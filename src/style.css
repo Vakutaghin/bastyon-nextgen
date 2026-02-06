@@ -1,0 +1,228 @@
+/* Light Theme CSS Variables - pxoved, values inlined */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI Variable', 'Segoe UI', SegoeUI, "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  background: rgb(255, 255, 255);
+  color: rgb(33, 37, 41);
+  min-height: 100vh;
+  overscroll-behavior: none;
+  scroll-behavior: smooth;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.4;
+  min-height: 100%;
+  position: relative;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Native transparent scrollbar */
+html::-webkit-scrollbar {
+  width: 8px;
+}
+
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+  background-color: rgba(173, 181, 189, 0.5);
+  border-radius: 4px;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(108, 117, 125, 0.7);
+}
+
+/* Firefox scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(173, 181, 189, 0.5) transparent;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* Button styles from master.css */
+button {
+  background: rgb(0, 123, 255);
+  color: rgb(255, 255, 255);
+  border: 1px solid rgb(0, 123, 255);
+  text-align: center;
+  border-radius: 8px;
+  font-size: 0.9em;
+  padding: 0.5em;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+button:hover {
+  background: transparent;
+  color: rgb(0, 123, 255);
+}
+
+button.disabled {
+  cursor: default;
+  background: rgb(233, 236, 239);
+  border-color: rgb(206, 212, 218);
+  color: rgb(108, 117, 125);
+}
+
+/* Input styles from master.css */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"] {
+  color: rgb(33, 37, 41);
+  border-radius: 6px;
+  padding: 0 0.5em;
+  border: 1px solid rgb(206, 212, 218);
+}
+
+textarea {
+  background: rgb(250, 250, 250);
+  color: rgb(33, 37, 41);
+  border: 1px solid rgb(206, 212, 218);
+  border-radius: 6px;
+}
+
+input:focus,
+textarea:focus {
+  outline: 0;
+}
+
+::placeholder {
+  color: rgb(108, 117, 125);
+}
+
+/* Global link styles */
+a {
+  color: rgb(0, 123, 255);
+  text-decoration: none;
+  border-bottom: 1px solid rgb(0, 123, 255);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+a:hover {
+  color: rgb(0, 86, 179);
+  border-bottom-color: rgb(0, 86, 179);
+}
+
+a:visited {
+  color: rgb(0, 123, 255);
+}
+
+a:active {
+  color: rgb(0, 86, 179);
+}
+
+/* Selection styles */
+::selection {
+  background: rgb(0, 123, 255);
+  text-shadow: none;
+}
+
+/* Scrollbar styles */
+.customscroll {
+  overflow-y: overlay;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
+.customscroll::-webkit-scrollbar {
+  width: 7px;
+}
+
+.customscroll::-webkit-scrollbar-track {
+  background: rgba(248, 249, 250, 0.5);
+}
+
+.customscroll::-webkit-scrollbar-thumb {
+  background-color: rgba(173, 181, 189, 0.5);
+  border: 0 solid rgba(248, 249, 250, 0.5);
+  border-radius: 3px;
+}
+
+.customscroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(108, 117, 125, 0.7);
+}
+
+/* Utility classes */
+.unselectable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.blur {
+  -webkit-filter: blur(10px);
+  -moz-filter: blur(10px);
+  -o-filter: blur(10px);
+  -ms-filter: blur(10px);
+  filter: blur(10px);
+}
+
+/* Ant Design Card overrides for light theme */
+.ant-card {
+  background: rgb(255, 255, 255) !important;
+  color: rgb(33, 37, 41) !important;
+  border-color: rgba(206, 212, 218, 0.5) !important;
+}
+
+.ant-card-body {
+  background: rgb(255, 255, 255) !important;
+  color: rgb(33, 37, 41) !important;
+}
+
+.ant-card-body * {
+  color: rgb(33, 37, 41) !important;
+}
+
+.ant-card-body p {
+  color: rgb(33, 37, 41) !important;
+}
+
+.ant-card-body div {
+  color: rgb(33, 37, 41) !important;
+}
+
+.ant-card-body span {
+  color: rgb(33, 37, 41) !important;
+}
+
+.ant-card-body h1,
+.ant-card-body h2,
+.ant-card-body h3,
+.ant-card-body h4,
+.ant-card-body h5,
+.ant-card-body h6 {
+  color: rgb(33, 37, 41) !important;
+}
+
+/* Star Rating Styles */
+.star-rating .star-bg,
+.star-rating .star-bg svg {
+  color: rgba(255, 193, 7, 0.3) !important;
+  fill: rgba(255, 193, 7, 0.3) !important;
+}
+
+.star-rating .star-fill,
+.star-rating .star-fill svg {
+  color: rgb(255, 193, 7) !important;
+  fill: rgb(255, 193, 7) !important;
+}
+

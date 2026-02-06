@@ -1,0 +1,51 @@
+import {
+  isPoint,
+  pointAdd,
+  pointAddScalar,
+  pointCompress,
+  pointFromScalar,
+  pointMultiply,
+  privateAdd,
+  privateSub,
+  sign,
+  signSchnorr,
+  verify,
+  verifySchnorr,
+  xOnlyPointAddTweak,
+  recover,
+  xOnlyPointAddTweakCheck,
+  isPointCompressed,
+  isXOnlyPoint,
+  isPrivate,
+  xOnlyPointFromScalar,
+  xOnlyPointFromPoint,
+  privateNegate,
+  signRecoverable
+} from 'tiny-secp256k1';
+
+const ecc = {
+  isPoint,
+  pointAdd,
+  pointAddScalar,
+  pointCompress,
+  pointFromScalar,
+  pointMultiply,
+  privateAdd,
+  privateSub,
+  sign,
+  signSchnorr,
+  verify,
+  verifySchnorr,
+  xOnlyPointAddTweak,
+  recover,
+  xOnlyPointAddTweakCheck,
+  isPointCompressed,
+  isXOnlyPoint,
+  isPrivate,
+  xOnlyPointFromScalar,
+  xOnlyPointFromPoint,
+  privateNegate,
+  signRecoverable
+};
+
+export default ecc;
