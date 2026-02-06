@@ -12,7 +12,7 @@ export const SC_ProfileSidebar = styled.div`
   flex-shrink: 0;
   top: 60px;
   border-radius: 8px;
-  padding: 20px;
+  padding: 20px 0 20px 20px;
   z-index: 10;
 
   @media (max-width: 800px) {
@@ -61,9 +61,10 @@ export const SC_UserName = styled.h2`
 
 export const SC_UserStats = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
+  flex-direction: row;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 12px 0 20px;
 `
 
 export const SC_UserAddress = styled.div`
@@ -72,18 +73,8 @@ export const SC_UserAddress = styled.div`
   word-break: break-all;
   display: flex;
   align-items: center;
-  gap: 5px;
   cursor: pointer;
-  padding: 5px 0;
-  border-top: 1px solid #eee;
-
-  &:hover {
-    color: #666;
-  }
-
-  i {
-    font-size: 14px;
-  }
+  margin-top: 10px;
 `
 
 export const SC_UserSite = styled.a`
@@ -93,7 +84,6 @@ export const SC_UserSite = styled.a`
   word-break: break-all;
   display: flex;
   align-items: center;
-  gap: 5px;
   border: 0;
 
   &:hover {
@@ -103,20 +93,27 @@ export const SC_UserSite = styled.a`
 
 export const SC_StatItem = styled.div`
   display: flex;
-  justify-content: space-between;
-  font-size: 14px;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 70px;
 `
 
 export const SC_StatLabel = styled.span`
+  font-size: 12px;
   color: #666;
+  line-height: 1.2;
 `
 
 export const SC_StatValue = styled.span`
+  margin-top: 2px;
   font-weight: 600;
+  color: #000;
+  line-height: 1.2;
 `
 
 export const SC_UserAbout = styled.div`
-  margin-bottom: 20px;
+  margin-top: 20px;
   font-size: 14px;
   color: #333;
   line-height: 1.5;
@@ -137,7 +134,6 @@ export const SC_UserAbout = styled.div`
 export const SC_UserJoined = styled.div`
   font-size: 12px;
   color: #999;
-  text-align: center;
 `
 
 export const SC_LoadingState = styled.div`

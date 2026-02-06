@@ -128,6 +128,12 @@ export default defineComponent({
       }
     }
 
+    const formattedReputation = computed(() => {
+      const r: unknown = props.profile?.reputation ?? 0
+      const num = typeof r === 'number' ? r : Number(r || 0)
+      return num.toFixed(1)
+    })
+
     return {
       userAvatar,
       displayName,
@@ -136,7 +142,8 @@ export default defineComponent({
       userSite,
       formattedUserAbout,
       userAddress,
-      copyAddress
+      copyAddress,
+      formattedReputation
     }
   }
 })

@@ -13,39 +13,44 @@
       <SC_UserStats>
         <SC_StatItem>
           <SC_StatLabel>Репутация</SC_StatLabel>
-          <SC_StatValue>{{ profile.reputation || 0 }}</SC_StatValue>
-        </SC_StatItem>
-        <SC_StatItem>
-          <SC_StatLabel>Постов</SC_StatLabel>
-          <SC_StatValue>{{ profile.postcnt || 0 }}</SC_StatValue>
-        </SC_StatItem>
-        <SC_StatItem>
-          <SC_StatLabel>Подписчиков</SC_StatLabel>
-          <SC_StatValue>{{ profile.subscribers_count || 0 }}</SC_StatValue>
-        </SC_StatItem>
-        <SC_StatItem>
-          <SC_StatLabel>Подписок</SC_StatLabel>
-          <SC_StatValue>{{ profile.subscribes_count || 0 }}</SC_StatValue>
+          <SC_StatValue>{{ formattedReputation }}</SC_StatValue>
         </SC_StatItem>
 
+        <SC_StatItem>
+          <SC_StatLabel>Подписчики</SC_StatLabel>
+          <SC_StatValue>{{ profile.subscribers_count || 0 }}</SC_StatValue>
+        </SC_StatItem>
+
+        <SC_StatItem>
+          <SC_StatLabel>Подписки</SC_StatLabel>
+          <SC_StatValue>{{ profile.subscribes_count || 0 }}</SC_StatValue>
+        </SC_StatItem>
+      </SC_UserStats>
+
+      <!-- Тут давай сделаем кнопку, которая позволит начать чат с пользователем, чью страницу мы смотрим -->
+
+      <SC_UserAbout v-if="formattedUserAbout">
+        <h3>Информация</h3>
+
+        <p v-html="formattedUserAbout"></p>
+        <hr />
+
         <SC_UserAddress v-if="userAddress" @click="copyAddress" title="Copy address">
-          <i class="fas fa-wallet"></i>
           {{ userAddress }}
         </SC_UserAddress>
 
         <SC_UserSite v-if="userSite" :href="userSite" target="_blank">
-          <i class="fas fa-link"></i>
           {{ userSite }}
         </SC_UserSite>
 
-        <SC_UserJoined v-if="profile.regdate">
-          <span>Регистрация: {{ formattedDate }}</span>
-        </SC_UserJoined>
-      </SC_UserStats>
+        <div>
+          <span>Публикации: </span>
+          <strong>{{ profile.publications_count || 0 }}</strong>
+        </div>
 
-      <SC_UserAbout v-if="formattedUserAbout">
-        <h3>Информация</h3>
-        <p v-html="formattedUserAbout"></p>
+        <div v-if="profile.regdate">
+          <span>Регистрация: <strong>{{ formattedDate }}</strong></span>
+        </div>
       </SC_UserAbout>
     </div>
 

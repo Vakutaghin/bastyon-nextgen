@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 
+
 export const SC_UserInfo = styled.div`
   display: flex;
   align-items: center;
@@ -43,4 +44,3 @@ export const SC_UserInfoTrigger = styled(SC_UserInfo)`
     opacity: 0.8;
   }
 `
-
