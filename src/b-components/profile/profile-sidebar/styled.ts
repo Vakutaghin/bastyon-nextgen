@@ -67,6 +67,33 @@ export const SC_UserStats = styled.div`
   margin: 12px 0 20px;
 `
 
+export const SC_StartChatButton = styled.button`
+  width: 100%;
+  margin: 0 20px 16px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background-color: #00A3F7;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(0, 163, 247, 0.25);
+  &:hover {
+    background-color: #0088d1;
+  }
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+`
+
 export const SC_UserAddress = styled.div`
   font-size: 12px;
   color: #999;

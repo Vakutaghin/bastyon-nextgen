@@ -1,6 +1,6 @@
 <template>
   <SC_MessengerContainer>
-    <SC_SidebarColumn :isHidden="!!store.activeChatId">
+    <SC_SidebarColumn :isHidden="!!store.activeChatId || !!store.lastTargetAddress">
       <div style="padding: 16px; border-bottom: 1px solid #eee; font-weight: bold; display: flex; align-items: center; justify-content: space-between;">
         <span>Сообщения</span>
         <slot name="header-actions" />
@@ -21,7 +21,7 @@
       />
     </SC_SidebarColumn>
 
-    <SC_ChatColumn :isActive="!!store.activeChatId">
+    <SC_ChatColumn :isActive="!!store.activeChatId || !!store.lastTargetAddress">
       <template v-if="store.activeChatId">
         <div style="height: 56px; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 16px;">
           <SC_MobileBackButton @click="store.closeActiveChat ? store.closeActiveChat() : (store.activeChatId = null)">
@@ -33,6 +33,19 @@
             :messages="store.activeMessages"
             @send="(text) => store.sendMessage(store.activeChatId, text)"
             @load-more="handleLoadMore"
+          />
+      </template>
+      <template v-else-if="store.lastTargetAddress">
+        <div style="height: 56px; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 16px;">
+          <SC_MobileBackButton @click="store.clearInviteTarget">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </SC_MobileBackButton>
+          <span style="font-weight: 600;">{{ invitePartnerName }}</span>
+        </div>
+        <ChatRoom
+            :messages="[]"
+            @send="() => {}"
+            @load-more="() => {}"
           />
       </template>
       <SC_EmptyState v-else>

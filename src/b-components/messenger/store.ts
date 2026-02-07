@@ -144,6 +144,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     name: 'Я',
     avatar: 'https://via.placeholder.com/150',
   })
+  const lastTargetAddress = ref<string | null>(null)
   const isSyncStarted = ref(false)
   const isLoading = ref(false)
   const isMessagesLoading = ref(false)
@@ -1512,9 +1513,27 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
   }
 
+  const openMessenger = async () => {
+    if (!isOpen.value) {
+      await toggleMessenger()
+    } else {
+      if (!matrixService.getClient()) {
+        await initMatrix()
+      }
+      if (dialogs.value.length === 0) {
+        await loadDialogs()
+      }
+    }
+  }
+
   const activeMessages = computed(() => {
     if (!activeChatId.value) return []
     return messages.value[activeChatId.value] || []
+  })
+
+  const activeDialog = computed<Dialog | null>(() => {
+    if (!activeChatId.value) return null
+    return dialogs.value.find(d => d.id === activeChatId.value) || null
   })
 
   const totalUnreadCount = computed(() => {
@@ -1529,6 +1548,73 @@ export const useMessengerStore = defineStore('messenger', () => {
       loadDialogs(true)
     }, 500)
   }, { deep: true })
+
+  const startChatWithAddress = async (address: string): Promise<void> => {
+    if (!address) return
+    // Ensure auth and matrix
+    if (!authStore.isUserAuthenticated) return
+    lastTargetAddress.value = address
+    try {
+      await fetchProfiles([address])
+    } catch (_e) {}
+    await openMessenger()
+    await initMatrix()
+    // Build matrix user id from address
+    const hex = matrixService.addressToHex(address).toLowerCase()
+    let host = 'matrix.bastyon.com'
+    try {
+      const base = matrixService.getBaseUrl()
+      const parsed = new URL(base.startsWith('http') ? base : window.location.origin)
+      const h = parsed.host || window.location.host
+      host = (h.includes('localhost') || h.startsWith('127.')) ? 'matrix.pocketnet.app' : h
+    } catch (_e) {
+      const h = window.location.host
+      host = (h.includes('localhost') || h.startsWith('127.')) ? 'matrix.pocketnet.app' : h
+    }
+    const partnerId = `@${hex}:${host}`
+    // Try find existing room
+    const rooms = matrixService.getRooms()
+    let roomId: string | null = null
+    for (const room of rooms) {
+      const pid = getPartnerMatrixId(room)
+      if (pid === partnerId) {
+        roomId = room.roomId
+        break
+      }
+    }
+    // If not found, create a direct room
+    if (!roomId) {
+      roomId = await matrixService.createDirectRoom(partnerId)
+    }
+    // Open chat
+    if (roomId) {
+      await openChat(roomId)
+      // Ensure dialogs reflect the new room with profile data
+      await loadDialogs(true)
+    } else {
+      console.warn('[MessengerStore] startChatWithAddress: failed to create/open room')
+    }
+  }
+
+  const openInviteWithAddress = async (address: string, preloadedProfile?: UserProfile | null): Promise<void> => {
+    if (!address) return
+    if (!authStore.isUserAuthenticated) return
+    lastTargetAddress.value = address
+    // Если передан уже загруженный профиль (например из сайдбара страницы профиля) — используем его, без повторного запроса
+    if (preloadedProfile && preloadedProfile.address === address) {
+      userProfiles.value[address] = preloadedProfile
+    }
+    try {
+      await fetchProfiles([address])
+    } catch (_e) {}
+    await openMessenger()
+    // Do NOT create room yet; wait for user to press "Начать чат"
+    activeChatId.value = null
+  }
+
+  const clearInviteTarget = (): void => {
+    lastTargetAddress.value = null
+  }
 
   const decryptAudioData = async (blob: Blob, message: Message): Promise<Blob | null> => {
     if (!pcryptoService.value) return null
@@ -1676,7 +1762,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     dialogs,
     messages,
     activeMessages,
+    activeDialog,
     currentUser,
+    lastTargetAddress,
     isSyncStarted,
     isLoading,
     isMessagesLoading,
@@ -1690,12 +1778,16 @@ export const useMessengerStore = defineStore('messenger', () => {
     loadMoreMessages,
     openChat,
     toggleMessenger,
+    openMessenger,
     sendMessage,
     sendAudio,
     initMatrix,
     logout,
     fetchProfiles,
     totalUnreadCount,
-    decryptAudioData
+    decryptAudioData,
+    startChatWithAddress,
+    openInviteWithAddress,
+    clearInviteTarget
   }
 })

@@ -27,7 +27,9 @@
         </SC_StatItem>
       </SC_UserStats>
 
-      <!-- Тут давай сделаем кнопку, которая позволит начать чат с пользователем, чью страницу мы смотрим -->
+      <SC_StartChatButton :disabled="!userAddress" @click="startChatWithUser">
+        Начать чат
+      </SC_StartChatButton>
 
       <SC_UserAbout v-if="formattedUserAbout">
         <h3>Информация</h3>
@@ -45,7 +47,7 @@
 
         <div>
           <span>Публикации: </span>
-          <strong>{{ profile.publications_count || 0 }}</strong>
+          <strong>{{ publicationsCount }}</strong>
         </div>
 
         <div v-if="profile.regdate">

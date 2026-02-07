@@ -237,6 +237,22 @@ export class MatrixService {
     return this.client.getRoom(roomId)
   }
 
+  public async createDirectRoom(inviteeId: string): Promise<string | null> {
+    if (!this.client) throw new Error('Client not initialized')
+    try {
+      const res = await this.client.createRoom({
+        invite: [inviteeId],
+        is_direct: true,
+        preset: 'trusted_private_chat'
+      })
+      const roomId = (res && (res.room_id || (res as any).roomId)) || null
+      return typeof roomId === 'string' ? roomId : null
+    } catch (e) {
+      console.error('Matrix createDirectRoom failed:', e)
+      return null
+    }
+  }
+
   public async sendMessage(roomId: string, content: string) {
     if (!this.client) throw new Error('Client not initialized')
 

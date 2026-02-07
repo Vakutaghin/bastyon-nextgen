@@ -47,13 +47,26 @@ export const messengerWrapperOptions = defineComponent({
       return authStore.isUserAuthenticated
     })
 
-    const title = computed(() => {
+    const widgetTitle = computed(() => {
       if (store.activeChatId) {
         const dialog = store.dialogs.find(d => d.id === store.activeChatId)
         return dialog?.partner.name || 'Чат'
       }
+      if (store.lastTargetAddress) {
+        const profile = store.userProfiles[store.lastTargetAddress]
+        return profile?.name || store.lastTargetAddress || 'Новый чат'
+      }
       return 'Сообщения'
     })
+
+    const onWidgetBack = () => {
+      if (store.activeChatId) {
+        store.closeActiveChat?.()
+        store.activeChatId = null
+      } else if (store.lastTargetAddress) {
+        store.clearInviteTarget()
+      }
+    }
 
     const closeFullScreen = () => {
       store.isFullScreen = false
@@ -156,10 +169,11 @@ export const messengerWrapperOptions = defineComponent({
 
     return {
       store,
-      title,
+      widgetTitle,
       isVisible,
       closeWidget,
       closeFullScreen,
+      onWidgetBack,
       icons,
       handleLoadMore
     }

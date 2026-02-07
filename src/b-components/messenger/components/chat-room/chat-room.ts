@@ -1,6 +1,7 @@
-import { defineComponent, ref, type PropType, nextTick } from 'vue'
+import { defineComponent, ref, type PropType, nextTick, watch, watchEffect } from 'vue'
 import type { Message } from '../../types'
-import { SC_MessageInputArea, SC_MessageInput, SC_SendButton, SC_EmojiToggleButton, SC_VoiceButton, SC_RecordingTimer, SC_SwipeHint, SC_CancelButton } from './styled'
+import { SC_MessageInputArea, SC_MessageInput, SC_SendButton, SC_EmojiToggleButton, SC_VoiceButton, SC_RecordingTimer, SC_SwipeHint, SC_CancelButton, SC_StartChatContainer, SC_StartChatButton, SC_PartnerHeader, SC_PartnerAvatar, SC_PartnerName, SC_PartnerInfoCard } from './styled'
+import { SC_UserStats, SC_StatItem, SC_StatLabel, SC_StatValue } from '@/b-components/profile/profile-sidebar/styled'
 import MessageList from '../message-list/message-list.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import { useMessengerStore } from '../../store'
@@ -16,6 +17,16 @@ export const chatRoomOptions = defineComponent({
     SC_RecordingTimer,
     SC_SwipeHint,
     SC_CancelButton,
+    SC_StartChatContainer,
+    SC_StartChatButton,
+    SC_PartnerHeader,
+    SC_PartnerAvatar,
+    SC_PartnerName,
+    SC_PartnerInfoCard,
+    SC_UserStats,
+    SC_StatItem,
+    SC_StatLabel,
+    SC_StatValue,
     MessageList,
     EmojiPicker
   },
@@ -31,6 +42,12 @@ export const chatRoomOptions = defineComponent({
     const inputRef = ref<any>(null)
     const showEmojiPicker = ref(false)
     const store = useMessengerStore()
+    const isInitiated = ref<boolean>((props.messages && props.messages.length > 0) ? true : false)
+    const partnerName = ref<string>('')
+    const partnerAvatar = ref<string | null>(null)
+    const reputation = ref<string>('0.0')
+    const subscribersCount = ref<number>(0)
+    const subscribesCount = ref<number>(0)
 
     const isRecording = ref(false)
     const isLocked = ref(false)
@@ -110,6 +127,120 @@ export const chatRoomOptions = defineComponent({
         adjustHeight()
       }
     }
+
+    const startChatNow = async () => {
+      const addrRef = (store as any).lastTargetAddress
+      const address = addrRef?.value ?? addrRef ?? null
+      if (address) {
+        try {
+          await (store as any).startChatWithAddress(address)
+        } catch (e) {
+          console.error('[ChatRoom] Failed to start chat room:', e)
+        }
+      }
+      isInitiated.value = true
+      nextTick(() => {
+        const el = inputRef.value?.$el
+        if (el) {
+          el.focus()
+          adjustHeight()
+        }
+      })
+    }
+
+    const hexToAddress = (hex: string): string => {
+      if (!hex || hex.length % 2 !== 0) return ''
+      let result = ''
+      for (let i = 0; i < hex.length; i += 2) {
+        const chHex = hex.substring(i, i + 2)
+        if (!/^[0-9a-fA-F]{2}$/.test(chHex)) return ''
+        let charCode = parseInt(chHex, 16)
+        if (charCode >= 0x80) {
+          charCode += 0x350
+        }
+        result += String.fromCharCode(charCode)
+      }
+      return result
+    }
+
+    const getAvatarUrlFromProfile = (imageHash?: string): string | undefined => {
+      if (!imageHash) return undefined
+      if (imageHash.startsWith('http://') || imageHash.startsWith('https://')) {
+        return imageHash.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
+      }
+      return `https://pocketnet.app:8092/i/${imageHash}`
+    }
+
+    const updatePartnerInfo = async () => {
+      let address: string | null = null
+      const dialogRef = (store as any).activeDialog
+      const d = dialogRef?.value ?? dialogRef
+
+      if (d) {
+        partnerName.value = d.partner?.name || 'Чат'
+        partnerAvatar.value = d.partner?.avatar || null
+        const id = d.partner?.id
+        if (typeof id === 'string' && id.startsWith('@') && id.includes(':')) {
+          const parts = id.split(':')
+          let userId = parts[0].substring(1)
+          const looksHex = /^[0-9a-fA-F]+$/.test(userId) && userId.length % 2 === 0
+          address = looksHex ? hexToAddress(userId) : userId
+        }
+      }
+      if (!address) {
+        const addrRef = (store as any).lastTargetAddress
+        address = addrRef?.value ?? addrRef ?? null
+      }
+      if (address) {
+        const profilesRef = (store as any).userProfiles
+        const profilesObj = profilesRef?.value ?? profilesRef
+        const p = profilesObj ? profilesObj[address] : undefined
+        if (!p) {
+          await (store as any).fetchProfiles([address])
+        }
+        const freshProfilesObj = ((store as any).userProfiles?.value ?? (store as any).userProfiles)
+        const profile = freshProfilesObj ? freshProfilesObj[address] : undefined
+        if (profile) {
+          const r: unknown = profile.reputation ?? 0
+          const num = typeof r === 'number' ? r : Number(r || 0)
+          reputation.value = num.toFixed(1)
+          subscribersCount.value = profile.subscribers_count || 0
+          subscribesCount.value = profile.subscribes_count || 0
+          if (!partnerAvatar.value) {
+            const img = (profile as any)?.i || (profile as any)?.avatar || (profile as any)?.image
+            const url = getAvatarUrlFromProfile(img)
+            if (url) partnerAvatar.value = url
+          }
+          if (!partnerName.value && profile.name) {
+            partnerName.value = profile.name
+          }
+        }
+      }
+    }
+
+    // Watch active dialog changes (use id to ensure reactivity across unwrap cases)
+    watch(() => {
+      const d = (store as any).activeDialog
+      if (d == null) return null
+      const val = (typeof d === 'object' && 'id' in d) ? d.id : (d?.value?.id)
+      return val ?? null
+    }, () => {
+      updatePartnerInfo()
+    }, { immediate: true })
+
+    // Watch profiles cache changes
+    watch(() => (store as any).userProfiles, () => {
+      updatePartnerInfo()
+    }, { deep: true })
+
+    watchEffect(() => {
+      // react to both active dialog and profiles changes
+      const _d = (store as any).activeDialog
+      const _p = (store as any).userProfiles
+      void _d
+      void _p
+      updatePartnerInfo()
+    })
 
     const getSupportedType = (): string | undefined => {
       const types = preferredTypes
@@ -225,6 +356,14 @@ export const chatRoomOptions = defineComponent({
       inputValue,
       inputRef,
       showEmojiPicker,
+      isInitiated,
+      startChatNow,
+      partnerName,
+      partnerAvatar,
+      reputation,
+      subscribersCount,
+      subscribesCount,
+      SC_PartnerInfoCard,
       handleSend,
       handleKeydown,
       handleInput,

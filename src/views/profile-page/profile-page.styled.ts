@@ -36,6 +36,7 @@ export const SC_ProfileContentWrapper = styled.div`
   width: 100%;
   margin: 0 auto;
   gap: 20px;
+  max-width: 1600px;
 
   @media (max-width: 800px) {
     flex-direction: column;

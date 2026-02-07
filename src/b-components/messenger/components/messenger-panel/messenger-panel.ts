@@ -36,6 +36,13 @@ export const messengerPanelOptions = defineComponent({
       return ''
     })
 
+    const invitePartnerName = computed(() => {
+      const addr = store.lastTargetAddress
+      if (!addr) return 'Новый чат'
+      const profile = store.userProfiles[addr]
+      return profile?.name || addr || 'Новый чат'
+    })
+
     onMounted(async () => {
       // Initialize Matrix
       if (authStore.isUserAuthenticated) {
@@ -53,6 +60,7 @@ export const messengerPanelOptions = defineComponent({
     return {
       store,
       activeChatName,
+      invitePartnerName,
       handleLoadMore
     }
   }

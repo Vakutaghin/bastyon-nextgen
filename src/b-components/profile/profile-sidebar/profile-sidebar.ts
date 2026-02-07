@@ -16,8 +16,10 @@ import {
   SC_UserJoined,
   SC_LoadingState,
   SC_UserAddress,
-  SC_UserSite
+  SC_UserSite,
+  SC_StartChatButton
 } from './styled'
+import { useMessengerStore } from '@/b-components/messenger/store'
 
 export default defineComponent({
   name: 'ProfileSidebar',
@@ -35,6 +37,7 @@ export default defineComponent({
     SC_LoadingState,
     SC_UserAddress,
     SC_UserSite,
+    SC_StartChatButton,
     Spin,
     LoadingOutlined
   },
@@ -45,6 +48,7 @@ export default defineComponent({
     }
   },
   setup(props) {
+    const messengerStore = useMessengerStore()
     const userAvatar = computed(() => {
       // 1. Пробуем из accSet (настройки аккаунта) - это приоритетный источник, если есть
       const profileAny = props.profile as any
@@ -134,6 +138,28 @@ export default defineComponent({
       return num.toFixed(1)
     })
 
+    // Количество публикаций: API getuserprofile возвращает postcnt; content[200] — посты по типам
+    const publicationsCount = computed(() => {
+      const p = props.profile
+      if (!p) return 0
+      const fromApi = (p as any).publications_count ?? p.postcnt
+      if (typeof fromApi === 'number' && !Number.isNaN(fromApi)) return fromApi
+      const fromContent = p.content?.[200]
+      if (typeof fromContent === 'number' && !Number.isNaN(fromContent)) return fromContent
+      return 0
+    })
+
+    const startChatWithUser = async () => {
+      const address = userAddress.value
+      if (!address) return
+      try {
+        // Передаём профиль из сайдбара — мессенджер не будет повторно запрашивать аватар, имя, подписчиков и т.д.
+        await messengerStore.openInviteWithAddress(address, props.profile ?? undefined)
+      } catch (e) {
+        console.error('[ProfileSidebar] Failed to start chat:', e)
+      }
+    }
+
     return {
       userAvatar,
       displayName,
@@ -143,7 +169,9 @@ export default defineComponent({
       formattedUserAbout,
       userAddress,
       copyAddress,
-      formattedReputation
+      formattedReputation,
+      publicationsCount,
+      startChatWithUser
     }
   }
 })

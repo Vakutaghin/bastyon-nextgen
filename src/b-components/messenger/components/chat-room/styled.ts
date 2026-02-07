@@ -186,3 +186,77 @@ export const SC_CancelButton = styled.button`
     text-decoration: underline;
   }
 `
+
+export const SC_StartChatContainer = styled.div`
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  box-sizing: border-box;
+`
+
+export const SC_StartChatButton = styled.button`
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: #00A3F7;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 163, 247, 0.25);
+  &:hover {
+    background-color: #0088d1;
+  }
+`
+
+export const SC_PartnerHeader = styled.div`
+  padding: 16px 20px 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+`
+
+export const SC_PartnerAvatar = styled.div`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f0f2f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`
+
+export const SC_PartnerName = styled.div`
+  font-weight: 600;
+  font-size: 15px;
+  color: #000;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`
+
+export const SC_PartnerInfoCard = styled.div`
+  margin: 16px auto 12px;
+  padding: 16px 16px 6px 16px;
+  border: 1px solid #e9e9e9;
+  border-radius: 12px;
+  max-width: 380px;
+  box-sizing: border-box;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+`

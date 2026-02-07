@@ -8,21 +8,28 @@
 
   <!-- Floating Widget Mode -->
   <SC_MessengerWrapper v-if="isVisible && !store.isFullScreen">
-    <MessengerWindow :is-open="store.isOpen" :title="title" @close="closeWidget">
+    <MessengerWindow :is-open="store.isOpen" :title="widgetTitle" @close="closeWidget">
       <template #actions>
-        <SC_BackButton v-if="store.activeChatId" @click="store.activeChatId = null">
+        <SC_BackButton v-if="store.activeChatId || store.lastTargetAddress" @click="onWidgetBack">
           <img :src="icons.back" style="filter: brightness(0) invert(1);" />
         </SC_BackButton>
       </template>
 
-      <div v-if="store.isLoading && !store.activeChatId" style="padding: 20px; text-align: center; color: #888;">
+      <div v-if="store.isLoading && !store.activeChatId && !store.lastTargetAddress" style="padding: 20px; text-align: center; color: #888;">
         Загрузка...
       </div>
 
       <ChatList
-        v-else-if="!store.activeChatId"
+        v-else-if="!store.activeChatId && !store.lastTargetAddress"
         :dialogs="store.dialogs"
         @select="store.openChat"
+      />
+
+      <ChatRoom
+        v-else-if="store.lastTargetAddress && !store.activeChatId"
+        :messages="[]"
+        @send="() => {}"
+        @load-more="() => {}"
       />
 
       <ChatRoom
