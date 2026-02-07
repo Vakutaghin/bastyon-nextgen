@@ -17,8 +17,10 @@ import {
   PlayCircleFilled,
   ZoomInOutlined,
   BookOutlined,
-  BookFilled
+  BookFilled,
+  MessageOutlined
 } from '@ant-design/icons-vue'
+import { useMessengerStore } from '@/b-components/messenger/store'
 import {
   SC_PostCard,
   SC_PostHeader,
@@ -55,6 +57,8 @@ interface PostAuthor {
   reputation: number
   letter: string
   verified?: boolean
+  subscribers_count?: number
+  subscribes_count?: number
 }
 
 interface Post {
@@ -110,6 +114,7 @@ export const postCardOptions = defineComponent({
     ZoomInOutlined,
     BookOutlined,
     BookFilled,
+    MessageOutlined,
     SC_PostCard,
     SC_PostHeader,
     SC_PostAuthor,
@@ -591,6 +596,28 @@ export const postCardOptions = defineComponent({
     }
   },
   methods: {
+    async startChatWithAuthor(event: Event) {
+      event.preventDefault()
+      event.stopPropagation()
+      const address = this.displayAuthor?.address
+      if (!address) return
+      try {
+        const messengerStore = useMessengerStore()
+        const preloadedProfile = {
+          address,
+          name: this.displayAuthor?.name,
+          i: this.displayAuthor?.avatar || undefined,
+          reputation: this.displayAuthor?.reputation,
+          subscribers_count: this.displayAuthor?.subscribers_count,
+          subscribes_count: this.displayAuthor?.subscribes_count,
+          hash: '',
+          id: 0
+        }
+        await messengerStore.openInviteWithAddress(address, preloadedProfile)
+      } catch (e) {
+        console.error('[PostCard] Failed to open chat:', e)
+      }
+    },
     async checkBookmarkStatus() {
       if (!this.postId) return
       this.isBookmarked = await isFavorite(this.postId)

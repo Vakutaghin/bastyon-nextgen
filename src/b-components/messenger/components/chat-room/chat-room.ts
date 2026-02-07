@@ -1,4 +1,4 @@
-import { defineComponent, ref, type PropType, nextTick, watch, watchEffect } from 'vue'
+import { defineComponent, ref, computed, type PropType, nextTick, watch, watchEffect } from 'vue'
 import type { Message } from '../../types'
 import { SC_MessageInputArea, SC_MessageInput, SC_SendButton, SC_EmojiToggleButton, SC_VoiceButton, SC_RecordingTimer, SC_SwipeHint, SC_CancelButton, SC_StartChatContainer, SC_StartChatButton, SC_PartnerHeader, SC_PartnerAvatar, SC_PartnerName, SC_PartnerInfoCard } from './styled'
 import { SC_UserStats, SC_StatItem, SC_StatLabel, SC_StatValue } from '@/b-components/profile/profile-sidebar/styled'
@@ -34,9 +34,19 @@ export const chatRoomOptions = defineComponent({
     messages: {
       type: Array as PropType<Message[]>,
       required: true
+    },
+    /** Режим приглашения: карточка + «Начать чат». Только при открытии из профиля/поста. */
+    inviteMode: {
+      type: Boolean,
+      default: false
+    },
+    /** Загрузка сообщений диалога (показываем прелоадер вместо списка). */
+    isLoading: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['send', 'load-more'],
+  emits: ['send', 'load-more', 'open-chat'],
   setup(props, { emit }) {
     const inputValue = ref('')
     const inputRef = ref<any>(null)
@@ -45,6 +55,7 @@ export const chatRoomOptions = defineComponent({
     const isInitiated = ref<boolean>((props.messages && props.messages.length > 0) ? true : false)
     const partnerName = ref<string>('')
     const partnerAvatar = ref<string | null>(null)
+    const avatarLoadFailed = ref(false)
     const reputation = ref<string>('0.0')
     const subscribersCount = ref<number>(0)
     const subscribesCount = ref<number>(0)
@@ -131,12 +142,14 @@ export const chatRoomOptions = defineComponent({
     const startChatNow = async () => {
       const addrRef = (store as any).lastTargetAddress
       const address = addrRef?.value ?? addrRef ?? null
-      if (address) {
-        try {
-          await (store as any).startChatWithAddress(address)
-        } catch (e) {
-          console.error('[ChatRoom] Failed to start chat room:', e)
+      if (!address) return
+      try {
+        const roomId = await (store as any).startChatWithAddress(address)
+        if (roomId) {
+          emit('open-chat', roomId)
         }
+      } catch (e) {
+        console.error('[ChatRoom] Failed to start chat room:', e)
       }
       isInitiated.value = true
       nextTick(() => {
@@ -175,10 +188,12 @@ export const chatRoomOptions = defineComponent({
       let address: string | null = null
       const dialogRef = (store as any).activeDialog
       const d = dialogRef?.value ?? dialogRef
+      const isInviteMode = !d
 
       if (d) {
         partnerName.value = d.partner?.name || 'Чат'
         partnerAvatar.value = d.partner?.avatar || null
+        avatarLoadFailed.value = false
         const id = d.partner?.id
         if (typeof id === 'string' && id.startsWith('@') && id.includes(':')) {
           const parts = id.split(':')
@@ -206,17 +221,38 @@ export const chatRoomOptions = defineComponent({
           reputation.value = num.toFixed(1)
           subscribersCount.value = profile.subscribers_count || 0
           subscribesCount.value = profile.subscribes_count || 0
-          if (!partnerAvatar.value) {
+          // В режиме приглашения всегда обновлять имя и аватар из профиля по текущему lastTargetAddress,
+          // иначе при смене собеседника без выхода через «Назад» остаются старые значения
+          if (isInviteMode) {
+            partnerName.value = profile.name || address || 'Новый чат'
             const img = (profile as any)?.i || (profile as any)?.avatar || (profile as any)?.image
-            const url = getAvatarUrlFromProfile(img)
-            if (url) partnerAvatar.value = url
-          }
-          if (!partnerName.value && profile.name) {
-            partnerName.value = profile.name
+            partnerAvatar.value = img ? getAvatarUrlFromProfile(img) || null : null
+            avatarLoadFailed.value = false
+          } else {
+            if (!partnerAvatar.value) {
+              const img = (profile as any)?.i || (profile as any)?.avatar || (profile as any)?.image
+              const url = getAvatarUrlFromProfile(img)
+              if (url) {
+                partnerAvatar.value = url
+                avatarLoadFailed.value = false
+              }
+            }
+            if (!partnerName.value && profile.name) {
+              partnerName.value = profile.name
+            }
           }
         }
       }
     }
+
+    const onAvatarError = () => {
+      avatarLoadFailed.value = true
+    }
+
+    const partnerInitial = computed(() => {
+      const name = partnerName.value
+      return name ? name[0].toUpperCase() : 'U'
+    })
 
     // Watch active dialog changes (use id to ensure reactivity across unwrap cases)
     watch(() => {
@@ -234,11 +270,13 @@ export const chatRoomOptions = defineComponent({
     }, { deep: true })
 
     watchEffect(() => {
-      // react to both active dialog and profiles changes
+      // react to active dialog, profiles and lastTargetAddress (смена собеседника в режиме приглашения)
       const _d = (store as any).activeDialog
       const _p = (store as any).userProfiles
+      const _addr = (store as any).lastTargetAddress?.value ?? (store as any).lastTargetAddress
       void _d
       void _p
+      void _addr
       updatePartnerInfo()
     })
 
@@ -360,6 +398,9 @@ export const chatRoomOptions = defineComponent({
       startChatNow,
       partnerName,
       partnerAvatar,
+      avatarLoadFailed,
+      onAvatarError,
+      partnerInitial,
       reputation,
       subscribersCount,
       subscribesCount,

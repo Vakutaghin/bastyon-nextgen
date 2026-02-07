@@ -1,4 +1,5 @@
 import { defineComponent, computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 
 import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
@@ -26,18 +27,19 @@ export const messengerPanelOptions = defineComponent({
   },
   setup() {
     const store = useMessengerStore()
+    const { activeChatId, lastTargetAddress, inviteViewActive } = storeToRefs(store)
     const authStore = useAuthStore()
 
     const activeChatName = computed(() => {
-      if (store.activeChatId) {
-        const dialog = store.dialogs.find(d => d.id === store.activeChatId)
+      if (activeChatId.value) {
+        const dialog = store.dialogs.find(d => d.id === activeChatId.value)
         return dialog?.partner.name || 'Чат'
       }
       return ''
     })
 
     const invitePartnerName = computed(() => {
-      const addr = store.lastTargetAddress
+      const addr = lastTargetAddress.value
       if (!addr) return 'Новый чат'
       const profile = store.userProfiles[addr]
       return profile?.name || addr || 'Новый чат'
@@ -51,17 +53,24 @@ export const messengerPanelOptions = defineComponent({
     })
 
     const handleLoadMore = () => {
-      console.error('[MessengerPanel] handleLoadMore triggered. Active chat:', store.activeChatId)
-      if (store.activeChatId) {
-        store.loadMoreMessages(store.activeChatId)
+      if (activeChatId.value) {
+        store.loadMoreMessages(activeChatId.value)
       }
+    }
+
+    const onChatStarted = (roomId: string) => {
+      store.switchToChatAndLoad(roomId)
     }
 
     return {
       store,
+      activeChatId,
+      lastTargetAddress,
+      inviteViewActive,
       activeChatName,
       invitePartnerName,
-      handleLoadMore
+      handleLoadMore,
+      onChatStarted
     }
   }
 })

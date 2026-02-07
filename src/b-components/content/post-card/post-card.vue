@@ -18,6 +18,16 @@
               <SC_PostAuthorName>{{ displayAuthor.name }}</SC_PostAuthorName>
             </router-link>
 
+            <button
+              v-if="displayAuthor.address"
+              type="button"
+              class="post-card-chat-btn"
+              aria-label="Начать чат"
+              @click.stop.prevent="startChatWithAuthor"
+            >
+              <MessageOutlined :style="{ fontSize: '16px' }" />
+            </button>
+
             <SC_PostAuthorRep>{{ formattedReputation }}</SC_PostAuthorRep>
           </SC_AuthorNameRow>
 
@@ -194,4 +204,21 @@ export default postCardOptions
 </script>
 
 <style scoped>
+.post-card-chat-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  border-radius: 4px;
+  line-height: 1;
+}
+.post-card-chat-btn:hover {
+  color: #00a4ff;
+  background: rgba(0, 164, 255, 0.08);
+}
 </style>

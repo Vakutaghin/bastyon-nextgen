@@ -237,13 +237,18 @@ export class MatrixService {
     return this.client.getRoom(roomId)
   }
 
+  /**
+   * Создаёт личный чат (запрос _matrix/client/v3/createRoom), как в старом bastyon-chat.
+   * Комната появляется в списке чатов после синка; в store добавляется оптимистичный диалог сразу.
+   */
   public async createDirectRoom(inviteeId: string): Promise<string | null> {
     if (!this.client) throw new Error('Client not initialized')
     try {
       const res = await this.client.createRoom({
         invite: [inviteeId],
         is_direct: true,
-        preset: 'trusted_private_chat'
+        preset: 'trusted_private_chat',
+        visibility: 'private'
       })
       const roomId = (res && (res.room_id || (res as any).roomId)) || null
       return typeof roomId === 'string' ? roomId : null

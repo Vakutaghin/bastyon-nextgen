@@ -22,6 +22,8 @@ export interface AdaptedPost {
     reputation: number
     letter: string
     verified?: boolean
+    subscribers_count?: number
+    subscribes_count?: number
   }
   title: string
   content: string
@@ -146,7 +148,9 @@ export function adaptPostData(post: any, index: number, usersMap: Record<string,
       avatar: avatar,
       reputation: reputation,
       letter: authorName.charAt(0).toUpperCase(),
-      verified
+      verified,
+      subscribers_count: userprofile?.subscribers_count,
+      subscribes_count: userprofile?.subscribes_count
     },
     title: title,
     content: content,

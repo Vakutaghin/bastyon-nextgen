@@ -1,11 +1,16 @@
 <template>
   <div style="display: flex; flex-direction: column; height: 100%;">
-    <template v-if="!isInitiated && (!messages || messages.length === 0)">
+    <template v-if="inviteMode">
       <SC_PartnerInfoCard>
         <SC_PartnerHeader>
           <SC_PartnerAvatar>
-            <img v-if="partnerAvatar" :src="partnerAvatar" alt="avatar" />
-            <span v-else>{{ partnerName ? partnerName[0]?.toUpperCase() : 'U' }}</span>
+            <img
+              v-if="partnerAvatar && !avatarLoadFailed"
+              :src="partnerAvatar"
+              alt=""
+              @error="onAvatarError"
+            />
+            <span v-else class="avatar-fallback">{{ partnerInitial }}</span>
           </SC_PartnerAvatar>
           <SC_PartnerName>{{ partnerName }}</SC_PartnerName>
         </SC_PartnerHeader>
@@ -30,7 +35,16 @@
         <SC_StartChatButton @click="startChatNow">Начать чат</SC_StartChatButton>
       </SC_StartChatContainer>
     </template>
+    <template v-else-if="isLoading">
+      <div class="chat-room-loader">
+        <span class="chat-room-spinner" />
+        <span class="chat-room-loader-text">Загрузка сообщений...</span>
+      </div>
+    </template>
     <template v-else>
+      <div v-if="!messages || messages.length === 0" class="chat-room-empty-hint">
+        Пока сообщений нет. Вы можете написать первое.
+      </div>
       <MessageList :messages="messages" @load-more="() => { console.error('[ChatRoom] load-more triggered (emitting)'); $emit('load-more') }" />
     </template>
 
@@ -54,7 +68,7 @@
       </template>
 
       <!-- NORMAL STATE -->
-      <template v-else-if="isInitiated || (messages && messages.length > 0)">
+      <template v-else-if="!inviteMode || isInitiated || (messages && messages.length > 0)">
         <EmojiPicker
           v-if="showEmojiPicker"
           @select="onEmojiSelect"
@@ -78,7 +92,7 @@
 
       <!-- VOICE BUTTON (Visible when recording but not locked, or when input empty) -->
       <SC_VoiceButton
-        v-if="(isInitiated || (messages && messages.length > 0)) && (!inputValue.trim() && !isLocked)"
+        v-if="(!inviteMode || isInitiated || (messages && messages.length > 0)) && (!inputValue.trim() && !isLocked)"
         :class="{ recording: isRecording }"
         @mousedown.prevent="startRecording"
         @mouseup.prevent="stopRecording"
@@ -106,3 +120,38 @@ import { chatRoomOptions } from './chat-room'
 
 export default chatRoomOptions
 </script>
+
+<style scoped>
+.chat-room-loader {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #888;
+  font-size: 14px;
+}
+.chat-room-spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #666;
+  border-radius: 50%;
+  animation: chat-room-spin 0.8s linear infinite;
+}
+@keyframes chat-room-spin {
+  to { transform: rotate(360deg); }
+}
+.chat-room-loader-text {
+  margin: 0;
+}
+.chat-room-empty-hint {
+  padding: 12px 16px;
+  color: #888;
+  font-size: 14px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+</style>

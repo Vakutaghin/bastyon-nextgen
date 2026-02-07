@@ -22,6 +22,8 @@ interface AdaptedPost {
     avatar: string | null
     reputation: number
     letter: string
+    subscribers_count?: number
+    subscribes_count?: number
   }
   title: string
   content: string
@@ -156,7 +158,9 @@ export const useFeedStore = defineStore('feed', {
             const real = (flags && (flags as any).real) ?? (post.userprofile as any)?.real
             return real === 1 || real === '1' || real === true || real === 'true'
           })(),
-          letter: authorName.charAt(0).toUpperCase()
+          letter: authorName.charAt(0).toUpperCase(),
+          subscribers_count: post.userprofile?.subscribers_count,
+          subscribes_count: post.userprofile?.subscribes_count
         },
         title: title,
         content: content,

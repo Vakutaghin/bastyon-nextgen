@@ -9,6 +9,7 @@ import MessengerWindow from '../messenger-window/messenger-window.vue'
 import ChatList from '../chat-list/chat-list.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
 import MessengerPanel from '../messenger-panel/messenger-panel.vue'
+import { storeToRefs } from 'pinia'
 import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
 import {
@@ -34,6 +35,7 @@ export const messengerWrapperOptions = defineComponent({
   },
   setup() {
     const store = useMessengerStore()
+    const { activeChatId, lastTargetAddress, inviteViewActive } = storeToRefs(store)
     const route = useRoute()
     const authStore = useAuthStore()
 
@@ -68,20 +70,20 @@ export const messengerWrapperOptions = defineComponent({
       }
     }
 
+    const onChatStarted = (roomId: string) => {
+      store.switchToChatAndLoad(roomId)
+    }
+
     const closeFullScreen = () => {
       store.isFullScreen = false
-      // Also ensure widget is "collapsed to circle" if that was the intent
-      // "сворачивать мессенджер в кружочек" implies closing the expanded view.
-      // If widget was open before, maybe we should close it too?
+      store.clearInviteTarget()
       store.isOpen = false
     }
 
     const closeWidget = () => {
-      try {
-        store.closeActiveChat?.()
-      } catch (_e) {
-        store.activeChatId = null
-      }
+      // Сбрасываем приглашение к новому чату — при следующем открытии покажем список диалогов
+      store.clearInviteTarget()
+      // Активный диалог не сбрасываем — при открытии снова покажем тот же чат
       store.isOpen = false
     }
 
@@ -169,11 +171,15 @@ export const messengerWrapperOptions = defineComponent({
 
     return {
       store,
+      activeChatId,
+      lastTargetAddress,
+      inviteViewActive,
       widgetTitle,
       isVisible,
       closeWidget,
       closeFullScreen,
       onWidgetBack,
+      onChatStarted,
       icons,
       handleLoadMore
     }

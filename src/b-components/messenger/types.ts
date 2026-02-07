@@ -26,4 +26,6 @@ export interface Dialog {
   partner: User
   unreadCount: number
   lastMessage?: Message
+  /** Время создания комнаты (Unix, сек) — для сортировки диалогов без сообщений в общем ряду */
+  createdAt?: number
 }

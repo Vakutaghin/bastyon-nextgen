@@ -306,11 +306,8 @@ export const SC_PostAuthorRep = styled.div`
   border-radius: 6px;
   padding: 0 6px;
   line-height: 1.4;
-  margin-left: 8px;
   font-weight: 500;
   font-size: 14px;
-  position: relative;
-  top: -7px;
 `
 
 export const SC_PostTime = styled.time`
@@ -323,6 +320,7 @@ export const SC_AuthorNameRow = styled.div`
   display: flex;
   align-items: center;
   text-decoration: none;
+  gap: 8px;
 
   a {
     border-bottom: 0;

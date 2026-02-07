@@ -225,7 +225,7 @@ export const SC_PartnerAvatar = styled.div`
   height: 44px;
   border-radius: 50%;
   overflow: hidden;
-  background: #f0f2f5;
+  background: #e0e4e8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,6 +234,12 @@ export const SC_PartnerAvatar = styled.div`
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+  .avatar-fallback {
+    font-size: 18px;
+    font-weight: 600;
+    color: #5c6370;
+    user-select: none;
   }
 `
 
