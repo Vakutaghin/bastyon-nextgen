@@ -700,3 +700,70 @@ export const SC_CommentActions = styled.div`
     user-select: none;
   }
 `
+
+export const SC_ChatBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  border-radius: 4px;
+  line-height: 1;
+
+  &:hover {
+    color: #00a4ff;
+    background: rgba(0, 164, 255, 0.08);
+  }
+`
+
+export const SC_ShowCommentsBtn = styled.button`
+  display: inline-block;
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #00a4ff;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+`
+
+export const SC_ShowCommentsBtnSecondary = styled(SC_ShowCommentsBtn)`
+  color: rgba(0, 0, 0, 0.45);
+  margin-left: 12px;
+
+  &:hover:not(:disabled) {
+    color: rgba(0, 0, 0, 0.65);
+  }
+`
+
+export const SC_ShowCommentsBtnCollapse = styled(SC_ShowCommentsBtn)`
+  color: rgba(0, 0, 0, 0.45);
+  margin-left: 12px;
+
+  &:hover:not(:disabled) {
+    color: rgba(0, 0, 0, 0.65);
+  }
+`
+
+export const SC_PostBookmark = styled.div`
+  margin-left: auto;
+  cursor: pointer;
+  padding: 0 10px;
+`
+
+export const SC_AuthorLinkWrap = styled.div`
+  display: block;
+`

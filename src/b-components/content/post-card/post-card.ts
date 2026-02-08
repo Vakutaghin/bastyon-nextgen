@@ -2,6 +2,8 @@ import { defineComponent, type PropType } from 'vue'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { useFiltersStore } from '@/stores/filters-store'
+import { getByPRC } from '@/helpers/api/request'
+import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
 import Card from '@/components/card/card.vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import Tag from '@/components/tag/tag.vue'
@@ -47,7 +49,13 @@ import {
   SC_CommentContent,
   SC_CommentMeta,
   SC_CommentDate,
-  SC_CommentActions
+  SC_CommentActions,
+  SC_ChatBtn,
+  SC_ShowCommentsBtn,
+  SC_ShowCommentsBtnSecondary,
+  SC_ShowCommentsBtnCollapse,
+  SC_PostBookmark,
+  SC_AuthorLinkWrap
 } from './styled'
 
 interface PostAuthor {
@@ -140,7 +148,13 @@ export const postCardOptions = defineComponent({
     SC_CommentContent,
     SC_CommentMeta,
     SC_CommentDate,
-    SC_CommentActions
+    SC_CommentActions,
+    SC_ChatBtn,
+    SC_ShowCommentsBtn,
+    SC_ShowCommentsBtnSecondary,
+    SC_ShowCommentsBtnCollapse,
+    SC_PostBookmark,
+    SC_AuthorLinkWrap
   },
   setup() {
     const modalStore = useModalStore()
@@ -186,7 +200,15 @@ export const postCardOptions = defineComponent({
       isCollapsed: true,
       isBookmarked: false,
       // Хранит информацию о соотношении сторон для каждого изображения
-      imageAspectRatios: {} as Record<number, { width: number; height: number; useContain: boolean }>
+      imageAspectRatios: {} as Record<number, { width: number; height: number; useContain: boolean }>,
+      /** Подгруженные комментарии поста (полный ответ бэкенда) */
+      allComments: null as GetComment[] | null,
+      allCommentsLoading: false,
+      allCommentsError: null as Error | null,
+      /** Сколько комментариев показывать (пагинация на фронте по 15) */
+      visibleCommentsCount: 0,
+      /** Комментарии развёрнуты (false = компактный вид: один превью + кнопка) */
+      commentsCollapsed: false
     }
   },
   watch: {
@@ -593,6 +615,33 @@ export const postCardOptions = defineComponent({
       if (!t) return ''
       const d = new Date(t * 1000)
       return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    },
+    /** Общее количество комментариев поста (из данных поста) */
+    totalCommentsCount(): number {
+      return this.post.comments ?? 0
+    },
+    /** Фактическое количество комментариев из ответа API (без заблокированных и т.п.) */
+    actualCommentsCount(): number {
+      return this.allComments?.length ?? 0
+    },
+    /** Комментарии, видимые сейчас (первые visibleCommentsCount из allComments) */
+    visibleComments(): GetComment[] {
+      if (!this.allComments) return []
+      return this.allComments.slice(0, this.visibleCommentsCount)
+    },
+    /** Сколько комментариев ещё не показано */
+    remainingCommentsCount(): number {
+      const total = this.actualCommentsCount
+      return Math.max(0, total - this.visibleCommentsCount)
+    },
+    /** Число для кнопки "Показать следующие N" (15 или остаток) */
+    nextCommentsPageSize(): number {
+      const remaining = this.remainingCommentsCount
+      return remaining <= 0 ? 0 : Math.min(15, remaining)
+    },
+    /** Показывать ли кнопку "Показать следующие N" */
+    hasMoreCommentsToShow(): boolean {
+      return this.remainingCommentsCount > 0
     }
   },
   methods: {
@@ -826,6 +875,117 @@ export const postCardOptions = defineComponent({
         // и автоматически выбираем её.
         this.filtersStore.addTemporaryCategory(item.name)
       }
+    },
+    /**
+     * Подгружает все комментарии поста через /rpc/getcomments
+     */
+    /**
+     * @param showAll — если true, после загрузки показать все комментарии сразу; иначе первые 15
+     */
+    async loadAllComments(showAll = false): Promise<void> {
+      if (!this.postId || this.allCommentsLoading) return
+      this.allCommentsLoading = true
+      this.allCommentsError = null
+      try {
+        const res = await getByPRC({
+          method: 'getcomments',
+          parameters: [this.postId, '', ''],
+          options: { auth: false }
+        })
+        const typed = res as GetCommentsResponse
+        if (typed.result === 'success' && Array.isArray(typed.data)) {
+          this.allComments = typed.data
+          this.visibleCommentsCount = showAll ? typed.data.length : Math.min(15, typed.data.length)
+          this.commentsCollapsed = false
+        }
+      } catch (e) {
+        this.allCommentsError = e instanceof Error ? e : new Error(String(e))
+      } finally {
+        this.allCommentsLoading = false
+      }
+    },
+    /**
+     * Свернуть комментарии в компактный вид (один превью + кнопка)
+     * и проскроллить к верху поста, чтобы не теряться в ленте
+     */
+    collapseComments(): void {
+      this.commentsCollapsed = true
+      this.$nextTick(() => {
+        const ref = this.$refs.postCardRef as { $el?: HTMLElement } | HTMLElement | undefined
+        const el = ref && ('$el' in ref ? ref.$el : ref)
+        if (el && typeof el.scrollIntoView === 'function') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      })
+    },
+    /**
+     * Развернуть комментарии (показать список из уже загруженных)
+     */
+    expandComments(): void {
+      this.commentsCollapsed = false
+    },
+    /**
+     * Показать следующую порцию комментариев (по 15)
+     */
+    showMoreComments(): void {
+      if (!this.allComments) return
+      this.visibleCommentsCount = Math.min(
+        this.visibleCommentsCount + 15,
+        this.allComments.length
+      )
+    },
+    /**
+     * Показать все комментарии сразу
+     */
+    showAllComments(): void {
+      if (!this.allComments) return
+      this.visibleCommentsCount = this.allComments.length
+    },
+    /**
+     * Извлекает текст сообщения из поля msg комментария (JSON)
+     */
+    getCommentMessageText(comment: GetComment): string {
+      try {
+        const parsed = JSON.parse(comment.msg) as { message?: string }
+        return parsed?.message ?? comment.msg
+      } catch {
+        return comment.msg
+      }
+    },
+    /**
+     * URL аватара автора комментария из getcomments
+     */
+    getCommentAvatarUrl(profile: GetComment['userprofile']): string | null {
+      const i = profile?.i
+      if (!i) return null
+      if (typeof i === 'string' && (i.startsWith('http://') || i.startsWith('https://'))) {
+        return i.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
+      }
+      return `https://pocketnet.app:8092/i/${i}`
+    },
+    /**
+     * Форматированная дата комментария (time — unix timestamp)
+     */
+    formatCommentDate(time: number): string {
+      if (!time) return ''
+      const d = new Date(time * 1000)
+      return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    },
+    /**
+     * Ссылка на профиль автора комментария
+     */
+    getCommentProfileLink(comment: GetComment): string {
+      const name = (comment.userprofile?.name || '').toLowerCase()
+      const address = comment.address || ''
+      if (address) return '/' + address
+      if (name) return '/' + name
+      return '/'
+    },
+    /**
+     * HTML сообщения комментария (с форматированием ссылок)
+     */
+    formatCommentMessageHtml(comment: GetComment): string {
+      return formatBastyonLinks(this.getCommentMessageText(comment))
     }
   }
 })

@@ -1,16 +1,18 @@
 <template>
-  <SC_PostCard hoverable>
+  <SC_PostCard ref="postCardRef" hoverable>
     <SC_PostHeader>
       <SC_PostAuthor>
-        <router-link :to="'/' + (displayAuthor.name || displayAuthor.address)" class="author-link" style="display: block;">
-          <Avatar
+        <SC_AuthorLinkWrap>
+          <router-link :to="'/' + (displayAuthor.name || displayAuthor.address)" class="author-link">
+            <Avatar
             :src='displayAuthor.avatar'
             :alt='displayAuthor.name || displayAuthor.letter'
             :fallback-text='displayAuthor.name'
             :size='50'
             :verified='displayAuthor.verified'
           />
-        </router-link>
+          </router-link>
+        </SC_AuthorLinkWrap>
 
         <SC_PostAuthorInfo>
           <SC_AuthorNameRow>
@@ -18,15 +20,14 @@
               <SC_PostAuthorName>{{ displayAuthor.name }}</SC_PostAuthorName>
             </router-link>
 
-            <button
+            <SC_ChatBtn
               v-if="displayAuthor.address"
               type="button"
-              class="post-card-chat-btn"
               aria-label="Начать чат"
               @click.stop.prevent="startChatWithAuthor"
             >
               <MessageOutlined :style="{ fontSize: '16px' }" />
-            </button>
+            </SC_ChatBtn>
 
             <SC_PostAuthorRep>{{ formattedReputation }}</SC_PostAuthorRep>
           </SC_AuthorNameRow>
@@ -35,10 +36,10 @@
         </SC_PostAuthorInfo>
       </SC_PostAuthor>
 
-      <div class="post-bookmark" @click="toggleBookmark" style="margin-left: auto; cursor: pointer; padding: 0 10px;">
+      <SC_PostBookmark @click="toggleBookmark">
         <BookFilled v-if="isBookmarked" :style="{ color: '#00a4ff', fontSize: '18px' }" />
         <BookOutlined v-else :style="{ fontSize: '18px', color: 'rgba(0,0,0,0.45)' }" />
-      </div>
+      </SC_PostBookmark>
     </SC_PostHeader>
 
     <SC_PostImage
@@ -124,6 +125,7 @@
         <Tag v-if="item.type === 'category'" @click.stop.prevent="handleTagClick(item)" style="cursor: pointer;">
           {{ item.icon }} {{ item.name }}
         </Tag>
+
         <Tag v-else @click.stop.prevent="handleTagClick(item)" style="cursor: pointer;">
           #{{ item.name }}
         </Tag>
@@ -144,36 +146,151 @@
       />
     </SC_PostActions>
 
-    <SC_CommentsPreview v-if="hasUserComments">
-      <SC_CommentItem>
-        <router-link :to="lastCommentProfileLink">
-          <div v-if="lastCommentAvatarUrl" class="comment-avatar">
-            <img :src="lastCommentAvatarUrl" :alt="post.lastComment.authorName" />
-          </div>
+    <SC_CommentsPreview v-if="hasUserComments || allComments">
+      <!-- Компактный вид: комментарии ещё не загружены -->
+      <template v-if="!allComments">
+        <SC_CommentItem v-if="hasUserComments">
+          <router-link :to="lastCommentProfileLink">
+            <div v-if="lastCommentAvatarUrl" class="comment-avatar">
+              <img :src="lastCommentAvatarUrl" :alt="post.lastComment.authorName" />
+            </div>
 
-          <div v-else class="comment-avatar-placeholder">
-            {{ lastCommentInitial }}
-          </div>
-        </router-link>
+            <div v-else class="comment-avatar-placeholder">
+              {{ lastCommentInitial }}
+            </div>
+          </router-link>
 
-        <SC_CommentContent>
-          <SC_CommentMeta>
-            <router-link :to="lastCommentProfileLink">
-              <SC_CommentAuthor>{{ post.lastComment.authorName }}</SC_CommentAuthor>
-            </router-link>
+          <SC_CommentContent>
+            <SC_CommentMeta>
+              <router-link :to="lastCommentProfileLink">
+                <SC_CommentAuthor>{{ post.lastComment.authorName }}</SC_CommentAuthor>
+              </router-link>
 
-            <SC_CommentDate>{{ lastCommentDateOnly }}</SC_CommentDate>
-          </SC_CommentMeta>
+              <SC_CommentDate>{{ lastCommentDateOnly }}</SC_CommentDate>
+            </SC_CommentMeta>
 
-          <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
+            <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
 
-          <SC_CommentActions>
-            <span>👍</span>
-            <span>👎</span>
-            <span>Ответить</span>
-          </SC_CommentActions>
-        </SC_CommentContent>
-      </SC_CommentItem>
+            <SC_CommentActions>
+              <span>👍</span>
+              <span>👎</span>
+              <span>Ответить</span>
+            </SC_CommentActions>
+          </SC_CommentContent>
+        </SC_CommentItem>
+
+        <template v-if="totalCommentsCount > 0">
+          <SC_ShowCommentsBtn
+            type="button"
+            :disabled="allCommentsLoading"
+            @click.stop.prevent="loadAllComments(false)"
+          >
+            {{ allCommentsLoading ? 'Загрузка...' : 'Показать ещё 15' }}
+          </SC_ShowCommentsBtn>
+
+          <SC_ShowCommentsBtnSecondary
+            type="button"
+            :disabled="allCommentsLoading"
+            @click.stop.prevent="loadAllComments(true)"
+          >
+            {{ allCommentsLoading ? 'Загрузка...' : 'Показать все' }}
+          </SC_ShowCommentsBtnSecondary>
+        </template>
+      </template>
+
+      <!-- Компактный вид: комментарии загружены, но свернуты -->
+      <template v-else-if="commentsCollapsed">
+        <SC_CommentItem v-if="hasUserComments">
+          <router-link :to="lastCommentProfileLink">
+            <div v-if="lastCommentAvatarUrl" class="comment-avatar">
+              <img :src="lastCommentAvatarUrl" :alt="post.lastComment.authorName" />
+            </div>
+
+            <div v-else class="comment-avatar-placeholder">
+              {{ lastCommentInitial }}
+            </div>
+          </router-link>
+
+          <SC_CommentContent>
+            <SC_CommentMeta>
+              <router-link :to="lastCommentProfileLink">
+                <SC_CommentAuthor>{{ post.lastComment.authorName }}</SC_CommentAuthor>
+              </router-link>
+
+              <SC_CommentDate>{{ lastCommentDateOnly }}</SC_CommentDate>
+            </SC_CommentMeta>
+
+            <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
+
+            <SC_CommentActions>
+              <span>👍</span>
+              <span>👎</span>
+              <span>Ответить</span>
+            </SC_CommentActions>
+          </SC_CommentContent>
+        </SC_CommentItem>
+
+        <SC_ShowCommentsBtn
+          type="button"
+          @click.stop.prevent="expandComments"
+        >
+          Развернуть комментарии ({{ actualCommentsCount }})
+        </SC_ShowCommentsBtn>
+      </template>
+
+      <!-- Развёрнутый вид: список с пагинацией -->
+      <template v-else>
+        <SC_CommentItem
+          v-for="comment in visibleComments"
+          :key="comment.id"
+        >
+          <router-link :to="getCommentProfileLink(comment)">
+            <div v-if="getCommentAvatarUrl(comment.userprofile)" class="comment-avatar">
+              <img :src="getCommentAvatarUrl(comment.userprofile)" :alt="comment.userprofile?.name" />
+            </div>
+            <div v-else class="comment-avatar-placeholder">
+              {{ (comment.userprofile?.name || '?').charAt(0).toUpperCase() }}
+            </div>
+          </router-link>
+
+          <SC_CommentContent>
+            <SC_CommentMeta>
+              <router-link :to="getCommentProfileLink(comment)">
+                <SC_CommentAuthor>{{ comment.userprofile?.name || comment.address }}</SC_CommentAuthor>
+              </router-link>
+              <SC_CommentDate>{{ formatCommentDate(comment.time) }}</SC_CommentDate>
+            </SC_CommentMeta>
+            <SC_CommentText v-html="formatCommentMessageHtml(comment)"></SC_CommentText>
+            <SC_CommentActions>
+              <span>👍</span>
+              <span>👎</span>
+              <span>Ответить</span>
+            </SC_CommentActions>
+          </SC_CommentContent>
+        </SC_CommentItem>
+
+        <template v-if="hasMoreCommentsToShow">
+          <SC_ShowCommentsBtn
+            type="button"
+            @click.stop.prevent="showMoreComments"
+          >
+            Показать ещё {{ nextCommentsPageSize }}
+          </SC_ShowCommentsBtn>
+          <SC_ShowCommentsBtnSecondary
+            type="button"
+            @click.stop.prevent="showAllComments"
+          >
+            Показать все
+          </SC_ShowCommentsBtnSecondary>
+        </template>
+
+        <SC_ShowCommentsBtnCollapse
+          type="button"
+          @click.stop.prevent="collapseComments"
+        >
+          Свернуть
+        </SC_ShowCommentsBtnCollapse>
+      </template>
     </SC_CommentsPreview>
   </SC_PostCard>
 
@@ -202,23 +319,3 @@ import { postCardOptions } from './post-card.ts'
 
 export default postCardOptions
 </script>
-
-<style scoped>
-.post-card-chat-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  margin: 0;
-  border: none;
-  background: transparent;
-  color: rgba(0, 0, 0, 0.45);
-  cursor: pointer;
-  border-radius: 4px;
-  line-height: 1;
-}
-.post-card-chat-btn:hover {
-  color: #00a4ff;
-  background: rgba(0, 164, 255, 0.08);
-}
-</style>
