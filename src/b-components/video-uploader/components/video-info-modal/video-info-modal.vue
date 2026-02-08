@@ -5,6 +5,7 @@
     :width="600"
     :centered="true"
     :footer="null"
+    :z-index="10003"
     @cancel="$emit('close')"
   >
     <SC_InfoContent v-if="video">

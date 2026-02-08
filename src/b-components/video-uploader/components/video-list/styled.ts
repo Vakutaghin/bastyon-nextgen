@@ -25,6 +25,7 @@ export const SC_VideosGrid = styled.div`
 
 export const SC_VideoItem = styled.div`
   position: relative !important;
+  z-index: 1 !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -36,10 +37,11 @@ export const SC_VideoItem = styled.div`
   border: none !important;
 
   &:hover {
+    z-index: 100 !important;
     box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15) !important;
     transform: translateY(-2px) !important;
 
-    /* Показываем действия при hover - используем класс */
+    /* Показываем действия при hover */
     .video-actions {
       opacity: 1 !important;
       pointer-events: auto !important;
@@ -94,7 +96,7 @@ export const SC_VideoActions = styled.div`
   gap: 6px !important;
   opacity: 0 !important;
   transition: all 0.3s ease !important;
-  z-index: 10 !important;
+  z-index: 50 !important;
   pointer-events: none !important;
   backdrop-filter: blur(4px) !important;
   background: rgba(0, 0, 0, 0.3) !important;

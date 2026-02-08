@@ -125,4 +125,4 @@ const passwordHash = CryptoJS.SHA256(
 
 ### 4.6. Источник истины
 Файл реализации:
-`/private/var/www/pocketnet/bastyon-vue/src/b-components/messenger/services/matrix-service.ts`
+`/private/var/www/pocketnet/bastyon-nextgen/src/b-components/messenger/services/matrix-service.ts`

@@ -541,6 +541,16 @@ pub fn run() {
             .build(),
         )?;
       }
+      // Флаг для фронтенда (кнопка загрузки видео и др.) — и в debug, и в release
+      let app_handle = app.handle().clone();
+      std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        if let Some(w) = app_handle.get_webview_window("main") {
+          let _ = w.eval("window.__TAURI_APP_READY__ = true;");
+        } else if let Some(w) = app_handle.webview_windows().values().next() {
+          let _ = w.eval("window.__TAURI_APP_READY__ = true;");
+        }
+      });
       Ok(())
     })
     .run(tauri::generate_context!())

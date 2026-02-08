@@ -59,38 +59,16 @@ self.onmessage = async (event: MessageEvent) => {
       }
 
       case 'CREATE_BLOB': {
-        const { data, mimeType } = payload as { data: number[], mimeType: string }
-        
-        // Для больших данных создаем Uint8Array порциями
-        const chunkSize = 100 * 1024 * 1024 // 100MB порции
-        const totalSize = data.length
-        
-        if (totalSize > chunkSize) {
-          // Для очень больших данных создаем Blob из частей
-          const chunks: Uint8Array[] = []
-          
-          for (let offset = 0; offset < totalSize; offset += chunkSize) {
-            const end = Math.min(offset + chunkSize, totalSize)
-            const chunk = new Uint8Array(data.slice(offset, end))
-            chunks.push(chunk)
-          }
-          
-          const blob = new Blob(chunks, { type: mimeType })
-          
-          self.postMessage({
-            type: 'BLOB_CREATED',
-            payload: { blob }
-          }, [blob])
-        } else {
-          // Для маленьких данных создаем сразу
-          const uint8Array = new Uint8Array(data)
-          const blob = new Blob([uint8Array], { type: mimeType })
-          
-          self.postMessage({
-            type: 'BLOB_CREATED',
-            payload: { blob }
-          }, [blob])
+        // buffer приходит через transfer list из main thread (без клонирования)
+        const { buffer, mimeType } = payload as { buffer: ArrayBuffer; mimeType: string }
+        if (!buffer || !(buffer instanceof ArrayBuffer)) {
+          throw new Error('CREATE_BLOB: expected transferred ArrayBuffer')
         }
+        const blob = new Blob([buffer], { type: mimeType })
+        self.postMessage(
+          { type: 'BLOB_CREATED', payload: { blob } },
+          [blob]
+        )
         break
       }
 

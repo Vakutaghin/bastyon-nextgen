@@ -17,12 +17,12 @@ export function useUploadDropzone(
   props: { state: UploadState },
   emit: (event: 'fileSelect' | 'start' | 'reset', ...args: any[]) => void
 ): UploadDropzoneComposables {
-  const isUploading = computed(() => p.state === 'transcoding' || p.state === 'saving')
+  const isUploading = computed(() => props.state === 'transcoding' || props.state === 'saving')
   const fileInput = ref<HTMLInputElement | null>(null)
 
   const handleDragOver = (e: DragEvent) => {
     // Игнорируем drag & drop в состоянии ready
-    if (p.state === 'ready') {
+    if (props.state === 'ready') {
       return
     }
     e.preventDefault()
@@ -34,7 +34,7 @@ export function useUploadDropzone(
   }
 
   const handleDragLeave = (e: DragEvent) => {
-    if (p.state === 'ready') {
+    if (props.state === 'ready') {
       return
     }
     e.preventDefault()
@@ -47,7 +47,7 @@ export function useUploadDropzone(
 
   const handleDrop = async (e: DragEvent) => {
     // Игнорируем drop в состоянии ready
-    if (p.state === 'ready') {
+    if (props.state === 'ready') {
       return
     }
     e.preventDefault()

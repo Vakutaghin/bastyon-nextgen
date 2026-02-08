@@ -110,9 +110,14 @@ export async function getPeerTubeVideoInfo(
     throw new Error('Host and videoId are required')
   }
 
-  // Формируем URL API
-  // PeerTube API: GET /api/v1/videos/{id}
-  const apiUrl = `https://${host}/api/v1/videos/${videoId}`
+  // В dev в браузере — запрос через Vite proxy, чтобы обойти CORS
+  const isDevBrowser =
+    typeof import.meta !== 'undefined' &&
+    import.meta.env?.DEV === true &&
+    typeof window !== 'undefined'
+  const apiUrl = isDevBrowser
+    ? `/api/peertube/${host}/api/v1/videos/${videoId}`
+    : `https://${host}/api/v1/videos/${videoId}`
 
   try {
     const response = await fetch(apiUrl, {
@@ -145,14 +150,14 @@ export async function getPeerTubeVideoInfo(
 
 /**
  * Извлекает HLS плейлист URL из информации о видео
- * 
+ *
  * Приоритет:
  * 1. streamingPlaylists[0].playlistUrl (HLS плейлист)
  * 2. Если нет streamingPlaylists, пытаемся построить URL по паттерну
- * 
+ *
  * @param videoInfo - Информация о видео с PeerTube API
  * @returns URL HLS плейлиста или null, если не найден
- * 
+ *
  * @example
  * const playlistUrl = getHlsPlaylistUrl(videoInfo)
  * // 'https://host/static/streaming-playlists/hls/videoId/playlistId-master.m3u8'
@@ -190,11 +195,11 @@ export function getHlsPlaylistUrl(
 
 /**
  * Получает URL превьюшки (thumbnail) видео
- * 
+ *
  * @param videoInfo - Информация о видео с PeerTube API
  * @param host - Хост PeerTube сервера
  * @returns URL превьюшки или null, если не найдена
- * 
+ *
  * @example
  * const thumbnailUrl = getVideoThumbnailUrl(videoInfo, 'peertube359.pocketnet.app')
  * // 'https://peertube359.pocketnet.app/static/thumbnails/videoId.jpg'
@@ -246,10 +251,10 @@ export function getVideoThumbnailUrl(
 
 /**
  * Получает URL превьюшки напрямую из PeerTube URL
- * 
+ *
  * @param peertubeUrl - URL в формате peertube://host/videoid
  * @returns Promise с URL превьюшки или null
- * 
+ *
  * @throws {Error} Если URL неверный или видео не найдено
  */
 export async function getVideoThumbnailFromUrl(

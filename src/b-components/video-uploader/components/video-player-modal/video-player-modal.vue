@@ -8,6 +8,7 @@
     :maskClosable="true"
     :footer="null"
     :destroyOnClose="true"
+    :z-index="10002"
     @cancel="handleClose"
   >
     <SC_PlayerSection v-if="isOpen">

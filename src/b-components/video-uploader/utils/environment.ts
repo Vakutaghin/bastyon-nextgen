@@ -9,14 +9,14 @@ export function isCapacitor(): boolean {
   if (typeof window === 'undefined') {
     return false
   }
-  
+
   try {
     // Проверяем наличие Capacitor в глобальном объекте
     const win = window as any
     if (win.Capacitor || win.CapacitorWeb) {
       return true
     }
-    
+
     // Проверяем через импорт (может быть не всегда доступен)
     // Это будет работать только если @capacitor/core установлен
     if (typeof (window as any).Capacitor !== 'undefined') {
@@ -25,96 +25,84 @@ export function isCapacitor(): boolean {
   } catch {
     // Игнорируем ошибки
   }
-  
+
   return false
 }
 
 /**
- * Проверка, запущено ли приложение в Tauri (синхронная версия)
- * В Tauri 2.x проверяем наличие различных глобальных объектов
+ * Проверка, запущено ли приложение в Tauri (синхронная версия).
+ * Используем только runtime-признаки (window/navigator): в браузере при открытии
+ * того же dev-сервера (запущенного через tauri dev) VITE_TAURI может быть в бандле,
+ * но __TAURI__ и др. в браузере отсутствуют.
  */
 export function isTauri(): boolean {
   if (typeof window === 'undefined') {
     return false
   }
-  
+
   const win = window as any
-  
+
   // Tauri 1.x
   if (typeof win.__TAURI__ !== 'undefined') {
     return true
   }
-  
-  // Tauri 2.x - проверяем наличие внутренних объектов
+
+  // Tauri 2.x
   if (typeof win.__TAURI_INTERNALS__ !== 'undefined') {
     return true
   }
-  
-  // Tauri 2.x - проверяем наличие метаданных
   if (typeof win.__TAURI_METADATA__ !== 'undefined') {
     return true
   }
-  
-  // Проверяем наличие глобального объекта, который создается Tauri 2.x
   try {
-    const keys = Object.keys(win).filter(key => key.startsWith('__TAURI'))
+    const keys = Object.keys(win).filter((key) => key.startsWith('__TAURI'))
     if (keys.length > 0) {
       return true
     }
   } catch {
-    // Игнорируем ошибки
+    // ignore
   }
-  
-  // Проверяем наличие invoke в глобальной области
   if (typeof win.invoke !== 'undefined') {
     return true
   }
-  
-  // Проверяем userAgent
   if (typeof navigator !== 'undefined' && navigator.userAgent.includes('Tauri')) {
     return true
   }
-  
+  if (typeof win.__TAURI_APP_READY__ !== 'undefined' && win.__TAURI_APP_READY__) {
+    return true
+  }
+
   return false
 }
 
 /**
- * Асинхронная проверка Tauri через попытку использования invoke
- * Более надежный способ для Tauri 2.x
+ * Асинхронная проверка Tauri через попытку использования invoke.
+ * Вызывать только когда возможен Tauri (например, сборка с VITE_TAURI), иначе в браузере
+ * импорт @tauri-apps/api может успешно загрузиться и дать ложное срабатывание.
  */
 export async function isTauriAsync(): Promise<boolean> {
-  // Сначала проверяем синхронно
   if (isTauri()) {
     return true
   }
-  
-  // Пытаемся использовать invoke для проверки
   try {
     const { invoke } = await import('@tauri-apps/api/core')
-    // Если мы можем импортировать invoke без ошибки, значит мы в Tauri
-    // В браузере этот импорт должен выбросить ошибку или вернуть undefined
-    if (typeof invoke === 'function') {
-      // Пытаемся вызвать простую команду для проверки
-      // Если команда не существует, но мы в Tauri - получим ошибку о команде
-      // Если мы не в Tauri - получим другую ошибку
-      try {
-        await invoke('__tauri_internal_check')
-      } catch (e: any) {
-        const errorMessage = e?.message || String(e)
-        // Если ошибка связана с отсутствием команды или Tauri - мы в Tauri
-        if (errorMessage.includes('command') || errorMessage.includes('not found') || errorMessage.includes('Tauri')) {
-          return true
-        }
-        // Другие ошибки могут означать, что мы не в Tauri
-      }
+    if (typeof invoke !== 'function') return false
+    try {
+      await invoke('__tauri_internal_check')
       return true
+    } catch (e: any) {
+      const msg = (e?.message || String(e)).toLowerCase()
+      // Только явная ошибка «команда не найдена» = мы в Tauri, команды нет
+      if ((msg.includes('command') && msg.includes('not found')) || msg.includes('unknown command')) {
+        return true
+      }
+      // В браузере: "undefined", "not available" — не Tauri
+      if (msg.includes('undefined') || msg.includes('not available') || msg.includes('is not defined')) {
+        return false
+      }
     }
     return false
-  } catch (e: any) {
-    // Если импорт не удался, значит мы не в Tauri
-    const errorMessage = e?.message || String(e)
-    // В некоторых случаях импорт может не выбросить ошибку, но вернуть undefined
-    // В этом случае мы уже проверили выше
+  } catch {
     return false
   }
 }

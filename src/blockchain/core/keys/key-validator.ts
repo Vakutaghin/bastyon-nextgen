@@ -88,9 +88,9 @@ if (!bip39RussianLoaded && typeof window !== 'undefined') {
   import('bip39russian').then((module) => {
     bip39Russian = module.default || module
     bip39RussianLoaded = true
-  }).catch((e) => {
-    bip39RussianLoaded = true // Помечаем как загруженный, чтобы не пробовать снова
-    bip39Russian = null // Явно устанавливаем в null при ошибке
+  }).catch(() => {
+    bip39RussianLoaded = true
+    bip39Russian = null
   })
 }
 
@@ -113,13 +113,10 @@ export function validateMnemonic(mnemonic: Mnemonic): boolean {
   }
 
   try {
-    // Нормализуем к нижнему регистру для проверки
-    const normalized = mnemonic.toLowerCase().trim()
+    // Нормализация как в normalizeMnemonic: нижний регистр + схлопывание пробелов (bip39 разбивает по одному пробелу)
+    const normalized = mnemonic.toLowerCase().trim().split(/\s+/).filter(Boolean).join(' ')
     console.debug('[validateMnemonic] Validating mnemonic (length:', normalized.split(/\s+/).length, 'words)')
 
-    // Если доступен bip39russian, используем его как основной (как в оригинальном приложении)
-    // bip39russian поддерживает и английский, и русский wordlists
-    // Пробуем загрузить если еще не загружен
     if (!bip39RussianLoaded) {
       loadBip39Russian().catch(() => {})
     }
@@ -128,88 +125,91 @@ export function validateMnemonic(mnemonic: Mnemonic): boolean {
       try {
         const result = bip39Russian.validateMnemonic(normalized)
         console.debug('[validateMnemonic] bip39Russian result:', result)
-        if (result) {
-          return true
-        }
+        if (result) return true
       } catch (e) {
         console.debug('[validateMnemonic] bip39Russian error:', e)
-        // Игнорируем ошибки, пробуем дальше
       }
-    } else {
-      // Пробуем загрузить синхронно если еще не загружен
-      if (!bip39RussianLoaded && typeof require !== 'undefined') {
-        try {
-          bip39Russian = require('bip39russian')
-          bip39RussianLoaded = true
-          if (bip39Russian && bip39Russian.validateMnemonic) {
-            const result = bip39Russian.validateMnemonic(normalized)
-            if (result) {
-              return true
-            }
-          }
-        } catch (e) {
-          // Игнорируем ошибки
-        }
+    } else if (!bip39RussianLoaded && typeof require !== 'undefined') {
+      try {
+        bip39Russian = require('bip39russian')
+        bip39RussianLoaded = true
+        if (bip39Russian?.validateMnemonic?.(normalized)) return true
+      } catch (e) {
+        // игнорируем
       }
     }
 
-    // Пробуем стандартную валидацию (английский wordlist по умолчанию)
-    try {
-      // Пробуем валидировать через mnemonicToEntropy (более надежный способ)
-      // Если mnemonicToEntropy не выбрасывает ошибку, значит мнемоника валидна
+    // Сначала пробуем с явным английским wordlist (в сборке Vite default может быть не задан или не EN)
+    const wl = bip39.wordlists || {}
+    if (wl.english && Array.isArray(wl.english)) {
       try {
-        const entropy = bip39.mnemonicToEntropy(normalized)
-        // Если mnemonicToEntropy успешно, значит мнемоника валидна
-        return true
+        if (bip39.mnemonicToEntropy) {
+          bip39.mnemonicToEntropy(normalized, wl.english)
+          return true
+        }
+        if (bip39.validateMnemonic(normalized, wl.english)) return true
       } catch (e) {
-        // Игнорируем ошибки, пробуем стандартную валидацию
+        console.debug('[validateMnemonic] English wordlist (explicit) failed:', e)
       }
+    }
+    if (wl.EN && Array.isArray(wl.EN)) {
+      try {
+        if (bip39.mnemonicToEntropy) {
+          bip39.mnemonicToEntropy(normalized, wl.EN)
+          return true
+        }
+        if (bip39.validateMnemonic(normalized, wl.EN)) return true
+      } catch (e) {
+        // игнорируем
+      }
+    }
 
-      // Пробуем стандартную валидацию
+    // Стандартная валидация (default wordlist в bip39)
+    try {
+      try {
+        if (bip39.mnemonicToEntropy) {
+          bip39.mnemonicToEntropy(normalized)
+          return true
+        }
+      } catch (e) {
+        // пробуем validateMnemonic
+      }
       const result = bip39.validateMnemonic(normalized)
       console.debug('[validateMnemonic] Standard validation result:', result)
-
-      // Если не прошла, пробуем с явным указанием английского wordlist
-      if (!result && bip39.wordlists && bip39.wordlists.english) {
-        const resultWithWordlist = bip39.validateMnemonic(normalized, bip39.wordlists.english)
-        console.debug('[validateMnemonic] English wordlist result:', resultWithWordlist)
-        if (resultWithWordlist) {
-          return true
-        }
-      }
-
-      if (result) {
-        return true
-      }
+      if (result) return true
+      if (wl.english && bip39.validateMnemonic(normalized, wl.english)) return true
+      if (wl.EN && bip39.validateMnemonic(normalized, wl.EN)) return true
     } catch (e) {
       console.warn('[validateMnemonic] Standard validation error:', e)
-      // Игнорируем ошибки
     }
 
-    // Пробуем русский wordlist из bip39russian напрямую через стандартный bip39
-    if (bip39Russian && bip39Russian.wordlists && bip39Russian.wordlists.russian) {
+    // Русский wordlist из bip39russian
+    const russianWl = bip39Russian?.wordlists?.russian
+    if (russianWl && Array.isArray(russianWl)) {
       try {
-        if (bip39.validateMnemonic(normalized, bip39Russian.wordlists.russian)) {
+        if (bip39.mnemonicToEntropy) {
+          bip39.mnemonicToEntropy(normalized, russianWl)
           return true
         }
+        if (bip39.validateMnemonic(normalized, russianWl)) return true
       } catch (e) {
-        // Игнорируем ошибки
+        // игнорируем
       }
     }
 
-    // Пробуем все доступные wordlists из стандартного bip39
-    const wordlists = bip39.wordlists || {}
-    const availableWordlists = Object.keys(wordlists)
-
-    for (const lang of availableWordlists) {
-      if (lang !== 'EN' && lang !== 'english' && wordlists[lang]) {
-        try {
-          if (bip39.validateMnemonic(normalized, wordlists[lang])) {
-            return true
-          }
-        } catch {
-          // Игнорируем ошибки
+    // Все остальные wordlists из bip39
+    for (const lang of Object.keys(wl)) {
+      if (lang === 'EN' || lang === 'english') continue
+      const list = wl[lang]
+      if (!list || !Array.isArray(list)) continue
+      try {
+        if (bip39.mnemonicToEntropy) {
+          bip39.mnemonicToEntropy(normalized, list)
+          return true
         }
+        if (bip39.validateMnemonic(normalized, list)) return true
+      } catch {
+        // игнорируем
       }
     }
 
@@ -231,16 +231,13 @@ export function detectPrivateKeyFormat(privateKey: PrivateKey): PrivateKeyFormat
     return null
   }
 
-  const normalized = privateKey.toLowerCase().trim()
+  const trimmed = privateKey.toLowerCase().trim()
+  const words = trimmed.split(/\s+/).filter(w => w.length > 0)
 
-  // Проверка на мнемонику (12 или 24 слова) - делаем это ПЕРВЫМ
-  // чтобы не перепутать с hex или WIF
-  // Мнемоника обычно содержит пробелы и состоит из слов
-  const words = normalized.split(/\s+/).filter(w => w.length > 0)
-
-  // Если это похоже на мнемонику (12-24 слова), пробуем валидировать
+  // Проверка на мнемонику (12 или 24 слова) — нормализуем как при восстановлении (схлопывание пробелов)
   if (words.length >= 12 && words.length <= 24) {
-    const isValidMnemonic = validateMnemonic(normalized)
+    const normalizedMnemonic = words.join(' ')
+    const isValidMnemonic = validateMnemonic(normalizedMnemonic)
     if (isValidMnemonic) {
       return 'mnemonic'
     }
@@ -249,18 +246,14 @@ export function detectPrivateKeyFormat(privateKey: PrivateKey): PrivateKeyFormat
     return null
   }
 
-  // Также пробуем валидировать даже если не 12-24 слова (может быть другая длина)
-  // но только если есть пробелы (признак мнемоники)
-  if (words.length > 1 && normalized.includes(' ')) {
-    const isValidMnemonic = validateMnemonic(normalized)
-    if (isValidMnemonic) {
-      return 'mnemonic'
-    }
+  if (words.length > 1 && trimmed.includes(' ')) {
+    const normalizedMnemonic2 = words.join(' ')
+    if (validateMnemonic(normalizedMnemonic2)) return 'mnemonic'
   }
 
-  // Проверка на WIF формат (начинается с '5', 'K', 'L' для mainnet или 'c' для testnet)
+  // Проверка на WIF формат
   try {
-    ECPair.fromWIF(normalized)
+    ECPair.fromWIF(trimmed)
     return 'wif'
   } catch {
     // Не WIF
@@ -268,9 +261,9 @@ export function detectPrivateKeyFormat(privateKey: PrivateKey): PrivateKeyFormat
 
   // Проверка на hex формат (64 символа hex)
   const hexPattern = /^[0-9a-f]{64}$/i
-  if (hexPattern.test(normalized)) {
+  if (hexPattern.test(trimmed)) {
     try {
-      Buffer.from(normalized, 'hex')
+      Buffer.from(trimmed, 'hex')
       return 'hex'
     } catch {
       // Не валидный hex
@@ -327,64 +320,65 @@ export function validatePrivateKey(privateKey: PrivateKey): boolean {
  * @returns Wordlist или null если не удалось определить
  */
 export function detectMnemonicWordlist(mnemonic: Mnemonic): any {
-  if (!mnemonic || typeof mnemonic !== 'string') {
-    return null
-  }
-
+  if (!mnemonic || typeof mnemonic !== 'string') return null
   try {
-    const normalized = mnemonic.toLowerCase().trim()
+    const normalized = normalizeMnemonic(mnemonic)
+    if (!normalized) return null
 
-    // Если доступен bip39russian, пробуем его первым (как в оригинальном приложении)
-    if (bip39Russian && bip39Russian.validateMnemonic) {
+    const wl = bip39.wordlists || {}
+
+    if (bip39Russian?.validateMnemonic?.(normalized) && bip39Russian?.wordlists?.russian) {
+      return bip39Russian.wordlists.russian
+    }
+    // Явно английский первым (как в validateMnemonic)
+    if (wl.english && Array.isArray(wl.english)) {
       try {
-        if (bip39Russian.validateMnemonic(normalized)) {
-          // Если валидация прошла, возвращаем русский wordlist если доступен
-          if (bip39Russian.wordlists && bip39Russian.wordlists.russian) {
-            return bip39Russian.wordlists.russian
-          }
-          return undefined // или стандартный wordlist
+        if (bip39.mnemonicToEntropy) {
+          bip39.mnemonicToEntropy(normalized, wl.english)
+          return wl.english
         }
+        if (bip39.validateMnemonic(normalized, wl.english)) return wl.english
       } catch {
-        // Игнорируем ошибки
+        // пробуем дальше
       }
     }
-
-    const wordlists = bip39.wordlists || {}
-
-    // Пробуем стандартный (английский) wordlist
-    if (bip39.validateMnemonic(normalized)) {
-      return undefined // undefined означает стандартный wordlist
-    }
-
-    // Пробуем русский wordlist из bip39russian напрямую
-    if (bip39Russian && bip39Russian.wordlists && bip39Russian.wordlists.russian) {
-      const russianWordlist = bip39Russian.wordlists.russian
+    if (wl.EN && Array.isArray(wl.EN)) {
       try {
-        if (bip39.validateMnemonic(normalized, russianWordlist)) {
-          return russianWordlist
+        if (bip39.mnemonicToEntropy) {
+          bip39.mnemonicToEntropy(normalized, wl.EN)
+          return wl.EN
         }
+        if (bip39.validateMnemonic(normalized, wl.EN)) return wl.EN
       } catch {
-        // Игнорируем ошибки
+        // пробуем дальше
       }
     }
-
-    // Пробуем все доступные wordlists из стандартного bip39
-    const availableWordlists = Object.keys(wordlists)
-
-    for (const lang of availableWordlists) {
-      if (lang !== 'EN' && lang !== 'english' && wordlists[lang]) {
-        try {
-          if (bip39.validateMnemonic(normalized, wordlists[lang])) {
-            return wordlists[lang]
-          }
-        } catch {
-          // Игнорируем ошибки
-        }
+    try {
+      if (bip39.validateMnemonic(normalized)) return undefined
+    } catch {
+      // пробуем дальше
+    }
+    if (bip39Russian?.wordlists?.russian) {
+      try {
+        if (bip39.mnemonicToEntropy?.(normalized, bip39Russian.wordlists.russian)) return bip39Russian.wordlists.russian
+        if (bip39.validateMnemonic(normalized, bip39Russian.wordlists.russian)) return bip39Russian.wordlists.russian
+      } catch {
+        // игнорируем
       }
     }
-
+    for (const lang of Object.keys(wl)) {
+      if (lang === 'EN' || lang === 'english') continue
+      const list = wl[lang]
+      if (!list || !Array.isArray(list)) continue
+      try {
+        if (bip39.mnemonicToEntropy?.(normalized, list)) return list
+        if (bip39.validateMnemonic(normalized, list)) return list
+      } catch {
+        // игнорируем
+      }
+    }
     return null
-  } catch (error) {
+  } catch {
     return null
   }
 }

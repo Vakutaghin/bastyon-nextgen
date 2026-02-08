@@ -3,6 +3,7 @@
     :open="open"
     :width="400"
     :centered="true"
+    :z-index="10004"
     @cancel="$emit('cancel')"
   >
     <template #title>

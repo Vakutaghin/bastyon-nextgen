@@ -13,8 +13,8 @@
         <SC_VideoName>{{ video.originalFileName }}</SC_VideoName>
         <SC_VideoResolution>{{ video.resolution }}</SC_VideoResolution>
 
-        <!-- Действия -->
-        <SC_VideoActions @click.stop>
+        <!-- Действия (class для селектора при hover) -->
+        <SC_VideoActions class="video-actions" @click.stop>
           <SC_ActionButton
             @click="$emit('download', video)"
             title="Скачать"

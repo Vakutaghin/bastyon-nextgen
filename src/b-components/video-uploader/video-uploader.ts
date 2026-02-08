@@ -480,11 +480,19 @@ export const videoUploaderOptions = defineComponent({
       } catch (error) {
         uploadState.value = 'error'
         const errorMessage = error instanceof Error ? error.message : 'Ошибка транскодирования'
-        uploadError.value = errorMessage.includes('Storage limit')
-          ? 'Превышен лимит хранилища. Удалите старые видео.'
-          : errorMessage.includes('not supported')
-          ? 'Транскодирование не поддерживается в вашем браузере'
-          : 'Ошибка транскодирования: ' + errorMessage
+        let displayMessage: string
+        if (errorMessage.includes('Storage limit')) {
+          displayMessage = 'Превышен лимит хранилища. Удалите старые видео.'
+        } else if (errorMessage.includes('not supported')) {
+          displayMessage = 'Транскодирование не поддерживается в вашем браузере'
+        } else {
+          displayMessage = errorMessage.startsWith('Ошибка') ? errorMessage : 'Ошибка транскодирования: ' + errorMessage
+          const lower = errorMessage.toLowerCase()
+          if ((lower.includes('ffmpeg') && (lower.includes('no such file') || lower.includes('not found') || lower.includes('command not found'))) || lower.includes('failed to execute ffmpeg')) {
+            displayMessage += ' Установите FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.'
+          }
+        }
+        uploadError.value = displayMessage
         console.error('Transcoding error:', error)
       } finally {
         isTranscoding = false

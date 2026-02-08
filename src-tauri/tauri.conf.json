@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1990",
-    "beforeDevCommand": "VITE_PORT=1990 npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeDevCommand": "VITE_PORT=1990 VITE_TAURI=true npm run dev",
+    "beforeBuildCommand": "VITE_TAURI=true npm run build"
   },
   "app": {
     "windows": [
@@ -25,7 +25,11 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' asset: http://asset.localhost",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$TEMP/**"]
+      }
     }
   },
   "bundle": {

@@ -15,7 +15,8 @@ export const SC_FabButton = styled.button`
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  z-index: 9999 !important;
+  z-index: 99999 !important;
+  pointer-events: auto !important;
   transition: all 0.3s ease !important;
 
   &:hover {

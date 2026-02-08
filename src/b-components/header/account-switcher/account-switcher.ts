@@ -1,6 +1,7 @@
 import { defineComponent } from 'vue'
 import Modal from '@/components/modal/modal.vue'
 import Avatar from '@/components/avatar/avatar.vue'
+import Button from '@/components/button/button.vue'
 import SignInModal from '@/b-components/header/sign-in-modal/sign-in-modal.vue'
 import MnemonicModal from '@/b-components/header/mnemonic-modal/mnemonic-modal.vue'
 import ConfirmDeleteModal from './confirm-delete-modal.vue'
@@ -36,6 +37,7 @@ export const accountSwitcherOptions = defineComponent({
   components: {
     Modal,
     Avatar,
+    Button,
     SignInModal,
     MnemonicModal,
     ConfirmDeleteModal,

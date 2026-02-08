@@ -5,11 +5,53 @@ import wasm from 'vite-plugin-wasm'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import babel from 'vite-plugin-babel'
 
+// Прокси для PeerTube API в dev — обход CORS (запрос идёт через тот же origin)
+function peertubeProxyPlugin() {
+  const PREFIX = '/api/peertube/'
+  return {
+    name: 'peertube-proxy',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.startsWith(PREFIX) && req.method === 'GET') {
+          const rest = req.url.slice(PREFIX.length)
+          const i = rest.indexOf('/')
+          if (i === -1) return next()
+          const host = rest.slice(0, i)
+          const targetPath = rest.slice(i)
+          const targetUrl = `https://${host}${targetPath}`
+          fetch(targetUrl, {
+            method: 'GET',
+            headers: {
+              Accept: req.headers.accept || 'application/json',
+            },
+          })
+            .then((fetchRes) => {
+              res.statusCode = fetchRes.status
+              fetchRes.headers.forEach((v, k) => res.setHeader(k, v))
+              return fetchRes.arrayBuffer()
+            })
+            .then((buf) => {
+              res.end(Buffer.from(buf))
+            })
+            .catch((err) => {
+              res.statusCode = 502
+              res.setHeader('Content-Type', 'text/plain')
+              res.end('Proxy error: ' + String(err.message))
+            })
+          return
+        }
+        next()
+      })
+    },
+  }
+}
+
 // import { styledDataAttr } from './vite-plugin-styled-data-attr.js'
 
 
 export default defineConfig(({ mode }) => ({
   plugins: [
+    peertubeProxyPlugin(),
     babel({
       babelConfig: {
         presets: ['@babel/preset-typescript'],
@@ -55,6 +97,10 @@ export default defineConfig(({ mode }) => ({
       'vite-plugin-node-polyfills/shims/buffer': path.resolve(__dirname, 'node_modules/vite-plugin-node-polyfills/shims/buffer'),
       // Перенаправляем vue3-styled-components на наш wrapper для поддержки .withConfig
       'vue3-styled-components': path.resolve(__dirname, 'src/styled-wrapper.js'),
+      // Полифиллы util/stream отключены: при включении ломалась авторизация по мнемонике.
+      // Предупреждения "Module util/stream externalized for browser compatibility" в консоли можно игнорировать.
+      // 'util': path.resolve(__dirname, 'node_modules/util'),
+      // 'stream': path.resolve(__dirname, 'node_modules/stream-browserify'),
     },
     // Поддержка CommonJS модулей (для btc17.js)
     extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],

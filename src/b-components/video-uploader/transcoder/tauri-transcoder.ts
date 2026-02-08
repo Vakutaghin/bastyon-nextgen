@@ -15,7 +15,7 @@ import {
   getBitrateForResolution
 } from '../utils/constants'
 import { isTauri } from '../utils/environment'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke, convertFileSrc } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 
 /**
@@ -170,13 +170,13 @@ export class TauriTranscoder implements Transcoder {
           duration: metadata.duration
         })
 
-        // Читаем результат из файла
-        const outputFile = await invoke<number[]>('read_file', {
-          filePath: result.output_path
-        })
-
-        // Создаем Blob, используя Worker для больших файлов
-        const blob = await this.createBlobInWorker(outputFile, 'video/webm')
+        // Получаем Blob через asset URL (без передачи содержимого по IPC — иначе "object can not be cloned")
+        const assetUrl = convertFileSrc(result.output_path)
+        const response = await fetch(assetUrl)
+        if (!response.ok) {
+          throw new Error(`Failed to read transcoded file: ${response.status}`)
+        }
+        const blob = await response.blob()
 
         // Удаляем временные файлы
         await invoke('delete_temp_file', { filePath: inputFilePath })
@@ -197,7 +197,9 @@ export class TauriTranscoder implements Transcoder {
 
         return transcodeResult
       } catch (error) {
-        throw new TranscodeError('Tauri transcoding error', 'TRANSCODE_ERROR', error as Error)
+        const err = error as Error
+        const msg = err?.message || String(error)
+        throw new TranscodeError(msg || 'Tauri transcoding error', 'TRANSCODE_ERROR', err)
       } finally {
         // Отключаем слушатель событий
         if (progressUnlisten) {
@@ -205,7 +207,13 @@ export class TauriTranscoder implements Transcoder {
         }
       }
     } catch (error) {
-      throw new TranscodeError('Failed to transcode video', 'TRANSCODE_ERROR', error as Error)
+      const err = error as Error
+      // Пробрасываем как есть, если уже TranscodeError; иначе показываем исходное сообщение (Rust/FFmpeg)
+      if (error instanceof TranscodeError) {
+        throw error
+      }
+      const msg = err?.message || String(error)
+      throw new TranscodeError(msg || 'Failed to transcode video', 'TRANSCODE_ERROR', err)
     }
   }
 
@@ -294,18 +302,20 @@ export class TauriTranscoder implements Transcoder {
 
   /**
    * Создать Blob из данных в Web Worker
-   * Для больших файлов (до 4GB) использует Worker, чтобы не блокировать UI
+   * Для больших файлов (до 4GB) передаём ArrayBuffer через Transferable,
+   * чтобы не клонировать данные (structured clone падает на больших объёмах).
    */
   private async createBlobInWorker(data: number[], mimeType: string): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-      // Для данных меньше 10MB создаем Blob напрямую (быстро)
-      if (data.length < 10 * 1024 * 1024) { // < 10MB
-        const blob = new Blob([new Uint8Array(data)], { type: mimeType })
-        resolve(blob)
-        return
-      }
+    // Для данных меньше 10MB создаем Blob напрямую (быстро, без Worker)
+    if (data.length < 10 * 1024 * 1024) {
+      return new Blob([new Uint8Array(data)], { type: mimeType })
+    }
 
-      // Для больших данных (до 4GB) используем Worker
+    // Для больших данных передаём буфер через transfer, а не clone
+    const uint8 = new Uint8Array(data)
+    const buffer = uint8.buffer
+
+    return new Promise((resolve, reject) => {
       const worker = new Worker(
         new URL('./file-worker.ts', import.meta.url),
         { type: 'module' }
@@ -336,12 +346,12 @@ export class TauriTranscoder implements Transcoder {
         reject(error)
       }
 
-      // Отправляем данные порциями для очень больших файлов
-      // Но для простоты отправляем все сразу (Worker обработает)
-      worker.postMessage({
-        type: 'CREATE_BLOB',
-        payload: { data, mimeType }
-      })
+      // Передаём буфер через transfer list — владение переходит в Worker,
+      // клонирование не используется, ограничение "object can not be cloned" не срабатывает
+      worker.postMessage(
+        { type: 'CREATE_BLOB', payload: { buffer, mimeType } },
+        [buffer]
+      )
     })
   }
 
