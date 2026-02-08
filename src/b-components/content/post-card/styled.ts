@@ -722,7 +722,6 @@ export const SC_ChatBtn = styled.button`
 
 export const SC_ShowCommentsBtn = styled.button`
   display: inline-block;
-  margin-top: 6px;
   padding: 0;
   border: none;
   background: none;
@@ -751,11 +750,34 @@ export const SC_ShowCommentsBtnSecondary = styled(SC_ShowCommentsBtn)`
 
 export const SC_ShowCommentsBtnCollapse = styled(SC_ShowCommentsBtn)`
   color: rgba(0, 0, 0, 0.45);
-  margin-left: 12px;
 
   &:hover:not(:disabled) {
     color: rgba(0, 0, 0, 0.65);
   }
+`
+
+/** Контейнер для кнопок «Показать ещё», «Показать все» и «Свернуть»: слева — первые две, справа — Свернуть */
+export const SC_CommentsActionsRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+`
+
+/** Группа кнопок слева: «Показать ещё N» и «Показать все» */
+export const SC_CommentsActionsLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`
+
+/** Прелоадер при загрузке комментариев (одна крутилка вместо двух кнопок) */
+export const SC_CommentsLoading = styled.div`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
 `
 
 export const SC_PostBookmark = styled.div`

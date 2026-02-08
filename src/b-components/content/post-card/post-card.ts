@@ -20,7 +20,8 @@ import {
   ZoomInOutlined,
   BookOutlined,
   BookFilled,
-  MessageOutlined
+  MessageOutlined,
+  LoadingOutlined
 } from '@ant-design/icons-vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import {
@@ -54,6 +55,9 @@ import {
   SC_ShowCommentsBtn,
   SC_ShowCommentsBtnSecondary,
   SC_ShowCommentsBtnCollapse,
+  SC_CommentsActionsRow,
+  SC_CommentsActionsLeft,
+  SC_CommentsLoading,
   SC_PostBookmark,
   SC_AuthorLinkWrap
 } from './styled'
@@ -123,6 +127,7 @@ export const postCardOptions = defineComponent({
     BookOutlined,
     BookFilled,
     MessageOutlined,
+    LoadingOutlined,
     SC_PostCard,
     SC_PostHeader,
     SC_PostAuthor,
@@ -153,6 +158,9 @@ export const postCardOptions = defineComponent({
     SC_ShowCommentsBtn,
     SC_ShowCommentsBtnSecondary,
     SC_ShowCommentsBtnCollapse,
+    SC_CommentsActionsRow,
+    SC_CommentsActionsLeft,
+    SC_CommentsLoading,
     SC_PostBookmark,
     SC_AuthorLinkWrap
   },

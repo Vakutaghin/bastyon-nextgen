@@ -179,23 +179,27 @@
           </SC_CommentContent>
         </SC_CommentItem>
 
-        <template v-if="totalCommentsCount > 0">
-          <SC_ShowCommentsBtn
-            type="button"
-            :disabled="allCommentsLoading"
-            @click.stop.prevent="loadAllComments(false)"
-          >
-            {{ allCommentsLoading ? 'Загрузка...' : 'Показать ещё 15' }}
-          </SC_ShowCommentsBtn>
-
-          <SC_ShowCommentsBtnSecondary
-            type="button"
-            :disabled="allCommentsLoading"
-            @click.stop.prevent="loadAllComments(true)"
-          >
-            {{ allCommentsLoading ? 'Загрузка...' : 'Показать все' }}
-          </SC_ShowCommentsBtnSecondary>
-        </template>
+        <SC_CommentsActionsRow v-if="totalCommentsCount > 0">
+          <SC_CommentsActionsLeft>
+            <SC_CommentsLoading v-if="allCommentsLoading">
+              <LoadingOutlined :style="{ fontSize: '18px', color: '#00a4ff' }" spin />
+            </SC_CommentsLoading>
+            <template v-else>
+              <SC_ShowCommentsBtn
+                type="button"
+                @click.stop.prevent="loadAllComments(false)"
+              >
+                Показать ещё 15
+              </SC_ShowCommentsBtn>
+              <SC_ShowCommentsBtnSecondary
+                type="button"
+                @click.stop.prevent="loadAllComments(true)"
+              >
+                Показать все
+              </SC_ShowCommentsBtnSecondary>
+            </template>
+          </SC_CommentsActionsLeft>
+        </SC_CommentsActionsRow>
       </template>
 
       <!-- Компактный вид: комментарии загружены, но свернуты -->
@@ -269,27 +273,30 @@
           </SC_CommentContent>
         </SC_CommentItem>
 
-        <template v-if="hasMoreCommentsToShow">
-          <SC_ShowCommentsBtn
+        <SC_CommentsActionsRow>
+          <SC_CommentsActionsLeft>
+            <SC_ShowCommentsBtn
+              v-if="hasMoreCommentsToShow"
+              type="button"
+              @click.stop.prevent="showMoreComments"
+            >
+              Показать ещё {{ nextCommentsPageSize }}
+            </SC_ShowCommentsBtn>
+            <SC_ShowCommentsBtnSecondary
+              v-if="hasMoreCommentsToShow"
+              type="button"
+              @click.stop.prevent="showAllComments"
+            >
+              Показать все
+            </SC_ShowCommentsBtnSecondary>
+          </SC_CommentsActionsLeft>
+          <SC_ShowCommentsBtnCollapse
             type="button"
-            @click.stop.prevent="showMoreComments"
+            @click.stop.prevent="collapseComments"
           >
-            Показать ещё {{ nextCommentsPageSize }}
-          </SC_ShowCommentsBtn>
-          <SC_ShowCommentsBtnSecondary
-            type="button"
-            @click.stop.prevent="showAllComments"
-          >
-            Показать все
-          </SC_ShowCommentsBtnSecondary>
-        </template>
-
-        <SC_ShowCommentsBtnCollapse
-          type="button"
-          @click.stop.prevent="collapseComments"
-        >
-          Свернуть
-        </SC_ShowCommentsBtnCollapse>
+            Свернуть
+          </SC_ShowCommentsBtnCollapse>
+        </SC_CommentsActionsRow>
       </template>
     </SC_CommentsPreview>
   </SC_PostCard>
