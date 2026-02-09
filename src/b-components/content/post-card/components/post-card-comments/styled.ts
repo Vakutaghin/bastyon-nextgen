@@ -10,6 +10,45 @@ export const SC_CommentsPreview = styled.div`
   padding-top: 12px;
 `
 
+export const SC_CommentRow = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+
+  a {
+    border-bottom: 0;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .comment-avatar,
+  .comment-avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgb(222, 226, 230);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .comment-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .comment-avatar-placeholder {
+    color: rgb(33, 37, 41);
+    font-weight: 600;
+    font-size: 13px;
+  }
+`
+
 export const SC_CommentItem = styled.div`
   display: flex;
   gap: 10px;
@@ -202,5 +241,48 @@ export const SC_CommentsSortSelect = styled.select`
   &:focus {
     outline: none;
     border-color: #00a4ff;
+  }
+`
+
+export const SC_CommentRepliesLink = styled.span`
+  font-size: 13px;
+  color: #00a4ff;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
+export const SC_CommentWithReplies = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  gap: 0;
+`
+
+export const SC_CommentReplies = styled.div`
+  margin-left: 24px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`
+
+export const SC_CommentRepliesToggle = styled.button`
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    color: rgba(0, 0, 0, 0.65);
+    text-decoration: underline;
   }
 `

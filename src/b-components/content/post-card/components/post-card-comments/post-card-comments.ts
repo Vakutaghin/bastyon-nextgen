@@ -11,12 +11,17 @@ import { appToast } from '@/b-components/app-toast'
 import {
   SC_CommentsPreview,
   SC_CommentItem,
+  SC_CommentRow,
+  SC_CommentWithReplies,
   SC_CommentAuthor,
   SC_CommentText,
   SC_CommentContent,
   SC_CommentMeta,
   SC_CommentDate,
   SC_CommentActions,
+  SC_CommentRepliesLink,
+  SC_CommentReplies,
+  SC_CommentRepliesToggle,
   SC_ShowCommentsBtn,
   SC_ShowCommentsBtnSecondary,
   SC_ShowCommentsBtnCollapse,
@@ -124,12 +129,17 @@ export const postCardCommentsOptions = defineComponent({
     LoadingOutlined,
     SC_CommentsPreview,
     SC_CommentItem,
+    SC_CommentRow,
+    SC_CommentWithReplies,
     SC_CommentAuthor,
     SC_CommentText,
     SC_CommentContent,
     SC_CommentMeta,
     SC_CommentDate,
     SC_CommentActions,
+    SC_CommentRepliesLink,
+    SC_CommentReplies,
+    SC_CommentRepliesToggle,
     SC_ShowCommentsBtn,
     SC_ShowCommentsBtnSecondary,
     SC_ShowCommentsBtnCollapse,
@@ -145,7 +155,7 @@ export const postCardCommentsOptions = defineComponent({
       required: true
     }
   },
-  emits: ['collapsed'],
+  emits: ['collapsed', 'replyToComment'],
   data() {
     return {
       allComments: null as GetComment[] | null,
@@ -159,7 +169,13 @@ export const postCardCommentsOptions = defineComponent({
       /** Локальные голоса по comment.id для развёрнутого списка */
       commentVotes: {} as Record<string, 'up' | 'down'>,
       /** id комментария или 'last' во время отправки оценки (блокируем повторный клик) */
-      commentScoreSubmitting: null as string | null
+      commentScoreSubmitting: null as string | null,
+      /** Ответы второго уровня: parentId -> массив комментариев */
+      repliesByParentId: {} as Record<string, GetComment[]>,
+      /** Идёт ли загрузка ответов для parentId */
+      repliesLoading: {} as Record<string, boolean>,
+      /** Развёрнута ли ветка ответов для parentId (после загрузки можно свернуть) */
+      repliesExpanded: {} as Record<string, boolean>
     }
   },
   computed: {
@@ -455,6 +471,70 @@ export const postCardCommentsOptions = defineComponent({
     },
     formatCommentMessageHtml(comment: GetComment): string {
       return formatBastyonLinks(this.getCommentMessageText(comment))
+    },
+    /** Загрузить ответы второго уровня для комментария */
+    async loadReplies(commentId: string): Promise<void> {
+      if (!this.postId || this.repliesLoading[commentId]) return
+      this.repliesLoading = { ...this.repliesLoading, [commentId]: true }
+      this.repliesExpanded = { ...this.repliesExpanded, [commentId]: true }
+      const authStore = useAuthStore()
+      const userAddress = authStore.getUserAddress ?? ''
+      try {
+        const res = await getByPRC({
+          method: 'getcomments',
+          parameters: [this.postId, commentId, userAddress],
+          cachehash: `replies-${commentId}-${Date.now()}`,
+          options: { auth: authStore.isUserAuthenticated }
+        })
+        let list: GetComment[] = []
+        if (Array.isArray(res)) {
+          list = res as GetComment[]
+        } else if (res && typeof res === 'object' && 'data' in res) {
+          const data = (res as GetCommentsResponse).data
+          list = Array.isArray(data) ? data : []
+        }
+        this.repliesByParentId = { ...this.repliesByParentId, [commentId]: list }
+        this.repliesExpanded = { ...this.repliesExpanded, [commentId]: true }
+      } catch {
+        this.repliesByParentId = { ...this.repliesByParentId, [commentId]: [] }
+        this.repliesExpanded = { ...this.repliesExpanded, [commentId]: true }
+      } finally {
+        this.repliesLoading = { ...this.repliesLoading, [commentId]: false }
+      }
+    },
+    toggleRepliesExpanded(commentId: string): void {
+      const expanded = this.repliesExpanded[commentId]
+      this.repliesExpanded = { ...this.repliesExpanded, [commentId]: !expanded }
+    },
+    isRepliesExpanded(commentId: string): boolean {
+      return !!this.repliesExpanded[commentId]
+    },
+    isRepliesLoading(commentId: string): boolean {
+      return !!this.repliesLoading[commentId]
+    },
+    getReplies(commentId: string): GetComment[] {
+      return this.repliesByParentId[commentId] ?? []
+    },
+    /** Клик по "Ответы (N)": подгрузить ответы (если ещё не загружены) и показать; иначе переключить свёрнутость */
+    onRepliesClick(comment: GetComment): void {
+      const id = comment.id
+      if (this.repliesLoading[id]) return
+      if (id in this.repliesByParentId) {
+        this.toggleRepliesExpanded(id)
+      } else {
+        this.loadReplies(id)
+      }
+    },
+    /** Ответ на комментарий второго уровня: создаёт ответ с префиксом @UserAccountName, */
+    onReplyToComment(reply: GetComment): void {
+      const accountName = reply.userprofile?.name || reply.address || ''
+      const prefix = accountName ? `@${accountName}, ` : ''
+      this.$emit('replyToComment', {
+        parentId: reply.id,
+        postId: this.postId,
+        replyTo: reply,
+        prefix
+      })
     }
   }
 })

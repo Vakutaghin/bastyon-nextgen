@@ -135,47 +135,114 @@
         </SC_CommentsSortSelect>
       </SC_CommentsSortRow>
 
-      <SC_CommentItem
+      <SC_CommentWithReplies
         v-for="comment in visibleComments"
         :key="comment.id"
       >
-        <router-link :to="getCommentProfileLink(comment)">
-          <div v-if="getCommentAvatarUrl(comment.userprofile)" class="comment-avatar">
-            <img :src="getCommentAvatarUrl(comment.userprofile)" :alt="comment.userprofile?.name" />
-          </div>
-          <div v-else class="comment-avatar-placeholder">
-            {{ (comment.userprofile?.name || '?').charAt(0).toUpperCase() }}
-          </div>
-        </router-link>
+        <SC_CommentRow>
+          <router-link :to="getCommentProfileLink(comment)">
+            <div v-if="getCommentAvatarUrl(comment.userprofile)" class="comment-avatar">
+              <img :src="getCommentAvatarUrl(comment.userprofile)" :alt="comment.userprofile?.name" />
+            </div>
+            <div v-else class="comment-avatar-placeholder">
+              {{ (comment.userprofile?.name || '?').charAt(0).toUpperCase() }}
+            </div>
+          </router-link>
 
-        <SC_CommentContent>
-          <SC_CommentMeta>
-            <router-link :to="getCommentProfileLink(comment)">
-              <SC_CommentAuthor>{{ comment.userprofile?.name || comment.address }}</SC_CommentAuthor>
-            </router-link>
-            <SC_CommentDate>{{ formatCommentDate(comment.time) }}</SC_CommentDate>
-          </SC_CommentMeta>
+          <SC_CommentContent>
+            <SC_CommentMeta>
+              <router-link :to="getCommentProfileLink(comment)">
+                <SC_CommentAuthor>{{ comment.userprofile?.name || comment.address }}</SC_CommentAuthor>
+              </router-link>
+              <SC_CommentDate>{{ formatCommentDate(comment.time) }}</SC_CommentDate>
+            </SC_CommentMeta>
 
-          <SC_CommentText v-html="formatCommentMessageHtml(comment)"></SC_CommentText>
+            <SC_CommentText v-html="formatCommentMessageHtml(comment)"></SC_CommentText>
 
-          <SC_CommentActions>
-            <span
-              :class="['comment-score', { 'comment-score--voted': isCommentLiked(comment), 'comment-score--clickable': commentCanClickLike(comment) }]"
-              role="button"
-              tabindex="0"
-              @click.stop.prevent="onCommentScoreUp(comment)"
-            >👍 {{ comment.scoreUp ?? 0 }}</span>
+            <SC_CommentActions>
+              <span
+                :class="['comment-score', { 'comment-score--voted': isCommentLiked(comment), 'comment-score--clickable': commentCanClickLike(comment) }]"
+                role="button"
+                tabindex="0"
+                @click.stop.prevent="onCommentScoreUp(comment)"
+              >👍 {{ comment.scoreUp ?? 0 }}</span>
 
-            <span
-              :class="['comment-score', { 'comment-score--voted': isCommentDisliked(comment), 'comment-score--clickable': commentCanClickDislike(comment) }]"
-              role="button"
-              tabindex="0"
-              @click.stop.prevent="onCommentScoreDown(comment)"
-            >👎 {{ comment.scoreDown ?? 0 }}</span>
-            <span>Ответить</span>
-          </SC_CommentActions>
-        </SC_CommentContent>
-      </SC_CommentItem>
+              <span
+                :class="['comment-score', { 'comment-score--voted': isCommentDisliked(comment), 'comment-score--clickable': commentCanClickDislike(comment) }]"
+                role="button"
+                tabindex="0"
+                @click.stop.prevent="onCommentScoreDown(comment)"
+              >👎 {{ comment.scoreDown ?? 0 }}</span>
+              <SC_CommentRepliesLink
+                v-if="(comment.children ?? 0) > 0"
+                role="button"
+                tabindex="0"
+                @click.stop.prevent="onRepliesClick(comment)"
+              >
+                Ответы ({{ comment.children }})
+              </SC_CommentRepliesLink>
+              <span>Ответить</span>
+            </SC_CommentActions>
+          </SC_CommentContent>
+        </SC_CommentRow>
+
+        <!-- Ветка ответов второго уровня — строками ниже, с отступом слева -->
+        <template v-if="isRepliesExpanded(comment.id)">
+          <SC_CommentReplies v-if="getReplies(comment.id).length > 0">
+            <SC_CommentItem
+              v-for="reply in getReplies(comment.id)"
+              :key="reply.id"
+            >
+              <router-link :to="getCommentProfileLink(reply)">
+                <div v-if="getCommentAvatarUrl(reply.userprofile)" class="comment-avatar">
+                  <img :src="getCommentAvatarUrl(reply.userprofile)" :alt="reply.userprofile?.name" />
+                </div>
+                <div v-else class="comment-avatar-placeholder">
+                  {{ (reply.userprofile?.name || '?').charAt(0).toUpperCase() }}
+                </div>
+              </router-link>
+              <SC_CommentContent>
+                <SC_CommentMeta>
+                  <router-link :to="getCommentProfileLink(reply)">
+                    <SC_CommentAuthor>{{ reply.userprofile?.name || reply.address }}</SC_CommentAuthor>
+                  </router-link>
+                  <SC_CommentDate>{{ formatCommentDate(reply.time) }}</SC_CommentDate>
+                </SC_CommentMeta>
+                <SC_CommentText v-html="formatCommentMessageHtml(reply)"></SC_CommentText>
+                <SC_CommentActions>
+                  <span
+                    :class="['comment-score', { 'comment-score--voted': isCommentLiked(reply), 'comment-score--clickable': commentCanClickLike(reply) }]"
+                    role="button"
+                    tabindex="0"
+                    @click.stop.prevent="onCommentScoreUp(reply)"
+                  >👍 {{ reply.scoreUp ?? 0 }}</span>
+                  <span
+                    :class="['comment-score', { 'comment-score--voted': isCommentDisliked(reply), 'comment-score--clickable': commentCanClickDislike(reply) }]"
+                    role="button"
+                    tabindex="0"
+                    @click.stop.prevent="onCommentScoreDown(reply)"
+                  >👎 {{ reply.scoreDown ?? 0 }}</span>
+                  <span
+                    role="button"
+                    tabindex="0"
+                    @click.stop.prevent="onReplyToComment(reply)"
+                  >Ответить</span>
+                </SC_CommentActions>
+              </SC_CommentContent>
+            </SC_CommentItem>
+          </SC_CommentReplies>
+          <SC_CommentRepliesToggle
+            v-if="!isRepliesLoading(comment.id)"
+            type="button"
+            @click.stop.prevent="toggleRepliesExpanded(comment.id)"
+          >
+            {{ getReplies(comment.id).length > 0 ? 'Свернуть ответы' : 'Свернуть' }}
+          </SC_CommentRepliesToggle>
+          <SC_CommentsLoading v-if="isRepliesLoading(comment.id)">
+            <LoadingOutlined :style="{ fontSize: '16px', color: '#00a4ff' }" spin />
+          </SC_CommentsLoading>
+        </template>
+      </SC_CommentWithReplies>
 
       <SC_CommentsActionsRow>
         <SC_CommentsActionsLeft>
