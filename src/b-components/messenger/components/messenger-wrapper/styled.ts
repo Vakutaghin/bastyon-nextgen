@@ -85,3 +85,33 @@ export const SC_OverlayContent = styled.div`
   margin: 0 auto;
   max-width: 1600px;
 `
+
+export const SC_MessengerWrapperLoader = styled.div`
+  flex: 1;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #888;
+  font-size: 14px;
+`
+
+export const SC_MessengerWrapperSpinner = styled.span`
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #666;
+  border-radius: 50%;
+  animation: messenger-wrapper-spin 0.8s linear infinite;
+
+  @keyframes messenger-wrapper-spin {
+    to { transform: rotate(360deg); }
+  }
+`
+
+export const SC_MessengerWrapperLoaderText = styled.span`
+  margin: 0;
+`

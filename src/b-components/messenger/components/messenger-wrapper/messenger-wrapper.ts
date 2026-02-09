@@ -16,7 +16,10 @@ import {
   SC_MessengerWrapper,
   SC_BackButton,
   SC_FullScreenOverlay,
-  SC_OverlayContent
+  SC_OverlayContent,
+  SC_MessengerWrapperLoader,
+  SC_MessengerWrapperLoaderText,
+  SC_MessengerWrapperSpinner
 } from './styled'
 
 
@@ -27,6 +30,9 @@ export const messengerWrapperOptions = defineComponent({
     SC_BackButton,
     SC_FullScreenOverlay,
     SC_OverlayContent,
+    SC_MessengerWrapperLoader,
+    SC_MessengerWrapperLoaderText,
+    SC_MessengerWrapperSpinner,
     MessengerButton,
     MessengerWindow,
     ChatList,

@@ -15,10 +15,10 @@
         </SC_BackButton>
       </template>
 
-      <div v-if="(!store.dialogsLoadedOnce || store.isLoading) && !activeChatId && !(lastTargetAddress && inviteViewActive)" class="messenger-dialogs-loader">
-        <span class="messenger-dialogs-spinner" />
-        <span class="messenger-dialogs-loader-text">Загрузка диалогов...</span>
-      </div>
+      <SC_MessengerWrapperLoader v-if="(!store.dialogsLoadedOnce || store.isLoading) && !activeChatId && !(lastTargetAddress && inviteViewActive)">
+        <SC_MessengerWrapperSpinner />
+        <SC_MessengerWrapperLoaderText>Загрузка диалогов...</SC_MessengerWrapperLoaderText>
+      </SC_MessengerWrapperLoader>
 
       <ChatRoom
         v-else-if="activeChatId"
@@ -65,32 +65,3 @@ import { messengerWrapperOptions } from './messenger-wrapper'
 
 export default messengerWrapperOptions
 </script>
-
-<style scoped>
-.messenger-dialogs-loader {
-  flex: 1;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: #888;
-  font-size: 14px;
-}
-.messenger-dialogs-spinner {
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #666;
-  border-radius: 50%;
-  animation: messenger-dialogs-spin 0.8s linear infinite;
-}
-@keyframes messenger-dialogs-spin {
-  to { transform: rotate(360deg); }
-}
-.messenger-dialogs-loader-text {
-  margin: 0;
-}
-</style>
