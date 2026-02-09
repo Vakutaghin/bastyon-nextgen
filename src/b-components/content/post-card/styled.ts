@@ -780,6 +780,30 @@ export const SC_CommentsLoading = styled.div`
   min-height: 20px;
 `
 
+/** Строка с селектом сортировки комментариев (вверху списка) */
+export const SC_CommentsSortRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+`
+
+export const SC_CommentsSortSelect = styled.select`
+  font-size: 13px;
+  color: rgb(33, 37, 41);
+  padding: 4px 8px;
+  border: 1px solid rgb(222, 226, 230);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  min-width: 180px;
+
+  &:focus {
+    outline: none;
+    border-color: #00a4ff;
+  }
+`
+
 export const SC_PostBookmark = styled.div`
   margin-left: auto;
   cursor: pointer;

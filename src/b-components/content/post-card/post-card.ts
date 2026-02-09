@@ -13,7 +13,6 @@ import PostModal from '@/b-components/content/post-modal/post-modal.vue'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { ImageGallery } from '@/components/image-gallery'
 import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
-import { categoriesData } from '@/b-components/sidebar/sidebar-categories/categories-data'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import {
   PlayCircleFilled,
@@ -58,6 +57,8 @@ import {
   SC_CommentsActionsRow,
   SC_CommentsActionsLeft,
   SC_CommentsLoading,
+  SC_CommentsSortRow,
+  SC_CommentsSortSelect,
   SC_PostBookmark,
   SC_AuthorLinkWrap
 } from './styled'
@@ -110,6 +111,14 @@ interface Post {
 import { editorjsToHtml } from '@/helpers/content/editorjs-parser'
 import { isFavorite, addFavorite, removeFavorite } from '@/db/favorites-db'
 
+/** Размер порции при нажатии «Показать ещё» */
+const COMMENTS_PAGE_SIZE = 15
+/** Уже показан один комментарий (превью) до загрузки списка */
+const COMMENTS_ALREADY_SHOWN = 1
+
+/** Варианты сортировки комментариев */
+export type CommentsSortOrder = 'interesting' | 'newest' | 'oldest'
+
 export const postCardOptions = defineComponent({
   name: 'PostCard',
   components: {
@@ -161,6 +170,8 @@ export const postCardOptions = defineComponent({
     SC_CommentsActionsRow,
     SC_CommentsActionsLeft,
     SC_CommentsLoading,
+    SC_CommentsSortRow,
+    SC_CommentsSortSelect,
     SC_PostBookmark,
     SC_AuthorLinkWrap
   },
@@ -216,7 +227,9 @@ export const postCardOptions = defineComponent({
       /** Сколько комментариев показывать (пагинация на фронте по 15) */
       visibleCommentsCount: 0,
       /** Комментарии развёрнуты (false = компактный вид: один превью + кнопка) */
-      commentsCollapsed: false
+      commentsCollapsed: false,
+      /** Сортировка комментариев: интересные, сначала новые, сначала старые */
+      commentsSortOrder: 'interesting' as CommentsSortOrder
     }
   },
   watch: {
@@ -632,20 +645,24 @@ export const postCardOptions = defineComponent({
     actualCommentsCount(): number {
       return this.allComments?.length ?? 0
     },
-    /** Комментарии, видимые сейчас (первые visibleCommentsCount из allComments) */
-    visibleComments(): GetComment[] {
+    /** Комментарии, отсортированные по выбранному порядку */
+    sortedComments(): GetComment[] {
       if (!this.allComments) return []
-      return this.allComments.slice(0, this.visibleCommentsCount)
+      return this.sortComments([...this.allComments], this.commentsSortOrder)
+    },
+    /** Комментарии, видимые сейчас (первые visibleCommentsCount из sortedComments) */
+    visibleComments(): GetComment[] {
+      return this.sortedComments.slice(0, this.visibleCommentsCount)
     },
     /** Сколько комментариев ещё не показано */
     remainingCommentsCount(): number {
       const total = this.actualCommentsCount
       return Math.max(0, total - this.visibleCommentsCount)
     },
-    /** Число для кнопки "Показать следующие N" (15 или остаток) */
+    /** Число для кнопки "Показать ещё N" (COMMENTS_PAGE_SIZE или остаток) */
     nextCommentsPageSize(): number {
       const remaining = this.remainingCommentsCount
-      return remaining <= 0 ? 0 : Math.min(15, remaining)
+      return remaining <= 0 ? 0 : Math.min(COMMENTS_PAGE_SIZE, remaining)
     },
     /** Показывать ли кнопку "Показать следующие N" */
     hasMoreCommentsToShow(): boolean {
@@ -888,24 +905,38 @@ export const postCardOptions = defineComponent({
      * Подгружает все комментарии поста через /rpc/getcomments
      */
     /**
-     * @param showAll — если true, после загрузки показать все комментарии сразу; иначе первые 15
+     * @param showAll — если true, после загрузки показать все комментарии сразу; иначе первые 16 (1 уже показан как превью + 15)
      */
     async loadAllComments(showAll = false): Promise<void> {
       if (!this.postId || this.allCommentsLoading) return
       this.allCommentsLoading = true
       this.allCommentsError = null
+      const COMMENT_LOAD_TIMEOUT_MS = 25000
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Таймаут загрузки комментариев')), COMMENT_LOAD_TIMEOUT_MS)
+      })
       try {
-        const res = await getByPRC({
-          method: 'getcomments',
-          parameters: [this.postId, '', ''],
-          options: { auth: false }
-        })
-        const typed = res as GetCommentsResponse
-        if (typed.result === 'success' && Array.isArray(typed.data)) {
-          this.allComments = typed.data
-          this.visibleCommentsCount = showAll ? typed.data.length : Math.min(15, typed.data.length)
-          this.commentsCollapsed = false
+        const res = await Promise.race([
+          getByPRC({
+            method: 'getcomments',
+            parameters: [this.postId, '', ''],
+            options: { auth: false }
+          }),
+          timeoutPromise
+        ])
+        // Поддержка разных форматов ответа: массив напрямую или { result, data }
+        let list: GetComment[] = []
+        if (Array.isArray(res)) {
+          list = res as GetComment[]
+        } else if (res && typeof res === 'object' && 'data' in res) {
+          const data = (res as GetCommentsResponse).data
+          list = Array.isArray(data) ? data : []
         }
+        this.allComments = list
+        const len = list.length
+        const initialVisible = COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
+        this.visibleCommentsCount = showAll ? len : Math.min(initialVisible, len)
+        this.commentsCollapsed = false
       } catch (e) {
         this.allCommentsError = e instanceof Error ? e : new Error(String(e))
       } finally {
@@ -933,12 +964,21 @@ export const postCardOptions = defineComponent({
       this.commentsCollapsed = false
     },
     /**
-     * Показать следующую порцию комментариев (по 15)
+     * Установить порядок сортировки комментариев
+     */
+    setCommentsSortOrder(event: Event): void {
+      const value = (event.target as HTMLSelectElement)?.value
+      if (value === 'interesting' || value === 'newest' || value === 'oldest') {
+        this.commentsSortOrder = value
+      }
+    },
+    /**
+     * Показать следующую порцию комментариев (по COMMENTS_PAGE_SIZE)
      */
     showMoreComments(): void {
       if (!this.allComments) return
       this.visibleCommentsCount = Math.min(
-        this.visibleCommentsCount + 15,
+        this.visibleCommentsCount + COMMENTS_PAGE_SIZE,
         this.allComments.length
       )
     },
@@ -959,6 +999,56 @@ export const postCardOptions = defineComponent({
       } catch {
         return comment.msg
       }
+    },
+    /**
+     * Очки «интересности» комментария (упрощённая формула из старого приложения).
+     * Учитываются: лайки, ответы, дизлайки, длина текста, репутация, удалённость.
+     */
+    commentPoint(comment: GetComment): number {
+      let p = 0
+      const msgLen = this.getCommentMessageText(comment).length
+      const rep = comment.reputation ?? 0
+
+      p += comment.scoreUp * 250
+      p += comment.children * 450
+      if (comment.scoreUp > comment.scoreDown) p += comment.scoreDown * 50
+      else p -= comment.scoreDown * 1000
+      p += Math.min(msgLen, 200) * 3
+      p += Math.max(rep, 100) * 10 + rep / 20
+      if (comment.deleted) p = p / 1300
+      return p
+    },
+    /**
+     * Сортировка комментариев по выбранному порядку (как в pocketnet.gui/components/comments).
+     * interesting — по интересности (commentPoint + учёт времени и количества от одного автора),
+     * newest — сначала новые, oldest — сначала старые.
+     */
+    sortComments(comments: GetComment[], order: CommentsSortOrder): GetComment[] {
+      if (!comments.length) return comments
+      if (order === 'oldest') {
+        return [...comments].sort((a, b) => (a.time || 0) - (b.time || 0))
+      }
+      if (order === 'newest') {
+        return [...comments].sort((a, b) => (b.time || 0) - (a.time || 0))
+      }
+      // interesting
+      const times = comments.map(c => c.time || 0)
+      const oldest = Math.min(...times)
+      const newest = Math.max(...times)
+      const range = newest - oldest || 1
+      const byAuthor: Record<string, number> = {}
+      for (const c of comments) {
+        byAuthor[c.address] = (byAuthor[c.address] || 0) + 1
+      }
+      return [...comments].sort((a, b) => {
+        const timecA = ((a.time || 0) - oldest) / range
+        const timecB = ((b.time || 0) - oldest) / range
+        const countA = byAuthor[a.address] || 1
+        const countB = byAuthor[b.address] || 1
+        const scoreA = -(this.commentPoint(a) + timecA * 3000) / countA
+        const scoreB = -(this.commentPoint(b) + timecB * 3000) / countB
+        return scoreA - scoreB
+      })
     },
     /**
      * URL аватара автора комментария из getcomments

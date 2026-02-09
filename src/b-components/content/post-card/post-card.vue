@@ -172,8 +172,8 @@
             <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
 
             <SC_CommentActions>
-              <span>👍</span>
-              <span>👎</span>
+              <span>👍 {{ post.lastComment?.scoreUp ?? 0 }}</span>
+              <span>👎 {{ post.lastComment?.scoreDown ?? 0 }}</span>
               <span>Ответить</span>
             </SC_CommentActions>
           </SC_CommentContent>
@@ -227,8 +227,8 @@
             <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
 
             <SC_CommentActions>
-              <span>👍</span>
-              <span>👎</span>
+              <span>👍 {{ post.lastComment?.scoreUp ?? 0 }}</span>
+              <span>👎 {{ post.lastComment?.scoreDown ?? 0 }}</span>
               <span>Ответить</span>
             </SC_CommentActions>
           </SC_CommentContent>
@@ -242,8 +242,21 @@
         </SC_ShowCommentsBtn>
       </template>
 
-      <!-- Развёрнутый вид: список с пагинацией -->
+      <!-- Развёрнутый вид: сортировка + список с пагинацией -->
       <template v-else>
+        <SC_CommentsSortRow>
+          <label for="comments-sort">Сортировка:</label>
+          <SC_CommentsSortSelect
+            id="comments-sort"
+            :value="commentsSortOrder"
+            @change="setCommentsSortOrder($event)"
+          >
+            <option value="interesting">Сначала интересные</option>
+            <option value="newest">Сначала новые</option>
+            <option value="oldest">Сначала старые</option>
+          </SC_CommentsSortSelect>
+        </SC_CommentsSortRow>
+
         <SC_CommentItem
           v-for="comment in visibleComments"
           :key="comment.id"
@@ -266,8 +279,8 @@
             </SC_CommentMeta>
             <SC_CommentText v-html="formatCommentMessageHtml(comment)"></SC_CommentText>
             <SC_CommentActions>
-              <span>👍</span>
-              <span>👎</span>
+              <span>👍 {{ comment.scoreUp ?? 0 }}</span>
+              <span>👎 {{ comment.scoreDown ?? 0 }}</span>
               <span>Ответить</span>
             </SC_CommentActions>
           </SC_CommentContent>
