@@ -8,45 +8,46 @@
       {{ userData.registerText }}
     </Button>
   </template>
+  <template v-else>
+    <Dropdown
+      :trigger="['click']"
+      placement="bottomRight"
+      :overlayClassName="dropdownOverlayClass"
+    >
+      <SC_UserInfoTrigger>
+        <!-- DEBUG: userAvatar = {{ userAvatar ? 'HAS_URL' : 'NULL' }} -->
+        <Avatar
+          :src='userAvatar'
+          :alt='userInitial'
+          :fallback-text='userName'
+          :size='32'
+          :verified="isUserVerified"
+          data-header-avatar="true"
+        />
+
+        <SC_UserDetails>
+          <SC_UserName>{{ userName }}</SC_UserName>
+
+          <SC_UserBalance v-if='typeof userBalance === "number"'>
+            {{ formatBalance(userBalance) }} PKOIN
+          </SC_UserBalance>
+
+          <SC_UserLoading v-else-if='authStore.isLoading || authStore.isFetchingUserState'>
+            Загрузка...
+          </SC_UserLoading>
+        </SC_UserDetails>
+      </SC_UserInfoTrigger>
+
+      <template #overlay>
+        <Menu :items="menuItems" @click="handleMenuClick" />
+      </template>
+    </Dropdown>
+  </template>
   <SC_HeaderDropdownZindexFix
     ref="dropdownZindexFixRef"
     style="position: absolute; left: -9999px; visibility: hidden; pointer-events: none;"
     aria-hidden="true"
   />
-  <Dropdown
-    v-else
-    :trigger="['click']"
-    placement="bottomRight"
-    :overlayClassName="dropdownOverlayClass"
-  >
-    <SC_UserInfoTrigger>
-      <!-- DEBUG: userAvatar = {{ userAvatar ? 'HAS_URL' : 'NULL' }} -->
-      <Avatar
-        :src='userAvatar'
-        :alt='userInitial'
-        :fallback-text='userName'
-        :size='32'
-        :verified="isUserVerified"
-        data-header-avatar="true"
-      />
-
-      <SC_UserDetails>
-        <SC_UserName>{{ userName }}</SC_UserName>
-
-        <SC_UserBalance v-if='typeof userBalance === "number"'>
-          {{ formatBalance(userBalance) }} PKOIN
-        </SC_UserBalance>
-
-        <SC_UserLoading v-else-if='authStore.isLoading || authStore.isFetchingUserState'>
-          Загрузка...
-        </SC_UserLoading>
-      </SC_UserDetails>
-    </SC_UserInfoTrigger>
-
-    <template #overlay>
-      <Menu :items="menuItems" @click="handleMenuClick" />
-    </template>
-  </Dropdown>
 
   <SignInModal
     v-model:open='signInModalOpen'

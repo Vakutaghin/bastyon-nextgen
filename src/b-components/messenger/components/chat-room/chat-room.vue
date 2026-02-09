@@ -36,15 +36,15 @@
       </SC_StartChatContainer>
     </template>
     <template v-else-if="isLoading">
-      <div class="chat-room-loader">
-        <span class="chat-room-spinner" />
-        <span class="chat-room-loader-text">Загрузка сообщений...</span>
-      </div>
+      <SC_ChatRoomLoader>
+        <SC_ChatRoomSpinner />
+        <SC_ChatRoomLoaderText>Загрузка сообщений...</SC_ChatRoomLoaderText>
+      </SC_ChatRoomLoader>
     </template>
     <template v-else>
-      <div v-if="!messages || messages.length === 0" class="chat-room-empty-hint">
+      <SC_ChatRoomEmptyHint v-if="!messages || messages.length === 0">
         Пока сообщений нет. Вы можете написать первое.
-      </div>
+      </SC_ChatRoomEmptyHint>
       <MessageList :messages="messages" @load-more="() => { console.error('[ChatRoom] load-more triggered (emitting)'); $emit('load-more') }" />
     </template>
 
@@ -120,38 +120,3 @@ import { chatRoomOptions } from './chat-room'
 
 export default chatRoomOptions
 </script>
-
-<style scoped>
-.chat-room-loader {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: #888;
-  font-size: 14px;
-}
-.chat-room-spinner {
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #666;
-  border-radius: 50%;
-  animation: chat-room-spin 0.8s linear infinite;
-}
-@keyframes chat-room-spin {
-  to { transform: rotate(360deg); }
-}
-.chat-room-loader-text {
-  margin: 0;
-}
-.chat-room-empty-hint {
-  padding: 12px 16px;
-  color: #888;
-  font-size: 14px;
-  line-height: 1.4;
-  flex-shrink: 0;
-}
-</style>

@@ -380,17 +380,13 @@ export const useMessengerStore = defineStore('messenger', () => {
   let isLoadingMore = false
 
   const loadMoreMessages = async (chatId: string) => {
-    console.error('[MessengerStore] loadMoreMessages called for:', chatId)
     if (!chatId) return
-    if (isLoadingMore) {
-      console.warn('[MessengerStore] loadMoreMessages: already loading')
-      return
-    }
+
+    if (isLoadingMore) return
 
     const room = matrixService.getRoom(chatId)
-    if (!room) {
-      return
-    }
+
+    if (!room) return
 
     isLoadingMore = true
 

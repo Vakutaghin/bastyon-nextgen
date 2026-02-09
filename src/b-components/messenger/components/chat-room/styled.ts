@@ -266,3 +266,40 @@ export const SC_PartnerInfoCard = styled.div`
   background: #fff;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 `
+
+export const SC_ChatRoomLoader = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #888;
+  font-size: 14px;
+`
+
+export const SC_ChatRoomSpinner = styled.span`
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #666;
+  border-radius: 50%;
+  animation: chat-room-spin 0.8s linear infinite;
+
+  @keyframes chat-room-spin {
+    to { transform: rotate(360deg); }
+  }
+`
+
+export const SC_ChatRoomLoaderText = styled.span`
+  margin: 0;
+`
+
+export const SC_ChatRoomEmptyHint = styled.div`
+  padding: 12px 16px;
+  color: #888;
+  font-size: 14px;
+  line-height: 1.4;
+  flex-shrink: 0;
+`

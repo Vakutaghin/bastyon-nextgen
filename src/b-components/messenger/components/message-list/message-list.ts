@@ -24,22 +24,27 @@ export const messageListOptions = defineComponent({
   },
   emits: ['load-more'],
   setup(props, { emit }) {
-    const listRef = ref<HTMLDivElement | null>(null)
+    const listRef = ref<HTMLDivElement | { $el: HTMLDivElement } | null>(null)
+
+    const getListEl = (): HTMLDivElement | null => {
+      const v = listRef.value
+      if (!v) return null
+      return (v as { $el?: HTMLDivElement }).$el ?? (v as HTMLDivElement)
+    }
 
     const scrollToBottom = async () => {
       await nextTick()
-      if (listRef.value) {
-        listRef.value.scrollTop = listRef.value.scrollHeight
+      const el = getListEl()
+      if (el) {
+        el.scrollTop = el.scrollHeight
       }
     }
 
     const checkAndLoadMore = () => {
-       if (listRef.value) {
-          const el = listRef.value
-          if (el.scrollHeight <= el.clientHeight + 100) {
-             emit('load-more')
-          }
-       }
+      const el = getListEl()
+      if (el && el.scrollHeight <= el.clientHeight + 100) {
+        emit('load-more')
+      }
     }
 
     onMounted(() => {
@@ -48,8 +53,8 @@ export const messageListOptions = defineComponent({
     })
 
     watch(() => props.messages, async (newVal, oldVal) => {
-      if (!listRef.value) return
-      const el = listRef.value
+      const el = getListEl()
+      if (!el) return
 
       const oldScrollHeight = el.scrollHeight
       const oldScrollTop = el.scrollTop

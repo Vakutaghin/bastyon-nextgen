@@ -1,6 +1,6 @@
 import { defineComponent, ref, computed, type PropType, nextTick, watch, watchEffect } from 'vue'
 import type { Message } from '../../types'
-import { SC_MessageInputArea, SC_MessageInput, SC_SendButton, SC_EmojiToggleButton, SC_VoiceButton, SC_RecordingTimer, SC_SwipeHint, SC_CancelButton, SC_StartChatContainer, SC_StartChatButton, SC_PartnerHeader, SC_PartnerAvatar, SC_PartnerName, SC_PartnerInfoCard } from './styled'
+import { SC_MessageInputArea, SC_MessageInput, SC_SendButton, SC_EmojiToggleButton, SC_VoiceButton, SC_RecordingTimer, SC_SwipeHint, SC_CancelButton, SC_StartChatContainer, SC_StartChatButton, SC_PartnerHeader, SC_PartnerAvatar, SC_PartnerName, SC_PartnerInfoCard, SC_ChatRoomLoader, SC_ChatRoomSpinner, SC_ChatRoomLoaderText, SC_ChatRoomEmptyHint } from './styled'
 import { SC_UserStats, SC_StatItem, SC_StatLabel, SC_StatValue } from '@/b-components/profile/profile-sidebar/styled'
 import MessageList from '../message-list/message-list.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
@@ -23,6 +23,10 @@ export const chatRoomOptions = defineComponent({
     SC_PartnerAvatar,
     SC_PartnerName,
     SC_PartnerInfoCard,
+    SC_ChatRoomLoader,
+    SC_ChatRoomSpinner,
+    SC_ChatRoomLoaderText,
+    SC_ChatRoomEmptyHint,
     SC_UserStats,
     SC_StatItem,
     SC_StatLabel,
