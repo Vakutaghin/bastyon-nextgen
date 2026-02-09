@@ -9,6 +9,7 @@ export const SC_MessengerWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  pointer-events: none;
 `
 
 export const SC_BackButton = styled.button`

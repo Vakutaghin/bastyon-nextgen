@@ -16,6 +16,7 @@ export const SC_MessengerButton = styled('button', { isOpen: Boolean })`
   position: relative;
   transition: transform 0.2s, background-color 0.2s;
   z-index: 1001;
+  pointer-events: auto;
 
   &:hover {
     transform: scale(1.05);

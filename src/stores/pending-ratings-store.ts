@@ -103,6 +103,7 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
       const address = auth.getUserAddress
       if (!address || this.count === 0) return
       const postIds = Array.from(this.items.keys())
+
       try {
         const response = await getByPRCWithAuth({
           method: 'getpagescores',
@@ -111,7 +112,9 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
           // Add a unique cachehash to bypass cache
           cachehash: `${Date.now()}-${Math.random()}`
         })
+
         const arr = Array.isArray((response as any)?.data) ? (response as any).data : (Array.isArray(response) ? response : [])
+
         arr.forEach((entry: any) => {
           const postId = entry.posttxid
           const val = Number(entry.value)
@@ -124,6 +127,7 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
             // Try to find post by txid (which is what we have as postId)
             // Use updatePost which now handles txid lookup internally via txidMap
             const post = postsStore.getPostByShareId(postId)
+
             if (post) {
               const oldMyVal = post.myVal || 0
               const newMyVal = val
@@ -148,13 +152,16 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
             }
           }
         })
+
         await postRatingPendingAPI.cleanupExpired()
         const now = Date.now()
+
         Array.from(this.items.values()).forEach((i) => {
           if (i.expiresAt <= now) {
             this.items.delete(i.shareId)
           }
         })
+
         this.ensurePolling()
       } catch (e) {
         // ignore polling errors
