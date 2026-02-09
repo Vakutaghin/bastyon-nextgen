@@ -271,6 +271,14 @@ export const SC_CommentReplies = styled.div`
   gap: 12px;
 `
 
+/** Обёртка одного ответа второго уровня: комментарий + плашка ответа под ним */
+export const SC_ReplyItemWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+`
+
 export const SC_CommentRepliesToggle = styled.button`
   margin-top: 4px;
   padding: 0;
@@ -285,4 +293,152 @@ export const SC_CommentRepliesToggle = styled.button`
     color: rgba(0, 0, 0, 0.65);
     text-decoration: underline;
   }
+`
+
+/** Плашка ответа под комментарием: аватар + textarea + кнопки */
+export const SC_ReplyPanel = styled.div`
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #f5f5f5;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+
+  .reply-avatar,
+  .reply-avatar-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgb(222, 226, 230);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .reply-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .reply-avatar-placeholder {
+    color: rgb(33, 37, 41);
+    font-weight: 600;
+    font-size: 14px;
+  }
+`
+
+export const SC_ReplyInputWrap = styled.div`
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+`
+
+export const SC_ReplyTextarea = styled.textarea`
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-size: 14px;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  min-height: 36px;
+  max-height: 120px;
+  line-height: 1.45;
+  font-family: inherit;
+  background: #fff;
+
+  &:focus {
+    border-color: #00a4ff;
+  }
+
+  &::placeholder {
+    color: rgb(108, 117, 125);
+  }
+`
+
+export const SC_MentionList = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+`
+
+export const SC_MentionItem = styled.button`
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 14px;
+  color: rgb(33, 37, 41);
+  cursor: pointer;
+
+  &:hover {
+    background: #f0f0f0;
+  }
+
+  &.mention-item--highlighted {
+    background: #e6f4ff;
+  }
+`
+
+export const SC_ReplySendBtn = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #00a4ff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+  &:not(:disabled):hover {
+    background: #0088d1;
+  }
+  svg { width: 18px; height: 18px; fill: currentColor; }
+`
+
+export const SC_ReplyCancelBtn = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: rgb(108, 117, 125);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: rgb(33, 37, 41);
+  }
+  svg { width: 18px; height: 18px; }
 `

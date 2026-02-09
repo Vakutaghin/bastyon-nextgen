@@ -8,6 +8,7 @@ import babel from 'vite-plugin-babel'
 // Прокси для PeerTube API в dev — обход CORS (запрос идёт через тот же origin)
 function peertubeProxyPlugin() {
   const PREFIX = '/api/peertube/'
+
   return {
     name: 'peertube-proxy',
     configureServer(server) {
@@ -15,10 +16,13 @@ function peertubeProxyPlugin() {
         if (req.url?.startsWith(PREFIX) && req.method === 'GET') {
           const rest = req.url.slice(PREFIX.length)
           const i = rest.indexOf('/')
+
           if (i === -1) return next()
+
           const host = rest.slice(0, i)
           const targetPath = rest.slice(i)
           const targetUrl = `https://${host}${targetPath}`
+
           fetch(targetUrl, {
             method: 'GET',
             headers: {
@@ -38,8 +42,10 @@ function peertubeProxyPlugin() {
               res.setHeader('Content-Type', 'text/plain')
               res.end('Proxy error: ' + String(err.message))
             })
+
           return
         }
+
         next()
       })
     },
