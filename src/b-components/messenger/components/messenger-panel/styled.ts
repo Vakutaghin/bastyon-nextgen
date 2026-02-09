@@ -9,7 +9,7 @@ export const SC_MessengerContainer = styled.div`
   border: 1px solid #eee;
   overflow: hidden;
   /* Remove margin here, let parent control it */
-  /* margin: 20px 0; */ 
+  /* margin: 20px 0; */
   height: 100%;
 `
 
