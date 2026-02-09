@@ -19,6 +19,7 @@ import {
   SC_UserBalance,
   SC_UserLoading,
   SC_UserInfoTrigger,
+  SC_HeaderDropdownZindexFix,
 } from './styled'
 
 export const headerUserOptions = defineComponent({
@@ -39,6 +40,7 @@ export const headerUserOptions = defineComponent({
     SC_UserBalance,
     SC_UserLoading,
     SC_UserInfoTrigger,
+    SC_HeaderDropdownZindexFix,
   },
   setup() {
     const authStore = useAuthStore()
@@ -63,6 +65,7 @@ export const headerUserOptions = defineComponent({
       validationModalOpen: false,
       validationStatus: null as string | null,
       registrationStatusCheckInterval: null as NodeJS.Timeout | null,
+      dropdownOverlayClass: '',
     }
   },
   computed: {
@@ -369,6 +372,9 @@ export const headerUserOptions = defineComponent({
     },
   },
   async mounted() {
+    this.dropdownOverlayClass =
+      (this.$refs.dropdownZindexFixRef as any)?.$el?.className ?? ''
+
     // Пытаемся восстановить сессию при монтировании компонента
     // fetchUserState автоматически вызывается в restoreSession, поэтому дополнительный вызов не нужен
     await this.authStore.restoreSession()

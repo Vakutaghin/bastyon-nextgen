@@ -82,7 +82,6 @@ const p = withDefaults(defineProps<AvatarProps>(), {
 const {
   Avatar,
   SC_Avatar,
-  attrs,
   showPlaceholder,
   isHeaderAvatar,
   avatarClass,
@@ -94,6 +93,5 @@ const {
   handleImageError,
   handleImageLoad,
   actualSrc,
-  rootEl
 } = useAvatar(p)
 </script>

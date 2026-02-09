@@ -8,11 +8,16 @@
       {{ userData.registerText }}
     </Button>
   </template>
+  <SC_HeaderDropdownZindexFix
+    ref="dropdownZindexFixRef"
+    style="position: absolute; left: -9999px; visibility: hidden; pointer-events: none;"
+    aria-hidden="true"
+  />
   <Dropdown
     v-else
     :trigger="['click']"
     placement="bottomRight"
-    overlayClassName="header-dropdown-zindex-fix"
+    :overlayClassName="dropdownOverlayClass"
   >
     <SC_UserInfoTrigger>
       <!-- DEBUG: userAvatar = {{ userAvatar ? 'HAS_URL' : 'NULL' }} -->
@@ -88,9 +93,3 @@ import { headerUserOptions } from './header-user.ts'
 
 export default headerUserOptions
 </script>
-
-<style>
-.header-dropdown-zindex-fix {
-  z-index: 3005 !important;
-}
-</style>

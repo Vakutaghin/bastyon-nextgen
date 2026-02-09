@@ -78,7 +78,6 @@ const {
   inputText,
   imageShown,
   controlsShown,
-  captchaImageRef,
   reasonText,
   isValid,
   handleInput,

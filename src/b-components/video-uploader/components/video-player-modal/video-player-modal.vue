@@ -29,7 +29,6 @@ const {
   Modal,
   VideoPlayer,
   SC_PlayerSection,
-  videoPlayerRef,
   isOpen,
   handleClose
 } = useVideoPlayerModal(p, emit)
