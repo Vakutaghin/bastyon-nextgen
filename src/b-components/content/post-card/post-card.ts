@@ -1,48 +1,21 @@
 import { defineComponent, type PropType } from 'vue'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
-import { useFiltersStore } from '@/stores/filters-store'
 import Card from '@/components/card/card.vue'
-import Avatar from '@/components/avatar/avatar.vue'
-import Tag from '@/components/tag/tag.vue'
-import Button from '@/components/button/button.vue'
-import BlockContent from '@/b-components/content/block-content/block-content.vue'
 import PostModal from '@/b-components/content/post-modal/post-modal.vue'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { ImageGallery } from '@/components/image-gallery'
 import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
 import PostCardComments from '@/b-components/content/post-card/components/post-card-comments/post-card-comments.vue'
-import { formatBastyonLinks } from '@/helpers/common/text-formatter'
-import {
-  PlayCircleFilled,
-  ZoomInOutlined,
-  BookOutlined,
-  BookFilled,
-  MessageOutlined
-} from '@ant-design/icons-vue'
-import { useMessengerStore } from '@/b-components/messenger/store'
+import PostCardHeader from '@/b-components/content/post-card/components/post-card-header/post-card-header.vue'
+import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
+import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
+import PostCardCategoriesTags from '@/b-components/content/post-card/components/post-card-categories-tags/post-card-categories-tags.vue'
+import PostCardVideoPlaceholder from '@/b-components/content/post-card/components/post-card-video-placeholder/post-card-video-placeholder.vue'
 import {
   SC_PostCard,
-  SC_PostHeader,
-  SC_PostImage,
-  SC_ImageWrapper,
-  SC_ImageOverlay,
-  SC_ZoomIconCircle,
-  SC_VideoPlaceholder,
   SC_PostTitle,
-  SC_PostAuthor,
-  SC_PostAuthorInfo,
-  SC_PostAuthorName,
-  SC_AuthorNameRow,
-  SC_PostAuthorRep,
-  SC_PostTime,
-  SC_PostContent,
-  SC_PostPreview,
-  SC_PostCategoriesAndTags,
-  SC_PostActions,
-  SC_ChatBtn,
-  SC_PostBookmark,
-  SC_AuthorLinkWrap
+  SC_PostActions
 } from './styled'
 
 interface PostAuthor {
@@ -90,54 +63,28 @@ interface Post {
   }
 }
 
-import { editorjsToHtml } from '@/helpers/content/editorjs-parser'
-import { isFavorite, addFavorite, removeFavorite } from '@/db/favorites-db'
-
 export const postCardOptions = defineComponent({
   name: 'PostCard',
   components: {
     Card,
-    Avatar,
-    Tag,
-    Button,
-    BlockContent,
     PostModal,
     VideoPlayer,
     ImageGallery,
     StarRating,
     PostCardComments,
-    PlayCircleFilled,
-    ZoomInOutlined,
-    BookOutlined,
-    BookFilled,
-    MessageOutlined,
+    PostCardHeader,
+    PostCardImages,
+    PostCardContent,
+    PostCardCategoriesTags,
+    PostCardVideoPlaceholder,
     SC_PostCard,
-    SC_PostHeader,
-    SC_PostAuthor,
-    SC_PostAuthorInfo,
-    SC_PostAuthorName,
-    SC_AuthorNameRow,
-    SC_PostAuthorRep,
-    SC_PostTime,
-    SC_PostImage,
-    SC_ImageWrapper,
-    SC_ImageOverlay,
-    SC_ZoomIconCircle,
-    SC_VideoPlaceholder,
     SC_PostTitle,
-    SC_PostContent,
-    SC_PostPreview,
-    SC_PostCategoriesAndTags,
-    SC_PostActions,
-    SC_ChatBtn,
-    SC_PostBookmark,
-    SC_AuthorLinkWrap
+    SC_PostActions
   },
   setup() {
     const modalStore = useModalStore()
     const postsStore = usePostsStore()
-    const filtersStore = useFiltersStore()
-    return { modalStore, postsStore, filtersStore }
+    return { modalStore, postsStore }
   },
   props: {
     post: {
@@ -170,22 +117,10 @@ export const postCardOptions = defineComponent({
     if (this.post.id !== undefined) {
       this.postsStore.registerPost(this.post)
     }
-    this.checkBookmarkStatus()
   },
   data() {
     return {
-      isCollapsed: true,
-      isBookmarked: false,
-      // Хранит информацию о соотношении сторон для каждого изображения
-      imageAspectRatios: {} as Record<number, { width: number; height: number; useContain: boolean }>
-    }
-  },
-  watch: {
-    post: {
-      handler() {
-        this.checkBookmarkStatus()
-      },
-      deep: true
+      isCollapsed: true
     }
   },
   computed: {
@@ -211,240 +146,6 @@ export const postCardOptions = defineComponent({
       return this.modalStore.imageGallery.index
     },
     /**
-     * Отформатированная репутация автора
-     * До 1000 - число
-     * После 1000 - 1K, 5.5K, 206.7K (макс 1 знак после точки)
-     */
-    formattedReputation(): string {
-      const rep = this.displayAuthor.reputation || 0
-      if (Math.abs(rep) < 1000) {
-        return rep.toString()
-      }
-      const val = rep / 1000
-      const rounded = Math.round(val * 10) / 10
-      return `${rounded}K`
-    },
-    /**
-     * Количество изображений в посте
-     */
-    imageCount(): number {
-      return this.post.images ? this.post.images.length : 0
-    },
-    /**
-     * Проверяет, является ли контент структурой блоков (Editor.js формат)
-     */
-    isBlockContent(): boolean {
-      if (!this.post.content) {
-        return false
-      }
-
-      try {
-        // Пытаемся распарсить контент
-        const parsed = typeof this.post.content === 'string'
-          ? JSON.parse(this.post.content)
-          : this.post.content
-
-        // Проверяем наличие поля blocks с массивом
-        return parsed &&
-               typeof parsed === 'object' &&
-               Array.isArray(parsed.blocks) &&
-               parsed.blocks.length > 0
-      } catch {
-        // Если не JSON, значит обычный текст
-        return false
-      }
-    },
-    /**
-     * Нужно ли сворачивать контент
-     */
-    shouldCollapse(): boolean {
-      // Если showFull = true, никогда не сворачиваем
-      if (this.showFull) {
-        return false
-      }
-
-      if (!this.post.content) {
-        return false
-      }
-
-      if (this.isBlockContent) {
-        try {
-          const parsed = typeof this.post.content === 'string'
-            ? JSON.parse(this.post.content)
-            : this.post.content
-
-          // Сворачиваем если блоков больше maxBlocks
-          return parsed.blocks && parsed.blocks.length > this.maxBlocks
-        } catch {
-          return false
-        }
-      } else {
-        // Для обычного текста проверяем длину
-        return String(this.post.content).length > this.maxLength
-      }
-    },
-    /**
-     * Обрезанный текст для предпросмотра
-     */
-    truncatedText(): string {
-      if (!this.post.content) return ''
-      const text = String(this.post.content)
-      if (text.length <= this.maxLength) return text
-      return text.substring(0, this.maxLength) + '...'
-    },
-    /**
-     * Обрезанный контент блоков для предпросмотра
-     */
-    truncatedBlockContent(): string | null {
-      if (!this.isBlockContent) return null
-
-      try {
-        const parsed = typeof this.post.content === 'string'
-          ? JSON.parse(this.post.content)
-          : this.post.content
-
-        if (!parsed.blocks || parsed.blocks.length <= this.maxBlocks) {
-          return this.post.content || null
-        }
-
-        // Берем только первые maxBlocks блоков
-        const truncated = {
-          ...parsed,
-          blocks: parsed.blocks.slice(0, this.maxBlocks)
-        }
-
-        return JSON.stringify(truncated)
-      } catch {
-        return this.post.content || null
-      }
-    },
-    /**
-     * Форматированный текст для отображения (если не BlockContent)
-     * Теперь поддерживает и Editor.js структуру, преобразуя её в HTML
-     */
-    formattedPlainText(): string {
-      return editorjsToHtml(this.post.content || '')
-    },
-
-    /**
-     * Форматированный текст превью
-     * Если превью - это JSON Editor.js, то парсим его
-     * Если обычный текст - форматируем
-     */
-    formattedPreview(): string {
-      const preview = this.post.preview
-
-      if (!preview) return ''
-
-      // Для статей используем ограничение в 300 символов
-      const MAX_PREVIEW_LENGTH = 300
-
-      // Проверяем, похоже ли на JSON Editor.js
-      const trimmed = preview.trim()
-      let html = ''
-
-      if (trimmed.startsWith('{"blocks":')) {
-        try {
-          // Проверяем валидность JSON перед передачей в editorjsToHtml
-          JSON.parse(preview)
-          html = editorjsToHtml(preview)
-        } catch (e) {
-          // Если JSON битый, editorjsToHtml попробует его восстановить через Regex
-          html = editorjsToHtml(preview)
-        }
-      } else {
-        // Если это обычный текст
-        html = editorjsToHtml(preview)
-      }
-
-      // Если это HTML, нам нужно обрезать текст, но сохранить структуру тегов
-      // Для простоты, мы можем обрезать текст до форматирования, если это обычный текст
-      // Или использовать временный элемент для извлечения текста
-
-      // Временное решение: удаляем HTML теги, обрезаем, и возвращаем как текст (или пытаемся сохранить)
-      // Но лучше просто обрезать визуальный текст.
-
-      // Создаем временный div для парсинга HTML и получения текста
-      const tempDiv = document.createElement('div')
-      tempDiv.innerHTML = html
-      let textContent = tempDiv.textContent || tempDiv.innerText || ''
-
-      if (textContent.length > MAX_PREVIEW_LENGTH) {
-        textContent = textContent.substring(0, MAX_PREVIEW_LENGTH) + '...'
-        // Возвращаем как обычный текст, отформатированный в параграфы, так как обрезать HTML сложно
-        // Используем editorjsToHtml для форматирования обычного текста (ссылки и т.д.)
-        return editorjsToHtml(textContent)
-      }
-
-      return html
-    },
-    /**
-     * Отформатированный обрезанный текст с преобразованными bastyon:// ссылками
-     * Переносы строк (\n и <br />) преобразуются в параграфы <p>
-     */
-    formattedTruncatedText(): string {
-      if (!this.post.content) return ''
-
-      // Для статей используем ограничение в 300 символов
-      const MAX_PREVIEW_LENGTH = 300
-
-      // Для статей пытаемся распарсить как Editor.js и вернуть HTML
-      // Это fallback на случай, если isBlockContent вернул false (например, из-за структуры),
-      // но контент всё равно содержит JSON
-      if (this.post.type === 'article') {
-        let html = ''
-        try {
-          const parsed = typeof this.post.content === 'string'
-            ? JSON.parse(this.post.content)
-            : this.post.content
-
-          if (parsed && parsed.blocks && Array.isArray(parsed.blocks)) {
-            // Обрезаем блоки, как в truncatedBlockContent
-            // Но также применяем ограничение по символам
-            const sliced = {
-              ...parsed,
-              blocks: parsed.blocks.slice(0, this.maxBlocks)
-            }
-            html = editorjsToHtml(sliced)
-          }
-        } catch (e) {
-          // Если парсинг не удался, пробуем editorjsToHtml напрямую
-        }
-
-        if (!html) {
-          html = editorjsToHtml(this.post.content)
-        }
-
-        // Если результат похож на HTML, возвращаем его
-        if (html.trim().startsWith('<')) {
-           // Применяем обрезку по символам
-           const tempDiv = document.createElement('div')
-           tempDiv.innerHTML = html
-           let textContent = tempDiv.textContent || tempDiv.innerText || ''
-
-           if (textContent.length > MAX_PREVIEW_LENGTH) {
-             textContent = textContent.substring(0, MAX_PREVIEW_LENGTH) + '...'
-             return editorjsToHtml(textContent)
-           }
-           return html
-        }
-      }
-
-      let text = String(this.post.content)
-      if (text.length > this.maxLength) {
-        text = text.substring(0, this.maxLength) + '...'
-      }
-
-      // Преобразуем <br />, <br/>, <br> в \n для унификации
-      text = text.replace(/<br\s*\/?>/gi, '\n')
-
-      // Разбиваем по \n и оборачиваем каждую строку в <p>
-      const lines = text.split('\n').filter((line) => line.trim() !== '')
-      if (lines.length === 0) return ''
-
-      return lines.map((line) => `<p>${formatBastyonLinks(line)}</p>`).join('')
-    },
-    /**
      * Получает средний рейтинг в звёздах (0-5) - computed свойство для реактивности
      */
     averageRating(): number {
@@ -465,132 +166,9 @@ export const postCardOptions = defineComponent({
     decodedTitle(): string {
       if (!this.post.title) return ''
       return this.decodeUrlEncoded(this.post.title)
-    },
-    /**
-     * Декодированные теги поста (если были URL-encoded)
-     */
-    decodedTags(): string[] {
-      if (!this.post.tags || !Array.isArray(this.post.tags)) return []
-      return this.post.tags.map(tag => this.decodeUrlEncoded(tag))
-    },
-    /**
-     * Список элементов для отображения (категории + теги)
-     */
-    displayItems(): any[] {
-      const tags = this.decodedTags
-      if (!tags || tags.length === 0) return []
-
-      const uniqueTags = Array.from(new Set(tags))
-      const categories: any[] = []
-      const remainingTags: any[] = []
-
-      // Используем все категории из стора (включая кастомные и временные)
-      const allCategories = this.filtersStore.allCategories
-
-      // Находим категории
-      for (const cat of allCategories) {
-        // Проверяем, есть ли теги категории в тегах поста
-        const matchingTags = cat.tags.filter(catTag =>
-          uniqueTags.some(postTag => postTag.toLowerCase() === catTag.toLowerCase())
-        )
-
-        if (matchingTags.length > 0) {
-          categories.push({
-            type: 'category',
-            id: cat.id,
-            name: cat.name,
-            icon: cat.icon
-          })
-        }
-      }
-
-      // Находим оставшиеся теги (те, которые не относятся ни к одной категории)
-      uniqueTags.forEach(tag => {
-        const isCategoryTag = allCategories.some(cat =>
-          cat.tags.includes(tag.toLowerCase())
-        )
-
-        if (!isCategoryTag) {
-          remainingTags.push({
-            type: 'tag',
-            name: tag
-          })
-        }
-      })
-
-      return [...categories, ...remainingTags]
-    },
-    /**
-     * Текст кнопки "Показать полностью"
-     */
-    readMoreLabel(): string {
-      return (this.post.type === 'article') ? 'Читать статью' : 'Показать полностью'
-    },
-    displayAuthor(): PostAuthor {
-      const defaultAuthor = this.post?.author || {
-        name: 'Unknown',
-        address: '',
-        avatar: null,
-        reputation: 0,
-        letter: '?',
-        verified: false
-      }
-
-      if (this.authorOverride && this.authorOverride.name) {
-        return {
-          ...defaultAuthor,
-          name: this.authorOverride.name,
-          address: this.authorOverride.address || defaultAuthor.address,
-          avatar: this.authorOverride.avatar || defaultAuthor.avatar,
-          reputation: this.authorOverride.reputation !== undefined ? this.authorOverride.reputation : defaultAuthor.reputation,
-          letter: this.authorOverride.letter || defaultAuthor.letter,
-          verified: this.authorOverride.verified !== undefined ? this.authorOverride.verified : defaultAuthor.verified
-        }
-      }
-      return defaultAuthor
     }
   },
   methods: {
-    async startChatWithAuthor(event: Event) {
-      event.preventDefault()
-      event.stopPropagation()
-      const address = this.displayAuthor?.address
-      if (!address) return
-      try {
-        const messengerStore = useMessengerStore()
-        const preloadedProfile = {
-          address,
-          name: this.displayAuthor?.name,
-          i: this.displayAuthor?.avatar || undefined,
-          reputation: this.displayAuthor?.reputation,
-          subscribers_count: this.displayAuthor?.subscribers_count,
-          subscribes_count: this.displayAuthor?.subscribes_count,
-          hash: '',
-          id: 0
-        }
-        await messengerStore.openInviteWithAddress(address, preloadedProfile)
-      } catch (e) {
-        console.error('[PostCard] Failed to open chat:', e)
-      }
-    },
-    async checkBookmarkStatus() {
-      if (!this.postId) return
-      this.isBookmarked = await isFavorite(this.postId)
-    },
-    async toggleBookmark(event: Event) {
-      event.preventDefault()
-      event.stopPropagation()
-
-      if (!this.postId) return
-
-      if (this.isBookmarked) {
-        await removeFavorite(this.postId)
-        this.isBookmarked = false
-      } else {
-        await addFavorite(this.postId)
-        this.isBookmarked = true
-      }
-    },
     /**
      * Декодирует URL-encoded строку, если она была закодирована
      * Проверяет, является ли строка URL-encoded (содержит %XX паттерны)
@@ -620,51 +198,10 @@ export const postCardOptions = defineComponent({
       return str
     },
     /**
-     * Открывает модалку с полным постом
-     */
-    openPostModal(event?: Event): void {
-      // Предотвращаем любое стандартное поведение и всплытие события
-      if (event) {
-        event.preventDefault()
-        event.stopPropagation()
-        event.stopImmediatePropagation()
-        if (event.cancelBubble !== undefined) {
-          event.cancelBubble = true
-        }
-      }
-
-      // Используем store для открытия модалки
-      this.modalStore.openPostModal(this.post)
-    },
-    /**
      * Закрывает модалку
      */
     closePostModal(): void {
       this.modalStore.closePostModal()
-    },
-    formatTime(timestamp: string): string {
-      const date = new Date(timestamp)
-      if (isNaN(date.getTime())) return ''
-
-      const now = new Date()
-      const isCurrentYear = date.getFullYear() === now.getFullYear()
-
-      const time = date.toLocaleString('ru-RU', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-
-      const dayMonth = date.toLocaleString('ru-RU', {
-        day: 'numeric',
-        month: 'long'
-      })
-
-      if (isCurrentYear) {
-        return `${dayMonth}, ${time}`
-      } else {
-        const year = date.getFullYear()
-        return `${dayMonth} ${year}, ${time}`
-      }
     },
     getInitial(nameOrLetter?: string): string {
       if (!nameOrLetter) return '?'
@@ -672,73 +209,6 @@ export const postCardOptions = defineComponent({
       if (nameOrLetter.length === 1) return nameOrLetter.toUpperCase()
       // Otherwise get first letter of name
       return nameOrLetter.charAt(0).toUpperCase()
-    },
-    handleImageError(event: Event): void {
-      // Скрываем изображение при ошибке загрузки
-      const target = event.target as HTMLImageElement
-      if (target) {
-        target.style.display = 'none'
-      }
-    },
-    handleImageLoad(event: Event, imageIndex: number): void {
-      const target = event.target as HTMLImageElement
-      if (!target) return
-
-      const naturalWidth = target.naturalWidth
-      const naturalHeight = target.naturalHeight
-
-      if (naturalWidth === 0 || naturalHeight === 0) return
-
-      // Вычисляем соотношение сторон (width/height)
-      const aspectRatio = naturalWidth / naturalHeight
-      // Если соотношение больше чем 1:1.5 (т.е. width/height > 1/1.5 или > 0.667)
-      // То используем contain, иначе cover
-      const useContain = aspectRatio > (1 / 1.5)
-
-      // Сохраняем информацию о соотношении сторон
-      this.imageAspectRatios[imageIndex] = {
-        width: naturalWidth,
-        height: naturalHeight,
-        useContain
-      }
-
-      // Старая логика для ограничения высоты при соотношении сторон > 2:1 (только для одного изображения)
-      if (this.imageCount === 1 && naturalHeight > naturalWidth * 2) {
-        target.style.aspectRatio = '1 / 2'
-        target.style.maxHeight = '500px'
-      }
-    },
-    /**
-     * Возвращает стили для обёртки изображения
-     */
-    getImageWrapperStyle(imageIndex: number): Record<string, string> {
-      const imageInfo = this.imageAspectRatios[imageIndex]
-      if (imageInfo && imageInfo.useContain) {
-        // Если используем contain, добавляем светло-серый фон
-        return {
-          backgroundColor: '#f5f5f5'
-        }
-      }
-      return {}
-    },
-    /**
-     * Возвращает стили для изображения
-     */
-    getImageStyle(imageIndex: number): Record<string, string> {
-      const imageInfo = this.imageAspectRatios[imageIndex]
-      if (imageInfo && imageInfo.useContain) {
-        return {
-          objectFit: 'contain'
-        }
-      }
-      return {
-        objectFit: 'cover'
-      }
-    },
-    openImageGallery(index: number): void {
-      if (this.post.images && this.post.images.length > 0) {
-        this.modalStore.openImageGallery(this.post.images, index)
-      }
     },
     closeImageGallery(): void {
       this.modalStore.closeImageGallery()
@@ -762,25 +232,6 @@ export const postCardOptions = defineComponent({
     handleRatingError(error: Error): void {
       // Обработка ошибок при отправке рейтинга
       console.error('Failed to submit rating:', error)
-      // Можно показать уведомление пользователю
-    },
-    /**
-     * Обработка клика по тегу или категории в посте.
-     * Реализует логику фильтрации ленты по клику на элемент.
-     *
-     * @param item Объект тега или категории { type: 'category'|'tag', id?: string, name: string }
-     */
-    handleTagClick(item: any) {
-      if (item.type === 'category') {
-        // Если это уже существующая категория (системная или кастомная),
-        // просто переключаем её выбор в фильтре.
-        this.filtersStore.toggleCategorySelection(item.id)
-      } else {
-        // Если это обычный тег (не привязан к категории),
-        // создаем временную категорию (которая исчезнет при перезагрузке)
-        // и автоматически выбираем её.
-        this.filtersStore.addTemporaryCategory(item.name)
-      }
     },
     /**
      * При сворачивании комментариев скроллим к карточке поста
