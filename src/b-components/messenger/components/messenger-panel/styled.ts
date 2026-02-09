@@ -78,3 +78,32 @@ export const SC_MobileBackButton = styled.button`
     display: flex;
   }
 `
+
+export const SC_MessengerDialogsLoader = styled.div`
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #888;
+  font-size: 14px;
+`
+
+export const SC_MessengerDialogsSpinner = styled.span`
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #666;
+  border-radius: 50%;
+  animation: messenger-dialogs-spin 0.8s linear infinite;
+
+  @keyframes messenger-dialogs-spin {
+    to { transform: rotate(360deg); }
+  }
+`
+
+export const SC_MessengerDialogsLoaderText = styled.span`
+  margin: 0;
+`

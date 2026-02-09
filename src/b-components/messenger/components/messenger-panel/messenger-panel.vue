@@ -11,10 +11,10 @@
       <div v-else-if="store.syncState !== 'PREPARED' && store.syncState !== 'SYNCING'" style="padding: 8px; background: #e3f2fd; color: #1565c0; font-size: 12px;">
         Status: {{ store.syncState }}
       </div>
-      <div v-if="!store.dialogsLoadedOnce || store.isLoading" class="messenger-dialogs-loader">
-        <span class="messenger-dialogs-spinner" />
-        <span class="messenger-dialogs-loader-text">Загрузка диалогов...</span>
-      </div>
+      <SC_MessengerDialogsLoader v-if="!store.dialogsLoadedOnce || store.isLoading">
+        <SC_MessengerDialogsSpinner />
+        <SC_MessengerDialogsLoaderText>Загрузка диалогов...</SC_MessengerDialogsLoaderText>
+      </SC_MessengerDialogsLoader>
       <ChatList
         v-else
         :dialogs="store.dialogs"
@@ -65,34 +65,19 @@
 
 <script lang="ts">
 import { messengerPanelOptions } from './messenger-panel'
+import {
+  SC_MessengerDialogsLoader,
+  SC_MessengerDialogsLoaderText,
+  SC_MessengerDialogsSpinner,
+} from './styled'
 
-export default messengerPanelOptions
+export default {
+  ...messengerPanelOptions,
+  components: {
+    ...messengerPanelOptions.components,
+    SC_MessengerDialogsLoader,
+    SC_MessengerDialogsLoaderText,
+    SC_MessengerDialogsSpinner,
+  },
+}
 </script>
-
-<style scoped>
-.messenger-dialogs-loader {
-  padding: 24px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: #888;
-  font-size: 14px;
-}
-.messenger-dialogs-spinner {
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #666;
-  border-radius: 50%;
-  animation: messenger-dialogs-spin 0.8s linear infinite;
-}
-@keyframes messenger-dialogs-spin {
-  to { transform: rotate(360deg); }
-}
-.messenger-dialogs-loader-text {
-  margin: 0;
-}
-</style>
