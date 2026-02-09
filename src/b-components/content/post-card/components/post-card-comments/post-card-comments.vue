@@ -99,10 +99,11 @@
           <SC_ReplySendBtn
             type="button"
             title="Отправить"
-            :disabled="!(replyDraft || '').trim()"
+            :disabled="!(replyDraft || '').trim() || replySubmitting"
             @click.stop.prevent="sendReply"
           >
-            <SendOutlined />
+            <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+            <SendOutlined v-else />
           </SC_ReplySendBtn>
         </SC_ReplyPanel>
       </SC_CommentWithReplies>
@@ -228,10 +229,11 @@
           <SC_ReplySendBtn
             type="button"
             title="Отправить"
-            :disabled="!(replyDraft || '').trim()"
+            :disabled="!(replyDraft || '').trim() || replySubmitting"
             @click.stop.prevent="sendReply"
           >
-            <SendOutlined />
+            <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+            <SendOutlined v-else />
           </SC_ReplySendBtn>
         </SC_ReplyPanel>
       </SC_CommentWithReplies>
@@ -356,10 +358,11 @@
           <SC_ReplySendBtn
             type="button"
             title="Отправить"
-            :disabled="!(replyDraft || '').trim()"
+            :disabled="!(replyDraft || '').trim() || replySubmitting"
             @click.stop.prevent="sendReply"
           >
-            <SendOutlined />
+            <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+            <SendOutlined v-else />
           </SC_ReplySendBtn>
         </SC_ReplyPanel>
 
@@ -450,10 +453,11 @@
                 <SC_ReplySendBtn
                   type="button"
                   title="Отправить"
-                  :disabled="!(replyDraft || '').trim()"
+                  :disabled="!(replyDraft || '').trim() || replySubmitting"
                   @click.stop.prevent="sendReply"
                 >
-                  <SendOutlined />
+                  <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+                  <SendOutlined v-else />
                 </SC_ReplySendBtn>
               </SC_ReplyPanel>
             </SC_ReplyItemWrapper>

@@ -234,6 +234,20 @@ export const SC_PostBookmark = styled.div`
   padding: 0 10px;
 `
 
+export const SC_PostCardYoutube = styled.div`
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  iframe {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    border: 0;
+  }
+`
+
 export const SC_AuthorLinkWrap = styled.div`
   display: block;
 `

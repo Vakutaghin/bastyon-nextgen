@@ -29,4 +29,5 @@ export const rpcEndpoints = {
   getMissedInfo: '/rpc/getmissedinfo',
   getApps: '/rpc/getapps',
   getRawTransactionWithMessageById: '/rpc/getrawtransactionwithmessagebyid',
+  sendRawTransactionWithMessage: '/rpc/sendrawtransactionwithmessage',
 }

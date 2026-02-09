@@ -28,6 +28,13 @@ export type { GetHierarchicalStripRequest, GetHierarchicalStripParameters } from
 export type { GetCommentsRequest, GetCommentsParameters } from './get-comments'
 export type { GetLastCommentsRequest, GetLastCommentsParameters } from './get-last-comments'
 export type { GetPageScoresRequest, GetPageScoresParameters } from './get-page-scores'
+export type {
+  SendRawTransactionWithMessageRequest,
+  SendRawTransactionWithMessageParameters,
+  CommentMessagePayload,
+  CommentMessageBody,
+  SendRawTransactionOperationType
+} from './send-raw-transaction-with-message'
 
 // Account methods
 export type { GetAccountSettingRequest, GetAccountSettingParameters } from './get-account-setting'

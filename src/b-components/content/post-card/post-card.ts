@@ -12,10 +12,12 @@ import PostCardImages from '@/b-components/content/post-card/components/post-car
 import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
 import PostCardCategoriesTags from '@/b-components/content/post-card/components/post-card-categories-tags/post-card-categories-tags.vue'
 import PostCardVideoPlaceholder from '@/b-components/content/post-card/components/post-card-video-placeholder/post-card-video-placeholder.vue'
+import { getYoutubeEmbedUrls } from '@/helpers/common/youtube-url'
 import {
   SC_PostCard,
   SC_PostTitle,
-  SC_PostActions
+  SC_PostActions,
+  SC_PostCardYoutube
 } from './styled'
 
 interface PostAuthor {
@@ -79,7 +81,8 @@ export const postCardOptions = defineComponent({
     PostCardVideoPlaceholder,
     SC_PostCard,
     SC_PostTitle,
-    SC_PostActions
+    SC_PostActions,
+    SC_PostCardYoutube
   },
   setup() {
     const modalStore = useModalStore()
@@ -166,6 +169,17 @@ export const postCardOptions = defineComponent({
     decodedTitle(): string {
       if (!this.post.title) return ''
       return this.decodeUrlEncoded(this.post.title)
+    },
+    /**
+     * Ссылки на YouTube embed для отображения под контентом поста
+     */
+    youtubeEmbedUrls(): string[] {
+      if (!this.post) return []
+      const fromContent = getYoutubeEmbedUrls(this.post.content)
+      const fromPreview = getYoutubeEmbedUrls(this.post.preview)
+      const seen = new Set(fromContent)
+      fromPreview.forEach((url) => seen.add(url))
+      return Array.from(seen)
     }
   },
   methods: {

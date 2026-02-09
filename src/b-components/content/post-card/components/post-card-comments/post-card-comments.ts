@@ -9,6 +9,7 @@ import { Modal } from 'ant-design-vue'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } from '@/blockchain/core/transactions/unspents-manager'
 import { appToast } from '@/b-components/app-toast'
+import type { CommentMessagePayload, CommentMessageBody } from '@/types/rpc-requests/send-raw-transaction-with-message'
 import {
   SC_CommentsPreview,
   SC_CommentItem,
@@ -132,6 +133,90 @@ async function sendCommentScore(
   throw err instanceof Error ? err : new Error(String(err ?? 'Ошибка отправки оценки комментария'))
 }
 
+/**
+ * Формирует тело сообщения комментария (msg) в виде JSON-строки.
+ */
+function buildCommentMsgBody(message: string): string {
+  const body: CommentMessageBody = {
+    message: message.trim(),
+    url: '',
+    images: [],
+    info: ''
+  }
+  return JSON.stringify(body)
+}
+
+/**
+ * Отправка комментария (comment).
+ * Строит транзакцию с serializedData = JSON.stringify(payload), operationType = 'comment'.
+ */
+async function sendComment(
+  postId: string,
+  parentId: string,
+  answerId: string,
+  messageText: string
+): Promise<string> {
+  const authStore = useAuthStore()
+  const keyPair = authStore.getKeyPair
+  const address = authStore.getUserAddress
+
+  if (!keyPair || !address) {
+    throw new Error('Нужна авторизация для отправки комментария')
+  }
+  if (!postId || !messageText.trim()) {
+    throw new Error('Пост и текст комментария обязательны')
+  }
+
+  const msg = buildCommentMsgBody(messageText)
+  const messagePayload: CommentMessagePayload = {
+    postid: postId,
+    answerid: answerId || '',
+    parentid: parentId || '',
+    msg
+  }
+  // Сериализация как в старом приложении (kit.js Comment.serialize): postid + msg + parentid + answerid
+  const serializedData = postId + msg + (parentId || '') + (answerId || '')
+
+  // getUnspents → /rpc/txunspent нужен для выбора входов транзакции (в старом приложении unspents берут из кэша кошелька)
+  let unspents = await getUnspents(address, 1, 9999999)
+  unspents = filterAvailableUnspents(unspents, false)
+  if (!unspents?.length) {
+    throw new Error('Нет доступных unspents')
+  }
+
+  const selectedUnspents = selectBestUnspents(unspents, 0.00000001)
+  if (selectedUnspents.length === 0) {
+    throw new Error('Не удалось выбрать unspents для транзакции')
+  }
+
+  lockUTXOs(selectedUnspents)
+
+  const builtTx = await buildTransaction({
+    unspents: selectedUnspents,
+    fromAddress: address,
+    keyPair,
+    serializedData,
+    operationType: 'comment',
+    fee: 0.00000001
+  })
+
+  const response = await getByPRCWithAuth({
+    method: 'sendrawtransactionwithmessage',
+    parameters: [builtTx.hex, messagePayload, 'comment'],
+    options: { auth: true }
+  })
+
+  if (typeof response === 'string') return response
+  if (response && typeof response === 'object' && 'data' in response && typeof (response as { data?: string }).data === 'string') {
+    return (response as { data: string }).data
+  }
+  if (response && typeof response === 'object' && 'result' in response && (response as { result?: string }).result === 'success' && 'data' in response) {
+    return (response as { data: string }).data
+  }
+  const err = response && typeof response === 'object' && 'error' in response ? (response as { error: unknown }).error : null
+  throw err instanceof Error ? err : new Error(String(err ?? 'Ошибка отправки комментария'))
+}
+
 export const postCardCommentsOptions = defineComponent({
   name: 'PostCardComments',
   components: {
@@ -212,6 +297,8 @@ export const postCardCommentsOptions = defineComponent({
       mentionEndOffset: 0,
       /** Индекс подсвеченного элемента в списке @упоминаний (для стрелок вверх/вниз) */
       mentionHighlightIndex: 0,
+      /** Идёт отправка комментария (блокируем повторный клик) */
+      replySubmitting: false,
     }
   },
   computed: {
@@ -716,17 +803,28 @@ export const postCardCommentsOptions = defineComponent({
     confirmCancelReply(): void {
       this.closeReply()
     },
-    /** Отправить ответ (пока только в консоль) */
-    sendReply(): void {
+    /** Отправить ответ (реальный запрос sendrawtransactionwithmessage) */
+    async sendReply(): Promise<void> {
       const text = (this.replyDraft || '').trim()
-      if (!text || !this.replyTarget) return
-      const payload = {
-        postId: this.postId,
-        parentId: this.replyTarget.parentId,
-        text
+      if (!text || !this.replyTarget || this.replySubmitting) return
+      this.replySubmitting = true
+      try {
+        await sendComment(
+          this.postId,
+          this.replyTarget.parentId,
+          this.replyTarget.commentId,
+          text
+        )
+        appToast.success('Комментарий отправлен')
+        this.closeReply()
+        if (this.allComments) {
+          await this.loadAllCommentsInternal(false)
+        }
+      } catch (e) {
+        appToast.error(e instanceof Error ? e.message : 'Не удалось отправить комментарий')
+      } finally {
+        this.replySubmitting = false
       }
-      console.log('[PostCardComments] Отправка ответа на комментарий (без бэка):', payload)
-      this.closeReply()
     },
     /** Ответ на комментарий первого уровня — открыть форму (пустое поле), при переключении с «Ответить автору» очистить текст */
     onReplyToFirstLevel(comment: GetComment): void {
@@ -770,8 +868,16 @@ export const postCardCommentsOptions = defineComponent({
       this.mentionHighlightIndex = 0
       this.showMentionList = true
     },
-    /** Обработка клавиш в поле ответа: Esc — скрыть список; стрелки — навигация; Enter — выбрать */
+    /** Обработка клавиш в поле ответа: Cmd/Ctrl+Enter — отправить; Esc — скрыть список; стрелки — навигация; Enter — выбрать */
     handleReplyKeydown(e: KeyboardEvent): void {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        const text = (this.replyDraft || '').trim()
+        if (text && this.replyTarget && !this.replySubmitting) {
+          this.sendReply()
+        }
+        return
+      }
       if (this.showMentionList && (this.filteredMentionUsers as { address: string; name: string }[]).length > 0) {
         if (e.key === 'Escape') {
           this.showMentionList = false

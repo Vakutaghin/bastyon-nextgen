@@ -29,6 +29,19 @@
       :is-collapsed="isCollapsed"
     />
 
+    <SC_PostCardYoutube v-if="(youtubeEmbedUrls || []).length">
+      <iframe
+        v-for="(embedUrl, i) in youtubeEmbedUrls"
+        :key="i"
+        :src="embedUrl"
+        title="YouTube video player"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen
+      />
+    </SC_PostCardYoutube>
+
     <PostCardCategoriesTags :post="post" />
 
     <SC_PostActions>

@@ -209,7 +209,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
         } as any
       }
 
-      // Для вкладки обсуждаемого (id: 7)
+      // Для вкладки обсуждаемого (id: 7) — всегда свежие данные, без кэша
       if (filtersStore.activeTab === 7) {
         return getByPRCWithAuth({
           method: 'getmostcommentedfeed',
@@ -228,7 +228,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
           ],
           cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
           options: {
-            ex: true
+            ex: true,
+            cache: false
           },
           state: 1
         }) as Promise<GetHierarchicalStripResponse>
