@@ -12,14 +12,14 @@
  * // Получить профиль одного пользователя
  * const request: GetUserProfileRequest = {
  *   method: 'getuserprofile',
- *   parameters: [['PJT8eTrxXD5uCFL2QmRmdDJtCBA1R68Tdf']],
+ *   parameters: [['PJT7eTrGXD9uCFВ2QmRmdDJtCBA1R68TRf']],
  *   options: { auth: false }
  * }
  *
  * // Получить профили нескольких пользователей
  * const request: GetUserProfileRequest = {
  *   method: 'getuserprofile',
- *   parameters: [['PJT8eTrxXD5uCFL2QmRmdDJtCBA1R68Tdf', 'PJT8eTrxXD5uCFL2QmRmdDJtCBA1R68Tdf']],
+ *   parameters: [['PJT7eTrGXD9uCFВ2QmRmdDJtCBA1R68TRf', 'PJT7eTrGXD9uCFВ2QmRmdDJtCBA1R68TRf']],
  *   options: { auth: false }
  * }
  * ```

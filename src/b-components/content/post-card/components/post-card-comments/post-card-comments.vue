@@ -1,5 +1,7 @@
 <template>
   <SC_CommentsPreview v-if="hasUserComments || allComments">
+    <h3>Комментарии ({{ totalCommentsCount }})</h3>
+
     <!-- Компактный вид: комментарии ещё не загружены -->
     <template v-if="!allComments">
       <SC_CommentItem v-if="hasUserComments">
@@ -25,8 +27,19 @@
           <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
 
           <SC_CommentActions>
-            <span>👍 {{ post.lastComment?.scoreUp ?? 0 }}</span>
-            <span>👎 {{ post.lastComment?.scoreDown ?? 0 }}</span>
+            <span
+              :class="['comment-score', { 'comment-score--voted': lastCommentUserLiked, 'comment-score--clickable': lastCommentCanClickLike }]"
+              role="button"
+              tabindex="0"
+              @click.stop.prevent="onLastCommentScoreUp()"
+            >👍 {{ post.lastComment?.scoreUp ?? 0 }}</span>
+
+            <span
+              :class="['comment-score', { 'comment-score--voted': lastCommentUserDisliked, 'comment-score--clickable': lastCommentCanClickDislike }]"
+              role="button"
+              tabindex="0"
+              @click.stop.prevent="onLastCommentScoreDown()"
+            >👎 {{ post.lastComment?.scoreDown ?? 0 }}</span>
             <span>Ответить</span>
           </SC_CommentActions>
         </SC_CommentContent>
@@ -37,6 +50,7 @@
           <SC_CommentsLoading v-if="allCommentsLoading">
             <LoadingOutlined :style="{ fontSize: '18px', color: '#00a4ff' }" spin />
           </SC_CommentsLoading>
+
           <template v-else>
             <SC_ShowCommentsBtn
               type="button"
@@ -44,6 +58,7 @@
             >
               Показать ещё 15
             </SC_ShowCommentsBtn>
+
             <SC_ShowCommentsBtnSecondary
               type="button"
               @click.stop.prevent="loadAllComments(true)"
@@ -80,8 +95,18 @@
           <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
 
           <SC_CommentActions>
-            <span>👍 {{ post.lastComment?.scoreUp ?? 0 }}</span>
-            <span>👎 {{ post.lastComment?.scoreDown ?? 0 }}</span>
+            <span
+              :class="['comment-score', { 'comment-score--voted': lastCommentUserLiked, 'comment-score--clickable': lastCommentCanClickLike }]"
+              role="button"
+              tabindex="0"
+              @click.stop.prevent="onLastCommentScoreUp()"
+            >👍 {{ post.lastComment?.scoreUp ?? 0 }}</span>
+            <span
+              :class="['comment-score', { 'comment-score--voted': lastCommentUserDisliked, 'comment-score--clickable': lastCommentCanClickDislike }]"
+              role="button"
+              tabindex="0"
+              @click.stop.prevent="onLastCommentScoreDown()"
+            >👎 {{ post.lastComment?.scoreDown ?? 0 }}</span>
             <span>Ответить</span>
           </SC_CommentActions>
         </SC_CommentContent>
@@ -130,10 +155,23 @@
             </router-link>
             <SC_CommentDate>{{ formatCommentDate(comment.time) }}</SC_CommentDate>
           </SC_CommentMeta>
+
           <SC_CommentText v-html="formatCommentMessageHtml(comment)"></SC_CommentText>
+
           <SC_CommentActions>
-            <span>👍 {{ comment.scoreUp ?? 0 }}</span>
-            <span>👎 {{ comment.scoreDown ?? 0 }}</span>
+            <span
+              :class="['comment-score', { 'comment-score--voted': isCommentLiked(comment), 'comment-score--clickable': commentCanClickLike(comment) }]"
+              role="button"
+              tabindex="0"
+              @click.stop.prevent="onCommentScoreUp(comment)"
+            >👍 {{ comment.scoreUp ?? 0 }}</span>
+
+            <span
+              :class="['comment-score', { 'comment-score--voted': isCommentDisliked(comment), 'comment-score--clickable': commentCanClickDislike(comment) }]"
+              role="button"
+              tabindex="0"
+              @click.stop.prevent="onCommentScoreDown(comment)"
+            >👎 {{ comment.scoreDown ?? 0 }}</span>
             <span>Ответить</span>
           </SC_CommentActions>
         </SC_CommentContent>
@@ -148,6 +186,7 @@
           >
             Показать ещё {{ nextCommentsPageSize }}
           </SC_ShowCommentsBtn>
+
           <SC_ShowCommentsBtnSecondary
             v-if="hasMoreCommentsToShow"
             type="button"
@@ -156,6 +195,7 @@
             Показать все
           </SC_ShowCommentsBtnSecondary>
         </SC_CommentsActionsLeft>
+
         <SC_ShowCommentsBtnCollapse
           type="button"
           @click.stop.prevent="collapseComments"
@@ -172,3 +212,16 @@ import { postCardCommentsOptions } from './post-card-comments.ts'
 
 export default postCardCommentsOptions
 </script>
+
+<style scoped>
+.comment-score {
+  filter: grayscale(1);
+  cursor: default;
+}
+.comment-score.comment-score--voted {
+  filter: none;
+}
+.comment-score.comment-score--clickable {
+  cursor: pointer;
+}
+</style>

@@ -4,8 +4,8 @@
       <SC_Spinner />
     </SC_PlayButton>
     <SC_PlayButton v-else :class="{ playing: isPlaying }" @click="togglePlay" :disabled="!!hasError">
-      <svg v-if="!isPlaying" viewBox="0 0 24 24" width="20" height="20"><path fill="#00A4DB" d="M8 5v14l11-7z"/></svg>
-      <svg v-else viewBox="0 0 24 24" width="20" height="20"><path fill="#00A4DB" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+      <img v-if="!isPlaying" :src="playIcon" alt="" width="20" height="20" />
+      <img v-else :src="pauseIcon" alt="" width="20" height="20" />
     </SC_PlayButton>
 
     <SC_WaveContainer ref="container" :compact="compact" @click="onSeekByClick">
@@ -25,5 +25,13 @@
 
 <script lang="ts">
 import { audioMessageOptions } from './audio-message'
-export default audioMessageOptions
+import playIcon from './img/play.svg'
+import pauseIcon from './img/pause.svg'
+
+export default {
+  ...audioMessageOptions,
+  data () {
+    return { playIcon, pauseIcon }
+  },
+}
 </script>

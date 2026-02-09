@@ -16,7 +16,7 @@
  * // Получить профиль любого пользователя
  * const profile = await getByPRC({
  *   method: 'getuserprofile',
- *   parameters: [['PJT8eTrxXD5uCFL2QmRmdDJtCBA1R68Tdf']],
+ *   parameters: [['PJT7eTrGXD9uCFВ2QmRmdDJtCBA1R68TRf']],
  *   options: { auth: false } // Не требует авторизации
  * })
  * ```

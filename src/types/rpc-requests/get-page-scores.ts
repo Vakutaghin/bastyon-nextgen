@@ -14,7 +14,7 @@
  *   method: 'getpagescores',
  *   parameters: [
  *     ['postTxId1', 'postTxId2'],            // postIds - массив ID постов
- *     'PJT8eTrxXD5uCFL2QmRmdDJtCBA1R68Tdf', // address - адрес пользователя
+ *     'PJT7eTrGXD9uCFВ2QmRmdDJtCBA1R68TRf', // address - адрес пользователя
  *     [                                      // commentIds - массив ID комментариев
  *       '415a9e3392172df0d498a462e3b72dbd53afa63da67ef42cb0882c6b013d3e5f'
  *     ]

@@ -1,4 +1,5 @@
 import { defineComponent, type PropType } from 'vue'
+import { useAuthStore } from '@/blockchain'
 import { getByPRC } from '@/helpers/api/request'
 import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
@@ -38,6 +39,8 @@ export interface PostForComments {
     children: number
     scoreUp: number
     scoreDown: number
+    /** Оценка текущего пользователя: 1 — лайк, -1 — дизлайк, 0/нет — не голосовал */
+    myScore?: number
   }
 }
 
@@ -81,7 +84,11 @@ export const postCardCommentsOptions = defineComponent({
       allCommentsError: null as Error | null,
       visibleCommentsCount: 0,
       commentsCollapsed: false,
-      commentsSortOrder: 'newest' as CommentsSortOrder
+      commentsSortOrder: 'newest' as CommentsSortOrder,
+      /** Локальный голос по lastComment (до прихода myScore с сервера или после клика) */
+      lastCommentVote: null as 'up' | 'down' | null,
+      /** Локальные голоса по comment.id для развёрнутого списка */
+      commentVotes: {} as Record<string, 'up' | 'down'>
     }
   },
   computed: {
@@ -127,6 +134,19 @@ export const postCardCommentsOptions = defineComponent({
     totalCommentsCount(): number {
       return this.post.comments ?? 0
     },
+    lastCommentUserLiked(): boolean {
+      return (this.post.lastComment?.myScore ?? 0) > 0 || this.lastCommentVote === 'up'
+    },
+    lastCommentUserDisliked(): boolean {
+      return (this.post.lastComment?.myScore ?? 0) < 0 || this.lastCommentVote === 'down'
+    },
+    /** Противоположное действие после выбора нажать нельзя → cursor default */
+    lastCommentCanClickLike(): boolean {
+      return !this.lastCommentUserDisliked
+    },
+    lastCommentCanClickDislike(): boolean {
+      return !this.lastCommentUserLiked
+    },
     actualCommentsCount(): number {
       return this.allComments?.length ?? 0
     },
@@ -155,6 +175,38 @@ export const postCardCommentsOptions = defineComponent({
       if (nameOrLetter.length === 1) return nameOrLetter.toUpperCase()
       return nameOrLetter.charAt(0).toUpperCase()
     },
+    isCommentLiked(comment: GetComment): boolean {
+      return (comment.myScore ?? 0) > 0 || this.commentVotes[comment.id] === 'up'
+    },
+    isCommentDisliked(comment: GetComment): boolean {
+      return (comment.myScore ?? 0) < 0 || this.commentVotes[comment.id] === 'down'
+    },
+    commentCanClickLike(comment: GetComment): boolean {
+      return !this.isCommentDisliked(comment)
+    },
+    commentCanClickDislike(comment: GetComment): boolean {
+      return !this.isCommentLiked(comment)
+    },
+    onLastCommentScoreUp(): void {
+      if (!this.lastCommentCanClickLike) return
+      if (!this.lastCommentUserLiked) console.log('thumb up')
+      this.lastCommentVote = 'up'
+    },
+    onLastCommentScoreDown(): void {
+      if (!this.lastCommentCanClickDislike) return
+      if (!this.lastCommentUserDisliked) console.log('thumb down')
+      this.lastCommentVote = 'down'
+    },
+    onCommentScoreUp(comment: GetComment): void {
+      if (!this.commentCanClickLike(comment)) return
+      if (!this.isCommentLiked(comment)) console.log('thumb up')
+      this.commentVotes = { ...this.commentVotes, [comment.id]: 'up' }
+    },
+    onCommentScoreDown(comment: GetComment): void {
+      if (!this.commentCanClickDislike(comment)) return
+      if (!this.isCommentDisliked(comment)) console.log('thumb down')
+      this.commentVotes = { ...this.commentVotes, [comment.id]: 'down' }
+    },
     async loadAllComments(showAll = false): Promise<void> {
       if (!this.postId || this.allCommentsLoading) return
       this.allCommentsLoading = true
@@ -164,11 +216,14 @@ export const postCardCommentsOptions = defineComponent({
         setTimeout(() => reject(new Error('Таймаут загрузки комментариев')), COMMENT_LOAD_TIMEOUT_MS)
       })
       try {
+        const authStore = useAuthStore()
+        const userAddress = authStore.getUserAddress ?? ''
         const res = await Promise.race([
           getByPRC({
             method: 'getcomments',
-            parameters: [this.postId, '', ''],
-            options: { auth: false }
+            parameters: [this.postId, '', userAddress],
+            cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
+            options: { auth: authStore.isUserAuthenticated }
           }),
           timeoutPromise
         ])

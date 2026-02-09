@@ -26,7 +26,7 @@
       <template v-if="activeChatId">
         <div style="height: 56px; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 16px;">
           <SC_MobileBackButton @click="store.closeActiveChat ? store.closeActiveChat() : (store.activeChatId = null)">
-            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            <img :src="arrowBackIcon" alt="" width="24" height="24" />
           </SC_MobileBackButton>
           <span style="font-weight: 600;">{{ activeChatName }}</span>
         </div>
@@ -42,7 +42,7 @@
       <template v-else-if="lastTargetAddress && inviteViewActive">
         <div style="height: 56px; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 16px;">
           <SC_MobileBackButton @click="store.clearInviteTarget">
-            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            <img :src="arrowBackIcon" alt="" width="24" height="24" />
           </SC_MobileBackButton>
           <span style="font-weight: 600;">{{ invitePartnerName }}</span>
         </div>
@@ -56,7 +56,7 @@
           />
       </template>
       <SC_EmptyState v-else>
-        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+        <img :src="chatEmptyIcon" alt="" width="24" height="24" />
         <div>Выберите чат, чтобы начать общение</div>
       </SC_EmptyState>
     </SC_ChatColumn>
@@ -70,6 +70,8 @@ import {
   SC_MessengerDialogsLoaderText,
   SC_MessengerDialogsSpinner,
 } from './styled'
+import arrowBackIcon from './img/arrow-back.svg'
+import chatEmptyIcon from './img/chat-empty.svg'
 
 export default {
   ...messengerPanelOptions,
@@ -78,6 +80,9 @@ export default {
     SC_MessengerDialogsLoader,
     SC_MessengerDialogsLoaderText,
     SC_MessengerDialogsSpinner,
+  },
+  data () {
+    return { arrowBackIcon, chatEmptyIcon }
   },
 }
 </script>

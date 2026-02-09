@@ -13,7 +13,7 @@
  * const request: GetUserStatisticRequest = {
  *   method: 'getuserstatistic',
  *   parameters: [
- *     ['PJT8eTrxXD5uCFL2QmRmdDJtCBA1R68Tdf'], // addresses - массив адресов пользователей
+ *     ['PJT7eTrGXD9uCFВ2QmRmdDJtCBA1R68TRf'], // addresses - массив адресов пользователей
  *     0,                                        // param2 - флаг или тип статистики (обычно 0)
  *     2246708                                   // param3 - высота блока или ID (опционально)
  *   ],

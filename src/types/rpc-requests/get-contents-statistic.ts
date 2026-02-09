@@ -13,8 +13,8 @@
  * const request: GetContentsStatisticRequest = {
  *   method: 'getcontentsstatistic',
  *   parameters: [
- *     ['PJT8eTrxXD5uCFL2QmRmdDJtCBA1R68Tdf'], // addresses - массив адресов пользователей
- *     'video'                                   // contentType - тип контента ('video', 'share', 'post', 'audio' или '' для всех)
+ *     ['PJU3eTrGXD2uCFВ2QmRmdDJtCGl1R68Tdf'], // addresses - массив адресов пользователей
+ *     'video'                                 // contentType - тип контента ('video', 'share', 'post', 'audio' или '' для всех)
  *   ],
  *   options: { auth: false }
  * }

@@ -170,7 +170,7 @@ export interface GetHierarchicalStripPost {
   /**
    * Адрес автора поста (address)
    * Pocketnet адрес пользователя, создавшего пост
-   * Формат: начинается с 'P' (например, "PJT8eTrxXD5uCFL2QmRmdDJtCBA1R68Tdf")
+   * Формат: начинается с 'P' (например, "PJT7eTrGXD9uCFВ2QmRmdDJtCBA1R68TRf")
    */
   address: string
   /**
