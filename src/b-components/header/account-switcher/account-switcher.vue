@@ -114,8 +114,10 @@ const options = { ...accountSwitcherOptions }
 
 // Добавляем keyIcon в data
 const originalData = options.data
+
 options.data = function() {
   const original = typeof originalData === 'function' ? originalData() : originalData
+
   return {
     ...original,
     keyIcon
