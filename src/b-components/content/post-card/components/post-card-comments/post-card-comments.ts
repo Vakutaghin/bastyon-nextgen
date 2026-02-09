@@ -1,9 +1,13 @@
 import { defineComponent, type PropType } from 'vue'
+import { Buffer } from 'buffer'
 import { useAuthStore } from '@/blockchain'
-import { getByPRC } from '@/helpers/api/request'
+import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { LoadingOutlined } from '@ant-design/icons-vue'
+import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
+import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } from '@/blockchain/core/transactions/unspents-manager'
+import { appToast } from '@/b-components/app-toast'
 import {
   SC_CommentsPreview,
   SC_CommentItem,
@@ -49,6 +53,71 @@ const COMMENTS_ALREADY_SHOWN = 1
 
 export type CommentsSortOrder = 'interesting' | 'newest' | 'oldest'
 
+/**
+ * Отправка лайка/дизлайка комментария (cScore).
+ * В старом приложении: type 'cScore', serialize = commentId + value, opreturn = commentAuthorAddress + " " + value.
+ */
+async function sendCommentScore(
+  commentId: string,
+  value: 1 | -1,
+  commentAuthorAddress: string
+): Promise<string> {
+  const authStore = useAuthStore()
+  const keyPair = authStore.getKeyPair
+  const address = authStore.getUserAddress
+
+  if (!keyPair || !address) {
+    throw new Error('Нужна авторизация для оценки комментария')
+  }
+  if (!commentAuthorAddress) {
+    throw new Error('Адрес автора комментария обязателен')
+  }
+
+  let unspents = await getUnspents(address, 1, 9999999)
+  unspents = filterAvailableUnspents(unspents, false)
+  if (!unspents?.length) {
+    throw new Error('Нет доступных unspents')
+  }
+
+  const selectedUnspents = selectBestUnspents(unspents, 0.00000001)
+  if (selectedUnspents.length === 0) {
+    throw new Error('Не удалось выбрать unspents для транзакции')
+  }
+
+  lockUTXOs(selectedUnspents)
+
+  const serializedData = commentId + value.toString()
+  const payloadString = `${commentAuthorAddress} ${value}`
+  const opReturnData = [Buffer.from(payloadString, 'utf8')]
+  const rpcData = { commentid: commentId, value: value.toString() }
+
+  const builtTx = await buildTransaction({
+    unspents: selectedUnspents,
+    fromAddress: address,
+    keyPair,
+    serializedData,
+    operationType: 'cScore',
+    opReturnData,
+    fee: 0.00000001,
+  })
+
+  const response = await getByPRCWithAuth({
+    method: 'sendrawtransactionwithmessage',
+    parameters: [builtTx.hex, rpcData, 'cScore'],
+    options: { auth: true }
+  })
+
+  if (typeof response === 'string') return response
+  if (response && typeof response === 'object' && 'data' in response && typeof (response as { data?: string }).data === 'string') {
+    return (response as { data: string }).data
+  }
+  if (response && typeof response === 'object' && 'result' in response && (response as { result?: string }).result === 'success' && 'data' in response) {
+    return (response as { data: string }).data
+  }
+  const err = response && typeof response === 'object' && 'error' in response ? (response as { error: unknown }).error : null
+  throw err instanceof Error ? err : new Error(String(err ?? 'Ошибка отправки оценки комментария'))
+}
+
 export const postCardCommentsOptions = defineComponent({
   name: 'PostCardComments',
   components: {
@@ -88,7 +157,9 @@ export const postCardCommentsOptions = defineComponent({
       /** Локальный голос по lastComment (до прихода myScore с сервера или после клика) */
       lastCommentVote: null as 'up' | 'down' | null,
       /** Локальные голоса по comment.id для развёрнутого списка */
-      commentVotes: {} as Record<string, 'up' | 'down'>
+      commentVotes: {} as Record<string, 'up' | 'down'>,
+      /** id комментария или 'last' во время отправки оценки (блокируем повторный клик) */
+      commentScoreSubmitting: null as string | null
     }
   },
   computed: {
@@ -140,12 +211,12 @@ export const postCardCommentsOptions = defineComponent({
     lastCommentUserDisliked(): boolean {
       return (this.post.lastComment?.myScore ?? 0) < 0 || this.lastCommentVote === 'down'
     },
-    /** Противоположное действие после выбора нажать нельзя → cursor default */
+    /** После голоса оба значка cursor default; кликабельно только пока не голосовали и не идёт отправка */
     lastCommentCanClickLike(): boolean {
-      return !this.lastCommentUserDisliked
+      return !this.lastCommentUserDisliked && !this.lastCommentUserLiked && this.commentScoreSubmitting !== 'last'
     },
     lastCommentCanClickDislike(): boolean {
-      return !this.lastCommentUserLiked
+      return !this.lastCommentUserLiked && !this.lastCommentUserDisliked && this.commentScoreSubmitting !== 'last'
     },
     actualCommentsCount(): number {
       return this.allComments?.length ?? 0
@@ -182,30 +253,76 @@ export const postCardCommentsOptions = defineComponent({
       return (comment.myScore ?? 0) < 0 || this.commentVotes[comment.id] === 'down'
     },
     commentCanClickLike(comment: GetComment): boolean {
-      return !this.isCommentDisliked(comment)
+      return !this.isCommentDisliked(comment) && !this.isCommentLiked(comment) && this.commentScoreSubmitting !== comment.id
     },
     commentCanClickDislike(comment: GetComment): boolean {
-      return !this.isCommentLiked(comment)
+      return !this.isCommentLiked(comment) && !this.isCommentDisliked(comment) && this.commentScoreSubmitting !== comment.id
     },
-    onLastCommentScoreUp(): void {
-      if (!this.lastCommentCanClickLike) return
-      if (!this.lastCommentUserLiked) console.log('thumb up')
+    async onLastCommentScoreUp(): Promise<void> {
+      if (!this.lastCommentCanClickLike || this.commentScoreSubmitting) return
+      const lc = this.post.lastComment
+      if (!lc?.id || !lc.address) return
+      this.commentScoreSubmitting = 'last'
+      const prev = this.lastCommentVote
       this.lastCommentVote = 'up'
+      try {
+        await sendCommentScore(lc.id, 1, lc.address)
+      } catch (e) {
+        this.lastCommentVote = prev
+        appToast.error(e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию')
+      } finally {
+        this.commentScoreSubmitting = null
+      }
     },
-    onLastCommentScoreDown(): void {
-      if (!this.lastCommentCanClickDislike) return
-      if (!this.lastCommentUserDisliked) console.log('thumb down')
+    async onLastCommentScoreDown(): Promise<void> {
+      if (!this.lastCommentCanClickDislike || this.commentScoreSubmitting) return
+      const lc = this.post.lastComment
+      if (!lc?.id || !lc.address) return
+      this.commentScoreSubmitting = 'last'
+      const prev = this.lastCommentVote
       this.lastCommentVote = 'down'
+      try {
+        await sendCommentScore(lc.id, -1, lc.address)
+      } catch (e) {
+        this.lastCommentVote = prev
+        appToast.error(e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию')
+      } finally {
+        this.commentScoreSubmitting = null
+      }
     },
-    onCommentScoreUp(comment: GetComment): void {
-      if (!this.commentCanClickLike(comment)) return
-      if (!this.isCommentLiked(comment)) console.log('thumb up')
+    async onCommentScoreUp(comment: GetComment): Promise<void> {
+      if (!this.commentCanClickLike(comment) || this.commentScoreSubmitting) return
+      this.commentScoreSubmitting = comment.id
+      const prev = this.commentVotes[comment.id]
       this.commentVotes = { ...this.commentVotes, [comment.id]: 'up' }
+      try {
+        await sendCommentScore(comment.id, 1, comment.address)
+      } catch (e) {
+        const next = prev ? { [comment.id]: prev } : {}
+        const rest = { ...this.commentVotes }
+        delete rest[comment.id]
+        this.commentVotes = { ...rest, ...next }
+        appToast.error(e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию')
+      } finally {
+        this.commentScoreSubmitting = null
+      }
     },
-    onCommentScoreDown(comment: GetComment): void {
-      if (!this.commentCanClickDislike(comment)) return
-      if (!this.isCommentDisliked(comment)) console.log('thumb down')
+    async onCommentScoreDown(comment: GetComment): Promise<void> {
+      if (!this.commentCanClickDislike(comment) || this.commentScoreSubmitting) return
+      this.commentScoreSubmitting = comment.id
+      const prev = this.commentVotes[comment.id]
       this.commentVotes = { ...this.commentVotes, [comment.id]: 'down' }
+      try {
+        await sendCommentScore(comment.id, -1, comment.address)
+      } catch (e) {
+        const next = prev ? { [comment.id]: prev } : {}
+        const rest = { ...this.commentVotes }
+        delete rest[comment.id]
+        this.commentVotes = { ...rest, ...next }
+        appToast.error(e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию')
+      } finally {
+        this.commentScoreSubmitting = null
+      }
     },
     async loadAllComments(showAll = false): Promise<void> {
       if (!this.postId || this.allCommentsLoading) return

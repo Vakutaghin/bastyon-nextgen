@@ -212,16 +212,3 @@ import { postCardCommentsOptions } from './post-card-comments.ts'
 
 export default postCardCommentsOptions
 </script>
-
-<style scoped>
-.comment-score {
-  filter: grayscale(1);
-  cursor: default;
-}
-.comment-score.comment-score--voted {
-  filter: none;
-}
-.comment-score.comment-score--clickable {
-  cursor: pointer;
-}
-</style>

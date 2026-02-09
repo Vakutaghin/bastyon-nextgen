@@ -112,6 +112,17 @@ export const SC_CommentActions = styled.div`
     cursor: pointer;
     user-select: none;
   }
+
+  .comment-score {
+    filter: grayscale(1);
+    cursor: default;
+  }
+  .comment-score.comment-score--voted {
+    filter: none;
+  }
+  .comment-score.comment-score--clickable {
+    cursor: pointer;
+  }
 `
 
 export const SC_ShowCommentsBtn = styled.button`

@@ -1,5 +1,20 @@
 import styled from 'vue3-styled-components'
 
+export const SC_AuthPopoverContent = styled.div`
+  text-align: center;
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+`
+
 export const SC_StarRating = styled.div`
   display: flex;
   align-items: center;

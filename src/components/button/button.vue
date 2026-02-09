@@ -5,15 +5,14 @@
     :disabled="buttonProps.disabled"
     :class="buttonClass"
   >
-    <span v-if="loading" style="margin-right: 8px;">
+    <SC_ButtonLoadingWrap v-if="loading">
       <img
         :src="loadingSpinnerIcon"
         alt=""
         width="14"
         height="14"
-        style="animation: spin 1s linear infinite;"
       />
-    </span>
+    </SC_ButtonLoadingWrap>
     <slot />
   </SC_ButtonMore>
 </template>
@@ -23,6 +22,7 @@ import { computed } from 'vue'
 import { useButton } from './button'
 import type { ButtonProps } from './types'
 import loadingSpinnerIcon from './img/loading-spinner.svg'
+import { SC_ButtonLoadingWrap } from './styled'
 
 const p = defineProps<ButtonProps>()
 
@@ -30,14 +30,3 @@ const { SC_ButtonMore, buttonProps, buttonClass } = useButton(p)
 
 const loading = computed(() => p.loading)
 </script>
-
-<style scoped>
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>

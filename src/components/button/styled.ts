@@ -1,4 +1,22 @@
-import styled from 'vue3-styled-components'
+import styled, { keyframes } from 'vue3-styled-components'
+
+const spinKeyframes = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`
+
+export const SC_ButtonLoadingWrap = styled.span`
+  margin-right: 8px;
+  display: inline-flex;
+
+  img {
+    animation: ${spinKeyframes} 1s linear infinite;
+  }
+`
 
 export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
   display: inline-flex;

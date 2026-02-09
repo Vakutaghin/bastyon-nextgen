@@ -1,10 +1,10 @@
 <template>
   <a-popover v-model:open="authPopoverVisible" trigger="click" placement="bottom">
     <template #content>
-      <div class="auth-popover-content">
+      <SC_AuthPopoverContent>
         <p>Войдите или зарегистрируйтесь, чтобы оценивать посты</p>
         <a-button type="primary" size="small" @click="openAuthModal">Войти</a-button>
-      </div>
+      </SC_AuthPopoverContent>
     </template>
     <!-- Обертка для перехвата событий до того, как они дойдут до popover -->
     <div style="display: inline-block" @click.capture="handleRatingClick">
@@ -41,6 +41,7 @@ import { starRatingOptions } from './star-rating.ts'
 import { StarOutlined, StarFilled, UserOutlined } from '@ant-design/icons-vue'
 import { Popover, Button } from 'ant-design-vue'
 import {
+  SC_AuthPopoverContent,
   SC_StarRating,
   SC_StarWrapper,
   SC_StarFilled
@@ -52,6 +53,7 @@ export default {
     StarOutlined,
     StarFilled,
     UserOutlined,
+    SC_AuthPopoverContent,
     SC_StarRating,
     SC_StarWrapper,
     SC_StarFilled,
@@ -60,19 +62,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.auth-popover-content {
-  text-align: center;
-  max-width: 200px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.auth-popover-content p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
-}
-</style>
