@@ -290,7 +290,7 @@ export const headerUserOptions = defineComponent({
       if (key === 'signout') {
         this.confirmSignOutOpen = true
       } else if (key === 'settings') {
-        // TODO: Переход на страницу настроек
+        this.$router.push('/settings')
       } else if (key === 'switchAccount') {
         this.accountSwitcherOpen = true
       } else if (key.startsWith('/')) {
