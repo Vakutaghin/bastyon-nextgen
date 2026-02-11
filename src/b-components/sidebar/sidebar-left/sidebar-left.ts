@@ -13,5 +13,11 @@ export const sidebarLeftOptions = defineComponent({
     SidebarCategories,
     SidebarTags,
     SC_LeftSidebar,
+  },
+  props: {
+    collapsed: {
+      type: Boolean,
+      default: false
+    }
   }
 })

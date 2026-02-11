@@ -17,6 +17,7 @@ import {
 import {
   SC_Feed,
   SC_FeedHeader,
+  SC_FeedHeaderLeft,
   SC_FeedHeaderActions,
   SC_SidebarToggleWrap,
   SC_FeedTitle,
@@ -42,6 +43,7 @@ export const contentFeedOptions = defineComponent({
     MenuUnfoldOutlined,
     SC_Feed,
     SC_FeedHeader,
+    SC_FeedHeaderLeft,
     SC_FeedHeaderActions,
     SC_SidebarToggleWrap,
     SC_FeedTitle,
@@ -55,9 +57,13 @@ export const contentFeedOptions = defineComponent({
     rightSidebarVisible: {
       type: Boolean,
       default: true
+    },
+    leftSidebarCollapsed: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: [ 'toggle-right-sidebar' ],
+  emits: [ 'toggle-right-sidebar', 'toggle-left-sidebar' ],
   setup() {
     const postsStore = usePostsStore()
     const filtersStore = useFiltersStore()

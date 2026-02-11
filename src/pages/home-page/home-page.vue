@@ -1,13 +1,15 @@
 <template>
   <SC_HomeWork class='adj'>
-    <SidebarLeft />
+    <SidebarLeft :collapsed='leftSidebarCollapsed' />
     <SC_HomeMainContent :class='{ "sidebar-right-hidden": !rightSidebarVisible }'>
       <ContentFeed
         :feedData='null'
         :loading='false'
         :error='null'
         :right-sidebar-visible='rightSidebarVisible'
+        :left-sidebar-collapsed='leftSidebarCollapsed'
         @toggle-right-sidebar='rightSidebarVisible = !rightSidebarVisible'
+        @toggle-left-sidebar='leftSidebarCollapsed = !leftSidebarCollapsed'
       />
     </SC_HomeMainContent>
     <SidebarRight v-if='rightSidebarVisible' />
@@ -22,6 +24,7 @@ import ContentFeed from '@/b-components/content/content-feed/content-feed.vue'
 import { SC_HomeWork, SC_HomeMainContent } from './home-page.styled'
 
 const LS_KEY_RIGHT_SIDEBAR = 'bastyon_right_sidebar_visible'
+const LS_KEY_LEFT_SIDEBAR_COLLAPSED = 'bastyon_left_sidebar_collapsed'
 
 function getInitialRightSidebarVisible(): boolean {
   if (typeof localStorage === 'undefined') return true
@@ -29,6 +32,14 @@ function getInitialRightSidebarVisible(): boolean {
   if (stored === 'true') return true
   if (stored === 'false') return false
   return true
+}
+
+function getInitialLeftSidebarCollapsed(): boolean {
+  if (typeof localStorage === 'undefined') return false
+  const stored = localStorage.getItem(LS_KEY_LEFT_SIDEBAR_COLLAPSED)
+  if (stored === 'true') return true
+  if (stored === 'false') return false
+  return false
 }
 
 export default defineComponent({
@@ -42,6 +53,7 @@ export default defineComponent({
   },
   setup() {
     const rightSidebarVisible = ref(getInitialRightSidebarVisible())
+    const leftSidebarCollapsed = ref(getInitialLeftSidebarCollapsed())
 
     watch(rightSidebarVisible, (visible) => {
       if (typeof localStorage !== 'undefined') {
@@ -49,7 +61,13 @@ export default defineComponent({
       }
     }, { immediate: true })
 
-    return { rightSidebarVisible }
+    watch(leftSidebarCollapsed, (collapsed) => {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(LS_KEY_LEFT_SIDEBAR_COLLAPSED, String(collapsed))
+      }
+    }, { immediate: true })
+
+    return { rightSidebarVisible, leftSidebarCollapsed }
   }
 })
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <SC_Tabs>
+  <SC_Tabs :class='{ collapsed }'>
     <SC_TabsItem
       v-for='tab in tabsData'
       :key='tab.id'
@@ -17,7 +17,7 @@
       <StarOutlined v-else-if="tab.icon === 'StarOutlined'" />
       <MessageOutlined v-else-if="tab.icon === 'MessageOutlined'" />
       <AppstoreOutlined v-else />
-      <SC_TabsLabel>{{ tab.name }}</SC_TabsLabel>
+      <SC_TabsLabel v-if='!collapsed'>{{ tab.name }}</SC_TabsLabel>
     </SC_TabsItem>
   </SC_Tabs>
 </template>

@@ -11,6 +11,16 @@ export const SC_Tabs = styled.nav`
   gap: 4px;
   padding-bottom: 20px;
   border-bottom: 1px solid rgb(248, 249, 250);
+
+  &.collapsed {
+    padding-bottom: 12px;
+    border-bottom-color: rgba(206, 212, 218, 0.3);
+  }
+
+  &.collapsed button {
+    justify-content: center;
+    padding: 10px;
+  }
 `
 
 export const SC_TabsItem = styled('button', tabProps)`

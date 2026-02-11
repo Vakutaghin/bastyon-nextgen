@@ -19,6 +19,13 @@ export const SC_LeftSidebar = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   z-index: 10;
+  transition: width 0.2s ease, min-width 0.2s ease, padding 0.2s ease;
+
+  &.collapsed {
+    width: 64px;
+    min-width: 64px;
+    padding: 12px 8px;
+  }
 
   @media (max-width: 800px) {
     display: none;

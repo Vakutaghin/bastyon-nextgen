@@ -1,8 +1,8 @@
 <template>
-  <SC_LeftSidebar>
-    <SidebarTabs />
-    <SidebarCategories />
-    <SidebarTags />
+  <SC_LeftSidebar :class='{ collapsed }'>
+    <SidebarTabs :collapsed='collapsed' />
+    <SidebarCategories v-if='!collapsed' />
+    <SidebarTags v-if='!collapsed' />
     <!-- <SidebarFooter /> -->
   </SC_LeftSidebar>
 </template>

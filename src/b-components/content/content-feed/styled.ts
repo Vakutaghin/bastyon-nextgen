@@ -14,6 +14,12 @@ export const SC_FeedHeader = styled.div`
   border-bottom: 1px solid rgba(206, 212, 218, 0.5);
 `
 
+export const SC_FeedHeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`
+
 export const SC_SidebarToggleWrap = styled.div`
   height: 38px;
   display: inline-flex;

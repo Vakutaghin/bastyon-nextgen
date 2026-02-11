@@ -1,7 +1,20 @@
 <template>
   <SC_Feed>
     <SC_FeedHeader>
-      <SC_FeedTitle>Лента</SC_FeedTitle>
+      <SC_FeedHeaderLeft>
+        <SC_SidebarToggleWrap>
+          <Button
+            type='text'
+            size='small'
+            :title='leftSidebarCollapsed ? "Развернуть меню" : "Свернуть меню"'
+            @click='$emit("toggle-left-sidebar")'
+          >
+            <MenuUnfoldOutlined v-if='leftSidebarCollapsed' :style='{ fontSize: "16px" }' />
+            <MenuFoldOutlined v-else :style='{ fontSize: "16px" }' />
+          </Button>
+        </SC_SidebarToggleWrap>
+        <SC_FeedTitle>Лента</SC_FeedTitle>
+      </SC_FeedHeaderLeft>
 
       <SC_FeedHeaderActions>
         <Button type='primary'>

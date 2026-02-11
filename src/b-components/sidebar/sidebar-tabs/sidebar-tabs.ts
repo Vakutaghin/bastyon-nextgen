@@ -19,6 +19,12 @@ import { SC_Tabs, SC_TabsItem, SC_TabsLabel } from './styled'
 
 export const sidebarTabsOptions = defineComponent({
   name: 'SidebarTabs',
+  props: {
+    collapsed: {
+      type: Boolean,
+      default: false
+    }
+  },
   components: {
     HomeOutlined,
     TeamOutlined,
