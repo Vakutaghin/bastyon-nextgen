@@ -10,11 +10,15 @@ import {
   PlusOutlined,
   ExclamationCircleOutlined,
   LoadingOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined
 } from '@ant-design/icons-vue'
 import {
   SC_Feed,
   SC_FeedHeader,
+  SC_FeedHeaderActions,
+  SC_SidebarToggleWrap,
   SC_FeedTitle,
   SC_FeedContent,
   SC_FeedLoading,
@@ -34,8 +38,12 @@ export const contentFeedOptions = defineComponent({
     ExclamationCircleOutlined,
     LoadingOutlined,
     ReloadOutlined,
+    MenuFoldOutlined,
+    MenuUnfoldOutlined,
     SC_Feed,
     SC_FeedHeader,
+    SC_FeedHeaderActions,
+    SC_SidebarToggleWrap,
     SC_FeedTitle,
     SC_FeedContent,
     SC_FeedLoading,
@@ -43,6 +51,13 @@ export const contentFeedOptions = defineComponent({
     SC_FeedLoadingMore,
     SC_FeedEnd
   },
+  props: {
+    rightSidebarVisible: {
+      type: Boolean,
+      default: true
+    }
+  },
+  emits: [ 'toggle-right-sidebar' ],
   setup() {
     const postsStore = usePostsStore()
     const filtersStore = useFiltersStore()

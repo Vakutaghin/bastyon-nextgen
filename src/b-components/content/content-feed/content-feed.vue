@@ -2,13 +2,29 @@
   <SC_Feed>
     <SC_FeedHeader>
       <SC_FeedTitle>Лента</SC_FeedTitle>
-      <Button type='primary'>
-        <template #icon>
-          <PlusOutlined />
-        </template>
-        Создать пост
-      </Button>
+
+      <SC_FeedHeaderActions>
+        <Button type='primary'>
+          <template #icon>
+            <PlusOutlined />
+          </template>
+          Создать пост
+        </Button>
+
+        <SC_SidebarToggleWrap>
+          <Button
+            type='text'
+            size='small'
+            :title='rightSidebarVisible ? "Скрыть боковую панель" : "Показать боковую панель"'
+            @click='$emit("toggle-right-sidebar")'
+          >
+            <MenuFoldOutlined v-if='rightSidebarVisible' :style='{ fontSize: "16px" }' />
+            <MenuUnfoldOutlined v-else :style='{ fontSize: "16px" }' />
+          </Button>
+        </SC_SidebarToggleWrap>
+      </SC_FeedHeaderActions>
     </SC_FeedHeader>
+
     <SC_FeedContent>
       <SC_FeedLoading v-if='isLoading && allPosts.length === 0'>
         <Spin tip='Загрузка ленты...'>
@@ -17,6 +33,7 @@
           </template>
         </Spin>
       </SC_FeedLoading>
+
       <SC_FeedError v-else-if='error'>
         <div v-if="isServerError" style="display: flex; flex-direction: column; align-items: center;">
           <ExclamationCircleOutlined style='font-size: 30px; margin-bottom: 15px; color: rgb(220, 53, 69);' />

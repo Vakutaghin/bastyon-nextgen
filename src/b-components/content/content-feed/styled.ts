@@ -11,8 +11,29 @@ export const SC_FeedHeader = styled.div`
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 15px;
-  padding-right: 24px;
   border-bottom: 1px solid rgba(206, 212, 218, 0.5);
+`
+
+export const SC_SidebarToggleWrap = styled.div`
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+
+  button {
+    height: 100% !important;
+    min-height: 100% !important;
+    padding: 0 12px;
+  }
+
+  .anticon {
+    font-size: 16px;
+  }
+`
+
+export const SC_FeedHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `
 
 export const SC_FeedTitle = styled.h2`

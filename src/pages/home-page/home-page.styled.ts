@@ -21,7 +21,15 @@ export const SC_HomeMainContent = styled.div`
   padding: 20px 0;
   border-radius: 8px;
 
+  &.sidebar-right-hidden {
+    padding-right: 20px;
+  }
+
   @media (max-width: 800px) {
     padding: 16px 10px 20px;
+
+    &.sidebar-right-hidden {
+      padding-right: 20px;
+    }
   }
 `
