@@ -2,10 +2,11 @@
  * Composables для работы с пользователями через Vue Query
  */
 
-import { computed } from 'vue'
+import { computed, type MaybeRefOrGetter, unref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 import { useRpcQuery, useRpcQueryWithAuth } from './use-rpc-query'
+import type { RpcRequestParams } from '@/helpers/api/request'
 import type { GetUserProfileResponse, UserProfile } from '@/types/rpc-responses/user-get'
 import type { GetUserStateResponse, UserState as UserStateData } from '@/types/rpc-responses/user-state'
 import { useAuthStore } from '@/blockchain'
@@ -116,26 +117,33 @@ export function useUserProfile(
 /**
  * Загружает профили нескольких пользователей
  *
- * @param addresses - Массив адресов пользователей
+ * @param addresses - Массив адресов или ref/computed (реактивный список)
  * @param enabled - Включен ли запрос
  */
 export function useUserProfiles(
-  addresses: string[],
+  addresses: MaybeRefOrGetter<string[]>,
   enabled: boolean = true
 ) {
-  return useRpcQuery<GetUserProfileResponse>(
-    ['user', 'profiles', addresses.sort().join(',')],
-    {
-      method: 'getuserprofile',
-      parameters: [addresses],
-      options: { auth: false }
+  const addressesRef = computed(() => {
+    const arr = typeof addresses === 'function' ? (addresses as () => string[])() : unref(addresses)
+    return Array.isArray(arr) ? arr : []
+  })
+  const queryKey = computed(() => ['user', 'profiles', [...addressesRef.value].sort().join(',')])
+  return useQuery<GetUserProfileResponse>({
+    queryKey,
+    queryFn: () => {
+      const addrs = addressesRef.value
+      const params: RpcRequestParams = {
+        method: 'getuserprofile',
+        parameters: [addrs],
+        options: { auth: false }
+      }
+      return getByPRC(params) as Promise<GetUserProfileResponse>
     },
-    {
-      enabled: enabled && addresses.length > 0,
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-    }
-  )
+    enabled: computed(() => enabled && addressesRef.value.length > 0),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  })
 }
 
 /**

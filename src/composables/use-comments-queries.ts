@@ -42,19 +42,18 @@ export function useComments(
 
 /**
  * Загружает последние комментарии
- * 
- * @param limit - Количество комментариев
+ *
+ * Параметры getlastcomments: [limit, '', lang] — лимит (строка), пустая строка, язык (например "ru").
+ *
  * @param enabled - Включен ли запрос
  */
-export function useLastComments(
-  limit: number = 20,
-  enabled: boolean = true
-) {
+export function useLastComments(enabled: boolean = true) {
+  const parameters: [string, string, string] = ['20', '', 'ru']
   return useRpcQuery<GetLastCommentsResponse>(
-    ['comments', 'last', limit],
+    ['comments', 'last', ...parameters],
     {
       method: 'getlastcomments',
-      parameters: [limit],
+      parameters,
       options: { auth: false }
     },
     {
