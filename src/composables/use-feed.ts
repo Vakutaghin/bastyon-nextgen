@@ -52,6 +52,13 @@ export interface AdaptedPost {
     scoreUp: number
     scoreDown: number
   }
+  /** txid оригинальной записи, если это репост */
+  repost?: string
+  /** Автор оригинальной записи (если есть в ответе API) */
+  repostAuthor?: {
+    name: string
+    address: string
+  }
 }
 
 /**
@@ -168,7 +175,39 @@ export function adaptPostData(post: any, index: number, usersMap: Record<string,
     myVal: myVal,
     videoUrl: videoUrl,
     preview: preview,
-    lastComment
+    lastComment,
+    repost: post.repost || undefined,
+    repostAuthor: (() => {
+      const addr = post.repostAddress || post.repost_author_address
+      if (!addr) return undefined
+      const profile = usersMap[addr]
+      if (!profile) return undefined
+      return {
+        name: profile.name || addr,
+        address: addr
+      }
+    })()
+  }
+}
+
+/**
+ * Подмешивает контент оригинальной записи в адаптированный пост-репост.
+ * Вызывать после получения оригинала через getrawtransactionwithmessagebyid.
+ */
+export function mergeRepostContent(adapted: AdaptedPost, originalRaw: any): void {
+  if (!originalRaw) return
+  adapted.title = safeDecode(originalRaw.c || '')
+  adapted.content = safeDecode(originalRaw.m || '')
+  adapted.images = Array.isArray(originalRaw.i) ? originalRaw.i : []
+  adapted.videoUrl = originalRaw.u || originalRaw.s?.v || undefined
+  adapted.tags = Array.isArray(originalRaw.t) ? originalRaw.t : []
+  adapted.type = originalRaw.type || adapted.type
+  adapted.category = originalRaw.type || adapted.category
+  adapted.preview = safeDecode(originalRaw.preview || originalRaw.p || '')
+  if (originalRaw.scoreCnt > 0 && originalRaw.scoreSum != null) {
+    adapted.ratingStars = Math.max(0, Math.min(5, Math.round((originalRaw.scoreSum / originalRaw.scoreCnt) * 10) / 10))
+    adapted.scoreCnt = originalRaw.scoreCnt
+    adapted.scoreSum = originalRaw.scoreSum
   }
 }
 

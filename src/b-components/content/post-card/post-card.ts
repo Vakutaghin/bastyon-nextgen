@@ -63,6 +63,13 @@ interface Post {
     scoreUp: number
     scoreDown: number
   }
+  /** txid оригинальной записи, если это репост */
+  repost?: string
+  /** Автор оригинальной записи (если есть) */
+  repostAuthor?: {
+    name: string
+    address: string
+  }
 }
 
 export const postCardOptions = defineComponent({

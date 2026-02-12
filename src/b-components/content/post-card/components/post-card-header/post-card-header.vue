@@ -32,6 +32,18 @@
         </SC_AuthorNameRow>
 
         <SC_PostTime>{{ formatTime(post.timestamp) }}</SC_PostTime>
+
+        <SC_RepostLine v-if="post.repost">
+          <ShareAltOutlined class="repost-icon" />
+          <span class="repost-text">Репост</span>
+          <template v-if="post.repostAuthor">
+            <span class="repost-from"> от </span>
+            <router-link :to="'/' + (post.repostAuthor.name || post.repostAuthor.address)" class="repost-author">
+              {{ post.repostAuthor.name || post.repostAuthor.address }}
+            </router-link>
+          </template>
+          <span v-else class="repost-record"> записи</span>
+        </SC_RepostLine>
       </SC_PostAuthorInfo>
     </SC_PostAuthor>
 

@@ -83,3 +83,37 @@ export const SC_PostBookmark = styled.div`
 export const SC_AuthorLinkWrap = styled.div`
   display: block;
 `
+
+export const SC_RepostLine = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgb(108, 117, 125);
+
+  .repost-icon {
+    font-size: 12px;
+    color: rgb(108, 117, 125);
+  }
+
+  .repost-text {
+    font-weight: 500;
+  }
+
+  .repost-from {
+    color: rgb(108, 117, 125);
+  }
+
+  .repost-author {
+    color: #00a4ff;
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .repost-record {
+    color: rgb(108, 117, 125);
+  }
+`

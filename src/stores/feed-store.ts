@@ -39,6 +39,8 @@ interface AdaptedPost {
   scoreCnt: number
   scoreSum?: number
   videoUrl?: string
+  repost?: string
+  repostAuthor?: { name: string; address: string }
 }
 
 export const useFeedStore = defineStore('feed', {
@@ -175,7 +177,9 @@ export const useFeedStore = defineStore('feed', {
         ratingStars: ratingStars,
         scoreCnt: post.scoreCnt || 0,
         scoreSum: post.scoreSum,
-        videoUrl: videoUrl
+        videoUrl: videoUrl,
+        repost: post.repost || undefined,
+        repostAuthor: undefined
       }
     },
 

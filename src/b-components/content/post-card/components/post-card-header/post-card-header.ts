@@ -1,6 +1,6 @@
 import { defineComponent, type PropType } from 'vue'
 import Avatar from '@/components/avatar/avatar.vue'
-import { BookOutlined, BookFilled, MessageOutlined } from '@ant-design/icons-vue'
+import { BookOutlined, BookFilled, MessageOutlined, ShareAltOutlined } from '@ant-design/icons-vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { isFavorite, addFavorite, removeFavorite } from '@/db/favorites-db'
 import {
@@ -13,7 +13,8 @@ import {
   SC_PostTime,
   SC_ChatBtn,
   SC_PostBookmark,
-  SC_AuthorLinkWrap
+  SC_AuthorLinkWrap,
+  SC_RepostLine
 } from './styled'
 
 export interface PostAuthor {
@@ -33,6 +34,13 @@ export interface PostHeaderPost {
   hash?: string
   author: PostAuthor
   timestamp: string
+  /** txid оригинальной записи, если это репост */
+  repost?: string
+  /** Автор оригинальной записи (если есть) */
+  repostAuthor?: {
+    name: string
+    address: string
+  }
 }
 
 export const postCardHeaderOptions = defineComponent({
@@ -42,6 +50,7 @@ export const postCardHeaderOptions = defineComponent({
     BookOutlined,
     BookFilled,
     MessageOutlined,
+    ShareAltOutlined,
     SC_PostHeader,
     SC_PostAuthor,
     SC_PostAuthorInfo,
@@ -51,7 +60,8 @@ export const postCardHeaderOptions = defineComponent({
     SC_PostTime,
     SC_ChatBtn,
     SC_PostBookmark,
-    SC_AuthorLinkWrap
+    SC_AuthorLinkWrap,
+    SC_RepostLine
   },
   props: {
     post: {
