@@ -17,30 +17,15 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch } from 'vue'
+import { defineComponent, ref, watch, onMounted } from 'vue'
 import SidebarLeft from '@/b-components/sidebar/sidebar-left/sidebar-left.vue'
 import SidebarRight from '@/b-components/sidebar/sidebar-right/sidebar-right.vue'
 import ContentFeed from '@/b-components/content/content-feed/content-feed.vue'
 import { SC_HomeWork, SC_HomeMainContent } from './home-page.styled'
+import { settingsAPI } from '@/db'
 
-const LS_KEY_RIGHT_SIDEBAR = 'bastyon_right_sidebar_visible'
-const LS_KEY_LEFT_SIDEBAR_COLLAPSED = 'bastyon_left_sidebar_collapsed'
-
-function getInitialRightSidebarVisible(): boolean {
-  if (typeof localStorage === 'undefined') return true
-  const stored = localStorage.getItem(LS_KEY_RIGHT_SIDEBAR)
-  if (stored === 'true') return true
-  if (stored === 'false') return false
-  return true
-}
-
-function getInitialLeftSidebarCollapsed(): boolean {
-  if (typeof localStorage === 'undefined') return false
-  const stored = localStorage.getItem(LS_KEY_LEFT_SIDEBAR_COLLAPSED)
-  if (stored === 'true') return true
-  if (stored === 'false') return false
-  return false
-}
+const SETTING_KEY_RIGHT_SIDEBAR = 'bastyonRightSidebarVisible'
+const SETTING_KEY_LEFT_SIDEBAR_COLLAPSED = 'bastyonLeftSidebarCollapsed'
 
 export default defineComponent({
   name: 'HomeView',
@@ -52,20 +37,55 @@ export default defineComponent({
     SC_HomeMainContent
   },
   setup() {
-    const rightSidebarVisible = ref(getInitialRightSidebarVisible())
-    const leftSidebarCollapsed = ref(getInitialLeftSidebarCollapsed())
+    const rightSidebarVisible = ref(true)
+    const leftSidebarCollapsed = ref(false)
+
+    async function loadSidebarSettings() {
+      try {
+        const [right, left] = await Promise.all([
+          settingsAPI.get(SETTING_KEY_RIGHT_SIDEBAR),
+          settingsAPI.get(SETTING_KEY_LEFT_SIDEBAR_COLLAPSED)
+        ])
+        if (right !== undefined) {
+          rightSidebarVisible.value = right === true
+        } else if (typeof localStorage !== 'undefined') {
+          const stored = localStorage.getItem('bastyon_right_sidebar_visible')
+          if (stored === 'true' || stored === 'false') {
+            const val = stored === 'true'
+            rightSidebarVisible.value = val
+            await settingsAPI.set(SETTING_KEY_RIGHT_SIDEBAR, val)
+            localStorage.removeItem('bastyon_right_sidebar_visible')
+          }
+        }
+        if (left !== undefined) {
+          leftSidebarCollapsed.value = left === true
+        } else if (typeof localStorage !== 'undefined') {
+          const stored = localStorage.getItem('bastyon_left_sidebar_collapsed')
+          if (stored === 'true' || stored === 'false') {
+            const val = stored === 'true'
+            leftSidebarCollapsed.value = val
+            await settingsAPI.set(SETTING_KEY_LEFT_SIDEBAR_COLLAPSED, val)
+            localStorage.removeItem('bastyon_left_sidebar_collapsed')
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load sidebar settings:', e)
+      }
+    }
+
+    onMounted(loadSidebarSettings)
 
     watch(rightSidebarVisible, (visible) => {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(LS_KEY_RIGHT_SIDEBAR, String(visible))
-      }
-    }, { immediate: true })
+      settingsAPI.set(SETTING_KEY_RIGHT_SIDEBAR, visible).catch((e) =>
+        console.error('Failed to save right sidebar setting:', e)
+      )
+    }, { immediate: false })
 
     watch(leftSidebarCollapsed, (collapsed) => {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(LS_KEY_LEFT_SIDEBAR_COLLAPSED, String(collapsed))
-      }
-    }, { immediate: true })
+      settingsAPI.set(SETTING_KEY_LEFT_SIDEBAR_COLLAPSED, collapsed).catch((e) =>
+        console.error('Failed to save left sidebar setting:', e)
+      )
+    }, { immediate: false })
 
     return { rightSidebarVisible, leftSidebarCollapsed }
   }

@@ -1,6 +1,60 @@
 <template>
-  <SC_CommentsPreview v-if="hasUserComments || allComments">
+  <SC_CommentsPreview>
     <h3>Комментарии ({{ totalCommentsCount }})</h3>
+
+    <!-- Форма первого комментария (пост без комментариев) -->
+    <template v-if="totalCommentsCount === 0">
+      <SC_ReplyPanel v-if="isReplyPanelOpen('root')">
+        <div v-if="currentUserAvatarUrl" class="reply-avatar">
+          <img :src="currentUserAvatarUrl" alt="" />
+        </div>
+        <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
+        <SC_ReplyInputWrap>
+          <SC_ReplyTextarea
+            :key="replyPanelKey"
+            ref="replyTextareaRef"
+            v-model="replyDraft"
+            placeholder="Введите комментарий... (введите @ чтобы упомянуть пользователя)"
+            rows="2"
+            @input="handleReplyInput"
+            @keydown="handleReplyKeydown"
+          />
+          <SC_MentionList
+            ref="mentionListRef"
+            v-if="showMentionList && filteredMentionUsers.length > 0"
+          >
+            <SC_MentionItem
+              v-for="(u, idx) in filteredMentionUsers"
+              :key="u.address"
+              type="button"
+              :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
+              @click.stop.prevent="selectMentionUser(u)"
+            >
+              {{ u.name }}
+            </SC_MentionItem>
+          </SC_MentionList>
+        </SC_ReplyInputWrap>
+        <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
+          <CloseOutlined />
+        </SC_ReplyCancelBtn>
+        <SC_ReplySendBtn
+          type="button"
+          title="Отправить"
+          :disabled="!(replyDraft || '').trim() || replySubmitting"
+          @click.stop.prevent="sendReply"
+        >
+          <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+          <SendOutlined v-else />
+        </SC_ReplySendBtn>
+      </SC_ReplyPanel>
+      <SC_ShowCommentsBtn
+        v-else
+        type="button"
+        @click.stop.prevent="openReplyToPost"
+      >
+        Написать комментарий
+      </SC_ShowCommentsBtn>
+    </template>
 
     <!-- Компактный вид: комментарии ещё не загружены -->
     <template v-if="!allComments">

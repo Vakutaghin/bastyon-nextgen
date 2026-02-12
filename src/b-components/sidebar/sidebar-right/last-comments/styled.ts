@@ -91,6 +91,9 @@ export const SC_LastCommentMessage = styled.span`
 `
 
 export const SC_LastCommentsLoading = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 16px 0;
   color: rgb(134, 142, 150);
   font-size: 13px;

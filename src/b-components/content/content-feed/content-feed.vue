@@ -31,8 +31,8 @@
             :title='rightSidebarVisible ? "Скрыть боковую панель" : "Показать боковую панель"'
             @click='$emit("toggle-right-sidebar")'
           >
-            <MenuFoldOutlined v-if='rightSidebarVisible' :style='{ fontSize: "16px" }' />
-            <MenuUnfoldOutlined v-else :style='{ fontSize: "16px" }' />
+            <MenuUnfoldOutlined v-if='rightSidebarVisible' :style='{ fontSize: "16px" }' />
+            <MenuFoldOutlined v-else :style='{ fontSize: "16px" }' />
           </Button>
         </SC_SidebarToggleWrap>
       </SC_FeedHeaderActions>

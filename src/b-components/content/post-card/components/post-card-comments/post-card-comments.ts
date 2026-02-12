@@ -260,7 +260,7 @@ export const postCardCommentsOptions = defineComponent({
       required: true
     }
   },
-  emits: ['collapsed', 'replyToComment'],
+  emits: ['collapsed', 'replyToComment', 'comment'],
   data() {
     return {
       allComments: null as GetComment[] | null,
@@ -585,6 +585,15 @@ export const postCardCommentsOptions = defineComponent({
       this.repliesExpanded = { ...this.repliesExpanded, [id]: true }
       await this.loadReplies(id)
     },
+    /** Открыть форму комментария к посту (первый комментарий, без ответа на кого-либо) */
+    openReplyToPost(): void {
+      this.replyTarget = { commentId: 'root', parentId: '', prefix: '' }
+      this.replyDraft = ''
+      this.showCancelReplyModal = false
+      this.showMentionList = false
+      this.mentionQuery = ''
+      this.mentionHighlightIndex = 0
+    },
     /** Ответ на последний комментарий в компактном виде (пустое поле) */
     onLastCommentReply(): void {
       const id = this.post.lastComment?.id
@@ -808,15 +817,19 @@ export const postCardCommentsOptions = defineComponent({
       const text = (this.replyDraft || '').trim()
       if (!text || !this.replyTarget || this.replySubmitting) return
       this.replySubmitting = true
+      const isRootComment = this.replyTarget.commentId === 'root'
+      const parentId = isRootComment ? '' : this.replyTarget.parentId
+      const answerId = isRootComment ? '' : this.replyTarget.commentId
       try {
         await sendComment(
           this.postId,
-          this.replyTarget.parentId,
-          this.replyTarget.commentId,
+          parentId,
+          answerId,
           text
         )
         appToast.success('Комментарий отправлен')
         this.closeReply()
+        this.$emit('comment')
         if (this.allComments) {
           await this.loadAllCommentsInternal(false)
         }

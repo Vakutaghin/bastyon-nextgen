@@ -3,95 +3,137 @@
  *
  * # getmissedinfo - получение пропущенной информации
  *
- * ## Когда использовать getmissedinfo:
+ * Ответ приходит в обёртке: { result, data, node, time }.
+ * data — массив, где:
+ * - data[0] — сводка по блоку (block, cntposts, contentsLang);
+ * - data[1], data[2], ... — события/уведомления (msg: "event", mesType, txid, time и т.д.).
  *
- * ✅ **Используйте для:**
- * - Получения информации о пропущенных блоках
- * - Синхронизации контента после перерыва в работе
- * - Получения статистики пропущенного контента
- * - Определения количества новых постов за период
- *
- *
- * ## Структура данных:
- *
- * **getmissedinfo** возвращает массив информации о пропущенных блоках:
- * - `block` - номер блока
- * - `cntposts` - количество постов в блоке
- * - `contentsLang` - контент по языкам и типам:
- *   * Ключ - тип контента (например, "share")
- *   * Значение - объект с языками и количеством (например, {"ru": 1})
- *
- * ## Особенности:
- *
- * 1. **Структура contentsLang**:
- *    - Вложенная структура: тип контента -> язык -> количество
- *    - Позволяет получить статистику по типам и языкам контента
- *
- * 2. **Использование**:
- *    - Используется для синхронизации после перерыва
- *    - Помогает определить, сколько нового контента появилось
- *
- * ## В старом приложении:
- *
- * - Вызывается через соответствующий RPC метод
- * - Используется для синхронизации контента
+ * В старом приложении: d[0] используется как block (добавляют msg: 'newblocks'),
+ * d.slice(1) — как notifications, сортируют по -nblock и передают в messageHandler.
  */
 
 import type { BaseRpcResponse, StandardRpcTime } from './common'
 
 /**
- * Контент по языкам для определенного типа
+ * Контент по языкам для определённого типа
  *
- * Ключ - код языка (например, "ru", "en")
- * Значение - количество постов этого типа и языка
+ * Ключ — код языка (ru, en и т.д.)
+ * Значение — количество постов
  */
-export type ContentsByLanguage = Record<string, number>
+export type GetMissedInfoContentsByLanguage = Record<string, number>
 
 /**
  * Контент по типам и языкам
  *
- * Ключ - тип контента (например, "share", "video", "audio", "post")
- * Значение - объект с языками и количеством постов
+ * Ключ — тип контента (share, video, audio, post)
+ * Значение — объект язык -> количество
  */
-export type ContentsByType = Record<string, ContentsByLanguage>
+export type GetMissedInfoContentsByType = Record<string, GetMissedInfoContentsByLanguage>
 
 /**
- * Информация о пропущенном блоке
+ * Первый элемент data — сводка по блоку
  *
- * Содержит статистику контента в конкретном блоке.
+ * Содержит статистику контента в блоке (количество постов, разбивка по типам и языкам).
  */
-export interface GetMissedInfoItem {
-  /**
-   * Номер блока (block)
-   * Высота блока в блокчейне
-   * Используется для идентификации и синхронизации
-   */
+export interface GetMissedInfoBlockItem {
+  /** Номер блока (высота в блокчейне) */
   block: number
-  /**
-   * Количество постов (cntposts)
-   * Общее количество постов в этом блоке
-   */
+  /** Количество постов в блоке */
   cntposts: number
-  /**
-   * Контент по языкам и типам (contentsLang)
-   * Вложенная структура: тип контента -> язык -> количество
-   * Пример: {"share": {"ru": 1}, "video": {"en": 2}}
-   *
-   * Позволяет получить детальную статистику:
-   * - По типам контента (share, video, audio, post)
-   * - По языкам (ru, en и т.д.)
-   */
-  contentsLang: ContentsByType
+  /** Контент по типам и языкам (например, share: { ru: 14, en: 1 }, video: { ru: 5 }) */
+  contentsLang: GetMissedInfoContentsByType
 }
 
 /**
- * Полный ответ RPC метода getmissedinfo
+ * Типы событий в пропущенной информации (mesType)
  *
- * Используется для получения информации о пропущенных блоках и контенте.
- * Не требует авторизации.
- *
- * В старом приложении:
- * - Используется для синхронизации контента после перерыва
- * - Помогает определить количество нового контента
+ * По использованию в старом приложении (satolist.js):
+ * - upvoteShare — оценка поста
+ * - subscribe / unsubscribe / subscribePrivate — подписка
+ * - answer — ответ на комментарий
+ * - post — пост
+ * - userInfo — смена инфо пользователя
  */
-export interface GetMissedInfoResponse extends BaseRpcResponse<GetMissedInfoItem[], StandardRpcTime> {}
+export type GetMissedInfoEventMesType =
+  | 'upvoteShare'
+  | 'subscribe'
+  | 'unsubscribe'
+  | 'subscribePrivate'
+  | 'answer'
+  | 'post'
+  | 'userInfo'
+  | 'comment'
+  | 'repost'
+  | string
+
+/**
+ * Элемент data[1..] — событие/уведомление
+ *
+ * Базовые поля присутствуют у всех событий; остальные зависят от mesType.
+ * В старом приложении обрабатываются: upvoteShare (posttxid, upvoteVal), subscribe (addrFrom),
+ * answer (comment, share, user), post (comment, share, user), userInfo.
+ */
+export interface GetMissedInfoEventItem {
+  /** Адрес получателя (кому предназначено уведомление) */
+  addr: string
+  /** Признак события (обычно "event") */
+  msg?: 'event'
+  /** Тип события (upvoteShare, subscribe, answer и т.д.) */
+  mesType: GetMissedInfoEventMesType
+  /** Адрес отправителя (кто совершил действие) */
+  addrFrom?: string
+  /** ID транзакции события */
+  txid: string
+  /** Unix timestamp (секунды) */
+  time: number
+  /** Номер блока, в котором событие */
+  nblock: number
+
+  /** ID поста (для upvoteShare и др.) */
+  posttxid?: string
+  /** Значение оценки (для upvoteShare) */
+  upvoteVal?: number
+
+  /** Связанный пост/контент (объект, при наличии) */
+  share?: unknown
+  /** Связанный пользователь (объект, при наличии) */
+  user?: unknown
+  /** Связанный комментарий (объект, при наличии) */
+  comment?: unknown
+
+  /** Дополнительные поля в зависимости от mesType */
+  [key: string]: unknown
+}
+
+/**
+ * Элемент массива data — либо сводка по блоку, либо событие
+ *
+ * Различение: у блока есть contentsLang и cntposts, у события — mesType и msg.
+ */
+export type GetMissedInfoDataItem = GetMissedInfoBlockItem | GetMissedInfoEventItem
+
+/**
+ * Проверка, что элемент — сводка по блоку (а не событие)
+ */
+export function isGetMissedInfoBlockItem(
+  item: GetMissedInfoDataItem
+): item is GetMissedInfoBlockItem {
+  return 'contentsLang' in item && 'cntposts' in item
+}
+
+/**
+ * Проверка, что элемент — событие/уведомление
+ */
+export function isGetMissedInfoEventItem(
+  item: GetMissedInfoDataItem
+): item is GetMissedInfoEventItem {
+  return 'mesType' in item && 'txid' in item
+}
+
+/**
+ * Ответ getmissedinfo
+ *
+ * data[0] — блок (GetMissedInfoBlockItem)
+ * data[1..] — события (GetMissedInfoEventItem[])
+ */
+export interface GetMissedInfoResponse extends BaseRpcResponse<GetMissedInfoDataItem[], StandardRpcTime> {}

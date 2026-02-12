@@ -1,4 +1,6 @@
 import { defineComponent, computed } from 'vue'
+import { LoadingOutlined } from '@ant-design/icons-vue'
+import Spin from '@/components/spin/spin.vue'
 import { useLastComments } from '@/composables/use-comments-queries'
 import { useUserProfiles } from '@/composables/use-user-queries'
 import { useModalStore } from '@/stores/modal-store'
@@ -65,6 +67,8 @@ function getDisplayName(profile: UserProfile | undefined, address: string): stri
 export const lastCommentsOptions = defineComponent({
   name: 'LastComments',
   components: {
+    LoadingOutlined,
+    Spin,
     SC_LastCommentsRoot,
     SC_LastCommentsCaption,
     SC_LastCommentsList,

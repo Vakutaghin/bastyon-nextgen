@@ -1,7 +1,13 @@
 <template>
   <SC_LastCommentsRoot>
     <SC_LastCommentsCaption>Последние комментарии</SC_LastCommentsCaption>
-    <SC_LastCommentsLoading v-if="isLoading">Загрузка…</SC_LastCommentsLoading>
+    <SC_LastCommentsLoading v-if="isLoading">
+      <Spin size="small">
+        <template #indicator>
+          <LoadingOutlined :style="{ fontSize: '24px', color: 'rgb(0, 123, 255)' }" spin />
+        </template>
+      </Spin>
+    </SC_LastCommentsLoading>
     <SC_LastCommentsEmpty v-else-if="!displayComments.length">Нет комментариев</SC_LastCommentsEmpty>
     <SC_LastCommentsList v-else>
       <SC_LastCommentItem

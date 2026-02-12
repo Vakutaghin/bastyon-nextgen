@@ -7,6 +7,7 @@
 
       <SC_Right v-hide-zero-width>
         <HeaderEvents />
+        <HeaderNotifications />
         <SC_MessengerWrapper v-if="showMessengerIcon" @click="toggleMessenger">
           <CloseOutlined v-if="messengerStore.isFullScreen" :style="{ fontSize: '20px' }" />
           <MessageOutlined v-else :style="{ fontSize: '20px' }" />

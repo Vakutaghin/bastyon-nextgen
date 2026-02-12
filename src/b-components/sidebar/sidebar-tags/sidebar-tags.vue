@@ -15,7 +15,14 @@
       </SC_TagsToggle>
     </SC_TagsHeader>
 
-    <SC_TagsList v-if='!isLoading && !error && visibleTags.length > 0'>
+    <SC_TagsLoading v-if='isLoading'>
+      <Spin size='small'>
+        <template #indicator>
+          <LoadingOutlined :style="{ fontSize: '24px', color: 'rgb(0, 123, 255)' }" spin />
+        </template>
+      </Spin>
+    </SC_TagsLoading>
+    <SC_TagsList v-else-if='!error && visibleTags.length > 0'>
       <SC_TagsItem
         v-for='tag in visibleTags'
         :key='tag.id'

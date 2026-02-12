@@ -63,6 +63,15 @@ export const SC_TagsToggle = styled.button`
   }
 `
 
+export const SC_TagsLoading = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  padding: 16px 0;
+  color: rgb(108, 117, 125);
+`
+
 export const SC_TagsList = styled.div`
   display: flex;
   flex-direction: column;

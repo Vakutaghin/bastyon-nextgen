@@ -2,7 +2,8 @@ import { defineComponent, computed, ref } from 'vue'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import { useFiltersStore } from '@/stores/filters-store'
 import type { GetTagsResponse } from '@/types/rpc-responses/get-tags'
-import { CaretUpOutlined, CaretDownOutlined, StopOutlined } from '@ant-design/icons-vue'
+import { CaretUpOutlined, CaretDownOutlined, StopOutlined, LoadingOutlined } from '@ant-design/icons-vue'
+import Spin from '@/components/spin/spin.vue'
 import {
   SC_Tags,
   SC_TagsHeader,
@@ -10,6 +11,7 @@ import {
   SC_TagsReset,
   SC_TagsTitle,
   SC_TagsToggle,
+  SC_TagsLoading,
   SC_TagsList,
   SC_TagsItem,
   SC_TagsName,
@@ -22,12 +24,15 @@ export const sidebarTagsOptions = defineComponent({
     CaretUpOutlined,
     CaretDownOutlined,
     StopOutlined,
+    LoadingOutlined,
+    Spin,
     SC_Tags,
     SC_TagsHeader,
     SC_TagsControls,
     SC_TagsReset,
     SC_TagsTitle,
     SC_TagsToggle,
+    SC_TagsLoading,
     SC_TagsList,
     SC_TagsItem,
     SC_TagsName,
