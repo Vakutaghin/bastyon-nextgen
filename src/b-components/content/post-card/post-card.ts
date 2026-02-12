@@ -171,10 +171,15 @@ export const postCardOptions = defineComponent({
       return this.decodeUrlEncoded(this.post.title)
     },
     /**
-     * Ссылки на YouTube embed для отображения под контентом поста
+     * Ссылки на YouTube embed для отображения под контентом поста.
+     * Не показываем YouTube-эмбеды, если пост уже содержит внутриплатформенное видео.
      */
     youtubeEmbedUrls(): string[] {
       if (!this.post) return []
+      const hasInPlatformVideo =
+        (this.post.type === 'video' || this.post.type === 'audio') &&
+        !!this.post.videoUrl
+      if (hasInPlatformVideo) return []
       const fromContent = getYoutubeEmbedUrls(this.post.content)
       const fromPreview = getYoutubeEmbedUrls(this.post.preview)
       const seen = new Set(fromContent)
