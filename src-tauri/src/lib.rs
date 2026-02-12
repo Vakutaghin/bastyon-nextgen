@@ -466,18 +466,31 @@ pub fn run() {
     .plugin(
       tauri_plugin_global_shortcut::Builder::new()
         .with_handler(|app, shortcut, event| {
-          // Создаем шорткат для проверки
           #[cfg(target_os = "macos")]
           let cmd_r_shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::KeyR);
           #[cfg(not(target_os = "macos"))]
           let cmd_r_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyR);
 
-          if shortcut == &cmd_r_shortcut && event.state() == ShortcutState::Pressed {
-            // Получаем главное окно и перезагружаем страницу
-            if let Some(window) = app.get_webview_window("main") {
-              let _ = window.eval("window.location.reload()");
-            } else if let Some(window) = app.webview_windows().values().next() {
-              let _ = window.eval("window.location.reload()");
+          let f12_shortcut = Shortcut::new(None, Code::F12);
+          let ctrl_shift_i = Shortcut::new(
+            Some(Modifiers::CONTROL | Modifiers::SHIFT),
+            Code::KeyI,
+          );
+
+          if event.state() == ShortcutState::Pressed {
+            if shortcut == &cmd_r_shortcut {
+              if let Some(window) = app.get_webview_window("main") {
+                let _ = window.eval("window.location.reload()");
+              } else if let Some(window) = app.webview_windows().values().next() {
+                let _ = window.eval("window.location.reload()");
+              }
+            } else if shortcut == &f12_shortcut || shortcut == &ctrl_shift_i {
+              // F12 или Ctrl+Shift+I — открыть DevTools (работает и в release для отладки)
+              if let Some(window) = app.get_webview_window("main") {
+                window.open_devtools();
+              } else if let Some(window) = app.webview_windows().values().next() {
+                window.open_devtools();
+              }
             }
           }
         })
@@ -541,6 +554,16 @@ pub fn run() {
             .build(),
         )?;
       }
+
+      // F12 и Ctrl+Shift+I — открыть DevTools (и в release, чтобы отлаживать пустой экран и т.п.)
+      let f12 = Shortcut::new(None, Code::F12);
+      let ctrl_shift_i = Shortcut::new(
+        Some(Modifiers::CONTROL | Modifiers::SHIFT),
+        Code::KeyI,
+      );
+      let _ = app.handle().global_shortcut().register(f12);
+      let _ = app.handle().global_shortcut().register(ctrl_shift_i);
+
       // Флаг для фронтенда (кнопка загрузки видео и др.) — и в debug, и в release
       let app_handle = app.handle().clone();
       std::thread::spawn(move || {
