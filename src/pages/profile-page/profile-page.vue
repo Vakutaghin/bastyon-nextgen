@@ -23,6 +23,7 @@
             <ProfileFeed
               :address="userAddress"
               :profile="profile"
+              :lang="''"
               @profile-loaded="onProfileLoaded"
             />
           </div>

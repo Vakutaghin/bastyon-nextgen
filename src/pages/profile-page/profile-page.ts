@@ -14,6 +14,7 @@ import ProfileFeed from '@/b-components/profile/profile-feed/profile-feed.vue'
 import Spin from '@/components/spin/spin.vue'
 import { LoadingOutlined } from '@ant-design/icons-vue'
 import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
+import { useAuthStore } from '@/blockchain/store/auth-store'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type { GetUserAddressResponse } from '@/types/rpc-responses/get-user-address'
 
@@ -34,6 +35,7 @@ export default defineComponent({
   },
   setup() {
     const route = useRoute()
+    const authStore = useAuthStore()
     const userAddress = ref<string>('')
     const profile = ref<UserProfile | null>(null)
     const loading = ref(true)
@@ -66,25 +68,32 @@ export default defineComponent({
 
         userAddress.value = address
 
-        // Теперь получаем профиль по адресу
-        const profileResponse = await getByPRCWithAuth({
-          method: 'getuserprofile',
-          parameters: [[address]],
-          options: { auth: false }
-        }) as any
-
-        if (profileResponse && profileResponse.data && profileResponse.data.length > 0) {
-          profile.value = profileResponse.data[0]
-        } else if (profileResponse && Array.isArray(profileResponse) && profileResponse.length > 0) {
-           // Иногда возвращает массив напрямую (в старых версиях/legacy)
-           profile.value = profileResponse[0]
+        // Свой профиль: используем данные из auth-store, getuserprofile не вызываем
+        const myAddress = authStore.getUserAddress
+        const myProfile = authStore.getUserProfile
+        if (myAddress && myProfile && address === myAddress) {
+          profile.value = { ...myProfile } as UserProfile
         } else {
-          // Если профиль не найден, создаем заглушку с адресом
-          profile.value = {
-            address: address,
-            name: identifier,
-            hash: '',
-            id: 0
+          // Теперь получаем профиль по адресу
+          const profileResponse = await getByPRCWithAuth({
+            method: 'getuserprofile',
+            parameters: [[address]],
+            options: { auth: false }
+          }) as any
+
+          if (profileResponse && profileResponse.data && profileResponse.data.length > 0) {
+            profile.value = profileResponse.data[0]
+          } else if (profileResponse && Array.isArray(profileResponse) && profileResponse.length > 0) {
+             // Иногда возвращает массив напрямую (в старых версиях/legacy)
+             profile.value = profileResponse[0]
+          } else {
+            // Если профиль не найден, создаем заглушку с адресом
+            profile.value = {
+              address: address,
+              name: identifier,
+              hash: '',
+              id: 0
+            }
           }
         }
 

@@ -36,6 +36,11 @@ export default defineComponent({
     profile: {
       type: Object as PropType<UserProfile | null>,
       default: null
+    },
+    /** Язык контента для getprofilefeed: '' = все языки, 'ru'/'en' и т.д. Если не задан — используется 'ru'. */
+    lang: {
+      type: String,
+      default: undefined
     }
   },
   emits: ['profile-loaded'],
@@ -49,7 +54,8 @@ export default defineComponent({
       hasMore,
       loadMoreTrigger
     } = useProfileFeed({
-      address: props.address
+      address: props.address,
+      ...(props.lang !== undefined && { lang: props.lang })
     })
 
     // Если профиль загрузился через ленту, сообщаем об этом наверх
