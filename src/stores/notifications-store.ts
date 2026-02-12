@@ -47,6 +47,7 @@ function mapMissedEventToNotification(n: GetMissedInfoEventItem | Record<string,
     repost: 'repost'
   }
   const safeType = typeMap[mesType] ?? (allowedTypes.includes(mesType as NotificationItem['type']) ? (mesType as NotificationItem['type']) : 'other')
+  const upvoteVal = n.upvoteVal != null ? Number(n.upvoteVal) : undefined
   return {
     id: String(id),
     type: safeType,
@@ -56,7 +57,9 @@ function mapMissedEventToNotification(n: GetMissedInfoEventItem | Record<string,
     link,
     seen: false,
     from: (n.addrFrom ?? (n.account as Record<string, unknown>)?.name) as string | undefined,
-    shareId: (n.posttxid ?? n.rootTxHash ?? n.postHash) as string | undefined
+    shareId: (n.posttxid ?? n.rootTxHash ?? n.postHash) as string | undefined,
+    mesType,
+    upvoteVal
   }
 }
 
@@ -84,6 +87,10 @@ export interface NotificationItem {
   from?: string
   /** Optional: related content id */
   shareId?: string
+  /** Raw mesType from API (for filter mapping: comment, answer, upvoteShare, subscribe, ...) */
+  mesType?: string
+  /** For upvoteShare: rating value (positive = upvote, negative = downvote) */
+  upvoteVal?: number
 }
 
 export const useNotificationsStore = defineStore('notifications', {
@@ -93,7 +100,9 @@ export const useNotificationsStore = defineStore('notifications', {
     inited: false,
     lastBlock: 0 as number,
     /** Адрес, для которого загружали — при смене пользователя сбрасываем inited */
-    initedForAddress: null as string | null
+    initedForAddress: null as string | null,
+    /** Колбэк при появлении новых уведомлений (тосты/звук). Вызывается после обновления items при опросе getmissedinfo. */
+    onNewNotifications: null as ((items: NotificationItem[]) => void) | null
   }),
   getters: {
     list(): NotificationItem[] {
@@ -207,7 +216,16 @@ export const useNotificationsStore = defineStore('notifications', {
           const mapped = rawEvents
             .map((n) => mapMissedEventToNotification(n))
             .filter((n): n is NotificationItem => n != null)
+          const oldIds = new Set(this.items.map((i) => i.id))
+          const newItems = mapped.filter((n) => !oldIds.has(n.id))
           this.items = mapped
+          if (opts?.forceRefresh && newItems.length > 0 && this.onNewNotifications) {
+            try {
+              this.onNewNotifications(newItems)
+            } catch (e) {
+              console.error('[notifications] onNewNotifications callback failed', e)
+            }
+          }
           lastError = undefined
           break
         } catch (e) {
@@ -228,11 +246,15 @@ export const useNotificationsStore = defineStore('notifications', {
       }
       this.loading = false
     },
+    setOnNewNotifications(cb: ((items: NotificationItem[]) => void) | null) {
+      this.onNewNotifications = cb
+    },
     reset() {
       this.items = []
       this.inited = false
       this.initedForAddress = null
       this.lastBlock = 0
+      this.onNewNotifications = null
     },
     setItems(items: NotificationItem[]) {
       this.items = items

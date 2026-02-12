@@ -43,7 +43,8 @@ import { initDatabase } from '@/db'
 import { queryClient } from './query-client'
 import { useAuthStore } from '@/blockchain'
 import { useMessengerStore } from '@/b-components/messenger/store'
-import { useNotificationsStore } from '@/stores'
+import { useNotificationsStore, useNotificationSettingsStore } from '@/stores'
+import { showToastsForNewNotifications } from '@/b-components/header/header-notifications/notification-toasts'
 
 // Подавляем предупреждение о theme injection в dev-режиме
 // Это известная проблема в ant-design-vue v4, которая не влияет на функциональность
@@ -77,6 +78,7 @@ app.use(router)
 const authStore = useAuthStore(pinia)
 const messengerStore = useMessengerStore(pinia)
 const notificationsStore = useNotificationsStore(pinia)
+notificationsStore.setOnNewNotifications((items) => showToastsForNewNotifications(pinia, items))
 
 const NOTIFICATIONS_POLL_INTERVAL_MS = 30 * 1000
 let notificationsPollTimerId = null
@@ -89,6 +91,7 @@ watch(
       notificationsPollTimerId = null
     }
     if (isAuthenticated) {
+      useNotificationSettingsStore(pinia).load()
       notificationsStore.init()
       notificationsPollTimerId = setInterval(() => {
         notificationsStore.init({ forceRefresh: true })
