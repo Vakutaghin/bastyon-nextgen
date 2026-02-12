@@ -209,7 +209,7 @@ export const useMessengerStore = defineStore('messenger', () => {
       const mediaId = match[2]
       const base = matrixService.getBaseUrl()
       const baseIsLocal = !/^https?:\/\//.test(base) || /localhost|127\.0\.0\.1/.test(base)
-      const host = baseIsLocal ? 'https://matrix.bastyon.com' : base
+      const host = baseIsLocal ? 'https://matrix.pocketnet.app' : base
       return `${host}/_matrix/media/r0/thumbnail/${server}/${mediaId}?width=${size}&height=${size}&method=crop`
     } catch (_e) {
       return undefined
@@ -1619,7 +1619,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     await openMessenger()
     await initMatrix()
     const hex = matrixService.addressToHex(address).toLowerCase()
-    let host = 'matrix.bastyon.com'
+    let host = 'matrix.pocketnet.app'
     try {
       const base = matrixService.getBaseUrl()
       const parsed = new URL(base.startsWith('http') ? base : window.location.origin)

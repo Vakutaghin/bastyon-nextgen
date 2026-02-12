@@ -1,3 +1,4 @@
+console.log('[main] Boot start')
 // Полифилл для Buffer в браузере (нужен для bip39 и других библиотек)
 import { Buffer } from 'buffer'
 if (typeof globalThis !== 'undefined') {
@@ -45,6 +46,8 @@ import { useAuthStore } from '@/blockchain'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useNotificationsStore, useNotificationSettingsStore } from '@/stores'
 import { showToastsForNewNotifications } from '@/b-components/header/header-notifications/notification-toasts'
+
+console.log('[main] Imports done')
 
 // Подавляем предупреждение о theme injection в dev-режиме
 // Это известная проблема в ant-design-vue v4, которая не влияет на функциональность
@@ -111,21 +114,39 @@ watch(
   { immediate: true }
 )
 
-// Инициализируем IndexedDB перед монтированием приложения
+// Инициализируем IndexedDB перед монтированием приложения.
+// В Tauri/WebView IndexedDB может зависнуть — таймаут гарантирует монтирование и возможность отладки.
+const MOUNT_TIMEOUT_MS = 5000
 let mounted = false
 
-initDatabase()
-  .then(() => {
-    if (!mounted) {
-      mounted = true
+function doMount() {
+  if (!mounted) {
+    mounted = true
+    console.log('[main] Mounting app')
+    try {
       app.mount('#app')
+      console.log('[main] App mounted')
+    } catch (e) {
+      console.error('[main] Mount failed:', e)
     }
+  }
+}
+
+console.log('[main] initDatabase start')
+const initPromise = initDatabase()
+  .then(() => {
+    console.log('[main] initDatabase done')
+    doMount()
   })
   .catch((error) => {
-    console.error('Failed to initialize application:', error)
-    // Монтируем приложение даже при ошибке инициализации БД
-    if (!mounted) {
-      mounted = true
-      app.mount('#app')
-    }
+    console.error('[main] initDatabase failed:', error)
+    doMount()
   })
+
+// Если IndexedDB завис (например в Tauri production), монтируем по таймауту
+setTimeout(() => {
+  if (!mounted) {
+    console.warn('[main] initDatabase timeout, mounting anyway')
+    doMount()
+  }
+}, MOUNT_TIMEOUT_MS)

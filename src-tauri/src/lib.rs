@@ -569,9 +569,9 @@ pub fn run() {
       std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(2));
         if let Some(w) = app_handle.get_webview_window("main") {
-          let _ = w.eval("window.__TAURI_APP_READY__ = true;");
+          let _ = w.eval("console.log('[Tauri] URL:', location.href, '| HTML length:', document.documentElement.outerHTML.length); window.__TAURI_APP_READY__ = true;");
         } else if let Some(w) = app_handle.webview_windows().values().next() {
-          let _ = w.eval("window.__TAURI_APP_READY__ = true;");
+          let _ = w.eval("console.log('[Tauri] URL:', location.href, '| HTML length:', document.documentElement.outerHTML.length); window.__TAURI_APP_READY__ = true;");
         }
       });
       Ok(())

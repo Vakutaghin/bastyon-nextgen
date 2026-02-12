@@ -4,13 +4,18 @@ import CryptoJS from 'crypto-js'
 import type { KeyPair } from '@/blockchain/types/keys'
 import { isValidAddress } from '@/blockchain/core/addresses'
 import { Buffer } from 'buffer'
+import servers from '@/servers.json'
+
+const getDefaultMatrixBaseUrl = (): string => {
+  if (import.meta.env.DEV) return window.location.origin
+  const host = servers.servers?.production?.matrix ?? 'matrix.pocketnet.app'
+  return host.startsWith('http') ? host : `https://${host}`
+}
 
 export class MatrixService {
   private client: any = null
-  // In development (local), we use relative path to use Vite proxy
-  // In production, we use the full URL or whatever is appropriate
-  // WARNING: If this is relative (window.location.origin), fetch() might be hitting index.html if proxy is not matching
-  private baseUrl: string = import.meta.env.DEV ? window.location.origin : 'https://matrix.bastyon.com'
+  // In development we use Vite proxy (relative); in production — URL из servers.json (matrix.pocketnet.app)
+  private baseUrl: string = getDefaultMatrixBaseUrl()
   private eventQueue: Array<{ event: string, listener: (...args: any[]) => void }> = []
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null
   private keepAliveIntervalMs = 60000

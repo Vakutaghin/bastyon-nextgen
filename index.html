@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>bst</title>
     <script>
+      console.log('[index.html] Inline script run, location:', location.href);
+      window.addEventListener('error', function(e) { console.error('[window.error]', e.message, e.filename, e.lineno, e.colno, e.error); });
+      window.addEventListener('unhandledrejection', function(e) { console.error('[unhandledrejection]', e.reason); });
       // Полифилл для process (нужен для btc17.js)
       if (typeof process === 'undefined') {
         window.process = {
