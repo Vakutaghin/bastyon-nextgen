@@ -1,6 +1,6 @@
 import { defineComponent, computed, ref, onMounted, watch } from 'vue'
-import { Dropdown, Badge } from 'ant-design-vue'
-import { BellOutlined } from '@ant-design/icons-vue'
+import { Dropdown, Badge, Menu } from 'ant-design-vue'
+import { BellOutlined, EllipsisOutlined } from '@ant-design/icons-vue'
 import { SC_NotificationsWrapper } from './styled'
 import { useAuthStore, useNotificationsStore } from '@/stores'
 import type { NotificationItem } from '@/stores/notifications-store'
@@ -24,7 +24,9 @@ export const headerNotificationsOptions = defineComponent({
   components: {
     Dropdown,
     Badge,
+    Menu,
     BellOutlined,
+    EllipsisOutlined,
     SC_NotificationsWrapper
   },
   setup() {
@@ -50,11 +52,14 @@ export const headerNotificationsOptions = defineComponent({
     const unreadCount = computed(() => notificationsStore.unreadCount)
     const list = computed(() => notificationsStore.list.slice(0, 20))
     const isLoading = computed(() => notificationsStore.loading)
+    const lastBlock = computed(() => notificationsStore.lastBlock)
 
     const formatTime = (n: NotificationItem) => formatNotificationTime(n.time)
 
+    /** Прочитано = ниже указателя блока (показано после открытия выпадашки) */
+    const isSeen = (item: NotificationItem) => (item.nblock ?? 0) <= lastBlock.value
+
     const onItemClick = (item: NotificationItem) => {
-      notificationsStore.markSeen(item.id)
       if (item.link) {
         visible.value = false
         window.location.href = item.link
@@ -64,11 +69,19 @@ export const headerNotificationsOptions = defineComponent({
     const onOpenChange = (open: boolean) => {
       visible.value = open
       if (open) {
-        notificationsStore.markAllSeenAndPersistBlock()
+        notificationsStore.persistReadPointer()
         if (notificationsStore.list.length === 0 && !notificationsStore.loading) {
           notificationsStore.init({ forceRefresh: true })
         }
       }
+    }
+
+    const onItemMenuClick = ({ key }: { key: string }) => {
+      notificationsStore.hideNotification(key)
+    }
+
+    const onClearAll = () => {
+      notificationsStore.hideAllNotifications()
     }
 
     return {
@@ -78,9 +91,13 @@ export const headerNotificationsOptions = defineComponent({
       unreadCount,
       list,
       isLoading,
+      lastBlock,
       formatTime,
+      isSeen,
       onItemClick,
-      onOpenChange
+      onOpenChange,
+      onItemMenuClick,
+      onClearAll
     }
   },
   computed: {

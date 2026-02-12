@@ -1,14 +1,17 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
 import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
-import { settingsAPI } from '@/db'
+import { settingsAPI, notificationsAPI } from '@/db'
 import type { GetMissedInfoParameters } from '@/types/rpc-requests/get-missed-info'
 import type { GetMissedInfoBlockItem, GetMissedInfoEventItem } from '@/types/rpc-responses/get-missed-info'
 
 const NOTIFICATIONS_LAST_BLOCK_KEY = 'notificationsLastBlock'
+const NOTIFICATIONS_HIDDEN_IDS_KEY = 'notificationsHiddenIds'
 
-/** В IDB храним { [address]: block } */
+/** В IDB settings: { [address]: block } */
 type LastBlockByAddress = Record<string, number>
+/** В IDB settings: { [address]: id[] } — скрытые пользователем уведомления */
+type HiddenIdsByAddress = Record<string, string[]>
 
 /**
  * Запрос уведомлений: getmissedinfo(address, block, limit).
@@ -30,6 +33,7 @@ const MES_TYPE_TITLES: Record<string, string> = {
 
 function mapMissedEventToNotification(n: GetMissedInfoEventItem | Record<string, unknown>): NotificationItem | null {
   const id = (n.txid ?? n.id ?? n.nblock ?? Math.random().toString(36)) as string
+  const nblock = Number(n.nblock ?? 0) || 0
   const mesType = (n.mesType ?? n.type) as string
   const time = Number(n.time ?? n.nTime ?? n.nblock ?? 0) || Math.floor(Date.now() / 1000)
   const title = MES_TYPE_TITLES[mesType] ?? 'Уведомление'
@@ -50,6 +54,7 @@ function mapMissedEventToNotification(n: GetMissedInfoEventItem | Record<string,
   const upvoteVal = n.upvoteVal != null ? Number(n.upvoteVal) : undefined
   return {
     id: String(id),
+    nblock,
     type: safeType,
     title: String(title),
     description,
@@ -75,6 +80,8 @@ export type NotificationType =
 
 export interface NotificationItem {
   id: string
+  /** Номер блока (для указателя «прочитано до» и подсчёта непрочитанных) */
+  nblock?: number
   type: NotificationType
   title: string
   description?: string
@@ -96,6 +103,8 @@ export interface NotificationItem {
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     items: [] as NotificationItem[],
+    /** Скрытые пользователем id (по кнопке «Скрыть» или «Убрать все») */
+    hiddenIds: new Set<string>() as Set<string>,
     loading: false,
     inited: false,
     lastBlock: 0 as number,
@@ -105,14 +114,17 @@ export const useNotificationsStore = defineStore('notifications', {
     onNewNotifications: null as ((items: NotificationItem[]) => void) | null
   }),
   getters: {
+    /** Список без скрытых, по убыванию nblock/time */
     list(): NotificationItem[] {
-      return [...this.items].sort((a, b) => b.time - a.time)
+      const filtered = this.items.filter((n) => !this.hiddenIds.has(n.id))
+      return [...filtered].sort((a, b) => (b.nblock ?? b.time) - (a.nblock ?? a.time))
     },
+    /** Счётчик: количество уведомлений в списке, которые не скрыты */
     unreadCount(): number {
-      return this.items.filter((n) => !n.seen).length
+      return this.list.length
     },
     unreadList(): NotificationItem[] {
-      return this.list.filter((n) => !n.seen)
+      return this.list
     }
   },
   actions: {
@@ -129,7 +141,7 @@ export const useNotificationsStore = defineStore('notifications', {
       }
     },
 
-    /** Сохранить высоту блока в IDB для адреса (все уведомления до этого блока прочитаны). */
+    /** Сохранить высоту блока в IDB для адреса (указатель «прочитано до» — двигаем при открытии выпадашки). */
     async saveLastBlockToSettings(address: string, block: number): Promise<void> {
       try {
         const raw = (await settingsAPI.get(NOTIFICATIONS_LAST_BLOCK_KEY)) as LastBlockByAddress | undefined
@@ -137,6 +149,28 @@ export const useNotificationsStore = defineStore('notifications', {
         await settingsAPI.set(NOTIFICATIONS_LAST_BLOCK_KEY, next)
       } catch (e) {
         console.error('[notifications] saveLastBlockToSettings failed', e)
+      }
+    },
+
+    /** Загрузить скрытые id для адреса из settings. */
+    async loadHiddenIdsFromSettings(address: string): Promise<Set<string>> {
+      try {
+        const raw = (await settingsAPI.get(NOTIFICATIONS_HIDDEN_IDS_KEY)) as HiddenIdsByAddress | undefined
+        const arr = raw && typeof raw === 'object' && Array.isArray(raw[address]) ? raw[address] : []
+        return new Set(arr)
+      } catch {
+        return new Set()
+      }
+    },
+
+    /** Сохранить скрытые id для адреса в settings. */
+    async saveHiddenIdsToSettings(address: string, ids: Set<string>): Promise<void> {
+      try {
+        const raw = (await settingsAPI.get(NOTIFICATIONS_HIDDEN_IDS_KEY)) as HiddenIdsByAddress | undefined
+        const next: HiddenIdsByAddress = { ...(raw && typeof raw === 'object' ? raw : {}), [address]: [...ids] }
+        await settingsAPI.set(NOTIFICATIONS_HIDDEN_IDS_KEY, next)
+      } catch (e) {
+        console.error('[notifications] saveHiddenIdsToSettings failed', e)
       }
     },
 
@@ -182,7 +216,13 @@ export const useNotificationsStore = defineStore('notifications', {
       this.inited = true
       this.loading = true
 
-      const savedBlock = await this.loadLastBlockFromSettings(address)
+      const [savedBlock, storedList, hiddenIds] = await Promise.all([
+        this.loadLastBlockFromSettings(address),
+        notificationsAPI.getAllByAddress(address),
+        this.loadHiddenIdsFromSettings(address)
+      ])
+
+      this.hiddenIds = hiddenIds
       if (savedBlock != null && savedBlock > 0) {
         this.lastBlock = savedBlock
       } else {
@@ -193,6 +233,23 @@ export const useNotificationsStore = defineStore('notifications', {
         }
       }
 
+      // Преобразуем запись IDB в NotificationItem для state
+      const toItem = (s: { id: string; nblock: number; type: string; title: string; description?: string; time: number; link?: string; from?: string; shareId?: string; mesType?: string; upvoteVal?: number }): NotificationItem => ({
+        id: s.id,
+        nblock: s.nblock,
+        type: s.type as NotificationItem['type'],
+        title: s.title,
+        description: s.description,
+        time: s.time,
+        link: s.link,
+        seen: false,
+        from: s.from,
+        shareId: s.shareId,
+        mesType: s.mesType,
+        upvoteVal: s.upvoteVal
+      })
+      this.items = storedList.map(toItem)
+
       const maxRetries = 2
       let lastError: unknown
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -202,6 +259,7 @@ export const useNotificationsStore = defineStore('notifications', {
         try {
           const blockToRequest = this.lastBlock || 0
           const params: GetMissedInfoParameters = [address, blockToRequest, 30]
+          // getmissedinfo всегда без кэша — актуальные пропущенные события
           const raw = await getByPRCWithAuth({
             method: 'getmissedinfo',
             parameters: params,
@@ -216,9 +274,25 @@ export const useNotificationsStore = defineStore('notifications', {
           const mapped = rawEvents
             .map((n) => mapMissedEventToNotification(n))
             .filter((n): n is NotificationItem => n != null)
-          const oldIds = new Set(this.items.map((i) => i.id))
-          const newItems = mapped.filter((n) => !oldIds.has(n.id))
-          this.items = mapped
+          const existingIds = new Set(this.items.map((i) => i.id))
+          const newItems = mapped.filter((n) => !existingIds.has(n.id))
+          if (newItems.length > 0) {
+            const toStore = newItems.map(({ id, nblock = 0, type, title, description, time, link, from, shareId, mesType, upvoteVal }) => ({
+              id,
+              nblock,
+              type,
+              title,
+              description,
+              time,
+              link,
+              from,
+              shareId,
+              mesType,
+              upvoteVal
+            }))
+            await notificationsAPI.putMany(address, toStore)
+            this.items = [...newItems, ...this.items]
+          }
           if (opts?.forceRefresh && newItems.length > 0 && this.onNewNotifications) {
             try {
               this.onNewNotifications(newItems)
@@ -233,6 +307,7 @@ export const useNotificationsStore = defineStore('notifications', {
           const isRetryable = attempt < maxRetries && this._isTimeoutError(e)
           if (!isRetryable) {
             this.items = []
+            this.hiddenIds = new Set()
             this.initedForAddress = null
             this.inited = false
             break
@@ -241,6 +316,7 @@ export const useNotificationsStore = defineStore('notifications', {
       }
       if (lastError !== undefined) {
         this.items = []
+        this.hiddenIds = new Set()
         this.initedForAddress = null
         this.inited = false
       }
@@ -251,6 +327,7 @@ export const useNotificationsStore = defineStore('notifications', {
     },
     reset() {
       this.items = []
+      this.hiddenIds = new Set()
       this.inited = false
       this.initedForAddress = null
       this.lastBlock = 0
@@ -263,25 +340,38 @@ export const useNotificationsStore = defineStore('notifications', {
       if (this.items.some((n) => n.id === item.id)) return
       this.items = [item, ...this.items]
     },
-    markSeen(id: string) {
-      const n = this.items.find((i) => i.id === id)
-      if (n) n.seen = true
-    },
-    markAllSeen() {
-      this.items.forEach((n) => (n.seen = true))
-    },
 
     /**
-     * Пометить все уведомления прочитанными и сохранить высоту блока в IDB.
-     * Вызывать при открытии выпадающего списка уведомлений.
+     * При открытии выпадашки только двигаем указатель блока (прочитано до).
+     * Уведомления не скрываются автоматически.
      */
-    async markAllSeenAndPersistBlock() {
-      this.markAllSeen()
+    async persistReadPointer() {
       const auth = useAuthStore()
       const address = auth.getUserAddress
       if (address && this.lastBlock > 0) {
         await this.saveLastBlockToSettings(address, this.lastBlock)
       }
+    },
+
+    /**
+     * Скрыть одно уведомление (по кнопке «Скрыть уведомление» в меню).
+     */
+    async hideNotification(id: string) {
+      this.hiddenIds = new Set([...this.hiddenIds, id])
+      const auth = useAuthStore()
+      const address = auth.getUserAddress
+      if (address) await this.saveHiddenIdsToSettings(address, this.hiddenIds)
+    },
+
+    /**
+     * Скрыть все уведомления (кнопка «Убрать все уведомления»).
+     */
+    async hideAllNotifications() {
+      const ids = this.list.map((n) => n.id)
+      this.hiddenIds = new Set([...this.hiddenIds, ...ids])
+      const auth = useAuthStore()
+      const address = auth.getUserAddress
+      if (address) await this.saveHiddenIdsToSettings(address, this.hiddenIds)
     }
   }
 })

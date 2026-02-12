@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie'
-import type { VideoData, ContentCache, TranscodedVideo, PendingPostRating, AppSettings, FavoritePost } from './types'
+import type { VideoData, ContentCache, TranscodedVideo, PendingPostRating, AppSettings, FavoritePost, StoredNotification } from './types'
 
 /**
  * Класс базы данных с использованием Dexie
@@ -12,6 +12,7 @@ export class AppDatabase extends Dexie {
   postRatingsPending!: Table<PendingPostRating, number>
   settings!: Table<AppSettings, string>
   favorites!: Table<FavoritePost, string>
+  notifications!: Table<StoredNotification, [string, string]>
 
   constructor() {
     super('BastyonDB')
@@ -54,6 +55,17 @@ export class AppDatabase extends Dexie {
       postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
       settings: 'key, createdAt',
       favorites: 'id, addedAt'
+    })
+
+    // Версия 6: хранилище уведомлений по адресу (address+id), индекс по address и nblock
+    this.version(6).stores({
+      videos: 'id, url, createdAt',
+      contentCache: 'key, expiresAt, createdAt',
+      transcodedVideos: 'id, originalFileName, resolution, createdAt',
+      postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
+      settings: 'key, createdAt',
+      favorites: 'id, addedAt',
+      notifications: '[address+id], address, nblock'
     })
   }
 }

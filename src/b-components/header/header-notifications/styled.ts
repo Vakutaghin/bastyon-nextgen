@@ -43,6 +43,27 @@ export const SC_NotificationsTitle = styled.div`
   color: #333;
 `
 
+export const SC_NotificationsHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`
+
+export const SC_ClearAllButton = styled.button`
+  font-size: 12px;
+  color: #666;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+
+  &:hover {
+    color: #1890ff;
+    background: rgba(24, 144, 255, 0.06);
+  }
+`
+
 export const SC_NotificationsList = styled.div`
   display: flex;
   flex-direction: column;
@@ -59,9 +80,38 @@ export const SC_NotificationItem = styled.div<{ $seen?: boolean }>`
   border: 1px solid ${(p) => (p.$seen ? '#e8e8e8' : 'rgba(24, 144, 255, 0.15)')};
   cursor: pointer;
   transition: background-color 0.15s;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
 
   &:hover {
     background: ${(p) => (p.$seen ? '#f5f5f5' : 'rgba(24, 144, 255, 0.08)')};
+  }
+`
+
+export const SC_NotificationItemBody = styled.div`
+  flex: 1;
+  min-width: 0;
+`
+
+export const SC_NotificationItemActions = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+`
+
+export const SC_NotificationItemTrigger = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #999;
+
+  &:hover {
+    color: #333;
+    background: rgba(0, 0, 0, 0.06);
   }
 `
 

@@ -21,6 +21,11 @@
       <SC_NotificationsMenu @click.stop @mousedown.stop>
         <SC_NotificationsHeader>
           <SC_NotificationsTitle>Уведомления</SC_NotificationsTitle>
+          <SC_NotificationsHeaderActions v-if="list.length > 0">
+            <SC_ClearAllButton type="button" @click.stop="onClearAll">
+              Убрать все
+            </SC_ClearAllButton>
+          </SC_NotificationsHeaderActions>
         </SC_NotificationsHeader>
 
         <SC_LoaderWrap v-if="isLoading">
@@ -33,14 +38,30 @@
           <SC_NotificationItem
             v-for="item in list"
             :key="item.id"
-            :$seen="item.seen"
-            @click="onItemClick(item)"
+            :$seen="isSeen(item)"
           >
-            <SC_NotificationItemTitle>{{ item.title }}</SC_NotificationItemTitle>
-            <SC_NotificationItemDesc v-if="item.description">
-              {{ item.description }}
-            </SC_NotificationItemDesc>
-            <SC_NotificationItemTime>{{ formatTime(item) }}</SC_NotificationItemTime>
+            <SC_NotificationItemBody @click="onItemClick(item)">
+              <SC_NotificationItemTitle>{{ item.title }}</SC_NotificationItemTitle>
+              <SC_NotificationItemDesc v-if="item.description">
+                {{ item.description }}
+              </SC_NotificationItemDesc>
+              <SC_NotificationItemTime>{{ formatTime(item) }}</SC_NotificationItemTime>
+            </SC_NotificationItemBody>
+            <SC_NotificationItemActions @click.stop>
+              <Dropdown
+                trigger="click"
+                placement="bottomRight"
+                :getPopupContainer="(trigger) => trigger?.closest?.('.ant-dropdown') || document.body"
+              >
+                <SC_NotificationItemTrigger><EllipsisOutlined /></SC_NotificationItemTrigger>
+                <template #overlay>
+                  <Menu
+                    :items="[{ key: item.id, label: 'Скрыть уведомление' }]"
+                    @click="onItemMenuClick"
+                  />
+                </template>
+              </Dropdown>
+            </SC_NotificationItemActions>
           </SC_NotificationItem>
         </SC_NotificationsList>
       </SC_NotificationsMenu>
@@ -55,8 +76,13 @@ import {
   SC_NotificationsMenu,
   SC_NotificationsHeader,
   SC_NotificationsTitle,
+  SC_NotificationsHeaderActions,
+  SC_ClearAllButton,
   SC_NotificationsList,
   SC_NotificationItem,
+  SC_NotificationItemBody,
+  SC_NotificationItemActions,
+  SC_NotificationItemTrigger,
   SC_NotificationItemTitle,
   SC_NotificationItemDesc,
   SC_NotificationItemTime,
@@ -72,8 +98,13 @@ export default {
     SC_NotificationsMenu,
     SC_NotificationsHeader,
     SC_NotificationsTitle,
+    SC_NotificationsHeaderActions,
+    SC_ClearAllButton,
     SC_NotificationsList,
     SC_NotificationItem,
+    SC_NotificationItemBody,
+    SC_NotificationItemActions,
+    SC_NotificationItemTrigger,
     SC_NotificationItemTitle,
     SC_NotificationItemDesc,
     SC_NotificationItemTime,

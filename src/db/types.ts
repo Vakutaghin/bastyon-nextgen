@@ -76,3 +76,21 @@ export interface FavoritePost {
   id: string
   addedAt: number
 }
+
+/**
+ * Уведомление в IDB: привязано к адресу, есть номер блока для подсчёта непрочитанных
+ */
+export interface StoredNotification {
+  address: string
+  id: string
+  nblock: number
+  type: string
+  title: string
+  description?: string
+  time: number
+  link?: string
+  from?: string
+  shareId?: string
+  mesType?: string
+  upvoteVal?: number
+}

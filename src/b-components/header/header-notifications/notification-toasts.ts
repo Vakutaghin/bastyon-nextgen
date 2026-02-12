@@ -58,9 +58,13 @@ function playNotificationSoundOnce(): void {
   }
 }
 
+/** Максимум тостов за раз при пачке уведомлений — показываем только последние 2. */
+const MAX_TOASTS_AT_ONCE = 2
+
 /**
  * Показать тосты для новых уведомлений и один раз проиграть звук.
  * Вызывается из колбэка store (при опросе getmissedinfo раз в 30 сек).
+ * Если пришло больше двух уведомлений — показываем только последние 2.
  */
 export function showToastsForNewNotifications(pinia: Pinia, items: NotificationItem[]): void {
   if (items.length === 0) return
@@ -68,7 +72,8 @@ export function showToastsForNewNotifications(pinia: Pinia, items: NotificationI
   const allowed = items.filter((item) => isAllowedBySettings(settings, item))
   if (allowed.length === 0) return
 
-  for (const item of allowed) {
+  const toShow = allowed.length > MAX_TOASTS_AT_ONCE ? allowed.slice(0, MAX_TOASTS_AT_ONCE) : allowed
+  for (const item of toShow) {
     appToast.info({
       message: item.title,
       description: item.description ?? (item.from ? `От: ${item.from}` : undefined),
