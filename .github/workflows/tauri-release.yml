@@ -63,6 +63,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tauriScript: npm run tauri
           tagName: app-v__VERSION__
           releaseName: 'Bastyon v__VERSION__'
           releaseBody: 'See the assets to download this version and install.'
