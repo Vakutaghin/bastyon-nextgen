@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { filtersData } from '@/b-components/sidebar/dummy-data/filters-data'
-import { tabsData } from '@/b-components/sidebar/dummy-data/tabs-data'
+import { filtersData } from '@/b-components/sidebar/filters-data'
+import { tabsData } from '@/b-components/sidebar/sidebar-tabs/tabs-data'
 import { categoriesData, type Category } from '@/b-components/sidebar/sidebar-categories/categories-data'
 import { settingsAPI } from '@/db'
 
