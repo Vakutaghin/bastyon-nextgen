@@ -35,7 +35,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          # Windows: Node 20 часто имеет пребилды для canvas (hex-captcha); при опциональной установке сбой canvas не роняет сборку
+          node-version: ${{ matrix.platform == 'windows-latest' && '20' || 'lts/*' }}
           cache: 'npm'
 
       - name: Install Rust stable
