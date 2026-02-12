@@ -11,6 +11,7 @@ import { useAuthStore } from '@/blockchain'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { loadEncryptedMnemonic } from '@/blockchain/storage'
 import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import type { Address } from '@/blockchain/types/addresses'
 import type { UserProfile, GetUserProfileResponse } from '@/types/rpc-responses/user-get'
@@ -169,7 +170,7 @@ export const accountSwitcherOptions = defineComponent({
         const cachehash = Date.now().toString(36) + Math.random().toString(36).substr(2)
 
         const response = await getByPRCWithAuth({
-          method: 'getuserprofile',
+          method: rpcEndpoints.getUserProfile,
           parameters: [addresses],
           cachehash,
           options: {

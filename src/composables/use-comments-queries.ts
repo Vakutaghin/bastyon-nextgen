@@ -2,6 +2,7 @@
  * Composables для работы с комментариями через Vue Query
  */
 
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from './use-rpc-query'
 import type { GetCommentsResponse } from '@/types/rpc-responses/get-comments'
 import type { GetLastCommentsResponse } from '@/types/rpc-responses/get-last-comments'
@@ -28,7 +29,7 @@ export function useComments(
   return useRpcQuery<GetCommentsResponse>(
     ['comments', postId, parentId, address],
     {
-      method: 'getcomments',
+      method: rpcEndpoints.getComments,
       parameters: postId ? [postId, parentId, address] : [],
       options: { auth: false }
     },
@@ -52,7 +53,7 @@ export function useLastComments(enabled: boolean = true) {
   return useRpcQuery<GetLastCommentsResponse>(
     ['comments', 'last', ...parameters],
     {
-      method: 'getlastcomments',
+      method: rpcEndpoints.getLastComments,
       parameters,
       options: { auth: false }
     },

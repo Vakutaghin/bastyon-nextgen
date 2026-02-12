@@ -1,6 +1,7 @@
 import { defineComponent, ref, computed } from 'vue'
 import { Buffer } from 'buffer'
 
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useModalStore } from '@/stores/modal-store'
@@ -136,7 +137,7 @@ async function sendUpvoteTransaction(
   // Встроенная retry логика автоматически пробует все доступные серверы по кругу
   // messageData должен быть объектом, который нода сериализует и сверяет с хешем в транзакции
   const response = await getByPRCWithAuth({
-    method: 'sendrawtransactionwithmessage',
+    method: rpcEndpoints.sendRawTransactionWithMessage,
     parameters: [builtTx.hex, rpcData, 'upvoteShare'],
     options: {
       auth: true

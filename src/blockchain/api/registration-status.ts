@@ -4,6 +4,7 @@
  */
 
 import { useAuthStore } from '@/blockchain/store/auth-store'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC } from '@/helpers/api/request'
 import { watch } from 'vue'
 
@@ -69,7 +70,7 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
       // getuserprofile возвращает { result: "success", data: UserProfile[] }
       // Для незарегистрированного аккаунта сервер может вернуть пустой массив data
       const userInfo = await getByPRC({
-        method: 'getuserprofile',
+        method: rpcEndpoints.getUserProfile,
         parameters: [[address]], // getuserprofile принимает массив адресов в массиве параметров
         options: { auth: false },
       }) as { result?: string; data?: Array<{ address?: string; id?: number; name?: string; hash?: string }> | null }

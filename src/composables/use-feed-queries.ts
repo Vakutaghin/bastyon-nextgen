@@ -12,6 +12,7 @@ import type { GetProfileFeedResponse } from '@/types/rpc-responses/get-profile-f
 import type { GetProfileFeedParameters } from '@/types/rpc-requests/get-profile-feed'
 import { extractPostsFromResponse } from './use-feed'
 import { useFiltersStore } from '@/stores/filters-store'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 
 /**
@@ -37,7 +38,7 @@ export function useHierarchicalStrip(
   const { data, isLoading, error, refetch } = useRpcQueryWithAuth<GetHierarchicalStripResponse>(
     ['feed', 'hierarchical-strip', offset, limit, address],
     {
-      method: 'gethierarchicalstrip',
+      method: rpcEndpoints.getHierarchicalStrip,
       parameters: [offset, '', limit, 'ru', [], [], [], [], []],
       cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
       options: {
@@ -83,7 +84,7 @@ export function useTopFeed(
   const { data, isLoading, error, refetch } = useRpcQueryWithAuth<GetTopFeedResponse>(
     ['feed', 'top-feed', offset, limit, address],
     {
-      method: 'gettopfeed',
+      method: rpcEndpoints.getTopFeed,
       parameters: [offset, limit],
       cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
       options: {
@@ -146,7 +147,7 @@ export function useProfileFeed(
   const { data, isLoading, error, refetch } = useRpcQueryWithAuth<GetProfileFeedResponse>(
     ['feed', 'profile', address || '', offset, limit, orderby, ascdesc],
     {
-      method: 'getprofilefeed',
+      method: rpcEndpoints.getProfileFeed,
       parameters,
       cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
       options: {
@@ -221,7 +222,7 @@ export function useProfileFeedWithFilters(
   const { data, isLoading, error, refetch } = useQuery<GetProfileFeedResponse>({
     queryKey: computed(() => ['feed', 'profile', address || '', offset, limit, orderby.value, ascdesc.value]),
     queryFn: () => getByPRCWithAuth({
-      method: 'getprofilefeed',
+      method: rpcEndpoints.getProfileFeed,
       parameters: parameters.value,
       cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
       options: {

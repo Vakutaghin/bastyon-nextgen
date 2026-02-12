@@ -1,5 +1,6 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import type { GetProfileFeedResponse } from '@/types/rpc-responses/get-profile-feed'
 import { extractPostsFromResponse, mergeRepostContent } from '@/composables/use-feed'
@@ -56,7 +57,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       const count = currentTxid === '' ? initialLimit : pageSize
 
       return getByPRCWithAuth({
-        method: 'getprofilefeed',
+        method: rpcEndpoints.getProfileFeed,
         parameters: [
           0,              // height
           currentTxid,    // txid
@@ -112,7 +113,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     if (repostTxids.length > 0) {
       try {
         const result: any = await getByPRCWithAuth({
-          method: 'getrawtransactionwithmessagebyid',
+          method: rpcEndpoints.getRawTransactionWithMessageById,
           parameters: [repostTxids],
           cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
           options: {},

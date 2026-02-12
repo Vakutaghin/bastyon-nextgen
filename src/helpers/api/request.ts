@@ -1,4 +1,5 @@
 import servers from '@/servers.json'
+import { getRpcPath } from './rpc-endpoints'
 import {
   getBackoffDelay,
   markServerSuccess,
@@ -65,10 +66,9 @@ async function tryRpcRequest(
   host: string,
   port: number
 ): Promise<unknown> {
-  // Автоматически определяем использование rpc-ex на основе options.ex
   const useEx = params.options?.ex === true
-  const endpoint = useEx ? 'rpc-ex' : 'rpc'
-  const url = `https://${host}:${port}/${endpoint}/${params.method}`
+  const path = getRpcPath(params.method, useEx)
+  const url = `https://${host}:${port}${path}`
 
   const response = await fetch(url, {
     method: 'POST',

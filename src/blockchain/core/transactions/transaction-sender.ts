@@ -2,6 +2,7 @@
  * Модуль для отправки транзакций в блокчейн Pocketnet
  */
 
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 
 /**
@@ -42,7 +43,7 @@ export async function sendTransactionWithMessage(
     // Вызываем sendrawtransactionwithmessage через RPC
     // Параметры: [hex, messageData, operationType]
     const response = await getByPRCWithAuth({
-      method: 'sendrawtransactionwithmessage',
+      method: rpcEndpoints.sendRawTransactionWithMessage,
       parameters: [hex, messageData, operationType],
       options: { auth: true }, // Требуется авторизация для отправки транзакций
     })

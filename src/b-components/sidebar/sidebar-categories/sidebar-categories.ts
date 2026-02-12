@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons-vue'
 
 import { useFiltersStore } from '@/stores/filters-store'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import type { GetTagsResponse } from '@/types/rpc-responses/get-tags'
 import {
@@ -66,7 +67,7 @@ export const sidebarCategoriesOptions = defineComponent({
     const { data: tagsResponse } = useRpcQuery<GetTagsResponse>(
       ['tags', 'cloud', 'ru'],
       {
-        method: 'gettags',
+        method: rpcEndpoints.getTags,
         parameters: ['', '50', '', 'ru'],
         options: { auth: false }
       },

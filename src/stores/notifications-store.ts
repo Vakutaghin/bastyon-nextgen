@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
 import { settingsAPI, notificationsAPI } from '@/db'
 import type { GetMissedInfoParameters } from '@/types/rpc-requests/get-missed-info'
@@ -176,7 +177,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
     /** Текущая высота сети (getnodeinfo). Если нет сохранённого блока — запрашиваем с неё (0 новых уведомлений). */
     async getCurrentBlockHeight(): Promise<number> {
-      const res = await getByPRC({ method: 'getnodeinfo', parameters: [], options: { auth: false } }) as unknown
+      const res = await getByPRC({ method: rpcEndpoints.getNodeInfo, parameters: [], options: { auth: false } }) as unknown
       const data = (res && typeof res === 'object' && 'data' in res) ? (res as { data: unknown }).data : res
       const obj = typeof data === 'object' && data !== null ? data as Record<string, unknown> : null
       const lastblock = obj?.lastblock as { height?: number } | undefined
@@ -261,7 +262,7 @@ export const useNotificationsStore = defineStore('notifications', {
           const params: GetMissedInfoParameters = [address, blockToRequest, 30]
           // getmissedinfo всегда без кэша — актуальные пропущенные события
           const raw = await getByPRCWithAuth({
-            method: 'getmissedinfo',
+            method: rpcEndpoints.getMissedInfo,
             parameters: params,
             options: { cache: false }
           }) as unknown

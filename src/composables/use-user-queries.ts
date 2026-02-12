@@ -4,6 +4,7 @@
 
 import { computed, type MaybeRefOrGetter, unref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 import { useRpcQuery, useRpcQueryWithAuth } from './use-rpc-query'
 import type { RpcRequestParams } from '@/helpers/api/request'
@@ -82,13 +83,13 @@ export function useUserProfile(
 
       if (isCurrentUser.value) {
         return getByPRCWithAuth({
-          method: 'getuserprofile',
+          method: rpcEndpoints.getUserProfile,
           parameters: [[address]],
           options: { auth: true }
         }) as Promise<GetUserProfileResponse>
       } else {
         return getByPRC({
-          method: 'getuserprofile',
+          method: rpcEndpoints.getUserProfile,
           parameters: [[address]],
           options: { auth: false }
         }) as Promise<GetUserProfileResponse>
@@ -134,7 +135,7 @@ export function useUserProfiles(
     queryFn: () => {
       const addrs = addressesRef.value
       const params: RpcRequestParams = {
-        method: 'getuserprofile',
+        method: rpcEndpoints.getUserProfile,
         parameters: [addrs],
         options: { auth: false }
       }
@@ -164,7 +165,7 @@ export function useUserState(enabled: boolean = true) {
   return useRpcQueryWithAuth<GetUserStateResponse>(
     ['user', 'state', address.value],
     {
-      method: 'getuserstate',
+      method: rpcEndpoints.getUserState,
       parameters: address.value ? [[address.value]] : [], // getuserstate принимает массив с адресом пользователя
       options: {
         auth: true,
@@ -192,7 +193,7 @@ export function useCurrentUserProfile(enabled: boolean = true) {
   return useRpcQueryWithAuth<GetUserProfileResponse>(
     ['user', 'current-profile', address.value],
     {
-      method: 'getuserprofile',
+      method: rpcEndpoints.getUserProfile,
       parameters: address.value ? [[address.value]] : [],
       options: {
         auth: true,
@@ -321,7 +322,7 @@ export function useWalletBalance(
   } = useRpcQuery<TxUnspentResponse>(
     ['wallet', 'balance', address],
     {
-      method: 'txunspent',
+      method: rpcEndpoints.txUnspent,
       // Параметры: [адреса, minconf, maxconf]
       parameters: address ? [[address], 1, 9999999] : [],
       options: { auth: false }

@@ -1,4 +1,5 @@
 import { defineComponent, computed, ref } from 'vue'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import { useFiltersStore } from '@/stores/filters-store'
 import type { GetTagsResponse } from '@/types/rpc-responses/get-tags'
@@ -49,7 +50,7 @@ export const sidebarTagsOptions = defineComponent({
     const { data: tagsResponse, isLoading, error } = useRpcQuery<GetTagsResponse>(
       ['tags', 'cloud', 'ru'],
       {
-        method: 'gettags',
+        method: rpcEndpoints.getTags,
         parameters: ['', '100', '', 'ru'], // address, count, block, localization
         options: { auth: false }
       },

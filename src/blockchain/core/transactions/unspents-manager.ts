@@ -2,6 +2,7 @@
  * Модуль для работы с unspents (UTXO)
  */
 
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC } from '@/helpers/api/request'
 import type { UTXO, TxUnspentResponse } from '@/composables/use-user-queries'
 import {
@@ -44,7 +45,7 @@ export async function getUnspents(
   maxConf: number = 9999999
 ): Promise<UTXO[]> {
   const response = await getByPRC({
-    method: 'txunspent',
+    method: rpcEndpoints.txUnspent,
     parameters: [[address], minConf, maxConf],
     options: { auth: false },
   }) as TxUnspentResponse

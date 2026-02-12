@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia'
 import { useQueryClient } from '@tanstack/vue-query'
+
 import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hierarchical-strip'
 import type { GetTopFeedResponse } from '@/types/rpc-responses/get-top-feed'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useFiltersStore } from './filters-store'
+
 
 /**
  * @deprecated Используйте composables из @/composables вместо этого store
@@ -208,16 +211,12 @@ export const useFeedStore = defineStore('feed', {
           return
         }
 
-        // Если данных нет в кэше, делаем запрос через Vue Query
-        // Импортируем динамически для избежания циклических зависимостей
-        const { useHierarchicalStrip } = await import('@/composables/use-feed-queries')
-
         // Для использования в action нужно использовать другой подход
         // Вместо этого используем прямой запрос, но с инвалидацией через Vue Query
         const { getByPRC } = await import('@/helpers/api/request')
 
         const response = await getByPRC({
-          method: 'gethierarchicalstrip',
+          method: rpcEndpoints.getHierarchicalStrip,
           parameters: [offset, '', limit, 'ru', [], [], [], [], []],
           cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
           options: {

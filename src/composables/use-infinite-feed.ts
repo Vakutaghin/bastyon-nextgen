@@ -7,6 +7,7 @@
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hierarchical-strip'
 import { extractPostsFromResponse, mergeRepostContent, type AdaptedPost } from './use-feed'
@@ -125,7 +126,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       // Для вкладки подписок (id: 2) используем специальный метод
       if (filtersStore.activeTab === 2) {
         return getByPRCWithAuth({
-          method: 'getsubscribesfeed',
+          method: rpcEndpoints.getSubscribesFeed,
           parameters: [
             0,
             currentTxid,
@@ -170,7 +171,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
         }
 
         const result: any = await getByPRCWithAuth({
-          method: 'getrawtransactionwithmessagebyid',
+          method: rpcEndpoints.getRawTransactionWithMessageById,
           parameters: [
             idsToFetch
           ],
@@ -212,7 +213,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       // Для вкладки обсуждаемого (id: 7) — всегда свежие данные, без кэша
       if (filtersStore.activeTab === 7) {
         return getByPRCWithAuth({
-          method: 'getmostcommentedfeed',
+          method: rpcEndpoints.getMostCommentedFeed,
           parameters: [
             0,
             currentTxid,
@@ -236,7 +237,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       }
 
       return getByPRCWithAuth({
-        method: 'gethierarchicalstrip',
+        method: rpcEndpoints.getHierarchicalStrip,
         parameters: [
           0, // height
           currentTxid, // txid для пагинации
@@ -285,7 +286,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     if (repostTxids.length > 0) {
       try {
         const result: any = await getByPRCWithAuth({
-          method: 'getrawtransactionwithmessagebyid',
+          method: rpcEndpoints.getRawTransactionWithMessageById,
           parameters: [repostTxids],
           cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
           options: {},
@@ -330,7 +331,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
        if (postIds.length > 0) {
          // Запускаем асинхронно, не блокируя UI
          getByPRCWithAuth({
-           method: 'getpagescores',
+           method: rpcEndpoints.getPageScores,
            parameters: [
              postIds,
              authStore.address,

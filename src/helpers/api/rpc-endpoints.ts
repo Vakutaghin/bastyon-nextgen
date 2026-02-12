@@ -1,33 +1,62 @@
 export const rpcEndpoints = {
   // User methods
-  getUserProfile: '/rpc/getuserprofile',
-  getUserState: '/rpc/getuserstate',
-  getUserStatistic: '/rpc/getuserstatistic',
-  
+  getUserProfile: 'getuserprofile',
+  getUserState: 'getuserstate',
+  getUserStatistic: 'getuserstatistic',
+  getUserAddress: 'getuseraddress',
+
   // Node methods
-  getNodeInfo: '/rpc/getnodeinfo',
-  
-  // Content methods
-  getTopFeed: '/rpc-ex/gettopfeed',
-  getBoostFeed: '/rpc-ex/getboostfeed',
-  getHierarchicalStrip: '/rpc-ex/gethierarchicalstrip',
-  getProfileFeed: '/rpc-ex/getprofilefeed',
-  
+  getNodeInfo: 'getnodeinfo',
+
+  // Content / Feed methods (rpc-ex)
+  getTopFeed: 'gettopfeed',
+  getBoostFeed: 'getboostfeed',
+  getHierarchicalStrip: 'gethierarchicalstrip',
+  getProfileFeed: 'getprofilefeed',
+  getSubscribesFeed: 'getsubscribesfeed',
+  getMostCommentedFeed: 'getmostcommentedfeed',
+
   // Comment methods
-  getComments: '/rpc/getcomments',
-  getLastComments: '/rpc/getlastcomments',
-  getPageScores: '/rpc/getpagescores',
-  
+  getComments: 'getcomments',
+  getLastComments: 'getlastcomments',
+  getPageScores: 'getpagescores',
+
+  // Tags / Categories
+  getTags: 'gettags',
+
   // Account methods
-  getAccountSetting: '/rpc/getaccountsetting',
-  getAccountEarning: '/rpc/getaccountearning',
-  
+  getAccountSetting: 'getaccountsetting',
+  getAccountEarning: 'getaccountearning',
+
   // Statistics methods
-  getContentsStatistic: '/rpc/getcontentsstatistic',
-  
+  getContentsStatistic: 'getcontentsstatistic',
+
+  // Transaction / Blockchain methods
+  txUnspent: 'txunspent',
+  getRawTransaction: 'getrawtransaction',
+  getRawTransactionWithMessageById: 'getrawtransactionwithmessagebyid',
+  sendRawTransactionWithMessage: 'sendrawtransactionwithmessage',
+
   // Other methods
-  getMissedInfo: '/rpc/getmissedinfo',
-  getApps: '/rpc/getapps',
-  getRawTransactionWithMessageById: '/rpc/getrawtransactionwithmessagebyid',
-  sendRawTransactionWithMessage: '/rpc/sendrawtransactionwithmessage',
+  getMissedInfo: 'getmissedinfo',
+  getApps: 'getapps',
+} as const
+
+/** Методы, которые идут через /rpc-ex/ (ленты и т.п.). */
+const RPC_EX_METHODS = new Set<string>([
+  rpcEndpoints.getTopFeed,
+  rpcEndpoints.getBoostFeed,
+  rpcEndpoints.getHierarchicalStrip,
+  rpcEndpoints.getProfileFeed,
+  rpcEndpoints.getSubscribesFeed,
+  rpcEndpoints.getMostCommentedFeed,
+])
+
+/**
+ * Возвращает путь RPC-эндпоинта по имени метода.
+ * Если метод не из rpcEndpoints, использует useEx для выбора префикса (fallback).
+ */
+export function getRpcPath(method: string, useEx = false): string {
+  const prefix = RPC_EX_METHODS.has(method) || useEx ? 'rpc-ex' : 'rpc'
+  return `/${prefix}/${method}`
 }

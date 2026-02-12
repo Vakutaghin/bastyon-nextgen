@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { postRatingPendingAPI } from '@/db'
 import { useAuthStore } from '@/stores'
 import { usePostsStore } from '@/stores/posts-store'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 
 
@@ -106,7 +107,7 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
 
       try {
         const response = await getByPRCWithAuth({
-          method: 'getpagescores',
+          method: rpcEndpoints.getPageScores,
           parameters: [postIds, address, []],
           options: { auth: false },
           // Add a unique cachehash to bypass cache

@@ -1,6 +1,7 @@
 import { defineComponent, type PropType } from 'vue'
 import { Buffer } from 'buffer'
 import { useAuthStore } from '@/blockchain'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
@@ -117,7 +118,7 @@ async function sendCommentScore(
   })
 
   const response = await getByPRCWithAuth({
-    method: 'sendrawtransactionwithmessage',
+    method: rpcEndpoints.sendRawTransactionWithMessage,
     parameters: [builtTx.hex, rpcData, 'cScore'],
     options: { auth: true }
   })
@@ -201,7 +202,7 @@ async function sendComment(
   })
 
   const response = await getByPRCWithAuth({
-    method: 'sendrawtransactionwithmessage',
+    method: rpcEndpoints.sendRawTransactionWithMessage,
     parameters: [builtTx.hex, messagePayload, 'comment'],
     options: { auth: true }
   })
@@ -550,7 +551,7 @@ export const postCardCommentsOptions = defineComponent({
       const userAddress = authStore.getUserAddress ?? ''
       const res = await Promise.race([
         getByPRC({
-          method: 'getcomments',
+          method: rpcEndpoints.getComments,
           parameters: [this.postId, '', userAddress],
           cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
           options: { auth: authStore.isUserAuthenticated }
@@ -718,7 +719,7 @@ export const postCardCommentsOptions = defineComponent({
       const userAddress = authStore.getUserAddress ?? ''
       try {
         const res = await getByPRC({
-          method: 'getcomments',
+          method: rpcEndpoints.getComments,
           parameters: [this.postId, commentId, userAddress],
           cachehash: `replies-${commentId}-${Date.now()}`,
           options: { auth: authStore.isUserAuthenticated }

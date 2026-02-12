@@ -13,6 +13,7 @@ import ProfileSidebar from '@/b-components/profile/profile-sidebar/profile-sideb
 import ProfileFeed from '@/b-components/profile/profile-feed/profile-feed.vue'
 import Spin from '@/components/spin/spin.vue'
 import { LoadingOutlined } from '@ant-design/icons-vue'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -54,7 +55,7 @@ export default defineComponent({
         // Простая проверка: адрес Pocketnet 33-34 символа
         if (identifier.length < 30) {
           const addressResponse = await getByPRC({
-            method: 'getuseraddress',
+            method: rpcEndpoints.getUserAddress,
             parameters: [identifier],
             options: { auth: false }
           }) as GetUserAddressResponse
@@ -76,7 +77,7 @@ export default defineComponent({
         } else {
           // Теперь получаем профиль по адресу
           const profileResponse = await getByPRCWithAuth({
-            method: 'getuserprofile',
+            method: rpcEndpoints.getUserProfile,
             parameters: [[address]],
             options: { auth: false }
           }) as any
@@ -100,7 +101,7 @@ export default defineComponent({
         // Пытаемся получить дополнительные настройки аккаунта (включая обложку из accSet)
         try {
           const settingsResponse = await getByPRC({
-            method: 'getaccountsetting',
+            method: rpcEndpoints.getAccountSetting,
             parameters: [address],
             options: { auth: false }
           }) as any

@@ -5,6 +5,7 @@ import CryptoJS from 'crypto-js'
 
 import { useAuthStore } from '@/blockchain'
 import { deriveMessengerKeys } from '@/blockchain/core/keys'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC } from '@/helpers/api/request'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { PcryptoService, type User as PcryptoUser } from './services/pcrypto'
@@ -254,7 +255,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     for (const batch of batches) {
       try {
         const result = await getByPRC({
-          method: 'getuserprofile',
+          method: rpcEndpoints.getUserProfile,
           parameters: [[...batch]],
           cachehash: Date.now().toString() + Math.random().toString()
         }) as any
@@ -318,7 +319,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
     try {
       const response = await getByPRC({
-        method: 'getnodeinfo',
+        method: rpcEndpoints.getNodeInfo,
         parameters: [],
         options: { auth: false }
       }) as any

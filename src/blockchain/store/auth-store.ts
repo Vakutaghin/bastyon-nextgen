@@ -929,6 +929,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         // Делаем запросы напрямую (не через Vue Query, так как это action в store)
         // Vue Query composables должны использоваться в компонентах
+        const { rpcEndpoints } = await import('../../helpers/api/rpc-endpoints')
         const { getByPRCWithAuth } = await import('../../helpers/api/request')
 
         // Всегда делаем оба запроса параллельно для получения максимально полных данных
@@ -940,7 +941,7 @@ export const useAuthStore = defineStore('auth', {
         const [stateResponse, profileResponse] = await Promise.all([
           // getuserstate - лимиты и состояние
           getByPRCWithAuth({
-            method: 'getuserstate',
+            method: rpcEndpoints.getUserState,
             parameters: [[this.address]], // getuserstate принимает массив с адресом пользователя
             cachehash,
             options: {
@@ -950,7 +951,7 @@ export const useAuthStore = defineStore('auth', {
 
           // getuserprofile - полный профиль
           getByPRCWithAuth({
-            method: 'getuserprofile',
+            method: rpcEndpoints.getUserProfile,
             parameters: [[this.address]],
             cachehash,
             options: {
@@ -1128,8 +1129,9 @@ export const useAuthStore = defineStore('auth', {
         // Делаем запрос напрямую (не через Vue Query, так как это action в store)
         const { getByPRCWithAuth } = await import('../../helpers/api/request')
 
+        const { rpcEndpoints } = await import('../../helpers/api/rpc-endpoints')
         const response = await getByPRCWithAuth({
-          method: 'getuserprofile',
+          method: rpcEndpoints.getUserProfile,
           parameters: [[targetAddress]], // getuserprofile принимает массив адресов в массиве параметров
           options: {
             auth: true, // Требуется авторизация для получения своих данных
