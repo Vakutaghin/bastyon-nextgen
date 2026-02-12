@@ -2,7 +2,8 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import type { GetProfileFeedResponse } from '@/types/rpc-responses/get-profile-feed'
-import { extractPostsFromResponse } from '@/composables/use-feed'
+import { extractPostsFromResponse, mergeRepostContent } from '@/composables/use-feed'
+import type { AdaptedPost } from '@/composables/use-feed'
 
 /**
  * Параметры для useProfileFeed
@@ -90,7 +91,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
   })
 
   // Обработка полученных данных
-  watch(data, (newData) => {
+  watch(data, async (newData) => {
     if (!newData?.data?.contents) {
       if (currentTxidForQuery.value !== '') {
         hasMore.value = false
@@ -99,8 +100,39 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       return
     }
 
-    const newPosts = extractPostsFromResponse(newData)
+    let newPosts: AdaptedPost[] = extractPostsFromResponse(newData)
     const contents = newData.data.contents
+
+    // Подгружаем контент оригинальных записей для репостов
+    const repostTxids = [...new Set(
+      contents
+        .filter((p: any) => p.repost)
+        .map((p: any) => p.repost)
+    )] as string[]
+    if (repostTxids.length > 0) {
+      try {
+        const result: any = await getByPRCWithAuth({
+          method: 'getrawtransactionwithmessagebyid',
+          parameters: [repostTxids],
+          cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
+          options: {},
+          state: 1
+        })
+        const originals = Array.isArray(result)
+          ? result
+          : (result?.data ?? result?.result ?? [])
+        const originalMap = new Map(
+          (Array.isArray(originals) ? originals : []).map((p: any) => [p.txid || p.hash || p.id, p])
+        )
+        newPosts.forEach((adapted) => {
+          if (!adapted.repost) return
+          const orig = originalMap.get(adapted.repost)
+          if (orig) mergeRepostContent(adapted, orig)
+        })
+      } catch (err) {
+        console.error('[useProfileFeed] Failed to fetch repost content:', err)
+      }
+    }
 
     // Извлекаем профиль пользователя из ответа
     const profile = contents.find((item: any) => item.name && !item.txid)

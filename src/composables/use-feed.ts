@@ -58,7 +58,12 @@ export interface AdaptedPost {
   repostAuthor?: {
     name: string
     address: string
+    avatar?: string | null
   }
+  /** Время публикации оригинала (unix sec), для отображения даты в блоке репоста */
+  repostOriginalTimestamp?: number
+  /** Оригинальная запись удалена */
+  repostDeleted?: boolean
 }
 
 /**
@@ -70,6 +75,18 @@ function safeDecode(str: string): string {
   } catch (e) {
     return str
   }
+}
+
+/**
+ * Нормализует поле изображений из сырого ответа API (разные форматы: массив строк, одна строка, массив объектов с url).
+ */
+function normalizeImages(raw: any): string[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) {
+    return raw.map((item: any) => (typeof item === 'string' ? item : (item?.url ?? item?.src ?? ''))).filter(Boolean)
+  }
+  if (typeof raw === 'string') return [raw]
+  return []
 }
 
 /**
@@ -107,7 +124,7 @@ export function adaptPostData(post: any, index: number, usersMap: Record<string,
   const comments = post.comments || 0
   const shares = post.reposted || 0
   const tags = Array.isArray(post.t) ? post.t : []
-  const images = Array.isArray(post.i) ? post.i : []
+  const images = normalizeImages(post.i).length > 0 ? normalizeImages(post.i) : normalizeImages(post.images)
   const videoUrl = post.u || post.s?.v || undefined
   const myVal = post.myVal
   const preview = safeDecode(post.preview || post.p || '')
@@ -177,6 +194,7 @@ export function adaptPostData(post: any, index: number, usersMap: Record<string,
     preview: preview,
     lastComment,
     repost: post.repost || undefined,
+    repostDeleted: !!post.deleted,
     repostAuthor: (() => {
       const addr = post.repostAddress || post.repost_author_address
       if (!addr) return undefined
@@ -198,7 +216,7 @@ export function mergeRepostContent(adapted: AdaptedPost, originalRaw: any): void
   if (!originalRaw) return
   adapted.title = safeDecode(originalRaw.c || '')
   adapted.content = safeDecode(originalRaw.m || '')
-  adapted.images = Array.isArray(originalRaw.i) ? originalRaw.i : []
+  adapted.images = normalizeImages(originalRaw.i).length > 0 ? normalizeImages(originalRaw.i) : normalizeImages(originalRaw.images)
   adapted.videoUrl = originalRaw.u || originalRaw.s?.v || undefined
   adapted.tags = Array.isArray(originalRaw.t) ? originalRaw.t : []
   adapted.type = originalRaw.type || adapted.type
@@ -208,6 +226,24 @@ export function mergeRepostContent(adapted: AdaptedPost, originalRaw: any): void
     adapted.ratingStars = Math.max(0, Math.min(5, Math.round((originalRaw.scoreSum / originalRaw.scoreCnt) * 10) / 10))
     adapted.scoreCnt = originalRaw.scoreCnt
     adapted.scoreSum = originalRaw.scoreSum
+  }
+  const origAddress = originalRaw.address || ''
+  const origName = originalRaw.userprofile?.name || origAddress || ''
+  const origAvatar = originalRaw.userprofile?.i ?? originalRaw.userprofile?.avatar ?? null
+  if (!adapted.repostAuthor && (origAddress || origName)) {
+    adapted.repostAuthor = {
+      address: origAddress,
+      name: origName,
+      avatar: origAvatar
+    }
+  } else if (adapted.repostAuthor) {
+    if (!adapted.repostAuthor.avatar && origAvatar) adapted.repostAuthor.avatar = origAvatar
+  }
+  if (originalRaw.time != null) {
+    adapted.repostOriginalTimestamp = typeof originalRaw.time === 'number' ? originalRaw.time : parseInt(originalRaw.time, 10)
+  }
+  if (originalRaw.deleted) {
+    adapted.repostDeleted = true
   }
 }
 

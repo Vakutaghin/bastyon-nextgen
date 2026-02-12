@@ -251,3 +251,66 @@ export const SC_PostCardYoutube = styled.div`
 export const SC_AuthorLinkWrap = styled.div`
   display: block;
 `
+
+/** Обёртка контента репоста: ниже шапки показывается «карточка» оригинала */
+export const SC_RepostInnerCard = styled.div`
+  margin-top: 8px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+`
+
+/** Блок «автор оригинала» внутри карточки репоста: аватар, имя, дата — как в шапке поста */
+export const SC_RepostOriginalAuthor = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 12px;
+
+  a {
+    border: 0;
+  }
+`
+
+export const SC_RepostOriginalAuthorInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+`
+
+export const SC_RepostOriginalAuthorName = styled.div`
+  font-weight: 600;
+  font-size: 14px;
+  color: rgb(33, 37, 41);
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    &:hover {
+      color: #00a4ff;
+      text-decoration: underline;
+    }
+  }
+`
+
+export const SC_RepostOriginalAuthorTime = styled.time`
+  font-size: 11px;
+  color: rgb(108, 117, 125);
+  margin-top: 2px;
+`
+
+/** Блок «Публикация удалена» для репоста с deleted */
+export const SC_RepostDeleted = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  font-size: 14px;
+  color: rgb(108, 117, 125);
+
+  .repost-deleted-icon {
+    color: rgb(33, 37, 41);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+`

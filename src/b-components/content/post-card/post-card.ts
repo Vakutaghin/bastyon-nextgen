@@ -7,6 +7,8 @@ import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { ImageGallery } from '@/components/image-gallery'
 import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
 import PostCardComments from '@/b-components/content/post-card/components/post-card-comments/post-card-comments.vue'
+import Avatar from '@/components/avatar/avatar.vue'
+import { DeleteOutlined } from '@ant-design/icons-vue'
 import PostCardHeader from '@/b-components/content/post-card/components/post-card-header/post-card-header.vue'
 import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
 import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
@@ -17,7 +19,13 @@ import {
   SC_PostCard,
   SC_PostTitle,
   SC_PostActions,
-  SC_PostCardYoutube
+  SC_PostCardYoutube,
+  SC_RepostInnerCard,
+  SC_RepostOriginalAuthor,
+  SC_RepostOriginalAuthorInfo,
+  SC_RepostOriginalAuthorName,
+  SC_RepostOriginalAuthorTime,
+  SC_RepostDeleted
 } from './styled'
 
 interface PostAuthor {
@@ -69,7 +77,12 @@ interface Post {
   repostAuthor?: {
     name: string
     address: string
+    avatar?: string | null
   }
+  /** Время публикации оригинала (unix sec) */
+  repostOriginalTimestamp?: number
+  /** Оригинальная запись удалена */
+  repostDeleted?: boolean
 }
 
 export const postCardOptions = defineComponent({
@@ -81,6 +94,8 @@ export const postCardOptions = defineComponent({
     ImageGallery,
     StarRating,
     PostCardComments,
+    Avatar,
+    DeleteOutlined,
     PostCardHeader,
     PostCardImages,
     PostCardContent,
@@ -89,7 +104,13 @@ export const postCardOptions = defineComponent({
     SC_PostCard,
     SC_PostTitle,
     SC_PostActions,
-    SC_PostCardYoutube
+    SC_PostCardYoutube,
+    SC_RepostInnerCard,
+    SC_RepostOriginalAuthor,
+    SC_RepostOriginalAuthorInfo,
+    SC_RepostOriginalAuthorName,
+    SC_RepostOriginalAuthorTime,
+    SC_RepostDeleted
   },
   setup() {
     const modalStore = useModalStore()
@@ -134,6 +155,9 @@ export const postCardOptions = defineComponent({
     }
   },
   computed: {
+    isRepost(): boolean {
+      return !!(this.post.repost)
+    },
     postId(): string {
       return this.post.txid || this.post.hash || String(this.post.id || '')
     },
@@ -181,6 +205,18 @@ export const postCardOptions = defineComponent({
      * Ссылки на YouTube embed для отображения под контентом поста.
      * Не показываем YouTube-эмбеды, если пост уже содержит внутриплатформенное видео.
      */
+    /** Форматированная дата оригинала для блока репоста */
+    originalAuthorFormattedTime(): string {
+      const ts = this.post.repostOriginalTimestamp
+      if (ts == null) return ''
+      const date = new Date(ts * 1000)
+      if (isNaN(date.getTime())) return ''
+      const now = new Date()
+      const isCurrentYear = date.getFullYear() === now.getFullYear()
+      const time = date.toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      const dayMonth = date.toLocaleString('ru-RU', { day: 'numeric', month: 'long' })
+      return isCurrentYear ? `${dayMonth}, ${time}` : `${dayMonth} ${date.getFullYear()}, ${time}`
+    },
     youtubeEmbedUrls(): string[] {
       if (!this.post) return []
       const hasInPlatformVideo =
