@@ -55,7 +55,12 @@ function peertubeProxyPlugin() {
 // import { styledDataAttr } from './vite-plugin-styled-data-attr.js'
 
 
+// В production Tauri загружает фронт через asset-протокол; относительный base гарантирует
+// корректное разрешение путей к JS/CSS (иначе возможен пустой экран, нет запросов)
+const base = process.env.VITE_TAURI === 'true' ? './' : '/'
+
 export default defineConfig(({ mode }) => ({
+  base,
   plugins: [
     peertubeProxyPlugin(),
     babel({
