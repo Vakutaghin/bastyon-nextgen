@@ -97,3 +97,34 @@ export const SC_SettingsPlaceholder = styled.div`
   color: rgb(102, 102, 102);
   padding: 20px 0;
 `
+
+export const SC_SettingsSectionTitle = styled.h2`
+  font-size: 16px;
+  font-weight: 600;
+  color: rgb(33, 33, 33);
+  margin: 0 0 16px;
+`
+
+export const SC_NotificationsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`
+
+export const SC_NotificationsRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 14px;
+  color: rgb(33, 33, 33);
+
+  &:last-child {
+    border-bottom: none;
+  }
+`
+
+export const SC_NotificationsRowLabel = styled.span`
+  flex: 1;
+`
