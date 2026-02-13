@@ -18,6 +18,7 @@ import {
   USER_ADDRESS_STORAGE_KEY,
   WAS_LOGGED_KEY,
   ACCOUNT_STORAGE_PREFIX,
+  WALLET_ADDRESSES_PREFIX,
 } from '../constants/storage'
 
 /**
@@ -481,4 +482,46 @@ export function setCurrentAccount(address: Address): StorageSaveResult {
   }
 
   return saveAccountsList(accountsList)
+}
+
+/**
+ * Ключ localStorage для списка адресов кошелька по адресу аккаунта
+ */
+function walletAddressesKey(address: Address): string {
+  return WALLET_ADDRESSES_PREFIX + address
+}
+
+/**
+ * Загружает список адресов кошелька (производные P2SH) для аккаунта.
+ * Как в старом приложении: sdk.addresses.storage.addresses (wallets2).
+ */
+export function getWalletAddressesList(address: Address): string[] {
+  try {
+    const key = walletAddressesKey(address)
+    const raw =
+      (typeof localStorage !== 'undefined' && localStorage.getItem(key)) || null
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((a: unknown) => typeof a === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Сохраняет список адресов кошелька для аккаунта.
+ */
+export function saveWalletAddressesList(address: Address, addresses: string[]): StorageSaveResult {
+  try {
+    const key = walletAddressesKey(address)
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, JSON.stringify(addresses))
+    }
+    return { success: true }
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : String(e),
+    }
+  }
 }

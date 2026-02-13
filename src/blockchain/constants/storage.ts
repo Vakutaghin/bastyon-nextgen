@@ -51,3 +51,6 @@ export const SCROLL_POSITION_PREFIX = 'BST_SCROLL_POSITION_'
  * Ключ для хранения позиции скролла модального окна поста
  */
 export const POST_MODAL_SCROLL_POSITION_KEY = 'BST_POST_MODAL_SCROLL_POSITION'
+
+/** Префикс ключа для списка адресов кошелька (как в старом приложении: wallets2) */
+export const WALLET_ADDRESSES_PREFIX = 'BST_WALLET_ADDRS_'

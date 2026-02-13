@@ -33,4 +33,6 @@ export {
   removeAccountFromStore,
   getAccountInfo,
   setCurrentAccount,
+  getWalletAddressesList,
+  saveWalletAddressesList,
 } from './storage-manager'

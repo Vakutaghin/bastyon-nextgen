@@ -72,6 +72,7 @@ export const headerUserOptions = defineComponent({
     menuItems() {
       return [
         { key: this.profileLink, label: 'Профиль' },
+        { key: '/wallet', label: 'Кошелёк' },
         { key: '/limits', label: 'Лимиты' },
         { key: 'settings', label: 'Настройки' },
         { type: 'divider' },

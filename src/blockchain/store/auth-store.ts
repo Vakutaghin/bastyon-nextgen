@@ -44,6 +44,7 @@ import {
   saveEncryptedData,
 } from '../storage'
 import { ACCOUNT_STORAGE_PREFIX } from '../constants/storage'
+import { deriveAndSaveWalletAddresses } from '../wallet-addresses'
 
 
 export const useAuthStore = defineStore('auth', {
@@ -236,6 +237,11 @@ export const useAuthStore = defineStore('auth', {
         this.setKeyPair(keyPair)
         this.isAuthenticated = true
         this.authState = 'authenticated'
+
+        // Деривируем и сохраняем адреса кошелька (как в старом приложении)
+        if (this.address) {
+          deriveAndSaveWalletAddresses(mnemonic, this.address)
+        }
 
         // Сохраняем если нужно
         if (saveAfterRegistration) {
@@ -541,6 +547,11 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = true
         this.authState = 'authenticated'
 
+        // Деривируем и сохраняем адреса кошелька (как в старом приложении)
+        if (this.address) {
+          deriveAndSaveWalletAddresses(mnemonic, this.address)
+        }
+
         // Загружаем данные пользователя после восстановления сессии
         // Используем getuserstate для получения полной информации (профиль + лимиты)
         if (this.address) {
@@ -673,6 +684,11 @@ export const useAuthStore = defineStore('auth', {
         this.setKeyPair(recoveryResult.keyPair)
         this.isAuthenticated = true
         this.authState = 'authenticated'
+
+        // Деривируем и сохраняем адреса кошелька для этого аккаунта
+        if (this.address) {
+          deriveAndSaveWalletAddresses(mnemonic, this.address)
+        }
 
         // Устанавливаем как текущий аккаунт
         setCurrentAccount(address)
