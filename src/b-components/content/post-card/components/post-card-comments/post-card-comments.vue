@@ -443,8 +443,8 @@
                   </SC_CommentActions>
                 </SC_CommentContent>
               </SC_CommentItem>
-              <!-- Плашка ответа под комментарием второго уровня -->
-              <SC_ReplyPanelNested v-if="isReplyPanelOpen(reply.id)">
+              <!-- Плашка ответа под комментарием второго уровня (без доп. margin — уже внутри ветки с отступом) -->
+              <SC_ReplyPanelNestedLevel2 v-if="isReplyPanelOpen(reply.id)">
                 <div v-if="currentUserAvatarUrl" class="reply-avatar">
                   <img :src="currentUserAvatarUrl" alt="" />
                 </div>
@@ -495,7 +495,7 @@
                     <SendOutlined v-else />
                   </SC_ReplySendBtn>
                 </template>
-              </SC_ReplyPanelNested>
+              </SC_ReplyPanelNestedLevel2>
             </SC_ReplyItemWrapper>
           </SC_CommentReplies>
           <SC_CommentRepliesToggle

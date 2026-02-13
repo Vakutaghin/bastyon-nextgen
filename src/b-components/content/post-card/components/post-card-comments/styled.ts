@@ -264,7 +264,7 @@ export const SC_CommentWithReplies = styled.div`
 `
 
 export const SC_CommentReplies = styled.div`
-  margin-left: 24px;
+  margin-left: 50px;
   margin-top: 12px;
   display: flex;
   flex-direction: column;
@@ -288,6 +288,9 @@ export const SC_CommentRepliesToggle = styled.button`
   color: rgba(0, 0, 0, 0.45);
   cursor: pointer;
   text-align: left;
+  margin-left: 50px;
+  margin-top: 10px;
+  margin-bottom: 20px;
 
   &:hover {
     color: rgba(0, 0, 0, 0.65);
@@ -333,11 +336,14 @@ export const SC_ReplyPanel = styled.div`
   }
 `
 
-/** Вложенная плашка ответа (ответ на комментарий): отступ слева для визуальной ветки */
+/** Вложенная плашка ответа 1-го уровня (ответ на комментарий): отступ слева для визуальной ветки */
 export const SC_ReplyPanelNested = styled(SC_ReplyPanel)`
   margin-left: 50px;
   width: calc(100% - 50px);
 `
+
+/** Вложенная плашка ответа 2-го уровня (ответ на ответ): без доп. отступа, т.к. уже внутри ветки с отступом */
+export const SC_ReplyPanelNestedLevel2 = styled(SC_ReplyPanel)``
 
 export const SC_ReplyInputWrap = styled.div`
   flex: 1;
