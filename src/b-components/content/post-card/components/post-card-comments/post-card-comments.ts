@@ -6,7 +6,6 @@ import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { LoadingOutlined, CloseOutlined, SendOutlined } from '@ant-design/icons-vue'
-import { Modal } from 'ant-design-vue'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } from '@/blockchain/core/transactions/unspents-manager'
 import { appToast } from '@/b-components/app-toast'
@@ -27,6 +26,7 @@ import {
   SC_CommentRepliesToggle,
   SC_ReplyItemWrapper,
   SC_ReplyPanel,
+  SC_ReplyPanelNested,
   SC_ReplyInputWrap,
   SC_ReplyTextarea,
   SC_MentionList,
@@ -40,7 +40,11 @@ import {
   SC_CommentsActionsLeft,
   SC_CommentsLoading,
   SC_CommentsSortRow,
-  SC_CommentsSortSelect
+  SC_CommentsSortSelect,
+  SC_ConfirmWrap,
+  SC_ConfirmMessage,
+  SC_ConfirmActions,
+  SC_ConfirmBtn
 } from './styled'
 
 /** Пост в минимальном виде для блока комментариев */
@@ -224,7 +228,6 @@ export const postCardCommentsOptions = defineComponent({
     LoadingOutlined,
     CloseOutlined,
     SendOutlined,
-    Modal,
     SC_CommentsPreview,
     SC_CommentItem,
     SC_CommentRow,
@@ -240,6 +243,7 @@ export const postCardCommentsOptions = defineComponent({
     SC_CommentRepliesToggle,
     SC_ReplyItemWrapper,
     SC_ReplyPanel,
+    SC_ReplyPanelNested,
     SC_ReplyInputWrap,
     SC_ReplyTextarea,
     SC_MentionList,
@@ -253,7 +257,11 @@ export const postCardCommentsOptions = defineComponent({
     SC_CommentsActionsLeft,
     SC_CommentsLoading,
     SC_CommentsSortRow,
-    SC_CommentsSortSelect
+    SC_CommentsSortSelect,
+    SC_ConfirmWrap,
+    SC_ConfirmMessage,
+    SC_ConfirmActions,
+    SC_ConfirmBtn
   },
   props: {
     post: {
@@ -286,7 +294,7 @@ export const postCardCommentsOptions = defineComponent({
       replyTarget: null as { commentId: string; parentId: string; prefix: string } | null,
       /** Текст ответа в форме */
       replyDraft: '',
-      /** Показать модалку подтверждения отмены ответа (если уже введён текст) */
+      /** Показать инлайн-подтверждение отмены ответа (если уже введён текст) */
       showCancelReplyModal: false,
       /** Показать список выбора пользователя для @упоминания */
       showMentionList: false,
@@ -441,6 +449,10 @@ export const postCardCommentsOptions = defineComponent({
       const t = this.replyTarget
       if (!t) return 'closed'
       return `${t.commentId}:${t.prefix ? 'author' : 'empty'}`
+    },
+    /** Нижний бар «написать комментарий к посту» активен, когда нет открытого ответа на комментарий */
+    isRootReplyActive(): boolean {
+      return this.replyTarget === null || this.replyTarget?.commentId === 'root'
     }
   },
   methods: {
@@ -793,7 +805,7 @@ export const postCardCommentsOptions = defineComponent({
         this.replyDraft = prefix
       }
     },
-    /** Закрыть форму ответа: если есть текст — показать модалку подтверждения */
+    /** Закрыть форму ответа: если есть текст — показать инлайн-подтверждение (без модалки, скролл не трогаем) */
     requestCloseReply(): void {
       if ((this.replyDraft || '').trim() && this.replyDraft !== (this.replyTarget?.prefix || '')) {
         this.showCancelReplyModal = true
@@ -801,7 +813,7 @@ export const postCardCommentsOptions = defineComponent({
         this.closeReply()
       }
     },
-    /** Закрыть форму ответа без подтверждения (после подтверждения в модалке) */
+    /** Закрыть форму ответа без подтверждения (после подтверждения в инлайне) */
     closeReply(): void {
       this.replyTarget = null
       this.replyDraft = ''
@@ -816,11 +828,13 @@ export const postCardCommentsOptions = defineComponent({
     /** Отправить ответ (реальный запрос sendrawtransactionwithmessage) */
     async sendReply(): Promise<void> {
       const text = (this.replyDraft || '').trim()
-      if (!text || !this.replyTarget || this.replySubmitting) return
+      if (!text || this.replySubmitting) return
+      // Нижний бар или явный root: комментарий к посту на первом уровне
+      const isRootComment = this.isRootReplyActive
+      if (!isRootComment && !this.replyTarget) return
       this.replySubmitting = true
-      const isRootComment = this.replyTarget.commentId === 'root'
-      const parentId = isRootComment ? '' : this.replyTarget.parentId
-      const answerId = isRootComment ? '' : this.replyTarget.commentId
+      const parentId = isRootComment ? '' : (this.replyTarget!.parentId)
+      const answerId = isRootComment ? '' : (this.replyTarget!.commentId)
       try {
         await sendComment(
           this.postId,
@@ -859,6 +873,17 @@ export const postCardCommentsOptions = defineComponent({
       this.openReplyToAuthor(reply.id, reply.id, accountName)
     },
     /** Обработка ввода в поле ответа: показ/скрытие списка @упоминаний */
+    /** Фокус на нижнем баре: переключить в режим «комментарий к посту», если сейчас открыт ответ на комментарий */
+    onRootBarFocus(): void {
+      if (!this.isRootReplyActive) this.openReplyToPost()
+    },
+    /** Ввод в нижнем баре (комментарий к посту): обновить replyDraft и обработка @ */
+    handleRootReplyInput(e: Event): void {
+      if (!this.isRootReplyActive) return
+      const el = e.target as HTMLTextAreaElement
+      if (el) this.replyDraft = el.value
+      this.handleReplyInput(e)
+    },
     handleReplyInput(e: Event): void {
       const el = e.target as HTMLTextAreaElement
       if (!el) return
@@ -936,7 +961,7 @@ export const postCardCommentsOptions = defineComponent({
     scrollMentionHighlightIntoView(): void {
       this.$nextTick(() => {
         requestAnimationFrame(() => {
-          const ref = this.$refs.mentionListRef
+          const ref = this.isRootReplyActive ? this.$refs.rootMentionListRef : this.$refs.mentionListRef
           const raw = Array.isArray(ref) ? ref[0] : ref
           const listEl = raw && (raw as HTMLElement).scrollTop !== undefined
             ? (raw as HTMLElement)
@@ -959,7 +984,7 @@ export const postCardCommentsOptions = defineComponent({
       this.mentionQuery = ''
       this.mentionHighlightIndex = 0
       this.$nextTick(() => {
-        const ref = this.$refs.replyTextareaRef
+        const ref = this.isRootReplyActive ? this.$refs.rootReplyTextareaRef : this.$refs.replyTextareaRef
         const el = ref && typeof (ref as HTMLTextAreaElement).focus === 'function'
           ? (ref as HTMLTextAreaElement)
           : (ref as { $el?: HTMLTextAreaElement })?.$el

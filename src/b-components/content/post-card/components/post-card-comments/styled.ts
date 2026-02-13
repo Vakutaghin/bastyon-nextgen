@@ -333,6 +333,12 @@ export const SC_ReplyPanel = styled.div`
   }
 `
 
+/** Вложенная плашка ответа (ответ на комментарий): отступ слева для визуальной ветки */
+export const SC_ReplyPanelNested = styled(SC_ReplyPanel)`
+  margin-left: 50px;
+  width: calc(100% - 50px);
+`
+
 export const SC_ReplyInputWrap = styled.div`
   flex: 1;
   position: relative;
@@ -441,4 +447,51 @@ export const SC_ReplyCancelBtn = styled.button`
     color: rgb(33, 37, 41);
   }
   svg { width: 18px; height: 18px; }
+`
+
+/** Инлайн-подтверждение отмены ответа (без модалки, без скачка скролла) */
+export const SC_ConfirmWrap = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+`
+
+export const SC_ConfirmMessage = styled.p`
+  margin: 0;
+  font-size: 14px;
+  color: rgb(33, 37, 41);
+  flex: 1;
+`
+
+export const SC_ConfirmActions = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+`
+
+export const SC_ConfirmBtn = styled.button`
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 13px;
+  color: rgb(33, 37, 41);
+  cursor: pointer;
+
+  &:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+  }
+
+  &.confirm-btn--primary {
+    background: #00a4ff;
+    border-color: #00a4ff;
+    color: #fff;
+  }
+  &.confirm-btn--primary:hover {
+    background: #0088d1;
+    border-color: #0088d1;
+  }
 `

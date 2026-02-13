@@ -2,60 +2,6 @@
   <SC_CommentsPreview>
     <h3>Комментарии ({{ totalCommentsCount }})</h3>
 
-    <!-- Форма первого комментария (пост без комментариев) -->
-    <template v-if="totalCommentsCount === 0">
-      <SC_ReplyPanel v-if="isReplyPanelOpen('root')">
-        <div v-if="currentUserAvatarUrl" class="reply-avatar">
-          <img :src="currentUserAvatarUrl" alt="" />
-        </div>
-        <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
-        <SC_ReplyInputWrap>
-          <SC_ReplyTextarea
-            :key="replyPanelKey"
-            ref="replyTextareaRef"
-            v-model="replyDraft"
-            placeholder="Введите комментарий... (введите @ чтобы упомянуть пользователя)"
-            rows="2"
-            @input="handleReplyInput"
-            @keydown="handleReplyKeydown"
-          />
-          <SC_MentionList
-            ref="mentionListRef"
-            v-if="showMentionList && filteredMentionUsers.length > 0"
-          >
-            <SC_MentionItem
-              v-for="(u, idx) in filteredMentionUsers"
-              :key="u.address"
-              type="button"
-              :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
-              @click.stop.prevent="selectMentionUser(u)"
-            >
-              {{ u.name }}
-            </SC_MentionItem>
-          </SC_MentionList>
-        </SC_ReplyInputWrap>
-        <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
-          <CloseOutlined />
-        </SC_ReplyCancelBtn>
-        <SC_ReplySendBtn
-          type="button"
-          title="Отправить"
-          :disabled="!(replyDraft || '').trim() || replySubmitting"
-          @click.stop.prevent="sendReply"
-        >
-          <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
-          <SendOutlined v-else />
-        </SC_ReplySendBtn>
-      </SC_ReplyPanel>
-      <SC_ShowCommentsBtn
-        v-else
-        type="button"
-        @click.stop.prevent="openReplyToPost"
-      >
-        Написать комментарий
-      </SC_ShowCommentsBtn>
-    </template>
-
     <!-- Компактный вид: комментарии ещё не загружены -->
     <template v-if="!allComments">
       <SC_CommentWithReplies v-if="hasUserComments">
@@ -117,49 +63,58 @@
         </SC_CommentContent>
       </SC_CommentItem>
         <!-- Плашка ответа под последним комментарием (комментарии ещё не загружены) -->
-        <SC_ReplyPanel v-if="lastCommentId && isReplyPanelOpen(lastCommentId)">
+        <SC_ReplyPanelNested v-if="lastCommentId && isReplyPanelOpen(lastCommentId)">
           <div v-if="currentUserAvatarUrl" class="reply-avatar">
             <img :src="currentUserAvatarUrl" alt="" />
           </div>
           <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
-          <SC_ReplyInputWrap>
-            <SC_ReplyTextarea
-              :key="replyPanelKey"
-              ref="replyTextareaRef"
-              v-model="replyDraft"
-              placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
-              rows="2"
-              @input="handleReplyInput"
-              @keydown="handleReplyKeydown"
-            />
-            <SC_MentionList
-              ref="mentionListRef"
-              v-if="showMentionList && filteredMentionUsers.length > 0"
-            >
-              <SC_MentionItem
-                v-for="(u, idx) in filteredMentionUsers"
-                :key="u.address"
-                type="button"
-                :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
-                @click.stop.prevent="selectMentionUser(u)"
+          <SC_ConfirmWrap v-if="showCancelReplyModal">
+            <SC_ConfirmMessage>Введённый текст будет удалён.</SC_ConfirmMessage>
+            <SC_ConfirmActions>
+              <SC_ConfirmBtn type="button" @click.stop.prevent="showCancelReplyModal = false">Нет</SC_ConfirmBtn>
+              <SC_ConfirmBtn type="button" class="confirm-btn--primary" @click.stop.prevent="confirmCancelReply">Да, отменить</SC_ConfirmBtn>
+            </SC_ConfirmActions>
+          </SC_ConfirmWrap>
+          <template v-else>
+            <SC_ReplyInputWrap>
+              <SC_ReplyTextarea
+                :key="replyPanelKey"
+                ref="replyTextareaRef"
+                v-model="replyDraft"
+                placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
+                rows="2"
+                @input="handleReplyInput"
+                @keydown="handleReplyKeydown"
+              />
+              <SC_MentionList
+                ref="mentionListRef"
+                v-if="showMentionList && filteredMentionUsers.length > 0"
               >
-                {{ u.name }}
-              </SC_MentionItem>
-            </SC_MentionList>
-          </SC_ReplyInputWrap>
-          <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
-            <CloseOutlined />
-          </SC_ReplyCancelBtn>
-          <SC_ReplySendBtn
-            type="button"
-            title="Отправить"
-            :disabled="!(replyDraft || '').trim() || replySubmitting"
-            @click.stop.prevent="sendReply"
-          >
-            <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
-            <SendOutlined v-else />
-          </SC_ReplySendBtn>
-        </SC_ReplyPanel>
+                <SC_MentionItem
+                  v-for="(u, idx) in filteredMentionUsers"
+                  :key="u.address"
+                  type="button"
+                  :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
+                  @click.stop.prevent="selectMentionUser(u)"
+                >
+                  {{ u.name }}
+                </SC_MentionItem>
+              </SC_MentionList>
+            </SC_ReplyInputWrap>
+            <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
+              <CloseOutlined />
+            </SC_ReplyCancelBtn>
+            <SC_ReplySendBtn
+              type="button"
+              title="Отправить"
+              :disabled="!(replyDraft || '').trim() || replySubmitting"
+              @click.stop.prevent="sendReply"
+            >
+              <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+              <SendOutlined v-else />
+            </SC_ReplySendBtn>
+          </template>
+        </SC_ReplyPanelNested>
       </SC_CommentWithReplies>
 
       <SC_CommentsActionsRow v-if="totalCommentsCount > 0">
@@ -247,49 +202,58 @@
         </SC_CommentContent>
       </SC_CommentItem>
         <!-- Плашка ответа под последним комментарием (комментарии свернуты) -->
-        <SC_ReplyPanel v-if="lastCommentId && isReplyPanelOpen(lastCommentId)">
+        <SC_ReplyPanelNested v-if="lastCommentId && isReplyPanelOpen(lastCommentId)">
           <div v-if="currentUserAvatarUrl" class="reply-avatar">
             <img :src="currentUserAvatarUrl" alt="" />
           </div>
           <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
-          <SC_ReplyInputWrap>
-            <SC_ReplyTextarea
-              :key="replyPanelKey"
-              ref="replyTextareaRef"
-              v-model="replyDraft"
-              placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
-              rows="2"
-              @input="handleReplyInput"
-              @keydown="handleReplyKeydown"
-            />
-            <SC_MentionList
-              ref="mentionListRef"
-              v-if="showMentionList && filteredMentionUsers.length > 0"
-            >
-              <SC_MentionItem
-                v-for="(u, idx) in filteredMentionUsers"
-                :key="u.address"
-                type="button"
-                :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
-                @click.stop.prevent="selectMentionUser(u)"
+          <SC_ConfirmWrap v-if="showCancelReplyModal">
+            <SC_ConfirmMessage>Введённый текст будет удалён.</SC_ConfirmMessage>
+            <SC_ConfirmActions>
+              <SC_ConfirmBtn type="button" @click.stop.prevent="showCancelReplyModal = false">Нет</SC_ConfirmBtn>
+              <SC_ConfirmBtn type="button" class="confirm-btn--primary" @click.stop.prevent="confirmCancelReply">Да, отменить</SC_ConfirmBtn>
+            </SC_ConfirmActions>
+          </SC_ConfirmWrap>
+          <template v-else>
+            <SC_ReplyInputWrap>
+              <SC_ReplyTextarea
+                :key="replyPanelKey"
+                ref="replyTextareaRef"
+                v-model="replyDraft"
+                placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
+                rows="2"
+                @input="handleReplyInput"
+                @keydown="handleReplyKeydown"
+              />
+              <SC_MentionList
+                ref="mentionListRef"
+                v-if="showMentionList && filteredMentionUsers.length > 0"
               >
-                {{ u.name }}
-              </SC_MentionItem>
-            </SC_MentionList>
-          </SC_ReplyInputWrap>
-          <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
-            <CloseOutlined />
-          </SC_ReplyCancelBtn>
-          <SC_ReplySendBtn
-            type="button"
-            title="Отправить"
-            :disabled="!(replyDraft || '').trim() || replySubmitting"
-            @click.stop.prevent="sendReply"
-          >
-            <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
-            <SendOutlined v-else />
-          </SC_ReplySendBtn>
-        </SC_ReplyPanel>
+                <SC_MentionItem
+                  v-for="(u, idx) in filteredMentionUsers"
+                  :key="u.address"
+                  type="button"
+                  :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
+                  @click.stop.prevent="selectMentionUser(u)"
+                >
+                  {{ u.name }}
+                </SC_MentionItem>
+              </SC_MentionList>
+            </SC_ReplyInputWrap>
+            <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
+              <CloseOutlined />
+            </SC_ReplyCancelBtn>
+            <SC_ReplySendBtn
+              type="button"
+              title="Отправить"
+              :disabled="!(replyDraft || '').trim() || replySubmitting"
+              @click.stop.prevent="sendReply"
+            >
+              <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+              <SendOutlined v-else />
+            </SC_ReplySendBtn>
+          </template>
+        </SC_ReplyPanelNested>
       </SC_CommentWithReplies>
 
       <SC_ShowCommentsBtn
@@ -376,49 +340,58 @@
         </SC_CommentRow>
 
         <!-- Плашка ответа под комментарием первого уровня -->
-        <SC_ReplyPanel v-if="isReplyPanelOpen(comment.id)">
+        <SC_ReplyPanelNested v-if="isReplyPanelOpen(comment.id)">
           <div v-if="currentUserAvatarUrl" class="reply-avatar">
             <img :src="currentUserAvatarUrl" alt="" />
           </div>
           <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
-          <SC_ReplyInputWrap>
-            <SC_ReplyTextarea
-              :key="replyPanelKey"
-              ref="replyTextareaRef"
-              v-model="replyDraft"
-              placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
-              rows="2"
-              @input="handleReplyInput"
-              @keydown="handleReplyKeydown"
-            />
-            <SC_MentionList
-              ref="mentionListRef"
-              v-if="showMentionList && filteredMentionUsers.length > 0"
-            >
-              <SC_MentionItem
-                v-for="(u, idx) in filteredMentionUsers"
-                :key="u.address"
-                type="button"
-                :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
-                @click.stop.prevent="selectMentionUser(u)"
+          <SC_ConfirmWrap v-if="showCancelReplyModal">
+            <SC_ConfirmMessage>Введённый текст будет удалён.</SC_ConfirmMessage>
+            <SC_ConfirmActions>
+              <SC_ConfirmBtn type="button" @click.stop.prevent="showCancelReplyModal = false">Нет</SC_ConfirmBtn>
+              <SC_ConfirmBtn type="button" class="confirm-btn--primary" @click.stop.prevent="confirmCancelReply">Да, отменить</SC_ConfirmBtn>
+            </SC_ConfirmActions>
+          </SC_ConfirmWrap>
+          <template v-else>
+            <SC_ReplyInputWrap>
+              <SC_ReplyTextarea
+                :key="replyPanelKey"
+                ref="replyTextareaRef"
+                v-model="replyDraft"
+                placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
+                rows="2"
+                @input="handleReplyInput"
+                @keydown="handleReplyKeydown"
+              />
+              <SC_MentionList
+                ref="mentionListRef"
+                v-if="showMentionList && filteredMentionUsers.length > 0"
               >
-                {{ u.name }}
-              </SC_MentionItem>
-            </SC_MentionList>
-          </SC_ReplyInputWrap>
-          <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
-            <CloseOutlined />
-          </SC_ReplyCancelBtn>
-          <SC_ReplySendBtn
-            type="button"
-            title="Отправить"
-            :disabled="!(replyDraft || '').trim() || replySubmitting"
-            @click.stop.prevent="sendReply"
-          >
-            <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
-            <SendOutlined v-else />
-          </SC_ReplySendBtn>
-        </SC_ReplyPanel>
+                <SC_MentionItem
+                  v-for="(u, idx) in filteredMentionUsers"
+                  :key="u.address"
+                  type="button"
+                  :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
+                  @click.stop.prevent="selectMentionUser(u)"
+                >
+                  {{ u.name }}
+                </SC_MentionItem>
+              </SC_MentionList>
+            </SC_ReplyInputWrap>
+            <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
+              <CloseOutlined />
+            </SC_ReplyCancelBtn>
+            <SC_ReplySendBtn
+              type="button"
+              title="Отправить"
+              :disabled="!(replyDraft || '').trim() || replySubmitting"
+              @click.stop.prevent="sendReply"
+            >
+              <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+              <SendOutlined v-else />
+            </SC_ReplySendBtn>
+          </template>
+        </SC_ReplyPanelNested>
 
         <!-- Ветка ответов второго уровня — строками ниже, с отступом слева -->
         <template v-if="isRepliesExpanded(comment.id)">
@@ -471,49 +444,58 @@
                 </SC_CommentContent>
               </SC_CommentItem>
               <!-- Плашка ответа под комментарием второго уровня -->
-              <SC_ReplyPanel v-if="isReplyPanelOpen(reply.id)">
+              <SC_ReplyPanelNested v-if="isReplyPanelOpen(reply.id)">
                 <div v-if="currentUserAvatarUrl" class="reply-avatar">
                   <img :src="currentUserAvatarUrl" alt="" />
                 </div>
                 <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
-                <SC_ReplyInputWrap>
-                  <SC_ReplyTextarea
-                    :key="replyPanelKey"
-                    ref="replyTextareaRef"
-                    v-model="replyDraft"
-                    placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
-                    rows="2"
-                    @input="handleReplyInput"
-                    @keydown="handleReplyKeydown"
-                  />
-            <SC_MentionList
-              ref="mentionListRef"
-              v-if="showMentionList && filteredMentionUsers.length > 0"
-            >
-              <SC_MentionItem
-                v-for="(u, idx) in filteredMentionUsers"
-                :key="u.address"
-                type="button"
-                :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
-                @click.stop.prevent="selectMentionUser(u)"
-              >
-                {{ u.name }}
-              </SC_MentionItem>
-            </SC_MentionList>
-          </SC_ReplyInputWrap>
-          <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
-                  <CloseOutlined />
-                </SC_ReplyCancelBtn>
-                <SC_ReplySendBtn
-                  type="button"
-                  title="Отправить"
-                  :disabled="!(replyDraft || '').trim() || replySubmitting"
-                  @click.stop.prevent="sendReply"
-                >
-                  <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
-                  <SendOutlined v-else />
-                </SC_ReplySendBtn>
-              </SC_ReplyPanel>
+                <SC_ConfirmWrap v-if="showCancelReplyModal">
+                  <SC_ConfirmMessage>Введённый текст будет удалён.</SC_ConfirmMessage>
+                  <SC_ConfirmActions>
+                    <SC_ConfirmBtn type="button" @click.stop.prevent="showCancelReplyModal = false">Нет</SC_ConfirmBtn>
+                    <SC_ConfirmBtn type="button" class="confirm-btn--primary" @click.stop.prevent="confirmCancelReply">Да, отменить</SC_ConfirmBtn>
+                  </SC_ConfirmActions>
+                </SC_ConfirmWrap>
+                <template v-else>
+                  <SC_ReplyInputWrap>
+                    <SC_ReplyTextarea
+                      :key="replyPanelKey"
+                      ref="replyTextareaRef"
+                      v-model="replyDraft"
+                      placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
+                      rows="2"
+                      @input="handleReplyInput"
+                      @keydown="handleReplyKeydown"
+                    />
+                    <SC_MentionList
+                      ref="mentionListRef"
+                      v-if="showMentionList && filteredMentionUsers.length > 0"
+                    >
+                      <SC_MentionItem
+                        v-for="(u, idx) in filteredMentionUsers"
+                        :key="u.address"
+                        type="button"
+                        :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
+                        @click.stop.prevent="selectMentionUser(u)"
+                      >
+                        {{ u.name }}
+                      </SC_MentionItem>
+                    </SC_MentionList>
+                  </SC_ReplyInputWrap>
+                  <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
+                    <CloseOutlined />
+                  </SC_ReplyCancelBtn>
+                  <SC_ReplySendBtn
+                    type="button"
+                    title="Отправить"
+                    :disabled="!(replyDraft || '').trim() || replySubmitting"
+                    @click.stop.prevent="sendReply"
+                  >
+                    <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+                    <SendOutlined v-else />
+                  </SC_ReplySendBtn>
+                </template>
+              </SC_ReplyPanelNested>
             </SC_ReplyItemWrapper>
           </SC_CommentReplies>
           <SC_CommentRepliesToggle
@@ -555,18 +537,50 @@
           Свернуть
         </SC_ShowCommentsBtnCollapse>
       </SC_CommentsActionsRow>
-
-      <!-- Модалка подтверждения отмены ответа (если уже введён текст) -->
-      <Modal
-        v-model:open="showCancelReplyModal"
-        title="Отменить ответ?"
-        ok-text="Да, отменить"
-        cancel-text="Нет"
-        @ok="confirmCancelReply"
-      >
-        <p>Введённый текст будет удалён.</p>
-      </Modal>
     </template>
+
+    <!-- Бар «написать комментарий к посту» — внизу, скрыт пока открыта форма ответа на комментарий -->
+    <SC_ReplyPanel v-if="isRootReplyActive">
+      <div v-if="currentUserAvatarUrl" class="reply-avatar">
+        <img :src="currentUserAvatarUrl" alt="" />
+      </div>
+      <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
+      <SC_ReplyInputWrap>
+        <SC_ReplyTextarea
+          :key="'root-' + replyPanelKey"
+          ref="rootReplyTextareaRef"
+          :value="isRootReplyActive ? replyDraft : ''"
+          placeholder="Введите комментарий... (введите @ чтобы упомянуть пользователя)"
+          rows="2"
+          @input="(e) => { if (isRootReplyActive) handleRootReplyInput(e) }"
+          @focus="onRootBarFocus"
+          @keydown="handleReplyKeydown"
+        />
+        <SC_MentionList
+          ref="rootMentionListRef"
+          v-if="showMentionList && filteredMentionUsers.length > 0 && isRootReplyActive"
+        >
+          <SC_MentionItem
+            v-for="(u, idx) in filteredMentionUsers"
+            :key="u.address"
+            type="button"
+            :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
+            @click.stop.prevent="selectMentionUser(u)"
+          >
+            {{ u.name }}
+          </SC_MentionItem>
+        </SC_MentionList>
+      </SC_ReplyInputWrap>
+      <SC_ReplySendBtn
+        type="button"
+        title="Отправить"
+        :disabled="!isRootReplyActive || !(replyDraft || '').trim() || replySubmitting"
+        @click.stop.prevent="sendReply"
+      >
+        <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+        <SendOutlined v-else />
+      </SC_ReplySendBtn>
+    </SC_ReplyPanel>
   </SC_CommentsPreview>
 </template>
 
