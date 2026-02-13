@@ -105,6 +105,22 @@ export const SC_VideoElement = styled.video`
   display: block;
 `
 
+/** Размытый фон из превью — заполняет контейнер (cover), под основной превьюшкой */
+export const SC_VideoThumbnailBackdrop = styled.img`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(20px);
+  -webkit-filter: blur(20px);
+  transform: scale(1.05);
+`
+
 export const SC_VideoThumbnail = styled.img`
   position: absolute;
   top: 0;
@@ -116,7 +132,7 @@ export const SC_VideoThumbnail = styled.img`
   z-index: 2;
   pointer-events: none;
   transition: opacity 0.3s ease;
-  background-color: #f2f2f2;
+  background-color: transparent;
 `
 
 // Объявляем SC_VideoControls после SC_VideoContainer, но используем другой подход для hover

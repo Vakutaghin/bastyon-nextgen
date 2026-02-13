@@ -12,6 +12,14 @@
       <!-- Skeleton loader while thumbnail is loading -->
       <SC_VideoSkeleton v-if="thumbnailUrl && !isThumbnailLoaded" />
 
+      <!-- Размытый фон из превью (cover) — заполняет пустое пространство под основной превьюшкой -->
+      <SC_VideoThumbnailBackdrop
+        v-if="(isAudio || !isInitialized) && thumbnailUrl && !isLoading && !error"
+        :src="thumbnailUrl"
+        alt=""
+        aria-hidden="true"
+      />
+
       <!-- Превьюшка видео до инициализации или если это аудио -->
       <SC_VideoThumbnail
         v-if="(isAudio || !isInitialized) && thumbnailUrl && !isLoading && !error"
