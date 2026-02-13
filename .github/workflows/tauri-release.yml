@@ -1,14 +1,11 @@
 # Сборка Tauri (Bastyon) для macOS, Linux и Windows.
 # Кросс-компиляция с Mac на другие ОС не поддерживается — каждая платформа собирается на своём runner.
-# Запуск: push в ветку tauri-release или вручную (workflow_dispatch).
+# Запуск: вручную в GitHub Actions → Tauri release → Run workflow (ветка main или любая другая).
 
 name: Tauri release
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - tauri-release
 
 jobs:
   publish-tauri:
