@@ -2,7 +2,7 @@ import { defineComponent, type PropType } from 'vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import { BookOutlined, BookFilled, MessageOutlined, ShareAltOutlined } from '@ant-design/icons-vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
-import { isFavorite, addFavorite, removeFavorite } from '@/db/favorites-db'
+import { favoritesAPI } from '@/db/apis/favorites-api'
 import {
   SC_PostHeader,
   SC_PostAuthor,
@@ -151,17 +151,17 @@ export const postCardHeaderOptions = defineComponent({
     },
     async checkBookmarkStatus() {
       if (!this.postId) return
-      this.isBookmarked = await isFavorite(this.postId)
+      this.isBookmarked = await favoritesAPI.has(this.postId)
     },
     async toggleBookmark(event: Event) {
       event.preventDefault()
       event.stopPropagation()
       if (!this.postId) return
       if (this.isBookmarked) {
-        await removeFavorite(this.postId)
+        await favoritesAPI.remove(this.postId)
         this.isBookmarked = false
       } else {
-        await addFavorite(this.postId)
+        await favoritesAPI.add(this.postId)
         this.isBookmarked = true
       }
     },

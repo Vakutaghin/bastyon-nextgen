@@ -1,4 +1,4 @@
-import { transcodedVideoAPI } from '@/db'
+import { transcodedVideoAPI } from '@/db/apis/transcoded-video-api'
 
 /**
  * Константы для управления хранилищем

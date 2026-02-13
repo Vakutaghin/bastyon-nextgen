@@ -22,7 +22,7 @@ import SidebarLeft from '@/b-components/sidebar/sidebar-left/sidebar-left.vue'
 import SidebarRight from '@/b-components/sidebar/sidebar-right/sidebar-right.vue'
 import ContentFeed from '@/b-components/content/content-feed/content-feed.vue'
 import { SC_HomeWork, SC_HomeMainContent } from './home-page.styled'
-import { settingsAPI } from '@/db'
+import { settingsAPI } from '@/db/apis/settings-api'
 
 const SETTING_KEY_RIGHT_SIDEBAR = 'bastyonRightSidebarVisible'
 const SETTING_KEY_LEFT_SIDEBAR_COLLAPSED = 'bastyonLeftSidebarCollapsed'

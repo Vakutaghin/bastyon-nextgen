@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { settingsAPI } from '@/db'
+import { settingsAPI } from '@/db/apis/settings-api'
 
 const NOTIFICATION_FILTERS_KEY = 'notificationFilters'
 

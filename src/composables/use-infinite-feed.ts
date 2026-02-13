@@ -13,7 +13,7 @@ import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hie
 import { extractPostsFromResponse, mergeRepostContent, type AdaptedPost } from './use-feed'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useFiltersStore } from '@/stores/filters-store'
-import { getAllFavoritesIds } from '@/db/favorites-db'
+import { favoritesAPI } from '@/db/apis/favorites-api'
 
 /**
  * Параметры для useInfiniteFeed
@@ -150,7 +150,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
 
       // Для вкладки избранного (id: 6)
       if (filtersStore.activeTab === 6) {
-        const allFavIds = await getAllFavoritesIds()
+        const allFavIds = await favoritesAPI.getAllIds()
 
         let startIndex = 0
         if (currentTxid) {

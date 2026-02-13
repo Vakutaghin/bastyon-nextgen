@@ -1,13 +1,11 @@
 import Dexie, { Table } from 'dexie'
-import type { VideoData, ContentCache, TranscodedVideo, PendingPostRating, AppSettings, FavoritePost, StoredNotification } from './types'
+import type { VideoData, TranscodedVideo, PendingPostRating, AppSettings, FavoritePost, StoredNotification } from './types'
 
 /**
  * Класс базы данных с использованием Dexie
  */
 export class AppDatabase extends Dexie {
   // Определяем таблицы с типами
-  videos!: Table<VideoData, string>
-  contentCache!: Table<ContentCache, string>
   transcodedVideos!: Table<TranscodedVideo, string>
   postRatingsPending!: Table<PendingPostRating, number>
   settings!: Table<AppSettings, string>
@@ -17,55 +15,12 @@ export class AppDatabase extends Dexie {
   constructor() {
     super('BastyonDB')
 
-    // Определяем схему базы данных
-    // Версия 1: базовые таблицы
     this.version(1).stores({
-      videos: 'id, url, createdAt',
-      contentCache: 'key, expiresAt, createdAt'
-    })
-
-    // Версия 2: добавляем таблицу для транскодированных видео
-    // Dexie автоматически мигрирует базу данных при обновлении схемы
-    this.version(2).stores({
-      videos: 'id, url, createdAt',
-      contentCache: 'key, expiresAt, createdAt',
-      transcodedVideos: 'id, originalFileName, resolution, createdAt' // новая таблица
-    })
-
-    this.version(3).stores({
-      videos: 'id, url, createdAt',
-      contentCache: 'key, expiresAt, createdAt',
-      transcodedVideos: 'id, originalFileName, resolution, createdAt',
-      postRatingsPending: '++id, shareId, userAddress, expiresAt, status'
-    })
-
-    this.version(4).stores({
-      videos: 'id, url, createdAt',
-      contentCache: 'key, expiresAt, createdAt',
-      transcodedVideos: 'id, originalFileName, resolution, createdAt',
-      postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
-      settings: 'key, createdAt'
-    })
-    
-    // Версия 5: добавляем таблицу избранных постов
-    this.version(5).stores({
-      videos: 'id, url, createdAt',
-      contentCache: 'key, expiresAt, createdAt',
-      transcodedVideos: 'id, originalFileName, resolution, createdAt',
-      postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
-      settings: 'key, createdAt',
-      favorites: 'id, addedAt'
-    })
-
-    // Версия 6: хранилище уведомлений по адресу (address+id), индекс по address и nblock
-    this.version(6).stores({
-      videos: 'id, url, createdAt',
-      contentCache: 'key, expiresAt, createdAt',
       transcodedVideos: 'id, originalFileName, resolution, createdAt',
       postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
       settings: 'key, createdAt',
       favorites: 'id, addedAt',
-      notifications: '[address+id], address, nblock'
+      notifications: '[address+id], address, nblock',
     })
   }
 }

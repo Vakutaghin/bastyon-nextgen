@@ -1,5 +1,5 @@
 import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue'
-import { transcodedVideoAPI } from '@/db'
+import { transcodedVideoAPI } from '@/db/apis/transcoded-video-api'
 import { transcoder } from './transcoder'
 import { storageManager } from './utils'
 import type { TranscodedVideo } from '@/db'

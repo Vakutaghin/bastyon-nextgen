@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { postRatingPendingAPI } from '@/db'
+import { postRatingPendingAPI } from '@/db/apis/post-rating-pending-api'
 import { useAuthStore } from '@/stores'
 import { usePostsStore } from '@/stores/posts-store'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'

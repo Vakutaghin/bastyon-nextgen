@@ -39,7 +39,7 @@ import 'ant-design-vue/dist/reset.css'
 
 import App from '@/src.vue'
 import router from '@/router'
-import { initDatabase } from '@/db'
+import { initDatabase } from '@/db/database'
 import { useAuthStore } from '@/blockchain'
 import { useNotificationsStore, useNotificationSettingsStore } from '@/stores'
 import { useMessengerStore } from '@/b-components/messenger/store'
