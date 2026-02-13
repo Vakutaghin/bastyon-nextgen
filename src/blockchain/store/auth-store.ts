@@ -346,6 +346,10 @@ export const useAuthStore = defineStore('auth', {
         // Сохраняем мнемонику (если это мнемоника)
         if (recoveryResult.format === 'mnemonic') {
           await this.saveMnemonic(trimmedKey)
+          // Деривируем и сохраняем адреса кошелька (по умолчанию 3)
+          if (this.address) {
+            deriveAndSaveWalletAddresses(trimmedKey, this.address)
+          }
         }
 
         // Сохраняем флаг "был авторизован"
@@ -494,6 +498,11 @@ export const useAuthStore = defineStore('auth', {
                 this.setKeyPair(recoveryResult.keyPair)
                 this.isAuthenticated = true
                 this.authState = 'authenticated'
+
+                // Деривируем и сохраняем адреса кошелька (по умолчанию 3)
+                if (this.address) {
+                  deriveAndSaveWalletAddresses(mnemonic, this.address)
+                }
 
                 // Загружаем данные пользователя после восстановления сессии
                 if (this.address) {

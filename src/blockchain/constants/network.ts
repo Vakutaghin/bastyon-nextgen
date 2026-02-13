@@ -19,9 +19,9 @@ export const POCKETNET_NETWORK: Network = {
     public: 0x0488b21e,
     private: 0x0488ade4,
   },
-  pubKeyHash: 0x37, // 55 в десятичной - для адресов, начинающихся с 'P'
-  scriptHash: 0x05, // 5 в десятичной - для адресов, начинающихся с '3'
-  wif: 0x80, // 128 в десятичной - для WIF ключей
+  pubKeyHash: 0x37, // 55 — адреса аккаунтов начинаются с 'P'
+  scriptHash: 0x50, // 80 — адреса кошельков (P2SH) начинаются с 'Z', как в старом приложении (lib/pocketnet/modules/networks.js)
+  wif: 0x21, // 33 — WIF ключи (как в Pocketnet mainnet)
 }
 
 /**

@@ -19,6 +19,7 @@ import {
   WAS_LOGGED_KEY,
   ACCOUNT_STORAGE_PREFIX,
   WALLET_ADDRESSES_PREFIX,
+  ADDITIONAL_WALLETS_LIST_KEY,
 } from '../constants/storage'
 
 /**
@@ -516,6 +517,52 @@ export function saveWalletAddressesList(address: Address, addresses: string[]): 
     const key = walletAddressesKey(address)
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(key, JSON.stringify(addresses))
+    }
+    return { success: true }
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : String(e),
+    }
+  }
+}
+
+/** Читает объект дополнительных кошельков из LS: { [accountAddress]: string[] } */
+function getAdditionalWalletsMap(): Record<string, string[]> {
+  try {
+    const raw =
+      (typeof localStorage !== 'undefined' && localStorage.getItem(ADDITIONAL_WALLETS_LIST_KEY)) ||
+      null
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Загружает список адресов дополнительных кошельков (индексы 1, 2, …) для аккаунта.
+ * Хранится в ключе BST_ADDITIONAL_WALLETS_LIST.
+ */
+export function getAdditionalWalletAddressesList(address: Address): string[] {
+  const map = getAdditionalWalletsMap()
+  const list = map[address]
+  return Array.isArray(list) ? list.filter((a: unknown) => typeof a === 'string') : []
+}
+
+/**
+ * Сохраняет список адресов дополнительных кошельков для аккаунта.
+ */
+export function saveAdditionalWalletAddressesList(
+  address: Address,
+  addresses: string[]
+): StorageSaveResult {
+  try {
+    const map = getAdditionalWalletsMap()
+    map[address] = addresses
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(ADDITIONAL_WALLETS_LIST_KEY, JSON.stringify(map))
     }
     return { success: true }
   } catch (e) {

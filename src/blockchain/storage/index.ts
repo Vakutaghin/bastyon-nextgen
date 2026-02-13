@@ -35,4 +35,6 @@ export {
   setCurrentAccount,
   getWalletAddressesList,
   saveWalletAddressesList,
+  getAdditionalWalletAddressesList,
+  saveAdditionalWalletAddressesList,
 } from './storage-manager'

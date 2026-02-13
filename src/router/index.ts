@@ -1,9 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getActivePinia } from 'pinia'
 import HomePage from '@/pages/home-page/home-page.vue'
 import ProfilePage from '@/pages/profile-page/profile-page.vue'
 import SettingsPage from '@/pages/settings-page/settings-page.vue'
 import LimitsPage from '@/pages/limits-page/limits-page.vue'
-import WalletPage from '@/pages/wallet-page/wallet-page.vue'
+import WalletsPage from '@/pages/wallets-page/wallets-page.vue'
+import { useAuthStore } from '@/blockchain'
+
+/** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
+const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings'])
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,9 +30,9 @@ const router = createRouter({
       component: LimitsPage
     },
     {
-      path: '/wallet',
-      name: 'wallet',
-      component: WalletPage
+      path: '/wallets',
+      name: 'wallets',
+      component: WalletsPage
     },
     {
       path: '/:userName',
@@ -35,6 +40,17 @@ const router = createRouter({
       component: ProfilePage
     }
   ]
+})
+
+router.beforeEach(async (to) => {
+  if (!AUTH_REQUIRED_NAMES.has(to.name)) return
+  const pinia = getActivePinia()
+  if (!pinia) return
+  const authStore = useAuthStore(pinia)
+  await authStore.restoreSession()
+  if (!authStore.isUserAuthenticated) {
+    return { path: '/', replace: true }
+  }
 })
 
 export default router

@@ -61,3 +61,4 @@ export {
   generateQRCode,
   generateMnemonicQRCode,
 } from './utils'
+export { addOneWalletAddress, ensureDefaultAdditionalWallet } from './wallet-addresses'

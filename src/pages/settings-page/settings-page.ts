@@ -21,7 +21,7 @@ import {
 export type T_SettingsTabKey =
   | 'general'
   | 'notifications'
-  | 'wallet'
+  | 'wallets'
   | 'accounts'
   | 'system'
   | 'myVideos'
@@ -31,7 +31,7 @@ export type T_SettingsTabKey =
 export const SETTINGS_TABS: { key: T_SettingsTabKey; label: string }[] = [
   { key: 'general', label: 'Общие' },
   { key: 'notifications', label: 'Уведомления' },
-  { key: 'wallet', label: 'Кошелёк' },
+  { key: 'wallets', label: 'Кошельки' },
   { key: 'accounts', label: 'Аккаунты' },
   { key: 'system', label: 'Система' },
   { key: 'myVideos', label: 'Мои видео' },

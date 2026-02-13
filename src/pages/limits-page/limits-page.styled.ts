@@ -13,7 +13,7 @@ export const SC_LimitsWork = styled.div`
 
 export const SC_LimitsPage = styled.div`
   width: 100%;
-  max-width: 720px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 60px 20px 24px;
 `
@@ -22,13 +22,17 @@ export const SC_LimitsTitle = styled.h1`
   font-size: 22px;
   font-weight: 600;
   color: rgb(33, 33, 33);
-  margin: 0 0 24px;
+  margin: 24px 0;
 `
 
 export const SC_LimitsList = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
 `
 
 export const SC_LimitRow = styled.div`
@@ -39,6 +43,7 @@ export const SC_LimitRow = styled.div`
   background: rgb(249, 249, 249);
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.06);
+  min-width: 0;
 `
 
 export const SC_LimitLabel = styled.span`

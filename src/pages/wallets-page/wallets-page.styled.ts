@@ -13,7 +13,7 @@ export const SC_WalletWork = styled.div`
 
 export const SC_WalletPage = styled.div`
   width: 100%;
-  max-width: 720px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 60px 20px 24px;
 `
@@ -22,7 +22,7 @@ export const SC_WalletTitle = styled.h1`
   font-size: 22px;
   font-weight: 600;
   color: rgb(33, 33, 33);
-  margin: 0 0 24px;
+  margin: 24px 0;
 `
 
 export const SC_WalletBalanceCards = styled.div`
@@ -55,11 +55,43 @@ export const SC_WalletTableSection = styled.section`
   margin-top: 8px;
 `
 
+export const SC_WalletTableSectionSecondary = styled.section`
+  margin-top: 24px;
+`
+
+export const SC_WalletTableTitleRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 12px;
+  gap: 12px;
+`
+
 export const SC_WalletTableTitle = styled.h2`
   font-size: 16px;
   font-weight: 600;
   color: rgb(33, 33, 33);
-  margin: 0 0 12px;
+  margin: 10px;
+`
+
+export const SC_WalletAddButton = styled.button`
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(33, 33, 33);
+  background: rgb(249, 249, 249);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: rgb(240, 240, 240);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `
 
 export const SC_WalletTable = styled.div`

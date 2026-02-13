@@ -54,3 +54,6 @@ export const POST_MODAL_SCROLL_POSITION_KEY = 'BST_POST_MODAL_SCROLL_POSITION'
 
 /** Префикс ключа для списка адресов кошелька (как в старом приложении: wallets2) */
 export const WALLET_ADDRESSES_PREFIX = 'BST_WALLET_ADDRS_'
+
+/** Ключ для списка дополнительных кошельков (адреса от индекса 1 и далее). Значение: JSON Record<address, string[]> */
+export const ADDITIONAL_WALLETS_LIST_KEY = 'BST_ADDITIONAL_WALLETS_LIST'
