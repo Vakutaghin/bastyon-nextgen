@@ -71,7 +71,8 @@ export const headerUserOptions = defineComponent({
   computed: {
     menuItems() {
       return [
-        { key: this.profileLink, label: 'Мой профиль' },
+        { key: this.profileLink, label: 'Профиль' },
+        { key: '/limits', label: 'Лимиты' },
         { key: 'settings', label: 'Настройки' },
         { type: 'divider' },
         { key: 'switchAccount', label: 'Сменить аккаунт' },

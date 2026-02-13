@@ -171,6 +171,26 @@ export interface UserState extends UserProfile {
    */
   comment_unspent?: number
   comment_spent?: number
+
+  /** Лимиты на посты с видео (video_unspent / video_spent) */
+  video_unspent?: number
+  video_spent?: number
+
+  /** Лимиты на посты с аудио (audio_unspent / audio_spent) */
+  audio_unspent?: number
+  audio_spent?: number
+
+  /** Лимиты на оценки комментариев (comment_score_unspent / comment_score_spent) */
+  comment_score_unspent?: number
+  comment_score_spent?: number
+
+  /** Лимиты на жалобы (complain_unspent / complain_spent) */
+  complain_unspent?: number
+  complain_spent?: number
+
+  /** Лимиты на статьи (article_unspent / article_spent) */
+  article_unspent?: number
+  article_spent?: number
   
   /** 
    * Триальный период пользователя
