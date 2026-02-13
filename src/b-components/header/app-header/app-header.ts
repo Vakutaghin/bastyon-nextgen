@@ -1,4 +1,5 @@
 import { defineComponent, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import HeaderLogo from '@/b-components/header/header-logo/header-logo.vue'
 import HeaderSearch from '@/b-components/header/header-search/header-search.vue'
 import HeaderUser from '@/b-components/header/header-user/header-user.vue'
@@ -27,7 +28,8 @@ export const appHeaderOptions = defineComponent({
   setup() {
     const messengerStore = useMessengerStore()
     const authStore = useAuthStore()
-    
+    const { isFullScreen } = storeToRefs(messengerStore)
+
     const toggleMessenger = () => {
       if (!authStore.isUserAuthenticated) return
       messengerStore.isFullScreen = !messengerStore.isFullScreen
@@ -36,7 +38,7 @@ export const appHeaderOptions = defineComponent({
     const showMessengerIcon = computed(() => authStore.isUserAuthenticated)
 
     return {
-      messengerStore,
+      isFullScreen,
       toggleMessenger,
       showMessengerIcon
     }

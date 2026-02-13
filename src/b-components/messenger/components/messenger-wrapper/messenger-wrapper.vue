@@ -1,21 +1,21 @@
 <template>
   <!-- Full Screen Overlay Mode -->
-  <SC_FullScreenOverlay v-if="store.isFullScreen">
+  <SC_FullScreenOverlay v-if="isFullScreen">
     <SC_OverlayContent>
       <MessengerPanel />
     </SC_OverlayContent>
   </SC_FullScreenOverlay>
 
   <!-- Floating Widget Mode -->
-  <SC_MessengerWrapper v-if="isVisible && !store.isFullScreen">
-    <MessengerWindow :is-open="store.isOpen" :title="widgetTitle" @close="closeWidget">
+  <SC_MessengerWrapper v-if="isVisible && !isFullScreen">
+    <MessengerWindow :is-open="isOpen" :title="widgetTitle" @close="closeWidget">
       <template #actions>
         <SC_BackButton v-if="activeChatId || (lastTargetAddress && inviteViewActive)" @click="onWidgetBack">
           <img :src="icons.back" style="filter: brightness(0) invert(1);" />
         </SC_BackButton>
       </template>
 
-      <SC_MessengerWrapperLoader v-if="(!store.dialogsLoadedOnce || store.isLoading) && !activeChatId && !(lastTargetAddress && inviteViewActive)">
+      <SC_MessengerWrapperLoader v-if="(!dialogsLoadedOnce || isLoading) && !activeChatId && !(lastTargetAddress && inviteViewActive)">
         <SC_MessengerWrapperSpinner />
         <SC_MessengerWrapperLoaderText>Загрузка диалогов...</SC_MessengerWrapperLoaderText>
       </SC_MessengerWrapperLoader>
@@ -23,10 +23,10 @@
       <ChatRoom
         v-else-if="activeChatId"
         :key="activeChatId"
-        :messages="store.activeMessages"
+        :messages="activeMessages"
         :invite-mode="false"
-        :is-loading="store.isMessagesLoading"
-        @send="(text) => store.sendMessage(activeChatId, text)"
+        :is-loading="isMessagesLoading"
+        @send="handleSendMessage"
         @load-more="handleLoadMore"
       />
 
@@ -42,18 +42,18 @@
 
       <ChatList
         v-else
-        :dialogs="store.dialogs"
-        @select="store.openChat"
+        :dialogs="dialogs"
+        @select="openChat"
       />
     </MessengerWindow>
 
     <MessengerButton
-      :unread-count="store.totalUnreadCount"
-      :is-open="store.isOpen"
-      @click="store.toggleMessenger"
+      :unread-count="totalUnreadCount"
+      :is-open="isOpen"
+      @click="toggleMessenger"
     >
       <template #icon>
-        <img v-if="!store.isOpen" :src="icons.chat" style="filter: brightness(0) invert(1);" />
+        <img v-if="!isOpen" :src="icons.chat" style="filter: brightness(0) invert(1);" />
         <img v-else :src="icons.close" style="filter: brightness(0) invert(1);" />
       </template>
     </MessengerButton>

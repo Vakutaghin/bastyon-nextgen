@@ -1,4 +1,3 @@
-console.log('[main] Boot start')
 // Полифилл для Buffer в браузере (нужен для bip39 и других библиотек)
 import { Buffer } from 'buffer'
 if (typeof globalThis !== 'undefined') {
@@ -37,17 +36,17 @@ import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import Antd from 'ant-design-vue'
 import 'ant-design-vue/dist/reset.css'
-import './style.css'
+
 import App from '@/src.vue'
 import router from '@/router'
 import { initDatabase } from '@/db'
-import { queryClient } from './query-client'
 import { useAuthStore } from '@/blockchain'
-import { useMessengerStore } from '@/b-components/messenger/store'
 import { useNotificationsStore, useNotificationSettingsStore } from '@/stores'
+import { useMessengerStore } from '@/b-components/messenger/store'
 import { showToastsForNewNotifications } from '@/b-components/header/header-notifications/notification-toasts'
+import { queryClient } from './query-client'
+import './style.css'
 
-console.log('[main] Imports done')
 
 // Подавляем предупреждение о theme injection в dev-режиме
 // Это известная проблема в ant-design-vue v4, которая не влияет на функциональность
@@ -122,22 +121,17 @@ let mounted = false
 function doMount() {
   if (!mounted) {
     mounted = true
-    console.log('[main] Mounting app')
+
     try {
       app.mount('#app')
-      console.log('[main] App mounted')
     } catch (e) {
       console.error('[main] Mount failed:', e)
     }
   }
 }
 
-console.log('[main] initDatabase start')
-const initPromise = initDatabase()
-  .then(() => {
-    console.log('[main] initDatabase done')
-    doMount()
-  })
+initDatabase()
+  .then(() => doMount())
   .catch((error) => {
     console.error('[main] initDatabase failed:', error)
     doMount()

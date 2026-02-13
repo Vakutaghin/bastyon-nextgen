@@ -1,5 +1,4 @@
 import { defineComponent, computed, onMounted, watch, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
 
 import closeIcon from '../../img/close.svg'
 import backIcon from '../../img/back.svg'
@@ -41,8 +40,19 @@ export const messengerWrapperOptions = defineComponent({
   },
   setup() {
     const store = useMessengerStore()
-    const { activeChatId, lastTargetAddress, inviteViewActive } = storeToRefs(store)
-    const route = useRoute()
+    const {
+      isFullScreen,
+      isOpen,
+      dialogsLoadedOnce,
+      isLoading,
+      isMessagesLoading,
+      dialogs,
+      activeChatId,
+      lastTargetAddress,
+      inviteViewActive
+    } = storeToRefs(store)
+    const activeMessages = store.activeMessages
+    const totalUnreadCount = store.totalUnreadCount
     const authStore = useAuthStore()
 
     const icons = {
@@ -56,22 +66,21 @@ export const messengerWrapperOptions = defineComponent({
     })
 
     const widgetTitle = computed(() => {
-      if (store.activeChatId) {
-        const dialog = store.dialogs.find(d => d.id === store.activeChatId)
+      if (activeChatId.value) {
+        const dialog = dialogs.value.find(d => d.id === activeChatId.value)
         return dialog?.partner.name || 'Чат'
       }
-      if (store.lastTargetAddress) {
-        const profile = store.userProfiles[store.lastTargetAddress]
-        return profile?.name || store.lastTargetAddress || 'Новый чат'
+      if (lastTargetAddress.value) {
+        const profile = store.userProfiles[lastTargetAddress.value]
+        return profile?.name || lastTargetAddress.value || 'Новый чат'
       }
       return 'Сообщения'
     })
 
     const onWidgetBack = () => {
-      if (store.activeChatId) {
-        store.closeActiveChat?.()
+      if (activeChatId.value) {
         store.activeChatId = null
-      } else if (store.lastTargetAddress) {
+      } else if (lastTargetAddress.value) {
         store.clearInviteTarget()
       }
     }
@@ -87,15 +96,19 @@ export const messengerWrapperOptions = defineComponent({
     }
 
     const closeWidget = () => {
-      // Сбрасываем приглашение к новому чату — при следующем открытии покажем список диалогов
       store.clearInviteTarget()
-      // Активный диалог не сбрасываем — при открытии снова покажем тот же чат
       store.isOpen = false
     }
 
     const handleLoadMore = () => {
-      if (store.activeChatId) {
-        store.loadMoreMessages(store.activeChatId)
+      if (activeChatId.value) {
+        store.loadMoreMessages(activeChatId.value)
+      }
+    }
+
+    const handleSendMessage = (text: string) => {
+      if (activeChatId.value) {
+        store.sendMessage(activeChatId.value, text)
       }
     }
 
@@ -176,7 +189,14 @@ export const messengerWrapperOptions = defineComponent({
     })
 
     return {
-      store,
+      isFullScreen,
+      isOpen,
+      dialogsLoadedOnce,
+      isLoading,
+      isMessagesLoading,
+      dialogs,
+      activeMessages,
+      totalUnreadCount,
       activeChatId,
       lastTargetAddress,
       inviteViewActive,
@@ -187,7 +207,10 @@ export const messengerWrapperOptions = defineComponent({
       onWidgetBack,
       onChatStarted,
       icons,
-      handleLoadMore
+      handleLoadMore,
+      handleSendMessage,
+      openChat: store.openChat,
+      toggleMessenger: store.toggleMessenger
     }
   }
 })
