@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, reactive } from 'vue'
 import { Buffer } from 'buffer'
 import CryptoJS from 'crypto-js'
 
@@ -139,7 +139,7 @@ export const useMessengerStore = defineStore('messenger', () => {
   const isFullScreen = ref(false)
   const activeChatId = ref<string | null>(null)
   const dialogs = ref<Dialog[]>([])
-  const messages = ref<Record<string, Message[]>>({})
+  const messages = reactive<Record<string, Message[]>>({})
   const currentUser = ref<User>({
     id: 'me',
     name: 'Я',
@@ -407,7 +407,7 @@ export const useMessengerStore = defineStore('messenger', () => {
       if (finalCount > initialCount) {
         const timelineEvents = getRoomTimelineEvents(room)
         const mapped = await Promise.all(timelineEvents.map((e: any) => mapEventToMessage(e)))
-        messages.value[chatId] = mapped.filter((m): m is Message => Boolean(m))
+        messages[chatId] = mapped.filter((m): m is Message => Boolean(m))
       }
     } catch(e) {
       console.error('[MessengerStore] Failed to load more messages', e)
@@ -1197,7 +1197,7 @@ export const useMessengerStore = defineStore('messenger', () => {
 
         const timelineEvents = getRoomTimelineEvents(room)
         const mapped = await Promise.all(timelineEvents.map((e: any) => mapEventToMessage(e)))
-        messages.value[chatId] = mapped.filter((m): m is Message => Boolean(m))
+        messages[chatId] = mapped.filter((m): m is Message => Boolean(m))
       }
     } catch (e) {
       console.error('[MessengerStore] Failed to load messages:', e)
@@ -1253,11 +1253,11 @@ export const useMessengerStore = defineStore('messenger', () => {
         status: 'sending'
       }
 
-      if (!messages.value[chatId]) messages.value[chatId] = []
-      messages.value[chatId].push(tempMessage)
+      if (!messages[chatId]) messages[chatId] = []
+      messages[chatId].push(tempMessage)
 
       const onProgress = (loaded: number, total?: number) => {
-        const msg = messages.value[chatId]?.find(m => m.id === tempId)
+        const msg = messages[chatId]?.find(m => m.id === tempId)
         if (msg && msg.info) {
           const percent = total ? Math.min(100, Math.round((loaded / total) * 100)) : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
           msg.info.uploadProgress = percent
@@ -1361,9 +1361,9 @@ export const useMessengerStore = defineStore('messenger', () => {
         onProgress
       )
 
-      const idx = messages.value[chatId]?.findIndex(m => m.id === tempId)
+      const idx = messages[chatId]?.findIndex(m => m.id === tempId)
       if (typeof idx === 'number' && idx >= 0) {
-        messages.value[chatId].splice(idx, 1)
+        messages[chatId].splice(idx, 1)
       }
 
       try {
@@ -1372,7 +1372,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     } catch (e) {
       console.error('[MessengerStore] Failed to send audio:', e)
       // Mark temp message failed
-      const arr = messages.value[chatId]
+      const arr = messages[chatId]
       if (arr) {
         const last = arr[arr.length - 1]
         if (last && last.status === 'sending' && last.type === 'audio') {
@@ -1436,10 +1436,10 @@ export const useMessengerStore = defineStore('messenger', () => {
                       return
                     }
 
-                    if (!messages.value[roomId]) messages.value[roomId] = []
+                    if (!messages[roomId]) messages[roomId] = []
                     // Check duplicate
-                    if (!messages.value[roomId].find(m => m.id === msg.id)) {
-                      messages.value[roomId].push(msg)
+                    if (!messages[roomId].find(m => m.id === msg.id)) {
+                      messages[roomId].push(msg)
                       // Force scroll to bottom if needed? MessageList watches messages and handles it.
                     }
 
@@ -1584,7 +1584,7 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   const activeMessages = computed(() => {
     if (!activeChatId.value) return []
-    return messages.value[activeChatId.value] || []
+    return messages[activeChatId.value] || []
   })
 
   const activeDialog = computed<Dialog | null>(() => {
@@ -1848,7 +1848,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     isFullScreen.value = false
     activeChatId.value = null
     dialogs.value = []
-    messages.value = {}
+    Object.keys(messages).forEach((key) => delete messages[key])
     currentUser.value = {
       id: 'me',
       name: 'Я',

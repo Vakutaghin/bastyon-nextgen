@@ -89,9 +89,6 @@ importers:
       ecpair:
         specifier: ^3.0.0
         version: 3.0.0(typescript@5.9.3)
-      hex-captcha:
-        specifier: ^2.0.5
-        version: 2.0.5(encoding@0.1.13)
       hls.js:
         specifier: ^1.6.15
         version: 1.6.15
@@ -116,12 +113,18 @@ importers:
       randombytes:
         specifier: ^2.1.0
         version: 2.1.0
+      stream-browserify:
+        specifier: ^3.0.0
+        version: 3.0.0
       tiny-secp256k1:
         specifier: ^2.2.4
         version: 2.2.4
       typeforce:
         specifier: ^1.18.0
         version: 1.18.0
+      util:
+        specifier: ^0.12.5
+        version: 0.12.5
       varuint-bitcoin:
         specifier: ^2.0.0
         version: 2.0.0
@@ -162,6 +165,9 @@ importers:
       '@tauri-apps/plugin-fs':
         specifier: ^2.4.5
         version: 2.4.5
+      '@tauri-apps/plugin-http':
+        specifier: ^2.5.7
+        version: 2.5.7
       '@types/bn.js':
         specifier: ^5.2.0
         version: 5.2.0
@@ -180,6 +186,9 @@ importers:
       babel-plugin-styled-components:
         specifier: ^2.1.4
         version: 2.1.4(@babel/core@7.29.0)(styled-components@6.3.8(react@19.2.4))
+      cross-env:
+        specifier: ^7.0.3
+        version: 7.0.3
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -195,6 +204,10 @@ importers:
       vite-plugin-wasm:
         specifier: ^3.5.0
         version: 3.5.0(vite@5.4.21(@types/node@25.0.10))
+    optionalDependencies:
+      hex-captcha:
+        specifier: ^2.0.5
+        version: 2.0.5(encoding@0.1.13)
 
 packages:
 
@@ -814,6 +827,9 @@ packages:
       '@vue/composition-api':
         optional: true
 
+  '@tauri-apps/api@2.10.1':
+    resolution: {integrity: sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw==}
+
   '@tauri-apps/api@2.9.1':
     resolution: {integrity: sha512-IGlhP6EivjXHepbBic618GOmiWe4URJiIeZFlB7x3czM0yDHHYviH1Xvoiv4FefdkQtn6v7TuwWCRfOGdnVUGw==}
 
@@ -893,6 +909,9 @@ packages:
 
   '@tauri-apps/plugin-fs@2.4.5':
     resolution: {integrity: sha512-dVxWWGE6VrOxC7/jlhyE+ON/Cc2REJlM35R3PJX3UvFw2XwYhLGQVAIyrehenDdKjotipjYEVc4YjOl3qq90fA==}
+
+  '@tauri-apps/plugin-http@2.5.7':
+    resolution: {integrity: sha512-+F2lEH/c9b0zSsOXKq+5hZNcd9F4IIKCK1T17RqMwpCmVnx2aoqY8yIBccCd25HTYUb3j6NPVbRax/m00hKG8A==}
 
   '@types/bn.js@5.2.0':
     resolution: {integrity: sha512-DLbJ1BPqxvQhIGbeu8VbUC1DiAiahHtAYvA0ZEAa4P31F7IaArc8z3C3BRQdWX4mtLQuABG4yzp76ZrS02Ui1Q==}
@@ -1300,6 +1319,11 @@ packages:
 
   create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
+
+  cross-env@7.0.3:
+    resolution: {integrity: sha512-+/HKd6EgcQCJGh2PSjZuUitQBQynKor4wrFbRg4DtAgS1aWO+gU52xpH7M9ScGgXSYmAVS9bIJ8EzuaGw0oNAw==}
+    engines: {node: '>=10.14', npm: '>=6', yarn: '>=1'}
+    hasBin: true
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -3145,6 +3169,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+    optional: true
 
   '@matrix-org/matrix-sdk-crypto-wasm@17.1.0': {}
 
@@ -3264,6 +3289,8 @@ snapshots:
       vue: 3.5.26(typescript@5.9.3)
       vue-demi: 0.14.10(vue@3.5.26(typescript@5.9.3))
 
+  '@tauri-apps/api@2.10.1': {}
+
   '@tauri-apps/api@2.9.1': {}
 
   '@tauri-apps/cli-darwin-arm64@2.9.6':
@@ -3320,6 +3347,10 @@ snapshots:
   '@tauri-apps/plugin-fs@2.4.5':
     dependencies:
       '@tauri-apps/api': 2.9.1
+
+  '@tauri-apps/plugin-http@2.5.7':
+    dependencies:
+      '@tauri-apps/api': 2.10.1
 
   '@types/bn.js@5.2.0':
     dependencies:
@@ -3468,7 +3499,8 @@ snapshots:
 
   '@xmldom/xmldom@0.8.11': {}
 
-  abbrev@1.1.1: {}
+  abbrev@1.1.1:
+    optional: true
 
   acorn@8.15.0: {}
 
@@ -3477,6 +3509,7 @@ snapshots:
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   another-json@0.2.0: {}
 
@@ -3512,12 +3545,14 @@ snapshots:
       vue-types: 3.0.2(vue@3.5.26(typescript@5.9.3))
       warning: 4.0.3
 
-  aproba@2.1.0: {}
+  aproba@2.1.0:
+    optional: true
 
   are-we-there-yet@2.0.0:
     dependencies:
       delegates: 1.0.0
       readable-stream: 3.6.2
+    optional: true
 
   array-tree-filter@2.1.0: {}
 
@@ -3569,7 +3604,8 @@ snapshots:
       - '@babel/core'
       - supports-color
 
-  balanced-match@1.0.2: {}
+  balanced-match@1.0.2:
+    optional: true
 
   base-x@5.0.1: {}
 
@@ -3625,6 +3661,7 @@ snapshots:
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
+    optional: true
 
   brorand@1.1.0: {}
 
@@ -3740,6 +3777,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+    optional: true
 
   chokidar@5.0.0:
     dependencies:
@@ -3765,13 +3803,15 @@ snapshots:
 
   color-name@1.1.4: {}
 
-  color-support@1.1.3: {}
+  color-support@1.1.3:
+    optional: true
 
   commander@12.1.0: {}
 
   compute-scroll-into-view@1.0.20: {}
 
-  concat-map@0.0.1: {}
+  concat-map@0.0.1:
+    optional: true
 
   confbox@0.1.8: {}
 
@@ -3779,7 +3819,8 @@ snapshots:
 
   console-browserify@1.2.0: {}
 
-  console-control-strings@1.1.0: {}
+  console-control-strings@1.1.0:
+    optional: true
 
   constants-browserify@1.0.0: {}
 
@@ -3820,6 +3861,10 @@ snapshots:
       sha.js: 2.4.12
 
   create-require@1.1.1: {}
+
+  cross-env@7.0.3:
+    dependencies:
+      cross-spawn: 7.0.6
 
   cross-spawn@7.0.6:
     dependencies:
@@ -3874,6 +3919,7 @@ snapshots:
   decompress-response@4.2.1:
     dependencies:
       mimic-response: 2.1.0
+    optional: true
 
   define-data-property@1.1.4:
     dependencies:
@@ -3889,14 +3935,16 @@ snapshots:
       has-property-descriptors: 1.0.2
       object-keys: 1.1.1
 
-  delegates@1.0.0: {}
+  delegates@1.0.0:
+    optional: true
 
   des.js@1.1.0:
     dependencies:
       inherits: 2.0.4
       minimalistic-assert: 1.0.1
 
-  detect-libc@2.1.2: {}
+  detect-libc@2.1.2:
+    optional: true
 
   dexie@4.2.1: {}
 
@@ -4056,7 +4104,8 @@ snapshots:
     dependencies:
       minipass: 3.3.6
 
-  fs.realpath@1.0.0: {}
+  fs.realpath@1.0.0:
+    optional: true
 
   fsevents@2.3.3:
     optional: true
@@ -4074,6 +4123,7 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
       wide-align: 1.1.5
+    optional: true
 
   generator-function@2.0.1: {}
 
@@ -4125,6 +4175,7 @@ snapshots:
       minimatch: 3.1.2
       once: 1.4.0
       path-is-absolute: 1.0.1
+    optional: true
 
   gopd@1.2.0: {}
 
@@ -4140,7 +4191,8 @@ snapshots:
     dependencies:
       has-symbols: 1.1.0
 
-  has-unicode@2.0.1: {}
+  has-unicode@2.0.1:
+    optional: true
 
   hash-base@3.0.5:
     dependencies:
@@ -4169,6 +4221,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+    optional: true
 
   hls.js@1.6.15: {}
 
@@ -4188,6 +4241,7 @@ snapshots:
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   hyphenate-style-name@1.1.0: {}
 
@@ -4201,6 +4255,7 @@ snapshots:
     dependencies:
       once: 1.4.0
       wrappy: 1.0.2
+    optional: true
 
   inherits@2.0.4: {}
 
@@ -4349,6 +4404,7 @@ snapshots:
   make-dir@3.1.0:
     dependencies:
       semver: 6.3.1
+    optional: true
 
   math-intrinsics@1.1.0: {}
 
@@ -4387,7 +4443,8 @@ snapshots:
       bn.js: 4.12.2
       brorand: 1.1.0
 
-  mimic-response@2.1.0: {}
+  mimic-response@2.1.0:
+    optional: true
 
   minimalistic-assert@1.0.1: {}
 
@@ -4400,6 +4457,7 @@ snapshots:
   minimatch@3.1.2:
     dependencies:
       brace-expansion: 1.1.12
+    optional: true
 
   minipass@3.3.6:
     dependencies:
@@ -4431,7 +4489,8 @@ snapshots:
 
   muggle-string@0.4.1: {}
 
-  nan@2.25.0: {}
+  nan@2.25.0:
+    optional: true
 
   nanoid@3.3.11: {}
 
@@ -4463,6 +4522,7 @@ snapshots:
       whatwg-url: 5.0.0
     optionalDependencies:
       encoding: 0.1.13
+    optional: true
 
   node-releases@2.0.27: {}
 
@@ -4499,6 +4559,7 @@ snapshots:
   nopt@5.0.0:
     dependencies:
       abbrev: 1.1.1
+    optional: true
 
   npmlog@5.0.1:
     dependencies:
@@ -4506,6 +4567,7 @@ snapshots:
       console-control-strings: 1.1.0
       gauge: 3.0.2
       set-blocking: 2.0.0
+    optional: true
 
   object-assign@4.1.1: {}
 
@@ -4534,6 +4596,7 @@ snapshots:
   once@1.4.0:
     dependencies:
       wrappy: 1.0.2
+    optional: true
 
   open@8.4.2:
     dependencies:
@@ -4583,7 +4646,8 @@ snapshots:
 
   path-exists@4.0.0: {}
 
-  path-is-absolute@1.0.1: {}
+  path-is-absolute@1.0.1:
+    optional: true
 
   path-key@3.1.1: {}
 
@@ -4772,6 +4836,7 @@ snapshots:
   rimraf@3.0.2:
     dependencies:
       glob: 7.2.3
+    optional: true
 
   rimraf@6.1.2:
     dependencies:
@@ -4901,13 +4966,15 @@ snapshots:
 
   signal-exit@3.0.7: {}
 
-  simple-concat@1.0.1: {}
+  simple-concat@1.0.1:
+    optional: true
 
   simple-get@3.1.1:
     dependencies:
       decompress-response: 4.2.1
       once: 1.4.0
       simple-concat: 1.0.1
+    optional: true
 
   sisteransi@1.0.5: {}
 
@@ -5010,7 +5077,8 @@ snapshots:
       safe-buffer: 5.2.1
       typed-array-buffer: 1.0.3
 
-  tr46@0.0.3: {}
+  tr46@0.0.3:
+    optional: true
 
   tree-kill@1.2.2: {}
 
@@ -5176,7 +5244,8 @@ snapshots:
     dependencies:
       loose-envify: 1.4.0
 
-  webidl-conversions@3.0.1: {}
+  webidl-conversions@3.0.1:
+    optional: true
 
   webpack-virtual-modules@0.6.2: {}
 
@@ -5186,6 +5255,7 @@ snapshots:
     dependencies:
       tr46: 0.0.3
       webidl-conversions: 3.0.1
+    optional: true
 
   which-module@2.0.1: {}
 
@@ -5206,6 +5276,7 @@ snapshots:
   wide-align@1.1.5:
     dependencies:
       string-width: 4.2.3
+    optional: true
 
   wif@5.0.0:
     dependencies:
@@ -5223,7 +5294,8 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
 
-  wrappy@1.0.2: {}
+  wrappy@1.0.2:
+    optional: true
 
   xml2js@0.6.2:
     dependencies:

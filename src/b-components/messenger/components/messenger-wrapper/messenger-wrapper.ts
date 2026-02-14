@@ -48,10 +48,10 @@ export const messengerWrapperOptions = defineComponent({
       isMessagesLoading,
       dialogs,
       activeChatId,
+      activeMessages,
       lastTargetAddress,
       inviteViewActive
     } = storeToRefs(store)
-    const activeMessages = store.activeMessages
     const totalUnreadCount = store.totalUnreadCount
     const authStore = useAuthStore()
 
