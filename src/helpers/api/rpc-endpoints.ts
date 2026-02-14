@@ -4,6 +4,7 @@ export const rpcEndpoints = {
   getUserState: 'getuserstate',
   getUserStatistic: 'getuserstatistic',
   getUserAddress: 'getuseraddress',
+  searchUsers: 'searchusers',
 
   // Node methods
   getNodeInfo: 'getnodeinfo',

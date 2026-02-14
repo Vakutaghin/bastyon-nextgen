@@ -147,3 +147,10 @@ export const SC_WalletError = styled.div`
   font-size: 14px;
   color: rgb(180, 50, 50);
 `
+
+export const SC_WalletTabPlaceholder = styled.div`
+  padding: 40px 0;
+  text-align: center;
+  font-size: 14px;
+  color: rgb(120, 120, 120);
+`

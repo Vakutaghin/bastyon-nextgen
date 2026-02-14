@@ -10,6 +10,7 @@ import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import type { GetUserProfileResponse } from '@/types/rpc-responses/user-get'
+import WalletTransfer from './wallet-transfer/wallet-transfer.vue'
 import {
   SC_WalletWork,
   SC_WalletPage,
@@ -30,6 +31,7 @@ import {
   SC_WalletTableBalance,
   SC_WalletLoading,
   SC_WalletError,
+  SC_WalletTabPlaceholder,
 } from './wallets-page.styled'
 
 const MAX_ADDITIONAL_WALLETS = 20
@@ -37,6 +39,7 @@ const MAX_ADDITIONAL_WALLETS = 20
 export default defineComponent({
   name: 'WalletsPage',
   components: {
+    WalletTransfer,
     SC_WalletWork,
     SC_WalletPage,
     SC_WalletTitle,
@@ -56,6 +59,7 @@ export default defineComponent({
     SC_WalletTableBalance,
     SC_WalletLoading,
     SC_WalletError,
+    SC_WalletTabPlaceholder,
   },
   setup() {
     const router = useRouter()
@@ -65,6 +69,7 @@ export default defineComponent({
     const accountsWithBalances = ref<{ address: string; balance: number | null }[]>([])
     const walletListVersion = ref(0)
     const addingWallet = ref(false)
+    const activeTabKey = ref<string>('balances')
 
     const currentAddress = computed(() => authStore.getUserAddress)
     const currentProfile = computed(() => authStore.getUserProfile)
@@ -280,6 +285,7 @@ export default defineComponent({
       addingWallet,
       canAddWallet,
       onAddWallet,
+      activeTabKey,
     }
   },
 })
