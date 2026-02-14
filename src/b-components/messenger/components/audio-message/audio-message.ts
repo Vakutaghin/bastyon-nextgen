@@ -2,6 +2,7 @@ import { defineComponent, type PropType, ref, onMounted, onBeforeUnmount, comput
 import * as PIXI from 'pixi.js'
 
 import type { Message } from '../../types'
+import { matrixFetch } from '@/helpers/api/request'
 import { useMessengerStore } from '../../store'
 import { SC_AudioMessage, SC_PlayButton, SC_WaveContainer, SC_TimeLabel, SC_Error, SC_WaveSpinnerOverlay, SC_Spinner } from './styled'
 
@@ -201,12 +202,15 @@ export const audioMessageOptions = defineComponent({
           hasError.value = 'Нет URL аудио'
           return
         }
-        const response = await fetch(url, { mode: 'cors' })
+        const response = await matrixFetch(url, { mode: 'cors' })
+
         if (!response.ok) {
           hasError.value = `HTTP ${response.status}`
           return
         }
+
         let blob = await response.blob()
+
         // Attempt decryption if secrets present
         if (props.message.info?.secrets) {
           const decrypted = await store.decryptAudioData(blob, props.message)
@@ -214,44 +218,57 @@ export const audioMessageOptions = defineComponent({
             blob = decrypted
           }
         }
+
         lastBlob.value = blob
         await computeWaveform(blob)
         const oUrl = URL.createObjectURL(blob)
         objectUrl.value = oUrl
+
         const el = new Audio()
+
         el.src = oUrl
         el.preload = 'auto'
+
         el.addEventListener('loadedmetadata', () => {
           duration.value = el.duration || 0
           isReady.value = true
           showDurationMode.value = true
           drawWaveforms()
         })
+
         el.addEventListener('timeupdate', () => {
           currentTime.value = el.currentTime || 0
           drawWaveforms()
         })
+
         el.addEventListener('ended', () => {
           isPlaying.value = false
           showDurationMode.value = true
           drawWaveforms()
         })
+
         el.addEventListener('error', () => {
           // Try to enforce MIME and reload once
           try {
             if (lastBlob.value) {
               const fixedBlob = new Blob([lastBlob.value], { type: 'audio/mpeg' })
               const fixedUrl = URL.createObjectURL(fixedBlob)
+
               el.src = fixedUrl
               el.load()
+
               objectUrl.value && URL.revokeObjectURL(objectUrl.value)
               objectUrl.value = fixedUrl
+
               hasError.value = null
+
               return
             }
           } catch (_e) {}
+
           hasError.value = 'Ошибка воспроизведения аудио'
         })
+
         el.addEventListener('pause', () => {
           isPlaying.value = false
           // If pause is user-initiated, keep current time visible
@@ -260,10 +277,12 @@ export const audioMessageOptions = defineComponent({
             // remain showing current time
           }
         })
+
         el.addEventListener('forcedpause', () => {
           // External stop due to another audio starting in same chat
           showDurationMode.value = true
         })
+
         audioEl.value = el
       } catch (e: any) {
         hasError.value = e?.message || 'Ошибка загрузки аудио'
@@ -272,6 +291,7 @@ export const audioMessageOptions = defineComponent({
 
     const togglePlay = async () => {
       if (!audioEl.value) return
+
       try {
         if (!isPlaying.value) {
           if (props.message.chatId) {
@@ -283,19 +303,25 @@ export const audioMessageOptions = defineComponent({
               } catch (_e) {}
             }
           }
+
           await audioEl.value.play()
+
           isPlaying.value = true
           showDurationMode.value = false
+
           if (props.message.chatId) {
             playingByChat.set(props.message.chatId, audioEl.value!)
           }
         } else {
           audioEl.value.pause()
           isPlaying.value = false
+
           // User pause: keep current time visible
           showDurationMode.value = false
+
           if (props.message.chatId) {
             const cur = playingByChat.get(props.message.chatId)
+
             if (cur === audioEl.value) {
               playingByChat.delete(props.message.chatId)
             }
@@ -308,20 +334,28 @@ export const audioMessageOptions = defineComponent({
 
     const seekAt = (ratio: number) => {
       if (!audioEl.value || duration.value <= 0) return
+
       const t = Math.max(0, Math.min(duration.value, ratio * duration.value))
+
       audioEl.value.currentTime = t
       currentTime.value = t
+
       drawWaveforms()
     }
 
     const onSeekByClick = (evt: MouseEvent) => {
       const canvas = app.value?.canvas || null
       const el = (canvas as any) as HTMLElement || resolveDom(container.value)
+
       if (!el) return
+
       const rect = el.getBoundingClientRect()
+
       let x = evt.clientX - rect.left
+
       if (x < 0) x = 0
       if (x > rect.width) x = rect.width
+
       const ratio = rect.width > 0 ? (x / rect.width) : 0
       seekAt(ratio)
     }

@@ -1,11 +1,11 @@
 <template>
   <template v-if='!isAuthenticated'>
     <Button type='default' @click='openSignInModal'>
-      {{ userData.loginText }}
+      Войти
     </Button>
 
     <Button type='default' @click='openRegisterModal'>
-      {{ userData.registerText }}
+      Регистрация
     </Button>
   </template>
   <template v-else>

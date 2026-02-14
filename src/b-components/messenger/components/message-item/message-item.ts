@@ -1,6 +1,7 @@
 import { defineComponent, type PropType, computed } from 'vue'
 
 import type { Message } from '../../types'
+import { matrixFetch } from '@/helpers/api/request'
 import { useMessengerStore } from '../../store'
 import { SC_MessageItem, SC_MessageMeta, SC_MessageRow, SC_MessageTime } from './styled'
 import AudioMessage from '../audio-message/audio-message.vue'
@@ -102,7 +103,7 @@ export const messageItemOptions = defineComponent({
           // Check for Bastyon encryption (secrets)
           if (props.message.info?.secrets) {
             try {
-              const response = await fetch(src, { mode: 'cors' })
+              const response = await matrixFetch(src, { mode: 'cors' })
               if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
               const blob = await response.blob()
@@ -124,7 +125,7 @@ export const messageItemOptions = defineComponent({
           const fileInfo = props.message.info?.file || props.message.info?.secrets?.file
 
           if (fileInfo && fileInfo.key) {
-             const response = await fetch(src, { mode: 'cors' })
+             const response = await matrixFetch(src, { mode: 'cors' })
              const arrayBuffer = await response.arrayBuffer()
 
              try {
@@ -142,7 +143,7 @@ export const messageItemOptions = defineComponent({
           const controller = new AbortController()
           const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-          const response = await fetch(src, {
+          const response = await matrixFetch(src, {
             mode: 'cors',
             signal: controller.signal
           })

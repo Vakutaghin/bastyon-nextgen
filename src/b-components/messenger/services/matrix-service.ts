@@ -3,6 +3,7 @@ import CryptoJS from 'crypto-js'
 
 import type { KeyPair } from '@/blockchain/types/keys'
 import { isValidAddress } from '@/blockchain/core/addresses'
+import { matrixFetch } from '@/helpers/api/request'
 import { Buffer } from 'buffer'
 import servers from '@/servers.json'
 
@@ -103,6 +104,9 @@ export class MatrixService {
       if (deviceId) opts.deviceId = deviceId
     }
 
+    // Все запросы Matrix (в т.ч. /filter) через matrixFetch — в Tauri обход CORS
+    opts.fetchFn = (input: RequestInfo | URL, init?: RequestInit) => matrixFetch(input, init)
+
     this.client = sdk.createClient(opts)
 
     // Re-attach listeners
@@ -118,7 +122,10 @@ export class MatrixService {
 
   public async login(address: string, passwordOrKeyPair?: string | KeyPair, loginToken?: string) {
     try {
-      const tempClient = sdk.createClient({ baseUrl: this.baseUrl })
+      const loginOpts: any = { baseUrl: this.baseUrl }
+      loginOpts.fetchFn = (input: RequestInfo | URL, init?: RequestInit) => matrixFetch(input, init)
+
+      const tempClient = sdk.createClient(loginOpts)
 
       const normalizedAddress = this.normalizeLoginAddress(address)
 
@@ -141,6 +148,7 @@ export class MatrixService {
       } else if (keyPair) {
         const privateKeyHex = keyPair.privateKey.toString('hex')
         const passwordHash = CryptoJS.SHA256(CryptoJS.SHA256(privateKeyHex)).toString(CryptoJS.enc.Hex)
+
         const loginParams: any = {
           user: userHex,
           password: passwordHash,
@@ -155,6 +163,7 @@ export class MatrixService {
         if (!response?.access_token) {
           try {
             const available = await tempClient.isUsernameAvailable(loginParams.user)
+
             if (available) {
               response = await tempClient.register(loginParams.user, loginParams.password, null, { type: 'm.login.dummy' })
             }
@@ -174,6 +183,7 @@ export class MatrixService {
           this.client.stopClient()
           this.client = null
         }
+
         await this.init(response.user_id, response.access_token, response.device_id)
         return true
       }
@@ -187,6 +197,7 @@ export class MatrixService {
 
   public on(event: string, listener: (...args: any[]) => void) {
     this.eventQueue.push({ event, listener })
+
     if (this.client) {
       this.client.on(event, listener)
     }
@@ -194,13 +205,16 @@ export class MatrixService {
 
   private async runKeepAlive() {
     if (!this.client) return
+
     try {
       if (typeof this.client.whoami === 'function') {
         await this.client.whoami()
         return
       }
+
       if (typeof this.client.getProfileInfo === 'function') {
         const userId = typeof this.client.getUserId === 'function' ? this.client.getUserId() : null
+
         if (userId) {
           await this.client.getProfileInfo(userId)
         }
@@ -212,9 +226,11 @@ export class MatrixService {
 
   public startKeepAlive(intervalMs: number = this.keepAliveIntervalMs) {
     if (this.keepAliveTimer || !this.client) return
+
     this.keepAliveTimer = setInterval(() => {
       this.runKeepAlive()
     }, intervalMs)
+
     this.runKeepAlive()
   }
 
@@ -248,6 +264,7 @@ export class MatrixService {
    */
   public async createDirectRoom(inviteeId: string): Promise<string | null> {
     if (!this.client) throw new Error('Client not initialized')
+
     try {
       const res = await this.client.createRoom({
         invite: [inviteeId],
@@ -255,6 +272,7 @@ export class MatrixService {
         preset: 'trusted_private_chat',
         visibility: 'private'
       })
+
       const roomId = (res && (res.room_id || (res as any).roomId)) || null
       return typeof roomId === 'string' ? roomId : null
     } catch (e) {
@@ -297,9 +315,11 @@ export class MatrixService {
     })
     // matrix-js-sdk may return a string (mxc://...) or an object { content_uri: 'mxc://...' }
     const uri = typeof res === 'string' ? res : (res && typeof res === 'object' && (res as any).content_uri)
+
     if (!uri || typeof uri !== 'string') {
       throw new Error('Upload content failed: invalid response')
     }
+
     return uri
   }
 

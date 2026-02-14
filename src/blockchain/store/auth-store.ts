@@ -1182,6 +1182,7 @@ export const useAuthStore = defineStore('auth', {
             if (response.data.length > 0) {
               // Ищем данные для нашего адреса
               const userData = response.data.find((item) => item && item.address === targetAddress)
+
               if (userData) {
                 userProfile = userData
               }

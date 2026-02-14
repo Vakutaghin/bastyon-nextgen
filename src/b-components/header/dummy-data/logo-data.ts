@@ -2,6 +2,7 @@ export const logoData = {
   logoWhite: '/img/bastyon_logo_white.svg',
   siteName: 'Bastyon',
   currentLanguage: 'ru',
+
   languages: [
     { code: 'en', name: 'English', flag: '🇺🇸' },
     { code: 'ru', name: 'Русский', flag: '🇷🇺' },

@@ -8,7 +8,6 @@ import MnemonicModal from '@/b-components/header/mnemonic-modal/mnemonic-modal.v
 import AccountSwitcher from '@/b-components/header/account-switcher/account-switcher.vue'
 import ConfirmSignOutModal from '@/b-components/header/confirm-sign-out-modal/confirm-sign-out-modal.vue'
 import RegistrationValidationModal from '@/b-components/header/registration-validation-modal/registration-validation-modal.vue'
-import { userData } from '@/b-components/header/dummy-data/user-data'
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
@@ -55,7 +54,6 @@ export const headerUserOptions = defineComponent({
   },
   data() {
     return {
-      userData,
       signInModalOpen: false,
       registerModalOpen: false,
       mnemonicModalOpen: false,

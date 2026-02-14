@@ -6,6 +6,39 @@ import {
   markServerFailure,
 } from './server-backoff'
 
+/** Tauri 1/2 detection: __TAURI__, __TAURI_INTERNALS__, __TAURI_METADATA__, or any __TAURI* key. */
+function isTauriEnv(): boolean {
+  if (typeof window === 'undefined') return false
+  const w = window as any
+  if (typeof w.__TAURI__ !== 'undefined') return true
+  if (typeof w.__TAURI_INTERNALS__ !== 'undefined') return true
+  if (typeof w.__TAURI_METADATA__ !== 'undefined') return true
+  try {
+    if (Object.keys(w).some((k) => k.startsWith('__TAURI'))) return true
+  } catch {}
+  return false
+}
+
+/** In Tauri production, browser fetch hits CORS (e.g. Authorization not allowed). Plugin-http bypasses CORS. */
+export async function getTauriFetch(): Promise<typeof globalThis.fetch | undefined> {
+  const isTauri = isTauriEnv() || (import.meta.env?.VITE_TAURI === 'true')
+  if (!isTauri) return undefined
+  try {
+    const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
+    return tauriFetch as typeof globalThis.fetch
+  } catch {
+    return undefined
+  }
+}
+
+/** Fetch for Matrix/chat: uses Tauri fetch in Tauri app (bypasses CORS), else global fetch. */
+export async function matrixFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
+  const fn = await getTauriFetch()
+  return (fn ?? globalThis.fetch)(input, init)
+}
 
 export type RpcOptions = {
   node?: string
