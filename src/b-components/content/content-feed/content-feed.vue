@@ -1,5 +1,5 @@
 <template>
-  <SC_Feed>
+  <SC_Feed ref='feedRootRef'>
     <SC_FeedHeader>
       <SC_FeedHeaderLeft>
         <SC_SidebarToggleWrap>
@@ -14,6 +14,20 @@
           </Button>
         </SC_SidebarToggleWrap>
         <SC_FeedTitle>Лента</SC_FeedTitle>
+        <SC_FeedRefreshWrap>
+          <Button
+            type='text'
+            size='small'
+            title='Обновить ленту'
+            :loading='isLoading && allPosts.length > 0'
+            @click='refetch'
+          >
+            <template #icon>
+              <ReloadOutlined :style='{ fontSize: "14px" }' />
+            </template>
+            Обновить ленту
+          </Button>
+        </SC_FeedRefreshWrap>
       </SC_FeedHeaderLeft>
 
       <SC_FeedHeaderActions>
@@ -91,18 +105,32 @@
       </template>
       <Empty v-else-if='!isLoading' description='Лента пуста' />
     </SC_FeedContent>
+
+    <SC_ScrollToTop
+      v-show='showScrollToTopVisible'
+      type='button'
+      aria-label='Наверх'
+      :style='scrollToTopButtonStyle'
+      @click='scrollToTop'
+      @mouseenter='isHoveringScrollToTop = true'
+      @mouseleave='isHoveringScrollToTop = false'
+    >
+      <UpOutlined />
+      Наверх
+    </SC_ScrollToTop>
   </SC_Feed>
 </template>
 
 <script>
-import { ReloadOutlined } from '@ant-design/icons-vue'
+import { ReloadOutlined, UpOutlined } from '@ant-design/icons-vue'
 import { contentFeedOptions } from './content-feed.ts'
 
 export default {
   ...contentFeedOptions,
   components: {
     ...(contentFeedOptions.components || {}),
-    ReloadOutlined
+    ReloadOutlined,
+    UpOutlined
   }
 }
 </script>

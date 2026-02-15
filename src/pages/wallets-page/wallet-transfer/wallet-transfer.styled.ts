@@ -14,13 +14,13 @@ export const SC_TransferSwitch = styled.div`
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 `
 
-export const SC_TransferSwitchBtn = styled.button<{ $active?: boolean }>`
+export const SC_TransferSwitchBtn = styled.button<{ active?: boolean }>`
   flex: 1;
   padding: 14px 20px;
   font-size: 15px;
   font-weight: 600;
-  color: ${(p) => (p.$active ? 'rgb(33, 33, 33)' : 'rgb(120, 120, 120)')};
-  background: ${(p) => (p.$active ? 'rgb(249, 249, 249)' : 'transparent')};
+  color: ${(p) => (p.active ? 'rgb(33, 33, 33)' : 'rgb(120, 120, 120)')};
+  background: ${(p) => (p.active ? 'rgb(249, 249, 249)' : 'transparent')};
   border: none;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;

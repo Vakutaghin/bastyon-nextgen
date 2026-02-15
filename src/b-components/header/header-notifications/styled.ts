@@ -73,11 +73,11 @@ export const SC_NotificationsList = styled.div`
   min-height: 0;
 `
 
-export const SC_NotificationItem = styled.div<{ $seen?: boolean }>`
+export const SC_NotificationItem = styled.div<{ seen?: boolean }>`
   border-radius: 6px;
   padding: 10px 12px;
-  background: ${(p) => (p.$seen ? '#fafafa' : 'rgba(24, 144, 255, 0.04)')};
-  border: 1px solid ${(p) => (p.$seen ? '#e8e8e8' : 'rgba(24, 144, 255, 0.15)')};
+  background: ${(p) => (p.seen ? '#fafafa' : 'rgba(24, 144, 255, 0.04)')};
+  border: 1px solid ${(p) => (p.seen ? '#e8e8e8' : 'rgba(24, 144, 255, 0.15)')};
   cursor: pointer;
   transition: background-color 0.15s;
   display: flex;
@@ -85,7 +85,7 @@ export const SC_NotificationItem = styled.div<{ $seen?: boolean }>`
   gap: 8px;
 
   &:hover {
-    background: ${(p) => (p.$seen ? '#f5f5f5' : 'rgba(24, 144, 255, 0.08)')};
+    background: ${(p) => (p.seen ? '#f5f5f5' : 'rgba(24, 144, 255, 0.08)')};
   }
 `
 

@@ -1,4 +1,4 @@
-import { defineComponent, watch, onMounted, nextTick, computed } from 'vue'
+import { defineComponent, watch, onMounted, onUnmounted, nextTick, computed, ref } from 'vue'
 import { usePostsStore } from '@/stores/posts-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useInfiniteFeed } from '@/composables/use-infinite-feed'
@@ -12,7 +12,8 @@ import {
   LoadingOutlined,
   ReloadOutlined,
   MenuFoldOutlined,
-  MenuUnfoldOutlined
+  MenuUnfoldOutlined,
+  UpOutlined
 } from '@ant-design/icons-vue'
 import {
   SC_Feed,
@@ -25,7 +26,9 @@ import {
   SC_FeedLoading,
   SC_FeedError,
   SC_FeedLoadingMore,
-  SC_FeedEnd
+  SC_FeedEnd,
+  SC_FeedRefreshWrap,
+  SC_ScrollToTop
 } from './styled'
 
 export const contentFeedOptions = defineComponent({
@@ -51,7 +54,10 @@ export const contentFeedOptions = defineComponent({
     SC_FeedLoading,
     SC_FeedError,
     SC_FeedLoadingMore,
-    SC_FeedEnd
+    SC_FeedEnd,
+    SC_FeedRefreshWrap,
+    SC_ScrollToTop,
+    UpOutlined
   },
   props: {
     rightSidebarVisible: {
@@ -130,6 +136,63 @@ export const contentFeedOptions = defineComponent({
 
     const isFavoritesTab = computed(() => filtersStore.activeTab === 6)
 
+    // Плавающая кнопка «наверх» при прокрутке > 100vh — центрируем относительно контентной части (SC_HomeMainContent)
+    const feedRootRef = ref<HTMLElement | null>(null)
+    const showScrollToTop = ref(false)
+    const isHoveringScrollToTop = ref(false)
+    const scrollToTopLeftPx = ref<number | null>(null)
+    const scrollThreshold = () => typeof window !== 'undefined' ? window.innerHeight : 800
+
+    const updateScrollToTopPosition = () => {
+      const el = feedRootRef.value && ((feedRootRef.value as any).$el ?? feedRootRef.value)
+      const parent = el?.parentElement
+      if (parent && typeof window !== 'undefined') {
+        const rect = parent.getBoundingClientRect()
+        scrollToTopLeftPx.value = rect.left + rect.width / 2
+      } else {
+        scrollToTopLeftPx.value = null
+      }
+    }
+
+    const onScroll = () => {
+      if (typeof window !== 'undefined') {
+        showScrollToTop.value = window.scrollY > scrollThreshold()
+        updateScrollToTopPosition()
+      }
+    }
+
+    // Не скрывать кнопку, пока на неё наведён курсор
+    const showScrollToTopVisible = computed(() => showScrollToTop.value || isHoveringScrollToTop.value)
+
+    const scrollToTopButtonStyle = computed(() => {
+      const left = scrollToTopLeftPx.value
+      return left != null ? { left: `${left}px` } : { left: '50%' }
+    })
+
+    const scrollToTop = () => {
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }
+
+    onMounted(() => {
+      if (typeof window !== 'undefined') {
+        window.addEventListener('scroll', onScroll, { passive: true })
+        window.addEventListener('resize', updateScrollToTopPosition)
+        nextTick(() => {
+          onScroll()
+          updateScrollToTopPosition()
+        })
+      }
+    })
+
+    onUnmounted(() => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('scroll', onScroll)
+        window.removeEventListener('resize', updateScrollToTopPosition)
+      }
+    })
+
     return {
       allPosts,
       isLoading,
@@ -142,7 +205,12 @@ export const contentFeedOptions = defineComponent({
       handleShare,
       refetch,
       isServerError,
-      isFavoritesTab
+      isFavoritesTab,
+      feedRootRef,
+      showScrollToTopVisible,
+      isHoveringScrollToTop,
+      scrollToTopButtonStyle,
+      scrollToTop
     }
   }
 })

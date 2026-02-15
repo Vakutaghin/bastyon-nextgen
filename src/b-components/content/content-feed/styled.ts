@@ -124,3 +124,44 @@ export const SC_FeedEnd = styled.div`
     margin: 0;
   }
 `
+
+export const SC_FeedRefreshWrap = styled.div`
+  display: inline-flex;
+  align-items: center;
+`
+
+export const SC_ScrollToTop = styled.button`
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: rgb(33, 37, 41);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translate(-50%, -1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  &:active {
+    transform: translate(-50%, 0);
+  }
+
+  .anticon {
+    font-size: 14px;
+  }
+`

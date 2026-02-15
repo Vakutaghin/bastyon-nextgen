@@ -3,14 +3,14 @@
     <SC_TransferSwitch>
       <SC_TransferSwitchBtn
         type="button"
-        :$active="mode === 'send'"
+        :active="mode === 'send'"
         @click="mode = 'send'"
       >
         Отправка
       </SC_TransferSwitchBtn>
       <SC_TransferSwitchBtn
         type="button"
-        :$active="mode === 'receive'"
+        :active="mode === 'receive'"
         @click="mode = 'receive'"
       >
         Получение

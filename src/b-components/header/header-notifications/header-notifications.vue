@@ -4,7 +4,7 @@
     v-model:open="visible"
     :trigger="['click']"
     placement="bottomRight"
-    :getPopupContainer="(trigger) => trigger.closest('header') || document.body"
+    :getPopupContainer="getPopupContainer"
     @openChange="onOpenChange"
   >
     <SC_NotificationsWrapper>
@@ -38,7 +38,7 @@
           <SC_NotificationItem
             v-for="item in list"
             :key="item.id"
-            :$seen="isSeen(item)"
+            :seen="isSeen(item)"
           >
             <SC_NotificationItemBody @click="onItemClick(item)">
               <SC_NotificationItemTitle>{{ item.title }}</SC_NotificationItemTitle>
@@ -51,7 +51,7 @@
               <Dropdown
                 trigger="click"
                 placement="bottomRight"
-                :getPopupContainer="(trigger) => trigger?.closest?.('.ant-dropdown') || document.body"
+                :getPopupContainer="getPopupContainerInner"
               >
                 <SC_NotificationItemTrigger><EllipsisOutlined /></SC_NotificationItemTrigger>
                 <template #overlay>

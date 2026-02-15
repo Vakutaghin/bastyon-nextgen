@@ -99,8 +99,17 @@ export default defineComponent({
     })
 
     const formattedUserAbout = computed(() => {
-      const text = props.profile?.a || props.profile?.r || ''
+      let text = props.profile?.a || props.profile?.r || ''
       if (!text) return ''
+
+      // Если описание пришло в URI-encoded виде — декодируем
+      if (typeof text === 'string' && /%[0-9A-Fa-f]{2}/.test(text)) {
+        try {
+          text = decodeURIComponent(text.replace(/\+/g, ' '))
+        } catch {
+          // оставляем как есть при ошибке декодирования
+        }
+      }
 
       // Escape HTML
       const escapedText = text

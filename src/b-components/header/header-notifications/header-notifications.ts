@@ -84,6 +84,23 @@ export const headerNotificationsOptions = defineComponent({
       notificationsStore.hideAllNotifications()
     }
 
+    /** Контейнер для overlay: в Tauri document может быть недоступен в момент вызова */
+    const getPopupContainer = (trigger: HTMLElement | undefined) => {
+      const doc = typeof document !== 'undefined' ? document : (typeof window !== 'undefined' ? (window as Window & { document?: Document }).document : undefined)
+      const node = trigger?.closest?.('header')
+      if (node) return node
+      if (doc?.body) return doc.body
+      return undefined
+    }
+
+    const getPopupContainerInner = (trigger: HTMLElement | undefined) => {
+      const doc = typeof document !== 'undefined' ? document : (typeof window !== 'undefined' ? (window as Window & { document?: Document }).document : undefined)
+      const node = trigger?.closest?.('.ant-dropdown')
+      if (node) return node
+      if (doc?.body) return doc.body
+      return undefined
+    }
+
     return {
       authStore,
       notificationsStore,
@@ -97,7 +114,9 @@ export const headerNotificationsOptions = defineComponent({
       onItemClick,
       onOpenChange,
       onItemMenuClick,
-      onClearAll
+      onClearAll,
+      getPopupContainer,
+      getPopupContainerInner
     }
   },
   computed: {
