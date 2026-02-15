@@ -3,8 +3,34 @@
     <SC_WalletPage>
       <SC_WalletTitle>Кошельки</SC_WalletTitle>
 
-      <a-tabs v-model:activeKey="activeTabKey" class="wallet-tabs" :destroyInactiveTabPane="false">
-        <a-tab-pane key="balances" tab="Балансы">
+      <SC_WalletTabs>
+        <SC_WalletTabList>
+          <SC_WalletTabButton
+            type="button"
+            :class="{ active: activeTabKey === 'balances' }"
+            @click="activeTabKey = 'balances'"
+          >
+            Балансы
+          </SC_WalletTabButton>
+          <SC_WalletTabButton
+            type="button"
+            :class="{ active: activeTabKey === 'transfers' }"
+            @click="activeTabKey = 'transfers'"
+          >
+            Переводы
+          </SC_WalletTabButton>
+          <SC_WalletTabButton
+            type="button"
+            :class="{ active: activeTabKey === 'buy' }"
+            @click="activeTabKey = 'buy'"
+          >
+            Покупка/продажа
+          </SC_WalletTabButton>
+        </SC_WalletTabList>
+
+        <SC_WalletTabPanels>
+          <SC_WalletTabPanel :class="{ active: activeTabKey === 'balances' }">
+
           <SC_WalletLoading v-if="loading && !hasAddresses">
             Загрузка...
           </SC_WalletLoading>
@@ -79,16 +105,17 @@
               </SC_WalletTable>
             </SC_WalletTableSectionSecondary>
           </template>
-        </a-tab-pane>
+          </SC_WalletTabPanel>
 
-        <a-tab-pane key="transfers" tab="Переводы">
-          <WalletTransfer />
-        </a-tab-pane>
+          <SC_WalletTabPanel :class="{ active: activeTabKey === 'transfers' }">
+            <WalletTransfer />
+          </SC_WalletTabPanel>
 
-        <a-tab-pane key="buy" tab="Покупка PKOIN">
-          <SC_WalletTabPlaceholder>Раздел в разработке.</SC_WalletTabPlaceholder>
-        </a-tab-pane>
-      </a-tabs>
+          <SC_WalletTabPanel :class="{ active: activeTabKey === 'buy' }">
+            <PkoinChart />
+          </SC_WalletTabPanel>
+        </SC_WalletTabPanels>
+      </SC_WalletTabs>
     </SC_WalletPage>
   </SC_WalletWork>
 </template>
@@ -98,12 +125,3 @@ import walletsPage from './wallets-page'
 
 export default walletsPage
 </script>
-
-<style scoped>
-.wallet-tabs {
-  margin-top: 8px;
-}
-.wallet-tabs :deep(.ant-tabs-nav) {
-  margin-bottom: 20px;
-}
-</style>

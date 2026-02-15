@@ -32,7 +32,7 @@ const themeConfig = computed<ThemeConfig>(() => ({
 </script>
 
 <template>
-  <ConfigProvider :theme="themeConfig">
+  <ConfigProvider prefixCls="ant" :theme="themeConfig">
     <AppLayout />
     <!-- Video Uploader - fixed кнопка и модалка (на верхнем уровне) -->
     <VideoUploader />

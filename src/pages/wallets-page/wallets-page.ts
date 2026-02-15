@@ -11,6 +11,7 @@ import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import type { GetUserProfileResponse } from '@/types/rpc-responses/user-get'
 import WalletTransfer from './wallet-transfer/wallet-transfer.vue'
+import PkoinChart from './pkoin-chart/pkoin-chart.vue'
 import {
   SC_WalletWork,
   SC_WalletPage,
@@ -32,6 +33,11 @@ import {
   SC_WalletLoading,
   SC_WalletError,
   SC_WalletTabPlaceholder,
+  SC_WalletTabs,
+  SC_WalletTabList,
+  SC_WalletTabButton,
+  SC_WalletTabPanels,
+  SC_WalletTabPanel,
 } from './wallets-page.styled'
 
 const MAX_ADDITIONAL_WALLETS = 20
@@ -40,6 +46,7 @@ export default defineComponent({
   name: 'WalletsPage',
   components: {
     WalletTransfer,
+    PkoinChart,
     SC_WalletWork,
     SC_WalletPage,
     SC_WalletTitle,
@@ -60,6 +67,11 @@ export default defineComponent({
     SC_WalletLoading,
     SC_WalletError,
     SC_WalletTabPlaceholder,
+    SC_WalletTabs,
+    SC_WalletTabList,
+    SC_WalletTabButton,
+    SC_WalletTabPanels,
+    SC_WalletTabPanel,
   },
   setup() {
     const router = useRouter()

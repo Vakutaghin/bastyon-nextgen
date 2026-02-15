@@ -154,3 +154,46 @@ export const SC_WalletTabPlaceholder = styled.div`
   font-size: 14px;
   color: rgb(120, 120, 120);
 `
+
+export const SC_WalletTabs = styled.div`
+  margin-top: 8px;
+`
+
+export const SC_WalletTabList = styled.nav`
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  margin-bottom: 20px;
+`
+
+export const SC_WalletTabButton = styled.button`
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(120, 120, 120);
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+
+  &:hover {
+    color: rgb(33, 33, 33);
+  }
+
+  &.active {
+    color: rgb(22, 119, 255);
+    border-bottom-color: rgb(22, 119, 255);
+  }
+`
+
+export const SC_WalletTabPanels = styled.div`
+  min-height: 200px;
+`
+
+export const SC_WalletTabPanel = styled.div`
+  display: none;
+  &.active {
+    display: block;
+  }
+`

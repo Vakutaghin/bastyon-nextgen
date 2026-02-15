@@ -34,7 +34,7 @@ if (typeof process === 'undefined') {
 import { createApp, watch } from 'vue'
 import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
-import Antd from 'ant-design-vue'
+import Antd, { ConfigProvider } from 'ant-design-vue'
 import 'ant-design-vue/dist/reset.css'
 
 import App from '@/src.vue'
@@ -73,6 +73,8 @@ app.use(VueQueryPlugin, { queryClient })
 
 // Регистрируем Ant Design Vue глобально
 app.use(Antd)
+// Инициализируем глобальный конфиг до монтирования (избегаем "reading 'prefixCls'" в API: modal, message, notification)
+ConfigProvider.config({ prefixCls: 'ant' })
 
 // Регистрируем Router
 app.use(router)
