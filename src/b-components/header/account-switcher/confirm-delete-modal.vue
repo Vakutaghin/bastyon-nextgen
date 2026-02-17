@@ -5,6 +5,7 @@
     :centered="true"
     :closable="true"
     :maskClosable="true"
+    :z-index="2700"
     @cancel="handleCancel"
   >
     <template #title>

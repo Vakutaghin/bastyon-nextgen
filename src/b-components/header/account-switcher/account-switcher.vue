@@ -7,6 +7,7 @@
     :closable="true"
     :maskClosable="true"
     :destroyOnClose="true"
+    :z-index="2600"
     @cancel="handleCancel"
   >
     <SC_AccountSwitcher>
@@ -101,6 +102,7 @@
     <MnemonicModal
       v-model:open="mnemonicModalOpen"
       :mnemonic="mnemonic"
+      :privateKeyHex="privateKeyHex"
       @close="handleMnemonicModalClose"
     />
   </Modal>

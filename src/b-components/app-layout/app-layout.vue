@@ -9,6 +9,8 @@
     </SC_Appcnt>
 
     <MessengerWrapper />
+
+    <PostModal />
   </SC_Application>
 </template>
 

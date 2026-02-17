@@ -323,6 +323,24 @@ export class MatrixService {
     return uri
   }
 
+  /**
+   * Отправить реакцию на сообщение (m.reaction с m.annotation).
+   * @param roomId — ID комнаты
+   * @param eventId — ID события (сообщения), на которое ставим реакцию
+   * @param key — эмодзи или текст реакции (например "👍", "❤️")
+   */
+  public async sendReaction(roomId: string, eventId: string, key: string) {
+    if (!this.client) throw new Error('Client not initialized')
+
+    return this.client.sendEvent(roomId, 'm.reaction', {
+      'm.relates_to': {
+        event_id: eventId,
+        key,
+        rel_type: 'm.annotation',
+      },
+    })
+  }
+
   public async sendAudio(
     roomId: string,
     data: {

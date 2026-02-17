@@ -73,8 +73,8 @@
   <MnemonicModal
     v-model:open='mnemonicModalOpen'
     :mnemonic='mnemonic'
+    :privateKeyHex='privateKeyHex'
     @close='handleMnemonicModalClose'
-    @dontShowAgain='handleDontShowMnemonicAgain'
   />
 
   <AccountSwitcher

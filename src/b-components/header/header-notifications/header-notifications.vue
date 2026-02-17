@@ -5,6 +5,8 @@
     :trigger="['click']"
     placement="bottomRight"
     :getPopupContainer="getPopupContainer"
+    overlay-class-name="header-notifications-dropdown"
+    :overlay-style="{ zIndex: 3000 }"
     @openChange="onOpenChange"
   >
     <SC_NotificationsWrapper>

@@ -11,7 +11,7 @@ import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { PcryptoService, type User as PcryptoUser } from './services/pcrypto'
 import { matrixService } from './services/matrix-service'
 import glassSound from './sounds/glass.mp3'
-import type { Dialog, Message, User } from './types'
+import type { Dialog, Message, MessageReaction, User } from './types'
 
 // Helper functions for hex and base64 conversion
 function hexStringToUint8Array(hexString: string): Uint8Array {
@@ -76,6 +76,12 @@ const isRenderableMessageEvent = (event: any): boolean => {
   const msgtype = content.msgtype
   if (msgtype === 'm.text' || msgtype === 'm.notice' || msgtype === 'm.emote' || msgtype === 'm.encrypted' || msgtype === 'm.audio') return true
   return typeof content.body === 'string' && content.body.trim().length > 0
+}
+
+/** Событие — именно сообщение (не реакция и не другое отношение). Нужно для lastMessage/сортировки диалогов. */
+const isMessageEvent = (event: any): boolean => {
+  const type = getEventType(event)
+  return type === 'm.room.message' || type === 'm.room.encrypted'
 }
 
 const getMatrixId = (userId: string): string => {
@@ -362,6 +368,31 @@ export const useMessengerStore = defineStore('messenger', () => {
     return Array.isArray(room.timeline) ? room.timeline : []
   }
 
+  /** Реакции на событие из room.relations (m.annotation / m.reaction) */
+  const getReactionsForEventId = (room: any, eventId: string, myUserId: string): MessageReaction[] => {
+    if (!room?.relations?.getChildEventsForEvent) return []
+    const relations = room.relations.getChildEventsForEvent(eventId, 'm.annotation', 'm.reaction')
+    if (!relations?.getSortedAnnotationsByKey) return []
+    const sorted = relations.getSortedAnnotationsByKey()
+    if (!sorted || !Array.isArray(sorted)) return []
+    return sorted.map(([key, eventsSet]: [string, Set<unknown>]) => {
+      const events = Array.from(eventsSet as Set<{ getSender?: () => string }>)
+      const count = events.length
+      const my = events.some((e) => (e.getSender ? e.getSender() : (e as any).sender) === myUserId)
+      return { key, count, my }
+    })
+  }
+
+  const enrichMessagesWithReactions = (room: any, msgList: Message[], myUserId: string) => {
+    if (!room || !myUserId) return
+    msgList.forEach((msg) => {
+      if (msg.id && msg.id.startsWith('$')) {
+        msg.reactions = getReactionsForEventId(room, msg.id, myUserId)
+        if (msg.reactions?.length === 0) msg.reactions = undefined
+      }
+    })
+  }
+
   const paginateRoomHistory = async (room: any) => {
     const client = matrixService.getClient()
     if (!client || !room || typeof room.getLiveTimeline !== 'function') return
@@ -407,7 +438,9 @@ export const useMessengerStore = defineStore('messenger', () => {
       if (finalCount > initialCount) {
         const timelineEvents = getRoomTimelineEvents(room)
         const mapped = await Promise.all(timelineEvents.map((e: any) => mapEventToMessage(e)))
-        messages[chatId] = mapped.filter((m): m is Message => Boolean(m))
+        const list = mapped.filter((m): m is Message => Boolean(m))
+        messages[chatId] = list
+        if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')
       }
     } catch(e) {
       console.error('[MessengerStore] Failed to load more messages', e)
@@ -1070,7 +1103,9 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     let lastMessage: Message | undefined = undefined
     for (let i = timelineEvents.length - 1; i >= 0; i -= 1) {
-      const mapped = await mapEventToMessage(timelineEvents[i], false)
+      const ev = timelineEvents[i]
+      if (!isMessageEvent(ev)) continue
+      const mapped = await mapEventToMessage(ev, false)
       if (mapped) {
         lastMessage = mapped
         break
@@ -1197,7 +1232,10 @@ export const useMessengerStore = defineStore('messenger', () => {
 
         const timelineEvents = getRoomTimelineEvents(room)
         const mapped = await Promise.all(timelineEvents.map((e: any) => mapEventToMessage(e)))
-        messages[chatId] = mapped.filter((m): m is Message => Boolean(m))
+        const list = mapped.filter((m): m is Message => Boolean(m))
+        messages[chatId] = list
+        const client = matrixService.getClient()
+        if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')
       }
     } catch (e) {
       console.error('[MessengerStore] Failed to load messages:', e)
@@ -1213,6 +1251,28 @@ export const useMessengerStore = defineStore('messenger', () => {
       // Matrix SDK handles sync
     } catch (e) {
       console.error('[MessengerStore] Failed to send message:', e)
+    }
+  }
+
+  const sendReaction = async (chatId: string, eventId: string, key: string) => {
+    try {
+      const list = messages[chatId]
+      const msg = list?.find((m) => m.id === eventId)
+      if (msg) {
+        if (!msg.reactions) msg.reactions = []
+        const existing = msg.reactions.find((r) => r.key === key)
+        if (existing) {
+          if (!existing.my) {
+            existing.count += 1
+            existing.my = true
+          }
+        } else {
+          msg.reactions.push({ key, count: 1, my: true })
+        }
+      }
+      await matrixService.sendReaction(chatId, eventId, key)
+    } catch (e) {
+      console.error('[MessengerStore] Failed to send reaction:', e)
     }
   }
 
@@ -1401,8 +1461,18 @@ export const useMessengerStore = defineStore('messenger', () => {
           matrixService.on('Room.timeline', async (event: any, room: any, toStartOfTimeline: boolean) => {
              if (toStartOfTimeline) return
 
+             const evType = getEventType(event)
+             if (evType === 'm.reaction') {
+               const roomId = getEventRoomId(event)
+               if (activeChatId.value === roomId) {
+                 const client = matrixService.getClient()
+                 const list = messages[roomId]
+                 if (client && list) enrichMessagesWithReactions(room, list, client.getUserId() || '')
+               }
+               return
+             }
+
              try {
-                const type = getEventType(event)
                 if (isRenderableMessageEvent(event)) {
                   const roomId = getEventRoomId(event)
 
@@ -1442,6 +1512,8 @@ export const useMessengerStore = defineStore('messenger', () => {
                       messages[roomId].push(msg)
                       // Force scroll to bottom if needed? MessageList watches messages and handles it.
                     }
+                    const clientForReactions = matrixService.getClient()
+                    if (clientForReactions) enrichMessagesWithReactions(room, messages[roomId], clientForReactions.getUserId() || '')
 
                     // Mark as read immediately if active
                     try {
@@ -1892,6 +1964,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     toggleMessenger,
     openMessenger,
     sendMessage,
+    sendReaction,
     sendAudio,
     initMatrix,
     logout,

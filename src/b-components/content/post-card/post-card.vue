@@ -94,17 +94,6 @@
     </component>
   </SC_PostCard>
 
-  <Teleport v-if='!showFull' to='body'>
-    <PostModal
-      :isOpen='isModalOpen'
-      :post='post'
-      @close='closePostModal'
-      @like='handleLike'
-      @comment='handleComment'
-      @share='handleShare'
-    />
-  </Teleport>
-
   <ImageGallery
     v-if='post.images && post.images.length > 0'
     v-model:visible='isImageGalleryOpen'

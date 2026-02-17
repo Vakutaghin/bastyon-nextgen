@@ -8,10 +8,10 @@ import MnemonicModal from '@/b-components/header/mnemonic-modal/mnemonic-modal.v
 import AccountSwitcher from '@/b-components/header/account-switcher/account-switcher.vue'
 import ConfirmSignOutModal from '@/b-components/header/confirm-sign-out-modal/confirm-sign-out-modal.vue'
 import RegistrationValidationModal from '@/b-components/header/registration-validation-modal/registration-validation-modal.vue'
-import { useAuthStore } from '@/blockchain'
+import { useAuthStore, detectPrivateKeyFormat, recoverKeyPair } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
-import { shouldShowMnemonic, setDontShowMnemonic } from '@/helpers/common/mnemonic-storage'
+import { shouldShowMnemonic } from '@/helpers/common/mnemonic-storage'
 import {
   SC_UserDetails,
   SC_UserName,
@@ -58,6 +58,7 @@ export const headerUserOptions = defineComponent({
       registerModalOpen: false,
       mnemonicModalOpen: false,
       mnemonic: '',
+      privateKeyHex: '',
       accountSwitcherOpen: false,
       confirmSignOutOpen: false,
       validationModalOpen: false,
@@ -267,12 +268,7 @@ export const headerUserOptions = defineComponent({
     handleMnemonicModalClose() {
       this.mnemonicModalOpen = false
       this.mnemonic = ''
-    },
-    handleDontShowMnemonicAgain() {
-      const address = this.authStore.getUserAddress
-      if (address) {
-        setDontShowMnemonic(address)
-      }
+      this.privateKeyHex = ''
     },
     handleRegisterCancel() {
       this.registerModalOpen = false
@@ -357,13 +353,31 @@ export const headerUserOptions = defineComponent({
       }
 
       if (shouldShowMnemonic(address)) {
-        // Загружаем мнемонику из хранилища
         const { loadEncryptedMnemonic } = await import('@/blockchain/storage')
-        const result = loadEncryptedMnemonic(true) // Проверяем в localStorage
+        const result = loadEncryptedMnemonic(true)
 
-        if (result.success && result.data) {
-          this.mnemonic = result.data
-          // Показываем модалку с задержкой (как в старом приложении - 3 секунды)
+        if (result.success && result.data && result.data.trim()) {
+          const raw = result.data.trim()
+          const format = detectPrivateKeyFormat(raw)
+          if (format === 'mnemonic') {
+            this.mnemonic = raw
+            this.privateKeyHex = ''
+          } else if (format === 'hex') {
+            this.mnemonic = ''
+            this.privateKeyHex = raw
+          } else if (format === 'wif') {
+            try {
+              const { keyPair } = recoverKeyPair(raw)
+              this.mnemonic = ''
+              this.privateKeyHex = keyPair?.privateKey
+                ? (Buffer.isBuffer(keyPair.privateKey) ? keyPair.privateKey.toString('hex') : String(keyPair.privateKey))
+                : ''
+            } catch {
+              return
+            }
+          } else {
+            return
+          }
           setTimeout(() => {
             this.mnemonicModalOpen = true
           }, 3000)

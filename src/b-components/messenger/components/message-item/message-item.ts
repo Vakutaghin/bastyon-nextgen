@@ -1,11 +1,22 @@
-import { defineComponent, type PropType, computed } from 'vue'
+import { defineComponent, type PropType, computed, ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
 
 import type { Message } from '../../types'
 import { matrixFetch } from '@/helpers/api/request'
 import { useMessengerStore } from '../../store'
-import { SC_MessageItem, SC_MessageMeta, SC_MessageRow, SC_MessageTime } from './styled'
+import {
+  SC_MessageItem,
+  SC_MessageMeta,
+  SC_MessageRow,
+  SC_MessageTime,
+  SC_ReactionsRow,
+  SC_ReactionPill,
+  SC_ReactionButton,
+  SC_ReactionPicker,
+  SC_ReactionPickerEmoji
+} from './styled'
 import AudioMessage from '../audio-message/audio-message.vue'
 
+const QUICK_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
 
 export const messageItemOptions = defineComponent({
   name: 'MessageItem',
@@ -14,6 +25,11 @@ export const messageItemOptions = defineComponent({
     SC_MessageMeta,
     SC_MessageRow,
     SC_MessageTime,
+    SC_ReactionsRow,
+    SC_ReactionPill,
+    SC_ReactionButton,
+    SC_ReactionPicker,
+    SC_ReactionPickerEmoji,
     AudioMessage
   },
   props: {
@@ -207,6 +223,145 @@ export const messageItemOptions = defineComponent({
       return decrypted
     }
 
-    return { formatTime, displayName, isMine, formattedText, onAudioError, isCompact }
+    const showReactionPicker = ref(false)
+    const reactionTriggerRef = ref<HTMLElement | null>(null)
+    const reactionPickerRef = ref<HTMLElement | null>(null)
+    const pickerStyle = ref<{ position: string; top: string; left: string; right?: string; bottom?: string; zIndex: number } | null>(null)
+    let scrollParent: HTMLElement | null = null
+    let clickOutsideHandler: ((e: MouseEvent) => void) | null = null
+    let scrollHandler: (() => void) | null = null
+
+    const canReact = computed(() => {
+      if (typeof props.message.id !== 'string' || !props.message.id.startsWith('$')) return false
+      if (isMine.value) return false
+      return true
+    })
+
+    function getScrollParent(el: HTMLElement | null): HTMLElement | null {
+      if (!el) return null
+      let parent = el.parentElement
+      while (parent) {
+        const style = getComputedStyle(parent)
+        const overflow = style.overflow + style.overflowY + style.overflowX
+        if (/(auto|scroll|overlay)/.test(overflow)) return parent
+        parent = parent.parentElement
+      }
+      return null
+    }
+
+    function asElement(refVal: unknown): HTMLElement | null {
+      if (!refVal) return null
+      const el = (refVal as { $el?: HTMLElement })?.$el ?? refVal
+      return el instanceof HTMLElement ? el : null
+    }
+
+    function positionPicker() {
+      const trigger = asElement(reactionTriggerRef.value)
+      const picker = asElement(reactionPickerRef.value)
+      if (!trigger || !picker) return
+      const container = getScrollParent(trigger) || document.documentElement
+      const containerRect = container.getBoundingClientRect()
+      const triggerRect = trigger.getBoundingClientRect()
+      const pickerRect = picker.getBoundingClientRect()
+      const gap = 4
+      const padding = 8
+      const pickerHeight = pickerRect.height || 44
+      const pickerWidth = pickerRect.width || 220
+      let top: number
+      if (triggerRect.top - containerRect.top >= pickerHeight + gap) {
+        top = triggerRect.top - pickerHeight - gap
+      } else if (containerRect.bottom - triggerRect.bottom >= pickerHeight + gap) {
+        top = triggerRect.bottom + gap
+      } else {
+        top = Math.max(containerRect.top + padding, containerRect.bottom - pickerHeight - padding)
+      }
+      let left = triggerRect.left
+      if (left + pickerWidth > containerRect.right - padding) {
+        left = containerRect.right - pickerWidth - padding
+      }
+      if (left < containerRect.left + padding) {
+        left = containerRect.left + padding
+      }
+      pickerStyle.value = {
+        position: 'fixed',
+        top: `${top}px`,
+        left: `${left}px`,
+        right: 'auto',
+        bottom: 'auto',
+        zIndex: 10000
+      }
+    }
+
+    const toggleReactionPicker = () => {
+      if (!canReact.value) return
+      showReactionPicker.value = !showReactionPicker.value
+      if (showReactionPicker.value) {
+        nextTick(() => {
+          nextTick(() => positionPicker())
+        })
+      } else {
+        pickerStyle.value = null
+      }
+    }
+
+    const onReactionClick = (key: string) => {
+      if (!canReact.value || !props.message.chatId) return
+      store.sendReaction(props.message.chatId, props.message.id, key)
+      showReactionPicker.value = false
+      pickerStyle.value = null
+    }
+
+    watch(showReactionPicker, (open) => {
+      if (open) {
+        nextTick(() => {
+          nextTick(() => positionPicker())
+        })
+        clickOutsideHandler = (e: MouseEvent) => {
+          const pickerEl = asElement(reactionPickerRef.value)
+          const triggerEl = asElement(reactionTriggerRef.value)
+          const target = e.target as Node
+          if (pickerEl?.contains(target) || triggerEl?.contains(target)) return
+          showReactionPicker.value = false
+          pickerStyle.value = null
+        }
+        scrollParent = reactionTriggerRef.value ? getScrollParent(reactionTriggerRef.value) : null
+        scrollHandler = () => {
+          showReactionPicker.value = false
+          pickerStyle.value = null
+        }
+        setTimeout(() => document.addEventListener('click', clickOutsideHandler!, true), 0)
+        scrollParent?.addEventListener('scroll', scrollHandler, true)
+      } else {
+        document.removeEventListener('click', clickOutsideHandler!, true)
+        scrollParent?.removeEventListener('scroll', scrollHandler!, true)
+        clickOutsideHandler = null
+        scrollHandler = null
+      }
+    })
+
+    onMounted(() => {
+      if (showReactionPicker.value) nextTick(() => positionPicker())
+    })
+    onUnmounted(() => {
+      document.removeEventListener('click', clickOutsideHandler!, true)
+      scrollParent?.removeEventListener('scroll', scrollHandler!, true)
+    })
+
+    return {
+      formatTime,
+      displayName,
+      isMine,
+      formattedText,
+      onAudioError,
+      isCompact,
+      showReactionPicker,
+      canReact,
+      toggleReactionPicker,
+      onReactionClick,
+      quickReactionEmojis: QUICK_REACTION_EMOJIS,
+      reactionTriggerRef,
+      reactionPickerRef,
+      pickerStyle
+    }
   }
 })

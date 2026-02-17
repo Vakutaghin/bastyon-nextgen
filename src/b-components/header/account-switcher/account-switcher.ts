@@ -7,7 +7,7 @@ import MnemonicModal from '@/b-components/header/mnemonic-modal/mnemonic-modal.v
 import ConfirmDeleteModal from './confirm-delete-modal.vue'
 import ConfirmShowMnemonicModal from './confirm-show-mnemonic-modal.vue'
 import { KeyOutlined, LogoutOutlined } from '@ant-design/icons-vue'
-import { useAuthStore } from '@/blockchain'
+import { useAuthStore, recoverKeyPair, detectPrivateKeyFormat } from '@/blockchain'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { loadEncryptedMnemonic } from '@/blockchain/storage'
 import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
@@ -87,7 +87,8 @@ export const accountSwitcherOptions = defineComponent({
       confirmShowMnemonicOpen: false,
       mnemonicModalOpen: false,
       mnemonic: '',
-      selectedAccountAddress: null as Address | null, // Адрес аккаунта для операций
+      privateKeyHex: '',
+      selectedAccountAddress: null as Address | null,
     }
   },
   computed: {
@@ -338,19 +339,39 @@ export const accountSwitcherOptions = defineComponent({
           storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}`,
         })
 
-        if (!mnemonicResult.success || !mnemonicResult.data) {
-          // Пробуем загрузить из общего хранилища
-          const generalResult = loadEncryptedMnemonic()
-          if (generalResult.success && generalResult.data) {
-            this.mnemonic = generalResult.data
-            this.mnemonicModalOpen = true
-          } else {
-            throw new Error('Failed to load mnemonic')
+        const rawData = mnemonicResult.success && mnemonicResult.data
+          ? mnemonicResult.data
+          : (() => {
+              const generalResult = loadEncryptedMnemonic()
+              if (generalResult.success && generalResult.data) return generalResult.data
+              return null
+            })()
+
+        if (!rawData || !rawData.trim()) {
+          throw new Error('Нет сохранённой сид-фразы или ключа для этого аккаунта')
+        }
+
+        const format = detectPrivateKeyFormat(rawData.trim())
+        if (format === 'mnemonic') {
+          this.mnemonic = rawData.trim()
+          this.privateKeyHex = ''
+        } else if (format === 'hex') {
+          this.mnemonic = ''
+          this.privateKeyHex = rawData.trim()
+        } else if (format === 'wif') {
+          try {
+            const { keyPair } = recoverKeyPair(rawData.trim())
+            this.mnemonic = ''
+            this.privateKeyHex = keyPair?.privateKey
+              ? (Buffer.isBuffer(keyPair.privateKey) ? keyPair.privateKey.toString('hex') : String(keyPair.privateKey))
+              : ''
+          } catch {
+            throw new Error('Не удалось прочитать ключ')
           }
         } else {
-          this.mnemonic = mnemonicResult.data
-          this.mnemonicModalOpen = true
+          throw new Error('Неизвестный формат данных')
         }
+        this.mnemonicModalOpen = true
       } catch (error) {
         console.error('Failed to load mnemonic:', error)
         // Можно показать уведомление об ошибке
@@ -367,6 +388,7 @@ export const accountSwitcherOptions = defineComponent({
     handleMnemonicModalClose() {
       this.mnemonicModalOpen = false
       this.mnemonic = ''
+      this.privateKeyHex = ''
       this.selectedAccountAddress = null
     },
 

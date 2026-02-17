@@ -2,14 +2,14 @@ import styled from 'vue3-styled-components'
 
 export const SC_PostContent = styled.div`
   margin-bottom: 15px;
-  line-height: 1.6;
+  line-height: 1.2;
   color: rgb(33, 37, 41) !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
 
   p {
-    margin: 0;
+    margin: 6px 0;
     color: rgb(33, 37, 41) !important;
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -21,6 +21,7 @@ export const SC_PostContent = styled.div`
   }
 
   :deep(p) {
+    margin: 6px 0;
     color: rgb(33, 37, 41) !important;
   }
 

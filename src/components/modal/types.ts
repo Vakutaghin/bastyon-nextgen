@@ -3,6 +3,8 @@ export interface ModalProps {
   open?: boolean
   title?: string
   width?: string | number
+  /** Почти на всю ширину экрана (например 95vw). По умолчанию false. */
+  fullWidth?: boolean
   centered?: boolean
   closable?: boolean
   maskClosable?: boolean

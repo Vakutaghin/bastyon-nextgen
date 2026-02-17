@@ -2,6 +2,7 @@
   <SC_Modal>
     <Modal
       :open="isOpen"
+      :width="width"
       :class="['bastyon-modal', modalClass]"
       :wrapClassName='wrapClassName'
       :maskStyle='maskStyle'
@@ -36,6 +37,7 @@ const {
   otherAttrs,
   modalClass,
   wrapClassName,
+  width,
   maskStyle,
   bodyStyle,
   handleUpdateOpen,

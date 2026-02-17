@@ -8,6 +8,7 @@
     :closable="true"
     :maskClosable="true"
     :destroyOnClose="true"
+    :z-index="2700"
     @cancel="handleCancel"
   >
     <SC_SignInForm>

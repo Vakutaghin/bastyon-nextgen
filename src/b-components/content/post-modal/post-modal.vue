@@ -1,16 +1,17 @@
 <template>
   <SC_PostModalWrapper>
-    <a-modal
-      v-model:open='isModalOpen'
+    <Modal
+      :open='isModalOpen'
       title='Пост'
-      :width='800'
+      :full-width='fullWidth'
       :centered='true'
       :closable='true'
       :maskClosable='true'
       :footer='null'
+      :destroyOnClose='true'
       @cancel='closeModal'
     >
-      <SC_PostModalContent v-if='postData'>
+      <SC_PostModalContent v-if='isModalOpen && postData' :key='postData.id ?? postData.txid ?? ""'>
         <PostCard
           :post='postData'
           :show-full='true'
@@ -19,7 +20,7 @@
           @share='handleShare'
         />
       </SC_PostModalContent>
-    </a-modal>
+    </Modal>
   </SC_PostModalWrapper>
 </template>
 

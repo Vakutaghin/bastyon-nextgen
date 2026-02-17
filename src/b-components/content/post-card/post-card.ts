@@ -2,7 +2,6 @@ import { defineComponent, type PropType } from 'vue'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import Card from '@/components/card/card.vue'
-import PostModal from '@/b-components/content/post-modal/post-modal.vue'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { ImageGallery } from '@/components/image-gallery'
 import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
@@ -89,7 +88,6 @@ export const postCardOptions = defineComponent({
   name: 'PostCard',
   components: {
     Card,
-    PostModal,
     VideoPlayer,
     ImageGallery,
     StarRating,
@@ -160,10 +158,6 @@ export const postCardOptions = defineComponent({
     },
     postId(): string {
       return this.post.txid || this.post.hash || String(this.post.id || '')
-    },
-    isModalOpen(): boolean {
-      return this.modalStore.postModal.isOpen &&
-             this.modalStore.postModal.post?.id === this.post.id
     },
     isImageGalleryOpen: {
       get(): boolean {
@@ -258,12 +252,6 @@ export const postCardOptions = defineComponent({
       }
 
       return str
-    },
-    /**
-     * Закрывает модалку
-     */
-    closePostModal(): void {
-      this.modalStore.closePostModal()
     },
     getInitial(nameOrLetter?: string): string {
       if (!nameOrLetter) return '?'

@@ -343,49 +343,52 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = true
         this.authState = 'authenticated'
 
-        // Сохраняем мнемонику (если это мнемоника)
+        // Сид-фраза (12 слов) сохраняем только при входе по мнемонике; при входе по ключу (hex/WIF) в слот не пишем
         if (recoveryResult.format === 'mnemonic') {
           await this.saveMnemonic(trimmedKey)
-          // Деривируем и сохраняем адреса кошелька (по умолчанию 3)
           if (this.address) {
             deriveAndSaveWalletAddresses(trimmedKey, this.address)
+          }
+          if (this.address) {
+            const accountMnemonicResult = saveEncryptedData(trimmedKey, {
+              persistent: true,
+              storageKey: `${ACCOUNT_STORAGE_PREFIX}${this.address}`,
+            })
+            if (accountMnemonicResult.success) {
+              const storage = typeof localStorage !== 'undefined' ? localStorage : null
+              const encryptedMnemonic = storage?.getItem(`${ACCOUNT_STORAGE_PREFIX}${this.address}`) || ''
+              const accountInfo: AccountInfo = {
+                address: this.address,
+                encryptedMnemonic,
+                lastUsed: Date.now(),
+              }
+              const addResult = addAccountToStore(accountInfo)
+              if (addResult.success) {
+                const listResult = loadAccountsList()
+                if (listResult.success && listResult.data) {
+                  this.accountsList = listResult.data
+                }
+              }
+            }
+          }
+        } else if (this.address) {
+          // Вход по приватному ключу (hex/WIF): в список аккаунтов добавляем с пустой сид-фразой
+          const accountInfo: AccountInfo = {
+            address: this.address,
+            encryptedMnemonic: '',
+            lastUsed: Date.now(),
+          }
+          const addResult = addAccountToStore(accountInfo)
+          if (addResult.success) {
+            const listResult = loadAccountsList()
+            if (listResult.success && listResult.data) {
+              this.accountsList = listResult.data
+            }
           }
         }
 
         // Сохраняем флаг "был авторизован"
         saveWasLogged(true)
-
-        // Добавляем аккаунт в список мульти-аккаунтов
-        if (this.address) {
-          // Сохраняем зашифрованную мнемонику отдельно для этого аккаунта
-          const accountMnemonicResult = saveEncryptedData(trimmedKey, {
-            persistent: true,
-            storageKey: `${ACCOUNT_STORAGE_PREFIX}${this.address}`,
-          })
-
-          if (accountMnemonicResult.success) {
-            // Получаем зашифрованную строку из хранилища
-            const storage = typeof localStorage !== 'undefined' ? localStorage : null
-
-            const encryptedMnemonic = storage?.getItem(`${ACCOUNT_STORAGE_PREFIX}${this.address}`) || ''
-
-            const accountInfo: AccountInfo = {
-              address: this.address,
-              encryptedMnemonic,
-              lastUsed: Date.now(),
-            }
-
-            // Добавляем в список аккаунтов
-            const addResult = addAccountToStore(accountInfo)
-            if (addResult.success) {
-              // Обновляем локальный список
-              const listResult = loadAccountsList()
-              if (listResult.success && listResult.data) {
-                this.accountsList = listResult.data
-              }
-            }
-          }
-        }
 
         // Загружаем данные пользователя после успешного входа
         // Используем getuserstate для получения полной информации (профиль + лимиты)

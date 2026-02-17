@@ -5,15 +5,12 @@ import type { ModalProps, ModalEmits } from './types'
 
 export function useModal(p: ModalProps, emit: ModalEmits) {
   const attrs = useAttrs()
-  // Исключаем open из attrs, так как мы управляем им отдельно
-  const { open: _, ...otherAttrs } = attrs
+  const { open: _o, width: _w, ...restAttrs } = attrs as Record<string, unknown>
 
-  // Используем computed для v-model:open
-  // Приоритет: p.open (для v-model:open) > p.modelValue (для v-model)
+  const otherAttrs = restAttrs as Omit<Record<string, unknown>, 'open' | 'width'>
+
   const isOpen = computed({
     get: () => {
-      // Приоритет: p.open (для v-model:open) > p.modelValue (для v-model)
-      // Проверяем явно на undefined, так как false тоже валидное значение
       return p.open !== undefined ? p.open : (p.modelValue !== undefined ? p.modelValue : false)
     },
     set: (value: boolean) => {
@@ -34,27 +31,22 @@ export function useModal(p: ModalProps, emit: ModalEmits) {
     }
   }
 
-  const modalClass = computed(() => {
-    return {}
-  })
+  const modalClass = computed(() => ({}))
+  const wrapClassName = computed(() => 'bastyon-modal-wrap')
 
-  const wrapClassName = computed(() => {
-    return 'bastyon-modal-wrap'
-  })
+  const width = computed(() =>
+    p.fullWidth ? '95vw' : (p.width !== undefined ? p.width : (attrs as Record<string, unknown>).width)
+  )
 
-  const maskStyle = computed(() => {
-    return {
-      backgroundColor: 'rgba(0, 0, 0, 0.45)',
-      backdropFilter: 'blur(4px)'
-    }
-  })
+  const maskStyle = computed(() => ({
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backdropFilter: 'blur(4px)'
+  }))
 
-  const bodyStyle = computed(() => {
-    return {
-      maxHeight: '90vh',
-      overflowY: 'auto'
-    }
-  })
+  const bodyStyle = computed(() => ({
+    maxHeight: '90vh',
+    overflowY: 'auto'
+  }))
 
   return {
     Modal,
@@ -63,6 +55,7 @@ export function useModal(p: ModalProps, emit: ModalEmits) {
     otherAttrs,
     modalClass,
     wrapClassName,
+    width,
     maskStyle,
     bodyStyle,
     handleUpdateOpen,

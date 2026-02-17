@@ -53,3 +53,70 @@ export const SC_MessageMeta = styled.div`
   gap: 8px;
   margin-bottom: 4px;
 `
+
+export const SC_ReactionsRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+`
+
+export const SC_ReactionPill = styled.span`
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.06);
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+
+  &.mine {
+    background: rgba(0, 100, 200, 0.15);
+  }
+`
+
+export const SC_ReactionButton = styled.button`
+  padding: 2px 6px;
+  margin-left: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.6;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+
+  &:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.06);
+  }
+`
+
+export const SC_ReactionPicker = styled.div`
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 4px;
+  padding: 6px 8px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+`
+
+export const SC_ReactionPickerEmoji = styled.button`
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  border-radius: 6px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+`

@@ -226,3 +226,8 @@ a:active {
   fill: rgb(255, 193, 7) !important;
 }
 
+/* Выпадашка уведомлений в шапке — выше мессенджера (1000) и полноэкранного оверлея (2500) */
+.header-notifications-dropdown {
+  z-index: 3000 !important;
+}
+

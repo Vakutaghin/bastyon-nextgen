@@ -1,6 +1,8 @@
-import { defineComponent, defineAsyncComponent, type PropType } from 'vue'
+import { defineComponent, defineAsyncComponent, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useModalStore } from '@/stores/modal-store'
-import { Modal as AModal } from 'ant-design-vue'
+import { usePostsStore } from '@/stores/posts-store'
+import Modal from '@/components/modal/modal.vue'
 import {
   SC_PostModalWrapper,
   SC_PostModalContent
@@ -34,58 +36,30 @@ interface Post {
 export const postModalOptions = defineComponent({
   name: 'PostModal',
   components: {
-    'a-modal': AModal,
+    Modal,
     PostCard,
     SC_PostModalWrapper,
     SC_PostModalContent
   },
-  setup() {
-    const modalStore = useModalStore()
-    return { modalStore }
-  },
   props: {
-    /** Открыта ли модалка */
-    isOpen: {
+    /** Почти на всю ширину экрана. По умолчанию true для модалки поста. */
+    fullWidth: {
       type: Boolean,
-      default: false
-    },
-    /** Данные поста для отображения */
-    post: {
-      type: Object as PropType<Post | null>,
-      default: null
+      default: true
     }
   },
   emits: ['close', 'like', 'comment', 'share'],
-  watch: {
-    isOpen(newVal) {
-      if (newVal && this.post) {
-        this.modalStore.openPostModal(this.post)
-      } else if (!newVal) {
-        this.modalStore.closePostModal()
-      }
-    },
-    post: {
-      handler(newVal) {
-        if (newVal && this.isOpen) {
-          this.modalStore.openPostModal(newVal)
-        }
-      },
-      immediate: true
-    }
-  },
-  computed: {
-    isModalOpen: {
-      get(): boolean {
-        return this.modalStore.postModal.isOpen
-      },
-      set(value: boolean): void {
-        if (!value) {
-          this.closeModal()
-        }
-      }
-    },
-    postData(): Post | null {
-      return this.modalStore.postModal.post
+  setup() {
+    const modalStore = useModalStore()
+    const postsStore = usePostsStore()
+    const { postModal } = storeToRefs(modalStore)
+    const isModalOpen = computed(() => postModal.value.isOpen)
+    const postData = computed(() => postModal.value.post)
+    return {
+      modalStore,
+      postsStore,
+      isModalOpen,
+      postData
     }
   },
   methods: {
@@ -94,12 +68,15 @@ export const postModalOptions = defineComponent({
       this.$emit('close')
     },
     handleLike(postId: string | number): void {
+      this.postsStore.likePost(postId)
       this.$emit('like', postId)
     },
     handleComment(postId: string | number): void {
+      this.postsStore.commentPost(postId)
       this.$emit('comment', postId)
     },
     handleShare(postId: string | number): void {
+      this.postsStore.sharePost(postId)
       this.$emit('share', postId)
     }
   }

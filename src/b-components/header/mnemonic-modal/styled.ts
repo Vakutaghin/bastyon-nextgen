@@ -25,13 +25,45 @@ export const SC_WarningText = styled.div`
   line-height: 1.5;
 `
 
+export const SC_EquivalenceNote = styled.div`
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.5;
+  margin-bottom: 16px;
+`
+
 export const SC_MnemonicBox = styled.div`
+  position: relative;
   background-color: #f5f5f5;
   border: 1px solid #d9d9d9;
   border-radius: 8px;
   padding: 16px;
+  padding-bottom: 48px;
   margin-bottom: 20px;
   text-align: center;
+`
+
+export const SC_CopyIconBtn = styled.button`
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  &:hover {
+    color: #1890ff;
+    border-color: #1890ff;
+    background: #e6f7ff;
+  }
 `
 
 export const SC_MnemonicText = styled.div`
@@ -43,9 +75,33 @@ export const SC_MnemonicText = styled.div`
   user-select: all;
 `
 
-export const SC_CopyButton = styled.div`
-  margin-top: 12px;
+export const SC_PrivateKeyBox = styled.div`
+  position: relative;
+  background-color: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 16px;
+  padding-bottom: 48px;
+  margin-bottom: 20px;
 `
+
+export const SC_PrivateKeyLabel = styled.div`
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 8px;
+  text-align: center;
+  font-weight: 900;
+`
+
+export const SC_PrivateKeyText = styled.div`
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #000;
+  word-break: break-all;
+  user-select: all;
+`
+
 
 export const SC_DontShowAgain = styled.div`
   display: flex;

@@ -1,6 +1,7 @@
 import { defineComponent } from 'vue'
 import AppHeader from '@/b-components/header/app-header/app-header.vue'
 import MessengerWrapper from '@/b-components/messenger/components/messenger-wrapper/messenger-wrapper.vue'
+import PostModal from '@/b-components/content/post-modal/post-modal.vue'
 import { StarExplosion } from '@/b-components/effects/star-explosion'
 import {
   SC_Application,
@@ -13,6 +14,7 @@ export const appLayoutOptions = defineComponent({
   components: {
     AppHeader,
     MessengerWrapper,
+    PostModal,
     StarExplosion,
     SC_Application,
     SC_Camera,

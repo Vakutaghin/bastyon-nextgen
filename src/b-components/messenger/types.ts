@@ -6,6 +6,13 @@ export interface User {
   verified?: boolean
 }
 
+/** Одна агрегированная реакция (эмодзи + количество + поставил ли текущий пользователь) */
+export interface MessageReaction {
+  key: string
+  count: number
+  my?: boolean
+}
+
 export interface Message {
   id: string
   chatId: string
@@ -19,6 +26,8 @@ export interface Message {
   timestamp: number
   read: boolean
   status: 'sending' | 'sent' | 'read' | 'failed'
+  /** Реакции на сообщение (эмодзи), заполняется из Matrix m.reaction */
+  reactions?: MessageReaction[]
 }
 
 export interface Dialog {

@@ -84,11 +84,9 @@ export const headerNotificationsOptions = defineComponent({
       notificationsStore.hideAllNotifications()
     }
 
-    /** Контейнер для overlay: в Tauri document может быть недоступен в момент вызова */
-    const getPopupContainer = (trigger: HTMLElement | undefined) => {
+    /** Контейнер для overlay: body, чтобы выпадашка была выше мессенджера и полноэкранного оверлея (z-index). В Tauri document может быть недоступен в момент вызова */
+    const getPopupContainer = (_trigger: HTMLElement | undefined) => {
       const doc = typeof document !== 'undefined' ? document : (typeof window !== 'undefined' ? (window as Window & { document?: Document }).document : undefined)
-      const node = trigger?.closest?.('header')
-      if (node) return node
       if (doc?.body) return doc.body
       return undefined
     }
