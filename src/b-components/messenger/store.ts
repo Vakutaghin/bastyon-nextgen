@@ -1702,15 +1702,7 @@ export const useMessengerStore = defineStore('messenger', () => {
       host = (h.includes('localhost') || h.startsWith('127.')) ? 'matrix.pocketnet.app' : h
     }
     const partnerId = `@${hex}:${host}`
-    const rooms = matrixService.getRooms()
-    let roomId: string | null = null
-    for (const room of rooms) {
-      const pid = getPartnerMatrixId(room)
-      if (pid === partnerId) {
-        roomId = room.roomId
-        break
-      }
-    }
+    let roomId = findExistingRoomByAddress(address)
     if (!roomId) {
       roomId = await matrixService.createDirectRoom(partnerId)
       if (roomId) {
@@ -1775,12 +1767,31 @@ export const useMessengerStore = defineStore('messenger', () => {
     })
   }
 
+  const findExistingRoomByAddress = (address: string): string | null => {
+    const hex = matrixService.addressToHex(address).toLowerCase()
+    let host = 'matrix.pocketnet.app'
+    try {
+      const base = matrixService.getBaseUrl()
+      const parsed = new URL(base.startsWith('http') ? base : window.location.origin)
+      const h = parsed.host || window.location.host
+      host = (h.includes('localhost') || h.startsWith('127.')) ? 'matrix.pocketnet.app' : h
+    } catch (_e) {
+      const h = window.location.host
+      host = (h.includes('localhost') || h.startsWith('127.')) ? 'matrix.pocketnet.app' : h
+    }
+    const partnerId = `@${hex}:${host}`
+    const rooms = matrixService.getRooms()
+    for (const room of rooms) {
+      if (getPartnerMatrixId(room) === partnerId) return room.roomId
+    }
+    return null
+  }
+
   const openInviteWithAddress = async (address: string, preloadedProfile?: UserProfile | null): Promise<void> => {
     if (!address) return
     if (!authStore.isUserAuthenticated) return
-    lastTargetAddress.value = address
-    inviteViewActive.value = true
-    // Если передан уже загруженный профиль (например из сайдбара страницы профиля) — используем его, без повторного запроса
+
+    // Если передан уже загруженный профиль — используем его, без повторного запроса
     if (preloadedProfile && preloadedProfile.address === address) {
       userProfiles.value[address] = preloadedProfile
     }
@@ -1788,7 +1799,18 @@ export const useMessengerStore = defineStore('messenger', () => {
       await fetchProfiles([address])
     } catch (_e) {}
     await openMessenger()
-    // Do NOT create room yet; wait for user to press "Начать чат"
+    await initMatrix()
+
+    // Если диалог с этим адресом уже существует — сразу открываем его
+    const existingRoomId = findExistingRoomByAddress(address)
+    if (existingRoomId) {
+      switchToChatAndLoad(existingRoomId)
+      return
+    }
+
+    // Нет существующего диалога — показываем invite-экран
+    lastTargetAddress.value = address
+    inviteViewActive.value = true
     activeChatId.value = null
   }
 
@@ -1914,6 +1936,32 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
   }
 
+  const deleteDialog = (chatId: string) => {
+    const removedDialog = dialogs.value.find(d => d.id === chatId)
+    const removedIndex = dialogs.value.findIndex(d => d.id === chatId)
+    const removedMessages = messages[chatId] ? [...messages[chatId]] : null
+    const wasActive = activeChatId.value === chatId
+
+    if (wasActive) {
+      activeChatId.value = null
+    }
+    dialogs.value = dialogs.value.filter(d => d.id !== chatId)
+    delete messages[chatId]
+
+    matrixService.leaveAndForgetRoom(chatId).catch((e) => {
+      console.error('[MessengerStore] deleteDialog failed, restoring:', e)
+      if (removedDialog) {
+        dialogs.value.splice(removedIndex, 0, removedDialog)
+      }
+      if (removedMessages) {
+        messages[chatId] = removedMessages
+      }
+      if (wasActive) {
+        activeChatId.value = chatId
+      }
+    })
+  }
+
   const logout = () => {
     matrixService.stop()
     isOpen.value = false
@@ -1967,6 +2015,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     sendReaction,
     sendAudio,
     initMatrix,
+    deleteDialog,
     logout,
     fetchProfiles,
     totalUnreadCount,

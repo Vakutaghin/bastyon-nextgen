@@ -421,6 +421,17 @@ export class MatrixService {
     return this.client.sendEvent(roomId, 'm.room.message', content)
   }
 
+  /**
+   * Покинуть комнату (leave) и забыть её (forget).
+   * После forget комната удаляется из локального хранилища SDK.
+   */
+  public async leaveAndForgetRoom(roomId: string): Promise<void> {
+    if (!this.client) throw new Error('Client not initialized')
+
+    await this.client.leave(roomId)
+    await this.client.forget(roomId, true)
+  }
+
   public stop() {
     if (this.client) {
       this.client.stopClient()
