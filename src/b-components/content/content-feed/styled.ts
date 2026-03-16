@@ -9,9 +9,7 @@ export const SC_FeedHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
   padding-bottom: 15px;
-  border-bottom: 1px solid rgba(206, 212, 218, 0.5);
 `
 
 export const SC_FeedHeaderLeft = styled.div`
