@@ -140,7 +140,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
             "",
             authStore.address || ""
           ],
-          cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+          cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
           options: {
             ex: true
           },
@@ -175,7 +175,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
           parameters: [
             idsToFetch
           ],
-          cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+          cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
           options: {},
           state: 1
         })
@@ -227,7 +227,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
             "",
             1440
           ],
-          cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+          cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
           options: {
             ex: true,
             cache: false
@@ -251,7 +251,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
           "",
           authStore.address || ""
         ],
-        cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
         options: {
           ex: true
         },
@@ -337,7 +337,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
              authStore.address,
              [] // commentIds
            ],
-           cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2)
+           cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2)
          }).then((scoresResponse: any) => {
             // Handle various response formats:
             // 1. Direct array: [...]

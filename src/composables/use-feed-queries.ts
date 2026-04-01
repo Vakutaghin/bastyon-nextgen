@@ -40,7 +40,7 @@ export function useHierarchicalStrip(
     {
       method: rpcEndpoints.getHierarchicalStrip,
       parameters: [offset, '', limit, 'ru', [], [], [], [], []],
-      cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
       options: {
         ex: true,
         auth: true
@@ -86,7 +86,7 @@ export function useTopFeed(
     {
       method: rpcEndpoints.getTopFeed,
       parameters: [offset, limit],
-      cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
       options: {
         // Убираем auth: false, чтобы разрешить подпись запроса при наличии авторизации
       }
@@ -149,7 +149,7 @@ export function useProfileFeed(
     {
       method: rpcEndpoints.getProfileFeed,
       parameters,
-      cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
       options: {
         // auth: false, // Разрешаем авторизацию
         ex: true  // Используем rpc-ex эндпоинт
@@ -224,7 +224,7 @@ export function useProfileFeedWithFilters(
     queryFn: () => getByPRCWithAuth({
       method: rpcEndpoints.getProfileFeed,
       parameters: parameters.value,
-      cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
       options: {
         // auth: false,
         ex: true  // Используем rpc-ex эндпоинт

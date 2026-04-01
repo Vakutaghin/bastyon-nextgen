@@ -168,7 +168,7 @@ export const accountSwitcherOptions = defineComponent({
       try {
         // Запрашиваем профили для всех аккаунтов
         // Добавляем cachehash для обхода кэша и получения актуального баланса
-        const cachehash = Date.now().toString(36) + Math.random().toString(36).substr(2)
+        const cachehash = Date.now().toString(36) + Math.random().toString(36).substring(2)
 
         const response = await getByPRCWithAuth({
           method: rpcEndpoints.getUserProfile,

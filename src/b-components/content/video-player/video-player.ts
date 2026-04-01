@@ -161,7 +161,7 @@ export const videoPlayer = defineComponent({
     const isThumbnailLoaded = ref(false)
     const thumbnailAspectRatio = ref<{ width: number; height: number; useContain: boolean } | null>(null)
     const videoAspectRatio = ref<{ width: number; height: number; useContain: boolean } | null>(null)
-    const playerId = ref(`video-player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
+    const playerId = ref(`video-player-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`)
     let intersectionObserver: IntersectionObserver | null = null
 
     // Notifications

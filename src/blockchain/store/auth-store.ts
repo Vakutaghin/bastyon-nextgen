@@ -964,7 +964,7 @@ export const useAuthStore = defineStore('auth', {
         // getuserstate - для лимитов и состояния
         // getuserprofile - для полного профиля (имя, аватар, описание и т.д.)
         // Добавляем cachehash для обхода кэша и получения актуального баланса
-        const cachehash = Date.now().toString(36) + Math.random().toString(36).substr(2)
+        const cachehash = Date.now().toString(36) + Math.random().toString(36).substring(2)
 
         const [stateResponse, profileResponse] = await Promise.all([
           // getuserstate - лимиты и состояние

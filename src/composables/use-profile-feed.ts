@@ -74,7 +74,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
           '',             // orderby
           'desc'          // ascdesc
         ],
-        cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
         options: {
           ex: true
         }

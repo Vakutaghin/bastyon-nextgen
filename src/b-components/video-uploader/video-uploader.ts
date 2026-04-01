@@ -448,7 +448,7 @@ export const videoUploaderOptions = defineComponent({
         uploadState.value = 'saving'
 
         const videoData: Omit<TranscodedVideo, 'createdAt' | 'updatedAt'> = {
-          id: `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `video_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           originalFileName: file.name,
           originalSize: file.size,
           transcodedBlob: result.blob,

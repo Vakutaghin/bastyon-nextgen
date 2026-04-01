@@ -57,9 +57,7 @@ export const useSearchStore = defineStore('search', {
       this.query = searchQuery
 
       try {
-        // Здесь будет логика поиска через API
-        // Пока заглушка
-        console.info('Search:', searchQuery)
+        // TODO: Реализовать поиск через API
 
         // Добавляем в историю, если еще нет
         if (!this.history.includes(searchQuery)) {

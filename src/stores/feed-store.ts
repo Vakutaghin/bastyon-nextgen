@@ -218,7 +218,7 @@ export const useFeedStore = defineStore('feed', {
         const response = await getByPRC({
           method: rpcEndpoints.getHierarchicalStrip,
           parameters: [offset, '', limit, 'ru', [], [], [], [], []],
-          cachehash: Date.now().toString(36) + Math.random().toString(36).substr(2),
+          cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
           options: {
             ex: true
           },

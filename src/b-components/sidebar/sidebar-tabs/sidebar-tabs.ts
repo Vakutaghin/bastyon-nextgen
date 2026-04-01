@@ -94,21 +94,11 @@ export const sidebarTabsOptions = defineComponent({
       emit('tab-changed', tabId)
 
       // Обновляем URL параметр
-      if (tabId === 2) {
-        updateUrlParam('subscriptions')
-      } else if (tabId === 3) {
-        updateUrlParam('video')
-      } else if (tabId === 4) {
-        updateUrlParam('audio')
-      } else if (tabId === 5) {
-        updateUrlParam('article')
-      } else if (tabId === 6) {
-        updateUrlParam('favorites')
-      } else if (tabId === 7) {
-        updateUrlParam('discussed')
-      } else {
-        updateUrlParam(null)
+      const TAB_URL_MAPPING: Record<number, string> = {
+        2: 'subscriptions', 3: 'video', 4: 'audio',
+        5: 'article', 6: 'favorites', 7: 'discussed',
       }
+      updateUrlParam(TAB_URL_MAPPING[tabId as number] ?? null)
     }
 
     onMounted(() => {
