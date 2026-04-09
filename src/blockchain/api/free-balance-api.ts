@@ -1,51 +1,54 @@
 /**
  * API для запроса бесплатных unspents (баланса) для регистрации
  * Аналог requestUnspents из оригинального приложения
+ * (js/lib/client/actions.js:1884-1948)
  */
 
 import { fetchHttp } from '@/helpers/api/request'
 import { captchaAPI } from './captcha-api'
 import type { CaptchaData } from './captcha-api'
 import { showCaptchaModal } from '@/components/captcha'
+import { getProxyWithWalletCached } from './proxy-with-wallet'
 
 export interface RequestUnspentsParams {
   /** Причина запроса ('registration' для регистрации) */
   reason: string
-  /** Опции прокси */
-  proxyOptions?: { proxy?: string }
 }
 
 export interface RequestUnspentsResult {
   /** ID действия (для отслеживания) */
   action: string
   /** Прокси, через который был выполнен запрос */
-  proxy?: string
+  proxy?: { host: string; port: number }
 }
 
+const MAX_CAPTCHA_RETRIES = 3
+
 /**
- * Запрашивает бесплатные unspents для регистрации
- * Включает решение капчи, если требуется
- * 
- * @param address - Адрес пользователя
- * @param params - Параметры запроса
- * @param onCaptchaRequired - Callback для показа капчи пользователю (опционально)
- * @returns Promise с результатом запроса
+ * Запрашивает бесплатные unspents для регистрации.
  */
 export async function requestUnspents(
   address: string,
   params: RequestUnspentsParams,
-  onCaptchaRequired?: (captcha: CaptchaData) => Promise<CaptchaData>
+  onCaptchaRequired?: (captcha: CaptchaData) => Promise<CaptchaData>,
+  _retryCount: number = 0,
 ): Promise<RequestUnspentsResult> {
-  const { reason, proxyOptions } = params
+  const { reason } = params
 
-  // Шаг 1: Получаем прокси (если не указан)
-  let proxy = proxyOptions?.proxy
+  // Шаг 1: Найти прокси с регистрационным кошельком
+  console.log('[requestUnspents] Step 1: finding proxy with wallet...')
+  const proxyServer = await getProxyWithWalletCached()
 
-  // TODO: Реализовать получение прокси через API, если нужно
-  // const proxy = await getProxyWithWallet()
+  if (!proxyServer) {
+    console.error('[requestUnspents] No proxy with wallet found!')
+    throw new Error('Не удалось найти прокси с регистрационным кошельком. Попробуйте позже.')
+  }
 
-  // Шаг 2: Проверяем, что ключи доступны для подписи запросов
-  // Для endpoints капчи требуется авторизация
+  console.log('[requestUnspents] Found proxy:', proxyServer.host, proxyServer.port)
+
+  const proxyOptions = { host: proxyServer.host, port: proxyServer.port }
+
+  // Шаг 2: Проверяем ключи
   const { useAuthStore } = await import('@/blockchain/store/auth-store')
   const authStore = useAuthStore()
   const keyPair = authStore.getKeyPair
@@ -55,54 +58,61 @@ export async function requestUnspents(
     throw new Error('Ключи не найдены. Пожалуйста, убедитесь, что вы зарегистрированы.')
   }
 
-  // Шаг 3: Решаем капчу
+  console.log('[requestUnspents] Step 2: keys OK, address:', userAddress)
+
+  // Шаг 3: Решаем капчу через тот же прокси
   let captcha: CaptchaData | null = null
 
+  console.log('[requestUnspents] Step 3: solving captcha...')
+
   try {
-    // Пробуем получить капчу (обычную или hex)
-    // В оригинальном приложении проверяется hasHexCaptcha()
-    // Для упрощения пробуем сначала hex, потом обычную
     captcha = await captchaAPI.getHex(undefined, false, proxyOptions)
-    
+    console.log('[requestUnspents] getHex result:', captcha ? { id: captcha.id, done: captcha.done } : null)
+
     if (!captcha || !captcha.done) {
-      // Если hex капча не получена или не решена, пробуем обычную
       captcha = await captchaAPI.get(undefined, false, proxyOptions)
+      console.log('[requestUnspents] get result:', captcha ? { id: captcha.id, done: captcha.done } : null)
     }
 
-    // Если капча не решена, показываем модальное окно пользователю
+    // Если капча не решена автоматически, показываем пользователю
     if (captcha && !captcha.done) {
+      console.log('[requestUnspents] Captcha not auto-solved, showing modal...')
       if (onCaptchaRequired) {
-        // Используем переданный callback, если есть
         captcha = await onCaptchaRequired(captcha)
       } else {
-        // Иначе показываем модальное окно
         try {
           captcha = await showCaptchaModal({
             captcha,
             reason,
             proxyOptions,
           })
-        } catch (error) {
-          // Пользователь отменил или произошла ошибка
-          throw new Error('captcha')
+        } catch {
+          throw new Error('captcha_cancelled')
         }
       }
     }
 
-    // Если капча все еще не решена, выбрасываем ошибку
     if (!captcha || !captcha.done) {
-      throw new Error('captcha')
+      console.error('[requestUnspents] Captcha not solved! captcha:', captcha)
+      throw new Error('captcha_failed')
     }
+
+    console.log('[requestUnspents] Captcha solved! id:', captcha.id)
   } catch (error) {
-    // Если ошибка связана с капчей, пробуем еще раз
-    if (error instanceof Error && error.message === 'captcha') {
-      // Рекурсивно вызываем функцию для повторной попытки
-      return requestUnspents(address, params, onCaptchaRequired)
+    const msg = error instanceof Error ? error.message : String(error)
+
+    if ((msg === 'captcha_failed' || msg === 'captcha_cancelled') && _retryCount < MAX_CAPTCHA_RETRIES) {
+      console.log('[requestUnspents] Captcha retry', _retryCount + 1, 'of', MAX_CAPTCHA_RETRIES)
+      return requestUnspents(address, params, onCaptchaRequired, _retryCount + 1)
     }
-    throw error
+
+    console.error('[requestUnspents] Captcha error:', msg)
+    throw new Error('Не удалось решить капчу. Попробуйте позже.')
   }
 
-  // Шаг 4: Отправляем запрос на получение бесплатных unspents
+  // Шаг 4: Отправляем free/balance через тот же прокси
+  console.log('[requestUnspents] Step 4: sending free/balance to', proxyServer.host, '...')
+
   try {
     const response = await fetchHttp({
       path: 'free/balance',
@@ -112,37 +122,27 @@ export async function requestUnspents(
         key: reason,
       },
       options: {
-        ...proxyOptions,
         auth: true,
+        ...proxyOptions,
       },
     }) as { action?: string }
 
-    // Шаг 5: Ожидаем изменения unspents
-    // В оригинальном приложении используется willChangeUnspentsCallback
-    // Здесь мы просто возвращаем результат
+    console.log('[requestUnspents] free/balance response:', response)
 
     return {
       action: response.action || '',
-      proxy,
+      proxy: proxyServer,
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('[requestUnspents] free/balance error:', errorMessage)
 
-    // Обрабатываем специальные ошибки
-    if (errorMessage === 'captcha' || errorMessage.includes('captcha')) {
-      // Если требуется капча, пробуем еще раз
-      return requestUnspents(address, params, onCaptchaRequired)
+    if (errorMessage.includes('captcha') && _retryCount < MAX_CAPTCHA_RETRIES) {
+      return requestUnspents(address, params, onCaptchaRequired, _retryCount + 1)
     }
 
-    if (
-      errorMessage === 'noproxywithwallet' ||
-      errorMessage === 'error' ||
-      errorMessage === 'iplimit' ||
-      errorMessage === 'uniq'
-    ) {
-      // Эти ошибки требуют обращения в поддержку
-      // TODO: Реализовать механизм поддержки
-      throw new Error(`Support required: ${errorMessage}`)
+    if (['noproxywithwallet', 'error', 'iplimit', 'uniq'].includes(errorMessage)) {
+      throw new Error(`Ошибка регистрации: ${errorMessage}. Обратитесь в поддержку.`)
     }
 
     throw error

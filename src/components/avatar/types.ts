@@ -6,4 +6,5 @@ export interface AvatarProps {
   icon?: any
   fallbackText?: string // Текст для фолбэка (например, "Иван Петров")
   verified?: boolean
+  pending?: boolean // Регистрация в процессе — показывает значок часов
 }

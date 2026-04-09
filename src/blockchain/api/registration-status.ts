@@ -47,19 +47,12 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
     })
   }
 
-  // OPTIMIZATION: Check if profile is already loaded in store
-  // If we have a profile matching the address, we are definitely registered
-  // This avoids duplicate getuserprofile calls at startup when profile is already loaded by fetchUserState
-  if (authStore.userProfile && authStore.userProfile.address === address) {
-    // If we have an ID, we are registered
-    if (authStore.userProfile.id) {
-      return 'registered'
-    }
-
-    // If we have a profile but no ID, it means the store fetched it and found nothing (unregistered)
-    // So we can skip the RPC call and go straight to unspents check
-    skipRpcCheck = true
+  // OPTIMIZATION: Check if profile is already loaded in store with a real ID
+  // This avoids duplicate getuserprofile calls when profile is already loaded
+  if (authStore.userProfile && authStore.userProfile.address === address && authStore.userProfile.id) {
+    return 'registered'
   }
+  // Для id=0 (stub после регистрации) — всегда делаем RPC проверку
 
   // Проверяем, зарегистрирован ли пользователь
   // В оригинальном приложении это проверяется через account.status.value

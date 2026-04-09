@@ -25,6 +25,39 @@ export const SC_InputWrapper = styled.div`
   position: relative;
   display: flex;
   align-items: center;
+
+  > input {
+    width: 100%;
+    padding: 4px 11px;
+    font-size: 14px;
+    line-height: 1.5715;
+    color: rgb(33, 37, 41);
+    background: #fff;
+    border: 1px solid rgb(206, 212, 218);
+    border-radius: 6px;
+    outline: none;
+    transition: all 0.2s;
+
+    &::placeholder {
+      color: rgb(108, 117, 125);
+    }
+
+    &:hover:not(:disabled) {
+      border-color: rgb(173, 181, 189);
+    }
+
+    &:focus {
+      border-color: rgb(0, 123, 255);
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+    }
+
+    &:disabled {
+      background: rgb(248, 249, 250);
+      color: rgb(108, 117, 125);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
 `
 
 export const SC_FormHint = styled.div`

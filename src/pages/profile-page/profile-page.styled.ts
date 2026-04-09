@@ -57,3 +57,24 @@ export const SC_ErrorProfile = styled.div`
   font-size: 18px;
   color: #ff4d4f;
 `
+
+export const SC_PendingProfile = styled.div`
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+
+  .pending-icon {
+    font-size: 48px;
+    color: #faad14;
+    margin-bottom: 16px;
+  }
+
+  .pending-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+  }
+`

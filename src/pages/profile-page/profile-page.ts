@@ -6,13 +6,14 @@ import {
   SC_ProfilePage,
   SC_ProfileContentWrapper,
   SC_LoadingProfile,
-  SC_ErrorProfile
+  SC_ErrorProfile,
+  SC_PendingProfile,
 } from './profile-page.styled'
 import ProfileCover from '@/b-components/profile/profile-cover/profile-cover.vue'
 import ProfileSidebar from '@/b-components/profile/profile-sidebar/profile-sidebar.vue'
 import ProfileFeed from '@/b-components/profile/profile-feed/profile-feed.vue'
 import Spin from '@/components/spin/spin.vue'
-import { LoadingOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain/store/auth-store'
@@ -28,6 +29,8 @@ export default defineComponent({
     SC_ProfileContentWrapper,
     SC_LoadingProfile,
     SC_ErrorProfile,
+    SC_PendingProfile,
+    ClockCircleOutlined,
     ProfileCover,
     ProfileSidebar,
     ProfileFeed,
@@ -54,16 +57,25 @@ export default defineComponent({
         // Если это не адрес (адрес обычно начинается с P и длинный), пробуем получить адрес по имени
         // Простая проверка: адрес Pocketnet 33-34 символа
         if (identifier.length < 30) {
-          const addressResponse = await getByPRC({
-            method: rpcEndpoints.getUserAddress,
-            parameters: [identifier],
-            options: { auth: false }
-          }) as GetUserAddressResponse
+          // Сначала проверяем: может это наш pending nickname?
+          const myAddress = authStore.getUserAddress
+          const pendingNickname = (() => { try { return localStorage.getItem('pending_nickname') } catch { return null } })()
 
-          if (addressResponse && addressResponse.data && addressResponse.data.length > 0 && addressResponse.data[0].address) {
-            address = addressResponse.data[0].address
+          if (myAddress && pendingNickname && identifier.toLowerCase() === pendingNickname.toLowerCase()) {
+            // Это наш незарегистрированный профиль — используем адрес из store
+            address = myAddress
           } else {
-            throw new Error('Пользователь не найден')
+            const addressResponse = await getByPRC({
+              method: rpcEndpoints.getUserAddress,
+              parameters: [identifier],
+              options: { auth: false }
+            }) as GetUserAddressResponse
+
+            if (addressResponse && addressResponse.data && addressResponse.data.length > 0 && addressResponse.data[0].address) {
+              address = addressResponse.data[0].address
+            } else {
+              throw new Error('Пользователь не найден')
+            }
           }
         }
 
@@ -72,8 +84,19 @@ export default defineComponent({
         // Свой профиль: используем данные из auth-store, getuserprofile не вызываем
         const myAddress = authStore.getUserAddress
         const myProfile = authStore.getUserProfile
-        if (myAddress && myProfile && address === myAddress) {
-          profile.value = { ...myProfile } as UserProfile
+        if (myAddress && address === myAddress) {
+          if (myProfile) {
+            profile.value = { ...myProfile } as UserProfile
+          } else {
+            // Профиль ещё не в блокчейне (регистрация в процессе) — заглушка
+            const pendingNickname = (() => { try { return localStorage.getItem('pending_nickname') } catch { return null } })()
+            profile.value = {
+              address: myAddress,
+              name: pendingNickname || identifier,
+              hash: '',
+              id: 0,
+            }
+          }
         } else {
           // Теперь получаем профиль по адресу
           const profileResponse = await getByPRCWithAuth({
@@ -158,11 +181,24 @@ export default defineComponent({
       }
     }, { immediate: true })
 
+    const isOwnPendingProfile = ref(false)
+
+    // Проверяем, является ли это наш pending-профиль
+    watch(profile, (p) => {
+      if (p && p.address && authStore.getUserAddress === p.address && (!p.id || p.id === 0)) {
+        // Наш профиль без id — регистрация в процессе
+        isOwnPendingProfile.value = true
+      } else {
+        isOwnPendingProfile.value = false
+      }
+    })
+
     return {
       userAddress,
       profile,
       loading,
       error,
+      isOwnPendingProfile,
       onProfileLoaded
     }
   }

@@ -76,6 +76,10 @@ export type HttpRequestOptions = {
   proxy?: string
   /** Таймаут запроса в миллисекундах */
   timeout?: number
+  /** Конкретный хост прокси (для запросов к определённому серверу) */
+  host?: string
+  /** Конкретный порт прокси (для запросов к определённому серверу) */
+  port?: number
 }
 
 export type HttpRequestParams = {
@@ -297,6 +301,11 @@ async function tryHttpRequest(
 export async function fetchHttp(
   params: HttpRequestParams
 ): Promise<unknown> {
+  // Если указан конкретный host:port — обращаемся только к нему (для прокси с кошельком и т. п.)
+  if (params.options?.host && params.options?.port) {
+    return tryHttpRequest(params, params.options.host, params.options.port)
+  }
+
   // Получаем список доступных серверов
   const availableServers = servers.servers.production.proxy
 

@@ -19,6 +19,17 @@
             {{ error }}
           </SC_ErrorProfile>
 
+          <SC_PendingProfile v-else-if="isOwnPendingProfile">
+            <div class="pending-icon">
+              <ClockCircleOutlined />
+            </div>
+            <div class="pending-title">Регистрация в процессе</div>
+            <div>
+              Ваш аккаунт проходит регистрацию в блокчейне. Обычно это занимает несколько минут.
+              После завершения профиль станет полностью доступен.
+            </div>
+          </SC_PendingProfile>
+
           <div v-else-if="userAddress">
             <ProfileFeed
               :address="userAddress"

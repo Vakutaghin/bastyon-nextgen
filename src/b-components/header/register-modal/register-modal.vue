@@ -15,16 +15,18 @@
           Псевдоним
         </SC_FormLabel>
         <SC_InputWrapper>
-          <Input
-            v-model:value="nickname"
+          <input
+            class="ant-input"
+            :value="nickname"
             placeholder="Введите псевдоним"
             :disabled="loading"
-            :allowClear="true"
+            maxlength="20"
+            @input="onNicknameInput"
             @keyup.enter="handleRegister"
           />
         </SC_InputWrapper>
         <SC_FormHint>
-          Только латинские буквы, цифры и нижнее подчеркивание. Русские буквы автоматически транслитерируются.
+          Максимум 20 символов. Только латинские буквы, цифры и нижнее подчеркивание. Русские буквы автоматически транслитерируются.
         </SC_FormHint>
       </SC_FormItem>
 
@@ -34,12 +36,12 @@
           <SC_FormLabelOptional>(необязательно)</SC_FormLabelOptional>
         </SC_FormLabel>
         <SC_InputWrapper>
-          <Input
-            v-model:value="email"
+          <input
+            :value="email"
             type="email"
             placeholder="Введите email"
             :disabled="loading"
-            :allowClear="true"
+            @input="onEmailInput"
             @keyup.enter="handleRegister"
           />
         </SC_InputWrapper>

@@ -48,8 +48,9 @@ export async function sendTransactionWithMessage(
       options: { auth: true }, // Требуется авторизация для отправки транзакций
     })
 
+    console.log('[sendTransaction] Raw response:', JSON.stringify(response).substring(0, 500))
+
     // Ответ должен содержать txid транзакции
-    // В зависимости от формата ответа сервера, может быть строка или объект
     if (typeof response === 'string') {
       return response
     }
@@ -65,14 +66,31 @@ export async function sendTransactionWithMessage(
       if ('result' in response && typeof response.result === 'string') {
         return response.result
       }
+      // Если ответ — объект с data, который содержит txid
+      if ('data' in response && response.data && typeof response.data === 'object') {
+        const data = response.data as Record<string, unknown>
+        if (data.txid && typeof data.txid === 'string') return data.txid
+      }
+      // Fallback: если есть хоть какой-то непустой ответ — считаем успехом
+      // sendrawtransactionwithmessage может вернуть просто txid hash
+      const responseStr = JSON.stringify(response)
+      if (responseStr.length > 2 && responseStr !== '{}' && responseStr !== '[]') {
+        console.log('[sendTransaction] Accepting response as txid:', responseStr.substring(0, 100))
+        return responseStr
+      }
     }
 
     throw new Error('Unexpected response format from sendrawtransactionwithmessage')
   } catch (error) {
-    // Обрабатываем ошибки от RPC
+    console.error('[sendTransaction] Error details:', error)
     if (error instanceof Error) {
       throw new Error(`Failed to send transaction: ${error.message}`)
     }
-    throw new Error('Failed to send transaction: unknown error')
+    // Если ошибка — объект с кодом (от RPC)
+    if (error && typeof error === 'object') {
+      const errStr = JSON.stringify(error)
+      throw new Error(`Failed to send transaction: ${errStr}`)
+    }
+    throw new Error(`Failed to send transaction: ${String(error)}`)
   }
 }

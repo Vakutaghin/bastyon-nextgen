@@ -22,7 +22,9 @@
           :fallback-text='userName'
           :size='32'
           :verified="isUserVerified"
+          :pending="registrationPending"
           data-header-avatar="true"
+          @click.stop="onAvatarClick"
         />
 
         <SC_UserDetails>

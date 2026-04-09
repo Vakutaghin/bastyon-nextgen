@@ -58,7 +58,17 @@
       </slot>
     </Avatar>
     <div
-      v-if="p.verified"
+      v-if="p.pending"
+      class="pending-badge"
+      :style="{
+        width: Math.max(14, Math.floor(sizePx * 0.35)) + 'px',
+        height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px'
+      }"
+    >
+      <ClockCircleOutlined style="color: #fff; font-size: 9px;" />
+    </div>
+    <div
+      v-else-if="p.verified"
       class="verified-badge"
       :style="{
         width: Math.max(14, Math.floor(sizePx * 0.35)) + 'px',
@@ -73,10 +83,11 @@
 <script setup lang='ts'>
 import { useAvatar } from './avatar'
 import type { AvatarProps } from './types'
-import { CheckOutlined } from '@ant-design/icons-vue'
+import { CheckOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
 
 const p = withDefaults(defineProps<AvatarProps>(), {
-  verified: false
+  verified: false,
+  pending: false,
 })
 
 const {

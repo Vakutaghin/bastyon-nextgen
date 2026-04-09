@@ -26,10 +26,10 @@ export function transliterate(text: string): string {
 }
 
 /**
- * Валидирует псевдоним (только латинские буквы, цифры и нижнее подчеркивание)
+ * Валидирует псевдоним (только латинские буквы, цифры и нижнее подчеркивание, макс 20 символов)
  */
 export function validateNickname(nickname: string): boolean {
-  return /^[a-zA-Z0-9_]+$/.test(nickname)
+  return /^[a-zA-Z0-9_]+$/.test(nickname) && nickname.length <= 20
 }
 
 /**

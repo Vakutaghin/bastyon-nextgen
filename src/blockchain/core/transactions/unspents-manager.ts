@@ -42,13 +42,14 @@ export function lockUTXOs(utxos: UTXO[], ttl: number = 60000) {
 export async function getUnspents(
   address: string,
   minConf: number = 1,
-  maxConf: number = 9999999
+  maxConf: number = 9999999,
+  server?: { host: string; port: number },
 ): Promise<UTXO[]> {
   const response = await getByPRC({
     method: rpcEndpoints.txUnspent,
     parameters: [[address], minConf, maxConf],
     options: { auth: false },
-  }) as TxUnspentResponse
+  }, server) as TxUnspentResponse
 
   if (response.result === 'error') {
     throw new Error(response.error || 'Failed to get unspents')

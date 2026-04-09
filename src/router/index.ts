@@ -5,10 +5,11 @@ import ProfilePage from '@/pages/profile-page/profile-page.vue'
 import SettingsPage from '@/pages/settings-page/settings-page.vue'
 import LimitsPage from '@/pages/limits-page/limits-page.vue'
 import WalletsPage from '@/pages/wallets-page/wallets-page.vue'
+import MyVideosPage from '@/pages/my-videos-page/my-videos-page.vue'
 import { useAuthStore } from '@/blockchain'
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
-const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings'])
+const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/wallets',
       name: 'wallets',
       component: WalletsPage
+    },
+    {
+      path: '/my-videos',
+      name: 'my-videos',
+      component: MyVideosPage
     },
     {
       path: '/:userName',

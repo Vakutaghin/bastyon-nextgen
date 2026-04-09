@@ -69,7 +69,7 @@ export class CaptchaAPI {
   async get(
     callback?: (captcha: CaptchaData | null, error?: string) => void,
     refresh: boolean = false,
-    proxyOptions?: { proxy?: string }
+    proxyOptions?: { proxy?: string; host?: string; port?: number }
   ): Promise<CaptchaData | null> {
     if (refresh) {
       this.storage.current = null
@@ -128,7 +128,7 @@ export class CaptchaAPI {
   async getHex(
     callback?: (captcha: CaptchaData | null, error?: string) => void,
     refresh: boolean = false,
-    proxyOptions?: { proxy?: string }
+    proxyOptions?: { proxy?: string; host?: string; port?: number }
   ): Promise<CaptchaData | null> {
     if (refresh) {
       this.storage.current = null
@@ -193,7 +193,7 @@ export class CaptchaAPI {
     text: string,
     angles: number[] | null,
     callback?: (error: string | null, captcha?: CaptchaData) => void,
-    proxyOptions?: { proxy?: string }
+    proxyOptions?: { proxy?: string; host?: string; port?: number }
   ): Promise<CaptchaData | null> {
     try {
       const response = await fetchHttp({

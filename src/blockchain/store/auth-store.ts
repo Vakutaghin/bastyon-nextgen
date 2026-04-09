@@ -45,6 +45,7 @@ import {
 } from '../storage'
 import { ACCOUNT_STORAGE_PREFIX } from '../constants/storage'
 import { deriveAndSaveWalletAddresses } from '../wallet-addresses'
+import { wsService } from '../ws'
 
 
 export const useAuthStore = defineStore('auth', {
@@ -280,9 +281,11 @@ export const useAuthStore = defineStore('auth', {
           }
         }
 
-        // Обновляем ленту и мессенджер
+        // Обновляем ленту (мессенджер инициализируется после регистрации на сервере)
         this.invalidateAllQueries().catch(() => {})
-        this.resetMessenger(true).catch(() => {})
+
+        // Подключаем WebSocket для получения push-событий (транзакции и т.д.)
+        wsService.connect()
 
         this.setLoading(false)
 
@@ -400,6 +403,9 @@ export const useAuthStore = defineStore('auth', {
         this.invalidateAllQueries().catch(() => {})
         this.resetMessenger(true).catch(() => {})
 
+        // Подключаем WebSocket для получения push-событий
+        wsService.connect()
+
         this.setLoading(false)
 
         return {
@@ -429,6 +435,9 @@ export const useAuthStore = defineStore('auth', {
       this.setLoading(true)
 
       try {
+        // Закрываем WebSocket
+        wsService.close()
+
         // Очищаем состояние
         this.isAuthenticated = false
         this.authState = 'unauthenticated'
@@ -469,6 +478,26 @@ export const useAuthStore = defineStore('auth', {
       this.setError(null)
 
       try {
+        // Проверяем, не осталась ли незавершённая регистрация (транзакция НЕ отправлена)
+        // Если step < 2 — ключи сгенерированы, но транзакция не ушла в блокчейн.
+        // Такой «недоюзер» не должен авторизоваться при перезагрузке.
+        try {
+          const pendingRaw = localStorage.getItem('pending_registration')
+          if (pendingRaw) {
+            const pending = JSON.parse(pendingRaw)
+            if (pending && pending.step < 2) {
+              // Регистрация не завершена — очищаем всё
+              localStorage.removeItem('pending_registration')
+              localStorage.removeItem('pending_nickname')
+              clearAllUserData()
+              this.setLoading(false)
+              return false
+            }
+          }
+        } catch {
+          // Ошибка чтения — игнорируем
+        }
+
         // Убеждаемся, что поддержка русского языка загружена
         await loadBip39Russian()
 
@@ -514,6 +543,9 @@ export const useAuthStore = defineStore('auth', {
                     // Игнорируем ошибки при восстановлении сессии
                   })
                 }
+
+                // Подключаем WebSocket для получения push-событий
+                wsService.connect()
 
                 this.setLoading(false)
                 return true
@@ -572,6 +604,9 @@ export const useAuthStore = defineStore('auth', {
             // Игнорируем ошибки при восстановлении сессии
           })
         }
+
+        // Подключаем WebSocket для получения push-событий
+        wsService.connect()
 
         this.setLoading(false)
         return true

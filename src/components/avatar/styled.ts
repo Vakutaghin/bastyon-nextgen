@@ -37,4 +37,20 @@ export const SC_Avatar = styled.div<{
     box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
     z-index: 2;
   }
+
+  .pending-badge {
+    position: absolute;
+    left: -2px;
+    bottom: -2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #faad14;
+    border: 2px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+    z-index: 2;
+  }
 `
