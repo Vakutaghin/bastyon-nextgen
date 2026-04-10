@@ -9,6 +9,14 @@
  */
 
 import servers from '@/servers.json'
+import { logger } from '@/services/logger'
+
+const log = logger.scope('[ProxyWithWallet]')
+
+/** Протокол для подключения к прокси */
+const PROXY_PROTOCOL = 'https'
+/** Endpoint для получения информации о прокси */
+const PROXY_INFO_PATH = '/info'
 
 export interface ProxyServer {
   host: string
@@ -29,7 +37,7 @@ async function fetchProxyInfo(
   port: number,
   timeout: number = 8000,
 ): Promise<any> {
-  const url = `https://${host}:${port}/info`
+  const url = `${PROXY_PROTOCOL}://${host}:${port}${PROXY_INFO_PATH}`
 
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout)
@@ -83,7 +91,7 @@ export async function getProxyWithWallet(): Promise<ProxyWithWalletResult | null
 
       const wallet = info?.info?.wallet?.addresses?.registration
 
-      console.log(`[getProxyWithWallet] ${proxy.host}: ready=${wallet?.ready}, unspents=${wallet?.unspents}, queue=${wallet?.queue}`)
+      log.debug(`${proxy.host}: ready=${wallet?.ready}, unspents=${wallet?.unspents}, queue=${wallet?.queue}`)
 
       if (wallet && wallet.ready && wallet.unspents) {
         return {
@@ -110,7 +118,7 @@ export async function getProxyWithWallet(): Promise<ProxyWithWalletResult | null
   }
 
   if (best) {
-    console.log(`[getProxyWithWallet] Selected: ${best.host} (queue=${best.queue}, unspents=${best.unspents})`)
+    log.debug(`Selected: ${best.host} (queue=${best.queue}, unspents=${best.unspents})`)
     return { host: best.host, port: best.port }
   }
 

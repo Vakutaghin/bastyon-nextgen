@@ -2,6 +2,7 @@ import { defineComponent, type PropType } from 'vue'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
+import { getInitials } from '@/helpers/common/initials'
 import Card from '@/components/card/card.vue'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { ImageGallery } from '@/components/image-gallery'
@@ -249,11 +250,7 @@ export const postCardOptions = defineComponent({
       return str
     },
     getInitial(nameOrLetter?: string): string {
-      if (!nameOrLetter) return '?'
-      // If it's already a single letter, return it
-      if (nameOrLetter.length === 1) return nameOrLetter.toUpperCase()
-      // Otherwise get first letter of name
-      return nameOrLetter.charAt(0).toUpperCase()
+      return getInitials(nameOrLetter, { maxLetters: 1 })
     },
     closeImageGallery(): void {
       this.modalStore.closeImageGallery()

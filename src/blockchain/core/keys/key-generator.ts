@@ -5,9 +5,7 @@
 // Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
 import { Buffer } from '../../utils/buffer-polyfill'
 
-// Импортируем bip39 - пробуем разные способы для совместимости
-import * as bip39Module from 'bip39'
-const bip39 = (bip39Module as any).default || bip39Module
+import { bip39, getBip39Russian } from './bip39-loader'
 import * as bip32Module from 'bip32'
 import * as ecc from 'tiny-secp256k1'
 import { ECPairFactory } from 'ecpair'
@@ -38,7 +36,7 @@ import type {
   KeyGenerationOptions,
 } from '../../types/keys'
 import { getMainAddressPath } from '../../constants/paths'
-import { detectMnemonicWordlist, validateMnemonic, getBip39Russian } from './key-validator'
+import { detectMnemonicWordlist, validateMnemonic } from './key-validator'
 
 // Кеш для оптимизации (в памяти)
 const seedCache = new Map<string, Seed>()

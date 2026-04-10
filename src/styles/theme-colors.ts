@@ -60,7 +60,12 @@ export const COLORS = {
   RED_BG: '#fff2f0',
   RED_BORDER: '#ffccc7',
 
-  // Оранжевые оттенки (предупреждения)
+  // Жёлтые/оранжевые оттенки (предупреждения)
+  WARNING_BG: '#fff3cd',
+  WARNING_BORDER: '#ffc107',
+  WARNING_TEXT: '#856404',
+  WARNING_BORDER_LIGHT: '#ffe58f',
+  WARNING_ICON: '#faad14',
   ORANGE_BG: '#fff7e6',
   ORANGE_BORDER: '#ffd591',
   ORANGE_TEXT: '#d46b08',

@@ -3,24 +3,10 @@
  */
 
 import { Buffer } from 'buffer'
-import CryptoJS from 'crypto-js'
 import type { KeyPair } from '../../types/keys'
 import type { Address } from '../../types/addresses'
 import type { ApiSignature, ApiSignatureOptions } from '../../types/signatures'
-
-/**
- * Кодирует строку в hex формат
- * @param str - Строка для кодирования
- * @returns Hex строка
- */
-function hexEncode(str: string): string {
-  let hex = ''
-  for (let i = 0; i < str.length; i++) {
-    const charCode = str.charCodeAt(i)
-    hex += charCode.toString(16).padStart(2, '0')
-  }
-  return hex
-}
+import { sha256, hexEncode } from '../../utils/crypto-hash'
 
 /**
  * Генерирует случайное число в диапазоне
@@ -113,8 +99,7 @@ export function generateApiSignature(
     signature = keyPair.ecPair.sign(Buffer.from(nonce))
   } else {
     // Новый формат: подпись SHA256 хеша nonce
-    const hashWord = CryptoJS.SHA256(nonce)
-    const hash = Buffer.from(hashWord.toString(CryptoJS.enc.Hex), 'hex')
+    const hash = sha256(nonce)
     signature = keyPair.ecPair.sign(hash)
   }
 

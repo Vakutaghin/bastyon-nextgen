@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_ProfileWork = styled.div`
   display: flex;
@@ -48,33 +49,33 @@ export const SC_LoadingProfile = styled.div`
   text-align: center;
   padding: 40px;
   font-size: 18px;
-  color: #666;
+  color: ${COLORS.GRAY_666};
 `
 
 export const SC_ErrorProfile = styled.div`
   text-align: center;
   padding: 40px;
   font-size: 18px;
-  color: #ff4d4f;
+  color: ${COLORS.RED_ANT};
 `
 
 export const SC_PendingProfile = styled.div`
   text-align: center;
   padding: 40px 20px;
   font-size: 16px;
-  color: #666;
+  color: ${COLORS.GRAY_666};
   line-height: 1.6;
 
   .pending-icon {
     font-size: 48px;
-    color: #faad14;
+    color: ${COLORS.WARNING_ICON};
     margin-bottom: 16px;
   }
 
   .pending-title {
     font-size: 20px;
     font-weight: 500;
-    color: #333;
+    color: ${COLORS.GRAY_333};
     margin-bottom: 8px;
   }
 `

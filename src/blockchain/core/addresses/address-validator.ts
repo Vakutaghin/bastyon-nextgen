@@ -8,15 +8,9 @@ import { Buffer } from '../../utils/buffer-polyfill'
 import bs58 from 'bs58'
 // @ts-ignore
 import { bech32 } from 'bech32'
-import CryptoJS from 'crypto-js'
 
 import type { Address, AddressType, AddressValidationResult } from '../../types/addresses'
-
-function localHash256(buffer: Buffer): Buffer {
-  const wordArray = CryptoJS.enc.Hex.parse(buffer.toString('hex'))
-  const hash = CryptoJS.SHA256(CryptoJS.SHA256(wordArray))
-  return Buffer.from(hash.toString(CryptoJS.enc.Hex), 'hex')
-}
+import { hash256 } from '../../utils/crypto-hash'
 
 function fromBase58Check(address: string): { version: number, hash: Buffer } {
   try {
@@ -26,7 +20,7 @@ function fromBase58Check(address: string): { version: number, hash: Buffer } {
     const checksum = payload.slice(-4)
     const data = payload.slice(0, -4)
 
-    const newChecksum = localHash256(Buffer.from(data)).slice(0, 4)
+    const newChecksum = hash256(Buffer.from(data)).slice(0, 4)
 
     if (Buffer.from(checksum).compare(newChecksum) !== 0) {
       throw new Error('Invalid checksum')

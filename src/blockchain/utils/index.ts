@@ -32,6 +32,9 @@ export {
   isValidHex,
 } from './format-converters'
 
+// Криптографические хеши
+export { sha256, hash256, hexEncode } from './crypto-hash'
+
 // QR-коды
 export {
   generateQRCode,

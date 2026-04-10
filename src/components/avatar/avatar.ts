@@ -4,6 +4,7 @@ import { Avatar } from 'ant-design-vue'
 import { generateNeutralColor, getContrastTextColor } from './color-utils'
 import { SC_Avatar } from './styled'
 import type { AvatarProps } from './types'
+import { getInitials as getInitialsUtil } from '@/helpers/common/initials'
 
 
 export function useAvatar(p: AvatarProps) {
@@ -33,37 +34,9 @@ export function useAvatar(p: AvatarProps) {
     return p.shape === 'square' ? '4px' : '50%'
   })
 
-  /**
-   * Извлекает первые буквы из текста
-   * Если передан "Иван Петров", вернет "ИП"
-   * Если передан "Иван", вернет "И"
-   * Если текста нет, вернет пустую строку
-   */
   const getInitials = (): string => {
-    // Используем fallbackText, если передан, иначе alt
     const text = p.fallbackText || p.alt
-
-    if (!text || typeof text !== 'string') {
-      return ''
-    }
-
-    // Разбиваем текст на слова и берем первые буквы
-    const words = text.trim().split(/\s+/).filter(word => word.length > 0)
-
-    if (words.length === 0) {
-      return ''
-    }
-
-    if (words.length === 1) {
-      // Если одно слово, берем первую букву
-      return words[0].charAt(0).toUpperCase()
-    }
-
-    // Если несколько слов, берем первые буквы первых двух слов
-    const firstLetter = words[0].charAt(0).toUpperCase()
-    const secondLetter = words[1] ? words[1].charAt(0).toUpperCase() : ''
-
-    return firstLetter + secondLetter
+    return getInitialsUtil(text, { fallback: '' })
   }
 
   /**

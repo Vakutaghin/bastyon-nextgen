@@ -10,6 +10,9 @@ import type { CaptchaData } from './captcha-api'
 import { showCaptchaModal } from '@/components/captcha'
 import { getProxyWithWalletCached } from './proxy-with-wallet'
 import { isCaptchaError, isRegistrationBlockingError } from '@/helpers/api/error-codes'
+import { logger } from '@/services/logger'
+
+const log = logger.scope('[requestUnspents]')
 
 export interface RequestUnspentsParams {
   /** Причина запроса ('registration' для регистрации) */
@@ -37,15 +40,15 @@ export async function requestUnspents(
   const { reason } = params
 
   // Шаг 1: Найти прокси с регистрационным кошельком
-  console.log('[requestUnspents] Step 1: finding proxy with wallet...')
+  log.debug('Step 1: finding proxy with wallet...')
   const proxyServer = await getProxyWithWalletCached()
 
   if (!proxyServer) {
-    console.error('[requestUnspents] No proxy with wallet found!')
+    log.error('No proxy with wallet found!')
     throw new Error('Не удалось найти прокси с регистрационным кошельком. Попробуйте позже.')
   }
 
-  console.log('[requestUnspents] Found proxy:', proxyServer.host, proxyServer.port)
+  log.debug('Found proxy:', proxyServer.host, proxyServer.port)
 
   const proxyOptions = { host: proxyServer.host, port: proxyServer.port }
 
@@ -59,25 +62,25 @@ export async function requestUnspents(
     throw new Error('Ключи не найдены. Пожалуйста, убедитесь, что вы зарегистрированы.')
   }
 
-  console.log('[requestUnspents] Step 2: keys OK, address:', userAddress)
+  log.debug('Step 2: keys OK, address:', userAddress)
 
   // Шаг 3: Решаем капчу через тот же прокси
   let captcha: CaptchaData | null = null
 
-  console.log('[requestUnspents] Step 3: solving captcha...')
+  log.debug('Step 3: solving captcha...')
 
   try {
     captcha = await captchaAPI.getHex(undefined, false, proxyOptions)
-    console.log('[requestUnspents] getHex result:', captcha ? { id: captcha.id, done: captcha.done } : null)
+    log.debug('getHex result:', captcha ? { id: captcha.id, done: captcha.done } : null)
 
     if (!captcha || !captcha.done) {
       captcha = await captchaAPI.get(undefined, false, proxyOptions)
-      console.log('[requestUnspents] get result:', captcha ? { id: captcha.id, done: captcha.done } : null)
+      log.debug('get result:', captcha ? { id: captcha.id, done: captcha.done } : null)
     }
 
     // Если капча не решена автоматически, показываем пользователю
     if (captcha && !captcha.done) {
-      console.log('[requestUnspents] Captcha not auto-solved, showing modal...')
+      log.debug('Captcha not auto-solved, showing modal...')
       if (onCaptchaRequired) {
         captcha = await onCaptchaRequired(captcha)
       } else {
@@ -94,25 +97,25 @@ export async function requestUnspents(
     }
 
     if (!captcha || !captcha.done) {
-      console.error('[requestUnspents] Captcha not solved! captcha:', captcha)
+      log.error('Captcha not solved! captcha:', captcha)
       throw new Error('captcha_failed')
     }
 
-    console.log('[requestUnspents] Captcha solved! id:', captcha.id)
+    log.debug('Captcha solved! id:', captcha.id)
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
 
     if ((msg === 'captcha_failed' || msg === 'captcha_cancelled') && _retryCount < MAX_CAPTCHA_RETRIES) {
-      console.log('[requestUnspents] Captcha retry', _retryCount + 1, 'of', MAX_CAPTCHA_RETRIES)
+      log.debug('Captcha retry', _retryCount + 1, 'of', MAX_CAPTCHA_RETRIES)
       return requestUnspents(address, params, onCaptchaRequired, _retryCount + 1)
     }
 
-    console.error('[requestUnspents] Captcha error:', msg)
+    log.error('Captcha error:', msg)
     throw new Error('Не удалось решить капчу. Попробуйте позже.')
   }
 
   // Шаг 4: Отправляем free/balance через тот же прокси
-  console.log('[requestUnspents] Step 4: sending free/balance to', proxyServer.host, '...')
+  log.debug('Step 4: sending free/balance to', proxyServer.host, '...')
 
   try {
     const response = await fetchHttp({
@@ -128,7 +131,7 @@ export async function requestUnspents(
       },
     }) as { action?: string }
 
-    console.log('[requestUnspents] free/balance response:', response)
+    log.debug('free/balance response:', response)
 
     return {
       action: response.action || '',
@@ -136,7 +139,7 @@ export async function requestUnspents(
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error('[requestUnspents] free/balance error:', errorMessage)
+    log.error('free/balance error:', errorMessage)
 
     if (isCaptchaError(errorMessage) && _retryCount < MAX_CAPTCHA_RETRIES) {
       return requestUnspents(address, params, onCaptchaRequired, _retryCount + 1)

@@ -1,4 +1,5 @@
 import styled, { css } from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 const sidebarItemProps = { active: Boolean }
 
@@ -137,19 +138,19 @@ export const SC_PrivateKeySection = styled.div`
 
 export const SC_PrivateKeyWarning = styled.div`
   padding: 12px 16px;
-  background-color: #fff3cd;
-  border: 1px solid #ffc107;
+  background-color: ${COLORS.WARNING_BG};
+  border: 1px solid ${COLORS.WARNING_BORDER};
   border-radius: 8px;
   margin-bottom: 20px;
   font-size: 13px;
   line-height: 1.5;
-  color: #856404;
+  color: ${COLORS.WARNING_TEXT};
 `
 
 export const SC_PrivateKeyBox = styled.div`
   position: relative;
-  background-color: #f5f5f5;
-  border: 1px solid #d9d9d9;
+  background-color: ${COLORS.BG_TERTIARY};
+  border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 8px;
   padding: 16px;
   padding-bottom: 48px;
@@ -167,7 +168,7 @@ export const SC_PrivateKeyValue = styled.div`
   font-family: 'Courier New', monospace;
   font-size: 14px;
   line-height: 1.6;
-  color: #000;
+  color: ${COLORS.BLACK};
   word-break: break-all;
   user-select: all;
 `
@@ -182,17 +183,17 @@ export const SC_CopyIconBtn = styled.button`
   width: 36px;
   height: 36px;
   padding: 0;
-  border: 1px solid #d9d9d9;
+  border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 6px;
-  background: #fff;
-  color: rgba(0, 0, 0, 0.65);
+  background: ${COLORS.WHITE};
+  color: ${COLORS.OVERLAY_65};
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
 
   &:hover {
-    color: #1890ff;
-    border-color: #1890ff;
-    background: #e6f7ff;
+    color: ${COLORS.ANT_BLUE};
+    border-color: ${COLORS.ANT_BLUE};
+    background: ${COLORS.ANT_BLUE_BG};
   }
 `
 
@@ -203,19 +204,19 @@ export const SC_ShowKeyButton = styled.button`
   padding: 10px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
-  background: #1890ff;
+  color: ${COLORS.WHITE};
+  background: ${COLORS.ANT_BLUE};
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s;
 
   &:hover {
-    background: #40a9ff;
+    background: ${COLORS.ANT_BLUE_HOVER};
   }
 
   &:disabled {
-    background: #d9d9d9;
+    background: ${COLORS.BORDER_DEFAULT};
     cursor: not-allowed;
   }
 `
@@ -227,23 +228,23 @@ export const SC_HideKeyButton = styled.button`
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.65);
+  color: ${COLORS.OVERLAY_65};
   background: transparent;
-  border: 1px solid #d9d9d9;
+  border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 6px;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
 
   &:hover {
-    color: #1890ff;
-    border-color: #1890ff;
+    color: ${COLORS.ANT_BLUE};
+    border-color: ${COLORS.ANT_BLUE};
   }
 `
 
 export const SC_ConfirmOverlay = styled.div`
   padding: 20px;
-  background: #fff;
-  border: 1px solid #ffe58f;
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.WARNING_BORDER_LIGHT};
   border-radius: 8px;
   max-width: 480px;
 `
@@ -254,7 +255,7 @@ export const SC_ConfirmTitle = styled.div`
   gap: 10px;
   font-size: 16px;
   font-weight: 600;
-  color: #d46b08;
+  color: ${COLORS.ORANGE_TEXT};
   margin-bottom: 12px;
 `
 
@@ -275,15 +276,15 @@ export const SC_ConfirmBtnPrimary = styled.button`
   padding: 8px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
-  background: #1890ff;
+  color: ${COLORS.WHITE};
+  background: ${COLORS.ANT_BLUE};
   border: none;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
 
   &:hover {
-    background: #40a9ff;
+    background: ${COLORS.ANT_BLUE_HOVER};
   }
 `
 
@@ -291,15 +292,15 @@ export const SC_ConfirmBtnDefault = styled.button`
   padding: 8px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.65);
-  background: #fff;
-  border: 1px solid #d9d9d9;
+  color: ${COLORS.OVERLAY_65};
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 6px;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
 
   &:hover {
-    color: #1890ff;
-    border-color: #1890ff;
+    color: ${COLORS.ANT_BLUE};
+    border-color: ${COLORS.ANT_BLUE};
   }
 `

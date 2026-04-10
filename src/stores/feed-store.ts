@@ -5,6 +5,7 @@ import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hie
 import type { GetTopFeedResponse } from '@/types/rpc-responses/get-top-feed'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useFiltersStore } from './filters-store'
+import { adaptPostData, extractRawPosts, type AdaptedPost } from '@/helpers/common/post-mapper'
 
 
 /**
@@ -15,37 +16,6 @@ import { useFiltersStore } from './filters-store'
  * Все запросы теперь управляются через Vue Query.
  */
 
-interface AdaptedPost {
-  id: string | number
-  hash?: string // Хеш поста (share ID для upvote)
-  txid?: string // ID транзакции (альтернатива hash)
-  author: {
-    name: string
-    address: string
-    avatar: string | null
-    reputation: number
-    letter: string
-    subscribers_count?: number
-    subscribes_count?: number
-  }
-  title: string
-  content: string
-  timestamp: string
-  likes: number
-  comments: number
-  shares: number
-  tags: string[]
-  type: string
-  category: string
-  images: string[]
-  ratingStars: number
-  scoreCnt: number
-  scoreSum?: number
-  videoUrl?: string
-  repost?: string
-  repostAuthor?: { name: string; address: string }
-}
-
 export const useFeedStore = defineStore('feed', {
   state: () => ({
     feedData: null as GetTopFeedResponse | GetHierarchicalStripResponse | null,
@@ -53,138 +23,29 @@ export const useFeedStore = defineStore('feed', {
     loading: false,
     error: null as string | null,
     scrollPosition: 0,
-    cachedPostsData: null as AdaptedPost[] | null,
-    cachedFeedDataHash: null as string | null
   }),
 
   getters: {
     /**
-     * Получает адаптированные посты из feedData
+     * Получает адаптированные посты из feedData.
+     * Pinia getter уже является computed — ручное кеширование не нужно.
      */
     postsData(): AdaptedPost[] {
-      if (!this.feedData) {
-        this.cachedPostsData = null
-        this.cachedFeedDataHash = null
-        return []
-      }
+      if (!this.feedData) return []
 
-      // Создаем простой хеш для проверки изменений
-      // Включаем в хеш также активные фильтры для инвалидации при изменении сортировки
-      const filtersStore = useFiltersStore()
-      const feedDataHash = JSON.stringify({
-        feedData: this.feedData,
-        orderby: filtersStore.orderby,
-        ascdesc: filtersStore.ascdesc
-      })
+      const rawPosts = extractRawPosts(this.feedData)
+      if (rawPosts.length === 0) return []
 
-      // Если данные не изменились, возвращаем кешированные
-      if (this.cachedPostsData && this.cachedFeedDataHash === feedDataHash) {
-        return this.cachedPostsData
-      }
-
-      let rawPosts: any[] = []
-
-      // API может возвращать данные в разных форматах
-      if (Array.isArray(this.feedData)) {
-        rawPosts = this.feedData
-      } else if (this.feedData.data && this.feedData.data.contents && Array.isArray(this.feedData.data.contents)) {
-        rawPosts = this.feedData.data.contents
-      } else if (this.feedData.data && Array.isArray(this.feedData.data)) {
-        rawPosts = this.feedData.data
-      } else if (this.feedData.result && Array.isArray(this.feedData.result)) {
-        rawPosts = this.feedData.result
-      } else if ((this.feedData as any).posts && Array.isArray((this.feedData as any).posts)) {
-        rawPosts = (this.feedData as any).posts
-      } else if ((this.feedData as any).contents && Array.isArray((this.feedData as any).contents)) {
-        rawPosts = (this.feedData as any).contents
-      } else {
-        this.cachedPostsData = null
-        this.cachedFeedDataHash = null
-        return []
-      }
-
-      // Преобразуем данные API в формат, ожидаемый PostCard
-      const adapted = rawPosts.map((post, index) => this.adaptPostData(post, index))
-
-      // Применяем сортировку на основе активных фильтров
-      const sorted = this.applySorting(adapted)
-
-      // Кешируем результат
-      this.cachedPostsData = sorted
-      this.cachedFeedDataHash = feedDataHash
-
-      return sorted
+      const adapted = rawPosts.map((post, index) => adaptPostData(post, index))
+      return this.applySorting(adapted)
     }
   },
 
   actions: {
     /**
-     * Адаптирует данные поста из API в формат компонента
+     * @deprecated Используйте adaptPostData из @/helpers/common/post-mapper
      */
-    adaptPostData(post: any, index: number): AdaptedPost {
-      const authorName = post.userprofile?.name ||
-                        post.address ||
-                        'Неизвестный автор'
-
-      const avatar = post.userprofile?.i || null
-      const reputation = post.userprofile?.reputation || 0
-      const title = post.c || ''
-      const content = post.m || ''
-      const timestamp = post.time
-        ? new Date(post.time * 1000).toISOString()
-        : new Date().toISOString()
-      const likes = post.scoreCnt || 0
-      const comments = post.comments || 0
-      const shares = post.reposted || 0
-      const tags = Array.isArray(post.t) ? post.t : []
-      const images = Array.isArray(post.i) ? post.i : []
-      const videoUrl = post.u || post.s?.v || undefined
-
-      let ratingStars = 0
-      if (post.scoreCnt > 0 && post.scoreSum !== undefined && post.scoreSum !== null) {
-        const averageRating = post.scoreSum / post.scoreCnt
-        ratingStars = Math.max(0, Math.min(5, Math.round(averageRating * 10) / 10))
-      }
-
-      return {
-        id: post.id || post.txid || post.hash || index,
-        hash: post.hash || post.txid || post.id,
-        txid: post.txid || post.hash || post.id,
-        author: {
-          name: authorName,
-          address: post.address || '',
-          avatar: avatar,
-          reputation: reputation,
-          verified: Array.isArray(post.userprofile?.badges)
-        ? (post.userprofile.badges as any[]).includes('verificated') ||
-          (post.userprofile.badges as any[]).includes('verified')
-        : (() => {
-            const flags = (post.userprofile as any)?.flags
-            const real = (flags && (flags as any).real) ?? (post.userprofile as any)?.real
-            return real === 1 || real === '1' || real === true || real === 'true'
-          })(),
-          letter: authorName.charAt(0).toUpperCase(),
-          subscribers_count: post.userprofile?.subscribers_count,
-          subscribes_count: post.userprofile?.subscribes_count
-        },
-        title: title,
-        content: content,
-        timestamp: timestamp,
-        likes: likes,
-        comments: comments,
-        shares: shares,
-        tags: tags,
-        type: post.type || '',
-        category: post.type || '',
-        images: images,
-        ratingStars: ratingStars,
-        scoreCnt: post.scoreCnt || 0,
-        scoreSum: post.scoreSum,
-        videoUrl: videoUrl,
-        repost: post.repost || undefined,
-        repostAuthor: undefined
-      }
-    },
+    adaptPostData: adaptPostData,
 
     /**
      * Загружает hierarchical strip
@@ -275,10 +136,6 @@ export const useFeedStore = defineStore('feed', {
       const post = this.postsData.find((p) => p.id === postId)
       if (post) {
         post.likes = likes
-        // Инвалидируем кеш
-        this.cachedFeedDataHash = null
-
-        // Инвалидируем кэш Vue Query
         const queryClient = useQueryClient()
         queryClient.invalidateQueries({ queryKey: ['feed'] })
       }
@@ -292,10 +149,6 @@ export const useFeedStore = defineStore('feed', {
       const post = this.postsData.find((p) => p.id === postId)
       if (post) {
         post.shares = shares
-        // Инвалидируем кеш
-        this.cachedFeedDataHash = null
-
-        // Инвалидируем кэш Vue Query
         const queryClient = useQueryClient()
         queryClient.invalidateQueries({ queryKey: ['feed'] })
       }

@@ -7,6 +7,7 @@ import { computed, watch } from 'vue'
 import { useAuthStore } from '@/blockchain'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { logger } from '@/services/logger'
 
 import { matrixService } from '../services/matrix-service'
 import glassSound from '../sounds/glass.mp3'
@@ -19,6 +20,8 @@ import {
 } from '../helpers'
 
 import { SOUND_MAX_AGE, PROFILE_UPDATE_DEBOUNCE, PCRYPTO_DIALOG_TIMEOUT } from './consts'
+
+const log = logger.scope('[MessengerStore]')
 import { useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerProfileCache } from './messenger-profile-cache'
 import { useMessengerChatStore } from './messenger-chat-store'
@@ -163,13 +166,13 @@ export const useMessengerStore = defineStore('messenger', () => {
         if (existing) dialogsList = [existing, ...dialogsList]
       }
 
-      uiStore.dialogs = dialogsList.sort((a, b) => {
+      uiStore.setDialogs(dialogsList.sort((a, b) => {
         const tsA = a.lastMessage?.timestamp ?? a.createdAt ?? 0
         const tsB = b.lastMessage?.timestamp ?? b.createdAt ?? 0
         return tsB - tsA
-      })
+      }))
     } catch (e) {
-      console.error('[MessengerStore] Ошибка загрузки диалогов:', e)
+      log.error('Ошибка загрузки диалогов:', e)
     } finally {
       if (!silent) uiStore.isLoading = false
       if (uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING') uiStore.dialogsLoadedOnce = true
@@ -253,7 +256,7 @@ export const useMessengerStore = defineStore('messenger', () => {
                 loadDialogs(true)
               }
             } catch (e) {
-              console.error('[MessengerStore] Ошибка в Room.timeline:', e)
+              log.error('Ошибка в Room.timeline:', e)
             }
           })
 
@@ -270,7 +273,7 @@ export const useMessengerStore = defineStore('messenger', () => {
           if (!success) throw new Error('Matrix login failed')
           await syncCurrentUser()
         } catch (e) {
-          console.error('[MessengerStore] Ошибка инициализации Matrix:', e)
+          log.error('Ошибка инициализации Matrix:', e)
         } finally {
           uiStore.isLoading = false
         }
@@ -287,12 +290,8 @@ export const useMessengerStore = defineStore('messenger', () => {
   // --- Открытие/переключение ---
 
   const openChat = async (chatId: string) => {
-    uiStore.inviteViewActive = false
-    uiStore.lastTargetAddress = null
-    uiStore.activeChatId = chatId
-
-    const dialogIndex = uiStore.dialogs.findIndex((d) => d.id === chatId)
-    if (dialogIndex !== -1) uiStore.dialogs[dialogIndex].unreadCount = 0
+    uiStore.switchToChat(chatId)
+    uiStore.markDialogRead(chatId)
 
     await chatStore.loadMessages(chatId)
 
@@ -367,22 +366,19 @@ export const useMessengerStore = defineStore('messenger', () => {
         const img = (profile as any)?.i || (profile as any)?.avatar
         const partnerAvatar = img ? resolveImageUrl(img) : undefined
 
-        uiStore.dialogs = [{
+        uiStore.prependDialog({
           id: roomId,
           partner: { id: partnerId, name: partnerName, avatar: partnerAvatar, verified: false },
           unreadCount: 0, lastMessage: undefined, createdAt: Date.now(),
-        }, ...uiStore.dialogs]
+        })
       }
     }
     return roomId || null
   }
 
   const switchToChatAndLoad = (roomId: string): void => {
-    uiStore.inviteViewActive = false
-    uiStore.lastTargetAddress = null
-    uiStore.activeChatId = roomId
-    const idx = uiStore.dialogs.findIndex((d) => d.id === roomId)
-    if (idx !== -1) uiStore.dialogs[idx].unreadCount = 0
+    uiStore.switchToChat(roomId)
+    uiStore.markDialogRead(roomId)
     Promise.resolve().then(async () => {
       await chatStore.loadMessages(roomId)
       await loadDialogs(true)
@@ -409,26 +405,22 @@ export const useMessengerStore = defineStore('messenger', () => {
     await initMatrix()
     const existingRoomId = findExistingRoomByAddress(address)
     if (existingRoomId) { switchToChatAndLoad(existingRoomId); return }
-    uiStore.lastTargetAddress = address
-    uiStore.inviteViewActive = true
-    uiStore.activeChatId = null
+    uiStore.showInvite(address)
   }
 
   const deleteDialog = (chatId: string) => {
-    const removedDialog = uiStore.dialogs.find((d) => d.id === chatId)
-    const removedIndex = uiStore.dialogs.findIndex((d) => d.id === chatId)
     const removedMessages = chatStore.messages[chatId] ? [...chatStore.messages[chatId]] : null
     const wasActive = uiStore.activeChatId === chatId
 
-    if (wasActive) uiStore.activeChatId = null
-    uiStore.dialogs = uiStore.dialogs.filter((d) => d.id !== chatId)
+    if (wasActive) uiStore.setActiveChatId(null)
+    const { dialog: removedDialog, index: removedIndex } = uiStore.removeDialog(chatId)
     delete chatStore.messages[chatId]
 
     matrixService.leaveAndForgetRoom(chatId).catch((e) => {
-      console.error('[MessengerStore] Ошибка удаления, восстанавливаем:', e)
-      if (removedDialog) uiStore.dialogs.splice(removedIndex, 0, removedDialog)
+      log.error('Ошибка удаления, восстанавливаем:', e)
+      if (removedDialog) uiStore.restoreDialog(removedDialog, removedIndex)
       if (removedMessages) chatStore.messages[chatId] = removedMessages
-      if (wasActive) uiStore.activeChatId = chatId
+      if (wasActive) uiStore.setActiveChatId(chatId)
     })
   }
 
@@ -440,11 +432,15 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   // Обновление диалогов при обновлении профилей
-  let profileUpdateTimeout: any = null
-  watch(() => profileCache.userProfiles, () => {
-    if (profileUpdateTimeout) clearTimeout(profileUpdateTimeout)
-    profileUpdateTimeout = setTimeout(() => loadDialogs(true), PROFILE_UPDATE_DEBOUNCE)
-  }, { deep: true })
+  // Вместо deep watch на весь объект — следим за количеством ключей (новые профили)
+  let profileUpdateTimeout: ReturnType<typeof setTimeout> | null = null
+  watch(
+    () => Object.keys(profileCache.userProfiles).length,
+    () => {
+      if (profileUpdateTimeout) clearTimeout(profileUpdateTimeout)
+      profileUpdateTimeout = setTimeout(() => loadDialogs(true), PROFILE_UPDATE_DEBOUNCE)
+    },
+  )
 
   // Computed для обратной совместимости
   const activeMessages = computed(() => {
