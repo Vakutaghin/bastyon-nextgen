@@ -1,12 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getActivePinia } from 'pinia'
-import HomePage from '@/pages/home-page/home-page.vue'
-import ProfilePage from '@/pages/profile-page/profile-page.vue'
-import SettingsPage from '@/pages/settings-page/settings-page.vue'
-import LimitsPage from '@/pages/limits-page/limits-page.vue'
-import WalletsPage from '@/pages/wallets-page/wallets-page.vue'
-import MyVideosPage from '@/pages/my-videos-page/my-videos-page.vue'
 import { useAuthStore } from '@/blockchain'
+
+// Lazy-loaded page components for code-splitting
+const HomePage = () => import('@/pages/home-page/home-page.vue')
+const ProfilePage = () => import('@/pages/profile-page/profile-page.vue')
+const SettingsPage = () => import('@/pages/settings-page/settings-page.vue')
+const LimitsPage = () => import('@/pages/limits-page/limits-page.vue')
+const WalletsPage = () => import('@/pages/wallets-page/wallets-page.vue')
+const MyVideosPage = () => import('@/pages/my-videos-page/my-videos-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])

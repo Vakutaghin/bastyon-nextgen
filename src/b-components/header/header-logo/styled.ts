@@ -1,4 +1,6 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_Logo = styled.div`
   display: flex;
@@ -7,7 +9,7 @@ export const SC_Logo = styled.div`
   height: 100%;
   flex-shrink: 0;
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     gap: 5px;
   }
 
@@ -27,7 +29,7 @@ export const SC_LogoLink = styled.button`
   transition: opacity 0.3s;
   cursor: pointer;
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     width: 31px;
     overflow: hidden;
   }
@@ -55,7 +57,7 @@ export const SC_LogoLang = styled.button`
   align-items: center;
   gap: 6px;
   height: 100%;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   font-size: 13px;
   font-weight: 400;
   cursor: pointer;
@@ -72,7 +74,7 @@ export const SC_LogoLang = styled.button`
 
   &:hover {
     background: rgba(206, 212, 218, 0.1);
-    border-color: rgba(206, 212, 218, 0.3);
+    border-color: ${COLORS.BORDER_LIGHTER};
   }
 `
 
@@ -84,7 +86,7 @@ export const SC_LanguageFlag = styled.span`
 export const SC_LanguageName = styled.span`
   min-width: 0;
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     display: none;
   }
 `

@@ -223,12 +223,8 @@ async function tryHttpRequest(
     } else {
       // Если не авторизован, но требуется авторизация
       // Для endpoints капчи авторизация обязательна
-      console.error('Authentication required but user not authenticated', {
-        path,
-        isAuthenticated: authStore.isUserAuthenticated,
-        hasKeyPair: !!keyPair,
-        hasAddress: !!address
-      })
+      // Avoid leaking internal auth state in production logs
+      console.warn('[request] Auth required but user not authenticated for', path)
       throw new Error('Authentication required for this request. Please ensure you are registered and logged in.')
     }
   }
@@ -260,7 +256,7 @@ async function tryHttpRequest(
 
       // Специальная обработка ошибки 401 (Unauthorized)
       if (response.status === 401) {
-        console.error('Authentication failed for request', { path, url, error: errorMessage })
+        console.warn('[request] Auth failed for', path)
         throw new Error(`Authentication failed: ${errorMessage}`)
       }
 
@@ -572,4 +568,72 @@ export async function getByPRCWithAuth(
   }
 
   return getByPRC(params, config)
+}
+
+// ---------------------------------------------------------------------------
+// Typed RPC helpers — use these instead of raw getByPRC + unsafe cast
+// ---------------------------------------------------------------------------
+
+import type { BaseRpcResponse } from '@/types/rpc-responses/common'
+import { unwrapRpcResponse, unwrapRpcArray } from '@/helpers/common/response-parser'
+
+/**
+ * Typed RPC request — returns unwrapped data of type T.
+ * Automatically unwraps the standard `{ result, data }` envelope.
+ *
+ * @throws if the server returns `result === 'error'`
+ */
+export async function rpcCall<T>(
+  params: T_RpcRequestParams,
+  config?: RpcRequestConfig
+): Promise<T> {
+  const raw = await getByPRC(params, config) as BaseRpcResponse<T> | T
+  if (raw && typeof raw === 'object' && 'result' in raw && (raw as BaseRpcResponse<T>).result === 'error') {
+    throw new Error((raw as BaseRpcResponse<T>).error ?? 'RPC error')
+  }
+  const data = unwrapRpcResponse<T>(raw)
+  if (data === null) {
+    throw new Error('RPC response contained no data')
+  }
+  return data
+}
+
+/**
+ * Typed RPC request with auth — returns unwrapped data of type T.
+ */
+export async function rpcCallWithAuth<T>(
+  params: T_RpcRequestParams,
+  config?: RpcRequestConfig
+): Promise<T> {
+  const raw = await getByPRCWithAuth(params, config) as BaseRpcResponse<T> | T
+  if (raw && typeof raw === 'object' && 'result' in raw && (raw as BaseRpcResponse<T>).result === 'error') {
+    throw new Error((raw as BaseRpcResponse<T>).error ?? 'RPC error')
+  }
+  const data = unwrapRpcResponse<T>(raw)
+  if (data === null) {
+    throw new Error('RPC response contained no data')
+  }
+  return data
+}
+
+/**
+ * Typed RPC request — returns an array of T (safe: always returns []).
+ */
+export async function rpcCallArray<T>(
+  params: T_RpcRequestParams,
+  config?: RpcRequestConfig
+): Promise<T[]> {
+  const raw = await getByPRC(params, config)
+  return unwrapRpcArray<T>(raw)
+}
+
+/**
+ * Typed RPC request with auth — returns an array of T.
+ */
+export async function rpcCallArrayWithAuth<T>(
+  params: T_RpcRequestParams,
+  config?: RpcRequestConfig
+): Promise<T[]> {
+  const raw = await getByPRCWithAuth(params, config)
+  return unwrapRpcArray<T>(raw)
 }

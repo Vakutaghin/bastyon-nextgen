@@ -1,6 +1,7 @@
 import { defineComponent, type PropType } from 'vue'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
+import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import Card from '@/components/card/card.vue'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { ImageGallery } from '@/components/image-gallery'
@@ -203,13 +204,7 @@ export const postCardOptions = defineComponent({
     originalAuthorFormattedTime(): string {
       const ts = this.post.repostOriginalTimestamp
       if (ts == null) return ''
-      const date = new Date(ts * 1000)
-      if (isNaN(date.getTime())) return ''
-      const now = new Date()
-      const isCurrentYear = date.getFullYear() === now.getFullYear()
-      const time = date.toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-      const dayMonth = date.toLocaleString('ru-RU', { day: 'numeric', month: 'long' })
-      return isCurrentYear ? `${dayMonth}, ${time}` : `${dayMonth} ${date.getFullYear()}, ${time}`
+      return formatDateTimeFull(ts)
     },
     youtubeEmbedUrls(): string[] {
       if (!this.post) return []

@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_LastCommentsRoot = styled.div`
   display: flex;
@@ -8,7 +9,7 @@ export const SC_LastCommentsRoot = styled.div`
 export const SC_LastCommentsCaption = styled.div`
   font-weight: 600;
   font-size: 15px;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   margin-bottom: 12px;
 `
 
@@ -25,7 +26,7 @@ export const SC_LastCommentItem = styled.div`
   align-items: flex-start;
   cursor: pointer;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(206, 212, 218, 0.3);
+  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
 
   &:last-child {
     border-bottom: 0;
@@ -62,7 +63,7 @@ export const SC_LastCommentAvatar = styled.div`
 `
 
 export const SC_LastCommentLetter = styled.span`
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   font-weight: 600;
   font-size: 12px;
 `
@@ -78,16 +79,16 @@ export const SC_LastCommentContent = styled.div`
   min-width: 0;
   font-size: 13px;
   line-height: 1.4;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
 `
 
 export const SC_LastCommentNames = styled.span`
   font-weight: 600;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
 `
 
 export const SC_LastCommentMessage = styled.span`
-  color: rgb(73, 80, 87);
+  color: ${COLORS.TEXT_DARK};
 `
 
 export const SC_LastCommentsLoading = styled.div`

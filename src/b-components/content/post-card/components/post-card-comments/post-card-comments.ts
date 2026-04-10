@@ -1,6 +1,7 @@
 import { defineComponent, type PropType } from 'vue'
 import { Buffer } from 'buffer'
 import { useAuthStore } from '@/blockchain'
+import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
@@ -701,18 +702,12 @@ export const postCardCommentsOptions = defineComponent({
       }
       return `https://pocketnet.app:8092/i/${i}`
     },
-    /** Дата и время комментария: «23 января, 08:23» или «23 января 2023, 08:23» если год отличается от текущего */
+    /** Дата и время — делегирует в централизованную утилиту */
     formatCommentDateAndTime(time: number): string {
-      if (!time) return ''
-      const d = new Date(time * 1000)
-      const now = new Date()
-      const datePart = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-      const yearPart = d.getFullYear() !== now.getFullYear() ? ` ${d.getFullYear()}` : ''
-      const timePart = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-      return `${datePart}${yearPart}, ${timePart}`
+      return formatDateTimeFull(time)
     },
     formatCommentDate(time: number): string {
-      return this.formatCommentDateAndTime(time)
+      return formatDateTimeFull(time)
     },
     getCommentProfileLink(comment: GetComment): string {
       const name = (comment.userprofile?.name || '').toLowerCase()

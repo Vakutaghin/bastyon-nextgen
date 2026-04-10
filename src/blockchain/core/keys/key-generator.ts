@@ -2,14 +2,8 @@
  * Генерация ключей и мнемонических фраз
  */
 
-// Полифилл для Buffer (нужен для bip32 и других библиотек)
-import { Buffer } from 'buffer'
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).Buffer = Buffer
-}
-if (typeof window !== 'undefined') {
-  (window as any).Buffer = Buffer
-}
+// Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
+import { Buffer } from '../../utils/buffer-polyfill'
 
 // Импортируем bip39 - пробуем разные способы для совместимости
 import * as bip39Module from 'bip39'

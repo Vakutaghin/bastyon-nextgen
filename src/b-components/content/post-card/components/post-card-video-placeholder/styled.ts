@@ -1,10 +1,11 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_VideoPlaceholder = styled.div`
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: linear-gradient(135deg, rgba(206, 212, 218, 0.3) 0%, rgba(206, 212, 218, 0.5) 100%);
+  background: linear-gradient(135deg, ${COLORS.BORDER_LIGHTER} 0%, ${COLORS.BORDER_LIGHT} 100%);
   border-radius: 8px;
   margin-bottom: 15px;
   display: flex;

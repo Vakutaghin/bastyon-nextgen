@@ -1,4 +1,5 @@
 import styled, { css } from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 const selectedProps = {
   selected: Boolean
@@ -28,18 +29,18 @@ export const SC_TagsReset = styled.button`
   background: transparent;
   border: none;
   cursor: pointer;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   transition: color 0.2s;
 
   &:hover {
-    color: rgb(33, 37, 41);
+    color: ${COLORS.TEXT_PRIMARY};
   }
 `
 
 export const SC_TagsTitle = styled.h3`
   font-size: 13px;
   font-weight: 600;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -55,11 +56,11 @@ export const SC_TagsToggle = styled.button`
   background: transparent;
   border: none;
   cursor: pointer;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   transition: color 0.2s;
 
   &:hover {
-    color: rgb(33, 37, 41);
+    color: ${COLORS.TEXT_PRIMARY};
   }
 `
 
@@ -69,7 +70,7 @@ export const SC_TagsLoading = styled.div`
   justify-content: center;
   min-height: 80px;
   padding: 16px 0;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
 `
 
 export const SC_TagsList = styled.div`
@@ -81,7 +82,7 @@ export const SC_TagsList = styled.div`
 
 export const SC_TagsCount = styled.span`
   font-size: 10px;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   background: rgba(173, 181, 189, 0.2);
   padding: 1.88px 4px;
   border-radius: 8px;
@@ -99,7 +100,7 @@ export const SC_TagsItem = styled('button', selectedProps)`
   border-radius: 12px;
   cursor: pointer;
   transition: background-color 0.2s;
-  color: rgb(0, 123, 255);
+  color: ${COLORS.PRIMARY};
   font-size: 11px;
   font-weight: 500;
 
@@ -113,12 +114,12 @@ export const SC_TagsItem = styled('button', selectedProps)`
   }
 
   ${props => props.selected && css`
-    background: rgb(0, 123, 255);
+    background: ${COLORS.PRIMARY};
     color: white;
-    border-color: rgb(0, 123, 255);
+    border-color: ${COLORS.PRIMARY};
 
     &:hover {
-      background: rgb(0, 105, 217);
+      background: ${COLORS.PRIMARY_HOVER};
       border-color: rgb(0, 98, 204);
     }
 

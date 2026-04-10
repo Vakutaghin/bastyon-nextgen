@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Header = styled.header`
   position: fixed;
@@ -6,8 +7,8 @@ export const SC_Header = styled.header`
   left: 0;
   width: 100%;
   height: 60px;
-  background: rgb(255, 255, 255);
-  border-bottom: 1px solid rgba(206, 212, 218, 0.3);
+  background: ${COLORS.BG_PRIMARY};
+  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
   z-index: 1000;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   -webkit-user-select: none;

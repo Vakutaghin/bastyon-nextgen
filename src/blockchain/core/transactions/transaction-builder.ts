@@ -5,7 +5,8 @@
  * которая поддерживает поле nTime в транзакциях, необходимое для ноды Pocketnet
  */
 
-import { Buffer } from 'buffer'
+// Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
+import { Buffer } from '../../utils/buffer-polyfill'
 import type { KeyPair } from '../../types/keys'
 import type { UTXO } from '@/composables/use-user-queries'
 import { POCKETNET_NETWORK } from '../../constants/network'
@@ -24,13 +25,6 @@ async function loadPocketnetBitcoin() {
   try {
     // Пробуем динамический импорт
     try {
-      // Ensure Buffer is available globally for the library
-      if (typeof window !== 'undefined' && !window.Buffer) {
-        window.Buffer = Buffer
-      }
-      if (typeof globalThis !== 'undefined' && !globalThis.Buffer) {
-        globalThis.Buffer = Buffer
-      }
 
       // @ts-expect-error - btc17.js не имеет TypeScript типов
       const module = await import('../../lib/pocketnet/btc17.js')

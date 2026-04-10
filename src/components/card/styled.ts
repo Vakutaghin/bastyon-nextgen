@@ -1,42 +1,43 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Card = styled.div`
   :deep(.ant-card) {
-    background: rgb(255, 255, 255) !important;
-    border-color: rgba(206, 212, 218, 0.5) !important;
+    background: ${COLORS.BG_PRIMARY} !important;
+    border-color: ${COLORS.BORDER_LIGHT} !important;
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   :deep(.ant-card-head) {
-    border-bottom: 1px solid rgba(206, 212, 218, 0.5);
+    border-bottom: 1px solid ${COLORS.BORDER_LIGHT};
     background: transparent;
   }
 
   :deep(.ant-card-head-title) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
     font-weight: 600;
   }
 
   :deep(.ant-card-extra) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(.ant-card-body) {
-    color: rgb(33, 37, 41) !important;
-    background: rgb(255, 255, 255) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
+    background: ${COLORS.BG_PRIMARY} !important;
   }
 
   :deep(.ant-card-body *) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(.ant-card-body p) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(.ant-card-body div) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(.ant-card:hover) {

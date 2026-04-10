@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Avatar = styled.div<{
   backgroundColor?: string
@@ -10,9 +11,9 @@ export const SC_Avatar = styled.div<{
   overflow: visible;
 
   :deep(.ant-avatar) {
-    background: ${(p) => p.backgroundColor || 'rgb(0, 123, 255)'};
+    background: ${(p) => p.backgroundColor || COLORS.PRIMARY};
     color: ${(p) => p.color || 'white'};
-    border: 2px solid rgba(206, 212, 218, 0.5);
+    border: 2px solid ${COLORS.BORDER_LIGHT};
     border-radius: ${(p) => p.shape === 'square' ? '4px' : '50%'};
     font-weight: 600;
   }

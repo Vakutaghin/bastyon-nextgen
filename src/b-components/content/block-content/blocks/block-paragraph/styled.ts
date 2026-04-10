@@ -1,9 +1,10 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_BlockParagraph = styled.p`
   margin: 0.75em 0;
   line-height: 1.6;
-  color: rgb(33, 37, 41) !important;
+  color: ${COLORS.TEXT_PRIMARY} !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -17,11 +18,11 @@ export const SC_BlockParagraph = styled.p`
   }
 
   :deep(*) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(.bastyon-link) {
-    color: rgb(0, 123, 255) !important;
+    color: ${COLORS.PRIMARY} !important;
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
@@ -30,7 +31,7 @@ export const SC_BlockParagraph = styled.p`
   }
 
   :deep(.bastyon-link:hover) {
-    color: rgb(0, 86, 179) !important;
+    color: ${COLORS.PRIMARY_ACTIVE} !important;
     text-decoration: underline;
   }
 `

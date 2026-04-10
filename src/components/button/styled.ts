@@ -1,4 +1,5 @@
 import styled, { keyframes } from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 const spinKeyframes = keyframes`
   from {
@@ -46,83 +47,83 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
 
   /* Primary variant */
   &.bastyon-button-primary {
-    background: rgb(0, 123, 255);
-    border-color: rgb(0, 123, 255);
-    color: rgb(255, 255, 255);
+    background: ${COLORS.PRIMARY};
+    border-color: ${COLORS.PRIMARY};
+    color: ${COLORS.BG_PRIMARY};
 
     &:hover:not(:disabled) {
-      background: rgb(0, 86, 179);
-      border-color: rgb(0, 86, 179);
+      background: ${COLORS.PRIMARY_ACTIVE};
+      border-color: ${COLORS.PRIMARY_ACTIVE};
     }
 
     &:active:not(:disabled) {
-      background: rgb(0, 70, 150);
-      border-color: rgb(0, 70, 150);
+      background: ${COLORS.PRIMARY_DARK};
+      border-color: ${COLORS.PRIMARY_DARK};
     }
   }
 
   /* Primary danger variant */
   &.bastyon-button-primary.bastyon-button-danger {
-    background: rgb(220, 53, 69);
-    border-color: rgb(220, 53, 69);
-    color: rgb(255, 255, 255);
+    background: ${COLORS.DANGER};
+    border-color: ${COLORS.DANGER};
+    color: ${COLORS.BG_PRIMARY};
 
     &:hover:not(:disabled) {
-      background: rgb(200, 35, 51);
-      border-color: rgb(200, 35, 51);
+      background: ${COLORS.DANGER_HOVER};
+      border-color: ${COLORS.DANGER_HOVER};
     }
 
     &:active:not(:disabled) {
-      background: rgb(180, 20, 35);
-      border-color: rgb(180, 20, 35);
+      background: ${COLORS.DANGER_ACTIVE};
+      border-color: ${COLORS.DANGER_ACTIVE};
     }
   }
 
   /* Secondary variant (default) */
   &.bastyon-button-secondary,
   &:not(.bastyon-button-primary):not(.bastyon-button-danger) {
-    background: rgb(255, 255, 255);
-    border-color: rgb(206, 212, 218);
-    color: rgb(33, 37, 41);
+    background: ${COLORS.BG_PRIMARY};
+    border-color: ${COLORS.BORDER};
+    color: ${COLORS.TEXT_PRIMARY};
 
     &:hover:not(:disabled) {
-      background: rgb(248, 249, 250);
-      border-color: rgb(0, 123, 255);
-      color: rgb(0, 123, 255);
+      background: ${COLORS.BG_SECONDARY};
+      border-color: ${COLORS.PRIMARY};
+      color: ${COLORS.PRIMARY};
     }
 
     &:active:not(:disabled) {
-      background: rgb(233, 236, 239);
-      border-color: rgb(0, 86, 179);
-      color: rgb(0, 86, 179);
+      background: ${COLORS.BG_DISABLED};
+      border-color: ${COLORS.PRIMARY_ACTIVE};
+      color: ${COLORS.PRIMARY_ACTIVE};
     }
   }
 
   /* Secondary danger variant */
   &.bastyon-button-secondary.bastyon-button-danger,
   &.bastyon-button-danger:not(.bastyon-button-primary) {
-    background: rgb(255, 255, 255);
-    border-color: rgb(220, 53, 69);
-    color: rgb(220, 53, 69);
+    background: ${COLORS.BG_PRIMARY};
+    border-color: ${COLORS.DANGER};
+    color: ${COLORS.DANGER};
 
     &:hover:not(:disabled) {
-      background: rgb(248, 249, 250);
-      border-color: rgb(200, 35, 51);
-      color: rgb(200, 35, 51);
+      background: ${COLORS.BG_SECONDARY};
+      border-color: ${COLORS.DANGER_HOVER};
+      color: ${COLORS.DANGER_HOVER};
     }
 
     &:active:not(:disabled) {
-      background: rgb(233, 236, 239);
-      border-color: rgb(180, 20, 35);
-      color: rgb(180, 20, 35);
+      background: ${COLORS.BG_DISABLED};
+      border-color: ${COLORS.DANGER_ACTIVE};
+      color: ${COLORS.DANGER_ACTIVE};
     }
   }
 
   /* Disabled state */
   &:disabled {
-    background: rgb(233, 236, 239) !important;
-    border-color: rgb(206, 212, 218) !important;
-    color: rgb(108, 117, 125) !important;
+    background: ${COLORS.BG_DISABLED} !important;
+    border-color: ${COLORS.BORDER} !important;
+    color: ${COLORS.TEXT_SECONDARY} !important;
     cursor: not-allowed !important;
     opacity: 0.6;
   }
@@ -137,7 +138,7 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
   /* Focus state */
   &:focus {
     outline: 0;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+    box-shadow: 0 0 0 2px ${COLORS.PRIMARY_LIGHT_20};
   }
 
   &:focus:not(:focus-visible) {

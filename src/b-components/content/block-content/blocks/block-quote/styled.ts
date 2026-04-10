@@ -1,12 +1,13 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_BlockQuote = styled.blockquote`
   margin: 1em 0;
   padding: 1em 1.5em;
-  border-left: 4px solid rgb(0, 123, 255);
+  border-left: 4px solid ${COLORS.PRIMARY};
   background-color: rgba(248, 249, 250, 0.8);
   font-style: italic;
-  color: rgb(33, 37, 41) !important;
+  color: ${COLORS.TEXT_PRIMARY} !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -15,17 +16,17 @@ export const SC_BlockQuote = styled.blockquote`
 export const SC_BlockQuoteContent = styled.div`
   line-height: 1.6;
   margin-bottom: 0.5em;
-  color: rgb(33, 37, 41) !important;
+  color: ${COLORS.TEXT_PRIMARY} !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
 
   :deep(*) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(.bastyon-link) {
-    color: rgb(0, 123, 255) !important;
+    color: ${COLORS.PRIMARY} !important;
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
@@ -34,7 +35,7 @@ export const SC_BlockQuoteContent = styled.div`
   }
 
   :deep(.bastyon-link:hover) {
-    color: rgb(0, 86, 179) !important;
+    color: ${COLORS.PRIMARY_ACTIVE} !important;
     text-decoration: underline;
   }
 `
@@ -42,6 +43,6 @@ export const SC_BlockQuoteContent = styled.div`
 export const SC_BlockQuoteCaption = styled.footer`
   font-size: 0.9em;
   text-align: right;
-  color: rgb(108, 117, 125) !important;
+  color: ${COLORS.TEXT_SECONDARY} !important;
   font-style: normal;
 `

@@ -3,6 +3,7 @@ import Avatar from '@/components/avatar/avatar.vue'
 import { BookOutlined, BookFilled, MessageOutlined, ShareAltOutlined } from '@ant-design/icons-vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { favoritesAPI } from '@/db/apis/favorites-api'
+import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
 import {
   SC_PostHeader,
   SC_PostAuthor,
@@ -69,7 +70,7 @@ export const postCardHeaderOptions = defineComponent({
       required: true
     },
     authorOverride: {
-      type: Object as PropType<any>,
+      type: Object as PropType<{ name: string; address?: string; avatar?: string | null; reputation?: number; letter?: string; verified?: boolean } | null>,
       default: null
     }
   },
@@ -166,23 +167,7 @@ export const postCardHeaderOptions = defineComponent({
       }
     },
     formatTime(timestamp: string): string {
-      const date = new Date(timestamp)
-      if (isNaN(date.getTime())) return ''
-      const now = new Date()
-      const isCurrentYear = date.getFullYear() === now.getFullYear()
-      const time = date.toLocaleString('ru-RU', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-      const dayMonth = date.toLocaleString('ru-RU', {
-        day: 'numeric',
-        month: 'long'
-      })
-      if (isCurrentYear) {
-        return `${dayMonth}, ${time}`
-      }
-      const year = date.getFullYear()
-      return `${dayMonth} ${year}, ${time}`
+      return formatDateTimeFromString(timestamp)
     }
   }
 })

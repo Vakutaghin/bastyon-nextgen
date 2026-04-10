@@ -1,40 +1,41 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_PostContent = styled.div`
   margin-bottom: 15px;
   line-height: 1.2;
-  color: rgb(33, 37, 41) !important;
+  color: ${COLORS.TEXT_PRIMARY} !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
 
   p {
     margin: 6px 0;
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word;
   }
 
   :deep(*) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(p) {
     margin: 6px 0;
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(div) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(span) {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   :deep(.bastyon-link) {
-    color: rgb(0, 123, 255) !important;
+    color: ${COLORS.PRIMARY} !important;
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
@@ -43,7 +44,7 @@ export const SC_PostContent = styled.div`
   }
 
   :deep(.bastyon-link:hover) {
-    color: rgb(0, 86, 179) !important;
+    color: ${COLORS.PRIMARY_ACTIVE} !important;
     text-decoration: underline;
   }
 `
@@ -57,7 +58,7 @@ export const SC_PostPreview = styled.div`
 
   p {
     margin: 0 0 7.50px 0;
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
 
     &:last-child {
       margin-bottom: 0;
@@ -65,7 +66,7 @@ export const SC_PostPreview = styled.div`
   }
 
   :deep(.bastyon-link) {
-    color: rgb(0, 123, 255) !important;
+    color: ${COLORS.PRIMARY} !important;
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
@@ -74,7 +75,7 @@ export const SC_PostPreview = styled.div`
   }
 
   :deep(.bastyon-link:hover) {
-    color: rgb(0, 86, 179) !important;
+    color: ${COLORS.PRIMARY_ACTIVE} !important;
     text-decoration: underline;
   }
 `

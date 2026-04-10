@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 
 export const SC_Feed = styled.div`
@@ -44,7 +45,7 @@ export const SC_FeedTitle = styled.h2`
   margin: 0;
   font-size: 22px;
   font-weight: 600;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
 `
 
 export const SC_FeedContent = styled.div`
@@ -77,12 +78,12 @@ export const SC_FeedLoading = styled.div`
 
   :deep(.anticon) {
     font-size: 120px !important;
-    color: rgb(0, 123, 255) !important;
+    color: ${COLORS.PRIMARY} !important;
   }
 
   :deep(.ant-spin-text) {
     font-size: 24px !important;
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
     font-weight: 500;
     margin-top: 0;
     letter-spacing: 1px;
@@ -96,7 +97,7 @@ export const SC_FeedError = styled.div`
   justify-content: center;
   padding: 45px 22px;
   text-align: center;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
 
   p {
     margin: 0;
@@ -115,7 +116,7 @@ export const SC_FeedLoadingMore = styled.div`
 export const SC_FeedEnd = styled.div`
   text-align: center;
   padding: 30px 20px;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   font-size: 16px;
 
   p {
@@ -140,8 +141,8 @@ export const SC_ScrollToTop = styled.button`
   gap: 6px;
   padding: 10px 16px;
   font-size: 14px;
-  color: rgb(33, 37, 41);
-  background: rgba(255, 255, 255, 0.85);
+  color: ${COLORS.TEXT_PRIMARY};
+  background: ${COLORS.WHITE_85};
   backdrop-filter: blur(8px);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
@@ -150,7 +151,7 @@ export const SC_ScrollToTop = styled.button`
   transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.95);
+    background: ${COLORS.WHITE_95};
     transform: translate(-50%, -1px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   }

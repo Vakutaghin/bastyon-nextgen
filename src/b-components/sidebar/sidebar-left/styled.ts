@@ -1,12 +1,14 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 
 export const SC_LeftSidebar = styled.div`
   width: 280px;
   min-width: 280px;
   max-height: calc(100vh - 70px);
-  background: rgb(255, 255, 255);
-  border-right: 1px solid rgba(206, 212, 218, 0.3);
+  background: ${COLORS.BG_PRIMARY};
+  border-right: 1px solid ${COLORS.BORDER_LIGHTER};
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -27,7 +29,7 @@ export const SC_LeftSidebar = styled.div`
     padding: 12px 8px;
   }
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     display: none;
   }
 
@@ -40,7 +42,7 @@ export const SC_LeftSidebar = styled.div`
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(206, 212, 218, 0.5);
+    background: ${COLORS.BORDER_LIGHT};
     border-radius: 3px;
   }
 

@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_CommentsPreview = styled.div`
   display: flex;
@@ -6,7 +7,7 @@ export const SC_CommentsPreview = styled.div`
   gap: 8px;
   flex: 1;
   margin-top: 12px;
-  border-top: 1px solid rgba(206, 212, 218, 0.5);
+  border-top: 1px solid ${COLORS.BORDER_LIGHT};
   padding-top: 12px;
 `
 
@@ -43,7 +44,7 @@ export const SC_CommentRow = styled.div`
   }
 
   .comment-avatar-placeholder {
-    color: rgb(33, 37, 41);
+    color: ${COLORS.TEXT_PRIMARY};
     font-weight: 600;
     font-size: 13px;
   }
@@ -81,7 +82,7 @@ export const SC_CommentItem = styled.div`
   }
 
   .comment-avatar-placeholder {
-    color: rgb(33, 37, 41);
+    color: ${COLORS.TEXT_PRIMARY};
     font-weight: 600;
     font-size: 13px;
   }
@@ -90,19 +91,19 @@ export const SC_CommentItem = styled.div`
 export const SC_CommentAuthor = styled.div`
   font-weight: 600;
   font-size: 13px;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
 `
 
 export const SC_CommentText = styled.div`
   font-size: 14px;
-  color: rgb(33, 37, 41) !important;
+  color: ${COLORS.TEXT_PRIMARY} !important;
   line-height: 1.5;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
 
   :deep(.bastyon-link) {
-    color: rgb(0, 123, 255) !important;
+    color: ${COLORS.PRIMARY} !important;
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
@@ -111,7 +112,7 @@ export const SC_CommentText = styled.div`
   }
 
   a {
-    border-bottom: 1px solid rgb(0, 123, 255);
+    border-bottom: 1px solid ${COLORS.PRIMARY};
   }
 `
 
@@ -136,7 +137,7 @@ export const SC_CommentMeta = styled.div`
 
 export const SC_CommentDate = styled.div`
   font-size: 12px;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
 `
 
 export const SC_CommentActions = styled.div`
@@ -147,7 +148,7 @@ export const SC_CommentActions = styled.div`
 
   span {
     font-size: 14px;
-    color: rgb(108, 117, 125);
+    color: ${COLORS.TEXT_SECONDARY};
     cursor: pointer;
     user-select: none;
   }
@@ -230,7 +231,7 @@ export const SC_CommentsSortRow = styled.div`
 
 export const SC_CommentsSortSelect = styled.select`
   font-size: 13px;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   padding: 4px 8px;
   border: 1px solid rgb(222, 226, 230);
   border-radius: 6px;
@@ -330,7 +331,7 @@ export const SC_ReplyPanel = styled.div`
     display: block;
   }
   .reply-avatar-placeholder {
-    color: rgb(33, 37, 41);
+    color: ${COLORS.TEXT_PRIMARY};
     font-weight: 600;
     font-size: 14px;
   }
@@ -374,7 +375,7 @@ export const SC_ReplyTextarea = styled.textarea`
   }
 
   &::placeholder {
-    color: rgb(108, 117, 125);
+    color: ${COLORS.TEXT_SECONDARY};
   }
 `
 
@@ -401,7 +402,7 @@ export const SC_MentionItem = styled.button`
   background: none;
   text-align: left;
   font-size: 14px;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   cursor: pointer;
 
   &:hover {
@@ -442,7 +443,7 @@ export const SC_ReplyCancelBtn = styled.button`
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -450,7 +451,7 @@ export const SC_ReplyCancelBtn = styled.button`
   flex-shrink: 0;
   &:hover {
     background: rgba(0, 0, 0, 0.06);
-    color: rgb(33, 37, 41);
+    color: ${COLORS.TEXT_PRIMARY};
   }
   svg { width: 18px; height: 18px; }
 `
@@ -467,7 +468,7 @@ export const SC_ConfirmWrap = styled.div`
 export const SC_ConfirmMessage = styled.p`
   margin: 0;
   font-size: 14px;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   flex: 1;
 `
 
@@ -483,7 +484,7 @@ export const SC_ConfirmBtn = styled.button`
   border: 1px solid #ddd;
   background: #fff;
   font-size: 13px;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   cursor: pointer;
 
   &:hover {

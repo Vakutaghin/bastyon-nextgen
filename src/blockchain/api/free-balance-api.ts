@@ -9,6 +9,7 @@ import { captchaAPI } from './captcha-api'
 import type { CaptchaData } from './captcha-api'
 import { showCaptchaModal } from '@/components/captcha'
 import { getProxyWithWalletCached } from './proxy-with-wallet'
+import { isCaptchaError, isRegistrationBlockingError } from '@/helpers/api/error-codes'
 
 export interface RequestUnspentsParams {
   /** Причина запроса ('registration' для регистрации) */
@@ -137,11 +138,11 @@ export async function requestUnspents(
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('[requestUnspents] free/balance error:', errorMessage)
 
-    if (errorMessage.includes('captcha') && _retryCount < MAX_CAPTCHA_RETRIES) {
+    if (isCaptchaError(errorMessage) && _retryCount < MAX_CAPTCHA_RETRIES) {
       return requestUnspents(address, params, onCaptchaRequired, _retryCount + 1)
     }
 
-    if (['noproxywithwallet', 'error', 'iplimit', 'uniq'].includes(errorMessage)) {
+    if (isRegistrationBlockingError(errorMessage)) {
       throw new Error(`Ошибка регистрации: ${errorMessage}. Обратитесь в поддержку.`)
     }
 

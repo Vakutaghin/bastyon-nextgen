@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores'
 import { usePostsStore } from '@/stores/posts-store'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
+import { calculateRatingUpdate } from '@/helpers/common/rating-calculator'
 
 
 type T_PendingItem = {
@@ -13,10 +14,12 @@ type T_PendingItem = {
   postTitle?: string
 }
 
+// Polling timer lives outside reactive state to avoid serialization/reactivity issues
+let pollingTimer: ReturnType<typeof setInterval> | null = null
+
 export const usePendingRatingsStore = defineStore('pendingRatings', {
   state: () => ({
     items: new Map<string, T_PendingItem>(),
-    pollingTimer: null as any,
     isInitialized: false
   }),
   getters: {
@@ -89,14 +92,14 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
     },
     ensurePolling() {
       if (this.count === 0) {
-        if (this.pollingTimer) {
-          clearInterval(this.pollingTimer)
-          this.pollingTimer = null
+        if (pollingTimer) {
+          clearInterval(pollingTimer)
+          pollingTimer = null
         }
         return
       }
-      if (this.pollingTimer) return
-      this.pollingTimer = setInterval(() => this.poll(), 5000)
+      if (pollingTimer) return
+      pollingTimer = setInterval(() => this.poll(), 5000)
     },
     async poll() {
       const auth = useAuthStore()
@@ -130,24 +133,15 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
             const post = postsStore.getPostByShareId(postId)
 
             if (post) {
-              const oldMyVal = post.myVal || 0
-              const newMyVal = val
-              let newScoreSum = (post.scoreSum || 0)
-              let newScoreCnt = (post.scoreCnt || 0)
+              const update = calculateRatingUpdate(
+                post.myVal || 0,
+                val,
+                post.scoreSum || 0,
+                post.scoreCnt || 0
+              )
 
-              if (oldMyVal === 0) {
-                newScoreCnt += 1
-                newScoreSum += newMyVal
-              } else {
-                newScoreSum = newScoreSum - oldMyVal + newMyVal
-              }
-
-              // Pass postId (txid) - updatePost will resolve it to ID if needed
-              postsStore.updatePost(postId, {
-                myVal: newMyVal,
-                scoreSum: newScoreSum,
-                scoreCnt: newScoreCnt
-              })
+              // Delegate update to postsStore action (avoids direct state mutation)
+              postsStore.updatePost(postId, update)
             } else {
               console.warn('[PendingRatings] Post not found in store for update:', postId)
             }
@@ -165,7 +159,7 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
 
         this.ensurePolling()
       } catch (e) {
-        // ignore polling errors
+        console.warn('[PendingRatings] Polling error:', e)
       }
     }
   }

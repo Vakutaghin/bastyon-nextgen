@@ -41,7 +41,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const localMessengerKeys = ref<{ private: string; public: string }[] | null>(null)
   const currentBlockHeight = ref<number | null>(null)
   let currentBlockFetchedAt = 0
-  let isLoadingMore = false
+  const isLoadingMore = ref(false)
 
   // --- Вспомогательные методы ---
 
@@ -491,11 +491,11 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   }
 
   const loadMoreMessages = async (chatId: string) => {
-    if (!chatId || isLoadingMore) return
+    if (!chatId || isLoadingMore.value) return
     const room = matrixService.getRoom(chatId)
     if (!room) return
 
-    isLoadingMore = true
+    isLoadingMore.value = true
     try {
       const client = matrixService.getClient()
       const liveTimeline = room.getLiveTimeline()
@@ -514,7 +514,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     } catch (e) {
       console.error('[ChatStore] Ошибка подгрузки истории:', e)
     } finally {
-      isLoadingMore = false
+      isLoadingMore.value = false
     }
   }
 

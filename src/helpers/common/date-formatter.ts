@@ -53,3 +53,41 @@ export function formatDate(timestamp: number): string {
     year: 'numeric',
   })
 }
+
+/**
+ * Форматирует Unix timestamp в полный формат: "12 марта, 14:30" или "12 марта 2023, 14:30".
+ * Год опускается если совпадает с текущим.
+ *
+ * Заменяет дублированные `formatTime`, `originalAuthorFormattedTime`,
+ * `formatCommentDateAndTime` из post-card, post-card-header, post-card-comments.
+ *
+ * @param timestamp - Unix-метка времени в секундах
+ * @returns отформатированная строка с датой и временем
+ */
+export function formatDateTimeFull(timestamp: number): string {
+  if (!timestamp) return ''
+  const date = new Date(timestamp * 1000)
+  if (isNaN(date.getTime())) return ''
+
+  const now = new Date()
+  const isCurrentYear = date.getFullYear() === now.getFullYear()
+  const time = date.toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  const dayMonth = date.toLocaleString('ru-RU', { day: 'numeric', month: 'long' })
+
+  if (isCurrentYear) {
+    return `${dayMonth}, ${time}`
+  }
+  return `${dayMonth} ${date.getFullYear()}, ${time}`
+}
+
+/**
+ * Форматирует миллисекундный timestamp (или строку Date) в полный формат.
+ *
+ * @param dateInput - строка даты или миллисекунды
+ * @returns отформатированная строка
+ */
+export function formatDateTimeFromString(dateInput: string | number): string {
+  const date = new Date(dateInput)
+  if (isNaN(date.getTime())) return ''
+  return formatDateTimeFull(Math.floor(date.getTime() / 1000))
+}

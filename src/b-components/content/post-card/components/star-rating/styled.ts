@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_AuthPopoverContent = styled.div`
   text-align: center;
@@ -22,7 +23,7 @@ export const SC_StarRating = styled.div`
   min-height: 22px;
 
   .star-count {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
     font-size: 15px;
     margin-left: 7px;
   }
@@ -119,7 +120,7 @@ export const SC_StarFilled = styled.div`
 
   .star-fill {
     font-size: 22px;
-    color: rgb(255, 193, 7) !important;
+    color: ${COLORS.WARNING} !important;
     display: block;
     width: 22px;
     height: 22px;
@@ -129,8 +130,8 @@ export const SC_StarFilled = styled.div`
       width: 22px;
       height: 22px;
       display: block;
-      fill: rgb(255, 193, 7) !important;
-      color: rgb(255, 193, 7) !important;
+      fill: ${COLORS.WARNING} !important;
+      color: ${COLORS.WARNING} !important;
       stroke: none !important;
     }
   }

@@ -59,16 +59,10 @@ export function getInitial(nameOrLetter?: string): string {
 /**
  * Форматирует дату и время комментария:
  * «23 января, 08:23» или «23 января 2023, 08:23» (если год отличается).
+ *
+ * Делегирует в централизованную утилиту formatDateTimeFull.
  */
-export function formatCommentDateAndTime(time: number): string {
-  if (!time) return ''
-  const d = new Date(time * 1000)
-  const now = new Date()
-  const datePart = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-  const yearPart = d.getFullYear() !== now.getFullYear() ? ` ${d.getFullYear()}` : ''
-  const timePart = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-  return `${datePart}${yearPart}, ${timePart}`
-}
+export { formatDateTimeFull as formatCommentDateAndTime } from '@/helpers/common/date-formatter'
 
 // --- Алгоритм сортировки «интересные» ---
 

@@ -2,14 +2,8 @@
  * Конвертеры между различными форматами ключей
  */
 
-// Полифилл для Buffer
-import { Buffer } from 'buffer'
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).Buffer = Buffer
-}
-if (typeof window !== 'undefined') {
-  (window as any).Buffer = Buffer
-}
+// Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
+import { Buffer } from './buffer-polyfill'
 
 import type { Network } from '../types/btc17-types'
 import * as ecc from 'tiny-secp256k1'

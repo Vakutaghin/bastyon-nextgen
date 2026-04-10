@@ -2,20 +2,13 @@
  * Генерация адресов Pocketnet
  */
 
-import { Buffer } from 'buffer'
+// Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
+import { Buffer } from '../../utils/buffer-polyfill'
 // @ts-ignore
 import bs58 from 'bs58'
 // @ts-ignore
 import bech32 from 'bech32'
 import CryptoJS from 'crypto-js'
-
-// Полифилл Buffer для браузера (на всякий случай)
-if (typeof globalThis !== 'undefined' && !(globalThis as any).Buffer) {
-  (globalThis as any).Buffer = Buffer
-}
-if (typeof window !== 'undefined' && !(window as any).Buffer) {
-  (window as any).Buffer = Buffer
-}
 
 import type {
   Address,

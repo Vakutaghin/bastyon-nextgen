@@ -308,18 +308,16 @@ export const useNotificationsStore = defineStore('notifications', {
           lastError = e
           const isRetryable = attempt < maxRetries && this._isTimeoutError(e)
           if (!isRetryable) {
-            this.items = []
-            this.hiddenIds = new Set()
-            this.initedForAddress = null
+            // Keep cached items/hiddenIds — don't wipe data on transient errors.
+            // Only mark as not-inited so next call retries the fetch.
+            console.warn('[notifications] Failed to fetch notifications', e)
             this.inited = false
             break
           }
         }
       }
       if (lastError !== undefined) {
-        this.items = []
-        this.hiddenIds = new Set()
-        this.initedForAddress = null
+        console.warn('[notifications] All retry attempts exhausted', lastError)
         this.inited = false
       }
       this.loading = false

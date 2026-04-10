@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_InfoPanel = styled.div`
   display: grid !important;
@@ -8,7 +9,7 @@ export const SC_InfoPanel = styled.div`
   width: 100% !important;
   box-sizing: border-box !important;
 
-  @media (max-width: 1200px) {
+  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
     grid-template-columns: 1fr !important;
   }
 `

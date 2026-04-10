@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 
 export const SC_UserInfo = styled.div`
@@ -12,7 +13,7 @@ export const SC_UserDetails = styled.div`
   flex-direction: column;
   gap: 2px;
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     display: none;
   }
 `

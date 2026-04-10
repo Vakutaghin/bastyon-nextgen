@@ -3,6 +3,9 @@
  * Экспорт всех утилитных функций
  */
 
+// Buffer polyfill (side-effect import — sets up globalThis.Buffer)
+export { Buffer } from './buffer-polyfill'
+
 // BIP32 пути
 export {
   validateBip32Path,

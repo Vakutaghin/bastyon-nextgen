@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import Card from '@/components/card/card.vue'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_PostCard = styled(Card)`
   margin-bottom: 15px;
@@ -16,7 +17,7 @@ export const SC_PostTitle = styled.h3`
   margin: 0 0 15px 0;
   font-size: 16px;
   font-weight: 600;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   line-height: 1.4;
 `
 
@@ -38,11 +39,11 @@ export const SC_PostAuthorInfo = styled.div`
 export const SC_PostAuthorName = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
 `
 
 export const SC_PostAuthorRep = styled.div`
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   border: 1px solid rgb(222, 226, 230);
   border-radius: 6px;
   padding: 0 6px;
@@ -53,7 +54,7 @@ export const SC_PostAuthorRep = styled.div`
 
 export const SC_PostTime = styled.time`
   font-size: 11px;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   margin-top: 2px;
 `
 
@@ -73,7 +74,7 @@ export const SC_PostActions = styled.div`
   align-items: center;
   gap: 15px;
   padding-top: 12px;
-  border-top: 1px solid rgba(206, 212, 218, 0.5);
+  border-top: 1px solid ${COLORS.BORDER_LIGHT};
 
   :deep(.ant-btn) {
     flex: 0 0 auto;
@@ -91,7 +92,7 @@ export const SC_StarRating = styled.div`
   min-height: 22px;
 
   .star-count {
-    color: rgb(33, 37, 41) !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
     font-size: 15px;
     margin-left: 7px;
   }
@@ -161,7 +162,7 @@ export const SC_StarFilled = styled.div`
 
   .star-fill {
     font-size: 22px;
-    color: rgb(255, 193, 7) !important;
+    color: ${COLORS.WARNING} !important;
     display: block;
     width: 22px;
     height: 22px;
@@ -171,8 +172,8 @@ export const SC_StarFilled = styled.div`
       width: 22px;
       height: 22px;
       display: block;
-      fill: rgb(255, 193, 7) !important;
-      color: rgb(255, 193, 7) !important;
+      fill: ${COLORS.WARNING} !important;
+      color: ${COLORS.WARNING} !important;
       stroke: none !important;
     }
   }
@@ -192,7 +193,7 @@ export const SC_StarPartial = styled.div`
 
   .star-fill {
     font-size: 22px;
-    color: rgb(255, 193, 7) !important;
+    color: ${COLORS.WARNING} !important;
     display: block;
     width: 22px;
     height: 22px;
@@ -202,8 +203,8 @@ export const SC_StarPartial = styled.div`
       width: 22px;
       height: 22px;
       display: block;
-      fill: rgb(255, 193, 7) !important;
-      color: rgb(255, 193, 7) !important;
+      fill: ${COLORS.WARNING} !important;
+      color: ${COLORS.WARNING} !important;
       stroke: none !important;
     }
   }
@@ -281,7 +282,7 @@ export const SC_RepostOriginalAuthorInfo = styled.div`
 export const SC_RepostOriginalAuthorName = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
 
   a {
     color: inherit;
@@ -295,7 +296,7 @@ export const SC_RepostOriginalAuthorName = styled.div`
 
 export const SC_RepostOriginalAuthorTime = styled.time`
   font-size: 11px;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   margin-top: 2px;
 `
 
@@ -306,10 +307,10 @@ export const SC_RepostDeleted = styled.div`
   gap: 8px;
   padding: 12px 0;
   font-size: 14px;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
 
   .repost-deleted-icon {
-    color: rgb(33, 37, 41);
+    color: ${COLORS.TEXT_PRIMARY};
     font-size: 18px;
     flex-shrink: 0;
   }

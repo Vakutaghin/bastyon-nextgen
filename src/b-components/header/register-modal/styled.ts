@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_RegisterForm = styled.div`
   padding: 20px 0;
@@ -31,29 +32,29 @@ export const SC_InputWrapper = styled.div`
     padding: 4px 11px;
     font-size: 14px;
     line-height: 1.5715;
-    color: rgb(33, 37, 41);
+    color: ${COLORS.TEXT_PRIMARY};
     background: #fff;
-    border: 1px solid rgb(206, 212, 218);
+    border: 1px solid ${COLORS.BORDER};
     border-radius: 6px;
     outline: none;
     transition: all 0.2s;
 
     &::placeholder {
-      color: rgb(108, 117, 125);
+      color: ${COLORS.TEXT_SECONDARY};
     }
 
     &:hover:not(:disabled) {
-      border-color: rgb(173, 181, 189);
+      border-color: ${COLORS.TEXT_MUTED};
     }
 
     &:focus {
-      border-color: rgb(0, 123, 255);
-      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+      border-color: ${COLORS.PRIMARY};
+      box-shadow: 0 0 0 2px ${COLORS.PRIMARY_LIGHT_20};
     }
 
     &:disabled {
-      background: rgb(248, 249, 250);
-      color: rgb(108, 117, 125);
+      background: ${COLORS.BG_SECONDARY};
+      color: ${COLORS.TEXT_SECONDARY};
       cursor: not-allowed;
       opacity: 0.6;
     }

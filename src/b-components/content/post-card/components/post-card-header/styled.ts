@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_PostHeader = styled.div`
   display: flex;
@@ -25,11 +26,11 @@ export const SC_PostAuthorInfo = styled.div`
 export const SC_PostAuthorName = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
 `
 
 export const SC_PostAuthorRep = styled.div`
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   border: 1px solid rgb(222, 226, 230);
   border-radius: 6px;
   padding: 0 6px;
@@ -40,7 +41,7 @@ export const SC_PostAuthorRep = styled.div`
 
 export const SC_PostTime = styled.time`
   font-size: 11px;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   margin-top: 2px;
 `
 
@@ -90,11 +91,11 @@ export const SC_RepostLine = styled.div`
   gap: 4px;
   margin-top: 4px;
   font-size: 12px;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
 
   .repost-icon {
     font-size: 12px;
-    color: rgb(108, 117, 125);
+    color: ${COLORS.TEXT_SECONDARY};
   }
 
   .repost-text {
@@ -102,7 +103,7 @@ export const SC_RepostLine = styled.div`
   }
 
   .repost-from {
-    color: rgb(108, 117, 125);
+    color: ${COLORS.TEXT_SECONDARY};
   }
 
   .repost-author {
@@ -114,6 +115,6 @@ export const SC_RepostLine = styled.div`
   }
 
   .repost-record {
-    color: rgb(108, 117, 125);
+    color: ${COLORS.TEXT_SECONDARY};
   }
 `

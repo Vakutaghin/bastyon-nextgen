@@ -1,10 +1,12 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_ProfileSidebar = styled.div`
   width: 280px;
   min-width: 280px;
   height: fit-content;
-  background: rgb(255, 255, 255);
+  background: ${COLORS.BG_PRIMARY};
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -15,7 +17,7 @@ export const SC_ProfileSidebar = styled.div`
   padding: 20px 0 20px 20px;
   z-index: 10;
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     display: none;
   }
 `

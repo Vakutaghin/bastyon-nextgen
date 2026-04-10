@@ -2,8 +2,7 @@
  * Расширенный API клиент с поддержкой авторизации
  */
 
-import type { RpcRequestParams, RpcOptions } from '../../helpers/api/request'
-import type { RequestSignOptions } from './request-signer'
+import type { T_RpcRequestParams as RpcRequestParams, RpcOptions } from '../../helpers/api/request'
 import { signRequest } from './request-signer'
 import type { KeyPair } from '../types/keys'
 import type { Address } from '../types/addresses'
@@ -63,24 +62,24 @@ export function createAuthenticatedApiClient(config: ApiClientConfig) {
     }
 
     // Если требуется авторизация, подписываем запрос
-    if (params.options?.auth !== false) {
-      const keyPair = getKeyPair()
-      const address = getAddress()
+    const keyPair = getKeyPair()
+    const address = getAddress()
 
+    if (params.options?.auth !== false) {
       if (keyPair && address) {
         requestParams = signRequest(
           requestParams,
           keyPair,
           address,
           {
-            requireSignature: params.options?.auth !== false,
+            requireSignature: true,
             session: params.options?.session,
           }
         ) as RpcRequestParams
-      } else if (keyPair && address) {
-        // Если авторизован, но подпись не требуется, добавляем state
-        requestParams.state = 1
       }
+    } else if (keyPair && address) {
+      // Авторизован, но подпись не требуется — добавляем state
+      requestParams.state = 1
     }
 
     // Выполняем запрос

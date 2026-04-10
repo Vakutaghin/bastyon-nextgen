@@ -1,4 +1,5 @@
 import styled, { css } from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 const activeProps = {
   active: Boolean
@@ -27,7 +28,7 @@ export const SC_CategoriesHeader = styled.div`
 export const SC_CategoriesTitle = styled.h3`
   font-size: 13px;
   font-weight: 600;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   text-transform: uppercase;
   margin: 0;
 `
@@ -35,7 +36,7 @@ export const SC_CategoriesTitle = styled.h3`
 export const SC_CategoriesToggle = styled.button`
   background: none;
   border: none;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -62,17 +63,17 @@ export const SC_ControlBtn = styled('button', activeProps)`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
   transition: all 0.2s;
   border-radius: 4px;
 
   &:hover {
-    color: rgb(33, 37, 41);
+    color: ${COLORS.TEXT_PRIMARY};
     background: rgba(0, 0, 0, 0.05);
   }
 
   ${props => props.active && css`
-    color: rgb(0, 123, 255);
+    color: ${COLORS.PRIMARY};
   `}
 `
 
@@ -92,7 +93,7 @@ export const SC_CategoriesItem = styled('div', selectedProps)`
   border: none;
   cursor: pointer;
   transition: all 0.3s;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   font-size: 13px;
   font-weight: 500;
   text-align: left;
@@ -100,12 +101,12 @@ export const SC_CategoriesItem = styled('div', selectedProps)`
   opacity: 1;
 
   &:hover {
-    background: rgb(248, 249, 250);
+    background: ${COLORS.BG_SECONDARY};
   }
 
   ${props => props.selected && css`
     background: rgba(0, 123, 255, 0.1);
-    color: rgb(0, 123, 255);
+    color: ${COLORS.PRIMARY};
     font-weight: 600;
 
     &:hover {
@@ -139,6 +140,6 @@ export const SC_TopFirstWrapper = styled.div`
 export const SC_TopFirstLabel = styled.span`
   font-size: 13px;
   font-weight: 600;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   text-transform: uppercase;
 `

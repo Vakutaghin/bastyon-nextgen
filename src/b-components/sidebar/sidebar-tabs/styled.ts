@@ -1,4 +1,5 @@
 import styled, { css } from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 const tabProps = {
   active: Boolean,
@@ -10,11 +11,11 @@ export const SC_Tabs = styled.nav`
   flex-direction: column;
   gap: 4px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgb(248, 249, 250);
+  border-bottom: 1px solid ${COLORS.BG_SECONDARY};
 
   &.collapsed {
     padding-bottom: 12px;
-    border-bottom-color: rgba(206, 212, 218, 0.3);
+    border-bottom-color: ${COLORS.BORDER_LIGHTER};
   }
 
   &.collapsed button {
@@ -33,7 +34,7 @@ export const SC_TabsItem = styled('button', tabProps)`
   border: none;
   cursor: pointer;
   transition: all 0.3s;
-  color: rgb(33, 37, 41);
+  color: ${COLORS.TEXT_PRIMARY};
   font-size: 13px;
   font-weight: 500;
   text-align: left;
@@ -49,13 +50,13 @@ export const SC_TabsItem = styled('button', tabProps)`
   }
 
   &:hover {
-    background: rgb(248, 249, 250);
-    color: rgb(0, 123, 255);
+    background: ${COLORS.BG_SECONDARY};
+    color: ${COLORS.PRIMARY};
   }
 
   ${props => props.active && css`
     background: rgba(0, 123, 255, 0.1);
-    color: rgb(0, 123, 255);
+    color: ${COLORS.PRIMARY};
     font-weight: 600;
 
     &::before {
@@ -66,7 +67,7 @@ export const SC_TabsItem = styled('button', tabProps)`
       transform: translateY(-50%);
       width: 3px;
       height: 60%;
-      background: rgb(0, 123, 255);
+      background: ${COLORS.PRIMARY};
       border-radius: 0 2px 2px 0;
     }
 
@@ -77,12 +78,12 @@ export const SC_TabsItem = styled('button', tabProps)`
 
   ${props => props.disabled && css`
     cursor: not-allowed;
-    color: rgb(173, 181, 189);
+    color: ${COLORS.TEXT_MUTED};
     opacity: 0.6;
 
     &:hover {
       background: none;
-      color: rgb(173, 181, 189);
+      color: ${COLORS.TEXT_MUTED};
     }
   `}
 `
