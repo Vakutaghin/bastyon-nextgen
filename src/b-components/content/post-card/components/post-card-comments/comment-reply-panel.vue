@@ -51,6 +51,12 @@
           {{ u.name }}
         </SC_MentionItem>
       </SC_MentionList>
+      <SC_LengthCounter
+        v-if="lengthHint"
+        :class="{ 'length-counter--bad': lengthHint.isOver }"
+      >
+        {{ lengthHint.text }}
+      </SC_LengthCounter>
     </SC_ReplyInputWrap>
     <SC_ReplyCancelBtn
       type="button"
@@ -62,7 +68,7 @@
     <SC_ReplySendBtn
       type="button"
       title="Отправить"
-      :disabled="!(replyDraft || '').trim() || replySubmitting"
+      :disabled="!(replyDraft || '').trim() || replySubmitting || !lengthValid"
       @click.stop.prevent="emit('send')"
     >
       <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
@@ -72,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { LoadingOutlined, CloseOutlined, SendOutlined } from '@ant-design/icons-vue'
 import {
   SC_ConfirmWrap,
@@ -85,7 +91,9 @@ import {
   SC_MentionItem,
   SC_ReplyCancelBtn,
   SC_ReplySendBtn,
+  SC_LengthCounter,
 } from './styled'
+import { getCommentLengthHint, isCommentLengthValid } from './helpers'
 
 interface MentionUser {
   address: string
@@ -103,6 +111,9 @@ const props = defineProps<{
   filteredMentionUsers: Array<MentionUser>
   mentionHighlightIndex: number
 }>()
+
+const lengthHint = computed(() => getCommentLengthHint(props.replyDraft || ''))
+const lengthValid = computed(() => isCommentLengthValid(props.replyDraft || ''))
 
 const emit = defineEmits<{
   'update:replyDraft': [value: string]

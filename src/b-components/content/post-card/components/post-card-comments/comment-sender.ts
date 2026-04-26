@@ -23,13 +23,18 @@ function buildCommentMsgBody(message: string): string {
 }
 
 /**
- * Отправка комментария (comment).
- * Строит транзакцию с serializedData = postid + msg + parentid + answerid.
+ * Отправка нового комментария или редактирование существующего.
  *
- * @param postId - ID поста
- * @param parentId - ID родительского комментария (пусто для корневого)
- * @param answerId - ID комментария, на который отвечаем
- * @param messageText - текст комментария
+ * Для нового (editId не передан):
+ *   - operationType = 'comment'
+ *   - serializedData = postid + msg + parentid + answerid
+ *   - payload = { postid, parentid, answerid, msg }
+ *
+ * Для редактирования (editId = txid редактируемого, по legacy proxy16/lib/kit.js:538-552):
+ *   - operationType = 'commentEdit'
+ *   - serializedData тот же
+ *   - payload = { postid, parentid, answerid, msg, id: editId }
+ *
  * @returns txid отправленной транзакции
  */
 export async function sendComment(
@@ -37,6 +42,7 @@ export async function sendComment(
   parentId: string,
   answerId: string,
   messageText: string,
+  editId?: string,
 ): Promise<string> {
   const authStore = useAuthStore()
   const keyPair = authStore.getKeyPair
@@ -52,6 +58,7 @@ export async function sendComment(
     parentid: parentId || '',
     msg,
   }
+  if (editId) messagePayload.id = editId
 
   // Сериализация как в старом приложении: postid + msg + parentid + answerid
   const serializedData = postId + msg + (parentId || '') + (answerId || '')
@@ -65,18 +72,20 @@ export async function sendComment(
 
   lockUTXOs(selectedUnspents)
 
+  const operationType = editId ? 'commentEdit' : 'comment'
+
   const builtTx = await buildTransaction({
     unspents: selectedUnspents,
     fromAddress: address,
     keyPair,
     serializedData,
-    operationType: 'comment',
+    operationType,
     fee: COMMENT_TX_FEE,
   })
 
   const response = await getByPRCWithAuth({
     method: rpcEndpoints.sendRawTransactionWithMessage,
-    parameters: [builtTx.hex, messagePayload, 'comment'],
+    parameters: [builtTx.hex, messagePayload, operationType],
     options: { auth: true },
   })
 

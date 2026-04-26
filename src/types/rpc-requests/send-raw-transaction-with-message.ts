@@ -20,7 +20,12 @@ export interface CommentMessageBody {
 }
 
 /**
- * Тело сообщения для типа "comment" во втором параметре RPC.
+ * Тело сообщения для типа "comment" / "commentEdit" / "commentDelete" во втором параметре RPC.
+ *
+ * Для:
+ *   - "comment"        — поле id отсутствует; msg обязателен.
+ *   - "commentEdit"    — поле id = txid редактируемого комментария; msg обязателен.
+ *   - "commentDelete"  — поле id = txid удаляемого комментария; msg отсутствует (по legacy: kit.js:481-504).
  */
 export interface CommentMessagePayload {
   /** ID поста (txid поста) */
@@ -29,14 +34,22 @@ export interface CommentMessagePayload {
   answerid: string
   /** ID родительского комментария (пусто для комментария к посту) */
   parentid: string
-  /** JSON-строка с полями message, url, images, info */
-  msg: string
+  /** JSON-строка с полями message, url, images, info. Не передаётся при commentDelete. */
+  msg?: string
+  /** Только для commentEdit/commentDelete — txid редактируемого/удаляемого комментария */
+  id?: string
 }
 
 /**
  * Тип операции для sendrawtransactionwithmessage
  */
-export type SendRawTransactionOperationType = 'comment' | 'cScore' | 'upvoteShare' | string
+export type SendRawTransactionOperationType =
+  | 'comment'
+  | 'commentEdit'
+  | 'commentDelete'
+  | 'cScore'
+  | 'upvoteShare'
+  | string
 
 /**
  * Параметры запроса sendrawtransactionwithmessage

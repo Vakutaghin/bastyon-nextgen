@@ -1,0 +1,88 @@
+// Удаление комментария через блокчейн-транзакцию commentDelete.
+//
+// Формат payload и serializedData взяты 1:1 из legacy: proxy16/lib/kit.js:457-504, 538-552
+//   - operationType: 'commentDelete'
+//   - serialized:    postid + (parentid || '') + (answerid || '')   (msg отсутствует)
+//   - payload:       { postid, answerid, parentid, id: txidЕдалённогоКомментария }
+
+import { useAuthStore } from '@/blockchain'
+import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
+import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } from '@/blockchain/core/transactions/unspents-manager'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
+import { getByPRCWithAuth } from '@/helpers/api/request'
+import type { CommentMessagePayload } from '@/types/rpc-requests/send-raw-transaction-with-message'
+
+import { COMMENT_TX_FEE } from './consts'
+
+export interface DeleteCommentParams {
+  /** txid поста, к которому относится комментарий */
+  postId: string
+  /** txid удаляемого комментария */
+  commentId: string
+  /** txid комментария, на который было отвечено (если ответ на ответ) */
+  answerId?: string
+  /** txid корневого (первого) комментария ветки (если ответ) */
+  parentId?: string
+}
+
+/**
+ * Удаляет комментарий пользователя.
+ * Возвращает txid отправленной транзакции.
+ */
+export async function deleteComment(params: DeleteCommentParams): Promise<string> {
+  const { postId, commentId } = params
+  const answerId = params.answerId || ''
+  const parentId = params.parentId || ''
+
+  const authStore = useAuthStore()
+  const keyPair = authStore.getKeyPair
+  const address = authStore.getUserAddress
+
+  if (!keyPair || !address) throw new Error('Нужна авторизация для удаления комментария')
+  if (!postId || !commentId) throw new Error('postId и commentId обязательны')
+
+  const messagePayload: CommentMessagePayload = {
+    postid: postId,
+    answerid: answerId,
+    parentid: parentId,
+    id: commentId,
+  }
+
+  // serializedData как в legacy serialize(): postid + parentid + answerid (без msg при delete)
+  const serializedData = postId + parentId + answerId
+
+  let unspents = await getUnspents(address, 1, 9999999)
+  unspents = filterAvailableUnspents(unspents, false)
+  if (!unspents?.length) throw new Error('Нет доступных unspents')
+
+  const selectedUnspents = selectBestUnspents(unspents, COMMENT_TX_FEE)
+  if (selectedUnspents.length === 0) throw new Error('Не удалось выбрать unspents для транзакции')
+
+  lockUTXOs(selectedUnspents)
+
+  const builtTx = await buildTransaction({
+    unspents: selectedUnspents,
+    fromAddress: address,
+    keyPair,
+    serializedData,
+    operationType: 'commentDelete',
+    fee: COMMENT_TX_FEE,
+  })
+
+  const response = await getByPRCWithAuth({
+    method: rpcEndpoints.sendRawTransactionWithMessage,
+    parameters: [builtTx.hex, messagePayload, 'commentDelete'],
+    options: { auth: true },
+  })
+
+  if (typeof response === 'string') return response
+  if (response && typeof response === 'object' && 'data' in response && typeof (response as any).data === 'string') {
+    return (response as any).data
+  }
+  if (response && typeof response === 'object' && 'result' in response && (response as any).result === 'success' && 'data' in response) {
+    return (response as any).data
+  }
+
+  const err = response && typeof response === 'object' && 'error' in response ? (response as any).error : null
+  throw err instanceof Error ? err : new Error(String(err ?? 'Ошибка удаления комментария'))
+}

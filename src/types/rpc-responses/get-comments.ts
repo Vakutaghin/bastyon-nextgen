@@ -95,6 +95,20 @@ export interface GetComment {
   edit: boolean
   flags: Record<string, unknown>
   userprofile: GetCommentUserProfile
+  /** txid корневого (первого) комментария ветки. Пусто для первого уровня. */
+  parentid?: string
+  /** txid комментария, на который был дан ответ. Пусто для первого уровня. */
+  answerid?: string
+  /**
+   * Локальные статусы транзакции (выставляются клиентом, не приходят из getcomments):
+   *   - temp     — TX в mempool, ждёт подтверждения
+   *   - relay    — TX отправлена, ждёт релэя
+   *   - rejected — TX отклонена сетью
+   * См. legacy: components/comments/templates/list.html:33,90-95
+   */
+  temp?: boolean
+  relay?: boolean
+  rejected?: boolean
 }
 
 /**

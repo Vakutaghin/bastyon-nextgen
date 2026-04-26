@@ -17,6 +17,10 @@ export const SC_CommentRow = styled.div`
   align-items: flex-start;
   width: 100%;
 
+  &.is-pending {
+    opacity: 0.65;
+  }
+
   a {
     border-bottom: 0;
     text-decoration: none;
@@ -54,6 +58,10 @@ export const SC_CommentItem = styled.div`
   display: flex;
   gap: 10px;
   align-items: flex-start;
+
+  &.is-pending {
+    opacity: 0.65;
+  }
 
   a {
     border-bottom: 0;
@@ -139,6 +147,167 @@ export const SC_CommentDate = styled.div`
   font-size: 12px;
   color: ${COLORS.TEXT_SECONDARY};
 `
+
+/** Правый край шапки комментария: дата + кнопка меню */
+export const SC_CommentMetaRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`
+
+/** Обёртка для сетки картинок в комментарии (уменьшенный масштаб vs пост) */
+export const SC_CommentImages = styled.div`
+  margin-top: 6px;
+  max-width: 480px;
+
+  /* Сетка PostCardImages по умолчанию занимает всю ширину поста; в комменте сжимаем. */
+  & > div {
+    border-radius: 10px;
+    overflow: hidden;
+  }
+`
+
+/** Плашка-заглушка вместо текста удалённого комментария */
+export const SC_CommentDeleted = styled.div`
+  font-size: 14px;
+  font-style: italic;
+  color: ${COLORS.TEXT_SECONDARY};
+  line-height: 1.5;
+`
+
+/** Плашка-заглушка вместо текста скрытого по репутации комментария */
+export const SC_HiddenBanner = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  font-size: 13px;
+  color: ${COLORS.TEXT_SECONDARY};
+  line-height: 1.4;
+
+  & > span { flex: 1; }
+`
+
+export const SC_RevealBtn = styled.button`
+  border: none;
+  background: transparent;
+  color: #00a4ff;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover { text-decoration: underline; }
+`
+
+/** Плашка-блокировщик публикации (вместо формы ввода) */
+export const SC_ComposerDisabled = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px dashed #ddd;
+  border-radius: 12px;
+  font-size: 13px;
+  color: ${COLORS.TEXT_SECONDARY};
+  line-height: 1.4;
+  margin-top: 8px;
+`
+
+/** Контейнер inline-формы редактирования комментария */
+export const SC_EditFormWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+`
+
+export const SC_EditFormActions = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+`
+
+export const SC_EditCancelBtn = styled.button`
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 13px;
+  color: ${COLORS.TEXT_PRIMARY};
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #f5f5f5;
+    border-color: #ccc;
+  }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+`
+
+export const SC_EditSaveBtn = styled.button`
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid #00a4ff;
+  background: #00a4ff;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  min-height: 30px;
+
+  &:hover:not(:disabled) {
+    background: #0088d1;
+    border-color: #0088d1;
+  }
+  &:disabled {
+    cursor: not-allowed;
+    background: #ccc;
+    border-color: #ccc;
+  }
+`
+
+/** Иконка пера у даты — индикатор отредактированного комментария */
+export const SC_EditedMark = styled.span`
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  color: ${COLORS.TEXT_SECONDARY};
+  gap: 3px;
+  margin-left: 4px;
+`
+
+/**
+ * Бейдж статуса транзакции рядом с датой.
+ * Серый — pending (в mempool), красный — rejected.
+ */
+export const SC_TxStatusBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  color: ${COLORS.TEXT_SECONDARY};
+
+  &.tx-status--rejected {
+    background: rgba(255, 77, 79, 0.1);
+    color: #ff4d4f;
+  }
+
+  svg { width: 11px; height: 11px; }
+`
+
 
 export const SC_CommentActions = styled.div`
   display: flex;
@@ -227,6 +396,32 @@ export const SC_CommentsSortRow = styled.div`
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+`
+
+/** Кнопка ручного обновления списка комментариев */
+export const SC_RefreshBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: ${COLORS.TEXT_SECONDARY};
+  cursor: pointer;
+  margin-left: auto;
+
+  &:hover:not(:disabled) {
+    background: #f5f5f5;
+    color: ${COLORS.TEXT_PRIMARY};
+  }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  svg { width: 14px; height: 14px; }
 `
 
 export const SC_CommentsSortSelect = styled.select`
@@ -501,4 +696,73 @@ export const SC_ConfirmBtn = styled.button`
     background: #0088d1;
     border-color: #0088d1;
   }
+`
+
+/** Счётчик оставшихся символов под полем ввода. Показывается только когда осталось мало. */
+export const SC_LengthCounter = styled.div`
+  font-size: 12px;
+  color: ${COLORS.TEXT_SECONDARY};
+  padding: 2px 14px 0;
+  line-height: 1.3;
+
+  &.length-counter--bad {
+    color: #ff4d4f;
+  }
+`
+
+/** Кнопка-триггер контекстного меню комментария (три точки) */
+export const SC_MenuTrigger = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: ${COLORS.TEXT_SECONDARY};
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: ${COLORS.TEXT_PRIMARY};
+  }
+
+  svg { width: 16px; height: 16px; }
+`
+
+/** Контейнер списка пунктов меню в поповере */
+export const SC_MenuList = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 4px 0;
+`
+
+/** Пункт меню */
+export const SC_MenuItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: ${COLORS.TEXT_PRIMARY};
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+
+  &.menu-item--danger {
+    color: #ff4d4f;
+  }
+  &.menu-item--danger:hover {
+    background: rgba(255, 77, 79, 0.08);
+  }
+
+  svg { width: 14px; height: 14px; }
 `
