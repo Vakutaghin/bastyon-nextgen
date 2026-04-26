@@ -5,9 +5,9 @@
 import { computed, type MaybeRefOrGetter, unref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
+import { rpcCall, rpcCallWithAuth } from '@/helpers/api/request'
 import { useRpcQuery, useRpcQueryWithAuth } from './use-rpc-query'
-import type { RpcRequestParams } from '@/helpers/api/request'
+import type { T_RpcRequestParams } from '@/helpers/api/request'
 import type { GetUserProfileResponse, UserProfile } from '@/types/rpc-responses/user-get'
 import type { GetUserStateResponse, UserState as UserStateData } from '@/types/rpc-responses/user-state'
 import { useAuthStore } from '@/blockchain'
@@ -76,23 +76,23 @@ export function useUserProfile(
     return ['user', 'profile', address]
   })
 
-  return useQuery<GetUserProfileResponse>({
+  return useQuery<UserProfile[]>({
     queryKey,
     queryFn: async () => {
       if (!address) throw new Error('No address provided')
 
       if (isCurrentUser.value) {
-        return getByPRCWithAuth({
+        return rpcCallWithAuth<UserProfile[]>({
           method: rpcEndpoints.getUserProfile,
           parameters: [[address]],
           options: { auth: true }
-        }) as Promise<GetUserProfileResponse>
+        })
       } else {
-        return getByPRC({
+        return rpcCall<UserProfile[]>({
           method: rpcEndpoints.getUserProfile,
           parameters: [[address]],
           options: { auth: false }
-        }) as Promise<GetUserProfileResponse>
+        })
       }
     },
     enabled: computed(() => {
@@ -130,16 +130,16 @@ export function useUserProfiles(
     return Array.isArray(arr) ? arr : []
   })
   const queryKey = computed(() => ['user', 'profiles', [...addressesRef.value].sort().join(',')])
-  return useQuery<GetUserProfileResponse>({
+  return useQuery<UserProfile[]>({
     queryKey,
     queryFn: () => {
       const addrs = addressesRef.value
-      const params: RpcRequestParams = {
+      const params: T_RpcRequestParams = {
         method: rpcEndpoints.getUserProfile,
         parameters: [addrs],
         options: { auth: false }
       }
-      return getByPRC(params) as Promise<GetUserProfileResponse>
+      return rpcCall<UserProfile[]>(params)
     },
     enabled: computed(() => enabled && addressesRef.value.length > 0),
     staleTime: 5 * 60 * 1000,

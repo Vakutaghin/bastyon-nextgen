@@ -3,7 +3,7 @@
  */
 
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
+import { rpcCallWithAuth } from '@/helpers/api/request'
 
 /**
  * Интерфейс для параметров отправки транзакции
@@ -41,8 +41,9 @@ export async function sendTransactionWithMessage(
 
   try {
     // Вызываем sendrawtransactionwithmessage через RPC
+    // rpcCallWithAuth unwraps the { result, data } envelope automatically
     // Параметры: [hex, messageData, operationType]
-    const response = await getByPRCWithAuth({
+    const response = await rpcCallWithAuth<unknown>({
       method: rpcEndpoints.sendRawTransactionWithMessage,
       parameters: [hex, messageData, operationType],
       options: { auth: true }, // Требуется авторизация для отправки транзакций
@@ -51,25 +52,16 @@ export async function sendTransactionWithMessage(
     console.log('[sendTransaction] Raw response:', JSON.stringify(response).substring(0, 500))
 
     // Ответ должен содержать txid транзакции
+    // After unwrapping, the response is the inner data (e.g. a txid string)
     if (typeof response === 'string') {
       return response
     }
 
     if (response && typeof response === 'object') {
+      const resp = response as Record<string, unknown>
       // Если ответ - объект, ищем txid в разных возможных полях
-      if ('txid' in response && typeof response.txid === 'string') {
-        return response.txid
-      }
-      if ('data' in response && typeof response.data === 'string') {
-        return response.data
-      }
-      if ('result' in response && typeof response.result === 'string') {
-        return response.result
-      }
-      // Если ответ — объект с data, который содержит txid
-      if ('data' in response && response.data && typeof response.data === 'object') {
-        const data = response.data as Record<string, unknown>
-        if (data.txid && typeof data.txid === 'string') return data.txid
+      if (typeof resp.txid === 'string') {
+        return resp.txid
       }
       // Fallback: если есть хоть какой-то непустой ответ — считаем успехом
       // sendrawtransactionwithmessage может вернуть просто txid hash

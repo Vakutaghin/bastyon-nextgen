@@ -1,8 +1,8 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
-import type { GetProfileFeedResponse } from '@/types/rpc-responses/get-profile-feed'
+import { rpcCallWithAuth } from '@/helpers/api/request'
+import type { GetProfileFeedData } from '@/types/rpc-responses/get-profile-feed'
 import { extractPostsFromResponse, mergeRepostContent } from '@/composables/use-feed'
 import type { AdaptedPost } from '@/composables/use-feed'
 
@@ -50,13 +50,13 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     currentTxidForQuery.value || 'initial'
   ])
 
-  const { data, isLoading, error, refetch } = useQuery<GetProfileFeedResponse>({
+  const { data, isLoading, error, refetch } = useQuery<GetProfileFeedData>({
     queryKey: queryKey,
     queryFn: async () => {
       const currentTxid = currentTxidForQuery.value
       const count = currentTxid === '' ? initialLimit : pageSize
 
-      return getByPRCWithAuth({
+      return rpcCallWithAuth<GetProfileFeedData>({
         method: rpcEndpoints.getProfileFeed,
         parameters: [
           0,              // height
@@ -78,7 +78,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
         options: {
           ex: true
         }
-      }) as Promise<GetProfileFeedResponse>
+      })
     },
     staleTime: 0, // Не кешируем, чтобы всегда получать свежие данные
     gcTime: 0
@@ -93,7 +93,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
 
   // Обработка полученных данных
   watch(data, async (newData) => {
-    if (!newData?.data?.contents) {
+    if (!newData?.contents) {
       if (currentTxidForQuery.value !== '') {
         hasMore.value = false
         isLoadingMore.value = false
@@ -101,8 +101,8 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       return
     }
 
-    let newPosts: AdaptedPost[] = extractPostsFromResponse(newData)
-    const contents = newData.data.contents
+    let newPosts: AdaptedPost[] = extractPostsFromResponse(newData as any)
+    const contents = newData.contents
 
     // Подгружаем контент оригинальных записей для репостов
     const repostTxids = [...new Set(
@@ -112,16 +112,14 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     )] as string[]
     if (repostTxids.length > 0) {
       try {
-        const result: any = await getByPRCWithAuth({
+        const result = await rpcCallWithAuth<any[]>({
           method: rpcEndpoints.getRawTransactionWithMessageById,
           parameters: [repostTxids],
           cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
           options: {},
           state: 1
         })
-        const originals = Array.isArray(result)
-          ? result
-          : (result?.data ?? result?.result ?? [])
+        const originals = Array.isArray(result) ? result : []
         const originalMap = new Map(
           (Array.isArray(originals) ? originals : []).map((p: any) => [p.txid || p.hash || p.id, p])
         )

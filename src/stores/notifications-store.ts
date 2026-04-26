@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
+import { rpcCall, rpcCallArrayWithAuth } from '@/helpers/api/request'
 import { settingsAPI, } from '@/db/apis/settings-api'
 import { notificationsAPI } from '@/db/apis/notifications-api'
 import type { GetMissedInfoParameters } from '@/types/rpc-requests/get-missed-info'
-import type { GetMissedInfoBlockItem, GetMissedInfoEventItem } from '@/types/rpc-responses/get-missed-info'
+import type { GetMissedInfoBlockItem, GetMissedInfoEventItem, GetMissedInfoDataItem } from '@/types/rpc-responses/get-missed-info'
+import type { GetNodeInfoData } from '@/types/rpc-responses/get-node-info'
 
 const NOTIFICATIONS_LAST_BLOCK_KEY = 'notificationsLastBlock'
 const NOTIFICATIONS_HIDDEN_IDS_KEY = 'notificationsHiddenIds'
@@ -178,28 +179,12 @@ export const useNotificationsStore = defineStore('notifications', {
 
     /** Текущая высота сети (getnodeinfo). Если нет сохранённого блока — запрашиваем с неё (0 новых уведомлений). */
     async getCurrentBlockHeight(): Promise<number> {
-      const res = await getByPRC({ method: rpcEndpoints.getNodeInfo, parameters: [], options: { auth: false } }) as unknown
-      const data = (res && typeof res === 'object' && 'data' in res) ? (res as { data: unknown }).data : res
-      const obj = typeof data === 'object' && data !== null ? data as Record<string, unknown> : null
-      const lastblock = obj?.lastblock as { height?: number } | undefined
-      const h = lastblock?.height
+      const data = await rpcCall<GetNodeInfoData>({ method: rpcEndpoints.getNodeInfo, parameters: [], options: { auth: false } })
+      const h = data?.lastblock?.height
       if (typeof h === 'number' && h > 0) return h
       return 0
     },
 
-    /** Извлекает массив из ответа прокси (data/result) или сырой массив */
-    _unwrapResponse(raw: unknown): unknown[] {
-      if (Array.isArray(raw)) return raw
-      if (!raw || typeof raw !== 'object') return []
-      const obj = raw as Record<string, unknown>
-      if (Array.isArray(obj.data)) return obj.data
-      if (Array.isArray(obj.result)) return obj.result
-      // вложенная обёртка, например { data: { data: [...] } }
-      if (obj.data && typeof obj.data === 'object' && Array.isArray((obj.data as Record<string, unknown>).data)) {
-        return (obj.data as Record<string, unknown>).data as unknown[]
-      }
-      return []
-    },
     _isTimeoutError(err: unknown): boolean {
       if (!err || typeof err !== 'object') return false
       const o = err as Record<string, unknown>
@@ -262,12 +247,11 @@ export const useNotificationsStore = defineStore('notifications', {
           const blockToRequest = this.lastBlock || 0
           const params: GetMissedInfoParameters = [address, blockToRequest, 30]
           // getmissedinfo всегда без кэша — актуальные пропущенные события
-          const raw = await getByPRCWithAuth({
+          const arr = await rpcCallArrayWithAuth<GetMissedInfoDataItem>({
             method: rpcEndpoints.getMissedInfo,
             parameters: params,
             options: { cache: false }
-          }) as unknown
-          const arr = this._unwrapResponse(raw)
+          })
           const blockInfo = arr[0]
           if (blockInfo && typeof blockInfo === 'object' && 'block' in blockInfo && 'contentsLang' in blockInfo) {
             this.lastBlock = Number((blockInfo as GetMissedInfoBlockItem).block) || this.lastBlock

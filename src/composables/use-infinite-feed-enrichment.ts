@@ -1,7 +1,7 @@
 // Обогащение постов: подгрузка контента репостов и рейтингов пользователя
 
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
+import { rpcCallWithAuth } from '@/helpers/api/request'
 import { generateCacheHash } from '@/helpers/common/cache-hash'
 import { mergeRepostContent, type AdaptedPost } from './use-feed'
 
@@ -25,7 +25,7 @@ export async function enrichRepostsWithContent(
   if (repostTxids.length === 0) return
 
   try {
-    const result: any = await getByPRCWithAuth({
+    const result = await rpcCallWithAuth<any[]>({
       method: rpcEndpoints.getRawTransactionWithMessageById,
       parameters: [repostTxids],
       cachehash: generateCacheHash(),
@@ -33,9 +33,7 @@ export async function enrichRepostsWithContent(
       state: 1,
     })
 
-    const originals = Array.isArray(result)
-      ? result
-      : (result?.data ?? result?.result ?? [])
+    const originals = Array.isArray(result) ? result : []
 
     const originalMap = new Map(
       (Array.isArray(originals) ? originals : []).map((p: any) => [p.txid || p.hash || p.id, p]),
@@ -73,14 +71,11 @@ export function enrichPostsWithScores(
   if (postIds.length === 0) return
 
   // Запускаем асинхронно, не блокируя UI
-  getByPRCWithAuth({
+  rpcCallWithAuth<any[]>({
     method: rpcEndpoints.getPageScores,
     parameters: [postIds, userAddress, []],
     cachehash: generateCacheHash(),
-  }).then((scoresResponse: any) => {
-    const scores = Array.isArray(scoresResponse)
-      ? scoresResponse
-      : (scoresResponse?.data || scoresResponse?.result || [])
+  }).then((scores: any[]) => {
 
     if (!Array.isArray(scores)) return
 

@@ -3,13 +3,13 @@
  */
 
 import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/vue-query'
-import type { RpcRequestParams, RpcRequestConfig } from '@/helpers/api/request'
+import type { T_RpcRequestParams, RpcRequestConfig } from '@/helpers/api/request'
 import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 
 /**
  * Опции для useRpcMutation
  */
-export interface UseRpcMutationOptions<TData = unknown, TVariables = RpcRequestParams> {
+export interface UseRpcMutationOptions<TData = unknown, TVariables = T_RpcRequestParams> {
   /** Ключи запросов для инвалидации после успешной мутации */
   invalidateQueries?: (string | number)[][]
   /** Конфигурация RPC запроса (host, port) */
@@ -27,7 +27,7 @@ export interface UseRpcMutationOptions<TData = unknown, TVariables = RpcRequestP
  *
  */
 export function useRpcMutation<TData = unknown>(
-  params: RpcRequestParams | ((variables: any) => RpcRequestParams),
+  params: T_RpcRequestParams | ((variables: any) => T_RpcRequestParams),
   options?: UseRpcMutationOptions<TData>
 ) {
   const queryClient = useQueryClient()
@@ -70,7 +70,7 @@ export function useRpcMutation<TData = unknown>(
  * ```
  */
 export function useRpcMutationWithAuth<TData = unknown>(
-  params: RpcRequestParams | ((variables: any) => RpcRequestParams),
+  params: T_RpcRequestParams | ((variables: any) => T_RpcRequestParams),
   options?: UseRpcMutationOptions<TData>
 ) {
   const queryClient = useQueryClient()

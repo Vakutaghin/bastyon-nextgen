@@ -3,8 +3,8 @@
  */
 
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRC } from '@/helpers/api/request'
-import type { UTXO, TxUnspentResponse } from '@/composables/use-user-queries'
+import { rpcCall } from '@/helpers/api/request'
+import type { UTXO } from '@/composables/use-user-queries'
 import {
   DUST_VALUE,
   OPTIMIZE_UNSPENTS_MAX,
@@ -45,17 +45,12 @@ export async function getUnspents(
   maxConf: number = 9999999,
   server?: { host: string; port: number },
 ): Promise<UTXO[]> {
-  const response = await getByPRC({
+  // rpcCall unwraps the { result, data } envelope and throws on error
+  return await rpcCall<UTXO[]>({
     method: rpcEndpoints.txUnspent,
     parameters: [[address], minConf, maxConf],
     options: { auth: false },
-  }, server) as TxUnspentResponse
-
-  if (response.result === 'error') {
-    throw new Error(response.error || 'Failed to get unspents')
-  }
-
-  return response.data || []
+  }, server)
 }
 
 /**
@@ -112,6 +107,7 @@ export function selectBestUnspents(unspents: UTXO[], requiredAmount: number): UT
 
     // Выбираем случайный из кандидатов (или первый, если один)
     const selectedUnspent = candidates[Math.floor(Math.random() * candidates.length)]
+    if (!selectedUnspent) break
     const key = `${selectedUnspent.txid}:${selectedUnspent.vout}`
 
     selected[key] = selectedUnspent

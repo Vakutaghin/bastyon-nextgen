@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { POST_MODAL_SCROLL_POSITION_KEY } from '@/blockchain/constants/storage'
-import type { Post } from '@/types/post'
+import type { GetTopFeedPost as Post } from '@/types/rpc-responses/get-top-feed'
 
 interface ImageGalleryState {
   isOpen: boolean

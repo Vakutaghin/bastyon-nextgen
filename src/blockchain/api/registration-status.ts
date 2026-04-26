@@ -5,7 +5,7 @@
 
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRC } from '@/helpers/api/request'
+import { rpcCall } from '@/helpers/api/request'
 import { watch } from 'vue'
 
 export type RegistrationStatus =
@@ -62,11 +62,13 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
       // Используем getuserprofile для проверки наличия аккаунта в блокчейне
       // getuserprofile возвращает { result: "success", data: UserProfile[] }
       // Для незарегистрированного аккаунта сервер может вернуть пустой массив data
-      const userInfo = await getByPRC({
+      // rpcCall unwraps { result, data } and throws on error,
+      // so we receive the inner data directly.
+      const profiles = await rpcCall<Array<{ address?: string; id?: number; name?: string; hash?: string }>>({
         method: rpcEndpoints.getUserProfile,
         parameters: [[address]], // getuserprofile принимает массив адресов в массиве параметров
         options: { auth: false },
-      }) as { result?: string; data?: Array<{ address?: string; id?: number; name?: string; hash?: string }> | null }
+      })
 
       // Проверяем, существует ли аккаунт в блокчейне
       // Аккаунт считается зарегистрированным, если getuserprofile возвращает массив с элементами
@@ -75,12 +77,11 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
       // В старом приложении проверка идет через account.status.value, который устанавливается
       // когда транзакция userInfo завершена, что означает наличие аккаунта в блокчейне
 
-      // Упрощенная проверка: если result === 'success' и есть хотя бы один элемент в data,
+      // Упрощенная проверка: если есть хотя бы один элемент,
       // значит аккаунт уже в блокчейне (даже если у элемента нет name)
       const hasAccountInBlockchain =
-        userInfo?.result === 'success' &&
-        Array.isArray(userInfo?.data) &&
-        userInfo.data.length > 0
+        Array.isArray(profiles) &&
+        profiles.length > 0
 
       if (hasAccountInBlockchain) {
         // Аккаунт уже в блокчейне - зарегистрирован

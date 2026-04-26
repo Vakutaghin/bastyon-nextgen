@@ -3,8 +3,9 @@ import { postRatingPendingAPI } from '@/db/apis/post-rating-pending-api'
 import { useAuthStore } from '@/stores'
 import { usePostsStore } from '@/stores/posts-store'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
+import { rpcCallArrayWithAuth } from '@/helpers/api/request'
 import { calculateRatingUpdate } from '@/helpers/common/rating-calculator'
+import type { GetPageScore } from '@/types/rpc-responses/get-page-scores'
 
 
 type T_PendingItem = {
@@ -109,7 +110,7 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
       const postIds = Array.from(this.items.keys())
 
       try {
-        const response = await getByPRCWithAuth({
+        const arr = await rpcCallArrayWithAuth<GetPageScore>({
           method: rpcEndpoints.getPageScores,
           parameters: [postIds, address, []],
           options: { auth: false },
@@ -117,9 +118,7 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
           cachehash: `${Date.now()}-${Math.random()}`
         })
 
-        const arr = Array.isArray((response as any)?.data) ? (response as any).data : (Array.isArray(response) ? response : [])
-
-        arr.forEach((entry: any) => {
+        arr.forEach((entry) => {
           const postId = entry.posttxid
           const val = Number(entry.value)
 

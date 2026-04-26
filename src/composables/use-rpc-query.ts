@@ -3,7 +3,7 @@
  */
 
 import { useQuery, type UseQueryOptions } from '@tanstack/vue-query'
-import type { RpcRequestParams, RpcRequestConfig } from '@/helpers/api/request'
+import type { T_RpcRequestParams, RpcRequestConfig } from '@/helpers/api/request'
 import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 
 /**
@@ -52,7 +52,7 @@ export interface UseRpcQueryOptions<TData = unknown> {
  */
 export function useRpcQuery<TData = unknown>(
   queryKey: readonly unknown[],
-  params: RpcRequestParams,
+  params: T_RpcRequestParams,
   options?: UseRpcQueryOptions<TData>
 ) {
   return useQuery<TData>({
@@ -91,7 +91,7 @@ export function useRpcQuery<TData = unknown>(
  */
 export function useRpcQueryWithAuth<TData = unknown>(
   queryKey: readonly unknown[],
-  params: RpcRequestParams,
+  params: T_RpcRequestParams,
   options?: UseRpcQueryOptions<TData>
 ) {
   return useQuery<TData>({

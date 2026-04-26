@@ -8,12 +8,12 @@ import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useRpcQueryWithAuth } from './use-rpc-query'
 import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hierarchical-strip'
 import type { GetTopFeedResponse } from '@/types/rpc-responses/get-top-feed'
-import type { GetProfileFeedResponse } from '@/types/rpc-responses/get-profile-feed'
+import type { GetProfileFeedResponse, GetProfileFeedData } from '@/types/rpc-responses/get-profile-feed'
 import type { GetProfileFeedParameters } from '@/types/rpc-requests/get-profile-feed'
 import { extractPostsFromResponse } from './use-feed'
 import { useFiltersStore } from '@/stores/filters-store'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
+import { rpcCallWithAuth } from '@/helpers/api/request'
 
 /**
  * Загружает hierarchical strip (основная лента)
@@ -219,9 +219,9 @@ export function useProfileFeedWithFilters(
   ] : [] as any)
 
   // Используем useQuery напрямую для полного контроля над реактивностью
-  const { data, isLoading, error, refetch } = useQuery<GetProfileFeedResponse>({
+  const { data, isLoading, error, refetch } = useQuery<GetProfileFeedData>({
     queryKey: computed(() => ['feed', 'profile', address || '', offset, limit, orderby.value, ascdesc.value]),
-    queryFn: () => getByPRCWithAuth({
+    queryFn: () => rpcCallWithAuth<GetProfileFeedData>({
       method: rpcEndpoints.getProfileFeed,
       parameters: parameters.value,
       cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
@@ -229,13 +229,13 @@ export function useProfileFeedWithFilters(
         // auth: false,
         ex: true  // Используем rpc-ex эндпоинт
       }
-    }) as Promise<GetProfileFeedResponse>,
+    }),
     enabled: computed(() => enabled && !!address),
     staleTime: 3 * 60 * 1000, // 3 минуты
     gcTime: 10 * 60 * 1000,
   })
 
-  const posts = computed(() => extractPostsFromResponse(data.value))
+  const posts = computed(() => extractPostsFromResponse(data.value as any))
 
   return {
     data,
