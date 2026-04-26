@@ -1,9 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+
+const mockStorage = new Map<string, string>()
+
+vi.stubGlobal('localStorage', {
+  getItem: (key: string) => mockStorage.get(key) ?? null,
+  setItem: (key: string, value: string) => mockStorage.set(key, value),
+  removeItem: (key: string) => mockStorage.delete(key),
+  clear: () => mockStorage.clear(),
+})
+
 import { setNeedShowMnemonic, shouldShowMnemonic, setDontShowMnemonic } from './mnemonic-storage'
 
 describe('mnemonic-storage', () => {
   beforeEach(() => {
-    localStorage.clear()
+    mockStorage.clear()
   })
 
   describe('setNeedShowMnemonic', () => {
