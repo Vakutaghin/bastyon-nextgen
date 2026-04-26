@@ -16,7 +16,7 @@ export function useConfirmShowMnemonicModal(
   })
 
   watch(visible, (newValue) => {
-    emit('update:open', newValue)
+    emit('update:open', newValue ?? false)
   })
 
   function handleConfirm() {

@@ -67,7 +67,7 @@ export const messageListOptions = defineComponent({
       if (newVal !== oldVal) {
         // Check if it's the same chat (last message is the same)
         const isSameChat = newVal.length > 0 && oldVal && oldVal.length > 0 &&
-                           newVal[newVal.length - 1].id === oldVal[oldVal.length - 1].id
+                           newVal[newVal.length - 1]?.id === oldVal[oldVal.length - 1]?.id
 
         if (!oldVal || oldVal.length === 0 || !isSameChat) {
           // New chat or initial load
@@ -108,7 +108,7 @@ export const messageListOptions = defineComponent({
       if (index === 0) return true
       const current = props.messages[index]
       const previous = props.messages[index - 1]
-      return current.senderId !== previous.senderId
+      return current?.senderId !== previous?.senderId
     }
 
     return { listRef, shouldShowName, handleScroll }

@@ -176,7 +176,7 @@ export function getHlsPlaylistUrl(
     videoInfo.streamingPlaylists.length > 0
   ) {
     const playlist = videoInfo.streamingPlaylists[0]
-    if (playlist.playlistUrl) {
+    if (playlist?.playlistUrl) {
       return playlist.playlistUrl
     }
   }
@@ -185,7 +185,7 @@ export function getHlsPlaylistUrl(
   // (для прямых видео файлов, не HLS)
   if (videoInfo.files && Array.isArray(videoInfo.files) && videoInfo.files.length > 0) {
     const file = videoInfo.files[0]
-    if (file.fileUrl) {
+    if (file?.fileUrl) {
       return file.fileUrl
     }
   }

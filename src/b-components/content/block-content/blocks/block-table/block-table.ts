@@ -53,7 +53,7 @@ export const blockTableOptions = defineComponent({
      * Первая строка (заголовок)
      */
     headerRow(): string[] {
-      return this.hasHeader && this.content.length > 0 ? this.content[0] : []
+      return this.hasHeader && this.content.length > 0 ? this.content[0] ?? [] : []
     },
     /**
      * Строки тела таблицы

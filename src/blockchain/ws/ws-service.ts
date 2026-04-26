@@ -89,6 +89,7 @@ class PocketnetWsService {
     }
 
     const proxy = proxyList[0]
+    if (!proxy) return
     const url = `wss://${proxy.host}:${proxy.wss}`
 
     console.log('[WS] Connecting to', url)

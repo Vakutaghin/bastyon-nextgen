@@ -201,7 +201,7 @@ export const chatRoomOptions = defineComponent({
         const id = d.partner?.id
         if (typeof id === 'string' && id.startsWith('@') && id.includes(':')) {
           const parts = id.split(':')
-          let userId = parts[0].substring(1)
+          let userId = parts[0]!.substring(1)
           const looksHex = /^[0-9a-fA-F]+$/.test(userId) && userId.length % 2 === 0
           address = looksHex ? hexToAddress(userId) : userId
         }
@@ -255,7 +255,7 @@ export const chatRoomOptions = defineComponent({
 
     const partnerInitial = computed(() => {
       const name = partnerName.value
-      return name ? name[0].toUpperCase() : 'U'
+      return name ? name[0]!.toUpperCase() : 'U'
     })
 
     // Watch active dialog changes (use id to ensure reactivity across unwrap cases)
@@ -289,7 +289,7 @@ export const chatRoomOptions = defineComponent({
       const tmpEl = document.createElement('audio')
       for (const t of types) {
         const mrSupported = (window as any).MediaRecorder?.isTypeSupported?.(t)
-        const audioCanPlay = tmpEl.canPlayType(t.split(';')[0])
+        const audioCanPlay = tmpEl.canPlayType(t.split(';')[0]!)
         if (mrSupported || audioCanPlay) return t
       }
       return undefined
@@ -306,8 +306,8 @@ export const chatRoomOptions = defineComponent({
 
       // Capture touch start
       if (e && 'touches' in e && e.touches.length > 0) {
-        touchStartX.value = e.touches[0].clientX
-        touchStartY.value = e.touches[0].clientY
+        touchStartX.value = e.touches[0]!.clientX
+        touchStartY.value = e.touches[0]!.clientY
       }
 
       try {
@@ -375,6 +375,7 @@ export const chatRoomOptions = defineComponent({
       if (!isRecording.value || isLocked.value) return
 
       const touch = e.touches[0]
+      if (!touch) return
       const diffX = touch.clientX - touchStartX.value
       const diffY = touch.clientY - touchStartY.value
 

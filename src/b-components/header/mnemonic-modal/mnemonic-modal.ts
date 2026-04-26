@@ -67,7 +67,7 @@ export const mnemonicModalOptions = defineComponent({
   computed: {
     isOpen: {
       get(): boolean {
-        return this.open
+        return this.open ?? false
       },
       set(value: boolean) {
         this.$emit('update:open', value)

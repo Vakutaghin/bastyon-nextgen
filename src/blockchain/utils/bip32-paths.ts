@@ -90,7 +90,7 @@ export function getLastIndexFromPath(path: string): number {
   }
 
   const parts = path.split('/')
-  const lastPart = parts[parts.length - 1]
+  const lastPart = parts[parts.length - 1]!
   const cleanPart = lastPart.replace(/'/g, '')
   return parseInt(cleanPart, 10)
 }

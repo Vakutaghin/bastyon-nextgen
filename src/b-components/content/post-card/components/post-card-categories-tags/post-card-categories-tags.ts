@@ -78,7 +78,7 @@ export const postCardCategoriesTagsOptions = defineComponent({
     },
     handleTagClick(item: { type: string; id?: string; name: string }) {
       if (item.type === 'category') {
-        this.filtersStore.toggleCategorySelection(item.id)
+        this.filtersStore.toggleCategorySelection(item.id ?? '')
       } else {
         this.filtersStore.addTemporaryCategory(item.name)
       }

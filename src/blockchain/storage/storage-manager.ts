@@ -415,7 +415,7 @@ export function removeAccountFromStore(address: Address): StorageSaveResult {
   // Если удаляемый аккаунт был текущим, выбираем первый из оставшихся
   if (accountsList.currentAccount === address) {
     accountsList.currentAccount =
-      accountsList.accounts.length > 0 ? accountsList.accounts[0].address : null
+      accountsList.accounts.length > 0 ? accountsList.accounts[0]!.address : null
   }
 
   return saveAccountsList(accountsList)

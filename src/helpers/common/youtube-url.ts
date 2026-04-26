@@ -16,7 +16,7 @@ export function getYoutubeEmbedUrls(content: string | undefined): string[] {
   let m
   YOUTUBE_REGEX.lastIndex = 0
   while ((m = YOUTUBE_REGEX.exec(content)) !== null) {
-    ids.add(m[1])
+    ids.add(m[1] ?? '')
   }
   return Array.from(ids).map((id) => `https://www.youtube.com/embed/${id}`)
 }

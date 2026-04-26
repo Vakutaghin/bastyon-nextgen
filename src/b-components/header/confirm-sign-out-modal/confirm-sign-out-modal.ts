@@ -15,7 +15,7 @@ export function useConfirmSignOutModal(p: ConfirmSignOutModalProps, emit: Confir
   })
 
   watch(visible, (newValue) => {
-    emit('update:open', newValue)
+    emit('update:open', newValue ?? false)
   })
 
   function handleConfirm() {

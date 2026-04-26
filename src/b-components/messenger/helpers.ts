@@ -127,7 +127,7 @@ export const isTetatetchat = (room: any): boolean => {
 export const getAddressFromMatrixId = (matrixId: string): string | null => {
   if (matrixId && matrixId.startsWith('@') && matrixId.includes(':')) {
     const parts = matrixId.split(':')
-    let userId = parts[0].substring(1)
+    let userId = parts[0]!.substring(1)
 
     // Hex-encoded адреса (стандарт для Bastyon)
     if (/^(0x)?[0-9a-fA-F]+$/.test(userId)) {
@@ -182,13 +182,14 @@ export function base64StringToUint8Array(base64String: string): Uint8Array {
 /** Определяет MIME-тип аудио по магическим байтам */
 export const detectAudioMime = (bytes: Uint8Array): string | null => {
   if (!bytes || bytes.length < 4) return null
-  if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) return 'audio/mpeg'
-  if (bytes[0] === 0xFF && (bytes[1] & 0xE0) === 0xE0) return 'audio/mpeg'
-  if (bytes[0] === 0x4F && bytes[1] === 0x67 && bytes[2] === 0x67 && bytes[3] === 0x53) return 'audio/ogg'
-  if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) return 'audio/wav'
-  if (bytes[0] === 0xFF && (bytes[1] & 0xF0) === 0xF0) return 'audio/aac'
-  if (bytes[0] === 0x1A && bytes[1] === 0x45 && bytes[2] === 0xDF && bytes[3] === 0xA3) return 'audio/webm'
-  if (bytes[0] === 0x66 && bytes[1] === 0x4C && bytes[2] === 0x61 && bytes[3] === 0x43) return 'audio/flac'
+  const b0 = bytes[0]!, b1 = bytes[1]!, b2 = bytes[2]!, b3 = bytes[3]!
+  if (b0 === 0x49 && b1 === 0x44 && b2 === 0x33) return 'audio/mpeg'
+  if (b0 === 0xFF && (b1 & 0xE0) === 0xE0) return 'audio/mpeg'
+  if (b0 === 0x4F && b1 === 0x67 && b2 === 0x67 && b3 === 0x53) return 'audio/ogg'
+  if (b0 === 0x52 && b1 === 0x49 && b2 === 0x46 && b3 === 0x46) return 'audio/wav'
+  if (b0 === 0xFF && (b1 & 0xF0) === 0xF0) return 'audio/aac'
+  if (b0 === 0x1A && b1 === 0x45 && b2 === 0xDF && b3 === 0xA3) return 'audio/webm'
+  if (b0 === 0x66 && b1 === 0x4C && b2 === 0x61 && b3 === 0x43) return 'audio/flac'
   return null
 }
 

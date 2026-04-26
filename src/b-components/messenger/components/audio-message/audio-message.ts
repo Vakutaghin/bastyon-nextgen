@@ -136,7 +136,7 @@ export const audioMessageOptions = defineComponent({
       const partialCut = progressRatio * bars.length - progressCutIndex
 
       for (let i = 0; i < bars.length; i++) {
-        const value = Math.min(1, Math.max(0, bars[i]))
+        const value = Math.min(1, Math.max(0, bars[i] ?? 0))
         const barHeight = Math.max(2, Math.floor(maxBarHeight * value))
         const x = i * (barWidth + spacing)
         const yTop = centerY - Math.floor(barHeight / 2)
@@ -174,7 +174,7 @@ export const audioMessageOptions = defineComponent({
           const end = Math.min(samples, start + samplesPerBar)
           let peak = 0
           for (let j = start; j < end; j++) {
-            const v = Math.abs(channelData[j])
+            const v = Math.abs(channelData[j] ?? 0)
             if (v > peak) peak = v
           }
           // Smooth a bit

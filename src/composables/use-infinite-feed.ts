@@ -367,7 +367,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     // Обновляем lastTxid для следующей загрузки
     if (contents.length > 0) {
       const lastPost = contents[contents.length - 1]
-      const newLastTxid = lastPost.txid || ''
+      const newLastTxid = lastPost?.txid || ''
 
       // Если получили меньше постов, чем запрашивали, значит это последняя страница
       const expectedCount = currentTxidForQuery.value === '' ? initialLimit : pageSize

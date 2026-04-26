@@ -104,7 +104,7 @@ export const useProfileStore = defineStore('profile', {
             else if (Object.keys(stateResponse.data).length > 0) stateArray = [stateResponse.data as UserStateData]
           }
           if (stateArray.length > 0) {
-            userStateData = stateArray.find((item) => item?.address === address) || stateArray[0]
+            userStateData = stateArray.find((item) => item?.address === address) || stateArray[0] || null
           }
         }
 

@@ -48,7 +48,7 @@ class VideoPlayerManager {
           this.lastActivePlayerId = playingPlayer[0]
         } else if (this.instances.size > 0) {
           // Берем первый доступный плеер
-          this.lastActivePlayerId = Array.from(this.instances.keys())[0]
+          this.lastActivePlayerId = Array.from(this.instances.keys())[0] ?? null
         } else {
           this.lastActivePlayerId = null
         }

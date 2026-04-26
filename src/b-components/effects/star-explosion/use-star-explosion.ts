@@ -66,6 +66,7 @@ export function useStarExplosion(
   function update() {
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i]
+      if (!p) continue
 
       p.sprite.x += p.vx
       p.sprite.y += p.vy

@@ -40,7 +40,7 @@ const f = {
     const bytes = new Uint8Array(buffer);
     const len = bytes.byteLength;
     for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
+      binary += String.fromCharCode(bytes[i]!);
     }
     return btoa(binary);
   }
@@ -112,7 +112,7 @@ export class PcryptoService {
         const ch = this.eaa.cuhash(users, i, block);
 
         // bitcoin.ecc.pointMultiply(points[i], ch, undefined, true)
-        const mul = ecc.pointMultiply(points[i], ch, true);
+        const mul = ecc.pointMultiply(points[i]!, ch, true);
 
         if (!mul) throw new Error("Point multiplication failed");
 
@@ -160,7 +160,7 @@ export class PcryptoService {
       const su: Record<string, Buffer> = {};
 
       Object.keys(us).forEach(id => {
-        const point = us[id];
+        const point = us[id]!;
         const shared = ecc.pointMultiply(point, c, true);
         if (shared) {
           su[id] = pbkdf2.pbkdf2Sync(
@@ -317,7 +317,7 @@ export class PcryptoService {
     const encrypted = encryptedKeyData.encrypted || encryptedKeyData;
     const nonce = encryptedKeyData.nonce || "";
 
-    return await this.decryptSIV(keys[keyindex], encrypted, nonce);
+    return await this.decryptSIV(keys[keyindex]!, encrypted, nonce);
   }
 
   public async encryptKey(secret: string, users: User[], block: number, version: number) {

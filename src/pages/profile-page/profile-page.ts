@@ -71,7 +71,7 @@ export default defineComponent({
               options: { auth: false }
             }) as GetUserAddressResponse
 
-            if (addressResponse && addressResponse.data && addressResponse.data.length > 0 && addressResponse.data[0].address) {
+            if (addressResponse && addressResponse.data && addressResponse.data.length > 0 && addressResponse.data[0]?.address) {
               address = addressResponse.data[0].address
             } else {
               throw new Error('Пользователь не найден')

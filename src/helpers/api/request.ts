@@ -316,7 +316,7 @@ export async function fetchHttp(
   // Пробуем все серверы, начиная с startIndex, затем по кругу
   for (let i = 0; i < availableServers.length; i++) {
     const serverIndex = (startIndex + i) % availableServers.length
-    const server = availableServers[serverIndex]
+    const server = availableServers[serverIndex]!
 
     // Получаем задержку для этого сервера (на основе предыдущих неудач)
     const delay = getBackoffDelay(server.host, server.port)
@@ -349,7 +349,7 @@ export async function fetchHttp(
 
   // Если все серверы недоступны, выбрасываем последнюю ошибку
   if (lastError.length > 0) {
-    const errorMessage = `All HTTP servers failed. Last error: ${lastError[lastError.length - 1].message}`
+    const errorMessage = `All HTTP servers failed. Last error: ${lastError[lastError.length - 1]!.message}`
     const combinedError = new Error(errorMessage)
     ;(combinedError as any).allErrors = lastError
     throw combinedError
@@ -394,7 +394,7 @@ export async function getByPRC(
   // Пробуем все серверы, начиная с startIndex, затем по кругу
   for (let i = 0; i < availableServers.length; i++) {
     const serverIndex = (startIndex + i) % availableServers.length
-    const server = availableServers[serverIndex]
+    const server = availableServers[serverIndex]!
 
     // Получаем задержку для этого сервера (на основе предыдущих неудач)
     const delay = getBackoffDelay(server.host, server.port)
@@ -481,7 +481,7 @@ export async function getByPRC(
   // Если все серверы недоступны, выбрасываем последнюю ошибку
   // или общую ошибку, если ошибок не было
   if (lastError.length > 0) {
-    const errorMessage = `All RPC servers failed. Last error: ${lastError[lastError.length - 1].message}`
+    const errorMessage = `All RPC servers failed. Last error: ${lastError[lastError.length - 1]!.message}`
     const combinedError = new Error(errorMessage)
     // Сохраняем все ошибки для отладки
     ;(combinedError as any).allErrors = lastError

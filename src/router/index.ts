@@ -51,7 +51,7 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  if (!AUTH_REQUIRED_NAMES.has(to.name)) return
+  if (!AUTH_REQUIRED_NAMES.has(to.name as string)) return
   const pinia = getActivePinia()
   if (!pinia) return
   const authStore = useAuthStore(pinia)

@@ -14,7 +14,7 @@ export function useConfirmDeleteModal(p: ConfirmDeleteModalProps, emit: ConfirmD
   })
 
   watch(visible, (newValue) => {
-    emit('update:open', newValue)
+    emit('update:open', newValue ?? false)
   })
 
   function handleConfirm() {

@@ -293,7 +293,7 @@ export default defineComponent({
     watch(
       receiveAddressOptions,
       (opts) => {
-        if (opts.length === 1) receiveTarget.value = opts[0].value
+        if (opts.length === 1) receiveTarget.value = opts[0]!.value
       },
       { immediate: true }
     )

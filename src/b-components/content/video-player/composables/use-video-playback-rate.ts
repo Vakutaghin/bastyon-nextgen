@@ -59,7 +59,7 @@ export function useVideoPlaybackRate(
   const increasePlaybackRate = () => {
     const currentIndex = availablePlaybackRates.indexOf(playbackRate.value)
     if (currentIndex < availablePlaybackRates.length - 1) {
-      setPlaybackRate(availablePlaybackRates[currentIndex + 1], true)
+      setPlaybackRate(availablePlaybackRates[currentIndex + 1] ?? 1.0, true)
     }
   }
 
@@ -69,7 +69,7 @@ export function useVideoPlaybackRate(
   const decreasePlaybackRate = () => {
     const currentIndex = availablePlaybackRates.indexOf(playbackRate.value)
     if (currentIndex > 0) {
-      setPlaybackRate(availablePlaybackRates[currentIndex - 1], true)
+      setPlaybackRate(availablePlaybackRates[currentIndex - 1] ?? 1.0, true)
     }
   }
 

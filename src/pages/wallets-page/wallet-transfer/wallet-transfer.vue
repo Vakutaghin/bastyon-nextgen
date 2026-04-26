@@ -106,7 +106,7 @@
         <template v-else-if="receiveAddressOptions.length === 1">
           <SC_TransferField>
             <SC_TransferLabel>Получить на</SC_TransferLabel>
-            <div>{{ receiveAddressOptions[0].label }}</div>
+            <div>{{ receiveAddressOptions[0]?.label }}</div>
           </SC_TransferField>
         </template>
 

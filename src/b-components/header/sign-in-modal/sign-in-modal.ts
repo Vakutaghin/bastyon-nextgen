@@ -39,7 +39,7 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
       if (!value) {
         clearForm()
       }
-      emit('update:open', value)
+      emit('update:open', value ?? false)
     }
   })
 

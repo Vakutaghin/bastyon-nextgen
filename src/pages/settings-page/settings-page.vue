@@ -25,7 +25,7 @@
                 <SC_NotificationsRowLabel>{{ NOTIFICATION_FILTER_LABELS[key] }}</SC_NotificationsRowLabel>
                 <Switch
                   :checked="notificationSettings.getFilter(key)"
-                  @change="(checked) => onNotificationFilterChange(key, checked)"
+                  @change="(checked: boolean) => onNotificationFilterChange(key, checked)"
                 />
               </SC_NotificationsRow>
             </SC_NotificationsList>

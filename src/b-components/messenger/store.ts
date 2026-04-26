@@ -120,20 +120,21 @@ const isTetatetchat = (room: any): boolean => {
 // Helper to detect audio MIME type from bytes
 const detectAudioMime = (bytes: Uint8Array): string | null => {
     if (!bytes || bytes.length < 4) return null
+    const b0 = bytes[0]!, b1 = bytes[1]!, b2 = bytes[2]!, b3 = bytes[3]!
     // ID3 (MP3)
-    if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) return 'audio/mpeg'
+    if (b0 === 0x49 && b1 === 0x44 && b2 === 0x33) return 'audio/mpeg'
     // MP3 (Frame sync - FFFB/FFFA usually)
-    if (bytes[0] === 0xFF && (bytes[1] & 0xE0) === 0xE0) return 'audio/mpeg'
+    if (b0 === 0xFF && (b1 & 0xE0) === 0xE0) return 'audio/mpeg'
     // Ogg
-    if (bytes[0] === 0x4F && bytes[1] === 0x67 && bytes[2] === 0x67 && bytes[3] === 0x53) return 'audio/ogg'
+    if (b0 === 0x4F && b1 === 0x67 && b2 === 0x67 && b3 === 0x53) return 'audio/ogg'
     // WAV
-    if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) return 'audio/wav'
+    if (b0 === 0x52 && b1 === 0x49 && b2 === 0x46 && b3 === 0x46) return 'audio/wav'
     // AAC (ADTS)
-    if (bytes[0] === 0xFF && (bytes[1] & 0xF0) === 0xF0) return 'audio/aac'
+    if (b0 === 0xFF && (b1 & 0xF0) === 0xF0) return 'audio/aac'
     // WebM / Matroska (1A 45 DF A3)
-    if (bytes[0] === 0x1A && bytes[1] === 0x45 && bytes[2] === 0xDF && bytes[3] === 0xA3) return 'audio/webm'
+    if (b0 === 0x1A && b1 === 0x45 && b2 === 0xDF && b3 === 0xA3) return 'audio/webm'
     // FLAC (fLaC)
-    if (bytes[0] === 0x66 && bytes[1] === 0x4C && bytes[2] === 0x61 && bytes[3] === 0x43) return 'audio/flac'
+    if (b0 === 0x66 && b1 === 0x4C && b2 === 0x61 && b3 === 0x43) return 'audio/flac'
 
     return null
 }
@@ -179,7 +180,7 @@ export const useMessengerStore = defineStore('messenger', () => {
   const getAddressFromMatrixId = (matrixId: string): string | null => {
     if (matrixId && matrixId.startsWith('@') && matrixId.includes(':')) {
       const parts = matrixId.split(':')
-      let userId = parts[0].substring(1)
+      let userId = parts[0]!.substring(1)
 
       // Handle hex encoded addresses (standard for Bastyon)
       if (/^(0x)?[0-9a-fA-F]+$/.test(userId)) {
@@ -1586,7 +1587,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     // Reset unread count for this chat
     const dialogIndex = dialogs.value.findIndex(d => d.id === chatId)
     if (dialogIndex !== -1) {
-      dialogs.value[dialogIndex].unreadCount = 0
+      dialogs.value[dialogIndex]!.unreadCount = 0
     }
 
     await loadMessages(chatId)
@@ -1742,7 +1743,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     activeChatId.value = roomId
     const dialogIndex = dialogs.value.findIndex(d => d.id === roomId)
     if (dialogIndex !== -1) {
-      dialogs.value[dialogIndex].unreadCount = 0
+      dialogs.value[dialogIndex]!.unreadCount = 0
     }
     Promise.resolve().then(async () => {
       await loadMessages(roomId)

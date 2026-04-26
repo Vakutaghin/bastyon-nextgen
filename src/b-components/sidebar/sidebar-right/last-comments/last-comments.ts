@@ -105,7 +105,7 @@ export const lastCommentsOptions = defineComponent({
 
     const { data: profilesResponse } = useUserProfiles(uniqueAddresses, true)
     const profilesByAddress = computed(() => {
-      const arr = profilesResponse.value?.data
+      const arr = profilesResponse.value
       if (!Array.isArray(arr)) return {} as Record<string, UserProfile>
       const map: Record<string, UserProfile> = {}
       arr.forEach((p) => {

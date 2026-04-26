@@ -138,11 +138,15 @@ export const postCardOptions = defineComponent({
       default: false
     },
     authorOverride: {
-      type: Object as PropType<any>,
-      default: null
+      type: Object as PropType<PostAuthor | null>,
+      default: null,
     }
   },
-  emits: ['like', 'comment', 'share'],
+  emits: {
+    like: (_postId: string) => true,
+    comment: () => true,
+    share: (_postId: string) => true,
+  },
   mounted() {
     // Регистрируем пост в store
     if (this.post.id !== undefined) {

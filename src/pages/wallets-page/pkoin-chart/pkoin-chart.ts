@@ -123,8 +123,8 @@ export default defineComponent({
         .attr('transform', `translate(${margin.left},${margin.top})`)
 
       const points = data.map(([t, y]) => ({ date: new Date(t), value: y }))
-      const xExtent = d3.extent(points, (d) => d.date) as [Date, Date]
-      const yExtent = d3.extent(points, (d) => d.value) as [number, number]
+      const xExtent = d3.extent(points, (d: { date: Date; value: number }) => d.date) as [Date, Date]
+      const yExtent = d3.extent(points, (d: { date: Date; value: number }) => d.value) as [number, number]
       const yPadding = (yExtent[1] - yExtent[0]) * 0.05 || 0.01
       const yMin = Math.max(0, yExtent[0] - yPadding)
       const yMax = yExtent[1] + yPadding
@@ -134,8 +134,8 @@ export default defineComponent({
 
       const line = d3
         .line<{ date: Date; value: number }>()
-        .x((d) => xScale(d.date))
-        .y((d) => yScale(d.value))
+        .x((d: { date: Date; value: number }) => xScale(d.date))
+        .y((d: { date: Date; value: number }) => yScale(d.value))
         .curve(d3.curveMonotoneX)
 
       g.append('path')
@@ -151,7 +151,7 @@ export default defineComponent({
         .axisBottom(xScale)
         .ticks(5)
         .tickSizeOuter(0)
-        .tickFormat((d) => d3.timeFormat('%d.%m')(d as Date))
+        .tickFormat((d: any) => d3.timeFormat('%d.%m')(d as Date))
 
       g.append('g')
         .attr('transform', `translate(0,${innerHeight})`)
@@ -163,7 +163,7 @@ export default defineComponent({
         .axisLeft(yScale)
         .ticks(5)
         .tickSizeOuter(0)
-        .tickFormat((d) => `$${Number(d).toFixed(2)}`)
+        .tickFormat((d: any) => `$${Number(d).toFixed(2)}`)
 
       g.append('g')
         .call(yAxis)
@@ -266,11 +266,11 @@ export default defineComponent({
         chartDataRef.value = data
         if (data.length >= 2) {
           const prices = data.map(([, p]) => p)
-          const lastPrice = data[data.length - 1][1]
-          const lastTs = data[data.length - 1][0]
+          const lastPrice = data[data.length - 1]![1]
+          const lastTs = data[data.length - 1]![0]
           currentPrice.value = lastPrice
 
-          const firstPrice = data[0][1]
+          const firstPrice = data[0]![1]
           if (firstPrice && firstPrice > 0) {
             priceChange.value = ((lastPrice - firstPrice) / firstPrice) * 100
           }
@@ -278,7 +278,7 @@ export default defineComponent({
           const ts24hAgo = lastTs - 24 * 60 * 60 * 1000
           const idx24h = data.findIndex(([t]) => t >= ts24hAgo)
           if (idx24h >= 0 && idx24h < data.length) {
-            const price24h = data[idx24h][1]
+            const price24h = data[idx24h]![1]
             if (price24h && price24h > 0) {
               priceChange24h.value = ((lastPrice - price24h) / price24h) * 100
             }

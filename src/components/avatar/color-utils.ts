@@ -38,7 +38,7 @@ export function getContrastTextColor(backgroundColor: string): string {
   // Извлекаем lightness из HSL
   const match = backgroundColor.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/)
   if (match) {
-    const lightness = parseInt(match[3])
+    const lightness = parseInt(match[3] ?? '0')
     // Если яркость больше 80%, используем темный текст
     return lightness > 80 ? '#333333' : '#ffffff'
   }

@@ -63,12 +63,12 @@ function getServerState(host: string, port: number): ServerBackoffState {
  * Вычисляет задержку на основе текущего индекса Фибоначчи
  */
 function getFibonacciDelay(index: number): number {
-  if (index < 0) return FIBONACCI_SEQUENCE[0]
+  if (index < 0) return FIBONACCI_SEQUENCE[0] ?? 1000
   if (index >= FIBONACCI_SEQUENCE.length) {
     // Если индекс превышает длину последовательности, используем последнее значение
-    return FIBONACCI_SEQUENCE[FIBONACCI_SEQUENCE.length - 1]
+    return FIBONACCI_SEQUENCE[FIBONACCI_SEQUENCE.length - 1] ?? 89000
   }
-  return FIBONACCI_SEQUENCE[index]
+  return FIBONACCI_SEQUENCE[index] ?? 1000
 }
 
 /**
