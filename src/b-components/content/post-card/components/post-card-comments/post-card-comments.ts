@@ -1,16 +1,26 @@
-import { defineComponent, type PropType } from 'vue'
-import { Buffer } from 'buffer'
+import { defineComponent } from 'vue'
 import { useAuthStore } from '@/blockchain'
-import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
+import { getByPRC } from '@/helpers/api/request'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
-import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { LoadingOutlined, CloseOutlined, SendOutlined } from '@ant-design/icons-vue'
-import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
-import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } from '@/blockchain/core/transactions/unspents-manager'
 import { appToast } from '@/b-components/app-toast'
-import type { CommentMessagePayload, CommentMessageBody } from '@/types/rpc-requests/send-raw-transaction-with-message'
+import CommentAvatar from './comment-avatar.vue'
+import CommentReplyPanel from './comment-reply-panel.vue'
+
+import type { PostForComments, CommentsSortOrder, MentionUser } from './types'
+import { COMMENTS_PAGE_SIZE, COMMENTS_ALREADY_SHOWN, COMMENT_LOAD_TIMEOUT_MS, MENTION_LIST_LIMIT } from './consts'
+import { sendCommentScore } from './comment-scoring'
+import { sendComment } from './comment-sender'
+import {
+  formatCommentMessageHtml,
+  getCommentAvatarUrl,
+  getCommentProfileLink,
+  getInitial,
+  formatCommentDateAndTime,
+  sortComments,
+} from './helpers'
 import {
   SC_CommentsPreview,
   SC_CommentItem,
@@ -34,7 +44,6 @@ import {
   SC_MentionList,
   SC_MentionItem,
   SC_ReplySendBtn,
-  SC_ReplyCancelBtn,
   SC_ShowCommentsBtn,
   SC_ShowCommentsBtnSecondary,
   SC_ShowCommentsBtnCollapse,
@@ -43,186 +52,9 @@ import {
   SC_CommentsLoading,
   SC_CommentsSortRow,
   SC_CommentsSortSelect,
-  SC_ConfirmWrap,
-  SC_ConfirmMessage,
-  SC_ConfirmActions,
-  SC_ConfirmBtn
 } from './styled'
 
-/** Пост в минимальном виде для блока комментариев */
-export interface PostForComments {
-  id?: string | number
-  hash?: string
-  txid?: string
-  comments?: number
-  lastComment?: {
-    id: string
-    address: string
-    authorName: string
-    avatar: string | null
-    time: number
-    message: string
-    children: number
-    scoreUp: number
-    scoreDown: number
-    /** Оценка текущего пользователя: 1 — лайк, -1 — дизлайк, 0/нет — не голосовал */
-    myScore?: number
-  }
-}
-
-const COMMENTS_PAGE_SIZE = 15
-const COMMENTS_ALREADY_SHOWN = 1
-
-export type CommentsSortOrder = 'interesting' | 'newest' | 'oldest'
-
-/**
- * Отправка лайка/дизлайка комментария (cScore).
- * В старом приложении: type 'cScore', serialize = commentId + value, opreturn = commentAuthorAddress + " " + value.
- */
-async function sendCommentScore(
-  commentId: string,
-  value: 1 | -1,
-  commentAuthorAddress: string
-): Promise<string> {
-  const authStore = useAuthStore()
-  const keyPair = authStore.getKeyPair
-  const address = authStore.getUserAddress
-
-  if (!keyPair || !address) {
-    throw new Error('Нужна авторизация для оценки комментария')
-  }
-  if (!commentAuthorAddress) {
-    throw new Error('Адрес автора комментария обязателен')
-  }
-
-  let unspents = await getUnspents(address, 1, 9999999)
-  unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) {
-    throw new Error('Нет доступных unspents')
-  }
-
-  const selectedUnspents = selectBestUnspents(unspents, 0.00000001)
-  if (selectedUnspents.length === 0) {
-    throw new Error('Не удалось выбрать unspents для транзакции')
-  }
-
-  lockUTXOs(selectedUnspents)
-
-  const serializedData = commentId + value.toString()
-  const payloadString = `${commentAuthorAddress} ${value}`
-  const opReturnData = [Buffer.from(payloadString, 'utf8')]
-  const rpcData = { commentid: commentId, value: value.toString() }
-
-  const builtTx = await buildTransaction({
-    unspents: selectedUnspents,
-    fromAddress: address,
-    keyPair,
-    serializedData,
-    operationType: 'cScore',
-    opReturnData,
-    fee: 0.00000001,
-  })
-
-  const response = await getByPRCWithAuth({
-    method: rpcEndpoints.sendRawTransactionWithMessage,
-    parameters: [builtTx.hex, rpcData, 'cScore'],
-    options: { auth: true }
-  })
-
-  if (typeof response === 'string') return response
-  if (response && typeof response === 'object' && 'data' in response && typeof (response as { data?: string }).data === 'string') {
-    return (response as { data: string }).data
-  }
-  if (response && typeof response === 'object' && 'result' in response && (response as { result?: string }).result === 'success' && 'data' in response) {
-    return (response as { data: string }).data
-  }
-  const err = response && typeof response === 'object' && 'error' in response ? (response as { error: unknown }).error : null
-  throw err instanceof Error ? err : new Error(String(err ?? 'Ошибка отправки оценки комментария'))
-}
-
-/**
- * Формирует тело сообщения комментария (msg) в виде JSON-строки.
- */
-function buildCommentMsgBody(message: string): string {
-  const body: CommentMessageBody = {
-    message: message.trim(),
-    url: '',
-    images: [],
-    info: ''
-  }
-  return JSON.stringify(body)
-}
-
-/**
- * Отправка комментария (comment).
- * Строит транзакцию с serializedData = JSON.stringify(payload), operationType = 'comment'.
- */
-async function sendComment(
-  postId: string,
-  parentId: string,
-  answerId: string,
-  messageText: string
-): Promise<string> {
-  const authStore = useAuthStore()
-  const keyPair = authStore.getKeyPair
-  const address = authStore.getUserAddress
-
-  if (!keyPair || !address) {
-    throw new Error('Нужна авторизация для отправки комментария')
-  }
-  if (!postId || !messageText.trim()) {
-    throw new Error('Пост и текст комментария обязательны')
-  }
-
-  const msg = buildCommentMsgBody(messageText)
-  const messagePayload: CommentMessagePayload = {
-    postid: postId,
-    answerid: answerId || '',
-    parentid: parentId || '',
-    msg
-  }
-  // Сериализация как в старом приложении (kit.js Comment.serialize): postid + msg + parentid + answerid
-  const serializedData = postId + msg + (parentId || '') + (answerId || '')
-
-  // getUnspents → /rpc/txunspent нужен для выбора входов транзакции (в старом приложении unspents берут из кэша кошелька)
-  let unspents = await getUnspents(address, 1, 9999999)
-  unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) {
-    throw new Error('Нет доступных unspents')
-  }
-
-  const selectedUnspents = selectBestUnspents(unspents, 0.00000001)
-  if (selectedUnspents.length === 0) {
-    throw new Error('Не удалось выбрать unspents для транзакции')
-  }
-
-  lockUTXOs(selectedUnspents)
-
-  const builtTx = await buildTransaction({
-    unspents: selectedUnspents,
-    fromAddress: address,
-    keyPair,
-    serializedData,
-    operationType: 'comment',
-    fee: 0.00000001
-  })
-
-  const response = await getByPRCWithAuth({
-    method: rpcEndpoints.sendRawTransactionWithMessage,
-    parameters: [builtTx.hex, messagePayload, 'comment'],
-    options: { auth: true }
-  })
-
-  if (typeof response === 'string') return response
-  if (response && typeof response === 'object' && 'data' in response && typeof (response as { data?: string }).data === 'string') {
-    return (response as { data: string }).data
-  }
-  if (response && typeof response === 'object' && 'result' in response && (response as { result?: string }).result === 'success' && 'data' in response) {
-    return (response as { data: string }).data
-  }
-  const err = response && typeof response === 'object' && 'error' in response ? (response as { error: unknown }).error : null
-  throw err instanceof Error ? err : new Error(String(err ?? 'Ошибка отправки комментария'))
-}
+export { type PostForComments }
 
 export const postCardCommentsOptions = defineComponent({
   name: 'PostCardComments',
@@ -230,6 +62,8 @@ export const postCardCommentsOptions = defineComponent({
     LoadingOutlined,
     CloseOutlined,
     SendOutlined,
+    CommentAvatar,
+    CommentReplyPanel,
     SC_CommentsPreview,
     SC_CommentItem,
     SC_CommentRow,
@@ -252,7 +86,6 @@ export const postCardCommentsOptions = defineComponent({
     SC_MentionList,
     SC_MentionItem,
     SC_ReplySendBtn,
-    SC_ReplyCancelBtn,
     SC_ShowCommentsBtn,
     SC_ShowCommentsBtnSecondary,
     SC_ShowCommentsBtnCollapse,
@@ -261,16 +94,12 @@ export const postCardCommentsOptions = defineComponent({
     SC_CommentsLoading,
     SC_CommentsSortRow,
     SC_CommentsSortSelect,
-    SC_ConfirmWrap,
-    SC_ConfirmMessage,
-    SC_ConfirmActions,
-    SC_ConfirmBtn
   },
   props: {
     post: {
-      type: Object as PropType<PostForComments>,
-      required: true
-    }
+      type: Object as () => PostForComments,
+      required: true,
+    },
   },
   emits: ['collapsed', 'replyToComment', 'comment'],
   data() {
@@ -281,35 +110,20 @@ export const postCardCommentsOptions = defineComponent({
       visibleCommentsCount: 0,
       commentsCollapsed: false,
       commentsSortOrder: 'newest' as CommentsSortOrder,
-      /** Локальный голос по lastComment (до прихода myScore с сервера или после клика) */
       lastCommentVote: null as 'up' | 'down' | null,
-      /** Локальные голоса по comment.id для развёрнутого списка */
       commentVotes: {} as Record<string, 'up' | 'down'>,
-      /** id комментария или 'last' во время отправки оценки (блокируем повторный клик) */
       commentScoreSubmitting: null as string | null,
-      /** Ответы второго уровня: parentId -> массив комментариев */
       repliesByParentId: {} as Record<string, GetComment[]>,
-      /** Идёт ли загрузка ответов для parentId */
       repliesLoading: {} as Record<string, boolean>,
-      /** Развёрнута ли ветка ответов для parentId (после загрузки можно свернуть) */
       repliesExpanded: {} as Record<string, boolean>,
-      /** Открытая форма ответа: под каким комментарием (commentId), parentId для бэка, префикс в поле ввода */
       replyTarget: null as { commentId: string; parentId: string; prefix: string } | null,
-      /** Текст ответа в форме */
       replyDraft: '',
-      /** Показать инлайн-подтверждение отмены ответа (если уже введён текст) */
       showCancelReplyModal: false,
-      /** Показать список выбора пользователя для @упоминания */
       showMentionList: false,
-      /** Текст после @ для фильтрации списка */
       mentionQuery: '',
-      /** Позиция в replyDraft, с которой началось введение @ (для подстановки) */
       mentionStartOffset: 0,
-      /** Позиция конца фрагмента после @ (курсор при последнем вводе) */
       mentionEndOffset: 0,
-      /** Индекс подсвеченного элемента в списке @упоминаний (для стрелок вверх/вниз) */
       mentionHighlightIndex: 0,
-      /** Идёт отправка комментария (блокируем повторный клик) */
       replySubmitting: false,
     }
   },
@@ -319,37 +133,31 @@ export const postCardCommentsOptions = defineComponent({
     },
     hasUserComments(): boolean {
       const lc = this.post.lastComment
-      const cnt = this.post.comments || 0
-      return !!lc && !!lc.message && cnt > 0
+      return !!lc && !!lc.message && (this.post.comments || 0) > 0
     },
     lastCommentMessageHtml(): string {
-      const text = this.post.lastComment?.message || ''
-      return formatBastyonLinks(text)
+      return formatCommentMessageHtml({
+        msg: this.post.lastComment?.message || '',
+      } as GetComment)
     },
     lastCommentProfileLink(): string {
       const lc = this.post.lastComment
       if (!lc) return '/'
+      if (lc.address) return '/' + lc.address
       const name = (lc.authorName || '').toLowerCase()
-      const address = lc.address || ''
-      if (address) return '/' + address
       if (name) return '/' + name
       return '/'
     },
     lastCommentAvatarUrl(): string | null {
       const img = this.post.lastComment?.avatar || null
       if (!img) return null
-      if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://'))) {
-        return img.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
-      }
-      return `https://pocketnet.app:8092/i/${img}`
+      return resolveImageUrl(img) || null
     },
     lastCommentInitial(): string {
-      const name = this.post.lastComment?.authorName || ''
-      return this.getInitial(name)
+      return getInitial(this.post.lastComment?.authorName)
     },
     lastCommentDateOnly(): string {
-      const t = this.post.lastComment?.time || 0
-      return this.formatCommentDateAndTime(t)
+      return formatCommentDateAndTime(this.post.lastComment?.time || 0)
     },
     totalCommentsCount(): number {
       return this.post.comments ?? 0
@@ -360,7 +168,6 @@ export const postCardCommentsOptions = defineComponent({
     lastCommentUserDisliked(): boolean {
       return (this.post.lastComment?.myScore ?? 0) < 0 || this.lastCommentVote === 'down'
     },
-    /** После голоса оба значка cursor default; кликабельно только пока не голосовали и не идёт отправка */
     lastCommentCanClickLike(): boolean {
       return !this.lastCommentUserDisliked && !this.lastCommentUserLiked && this.commentScoreSubmitting !== 'last'
     },
@@ -372,43 +179,34 @@ export const postCardCommentsOptions = defineComponent({
     },
     sortedComments(): GetComment[] {
       if (!this.allComments) return []
-      return this.sortComments([...this.allComments], this.commentsSortOrder)
+      return sortComments([...this.allComments], this.commentsSortOrder)
     },
     visibleComments(): GetComment[] {
       return this.sortedComments.slice(0, this.visibleCommentsCount)
     },
     remainingCommentsCount(): number {
-      const total = this.actualCommentsCount
-      return Math.max(0, total - this.visibleCommentsCount)
+      return Math.max(0, this.actualCommentsCount - this.visibleCommentsCount)
     },
     nextCommentsPageSize(): number {
-      const remaining = this.remainingCommentsCount
-      return remaining <= 0 ? 0 : Math.min(COMMENTS_PAGE_SIZE, remaining)
+      return this.remainingCommentsCount <= 0 ? 0 : Math.min(COMMENTS_PAGE_SIZE, this.remainingCommentsCount)
     },
     hasMoreCommentsToShow(): boolean {
       return this.remainingCommentsCount > 0
     },
-    /** Аватар залогиненного пользователя для плашки ответа */
     currentUserAvatarUrl(): string | null {
-      const authStore = useAuthStore()
-      const url = authStore.getUserAvatarUrl
+      const url = useAuthStore().getUserAvatarUrl
       if (!url) return null
-      if (typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'))) {
-        return url.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
-      }
-      return `https://pocketnet.app:8092/i/${url}`
+      return resolveImageUrl(url) || null
     },
     currentUserInitial(): string {
-      const authStore = useAuthStore()
-      const profile = authStore.getUserProfile as { name?: string } | null
+      const profile = useAuthStore().getUserProfile as { name?: string } | null
       const name = profile?.name
       if (name) return name.charAt(0).toUpperCase()
       const addr = useAuthStore().getUserAddress
       if (addr && typeof addr === 'string') return addr.charAt(0).toUpperCase()
       return '?'
     },
-    /** Уникальные пользователи из всех комментариев поста (1-й уровень + все подгруженные ответы + lastComment в компактном виде) */
-    mentionUsers(): { address: string; name: string }[] {
+    mentionUsers(): MentionUser[] {
       const byAddress = new Map<string, string>()
       const add = (c: GetComment) => {
         if (!c?.address) return
@@ -428,44 +226,37 @@ export const postCardCommentsOptions = defineComponent({
       }
       return Array.from(byAddress.entries()).map(([address, name]) => ({ address, name }))
     },
-    /** Список для автокомплита по текущему mentionQuery */
-    filteredMentionUsers(): { address: string; name: string }[] {
+    filteredMentionUsers(): MentionUser[] {
       const q = (this.mentionQuery || '').trim().toLowerCase()
-      if (!q) return this.mentionUsers.slice(0, 15)
+      if (!q) return this.mentionUsers.slice(0, MENTION_LIST_LIMIT)
       return this.mentionUsers
-        .filter(
-          (u) =>
-            (u.name || '').toLowerCase().includes(q) || (u.address || '').toLowerCase().includes(q)
-        )
-        .slice(0, 15)
+        .filter((u) => (u.name || '').toLowerCase().includes(q) || (u.address || '').toLowerCase().includes(q))
+        .slice(0, MENTION_LIST_LIMIT)
     },
-    /** ID последнего комментария (для компактного вида) */
     lastCommentId(): string | null {
       return this.post.lastComment?.id ?? null
     },
-    /** Количество ответов у последнего комментария (для компактного вида) */
     lastCommentChildren(): number {
       return this.post.lastComment?.children ?? 0
     },
-    /** Ключ поля ответа: один и тот же для комментария, чтобы при переключении «Ответить» / «Ответить автору» текст не сбрасывался */
     replyPanelKey(): string {
       const t = this.replyTarget
       if (!t) return 'closed'
       return `${t.commentId}:${t.prefix ? 'author' : 'empty'}`
     },
-    /** Нижний бар «написать комментарий к посту» активен, когда нет открытого ответа на комментарий */
     isRootReplyActive(): boolean {
       return this.replyTarget === null || this.replyTarget?.commentId === 'root'
-    }
+    },
   },
   methods: {
+    // --- Делегаты в хелперы ---
+    getCommentAvatarUrl,
+    getCommentProfileLink,
+    formatCommentDate: formatCommentDateAndTime,
+    formatCommentMessageHtml,
+
     isReplyPanelOpen(commentId: string): boolean {
       return this.replyTarget?.commentId === commentId
-    },
-    getInitial(nameOrLetter?: string): string {
-      if (!nameOrLetter) return '?'
-      if (nameOrLetter.length === 1) return nameOrLetter.toUpperCase()
-      return nameOrLetter.charAt(0).toUpperCase()
     },
     isCommentLiked(comment: GetComment): boolean {
       return (comment.myScore ?? 0) > 0 || this.commentVotes[comment.id] === 'up'
@@ -479,6 +270,8 @@ export const postCardCommentsOptions = defineComponent({
     commentCanClickDislike(comment: GetComment): boolean {
       return !this.isCommentLiked(comment) && !this.isCommentDisliked(comment) && this.commentScoreSubmitting !== comment.id
     },
+
+    // --- Голосование ---
     async onLastCommentScoreUp(): Promise<void> {
       if (!this.lastCommentCanClickLike || this.commentScoreSubmitting) return
       const lc = this.post.lastComment
@@ -490,7 +283,7 @@ export const postCardCommentsOptions = defineComponent({
         await sendCommentScore(lc.id, 1, lc.address)
       } catch (e) {
         this.lastCommentVote = prev
-        appToast.error(e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию')
+        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию' })
       } finally {
         this.commentScoreSubmitting = null
       }
@@ -506,7 +299,7 @@ export const postCardCommentsOptions = defineComponent({
         await sendCommentScore(lc.id, -1, lc.address)
       } catch (e) {
         this.lastCommentVote = prev
-        appToast.error(e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию')
+        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию' })
       } finally {
         this.commentScoreSubmitting = null
       }
@@ -523,7 +316,7 @@ export const postCardCommentsOptions = defineComponent({
         const rest = { ...this.commentVotes }
         delete rest[comment.id]
         this.commentVotes = { ...rest, ...next }
-        appToast.error(e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию')
+        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию' })
       } finally {
         this.commentScoreSubmitting = null
       }
@@ -540,11 +333,13 @@ export const postCardCommentsOptions = defineComponent({
         const rest = { ...this.commentVotes }
         delete rest[comment.id]
         this.commentVotes = { ...rest, ...next }
-        appToast.error(e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию')
+        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию' })
       } finally {
         this.commentScoreSubmitting = null
       }
     },
+
+    // --- Загрузка комментариев ---
     async loadAllComments(showAll = false): Promise<void> {
       if (!this.postId || this.allCommentsLoading) return
       this.allCommentsLoading = true
@@ -558,38 +353,36 @@ export const postCardCommentsOptions = defineComponent({
       if (!this.postId) return
       this.allCommentsError = null
       try {
-        const COMMENT_LOAD_TIMEOUT_MS = 25000
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Таймаут загрузки комментариев')), COMMENT_LOAD_TIMEOUT_MS)
-      })
-      const authStore = useAuthStore()
-      const userAddress = authStore.getUserAddress ?? ''
-      const res = await Promise.race([
-        getByPRC({
-          method: rpcEndpoints.getComments,
-          parameters: [this.postId, '', userAddress],
-          cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
-          options: { auth: authStore.isUserAuthenticated }
-        }),
-        timeoutPromise
-      ])
-      let list: GetComment[] = []
-      if (Array.isArray(res)) {
-        list = res as GetComment[]
-      } else if (res && typeof res === 'object' && 'data' in res) {
-        const data = (res as GetCommentsResponse).data
-        list = Array.isArray(data) ? data : []
-      }
-      this.allComments = list
-      const len = list.length
-      const initialVisible = COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
-      this.visibleCommentsCount = showAll ? len : Math.min(initialVisible, len)
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Таймаут загрузки комментариев')), COMMENT_LOAD_TIMEOUT_MS)
+        })
+        const authStore = useAuthStore()
+        const userAddress = authStore.getUserAddress ?? ''
+        const res = await Promise.race([
+          getByPRC({
+            method: rpcEndpoints.getComments,
+            parameters: [this.postId, '', userAddress],
+            cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
+            options: { auth: authStore.isUserAuthenticated },
+          }),
+          timeoutPromise,
+        ])
+        let list: GetComment[] = []
+        if (Array.isArray(res)) {
+          list = res as GetComment[]
+        } else if (res && typeof res === 'object' && 'data' in res) {
+          const data = (res as GetCommentsResponse).data
+          list = Array.isArray(data) ? data : []
+        }
+        this.allComments = list
+        const len = list.length
+        const initialVisible = COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
+        this.visibleCommentsCount = showAll ? len : Math.min(initialVisible, len)
         this.commentsCollapsed = false
       } catch (e) {
         this.allCommentsError = e instanceof Error ? e : new Error(String(e))
       }
     },
-    /** Клик «Ответы (N)» у последнего комментария в компактном виде: загрузить комментарии при необходимости и открыть ветку ответов */
     async onLastCommentRepliesClick(): Promise<void> {
       const id = this.post.lastComment?.id
       if (!id) return
@@ -601,28 +394,8 @@ export const postCardCommentsOptions = defineComponent({
       this.repliesExpanded = { ...this.repliesExpanded, [id]: true }
       await this.loadReplies(id)
     },
-    /** Открыть форму комментария к посту (первый комментарий, без ответа на кого-либо) */
-    openReplyToPost(): void {
-      this.replyTarget = { commentId: 'root', parentId: '', prefix: '' }
-      this.replyDraft = ''
-      this.showCancelReplyModal = false
-      this.showMentionList = false
-      this.mentionQuery = ''
-      this.mentionHighlightIndex = 0
-    },
-    /** Ответ на последний комментарий в компактном виде (пустое поле) */
-    onLastCommentReply(): void {
-      const id = this.post.lastComment?.id
-      if (!id) return
-      this.openReplyEmpty(id, id)
-    },
-    /** Ответ автору последнего комментария в компактном виде: заменить текст на @Author, */
-    onLastCommentReplyToAuthor(): void {
-      const lc = this.post.lastComment
-      if (!lc?.id) return
-      const name = lc.authorName || lc.address || ''
-      this.openReplyToAuthor(lc.id, lc.id, name)
-    },
+
+    // --- Навигация комментариев ---
     collapseComments(): void {
       this.commentsCollapsed = true
       this.$emit('collapsed')
@@ -640,86 +413,15 @@ export const postCardCommentsOptions = defineComponent({
       if (!this.allComments) return
       this.visibleCommentsCount = Math.min(
         this.visibleCommentsCount + COMMENTS_PAGE_SIZE,
-        this.allComments.length
+        this.allComments.length,
       )
     },
     showAllComments(): void {
       if (!this.allComments) return
       this.visibleCommentsCount = this.allComments.length
     },
-    getCommentMessageText(comment: GetComment): string {
-      try {
-        const parsed = JSON.parse(comment.msg) as { message?: string }
-        return parsed?.message ?? comment.msg
-      } catch {
-        return comment.msg
-      }
-    },
-    commentPoint(comment: GetComment): number {
-      let p = 0
-      const msgLen = this.getCommentMessageText(comment).length
-      const rep = comment.reputation ?? 0
-      p += comment.scoreUp * 250
-      p += comment.children * 450
-      if (comment.scoreUp > comment.scoreDown) p += comment.scoreDown * 50
-      else p -= comment.scoreDown * 1000
-      p += Math.min(msgLen, 200) * 3
-      p += Math.max(rep, 100) * 10 + rep / 20
-      if (comment.deleted) p = p / 1300
-      return p
-    },
-    sortComments(comments: GetComment[], order: CommentsSortOrder): GetComment[] {
-      if (!comments.length) return comments
-      if (order === 'oldest') {
-        return [...comments].sort((a, b) => (a.time || 0) - (b.time || 0))
-      }
-      if (order === 'newest') {
-        return [...comments].sort((a, b) => (b.time || 0) - (a.time || 0))
-      }
-      const times = comments.map(c => c.time || 0)
-      const oldest = Math.min(...times)
-      const newest = Math.max(...times)
-      const range = newest - oldest || 1
-      const byAuthor: Record<string, number> = {}
-      for (const c of comments) {
-        byAuthor[c.address] = (byAuthor[c.address] || 0) + 1
-      }
-      return [...comments].sort((a, b) => {
-        const timecA = ((a.time || 0) - oldest) / range
-        const timecB = ((b.time || 0) - oldest) / range
-        const countA = byAuthor[a.address] || 1
-        const countB = byAuthor[b.address] || 1
-        const scoreA = -(this.commentPoint(a) + timecA * 3000) / countA
-        const scoreB = -(this.commentPoint(b) + timecB * 3000) / countB
-        return scoreA - scoreB
-      })
-    },
-    getCommentAvatarUrl(profile: GetComment['userprofile']): string | null {
-      const i = profile?.i
-      if (!i) return null
-      if (typeof i === 'string' && (i.startsWith('http://') || i.startsWith('https://'))) {
-        return i.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
-      }
-      return `https://pocketnet.app:8092/i/${i}`
-    },
-    /** Дата и время — делегирует в централизованную утилиту */
-    formatCommentDateAndTime(time: number): string {
-      return formatDateTimeFull(time)
-    },
-    formatCommentDate(time: number): string {
-      return formatDateTimeFull(time)
-    },
-    getCommentProfileLink(comment: GetComment): string {
-      const name = (comment.userprofile?.name || '').toLowerCase()
-      const address = comment.address || ''
-      if (address) return '/' + address
-      if (name) return '/' + name
-      return '/'
-    },
-    formatCommentMessageHtml(comment: GetComment): string {
-      return formatBastyonLinks(this.getCommentMessageText(comment))
-    },
-    /** Загрузить ответы второго уровня для комментария */
+
+    // --- Ответы второго уровня ---
     async loadReplies(commentId: string): Promise<void> {
       if (!this.postId || this.repliesLoading[commentId]) return
       this.repliesLoading = { ...this.repliesLoading, [commentId]: true }
@@ -731,7 +433,7 @@ export const postCardCommentsOptions = defineComponent({
           method: rpcEndpoints.getComments,
           parameters: [this.postId, commentId, userAddress],
           cachehash: `replies-${commentId}-${Date.now()}`,
-          options: { auth: authStore.isUserAuthenticated }
+          options: { auth: authStore.isUserAuthenticated },
         })
         let list: GetComment[] = []
         if (Array.isArray(res)) {
@@ -741,17 +443,14 @@ export const postCardCommentsOptions = defineComponent({
           list = Array.isArray(data) ? data : []
         }
         this.repliesByParentId = { ...this.repliesByParentId, [commentId]: list }
-        this.repliesExpanded = { ...this.repliesExpanded, [commentId]: true }
       } catch {
         this.repliesByParentId = { ...this.repliesByParentId, [commentId]: [] }
-        this.repliesExpanded = { ...this.repliesExpanded, [commentId]: true }
       } finally {
         this.repliesLoading = { ...this.repliesLoading, [commentId]: false }
       }
     },
     toggleRepliesExpanded(commentId: string): void {
-      const expanded = this.repliesExpanded[commentId]
-      this.repliesExpanded = { ...this.repliesExpanded, [commentId]: !expanded }
+      this.repliesExpanded = { ...this.repliesExpanded, [commentId]: !this.repliesExpanded[commentId] }
     },
     isRepliesExpanded(commentId: string): boolean {
       return !!this.repliesExpanded[commentId]
@@ -762,7 +461,6 @@ export const postCardCommentsOptions = defineComponent({
     getReplies(commentId: string): GetComment[] {
       return this.repliesByParentId[commentId] ?? []
     },
-    /** Клик по "Ответы (N)": подгрузить ответы (если ещё не загружены) и показать; иначе переключить свёрнутость */
     onRepliesClick(comment: GetComment): void {
       const id = comment.id
       if (this.repliesLoading[id]) return
@@ -772,7 +470,26 @@ export const postCardCommentsOptions = defineComponent({
         this.loadReplies(id)
       }
     },
-    /** Переключить на «Ответить» (без упоминания): не очищать поле — только убрать префикс @Имя, если он был; при открытии под другим комментарием — пустое поле. */
+
+    // --- Форма ответа ---
+    openReplyToPost(): void {
+      this.replyTarget = { commentId: 'root', parentId: '', prefix: '' }
+      this.replyDraft = ''
+      this.showCancelReplyModal = false
+      this.showMentionList = false
+      this.mentionQuery = ''
+      this.mentionHighlightIndex = 0
+    },
+    onLastCommentReply(): void {
+      const id = this.post.lastComment?.id
+      if (!id) return
+      this.openReplyEmpty(id, id)
+    },
+    onLastCommentReplyToAuthor(): void {
+      const lc = this.post.lastComment
+      if (!lc?.id) return
+      this.openReplyToAuthor(lc.id, lc.id, lc.authorName || lc.address || '')
+    },
     openReplyEmpty(commentId: string, parentId: string): void {
       const sameComment = this.replyTarget?.commentId === commentId
       const oldPrefix = this.replyTarget?.prefix || ''
@@ -787,7 +504,6 @@ export const postCardCommentsOptions = defineComponent({
         this.replyDraft = ''
       }
     },
-    /** Переключить на «Ответить автору»: добавить @Имя, в начало текста (не заменять); при открытии под другим комментарием — только префикс. */
     openReplyToAuthor(commentId: string, parentId: string, authorName: string): void {
       const prefix = authorName ? `@${authorName}, ` : ''
       const sameComment = this.replyTarget?.commentId === commentId
@@ -802,7 +518,6 @@ export const postCardCommentsOptions = defineComponent({
         this.replyDraft = prefix
       }
     },
-    /** Закрыть форму ответа: если есть текст — показать инлайн-подтверждение (без модалки, скролл не трогаем) */
     requestCloseReply(): void {
       if ((this.replyDraft || '').trim() && this.replyDraft !== (this.replyTarget?.prefix || '')) {
         this.showCancelReplyModal = true
@@ -810,7 +525,6 @@ export const postCardCommentsOptions = defineComponent({
         this.closeReply()
       }
     },
-    /** Закрыть форму ответа без подтверждения (после подтверждения в инлайне) */
     closeReply(): void {
       this.replyTarget = null
       this.replyDraft = ''
@@ -818,63 +532,48 @@ export const postCardCommentsOptions = defineComponent({
       this.showMentionList = false
       this.mentionQuery = ''
     },
-    /** Подтвердить отмену в модалке */
     confirmCancelReply(): void {
       this.closeReply()
     },
-    /** Отправить ответ (реальный запрос sendrawtransactionwithmessage) */
     async sendReply(): Promise<void> {
       const text = (this.replyDraft || '').trim()
       if (!text || this.replySubmitting) return
-      // Нижний бар или явный root: комментарий к посту на первом уровне
       const isRootComment = this.isRootReplyActive
       if (!isRootComment && !this.replyTarget) return
       this.replySubmitting = true
       const parentId = isRootComment ? '' : (this.replyTarget!.parentId)
       const answerId = isRootComment ? '' : (this.replyTarget!.commentId)
       try {
-        await sendComment(
-          this.postId,
-          parentId,
-          answerId,
-          text
-        )
-        appToast.success('Комментарий отправлен')
+        await sendComment(this.postId, parentId, answerId, text)
+        appToast.success({ message: 'Комментарий отправлен' })
         this.closeReply()
         this.$emit('comment')
         if (this.allComments) {
           await this.loadAllCommentsInternal(false)
         }
       } catch (e) {
-        appToast.error(e instanceof Error ? e.message : 'Не удалось отправить комментарий')
+        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось отправить комментарий' })
       } finally {
         this.replySubmitting = false
       }
     },
-    /** Ответ на комментарий первого уровня — открыть форму (пустое поле), при переключении с «Ответить автору» очистить текст */
     onReplyToFirstLevel(comment: GetComment): void {
       this.openReplyEmpty(comment.id, comment.id)
     },
-    /** Ответ автору (первый уровень) — заменить текст на @AuthorName, (не добавлять в начало) */
     onReplyToAuthorFirstLevel(comment: GetComment): void {
-      const name = comment.userprofile?.name || comment.address || ''
-      this.openReplyToAuthor(comment.id, comment.id, name)
+      this.openReplyToAuthor(comment.id, comment.id, comment.userprofile?.name || comment.address || '')
     },
-    /** Ответ на комментарий второго уровня — открыть форму (пустое поле) */
     onReplyToSecondLevel(reply: GetComment): void {
       this.openReplyEmpty(reply.id, reply.id)
     },
-    /** Ответ автору (второй уровень) — заменить текст на @UserName, */
     onReplyToComment(reply: GetComment): void {
-      const accountName = reply.userprofile?.name || reply.address || ''
-      this.openReplyToAuthor(reply.id, reply.id, accountName)
+      this.openReplyToAuthor(reply.id, reply.id, reply.userprofile?.name || reply.address || '')
     },
-    /** Обработка ввода в поле ответа: показ/скрытие списка @упоминаний */
-    /** Фокус на нижнем баре: переключить в режим «комментарий к посту», если сейчас открыт ответ на комментарий */
+
+    // --- @Упоминания ---
     onRootBarFocus(): void {
       if (!this.isRootReplyActive) this.openReplyToPost()
     },
-    /** Ввод в нижнем баре (комментарий к посту): обновить replyDraft и обработка @ */
     handleRootReplyInput(e: Event): void {
       if (!this.isRootReplyActive) return
       const el = e.target as HTMLTextAreaElement
@@ -904,7 +603,6 @@ export const postCardCommentsOptions = defineComponent({
       this.mentionHighlightIndex = 0
       this.showMentionList = true
     },
-    /** Обработка клавиш в поле ответа: Cmd/Ctrl+Enter — отправить; Esc — скрыть список; стрелки — навигация; Enter — выбрать */
     handleReplyKeydown(e: KeyboardEvent): void {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
@@ -914,15 +612,14 @@ export const postCardCommentsOptions = defineComponent({
         }
         return
       }
-      if (this.showMentionList && (this.filteredMentionUsers as { address: string; name: string }[]).length > 0) {
+      if (this.showMentionList && this.filteredMentionUsers.length > 0) {
         if (e.key === 'Escape') {
           this.showMentionList = false
           e.preventDefault()
           return
         }
         if (e.key === 'ArrowDown') {
-          const len = (this.filteredMentionUsers as { address: string; name: string }[]).length
-          this.mentionHighlightIndex = Math.min(this.mentionHighlightIndex + 1, len - 1)
+          this.mentionHighlightIndex = Math.min(this.mentionHighlightIndex + 1, this.filteredMentionUsers.length - 1)
           this.$nextTick(() => this.scrollMentionHighlightIntoView())
           e.preventDefault()
           return
@@ -934,8 +631,7 @@ export const postCardCommentsOptions = defineComponent({
           return
         }
         if (e.key === 'Enter') {
-          const list = this.filteredMentionUsers as { address: string; name: string }[]
-          const user = list[this.mentionHighlightIndex]
+          const user = this.filteredMentionUsers[this.mentionHighlightIndex]
           if (user) {
             this.selectMentionUser(user)
             e.preventDefault()
@@ -944,17 +640,6 @@ export const postCardCommentsOptions = defineComponent({
         }
       }
     },
-    /** Найти прокручиваемого предка элемента (overflow-y: auto/scroll) */
-    getScrollableParent(el: HTMLElement | null): HTMLElement | null {
-      let p = el?.parentElement ?? null
-      while (p) {
-        const sy = getComputedStyle(p).overflowY
-        if ((sy === 'auto' || sy === 'scroll' || sy === 'overlay') && p.scrollHeight > p.clientHeight) return p
-        p = p.parentElement
-      }
-      return null
-    },
-    /** Прокрутить список так, чтобы выделенный элемент был в видимой области */
     scrollMentionHighlightIntoView(): void {
       this.$nextTick(() => {
         requestAnimationFrame(() => {
@@ -970,8 +655,7 @@ export const postCardCommentsOptions = defineComponent({
         })
       })
     },
-    /** Подставить выбранного пользователя в поле ответа */
-    selectMentionUser(user: { address: string; name: string }): void {
+    selectMentionUser(user: MentionUser): void {
       const insert = `@${user.name} `
       const before = (this.replyDraft || '').slice(0, this.mentionStartOffset)
       const endPos = this.mentionEndOffset
@@ -991,6 +675,6 @@ export const postCardCommentsOptions = defineComponent({
           el.setSelectionRange(newPos, newPos)
         }
       })
-    }
-  }
+    },
+  },
 })

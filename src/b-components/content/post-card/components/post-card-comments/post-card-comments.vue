@@ -7,13 +7,7 @@
       <SC_CommentWithReplies v-if="hasUserComments">
       <SC_CommentItem>
         <router-link :to="lastCommentProfileLink">
-          <div v-if="lastCommentAvatarUrl" class="comment-avatar">
-            <img :src="lastCommentAvatarUrl" :alt="post.lastComment.authorName" />
-          </div>
-
-          <div v-else class="comment-avatar-placeholder">
-            {{ lastCommentInitial }}
-          </div>
+          <CommentAvatar :url="lastCommentAvatarUrl" :name="post.lastComment.authorName" />
         </router-link>
 
         <SC_CommentContent>
@@ -62,58 +56,24 @@
           </SC_CommentActions>
         </SC_CommentContent>
       </SC_CommentItem>
-        <!-- Плашка ответа под последним комментарием (комментарии ещё не загружены) -->
         <SC_ReplyPanelNested v-if="lastCommentId && isReplyPanelOpen(lastCommentId)">
-          <div v-if="currentUserAvatarUrl" class="reply-avatar">
-            <img :src="currentUserAvatarUrl" alt="" />
-          </div>
-          <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
-          <SC_ConfirmWrap v-if="showCancelReplyModal">
-            <SC_ConfirmMessage>Введённый текст будет удалён.</SC_ConfirmMessage>
-            <SC_ConfirmActions>
-              <SC_ConfirmBtn type="button" @click.stop.prevent="showCancelReplyModal = false">Нет</SC_ConfirmBtn>
-              <SC_ConfirmBtn type="button" class="confirm-btn--primary" @click.stop.prevent="confirmCancelReply">Да, отменить</SC_ConfirmBtn>
-            </SC_ConfirmActions>
-          </SC_ConfirmWrap>
-          <template v-else>
-            <SC_ReplyInputWrap>
-              <SC_ReplyTextarea
-                :key="replyPanelKey"
-                ref="replyTextareaRef"
-                v-model="replyDraft"
-                placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
-                rows="2"
-                @input="handleReplyInput"
-                @keydown="handleReplyKeydown"
-              />
-              <SC_MentionList
-                ref="mentionListRef"
-                v-if="showMentionList && filteredMentionUsers.length > 0"
-              >
-                <SC_MentionItem
-                  v-for="(u, idx) in filteredMentionUsers"
-                  :key="u.address"
-                  type="button"
-                  :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
-                  @click.stop.prevent="selectMentionUser(u)"
-                >
-                  {{ u.name }}
-                </SC_MentionItem>
-              </SC_MentionList>
-            </SC_ReplyInputWrap>
-            <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
-              <CloseOutlined />
-            </SC_ReplyCancelBtn>
-            <SC_ReplySendBtn
-              type="button"
-              title="Отправить"
-              :disabled="!(replyDraft || '').trim() || replySubmitting"
-              @click.stop.prevent="sendReply"
-            >
-              <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
-              <SendOutlined v-else />
-            </SC_ReplySendBtn>
-          </template>
+          <CommentReplyPanel
+            :current-user-avatar-url="currentUserAvatarUrl"
+            :current-user-initial="currentUserInitial"
+            v-model:show-cancel-modal="showCancelReplyModal"
+            v-model:reply-draft="replyDraft"
+            :reply-panel-key="replyPanelKey"
+            :reply-submitting="replySubmitting"
+            :show-mention-list="showMentionList"
+            :filtered-mention-users="filteredMentionUsers"
+            :mention-highlight-index="mentionHighlightIndex"
+            @confirm-cancel="confirmCancelReply"
+            @input="handleReplyInput"
+            @keydown="handleReplyKeydown"
+            @select-mention="selectMentionUser"
+            @request-close="requestCloseReply"
+            @send="sendReply"
+          />
         </SC_ReplyPanelNested>
       </SC_CommentWithReplies>
 
@@ -147,13 +107,7 @@
       <SC_CommentWithReplies v-if="hasUserComments">
       <SC_CommentItem>
         <router-link :to="lastCommentProfileLink">
-          <div v-if="lastCommentAvatarUrl" class="comment-avatar">
-            <img :src="lastCommentAvatarUrl" :alt="post.lastComment.authorName" />
-          </div>
-
-          <div v-else class="comment-avatar-placeholder">
-            {{ lastCommentInitial }}
-          </div>
+          <CommentAvatar :url="lastCommentAvatarUrl" :name="post.lastComment.authorName" />
         </router-link>
 
         <SC_CommentContent>
@@ -201,58 +155,24 @@
           </SC_CommentActions>
         </SC_CommentContent>
       </SC_CommentItem>
-        <!-- Плашка ответа под последним комментарием (комментарии свернуты) -->
         <SC_ReplyPanelNested v-if="lastCommentId && isReplyPanelOpen(lastCommentId)">
-          <div v-if="currentUserAvatarUrl" class="reply-avatar">
-            <img :src="currentUserAvatarUrl" alt="" />
-          </div>
-          <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
-          <SC_ConfirmWrap v-if="showCancelReplyModal">
-            <SC_ConfirmMessage>Введённый текст будет удалён.</SC_ConfirmMessage>
-            <SC_ConfirmActions>
-              <SC_ConfirmBtn type="button" @click.stop.prevent="showCancelReplyModal = false">Нет</SC_ConfirmBtn>
-              <SC_ConfirmBtn type="button" class="confirm-btn--primary" @click.stop.prevent="confirmCancelReply">Да, отменить</SC_ConfirmBtn>
-            </SC_ConfirmActions>
-          </SC_ConfirmWrap>
-          <template v-else>
-            <SC_ReplyInputWrap>
-              <SC_ReplyTextarea
-                :key="replyPanelKey"
-                ref="replyTextareaRef"
-                v-model="replyDraft"
-                placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
-                rows="2"
-                @input="handleReplyInput"
-                @keydown="handleReplyKeydown"
-              />
-              <SC_MentionList
-                ref="mentionListRef"
-                v-if="showMentionList && filteredMentionUsers.length > 0"
-              >
-                <SC_MentionItem
-                  v-for="(u, idx) in filteredMentionUsers"
-                  :key="u.address"
-                  type="button"
-                  :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
-                  @click.stop.prevent="selectMentionUser(u)"
-                >
-                  {{ u.name }}
-                </SC_MentionItem>
-              </SC_MentionList>
-            </SC_ReplyInputWrap>
-            <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
-              <CloseOutlined />
-            </SC_ReplyCancelBtn>
-            <SC_ReplySendBtn
-              type="button"
-              title="Отправить"
-              :disabled="!(replyDraft || '').trim() || replySubmitting"
-              @click.stop.prevent="sendReply"
-            >
-              <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
-              <SendOutlined v-else />
-            </SC_ReplySendBtn>
-          </template>
+          <CommentReplyPanel
+            :current-user-avatar-url="currentUserAvatarUrl"
+            :current-user-initial="currentUserInitial"
+            v-model:show-cancel-modal="showCancelReplyModal"
+            v-model:reply-draft="replyDraft"
+            :reply-panel-key="replyPanelKey"
+            :reply-submitting="replySubmitting"
+            :show-mention-list="showMentionList"
+            :filtered-mention-users="filteredMentionUsers"
+            :mention-highlight-index="mentionHighlightIndex"
+            @confirm-cancel="confirmCancelReply"
+            @input="handleReplyInput"
+            @keydown="handleReplyKeydown"
+            @select-mention="selectMentionUser"
+            @request-close="requestCloseReply"
+            @send="sendReply"
+          />
         </SC_ReplyPanelNested>
       </SC_CommentWithReplies>
 
@@ -285,12 +205,10 @@
       >
         <SC_CommentRow>
           <router-link :to="getCommentProfileLink(comment)">
-            <div v-if="getCommentAvatarUrl(comment.userprofile)" class="comment-avatar">
-              <img :src="getCommentAvatarUrl(comment.userprofile)" :alt="comment.userprofile?.name" />
-            </div>
-            <div v-else class="comment-avatar-placeholder">
-              {{ (comment.userprofile?.name || '?').charAt(0).toUpperCase() }}
-            </div>
+            <CommentAvatar
+              :url="getCommentAvatarUrl(comment.userprofile)"
+              :name="comment.userprofile?.name || '?'"
+            />
           </router-link>
 
           <SC_CommentContent>
@@ -341,59 +259,26 @@
 
         <!-- Плашка ответа под комментарием первого уровня -->
         <SC_ReplyPanelNested v-if="isReplyPanelOpen(comment.id)">
-          <div v-if="currentUserAvatarUrl" class="reply-avatar">
-            <img :src="currentUserAvatarUrl" alt="" />
-          </div>
-          <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
-          <SC_ConfirmWrap v-if="showCancelReplyModal">
-            <SC_ConfirmMessage>Введённый текст будет удалён.</SC_ConfirmMessage>
-            <SC_ConfirmActions>
-              <SC_ConfirmBtn type="button" @click.stop.prevent="showCancelReplyModal = false">Нет</SC_ConfirmBtn>
-              <SC_ConfirmBtn type="button" class="confirm-btn--primary" @click.stop.prevent="confirmCancelReply">Да, отменить</SC_ConfirmBtn>
-            </SC_ConfirmActions>
-          </SC_ConfirmWrap>
-          <template v-else>
-            <SC_ReplyInputWrap>
-              <SC_ReplyTextarea
-                :key="replyPanelKey"
-                ref="replyTextareaRef"
-                v-model="replyDraft"
-                placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
-                rows="2"
-                @input="handleReplyInput"
-                @keydown="handleReplyKeydown"
-              />
-              <SC_MentionList
-                ref="mentionListRef"
-                v-if="showMentionList && filteredMentionUsers.length > 0"
-              >
-                <SC_MentionItem
-                  v-for="(u, idx) in filteredMentionUsers"
-                  :key="u.address"
-                  type="button"
-                  :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
-                  @click.stop.prevent="selectMentionUser(u)"
-                >
-                  {{ u.name }}
-                </SC_MentionItem>
-              </SC_MentionList>
-            </SC_ReplyInputWrap>
-            <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
-              <CloseOutlined />
-            </SC_ReplyCancelBtn>
-            <SC_ReplySendBtn
-              type="button"
-              title="Отправить"
-              :disabled="!(replyDraft || '').trim() || replySubmitting"
-              @click.stop.prevent="sendReply"
-            >
-              <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
-              <SendOutlined v-else />
-            </SC_ReplySendBtn>
-          </template>
+          <CommentReplyPanel
+            :current-user-avatar-url="currentUserAvatarUrl"
+            :current-user-initial="currentUserInitial"
+            v-model:show-cancel-modal="showCancelReplyModal"
+            v-model:reply-draft="replyDraft"
+            :reply-panel-key="replyPanelKey"
+            :reply-submitting="replySubmitting"
+            :show-mention-list="showMentionList"
+            :filtered-mention-users="filteredMentionUsers"
+            :mention-highlight-index="mentionHighlightIndex"
+            @confirm-cancel="confirmCancelReply"
+            @input="handleReplyInput"
+            @keydown="handleReplyKeydown"
+            @select-mention="selectMentionUser"
+            @request-close="requestCloseReply"
+            @send="sendReply"
+          />
         </SC_ReplyPanelNested>
 
-        <!-- Ветка ответов второго уровня — строками ниже, с отступом слева -->
+        <!-- Ветка ответов второго уровня -->
         <template v-if="isRepliesExpanded(comment.id)">
           <SC_CommentReplies v-if="getReplies(comment.id).length > 0">
             <SC_ReplyItemWrapper
@@ -402,12 +287,10 @@
             >
               <SC_CommentItem>
                 <router-link :to="getCommentProfileLink(reply)">
-                  <div v-if="getCommentAvatarUrl(reply.userprofile)" class="comment-avatar">
-                    <img :src="getCommentAvatarUrl(reply.userprofile)" :alt="reply.userprofile?.name" />
-                  </div>
-                  <div v-else class="comment-avatar-placeholder">
-                    {{ (reply.userprofile?.name || '?').charAt(0).toUpperCase() }}
-                  </div>
+                  <CommentAvatar
+                    :url="getCommentAvatarUrl(reply.userprofile)"
+                    :name="reply.userprofile?.name || '?'"
+                  />
                 </router-link>
                 <SC_CommentContent>
                   <SC_CommentMeta>
@@ -443,58 +326,25 @@
                   </SC_CommentActions>
                 </SC_CommentContent>
               </SC_CommentItem>
-              <!-- Плашка ответа под комментарием второго уровня (без доп. margin — уже внутри ветки с отступом) -->
+              <!-- Плашка ответа под комментарием второго уровня -->
               <SC_ReplyPanelNestedLevel2 v-if="isReplyPanelOpen(reply.id)">
-                <div v-if="currentUserAvatarUrl" class="reply-avatar">
-                  <img :src="currentUserAvatarUrl" alt="" />
-                </div>
-                <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
-                <SC_ConfirmWrap v-if="showCancelReplyModal">
-                  <SC_ConfirmMessage>Введённый текст будет удалён.</SC_ConfirmMessage>
-                  <SC_ConfirmActions>
-                    <SC_ConfirmBtn type="button" @click.stop.prevent="showCancelReplyModal = false">Нет</SC_ConfirmBtn>
-                    <SC_ConfirmBtn type="button" class="confirm-btn--primary" @click.stop.prevent="confirmCancelReply">Да, отменить</SC_ConfirmBtn>
-                  </SC_ConfirmActions>
-                </SC_ConfirmWrap>
-                <template v-else>
-                  <SC_ReplyInputWrap>
-                    <SC_ReplyTextarea
-                      :key="replyPanelKey"
-                      ref="replyTextareaRef"
-                      v-model="replyDraft"
-                      placeholder="Введите ответ... (введите @ чтобы упомянуть пользователя)"
-                      rows="2"
-                      @input="handleReplyInput"
-                      @keydown="handleReplyKeydown"
-                    />
-                    <SC_MentionList
-                      ref="mentionListRef"
-                      v-if="showMentionList && filteredMentionUsers.length > 0"
-                    >
-                      <SC_MentionItem
-                        v-for="(u, idx) in filteredMentionUsers"
-                        :key="u.address"
-                        type="button"
-                        :class="{ 'mention-item--highlighted': mentionHighlightIndex === idx }"
-                        @click.stop.prevent="selectMentionUser(u)"
-                      >
-                        {{ u.name }}
-                      </SC_MentionItem>
-                    </SC_MentionList>
-                  </SC_ReplyInputWrap>
-                  <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="requestCloseReply">
-                    <CloseOutlined />
-                  </SC_ReplyCancelBtn>
-                  <SC_ReplySendBtn
-                    type="button"
-                    title="Отправить"
-                    :disabled="!(replyDraft || '').trim() || replySubmitting"
-                    @click.stop.prevent="sendReply"
-                  >
-                    <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
-                    <SendOutlined v-else />
-                  </SC_ReplySendBtn>
-                </template>
+                <CommentReplyPanel
+                  :current-user-avatar-url="currentUserAvatarUrl"
+                  :current-user-initial="currentUserInitial"
+                  v-model:show-cancel-modal="showCancelReplyModal"
+                  v-model:reply-draft="replyDraft"
+                  :reply-panel-key="replyPanelKey"
+                  :reply-submitting="replySubmitting"
+                  :show-mention-list="showMentionList"
+                  :filtered-mention-users="filteredMentionUsers"
+                  :mention-highlight-index="mentionHighlightIndex"
+                  @confirm-cancel="confirmCancelReply"
+                  @input="handleReplyInput"
+                  @keydown="handleReplyKeydown"
+                  @select-mention="selectMentionUser"
+                  @request-close="requestCloseReply"
+                  @send="sendReply"
+                />
               </SC_ReplyPanelNestedLevel2>
             </SC_ReplyItemWrapper>
           </SC_CommentReplies>
@@ -539,7 +389,7 @@
       </SC_CommentsActionsRow>
     </template>
 
-    <!-- Бар «написать комментарий к посту» — внизу, скрыт пока открыта форма ответа на комментарий -->
+    <!-- Бар «написать комментарий к посту» -->
     <SC_ReplyPanel v-if="isRootReplyActive">
       <div v-if="currentUserAvatarUrl" class="reply-avatar">
         <img :src="currentUserAvatarUrl" alt="" />
