@@ -18,19 +18,29 @@
           Нет активных событий
         </SC_EmptyMessage>
         <SC_EventsList v-else>
-          <SC_EventItem v-for="item in pendingItems" :key="item.shareId" @click.stop @mousedown.stop>
-            <SC_EventHeader>Оценка поста</SC_EventHeader>
+          <SC_EventItem v-for="item in pendingItems" :key="item.key" @click.stop @mousedown.stop>
+            <template v-if="item.kind === 'rating'">
+              <SC_EventHeader>Оценка поста</SC_EventHeader>
+              <SC_EventContent>
+                <SC_PostTitle :title="item.postTitle || 'Без названия'">
+                  {{ truncateTitle(item.postTitle) }}
+                </SC_PostTitle>
+                <SC_RatingDisplay>
+                  <StarFilled :style="{ color: 'rgb(255, 193, 7)', fontSize: '18px', marginRight: '4px' }" />
+                  <SC_RatingValue>{{ item.ratingValue }}</SC_RatingValue>
+                </SC_RatingDisplay>
+              </SC_EventContent>
+            </template>
 
-            <SC_EventContent>
+            <template v-else>
+              <SC_EventHeader>Комментарий</SC_EventHeader>
               <SC_PostTitle :title="item.postTitle || 'Без названия'">
                 {{ truncateTitle(item.postTitle) }}
               </SC_PostTitle>
-
-              <SC_RatingDisplay>
-                <StarFilled :style="{ color: 'rgb(255, 193, 7)', fontSize: '18px', marginRight: '4px' }" />
-                <SC_RatingValue>{{ item.ratingValue }}</SC_RatingValue>
-              </SC_RatingDisplay>
-            </SC_EventContent>
+              <SC_CommentSnippet :title="item.message">
+                {{ truncateMessage(item.message) }}
+              </SC_CommentSnippet>
+            </template>
           </SC_EventItem>
         </SC_EventsList>
       </SC_PendingEventsMenu>
@@ -50,7 +60,8 @@ import {
   SC_EventContent,
   SC_PostTitle,
   SC_RatingDisplay,
-  SC_RatingValue
+  SC_RatingValue,
+  SC_CommentSnippet
 } from './styled.ts'
 
 export default {
@@ -66,13 +77,19 @@ export default {
     SC_EventContent,
     SC_PostTitle,
     SC_RatingDisplay,
-    SC_RatingValue
+    SC_RatingValue,
+    SC_CommentSnippet
   },
   methods: {
     truncateTitle(title) {
       const t = title || 'Без названия'
       if (t.length <= 100) return t
       return t.slice(0, 100) + '...'
+    },
+    truncateMessage(msg) {
+      const t = (msg || '').replace(/\s+/g, ' ').trim()
+      if (t.length <= 140) return t
+      return t.slice(0, 140) + '...'
     }
   }
 }

@@ -83,3 +83,18 @@ export const SC_RatingValue = styled.span`
   font-weight: 700;
   color: #333;
 `
+
+export const SC_CommentSnippet = styled.div`
+  font-size: 13px;
+  color: #555;
+  word-break: break-word;
+  white-space: pre-wrap;
+  background: #fff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+  margin-top: 6px;
+  max-height: 4.5em;
+  overflow: hidden;
+  flex: 1;
+`

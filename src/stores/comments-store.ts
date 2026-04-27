@@ -77,6 +77,20 @@ export const useCommentsStore = defineStore('comments', {
     getPendingForPost(state) {
       return (postId: string): PendingComment[] => state.pendingCreates[postId] ?? []
     },
+    /** Общее число pending-комментов по всем постам — для индикатора в шапке */
+    pendingCount(state): number {
+      let n = 0
+      for (const list of Object.values(state.pendingCreates)) n += list.length
+      return n
+    },
+    /** Плоский список pending-комментов по всем постам — для дропдауна шапки */
+    allPending(state): PendingComment[] {
+      const out: PendingComment[] = []
+      for (const list of Object.values(state.pendingCreates)) {
+        for (const c of list) out.push(c)
+      }
+      return out
+    },
     /** Раскрыт ли скрытый комментарий пользователем */
     isRevealed(state) {
       return (commentId: string): boolean => state.revealedHiddenIds[commentId] === true
