@@ -306,7 +306,9 @@ export const postCardCommentsOptions = defineComponent({
       return this.sortedComments.slice(0, this.visibleCommentsCount)
     },
     remainingCommentsCount(): number {
-      return Math.max(0, this.actualCommentsCount - this.visibleCommentsCount)
+      // sortedComments включает pending — иначе при наличии локального коммента и полной
+      // странице серверных счётчик «Показать ещё» завышал бы остаток на 1.
+      return Math.max(0, this.sortedComments.length - this.visibleCommentsCount)
     },
     nextCommentsPageSize(): number {
       return this.remainingCommentsCount <= 0 ? 0 : Math.min(COMMENTS_PAGE_SIZE, this.remainingCommentsCount)
@@ -621,9 +623,11 @@ export const postCardCommentsOptions = defineComponent({
         // Согласовываем локальные оверрайды с серверными данными:
         // если сервер уже знает о наших правках/удалениях/созданиях — снимаем локальные метки.
         useCommentsStore().reconcileWithServer(this.postId, list)
-        const len = list.length
+        // visibleCount учитывает pending: иначе свежеотправленный коммент при пустом сервере
+        // (len = 0, visibleCount = 0) не показался бы вовсе.
+        const total = this.sortedComments.length
         const initialVisible = COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
-        this.visibleCommentsCount = showAll ? len : Math.min(initialVisible, len)
+        this.visibleCommentsCount = showAll ? total : Math.min(initialVisible, total)
         this.commentsCollapsed = false
       } catch (e) {
         this.allCommentsError = e instanceof Error ? e : new Error(String(e))
@@ -809,31 +813,72 @@ export const postCardCommentsOptions = defineComponent({
       this.replySubmitting = true
       const parentId = isRootComment ? '' : (this.replyTarget!.parentId)
       const answerId = isRootComment ? '' : (this.replyTarget!.commentId)
+      // Сохраняем целевую ветку, чтобы восстановить форму при ошибке
+      const replyTargetSnapshot = this.replyTarget ? { ...this.replyTarget } : null
+
+      // Оптимистичный insert: показать комментарий со значком часов сразу, пока TX строится и
+      // ретранслируется. После получения реального txid — подменим id, чтобы reconcileWithServer
+      // мог дедуплицировать запись, когда серверный комментарий придёт из getcomments.
+      const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const me = this.currentUserAddress
+      const commentsStore = useCommentsStore()
+      commentsStore.addPending({
+        id: localId,
+        postId: this.postId,
+        message: text,
+        parentId: parentId || '',
+        answerId: answerId || '',
+        address: me,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      })
+
+      // Авто-разворот списка комментариев — иначе только-что-отправленный коммент пользователь
+      // увидит лишь после того, как сам кликнет «Развернуть». При сортировке «Сначала новые»
+      // (по умолчанию) pending попадает в самый верх благодаря createdAt = now.
+      // Для корневого комментария разворачиваем общий список; для ответа в ветке — раскрываем
+      // ветку с ответами, чтобы свеже-отправленный был виден.
+      if (isRootComment) {
+        if (this.allComments == null) this.allComments = []
+        if (this.commentsCollapsed) this.commentsCollapsed = false
+        const minVisible = COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
+        if (this.visibleCommentsCount < minVisible) this.visibleCommentsCount = minVisible
+      } else if (parentId) {
+        this.repliesExpanded = { ...this.repliesExpanded, [parentId]: true }
+      }
+
+      // Сразу очищаем форму: pending уже виден в списке, юзеру не за что цепляться взглядом.
+      this.closeReply()
+      this.$emit('comment')
+
+      // Параллельно тянем актуальные комментарии — серверный коммент с тем же txid заменит
+      // pending через reconcileWithServer. Не блокируем спиннер отправки на этот запрос.
+      const refreshPromise = isRootComment
+        ? this.loadAllComments(false).catch((err) => {
+            console.warn('[comments] refresh after send failed', err)
+          })
+        : Promise.resolve()
+
       try {
         const txid = await sendComment(this.postId, parentId, answerId, text)
         haptic('small')
         appToast.success({ message: 'Комментарий отправлен' })
-        this.closeReply()
-        this.$emit('comment')
-        // Регистрируем pending в общем сторе — отображается в списке как "Ожидание"
-        // до прихода подтверждения через RPC reconcile / WS.
         if (txid) {
-          const me = this.currentUserAddress
-          useCommentsStore().addPending({
-            id: txid,
-            postId: this.postId,
-            message: text,
-            parentId: parentId || '',
-            answerId: answerId || '',
-            address: me,
-            createdAt: Date.now(),
-            expiresAt: Date.now() + 10 * 60 * 1000,
-          })
+          commentsStore.replacePendingId(this.postId, localId, txid)
         }
-        if (this.allComments) {
-          await this.loadAllCommentsInternal(false)
-        }
+        // refreshPromise уже в полёте; await не обязателен, но ждём, чтобы сервер мог снять pending,
+        // если коммент уже подтвердился к моменту, когда вернулся txid.
+        await refreshPromise
       } catch (e) {
+        // Не оставляем «осиротевший» pending в списке — пользователь увидит ошибку через тост.
+        commentsStore.removePending(this.postId, localId)
+        // Восстанавливаем форму с текстом и целевой веткой, чтобы можно было поправить и отправить ещё раз.
+        if (replyTargetSnapshot) {
+          this.replyTarget = replyTargetSnapshot
+        } else if (isRootComment) {
+          this.replyTarget = { commentId: 'root', parentId: '', prefix: '' }
+        }
+        this.replyDraft = text
         appToast.error({ message: e instanceof Error ? e.message : 'Не удалось отправить комментарий' })
       } finally {
         this.replySubmitting = false

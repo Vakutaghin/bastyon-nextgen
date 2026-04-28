@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { rpcCall, rpcCallArrayWithAuth } from '@/helpers/api/request'
+import { rpcCall, rpcCallArrayWithAuth, rpcCallWithAuth } from '@/helpers/api/request'
 import { settingsAPI, } from '@/db/apis/settings-api'
 import { notificationsAPI } from '@/db/apis/notifications-api'
+import { generateCacheHash } from '@/helpers/common/cache-hash'
 import type { GetMissedInfoParameters } from '@/types/rpc-requests/get-missed-info'
 import type { GetMissedInfoBlockItem, GetMissedInfoEventItem, GetMissedInfoDataItem } from '@/types/rpc-responses/get-missed-info'
 import type { GetNodeInfoData } from '@/types/rpc-responses/get-node-info'
+import type { UserProfile } from '@/types/rpc-responses/user-get'
 
 const NOTIFICATIONS_LAST_BLOCK_KEY = 'notificationsLastBlock'
 const NOTIFICATIONS_HIDDEN_IDS_KEY = 'notificationsHiddenIds'
@@ -34,6 +36,85 @@ const MES_TYPE_TITLES: Record<string, string> = {
   repost: 'Репост'
 }
 
+function pickStr(o: Record<string, unknown> | undefined | null, ...keys: string[]): string | undefined {
+  if (!o) return undefined
+  for (const k of keys) {
+    const v = o[k]
+    if (typeof v === 'string' && v.length > 0) return v
+  }
+  return undefined
+}
+
+function pickArr<T = unknown>(o: Record<string, unknown> | undefined | null, ...keys: string[]): T[] | undefined {
+  if (!o) return undefined
+  for (const k of keys) {
+    const v = o[k]
+    if (Array.isArray(v)) return v as T[]
+  }
+  return undefined
+}
+
+/**
+ * RPC `getmissedinfo` иногда прикладывает связанные сущности к событию: `share` (пост), `comment`, `user`.
+ * Сохраняем их в snapshot — это даёт превью без дополнительных запросов и позволяет сразу открыть PostModal.
+ */
+function extractPostSnapshot(raw: unknown, fallbackTxid?: string): NotificationPostSnapshot | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const o = raw as Record<string, unknown>
+  const txid = pickStr(o, 'txid', 'hash', 'id') ?? fallbackTxid
+  if (!txid) return undefined
+  return {
+    txid,
+    caption: pickStr(o, 'c', 'caption', 'title'),
+    message: pickStr(o, 'm', 'message', 'text'),
+    type: pickStr(o, 'type'),
+    images: pickArr<string>(o, 'i', 'images')
+  }
+}
+
+function extractCommentSnapshot(raw: unknown, fallbackId?: string, fallbackPostId?: string): NotificationCommentSnapshot | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const o = raw as Record<string, unknown>
+  const id = pickStr(o, 'id', 'txid') ?? fallbackId
+  if (!id) return undefined
+  let message: string | undefined
+  const msgRaw = o.msg ?? o.message
+  if (typeof msgRaw === 'string') {
+    try {
+      const parsed = JSON.parse(msgRaw) as { message?: string }
+      message = typeof parsed?.message === 'string' ? parsed.message : msgRaw
+    } catch {
+      message = msgRaw
+    }
+  } else if (msgRaw && typeof msgRaw === 'object') {
+    const inner = (msgRaw as Record<string, unknown>).message
+    if (typeof inner === 'string') message = inner
+  }
+  return {
+    id,
+    postid: pickStr(o, 'postid', 'rootTxHash', 'posttxid') ?? fallbackPostId,
+    parentid: pickStr(o, 'parentid'),
+    answerid: pickStr(o, 'answerid'),
+    address: pickStr(o, 'address'),
+    message
+  }
+}
+
+function extractUserSnapshot(raw: unknown, fallbackAddress?: string): NotificationUserSnapshot | undefined {
+  if (!raw || typeof raw !== 'object') {
+    return fallbackAddress ? { address: fallbackAddress } : undefined
+  }
+  const o = raw as Record<string, unknown>
+  const address = pickStr(o, 'address', 'addr') ?? fallbackAddress
+  if (!address) return undefined
+  return {
+    address,
+    name: pickStr(o, 'name'),
+    avatar: pickStr(o, 'i', 'avatar'),
+    reputation: typeof o.reputation === 'number' ? (o.reputation as number) : undefined
+  }
+}
+
 function mapMissedEventToNotification(n: GetMissedInfoEventItem | Record<string, unknown>): NotificationItem | null {
   const id = (n.txid ?? n.id ?? n.nblock ?? Math.random().toString(36)) as string
   const nblock = Number(n.nblock ?? 0) || 0
@@ -55,6 +136,13 @@ function mapMissedEventToNotification(n: GetMissedInfoEventItem | Record<string,
   }
   const safeType = typeMap[mesType] ?? (allowedTypes.includes(mesType as NotificationItem['type']) ? (mesType as NotificationItem['type']) : 'other')
   const upvoteVal = n.upvoteVal != null ? Number(n.upvoteVal) : undefined
+  const fromAddress = (n.addrFrom ?? (n.account as Record<string, unknown>)?.address) as string | undefined
+  const shareId = (n.posttxid ?? n.rootTxHash ?? n.postHash) as string | undefined
+
+  const postSnapshot = extractPostSnapshot(n.share, shareId)
+  const commentSnapshot = extractCommentSnapshot(n.comment, String(id), shareId)
+  const fromSnapshot = extractUserSnapshot(n.user, fromAddress)
+
   return {
     id: String(id),
     nblock,
@@ -64,10 +152,13 @@ function mapMissedEventToNotification(n: GetMissedInfoEventItem | Record<string,
     time,
     link,
     seen: false,
-    from: (n.addrFrom ?? (n.account as Record<string, unknown>)?.name) as string | undefined,
-    shareId: (n.posttxid ?? n.rootTxHash ?? n.postHash) as string | undefined,
+    from: fromAddress ?? fromSnapshot?.address,
+    shareId,
     mesType,
-    upvoteVal
+    upvoteVal,
+    postSnapshot,
+    commentSnapshot,
+    fromSnapshot
   }
 }
 
@@ -80,6 +171,30 @@ export type NotificationType =
   | 'rating'
   | 'tip'
   | 'other'
+
+export interface NotificationPostSnapshot {
+  txid: string
+  caption?: string
+  message?: string
+  type?: string
+  images?: string[]
+}
+
+export interface NotificationCommentSnapshot {
+  id: string
+  postid?: string
+  parentid?: string
+  answerid?: string
+  address?: string
+  message?: string
+}
+
+export interface NotificationUserSnapshot {
+  address: string
+  name?: string
+  avatar?: string
+  reputation?: number
+}
 
 export interface NotificationItem {
   id: string
@@ -101,6 +216,13 @@ export interface NotificationItem {
   mesType?: string
   /** For upvoteShare: rating value (positive = upvote, negative = downvote) */
   upvoteVal?: number
+  /**
+   * Снимок связанного контента, если RPC отдал его вместе с событием.
+   * Не сохраняется в IDB — нужен только в памяти для превью.
+   */
+  postSnapshot?: NotificationPostSnapshot
+  commentSnapshot?: NotificationCommentSnapshot
+  fromSnapshot?: NotificationUserSnapshot
 }
 
 export const useNotificationsStore = defineStore('notifications', {
@@ -114,7 +236,17 @@ export const useNotificationsStore = defineStore('notifications', {
     /** Адрес, для которого загружали — при смене пользователя сбрасываем inited */
     initedForAddress: null as string | null,
     /** Колбэк при появлении новых уведомлений (тосты/звук). Вызывается после обновления items при опросе getmissedinfo. */
-    onNewNotifications: null as ((items: NotificationItem[]) => void) | null
+    onNewNotifications: null as ((items: NotificationItem[]) => void) | null,
+    /** Кэш постов по txid — для превью и открытия PostModal */
+    postCache: {} as Record<string, NotificationPostSnapshot & Record<string, unknown>>,
+    /** Кэш комментариев по id (txid) — для превью и развёртывания текста */
+    commentCache: {} as Record<string, NotificationCommentSnapshot & Record<string, unknown>>,
+    /** Кэш профилей по адресу */
+    profileCache: {} as Record<string, NotificationUserSnapshot & { profile?: UserProfile }>,
+    /** Идёт фоновое обогащение — для скелетонов */
+    enriching: false,
+    /** id уведомлений, для которых уже запускали enrichVisible (антидубль) */
+    enrichedIds: new Set<string>() as Set<string>
   }),
   getters: {
     /** Список без скрытых, по убыванию nblock/time */
@@ -316,6 +448,11 @@ export const useNotificationsStore = defineStore('notifications', {
       this.initedForAddress = null
       this.lastBlock = 0
       this.onNewNotifications = null
+      this.postCache = {}
+      this.commentCache = {}
+      this.profileCache = {}
+      this.enrichedIds = new Set()
+      this.enriching = false
     },
     setItems(items: NotificationItem[]) {
       this.items = items
@@ -356,6 +493,145 @@ export const useNotificationsStore = defineStore('notifications', {
       const auth = useAuthStore()
       const address = auth.getUserAddress
       if (address) await this.saveHiddenIdsToSettings(address, this.hiddenIds)
+    },
+
+    /**
+     * Догрузить недостающие данные для уведомлений (посты, комментарии, профили).
+     * Батчит запросы и кэширует результаты в памяти.
+     * Вызывать при открытии выпадашки для видимых items.
+     */
+    async enrichVisible(notifications: NotificationItem[]) {
+      if (!notifications || notifications.length === 0) return
+
+      const fresh = notifications.filter((n) => !this.enrichedIds.has(n.id))
+      if (fresh.length === 0) return
+      fresh.forEach((n) => this.enrichedIds.add(n.id))
+
+      const postTxids = new Set<string>()
+      const commentTxids = new Set<string>()
+      const profileAddrs = new Set<string>()
+
+      for (const n of fresh) {
+        // Пост — нужен для типов с shareId; либо если comment имеет postid, чтобы открыть родительский пост
+        const postId = n.shareId ?? n.commentSnapshot?.postid
+        if (postId && !this.postCache[postId] && !(n.postSnapshot && n.postSnapshot.message)) {
+          postTxids.add(postId)
+        }
+        // Комментарий — id уведомления для type=comment является txid комментария
+        if (n.type === 'comment' && !n.commentSnapshot?.message && !this.commentCache[n.id]) {
+          commentTxids.add(n.id)
+        }
+        // Профиль отправителя
+        const addr = n.from ?? n.fromSnapshot?.address
+        if (addr && !this.profileCache[addr]?.name && !n.fromSnapshot?.name) {
+          profileAddrs.add(addr)
+        }
+      }
+
+      const tasks: Array<Promise<unknown>> = []
+      if (postTxids.size > 0) {
+        const ids = [...postTxids]
+        tasks.push(
+          rpcCallWithAuth<unknown[]>({
+            method: rpcEndpoints.getRawTransactionWithMessageById,
+            parameters: [ids],
+            cachehash: generateCacheHash(),
+            options: {},
+            state: 1
+          })
+            .then((arr) => {
+              const list = Array.isArray(arr) ? arr : []
+              for (const raw of list) {
+                if (!raw || typeof raw !== 'object') continue
+                const o = raw as Record<string, unknown>
+                const txid = pickStr(o, 'txid', 'hash', 'id')
+                if (!txid) continue
+                this.postCache[txid] = {
+                  ...(o as Record<string, unknown>),
+                  txid,
+                  caption: pickStr(o, 'c', 'caption', 'title'),
+                  message: pickStr(o, 'm', 'message', 'text'),
+                  type: pickStr(o, 'type'),
+                  images: pickArr<string>(o, 'i', 'images')
+                }
+              }
+            })
+            .catch((e) => {
+              console.warn('[notifications] enrich posts failed', e)
+            })
+        )
+      }
+      if (commentTxids.size > 0) {
+        // Комментарии — это тоже tx, поэтому грузим тем же RPC
+        const ids = [...commentTxids]
+        tasks.push(
+          rpcCallWithAuth<unknown[]>({
+            method: rpcEndpoints.getRawTransactionWithMessageById,
+            parameters: [ids],
+            cachehash: generateCacheHash(),
+            options: {},
+            state: 1
+          })
+            .then((arr) => {
+              const list = Array.isArray(arr) ? arr : []
+              for (const raw of list) {
+                const snap = extractCommentSnapshot(raw)
+                if (snap) this.commentCache[snap.id] = snap
+              }
+            })
+            .catch((e) => {
+              console.warn('[notifications] enrich comments failed', e)
+            })
+        )
+      }
+      if (profileAddrs.size > 0) {
+        const addrs = [...profileAddrs]
+        tasks.push(
+          rpcCall<UserProfile[]>({
+            method: rpcEndpoints.getUserProfile,
+            parameters: [addrs],
+            options: { auth: false }
+          })
+            .then((arr) => {
+              const list = Array.isArray(arr) ? arr : []
+              for (const p of list) {
+                if (!p || !p.address) continue
+                this.profileCache[p.address] = {
+                  address: p.address,
+                  name: p.name,
+                  avatar: typeof p.i === 'string' ? p.i : undefined,
+                  reputation: typeof p.reputation === 'number' ? p.reputation : undefined,
+                  profile: p
+                }
+              }
+            })
+            .catch((e) => {
+              console.warn('[notifications] enrich profiles failed', e)
+            })
+        )
+      }
+
+      if (tasks.length === 0) return
+      this.enriching = true
+      try {
+        await Promise.all(tasks)
+      } finally {
+        this.enriching = false
+      }
+    },
+
+    /**
+     * Превью данных для конкретного уведомления — берёт из snapshot или кэша.
+     * Используется компонентом для отрисовки богатой карточки.
+     */
+    getEnrichment(item: NotificationItem) {
+      const postId = item.shareId ?? item.commentSnapshot?.postid
+      const post = item.postSnapshot ?? (postId ? this.postCache[postId] : undefined)
+      const comment = item.commentSnapshot ?? this.commentCache[item.id]
+      const fromAddr = item.from ?? item.fromSnapshot?.address
+      const fromCached = fromAddr ? this.profileCache[fromAddr] : undefined
+      const from = item.fromSnapshot ?? fromCached
+      return { post, comment, from }
     }
   }
 })

@@ -147,6 +147,22 @@ export const useCommentsStore = defineStore('comments', {
         this.pendingCreates = { ...this.pendingCreates, [postId]: next }
       }
     },
+    /**
+     * Заменить локальный временный id pending-комментария на реальный txid,
+     * полученный от sendrawtransactionwithmessage. Нужно, чтобы reconcileWithServer
+     * корректно дедуплицировал запись, когда серверный комментарий с тем же txid
+     * прилетит из getcomments.
+     */
+    replacePendingId(postId: string, oldId: string, newId: string): void {
+      if (oldId === newId) return
+      const list = this.pendingCreates[postId]
+      if (!list) return
+      const idx = list.findIndex((c) => c.id === oldId)
+      if (idx === -1) return
+      const next = list.slice()
+      next[idx] = { ...next[idx], id: newId }
+      this.pendingCreates = { ...this.pendingCreates, [postId]: next }
+    },
     /** Удаляет просроченные pending по всем постам (TTL) */
     cleanupExpired(now: number = Date.now()): void {
       let dirty = false

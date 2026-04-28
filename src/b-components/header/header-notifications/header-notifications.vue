@@ -30,7 +30,9 @@
           </SC_NotificationsHeaderActions>
         </SC_NotificationsHeader>
 
-        <SC_LoaderWrap v-if="isLoading">
+        <SC_EnrichingHint v-if="isEnriching && list.length > 0" />
+
+        <SC_LoaderWrap v-if="isLoading && list.length === 0">
           Загрузка...
         </SC_LoaderWrap>
         <SC_EmptyMessage v-else-if="list.length === 0">
@@ -43,12 +45,54 @@
             :seen="isSeen(item)"
           >
             <SC_NotificationItemBody @click="onItemClick(item)">
-              <SC_NotificationItemTitle>{{ item.title }}</SC_NotificationItemTitle>
-              <SC_NotificationItemDesc v-if="item.description">
-                {{ item.description }}
-              </SC_NotificationItemDesc>
-              <SC_NotificationItemTime>{{ formatTime(item) }}</SC_NotificationItemTime>
+              <SC_NotificationHead>
+                <SC_NotificationTypePill :variant="item.type">
+                  <component :is="iconFor(item)" />
+                  <span>{{ getTypeLabel(item) }}</span>
+                </SC_NotificationTypePill>
+                <SC_NotificationItemTime>{{ formatTime(item) }}</SC_NotificationItemTime>
+              </SC_NotificationHead>
+
+              <SC_NotificationActor>
+                <SC_NotificationAvatar v-if="getAvatar(item)">
+                  <img :src="getAvatar(item)" :alt="getDisplayName(item)" />
+                </SC_NotificationAvatar>
+                <SC_NotificationAvatarLetter v-else>{{ getInitial(item) }}</SC_NotificationAvatarLetter>
+
+                <SC_NotificationActorText>
+                  <SC_NotificationActorName>{{ getDisplayName(item) }}</SC_NotificationActorName>
+                  <SC_NotificationAction>{{ getActionLine(item) }}</SC_NotificationAction>
+                </SC_NotificationActorText>
+              </SC_NotificationActor>
+
+              <SC_NotificationPreview v-if="hasPreview(item)" :variant="item.type">
+                <SC_RatingValue
+                  v-if="item.type === 'rating' && item.upvoteVal != null"
+                  :positive="getRatingDisplay(item).positive"
+                >
+                  {{ getRatingDisplay(item).label }}
+                </SC_RatingValue>
+
+                <SC_CommentPreview
+                  v-if="getCommentText(item)"
+                  :expanded="isExpanded(item.id)"
+                >{{ getCommentDisplay(item) }}</SC_CommentPreview>
+
+                <SC_ExpandToggle
+                  v-if="isCommentLong(item)"
+                  type="button"
+                  @click.stop="toggleExpand(item.id)"
+                >
+                  {{ isExpanded(item.id) ? 'Свернуть' : 'Показать полностью' }}
+                </SC_ExpandToggle>
+
+                <SC_PostRef v-if="getPostCaption(item)">
+                  <SC_PostRefLabel>Пост:</SC_PostRefLabel>
+                  <SC_PostRefText>{{ getPostCaption(item) }}</SC_PostRefText>
+                </SC_PostRef>
+              </SC_NotificationPreview>
             </SC_NotificationItemBody>
+
             <SC_NotificationItemActions @click.stop>
               <Dropdown
                 trigger="click"
@@ -85,11 +129,25 @@ import {
   SC_NotificationItemBody,
   SC_NotificationItemActions,
   SC_NotificationItemTrigger,
-  SC_NotificationItemTitle,
-  SC_NotificationItemDesc,
   SC_NotificationItemTime,
+  SC_NotificationHead,
+  SC_NotificationTypePill,
+  SC_NotificationActor,
+  SC_NotificationAvatar,
+  SC_NotificationAvatarLetter,
+  SC_NotificationActorText,
+  SC_NotificationActorName,
+  SC_NotificationAction,
+  SC_NotificationPreview,
+  SC_RatingValue,
+  SC_CommentPreview,
+  SC_ExpandToggle,
+  SC_PostRef,
+  SC_PostRefLabel,
+  SC_PostRefText,
   SC_EmptyMessage,
-  SC_LoaderWrap
+  SC_LoaderWrap,
+  SC_EnrichingHint
 } from './styled.ts'
 
 export default {
@@ -107,11 +165,25 @@ export default {
     SC_NotificationItemBody,
     SC_NotificationItemActions,
     SC_NotificationItemTrigger,
-    SC_NotificationItemTitle,
-    SC_NotificationItemDesc,
     SC_NotificationItemTime,
+    SC_NotificationHead,
+    SC_NotificationTypePill,
+    SC_NotificationActor,
+    SC_NotificationAvatar,
+    SC_NotificationAvatarLetter,
+    SC_NotificationActorText,
+    SC_NotificationActorName,
+    SC_NotificationAction,
+    SC_NotificationPreview,
+    SC_RatingValue,
+    SC_CommentPreview,
+    SC_ExpandToggle,
+    SC_PostRef,
+    SC_PostRefLabel,
+    SC_PostRefText,
     SC_EmptyMessage,
-    SC_LoaderWrap
+    SC_LoaderWrap,
+    SC_EnrichingHint
   }
 }
 </script>
