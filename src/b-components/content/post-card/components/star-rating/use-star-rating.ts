@@ -11,6 +11,7 @@ import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } f
 import { appToast } from '@/b-components/app-toast'
 import { usePendingRatingsStore } from '@/stores/pending-ratings-store'
 import { useEffectsStore } from '@/stores/effects-store'
+import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 import type {
   StarRatingProps,
   StarRatingEmits,
@@ -352,49 +353,8 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
 
   // ── Vote submission ──────────────────────────────────────────────────
 
-  /**
-   * Resolves a post title / content snippet for the pending-ratings store.
-   */
   function resolvePostTitle(shareId: string): { title: string; usedContent: boolean } {
-    const post = postsStore.getPostByShareId(shareId)
-    let postTitle = post?.title || ''
-    const usedContent = !postTitle && !!post?.content
-
-    if (usedContent) {
-      const content = post!.content
-      if (typeof content === 'string' && content.trim().startsWith('{')) {
-        try {
-          const json = JSON.parse(content)
-          if (json?.blocks && Array.isArray(json.blocks) && json.blocks.length > 0) {
-            postTitle = json.blocks[0].text || ''
-          }
-        } catch {
-          postTitle = content
-        }
-      } else {
-        postTitle = content
-      }
-    }
-
-    if (postTitle) {
-      try {
-        if (/%[0-9A-Fa-f]{2}/.test(postTitle)) {
-          postTitle = decodeURIComponent(postTitle)
-        }
-      } catch {
-        // ignore decoding errors
-      }
-    }
-
-    if (usedContent && postTitle.length > 200) {
-      postTitle = postTitle.substring(0, 200) + '...'
-    }
-
-    if (!postTitle && post?.type === 'video') {
-      postTitle = 'Видео'
-    }
-
-    return { title: postTitle, usedContent }
+    return resolvePostTitleFromPost(postsStore.getPostByShareId(shareId))
   }
 
   const handleStarClick = async (starNumber: number, event?: Event) => {

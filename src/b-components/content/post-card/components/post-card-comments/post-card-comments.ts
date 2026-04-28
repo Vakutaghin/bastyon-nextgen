@@ -1,7 +1,8 @@
 import { defineComponent, h } from 'vue'
 import { Modal } from 'ant-design-vue'
 import { useAuthStore } from '@/blockchain'
-import { useCommentsStore, type PendingComment } from '@/stores'
+import { useCommentsStore, usePostsStore, type PendingComment } from '@/stores'
+import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 import { wsService } from '@/blockchain/ws/ws-service'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC } from '@/helpers/api/request'
@@ -822,6 +823,8 @@ export const postCardCommentsOptions = defineComponent({
       const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
       const me = this.currentUserAddress
       const commentsStore = useCommentsStore()
+      const postsStore = usePostsStore()
+      const { title: postTitle } = resolvePostTitleFromPost(postsStore.getPostByShareId(this.postId))
       commentsStore.addPending({
         id: localId,
         postId: this.postId,
@@ -831,6 +834,7 @@ export const postCardCommentsOptions = defineComponent({
         address: me,
         createdAt: Date.now(),
         expiresAt: Date.now() + 10 * 60 * 1000,
+        postTitle: postTitle || undefined,
       })
 
       // Авто-разворот списка комментариев — иначе только-что-отправленный коммент пользователь

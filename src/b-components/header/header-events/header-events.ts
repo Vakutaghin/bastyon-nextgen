@@ -4,6 +4,7 @@ import { HourglassOutlined } from '@ant-design/icons-vue'
 import { SC_EventsWrapper } from './styled'
 import { useAuthStore } from '@/blockchain'
 import { usePendingRatingsStore, useCommentsStore, usePostsStore } from '@/stores'
+import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 
 type RatingPendingItem = {
   kind: 'rating'
@@ -67,8 +68,11 @@ export const headerEventsOptions = defineComponent({
 
       const pendingComments = this.commentsStore.allPending
       pendingComments.forEach((c) => {
-        const post = this.postsStore.getPostByShareId(c.postId)
-        const title = (post && post.title) || undefined
+        let title = c.postTitle
+        if (!title) {
+          const post = this.postsStore.getPostByShareId(c.postId)
+          title = resolvePostTitleFromPost(post).title || undefined
+        }
         items.push({
           kind: 'comment',
           key: `comment:${c.id}`,

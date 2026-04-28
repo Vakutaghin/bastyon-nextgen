@@ -39,6 +39,8 @@ export interface PendingComment {
   createdAt: number
   /** Срок жизни pending в локальном кеше (по умолчанию 10 мин) */
   expiresAt: number
+  /** Заголовок поста (snapshot на момент отправки) — для дропдауна шапки */
+  postTitle?: string
 }
 
 const PENDING_TTL_MS = 10 * 60 * 1000
