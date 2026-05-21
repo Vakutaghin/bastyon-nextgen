@@ -6,6 +6,7 @@
       <HeaderSearch />
 
       <SC_Right v-hide-zero-width>
+        <HeaderTor />
         <HeaderEvents />
         <HeaderNotifications />
         <SC_MessengerWrapper v-if="showMessengerIcon" @click="toggleMessenger">

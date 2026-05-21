@@ -1,4 +1,6 @@
-use tauri::{Emitter, Manager};
+mod tor;
+
+use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -502,7 +504,15 @@ pub fn run() {
       delete_temp_file,
       read_file,
       get_video_metadata,
-      transcode_video
+      transcode_video,
+      tor::tor_status,
+      tor::tor_start,
+      tor::tor_stop,
+      tor::tor_fetch,
+      tor::tor_set_bridges,
+      tor::tor_ws_connect,
+      tor::tor_ws_send,
+      tor::tor_ws_close,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]
@@ -522,15 +532,10 @@ pub fn run() {
         };
 
         if let Some(window) = window {
-          // Получаем размеры основного монитора
-          if let Ok(Some(monitor)) = window.primary_monitor() {
-            let size = monitor.size();
-            // Устанавливаем размер окна равным размеру экрана (используем логический размер)
-            let logical_size = tauri::LogicalSize::new(size.width as f64, size.height as f64);
-            let _ = window.set_size(logical_size);
-            // Устанавливаем позицию окна в (0, 0)
-            let _ = window.set_position(tauri::LogicalPosition::new(0.0, 0.0));
-          }
+          // Раскрываем окно во весь доступный экран (учитывая dock/menu bar).
+          // Раньше использовали monitor.size() как LogicalSize, но это физические
+          // пиксели — на retina-экранах окно становилось вдвое больше нужного.
+          let _ = window.maximize();
 
           // Открываем dev tools автоматически в режиме разработки
           window.open_devtools();
@@ -575,8 +580,25 @@ pub fn run() {
           let _ = w.eval("console.log('[Tauri] URL:', location.href, '| HTML length:', document.documentElement.outerHTML.length); window.__TAURI_APP_READY__ = true;");
         }
       });
+
+      // Tor manager — initialise app state holder.
+      tor::init(app.handle()).map_err(|e| e.to_string())?;
+
       Ok(())
     })
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .build(tauri::generate_context!())
+    .expect("error while building tauri application")
+    .run(|app_handle, event| {
+      if let RunEvent::ExitRequested { .. } = event {
+        // Best-effort synchronous shutdown of the tor child process so we don't
+        // leave an orphaned `tor` binary after the app window closes.
+        if let Some(mgr) = app_handle.try_state::<tor::TorManager>() {
+          if let Ok(mut guard) = mgr.child.lock() {
+            if let Some(mut child) = guard.take() {
+              let _ = tor::process::kill(&mut child);
+            }
+          }
+        }
+      }
+    });
 }

@@ -8,9 +8,13 @@ import { Buffer } from 'buffer'
 import servers from '@/servers.json'
 
 const getDefaultMatrixBaseUrl = (): string => {
-  if (import.meta.env.DEV) return window.location.origin
   const host = servers.servers?.production?.matrix ?? 'matrix.pocketnet.app'
-  return host.startsWith('http') ? host : `https://${host}`
+  const prodUrl = host.startsWith('http') ? host : `https://${host}`
+  if (!import.meta.env.DEV) return prodUrl
+  // In Tauri tauriFetch isn't subject to CORS, so skip the Vite /_matrix proxy
+  // and talk to the homeserver directly (which is also what's allowed by the HTTP scope).
+  const inTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
+  return inTauri ? prodUrl : window.location.origin
 }
 
 export class MatrixService {

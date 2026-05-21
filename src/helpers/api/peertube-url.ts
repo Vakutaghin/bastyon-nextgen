@@ -2,6 +2,8 @@
  * Утилиты для работы с PeerTube URL и получением информации о видео
  */
 
+import { appFetch } from '@/helpers/api/request'
+
 /**
  * Распарсенный PeerTube URL
  */
@@ -120,7 +122,7 @@ export async function getPeerTubeVideoInfo(
     : `https://${host}/api/v1/videos/${videoId}`
 
   try {
-    const response = await fetch(apiUrl, {
+    const response = await appFetch(apiUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -144,7 +146,7 @@ export async function getPeerTubeVideoInfo(
     if (error instanceof Error) {
       throw error
     }
-    throw new Error('Unknown error while fetching video info')
+    throw new Error(`peertube fetch failed: ${typeof error === 'string' ? error : JSON.stringify(error)}`)
   }
 }
 

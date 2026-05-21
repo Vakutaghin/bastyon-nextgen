@@ -31,13 +31,318 @@ export async function getTauriFetch(): Promise<typeof globalThis.fetch | undefin
   }
 }
 
-/** Fetch for Matrix/chat: uses Tauri fetch in Tauri app (bypasses CORS), else global fetch. */
+/** Fetch for Matrix/chat: routes through Tor when enabled, plugin-http for cross-origin
+ *  (CORS bypass), and plain browser fetch for same-origin (Vite dev proxy). */
 export async function matrixFetch(
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> {
-  const fn = await getTauriFetch()
-  return (fn ?? globalThis.fetch)(input, init)
+  return appFetch(input, init)
+}
+
+// ---------------------------------------------------------------------------
+// Tor-aware fetch
+// ---------------------------------------------------------------------------
+
+/**
+ * Universal fetch wrapper. If Tor is enabled and ready, the request is sent
+ * through a Tauri command that pipes it via SOCKS5; otherwise the standard
+ * fetch path is used. Same-origin requests (relative paths or same origin
+ * as `window.location`) always use the plain browser `fetch` so the dev
+ * server's proxy keeps working in `tauri:dev`.
+ */
+export async function appFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
+  const url = typeof input === 'string'
+    ? input
+    : input instanceof URL
+      ? input.toString()
+      : input.url
+
+  // Vite dev proxy / same-origin: bypass plugin-http and Tor.
+  if (isSameOriginUrl(url)) {
+    return globalThis.fetch(input, init)
+  }
+  if (await shouldTorifyRequest()) {
+    return torFetch(input, init)
+  }
+  const tauriF = await getTauriFetch()
+  return (tauriF ?? globalThis.fetch)(input, init)
+}
+
+async function shouldTorifyRequest(): Promise<boolean> {
+  if (!isTauriEnv()) return false
+  try {
+    const { useTorStore } = await import('@/stores/tor-store')
+    const store = useTorStore()
+    return store.shouldTorify
+  } catch {
+    return false
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Debug helpers — exposed on `window.__torDebug` for live introspection.
+// ---------------------------------------------------------------------------
+
+type TorDebugEntry = {
+  url: string
+  usedTor: boolean
+  durationMs: number
+  error?: string
+  at: number
+}
+
+type TorDebugStats = {
+  enabled: boolean
+  through: number
+  direct: number
+  failed: number
+  recent: TorDebugEntry[]
+  lastUrl?: string
+}
+
+const TOR_DEBUG_KEY = '__torDebug'
+const TOR_DEBUG_RECENT_LIMIT = 50
+
+function recordTorRequest(
+  url: string,
+  usedTor: boolean,
+  durationMs: number,
+  error?: string
+): void {
+  const stats = ensureDebug()._stats
+  if (error) stats.failed += 1
+  else if (usedTor) stats.through += 1
+  else stats.direct += 1
+  stats.lastUrl = url
+  const entry: TorDebugEntry = { url, usedTor, durationMs, error, at: Date.now() }
+  stats.recent.push(entry)
+  if (stats.recent.length > TOR_DEBUG_RECENT_LIMIT) {
+    stats.recent.shift()
+  }
+}
+
+function ensureDebug(): {
+  _stats: TorDebugStats
+  summary: () => TorDebugStats
+  recent: () => TorDebugEntry[]
+  reset: () => void
+  checkIp: () => Promise<{ direct: string; viaTor: string | null; same: boolean }>
+} {
+  const w = globalThis as unknown as Record<string, unknown>
+  const existing = w[TOR_DEBUG_KEY] as ReturnType<typeof ensureDebug> | undefined
+  if (existing) return existing
+  const stats: TorDebugStats = {
+    enabled: false,
+    through: 0,
+    direct: 0,
+    failed: 0,
+    recent: [],
+  }
+  const debug = {
+    _stats: stats,
+    summary(): TorDebugStats {
+      return { ...stats, recent: stats.recent.slice() }
+    },
+    recent(): TorDebugEntry[] {
+      return stats.recent.slice()
+    },
+    reset(): void {
+      stats.through = 0
+      stats.direct = 0
+      stats.failed = 0
+      stats.recent.length = 0
+      stats.lastUrl = undefined
+    },
+    async checkIp(): Promise<{ direct: string; viaTor: string | null; same: boolean }> {
+      const directResp = await globalThis.fetch('https://api.ipify.org?format=json')
+      const direct = (await directResp.json()).ip as string
+      let viaTor: string | null = null
+      try {
+        const r = await appFetch('https://api.ipify.org?format=json')
+        viaTor = (await r.json()).ip as string
+      } catch (e) {
+        viaTor = `error: ${(e as Error).message}`
+      }
+      return { direct, viaTor, same: direct === viaTor }
+    },
+  }
+  w[TOR_DEBUG_KEY] = debug
+  return debug
+}
+
+// Initialise lazily when this module first loads in a window.
+if (typeof window !== 'undefined') {
+  ensureDebug()
+}
+
+function isSameOriginUrl(url: string): boolean {
+  if (!url) return false
+  // Relative URLs are always same-origin.
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) return true
+  if (typeof window === 'undefined') return false
+  try {
+    return new URL(url).origin === window.location.origin
+  } catch {
+    return false
+  }
+}
+
+type TorFetchRequest = {
+  url: string
+  method: string
+  headers: Record<string, string>
+  body_b64?: string
+  timeout_ms?: number
+}
+
+type TorFetchResponse = {
+  status: number
+  status_text: string
+  headers: Array<[string, string]>
+  body_b64: string
+  final_url: string
+  used_tor: boolean
+}
+
+async function torFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
+  if (init?.signal?.aborted) {
+    throw new DOMException('Aborted', 'AbortError')
+  }
+
+  const url = inputToUrl(input)
+  const method = (init?.method ?? 'GET').toUpperCase()
+  const headers = headersToRecord(input, init)
+  const bodyBytes = await bodyToBytes(init?.body, headers)
+
+  const req: TorFetchRequest = {
+    url,
+    method,
+    headers,
+    body_b64: bodyBytes ? bytesToBase64(bodyBytes) : undefined,
+  }
+
+  const { invoke } = await import('@tauri-apps/api/core')
+  let resp: TorFetchResponse
+  const startedAt = performance.now()
+  try {
+    resp = await invoke<TorFetchResponse>('tor_fetch', { req })
+  } catch (e) {
+    const message = typeof e === 'string' ? e : (e as Error)?.message ?? JSON.stringify(e)
+    recordTorRequest(url, false, performance.now() - startedAt, message)
+    throw new Error(`tor_fetch failed (${url}): ${message}`)
+  }
+  recordTorRequest(url, resp.used_tor, performance.now() - startedAt)
+
+  const responseHeaders = new Headers()
+  for (const [k, v] of resp.headers) {
+    try {
+      responseHeaders.append(k, v)
+    } catch {
+      // ignore non-conformant headers (e.g. Set-Cookie variants)
+    }
+  }
+
+  const bodyBuf = base64ToBytes(resp.body_b64)
+  return new Response(bodyBuf as unknown as BodyInit, {
+    status: resp.status,
+    statusText: resp.status_text,
+    headers: responseHeaders,
+  })
+}
+
+function inputToUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input
+  if (input instanceof URL) return input.toString()
+  return input.url
+}
+
+function headersToRecord(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Record<string, string> {
+  const out: Record<string, string> = {}
+  const collect = (h: HeadersInit) => {
+    if (h instanceof Headers) {
+      h.forEach((v, k) => {
+        out[k] = v
+      })
+    } else if (Array.isArray(h)) {
+      for (const [k, v] of h) out[k] = v
+    } else {
+      Object.assign(out, h)
+    }
+  }
+  if (input instanceof Request && input.headers) collect(input.headers)
+  if (init?.headers) collect(init.headers)
+  return out
+}
+
+async function bodyToBytes(
+  body: BodyInit | null | undefined,
+  headers: Record<string, string>
+): Promise<Uint8Array | undefined> {
+  if (body == null) return undefined
+  if (typeof body === 'string') {
+    return new TextEncoder().encode(body)
+  }
+  if (body instanceof Uint8Array) return body
+  if (body instanceof ArrayBuffer) return new Uint8Array(body)
+  if (ArrayBuffer.isView(body)) {
+    return new Uint8Array(body.buffer, body.byteOffset, body.byteLength)
+  }
+  if (typeof Blob !== 'undefined' && body instanceof Blob) {
+    const buf = await body.arrayBuffer()
+    return new Uint8Array(buf)
+  }
+  if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) {
+    if (!hasHeader(headers, 'content-type')) {
+      headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
+    }
+    return new TextEncoder().encode(body.toString())
+  }
+  if (typeof FormData !== 'undefined' && body instanceof FormData) {
+    // Encode FormData via Request to get a multipart body the same way fetch would.
+    const tmp = new Request('http://localhost', { method: 'POST', body })
+    const buf = await tmp.arrayBuffer()
+    const ctype = tmp.headers.get('content-type')
+    if (ctype && !hasHeader(headers, 'content-type')) {
+      headers['content-type'] = ctype
+    }
+    return new Uint8Array(buf)
+  }
+  // Fallback: treat as string-like.
+  return new TextEncoder().encode(String(body))
+}
+
+function hasHeader(headers: Record<string, string>, name: string): boolean {
+  const lc = name.toLowerCase()
+  return Object.keys(headers).some((k) => k.toLowerCase() === lc)
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode.apply(
+      null,
+      bytes.subarray(i, i + chunk) as unknown as number[]
+    )
+  }
+  return btoa(bin)
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64)
+  const out = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+  return out
 }
 
 export type RpcOptions = {
@@ -107,7 +412,7 @@ async function tryRpcRequest(
   const path = getRpcPath(params.method, useEx)
   const url = `https://${host}:${port}${path}`
 
-  const response = await fetch(url, {
+  const response = await appFetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8',
@@ -238,7 +543,7 @@ async function tryHttpRequest(
   const timeoutId = setTimeout(() => controller.abort(), timeout)
 
   try {
-    const response = await fetch(url, {
+    const response = await appFetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=utf-8',

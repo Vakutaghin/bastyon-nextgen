@@ -10,6 +10,7 @@
 
 import servers from '@/servers.json'
 import { logger } from '@/services/logger'
+import { appFetch } from '@/helpers/api/request'
 
 const log = logger.scope('[ProxyWithWallet]')
 
@@ -43,7 +44,7 @@ async function fetchProxyInfo(
   const timeoutId = setTimeout(() => controller.abort(), timeout)
 
   try {
-    const response = await fetch(url, {
+    const response = await appFetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=utf-8',

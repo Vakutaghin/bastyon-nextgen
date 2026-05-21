@@ -12,6 +12,7 @@
 
 import servers from '@/servers.json'
 import type { ApiSignature } from '../types/signatures'
+import { pickWebSocketCtor } from '@/helpers/tor/tor-websocket'
 
 // --- Types ---
 
@@ -75,7 +76,7 @@ class PocketnetWsService {
 
   // --- Connection ---
 
-  connect() {
+  async connect() {
     if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
       return
     }
@@ -95,7 +96,8 @@ class PocketnetWsService {
     console.log('[WS] Connecting to', url)
 
     try {
-      this.socket = new WebSocket(url)
+      const Ctor = await pickWebSocketCtor()
+      this.socket = new Ctor(url)
     } catch (e) {
       console.error('[WS] Failed to create WebSocket:', e)
       this.scheduleReconnect()
@@ -283,7 +285,7 @@ class PocketnetWsService {
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
-      this.connect()
+      void this.connect()
     }, delay)
   }
 
@@ -293,7 +295,7 @@ class PocketnetWsService {
     this.close()
     this.closing = false
     this.reconnectAttempt = 0
-    this.connect()
+    void this.connect()
   }
 
   close() {

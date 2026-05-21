@@ -14,3 +14,10 @@ export { useCommentsStore } from './comments-store'
 export type { PendingComment } from './comments-store'
 export { useNotificationsStore } from './notifications-store'
 export { useNotificationSettingsStore } from './notification-settings-store'
+export { useTorStore } from './tor-store'
+export type {
+  TorStatus,
+  TorBridgeKind,
+  TorStateSnapshot,
+  TorInstallProgress,
+} from './tor-store'

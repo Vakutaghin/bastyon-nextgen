@@ -1,3 +1,7 @@
+// Подавление шума в консоли (console.log/info/debug + matrix-js-sdk).
+// Раскрыть обратно: localStorage.setItem('debug', '1') и перезагрузить.
+import './silence-console'
+
 // Полифилл для Buffer в браузере (нужен для bip39 и других библиотек)
 import { Buffer } from 'buffer'
 if (typeof globalThis !== 'undefined') {
@@ -41,7 +45,9 @@ import App from '@/src.vue'
 import router from '@/router'
 import { initDatabase } from '@/db/database'
 import { useAuthStore } from '@/blockchain'
-import { useNotificationsStore, useNotificationSettingsStore } from '@/stores'
+import { useNotificationsStore, useNotificationSettingsStore, useTorStore } from '@/stores'
+// Force-load request module so __torDebug is available in the console at boot.
+import '@/helpers/api/request'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { showToastsForNewNotifications } from '@/b-components/header/header-notifications/notification-toasts'
 import { queryClient } from './query-client'
@@ -82,6 +88,8 @@ app.use(router)
 const authStore = useAuthStore(pinia)
 const messengerStore = useMessengerStore(pinia)
 const notificationsStore = useNotificationsStore(pinia)
+const torStore = useTorStore(pinia)
+torStore.hydrate().catch(() => {})
 notificationsStore.setOnNewNotifications((items) => showToastsForNewNotifications(pinia, items))
 
 const NOTIFICATIONS_POLL_INTERVAL_MS = 30 * 1000
