@@ -848,6 +848,10 @@ export const postCardCommentsOptions = defineComponent({
         const minVisible = COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
         if (this.visibleCommentsCount < minVisible) this.visibleCommentsCount = minVisible
       } else if (parentId) {
+        // В развёрнутом виде ветка раскроется автоматически через v-if по этому флагу.
+        // В компактном превью флаг тоже ставим — чтобы при будущем раскрытии списка
+        // ветка с pending-ответом уже была развёрнута. Сам pending в компактном
+        // виде рендерится отдельным блоком в шаблоне (см. SC_CommentReplies под lastComment).
         this.repliesExpanded = { ...this.repliesExpanded, [parentId]: true }
       }
 

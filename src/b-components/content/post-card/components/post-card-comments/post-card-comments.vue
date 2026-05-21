@@ -75,6 +75,46 @@
             @send="sendReply"
           />
         </SC_ReplyPanelNested>
+        <!-- Оптимистично-добавленные pending-ответы к lastComment.
+             В компактном виде real-ответы не подгружаются (клик «Ответы» переключает в развёрнутый),
+             поэтому getReplies здесь возвращает только pending — это и показываем. -->
+        <SC_CommentReplies v-if="lastCommentId && getReplies(lastCommentId).length > 0">
+          <SC_ReplyItemWrapper
+            v-for="reply in getReplies(lastCommentId)"
+            :key="reply.id"
+          >
+            <SC_CommentItem :class="{ 'is-pending': isCommentPending(reply) }">
+              <CommentAvatar
+                :url="getCommentAvatarUrl(reply.userprofile)"
+                :name="reply.userprofile?.name || '?'"
+              />
+              <SC_CommentContent>
+                <SC_CommentMeta>
+                  <SC_CommentAuthor>{{ reply.userprofile?.name || reply.address }}</SC_CommentAuthor>
+                  <SC_CommentMetaRight>
+                    <SC_CommentDate :title="formatCommentDateFull(reply.time)">{{ formatCommentDate(reply.time) }}</SC_CommentDate>
+                    <SC_TxStatusBadge
+                      v-if="isCommentPending(reply)"
+                      title="Ожидает подтверждения сетью"
+                    >
+                      <ClockCircleOutlined />
+                      <span>Ожидание</span>
+                    </SC_TxStatusBadge>
+                    <SC_TxStatusBadge
+                      v-else-if="isCommentRejected(reply)"
+                      class="tx-status--rejected"
+                      title="Транзакция отклонена"
+                    >
+                      <StopOutlined />
+                      <span>Ошибка</span>
+                    </SC_TxStatusBadge>
+                  </SC_CommentMetaRight>
+                </SC_CommentMeta>
+                <SC_CommentText v-html="formatCommentMessageHtml(reply)"></SC_CommentText>
+              </SC_CommentContent>
+            </SC_CommentItem>
+          </SC_ReplyItemWrapper>
+        </SC_CommentReplies>
       </SC_CommentWithReplies>
 
       <SC_CommentsActionsRow v-if="totalCommentsCount > 0">
@@ -174,6 +214,45 @@
             @send="sendReply"
           />
         </SC_ReplyPanelNested>
+        <!-- Оптимистично-добавленные pending-ответы к lastComment в свёрнутом виде.
+             Аналогично первому компактному шаблону: getReplies возвращает только pending. -->
+        <SC_CommentReplies v-if="lastCommentId && getReplies(lastCommentId).length > 0">
+          <SC_ReplyItemWrapper
+            v-for="reply in getReplies(lastCommentId)"
+            :key="reply.id"
+          >
+            <SC_CommentItem :class="{ 'is-pending': isCommentPending(reply) }">
+              <CommentAvatar
+                :url="getCommentAvatarUrl(reply.userprofile)"
+                :name="reply.userprofile?.name || '?'"
+              />
+              <SC_CommentContent>
+                <SC_CommentMeta>
+                  <SC_CommentAuthor>{{ reply.userprofile?.name || reply.address }}</SC_CommentAuthor>
+                  <SC_CommentMetaRight>
+                    <SC_CommentDate :title="formatCommentDateFull(reply.time)">{{ formatCommentDate(reply.time) }}</SC_CommentDate>
+                    <SC_TxStatusBadge
+                      v-if="isCommentPending(reply)"
+                      title="Ожидает подтверждения сетью"
+                    >
+                      <ClockCircleOutlined />
+                      <span>Ожидание</span>
+                    </SC_TxStatusBadge>
+                    <SC_TxStatusBadge
+                      v-else-if="isCommentRejected(reply)"
+                      class="tx-status--rejected"
+                      title="Транзакция отклонена"
+                    >
+                      <StopOutlined />
+                      <span>Ошибка</span>
+                    </SC_TxStatusBadge>
+                  </SC_CommentMetaRight>
+                </SC_CommentMeta>
+                <SC_CommentText v-html="formatCommentMessageHtml(reply)"></SC_CommentText>
+              </SC_CommentContent>
+            </SC_CommentItem>
+          </SC_ReplyItemWrapper>
+        </SC_CommentReplies>
       </SC_CommentWithReplies>
 
       <SC_ShowCommentsBtn
