@@ -1,0 +1,148 @@
+# Сборка релизных бинарей для всех платформ и аттач к GitHub Release.
+#
+# Триггер:
+#   - автоматически на push тега вида `v*` (например, v0.1.0)
+#   - вручную через Actions → Release → Run workflow с указанием существующего тега
+#
+# Платформы:
+#   - desktop (Tauri): macOS arm64, macOS x64, Linux (Ubuntu 22.04), Windows
+#   - mobile (Capacitor): Android debug APK (без релизного keystore — позже)
+#
+# Все артефакты загружаются на release, помеченный соответствующим тегом.
+# Если release ещё не существует — tauri-action создаст его (не draft).
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Существующий тег для сборки (например, v0.1.0)'
+        required: true
+        type: string
+
+# При обоих триггерах нужен один способ узнать целевой тег.
+# При push -> github.ref_name (e.g. v0.1.0). При dispatch -> inputs.tag.
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  desktop:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            args: ''
+          - platform: windows-latest
+            args: ''
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Windows: Node 20 надёжнее для нативных пакетов (canvas / hex-captcha)
+          node-version: ${{ matrix.platform == 'windows-latest' && '20' || 'lts/*' }}
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and attach to release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tauriScript: npm run tauri
+          tagName: ${{ env.TAG }}
+          releaseName: ${{ env.TAG }}
+          releaseBody: |
+            Скачайте подходящий установщик из Assets ниже.
+
+            **Подпись:** сборки не подписаны — на macOS возможно сообщение «приложение повреждено»
+            (обойти: ПКМ → Открыть), на Windows — предупреждение SmartScreen. Подписи добавим позже.
+
+            Полные release notes — см. `changelogs/${{ env.TAG }}/` в репозитории.
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+
+  android:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install frontend dependencies and build web bundle
+        run: |
+          npm ci
+          npm run build
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      # TODO: для production-релизов подключить релизный keystore (через secrets
+      # ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS /
+      # ANDROID_KEY_PASSWORD) и заменить assembleDebug на assembleRelease.
+      # Сейчас shipим debug-APK — он установится, но подпись runner-специфична,
+      # поэтому in-place upgrade между релизами не сработает.
+      - name: Build Android debug APK (unsigned for now)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Rename APK with tag
+        id: rename
+        run: |
+          OUT="bastyon-${TAG}-android.apk"
+          mv android/app/build/outputs/apk/debug/app-debug.apk "$OUT"
+          echo "apk=$OUT" >> "$GITHUB_OUTPUT"
+
+      - name: Attach APK to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${TAG}" "${{ steps.rename.outputs.apk }}" --clobber
