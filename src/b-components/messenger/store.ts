@@ -1334,21 +1334,30 @@ export const useMessengerStore = defineStore('messenger', () => {
 
       let dialogsList = await Promise.all(rooms.map(mapRoomToDialog))
 
-      // Сохраняем имя/аватар из уже имеющегося диалога, если из Matrix пришло пусто («Empty Room»)
+      // Стабилизация partner: если предыдущая итерация уже подобрала имя/аватар,
+      // а в новой mapRoomToDialog временно не получилось их вычислить (профиль ещё
+      // не приехал, member ещё не подгружен и т.д.) — сохраняем прошлые значения.
+      // Это убирает повторные «загрузки» аватарки при каждом ре-вычислении диалогов
+      // (по таймеру profile-cache, на Room.timeline и т.п.).
       const prevDialogs = dialogs.value
       dialogsList = dialogsList.map((d: Dialog) => {
         const prev = prevDialogs.find((p: Dialog) => p.id === d.id)
         if (!prev?.partner) return d
-        const name = d.partner?.name?.trim()
-        const avatar = d.partner?.avatar
-        if ((!name || name === 'Empty Room' || name === 'Unknown') && (prev.partner.name || prev.partner.avatar)) {
+
+        const newName = d.partner?.name?.trim()
+        const isPlaceholderName = !newName || newName === 'Empty Room' || newName === 'Unknown'
+        const stableName = isPlaceholderName && prev.partner.name ? prev.partner.name : d.partner?.name
+
+        // Если в новом проходе аватарки нет — используем предыдущую. Если есть и совпадает —
+        // оставляем ту же строку-ссылку, чтобы prop у Avatar не «менялся» и img не дёргался.
+        let stableAvatar = d.partner?.avatar
+        if (!stableAvatar && prev.partner.avatar) stableAvatar = prev.partner.avatar
+        else if (stableAvatar && prev.partner.avatar === stableAvatar) stableAvatar = prev.partner.avatar
+
+        if (stableName !== d.partner?.name || stableAvatar !== d.partner?.avatar) {
           return {
             ...d,
-            partner: {
-              ...d.partner,
-              name: prev.partner.name || d.partner?.name,
-              avatar: prev.partner.avatar ?? d.partner?.avatar
-            }
+            partner: { ...d.partner, name: stableName, avatar: stableAvatar },
           }
         }
         return d
