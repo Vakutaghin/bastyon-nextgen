@@ -1814,6 +1814,11 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   const openChat = async (chatId: string) => {
+    // Тот же чат уже открыт и сообщения уже загружены — не дёргаем matrix заново
+    // (loadMembersIfNeeded, paginateEventTimeline, перерасшифровка last message и т.д.).
+    // Достаточно убедиться, что invite-режим выключен и unread сброшен.
+    const isSameActive = activeChatId.value === chatId && messages[chatId] && messages[chatId].length > 0
+
     inviteViewActive.value = false
     lastTargetAddress.value = null
     activeChatId.value = chatId
@@ -1824,7 +1829,13 @@ export const useMessengerStore = defineStore('messenger', () => {
       dialogs.value[dialogIndex]!.unreadCount = 0
     }
 
-    await loadMessages(chatId)
+    if (!isSameActive) {
+      await loadMessages(chatId)
+    }
+
+    // Read receipt отправляем только при первом заходе в чат — если кликнули по уже
+    // активному, ничего нового сервер не узнает, лишний HTTP не нужен.
+    if (isSameActive) return
 
     // Send read receipt to Matrix server
     try {
@@ -1972,6 +1983,8 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   const switchToChatAndLoad = (roomId: string): void => {
+    const isSameActive = activeChatId.value === roomId && messages[roomId] && messages[roomId].length > 0
+
     inviteViewActive.value = false
     lastTargetAddress.value = null
     activeChatId.value = roomId
@@ -1979,6 +1992,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (dialogIndex !== -1) {
       dialogs.value[dialogIndex]!.unreadCount = 0
     }
+
+    if (isSameActive) return
+
     Promise.resolve().then(async () => {
       await loadMessages(roomId)
       await loadDialogs(true)
