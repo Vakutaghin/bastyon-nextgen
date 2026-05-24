@@ -98,6 +98,19 @@ export const audioMessageOptions = defineComponent({
       bgGraphics.value = bg
       progressGraphics.value = prog
 
+      // PIXI читает размер dom при init(). Если layout ещё не полностью устоялся
+      // (особенно для оптимистично отрисованных мной отправленных сообщений —
+      // компонент монтируется одновременно с insert в DOM), screen может оказаться
+      // 0×0 или сильно меньше реального. Силой синхронизируем под актуальный clientWidth.
+      try {
+        const w = Math.max(0, Math.floor(dom.clientWidth))
+        const h = Math.max(0, Math.floor(dom.clientHeight))
+        const renderer = (application as any).renderer
+        if (renderer && typeof renderer.resize === 'function' && w > 0 && h > 0) {
+          renderer.resize(w, h)
+        }
+      } catch (_e) {}
+
       // Draw a baseline straight waveform until actual data is computed
       waveformBars.value = Array.from({ length: barCount }, () => 0.12)
       drawWaveforms()
@@ -106,55 +119,104 @@ export const audioMessageOptions = defineComponent({
     const drawWaveforms = () => {
       if (!app.value || !bgGraphics.value || !progressGraphics.value || waveformBars.value.length === 0) return
 
-      const width = app.value.screen.width
-      const height = app.value.screen.height
-      const bars = waveformBars.value
+      // Перед каждой отрисовкой синхронизируемся с фактическим размером dom-элемента.
+      // PIXI v8 resizeTo слушает только window resize, поэтому изменения от родительского
+      // layout (особенно когда несколько AudioMessage монтируются разом — для входящей
+      // истории, например) могут оставлять app.screen в устаревшем состоянии. Делая
+      // sync здесь, гарантируем что drawWaveforms всегда работает с актуальной шириной.
+      const dom = resolveDom(container.value)
+      let width = app.value.screen.width
+      let height = app.value.screen.height
+      if (dom) {
+        const realW = Math.max(0, Math.floor(dom.clientWidth))
+        const realH = Math.max(0, Math.floor(dom.clientHeight))
+        if (realW > 0 && realH > 0 && (realW !== width || realH !== height)) {
+          try {
+            const renderer = (app.value as any).renderer
+            if (renderer && typeof renderer.resize === 'function') {
+              renderer.resize(realW, realH)
+              width = realW
+              height = realH
+            }
+          } catch (_e) {}
+        }
+      }
 
-      const minBarWidth = 1
-      let spacing = Math.max(0, width * 0.01)
-      let totalSpacing = spacing * (bars.length - 1)
-      let barWidth = (width - totalSpacing) / bars.length
-      if (barWidth < minBarWidth) {
-        spacing = Math.max(0, (width - minBarWidth * bars.length) / (bars.length - 1))
-        totalSpacing = spacing * (bars.length - 1)
-        barWidth = Math.max(minBarWidth, (width - totalSpacing) / bars.length)
+      if (width <= 0 || height <= 0) return
+
+      const sourceBars = waveformBars.value
+
+      // Геометрия как в современных мессенджерах (Telegram/WhatsApp):
+      // ширина бара и зазор — константы, количество видимых баров подбирается
+      // под актуальную ширину контейнера. Поэтому wave одинаково выглядит и в
+      // узком пузыре, и в широком, без сплющиваний/растягиваний.
+      const targetBarWidth = 2
+      const targetSpacing = 2
+      const slot = targetBarWidth + targetSpacing
+
+      let visibleBars = Math.max(8, Math.floor((width + targetSpacing) / slot))
+      visibleBars = Math.min(visibleBars, sourceBars.length)
+
+      let barWidth = targetBarWidth
+      let spacing = targetSpacing
+      const used = visibleBars * barWidth + (visibleBars - 1) * spacing
+      if (used > width) {
+        // Если даже с целевой геометрией не помещаемся (очень узкий контейнер) —
+        // пропорционально ужимаем.
+        const ratio = width / used
+        barWidth = Math.max(1, targetBarWidth * ratio)
+        spacing = Math.max(0, targetSpacing * ratio)
+      }
+
+      // Down-sample исходных 64 семплов до количества видимых баров методом max-pooling
+      // (peak в каждом сегменте — стандартное поведение для waveform-превью).
+      const sampledBars: number[] = new Array(visibleBars)
+      for (let i = 0; i < visibleBars; i += 1) {
+        const start = Math.floor((i * sourceBars.length) / visibleBars)
+        const end = Math.min(sourceBars.length, Math.ceil(((i + 1) * sourceBars.length) / visibleBars))
+        let peak = 0
+        for (let j = start; j < end; j += 1) {
+          const v = sourceBars[j] ?? 0
+          if (v > peak) peak = v
+        }
+        sampledBars[i] = peak
       }
 
       bgGraphics.value.clear()
       progressGraphics.value.clear()
 
       const baseColor = 0xD0D7E2
-      const baseAlpha = 1
       const progColor = 0x00A4DB
-      const progAlpha = 1
 
       const centerY = Math.floor(height / 2)
       const maxBarHeight = Math.max(24, Math.floor(height * 0.7))
 
-      // Determine progress cutoff in bars
+      // Центрируем группу баров в контейнере
+      const totalUsed = visibleBars * barWidth + (visibleBars - 1) * spacing
+      const startX = Math.max(0, Math.floor((width - totalUsed) / 2))
+
       const progressRatio = duration.value > 0 ? currentTime.value / duration.value : 0
-      const progressCutIndex = Math.floor(progressRatio * bars.length)
-      const partialCut = progressRatio * bars.length - progressCutIndex
+      const progressCutIndex = Math.floor(progressRatio * visibleBars)
+      const partialCut = progressRatio * visibleBars - progressCutIndex
 
-      for (let i = 0; i < bars.length; i++) {
-        const value = Math.min(1, Math.max(0, bars[i] ?? 0))
+      const radius = Math.min(2, barWidth / 2)
+
+      for (let i = 0; i < visibleBars; i += 1) {
+        const value = Math.min(1, Math.max(0, sampledBars[i] ?? 0))
         const barHeight = Math.max(2, Math.floor(maxBarHeight * value))
-        const x = i * (barWidth + spacing)
+        const x = startX + i * (barWidth + spacing)
         const yTop = centerY - Math.floor(barHeight / 2)
-        const yBottom = centerY + Math.floor(barHeight / 2)
 
-        // Background bar
-        bgGraphics.value.roundRect(x, yTop, barWidth, barHeight, Math.min(6, barWidth / 2))
-        bgGraphics.value.fill({ color: baseColor, alpha: baseAlpha })
+        bgGraphics.value.roundRect(x, yTop, barWidth, barHeight, radius)
+        bgGraphics.value.fill({ color: baseColor, alpha: 1 })
 
-        // Progress overlay
         if (i < progressCutIndex) {
-          progressGraphics.value.roundRect(x, yTop, barWidth, barHeight, Math.min(6, barWidth / 2))
-          progressGraphics.value.fill({ color: progColor, alpha: progAlpha })
+          progressGraphics.value.roundRect(x, yTop, barWidth, barHeight, radius)
+          progressGraphics.value.fill({ color: progColor, alpha: 1 })
         } else if (i === progressCutIndex && partialCut > 0) {
           const partialWidth = Math.max(1, Math.floor(barWidth * partialCut))
-          progressGraphics.value.roundRect(x, yTop, partialWidth, barHeight, Math.min(6, partialWidth / 2))
-          progressGraphics.value.fill({ color: progColor, alpha: progAlpha })
+          progressGraphics.value.roundRect(x, yTop, partialWidth, barHeight, Math.min(radius, partialWidth / 2))
+          progressGraphics.value.fill({ color: progColor, alpha: 1 })
         }
       }
     }
@@ -365,11 +427,26 @@ export const audioMessageOptions = defineComponent({
       await initPixi()
       await prepareAudio()
 
-      // PIXI resizeTo подгоняет канвас, но не перерисовывает бары —
-      // вешаем ResizeObserver, чтобы wave перерисовывался под актуальную ширину пузыря.
+      // PIXI v8 `resizeTo` слушает только window resize, не ResizeObserver контейнера.
+      // Поэтому когда родительский пузырь меняет ширину (например, имя получателя
+      // подгрузилось — bubble стал шире), PIXI остаётся с прежним размером экрана,
+      // и drawWaveforms рисует по устаревшему `app.screen.width` — в итоге wave либо
+      // невидимый, либо узкий. Вешаем ResizeObserver: руками говорим renderer'у
+      // переразмериться, а потом перерисовываем.
       const dom = resolveDom(container.value)
       if (dom && typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(() => {
+          const a = app.value
+          if (a && dom) {
+            const w = Math.max(0, Math.floor(dom.clientWidth))
+            const h = Math.max(0, Math.floor(dom.clientHeight))
+            try {
+              const renderer = (a as any).renderer
+              if (renderer && typeof renderer.resize === 'function' && w > 0 && h > 0) {
+                renderer.resize(w, h)
+              }
+            } catch (_e) {}
+          }
           drawWaveforms()
         })
         resizeObserver.observe(dom)
