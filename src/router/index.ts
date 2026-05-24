@@ -14,6 +14,7 @@ const ExplorerBlockPage = () => import('@/pages/block-explorer-page/block-page/b
 const ExplorerTxPage    = () => import('@/pages/block-explorer-page/tx-page/tx-page.vue')
 const ExplorerAddressPage = () => import('@/pages/block-explorer-page/address-page/address-page.vue')
 const ExplorerPeersPage = () => import('@/pages/block-explorer-page/peers-page/peers-page.vue')
+const SearchPage = () => import('@/pages/search-page/search-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])
@@ -76,6 +77,13 @@ const router = createRouter({
       path: '/explorer/peers',
       name: 'explorer-peers',
       component: ExplorerPeersPage
+    },
+    // /search must be declared BEFORE the catch-all /:userName so the
+    // profile route doesn't greedily match it.
+    {
+      path: '/search',
+      name: 'search',
+      component: SearchPage
     },
     {
       path: '/:userName',

@@ -16,11 +16,6 @@ describe('search-store', () => {
       expect(store.hasQuery).toBe(false)
     })
 
-    it('starts with no results', () => {
-      expect(store.results).toEqual([])
-      expect(store.hasResults).toBe(false)
-    })
-
     it('starts with empty history', () => {
       expect(store.history).toEqual([])
       expect(store.recentHistory).toEqual([])
@@ -33,63 +28,67 @@ describe('search-store', () => {
       expect(store.query).toBe('test')
       expect(store.hasQuery).toBe(true)
     })
+
+    it('hasQuery is false for whitespace-only input', () => {
+      store.setQuery('   ')
+      expect(store.hasQuery).toBe(false)
+    })
   })
 
   describe('clearQuery', () => {
-    it('clears query and results', () => {
+    it('clears query', () => {
       store.setQuery('test')
       store.clearQuery()
       expect(store.query).toBe('')
-      expect(store.results).toEqual([])
     })
   })
 
-  describe('search', () => {
-    it('adds to history on search', async () => {
-      await store.search('blockchain')
+  describe('commit', () => {
+    it('adds normalized value to history', () => {
+      store.commit('blockchain')
       expect(store.history).toContain('blockchain')
+      expect(store.query).toBe('blockchain')
     })
 
-    it('does not duplicate in history', async () => {
-      await store.search('blockchain')
-      await store.search('blockchain')
-      expect(store.history.filter(h => h === 'blockchain')).toHaveLength(1)
+    it('does not duplicate in history (moves to front)', () => {
+      store.commit('blockchain')
+      store.commit('crypto')
+      store.commit('blockchain')
+      expect(store.history.filter((h) => h === 'blockchain')).toHaveLength(1)
+      expect(store.history[0]).toBe('blockchain')
     })
 
-    it('clears results for empty query', async () => {
-      store.setQuery('')
-      await store.search()
-      expect(store.results).toEqual([])
+    it('ignores empty / whitespace input', () => {
+      store.commit('   ')
+      expect(store.history).toEqual([])
     })
 
-    it('sets loading state during search', async () => {
-      const promise = store.search('test')
-      // After search completes, loading should be false
-      await promise
-      expect(store.loading).toBe(false)
+    it('returns the sanitized value', () => {
+      const value = store.commit('hello!!!')
+      expect(value).toBe('hello')
     })
 
-    it('limits history to maxHistoryLength', async () => {
+    it('limits history to maxHistoryLength', () => {
       for (let i = 0; i < 15; i++) {
-        await store.search(`query${i}`)
+        store.commit(`query${i}`)
       }
       expect(store.history.length).toBeLessThanOrEqual(store.maxHistoryLength)
     })
   })
 
   describe('clearHistory', () => {
-    it('clears all history', async () => {
-      await store.search('test1')
-      await store.search('test2')
+    it('clears all history', () => {
+      store.commit('test1')
+      store.commit('test2')
       store.clearHistory()
       expect(store.history).toEqual([])
     })
   })
 
   describe('removeFromHistory', () => {
-    it('removes specific item from history', async () => {
-      await store.search('keep')
-      await store.search('remove')
+    it('removes specific item from history', () => {
+      store.commit('keep')
+      store.commit('remove')
       store.removeFromHistory('remove')
       expect(store.history).toContain('keep')
       expect(store.history).not.toContain('remove')
@@ -97,9 +96,9 @@ describe('search-store', () => {
   })
 
   describe('recentHistory', () => {
-    it('returns at most maxHistoryLength items', async () => {
+    it('returns at most maxHistoryLength items', () => {
       for (let i = 0; i < 15; i++) {
-        await store.search(`q${i}`)
+        store.commit(`q${i}`)
       }
       expect(store.recentHistory.length).toBeLessThanOrEqual(store.maxHistoryLength)
     })
