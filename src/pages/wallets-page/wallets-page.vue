@@ -70,7 +70,22 @@
                   v-for="row in mainTableRows"
                   :key="row.address"
                 >
-                  <SC_WalletTableAddress>{{ row.address }}</SC_WalletTableAddress>
+                  <SC_WalletAddressCell>
+                    <SC_WalletTableAddress>{{ row.address }}</SC_WalletTableAddress>
+                    <RouterLink
+                      v-slot="{ navigate, href }"
+                      custom
+                      :to="{ name: 'explorer-address', params: { address: row.address } }"
+                    >
+                      <SC_WalletExplorerLink
+                        :href="href"
+                        title="Открыть в блок-эксплорере"
+                        @click="navigate"
+                      >
+                        <BlockOutlined :style="{ fontSize: '14px' }" />
+                      </SC_WalletExplorerLink>
+                    </RouterLink>
+                  </SC_WalletAddressCell>
                   <SC_WalletTableBalance>{{ formatBalance(row.balance) }}</SC_WalletTableBalance>
                 </SC_WalletTableRow>
               </SC_WalletTable>
@@ -99,7 +114,22 @@
                   v-for="row in additionalTableRows"
                   :key="row.address"
                 >
-                  <SC_WalletTableAddress>{{ row.address }}</SC_WalletTableAddress>
+                  <SC_WalletAddressCell>
+                    <SC_WalletTableAddress>{{ row.address }}</SC_WalletTableAddress>
+                    <RouterLink
+                      v-slot="{ navigate, href }"
+                      custom
+                      :to="{ name: 'explorer-address', params: { address: row.address } }"
+                    >
+                      <SC_WalletExplorerLink
+                        :href="href"
+                        title="Открыть в блок-эксплорере"
+                        @click="navigate"
+                      >
+                        <BlockOutlined :style="{ fontSize: '14px' }" />
+                      </SC_WalletExplorerLink>
+                    </RouterLink>
+                  </SC_WalletAddressCell>
                   <SC_WalletTableBalance>{{ formatBalance(row.balance) }}</SC_WalletTableBalance>
                 </SC_WalletTableRow>
               </SC_WalletTable>

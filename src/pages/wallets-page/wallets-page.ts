@@ -1,5 +1,6 @@
 import { defineComponent, ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
+import { BlockOutlined } from '@ant-design/icons-vue'
 import {
   useAuthStore,
   getAdditionalWalletAddressesList,
@@ -29,6 +30,8 @@ import {
   SC_WalletTableRow,
   SC_WalletTableHeader,
   SC_WalletTableAddress,
+  SC_WalletAddressCell,
+  SC_WalletExplorerLink,
   SC_WalletTableBalance,
   SC_WalletLoading,
   SC_WalletError,
@@ -63,7 +66,11 @@ export default defineComponent({
     SC_WalletTableRow,
     SC_WalletTableHeader,
     SC_WalletTableAddress,
+    SC_WalletAddressCell,
+    SC_WalletExplorerLink,
     SC_WalletTableBalance,
+    RouterLink,
+    BlockOutlined,
     SC_WalletLoading,
     SC_WalletError,
     SC_WalletTabPlaceholder,

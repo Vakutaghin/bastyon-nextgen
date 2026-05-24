@@ -128,6 +128,32 @@ export const SC_WalletTableAddress = styled.span`
   word-break: break-all;
 `
 
+export const SC_WalletAddressCell = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+`
+
+export const SC_WalletExplorerLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: rgb(120, 120, 120);
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  text-decoration: none;
+
+  &:hover {
+    color: rgb(0, 123, 255);
+    background: rgba(0, 123, 255, 0.08);
+  }
+`
+
 export const SC_WalletTableBalance = styled.span`
   font-weight: 500;
   color: rgb(33, 33, 33);
