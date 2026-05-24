@@ -46,6 +46,11 @@ export const messageItemOptions = defineComponent({
     showName: {
       type: Boolean,
       default: true
+    },
+    /** Показывать аватарку. Передаём false для подряд идущих сообщений того же отправителя — слот сохраняем для выравнивания. */
+    showAvatar: {
+      type: Boolean,
+      default: true
     }
   },
   setup(props) {

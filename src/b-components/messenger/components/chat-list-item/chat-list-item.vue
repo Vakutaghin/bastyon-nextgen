@@ -1,5 +1,5 @@
 <template>
-  <SC_ListItem>
+  <SC_ListItem :class="{ active: isActive }">
     <Avatar
       :src="dialog.partner.avatar"
       :alt="dialog.partner.name || dialog.partner.id"

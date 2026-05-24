@@ -104,13 +104,18 @@ export const messageListOptions = defineComponent({
       }
     }
 
-    const shouldShowName = (index: number) => {
+    /**
+     * Сообщение — первое в подряд идущей серии от одного отправителя.
+     * Используется для показа имени и аватарки только у первого в группе:
+     * визуально это даёт «слипшиеся» бабблы без повторов меты на каждом сообщении.
+     */
+    const isFirstInGroup = (index: number) => {
       if (index === 0) return true
       const current = props.messages[index]
       const previous = props.messages[index - 1]
       return current?.senderId !== previous?.senderId
     }
 
-    return { listRef, shouldShowName, handleScroll }
+    return { listRef, isFirstInGroup, handleScroll }
   }
 })

@@ -16,6 +16,18 @@ export const SC_ListItem = styled.div`
   &:hover .dots-btn {
     opacity: 1;
   }
+
+  &.active {
+    background-color: #e6f4ff;
+  }
+
+  &.active:hover {
+    background-color: #d6ecff;
+  }
+
+  &.active .dots-btn {
+    opacity: 1;
+  }
 `
 
 export const SC_Info = styled.div`

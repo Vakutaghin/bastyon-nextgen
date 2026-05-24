@@ -2,6 +2,7 @@
   <SC_MessageRow :class="isMine ? 'mine' : 'others'">
     <SC_AvatarSlot v-if="!isMine">
       <Avatar
+        v-if="showAvatar"
         :src="displayAvatar"
         :alt="displayName"
         :fallbackText="displayName"

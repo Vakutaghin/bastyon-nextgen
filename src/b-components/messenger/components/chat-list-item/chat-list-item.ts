@@ -65,6 +65,9 @@ export const chatListItemOptions = defineComponent({
     const showConfirm = ref(false)
     const menuPos = ref({ top: 0, right: 0 })
 
+    /** Этот диалог сейчас открыт в чат-комнате — подсвечиваем его в списке слева. */
+    const isActive = computed(() => store.activeChatId === props.dialog.id)
+
     const formatTime = (timestamp?: number) => {
       if (!timestamp) return ''
 
@@ -111,6 +114,6 @@ export const chatListItemOptions = defineComponent({
       store.deleteDialog(props.dialog.id)
     }
 
-    return { formatTime, isMine, menuOpen, showConfirm, toggleMenu, onDelete, confirmDelete, dropdownStyle }
+    return { formatTime, isMine, isActive, menuOpen, showConfirm, toggleMenu, onDelete, confirmDelete, dropdownStyle }
   }
 })

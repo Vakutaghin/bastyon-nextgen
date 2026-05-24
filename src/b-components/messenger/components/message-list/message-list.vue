@@ -4,7 +4,8 @@
       v-for="(message, index) in messages"
       :key="message.id"
       :message="message"
-      :showName="shouldShowName(index)"
+      :showName="isFirstInGroup(index)"
+      :showAvatar="isFirstInGroup(index)"
     />
   </SC_MessageList>
 </template>
