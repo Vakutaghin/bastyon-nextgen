@@ -106,6 +106,25 @@ export const SC_UserAddress = styled.div`
   margin-top: 10px;
 `
 
+export const SC_ExplorerLinkRow = styled.div`
+  margin-top: 4px;
+  margin-bottom: 8px;
+`
+
+export const SC_ExplorerLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: rgb(0, 123, 255);
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
 export const SC_UserSite = styled.a`
   font-size: 13px;
   color: #00a4ff;

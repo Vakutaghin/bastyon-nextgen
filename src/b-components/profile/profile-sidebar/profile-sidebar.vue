@@ -41,6 +41,19 @@
           {{ userAddress }}
         </SC_UserAddress>
 
+        <SC_ExplorerLinkRow v-if="userAddress">
+          <RouterLink
+            v-slot="{ navigate, href }"
+            custom
+            :to="{ name: 'explorer-address', params: { address: userAddress } }"
+          >
+            <SC_ExplorerLink :href="href" @click="navigate">
+              <BlockOutlined :style="{ fontSize: '11px' }" />
+              Открыть в блок-эксплорере
+            </SC_ExplorerLink>
+          </RouterLink>
+        </SC_ExplorerLinkRow>
+
         <SC_UserSite v-if="userSite" :href="userSite" target="_blank">
           {{ userSite }}
         </SC_UserSite>

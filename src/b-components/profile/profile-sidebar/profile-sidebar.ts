@@ -1,7 +1,8 @@
 import { defineComponent, computed } from 'vue'
 import type { PropType } from 'vue'
+import { RouterLink } from 'vue-router'
 import Spin from '@/components/spin/spin.vue'
-import { LoadingOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined, BlockOutlined } from '@ant-design/icons-vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import {
   SC_ProfileSidebar,
@@ -17,7 +18,9 @@ import {
   SC_LoadingState,
   SC_UserAddress,
   SC_UserSite,
-  SC_StartChatButton
+  SC_StartChatButton,
+  SC_ExplorerLinkRow,
+  SC_ExplorerLink
 } from './styled'
 import { useMessengerStore } from '@/b-components/messenger/store'
 
@@ -38,8 +41,12 @@ export default defineComponent({
     SC_UserAddress,
     SC_UserSite,
     SC_StartChatButton,
+    SC_ExplorerLinkRow,
+    SC_ExplorerLink,
+    RouterLink,
     Spin,
-    LoadingOutlined
+    LoadingOutlined,
+    BlockOutlined
   },
   props: {
     profile: {
