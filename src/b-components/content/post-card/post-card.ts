@@ -271,9 +271,12 @@ export const postCardOptions = defineComponent({
       this.postsStore.sharePost(postId)
       this.$emit('share', postId)
     },
-    handleRatingChange(rating: number): void {
-      // Обновляем локальное состояние поста при изменении рейтинга
-      this.post.myVal = rating
+    handleRatingChange(_rating: number): void {
+      // Оптимистичное состояние держится в composable (optimisticRating + pendingValue).
+      // Мутировать post.myVal здесь нельзя: это делает effectiveUserVote правдивым
+      // до подтверждения транзакции, из‑за чего optimisticVotersCount/scoreSum
+      // откатывают +1 обратно. myVal/scoreCnt/scoreSum обновятся атомарно в store
+      // после поллинга подтверждения в pending-ratings-store.
     },
     handleRatingError(error: Error): void {
       // Обработка ошибок при отправке рейтинга
