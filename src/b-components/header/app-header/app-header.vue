@@ -9,6 +9,7 @@
         <HeaderTor />
         <HeaderEvents />
         <HeaderNotifications />
+        <HeaderReportBug />
         <SC_MessengerWrapper v-if="showMessengerIcon" @click="toggleMessenger">
           <CloseOutlined v-if="isFullScreen" :style="{ fontSize: '20px' }" />
           <MessageOutlined v-else :style="{ fontSize: '20px' }" />

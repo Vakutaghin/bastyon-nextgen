@@ -6,6 +6,7 @@ import HeaderUser from '@/b-components/header/header-user/header-user.vue'
 import HeaderEvents from '@/b-components/header/header-events/header-events.vue'
 import HeaderNotifications from '@/b-components/header/header-notifications/header-notifications.vue'
 import HeaderTor from '@/b-components/header/header-tor/header-tor.vue'
+import HeaderReportBug from '@/b-components/header/header-report-bug/header-report-bug.vue'
 import { SC_Header, SC_Sections, SC_Right, SC_MessengerWrapper } from './styled'
 import { MessageOutlined, CloseOutlined } from '@ant-design/icons-vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
@@ -20,6 +21,7 @@ export const appHeaderOptions = defineComponent({
     HeaderEvents,
     HeaderNotifications,
     HeaderTor,
+    HeaderReportBug,
     SC_Header,
     SC_Sections,
     SC_Right,
