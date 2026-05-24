@@ -47,6 +47,8 @@ vi.mock('../storage', () => ({
   saveWasLogged: vi.fn(),
   clearAllUserData: vi.fn(),
   loadAccountsList: vi.fn().mockReturnValue({ success: false }),
+  hasStoredSession: vi.fn().mockReturnValue(false),
+  updateAccountName: vi.fn().mockReturnValue({ success: true }),
 }))
 
 vi.mock('../wallet-addresses', () => ({

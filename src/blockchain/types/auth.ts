@@ -9,7 +9,7 @@ import type { UserProfile } from '../../types/rpc-responses/user-get'
 /**
  * Состояние авторизации пользователя
  */
-export type AuthState = 'unauthenticated' | 'authenticating' | 'authenticated' | 'error'
+export type AuthState = 'unauthenticated' | 'restoring' | 'authenticating' | 'authenticated' | 'error'
 
 /**
  * Состояние пользователя

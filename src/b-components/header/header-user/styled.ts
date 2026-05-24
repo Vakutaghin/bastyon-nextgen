@@ -49,3 +49,17 @@ export const SC_UserInfoTrigger = styled(SC_UserInfo)`
 export const SC_HeaderDropdownZindexFix = styled.div`
   z-index: 3005 !important;
 `
+
+export const SC_AuthSkeleton = styled(SC_UserInfo)`
+  pointer-events: none;
+`
+
+export const SC_SkeletonLines = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    display: none;
+  }
+`

@@ -246,6 +246,24 @@ export function loadUserAddress(): string | null {
 }
 
 /**
+ * Синхронная проверка: есть ли в localStorage следы сохранённой сессии.
+ * Не расшифровывает данные — только смотрит на наличие ключей.
+ * Используется на старте, чтобы UI знал «нужно ли ждать restoreSession»
+ * и показывал скелетон вместо мерцающей кнопки «Войти».
+ */
+export function hasStoredSession(): boolean {
+  try {
+    if (typeof localStorage === 'undefined') return false
+    if (localStorage.getItem(ACCOUNTS_LIST_KEY)) return true
+    if (localStorage.getItem(WAS_LOGGED_KEY) === 'true') return true
+    if (localStorage.getItem(MNEMONIC_STORAGE_KEY)) return true
+  } catch {
+    return false
+  }
+  return false
+}
+
+/**
  * Сохраняет флаг "был авторизован"
  * @param wasLogged - Значение флага
  */
@@ -443,6 +461,27 @@ export function getAccountInfo(address: Address): StorageLoadResult<AccountInfo>
     data: account || null,
     storageType: 'localStorage',
   }
+}
+
+/**
+ * Обновляет кэшированный ник для аккаунта.
+ * Хранится в AccountInfo.name и используется UI как мгновенно доступная
+ * подпись до того, как fetchUserState вернёт свежий профиль.
+ * Возвращает true если значение изменилось (нужна запись).
+ */
+export function updateAccountName(address: Address, name: string): StorageSaveResult {
+  const result = loadAccountsList()
+  if (!result.success || !result.data) {
+    return { success: false, error: 'Failed to load accounts list' }
+  }
+  const accountsList = result.data
+  const idx = accountsList.accounts.findIndex((acc) => acc.address === address)
+  if (idx < 0) return { success: false, error: 'Account not found' }
+  if (accountsList.accounts[idx].name === name) {
+    return { success: true, storageType: 'localStorage' }
+  }
+  accountsList.accounts[idx] = { ...accountsList.accounts[idx], name }
+  return saveAccountsList(accountsList)
 }
 
 /**

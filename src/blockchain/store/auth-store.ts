@@ -31,6 +31,8 @@ import {
   saveWasLogged,
   clearAllUserData,
   loadAccountsList,
+  hasStoredSession,
+  updateAccountName,
 } from '../storage'
 import { deriveAndSaveWalletAddresses } from '../wallet-addresses'
 import { wsService } from '../ws'
@@ -45,7 +47,10 @@ export const useAuthStore = defineStore('auth', {
     accountsList: AccountsList | null
   } => ({
     isAuthenticated: false,
-    authState: 'unauthenticated',
+    // Если в localStorage уже есть следы сессии — стартуем в 'restoring',
+    // чтобы UI показал скелетон вместо мерцания кнопки "Войти" до того,
+    // как асинхронный restoreSession() поднимет ключи.
+    authState: hasStoredSession() ? 'restoring' : 'unauthenticated',
     address: null,
     keyPair: null,
     userProfile: null,
@@ -59,6 +64,22 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isUserAuthenticated(): boolean {
       return this.isAuthenticated && this.authState === 'authenticated'
+    },
+
+    /** True пока стартовый restoreSession() ещё не завершился, но в localStorage есть сохранённая сессия. */
+    isAuthRestoring(): boolean {
+      return this.authState === 'restoring'
+    },
+
+    /**
+     * Ник, закэшированный с прошлой сессии в AccountInfo.name.
+     * Используется UI как мгновенная подпись до того, как fetchUserState поднимет свежий профиль —
+     * чтобы не было прыжка «адрес → ник».
+     */
+    getCachedAccountName(): string | null {
+      if (!this.address || !this.accountsList) return null
+      const acc = this.accountsList.accounts.find((a) => a.address === this.address)
+      return acc?.name || null
     },
 
     getUserAddress(): Address | null {
@@ -290,6 +311,14 @@ export const useAuthStore = defineStore('auth', {
       this.setError(null)
       const keys = useKeysStore()
 
+      // Любой выход без успеха должен сбросить 'restoring' → 'unauthenticated',
+      // иначе UI-скелетон зависнет навсегда.
+      const finishUnauthenticated = (): false => {
+        if (this.authState === 'restoring') this.authState = 'unauthenticated'
+        this.setLoading(false)
+        return false
+      }
+
       try {
         // Check for incomplete registration
         try {
@@ -300,8 +329,7 @@ export const useAuthStore = defineStore('auth', {
               localStorage.removeItem('pending_registration')
               localStorage.removeItem('pending_nickname')
               clearAllUserData()
-              this.setLoading(false)
-              return false
+              return finishUnauthenticated()
             }
           }
         } catch { /* ignore */ }
@@ -336,8 +364,7 @@ export const useAuthStore = defineStore('auth', {
         // Fallback: legacy mnemonic
         const mnemonicResult = loadEncryptedMnemonic()
         if (!mnemonicResult.success || !mnemonicResult.data) {
-          this.setLoading(false)
-          return false
+          return finishUnauthenticated()
         }
 
         const mnemonic = mnemonicResult.data
@@ -399,6 +426,18 @@ export const useAuthStore = defineStore('auth', {
       try {
         const result = await profile.fetchUserState(this.address)
         this._syncFromProfileStore()
+        // Persist nickname into AccountInfo so next session can show it
+        // instantly instead of flashing the truncated address first.
+        const freshName = (result as any)?.name as string | undefined
+        if (this.address && freshName && typeof freshName === 'string') {
+          updateAccountName(this.address, freshName)
+          const listResult = loadAccountsList()
+          if (listResult.success && listResult.data) {
+            const keys = useKeysStore()
+            keys.accountsList = listResult.data
+            this.accountsList = listResult.data
+          }
+        }
         this.setLoading(false)
         return result
       } catch (error) {

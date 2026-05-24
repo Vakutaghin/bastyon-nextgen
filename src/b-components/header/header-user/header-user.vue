@@ -1,5 +1,14 @@
 <template>
-  <template v-if='!isAuthenticated'>
+  <template v-if='isAuthRestoring'>
+    <SC_AuthSkeleton aria-hidden='true'>
+      <Skeleton :width='32' :height='32' :radius='16' />
+      <SC_SkeletonLines>
+        <Skeleton :width='90' :height='12' :radius='4' />
+        <Skeleton :width='60' :height='10' :radius='4' />
+      </SC_SkeletonLines>
+    </SC_AuthSkeleton>
+  </template>
+  <template v-else-if='!isAuthenticated'>
     <Button type='default' @click='openSignInModal'>
       Войти
     </Button>

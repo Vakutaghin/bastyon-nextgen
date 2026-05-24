@@ -2,6 +2,7 @@ import { defineComponent } from 'vue'
 import { Dropdown, Menu } from 'ant-design-vue'
 import Button from '@/components/button/button.vue'
 import Avatar from '@/components/avatar/avatar.vue'
+import Skeleton from '@/components/skeleton/skeleton.vue'
 import SignInModal from '@/b-components/header/sign-in-modal/sign-in-modal.vue'
 import RegisterModal from '@/b-components/header/register-modal/register-modal.vue'
 import MnemonicModal from '@/b-components/header/mnemonic-modal/mnemonic-modal.vue'
@@ -19,6 +20,8 @@ import {
   SC_UserLoading,
   SC_UserInfoTrigger,
   SC_HeaderDropdownZindexFix,
+  SC_AuthSkeleton,
+  SC_SkeletonLines,
 } from './styled'
 
 export const headerUserOptions = defineComponent({
@@ -28,6 +31,7 @@ export const headerUserOptions = defineComponent({
     Menu,
     Button,
     Avatar,
+    Skeleton,
     SignInModal,
     RegisterModal,
     MnemonicModal,
@@ -40,6 +44,8 @@ export const headerUserOptions = defineComponent({
     SC_UserLoading,
     SC_UserInfoTrigger,
     SC_HeaderDropdownZindexFix,
+    SC_AuthSkeleton,
+    SC_SkeletonLines,
   },
   setup() {
     const authStore = useAuthStore()
@@ -94,6 +100,9 @@ export const headerUserOptions = defineComponent({
     isAuthenticated() {
       return this.authStore.isUserAuthenticated
     },
+    isAuthRestoring() {
+      return this.authStore.isAuthRestoring
+    },
     userAddress() {
       return this.authStore.getUserAddress
     },
@@ -107,6 +116,12 @@ export const headerUserOptions = defineComponent({
       // Показываем сохранённый ник пока профиль не подтверждён в блокчейне
       if (this.pendingNickname) {
         return this.pendingNickname
+      }
+      // Кэш ника из прошлой сессии — чтобы не мелькал обрезанный адрес
+      // пока fetchUserState поднимает свежий профиль.
+      const cached = this.authStore.getCachedAccountName
+      if (cached) {
+        return cached
       }
       if (this.userAddress) {
         return this.userAddress.substring(0, 8) + '...'
