@@ -21,6 +21,8 @@ import {
 
 import { getVideoThumbnailFromUrl } from '@/helpers/api/peertube-url'
 import { videoPlayerManager } from './video-player-manager'
+import type { Chapter } from '@/helpers/content/timecode-parser'
+import { findActiveChapterIndex } from '@/helpers/content/timecode-parser'
 
 // Composables
 import { useVideoControls } from './composables/use-video-controls'
@@ -47,6 +49,8 @@ import {
   SC_VideoProgressBar,
   SC_VideoProgressFill,
   SC_VideoBufferFill,
+  SC_VideoChapterMarker,
+  SC_VideoChapterTitle,
   SC_VideoLoading,
   SC_VideoError,
   SC_VideoVolumeControl,
@@ -98,6 +102,8 @@ export const videoPlayer = defineComponent({
     SC_VideoProgressBar,
     SC_VideoProgressFill,
     SC_VideoBufferFill,
+    SC_VideoChapterMarker,
+    SC_VideoChapterTitle,
     SC_VideoLoading,
     SC_VideoError,
     SC_VideoVolumeControl,
@@ -150,6 +156,10 @@ export const videoPlayer = defineComponent({
     isAudio: {
       type: Boolean as PropType<boolean>,
       default: false
+    },
+    chapters: {
+      type: Array as PropType<Chapter[]>,
+      default: () => []
     }
   },
   setup(p) {
@@ -309,6 +319,81 @@ export const videoPlayer = defineComponent({
 
     const getVideoElement = () => resolveVideoElement(videoElement)
     const domVideoElement = computed(() => resolveVideoElement(videoElement))
+
+    // === Главы (тайм-коды из описания) ===
+
+    // Маркеры на прогресс-баре (в процентах), пропускаем 0:00 и тайм-коды за пределами длительности.
+    const chapterMarkers = computed<number[]>(() => {
+      const chapters = p.chapters || []
+      const total = duration.value
+      if (!chapters.length || !total || !isFinite(total) || total <= 0) return []
+      return chapters
+        .filter(ch => ch.start > 0 && ch.start < total)
+        .map(ch => (ch.start / total) * 100)
+    })
+
+    // Текущая активная глава по currentTime (показывается рядом со временем).
+    const activeChapter = computed<Chapter | null>(() => {
+      const chapters = p.chapters || []
+      if (!chapters.length) return null
+      const idx = findActiveChapterIndex(chapters, currentTime.value)
+      return idx >= 0 ? chapters[idx] : null
+    })
+
+    // Перемотка к моменту (вызывается извне через template ref).
+    // Если плеер ещё не инициализирован — запускаем загрузку и применяем seek после готовности.
+    let pendingSeek: number | null = null
+    const applySeek = (seconds: number) => {
+      const video = getVideoElement()
+      if (!video) return
+      const clamped = Math.max(0, seconds)
+      const safe = video.duration && isFinite(video.duration) && video.duration > 0
+        ? Math.min(clamped, video.duration)
+        : clamped
+      video.currentTime = safe
+      currentTime.value = safe
+      isEnded.value = false
+    }
+
+    const seekTo = (seconds: number) => {
+      if (!isFinite(seconds) || seconds < 0) return
+
+      if (!isInitialized.value) {
+        // Запоминаем точку и инициализируем плеер с воспроизведением.
+        pendingSeek = seconds
+        initPlayer(true)
+        return
+      }
+
+      applySeek(seconds)
+      const video = getVideoElement()
+      if (video && video.paused) {
+        video.play()
+          .then(() => {
+            isPlaying.value = true
+            videoPlayerManager.pauseAllExcept(playerId.value)
+          })
+          .catch(err => console.warn('Seek + play failed:', err))
+      }
+    }
+
+    // Применяем отложенный seek сразу после инициализации плеера.
+    watch(isInitialized, (initialized) => {
+      if (initialized && pendingSeek !== null) {
+        const target = pendingSeek
+        pendingSeek = null
+        // Дожидаемся, чтобы видео получило длительность (loadedmetadata).
+        const tryApply = () => {
+          const video = getVideoElement()
+          if (video && video.readyState >= 1) {
+            applySeek(target)
+          } else if (video) {
+            video.addEventListener('loadedmetadata', () => applySeek(target), { once: true })
+          }
+        }
+        tryApply()
+      }
+    })
 
     const togglePlay = (showNotification: boolean = false) => {
       const video = getVideoElement()
@@ -818,7 +903,12 @@ export const videoPlayer = defineComponent({
       showPlayNotification,
       showPauseNotification,
       showSeekNotification,
-      seekValue
+      seekValue,
+
+      // Chapters
+      chapterMarkers,
+      activeChapter,
+      seekTo
     }
   }
 })

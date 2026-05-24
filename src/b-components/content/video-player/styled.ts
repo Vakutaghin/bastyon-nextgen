@@ -257,6 +257,33 @@ export const SC_VideoTimeDisplay = styled.span`
   box-sizing: border-box !important;
 `
 
+export const SC_VideoChapterMarker = styled.div`
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 2px !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  pointer-events: none !important;
+  z-index: 3 !important;
+  transform: translateX(-1px) !important;
+`
+
+export const SC_VideoChapterTitle = styled.span`
+  color: #333 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  user-select: none !important;
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+  max-width: 220px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  padding: 0 4px !important;
+  opacity: 0.85 !important;
+`
+
 export const SC_VideoProgressBar = styled.div`
   flex: 1 1 0 !important;
   min-width: 0 !important;

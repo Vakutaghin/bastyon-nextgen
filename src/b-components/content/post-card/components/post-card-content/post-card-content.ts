@@ -4,6 +4,11 @@ import BlockContent from '@/b-components/content/block-content/block-content.vue
 import { useModalStore } from '@/stores/modal-store'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { editorjsToHtml } from '@/helpers/content/editorjs-parser'
+import {
+  TIMECODE_REGEX,
+  timecodeMatchToSeconds,
+  type Chapter
+} from '@/helpers/content/timecode-parser'
 import { SC_PostContent, SC_PostPreview } from './styled'
 
 export interface PostContentPost {
@@ -29,13 +34,23 @@ export const postCardContentOptions = defineComponent({
     maxLength: { type: Number, default: 500 },
     maxBlocks: { type: Number, default: 3 },
     showFull: { type: Boolean, default: false },
-    isCollapsed: { type: Boolean, default: true }
+    isCollapsed: { type: Boolean, default: true },
+    chapters: {
+      type: Array as PropType<Chapter[]>,
+      default: () => []
+    }
+  },
+  emits: {
+    'seek-timecode': (_seconds: number) => true
   },
   setup() {
     const modalStore = useModalStore()
     return { modalStore }
   },
   computed: {
+    hasChapters(): boolean {
+      return Array.isArray(this.chapters) && this.chapters.length > 0
+    },
     isBlockContent(): boolean {
       if (!this.post.content) return false
       try {
@@ -150,6 +165,29 @@ export const postCardContentOptions = defineComponent({
       return this.post.type === 'article' ? 'Читать статью' : 'Показать полностью'
     }
   },
+  watch: {
+    'post.content'() {
+      this.$nextTick(() => this.injectTimecodeLinks())
+    },
+    isCollapsed() {
+      this.$nextTick(() => this.injectTimecodeLinks())
+    },
+    showFull() {
+      this.$nextTick(() => this.injectTimecodeLinks())
+    },
+    chapters: {
+      handler() {
+        this.$nextTick(() => this.injectTimecodeLinks())
+      },
+      deep: true
+    }
+  },
+  mounted() {
+    this.$nextTick(() => this.injectTimecodeLinks())
+  },
+  updated() {
+    this.injectTimecodeLinks()
+  },
   methods: {
     openPostModal(event?: Event) {
       if (event) {
@@ -161,6 +199,106 @@ export const postCardContentOptions = defineComponent({
         }
       }
       this.modalStore.openPostModal(this.post)
+    },
+    /**
+     * Делегированный клик: ловим клик по `.timecode-link` и эмитим seek.
+     */
+    handleContentClick(event: MouseEvent) {
+      if (!this.hasChapters) return
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      const link = target.closest('a.timecode-link') as HTMLAnchorElement | null
+      if (!link) return
+      const secondsAttr = link.getAttribute('data-seconds')
+      const seconds = secondsAttr ? Number(secondsAttr) : NaN
+      if (!Number.isFinite(seconds)) return
+      event.preventDefault()
+      event.stopPropagation()
+      this.$emit('seek-timecode', seconds)
+    },
+    /**
+     * После рендера HTML обходим текстовые ноды внутри контента и
+     * заменяем тайм-коды на `<a class="timecode-link" data-seconds="N">`.
+     * Заменяем только те, что совпадают с известными главами (start всех глав).
+     */
+    injectTimecodeLinks() {
+      if (!this.hasChapters) return
+      const root = this.$refs.contentRoot as { $el?: HTMLElement } | HTMLElement | undefined
+      const el = root && ('$el' in root ? root.$el : root)
+      if (!el) return
+
+      const knownSeconds = new Set<number>(this.chapters.map((c) => c.start))
+
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node: Node) => {
+          const parent = (node as Text).parentElement
+          if (!parent) return NodeFilter.FILTER_REJECT
+          // Уже внутри ссылки — пропускаем (не оборачиваем дважды).
+          if (parent.closest('a')) return NodeFilter.FILTER_REJECT
+          // Уже преобразовано.
+          if (parent.classList && parent.classList.contains('timecode-link')) {
+            return NodeFilter.FILTER_REJECT
+          }
+          const text = node.nodeValue || ''
+          // Быстрый префильтр — без двоеточия в тексте обрабатывать нечего.
+          if (!text.includes(':')) return NodeFilter.FILTER_REJECT
+          return NodeFilter.FILTER_ACCEPT
+        }
+      })
+
+      const targets: Text[] = []
+      let n: Node | null = walker.nextNode()
+      while (n) {
+        targets.push(n as Text)
+        n = walker.nextNode()
+      }
+
+      for (const textNode of targets) {
+        this.transformTextNode(textNode, knownSeconds)
+      }
+    },
+    transformTextNode(textNode: Text, knownSeconds: Set<number>) {
+      const text = textNode.nodeValue || ''
+      TIMECODE_REGEX.lastIndex = 0
+
+      type Part = { type: 'text'; value: string } | { type: 'tc'; value: string; seconds: number }
+      const parts: Part[] = []
+      let lastIndex = 0
+      let match: RegExpExecArray | null
+      let foundAny = false
+
+      while ((match = TIMECODE_REGEX.exec(text)) !== null) {
+        const seconds = timecodeMatchToSeconds(match)
+        if (seconds === null || !knownSeconds.has(seconds)) continue
+
+        if (match.index > lastIndex) {
+          parts.push({ type: 'text', value: text.slice(lastIndex, match.index) })
+        }
+        parts.push({ type: 'tc', value: match[0], seconds })
+        lastIndex = match.index + match[0].length
+        foundAny = true
+      }
+
+      if (!foundAny) return
+
+      if (lastIndex < text.length) {
+        parts.push({ type: 'text', value: text.slice(lastIndex) })
+      }
+
+      const frag = document.createDocumentFragment()
+      for (const part of parts) {
+        if (part.type === 'text') {
+          frag.appendChild(document.createTextNode(part.value))
+        } else {
+          const a = document.createElement('a')
+          a.className = 'timecode-link'
+          a.href = '#'
+          a.setAttribute('data-seconds', String(part.seconds))
+          a.textContent = part.value
+          frag.appendChild(a)
+        }
+      }
+      textNode.parentNode?.replaceChild(frag, textNode)
     }
   }
 })

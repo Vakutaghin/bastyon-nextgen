@@ -1,5 +1,5 @@
 <template>
-  <SC_PostContent>
+  <SC_PostContent ref="contentRoot" @click="handleContentClick">
     <BlockContent
       v-if="isBlockContent && (showFull || !isCollapsed || !shouldCollapse)"
       :content="post.content"

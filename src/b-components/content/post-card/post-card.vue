@@ -37,8 +37,10 @@
 
         <VideoPlayer
           v-else-if="(post.type === 'video' || post.type === 'audio') && post.videoUrl"
+          ref="videoPlayerRef"
           :video-url="post.videoUrl"
           :is-audio="post.type === 'audio'"
+          :chapters="chapters"
         />
 
         <PostCardVideoPlaceholder
@@ -55,6 +57,8 @@
           :max-blocks="maxBlocks"
           :show-full="showFull"
           :is-collapsed="isCollapsed"
+          :chapters="chapters"
+          @seek-timecode="handleSeekTimecode"
         />
 
         <SC_PostCardYoutube v-if="(youtubeEmbedUrls || []).length">

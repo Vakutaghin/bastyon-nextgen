@@ -270,12 +270,23 @@
           <SC_VideoProgressFill
             :style="{ width: progressWidth }"
           />
+          <SC_VideoChapterMarker
+            v-for="(pos, i) in chapterMarkers"
+            :key="`chapter-${i}`"
+            :style="{ left: pos + '%' }"
+            :title="chapters[i]?.label"
+          />
         </SC_VideoProgressBar>
 
         <!-- Время -->
         <SC_VideoTimeDisplay>
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </SC_VideoTimeDisplay>
+
+        <!-- Название текущей главы -->
+        <SC_VideoChapterTitle v-if="activeChapter" :title="activeChapter.label">
+          {{ activeChapter.label }}
+        </SC_VideoChapterTitle>
 
         <!-- Кнопка полноэкранного режима -->
         <SC_VideoFullscreenButton

@@ -47,6 +47,19 @@ export const SC_PostContent = styled.div`
     color: ${COLORS.PRIMARY_ACTIVE} !important;
     text-decoration: underline;
   }
+
+  :deep(.timecode-link) {
+    color: ${COLORS.PRIMARY} !important;
+    text-decoration: none;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px dashed currentColor;
+  }
+
+  :deep(.timecode-link:hover) {
+    color: ${COLORS.PRIMARY_ACTIVE} !important;
+    border-bottom-style: solid;
+  }
 `
 
 export const SC_PostPreview = styled.div`

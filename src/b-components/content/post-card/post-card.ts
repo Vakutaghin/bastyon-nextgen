@@ -16,6 +16,7 @@ import PostCardContent from '@/b-components/content/post-card/components/post-ca
 import PostCardCategoriesTags from '@/b-components/content/post-card/components/post-card-categories-tags/post-card-categories-tags.vue'
 import PostCardVideoPlaceholder from '@/b-components/content/post-card/components/post-card-video-placeholder/post-card-video-placeholder.vue'
 import { getYoutubeEmbedUrls } from '@/helpers/common/youtube-url'
+import { parseTimecodes, type Chapter } from '@/helpers/content/timecode-parser'
 import {
   SC_PostCard,
   SC_PostTitle,
@@ -211,6 +212,15 @@ export const postCardOptions = defineComponent({
       if (ts == null) return ''
       return formatDateTimeFull(ts)
     },
+    /**
+     * Главы, спарсенные из описания поста (YouTube-style тайм-коды).
+     * Активны только для видео/аудио постов; в противном случае пусто.
+     */
+    chapters(): Chapter[] {
+      const isMedia = (this.post.type === 'video' || this.post.type === 'audio') && !!this.post.videoUrl
+      if (!isMedia) return []
+      return parseTimecodes(this.post.content)
+    },
     youtubeEmbedUrls(): string[] {
       if (!this.post) return []
       const hasInPlatformVideo =
@@ -281,6 +291,15 @@ export const postCardOptions = defineComponent({
     handleRatingError(error: Error): void {
       // Обработка ошибок при отправке рейтинга
       console.error('Failed to submit rating:', error)
+    },
+    /**
+     * Клик по тайм-коду в описании — просим плеер перемотать туда и запустить.
+     */
+    handleSeekTimecode(seconds: number): void {
+      const ref = this.$refs.videoPlayerRef as { seekTo?: (s: number) => void } | undefined
+      if (ref && typeof ref.seekTo === 'function') {
+        ref.seekTo(seconds)
+      }
     },
     /**
      * При сворачивании комментариев скроллим к карточке поста
