@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
+import { readFileSync } from 'node:fs'
 import wasm from 'vite-plugin-wasm'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import babel from 'vite-plugin-babel'
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
 
 // Прокси для PeerTube API в dev — обход CORS (запрос идёт через тот же origin)
 function peertubeProxyPlugin() {
@@ -122,6 +125,7 @@ export default defineConfig(({ mode }) => ({
     'process.env': {},
     'process.browser': true,
     'process.version': '"v16.0.0"',
+    '__APP_VERSION__': JSON.stringify(pkg.version),
   },
 
   optimizeDeps: {

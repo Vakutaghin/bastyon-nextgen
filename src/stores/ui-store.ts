@@ -1,12 +1,28 @@
 import { defineStore } from 'pinia'
 import { SCROLL_POSITION_PREFIX } from '@/blockchain/constants/storage'
+import { settingsAPI } from '@/db/apis/settings-api'
+
+export type AppLanguage = 'ru' | 'en'
+
+const SETTING_KEY_LANGUAGE = 'bastyonAppLanguage'
+
+function detectDefaultLanguage(): AppLanguage {
+  try {
+    const nav = (navigator?.language ?? '').slice(0, 2).toLowerCase()
+    return nav === 'ru' ? 'ru' : 'en'
+  } catch {
+    return 'ru'
+  }
+}
 
 export const useUIStore = defineStore('ui', {
   state: () => ({
     scrollPositions: new Map<string, number>(),
     loadingStates: new Map<string, boolean>(),
     theme: 'light' as 'light' | 'dark',
-    sidebarCollapsed: false
+    sidebarCollapsed: false,
+    language: detectDefaultLanguage(),
+    languageLoaded: false,
   }),
 
   getters: {
@@ -123,6 +139,35 @@ export const useUIStore = defineStore('ui', {
      */
     clearLoadingStates(): void {
       this.loadingStates.clear()
-    }
-  }
+    },
+
+    /**
+     * Подтягивает сохранённый язык из IndexedDB. Если ничего не сохранено —
+     * остаётся то, что определилось из navigator.language.
+     */
+    async loadLanguage(): Promise<void> {
+      try {
+        const stored = await settingsAPI.get(SETTING_KEY_LANGUAGE)
+        if (stored === 'ru' || stored === 'en') {
+          this.language = stored
+        }
+      } catch (err) {
+        console.error('Failed to load language setting:', err)
+      } finally {
+        this.languageLoaded = true
+      }
+    },
+
+    /**
+     * Меняет язык и персистит в IndexedDB.
+     */
+    async setLanguage(language: AppLanguage): Promise<void> {
+      this.language = language
+      try {
+        await settingsAPI.set(SETTING_KEY_LANGUAGE, language)
+      } catch (err) {
+        console.error('Failed to save language setting:', err)
+      }
+    },
+  },
 })
