@@ -10,6 +10,7 @@ import { getByPRC } from '@/helpers/api/request'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { PcryptoService, type User as PcryptoUser } from './services/pcrypto'
 import { matrixService } from './services/matrix-service'
+import { encryptTextWithSecret, decryptTextWithSecret } from './services/encryption-service'
 import glassSound from './sounds/glass.mp3'
 import type { Dialog, Message, MessageReaction, User } from './types'
 
@@ -525,6 +526,131 @@ export const useMessengerStore = defineStore('messenger', () => {
     return memberIds
   }
 
+  // === Групповая криптография (общий ключ комнаты по протоколу bastyon-chat) ===
+
+  /**
+   * Признак группового зашифрованного m.room.message: есть content.hash и body
+   * выглядит как hex-кодированный AES-CBC ciphertext (только hex-символы,
+   * длина кратна 32 — 1 блок = 16 байт = 32 hex). Не требуем msgtype, потому что
+   * старые клиенты могли отправлять без него.
+   */
+  const isGroupEncryptedContent = (content: any): boolean => {
+    if (!content) return false
+    if (typeof content.hash !== 'string' || content.hash.length === 0) return false
+    if (typeof content.body !== 'string' || content.body.length === 0) return false
+    if (content.body.length % 32 !== 0) return false
+    return /^[0-9a-fA-F]+$/.test(content.body)
+  }
+
+  /**
+   * Находит state-событие `m.room.encryption` со state_key `pcrypto.<sender>.<hash>`.
+   * В нём лежит общий ключ группы (зашифрованный per-recipient AES-SIV по EAA-схеме).
+   */
+  const findCommonKeyStateEvent = (room: any, senderMatrixIdLocal: string, hash: string): any | null => {
+    if (!room?.currentState?.getStateEvents) return null
+    const stateKey = `pcrypto.${senderMatrixIdLocal}.${hash}`
+    const single = room.currentState.getStateEvents('m.room.encryption', stateKey)
+    if (single) return single
+    const events = room.currentState.getStateEvents('m.room.encryption')
+    if (!Array.isArray(events)) return null
+    return events.find((e: any) => {
+      const sk = typeof e.getStateKey === 'function' ? e.getStateKey() : (e.event?.state_key || e.state_key)
+      return sk === stateKey
+    }) || null
+  }
+
+  /**
+   * Расшифровывает state-событие общего ключа группы и возвращает строку-секрет
+   * (которой далее AES-CBC дешифруется тело сообщения).
+   */
+  const decryptGroupCommonKey = async (
+    stateEvent: any,
+    users: PcryptoUser[],
+  ): Promise<string | null> => {
+    if (!pcryptoService.value || !stateEvent) return null
+    const raw = stateEvent.event || stateEvent
+    const senderId = typeof stateEvent.getSender === 'function'
+      ? stateEvent.getSender()
+      : (raw?.sender || raw?.user_id)
+    const stateContent = typeof stateEvent.getContent === 'function'
+      ? stateEvent.getContent()
+      : raw?.content
+    if (!stateContent?.keys) return null
+    const fakeStateEvent = {
+      type: 'm.room.encryption',
+      sender: senderId,
+      content: stateContent,
+      origin_server_ts: raw?.origin_server_ts || Date.now(),
+    }
+    try {
+      return await pcryptoService.value.decryptEvent(fakeStateEvent, users)
+    } catch (e) {
+      return null
+    }
+  }
+
+  /**
+   * Собирает PcryptoUser[] для расшифровки/шифрования группового события.
+   * Загружает недостающие профили (best-effort).
+   */
+  const collectGroupUsers = async (memberIds: string[]): Promise<PcryptoUser[]> => {
+    const myMatrixId = matrixService.getClient()?.getUserId()
+    const addressesToFetch: string[] = []
+    for (const memberId of memberIds) {
+      const address = getAddressFromMatrixId(memberId)
+      if (address && !userProfiles.value[address]) addressesToFetch.push(address)
+    }
+    const myAddress = myMatrixId ? getAddressFromMatrixId(myMatrixId) : null
+    if (myAddress && !userProfiles.value[myAddress]) addressesToFetch.push(myAddress)
+    if (addressesToFetch.length > 0) await fetchProfiles(addressesToFetch)
+
+    const users: PcryptoUser[] = []
+    for (const memberId of memberIds) {
+      const address = getAddressFromMatrixId(memberId)
+      const isMe = !!myMatrixId && memberId === myMatrixId
+      if (isMe) {
+        if (address && userProfiles.value[address]?.k) {
+          users.push({
+            id: memberId,
+            keys: parseProfileKeys(userProfiles.value[address].k),
+            dbId: (userProfiles.value[address] as any).id,
+          })
+          continue
+        }
+        if (localMessengerKeys.value) {
+          users.push({
+            id: memberId,
+            keys: localMessengerKeys.value.map((k) => k.public),
+            dbId: address && userProfiles.value[address] ? (userProfiles.value[address] as any).id : undefined,
+          })
+          continue
+        }
+      }
+      if (address && userProfiles.value[address]?.k) {
+        users.push({
+          id: memberId,
+          keys: parseProfileKeys(userProfiles.value[address].k),
+          dbId: (userProfiles.value[address] as any).id,
+        })
+      }
+    }
+    return users
+  }
+
+  /** md5(<id участников кроме меня, сортировка по dbId>) + "_v13_2" — совместимо с bastyon-chat */
+  const computeGroupUsershash = (users: PcryptoUser[], myMatrixIdLocal: string): string => {
+    const sorted = [...users].sort((a, b) => {
+      const da = a.dbId || 0
+      const db = b.dbId || 0
+      if (da !== db) return da - db
+      return a.id.localeCompare(b.id)
+    })
+    const otherIds = sorted
+      .map((u) => getMatrixId(u.id))
+      .filter((id) => id && id !== myMatrixIdLocal)
+    return CryptoJS.MD5(otherIds.join('') + '_v13_2').toString()
+  }
+
   const tryDecrypt = async (event: any): Promise<string | null> => {
     const eventId = getEventId(event)
 
@@ -535,6 +661,43 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     const content = getEventContent(event)
     const isEncryptedType = getEventType(event) === 'm.room.encrypted'
+
+    // === Группа: m.room.message с msgtype 'm.encrypted', body=hex, content.hash ===
+    if (isGroupEncryptedContent(content)) {
+      try {
+        const room = matrixService.getRoom(getEventRoomId(event))
+        if (!room) return null
+
+        const senderId = getEventSender(event)
+        const senderLocal = getMatrixId(senderId)
+        const stateEvent = findCommonKeyStateEvent(room, senderLocal, content.hash)
+        if (!stateEvent) {
+          console.warn(`[MessengerStore] Group msg ${eventId}: m.room.encryption state event not found for "pcrypto.${senderLocal}.${content.hash}"`)
+          return null
+        }
+
+        const memberIds = getOrderedMemberIds(room, getEventTs(event))
+        const users = await collectGroupUsers(memberIds)
+
+        if (!users.find((u) => u.id === senderId)) {
+          const senderAddr = getAddressFromMatrixId(senderId)
+          if (senderAddr) {
+            await fetchProfiles([senderAddr])
+            const p = userProfiles.value[senderAddr]
+            if (p?.k) users.push({ id: senderId, keys: parseProfileKeys(p.k), dbId: (p as any).id })
+          }
+          if (!users.find((u) => u.id === senderId)) return null
+        }
+
+        const commonSecret = await decryptGroupCommonKey(stateEvent, users)
+        if (!commonSecret) return null
+
+        return await decryptTextWithSecret(content.body, commonSecret)
+      } catch (e: any) {
+        console.error(`[MessengerStore] Group decryption failed for ${eventId}:`, e.message || e)
+        return null
+      }
+    }
 
     // Explicitly type check and cast to avoid implicit any
     let secrets: any = null
@@ -780,6 +943,8 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     // Check if we should try decrypting
     const isEncryptedType = getEventType(event) === 'm.room.encrypted'
+    // Группа: m.room.message с body=hex + content.hash → bastyon-chat group protocol.
+    const isGroupEncrypted = content.msgtype !== 'm.audio' && isGroupEncryptedContent(content)
 
     // Check nested secrets or if body itself is a JSON with 'encrypted'
     let hasSecrets = (content.info && content.info.secrets) || (content.pbody && content.pbody.secrets)
@@ -803,7 +968,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (content.msgtype === 'm.audio' && content.body && content.body.startsWith('http')) {
         // Do nothing here, it will be handled in main logic
     }
-    else if (!hasSecrets && content.body && typeof content.body === 'string' && content.body.startsWith('ey')) {
+    else if (!hasSecrets && !isGroupEncrypted && content.body && typeof content.body === 'string' && content.body.startsWith('ey')) {
       try {
         // Check if it parses to JSON and has keys looking like our addresses/hex?
         const decoded = atob(content.body)
@@ -830,7 +995,7 @@ export const useMessengerStore = defineStore('messenger', () => {
       } catch (e) {}
     }
 
-    const shouldDecrypt = (isEncryptedType || hasSecrets) && !skipDecryption
+    const shouldDecrypt = (isEncryptedType || hasSecrets || isGroupEncrypted) && !skipDecryption
 
     if (shouldDecrypt) {
       const decrypted = await tryDecrypt(event)
@@ -881,6 +1046,9 @@ export const useMessengerStore = defineStore('messenger', () => {
           // Not JSON, use as is
           text = decrypted
         }
+      } else if (isGroupEncrypted) {
+        // Группа: показывать сырой hex нельзя — он бессмысленен. Placeholder.
+        text = '*** Encrypted Message ***'
       } else {
         // Fallback: If decryption returns null, it might be because of missing keys or other issues
         // But if event has 'body' which is NOT '*** Encrypted Message ***' (default from some clients),
@@ -892,10 +1060,10 @@ export const useMessengerStore = defineStore('messenger', () => {
           text = '*** Encrypted Message ***'
         }
       }
-    } else if ((isEncryptedType || hasSecrets) && skipDecryption) {
+    } else if ((isEncryptedType || hasSecrets || isGroupEncrypted) && skipDecryption) {
       // In list view (dialogs), show placeholder or body if available (but body is usually encrypted text)
       // Actually, Matrix spec says body contains "readable" fallback, but in our case it might be the ciphertext or 'Encrypted message' string
-      if (content.body && !content.body.includes('***') && content.body.length < 100) {
+      if (!isGroupEncrypted && content.body && !content.body.includes('***') && content.body.length < 100) {
         // If body is short and doesn't look like ciphertext (ciphertext is usually long base64), maybe show it?
         // But usually it IS ciphertext or "Encrypted message"
         text = content.body
@@ -1245,11 +1413,68 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
   }
 
+  /**
+   * Отправка группового зашифрованного сообщения по протоколу bastyon-chat:
+   *   1) usershash = md5(<id участников кроме меня, сортировка по dbId>) + "_v13_2"
+   *   2) ищем state-событие m.room.encryption со state_key `pcrypto.<my>.<hash>`;
+   *      если есть — расшифровываем общий ключ; нет — генерируем и публикуем своё.
+   *   3) AES-CBC шифруем тело общим ключом, отправляем m.room.message
+   *      { msgtype: 'm.encrypted', body: hex, hash, block: 10 }.
+   */
+  const sendGroupMessage = async (chatId: string, room: any, text: string) => {
+    await room.loadMembersIfNeeded?.()
+
+    ensurePcryptoInitialized()
+    if (!pcryptoService.value && isInitInProgress.value) await waitForPcrypto()
+    if (!pcryptoService.value) throw new Error('PcryptoService not initialized')
+
+    const client = matrixService.getClient()
+    if (!client) throw new Error('Matrix client not initialized')
+    const myMatrixId = client.getUserId()
+    if (!myMatrixId) throw new Error('Missing my matrix id')
+    const myLocal = getMatrixId(myMatrixId)
+
+    const memberIds = getOrderedMemberIds(room, Date.now())
+    const users = await collectGroupUsers(memberIds)
+    if (!users.find((u) => u.id === myMatrixId)) {
+      throw new Error('My pcrypto keys are not available')
+    }
+
+    const hash = computeGroupUsershash(users, myLocal)
+    const block = 10
+    const version = 2
+
+    let commonSecret: string | null = null
+    const existing = findCommonKeyStateEvent(room, myLocal, hash)
+    if (existing) {
+      commonSecret = await decryptGroupCommonKey(existing, users)
+    }
+
+    if (!commonSecret) {
+      const rand = crypto.getRandomValues(new Uint8Array(32))
+      commonSecret = Array.from(rand).map((b) => b.toString(16).padStart(2, '0')).join('')
+      const encrypted = await pcryptoService.value.encryptKey(commonSecret, users, block, version)
+      await matrixService.sendStateEvent(
+        chatId,
+        'm.room.encryption',
+        { version, hash, block: encrypted.block, keys: encrypted.keys },
+        `pcrypto.${myLocal}.${hash}`,
+      )
+    }
+
+    const bodyHex = await encryptTextWithSecret(text, commonSecret)
+    await matrixService.sendEncryptedTextMessage(chatId, { body: bodyHex, hash, block })
+  }
+
   const sendMessage = async (chatId: string, text: string) => {
     try {
+      const room = matrixService.getRoom(chatId)
+      // Тет-а-тет → плейн-текст как раньше; группа → bastyon-chat group protocol.
+      if (room && !isTetatetchat(room)) {
+        await sendGroupMessage(chatId, room, text)
+        return
+      }
       await matrixService.sendMessage(chatId, text)
-      // Optimistic update or wait for sync?
-      // Matrix SDK handles sync
     } catch (e) {
       console.error('[MessengerStore] Failed to send message:', e)
     }

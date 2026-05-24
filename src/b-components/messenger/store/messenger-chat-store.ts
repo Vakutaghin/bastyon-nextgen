@@ -300,15 +300,20 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     }
   }
 
-  /** Признак группового зашифрованного m.room.message (новый протокол bastyon-chat) */
+  /**
+   * Признак группового зашифрованного m.room.message (bastyon-chat group protocol).
+   *
+   * Раньше требовали msgtype === 'm.encrypted', но это ломалось на исторических
+   * сообщениях, где старые клиенты могли отправлять без явного msgtype или с другим.
+   * Достаточный сигнал: есть content.hash и body выглядит как hex-кодированный
+   * AES-CBC ciphertext (только hex-символы, длина кратна 32 — 1 блок = 16 байт = 32 hex).
+   */
   const isGroupEncryptedContent = (content: any): boolean => {
-    return !!(
-      content
-      && typeof content.hash === 'string'
-      && typeof content.body === 'string'
-      && content.body.length > 0
-      && (content.msgtype === 'm.encrypted' || !content.msgtype)
-    )
+    if (!content) return false
+    if (typeof content.hash !== 'string' || content.hash.length === 0) return false
+    if (typeof content.body !== 'string' || content.body.length === 0) return false
+    if (content.body.length % 32 !== 0) return false
+    return /^[0-9a-fA-F]+$/.test(content.body)
   }
 
   // --- Дешифрование ---
@@ -334,7 +339,12 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
         const senderId = getEventSender(event)
         const senderLocal = getMatrixId(senderId)
         const stateEvent = findCommonKeyStateEvent(room, senderLocal, content.hash)
-        if (!stateEvent) return null
+        if (!stateEvent) {
+          // Без state-события `m.room.encryption` с подходящим state_key
+          // расшифровать невозможно — отдаём placeholder, а не сырой hex.
+          console.warn(`[ChatStore] Group msg ${eventId}: m.room.encryption state event not found for state_key "pcrypto.${senderLocal}.${content.hash}"`)
+          return null
+        }
 
         const memberIds = getOrderedMemberIds(room, getEventTs(event))
         const users = await collectPcryptoUsers(memberIds)
