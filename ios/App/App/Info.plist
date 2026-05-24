@@ -47,5 +47,13 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Bastyon использует камеру для съёмки фото и видео при создании постов и сообщений</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Bastyon обращается к фотогалерее, чтобы прикреплять изображения к постам и сообщениям</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Bastyon сохраняет в фотогалерею изображения, выбранные в приложении</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Bastyon использует микрофон для записи голосовых сообщений и видеосъёмки</string>
 </dict>
 </plist>

@@ -12,6 +12,11 @@ export const SC_HomeWork = styled.div`
   padding: 58px 0 25px;
   align-items: flex-start;
   background: rgb(255, 255, 255);
+
+  &.is-mobile {
+    gap: 0;
+    padding: calc(60px + env(safe-area-inset-top, 0px)) 0 0;
+  }
 `
 
 export const SC_HomeMainContent = styled.div`

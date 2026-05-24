@@ -2,6 +2,8 @@ import { defineComponent, watch, onMounted, onUnmounted, nextTick, computed, ref
 import { usePostsStore } from '@/stores/posts-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useInfiniteFeed } from '@/composables/use-infinite-feed'
+import { isMobile } from '@mobile/utils/platform'
+import { getPhoto } from '@mobile/adapters/capacitor-camera'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import Button from '@/components/button/button.vue'
 import Spin from '@/components/spin/spin.vue'
@@ -175,6 +177,30 @@ export const contentFeedOptions = defineComponent({
       }
     }
 
+    const pickedPhotoDataUrl = ref<string | null>(null)
+    const isPickingPhoto = ref(false)
+
+    const handleCreatePost = async (): Promise<void> => {
+      if (!isMobile()) {
+        // На вебе пока ничего не делаем (форма публикации ещё не реализована).
+        return
+      }
+
+      isPickingPhoto.value = true
+      try {
+        const dataUrl = await getPhoto({ quality: 85 })
+        if (dataUrl) {
+          pickedPhotoDataUrl.value = dataUrl
+        }
+      } finally {
+        isPickingPhoto.value = false
+      }
+    }
+
+    const closePhotoPreview = () => {
+      pickedPhotoDataUrl.value = null
+    }
+
     onMounted(() => {
       if (typeof window !== 'undefined') {
         window.addEventListener('scroll', onScroll, { passive: true })
@@ -210,7 +236,11 @@ export const contentFeedOptions = defineComponent({
       showScrollToTopVisible,
       isHoveringScrollToTop,
       scrollToTopButtonStyle,
-      scrollToTop
+      scrollToTop,
+      handleCreatePost,
+      pickedPhotoDataUrl,
+      isPickingPhoto,
+      closePhotoPreview
     }
   }
 })

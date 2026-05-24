@@ -31,7 +31,7 @@
       </SC_FeedHeaderLeft>
 
       <SC_FeedHeaderActions>
-        <Button type='primary'>
+        <Button type='primary' :loading='isPickingPhoto' @click='handleCreatePost'>
           <template #icon>
             <PlusOutlined />
           </template>
@@ -118,6 +118,15 @@
       <UpOutlined />
       Наверх
     </SC_ScrollToTop>
+
+    <div
+      v-if='pickedPhotoDataUrl'
+      style='position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 16px;'
+      @click='closePhotoPreview'
+    >
+      <img :src='pickedPhotoDataUrl' style='max-width: 100%; max-height: 70vh; border-radius: 8px;' />
+      <div style='color: white; font-size: 14px; opacity: 0.85;'>Тап в любом месте — закрыть</div>
+    </div>
   </SC_Feed>
 </template>
 

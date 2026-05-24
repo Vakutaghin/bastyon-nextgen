@@ -43,6 +43,7 @@ import 'ant-design-vue/dist/reset.css'
 
 import App from '@/src.vue'
 import router from '@/router'
+import { initCapacitor } from '@mobile/bootstrap'
 import { initDatabase } from '@/db/database'
 import { useAuthStore } from '@/blockchain'
 import { useNotificationsStore, useNotificationSettingsStore, useTorStore } from '@/stores'
@@ -134,6 +135,7 @@ function doMount() {
 
     try {
       app.mount('#app')
+      initCapacitor(router).catch((e) => console.warn('[main] initCapacitor failed:', e))
     } catch (e) {
       console.error('[main] Mount failed:', e)
     }

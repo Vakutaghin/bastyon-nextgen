@@ -17,6 +17,7 @@
 
 import { useQuery } from '@tanstack/vue-query'
 import { getByPRC } from '@/helpers/api/request'
+import { getExplorerRpcConfig } from './use-explorer-preferred-node'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import type { GetLastBlocksResponse } from '@/types/rpc-responses/get-last-blocks'
 import type { GetBlockTransactionsResponse } from '@/types/rpc-responses/get-transactions'
@@ -80,7 +81,7 @@ export function useActiveAddresses(options: UseActiveAddressesOptions = {}) {
         method: rpcEndpoints.getLastBlocks,
         parameters: [blockDepth, -1, false],
         options: { auth: false },
-      })) as GetLastBlocksResponse
+      }, getExplorerRpcConfig())) as GetLastBlocksResponse
       const blocks = lastBlocksResp?.data ?? []
       if (blocks.length === 0) {
         return { addresses: [], blocksScanned: 0, txCount: 0 }
@@ -96,7 +97,7 @@ export function useActiveAddresses(options: UseActiveAddressesOptions = {}) {
               method: rpcEndpoints.getBlockTransactions,
               parameters: [hash, 0, txLimit],
               options: { auth: false },
-            })) as GetBlockTransactionsResponse
+            }, getExplorerRpcConfig())) as GetBlockTransactionsResponse
             return resp?.data ?? []
           } catch {
             // Один упавший блок не должен валить весь отчёт.

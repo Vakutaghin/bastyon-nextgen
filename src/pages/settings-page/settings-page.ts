@@ -1,12 +1,21 @@
-import { defineComponent, ref, onMounted } from 'vue'
+import { defineComponent, ref, onMounted, computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { RouterLink } from 'vue-router'
 import { Switch } from 'ant-design-vue'
 import { CopyOutlined } from '@ant-design/icons-vue'
 import { useNotificationSettingsStore, useAuthStore } from '@/stores'
+import { useUIStore, type AppLanguage } from '@/stores/ui-store'
+import ChangelogView from '@/b-components/changelog/changelog-view.vue'
 import type { NotificationFilterKey } from '@/stores/notification-settings-store'
 import { NOTIFICATION_FILTER_LABELS } from '@/stores/notification-settings-store'
 import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
 import { detectPrivateKeyFormat, recoverKeyPair } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
+import {
+  useExplorerPreferredNode,
+  type AvailableNode,
+  type PreferredNode,
+} from '@/composables/use-explorer-preferred-node'
 
 import {
   SC_SettingsWork,
@@ -34,6 +43,20 @@ import {
   SC_ConfirmButtons,
   SC_ConfirmBtnPrimary,
   SC_ConfirmBtnDefault,
+  SC_ExplorerSettingsSection,
+  SC_ExplorerSettingsBlock,
+  SC_ExplorerSettingsLead,
+  SC_ExplorerOpenFullButton,
+  SC_ExplorerNodeList,
+  SC_ExplorerNodeRow,
+  SC_ExplorerNodeRadio,
+  SC_ExplorerNodeLabel,
+  SC_ExplorerNodeHint,
+  SC_GeneralBlock,
+  SC_GeneralRow,
+  SC_GeneralLabel,
+  SC_LangSwitcher,
+  SC_LangButton,
 } from './settings-page.styled'
 
 export type T_SettingsTabKey =
@@ -44,6 +67,7 @@ export type T_SettingsTabKey =
   | 'system'
   | 'privateKey'
   | 'blockExplorer'
+  | 'whatsNew'
 
 export const SETTINGS_TABS: { key: T_SettingsTabKey; label: string }[] = [
   { key: 'general', label: 'Общие' },
@@ -53,6 +77,7 @@ export const SETTINGS_TABS: { key: T_SettingsTabKey; label: string }[] = [
   { key: 'system', label: 'Система' },
   { key: 'privateKey', label: 'Приватный ключ' },
   { key: 'blockExplorer', label: 'Block Explorer' },
+  { key: 'whatsNew', label: 'Что нового' },
 ]
 
 const NOTIFICATION_KEYS: NotificationFilterKey[] = [
@@ -70,8 +95,10 @@ const NOTIFICATION_KEYS: NotificationFilterKey[] = [
 export default defineComponent({
   name: 'SettingsPage',
   components: {
+    RouterLink,
     Switch,
     CopyOutlined,
+    ChangelogView,
     SC_SettingsWork,
     SC_SettingsPage,
     SC_SettingsContentWrapper,
@@ -97,14 +124,41 @@ export default defineComponent({
     SC_ConfirmButtons,
     SC_ConfirmBtnPrimary,
     SC_ConfirmBtnDefault,
+    SC_ExplorerSettingsSection,
+    SC_ExplorerSettingsBlock,
+    SC_ExplorerSettingsLead,
+    SC_ExplorerOpenFullButton,
+    SC_ExplorerNodeList,
+    SC_ExplorerNodeRow,
+    SC_ExplorerNodeRadio,
+    SC_ExplorerNodeLabel,
+    SC_ExplorerNodeHint,
+    SC_GeneralBlock,
+    SC_GeneralRow,
+    SC_GeneralLabel,
+    SC_LangSwitcher,
+    SC_LangButton,
   },
   setup() {
     const activeTab = ref<T_SettingsTabKey>('notifications')
     const notificationSettings = useNotificationSettingsStore()
     const authStore = useAuthStore()
+    const uiStore = useUIStore()
+    const { language: appLanguage } = storeToRefs(uiStore)
+    const {
+      preferredNode,
+      availableNodes: availableExplorerNodes,
+      setPreferredNode,
+    } = useExplorerPreferredNode()
     onMounted(() => {
       notificationSettings.load()
+      void uiStore.loadLanguage()
     })
+    async function onSetLanguage(language: AppLanguage): Promise<void> {
+      await uiStore.setLanguage(language)
+    }
+    const supportedLanguages: AppLanguage[] = ['ru', 'en']
+    const languageLabel = computed(() => (appLanguage.value === 'ru' ? 'Язык' : 'Language'))
     return {
       tabs: SETTINGS_TABS,
       activeTab,
@@ -112,6 +166,13 @@ export default defineComponent({
       authStore,
       NOTIFICATION_FILTER_LABELS,
       NOTIFICATION_KEYS,
+      preferredNode,
+      availableExplorerNodes,
+      setPreferredNode,
+      appLanguage,
+      onSetLanguage,
+      supportedLanguages,
+      languageLabel,
     }
   },
 
@@ -133,6 +194,18 @@ export default defineComponent({
       if (key !== 'privateKey') {
         this.pkHide()
       }
+    },
+
+    isNodePinned(node: AvailableNode): boolean {
+      const p = this.preferredNode as PreferredNode | null
+      return !!p && p.host === node.host && p.port === node.port
+    },
+
+    onPickPreferredNode(node: AvailableNode | null) {
+      this.setPreferredNode(node ? { host: node.host, port: node.port } : null)
+      appToast.success({
+        message: node ? `Закреплена нода ${node.host}` : 'Включён авто-режим',
+      })
     },
 
     placeholderText(): string {

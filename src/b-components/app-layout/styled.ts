@@ -17,6 +17,10 @@ export const SC_Appcnt = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+
+  &.with-bottom-nav {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
 `
 
 export const SC_Work = styled.div`

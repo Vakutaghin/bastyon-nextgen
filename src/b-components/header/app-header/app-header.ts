@@ -11,6 +11,7 @@ import { SC_Header, SC_Sections, SC_Right, SC_MessengerWrapper } from './styled'
 import { MessageOutlined, CloseOutlined } from '@ant-design/icons-vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain'
+import { isMobile } from '@mobile/utils/platform'
 
 export const appHeaderOptions = defineComponent({
   name: 'AppHeader',
@@ -39,12 +40,14 @@ export const appHeaderOptions = defineComponent({
       messengerStore.isFullScreen = !messengerStore.isFullScreen
     }
 
-    const showMessengerIcon = computed(() => authStore.isUserAuthenticated)
+    const mobile = computed(() => isMobile())
+    const showMessengerIcon = computed(() => authStore.isUserAuthenticated && !mobile.value)
 
     return {
       isFullScreen,
       toggleMessenger,
-      showMessengerIcon
+      showMessengerIcon,
+      mobile
     }
   },
   directives: {

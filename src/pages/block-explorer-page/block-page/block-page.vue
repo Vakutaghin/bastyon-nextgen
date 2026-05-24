@@ -2,12 +2,12 @@
   <SC_BlockPageWork>
     <SC_BlockPagePage>
       <SC_BlockBreadcrumb>
-        <RouterLink :to='{ name: "explorer" }'>Эксплорер</RouterLink>
-        <span> / Блок</span>
+        <RouterLink :to='{ name: "explorer" }'>{{ s.common.breadcrumbRoot }}</RouterLink>
+        <span> / {{ s.block.breadcrumb }}</span>
       </SC_BlockBreadcrumb>
 
       <SC_BlockTitle>
-        Блок <span style='font-variant-numeric: tabular-nums;'>{{ heightLabel }}</span>
+        {{ s.block.breadcrumb }} <span style='font-variant-numeric: tabular-nums;'>{{ heightLabel }}</span>
       </SC_BlockTitle>
 
       <SC_BlockNav>
@@ -16,16 +16,16 @@
           :disabled='!prevHash'
           @click='goTo(prevHash)'
         >
-          <LeftOutlined :style="{ fontSize: '12px' }" /> Предыдущий
+          <LeftOutlined :style="{ fontSize: '12px' }" /> {{ s.block.navPrev }}
         </SC_BlockNavBtn>
         <SC_BlockNavBtn
           type='button'
           :disabled='!nextHash'
           @click='goTo(nextHash)'
         >
-          Следующий <RightOutlined :style="{ fontSize: '12px' }" />
+          {{ s.block.navNext }} <RightOutlined :style="{ fontSize: '12px' }" />
         </SC_BlockNavBtn>
-        <ShareButton v-if='block' :title='`Блок ${heightLabel}`' />
+        <ShareButton v-if='block' :title='s.block.shareTitle(heightLabel)' />
       </SC_BlockNav>
 
       <SC_BlockMetaGrid v-if='blockLoading && !block'>
@@ -43,7 +43,7 @@
         <SC_BlockMetaGrid>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              Хеш блока
+              {{ s.block.metaHash }}
               <InfoTooltip term-key='hash' />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
@@ -52,14 +52,14 @@
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              Высота
+              {{ s.block.metaHeight }}
               <InfoTooltip term-key='height' />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>#{{ formatNumber(block.height) }}</SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
           <SC_BlockMetaCell>
-            <SC_BlockMetaLabel>Время</SC_BlockMetaLabel>
+            <SC_BlockMetaLabel>{{ s.block.metaTime }}</SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               {{ formatAbsTime(block.time) }}
               <span style='color: rgb(173, 181, 189); font-size: 12px;'>
@@ -68,28 +68,28 @@
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
-            <SC_BlockMetaLabel>Транзакций</SC_BlockMetaLabel>
+            <SC_BlockMetaLabel>{{ s.block.metaNTx }}</SC_BlockMetaLabel>
             <SC_BlockMetaValue>{{ block.nTx }}</SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              Подтверждений
+              {{ s.block.metaConfirmations }}
               <InfoTooltip term-key='confirmations' />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               <span v-if='confirmations > 0'>
                 {{ formatNumber(confirmations) }}
                 <span v-if='confirmations === 1' style='font-size: 12px; color: rgb(255, 174, 0);'>
-                  · tip
+                  {{ s.block.metaConfirmationsTip }}
                 </span>
               </span>
-              <span v-else style='color: rgb(173, 181, 189);'>—</span>
+              <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              Сложность · bits
+              {{ s.block.metaDifficulty }}
               <InfoTooltip term-key='difficulty' />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
@@ -106,24 +106,24 @@
             <SC_BlockMetaValue>
               <AddressLink v-if='coinstakeInfo' :address='coinstakeInfo.staker' />
               <Skeleton v-else-if='txLoading' :width='180' :height='14' />
-              <span v-else style='color: rgb(173, 181, 189);'>—</span>
+              <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              Награда блока
+              {{ s.block.metaReward }}
               <InfoTooltip term-key='blockReward' />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               <span v-if='coinstakeInfo'>{{ formatExplorerPkoin(coinstakeInfo.reward) }} PKOIN</span>
               <Skeleton v-else-if='txLoading' :width='100' :height='14' />
-              <span v-else style='color: rgb(173, 181, 189);'>—</span>
+              <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              Merkle root
+              {{ s.block.metaMerkle }}
               <InfoTooltip term-key='merkleRoot' />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
@@ -131,7 +131,7 @@
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
-            <SC_BlockMetaLabel>Соседи</SC_BlockMetaLabel>
+            <SC_BlockMetaLabel>{{ s.block.metaSiblings }}</SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               <div v-if='block.prevhash' style='margin-bottom: 4px;'>
                 ← <HashLink
@@ -146,7 +146,7 @@
                 />
               </div>
               <div v-if='!block.prevhash && !block.nexthash' style='color: rgb(173, 181, 189);'>
-                —
+                {{ s.common.em }}
               </div>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
@@ -154,7 +154,7 @@
 
         <SC_TxSection>
           <SC_TxSectionHeader>
-            <SC_TxSectionTitle>Транзакции в блоке</SC_TxSectionTitle>
+            <SC_TxSectionTitle>{{ s.block.sectionTxTitle }}</SC_TxSectionTitle>
             <SC_TxSectionPager>
               {{ pagerLabel }}
             </SC_TxSectionPager>
@@ -167,8 +167,8 @@
               <SC_TxValue><Skeleton :width='80' :height='12' /></SC_TxValue>
             </SC_TxRow>
           </div>
-          <SC_PlaceholderError v-else-if='txError'>Не удалось загрузить транзакции</SC_PlaceholderError>
-          <SC_Placeholder v-else-if='!txList.length'>Транзакций нет</SC_Placeholder>
+          <SC_PlaceholderError v-else-if='txError'>{{ s.block.txError }}</SC_PlaceholderError>
+          <SC_Placeholder v-else-if='!txList.length'>{{ s.block.txEmpty }}</SC_Placeholder>
           <div v-else>
             <SC_TxRow v-for='tx in txList' :key='tx.txid'>
               <SC_TxTypeBadge>{{ typeLabel(tx.type) }}</SC_TxTypeBadge>
@@ -186,7 +186,7 @@
                 :disabled='txFetching'
                 @click='loadMoreTx'
               >
-                {{ txFetching ? 'Загрузка…' : `Загрузить ещё ${nextChunkLabel}` }}
+                {{ txFetching ? s.common.loading : loadMoreLabel }}
               </SC_LoadMoreBtn>
             </SC_LoadMoreFooter>
           </div>
@@ -220,6 +220,7 @@ import {
 import { labelForTxType } from '../components/shared/tx-type-labels'
 import { extractCoinstakeInfo, calcConfirmations } from '../components/shared/extract-coinstake'
 import { recordVisit } from '../components/shared/use-search-history'
+import { explorerStrings as s } from '../block-explorer-strings'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 import {
   SC_BlockPageWork,
@@ -294,13 +295,6 @@ function loadMoreTx() {
   txCount.value = Math.min(txCount.value + TX_PAGE_SIZE, total)
 }
 
-const nextChunkLabel = computed(() => {
-  const total = block.value?.nTx ?? 0
-  const remaining = Math.max(0, total - txList.value.length)
-  const next = Math.min(TX_PAGE_SIZE, remaining)
-  return next > 0 ? `(${next})` : ''
-})
-
 // Подключаем real-time обновление tip-а: confirmations растут на новом блоке.
 useExplorerWsUpdates()
 
@@ -316,8 +310,8 @@ const confirmations = computed(() => {
 const coinstakeInfo = computed(() => extractCoinstakeInfo(txList.value))
 
 const coinstakeLabel = computed(() => {
-  if (!coinstakeInfo.value) return 'Стейкер'
-  return coinstakeInfo.value.kind === 'pow' ? 'Майнер (PoW)' : 'Стейкер (PoS)'
+  if (!coinstakeInfo.value) return s.block.metaStaker
+  return coinstakeInfo.value.kind === 'pow' ? s.block.metaMinerPow : s.block.metaStakerPos
 })
 
 const prevHash = computed(() => block.value?.prevhash ?? '')
@@ -326,18 +320,18 @@ const nextHash = computed(() => block.value?.nexthash ?? '')
 const heightLabel = computed(() => {
   if (block.value) return `#${formatNumber(block.value.height)}`
   // если параметр — число, покажем сразу
-  return /^\d+$/.test(p.hashOrHeight) ? `#${formatNumber(Number(p.hashOrHeight))}` : '…'
+  return /^\d+$/.test(p.hashOrHeight) ? `#${formatNumber(Number(p.hashOrHeight))}` : s.common.ellipsis
 })
 
 const difficultyLabel = computed(() => {
   const d = block.value?.difficulty
-  return d ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(d) : '—'
+  return d ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(d) : s.common.em
 })
 
 const pagerLabel = computed(() => {
   const total = block.value?.nTx ?? 0
   const shown = txList.value.length
-  return total > 0 ? `Показано ${shown} из ${total}` : ''
+  return s.block.txPager(shown, total)
 })
 
 const blockErrorMessage = computed(() => {
@@ -345,9 +339,16 @@ const blockErrorMessage = computed(() => {
   if (!e) return ''
   const msg = e instanceof Error ? e.message : String(e)
   if (msg.toLowerCase().includes('block not found')) {
-    return 'Блок не найден. Возможно, это txid — попробуйте открыть как транзакцию.'
+    return s.block.notFound
   }
-  return `Ошибка загрузки блока: ${msg}`
+  return s.block.errorPrefix(msg)
+})
+
+const loadMoreLabel = computed(() => {
+  const total = block.value?.nTx ?? 0
+  const remaining = Math.max(0, total - txList.value.length)
+  const next = Math.min(TX_PAGE_SIZE, remaining)
+  return s.block.loadMoreNext(next)
 })
 
 function typeLabel(type: number): string {

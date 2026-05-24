@@ -3,15 +3,13 @@
     <SC_TopHeader>
       <SC_TopTitleGroup>
         <SC_TopTitle>
-          Активные адреса
-          <InfoTooltip
-            text='Топ адресов по числу транзакций за последние блоки. Считается локально по данным ноды — без зависимости от центрального хоста.'
-          />
+          {{ s.topAddresses.title }}
+          <InfoTooltip :text='s.topAddresses.tooltip' />
         </SC_TopTitle>
         <SC_TopHint>{{ hint }}</SC_TopHint>
       </SC_TopTitleGroup>
       <SC_TopToggle type='button' :disabled='!hasMore' @click='toggleShowAll'>
-        {{ expanded ? 'Свернуть' : `Показать топ-${maxShown}` }}
+        {{ expanded ? s.topAddresses.collapse : s.topAddresses.expand(maxShown) }}
       </SC_TopToggle>
     </SC_TopHeader>
 
@@ -25,22 +23,22 @@
     </template>
 
     <SC_Placeholder v-else-if='error'>
-      Не удалось вычислить топ адресов
+      {{ s.topAddresses.error }}
     </SC_Placeholder>
 
     <SC_Placeholder v-else-if='!visibleAddresses.length'>
-      Нет активности
+      {{ s.topAddresses.empty }}
     </SC_Placeholder>
 
     <template v-else>
       <SC_TopRow v-for='(row, idx) in visibleAddresses' :key='row.address'>
         <SC_TopRank>{{ idx + 1 }}</SC_TopRank>
         <AddressLink :address='row.address' />
-        <SC_TopVolume :title='`Получено + отправлено за окно`'>
+        <SC_TopVolume :title='s.topAddresses.volumeTooltip'>
           {{ formatExplorerPkoin(row.volumeIn + row.volumeOut) }} PKOIN
         </SC_TopVolume>
-        <SC_TopCount :title='`Появлений в транзакциях`'>
-          {{ row.txCount }} tx
+        <SC_TopCount :title='s.topAddresses.countTooltip'>
+          {{ s.topAddresses.txCount(row.txCount) }}
         </SC_TopCount>
       </SC_TopRow>
     </template>
@@ -53,6 +51,7 @@ import { useActiveAddresses } from '@/composables/use-active-addresses'
 import AddressLink from '../shared/address-link.vue'
 import InfoTooltip from '../shared/info-tooltip.vue'
 import { formatExplorerPkoin } from '../shared/format-explorer'
+import { explorerStrings as s } from '../../block-explorer-strings'
 import { Skeleton } from '@/components'
 import {
   SC_TopCard,
@@ -90,7 +89,7 @@ const hint = computed(() => {
   const blocks = data.value?.blocksScanned ?? 0
   const txCount = data.value?.txCount ?? 0
   if (!blocks) return ''
-  return `За последние ${blocks} блоков · ${txCount.toLocaleString('en-US')} tx`
+  return s.topAddresses.hint(blocks, txCount)
 })
 
 function toggleShowAll() {

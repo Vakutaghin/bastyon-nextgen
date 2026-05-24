@@ -18,15 +18,15 @@
           type='submit'
           :disabled='!canSubmit || resolving'
         >
-          {{ resolving ? 'Поиск…' : 'Открыть' }}
+          {{ resolving ? s.search.submitting : s.search.submit }}
         </SC_ExplorerSearchButton>
       </SC_ExplorerSearch>
 
       <SC_SuggestionsDropdown v-if='dropdownVisible'>
         <SC_SuggestionsHeader>
-          <span>Недавно открытые</span>
+          <span>{{ s.search.suggestionsTitle }}</span>
           <SC_ClearAllBtn type='button' @click='onClearAll'>
-            Очистить
+            {{ s.search.clearAll }}
           </SC_ClearAllBtn>
         </SC_SuggestionsHeader>
         <SC_SuggestionItem
@@ -40,7 +40,7 @@
           <SC_SuggestionAge>{{ ageLabel(entry.lastVisitedAt) }}</SC_SuggestionAge>
           <SC_RemoveItemBtn
             role='button'
-            title='Убрать из истории'
+            :title='s.search.removeFromHistory'
             @click.stop='onRemoveEntry(entry)'
           >
             ×
@@ -60,6 +60,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
+import { getExplorerRpcConfig } from '@/composables/use-explorer-preferred-node'
 import type { SearchByHashResponse } from '@/types/rpc-responses/search-by-hash'
 import { classifyExplorerQuery } from './use-explorer-search'
 import {
@@ -71,6 +72,7 @@ import {
   type HistoryKind,
 } from '../../components/shared/use-search-history'
 import { shortenHash, formatRelativeTime } from '../../components/shared/format-explorer'
+import { explorerStrings as s } from '../../block-explorer-strings'
 import {
   SC_ExplorerSearch,
   SC_ExplorerSearchInput,
@@ -93,7 +95,7 @@ withDefaults(
     placeholder?: string
   }>(),
   {
-    placeholder: 'Хеш блока, txid, адрес или высота',
+    placeholder: s.search.placeholder,
   },
 )
 
@@ -111,9 +113,9 @@ const canSubmit = computed(() => classification.value.value.length > 0)
 
 const hintLabel = computed(() => {
   switch (classification.value.kind) {
-    case 'block-height': return 'Блок'
-    case 'address':      return 'Адрес'
-    case 'hash64':       return 'Хеш'
+    case 'block-height': return s.search.hintBlock
+    case 'address':      return s.search.hintAddress
+    case 'hash64':       return s.search.hintHash
     default:             return ''
   }
 })
@@ -123,9 +125,9 @@ const dropdownVisible = computed(() => focused.value && suggestions.value.length
 
 function kindLabel(kind: HistoryKind): string {
   switch (kind) {
-    case 'block':   return 'Блок'
-    case 'tx':      return 'TX'
-    case 'address': return 'Адрес'
+    case 'block':   return s.search.suggestionsKindBlock
+    case 'tx':      return s.search.suggestionsKindTx
+    case 'address': return s.search.suggestionsKindAddress
   }
 }
 
@@ -191,7 +193,7 @@ async function resolveHash64(value: string) {
       method: rpcEndpoints.searchByHash,
       parameters: [value],
       options: { auth: false },
-    })) as SearchByHashResponse
+    }, getExplorerRpcConfig())) as SearchByHashResponse
     const type = resp?.data?.type
     if (type === 'block') return go('explorer-block', value)
     if (type === 'transaction') return go('explorer-tx', value)
@@ -211,14 +213,14 @@ async function fallbackServerSearch(value: string) {
       method: rpcEndpoints.searchByHash,
       parameters: [value],
       options: { auth: false },
-    })) as SearchByHashResponse
+    }, getExplorerRpcConfig())) as SearchByHashResponse
     const type = resp?.data?.type
     if (type === 'block')        return go('explorer-block', value)
     if (type === 'transaction')  return go('explorer-tx', value)
     if (type === 'address')      return go('explorer-address', value)
-    errorMessage.value = 'Не удалось определить тип строки. Проверьте формат.'
+    errorMessage.value = s.search.errorUnknown
   } catch (e) {
-    errorMessage.value = e instanceof Error ? e.message : 'Ошибка сетевого поиска'
+    errorMessage.value = e instanceof Error ? e.message : s.search.errorNetwork
   } finally {
     resolving.value = false
   }

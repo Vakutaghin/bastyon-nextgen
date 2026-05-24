@@ -2,8 +2,8 @@
   <SC_AddrPageWork>
     <SC_AddrPagePage>
       <SC_AddrBreadcrumb>
-        <RouterLink :to='{ name: "explorer" }'>Эксплорер</RouterLink>
-        <span> / Адрес</span>
+        <RouterLink :to='{ name: "explorer" }'>{{ s.common.breadcrumbRoot }}</RouterLink>
+        <span> / {{ s.address.breadcrumb }}</span>
       </SC_AddrBreadcrumb>
 
       <SC_AddrTitleRow>
@@ -11,41 +11,41 @@
           <HashLink :hash='address' full :copyable='true' :to='undefined' />
         </SC_AddrTitle>
         <SC_AddrTitleActions>
-          <ShareButton v-if='address' :title='`Адрес ${address}`' />
+          <ShareButton v-if='address' :title='s.address.shareTitle(address)' />
           <AddressQr v-if='address' :address='address' />
         </SC_AddrTitleActions>
       </SC_AddrTitleRow>
 
       <SC_AddrSummary>
         <SC_AddrSummaryCard>
-          <SC_AddrSummaryLabel>Баланс</SC_AddrSummaryLabel>
+          <SC_AddrSummaryLabel>{{ s.address.summaryBalance }}</SC_AddrSummaryLabel>
           <SC_AddrSummaryValue>
             <Skeleton v-if='infoLoading && !info' :width='160' :height='22' />
             <template v-else>{{ balanceLabel }}</template>
           </SC_AddrSummaryValue>
         </SC_AddrSummaryCard>
         <SC_AddrSummaryCard>
-          <SC_AddrSummaryLabel>Последняя активность</SC_AddrSummaryLabel>
+          <SC_AddrSummaryLabel>{{ s.address.summaryLastChange }}</SC_AddrSummaryLabel>
           <SC_AddrSummaryValue>
             <Skeleton v-if='infoLoading && !info' :width='120' :height='22' />
             <template v-else>{{ lastChangeLabel }}</template>
           </SC_AddrSummaryValue>
         </SC_AddrSummaryCard>
         <SC_AddrSummaryCard>
-          <SC_AddrSummaryLabel>Связь с приложением</SC_AddrSummaryLabel>
+          <SC_AddrSummaryLabel>{{ s.address.summaryProfileLink }}</SC_AddrSummaryLabel>
           <SC_AddrSummaryValue style='font-size: 14px; font-weight: 500;'>
             <RouterLink
               :to='{ name: "profile", params: { userName: address } }'
               style='color: rgb(0, 123, 255); text-decoration: none;'
             >
-              Открыть профиль
+              {{ s.address.openProfile }}
             </RouterLink>
           </SC_AddrSummaryValue>
         </SC_AddrSummaryCard>
       </SC_AddrSummary>
 
       <SC_AddrTxSection>
-        <SC_AddrTxSectionHeader>Транзакции</SC_AddrTxSectionHeader>
+        <SC_AddrTxSectionHeader>{{ s.address.sectionTx }}</SC_AddrTxSectionHeader>
 
         <div v-if='txLoading && !txList.length'>
           <SC_AddrTxRow v-for='i in 5' :key='`addr-tx-sk-${i}`'>
@@ -56,9 +56,9 @@
           </SC_AddrTxRow>
         </div>
         <SC_PlaceholderError v-else-if='txError'>
-          Не удалось загрузить транзакции
+          {{ s.address.txError }}
         </SC_PlaceholderError>
-        <SC_Placeholder v-else-if='!txList.length'>Транзакций нет</SC_Placeholder>
+        <SC_Placeholder v-else-if='!txList.length'>{{ s.address.txEmpty }}</SC_Placeholder>
         <div v-else>
           <SC_AddrTxRow v-for='tx in txList' :key='tx.txid'>
             <SC_AddrTxTypeBadge>{{ typeLabel(tx.type) }}</SC_AddrTxTypeBadge>
@@ -84,7 +84,7 @@
               :disabled='txLoading'
               @click='loadTxPage(false)'
             >
-              {{ txLoading ? 'Загрузка…' : 'Загрузить ещё' }}
+              {{ txLoading ? s.common.loading : s.common.loadMore }}
             </SC_LoadMoreBtn>
           </SC_LoadMoreFooter>
         </div>
@@ -98,6 +98,7 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAddressInfo } from '@/composables/use-block-explorer-queries'
 import { getByPRC } from '@/helpers/api/request'
+import { getExplorerRpcConfig } from '@/composables/use-explorer-preferred-node'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import type { GetAddressTransactionsResponse } from '@/types/rpc-responses/get-address-transactions'
 import HashLink from '../components/shared/hash-link.vue'
@@ -112,6 +113,7 @@ import {
 } from '../components/shared/format-explorer'
 import { labelForTxType } from '../components/shared/tx-type-labels'
 import { recordVisit } from '../components/shared/use-search-history'
+import { explorerStrings as s } from '../block-explorer-strings'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 import {
   SC_AddrPageWork,
@@ -169,7 +171,7 @@ async function loadTxPage(reset = false) {
       method: rpcEndpoints.getAddressTransactions,
       parameters: [addressRef.value, nextCursorHeight, TX_PAGE_SIZE],
       options: { auth: false },
-    })) as GetAddressTransactionsResponse
+    }, getExplorerRpcConfig())) as GetAddressTransactionsResponse
     const page = resp?.data ?? []
     if (page.length === 0) {
       hasMoreTx.value = false
@@ -214,14 +216,14 @@ const address = computed(() => p.address ?? '')
 
 const balanceLabel = computed(() => {
   const b = info.value?.balance
-  if (b === undefined || b === null) return '—'
+  if (b === undefined || b === null) return s.common.em
   return `${formatExplorerPkoin(b)} PKOIN`
 })
 
 const lastChangeLabel = computed(() => {
   const lc = info.value?.lastChange
-  if (lc === undefined || lc === null || lc === -1) return '—'
-  return `блок #${formatNumber(lc)}`
+  if (lc === undefined || lc === null || lc === -1) return s.common.em
+  return s.address.lastChangeAtBlock(formatNumber(lc))
 })
 
 function typeLabel(type: number): string {

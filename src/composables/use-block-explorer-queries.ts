@@ -7,15 +7,17 @@
  *   - getcompactblock по hash старых блоков — долгий (24 ч), блоки иммутабельны;
  *   - getaddressinfo / getaddresstransactions — средний (~30 с), баланс может меняться.
  *
- * Для запросов, зависящих от Ref-параметров (block, tx, address), используем useQuery
- * напрямую, чтобы queryFn читал свежее значение ref-а через unref(...) при каждом запуске.
+ * Все запросы уважают preferred-node из use-explorer-preferred-node:
+ * если пользователь закрепил конкретную ноду, getByPRC использует её, иначе —
+ * стандартный round-robin по servers.json. Конфиг читается через геттер при каждом
+ * вызове queryFn, поэтому смена ноды после mount работает без пересоздания query.
  */
 
 import { computed, unref, type MaybeRef } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { useRpcQuery } from './use-rpc-query'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
+import { getExplorerRpcConfig } from './use-explorer-preferred-node'
 import type { GetNodeInfoResponse } from '@/types/rpc-responses/get-node-info'
 import type { GetCoinInfoResponse } from '@/types/rpc-responses/get-coin-info'
 import type { GetLastBlocksResponse } from '@/types/rpc-responses/get-last-blocks'
@@ -36,52 +38,58 @@ const STALE_HISTORICAL = 24 * 60 * 60 * 1000
 
 /** Tip-инфо: высота, хеш последнего блока, версия ноды, chain. */
 export function useNodeInfo() {
-  return useRpcQuery<GetNodeInfoResponse>(
-    ['explorer', 'node-info'],
-    {
-      method: rpcEndpoints.getNodeInfo,
-      parameters: [],
-      options: { auth: false },
-    },
-    {
-      staleTime: STALE_TIP,
-      refetchInterval: 15_000,
-      refetchOnWindowFocus: false,
-    },
-  )
+  return useQuery<GetNodeInfoResponse>({
+    queryKey: ['explorer', 'node-info'] as const,
+    queryFn: () =>
+      getByPRC(
+        {
+          method: rpcEndpoints.getNodeInfo,
+          parameters: [],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetNodeInfoResponse>,
+    staleTime: STALE_TIP,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: false,
+  })
 }
 
 /** Эмиссия / supply. Меняется медленно — кэш на 5 минут. */
 export function useCoinInfo() {
-  return useRpcQuery<GetCoinInfoResponse>(
-    ['explorer', 'coin-info'],
-    {
-      method: rpcEndpoints.getCoinInfo,
-      parameters: [],
-      options: { auth: false },
-    },
-    {
-      staleTime: 5 * 60_000,
-      refetchOnWindowFocus: false,
-    },
-  )
+  return useQuery<GetCoinInfoResponse>({
+    queryKey: ['explorer', 'coin-info'] as const,
+    queryFn: () =>
+      getByPRC(
+        {
+          method: rpcEndpoints.getCoinInfo,
+          parameters: [],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetCoinInfoResponse>,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  })
 }
 
 /** Последние N блоков от tip-а. */
 export function useLastBlocks(count: number = 20) {
-  return useRpcQuery<GetLastBlocksResponse>(
-    ['explorer', 'last-blocks', count],
-    {
-      method: rpcEndpoints.getLastBlocks,
-      parameters: [count, -1, false],
-      options: { auth: false },
-    },
-    {
-      staleTime: STALE_TIP,
-      refetchInterval: 15_000,
-      refetchOnWindowFocus: false,
-    },
-  )
+  return useQuery<GetLastBlocksResponse>({
+    queryKey: ['explorer', 'last-blocks', count] as const,
+    queryFn: () =>
+      getByPRC(
+        {
+          method: rpcEndpoints.getLastBlocks,
+          parameters: [count, -1, false],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetLastBlocksResponse>,
+    staleTime: STALE_TIP,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: false,
+  })
 }
 
 /** Один блок по hash либо height. */
@@ -90,11 +98,14 @@ export function useBlockDetails(hashOrHeight: MaybeRef<string>) {
   return useQuery<GetCompactBlockResponse>({
     queryKey: ['explorer', 'block', key] as const,
     queryFn: () =>
-      getByPRC({
-        method: rpcEndpoints.getCompactBlock,
-        parameters: [unref(hashOrHeight), -1],
-        options: { auth: false },
-      }) as Promise<GetCompactBlockResponse>,
+      getByPRC(
+        {
+          method: rpcEndpoints.getCompactBlock,
+          parameters: [unref(hashOrHeight), -1],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetCompactBlockResponse>,
     enabled: computed(() => unref(hashOrHeight).length > 0),
     staleTime: STALE_HISTORICAL,
     refetchOnWindowFocus: false,
@@ -110,11 +121,14 @@ export function useBlockTransactions(
   return useQuery<GetBlockTransactionsResponse>({
     queryKey: ['explorer', 'block-transactions', blockHash, offset, count] as const,
     queryFn: () =>
-      getByPRC({
-        method: rpcEndpoints.getBlockTransactions,
-        parameters: [unref(blockHash), unref(offset), unref(count)],
-        options: { auth: false },
-      }) as Promise<GetBlockTransactionsResponse>,
+      getByPRC(
+        {
+          method: rpcEndpoints.getBlockTransactions,
+          parameters: [unref(blockHash), unref(offset), unref(count)],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetBlockTransactionsResponse>,
     enabled: computed(() => unref(blockHash).length > 0),
     staleTime: STALE_HISTORICAL,
     refetchOnWindowFocus: false,
@@ -126,11 +140,14 @@ export function useTransactionDetails(txid: MaybeRef<string>) {
   return useQuery<GetTransactionsResponse>({
     queryKey: ['explorer', 'tx', txid] as const,
     queryFn: () =>
-      getByPRC({
-        method: rpcEndpoints.getTransactions,
-        parameters: [[unref(txid)]],
-        options: { auth: false },
-      }) as Promise<GetTransactionsResponse>,
+      getByPRC(
+        {
+          method: rpcEndpoints.getTransactions,
+          parameters: [[unref(txid)]],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetTransactionsResponse>,
     enabled: computed(() => unref(txid).length > 0),
     staleTime: STALE_FRESH,
     refetchOnWindowFocus: false,
@@ -142,11 +159,14 @@ export function useAddressInfo(address: MaybeRef<string>) {
   return useQuery<GetAddressInfoResponse>({
     queryKey: ['explorer', 'address-info', address] as const,
     queryFn: () =>
-      getByPRC({
-        method: rpcEndpoints.getAddressInfo,
-        parameters: [unref(address)],
-        options: { auth: false },
-      }) as Promise<GetAddressInfoResponse>,
+      getByPRC(
+        {
+          method: rpcEndpoints.getAddressInfo,
+          parameters: [unref(address)],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetAddressInfoResponse>,
     enabled: computed(() => unref(address).length > 0),
     staleTime: STALE_FRESH,
     refetchOnWindowFocus: false,
@@ -162,11 +182,14 @@ export function useAddressTransactions(
   return useQuery<GetAddressTransactionsResponse>({
     queryKey: ['explorer', 'address-transactions', address, fromHeight, count] as const,
     queryFn: () =>
-      getByPRC({
-        method: rpcEndpoints.getAddressTransactions,
-        parameters: [unref(address), unref(fromHeight), unref(count)],
-        options: { auth: false },
-      }) as Promise<GetAddressTransactionsResponse>,
+      getByPRC(
+        {
+          method: rpcEndpoints.getAddressTransactions,
+          parameters: [unref(address), unref(fromHeight), unref(count)],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetAddressTransactionsResponse>,
     enabled: computed(() => unref(address).length > 0),
     staleTime: STALE_FRESH,
     refetchOnWindowFocus: false,
@@ -182,11 +205,14 @@ export function useStatsByHours(hours: MaybeRef<number> = 48) {
   return useQuery<GetStatisticResponse>({
     queryKey: ['explorer', 'stats-hours', hours] as const,
     queryFn: () =>
-      getByPRC({
-        method: rpcEndpoints.getStatisticByHours,
-        parameters: [9_999_999, unref(hours)],
-        options: { auth: false },
-      }) as Promise<GetStatisticResponse>,
+      getByPRC(
+        {
+          method: rpcEndpoints.getStatisticByHours,
+          parameters: [9_999_999, unref(hours)],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetStatisticResponse>,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   })
@@ -197,11 +223,14 @@ export function useStatsByDays(days: MaybeRef<number> = 30) {
   return useQuery<GetStatisticResponse>({
     queryKey: ['explorer', 'stats-days', days] as const,
     queryFn: () =>
-      getByPRC({
-        method: rpcEndpoints.getStatisticByDays,
-        parameters: [9_999_999, unref(days)],
-        options: { auth: false },
-      }) as Promise<GetStatisticResponse>,
+      getByPRC(
+        {
+          method: rpcEndpoints.getStatisticByDays,
+          parameters: [9_999_999, unref(days)],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetStatisticResponse>,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   })
@@ -212,19 +241,21 @@ export function useStatsByDays(days: MaybeRef<number> = 30) {
  * pingtime обновляется, banscore тоже.
  */
 export function usePeerInfo() {
-  return useRpcQuery<GetPeerInfoResponse>(
-    ['explorer', 'peer-info'],
-    {
-      method: rpcEndpoints.getPeerInfo,
-      parameters: [],
-      options: { auth: false },
-    },
-    {
-      staleTime: STALE_FRESH,
-      refetchInterval: 30_000,
-      refetchOnWindowFocus: false,
-    },
-  )
+  return useQuery<GetPeerInfoResponse>({
+    queryKey: ['explorer', 'peer-info'] as const,
+    queryFn: () =>
+      getByPRC(
+        {
+          method: rpcEndpoints.getPeerInfo,
+          parameters: [],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<GetPeerInfoResponse>,
+    staleTime: STALE_FRESH,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: false,
+  })
 }
 
 /** Серверный детектор типа строки. Используем как fallback. */
@@ -232,11 +263,14 @@ export function useSearchByHash(query: MaybeRef<string>, enabled: MaybeRef<boole
   return useQuery<SearchByHashResponse>({
     queryKey: ['explorer', 'search-by-hash', query] as const,
     queryFn: () =>
-      getByPRC({
-        method: rpcEndpoints.searchByHash,
-        parameters: [unref(query)],
-        options: { auth: false },
-      }) as Promise<SearchByHashResponse>,
+      getByPRC(
+        {
+          method: rpcEndpoints.searchByHash,
+          parameters: [unref(query)],
+          options: { auth: false },
+        },
+        getExplorerRpcConfig(),
+      ) as Promise<SearchByHashResponse>,
     enabled: computed(() => unref(enabled) && unref(query).length > 0),
     staleTime: 60_000,
     refetchOnWindowFocus: false,

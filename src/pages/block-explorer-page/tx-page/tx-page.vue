@@ -2,8 +2,8 @@
   <SC_TxPageWork>
     <SC_TxPagePage>
       <SC_TxBreadcrumb>
-        <RouterLink :to='{ name: "explorer" }'>Эксплорер</RouterLink>
-        <span> / Транзакция</span>
+        <RouterLink :to='{ name: "explorer" }'>{{ s.common.breadcrumbRoot }}</RouterLink>
+        <span> / {{ s.tx.breadcrumb }}</span>
       </SC_TxBreadcrumb>
 
       <template v-if='txLoading && !tx'>
@@ -25,15 +25,15 @@
 
       <template v-else>
         <SC_TxTitleRow>
-          <SC_TxTitle>Транзакция</SC_TxTitle>
+          <SC_TxTitle>{{ s.tx.title }}</SC_TxTitle>
           <SC_TxTypeBadge>{{ typeLabel }}</SC_TxTypeBadge>
-          <ShareButton :title='`Транзакция ${tx.txid}`' />
+          <ShareButton :title='s.tx.shareTitle(tx.txid)' />
         </SC_TxTitleRow>
 
         <SC_TxMetaGrid>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              TX ID
+              {{ s.tx.metaTxid }}
               <InfoTooltip term-key='txid' />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
@@ -41,12 +41,12 @@
             </SC_TxMetaValue>
           </SC_TxMetaCell>
           <SC_TxMetaCell>
-            <SC_TxMetaLabel>Тип</SC_TxMetaLabel>
+            <SC_TxMetaLabel>{{ s.tx.metaType }}</SC_TxMetaLabel>
             <SC_TxMetaValue>{{ typeLabel }} ({{ tx.type }})</SC_TxMetaValue>
           </SC_TxMetaCell>
 
           <SC_TxMetaCell>
-            <SC_TxMetaLabel>Блок</SC_TxMetaLabel>
+            <SC_TxMetaLabel>{{ s.tx.metaBlock }}</SC_TxMetaLabel>
             <SC_TxMetaValue>
               <RouterLink
                 :to='{ name: "explorer-block", params: { hashOrHeight: tx.blockHash } }'
@@ -62,12 +62,12 @@
           </SC_TxMetaCell>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              Подтверждений · время
+              {{ s.tx.metaConfirmationsTime }}
               <InfoTooltip term-key='confirmations' />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
               <span v-if='confirmations > 0'>{{ formatNumber(confirmations) }}</span>
-              <span v-else style='color: rgb(173, 181, 189);'>—</span>
+              <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
               <span style='color: rgb(173, 181, 189); font-size: 12px; margin-left: 8px;'>
                 · {{ formatRelTime(tx.nTime, now) }}
               </span>
@@ -79,14 +79,14 @@
 
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              Входов
+              {{ s.tx.metaVin }}
               <InfoTooltip term-key='vin' />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>{{ tx.vin.length }} · {{ formatExplorerPkoin(totalIn) }} PKOIN</SC_TxMetaValue>
           </SC_TxMetaCell>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              Выходов
+              {{ s.tx.metaVout }}
               <InfoTooltip term-key='vout' />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>{{ tx.vout.length }} · {{ formatExplorerPkoin(totalOut) }} PKOIN</SC_TxMetaValue>
@@ -94,24 +94,24 @@
 
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              Комиссия
+              {{ s.tx.metaFee }}
               <InfoTooltip term-key='fee' />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
               <span v-if='feeLabel'>{{ feeLabel }} PKOIN</span>
-              <span v-else style='color: rgb(173, 181, 189);'>не определена</span>
+              <span v-else style='color: rgb(173, 181, 189);'>{{ s.tx.metaFeeUnknown }}</span>
             </SC_TxMetaValue>
           </SC_TxMetaCell>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              Pocketnet
+              {{ s.tx.metaPocketnet }}
               <InfoTooltip term-key='pocketPayload' />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
               <span v-if='pocketPayload' style='color: rgb(108, 117, 125);'>
-                {{ payloadKindLabel }} — см. карточку ниже
+                {{ payloadKindLabel }} — {{ s.tx.metaPocketnetCardHint }}
               </span>
-              <span v-else style='color: rgb(173, 181, 189);'>не социальная транзакция</span>
+              <span v-else style='color: rgb(173, 181, 189);'>{{ s.tx.metaPocketnetEmpty }}</span>
             </SC_TxMetaValue>
           </SC_TxMetaCell>
         </SC_TxMetaGrid>
@@ -120,18 +120,18 @@
 
         <SC_TxIOGrid>
           <SC_TxIOColumn>
-            <SC_TxIOHeader>Входы (vin)</SC_TxIOHeader>
+            <SC_TxIOHeader>{{ s.tx.ioHeaderVin }}</SC_TxIOHeader>
             <SC_TxIOItem v-for='(vin, i) in tx.vin' :key='`vin-${i}`'>
               <SC_TxIOAddress>
                 <AddressLink v-if='vin.address' :address='vin.address' />
-                <span v-else-if='vin.coinbase' style='color: rgb(108, 117, 125);'>Coinbase</span>
-                <span v-else style='color: rgb(173, 181, 189);'>—</span>
+                <span v-else-if='vin.coinbase' style='color: rgb(108, 117, 125);'>{{ s.tx.ioCoinbase }}</span>
+                <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
               </SC_TxIOAddress>
               <SC_TxIOValue v-if='vin.value !== undefined'>
                 {{ formatExplorerPkoin(vin.value) }} PKOIN
               </SC_TxIOValue>
               <SC_TxIOAnnotation v-if='vin.txid'>
-                от
+                {{ s.tx.ioVinFrom }}
                 <RouterLink
                   :to='{ name: "explorer-tx", params: { txid: vin.txid } }'
                   style='color: rgb(0, 123, 255); text-decoration: none;'
@@ -145,7 +145,7 @@
           <SC_TxArrow>→</SC_TxArrow>
 
           <SC_TxIOColumn>
-            <SC_TxIOHeader>Выходы (vout)</SC_TxIOHeader>
+            <SC_TxIOHeader>{{ s.tx.ioHeaderVout }}</SC_TxIOHeader>
             <SC_TxIOItem v-for='(vout, i) in tx.vout' :key='`vout-${i}`'>
               <SC_TxIOAddress>
                 <AddressLink
@@ -153,7 +153,7 @@
                   :address='firstAddress(vout)'
                 />
                 <span v-else style='color: rgb(108, 117, 125);'>
-                  OP_RETURN (data)
+                  {{ s.tx.ioOpReturn }}
                 </span>
               </SC_TxIOAddress>
               <SC_TxIOValue>{{ formatExplorerPkoin(vout.value) }} PKOIN</SC_TxIOValue>
@@ -163,7 +163,7 @@
         </SC_TxIOGrid>
 
         <SC_TxRawToggle type='button' @click='showRaw = !showRaw'>
-          {{ showRaw ? 'Скрыть сырой JSON' : 'Показать сырой JSON' }}
+          {{ showRaw ? s.common.rawJsonHide : s.common.rawJsonShow }}
         </SC_TxRawToggle>
         <SC_TxRawPre v-if='showRaw'>{{ rawJson }}</SC_TxRawPre>
       </template>
@@ -193,6 +193,7 @@ import {
 import { labelForTxType } from '../components/shared/tx-type-labels'
 import { calcConfirmations } from '../components/shared/extract-coinstake'
 import { recordVisit } from '../components/shared/use-search-history'
+import { explorerStrings as s } from '../block-explorer-strings'
 import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions'
 import {
   SC_TxPageWork,
@@ -272,21 +273,9 @@ const feeLabel = computed(() => {
 
 const pocketPayload = computed(() => parsePocketnetPayload(tx.value ?? null))
 
-const PAYLOAD_KIND_LABELS: Record<string, string> = {
-  post: 'контент',
-  comment: 'комментарий',
-  'comment-edit': 'редакция комментария',
-  'upvote-share': 'оценка поста',
-  'c-score': 'оценка комментария',
-  subscribe: 'подписка',
-  'block-user': 'блокировка',
-  boost: 'буст',
-  account: 'действие с аккаунтом',
-}
-
 const payloadKindLabel = computed(() => {
   const k = pocketPayload.value?.kind
-  return k ? (PAYLOAD_KIND_LABELS[k] ?? k) : ''
+  return k ? (s.tx.payloadKindLabels[k] ?? k) : ''
 })
 
 function firstAddress(vout: TxVout): string {
@@ -300,10 +289,10 @@ const rawJson = computed(() => (tx.value ? JSON.stringify(tx.value, null, 2) : '
 const errorMessage = computed(() => {
   if (txError.value) {
     const msg = txError.value instanceof Error ? txError.value.message : String(txError.value)
-    return `Не удалось загрузить транзакцию: ${msg}`
+    return s.tx.errorPrefix(msg)
   }
   if (!tx.value && !txLoading.value) {
-    return 'Транзакция не найдена'
+    return s.tx.notFound
   }
   return ''
 })

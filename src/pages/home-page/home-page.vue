@@ -1,28 +1,29 @@
 <template>
-  <SC_HomeWork class='adj'>
-    <SidebarLeft :collapsed='leftSidebarCollapsed' />
-    <SC_HomeMainContent :class='{ "sidebar-right-hidden": !rightSidebarVisible }'>
+  <SC_HomeWork class='adj' :class='{ "is-mobile": mobile }'>
+    <SidebarLeft v-if='!mobile' :collapsed='leftSidebarCollapsed' />
+    <SC_HomeMainContent :class='{ "sidebar-right-hidden": !rightSidebarVisible || mobile }'>
       <ContentFeed
         :feedData='null'
         :loading='false'
         :error='null'
-        :right-sidebar-visible='rightSidebarVisible'
+        :right-sidebar-visible='!mobile && rightSidebarVisible'
         :left-sidebar-collapsed='leftSidebarCollapsed'
         @toggle-right-sidebar='rightSidebarVisible = !rightSidebarVisible'
         @toggle-left-sidebar='leftSidebarCollapsed = !leftSidebarCollapsed'
       />
     </SC_HomeMainContent>
-    <SidebarRight v-if='rightSidebarVisible' />
+    <SidebarRight v-if='!mobile && rightSidebarVisible' />
   </SC_HomeWork>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch, onMounted } from 'vue'
+import { defineComponent, ref, computed, watch, onMounted } from 'vue'
 import SidebarLeft from '@/b-components/sidebar/sidebar-left/sidebar-left.vue'
 import SidebarRight from '@/b-components/sidebar/sidebar-right/sidebar-right.vue'
 import ContentFeed from '@/b-components/content/content-feed/content-feed.vue'
 import { SC_HomeWork, SC_HomeMainContent } from './home-page.styled'
 import { settingsAPI } from '@/db/apis/settings-api'
+import { isMobile } from '@mobile/utils/platform'
 
 const SETTING_KEY_RIGHT_SIDEBAR = 'bastyonRightSidebarVisible'
 const SETTING_KEY_LEFT_SIDEBAR_COLLAPSED = 'bastyonLeftSidebarCollapsed'
@@ -39,6 +40,7 @@ export default defineComponent({
   setup() {
     const rightSidebarVisible = ref(true)
     const leftSidebarCollapsed = ref(false)
+    const mobile = computed(() => isMobile())
 
     async function loadSidebarSettings() {
       try {
@@ -87,7 +89,7 @@ export default defineComponent({
       )
     }, { immediate: false })
 
-    return { rightSidebarVisible, leftSidebarCollapsed }
+    return { rightSidebarVisible, leftSidebarCollapsed, mobile }
   }
 })
 </script>

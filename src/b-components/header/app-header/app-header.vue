@@ -3,13 +3,13 @@
     <SC_Sections>
       <HeaderLogo />
 
-      <HeaderSearch />
+      <HeaderSearch v-if='!mobile' />
 
       <SC_Right v-hide-zero-width>
-        <HeaderTor />
-        <HeaderEvents />
+        <HeaderTor v-if='!mobile' />
+        <HeaderEvents v-if='!mobile' />
         <HeaderNotifications />
-        <HeaderReportBug />
+        <HeaderReportBug v-if='!mobile' />
         <SC_MessengerWrapper v-if="showMessengerIcon" @click="toggleMessenger">
           <CloseOutlined v-if="isFullScreen" :style="{ fontSize: '20px' }" />
           <MessageOutlined v-else :style="{ fontSize: '20px' }" />

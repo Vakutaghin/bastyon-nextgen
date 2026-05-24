@@ -2,17 +2,17 @@
   <SC_PeersWork>
     <SC_PeersPage>
       <SC_PeersBreadcrumb>
-        <RouterLink :to='{ name: "explorer" }'>Эксплорер</RouterLink>
-        <span> / Сеть</span>
+        <RouterLink :to='{ name: "explorer" }'>{{ s.common.breadcrumbRoot }}</RouterLink>
+        <span> / {{ s.peers.breadcrumb }}</span>
       </SC_PeersBreadcrumb>
 
-      <SC_PeersTitle>Ноды и пиры сети</SC_PeersTitle>
+      <SC_PeersTitle>{{ s.peers.title }}</SC_PeersTitle>
 
       <SC_PeersSection>
         <SC_PeersSectionHeader>
-          <SC_PeersSectionTitle>Публичные ноды Pocketnet</SC_PeersSectionTitle>
+          <SC_PeersSectionTitle>{{ s.peers.nodesSectionTitle }}</SC_PeersSectionTitle>
           <SC_PeersSectionHint>
-            {{ healthyCount }}/{{ totalNodes }} живы · ping каждые 60 с
+            {{ s.peers.nodesHealthHint(healthyCount, totalNodes) }}
           </SC_PeersSectionHint>
         </SC_PeersSectionHeader>
 
@@ -28,22 +28,22 @@
 
         <template v-else>
           <SC_NodeRow v-for='node in nodeHealth' :key='`${node.host}:${node.port}`'>
-            <SC_NodeDot :color='node.ok ? "#28a745" : "#dc3545"' :title='node.ok ? "доступна" : (node.error || "недоступна")' />
+            <SC_NodeDot :color='node.ok ? "#28a745" : "#dc3545"' :title='node.ok ? s.peers.nodeOk : (node.error || s.peers.nodeFail)' />
             <SC_NodeAddr>{{ node.host }}:{{ node.port }}</SC_NodeAddr>
             <SC_NodeMetric>
-              <SC_NodeMetricLabel>Ping</SC_NodeMetricLabel>
+              <SC_NodeMetricLabel>{{ s.peers.nodeMetricPing }}</SC_NodeMetricLabel>
               <span v-if='node.latencyMs !== null'>{{ node.latencyMs }} ms</span>
-              <span v-else style='color: rgb(220, 53, 69);'>—</span>
+              <span v-else style='color: rgb(220, 53, 69);'>{{ s.common.em }}</span>
             </SC_NodeMetric>
             <SC_NodeMetric class='secondary'>
-              <SC_NodeMetricLabel>Высота</SC_NodeMetricLabel>
+              <SC_NodeMetricLabel>{{ s.peers.nodeMetricHeight }}</SC_NodeMetricLabel>
               <span v-if='node.height !== undefined'>{{ formatNumber(node.height) }}</span>
-              <span v-else>—</span>
+              <span v-else>{{ s.common.em }}</span>
             </SC_NodeMetric>
             <SC_NodeMetric class='secondary'>
-              <SC_NodeMetricLabel>Версия</SC_NodeMetricLabel>
+              <SC_NodeMetricLabel>{{ s.peers.nodeMetricVersion }}</SC_NodeMetricLabel>
               <span v-if='node.version'>{{ node.version }}</span>
-              <span v-else>—</span>
+              <span v-else>{{ s.common.em }}</span>
             </SC_NodeMetric>
           </SC_NodeRow>
         </template>
@@ -51,19 +51,19 @@
 
       <SC_PeersSection>
         <SC_PeersSectionHeader>
-          <SC_PeersSectionTitle>Пиры подключенной ноды</SC_PeersSectionTitle>
+          <SC_PeersSectionTitle>{{ s.peers.peersSectionTitle }}</SC_PeersSectionTitle>
           <SC_PeersSectionHint v-if='peers.length'>
-            {{ peers.length }} пиров · {{ inboundCount }} входящих
+            {{ s.peers.peersCountHint(peers.length, inboundCount) }}
           </SC_PeersSectionHint>
         </SC_PeersSectionHeader>
 
         <SC_PeerTableHeader>
-          <div>Адрес</div>
-          <div>Клиент</div>
-          <div>Тип</div>
-          <div class='col-hide-mobile'>Ping</div>
-          <div class='col-hide-mobile'>Sync</div>
-          <div class='col-hide-mobile'>Подключён</div>
+          <div>{{ s.peers.colAddress }}</div>
+          <div>{{ s.peers.colClient }}</div>
+          <div>{{ s.peers.colDirection }}</div>
+          <div class='col-hide-mobile'>{{ s.peers.colPing }}</div>
+          <div class='col-hide-mobile'>{{ s.peers.colSync }}</div>
+          <div class='col-hide-mobile'>{{ s.peers.colConnected }}</div>
         </SC_PeerTableHeader>
 
         <div v-if='peersLoading && !peers.length'>
@@ -78,11 +78,11 @@
         </div>
 
         <SC_PlaceholderError v-else-if='peersError'>
-          Не удалось загрузить пиры
+          {{ s.peers.peersError }}
         </SC_PlaceholderError>
 
         <SC_Placeholder v-else-if='!peers.length'>
-          Пиров не найдено
+          {{ s.peers.peersEmpty }}
         </SC_Placeholder>
 
         <template v-else-if='peers.length'>
@@ -91,7 +91,7 @@
           <SC_PeerVersion :title='peer.version'>{{ shortenVersion(peer.version) }}</SC_PeerVersion>
           <div>
             <SC_DirectionBadge :dir='peer.inbound ? "in" : "out"'>
-              {{ peer.inbound ? 'входящий' : 'исходящий' }}
+              {{ peer.inbound ? s.peers.dirIn : s.peers.dirOut }}
             </SC_DirectionBadge>
           </div>
           <div class='col-hide-mobile' style='font-size: 12px; color: rgb(108, 117, 125);'>
@@ -120,6 +120,7 @@ import {
   formatExplorerNumber as formatNumber,
   formatRelativeTime,
 } from '../components/shared/format-explorer'
+import { explorerStrings as s } from '../block-explorer-strings'
 import type { PeerInfo } from '@/types/rpc-responses/get-peer-info'
 import {
   SC_PeersWork,
@@ -163,7 +164,7 @@ function shortenVersion(v: string): string {
 }
 
 function pingLabel(microseconds: number): string {
-  if (!microseconds || microseconds < 0) return '—'
+  if (!microseconds || microseconds < 0) return s.common.em
   const ms = microseconds / 1000
   if (ms < 10)   return `${ms.toFixed(1)} ms`
   if (ms < 1000) return `${Math.round(ms)} ms`

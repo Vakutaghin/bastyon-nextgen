@@ -2,7 +2,7 @@
   <SC_StatsCard>
     <SC_StatsHeader>
       <SC_StatsTitleGroup>
-        <SC_StatsTitle>Активность сети</SC_StatsTitle>
+        <SC_StatsTitle>{{ s.stats.title }}</SC_StatsTitle>
         <SC_StatsSubtitle>
           {{ subtitle }}
         </SC_StatsSubtitle>
@@ -13,21 +13,21 @@
           :class='{ active: granularity === "hours" }'
           @click='granularity = "hours"'
         >
-          48 часов
+          {{ s.stats.toggleHours }}
         </SC_StatsToggleBtn>
         <SC_StatsToggleBtn
           type='button'
           :class='{ active: granularity === "days" }'
           @click='granularity = "days"'
         >
-          30 дней
+          {{ s.stats.toggleDays }}
         </SC_StatsToggleBtn>
       </SC_StatsToggle>
     </SC_StatsHeader>
 
-    <SC_StatsPlaceholder v-if='isLoading'>Загрузка…</SC_StatsPlaceholder>
-    <SC_StatsPlaceholder v-else-if='error'>Не удалось загрузить статистику</SC_StatsPlaceholder>
-    <SC_StatsPlaceholder v-else-if='!points.length'>Нет данных</SC_StatsPlaceholder>
+    <SC_StatsPlaceholder v-if='isLoading'>{{ s.common.loading }}</SC_StatsPlaceholder>
+    <SC_StatsPlaceholder v-else-if='error'>{{ s.stats.error }}</SC_StatsPlaceholder>
+    <SC_StatsPlaceholder v-else-if='!points.length'>{{ s.stats.empty }}</SC_StatsPlaceholder>
     <SC_ChartHost v-else ref='hostRef'>
       <svg ref='svgRef' :viewBox='`0 0 ${WIDTH} ${HEIGHT}`' preserveAspectRatio='none' />
     </SC_ChartHost>
@@ -50,6 +50,7 @@ import {
   sumTotals,
   type StatsPoint,
 } from './aggregate-stats'
+import { explorerStrings as s } from '../../block-explorer-strings'
 import {
   SC_StatsCard,
   SC_StatsHeader,
@@ -78,12 +79,12 @@ interface CategorySpec {
 }
 
 const CATEGORIES: CategorySpec[] = [
-  { key: 'content',       label: 'Контент (пост/коммент)', color: '#1890ff' },
-  { key: 'ratings',       label: 'Оценки',                 color: '#52c41a' },
-  { key: 'subscriptions', label: 'Подписки',               color: '#faad14' },
-  { key: 'accounts',      label: 'Аккаунты',               color: '#722ed1' },
-  { key: 'moderation',    label: 'Модерация',              color: '#eb2f96' },
-  { key: 'other',         label: 'Прочее (PoS/переводы)',  color: '#8c8c8c' },
+  { key: 'content',       label: s.stats.legend.content,       color: '#1890ff' },
+  { key: 'ratings',       label: s.stats.legend.ratings,       color: '#52c41a' },
+  { key: 'subscriptions', label: s.stats.legend.subscriptions, color: '#faad14' },
+  { key: 'accounts',      label: s.stats.legend.accounts,      color: '#722ed1' },
+  { key: 'moderation',    label: s.stats.legend.moderation,    color: '#eb2f96' },
+  { key: 'other',         label: s.stats.legend.other,         color: '#8c8c8c' },
 ]
 
 const granularity = ref<'hours' | 'days'>('hours')
@@ -107,8 +108,7 @@ const subtitle = computed(() => {
   const n = points.value.length
   const total = sumTotals(points.value)
   if (!n) return ''
-  const unit = granularity.value === 'hours' ? `${n} ч` : `${n} д`
-  return `Всего ${total.toLocaleString('en-US')} транзакций за ${unit}`
+  return s.stats.subtitle(total, n, granularity.value)
 })
 
 const svgRef = ref<SVGSVGElement | null>(null)
@@ -178,7 +178,6 @@ function renderChart() {
     .call((sel) => sel.selectAll('line').attr('stroke', '#e9ecef').attr('stroke-dasharray', '2,2'))
 
   // X-axis: «N{ч|д} назад» каждый ~6-й тик.
-  const unitChar = granularity.value === 'hours' ? 'ч' : 'д'
   const step = Math.max(1, Math.ceil(pts.length / 6))
   const xTickIdxs = pts.map((_, i) => i).filter((i) => i % step === 0 || i === pts.length - 1)
 
@@ -197,8 +196,8 @@ function renderChart() {
     .style('font-size', '11px')
     .text((i) => {
       const fromEnd = pts.length - 1 - i
-      if (fromEnd === 0) return 'сейчас'
-      return `-${fromEnd}${unitChar}`
+      if (fromEnd === 0) return s.stats.xTickNow
+      return s.stats.xTick(fromEnd, granularity.value)
     })
 }
 
