@@ -219,7 +219,10 @@ export class PcryptoService {
   }
 
   public async decryptEvent(event: any, users: User[]) {
-    if (event?.content?.hash) {
+    // Групповое m.room.message с hash идёт через отдельный путь decryptGroupMessage в chat-store.
+    // А вот state-событие m.room.encryption (которое содержит общий ключ) тоже имеет hash —
+    // его необходимо обработать здесь.
+    if (event?.content?.hash && event?.type !== "m.room.encryption") {
       return null;
     }
 

@@ -24,6 +24,16 @@ export class MatrixService {
   private eventQueue: Array<{ event: string, listener: (...args: any[]) => void }> = []
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null
   private keepAliveIntervalMs = 60000
+  private store: any = null
+
+  /**
+   * Имя БД для IndexedDBStore — отдельное на каждого matrix-юзера,
+   * чтобы при смене аккаунта sync-данные не пересекались.
+   */
+  private getStoreDbName(userId: string): string {
+    const safe = userId.replace(/[^a-zA-Z0-9_.-]/g, '_')
+    return `bastyon-matrix-sync:${safe}`
+  }
 
   public configure(baseUrl: string) {
     this.baseUrl = baseUrl
@@ -110,6 +120,25 @@ export class MatrixService {
 
     // Все запросы Matrix (в т.ч. /filter) через matrixFetch — в Tauri обход CORS
     opts.fetchFn = (input: RequestInfo | URL, init?: RequestInit) => matrixFetch(input, init)
+
+    // Включаем IndexedDBStore: matrix-js-sdk сохраняет sync-state на диск,
+    // и при последующих запусках `getRooms()` сразу возвращает все комнаты из кэша,
+    // без полного initial sync с сервера. Это самый дешёвый и крупный буст к скорости
+    // первого отображения списка диалогов.
+    if (userId && typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined') {
+      try {
+        this.store = new sdk.IndexedDBStore({
+          indexedDB: window.indexedDB,
+          localStorage: typeof window.localStorage !== 'undefined' ? window.localStorage : undefined,
+          dbName: this.getStoreDbName(userId),
+        })
+        await this.store.startup()
+        opts.store = this.store
+      } catch (e) {
+        console.warn('[MatrixService] IndexedDBStore init failed, falling back to MemoryStore:', e)
+        this.store = null
+      }
+    }
 
     this.client = sdk.createClient(opts)
 
@@ -294,6 +323,32 @@ export class MatrixService {
     })
   }
 
+  /**
+   * Отправить state-событие (например `m.room.encryption` с общим ключом группы).
+   */
+  public async sendStateEvent(roomId: string, type: string, content: any, stateKey: string) {
+    if (!this.client) throw new Error('Client not initialized')
+    return this.client.sendStateEvent(roomId, type, content, stateKey)
+  }
+
+  /**
+   * Отправить групповое зашифрованное сообщение.
+   * Соответствует формату bastyon-chat: m.room.message с msgtype "m.encrypted",
+   * body = hex(AES-CBC ciphertext), hash + block — для поиска state-события общего ключа.
+   */
+  public async sendEncryptedTextMessage(
+    roomId: string,
+    payload: { body: string; hash: string; block: number },
+  ) {
+    if (!this.client) throw new Error('Client not initialized')
+    return this.client.sendEvent(roomId, 'm.room.message', {
+      msgtype: 'm.encrypted',
+      body: payload.body,
+      hash: payload.hash,
+      block: payload.block,
+    })
+  }
+
   public async uploadContent(
     file: Blob | File,
     opts?: {
@@ -440,6 +495,10 @@ export class MatrixService {
     if (this.client) {
       this.client.stopClient()
       this.client = null
+    }
+    if (this.store) {
+      try { this.store.destroy?.() } catch (_e) {}
+      this.store = null
     }
     this.stopKeepAlive()
     this.eventQueue = []

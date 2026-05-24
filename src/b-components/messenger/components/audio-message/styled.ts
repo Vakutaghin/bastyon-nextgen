@@ -5,6 +5,7 @@ export const SC_AudioMessage = styled.div`
   align-items: center;
   gap: 8px;
   max-width: 100%;
+  min-width: 0;
 `
 
 export const SC_PlayButton = styled.button`
@@ -31,16 +32,21 @@ export const SC_PlayButton = styled.button`
 `
 
 export const SC_WaveContainer = styled('div', { compact: Boolean })`
-  flex: 0 0 ${(p: any) => p.compact ? '120px' : '240px'};
-  width: ${(p: any) => p.compact ? '120px' : '240px'};
+  flex: 1 1 ${(p: any) => p.compact ? '120px' : '240px'};
+  width: 100%;
+  max-width: ${(p: any) => p.compact ? '120px' : '240px'};
+  min-width: 0;
   height: 36px;
   position: relative;
   cursor: pointer;
+  overflow: hidden;
 `
 
 export const SC_WavePlaceholder = styled('div', { compact: Boolean })`
-  flex: 0 0 ${(props: any) => props.compact ? '160px' : '240px'};
-  width: ${(props: any) => props.compact ? '160px' : '240px'};
+  flex: 1 1 ${(props: any) => props.compact ? '160px' : '240px'};
+  width: 100%;
+  max-width: ${(props: any) => props.compact ? '160px' : '240px'};
+  min-width: 0;
   height: 36px;
   display: flex;
   align-items: center;

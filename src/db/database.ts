@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie'
-import type { VideoData, TranscodedVideo, PendingPostRating, AppSettings, FavoritePost, StoredNotification } from './types'
+import type { VideoData, TranscodedVideo, PendingPostRating, AppSettings, FavoritePost, StoredNotification, DecryptedMessage } from './types'
 
 /**
  * Класс базы данных с использованием Dexie
@@ -11,6 +11,7 @@ export class AppDatabase extends Dexie {
   settings!: Table<AppSettings, string>
   favorites!: Table<FavoritePost, string>
   notifications!: Table<StoredNotification, [string, string]>
+  decryptedMessages!: Table<DecryptedMessage, [string, string]>
 
   constructor() {
     super('BastyonDB')
@@ -21,6 +22,19 @@ export class AppDatabase extends Dexie {
       settings: 'key, createdAt',
       favorites: 'id, addedAt',
       notifications: '[address+id], address, nblock',
+    })
+
+    // v2: добавлен персистентный кэш расшифрованных сообщений мессенджера.
+    // Ключ — (userId, eventId). PBKDF2 10000 итераций + EAA secp256k1 — очень дорогая
+    // операция, имеет смысл переживать перезагрузку, чтобы открытие списка диалогов
+    // и истории чатов было моментальным.
+    this.version(2).stores({
+      transcodedVideos: 'id, originalFileName, resolution, createdAt',
+      postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
+      settings: 'key, createdAt',
+      favorites: 'id, addedAt',
+      notifications: '[address+id], address, nblock',
+      decryptedMessages: '[userId+eventId], userId, createdAt',
     })
   }
 }

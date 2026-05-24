@@ -2,7 +2,7 @@
 // Инкапсулирует криптографические операции (AES-CBC, PBKDF2) без зависимости от стейта
 
 import { AES_CBC_IV, PBKDF2_SALT, PBKDF2_ITERATIONS } from '../store/consts'
-import { detectAudioMime } from '../helpers'
+import { detectAudioMime, hexStringToUint8Array } from '../helpers'
 
 /**
  * Деривирует AES-CBC ключ из строки-секрета через PBKDF2.
@@ -90,4 +90,36 @@ export async function decryptAudioBlob(blob: Blob, secretStr: string): Promise<B
   const mime = detectAudioMime(decryptedBytes)
 
   return new Blob([decryptedBytes as unknown as BlobPart], { type: mime || 'audio/mpeg' })
+}
+
+/**
+ * Шифрует текст общим ключом группы (AES-CBC, hex).
+ * Совместим с bastyon-chat: pcryptoFile.encrypt(utf8(text), commonKey) → hex.
+ */
+export async function encryptTextWithSecret(plaintext: string, secretStr: string): Promise<string> {
+  const enc = new TextEncoder()
+  const derivedKey = await deriveAesCbcKey(secretStr)
+  const cipherBuffer = await window.crypto.subtle.encrypt(
+    { name: 'AES-CBC', iv: AES_CBC_IV },
+    derivedKey,
+    enc.encode(plaintext),
+  )
+  return Array.from(new Uint8Array(cipherBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+/**
+ * Дешифрует hex-тело группового сообщения общим ключом (AES-CBC).
+ * Совместим с bastyon-chat: pcryptoFile.decrypt(Buffer.from(body, 'hex'), commonKey) → utf8.
+ */
+export async function decryptTextWithSecret(hexCipher: string, secretStr: string): Promise<string> {
+  const bytes = hexStringToUint8Array(hexCipher)
+  const derivedKey = await deriveAesCbcKey(secretStr)
+  const plainBuffer = await window.crypto.subtle.decrypt(
+    { name: 'AES-CBC', iv: AES_CBC_IV },
+    derivedKey,
+    bytes as unknown as BufferSource,
+  )
+  return new TextDecoder().decode(plainBuffer)
 }

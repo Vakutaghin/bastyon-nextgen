@@ -139,8 +139,9 @@ export const SC_ConfirmDialog = styled.div`
   background: white;
   border-radius: 12px;
   padding: 24px;
-  max-width: 360px;
-  width: 90%;
+  width: 95%;
+  max-width: 480px;
+  box-sizing: border-box;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 `
 
@@ -156,6 +157,8 @@ export const SC_ConfirmText = styled.div`
   color: #666;
   margin-bottom: 20px;
   line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 `
 
 export const SC_ConfirmButtons = styled.div`

@@ -46,6 +46,7 @@ export const audioMessageOptions = defineComponent({
     const audioContext = ref<AudioContext | null>(null)
     const waveformBars = ref<number[]>([])
     const barCount = 64
+    let resizeObserver: ResizeObserver | null = null
     const isLoadingWave = ref(true)
     const isLoading = computed(() => !isReady.value || isLoadingWave.value)
 
@@ -363,6 +364,16 @@ export const audioMessageOptions = defineComponent({
     onMounted(async () => {
       await initPixi()
       await prepareAudio()
+
+      // PIXI resizeTo подгоняет канвас, но не перерисовывает бары —
+      // вешаем ResizeObserver, чтобы wave перерисовывался под актуальную ширину пузыря.
+      const dom = resolveDom(container.value)
+      if (dom && typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver(() => {
+          drawWaveforms()
+        })
+        resizeObserver.observe(dom)
+      }
     })
 
     onBeforeUnmount(() => {
@@ -379,6 +390,10 @@ export const audioMessageOptions = defineComponent({
       } catch (_e) {}
       if (objectUrl.value) {
         URL.revokeObjectURL(objectUrl.value)
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+        resizeObserver = null
       }
       if (app.value) {
         app.value.destroy(true, { children: true, texture: true })

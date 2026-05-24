@@ -2,19 +2,26 @@
 
 import { defineStore } from 'pinia'
 import { ref, reactive } from 'vue'
+import CryptoJS from 'crypto-js'
 
 import { useAuthStore } from '@/blockchain'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC } from '@/helpers/api/request'
 import { PcryptoService, type User as PcryptoUser } from '../services/pcrypto'
 import { matrixService } from '../services/matrix-service'
-import { encryptAudioBlob, decryptAudioBlob } from '../services/encryption-service'
+import {
+  encryptAudioBlob, decryptAudioBlob,
+  encryptTextWithSecret, decryptTextWithSecret,
+} from '../services/encryption-service'
+import {
+  loadAllDecryptedForUser, saveDecrypted, clearDecryptedForUser,
+} from '@/db/apis/decrypted-messages-api'
 import type { Message, MessageReaction, User } from '../types'
 
 import {
   getEventId, getEventContent, getEventType, getEventRoomId,
   getEventSender, getEventTs, isRenderableMessageEvent,
-  isTetatetchat, getAddressFromMatrixId,
+  isTetatetchat, getAddressFromMatrixId, getMatrixId,
   getRoomTimelineEvents, extractUrl, parseProfileKeys, applyBlockToContent,
 } from '../helpers'
 
@@ -42,6 +49,21 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const currentBlockHeight = ref<number | null>(null)
   let currentBlockFetchedAt = 0
   const isLoadingMore = ref(false)
+
+  /**
+   * Кэш расшифрованного текста по event_id. События в матрице иммутабельны,
+   * так что один раз расшифровали — повторно не дёргаем тяжёлую криптографию
+   * (PBKDF2×2 + EAA + secp256k1). Кэшируем только успешные расшифровки —
+   * при сбое (например, ещё не приехал state event с общим ключом) на следующем
+   * проходе попробуем снова.
+   *
+   * Параллельно зеркалится в IndexedDB через decrypted-messages-api, чтобы
+   * расшифровки переживали перезагрузку приложения. hydrate() поднимает их
+   * пачкой в память сразу после инициализации pcrypto.
+   */
+  const decryptedTextCache = new Map<string, string>()
+  let decryptedCacheHydrated = false
+  let decryptedCacheHydrating: Promise<void> | null = null
 
   // --- Вспомогательные методы ---
 
@@ -212,14 +234,136 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     return users
   }
 
+  // --- Групповая криптография (общий ключ комнаты) ---
+
+  /**
+   * Вычисляет usershash для группового чата: md5(<id всех участников кроме меня, отсортировано по dbId>) + suffix.
+   * Совместимо с bastyon-chat: usershashVersion=13, version=2.
+   */
+  const computeGroupUsershash = (users: PcryptoUser[], myMatrixIdLocal: string): string => {
+    const sorted = [...users].sort((a, b) => {
+      const da = a.dbId || 0
+      const db = b.dbId || 0
+      if (da !== db) return da - db
+      return a.id.localeCompare(b.id)
+    })
+    const otherIds = sorted
+      .map((u) => getMatrixId(u.id))
+      .filter((id) => id && id !== myMatrixIdLocal)
+    return CryptoJS.MD5(otherIds.join('') + '_v13_2').toString()
+  }
+
+  /**
+   * Находит state-событие `m.room.encryption` с state_key `pcrypto.<sender>.<hash>`,
+   * в котором лежит общий ключ группы (зашифрованный по схеме pcrypto для каждого участника).
+   */
+  const findCommonKeyStateEvent = (room: any, senderMatrixIdLocal: string, hash: string): any | null => {
+    if (!room?.currentState?.getStateEvents) return null
+    const stateKey = `pcrypto.${senderMatrixIdLocal}.${hash}`
+    const single = room.currentState.getStateEvents('m.room.encryption', stateKey)
+    if (single) return single
+    const events = room.currentState.getStateEvents('m.room.encryption')
+    if (!Array.isArray(events)) return null
+    return events.find((e: any) => {
+      const sk = typeof e.getStateKey === 'function' ? e.getStateKey() : (e.event?.state_key || e.state_key)
+      return sk === stateKey
+    }) || null
+  }
+
+  /**
+   * Расшифровывает state-событие общего ключа группы и возвращает строку-секрет
+   * (которой далее AES-CBC-дешифруется тело сообщения).
+   */
+  const decryptGroupCommonKey = async (
+    stateEvent: any,
+    users: PcryptoUser[],
+  ): Promise<string | null> => {
+    if (!pcryptoService.value || !stateEvent) return null
+    const raw = stateEvent.event || stateEvent
+    const senderId = typeof stateEvent.getSender === 'function'
+      ? stateEvent.getSender()
+      : (raw?.sender || raw?.user_id)
+    const content = typeof stateEvent.getContent === 'function'
+      ? stateEvent.getContent()
+      : raw?.content
+    if (!content?.keys) return null
+    const fakeStateEvent = {
+      type: 'm.room.encryption',
+      sender: senderId,
+      content,
+      origin_server_ts: raw?.origin_server_ts || Date.now(),
+    }
+    try {
+      return await pcryptoService.value.decryptEvent(fakeStateEvent, users)
+    } catch (e) {
+      return null
+    }
+  }
+
+  /** Признак группового зашифрованного m.room.message (новый протокол bastyon-chat) */
+  const isGroupEncryptedContent = (content: any): boolean => {
+    return !!(
+      content
+      && typeof content.hash === 'string'
+      && typeof content.body === 'string'
+      && content.body.length > 0
+      && (content.msgtype === 'm.encrypted' || !content.msgtype)
+    )
+  }
+
   // --- Дешифрование ---
 
   const tryDecrypt = async (event: any): Promise<string | null> => {
     const eventId = getEventId(event)
     if (!pcryptoService.value) return null
 
+    // Кэш: один раз расшифровали — больше не считаем.
+    if (eventId && decryptedTextCache.has(eventId)) {
+      return decryptedTextCache.get(eventId)!
+    }
+
     const content = getEventContent(event)
     const isEncryptedType = getEventType(event) === 'm.room.encrypted'
+
+    // Группа: m.room.message с msgtype 'm.encrypted', body=hex, content.hash
+    if (isGroupEncryptedContent(content)) {
+      try {
+        const room = matrixService.getRoom(getEventRoomId(event))
+        if (!room) return null
+
+        const senderId = getEventSender(event)
+        const senderLocal = getMatrixId(senderId)
+        const stateEvent = findCommonKeyStateEvent(room, senderLocal, content.hash)
+        if (!stateEvent) return null
+
+        const memberIds = getOrderedMemberIds(room, getEventTs(event))
+        const users = await collectPcryptoUsers(memberIds)
+
+        if (!users.find((u) => u.id === senderId)) {
+          const senderAddr = getAddressFromMatrixId(senderId)
+          if (senderAddr) {
+            await profileCache.fetchProfiles([senderAddr])
+            const p = profileCache.userProfiles[senderAddr]
+            if (p?.k) users.push({ id: senderId, keys: parseProfileKeys(p.k), dbId: (p as any).id })
+          }
+          if (!users.find((u) => u.id === senderId)) return null
+        }
+
+        const commonSecret = await decryptGroupCommonKey(stateEvent, users)
+        if (!commonSecret) return null
+
+        const decrypted = await decryptTextWithSecret(content.body, commonSecret)
+        if (decrypted && eventId) {
+          decryptedTextCache.set(eventId, decrypted)
+          const uid = matrixService.getClient()?.getUserId()
+          if (uid) saveDecrypted(uid, eventId, decrypted)
+        }
+        return decrypted
+      } catch (e: any) {
+        console.error(`[ChatStore] Ошибка дешифрования группового ${eventId}:`, e.message || e)
+        return null
+      }
+    }
 
     let secrets: any = content.info?.secrets || content.pbody?.secrets || content.secrets || null
 
@@ -289,7 +433,13 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
         ? { ...(event as any).event, content }
         : { ...event, content }
 
-      return await pcryptoService.value.decryptEvent(rawEvent, users)
+      const decrypted = await pcryptoService.value.decryptEvent(rawEvent, users)
+      if (decrypted && eventId) {
+        decryptedTextCache.set(eventId, decrypted)
+        const uid = matrixService.getClient()?.getUserId()
+        if (uid) saveDecrypted(uid, eventId, decrypted)
+      }
+      return decrypted
     } catch (e: any) {
       console.error(`[ChatStore] Ошибка дешифрования ${eventId}:`, e.message || e)
       return null
@@ -336,9 +486,10 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
 
     const isEncryptedType = getEventType(event) === 'm.room.encrypted'
     let hasSecrets = !!(content.info?.secrets || content.pbody?.secrets || content.secrets)
+    const isGroupEncrypted = content.msgtype !== 'm.audio' && isGroupEncryptedContent(content)
 
     // body может быть base64 JSON с секретами
-    if (!hasSecrets && content.msgtype !== 'm.audio' && content.body && typeof content.body === 'string' && content.body.startsWith('ey')) {
+    if (!hasSecrets && !isGroupEncrypted && content.msgtype !== 'm.audio' && content.body && typeof content.body === 'string' && content.body.startsWith('ey')) {
       try {
         const decoded = atob(content.body)
         if (decoded.startsWith('{') && (decoded.includes('"encrypted"') || (decoded.includes('"keys"') && decoded.includes('"cipher"')))) {
@@ -351,7 +502,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
       } catch (_e) {}
     }
 
-    const shouldDecrypt = (isEncryptedType || hasSecrets) && !skipDecryption
+    const shouldDecrypt = (isEncryptedType || hasSecrets || isGroupEncrypted) && !skipDecryption
 
     if (shouldDecrypt) {
       const decrypted = await tryDecrypt(event)
@@ -377,11 +528,13 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
         } catch (_e) {
           text = decrypted
         }
+      } else if (isGroupEncrypted) {
+        text = ENCRYPTED_MESSAGE_PLACEHOLDER
       } else {
         text = content.body || ENCRYPTED_MESSAGE_PLACEHOLDER
       }
-    } else if ((isEncryptedType || hasSecrets) && skipDecryption) {
-      if (content.body && !content.body.includes('***') && content.body.length < 100) {
+    } else if ((isEncryptedType || hasSecrets || isGroupEncrypted) && skipDecryption) {
+      if (!isGroupEncrypted && content.body && !content.body.includes('***') && content.body.length < 100) {
         text = content.body
       } else {
         text = ENCRYPTED_MESSAGE_PLACEHOLDER
@@ -520,8 +673,68 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
 
   // --- Отправка ---
 
+  /**
+   * Отправка группового зашифрованного сообщения по протоколу bastyon-chat:
+   *   1) usershash = md5(<id участников кроме меня, сортировка по dbId>) + "_v13_2"
+   *   2) ищем state-событие m.room.encryption со state_key `pcrypto.<my>.<hash>`;
+   *      если есть — расшифровываем общий ключ; нет — генерируем и публикуем своё.
+   *   3) AES-CBC шифруем тело общим ключом, отправляем m.room.message
+   *      { msgtype: 'm.encrypted', body: hex, hash, block: 10 }.
+   */
+  const sendGroupMessage = async (chatId: string, room: any, text: string) => {
+    await room.loadMembersIfNeeded?.()
+
+    ensurePcryptoInitialized()
+    if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
+    if (!pcryptoService.value) throw new Error('PcryptoService not initialized')
+
+    const client = matrixService.getClient()
+    if (!client) throw new Error('Matrix client not initialized')
+    const myMatrixId = client.getUserId()
+    if (!myMatrixId) throw new Error('Missing my matrix id')
+    const myLocal = getMatrixId(myMatrixId)
+
+    const memberIds = getOrderedMemberIds(room, Date.now())
+    const users = await collectPcryptoUsers(memberIds)
+    if (!users.find((u) => u.id === myMatrixId)) {
+      throw new Error('My pcrypto keys are not available')
+    }
+
+    const hash = computeGroupUsershash(users, myLocal)
+    const block = 10
+    const version = 2
+
+    let commonSecret: string | null = null
+    const existing = findCommonKeyStateEvent(room, myLocal, hash)
+    if (existing) {
+      commonSecret = await decryptGroupCommonKey(existing, users)
+    }
+
+    if (!commonSecret) {
+      const rand = crypto.getRandomValues(new Uint8Array(32))
+      commonSecret = Array.from(rand).map((b) => b.toString(16).padStart(2, '0')).join('')
+      const encrypted = await pcryptoService.value.encryptKey(commonSecret, users, block, version)
+      await matrixService.sendStateEvent(
+        chatId,
+        'm.room.encryption',
+        { version, hash, block: encrypted.block, keys: encrypted.keys },
+        `pcrypto.${myLocal}.${hash}`,
+      )
+    }
+
+    const bodyHex = await encryptTextWithSecret(text, commonSecret)
+    await matrixService.sendEncryptedTextMessage(chatId, { body: bodyHex, hash, block })
+  }
+
   const sendMessage = async (chatId: string, text: string) => {
     try {
+      const room = matrixService.getRoom(chatId)
+      // Для тет-а-тет оставляем текущее поведение (отправка m.text).
+      // Для групп — протокол общего ключа.
+      if (room && !isTetatetchat(room)) {
+        await sendGroupMessage(chatId, room, text)
+        return
+      }
       await matrixService.sendMessage(chatId, text)
     } catch (e) {
       console.error('[ChatStore] Ошибка отправки сообщения:', e)
@@ -649,9 +862,38 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
       const keys = deriveMessengerKeys(authStore.keyPair.privateKey)
       pcryptoService.value = new PcryptoService(keys, client.getUserId() || '')
       localMessengerKeys.value = keys
+      // Fire-and-forget: поднимаем персистентный кэш расшифровок текущего юзера.
+      // Пока он подгружается, отдельные tryDecrypt просто посчитают на лету;
+      // после hydrate последующие чтения списка диалогов будут мгновенными.
+      hydrateDecryptedCache()
     } catch (e) {
       console.error('[ChatStore] Ошибка инициализации Pcrypto:', e)
     }
+  }
+
+  /**
+   * Однократная загрузка персистентного кэша расшифровок текущего юзера в память.
+   * Делается лениво (fire-and-forget) — UI не блокируется.
+   */
+  const hydrateDecryptedCache = (): Promise<void> => {
+    if (decryptedCacheHydrated) return Promise.resolve()
+    if (decryptedCacheHydrating) return decryptedCacheHydrating
+    const userId = matrixService.getClient()?.getUserId()
+    if (!userId) return Promise.resolve()
+    decryptedCacheHydrating = (async () => {
+      try {
+        const rows = await loadAllDecryptedForUser(userId)
+        for (const r of rows) {
+          if (!decryptedTextCache.has(r.eventId)) decryptedTextCache.set(r.eventId, r.text)
+        }
+        decryptedCacheHydrated = true
+      } catch (e) {
+        console.warn('[ChatStore] hydrateDecryptedCache failed:', e)
+      } finally {
+        decryptedCacheHydrating = null
+      }
+    })()
+    return decryptedCacheHydrating
   }
 
   const waitForPcrypto = async (timeoutMs = PCRYPTO_WAIT_TIMEOUT) => {
@@ -669,6 +911,21 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     currentUser.value = { id: 'me', name: 'Я', avatar: 'https://via.placeholder.com/150' }
     pcryptoService.value = null
     localMessengerKeys.value = null
+    decryptedTextCache.clear()
+    decryptedCacheHydrated = false
+    decryptedCacheHydrating = null
+    // IDb-кэш расшифровок не трогаем: при повторном логине того же аккаунта он сразу
+    // даст ускорение. Очистка для конкретного юзера доступна через clearDecryptedForUser
+    // (вызывается, например, при удалении аккаунта).
+  }
+
+  /** Полная очистка персистентного кэша расшифровок для текущего юзера. */
+  const purgeDecryptedCache = async (): Promise<void> => {
+    const userId = matrixService.getClient()?.getUserId()
+    decryptedTextCache.clear()
+    decryptedCacheHydrated = false
+    decryptedCacheHydrating = null
+    if (userId) await clearDecryptedForUser(userId)
   }
 
   return {
@@ -687,6 +944,8 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     enrichMessagesWithReactions,
     ensurePcryptoInitialized,
     waitForPcrypto,
+    hydrateDecryptedCache,
+    purgeDecryptedCache,
     getMatrixAvatarUrl,
     getOrderedMemberIds,
     collectPcryptoUsers,

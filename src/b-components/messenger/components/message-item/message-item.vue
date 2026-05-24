@@ -1,7 +1,17 @@
 <template>
   <SC_MessageRow :class="isMine ? 'mine' : 'others'">
+    <SC_AvatarSlot v-if="!isMine">
+      <Avatar
+        :src="displayAvatar"
+        :alt="displayName"
+        :fallbackText="displayName"
+        :size="32"
+        shape="circle"
+      />
+    </SC_AvatarSlot>
+
     <SC_MessageItem :class="isMine ? 'mine' : 'others'" style="position: relative;">
-      <SC_MessageMeta v-if="showName">
+      <SC_MessageMeta v-if="showName && !isMine">
         <span>{{ displayName }}</span>
       </SC_MessageMeta>
 

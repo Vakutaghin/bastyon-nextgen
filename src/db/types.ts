@@ -78,6 +78,18 @@ export interface FavoritePost {
 }
 
 /**
+ * Расшифрованный текст матрикс-сообщения. Ключ — пара (userId, eventId).
+ * События в матрице иммутабельны, поэтому кэш можно хранить «вечно».
+ * userId нужен, чтобы при смене аккаунта чужие расшифровки не подтекали.
+ */
+export interface DecryptedMessage {
+  userId: string
+  eventId: string
+  text: string
+  createdAt: number
+}
+
+/**
  * Уведомление в IDB: привязано к адресу, есть номер блока для подсчёта непрочитанных
  */
 export interface StoredNotification {

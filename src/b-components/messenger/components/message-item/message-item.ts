@@ -3,6 +3,9 @@ import { defineComponent, type PropType, computed, ref, nextTick, watch, onMount
 import type { Message } from '../../types'
 import { matrixFetch } from '@/helpers/api/request'
 import { useMessengerStore } from '../../store'
+import { getAddressFromMatrixId } from '../../helpers'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import Avatar from '@/components/avatar/avatar.vue'
 import {
   SC_MessageItem,
   SC_MessageMeta,
@@ -12,7 +15,8 @@ import {
   SC_ReactionPill,
   SC_ReactionButton,
   SC_ReactionPicker,
-  SC_ReactionPickerEmoji
+  SC_ReactionPickerEmoji,
+  SC_AvatarSlot,
 } from './styled'
 import AudioMessage from '../audio-message/audio-message.vue'
 
@@ -30,7 +34,9 @@ export const messageItemOptions = defineComponent({
     SC_ReactionButton,
     SC_ReactionPicker,
     SC_ReactionPickerEmoji,
-    AudioMessage
+    SC_AvatarSlot,
+    AudioMessage,
+    Avatar,
   },
   props: {
     message: {
@@ -53,10 +59,47 @@ export const messageItemOptions = defineComponent({
       return !store.isFullScreen
     })
 
+    /** Адрес pocketnet, выделенный из matrix id отправителя */
+    const senderAddress = computed(() => {
+      if (isMine.value) return null
+      const id = props.message.senderId
+      if (!id || id === 'me') return null
+      return getAddressFromMatrixId(id)
+    })
+
+    /** Профиль отправителя из реактивного кэша (подтянется автоматически после fetch). */
+    const senderProfile = computed(() => {
+      const addr = senderAddress.value
+      if (!addr) return null
+      return store.userProfiles[addr] || null
+    })
+
     const displayName = computed(() => {
       if (isMine.value) return store.currentUser.name || 'Вы'
+      const profile = senderProfile.value
+      if (profile?.name) return profile.name
       return props.message.senderName || props.message.senderId
     })
+
+    /** URL аватарки отправителя (или undefined, если ещё нет в кэше). */
+    const displayAvatar = computed<string | undefined>(() => {
+      if (isMine.value) return store.currentUser.avatar
+      const profile = senderProfile.value as any
+      const img = profile?.i || profile?.avatar || profile?.image
+      if (!img) return undefined
+      const resolved = resolveImageUrl(img)
+      return resolved || undefined
+    })
+
+    /** Подтянуть профиль, если его ещё нет в кэше. */
+    const ensureSenderProfile = () => {
+      const addr = senderAddress.value
+      if (!addr) return
+      if (store.userProfiles[addr]) return
+      store.fetchProfiles([addr])
+    }
+
+    watch(senderAddress, ensureSenderProfile, { immediate: true })
 
     const formatTime = (timestamp: number) => {
       const date = new Date(timestamp)
@@ -350,6 +393,7 @@ export const messageItemOptions = defineComponent({
     return {
       formatTime,
       displayName,
+      displayAvatar,
       isMine,
       formattedText,
       onAudioError,

@@ -3,6 +3,7 @@ import styled from 'vue3-styled-components'
 
 export const SC_MessageItem = styled.div`
   max-width: 80%;
+  min-width: 0;
   padding: 8px 12px;
   border-radius: 12px;
   font-size: 14px;
@@ -35,6 +36,8 @@ export const SC_MessageTime = styled.span`
 export const SC_MessageRow = styled.div`
   display: flex;
   width: 100%;
+  align-items: flex-end;
+  gap: 8px;
 
   &.mine {
     justify-content: flex-end;
@@ -43,6 +46,16 @@ export const SC_MessageRow = styled.div`
   &.others {
     justify-content: flex-start;
   }
+`
+
+/** Слот для аватарки слева от чужого сообщения. Сохраняет место даже когда аватарка пустая, чтобы пузыри стояли ровно. */
+export const SC_AvatarSlot = styled.div`
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
 `
 
 export const SC_MessageMeta = styled.div`

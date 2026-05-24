@@ -135,6 +135,21 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   // --- Загрузка диалогов ---
 
+  /**
+   * Дебаунсированный вызов silent-перезагрузки диалогов.
+   * Используется на инкрементальных событиях (Room.timeline) — во время initial sync
+   * matrix может реплеить много событий подряд, без дебаунса это даёт квадратичное
+   * поведение (loadDialogs зовётся N раз, каждый перекодирует N последних сообщений).
+   */
+  let scheduleLoadDialogsTimer: ReturnType<typeof setTimeout> | null = null
+  const scheduleLoadDialogs = (delayMs = 300) => {
+    if (scheduleLoadDialogsTimer) clearTimeout(scheduleLoadDialogsTimer)
+    scheduleLoadDialogsTimer = setTimeout(() => {
+      scheduleLoadDialogsTimer = null
+      loadDialogs(true)
+    }, delayMs)
+  }
+
   const loadDialogs = async (silent = false) => {
     if (!silent) uiStore.isLoading = true
     try {
@@ -203,6 +218,12 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (uiStore.isInitInProgress) return
     uiStore.isInitInProgress = true
 
+    // Был ли клиент уже инициализирован к моменту входа в эту функцию.
+    // Если нет — после login синк ещё бежит в фоне, и грузить диалоги сразу нет смысла:
+    // во-первых, getRooms() может вернуть пустоту/частично, во-вторых, обработчик 'PREPARED'
+    // сам вызовет loadDialogs (см. ниже). Иначе UI «ступенями» обновляется по мере подгрузки.
+    const wasClientAlreadyInitialized = !!matrixService.getClient()
+
     try {
       if (!matrixService.getClient()) {
         uiStore.isLoading = true
@@ -253,7 +274,7 @@ export const useMessengerStore = defineStore('messenger', () => {
                   } catch (_e) {}
                 }
 
-                loadDialogs(true)
+                scheduleLoadDialogs()
               }
             } catch (e) {
               log.error('Ошибка в Room.timeline:', e)
@@ -281,7 +302,12 @@ export const useMessengerStore = defineStore('messenger', () => {
 
       await syncCurrentUser()
       chatStore.ensurePcryptoInitialized()
-      if (uiStore.dialogs.length === 0 && matrixService.getClient()) await loadDialogs()
+      // Для свежей сессии (client только что создан) — ждём 'PREPARED', он сам поднимет диалоги.
+      // Для уже инициализированного клиента (повторное открытие мессенджера) — грузим сразу:
+      // sync прошёл ранее, повторного 'PREPARED' не будет.
+      if (wasClientAlreadyInitialized && uiStore.dialogs.length === 0 && matrixService.getClient()) {
+        await loadDialogs()
+      }
     } finally {
       uiStore.isInitInProgress = false
     }
@@ -315,8 +341,10 @@ export const useMessengerStore = defineStore('messenger', () => {
       const needDialogs = uiStore.dialogs.length === 0
       if (needDialogs) uiStore.isLoading = true
       try {
-        if (!matrixService.getClient()) await initMatrix()
-        if (needDialogs) await loadDialogs()
+        const wasClientInitialized = !!matrixService.getClient()
+        if (!wasClientInitialized) await initMatrix()
+        // Свежий клиент → дальнейшую подгрузку сделает обработчик 'PREPARED' внутри initMatrix.
+        if (needDialogs && wasClientInitialized) await loadDialogs()
       } finally {
         if (needDialogs) uiStore.isLoading = false
       }
@@ -328,8 +356,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     const needDialogs = uiStore.dialogs.length === 0
     if (needDialogs) uiStore.isLoading = true
     try {
-      if (!matrixService.getClient()) await initMatrix()
-      if (needDialogs) await loadDialogs()
+      const wasClientInitialized = !!matrixService.getClient()
+      if (!wasClientInitialized) await initMatrix()
+      if (needDialogs && wasClientInitialized) await loadDialogs()
     } finally {
       if (needDialogs) uiStore.isLoading = false
     }
