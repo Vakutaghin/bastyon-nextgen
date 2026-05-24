@@ -2,6 +2,61 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import pluginVue from 'eslint-plugin-vue'
 
+// Minimal set of browser globals used by <script setup> blocks in .vue files.
+// (no-undef is enabled via js.configs.recommended and doesn't know about these
+//  unless we declare them; .ts files get them from the TS lib instead.)
+const BROWSER_GLOBALS = {
+  window: 'readonly',
+  document: 'readonly',
+  navigator: 'readonly',
+  localStorage: 'readonly',
+  sessionStorage: 'readonly',
+  fetch: 'readonly',
+  setTimeout: 'readonly',
+  clearTimeout: 'readonly',
+  setInterval: 'readonly',
+  clearInterval: 'readonly',
+  console: 'readonly',
+  URL: 'readonly',
+  URLSearchParams: 'readonly',
+  Headers: 'readonly',
+  Request: 'readonly',
+  Response: 'readonly',
+  FormData: 'readonly',
+  Blob: 'readonly',
+  File: 'readonly',
+  FileReader: 'readonly',
+  Image: 'readonly',
+  HTMLElement: 'readonly',
+  HTMLInputElement: 'readonly',
+  HTMLTextAreaElement: 'readonly',
+  SVGElement: 'readonly',
+  SVGSVGElement: 'readonly',
+  Navigator: 'readonly',
+  ShareData: 'readonly',
+  Node: 'readonly',
+  CustomEvent: 'readonly',
+  Event: 'readonly',
+  KeyboardEvent: 'readonly',
+  MouseEvent: 'readonly',
+  TouchEvent: 'readonly',
+  performance: 'readonly',
+  requestAnimationFrame: 'readonly',
+  cancelAnimationFrame: 'readonly',
+  IntersectionObserver: 'readonly',
+  ResizeObserver: 'readonly',
+  MutationObserver: 'readonly',
+  AbortController: 'readonly',
+  AbortSignal: 'readonly',
+  TextEncoder: 'readonly',
+  TextDecoder: 'readonly',
+  DOMException: 'readonly',
+  WebSocket: 'readonly',
+  Buffer: 'readonly',
+  process: 'readonly',
+  globalThis: 'readonly',
+}
+
 export default tseslint.config(
   // Ignore patterns
   {
@@ -30,6 +85,15 @@ export default tseslint.config(
       parserOptions: {
         parser: tseslint.parser,
       },
+      globals: BROWSER_GLOBALS,
+    },
+  },
+
+  // Browser globals for TS / JS as well (matches what runs in the app).
+  {
+    files: ['**/*.{ts,tsx,js}'],
+    languageOptions: {
+      globals: BROWSER_GLOBALS,
     },
   },
 

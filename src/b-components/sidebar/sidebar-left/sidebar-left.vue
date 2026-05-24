@@ -3,6 +3,7 @@
     <SidebarTabs :collapsed='collapsed' />
     <SidebarCategories v-if='!collapsed' />
     <SidebarTags v-if='!collapsed' />
+    <SidebarExplorerLink v-if='!collapsed' />
     <!-- <SidebarFooter /> -->
   </SC_LeftSidebar>
 </template>

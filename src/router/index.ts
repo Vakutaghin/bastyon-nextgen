@@ -9,6 +9,11 @@ const SettingsPage = () => import('@/pages/settings-page/settings-page.vue')
 const LimitsPage = () => import('@/pages/limits-page/limits-page.vue')
 const WalletsPage = () => import('@/pages/wallets-page/wallets-page.vue')
 const MyVideosPage = () => import('@/pages/my-videos-page/my-videos-page.vue')
+const BlockExplorerPage = () => import('@/pages/block-explorer-page/block-explorer-page.vue')
+const ExplorerBlockPage = () => import('@/pages/block-explorer-page/block-page/block-page.vue')
+const ExplorerTxPage    = () => import('@/pages/block-explorer-page/tx-page/tx-page.vue')
+const ExplorerAddressPage = () => import('@/pages/block-explorer-page/address-page/address-page.vue')
+const ExplorerPeersPage = () => import('@/pages/block-explorer-page/peers-page/peers-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])
@@ -41,6 +46,36 @@ const router = createRouter({
       path: '/my-videos',
       name: 'my-videos',
       component: MyVideosPage
+    },
+    // Block explorer routes must come BEFORE the catch-all /:userName below —
+    // otherwise the profile route greedily matches `/explorer`, `/explorer/...`.
+    {
+      path: '/explorer',
+      name: 'explorer',
+      component: BlockExplorerPage
+    },
+    {
+      path: '/explorer/block/:hashOrHeight',
+      name: 'explorer-block',
+      component: ExplorerBlockPage,
+      props: true
+    },
+    {
+      path: '/explorer/tx/:txid',
+      name: 'explorer-tx',
+      component: ExplorerTxPage,
+      props: true
+    },
+    {
+      path: '/explorer/address/:address',
+      name: 'explorer-address',
+      component: ExplorerAddressPage,
+      props: true
+    },
+    {
+      path: '/explorer/peers',
+      name: 'explorer-peers',
+      component: ExplorerPeersPage
     },
     {
       path: '/:userName',

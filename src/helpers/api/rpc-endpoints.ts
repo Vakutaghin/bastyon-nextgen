@@ -38,6 +38,21 @@ export const rpcEndpoints = {
   getRawTransactionWithMessageById: 'getrawtransactionwithmessagebyid',
   sendRawTransactionWithMessage: 'sendrawtransactionwithmessage',
 
+  // Block Explorer methods
+  getCoinInfo: 'getcoininfo',
+  getLastBlocks: 'getlastblocks',
+  getCompactBlock: 'getcompactblock',
+  getBlockTransactions: 'getblocktransactions',
+  getTransactions: 'gettransactions',
+  getAddressInfo: 'getaddressinfo',
+  getAddressTransactions: 'getaddresstransactions',
+  searchByHash: 'searchbyhash',
+  getPeerInfo: 'getpeerinfo',
+  getStatisticByHours: 'getstatisticbyhours',
+  getStatisticByDays: 'getstatisticbydays',
+  getStatisticContentByHours: 'getstatisticcontentbyhours',
+  getStatisticContentByDays: 'getstatisticcontentbydays',
+
   // Other methods
   getMissedInfo: 'getmissedinfo',
   getApps: 'getapps',

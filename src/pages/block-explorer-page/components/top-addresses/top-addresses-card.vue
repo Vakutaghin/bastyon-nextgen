@@ -1,0 +1,99 @@
+<template>
+  <SC_TopCard>
+    <SC_TopHeader>
+      <SC_TopTitleGroup>
+        <SC_TopTitle>
+          Активные адреса
+          <InfoTooltip
+            text='Топ адресов по числу транзакций за последние блоки. Считается локально по данным ноды — без зависимости от центрального хоста.'
+          />
+        </SC_TopTitle>
+        <SC_TopHint>{{ hint }}</SC_TopHint>
+      </SC_TopTitleGroup>
+      <SC_TopToggle type='button' :disabled='!hasMore' @click='toggleShowAll'>
+        {{ expanded ? 'Свернуть' : `Показать топ-${maxShown}` }}
+      </SC_TopToggle>
+    </SC_TopHeader>
+
+    <template v-if='isLoading'>
+      <SC_TopRow v-for='i in 6' :key='`sk-${i}`'>
+        <SC_TopRank>{{ i }}</SC_TopRank>
+        <Skeleton :width='160' :height='14' />
+        <SC_TopVolume><Skeleton :width='60' :height='12' /></SC_TopVolume>
+        <SC_TopCount><Skeleton :width='40' :height='12' /></SC_TopCount>
+      </SC_TopRow>
+    </template>
+
+    <SC_Placeholder v-else-if='error'>
+      Не удалось вычислить топ адресов
+    </SC_Placeholder>
+
+    <SC_Placeholder v-else-if='!visibleAddresses.length'>
+      Нет активности
+    </SC_Placeholder>
+
+    <template v-else>
+      <SC_TopRow v-for='(row, idx) in visibleAddresses' :key='row.address'>
+        <SC_TopRank>{{ idx + 1 }}</SC_TopRank>
+        <AddressLink :address='row.address' />
+        <SC_TopVolume :title='`Получено + отправлено за окно`'>
+          {{ formatExplorerPkoin(row.volumeIn + row.volumeOut) }} PKOIN
+        </SC_TopVolume>
+        <SC_TopCount :title='`Появлений в транзакциях`'>
+          {{ row.txCount }} tx
+        </SC_TopCount>
+      </SC_TopRow>
+    </template>
+  </SC_TopCard>
+</template>
+
+<script setup lang='ts'>
+import { computed, ref } from 'vue'
+import { useActiveAddresses } from '@/composables/use-active-addresses'
+import AddressLink from '../shared/address-link.vue'
+import InfoTooltip from '../shared/info-tooltip.vue'
+import { formatExplorerPkoin } from '../shared/format-explorer'
+import { Skeleton } from '@/components'
+import {
+  SC_TopCard,
+  SC_TopHeader,
+  SC_TopTitleGroup,
+  SC_TopTitle,
+  SC_TopHint,
+  SC_TopToggle,
+  SC_TopRow,
+  SC_TopRank,
+  SC_TopVolume,
+  SC_TopCount,
+  SC_Placeholder,
+} from './top-addresses-card.styled'
+
+defineOptions({ name: 'TopAddressesCard' })
+
+const TOP_SHORT = 10
+const TOP_FULL = 30
+
+const expanded = ref(false)
+const maxShown = TOP_FULL
+
+const { data, isLoading, error } = useActiveAddresses({ blockDepth: 50, txLimit: 100 })
+
+const addresses = computed(() => data.value?.addresses ?? [])
+const hasMore = computed(() => addresses.value.length > TOP_SHORT)
+
+const visibleAddresses = computed(() => {
+  const n = expanded.value ? TOP_FULL : TOP_SHORT
+  return addresses.value.slice(0, n)
+})
+
+const hint = computed(() => {
+  const blocks = data.value?.blocksScanned ?? 0
+  const txCount = data.value?.txCount ?? 0
+  if (!blocks) return ''
+  return `За последние ${blocks} блоков · ${txCount.toLocaleString('en-US')} tx`
+})
+
+function toggleShowAll() {
+  expanded.value = !expanded.value
+}
+</script>

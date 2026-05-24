@@ -16,6 +16,17 @@ describe('rpcEndpoints', () => {
     expect(rpcEndpoints.txUnspent).toBe('txunspent')
     expect(rpcEndpoints.sendRawTransactionWithMessage).toBe('sendrawtransactionwithmessage')
   })
+
+  it('has block explorer methods', () => {
+    expect(rpcEndpoints.getCoinInfo).toBe('getcoininfo')
+    expect(rpcEndpoints.getLastBlocks).toBe('getlastblocks')
+    expect(rpcEndpoints.getCompactBlock).toBe('getcompactblock')
+    expect(rpcEndpoints.getBlockTransactions).toBe('getblocktransactions')
+    expect(rpcEndpoints.getTransactions).toBe('gettransactions')
+    expect(rpcEndpoints.getAddressInfo).toBe('getaddressinfo')
+    expect(rpcEndpoints.getAddressTransactions).toBe('getaddresstransactions')
+    expect(rpcEndpoints.searchByHash).toBe('searchbyhash')
+  })
 })
 
 describe('getRpcPath', () => {
