@@ -27,18 +27,48 @@
   --color-danger: rgb(220, 53, 69);
   --color-warning: rgb(255, 193, 7);
 
-  /* ── Spacing ── */
+  /* ── Spacing (desktop baseline; overridden in @media for mobile) ── */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* ── Fluid spacing — плавно интерполируется между mobile (480px) и desktop (1200px).
+       Используй вместо --spacing-* там, где нужна гладкая адаптация без media-queries. ── */
+  --fluid-xs: clamp(2px, 0.28vw + 0.67px, 4px);
+  --fluid-sm: clamp(6px, 0.28vw + 4.67px, 8px);
+  --fluid-md: clamp(10px, 0.83vw + 6px, 16px);
+  --fluid-lg: clamp(14px, 1.39vw + 7.33px, 24px);
+  --fluid-xl: clamp(20px, 1.67vw + 12px, 32px);
+  --fluid-xxl: clamp(28px, 2.78vw + 14.67px, 48px);
+
+  /* ── Layout (высоты ключевых элементов каркаса) ── */
+  --header-height: 60px;
+  /* safe-area c fallback: на iOS работает env(); на Android те же значения
+     пробрасываются нативно из MainActivity в --android-inset-*.
+     max() гарантирует, что используется источник, который действительно
+     знает размер системного бара. */
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--android-inset-top, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px));
+  --safe-left: max(env(safe-area-inset-left, 0px), var(--android-inset-left, 0px));
+  --safe-right: max(env(safe-area-inset-right, 0px), var(--android-inset-right, 0px));
+  --header-height-total: calc(var(--header-height) + var(--safe-top));
+  --bottom-nav-height: 56px;
+  --bottom-nav-height-total: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  --content-max-width: 1600px;
+  --content-gap: 20px;
+  --content-padding-x: 20px;
 
   /* ── Typography ── */
-  --font-family: 'Segoe UI Variable', 'Segoe UI', SegoeUI, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-family:
+    'Segoe UI Variable', 'Segoe UI', SegoeUI, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-size-xs: 11px;
   --font-size-sm: 12px;
   --font-size-md: 14px;
   --font-size-lg: 16px;
+  --font-size-xl: 18px;
 
   /* ── Border radius ── */
   --radius-sm: 4px;
@@ -48,6 +78,44 @@
   /* ── Transitions ── */
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
+
+  /* ── Breakpoints (для @container-queries и JS-кода через getComputedStyle) ── */
+  --bp-small-mobile: 360px;
+  --bp-mobile: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1200px;
+  --bp-wide: 1600px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile overrides — на узких экранах уменьшаем spacing, layout-высоты,
+   убираем большие отступы. Все компоненты, использующие CSS-переменные,
+   получают компактный вид автоматически.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  :root {
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 20px;
+    --spacing-xxl: 32px;
+
+    --header-height: 52px;
+    --content-gap: 12px;
+    --content-padding-x: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --spacing-md: 10px;
+    --spacing-lg: 14px;
+    --spacing-xl: 18px;
+    --spacing-xxl: 28px;
+
+    --content-gap: 8px;
+    --content-padding-x: 8px;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -138,10 +206,10 @@ button.disabled {
    Inputs
    ═══════════════════════════════════════════════════════════════════════════ */
 
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"] {
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'] {
   color: var(--color-text);
   border-radius: 6px;
   padding: 0 0.5em;
@@ -172,7 +240,9 @@ a {
   color: var(--color-primary);
   text-decoration: none;
   border-bottom: 1px solid var(--color-primary);
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 a:hover {
@@ -292,4 +362,29 @@ a:active {
 /* Notifications dropdown z-index */
 .header-notifications-dropdown {
   z-index: 3000 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile compactness for Ant Design Card body — vue3-styled-components не
+   доводит :deep() до .ant-card-body, поэтому override живёт здесь как глобал.
+   Применяется только к нашим Card-обёрткам (.bastyon-card), не ломая другие
+   ant-card в приложении (модалки, всплывашки и т.д.).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .bastyon-card.ant-card {
+    border-radius: 10px;
+  }
+  .bastyon-card .ant-card-body {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bastyon-card.ant-card {
+    border-radius: 8px;
+  }
+  .bastyon-card .ant-card-body {
+    padding: 12px;
+  }
 }
