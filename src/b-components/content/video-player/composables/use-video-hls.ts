@@ -2,7 +2,7 @@ import { ref, computed, nextTick, type Ref, onBeforeUnmount } from 'vue'
 import Hls from 'hls.js'
 import { getHlsPlaylistFromUrl } from '@/helpers/api/peertube-url'
 import { videoPlayerManager } from '../video-player-manager'
-import { resolveVideoElement } from './utils'
+import { resolveVideoElement, tryAutoplay } from './utils'
 
 export function useVideoHls(
   p: { videoUrl: string; autoplay: boolean },
@@ -58,7 +58,7 @@ export function useVideoHls(
     const levels = hls.value.levels.map((level, index) => ({
       index,
       height: level.height || 0,
-      label: formatQualityLabel(level.height || 0)
+      label: formatQualityLabel(level.height || 0),
     }))
 
     // Сортируем по высоте (от большего к меньшему)
@@ -131,11 +131,11 @@ export function useVideoHls(
         qualityMenuClickOutsideHandler = (e: MouseEvent) => {
           // Если меню уже закрыто, удаляем обработчик и выходим
           if (!isQualityMenuOpen.value) {
-             if (qualityMenuClickOutsideHandler) {
-                window.removeEventListener('click', qualityMenuClickOutsideHandler, true)
-                qualityMenuClickOutsideHandler = null
-             }
-             return
+            if (qualityMenuClickOutsideHandler) {
+              window.removeEventListener('click', qualityMenuClickOutsideHandler, true)
+              qualityMenuClickOutsideHandler = null
+            }
+            return
           }
 
           const target = e.target as HTMLElement
@@ -143,8 +143,8 @@ export function useVideoHls(
 
           // Проверяем, кликнули ли мы внутрь дропдауна или кнопки
           const getElement = (ref: any) => {
-             if (!ref) return null
-             return (ref instanceof HTMLElement) ? ref : (ref.$el || ref)
+            if (!ref) return null
+            return ref instanceof HTMLElement ? ref : ref.$el || ref
           }
 
           const controlEl = getElement(qualityControlRef.value)
@@ -152,8 +152,11 @@ export function useVideoHls(
 
           // Если клик внутри контрола или дропдауна - ничего не делаем (меню не закрываем)
           // Клик по кнопке "шестеренки" обрабатывается отдельно в toggleQualityMenu
-          if ((controlEl && controlEl.contains(target)) || (dropdownEl && dropdownEl.contains(target))) {
-             return
+          if (
+            (controlEl && controlEl.contains(target)) ||
+            (dropdownEl && dropdownEl.contains(target))
+          ) {
+            return
           }
 
           // Иначе закрываем меню
@@ -222,35 +225,41 @@ export function useVideoHls(
         video.volume = volume.value
         video.playbackRate = playbackRate.value
 
-        video.addEventListener('loadedmetadata', () => {
-          isLoading.value = false
-          isInitialized.value = true
-          showControlsInitially.value = true
-          setTimeout(() => {
-            showControlsInitially.value = false
-          }, 3000)
+        video.addEventListener(
+          'loadedmetadata',
+          () => {
+            isLoading.value = false
+            isInitialized.value = true
+            showControlsInitially.value = true
+            setTimeout(() => {
+              showControlsInitially.value = false
+            }, 3000)
 
-          // Начальное обновление буферизации
-          setTimeout(updateBuffered, 300)
+            // Начальное обновление буферизации
+            setTimeout(updateBuffered, 300)
 
-          // Настраиваем Intersection Observer после инициализации видео
-          nextTick(() => {
-            setupIntersectionObserver()
-          })
-
-          if ((p.autoplay || forcePlay) && video) {
-            // Останавливаем все другие видеоплееры перед автозапуском
-            videoPlayerManager.pauseAllExcept(playerId.value)
-            video.play().catch((err) => {
-              console.warn('Autoplay failed:', err)
+            // Настраиваем Intersection Observer после инициализации видео
+            nextTick(() => {
+              setupIntersectionObserver()
             })
-          }
-        }, { once: true })
 
-        video.addEventListener('error', () => {
-          isLoading.value = false
-          error.value = 'Ошибка загрузки видео'
-        }, { once: true })
+            if ((p.autoplay || forcePlay) && video) {
+              // Останавливаем все другие видеоплееры перед автозапуском
+              videoPlayerManager.pauseAllExcept(playerId.value)
+              tryAutoplay(video)
+            }
+          },
+          { once: true }
+        )
+
+        video.addEventListener(
+          'error',
+          () => {
+            isLoading.value = false
+            error.value = 'Ошибка загрузки видео'
+          },
+          { once: true }
+        )
 
         return
       }
@@ -268,10 +277,10 @@ export function useVideoHls(
         hls.value = new Hls({
           enableWorker: true,
           lowLatencyMode: false,
-          maxBufferLength: 60, // Минимум 1 минута
-          maxMaxBufferLength: 300, // Максимум 5 минут
-          // Ограничиваем размер буфера в байтах (по умолчанию 60MB, можно оставить или увеличить если нужно 2 мин 4k)
-          // maxBufferSize: 60 * 1000 * 1000,
+          maxBufferLength: 60,
+          maxMaxBufferLength: 300,
+          // Жёсткий потолок в байтах: на 4K стриме без него буфер съедает >1GB RAM и убивает мобильный браузер
+          maxBufferSize: 60 * 1000 * 1000,
         })
 
         hls.value.loadSource(playlistUrl)
@@ -310,9 +319,7 @@ export function useVideoHls(
           if ((p.autoplay || forcePlay) && video) {
             // Останавливаем все другие видеоплееры перед автозапуском
             videoPlayerManager.pauseAllExcept(playerId.value)
-            video.play().catch((err) => {
-              console.warn('Autoplay failed:', err)
-            })
+            tryAutoplay(video)
           }
         })
 
@@ -323,39 +330,70 @@ export function useVideoHls(
           }
         })
 
-        hls.value.on(Hls.Events.ERROR, (event, data) => {
-          // Обрабатываем некритичные ошибки отдельно
+        // Счётчики для recovery, сбрасываются на каждый успешный фрагмент
+        let networkRetryCount = 0
+        let mediaRecoveryCount = 0
+        let stallRecoveryAt = 0
+        const MAX_NETWORK_RETRY = 3
+        const MAX_MEDIA_RECOVERY = 2
+
+        hls.value.on(Hls.Events.FRAG_LOADED, () => {
+          networkRetryCount = 0
+          mediaRecoveryCount = 0
+        })
+
+        hls.value.on(Hls.Events.ERROR, (_event, data) => {
           if (!data.fatal) {
-            // bufferStalledError - не критичная ошибка, возникает при остановке буфера
+            // bufferStalledError — буфер опустошён, hls.js обычно сам восстанавливается, но
+            // на медленной сети может зависнуть. Форсируем startLoad не чаще раза в 5с.
             if (data.details === 'bufferStalledError') {
+              const now = Date.now()
+              if (now - stallRecoveryAt > 5000 && hls.value) {
+                stallRecoveryAt = now
+                hls.value.startLoad(-1)
+              }
               return
             }
-            // Другие некритичные ошибки логируем как предупреждения
-            console.warn('HLS non-fatal error:', data)
+            console.warn('HLS non-fatal error:', data.details)
             return
           }
 
-          // Критичные ошибки логируем и обрабатываем
           console.error('HLS fatal error:', data)
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
+              if (networkRetryCount < MAX_NETWORK_RETRY && hls.value) {
+                const delay = 1000 * Math.pow(2, networkRetryCount)
+                networkRetryCount += 1
+                console.warn(
+                  `HLS network retry ${networkRetryCount}/${MAX_NETWORK_RETRY} in ${delay}ms`
+                )
+                setTimeout(() => hls.value?.startLoad(), delay)
+                return
+              }
               error.value = 'Ошибка сети при загрузке видео'
+              isLoading.value = false
               break
             case Hls.ErrorTypes.MEDIA_ERROR:
-              error.value = 'Ошибка воспроизведения видео'
-              // Пытаемся восстановиться
-              if (hls.value) {
+              if (mediaRecoveryCount < MAX_MEDIA_RECOVERY && hls.value) {
+                mediaRecoveryCount += 1
+                // На второй попытке меняем аудиокодек — рекомендованный hls.js паттерн
+                if (mediaRecoveryCount === 2) {
+                  hls.value.swapAudioCodec()
+                }
                 hls.value.recoverMediaError()
+                return
               }
+              error.value = 'Ошибка воспроизведения видео'
+              isLoading.value = false
               break
             default:
               error.value = 'Ошибка загрузки видео'
               if (hls.value) {
                 hls.value.destroy()
               }
+              isLoading.value = false
               break
           }
-          isLoading.value = false
         })
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         // Нативная поддержка HLS (Safari)
@@ -386,9 +424,7 @@ export function useVideoHls(
         if (p.autoplay || forcePlay) {
           // Останавливаем все другие видеоплееры перед автозапуском
           videoPlayerManager.pauseAllExcept(playerId.value)
-          video.play().catch((err) => {
-            console.warn('Autoplay failed:', err)
-          })
+          tryAutoplay(video)
         }
       } else {
         throw new Error('HLS не поддерживается в этом браузере')
@@ -430,6 +466,6 @@ export function useVideoHls(
     openSpeedMenu,
     goBackToMainMenu,
     toggleQualityMenu,
-    getCurrentQualityLabel
+    getCurrentQualityLabel,
   }
 }

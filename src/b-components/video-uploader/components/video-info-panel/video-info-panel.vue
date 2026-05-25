@@ -51,7 +51,9 @@
       <SC_InfoContent>
         <SC_InfoRow>
           <SC_InfoLabel>Разрешение:</SC_InfoLabel>
-          <SC_InfoValue>{{ targetWidth }} × {{ targetHeight }} ({{ targetResolution }})</SC_InfoValue>
+          <SC_InfoValue
+            >{{ targetWidth }} × {{ targetHeight }} ({{ targetResolution }})</SC_InfoValue
+          >
         </SC_InfoRow>
         <SC_InfoRow>
           <SC_InfoLabel>Битрейт видео:</SC_InfoLabel>
@@ -68,8 +70,9 @@
         <SC_InfoRow>
           <SC_InfoLabel>Аудио:</SC_InfoLabel>
           <SC_InfoValue>
-            <CloseCircleOutlined :style="{ color: '#ff4d4f' }" />
-            Нет (временно отключено)
+            <CheckCircleOutlined v-if="sourceMetadata.hasAudio" :style="{ color: '#52c41a' }" />
+            <CloseCircleOutlined v-else :style="{ color: '#ff4d4f' }" />
+            {{ sourceMetadata.hasAudio ? `Opus, ${MAX_AUDIO_BITRATE} kbps` : 'Нет' }}
           </SC_InfoValue>
         </SC_InfoRow>
       </SC_InfoContent>
@@ -118,10 +121,11 @@ import {
   SC_InfoRow,
   SC_InfoLabel,
   SC_InfoValue,
-  SC_TranscoderBadge
+  SC_TranscoderBadge,
 } from './styled'
 import { formatFileSize, formatDuration, calculateVideoBitrate } from './video-info-panel'
 import type { VideoMetadata } from '../../transcoder/types'
+import { MAX_AUDIO_BITRATE } from '../../utils/constants'
 import { computed } from 'vue'
 
 const p = defineProps<{

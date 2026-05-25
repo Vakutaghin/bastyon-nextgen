@@ -15,7 +15,7 @@ export const resolveDomElement = (elementRef: Ref<any>): HTMLElement | null => {
   if (element instanceof HTMLElement) {
     return element
   }
-  
+
   return null
 }
 
@@ -47,4 +47,31 @@ export const resolveVideoElement = (videoElementRef: Ref<any>): HTMLVideoElement
   }
 
   return null
+}
+
+/**
+ * Запускает autoplay с fallback на muted.
+ * Mobile Safari (и Chrome на Android) блокируют play() для unmuted видео без user gesture —
+ * перезапускаем с muted=true, иначе плеер залипает на постере без сообщения.
+ */
+export const tryAutoplay = async (
+  video: HTMLVideoElement
+): Promise<{ played: boolean; muted: boolean }> => {
+  try {
+    await video.play()
+    return { played: true, muted: video.muted }
+  } catch (err) {
+    if (video.muted) {
+      console.warn('Autoplay failed even with muted:', err)
+      return { played: false, muted: true }
+    }
+    try {
+      video.muted = true
+      await video.play()
+      return { played: true, muted: true }
+    } catch (mutedErr) {
+      console.warn('Autoplay failed (both unmuted and muted):', mutedErr)
+      return { played: false, muted: true }
+    }
+  }
 }

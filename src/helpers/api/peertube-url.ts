@@ -88,18 +88,43 @@ export function parsePeerTubeUrl(url: string): PeerTubeUrl | null {
   return {
     host,
     videoId,
-    type
+    type,
+  }
+}
+
+/** Параметры retry для PeerTube API запросов */
+const PEERTUBE_FETCH_TIMEOUT_MS = 10_000
+const PEERTUBE_MAX_RETRIES = 3
+const PEERTUBE_RETRY_BASE_DELAY_MS = 500
+
+/**
+ * Одна попытка fetch с таймаутом через AbortController.
+ */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await appFetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 
 /**
- * Получает информацию о видео с PeerTube сервера через API
+ * Получает информацию о видео с PeerTube сервера через API.
+ *
+ * Делает до 3 попыток с экспоненциальным backoff (500ms / 1s / 2s) и таймаутом 10s
+ * на каждую попытку. 404 не ретраится — это окончательный ответ.
  *
  * @param host - Хост PeerTube сервера (например, 'peertube359.pocketnet.app')
  * @param videoId - ID видео (UUID или короткий ID)
  * @returns Promise с информацией о видео
  *
- * @throws {Error} Если запрос не удался или видео не найдено
+ * @throws {Error} Если все попытки исчерпаны или видео не найдено
  *
  * @example
  * const info = await getPeerTubeVideoInfo('peertube359.pocketnet.app', 'abc123')
@@ -121,33 +146,55 @@ export async function getPeerTubeVideoInfo(
     ? `/api/peertube/${host}/api/v1/videos/${videoId}`
     : `https://${host}/api/v1/videos/${videoId}`
 
-  try {
-    const response = await appFetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        // Добавляем Referer для совместимости с некоторыми серверами
-        'Referer': typeof window !== 'undefined' ? window.location.origin : ''
-      }
-    })
+  const init: RequestInit = {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      // Добавляем Referer для совместимости с некоторыми серверами
+      Referer: typeof window !== 'undefined' ? window.location.origin : '',
+    },
+  }
 
-    if (!response.ok) {
+  let lastError: Error | null = null
+  for (let attempt = 0; attempt < PEERTUBE_MAX_RETRIES; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(apiUrl, init, PEERTUBE_FETCH_TIMEOUT_MS)
+
+      // 404 не ретраим — это окончательный ответ "видео не существует"
       if (response.status === 404) {
         throw new Error(`Video not found: ${videoId}`)
       }
-      throw new Error(
-        `Failed to fetch video info: ${response.status} ${response.statusText}`
-      )
-    }
 
-    const data = await response.json()
-    return data as PeerTubeVideoInfo
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video info: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      return data as PeerTubeVideoInfo
+    } catch (error) {
+      const err =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : JSON.stringify(error))
+
+      // 404 пробрасываем сразу, не ретраим
+      if (err.message.startsWith('Video not found:')) {
+        throw err
+      }
+
+      lastError = err
+      const isLastAttempt = attempt === PEERTUBE_MAX_RETRIES - 1
+      if (isLastAttempt) break
+
+      const delay = PEERTUBE_RETRY_BASE_DELAY_MS * Math.pow(2, attempt)
+      console.warn(
+        `PeerTube fetch attempt ${attempt + 1}/${PEERTUBE_MAX_RETRIES} failed (${err.message}), retrying in ${delay}ms`
+      )
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
-    throw new Error(`peertube fetch failed: ${typeof error === 'string' ? error : JSON.stringify(error)}`)
   }
+
+  throw lastError ?? new Error('peertube fetch failed: unknown error')
 }
 
 /**
@@ -164,9 +211,7 @@ export async function getPeerTubeVideoInfo(
  * const playlistUrl = getHlsPlaylistUrl(videoInfo)
  * // 'https://host/static/streaming-playlists/hls/videoId/playlistId-master.m3u8'
  */
-export function getHlsPlaylistUrl(
-  videoInfo: PeerTubeVideoInfo
-): string | null {
+export function getHlsPlaylistUrl(videoInfo: PeerTubeVideoInfo): string | null {
   if (!videoInfo) {
     return null
   }
@@ -206,10 +251,7 @@ export function getHlsPlaylistUrl(
  * const thumbnailUrl = getVideoThumbnailUrl(videoInfo, 'peertube359.pocketnet.app')
  * // 'https://peertube359.pocketnet.app/static/thumbnails/videoId.jpg'
  */
-export function getVideoThumbnailUrl(
-  videoInfo: PeerTubeVideoInfo,
-  host: string
-): string | null {
+export function getVideoThumbnailUrl(videoInfo: PeerTubeVideoInfo, host: string): string | null {
   if (!videoInfo || !host) {
     return null
   }
@@ -217,7 +259,10 @@ export function getVideoThumbnailUrl(
   // Приоритет 1: Используем thumbnailUrl если есть
   if (videoInfo.thumbnailUrl) {
     // Если это полный URL, возвращаем как есть
-    if (videoInfo.thumbnailUrl.startsWith('http://') || videoInfo.thumbnailUrl.startsWith('https://')) {
+    if (
+      videoInfo.thumbnailUrl.startsWith('http://') ||
+      videoInfo.thumbnailUrl.startsWith('https://')
+    ) {
       return videoInfo.thumbnailUrl
     }
     // Если относительный путь, добавляем хост
@@ -259,9 +304,7 @@ export function getVideoThumbnailUrl(
  *
  * @throws {Error} Если URL неверный или видео не найдено
  */
-export async function getVideoThumbnailFromUrl(
-  peertubeUrl: string
-): Promise<string | null> {
+export async function getVideoThumbnailFromUrl(peertubeUrl: string): Promise<string | null> {
   // Парсим URL
   const parsed = parsePeerTubeUrl(peertubeUrl)
   if (!parsed) {
@@ -289,9 +332,7 @@ export async function getVideoThumbnailFromUrl(
  * @example
  * const playlistUrl = await getHlsPlaylistFromUrl('peertube://host/videoid')
  */
-export async function getHlsPlaylistFromUrl(
-  peertubeUrl: string
-): Promise<string | null> {
+export async function getHlsPlaylistFromUrl(peertubeUrl: string): Promise<string | null> {
   // Парсим URL
   const parsed = parsePeerTubeUrl(peertubeUrl)
   if (!parsed) {
