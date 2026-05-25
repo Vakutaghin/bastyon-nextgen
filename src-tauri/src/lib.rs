@@ -58,6 +58,60 @@ async fn delete_temp_file(file_path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Удалить осиротевшие временные файлы транскодера (tauri_video_* / tauri_output_*)
+/// старше `max_age_secs` секунд. Сбойный транскод оставляет за собой файлы по 4GB,
+/// этот sweep вызывается при старте приложения, чтобы они не копились между сессиями.
+fn cleanup_orphaned_temp_files(max_age_secs: u64) {
+    let temp_dir = env::temp_dir();
+    let entries = match fs::read_dir(&temp_dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    let now = std::time::SystemTime::now();
+    let mut removed_count = 0usize;
+    let mut removed_bytes = 0u64;
+
+    for entry in entries.flatten() {
+        let file_name = entry.file_name();
+        let name = file_name.to_string_lossy();
+        if !name.starts_with("tauri_video_") && !name.starts_with("tauri_output_") {
+            continue;
+        }
+
+        let metadata = match entry.metadata() {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+        let modified = match metadata.modified() {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+        let age = match now.duration_since(modified) {
+            Ok(d) => d,
+            Err(_) => continue, // файл из будущего — пропустим
+        };
+
+        if age.as_secs() < max_age_secs {
+            continue;
+        }
+
+        let size = metadata.len();
+        if fs::remove_file(entry.path()).is_ok() {
+            removed_count += 1;
+            removed_bytes += size;
+        }
+    }
+
+    if removed_count > 0 {
+        log::info!(
+            "Cleaned up {} orphaned transcoder temp files ({} bytes)",
+            removed_count,
+            removed_bytes
+        );
+    }
+}
+
 /// Читать файл
 #[tauri::command]
 async fn read_file(file_path: String) -> Result<Vec<u8>, String> {
@@ -645,6 +699,12 @@ pub fn run() {
 
       // Tor manager — initialise app state holder.
       tor::init(app.handle()).map_err(|e| e.to_string())?;
+
+      // Подбираем осиротевшие temp-файлы транскодера старше 24 часов в фоне,
+      // чтобы упавшие транскоды не накапливали гигабайты между запусками.
+      std::thread::spawn(|| {
+        cleanup_orphaned_temp_files(24 * 60 * 60);
+      });
 
       Ok(())
     })

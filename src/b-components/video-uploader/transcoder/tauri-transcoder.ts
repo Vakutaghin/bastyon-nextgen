@@ -66,51 +66,63 @@ export class TauriTranscoder implements Transcoder {
   }
 
   /**
-   * Получить метаданные видео
+   * Получить метаданные видео по File (для standalone-вызовов).
+   * Сохраняет файл во временную директорию, читает метаданные, удаляет.
+   * Внутри transcode() предпочтительнее getMetadataByPath() — там путь уже есть.
    */
   async getMetadata(file: File): Promise<VideoMetadata> {
     if (!this.isSupported()) {
       throw new TranscodeError('Tauri is not available', 'NOT_SUPPORTED')
     }
 
-    // Используем Tauri команду для получения метаданных
+    let filePath: string | null = null
     try {
-      const filePath = await this.saveFileToTemp(file)
-
-      const metadata = await invoke<{
-        width: number
-        height: number
-        duration: number
-        fps: number
-        has_audio: boolean
-        video_bitrate?: number
-        audio_bitrate?: number
-        mime_type?: string
-      }>('get_video_metadata', {
-        filePath,
-      })
-
-      // Удаляем временный файл
-      await invoke('delete_temp_file', { filePath })
-
-      // Конвертируем в VideoMetadata
-      return {
-        width: metadata.width,
-        height: metadata.height,
-        duration: metadata.duration,
-        fps: metadata.fps,
-        hasAudio: metadata.has_audio,
-        videoBitrate: metadata.video_bitrate,
-        audioBitrate: metadata.audio_bitrate,
-        mimeType: metadata.mime_type,
-      }
+      filePath = await this.saveFileToTemp(file)
+      return await this.getMetadataByPath(filePath)
     } catch (error) {
       throw new TranscodeError('Failed to get video metadata', 'METADATA_ERROR', error as Error)
+    } finally {
+      if (filePath) {
+        // Не блокируем основной флоу, если cleanup упал — TTL-сборщик подберёт
+        invoke('delete_temp_file', { filePath }).catch(() => {})
+      }
     }
   }
 
   /**
-   * Транскодировать видео
+   * Прочитать метаданные напрямую из готового пути на диске — без сохранения/удаления.
+   * Используется внутри transcode(), чтобы не копировать большой файл повторно.
+   */
+  private async getMetadataByPath(filePath: string): Promise<VideoMetadata> {
+    const metadata = await invoke<{
+      width: number
+      height: number
+      duration: number
+      fps: number
+      has_audio: boolean
+      video_bitrate?: number
+      audio_bitrate?: number
+      mime_type?: string
+    }>('get_video_metadata', { filePath })
+
+    return {
+      width: metadata.width,
+      height: metadata.height,
+      duration: metadata.duration,
+      fps: metadata.fps,
+      hasAudio: metadata.has_audio,
+      videoBitrate: metadata.video_bitrate,
+      audioBitrate: metadata.audio_bitrate,
+      mimeType: metadata.mime_type,
+    }
+  }
+
+  /**
+   * Транскодировать видео.
+   *
+   * Файл копируется во временную директорию ровно один раз; метаданные читаются с того
+   * же пути (без повторного save/delete), результат удаляется в finally вместе с входом —
+   * чтобы ничего не утекало даже при ошибке.
    */
   async transcode(
     file: File,
@@ -121,135 +133,116 @@ export class TauriTranscoder implements Transcoder {
       throw new TranscodeError('Tauri is not available', 'NOT_SUPPORTED')
     }
 
-    // Получаем метаданные
-    const metadata = await this.getMetadata(file)
-
-    // Определяем целевое разрешение
-    const targetResolution =
-      options.resolution || selectTargetResolution(metadata.width, metadata.height)
-    const { width, height } = calculateTargetDimensions(
-      metadata.width,
-      metadata.height,
-      targetResolution
-    )
-
-    // Определяем параметры кодирования
-    const sourceBitrate = metadata.videoBitrate
-      ? metadata.videoBitrate
-      : Math.round((file.size * 8) / (metadata.duration * 1000))
-
-    const calculatedBitrate = options.videoBitrate || getBitrateForResolution(targetResolution)
-    const videoBitrate = Math.min(
-      calculatedBitrate,
-      MAX_VIDEO_BITRATE,
-      sourceBitrate > 0 ? sourceBitrate : Infinity
-    )
-    const fps = Math.min(options.fps || TARGET_FPS, MAX_FPS)
-    const codec: TranscodeCodec = options.codec ?? 'h264'
-
-    // Вычисляем audioBitrate: если есть аудио, используем опции или значение по умолчанию
-    const audioBitrate = metadata.hasAudio ? options.audioBitrate || MAX_AUDIO_BITRATE : 0
+    let inputFilePath: string | null = null
+    let outputFilePath: string | null = null
+    let progressUnlisten: (() => void) | null = null
 
     try {
-      // Сохраняем файл во временную директорию
-      const inputFilePath = await this.saveFileToTemp(file)
+      // Один save файла на весь transcode-цикл — экономит 2× копирования для 4GB файлов
+      inputFilePath = await this.saveFileToTemp(file)
 
-      // Параметры для транскодирования (snake_case для Rust)
-      const transcodeParams = {
-        input_path: inputFilePath,
-        output_path: '', // Будет создан автоматически
+      // Метаданные читаем с уже сохранённого пути, без повторного save
+      const metadata = await this.getMetadataByPath(inputFilePath)
+
+      // Определяем целевое разрешение
+      const targetResolution =
+        options.resolution || selectTargetResolution(metadata.width, metadata.height)
+      const { width, height } = calculateTargetDimensions(
+        metadata.width,
+        metadata.height,
+        targetResolution
+      )
+
+      // Определяем параметры кодирования
+      const sourceBitrate = metadata.videoBitrate
+        ? metadata.videoBitrate
+        : Math.round((file.size * 8) / (metadata.duration * 1000))
+
+      const calculatedBitrate = options.videoBitrate || getBitrateForResolution(targetResolution)
+      const videoBitrate = Math.min(
+        calculatedBitrate,
+        MAX_VIDEO_BITRATE,
+        sourceBitrate > 0 ? sourceBitrate : Infinity
+      )
+      const fps = Math.min(options.fps || TARGET_FPS, MAX_FPS)
+      const codec: TranscodeCodec = options.codec ?? 'h264'
+
+      const audioBitrate = metadata.hasAudio ? options.audioBitrate || MAX_AUDIO_BITRATE : 0
+
+      if (onProgress) {
+        progressUnlisten = await listen<{
+          progress: number
+          currentTime: number
+          duration: number
+        }>('transcode-progress', (event) => {
+          onProgress({
+            progress: event.payload.progress,
+            framesProcessed: undefined,
+          })
+        })
+      }
+
+      // Tauri автоматически конвертирует camelCase в snake_case для Rust
+      const result = await invoke<{
+        output_path: string
+        width: number
+        height: number
+        duration: number
+        file_size: number
+      }>('transcode_video', {
+        inputPath: inputFilePath,
+        outputPath: '',
         width,
         height,
-        video_bitrate: videoBitrate,
-        audio_bitrate: audioBitrate,
+        videoBitrate,
+        audioBitrate,
         fps,
-        has_audio: metadata.hasAudio, // Если в исходном видео есть аудио, передаем true
+        hasAudio: metadata.hasAudio,
+        duration: metadata.duration,
+        codec,
+      })
+
+      outputFilePath = result.output_path
+
+      // Получаем Blob через asset URL (передача байтов через IPC падает с "object can not be cloned")
+      const assetUrl = convertFileSrc(outputFilePath)
+      const response = await fetch(assetUrl)
+      if (!response.ok) {
+        throw new Error(`Failed to read transcoded file: ${response.status}`)
       }
+      const blob = await response.blob()
 
-      // Настраиваем слушатель событий прогресса
-      let progressUnlisten: (() => void) | null = null
-      if (onProgress) {
-        const unlisten = await listen<{ progress: number; currentTime: number; duration: number }>(
-          'transcode-progress',
-          (event) => {
-            if (onProgress) {
-              onProgress({
-                progress: event.payload.progress,
-                framesProcessed: undefined,
-              })
-            }
-          }
-        )
-        progressUnlisten = unlisten
-      }
-
-      try {
-        // Вызываем Tauri команду для транскодирования
-        // Tauri автоматически конвертирует camelCase в snake_case для Rust
-        const result = await invoke<{
-          output_path: string
-          width: number
-          height: number
-          duration: number
-          file_size: number
-        }>('transcode_video', {
-          inputPath: transcodeParams.input_path,
-          outputPath: transcodeParams.output_path,
-          width: transcodeParams.width,
-          height: transcodeParams.height,
-          videoBitrate: transcodeParams.video_bitrate,
-          audioBitrate: transcodeParams.audio_bitrate,
-          fps: transcodeParams.fps,
-          hasAudio: transcodeParams.has_audio,
-          duration: metadata.duration,
-          codec,
-        })
-
-        // Получаем Blob через asset URL (без передачи содержимого по IPC — иначе "object can not be cloned")
-        const assetUrl = convertFileSrc(result.output_path)
-        const response = await fetch(assetUrl)
-        if (!response.ok) {
-          throw new Error(`Failed to read transcoded file: ${response.status}`)
-        }
-        const blob = await response.blob()
-
-        // Удаляем временные файлы
-        await invoke('delete_temp_file', { filePath: inputFilePath })
-        await invoke('delete_temp_file', { filePath: result.output_path })
-
-        const mimeType = codec === 'vp9' ? 'video/webm' : 'video/mp4'
-        const transcodeResult: TranscodeResult = {
-          blob,
-          width: result.width,
-          height: result.height,
-          resolution: getResolutionString(targetResolution),
-          videoBitrate,
-          audioBitrate,
-          fps,
-          hasAudio: metadata.hasAudio && !!audioBitrate,
-          mimeType,
-          duration: result.duration,
-        }
-
-        return transcodeResult
-      } catch (error) {
-        const err = error as Error
-        const msg = err?.message || String(error)
-        throw new TranscodeError(msg || 'Tauri transcoding error', 'TRANSCODE_ERROR', err)
-      } finally {
-        // Отключаем слушатель событий
-        if (progressUnlisten) {
-          progressUnlisten()
-        }
+      const mimeType = codec === 'vp9' ? 'video/webm' : 'video/mp4'
+      return {
+        blob,
+        width: result.width,
+        height: result.height,
+        resolution: getResolutionString(targetResolution),
+        videoBitrate,
+        audioBitrate,
+        fps,
+        hasAudio: metadata.hasAudio && !!audioBitrate,
+        mimeType,
+        duration: result.duration,
       }
     } catch (error) {
-      const err = error as Error
-      // Пробрасываем как есть, если уже TranscodeError; иначе показываем исходное сообщение (Rust/FFmpeg)
       if (error instanceof TranscodeError) {
         throw error
       }
+      const err = error as Error
       const msg = err?.message || String(error)
       throw new TranscodeError(msg || 'Failed to transcode video', 'TRANSCODE_ERROR', err)
+    } finally {
+      if (progressUnlisten) {
+        progressUnlisten()
+      }
+      // Cleanup даже при ошибке — иначе temp засоряется на каждом сбое
+      if (inputFilePath) {
+        invoke('delete_temp_file', { filePath: inputFilePath }).catch(() => {})
+      }
+      if (outputFilePath) {
+        invoke('delete_temp_file', { filePath: outputFilePath }).catch(() => {})
+      }
     }
   }
 
@@ -334,55 +327,6 @@ export class TauriTranscoder implements Transcoder {
         },
         [arrayBuffer]
       )
-    })
-  }
-
-  /**
-   * Создать Blob из данных в Web Worker
-   * Для больших файлов (до 4GB) передаём ArrayBuffer через Transferable,
-   * чтобы не клонировать данные (structured clone падает на больших объёмах).
-   */
-  private async createBlobInWorker(data: number[], mimeType: string): Promise<Blob> {
-    // Для данных меньше 10MB создаем Blob напрямую (быстро, без Worker)
-    if (data.length < 10 * 1024 * 1024) {
-      return new Blob([new Uint8Array(data)], { type: mimeType })
-    }
-
-    // Для больших данных передаём буфер через transfer, а не clone
-    const uint8 = new Uint8Array(data)
-    const buffer = uint8.buffer
-
-    return new Promise((resolve, reject) => {
-      const worker = new Worker(new URL('./file-worker.ts', import.meta.url), { type: 'module' })
-
-      const timeout = setTimeout(() => {
-        worker.terminate()
-        reject(new Error('Blob creation timeout'))
-      }, 300000) // 5 минут таймаут для очень больших файлов
-
-      worker.onmessage = (event: MessageEvent) => {
-        const { type, payload } = event.data
-
-        if (type === 'BLOB_CREATED') {
-          clearTimeout(timeout)
-          worker.terminate()
-          resolve(payload.blob)
-        } else if (type === 'ERROR') {
-          clearTimeout(timeout)
-          worker.terminate()
-          reject(new Error(payload.error))
-        }
-      }
-
-      worker.onerror = (error) => {
-        clearTimeout(timeout)
-        worker.terminate()
-        reject(error)
-      }
-
-      // Передаём буфер через transfer list — владение переходит в Worker,
-      // клонирование не используется, ограничение "object can not be cloned" не срабатывает
-      worker.postMessage({ type: 'CREATE_BLOB', payload: { buffer, mimeType } }, [buffer])
     })
   }
 
