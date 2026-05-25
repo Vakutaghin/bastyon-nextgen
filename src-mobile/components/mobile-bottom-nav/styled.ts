@@ -10,8 +10,8 @@ export const SC_MobileBottomNav = styled.nav`
   display: flex;
   align-items: stretch;
   justify-content: space-around;
-  height: calc(56px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  height: var(--bottom-nav-height-total);
+  padding-bottom: var(--safe-bottom);
   background: ${COLORS.BG_PRIMARY};
   border-top: 1px solid ${COLORS.BORDER_LIGHTER};
   box-shadow: 0 -1px 8px rgba(0, 0, 0, 0.06);
@@ -33,7 +33,9 @@ export const SC_MobileBottomNavItem = styled('a', itemAttrs)`
   line-height: 1;
   color: ${(p) => (p.active ? COLORS.PRIMARY : COLORS.TEXT_PRIMARY)};
   opacity: ${(p) => (p.active ? 1 : 0.72)};
-  transition: color 0.15s ease, opacity 0.15s ease;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 
