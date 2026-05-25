@@ -1,7 +1,7 @@
 import { ref, computed, type Ref, onBeforeUnmount, watch } from 'vue'
-  import { resolveVideoElement } from './utils'
+import { resolveVideoElement } from './utils'
 
-  export function useVideoProgress(videoElement: Ref<any>, isPlaying: Ref<boolean>) {
+export function useVideoProgress(videoElement: Ref<any>, isPlaying: Ref<boolean>) {
   const currentTime = ref(0)
   const duration = ref(0)
   const progress = ref(0)
@@ -134,6 +134,73 @@ import { ref, computed, type Ref, onBeforeUnmount, watch } from 'vue'
     event.stopPropagation()
   }
 
+  // ── Drag-to-seek (mouse + touch) ────────────────────────────────────────
+  // Поддержка как мыши на десктопе, так и пальца на мобильных устройствах.
+  // touchstart на progress bar → запоминаем bar rect, на touchmove
+  // обновляем seek, на touchend отвязываем listener.
+  let dragBar: HTMLElement | null = null
+  let dragBarRect: DOMRect | null = null
+  let wasPlayingBeforeDrag = false
+
+  const seekToClientX = (clientX: number) => {
+    const video = resolveVideoElement(videoElement)
+    if (!video || !duration.value || !dragBarRect) return
+
+    const x = Math.max(0, Math.min(clientX - dragBarRect.left, dragBarRect.width))
+    const percentage = x / dragBarRect.width
+    video.currentTime = percentage * duration.value
+    progress.value = percentage * 100
+    currentTime.value = video.currentTime
+  }
+
+  const onPointerMove = (e: PointerEvent) => {
+    e.preventDefault()
+    seekToClientX(e.clientX)
+  }
+
+  const onPointerUp = (e: PointerEvent) => {
+    e.preventDefault()
+    window.removeEventListener('pointermove', onPointerMove)
+    window.removeEventListener('pointerup', onPointerUp)
+    window.removeEventListener('pointercancel', onPointerUp)
+    dragBar = null
+    dragBarRect = null
+
+    const video = resolveVideoElement(videoElement)
+    if (video && wasPlayingBeforeDrag) {
+      void video.play()
+    }
+    if (isPlaying.value) {
+      startProgressAnimation()
+    }
+  }
+
+  /**
+   * Pointer-down на progress bar: запускает drag-to-seek.
+   * Универсальный обработчик для mouse + touch + pen через Pointer Events API.
+   * Это полностью заменяет handleProgressClick на мобилке (а на десктопе
+   * сохраняет тот же UX — клик = моментальный seek без перетаскивания).
+   */
+  const handleProgressPointerDown = (event: PointerEvent) => {
+    const video = resolveVideoElement(videoElement)
+    if (!video || !duration.value) return
+
+    event.stopPropagation()
+    event.preventDefault()
+
+    dragBar = event.currentTarget as HTMLElement
+    dragBarRect = dragBar.getBoundingClientRect()
+    wasPlayingBeforeDrag = isPlaying.value
+
+    // Сразу делаем seek по точке нажатия — если пользователь просто
+    // тапнул без перетаскивания, мы уже отработали как клик.
+    seekToClientX(event.clientX)
+
+    window.addEventListener('pointermove', onPointerMove, { passive: false })
+    window.addEventListener('pointerup', onPointerUp, { passive: false })
+    window.addEventListener('pointercancel', onPointerUp, { passive: false })
+  }
+
   /**
    * Форматирование времени в формат MM:SS или HH:MM:SS
    */
@@ -191,6 +258,7 @@ import { ref, computed, type Ref, onBeforeUnmount, watch } from 'vue'
     stopProgressAnimation,
     startProgressAnimation,
     handleProgressClick,
-    formatTime
+    handleProgressPointerDown,
+    formatTime,
   }
 }

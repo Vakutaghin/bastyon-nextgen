@@ -31,9 +31,9 @@
       />
 
       <AudioVisualizer
-         v-if="isAudio && isInitialized && !error"
-         :videoElement="domVideoElement"
-         :isPlaying="isPlaying"
+        v-if="isAudio && isInitialized && !error"
+        :videoElement="domVideoElement"
+        :isPlaying="isPlaying"
       />
 
       <SC_VideoElement
@@ -63,10 +63,7 @@
     </SC_VideoError>
 
     <!-- Кнопка Play для неинициализированного проигрывателя -->
-    <SC_VideoPlayButton
-      v-if="!isInitialized && !isLoading && !error"
-      @click.stop="togglePlay"
-    >
+    <SC_VideoPlayButton v-if="!isInitialized && !isLoading && !error" @click.stop="togglePlay">
       <PlayCircleOutlined :style="{ fontSize: '64px', color: '#ffffff' }" />
     </SC_VideoPlayButton>
 
@@ -87,18 +84,12 @@
     </SC_VolumeNotification>
 
     <!-- Уведомление о перемотке -->
-    <SC_SeekNotification
-      v-if="showSeekNotification && isInitialized"
-      :show="showSeekNotification"
-    >
+    <SC_SeekNotification v-if="showSeekNotification && isInitialized" :show="showSeekNotification">
       {{ seekValue }}
     </SC_SeekNotification>
 
     <!-- Иконка Play -->
-    <SC_SeekNotification
-      v-if="showPlayNotification && isInitialized"
-      :show="showPlayNotification"
-    >
+    <SC_SeekNotification v-if="showPlayNotification && isInitialized" :show="showPlayNotification">
       <PlayCircleOutlined :style="{ fontSize: '24px', color: '#eee' }" />
     </SC_SeekNotification>
 
@@ -136,9 +127,7 @@
     >
       <SC_VideoControlsBar>
         <!-- Кнопка Play/Pause -->
-        <SC_VideoPlayPauseButton
-          @click.stop="togglePlay"
-        >
+        <SC_VideoPlayPauseButton @click.stop="togglePlay">
           <ReloadOutlined v-if="isEnded" :style="{ fontSize: '20px' }" />
           <PlayCircleOutlined v-else-if="!isPlaying" :style="{ fontSize: '20px' }" />
           <PauseCircleOutlined v-else :style="{ fontSize: '20px' }" />
@@ -146,16 +135,14 @@
 
         <!-- Контрол громкости -->
         <SC_VideoVolumeControl>
-          <SC_VideoVolumeButton
-            @click.stop="toggleMute"
-          >
+          <SC_VideoVolumeButton @click.stop="toggleMute">
             <SC_VideoVolumeMutedIcon v-if="volume === 0">
               <SoundOutlined
                 :style="{
                   fontSize: '18px',
                   color: '#999',
                   position: 'relative',
-                  zIndex: 0
+                  zIndex: 0,
                 }"
               />
               <SC_VideoVolumeMutedCross />
@@ -163,7 +150,7 @@
             <SoundOutlined
               v-else
               :style="{
-                fontSize: '18px'
+                fontSize: '18px',
               }"
             />
           </SC_VideoVolumeButton>
@@ -172,46 +159,31 @@
             @mousedown.stop="handleVolumeMouseDown"
             @click.stop="handleVolumeClick"
           >
-            <SC_VideoVolumeFill
-              :isDragging="isDraggingVolume"
-              :style="{ width: volumeWidth }"
-            />
+            <SC_VideoVolumeFill :isDragging="isDraggingVolume" :style="{ width: volumeWidth }" />
           </SC_VideoVolumeSlider>
         </SC_VideoVolumeControl>
 
         <!-- Контрол качества видео и скорости -->
-        <SC_VideoQualityControl
-          ref="qualityControlRef"
-        >
-          <SC_VideoQualityButton
-            @click.stop="toggleQualityMenu"
-          >
+        <SC_VideoQualityControl ref="qualityControlRef">
+          <SC_VideoQualityButton @click.stop="toggleQualityMenu">
             <SettingOutlined :style="{ fontSize: '18px' }" />
           </SC_VideoQualityButton>
-          <SC_VideoQualityDropdown
-            ref="qualityDropdownRef"
-            :isOpen="isQualityMenuOpen"
-            @click.stop
-          >
+          <SC_VideoQualityDropdown ref="qualityDropdownRef" :isOpen="isQualityMenuOpen" @click.stop>
             <!-- Главное меню -->
             <template v-if="currentMenuScreen === 'main'">
               <!-- Пункт меню: Качество видео -->
               <SC_VideoQualityMenuSection v-if="!isAudio && availableQualityLevels.length > 0">
-                <SC_VideoQualitySubmenuItem
-                  @click.stop="openQualityMenu"
-                >
+                <SC_VideoQualitySubmenuItem @click.stop="openQualityMenu">
                   <span>Качество</span>
-                  <span style="font-size: 10px; color: #999; margin-left: 8px;">▶</span>
+                  <span style="font-size: 10px; color: #999; margin-left: 8px">▶</span>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
 
               <!-- Пункт меню: Скорость воспроизведения -->
               <SC_VideoQualityMenuSection>
-                <SC_VideoQualitySubmenuItem
-                  @click.stop="openSpeedMenu"
-                >
+                <SC_VideoQualitySubmenuItem @click.stop="openSpeedMenu">
                   <span>Скорость</span>
-                  <span style="font-size: 10px; color: #999; margin-left: 8px;">▶</span>
+                  <span style="font-size: 10px; color: #999; margin-left: 8px">▶</span>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
             </template>
@@ -219,9 +191,7 @@
             <!-- Меню качества -->
             <template v-if="currentMenuScreen === 'quality'">
               <SC_VideoQualityMenuSection>
-                <SC_VideoQualitySubmenuItem
-                  @click.stop="goBackToMainMenu"
-                >
+                <SC_VideoQualitySubmenuItem @click.stop="goBackToMainMenu">
                   <span>← Назад</span>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
@@ -240,9 +210,7 @@
             <!-- Меню скорости -->
             <template v-if="currentMenuScreen === 'speed'">
               <SC_VideoQualityMenuSection>
-                <SC_VideoQualitySubmenuItem
-                  @click.stop="goBackToMainMenu"
-                >
+                <SC_VideoQualitySubmenuItem @click.stop="goBackToMainMenu">
                   <span>← Назад</span>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
@@ -260,16 +228,10 @@
           </SC_VideoQualityDropdown>
         </SC_VideoQualityControl>
 
-        <!-- Прогресс-бар -->
-        <SC_VideoProgressBar
-          @click.stop="handleProgressClick"
-        >
-          <SC_VideoBufferFill
-            :style="{ width: bufferedWidth }"
-          />
-          <SC_VideoProgressFill
-            :style="{ width: progressWidth }"
-          />
+        <!-- Прогресс-бар (Pointer Events: mouse + touch + pen) -->
+        <SC_VideoProgressBar @pointerdown.stop="handleProgressPointerDown">
+          <SC_VideoBufferFill :style="{ width: bufferedWidth }" />
+          <SC_VideoProgressFill :style="{ width: progressWidth }" />
           <SC_VideoChapterMarker
             v-for="(pos, i) in chapterMarkers"
             :key="`chapter-${i}`"
@@ -289,10 +251,7 @@
         </SC_VideoChapterTitle>
 
         <!-- Кнопка полноэкранного режима -->
-        <SC_VideoFullscreenButton
-          v-if="!isAudio"
-          @click.stop="toggleFullscreen"
-        >
+        <SC_VideoFullscreenButton v-if="!isAudio" @click.stop="toggleFullscreen">
           <FullscreenExitOutlined v-if="isFullscreen" :style="{ fontSize: '20px' }" />
           <FullscreenOutlined v-else :style="{ fontSize: '20px' }" />
         </SC_VideoFullscreenButton>

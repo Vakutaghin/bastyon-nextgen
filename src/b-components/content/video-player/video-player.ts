@@ -5,6 +5,7 @@ import {
   onMounted,
   onBeforeUnmount,
   watch,
+  toRef,
   type PropType,
 } from 'vue'
 import {
@@ -16,7 +17,7 @@ import {
   ReloadOutlined,
   SoundOutlined,
   CloseOutlined,
-  SettingOutlined
+  SettingOutlined,
 } from '@ant-design/icons-vue'
 
 import { getVideoThumbnailFromUrl } from '@/helpers/api/peertube-url'
@@ -31,6 +32,7 @@ import { useVideoVolume } from './composables/use-video-volume'
 import { useVideoPlaybackRate } from './composables/use-video-playback-rate'
 import { useVideoFullscreen } from './composables/use-video-fullscreen'
 import { useVideoHls } from './composables/use-video-hls'
+import { useBackgroundPlayback } from './composables/use-background-playback'
 import { resolveVideoElement, resolveDomElement } from './composables/utils'
 import AudioVisualizer from '@/b-components/content/video-player/components/audio-visualizer/audio-visualizer.vue'
 
@@ -80,9 +82,8 @@ import {
   SC_HotkeysDescription,
   SC_HotkeysCloseButton,
   SC_IconNotification,
-  SC_SeekNotification
+  SC_SeekNotification,
 } from './styled'
-
 
 export const videoPlayer = defineComponent({
   name: 'VideoPlayer',
@@ -142,25 +143,33 @@ export const videoPlayer = defineComponent({
     ReloadOutlined,
     SoundOutlined,
     CloseOutlined,
-    SettingOutlined
+    SettingOutlined,
   },
   props: {
     videoUrl: {
       type: String as PropType<string>,
-      required: true
+      required: true,
     },
     autoplay: {
       type: Boolean as PropType<boolean>,
-      default: false
+      default: false,
     },
     isAudio: {
       type: Boolean as PropType<boolean>,
-      default: false
+      default: false,
     },
     chapters: {
       type: Array as PropType<Chapter[]>,
-      default: () => []
-    }
+      default: () => [],
+    },
+    title: {
+      type: String as PropType<string>,
+      default: '',
+    },
+    artist: {
+      type: String as PropType<string>,
+      default: '',
+    },
   },
   setup(p) {
     const videoElement = ref<HTMLVideoElement | null>(null)
@@ -169,9 +178,15 @@ export const videoPlayer = defineComponent({
     const isEnded = ref(false)
     const thumbnailUrl = ref<string | null>(null)
     const isThumbnailLoaded = ref(false)
-    const thumbnailAspectRatio = ref<{ width: number; height: number; useContain: boolean } | null>(null)
-    const videoAspectRatio = ref<{ width: number; height: number; useContain: boolean } | null>(null)
-    const playerId = ref(`video-player-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`)
+    const thumbnailAspectRatio = ref<{ width: number; height: number; useContain: boolean } | null>(
+      null
+    )
+    const videoAspectRatio = ref<{ width: number; height: number; useContain: boolean } | null>(
+      null
+    )
+    const playerId = ref(
+      `video-player-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
+    )
     let intersectionObserver: IntersectionObserver | null = null
 
     // Notifications
@@ -204,7 +219,7 @@ export const videoPlayer = defineComponent({
     }
 
     const triggerPlayPauseNotification = (isPlay: boolean) => {
-       if (playPauseNotificationTimer) {
+      if (playPauseNotificationTimer) {
         clearTimeout(playPauseNotificationTimer)
         playPauseNotificationTimer = null
       }
@@ -248,7 +263,8 @@ export const videoPlayer = defineComponent({
       stopProgressAnimation,
       startProgressAnimation,
       handleProgressClick,
-      formatTime
+      handleProgressPointerDown,
+      formatTime,
     } = useVideoProgress(videoElement, isPlaying)
 
     const progressWidth = computed(() => `${progress.value}%`)
@@ -264,13 +280,10 @@ export const videoPlayer = defineComponent({
       handleVolumeMouseDown,
       handleVolumeClick,
       formatVolumeDisplay,
-      toggleMute
+      toggleMute,
     } = useVideoVolume(videoElement)
 
-    const {
-      isFullscreen,
-      toggleFullscreen
-    } = useVideoFullscreen(videoElement, videoContainer)
+    const { isFullscreen, toggleFullscreen } = useVideoFullscreen(videoElement, videoContainer)
 
     const {
       playbackRate,
@@ -280,7 +293,7 @@ export const videoPlayer = defineComponent({
       increasePlaybackRate,
       decreasePlaybackRate,
       resetPlaybackRate,
-      formatPlaybackRate
+      formatPlaybackRate,
     } = useVideoPlaybackRate(videoElement, isPlaying, startProgressAnimation)
 
     // Определения функций для позднего связывания
@@ -304,7 +317,7 @@ export const videoPlayer = defineComponent({
       openSpeedMenu,
       goBackToMainMenu,
       toggleQualityMenu,
-      getCurrentQualityLabel
+      getCurrentQualityLabel,
     } = useVideoHls(
       p,
       videoElement,
@@ -320,6 +333,23 @@ export const videoPlayer = defineComponent({
     const getVideoElement = () => resolveVideoElement(videoElement)
     const domVideoElement = computed(() => resolveVideoElement(videoElement))
 
+    // Фоновое воспроизведение: native media session (Android) + MediaSession API (iOS / web),
+    // даунгрейд качества при сворачивании, синхронизация контролов с lock screen.
+    // Singleton-контроллер обеспечивает, что в каждый момент только один плеер
+    // владеет media notification.
+    const { isInBackground, refreshMetadata } = useBackgroundPlayback({
+      playerId,
+      videoElement,
+      hls,
+      isPlaying,
+      isAudio: toRef(p, 'isAudio'),
+      getMetadata: () => ({
+        title: p.title || 'Видео',
+        artist: p.artist || '',
+        artworkUrl: thumbnailUrl.value || undefined,
+      }),
+    })
+
     // === Главы (тайм-коды из описания) ===
 
     // Маркеры на прогресс-баре (в процентах), пропускаем 0:00 и тайм-коды за пределами длительности.
@@ -328,8 +358,8 @@ export const videoPlayer = defineComponent({
       const total = duration.value
       if (!chapters.length || !total || !isFinite(total) || total <= 0) return []
       return chapters
-        .filter(ch => ch.start > 0 && ch.start < total)
-        .map(ch => (ch.start / total) * 100)
+        .filter((ch) => ch.start > 0 && ch.start < total)
+        .map((ch) => (ch.start / total) * 100)
     })
 
     // Текущая активная глава по currentTime (показывается рядом со временем).
@@ -347,9 +377,10 @@ export const videoPlayer = defineComponent({
       const video = getVideoElement()
       if (!video) return
       const clamped = Math.max(0, seconds)
-      const safe = video.duration && isFinite(video.duration) && video.duration > 0
-        ? Math.min(clamped, video.duration)
-        : clamped
+      const safe =
+        video.duration && isFinite(video.duration) && video.duration > 0
+          ? Math.min(clamped, video.duration)
+          : clamped
       video.currentTime = safe
       currentTime.value = safe
       isEnded.value = false
@@ -368,12 +399,13 @@ export const videoPlayer = defineComponent({
       applySeek(seconds)
       const video = getVideoElement()
       if (video && video.paused) {
-        video.play()
+        video
+          .play()
           .then(() => {
             isPlaying.value = true
             videoPlayerManager.pauseAllExcept(playerId.value)
           })
-          .catch(err => console.warn('Seek + play failed:', err))
+          .catch((err) => console.warn('Seek + play failed:', err))
       }
     }
 
@@ -410,7 +442,8 @@ export const videoPlayer = defineComponent({
         if (!isInitialized.value) {
           initPlayer(true)
         } else {
-          video.play()
+          video
+            .play()
             .then(() => {
               isPlaying.value = true
               videoPlayerManager.pauseAllExcept(playerId.value)
@@ -419,7 +452,7 @@ export const videoPlayer = defineComponent({
                 triggerPlayPauseNotification(true)
               }
             })
-            .catch(err => {
+            .catch((err) => {
               console.error('Error playing video:', err)
             })
         }
@@ -438,16 +471,16 @@ export const videoPlayer = defineComponent({
       // Если видео на паузе, показываем уведомление вручную, так как ratechange не сработает
       if (!isPlaying.value) {
         showPlaybackRateNotification.value = true
-        setTimeout(() => showPlaybackRateNotification.value = false, 1000)
+        setTimeout(() => (showPlaybackRateNotification.value = false), 1000)
       }
     }
 
     const loadThumbnail = () => {
       getVideoThumbnailFromUrl(p.videoUrl)
-        .then(url => {
+        .then((url) => {
           thumbnailUrl.value = url
         })
-        .catch(err => {
+        .catch((err) => {
           console.warn('Failed to load video thumbnail:', err)
           thumbnailUrl.value = null
         })
@@ -469,12 +502,12 @@ export const videoPlayer = defineComponent({
       const img = e.target as HTMLImageElement
       if (img.naturalWidth && img.naturalHeight) {
         const aspectRatio = img.naturalWidth / img.naturalHeight
-        const useContain = aspectRatio > (1 / 1.5) // Если слишком широкое или узкое
+        const useContain = aspectRatio > 1 / 1.5 // Если слишком широкое или узкое
 
         thumbnailAspectRatio.value = {
           width: img.naturalWidth,
           height: img.naturalHeight,
-          useContain
+          useContain,
         }
       }
     }
@@ -546,19 +579,26 @@ export const videoPlayer = defineComponent({
       const element = resolveDomElement(videoContainer)
       if (!element) return
 
-      intersectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (!entry.isIntersecting) {
-            // Если видео ушло с экрана - ставим на паузу
-            const video = getVideoElement()
-            if (video && !video.paused) {
-              video.pause()
+      intersectionObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+              // Видео ушло с экрана — обычно ставим на паузу. НО: если приложение
+              // ушло в фон (document.hidden / isInBackground), это «ложный» уход
+              // из вьюпорта и плеер должен продолжать играть звук.
+              if (isInBackground.value || document.hidden) return
+
+              const video = getVideoElement()
+              if (video && !video.paused) {
+                video.pause()
+              }
             }
-          }
-        })
-      }, {
-        threshold: 0.5 // 50% видимости
-      })
+          })
+        },
+        {
+          threshold: 0.5, // 50% видимости
+        }
+      )
 
       intersectionObserver.observe(element)
     }
@@ -567,18 +607,22 @@ export const videoPlayer = defineComponent({
       const video = getVideoElement()
       if (!video) return
 
+      // Длительность стала известна — обновим media session, чтобы scrubber на
+      // lock screen / в notification получил корректный диапазон.
+      refreshMetadata()
+
       const videoWidth = video.videoWidth
       const videoHeight = video.videoHeight
 
       if (videoWidth === 0 || videoHeight === 0) return
 
       const aspectRatio = videoWidth / videoHeight
-      const useContain = aspectRatio > (1 / 1.5)
+      const useContain = aspectRatio > 1 / 1.5
 
       videoAspectRatio.value = {
         width: videoWidth,
         height: videoHeight,
-        useContain
+        useContain,
       }
     }
 
@@ -640,12 +684,11 @@ export const videoPlayer = defineComponent({
     const handleKeydown = (e: KeyboardEvent) => {
       // Игнорируем ввод в текстовые поля
       const target = e.target as HTMLElement
-      if ([
-        'INPUT',
-        'TEXTAREA',
-        'SELECT',
-        'BUTTON'
-      ].includes(target.tagName) || target.isContentEditable) return
+      if (
+        ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName) ||
+        target.isContentEditable
+      )
+        return
 
       // Проверяем, был ли запущен хотя бы один плеер (глобально)
       // Если нет - игнорируем любые горячие клавиши, даже при наведении
@@ -678,7 +721,7 @@ export const videoPlayer = defineComponent({
       const video = getVideoElement()
       if (!video) return
 
-      switch(e.code) {
+      switch (e.code) {
         case 'ArrowRight':
         case 'KeyL':
           e.preventDefault()
@@ -697,13 +740,13 @@ export const videoPlayer = defineComponent({
           e.preventDefault()
           setVolume(volume.value + 0.1)
           showVolumeNotification.value = true
-          setTimeout(() => showVolumeNotification.value = false, 1000)
+          setTimeout(() => (showVolumeNotification.value = false), 1000)
           break
         case 'ArrowDown':
           e.preventDefault()
           setVolume(volume.value - 0.1)
           showVolumeNotification.value = true
-          setTimeout(() => showVolumeNotification.value = false, 1000)
+          setTimeout(() => (showVolumeNotification.value = false), 1000)
           break
         case 'KeyF':
           e.preventDefault()
@@ -761,7 +804,7 @@ export const videoPlayer = defineComponent({
         increasePlaybackRate: () => increasePlaybackRate(),
         decreasePlaybackRate: () => decreasePlaybackRate(),
         resetPlaybackRate: () => resetPlaybackRate(),
-        toggleHotkeysHelp: () => toggleHotkeysHelp()
+        toggleHotkeysHelp: () => toggleHotkeysHelp(),
       })
 
       // Загружаем thumbnail
@@ -793,24 +836,27 @@ export const videoPlayer = defineComponent({
       stopVideo()
     })
 
-    watch(() => p.videoUrl, () => {
-      stopVideo()
-      isInitialized.value = false
-      error.value = null
-      thumbnailUrl.value = null
-      isThumbnailLoaded.value = false
+    watch(
+      () => p.videoUrl,
+      () => {
+        stopVideo()
+        isInitialized.value = false
+        error.value = null
+        thumbnailUrl.value = null
+        isThumbnailLoaded.value = false
 
-      // Сбрасываем HLS и инициализируем заново
-      if (hls.value) {
-        hls.value.destroy()
-        hls.value = null
-      }
+        // Сбрасываем HLS и инициализируем заново
+        if (hls.value) {
+          hls.value.destroy()
+          hls.value = null
+        }
 
-      loadThumbnail()
-      if (p.autoplay) {
-        initPlayer()
+        loadThumbnail()
+        if (p.autoplay) {
+          initPlayer()
+        }
       }
-    })
+    )
 
     return {
       videoElement,
@@ -842,6 +888,7 @@ export const videoPlayer = defineComponent({
       progressWidth,
       bufferedWidth,
       handleProgressClick,
+      handleProgressPointerDown,
       formatTime,
 
       // Volume
@@ -908,7 +955,7 @@ export const videoPlayer = defineComponent({
       // Chapters
       chapterMarkers,
       activeChapter,
-      seekTo
+      seekTo,
     }
-  }
+  },
 })

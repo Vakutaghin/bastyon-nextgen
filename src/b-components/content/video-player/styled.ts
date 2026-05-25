@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error vue3-styled-components types
 import styled, { keyframes } from 'vue3-styled-components'
 
 const shimmer = keyframes`
@@ -85,7 +85,6 @@ export const SC_VideoContainer = styled.div`
   &.hide-cursor {
     cursor: none !important;
   }
-
 `
 
 export const SC_VideoWrapper = styled.div`
@@ -144,7 +143,9 @@ export const SC_VideoControls = styled.div<{ show?: boolean }>`
   z-index: 10;
   opacity: ${(p) => (p.show !== undefined && p.show ? 1 : 0)};
   visibility: ${(p) => (p.show !== undefined && p.show ? 'visible' : 'hidden')};
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
   pointer-events: ${(p) => (p.show !== undefined && p.show ? 'auto' : 'none')};
   /* Убеждаемся, что контролы не влияют на layout - абсолютное позиционирование выводит из потока */
   height: auto;
@@ -172,6 +173,18 @@ export const SC_VideoControlsBar = styled.div`
   min-height: 50px !important;
   height: 50px !important;
   pointer-events: auto !important;
+
+  @media (max-width: 768px) {
+    gap: 6px !important;
+    padding: 8px 10px calc(8px + var(--safe-bottom)) 10px !important;
+    min-height: 56px !important;
+    height: auto !important;
+  }
+
+  @media (max-width: 480px) {
+    gap: 4px !important;
+    padding: 6px 8px calc(6px + var(--safe-bottom)) 8px !important;
+  }
 `
 
 export const SC_VideoPlayPauseButton = styled.button`
@@ -191,6 +204,13 @@ export const SC_VideoPlayPauseButton = styled.button`
   min-width: 40px !important;
   min-height: 40px !important;
   box-sizing: border-box !important;
+
+  @media (max-width: 768px) {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
 
   &:hover {
     background: rgba(0, 0, 0, 0.1) !important;
@@ -248,7 +268,8 @@ export const SC_VideoTimeDisplay = styled.span`
   flex-shrink: 0 !important;
   min-width: 100px !important;
   text-align: center !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   white-space: nowrap !important;
   display: flex !important;
   align-items: center !important;
@@ -279,7 +300,8 @@ export const SC_VideoChapterTitle = styled.span`
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   padding: 0 4px !important;
   opacity: 0.85 !important;
 `
@@ -296,13 +318,16 @@ export const SC_VideoProgressBar = styled.div`
   cursor: pointer !important;
   position: relative !important;
   overflow: hidden !important;
-  transition: height 0.15s ease, background-color 0.15s ease !important;
+  transition:
+    height 0.15s ease,
+    background-color 0.15s ease !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
   margin: 0 !important;
   padding: 0 !important;
   display: block !important;
   align-self: center !important;
   box-sizing: border-box !important;
+  touch-action: none !important;
 
   > * {
     position: absolute !important;
@@ -324,6 +349,31 @@ export const SC_VideoProgressBar = styled.div`
     }
   }
 
+  /* Mobile: толще progress + увеличенная hit-area через ::before для удобного тапа.
+     6px полоса с +12px невидимой вверх/вниз = 30px total touch-target. */
+  @media (max-width: 768px) {
+    height: 8px !important;
+    min-height: 8px !important;
+    max-height: 8px !important;
+    border-radius: 4px !important;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -12px;
+      bottom: -12px;
+      left: 0;
+      right: 0;
+      z-index: 3;
+    }
+  }
+
+  @media (max-width: 480px) {
+    height: 10px !important;
+    min-height: 10px !important;
+    max-height: 10px !important;
+    border-radius: 5px !important;
+  }
 `
 
 export const SC_VideoProgressFill = styled.div`
@@ -332,7 +382,9 @@ export const SC_VideoProgressFill = styled.div`
   background-color: #ff0000 !important;
   background: linear-gradient(90deg, #ff0000 0%, #cc0000 100%) !important;
   border-radius: 3px !important;
-  transition: background 0.15s ease, box-shadow 0.15s ease !important;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease !important;
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
@@ -353,7 +405,11 @@ export const SC_VideoBufferFill = styled.div`
   height: 100% !important;
   width: 0%;
   background-color: rgba(100, 150, 255, 0.5) !important;
-  background: linear-gradient(90deg, rgba(120, 170, 255, 0.6) 0%, rgba(80, 130, 255, 0.4) 100%) !important;
+  background: linear-gradient(
+    90deg,
+    rgba(120, 170, 255, 0.6) 0%,
+    rgba(80, 130, 255, 0.4) 100%
+  ) !important;
   border-radius: 3px !important;
   transition: width 0.2s ease !important;
   position: absolute !important;
@@ -430,6 +486,13 @@ export const SC_VideoVolumeButton = styled.button`
   box-sizing: border-box !important;
   position: relative !important;
 
+  @media (max-width: 768px) {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
   &:hover {
     background: rgba(0, 0, 0, 0.1) !important;
   }
@@ -498,7 +561,9 @@ export const SC_VideoVolumeSlider = styled.div`
   cursor: pointer !important;
   position: relative !important;
   overflow: hidden !important;
-  transition: height 0.15s ease, background-color 0.15s ease !important;
+  transition:
+    height 0.15s ease,
+    background-color 0.15s ease !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -511,6 +576,12 @@ export const SC_VideoVolumeSlider = styled.div`
     min-height: 8px !important;
     max-height: 8px !important;
     background-color: rgba(0, 0, 0, 0.4) !important;
+  }
+
+  /* На мобилке скрываем slider — только mute-кнопка остаётся.
+     Регулировка громкости делается hardware-кнопками девайса. */
+  @media (max-width: 768px) {
+    display: none !important;
   }
 `
 
@@ -595,7 +666,9 @@ export const SC_VideoQualityDropdown = styled.div<{
   opacity: ${(p) => (p.isOpen ? 1 : 0)} !important;
   visibility: ${(p) => (p.isOpen ? 'visible' : 'hidden')} !important;
   pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')} !important;
-  transition: opacity 0.2s ease, visibility 0.2s ease !important;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease !important;
   z-index: 1000 !important;
 `
 
@@ -619,7 +692,8 @@ export const SC_VideoQualitySubmenuItem = styled.button<{ isOpen?: boolean }>`
   color: #333 !important;
   font-size: 12px !important;
   font-weight: 400 !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   transition: background-color 0.15s ease !important;
   text-align: left !important;
   box-sizing: border-box !important;
@@ -658,7 +732,9 @@ export const SC_VideoQualitySubmenu = styled.div<{ isOpen?: boolean }>`
   opacity: ${(p) => (p.isOpen ? 1 : 0)} !important;
   visibility: ${(p) => (p.isOpen ? 'visible' : 'hidden')} !important;
   pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')} !important;
-  transition: opacity 0.2s ease, visibility 0.2s ease !important;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease !important;
   z-index: 1001 !important;
   white-space: nowrap !important;
 `
@@ -675,8 +751,11 @@ export const SC_VideoQualitySubmenuItemInner = styled.button<{ isActive?: boolea
   color: ${(p) => (p.isActive ? '#ff0000' : '#333')} !important;
   font-size: 11px !important;
   font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-  transition: background-color 0.15s ease, color 0.15s ease !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease !important;
   text-align: left !important;
   box-sizing: border-box !important;
   white-space: nowrap !important;
@@ -710,8 +789,11 @@ export const SC_VideoQualityMenuItem = styled.button<{ isActive?: boolean }>`
   color: ${(p) => (p.isActive ? '#ff0000' : '#333')} !important;
   font-size: 12px !important;
   font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-  transition: background-color 0.15s ease, color 0.15s ease !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease !important;
   text-align: left !important;
   box-sizing: border-box !important;
 
@@ -751,6 +833,13 @@ export const SC_VideoFullscreenButton = styled.button`
   box-sizing: border-box !important;
   margin-left: auto !important;
 
+  @media (max-width: 768px) {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
   &:hover {
     background: rgba(0, 0, 0, 0.1) !important;
   }
@@ -778,13 +867,16 @@ export const SC_PlaybackRateNotification = styled.div<{ show?: boolean }>`
   color: #eee !important;
   font-size: 18px !important;
   font-weight: 500 !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   white-space: nowrap !important;
   user-select: none !important;
   pointer-events: none !important;
   opacity: ${(p) => (p.show ? 1 : 0)} !important;
   visibility: ${(p) => (p.show ? 'visible' : 'hidden')} !important;
-  transition: opacity 0.2s ease, visibility 0.2s ease !important;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 `
 
@@ -802,13 +894,16 @@ export const SC_SeekNotification = styled.div<{ show?: boolean }>`
   color: #eee !important;
   font-size: 18px !important;
   font-weight: 500 !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   white-space: nowrap !important;
   user-select: none !important;
   pointer-events: none !important;
   opacity: ${(p) => (p.show ? 1 : 0)} !important;
   visibility: ${(p) => (p.show ? 'visible' : 'hidden')} !important;
-  transition: opacity 0.2s ease, visibility 0.2s ease !important;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 `
 
@@ -826,13 +921,16 @@ export const SC_VolumeNotification = styled.div<{ show?: boolean }>`
   color: #eee !important;
   font-size: 18px !important;
   font-weight: 500 !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   white-space: nowrap !important;
   user-select: none !important;
   pointer-events: none !important;
   opacity: ${(p) => (p.show ? 1 : 0)} !important;
   visibility: ${(p) => (p.show ? 'visible' : 'hidden')} !important;
-  transition: opacity 0.2s ease, visibility 0.2s ease !important;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 `
 
@@ -855,7 +953,9 @@ export const SC_IconNotification = styled.div<{ show?: boolean }>`
   pointer-events: none !important;
   opacity: ${(p) => (p.show ? 1 : 0)} !important;
   visibility: ${(p) => (p.show ? 'visible' : 'hidden')} !important;
-  transition: opacity 0.2s ease, visibility 0.2s ease !important;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 `
 
