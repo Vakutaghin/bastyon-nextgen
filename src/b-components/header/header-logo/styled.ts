@@ -13,7 +13,7 @@ export const SC_Logo = styled.div`
     gap: 5px;
   }
 
-  @media (max-width: 450px) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     margin-right: 20px;
   }
 `
@@ -68,7 +68,7 @@ export const SC_LogoLang = styled.button`
   border: 1px solid transparent;
   white-space: nowrap;
 
-  @media (max-width: 450px) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     display: none;
   }
 

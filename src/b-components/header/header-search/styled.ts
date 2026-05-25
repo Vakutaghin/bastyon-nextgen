@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_HeaderSearchWrapper = styled.div`
   position: relative;
@@ -12,7 +13,7 @@ export const SC_HeaderSearchWrapper = styled.div`
     width: 100%;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     width: 100%;
     flex-shrink: 1;
   }

@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_MessengerContainer = styled.div`
   flex: 1;
@@ -14,7 +14,7 @@ export const SC_MessengerContainer = styled.div`
 `
 
 const sidebarProps = {
-  isHidden: Boolean
+  isHidden: Boolean,
 }
 
 export const SC_SidebarColumn = styled('div', sidebarProps)`
@@ -24,14 +24,14 @@ export const SC_SidebarColumn = styled('div', sidebarProps)`
   flex-direction: column;
   background: #fff;
 
-  @media (max-width: 768px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     width: 100%;
-    display: ${props => props.isHidden ? 'none' : 'flex'};
+    display: ${(props) => (props.isHidden ? 'none' : 'flex')};
   }
 `
 
 const chatProps = {
-  isActive: Boolean
+  isActive: Boolean,
 }
 
 export const SC_ChatColumn = styled('div', chatProps)`
@@ -41,8 +41,8 @@ export const SC_ChatColumn = styled('div', chatProps)`
   background: #fff;
   position: relative;
 
-  @media (max-width: 768px) {
-    display: ${props => props.isActive ? 'flex' : 'none'};
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    display: ${(props) => (props.isActive ? 'flex' : 'none')};
     width: 100%;
   }
 `
@@ -74,7 +74,7 @@ export const SC_MobileBackButton = styled.button`
   justify-content: center;
   padding: 0;
 
-  @media (max-width: 768px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     display: flex;
   }
 `
@@ -100,7 +100,9 @@ export const SC_MessengerDialogsSpinner = styled.span`
   animation: messenger-dialogs-spin 0.8s linear infinite;
 
   @keyframes messenger-dialogs-spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 `
 
