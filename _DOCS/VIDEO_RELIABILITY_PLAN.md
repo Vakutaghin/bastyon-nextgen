@@ -1,5 +1,7 @@
 # PLAN: Надёжность загрузки и декодирования видео
 
+**Статус: Phase 1–3 завершены (commits `2773e5b`, `73c0923`, `30170cb`). Phase 4–5 — pending.**
+
 ## 0. Контекст
 
 Документ описывает план устранения проблем загрузки, кодирования и воспроизведения
@@ -89,63 +91,122 @@
 
 ## 3. Фазы реализации
 
-### Phase 1 — Стабилизация плеера и сети (P0/P1, быстрые победы)
+### Phase 1 — Стабилизация плеера и сети (P0/P1, быстрые победы) ✅
+
+**Commit:** `2773e5b` fix(video): harden HLS player + PeerTube fetch resilience.
 
 Цель: одно видео из ленты ВСЕГДА открывается или показывает понятное сообщение об ошибке.
 
-- [ ] **P1, XS** — Раскомментировать и подобрать `maxBufferSize` в [use-video-hls.ts:274](../src/b-components/content/video-player/composables/use-video-hls.ts#L274) (рекомендация: `60_000_000` байт).
-- [ ] **P1, XS** — Hls.js error handling: `bufferStalledError` → `hls.startLoad(-1)`; счётчик попыток для `MEDIA_ERROR` + `swapAudioCodec()` на 2-й.
-- [ ] **P1, S** — `NETWORK_ERROR` retry с exponential backoff (макс 3 попытки, 1s / 2s / 4s).
-- [ ] **P1, S** — Muted-autoplay fallback: при reject `play()` → `video.muted = true; play()`. Извлечь в утилиту `tryAutoplay(video)`, заменить 3 дублирующих места.
-- [ ] **P1, S** — Retry + таймаут в [peertube-url.ts:107](../src/helpers/api/peertube-url.ts#L107) (`AbortController`, 10s timeout, 3 попытки).
-- [ ] **P1, S** — Fallback на альтернативный хост из `servers.json` при недоступности основного.
-- [ ] **P1, XS** — Чинит UI: убрать "Нет (временно отключено)" в [video-info-panel.vue:71](../src/b-components/video-uploader/components/video-info-panel/video-info-panel.vue#L71), показывать реальное состояние из метаданных.
+- [x] **P1, XS** — `maxBufferSize: 60_000_000` в [use-video-hls.ts:274](../src/b-components/content/video-player/composables/use-video-hls.ts#L274).
+- [x] **P1, XS** — Hls.js error handling: `bufferStalledError` → throttled `hls.startLoad(-1)`; счётчик попыток для `MEDIA_ERROR` + `swapAudioCodec()` на 2-й; сброс счётчиков на `FRAG_LOADED`.
+- [x] **P1, S** — `NETWORK_ERROR` retry с exponential backoff 1s/2s/4s (макс 3 попытки).
+- [x] **P1, S** — Утилита `tryAutoplay(video)` в [utils.ts](../src/b-components/content/video-player/composables/utils.ts) с muted-fallback; заменены 3 дублирующих места в use-video-hls.ts.
+- [x] **P1, S** — Retry + таймаут в [peertube-url.ts](../src/helpers/api/peertube-url.ts) (`AbortController`, 10s timeout, 3 попытки, 404 fast-fail).
+- [ ] **P1, S** — ~~Fallback на альтернативный хост из `servers.json`~~ — **отложено** (см. §6.1: `servers.json` не содержит PeerTube-зеркал, нужен отдельный mirror-список).
+- [x] **P1, XS** — UI: "Нет (временно отключено)" заменено на реальное состояние из `sourceMetadata.hasAudio` в [video-info-panel.vue](../src/b-components/video-uploader/components/video-info-panel/video-info-panel.vue).
 
 **Критерий приёмки:** плеер не залипает на мобильном Safari, видео из ленты открывается даже при первой неудаче сети, временные glitch'и буфера не дают чёрный экран навсегда.
 
-### Phase 2 — H.264 fallback и предсказуемые лимиты (P0)
+### Phase 2 — H.264 fallback и предсказуемые лимиты (P0) ✅
+
+**Commit:** `73c0923` feat(video): H.264/MP4 transcoding + ffmpeg availability check.
 
 Цель: транскодированные видео играются на iOS Safari нативно (без VP9 issues).
 
-- [ ] **P0, S** — В [src-tauri/src/lib.rs:230](../src-tauri/src/lib.rs#L230) добавить опцию `codec: "h264" | "vp9"`, маппить на `libx264` + `aac` + `mp4` container. По умолчанию — `h264` для совместимости.
-- [ ] **P0, S** — В [tauri-transcoder.ts:194](../src/b-components/video-uploader/transcoder/tauri-transcoder.ts#L194) брать `mimeType` из выбранного кодека, не хардкодить `video/webm`.
-- [ ] **P0, XS** — Проверка наличия `ffmpeg` и `ffprobe` на старте Tauri (новая команда `check_ffmpeg_available`), показывать инструкцию по установке в UI до выбора файла.
-- [ ] **P1, XS** — Поднять потолок: 1080p / 4000 kbps / 60 FPS как опции, оставить 720p/30/1.5Mbps как preset "data-saver".
+- [x] **P0, S** — `transcode_video` принимает `codec: Option<String>` ("h264" default / "vp9"); h264 → libx264 + AAC + MP4 (`+faststart`, `yuv420p`); vp9 → libvpx-vp9 + libopus + WebM.
+- [x] **P0, S** — `mimeType` вычисляется из codec; экспортирован тип `TranscodeCodec`.
+- [x] **P0, XS** — Новая команда `check_ffmpeg_available` (возвращает `{ ffmpeg, ffprobe, ffmpeg_version }`); uploader показывает в UI инструкцию `brew install ffmpeg` / `winget install ffmpeg` / `sudo apt install ffmpeg` в зависимости от платформы.
+- [x] **P1, XS** — `TARGET_RESOLUTIONS` теперь включает `1080`; `MAX_RESOLUTION=1080`, `MAX_VIDEO_BITRATE=4000`, `MAX_FPS=60`; добавлен `DATA_SAVER_PRESET` (720p/1.5Mbps/30fps) как explicit fallback.
 
 **Критерий приёмки:** видео, загруженное через Tauri, открывается на iPhone Safari нативно; не-Tauri пользователь получает понятное сообщение, а не "Failed to execute ffprobe".
 
-### Phase 3 — Большие файлы через IPC (P0)
+### Phase 3 — Большие файлы через IPC (P0) ✅
+
+**Commit:** `30170cb` perf(video): single temp-file copy per transcode + orphan cleanup.
 
 Цель: транскодинг 4GB файлов не падает по памяти.
 
-- [ ] **P0, M** — Заменить `save_temp_file(Vec<u8>)` на путь через `tauri-plugin-fs` или передачу пути исходного файла напрямую (через `tauri-plugin-dialog` уже получаем абсолютный путь — использовать его без копирования).
-- [ ] **P1, S** — `getMetadata()` не должна копировать файл; принимать `filePath` если он уже известен. Кэшировать результат на уровне `UniversalTranscoder`.
-- [ ] **P1, S** — `transcode()` переиспользует уже сохранённый файл вместо нового копирования.
-- [ ] **P2, XS** — TTL-cleanup `tauri_video_*` / `tauri_output_*` старше 24ч при старте Tauri.
+- [ ] **P0, M** — ~~Заменить `save_temp_file(Vec<u8>)` на путь через `tauri-plugin-fs`~~ — **частично, отложено** (см. §6.2: нужен переход на нативный file picker, меняет UX).
+- [x] **P1, S** — `getMetadata()` рефакторена: один проход через `saveFileToTemp` → `getMetadataByPath` → cleanup в finally.
+- [x] **P1, S** — `transcode()` не вызывает `getMetadata(file)` повторно; единственный `saveFileToTemp` в начале + `getMetadataByPath(savedPath)` + cleanup input + output в finally.
+- [x] **P2, XS** — `cleanup_orphaned_temp_files(24h)` запускается в background-потоке при старте Tauri.
+- [x] Cleanup: удалён мёртвый `createBlobInWorker` (~50 строк).
 
-**Критерий приёмки:** транскодинг файла 2GB не выжирает >2.5GB RAM (текущий пик — ~6GB+).
+**Критерий приёмки:** транскодинг файла 2GB не выжирает >2.5GB RAM (раньше пик ~6GB+).
 
-### Phase 4 — Браузерный транскодинг (P0, отдельный трек)
+**Реальный эффект:** 3× копий → 1×. Полный zero-copy требует переключения на нативный диалог (§6.2).
 
-Цель: standalone-работа без Tauri.
+### Phase 4 — Браузерный транскодинг (P0, отдельный трек) ⬜
 
-- [ ] **P0, L** — Подключить `@ffmpeg/ffmpeg` (ffmpeg.wasm) как второй `Transcoder`-имплементация в [transcoder/index.ts](../src/b-components/video-uploader/transcoder/index.ts).
-- [ ] **P0, M** — `UniversalTranscoder.selectTranscoder()` → Tauri > ffmpeg.wasm > null. На мобильных Capacitor — ffmpeg.wasm.
-- [ ] **P1, M** — Понизить дефолтные лимиты для wasm-пути (он медленнее в ~5–10× от нативного): 480p как дефолт, 720p как опция.
+Цель: standalone-работа без Tauri (см. принцип децентрализации в [памяти](../../../.claude/projects/-private-var-www-pocketnet/memory/principle_decentralization.md)).
+
+- [ ] **P0, L** — Подключить `@ffmpeg/ffmpeg` (ffmpeg.wasm) как второй `Transcoder`-реализация в [transcoder/index.ts](../src/b-components/video-uploader/transcoder/index.ts). Lazy-load (бандл ~30MB), CDN или self-hosted.
+- [ ] **P0, M** — `UniversalTranscoder.selectTranscoder()` → Tauri > ffmpeg.wasm > null. На мобильных Capacitor — ffmpeg.wasm (если есть память).
+- [ ] **P0, M** — Настроить cross-origin isolation (`COOP: same-origin` + `COEP: require-corp`) для SharedArrayBuffer — **внимание: ломает embedded видео и postMessage с другими доменами**. Решить через `credentialless` COEP или service worker для нужных ресурсов.
+- [ ] **P1, M** — Дефолты для wasm-пути: 480p как стандарт (vs 720p в Tauri), потому что wasm в 5–10× медленнее нативного; preset выбора качества с предупреждением "wasm: ожидайте ~N минут".
 - [ ] **P1, S** — Прогресс из ffmpeg.wasm через `logger` callback, унифицировать с `transcode-progress` событием Tauri.
+- [ ] **P2, S** — Замерить производительность на типовых файлах (10MB / 100MB / 500MB) на разных устройствах. Решить нужен ли upper limit для wasm-пути (например, файлы >200MB → "используйте десктоп-приложение").
 
-**Критерий приёмки:** пользователь без Tauri может выбрать локальный файл, дождаться транскода, увидеть preview и опубликовать.
+**Критерий приёмки:** пользователь без Tauri может выбрать локальный файл до 200MB, дождаться транскода с прогрессом, увидеть preview и опубликовать.
 
-### Phase 5 — Кэширование и UX (P2)
+### Phase 5 — Кэширование и UX (P2) ⬜
 
 - [ ] **P2, M** — Service Worker для кэширования HLS-сегментов (`.m4s` / `.ts`) с lru-eviction.
 - [ ] **P2, S** — Уведомление пользователя при auto-cleanup IndexedDB ("Удалено N черновиков старше 30 дней"), кнопка "не удалять" для текущего.
 - [ ] **P2, S** — Различать CORS-ошибку от network-ошибки в `peertube-url.ts`; показывать другое сообщение ("Сервер ноды не настроен на CORS").
-- [ ] **P2, L** — Capacitor-нативный плеер через [capacitor-video-player](https://github.com/jepiqueau/capacitor-video-player) или собственный плагин (AVPlayer/ExoPlayer).
+- [ ] **P2, L** — Capacitor-нативный плеер через [capacitor-video-player](https://github.com/jepiqueau/capacitor-video-player) или собственный плагин (AVPlayer/ExoPlayer) — экономия CPU/батареи vs hls.js в WebView.
+- [ ] **P2, XS** — `delete()` в [transcoded-video-api.ts](../src/db/apis/transcoded-video-api.ts) — добавить контекст к Error при сбое IDB.
+- [ ] **P2, XS** — Resolution-selector docstring и комментарии упоминают только до 720p — обновить под 1080p (см. [resolution-selector.ts:14](../src/b-components/video-uploader/transcoder/resolution-selector.ts#L14)).
+- [ ] **P2, XS** — `appFetch` в [peertube-url.ts:125](../src/helpers/api/peertube-url.ts#L125) без явного `redirect: 'follow'` — добавить.
 
 ---
 
-## 4. Что НЕ входит в этот план
+## 4. Отложенные доделки
+
+Задачи, которые были выявлены аудитом, но требуют отдельной инфраструктуры или
+архитектурного решения. Не блокируют Phase 4–5.
+
+### 4.1 PeerTube mirror-fallback (отложено из Phase 1, N2)
+
+**Проблема:** если PeerTube-нода из `peertube://host/id` упала, fallback'а нет.
+
+**Почему отложено:** `src/servers.json` содержит только pocketnet RPC-прокси
+(`*.pocketnet.app:8899`), не PeerTube. PeerTube федеративный — реплики живут на разных
+независимых нодах, и без отдельного mirror-индекса fallback некуда.
+
+**Что нужно:**
+- Источник списка PeerTube-зеркал (новое поле в `servers.json` или DNS-based discovery).
+- Логика fallback в [peertube-url.ts](../src/helpers/api/peertube-url.ts) `getPeerTubeVideoInfo()`: при network-ошибке после исчерпания retry — пробовать тот же `videoId` на следующем mirror-хосте.
+- TTL-кэш "этот mirror знает это видео" — иначе каждый раз 404 на пол-списке.
+
+**Приоритет:** P2 (без mirror-инфраструктуры pocketnet это не решается).
+
+### 4.2 Полный zero-copy через native file picker (отложено из Phase 3)
+
+**Проблема:** HTML `<input type="file">` не даёт абсолютного пути → файл копируется во временную
+директорию (1× с Phase 3, было 3×). Для 4GB файлов это всё равно ~4GB диск + IPC.
+
+**Почему отложено:** требует переключения с HTML-инпута на `@tauri-apps/plugin-dialog.open()` —
+это меняет UX (нативный file dialog вместо браузерного), плюс ломает drag&drop в той же
+форме (он остаётся на File API).
+
+**Что нужно:**
+- В Tauri-режиме [upload-dropzone.vue](../src/b-components/video-uploader/components/upload-dropzone/upload-dropzone.vue): подменить кнопку "выбрать файл" на вызов `dialog.open({ filters: [{ extensions: ['mp4', 'mov', 'webm', 'mkv', 'avi'] }] })`.
+- Новый interface `TranscodeSource = File | { path: string, name: string, size: number }`.
+- `TauriTranscoder.transcode(source)` принимает оба; если `source.path` есть — не вызывать `saveFileToTemp`.
+- Drag&drop: использовать Tauri-событие `onDragDrop` (даёт пути напрямую) вместо HTML `dragover/drop` (даёт File).
+- TS-API не сломать для wasm-пути (он всегда работает с File).
+
+**Приоритет:** P1 (большой UX-выигрыш на крупных файлах, но требует UI-переписи).
+
+### 4.3 Background playback / drag-seek (вне scope)
+
+См. отдельные ветки работы в `use-background-playback.ts` (untracked). Не относится к
+аудиту видео-надёжности, отмечено для общей картины.
+
+---
+
+## 5. Что НЕ входит в этот план
 
 - DASH/MSE улучшения — нет реальных DASH-источников в pocketnet.
 - WebRTC live-streaming — отдельная инициатива.
@@ -154,7 +215,7 @@
 
 ---
 
-## 5. Метрики успеха
+## 6. Метрики успеха
 
 - **Open-rate** видео из ленты на мобильном Safari: с текущих ~? до >95% (нужен baseline).
 - **Время до первого кадра** (TTFB → first decoded frame): <3s на широкополосном, <8s на 3G.
