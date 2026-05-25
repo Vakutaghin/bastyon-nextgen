@@ -4,7 +4,11 @@ import { transcoder } from './transcoder'
 import { storageManager } from './utils'
 import type { TranscodedVideo } from '@/db'
 import type { TranscodeProgress, VideoMetadata } from './transcoder/types'
-import { selectTargetResolution, calculateTargetDimensions, getResolutionString } from './transcoder/resolution-selector'
+import {
+  selectTargetResolution,
+  calculateTargetDimensions,
+  getResolutionString,
+} from './transcoder/resolution-selector'
 import { getBitrateForResolution, TARGET_FPS, MAX_FPS } from './utils/constants'
 import { getBestMimeType, isTauri } from './utils/environment'
 import { calculateVideoBitrate } from './components/video-info-panel/video-info-panel'
@@ -37,7 +41,7 @@ export const videoUploaderOptions = defineComponent({
     const deleteVideo = ref<TranscodedVideo | null>(null)
     const isDeleteModalOpen = ref(false)
 
-      // Загрузка и транскодирование
+    // Загрузка и транскодирование
     const uploadState = ref<UploadState>('idle')
     const uploadProgress = ref(0)
     const uploadError = ref<string | null>(null)
@@ -64,12 +68,35 @@ export const videoUploaderOptions = defineComponent({
         // Проверяем поддержку транскодирования (только в Tauri)
         if (!transcoder.isSupported()) {
           console.warn('Video transcoding is not supported - доступно только в Tauri приложении')
+        } else {
+          // В Tauri дополнительно проверяем, установлен ли системный ffmpeg/ffprobe.
+          // Без этого пользователь увидел бы невнятное "Failed to execute ffprobe" только
+          // после выбора файла и начала анализа.
+          const ffmpegStatus = await transcoder.checkFfmpegAvailable()
+          if (!ffmpegStatus.ffmpeg || !ffmpegStatus.ffprobe) {
+            uploadError.value = getFfmpegMissingInstruction()
+          }
         }
 
         isInitialized.value = true
       } catch (error) {
         console.error('Failed to initialize video uploader:', error)
       }
+    }
+
+    /** Инструкция по установке ffmpeg, специфичная для платформы пользователя. */
+    const getFfmpegMissingInstruction = (): string => {
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+      if (/mac|darwin/i.test(ua)) {
+        return 'Для транскодирования видео требуется FFmpeg. Установите его: brew install ffmpeg'
+      }
+      if (/win/i.test(ua)) {
+        return 'Для транскодирования видео требуется FFmpeg. Установите его: winget install ffmpeg (или скачайте с ffmpeg.org)'
+      }
+      if (/linux/i.test(ua)) {
+        return 'Для транскодирования видео требуется FFmpeg. Установите его: sudo apt install ffmpeg (или через ваш пакетный менеджер)'
+      }
+      return 'Для транскодирования видео требуется FFmpeg. Установите его системно (ffmpeg + ffprobe должны быть в PATH).'
     }
 
     // Загрузка списка видео
@@ -158,10 +185,12 @@ export const videoUploaderOptions = defineComponent({
           // Показываем диалог сохранения файла
           const filePath = await save({
             defaultPath: fileName,
-            filters: [{
-              name: 'Video',
-              extensions: [extension]
-            }]
+            filters: [
+              {
+                name: 'Video',
+                extensions: [extension],
+              },
+            ],
           })
 
           if (filePath) {
@@ -309,8 +338,7 @@ export const videoUploaderOptions = defineComponent({
 
         // Получаем информацию о транскодере
         const transcoderInfo = transcoder.getTranscoderInfo()
-        transcoderName.value = transcoderInfo.method === 'tauri' ? 'TauriTranscoder'
-          : 'Неизвестно'
+        transcoderName.value = transcoderInfo.method === 'tauri' ? 'TauriTranscoder' : 'Неизвестно'
         isWorker.value = false // Tauri не использует Worker
 
         // Переходим в состояние готовности - пользователь может начать кодирование
@@ -399,7 +427,7 @@ export const videoUploaderOptions = defineComponent({
 
       try {
         // Если метаданные не переданы, получаем их
-        const fileMetadata = metadata || await transcoder.getMetadata(file)
+        const fileMetadata = metadata || (await transcoder.getMetadata(file))
 
         // Проверяем возможность сохранения
         const estimatedSizeMB = (file.size * 0.7) / (1024 * 1024) // Примерная оценка
@@ -424,7 +452,7 @@ export const videoUploaderOptions = defineComponent({
 
         // Передаем опции с ограниченным битрейтом
         const transcodeOptions = {
-          videoBitrate: Math.min(targetVideoBitrate.value, sourceBitrate)
+          videoBitrate: Math.min(targetVideoBitrate.value, sourceBitrate),
         }
 
         const result = await transcoder.transcode(
@@ -459,7 +487,7 @@ export const videoUploaderOptions = defineComponent({
           width: result.width,
           height: result.height,
           mimeType: result.mimeType,
-          fps: result.fps
+          fps: result.fps,
         }
 
         const sizeMB = result.blob.size / (1024 * 1024)
@@ -486,10 +514,19 @@ export const videoUploaderOptions = defineComponent({
         } else if (errorMessage.includes('not supported')) {
           displayMessage = 'Транскодирование не поддерживается в вашем браузере'
         } else {
-          displayMessage = errorMessage.startsWith('Ошибка') ? errorMessage : 'Ошибка транскодирования: ' + errorMessage
+          displayMessage = errorMessage.startsWith('Ошибка')
+            ? errorMessage
+            : 'Ошибка транскодирования: ' + errorMessage
           const lower = errorMessage.toLowerCase()
-          if ((lower.includes('ffmpeg') && (lower.includes('no such file') || lower.includes('not found') || lower.includes('command not found'))) || lower.includes('failed to execute ffmpeg')) {
-            displayMessage += ' Установите FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.'
+          if (
+            (lower.includes('ffmpeg') &&
+              (lower.includes('no such file') ||
+                lower.includes('not found') ||
+                lower.includes('command not found'))) ||
+            lower.includes('failed to execute ffmpeg')
+          ) {
+            displayMessage +=
+              ' Установите FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.'
           }
         }
         uploadError.value = displayMessage
@@ -607,7 +644,7 @@ export const videoUploaderOptions = defineComponent({
 
       // Утилиты
       formatFileSize,
-      formatDuration
+      formatDuration,
     }
-  }
+  },
 })

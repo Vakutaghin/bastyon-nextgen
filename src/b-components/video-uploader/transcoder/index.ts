@@ -3,7 +3,7 @@ import type {
   TranscodeOptions,
   TranscodeProgress,
   TranscodeResult,
-  VideoMetadata
+  VideoMetadata,
 } from './types'
 import { TauriTranscoder } from './tauri-transcoder'
 import { TranscodeError } from './types'
@@ -23,7 +23,7 @@ class UniversalTranscoder implements Transcoder {
       // Игнорируем ошибки инициализации
     })
   }
-  
+
   /**
    * Дождаться завершения инициализации
    */
@@ -41,13 +41,13 @@ class UniversalTranscoder implements Transcoder {
     // Используем только TauriTranscoder
     try {
       const tauriTranscoder = new TauriTranscoder()
-      
+
       // Сначала проверяем синхронно
       if (tauriTranscoder.isSupported()) {
         this.transcoder = tauriTranscoder
         return
       }
-      
+
       // Если синхронная проверка не сработала, пробуем асинхронную
       const { isTauriAsync } = await import('../utils/environment')
       if (await isTauriAsync()) {
@@ -70,7 +70,7 @@ class UniversalTranscoder implements Transcoder {
     // Транскодирование поддерживается только в Tauri
     return isTauri() && this.transcoder !== null && (this.transcoder?.isSupported() ?? false)
   }
-  
+
   /**
    * Асинхронная проверка поддержки (более надежная)
    */
@@ -85,7 +85,7 @@ class UniversalTranscoder implements Transcoder {
   async getMetadata(file: File): Promise<VideoMetadata> {
     // Ждем завершения инициализации
     await this.ensureInitialized()
-    
+
     if (!this.transcoder) {
       throw new TranscodeError(
         'Транскодирование видео доступно только в Tauri приложении. В браузере эта функция не поддерживается.',
@@ -106,7 +106,7 @@ class UniversalTranscoder implements Transcoder {
   ): Promise<TranscodeResult> {
     // Ждем завершения инициализации
     await this.ensureInitialized()
-    
+
     if (!this.transcoder) {
       throw new TranscodeError(
         'Транскодирование видео доступно только в Tauri приложении. В браузере эта функция не поддерживается.',
@@ -125,18 +125,34 @@ class UniversalTranscoder implements Transcoder {
   }
 
   /**
+   * Проверить, доступен ли системный ffmpeg в Tauri.
+   * Браузер всегда возвращает { ffmpeg: false } — там и должен сработать другой fallback (Phase 4).
+   */
+  async checkFfmpegAvailable(): Promise<{
+    ffmpeg: boolean
+    ffprobe: boolean
+    ffmpegVersion: string | null
+  }> {
+    await this.ensureInitialized()
+    if (this.transcoder instanceof TauriTranscoder) {
+      return this.transcoder.checkFfmpegAvailable()
+    }
+    return { ffmpeg: false, ffprobe: false, ffmpegVersion: null }
+  }
+
+  /**
    * Получить информацию о текущем транскодере
    */
   getTranscoderInfo(): { method: string; supported: boolean } {
     if (this.transcoder instanceof TauriTranscoder) {
       return {
         method: 'tauri',
-        supported: this.isSupported()
+        supported: this.isSupported(),
       }
     }
     return {
       method: 'none',
-      supported: false
+      supported: false,
     }
   }
 
@@ -160,12 +176,16 @@ export type {
   TranscodeOptions,
   TranscodeProgress,
   TranscodeResult,
-  VideoMetadata
+  VideoMetadata,
 } from './types'
 
 export { TranscodeError } from './types'
 export { TauriTranscoder } from './tauri-transcoder'
-export { selectTargetResolution, calculateTargetDimensions, getResolutionString } from './resolution-selector'
+export {
+  selectTargetResolution,
+  calculateTargetDimensions,
+  getResolutionString,
+} from './resolution-selector'
 
 // Экспортируем функции для прямого использования
 export async function transcodeVideo(

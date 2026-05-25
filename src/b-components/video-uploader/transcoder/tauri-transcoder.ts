@@ -1,18 +1,23 @@
 import type {
   Transcoder,
+  TranscodeCodec,
   TranscodeOptions,
   TranscodeProgress,
   TranscodeResult,
-  VideoMetadata
+  VideoMetadata,
 } from './types'
 import { TranscodeError } from './types'
-import { selectTargetResolution, calculateTargetDimensions, getResolutionString } from './resolution-selector'
+import {
+  selectTargetResolution,
+  calculateTargetDimensions,
+  getResolutionString,
+} from './resolution-selector'
 import {
   MAX_VIDEO_BITRATE,
   MAX_AUDIO_BITRATE,
   TARGET_FPS,
   MAX_FPS,
-  getBitrateForResolution
+  getBitrateForResolution,
 } from '../utils/constants'
 import { isTauri } from '../utils/environment'
 import { invoke, convertFileSrc } from '@tauri-apps/api/core'
@@ -29,6 +34,35 @@ export class TauriTranscoder implements Transcoder {
    */
   isSupported(): boolean {
     return isTauri()
+  }
+
+  /**
+   * Проверить, установлены ли системные ffmpeg/ffprobe.
+   * Запускается один раз при инициализации UI uploader'а, чтобы показать инструкцию
+   * по установке ДО того, как пользователь упрётся в "Failed to execute ffprobe".
+   */
+  async checkFfmpegAvailable(): Promise<{
+    ffmpeg: boolean
+    ffprobe: boolean
+    ffmpegVersion: string | null
+  }> {
+    if (!this.isSupported()) {
+      return { ffmpeg: false, ffprobe: false, ffmpegVersion: null }
+    }
+    try {
+      const result = await invoke<{
+        ffmpeg: boolean
+        ffprobe: boolean
+        ffmpeg_version: string | null
+      }>('check_ffmpeg_available')
+      return {
+        ffmpeg: result.ffmpeg,
+        ffprobe: result.ffprobe,
+        ffmpegVersion: result.ffmpeg_version,
+      }
+    } catch {
+      return { ffmpeg: false, ffprobe: false, ffmpegVersion: null }
+    }
   }
 
   /**
@@ -53,7 +87,7 @@ export class TauriTranscoder implements Transcoder {
         audio_bitrate?: number
         mime_type?: string
       }>('get_video_metadata', {
-        filePath
+        filePath,
       })
 
       // Удаляем временный файл
@@ -68,7 +102,7 @@ export class TauriTranscoder implements Transcoder {
         hasAudio: metadata.has_audio,
         videoBitrate: metadata.video_bitrate,
         audioBitrate: metadata.audio_bitrate,
-        mimeType: metadata.mime_type
+        mimeType: metadata.mime_type,
       }
     } catch (error) {
       throw new TranscodeError('Failed to get video metadata', 'METADATA_ERROR', error as Error)
@@ -91,7 +125,8 @@ export class TauriTranscoder implements Transcoder {
     const metadata = await this.getMetadata(file)
 
     // Определяем целевое разрешение
-    const targetResolution = options.resolution || selectTargetResolution(metadata.width, metadata.height)
+    const targetResolution =
+      options.resolution || selectTargetResolution(metadata.width, metadata.height)
     const { width, height } = calculateTargetDimensions(
       metadata.width,
       metadata.height,
@@ -110,11 +145,10 @@ export class TauriTranscoder implements Transcoder {
       sourceBitrate > 0 ? sourceBitrate : Infinity
     )
     const fps = Math.min(options.fps || TARGET_FPS, MAX_FPS)
+    const codec: TranscodeCodec = options.codec ?? 'h264'
 
     // Вычисляем audioBitrate: если есть аудио, используем опции или значение по умолчанию
-    const audioBitrate = metadata.hasAudio
-      ? (options.audioBitrate || MAX_AUDIO_BITRATE)
-      : 0
+    const audioBitrate = metadata.hasAudio ? options.audioBitrate || MAX_AUDIO_BITRATE : 0
 
     try {
       // Сохраняем файл во временную директорию
@@ -129,7 +163,7 @@ export class TauriTranscoder implements Transcoder {
         video_bitrate: videoBitrate,
         audio_bitrate: audioBitrate,
         fps,
-        has_audio: metadata.hasAudio // Если в исходном видео есть аудио, передаем true
+        has_audio: metadata.hasAudio, // Если в исходном видео есть аудио, передаем true
       }
 
       // Настраиваем слушатель событий прогресса
@@ -141,7 +175,7 @@ export class TauriTranscoder implements Transcoder {
             if (onProgress) {
               onProgress({
                 progress: event.payload.progress,
-                framesProcessed: undefined
+                framesProcessed: undefined,
               })
             }
           }
@@ -167,7 +201,8 @@ export class TauriTranscoder implements Transcoder {
           audioBitrate: transcodeParams.audio_bitrate,
           fps: transcodeParams.fps,
           hasAudio: transcodeParams.has_audio,
-          duration: metadata.duration
+          duration: metadata.duration,
+          codec,
         })
 
         // Получаем Blob через asset URL (без передачи содержимого по IPC — иначе "object can not be cloned")
@@ -182,6 +217,7 @@ export class TauriTranscoder implements Transcoder {
         await invoke('delete_temp_file', { filePath: inputFilePath })
         await invoke('delete_temp_file', { filePath: result.output_path })
 
+        const mimeType = codec === 'vp9' ? 'video/webm' : 'video/mp4'
         const transcodeResult: TranscodeResult = {
           blob,
           width: result.width,
@@ -191,8 +227,8 @@ export class TauriTranscoder implements Transcoder {
           audioBitrate,
           fps,
           hasAudio: metadata.hasAudio && !!audioBitrate,
-          mimeType: 'video/webm',
-          duration: result.duration
+          mimeType,
+          duration: result.duration,
         }
 
         return transcodeResult
@@ -226,7 +262,8 @@ export class TauriTranscoder implements Transcoder {
       // Для файлов больше 5MB используем Worker, чтобы не блокировать UI
       let data: number[]
 
-      if (file.size > 5 * 1024 * 1024) { // > 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        // > 5MB
         // Используем Worker для больших файлов (до 4GB)
         data = await this.readFileInWorker(file)
       } else {
@@ -238,7 +275,7 @@ export class TauriTranscoder implements Transcoder {
 
       const filePath = await invoke<string>('save_temp_file', {
         fileName: file.name,
-        data
+        data,
       })
 
       return filePath
@@ -259,10 +296,7 @@ export class TauriTranscoder implements Transcoder {
 
     return new Promise((resolve, reject) => {
       // Создаем Worker динамически
-      const worker = new Worker(
-        new URL('./file-worker.ts', import.meta.url),
-        { type: 'module' }
-      )
+      const worker = new Worker(new URL('./file-worker.ts', import.meta.url), { type: 'module' })
 
       const timeout = setTimeout(() => {
         worker.terminate()
@@ -293,10 +327,13 @@ export class TauriTranscoder implements Transcoder {
 
       // Отправляем ArrayBuffer в Worker через Transferable для эффективности
       // Это передает владение ArrayBuffer в Worker, освобождая память в основном потоке
-      worker.postMessage({
-        type: 'READ_FILE',
-        payload: { arrayBuffer }
-      }, [arrayBuffer])
+      worker.postMessage(
+        {
+          type: 'READ_FILE',
+          payload: { arrayBuffer },
+        },
+        [arrayBuffer]
+      )
     })
   }
 
@@ -316,10 +353,7 @@ export class TauriTranscoder implements Transcoder {
     const buffer = uint8.buffer
 
     return new Promise((resolve, reject) => {
-      const worker = new Worker(
-        new URL('./file-worker.ts', import.meta.url),
-        { type: 'module' }
-      )
+      const worker = new Worker(new URL('./file-worker.ts', import.meta.url), { type: 'module' })
 
       const timeout = setTimeout(() => {
         worker.terminate()
@@ -348,10 +382,7 @@ export class TauriTranscoder implements Transcoder {
 
       // Передаём буфер через transfer list — владение переходит в Worker,
       // клонирование не используется, ограничение "object can not be cloned" не срабатывает
-      worker.postMessage(
-        { type: 'CREATE_BLOB', payload: { buffer, mimeType } },
-        [buffer]
-      )
+      worker.postMessage({ type: 'CREATE_BLOB', payload: { buffer, mimeType } }, [buffer])
     })
   }
 

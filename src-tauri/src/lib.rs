@@ -65,6 +65,37 @@ async fn read_file(file_path: String) -> Result<Vec<u8>, String> {
         .map_err(|e| format!("Failed to read file: {}", e))
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct FfmpegAvailability {
+    ffmpeg: bool,
+    ffprobe: bool,
+    ffmpeg_version: Option<String>,
+}
+
+/// Проверить, доступны ли системные ffmpeg/ffprobe и вернуть версию ffmpeg.
+/// Вызывается при старте Tauri приложения, чтобы UI мог показать инструкцию по установке
+/// до того, как пользователь выберет файл и упрётся в невнятную ошибку "Failed to execute ffprobe".
+#[tauri::command]
+async fn check_ffmpeg_available() -> Result<FfmpegAvailability, String> {
+    let ffmpeg_output = Command::new("ffmpeg").arg("-version").output();
+    let ffprobe_output = Command::new("ffprobe").arg("-version").output();
+
+    let ffmpeg_version = ffmpeg_output.as_ref().ok().and_then(|out| {
+        if !out.status.success() {
+            return None;
+        }
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        // Первая строка ffmpeg -version: "ffmpeg version 6.1.1 Copyright (c) ..."
+        stdout.lines().next().map(|s| s.trim().to_string())
+    });
+
+    Ok(FfmpegAvailability {
+        ffmpeg: ffmpeg_output.map(|o| o.status.success()).unwrap_or(false),
+        ffprobe: ffprobe_output.map(|o| o.status.success()).unwrap_or(false),
+        ffmpeg_version,
+    })
+}
+
 /// Получить метаданные видео через FFmpeg (используя системный ffmpeg через команду)
 #[tauri::command]
 async fn get_video_metadata(file_path: String) -> Result<VideoMetadata, String> {
@@ -206,14 +237,23 @@ async fn transcode_video(
     fps: u32,
     has_audio: bool,
     duration: f64, // Длительность видео для расчета прогресса
+    codec: Option<String>, // "h264" (default, MP4/AAC) | "vp9" (WebM/Opus)
 ) -> Result<TranscodeResult, String> {
+
+    let codec = codec.unwrap_or_else(|| "h264".to_string());
+    let (extension, format) = match codec.as_str() {
+        "vp9" => ("webm", "webm"),
+        "h264" => ("mp4", "mp4"),
+        other => return Err(format!("Unsupported codec: {}", other)),
+    };
 
     // Создаем выходной файл
     let output_path = if output_path.is_empty() {
         let temp_dir = env::temp_dir();
-        temp_dir.join(format!("tauri_output_{}.webm",
+        temp_dir.join(format!("tauri_output_{}.{}",
             std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
-                .unwrap().as_secs()))
+                .unwrap().as_secs(),
+            extension))
             .to_string_lossy().to_string()
     } else {
         output_path
@@ -227,32 +267,53 @@ async fn transcode_video(
         .arg(&input_path)
         .arg("-map")
         .arg("0:v:0") // Явно указываем использовать первый видео поток
-        .arg("-c:v")
-        .arg("libvpx-vp9")
         .arg("-b:v")
         .arg(format!("{}k", video_bitrate))
         .arg("-r")
-        .arg(format!("{}", fps)) // Устанавливаем frame rate
+        .arg(format!("{}", fps))
         .arg("-vf")
         .arg(format!("scale={}:{}", width, height))
         .arg("-threads")
-        .arg("4")
-        .arg("-speed")
-        .arg("2")
-        .arg("-row-mt")
-        .arg("1");
+        .arg("4");
+
+    if codec == "vp9" {
+        ffmpeg_cmd
+            .arg("-c:v")
+            .arg("libvpx-vp9")
+            .arg("-speed")
+            .arg("2")
+            .arg("-row-mt")
+            .arg("1");
+    } else {
+        // h264 — preset fast как баланс скорость/качество; yuv420p и +faststart нужны для
+        // максимальной совместимости (QuickTime, iOS Safari, Twitter, и т.п.)
+        ffmpeg_cmd
+            .arg("-c:v")
+            .arg("libx264")
+            .arg("-preset")
+            .arg("fast")
+            .arg("-pix_fmt")
+            .arg("yuv420p")
+            .arg("-movflags")
+            .arg("+faststart");
+    }
 
     // Обработка аудио
     if has_audio && audio_bitrate > 0 {
+        let (audio_codec, sample_rate) = if codec == "vp9" {
+            ("libopus", "48000")
+        } else {
+            ("aac", "44100")
+        };
         ffmpeg_cmd
             .arg("-map")
-            .arg("0:a:0?") // Явно указываем использовать первый аудио поток (знак ? означает опциональность)
+            .arg("0:a:0?") // ? делает поток опциональным — не упадём, если аудио нет
             .arg("-c:a")
-            .arg("libopus")
+            .arg(audio_codec)
             .arg("-b:a")
             .arg(format!("{}k", audio_bitrate))
             .arg("-ar")
-            .arg("48000")
+            .arg(sample_rate)
             .arg("-ac")
             .arg("2");
     } else {
@@ -261,7 +322,7 @@ async fn transcode_video(
 
     ffmpeg_cmd
         .arg("-f")
-        .arg("webm")
+        .arg(format)
         .arg("-progress")
         .arg("pipe:1") // Выводим прогресс в stdout
         .arg("-y") // Перезаписать выходной файл
@@ -505,6 +566,7 @@ pub fn run() {
       read_file,
       get_video_metadata,
       transcode_video,
+      check_ffmpeg_available,
       tor::tor_status,
       tor::tor_start,
       tor::tor_stop,

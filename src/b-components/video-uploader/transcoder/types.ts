@@ -1,16 +1,25 @@
 import type { TargetResolution } from '../utils/constants'
 
 /**
+ * Видео-кодек выходного файла.
+ * - h264: контейнер MP4, аудио AAC — нативно играется на iOS Safari, всех Android, всех десктопах.
+ * - vp9:  контейнер WebM, аудио Opus — лучше сжатие, но iOS Safari нативно не играет в blob-предпросмотре.
+ */
+export type TranscodeCodec = 'h264' | 'vp9'
+
+/**
  * Параметры транскодирования
  */
 export interface TranscodeOptions {
-  /** Целевое разрешение по высоте (144, 240, 360, 480, 720) */
+  /** Целевое разрешение по высоте (144, 240, 360, 480, 720, 1080) */
   resolution?: TargetResolution
-  /** Битрейт видео в kbps (максимум 1500) */
+  /** Видео-кодек (по умолчанию h264 — максимальная совместимость с iOS Safari) */
+  codec?: TranscodeCodec
+  /** Битрейт видео в kbps */
   videoBitrate?: number
-  /** Битрейт аудио в kbps (максимум 128) */
+  /** Битрейт аудио в kbps */
   audioBitrate?: number
-  /** FPS (максимум 30) */
+  /** FPS */
   fps?: number
   /** Сохранять пропорции */
   preserveAspectRatio?: boolean

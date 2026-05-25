@@ -6,14 +6,14 @@
  * Доступные разрешения для транскодирования (в пикселях по высоте)
  * Видео будет транскодировано в одно из этих разрешений в зависимости от оригинала
  */
-export const TARGET_RESOLUTIONS = [144, 240, 360, 480, 720] as const
+export const TARGET_RESOLUTIONS = [144, 240, 360, 480, 720, 1080] as const
 
-export type TargetResolution = typeof TARGET_RESOLUTIONS[number]
+export type TargetResolution = (typeof TARGET_RESOLUTIONS)[number]
 
 /**
- * Максимальное разрешение (720p)
+ * Максимальное разрешение (1080p)
  */
-export const MAX_RESOLUTION = 720
+export const MAX_RESOLUTION = 1080
 
 /**
  * Минимальное разрешение (144p)
@@ -21,9 +21,9 @@ export const MAX_RESOLUTION = 720
 export const MIN_RESOLUTION = 144
 
 /**
- * Максимальный битрейт видео (kbps)
+ * Максимальный битрейт видео (kbps) — потолок для 1080p
  */
-export const MAX_VIDEO_BITRATE = 1500 // kbps
+export const MAX_VIDEO_BITRATE = 4000 // kbps
 
 /**
  * Максимальный битрейт аудио (kbps)
@@ -31,8 +31,8 @@ export const MAX_VIDEO_BITRATE = 1500 // kbps
 export const MAX_AUDIO_BITRATE = 128 // kbps
 
 /**
- * Целевой и максимальный FPS для транскодирования
- * Если оригинал имеет больший FPS, будет ограничен до этого значения
+ * Целевой FPS по умолчанию
+ * Если оригинал имеет больший FPS, будет ограничен до MAX_FPS
  */
 export const TARGET_FPS = 30
 
@@ -42,9 +42,9 @@ export const TARGET_FPS = 30
 export const MIN_FPS = 15
 
 /**
- * Максимальный FPS (равен целевому)
+ * Максимальный FPS
  */
-export const MAX_FPS = 30
+export const MAX_FPS = 60
 
 /**
  * Параметры кодирования по умолчанию
@@ -53,19 +53,32 @@ export const DEFAULT_ENCODING_OPTIONS = {
   videoBitrate: MAX_VIDEO_BITRATE,
   audioBitrate: MAX_AUDIO_BITRATE,
   fps: TARGET_FPS,
-  preserveAspectRatio: true
+  preserveAspectRatio: true,
 } as const
 
 /**
  * Соответствие разрешений и рекомендуемых битрейтов
  */
 export const RESOLUTION_BITRATE_MAP: Record<TargetResolution, number> = {
-  144: 200, // kbps для 144p
-  240: 400, // kbps для 240p
-  360: 600, // kbps для 360p
-  480: 900, // kbps для 480p
-  720: 1500 // kbps для 720p (максимум)
+  144: 200, // kbps
+  240: 400,
+  360: 600,
+  480: 900,
+  720: 1500,
+  1080: 4000, // потолок MAX_VIDEO_BITRATE
 }
+
+/**
+ * Data-saver preset — для слабых сетей или старых устройств.
+ * Совпадает со старым потолком (720p / 1.5 Mbps / 30fps), чтобы поведение прошлых
+ * сборок было воспроизводимо через явный preset.
+ */
+export const DATA_SAVER_PRESET = {
+  resolution: 720 as TargetResolution,
+  videoBitrate: 1500,
+  audioBitrate: 96,
+  fps: 30,
+} as const
 
 /**
  * Получить рекомендуемый битрейт для разрешения
@@ -85,7 +98,7 @@ export const MIME_TYPES = {
   WEBM_VP9: 'video/webm;codecs=vp9',
   WEBM_VP9_OPUS: 'video/webm;codecs=vp9,opus',
   WEBM_VP8: 'video/webm;codecs=vp8',
-  WEBM_VP8_OPUS: 'video/webm;codecs=vp8,opus'
+  WEBM_VP8_OPUS: 'video/webm;codecs=vp8,opus',
 } as const
 
 /**
@@ -93,7 +106,7 @@ export const MIME_TYPES = {
  */
 export const FILE_EXTENSIONS = {
   MP4: '.mp4',
-  WEBM: '.webm'
+  WEBM: '.webm',
 } as const
 
 /**
@@ -101,7 +114,7 @@ export const FILE_EXTENSIONS = {
  */
 export const FILE_SIZE_LIMITS = {
   MAX_ORIGINAL_SIZE: 4 * 1024 * 1024 * 1024, // 4 GB
-  MAX_TRANSCODED_SIZE: 2 * 1024 * 1024 * 1024 // 2 GB
+  MAX_TRANSCODED_SIZE: 2 * 1024 * 1024 * 1024, // 2 GB
 } as const
 
 /**
@@ -109,7 +122,7 @@ export const FILE_SIZE_LIMITS = {
  */
 export const TIMEOUTS = {
   VIDEO_LOAD: 30000, // 30 секунд на загрузку метаданных видео
-  TRANSCODING: 3600000 // 1 час на транскодирование (для очень больших файлов)
+  TRANSCODING: 3600000, // 1 час на транскодирование (для очень больших файлов)
 } as const
 
 /**
@@ -126,5 +139,5 @@ export const STORAGE_LIMITS = {
   /** Максимальное количество видео */
   MAX_COUNT: 50,
   /** Максимальный возраст записи в днях */
-  MAX_AGE_DAYS: 30
+  MAX_AGE_DAYS: 30,
 } as const
