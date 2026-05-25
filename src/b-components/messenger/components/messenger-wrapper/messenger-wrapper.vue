@@ -6,16 +6,25 @@
     </SC_OverlayContent>
   </SC_FullScreenOverlay>
 
-  <!-- Floating Widget Mode -->
-  <SC_MessengerWrapper v-if="isVisible && !isFullScreen">
+  <!-- Floating Widget Mode (desktop only) -->
+  <SC_MessengerWrapper v-if="showFloatingWidget && !isFullScreen">
     <MessengerWindow :is-open="isOpen" :title="widgetTitle" @close="closeWidget">
       <template #actions>
-        <SC_BackButton v-if="activeChatId || (lastTargetAddress && inviteViewActive)" @click="onWidgetBack">
-          <img :src="icons.back" style="filter: brightness(0) invert(1);" />
+        <SC_BackButton
+          v-if="activeChatId || (lastTargetAddress && inviteViewActive)"
+          @click="onWidgetBack"
+        >
+          <img :src="icons.back" style="filter: brightness(0) invert(1)" />
         </SC_BackButton>
       </template>
 
-      <SC_MessengerWrapperLoader v-if="(!dialogsLoadedOnce || isLoading) && !activeChatId && !(lastTargetAddress && inviteViewActive)">
+      <SC_MessengerWrapperLoader
+        v-if="
+          (!dialogsLoadedOnce || isLoading) &&
+          !activeChatId &&
+          !(lastTargetAddress && inviteViewActive)
+        "
+      >
         <SC_MessengerWrapperSpinner />
         <SC_MessengerWrapperLoaderText>Загрузка диалогов...</SC_MessengerWrapperLoaderText>
       </SC_MessengerWrapperLoader>
@@ -40,21 +49,13 @@
         @open-chat="onChatStarted"
       />
 
-      <ChatList
-        v-else
-        :dialogs="dialogs"
-        @select="openChat"
-      />
+      <ChatList v-else :dialogs="dialogs" @select="openChat" />
     </MessengerWindow>
 
-    <MessengerButton
-      :unread-count="totalUnreadCount"
-      :is-open="isOpen"
-      @click="toggleMessenger"
-    >
+    <MessengerButton :unread-count="totalUnreadCount" :is-open="isOpen" @click="toggleMessenger">
       <template #icon>
-        <img v-if="!isOpen" :src="icons.chat" style="filter: brightness(0) invert(1);" />
-        <img v-else :src="icons.close" style="filter: brightness(0) invert(1);" />
+        <img v-if="!isOpen" :src="icons.chat" style="filter: brightness(0) invert(1)" />
+        <img v-else :src="icons.close" style="filter: brightness(0) invert(1)" />
       </template>
     </MessengerButton>
   </SC_MessengerWrapper>

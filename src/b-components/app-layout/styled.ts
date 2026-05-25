@@ -17,21 +17,18 @@ export const SC_Appcnt = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-
-  &.with-bottom-nav {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-  }
+  padding-bottom: var(--safe-bottom);
 `
 
 export const SC_Work = styled.div`
   display: flex;
   flex: 1;
-  max-width: 1600px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   width: 100%;
-  min-height: calc(100vh - 60px);
-  gap: 20px;
-  padding: 58px 0 25px;
+  min-height: calc(100vh - var(--header-height));
+  gap: var(--content-gap);
+  padding: calc(var(--header-height) - 2px) 0 25px;
   align-items: flex-start;
   background: ${COLORS.BG_PRIMARY};
 `
@@ -44,7 +41,11 @@ export const SC_MainContent = styled.div`
   border-radius: 8px;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
-    padding: 16px 10px 20px;
+    padding: 12px 8px 16px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 8px 6px 12px;
   }
 `
 
@@ -52,12 +53,16 @@ export const SC_SidebarRight = styled.div`
   width: 320px;
   flex-shrink: 0;
   position: sticky;
-  top: 85px;
+  top: calc(var(--header-height) + 25px);
   height: fit-content;
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - var(--header-height) - 40px);
   background: ${COLORS.BG_PRIMARY};
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid ${COLORS.BORDER_LIGHTER};
+
+  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
+    padding: 14px;
+  }
 `

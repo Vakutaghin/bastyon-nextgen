@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 
-
 export const SC_MessengerWrapper = styled.div`
   position: fixed;
   bottom: 14px;
@@ -27,7 +26,8 @@ export const SC_BackButton = styled.button`
     background-color: rgba(255, 255, 255, 0.2);
   }
 
-  svg, img {
+  svg,
+  img {
     width: 24px;
     height: 24px;
     fill: currentColor;
@@ -37,14 +37,19 @@ export const SC_BackButton = styled.button`
 
 export const SC_FullScreenOverlay = styled.div`
   position: fixed;
-  top: 60px;
+  top: var(--header-height-total);
   left: 0;
-  width: 100vw;
-  height: calc(100vh - 60px);
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: calc(100vh - var(--header-height-total));
   z-index: 2500;
   background-color: #fff;
   display: flex;
   flex-direction: column;
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 `
 
 export const SC_CloseOverlayButton = styled.button`
@@ -63,7 +68,8 @@ export const SC_CloseOverlayButton = styled.button`
     border-radius: 50%;
   }
 
-  svg, img {
+  svg,
+  img {
     width: 24px;
     height: 24px;
     fill: currentColor;
@@ -84,7 +90,11 @@ export const SC_OverlayContent = styled.div`
   padding: 20px;
   width: 100%;
   margin: 0 auto;
-  max-width: 1600px;
+  max-width: var(--content-max-width);
+
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 `
 
 export const SC_MessengerWrapperLoader = styled.div`
@@ -109,7 +119,9 @@ export const SC_MessengerWrapperSpinner = styled.span`
   animation: messenger-wrapper-spin 0.8s linear infinite;
 
   @keyframes messenger-wrapper-spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 `
 

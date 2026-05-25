@@ -11,6 +11,7 @@ import MessengerPanel from '../messenger-panel/messenger-panel.vue'
 import { storeToRefs } from 'pinia'
 import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
+import { useViewport } from '@/composables/use-viewport'
 import {
   SC_MessengerWrapper,
   SC_BackButton,
@@ -18,9 +19,8 @@ import {
   SC_OverlayContent,
   SC_MessengerWrapperLoader,
   SC_MessengerWrapperLoaderText,
-  SC_MessengerWrapperSpinner
+  SC_MessengerWrapperSpinner,
 } from './styled'
-
 
 export const messengerWrapperOptions = defineComponent({
   name: 'MessengerWrapper',
@@ -36,7 +36,7 @@ export const messengerWrapperOptions = defineComponent({
     MessengerWindow,
     ChatList,
     ChatRoom,
-    MessengerPanel
+    MessengerPanel,
   },
   setup() {
     const store = useMessengerStore()
@@ -50,24 +50,50 @@ export const messengerWrapperOptions = defineComponent({
       activeChatId,
       activeMessages,
       lastTargetAddress,
-      inviteViewActive
+      inviteViewActive,
     } = storeToRefs(store)
     const totalUnreadCount = store.totalUnreadCount
     const authStore = useAuthStore()
+    const { isMobileOrTablet } = useViewport()
 
     const icons = {
       close: closeIcon,
       back: backIcon,
-      chat: chatIcon
+      chat: chatIcon,
     }
 
     const isVisible = computed(() => {
       return authStore.isUserAuthenticated
     })
 
+    // На мобилке/планшете НЕ показываем плавающий floating-widget — мессенджер
+    // открывается только в full-screen режиме по клику на иконку в header.
+    // Desktop сохраняет старое поведение: floating-widget + кнопка-кружок.
+    const showFloatingWidget = computed(() => {
+      return isVisible.value && !isMobileOrTablet.value
+    })
+
+    // На мобилке isFullScreen всегда автоматически синхронизируется
+    // с тем что пользователь открывает мессенджер (любое isOpen ≡ full-screen).
+    watch(
+      () => store.isOpen,
+      (open) => {
+        if (open && isMobileOrTablet.value) {
+          store.isFullScreen = true
+        }
+      }
+    )
+
+    // Если viewport ужался и мессенджер был открыт в widget-режиме — переключаем full-screen.
+    watch(isMobileOrTablet, (mobile) => {
+      if (mobile && store.isOpen) {
+        store.isFullScreen = true
+      }
+    })
+
     const widgetTitle = computed(() => {
       if (activeChatId.value) {
-        const dialog = dialogs.value.find(d => d.id === activeChatId.value)
+        const dialog = dialogs.value.find((d) => d.id === activeChatId.value)
         return dialog?.partner.name || 'Чат'
       }
       if (lastTargetAddress.value) {
@@ -117,35 +143,38 @@ export const messengerWrapperOptions = defineComponent({
       return window.innerWidth - document.documentElement.clientWidth
     }
 
-    watch(() => store.isFullScreen, (isFull) => {
-      const scrollbarWidth = getScrollbarWidth()
-      const header = document.querySelector('header') as HTMLElement
+    watch(
+      () => store.isFullScreen,
+      (isFull) => {
+        const scrollbarWidth = getScrollbarWidth()
+        const header = document.querySelector('header') as HTMLElement
 
-      if (isFull) {
-        // Close widget (collapse to circle) when opening full screen
-        store.isOpen = false
+        if (isFull) {
+          // Close widget (collapse to circle) when opening full screen
+          store.isOpen = false
 
-        // Lock body and add padding to compensate scrollbar
-        document.body.style.overflow = 'hidden'
-        if (scrollbarWidth > 0) {
-          document.body.style.paddingRight = `${scrollbarWidth}px`
-          // Compensate for fixed header as well
+          // Lock body and add padding to compensate scrollbar
+          document.body.style.overflow = 'hidden'
+          if (scrollbarWidth > 0) {
+            document.body.style.paddingRight = `${scrollbarWidth}px`
+            // Compensate for fixed header as well
+            if (header) {
+              header.style.paddingRight = `${scrollbarWidth}px`
+            }
+          }
+        } else {
+          // Reset active chat when closing full screen (return to dialog list)
+          store.activeChatId = null
+
+          // Unlock and reset
+          document.body.style.overflow = ''
+          document.body.style.paddingRight = ''
           if (header) {
-            header.style.paddingRight = `${scrollbarWidth}px`
+            header.style.paddingRight = ''
           }
         }
-      } else {
-        // Reset active chat when closing full screen (return to dialog list)
-        store.activeChatId = null
-
-        // Unlock and reset
-        document.body.style.overflow = ''
-        document.body.style.paddingRight = ''
-        if (header) {
-          header.style.paddingRight = ''
-        }
       }
-    })
+    )
 
     // Handle Escape key
     const handleKeydown = (e: KeyboardEvent) => {
@@ -202,6 +231,7 @@ export const messengerWrapperOptions = defineComponent({
       inviteViewActive,
       widgetTitle,
       isVisible,
+      showFloatingWidget,
       closeWidget,
       closeFullScreen,
       onWidgetBack,
@@ -210,7 +240,7 @@ export const messengerWrapperOptions = defineComponent({
       handleLoadMore,
       handleSendMessage,
       openChat: store.openChat,
-      toggleMessenger: store.toggleMessenger
+      toggleMessenger: store.toggleMessenger,
     }
-  }
+  },
 })
