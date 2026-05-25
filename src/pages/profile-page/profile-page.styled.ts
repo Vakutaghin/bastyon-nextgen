@@ -1,13 +1,14 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_ProfileWork = styled.div`
   display: flex;
   flex: 1;
   margin: 0 auto;
   width: 100%;
-  min-height: calc(100vh - 60px);
-  gap: 20px;
+  min-height: calc(100vh - var(--header-height));
+  gap: var(--content-gap);
   padding: 0 0 25px;
   align-items: flex-start;
   background: rgb(255, 255, 255);
@@ -20,8 +21,12 @@ export const SC_ProfileMainContent = styled.div`
   padding: 20px 0;
   border-radius: 8px;
 
-  @media (max-width: 800px) {
-    padding: 16px 10px 20px;
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 12px 8px 16px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 8px 6px 12px;
   }
 `
 
@@ -29,19 +34,25 @@ export const SC_ProfilePage = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
-  padding-top: 60px;
+  padding-top: var(--header-height-total);
 `
 
 export const SC_ProfileContentWrapper = styled.div`
   display: flex;
   width: 100%;
   margin: 0 auto;
-  gap: 20px;
-  max-width: 1600px;
+  gap: var(--content-gap);
+  max-width: var(--content-max-width);
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     flex-direction: column;
-    padding: 10px;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 6px;
+    gap: 6px;
   }
 `
 

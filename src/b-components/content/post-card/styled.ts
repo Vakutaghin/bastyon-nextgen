@@ -1,9 +1,18 @@
 import styled from 'vue3-styled-components'
 import Card from '@/components/card/card.vue'
 import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_PostCard = styled(Card)`
   margin-bottom: 15px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    margin-bottom: 10px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    margin-bottom: 8px;
+  }
 `
 
 export const SC_PostHeader = styled.div`
@@ -11,6 +20,10 @@ export const SC_PostHeader = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 15px;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    margin-bottom: 10px;
+  }
 `
 
 export const SC_PostTitle = styled.h3`
@@ -19,6 +32,11 @@ export const SC_PostTitle = styled.h3`
   font-weight: 600;
   color: ${COLORS.TEXT_PRIMARY};
   line-height: 1.4;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    margin: 0 0 10px 0;
+    font-size: 15px;
+  }
 `
 
 export const SC_PostAuthor = styled.div`
@@ -82,6 +100,16 @@ export const SC_PostActions = styled.div`
 
   :deep(.ant-btn:last-child) {
     margin-left: auto;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    gap: 10px;
+    padding-top: 10px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    gap: 8px;
+    padding-top: 8px;
   }
 `
 

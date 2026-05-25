@@ -1,11 +1,12 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_LimitsWork = styled.div`
   display: flex;
   flex: 1;
   margin: 0 auto;
   width: 100%;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
   background: rgb(255, 255, 255);
@@ -13,9 +14,9 @@ export const SC_LimitsWork = styled.div`
 
 export const SC_LimitsPage = styled.div`
   width: 100%;
-  max-width: 1600px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 60px 20px 24px;
+  padding: var(--header-height-total) var(--content-padding-x) 24px;
 `
 
 export const SC_LimitsTitle = styled.h1`
@@ -23,6 +24,11 @@ export const SC_LimitsTitle = styled.h1`
   font-weight: 600;
   color: rgb(33, 33, 33);
   margin: 24px 0;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 19px;
+    margin: 16px 0;
+  }
 `
 
 export const SC_LimitsList = styled.div`
@@ -30,8 +36,9 @@ export const SC_LimitsList = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 
-  @media (max-width: 560px) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 `
 
@@ -44,6 +51,10 @@ export const SC_LimitRow = styled.div`
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.06);
   min-width: 0;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 10px 14px;
+  }
 `
 
 export const SC_LimitLabel = styled.span`

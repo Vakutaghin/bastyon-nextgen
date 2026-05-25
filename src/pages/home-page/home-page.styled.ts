@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_HomeWork = styled.div`
   display: flex;
@@ -15,7 +15,7 @@ export const SC_HomeWork = styled.div`
 
   &.is-mobile {
     gap: 0;
-    padding: calc(60px + env(safe-area-inset-top, 0px)) 0 0;
+    padding: var(--header-height-total) 0 0;
   }
 `
 
@@ -30,11 +30,19 @@ export const SC_HomeMainContent = styled.div`
     padding-right: 20px;
   }
 
-  @media (max-width: 800px) {
-    padding: 16px 10px 20px;
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 12px 8px 16px;
 
     &.sidebar-right-hidden {
-      padding-right: 20px;
+      padding-right: 8px;
+    }
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 8px 6px 12px;
+
+    &.sidebar-right-hidden {
+      padding-right: 6px;
     }
   }
 `

@@ -1,22 +1,23 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 /** Контейнер всей страницы — повторяет SC_HomeWork: flex с сайдбаром слева. */
 export const SC_SearchWork = styled.div`
   display: flex;
   flex: 1;
-  max-width: 1600px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   width: 100%;
   min-height: calc(100vh - 20px);
-  gap: 20px;
-  padding: 58px 0 25px;
+  gap: var(--content-gap);
+  padding: calc(var(--header-height) - 2px) 0 25px;
   align-items: flex-start;
   background: ${COLORS.BG_PRIMARY};
 
   &.is-mobile {
     gap: 0;
-    padding: calc(60px + env(safe-area-inset-top, 0px)) 0 0;
+    padding: var(--header-height-total) 0 0;
   }
 `
 
@@ -28,8 +29,12 @@ export const SC_SearchMainContent = styled.div`
   padding: 20px 20px 60px;
   border-radius: 8px;
 
-  @media (max-width: 800px) {
-    padding: 16px 10px 60px;
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 12px 8px 60px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 8px 6px 60px;
   }
 `
 
@@ -74,7 +79,9 @@ export const SC_Tab = styled.button<{ active: boolean }>`
   cursor: pointer;
   border-bottom: 2px solid ${(p) => (p.active ? COLORS.PRIMARY : 'transparent')};
   margin-bottom: -1px;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 
   &:hover {
     color: ${COLORS.PRIMARY};
@@ -96,7 +103,9 @@ export const SC_ResultItem = styled.div`
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 
   &:hover {
     background: ${COLORS.BG_HOVER_BLUE};
@@ -171,7 +180,9 @@ export const SC_LoadMore = styled.button`
   color: ${COLORS.PRIMARY};
   font-size: 13px;
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 
   &:hover:not(:disabled) {
     background: ${COLORS.PRIMARY_LIGHT};

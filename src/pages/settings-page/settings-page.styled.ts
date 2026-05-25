@@ -1,5 +1,6 @@
 import styled, { css } from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 const sidebarItemProps = { active: Boolean }
 
@@ -8,7 +9,7 @@ export const SC_SettingsWork = styled.div`
   flex: 1;
   margin: 0 auto;
   width: 100%;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
   background: rgb(255, 255, 255);
@@ -16,22 +17,28 @@ export const SC_SettingsWork = styled.div`
 
 export const SC_SettingsPage = styled.div`
   width: 100%;
-  max-width: 1600px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  padding-top: 60px;
+  padding-top: var(--header-height-total);
 `
 
 export const SC_SettingsContentWrapper = styled.div`
   display: flex;
   width: 100%;
   gap: 24px;
-  padding: 0 20px;
+  padding: 0 var(--content-padding-x);
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     flex-direction: column;
-    padding: 10px;
+    padding: 8px;
+    gap: 12px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 6px;
+    gap: 8px;
   }
 `
 
@@ -43,11 +50,12 @@ export const SC_SettingsSidebar = styled.nav`
   gap: 2px;
   padding: 8px 0;
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     width: 100%;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+    padding: 4px 0;
   }
 `
 
@@ -63,7 +71,9 @@ export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   &:hover {
     background: rgba(0, 0, 0, 0.04);
@@ -79,9 +89,10 @@ export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
       }
     `}
 
-  @media (max-width: 800px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     width: auto;
-    min-width: 120px;
+    min-width: 110px;
+    padding: 8px 12px;
   }
 `
 
@@ -91,6 +102,14 @@ export const SC_SettingsMain = styled.main`
   background: rgb(255, 255, 255);
   padding: 24px;
   border-radius: 8px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 16px 12px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 12px 8px;
+  }
 `
 
 export const SC_SettingsPlaceholder = styled.div`
@@ -188,7 +207,10 @@ export const SC_CopyIconBtn = styled.button`
   background: ${COLORS.WHITE};
   color: ${COLORS.OVERLAY_65};
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
 
   &:hover {
     color: ${COLORS.ANT_BLUE};
@@ -233,7 +255,9 @@ export const SC_HideKeyButton = styled.button`
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 6px;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
 
   &:hover {
     color: ${COLORS.ANT_BLUE};
@@ -297,7 +321,9 @@ export const SC_ConfirmBtnDefault = styled.button`
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 6px;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
 
   &:hover {
     color: ${COLORS.ANT_BLUE};
@@ -363,10 +389,8 @@ export const SC_LangButton = styled('button', langRowProps)`
     `}
 
   &:hover {
-    background: ${(p: { active?: boolean }) =>
-      p.active ? COLORS.PRIMARY : COLORS.PRIMARY_LIGHT};
-    color: ${(p: { active?: boolean }) =>
-      p.active ? COLORS.WHITE : COLORS.PRIMARY};
+    background: ${(p: { active?: boolean }) => (p.active ? COLORS.PRIMARY : COLORS.PRIMARY_LIGHT)};
+    color: ${(p: { active?: boolean }) => (p.active ? COLORS.WHITE : COLORS.PRIMARY)};
   }
 `
 
@@ -434,7 +458,9 @@ export const SC_ExplorerNodeRow = styled('label', nodeRowProps)`
   cursor: pointer;
   font-size: 14px;
   color: rgb(33, 33, 33);
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 
   &:hover {
     background: rgba(0, 0, 0, 0.02);
