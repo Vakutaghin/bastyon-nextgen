@@ -66,9 +66,7 @@ export const videoUploaderOptions = defineComponent({
 
       try {
         // Проверяем поддержку транскодирования (только в Tauri)
-        if (!transcoder.isSupported()) {
-          console.warn('Video transcoding is not supported - доступно только в Tauri приложении')
-        } else {
+        if (transcoder.isSupported()) {
           // В Tauri дополнительно проверяем, установлен ли системный ffmpeg/ffprobe.
           // Без этого пользователь увидел бы невнятное "Failed to execute ffprobe" только
           // после выбора файла и начала анализа.

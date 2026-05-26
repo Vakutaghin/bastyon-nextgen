@@ -137,7 +137,6 @@ export function validateMnemonic(mnemonic: Mnemonic): boolean {
       }
     }
 
-    log.warn('All validation attempts failed for mnemonic')
     return false
   } catch (error) {
     log.error('Validation error:', error)
@@ -156,7 +155,7 @@ export function detectPrivateKeyFormat(privateKey: PrivateKey): PrivateKeyFormat
   }
 
   const trimmed = privateKey.toLowerCase().trim()
-  const words = trimmed.split(/\s+/).filter(w => w.length > 0)
+  const words = trimmed.split(/\s+/).filter((w) => w.length > 0)
 
   // Проверка на мнемонику (12 или 24 слова) — нормализуем как при восстановлении (схлопывание пробелов)
   if (words.length >= 12 && words.length <= 24) {
@@ -225,10 +224,11 @@ export function validatePrivateKey(privateKey: PrivateKey): boolean {
           return false
         }
 
-      case 'hex':
+      case 'hex': {
         const buffer = Buffer.from(privateKey, 'hex')
         // Проверяем что это валидный приватный ключ (32 байта)
         return buffer.length === 32
+      }
 
       default:
         return false
@@ -285,8 +285,10 @@ export function detectMnemonicWordlist(mnemonic: Mnemonic): any {
     }
     if (bip39Russian?.wordlists?.russian) {
       try {
-        if (bip39.mnemonicToEntropy?.(normalized, bip39Russian.wordlists.russian)) return bip39Russian.wordlists.russian
-        if (bip39.validateMnemonic(normalized, bip39Russian.wordlists.russian)) return bip39Russian.wordlists.russian
+        if (bip39.mnemonicToEntropy?.(normalized, bip39Russian.wordlists.russian))
+          return bip39Russian.wordlists.russian
+        if (bip39.validateMnemonic(normalized, bip39Russian.wordlists.russian))
+          return bip39Russian.wordlists.russian
       } catch {
         // игнорируем
       }
@@ -317,9 +319,5 @@ export function normalizeMnemonic(mnemonic: Mnemonic): Mnemonic {
   if (!mnemonic) {
     return ''
   }
-  return mnemonic
-    .toLowerCase()
-    .trim()
-    .split(/\s+/)
-    .join(' ')
+  return mnemonic.toLowerCase().trim().split(/\s+/).join(' ')
 }
