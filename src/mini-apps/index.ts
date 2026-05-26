@@ -6,6 +6,7 @@
  */
 
 export * from './types'
+export * from './registry'
 export {
   ActionSchemas,
   ACTION_NAMES,
