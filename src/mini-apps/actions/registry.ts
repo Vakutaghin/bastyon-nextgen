@@ -17,6 +17,7 @@ import { logger } from '@/services/logger'
 import type { InstalledApp } from '../types/app'
 import type { Payload } from '../types/messages'
 import type { PermissionResolver } from '../core/permission-resolver'
+import { RateLimiter } from '../core/rate-limiter'
 import type { ActionDefinition, ActionMap } from './types'
 import type { HostContext } from './host-context'
 
@@ -58,10 +59,16 @@ export interface ActionRegistryDeps {
   host: HostContext
   resolver: PermissionResolver
   actions: ActionMap
+  /** Опционально — если не передан, создаётся дефолтный per-registry. */
+  rateLimiter?: RateLimiter
 }
 
 export class ActionRegistry {
-  constructor(private readonly deps: ActionRegistryDeps) {}
+  private readonly rateLimiter: RateLimiter
+
+  constructor(private readonly deps: ActionRegistryDeps) {
+    this.rateLimiter = deps.rateLimiter ?? new RateLimiter()
+  }
 
   has(name: string): boolean {
     return name in this.deps.actions
@@ -97,6 +104,12 @@ export class ActionRegistry {
     for (const permission of def.permissions ?? []) {
       const result = await this.deps.resolver.request(app, permission)
       if (result !== 'granted') throw new PermissionDeniedError(permission)
+    }
+
+    // Rate limit gate — после permission-prompt'а, чтобы случайный спам после
+    // grant'а не уронил бакет в первой сессии.
+    if (def.rateLimitClass) {
+      this.rateLimiter.consume(app.manifest.id, def.rateLimitClass)
     }
 
     log.debug('exec', name, app.manifest.id)

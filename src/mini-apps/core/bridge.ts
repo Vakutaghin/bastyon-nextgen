@@ -306,11 +306,19 @@ function normalizeError(err: unknown, signal: AbortSignal): RpcError['error'] {
     }
   }
   if (err instanceof Error) {
-    return {
+    const out: RpcError['error'] = {
       message: err.message || 'unknown error',
       name: err.name,
       stack: err.stack,
     }
+    // Известные action-registry / rate-limiter ошибки несут машинно-читаемый
+    // `code` и (для rate-limit) `retryAfterMs`. Пробрасываем их в `RpcError`,
+    // чтобы SDK миниаппы мог реагировать программно.
+    const code = (err as { code?: unknown }).code
+    if (typeof code === 'string') out.code = code
+    const retryAfter = (err as { retryAfterMs?: unknown }).retryAfterMs
+    if (typeof retryAfter === 'number') out.retryAfter = retryAfter
+    return out
   }
   if (typeof err === 'string') {
     return { message: err, name: 'Error' }
