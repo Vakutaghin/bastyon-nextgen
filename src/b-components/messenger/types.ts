@@ -19,7 +19,7 @@ export interface Message {
   senderId: string
   senderName?: string
   text: string
-  type?: 'text' | 'audio' | 'image' | 'file'
+  type?: 'text' | 'audio' | 'image' | 'video' | 'file' | 'transaction'
   url?: string
   info?: any
   rawContent?: any

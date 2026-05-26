@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 
-
 export const SC_MessageItem = styled.div`
   max-width: 80%;
   min-width: 0;
@@ -11,6 +10,8 @@ export const SC_MessageItem = styled.div`
   position: relative;
   white-space: pre-wrap;
   word-break: break-word;
+  box-sizing: border-box;
+  overflow: hidden;
 
   &.mine {
     background-color: #d6ecff;

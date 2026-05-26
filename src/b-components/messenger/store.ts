@@ -11,6 +11,8 @@ import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { PcryptoService, type User as PcryptoUser } from './services/pcrypto'
 import { matrixService } from './services/matrix-service'
 import { encryptTextWithSecret, decryptTextWithSecret } from './services/encryption-service'
+import { encryptBlobWithRandomKey, wrapKeyForRoom } from './services/media-encrypt'
+import { decryptBytesWithSecret, sniffMimeFromBytes } from './services/media-decrypt'
 import glassSound from './sounds/glass.mp3'
 import type { Dialog, Message, MessageReaction, User } from './types'
 
@@ -75,7 +77,17 @@ const isRenderableMessageEvent = (event: any): boolean => {
   if (type !== 'm.room.message') return false
   const content = getEventContent(event)
   const msgtype = content.msgtype
-  if (msgtype === 'm.text' || msgtype === 'm.notice' || msgtype === 'm.emote' || msgtype === 'm.encrypted' || msgtype === 'm.audio') return true
+  if (
+    msgtype === 'm.text' ||
+    msgtype === 'm.notice' ||
+    msgtype === 'm.emote' ||
+    msgtype === 'm.encrypted' ||
+    msgtype === 'm.audio' ||
+    msgtype === 'm.image' ||
+    msgtype === 'm.video' ||
+    msgtype === 'm.file'
+  )
+    return true
   return typeof content.body === 'string' && content.body.trim().length > 0
 }
 
@@ -103,9 +115,12 @@ const tetatetid = (user1: string, user2: string): string | null => {
 const isTetatetchat = (room: any): boolean => {
   if (!room) return false
   if (typeof room.tetatet !== 'undefined') return room.tetatet
-  const members = typeof room.getJoinedMembers === 'function'
-    ? room.getJoinedMembers()
-    : (room.currentState?.getMembers ? room.currentState.getMembers() : [])
+  const members =
+    typeof room.getJoinedMembers === 'function'
+      ? room.getJoinedMembers()
+      : room.currentState?.getMembers
+        ? room.currentState.getMembers()
+        : []
   if (!members || members.length !== 2) return false
   const ids = members.map((m: any) => getMatrixId(m.userId)).filter(Boolean)
   if (ids.length !== 2) return false
@@ -116,28 +131,6 @@ const isTetatetchat = (room: any): boolean => {
   const tt = roomName === `#${tid}` || alias.includes(tid)
   if (members.length > 1) room.tetatet = tt
   return tt
-}
-
-// Helper to detect audio MIME type from bytes
-const detectAudioMime = (bytes: Uint8Array): string | null => {
-    if (!bytes || bytes.length < 4) return null
-    const b0 = bytes[0]!, b1 = bytes[1]!, b2 = bytes[2]!, b3 = bytes[3]!
-    // ID3 (MP3)
-    if (b0 === 0x49 && b1 === 0x44 && b2 === 0x33) return 'audio/mpeg'
-    // MP3 (Frame sync - FFFB/FFFA usually)
-    if (b0 === 0xFF && (b1 & 0xE0) === 0xE0) return 'audio/mpeg'
-    // Ogg
-    if (b0 === 0x4F && b1 === 0x67 && b2 === 0x67 && b3 === 0x53) return 'audio/ogg'
-    // WAV
-    if (b0 === 0x52 && b1 === 0x49 && b2 === 0x46 && b3 === 0x46) return 'audio/wav'
-    // AAC (ADTS)
-    if (b0 === 0xFF && (b1 & 0xF0) === 0xF0) return 'audio/aac'
-    // WebM / Matroska (1A 45 DF A3)
-    if (b0 === 0x1A && b1 === 0x45 && b2 === 0xDF && b3 === 0xA3) return 'audio/webm'
-    // FLAC (fLaC)
-    if (b0 === 0x66 && b1 === 0x4C && b2 === 0x61 && b3 === 0x43) return 'audio/flac'
-
-    return null
 }
 
 export const useMessengerStore = defineStore('messenger', () => {
@@ -198,10 +191,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     return null
   }
 
-  const getMatrixAvatarUrl = (
-    mxcUrl?: string | null,
-    size = 40,
-  ): string | undefined => {
+  const getMatrixAvatarUrl = (mxcUrl?: string | null, size = 40): string | undefined => {
     if (!mxcUrl) return undefined
 
     const client = matrixService.getClient()
@@ -262,13 +252,13 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     for (const batch of batches) {
       try {
-        const result = await getByPRC({
+        const result = (await getByPRC({
           method: rpcEndpoints.getUserProfile,
           parameters: [[...batch]],
-          cachehash: Date.now().toString() + Math.random().toString()
-        }) as any
+          cachehash: Date.now().toString() + Math.random().toString(),
+        })) as any
 
-        const profiles = Array.isArray(result) ? result : (result?.data || [])
+        const profiles = Array.isArray(result) ? result : result?.data || []
 
         if (Array.isArray(profiles)) {
           profiles.forEach((profile: UserProfile) => {
@@ -281,10 +271,10 @@ export const useMessengerStore = defineStore('messenger', () => {
         console.error('[MessengerStore] Failed to fetch user profiles batch:', e)
       } finally {
         // Resolve promises for processed addresses to unblock waiters
-        batch.forEach(addr => {
+        batch.forEach((addr) => {
           const resolvers = pendingResolvers.get(addr)
           if (resolvers) {
-            resolvers.forEach(r => r())
+            resolvers.forEach((r) => r())
             pendingResolvers.delete(addr)
           }
         })
@@ -293,12 +283,12 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   const fetchProfiles = (addresses: string[]): Promise<void> => {
-    const missing = addresses.filter(a => !userProfiles.value[a])
+    const missing = addresses.filter((a) => !userProfiles.value[a])
     if (missing.length === 0) return Promise.resolve()
 
     const promises: Promise<void>[] = []
 
-    missing.forEach(a => {
+    missing.forEach((a) => {
       // If not already pending, add to queue
       if (!pendingResolvers.has(a)) {
         pendingResolvers.set(a, [])
@@ -326,11 +316,11 @@ export const useMessengerStore = defineStore('messenger', () => {
       return currentBlockHeight.value
     }
     try {
-      const response = await getByPRC({
+      const response = (await getByPRC({
         method: rpcEndpoints.getNodeInfo,
         parameters: [],
-        options: { auth: false }
-      }) as any
+        options: { auth: false },
+      })) as any
       const data = response?.data || response
       const height = data?.lastblock?.height
       if (typeof height === 'number' && height > 0) {
@@ -338,7 +328,9 @@ export const useMessengerStore = defineStore('messenger', () => {
         currentBlockFetchedAt = now
         return height
       }
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
     return currentBlockHeight.value
   }
 
@@ -371,7 +363,11 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   /** Реакции на событие из room.relations (m.annotation / m.reaction) */
-  const getReactionsForEventId = (room: any, eventId: string, myUserId: string): MessageReaction[] => {
+  const getReactionsForEventId = (
+    room: any,
+    eventId: string,
+    myUserId: string
+  ): MessageReaction[] => {
     if (!room?.relations?.getChildEventsForEvent) return []
     const relations = room.relations.getChildEventsForEvent(eventId, 'm.annotation', 'm.reaction')
     if (!relations?.getSortedAnnotationsByKey) return []
@@ -406,7 +402,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (currentEvents.length < 30) {
       await client.paginateEventTimeline(liveTimeline, {
         backwards: true,
-        limit: 30
+        limit: 30,
       })
     }
   }
@@ -432,7 +428,7 @@ export const useMessengerStore = defineStore('messenger', () => {
 
       const result = await client.paginateEventTimeline(liveTimeline, {
         backwards: true,
-        limit: 30
+        limit: 30,
       })
 
       const finalCount = liveTimeline.getEvents().length
@@ -444,7 +440,7 @@ export const useMessengerStore = defineStore('messenger', () => {
         messages[chatId] = list
         if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')
       }
-    } catch(e) {
+    } catch (e) {
       console.error('[MessengerStore] Failed to load more messages', e)
     } finally {
       isLoadingMore = false
@@ -478,28 +474,34 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (historyEvents.length === 0) {
       const members = room.currentState?.getMembers ? room.currentState.getMembers() : []
       return members
-        .filter((m: any) => m.membership === 'join' || m.membership === 'invite' || m.membership === 'leave')
+        .filter(
+          (m: any) =>
+            m.membership === 'join' || m.membership === 'invite' || m.membership === 'leave'
+        )
         .map((m: any) => m.userId)
     }
-    const history = (historyEvents
-      .map((ev) => {
-        const content = getEventContent(ev)
-        const membership = content?.membership
-        if (membership !== 'join' && membership !== 'invite' && membership !== 'leave') return null
-        const stateKey = typeof ev.getStateKey === 'function'
-          ? ev.getStateKey()
-          : (ev.state_key || ev?.event?.state_key)
-        const sender = getEventSender(ev)
-        const id = membership === 'invite' ? stateKey : sender
-        if (!id) return null
-        return {
-          time: getEventTs(ev) || 1,
-          membership,
-          id
-        }
-      })
-      .filter(Boolean) as Array<{ time: number; membership: string; id: string }>)
-      .sort((a, b) => a.time - b.time)
+    const history = (
+      historyEvents
+        .map((ev) => {
+          const content = getEventContent(ev)
+          const membership = content?.membership
+          if (membership !== 'join' && membership !== 'invite' && membership !== 'leave')
+            return null
+          const stateKey =
+            typeof ev.getStateKey === 'function'
+              ? ev.getStateKey()
+              : ev.state_key || ev?.event?.state_key
+          const sender = getEventSender(ev)
+          const id = membership === 'invite' ? stateKey : sender
+          if (!id) return null
+          return {
+            time: getEventTs(ev) || 1,
+            membership,
+            id,
+          }
+        })
+        .filter(Boolean) as Array<{ time: number; membership: string; id: string }>
+    ).sort((a, b) => a.time - b.time)
     const users = new Map<string, { life: Array<{ start: number; end?: number }> }>()
     history.forEach((h) => {
       if (!users.has(h.id)) users.set(h.id, { life: [] })
@@ -546,17 +548,24 @@ export const useMessengerStore = defineStore('messenger', () => {
    * Находит state-событие `m.room.encryption` со state_key `pcrypto.<sender>.<hash>`.
    * В нём лежит общий ключ группы (зашифрованный per-recipient AES-SIV по EAA-схеме).
    */
-  const findCommonKeyStateEvent = (room: any, senderMatrixIdLocal: string, hash: string): any | null => {
+  const findCommonKeyStateEvent = (
+    room: any,
+    senderMatrixIdLocal: string,
+    hash: string
+  ): any | null => {
     if (!room?.currentState?.getStateEvents) return null
     const stateKey = `pcrypto.${senderMatrixIdLocal}.${hash}`
     const single = room.currentState.getStateEvents('m.room.encryption', stateKey)
     if (single) return single
     const events = room.currentState.getStateEvents('m.room.encryption')
     if (!Array.isArray(events)) return null
-    return events.find((e: any) => {
-      const sk = typeof e.getStateKey === 'function' ? e.getStateKey() : (e.event?.state_key || e.state_key)
-      return sk === stateKey
-    }) || null
+    return (
+      events.find((e: any) => {
+        const sk =
+          typeof e.getStateKey === 'function' ? e.getStateKey() : e.event?.state_key || e.state_key
+        return sk === stateKey
+      }) || null
+    )
   }
 
   /**
@@ -565,16 +574,16 @@ export const useMessengerStore = defineStore('messenger', () => {
    */
   const decryptGroupCommonKey = async (
     stateEvent: any,
-    users: PcryptoUser[],
+    users: PcryptoUser[]
   ): Promise<string | null> => {
     if (!pcryptoService.value || !stateEvent) return null
     const raw = stateEvent.event || stateEvent
-    const senderId = typeof stateEvent.getSender === 'function'
-      ? stateEvent.getSender()
-      : (raw?.sender || raw?.user_id)
-    const stateContent = typeof stateEvent.getContent === 'function'
-      ? stateEvent.getContent()
-      : raw?.content
+    const senderId =
+      typeof stateEvent.getSender === 'function'
+        ? stateEvent.getSender()
+        : raw?.sender || raw?.user_id
+    const stateContent =
+      typeof stateEvent.getContent === 'function' ? stateEvent.getContent() : raw?.content
     if (!stateContent?.keys) return null
     const fakeStateEvent = {
       type: 'm.room.encryption',
@@ -621,7 +630,10 @@ export const useMessengerStore = defineStore('messenger', () => {
           users.push({
             id: memberId,
             keys: localMessengerKeys.value.map((k) => k.public),
-            dbId: address && userProfiles.value[address] ? (userProfiles.value[address] as any).id : undefined,
+            dbId:
+              address && userProfiles.value[address]
+                ? (userProfiles.value[address] as any).id
+                : undefined,
           })
           continue
         }
@@ -635,6 +647,16 @@ export const useMessengerStore = defineStore('messenger', () => {
       }
     }
     return users
+  }
+
+  /**
+   * Подбор `block` для шифрования сообщения в комнате:
+   * для прямых чатов всегда 10 (совместимо с bastyon-chat), для групповых — текущая высота блокчейна.
+   */
+  const pickRoomBlock = async (room: any): Promise<number> => {
+    if (isTetatetchat(room)) return 10
+    const height = await getCurrentBlockHeight()
+    return height || 10
   }
 
   /** md5(<id участников кроме меня, сортировка по dbId>) + "_v13_2" — совместимо с bastyon-chat */
@@ -672,7 +694,9 @@ export const useMessengerStore = defineStore('messenger', () => {
         const senderLocal = getMatrixId(senderId)
         const stateEvent = findCommonKeyStateEvent(room, senderLocal, content.hash)
         if (!stateEvent) {
-          console.warn(`[MessengerStore] Group msg ${eventId}: m.room.encryption state event not found for "pcrypto.${senderLocal}.${content.hash}"`)
+          console.warn(
+            `[MessengerStore] Group msg ${eventId}: m.room.encryption state event not found for "pcrypto.${senderLocal}.${content.hash}"`
+          )
           return null
         }
 
@@ -708,24 +732,35 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     // Check if content itself has 'secrets' (sometimes it's top level?)
     if (!hasSecrets && content.secrets) {
-        secrets = content.secrets
-        hasSecrets = true
+      secrets = content.secrets
+      hasSecrets = true
     }
 
     // Check if body is base64 encoded JSON that contains secrets?
-    if (!hasSecrets && content.body && typeof content.body === 'string' && content.body.startsWith('ey')) {
+    if (
+      !hasSecrets &&
+      content.body &&
+      typeof content.body === 'string' &&
+      content.body.startsWith('ey')
+    ) {
       try {
         const decoded = atob(content.body)
-        if (decoded.startsWith('{') && (decoded.includes('"encrypted"') || (decoded.includes('"keys"') && decoded.includes('"cipher"')))) {
+        if (
+          decoded.startsWith('{') &&
+          (decoded.includes('"encrypted"') ||
+            (decoded.includes('"keys"') && decoded.includes('"cipher"')))
+        ) {
           if (!content.info) content.info = {}
           content.info.secrets = {
             keys: content.body,
-            block: content.block || content.info?.block || (JSON.parse(decoded).block) || 0
+            block: content.block || content.info?.block || JSON.parse(decoded).block || 0,
           }
           secrets = content.info.secrets
           hasSecrets = true
         }
-      } catch (e) {}
+      } catch {
+        /* ignore */
+      }
     }
 
     if (!isEncryptedType && !hasSecrets) {
@@ -789,15 +824,18 @@ export const useMessengerStore = defineStore('messenger', () => {
             users.push({
               id: memberId,
               keys: parseProfileKeys(userProfiles.value[address].k),
-              dbId: (userProfiles.value[address] as any).id
+              dbId: (userProfiles.value[address] as any).id,
             })
             continue
           }
           if (localMessengerKeys.value) {
             users.push({
               id: memberId,
-              keys: localMessengerKeys.value.map(k => k.public),
-              dbId: address && userProfiles.value[address] ? (userProfiles.value[address] as any).id : undefined
+              keys: localMessengerKeys.value.map((k) => k.public),
+              dbId:
+                address && userProfiles.value[address]
+                  ? (userProfiles.value[address] as any).id
+                  : undefined,
             })
             continue
           }
@@ -807,10 +845,10 @@ export const useMessengerStore = defineStore('messenger', () => {
           users.push({
             id: memberId,
             keys: parseProfileKeys(userProfiles.value[address].k),
-            dbId: (userProfiles.value[address] as any).id
+            dbId: (userProfiles.value[address] as any).id,
           })
         } else {
-             // console.warn(`[MessengerStore] Profile or keys missing for ${address} (${member.userId})`)
+          // console.warn(`[MessengerStore] Profile or keys missing for ${address} (${member.userId})`)
         }
       }
 
@@ -829,7 +867,7 @@ export const useMessengerStore = defineStore('messenger', () => {
           const dbIdA = a.dbId || 0
           const dbIdB = b.dbId || 0
           if (dbIdA !== dbIdB) {
-              return dbIdA - dbIdB
+            return dbIdA - dbIdB
           }
           return a.id.localeCompare(b.id)
         })
@@ -838,25 +876,25 @@ export const useMessengerStore = defineStore('messenger', () => {
       // If we are in a DM (2 people), but found only 1 user (me), decryption will fail
       // We must ensure we have keys for the sender if it's not me
       const sender = getEventSender(event)
-      if (!users.find(u => u.id === sender)) {
+      if (!users.find((u) => u.id === sender)) {
         console.warn(`[MessengerStore] Missing keys for sender ${sender} in event ${eventId}`)
         // We can't decrypt without sender's public key (to derive shared secret)
         // Try to fetch sender profile explicitly if missed
         const senderAddr = getAddressFromMatrixId(sender)
         if (senderAddr) {
-             await fetchProfiles([senderAddr])
-             if (userProfiles.value[senderAddr]) {
-                 const p = userProfiles.value[senderAddr]
-                 users.push({
-                     id: sender,
-                     keys: parseProfileKeys(p.k),
-                     dbId: (p as any).id
-                 })
-             }
+          await fetchProfiles([senderAddr])
+          if (userProfiles.value[senderAddr]) {
+            const p = userProfiles.value[senderAddr]
+            users.push({
+              id: sender,
+              keys: parseProfileKeys(p.k),
+              dbId: (p as any).id,
+            })
+          }
         }
 
-        if (!users.find(u => u.id === sender)) {
-             return null
+        if (!users.find((u) => u.id === sender)) {
+          return null
         }
       }
 
@@ -880,7 +918,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     const eventId = getEventId(event)
     const content = getEventContent(event)
     let text = content.body || ''
-    let type: 'text' | 'audio' | 'image' | 'file' = 'text'
+    let type: 'text' | 'audio' | 'image' | 'video' | 'file' = 'text'
     let url: string | undefined = undefined
     let info: any = undefined
     let finalContent = content
@@ -894,6 +932,12 @@ export const useMessengerStore = defineStore('messenger', () => {
       return null
     }
 
+    const resolveMediaUrl = (mxcOrHttp: string): string => {
+      if (mxcOrHttp.startsWith('http')) return mxcOrHttp
+      const client = matrixService.getClient()
+      if (client && client.mxcUrlToHttp) return client.mxcUrlToHttp(mxcOrHttp) || mxcOrHttp
+      return mxcOrHttp
+    }
 
     if (content.msgtype === 'm.audio') {
       type = 'audio'
@@ -905,16 +949,7 @@ export const useMessengerStore = defineStore('messenger', () => {
         (typeof content.body === 'string' && content.body.startsWith('http') ? content.body : null)
 
       if (typeof audioUrl === 'string' && audioUrl.length > 0) {
-        if (audioUrl.startsWith('http')) {
-          url = audioUrl
-        } else {
-          const client = matrixService.getClient()
-          if (client && client.mxcUrlToHttp) {
-            url = client.mxcUrlToHttp(audioUrl)
-          } else {
-            url = audioUrl
-          }
-        }
+        url = resolveMediaUrl(audioUrl)
       }
 
       // If we have a URL, let's try to fetch it as a blob if it's an encrypted content type
@@ -924,30 +959,147 @@ export const useMessengerStore = defineStore('messenger', () => {
       // We need to fetch it as blob and create an object URL with correct type.
 
       if (url && url.startsWith('http')) {
-         // We'll attach a special flag or handle this in the component
-         // But wait, we can't easily do async fetch here for every message in the list efficiently
-         // Ideally, the component should handle the blob fetching if needed.
-         // Let's pass the URL as is, and update the component to handle 'encrypted/' types or fetch errors.
-
-         // However, we can try to "fix" the URL if it's from our known server
-         // But the issue is likely the Content-Type header 'encrypted/audio/mpeg'
+        // We'll attach a special flag or handle this in the component
+        // But wait, we can't easily do async fetch here for every message in the list efficiently
+        // Ideally, the component should handle the blob fetching if needed.
+        // Let's pass the URL as is, and update the component to handle 'encrypted/' types or fetch errors.
+        // However, we can try to "fix" the URL if it's from our known server
+        // But the issue is likely the Content-Type header 'encrypted/audio/mpeg'
       }
 
       info = content.info
       // Pass file info for decryption if present
       if (content.file) {
-          if (!info) info = {}
-          info.file = content.file
+        if (!info) info = {}
+        info.file = content.file
       }
+    }
+
+    if (content.msgtype === 'm.image') {
+      type = 'image'
+      const imageUrl =
+        extractUrl(content.url) ||
+        extractUrl(content.file?.url) ||
+        extractUrl(content.info?.url) ||
+        extractUrl(content.info?.file?.url) ||
+        (typeof content.body === 'string' && content.body.startsWith('http') ? content.body : null)
+
+      if (typeof imageUrl === 'string' && imageUrl.length > 0) {
+        url = resolveMediaUrl(imageUrl)
+      }
+
+      info = content.info || {}
+      if (content.file && !info.file) info.file = content.file
+      // Подменяем text на имя файла для отображения tooltip-а / fallback
+      if (!info.name && typeof content.body === 'string' && !content.body.startsWith('http')) {
+        info.name = content.body
+      }
+    }
+
+    if (content.msgtype === 'm.video') {
+      type = 'video'
+      const videoUrl =
+        extractUrl(content.url) ||
+        extractUrl(content.file?.url) ||
+        extractUrl(content.info?.url) ||
+        extractUrl(content.info?.file?.url) ||
+        (typeof content.body === 'string' && content.body.startsWith('http') ? content.body : null)
+
+      if (typeof videoUrl === 'string' && videoUrl.length > 0) {
+        url = resolveMediaUrl(videoUrl)
+      }
+
+      info = content.info || {}
+      if (content.file && !info.file) info.file = content.file
+      // Резолвим mxc poster в http для немедленного отображения
+      if (typeof info.thumbnail_url === 'string' && info.thumbnail_url.startsWith('mxc://')) {
+        info.posterUrl = resolveMediaUrl(info.thumbnail_url)
+      }
+      if (!info.name && typeof content.body === 'string' && !content.body.startsWith('http')) {
+        info.name = content.body
+      }
+    }
+
+    // PKOIN-донат — обычное m.text с extra-полем `pocketnet_transaction`.
+    // Сторонние клиенты увидят body, наш — карточку. Учитываем только текстовые msgtype,
+    // чтобы случайно не сбить медиа-сообщения с тем же extra-полем.
+    if (
+      content.pocketnet_transaction &&
+      typeof content.pocketnet_transaction === 'object' &&
+      (content.msgtype === 'm.text' || content.msgtype === 'm.notice' || !content.msgtype)
+    ) {
+      type = 'transaction'
+      info = info || {}
+      info.transaction = content.pocketnet_transaction
+      text = typeof content.body === 'string' ? content.body : ''
+    }
+
+    if (content.msgtype === 'm.file') {
+      type = 'file'
+
+      // bastyon-chat / forta.chat кладут весь fileInfo в content.body как JSON-строку.
+      // Пробуем распарсить — если получилось, оттуда достаём name/type/size/url/secrets.
+      let parsedBody: {
+        name?: string
+        type?: string
+        size?: number
+        url?: string
+        secrets?: any
+      } | null = null
+      if (typeof content.body === 'string' && content.body.startsWith('{')) {
+        try {
+          const obj = JSON.parse(content.body)
+          if (obj && typeof obj === 'object') parsedBody = obj
+        } catch (_e) {
+          // body — не JSON; пойдём по стандартному Matrix-пути ниже
+        }
+      }
+
+      const fileUrl =
+        extractUrl(parsedBody?.url) ||
+        extractUrl(content.url) ||
+        extractUrl(content.file?.url) ||
+        extractUrl(content.info?.url) ||
+        extractUrl(content.info?.file?.url) ||
+        (typeof content.body === 'string' && content.body.startsWith('http') ? content.body : null)
+
+      if (typeof fileUrl === 'string' && fileUrl.length > 0) {
+        url = resolveMediaUrl(fileUrl)
+      }
+
+      info = content.info || {}
+      if (content.file && !info.file) info.file = content.file
+
+      // Имя — приоритет: parsedBody.name → content.filename → content.body (если не JSON/URL) → 'file'
+      const candidateName =
+        parsedBody?.name ||
+        (typeof content.filename === 'string' ? content.filename : null) ||
+        (typeof content.body === 'string' &&
+        !content.body.startsWith('http') &&
+        !content.body.startsWith('{')
+          ? content.body
+          : null)
+      if (candidateName && !info.name) info.name = candidateName
+
+      // Размер / MIME из parsedBody, если в info ещё не было
+      if (parsedBody?.size && !info.size) info.size = parsedBody.size
+      if (parsedBody?.type && !info.mimetype) info.mimetype = parsedBody.type
+      if (parsedBody?.secrets && !info.secrets) info.secrets = parsedBody.secrets
     }
 
     // Check if we should try decrypting
     const isEncryptedType = getEventType(event) === 'm.room.encrypted'
     // Группа: m.room.message с body=hex + content.hash → bastyon-chat group protocol.
-    const isGroupEncrypted = content.msgtype !== 'm.audio' && isGroupEncryptedContent(content)
+    const isGroupEncrypted =
+      content.msgtype !== 'm.audio' &&
+      content.msgtype !== 'm.image' &&
+      content.msgtype !== 'm.video' &&
+      content.msgtype !== 'm.file' &&
+      isGroupEncryptedContent(content)
 
     // Check nested secrets or if body itself is a JSON with 'encrypted'
-    let hasSecrets = (content.info && content.info.secrets) || (content.pbody && content.pbody.secrets)
+    let hasSecrets =
+      (content.info && content.info.secrets) || (content.pbody && content.pbody.secrets)
 
     // Also check if content itself has 'secrets' (sometimes it's top level?)
     if (!hasSecrets && content.secrets) hasSecrets = content.secrets
@@ -966,33 +1118,46 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     // Check if body is a URL (sometimes clients send audio URL as body for compatibility)
     if (content.msgtype === 'm.audio' && content.body && content.body.startsWith('http')) {
-        // Do nothing here, it will be handled in main logic
-    }
-    else if (!hasSecrets && !isGroupEncrypted && content.body && typeof content.body === 'string' && content.body.startsWith('ey')) {
+      // Do nothing here, it will be handled in main logic
+    } else if (
+      !hasSecrets &&
+      !isGroupEncrypted &&
+      content.body &&
+      typeof content.body === 'string' &&
+      content.body.startsWith('ey')
+    ) {
       try {
         // Check if it parses to JSON and has keys looking like our addresses/hex?
         const decoded = atob(content.body)
         // Check for standard encrypted fields: 'encrypted' (old), or 'cipher'/'keys'/'iv' (new)
-        if (decoded.startsWith('{') && (decoded.includes('"encrypted"') || (decoded.includes('"keys"') && decoded.includes('"cipher"')))) {
+        if (
+          decoded.startsWith('{') &&
+          (decoded.includes('"encrypted"') ||
+            (decoded.includes('"keys"') && decoded.includes('"cipher"')))
+        ) {
           // It looks like secrets!
 
           // Try to extract block from the JSON if present
           let extractedBlock = 0
           try {
-             const json = JSON.parse(decoded)
-             if (json.block) extractedBlock = json.block
-          } catch (e) {}
+            const json = JSON.parse(decoded)
+            if (json.block) extractedBlock = json.block
+          } catch {
+            /* ignore */
+          }
 
           // Construct a fake 'secrets' object for tryDecrypt to use
           // Let's inject it into content so tryDecrypt finds it
           if (!content.info) content.info = {}
           content.info.secrets = {
             keys: content.body,
-            block: content.block || extractedBlock
+            block: content.block || extractedBlock,
           }
           hasSecrets = content.info.secrets
         }
-      } catch (e) {}
+      } catch {
+        /* ignore */
+      }
     }
 
     const shouldDecrypt = (isEncryptedType || hasSecrets || isGroupEncrypted) && !skipDecryption
@@ -1005,31 +1170,36 @@ export const useMessengerStore = defineStore('messenger', () => {
           const parsed = JSON.parse(decrypted)
           if (parsed && typeof parsed === 'object') {
             finalContent = parsed
-            if (parsed.msgtype === 'm.audio') {
-              type = 'audio'
+            if (
+              parsed.msgtype === 'm.audio' ||
+              parsed.msgtype === 'm.image' ||
+              parsed.msgtype === 'm.video' ||
+              parsed.msgtype === 'm.file'
+            ) {
+              type =
+                parsed.msgtype === 'm.image'
+                  ? 'image'
+                  : parsed.msgtype === 'm.video'
+                    ? 'video'
+                    : parsed.msgtype === 'm.file'
+                      ? 'file'
+                      : 'audio'
               const pUrl =
                 extractUrl(parsed.url) ||
                 extractUrl(parsed.file?.url) ||
                 extractUrl(parsed.info?.file?.url) ||
                 extractUrl(parsed.info?.url) ||
-                (typeof parsed.body === 'string' && parsed.body.startsWith('http') ? parsed.body : null)
+                (typeof parsed.body === 'string' && parsed.body.startsWith('http')
+                  ? parsed.body
+                  : null)
               if (typeof pUrl === 'string' && pUrl.length > 0) {
-                if (pUrl.startsWith('http')) {
-                  url = pUrl
-                } else {
-                  const client = matrixService.getClient()
-                  if (client && client.mxcUrlToHttp) {
-                    url = client.mxcUrlToHttp(pUrl)
-                  } else {
-                    url = pUrl
-                  }
-                }
+                url = resolveMediaUrl(pUrl)
               }
 
               if (parsed.info) info = parsed.info
               if (parsed.file) {
-                  if (!info) info = {}
-                  info.file = parsed.file
+                if (!info) info = {}
+                info.file = parsed.file
               }
               text = parsed.body || ''
             } else if (parsed.body) {
@@ -1063,7 +1233,12 @@ export const useMessengerStore = defineStore('messenger', () => {
     } else if ((isEncryptedType || hasSecrets || isGroupEncrypted) && skipDecryption) {
       // In list view (dialogs), show placeholder or body if available (but body is usually encrypted text)
       // Actually, Matrix spec says body contains "readable" fallback, but in our case it might be the ciphertext or 'Encrypted message' string
-      if (!isGroupEncrypted && content.body && !content.body.includes('***') && content.body.length < 100) {
+      if (
+        !isGroupEncrypted &&
+        content.body &&
+        !content.body.includes('***') &&
+        content.body.length < 100
+      ) {
         // If body is short and doesn't look like ciphertext (ciphertext is usually long base64), maybe show it?
         // But usually it IS ciphertext or "Encrypted message"
         text = content.body
@@ -1108,7 +1283,7 @@ export const useMessengerStore = defineStore('messenger', () => {
       rawContent: finalContent,
       timestamp: getEventTs(event),
       read: false,
-      status: 'sent'
+      status: 'sent',
     }
   }
 
@@ -1136,7 +1311,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     const startedAt = Date.now()
 
     while (!pcryptoService.value && Date.now() - startedAt < timeoutMs) {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
     }
 
     return !!pcryptoService.value
@@ -1150,7 +1325,9 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     if (!otherMember && room.currentState?.getMembers) {
       const allMembers = room.currentState.getMembers()
-      otherMember = allMembers.find((m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite'))
+      otherMember = allMembers.find(
+        (m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
+      )
     }
 
     return otherMember ? otherMember.userId : room.roomId || null
@@ -1160,7 +1337,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (room?.loadMembersIfNeeded) {
       try {
         await room.loadMembersIfNeeded()
-      } catch (e) {}
+      } catch {
+        /* ignore */
+      }
     }
 
     const timelineEvents = getRoomTimelineEvents(room)
@@ -1178,7 +1357,9 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     if (!otherMember) {
       const allMembers = room.currentState.getMembers()
-      otherMember = allMembers.find((m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite'))
+      otherMember = allMembers.find(
+        (m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
+      )
     }
 
     const roomName = room.name || (otherMember ? otherMember.name : 'Чат')
@@ -1191,9 +1372,9 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     // 1. If Group, prioritize room avatar
     if (!isDirect) {
-        if (room.getAvatarUrl) {
-            avatarUrl = room.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
-        }
+      if (room.getAvatarUrl) {
+        avatarUrl = room.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
+      }
     }
 
     // 2. If DM or no room avatar, try member avatar
@@ -1239,8 +1420,7 @@ export const useMessengerStore = defineStore('messenger', () => {
         }
         const badges = (p as any)?.badges
         if (Array.isArray(badges)) {
-          verified = badges.includes('verificated') ||
-            badges.includes('verified')
+          verified = badges.includes('verificated') || badges.includes('verified')
         }
         if (!verified) {
           const flags = (p as any)?.flags
@@ -1258,7 +1438,9 @@ export const useMessengerStore = defineStore('messenger', () => {
           const matrixAvatar = getMatrixAvatarUrl(profile?.avatar_url, 40)
           if (matrixAvatar) avatar = matrixAvatar
           if (profile?.displayname && !name) name = profile.displayname
-        } catch (e) {}
+        } catch {
+          /* ignore */
+        }
       }
     }
 
@@ -1292,11 +1474,11 @@ export const useMessengerStore = defineStore('messenger', () => {
           id: partnerId || room.roomId,
           name: name,
           avatar: avatar,
-          verified: verified
+          verified: verified,
         },
         unreadCount: 0,
         lastMessage: lastMessage,
-        createdAt
+        createdAt,
       }
     }
 
@@ -1312,11 +1494,11 @@ export const useMessengerStore = defineStore('messenger', () => {
         id: partnerId || room.roomId,
         name: name,
         avatar: avatar,
-        verified: verified
+        verified: verified,
       },
       unreadCount: unreadCount || 0,
       lastMessage: lastMessage,
-      createdAt
+      createdAt,
     }
   }
 
@@ -1346,13 +1528,15 @@ export const useMessengerStore = defineStore('messenger', () => {
 
         const newName = d.partner?.name?.trim()
         const isPlaceholderName = !newName || newName === 'Empty Room' || newName === 'Unknown'
-        const stableName = isPlaceholderName && prev.partner.name ? prev.partner.name : d.partner?.name
+        const stableName =
+          isPlaceholderName && prev.partner.name ? prev.partner.name : d.partner?.name
 
         // Если в новом проходе аватарки нет — используем предыдущую. Если есть и совпадает —
         // оставляем ту же строку-ссылку, чтобы prop у Avatar не «менялся» и img не дёргался.
         let stableAvatar = d.partner?.avatar
         if (!stableAvatar && prev.partner.avatar) stableAvatar = prev.partner.avatar
-        else if (stableAvatar && prev.partner.avatar === stableAvatar) stableAvatar = prev.partner.avatar
+        else if (stableAvatar && prev.partner.avatar === stableAvatar)
+          stableAvatar = prev.partner.avatar
 
         if (stableName !== d.partner?.name || stableAvatar !== d.partner?.avatar) {
           return {
@@ -1461,13 +1645,15 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     if (!commonSecret) {
       const rand = crypto.getRandomValues(new Uint8Array(32))
-      commonSecret = Array.from(rand).map((b) => b.toString(16).padStart(2, '0')).join('')
+      commonSecret = Array.from(rand)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
       const encrypted = await pcryptoService.value.encryptKey(commonSecret, users, block, version)
       await matrixService.sendStateEvent(
         chatId,
         'm.room.encryption',
         { version, hash, block: encrypted.block, keys: encrypted.keys },
-        `pcrypto.${myLocal}.${hash}`,
+        `pcrypto.${myLocal}.${hash}`
       )
     }
 
@@ -1511,7 +1697,11 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
   }
 
-  const sendAudio = async (chatId: string, blob: Blob, meta?: { duration?: number; name?: string }) => {
+  const sendAudio = async (
+    chatId: string,
+    blob: Blob,
+    meta?: { duration?: number; name?: string }
+  ) => {
     try {
       const client = matrixService.getClient()
       if (!client) throw new Error('Matrix client not initialized')
@@ -1540,107 +1730,33 @@ export const useMessengerStore = defineStore('messenger', () => {
           mimetype: (blob as any).type || 'audio/webm',
           size: blob.size,
           duration: meta?.duration || 0,
-          uploadProgress: 0
+          uploadProgress: 0,
         },
         rawContent: null,
         timestamp: now,
         read: true,
-        status: 'sending'
+        status: 'sending',
       }
 
       if (!messages[chatId]) messages[chatId] = []
       messages[chatId].push(tempMessage)
 
       const onProgress = (loaded: number, total?: number) => {
-        const msg = messages[chatId]?.find(m => m.id === tempId)
+        const msg = messages[chatId]?.find((m) => m.id === tempId)
         if (msg && msg.info) {
-          const percent = total ? Math.min(100, Math.round((loaded / total) * 100)) : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
+          const percent = total
+            ? Math.min(100, Math.round((loaded / total) * 100))
+            : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
           msg.info.uploadProgress = percent
         }
       }
 
       const memberIds = getOrderedMemberIds(room, now)
-      const addressesToFetch: string[] = []
-      for (const memberId of memberIds) {
-        const address = getAddressFromMatrixId(memberId)
-        if (address && !userProfiles.value[address]) addressesToFetch.push(address)
-      }
-      if (addressesToFetch.length > 0) await fetchProfiles(addressesToFetch)
+      const users = await collectGroupUsers(memberIds)
+      const block = await pickRoomBlock(room)
 
-      const users: PcryptoUser[] = []
-      const myMatrixId = matrixService.getClient()?.getUserId()
-      for (const memberId of memberIds) {
-        const address = getAddressFromMatrixId(memberId)
-        const isMe = !!myMatrixId && memberId === myMatrixId
-        if (isMe) {
-          if (address && userProfiles.value[address]?.k) {
-            users.push({
-              id: memberId,
-              keys: parseProfileKeys(userProfiles.value[address].k),
-              dbId: (userProfiles.value[address] as any).id
-            })
-            continue
-          }
-          if (localMessengerKeys.value) {
-            users.push({
-              id: memberId,
-              keys: localMessengerKeys.value.map(k => k.public),
-              dbId: address && userProfiles.value[address] ? (userProfiles.value[address] as any).id : undefined
-            })
-            continue
-          }
-        }
-        if (address && userProfiles.value[address]?.k) {
-          users.push({
-            id: memberId,
-            keys: parseProfileKeys(userProfiles.value[address].k),
-            dbId: (userProfiles.value[address] as any).id
-          })
-        }
-      }
-
-      const isDirect = isTetatetchat(room)
-      let block = 0
-      if (isDirect) {
-        block = 10
-      } else {
-        const b = await getCurrentBlockHeight()
-        block = b || 10
-      }
-
-      const enc = new TextEncoder()
-      const rand = crypto.getRandomValues(new Uint8Array(32))
-      const secretStr = Array.from(rand).map(b => b.toString(16).padStart(2, '0')).join('')
-      const keyMaterial = await window.crypto.subtle.importKey(
-        'raw',
-        enc.encode(secretStr),
-        'PBKDF2',
-        false,
-        ['deriveBits', 'deriveKey']
-      )
-      const derivedKey = await window.crypto.subtle.deriveKey(
-        {
-          name: 'PBKDF2',
-          salt: enc.encode('matrix.pocketnet'),
-          iterations: 10000,
-          hash: 'SHA-256'
-        },
-        keyMaterial,
-        { name: 'AES-CBC', length: 256 },
-        true,
-        ['encrypt', 'decrypt']
-      )
-      const iv = new Uint8Array([19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34])
-      const plainBuffer = await blob.arrayBuffer()
-      const cipherBuffer = await window.crypto.subtle.encrypt(
-        { name: 'AES-CBC', iv },
-        derivedKey,
-        plainBuffer
-      )
-      const encryptedBlob = new Blob([cipherBuffer], { type: 'application/octet-stream' })
-
-      const version = 2
-      const secrets = await pcryptoService.value!.encryptKey(secretStr, users, block, version)
+      const { encryptedBlob, secretStr } = await encryptBlobWithRandomKey(blob)
+      const secrets = await wrapKeyForRoom(pcryptoService.value!, secretStr, users, block)
 
       await matrixService.sendAudio(
         chatId,
@@ -1651,19 +1767,21 @@ export const useMessengerStore = defineStore('messenger', () => {
           duration: meta?.duration || 0,
           size: encryptedBlob.size,
           secrets,
-          block
+          block,
         },
         onProgress
       )
 
-      const idx = messages[chatId]?.findIndex(m => m.id === tempId)
+      const idx = messages[chatId]?.findIndex((m) => m.id === tempId)
       if (typeof idx === 'number' && idx >= 0) {
         messages[chatId].splice(idx, 1)
       }
 
       try {
         URL.revokeObjectURL(objectUrl)
-      } catch (_e) {}
+      } catch {
+        /* ignore */
+      }
     } catch (e) {
       console.error('[MessengerStore] Failed to send audio:', e)
       // Mark temp message failed
@@ -1674,6 +1792,521 @@ export const useMessengerStore = defineStore('messenger', () => {
           last.status = 'failed'
         }
       }
+    }
+  }
+
+  /**
+   * Извлекает intrinsic width/height картинки через временный `<img>`.
+   * Возвращает null, если файл не декодируется как картинка.
+   */
+  const extractImageDimensions = (blob: Blob): Promise<{ w: number; h: number } | null> => {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(blob)
+      const img = new Image()
+      img.onload = () => {
+        const w = img.naturalWidth || img.width
+        const h = img.naturalHeight || img.height
+        URL.revokeObjectURL(url)
+        resolve(w && h ? { w, h } : null)
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        resolve(null)
+      }
+      img.src = url
+    })
+  }
+
+  /**
+   * Лимиты размеров согласованы с bastyon-chat (input/index.js:141, 163):
+   *  - фото:  100 МБ
+   *  - файлы:  25 МБ
+   * Тот же лимит применяется к видео (которые сейчас уходят как m.file).
+   */
+  const IMAGE_SIZE_LIMIT_BYTES = 100 * 1024 * 1024
+  const FILE_SIZE_LIMIT_BYTES = 25 * 1024 * 1024
+
+  const sendImage = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
+    try {
+      if (file.size > IMAGE_SIZE_LIMIT_BYTES) {
+        console.error(
+          '[MessengerStore] Image too large:',
+          file.size,
+          'limit:',
+          IMAGE_SIZE_LIMIT_BYTES
+        )
+        // TODO: surface to user via UI banner / toast
+        return
+      }
+
+      const client = matrixService.getClient()
+      if (!client) throw new Error('Matrix client not initialized')
+
+      ensurePcryptoInitialized()
+      if (!pcryptoService.value && isInitInProgress.value) await waitForPcrypto()
+
+      const room = matrixService.getRoom(chatId)
+      if (!room) throw new Error('Room not found')
+      await room.loadMembersIfNeeded?.()
+
+      const mimetype = (file as any).type || 'image/jpeg'
+      const fileName = (file as any).name || meta?.name || 'image'
+      const dims = await extractImageDimensions(file)
+      const objectUrl = URL.createObjectURL(file)
+      const tempId = 'local-' + Math.random().toString(36).slice(2)
+      const now = Date.now()
+
+      const tempMessage: Message = {
+        id: tempId,
+        chatId,
+        senderId: currentUser.value.id,
+        senderName: currentUser.value.name,
+        text: '',
+        type: 'image',
+        url: objectUrl,
+        info: {
+          mimetype,
+          size: file.size,
+          w: dims?.w,
+          h: dims?.h,
+          uploadProgress: 0,
+        },
+        rawContent: null,
+        timestamp: now,
+        read: true,
+        status: 'sending',
+      }
+
+      if (!messages[chatId]) messages[chatId] = []
+      messages[chatId].push(tempMessage)
+
+      const onProgress = (loaded: number, total?: number) => {
+        const msg = messages[chatId]?.find((m) => m.id === tempId)
+        if (msg && msg.info) {
+          const percent = total
+            ? Math.min(100, Math.round((loaded / total) * 100))
+            : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
+          msg.info.uploadProgress = percent
+        }
+      }
+
+      const memberIds = getOrderedMemberIds(room, now)
+      const users = await collectGroupUsers(memberIds)
+      const block = await pickRoomBlock(room)
+
+      const { encryptedBlob, secretStr } = await encryptBlobWithRandomKey(file)
+      const secrets = await wrapKeyForRoom(pcryptoService.value!, secretStr, users, block)
+
+      await matrixService.sendImage(
+        chatId,
+        {
+          blob: encryptedBlob,
+          name: fileName,
+          mimetype,
+          width: dims?.w,
+          height: dims?.h,
+          size: encryptedBlob.size,
+          secrets,
+          block,
+        },
+        onProgress
+      )
+
+      const idx = messages[chatId]?.findIndex((m) => m.id === tempId)
+      if (typeof idx === 'number' && idx >= 0) messages[chatId].splice(idx, 1)
+
+      try {
+        URL.revokeObjectURL(objectUrl)
+      } catch {
+        /* ignore */
+      }
+    } catch (e) {
+      console.error('[MessengerStore] Failed to send image:', e)
+      const arr = messages[chatId]
+      if (arr) {
+        const last = arr[arr.length - 1]
+        if (last && last.status === 'sending' && last.type === 'image') last.status = 'failed'
+      }
+    }
+  }
+
+  /**
+   * Извлекает duration (сек) + размеры видео + первый кадр как poster blob (JPEG).
+   * Возвращает null для duration/dims если не декодируется, и null для poster если не удалось снять кадр.
+   * Poster в первой итерации НЕ шифруется — он отправляется как обычный mxc-картинка
+   * через info.thumbnail_url. Так клиенты видят превью до расшифровки видео.
+   */
+  const extractVideoMetadata = (
+    blob: Blob,
+    maxThumbDim = 768
+  ): Promise<{ duration: number; w: number; h: number; posterBlob: Blob | null }> => {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(blob)
+      const video = document.createElement('video')
+      video.preload = 'auto'
+      video.muted = true
+      video.playsInline = true
+      // На некоторых платформах требуется crossOrigin для canvas.toBlob
+      video.crossOrigin = 'anonymous'
+      let done = false
+      const finalize = (result: {
+        duration: number
+        w: number
+        h: number
+        posterBlob: Blob | null
+      }) => {
+        if (done) return
+        done = true
+        URL.revokeObjectURL(url)
+        resolve(result)
+      }
+      video.onerror = () => finalize({ duration: 0, w: 0, h: 0, posterBlob: null })
+      video.onloadedmetadata = () => {
+        const duration = isFinite(video.duration) ? video.duration : 0
+        const w = video.videoWidth || 0
+        const h = video.videoHeight || 0
+        if (!w || !h) return finalize({ duration, w: 0, h: 0, posterBlob: null })
+        // Seek в небольшую позицию, чтобы получить кадр (а не чёрный начальный кадр)
+        const seekTo = Math.min(Math.max(0.1, duration * 0.05), 1.5)
+        const onSeeked = () => {
+          try {
+            const scale = Math.min(1, maxThumbDim / Math.max(w, h))
+            const tw = Math.max(1, Math.round(w * scale))
+            const th = Math.max(1, Math.round(h * scale))
+            const canvas = document.createElement('canvas')
+            canvas.width = tw
+            canvas.height = th
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return finalize({ duration, w, h, posterBlob: null })
+            ctx.drawImage(video, 0, 0, tw, th)
+            canvas.toBlob((b) => finalize({ duration, w, h, posterBlob: b }), 'image/jpeg', 0.7)
+          } catch (_e) {
+            finalize({ duration, w, h, posterBlob: null })
+          }
+        }
+        video.addEventListener('seeked', onSeeked, { once: true })
+        try {
+          video.currentTime = seekTo
+        } catch (_e) {
+          finalize({ duration, w, h, posterBlob: null })
+        }
+      }
+      video.src = url
+      // Браузеры требуют load() для применения src
+      try {
+        video.load()
+      } catch {
+        /* ignore */
+      }
+    })
+  }
+
+  const sendVideo = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
+    try {
+      const client = matrixService.getClient()
+      if (!client) throw new Error('Matrix client not initialized')
+
+      ensurePcryptoInitialized()
+      if (!pcryptoService.value && isInitInProgress.value) await waitForPcrypto()
+
+      const room = matrixService.getRoom(chatId)
+      if (!room) throw new Error('Room not found')
+      await room.loadMembersIfNeeded?.()
+
+      const mimetype = (file as any).type || 'video/mp4'
+      const fileName = (file as any).name || meta?.name || 'video'
+      const { duration, w, h, posterBlob } = await extractVideoMetadata(file)
+      const objectUrl = URL.createObjectURL(file)
+      const posterLocalUrl = posterBlob ? URL.createObjectURL(posterBlob) : null
+      const tempId = 'local-' + Math.random().toString(36).slice(2)
+      const now = Date.now()
+
+      const tempMessage: Message = {
+        id: tempId,
+        chatId,
+        senderId: currentUser.value.id,
+        senderName: currentUser.value.name,
+        text: '',
+        type: 'video',
+        url: objectUrl,
+        info: {
+          mimetype,
+          size: file.size,
+          duration: duration ? Math.round(duration * 1000) : undefined,
+          w: w || undefined,
+          h: h || undefined,
+          posterUrl: posterLocalUrl, // локальный preview во время upload
+          uploadProgress: 0,
+        },
+        rawContent: null,
+        timestamp: now,
+        read: true,
+        status: 'sending',
+      }
+
+      if (!messages[chatId]) messages[chatId] = []
+      messages[chatId].push(tempMessage)
+
+      const onProgress = (loaded: number, total?: number) => {
+        const msg = messages[chatId]?.find((m) => m.id === tempId)
+        if (msg && msg.info) {
+          const percent = total
+            ? Math.min(100, Math.round((loaded / total) * 100))
+            : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
+          msg.info.uploadProgress = percent
+        }
+      }
+
+      const memberIds = getOrderedMemberIds(room, now)
+      const users = await collectGroupUsers(memberIds)
+      const block = await pickRoomBlock(room)
+
+      // Параллельно: загружаем poster (без шифрования) и шифруем основное видео
+      const [posterMxcUrl, encryptedVideo] = await Promise.all([
+        posterBlob
+          ? matrixService
+              .uploadContent(posterBlob, { name: 'poster.jpg', type: 'image/jpeg' })
+              .catch(() => null)
+          : Promise.resolve(null),
+        encryptBlobWithRandomKey(file),
+      ])
+
+      const { encryptedBlob, secretStr } = encryptedVideo
+      const secrets = await wrapKeyForRoom(pcryptoService.value!, secretStr, users, block)
+
+      await matrixService.sendVideo(
+        chatId,
+        {
+          blob: encryptedBlob,
+          name: fileName,
+          mimetype,
+          duration,
+          width: w || undefined,
+          height: h || undefined,
+          size: encryptedBlob.size,
+          thumbnailUrl: posterMxcUrl || undefined,
+          thumbnailMimetype: posterBlob?.type || 'image/jpeg',
+          thumbnailSize: posterBlob?.size,
+          secrets,
+          block,
+        },
+        onProgress
+      )
+
+      const idx = messages[chatId]?.findIndex((m) => m.id === tempId)
+      if (typeof idx === 'number' && idx >= 0) messages[chatId].splice(idx, 1)
+
+      try {
+        URL.revokeObjectURL(objectUrl)
+      } catch {
+        /* ignore */
+      }
+      try {
+        if (posterLocalUrl) URL.revokeObjectURL(posterLocalUrl)
+      } catch {
+        /* ignore */
+      }
+    } catch (e) {
+      console.error('[MessengerStore] Failed to send video:', e)
+      const arr = messages[chatId]
+      if (arr) {
+        const last = arr[arr.length - 1]
+        if (last && last.status === 'sending' && last.type === 'video') last.status = 'failed'
+      }
+    }
+  }
+
+  const sendFile = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
+    try {
+      if (file.size > FILE_SIZE_LIMIT_BYTES) {
+        console.error(
+          '[MessengerStore] File too large:',
+          file.size,
+          'limit:',
+          FILE_SIZE_LIMIT_BYTES
+        )
+        // TODO: surface to user via UI banner / toast (PR с UX-сообщениями)
+        return
+      }
+
+      const client = matrixService.getClient()
+      if (!client) throw new Error('Matrix client not initialized')
+
+      ensurePcryptoInitialized()
+      if (!pcryptoService.value && isInitInProgress.value) await waitForPcrypto()
+
+      const room = matrixService.getRoom(chatId)
+      if (!room) throw new Error('Room not found')
+      await room.loadMembersIfNeeded?.()
+
+      const mimetype = (file as any).type || 'application/octet-stream'
+      const fileName = (file as any).name || meta?.name || 'file'
+      const tempId = 'local-' + Math.random().toString(36).slice(2)
+      const now = Date.now()
+
+      const tempMessage: Message = {
+        id: tempId,
+        chatId,
+        senderId: currentUser.value.id,
+        senderName: currentUser.value.name,
+        text: '',
+        type: 'file',
+        url: undefined, // файл скачивается явно по нажатию, локальный blob URL не нужен
+        info: {
+          mimetype,
+          size: file.size,
+          name: fileName,
+          uploadProgress: 0,
+        },
+        rawContent: null,
+        timestamp: now,
+        read: true,
+        status: 'sending',
+      }
+
+      if (!messages[chatId]) messages[chatId] = []
+      messages[chatId].push(tempMessage)
+
+      const onProgress = (loaded: number, total?: number) => {
+        const msg = messages[chatId]?.find((m) => m.id === tempId)
+        if (msg && msg.info) {
+          const percent = total
+            ? Math.min(100, Math.round((loaded / total) * 100))
+            : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
+          msg.info.uploadProgress = percent
+        }
+      }
+
+      const memberIds = getOrderedMemberIds(room, now)
+      const users = await collectGroupUsers(memberIds)
+      const block = await pickRoomBlock(room)
+
+      const { encryptedBlob, secretStr } = await encryptBlobWithRandomKey(file)
+      const secrets = await wrapKeyForRoom(pcryptoService.value!, secretStr, users, block)
+
+      await matrixService.sendFile(
+        chatId,
+        {
+          blob: encryptedBlob,
+          name: fileName,
+          mimetype,
+          size: encryptedBlob.size,
+          secrets,
+          block,
+        },
+        onProgress
+      )
+
+      const idx = messages[chatId]?.findIndex((m) => m.id === tempId)
+      if (typeof idx === 'number' && idx >= 0) messages[chatId].splice(idx, 1)
+    } catch (e) {
+      console.error('[MessengerStore] Failed to send file:', e)
+      const arr = messages[chatId]
+      if (arr) {
+        const last = arr[arr.length - 1]
+        if (last && last.status === 'sending' && last.type === 'file') last.status = 'failed'
+      }
+    }
+  }
+
+  /**
+   * Возвращает Pocketnet-адрес собеседника в личном чате. null — если это не 1-на-1.
+   */
+  const getDirectPartnerAddress = (chatId: string): string | null => {
+    const room = matrixService.getRoom(chatId)
+    if (!room) return null
+    if (!isTetatetchat(room)) return null
+    const partnerMatrixId = getPartnerMatrixId(room)
+    if (!partnerMatrixId) return null
+    return getAddressFromMatrixId(partnerMatrixId)
+  }
+
+  /**
+   * Отправка PKOIN-доната в личный чат.
+   *  1) собираем UTXO отправителя, выбираем подходящие,
+   *  2) строим и подписываем транзакцию (buildTransferTransaction),
+   *  3) шлём через sendrawtransactionwithmessage (sendTransactionWithMessage),
+   *  4) пишем в Matrix-комнату событие m.text с extra-полем `pocketnet_transaction`
+   *     — сторонние клиенты увидят body, наш — рендерит карточку.
+   *
+   * Работает только в личных чатах (получатель = partner address). Возвращает txid либо null.
+   */
+  const sendPkoin = async (
+    chatId: string,
+    amount: number,
+    messageText?: string
+  ): Promise<string | null> => {
+    if (!authStore.isUserAuthenticated) {
+      console.error('[MessengerStore] sendPkoin: not authenticated')
+      return null
+    }
+    const fromAddress = authStore.address
+    const keyPair = authStore.keyPair
+    if (!fromAddress || !keyPair) {
+      console.error('[MessengerStore] sendPkoin: missing address or keypair')
+      return null
+    }
+    const toAddress = getDirectPartnerAddress(chatId)
+    if (!toAddress) {
+      console.error('[MessengerStore] sendPkoin: partner address unavailable (not a direct chat?)')
+      return null
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      console.error('[MessengerStore] sendPkoin: invalid amount', amount)
+      return null
+    }
+
+    try {
+      // Загружаем wallet-модули динамически — без них чат не тащит блокчейн-код.
+      const [
+        { getUnspents, filterAvailableUnspents, selectBestUnspents },
+        { buildTransferTransaction },
+        { sendTransactionWithMessage },
+        { DEFAULT_TX_FEE },
+      ] = await Promise.all([
+        import('@/blockchain/core/transactions/unspents-manager'),
+        import('@/blockchain/core/transactions/transaction-builder'),
+        import('@/blockchain/core/transactions/transaction-sender'),
+        import('@/blockchain/constants/transactions'),
+      ])
+
+      const rawUnspents = await getUnspents(fromAddress, 1, 9999999)
+      const unspents = filterAvailableUnspents(rawUnspents, false)
+      const requiredAmount = amount + DEFAULT_TX_FEE
+      const selected = selectBestUnspents(unspents, requiredAmount)
+      if (!selected.length) {
+        throw new Error('Недостаточно средств для перевода с учётом комиссии')
+      }
+
+      const built = await buildTransferTransaction({
+        unspents: selected,
+        fromAddress,
+        sourceAddresses: [fromAddress],
+        keyPair,
+        outputs: [{ address: toAddress, amount }],
+        fee: DEFAULT_TX_FEE,
+        message: (messageText || '').trim(),
+        feemode: 'exclude',
+      })
+
+      const txid = await sendTransactionWithMessage({
+        hex: built.hex,
+        messageData: built.messageData,
+        operationType: 'transaction',
+      })
+
+      await matrixService.sendPkoinTransaction(chatId, {
+        txid,
+        amount,
+        fromAddress,
+        toAddress,
+        message: messageText,
+      })
+
+      return txid
+    } catch (e) {
+      console.error('[MessengerStore] sendPkoin failed:', e)
+      throw e
     }
   }
 
@@ -1693,40 +2326,45 @@ export const useMessengerStore = defineStore('messenger', () => {
         isLoading.value = true
         try {
           // Listen to matrix events
-          matrixService.on('Room.timeline', async (event: any, room: any, toStartOfTimeline: boolean) => {
-             if (toStartOfTimeline) return
+          matrixService.on(
+            'Room.timeline',
+            async (event: any, room: any, toStartOfTimeline: boolean) => {
+              if (toStartOfTimeline) return
 
-             const evType = getEventType(event)
-             if (evType === 'm.reaction') {
-               const roomId = getEventRoomId(event)
-               if (activeChatId.value === roomId) {
-                 const client = matrixService.getClient()
-                 const list = messages[roomId]
-                 if (client && list) enrichMessagesWithReactions(room, list, client.getUserId() || '')
-               }
-               return
-             }
+              const evType = getEventType(event)
+              if (evType === 'm.reaction') {
+                const roomId = getEventRoomId(event)
+                if (activeChatId.value === roomId) {
+                  const client = matrixService.getClient()
+                  const list = messages[roomId]
+                  if (client && list)
+                    enrichMessagesWithReactions(room, list, client.getUserId() || '')
+                }
+                return
+              }
 
-             try {
+              try {
                 if (isRenderableMessageEvent(event)) {
                   const roomId = getEventRoomId(event)
 
                   // Ensure currentUser id is set
                   if (currentUser.value.id === 'me') {
-                      const client = matrixService.getClient()
-                      if (client) currentUser.value.id = client.getUserId() || 'me'
+                    const client = matrixService.getClient()
+                    if (client) currentUser.value.id = client.getUserId() || 'me'
                   }
 
                   // Play sound if message is not from me and not in active chat
                   const senderId = getEventSender(event)
                   const myId = currentUser.value.id
                   // Only play sound for recent messages (less than 60 seconds old)
-                  const isRecent = (Date.now() - getEventTs(event)) < 60000
+                  const isRecent = Date.now() - getEventTs(event) < 60000
 
                   if (senderId !== myId && activeChatId.value !== roomId && isRecent) {
                     try {
                       const audio = new Audio(glassSound)
-                      audio.play().catch(e => console.error('[MessengerStore] Failed to play sound:', e))
+                      audio
+                        .play()
+                        .catch((e) => console.error('[MessengerStore] Failed to play sound:', e))
                     } catch (e) {
                       console.error('[MessengerStore] Failed to init audio:', e)
                     }
@@ -1737,23 +2375,32 @@ export const useMessengerStore = defineStore('messenger', () => {
                     const msg = await mapEventToMessage(event)
 
                     if (!msg) {
-                      console.warn('[MessengerStore] mapEventToMessage returned null for event:', event.getId())
+                      console.warn(
+                        '[MessengerStore] mapEventToMessage returned null for event:',
+                        event.getId()
+                      )
                       return
                     }
 
                     if (!messages[roomId]) messages[roomId] = []
                     // Check duplicate
-                    if (!messages[roomId].find(m => m.id === msg.id)) {
+                    if (!messages[roomId].find((m) => m.id === msg.id)) {
                       messages[roomId].push(msg)
                       // Force scroll to bottom if needed? MessageList watches messages and handles it.
                     }
                     const clientForReactions = matrixService.getClient()
-                    if (clientForReactions) enrichMessagesWithReactions(room, messages[roomId], clientForReactions.getUserId() || '')
+                    if (clientForReactions)
+                      enrichMessagesWithReactions(
+                        room,
+                        messages[roomId],
+                        clientForReactions.getUserId() || ''
+                      )
 
                     // Mark as read immediately if active
                     try {
                       const client = matrixService.getClient()
-                      const evId = (typeof event.getId === 'function') ? event.getId() : getEventId(event)
+                      const evId =
+                        typeof event.getId === 'function' ? event.getId() : getEventId(event)
                       if (client && typeof evId === 'string' && evId.startsWith('$')) {
                         if (typeof client.setRoomReadMarkers === 'function') {
                           await client.setRoomReadMarkers(room.roomId, evId, event)
@@ -1762,38 +2409,38 @@ export const useMessengerStore = defineStore('messenger', () => {
                         }
                       }
                     } catch (e) {
-                        console.warn('[MessengerStore] Failed to send read receipt', e)
+                      console.warn('[MessengerStore] Failed to send read receipt', e)
                     }
                   }
 
                   // Refresh dialogs to show new last message/unread count
                   loadDialogs(true)
                 }
-             } catch (e) {
-                 console.error('[MessengerStore] Error in Room.timeline listener:', e)
-             }
-          })
+              } catch (e) {
+                console.error('[MessengerStore] Error in Room.timeline listener:', e)
+              }
+            }
+          )
 
           // Monitor sync state — список показываем только после PREPARED и одной загрузки, чтобы не было прыжков UI
           matrixService.on('sync', (state: string, prevState: string, data: any) => {
-              syncState.value = state
-              if (state === 'ERROR') {
-                  syncError.value = 'Sync Error'
-              } else if (state === 'PREPARED') {
-                  syncError.value = null
-                  loadDialogs(true).then(() => {
-                    dialogsLoadedOnce.value = true
-                  })
-              }
+            syncState.value = state
+            if (state === 'ERROR') {
+              syncError.value = 'Sync Error'
+            } else if (state === 'PREPARED') {
+              syncError.value = null
+              loadDialogs(true).then(() => {
+                dialogsLoadedOnce.value = true
+              })
+            }
           })
 
           const success = await matrixService.login(authStore.address, authStore.keyPair)
           if (!success) {
-             throw new Error('Matrix login failed')
+            throw new Error('Matrix login failed')
           }
 
           await syncCurrentUser()
-
         } catch (e) {
           console.error('[MessengerStore] Failed to init Matrix:', e)
         } finally {
@@ -1806,7 +2453,7 @@ export const useMessengerStore = defineStore('messenger', () => {
 
       // 4. Load dialogs if needed
       if (dialogs.value.length === 0 && matrixService.getClient()) {
-          await loadDialogs()
+        await loadDialogs()
       }
     } finally {
       isInitInProgress.value = false
@@ -1817,14 +2464,15 @@ export const useMessengerStore = defineStore('messenger', () => {
     // Тот же чат уже открыт и сообщения уже загружены — не дёргаем matrix заново
     // (loadMembersIfNeeded, paginateEventTimeline, перерасшифровка last message и т.д.).
     // Достаточно убедиться, что invite-режим выключен и unread сброшен.
-    const isSameActive = activeChatId.value === chatId && messages[chatId] && messages[chatId].length > 0
+    const isSameActive =
+      activeChatId.value === chatId && messages[chatId] && messages[chatId].length > 0
 
     inviteViewActive.value = false
     lastTargetAddress.value = null
     activeChatId.value = chatId
 
     // Reset unread count for this chat
-    const dialogIndex = dialogs.value.findIndex(d => d.id === chatId)
+    const dialogIndex = dialogs.value.findIndex((d) => d.id === chatId)
     if (dialogIndex !== -1) {
       dialogs.value[dialogIndex]!.unreadCount = 0
     }
@@ -1843,18 +2491,20 @@ export const useMessengerStore = defineStore('messenger', () => {
       if (room) {
         const events = room.getLiveTimeline().getEvents()
         if (events && events.length > 0) {
-           // Find last event with a valid ID (remote)
-           const lastEvent = [...events].reverse().find(e => e.getId() && e.getId().startsWith('$'))
-           if (lastEvent) {
-               // Use setRoomReadMarkers instead of sendReadReceipt to avoid 500 error on some servers
-               // This updates both the 'fully read' marker and the read receipt
-               const client = matrixService.getClient()
-               if (client && typeof client.setRoomReadMarkers === 'function') {
-                   await client.setRoomReadMarkers(room.roomId, lastEvent.getId(), lastEvent)
-               } else {
-                   await client?.sendReadReceipt(lastEvent)
-               }
-           }
+          // Find last event with a valid ID (remote)
+          const lastEvent = [...events]
+            .reverse()
+            .find((e) => e.getId() && e.getId().startsWith('$'))
+          if (lastEvent) {
+            // Use setRoomReadMarkers instead of sendReadReceipt to avoid 500 error on some servers
+            // This updates both the 'fully read' marker and the read receipt
+            const client = matrixService.getClient()
+            if (client && typeof client.setRoomReadMarkers === 'function') {
+              await client.setRoomReadMarkers(room.roomId, lastEvent.getId(), lastEvent)
+            } else {
+              await client?.sendReadReceipt(lastEvent)
+            }
+          }
         }
       }
     } catch (e) {
@@ -1907,7 +2557,7 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   const activeDialog = computed<Dialog | null>(() => {
     if (!activeChatId.value) return null
-    return dialogs.value.find(d => d.id === activeChatId.value) || null
+    return dialogs.value.find((d) => d.id === activeChatId.value) || null
   })
 
   const totalUnreadCount = computed(() => {
@@ -1916,12 +2566,16 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   // Watch for profile updates to refresh dialog list (names/avatars)
   let profileUpdateTimeout: any = null
-  watch(() => userProfiles.value, () => {
-    if (profileUpdateTimeout) clearTimeout(profileUpdateTimeout)
-    profileUpdateTimeout = setTimeout(() => {
-      loadDialogs(true)
-    }, 500)
-  }, { deep: true })
+  watch(
+    () => userProfiles.value,
+    () => {
+      if (profileUpdateTimeout) clearTimeout(profileUpdateTimeout)
+      profileUpdateTimeout = setTimeout(() => {
+        loadDialogs(true)
+      }, 500)
+    },
+    { deep: true }
+  )
 
   /**
    * Находит или создаёт комнату с пользователем, добавляет оптимистичный диалог.
@@ -1933,19 +2587,21 @@ export const useMessengerStore = defineStore('messenger', () => {
     lastTargetAddress.value = address
     try {
       await fetchProfiles([address])
-    } catch (_e) {}
+    } catch {
+      /* ignore */
+    }
     await openMessenger()
     await initMatrix()
     const hex = matrixService.addressToHex(address).toLowerCase()
-    let host = 'matrix.pocketnet.app'
+    let host: string
     try {
       const base = matrixService.getBaseUrl()
       const parsed = new URL(base.startsWith('http') ? base : window.location.origin)
       const h = parsed.host || window.location.host
-      host = (h.includes('localhost') || h.startsWith('127.')) ? 'matrix.pocketnet.app' : h
+      host = h.includes('localhost') || h.startsWith('127.') ? 'matrix.pocketnet.app' : h
     } catch (_e) {
       const h = window.location.host
-      host = (h.includes('localhost') || h.startsWith('127.')) ? 'matrix.pocketnet.app' : h
+      host = h.includes('localhost') || h.startsWith('127.') ? 'matrix.pocketnet.app' : h
     }
     const partnerId = `@${hex}:${host}`
     let roomId = findExistingRoomByAddress(address)
@@ -1966,11 +2622,11 @@ export const useMessengerStore = defineStore('messenger', () => {
             id: partnerId,
             name: partnerName,
             avatar: partnerAvatar,
-            verified: false
+            verified: false,
           },
           unreadCount: 0,
           lastMessage: undefined,
-          createdAt: Date.now()
+          createdAt: Date.now(),
         }
         dialogs.value = [optimisticDialog, ...dialogs.value]
       }
@@ -1983,12 +2639,13 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   const switchToChatAndLoad = (roomId: string): void => {
-    const isSameActive = activeChatId.value === roomId && messages[roomId] && messages[roomId].length > 0
+    const isSameActive =
+      activeChatId.value === roomId && messages[roomId] && messages[roomId].length > 0
 
     inviteViewActive.value = false
     lastTargetAddress.value = null
     activeChatId.value = roomId
-    const dialogIndex = dialogs.value.findIndex(d => d.id === roomId)
+    const dialogIndex = dialogs.value.findIndex((d) => d.id === roomId)
     if (dialogIndex !== -1) {
       dialogs.value[dialogIndex]!.unreadCount = 0
     }
@@ -2003,7 +2660,9 @@ export const useMessengerStore = defineStore('messenger', () => {
         if (room) {
           const events = room.getLiveTimeline().getEvents()
           if (events && events.length > 0) {
-            const lastEvent = [...events].reverse().find((e: any) => e.getId() && e.getId().startsWith('$'))
+            const lastEvent = [...events]
+              .reverse()
+              .find((e: any) => e.getId() && e.getId().startsWith('$'))
             if (lastEvent) {
               const client = matrixService.getClient()
               if (client && typeof client.setRoomReadMarkers === 'function') {
@@ -2014,21 +2673,23 @@ export const useMessengerStore = defineStore('messenger', () => {
             }
           }
         }
-      } catch (_e) {}
+      } catch {
+        /* ignore */
+      }
     })
   }
 
   const findExistingRoomByAddress = (address: string): string | null => {
     const hex = matrixService.addressToHex(address).toLowerCase()
-    let host = 'matrix.pocketnet.app'
+    let host: string
     try {
       const base = matrixService.getBaseUrl()
       const parsed = new URL(base.startsWith('http') ? base : window.location.origin)
       const h = parsed.host || window.location.host
-      host = (h.includes('localhost') || h.startsWith('127.')) ? 'matrix.pocketnet.app' : h
+      host = h.includes('localhost') || h.startsWith('127.') ? 'matrix.pocketnet.app' : h
     } catch (_e) {
       const h = window.location.host
-      host = (h.includes('localhost') || h.startsWith('127.')) ? 'matrix.pocketnet.app' : h
+      host = h.includes('localhost') || h.startsWith('127.') ? 'matrix.pocketnet.app' : h
     }
     const partnerId = `@${hex}:${host}`
     const rooms = matrixService.getRooms()
@@ -2038,7 +2699,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     return null
   }
 
-  const openInviteWithAddress = async (address: string, preloadedProfile?: UserProfile | null): Promise<void> => {
+  const openInviteWithAddress = async (
+    address: string,
+    preloadedProfile?: UserProfile | null
+  ): Promise<void> => {
     if (!address) return
     if (!authStore.isUserAuthenticated) return
 
@@ -2048,7 +2712,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
     try {
       await fetchProfiles([address])
-    } catch (_e) {}
+    } catch {
+      /* ignore */
+    }
     await openMessenger()
     await initMatrix()
 
@@ -2070,133 +2736,97 @@ export const useMessengerStore = defineStore('messenger', () => {
     inviteViewActive.value = false
   }
 
-  const decryptAudioData = async (blob: Blob, message: Message): Promise<Blob | null> => {
+  /**
+   * Generic decrypt-pipeline для медиа-сообщений с `info.secrets`:
+   * собирает участников по timestamp сообщения → распаковывает secret через pcrypto →
+   * AES-CBC дешифрует переданный blob → возвращает blob с правильным MIME.
+   * Если secrets нет — возвращает blob как есть с fallback-mime.
+   */
+  const decryptMediaBlob = async (
+    blob: Blob,
+    message: Message,
+    fallbackMime: string
+  ): Promise<Blob | null> => {
+    if (!message.info?.secrets) {
+      return new Blob([await blob.arrayBuffer()], { type: blob.type || fallbackMime })
+    }
     if (!pcryptoService.value) return null
-    if (!message.info?.secrets) return null
 
     try {
-      const chatId = message.chatId
-      const room = matrixService.getRoom(chatId)
+      const room = matrixService.getRoom(message.chatId)
       if (!room) return null
 
-      const ts = message.timestamp
-      const memberIds = getOrderedMemberIds(room, ts)
-
-      const addressesToFetch: string[] = []
-      for (const memberId of memberIds) {
-          const address = getAddressFromMatrixId(memberId)
-          if (address && !userProfiles.value[address]) addressesToFetch.push(address)
-      }
-      if (addressesToFetch.length > 0) await fetchProfiles(addressesToFetch)
-
-      const users: PcryptoUser[] = []
-      const myMatrixId = matrixService.getClient()?.getUserId()
-
-      for (const memberId of memberIds) {
-        const address = getAddressFromMatrixId(memberId)
-        if (address && userProfiles.value[address]?.k) {
-            users.push({
-              id: memberId,
-              keys: parseProfileKeys(userProfiles.value[address].k),
-              dbId: userProfiles.value[address].id || 0
-            })
-        }
-      }
+      const memberIds = getOrderedMemberIds(room, message.timestamp)
+      const users = await collectGroupUsers(memberIds)
 
       const fakeEvent = {
-          sender: message.senderId,
-          content: {
-              info: { secrets: message.info.secrets }
-          }
+        sender: message.senderId,
+        content: { info: { secrets: message.info.secrets } },
       }
-
       const decryptedSecretsStr = await pcryptoService.value.decryptEvent(fakeEvent, users)
       if (!decryptedSecretsStr) {
-          console.error('[MessengerStore] decryptAudioData: decryptEvent returned null')
-          return null
+        console.error('[MessengerStore] decryptMediaBlob: decryptEvent returned null')
+        return null
       }
 
       const arrayBuffer = await blob.arrayBuffer()
-
-      // In bastyon-chat the decrypted key is a comma-separated numeric string.
-      // It is used directly as the PBKDF2 input, and AES-CBC decrypts the file
-      // with a fixed IV [19..34]. Replicate that behavior here.
-      const secretStr = decryptedSecretsStr.trim()
-
-      if (!secretStr) {
-        console.error('[MessengerStore] decryptAudioData: empty secret string')
-        return null
-      }
-
-      // Use proper AES-CBC decryption like the original bastyon-chat implementation
-      const enc = new TextEncoder()
-
-      // Derive key using PBKDF2 with proper salt and iterations
-      const keyMaterial = await window.crypto.subtle.importKey(
-        'raw',
-        enc.encode(secretStr),
-        'PBKDF2',
-        false,
-        ['deriveBits', 'deriveKey']
-      )
-
-      const derivedKey = await window.crypto.subtle.deriveKey(
-        {
-          name: 'PBKDF2',
-          salt: enc.encode('matrix.pocketnet'),
-          iterations: 10000,
-          hash: 'SHA-256'
-        },
-        keyMaterial,
-        { name: 'AES-CBC', length: 256 },
-        true,
-        ['encrypt', 'decrypt']
-      )
-
-      // Use fixed IV identical to bastyon-chat PcryptoFile implementation
-      const iv = new Uint8Array([19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34])
-
-      // Check if data size is valid for AES-CBC (must be multiple of 16 bytes and at least 16 bytes)
-      if (arrayBuffer.byteLength < 16) {
-        console.error('[MessengerStore] decryptAudioData: Data too small for AES-CBC:', arrayBuffer.byteLength, 'bytes')
-        return null
-      }
-      if (arrayBuffer.byteLength % 16 !== 0) {
-        console.error('[MessengerStore] decryptAudioData: Invalid data size for AES-CBC (not multiple of 16):', arrayBuffer.byteLength, 'bytes')
-        return null
-      }
-
-      // Decrypt using AES-CBC - ensure proper ArrayBuffer types
-      const decryptedResult = await window.crypto.subtle.decrypt(
-        {
-          name: 'AES-CBC',
-          iv: iv
-        },
-        derivedKey,
-        arrayBuffer
-      )
-
-      const decryptedBytes = new Uint8Array(decryptedResult)
-      const mime = detectAudioMime(decryptedBytes)
-
-      return new Blob([decryptedBytes as unknown as BlobPart], { type: mime || 'audio/mpeg' })
-
+      const decryptedBytes = await decryptBytesWithSecret(arrayBuffer, decryptedSecretsStr.trim())
+      const mime = sniffMimeFromBytes(decryptedBytes) || fallbackMime
+      return new Blob([decryptedBytes as unknown as BlobPart], { type: mime })
     } catch (e) {
-      console.error('[MessengerStore] decryptAudioData failed:', e)
+      console.error('[MessengerStore] decryptMediaBlob failed:', e)
+      return null
+    }
+  }
+
+  /** Совместимость: оставляем decryptAudioData как fallback-имя для message-item. */
+  const decryptAudioData = (blob: Blob, message: Message): Promise<Blob | null> =>
+    decryptMediaBlob(blob, message, 'audio/mpeg')
+
+  /**
+   * Скачивает и расшифровывает (если нужно) медиа по mxc/http url из message.url.
+   * Возвращает blob URL (object URL), пригодный для <img src>/<video src>/download.
+   * Кэширует результат в локальной Map по eventId.
+   */
+  const decryptedMediaUrls = new Map<string, string>()
+
+  const fetchAndDecryptMedia = async (
+    message: Message,
+    fallbackMime = 'application/octet-stream'
+  ): Promise<string | null> => {
+    if (!message.url) return null
+    const cached = decryptedMediaUrls.get(message.id)
+    if (cached) return cached
+
+    try {
+      const httpUrl = message.info?.httpUrl || message.url
+      const response = await (
+        await import('@/helpers/api/request')
+      ).matrixFetch(httpUrl, { mode: 'cors' })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const raw = await response.blob()
+
+      const decrypted = await decryptMediaBlob(raw, message, fallbackMime)
+      if (!decrypted) return null
+      const url = URL.createObjectURL(decrypted)
+      decryptedMediaUrls.set(message.id, url)
+      return url
+    } catch (e) {
+      console.error('[MessengerStore] fetchAndDecryptMedia failed:', e)
       return null
     }
   }
 
   const deleteDialog = (chatId: string) => {
-    const removedDialog = dialogs.value.find(d => d.id === chatId)
-    const removedIndex = dialogs.value.findIndex(d => d.id === chatId)
+    const removedDialog = dialogs.value.find((d) => d.id === chatId)
+    const removedIndex = dialogs.value.findIndex((d) => d.id === chatId)
     const removedMessages = messages[chatId] ? [...messages[chatId]] : null
     const wasActive = activeChatId.value === chatId
 
     if (wasActive) {
       activeChatId.value = null
     }
-    dialogs.value = dialogs.value.filter(d => d.id !== chatId)
+    dialogs.value = dialogs.value.filter((d) => d.id !== chatId)
     delete messages[chatId]
 
     matrixService.leaveAndForgetRoom(chatId).catch((e) => {
@@ -2265,6 +2895,12 @@ export const useMessengerStore = defineStore('messenger', () => {
     sendMessage,
     sendReaction,
     sendAudio,
+    sendImage,
+    sendVideo,
+    sendFile,
+    sendPkoin,
+    getDirectPartnerAddress,
+    fetchAndDecryptMedia,
     initMatrix,
     deleteDialog,
     logout,
@@ -2274,6 +2910,6 @@ export const useMessengerStore = defineStore('messenger', () => {
     startChatWithAddress,
     switchToChatAndLoad,
     openInviteWithAddress,
-    clearInviteTarget
+    clearInviteTarget,
   }
 })

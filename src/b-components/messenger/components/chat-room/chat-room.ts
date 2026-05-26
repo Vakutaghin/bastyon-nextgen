@@ -1,10 +1,37 @@
 import { defineComponent, ref, computed, type PropType, nextTick, watch, watchEffect } from 'vue'
 import type { Message } from '../../types'
-import { SC_MessageInputArea, SC_MessageInput, SC_SendButton, SC_EmojiToggleButton, SC_VoiceButton, SC_RecordingTimer, SC_SwipeHint, SC_CancelButton, SC_StartChatContainer, SC_StartChatButton, SC_PartnerHeader, SC_PartnerAvatar, SC_PartnerName, SC_PartnerInfoCard, SC_ChatRoomLoader, SC_ChatRoomSpinner, SC_ChatRoomLoaderText, SC_ChatRoomEmptyHint } from './styled'
-import { SC_UserStats, SC_StatItem, SC_StatLabel, SC_StatValue } from '@/b-components/profile/profile-sidebar/styled'
+import {
+  SC_MessageInputArea,
+  SC_MessageInput,
+  SC_SendButton,
+  SC_EmojiToggleButton,
+  SC_VoiceButton,
+  SC_RecordingTimer,
+  SC_SwipeHint,
+  SC_CancelButton,
+  SC_StartChatContainer,
+  SC_StartChatButton,
+  SC_PartnerHeader,
+  SC_PartnerAvatar,
+  SC_PartnerName,
+  SC_PartnerInfoCard,
+  SC_ChatRoomLoader,
+  SC_ChatRoomSpinner,
+  SC_ChatRoomLoaderText,
+  SC_ChatRoomEmptyHint,
+} from './styled'
+import {
+  SC_UserStats,
+  SC_StatItem,
+  SC_StatLabel,
+  SC_StatValue,
+} from '@/b-components/profile/profile-sidebar/styled'
 import MessageList from '../message-list/message-list.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
+import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
+import PkoinTransferModal from '../pkoin-transfer-modal/pkoin-transfer-modal.vue'
 import { useMessengerStore } from '../../store'
+import { usePasteDrop } from './use-paste-drop'
 
 export const chatRoomOptions = defineComponent({
   name: 'ChatRoom',
@@ -32,23 +59,25 @@ export const chatRoomOptions = defineComponent({
     SC_StatLabel,
     SC_StatValue,
     MessageList,
-    EmojiPicker
+    EmojiPicker,
+    AttachmentPanel,
+    PkoinTransferModal,
   },
   props: {
     messages: {
       type: Array as PropType<Message[]>,
-      required: true
+      required: true,
     },
     /** Режим приглашения: карточка + «Начать чат». Только при открытии из профиля/поста. */
     inviteMode: {
       type: Boolean,
-      default: false
+      default: false,
     },
     /** Загрузка сообщений диалога (показываем прелоадер вместо списка). */
     isLoading: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   emits: ['send', 'load-more', 'open-chat'],
   setup(props, { emit }) {
@@ -56,7 +85,7 @@ export const chatRoomOptions = defineComponent({
     const inputRef = ref<any>(null)
     const showEmojiPicker = ref(false)
     const store = useMessengerStore()
-    const isInitiated = ref<boolean>((props.messages && props.messages.length > 0) ? true : false)
+    const isInitiated = ref<boolean>(props.messages && props.messages.length > 0 ? true : false)
     const partnerName = ref<string>('')
     const partnerAvatar = ref<string | null>(null)
     const avatarLoadFailed = ref(false)
@@ -80,7 +109,7 @@ export const chatRoomOptions = defineComponent({
       'audio/webm',
       'audio/ogg;codecs=opus',
       'audio/mp4',
-      'audio/aac'
+      'audio/aac',
     ]
 
     const formatDuration = (seconds: number) => {
@@ -93,7 +122,7 @@ export const chatRoomOptions = defineComponent({
       const el = inputRef.value?.$el
       if (el) {
         el.style.height = 'auto'
-        el.style.height = (el.scrollHeight + 2) + 'px'
+        el.style.height = el.scrollHeight + 2 + 'px'
       }
     }
 
@@ -201,7 +230,7 @@ export const chatRoomOptions = defineComponent({
         const id = d.partner?.id
         if (typeof id === 'string' && id.startsWith('@') && id.includes(':')) {
           const parts = id.split(':')
-          let userId = parts[0]!.substring(1)
+          const userId = parts[0]!.substring(1)
           const looksHex = /^[0-9a-fA-F]+$/.test(userId) && userId.length % 2 === 0
           address = looksHex ? hexToAddress(userId) : userId
         }
@@ -217,7 +246,7 @@ export const chatRoomOptions = defineComponent({
         if (!p) {
           await (store as any).fetchProfiles([address])
         }
-        const freshProfilesObj = ((store as any).userProfiles?.value ?? (store as any).userProfiles)
+        const freshProfilesObj = (store as any).userProfiles?.value ?? (store as any).userProfiles
         const profile = freshProfilesObj ? freshProfilesObj[address] : undefined
         if (profile) {
           const r: unknown = profile.reputation ?? 0
@@ -259,19 +288,27 @@ export const chatRoomOptions = defineComponent({
     })
 
     // Watch active dialog changes (use id to ensure reactivity across unwrap cases)
-    watch(() => {
-      const d = (store as any).activeDialog
-      if (d == null) return null
-      const val = (typeof d === 'object' && 'id' in d) ? d.id : (d?.value?.id)
-      return val ?? null
-    }, () => {
-      updatePartnerInfo()
-    }, { immediate: true })
+    watch(
+      () => {
+        const d = (store as any).activeDialog
+        if (d == null) return null
+        const val = typeof d === 'object' && 'id' in d ? d.id : d?.value?.id
+        return val ?? null
+      },
+      () => {
+        updatePartnerInfo()
+      },
+      { immediate: true }
+    )
 
     // Watch profiles cache changes
-    watch(() => (store as any).userProfiles, () => {
-      updatePartnerInfo()
-    }, { deep: true })
+    watch(
+      () => (store as any).userProfiles,
+      () => {
+        updatePartnerInfo()
+      },
+      { deep: true }
+    )
 
     watchEffect(() => {
       // react to active dialog, profiles and lastTargetAddress (смена собеседника в режиме приглашения)
@@ -329,19 +366,25 @@ export const chatRoomOptions = defineComponent({
           if (isCancelling.value) {
             // Clean up stream but don't send
             try {
-              stream.getTracks().forEach(t => t.stop())
-            } catch (_e) {}
+              stream.getTracks().forEach((t) => t.stop())
+            } catch {
+              /* ignore */
+            }
             return
           }
 
-          const blob = new Blob(recordedChunks, { type: (options as any)?.mimeType || 'audio/webm' })
+          const blob = new Blob(recordedChunks, {
+            type: (options as any)?.mimeType || 'audio/webm',
+          })
           const duration = (Date.now() - recordStartAt.value) / 1000
           if (store.activeChatId) {
             await store.sendAudio(store.activeChatId, blob, { duration, name: 'voice-message' })
           }
           try {
-            stream.getTracks().forEach(t => t.stop())
-          } catch (_e) {}
+            stream.getTracks().forEach((t) => t.stop())
+          } catch {
+            /* ignore */
+          }
         }
         recordStartAt.value = Date.now()
         isRecording.value = true
@@ -395,6 +438,47 @@ export const chatRoomOptions = defineComponent({
       stopRecording()
     }
 
+    // === Файлы: drag/drop, paste, кнопка-«скрепка» ===
+    const inputAreaRef = ref<HTMLElement | null>(null)
+
+    const handlePickFiles = async (files: File[]) => {
+      if (!store.activeChatId) return
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          await store.sendImage(store.activeChatId, file, { name: file.name })
+        } else if (file.type.startsWith('video/')) {
+          // Видео отправляются как обычный файл (m.file) — отдельный m.video отключён.
+          await store.sendFile(store.activeChatId, file, { name: file.name })
+        } else {
+          await store.sendFile(store.activeChatId, file, { name: file.name })
+        }
+      }
+    }
+
+    const { isDragging, bindToRef } = usePasteDrop({
+      onMediaFiles: handlePickFiles,
+      onOtherFiles: handlePickFiles,
+    })
+    bindToRef(inputAreaRef)
+
+    // === PKOIN-донат (только для личных чатов) ===
+    const activeChatIdForPkoin = computed<string>(() => store.activeChatId || '')
+    const pkoinPartnerAddress = computed<string | null>(() => {
+      if (!store.activeChatId) return null
+      return store.getDirectPartnerAddress(store.activeChatId)
+    })
+    const canSendPkoin = computed<boolean>(() => !!pkoinPartnerAddress.value)
+    const pkoinModalOpen = ref(false)
+    const openPkoinModal = () => {
+      pkoinModalOpen.value = true
+    }
+    const closePkoinModal = () => {
+      pkoinModalOpen.value = false
+    }
+    const onPkoinSent = (txid: string) => {
+      console.log('[ChatRoom] PKOIN transaction sent:', txid)
+    }
+
     return {
       inputValue,
       inputRef,
@@ -422,7 +506,17 @@ export const chatRoomOptions = defineComponent({
       stopRecording,
       cancelRecording,
       handleTouchMove,
-      handleTouchEnd
+      handleTouchEnd,
+      inputAreaRef,
+      handlePickFiles,
+      isDragging,
+      canSendPkoin,
+      pkoinPartnerAddress,
+      activeChatIdForPkoin,
+      pkoinModalOpen,
+      openPkoinModal,
+      closePkoinModal,
+      onPkoinSent,
     }
-  }
+  },
 })

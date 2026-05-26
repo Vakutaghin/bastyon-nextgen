@@ -1,5 +1,5 @@
 <template>
-  <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+  <div style="display: flex; flex-direction: column; flex: 1; min-height: 0">
     <template v-if="inviteMode">
       <SC_PartnerInfoCard>
         <SC_PartnerHeader>
@@ -17,7 +17,7 @@
           <SC_PartnerName>{{ partnerName }}</SC_PartnerName>
         </SC_PartnerHeader>
 
-        <SC_UserStats style="justify-content: center; gap: 16px;">
+        <SC_UserStats style="justify-content: center; gap: 16px">
           <SC_StatItem>
             <SC_StatLabel>Репутация</SC_StatLabel>
             <SC_StatValue>{{ reputation }}</SC_StatValue>
@@ -52,36 +52,37 @@
         Пока сообщений нет. Вы можете написать первое.
       </SC_ChatRoomEmptyHint>
 
-      <MessageList
-        :messages="messages"
-        @load-more="() => $emit('load-more')" />
+      <MessageList :messages="messages" @load-more="() => $emit('load-more')" />
     </template>
 
-    <SC_MessageInputArea>
+    <SC_MessageInputArea ref="inputAreaRef" :style="isDragging ? dragStyle : undefined">
       <!-- RECORDING STATE -->
       <template v-if="isRecording || isLocked">
         <SC_RecordingTimer>{{ recordingDuration }}</SC_RecordingTimer>
 
         <template v-if="isLocked">
-           <SC_CancelButton @click="cancelRecording">Отмена</SC_CancelButton>
+          <SC_CancelButton @click="cancelRecording">Отмена</SC_CancelButton>
 
-           <SC_SendButton @click="stopRecording">
-             <img :src="sendIcon" alt="" width="24" height="24" />
-           </SC_SendButton>
+          <SC_SendButton @click="stopRecording">
+            <img :src="sendIcon" alt="" width="24" height="24" />
+          </SC_SendButton>
         </template>
 
         <template v-else>
-           <SC_SwipeHint>
-             <span>&lt; Влево - отмена, Вверх - замок</span>
-           </SC_SwipeHint>
+          <SC_SwipeHint>
+            <span>&lt; Влево - отмена, Вверх - замок</span>
+          </SC_SwipeHint>
         </template>
       </template>
 
       <!-- NORMAL STATE -->
       <template v-else-if="!inviteMode || isInitiated || (messages && messages.length > 0)">
-        <EmojiPicker
-          v-if="showEmojiPicker"
-          @select="onEmojiSelect"
+        <EmojiPicker v-if="showEmojiPicker" @select="onEmojiSelect" />
+
+        <AttachmentPanel
+          :can-send-pkoin="canSendPkoin"
+          @pick-files="handlePickFiles"
+          @pick-pkoin="openPkoinModal"
         />
 
         <SC_MessageInput
@@ -104,7 +105,11 @@
 
       <!-- VOICE BUTTON (Visible when recording but not locked, or when input empty) -->
       <SC_VoiceButton
-        v-if="(!inviteMode || isInitiated || (messages && messages.length > 0)) && (!inputValue.trim() && !isLocked)"
+        v-if="
+          (!inviteMode || isInitiated || (messages && messages.length > 0)) &&
+          !inputValue.trim() &&
+          !isLocked
+        "
         :class="{ recording: isRecording }"
         @mousedown.prevent="startRecording"
         @mouseup.prevent="stopRecording"
@@ -124,6 +129,15 @@
         <img :src="sendIcon" alt="" width="24" height="24" />
       </SC_SendButton>
     </SC_MessageInputArea>
+
+    <PkoinTransferModal
+      v-if="pkoinPartnerAddress"
+      :open="pkoinModalOpen"
+      :chat-id="activeChatIdForPkoin"
+      :to-address="pkoinPartnerAddress"
+      @close="closePkoinModal"
+      @sent="onPkoinSent"
+    />
   </div>
 </template>
 
@@ -133,10 +147,16 @@ import sendIcon from './img/send.svg'
 import emojiIcon from './img/emoji.svg'
 import micIcon from './img/mic.svg'
 
+const dragStyle = {
+  outline: '2px dashed #00A4DB',
+  outlineOffset: '-4px',
+  background: 'rgba(0, 164, 219, 0.06)',
+}
+
 export default {
   ...chatRoomOptions,
-  data () {
-    return { sendIcon, emojiIcon, micIcon }
+  data() {
+    return { sendIcon, emojiIcon, micIcon, dragStyle }
   },
 }
 </script>

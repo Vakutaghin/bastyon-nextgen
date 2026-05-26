@@ -1,9 +1,19 @@
-import { defineComponent, type PropType, computed, ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
+import {
+  defineComponent,
+  type PropType,
+  computed,
+  ref,
+  nextTick,
+  watch,
+  onMounted,
+  onUnmounted,
+} from 'vue'
 
 import type { Message } from '../../types'
 import { matrixFetch } from '@/helpers/api/request'
 import { useMessengerStore } from '../../store'
 import { getAddressFromMatrixId } from '../../helpers'
+import { decryptMatrixAttachment } from '../../services/media-decrypt'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import Avatar from '@/components/avatar/avatar.vue'
 import {
@@ -19,6 +29,13 @@ import {
   SC_AvatarSlot,
 } from './styled'
 import AudioMessage from '../audio-message/audio-message.vue'
+import ImageMessage from '../image-message/image-message.vue'
+import VideoMessage from '../video-message/video-message.vue'
+import FileMessage from '../file-message/file-message.vue'
+import TransactionMessage from '../transaction-message/transaction-message.vue'
+import PostEmbed from '../post-embed/post-embed.vue'
+import LinkPreview from '../link-preview/link-preview.vue'
+import { formatMessageSegments, extractFirstExternalUrl } from './helpers'
 
 const QUICK_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
 
@@ -36,22 +53,28 @@ export const messageItemOptions = defineComponent({
     SC_ReactionPickerEmoji,
     SC_AvatarSlot,
     AudioMessage,
+    ImageMessage,
+    VideoMessage,
+    FileMessage,
+    TransactionMessage,
+    PostEmbed,
+    LinkPreview,
     Avatar,
   },
   props: {
     message: {
       type: Object as PropType<Message>,
-      required: true
+      required: true,
     },
     showName: {
       type: Boolean,
-      default: true
+      default: true,
     },
     /** Показывать аватарку. Передаём false для подряд идущих сообщений того же отправителя — слот сохраняем для выравнивания. */
     showAvatar: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   setup(props) {
     const store = useMessengerStore()
@@ -115,7 +138,7 @@ export const messageItemOptions = defineComponent({
 
       const dateOptions: Intl.DateTimeFormatOptions = {
         day: 'numeric',
-        month: 'long'
+        month: 'long',
       }
 
       if (!isCurrentYear) {
@@ -127,25 +150,13 @@ export const messageItemOptions = defineComponent({
       return `${dateStr}, ${timeStr}`
     }
 
-    const formattedText = computed(() => {
-      const text = props.message.text || ''
-      const urlPattern = /((?:https?|ftp|bastyon):\/\/[^\s]+)/g
+    /** Сегменты текста: чередование 'html' (с inline <a>) и 'bastyon' (PostEmbed). */
+    const messageSegments = computed(() => formatMessageSegments(props.message.text || ''))
 
-      const parts = text.split(urlPattern)
-
-      return parts.map(part => {
-        if (part.match(urlPattern)) {
-            return `<a href="${part}" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: none;">${part}</a>`
-         }
-        // Escape HTML in non-link parts
-        return part
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;")
-      }).join('')
-    })
+    /** Первый внешний http(s) URL для OG-превью (не bastyon-ссылка). */
+    const previewUrl = computed<string | null>(() =>
+      extractFirstExternalUrl(props.message.text || '')
+    )
 
     const onAudioError = async (e: Event) => {
       const target = e.target as HTMLAudioElement
@@ -189,19 +200,19 @@ export const messageItemOptions = defineComponent({
           const fileInfo = props.message.info?.file || props.message.info?.secrets?.file
 
           if (fileInfo && fileInfo.key) {
-             const response = await matrixFetch(src, { mode: 'cors' })
-             const arrayBuffer = await response.arrayBuffer()
+            const response = await matrixFetch(src, { mode: 'cors' })
+            const arrayBuffer = await response.arrayBuffer()
 
-             try {
-               const decryptedData = await decryptAttachment(arrayBuffer, fileInfo)
-               const blob = new Blob([decryptedData], { type: 'audio/mpeg' })
-               const objectUrl = URL.createObjectURL(blob)
-               target.src = objectUrl
-               target.load()
-               return
-             } catch (decryptErr) {
-               console.error('[MessageItem] Decryption failed:', decryptErr)
-             }
+            try {
+              const decryptedData = await decryptMatrixAttachment(arrayBuffer, fileInfo)
+              const blob = new Blob([decryptedData], { type: 'audio/mpeg' })
+              const objectUrl = URL.createObjectURL(blob)
+              target.src = objectUrl
+              target.load()
+              return
+            } catch (decryptErr) {
+              console.error('[MessageItem] Decryption failed:', decryptErr)
+            }
           }
 
           const controller = new AbortController()
@@ -209,7 +220,7 @@ export const messageItemOptions = defineComponent({
 
           const response = await matrixFetch(src, {
             mode: 'cors',
-            signal: controller.signal
+            signal: controller.signal,
           })
           clearTimeout(timeoutId)
 
@@ -229,52 +240,17 @@ export const messageItemOptions = defineComponent({
       }
     }
 
-    const decryptAttachment = async (ciphertext: ArrayBuffer, info: any): Promise<ArrayBuffer> => {
-      if (!info.key || !info.iv || !info.key.k) {
-        throw new Error('Missing key or iv')
-      }
-
-      // Decode Base64 key
-      const keyString = atob(info.key.k.replace(/-/g, '+').replace(/_/g, '/'))
-      const keyBytes = new Uint8Array(keyString.length)
-      for (let i = 0; i < keyString.length; i++) keyBytes[i] = keyString.charCodeAt(i)
-
-      // Decode Base64 IV
-      const ivString = atob(info.iv.replace(/-/g, '+').replace(/_/g, '/'))
-      const ivBytes = new Uint8Array(ivString.length)
-      for (let i = 0; i < ivString.length; i++) ivBytes[i] = ivString.charCodeAt(i)
-
-      // Import Key
-      const key = await window.crypto.subtle.importKey(
-        'raw',
-        keyBytes,
-        { name: 'AES-CTR' },
-        false,
-        ['encrypt', 'decrypt']
-      )
-
-      // Decrypt
-      // Matrix uses AES-CTR with a counter. The IV provided is the initial counter block.
-      // WebCrypto AES-CTR requires 'counter' (the initial block) and 'length' (bits of counter).
-      // Usually length is 64.
-
-      const decrypted = await window.crypto.subtle.decrypt(
-        {
-          name: 'AES-CTR',
-          counter: ivBytes,
-          length: 64
-        },
-        key,
-        ciphertext
-      )
-
-      return decrypted
-    }
-
     const showReactionPicker = ref(false)
     const reactionTriggerRef = ref<HTMLElement | null>(null)
     const reactionPickerRef = ref<HTMLElement | null>(null)
-    const pickerStyle = ref<{ position: string; top: string; left: string; right?: string; bottom?: string; zIndex: number } | null>(null)
+    const pickerStyle = ref<{
+      position: string
+      top: string
+      left: string
+      right?: string
+      bottom?: string
+      zIndex: number
+    } | null>(null)
     let scrollParent: HTMLElement | null = null
     let clickOutsideHandler: ((e: MouseEvent) => void) | null = null
     let scrollHandler: (() => void) | null = null
@@ -336,7 +312,7 @@ export const messageItemOptions = defineComponent({
         left: `${left}px`,
         right: 'auto',
         bottom: 'auto',
-        zIndex: 10000
+        zIndex: 10000,
       }
     }
 
@@ -400,7 +376,8 @@ export const messageItemOptions = defineComponent({
       displayName,
       displayAvatar,
       isMine,
-      formattedText,
+      messageSegments,
+      previewUrl,
       onAudioError,
       isCompact,
       showReactionPicker,
@@ -410,7 +387,7 @@ export const messageItemOptions = defineComponent({
       quickReactionEmojis: QUICK_REACTION_EMOJIS,
       reactionTriggerRef,
       reactionPickerRef,
-      pickerStyle
+      pickerStyle,
     }
-  }
+  },
 })

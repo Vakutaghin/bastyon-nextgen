@@ -21,7 +21,7 @@ export class MatrixService {
   private client: any = null
   // In development we use Vite proxy (relative); in production — URL из servers.json (matrix.pocketnet.app)
   private baseUrl: string = getDefaultMatrixBaseUrl()
-  private eventQueue: Array<{ event: string, listener: (...args: any[]) => void }> = []
+  private eventQueue: Array<{ event: string; listener: (...args: any[]) => void }> = []
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null
   private keepAliveIntervalMs = 60000
   private store: any = null
@@ -66,12 +66,13 @@ export class MatrixService {
       const chHex = hex.substring(i, i + 2)
       // Check if valid hex
       if (!/^[0-9a-fA-F]{2}$/.test(chHex)) {
-          return ''
+        return ''
       }
       let charCode = parseInt(chHex, 16)
       // Restore Cyrillic characters if applicable (mapping from addressToHex)
-      if (charCode >= 0x80) { // Extended ASCII range
-          charCode += 0x350
+      if (charCode >= 0x80) {
+        // Extended ASCII range
+        charCode += 0x350
       }
       result += String.fromCharCode(charCode)
     }
@@ -129,7 +130,8 @@ export class MatrixService {
       try {
         this.store = new sdk.IndexedDBStore({
           indexedDB: window.indexedDB,
-          localStorage: typeof window.localStorage !== 'undefined' ? window.localStorage : undefined,
+          localStorage:
+            typeof window.localStorage !== 'undefined' ? window.localStorage : undefined,
           dbName: this.getStoreDbName(userId),
         })
         await this.store.startup()
@@ -166,7 +168,11 @@ export class MatrixService {
       let keyPair: KeyPair | null = null
       if (typeof passwordOrKeyPair === 'string') {
         password = passwordOrKeyPair
-      } else if (passwordOrKeyPair && typeof passwordOrKeyPair === 'object' && 'privateKey' in passwordOrKeyPair) {
+      } else if (
+        passwordOrKeyPair &&
+        typeof passwordOrKeyPair === 'object' &&
+        'privateKey' in passwordOrKeyPair
+      ) {
         keyPair = passwordOrKeyPair
       }
 
@@ -180,7 +186,9 @@ export class MatrixService {
         })
       } else if (keyPair) {
         const privateKeyHex = keyPair.privateKey.toString('hex')
-        const passwordHash = CryptoJS.SHA256(CryptoJS.SHA256(privateKeyHex)).toString(CryptoJS.enc.Hex)
+        const passwordHash = CryptoJS.SHA256(CryptoJS.SHA256(privateKeyHex)).toString(
+          CryptoJS.enc.Hex
+        )
 
         const loginParams: any = {
           user: userHex,
@@ -198,7 +206,9 @@ export class MatrixService {
             const available = await tempClient.isUsernameAvailable(loginParams.user)
 
             if (available) {
-              response = await tempClient.register(loginParams.user, loginParams.password, null, { type: 'm.login.dummy' })
+              response = await tempClient.register(loginParams.user, loginParams.password, null, {
+                type: 'm.login.dummy',
+              })
             }
           } catch (e) {
             response = undefined
@@ -303,7 +313,7 @@ export class MatrixService {
         invite: [inviteeId],
         is_direct: true,
         preset: 'trusted_private_chat',
-        visibility: 'private'
+        visibility: 'private',
       })
 
       const roomId = (res && (res.room_id || (res as any).roomId)) || null
@@ -338,7 +348,7 @@ export class MatrixService {
    */
   public async sendEncryptedTextMessage(
     roomId: string,
-    payload: { body: string; hash: string; block: number },
+    payload: { body: string; hash: string; block: number }
   ) {
     if (!this.client) throw new Error('Client not initialized')
     return this.client.sendEvent(roomId, 'm.room.message', {
@@ -363,7 +373,9 @@ export class MatrixService {
       ? (info: { loaded: number; total?: number }) => {
           try {
             opts?.onProgress?.(info.loaded, info.total)
-          } catch (_e) {}
+          } catch {
+            /* ignore */
+          }
         }
       : undefined
 
@@ -373,7 +385,8 @@ export class MatrixService {
       progressCallback: progressCb,
     })
     // matrix-js-sdk may return a string (mxc://...) or an object { content_uri: 'mxc://...' }
-    const uri = typeof res === 'string' ? res : (res && typeof res === 'object' && (res as any).content_uri)
+    const uri =
+      typeof res === 'string' ? res : res && typeof res === 'object' && (res as any).content_uri
 
     if (!uri || typeof uri !== 'string') {
       throw new Error('Upload content failed: invalid response')
@@ -438,12 +451,16 @@ export class MatrixService {
     try {
       if (typeof this.client.mxcUrlToHttp === 'function' && mxcUrl) {
         const candidate = this.client.mxcUrlToHttp(mxcUrl)
-        const isLoopback = typeof candidate === 'string' && (candidate.includes('://127.0.0.1') || candidate.includes('://localhost'))
+        const isLoopback =
+          typeof candidate === 'string' &&
+          (candidate.includes('://127.0.0.1') || candidate.includes('://localhost'))
         if (!isLoopback) {
           httpUrl = candidate
         }
       }
-    } catch (_e) {}
+    } catch {
+      /* ignore */
+    }
 
     if (!httpUrl && typeof mxcUrl === 'string' && mxcUrl.startsWith('mxc://')) {
       try {
@@ -453,7 +470,9 @@ export class MatrixService {
         if (server && mediaId) {
           httpUrl = `https://${server}/_matrix/media/v3/download/${server}/${mediaId}`
         }
-      } catch (_e) {}
+      } catch {
+        /* ignore */
+      }
     }
 
     const bodyName = httpUrl || data.name || 'voice-message'
@@ -480,6 +499,280 @@ export class MatrixService {
     return this.client.sendEvent(roomId, 'm.room.message', content)
   }
 
+  public async sendImage(
+    roomId: string,
+    data: {
+      blob?: Blob
+      mxcUrl?: string
+      name?: string
+      mimetype?: string
+      width?: number
+      height?: number
+      size?: number
+      secrets?: { keys: string; block: number; v?: number; version?: number }
+      block?: number
+    },
+    onProgress?: (loaded: number, total?: number) => void
+  ) {
+    if (!this.client) throw new Error('Client not initialized')
+
+    let mxcUrl = data.mxcUrl
+    let mimetype = data.mimetype
+    let size = data.size
+
+    if (!mxcUrl && data.blob) {
+      mimetype = mimetype || (data.blob as any).type || 'image/jpeg'
+      size = size || data.blob.size
+      mxcUrl = await this.uploadContent(data.blob, {
+        name: data.name || 'image',
+        type: mimetype,
+        onProgress,
+      })
+    }
+
+    if (!mxcUrl) {
+      throw new Error('sendImage failed: missing mxcUrl')
+    }
+
+    const httpUrl = this.resolveMxcHttpUrl(mxcUrl)
+
+    const info: any = {
+      mimetype: mimetype || 'image/jpeg',
+      size: size || 0,
+    }
+    if (typeof data.width === 'number') info.w = data.width
+    if (typeof data.height === 'number') info.h = data.height
+    info.url = mxcUrl
+    if (httpUrl) info.httpUrl = httpUrl
+    if (data.secrets) info.secrets = data.secrets
+
+    const content: any = {
+      msgtype: 'm.image',
+      body: data.name || httpUrl || 'image',
+      url: httpUrl || mxcUrl,
+      info,
+    }
+    if (typeof data.block === 'number') content.block = data.block
+    if (data.secrets?.v) content.version = data.secrets.v
+    return this.client.sendEvent(roomId, 'm.room.message', content)
+  }
+
+  public async sendVideo(
+    roomId: string,
+    data: {
+      blob?: Blob
+      mxcUrl?: string
+      name?: string
+      mimetype?: string
+      width?: number
+      height?: number
+      duration?: number
+      size?: number
+      thumbnailUrl?: string
+      thumbnailMimetype?: string
+      thumbnailWidth?: number
+      thumbnailHeight?: number
+      thumbnailSize?: number
+      secrets?: { keys: string; block: number; v?: number; version?: number }
+      block?: number
+    },
+    onProgress?: (loaded: number, total?: number) => void
+  ) {
+    if (!this.client) throw new Error('Client not initialized')
+
+    let mxcUrl = data.mxcUrl
+    let mimetype = data.mimetype
+    let size = data.size
+
+    if (!mxcUrl && data.blob) {
+      mimetype = mimetype || (data.blob as any).type || 'video/mp4'
+      size = size || data.blob.size
+      mxcUrl = await this.uploadContent(data.blob, {
+        name: data.name || 'video',
+        type: mimetype,
+        onProgress,
+      })
+    }
+
+    if (!mxcUrl) {
+      throw new Error('sendVideo failed: missing mxcUrl')
+    }
+
+    const httpUrl = this.resolveMxcHttpUrl(mxcUrl)
+
+    const info: any = {
+      mimetype: mimetype || 'video/mp4',
+      size: size || 0,
+    }
+    if (typeof data.duration === 'number') info.duration = Math.round(data.duration * 1000) // ms per spec
+    if (typeof data.width === 'number') info.w = data.width
+    if (typeof data.height === 'number') info.h = data.height
+    info.url = mxcUrl
+    if (httpUrl) info.httpUrl = httpUrl
+    if (data.secrets) info.secrets = data.secrets
+    if (data.thumbnailUrl) {
+      info.thumbnail_url = data.thumbnailUrl
+      info.thumbnail_info = {
+        mimetype: data.thumbnailMimetype || 'image/jpeg',
+        w: data.thumbnailWidth,
+        h: data.thumbnailHeight,
+        size: data.thumbnailSize,
+      }
+    }
+
+    const content: any = {
+      msgtype: 'm.video',
+      body: data.name || httpUrl || 'video',
+      url: httpUrl || mxcUrl,
+      info,
+    }
+    if (typeof data.block === 'number') content.block = data.block
+    if (data.secrets?.v) content.version = data.secrets.v
+    return this.client.sendEvent(roomId, 'm.room.message', content)
+  }
+
+  public async sendFile(
+    roomId: string,
+    data: {
+      blob?: Blob
+      mxcUrl?: string
+      name?: string
+      mimetype?: string
+      size?: number
+      secrets?: { keys: string; block: number; v?: number; version?: number }
+      block?: number
+    },
+    onProgress?: (loaded: number, total?: number) => void
+  ) {
+    if (!this.client) throw new Error('Client not initialized')
+
+    let mxcUrl = data.mxcUrl
+    let mimetype = data.mimetype
+    let size = data.size
+
+    if (!mxcUrl && data.blob) {
+      mimetype = mimetype || (data.blob as any).type || 'application/octet-stream'
+      size = size || data.blob.size
+      mxcUrl = await this.uploadContent(data.blob, {
+        name: data.name || 'file',
+        type: mimetype,
+        onProgress,
+      })
+    }
+
+    if (!mxcUrl) {
+      throw new Error('sendFile failed: missing mxcUrl')
+    }
+
+    const httpUrl = this.resolveMxcHttpUrl(mxcUrl)
+    const fileName = data.name || 'file'
+    const fileType = mimetype || 'application/octet-stream'
+    const fileSize = size || 0
+
+    // Совместимость с bastyon-chat / forta.chat: для m.file `body` — это
+    // JSON-строка с { name, type, size, url, secrets? }. Старые клиенты
+    // парсят body как JSON и достают оттуда имя/размер/url. Если положить
+    // в body просто имя файла (Matrix-стандарт), они показывают «NaN undefined».
+    const fileBody: any = {
+      name: fileName,
+      type: fileType,
+      size: fileSize,
+      url: httpUrl || mxcUrl,
+    }
+    if (data.secrets) fileBody.secrets = data.secrets
+
+    const info: any = {
+      mimetype: fileType,
+      size: fileSize,
+    }
+    info.url = mxcUrl
+    if (httpUrl) info.httpUrl = httpUrl
+    if (data.secrets) info.secrets = data.secrets
+
+    const content: any = {
+      msgtype: 'm.file',
+      body: JSON.stringify(fileBody),
+      // Дублируем поля для Matrix-стандарта (поддержка сторонних клиентов: Element и т.д.).
+      filename: fileName,
+      url: httpUrl || mxcUrl,
+      info,
+    }
+    if (typeof data.block === 'number') content.block = data.block
+    if (data.secrets?.v) content.version = data.secrets.v
+    return this.client.sendEvent(roomId, 'm.room.message', content)
+  }
+
+  /**
+   * Отправляет PKOIN-донат как Matrix-сообщение.
+   * msgtype: 'm.text' с extra-полем `pocketnet_transaction` — наш клиент
+   * рендерит карточку, сторонние видят body (читаемое описание).
+   */
+  public async sendPkoinTransaction(
+    roomId: string,
+    payload: {
+      txid: string
+      amount: number
+      fromAddress: string
+      toAddress: string
+      message?: string
+    }
+  ) {
+    if (!this.client) throw new Error('Client not initialized')
+
+    const human = payload.message
+      ? `💎 ${payload.amount} PKOIN · ${payload.message}`
+      : `💎 ${payload.amount} PKOIN`
+
+    return this.client.sendEvent(roomId, 'm.room.message', {
+      msgtype: 'm.text',
+      body: human,
+      pocketnet_transaction: {
+        txid: payload.txid,
+        amount: payload.amount,
+        from: payload.fromAddress,
+        to: payload.toAddress,
+        message: payload.message ?? '',
+      },
+    })
+  }
+
+  /**
+   * Преобразует mxc:// в публичный HTTPS-URL медиа-сервера. Совместимо со sendAudio:
+   * предпочитаем client.mxcUrlToHttp(), отбрасываем loopback-варианты, fallback на ручную сборку.
+   */
+  public mxcToHttp(mxcUrl: string): string | null {
+    return this.resolveMxcHttpUrl(mxcUrl)
+  }
+
+  private resolveMxcHttpUrl(mxcUrl: string): string | null {
+    let httpUrl: string | null = null
+    try {
+      if (typeof this.client.mxcUrlToHttp === 'function' && mxcUrl) {
+        const candidate = this.client.mxcUrlToHttp(mxcUrl)
+        const isLoopback =
+          typeof candidate === 'string' &&
+          (candidate.includes('://127.0.0.1') || candidate.includes('://localhost'))
+        if (!isLoopback) httpUrl = candidate
+      }
+    } catch (_e) {
+      // mxcUrlToHttp может отсутствовать в старых сборках matrix-js-sdk — fallback ниже
+    }
+
+    if (!httpUrl && typeof mxcUrl === 'string' && mxcUrl.startsWith('mxc://')) {
+      try {
+        const t = mxcUrl.replace('mxc://', '').split('/')
+        const server = t[0]
+        const mediaId = t[1]
+        if (server && mediaId) {
+          httpUrl = `https://${server}/_matrix/media/v3/download/${server}/${mediaId}`
+        }
+      } catch (_e) {
+        // некорректный mxc URL — вернём null
+      }
+    }
+    return httpUrl
+  }
+
   /**
    * Покинуть комнату (leave) и забыть её (forget).
    * После forget комната удаляется из локального хранилища SDK.
@@ -497,7 +790,11 @@ export class MatrixService {
       this.client = null
     }
     if (this.store) {
-      try { this.store.destroy?.() } catch (_e) {}
+      try {
+        this.store.destroy?.()
+      } catch {
+        /* ignore */
+      }
       this.store = null
     }
     this.stopKeepAlive()
