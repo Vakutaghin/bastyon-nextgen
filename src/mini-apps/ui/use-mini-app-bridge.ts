@@ -31,6 +31,7 @@ import { PSDK_ACTIONS } from '@/mini-apps/actions/psdk'
 import { PERMISSIONS_API_ACTIONS } from '@/mini-apps/actions/permissions-api'
 import { BARTERON_ACTIONS } from '@/mini-apps/actions/barteron'
 import { createDefaultHostContext } from '@/mini-apps/actions/host-context'
+import { setupEventSources } from '@/mini-apps/events/sources'
 import type { InstalledApp } from '@/mini-apps/types/app'
 import { logger } from '@/services/logger'
 
@@ -96,6 +97,8 @@ export async function bootMiniApps(router: Router): Promise<void> {
       }
     },
   })
+
+  setupEventSources({ router })
 
   log.debug('bridge ready', appsStore.installedCount, 'apps installed')
 }
