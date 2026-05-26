@@ -1,4 +1,5 @@
 import UIKit
+import AVFoundation
 import Capacitor
 
 @UIApplicationMain
@@ -7,7 +8,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Configure the shared audio session for background media playback.
+        // Without .playback category iOS silences the WKWebView audio as soon
+        // as the screen locks or the app moves to background.
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(
+                .playback,
+                mode: .moviePlayback,
+                options: []
+            )
+            try session.setActive(true, options: [])
+        } catch {
+            NSLog("Failed to configure AVAudioSession: \(error)")
+        }
         return true
     }
 

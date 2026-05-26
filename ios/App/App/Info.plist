@@ -55,5 +55,9 @@
 	<string>Bastyon сохраняет в фотогалерею изображения, выбранные в приложении</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Bastyon использует микрофон для записи голосовых сообщений и видеосъёмки</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 </dict>
 </plist>

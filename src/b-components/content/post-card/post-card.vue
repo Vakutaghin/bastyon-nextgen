@@ -10,7 +10,10 @@
 
       <template v-else>
         <SC_RepostOriginalAuthor v-if="isRepost && post.repostAuthor">
-          <router-link :to="'/' + (post.repostAuthor.name || post.repostAuthor.address)" class="author-link">
+          <router-link
+            :to="'/' + (post.repostAuthor.name || post.repostAuthor.address)"
+            class="author-link"
+          >
             <Avatar
               :src="post.repostAuthor.avatar"
               :alt="post.repostAuthor.name || post.repostAuthor.address"
@@ -30,10 +33,7 @@
           </SC_RepostOriginalAuthorInfo>
         </SC_RepostOriginalAuthor>
 
-        <PostCardImages
-          v-if="post.images && post.images.length > 0"
-          :images="post.images"
-        />
+        <PostCardImages v-if="post.images && post.images.length > 0" :images="post.images" />
 
         <VideoPlayer
           v-else-if="(post.type === 'video' || post.type === 'audio') && post.videoUrl"
@@ -41,11 +41,11 @@
           :video-url="post.videoUrl"
           :is-audio="post.type === 'audio'"
           :chapters="chapters"
+          :title="decodedTitle || post.author?.name || 'Bastyon'"
+          :artist="post.author?.name || ''"
         />
 
-        <PostCardVideoPlaceholder
-          v-else-if="post.type === 'video' || post.type === 'audio'"
-        />
+        <PostCardVideoPlaceholder v-else-if="post.type === 'video' || post.type === 'audio'" />
 
         <SC_PostTitle v-if="decodedTitle">
           {{ decodedTitle }}
@@ -68,7 +68,15 @@
             :src="embedUrl"
             title="YouTube video player"
             frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allow="
+              accelerometer;
+              autoplay;
+              clipboard-write;
+              encrypted-media;
+              gyroscope;
+              picture-in-picture;
+              web-share;
+            "
             referrerpolicy="strict-origin-when-cross-origin"
             allowfullscreen
           />
@@ -78,32 +86,29 @@
 
         <SC_PostActions>
           <StarRating
-            v-if='post.hash || post.txid || post.id'
-            :rating='averageRating'
-            :user-vote='post.myVal'
-            :voters-count='post.scoreCnt || 0'
-            :score-sum='post.scoreSum || 0'
-            :share-id='post.hash || post.txid || post.id || ""'
+            v-if="post.hash || post.txid || post.id"
+            :rating="averageRating"
+            :user-vote="post.myVal"
+            :voters-count="post.scoreCnt || 0"
+            :score-sum="post.scoreSum || 0"
+            :share-id="post.hash || post.txid || post.id || ''"
             :content-author-address="post.author?.address || ''"
-            @rating-change='handleRatingChange'
-            @error='handleRatingError'
+            @rating-change="handleRatingChange"
+            @error="handleRatingError"
           />
         </SC_PostActions>
 
-        <PostCardComments
-          :post="post"
-          @collapsed="onCommentsCollapsed"
-        />
+        <PostCardComments :post="post" @collapsed="onCommentsCollapsed" />
       </template>
     </component>
   </SC_PostCard>
 
   <ImageGallery
-    v-if='post.images && post.images.length > 0'
-    v-model:visible='isImageGalleryOpen'
-    :images='post.images'
-    :initial-index='galleryIndex'
-    @hide='closeImageGallery'
+    v-if="post.images && post.images.length > 0"
+    v-model:visible="isImageGalleryOpen"
+    :images="post.images"
+    :initial-index="galleryIndex"
+    @hide="closeImageGallery"
   />
 </template>
 
