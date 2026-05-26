@@ -9,10 +9,4 @@ export * from './types'
 export * from './core'
 export * from './registry'
 export * from './store'
-export {
-  ActionSchemas,
-  ACTION_NAMES,
-  isKnownAction,
-  parseActionParams,
-  type ActionName,
-} from './actions/_schema'
+export * from './actions'
