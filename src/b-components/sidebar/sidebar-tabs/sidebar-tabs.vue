@@ -17,7 +17,6 @@
         <BookOutlined v-else-if="tab.icon === 'BookOutlined'" />
         <StarOutlined v-else-if="tab.icon === 'StarOutlined'" />
         <MessageOutlined v-else-if="tab.icon === 'MessageOutlined'" />
-        <ShopOutlined v-else-if="tab.icon === 'ShopOutlined'" />
         <AppstoreOutlined v-else />
         <SC_TabsLabel v-if="!collapsed">{{ tab.name }}</SC_TabsLabel>
       </SC_TabsItem>

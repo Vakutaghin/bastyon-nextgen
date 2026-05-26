@@ -28,6 +28,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'
+import { BUILT_IN_APPS, getBuiltInIconUrl } from '@/mini-apps/registry/built-in'
 import {
   SC_FavoritesSection,
   SC_FavoritesItem,
@@ -43,7 +44,27 @@ const router = useRouter()
 const route = useRoute()
 const favStore = useFavoriteMiniAppsStore()
 
-const items = computed(() => favStore.items)
+/**
+ * Barteron всегда закреплён первым — это built-in миниаппа с `cantdelete: true`,
+ * исторически имела отдельный пин-таб в сайдбаре. Сейчас рендерится в общем
+ * списке favorites для визуального единообразия. Если пользователь отметит
+ * Barteron звёздочкой в каталоге (он попадёт в favStore), дубль фильтруется.
+ */
+const BARTERON_PINNED = (() => {
+  const meta = BUILT_IN_APPS.find((a) => a.id === 'barteron.pocketnet.app')
+  if (!meta) return null
+  return {
+    id: meta.id,
+    name: meta.name,
+    scope: meta.scope,
+    icon: getBuiltInIconUrl(meta.scope),
+  }
+})()
+
+const items = computed(() => {
+  const userPins = favStore.items.filter((f) => f.id !== BARTERON_PINNED?.id)
+  return BARTERON_PINNED ? [BARTERON_PINNED, ...userPins] : userPins
+})
 
 const brokenIcons = ref(new Set<string>())
 

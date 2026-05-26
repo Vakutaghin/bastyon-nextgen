@@ -1,4 +1,4 @@
-import { defineComponent, watch, onMounted, computed, ref } from 'vue'
+import { defineComponent, watch, computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   HomeOutlined,
@@ -10,10 +10,7 @@ import {
   StarOutlined,
   MessageOutlined,
   AppstoreOutlined,
-  ShopOutlined,
 } from '@ant-design/icons-vue'
-
-const BARTERON_PATH = '/app/barteron.pocketnet.app'
 
 import { useFiltersStore } from '@/stores/filters-store'
 import { useAuthStore } from '@/blockchain'
@@ -37,7 +34,6 @@ export const sidebarTabsOptions = defineComponent({
     StarOutlined,
     MessageOutlined,
     AppstoreOutlined,
-    ShopOutlined,
     SC_Tabs,
     SC_TabsItem,
     SC_TabsLabel,
@@ -70,20 +66,16 @@ export const sidebarTabsOptions = defineComponent({
       () => route.path,
       (path) => {
         // Главная — сбрасываем активный таб на «Ленту» (id=1) если ранее был
-        // miniapp-таб (8 или 9). feedMode через query сохраняется отдельно.
+        // miniapp-таб (id=8). feedMode через query сохраняется отдельно.
         if (path === '/') {
-          const current = filtersStore.activeTab
-          if (current === 8 || current === 9) {
+          if (filtersStore.activeTab === 8) {
             filtersStore.selectTab(1)
           }
           return
         }
-        // Barteron — отдельный пин-таб
-        if (path === BARTERON_PATH || path.startsWith(BARTERON_PATH + '/')) {
-          filtersStore.selectTab(9)
-          return
-        }
-        // Прочие /miniapps и /app/* — общий таб мини-приложений
+        // /miniapps и /app/* — общий таб мини-приложений. Активная подсветка
+        // конкретного pinned-аппа (включая Barteron) рендерится отдельно
+        // в `sidebar-favorites.vue` по route.path.
         if (path === '/miniapps' || path.startsWith('/app/')) {
           filtersStore.selectTab(8)
         }
@@ -126,14 +118,6 @@ export const sidebarTabsOptions = defineComponent({
         return
       }
 
-      // Barteron — прямой пин на конкретную миниаппу
-      if (tabId === 9) {
-        if (route.path !== BARTERON_PATH) {
-          void router.push(BARTERON_PATH)
-        }
-        return
-      }
-
       // Если уходим с /miniapps на feed-фильтр — возвращаемся на главную.
       if (route.path === '/miniapps' || route.path.startsWith('/app/')) {
         void router.push('/')
@@ -150,12 +134,6 @@ export const sidebarTabsOptions = defineComponent({
       }
       updateUrlParam(TAB_URL_MAPPING[tabId as number] ?? null)
     }
-
-    onMounted(() => {
-      if (route.path === '/messages') {
-        filtersStore.selectTab(9)
-      }
-    })
 
     return { filtersStore, tabsData, selectTab }
   },

@@ -7,5 +7,4 @@ export const tabsData = [
   { id: 6, name: 'Избранное', icon: 'BookOutlined', active: false, disabled: false },
   { id: 7, name: 'Обсуждаемое', icon: 'StarOutlined', active: false, disabled: false },
   { id: 8, name: 'Мини-приложения', icon: 'AppstoreOutlined', active: false, disabled: false },
-  { id: 9, name: 'Barteron', icon: 'ShopOutlined', active: false, disabled: false },
 ]
