@@ -8,6 +8,8 @@ export * from './rpc'
 export * from './payment'
 export * from './content'
 export * from './chat'
+export * from './media'
+export * from './psdk'
 export * from './permissions-api'
 export * from './barteron'
 export {

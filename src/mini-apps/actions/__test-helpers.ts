@@ -87,6 +87,8 @@ export function makeMockHost(overrides: Partial<HostContext> = {}): HostContext 
     chatSendMessage: vi.fn(async () => {
       throw new Error('chat_send_not_implemented')
     }),
+    // 5.8
+    takePhoto: vi.fn(async () => ({ images: [] })),
     ...overrides,
   }
 }

@@ -26,6 +26,8 @@ import { RPC_ACTIONS } from '@/mini-apps/actions/rpc'
 import { PAYMENT_ACTIONS } from '@/mini-apps/actions/payment'
 import { CONTENT_ACTIONS } from '@/mini-apps/actions/content'
 import { CHAT_ACTIONS } from '@/mini-apps/actions/chat'
+import { MEDIA_ACTIONS } from '@/mini-apps/actions/media'
+import { PSDK_ACTIONS } from '@/mini-apps/actions/psdk'
 import { PERMISSIONS_API_ACTIONS } from '@/mini-apps/actions/permissions-api'
 import { BARTERON_ACTIONS } from '@/mini-apps/actions/barteron'
 import { createDefaultHostContext } from '@/mini-apps/actions/host-context'
@@ -73,6 +75,8 @@ export async function bootMiniApps(router: Router): Promise<void> {
       ...PAYMENT_ACTIONS,
       ...CONTENT_ACTIONS,
       ...CHAT_ACTIONS,
+      ...MEDIA_ACTIONS,
+      ...PSDK_ACTIONS,
       ...PERMISSIONS_API_ACTIONS,
       ...BARTERON_ACTIONS,
     },

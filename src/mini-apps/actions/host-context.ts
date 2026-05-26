@@ -140,15 +140,29 @@ export interface HostContext {
   /** Возвращает pending actions пользователя (транзакции, ожидающие подтверждения). MVP: `[]`. */
   getPendingActions(): unknown[]
 
+  // ─── media (5.8) ───────────────────────────────────────────────────────
+  /**
+   * Снимает фото камерой устройства (или выбирает из галереи на mobile).
+   * Возвращает legacy-форму `{ images: [{ image: <base64> }] }`.
+   *
+   * - Web/desktop без Capacitor → throws `mobile:camera:notsupported`.
+   * - Пользователь отменил → throws `mobile:camera:cancel`.
+   */
+  takePhoto(): Promise<{ images: Array<{ image: string }> }>
+
   // ─── chat (5.7) ────────────────────────────────────────────────────────
   /** Открывает room в Matrix-чате. */
   chatOpenRoom(roomid: string): Promise<void>
   /**
-   * Создаёт или возвращает существующую комнату с пользователями.
-   * MVP: throws `not_implemented` пока nextgen не подключит Matrix API для миниапп.
+   * Создаёт или возвращает существующую DM-комнату с одним пользователем.
+   * Возвращает `{roomid}` в legacy-форме. Группы (`users.length > 1`) пока
+   * не поддерживаются — throws `chat_group_rooms_not_supported`.
    */
   chatGetOrCreateRoom(users: string[], parameters?: unknown): Promise<Record<string, unknown>>
-  /** Шлёт сообщение в комнату. MVP: throws. */
+  /**
+   * Шлёт текстовое сообщение в комнату. `content` принимает string или объект
+   * с полем `body`. Возвращает ответ matrix-js-sdk `{event_id}`.
+   */
   chatSendMessage(roomid: string, content: unknown): Promise<Record<string, unknown>>
 }
 
@@ -387,17 +401,104 @@ export async function createDefaultHostContext(
       return []
     },
 
+    // ─── media ─────────────────────────────────────────────────────────────
+    takePhoto: async () => {
+      if (!isCapacitor()) {
+        throw new Error('mobile:camera:notsupported')
+      }
+      // Динамический импорт — `@capacitor/camera` подтягивается только на
+      // mobile-сборках; в web/desktop SSR это «модуль не найден» если он
+      // не зарезолвен на build-time, поэтому ловим оба исхода.
+      let cameraMod: typeof import('@capacitor/camera')
+      try {
+        cameraMod = await import('@capacitor/camera')
+      } catch {
+        throw new Error('mobile:camera:notsupported')
+      }
+      try {
+        const photo = await cameraMod.Camera.getPhoto({
+          quality: 85,
+          allowEditing: false,
+          resultType: cameraMod.CameraResultType.Base64,
+          source: cameraMod.CameraSource.Prompt,
+        })
+        const base64 = photo.base64String
+        if (!base64) throw new Error('mobile:camera:cancel')
+        return { images: [{ image: base64 }] }
+      } catch (e) {
+        // Capacitor бросает Error со строкой "User cancelled photos app" /
+        // "User denied access to camera" — приводим к legacy `cancel`.
+        const msg = e instanceof Error ? e.message.toLowerCase() : ''
+        if (msg.includes('cancel') || msg.includes('denied')) {
+          throw new Error('mobile:camera:cancel', { cause: e })
+        }
+        throw e
+      }
+    },
+
     // ─── chat ──────────────────────────────────────────────────────────────
     chatOpenRoom: async (roomid) => {
       void opts.router.push({ path: '/messages', query: { room: roomid } })
     },
 
-    chatGetOrCreateRoom: async (_users, _parameters) => {
-      throw new Error('chat_get_or_create_not_implemented')
+    chatGetOrCreateRoom: async (users, _parameters) => {
+      if (!Array.isArray(users) || users.length === 0) {
+        throw new Error('chat_no_users')
+      }
+      if (users.length > 1) {
+        // Групповые комнаты пока не поддерживаем — matrix-service умеет только
+        // createDirectRoom(inviteeId). Когда понадобится — добавить
+        // createGroupRoom() в matrix-service.
+        throw new Error('chat_group_rooms_not_supported')
+      }
+
+      const address = users[0]
+      if (!address) throw new Error('chat_no_users')
+
+      const { matrixService } = await import('@/b-components/messenger/services/matrix-service')
+      const { resolveMatrixHost } = await import('@/b-components/messenger/helpers')
+      const { useMessengerStore } = await import('@/b-components/messenger/store/messenger-store')
+
+      // initMatrix идемпотентен (см. messenger-store.ts) — если клиент уже
+      // залогинен, вернётся быстро; иначе — login + sync.
+      await useMessengerStore().initMatrix()
+
+      const hex = matrixService.addressToHex(address).toLowerCase()
+      const partnerId = `@${hex}:${resolveMatrixHost()}`
+
+      // Сначала ищем существующую DM-комнату с этим партнёром, чтобы не плодить
+      // дубли. Логика повторяет findExistingRoomByAddress из messenger-store,
+      // но без зависимости от UI-стора.
+      const existing = matrixService
+        .getRooms()
+        .find((room: { roomId: string; getMember?: (id: string) => unknown }) => {
+          const member = room.getMember?.(partnerId)
+          return Boolean(member)
+        })
+      if (existing) return { roomid: existing.roomId }
+
+      const roomId = await matrixService.createDirectRoom(partnerId)
+      if (!roomId) throw new Error('chat_create_room_failed')
+      return { roomid: roomId }
     },
 
-    chatSendMessage: async (_roomid, _content) => {
-      throw new Error('chat_send_not_implemented')
+    chatSendMessage: async (roomid, content) => {
+      if (!roomid || typeof roomid !== 'string') throw new Error('chat_no_roomid')
+
+      const text =
+        typeof content === 'string'
+          ? content
+          : content && typeof content === 'object' && 'body' in content
+            ? String((content as { body: unknown }).body)
+            : ''
+      if (!text) throw new Error('chat_empty_content')
+
+      const { matrixService } = await import('@/b-components/messenger/services/matrix-service')
+      const { useMessengerStore } = await import('@/b-components/messenger/store/messenger-store')
+
+      await useMessengerStore().initMatrix()
+      const res = await matrixService.sendMessage(roomid, text)
+      return (res as Record<string, unknown>) ?? { ok: true }
     },
   }
 }
