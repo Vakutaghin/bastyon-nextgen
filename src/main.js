@@ -20,9 +20,9 @@ if (typeof process === 'undefined') {
     env: {},
     browser: true,
     version: 'v16.0.0',
-    nextTick: function(callback) {
+    nextTick: function (callback) {
       setTimeout(callback, 0)
-    }
+    },
   }
   if (typeof globalThis !== 'undefined') {
     globalThis.process = processPolyfill
@@ -51,9 +51,9 @@ import { useNotificationsStore, useNotificationSettingsStore, useTorStore } from
 import '@/helpers/api/request'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { showToastsForNewNotifications } from '@/b-components/header/header-notifications/notification-toasts'
+import { bootMiniApps } from '@/mini-apps/ui/use-mini-app-bridge'
 import { queryClient } from './query-client'
 import './style.css'
-
 
 // Подавляем предупреждение о theme injection в dev-режиме
 // Это известная проблема в ant-design-vue v4, которая не влияет на функциональность
@@ -123,6 +123,11 @@ watch(
   },
   { immediate: true }
 )
+
+// Поднимаем mini-apps bridge как можно раньше — нужно чтобы window.message listener
+// был активен до того как iframe миниаппы успеет загрузить SDK и отправить первое
+// сообщение. Async-фаза (lazy import сторов) обычно резолвится в один микротаск.
+bootMiniApps(router).catch((e) => console.warn('[main] bootMiniApps failed:', e))
 
 // Инициализируем IndexedDB перед монтированием приложения.
 // В Tauri/WebView IndexedDB может зависнуть — таймаут гарантирует монтирование и возможность отладки.

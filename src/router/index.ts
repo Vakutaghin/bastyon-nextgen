@@ -11,10 +11,13 @@ const WalletsPage = () => import('@/pages/wallets-page/wallets-page.vue')
 const MyVideosPage = () => import('@/pages/my-videos-page/my-videos-page.vue')
 const BlockExplorerPage = () => import('@/pages/block-explorer-page/block-explorer-page.vue')
 const ExplorerBlockPage = () => import('@/pages/block-explorer-page/block-page/block-page.vue')
-const ExplorerTxPage    = () => import('@/pages/block-explorer-page/tx-page/tx-page.vue')
-const ExplorerAddressPage = () => import('@/pages/block-explorer-page/address-page/address-page.vue')
+const ExplorerTxPage = () => import('@/pages/block-explorer-page/tx-page/tx-page.vue')
+const ExplorerAddressPage = () =>
+  import('@/pages/block-explorer-page/address-page/address-page.vue')
 const ExplorerPeersPage = () => import('@/pages/block-explorer-page/peers-page/peers-page.vue')
 const SearchPage = () => import('@/pages/search-page/search-page.vue')
+const MiniAppsPage = () => import('@/pages/mini-apps-page/mini-apps-page.vue')
+const MiniAppPage = () => import('@/pages/mini-app-page/mini-app-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])
@@ -26,71 +29,83 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomePage
+      component: HomePage,
     },
     {
       path: '/settings',
       name: 'settings',
-      component: SettingsPage
+      component: SettingsPage,
     },
     {
       path: '/limits',
       name: 'limits',
-      component: LimitsPage
+      component: LimitsPage,
     },
     {
       path: '/wallets',
       name: 'wallets',
-      component: WalletsPage
+      component: WalletsPage,
     },
     {
       path: '/my-videos',
       name: 'my-videos',
-      component: MyVideosPage
+      component: MyVideosPage,
     },
     // Block explorer routes must come BEFORE the catch-all /:userName below —
     // otherwise the profile route greedily matches `/explorer`, `/explorer/...`.
     {
       path: '/explorer',
       name: 'explorer',
-      component: BlockExplorerPage
+      component: BlockExplorerPage,
     },
     {
       path: '/explorer/block/:hashOrHeight',
       name: 'explorer-block',
       component: ExplorerBlockPage,
-      props: true
+      props: true,
     },
     {
       path: '/explorer/tx/:txid',
       name: 'explorer-tx',
       component: ExplorerTxPage,
-      props: true
+      props: true,
     },
     {
       path: '/explorer/address/:address',
       name: 'explorer-address',
       component: ExplorerAddressPage,
-      props: true
+      props: true,
     },
     {
       path: '/explorer/peers',
       name: 'explorer-peers',
-      component: ExplorerPeersPage
+      component: ExplorerPeersPage,
     },
     // /search must be declared BEFORE the catch-all /:userName so the
     // profile route doesn't greedily match it.
     {
       path: '/search',
       name: 'search',
-      component: SearchPage
+      component: SearchPage,
+    },
+    // Мини-приложения — список и iframe. Также объявляем ДО catch-all /:userName.
+    {
+      path: '/miniapps',
+      name: 'miniapps',
+      component: MiniAppsPage,
+    },
+    {
+      path: '/app/:appId/:innerPath(.*)?',
+      name: 'mini-app',
+      component: MiniAppPage,
+      props: true,
     },
     {
       path: '/:userName',
       name: 'profile',
-      component: ProfilePage
-    }
-  ]
+      component: ProfilePage,
+    },
+  ],
 })
 
 router.beforeEach(async (to) => {

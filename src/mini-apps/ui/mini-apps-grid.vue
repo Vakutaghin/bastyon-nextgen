@@ -1,0 +1,129 @@
+<template>
+  <div>
+    <SC_Search>
+      <InputSearch v-model:value="search" placeholder="Поиск по приложениям…" />
+    </SC_Search>
+
+    <SC_Error v-if="error"> Не удалось загрузить каталог: {{ error.message }} </SC_Error>
+
+    <!-- Установленные (built-in + локальные) -->
+    <SC_Section v-if="filteredInstalled.length > 0">
+      <SC_SectionTitle>Установленные</SC_SectionTitle>
+      <SC_Grid>
+        <CardItem
+          v-for="app in filteredInstalled"
+          :key="'i:' + app.manifest.id"
+          :id="app.manifest.id"
+          :name="app.manifest.name"
+          :icon="app.icon"
+          :is-fav="favStore.isFavorite(app.manifest.id)"
+          @open="openInstalled(app.manifest.id)"
+          @toggle-favorite="toggleFavInstalled(app)"
+        />
+      </SC_Grid>
+    </SC_Section>
+
+    <!-- Каталог из RPC getapps -->
+    <SC_Section v-if="filteredRemote.length > 0">
+      <SC_SectionTitle>Каталог</SC_SectionTitle>
+      <SC_Grid>
+        <CardItem
+          v-for="entry in filteredRemote"
+          :key="'r:' + entry.id"
+          :id="entry.id"
+          :name="entry.name"
+          :icon="entry.icon ?? ''"
+          :is-fav="favStore.isFavorite(entry.id)"
+          @open="openRemote(entry)"
+          @toggle-favorite="toggleFavRemote(entry)"
+        />
+      </SC_Grid>
+
+      <SC_LoadMore v-if="hasMore">
+        <SC_LoadMoreBtn type="button" :disabled="isLoading" @click="loadMore">
+          {{ isLoading ? 'Загрузка…' : 'Загрузить ещё' }}
+        </SC_LoadMoreBtn>
+      </SC_LoadMore>
+    </SC_Section>
+
+    <SC_Empty v-if="!isLoading && filteredInstalled.length === 0 && filteredRemote.length === 0">
+      {{ search ? 'Ничего не найдено.' : 'Каталог пуст.' }}
+    </SC_Empty>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAppsStore } from '@/mini-apps/store/apps-store'
+import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'
+import { useRemoteApps } from './use-remote-apps'
+import CardItem from './mini-apps-grid-card.vue'
+import InputSearch from '@/components/input-search/input-search.vue'
+import type { RemoteAppEntry } from '@/mini-apps/registry/remote-registry'
+import type { InstalledApp } from '@/mini-apps/types/app'
+import { getBuiltInIconUrl } from '@/mini-apps/registry/built-in'
+import {
+  SC_Search,
+  SC_Section,
+  SC_SectionTitle,
+  SC_Grid,
+  SC_LoadMore,
+  SC_LoadMoreBtn,
+  SC_Empty,
+  SC_Error,
+} from './mini-apps-grid.styled'
+
+const router = useRouter()
+const appsStore = useAppsStore()
+const favStore = useFavoriteMiniAppsStore()
+
+onMounted(() => {
+  void favStore.init()
+})
+
+const { search, items: remoteItems, hasMore, isLoading, error, loadMore } = useRemoteApps()
+
+const matchesSearch = (text: string): boolean => {
+  if (!search.value) return true
+  return text.toLowerCase().includes(search.value.toLowerCase())
+}
+
+const filteredInstalled = computed(() => {
+  return appsStore.forGrid.filter((app) => matchesSearch(app.manifest.name))
+})
+
+// «Установленные» = built-in + local. Каталог не должен повторно показывать их,
+// но remote-session app (открытая через каталог в этой сессии) пусть остаётся в каталоге.
+const persistedIds = computed(() => new Set(appsStore.forGrid.map((a) => a.manifest.id)))
+const filteredRemote = computed(() =>
+  remoteItems.value.filter((e) => !persistedIds.value.has(e.id))
+)
+
+const openInstalled = (appId: string) => {
+  void router.push(`/app/${encodeURIComponent(appId)}`)
+}
+
+const openRemote = (entry: RemoteAppEntry) => {
+  appsStore.installFromRemoteEntry(entry)
+  void router.push(`/app/${encodeURIComponent(entry.id)}`)
+}
+
+const toggleFavInstalled = (app: InstalledApp) => {
+  void favStore.toggle({
+    id: app.manifest.id,
+    name: app.manifest.name,
+    scope: app.scope,
+    icon: app.icon || getBuiltInIconUrl(app.scope),
+  })
+}
+
+const toggleFavRemote = (entry: RemoteAppEntry) => {
+  void favStore.toggle({
+    id: entry.id,
+    name: entry.name,
+    scope: entry.scope,
+    icon: entry.icon ?? getBuiltInIconUrl(entry.scope),
+  })
+}
+</script>
