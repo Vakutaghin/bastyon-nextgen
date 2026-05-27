@@ -13,60 +13,33 @@
  * Bridge **не знает** про конкретные actions, permissions, или Pinia. Это
  * чистый wire-уровень. Все доменные действия инжектятся снаружи через
  * {@link BridgeOptions}.
+ *
+ * Handler-логика (rpc/fetch/listeners) живёт в bridge-rpc.ts / bridge-fetch.ts /
+ * bridge-listeners.ts — здесь только wire-уровень и общий state.
  */
 
 import { logger } from '@/services/logger'
-import { parseIncomingMessage, rpcError, rpcSuccess, pushEvent } from '../types/messages'
-import type {
-  IncomingMessage,
-  OutgoingMessage,
-  Payload,
-  RpcError,
-  FetchRequest,
-  FetchResponse,
-} from '../types/messages'
+import { parseIncomingMessage, pushEvent } from '../types/messages'
+import type { IncomingMessage, Payload } from '../types/messages'
 import type { InstalledApp, AppId } from '../types/app'
-import { type AppOriginResolver, safeNormalizeOrigin } from './origin-guard'
+import { safeNormalizeOrigin } from './origin-guard'
+import {
+  type AppConnection,
+  type BridgeOptions,
+  type BridgeRouterState,
+  type RpcContext,
+  DEFAULT_RPC_TIMEOUT_MS,
+  getMsgExtra,
+  postRaw,
+} from './bridge-helpers'
+import { handleListener } from './bridge-listeners'
+import { handleRpc } from './bridge-rpc'
+import { handleFetch } from './bridge-fetch'
+
+export type { BridgeOptions, RpcContext }
+export { DEFAULT_RPC_TIMEOUT_MS }
 
 const log = logger.scope('[mini-apps:bridge]')
-
-/** Стандартный таймаут на один RPC. Конкретные actions могут переопределять. */
-export const DEFAULT_RPC_TIMEOUT_MS = 30_000
-
-export interface RpcContext {
-  readonly app: InstalledApp
-  readonly action: string
-  readonly data: unknown
-  readonly signal: AbortSignal
-}
-
-export interface BridgeOptions {
-  resolver: AppOriginResolver
-
-  /** Выполняет RPC. Должен либо вернуть результат, либо бросить ошибку. */
-  dispatchRpc(ctx: RpcContext): Promise<Payload>
-
-  /** Колбэк когда iframe зарегистрировал push-listener (для UI «приложение загружено»). */
-  onListenerRegistered?(app: InstalledApp, listenerId: string): void
-
-  /** Колбэк fire-and-forget событий от iframe (`loaded`, `changestate`, ...). */
-  onIframeEvent?(app: InstalledApp, event: string, data: unknown): void
-
-  /** Обработчик SW-туннеля. Если не задан — FETCH_REQUEST отвергается. */
-  onFetchRequest?(app: InstalledApp, req: FetchRequest): Promise<FetchResponse>
-
-  /** Таймаут на RPC. Default — {@link DEFAULT_RPC_TIMEOUT_MS}. */
-  rpcTimeoutMs?: number
-}
-
-interface AppConnection {
-  /** Окно iframe для отправки сообщений. Сохраняем из event.source. */
-  window: MessageEventSource
-  /** Канонический origin приложения для targetOrigin. */
-  origin: string
-  /** ID push-канала, сообщённый миниаппой через `{id, listener}`. Null если ещё не регистрировался. */
-  listenerId: string | null
-}
 
 export class MiniAppsBridge {
   private connections = new Map<AppId, AppConnection>()
@@ -103,7 +76,7 @@ export class MiniAppsBridge {
   push(appId: AppId, key: string, data: Payload): boolean {
     const conn = this.connections.get(appId)
     if (!conn || !conn.listenerId) return false
-    this.postRaw(conn, pushEvent(conn.listenerId, key, data))
+    postRaw(conn, pushEvent(conn.listenerId, key, data))
     return true
   }
 
@@ -169,161 +142,28 @@ export class MiniAppsBridge {
   }
 
   private async handle(app: InstalledApp, msg: IncomingMessage): Promise<void> {
+    if (!this.opts) return
+    const state: BridgeRouterState = {
+      connections: this.connections,
+      inflight: this.inflight,
+      opts: this.opts,
+      postRaw,
+    }
     switch (msg.kind) {
       case 'listener':
-        this.handleListener(app, msg.message.id, msg.message.listener)
+        handleListener(state, app, msg.message.id, msg.message.listener)
         return
       case 'rpc':
-        await this.handleRpc(app, msg.message.id, msg.message.action, msg.message.data)
+        await handleRpc(state, app, msg.message.id, msg.message.action, msg.message.data)
         return
       case 'event':
-        this.opts?.onIframeEvent?.(app, msg.message.event, msg.message.data)
+        this.opts.onIframeEvent?.(app, msg.message.event, msg.message.data)
         return
       case 'fetch':
-        await this.handleFetch(app, msg.message)
+        await handleFetch(state, app, msg.message)
         return
     }
   }
-
-  private handleListener(app: InstalledApp, requestId: string, listenerId: string): void {
-    const conn = this.connections.get(app.manifest.id)
-    if (!conn) return
-    conn.listenerId = listenerId
-    this.postRaw(conn, rpcSuccess(requestId, 'registered'))
-    this.opts?.onListenerRegistered?.(app, listenerId)
-    log.debug('listener registered', app.manifest.id, listenerId)
-  }
-
-  private async handleRpc(
-    app: InstalledApp,
-    requestId: string,
-    action: string,
-    data: unknown
-  ): Promise<void> {
-    if (!this.opts) return
-
-    const ctrl = new AbortController()
-    this.inflight.set(requestId, ctrl)
-
-    const timeoutMs = this.opts.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS
-    const timer = setTimeout(() => {
-      ctrl.abort(new Error('rpc_timeout'))
-    }, timeoutMs)
-
-    const start = performance.now()
-    try {
-      const result = await this.opts.dispatchRpc({
-        app,
-        action,
-        data,
-        signal: ctrl.signal,
-      })
-      const conn = this.connections.get(app.manifest.id)
-      if (conn) this.postRaw(conn, rpcSuccess(requestId, result))
-      log.debug('rpc ok', app.manifest.id, action, `${(performance.now() - start).toFixed(1)}ms`)
-    } catch (err) {
-      const conn = this.connections.get(app.manifest.id)
-      if (conn) this.postRaw(conn, rpcError(requestId, normalizeError(err, ctrl.signal)))
-      log.debug('rpc err', app.manifest.id, action, err)
-    } finally {
-      clearTimeout(timer)
-      this.inflight.delete(requestId)
-    }
-  }
-
-  private async handleFetch(app: InstalledApp, req: FetchRequest): Promise<void> {
-    if (!this.opts?.onFetchRequest) {
-      // SW-туннель не сконфигурирован — отвечаем явной ошибкой
-      const conn = this.connections.get(app.manifest.id)
-      if (conn) {
-        this.postRaw(conn, {
-          type: 'FETCH_RESPONSE',
-          requestId: req.requestId,
-          success: false,
-          error: 'fetch_tunnel_not_configured',
-        })
-      }
-      return
-    }
-
-    try {
-      const resp = await this.opts.onFetchRequest(app, req)
-      const conn = this.connections.get(app.manifest.id)
-      if (conn) this.postRaw(conn, resp)
-    } catch (err) {
-      const conn = this.connections.get(app.manifest.id)
-      if (conn) {
-        this.postRaw(conn, {
-          type: 'FETCH_RESPONSE',
-          requestId: req.requestId,
-          success: false,
-          error: err instanceof Error ? err.message : 'unknown error',
-        })
-      }
-    }
-  }
-
-  private postRaw(conn: AppConnection, message: OutgoingMessage): void {
-    // `structuredClone` (использует postMessage) НЕ умеет в Vue/Pinia reactive Proxy
-    // объекты (DataCloneError) — а response часто содержит данные из сторов
-    // (например `app.manifest` в appinfo). Делаем JSON-roundtrip как универсальный
-    // распроксиватель: дёшево, гарантированно даёт plain-объекты, и заодно
-    // отсекает функции/символы/циклы которые в postMessage всё равно нельзя.
-    let cloned: OutgoingMessage
-    try {
-      cloned = JSON.parse(JSON.stringify(message)) as OutgoingMessage
-    } catch (err) {
-      log.warn('postMessage: response is not JSON-serializable', err, message)
-      return
-    }
-    try {
-      conn.window.postMessage(cloned, { targetOrigin: conn.origin })
-    } catch (err) {
-      log.warn('postMessage failed', err)
-    }
-  }
-}
-
-function getMsgExtra(msg: IncomingMessage): string {
-  switch (msg.kind) {
-    case 'rpc':
-      return msg.message.action
-    case 'event':
-      return msg.message.event
-    case 'listener':
-      return msg.message.listener
-    case 'fetch':
-      return 'fetch'
-  }
-}
-
-function normalizeError(err: unknown, signal: AbortSignal): RpcError['error'] {
-  if (signal.aborted) {
-    return {
-      message: 'rpc_timeout',
-      name: 'TimeoutError',
-      code: 'timeout',
-    }
-  }
-  if (err instanceof Error) {
-    const out: RpcError['error'] = {
-      message: err.message || 'unknown error',
-      name: err.name,
-      stack: err.stack,
-    }
-    // Известные action-registry / rate-limiter ошибки несут машинно-читаемый
-    // `code` и (для rate-limit) `retryAfterMs`. Пробрасываем их в `RpcError`,
-    // чтобы SDK миниаппы мог реагировать программно.
-    const code = (err as { code?: unknown }).code
-    if (typeof code === 'string') out.code = code
-    const retryAfter = (err as { retryAfterMs?: unknown }).retryAfterMs
-    if (typeof retryAfter === 'number') out.retryAfter = retryAfter
-    return out
-  }
-  if (typeof err === 'string') {
-    return { message: err, name: 'Error' }
-  }
-  return { message: 'unknown error', name: 'Error' }
 }
 
 /**

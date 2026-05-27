@@ -16,9 +16,7 @@
 import { defineStore } from 'pinia'
 import { logger } from '@/services/logger'
 import type { InstalledApp, AppId } from '../types/app'
-import type { ParsedManifest } from '../types/manifest'
-import type { PermissionId } from '../types/permissions'
-import { BUILT_IN_APPS, getBuiltInIconUrl, type BuiltInApp } from '../registry/built-in'
+import { BUILT_IN_APPS } from '../registry/built-in'
 import { manifestLoader, type ManifestLoader } from '../registry/manifest-loader'
 import {
   localOverrides,
@@ -28,6 +26,8 @@ import {
 import type { RemoteAppEntry } from '../registry/remote-registry'
 import { matchesOrigin, type AppOriginResolver } from '../core/origin-guard'
 import { usePermissionsStore } from './permissions-store'
+import { builtInToInstalled, doInstall, remoteEntryToInstalled } from './apps-installer'
+import { seedPreinstalledGrants } from './apps-permission-sync'
 
 const log = logger.scope('[mini-apps:store]')
 
@@ -122,13 +122,7 @@ export const useAppsStore = defineStore('mini-apps:apps', {
       for (const b of BUILT_IN_APPS) {
         const app = builtInToInstalled(b)
         this.installed[app.manifest.id] = app
-        // Засеиваем pre-installed grants. Не перезаписываем если пользователь уже
-        // явно изменил (granted/denied/revoke).
-        for (const perm of b.grantedPermissions ?? []) {
-          if (permsStore.stateOf(b.id, perm) === null) {
-            await permsStore.set(b.id, perm, 'granted', 'preinstalled')
-          }
-        }
+        await seedPreinstalledGrants(permsStore, b)
       }
 
       // 2. Локальные оверрайды — параллельная установка, ошибки не блокируют init.
@@ -220,26 +214,7 @@ export const useAppsStore = defineStore('mini-apps:apps', {
       const existing = this.installed[entry.id]
       if (existing) return existing
 
-      const app: InstalledApp = {
-        manifest: {
-          id: entry.id,
-          name: entry.name,
-          version: 0,
-          versionText: '',
-          description: entry.description ?? '',
-          descriptions: {},
-          author: entry.author ?? '',
-          scope: entry.scope,
-          develop: false,
-          permissions: [],
-        },
-        scope: entry.scope,
-        icon: entry.icon ?? getBuiltInIconUrl(entry.scope),
-        source: 'remote-session',
-        installedAt: Date.now(),
-        grantedPermissions: [],
-        includeInMiniApps: true,
-      }
+      const app = remoteEntryToInstalled(entry)
       this.installed[entry.id] = app
       log.debug('registered remote app (session)', entry.id)
       return app
@@ -297,56 +272,7 @@ export const useAppsStore = defineStore('mini-apps:apps', {
     // ─── internals ──────────────────────────────────────────────────────────
 
     async _doInstall(scope: string, opts: { id?: AppId; source?: 'local' }): Promise<InstalledApp> {
-      const manifest = await deps.loader.load(scope)
-      if (opts.id && manifest.id !== opts.id) {
-        throw new Error(`discrepancy:id (expected ${opts.id}, got ${manifest.id})`)
-      }
-      const app: InstalledApp = {
-        manifest,
-        scope,
-        icon: getBuiltInIconUrl(scope),
-        source: opts.source ?? 'local',
-        installedAt: Date.now(),
-        grantedPermissions: [],
-      }
-      return app
+      return doInstall(deps.loader, scope, opts)
     },
   },
 })
-
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
-function builtInToInstalled(b: BuiltInApp): InstalledApp {
-  const synthetic: ParsedManifest = {
-    id: b.id,
-    name: b.name,
-    version: versionTextToNumber(b.version),
-    versionText: b.version,
-    description: '',
-    descriptions: {},
-    author: b.author ?? '',
-    scope: b.scope,
-    develop: false,
-    permissions: [...(b.grantedPermissions ?? [])] as PermissionId[],
-  }
-
-  return {
-    manifest: synthetic,
-    scope: b.scope,
-    tscope: b.tscope,
-    icon: getBuiltInIconUrl(b.scope),
-    source: 'built-in',
-    installedAt: Date.now(),
-    cantdelete: b.cantdelete,
-    grantedPermissions: b.grantedPermissions,
-    includeInMiniApps: b.includeInMiniApps ?? true,
-    includeInSearch: b.includeInSearch,
-  }
-}
-
-function versionTextToNumber(version: string): number {
-  const [major = 0, minor = 0, patch = 0] = version
-    .split('.')
-    .map((p) => Number.parseInt(p, 10) || 0)
-  return major * 1_000_000 + minor * 1_000 + patch
-}
