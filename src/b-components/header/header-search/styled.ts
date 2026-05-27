@@ -153,3 +153,51 @@ export const SC_LoadingHint = styled.div`
   color: ${COLORS.TEXT_HINT};
   font-size: 12px;
 `
+
+export const SC_RecentClearButton = styled.button`
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  color: ${COLORS.TEXT_HINT};
+  text-transform: none;
+  letter-spacing: 0;
+
+  &:hover {
+    background: ${COLORS.BG_HOVER_BLUE};
+    color: ${COLORS.TEXT_PRIMARY};
+  }
+`
+
+export const SC_RecentRemoveButton = styled.button`
+  background: none;
+  border: none;
+  padding: 4px;
+  margin-left: auto;
+  border-radius: 4px;
+  cursor: pointer;
+  color: ${COLORS.TEXT_HINT};
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+
+  &:hover {
+    background: ${COLORS.BG_HOVER_BLUE};
+    color: ${COLORS.TEXT_PRIMARY};
+  }
+`
+
+export const SC_RecentIcon = styled.div`
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: ${COLORS.GRAY_E8};
+  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 14px;
+  flex-shrink: 0;
+`
