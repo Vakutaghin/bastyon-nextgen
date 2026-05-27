@@ -11,13 +11,76 @@
  * имели одинаковый кэш-ключ с прежним поведением.
  */
 
-import { rpcCall } from '@/helpers/api/request'
+import { rpcCall, getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import type { SearchUsersData } from '@/types/rpc-responses/search-users'
+import type { SearchUsersData, SearchUserResult } from '@/types/rpc-responses/search-users'
 import type { SearchPostsData, SearchPost } from '@/types/rpc-responses/search-posts'
 import type { SearchTagsData, SearchTag } from '@/types/rpc-responses/search-tags'
 
 const SEARCH_VALUE_FORBIDDEN = /[^а-яА-Яa-zA-Z0-9# _]+/g
+
+/**
+ * TTL для кеша текущей высоты блока. Берём 30 секунд — pocketnet блок ~60 сек,
+ * значение не должно «протухать» между страницами одного запроса, но и не
+ * висеть в памяти бесконечно.
+ */
+const BLOCK_HEIGHT_TTL_MS = 30_000
+
+let cachedBlockHeight: number | null = null
+let cachedBlockFetchedAt = 0
+let inflightBlockRequest: Promise<number | null> | null = null
+
+/**
+ * Возвращает текущую высоту блока с ноды (`getnodeinfo`) для фиксации
+ * пагинации поиска. В оригинале это `self.currentBlock` — клиент сам
+ * выбирает блок и передаёт его в каждый запрос как `fixedBlock`, чтобы
+ * за время листания результаты не «съезжали» из-за добавляющихся постов
+ * (satolist.js:16265).
+ *
+ * Возвращает `null`, если запрос не удался — вызывающий код должен в этом
+ * случае fall back на `fixedBlock = 0` (нода вернёт «как есть»).
+ */
+export async function getCurrentBlockHeight(): Promise<number | null> {
+  const now = Date.now()
+  if (cachedBlockHeight !== null && now - cachedBlockFetchedAt < BLOCK_HEIGHT_TTL_MS) {
+    return cachedBlockHeight
+  }
+  if (inflightBlockRequest) return inflightBlockRequest
+
+  inflightBlockRequest = (async () => {
+    try {
+      const response = (await getByPRC({
+        method: rpcEndpoints.getNodeInfo,
+        parameters: [],
+        options: { auth: false },
+      } as Parameters<typeof getByPRC>[0])) as {
+        data?: { lastblock?: { height?: number } }
+        lastblock?: { height?: number }
+      } | null
+      const data = response?.data ?? response
+      const height = data?.lastblock?.height
+      if (typeof height === 'number' && height > 0) {
+        cachedBlockHeight = height
+        cachedBlockFetchedAt = now
+        return height
+      }
+    } catch (e) {
+      console.warn('getCurrentBlockHeight failed:', e)
+    } finally {
+      inflightBlockRequest = null
+    }
+    return cachedBlockHeight
+  })()
+
+  return inflightBlockRequest
+}
+
+/** Для тестов: сбросить TTL-кеш блока. */
+export function __resetBlockHeightCache(): void {
+  cachedBlockHeight = null
+  cachedBlockFetchedAt = 0
+  inflightBlockRequest = null
+}
 
 /** Нормализация поискового запроса (см. satolist.js:16234 в оригинале). */
 export function sanitizeSearchQuery(value: string): string {
@@ -51,10 +114,7 @@ export async function searchUsers(
   return Array.isArray(data) ? data : []
 }
 
-export async function searchPosts(
-  query: string,
-  paging: SearchPaging = {}
-): Promise<SearchPost[]> {
+export async function searchPosts(query: string, paging: SearchPaging = {}): Promise<SearchPost[]> {
   const value = sanitizeSearchQuery(query)
   if (!value) return []
 
@@ -69,10 +129,60 @@ export async function searchPosts(
   return data?.posts?.data ?? []
 }
 
-export async function searchTags(
+/**
+ * Объединённый ответ `search` при type='all' — нода возвращает все три
+ * выдачи одним RPC, что заметно дешевле трёх параллельных запросов
+ * (см. SEARCH_TODO §9). Поля:
+ *   - users — плоский массив профилей
+ *   - posts — `{ data: [...] }`
+ *   - tags  — `{ data: [...] }` (значения могут быть URL-encoded дважды,
+ *             как и в `searchTags` — нормализуем здесь же)
+ */
+export interface SearchAllResult {
+  users: SearchUserResult[]
+  posts: SearchPost[]
+  tags: SearchTag[]
+}
+
+export async function searchAll(
   query: string,
   paging: SearchPaging = {}
-): Promise<SearchTag[]> {
+): Promise<SearchAllResult> {
+  const value = sanitizeSearchQuery(query)
+  const empty: SearchAllResult = { users: [], posts: [], tags: [] }
+  if (!value) return empty
+
+  const { start = 0, count = 10, fixedBlock = 0 } = paging
+
+  const data = await rpcCall<{
+    users?: SearchUserResult[]
+    posts?: { data?: SearchPost[] }
+    tags?: { data?: SearchTag[] }
+  }>({
+    method: rpcEndpoints.search,
+    parameters: [value, 'all', fixedBlock, start, count],
+    options: { auth: false },
+  })
+
+  const tagsRaw = data?.tags?.data ?? []
+  const tags = tagsRaw
+    .map((t) => {
+      try {
+        return { tag: decodeURIComponent(decodeURIComponent(t.tag)), count: t.count }
+      } catch {
+        return t
+      }
+    })
+    .filter((t): t is SearchTag => Boolean(t?.tag))
+
+  return {
+    users: Array.isArray(data?.users) ? data.users : [],
+    posts: data?.posts?.data ?? [],
+    tags,
+  }
+}
+
+export async function searchTags(query: string, paging: SearchPaging = {}): Promise<SearchTag[]> {
   const value = sanitizeSearchQuery(query)
   if (!value) return []
 
