@@ -16,7 +16,7 @@ export function generatePlayerId(): string {
  */
 export function shouldUseContain(width: number, height: number): boolean {
   if (width === 0 || height === 0) return false
-  return (width / height) > ASPECT_RATIO_CONTAIN_THRESHOLD
+  return width / height > ASPECT_RATIO_CONTAIN_THRESHOLD
 }
 
 /**
@@ -38,4 +38,29 @@ export function getVideoWrapperStyle(aspectInfo: AspectRatio | null): Record<str
     return { backgroundColor: '#f5f5f5' }
   }
   return {}
+}
+
+/**
+ * Возвращает click-handler с разделением одиночного/двойного клика.
+ * Одиночный → togglePlay, двойной → toggleFullscreen.
+ * delay — окно ожидания второго клика (мс).
+ */
+export function createClickHandler(
+  togglePlay: () => void,
+  toggleFullscreen: () => void,
+  delay: number
+): () => void {
+  let clickTimer: ReturnType<typeof setTimeout> | null = null
+  return () => {
+    if (clickTimer) {
+      clearTimeout(clickTimer)
+      clickTimer = null
+      toggleFullscreen()
+    } else {
+      clickTimer = setTimeout(() => {
+        clickTimer = null
+        togglePlay()
+      }, delay)
+    }
+  }
 }

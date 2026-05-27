@@ -26,7 +26,10 @@ import type { Chapter } from '@/helpers/content/timecode-parser'
 import { findActiveChapterIndex } from '@/helpers/content/timecode-parser'
 
 // Composables
+import { useVideoHotkeys } from './composables/use-video-hotkeys'
 import { useVideoControls } from './composables/use-video-controls'
+import { HOTKEYS_LIST, DOUBLE_CLICK_DELAY } from './consts'
+import { createClickHandler } from './helpers'
 import { useVideoProgress } from './composables/use-video-progress'
 import { useVideoVolume } from './composables/use-video-volume'
 import { useVideoPlaybackRate } from './composables/use-video-playback-rate'
@@ -639,157 +642,34 @@ export const videoPlayer = defineComponent({
     const getThumbnailStyle = (): Record<string, string> => ({ objectFit: 'contain' })
     const getVideoStyle = (): Record<string, string> => ({ objectFit: 'contain' })
 
-    // Hotkeys Help
-    const showHotkeysHelp = ref(false)
-
-    const hotkeysList = [
-      { key: 'Space', description: 'Воспроизведение / Пауза' },
-      { key: 'M', description: 'Включить / Выключить звук' },
-      { key: 'F', description: 'На весь экран' },
-      { key: 'Shift + >', description: 'Увеличить скорость' },
-      { key: 'Shift + <', description: 'Уменьшить скорость' },
-      { key: 'Shift + / (?)', description: 'Показать эту справку' },
-      { key: '← / →', description: 'Перемотка на 10 сек' },
-      { key: '↑ / ↓', description: 'Громкость' },
-    ]
-
-    const toggleHotkeysHelp = () => {
-      showHotkeysHelp.value = !showHotkeysHelp.value
-    }
-
     // Computed
     const shouldHideCursor = computed(() => {
       return isFullscreen.value && !showControls.value
     })
 
-    // Обработка клика по видео
-    let clickTimer: any = null
-    const CLICK_DELAY = 200 // ms
+    // Click handler: single → play/pause, double → fullscreen
+    const handleVideoClick = createClickHandler(togglePlay, toggleFullscreen, DOUBLE_CLICK_DELAY)
 
-    const handleVideoClick = () => {
-      if (clickTimer) {
-        // Double click detected
-        clearTimeout(clickTimer)
-        clickTimer = null
-        toggleFullscreen()
-      } else {
-        // Single click candidate
-        clickTimer = setTimeout(() => {
-          clickTimer = null
-          togglePlay()
-        }, CLICK_DELAY)
-      }
-    }
-
-    // Обработка горячих клавиш
-    const handleKeydown = (e: KeyboardEvent) => {
-      // Игнорируем ввод в текстовые поля
-      const target = e.target as HTMLElement
-      if (
-        ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName) ||
-        target.isContentEditable
-      )
-        return
-
-      // Проверяем, был ли запущен хотя бы один плеер (глобально)
-      // Если нет - игнорируем любые горячие клавиши, даже при наведении
-      if (!videoPlayerManager.getHasUserInteracted()) {
-        return
-      }
-
-      // Получаем состояние из менеджера
-      const isActivePlayer = videoPlayerManager.getLastActivePlayer()?.id === playerId.value
-
-      // Для пробела и K - особая логика
-      // Space перехватывается глобальным обработчиком (use-global-keyboard),
-      // но если он дошел сюда (например, из-за stopPropagation в другом месте), обработаем его
-      if (e.code === 'Space' || e.code === 'KeyK') {
-        // Если это активный плеер ИЛИ мышь над ним ИЛИ он в фулскрине
-        if (isActivePlayer || isHovering.value || isFullscreen.value) {
-          e.preventDefault() // Обязательно предотвращаем скролл
-          togglePlay(true)
-          return
-        }
-      }
-
-      // Для остальных клавиш проверяем условия активности
-      // Разрешаем управление, если:
-      // 1. Мышь над видео
-      // 2. Видео в полноэкранном режиме
-      // 3. Плеер является последним активным (по клику)
-      if (!isHovering.value && !isFullscreen.value && !isActivePlayer) return
-
-      const video = getVideoElement()
-      if (!video) return
-
-      switch (e.code) {
-        case 'ArrowRight':
-        case 'KeyL':
-          e.preventDefault()
-          video.currentTime = Math.min(video.duration, video.currentTime + 10)
-
-          triggerSeekNotification('+10s')
-          break
-        case 'ArrowLeft':
-        case 'KeyJ':
-          e.preventDefault()
-          video.currentTime = Math.max(0, video.currentTime - 10)
-
-          triggerSeekNotification('-10s')
-          break
-        case 'ArrowUp':
-          e.preventDefault()
-          setVolume(volume.value + 0.1)
-          showVolumeNotification.value = true
-          setTimeout(() => (showVolumeNotification.value = false), 1000)
-          break
-        case 'ArrowDown':
-          e.preventDefault()
-          setVolume(volume.value - 0.1)
-          showVolumeNotification.value = true
-          setTimeout(() => (showVolumeNotification.value = false), 1000)
-          break
-        case 'KeyF':
-          e.preventDefault()
-          toggleFullscreen()
-          break
-        case 'Slash':
-          if (e.shiftKey) {
-            e.preventDefault()
-            toggleHotkeysHelp()
-          }
-          break
-        case 'KeyM':
-          // M также перехватывается глобальным обработчиком
-          e.preventDefault()
-          toggleMute()
-          break
-        case 'Period':
-          // > также перехватывается глобальным обработчиком
-          e.preventDefault()
-          increasePlaybackRate()
-          break
-        case 'Comma':
-          // < также перехватывается глобальным обработчиком
-          e.preventDefault()
-          decreasePlaybackRate()
-          break
-        case 'Escape':
-          if (showHotkeysHelp.value) {
-            e.preventDefault()
-            toggleHotkeysHelp()
-          } else if (isFullscreen.value) {
-            e.preventDefault()
-            toggleFullscreen()
-          }
-          break
-      }
-    }
+    // Горячие клавиши (регистрация/снятие listener'а делает сам composable)
+    const { showHotkeysHelp, toggleHotkeysHelp } = useVideoHotkeys({
+      videoElement,
+      playerId,
+      isHovering,
+      isFullscreen,
+      volume,
+      showVolumeNotification,
+      togglePlay,
+      toggleFullscreen,
+      toggleMute,
+      setVolume,
+      increasePlaybackRate,
+      decreasePlaybackRate,
+      triggerSeekNotification,
+    })
+    const hotkeysList = HOTKEYS_LIST
 
     // Lifecycle
     onMounted(() => {
-      window.addEventListener('keydown', handleKeydown)
-
       // Регистрируем плеер в менеджере
       unregisterPlayer = videoPlayerManager.register(playerId.value, {
         id: playerId.value,
@@ -820,12 +700,6 @@ export const videoPlayer = defineComponent({
     let unregisterPlayer: (() => void) | null = null
 
     onBeforeUnmount(() => {
-      window.removeEventListener('keydown', handleKeydown)
-
-      if (clickTimer) {
-        clearTimeout(clickTimer)
-      }
-
       if (unregisterPlayer) {
         unregisterPlayer()
       }
