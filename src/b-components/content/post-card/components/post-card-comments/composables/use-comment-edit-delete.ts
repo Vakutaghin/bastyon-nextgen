@@ -1,0 +1,235 @@
+/**
+ * Inline-редактирование и удаление комментариев.
+ *
+ * Edit: открытие/закрытие inline-формы, submit через sendComment(editId).
+ * Delete: confirm modal + optimistic markDeleted с откатом при ошибке.
+ *
+ * Также включает can* проверки (canEditComment / canDeleteComment / canShowMenu /
+ * isCommentDeleted / canInteractWithComment).
+ */
+
+import { ref, h, type Ref } from 'vue'
+import { Modal } from 'ant-design-vue'
+import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
+import { appToast } from '@/b-components/app-toast'
+import { haptic } from '@/helpers/common/haptics'
+import { useCommentsStore } from '@/stores'
+import type { GetComment } from '@/types/rpc-responses/get-comments'
+import { sendComment } from '../comment-sender'
+import { deleteComment } from '../comment-deleter'
+import { isCommentLengthValid, getCommentTxState } from '../helpers'
+
+export interface UseCommentEditDeleteOptions {
+  postId: Ref<string>
+  currentUserAddress: Ref<string>
+  postAuthorAddress: Ref<string>
+  /** Доступ к загруженным веткам/комментам — нужен для findCommentById. */
+  allComments: Ref<GetComment[] | null>
+  repliesByParentId: Ref<Record<string, GetComment[]>>
+}
+
+export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
+  const commentDeleteSubmitting = ref<string | null>(null)
+  const editingCommentId = ref<string | null>(null)
+  const editDraft = ref('')
+  const editInitialDraft = ref('')
+  const editSubmitting = ref(false)
+
+  // --- Состояние ---
+  const isCommentDeleted = (comment: GetComment): boolean => {
+    return !!comment.deleted || useCommentsStore().deletedCommentIds[comment.id] === true
+  }
+  const canEditComment = (comment: GetComment): boolean => {
+    // Только свой, не удалённый, не в pending/rejected (legacy: metmenu.html:51-62)
+    const me = opts.currentUserAddress.value
+    if (!me || comment.address !== me) return false
+    if (isCommentDeleted(comment)) return false
+    if (getCommentTxState(comment) !== 'normal') return false
+    return true
+  }
+  const canDeleteComment = (comment: GetComment): boolean => {
+    const me = opts.currentUserAddress.value
+    if (!me || isCommentDeleted(comment)) return false
+    if (getCommentTxState(comment) !== 'normal') return false
+    // Свой комментарий — можно. Автор поста может удалять чужие (модерация).
+    if (comment.address === me) return true
+    if (opts.postAuthorAddress.value && opts.postAuthorAddress.value === me) return true
+    return false
+  }
+  const canShowMenu = (comment: GetComment): boolean => {
+    if (isCommentDeleted(comment)) return false
+    return canEditComment(comment) || canDeleteComment(comment)
+  }
+  const isCommentPending = (comment: GetComment): boolean =>
+    getCommentTxState(comment) === 'pending'
+  const isCommentRejected = (comment: GetComment): boolean =>
+    getCommentTxState(comment) === 'rejected'
+  const canInteractWithComment = (comment: GetComment): boolean => {
+    if (isCommentDeleted(comment)) return false
+    if (getCommentTxState(comment) !== 'normal') return false
+    return true
+  }
+  const isEditingComment = (comment: GetComment): boolean => editingCommentId.value === comment.id
+
+  // --- Delete ---
+  const confirmDeleteComment = (comment: GetComment): void => {
+    Modal.confirm({
+      title: 'Удалить комментарий?',
+      icon: h(ExclamationCircleOutlined),
+      content: 'Действие нельзя отменить — комментарий будет помечен как удалённый.',
+      okText: 'Удалить',
+      okType: 'danger',
+      cancelText: 'Отмена',
+      centered: true,
+      onOk: () => deleteCommentInternal(comment),
+    })
+  }
+
+  const deleteCommentInternal = async (comment: GetComment): Promise<void> => {
+    if (commentDeleteSubmitting.value === comment.id) return
+    commentDeleteSubmitting.value = comment.id
+    const commentsStore = useCommentsStore()
+    // Optimistic: сразу прячем меню/контент через флаг в общем сторе;
+    // при ошибке откатываем — иначе оверрайд снимется при reconcile с RPC / при WS подтверждении.
+    commentsStore.markDeleted(comment.id)
+    try {
+      await deleteComment({
+        postId: opts.postId.value,
+        commentId: comment.id,
+        parentId: comment.parentid || '',
+        answerId: comment.answerid || '',
+      })
+      haptic('medium')
+      appToast.success({ message: 'Комментарий удалён' })
+    } catch (e) {
+      commentsStore.unmarkDeleted(comment.id)
+      appToast.error({ message: e instanceof Error ? e.message : 'Не удалось удалить комментарий' })
+    } finally {
+      commentDeleteSubmitting.value = null
+    }
+  }
+
+  // --- Edit ---
+  /** Текущий текст сообщения как plain (для предзаполнения формы редактирования) */
+  const getCommentMessagePlain = (comment: GetComment): string => {
+    const overridden = useCommentsStore().editedMessages[comment.id]
+    if (typeof overridden === 'string') return overridden
+    try {
+      const parsed = JSON.parse(comment.msg) as { message?: string }
+      return parsed?.message ?? comment.msg
+    } catch {
+      return comment.msg
+    }
+  }
+
+  const openEditComment = (comment: GetComment): void => {
+    const initial = getCommentMessagePlain(comment)
+    editingCommentId.value = comment.id
+    editDraft.value = initial
+    editInitialDraft.value = initial
+    editSubmitting.value = false
+  }
+
+  const closeEdit = (): void => {
+    editingCommentId.value = null
+    editDraft.value = ''
+    editInitialDraft.value = ''
+    editSubmitting.value = false
+  }
+
+  const requestCloseEdit = (): void => {
+    // Если изменений нет — закрываем без подтверждения, иначе — confirm-modal
+    if ((editDraft.value || '') === (editInitialDraft.value || '')) {
+      closeEdit()
+      return
+    }
+    Modal.confirm({
+      title: 'Отменить изменения?',
+      icon: h(ExclamationCircleOutlined),
+      content: 'Введённый текст не будет сохранён.',
+      okText: 'Да, отменить',
+      cancelText: 'Нет',
+      centered: true,
+      onOk: () => closeEdit(),
+    })
+  }
+
+  /** Находит комментарий по id среди корневых и ответов */
+  const findCommentById = (id: string): GetComment | null => {
+    if (opts.allComments.value) {
+      const found = opts.allComments.value.find((c) => c.id === id)
+      if (found) return found
+    }
+    for (const list of Object.values(opts.repliesByParentId.value)) {
+      if (Array.isArray(list)) {
+        const found = (list as GetComment[]).find((c) => c.id === id)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  const submitEdit = async (): Promise<void> => {
+    const id = editingCommentId.value
+    if (!id || editSubmitting.value) return
+    const text = (editDraft.value || '').trim()
+    if (!text) return
+    if (!isCommentLengthValid(text)) {
+      appToast.error({ message: 'Текст комментария превышает допустимую длину' })
+      return
+    }
+    if (text === (editInitialDraft.value || '').trim()) {
+      closeEdit()
+      return
+    }
+    const comment = findCommentById(id)
+    if (!comment) {
+      appToast.error({ message: 'Комментарий не найден' })
+      return
+    }
+    editSubmitting.value = true
+    try {
+      await sendComment(
+        opts.postId.value,
+        comment.parentid || '',
+        comment.answerid || '',
+        text,
+        id // editId — переключает sendComment в режим commentEdit
+      )
+      haptic('small')
+      // Optimistic: подменяем текст до прихода обновлённой версии (через стор)
+      useCommentsStore().setEditedMessage(id, text)
+      appToast.success({ message: 'Комментарий отредактирован' })
+      closeEdit()
+    } catch (e) {
+      appToast.error({
+        message: e instanceof Error ? e.message : 'Не удалось отредактировать комментарий',
+      })
+    } finally {
+      editSubmitting.value = false
+    }
+  }
+
+  return {
+    commentDeleteSubmitting,
+    editingCommentId,
+    editDraft,
+    editInitialDraft,
+    editSubmitting,
+    isCommentDeleted,
+    canEditComment,
+    canDeleteComment,
+    canShowMenu,
+    isCommentPending,
+    isCommentRejected,
+    canInteractWithComment,
+    isEditingComment,
+    confirmDeleteComment,
+    openEditComment,
+    closeEdit,
+    requestCloseEdit,
+    submitEdit,
+    findCommentById,
+    getCommentMessagePlain,
+  }
+}

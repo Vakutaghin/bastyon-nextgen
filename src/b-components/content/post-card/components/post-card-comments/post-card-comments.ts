@@ -1,58 +1,40 @@
-import { defineComponent, h } from 'vue'
-import { Modal } from 'ant-design-vue'
-import { useAuthStore } from '@/blockchain'
-import { useCommentsStore, usePostsStore, type PendingComment } from '@/stores'
-import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
-import { wsService } from '@/blockchain/ws/ws-service'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRC } from '@/helpers/api/request'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
-import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
+import { defineComponent, ref, computed, onBeforeUnmount, h, type PropType } from 'vue'
 import {
   LoadingOutlined,
   CloseOutlined,
   SendOutlined,
-  ExclamationCircleOutlined,
   EditOutlined,
   ClockCircleOutlined,
   StopOutlined,
   SyncOutlined,
 } from '@ant-design/icons-vue'
-import { appToast } from '@/b-components/app-toast'
+
+import { useAuthStore } from '@/blockchain'
+import { useCommentsStore } from '@/stores'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { formatRelativeTime } from '@/helpers/common/date-formatter'
+
+import type { GetComment } from '@/types/rpc-responses/get-comments'
+import type { PostForComments } from './types'
+import type { CommentMenuAction } from './comment-menu.vue'
+
 import CommentAvatar from './comment-avatar.vue'
 import CommentReplyPanel from './comment-reply-panel.vue'
-import CommentMenu, { type CommentMenuAction } from './comment-menu.vue'
+import CommentMenu from './comment-menu.vue'
 import CommentEditForm from './comment-edit-form.vue'
 import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
 
-import type { PostForComments, CommentsSortOrder, MentionUser } from './types'
-import { COMMENTS_PAGE_SIZE, COMMENTS_ALREADY_SHOWN, COMMENT_LOAD_TIMEOUT_MS, MENTION_LIST_LIMIT } from './consts'
-import { sendCommentScore } from './comment-scoring'
-import { sendComment } from './comment-sender'
-import { deleteComment } from './comment-deleter'
 import {
-  formatCommentMessageHtml,
+  formatCommentMessageHtml as formatCommentMessageHtmlRaw,
   getCommentAvatarUrl,
   getCommentProfileLink,
   getInitial,
   formatCommentDateAndTime,
-  sortComments,
-  getCommentLengthHint,
-  isCommentLengthValid,
-  getCommentTxState,
   getCommentImages,
   compressedNumber,
 } from './helpers'
-import { formatRelativeTime } from '@/helpers/common/date-formatter'
-import { haptic } from '@/helpers/common/haptics'
-import {
-  isHiddenByReputation as visIsHiddenByReputation,
-  isAuthorAccountLocked as visIsAuthorAccountLocked,
-  getCommentPostingDisableReason,
-  getCommentScoringDisableReason,
-  shouldShowScamWarningOnDislike,
-  type DisableReason,
-} from './visibility'
+import { getCommentPostingDisableReason, type DisableReason } from './visibility'
+
 import {
   SC_CommentsPreview,
   SC_CommentItem,
@@ -95,6 +77,20 @@ import {
   SC_CommentsSortSelect,
   SC_RefreshBtn,
 } from './styled'
+
+import {
+  buildSortedComments,
+  buildMentionUsers,
+  filterMentionUsers,
+} from './helpers/comments-computed'
+import { pendingToGetComment } from './helpers/pending-comments'
+import { useCommentsLoader } from './composables/use-comments-loader'
+import { useCommentsReplies } from './composables/use-comments-replies'
+import { useCommentsScoring } from './composables/use-comments-scoring'
+import { useCommentForm } from './composables/use-comment-form'
+import { useCommentEditDelete } from './composables/use-comment-edit-delete'
+import { useCommentVisibility } from './composables/use-comment-visibility'
+import { useCommentsWs } from './composables/use-comments-ws'
 
 export { type PostForComments }
 
@@ -156,1165 +152,468 @@ export const postCardCommentsOptions = defineComponent({
   },
   props: {
     post: {
-      type: Object as () => PostForComments,
+      type: Object as PropType<PostForComments>,
       required: true,
     },
   },
   emits: ['collapsed', 'replyToComment', 'comment'],
-  created() {
-    // WS unsubscribe-функция и таймеры не должны реактивиться,
-    // храним их прямо на инстансе (вне data()).
-    ;(this as unknown as { _wsUnsub: null | (() => void) })._wsUnsub = null
-    ;(this as unknown as { _refreshDebounce: number | null })._refreshDebounce = null
-    ;(this as unknown as { _relativeTimer: number | null })._relativeTimer = null
-    this.subscribeToWs()
-    // Тикаем раз в минуту, чтобы относительное время в шаблоне обновлялось
-    // (formatCommentDate читает this.nowTick).
-    ;(this as unknown as { _relativeTimer: number | null })._relativeTimer = window.setInterval(() => {
-      this.nowTick++
+  setup(props, { emit }) {
+    // --- Базовая идентификация поста / пользователя ---
+    const postId = computed<string>(
+      () => props.post.txid || props.post.hash || String(props.post.id || '')
+    )
+
+    const currentUserAddress = computed<string>(() => {
+      const addr = useAuthStore().getUserAddress
+      return typeof addr === 'string' ? addr : ''
+    })
+
+    const postAuthorAddress = computed<string>(() => {
+      const p = props.post as PostForComments & { address?: string }
+      return typeof p?.address === 'string' ? p.address : ''
+    })
+
+    const isUserAuthenticated = computed<boolean>(() => useAuthStore().isUserAuthenticated)
+
+    const currentUserStateData = computed<
+      import('@/types/rpc-responses/user-state').UserState | null
+    >(() => {
+      const profile = useAuthStore().getUserProfile as
+        | (import('@/types/rpc-responses/user-state').UserState & { reputation?: number })
+        | null
+      return profile ?? null
+    })
+
+    const composerDisableReason = computed<DisableReason | null>(() =>
+      getCommentPostingDisableReason(isUserAuthenticated.value, currentUserStateData.value)
+    )
+
+    // --- Тик для реактивного обновления относительного времени (раз в минуту) ---
+    const nowTick = ref(0)
+    const relativeTimer = window.setInterval(() => {
+      nowTick.value++
     }, 60_000)
-  },
-  beforeUnmount() {
-    this.unsubscribeFromWs()
-    const dbg = (this as unknown as { _refreshDebounce: number | null })
-    if (dbg._refreshDebounce !== null) {
-      clearTimeout(dbg._refreshDebounce!)
-      dbg._refreshDebounce = null
-    }
-    const rel = (this as unknown as { _relativeTimer: number | null })
-    if (rel._relativeTimer !== null) {
-      clearInterval(rel._relativeTimer)
-      rel._relativeTimer = null
-    }
-  },
-  data() {
-    return {
-      allComments: null as GetComment[] | null,
-      allCommentsLoading: false,
-      allCommentsError: null as Error | null,
-      visibleCommentsCount: 0,
-      commentsCollapsed: false,
-      commentsSortOrder: 'newest' as CommentsSortOrder,
-      lastCommentVote: null as 'up' | 'down' | null,
-      commentVotes: {} as Record<string, 'up' | 'down'>,
-      commentScoreSubmitting: null as string | null,
-      repliesByParentId: {} as Record<string, GetComment[]>,
-      repliesLoading: {} as Record<string, boolean>,
-      repliesExpanded: {} as Record<string, boolean>,
-      replyTarget: null as { commentId: string; parentId: string; prefix: string } | null,
-      replyDraft: '',
-      showCancelReplyModal: false,
-      showMentionList: false,
-      mentionQuery: '',
-      mentionStartOffset: 0,
-      mentionEndOffset: 0,
-      mentionHighlightIndex: 0,
-      replySubmitting: false,
-      commentDeleteSubmitting: null as string | null,
-      // Состояние inline-редактирования: id редактируемого комментария + черновик
-      editingCommentId: null as string | null,
-      editDraft: '',
-      editInitialDraft: '',
-      editSubmitting: false,
-      /** Реактивный тик для пересчёта относительного времени (инкрементится раз в минуту) */
-      nowTick: 0,
-    }
-  },
-  computed: {
-    postId(): string {
-      return this.post.txid || this.post.hash || String(this.post.id || '')
-    },
-    hasUserComments(): boolean {
-      const lc = this.post.lastComment
-      return !!lc && !!lc.message && (this.post.comments || 0) > 0
-    },
-    lastCommentMessageHtml(): string {
-      return formatCommentMessageHtml({
-        msg: this.post.lastComment?.message || '',
-      } as GetComment)
-    },
-    lastCommentProfileLink(): string {
-      const lc = this.post.lastComment
+
+    // --- Композаблы ---
+    // Forward-ref на sorted comments — нужен для loader (visibleCount учитывает pending).
+    // Заполняется ниже после создания computed sortedComments.
+    let sortedCommentsRef: { value: GetComment[] } = { value: [] }
+    const loader = useCommentsLoader({
+      postId,
+      getSortedLength: () => sortedCommentsRef.value.length,
+    })
+
+    const replies = useCommentsReplies({ postId })
+
+    const scoring = useCommentsScoring({
+      post: computed(() => props.post),
+      isUserAuthenticated,
+      currentUserStateData,
+    })
+
+    const editDelete = useCommentEditDelete({
+      postId,
+      currentUserAddress,
+      postAuthorAddress,
+      allComments: loader.allComments,
+      repliesByParentId: replies.repliesByParentId,
+    })
+
+    const visibility = useCommentVisibility({
+      currentUserAddress,
+      isDeleted: editDelete.isCommentDeleted,
+    })
+
+    // --- Вычисляемые списки ---
+    const pendingRootComments = computed<GetComment[]>(() => {
+      const list = useCommentsStore().getPendingForPost(postId.value)
+      if (!list.length) return []
+      return list
+        .filter((p) => !p.parentId) // только корневые здесь — ответы вшиваются в getReplies
+        .map((p) => pendingToGetComment(p))
+    })
+
+    const sortedComments = computed<GetComment[]>(() =>
+      buildSortedComments(
+        loader.allComments.value,
+        pendingRootComments.value,
+        loader.commentsSortOrder.value,
+        currentUserAddress.value || undefined,
+        postAuthorAddress.value || undefined
+      )
+    )
+    // Прокидываем актуальный массив в forward-ref для loader.getSortedLength
+    sortedCommentsRef = {
+      get value() {
+        return sortedComments.value
+      },
+    } as unknown as { value: GetComment[] }
+
+    const visibleComments = computed<GetComment[]>(() =>
+      sortedComments.value.slice(0, loader.visibleCommentsCount.value)
+    )
+
+    const remainingCommentsCount = computed<number>(() =>
+      Math.max(0, sortedComments.value.length - loader.visibleCommentsCount.value)
+    )
+
+    const nextCommentsPageSize = computed<number>(() => {
+      if (remainingCommentsCount.value <= 0) return 0
+      // импорт COMMENTS_PAGE_SIZE через consts уже сделан в composables, но для прямого
+      // computed дешевле захардкодить — это значение и так используется в loader.
+      // Берём пересчёт через само значение constsint:
+      return Math.min(20, remainingCommentsCount.value)
+    })
+    const hasMoreCommentsToShow = computed<boolean>(() => remainingCommentsCount.value > 0)
+
+    const totalCommentsCount = computed<number>(() => props.post.comments ?? 0)
+    const actualCommentsCount = computed<number>(() => loader.allComments.value?.length ?? 0)
+    const hasUserComments = computed<boolean>(() => {
+      const lc = props.post.lastComment
+      return !!lc && !!lc.message && (props.post.comments || 0) > 0
+    })
+
+    // --- Last comment отображение ---
+    const lastCommentMessageHtml = computed<string>(() =>
+      formatCommentMessageHtmlRaw({ msg: props.post.lastComment?.message || '' } as GetComment)
+    )
+    const lastCommentProfileLink = computed<string>(() => {
+      const lc = props.post.lastComment
       if (!lc) return '/'
       if (lc.address) return '/' + lc.address
       const name = (lc.authorName || '').toLowerCase()
       if (name) return '/' + name
       return '/'
-    },
-    lastCommentAvatarUrl(): string | null {
-      const img = this.post.lastComment?.avatar || null
+    })
+    const lastCommentAvatarUrl = computed<string | null>(() => {
+      const img = props.post.lastComment?.avatar || null
       if (!img) return null
       return resolveImageUrl(img) || null
-    },
-    lastCommentInitial(): string {
-      return getInitial(this.post.lastComment?.authorName)
-    },
-    lastCommentDateOnly(): string {
-      void this.nowTick // зависимость от тика для авто-обновления
-      return formatRelativeTime(this.post.lastComment?.time || 0)
-    },
-    lastCommentDateFull(): string {
-      return formatCommentDateAndTime(this.post.lastComment?.time || 0)
-    },
-    totalCommentsCount(): number {
-      return this.post.comments ?? 0
-    },
-    lastCommentUserLiked(): boolean {
-      return (this.post.lastComment?.myScore ?? 0) > 0 || this.lastCommentVote === 'up'
-    },
-    lastCommentUserDisliked(): boolean {
-      return (this.post.lastComment?.myScore ?? 0) < 0 || this.lastCommentVote === 'down'
-    },
-    lastCommentCanClickLike(): boolean {
-      return !this.lastCommentUserDisliked && !this.lastCommentUserLiked && this.commentScoreSubmitting !== 'last'
-    },
-    lastCommentCanClickDislike(): boolean {
-      return !this.lastCommentUserLiked && !this.lastCommentUserDisliked && this.commentScoreSubmitting !== 'last'
-    },
-    actualCommentsCount(): number {
-      return this.allComments?.length ?? 0
-    },
-    /** Pending-комменты к этому посту, конвертированные в GetComment для рендера */
-    pendingRootComments(): GetComment[] {
-      const list = useCommentsStore().getPendingForPost(this.postId)
-      if (!list.length) return []
-      return list
-        .filter((p) => !p.parentId) // только корневые здесь — ответы вшиваются в getReplies
-        .map((p) => pendingToGetComment(p))
-    },
-    sortedComments(): GetComment[] {
-      const real = this.allComments ?? []
-      const all = [...real, ...this.pendingRootComments]
-      if (!all.length) return []
-      // Карта репутаций авторов из ответа getcomments — для дешёвой проверки в isBlocked.
-      // (Скрытые-по-репутации идут в самый низ через обнуление веса в commentPoint.)
-      const lowRepAuthors = new Set<string>()
-      for (const c of all) {
-        if (visIsHiddenByReputation(c, this.currentUserAddress || undefined)) {
-          lowRepAuthors.add(c.address)
-        }
-      }
-      return sortComments(all, this.commentsSortOrder, {
-        myAddress: this.currentUserAddress || undefined,
-        postAuthorAddress: this.postAuthorAddress || undefined,
-        // Эвристический isBlocked: пока user-relations store нет, единственный
-        // надёжный сигнал «не показывать наверх» — низкая репутация автора.
-        isBlocked: (address) => lowRepAuthors.has(address),
-        // isVerified / getActivityPoint — TBD (нужен activity / verified сигнал из API).
-      })
-    },
-    visibleComments(): GetComment[] {
-      return this.sortedComments.slice(0, this.visibleCommentsCount)
-    },
-    remainingCommentsCount(): number {
-      // sortedComments включает pending — иначе при наличии локального коммента и полной
-      // странице серверных счётчик «Показать ещё» завышал бы остаток на 1.
-      return Math.max(0, this.sortedComments.length - this.visibleCommentsCount)
-    },
-    nextCommentsPageSize(): number {
-      return this.remainingCommentsCount <= 0 ? 0 : Math.min(COMMENTS_PAGE_SIZE, this.remainingCommentsCount)
-    },
-    hasMoreCommentsToShow(): boolean {
-      return this.remainingCommentsCount > 0
-    },
-    currentUserAvatarUrl(): string | null {
+    })
+    const lastCommentInitial = computed<string>(() =>
+      getInitial(props.post.lastComment?.authorName)
+    )
+    const lastCommentDateOnly = computed<string>(() => {
+      void nowTick.value // зависимость от тика для авто-обновления
+      return formatRelativeTime(props.post.lastComment?.time || 0)
+    })
+    const lastCommentDateFull = computed<string>(() =>
+      formatCommentDateAndTime(props.post.lastComment?.time || 0)
+    )
+    const lastCommentId = computed<string | null>(() => props.post.lastComment?.id ?? null)
+    const lastCommentChildren = computed<number>(() => props.post.lastComment?.children ?? 0)
+
+    // --- Текущий пользователь — аватар/инициал ---
+    const currentUserAvatarUrl = computed<string | null>(() => {
       const url = useAuthStore().getUserAvatarUrl
       if (!url) return null
       return resolveImageUrl(url) || null
-    },
-    currentUserInitial(): string {
+    })
+    const currentUserInitial = computed<string>(() => {
       const profile = useAuthStore().getUserProfile as { name?: string } | null
       const name = profile?.name
       if (name) return name.charAt(0).toUpperCase()
       const addr = useAuthStore().getUserAddress
       if (addr && typeof addr === 'string') return addr.charAt(0).toUpperCase()
       return '?'
-    },
-    mentionUsers(): MentionUser[] {
-      const byAddress = new Map<string, string>()
-      const add = (c: GetComment) => {
-        if (!c?.address) return
-        const name = (c.userprofile?.name || c.address || '').trim() || c.address
-        if (!byAddress.has(c.address)) byAddress.set(c.address, name)
+    })
+
+    // --- @mention candidates (computed) ---
+    const mentionUsers = computed(() =>
+      buildMentionUsers(props.post, loader.allComments.value, replies.repliesByParentId.value)
+    )
+
+    // --- Template refs для form composable ---
+    const rootMentionListRef = ref<unknown>(null)
+    const mentionListRef = ref<unknown>(null)
+    const rootReplyTextareaRef = ref<unknown>(null)
+    const replyTextareaRef = ref<unknown>(null)
+
+    // form composable нужен filteredMentionUsers (вынесен сюда, потому что зависит от
+    // mentionQuery, которое живёт внутри form composable — поэтому форвардим через ref-prop).
+    const mentionQueryProxy = ref('')
+    const filteredMentionUsers = computed(() =>
+      filterMentionUsers(mentionUsers.value, mentionQueryProxy.value)
+    )
+
+    const form = useCommentForm({
+      postId,
+      currentUserAddress,
+      composerDisableReason,
+      allComments: loader.allComments,
+      visibleCommentsCount: loader.visibleCommentsCount,
+      commentsCollapsed: loader.commentsCollapsed,
+      repliesExpanded: replies.repliesExpanded,
+      refreshAllComments: () => loader.loadAllComments(false),
+      emitComment: () => emit('comment'),
+      rootMentionListRef,
+      mentionListRef,
+      rootReplyTextareaRef,
+      replyTextareaRef,
+      filteredMentionUsers,
+    })
+
+    // Синхронизация mentionQuery формы с прокси (для computed filtered)
+    // Без watch — proxy просто читает из form.mentionQuery
+    Object.defineProperty(mentionQueryProxy, 'value', {
+      get: () => form.mentionQuery.value,
+      set: (v: string) => {
+        form.mentionQuery.value = v
+      },
+    })
+
+    // --- WS (требует уже инициализированный loader) ---
+    const ws = useCommentsWs({
+      postId,
+      isLoading: loader.allCommentsLoading,
+      hasLoaded: computed(
+        () => loader.allComments.value !== null
+      ) as unknown as import('vue').Ref<boolean>,
+      isCollapsed: loader.commentsCollapsed,
+      reload: () => loader.loadAllComments(false),
+    })
+
+    // --- LastComment handlers (UI-events) ---
+    const onLastCommentRepliesClick = async (): Promise<void> => {
+      const id = props.post.lastComment?.id
+      if (!id) return
+      if (!loader.allComments.value) {
+        await loader.loadAllComments(false)
+      } else if (loader.commentsCollapsed.value) {
+        loader.expandComments()
       }
-      const lc = this.post.lastComment
-      if (lc?.address) {
-        const name = (lc.authorName || lc.address || '').trim() || lc.address
-        if (!byAddress.has(lc.address)) byAddress.set(lc.address, name)
-      }
-      if (this.allComments) {
-        for (const c of this.allComments) add(c)
-      }
-      for (const list of Object.values(this.repliesByParentId)) {
-        if (Array.isArray(list)) for (const c of list) add(c)
-      }
-      return Array.from(byAddress.entries()).map(([address, name]) => ({ address, name }))
-    },
-    filteredMentionUsers(): MentionUser[] {
-      const q = (this.mentionQuery || '').trim().toLowerCase()
-      if (!q) return this.mentionUsers.slice(0, MENTION_LIST_LIMIT)
-      return this.mentionUsers
-        .filter((u) => (u.name || '').toLowerCase().includes(q) || (u.address || '').toLowerCase().includes(q))
-        .slice(0, MENTION_LIST_LIMIT)
-    },
-    lastCommentId(): string | null {
-      return this.post.lastComment?.id ?? null
-    },
-    lastCommentChildren(): number {
-      return this.post.lastComment?.children ?? 0
-    },
-    replyPanelKey(): string {
-      const t = this.replyTarget
-      if (!t) return 'closed'
-      return `${t.commentId}:${t.prefix ? 'author' : 'empty'}`
-    },
-    isRootReplyActive(): boolean {
-      return this.replyTarget === null || this.replyTarget?.commentId === 'root'
-    },
-    rootLengthHint(): { text: string; isOver: boolean } | null {
-      return getCommentLengthHint(this.replyDraft || '')
-    },
-    rootLengthValid(): boolean {
-      return isCommentLengthValid(this.replyDraft || '')
-    },
-    currentUserAddress(): string {
-      const addr = useAuthStore().getUserAddress
-      return typeof addr === 'string' ? addr : ''
-    },
-    postAuthorAddress(): string {
-      // PostForComments сейчас не несёт адрес автора поста; пробуем расширенные поля,
-      // если они вдруг есть в реальном объекте поста (легаси использует post.address).
-      const p = this.post as PostForComments & { address?: string }
-      return typeof p?.address === 'string' ? p.address : ''
-    },
-    /** Локальный лукап удалённых через общий стор */
-    deletedCommentIdsMap(): Record<string, true> {
-      return useCommentsStore().deletedCommentIds
-    },
-    /** Локальный лукап правок через общий стор */
-    editedMessagesMap(): Record<string, string> {
-      return useCommentsStore().editedMessages
-    },
-    /** Состояние пользователя для проверки лимитов и репутации */
-    currentUserStateData(): import('@/types/rpc-responses/user-state').UserState | null {
-      const auth = useAuthStore()
-      const profile = auth.getUserProfile as
-        | (import('@/types/rpc-responses/user-state').UserState & { reputation?: number })
-        | null
-      return profile ?? null
-    },
-    /** Причина запрета публикации (или null если можно) */
-    composerDisableReason(): DisableReason | null {
-      const auth = useAuthStore()
-      return getCommentPostingDisableReason(auth.isUserAuthenticated, this.currentUserStateData)
-    },
-    /** Причина запрета оценок (или null если можно) */
-    scoringDisableReason(): DisableReason | null {
-      const auth = useAuthStore()
-      return getCommentScoringDisableReason(auth.isUserAuthenticated, this.currentUserStateData)
-    },
-  },
-  methods: {
-    // --- Делегаты в хелперы ---
-    getCommentAvatarUrl,
-    getCommentProfileLink,
-    /**
-     * Относительное время комментария («5 мин.», «2 ч.»). Зависит от nowTick —
-     * Vue пересчитывает при тике (раз в минуту), поэтому надписи обновляются
-     * без перезагрузки. Полная дата доступна через formatCommentDateFull для тултипа.
-     */
-    formatCommentDate(time: number): string {
-      // Принудительное чтение nowTick для триггера реактивности
-      void this.nowTick
+      replies.repliesExpanded.value = { ...replies.repliesExpanded.value, [id]: true }
+      await replies.loadReplies(id)
+    }
+
+    const onLastCommentReply = (): void => {
+      const id = props.post.lastComment?.id
+      if (!id) return
+      form.openReplyEmpty(id, id)
+    }
+    const onLastCommentReplyToAuthor = (): void => {
+      const lc = props.post.lastComment
+      if (!lc?.id) return
+      form.openReplyToAuthor(lc.id, lc.id, lc.authorName || lc.address || '')
+    }
+
+    const collapseComments = (): void => {
+      loader.collapseComments()
+      emit('collapsed')
+    }
+
+    // --- Display helpers (методы для шаблона) ---
+    const formatCommentDate = (time: number): string => {
+      void nowTick.value
       return formatRelativeTime(time)
-    },
-    /** Полная дата для тултипа (title-атрибут) */
-    formatCommentDateFull(time: number): string {
-      return formatCommentDateAndTime(time)
-    },
-    /** Картинки комментария (резолвленные URL) для рендера в PostCardImages */
-    getCommentImagesList(comment: GetComment): string[] {
-      return getCommentImages(comment)
-    },
-    /**
-     * Форматирует число для отображения у бейджа score.
-     * Для 0 возвращает '0' — UI всегда показывает какую-то цифру (отличие от legacy,
-     * где compressedNumber для 0 возвращал ''; нам это не подходит, потому что
-     * у нас 0 рендерится явно для UX «есть кнопка, есть число»).
-     */
-    formatScore(n: number | undefined | null): string {
+    }
+    const formatCommentDateFull = (time: number): string => formatCommentDateAndTime(time)
+    const getCommentImagesList = (comment: GetComment): string[] => getCommentImages(comment)
+
+    const formatScore = (n: number | undefined | null): string => {
       if (n === undefined || n === null || !Number.isFinite(n) || n === 0) return '0'
       return compressedNumber(n) || String(n)
-    },
-    formatCommentMessageHtml(comment: GetComment): string {
-      // Если есть локальная правка после успешного commentEdit — показываем её,
-      // не дожидаясь повторной загрузки списка / WS-обновления.
-      const overridden = this.editedMessagesMap[comment.id]
+    }
+
+    const formatCommentMessageHtml = (comment: GetComment): string => {
+      const overridden = useCommentsStore().editedMessages[comment.id]
       if (typeof overridden === 'string') {
-        // Сборка временного объекта с переопределённым msg для корректного форматирования
-        const patched = { ...comment, msg: JSON.stringify({ message: overridden, url: '', images: [], info: '' }) } as GetComment
-        return formatCommentMessageHtml(patched)
+        const patched = {
+          ...comment,
+          msg: JSON.stringify({ message: overridden, url: '', images: [], info: '' }),
+        } as GetComment
+        return formatCommentMessageHtmlRaw(patched)
       }
-      return formatCommentMessageHtml(comment)
-    },
-    isCommentEdited(comment: GetComment): boolean {
-      // Локальная правка ИЛИ серверный признак редактирования
-      if (typeof this.editedMessagesMap[comment.id] === 'string') return true
-      return !!comment.edit || (comment.timeUpd > comment.time)
-    },
+      return formatCommentMessageHtmlRaw(comment)
+    }
+    const isCommentEdited = (comment: GetComment): boolean => {
+      if (typeof useCommentsStore().editedMessages[comment.id] === 'string') return true
+      return !!comment.edit || comment.timeUpd > comment.time
+    }
 
-    isReplyPanelOpen(commentId: string): boolean {
-      return this.replyTarget?.commentId === commentId
-    },
-    isCommentLiked(comment: GetComment): boolean {
-      return (comment.myScore ?? 0) > 0 || this.commentVotes[comment.id] === 'up'
-    },
-    isCommentDisliked(comment: GetComment): boolean {
-      return (comment.myScore ?? 0) < 0 || this.commentVotes[comment.id] === 'down'
-    },
-    commentCanClickLike(comment: GetComment): boolean {
-      return !this.isCommentDisliked(comment) && !this.isCommentLiked(comment) && this.commentScoreSubmitting !== comment.id
-    },
-    commentCanClickDislike(comment: GetComment): boolean {
-      return !this.isCommentLiked(comment) && !this.isCommentDisliked(comment) && this.commentScoreSubmitting !== comment.id
-    },
-
-    // --- Голосование ---
-    /**
-     * Гард перед голосованием: проверяет лимит/репутацию и для дизлайка
-     * запрашивает подтверждение если сработала эвристика scam-риска.
-     * Возвращает true если можно продолжать.
-     */
-    async ensureCanScore(value: 1 | -1): Promise<boolean> {
-      const reason = this.scoringDisableReason
-      if (reason) {
-        appToast.error({ message: reason.message })
-        return false
-      }
-      if (value < 0 && shouldShowScamWarningOnDislike(this.currentUserStateData)) {
-        const confirmed = await new Promise<boolean>((resolve) => {
-          Modal.confirm({
-            title: 'Поставить дизлайк?',
-            icon: h(ExclamationCircleOutlined),
-            content:
-              'Слишком много дизлайков может негативно сказаться на вашей репутации. Продолжить?',
-            okText: 'Поставить дизлайк',
-            okType: 'danger',
-            cancelText: 'Отмена',
-            centered: true,
-            onOk: () => resolve(true),
-            onCancel: () => resolve(false),
-          })
-        })
-        if (!confirmed) return false
-      }
-      return true
-    },
-    async onLastCommentScoreUp(): Promise<void> {
-      if (!this.lastCommentCanClickLike || this.commentScoreSubmitting) return
-      const lc = this.post.lastComment
-      if (!lc?.id || !lc.address) return
-      if (!(await this.ensureCanScore(1))) return
-      haptic('small')
-      this.commentScoreSubmitting = 'last'
-      const prev = this.lastCommentVote
-      this.lastCommentVote = 'up'
-      try {
-        await sendCommentScore(lc.id, 1, lc.address)
-      } catch (e) {
-        this.lastCommentVote = prev
-        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию' })
-      } finally {
-        this.commentScoreSubmitting = null
-      }
-    },
-    async onLastCommentScoreDown(): Promise<void> {
-      if (!this.lastCommentCanClickDislike || this.commentScoreSubmitting) return
-      const lc = this.post.lastComment
-      if (!lc?.id || !lc.address) return
-      if (!(await this.ensureCanScore(-1))) return
-      haptic('small')
-      this.commentScoreSubmitting = 'last'
-      const prev = this.lastCommentVote
-      this.lastCommentVote = 'down'
-      try {
-        await sendCommentScore(lc.id, -1, lc.address)
-      } catch (e) {
-        this.lastCommentVote = prev
-        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию' })
-      } finally {
-        this.commentScoreSubmitting = null
-      }
-    },
-    async onCommentScoreUp(comment: GetComment): Promise<void> {
-      if (!this.commentCanClickLike(comment) || this.commentScoreSubmitting) return
-      if (!(await this.ensureCanScore(1))) return
-      haptic('small')
-      this.commentScoreSubmitting = comment.id
-      const prev = this.commentVotes[comment.id]
-      this.commentVotes = { ...this.commentVotes, [comment.id]: 'up' }
-      try {
-        await sendCommentScore(comment.id, 1, comment.address)
-      } catch (e) {
-        const next = prev ? { [comment.id]: prev } : {}
-        const rest = { ...this.commentVotes }
-        delete rest[comment.id]
-        this.commentVotes = { ...rest, ...next }
-        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию' })
-      } finally {
-        this.commentScoreSubmitting = null
-      }
-    },
-    async onCommentScoreDown(comment: GetComment): Promise<void> {
-      if (!this.commentCanClickDislike(comment) || this.commentScoreSubmitting) return
-      if (!(await this.ensureCanScore(-1))) return
-      haptic('small')
-      this.commentScoreSubmitting = comment.id
-      const prev = this.commentVotes[comment.id]
-      this.commentVotes = { ...this.commentVotes, [comment.id]: 'down' }
-      try {
-        await sendCommentScore(comment.id, -1, comment.address)
-      } catch (e) {
-        const next = prev ? { [comment.id]: prev } : {}
-        const rest = { ...this.commentVotes }
-        delete rest[comment.id]
-        this.commentVotes = { ...rest, ...next }
-        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию' })
-      } finally {
-        this.commentScoreSubmitting = null
-      }
-    },
-
-    // --- Загрузка комментариев ---
-    async loadAllComments(showAll = false): Promise<void> {
-      if (!this.postId || this.allCommentsLoading) return
-      this.allCommentsLoading = true
-      try {
-        await this.loadAllCommentsInternal(showAll)
-      } finally {
-        this.allCommentsLoading = false
-      }
-    },
-    async loadAllCommentsInternal(showAll = false): Promise<void> {
-      if (!this.postId) return
-      this.allCommentsError = null
-      try {
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Таймаут загрузки комментариев')), COMMENT_LOAD_TIMEOUT_MS)
-        })
-        const authStore = useAuthStore()
-        const userAddress = authStore.getUserAddress ?? ''
-        const res = await Promise.race([
-          getByPRC({
-            method: rpcEndpoints.getComments,
-            parameters: [this.postId, '', userAddress],
-            cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
-            options: { auth: authStore.isUserAuthenticated },
-          }),
-          timeoutPromise,
-        ])
-        let list: GetComment[] = []
-        if (Array.isArray(res)) {
-          list = res as GetComment[]
-        } else if (res && typeof res === 'object' && 'data' in res) {
-          const data = (res as GetCommentsResponse).data
-          list = Array.isArray(data) ? data : []
-        }
-        this.allComments = list
-        // Согласовываем локальные оверрайды с серверными данными:
-        // если сервер уже знает о наших правках/удалениях/созданиях — снимаем локальные метки.
-        useCommentsStore().reconcileWithServer(this.postId, list)
-        // visibleCount учитывает pending: иначе свежеотправленный коммент при пустом сервере
-        // (len = 0, visibleCount = 0) не показался бы вовсе.
-        const total = this.sortedComments.length
-        const initialVisible = COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
-        this.visibleCommentsCount = showAll ? total : Math.min(initialVisible, total)
-        this.commentsCollapsed = false
-      } catch (e) {
-        this.allCommentsError = e instanceof Error ? e : new Error(String(e))
-      }
-    },
-    async onLastCommentRepliesClick(): Promise<void> {
-      const id = this.post.lastComment?.id
-      if (!id) return
-      if (!this.allComments) {
-        await this.loadAllComments(false)
-      } else if (this.commentsCollapsed) {
-        this.expandComments()
-      }
-      this.repliesExpanded = { ...this.repliesExpanded, [id]: true }
-      await this.loadReplies(id)
-    },
-
-    // --- Навигация комментариев ---
-    collapseComments(): void {
-      this.commentsCollapsed = true
-      this.$emit('collapsed')
-    },
-    expandComments(): void {
-      this.commentsCollapsed = false
-    },
-    setCommentsSortOrder(event: Event): void {
-      const value = (event.target as HTMLSelectElement)?.value
-      if (value === 'interesting' || value === 'newest' || value === 'oldest') {
-        this.commentsSortOrder = value
-      }
-    },
-    showMoreComments(): void {
-      if (!this.allComments) return
-      this.visibleCommentsCount = Math.min(
-        this.visibleCommentsCount + COMMENTS_PAGE_SIZE,
-        this.allComments.length,
-      )
-    },
-    showAllComments(): void {
-      if (!this.allComments) return
-      this.visibleCommentsCount = this.allComments.length
-    },
-
-    // --- Ответы второго уровня ---
-    async loadReplies(commentId: string): Promise<void> {
-      if (!this.postId || this.repliesLoading[commentId]) return
-      this.repliesLoading = { ...this.repliesLoading, [commentId]: true }
-      this.repliesExpanded = { ...this.repliesExpanded, [commentId]: true }
-      const authStore = useAuthStore()
-      const userAddress = authStore.getUserAddress ?? ''
-      try {
-        const res = await getByPRC({
-          method: rpcEndpoints.getComments,
-          parameters: [this.postId, commentId, userAddress],
-          cachehash: `replies-${commentId}-${Date.now()}`,
-          options: { auth: authStore.isUserAuthenticated },
-        })
-        let list: GetComment[] = []
-        if (Array.isArray(res)) {
-          list = res as GetComment[]
-        } else if (res && typeof res === 'object' && 'data' in res) {
-          const data = (res as GetCommentsResponse).data
-          list = Array.isArray(data) ? data : []
-        }
-        this.repliesByParentId = { ...this.repliesByParentId, [commentId]: list }
-      } catch {
-        this.repliesByParentId = { ...this.repliesByParentId, [commentId]: [] }
-      } finally {
-        this.repliesLoading = { ...this.repliesLoading, [commentId]: false }
-      }
-    },
-    toggleRepliesExpanded(commentId: string): void {
-      this.repliesExpanded = { ...this.repliesExpanded, [commentId]: !this.repliesExpanded[commentId] }
-    },
-    isRepliesExpanded(commentId: string): boolean {
-      return !!this.repliesExpanded[commentId]
-    },
-    isRepliesLoading(commentId: string): boolean {
-      return !!this.repliesLoading[commentId]
-    },
-    getReplies(commentId: string): GetComment[] {
-      const real = this.repliesByParentId[commentId] ?? []
-      // Примешиваем локальные pending-ответы к этому комментарию,
-      // чтобы пользователь сразу видел свой ответ под нужной веткой.
-      const pendingAll = useCommentsStore().getPendingForPost(this.postId)
-      if (!pendingAll.length) return real
-      const pendingForBranch = pendingAll
-        .filter((p) => p.parentId === commentId)
-        .map((p) => pendingToGetComment(p))
-      if (!pendingForBranch.length) return real
-      // Дедуп по id: если pending уже среди реальных — серверный приоритет
-      const seen = new Set(real.map((c) => c.id))
-      const extras = pendingForBranch.filter((c) => !seen.has(c.id))
-      return [...real, ...extras]
-    },
-    onRepliesClick(comment: GetComment): void {
-      const id = comment.id
-      if (this.repliesLoading[id]) return
-      if (id in this.repliesByParentId) {
-        this.toggleRepliesExpanded(id)
-      } else {
-        this.loadReplies(id)
-      }
-    },
-
-    // --- Форма ответа ---
-    openReplyToPost(): void {
-      this.replyTarget = { commentId: 'root', parentId: '', prefix: '' }
-      this.replyDraft = ''
-      this.showCancelReplyModal = false
-      this.showMentionList = false
-      this.mentionQuery = ''
-      this.mentionHighlightIndex = 0
-    },
-    onLastCommentReply(): void {
-      const id = this.post.lastComment?.id
-      if (!id) return
-      this.openReplyEmpty(id, id)
-    },
-    onLastCommentReplyToAuthor(): void {
-      const lc = this.post.lastComment
-      if (!lc?.id) return
-      this.openReplyToAuthor(lc.id, lc.id, lc.authorName || lc.address || '')
-    },
-    openReplyEmpty(commentId: string, parentId: string): void {
-      const sameComment = this.replyTarget?.commentId === commentId
-      const oldPrefix = this.replyTarget?.prefix || ''
-      this.replyTarget = { commentId, parentId, prefix: '' }
-      this.showCancelReplyModal = false
-      this.showMentionList = false
-      this.mentionQuery = ''
-      this.mentionHighlightIndex = 0
-      if (sameComment && oldPrefix && (this.replyDraft || '').startsWith(oldPrefix)) {
-        this.replyDraft = (this.replyDraft || '').slice(oldPrefix.length).trim()
-      } else if (!sameComment) {
-        this.replyDraft = ''
-      }
-    },
-    openReplyToAuthor(commentId: string, parentId: string, authorName: string): void {
-      const prefix = authorName ? `@${authorName}, ` : ''
-      const sameComment = this.replyTarget?.commentId === commentId
-      this.replyTarget = { commentId, parentId, prefix }
-      this.showCancelReplyModal = false
-      this.showMentionList = false
-      this.mentionQuery = ''
-      this.mentionHighlightIndex = 0
-      if (sameComment && !(this.replyDraft || '').startsWith(prefix)) {
-        this.replyDraft = prefix + (this.replyDraft || '')
-      } else if (!sameComment) {
-        this.replyDraft = prefix
-      }
-    },
-    requestCloseReply(): void {
-      if ((this.replyDraft || '').trim() && this.replyDraft !== (this.replyTarget?.prefix || '')) {
-        this.showCancelReplyModal = true
-      } else {
-        this.closeReply()
-      }
-    },
-    closeReply(): void {
-      this.replyTarget = null
-      this.replyDraft = ''
-      this.showCancelReplyModal = false
-      this.showMentionList = false
-      this.mentionQuery = ''
-    },
-    confirmCancelReply(): void {
-      this.closeReply()
-    },
-    async sendReply(): Promise<void> {
-      const text = (this.replyDraft || '').trim()
-      if (!text || this.replySubmitting) return
-      if (!isCommentLengthValid(text)) {
-        appToast.error({ message: 'Текст комментария превышает допустимую длину' })
-        return
-      }
-      if (this.composerDisableReason) {
-        appToast.error({ message: this.composerDisableReason.message })
-        return
-      }
-      const isRootComment = this.isRootReplyActive
-      if (!isRootComment && !this.replyTarget) return
-      this.replySubmitting = true
-      const parentId = isRootComment ? '' : (this.replyTarget!.parentId)
-      const answerId = isRootComment ? '' : (this.replyTarget!.commentId)
-      // Сохраняем целевую ветку, чтобы восстановить форму при ошибке
-      const replyTargetSnapshot = this.replyTarget ? { ...this.replyTarget } : null
-
-      // Оптимистичный insert: показать комментарий со значком часов сразу, пока TX строится и
-      // ретранслируется. После получения реального txid — подменим id, чтобы reconcileWithServer
-      // мог дедуплицировать запись, когда серверный комментарий придёт из getcomments.
-      const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      const me = this.currentUserAddress
-      const commentsStore = useCommentsStore()
-      const postsStore = usePostsStore()
-      const { title: postTitle } = resolvePostTitleFromPost(postsStore.getPostByShareId(this.postId))
-      commentsStore.addPending({
-        id: localId,
-        postId: this.postId,
-        message: text,
-        parentId: parentId || '',
-        answerId: answerId || '',
-        address: me,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + 10 * 60 * 1000,
-        postTitle: postTitle || undefined,
-      })
-
-      // Авто-разворот списка комментариев — иначе только-что-отправленный коммент пользователь
-      // увидит лишь после того, как сам кликнет «Развернуть». При сортировке «Сначала новые»
-      // (по умолчанию) pending попадает в самый верх благодаря createdAt = now.
-      // Для корневого комментария разворачиваем общий список; для ответа в ветке — раскрываем
-      // ветку с ответами, чтобы свеже-отправленный был виден.
-      if (isRootComment) {
-        if (this.allComments == null) this.allComments = []
-        if (this.commentsCollapsed) this.commentsCollapsed = false
-        const minVisible = COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
-        if (this.visibleCommentsCount < minVisible) this.visibleCommentsCount = minVisible
-      } else if (parentId) {
-        // В развёрнутом виде ветка раскроется автоматически через v-if по этому флагу.
-        // В компактном превью флаг тоже ставим — чтобы при будущем раскрытии списка
-        // ветка с pending-ответом уже была развёрнута. Сам pending в компактном
-        // виде рендерится отдельным блоком в шаблоне (см. SC_CommentReplies под lastComment).
-        this.repliesExpanded = { ...this.repliesExpanded, [parentId]: true }
-      }
-
-      // Сразу очищаем форму: pending уже виден в списке, юзеру не за что цепляться взглядом.
-      this.closeReply()
-      this.$emit('comment')
-
-      // Параллельно тянем актуальные комментарии — серверный коммент с тем же txid заменит
-      // pending через reconcileWithServer. Не блокируем спиннер отправки на этот запрос.
-      const refreshPromise = isRootComment
-        ? this.loadAllComments(false).catch((err) => {
-            console.warn('[comments] refresh after send failed', err)
-          })
-        : Promise.resolve()
-
-      try {
-        const txid = await sendComment(this.postId, parentId, answerId, text)
-        haptic('small')
-        appToast.success({ message: 'Комментарий отправлен' })
-        if (txid) {
-          commentsStore.replacePendingId(this.postId, localId, txid)
-        }
-        // refreshPromise уже в полёте; await не обязателен, но ждём, чтобы сервер мог снять pending,
-        // если коммент уже подтвердился к моменту, когда вернулся txid.
-        await refreshPromise
-      } catch (e) {
-        // Не оставляем «осиротевший» pending в списке — пользователь увидит ошибку через тост.
-        commentsStore.removePending(this.postId, localId)
-        // Восстанавливаем форму с текстом и целевой веткой, чтобы можно было поправить и отправить ещё раз.
-        if (replyTargetSnapshot) {
-          this.replyTarget = replyTargetSnapshot
-        } else if (isRootComment) {
-          this.replyTarget = { commentId: 'root', parentId: '', prefix: '' }
-        }
-        this.replyDraft = text
-        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось отправить комментарий' })
-      } finally {
-        this.replySubmitting = false
-      }
-    },
-    onReplyToFirstLevel(comment: GetComment): void {
-      this.openReplyEmpty(comment.id, comment.id)
-    },
-    onReplyToAuthorFirstLevel(comment: GetComment): void {
-      this.openReplyToAuthor(comment.id, comment.id, comment.userprofile?.name || comment.address || '')
-    },
-    onReplyToSecondLevel(reply: GetComment): void {
-      this.openReplyEmpty(reply.id, reply.id)
-    },
-    onReplyToComment(reply: GetComment): void {
-      this.openReplyToAuthor(reply.id, reply.id, reply.userprofile?.name || reply.address || '')
-    },
-
-    // --- @Упоминания ---
-    onRootBarFocus(): void {
-      if (!this.isRootReplyActive) this.openReplyToPost()
-    },
-    handleRootReplyInput(e: Event): void {
-      if (!this.isRootReplyActive) return
-      const el = e.target as HTMLTextAreaElement
-      if (el) this.replyDraft = el.value
-      this.handleReplyInput(e)
-    },
-    handleReplyInput(e: Event): void {
-      const el = e.target as HTMLTextAreaElement
-      if (!el) return
-      const value = el.value
-      const pos = el.selectionStart ?? value.length
-      const before = value.slice(0, pos)
-      const lastAt = before.lastIndexOf('@')
-      if (lastAt === -1) {
-        this.showMentionList = false
-        this.mentionQuery = ''
-        return
-      }
-      const afterAt = before.slice(lastAt + 1)
-      if (/\s/.test(afterAt)) {
-        this.showMentionList = false
-        return
-      }
-      this.mentionStartOffset = lastAt
-      this.mentionEndOffset = pos
-      this.mentionQuery = afterAt
-      this.mentionHighlightIndex = 0
-      this.showMentionList = true
-    },
-    handleReplyKeydown(e: KeyboardEvent): void {
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        const text = (this.replyDraft || '').trim()
-        if (text && this.replyTarget && !this.replySubmitting) {
-          this.sendReply()
-        }
-        return
-      }
-      if (this.showMentionList && this.filteredMentionUsers.length > 0) {
-        if (e.key === 'Escape') {
-          this.showMentionList = false
-          e.preventDefault()
-          return
-        }
-        if (e.key === 'ArrowDown') {
-          this.mentionHighlightIndex = Math.min(this.mentionHighlightIndex + 1, this.filteredMentionUsers.length - 1)
-          this.$nextTick(() => this.scrollMentionHighlightIntoView())
-          e.preventDefault()
-          return
-        }
-        if (e.key === 'ArrowUp') {
-          this.mentionHighlightIndex = Math.max(this.mentionHighlightIndex - 1, 0)
-          this.$nextTick(() => this.scrollMentionHighlightIntoView())
-          e.preventDefault()
-          return
-        }
-        if (e.key === 'Enter') {
-          const user = this.filteredMentionUsers[this.mentionHighlightIndex]
-          if (user) {
-            this.selectMentionUser(user)
-            e.preventDefault()
-          }
-          return
-        }
-      }
-    },
-    scrollMentionHighlightIntoView(): void {
-      this.$nextTick(() => {
-        requestAnimationFrame(() => {
-          const ref = this.isRootReplyActive ? this.$refs.rootMentionListRef : this.$refs.mentionListRef
-          const raw = Array.isArray(ref) ? ref[0] : ref
-          const listEl = raw && (raw as HTMLElement).scrollTop !== undefined
-            ? (raw as HTMLElement)
-            : (raw as { $el?: HTMLElement })?.$el
-          if (!listEl || !listEl.children || listEl.clientHeight <= 0) return
-          const child = listEl.children[this.mentionHighlightIndex] as HTMLElement | undefined
-          if (!child) return
-          child.scrollIntoView({ block: 'nearest', behavior: 'instant' })
-        })
-      })
-    },
-    selectMentionUser(user: MentionUser): void {
-      const insert = `@${user.name} `
-      const before = (this.replyDraft || '').slice(0, this.mentionStartOffset)
-      const endPos = this.mentionEndOffset
-      const after = (this.replyDraft || '').slice(endPos)
-      this.replyDraft = before + insert + after
-      this.showMentionList = false
-      this.mentionQuery = ''
-      this.mentionHighlightIndex = 0
-      this.$nextTick(() => {
-        const ref = this.isRootReplyActive ? this.$refs.rootReplyTextareaRef : this.$refs.replyTextareaRef
-        const el = ref && typeof (ref as HTMLTextAreaElement).focus === 'function'
-          ? (ref as HTMLTextAreaElement)
-          : (ref as { $el?: HTMLTextAreaElement })?.$el
-        if (el && typeof el.focus === 'function') {
-          el.focus()
-          const newPos = before.length + insert.length
-          el.setSelectionRange(newPos, newPos)
-        }
-      })
-    },
-
-    // --- Видимость комментария ---
-    /** Скрыт ли коммент по правилам видимости (репутация автора и т.п.) */
-    isCommentHiddenByVisibility(comment: GetComment): boolean {
-      const me = this.currentUserAddress || undefined
-      if (visIsHiddenByReputation(comment, me)) return true
-      if (visIsAuthorAccountLocked(comment)) return true
-      return false
-    },
-    /** Раскрыл ли пользователь скрытый коммент через «Показать всё равно» */
-    isHiddenRevealed(comment: GetComment): boolean {
-      return useCommentsStore().isRevealed(comment.id)
-    },
-    /** Должен ли быть скрыт контент (с учётом revealed-флага) */
-    shouldHideContent(comment: GetComment): boolean {
-      if (this.isCommentDeleted(comment)) return false
-      if (!this.isCommentHiddenByVisibility(comment)) return false
-      return !this.isHiddenRevealed(comment)
-    },
-    revealHiddenComment(comment: GetComment): void {
-      useCommentsStore().revealHidden(comment.id)
-    },
-
-    // --- Контекстное меню комментария ---
-    isCommentDeleted(comment: GetComment): boolean {
-      return !!comment.deleted || this.deletedCommentIdsMap[comment.id] === true
-    },
-    canShowMenu(comment: GetComment): boolean {
-      // Меню скрываем для удалённых, и для случая когда у пользователя нет доступных действий
-      if (this.isCommentDeleted(comment)) return false
-      return this.canEditComment(comment) || this.canDeleteComment(comment)
-    },
-    canEditComment(comment: GetComment): boolean {
-      // Только свой, не удалённый, не в pending/rejected (legacy: metmenu.html:51-62)
-      const me = this.currentUserAddress
-      if (!me || comment.address !== me) return false
-      if (this.isCommentDeleted(comment)) return false
-      if (getCommentTxState(comment) !== 'normal') return false
-      return true
-    },
-    canDeleteComment(comment: GetComment): boolean {
-      const me = this.currentUserAddress
-      if (!me || this.isCommentDeleted(comment)) return false
-      if (getCommentTxState(comment) !== 'normal') return false
-      // Свой комментарий — можно. Автор поста может удалять чужие (модерация).
-      if (comment.address === me) return true
-      if (this.postAuthorAddress && this.postAuthorAddress === me) return true
-      return false
-    },
-    /** Pending TX (свой комментарий, который ещё не подтверждён) */
-    isCommentPending(comment: GetComment): boolean {
-      return getCommentTxState(comment) === 'pending'
-    },
-    /** Rejected TX (свой комментарий, отклонённый сетью) */
-    isCommentRejected(comment: GetComment): boolean {
-      return getCommentTxState(comment) === 'rejected'
-    },
-    /** Может ли пользователь голосовать / отвечать на этот комментарий */
-    canInteractWithComment(comment: GetComment): boolean {
-      if (this.isCommentDeleted(comment)) return false
-      if (getCommentTxState(comment) !== 'normal') return false
-      return true
-    },
-    onCommentMenuAction(comment: GetComment, action: CommentMenuAction): void {
+    // --- Menu action handler ---
+    const onCommentMenuAction = (comment: GetComment, action: CommentMenuAction): void => {
       if (action === 'delete') {
-        this.confirmDeleteComment(comment)
+        editDelete.confirmDeleteComment(comment)
         return
       }
       if (action === 'edit') {
-        this.openEditComment(comment)
+        editDelete.openEditComment(comment)
         return
       }
-    },
-    confirmDeleteComment(comment: GetComment): void {
-      Modal.confirm({
-        title: 'Удалить комментарий?',
-        icon: h(ExclamationCircleOutlined),
-        content: 'Действие нельзя отменить — комментарий будет помечен как удалённый.',
-        okText: 'Удалить',
-        okType: 'danger',
-        cancelText: 'Отмена',
-        centered: true,
-        onOk: () => this.deleteCommentInternal(comment),
-      })
-    },
-    async deleteCommentInternal(comment: GetComment): Promise<void> {
-      if (this.commentDeleteSubmitting === comment.id) return
-      this.commentDeleteSubmitting = comment.id
-      const commentsStore = useCommentsStore()
-      // Optimistic: сразу прячем меню/контент через флаг в общем сторе;
-      // при ошибке откатываем — иначе оверрайд снимется при reconcile с RPC / при WS подтверждении.
-      commentsStore.markDeleted(comment.id)
-      try {
-        await deleteComment({
-          postId: this.postId,
-          commentId: comment.id,
-          parentId: comment.parentid || '',
-          answerId: comment.answerid || '',
-        })
-        haptic('medium')
-        appToast.success({ message: 'Комментарий удалён' })
-      } catch (e) {
-        commentsStore.unmarkDeleted(comment.id)
-        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось удалить комментарий' })
-      } finally {
-        this.commentDeleteSubmitting = null
-      }
-    },
+    }
 
-    // --- Inline-редактирование ---
-    isEditingComment(comment: GetComment): boolean {
-      return this.editingCommentId === comment.id
-    },
-    /** Текущий текст сообщения как plain (для предзаполнения формы редактирования) */
-    getCommentMessagePlain(comment: GetComment): string {
-      // Если есть локальный override (свежий commentEdit) — используем его,
-      // иначе парсим JSON-форму msg, либо возвращаем raw.
-      const overridden = this.editedMessagesMap[comment.id]
-      if (typeof overridden === 'string') return overridden
-      try {
-        const parsed = JSON.parse(comment.msg) as { message?: string }
-        return parsed?.message ?? comment.msg
-      } catch {
-        return comment.msg
-      }
-    },
-    openEditComment(comment: GetComment): void {
-      // Если открыта другая редактура с непустым изменением — закрыть тихо.
-      // (для упрощения: не сохраняем черновик между разными комментариями)
-      const initial = this.getCommentMessagePlain(comment)
-      this.editingCommentId = comment.id
-      this.editDraft = initial
-      this.editInitialDraft = initial
-      this.editSubmitting = false
-    },
-    requestCloseEdit(): void {
-      // Если изменений нет — закрываем без подтверждения, иначе — confirm-modal
-      if ((this.editDraft || '') === (this.editInitialDraft || '')) {
-        this.closeEdit()
-        return
-      }
-      Modal.confirm({
-        title: 'Отменить изменения?',
-        icon: h(ExclamationCircleOutlined),
-        content: 'Введённый текст не будет сохранён.',
-        okText: 'Да, отменить',
-        cancelText: 'Нет',
-        centered: true,
-        onOk: () => this.closeEdit(),
-      })
-    },
-    closeEdit(): void {
-      this.editingCommentId = null
-      this.editDraft = ''
-      this.editInitialDraft = ''
-      this.editSubmitting = false
-    },
-    async submitEdit(): Promise<void> {
-      const id = this.editingCommentId
-      if (!id || this.editSubmitting) return
-      const text = (this.editDraft || '').trim()
-      if (!text) return
-      if (!isCommentLengthValid(text)) {
-        appToast.error({ message: 'Текст комментария превышает допустимую длину' })
-        return
-      }
-      if (text === (this.editInitialDraft || '').trim()) {
-        // Без изменений — просто закрываем
-        this.closeEdit()
-        return
-      }
-      // Найдём комментарий чтобы взять parent/answer ids (нужны для serialize)
-      const comment = this.findCommentById(id)
-      if (!comment) {
-        appToast.error({ message: 'Комментарий не найден' })
-        return
-      }
-      this.editSubmitting = true
-      try {
-        await sendComment(
-          this.postId,
-          comment.parentid || '',
-          comment.answerid || '',
-          text,
-          id, // editId — переключает sendComment в режим commentEdit
-        )
-        haptic('small')
-        // Optimistic: подменяем текст до прихода обновлённой версии (через стор)
-        useCommentsStore().setEditedMessage(id, text)
-        appToast.success({ message: 'Комментарий отредактирован' })
-        this.closeEdit()
-      } catch (e) {
-        appToast.error({ message: e instanceof Error ? e.message : 'Не удалось отредактировать комментарий' })
-      } finally {
-        this.editSubmitting = false
-      }
-    },
-    /** Находит комментарий по id среди корневых и ответов */
-    findCommentById(id: string): GetComment | null {
-      if (this.allComments) {
-        const found = this.allComments.find((c) => c.id === id)
-        if (found) return found
-      }
-      for (const list of Object.values(this.repliesByParentId)) {
-        if (Array.isArray(list)) {
-          const found = (list as GetComment[]).find((c) => c.id === id)
-          if (found) return found
-        }
-      }
-      return null
-    },
+    // --- Cleanup ---
+    onBeforeUnmount(() => {
+      clearInterval(relativeTimer)
+    })
 
-    // --- WebSocket realtime ---
-    subscribeToWs(): void {
-      const self = this as unknown as { _wsUnsub: null | (() => void) }
-      if (self._wsUnsub) return
-      self._wsUnsub = wsService.on('transaction', (data) => {
-        // data.txid и data.type приходят от прокси; игнорируем шум, нас интересуют
-        // транзакции, относящиеся к нашему посту: comment / commentEdit / commentDelete / cScore.
-        const type = (data?.type as string | undefined) || ''
-        if (!this.postId) return
-        if (!type) return
+    // Не используем h() напрямую — нужно для tree-shake hint
+    void h
 
-        if (
-          type === 'comment' ||
-          type === 'commentEdit' ||
-          type === 'commentDelete'
-        ) {
-          // Снимаем локальный optimistic-флаг по txid (если совпадает с pending)
-          const txid = (data?.txid as string | undefined) || ''
-          if (txid) useCommentsStore().applyConfirmedTx(this.postId, txid, type)
-          // Перезапросить список (с дебаунсом, чтобы не штормить при пачках)
-          this.scheduleRefresh()
-          return
-        }
+    return {
+      // --- Базовое состояние ---
+      postId,
+      currentUserAddress,
+      postAuthorAddress,
+      nowTick,
 
-        if (type === 'cScore') {
-          // Голос за чужой комментарий — список нужно перезапросить, чтобы
-          // обновить scoreUp/scoreDown. Дебаунсим.
-          this.scheduleRefresh()
-          return
-        }
-      })
-    },
-    unsubscribeFromWs(): void {
-      const self = this as unknown as { _wsUnsub: null | (() => void) }
-      if (self._wsUnsub) {
-        try { self._wsUnsub() } catch { /* noop */ }
-        self._wsUnsub = null
-      }
-    },
-    /** Дебаунсенный рефреш списка комментариев (от 1 до N WS-событий пачкой) */
-    scheduleRefresh(): void {
-      const self = this as unknown as { _refreshDebounce: number | null }
-      if (self._refreshDebounce !== null) return
-      self._refreshDebounce = window.setTimeout(() => {
-        self._refreshDebounce = null
-        // Перезагружаем только если список уже был открыт хоть раз — иначе
-        // нет смысла нагружать сеть для свёрнутого превью.
-        if (this.allComments && !this.commentsCollapsed) {
-          this.loadAllComments(false)
-        }
-      }, 600)
-    },
-    /** Ручной refresh — кнопка в шапке списка */
-    refreshComments(): void {
-      if (this.allCommentsLoading) return
-      this.loadAllComments(false)
-    },
+      // --- LastComment computed ---
+      lastCommentMessageHtml,
+      lastCommentProfileLink,
+      lastCommentAvatarUrl,
+      lastCommentInitial,
+      lastCommentDateOnly,
+      lastCommentDateFull,
+      lastCommentId,
+      lastCommentChildren,
+      hasUserComments,
+      totalCommentsCount,
+
+      // --- Текущий юзер ---
+      currentUserAvatarUrl,
+      currentUserInitial,
+      currentUserStateData,
+
+      // --- Списки ---
+      sortedComments,
+      visibleComments,
+      remainingCommentsCount,
+      nextCommentsPageSize,
+      hasMoreCommentsToShow,
+      actualCommentsCount,
+      pendingRootComments,
+
+      // --- Mention list ---
+      mentionUsers,
+      filteredMentionUsers,
+
+      // --- Disable reasons ---
+      composerDisableReason,
+
+      // --- Loader (allComments/loading/sort/pagination) ---
+      allComments: loader.allComments,
+      allCommentsLoading: loader.allCommentsLoading,
+      allCommentsError: loader.allCommentsError,
+      visibleCommentsCount: loader.visibleCommentsCount,
+      commentsCollapsed: loader.commentsCollapsed,
+      commentsSortOrder: loader.commentsSortOrder,
+      loadAllComments: loader.loadAllComments,
+      expandComments: loader.expandComments,
+      setCommentsSortOrder: loader.setCommentsSortOrder,
+      showMoreComments: loader.showMoreComments,
+      showAllComments: loader.showAllComments,
+      collapseComments,
+
+      // --- Replies (2-уровневые) ---
+      repliesByParentId: replies.repliesByParentId,
+      repliesLoading: replies.repliesLoading,
+      repliesExpanded: replies.repliesExpanded,
+      loadReplies: replies.loadReplies,
+      toggleRepliesExpanded: replies.toggleRepliesExpanded,
+      isRepliesExpanded: replies.isRepliesExpanded,
+      isRepliesLoading: replies.isRepliesLoading,
+      getReplies: replies.getReplies,
+      onRepliesClick: replies.onRepliesClick,
+
+      // --- Scoring ---
+      lastCommentVote: scoring.lastCommentVote,
+      commentVotes: scoring.commentVotes,
+      commentScoreSubmitting: scoring.commentScoreSubmitting,
+      scoringDisableReason: scoring.scoringDisableReason,
+      lastCommentUserLiked: scoring.lastCommentUserLiked,
+      lastCommentUserDisliked: scoring.lastCommentUserDisliked,
+      lastCommentCanClickLike: scoring.lastCommentCanClickLike,
+      lastCommentCanClickDislike: scoring.lastCommentCanClickDislike,
+      isCommentLiked: scoring.isCommentLiked,
+      isCommentDisliked: scoring.isCommentDisliked,
+      commentCanClickLike: scoring.commentCanClickLike,
+      commentCanClickDislike: scoring.commentCanClickDislike,
+      onLastCommentScoreUp: scoring.onLastCommentScoreUp,
+      onLastCommentScoreDown: scoring.onLastCommentScoreDown,
+      onCommentScoreUp: scoring.onCommentScoreUp,
+      onCommentScoreDown: scoring.onCommentScoreDown,
+
+      // --- Form / @mentions ---
+      replyTarget: form.replyTarget,
+      replyDraft: form.replyDraft,
+      showCancelReplyModal: form.showCancelReplyModal,
+      showMentionList: form.showMentionList,
+      mentionQuery: form.mentionQuery,
+      mentionHighlightIndex: form.mentionHighlightIndex,
+      replySubmitting: form.replySubmitting,
+      replyPanelKey: form.replyPanelKey,
+      isRootReplyActive: form.isRootReplyActive,
+      rootLengthHint: form.rootLengthHint,
+      rootLengthValid: form.rootLengthValid,
+      isReplyPanelOpen: form.isReplyPanelOpen,
+      openReplyToPost: form.openReplyToPost,
+      openReplyEmpty: form.openReplyEmpty,
+      openReplyToAuthor: form.openReplyToAuthor,
+      requestCloseReply: form.requestCloseReply,
+      closeReply: form.closeReply,
+      confirmCancelReply: form.confirmCancelReply,
+      onRootBarFocus: form.onRootBarFocus,
+      handleRootReplyInput: form.handleRootReplyInput,
+      handleReplyInput: form.handleReplyInput,
+      handleReplyKeydown: form.handleReplyKeydown,
+      scrollMentionHighlightIntoView: form.scrollMentionHighlightIntoView,
+      selectMentionUser: form.selectMentionUser,
+      sendReply: form.sendReply,
+      onReplyToFirstLevel: form.onReplyToFirstLevel,
+      onReplyToAuthorFirstLevel: form.onReplyToAuthorFirstLevel,
+      onReplyToSecondLevel: form.onReplyToSecondLevel,
+      onReplyToComment: form.onReplyToComment,
+      onLastCommentReply,
+      onLastCommentReplyToAuthor,
+      onLastCommentRepliesClick,
+
+      // --- Visibility ---
+      isCommentHiddenByVisibility: visibility.isCommentHiddenByVisibility,
+      isHiddenRevealed: visibility.isHiddenRevealed,
+      shouldHideContent: visibility.shouldHideContent,
+      revealHiddenComment: visibility.revealHiddenComment,
+
+      // --- Edit/Delete ---
+      commentDeleteSubmitting: editDelete.commentDeleteSubmitting,
+      editingCommentId: editDelete.editingCommentId,
+      editDraft: editDelete.editDraft,
+      editInitialDraft: editDelete.editInitialDraft,
+      editSubmitting: editDelete.editSubmitting,
+      isCommentDeleted: editDelete.isCommentDeleted,
+      canEditComment: editDelete.canEditComment,
+      canDeleteComment: editDelete.canDeleteComment,
+      canShowMenu: editDelete.canShowMenu,
+      isCommentPending: editDelete.isCommentPending,
+      isCommentRejected: editDelete.isCommentRejected,
+      canInteractWithComment: editDelete.canInteractWithComment,
+      isEditingComment: editDelete.isEditingComment,
+      confirmDeleteComment: editDelete.confirmDeleteComment,
+      openEditComment: editDelete.openEditComment,
+      requestCloseEdit: editDelete.requestCloseEdit,
+      closeEdit: editDelete.closeEdit,
+      submitEdit: editDelete.submitEdit,
+      getCommentMessagePlain: editDelete.getCommentMessagePlain,
+      onCommentMenuAction,
+
+      // --- WS ---
+      refreshComments: ws.refresh,
+
+      // --- Display helpers ---
+      getCommentAvatarUrl,
+      getCommentProfileLink,
+      formatCommentDate,
+      formatCommentDateFull,
+      getCommentImagesList,
+      formatScore,
+      formatCommentMessageHtml,
+      isCommentEdited,
+
+      // --- Template refs ---
+      rootMentionListRef,
+      mentionListRef,
+      rootReplyTextareaRef,
+      replyTextareaRef,
+    }
   },
 })
-
-/**
- * Конвертирует pending-комментарий из стора в синтетический GetComment-объект
- * для рендера в общем списке. Помечается флагом `temp = true` — UI отрисует
- * статус-бейдж "Ожидание".
- */
-function pendingToGetComment(p: PendingComment): GetComment {
-  const authStore = useAuthStore()
-  const profile = (authStore.getUserProfile as { name?: string; i?: string } | null) ?? null
-  return {
-    type: 0,
-    id: p.id,
-    postid: p.postId,
-    address: p.address,
-    time: Math.floor(p.createdAt / 1000),
-    timeUpd: Math.floor(p.createdAt / 1000),
-    block: 0,
-    msg: JSON.stringify({ message: p.message, url: '', images: [], info: '' }),
-    scoreUp: 0,
-    scoreDown: 0,
-    children: 0,
-    deleted: false,
-    edit: false,
-    flags: {},
-    parentid: p.parentId || '',
-    answerid: p.answerId || '',
-    temp: true,
-    userprofile: {
-      hash: '',
-      address: p.address,
-      id: 0,
-      name: profile?.name || p.address,
-      i: profile?.i || '',
-    },
-  }
-}
