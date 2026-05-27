@@ -24,6 +24,7 @@ import {
   isMessageEvent,
   resolveMatrixHost,
 } from '../helpers'
+import { findExistingRoomByAddress, getPartnerMatrixId } from '../room-helpers'
 
 import { SOUND_MAX_AGE, PROFILE_UPDATE_DEBOUNCE, PCRYPTO_DIALOG_TIMEOUT } from './consts'
 
@@ -43,19 +44,6 @@ export const useMessengerStore = defineStore('messenger', () => {
   const uiRefs = storeToRefs(uiStore)
 
   // --- Маппинг комнаты в диалог ---
-
-  const getPartnerMatrixId = (room: any): string | null => {
-    if (!room) return null
-    const myUserId = matrixService.getClient()?.getUserId()
-    let otherMember = room.getJoinedMembers?.().find((m: any) => m.userId !== myUserId)
-    if (!otherMember && room.currentState?.getMembers) {
-      const allMembers = room.currentState.getMembers()
-      otherMember = allMembers.find(
-        (m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
-      )
-    }
-    return otherMember ? otherMember.userId : room.roomId || null
-  }
 
   const mapRoomToDialog = async (room: any): Promise<Dialog> => {
     if (room?.loadMembersIfNeeded) {
@@ -455,17 +443,6 @@ export const useMessengerStore = defineStore('messenger', () => {
     } finally {
       if (needDialogs) uiStore.isLoading = false
     }
-  }
-
-  const findExistingRoomByAddress = (address: string): string | null => {
-    const hex = matrixService.addressToHex(address).toLowerCase()
-    const host = resolveMatrixHost()
-    const partnerId = `@${hex}:${host}`
-    const rooms = matrixService.getRooms()
-    for (const room of rooms) {
-      if (getPartnerMatrixId(room) === partnerId) return room.roomId
-    }
-    return null
   }
 
   const startChatWithAddress = async (address: string): Promise<string | null> => {

@@ -255,6 +255,16 @@ export const formatMessageTime = (timestamp: number): string => {
 }
 
 /**
+ * Форматирует продолжительность в секундах как «MM:SS» (с ведущими нулями).
+ * Используется для рекордера голосовых сообщений и плеера аудио.
+ */
+export const formatDuration = (seconds: number): string => {
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
+/**
  * Резолвит Matrix-хост из baseUrl матрицы.
  * Для localhost/127.0.0.1 возвращает дефолтный хост.
  */

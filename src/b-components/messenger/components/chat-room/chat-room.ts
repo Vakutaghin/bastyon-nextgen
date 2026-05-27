@@ -31,6 +31,7 @@ import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import PkoinTransferModal from '../pkoin-transfer-modal/pkoin-transfer-modal.vue'
 import { useMessengerStore } from '../../store'
+import { formatDuration } from '../../helpers'
 import { usePasteDrop } from './use-paste-drop'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 
@@ -112,12 +113,6 @@ export const chatRoomOptions = defineComponent({
       'audio/mp4',
       'audio/aac',
     ]
-
-    const formatDuration = (seconds: number) => {
-      const m = Math.floor(seconds / 60)
-      const s = Math.floor(seconds % 60)
-      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-    }
 
     const adjustHeight = () => {
       const el = inputRef.value?.$el

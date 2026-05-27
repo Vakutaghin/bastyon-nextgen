@@ -2,7 +2,6 @@
 
 import { defineStore } from 'pinia'
 import { ref, reactive } from 'vue'
-import CryptoJS from 'crypto-js'
 
 import { useAuthStore } from '@/blockchain'
 import { deriveMessengerKeys } from '@/blockchain/core/keys'
@@ -18,11 +17,16 @@ import {
 } from '../services/encryption-service'
 import { encryptBlobWithRandomKey, wrapKeyForRoom } from '../services/media-encrypt'
 import { decryptBytesWithSecret, sniffMimeFromBytes } from '../services/media-decrypt'
+import { createDecryptionCache } from '../services/decryption-cache'
 import {
-  loadAllDecryptedForUser,
-  saveDecrypted,
-  clearDecryptedForUser,
-} from '@/db/apis/decrypted-messages-api'
+  computeGroupUsershash,
+  findCommonKeyStateEvent,
+  decryptGroupCommonKey,
+  isGroupEncryptedContent,
+  collectPcryptoUsers as collectPcryptoUsersHelper,
+} from '../services/group-encryption'
+import { extractImageDimensions, extractVideoMetadata } from '../services/media-metadata'
+import { getPartnerMatrixId } from '../room-helpers'
 import type { Message, MessageReaction, User } from '../types'
 
 import {
@@ -57,110 +61,6 @@ import { useMessengerProfileCache } from './messenger-profile-cache'
 const IMAGE_SIZE_LIMIT_BYTES = 100 * 1024 * 1024
 const FILE_SIZE_LIMIT_BYTES = 25 * 1024 * 1024
 
-/**
- * Декодирует blob как картинку, возвращает её размеры.
- * null — если файл не декодируется.
- */
-const extractImageDimensions = (blob: Blob): Promise<{ w: number; h: number } | null> => {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(blob)
-    const img = new Image()
-    img.onload = () => {
-      const w = img.naturalWidth || img.width
-      const h = img.naturalHeight || img.height
-      URL.revokeObjectURL(url)
-      resolve(w && h ? { w, h } : null)
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      resolve(null)
-    }
-    img.src = url
-  })
-}
-
-/**
- * Извлекает duration (сек) + размеры видео + первый кадр как poster blob (JPEG).
- * Poster НЕ шифруется — отправляется как обычный mxc-картинка через info.thumbnail_url,
- * чтобы клиенты видели превью до расшифровки видео.
- */
-const extractVideoMetadata = (
-  blob: Blob,
-  maxThumbDim = 768
-): Promise<{ duration: number; w: number; h: number; posterBlob: Blob | null }> => {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(blob)
-    const video = document.createElement('video')
-    video.preload = 'auto'
-    video.muted = true
-    video.playsInline = true
-    video.crossOrigin = 'anonymous'
-    let done = false
-    const finalize = (result: {
-      duration: number
-      w: number
-      h: number
-      posterBlob: Blob | null
-    }) => {
-      if (done) return
-      done = true
-      URL.revokeObjectURL(url)
-      resolve(result)
-    }
-    video.onerror = () => finalize({ duration: 0, w: 0, h: 0, posterBlob: null })
-    video.onloadedmetadata = () => {
-      const duration = isFinite(video.duration) ? video.duration : 0
-      const w = video.videoWidth || 0
-      const h = video.videoHeight || 0
-      if (!w || !h) return finalize({ duration, w: 0, h: 0, posterBlob: null })
-      // Seek в небольшую позицию, чтобы получить кадр (а не чёрный начальный кадр)
-      const seekTo = Math.min(Math.max(0.1, duration * 0.05), 1.5)
-      const onSeeked = () => {
-        try {
-          const scale = Math.min(1, maxThumbDim / Math.max(w, h))
-          const tw = Math.max(1, Math.round(w * scale))
-          const th = Math.max(1, Math.round(h * scale))
-          const canvas = document.createElement('canvas')
-          canvas.width = tw
-          canvas.height = th
-          const ctx = canvas.getContext('2d')
-          if (!ctx) return finalize({ duration, w, h, posterBlob: null })
-          ctx.drawImage(video, 0, 0, tw, th)
-          canvas.toBlob((b) => finalize({ duration, w, h, posterBlob: b }), 'image/jpeg', 0.7)
-        } catch (_e) {
-          finalize({ duration, w, h, posterBlob: null })
-        }
-      }
-      video.addEventListener('seeked', onSeeked, { once: true })
-      try {
-        video.currentTime = seekTo
-      } catch (_e) {
-        finalize({ duration, w, h, posterBlob: null })
-      }
-    }
-    video.src = url
-    try {
-      video.load()
-    } catch {
-      /* ignore */
-    }
-  })
-}
-
-/** Matrix ID собеседника по комнате (включая invite) или roomId как fallback. */
-const getPartnerMatrixId = (room: any): string | null => {
-  if (!room) return null
-  const myUserId = matrixService.getClient()?.getUserId()
-  let otherMember = room.getJoinedMembers?.().find((m: any) => m.userId !== myUserId)
-  if (!otherMember && room.currentState?.getMembers) {
-    const allMembers = room.currentState.getMembers()
-    otherMember = allMembers.find(
-      (m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
-    )
-  }
-  return otherMember ? otherMember.userId : room.roomId || null
-}
-
 export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const authStore = useAuthStore()
   const uiStore = useMessengerUiStore()
@@ -188,11 +88,10 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
    *
    * Параллельно зеркалится в IndexedDB через decrypted-messages-api, чтобы
    * расшифровки переживали перезагрузку приложения. hydrate() поднимает их
-   * пачкой в память сразу после инициализации pcrypto.
+   * пачкой в память сразу после инициализации pcrypto. Реализация — в
+   * services/decryption-cache.ts.
    */
-  const decryptedTextCache = new Map<string, string>()
-  let decryptedCacheHydrated = false
-  let decryptedCacheHydrating: Promise<void> | null = null
+  const decryptionCache = createDecryptionCache()
 
   // --- Вспомогательные методы ---
 
@@ -321,147 +220,13 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
 
   /**
    * Собирает PcryptoUser[] для шифрования/дешифрования по участникам комнаты.
-   * Загружает профили при необходимости.
+   * Делегирует в group-encryption.ts, передавая текущие profileCache + localMessengerKeys.
    */
-  const collectPcryptoUsers = async (memberIds: string[]): Promise<PcryptoUser[]> => {
-    const myMatrixId = matrixService.getClient()?.getUserId()
-    const addressesToFetch: string[] = []
-
-    for (const memberId of memberIds) {
-      const address = getAddressFromMatrixId(memberId)
-      if (address && !profileCache.userProfiles[address]) addressesToFetch.push(address)
-    }
-    const myAddress = myMatrixId ? getAddressFromMatrixId(myMatrixId) : null
-    if (myAddress && !profileCache.userProfiles[myAddress]) addressesToFetch.push(myAddress)
-
-    if (addressesToFetch.length > 0) await profileCache.fetchProfiles(addressesToFetch)
-
-    const users: PcryptoUser[] = []
-    for (const memberId of memberIds) {
-      const address = getAddressFromMatrixId(memberId)
-      const isMe = !!myMatrixId && memberId === myMatrixId
-
-      if (isMe) {
-        if (address && profileCache.userProfiles[address]?.k) {
-          users.push({
-            id: memberId,
-            keys: parseProfileKeys(profileCache.userProfiles[address].k),
-            dbId: (profileCache.userProfiles[address] as any).id,
-          })
-          continue
-        }
-        if (localMessengerKeys.value) {
-          users.push({
-            id: memberId,
-            keys: localMessengerKeys.value.map((k) => k.public),
-            dbId:
-              address && profileCache.userProfiles[address]
-                ? (profileCache.userProfiles[address] as any).id
-                : undefined,
-          })
-          continue
-        }
-      }
-
-      if (address && profileCache.userProfiles[address]?.k) {
-        users.push({
-          id: memberId,
-          keys: parseProfileKeys(profileCache.userProfiles[address].k),
-          dbId: (profileCache.userProfiles[address] as any).id,
-        })
-      }
-    }
-    return users
-  }
-
-  // --- Групповая криптография (общий ключ комнаты) ---
-
-  /**
-   * Вычисляет usershash для группового чата: md5(<id всех участников кроме меня, отсортировано по dbId>) + suffix.
-   * Совместимо с bastyon-chat: usershashVersion=13, version=2.
-   */
-  const computeGroupUsershash = (users: PcryptoUser[], myMatrixIdLocal: string): string => {
-    const sorted = [...users].sort((a, b) => {
-      const da = a.dbId || 0
-      const db = b.dbId || 0
-      if (da !== db) return da - db
-      return a.id.localeCompare(b.id)
+  const collectPcryptoUsers = (memberIds: string[]): Promise<PcryptoUser[]> =>
+    collectPcryptoUsersHelper(memberIds, {
+      profileCache,
+      localMessengerKeys: localMessengerKeys.value,
     })
-    const otherIds = sorted
-      .map((u) => getMatrixId(u.id))
-      .filter((id) => id && id !== myMatrixIdLocal)
-    return CryptoJS.MD5(otherIds.join('') + '_v13_2').toString()
-  }
-
-  /**
-   * Находит state-событие `m.room.encryption` с state_key `pcrypto.<sender>.<hash>`,
-   * в котором лежит общий ключ группы (зашифрованный по схеме pcrypto для каждого участника).
-   */
-  const findCommonKeyStateEvent = (
-    room: any,
-    senderMatrixIdLocal: string,
-    hash: string
-  ): any | null => {
-    if (!room?.currentState?.getStateEvents) return null
-    const stateKey = `pcrypto.${senderMatrixIdLocal}.${hash}`
-    const single = room.currentState.getStateEvents('m.room.encryption', stateKey)
-    if (single) return single
-    const events = room.currentState.getStateEvents('m.room.encryption')
-    if (!Array.isArray(events)) return null
-    return (
-      events.find((e: any) => {
-        const sk =
-          typeof e.getStateKey === 'function' ? e.getStateKey() : e.event?.state_key || e.state_key
-        return sk === stateKey
-      }) || null
-    )
-  }
-
-  /**
-   * Расшифровывает state-событие общего ключа группы и возвращает строку-секрет
-   * (которой далее AES-CBC-дешифруется тело сообщения).
-   */
-  const decryptGroupCommonKey = async (
-    stateEvent: any,
-    users: PcryptoUser[]
-  ): Promise<string | null> => {
-    if (!pcryptoService.value || !stateEvent) return null
-    const raw = stateEvent.event || stateEvent
-    const senderId =
-      typeof stateEvent.getSender === 'function'
-        ? stateEvent.getSender()
-        : raw?.sender || raw?.user_id
-    const content =
-      typeof stateEvent.getContent === 'function' ? stateEvent.getContent() : raw?.content
-    if (!content?.keys) return null
-    const fakeStateEvent = {
-      type: 'm.room.encryption',
-      sender: senderId,
-      content,
-      origin_server_ts: raw?.origin_server_ts || Date.now(),
-    }
-    try {
-      return await pcryptoService.value.decryptEvent(fakeStateEvent, users)
-    } catch (e) {
-      return null
-    }
-  }
-
-  /**
-   * Признак группового зашифрованного m.room.message (bastyon-chat group protocol).
-   *
-   * Раньше требовали msgtype === 'm.encrypted', но это ломалось на исторических
-   * сообщениях, где старые клиенты могли отправлять без явного msgtype или с другим.
-   * Достаточный сигнал: есть content.hash и body выглядит как hex-кодированный
-   * AES-CBC ciphertext (только hex-символы, длина кратна 32 — 1 блок = 16 байт = 32 hex).
-   */
-  const isGroupEncryptedContent = (content: any): boolean => {
-    if (!content) return false
-    if (typeof content.hash !== 'string' || content.hash.length === 0) return false
-    if (typeof content.body !== 'string' || content.body.length === 0) return false
-    if (content.body.length % 32 !== 0) return false
-    return /^[0-9a-fA-F]+$/.test(content.body)
-  }
 
   // --- Дешифрование ---
 
@@ -470,8 +235,8 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     if (!pcryptoService.value) return null
 
     // Кэш: один раз расшифровали — больше не считаем.
-    if (eventId && decryptedTextCache.has(eventId)) {
-      return decryptedTextCache.get(eventId)!
+    if (eventId && decryptionCache.has(eventId)) {
+      return decryptionCache.get(eventId)!
     }
 
     const content = getEventContent(event)
@@ -508,14 +273,13 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
           if (!users.find((u) => u.id === senderId)) return null
         }
 
-        const commonSecret = await decryptGroupCommonKey(stateEvent, users)
+        const commonSecret = await decryptGroupCommonKey(pcryptoService.value, stateEvent, users)
         if (!commonSecret) return null
 
         const decrypted = await decryptTextWithSecret(content.body, commonSecret)
         if (decrypted && eventId) {
-          decryptedTextCache.set(eventId, decrypted)
-          const uid = matrixService.getClient()?.getUserId()
-          if (uid) saveDecrypted(uid, eventId, decrypted)
+          decryptionCache.set(eventId, decrypted)
+          decryptionCache.persist(matrixService.getClient()?.getUserId(), eventId, decrypted)
         }
         return decrypted
       } catch (e: any) {
@@ -611,9 +375,8 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
 
       const decrypted = await pcryptoService.value.decryptEvent(rawEvent, users)
       if (decrypted && eventId) {
-        decryptedTextCache.set(eventId, decrypted)
-        const uid = matrixService.getClient()?.getUserId()
-        if (uid) saveDecrypted(uid, eventId, decrypted)
+        decryptionCache.set(eventId, decrypted)
+        decryptionCache.persist(matrixService.getClient()?.getUserId(), eventId, decrypted)
       }
       return decrypted
     } catch (e: any) {
@@ -921,7 +684,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     let commonSecret: string | null = null
     const existing = findCommonKeyStateEvent(room, myLocal, hash)
     if (existing) {
-      commonSecret = await decryptGroupCommonKey(existing, users)
+      commonSecret = await decryptGroupCommonKey(pcryptoService.value, existing, users)
     }
 
     if (!commonSecret) {
@@ -1573,36 +1336,15 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
       // Fire-and-forget: поднимаем персистентный кэш расшифровок текущего юзера.
       // Пока он подгружается, отдельные tryDecrypt просто посчитают на лету;
       // после hydrate последующие чтения списка диалогов будут мгновенными.
-      hydrateDecryptedCache()
+      void hydrateDecryptedCache()
     } catch (e) {
       console.error('[ChatStore] Ошибка инициализации Pcrypto:', e)
     }
   }
 
-  /**
-   * Однократная загрузка персистентного кэша расшифровок текущего юзера в память.
-   * Делается лениво (fire-and-forget) — UI не блокируется.
-   */
-  const hydrateDecryptedCache = (): Promise<void> => {
-    if (decryptedCacheHydrated) return Promise.resolve()
-    if (decryptedCacheHydrating) return decryptedCacheHydrating
-    const userId = matrixService.getClient()?.getUserId()
-    if (!userId) return Promise.resolve()
-    decryptedCacheHydrating = (async () => {
-      try {
-        const rows = await loadAllDecryptedForUser(userId)
-        for (const r of rows) {
-          if (!decryptedTextCache.has(r.eventId)) decryptedTextCache.set(r.eventId, r.text)
-        }
-        decryptedCacheHydrated = true
-      } catch (e) {
-        console.warn('[ChatStore] hydrateDecryptedCache failed:', e)
-      } finally {
-        decryptedCacheHydrating = null
-      }
-    })()
-    return decryptedCacheHydrating
-  }
+  /** Однократная загрузка персистентного кэша расшифровок текущего юзера в память. */
+  const hydrateDecryptedCache = (): Promise<void> =>
+    decryptionCache.hydrate(matrixService.getClient()?.getUserId())
 
   const waitForPcrypto = async (timeoutMs = PCRYPTO_WAIT_TIMEOUT) => {
     if (pcryptoService.value) return true
@@ -1619,22 +1361,12 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     currentUser.value = { id: 'me', name: 'Я', avatar: 'https://via.placeholder.com/150' }
     pcryptoService.value = null
     localMessengerKeys.value = null
-    decryptedTextCache.clear()
-    decryptedCacheHydrated = false
-    decryptedCacheHydrating = null
-    // IDb-кэш расшифровок не трогаем: при повторном логине того же аккаунта он сразу
-    // даст ускорение. Очистка для конкретного юзера доступна через clearDecryptedForUser
-    // (вызывается, например, при удалении аккаунта).
+    decryptionCache.resetInMemory()
   }
 
   /** Полная очистка персистентного кэша расшифровок для текущего юзера. */
-  const purgeDecryptedCache = async (): Promise<void> => {
-    const userId = matrixService.getClient()?.getUserId()
-    decryptedTextCache.clear()
-    decryptedCacheHydrated = false
-    decryptedCacheHydrating = null
-    if (userId) await clearDecryptedForUser(userId)
-  }
+  const purgeDecryptedCache = (): Promise<void> =>
+    decryptionCache.purge(matrixService.getClient()?.getUserId())
 
   return {
     messages,
