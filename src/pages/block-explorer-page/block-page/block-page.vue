@@ -2,58 +2,51 @@
   <SC_BlockPageWork>
     <SC_BlockPagePage>
       <SC_BlockBreadcrumb>
-        <RouterLink :to='{ name: "explorer" }'>{{ s.common.breadcrumbRoot }}</RouterLink>
+        <RouterLink :to="{ name: 'explorer' }">{{ s.common.breadcrumbRoot }}</RouterLink>
         <span> / {{ s.block.breadcrumb }}</span>
       </SC_BlockBreadcrumb>
 
       <SC_BlockTitle>
-        {{ s.block.breadcrumb }} <span style='font-variant-numeric: tabular-nums;'>{{ heightLabel }}</span>
+        {{ s.block.breadcrumb }}
+        <span style="font-variant-numeric: tabular-nums">{{ heightLabel }}</span>
       </SC_BlockTitle>
 
       <SC_BlockNav>
-        <SC_BlockNavBtn
-          type='button'
-          :disabled='!prevHash'
-          @click='goTo(prevHash)'
-        >
+        <SC_BlockNavBtn type="button" :disabled="!prevHash" @click="goTo(prevHash)">
           <LeftOutlined :style="{ fontSize: '12px' }" /> {{ s.block.navPrev }}
         </SC_BlockNavBtn>
-        <SC_BlockNavBtn
-          type='button'
-          :disabled='!nextHash'
-          @click='goTo(nextHash)'
-        >
+        <SC_BlockNavBtn type="button" :disabled="!nextHash" @click="goTo(nextHash)">
           {{ s.block.navNext }} <RightOutlined :style="{ fontSize: '12px' }" />
         </SC_BlockNavBtn>
-        <ShareButton v-if='block' :title='s.block.shareTitle(heightLabel)' />
+        <ShareButton v-if="block" :title="s.block.shareTitle(heightLabel)" />
       </SC_BlockNav>
 
-      <SC_BlockMetaGrid v-if='blockLoading && !block'>
-        <SC_BlockMetaCell v-for='i in 10' :key='`meta-sk-${i}`'>
-          <SC_BlockMetaLabel><Skeleton :width='80' :height='10' /></SC_BlockMetaLabel>
-          <SC_BlockMetaValue><Skeleton width='80%' :height='16' /></SC_BlockMetaValue>
+      <SC_BlockMetaGrid v-if="blockLoading && !block">
+        <SC_BlockMetaCell v-for="i in 10" :key="`meta-sk-${i}`">
+          <SC_BlockMetaLabel><Skeleton :width="80" :height="10" /></SC_BlockMetaLabel>
+          <SC_BlockMetaValue><Skeleton width="80%" :height="16" /></SC_BlockMetaValue>
         </SC_BlockMetaCell>
       </SC_BlockMetaGrid>
 
-      <SC_PlaceholderError v-if='blockError'>
+      <SC_PlaceholderError v-if="blockError">
         {{ blockErrorMessage }}
       </SC_PlaceholderError>
 
-      <template v-if='block'>
+      <template v-if="block">
         <SC_BlockMetaGrid>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
               {{ s.block.metaHash }}
-              <InfoTooltip term-key='hash' />
+              <InfoTooltip term-key="hash" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
-              <HashLink :hash='block.hash' full />
+              <HashLink :hash="block.hash" full />
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
               {{ s.block.metaHeight }}
-              <InfoTooltip term-key='height' />
+              <InfoTooltip term-key="height" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>#{{ formatNumber(block.height) }}</SC_BlockMetaValue>
           </SC_BlockMetaCell>
@@ -62,7 +55,7 @@
             <SC_BlockMetaLabel>{{ s.block.metaTime }}</SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               {{ formatAbsTime(block.time) }}
-              <span style='color: rgb(173, 181, 189); font-size: 12px;'>
+              <span style="color: rgb(173, 181, 189); font-size: 12px">
                 ({{ formatRelTime(block.time, now) }})
               </span>
             </SC_BlockMetaValue>
@@ -75,77 +68,81 @@
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
               {{ s.block.metaConfirmations }}
-              <InfoTooltip term-key='confirmations' />
+              <InfoTooltip term-key="confirmations" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
-              <span v-if='confirmations > 0'>
+              <span v-if="confirmations > 0">
                 {{ formatNumber(confirmations) }}
-                <span v-if='confirmations === 1' style='font-size: 12px; color: rgb(255, 174, 0);'>
+                <span v-if="confirmations === 1" style="font-size: 12px; color: rgb(255, 174, 0)">
                   {{ s.block.metaConfirmationsTip }}
                 </span>
               </span>
-              <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
+              <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
               {{ s.block.metaDifficulty }}
-              <InfoTooltip term-key='difficulty' />
+              <InfoTooltip term-key="difficulty" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               {{ difficultyLabel }}
-              <span style='font-size: 12px; color: rgb(173, 181, 189);'>· {{ block.bits }}</span>
+              <span style="font-size: 12px; color: rgb(173, 181, 189)">· {{ block.bits }}</span>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
               {{ coinstakeLabel }}
-              <InfoTooltip term-key='staker' />
+              <InfoTooltip term-key="staker" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
-              <AddressLink v-if='coinstakeInfo' :address='coinstakeInfo.staker' />
-              <Skeleton v-else-if='txLoading' :width='180' :height='14' />
-              <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
+              <AddressLink v-if="coinstakeInfo" :address="coinstakeInfo.staker" />
+              <Skeleton v-else-if="txLoading" :width="180" :height="14" />
+              <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
               {{ s.block.metaReward }}
-              <InfoTooltip term-key='blockReward' />
+              <InfoTooltip term-key="blockReward" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
-              <span v-if='coinstakeInfo'>{{ formatExplorerPkoin(coinstakeInfo.reward) }} PKOIN</span>
-              <Skeleton v-else-if='txLoading' :width='100' :height='14' />
-              <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
+              <span v-if="coinstakeInfo"
+                >{{ formatExplorerPkoin(coinstakeInfo.reward) }} PKOIN</span
+              >
+              <Skeleton v-else-if="txLoading" :width="100" :height="14" />
+              <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
               {{ s.block.metaMerkle }}
-              <InfoTooltip term-key='merkleRoot' />
+              <InfoTooltip term-key="merkleRoot" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
-              <HashLink :hash='block.merkleroot' full :copyable='true' :to='undefined' />
+              <HashLink :hash="block.merkleroot" full :copyable="true" :to="undefined" />
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>{{ s.block.metaSiblings }}</SC_BlockMetaLabel>
             <SC_BlockMetaValue>
-              <div v-if='block.prevhash' style='margin-bottom: 4px;'>
-                ← <HashLink
-                  :hash='block.prevhash'
-                  :to='{ name: "explorer-block", params: { hashOrHeight: block.prevhash } }'
+              <div v-if="block.prevhash" style="margin-bottom: 4px">
+                ←
+                <HashLink
+                  :hash="block.prevhash"
+                  :to="{ name: 'explorer-block', params: { hashOrHeight: block.prevhash } }"
                 />
               </div>
-              <div v-if='block.nexthash'>
-                → <HashLink
-                  :hash='block.nexthash'
-                  :to='{ name: "explorer-block", params: { hashOrHeight: block.nexthash } }'
+              <div v-if="block.nexthash">
+                →
+                <HashLink
+                  :hash="block.nexthash"
+                  :to="{ name: 'explorer-block', params: { hashOrHeight: block.nexthash } }"
                 />
               </div>
-              <div v-if='!block.prevhash && !block.nexthash' style='color: rgb(173, 181, 189);'>
+              <div v-if="!block.prevhash && !block.nexthash" style="color: rgb(173, 181, 189)">
                 {{ s.common.em }}
               </div>
             </SC_BlockMetaValue>
@@ -160,32 +157,25 @@
             </SC_TxSectionPager>
           </SC_TxSectionHeader>
 
-          <div v-if='txLoading && !txList.length'>
-            <SC_TxRow v-for='i in 5' :key='`tx-sk-${i}`'>
-              <SC_TxTypeBadge><Skeleton :width='50' :height='12' /></SC_TxTypeBadge>
-              <Skeleton width='100%' :height='14' />
-              <SC_TxValue><Skeleton :width='80' :height='12' /></SC_TxValue>
+          <div v-if="txLoading && !txList.length">
+            <SC_TxRow v-for="i in 5" :key="`tx-sk-${i}`">
+              <SC_TxTypeBadge><Skeleton :width="50" :height="12" /></SC_TxTypeBadge>
+              <Skeleton width="100%" :height="14" />
+              <SC_TxValue><Skeleton :width="80" :height="12" /></SC_TxValue>
             </SC_TxRow>
           </div>
-          <SC_PlaceholderError v-else-if='txError'>{{ s.block.txError }}</SC_PlaceholderError>
-          <SC_Placeholder v-else-if='!txList.length'>{{ s.block.txEmpty }}</SC_Placeholder>
+          <SC_PlaceholderError v-else-if="txError">{{ s.block.txError }}</SC_PlaceholderError>
+          <SC_Placeholder v-else-if="!txList.length">{{ s.block.txEmpty }}</SC_Placeholder>
           <div v-else>
-            <SC_TxRow v-for='tx in txList' :key='tx.txid'>
+            <SC_TxRow v-for="tx in txList" :key="tx.txid">
               <SC_TxTypeBadge>{{ typeLabel(tx.type) }}</SC_TxTypeBadge>
-              <HashLink
-                :hash='tx.txid'
-                :to='{ name: "explorer-tx", params: { txid: tx.txid } }'
-              />
+              <HashLink :hash="tx.txid" :to="{ name: 'explorer-tx', params: { txid: tx.txid } }" />
               <SC_TxValue>
                 {{ txTotalLabel(tx) }}
               </SC_TxValue>
             </SC_TxRow>
-            <SC_LoadMoreFooter v-if='canLoadMoreTx'>
-              <SC_LoadMoreBtn
-                type='button'
-                :disabled='txFetching'
-                @click='loadMoreTx'
-              >
+            <SC_LoadMoreFooter v-if="canLoadMoreTx">
+              <SC_LoadMoreBtn type="button" :disabled="txFetching" @click="loadMoreTx">
                 {{ txFetching ? s.common.loading : loadMoreLabel }}
               </SC_LoadMoreBtn>
             </SC_LoadMoreFooter>
@@ -196,7 +186,7 @@
   </SC_BlockPageWork>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue'
@@ -220,6 +210,7 @@ import {
 import { labelForTxType } from '../components/shared/tx-type-labels'
 import { extractCoinstakeInfo, calcConfirmations } from '../components/shared/extract-coinstake'
 import { recordVisit } from '../components/shared/use-search-history'
+import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import { explorerStrings as s } from '../block-explorer-strings'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 import {
@@ -253,11 +244,7 @@ const router = useRouter()
 
 const queryInput = computed(() => p.hashOrHeight ?? '')
 
-const {
-  data: blockResp,
-  isLoading: blockLoading,
-  error: blockError,
-} = useBlockDetails(queryInput)
+const { data: blockResp, isLoading: blockLoading, error: blockError } = useBlockDetails(queryInput)
 
 const block = computed(() => blockResp.value?.data)
 
@@ -265,7 +252,9 @@ const block = computed(() => blockResp.value?.data)
 // (height или hash) — пусть автокомплит соответствует тому, что вводил пользователь.
 watch(
   () => block.value?.hash,
-  (h) => { if (h) recordVisit(p.hashOrHeight, 'block') },
+  (h) => {
+    if (h) recordVisit(p.hashOrHeight, 'block')
+  }
 )
 
 const blockHash = computed(() => block.value?.hash ?? '')
@@ -274,7 +263,9 @@ const TX_PAGE_SIZE = 50
 const txCount = ref(TX_PAGE_SIZE)
 
 // Сбрасываем счётчик показа при переходе на другой блок.
-watch(blockHash, () => { txCount.value = TX_PAGE_SIZE })
+watch(blockHash, () => {
+  txCount.value = TX_PAGE_SIZE
+})
 
 const {
   data: txResp,
@@ -320,7 +311,9 @@ const nextHash = computed(() => block.value?.nexthash ?? '')
 const heightLabel = computed(() => {
   if (block.value) return `#${formatNumber(block.value.height)}`
   // если параметр — число, покажем сразу
-  return /^\d+$/.test(p.hashOrHeight) ? `#${formatNumber(Number(p.hashOrHeight))}` : s.common.ellipsis
+  return /^\d+$/.test(p.hashOrHeight)
+    ? `#${formatNumber(Number(p.hashOrHeight))}`
+    : s.common.ellipsis
 })
 
 const difficultyLabel = computed(() => {
@@ -337,7 +330,7 @@ const pagerLabel = computed(() => {
 const blockErrorMessage = computed(() => {
   const e = blockError.value
   if (!e) return ''
-  const msg = e instanceof Error ? e.message : String(e)
+  const msg = extractErrorMessage(e)
   if (msg.toLowerCase().includes('block not found')) {
     return s.block.notFound
   }
@@ -369,7 +362,9 @@ function goTo(hash: string) {
 const now = ref(Math.floor(Date.now() / 1000))
 let tickHandle: number | null = null
 onMounted(() => {
-  tickHandle = window.setInterval(() => { now.value = Math.floor(Date.now() / 1000) }, 1000)
+  tickHandle = window.setInterval(() => {
+    now.value = Math.floor(Date.now() / 1000)
+  }, 1000)
 })
 onBeforeUnmount(() => {
   if (tickHandle !== null) window.clearInterval(tickHandle)

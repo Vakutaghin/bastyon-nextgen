@@ -2,24 +2,24 @@
   <SC_TxPageWork>
     <SC_TxPagePage>
       <SC_TxBreadcrumb>
-        <RouterLink :to='{ name: "explorer" }'>{{ s.common.breadcrumbRoot }}</RouterLink>
+        <RouterLink :to="{ name: 'explorer' }">{{ s.common.breadcrumbRoot }}</RouterLink>
         <span> / {{ s.tx.breadcrumb }}</span>
       </SC_TxBreadcrumb>
 
-      <template v-if='txLoading && !tx'>
+      <template v-if="txLoading && !tx">
         <SC_TxTitleRow>
-          <SC_TxTitle><Skeleton :width='180' :height='28' /></SC_TxTitle>
-          <SC_TxTypeBadge><Skeleton :width='80' :height='18' /></SC_TxTypeBadge>
+          <SC_TxTitle><Skeleton :width="180" :height="28" /></SC_TxTitle>
+          <SC_TxTypeBadge><Skeleton :width="80" :height="18" /></SC_TxTypeBadge>
         </SC_TxTitleRow>
         <SC_TxMetaGrid>
-          <SC_TxMetaCell v-for='i in 8' :key='`tx-meta-sk-${i}`'>
-            <SC_TxMetaLabel><Skeleton :width='90' :height='10' /></SC_TxMetaLabel>
-            <SC_TxMetaValue><Skeleton width='80%' :height='16' /></SC_TxMetaValue>
+          <SC_TxMetaCell v-for="i in 8" :key="`tx-meta-sk-${i}`">
+            <SC_TxMetaLabel><Skeleton :width="90" :height="10" /></SC_TxMetaLabel>
+            <SC_TxMetaValue><Skeleton width="80%" :height="16" /></SC_TxMetaValue>
           </SC_TxMetaCell>
         </SC_TxMetaGrid>
       </template>
 
-      <SC_PlaceholderError v-else-if='txError || !tx'>
+      <SC_PlaceholderError v-else-if="txError || !tx">
         {{ errorMessage }}
       </SC_PlaceholderError>
 
@@ -27,17 +27,17 @@
         <SC_TxTitleRow>
           <SC_TxTitle>{{ s.tx.title }}</SC_TxTitle>
           <SC_TxTypeBadge>{{ typeLabel }}</SC_TxTypeBadge>
-          <ShareButton :title='s.tx.shareTitle(tx.txid)' />
+          <ShareButton :title="s.tx.shareTitle(tx.txid)" />
         </SC_TxTitleRow>
 
         <SC_TxMetaGrid>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
               {{ s.tx.metaTxid }}
-              <InfoTooltip term-key='txid' />
+              <InfoTooltip term-key="txid" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
-              <HashLink :hash='tx.txid' full :to='undefined' />
+              <HashLink :hash="tx.txid" full :to="undefined" />
             </SC_TxMetaValue>
           </SC_TxMetaCell>
           <SC_TxMetaCell>
@@ -49,29 +49,29 @@
             <SC_TxMetaLabel>{{ s.tx.metaBlock }}</SC_TxMetaLabel>
             <SC_TxMetaValue>
               <RouterLink
-                :to='{ name: "explorer-block", params: { hashOrHeight: tx.blockHash } }'
-                style='color: rgb(0, 123, 255); text-decoration: none; margin-right: 6px;'
+                :to="{ name: 'explorer-block', params: { hashOrHeight: tx.blockHash } }"
+                style="color: rgb(0, 123, 255); text-decoration: none; margin-right: 6px"
               >
                 #{{ formatNumber(tx.height) }}
               </RouterLink>
               <HashLink
-                :hash='tx.blockHash'
-                :to='{ name: "explorer-block", params: { hashOrHeight: tx.blockHash } }'
+                :hash="tx.blockHash"
+                :to="{ name: 'explorer-block', params: { hashOrHeight: tx.blockHash } }"
               />
             </SC_TxMetaValue>
           </SC_TxMetaCell>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
               {{ s.tx.metaConfirmationsTime }}
-              <InfoTooltip term-key='confirmations' />
+              <InfoTooltip term-key="confirmations" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
-              <span v-if='confirmations > 0'>{{ formatNumber(confirmations) }}</span>
-              <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
-              <span style='color: rgb(173, 181, 189); font-size: 12px; margin-left: 8px;'>
+              <span v-if="confirmations > 0">{{ formatNumber(confirmations) }}</span>
+              <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
+              <span style="color: rgb(173, 181, 189); font-size: 12px; margin-left: 8px">
                 · {{ formatRelTime(tx.nTime, now) }}
               </span>
-              <div style='font-size: 11px; color: rgb(173, 181, 189); margin-top: 2px;'>
+              <div style="font-size: 11px; color: rgb(173, 181, 189); margin-top: 2px">
                 {{ formatAbsTime(tx.nTime) }}
               </div>
             </SC_TxMetaValue>
@@ -80,61 +80,67 @@
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
               {{ s.tx.metaVin }}
-              <InfoTooltip term-key='vin' />
+              <InfoTooltip term-key="vin" />
             </SC_TxMetaLabel>
-            <SC_TxMetaValue>{{ tx.vin.length }} · {{ formatExplorerPkoin(totalIn) }} PKOIN</SC_TxMetaValue>
+            <SC_TxMetaValue
+              >{{ tx.vin.length }} · {{ formatExplorerPkoin(totalIn) }} PKOIN</SC_TxMetaValue
+            >
           </SC_TxMetaCell>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
               {{ s.tx.metaVout }}
-              <InfoTooltip term-key='vout' />
+              <InfoTooltip term-key="vout" />
             </SC_TxMetaLabel>
-            <SC_TxMetaValue>{{ tx.vout.length }} · {{ formatExplorerPkoin(totalOut) }} PKOIN</SC_TxMetaValue>
+            <SC_TxMetaValue
+              >{{ tx.vout.length }} · {{ formatExplorerPkoin(totalOut) }} PKOIN</SC_TxMetaValue
+            >
           </SC_TxMetaCell>
 
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
               {{ s.tx.metaFee }}
-              <InfoTooltip term-key='fee' />
+              <InfoTooltip term-key="fee" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
-              <span v-if='feeLabel'>{{ feeLabel }} PKOIN</span>
-              <span v-else style='color: rgb(173, 181, 189);'>{{ s.tx.metaFeeUnknown }}</span>
+              <span v-if="feeLabel">{{ feeLabel }} PKOIN</span>
+              <span v-else style="color: rgb(173, 181, 189)">{{ s.tx.metaFeeUnknown }}</span>
             </SC_TxMetaValue>
           </SC_TxMetaCell>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
               {{ s.tx.metaPocketnet }}
-              <InfoTooltip term-key='pocketPayload' />
+              <InfoTooltip term-key="pocketPayload" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
-              <span v-if='pocketPayload' style='color: rgb(108, 117, 125);'>
+              <span v-if="pocketPayload" style="color: rgb(108, 117, 125)">
                 {{ payloadKindLabel }} — {{ s.tx.metaPocketnetCardHint }}
               </span>
-              <span v-else style='color: rgb(173, 181, 189);'>{{ s.tx.metaPocketnetEmpty }}</span>
+              <span v-else style="color: rgb(173, 181, 189)">{{ s.tx.metaPocketnetEmpty }}</span>
             </SC_TxMetaValue>
           </SC_TxMetaCell>
         </SC_TxMetaGrid>
 
-        <TxPayloadCard v-if='pocketPayload' :payload='pocketPayload' />
+        <TxPayloadCard v-if="pocketPayload" :payload="pocketPayload" />
 
         <SC_TxIOGrid>
           <SC_TxIOColumn>
             <SC_TxIOHeader>{{ s.tx.ioHeaderVin }}</SC_TxIOHeader>
-            <SC_TxIOItem v-for='(vin, i) in tx.vin' :key='`vin-${i}`'>
+            <SC_TxIOItem v-for="(vin, i) in tx.vin" :key="`vin-${i}`">
               <SC_TxIOAddress>
-                <AddressLink v-if='vin.address' :address='vin.address' />
-                <span v-else-if='vin.coinbase' style='color: rgb(108, 117, 125);'>{{ s.tx.ioCoinbase }}</span>
-                <span v-else style='color: rgb(173, 181, 189);'>{{ s.common.em }}</span>
+                <AddressLink v-if="vin.address" :address="vin.address" />
+                <span v-else-if="vin.coinbase" style="color: rgb(108, 117, 125)">{{
+                  s.tx.ioCoinbase
+                }}</span>
+                <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
               </SC_TxIOAddress>
-              <SC_TxIOValue v-if='vin.value !== undefined'>
+              <SC_TxIOValue v-if="vin.value !== undefined">
                 {{ formatExplorerPkoin(vin.value) }} PKOIN
               </SC_TxIOValue>
-              <SC_TxIOAnnotation v-if='vin.txid'>
+              <SC_TxIOAnnotation v-if="vin.txid">
                 {{ s.tx.ioVinFrom }}
                 <RouterLink
-                  :to='{ name: "explorer-tx", params: { txid: vin.txid } }'
-                  style='color: rgb(0, 123, 255); text-decoration: none;'
+                  :to="{ name: 'explorer-tx', params: { txid: vin.txid } }"
+                  style="color: rgb(0, 123, 255); text-decoration: none"
                 >
                   {{ shortenHash(vin.txid, 6, 6) }}:{{ vin.vout }}
                 </RouterLink>
@@ -146,13 +152,10 @@
 
           <SC_TxIOColumn>
             <SC_TxIOHeader>{{ s.tx.ioHeaderVout }}</SC_TxIOHeader>
-            <SC_TxIOItem v-for='(vout, i) in tx.vout' :key='`vout-${i}`'>
+            <SC_TxIOItem v-for="(vout, i) in tx.vout" :key="`vout-${i}`">
               <SC_TxIOAddress>
-                <AddressLink
-                  v-if='firstAddress(vout)'
-                  :address='firstAddress(vout)'
-                />
-                <span v-else style='color: rgb(108, 117, 125);'>
+                <AddressLink v-if="firstAddress(vout)" :address="firstAddress(vout)" />
+                <span v-else style="color: rgb(108, 117, 125)">
                   {{ s.tx.ioOpReturn }}
                 </span>
               </SC_TxIOAddress>
@@ -162,16 +165,16 @@
           </SC_TxIOColumn>
         </SC_TxIOGrid>
 
-        <SC_TxRawToggle type='button' @click='showRaw = !showRaw'>
+        <SC_TxRawToggle type="button" @click="showRaw = !showRaw">
           {{ showRaw ? s.common.rawJsonHide : s.common.rawJsonShow }}
         </SC_TxRawToggle>
-        <SC_TxRawPre v-if='showRaw'>{{ rawJson }}</SC_TxRawPre>
+        <SC_TxRawPre v-if="showRaw">{{ rawJson }}</SC_TxRawPre>
       </template>
     </SC_TxPagePage>
   </SC_TxPageWork>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useTransactionDetails, useNodeInfo } from '@/composables/use-block-explorer-queries'
@@ -194,6 +197,7 @@ import { labelForTxType } from '../components/shared/tx-type-labels'
 import { calcConfirmations } from '../components/shared/extract-coinstake'
 import { recordVisit } from '../components/shared/use-search-history'
 import { explorerStrings as s } from '../block-explorer-strings'
+import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions'
 import {
   SC_TxPageWork,
@@ -225,18 +229,16 @@ const p = defineProps<{ txid: string }>()
 
 const txidRef = computed(() => p.txid ?? '')
 
-const {
-  data: txResp,
-  isLoading: txLoading,
-  error: txError,
-} = useTransactionDetails(txidRef)
+const { data: txResp, isLoading: txLoading, error: txError } = useTransactionDetails(txidRef)
 
 const tx = computed<Transaction | undefined>(() => txResp.value?.data?.[0])
 
 // Регистрируем визит, когда tx реально загрузилась.
 watch(
   () => tx.value?.txid,
-  (id) => { if (id) recordVisit(p.txid, 'tx') },
+  (id) => {
+    if (id) recordVisit(p.txid, 'tx')
+  }
 )
 
 // Real-time tip → confirmations растёт без рефреша страницы.
@@ -288,8 +290,7 @@ const rawJson = computed(() => (tx.value ? JSON.stringify(tx.value, null, 2) : '
 
 const errorMessage = computed(() => {
   if (txError.value) {
-    const msg = txError.value instanceof Error ? txError.value.message : String(txError.value)
-    return s.tx.errorPrefix(msg)
+    return s.tx.errorPrefix(extractErrorMessage(txError.value))
   }
   if (!tx.value && !txLoading.value) {
     return s.tx.notFound
@@ -301,7 +302,9 @@ const errorMessage = computed(() => {
 const now = ref(Math.floor(Date.now() / 1000))
 let tickHandle: number | null = null
 onMounted(() => {
-  tickHandle = window.setInterval(() => { now.value = Math.floor(Date.now() / 1000) }, 1000)
+  tickHandle = window.setInterval(() => {
+    now.value = Math.floor(Date.now() / 1000)
+  }, 1000)
 })
 onBeforeUnmount(() => {
   if (tickHandle !== null) window.clearInterval(tickHandle)
