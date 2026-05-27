@@ -1,50 +1,19 @@
 /**
- * Composables для работы с пользователями через Vue Query
+ * Composables для работы с профилями пользователей через Vue Query
  */
 
 import { computed, type MaybeRefOrGetter, unref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCall, rpcCallWithAuth } from '@/helpers/api/request'
-import { useRpcQuery, useRpcQueryWithAuth } from './use-rpc-query'
+import { useRpcQueryWithAuth } from './use-rpc-query'
 import type { T_RpcRequestParams } from '@/helpers/api/request'
 import type { GetUserProfileResponse, UserProfile } from '@/types/rpc-responses/user-get'
-import type { GetUserStateResponse, UserState as UserStateData } from '@/types/rpc-responses/user-state'
+import type {
+  GetUserStateResponse,
+  UserState as UserStateData,
+} from '@/types/rpc-responses/user-state'
 import { useAuthStore } from '@/blockchain'
-
-/**
- * Интерфейс для UTXO (Unspent Transaction Output)
- */
-export interface UTXO {
-  /** ID транзакции */
-  txid: string
-  /** Индекс выхода в транзакции */
-  vout: number
-  /** Сумма в минимальных единицах (сатоши) */
-  amount: number
-  /** Адрес */
-  address?: string
-  /** Подтверждения */
-  confirmations?: number
-  /** ScriptPubKey */
-  scriptPubKey?: string
-  /** Высота блока */
-  height?: number
-  /** Является ли транзакция Pocketnet (pockettx) */
-  pockettx?: boolean
-  /** Является ли транзакция coinbase */
-  coinbase?: boolean
-}
-
-/**
- * Ответ txunspent API
- */
-export interface TxUnspentResponse {
-  result: 'success' | 'error'
-  data: UTXO[]
-  node?: string
-  error?: string
-}
 
 /**
  * Загружает профиль пользователя
@@ -57,10 +26,7 @@ export interface TxUnspentResponse {
  * const { data: profile, isLoading } = useUserProfile(userAddress)
  * ```
  */
-export function useUserProfile(
-  address: string | null | undefined,
-  enabled: boolean = true
-) {
+export function useUserProfile(address: string | null | undefined, enabled: boolean = true) {
   const authStore = useAuthStore()
 
   const isCurrentUser = computed(() => {
@@ -85,13 +51,13 @@ export function useUserProfile(
         return rpcCallWithAuth<UserProfile[]>({
           method: rpcEndpoints.getUserProfile,
           parameters: [[address]],
-          options: { auth: true }
+          options: { auth: true },
         })
       } else {
         return rpcCall<UserProfile[]>({
           method: rpcEndpoints.getUserProfile,
           parameters: [[address]],
-          options: { auth: false }
+          options: { auth: false },
         })
       }
     },
@@ -121,10 +87,7 @@ export function useUserProfile(
  * @param addresses - Массив адресов или ref/computed (реактивный список)
  * @param enabled - Включен ли запрос
  */
-export function useUserProfiles(
-  addresses: MaybeRefOrGetter<string[]>,
-  enabled: boolean = true
-) {
+export function useUserProfiles(addresses: MaybeRefOrGetter<string[]>, enabled: boolean = true) {
   const addressesRef = computed(() => {
     const arr = typeof addresses === 'function' ? (addresses as () => string[])() : unref(addresses)
     return Array.isArray(arr) ? arr : []
@@ -137,7 +100,7 @@ export function useUserProfiles(
       const params: T_RpcRequestParams = {
         method: rpcEndpoints.getUserProfile,
         parameters: [addrs],
-        options: { auth: false }
+        options: { auth: false },
       }
       return rpcCall<UserProfile[]>(params)
     },
@@ -223,11 +186,7 @@ export function useFullUserState(enabled: boolean = true) {
   const address = computed(() => authStore.getUserAddress)
 
   // Загружаем состояние (с лимитами)
-  const {
-    data: stateData,
-    isLoading: isLoadingState,
-    error: stateError,
-  } = useUserState(enabled)
+  const { data: stateData, isLoading: isLoadingState, error: stateError } = useUserState(enabled)
 
   // Загружаем профиль
   const {
@@ -295,105 +254,4 @@ export function useFullUserState(enabled: boolean = true) {
       // Можно добавить refetch для обоих запросов если нужно
     },
   }
-}
-
-/**
- * Загружает баланс кошелька через txunspent
- *
- * Баланс вычисляется как сумма всех UTXO (непотраченных выходов транзакций).
- *
- * @param address - Адрес кошелька
- * @param enabled - Включен ли запрос
- *
- * @example
- * ```vue
- * const { balance, isLoading } = useWalletBalance(userAddress)
- * ```
- */
-export function useWalletBalance(
-  address: string | null | undefined,
-  enabled: boolean = true
-) {
-  const {
-    data: utxoData,
-    isLoading,
-    error,
-    refetch,
-  } = useRpcQuery<TxUnspentResponse>(
-    ['wallet', 'balance', address],
-    {
-      method: rpcEndpoints.txUnspent,
-      // Параметры: [адреса, minconf, maxconf]
-      parameters: address ? [[address], 1, 9999999] : [],
-      options: { auth: false }
-    },
-    {
-      enabled: enabled && !!address,
-      staleTime: 30 * 1000, // 30 секунд - баланс может часто меняться
-      gcTime: 5 * 60 * 1000,
-      refetchOnWindowFocus: true,
-    }
-  )
-
-  // Вычисляем баланс из UTXO
-  const balance = computed<number | null>(() => {
-    if (!utxoData.value) {
-      return null
-    }
-
-    // Обрабатываем разные форматы ответа
-    let utxos: UTXO[] = []
-
-    if (utxoData.value.result === 'success' && Array.isArray(utxoData.value.data)) {
-      utxos = utxoData.value.data
-    } else if (Array.isArray(utxoData.value)) {
-      // Если ответ напрямую массив UTXO
-      utxos = utxoData.value as unknown as UTXO[]
-    }
-
-    if (utxos.length === 0) {
-      return 0
-    }
-
-    // Суммируем все amount из UTXO
-    const total = utxos.reduce((sum, utxo) => {
-      const amount = typeof utxo.amount === 'number' ? utxo.amount : 0
-      return sum + amount
-    }, 0)
-
-    return total
-  })
-
-  // Баланс в PKOIN (конвертируем из минимальных единиц)
-  const balanceInPkoin = computed<number | null>(() => {
-    if (balance.value === null) {
-      return null
-    }
-    // 1 PKOIN = 100,000,000 минимальных единиц
-    return balance.value / 100000000
-  })
-
-  return {
-    /** Баланс в минимальных единицах (сатоши) */
-    balance,
-    /** Баланс в PKOIN */
-    balanceInPkoin,
-    /** Сырые данные UTXO */
-    utxoData,
-    isLoading,
-    error,
-    refetch,
-  }
-}
-
-/**
- * Загружает баланс текущего авторизованного пользователя
- *
- * @param enabled - Включен ли запрос
- */
-export function useCurrentUserBalance(enabled: boolean = true) {
-  const authStore = useAuthStore()
-  const address = computed(() => authStore.getUserAddress)
-
-  return useWalletBalance(address.value, enabled && !!address.value && authStore.isUserAuthenticated)
 }

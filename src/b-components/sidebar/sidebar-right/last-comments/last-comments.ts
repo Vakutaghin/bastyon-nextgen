@@ -2,7 +2,7 @@ import { defineComponent, computed } from 'vue'
 import { LoadingOutlined } from '@ant-design/icons-vue'
 import Spin from '@/components/spin/spin.vue'
 import { useLastComments } from '@/composables/use-comments-queries'
-import { useUserProfiles } from '@/composables/use-user-queries'
+import { useUserProfiles } from '@/composables/use-user-profile'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import type { GetLastComment } from '@/types/rpc-responses/get-last-comments'
@@ -21,7 +21,7 @@ import {
   SC_LastCommentNames,
   SC_LastCommentMessage,
   SC_LastCommentsLoading,
-  SC_LastCommentsEmpty
+  SC_LastCommentsEmpty,
 } from './styled'
 
 const MESSAGE_TRIM_LENGTH = 120
@@ -81,7 +81,7 @@ export const lastCommentsOptions = defineComponent({
     SC_LastCommentNames,
     SC_LastCommentMessage,
     SC_LastCommentsLoading,
-    SC_LastCommentsEmpty
+    SC_LastCommentsEmpty,
   },
   setup() {
     const modalStore = useModalStore()
@@ -129,7 +129,7 @@ export const lastCommentsOptions = defineComponent({
             commentTo,
             message: trimText(message, MESSAGE_TRIM_LENGTH),
             authorProfile: profilesByAddress.value[c.address],
-            toProfile: commentTo ? profilesByAddress.value[commentTo] : undefined
+            toProfile: commentTo ? profilesByAddress.value[commentTo] : undefined,
           }
         })
         .filter(Boolean) as Array<{
@@ -157,7 +157,7 @@ export const lastCommentsOptions = defineComponent({
       displayComments,
       getAvatarUrl,
       getDisplayName,
-      openPost
+      openPost,
     }
-  }
+  },
 })

@@ -1,6 +1,6 @@
 import { defineComponent, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserState } from '@/composables/use-user-queries'
+import { useUserState } from '@/composables/use-user-profile'
 import { useAuthStore } from '@/blockchain'
 import {
   SC_LimitsWork,
@@ -83,10 +83,7 @@ export default defineComponent({
     })
 
     const hasAnyData = computed(
-      () =>
-        limitRows.value.length > 0 ||
-        reputationValue.value != null ||
-        statusValue.value != null
+      () => limitRows.value.length > 0 || reputationValue.value != null || statusValue.value != null
     )
     const showLoading = computed(
       () => isLoading.value && !authStore.getUserState && !authStore.getUserProfile

@@ -8,7 +8,7 @@
 // Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
 import { Buffer } from '../../utils/buffer-polyfill'
 import type { KeyPair } from '../../types/keys'
-import type { UTXO } from '@/composables/use-user-queries'
+import type { UTXO } from '@/composables/use-wallet-queries'
 import { POCKETNET_NETWORK } from '../../constants/network'
 import { AMOUNT_MULTIPLIER, toSatoshis, DUST_VALUE } from '../../constants/transactions'
 
@@ -25,7 +25,6 @@ async function loadPocketnetBitcoin() {
   try {
     // Пробуем динамический импорт
     try {
-
       // @ts-expect-error - btc17.js не имеет TypeScript типов
       const module = await import('../../lib/pocketnet/btc17.js')
 
@@ -35,11 +34,9 @@ async function loadPocketnetBitcoin() {
 
       // Если модуль пустой, пробуем получить из window (но только pocketnetBitcoin, не bitcoin)
       if (
-        !pocketnetBitcoinLib
-        || (
-          !pocketnetBitcoinLib.TransactionBuilder
-          && !pocketnetBitcoinLib.default?.TransactionBuilder
-        )
+        !pocketnetBitcoinLib ||
+        (!pocketnetBitcoinLib.TransactionBuilder &&
+          !pocketnetBitcoinLib.default?.TransactionBuilder)
       ) {
         if (typeof window !== 'undefined') {
           // Используем только window.pocketnetBitcoin, чтобы не конфликтовать со стандартной библиотекой
@@ -52,10 +49,16 @@ async function loadPocketnetBitcoin() {
         }
       }
 
-      if (pocketnetBitcoinLib && (pocketnetBitcoinLib.TransactionBuilder || pocketnetBitcoinLib.default?.TransactionBuilder)) {
+      if (
+        pocketnetBitcoinLib &&
+        (pocketnetBitcoinLib.TransactionBuilder || pocketnetBitcoinLib.default?.TransactionBuilder)
+      ) {
         return pocketnetBitcoin
       } else {
-        console.error('[buildTransaction] Loaded module does not contain TransactionBuilder:', pocketnetBitcoinLib)
+        console.error(
+          '[buildTransaction] Loaded module does not contain TransactionBuilder:',
+          pocketnetBitcoinLib
+        )
       }
     } catch (e) {
       console.error('[buildTransaction] Dynamic import failed:', e)
@@ -87,7 +90,6 @@ function getTransactionBuilder(): any {
 
   return TransactionBuilder
 }
-
 
 /**
  * Интерфейс для параметров сборки транзакции
@@ -142,7 +144,9 @@ function hash256(data: string | Buffer): Buffer {
   // hash256 = SHA256(SHA256(data))
   // Используем crypto из кастомной библиотеки
   if (!pocketnetBitcoinLib || !pocketnetBitcoinLib.crypto) {
-    throw new Error('Pocketnet bitcoinjs-lib is not initialized. Call loadPocketnetBitcoin() first.')
+    throw new Error(
+      'Pocketnet bitcoinjs-lib is not initialized. Call loadPocketnetBitcoin() first.'
+    )
   }
   const firstHash = pocketnetBitcoinLib.crypto.sha256(buffer)
   return pocketnetBitcoinLib.crypto.sha256(firstHash)
@@ -158,7 +162,9 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
   await loadPocketnetBitcoin()
 
   if (!pocketnetBitcoinLib) {
-    throw new Error('Pocketnet bitcoinjs-lib (btc17.js) is not loaded. Please check the console for errors.')
+    throw new Error(
+      'Pocketnet bitcoinjs-lib (btc17.js) is not loaded. Please check the console for errors.'
+    )
   }
 
   // Получаем TransactionBuilder из загруженной библиотеки
@@ -199,9 +205,8 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
   }
 
   // Если change меньше dust value, отправляем все на комиссию
-  const finalChangeAmount = changeAmountSatoshis >= toSatoshis(DUST_VALUE)
-    ? changeAmountSatoshis
-    : 0
+  const finalChangeAmount =
+    changeAmountSatoshis >= toSatoshis(DUST_VALUE) ? changeAmountSatoshis : 0
 
   // Создаем TransactionBuilder
   const txb = new TransactionBuilder(POCKETNET_NETWORK)
@@ -243,12 +248,7 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
     // Если есть delayedNtime, sequence должен быть 4294967294 (0xFFFFFFFE), чтобы включить locktime
     const sequence = delayedNtime ? 4294967294 : null
 
-    txb.addInput(
-      unspent.txid,
-      unspent.vout,
-      sequence,
-      Buffer.from(unspent.scriptPubKey, 'hex')
-    )
+    txb.addInput(unspent.txid, unspent.vout, sequence, Buffer.from(unspent.scriptPubKey, 'hex'))
   })
 
   // Создаем данные для OP_RETURN
@@ -256,10 +256,7 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
   // В старом коде: Buffer.from(pocketnetBitcoinLib.crypto.hash256(self.object.serialize()), 'utf8')
   // Но hash256 уже возвращает Buffer, поэтому используем его напрямую
   const dataHash = hash256(serializedData)
-  const opReturnBuffers: Buffer[] = [
-    Buffer.from(operationType, 'utf8'),
-    dataHash,
-  ]
+  const opReturnBuffers: Buffer[] = [Buffer.from(operationType, 'utf8'), dataHash]
 
   // Добавляем дополнительные данные для OP_RETURN, если есть
   if (opReturnData) {
@@ -304,14 +301,14 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
   resultOutputs.push({
     address: fromAddress,
     amount: 0,
-    deleted: true
+    deleted: true,
   })
 
   // Добавляем change output
   if (finalChangeAmount > 0) {
     resultOutputs.push({
       address: fromAddress,
-      amount: finalChangeAmount / AMOUNT_MULTIPLIER // Конвертируем обратно в PKOIN
+      amount: finalChangeAmount / AMOUNT_MULTIPLIER, // Конвертируем обратно в PKOIN
     })
   }
 
@@ -323,7 +320,7 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
     totalInputAmount,
     totalOutputAmount,
     usedUnspents: unspents,
-    outputs: resultOutputs
+    outputs: resultOutputs,
   }
 }
 
@@ -411,12 +408,7 @@ export async function buildTransferTransaction(
     if (!unspent.scriptPubKey) {
       throw new Error(`Missing scriptPubKey for unspent ${unspent.txid}:${unspent.vout}`)
     }
-    txb.addInput(
-      unspent.txid,
-      unspent.vout,
-      null,
-      Buffer.from(unspent.scriptPubKey, 'hex')
-    )
+    txb.addInput(unspent.txid, unspent.vout, null, Buffer.from(unspent.scriptPubKey, 'hex'))
   })
 
   // Выходы: сначала получатели, потом сдача
@@ -439,7 +431,11 @@ export async function buildTransferTransaction(
     ...new Set(unspents.map((u) => u.address).filter((a): a is string => Boolean(a))),
   ]
   const sourceList =
-    sourceAddressesParam?.length > 0 ? sourceAddressesParam : derivedSources.length ? derivedSources : [fromAddress]
+    sourceAddressesParam?.length > 0
+      ? sourceAddressesParam
+      : derivedSources.length
+        ? derivedSources
+        : [fromAddress]
 
   const messageData: Record<string, unknown> = {
     source: { v: sourceList },

@@ -4,12 +4,12 @@
 
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCall } from '@/helpers/api/request'
-import type { UTXO } from '@/composables/use-user-queries'
+import type { UTXO } from '@/composables/use-wallet-queries'
 import {
   DUST_VALUE,
   OPTIMIZE_UNSPENTS_MAX,
   POCKETNET_TX_MATURITY,
-  COINBASE_MATURITY
+  COINBASE_MATURITY,
 } from '@/blockchain/constants/transactions'
 
 // Local cache of locked UTXOs to prevent double-spending in rapid transactions
@@ -21,7 +21,7 @@ const lockedUTXOs = new Set<string>()
  * @param ttl - Time to live in ms (default 60000ms = 1 min)
  */
 export function lockUTXOs(utxos: UTXO[], ttl: number = 60000) {
-  utxos.forEach(u => {
+  utxos.forEach((u) => {
     const key = `${u.txid}:${u.vout}`
     lockedUTXOs.add(key)
 
@@ -43,14 +43,17 @@ export async function getUnspents(
   address: string,
   minConf: number = 1,
   maxConf: number = 9999999,
-  server?: { host: string; port: number },
+  server?: { host: string; port: number }
 ): Promise<UTXO[]> {
   // rpcCall unwraps the { result, data } envelope and throws on error
-  return await rpcCall<UTXO[]>({
-    method: rpcEndpoints.txUnspent,
-    parameters: [[address], minConf, maxConf],
-    options: { auth: false },
-  }, server)
+  return await rpcCall<UTXO[]>(
+    {
+      method: rpcEndpoints.txUnspent,
+      parameters: [[address], minConf, maxConf],
+      options: { auth: false },
+    },
+    server
+  )
 }
 
 /**
@@ -72,8 +75,7 @@ export function selectBestUnspents(unspents: UTXO[], requiredAmount: number): UT
   }
 
   // Определяем, нужно ли оптимизировать количество unspents
-  const optimizeUnspents =
-    targetAmount < 0.0000001 && unspents.length > OPTIMIZE_UNSPENTS_MAX
+  const optimizeUnspents = targetAmount < 0.0000001 && unspents.length > OPTIMIZE_UNSPENTS_MAX
 
   // Вычисляем общую сумму всех unspents
   const totalAmount = unspents.reduce((sum, u) => sum + u.amount, 0)
@@ -92,8 +94,9 @@ export function selectBestUnspents(unspents: UTXO[], requiredAmount: number): UT
 
   // Выбираем unspents пока не наберем нужную сумму
   while (
-    (addedAmount < dustThreshold || addedAmount < targetAmount ||
-     (optimizeUnspents && Object.keys(selected).length < 5)) &&
+    (addedAmount < dustThreshold ||
+      addedAmount < targetAmount ||
+      (optimizeUnspents && Object.keys(selected).length < 5)) &&
     sortedUnspents.length > 0
   ) {
     const diff = Math.max(Math.max(targetAmount, dustThreshold) - addedAmount, 0)
@@ -131,10 +134,7 @@ export function selectBestUnspents(unspents: UTXO[], requiredAmount: number): UT
  * @param onlyConfirmed - Только подтвержденные (по умолчанию false)
  * @returns Отфильтрованный массив unspents
  */
-export function filterAvailableUnspents(
-  unspents: UTXO[],
-  onlyConfirmed: boolean = false
-): UTXO[] {
+export function filterAvailableUnspents(unspents: UTXO[], onlyConfirmed: boolean = false): UTXO[] {
   return unspents.filter((u) => {
     // Check if UTXO is locally locked
     if (lockedUTXOs.has(`${u.txid}:${u.vout}`)) {

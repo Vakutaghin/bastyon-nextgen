@@ -5,7 +5,7 @@
  *   Legacy: [index.js:295-301](../../../../___original-repos/pocketnet.gui/js/lib/apps/index.js#L295-L301)
  *   — вызывает `app.platform.psdk.userInfo.load(addresses, light, update)`, что
  *   под капотом дёргает RPC `getuserprofile`. В nextgen эта же queryFn уже живёт
- *   в [composables/use-user-queries.ts](../../composables/use-user-queries.ts) —
+ *   в [composables/use-user-profile.ts](../../composables/use-user-profile.ts) —
  *   `useUserProfiles(addresses)` использует тот же endpoint. Здесь дёргаем
  *   `host.callRpc` напрямую, чтобы не зависеть от Vue-tree.
  *
