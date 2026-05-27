@@ -10,109 +10,28 @@ import {
   RetweetOutlined,
   DollarOutlined,
   NotificationOutlined,
-  EditOutlined
+  EditOutlined,
 } from '@ant-design/icons-vue'
 import { SC_NotificationsWrapper } from './styled'
 import { useAuthStore, useNotificationsStore } from '@/stores'
 import { useModalStore } from '@/stores/modal-store'
 import type { NotificationItem } from '@/stores/notifications-store'
 import { adaptPostData } from '@/composables/use-feed'
-
-const COMMENT_PREVIEW_LIMIT = 160
-const POST_REF_PREVIEW_LIMIT = 80
-const AVATAR_BASE = 'https://pocketnet.app:8092/i/'
-
-function formatNotificationTime(ts: number): string {
-  const d = new Date(ts * 1000)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffM = Math.floor(diffMs / 60000)
-  const diffH = Math.floor(diffMs / 3600000)
-  const diffD = Math.floor(diffMs / 86400000)
-  if (diffM < 1) return 'только что'
-  if (diffM < 60) return `${diffM} мин.`
-  if (diffH < 24) return `${diffH} ч.`
-  if (diffD < 7) return `${diffD} дн.`
-  return d.toLocaleDateString()
-}
-
-function normalizeAvatar(raw: string | undefined | null): string | null {
-  if (!raw) return null
-  if (raw.startsWith('http://') || raw.startsWith('https://')) {
-    return raw.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
-  }
-  return `${AVATAR_BASE}${raw}`
-}
-
-function trimText(text: string | undefined, max: number): string {
-  if (!text) return ''
-  const plain = text.replace(/\s+/g, ' ').trim()
-  if (plain.length <= max) return plain
-  return plain.slice(0, max).trimEnd() + '…'
-}
-
-const ICON_BY_TYPE: Record<string, string> = {
-  rating: 'StarFilled',
-  like: 'StarFilled',
-  comment: 'MessageOutlined',
-  subscribe: 'UserAddOutlined',
-  repost: 'RetweetOutlined',
-  tip: 'DollarOutlined',
-  mention: 'NotificationOutlined',
-  other: 'EditOutlined'
-}
-
-/**
- * Короткая метка типа — выводится на цветной плашке. Для answer/post различаем подтипы,
- * чтобы пользователь сразу понимал «это ответ на мой коммент» vs «это просто новый коммент».
- */
-function notificationTypeLabel(item: NotificationItem): string {
-  switch (item.mesType) {
-    case 'upvoteShare':
-      return item.upvoteVal != null && item.upvoteVal < 0 ? 'Низкая оценка' : 'Оценка'
-    case 'comment':
-      return 'Комментарий'
-    case 'answer':
-      return 'Ответ'
-    case 'subscribe':
-      return 'Подписка'
-    case 'subscribePrivate':
-      return 'Приватная подписка'
-    case 'unsubscribe':
-      return 'Отписка'
-    case 'repost':
-      return 'Репост'
-    case 'post':
-      return 'Новый пост'
-    case 'userInfo':
-      return 'Профиль обновлён'
-    default:
-      break
-  }
-  switch (item.type) {
-    case 'rating':
-    case 'like':
-      return 'Оценка'
-    case 'comment':
-      return 'Комментарий'
-    case 'subscribe':
-      return 'Подписка'
-    case 'repost':
-      return 'Репост'
-    case 'tip':
-      return 'Донат'
-    case 'mention':
-      return 'Упоминание'
-    default:
-      return 'Уведомление'
-  }
-}
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import {
+  formatNotificationTime,
+  trimText,
+  COMMENT_PREVIEW_LIMIT,
+  POST_REF_PREVIEW_LIMIT,
+} from './helpers/notification-formatter'
+import { ICON_BY_TYPE, notificationTypeLabel } from './helpers/notification-type-map'
 
 export const headerNotificationsOptions = defineComponent({
   name: 'HeaderNotifications',
   components: {
     Dropdown,
     Badge,
+    // eslint-disable-next-line vue/no-reserved-component-names
     Menu,
     BellOutlined,
     EllipsisOutlined,
@@ -123,7 +42,7 @@ export const headerNotificationsOptions = defineComponent({
     DollarOutlined,
     NotificationOutlined,
     EditOutlined,
-    SC_NotificationsWrapper
+    SC_NotificationsWrapper,
   },
   setup() {
     const authStore = useAuthStore()
@@ -181,7 +100,7 @@ export const headerNotificationsOptions = defineComponent({
 
     const getAvatar = (item: NotificationItem): string | null => {
       const e = enrichmentFor(item)
-      return normalizeAvatar(e.from?.avatar)
+      return resolveImageUrl(e.from?.avatar) ?? null
     }
 
     const getActionLine = (item: NotificationItem): string => {
@@ -269,7 +188,8 @@ export const headerNotificationsOptions = defineComponent({
       const e = enrichmentFor(item)
       const postId = item.shareId ?? e.comment?.postid
       if (!postId) return false
-      const cached = (e.post as Record<string, unknown> | undefined) ?? notificationsStore.postCache[postId]
+      const cached =
+        (e.post as Record<string, unknown> | undefined) ?? notificationsStore.postCache[postId]
       if (!cached) return false
       try {
         const usersMap: Record<string, unknown> = {}
@@ -279,7 +199,7 @@ export const headerNotificationsOptions = defineComponent({
             address: sender.address,
             name: sender.name,
             i: sender.avatar,
-            reputation: sender.reputation
+            reputation: sender.reputation,
           }
         }
         const adapted = adaptPostData(cached, 0, usersMap)
@@ -345,13 +265,23 @@ export const headerNotificationsOptions = defineComponent({
 
     /** Контейнер для overlay: body, чтобы выпадашка была выше мессенджера и полноэкранного оверлея (z-index). В Tauri document может быть недоступен в момент вызова */
     const getPopupContainer = (_trigger: HTMLElement | undefined) => {
-      const doc = typeof document !== 'undefined' ? document : (typeof window !== 'undefined' ? (window as Window & { document?: Document }).document : undefined)
+      const doc =
+        typeof document !== 'undefined'
+          ? document
+          : typeof window !== 'undefined'
+            ? (window as Window & { document?: Document }).document
+            : undefined
       if (doc?.body) return doc.body
       return undefined
     }
 
     const getPopupContainerInner = (trigger: HTMLElement | undefined) => {
-      const doc = typeof document !== 'undefined' ? document : (typeof window !== 'undefined' ? (window as Window & { document?: Document }).document : undefined)
+      const doc =
+        typeof document !== 'undefined'
+          ? document
+          : typeof window !== 'undefined'
+            ? (window as Window & { document?: Document }).document
+            : undefined
       const node = trigger?.closest?.('.ant-dropdown')
       if (node) return node
       if (doc?.body) return doc.body
@@ -388,12 +318,12 @@ export const headerNotificationsOptions = defineComponent({
       onItemMenuClick,
       onClearAll,
       getPopupContainer,
-      getPopupContainerInner
+      getPopupContainerInner,
     }
   },
   computed: {
     isAuthenticated(): boolean {
       return this.authStore.isUserAuthenticated
-    }
-  }
+    },
+  },
 })

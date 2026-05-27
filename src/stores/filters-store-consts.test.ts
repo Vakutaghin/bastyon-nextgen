@@ -18,10 +18,11 @@ describe('filters-store-consts', () => {
   })
 
   it('maps sort filter IDs to API values', () => {
+    // 1 По популярности, 2 По дате, 3 По рейтингу, 4 По комментариям.
     expect(SORT_FILTER_MAP[1]).toBe('score')
     expect(SORT_FILTER_MAP[2]).toBe('id')
-    expect(SORT_FILTER_MAP[3]).toBe('comment')
-    expect(SORT_FILTER_MAP[4]).toBe('score')
+    expect(SORT_FILTER_MAP[3]).toBe('score')
+    expect(SORT_FILTER_MAP[4]).toBe('comment')
   })
 
   it('has distinct category prefixes', () => {

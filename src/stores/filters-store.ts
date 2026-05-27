@@ -1,34 +1,34 @@
 import { defineStore } from 'pinia'
 import { filtersData } from '@/b-components/sidebar/filters-data'
 import { tabsData } from '@/b-components/sidebar/sidebar-tabs/tabs-data'
-import { categoriesData, type Category } from '@/b-components/sidebar/sidebar-categories/categories-data'
-import { settingsAPI } from '@/db/apis/settings-api'
-
+import {
+  categoriesData,
+  type Category,
+} from '@/b-components/sidebar/sidebar-categories/categories-data'
+import {
+  FEED_MODE_TO_TAB_ID,
+  SORT_FILTER_MAP,
+  CUSTOM_CATEGORY_ICON,
+  TEMP_CATEGORY_ICON,
+} from './filters-store-consts'
+import { loadFiltersFromSettings, saveFiltersToSettings } from './filters-persistence'
 
 export const useFiltersStore = defineStore('filters', {
   state: () => {
-    // Определяем начальный таб из URL
+    // Определяем начальный таб из URL ?feedMode=…
     const urlParams = new URLSearchParams(window.location.search)
     const feedMode = urlParams.get('feedMode')
 
-    // Дефолтный таб
-    let initialTabId = tabsData.find((tab: any) => tab.active)?.id || tabsData[0]?.id || 1
-
-    // Маппинг feedMode на id табов
-    if (feedMode === 'subscriptions') initialTabId = 2
-    else if (feedMode === 'video') initialTabId = 3
-    else if (feedMode === 'audio') initialTabId = 4
-    else if (feedMode === 'article') initialTabId = 5
-    else if (feedMode === 'favorites') initialTabId = 6
-    else if (feedMode === 'discussed') initialTabId = 7
-    else if (feedMode === 'all') initialTabId = 1
+    // Дефолтный таб — либо помеченный active в tabsData, либо первый, либо id=1.
+    const fromUrl = feedMode ? FEED_MODE_TO_TAB_ID[feedMode] : undefined
+    const initialTabId =
+      fromUrl ?? (tabsData.find((tab: any) => tab.active)?.id || tabsData[0]?.id || 1)
 
     // Подготавливаем табы с правильным активным состоянием
     const initialTabs = JSON.parse(JSON.stringify(tabsData))
     initialTabs.forEach((tab: any) => {
       tab.active = tab.id === initialTabId
     })
-
 
     return {
       timeFilters: JSON.parse(JSON.stringify(filtersData.timeFilters)),
@@ -41,7 +41,7 @@ export const useFiltersStore = defineStore('filters', {
       selectedTags: [] as string[],
       topFirst: true,
       isInitialized: false,
-      isInitializing: false
+      isInitializing: false,
     }
   },
 
@@ -52,15 +52,11 @@ export const useFiltersStore = defineStore('filters', {
      */
     allCategories(): Category[] {
       // Объединяем списки, исключая дубликаты по ID
-      const all = [
-        ...this.temporaryCategories,
-        ...this.customCategories,
-        ...categoriesData
-      ]
+      const all = [...this.temporaryCategories, ...this.customCategories, ...categoriesData]
 
       // Убираем дубликаты (если вдруг временная категория совпадает с кастомной или статической)
       const unique = new Map()
-      all.forEach(cat => {
+      all.forEach((cat) => {
         if (!unique.has(cat.id)) {
           unique.set(cat.id, cat)
         }
@@ -85,23 +81,9 @@ export const useFiltersStore = defineStore('filters', {
       return active?.id || null
     },
 
-    /**
-     * Получает значение orderby для активного фильтра сортировки
-     * Маппинг фильтров:
-     * - id: 1 (По популярности) -> 'score'
-     * - id: 2 (По дате) -> 'id'
-     * - id: 3 (По рейтингу) -> 'score'
-     * - id: 4 (По комментариям) -> 'comment'
-     */
+    /** Значение orderby для активного фильтра сортировки (см. SORT_FILTER_MAP). */
     orderby(): string {
-      const activeId = this.activeSortFilter
-      const mapping: Record<number, string> = {
-        1: 'score',    // По популярности
-        2: 'id',       // По дате
-        3: 'score',    // По рейтингу
-        4: 'comment'   // По комментариям
-      }
-      return mapping[activeId as number] || 'score'
+      return SORT_FILTER_MAP[this.activeSortFilter as number] || 'score'
     },
 
     /**
@@ -110,7 +92,7 @@ export const useFiltersStore = defineStore('filters', {
      */
     ascdesc(): 'asc' | 'desc' {
       return 'desc'
-    }
+    },
   },
 
   actions: {
@@ -119,57 +101,26 @@ export const useFiltersStore = defineStore('filters', {
      */
     async init() {
       if (this.isInitialized || (this as any).isInitializing) return
-      (this as any).isInitializing = true
+      ;(this as any).isInitializing = true
 
-      try {
-        const settings = await settingsAPI.get('sidebarFilters')
-        if (settings) {
-          // Загружаем кастомные категории
-          if (Array.isArray(settings.customCategories)) {
-            this.customCategories = settings.customCategories
-          }
+      const snapshot = await loadFiltersFromSettings()
+      if (snapshot.customCategories) this.customCategories = snapshot.customCategories
+      if (snapshot.selectedCategories) this.selectedCategories = snapshot.selectedCategories
+      if (snapshot.selectedTags) this.selectedTags = snapshot.selectedTags
+      if (snapshot.topFirst !== undefined) this.topFirst = snapshot.topFirst
 
-          if (Array.isArray(settings.selectedCategories)) {
-            this.selectedCategories = settings.selectedCategories
-          }
-
-          // Backward compatibility for old "excludedCategories"
-          else if (Array.isArray(settings.excludedCategories) && settings.excludedCategories.length > 0) {
-             // If we had excluded categories, we might want to clear them or migrate logic.
-             // But since logic flipped, it's safer to just start empty or interpret differently.
-             // Let's just ignore old excluded categories to avoid confusion.
-             this.selectedCategories = []
-          }
-
-          if (Array.isArray(settings.selectedTags)) {
-            this.selectedTags = settings.selectedTags
-          }
-          if (settings.topFirst !== undefined) {
-            this.topFirst = settings.topFirst
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load settings:', e)
-      } finally {
-        this.isInitialized = true;
-        (this as any).isInitializing = false
-      }
+      this.isInitialized = true
+      ;(this as any).isInitializing = false
     },
 
-    /**
-     * Сохранение настроек в IndexedDB
-     */
+    /** Сохранение настроек в IndexedDB. */
     async saveSettings() {
-      try {
-        await settingsAPI.set('sidebarFilters', {
-          selectedCategories: JSON.parse(JSON.stringify(this.selectedCategories)),
-          customCategories: JSON.parse(JSON.stringify(this.customCategories)), // Сохраняем кастомные
-          selectedTags: JSON.parse(JSON.stringify(this.selectedTags)),
-          topFirst: this.topFirst
-        })
-      } catch (e) {
-        console.error('Failed to save settings:', e)
-      }
+      await saveFiltersToSettings({
+        selectedCategories: this.selectedCategories,
+        customCategories: this.customCategories,
+        selectedTags: this.selectedTags,
+        topFirst: this.topFirst,
+      })
     },
 
     /**
@@ -265,15 +216,14 @@ export const useFiltersStore = defineStore('filters', {
       const id = `custom_${tag.toLowerCase()}`
 
       // Проверяем, существует ли уже такая категория
-      if (!this.customCategories.some(c => c.id === id)) {
+      if (!this.customCategories.some((c) => c.id === id)) {
         const newCategory: Category = {
           id,
-          name: tag, // Используем введенное имя как есть (с регистром)
-          icon: '⭐', // Иконка для кастомных категорий
-          tags: [tag.toLowerCase()]
+          name: tag, // оставляем введённое имя как есть (с регистром)
+          icon: CUSTOM_CATEGORY_ICON,
+          tags: [tag.toLowerCase()],
         }
-
-        this.customCategories.unshift(newCategory) // Добавляем в начало
+        this.customCategories.unshift(newCategory)
       }
 
       // Автоматически выбираем добавленную категорию
@@ -288,10 +238,10 @@ export const useFiltersStore = defineStore('filters', {
      * Удаляет кастомную или временную категорию
      */
     removeCustomCategory(categoryId: string) {
-      this.customCategories = this.customCategories.filter(c => c.id !== categoryId)
-      this.temporaryCategories = this.temporaryCategories.filter(c => c.id !== categoryId)
+      this.customCategories = this.customCategories.filter((c) => c.id !== categoryId)
+      this.temporaryCategories = this.temporaryCategories.filter((c) => c.id !== categoryId)
       // Также убираем из выбранных, если была выбрана
-      this.selectedCategories = this.selectedCategories.filter(id => id !== categoryId)
+      this.selectedCategories = this.selectedCategories.filter((id) => id !== categoryId)
       this.saveSettings()
     },
 
@@ -303,12 +253,12 @@ export const useFiltersStore = defineStore('filters', {
       const id = `temp_${tag.toLowerCase()}`
 
       // Проверяем, есть ли уже такая категория (любого типа)
-      const exists = this.allCategories.some(c => c.tags.includes(tag.toLowerCase()))
+      const exists = this.allCategories.some((c) => c.tags.includes(tag.toLowerCase()))
 
       if (exists) {
         // Если категория уже есть (статическая или кастомная), просто выбираем её
         // Находим ID этой категории
-        const existingCat = this.allCategories.find(c => c.tags.includes(tag.toLowerCase()))
+        const existingCat = this.allCategories.find((c) => c.tags.includes(tag.toLowerCase()))
         if (existingCat && !this.selectedCategories.includes(existingCat.id)) {
           this.selectedCategories.push(existingCat.id)
           this.saveSettings()
@@ -316,12 +266,12 @@ export const useFiltersStore = defineStore('filters', {
         return
       }
 
-      // Если нет, создаем временную
+      // Если нет, создаём временную
       const newCategory: Category = {
         id,
         name: tag,
-        icon: '⚡', // Иконка для временных категорий
-        tags: [tag.toLowerCase()]
+        icon: TEMP_CATEGORY_ICON,
+        tags: [tag.toLowerCase()],
       }
 
       this.temporaryCategories.unshift(newCategory)
@@ -343,6 +293,6 @@ export const useFiltersStore = defineStore('filters', {
       this.sortFilters.forEach((filter: any, index: number) => {
         filter.active = index === 0
       })
-    }
-  }
+    },
+  },
 })

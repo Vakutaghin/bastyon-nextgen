@@ -2,228 +2,45 @@ import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCall, rpcCallArrayWithAuth, rpcCallWithAuth } from '@/helpers/api/request'
-import { settingsAPI, } from '@/db/apis/settings-api'
+import { settingsAPI } from '@/db/apis/settings-api'
 import { notificationsAPI } from '@/db/apis/notifications-api'
 import { generateCacheHash } from '@/helpers/common/cache-hash'
 import type { GetMissedInfoParameters } from '@/types/rpc-requests/get-missed-info'
-import type { GetMissedInfoBlockItem, GetMissedInfoEventItem, GetMissedInfoDataItem } from '@/types/rpc-responses/get-missed-info'
+import type {
+  GetMissedInfoBlockItem,
+  GetMissedInfoDataItem,
+} from '@/types/rpc-responses/get-missed-info'
 import type { GetNodeInfoData } from '@/types/rpc-responses/get-node-info'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 
-const NOTIFICATIONS_LAST_BLOCK_KEY = 'notificationsLastBlock'
-const NOTIFICATIONS_HIDDEN_IDS_KEY = 'notificationsHiddenIds'
+import {
+  NOTIFICATIONS_LAST_BLOCK_KEY,
+  NOTIFICATIONS_HIDDEN_IDS_KEY,
+} from './notifications-constants'
+import type {
+  NotificationItem,
+  NotificationPostSnapshot,
+  NotificationCommentSnapshot,
+  NotificationUserSnapshot,
+  LastBlockByAddress,
+  HiddenIdsByAddress,
+} from './notifications-types'
+import { mapMissedEventToNotification } from './notifications-mappers'
 
-/** В IDB settings: { [address]: block } */
-type LastBlockByAddress = Record<string, number>
-/** В IDB settings: { [address]: id[] } — скрытые пользователем уведомления */
-type HiddenIdsByAddress = Record<string, string[]>
+// Реэкспорт типов: внешние модули продолжают импортировать из @/stores/notifications-store.
+export type {
+  NotificationItem,
+  NotificationType,
+  NotificationPostSnapshot,
+  NotificationCommentSnapshot,
+  NotificationUserSnapshot,
+} from './notifications-types'
 
 /**
  * Запрос уведомлений: getmissedinfo(address, block, limit).
  * Ответ data: [BlockItem, ...EventItem[]]; события маппятся в NotificationItem.
  * Блок для следующего запроса сохраняем в IDB при открытии выпадашки (все прочитаны).
  */
-
-const MES_TYPE_TITLES: Record<string, string> = {
-  upvoteShare: 'Оценка поста',
-  subscribe: 'Новый подписчик',
-  unsubscribe: 'Отписка',
-  subscribePrivate: 'Приватная подписка',
-  answer: 'Ответ на комментарий',
-  post: 'Новый пост',
-  userInfo: 'Обновление профиля',
-  comment: 'Комментарий',
-  repost: 'Репост'
-}
-
-function pickStr(o: Record<string, unknown> | undefined | null, ...keys: string[]): string | undefined {
-  if (!o) return undefined
-  for (const k of keys) {
-    const v = o[k]
-    if (typeof v === 'string' && v.length > 0) return v
-  }
-  return undefined
-}
-
-function pickArr<T = unknown>(o: Record<string, unknown> | undefined | null, ...keys: string[]): T[] | undefined {
-  if (!o) return undefined
-  for (const k of keys) {
-    const v = o[k]
-    if (Array.isArray(v)) return v as T[]
-  }
-  return undefined
-}
-
-/**
- * RPC `getmissedinfo` иногда прикладывает связанные сущности к событию: `share` (пост), `comment`, `user`.
- * Сохраняем их в snapshot — это даёт превью без дополнительных запросов и позволяет сразу открыть PostModal.
- */
-function extractPostSnapshot(raw: unknown, fallbackTxid?: string): NotificationPostSnapshot | undefined {
-  if (!raw || typeof raw !== 'object') return undefined
-  const o = raw as Record<string, unknown>
-  const txid = pickStr(o, 'txid', 'hash', 'id') ?? fallbackTxid
-  if (!txid) return undefined
-  return {
-    txid,
-    caption: pickStr(o, 'c', 'caption', 'title'),
-    message: pickStr(o, 'm', 'message', 'text'),
-    type: pickStr(o, 'type'),
-    images: pickArr<string>(o, 'i', 'images')
-  }
-}
-
-function extractCommentSnapshot(raw: unknown, fallbackId?: string, fallbackPostId?: string): NotificationCommentSnapshot | undefined {
-  if (!raw || typeof raw !== 'object') return undefined
-  const o = raw as Record<string, unknown>
-  const id = pickStr(o, 'id', 'txid') ?? fallbackId
-  if (!id) return undefined
-  let message: string | undefined
-  const msgRaw = o.msg ?? o.message
-  if (typeof msgRaw === 'string') {
-    try {
-      const parsed = JSON.parse(msgRaw) as { message?: string }
-      message = typeof parsed?.message === 'string' ? parsed.message : msgRaw
-    } catch {
-      message = msgRaw
-    }
-  } else if (msgRaw && typeof msgRaw === 'object') {
-    const inner = (msgRaw as Record<string, unknown>).message
-    if (typeof inner === 'string') message = inner
-  }
-  return {
-    id,
-    postid: pickStr(o, 'postid', 'rootTxHash', 'posttxid') ?? fallbackPostId,
-    parentid: pickStr(o, 'parentid'),
-    answerid: pickStr(o, 'answerid'),
-    address: pickStr(o, 'address'),
-    message
-  }
-}
-
-function extractUserSnapshot(raw: unknown, fallbackAddress?: string): NotificationUserSnapshot | undefined {
-  if (!raw || typeof raw !== 'object') {
-    return fallbackAddress ? { address: fallbackAddress } : undefined
-  }
-  const o = raw as Record<string, unknown>
-  const address = pickStr(o, 'address', 'addr') ?? fallbackAddress
-  if (!address) return undefined
-  return {
-    address,
-    name: pickStr(o, 'name'),
-    avatar: pickStr(o, 'i', 'avatar'),
-    reputation: typeof o.reputation === 'number' ? (o.reputation as number) : undefined
-  }
-}
-
-function mapMissedEventToNotification(n: GetMissedInfoEventItem | Record<string, unknown>): NotificationItem | null {
-  const id = (n.txid ?? n.id ?? n.nblock ?? Math.random().toString(36)) as string
-  const nblock = Number(n.nblock ?? 0) || 0
-  const mesType = (n.mesType ?? n.type) as string
-  const time = Number(n.time ?? n.nTime ?? n.nblock ?? 0) || Math.floor(Date.now() / 1000)
-  const title = MES_TYPE_TITLES[mesType] ?? 'Уведомление'
-  let description: string | undefined
-  if (n.upvoteVal != null) description = `Оценка: ${n.upvoteVal}`
-  const link = (n.url ?? n.link) as string | undefined
-  const allowedTypes: NotificationItem['type'][] = ['comment', 'like', 'subscribe', 'repost', 'mention', 'rating', 'tip', 'other']
-  const typeMap: Record<string, NotificationItem['type']> = {
-    upvoteShare: 'rating',
-    subscribe: 'subscribe',
-    unsubscribe: 'subscribe',
-    answer: 'comment',
-    post: 'other',
-    comment: 'comment',
-    repost: 'repost'
-  }
-  const safeType = typeMap[mesType] ?? (allowedTypes.includes(mesType as NotificationItem['type']) ? (mesType as NotificationItem['type']) : 'other')
-  const upvoteVal = n.upvoteVal != null ? Number(n.upvoteVal) : undefined
-  const fromAddress = (n.addrFrom ?? (n.account as Record<string, unknown>)?.address) as string | undefined
-  const shareId = (n.posttxid ?? n.rootTxHash ?? n.postHash) as string | undefined
-
-  const postSnapshot = extractPostSnapshot(n.share, shareId)
-  const commentSnapshot = extractCommentSnapshot(n.comment, String(id), shareId)
-  const fromSnapshot = extractUserSnapshot(n.user, fromAddress)
-
-  return {
-    id: String(id),
-    nblock,
-    type: safeType,
-    title: String(title),
-    description,
-    time,
-    link,
-    seen: false,
-    from: fromAddress ?? fromSnapshot?.address,
-    shareId,
-    mesType,
-    upvoteVal,
-    postSnapshot,
-    commentSnapshot,
-    fromSnapshot
-  }
-}
-
-export type NotificationType =
-  | 'comment'
-  | 'like'
-  | 'subscribe'
-  | 'repost'
-  | 'mention'
-  | 'rating'
-  | 'tip'
-  | 'other'
-
-export interface NotificationPostSnapshot {
-  txid: string
-  caption?: string
-  message?: string
-  type?: string
-  images?: string[]
-}
-
-export interface NotificationCommentSnapshot {
-  id: string
-  postid?: string
-  parentid?: string
-  answerid?: string
-  address?: string
-  message?: string
-}
-
-export interface NotificationUserSnapshot {
-  address: string
-  name?: string
-  avatar?: string
-  reputation?: number
-}
-
-export interface NotificationItem {
-  id: string
-  /** Номер блока (для указателя «прочитано до» и подсчёта непрочитанных) */
-  nblock?: number
-  type: NotificationType
-  title: string
-  description?: string
-  /** Unix timestamp (seconds) */
-  time: number
-  /** Link for navigation (e.g. post url, profile) */
-  link?: string
-  seen: boolean
-  /** Optional: related user address or name */
-  from?: string
-  /** Optional: related content id */
-  shareId?: string
-  /** Raw mesType from API (for filter mapping: comment, answer, upvoteShare, subscribe, ...) */
-  mesType?: string
-  /** For upvoteShare: rating value (positive = upvote, negative = downvote) */
-  upvoteVal?: number
-  /**
-   * Снимок связанного контента, если RPC отдал его вместе с событием.
-   * Не сохраняется в IDB — нужен только в памяти для превью.
-   */
-  postSnapshot?: NotificationPostSnapshot
-  commentSnapshot?: NotificationCommentSnapshot
-  fromSnapshot?: NotificationUserSnapshot
-}
 
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
@@ -246,7 +63,7 @@ export const useNotificationsStore = defineStore('notifications', {
     /** Идёт фоновое обогащение — для скелетонов */
     enriching: false,
     /** id уведомлений, для которых уже запускали enrichVisible (антидубль) */
-    enrichedIds: new Set<string>() as Set<string>
+    enrichedIds: new Set<string>() as Set<string>,
   }),
   getters: {
     /** Список без скрытых, по убыванию nblock/time */
@@ -260,13 +77,15 @@ export const useNotificationsStore = defineStore('notifications', {
     },
     unreadList(): NotificationItem[] {
       return this.list
-    }
+    },
   },
   actions: {
     /** Высота блока из IDB для адреса (с какого блока запрашивать уведомления). */
     async loadLastBlockFromSettings(address: string): Promise<number | null> {
       try {
-        const raw = await settingsAPI.get(NOTIFICATIONS_LAST_BLOCK_KEY) as LastBlockByAddress | undefined
+        const raw = (await settingsAPI.get(NOTIFICATIONS_LAST_BLOCK_KEY)) as
+          | LastBlockByAddress
+          | undefined
         if (raw && typeof raw === 'object' && typeof raw[address] === 'number') {
           return raw[address]
         }
@@ -279,8 +98,13 @@ export const useNotificationsStore = defineStore('notifications', {
     /** Сохранить высоту блока в IDB для адреса (указатель «прочитано до» — двигаем при открытии выпадашки). */
     async saveLastBlockToSettings(address: string, block: number): Promise<void> {
       try {
-        const raw = (await settingsAPI.get(NOTIFICATIONS_LAST_BLOCK_KEY)) as LastBlockByAddress | undefined
-        const next: LastBlockByAddress = { ...(raw && typeof raw === 'object' ? raw : {}), [address]: block }
+        const raw = (await settingsAPI.get(NOTIFICATIONS_LAST_BLOCK_KEY)) as
+          | LastBlockByAddress
+          | undefined
+        const next: LastBlockByAddress = {
+          ...(raw && typeof raw === 'object' ? raw : {}),
+          [address]: block,
+        }
         await settingsAPI.set(NOTIFICATIONS_LAST_BLOCK_KEY, next)
       } catch (e) {
         console.error('[notifications] saveLastBlockToSettings failed', e)
@@ -290,8 +114,11 @@ export const useNotificationsStore = defineStore('notifications', {
     /** Загрузить скрытые id для адреса из settings. */
     async loadHiddenIdsFromSettings(address: string): Promise<Set<string>> {
       try {
-        const raw = (await settingsAPI.get(NOTIFICATIONS_HIDDEN_IDS_KEY)) as HiddenIdsByAddress | undefined
-        const arr = raw && typeof raw === 'object' && Array.isArray(raw[address]) ? raw[address] : []
+        const raw = (await settingsAPI.get(NOTIFICATIONS_HIDDEN_IDS_KEY)) as
+          | HiddenIdsByAddress
+          | undefined
+        const arr =
+          raw && typeof raw === 'object' && Array.isArray(raw[address]) ? raw[address] : []
         return new Set(arr)
       } catch {
         return new Set()
@@ -301,8 +128,13 @@ export const useNotificationsStore = defineStore('notifications', {
     /** Сохранить скрытые id для адреса в settings. */
     async saveHiddenIdsToSettings(address: string, ids: Set<string>): Promise<void> {
       try {
-        const raw = (await settingsAPI.get(NOTIFICATIONS_HIDDEN_IDS_KEY)) as HiddenIdsByAddress | undefined
-        const next: HiddenIdsByAddress = { ...(raw && typeof raw === 'object' ? raw : {}), [address]: [...ids] }
+        const raw = (await settingsAPI.get(NOTIFICATIONS_HIDDEN_IDS_KEY)) as
+          | HiddenIdsByAddress
+          | undefined
+        const next: HiddenIdsByAddress = {
+          ...(raw && typeof raw === 'object' ? raw : {}),
+          [address]: [...ids],
+        }
         await settingsAPI.set(NOTIFICATIONS_HIDDEN_IDS_KEY, next)
       } catch (e) {
         console.error('[notifications] saveHiddenIdsToSettings failed', e)
@@ -311,7 +143,11 @@ export const useNotificationsStore = defineStore('notifications', {
 
     /** Текущая высота сети (getnodeinfo). Если нет сохранённого блока — запрашиваем с неё (0 новых уведомлений). */
     async getCurrentBlockHeight(): Promise<number> {
-      const data = await rpcCall<GetNodeInfoData>({ method: rpcEndpoints.getNodeInfo, parameters: [], options: { auth: false } })
+      const data = await rpcCall<GetNodeInfoData>({
+        method: rpcEndpoints.getNodeInfo,
+        parameters: [],
+        options: { auth: false },
+      })
       const h = data?.lastblock?.height
       if (typeof h === 'number' && h > 0) return h
       return 0
@@ -320,8 +156,16 @@ export const useNotificationsStore = defineStore('notifications', {
     _isTimeoutError(err: unknown): boolean {
       if (!err || typeof err !== 'object') return false
       const o = err as Record<string, unknown>
-      const code = o?.code ?? (o?.error && typeof o.error === 'object' && (o.error as Record<string, unknown>)?.code)
-      const msg = String(o?.message ?? (o?.error && typeof o.error === 'object' && (o.error as Record<string, unknown>)?.message) ?? '')
+      const code =
+        o?.code ??
+        (o?.error && typeof o.error === 'object' && (o.error as Record<string, unknown>)?.code)
+      const msg = String(
+        o?.message ??
+          (o?.error &&
+            typeof o.error === 'object' &&
+            (o.error as Record<string, unknown>)?.message) ??
+          ''
+      )
       return code === 408 || code === 500 || /timeout/i.test(msg)
     },
 
@@ -338,7 +182,7 @@ export const useNotificationsStore = defineStore('notifications', {
       const [savedBlock, storedList, hiddenIds] = await Promise.all([
         this.loadLastBlockFromSettings(address),
         notificationsAPI.getAllByAddress(address),
-        this.loadHiddenIdsFromSettings(address)
+        this.loadHiddenIdsFromSettings(address),
       ])
 
       this.hiddenIds = hiddenIds
@@ -346,14 +190,26 @@ export const useNotificationsStore = defineStore('notifications', {
         this.lastBlock = savedBlock
       } else {
         try {
-          this.lastBlock = await this.getCurrentBlockHeight() || 0
+          this.lastBlock = (await this.getCurrentBlockHeight()) || 0
         } catch {
           this.lastBlock = 0
         }
       }
 
       // Преобразуем запись IDB в NotificationItem для state
-      const toItem = (s: { id: string; nblock: number; type: string; title: string; description?: string; time: number; link?: string; from?: string; shareId?: string; mesType?: string; upvoteVal?: number }): NotificationItem => ({
+      const toItem = (s: {
+        id: string
+        nblock: number
+        type: string
+        title: string
+        description?: string
+        time: number
+        link?: string
+        from?: string
+        shareId?: string
+        mesType?: string
+        upvoteVal?: number
+      }): NotificationItem => ({
         id: s.id,
         nblock: s.nblock,
         type: s.type as NotificationItem['type'],
@@ -365,7 +221,7 @@ export const useNotificationsStore = defineStore('notifications', {
         from: s.from,
         shareId: s.shareId,
         mesType: s.mesType,
-        upvoteVal: s.upvoteVal
+        upvoteVal: s.upvoteVal,
       })
       this.items = storedList.map(toItem)
 
@@ -382,10 +238,15 @@ export const useNotificationsStore = defineStore('notifications', {
           const arr = await rpcCallArrayWithAuth<GetMissedInfoDataItem>({
             method: rpcEndpoints.getMissedInfo,
             parameters: params,
-            options: { cache: false }
+            options: { cache: false },
           })
           const blockInfo = arr[0]
-          if (blockInfo && typeof blockInfo === 'object' && 'block' in blockInfo && 'contentsLang' in blockInfo) {
+          if (
+            blockInfo &&
+            typeof blockInfo === 'object' &&
+            'block' in blockInfo &&
+            'contentsLang' in blockInfo
+          ) {
             this.lastBlock = Number((blockInfo as GetMissedInfoBlockItem).block) || this.lastBlock
           }
           const rawEvents = arr.slice(1) as (GetMissedInfoEventItem | Record<string, unknown>)[]
@@ -395,19 +256,33 @@ export const useNotificationsStore = defineStore('notifications', {
           const existingIds = new Set(this.items.map((i) => i.id))
           const newItems = mapped.filter((n) => !existingIds.has(n.id))
           if (newItems.length > 0) {
-            const toStore = newItems.map(({ id, nblock = 0, type, title, description, time, link, from, shareId, mesType, upvoteVal }) => ({
-              id,
-              nblock,
-              type,
-              title,
-              description,
-              time,
-              link,
-              from,
-              shareId,
-              mesType,
-              upvoteVal
-            }))
+            const toStore = newItems.map(
+              ({
+                id,
+                nblock = 0,
+                type,
+                title,
+                description,
+                time,
+                link,
+                from,
+                shareId,
+                mesType,
+                upvoteVal,
+              }) => ({
+                id,
+                nblock,
+                type,
+                title,
+                description,
+                time,
+                link,
+                from,
+                shareId,
+                mesType,
+                upvoteVal,
+              })
+            )
             await notificationsAPI.putMany(address, toStore)
             this.items = [...newItems, ...this.items]
           }
@@ -537,7 +412,7 @@ export const useNotificationsStore = defineStore('notifications', {
             parameters: [ids],
             cachehash: generateCacheHash(),
             options: {},
-            state: 1
+            state: 1,
           })
             .then((arr) => {
               const list = Array.isArray(arr) ? arr : []
@@ -552,7 +427,7 @@ export const useNotificationsStore = defineStore('notifications', {
                   caption: pickStr(o, 'c', 'caption', 'title'),
                   message: pickStr(o, 'm', 'message', 'text'),
                   type: pickStr(o, 'type'),
-                  images: pickArr<string>(o, 'i', 'images')
+                  images: pickArr<string>(o, 'i', 'images'),
                 }
               }
             })
@@ -570,7 +445,7 @@ export const useNotificationsStore = defineStore('notifications', {
             parameters: [ids],
             cachehash: generateCacheHash(),
             options: {},
-            state: 1
+            state: 1,
           })
             .then((arr) => {
               const list = Array.isArray(arr) ? arr : []
@@ -590,7 +465,7 @@ export const useNotificationsStore = defineStore('notifications', {
           rpcCall<UserProfile[]>({
             method: rpcEndpoints.getUserProfile,
             parameters: [addrs],
-            options: { auth: false }
+            options: { auth: false },
           })
             .then((arr) => {
               const list = Array.isArray(arr) ? arr : []
@@ -601,7 +476,7 @@ export const useNotificationsStore = defineStore('notifications', {
                   name: p.name,
                   avatar: typeof p.i === 'string' ? p.i : undefined,
                   reputation: typeof p.reputation === 'number' ? p.reputation : undefined,
-                  profile: p
+                  profile: p,
                 }
               }
             })
@@ -632,6 +507,6 @@ export const useNotificationsStore = defineStore('notifications', {
       const fromCached = fromAddr ? this.profileCache[fromAddr] : undefined
       const from = item.fromSnapshot ?? fromCached
       return { post, comment, from }
-    }
-  }
+    },
+  },
 })

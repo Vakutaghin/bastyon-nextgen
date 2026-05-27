@@ -4,30 +4,22 @@
  */
 
 // Device fingerprint
-export {
-  generateDeviceFingerprint,
-  getDeviceFingerprint,
-} from './device-fingerprint'
+export { generateDeviceFingerprint, getDeviceFingerprint } from './device-fingerprint'
 
 // Шифрование
-export {
-  encryptData,
-  decryptData,
-  canDecrypt,
-} from './encryption'
+export { encryptData, decryptData, canDecrypt } from './encryption'
 
-// Управление хранилищем
+// Шифрование/мнемоника
 export {
   saveEncryptedData,
   loadEncryptedData,
   saveEncryptedMnemonic,
   loadEncryptedMnemonic,
   clearStoredData,
-  saveUserAddress,
-  loadUserAddress,
-  saveWasLogged,
-  hasStoredSession,
-  clearAllUserData,
+} from './storage-keys'
+
+// Список аккаунтов
+export {
   saveAccountsList,
   loadAccountsList,
   addAccountToStore,
@@ -35,6 +27,15 @@ export {
   getAccountInfo,
   setCurrentAccount,
   updateAccountName,
+} from './storage-accounts'
+
+// Сессия / адрес пользователя / wallet addresses / общий клин-ап
+export {
+  saveUserAddress,
+  loadUserAddress,
+  saveWasLogged,
+  hasStoredSession,
+  clearAllUserData,
   getWalletAddressesList,
   saveWalletAddressesList,
   getAdditionalWalletAddressesList,
