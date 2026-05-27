@@ -4,14 +4,8 @@
 
 // Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
 import { Buffer } from '../../utils/buffer-polyfill'
-// @ts-ignore
-import bs58 from 'bs58'
-// @ts-ignore
-import bech32 from 'bech32'
-import CryptoJS from 'crypto-js'
 
 import type {
-  Address,
   AddressInfo,
   AddressType,
   AddressGenerationResult,
@@ -21,40 +15,10 @@ import type { KeyPair } from '../../types/keys'
 import { getMainAddressPath } from '../../constants/paths'
 import { seedToKeyPair } from '../keys/key-generator'
 import { POCKETNET_NETWORK } from '../../constants/network'
+import { localHash160, toBase58Check, toBech32 } from './address-hash-utils'
 
 // Кеш для оптимизации (в памяти)
 const addressCache = new Map<string, AddressInfo>()
-
-function localHash256(buffer: Buffer): Buffer {
-  const wordArray = CryptoJS.enc.Hex.parse(buffer.toString('hex'))
-  const hash = CryptoJS.SHA256(CryptoJS.SHA256(wordArray))
-  return Buffer.from(hash.toString(CryptoJS.enc.Hex), 'hex')
-}
-
-function localHash160(buffer: Buffer): Buffer {
-  const wordArray = CryptoJS.enc.Hex.parse(buffer.toString('hex'))
-  const sha256 = CryptoJS.SHA256(wordArray)
-  const ripemd160 = CryptoJS.RIPEMD160(sha256)
-  return Buffer.from(ripemd160.toString(CryptoJS.enc.Hex), 'hex')
-}
-
-// Helper for manual Base58Check encoding to avoid bitcoinjs-lib internal typeforce checks
-function toBase58Check(hash: Buffer, version: number): string {
-  const payload = Buffer.allocUnsafe(21)
-  payload.writeUInt8(version, 0)
-  hash.copy(payload, 1)
-
-  const checksum = localHash256(payload).slice(0, 4)
-  const data = Buffer.concat([payload, checksum])
-
-  return bs58.encode(data)
-}
-
-function toBech32(hash: Buffer, version: number, prefix: string): string {
-  const words = bech32.toWords(hash)
-  words.unshift(version)
-  return bech32.encode(prefix, words)
-}
 
 /**
  * Генерирует P2PKH адрес из публичного ключа
@@ -103,7 +67,8 @@ export function generateP2PKHAddress(publicKey: Buffer): AddressInfo {
     return addressInfo
   } catch (error) {
     throw new Error(
-      `Failed to generate P2PKH address: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to generate P2PKH address: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -153,7 +118,8 @@ export function generateP2WPKHAddress(publicKey: Buffer): AddressInfo {
     return addressInfo
   } catch (error) {
     throw new Error(
-      `Failed to generate P2WPKH address: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to generate P2WPKH address: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -182,10 +148,7 @@ export function generateP2SHAddress(publicKey: Buffer): AddressInfo {
     const pubKeyHash = localHash160(publicKey)
 
     // Redeem script: 0x00 <20-byte pubKeyHash>
-    const redeemScript = Buffer.concat([
-      Buffer.from([0x00, 0x14]),
-      pubKeyHash
-    ])
+    const redeemScript = Buffer.concat([Buffer.from([0x00, 0x14]), pubKeyHash])
 
     // 2. Hash160 от redeem script
     const scriptHash = localHash160(redeemScript)
@@ -200,7 +163,7 @@ export function generateP2SHAddress(publicKey: Buffer): AddressInfo {
       hash: scriptHash,
       redeem: {
         output: redeemScript,
-        hash: pubKeyHash
+        hash: pubKeyHash,
       },
       pubkey: publicKey,
     }
@@ -218,7 +181,8 @@ export function generateP2SHAddress(publicKey: Buffer): AddressInfo {
     return addressInfo
   } catch (error) {
     throw new Error(
-      `Failed to generate P2SH address: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to generate P2SH address: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -318,7 +282,8 @@ export function generateWalletAddress(
     }
   } catch (error) {
     throw new Error(
-      `Failed to generate wallet address: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to generate wallet address: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
