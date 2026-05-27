@@ -7,11 +7,22 @@
  * - позволяет менять реализацию стора без перетряхивания всех action'ов;
  * - даёт явный аудит того, что вообще делает host.
  *
- * Дефолтная prod-реализация — в {@link createDefaultHostContext}.
+ * Дефолтная prod-реализация — в {@link createDefaultHostContext}. Конкретные
+ * группы методов вынесены в подпапку `host-context-methods/` по доменам
+ * (auth/rpc/content/payments/media/chat), константы — в `host-constants.ts`,
+ * device-детект/геолокация — в `host-device-utils.ts`.
  */
 
 import type { Router } from 'vue-router'
 import type { ApiSignature } from '@/blockchain/types/signatures'
+import { ARCHIVED_PEERTUBE_SERVERS } from './host-constants'
+import { detectDevice, browserGeolocation } from './host-device-utils'
+import { createAuthMethods } from './host-context-methods/auth'
+import { createRpcMethods } from './host-context-methods/rpc'
+import { createContentMethods } from './host-context-methods/content'
+import { createPaymentMethods } from './host-context-methods/payments'
+import { createMediaMethods } from './host-context-methods/media'
+import { createChatMethods } from './host-context-methods/chat'
 
 export type HostDevice = 'browser' | 'capacitor_ios' | 'capacitor_android' | 'tauri' | 'electron'
 
@@ -199,6 +210,13 @@ export async function createDefaultHostContext(
 
   const device: HostDevice = opts.device ?? detectDevice(isTauri(), isCapacitor())
 
+  const auth = createAuthMethods({ useAuthStore, generateApiSignature })
+  const rpc = createRpcMethods({ useAuthStore, getByPRC, rpcEndpoints, unwrapRpcResponse })
+  const content = createContentMethods({ router: opts.router })
+  const payments = createPaymentMethods()
+  const media = createMediaMethods({ isCapacitor })
+  const chat = createChatMethods({ router: opts.router })
+
   return {
     appVersion: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev',
     isProduction: import.meta.env?.MODE === 'production',
@@ -241,11 +259,6 @@ export async function createDefaultHostContext(
       void opts.router.push('/settings')
     },
 
-    openRegistration: async () => {
-      const { useModalStore } = await import('@/stores/modal-store')
-      useModalStore().openAuthModal('register')
-    },
-
     openProfile: async (address: string) => {
       void opts.router.push(`/${address}`)
     },
@@ -260,341 +273,15 @@ export async function createDefaultHostContext(
       return {}
     },
 
-    signApiMessage: (data, options = {}) => {
-      const auth = useAuthStore()
-      if (!auth.keyPair || !auth.address) return null
-      return generateApiSignature(auth.keyPair, auth.address, {
-        data,
-        expiration: options.expiration,
-        useOldFormat: options.useOldFormat,
-      })
-    },
-
-    getCurrentAccountStatus: () => {
-      // Legacy `account.getStatus()` отдавал балансы/permissions/etc. В nextgen
-      // эту аггрегацию делает отдельный composable; для миниаппы достаточно
-      // получить address + signature — статус они подтягивают через `balance`
-      // action отдельно.
-      return undefined
-    },
-
-    // TODO: end-to-end AbortSignal в RPC-слой. Сейчас `getByPRC` его не
-    // принимает — bridge всё равно установит таймаут на свою сторону через
-    // `DEFAULT_RPC_TIMEOUT_MS`, но прервать уже отправленный fetch к ноде
-    // мы не можем.
-
-    callRpc: async (method, parameters = [], options = {}) => {
-      // Pocketnet RPC всегда отдаёт обёртку `{result, data, node, time}` —
-      // снимаем её и пробрасываем только `data` миниаппе. Legacy ровно так
-      // и делает (миниаппы пишут `.map` сразу на результате).
-      const raw = await getByPRC({
-        method,
-        parameters,
-        options: { auth: false, ...options },
-      } as Parameters<typeof getByPRC>[0])
-      if (
-        raw &&
-        typeof raw === 'object' &&
-        'result' in raw &&
-        (raw as { result: string }).result === 'error'
-      ) {
-        const err = (raw as { error?: string }).error ?? 'rpc_error'
-        throw new Error(err)
-      }
-      return unwrapRpcResponse(raw) ?? raw
-    },
-
-    getUserBalance: async () => {
-      const auth = useAuthStore()
-      if (!auth.address) return {}
-      const raw = await getByPRC({
-        method: rpcEndpoints.getAddressInfo,
-        parameters: [auth.address],
-        options: { auth: false },
-      })
-      const data = unwrapRpcResponse<Record<string, unknown>>(raw)
-      return data ?? {}
-    },
-
-    getCurrentBlockHeight: async () => {
-      const raw = await getByPRC({
-        method: rpcEndpoints.getNodeInfo,
-        parameters: [],
-        options: { auth: false },
-      })
-      const data = unwrapRpcResponse<{ lastblock?: { height?: number } }>(raw)
-      const height = data?.lastblock?.height
-      if (typeof height !== 'number') {
-        throw new Error('actions_currentBlock_not_defined')
-      }
-      return height
-    },
-
-    // ─── payments ──────────────────────────────────────────────────────────
-    openPaymentDialog: async (_payment) => {
-      // TODO(etap 7+): подключить wallet UI nextgen. Возвращаем «rejected» в legacy-формате,
-      // чтобы миниаппа корректно отреагировала вместо повисания.
-      return { rejected: true, reason: 'payment_ui_not_implemented' }
-    },
-
-    openExternalPayment: async (_extHash) => {
-      throw new Error('ext_payment_not_implemented')
-    },
-
-    // ─── content ───────────────────────────────────────────────────────────
-    openPost: async (txid) => {
-      // Legacy открывает modal с постом. У нас в nextgen post-modal через ?p=<txid>.
-      void opts.router.push({ path: '/', query: { p: txid } })
-    },
-
-    openDonation: async (receiver) => {
-      // Открываем профиль получателя — оттуда уже доступна донат-кнопка.
-      void opts.router.push(`/${receiver}`)
-    },
-
-    openExternalLink: async (url) => {
-      // В Tauri/Capacitor желательно открывать в системном браузере, но `window.open`
-      // в обоих окружениях обычно делегируется правильно.
-      if (typeof window !== 'undefined') {
-        window.open(url, '_blank', 'noopener,noreferrer')
-      }
-    },
-
-    share: async (data, sharePref = {}) => {
-      const url =
-        data.url ??
-        (data.path
-          ? `${typeof window !== 'undefined' ? window.location.origin : ''}/${data.path.replace(/^\/+/, '')}`
-          : typeof window !== 'undefined'
-            ? window.location.href
-            : '')
-
-      if (sharePref.onBastyon) {
-        // Внутренний шаринг: открываем форму создания поста с pre-fill.
-        void opts.router.push({ path: '/', query: { share: url } })
-        return
-      }
-
-      // Web Share API если есть, иначе fallback на копирование в clipboard.
-      const nav = typeof navigator !== 'undefined' ? navigator : undefined
-      if (nav && typeof nav.share === 'function') {
-        try {
-          await nav.share({ url })
-          return
-        } catch {
-          // ignored — пользователь отменил или Web Share не поддерживается
-        }
-      }
-      if (nav?.clipboard?.writeText) {
-        await nav.clipboard.writeText(url)
-      }
-    },
-
-    openComplain: async (_data) => {
-      // TODO(etap 7+): подключить complain modal. Сейчас игнорим silently —
-      // миниаппа получает успех, пользовательский UI отсутствует.
-    },
-
-    getPendingActions: () => {
-      // Legacy: pending actions = транзакции в mempool. Pending tx store
-      // ещё не подключён к миниаппам в nextgen.
-      return []
-    },
-
-    // ─── media ─────────────────────────────────────────────────────────────
-    takePhoto: async () => {
-      if (!isCapacitor()) {
-        throw new Error('mobile:camera:notsupported')
-      }
-      // Динамический импорт — `@capacitor/camera` подтягивается только на
-      // mobile-сборках; в web/desktop SSR это «модуль не найден» если он
-      // не зарезолвен на build-time, поэтому ловим оба исхода.
-      let cameraMod: typeof import('@capacitor/camera')
-      try {
-        cameraMod = await import('@capacitor/camera')
-      } catch {
-        throw new Error('mobile:camera:notsupported')
-      }
-      try {
-        const photo = await cameraMod.Camera.getPhoto({
-          quality: 85,
-          allowEditing: false,
-          resultType: cameraMod.CameraResultType.Base64,
-          source: cameraMod.CameraSource.Prompt,
-        })
-        const base64 = photo.base64String
-        if (!base64) throw new Error('mobile:camera:cancel')
-        return { images: [{ image: base64 }] }
-      } catch (e) {
-        // Capacitor бросает Error со строкой "User cancelled photos app" /
-        // "User denied access to camera" — приводим к legacy `cancel`.
-        const msg = e instanceof Error ? e.message.toLowerCase() : ''
-        if (msg.includes('cancel') || msg.includes('denied')) {
-          throw new Error('mobile:camera:cancel', { cause: e })
-        }
-        throw e
-      }
-    },
-
-    // ─── chat ──────────────────────────────────────────────────────────────
-    chatOpenRoom: async (roomid) => {
-      void opts.router.push({ path: '/messages', query: { room: roomid } })
-    },
-
-    chatGetOrCreateRoom: async (users, _parameters) => {
-      if (!Array.isArray(users) || users.length === 0) {
-        throw new Error('chat_no_users')
-      }
-      if (users.length > 1) {
-        // Групповые комнаты пока не поддерживаем — matrix-service умеет только
-        // createDirectRoom(inviteeId). Когда понадобится — добавить
-        // createGroupRoom() в matrix-service.
-        throw new Error('chat_group_rooms_not_supported')
-      }
-
-      const address = users[0]
-      if (!address) throw new Error('chat_no_users')
-
-      const { matrixService } = await import('@/b-components/messenger/services/matrix-service')
-      const { resolveMatrixHost } = await import('@/b-components/messenger/helpers')
-      const { useMessengerStore } = await import('@/b-components/messenger/store/messenger-store')
-
-      // initMatrix идемпотентен (см. messenger-store.ts) — если клиент уже
-      // залогинен, вернётся быстро; иначе — login + sync.
-      await useMessengerStore().initMatrix()
-
-      const hex = matrixService.addressToHex(address).toLowerCase()
-      const partnerId = `@${hex}:${resolveMatrixHost()}`
-
-      // Сначала ищем существующую DM-комнату с этим партнёром, чтобы не плодить
-      // дубли. Логика повторяет findExistingRoomByAddress из messenger-store,
-      // но без зависимости от UI-стора.
-      const existing = matrixService
-        .getRooms()
-        .find((room: { roomId: string; getMember?: (id: string) => unknown }) => {
-          const member = room.getMember?.(partnerId)
-          return Boolean(member)
-        })
-      if (existing) return { roomid: existing.roomId }
-
-      const roomId = await matrixService.createDirectRoom(partnerId)
-      if (!roomId) throw new Error('chat_create_room_failed')
-      return { roomid: roomId }
-    },
-
-    chatSendMessage: async (roomid, content) => {
-      if (!roomid || typeof roomid !== 'string') throw new Error('chat_no_roomid')
-
-      const text =
-        typeof content === 'string'
-          ? content
-          : content && typeof content === 'object' && 'body' in content
-            ? String((content as { body: unknown }).body)
-            : ''
-      if (!text) throw new Error('chat_empty_content')
-
-      const { matrixService } = await import('@/b-components/messenger/services/matrix-service')
-      const { useMessengerStore } = await import('@/b-components/messenger/store/messenger-store')
-
-      await useMessengerStore().initMatrix()
-      const res = await matrixService.sendMessage(roomid, text)
-      return (res as Record<string, unknown>) ?? { ok: true }
-    },
+    // ─── domain methods (вынесены в host-context-methods/*) ────────────────
+    ...auth,
+    ...rpc,
+    ...content,
+    ...payments,
+    ...media,
+    ...chat,
   }
-}
-
-function detectDevice(tauri: boolean, capacitor: boolean): HostDevice {
-  if (tauri) return 'tauri'
-  if (capacitor) {
-    if (typeof navigator !== 'undefined') {
-      const ua = navigator.userAgent.toLowerCase()
-      if (/iphone|ipad|ipod/.test(ua)) return 'capacitor_ios'
-      if (/android/.test(ua)) return 'capacitor_android'
-    }
-    return 'capacitor_android'
-  }
-  return 'browser'
-}
-
-function browserGeolocation(
-  signal?: AbortSignal
-): Promise<{ latitude: number; longitude: number }> {
-  return new Promise((resolve, reject) => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      reject(new Error('location:notavailable'))
-      return
-    }
-    if (signal?.aborted) {
-      reject(new Error('location:aborted'))
-      return
-    }
-    const watchId = navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-      () => reject(new Error('location:notavailable')),
-      { enableHighAccuracy: false, timeout: 15_000 }
-    )
-    signal?.addEventListener('abort', () => {
-      // navigator.geolocation API не имеет явного cancel для getCurrentPosition,
-      // но watchId здесь undefined — оставляем reject через ошибку.
-      void watchId
-      reject(new Error('location:aborted'))
-    })
-  })
 }
 
 // ─── ambient declarations ────────────────────────────────────────────────────
 declare const __APP_VERSION__: string
-
-// ─── constants ───────────────────────────────────────────────────────────────
-
-/**
- * Archived peertube-серверы — раньше использовались для хостинга видео
- * пользователей Bastyon. Сейчас выведены из эксплуатации, видео перенесены
- * на `peertube.archive.pocketnet.app`. SDK миниапп ремапит URL'ы через этот
- * список (`sdk.manageBastyonImageSrc`).
- *
- * Синхронизирован с legacy `project_config.archivedPeertubeServers`.
- * При появлении новых архивных серверов — добавлять сюда.
- */
-const ARCHIVED_PEERTUBE_SERVERS: readonly string[] = [
-  'pocketnetpeertube1.nohost.me',
-  'pocketnetpeertube2.nohost.me',
-  'pocketnetpeertube5.nohost.me',
-  'pocketnetpeertube7.nohost.me',
-  'pocketnetpeertube4.nohost.me',
-  'pocketnetpeertube6.nohost.me',
-  'pocketnetpeertube8.nohost.me',
-  'pocketnetpeertube9.nohost.me',
-  'pocketnetpeertube10.nohost.me',
-  'pocketnetpeertube11.nohost.me',
-  'bastyonmma.pocketnet.app',
-  'bastyonmma.nohost.me',
-  '01rus.nohost.me',
-  '02rus.pocketnet.app',
-  'pocketnetpeertube12.nohost.me',
-  'pocketnetpeertube13.nohost.me',
-  'peertube14.pocketnet.app',
-  'peertube15.pocketnet.app',
-  'peertube18.pocketnet.app',
-  'peertube17mirror.pocketnet.app',
-  'peertube18mirror.pocketnet.app',
-  'peertube19mirror.pocketnet.app',
-  'peertube20.pocketnet.app',
-  'peertube21.pocketnet.app',
-  'peertube22.pocketnet.app',
-  'peertube23.pocketnet.app',
-  'peertube24.pocketnet.app',
-  'peertube25.pocketnet.app',
-  'peertube25mirror.pocketnet.app',
-  'peertube26.pocketnet.app',
-  'peertube26mirror.pocketnet.app',
-  'peertube27.pocketnet.app',
-  'peertube29.pocketnet.app',
-  'peertube30.pocketnet.app',
-  'peertube5new.pocketnet.app',
-  'peertube4new.pocketnet.app',
-  'peertube31.pocketnet.app',
-  'peertube32.pocketnet.app',
-  'peertube34.pocketnet.app',
-  'peertube35.pocketnet.app',
-] as const
