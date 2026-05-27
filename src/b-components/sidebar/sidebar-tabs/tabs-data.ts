@@ -6,5 +6,6 @@ export const tabsData = [
   { id: 5, name: 'Статьи', icon: 'FileTextOutlined', active: false, disabled: false },
   { id: 6, name: 'Избранное', icon: 'BookOutlined', active: false, disabled: false },
   { id: 7, name: 'Обсуждаемое', icon: 'StarOutlined', active: false, disabled: false },
+  { id: 9, name: 'Эксплорер', icon: 'BlockOutlined', active: false, disabled: false },
   { id: 8, name: 'Мини-приложения', icon: 'AppstoreOutlined', active: false, disabled: false },
 ]

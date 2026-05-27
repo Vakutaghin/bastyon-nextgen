@@ -10,6 +10,7 @@ import {
   StarOutlined,
   MessageOutlined,
   AppstoreOutlined,
+  BlockOutlined,
 } from '@ant-design/icons-vue'
 
 import { useFiltersStore } from '@/stores/filters-store'
@@ -34,6 +35,7 @@ export const sidebarTabsOptions = defineComponent({
     StarOutlined,
     MessageOutlined,
     AppstoreOutlined,
+    BlockOutlined,
     SC_Tabs,
     SC_TabsItem,
     SC_TabsLabel,
@@ -66,9 +68,10 @@ export const sidebarTabsOptions = defineComponent({
       () => route.path,
       (path) => {
         // Главная — сбрасываем активный таб на «Ленту» (id=1) если ранее был
-        // miniapp-таб (id=8). feedMode через query сохраняется отдельно.
+        // miniapp-таб (id=8) или эксплорер (id=9). feedMode через query
+        // сохраняется отдельно.
         if (path === '/') {
-          if (filtersStore.activeTab === 8) {
+          if (filtersStore.activeTab === 8 || filtersStore.activeTab === 9) {
             filtersStore.selectTab(1)
           }
           return
@@ -78,6 +81,11 @@ export const sidebarTabsOptions = defineComponent({
         // в `sidebar-favorites.vue` по route.path.
         if (path === '/miniapps' || path.startsWith('/app/')) {
           filtersStore.selectTab(8)
+          return
+        }
+        // /explorer и любые вложенные маршруты блок-эксплорера.
+        if (path === '/explorer' || path.startsWith('/explorer/')) {
+          filtersStore.selectTab(9)
         }
       },
       { immediate: true }
@@ -118,8 +126,22 @@ export const sidebarTabsOptions = defineComponent({
         return
       }
 
-      // Если уходим с /miniapps на feed-фильтр — возвращаемся на главную.
-      if (route.path === '/miniapps' || route.path.startsWith('/app/')) {
+      // Блок-эксплорер — тоже отдельный route, как и miniapps.
+      if (tabId === 9) {
+        if (route.path !== '/explorer' && !route.path.startsWith('/explorer/')) {
+          void router.push('/explorer')
+        }
+        return
+      }
+
+      // Если уходим с /miniapps, /app/* или /explorer на feed-фильтр —
+      // возвращаемся на главную.
+      if (
+        route.path === '/miniapps' ||
+        route.path.startsWith('/app/') ||
+        route.path === '/explorer' ||
+        route.path.startsWith('/explorer/')
+      ) {
         void router.push('/')
       }
 

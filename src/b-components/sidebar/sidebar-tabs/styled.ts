@@ -10,7 +10,7 @@ export const SC_Tabs = styled.nav`
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-bottom: 20px;
+  padding-bottom: 10px;
   border-bottom: 1px solid ${COLORS.BG_SECONDARY};
 
   &.collapsed {
@@ -106,7 +106,7 @@ export const SC_FavoritesSection = styled.nav`
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-top: 8px;
+  padding-bottom: 24px;
 
   &.collapsed button {
     justify-content: center;
