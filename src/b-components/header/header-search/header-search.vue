@@ -1,37 +1,51 @@
 <template>
-  <SC_HeaderSearchWrapper @focusin='onFocusIn' @focusout='onFocusOut' @keydown.esc='close'>
+  <SC_HeaderSearchWrapper
+    @focusin="onFocusIn"
+    @focusout="onFocusOut"
+    @keydown.esc="close"
+    @keyup="onKeyUp"
+  >
     <InputSearch
-      v-model:value='searchQuery'
-      :placeholder='searchData.placeholder'
-      :maxlength='searchData.maxLength'
+      v-model:value="searchQuery"
+      :placeholder="searchData.placeholder"
+      :maxlength="searchData.maxLength"
       allow-clear
-      autocomplete='off'
-      autocorrect='off'
-      autocapitalize='off'
-      spellcheck='false'
-      @search='onEnter'
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+      @search="onEnter"
     />
 
-    <HeaderSearchDropdown
-      v-if='isOpen'
-      :query='debouncedQuery'
-      @close='close'
-    />
+    <HeaderSearchDropdown v-if="isOpen" :query="debouncedQuery" @close="close" />
   </SC_HeaderSearchWrapper>
 </template>
 
-<script setup lang='ts'>
-import { computed, ref, watch, onUnmounted } from 'vue'
+<script setup lang="ts">
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSearchStore } from '@/stores/search-store'
 import { MIN_QUERY_LENGTH } from '@/composables/use-search-query'
 import { sanitizeSearchQuery } from '@/services/search-service'
+import {
+  ensureUserResolverLoaded,
+  resolveNameLocal,
+  resolveNameRemote,
+} from '@/services/user-resolver'
+import { parseBastyonInput } from '@/services/bastyon-input-link'
 import InputSearch from '@/components/input-search/input-search.vue'
 import HeaderSearchDropdown from './header-search-dropdown.vue'
 import { searchData } from '@/b-components/header/dummy-data/search-data'
 import { SC_HeaderSearchWrapper } from './styled'
 
 const DEBOUNCE_MS = 450
+
+// «Hot-стопы»: символы, которые сигнализируют о завершении слова.
+// В оригинале их ввод не сдвигает debounce-таймер (mobilesearch/index.js:139),
+// фактически — позволяет уже стоящему таймеру выстрелить. Здесь
+// реализуем эквивалентный эффект: при вводе hot-stop сразу обновляем
+// `debouncedQuery`, не дожидаясь окончания DEBOUNCE_MS.
+const HOT_STOP_RE = /^[,.!?;:() ]$/
 
 const router = useRouter()
 const searchStore = useSearchStore()
@@ -57,7 +71,18 @@ watch(
   }
 )
 
-const isOpen = computed(() => isFocused.value && debouncedQuery.value.length >= MIN_QUERY_LENGTH)
+// Dropdown открыт когда инпут в фокусе И (есть достаточно длинный запрос,
+// чтобы запустить поисковые RPC, ИЛИ есть история — тогда показываем Recent).
+const isOpen = computed(() => {
+  if (!isFocused.value) return false
+  if (debouncedQuery.value.length >= MIN_QUERY_LENGTH) return true
+  return searchStore.recentHistory.length > 0
+})
+
+onMounted(() => {
+  void searchStore.ensureLoaded()
+  void ensureUserResolverLoaded()
+})
 
 function onFocusIn(): void {
   if (blurTimer) {
@@ -82,8 +107,63 @@ function close(): void {
   isFocused.value = false
 }
 
-function onEnter(value: string): void {
-  const committed = searchStore.commit(value)
+function onKeyUp(e: KeyboardEvent): void {
+  if (!HOT_STOP_RE.test(e.key)) return
+  if (searchStore.query.length === 0) return
+  if (debounceTimer) {
+    clearTimeout(debounceTimer)
+    debounceTimer = null
+  }
+  debouncedQuery.value = sanitizeSearchQuery(searchStore.query)
+}
+
+async function onEnter(value: string): Promise<void> {
+  const raw = value.trim()
+  if (!raw) return
+
+  // Bastyon-URL — прямая навигация по таргету, как в оригинальном
+  // `thislink()` (menu/index.js:827-836). Парсим до резолва ника:
+  // строка вида `bastyon.com/@name` должна идти на профиль, не в поиск.
+  const parsedUrl = parseBastyonInput(raw)
+  if (parsedUrl) {
+    close()
+    searchStore.setQuery('')
+    if (parsedUrl.kind === 'profile') {
+      router.push({ name: 'profile', params: { userName: parsedUrl.userName } })
+      return
+    }
+    if (parsedUrl.kind === 'search') {
+      searchStore.commit(parsedUrl.query)
+      const query: Record<string, string> = { q: parsedUrl.query }
+      if (parsedUrl.tagMode) query.type = 'posts'
+      router.push({ path: '/search', query })
+      return
+    }
+  }
+
+  // Префикс @ — явный сигнал «это имя пользователя»: пытаемся резолвить
+  // (локально, потом удалённо через searchusers) и навигировать прямо
+  // на профиль, минуя поисковую выдачу.
+  if (raw.startsWith('@')) {
+    const name = raw.slice(1).trim()
+    if (name) {
+      close()
+      searchStore.setQuery('')
+      const local = resolveNameLocal(name)
+      const address = local ?? (await resolveNameRemote(name))
+      if (address) {
+        searchStore.commitUser(address, name)
+        router.push({ name: 'profile', params: { userName: address } })
+        return
+      }
+      // Не резолвился — fall back на обычный поиск без префикса.
+      const fallback = searchStore.commit(name)
+      if (fallback) router.push({ path: '/search', query: { q: fallback } })
+      return
+    }
+  }
+
+  const committed = searchStore.commit(raw)
   if (!committed) return
   close()
   router.push({ path: '/search', query: { q: committed } })
