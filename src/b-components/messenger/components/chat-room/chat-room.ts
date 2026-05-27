@@ -32,6 +32,7 @@ import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import PkoinTransferModal from '../pkoin-transfer-modal/pkoin-transfer-modal.vue'
 import { useMessengerStore } from '../../store'
 import { usePasteDrop } from './use-paste-drop'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
 
 export const chatRoomOptions = defineComponent({
   name: 'ChatRoom',
@@ -209,12 +210,10 @@ export const chatRoomOptions = defineComponent({
       return result
     }
 
+    // Тонкая обёртка над resolveImageUrl: chat-room принимает уже извлечённый хэш/URL,
+    // а не объект профиля целиком, поэтому используется именно url-нормализатор.
     const getAvatarUrlFromProfile = (imageHash?: string): string | undefined => {
-      if (!imageHash) return undefined
-      if (imageHash.startsWith('http://') || imageHash.startsWith('https://')) {
-        return imageHash.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
-      }
-      return `https://pocketnet.app:8092/i/${imageHash}`
+      return imageHash ? resolveImageUrl(imageHash) : undefined
     }
 
     const updatePartnerInfo = async () => {

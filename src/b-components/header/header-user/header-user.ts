@@ -9,10 +9,17 @@ import MnemonicModal from '@/b-components/header/mnemonic-modal/mnemonic-modal.v
 import AccountSwitcher from '@/b-components/header/account-switcher/account-switcher.vue'
 import ConfirmSignOutModal from '@/b-components/header/confirm-sign-out-modal/confirm-sign-out-modal.vue'
 import RegistrationValidationModal from '@/b-components/header/registration-validation-modal/registration-validation-modal.vue'
-import { useAuthStore, detectPrivateKeyFormat, recoverKeyPair } from '@/blockchain'
+import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
+import { extractAvatarFromProfile } from '@/helpers/common/profile-avatar'
 import { shouldShowMnemonic } from '@/helpers/common/mnemonic-storage'
+import { retryRegistrationBackgroundTx } from './helpers/retry-registration-tx'
+import { loadPendingMnemonic } from './helpers/pending-mnemonic'
+import {
+  createRegistrationStatusWatcher,
+  type RegistrationStatusWatcher,
+} from './helpers/registration-status-watcher'
 import {
   SC_UserDetails,
   SC_UserName,
@@ -28,8 +35,10 @@ export const headerUserOptions = defineComponent({
   name: 'HeaderUser',
   components: {
     Dropdown,
+    /* eslint-disable vue/no-reserved-component-names */
     Menu,
     Button,
+    /* eslint-enable vue/no-reserved-component-names */
     Avatar,
     Skeleton,
     SignInModal,
@@ -71,7 +80,7 @@ export const headerUserOptions = defineComponent({
       validationStatus: null as string | null,
       registrationPending: false,
       pendingNickname: null as string | null,
-      registrationStatusCheckInterval: null as NodeJS.Timeout | null,
+      registrationWatcher: null as RegistrationStatusWatcher | null,
       dropdownOverlayClass: '',
     }
   },
@@ -129,37 +138,11 @@ export const headerUserOptions = defineComponent({
       return 'Пользователь'
     },
     userAvatar() {
-      // Используем геттер из store для надежного получения URL аватарки
-      let avatarUrl = this.authStore.getUserAvatarUrl
-
-      // Если геттер не вернул URL, пробуем достать из профиля напрямую
-      if (!avatarUrl && this.userProfile) {
-        const profile = this.userProfile
-        avatarUrl = (profile as any).i || null
-
-        // Если не нашли в 'i', проверяем альтернативные поля
-        if (!avatarUrl) {
-          const possibleFields = ['avatar', 'image', 'img', 'avatarUrl', 'avatar_url']
-          for (const field of possibleFields) {
-            const value = (profile as any)[field]
-            if (value) {
-              avatarUrl = value
-              break
-            }
-          }
-        }
-      }
-
-      if (avatarUrl && typeof avatarUrl === 'string' && (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://'))) {
-        avatarUrl = avatarUrl.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
-      }
-
-      // Если это не полный URL, преобразуем в полный
-      if (avatarUrl && typeof avatarUrl === 'string' && !avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://')) {
-        avatarUrl = `https://pocketnet.app:8092/i/${avatarUrl}`
-      }
-
-      return avatarUrl
+      // Сначала пытаемся взять из стора, иначе — fallback на поля профиля.
+      // resolveImageUrl внутри extractAvatarFromProfile нормализует домен и достраивает URL от хэша.
+      const fromStore = this.authStore.getUserAvatarUrl
+      if (fromStore) return fromStore
+      return extractAvatarFromProfile(this.userProfile) ?? null
     },
     userBalance() {
       // Проверяем баланс в профиле
@@ -172,7 +155,8 @@ export const headerUserOptions = defineComponent({
         if (profile) {
           const profileAny = profile as any
           // Проверяем альтернативные поля для баланса
-          const altBalance = profileAny.balance || profileAny.wallet || profileAny.amount || profileAny.bal || null
+          const altBalance =
+            profileAny.balance || profileAny.wallet || profileAny.amount || profileAny.bal || null
           if (altBalance !== null) {
             return altBalance
           }
@@ -191,16 +175,13 @@ export const headerUserOptions = defineComponent({
       return 'U'
     },
     isUserVerified(): boolean {
-    const badges = (this.userProfile as any)?.badges
-    if (!Array.isArray(badges)) return false
-    if (
-      badges.includes('verificated') ||
-      badges.includes('verified')
-    ) return true
-    const flags = (this.userProfile as any)?.flags
-    const real = (flags && (flags as any).real) ?? (this.userProfile as any)?.real
-    return real === 1 || real === '1' || real === true || real === 'true'
-  }
+      const badges = (this.userProfile as any)?.badges
+      if (!Array.isArray(badges)) return false
+      if (badges.includes('verificated') || badges.includes('verified')) return true
+      const flags = (this.userProfile as any)?.flags
+      const real = (flags && (flags as any).real) ?? (this.userProfile as any)?.real
+      return real === 1 || real === '1' || real === true || real === 'true'
+    },
   },
   methods: {
     openSignInModal() {
@@ -241,7 +222,11 @@ export const headerUserOptions = defineComponent({
       // Сохраняем ник для показа до подтверждения
       if (data.nickname) {
         this.pendingNickname = data.nickname
-        try { localStorage.setItem('pending_nickname', data.nickname) } catch {}
+        try {
+          localStorage.setItem('pending_nickname', data.nickname)
+        } catch {
+          /* ignore */
+        }
       }
 
       // Показываем модалку валидации и помечаем pending
@@ -253,56 +238,34 @@ export const headerUserOptions = defineComponent({
       this.startRegistrationStatusCheck()
     },
     async startRegistrationStatusCheck() {
-      // Очищаем предыдущий interval, если есть
-      if (this.registrationStatusCheckInterval) {
-        clearInterval(this.registrationStatusCheckInterval)
-        this.registrationStatusCheckInterval = null
-      }
-
-      // Функция проверки статуса
-      const checkStatus = async () => {
-        try {
-          const { getRegistrationStatus, isRegistrationInProgress } = await import('@/blockchain/api/registration-status')
-        const status = await getRegistrationStatus()
-
-        console.log('[header-user] Status check:', status)
-        this.validationStatus = status
-
-        // Если регистрация завершена, закрываем модалку и показываем мнемонику
-        if (!isRegistrationInProgress(status)) {
-          if (this.registrationStatusCheckInterval) {
-            clearInterval(this.registrationStatusCheckInterval)
-            this.registrationStatusCheckInterval = null
-          }
-
+      this.registrationWatcher?.stop()
+      this.registrationWatcher = createRegistrationStatusWatcher({
+        onStatusUpdate: (status) => {
+          console.log('[header-user] Status check:', status)
+          this.validationStatus = status
+        },
+        onComplete: async (status) => {
+          console.log('[header-user] Registration complete:', status)
           // Снимаем pending-статус
           this.registrationPending = false
           this.pendingNickname = null
           try {
             localStorage.removeItem('pending_nickname')
             localStorage.removeItem('pending_registration')
-          } catch {}
-
-          this.validationModalOpen = false
-
-          // Показываем модалку с мнемоникой
-          if (this.mnemonic) {
-            this.mnemonicModalOpen = true
+          } catch {
+            /* ignore */
           }
-
-          // Загружаем данные пользователя
+          this.validationModalOpen = false
+          // Показываем модалку с мнемоникой
+          if (this.mnemonic) this.mnemonicModalOpen = true
+          // Подтягиваем свежий профиль с именем
           await this.authStore.fetchUserState()
-        }
-      } catch (error) {
-        console.error('Failed to check registration status:', error)
-      }
-    }
-
-      // Проверяем статус регистрации каждые 5 секунд
-      this.registrationStatusCheckInterval = setInterval(checkStatus, 5000)
-
-      // Первая проверка сразу
-      await checkStatus()
+        },
+        onError: (err) => {
+          console.error('Failed to check registration status:', err)
+        },
+      })
+      await this.registrationWatcher.start()
     },
     handleMnemonicModalClose() {
       this.mnemonicModalOpen = false
@@ -347,84 +310,15 @@ export const headerUserOptions = defineComponent({
      * Вызывается при перезагрузке, если step=2 (free/balance отправлен, tx нет).
      */
     async retryBackgroundTransaction(nickname: string) {
-      try {
-        const { serializeUserInfo, exportUserInfo } = await import('@/blockchain/core/actions/user-info-action')
-        const { getUnspents, selectBestUnspents, filterAvailableUnspents } = await import('@/blockchain/core/transactions/unspents-manager')
-        const { buildTransaction } = await import('@/blockchain/core/transactions/transaction-builder')
-        const { sendTransactionWithMessage } = await import('@/blockchain/core/transactions/transaction-sender')
-        const { DEFAULT_TX_FEE } = await import('@/blockchain/constants/transactions')
-        const { deriveMessengerKeys } = await import('@/blockchain/core/keys/key-generator')
-
-        const address = this.authStore.getUserAddress
-        const keyPair = this.authStore.getKeyPair
-        if (!address || !keyPair) return
-
-        const cryptoKeys = deriveMessengerKeys(keyPair.privateKey)
-        const publicKeys = cryptoKeys.map((k: { public: string }) => k.public)
-
-        const userInfoData = {
-          name: nickname, about: '', site: '', language: 'ru',
-          image: '', addresses: [], ref: '', keys: publicKeys,
-        }
-
-        const serialized = serializeUserInfo(userInfoData)
-        const userInfoExport = exportUserInfo(userInfoData, false)
-
-        let unspents = await getUnspents(address, 0, 9999999)
-        unspents = filterAvailableUnspents(unspents, false)
-        console.log('[header-user] Retry: unspents available:', unspents.length)
-
-        if (unspents.length === 0) {
-          console.log('[header-user] Retry: no unspents, will retry on next check')
-          return
-        }
-
-        const selectedUnspents = selectBestUnspents(unspents, 0)
-        if (selectedUnspents.length === 0) return
-
-        console.log('[header-user] Retry: building transaction...')
-        const builtTx = await buildTransaction({
-          unspents: selectedUnspents,
-          fromAddress: address,
-          keyPair,
-          serializedData: serialized,
-          operationType: 'userInfo',
-          fee: DEFAULT_TX_FEE,
-          timeDifference: 0,
-        })
-
-        console.log('[header-user] Retry: sending transaction...')
-        const txid = await sendTransactionWithMessage({
-          hex: builtTx.hex,
-          messageData: userInfoExport,
-          operationType: 'userInfo',
-        })
-
-        console.log('[header-user] Retry: transaction sent! txid:', txid)
-
-        // Помечаем step=3
-        try {
-          const pendingRaw = localStorage.getItem('pending_registration')
-          if (pendingRaw) {
-            const pending = JSON.parse(pendingRaw)
-            pending.step = 3
-            localStorage.setItem('pending_registration', JSON.stringify(pending))
-          }
-        } catch {}
-
-      } catch (err) {
-        console.error('[header-user] Retry transaction error:', err)
-        // Если ошибка от блокчейна (невалидные данные) — очищаем pending, повтор бессмыслен
-        const errMsg = err instanceof Error ? err.message : String(err)
-        if (errMsg.includes('NicknameLong') || errMsg.includes('code":19') || errMsg.includes('code":18')) {
-          console.log('[header-user] Fatal registration error, clearing pending')
-          try {
-            localStorage.removeItem('pending_registration')
-            localStorage.removeItem('pending_nickname')
-          } catch {}
-          this.registrationPending = false
-          this.pendingNickname = null
-        }
+      const outcome = await retryRegistrationBackgroundTx({
+        address: this.authStore.getUserAddress,
+        keyPair: this.authStore.getKeyPair,
+        nickname,
+      })
+      if (outcome === 'fatal') {
+        // Хелпер уже очистил localStorage; снимаем pending в UI.
+        this.registrationPending = false
+        this.pendingNickname = null
       }
     },
 
@@ -467,7 +361,9 @@ export const headerUserOptions = defineComponent({
           this.pendingNickname = savedNickname
           console.log('[header-user] Restored pending nickname:', savedNickname)
         }
-      } catch {}
+      } catch {
+        /* ignore */
+      }
 
       // Быстрая проверка: если есть pending_nickname, сразу ставим pending
       // (до async RPC-вызова, чтобы часики появились мгновенно)
@@ -476,7 +372,8 @@ export const headerUserOptions = defineComponent({
       }
 
       try {
-        const { getRegistrationStatus, isRegistrationInProgress } = await import('@/blockchain/api/registration-status')
+        const { getRegistrationStatus, isRegistrationInProgress } =
+          await import('@/blockchain/api/registration-status')
         const status = await getRegistrationStatus()
         console.log('[header-user] Registration status on load:', status)
 
@@ -496,7 +393,9 @@ export const headerUserOptions = defineComponent({
                 this.retryBackgroundTransaction(pending.nickname)
               }
             }
-          } catch {}
+          } catch {
+            /* ignore */
+          }
         } else {
           // Регистрация завершена — очищаем pending
           console.log('[header-user] Registration complete, clearing pending')
@@ -505,7 +404,9 @@ export const headerUserOptions = defineComponent({
           try {
             localStorage.removeItem('pending_nickname')
             localStorage.removeItem('pending_registration')
-          } catch {}
+          } catch {
+            /* ignore */
+          }
           // Обновляем профиль чтобы подтянуть имя
           this.authStore.fetchUserState().catch(() => {})
         }
@@ -522,46 +423,21 @@ export const headerUserOptions = defineComponent({
     // Проверяет и показывает модалку с сид-фразой, если нужно
     async checkAndShowMnemonic() {
       const address = this.authStore.getUserAddress
-      if (!address || !this.isAuthenticated) {
-        return
-      }
+      if (!address || !this.isAuthenticated) return
+      if (!shouldShowMnemonic(address)) return
 
-      if (shouldShowMnemonic(address)) {
-        const { loadEncryptedMnemonic } = await import('@/blockchain/storage')
-        const result = loadEncryptedMnemonic(true)
+      const result = await loadPendingMnemonic()
+      if (!result) return
 
-        if (result.success && result.data && result.data.trim()) {
-          const raw = result.data.trim()
-          const format = detectPrivateKeyFormat(raw)
-          if (format === 'mnemonic') {
-            this.mnemonic = raw
-            this.privateKeyHex = ''
-          } else if (format === 'hex') {
-            this.mnemonic = ''
-            this.privateKeyHex = raw
-          } else if (format === 'wif') {
-            try {
-              const { keyPair } = recoverKeyPair(raw)
-              this.mnemonic = ''
-              this.privateKeyHex = keyPair?.privateKey
-                ? (Buffer.isBuffer(keyPair.privateKey) ? keyPair.privateKey.toString('hex') : String(keyPair.privateKey))
-                : ''
-            } catch {
-              return
-            }
-          } else {
-            return
-          }
-          setTimeout(() => {
-            this.mnemonicModalOpen = true
-          }, 3000)
-        }
-      }
+      this.mnemonic = result.mnemonic
+      this.privateKeyHex = result.privateKeyHex
+      setTimeout(() => {
+        this.mnemonicModalOpen = true
+      }, 3000)
     },
   },
   async mounted() {
-    this.dropdownOverlayClass =
-      (this.$refs.dropdownZindexFixRef as any)?.$el?.className ?? ''
+    this.dropdownOverlayClass = (this.$refs.dropdownZindexFixRef as any)?.$el?.className ?? ''
 
     // Пытаемся восстановить сессию при монтировании компонента
     // fetchUserState автоматически вызывается в restoreSession, поэтому дополнительный вызов не нужен
@@ -591,19 +467,27 @@ export const headerUserOptions = defineComponent({
     },
     // Синхронизация локального состояния с store (если закрыли вручную)
     signInModalOpen(isOpen: boolean) {
-      if (!isOpen && this.modalStore.authModal.isOpen && this.modalStore.authModal.mode === 'login') {
+      if (
+        !isOpen &&
+        this.modalStore.authModal.isOpen &&
+        this.modalStore.authModal.mode === 'login'
+      ) {
         this.modalStore.closeAuthModal()
       }
     },
     registerModalOpen(isOpen: boolean) {
-      if (!isOpen && this.modalStore.authModal.isOpen && this.modalStore.authModal.mode === 'register') {
+      if (
+        !isOpen &&
+        this.modalStore.authModal.isOpen &&
+        this.modalStore.authModal.mode === 'register'
+      ) {
         this.modalStore.closeAuthModal()
       }
     },
 
     // Загружаем полное состояние пользователя при изменении адреса
     userAddress: {
-      handler: async function(newAddress, oldAddress) {
+      handler: async function (newAddress, oldAddress) {
         if (newAddress && newAddress !== oldAddress && this.isAuthenticated) {
           // При изменении адреса всегда загружаем данные заново
           // Очищаем старые данные профиля, чтобы не показывать данные предыдущего аккаунта
@@ -625,7 +509,7 @@ export const headerUserOptions = defineComponent({
           }
         }
       },
-      immediate: false
-    }
-  }
+      immediate: false,
+    },
+  },
 })

@@ -7,15 +7,14 @@ import MnemonicModal from '@/b-components/header/mnemonic-modal/mnemonic-modal.v
 import ConfirmDeleteModal from './confirm-delete-modal.vue'
 import ConfirmShowMnemonicModal from './confirm-show-mnemonic-modal.vue'
 import { KeyOutlined, LogoutOutlined } from '@ant-design/icons-vue'
-import { useAuthStore, recoverKeyPair, detectPrivateKeyFormat } from '@/blockchain'
+import { useAuthStore } from '@/blockchain'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
-import { loadEncryptedMnemonic } from '@/blockchain/storage'
-import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
+import { extractAvatarFromProfile } from '@/helpers/common/profile-avatar'
 import type { Address } from '@/blockchain/types/addresses'
-import type { UserProfile, GetUserProfileResponse } from '@/types/rpc-responses/user-get'
+import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type { AccountDisplayInfo, Props } from './types'
+import { loadAccounts } from './helpers/load-accounts'
+import { loadAccountMnemonic } from './helpers/load-account-mnemonic'
 import {
   SC_AccountSwitcher,
   SC_EmptyState,
@@ -38,6 +37,7 @@ export const accountSwitcherOptions = defineComponent({
   components: {
     Modal,
     Avatar,
+    // eslint-disable-next-line vue/no-reserved-component-names
     Button,
     SignInModal,
     MnemonicModal,
@@ -67,10 +67,7 @@ export const accountSwitcherOptions = defineComponent({
     },
   },
   emits: ['update:open', 'close'],
-  setup(
-    _p: Props,
-    { emit }: { emit: (event: 'update:open' | 'close', ...args: any[]) => void },
-  ) {
+  setup(_p: Props, { emit }: { emit: (event: 'update:open' | 'close', ...args: any[]) => void }) {
     const authStore = useAuthStore()
 
     return {
@@ -112,140 +109,18 @@ export const accountSwitcherOptions = defineComponent({
     },
   },
   methods: {
-    // Загружаем список аккаунтов и их данные из стора
+    // Загружаем список аккаунтов и их данные (вся логика — в helpers/load-accounts.ts).
     async loadAccounts() {
-      const accountsInfo = this.authStore.getAccountsInfo()
-      const currentAddress = this.authStore.getUserAddress
-      const currentUserProfile = this.authStore.getUserProfile
-
-      // Инициализируем массив аккаунтов с данными из стора
-      this.accounts = accountsInfo.map((acc) => {
-        // Для текущего пользователя используем данные из стора
-        if (acc.address === currentAddress && currentUserProfile) {
-          const badges = (currentUserProfile as any)?.badges
-          const verified =
-            Array.isArray(badges) &&
-            ((badges.includes('verificated') ||
-              badges.includes('verified')))
-            || (() => {
-              const flags = (currentUserProfile as any)?.flags
-              const real = (flags && (flags as any).real) ?? (currentUserProfile as any)?.real
-              return real === 1 || real === '1' || real === true || real === 'true'
-            })()
-          return {
-            address: acc.address,
-            name: currentUserProfile.name || acc.name || null,
-            avatar: this.getAvatarUrl(currentUserProfile as UserProfile),
-            balance: (currentUserProfile as any).balance ?? null,
-            loading: false,
-            verified
-          }
-        }
-
-        // Для других аккаунтов используем только базовую информацию из стора
-        // И ставим флаг загрузки, так как будем подгружать данные
-        return {
-          address: acc.address,
-          name: acc.name || null,
-          avatar: null,
-          balance: null,
-          loading: true,
-          verified: false
-        }
+      this.accounts = await loadAccounts({
+        accountsInfo: this.authStore.getAccountsInfo(),
+        currentAddress: this.authStore.getUserAddress,
+        currentUserProfile: this.authStore.getUserProfile,
       })
-
-      // Получаем список адресов для обновления данных
-      // Исключаем текущего пользователя, если его профиль уже загружен в сторе
-      const addresses = accountsInfo
-        .map((acc) => acc.address)
-        .filter((addr) => {
-          if (addr === currentAddress && currentUserProfile) return false
-          return true
-        })
-
-      if (addresses.length === 0) return
-
-      try {
-        // Запрашиваем профили для всех аккаунтов
-        // Добавляем cachehash для обхода кэша и получения актуального баланса
-        const cachehash = Date.now().toString(36) + Math.random().toString(36).substring(2)
-
-        const response = await getByPRCWithAuth({
-          method: rpcEndpoints.getUserProfile,
-          parameters: [addresses],
-          cachehash,
-          options: {
-            auth: false, // Не требуем авторизации для получения публичных данных
-          },
-        }) as GetUserProfileResponse
-
-        if (response.result === 'success' && response.data) {
-          // Обновляем данные аккаунтов
-          this.accounts = this.accounts.map((acc) => {
-            const profile = response.data.find((p) => p && p.address === acc.address)
-
-            if (profile) {
-              const badges = (profile as any)?.badges
-              const verified =
-                Array.isArray(badges) &&
-                ((badges.includes('verificated') ||
-                  badges.includes('verified')))
-                || (() => {
-                  const flags = (profile as any)?.flags
-                  const real = (flags && (flags as any).real) ?? (profile as any)?.real
-                  return real === 1 || real === '1' || real === true || real === 'true'
-                })()
-              // Если это текущий аккаунт, берем данные из профиля, но сохраняем приоритет стора если нужно
-              // В данном случае данные из API свежие
-              return {
-                address: acc.address,
-                name: profile.name || acc.name || null,
-                avatar: this.getAvatarUrl(profile),
-                balance: profile.balance ?? acc.balance ?? null,
-                loading: false,
-                verified
-              }
-            }
-
-            // Если профиль не найден, просто снимаем флаг загрузки
-            return {
-              ...acc,
-              loading: false,
-            }
-          })
-        } else {
-          // В случае ошибки API снимаем флаги загрузки
-          this.accounts = this.accounts.map(acc => ({ ...acc, loading: false }))
-        }
-      } catch (error) {
-        console.error('Failed to fetch accounts profiles:', error)
-        this.accounts = this.accounts.map(acc => ({ ...acc, loading: false }))
-      }
     },
 
-    // Получает URL аватарки из профиля
+    // Получает URL аватарки из профиля (общий хелпер с header-user / chat-room).
     getAvatarUrl(profile: UserProfile | null): string | null {
-      if (!profile) return null
-
-      let avatarUrl = (profile as any).i || null
-
-      if (!avatarUrl) {
-        const possibleFields = ['avatar', 'image', 'img', 'avatarUrl', 'avatar_url']
-        for (const field of possibleFields) {
-          const value = (profile as any)[field]
-          if (value) {
-            avatarUrl = value
-            break
-          }
-        }
-      }
-
-      // Если это не полный URL, преобразуем в полный
-      if (avatarUrl && typeof avatarUrl === 'string' && !avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://')) {
-        avatarUrl = `https://bastyon.com:8092/i/${avatarUrl}`
-      }
-
-      return avatarUrl || null
+      return extractAvatarFromProfile(profile) ?? null
     },
 
     // Форматирует адрес для отображения
@@ -317,64 +192,19 @@ export const accountSwitcherOptions = defineComponent({
     async handleConfirmShowMnemonic() {
       this.confirmShowMnemonicOpen = false
 
+      const address = this.selectedAccountAddress
+      if (!address) {
+        console.error('Failed to load mnemonic: No account address selected')
+        return
+      }
+
       try {
-        // Получаем мнемонику для выбранного аккаунта
-        const address = this.selectedAccountAddress
-        if (!address) {
-          throw new Error('No account address selected')
-        }
-
-        // Получаем информацию об аккаунте
-        const accountsList = this.authStore.getAccountsList()
-        const accountInfo = accountsList.accounts.find((acc) => acc.address === address)
-
-        if (!accountInfo) {
-          throw new Error('Account not found')
-        }
-
-        // Загружаем мнемонику
-        const { loadEncryptedData } = await import('@/blockchain/storage')
-        const mnemonicResult = loadEncryptedData({
-          persistent: true,
-          storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}`,
-        })
-
-        const rawData = mnemonicResult.success && mnemonicResult.data
-          ? mnemonicResult.data
-          : (() => {
-              const generalResult = loadEncryptedMnemonic()
-              if (generalResult.success && generalResult.data) return generalResult.data
-              return null
-            })()
-
-        if (!rawData || !rawData.trim()) {
-          throw new Error('Нет сохранённой сид-фразы или ключа для этого аккаунта')
-        }
-
-        const format = detectPrivateKeyFormat(rawData.trim())
-        if (format === 'mnemonic') {
-          this.mnemonic = rawData.trim()
-          this.privateKeyHex = ''
-        } else if (format === 'hex') {
-          this.mnemonic = ''
-          this.privateKeyHex = rawData.trim()
-        } else if (format === 'wif') {
-          try {
-            const { keyPair } = recoverKeyPair(rawData.trim())
-            this.mnemonic = ''
-            this.privateKeyHex = keyPair?.privateKey
-              ? (Buffer.isBuffer(keyPair.privateKey) ? keyPair.privateKey.toString('hex') : String(keyPair.privateKey))
-              : ''
-          } catch {
-            throw new Error('Не удалось прочитать ключ')
-          }
-        } else {
-          throw new Error('Неизвестный формат данных')
-        }
+        const { mnemonic, privateKeyHex } = await loadAccountMnemonic(address)
+        this.mnemonic = mnemonic
+        this.privateKeyHex = privateKeyHex
         this.mnemonicModalOpen = true
       } catch (error) {
         console.error('Failed to load mnemonic:', error)
-        // Можно показать уведомление об ошибке
       }
     },
 

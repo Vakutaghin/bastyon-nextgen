@@ -3,8 +3,6 @@ import Modal from '@/components/modal/modal.vue'
 import Input from '@/components/input/input.vue'
 import Button from '@/components/button/button.vue'
 import { useAuthStore } from '@/blockchain'
-import { normalizeNickname, validateNickname } from '@/helpers/common/transliterate'
-import { setNeedShowMnemonic } from '@/helpers/common/mnemonic-storage'
 import type { Props } from './types'
 import {
   SC_RegisterForm,
@@ -17,55 +15,27 @@ import {
   SC_LinkToSignIn,
   SC_LinkButton,
 } from './styled'
-
-// --- Registration state persistence ---
-
-const PENDING_REG_KEY = 'pending_registration'
-
-interface PendingRegistration {
-  nickname: string
-  address: string
-  /** 1 = keys generated, 2 = free/balance requested (optimistic done), 3 = tx sent */
-  step: number
-  timestamp: number
-}
-
-function savePendingRegistration(data: PendingRegistration): void {
-  try {
-    localStorage.setItem(PENDING_REG_KEY, JSON.stringify(data))
-  } catch { /* ignore */ }
-}
-
-function loadPendingRegistration(): PendingRegistration | null {
-  try {
-    const raw = localStorage.getItem(PENDING_REG_KEY)
-    if (!raw) return null
-    const data = JSON.parse(raw) as PendingRegistration
-    // Expire after 30 minutes
-    if (Date.now() - data.timestamp > 30 * 60 * 1000) {
-      clearPendingRegistration()
-      return null
-    }
-    return data
-  } catch {
-    return null
-  }
-}
-
-function clearPendingRegistration(): void {
-  try {
-    localStorage.removeItem(PENDING_REG_KEY)
-  } catch { /* ignore */ }
-}
-
-// --- Component ---
+import {
+  savePendingRegistration,
+  loadPendingRegistration,
+  clearPendingRegistration,
+  markPendingRegistrationStep,
+} from './helpers/pending-registration-store'
+import { waitForUnspents } from './helpers/wait-for-unspents'
+import {
+  isFormNicknameValid,
+  normalizeAndCapNickname,
+  validateRegistrationNickname,
+} from './helpers/nickname-validation'
 
 export const registerModalOptions = defineComponent({
   name: 'RegisterModal',
   components: {
     Modal,
+    /* eslint-disable vue/no-reserved-component-names */
     Input,
     Button,
+    /* eslint-enable vue/no-reserved-component-names */
     SC_RegisterForm,
     SC_FormItem,
     SC_FormLabel,
@@ -85,7 +55,11 @@ export const registerModalOptions = defineComponent({
   emits: ['update:open', 'success', 'validation', 'cancel', 'openSignIn'],
   setup(
     _p: Props,
-    { emit }: { emit: (event: 'update:open' | 'success' | 'cancel' | 'openSignIn', ...args: any[]) => void },
+    {
+      emit,
+    }: {
+      emit: (event: 'update:open' | 'success' | 'cancel' | 'openSignIn', ...args: any[]) => void
+    }
   ) {
     const authStore = useAuthStore()
 
@@ -100,7 +74,7 @@ export const registerModalOptions = defineComponent({
       email: '',
       loading: false,
       error: null as string | null,
-      _nicknameTimer: null as ReturnType<typeof setTimeout> | null,
+      nicknameTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
   computed: {
@@ -113,7 +87,7 @@ export const registerModalOptions = defineComponent({
       },
     },
     isFormValid(): boolean {
-      return !!this.nickname.trim() && validateNickname(this.nickname)
+      return isFormNicknameValid(this.nickname)
     },
   },
   watch: {
@@ -130,21 +104,18 @@ export const registerModalOptions = defineComponent({
   },
   methods: {
     onNicknameInput(eventOrValue: Event | string) {
-      let value = typeof eventOrValue === 'string'
-        ? eventOrValue
-        : (eventOrValue?.target as HTMLInputElement)?.value ?? ''
+      const value =
+        typeof eventOrValue === 'string'
+          ? eventOrValue
+          : ((eventOrValue?.target as HTMLInputElement)?.value ?? '')
 
       this.nickname = value
 
-      if (this._nicknameTimer) {
-        clearTimeout(this._nicknameTimer)
+      if (this.nicknameTimer) {
+        clearTimeout(this.nicknameTimer)
       }
-      this._nicknameTimer = setTimeout(() => {
-        let normalized = normalizeNickname(this.nickname)
-        // Обрезаем до 20 символов
-        if (normalized.length > 20) {
-          normalized = normalized.substring(0, 20)
-        }
+      this.nicknameTimer = setTimeout(() => {
+        const normalized = normalizeAndCapNickname(this.nickname)
         if (normalized !== this.nickname) {
           this.nickname = normalized
         }
@@ -190,18 +161,9 @@ export const registerModalOptions = defineComponent({
     async handleRegister() {
       console.log('[REG] === handleRegister START ===', this.nickname)
 
-      if (!this.nickname.trim()) {
-        this.error = 'Введите псевдоним'
-        return
-      }
-
-      if (!this.nickname.match(/^[a-zA-Z0-9_]+$/)) {
-        this.error = 'Псевдоним может содержать только латинские буквы, цифры и нижнее подчеркивание'
-        return
-      }
-
-      if (this.nickname.length > 20) {
-        this.error = 'Псевдоним не может быть длиннее 20 символов'
+      const validationError = validateRegistrationNickname(this.nickname)
+      if (validationError) {
+        this.error = validationError
         return
       }
 
@@ -257,7 +219,6 @@ export const registerModalOptions = defineComponent({
 
         // Шаг 5: В ФОНЕ ждём unspents → собираем tx → отправляем
         this.sendTransactionInBackground(this.nickname)
-
       } catch (err) {
         console.error('[REG] ERROR:', err)
         this.error = err instanceof Error ? err.message : 'Произошла ошибка при регистрации'
@@ -277,10 +238,14 @@ export const registerModalOptions = defineComponent({
      */
     async sendTransactionInBackground(nickname: string) {
       try {
-        const { serializeUserInfo, exportUserInfo } = await import('@/blockchain/core/actions/user-info-action')
-        const { getUnspents, selectBestUnspents, filterAvailableUnspents } = await import('@/blockchain/core/transactions/unspents-manager')
-        const { buildTransaction } = await import('@/blockchain/core/transactions/transaction-builder')
-        const { sendTransactionWithMessage } = await import('@/blockchain/core/transactions/transaction-sender')
+        const { serializeUserInfo, exportUserInfo } =
+          await import('@/blockchain/core/actions/user-info-action')
+        const { getUnspents, selectBestUnspents, filterAvailableUnspents } =
+          await import('@/blockchain/core/transactions/unspents-manager')
+        const { buildTransaction } =
+          await import('@/blockchain/core/transactions/transaction-builder')
+        const { sendTransactionWithMessage } =
+          await import('@/blockchain/core/transactions/transaction-sender')
         const { DEFAULT_TX_FEE } = await import('@/blockchain/constants/transactions')
         const { deriveMessengerKeys } = await import('@/blockchain/core/keys/key-generator')
         const { getProxyWithWalletCached } = await import('@/blockchain/api/proxy-with-wallet')
@@ -295,7 +260,7 @@ export const registerModalOptions = defineComponent({
 
         // cryptoKeys
         const cryptoKeys = deriveMessengerKeys(keyPair.privateKey)
-        const publicKeys = cryptoKeys.map(k => k.public)
+        const publicKeys = cryptoKeys.map((k) => k.public)
 
         const userInfoData = {
           name: nickname,
@@ -319,7 +284,12 @@ export const registerModalOptions = defineComponent({
         // Если нет — ждём с polling
         if (unspents.length === 0) {
           const proxyServer = await getProxyWithWalletCached()
-          unspents = await this.waitForUnspents(address, getUnspents, filterAvailableUnspents, proxyServer || undefined)
+          unspents = await waitForUnspents({
+            address,
+            getUnspents,
+            filterAvailableUnspents,
+            proxyServer: proxyServer || undefined,
+          })
           console.log('[REG-BG] Got unspents after waiting:', unspents.length)
         }
 
@@ -351,14 +321,10 @@ export const registerModalOptions = defineComponent({
         console.log('[REG-BG] Transaction sent! txid:', txid)
 
         // Помечаем step=3: транзакция отправлена
-        const pending = loadPendingRegistration()
-        if (pending) {
-          savePendingRegistration({ ...pending, step: 3 })
-        }
+        markPendingRegistrationStep(3)
 
         // Мессенджер
         this.authStore.resetMessenger(true).catch(() => {})
-
       } catch (err) {
         console.error('[REG-BG] Background transaction error:', err)
         // Не показываем ошибку пользователю — часики уже крутятся,
@@ -370,11 +336,11 @@ export const registerModalOptions = defineComponent({
       const { getByPRCWithAuth } = await import('@/helpers/api/request')
 
       try {
-        const response = await getByPRCWithAuth({
+        const response = (await getByPRCWithAuth({
           method: 'getuseraddress',
           parameters: [name],
           options: { auth: false },
-        }) as any[] | null
+        })) as any[] | null
 
         if (response && Array.isArray(response) && response.length > 0 && response[0]?.address) {
           const existingAddress = response[0].address
@@ -387,66 +353,6 @@ export const registerModalOptions = defineComponent({
           throw error
         }
       }
-    },
-
-    /**
-     * Ожидает появления unspents (фоновая задача).
-     * Polling через прокси + WS.
-     * Таймаут 5 минут (это фон, пользователь не ждёт).
-     */
-    async waitForUnspents(
-      address: string,
-      getUnspents: (addr: string, minConf: number, maxConf: number, server?: { host: string; port: number }) => Promise<any[]>,
-      filterAvailableUnspents: (u: any[], onlyConfirmed: boolean) => any[],
-      proxyServer?: { host: string; port: number },
-    ): Promise<any[]> {
-      const { wsService } = await import('@/blockchain/ws')
-
-      return new Promise<any[]>((resolve, reject) => {
-        let resolved = false
-        let pollTimer: ReturnType<typeof setInterval> | null = null
-        let timeoutTimer: ReturnType<typeof setTimeout> | null = null
-        let unsubscribeWs: (() => void) | null = null
-
-        const cleanup = () => {
-          resolved = true
-          if (pollTimer) clearInterval(pollTimer)
-          if (timeoutTimer) clearTimeout(timeoutTimer)
-          if (unsubscribeWs) unsubscribeWs()
-        }
-
-        const checkUnspents = async () => {
-          if (resolved) return
-          try {
-            let unspents = await getUnspents(address, 0, 9999999, proxyServer)
-            unspents = filterAvailableUnspents(unspents, false)
-            if (unspents.length > 0 && !resolved) {
-              console.log('[REG-BG] Unspents appeared:', unspents.length)
-              cleanup()
-              resolve(unspents)
-            }
-          } catch { /* retry */ }
-        }
-
-        // WS
-        wsService.subscribeAddress(address).catch(() => {})
-        unsubscribeWs = wsService.on('transaction', () => {
-          console.log('[REG-BG] WS transaction, checking unspents...')
-          checkUnspents()
-        })
-
-        // Polling каждые 3 сек
-        pollTimer = setInterval(checkUnspents, 3000)
-        setTimeout(checkUnspents, 1000)
-
-        // Таймаут 5 минут (это фон)
-        timeoutTimer = setTimeout(() => {
-          if (!resolved) {
-            cleanup()
-            reject(new Error('Background: unspents timeout'))
-          }
-        }, 5 * 60 * 1000)
-      })
     },
 
     handleOpenSignIn() {
