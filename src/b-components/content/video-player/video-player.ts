@@ -480,8 +480,9 @@ export const videoPlayer = defineComponent({
         .then((url) => {
           thumbnailUrl.value = url
         })
-        .catch((err) => {
-          console.warn('Failed to load video thumbnail:', err)
+        .catch(() => {
+          // Превью не критично: невалидный URL / PeerTube 5xx — просто
+          // показываем плеер без превью, не засоряя консоль.
           thumbnailUrl.value = null
         })
     }
