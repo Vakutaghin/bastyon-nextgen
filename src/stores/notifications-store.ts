@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { rpcCall, rpcCallArrayWithAuth, rpcCallWithAuth } from '@/helpers/api/request'
+import { rpcCall, rpcCallArrayWithAuth } from '@/helpers/api/request'
 import { settingsAPI } from '@/db/apis/settings-api'
 import { notificationsAPI } from '@/db/apis/notifications-api'
-import { generateCacheHash } from '@/helpers/common/cache-hash'
 import type { GetMissedInfoParameters } from '@/types/rpc-requests/get-missed-info'
 import type {
   GetMissedInfoBlockItem,
@@ -26,6 +25,7 @@ import type {
   HiddenIdsByAddress,
 } from './notifications-types'
 import { mapMissedEventToNotification } from './notifications-mappers'
+import { enrichNotifications } from './notifications-enricher'
 
 // Реэкспорт типов: внешние модули продолжают импортировать из @/stores/notifications-store.
 export type {
@@ -372,127 +372,21 @@ export const useNotificationsStore = defineStore('notifications', {
 
     /**
      * Догрузить недостающие данные для уведомлений (посты, комментарии, профили).
-     * Батчит запросы и кэширует результаты в памяти.
-     * Вызывать при открытии выпадашки для видимых items.
+     * Делегирует в notifications-enricher; здесь — только пробрасывание state.
      */
     async enrichVisible(notifications: NotificationItem[]) {
-      if (!notifications || notifications.length === 0) return
-
-      const fresh = notifications.filter((n) => !this.enrichedIds.has(n.id))
-      if (fresh.length === 0) return
-      fresh.forEach((n) => this.enrichedIds.add(n.id))
-
-      const postTxids = new Set<string>()
-      const commentTxids = new Set<string>()
-      const profileAddrs = new Set<string>()
-
-      for (const n of fresh) {
-        // Пост — нужен для типов с shareId; либо если comment имеет postid, чтобы открыть родительский пост
-        const postId = n.shareId ?? n.commentSnapshot?.postid
-        if (postId && !this.postCache[postId] && !(n.postSnapshot && n.postSnapshot.message)) {
-          postTxids.add(postId)
+      await enrichNotifications(
+        {
+          postCache: this.postCache,
+          commentCache: this.commentCache,
+          profileCache: this.profileCache,
+          enrichedIds: this.enrichedIds,
+        },
+        notifications,
+        (v) => {
+          this.enriching = v
         }
-        // Комментарий — id уведомления для type=comment является txid комментария
-        if (n.type === 'comment' && !n.commentSnapshot?.message && !this.commentCache[n.id]) {
-          commentTxids.add(n.id)
-        }
-        // Профиль отправителя
-        const addr = n.from ?? n.fromSnapshot?.address
-        if (addr && !this.profileCache[addr]?.name && !n.fromSnapshot?.name) {
-          profileAddrs.add(addr)
-        }
-      }
-
-      const tasks: Array<Promise<unknown>> = []
-      if (postTxids.size > 0) {
-        const ids = [...postTxids]
-        tasks.push(
-          rpcCallWithAuth<unknown[]>({
-            method: rpcEndpoints.getRawTransactionWithMessageById,
-            parameters: [ids],
-            cachehash: generateCacheHash(),
-            options: {},
-            state: 1,
-          })
-            .then((arr) => {
-              const list = Array.isArray(arr) ? arr : []
-              for (const raw of list) {
-                if (!raw || typeof raw !== 'object') continue
-                const o = raw as Record<string, unknown>
-                const txid = pickStr(o, 'txid', 'hash', 'id')
-                if (!txid) continue
-                this.postCache[txid] = {
-                  ...(o as Record<string, unknown>),
-                  txid,
-                  caption: pickStr(o, 'c', 'caption', 'title'),
-                  message: pickStr(o, 'm', 'message', 'text'),
-                  type: pickStr(o, 'type'),
-                  images: pickArr<string>(o, 'i', 'images'),
-                }
-              }
-            })
-            .catch((e) => {
-              console.warn('[notifications] enrich posts failed', e)
-            })
-        )
-      }
-      if (commentTxids.size > 0) {
-        // Комментарии — это тоже tx, поэтому грузим тем же RPC
-        const ids = [...commentTxids]
-        tasks.push(
-          rpcCallWithAuth<unknown[]>({
-            method: rpcEndpoints.getRawTransactionWithMessageById,
-            parameters: [ids],
-            cachehash: generateCacheHash(),
-            options: {},
-            state: 1,
-          })
-            .then((arr) => {
-              const list = Array.isArray(arr) ? arr : []
-              for (const raw of list) {
-                const snap = extractCommentSnapshot(raw)
-                if (snap) this.commentCache[snap.id] = snap
-              }
-            })
-            .catch((e) => {
-              console.warn('[notifications] enrich comments failed', e)
-            })
-        )
-      }
-      if (profileAddrs.size > 0) {
-        const addrs = [...profileAddrs]
-        tasks.push(
-          rpcCall<UserProfile[]>({
-            method: rpcEndpoints.getUserProfile,
-            parameters: [addrs],
-            options: { auth: false },
-          })
-            .then((arr) => {
-              const list = Array.isArray(arr) ? arr : []
-              for (const p of list) {
-                if (!p || !p.address) continue
-                this.profileCache[p.address] = {
-                  address: p.address,
-                  name: p.name,
-                  avatar: typeof p.i === 'string' ? p.i : undefined,
-                  reputation: typeof p.reputation === 'number' ? p.reputation : undefined,
-                  profile: p,
-                }
-              }
-            })
-            .catch((e) => {
-              console.warn('[notifications] enrich profiles failed', e)
-            })
-        )
-      }
-
-      if (tasks.length === 0) return
-      this.enriching = true
-      try {
-        await Promise.all(tasks)
-      } finally {
-        this.enriching = false
-      }
+      )
     },
 
     /**

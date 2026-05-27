@@ -11,7 +11,7 @@ import type {
 import { MES_TYPE_TITLES } from './notifications-constants'
 
 /** Первая непустая строка по списку ключей. */
-function pickStr(
+export function pickStr(
   o: Record<string, unknown> | undefined | null,
   ...keys: string[]
 ): string | undefined {
@@ -24,7 +24,7 @@ function pickStr(
 }
 
 /** Первый массив по списку ключей. */
-function pickArr<T = unknown>(
+export function pickArr<T = unknown>(
   o: Record<string, unknown> | undefined | null,
   ...keys: string[]
 ): T[] | undefined {
