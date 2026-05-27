@@ -7,6 +7,7 @@
 import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hierarchical-strip'
 import type { GetTopFeedResponse } from '@/types/rpc-responses/get-top-feed'
 import type { GetProfileFeedResponse } from '@/types/rpc-responses/get-profile-feed'
+import { registerNameAddress } from '@/services/user-resolver'
 
 /**
  * Интерфейс адаптированного поста
@@ -69,7 +70,7 @@ export interface AdaptedPost {
 /**
  * Безопасное декодирование URL-encoded строк
  */
-function safeDecode(str: string): string {
+export function safeDecode(str: string): string {
   try {
     return decodeURIComponent((str + '').replace(/\+/g, '%20'))
   } catch (e) {
@@ -83,7 +84,9 @@ function safeDecode(str: string): string {
 function normalizeImages(raw: any): string[] {
   if (!raw) return []
   if (Array.isArray(raw)) {
-    return raw.map((item: any) => (typeof item === 'string' ? item : (item?.url ?? item?.src ?? ''))).filter(Boolean)
+    return raw
+      .map((item: any) => (typeof item === 'string' ? item : (item?.url ?? item?.src ?? '')))
+      .filter(Boolean)
   }
   if (typeof raw === 'string') return [raw]
   return []
@@ -92,7 +95,11 @@ function normalizeImages(raw: any): string[] {
 /**
  * Адаптирует данные поста из API в формат компонента
  */
-export function adaptPostData(post: any, index: number, usersMap: Record<string, any> = {}): AdaptedPost {
+export function adaptPostData(
+  post: any,
+  index: number,
+  usersMap: Record<string, any> = {}
+): AdaptedPost {
   let userprofile = post.userprofile
 
   // Если профиля нет в посте, пробуем найти его в карте пользователей по адресу
@@ -100,31 +107,34 @@ export function adaptPostData(post: any, index: number, usersMap: Record<string,
     userprofile = usersMap[post.address]
   }
 
-  const authorName = userprofile?.name ||
-                    post.address ||
-                    'Неизвестный автор'
+  // Регистрируем (name, address) для быстрого резолва ника в шапочном поиске.
+  // Внутри user-resolver защита от дублей, persist debounced — повторные
+  // вызовы для уже знакомых имён почти бесплатны.
+  if (userprofile?.name && userprofile?.address) {
+    registerNameAddress([{ name: userprofile.name, address: userprofile.address }])
+  }
+
+  const authorName = userprofile?.name || post.address || 'Неизвестный автор'
 
   const avatar = userprofile?.i || null
   const reputation = userprofile?.reputation || 0
-  const verified =
-        Array.isArray(userprofile?.badges)
-          ? (userprofile.badges as any[]).includes('verificated') ||
-            (userprofile.badges as any[]).includes('verified')
-          : (() => {
-              const flags = (userprofile as any)?.flags
-              const real = (flags && (flags as any).real) ?? (userprofile as any)?.real
-              return real === 1 || real === '1' || real === true || real === 'true'
-            })()
+  const verified = Array.isArray(userprofile?.badges)
+    ? (userprofile.badges as any[]).includes('verificated') ||
+      (userprofile.badges as any[]).includes('verified')
+    : (() => {
+        const flags = (userprofile as any)?.flags
+        const real = (flags && (flags as any).real) ?? (userprofile as any)?.real
+        return real === 1 || real === '1' || real === true || real === 'true'
+      })()
   const title = safeDecode(post.c || '')
   const content = safeDecode(post.m || '')
-  const timestamp = post.time
-    ? new Date(post.time * 1000).toISOString()
-    : new Date().toISOString()
+  const timestamp = post.time ? new Date(post.time * 1000).toISOString() : new Date().toISOString()
   const likes = post.scoreCnt || 0
   const comments = post.comments || 0
   const shares = post.reposted || 0
   const tags = Array.isArray(post.t) ? post.t : []
-  const images = normalizeImages(post.i).length > 0 ? normalizeImages(post.i) : normalizeImages(post.images)
+  const images =
+    normalizeImages(post.i).length > 0 ? normalizeImages(post.i) : normalizeImages(post.images)
   const videoUrl = post.u || post.s?.v || undefined
   const myVal = post.myVal
   const preview = safeDecode(post.preview || post.p || '')
@@ -137,7 +147,7 @@ export function adaptPostData(post: any, index: number, usersMap: Record<string,
 
   let lastComment
   if (post.lastComment && post.lastComment.msg) {
-    let msg = ''
+    let msg: string
     try {
       const parsed = JSON.parse(post.lastComment.msg)
       msg = safeDecode(parsed?.message || '')
@@ -158,7 +168,7 @@ export function adaptPostData(post: any, index: number, usersMap: Record<string,
       message: msg,
       children: Number(post.lastComment.children || 0),
       scoreUp: Number(post.lastComment.scoreUp || 0),
-      scoreDown: Number(post.lastComment.scoreDown || 0)
+      scoreDown: Number(post.lastComment.scoreDown || 0),
     }
   }
 
@@ -174,7 +184,7 @@ export function adaptPostData(post: any, index: number, usersMap: Record<string,
       letter: authorName.charAt(0).toUpperCase(),
       verified,
       subscribers_count: userprofile?.subscribers_count,
-      subscribes_count: userprofile?.subscribes_count
+      subscribes_count: userprofile?.subscribes_count,
     },
     title: title,
     content: content,
@@ -202,9 +212,9 @@ export function adaptPostData(post: any, index: number, usersMap: Record<string,
       if (!profile) return undefined
       return {
         name: profile.name || addr,
-        address: addr
+        address: addr,
       }
-    })()
+    })(),
   }
 }
 
@@ -216,14 +226,20 @@ export function mergeRepostContent(adapted: AdaptedPost, originalRaw: any): void
   if (!originalRaw) return
   adapted.title = safeDecode(originalRaw.c || '')
   adapted.content = safeDecode(originalRaw.m || '')
-  adapted.images = normalizeImages(originalRaw.i).length > 0 ? normalizeImages(originalRaw.i) : normalizeImages(originalRaw.images)
+  adapted.images =
+    normalizeImages(originalRaw.i).length > 0
+      ? normalizeImages(originalRaw.i)
+      : normalizeImages(originalRaw.images)
   adapted.videoUrl = originalRaw.u || originalRaw.s?.v || undefined
   adapted.tags = Array.isArray(originalRaw.t) ? originalRaw.t : []
   adapted.type = originalRaw.type || adapted.type
   adapted.category = originalRaw.type || adapted.category
   adapted.preview = safeDecode(originalRaw.preview || originalRaw.p || '')
   if (originalRaw.scoreCnt > 0 && originalRaw.scoreSum != null) {
-    adapted.ratingStars = Math.max(0, Math.min(5, Math.round((originalRaw.scoreSum / originalRaw.scoreCnt) * 10) / 10))
+    adapted.ratingStars = Math.max(
+      0,
+      Math.min(5, Math.round((originalRaw.scoreSum / originalRaw.scoreCnt) * 10) / 10)
+    )
     adapted.scoreCnt = originalRaw.scoreCnt
     adapted.scoreSum = originalRaw.scoreSum
   }
@@ -234,13 +250,14 @@ export function mergeRepostContent(adapted: AdaptedPost, originalRaw: any): void
     adapted.repostAuthor = {
       address: origAddress,
       name: origName,
-      avatar: origAvatar
+      avatar: origAvatar,
     }
   } else if (adapted.repostAuthor) {
     if (!adapted.repostAuthor.avatar && origAvatar) adapted.repostAuthor.avatar = origAvatar
   }
   if (originalRaw.time != null) {
-    adapted.repostOriginalTimestamp = typeof originalRaw.time === 'number' ? originalRaw.time : parseInt(originalRaw.time, 10)
+    adapted.repostOriginalTimestamp =
+      typeof originalRaw.time === 'number' ? originalRaw.time : parseInt(originalRaw.time, 10)
   }
   if (originalRaw.deleted) {
     adapted.repostDeleted = true
@@ -251,18 +268,27 @@ export function mergeRepostContent(adapted: AdaptedPost, originalRaw: any): void
  * Преобразует данные API в массив адаптированных постов
  */
 export function extractPostsFromResponse(
-  feedData: GetTopFeedResponse | GetHierarchicalStripResponse | GetProfileFeedResponse | null | undefined
+  feedData:
+    | GetTopFeedResponse
+    | GetHierarchicalStripResponse
+    | GetProfileFeedResponse
+    | null
+    | undefined
 ): AdaptedPost[] {
   if (!feedData) {
     return []
   }
 
-  let rawPosts: any[] = []
+  let rawPosts: any[]
   const usersMap: Record<string, any> = {}
 
   // Обработка users из data.users (gethierarchicalstrip, gettopfeed)
-  if (feedData.data && (feedData.data as any).users && Array.isArray((feedData.data as any).users)) {
-    (feedData.data as any).users.forEach((u: any) => {
+  if (
+    feedData.data &&
+    (feedData.data as any).users &&
+    Array.isArray((feedData.data as any).users)
+  ) {
+    ;(feedData.data as any).users.forEach((u: any) => {
       if (u.address) {
         usersMap[u.address] = u
       }
