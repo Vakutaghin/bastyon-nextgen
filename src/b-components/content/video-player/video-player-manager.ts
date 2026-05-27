@@ -3,17 +3,7 @@
  * Обеспечивает, что только один видеоплеер воспроизводится одновременно
  */
 
-interface VideoPlayerInstance {
-  id: string
-  pause: () => void
-  isPlaying: () => boolean
-  togglePlay?: () => void
-  toggleMute?: () => void
-  increasePlaybackRate?: () => void
-  decreasePlaybackRate?: () => void
-  resetPlaybackRate?: () => void
-  toggleHotkeysHelp?: () => void
-}
+import type { VideoPlayerInstance } from './types'
 
 class VideoPlayerManager {
   private instances: Map<string, VideoPlayerInstance> = new Map()
@@ -43,7 +33,9 @@ class VideoPlayerManager {
       }
       if (this.lastActivePlayerId === id) {
         // Если удаляется последний активный плеер, ищем другой активный или первый доступный
-        const playingPlayer = Array.from(this.instances.entries()).find(([_, instance]) => instance.isPlaying())
+        const playingPlayer = Array.from(this.instances.entries()).find(([_, instance]) =>
+          instance.isPlaying()
+        )
         if (playingPlayer) {
           this.lastActivePlayerId = playingPlayer[0]
         } else if (this.instances.size > 0) {

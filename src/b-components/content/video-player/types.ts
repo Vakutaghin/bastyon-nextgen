@@ -30,15 +30,20 @@ export interface HotkeyItem {
   description: string
 }
 
-/** Интерфейс плеера для регистрации в video-player-manager */
-export interface PlayerInstance {
+/**
+ * Интерфейс плеера для регистрации в video-player-manager.
+ * `pause` / `isPlaying` обязательны (нужны для глобальной координации
+ * «играет только один»), остальные методы опциональны — manager сам проверит
+ * наличие перед вызовом из хоткеев.
+ */
+export interface VideoPlayerInstance {
   id: string
   pause: () => void
   isPlaying: () => boolean
-  togglePlay: () => void
-  toggleMute: () => void
-  increasePlaybackRate: () => void
-  decreasePlaybackRate: () => void
-  resetPlaybackRate: () => void
-  toggleHotkeysHelp: () => void
+  togglePlay?: () => void
+  toggleMute?: () => void
+  increasePlaybackRate?: () => void
+  decreasePlaybackRate?: () => void
+  resetPlaybackRate?: () => void
+  toggleHotkeysHelp?: () => void
 }

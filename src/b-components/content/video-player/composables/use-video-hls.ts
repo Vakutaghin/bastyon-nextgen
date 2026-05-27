@@ -1,8 +1,13 @@
-import { ref, computed, nextTick, type Ref, onBeforeUnmount } from 'vue'
+import { ref, computed, type Ref, onBeforeUnmount } from 'vue'
 import Hls from 'hls.js'
 import { getHlsPlaylistFromUrl } from '@/helpers/api/peertube-url'
-import { videoPlayerManager } from '../video-player-manager'
-import { resolveVideoElement, tryAutoplay } from './utils'
+import { resolveVideoElement } from './utils'
+import {
+  initBlobVideo,
+  initHlsJsVideo,
+  initNativeHlsVideo,
+  type VideoInitContext,
+} from '../services/hls-initializer'
 
 export function useVideoHls(
   p: { videoUrl: string; autoplay: boolean },
@@ -210,57 +215,26 @@ export function useVideoHls(
         throw new Error('Video element not found or not an HTMLVideoElement')
       }
 
+      const ctx: VideoInitContext = {
+        volume,
+        playbackRate,
+        showControlsInitially,
+        isLoading,
+        isInitialized,
+        error,
+        playerId,
+        autoplay: p.autoplay,
+        forcePlay,
+        setupVideoEventListeners,
+        updateBuffered,
+        setupIntersectionObserver,
+      }
+
       // Проверяем, является ли URL blob URL или обычным URL для локального видео
       const isBlobUrl = p.videoUrl.startsWith('blob:') || p.videoUrl.startsWith('data:')
 
       if (isBlobUrl) {
-        // Для blob URLs используем напрямую без HLS
-        video.src = p.videoUrl
-        video.load()
-
-        // Настраиваем обработчики событий для blob видео
-        setupVideoEventListeners()
-
-        // Устанавливаем громкость и скорость
-        video.volume = volume.value
-        video.playbackRate = playbackRate.value
-
-        video.addEventListener(
-          'loadedmetadata',
-          () => {
-            isLoading.value = false
-            isInitialized.value = true
-            showControlsInitially.value = true
-            setTimeout(() => {
-              showControlsInitially.value = false
-            }, 3000)
-
-            // Начальное обновление буферизации
-            setTimeout(updateBuffered, 300)
-
-            // Настраиваем Intersection Observer после инициализации видео
-            nextTick(() => {
-              setupIntersectionObserver()
-            })
-
-            if ((p.autoplay || forcePlay) && video) {
-              // Останавливаем все другие видеоплееры перед автозапуском
-              videoPlayerManager.pauseAllExcept(playerId.value)
-              tryAutoplay(video)
-            }
-          },
-          { once: true }
-        )
-
-        video.addEventListener(
-          'error',
-          () => {
-            isLoading.value = false
-            error.value = 'Ошибка загрузки видео'
-          },
-          { once: true }
-        )
-
+        initBlobVideo(video, p.videoUrl, ctx)
         return
       }
 
@@ -271,161 +245,19 @@ export function useVideoHls(
         throw new Error('HLS плейлист не найден')
       }
 
-      // Проверяем поддержку HLS
       if (Hls.isSupported()) {
         // Используем HLS.js для браузеров без нативной поддержки HLS
-        hls.value = new Hls({
-          enableWorker: true,
-          lowLatencyMode: false,
-          maxBufferLength: 60,
-          maxMaxBufferLength: 300,
-          // Жёсткий потолок в байтах: на 4K стриме без него буфер съедает >1GB RAM и убивает мобильный браузер
-          maxBufferSize: 60 * 1000 * 1000,
-        })
-
-        hls.value.loadSource(playlistUrl)
-        hls.value.attachMedia(video)
-
-        // Обработка событий HLS
-        hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
-          isLoading.value = false
-          isInitialized.value = true
-          // Показываем контролы на 3 секунды после инициализации
-          showControlsInitially.value = true
-          setTimeout(() => {
-            showControlsInitially.value = false
-          }, 3000)
-
-          // Получаем доступные уровни качества
+        hls.value = initHlsJsVideo(video, playlistUrl, ctx, (instance) => {
+          // MANIFEST_PARSED — обновляем список качества для UI
           updateQualityLevels()
-
-          // Настраиваем обработчики событий video элемента
-          setupVideoEventListeners()
-
-          // Устанавливаем начальную громкость и скорость
-          if (video) {
-            video.volume = volume.value
-            video.playbackRate = playbackRate.value
-          }
-
-          // Начальное обновление буферизации после настройки обработчиков
-          setTimeout(updateBuffered, 300)
-
-          // Настраиваем Intersection Observer после инициализации видео
-          nextTick(() => {
-            setupIntersectionObserver()
+          // Отслеживаем изменения уровня качества из HLS auto-switch
+          instance.on(Hls.Events.LEVEL_SWITCHED, () => {
+            currentQualityLevel.value = instance.currentLevel
           })
-
-          if ((p.autoplay || forcePlay) && video) {
-            // Останавливаем все другие видеоплееры перед автозапуском
-            videoPlayerManager.pauseAllExcept(playerId.value)
-            tryAutoplay(video)
-          }
-        })
-
-        // Отслеживаем изменения уровня качества
-        hls.value.on(Hls.Events.LEVEL_SWITCHED, () => {
-          if (hls.value) {
-            currentQualityLevel.value = hls.value.currentLevel
-          }
-        })
-
-        // Счётчики для recovery, сбрасываются на каждый успешный фрагмент
-        let networkRetryCount = 0
-        let mediaRecoveryCount = 0
-        let stallRecoveryAt = 0
-        const MAX_NETWORK_RETRY = 3
-        const MAX_MEDIA_RECOVERY = 2
-
-        hls.value.on(Hls.Events.FRAG_LOADED, () => {
-          networkRetryCount = 0
-          mediaRecoveryCount = 0
-        })
-
-        hls.value.on(Hls.Events.ERROR, (_event, data) => {
-          if (!data.fatal) {
-            // bufferStalledError — буфер опустошён, hls.js обычно сам восстанавливается, но
-            // на медленной сети может зависнуть. Форсируем startLoad не чаще раза в 5с.
-            if (data.details === 'bufferStalledError') {
-              const now = Date.now()
-              if (now - stallRecoveryAt > 5000 && hls.value) {
-                stallRecoveryAt = now
-                hls.value.startLoad(-1)
-              }
-              return
-            }
-            console.warn('HLS non-fatal error:', data.details)
-            return
-          }
-
-          console.error('HLS fatal error:', data)
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              if (networkRetryCount < MAX_NETWORK_RETRY && hls.value) {
-                const delay = 1000 * Math.pow(2, networkRetryCount)
-                networkRetryCount += 1
-                console.warn(
-                  `HLS network retry ${networkRetryCount}/${MAX_NETWORK_RETRY} in ${delay}ms`
-                )
-                setTimeout(() => hls.value?.startLoad(), delay)
-                return
-              }
-              error.value = 'Ошибка сети при загрузке видео'
-              isLoading.value = false
-              break
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              if (mediaRecoveryCount < MAX_MEDIA_RECOVERY && hls.value) {
-                mediaRecoveryCount += 1
-                // На второй попытке меняем аудиокодек — рекомендованный hls.js паттерн
-                if (mediaRecoveryCount === 2) {
-                  hls.value.swapAudioCodec()
-                }
-                hls.value.recoverMediaError()
-                return
-              }
-              error.value = 'Ошибка воспроизведения видео'
-              isLoading.value = false
-              break
-            default:
-              error.value = 'Ошибка загрузки видео'
-              if (hls.value) {
-                hls.value.destroy()
-              }
-              isLoading.value = false
-              break
-          }
         })
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         // Нативная поддержка HLS (Safari)
-        video.src = playlistUrl
-
-        // Настраиваем обработчики событий video элемента
-        setupVideoEventListeners()
-
-        // Устанавливаем громкость и скорость
-        video.volume = volume.value
-        video.playbackRate = playbackRate.value
-        isLoading.value = false
-        isInitialized.value = true
-        // Показываем контролы на 3 секунды после инициализации
-        showControlsInitially.value = true
-        setTimeout(() => {
-          showControlsInitially.value = false
-        }, 3000)
-
-        // Начальное обновление буферизации после настройки обработчиков
-        setTimeout(updateBuffered, 300)
-
-        // Настраиваем Intersection Observer после инициализации видео
-        nextTick(() => {
-          setupIntersectionObserver()
-        })
-
-        if (p.autoplay || forcePlay) {
-          // Останавливаем все другие видеоплееры перед автозапуском
-          videoPlayerManager.pauseAllExcept(playerId.value)
-          tryAutoplay(video)
-        }
+        initNativeHlsVideo(video, playlistUrl, ctx)
       } else {
         throw new Error('HLS не поддерживается в этом браузере')
       }
