@@ -574,7 +574,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     dialogs: computed(() => uiStore.dialogs),
     messages: chatStore.messages,
     activeMessages,
-    activeDialog: uiStore.activeDialog,
+    // ВАЖНО: та же проблема, что и с pcryptoService — `activeDialog` initial value
+    // (нет активного чата) = null. Голый null ломает storeToRefs.
+    activeDialog: computed(() => uiStore.activeDialog),
     currentUser: chatStore.currentUser,
     lastTargetAddress: computed(() => uiStore.lastTargetAddress),
     inviteViewActive: computed(() => uiStore.inviteViewActive),
@@ -585,7 +587,12 @@ export const useMessengerStore = defineStore('messenger', () => {
     syncState: computed(() => uiStore.syncState),
     syncError: computed(() => uiStore.syncError),
     userProfiles: computed(() => profileCache.userProfiles),
-    pcryptoService: chatStore.pcryptoService,
+    // ВАЖНО: `pcryptoService` инициализируется как `ref(null)`, поэтому при auto-unwrap
+    // через Pinia это даёт `null`. Если выставить значение напрямую (`pcryptoService:
+    // chatStore.pcryptoService`), оно попадёт в store как голый `null` — и `storeToRefs`
+    // упадёт на `null.effect`. Обёртка `computed` делает поле reactive-ссылкой, безопасной
+    // для storeToRefs.
+    pcryptoService: computed(() => chatStore.pcryptoService),
     totalUnreadCount: uiStore.totalUnreadCount,
 
     // Методы
