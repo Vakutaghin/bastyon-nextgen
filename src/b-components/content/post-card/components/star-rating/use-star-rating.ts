@@ -1,241 +1,20 @@
 import { ref, computed } from 'vue'
-import { Buffer } from 'buffer'
 
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
-import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
-import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } from '@/blockchain/core/transactions/unspents-manager'
 import { appToast } from '@/b-components/app-toast'
 import { usePendingRatingsStore } from '@/stores/pending-ratings-store'
 import { useEffectsStore } from '@/stores/effects-store'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
-import type {
-  StarRatingProps,
-  StarRatingEmits,
-  SendRawTransactionResponse
-} from './types'
-
-
-// ── Pure helper functions ──────────────────────────────────────────────
-
-/**
- * Создает сериализованные данные для upvote транзакции
- */
-function serializeUpvoteData(shareId: string, value: number): string {
-  return shareId + value.toString()
-}
-
-/**
- * Проверяет, является ли пользователь "новым" (регистрация менее 24 часов назад)
- */
-function isNewUser(userProfile: any): boolean {
-  if (!userProfile) return false
-  const regdate = userProfile.regdate
-  if (!regdate) return true
-
-  const regDateObj = new Date(regdate * 1000)
-  const hours24 = 24 * 60 * 60 * 1000
-  return regDateObj.getTime() + hours24 > Date.now()
-}
-
-/**
- * Проверяет блокировку по репутации
- */
-function isReputationBlocked(userProfile: any): boolean {
-  if (!userProfile) return false
-  const reputation = userProfile.reputation || 0
-  return reputation <= -12
-}
-
-/**
- * Проверяет ограничение на низкие оценки для пользователей с низкой репутацией
- */
-function isLowRatingBlocked(value: number, userProfile: any): boolean {
-  const reputation = userProfile.reputation || 0
-  return value <= 3 && reputation < 100
-}
-
-
-// ── Blockchain transaction logic ───────────────────────────────────────
-
-/**
- * Отправляет upvote транзакцию с retry логикой по доступным серверам
- */
-async function sendUpvoteTransaction(
-  shareId: string,
-  value: number,
-  contentAuthorAddress: string
-): Promise<string> {
-  const authStore = useAuthStore()
-  const keyPair = authStore.getKeyPair
-  const address = authStore.getUserAddress
-
-  if (!keyPair || !address) {
-    throw new Error('User not authenticated')
-  }
-
-  if (!contentAuthorAddress) {
-    throw new Error('Content author address is required')
-  }
-
-  let unspents = await getUnspents(address, 1, 9999999)
-  unspents = filterAvailableUnspents(unspents, false)
-
-  if (!unspents || unspents.length === 0) {
-    throw new Error('No unspents available')
-  }
-
-  const selectedUnspents = selectBestUnspents(unspents, 0.00000001)
-
-  if (selectedUnspents.length === 0) {
-    throw new Error('No suitable unspents available for transaction')
-  }
-
-  lockUTXOs(selectedUnspents)
-
-  const serializedData = serializeUpvoteData(shareId, value)
-
-  const rpcData = {
-    share: shareId,
-    value: value.toString()
-  }
-
-  const payloadString = `${contentAuthorAddress} ${value}`
-  const opReturnData = [
-    Buffer.from(payloadString, 'utf8')
-  ]
-
-  const builtTx = await buildTransaction({
-    unspents: selectedUnspents,
-    fromAddress: address,
-    keyPair,
-    serializedData,
-    operationType: 'upvoteShare',
-    opReturnData,
-    fee: 0.00000001,
-  })
-
-  const response = await getByPRCWithAuth({
-    method: rpcEndpoints.sendRawTransactionWithMessage,
-    parameters: [builtTx.hex, rpcData, 'upvoteShare'],
-    options: {
-      auth: true
-    }
-  }) as SendRawTransactionResponse | string
-
-  if (typeof response === 'string') {
-    return response
-  }
-
-  if (response && typeof response === 'object') {
-    if ('result' in response && response.result === 'success' && 'data' in response && typeof response.data === 'string') {
-      return response.data
-    }
-    if ('error' in response && response.error) {
-      if (typeof response.error === 'object') {
-        throw response.error
-      }
-      throw new Error(String(response.error))
-    }
-  }
-
-  throw new Error('Unexpected response format from sendrawtransactionwithmessage')
-}
-
-
-// ── Error classification & handling ────────────────────────────────────
-
-interface ClassifiedError {
-  isDoubleScore: boolean
-  isBlocking: boolean
-  isNotFound: boolean
-  isMempoolConflict: boolean
-  isNetworkFailed: boolean
-  message: string
-}
-
-function classifyVoteError(error: any): ClassifiedError {
-  const errorCode = (error?.error?.code) || (error?.code)
-
-  let errorMessage = ''
-  if (error?.message && typeof error.message === 'string') {
-    errorMessage = error.message
-  } else if (error?.error?.message && typeof error.error.message === 'string') {
-    errorMessage = error.error.message
-  } else if (typeof error?.error === 'string') {
-    errorMessage = error.error
-  }
-
-  let isDoubleScore = Number(errorCode) === 4
-  let isBlocking = Number(errorCode) === 32
-  let isNotFound = Number(errorCode) === 12
-  let isMempoolConflict = Number(errorCode) === -26
-
-  if (errorMessage) {
-    if (errorMessage.includes('DoubleScore') || errorMessage.includes('result 4')) {
-      isDoubleScore = true
-    }
-    if (errorMessage.includes('Blocking') || errorMessage.includes('result 32')) {
-      isBlocking = true
-    }
-    if (errorMessage.includes('NotFound') || errorMessage.includes('result 12')) {
-      isNotFound = true
-    }
-    if (errorMessage.includes('txn-mempool-conflict') || errorMessage.includes('too-long-mempool-chain')) {
-      isMempoolConflict = true
-    }
-  }
-
-  const isNetworkFailed =
-    typeof error?.message === 'string' &&
-    (error.message.includes('All RPC servers failed') || error.message.includes('All HTTP servers failed'))
-
-  return {
-    isDoubleScore,
-    isBlocking,
-    isNotFound,
-    isMempoolConflict,
-    isNetworkFailed,
-    message: error?.message || 'Failed to submit vote',
-  }
-}
-
-function handleVoteError(
-  classified: ClassifiedError,
-  emit: StarRatingEmits,
-) {
-  if (classified.isMempoolConflict) {
-    appToast.error({ message: 'Слишком частые оценки. Пожалуйста, подождите пару секунд.' })
-    return
-  }
-
-  if (classified.isDoubleScore) {
-    appToast.error({ message: 'Вы уже оценили этот пост' })
-    return
-  }
-
-  if (classified.isBlocking) {
-    appToast.error({ message: 'Невозможно поставить оценку, так как вы были заблокированы этим аккаунтом.' })
-    return
-  }
-
-  if (classified.isNotFound) {
-    appToast.error({ message: 'Оцениваемый контент не найден или был удален.' })
-    return
-  }
-
-  if (classified.isNetworkFailed) {
-    appToast.error({ message: 'Не удалось записать вашу оценку из‑за временных технических неполадок. Попробуйте позже.' })
-    emit('error', new Error(classified.message))
-    return
-  }
-
-  emit('error', new Error(classified.message))
-}
-
+import type { StarRatingProps, StarRatingEmits } from './types'
+import {
+  isNewUser,
+  isReputationBlocked,
+  isLowRatingBlocked,
+} from './helpers/star-rating-validation'
+import { sendUpvoteTransaction } from './helpers/star-rating-transaction'
+import { classifyVoteError, handleVoteError } from './helpers/star-rating-errors'
 
 // ── Composable ─────────────────────────────────────────────────────────
 
@@ -409,7 +188,11 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
       const { title } = resolvePostTitle(props.shareId)
       pendingStore.add(props.shareId, starNumber, 10 * 60 * 1000, title)
 
-      const txid = await sendUpvoteTransaction(props.shareId, starNumber, props.contentAuthorAddress)
+      const txid = await sendUpvoteTransaction(
+        props.shareId,
+        starNumber,
+        props.contentAuthorAddress
+      )
 
       pendingStore.markSubmitted(props.shareId, txid)
       emit('rating-change', starNumber)
