@@ -28,7 +28,9 @@ export const PROFILE_UPDATE_DEBOUNCE = 500
 export const DEFAULT_ENCRYPTION_BLOCK = 10
 
 /** Фиксированный IV для AES-CBC шифрования аудио (bastyon-chat совместимость) */
-export const AES_CBC_IV = new Uint8Array([19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34])
+export const AES_CBC_IV = new Uint8Array([
+  19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,
+])
 
 /** Соль для PBKDF2 деривации ключа */
 export const PBKDF2_SALT = 'matrix.pocketnet'
@@ -41,3 +43,6 @@ export const DEFAULT_MATRIX_HOST = 'matrix.pocketnet.app'
 
 /** Текст-заглушка для нерасшифрованных сообщений */
 export const ENCRYPTED_MESSAGE_PLACEHOLDER = '*** Encrypted Message ***'
+
+/** Эмодзи быстрых реакций в меню сообщения */
+export const QUICK_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const

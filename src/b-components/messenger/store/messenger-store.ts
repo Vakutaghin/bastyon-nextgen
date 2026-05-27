@@ -1,7 +1,7 @@
 // Главный стор мессенджера — координация подсторов и инициализация Matrix
 // Всю тяжёлую логику делегирует в messenger-chat-store, messenger-ui-store и messenger-profile-cache
 
-import { defineStore } from 'pinia'
+import { defineStore, storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
@@ -14,9 +14,15 @@ import glassSound from '../sounds/glass.mp3'
 import type { Dialog, Message } from '../types'
 
 import {
-  getEventType, getEventRoomId, getEventSender, getEventTs,
-  isRenderableMessageEvent, getAddressFromMatrixId,
-  getRoomTimelineEvents, isMessageEvent, resolveMatrixHost,
+  getEventType,
+  getEventRoomId,
+  getEventSender,
+  getEventTs,
+  isRenderableMessageEvent,
+  getAddressFromMatrixId,
+  getRoomTimelineEvents,
+  isMessageEvent,
+  resolveMatrixHost,
 } from '../helpers'
 
 import { SOUND_MAX_AGE, PROFILE_UPDATE_DEBOUNCE, PCRYPTO_DIALOG_TIMEOUT } from './consts'
@@ -32,6 +38,10 @@ export const useMessengerStore = defineStore('messenger', () => {
   const profileCache = useMessengerProfileCache()
   const chatStore = useMessengerChatStore()
 
+  // Writable refs из uiStore — нужны для внешних присваиваний
+  // (store.isOpen = false, store.isFullScreen = true, store.activeChatId = null).
+  const uiRefs = storeToRefs(uiStore)
+
   // --- Маппинг комнаты в диалог ---
 
   const getPartnerMatrixId = (room: any): string | null => {
@@ -40,14 +50,20 @@ export const useMessengerStore = defineStore('messenger', () => {
     let otherMember = room.getJoinedMembers?.().find((m: any) => m.userId !== myUserId)
     if (!otherMember && room.currentState?.getMembers) {
       const allMembers = room.currentState.getMembers()
-      otherMember = allMembers.find((m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite'))
+      otherMember = allMembers.find(
+        (m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
+      )
     }
     return otherMember ? otherMember.userId : room.roomId || null
   }
 
   const mapRoomToDialog = async (room: any): Promise<Dialog> => {
     if (room?.loadMembersIfNeeded) {
-      try { await room.loadMembersIfNeeded() } catch (_e) {}
+      try {
+        await room.loadMembersIfNeeded()
+      } catch {
+        /* ignore */
+      }
     }
 
     const timelineEvents = getRoomTimelineEvents(room)
@@ -57,7 +73,12 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     let otherMember = joinedMembers.find((m: any) => m.userId !== myUserId)
     if (!otherMember) {
-      otherMember = room.currentState.getMembers().find((m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite'))
+      otherMember = room.currentState
+        .getMembers()
+        .find(
+          (m: any) =>
+            m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
+        )
     }
 
     const roomName = room.name || (otherMember ? otherMember.name : 'Чат')
@@ -69,11 +90,16 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (!isDirect && room.getAvatarUrl) {
       avatarUrl = room.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
     }
-    if (!avatarUrl && member?.getAvatarUrl) avatarUrl = member.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
-    if (!avatarUrl && member?.avatarUrl) avatarUrl = chatStore.getMatrixAvatarUrl(member.avatarUrl, 40)
-    if (!avatarUrl && isDirect && room.getAvatarUrl) avatarUrl = room.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
-    if (!avatarUrl && otherMember?.getAvatarUrl) avatarUrl = otherMember.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
-    if (!avatarUrl && otherMember?.avatarUrl) avatarUrl = chatStore.getMatrixAvatarUrl(otherMember.avatarUrl, 40)
+    if (!avatarUrl && member?.getAvatarUrl)
+      avatarUrl = member.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
+    if (!avatarUrl && member?.avatarUrl)
+      avatarUrl = chatStore.getMatrixAvatarUrl(member.avatarUrl, 40)
+    if (!avatarUrl && isDirect && room.getAvatarUrl)
+      avatarUrl = room.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
+    if (!avatarUrl && otherMember?.getAvatarUrl)
+      avatarUrl = otherMember.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
+    if (!avatarUrl && otherMember?.avatarUrl)
+      avatarUrl = chatStore.getMatrixAvatarUrl(otherMember.avatarUrl, 40)
 
     let name = roomName
     if (isDirect && member?.name) name = member.name
@@ -88,9 +114,13 @@ export const useMessengerStore = defineStore('messenger', () => {
         const p = profileCache.userProfiles[address]
         if (p?.name) name = p.name
         const img = p?.i || (p as any)?.avatar || (p as any)?.image
-        if (img) { const url = resolveImageUrl(img); if (url) avatar = url }
+        if (img) {
+          const url = resolveImageUrl(img)
+          if (url) avatar = url
+        }
         const badges = (p as any)?.badges
-        if (Array.isArray(badges)) verified = badges.includes('verificated') || badges.includes('verified')
+        if (Array.isArray(badges))
+          verified = badges.includes('verificated') || badges.includes('verified')
         if (!verified) {
           const flags = (p as any)?.flags
           const real = (flags && (flags as any).real) ?? (p as any)?.real
@@ -107,29 +137,43 @@ export const useMessengerStore = defineStore('messenger', () => {
           const matrixAvatar = chatStore.getMatrixAvatarUrl(profile?.avatar_url, 40)
           if (matrixAvatar) avatar = matrixAvatar
           if (profile?.displayname && !name) name = profile.displayname
-        } catch (_e) {}
+        } catch {
+          /* ignore */
+        }
       }
     }
 
     chatStore.ensurePcryptoInitialized()
-    if (!chatStore.pcryptoService && uiStore.isInitInProgress) await chatStore.waitForPcrypto(PCRYPTO_DIALOG_TIMEOUT)
+    if (!chatStore.pcryptoService && uiStore.isInitInProgress)
+      await chatStore.waitForPcrypto(PCRYPTO_DIALOG_TIMEOUT)
 
     let lastMessage: Message | undefined = undefined
     for (let i = timelineEvents.length - 1; i >= 0; i--) {
       if (!isMessageEvent(timelineEvents[i])) continue
       const mapped = await chatStore.mapEventToMessage(timelineEvents[i], false)
-      if (mapped) { lastMessage = mapped; break }
+      if (mapped) {
+        lastMessage = mapped
+        break
+      }
     }
 
-    const createdAt = timelineEvents.length ? Math.min(...timelineEvents.map(getEventTs)) : undefined
+    const createdAt = timelineEvents.length
+      ? Math.min(...timelineEvents.map(getEventTs))
+      : undefined
 
-    const unreadCount = uiStore.activeChatId === room.roomId ? 0
-      : (room.getUnreadNotificationCount('total') || room.getUnreadNotificationCount('ns.total') || 0)
+    const unreadCount =
+      uiStore.activeChatId === room.roomId
+        ? 0
+        : room.getUnreadNotificationCount('total') ||
+          room.getUnreadNotificationCount('ns.total') ||
+          0
 
     return {
       id: room.roomId,
       partner: { id: partnerId || room.roomId, name, avatar, verified },
-      unreadCount, lastMessage, createdAt,
+      unreadCount,
+      lastMessage,
+      createdAt,
     }
   }
 
@@ -156,9 +200,10 @@ export const useMessengerStore = defineStore('messenger', () => {
       const rooms = matrixService.getRooms()
       const partnerAddresses = rooms
         .map((room: any) => getPartnerMatrixId(room))
-        .map((id: string | null) => id ? getAddressFromMatrixId(id) : null)
+        .map((id: string | null) => (id ? getAddressFromMatrixId(id) : null))
         .filter((a: string | null): a is string => Boolean(a))
-      if (partnerAddresses.length > 0) await profileCache.fetchProfiles([...new Set(partnerAddresses)] as string[])
+      if (partnerAddresses.length > 0)
+        await profileCache.fetchProfiles([...new Set(partnerAddresses)] as string[])
 
       let dialogsList = await Promise.all(rooms.map(mapRoomToDialog))
 
@@ -168,8 +213,18 @@ export const useMessengerStore = defineStore('messenger', () => {
         const prev = prevDialogs.find((p) => p.id === d.id)
         if (!prev?.partner) return d
         const n = d.partner?.name?.trim()
-        if ((!n || n === 'Empty Room' || n === 'Unknown') && (prev.partner.name || prev.partner.avatar)) {
-          return { ...d, partner: { ...d.partner, name: prev.partner.name || d.partner?.name, avatar: prev.partner.avatar ?? d.partner?.avatar } }
+        if (
+          (!n || n === 'Empty Room' || n === 'Unknown') &&
+          (prev.partner.name || prev.partner.avatar)
+        ) {
+          return {
+            ...d,
+            partner: {
+              ...d.partner,
+              name: prev.partner.name || d.partner?.name,
+              avatar: prev.partner.avatar ?? d.partner?.avatar,
+            },
+          }
         }
         return d
       })
@@ -181,16 +236,19 @@ export const useMessengerStore = defineStore('messenger', () => {
         if (existing) dialogsList = [existing, ...dialogsList]
       }
 
-      uiStore.setDialogs(dialogsList.sort((a, b) => {
-        const tsA = a.lastMessage?.timestamp ?? a.createdAt ?? 0
-        const tsB = b.lastMessage?.timestamp ?? b.createdAt ?? 0
-        return tsB - tsA
-      }))
+      uiStore.setDialogs(
+        dialogsList.sort((a, b) => {
+          const tsA = a.lastMessage?.timestamp ?? a.createdAt ?? 0
+          const tsB = b.lastMessage?.timestamp ?? b.createdAt ?? 0
+          return tsB - tsA
+        })
+      )
     } catch (e) {
       log.error('Ошибка загрузки диалогов:', e)
     } finally {
       if (!silent) uiStore.isLoading = false
-      if (uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING') uiStore.dialogsLoadedOnce = true
+      if (uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING')
+        uiStore.dialogsLoadedOnce = true
     }
   }
 
@@ -229,64 +287,89 @@ export const useMessengerStore = defineStore('messenger', () => {
         uiStore.isLoading = true
         try {
           // Подписка на события
-          matrixService.on('Room.timeline', async (event: any, room: any, toStartOfTimeline: boolean) => {
-            if (toStartOfTimeline) return
-            const evType = getEventType(event)
-            if (evType === 'm.reaction') {
-              const roomId = getEventRoomId(event)
-              if (uiStore.activeChatId === roomId) {
-                const client = matrixService.getClient()
-                const list = chatStore.messages[roomId]
-                if (client && list) chatStore.enrichMessagesWithReactions(room, list, client.getUserId() || '')
-              }
-              return
-            }
-
-            try {
-              if (isRenderableMessageEvent(event)) {
+          matrixService.on(
+            'Room.timeline',
+            async (event: any, room: any, toStartOfTimeline: boolean) => {
+              if (toStartOfTimeline) return
+              const evType = getEventType(event)
+              if (evType === 'm.reaction') {
                 const roomId = getEventRoomId(event)
-                if (chatStore.currentUser.id === 'me') {
-                  const client = matrixService.getClient()
-                  if (client) chatStore.currentUser.id = client.getUserId() || 'me'
-                }
-
-                const senderId = getEventSender(event)
-                const isRecent = (Date.now() - getEventTs(event)) < SOUND_MAX_AGE
-                if (senderId !== chatStore.currentUser.id && uiStore.activeChatId !== roomId && isRecent) {
-                  try { new Audio(glassSound).play().catch(() => {}) } catch (_e) {}
-                }
-
                 if (uiStore.activeChatId === roomId) {
-                  const msg = await chatStore.mapEventToMessage(event)
-                  if (!msg) return
-                  if (!chatStore.messages[roomId]) chatStore.messages[roomId] = []
-                  if (!chatStore.messages[roomId].find((m) => m.id === msg.id)) chatStore.messages[roomId].push(msg)
-                  const c = matrixService.getClient()
-                  if (c) chatStore.enrichMessagesWithReactions(room, chatStore.messages[roomId], c.getUserId() || '')
-
-                  try {
-                    const client = matrixService.getClient()
-                    const evId = typeof event.getId === 'function' ? event.getId() : event.event_id
-                    if (client && typeof evId === 'string' && evId.startsWith('$')) {
-                      if (typeof client.setRoomReadMarkers === 'function') await client.setRoomReadMarkers(room.roomId, evId, event)
-                      else if (typeof client.sendReadReceipt === 'function') await client.sendReadReceipt(event)
-                    }
-                  } catch (_e) {}
+                  const client = matrixService.getClient()
+                  const list = chatStore.messages[roomId]
+                  if (client && list)
+                    chatStore.enrichMessagesWithReactions(room, list, client.getUserId() || '')
                 }
-
-                scheduleLoadDialogs()
+                return
               }
-            } catch (e) {
-              log.error('Ошибка в Room.timeline:', e)
+
+              try {
+                if (isRenderableMessageEvent(event)) {
+                  const roomId = getEventRoomId(event)
+                  if (chatStore.currentUser.id === 'me') {
+                    const client = matrixService.getClient()
+                    if (client) chatStore.currentUser.id = client.getUserId() || 'me'
+                  }
+
+                  const senderId = getEventSender(event)
+                  const isRecent = Date.now() - getEventTs(event) < SOUND_MAX_AGE
+                  if (
+                    senderId !== chatStore.currentUser.id &&
+                    uiStore.activeChatId !== roomId &&
+                    isRecent
+                  ) {
+                    try {
+                      new Audio(glassSound).play().catch(() => {})
+                    } catch {
+                      /* ignore */
+                    }
+                  }
+
+                  if (uiStore.activeChatId === roomId) {
+                    const msg = await chatStore.mapEventToMessage(event)
+                    if (!msg) return
+                    if (!chatStore.messages[roomId]) chatStore.messages[roomId] = []
+                    if (!chatStore.messages[roomId].find((m) => m.id === msg.id))
+                      chatStore.messages[roomId].push(msg)
+                    const c = matrixService.getClient()
+                    if (c)
+                      chatStore.enrichMessagesWithReactions(
+                        room,
+                        chatStore.messages[roomId],
+                        c.getUserId() || ''
+                      )
+
+                    try {
+                      const client = matrixService.getClient()
+                      const evId =
+                        typeof event.getId === 'function' ? event.getId() : event.event_id
+                      if (client && typeof evId === 'string' && evId.startsWith('$')) {
+                        if (typeof client.setRoomReadMarkers === 'function')
+                          await client.setRoomReadMarkers(room.roomId, evId, event)
+                        else if (typeof client.sendReadReceipt === 'function')
+                          await client.sendReadReceipt(event)
+                      }
+                    } catch {
+                      /* ignore */
+                    }
+                  }
+
+                  scheduleLoadDialogs()
+                }
+              } catch (e) {
+                log.error('Ошибка в Room.timeline:', e)
+              }
             }
-          })
+          )
 
           matrixService.on('sync', (state: string) => {
             uiStore.syncState = state
             if (state === 'ERROR') uiStore.syncError = 'Sync Error'
             else if (state === 'PREPARED') {
               uiStore.syncError = null
-              loadDialogs(true).then(() => { uiStore.dialogsLoadedOnce = true })
+              loadDialogs(true).then(() => {
+                uiStore.dialogsLoadedOnce = true
+              })
             }
           })
 
@@ -305,7 +388,11 @@ export const useMessengerStore = defineStore('messenger', () => {
       // Для свежей сессии (client только что создан) — ждём 'PREPARED', он сам поднимет диалоги.
       // Для уже инициализированного клиента (повторное открытие мессенджера) — грузим сразу:
       // sync прошёл ранее, повторного 'PREPARED' не будет.
-      if (wasClientAlreadyInitialized && uiStore.dialogs.length === 0 && matrixService.getClient()) {
+      if (
+        wasClientAlreadyInitialized &&
+        uiStore.dialogs.length === 0 &&
+        matrixService.getClient()
+      ) {
         await loadDialogs()
       }
     } finally {
@@ -328,11 +415,14 @@ export const useMessengerStore = defineStore('messenger', () => {
         const lastEvent = [...events].reverse().find((e: any) => e.getId()?.startsWith('$'))
         if (lastEvent) {
           const client = matrixService.getClient()
-          if (client?.setRoomReadMarkers) await client.setRoomReadMarkers(room.roomId, lastEvent.getId(), lastEvent)
+          if (client?.setRoomReadMarkers)
+            await client.setRoomReadMarkers(room.roomId, lastEvent.getId(), lastEvent)
           else await client?.sendReadReceipt(lastEvent)
         }
       }
-    } catch (_e) {}
+    } catch {
+      /* ignore */
+    }
   }
 
   const toggleMessenger = async () => {
@@ -352,7 +442,10 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   const openMessenger = async () => {
-    if (!uiStore.isOpen) { await toggleMessenger(); return }
+    if (!uiStore.isOpen) {
+      await toggleMessenger()
+      return
+    }
     const needDialogs = uiStore.dialogs.length === 0
     if (needDialogs) uiStore.isLoading = true
     try {
@@ -378,7 +471,11 @@ export const useMessengerStore = defineStore('messenger', () => {
   const startChatWithAddress = async (address: string): Promise<string | null> => {
     if (!address || !authStore.isUserAuthenticated) return null
     uiStore.lastTargetAddress = address
-    try { await profileCache.fetchProfiles([address]) } catch (_e) {}
+    try {
+      await profileCache.fetchProfiles([address])
+    } catch {
+      /* ignore */
+    }
     await openMessenger()
     await initMatrix()
 
@@ -398,7 +495,9 @@ export const useMessengerStore = defineStore('messenger', () => {
         uiStore.prependDialog({
           id: roomId,
           partner: { id: partnerId, name: partnerName, avatar: partnerAvatar, verified: false },
-          unreadCount: 0, lastMessage: undefined, createdAt: Date.now(),
+          unreadCount: 0,
+          lastMessage: undefined,
+          createdAt: Date.now(),
         })
       }
     }
@@ -418,22 +517,35 @@ export const useMessengerStore = defineStore('messenger', () => {
           const lastEvent = [...events].reverse().find((e: any) => e.getId()?.startsWith('$'))
           if (lastEvent) {
             const client = matrixService.getClient()
-            if (client?.setRoomReadMarkers) await client.setRoomReadMarkers(room.roomId, lastEvent.getId(), lastEvent)
+            if (client?.setRoomReadMarkers)
+              await client.setRoomReadMarkers(room.roomId, lastEvent.getId(), lastEvent)
             else await client?.sendReadReceipt(lastEvent)
           }
         }
-      } catch (_e) {}
+      } catch {
+        /* ignore */
+      }
     })
   }
 
-  const openInviteWithAddress = async (address: string, preloadedProfile?: UserProfile | null): Promise<void> => {
+  const openInviteWithAddress = async (
+    address: string,
+    preloadedProfile?: UserProfile | null
+  ): Promise<void> => {
     if (!address || !authStore.isUserAuthenticated) return
     if (preloadedProfile?.address === address) profileCache.userProfiles[address] = preloadedProfile
-    try { await profileCache.fetchProfiles([address]) } catch (_e) {}
+    try {
+      await profileCache.fetchProfiles([address])
+    } catch {
+      /* ignore */
+    }
     await openMessenger()
     await initMatrix()
     const existingRoomId = findExistingRoomByAddress(address)
-    if (existingRoomId) { switchToChatAndLoad(existingRoomId); return }
+    if (existingRoomId) {
+      switchToChatAndLoad(existingRoomId)
+      return
+    }
     uiStore.showInvite(address)
   }
 
@@ -468,7 +580,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     () => {
       if (profileUpdateTimeout) clearTimeout(profileUpdateTimeout)
       profileUpdateTimeout = setTimeout(() => loadDialogs(true), PROFILE_UPDATE_DEBOUNCE)
-    },
+    }
   )
 
   // Computed для обратной совместимости
@@ -479,9 +591,9 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   return {
     // UI (делегируем в uiStore)
-    isOpen: uiStore.$state,
-    get isFullScreen() { return uiStore.isFullScreen },
-    activeChatId: computed(() => uiStore.activeChatId),
+    isOpen: uiRefs.isOpen,
+    isFullScreen: uiRefs.isFullScreen,
+    activeChatId: uiRefs.activeChatId,
     dialogs: computed(() => uiStore.dialogs),
     messages: chatStore.messages,
     activeMessages,
@@ -509,6 +621,12 @@ export const useMessengerStore = defineStore('messenger', () => {
     sendMessage: chatStore.sendMessage,
     sendReaction: chatStore.sendReaction,
     sendAudio: chatStore.sendAudio,
+    sendImage: chatStore.sendImage,
+    sendVideo: chatStore.sendVideo,
+    sendFile: chatStore.sendFile,
+    sendPkoin: chatStore.sendPkoin,
+    getDirectPartnerAddress: chatStore.getDirectPartnerAddress,
+    fetchAndDecryptMedia: chatStore.fetchAndDecryptMedia,
     initMatrix,
     deleteDialog,
     logout,

@@ -12,7 +12,8 @@ import {
 import type { Message } from '../../types'
 import { matrixFetch } from '@/helpers/api/request'
 import { useMessengerStore } from '../../store'
-import { getAddressFromMatrixId } from '../../helpers'
+import { getAddressFromMatrixId, formatMessageTime } from '../../helpers'
+import { QUICK_REACTION_EMOJIS } from '../../store/consts'
 import { decryptMatrixAttachment } from '../../services/media-decrypt'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import Avatar from '@/components/avatar/avatar.vue'
@@ -36,8 +37,6 @@ import TransactionMessage from '../transaction-message/transaction-message.vue'
 import PostEmbed from '../post-embed/post-embed.vue'
 import LinkPreview from '../link-preview/link-preview.vue'
 import { formatMessageSegments, extractFirstExternalUrl } from './helpers'
-
-const QUICK_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
 
 export const messageItemOptions = defineComponent({
   name: 'MessageItem',
@@ -128,27 +127,6 @@ export const messageItemOptions = defineComponent({
     }
 
     watch(senderAddress, ensureSenderProfile, { immediate: true })
-
-    const formatTime = (timestamp: number) => {
-      const date = new Date(timestamp)
-      const now = new Date()
-      const isCurrentYear = date.getFullYear() === now.getFullYear()
-
-      const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-
-      const dateOptions: Intl.DateTimeFormatOptions = {
-        day: 'numeric',
-        month: 'long',
-      }
-
-      if (!isCurrentYear) {
-        dateOptions.year = 'numeric'
-      }
-
-      const dateStr = date.toLocaleDateString('ru-RU', dateOptions)
-
-      return `${dateStr}, ${timeStr}`
-    }
 
     /** Сегменты текста: чередование 'html' (с inline <a>) и 'bastyon' (PostEmbed). */
     const messageSegments = computed(() => formatMessageSegments(props.message.text || ''))
@@ -372,7 +350,7 @@ export const messageItemOptions = defineComponent({
     })
 
     return {
-      formatTime,
+      formatTime: formatMessageTime,
       displayName,
       displayAvatar,
       isMine,

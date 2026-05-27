@@ -62,7 +62,14 @@ export const isRenderableMessageEvent = (event: any): boolean => {
   const content = getEventContent(event)
   const msgtype = content.msgtype
 
-  if (msgtype === 'm.text' || msgtype === 'm.notice' || msgtype === 'm.emote' || msgtype === 'm.encrypted' || msgtype === 'm.audio') return true
+  if (
+    msgtype === 'm.text' ||
+    msgtype === 'm.notice' ||
+    msgtype === 'm.emote' ||
+    msgtype === 'm.encrypted' ||
+    msgtype === 'm.audio'
+  )
+    return true
 
   return typeof content.body === 'string' && content.body.trim().length > 0
 }
@@ -100,9 +107,12 @@ export const isTetatetchat = (room: any): boolean => {
   if (!room) return false
   if (typeof room.tetatet !== 'undefined') return room.tetatet
 
-  const members = typeof room.getJoinedMembers === 'function'
-    ? room.getJoinedMembers()
-    : (room.currentState?.getMembers ? room.currentState.getMembers() : [])
+  const members =
+    typeof room.getJoinedMembers === 'function'
+      ? room.getJoinedMembers()
+      : room.currentState?.getMembers
+        ? room.currentState.getMembers()
+        : []
 
   if (!members || members.length !== 2) return false
 
@@ -182,14 +192,17 @@ export function base64StringToUint8Array(base64String: string): Uint8Array {
 /** Определяет MIME-тип аудио по магическим байтам */
 export const detectAudioMime = (bytes: Uint8Array): string | null => {
   if (!bytes || bytes.length < 4) return null
-  const b0 = bytes[0]!, b1 = bytes[1]!, b2 = bytes[2]!, b3 = bytes[3]!
+  const b0 = bytes[0]!,
+    b1 = bytes[1]!,
+    b2 = bytes[2]!,
+    b3 = bytes[3]!
   if (b0 === 0x49 && b1 === 0x44 && b2 === 0x33) return 'audio/mpeg'
-  if (b0 === 0xFF && (b1 & 0xE0) === 0xE0) return 'audio/mpeg'
-  if (b0 === 0x4F && b1 === 0x67 && b2 === 0x67 && b3 === 0x53) return 'audio/ogg'
+  if (b0 === 0xff && (b1 & 0xe0) === 0xe0) return 'audio/mpeg'
+  if (b0 === 0x4f && b1 === 0x67 && b2 === 0x67 && b3 === 0x53) return 'audio/ogg'
   if (b0 === 0x52 && b1 === 0x49 && b2 === 0x46 && b3 === 0x46) return 'audio/wav'
-  if (b0 === 0xFF && (b1 & 0xF0) === 0xF0) return 'audio/aac'
-  if (b0 === 0x1A && b1 === 0x45 && b2 === 0xDF && b3 === 0xA3) return 'audio/webm'
-  if (b0 === 0x66 && b1 === 0x4C && b2 === 0x61 && b3 === 0x43) return 'audio/flac'
+  if (b0 === 0xff && (b1 & 0xf0) === 0xf0) return 'audio/aac'
+  if (b0 === 0x1a && b1 === 0x45 && b2 === 0xdf && b3 === 0xa3) return 'audio/webm'
+  if (b0 === 0x66 && b1 === 0x4c && b2 === 0x61 && b3 === 0x43) return 'audio/flac'
   return null
 }
 
@@ -225,6 +238,23 @@ export const applyBlockToContent = (content: any, block: number) => {
 }
 
 /**
+ * Форматирует timestamp сообщения как «{дата ru-RU}, HH:MM».
+ * Год добавляется только если сообщение не из текущего года.
+ */
+export const formatMessageTime = (timestamp: number): string => {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const isCurrentYear = date.getFullYear() === now.getFullYear()
+
+  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const dateOptions: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' }
+  if (!isCurrentYear) dateOptions.year = 'numeric'
+  const dateStr = date.toLocaleDateString('ru-RU', dateOptions)
+
+  return `${dateStr}, ${timeStr}`
+}
+
+/**
  * Резолвит Matrix-хост из baseUrl матрицы.
  * Для localhost/127.0.0.1 возвращает дефолтный хост.
  */
@@ -234,9 +264,9 @@ export const resolveMatrixHost = (): string => {
     const base = matrixService.getBaseUrl()
     const parsed = new URL(base.startsWith('http') ? base : window.location.origin)
     const h = parsed.host || window.location.host
-    return (h.includes('localhost') || h.startsWith('127.')) ? DEFAULT_HOST : h
+    return h.includes('localhost') || h.startsWith('127.') ? DEFAULT_HOST : h
   } catch (_e) {
     const h = window.location.host
-    return (h.includes('localhost') || h.startsWith('127.')) ? DEFAULT_HOST : h
+    return h.includes('localhost') || h.startsWith('127.') ? DEFAULT_HOST : h
   }
 }
