@@ -70,6 +70,17 @@ export function parsePeerTubeUrl(url: string): PeerTubeUrl | null {
   // Убираем пробелы в начале и конце
   url = url.trim()
 
+  // URL может приходить URL-encoded (peertube%3A%2F%2Fhost%2Fid) — например,
+  // если был пропущен через encodeURIComponent на стороне фронта или ноды.
+  // Декодируем один уровень, если видим закодированную схему.
+  if (url.toLowerCase().startsWith('peertube%3a')) {
+    try {
+      url = decodeURIComponent(url)
+    } catch {
+      return null
+    }
+  }
+
   // Проверяем формат peertube://
   const match = url.match(/^peertube:\/\/([^/]+)\/([^/]+)(?:\/(.+))?$/)
   if (!match) {
@@ -187,9 +198,6 @@ export async function getPeerTubeVideoInfo(
       if (isLastAttempt) break
 
       const delay = PEERTUBE_RETRY_BASE_DELAY_MS * Math.pow(2, attempt)
-      console.warn(
-        `PeerTube fetch attempt ${attempt + 1}/${PEERTUBE_MAX_RETRIES} failed (${err.message}), retrying in ${delay}ms`
-      )
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }

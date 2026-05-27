@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  parsePeerTubeUrl,
-  getHlsPlaylistUrl,
-  getVideoThumbnailUrl,
-} from './peertube-url'
+import { parsePeerTubeUrl, getHlsPlaylistUrl, getVideoThumbnailUrl } from './peertube-url'
 import type { PeerTubeVideoInfo } from './peertube-url'
 
 describe('parsePeerTubeUrl', () => {
@@ -44,6 +40,15 @@ describe('parsePeerTubeUrl', () => {
     const result = parsePeerTubeUrl('  peertube://host.com/vid123  ')
     expect(result).not.toBeNull()
     expect(result!.videoId).toBe('vid123')
+  })
+
+  it('decodes URL-encoded peertube URL', () => {
+    const result = parsePeerTubeUrl(
+      'peertube%3A%2F%2Fpeertube6new.pocketnet.app%2Fe3113e81-d70c-4eb5-a60a-589ca3bb48e0'
+    )
+    expect(result).not.toBeNull()
+    expect(result!.host).toBe('peertube6new.pocketnet.app')
+    expect(result!.videoId).toBe('e3113e81-d70c-4eb5-a60a-589ca3bb48e0')
   })
 })
 
@@ -111,8 +116,9 @@ describe('getVideoThumbnailUrl', () => {
       name: 'test',
       thumbnailPath: '/static/thumbnails/abc.jpg',
     }
-    expect(getVideoThumbnailUrl(info, 'host.com'))
-      .toBe('https://host.com/static/thumbnails/abc.jpg')
+    expect(getVideoThumbnailUrl(info, 'host.com')).toBe(
+      'https://host.com/static/thumbnails/abc.jpg'
+    )
   })
 
   it('uses previewUrl as fallback', () => {
@@ -127,7 +133,8 @@ describe('getVideoThumbnailUrl', () => {
 
   it('falls back to uuid-based URL', () => {
     const info: PeerTubeVideoInfo = { id: 1, uuid: 'my-uuid', name: 'test' }
-    expect(getVideoThumbnailUrl(info, 'host.com'))
-      .toBe('https://host.com/static/thumbnails/my-uuid.jpg')
+    expect(getVideoThumbnailUrl(info, 'host.com')).toBe(
+      'https://host.com/static/thumbnails/my-uuid.jpg'
+    )
   })
 })
