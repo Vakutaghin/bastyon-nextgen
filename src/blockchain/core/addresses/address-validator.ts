@@ -4,15 +4,15 @@
 
 // Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
 import { Buffer } from '../../utils/buffer-polyfill'
-// @ts-ignore
+// @ts-expect-error — bs58 не поставляет .d.ts типов
 import bs58 from 'bs58'
-// @ts-ignore
+// @ts-expect-error — bech32 типы не подключены в проекте
 import { bech32 } from 'bech32'
 
 import type { Address, AddressType, AddressValidationResult } from '../../types/addresses'
 import { hash256 } from '../../utils/crypto-hash'
 
-function fromBase58Check(address: string): { version: number, hash: Buffer } {
+function fromBase58Check(address: string): { version: number; hash: Buffer } {
   try {
     const payload = bs58.decode(address)
     if (payload.length < 5) throw new Error('Invalid foundation length')
@@ -31,7 +31,7 @@ function fromBase58Check(address: string): { version: number, hash: Buffer } {
 
     return { version, hash }
   } catch (e) {
-    throw new Error('Invalid base58 address')
+    throw new Error('Invalid base58 address', { cause: e })
   }
 }
 
@@ -39,7 +39,7 @@ function fromBech32(address: string) {
   try {
     return bech32.decode(address)
   } catch (e) {
-    throw new Error('Invalid bech32 address')
+    throw new Error('Invalid bech32 address', { cause: e })
   }
 }
 

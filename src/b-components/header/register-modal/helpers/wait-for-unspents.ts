@@ -2,6 +2,8 @@
 // Используется после оптимистичного запроса free-balance — пока сеть подтверждает,
 // мы уже показали пользователю «часики». Таймаут — 5 минут.
 
+import { debugLog } from '@/helpers/common/debug-log'
+
 interface ProxyServer {
   host: string
   port: number
@@ -64,7 +66,7 @@ export async function waitForUnspents(opts: WaitOptions): Promise<any[]> {
         let unspents = await getUnspents(address, 0, 9999999, proxyServer)
         unspents = filterAvailableUnspents(unspents, false)
         if (unspents.length > 0 && !resolved) {
-          console.log(LOG_PREFIX, 'unspents appeared:', unspents.length)
+          debugLog(LOG_PREFIX, 'unspents appeared:', unspents.length)
           cleanup()
           resolve(unspents)
         }
@@ -75,7 +77,7 @@ export async function waitForUnspents(opts: WaitOptions): Promise<any[]> {
 
     wsService.subscribeAddress(address).catch(() => {})
     unsubscribeWs = wsService.on('transaction', () => {
-      console.log(LOG_PREFIX, 'WS transaction, rechecking unspents')
+      debugLog(LOG_PREFIX, 'WS transaction, rechecking unspents')
       checkUnspents()
     })
 

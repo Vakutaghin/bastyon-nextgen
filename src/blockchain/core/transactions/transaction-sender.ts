@@ -2,6 +2,7 @@
  * Модуль для отправки транзакций в блокчейн Pocketnet
  */
 
+import { debugLog } from '@/helpers/common/debug-log'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCallWithAuth } from '@/helpers/api/request'
 
@@ -22,9 +23,7 @@ export interface SendTransactionParams {
  * @param params - Параметры отправки транзакции
  * @returns Promise с txid транзакции
  */
-export async function sendTransactionWithMessage(
-  params: SendTransactionParams
-): Promise<string> {
+export async function sendTransactionWithMessage(params: SendTransactionParams): Promise<string> {
   const { hex, messageData, operationType } = params
 
   if (!hex || typeof hex !== 'string') {
@@ -49,7 +48,7 @@ export async function sendTransactionWithMessage(
       options: { auth: true }, // Требуется авторизация для отправки транзакций
     })
 
-    console.log('[sendTransaction] Raw response:', JSON.stringify(response).substring(0, 500))
+    debugLog('[sendTransaction] Raw response:', JSON.stringify(response).substring(0, 500))
 
     // Ответ должен содержать txid транзакции
     // After unwrapping, the response is the inner data (e.g. a txid string)
@@ -67,7 +66,7 @@ export async function sendTransactionWithMessage(
       // sendrawtransactionwithmessage может вернуть просто txid hash
       const responseStr = JSON.stringify(response)
       if (responseStr.length > 2 && responseStr !== '{}' && responseStr !== '[]') {
-        console.log('[sendTransaction] Accepting response as txid:', responseStr.substring(0, 100))
+        debugLog('[sendTransaction] Accepting response as txid:', responseStr.substring(0, 100))
         return responseStr
       }
     }
@@ -76,13 +75,13 @@ export async function sendTransactionWithMessage(
   } catch (error) {
     console.error('[sendTransaction] Error details:', error)
     if (error instanceof Error) {
-      throw new Error(`Failed to send transaction: ${error.message}`)
+      throw new Error(`Failed to send transaction: ${error.message}`, { cause: error })
     }
     // Если ошибка — объект с кодом (от RPC)
     if (error && typeof error === 'object') {
       const errStr = JSON.stringify(error)
-      throw new Error(`Failed to send transaction: ${errStr}`)
+      throw new Error(`Failed to send transaction: ${errStr}`, { cause: error })
     }
-    throw new Error(`Failed to send transaction: ${String(error)}`)
+    throw new Error(`Failed to send transaction: ${String(error)}`, { cause: error })
   }
 }

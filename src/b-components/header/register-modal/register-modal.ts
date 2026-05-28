@@ -1,4 +1,5 @@
 import { defineComponent } from 'vue'
+import { debugLog } from '@/helpers/common/debug-log'
 import Modal from '@/components/modal/modal.vue'
 import Input from '@/components/input/input.vue'
 import Button from '@/components/button/button.vue'
@@ -159,7 +160,7 @@ export const registerModalOptions = defineComponent({
      * 5. В фоне: дождаться unspents → собрать tx → отправить
      */
     async handleRegister() {
-      console.log('[REG] === handleRegister START ===', this.nickname)
+      debugLog('[REG] === handleRegister START ===', this.nickname)
 
       const validationError = validateRegistrationNickname(this.nickname)
       if (validationError) {
@@ -172,11 +173,11 @@ export const registerModalOptions = defineComponent({
 
       try {
         // Шаг 1: Проверяем имя
-        console.log('[REG] Step 1: checking name...')
+        debugLog('[REG] Step 1: checking name...')
         await this.checkNameAvailability(this.nickname)
 
         // Шаг 2: Генерируем ключи
-        console.log('[REG] Step 2: generating keys...')
+        debugLog('[REG] Step 2: generating keys...')
         const registrationResult = await this.authStore.register({
           generateNew: true,
           saveAfterRegistration: true,
@@ -185,7 +186,7 @@ export const registerModalOptions = defineComponent({
         if (!registrationResult?.address) {
           throw new Error('Не удалось создать аккаунт')
         }
-        console.log('[REG] Step 2: keys generated, address:', registrationResult.address)
+        debugLog('[REG] Step 2: keys generated, address:', registrationResult.address)
 
         savePendingRegistration({
           nickname: this.nickname,
@@ -195,10 +196,10 @@ export const registerModalOptions = defineComponent({
         })
 
         // Шаг 3: Запрашиваем free/balance (включая капчу)
-        console.log('[REG] Step 3: requesting free balance...')
+        debugLog('[REG] Step 3: requesting free balance...')
         const { requestUnspents } = await import('@/blockchain/api/free-balance-api')
         await requestUnspents(registrationResult.address, { reason: 'registration' })
-        console.log('[REG] Step 3: free/balance requested!')
+        debugLog('[REG] Step 3: free/balance requested!')
 
         // Помечаем step=2: free/balance запрошен
         savePendingRegistration({
@@ -210,7 +211,7 @@ export const registerModalOptions = defineComponent({
 
         // Шаг 4: ОПТИМИСТИЧНО показываем "регистрация в процессе"
         // НЕ ЖДЁМ unspents — как в оригинале!
-        console.log('[REG] Step 4: optimistic — showing validation modal')
+        debugLog('[REG] Step 4: optimistic — showing validation modal')
         this.$emit('validation', {
           status: 'in_progress_transaction',
           mnemonic: registrationResult.mnemonic,
@@ -279,7 +280,7 @@ export const registerModalOptions = defineComponent({
         // Пробуем получить unspents — возможно, уже пришли
         let unspents = await getUnspents(address, 0, 9999999)
         unspents = filterAvailableUnspents(unspents, false)
-        console.log('[REG-BG] Initial unspents:', unspents.length)
+        debugLog('[REG-BG] Initial unspents:', unspents.length)
 
         // Если нет — ждём с polling
         if (unspents.length === 0) {
@@ -290,7 +291,7 @@ export const registerModalOptions = defineComponent({
             filterAvailableUnspents,
             proxyServer: proxyServer || undefined,
           })
-          console.log('[REG-BG] Got unspents after waiting:', unspents.length)
+          debugLog('[REG-BG] Got unspents after waiting:', unspents.length)
         }
 
         const selectedUnspents = selectBestUnspents(unspents, 0)
@@ -300,7 +301,7 @@ export const registerModalOptions = defineComponent({
         }
 
         // Строим и отправляем транзакцию
-        console.log('[REG-BG] Building transaction...')
+        debugLog('[REG-BG] Building transaction...')
         const builtTx = await buildTransaction({
           unspents: selectedUnspents,
           fromAddress: address,
@@ -311,14 +312,14 @@ export const registerModalOptions = defineComponent({
           timeDifference: 0,
         })
 
-        console.log('[REG-BG] Sending transaction...')
+        debugLog('[REG-BG] Sending transaction...')
         const txid = await sendTransactionWithMessage({
           hex: builtTx.hex,
           messageData: userInfoExport,
           operationType: 'userInfo',
         })
 
-        console.log('[REG-BG] Transaction sent! txid:', txid)
+        debugLog('[REG-BG] Transaction sent! txid:', txid)
 
         // Помечаем step=3: транзакция отправлена
         markPendingRegistrationStep(3)

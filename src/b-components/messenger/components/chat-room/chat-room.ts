@@ -1,4 +1,5 @@
 import { defineComponent, ref, computed, type PropType, nextTick, watch, watchEffect } from 'vue'
+import { debugLog } from '@/helpers/common/debug-log'
 import type { Message } from '../../types'
 import {
   SC_MessageInputArea,
@@ -470,7 +471,7 @@ export const chatRoomOptions = defineComponent({
       pkoinModalOpen.value = false
     }
     const onPkoinSent = (txid: string) => {
-      console.log('[ChatRoom] PKOIN transaction sent:', txid)
+      debugLog('[ChatRoom] PKOIN transaction sent:', txid)
     }
 
     return {

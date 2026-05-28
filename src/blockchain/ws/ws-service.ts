@@ -13,6 +13,7 @@
 import servers from '@/servers.json'
 import type { ApiSignature } from '../types/signatures'
 import { pickWebSocketCtor } from '@/helpers/tor/tor-websocket'
+import { debugLog } from '@/helpers/common/debug-log'
 
 // --- Types ---
 
@@ -65,7 +66,7 @@ class PocketnetWsService {
   }
 
   private emit(event: WsEventType, data: WsMessage) {
-    this.handlers.get(event)?.forEach(handler => {
+    this.handlers.get(event)?.forEach((handler) => {
       try {
         handler(data)
       } catch (e) {
@@ -77,7 +78,10 @@ class PocketnetWsService {
   // --- Connection ---
 
   async connect() {
-    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+    if (
+      this.socket &&
+      (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)
+    ) {
       return
     }
 
@@ -93,7 +97,7 @@ class PocketnetWsService {
     if (!proxy) return
     const url = `wss://${proxy.host}:${proxy.wss}`
 
-    console.log('[WS] Connecting to', url)
+    debugLog('[WS] Connecting to', url)
 
     try {
       const Ctor = await pickWebSocketCtor()
@@ -105,7 +109,7 @@ class PocketnetWsService {
     }
 
     this.socket.onopen = () => {
-      console.log('[WS] Connected!')
+      debugLog('[WS] Connected!')
       this.isConnected = true
       this.reconnectAttempt = 0
       this.connected.clear()
@@ -123,12 +127,12 @@ class PocketnetWsService {
         return
       }
 
-      console.log('[WS] Raw message:', JSON.stringify(data).substring(0, 300))
+      debugLog('[WS] Raw message:', JSON.stringify(data).substring(0, 300))
       this.handleMessage(data)
     }
 
     this.socket.onclose = (event) => {
-      console.log('[WS] Closed, code:', event.code, 'reason:', event.reason)
+      debugLog('[WS] Closed, code:', event.code, 'reason:', event.reason)
       this.isConnected = false
       this.emit('close', {})
 
@@ -153,7 +157,7 @@ class PocketnetWsService {
       const address = authStore.getUserAddress
 
       if (!keyPair || !address) {
-        console.log('[WS] No keys yet, will subscribe later')
+        debugLog('[WS] No keys yet, will subscribe later')
         return
       }
 
@@ -176,7 +180,7 @@ class PocketnetWsService {
    */
   async subscribeAddress(address: string, keyPair?: any) {
     if (this.connected.get(address)) {
-      console.log('[WS] Already subscribed to', address)
+      debugLog('[WS] Already subscribed to', address)
       return
     }
 
@@ -185,7 +189,7 @@ class PocketnetWsService {
       if (!this.pendingSubscriptions.includes(address)) {
         this.pendingSubscriptions.push(address)
       }
-      console.log('[WS] WS not connected yet, queued subscription for', address)
+      debugLog('[WS] WS not connected yet, queued subscription for', address)
       return
     }
 
@@ -196,7 +200,7 @@ class PocketnetWsService {
     }
 
     if (!keyPair) {
-      console.log('[WS] No keyPair available for subscription')
+      debugLog('[WS] No keyPair available for subscription')
       return
     }
 
@@ -215,7 +219,7 @@ class PocketnetWsService {
       block: 0,
     }
 
-    console.log('[WS] Subscribing to address:', address)
+    debugLog('[WS] Subscribing to address:', address)
     this.send(JSON.stringify(message))
   }
 
@@ -240,13 +244,13 @@ class PocketnetWsService {
       case 'registered':
         if (data.addr) {
           this.connected.set(data.addr as string, true)
-          console.log('[WS] Subscribed to', data.addr, '✓')
+          debugLog('[WS] Subscribed to', data.addr, '✓')
         }
         this.emit('registered', data)
         break
 
       case 'transaction':
-        console.log('[WS] Transaction event:', data.txid, 'addr:', data.addr)
+        debugLog('[WS] Transaction event:', data.txid, 'addr:', data.addr)
         this.emit('transaction', data)
         break
 
@@ -278,10 +282,10 @@ class PocketnetWsService {
     this.reconnectAttempt++
     const delay = Math.min(
       RECONNECT_BASE_DELAY * Math.pow(1.5, this.reconnectAttempt - 1),
-      RECONNECT_MAX_DELAY,
+      RECONNECT_MAX_DELAY
     )
 
-    console.log('[WS] Reconnecting in', delay, 'ms (attempt', this.reconnectAttempt, ')')
+    debugLog('[WS] Reconnecting in', delay, 'ms (attempt', this.reconnectAttempt, ')')
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null

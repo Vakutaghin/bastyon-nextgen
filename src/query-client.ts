@@ -5,23 +5,23 @@
 
 import { QueryClient } from '@tanstack/vue-query'
 
+const MINUTE_MS = 60 * 1000
+const QUERY_STALE_TIME_MS = 5 * MINUTE_MS
+const QUERY_GC_TIME_MS = 10 * MINUTE_MS
+const QUERY_RETRY_COUNT = 2
+const MUTATION_RETRY_COUNT = 1
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Данные считаются свежими 5 минут
-      staleTime: 5 * 60 * 1000,
-      // Кэш хранится 10 минут после последнего использования
-      gcTime: 10 * 60 * 1000,
-      // Повторные попытки при ошибках
-      retry: 2,
-      // Рефетч при фокусе окна
+      staleTime: QUERY_STALE_TIME_MS,
+      gcTime: QUERY_GC_TIME_MS,
+      retry: QUERY_RETRY_COUNT,
       refetchOnWindowFocus: false,
-      // Рефетч при переподключении
       refetchOnReconnect: true,
     },
     mutations: {
-      // Повторные попытки для мутаций
-      retry: 1,
+      retry: MUTATION_RETRY_COUNT,
     },
   },
 })

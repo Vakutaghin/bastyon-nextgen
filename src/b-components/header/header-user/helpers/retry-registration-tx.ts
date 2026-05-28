@@ -2,6 +2,7 @@
 // Вызывается, если приложение перезагрузили между свободной отправкой свободных средств
 // и отправкой userInfo-tx. Все блокчейн-модули подгружаются динамически — header не тянет их.
 
+import { debugLog } from '@/helpers/common/debug-log'
 import type { KeyPair } from '@/blockchain/types/keys'
 import {
   markPendingRegistrationStep,
@@ -75,16 +76,16 @@ export async function retryRegistrationBackgroundTx(
 
     let unspents = await getUnspents(address, 0, 9999999)
     unspents = filterAvailableUnspents(unspents, false)
-    console.log(LOG_PREFIX, 'unspents available:', unspents.length)
+    debugLog(LOG_PREFIX, 'unspents available:', unspents.length)
     if (unspents.length === 0) {
-      console.log(LOG_PREFIX, 'no unspents, will retry on next check')
+      debugLog(LOG_PREFIX, 'no unspents, will retry on next check')
       return 'no-funds'
     }
 
     const selectedUnspents = selectBestUnspents(unspents, 0)
     if (selectedUnspents.length === 0) return 'no-funds'
 
-    console.log(LOG_PREFIX, 'building transaction...')
+    debugLog(LOG_PREFIX, 'building transaction...')
     const builtTx = await buildTransaction({
       unspents: selectedUnspents,
       fromAddress: address,
@@ -95,20 +96,20 @@ export async function retryRegistrationBackgroundTx(
       timeDifference: 0,
     })
 
-    console.log(LOG_PREFIX, 'sending transaction...')
+    debugLog(LOG_PREFIX, 'sending transaction...')
     const txid = await sendTransactionWithMessage({
       hex: builtTx.hex,
       messageData: userInfoExport,
       operationType: 'userInfo',
     })
-    console.log(LOG_PREFIX, 'transaction sent! txid:', txid)
+    debugLog(LOG_PREFIX, 'transaction sent! txid:', txid)
 
     markPendingRegistrationStep(3)
     return 'sent'
   } catch (err) {
     console.error(LOG_PREFIX, 'error:', err)
     if (isFatalError(err)) {
-      console.log(LOG_PREFIX, 'fatal registration error, clearing pending')
+      debugLog(LOG_PREFIX, 'fatal registration error, clearing pending')
       clearPendingRegistration()
       return 'fatal'
     }

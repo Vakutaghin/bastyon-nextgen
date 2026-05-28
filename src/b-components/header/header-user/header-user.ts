@@ -1,5 +1,6 @@
 import { defineComponent } from 'vue'
 import { Dropdown, Menu } from 'ant-design-vue'
+import { debugLog } from '@/helpers/common/debug-log'
 import Button from '@/components/button/button.vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import Skeleton from '@/components/skeleton/skeleton.vue'
@@ -241,11 +242,11 @@ export const headerUserOptions = defineComponent({
       this.registrationWatcher?.stop()
       this.registrationWatcher = createRegistrationStatusWatcher({
         onStatusUpdate: (status) => {
-          console.log('[header-user] Status check:', status)
+          debugLog('[header-user] Status check:', status)
           this.validationStatus = status
         },
         onComplete: async (status) => {
-          console.log('[header-user] Registration complete:', status)
+          debugLog('[header-user] Registration complete:', status)
           // Снимаем pending-статус
           this.registrationPending = false
           this.pendingNickname = null
@@ -359,7 +360,7 @@ export const headerUserOptions = defineComponent({
         const savedNickname = localStorage.getItem('pending_nickname')
         if (savedNickname) {
           this.pendingNickname = savedNickname
-          console.log('[header-user] Restored pending nickname:', savedNickname)
+          debugLog('[header-user] Restored pending nickname:', savedNickname)
         }
       } catch {
         /* ignore */
@@ -375,7 +376,7 @@ export const headerUserOptions = defineComponent({
         const { getRegistrationStatus, isRegistrationInProgress } =
           await import('@/blockchain/api/registration-status')
         const status = await getRegistrationStatus()
-        console.log('[header-user] Registration status on load:', status)
+        debugLog('[header-user] Registration status on load:', status)
 
         if (isRegistrationInProgress(status)) {
           this.validationStatus = status
@@ -388,7 +389,7 @@ export const headerUserOptions = defineComponent({
             if (pendingRaw) {
               const pending = JSON.parse(pendingRaw)
               if (pending && pending.step >= 2 && pending.step < 3 && pending.nickname) {
-                console.log('[header-user] Resuming background transaction for:', pending.nickname)
+                debugLog('[header-user] Resuming background transaction for:', pending.nickname)
                 // Динамически импортируем и запускаем фоновую отправку
                 this.retryBackgroundTransaction(pending.nickname)
               }
@@ -398,7 +399,7 @@ export const headerUserOptions = defineComponent({
           }
         } else {
           // Регистрация завершена — очищаем pending
-          console.log('[header-user] Registration complete, clearing pending')
+          debugLog('[header-user] Registration complete, clearing pending')
           this.registrationPending = false
           this.pendingNickname = null
           try {
