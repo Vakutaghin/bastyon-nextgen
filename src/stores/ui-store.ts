@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { SCROLL_POSITION_PREFIX } from '@/blockchain/constants/storage'
 import { settingsAPI } from '@/db/apis/settings-api'
+import { setI18nLocale } from '@/i18n'
 
 export type AppLanguage = 'ru' | 'en'
 
@@ -42,7 +43,7 @@ export const useUIStore = defineStore('ui', {
       return (key: string) => {
         return this.loadingStates.get(key) || false
       }
-    }
+    },
   },
 
   actions: {
@@ -50,9 +51,10 @@ export const useUIStore = defineStore('ui', {
      * Сохраняет позицию скролла
      */
     saveScrollPosition(key: string, position?: number): void {
-      const scrollTop = position !== undefined
-        ? position
-        : window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+      const scrollTop =
+        position !== undefined
+          ? position
+          : window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
       this.scrollPositions.set(key, scrollTop)
 
       // Сохраняем в sessionStorage как резерв
@@ -72,7 +74,7 @@ export const useUIStore = defineStore('ui', {
         window.scrollTo({
           top: position,
           left: 0,
-          behavior: 'instant'
+          behavior: 'instant',
         })
       } else {
         // Пытаемся восстановить из sessionStorage
@@ -83,7 +85,7 @@ export const useUIStore = defineStore('ui', {
             window.scrollTo({
               top: position,
               left: 0,
-              behavior: 'instant'
+              behavior: 'instant',
             })
           }
         } catch (e) {
@@ -144,6 +146,7 @@ export const useUIStore = defineStore('ui', {
     /**
      * Подтягивает сохранённый язык из IndexedDB. Если ничего не сохранено —
      * остаётся то, что определилось из navigator.language.
+     * Применяет язык к vue-i18n и <html lang>.
      */
     async loadLanguage(): Promise<void> {
       try {
@@ -155,14 +158,16 @@ export const useUIStore = defineStore('ui', {
         console.error('Failed to load language setting:', err)
       } finally {
         this.languageLoaded = true
+        setI18nLocale(this.language)
       }
     },
 
     /**
-     * Меняет язык и персистит в IndexedDB.
+     * Меняет язык и персистит в IndexedDB. Синхронизирует vue-i18n и <html lang>.
      */
     async setLanguage(language: AppLanguage): Promise<void> {
       this.language = language
+      setI18nLocale(language)
       try {
         await settingsAPI.set(SETTING_KEY_LANGUAGE, language)
       } catch (err) {

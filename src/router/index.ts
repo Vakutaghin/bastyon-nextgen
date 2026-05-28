@@ -1,7 +1,9 @@
+import { watch } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import { getActivePinia } from 'pinia'
 import { useAuthStore } from '@/blockchain'
 import { setDocumentTitle } from '@/composables/use-document-title'
+import { i18n, t } from '@/i18n'
 
 // Lazy-loaded page components for code-splitting
 const HomePage = () => import('@/pages/home-page/home-page.vue')
@@ -31,31 +33,31 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomePage,
-      meta: { title: 'Главная' },
+      meta: { titleKey: 'routes.home' },
     },
     {
       path: '/settings',
       name: 'settings',
       component: SettingsPage,
-      meta: { title: 'Настройки' },
+      meta: { titleKey: 'routes.settings' },
     },
     {
       path: '/limits',
       name: 'limits',
       component: LimitsPage,
-      meta: { title: 'Лимиты' },
+      meta: { titleKey: 'routes.limits' },
     },
     {
       path: '/wallets',
       name: 'wallets',
       component: WalletsPage,
-      meta: { title: 'Кошельки' },
+      meta: { titleKey: 'routes.wallets' },
     },
     {
       path: '/my-videos',
       name: 'my-videos',
       component: MyVideosPage,
-      meta: { title: 'Мои видео' },
+      meta: { titleKey: 'routes.my-videos' },
     },
     // Block explorer routes must come BEFORE the catch-all /:userName below —
     // otherwise the profile route greedily matches `/explorer`, `/explorer/...`.
@@ -63,34 +65,34 @@ const router = createRouter({
       path: '/explorer',
       name: 'explorer',
       component: BlockExplorerPage,
-      meta: { title: 'Блок-эксплорер' },
+      meta: { titleKey: 'routes.explorer' },
     },
     {
       path: '/explorer/block/:hashOrHeight',
       name: 'explorer-block',
       component: ExplorerBlockPage,
       props: true,
-      meta: { title: 'Блок' },
+      meta: { titleKey: 'routes.explorer-block' },
     },
     {
       path: '/explorer/tx/:txid',
       name: 'explorer-tx',
       component: ExplorerTxPage,
       props: true,
-      meta: { title: 'Транзакция' },
+      meta: { titleKey: 'routes.explorer-tx' },
     },
     {
       path: '/explorer/address/:address',
       name: 'explorer-address',
       component: ExplorerAddressPage,
       props: true,
-      meta: { title: 'Адрес' },
+      meta: { titleKey: 'routes.explorer-address' },
     },
     {
       path: '/explorer/peers',
       name: 'explorer-peers',
       component: ExplorerPeersPage,
-      meta: { title: 'Пиры сети' },
+      meta: { titleKey: 'routes.explorer-peers' },
     },
     // /search must be declared BEFORE the catch-all /:userName so the
     // profile route doesn't greedily match it.
@@ -98,27 +100,27 @@ const router = createRouter({
       path: '/search',
       name: 'search',
       component: SearchPage,
-      meta: { title: 'Поиск' },
+      meta: { titleKey: 'routes.search' },
     },
     // Мини-приложения — список и iframe. Также объявляем ДО catch-all /:userName.
     {
       path: '/miniapps',
       name: 'miniapps',
       component: MiniAppsPage,
-      meta: { title: 'Мини-приложения' },
+      meta: { titleKey: 'routes.miniapps' },
     },
     {
       path: '/app/:appId/:innerPath(.*)?',
       name: 'mini-app',
       component: MiniAppPage,
       props: true,
-      meta: { title: 'Мини-приложение' },
+      meta: { titleKey: 'routes.mini-app' },
     },
     {
       path: '/:userName',
       name: 'profile',
       component: ProfilePage,
-      meta: { title: 'Профиль' },
+      meta: { titleKey: 'routes.profile' },
     },
   ],
 })
@@ -135,8 +137,21 @@ router.beforeEach(async (to) => {
 })
 
 router.afterEach((to) => {
-  const metaTitle = typeof to.meta?.title === 'string' ? to.meta.title : null
-  setDocumentTitle(metaTitle)
+  const titleKey = typeof to.meta?.titleKey === 'string' ? to.meta.titleKey : null
+  setDocumentTitle(titleKey ? t(titleKey) : null)
 })
+
+// Реактивно обновлять document.title при смене языка — afterEach срабатывает
+// только на навигацию, watch на locale ловит смену языка на той же странице.
+watch(
+  () => i18n.global.locale.value,
+  () => {
+    const titleKey =
+      typeof router.currentRoute.value.meta?.titleKey === 'string'
+        ? router.currentRoute.value.meta.titleKey
+        : null
+    setDocumentTitle(titleKey ? t(titleKey) : null)
+  }
+)
 
 export default router

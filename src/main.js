@@ -6,6 +6,11 @@ import './silence-console'
 import { initTheme } from '@/composables/use-theme'
 initTheme()
 
+// Инициализация локали — до монтирования, чтобы <html lang> и тексты
+// сразу соответствовали выбранному языку.
+import { i18n, initI18n } from '@/i18n'
+initI18n()
+
 // Полифилл для Buffer в браузере (нужен для bip39 и других библиотек)
 import { Buffer } from 'buffer'
 if (typeof globalThis !== 'undefined') {
@@ -50,7 +55,12 @@ import router from '@/router'
 import { initCapacitor } from '@mobile/bootstrap'
 import { initDatabase } from '@/db/database'
 import { useAuthStore } from '@/blockchain'
-import { useNotificationsStore, useNotificationSettingsStore, useTorStore } from '@/stores'
+import {
+  useNotificationsStore,
+  useNotificationSettingsStore,
+  useTorStore,
+  useUIStore,
+} from '@/stores'
 // Force-load request module so __torDebug is available in the console at boot.
 import '@/helpers/api/request'
 import { useMessengerStore } from '@/b-components/messenger/store'
@@ -90,11 +100,18 @@ ConfigProvider.config({ prefixCls: 'ant' })
 // Регистрируем Router
 app.use(router)
 
+// Регистрируем i18n (composition API mode)
+app.use(i18n)
+
 const authStore = useAuthStore(pinia)
 const messengerStore = useMessengerStore(pinia)
 const notificationsStore = useNotificationsStore(pinia)
 const torStore = useTorStore(pinia)
 torStore.hydrate().catch(() => {})
+// Подтягиваем сохранённый язык из IndexedDB и применяем к vue-i18n + <html lang>.
+useUIStore(pinia)
+  .loadLanguage()
+  .catch((e) => console.warn('[main] loadLanguage failed:', e))
 notificationsStore.setOnNewNotifications((items) => showToastsForNewNotifications(pinia, items))
 
 const NOTIFICATIONS_POLL_INTERVAL_MS = 30 * 1000
