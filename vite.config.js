@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import wasm from 'vite-plugin-wasm'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import babel from 'vite-plugin-babel'
+import { VitePWA } from 'vite-plugin-pwa'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
 
@@ -57,7 +58,6 @@ function peertubeProxyPlugin() {
 
 // import { styledDataAttr } from './vite-plugin-styled-data-attr.js'
 
-
 // В production Tauri загружает фронт через asset-протокол; относительный base гарантирует
 // корректное разрешение путей к JS/CSS (иначе возможен пустой экран, нет запросов)
 const base = process.env.VITE_TAURI === 'true' ? './' : '/'
@@ -70,23 +70,57 @@ export default defineConfig(({ mode }) => ({
       babelConfig: {
         presets: ['@babel/preset-typescript'],
         plugins: [
-          ['babel-plugin-styled-components', {
-            ssr: true, // Включаем для стабильной генерации хешей (componentId)
-            displayName: true, // Включаем для отладки (data-styled-name)
-            fileName: false,
-            topLevelImportPaths: ['vue3-styled-components'] // Указываем путь импорта для vue3-styled-components
-          }]
-        ]
+          [
+            'babel-plugin-styled-components',
+            {
+              ssr: true, // Включаем для стабильной генерации хешей (componentId)
+              displayName: true, // Включаем для отладки (data-styled-name)
+              fileName: false,
+              topLevelImportPaths: ['vue3-styled-components'], // Указываем путь импорта для vue3-styled-components
+            },
+          ],
+        ],
       },
-      filter: /\.(ts|tsx)$/
+      filter: /\.(ts|tsx)$/,
     }),
     vue({
       script: {
         defineModel: true,
-        propsDestructure: true
-      }
+        propsDestructure: true,
+      },
     }),
     wasm(), // Плагин для поддержки WebAssembly (нужен для tiny-secp256k1)
+    // PWA: service worker для offline / установки. Отключаем в Tauri (там
+    // фронт грузится через asset-протокол, SW не нужен).
+    ...(process.env.VITE_TAURI === 'true'
+      ? []
+      : [
+          VitePWA({
+            registerType: 'autoUpdate',
+            // Manifest уже в public/manifest.webmanifest — берём его как есть.
+            manifest: false,
+            // Игнорируем precache мини-приложений и WASM-чанков (большие).
+            workbox: {
+              globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+              globIgnores: ['**/pocketnet-bitcoin-*.js', '**/*.wasm'],
+              maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+              navigateFallback: '/index.html',
+              // /app/* и /_matrix/* — не SPA, оставляем сети.
+              navigateFallbackDenylist: [/^\/app\//, /^\/_matrix\//, /^\/api\//],
+              runtimeCaching: [
+                {
+                  urlPattern: ({ request }) => request.destination === 'image',
+                  handler: 'CacheFirst',
+                  options: {
+                    cacheName: 'bastyon-images',
+                    expiration: { maxEntries: 200, maxAgeSeconds: 7 * 24 * 60 * 60 },
+                  },
+                },
+              ],
+            },
+            devOptions: { enabled: false },
+          }),
+        ]),
     // Плагин для полифиллов Node.js модулей (нужен для btc17.js)
     nodePolyfills({
       // Включаем только необходимые полифиллы
@@ -108,7 +142,10 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@mobile': path.resolve(__dirname, './src-mobile'),
-      'vite-plugin-node-polyfills/shims/buffer': path.resolve(__dirname, 'node_modules/vite-plugin-node-polyfills/shims/buffer'),
+      'vite-plugin-node-polyfills/shims/buffer': path.resolve(
+        __dirname,
+        'node_modules/vite-plugin-node-polyfills/shims/buffer'
+      ),
       // Перенаправляем vue3-styled-components на наш wrapper для поддержки .withConfig
       'vue3-styled-components': path.resolve(__dirname, 'src/styled-wrapper.js'),
       // Полифиллы util/stream отключены: при включении ломалась авторизация по мнемонике.
@@ -121,11 +158,11 @@ export default defineConfig(({ mode }) => ({
   },
 
   define: {
-    'global': 'globalThis',
+    global: 'globalThis',
     'process.env': {},
     'process.browser': true,
     'process.version': '"v16.0.0"',
-    '__APP_VERSION__': JSON.stringify(pkg.version),
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
 
   optimizeDeps: {
@@ -156,9 +193,17 @@ export default defineConfig(({ mode }) => ({
   },
 
   server: {
-    port: process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : (process.env.TAURI_DEV ? 1990 : 1980),
+    port: process.env.VITE_PORT
+      ? parseInt(process.env.VITE_PORT)
+      : process.env.TAURI_DEV
+        ? 1990
+        : 1980,
     hmr: {
-      port: process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : (process.env.TAURI_DEV ? 1990 : 1980),
+      port: process.env.VITE_PORT
+        ? parseInt(process.env.VITE_PORT)
+        : process.env.TAURI_DEV
+          ? 1990
+          : 1980,
     },
     headers: {
       // Используем credentialless вместо require-corp для разрешения загрузки внешних изображений
@@ -171,7 +216,7 @@ export default defineConfig(({ mode }) => ({
         target: 'https://matrix.pocketnet.app',
         changeOrigin: true,
         secure: false,
-      }
+      },
     },
   },
 }))
