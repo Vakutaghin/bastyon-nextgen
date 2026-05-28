@@ -7,49 +7,45 @@
           {{ subtitle }}
         </SC_StatsSubtitle>
       </SC_StatsTitleGroup>
-      <SC_StatsToggle role='tablist'>
+      <SC_StatsToggle role="tablist">
         <SC_StatsToggleBtn
-          type='button'
-          :class='{ active: granularity === "hours" }'
-          @click='granularity = "hours"'
+          type="button"
+          :class="{ active: granularity === 'hours' }"
+          @click="granularity = 'hours'"
         >
           {{ s.stats.toggleHours }}
         </SC_StatsToggleBtn>
         <SC_StatsToggleBtn
-          type='button'
-          :class='{ active: granularity === "days" }'
-          @click='granularity = "days"'
+          type="button"
+          :class="{ active: granularity === 'days' }"
+          @click="granularity = 'days'"
         >
           {{ s.stats.toggleDays }}
         </SC_StatsToggleBtn>
       </SC_StatsToggle>
     </SC_StatsHeader>
 
-    <SC_StatsPlaceholder v-if='isLoading'>{{ s.common.loading }}</SC_StatsPlaceholder>
-    <SC_StatsPlaceholder v-else-if='error'>{{ s.stats.error }}</SC_StatsPlaceholder>
-    <SC_StatsPlaceholder v-else-if='!points.length'>{{ s.stats.empty }}</SC_StatsPlaceholder>
-    <SC_ChartHost v-else ref='hostRef'>
-      <svg ref='svgRef' :viewBox='`0 0 ${WIDTH} ${HEIGHT}`' preserveAspectRatio='none' />
+    <SC_StatsPlaceholder v-if="isLoading">{{ s.common.loading }}</SC_StatsPlaceholder>
+    <SC_StatsPlaceholder v-else-if="error">{{ s.stats.error }}</SC_StatsPlaceholder>
+    <SC_StatsPlaceholder v-else-if="!points.length">{{ s.stats.empty }}</SC_StatsPlaceholder>
+    <SC_ChartHost v-else ref="hostRef">
+      <svg ref="svgRef" :viewBox="`0 0 ${WIDTH} ${HEIGHT}`" preserveAspectRatio="none" />
     </SC_ChartHost>
 
-    <SC_Legend v-if='points.length'>
-      <SC_LegendItem v-for='cat in CATEGORIES' :key='cat.key'>
-        <SC_LegendDot :style='{ background: cat.color }' />
+    <SC_Legend v-if="points.length">
+      <SC_LegendItem v-for="cat in CATEGORIES" :key="cat.key">
+        <SC_LegendDot :style="{ background: cat.color }" />
         <span>{{ cat.label }}</span>
       </SC_LegendItem>
     </SC_Legend>
   </SC_StatsCard>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import * as d3 from 'd3'
 import { useStatsByHours, useStatsByDays } from '@/composables/use-block-explorer-queries'
-import {
-  aggregateStats,
-  sumTotals,
-  type StatsPoint,
-} from './aggregate-stats'
+import { aggregateStats, sumTotals, type StatsPoint } from './aggregate-stats'
 import { explorerStrings as s } from '../../block-explorer-strings'
 import {
   SC_StatsCard,
@@ -73,18 +69,21 @@ const HEIGHT = 280
 const MARGIN = { top: 12, right: 12, bottom: 28, left: 44 }
 
 interface CategorySpec {
-  key: keyof Pick<StatsPoint, 'content' | 'ratings' | 'subscriptions' | 'accounts' | 'moderation' | 'other'>
+  key: keyof Pick<
+    StatsPoint,
+    'content' | 'ratings' | 'subscriptions' | 'accounts' | 'moderation' | 'other'
+  >
   label: string
   color: string
 }
 
 const CATEGORIES: CategorySpec[] = [
-  { key: 'content',       label: s.stats.legend.content,       color: '#1890ff' },
-  { key: 'ratings',       label: s.stats.legend.ratings,       color: '#52c41a' },
-  { key: 'subscriptions', label: s.stats.legend.subscriptions, color: '#faad14' },
-  { key: 'accounts',      label: s.stats.legend.accounts,      color: '#722ed1' },
-  { key: 'moderation',    label: s.stats.legend.moderation,    color: '#eb2f96' },
-  { key: 'other',         label: s.stats.legend.other,         color: '#8c8c8c' },
+  { key: 'content', label: s.stats.legend.content, color: 'var(--color-ant-blue)' },
+  { key: 'ratings', label: s.stats.legend.ratings, color: 'var(--color-success)' },
+  { key: 'subscriptions', label: s.stats.legend.subscriptions, color: 'var(--color-warning-icon)' },
+  { key: 'accounts', label: s.stats.legend.accounts, color: '#722ed1' },
+  { key: 'moderation', label: s.stats.legend.moderation, color: '#eb2f96' },
+  { key: 'other', label: s.stats.legend.other, color: '#8c8c8c' },
 ]
 
 const granularity = ref<'hours' | 'days'>('hours')
@@ -93,10 +92,10 @@ const hoursQuery = useStatsByHours(48)
 const daysQuery = useStatsByDays(30)
 
 const isLoading = computed(() =>
-  granularity.value === 'hours' ? hoursQuery.isLoading.value : daysQuery.isLoading.value,
+  granularity.value === 'hours' ? hoursQuery.isLoading.value : daysQuery.isLoading.value
 )
 const error = computed(() =>
-  granularity.value === 'hours' ? hoursQuery.error.value : daysQuery.error.value,
+  granularity.value === 'hours' ? hoursQuery.error.value : daysQuery.error.value
 )
 
 const points = computed<StatsPoint[]>(() => {
@@ -125,35 +124,32 @@ function renderChart() {
   const innerW = WIDTH - MARGIN.left - MARGIN.right
   const innerH = HEIGHT - MARGIN.top - MARGIN.bottom
 
-  const g = svg
-    .append('g')
-    .attr('transform', `translate(${MARGIN.left}, ${MARGIN.top})`)
+  const g = svg.append('g').attr('transform', `translate(${MARGIN.left}, ${MARGIN.top})`)
 
   // X — индекс точки 0..N-1, шкала линейная для красивого area-плотного рисунка.
-  const x = d3.scaleLinear()
+  const x = d3
+    .scaleLinear()
     .domain([0, pts.length - 1])
     .range([0, innerW])
 
   const stackKeys = CATEGORIES.map((c) => c.key)
-  const stackGen = d3.stack<StatsPoint, string>()
+  const stackGen = d3
+    .stack<StatsPoint, string>()
     .keys(stackKeys)
     .value((d, key) => (d as unknown as Record<string, number>)[key] ?? 0)
   const series = stackGen(pts)
 
   const yMax = d3.max(series, (s) => d3.max(s, (p) => p[1])) ?? 0
-  const y = d3.scaleLinear()
-    .domain([0, yMax])
-    .nice()
-    .range([innerH, 0])
+  const y = d3.scaleLinear().domain([0, yMax]).nice().range([innerH, 0])
 
-  const area = d3.area<d3.SeriesPoint<StatsPoint>>()
+  const area = d3
+    .area<d3.SeriesPoint<StatsPoint>>()
     .x((_, i) => x(i))
     .y0((d) => y(d[0]))
     .y1((d) => y(d[1]))
     .curve(d3.curveMonotoneX)
 
-  const colorOf = (key: string) =>
-    CATEGORIES.find((c) => c.key === key)?.color ?? '#999'
+  const colorOf = (key: string) => CATEGORIES.find((c) => c.key === key)?.color ?? '#999'
 
   g.selectAll('path.layer')
     .data(series)
@@ -165,7 +161,8 @@ function renderChart() {
     .attr('stroke', 'none')
 
   // Y-axis с минимальной разметкой.
-  const yAxis = d3.axisLeft(y)
+  const yAxis = d3
+    .axisLeft(y)
     .ticks(4)
     .tickFormat((v) => d3.format('~s')(v as number))
     .tickSize(-innerW)
@@ -181,11 +178,10 @@ function renderChart() {
   const step = Math.max(1, Math.ceil(pts.length / 6))
   const xTickIdxs = pts.map((_, i) => i).filter((i) => i % step === 0 || i === pts.length - 1)
 
-  const xAxisG = g.append('g')
-    .attr('class', 'x-axis')
-    .attr('transform', `translate(0, ${innerH})`)
+  const xAxisG = g.append('g').attr('class', 'x-axis').attr('transform', `translate(0, ${innerH})`)
 
-  xAxisG.selectAll('text.tick')
+  xAxisG
+    .selectAll('text.tick')
     .data(xTickIdxs)
     .join('text')
     .attr('class', 'tick')

@@ -32,8 +32,11 @@
         <SC_InfoRow>
           <SC_InfoLabel>Аудио:</SC_InfoLabel>
           <SC_InfoValue>
-            <CheckCircleOutlined v-if="sourceMetadata.hasAudio" :style="{ color: '#52c41a' }" />
-            <CloseCircleOutlined v-else :style="{ color: '#ff4d4f' }" />
+            <CheckCircleOutlined
+              v-if="sourceMetadata.hasAudio"
+              :style="{ color: 'var(--color-success)' }"
+            />
+            <CloseCircleOutlined v-else :style="{ color: 'var(--color-red-ant)' }" />
             {{ sourceMetadata.hasAudio ? 'Есть' : 'Нет' }}
           </SC_InfoValue>
         </SC_InfoRow>
@@ -70,8 +73,11 @@
         <SC_InfoRow>
           <SC_InfoLabel>Аудио:</SC_InfoLabel>
           <SC_InfoValue>
-            <CheckCircleOutlined v-if="sourceMetadata.hasAudio" :style="{ color: '#52c41a' }" />
-            <CloseCircleOutlined v-else :style="{ color: '#ff4d4f' }" />
+            <CheckCircleOutlined
+              v-if="sourceMetadata.hasAudio"
+              :style="{ color: 'var(--color-success)' }"
+            />
+            <CloseCircleOutlined v-else :style="{ color: 'var(--color-red-ant)' }" />
             {{ sourceMetadata.hasAudio ? `Opus, ${MAX_AUDIO_BITRATE} kbps` : 'Нет' }}
           </SC_InfoValue>
         </SC_InfoRow>
@@ -94,14 +100,14 @@
         <SC_InfoRow v-if="isWorker">
           <SC_InfoLabel>Режим:</SC_InfoLabel>
           <SC_InfoValue>
-            <CheckCircleOutlined :style="{ color: '#52c41a', marginRight: '4px' }" />
+            <CheckCircleOutlined :style="{ color: 'var(--color-success)', marginRight: '4px' }" />
             Веб-воркер (фоновая обработка)
           </SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow v-else>
           <SC_InfoLabel>Режим:</SC_InfoLabel>
           <SC_InfoValue>
-            <InfoCircleOutlined :style="{ color: '#1890ff', marginRight: '4px' }" />
+            <InfoCircleOutlined :style="{ color: 'var(--color-ant-blue)', marginRight: '4px' }" />
             Основной поток
           </SC_InfoValue>
         </SC_InfoRow>

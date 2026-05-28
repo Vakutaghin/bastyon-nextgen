@@ -2,39 +2,22 @@
   <SC_VideosSection>
     <SC_SectionTitle>Сохраненные видео</SC_SectionTitle>
     <SC_VideosGrid v-if="!loading && videos.length > 0">
-      <SC_VideoItem
-        v-for="video in videos"
-        :key="video.id"
-        @click="$emit('play', video)"
-      >
+      <SC_VideoItem v-for="video in videos" :key="video.id" @click="$emit('play', video)">
         <SC_VideoIcon>
-          <PlayCircleOutlined :style="{ fontSize: '72px', color: '#1890ff' }" />
+          <PlayCircleOutlined :style="{ fontSize: '72px', color: 'var(--color-ant-blue)' }" />
         </SC_VideoIcon>
         <SC_VideoName>{{ video.originalFileName }}</SC_VideoName>
         <SC_VideoResolution>{{ video.resolution }}</SC_VideoResolution>
 
         <!-- Действия (class для селектора при hover) -->
         <SC_VideoActions class="video-actions" @click.stop>
-          <SC_ActionButton
-            @click="$emit('download', video)"
-            title="Скачать"
-            type="button"
-          >
+          <SC_ActionButton @click="$emit('download', video)" title="Скачать" type="button">
             <DownloadOutlined />
           </SC_ActionButton>
-          <SC_ActionButton
-            @click="$emit('info', video)"
-            title="Информация"
-            type="button"
-          >
+          <SC_ActionButton @click="$emit('info', video)" title="Информация" type="button">
             <InfoCircleOutlined />
           </SC_ActionButton>
-          <SC_ActionButton
-            @click="$emit('delete', video)"
-            title="Удалить"
-            danger
-            type="button"
-          >
+          <SC_ActionButton @click="$emit('delete', video)" title="Удалить" danger type="button">
             <CloseOutlined />
           </SC_ActionButton>
         </SC_VideoActions>
@@ -76,6 +59,6 @@ const {
   SC_VideoActions,
   SC_ActionButton,
   SC_EmptyState,
-  SC_LoadingState
+  SC_LoadingState,
 } = useVideoList()
 </script>

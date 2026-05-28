@@ -18,49 +18,49 @@
       />
 
       <template v-if="state === 'idle'">
-        <UploadOutlined :style="{ fontSize: '64px', color: '#1890ff', marginBottom: '16px' }" />
+        <UploadOutlined
+          :style="{ fontSize: '64px', color: 'var(--color-ant-blue)', marginBottom: '16px' }"
+        />
         <SC_DropZoneText>
           <strong>Перетащите видеофайл сюда</strong>
           <span>или нажмите для выбора</span>
         </SC_DropZoneText>
-        <Button type="primary" @click="fileInput?.click()">
-          Выбрать видеофайл
-        </Button>
+        <Button type="primary" @click="fileInput?.click()"> Выбрать видеофайл </Button>
       </template>
 
       <template v-else-if="state === 'completed'">
-        <CheckCircleOutlined :style="{ fontSize: '64px', color: '#52c41a', marginBottom: '16px' }" />
+        <CheckCircleOutlined
+          :style="{ fontSize: '64px', color: 'var(--color-success)', marginBottom: '16px' }"
+        />
         <SC_DropZoneText>
           <strong>Видео успешно транскодировано!</strong>
         </SC_DropZoneText>
-        <Button type="primary" @click="$emit('reset')">
-          Загрузить еще
-        </Button>
+        <Button type="primary" @click="$emit('reset')"> Загрузить еще </Button>
       </template>
 
       <template v-else-if="state === 'analyzing'">
-        <LoadingOutlined :style="{ fontSize: '64px', color: '#1890ff' }" spin />
+        <LoadingOutlined :style="{ fontSize: '64px', color: 'var(--color-ant-blue)' }" spin />
         <SC_DropZoneText>
           <strong>Анализ видео...</strong>
         </SC_DropZoneText>
       </template>
 
       <template v-else-if="state === 'ready'">
-        <CheckCircleOutlined :style="{ fontSize: '64px', color: '#52c41a', marginBottom: '16px' }" />
+        <CheckCircleOutlined
+          :style="{ fontSize: '64px', color: 'var(--color-success)', marginBottom: '16px' }"
+        />
         <SC_DropZoneText>
           <strong>Файл готов к кодированию</strong>
           <span>Проверьте параметры ниже и нажмите "Начать загрузку"</span>
         </SC_DropZoneText>
-        <Button type="primary" size="large" @click="$emit('start')">
-          Начать загрузку
-        </Button>
-        <Button type="secondary" style="margin-top: 8px;" @click="$emit('reset')">
+        <Button type="primary" size="large" @click="$emit('start')"> Начать загрузку </Button>
+        <Button type="secondary" style="margin-top: 8px" @click="$emit('reset')">
           Выбрать другой файл
         </Button>
       </template>
 
       <template v-else-if="state === 'transcoding' || state === 'saving'">
-        <LoadingOutlined :style="{ fontSize: '64px', color: '#1890ff' }" spin />
+        <LoadingOutlined :style="{ fontSize: '64px', color: 'var(--color-ant-blue)' }" spin />
         <SC_DropZoneText>
           <strong v-if="state === 'transcoding'">Транскодирование видео...</strong>
           <strong v-else>Сохранение видео...</strong>
@@ -71,19 +71,17 @@
           :stroke-color="state === 'error' ? '#ff4d4f' : '#1890ff'"
         />
         <SC_ProgressText>{{ Math.round(progress) }}%</SC_ProgressText>
-        <div v-if="fileName" style="margin-top: 8px; color: #666; font-size: 12px;">
+        <div v-if="fileName" style="margin-top: 8px; color: #666; font-size: 12px">
           {{ fileName }}
         </div>
       </template>
 
       <template v-else-if="state === 'error'">
-        <CloseCircleOutlined :style="{ fontSize: '64px', color: '#ff4d4f' }" />
+        <CloseCircleOutlined :style="{ fontSize: '64px', color: 'var(--color-red-ant)' }" />
         <SC_DropZoneText>
-          <strong style="color: #ff4d4f;">Ошибка: {{ error }}</strong>
+          <strong style="color: #ff4d4f">Ошибка: {{ error }}</strong>
         </SC_DropZoneText>
-        <Button type="primary" @click="$emit('reset')">
-          Попробовать снова
-        </Button>
+        <Button type="primary" @click="$emit('reset')"> Попробовать снова </Button>
       </template>
     </SC_DropZone>
 
@@ -111,14 +109,14 @@ import {
   UploadOutlined,
   LoadingOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
 } from '@ant-design/icons-vue'
 import {
   SC_UploadSection,
   SC_SectionTitle,
   SC_DropZone,
   SC_DropZoneText,
-  SC_ProgressText
+  SC_ProgressText,
 } from './styled'
 import { VideoInfoPanel } from '../video-info-panel'
 import { useUploadDropzone } from './upload-dropzone'
@@ -134,6 +132,6 @@ const {
   handleDragOver,
   handleDragLeave,
   handleDrop,
-  handleFileInputChange
+  handleFileInputChange,
 } = useUploadDropzone(p, emit)
 </script>
