@@ -1,5 +1,6 @@
 import styled, { css } from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { COLORS } from '@/styles/theme-colors'
 
 const sidebarItemProps = { active: Boolean }
 
@@ -27,7 +28,7 @@ export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
   text-align: left;
   font-size: 14px;
   line-height: 1.4;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -37,13 +38,13 @@ export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
     color 0.15s;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: ${COLORS.OVERLAY_4};
   }
 
   ${(p: { active?: boolean }) =>
     p.active &&
     css`
-      color: rgb(0, 123, 255);
+      color: ${COLORS.PRIMARY};
       background: rgba(0, 123, 255, 0.08);
       &:hover {
         background: rgba(0, 123, 255, 0.12);

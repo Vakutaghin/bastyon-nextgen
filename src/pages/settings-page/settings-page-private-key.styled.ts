@@ -28,7 +28,7 @@ export const SC_PrivateKeyBox = styled.div`
 
 export const SC_PrivateKeyLabel = styled.div`
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: ${COLORS.OVERLAY_45};
   margin-bottom: 8px;
   font-weight: 600;
 `
@@ -136,7 +136,7 @@ export const SC_ConfirmTitle = styled.div`
 export const SC_ConfirmText = styled.p`
   font-size: 14px;
   line-height: 1.5;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   margin: 0 0 16px;
 `
 

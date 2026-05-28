@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Search = styled.div`
   margin: 8px 0 16px;
@@ -12,7 +13,7 @@ export const SC_Section = styled.section`
 export const SC_SectionTitle = styled.h2`
   font-size: 14px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.7);
+  color: ${COLORS.OVERLAY_70};
   margin: 0 0 12px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -37,9 +38,9 @@ export const SC_Card = styled.button`
   justify-content: flex-start;
   gap: 12px;
   padding: 20px 12px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 14px;
-  background: rgb(255, 255, 255);
+  background: ${COLORS.WHITE};
   cursor: pointer;
   transition:
     transform 120ms ease,
@@ -47,12 +48,12 @@ export const SC_Card = styled.button`
     border-color 120ms ease;
   text-align: center;
   font: inherit;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 14px ${COLORS.OVERLAY_6};
+    border-color: ${COLORS.OVERLAY_12};
   }
 
   &:active {
@@ -73,14 +74,14 @@ export const SC_FavoriteBtn = styled.button`
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  color: rgba(0, 0, 0, 0.25);
+  color: ${COLORS.OVERLAY_25};
   font-size: 14px;
   transition:
     color 150ms ease,
     background-color 150ms ease;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: ${COLORS.OVERLAY_5};
     color: rgb(245, 180, 0);
   }
 
@@ -97,7 +98,7 @@ export const SC_IconWrap = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.04);
+  background: ${COLORS.OVERLAY_4};
   flex: 0 0 auto;
 `
 
@@ -110,7 +111,7 @@ export const SC_Icon = styled.img`
 export const SC_IconFallback = styled.div`
   font-size: 22px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.55);
+  color: ${COLORS.OVERLAY_55};
 `
 
 export const SC_Name = styled.div`
@@ -133,16 +134,16 @@ export const SC_LoadMore = styled.div`
 
 export const SC_LoadMoreBtn = styled.button`
   padding: 8px 20px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgb(255, 255, 255);
+  border: 1px solid ${COLORS.OVERLAY_12};
+  background: ${COLORS.WHITE};
   border-radius: 8px;
   font-size: 13px;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   cursor: pointer;
   transition: background-color 120ms ease;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: ${COLORS.OVERLAY_4};
   }
 
   &:disabled {
@@ -154,7 +155,7 @@ export const SC_LoadMoreBtn = styled.button`
 export const SC_Empty = styled.div`
   padding: 40px 16px;
   text-align: center;
-  color: rgba(0, 0, 0, 0.55);
+  color: ${COLORS.OVERLAY_55};
   font-size: 14px;
 `
 

@@ -1,17 +1,18 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_TransferWidget = styled.div`
   max-width: 560px;
-  background: rgb(249, 249, 249);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: ${COLORS.BG_LIGHT};
+  border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 12px;
   overflow: hidden;
 `
 
 export const SC_TransferSwitch = styled.div`
   display: flex;
-  background: rgb(255, 255, 255);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: ${COLORS.WHITE};
+  border-bottom: 1px solid ${COLORS.OVERLAY_8};
 `
 
 export const SC_TransferSwitchBtn = styled.button<{ active?: boolean }>`
@@ -19,15 +20,17 @@ export const SC_TransferSwitchBtn = styled.button<{ active?: boolean }>`
   padding: 14px 20px;
   font-size: 15px;
   font-weight: 600;
-  color: ${(p) => (p.active ? 'rgb(33, 33, 33)' : 'rgb(120, 120, 120)')};
-  background: ${(p) => (p.active ? 'rgb(249, 249, 249)' : 'transparent')};
+  color: ${(p) => (p.active ? '${COLORS.GRAY_212}' : '${COLORS.GRAY_120}')};
+  background: ${(p) => (p.active ? '${COLORS.BG_LIGHT}' : 'transparent')};
   border: none;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 
   &:hover {
-    color: rgb(33, 33, 33);
-    background: rgb(249, 249, 249);
+    color: ${COLORS.GRAY_212};
+    background: ${COLORS.BG_LIGHT};
   }
 `
 
@@ -43,7 +46,7 @@ export const SC_TransferLabel = styled.label`
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
   margin-bottom: 6px;
 `
 
@@ -51,9 +54,9 @@ export const SC_TransferInput = styled.input`
   width: 100%;
   padding: 10px 14px;
   font-size: 14px;
-  color: rgb(33, 33, 33);
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: ${COLORS.GRAY_212};
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   box-sizing: border-box;
 
@@ -62,7 +65,7 @@ export const SC_TransferInput = styled.input`
   }
   &:focus {
     outline: none;
-    border-color: rgba(0, 0, 0, 0.25);
+    border-color: ${COLORS.OVERLAY_25};
   }
 `
 
@@ -71,9 +74,9 @@ export const SC_TransferTextarea = styled.textarea`
   min-height: 72px;
   padding: 10px 14px;
   font-size: 14px;
-  color: rgb(33, 33, 33);
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: ${COLORS.GRAY_212};
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   box-sizing: border-box;
   resize: vertical;
@@ -83,7 +86,7 @@ export const SC_TransferTextarea = styled.textarea`
   }
   &:focus {
     outline: none;
-    border-color: rgba(0, 0, 0, 0.25);
+    border-color: ${COLORS.OVERLAY_25};
   }
 `
 
@@ -91,9 +94,9 @@ export const SC_TransferSelect = styled.select`
   width: 100%;
   padding: 10px 14px;
   font-size: 14px;
-  color: rgb(33, 33, 33);
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: ${COLORS.GRAY_212};
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   cursor: pointer;
   box-sizing: border-box;
@@ -110,11 +113,11 @@ export const SC_TransferAddress = styled.div`
   flex: 1;
   font-family: ui-monospace, monospace;
   font-size: 13px;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   word-break: break-all;
   padding: 10px 14px;
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 8px;
 `
 
@@ -122,9 +125,9 @@ export const SC_TransferCopyBtn = styled.button`
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: rgb(33, 33, 33);
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: ${COLORS.GRAY_212};
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
@@ -140,8 +143,8 @@ export const SC_TransferSubmit = styled.button`
   padding: 12px 20px;
   font-size: 15px;
   font-weight: 600;
-  color: rgb(255, 255, 255);
-  background: rgb(33, 33, 33);
+  color: ${COLORS.WHITE};
+  background: ${COLORS.GRAY_212};
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -191,10 +194,10 @@ export const SC_TransferSearchDropdown = styled.div`
   margin-top: 4px;
   max-height: 220px;
   overflow-y: auto;
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px ${COLORS.OVERLAY_10};
   z-index: 10;
 `
 
@@ -204,17 +207,17 @@ export const SC_TransferSearchItem = styled.button`
   padding: 10px 14px;
   font-size: 14px;
   text-align: left;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   background: none;
   border: none;
   cursor: pointer;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid ${COLORS.OVERLAY_6};
 
   &:last-child {
     border-bottom: none;
   }
   &:hover {
-    background: rgb(249, 249, 249);
+    background: ${COLORS.BG_LIGHT};
   }
 `
 
@@ -225,9 +228,9 @@ export const SC_TransferLoginChip = styled.div`
   margin-top: 8px;
   padding: 8px 12px;
   font-size: 13px;
-  color: rgb(120, 120, 120);
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: ${COLORS.GRAY_120};
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 8px;
   max-width: fit-content;
 `
@@ -247,7 +250,7 @@ export const SC_TransferLoginChipRemove = styled.button`
   padding: 0;
   font-size: 14px;
   line-height: 1;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
   background: none;
   border: none;
   border-radius: 4px;
@@ -257,7 +260,7 @@ export const SC_TransferLoginChipRemove = styled.button`
   justify-content: center;
 
   &:hover {
-    color: rgb(33, 33, 33);
-    background: rgba(0, 0, 0, 0.06);
+    color: ${COLORS.GRAY_212};
+    background: ${COLORS.OVERLAY_6};
   }
 `

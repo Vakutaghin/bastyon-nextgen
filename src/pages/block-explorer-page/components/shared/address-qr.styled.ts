@@ -10,11 +10,13 @@ export const SC_QrFrame = styled.button`
   border: 1px solid ${COLORS.BORDER_LIGHTER};
   border-radius: 8px;
   cursor: zoom-in;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 
   &:hover {
     border-color: ${COLORS.PRIMARY_LIGHT_50};
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 10px ${COLORS.OVERLAY_8};
   }
 
   img {
@@ -27,7 +29,7 @@ export const SC_QrFrame = styled.button`
 export const SC_QrModalBackdrop = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: ${COLORS.OVERLAY_55};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,7 +42,7 @@ export const SC_QrModalCard = styled.div`
   border-radius: 14px;
   padding: 24px;
   max-width: 90vw;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 10px 40px ${COLORS.OVERLAY_25};
   text-align: center;
   cursor: default;
 `

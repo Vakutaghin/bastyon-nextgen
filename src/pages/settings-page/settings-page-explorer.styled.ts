@@ -18,7 +18,7 @@ export const SC_ExplorerSettingsLead = styled.p`
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
 `
 
 export const SC_ExplorerOpenFullButton = styled.a`
@@ -62,13 +62,13 @@ export const SC_ExplorerNodeRow = styled('label', nodeRowProps)`
   background: ${COLORS.WHITE};
   cursor: pointer;
   font-size: 14px;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   transition:
     background 0.15s,
     border-color 0.15s;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.02);
+    background: ${COLORS.OVERLAY_2};
     border-color: ${COLORS.ANT_BLUE};
   }
 
@@ -94,5 +94,5 @@ export const SC_ExplorerNodeLabel = styled.span`
 
 export const SC_ExplorerNodeHint = styled.span`
   font-size: 12px;
-  color: rgb(108, 117, 125);
+  color: ${COLORS.TEXT_SECONDARY};
 `

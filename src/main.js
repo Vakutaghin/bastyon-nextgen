@@ -2,6 +2,10 @@
 // Раскрыть обратно: localStorage.setItem('debug', '1') и перезагрузить.
 import './silence-console'
 
+// Инициализация темы — до монтирования, чтобы избежать FOUC.
+import { initTheme } from '@/composables/use-theme'
+initTheme()
+
 // Полифилл для Buffer в браузере (нужен для bip39 и других библиотек)
 import { Buffer } from 'buffer'
 if (typeof globalThis !== 'undefined') {

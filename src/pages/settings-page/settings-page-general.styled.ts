@@ -16,7 +16,7 @@ export const SC_GeneralRow = styled.div`
   justify-content: space-between;
   gap: 16px;
   padding: 14px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid ${COLORS.OVERLAY_6};
 
   &:last-child {
     border-bottom: none;
@@ -25,7 +25,7 @@ export const SC_GeneralRow = styled.div`
 
 export const SC_GeneralLabel = styled.span`
   font-size: 14px;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 `
 
 export const SC_LangSwitcher = styled.div`

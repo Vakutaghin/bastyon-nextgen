@@ -7,11 +7,37 @@
     "value-keyword-case": null,
     "function-name-case": null,
     "selector-class-pattern": null,
-    "selector-pseudo-class-no-unknown": [true, {
-      "ignorePseudoClasses": ["deep", "global"]
-    }],
+    "selector-pseudo-class-no-unknown": [
+      true,
+      {
+        "ignorePseudoClasses": ["deep", "global"]
+      }
+    ],
     "color-function-notation": null,
     "property-no-deprecated": null,
-    "declaration-property-value-keyword-no-deprecated": null
+    "declaration-property-value-keyword-no-deprecated": null,
+    "color-no-hex": [
+      true,
+      {
+        "severity": "warning",
+        "message": "Хардкод hex запрещён. Используй COLORS.* из src/styles/theme-colors.ts."
+      }
+    ],
+    "declaration-property-value-disallowed-list": [
+      {
+        "/.*color.*/": ["/rgba?\\(\\d/"],
+        "background": ["/rgba?\\(\\d/"],
+        "border": ["/rgba?\\(\\d/"],
+        "outline": ["/rgba?\\(\\d/"],
+        "box-shadow": ["/rgba?\\(\\d/"],
+        "text-shadow": ["/rgba?\\(\\d/"],
+        "fill": ["/rgba?\\(\\d/"],
+        "stroke": ["/rgba?\\(\\d/"]
+      },
+      {
+        "severity": "warning",
+        "message": "Хардкод rgb/rgba запрещён в стилях. Используй COLORS.* из src/styles/theme-colors.ts (см. OVERLAY_*, WHITE_*, и т.п.)."
+      }
+    ]
   }
 }

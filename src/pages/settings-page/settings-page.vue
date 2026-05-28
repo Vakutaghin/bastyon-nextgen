@@ -1,6 +1,7 @@
 <template>
   <SC_SettingsWork>
     <SC_SettingsPage>
+      <h1 class="visually-hidden">Настройки</h1>
       <SC_SettingsContentWrapper>
         <SC_SettingsSidebar>
           <SC_SettingsSidebarItem
@@ -32,6 +33,20 @@
                   </SC_LangButton>
                 </SC_LangSwitcher>
               </SC_GeneralRow>
+              <SC_GeneralRow>
+                <SC_GeneralLabel>Тема оформления</SC_GeneralLabel>
+                <SC_LangSwitcher>
+                  <SC_LangButton
+                    v-for="opt in themeOptions"
+                    :key="opt.value"
+                    :active="themeMode === opt.value"
+                    type="button"
+                    @click="setTheme(opt.value)"
+                  >
+                    {{ opt.label }}
+                  </SC_LangButton>
+                </SC_LangSwitcher>
+              </SC_GeneralRow>
             </SC_GeneralBlock>
           </template>
 
@@ -43,11 +58,10 @@
           <template v-else-if="activeTab === 'notifications'">
             <SC_SettingsSectionTitle>Фильтр уведомлений</SC_SettingsSectionTitle>
             <SC_NotificationsList>
-              <SC_NotificationsRow
-                v-for="key in NOTIFICATION_KEYS"
-                :key="key"
-              >
-                <SC_NotificationsRowLabel>{{ NOTIFICATION_FILTER_LABELS[key] }}</SC_NotificationsRowLabel>
+              <SC_NotificationsRow v-for="key in NOTIFICATION_KEYS" :key="key">
+                <SC_NotificationsRowLabel>{{
+                  NOTIFICATION_FILTER_LABELS[key]
+                }}</SC_NotificationsRowLabel>
                 <Switch
                   :checked="notificationSettings.getFilter(key)"
                   @change="(checked: boolean) => onNotificationFilterChange(key, checked)"
@@ -63,15 +77,19 @@
               <!-- Confirm dialog -->
               <template v-if="pkConfirmVisible">
                 <SC_ConfirmOverlay>
-                  <SC_ConfirmTitle>
-                    ⚠️ Показать приватный ключ?
-                  </SC_ConfirmTitle>
+                  <SC_ConfirmTitle> ⚠️ Показать приватный ключ? </SC_ConfirmTitle>
                   <SC_ConfirmText>
-                    Передавать приватный ключ или сид-фразу кому-либо небезопасно. Любой, кто получит доступ к ним, сможет получить полный контроль над вашим аккаунтом и средствами.
+                    Передавать приватный ключ или сид-фразу кому-либо небезопасно. Любой, кто
+                    получит доступ к ним, сможет получить полный контроль над вашим аккаунтом и
+                    средствами.
                   </SC_ConfirmText>
                   <SC_ConfirmButtons>
-                    <SC_ConfirmBtnDefault type="button" @click="pkCancelConfirm">Отмена</SC_ConfirmBtnDefault>
-                    <SC_ConfirmBtnPrimary type="button" @click="pkConfirmAndReveal">Да, показать</SC_ConfirmBtnPrimary>
+                    <SC_ConfirmBtnDefault type="button" @click="pkCancelConfirm"
+                      >Отмена</SC_ConfirmBtnDefault
+                    >
+                    <SC_ConfirmBtnPrimary type="button" @click="pkConfirmAndReveal"
+                      >Да, показать</SC_ConfirmBtnPrimary
+                    >
                   </SC_ConfirmButtons>
                 </SC_ConfirmOverlay>
               </template>
@@ -79,13 +97,18 @@
               <!-- Revealed keys -->
               <template v-else-if="pkRevealed">
                 <SC_PrivateKeyWarning>
-                  ⚠️ Никогда не делитесь приватным ключом или сид-фразой. Сохраните их в безопасном месте.
+                  ⚠️ Никогда не делитесь приватным ключом или сид-фразой. Сохраните их в безопасном
+                  месте.
                 </SC_PrivateKeyWarning>
 
                 <SC_PrivateKeyBox v-if="pkMnemonic">
                   <SC_PrivateKeyLabel>Сид-фраза</SC_PrivateKeyLabel>
                   <SC_PrivateKeyValue>{{ pkMnemonic }}</SC_PrivateKeyValue>
-                  <SC_CopyIconBtn type="button" title="Копировать сид-фразу" @click="pkCopyMnemonic">
+                  <SC_CopyIconBtn
+                    type="button"
+                    title="Копировать сид-фразу"
+                    @click="pkCopyMnemonic"
+                  >
                     <CopyOutlined />
                   </SC_CopyIconBtn>
                 </SC_PrivateKeyBox>
@@ -93,20 +116,23 @@
                 <SC_PrivateKeyBox v-if="pkPrivateKeyHex">
                   <SC_PrivateKeyLabel>Приватный ключ (hex)</SC_PrivateKeyLabel>
                   <SC_PrivateKeyValue>{{ pkPrivateKeyHex }}</SC_PrivateKeyValue>
-                  <SC_CopyIconBtn type="button" title="Копировать приватный ключ" @click="pkCopyKey">
+                  <SC_CopyIconBtn
+                    type="button"
+                    title="Копировать приватный ключ"
+                    @click="pkCopyKey"
+                  >
                     <CopyOutlined />
                   </SC_CopyIconBtn>
                 </SC_PrivateKeyBox>
 
-                <SC_HideKeyButton type="button" @click="pkHide">
-                  Скрыть
-                </SC_HideKeyButton>
+                <SC_HideKeyButton type="button" @click="pkHide"> Скрыть </SC_HideKeyButton>
               </template>
 
               <!-- Initial state: show button -->
               <template v-else>
                 <SC_PrivateKeyWarning>
-                  Приватный ключ обеспечивает полный доступ к вашему аккаунту. Убедитесь, что рядом нет посторонних, прежде чем показывать его.
+                  Приватный ключ обеспечивает полный доступ к вашему аккаунту. Убедитесь, что рядом
+                  нет посторонних, прежде чем показывать его.
                 </SC_PrivateKeyWarning>
                 <SC_ShowKeyButton type="button" :disabled="pkLoading" @click="pkShowConfirm">
                   {{ pkLoading ? 'Загрузка...' : 'Показать приватный ключ' }}
@@ -124,12 +150,16 @@
                   Встроенный блок-эксплорер работает на тех же нодах, что и остальное приложение —
                   без внешних редиректов.
                 </SC_ExplorerSettingsLead>
-                <RouterLink
-                  v-slot="{ navigate, href }"
-                  custom
-                  :to="{ name: 'explorer' }"
-                >
-                  <SC_ExplorerOpenFullButton :href="href" @click="(e) => { e.preventDefault(); navigate() }">
+                <RouterLink v-slot="{ navigate, href }" custom :to="{ name: 'explorer' }">
+                  <SC_ExplorerOpenFullButton
+                    :href="href"
+                    @click="
+                      (e) => {
+                        e.preventDefault()
+                        navigate()
+                      }
+                    "
+                  >
                     Открыть эксплорер →
                   </SC_ExplorerOpenFullButton>
                 </RouterLink>
@@ -140,9 +170,9 @@
                   Предпочитаемая нода
                 </SC_SettingsSectionTitle>
                 <SC_ExplorerSettingsLead>
-                  По умолчанию эксплорер использует автоматический round-robin по списку
-                  публичных нод. Можно закрепить конкретную ноду — все запросы эксплорера
-                  будут идти к ней. На остальное приложение это не влияет.
+                  По умолчанию эксплорер использует автоматический round-robin по списку публичных
+                  нод. Можно закрепить конкретную ноду — все запросы эксплорера будут идти к ней. На
+                  остальное приложение это не влияет.
                 </SC_ExplorerSettingsLead>
 
                 <SC_ExplorerNodeList>

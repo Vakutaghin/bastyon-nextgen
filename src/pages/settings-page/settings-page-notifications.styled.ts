@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_NotificationsList = styled.div`
   display: flex;
@@ -11,9 +12,9 @@ export const SC_NotificationsRow = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid ${COLORS.OVERLAY_6};
   font-size: 14px;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 
   &:last-child {
     border-bottom: none;

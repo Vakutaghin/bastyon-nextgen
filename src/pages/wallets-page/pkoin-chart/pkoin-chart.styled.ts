@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 const SIDEBAR_WIDTH = 200
 
@@ -10,7 +11,7 @@ export const SC_PkoinChartWrap = styled.div`
 export const SC_PkoinChartTitle = styled.h2`
   font-size: 16px;
   font-weight: 600;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   margin: 0 0 16px;
 `
 
@@ -32,27 +33,27 @@ export const SC_PkoinChartFilterGroup = styled.div`
 
 export const SC_PkoinChartFilterLabel = styled.span`
   font-size: 12px;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
   margin-right: 4px;
 `
 
 export const SC_PkoinChartFilterBtn = styled.button`
   font-size: 12px;
   font-weight: 500;
-  color: rgb(33, 33, 33);
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: ${COLORS.GRAY_212};
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 6px;
   padding: 6px 10px;
   cursor: pointer;
   user-select: none;
 
   &:hover {
-    background: rgb(249, 249, 249);
+    background: ${COLORS.BG_LIGHT};
   }
   &.active {
     background: rgb(22, 119, 255);
-    color: rgb(255, 255, 255);
+    color: ${COLORS.WHITE};
     border-color: rgb(22, 119, 255);
   }
 `
@@ -80,8 +81,8 @@ export const SC_PkoinChartContainer = styled.div`
   width: 100%;
   height: 100%;
   min-height: 260px;
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: ${COLORS.WHITE};
+  border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 10px;
   overflow: hidden;
   user-select: none;
@@ -106,14 +107,14 @@ export const SC_PkoinChartSidebar = styled.aside`
   justify-content: flex-start;
   gap: 16px;
   padding: 20px 16px;
-  background: rgb(249, 249, 249);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: ${COLORS.BG_LIGHT};
+  border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 10px;
 `
 
 export const SC_PkoinChartPriceLabel = styled.div`
   font-size: 12px;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
   text-transform: uppercase;
   letter-spacing: 0.02em;
 `
@@ -121,7 +122,7 @@ export const SC_PkoinChartPriceLabel = styled.div`
 export const SC_PkoinChartPriceValue = styled.div`
   font-size: 28px;
   font-weight: 700;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   line-height: 1.2;
 `
 
@@ -137,7 +138,7 @@ export const SC_PkoinChartChange = styled.div`
     color: rgb(180, 50, 50);
   }
   &.neutral {
-    color: rgb(120, 120, 120);
+    color: ${COLORS.GRAY_120};
   }
 `
 
@@ -149,7 +150,7 @@ export const SC_PkoinChartStatRow = styled.div`
 
 export const SC_PkoinChartStatLabel = styled.span`
   font-size: 11px;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
   text-transform: uppercase;
   letter-spacing: 0.02em;
 `
@@ -157,7 +158,7 @@ export const SC_PkoinChartStatLabel = styled.span`
 export const SC_PkoinChartStatValue = styled.span`
   font-size: 14px;
   font-weight: 600;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 `
 
 export const SC_PkoinChartLoading = styled.div`
@@ -167,8 +168,8 @@ export const SC_PkoinChartLoading = styled.div`
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: rgb(120, 120, 120);
-  background: rgb(255, 255, 255);
+  color: ${COLORS.GRAY_120};
+  background: ${COLORS.WHITE};
 `
 
 export const SC_PkoinChartError = styled.div`
@@ -186,10 +187,10 @@ export const SC_PkoinChartLegend = styled.div`
   gap: 16px;
   margin-top: 12px;
   font-size: 13px;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
 `
 
 export const SC_PkoinChartLegendPrice = styled.span`
   font-weight: 600;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 `

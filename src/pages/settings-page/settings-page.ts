@@ -5,6 +5,7 @@ import { Switch } from 'ant-design-vue'
 import { CopyOutlined } from '@ant-design/icons-vue'
 import { useNotificationSettingsStore, useAuthStore } from '@/stores'
 import { useUIStore, type AppLanguage } from '@/stores/ui-store'
+import { useTheme, type ThemeMode } from '@/composables/use-theme'
 import ChangelogView from '@/b-components/changelog/changelog-view.vue'
 import type { NotificationFilterKey } from '@/stores/notification-settings-store'
 import { NOTIFICATION_FILTER_LABELS } from '@/stores/notification-settings-store'
@@ -96,6 +97,7 @@ export default defineComponent({
   name: 'SettingsPage',
   components: {
     RouterLink,
+    // eslint-disable-next-line vue/no-reserved-component-names
     Switch,
     CopyOutlined,
     ChangelogView,
@@ -159,6 +161,14 @@ export default defineComponent({
     }
     const supportedLanguages: AppLanguage[] = ['ru', 'en']
     const languageLabel = computed(() => (appLanguage.value === 'ru' ? 'Язык' : 'Language'))
+
+    const { mode: themeMode, setMode: setTheme } = useTheme()
+    const themeOptions: { value: ThemeMode; label: string }[] = [
+      { value: 'auto', label: 'Авто' },
+      { value: 'light', label: 'Светлая' },
+      { value: 'dark', label: 'Тёмная' },
+    ]
+
     return {
       tabs: SETTINGS_TABS,
       activeTab,
@@ -173,6 +183,9 @@ export default defineComponent({
       onSetLanguage,
       supportedLanguages,
       languageLabel,
+      themeMode,
+      setTheme,
+      themeOptions,
     }
   },
 
@@ -244,13 +257,14 @@ export default defineComponent({
           storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}`,
         })
 
-        const rawData = mnemonicResult.success && mnemonicResult.data
-          ? mnemonicResult.data
-          : (() => {
-              const generalResult = loadEncryptedMnemonic()
-              if (generalResult.success && generalResult.data) return generalResult.data
-              return null
-            })()
+        const rawData =
+          mnemonicResult.success && mnemonicResult.data
+            ? mnemonicResult.data
+            : (() => {
+                const generalResult = loadEncryptedMnemonic()
+                if (generalResult.success && generalResult.data) return generalResult.data
+                return null
+              })()
 
         if (!rawData || !rawData.trim()) {
           throw new Error('Нет сохранённой сид-фразы или ключа для этого аккаунта')
@@ -263,7 +277,9 @@ export default defineComponent({
           try {
             const { keyPair } = recoverKeyPair(rawData.trim())
             this.pkPrivateKeyHex = keyPair?.privateKey
-              ? (Buffer.isBuffer(keyPair.privateKey) ? keyPair.privateKey.toString('hex') : String(keyPair.privateKey))
+              ? Buffer.isBuffer(keyPair.privateKey)
+                ? keyPair.privateKey.toString('hex')
+                : String(keyPair.privateKey)
               : ''
           } catch {
             this.pkPrivateKeyHex = ''
@@ -276,7 +292,9 @@ export default defineComponent({
             const { keyPair } = recoverKeyPair(rawData.trim())
             this.pkMnemonic = ''
             this.pkPrivateKeyHex = keyPair?.privateKey
-              ? (Buffer.isBuffer(keyPair.privateKey) ? keyPair.privateKey.toString('hex') : String(keyPair.privateKey))
+              ? Buffer.isBuffer(keyPair.privateKey)
+                ? keyPair.privateKey.toString('hex')
+                : String(keyPair.privateKey)
               : ''
           } catch {
             throw new Error('Не удалось прочитать ключ')
@@ -288,7 +306,9 @@ export default defineComponent({
         this.pkRevealed = true
       } catch (error) {
         console.error('Failed to load private key:', error)
-        appToast.error({ message: error instanceof Error ? error.message : 'Не удалось загрузить ключ' })
+        appToast.error({
+          message: error instanceof Error ? error.message : 'Не удалось загрузить ключ',
+        })
       } finally {
         this.pkLoading = false
       }
