@@ -211,6 +211,7 @@ import { labelForTxType } from '../components/shared/tx-type-labels'
 import { extractCoinstakeInfo, calcConfirmations } from '../components/shared/extract-coinstake'
 import { recordVisit } from '../components/shared/use-search-history'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
+import { useDocumentTitle } from '@/composables/use-document-title'
 import { explorerStrings as s } from '../block-explorer-strings'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 import {
@@ -315,6 +316,8 @@ const heightLabel = computed(() => {
     ? `#${formatNumber(Number(p.hashOrHeight))}`
     : s.common.ellipsis
 })
+
+useDocumentTitle(() => `Блок ${heightLabel.value}`)
 
 const difficultyLabel = computed(() => {
   const d = block.value?.difficulty

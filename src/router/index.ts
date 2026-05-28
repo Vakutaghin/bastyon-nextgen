@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getActivePinia } from 'pinia'
 import { useAuthStore } from '@/blockchain'
+import { setDocumentTitle } from '@/composables/use-document-title'
 
 // Lazy-loaded page components for code-splitting
 const HomePage = () => import('@/pages/home-page/home-page.vue')
@@ -30,26 +31,31 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomePage,
+      meta: { title: 'Главная' },
     },
     {
       path: '/settings',
       name: 'settings',
       component: SettingsPage,
+      meta: { title: 'Настройки' },
     },
     {
       path: '/limits',
       name: 'limits',
       component: LimitsPage,
+      meta: { title: 'Лимиты' },
     },
     {
       path: '/wallets',
       name: 'wallets',
       component: WalletsPage,
+      meta: { title: 'Кошельки' },
     },
     {
       path: '/my-videos',
       name: 'my-videos',
       component: MyVideosPage,
+      meta: { title: 'Мои видео' },
     },
     // Block explorer routes must come BEFORE the catch-all /:userName below —
     // otherwise the profile route greedily matches `/explorer`, `/explorer/...`.
@@ -57,29 +63,34 @@ const router = createRouter({
       path: '/explorer',
       name: 'explorer',
       component: BlockExplorerPage,
+      meta: { title: 'Блок-эксплорер' },
     },
     {
       path: '/explorer/block/:hashOrHeight',
       name: 'explorer-block',
       component: ExplorerBlockPage,
       props: true,
+      meta: { title: 'Блок' },
     },
     {
       path: '/explorer/tx/:txid',
       name: 'explorer-tx',
       component: ExplorerTxPage,
       props: true,
+      meta: { title: 'Транзакция' },
     },
     {
       path: '/explorer/address/:address',
       name: 'explorer-address',
       component: ExplorerAddressPage,
       props: true,
+      meta: { title: 'Адрес' },
     },
     {
       path: '/explorer/peers',
       name: 'explorer-peers',
       component: ExplorerPeersPage,
+      meta: { title: 'Пиры сети' },
     },
     // /search must be declared BEFORE the catch-all /:userName so the
     // profile route doesn't greedily match it.
@@ -87,23 +98,27 @@ const router = createRouter({
       path: '/search',
       name: 'search',
       component: SearchPage,
+      meta: { title: 'Поиск' },
     },
     // Мини-приложения — список и iframe. Также объявляем ДО catch-all /:userName.
     {
       path: '/miniapps',
       name: 'miniapps',
       component: MiniAppsPage,
+      meta: { title: 'Мини-приложения' },
     },
     {
       path: '/app/:appId/:innerPath(.*)?',
       name: 'mini-app',
       component: MiniAppPage,
       props: true,
+      meta: { title: 'Мини-приложение' },
     },
     {
       path: '/:userName',
       name: 'profile',
       component: ProfilePage,
+      meta: { title: 'Профиль' },
     },
   ],
 })
@@ -117,6 +132,11 @@ router.beforeEach(async (to) => {
   if (!authStore.isUserAuthenticated) {
     return { path: '/', replace: true }
   }
+})
+
+router.afterEach((to) => {
+  const metaTitle = typeof to.meta?.title === 'string' ? to.meta.title : null
+  setDocumentTitle(metaTitle)
 })
 
 export default router

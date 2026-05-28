@@ -1,0 +1,32 @@
+{
+  "name": "Bastyon",
+  "short_name": "Bastyon",
+  "description": "Bastyon — децентрализованная социальная сеть на блокчейне: посты, видео, мессенджер, мини-приложения и кошелёк PKOIN. Без посредников и SSO.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#1890ff",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/img/bastyon_logo_round.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/bastyon_logo_round.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/img/bastyon_logo_white.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

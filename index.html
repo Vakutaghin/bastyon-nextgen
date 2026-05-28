@@ -1,10 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>bst</title>
+    <meta name="theme-color" content="#1890ff" />
+    <meta name="description" content="Bastyon — децентрализованная социальная сеть на блокчейне: посты, видео, мессенджер, мини-приложения и кошелёк PKOIN. Без посредников и SSO." />
+
+    <!-- Иконки и PWA-манифест -->
+    <link rel="icon" type="image/png" href="/img/bastyon_logo_round.png" />
+    <link rel="apple-touch-icon" href="/img/bastyon_logo_round.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Прогрев соединений к основным нодам Pocketnet -->
+    <link rel="preconnect" href="https://1.pocketnet.app:8899" crossorigin />
+    <link rel="dns-prefetch" href="https://2.pocketnet.app" />
+    <link rel="dns-prefetch" href="https://3.pocketnet.app" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bastyon" />
+    <meta property="og:title" content="Bastyon" />
+    <meta property="og:description" content="Децентрализованная социальная сеть на блокчейне: посты, видео, мессенджер, мини-приложения и кошелёк PKOIN." />
+    <meta property="og:image" content="/img/bastyon_logo_round.png" />
+    <meta property="og:locale" content="ru_RU" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Bastyon" />
+    <meta name="twitter:description" content="Децентрализованная социальная сеть на блокчейне: посты, видео, мессенджер, мини-приложения и кошелёк PKOIN." />
+    <meta name="twitter:image" content="/img/bastyon_logo_round.png" />
+
+    <title>Bastyon</title>
 
     <script>
       window.addEventListener('error', function(e) { console.error('[window.error]', e.message, e.filename, e.lineno, e.colno, e.error); });

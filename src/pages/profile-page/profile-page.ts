@@ -1,5 +1,6 @@
 import { defineComponent, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useDocumentTitle } from '@/composables/use-document-title'
 import {
   SC_ProfileWork,
   SC_ProfileMainContent,
@@ -35,7 +36,7 @@ export default defineComponent({
     ProfileSidebar,
     ProfileFeed,
     Spin,
-    LoadingOutlined
+    LoadingOutlined,
   },
   setup() {
     const route = useRoute()
@@ -59,19 +60,34 @@ export default defineComponent({
         if (identifier.length < 30) {
           // Сначала проверяем: может это наш pending nickname?
           const myAddress = authStore.getUserAddress
-          const pendingNickname = (() => { try { return localStorage.getItem('pending_nickname') } catch { return null } })()
+          const pendingNickname = (() => {
+            try {
+              return localStorage.getItem('pending_nickname')
+            } catch {
+              return null
+            }
+          })()
 
-          if (myAddress && pendingNickname && identifier.toLowerCase() === pendingNickname.toLowerCase()) {
+          if (
+            myAddress &&
+            pendingNickname &&
+            identifier.toLowerCase() === pendingNickname.toLowerCase()
+          ) {
             // Это наш незарегистрированный профиль — используем адрес из store
             address = myAddress
           } else {
-            const addressResponse = await getByPRC({
+            const addressResponse = (await getByPRC({
               method: rpcEndpoints.getUserAddress,
               parameters: [identifier],
-              options: { auth: false }
-            }) as GetUserAddressResponse
+              options: { auth: false },
+            })) as GetUserAddressResponse
 
-            if (addressResponse && addressResponse.data && addressResponse.data.length > 0 && addressResponse.data[0]?.address) {
+            if (
+              addressResponse &&
+              addressResponse.data &&
+              addressResponse.data.length > 0 &&
+              addressResponse.data[0]?.address
+            ) {
               address = addressResponse.data[0].address
             } else {
               throw new Error('Пользователь не найден')
@@ -89,7 +105,13 @@ export default defineComponent({
             profile.value = { ...myProfile } as UserProfile
           } else {
             // Профиль ещё не в блокчейне (регистрация в процессе) — заглушка
-            const pendingNickname = (() => { try { return localStorage.getItem('pending_nickname') } catch { return null } })()
+            const pendingNickname = (() => {
+              try {
+                return localStorage.getItem('pending_nickname')
+              } catch {
+                return null
+              }
+            })()
             profile.value = {
               address: myAddress,
               name: pendingNickname || identifier,
@@ -99,41 +121,45 @@ export default defineComponent({
           }
         } else {
           // Теперь получаем профиль по адресу
-          const profileResponse = await getByPRCWithAuth({
+          const profileResponse = (await getByPRCWithAuth({
             method: rpcEndpoints.getUserProfile,
             parameters: [[address]],
-            options: { auth: false }
-          }) as any
+            options: { auth: false },
+          })) as any
 
           if (profileResponse && profileResponse.data && profileResponse.data.length > 0) {
             profile.value = profileResponse.data[0]
-          } else if (profileResponse && Array.isArray(profileResponse) && profileResponse.length > 0) {
-             // Иногда возвращает массив напрямую (в старых версиях/legacy)
-             profile.value = profileResponse[0]
+          } else if (
+            profileResponse &&
+            Array.isArray(profileResponse) &&
+            profileResponse.length > 0
+          ) {
+            // Иногда возвращает массив напрямую (в старых версиях/legacy)
+            profile.value = profileResponse[0]
           } else {
             // Если профиль не найден, создаем заглушку с адресом
             profile.value = {
               address: address,
               name: identifier,
               hash: '',
-              id: 0
+              id: 0,
             }
           }
         }
 
         // Пытаемся получить дополнительные настройки аккаунта (включая обложку из accSet)
         try {
-          const settingsResponse = await getByPRC({
+          const settingsResponse = (await getByPRC({
             method: rpcEndpoints.getAccountSetting,
             parameters: [address],
-            options: { auth: false }
-          }) as any
+            options: { auth: false },
+          })) as any
 
           // getByPRC возвращает data как есть, если это JSON
           let accSet: any = null
 
           if (settingsResponse && settingsResponse.data) {
-             accSet = settingsResponse.data
+            accSet = settingsResponse.data
           } else if (settingsResponse) {
             // Если ответ пришел не в структуре { data: ... }, а напрямую
             accSet = settingsResponse
@@ -159,7 +185,6 @@ export default defineComponent({
           console.warn('Failed to load account settings:', e)
           // Не прерываем загрузку профиля, если настройки не загрузились
         }
-
       } catch (e: any) {
         console.error('Failed to load profile:', e)
         error.value = e.message || 'Не удалось загрузить профиль'
@@ -175,11 +200,17 @@ export default defineComponent({
       }
     }
 
-    watch(() => route.params.userName, (newUserName) => {
-      if (newUserName) {
-        fetchUserProfile(newUserName as string)
-      }
-    }, { immediate: true })
+    watch(
+      () => route.params.userName,
+      (newUserName) => {
+        if (newUserName) {
+          fetchUserProfile(newUserName as string)
+        }
+      },
+      { immediate: true }
+    )
+
+    useDocumentTitle(() => profile.value?.name ?? (route.params.userName as string) ?? 'Профиль')
 
     const isOwnPendingProfile = ref(false)
 
@@ -199,7 +230,7 @@ export default defineComponent({
       loading,
       error,
       isOwnPendingProfile,
-      onProfileLoaded
+      onProfileLoaded,
     }
-  }
+  },
 })

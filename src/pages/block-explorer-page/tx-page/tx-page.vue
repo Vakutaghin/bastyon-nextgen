@@ -198,6 +198,7 @@ import { calcConfirmations } from '../components/shared/extract-coinstake'
 import { recordVisit } from '../components/shared/use-search-history'
 import { explorerStrings as s } from '../block-explorer-strings'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
+import { useDocumentTitle } from '@/composables/use-document-title'
 import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions'
 import {
   SC_TxPageWork,
@@ -226,6 +227,8 @@ import {
 defineOptions({ name: 'TxPage' })
 
 const p = defineProps<{ txid: string }>()
+
+useDocumentTitle(() => `Транзакция ${shortenHash(p.txid)}`)
 
 const txidRef = computed(() => p.txid ?? '')
 

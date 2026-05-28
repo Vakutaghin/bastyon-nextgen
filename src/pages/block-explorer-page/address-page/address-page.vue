@@ -2,17 +2,17 @@
   <SC_AddrPageWork>
     <SC_AddrPagePage>
       <SC_AddrBreadcrumb>
-        <RouterLink :to='{ name: "explorer" }'>{{ s.common.breadcrumbRoot }}</RouterLink>
+        <RouterLink :to="{ name: 'explorer' }">{{ s.common.breadcrumbRoot }}</RouterLink>
         <span> / {{ s.address.breadcrumb }}</span>
       </SC_AddrBreadcrumb>
 
       <SC_AddrTitleRow>
         <SC_AddrTitle>
-          <HashLink :hash='address' full :copyable='true' :to='undefined' />
+          <HashLink :hash="address" full :copyable="true" :to="undefined" />
         </SC_AddrTitle>
         <SC_AddrTitleActions>
-          <ShareButton v-if='address' :title='s.address.shareTitle(address)' />
-          <AddressQr v-if='address' :address='address' />
+          <ShareButton v-if="address" :title="s.address.shareTitle(address)" />
+          <AddressQr v-if="address" :address="address" />
         </SC_AddrTitleActions>
       </SC_AddrTitleRow>
 
@@ -20,23 +20,23 @@
         <SC_AddrSummaryCard>
           <SC_AddrSummaryLabel>{{ s.address.summaryBalance }}</SC_AddrSummaryLabel>
           <SC_AddrSummaryValue>
-            <Skeleton v-if='infoLoading && !info' :width='160' :height='22' />
+            <Skeleton v-if="infoLoading && !info" :width="160" :height="22" />
             <template v-else>{{ balanceLabel }}</template>
           </SC_AddrSummaryValue>
         </SC_AddrSummaryCard>
         <SC_AddrSummaryCard>
           <SC_AddrSummaryLabel>{{ s.address.summaryLastChange }}</SC_AddrSummaryLabel>
           <SC_AddrSummaryValue>
-            <Skeleton v-if='infoLoading && !info' :width='120' :height='22' />
+            <Skeleton v-if="infoLoading && !info" :width="120" :height="22" />
             <template v-else>{{ lastChangeLabel }}</template>
           </SC_AddrSummaryValue>
         </SC_AddrSummaryCard>
         <SC_AddrSummaryCard>
           <SC_AddrSummaryLabel>{{ s.address.summaryProfileLink }}</SC_AddrSummaryLabel>
-          <SC_AddrSummaryValue style='font-size: 14px; font-weight: 500;'>
+          <SC_AddrSummaryValue style="font-size: 14px; font-weight: 500">
             <RouterLink
-              :to='{ name: "profile", params: { userName: address } }'
-              style='color: rgb(0, 123, 255); text-decoration: none;'
+              :to="{ name: 'profile', params: { userName: address } }"
+              style="color: rgb(0, 123, 255); text-decoration: none"
             >
               {{ s.address.openProfile }}
             </RouterLink>
@@ -47,43 +47,36 @@
       <SC_AddrTxSection>
         <SC_AddrTxSectionHeader>{{ s.address.sectionTx }}</SC_AddrTxSectionHeader>
 
-        <div v-if='txLoading && !txList.length'>
-          <SC_AddrTxRow v-for='i in 5' :key='`addr-tx-sk-${i}`'>
-            <SC_AddrTxTypeBadge><Skeleton :width='50' :height='12' /></SC_AddrTxTypeBadge>
-            <Skeleton width='100%' :height='14' />
-            <SC_AddrTxBlock><Skeleton :width='60' :height='12' /></SC_AddrTxBlock>
-            <SC_AddrTxAge><Skeleton :width='60' :height='12' /></SC_AddrTxAge>
+        <div v-if="txLoading && !txList.length">
+          <SC_AddrTxRow v-for="i in 5" :key="`addr-tx-sk-${i}`">
+            <SC_AddrTxTypeBadge><Skeleton :width="50" :height="12" /></SC_AddrTxTypeBadge>
+            <Skeleton width="100%" :height="14" />
+            <SC_AddrTxBlock><Skeleton :width="60" :height="12" /></SC_AddrTxBlock>
+            <SC_AddrTxAge><Skeleton :width="60" :height="12" /></SC_AddrTxAge>
           </SC_AddrTxRow>
         </div>
-        <SC_PlaceholderError v-else-if='txError'>
+        <SC_PlaceholderError v-else-if="txError">
           {{ s.address.txError }}
         </SC_PlaceholderError>
-        <SC_Placeholder v-else-if='!txList.length'>{{ s.address.txEmpty }}</SC_Placeholder>
+        <SC_Placeholder v-else-if="!txList.length">{{ s.address.txEmpty }}</SC_Placeholder>
         <div v-else>
-          <SC_AddrTxRow v-for='tx in txList' :key='tx.txid'>
+          <SC_AddrTxRow v-for="tx in txList" :key="tx.txid">
             <SC_AddrTxTypeBadge>{{ typeLabel(tx.type) }}</SC_AddrTxTypeBadge>
-            <HashLink
-              :hash='tx.txid'
-              :to='{ name: "explorer-tx", params: { txid: tx.txid } }'
-            />
+            <HashLink :hash="tx.txid" :to="{ name: 'explorer-tx', params: { txid: tx.txid } }" />
             <SC_AddrTxBlock>
               <RouterLink
-                :to='{ name: "explorer-block", params: { hashOrHeight: tx.blockHash } }'
-                style='color: inherit; text-decoration: none;'
+                :to="{ name: 'explorer-block', params: { hashOrHeight: tx.blockHash } }"
+                style="color: inherit; text-decoration: none"
               >
                 #{{ formatNumber(tx.height) }}
               </RouterLink>
             </SC_AddrTxBlock>
-            <SC_AddrTxAge :title='formatAbsTime(tx.nTime)'>
+            <SC_AddrTxAge :title="formatAbsTime(tx.nTime)">
               {{ formatRelTime(tx.nTime, now) }}
             </SC_AddrTxAge>
           </SC_AddrTxRow>
-          <SC_LoadMoreFooter v-if='hasMoreTx'>
-            <SC_LoadMoreBtn
-              type='button'
-              :disabled='txLoading'
-              @click='loadTxPage(false)'
-            >
+          <SC_LoadMoreFooter v-if="hasMoreTx">
+            <SC_LoadMoreBtn type="button" :disabled="txLoading" @click="loadTxPage(false)">
               {{ txLoading ? s.common.loading : s.common.loadMore }}
             </SC_LoadMoreBtn>
           </SC_LoadMoreFooter>
@@ -93,7 +86,7 @@
   </SC_AddrPageWork>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAddressInfo } from '@/composables/use-block-explorer-queries'
@@ -114,6 +107,7 @@ import {
 import { labelForTxType } from '../components/shared/tx-type-labels'
 import { recordVisit } from '../components/shared/use-search-history'
 import { explorerStrings as s } from '../block-explorer-strings'
+import { useDocumentTitle } from '@/composables/use-document-title'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 import {
   SC_AddrPageWork,
@@ -143,10 +137,14 @@ defineOptions({ name: 'AddressPage' })
 const p = defineProps<{ address: string }>()
 const addressRef = computed(() => p.address ?? '')
 
-const {
-  data: infoResp,
-  isLoading: infoLoading,
-} = useAddressInfo(addressRef)
+useDocumentTitle(() => {
+  const addr = p.address ?? ''
+  if (!addr) return 'Адрес'
+  const short = addr.length > 12 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr
+  return `Адрес ${short}`
+})
+
+const { data: infoResp, isLoading: infoLoading } = useAddressInfo(addressRef)
 
 // Кастомная cursor-пагинация: API getaddresstransactions(addr, fromHeight, count)
 // принимает курсор-высоту. Для «загрузить ещё» используем minHeight(текущей страницы)-1.
@@ -167,11 +165,14 @@ async function loadTxPage(reset = false) {
   txLoading.value = true
   txError.value = null
   try {
-    const resp = (await getByPRC({
-      method: rpcEndpoints.getAddressTransactions,
-      parameters: [addressRef.value, nextCursorHeight, TX_PAGE_SIZE],
-      options: { auth: false },
-    }, getExplorerRpcConfig())) as GetAddressTransactionsResponse
+    const resp = (await getByPRC(
+      {
+        method: rpcEndpoints.getAddressTransactions,
+        parameters: [addressRef.value, nextCursorHeight, TX_PAGE_SIZE],
+        options: { auth: false },
+      },
+      getExplorerRpcConfig()
+    )) as GetAddressTransactionsResponse
     const page = resp?.data ?? []
     if (page.length === 0) {
       hasMoreTx.value = false
@@ -206,8 +207,10 @@ watch(addressRef, () => loadTxPage(true), { immediate: true })
 // (формат P...base58) — пишем сразу, не дожидаясь сетевого ответа.
 watch(
   addressRef,
-  (a) => { if (a) recordVisit(a, 'address') },
-  { immediate: true },
+  (a) => {
+    if (a) recordVisit(a, 'address')
+  },
+  { immediate: true }
 )
 
 const info = computed(() => infoResp.value?.data)
@@ -234,7 +237,9 @@ function typeLabel(type: number): string {
 const now = ref(Math.floor(Date.now() / 1000))
 let tickHandle: number | null = null
 onMounted(() => {
-  tickHandle = window.setInterval(() => { now.value = Math.floor(Date.now() / 1000) }, 1000)
+  tickHandle = window.setInterval(() => {
+    now.value = Math.floor(Date.now() / 1000)
+  }, 1000)
 })
 onBeforeUnmount(() => {
   if (tickHandle !== null) window.clearInterval(tickHandle)
