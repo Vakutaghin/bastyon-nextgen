@@ -1,3 +1,3 @@
 // Реэкспорт модулей блока комментариев
-export { postCardCommentsOptions } from './post-card-comments'
+export { default as PostCardComments } from './post-card-comments.vue'
 export type { PostForComments, CommentsSortOrder, ReplyTarget, MentionUser } from './types'

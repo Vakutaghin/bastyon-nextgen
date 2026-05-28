@@ -4,19 +4,21 @@
     v-model:open="visible"
     :trigger="['click']"
     placement="bottomRight"
-    :getPopupContainer="trigger => trigger.closest('header') || document.body"
+    :get-popup-container="(trigger) => trigger.closest('header') || document.body"
   >
     <SC_EventsWrapper>
-      <Badge :count="pendingCount" :offset="[0, 5]" :number-style="{ backgroundColor: '#1890ff' }">
+      <Badge
+        :count="pendingCount"
+        :offset="[0, 5]"
+        :number-style="{ backgroundColor: 'var(--color-ant-blue)' }"
+      >
         <HourglassOutlined :style="{ fontSize: '20px' }" />
       </Badge>
     </SC_EventsWrapper>
 
     <template #overlay>
       <SC_PendingEventsMenu @click.stop @mousedown.stop>
-        <SC_EmptyMessage v-if="pendingItems.length === 0">
-          Нет активных событий
-        </SC_EmptyMessage>
+        <SC_EmptyMessage v-if="pendingItems.length === 0"> Нет активных событий </SC_EmptyMessage>
         <SC_EventsList v-else>
           <SC_EventItem v-for="item in pendingItems" :key="item.key" @click.stop @mousedown.stop>
             <template v-if="item.kind === 'rating'">
@@ -26,7 +28,13 @@
                   {{ truncateTitle(item.postTitle) }}
                 </SC_PostTitle>
                 <SC_RatingDisplay>
-                  <StarFilled :style="{ color: 'rgb(255, 193, 7)', fontSize: '18px', marginRight: '4px' }" />
+                  <StarFilled
+                    :style="{
+                      color: 'var(--color-warning)',
+                      fontSize: '18px',
+                      marginRight: '4px',
+                    }"
+                  />
                   <SC_RatingValue>{{ item.ratingValue }}</SC_RatingValue>
                 </SC_RatingDisplay>
               </SC_EventContent>
@@ -48,10 +56,15 @@
   </Dropdown>
 </template>
 
-<script>
-import { headerEventsOptions } from './header-events.ts'
-import { StarFilled } from '@ant-design/icons-vue'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { Dropdown, Badge } from 'ant-design-vue'
+import { HourglassOutlined, StarFilled } from '@ant-design/icons-vue'
+import { useAuthStore } from '@/blockchain'
+import { usePendingRatingsStore, useCommentsStore, usePostsStore } from '@/stores'
+import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 import {
+  SC_EventsWrapper,
   SC_PendingEventsMenu,
   SC_EmptyMessage,
   SC_EventsList,
@@ -61,36 +74,80 @@ import {
   SC_PostTitle,
   SC_RatingDisplay,
   SC_RatingValue,
-  SC_CommentSnippet
-} from './styled.ts'
+  SC_CommentSnippet,
+} from './styled'
 
-export default {
-  ...headerEventsOptions,
-  components: {
-    ...headerEventsOptions.components,
-    StarFilled,
-    SC_PendingEventsMenu,
-    SC_EmptyMessage,
-    SC_EventsList,
-    SC_EventItem,
-    SC_EventHeader,
-    SC_EventContent,
-    SC_PostTitle,
-    SC_RatingDisplay,
-    SC_RatingValue,
-    SC_CommentSnippet
-  },
-  methods: {
-    truncateTitle(title) {
-      const t = title || 'Без названия'
-      if (t.length <= 100) return t
-      return t.slice(0, 100) + '...'
-    },
-    truncateMessage(msg) {
-      const t = (msg || '').replace(/\s+/g, ' ').trim()
-      if (t.length <= 140) return t
-      return t.slice(0, 140) + '...'
+type RatingPendingItem = {
+  kind: 'rating'
+  key: string
+  shareId: string
+  ratingValue: number
+  postTitle?: string
+}
+
+type CommentPendingItem = {
+  kind: 'comment'
+  key: string
+  postId: string
+  message: string
+  postTitle?: string
+}
+
+export type PendingHeaderItem = RatingPendingItem | CommentPendingItem
+
+const authStore = useAuthStore()
+const pendingStore = usePendingRatingsStore()
+const commentsStore = useCommentsStore()
+const postsStore = usePostsStore()
+
+pendingStore.init()
+
+const visible = ref(false)
+
+const isAuthenticated = computed(() => authStore.isUserAuthenticated)
+const pendingCount = computed(() => pendingStore.count + commentsStore.pendingCount)
+
+const pendingItems = computed<PendingHeaderItem[]>(() => {
+  const items: PendingHeaderItem[] = []
+
+  for (const k of pendingStore.items.keys()) {
+    const item = pendingStore.getPendingItem(k)
+    if (item) {
+      items.push({
+        kind: 'rating',
+        key: `rating:${item.shareId}`,
+        shareId: item.shareId,
+        ratingValue: item.ratingValue,
+        postTitle: item.postTitle,
+      })
     }
   }
+
+  for (const c of commentsStore.allPending) {
+    let title = c.postTitle
+    if (!title) {
+      const post = postsStore.getPostByShareId(c.postId)
+      title = resolvePostTitleFromPost(post).title || undefined
+    }
+    items.push({
+      kind: 'comment',
+      key: `comment:${c.id}`,
+      postId: c.postId,
+      message: c.message,
+      postTitle: title,
+    })
+  }
+
+  return items
+})
+
+function truncateTitle(title?: string): string {
+  const t = title || 'Без названия'
+  return t.length <= 100 ? t : t.slice(0, 100) + '...'
+}
+
+function truncateMessage(msg?: string): string {
+  const t = (msg || '').replace(/\s+/g, ' ').trim()
+  return t.length <= 140 ? t : t.slice(0, 140) + '...'
 }
 </script>

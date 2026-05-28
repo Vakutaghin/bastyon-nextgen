@@ -1,5 +1,5 @@
 <template>
-  <SC_MessengerButton @click="handleClick" :isOpen="isOpen">
+  <SC_MessengerButton :is-open="isOpen" @click="emit('click')">
     <slot name="icon" />
     <SC_UnreadBadge v-if="unreadCount > 0">
       {{ unreadCount > 99 ? '99+' : unreadCount }}
@@ -7,8 +7,13 @@
   </SC_MessengerButton>
 </template>
 
-<script lang="ts">
-import { messengerButtonOptions } from './messenger-button'
+<script setup lang="ts">
+import { SC_MessengerButton, SC_UnreadBadge } from './styled'
 
-export default messengerButtonOptions
+withDefaults(defineProps<{ unreadCount?: number; isOpen?: boolean }>(), {
+  unreadCount: 0,
+  isOpen: false,
+})
+
+const emit = defineEmits<{ click: [] }>()
 </script>

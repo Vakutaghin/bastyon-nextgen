@@ -1,29 +1,29 @@
 <template>
-  <SC_Feed ref='feedRootRef'>
+  <SC_Feed ref="feedRootRef">
     <SC_FeedHeader>
       <SC_FeedHeaderLeft>
         <SC_SidebarToggleWrap>
           <Button
-            type='text'
-            size='small'
-            :title='leftSidebarCollapsed ? "Развернуть меню" : "Свернуть меню"'
-            @click='$emit("toggle-left-sidebar")'
+            type="text"
+            size="small"
+            :title="leftSidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'"
+            @click="emit('toggle-left-sidebar')"
           >
-            <MenuUnfoldOutlined v-if='leftSidebarCollapsed' :style='{ fontSize: "16px" }' />
-            <MenuFoldOutlined v-else :style='{ fontSize: "16px" }' />
+            <MenuUnfoldOutlined v-if="leftSidebarCollapsed" :style="{ fontSize: '16px' }" />
+            <MenuFoldOutlined v-else :style="{ fontSize: '16px' }" />
           </Button>
         </SC_SidebarToggleWrap>
         <SC_FeedTitle>Лента</SC_FeedTitle>
         <SC_FeedRefreshWrap>
           <Button
-            type='text'
-            size='small'
-            title='Обновить ленту'
-            :loading='isLoading && allPosts.length > 0'
-            @click='refetch'
+            type="text"
+            size="small"
+            title="Обновить ленту"
+            :loading="isLoading && allPosts.length > 0"
+            @click="refetch"
           >
             <template #icon>
-              <ReloadOutlined :style='{ fontSize: "14px" }' />
+              <ReloadOutlined :style="{ fontSize: '14px' }" />
             </template>
             Обновить ленту
           </Button>
@@ -31,7 +31,7 @@
       </SC_FeedHeaderLeft>
 
       <SC_FeedHeaderActions>
-        <Button type='primary' :loading='isPickingPhoto' @click='handleCreatePost'>
+        <Button type="primary" :loading="isPickingPhoto" @click="handleCreatePost">
           <template #icon>
             <PlusOutlined />
           </template>
@@ -40,106 +40,304 @@
 
         <SC_SidebarToggleWrap>
           <Button
-            type='text'
-            size='small'
-            :title='rightSidebarVisible ? "Скрыть боковую панель" : "Показать боковую панель"'
-            @click='$emit("toggle-right-sidebar")'
+            type="text"
+            size="small"
+            :title="rightSidebarVisible ? 'Скрыть боковую панель' : 'Показать боковую панель'"
+            @click="emit('toggle-right-sidebar')"
           >
-            <MenuUnfoldOutlined v-if='rightSidebarVisible' :style='{ fontSize: "16px" }' />
-            <MenuFoldOutlined v-else :style='{ fontSize: "16px" }' />
+            <MenuUnfoldOutlined v-if="rightSidebarVisible" :style="{ fontSize: '16px' }" />
+            <MenuFoldOutlined v-else :style="{ fontSize: '16px' }" />
           </Button>
         </SC_SidebarToggleWrap>
       </SC_FeedHeaderActions>
     </SC_FeedHeader>
 
     <SC_FeedContent>
-      <SC_FeedLoading v-if='isLoading && allPosts.length === 0'>
-        <Spin tip='Загрузка ленты...'>
+      <SC_FeedLoading v-if="isLoading && allPosts.length === 0">
+        <Spin tip="Загрузка ленты...">
           <template #indicator>
-            <LoadingOutlined :style="{ fontSize: '120px', color: 'rgb(0, 123, 255)' }" spin />
+            <LoadingOutlined :style="{ fontSize: '120px', color: 'var(--color-primary)' }" spin />
           </template>
         </Spin>
       </SC_FeedLoading>
 
-      <SC_FeedError v-else-if='error'>
-        <div v-if="isServerError" style="display: flex; flex-direction: column; align-items: center;">
-          <ExclamationCircleOutlined style='font-size: 30px; margin-bottom: 15px; color: rgb(220, 53, 69);' />
+      <SC_FeedError v-else-if="error">
+        <div
+          v-if="isServerError"
+          style="display: flex; flex-direction: column; align-items: center"
+        >
+          <ExclamationCircleOutlined
+            :style="{
+              fontSize: '30px',
+              marginBottom: '15px',
+              color: 'var(--color-danger)',
+            }"
+          />
           <p>Сервер временно недоступен</p>
-          <Button @click="refetch" type="primary" ghost style="margin-top: 10px;">
+          <Button type="primary" ghost style="margin-top: 10px" @click="refetch">
             <template #icon><ReloadOutlined /></template>
             Обновить
           </Button>
         </div>
-        <div v-else style="display: flex; flex-direction: column; align-items: center;">
-          <ExclamationCircleOutlined style='font-size: 30px; margin-bottom: 15px; color: rgb(220, 53, 69);' />
+        <div v-else style="display: flex; flex-direction: column; align-items: center">
+          <ExclamationCircleOutlined
+            :style="{
+              fontSize: '30px',
+              marginBottom: '15px',
+              color: 'var(--color-danger)',
+            }"
+          />
           <p>{{ error }}</p>
         </div>
       </SC_FeedError>
-      <template v-else-if='allPosts && allPosts.length > 0'>
+      <template v-else-if="allPosts && allPosts.length > 0">
         <PostCard
-          v-for='(post, index) in allPosts'
-          :key='`post-${post.id || index}`'
-          v-memo='[post.id, post.likes, post.comments, post.shares]'
-          :post='post'
-          @like='handleLike'
-          @comment='handleComment'
-          @share='handleShare'
+          v-for="(post, index) in allPosts"
+          :key="`post-${post.id || index}`"
+          v-memo="[post.id, post.likes, post.comments, post.shares]"
+          :post="post"
+          @like="handleLike"
+          @comment="handleComment"
+          @share="handleShare"
         />
-        <!-- Триггер для lazy loading с безопасным расстоянием -->
-        <div
-          ref='loadMoreTrigger'
-          :style='{ height: "1px", width: "100%" }'
-        />
-        <!-- Индикатор загрузки следующей порции -->
-        <SC_FeedLoadingMore v-if='isLoadingMore'>
-          <Spin size='small' tip='Загрузка...'>
+        <!-- Триггер для lazy-loading с минимальной высотой. -->
+        <div ref="loadMoreTrigger" :style="{ height: '1px', width: '100%' }" />
+        <SC_FeedLoadingMore v-if="isLoadingMore">
+          <Spin size="small" tip="Загрузка...">
             <template #indicator>
-              <LoadingOutlined :style="{ fontSize: '24px', color: 'rgb(0, 123, 255)' }" spin />
+              <LoadingOutlined :style="{ fontSize: '24px', color: 'var(--color-primary)' }" spin />
             </template>
           </Spin>
         </SC_FeedLoadingMore>
-        <!-- Сообщение, если больше нет постов -->
-        <SC_FeedEnd v-else-if='!hasMore && allPosts.length > 0 && !isFavoritesTab'>
+        <SC_FeedEnd v-else-if="!hasMore && allPosts.length > 0 && !isFavoritesTab">
           <p>Все посты загружены</p>
         </SC_FeedEnd>
       </template>
-      <Empty v-else-if='!isLoading' description='Лента пуста' />
+      <Empty v-else-if="!isLoading" description="Лента пуста" />
     </SC_FeedContent>
 
     <SC_ScrollToTop
-      v-show='showScrollToTopVisible'
-      type='button'
-      aria-label='Наверх'
-      :style='scrollToTopButtonStyle'
-      @click='scrollToTop'
-      @mouseenter='isHoveringScrollToTop = true'
-      @mouseleave='isHoveringScrollToTop = false'
+      v-show="showScrollToTopVisible"
+      type="button"
+      aria-label="Наверх"
+      :style="scrollToTopButtonStyle"
+      @click="scrollToTop"
+      @mouseenter="isHoveringScrollToTop = true"
+      @mouseleave="isHoveringScrollToTop = false"
     >
       <UpOutlined />
       Наверх
     </SC_ScrollToTop>
 
     <div
-      v-if='pickedPhotoDataUrl'
-      style='position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 16px;'
-      @click='closePhotoPreview'
+      v-if="pickedPhotoDataUrl"
+      style="
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 3000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        gap: 16px;
+      "
+      @click="closePhotoPreview"
     >
-      <img :src='pickedPhotoDataUrl' style='max-width: 100%; max-height: 70vh; border-radius: 8px;' />
-      <div style='color: white; font-size: 14px; opacity: 0.85;'>Тап в любом месте — закрыть</div>
+      <img
+        :src="pickedPhotoDataUrl"
+        style="max-width: 100%; max-height: 70vh; border-radius: 8px"
+      />
+      <div style="color: white; font-size: 14px; opacity: 0.85">Тап в любом месте — закрыть</div>
     </div>
   </SC_Feed>
 </template>
 
-<script>
-import { ReloadOutlined, UpOutlined } from '@ant-design/icons-vue'
-import { contentFeedOptions } from './content-feed.ts'
+<script setup lang="ts">
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  PlusOutlined,
+  ExclamationCircleOutlined,
+  LoadingOutlined,
+  ReloadOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  UpOutlined,
+} from '@ant-design/icons-vue'
+import { usePostsStore } from '@/stores/posts-store'
+import { useFiltersStore } from '@/stores/filters-store'
+import { useInfiniteFeed } from '@/composables/use-infinite-feed'
+import { isMobile } from '@mobile/utils/platform'
+import { getPhoto } from '@mobile/adapters/capacitor-camera'
+import PostCard from '@/b-components/content/post-card/post-card.vue'
+import Button from '@/components/button/button.vue'
+import Spin from '@/components/spin/spin.vue'
+import Empty from '@/components/empty/empty.vue'
+import {
+  SC_Feed,
+  SC_FeedHeader,
+  SC_FeedHeaderLeft,
+  SC_FeedHeaderActions,
+  SC_SidebarToggleWrap,
+  SC_FeedTitle,
+  SC_FeedContent,
+  SC_FeedLoading,
+  SC_FeedError,
+  SC_FeedLoadingMore,
+  SC_FeedEnd,
+  SC_FeedRefreshWrap,
+  SC_ScrollToTop,
+} from './styled'
 
-export default {
-  ...contentFeedOptions,
-  components: {
-    ...(contentFeedOptions.components || {}),
-    ReloadOutlined,
-    UpOutlined
+withDefaults(
+  defineProps<{
+    rightSidebarVisible?: boolean
+    leftSidebarCollapsed?: boolean
+  }>(),
+  { rightSidebarVisible: true, leftSidebarCollapsed: false }
+)
+
+const emit = defineEmits<{
+  'toggle-right-sidebar': []
+  'toggle-left-sidebar': []
+}>()
+
+const postsStore = usePostsStore()
+const filtersStore = useFiltersStore()
+
+const { allPosts, isLoading, isLoadingMore, error, hasMore, loadMoreTrigger, refetch } =
+  useInfiniteFeed({
+    initialLimit: 20,
+    pageSize: 20,
+    threshold: undefined, // 100vh по умолчанию
+    lang: 'ru',
+    enabled: true,
+  })
+
+function registerPosts(): void {
+  for (const post of allPosts.value) {
+    postsStore.registerPost(post)
   }
 }
+
+onMounted(() => {
+  nextTick(registerPosts)
+})
+
+watch(
+  allPosts,
+  () => {
+    nextTick(registerPosts)
+  },
+  { deep: true }
+)
+
+function handleLike(postId: string | number): void {
+  postsStore.likePost(postId)
+}
+
+function handleComment(postId: string | number): void {
+  postsStore.commentPost(postId)
+}
+
+function handleShare(postId: string | number): void {
+  postsStore.sharePost(postId)
+}
+
+// Подсказку «Сервер временно недоступен» показываем только на вкладке подписок (id=2):
+// там 401 — это типичная ошибка авторизации, а не сетевая.
+const isServerError = computed<boolean>(() => {
+  if (!error.value) return false
+  if (filtersStore.activeTab !== 2) return false
+  return true
+})
+
+const isFavoritesTab = computed<boolean>(() => filtersStore.activeTab === 6)
+
+// Плавающая кнопка «наверх» при прокрутке > 100vh —
+// центрируем относительно контентной части (SC_HomeMainContent).
+const feedRootRef = ref<HTMLElement | { $el: HTMLElement } | null>(null)
+const showScrollToTop = ref(false)
+const isHoveringScrollToTop = ref(false)
+const scrollToTopLeftPx = ref<number | null>(null)
+
+function scrollThreshold(): number {
+  return typeof window !== 'undefined' ? window.innerHeight : 800
+}
+
+function updateScrollToTopPosition(): void {
+  const root = feedRootRef.value
+  const el = root && ((root as { $el?: HTMLElement }).$el ?? (root as HTMLElement))
+  const parent = el?.parentElement
+  if (parent && typeof window !== 'undefined') {
+    const rect = parent.getBoundingClientRect()
+    scrollToTopLeftPx.value = rect.left + rect.width / 2
+  } else {
+    scrollToTopLeftPx.value = null
+  }
+}
+
+function onScroll(): void {
+  if (typeof window !== 'undefined') {
+    showScrollToTop.value = window.scrollY > scrollThreshold()
+    updateScrollToTopPosition()
+  }
+}
+
+// Не скрываем кнопку, пока на неё наведён курсор.
+const showScrollToTopVisible = computed<boolean>(
+  () => showScrollToTop.value || isHoveringScrollToTop.value
+)
+
+const scrollToTopButtonStyle = computed<Record<string, string>>(() => {
+  const left = scrollToTopLeftPx.value
+  return left != null ? { left: `${left}px` } : { left: '50%' }
+})
+
+function scrollToTop(): void {
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+const pickedPhotoDataUrl = ref<string | null>(null)
+const isPickingPhoto = ref(false)
+
+async function handleCreatePost(): Promise<void> {
+  if (!isMobile()) {
+    // На вебе пока ничего не делаем — форма публикации ещё не реализована.
+    return
+  }
+
+  isPickingPhoto.value = true
+  try {
+    const dataUrl = await getPhoto({ quality: 85 })
+    if (dataUrl) pickedPhotoDataUrl.value = dataUrl
+  } finally {
+    isPickingPhoto.value = false
+  }
+}
+
+function closePhotoPreview(): void {
+  pickedPhotoDataUrl.value = null
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', updateScrollToTopPosition)
+    nextTick(() => {
+      onScroll()
+      updateScrollToTopPosition()
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('scroll', onScroll)
+    window.removeEventListener('resize', updateScrollToTopPosition)
+  }
+})
 </script>

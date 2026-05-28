@@ -7,8 +7,11 @@
   </SC_LeftSidebar>
 </template>
 
-<script>
-import { sidebarLeftOptions } from './sidebar-left.ts'
+<script setup lang="ts">
+import SidebarTabs from '@/b-components/sidebar/sidebar-tabs/sidebar-tabs.vue'
+import SidebarCategories from '@/b-components/sidebar/sidebar-categories/sidebar-categories.vue'
+import SidebarTags from '@/b-components/sidebar/sidebar-tags/sidebar-tags.vue'
+import { SC_LeftSidebar } from './styled'
 
-export default sidebarLeftOptions
+withDefaults(defineProps<{ collapsed?: boolean }>(), { collapsed: false })
 </script>

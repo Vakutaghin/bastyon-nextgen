@@ -6,8 +6,32 @@
   </Tooltip>
 </template>
 
-<script>
-import { headerReportBugOptions } from './header-report-bug.ts'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { Tooltip } from 'ant-design-vue'
+import { BugOutlined } from '@ant-design/icons-vue'
+import { useAuthStore } from '@/blockchain'
+import { useMessengerStore } from '@/b-components/messenger/store'
+import { SC_ReportBugWrapper } from './styled'
 
-export default headerReportBugOptions
+// TODO: заменить на реальный адрес аккаунта-приёмника багов
+const BUG_REPORT_ACCOUNT_ADDRESS = ''
+
+const authStore = useAuthStore()
+const messengerStore = useMessengerStore()
+
+const isVisible = computed<boolean>(() => authStore.isUserAuthenticated)
+
+async function onClick(): Promise<void> {
+  if (!authStore.isUserAuthenticated) return
+  if (!BUG_REPORT_ACCOUNT_ADDRESS) {
+    console.warn('[HeaderReportBug] BUG_REPORT_ACCOUNT_ADDRESS не задан')
+    return
+  }
+  const roomId = await messengerStore.startChatWithAddress(BUG_REPORT_ACCOUNT_ADDRESS)
+  if (roomId) {
+    messengerStore.switchToChatAndLoad(roomId)
+    messengerStore.isFullScreen = true
+  }
+}
 </script>

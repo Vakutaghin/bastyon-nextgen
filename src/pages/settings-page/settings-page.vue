@@ -215,8 +215,298 @@
   </SC_SettingsWork>
 </template>
 
-<script lang="ts">
-import settingsPage from './settings-page'
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
+import { Switch } from 'ant-design-vue'
+import { CopyOutlined } from '@ant-design/icons-vue'
+import { useNotificationSettingsStore, useAuthStore } from '@/stores'
+import { useUIStore, type AppLanguage } from '@/stores/ui-store'
+import { useTheme, type ThemeMode } from '@/composables/use-theme'
+import ChangelogView from '@/b-components/changelog/changelog-view.vue'
+import type { NotificationFilterKey } from '@/stores/notification-settings-store'
+import { NOTIFICATION_FILTER_LABELS } from '@/stores/notification-settings-store'
+import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
+import { detectPrivateKeyFormat, recoverKeyPair } from '@/blockchain'
+import { appToast } from '@/b-components/app-toast'
+import {
+  useExplorerPreferredNode,
+  type AvailableNode,
+  type PreferredNode,
+} from '@/composables/use-explorer-preferred-node'
+import {
+  SC_SettingsWork,
+  SC_SettingsPage,
+  SC_SettingsContentWrapper,
+  SC_SettingsSidebar,
+  SC_SettingsSidebarItem,
+  SC_SettingsMain,
+  SC_SettingsPlaceholder,
+  SC_SettingsSectionTitle,
+  SC_NotificationsList,
+  SC_NotificationsRow,
+  SC_NotificationsRowLabel,
+  SC_PrivateKeySection,
+  SC_PrivateKeyWarning,
+  SC_PrivateKeyBox,
+  SC_PrivateKeyLabel,
+  SC_PrivateKeyValue,
+  SC_CopyIconBtn,
+  SC_ShowKeyButton,
+  SC_HideKeyButton,
+  SC_ConfirmOverlay,
+  SC_ConfirmTitle,
+  SC_ConfirmText,
+  SC_ConfirmButtons,
+  SC_ConfirmBtnPrimary,
+  SC_ConfirmBtnDefault,
+  SC_ExplorerSettingsSection,
+  SC_ExplorerSettingsBlock,
+  SC_ExplorerSettingsLead,
+  SC_ExplorerOpenFullButton,
+  SC_ExplorerNodeList,
+  SC_ExplorerNodeRow,
+  SC_ExplorerNodeRadio,
+  SC_ExplorerNodeLabel,
+  SC_ExplorerNodeHint,
+  SC_GeneralBlock,
+  SC_GeneralRow,
+  SC_GeneralLabel,
+  SC_LangSwitcher,
+  SC_LangButton,
+} from './settings-page.styled'
 
-export default settingsPage
+export type T_SettingsTabKey =
+  | 'general'
+  | 'notifications'
+  | 'wallets'
+  | 'accounts'
+  | 'system'
+  | 'privateKey'
+  | 'blockExplorer'
+  | 'whatsNew'
+
+const SETTINGS_TABS: { key: T_SettingsTabKey; label: string }[] = [
+  { key: 'general', label: 'Общие' },
+  { key: 'notifications', label: 'Уведомления' },
+  { key: 'wallets', label: 'Кошельки' },
+  { key: 'accounts', label: 'Аккаунты' },
+  { key: 'system', label: 'Система' },
+  { key: 'privateKey', label: 'Приватный ключ' },
+  { key: 'blockExplorer', label: 'Block Explorer' },
+  { key: 'whatsNew', label: 'Что нового' },
+]
+
+const NOTIFICATION_KEYS: NotificationFilterKey[] = [
+  'sound',
+  'win',
+  'transactions',
+  'upvotes',
+  'downvotes',
+  'comments',
+  'answers',
+  'followers',
+  'commentScore',
+]
+
+const activeTab = ref<T_SettingsTabKey>('notifications')
+const notificationSettings = useNotificationSettingsStore()
+const authStore = useAuthStore()
+const uiStore = useUIStore()
+const { language: appLanguage } = storeToRefs(uiStore)
+const {
+  preferredNode,
+  availableNodes: availableExplorerNodes,
+  setPreferredNode,
+} = useExplorerPreferredNode()
+
+onMounted(() => {
+  notificationSettings.load()
+  void uiStore.loadLanguage()
+})
+
+async function onSetLanguage(language: AppLanguage): Promise<void> {
+  await uiStore.setLanguage(language)
+}
+
+const supportedLanguages: AppLanguage[] = ['ru', 'en']
+const { t } = useI18n()
+// Реактивно следует за активной локалью i18n.
+const languageLabel = computed(() => t('language.label'))
+
+const { mode: themeMode, setMode: setTheme } = useTheme()
+const themeOptions: { value: ThemeMode; label: string }[] = [
+  { value: 'auto', label: 'Авто' },
+  { value: 'light', label: 'Светлая' },
+  { value: 'dark', label: 'Тёмная' },
+]
+
+const tabs = SETTINGS_TABS
+
+// Private key section state
+const pkConfirmVisible = ref(false)
+const pkMnemonic = ref('')
+const pkPrivateKeyHex = ref('')
+const pkRevealed = ref(false)
+const pkLoading = ref(false)
+
+function setActiveTab(key: T_SettingsTabKey): void {
+  activeTab.value = key
+  // При переключении вкладок прячем ранее открытый ключ.
+  if (key !== 'privateKey') pkHide()
+}
+
+function isNodePinned(node: AvailableNode): boolean {
+  const p = preferredNode.value as PreferredNode | null
+  return !!p && p.host === node.host && p.port === node.port
+}
+
+function onPickPreferredNode(node: AvailableNode | null): void {
+  setPreferredNode(node ? { host: node.host, port: node.port } : null)
+  appToast.success({
+    message: node ? `Закреплена нода ${node.host}` : 'Включён авто-режим',
+  })
+}
+
+function placeholderText(): string {
+  const item = SETTINGS_TABS.find((tab) => tab.key === activeTab.value)
+  return item ? `Раздел «${item.label}» — контент будет добавлен позже.` : ''
+}
+
+async function onNotificationFilterChange(
+  key: NotificationFilterKey,
+  checked: boolean
+): Promise<void> {
+  await notificationSettings.setFilter(key, checked)
+}
+
+// ── Private key methods ──
+
+function pkShowConfirm(): void {
+  pkConfirmVisible.value = true
+}
+
+function pkCancelConfirm(): void {
+  pkConfirmVisible.value = false
+}
+
+async function pkConfirmAndReveal(): Promise<void> {
+  pkConfirmVisible.value = false
+  pkLoading.value = true
+
+  try {
+    const address = authStore.getUserAddress
+    if (!address) throw new Error('Нет активного аккаунта')
+
+    const { loadEncryptedData, loadEncryptedMnemonic } = await import('@/blockchain/storage')
+
+    const mnemonicResult = loadEncryptedData({
+      persistent: true,
+      storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}`,
+    })
+
+    const rawData =
+      mnemonicResult.success && mnemonicResult.data
+        ? mnemonicResult.data
+        : (() => {
+            const generalResult = loadEncryptedMnemonic()
+            if (generalResult.success && generalResult.data) return generalResult.data
+            return null
+          })()
+
+    if (!rawData || !rawData.trim()) {
+      throw new Error('Нет сохранённой сид-фразы или ключа для этого аккаунта')
+    }
+
+    const trimmed = rawData.trim()
+    const format = detectPrivateKeyFormat(trimmed)
+    if (format === 'mnemonic') {
+      pkMnemonic.value = trimmed
+      // Derive hex из мнемоники, чтобы пользователь видел оба формата.
+      try {
+        const { keyPair } = recoverKeyPair(trimmed)
+        pkPrivateKeyHex.value = keyPair?.privateKey
+          ? Buffer.isBuffer(keyPair.privateKey)
+            ? keyPair.privateKey.toString('hex')
+            : String(keyPair.privateKey)
+          : ''
+      } catch {
+        pkPrivateKeyHex.value = ''
+      }
+    } else if (format === 'hex') {
+      pkMnemonic.value = ''
+      pkPrivateKeyHex.value = trimmed
+    } else if (format === 'wif') {
+      try {
+        const { keyPair } = recoverKeyPair(trimmed)
+        pkMnemonic.value = ''
+        pkPrivateKeyHex.value = keyPair?.privateKey
+          ? Buffer.isBuffer(keyPair.privateKey)
+            ? keyPair.privateKey.toString('hex')
+            : String(keyPair.privateKey)
+          : ''
+      } catch {
+        throw new Error('Не удалось прочитать ключ')
+      }
+    } else {
+      throw new Error('Неизвестный формат данных')
+    }
+
+    pkRevealed.value = true
+  } catch (error) {
+    console.error('Failed to load private key:', error)
+    appToast.error({
+      message: error instanceof Error ? error.message : 'Не удалось загрузить ключ',
+    })
+  } finally {
+    pkLoading.value = false
+  }
+}
+
+function pkHide(): void {
+  pkRevealed.value = false
+  pkMnemonic.value = ''
+  pkPrivateKeyHex.value = ''
+  pkConfirmVisible.value = false
+}
+
+async function pkCopyMnemonic(): Promise<void> {
+  if (!pkMnemonic.value) return
+  if (await pkCopyToClipboard(pkMnemonic.value)) {
+    appToast.success({ message: 'Сид-фраза скопирована' })
+  }
+}
+
+async function pkCopyKey(): Promise<void> {
+  if (!pkPrivateKeyHex.value) return
+  if (await pkCopyToClipboard(pkPrivateKeyHex.value)) {
+    appToast.success({ message: 'Приватный ключ скопирован' })
+  }
+}
+
+async function pkCopyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // Fallback для контекстов без Clipboard API (старые WebView, file://).
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    textArea.style.position = 'fixed'
+    textArea.style.opacity = '0'
+    document.body.appendChild(textArea)
+    textArea.select()
+    try {
+      document.execCommand('copy')
+      return true
+    } catch (err) {
+      console.error('Failed to copy:', err)
+      return false
+    } finally {
+      document.body.removeChild(textArea)
+    }
+  }
+}
 </script>

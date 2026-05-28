@@ -1,12 +1,11 @@
 <template>
-  <SC_Window :isOpen="isOpen">
+  <SC_Window :is-open="isOpen">
     <SC_Header>
       <slot name="actions" />
       <SC_Title>{{ title }}</SC_Title>
       <button
         type="button"
         aria-label="Закрыть"
-        @click="$emit('close')"
         :style="{
           appearance: 'none',
           border: 'none',
@@ -20,6 +19,7 @@
           cursor: 'pointer',
           marginLeft: '8px',
         }"
+        @click="emit('close')"
       >
         <img :src="closeIcon" alt="" width="12" height="12" />
       </button>
@@ -31,14 +31,10 @@
   </SC_Window>
 </template>
 
-<script lang="ts">
-import { messengerWindowOptions } from './messenger-window'
+<script setup lang="ts">
+import { SC_Window, SC_Header, SC_Title, SC_Content } from './styled'
 import closeIcon from './img/close.svg'
 
-export default {
-  ...messengerWindowOptions,
-  data() {
-    return { closeIcon }
-  },
-}
+withDefaults(defineProps<{ isOpen: boolean; title?: string }>(), { title: 'Messenger' })
+const emit = defineEmits<{ close: [] }>()
 </script>

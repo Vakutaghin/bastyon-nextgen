@@ -2,7 +2,7 @@
   <SC_PostCard ref="postCardRef" hoverable>
     <PostCardHeader :post="post" :author-override="authorOverride" />
 
-    <component :is="isRepost ? 'SC_RepostInnerCard' : 'div'">
+    <component :is="isRepost ? SC_RepostInnerCard : 'div'">
       <SC_RepostDeleted v-if="isRepost && post.repostDeleted">
         <DeleteOutlined class="repost-deleted-icon" />
         <span>Публикация удалена</span>
@@ -91,7 +91,7 @@
             :user-vote="post.myVal"
             :voters-count="post.scoreCnt || 0"
             :score-sum="post.scoreSum || 0"
-            :share-id="post.hash || post.txid || post.id || ''"
+            :share-id="String(post.hash || post.txid || post.id || '')"
             :content-author-address="post.author?.address || ''"
             @rating-change="handleRatingChange"
             @error="handleRatingError"
@@ -112,8 +112,265 @@
   />
 </template>
 
-<script>
-import { postCardOptions } from './post-card.ts'
+<script setup lang="ts">
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { DeleteOutlined } from '@ant-design/icons-vue'
+import { useModalStore } from '@/stores/modal-store'
+import { usePostsStore } from '@/stores/posts-store'
+import { formatDateTimeFull } from '@/helpers/common/date-formatter'
+import { getInitials } from '@/helpers/common/initials'
+import { getYoutubeEmbedUrls } from '@/helpers/common/youtube-url'
+import { parseTimecodes, type Chapter } from '@/helpers/content/timecode-parser'
+import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
+import { ImageGallery } from '@/components/image-gallery'
+import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
+import PostCardComments from '@/b-components/content/post-card/components/post-card-comments/post-card-comments.vue'
+import Avatar from '@/components/avatar/avatar.vue'
+import PostCardHeader from '@/b-components/content/post-card/components/post-card-header/post-card-header.vue'
+import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
+import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
+import PostCardCategoriesTags from '@/b-components/content/post-card/components/post-card-categories-tags/post-card-categories-tags.vue'
+import PostCardVideoPlaceholder from '@/b-components/content/post-card/components/post-card-video-placeholder/post-card-video-placeholder.vue'
+import {
+  SC_PostCard,
+  SC_PostTitle,
+  SC_PostActions,
+  SC_PostCardYoutube,
+  SC_RepostInnerCard,
+  SC_RepostOriginalAuthor,
+  SC_RepostOriginalAuthorInfo,
+  SC_RepostOriginalAuthorName,
+  SC_RepostOriginalAuthorTime,
+  SC_RepostDeleted,
+} from './styled'
 
-export default postCardOptions
+interface PostAuthor {
+  name: string
+  address: string
+  avatar?: string | null
+  reputation: number
+  letter: string
+  verified?: boolean
+  subscribers_count?: number
+  subscribes_count?: number
+}
+
+interface Post {
+  id?: string | number
+  /** Хеш поста (share ID для upvote). */
+  hash?: string
+  /** ID транзакции (альтернатива hash). */
+  txid?: string
+  author: PostAuthor
+  title?: string
+  content?: string
+  timestamp: string
+  likes?: number
+  comments?: number
+  shares?: number
+  tags?: string[]
+  type?: string
+  category?: string
+  images?: string[]
+  ratingStars?: number
+  scoreCnt?: number
+  scoreSum?: number
+  /** Оценка текущего пользователя. */
+  myVal?: number
+  /** URL видео в формате peertube://host/videoid. */
+  videoUrl?: string
+  /** Текст превью для статей. */
+  preview?: string
+  lastComment?: {
+    id: string
+    address: string
+    authorName: string
+    avatar: string | null
+    time: number
+    message: string
+    children: number
+    scoreUp: number
+    scoreDown: number
+  }
+  /** txid оригинальной записи (если репост). */
+  repost?: string
+  /** Автор оригинальной записи. */
+  repostAuthor?: {
+    name: string
+    address: string
+    avatar?: string | null
+  }
+  /** Время публикации оригинала (unix sec). */
+  repostOriginalTimestamp?: number
+  /** Оригинал удалён. */
+  repostDeleted?: boolean
+}
+
+const props = withDefaults(
+  defineProps<{
+    post: Post
+    /** Максимальная длина текста до сворачивания (символов). */
+    maxLength?: number
+    /** Максимальное количество блоков до сворачивания. */
+    maxBlocks?: number
+    /** Показывать ли текст полностью (отключает сворачивание). */
+    showFull?: boolean
+    authorOverride?: PostAuthor | null
+  }>(),
+  { maxLength: 500, maxBlocks: 3, showFull: false, authorOverride: null }
+)
+
+const emit = defineEmits<{
+  like: [postId: string | number]
+  comment: [postId: string | number]
+  share: [postId: string | number]
+}>()
+
+const modalStore = useModalStore()
+const postsStore = usePostsStore()
+
+const isCollapsed = ref(true)
+const postCardRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
+const videoPlayerRef = ref<{ seekTo?: (s: number) => void } | null>(null)
+
+onMounted(() => {
+  if (props.post.id !== undefined) {
+    postsStore.registerPost(props.post)
+  }
+})
+
+const isRepost = computed<boolean>(() => !!props.post.repost)
+
+const postId = computed<string>(
+  () => props.post.txid || props.post.hash || String(props.post.id || '')
+)
+
+const isImageGalleryOpen = computed<boolean>({
+  get: () => modalStore.imageGallery.isOpen && modalStore.imageGallery.images === props.post.images,
+  set: (value) => {
+    if (!value) modalStore.closeImageGallery()
+  },
+})
+
+const galleryIndex = computed<number>(() => modalStore.imageGallery.index)
+
+/** Средний рейтинг в звёздах (0-5). */
+const averageRating = computed<number>(() => {
+  if (props.post.ratingStars != null) return props.post.ratingStars
+  if (
+    props.post.scoreCnt &&
+    props.post.scoreCnt > 0 &&
+    props.post.scoreSum != null &&
+    props.post.scoreSum !== undefined
+  ) {
+    const averageRating = props.post.scoreSum / props.post.scoreCnt
+    return Math.max(0, Math.min(5, Math.round(averageRating * 10) / 10))
+  }
+  return 0
+})
+
+function decodeUrlEncoded(str: string): string {
+  if (!str || typeof str !== 'string') return str
+  // Префильтр — без %XX декодировать смысла нет.
+  const urlEncodedPattern = /%[0-9A-Fa-f]{2}/g
+  if (!urlEncodedPattern.test(str)) return str
+  try {
+    const decoded = decodeURIComponent(str)
+    if (decoded && decoded !== str) return decoded
+  } catch {
+    return str
+  }
+  return str
+}
+
+const decodedTitle = computed<string>(() => decodeUrlEncoded(props.post.title || ''))
+
+const originalAuthorFormattedTime = computed<string>(() => {
+  const ts = props.post.repostOriginalTimestamp
+  if (ts == null) return ''
+  return formatDateTimeFull(ts)
+})
+
+/** Главы из тайм-кодов в описании (для video/audio постов). */
+const chapters = computed<Chapter[]>(() => {
+  const isMedia =
+    (props.post.type === 'video' || props.post.type === 'audio') && !!props.post.videoUrl
+  if (!isMedia) return []
+  return parseTimecodes(props.post.content)
+})
+
+const youtubeEmbedUrls = computed<string[]>(() => {
+  if (!props.post) return []
+  // Не показываем YouTube-эмбеды, если пост содержит внутриплатформенное видео —
+  // это привело бы к двум плеерам.
+  const hasInPlatformVideo =
+    (props.post.type === 'video' || props.post.type === 'audio') && !!props.post.videoUrl
+  if (hasInPlatformVideo) return []
+  const fromContent = getYoutubeEmbedUrls(props.post.content)
+  const fromPreview = getYoutubeEmbedUrls(props.post.preview)
+  const seen = new Set(fromContent)
+  for (const url of fromPreview) seen.add(url)
+  return Array.from(seen)
+})
+
+function getInitial(nameOrLetter?: string): string {
+  return getInitials(nameOrLetter, { maxLetters: 1 })
+}
+
+function closeImageGallery(): void {
+  modalStore.closeImageGallery()
+}
+
+function handleLike(): void {
+  postsStore.likePost(postId.value)
+  emit('like', postId.value)
+}
+
+function handleComment(): void {
+  postsStore.commentPost(postId.value)
+  emit('comment', postId.value)
+}
+
+function handleShare(): void {
+  postsStore.sharePost(postId.value)
+  emit('share', postId.value)
+}
+
+function handleRatingChange(_rating: number): void {
+  // Оптимистичное состояние держится в composable (`optimisticRating` +
+  // `pendingValue`). Мутировать `post.myVal` здесь нельзя: это делает
+  // `effectiveUserVote` правдивым до подтверждения транзакции — из-за чего
+  // `optimisticVotersCount` / `scoreSum` откатывают +1 обратно. `myVal`,
+  // `scoreCnt`, `scoreSum` обновятся атомарно в store после поллинга
+  // подтверждения в `pending-ratings-store`.
+}
+
+function handleRatingError(error: unknown): void {
+  console.error('Failed to submit rating:', error)
+}
+
+/** Клик по тайм-коду в описании → плеер перематывает и запускает. */
+function handleSeekTimecode(seconds: number): void {
+  const player = videoPlayerRef.value
+  if (player && typeof player.seekTo === 'function') {
+    player.seekTo(seconds)
+  }
+}
+
+/** При сворачивании комментариев скроллим к карточке поста. */
+function onCommentsCollapsed(): void {
+  nextTick(() => {
+    const r = postCardRef.value
+    const el = r && ('$el' in r ? r.$el : r)
+    if (el && typeof (el as HTMLElement).scrollIntoView === 'function') {
+      ;(el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  })
+}
+
+// Подавляем «unused»-предупреждение TS — функции используются как обработчики.
+void handleLike
+void handleComment
+void handleShare
+void getInitial
 </script>

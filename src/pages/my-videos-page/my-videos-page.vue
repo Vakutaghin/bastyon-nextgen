@@ -10,8 +10,11 @@
   </SC_MyVideosWork>
 </template>
 
-<script lang="ts">
-import myVideosPage from './my-videos-page'
-
-export default myVideosPage
+<script setup lang="ts">
+import {
+  SC_MyVideosWork,
+  SC_MyVideosPage,
+  SC_MyVideosTitle,
+  SC_MyVideosPlaceholder,
+} from './my-videos-page.styled'
 </script>

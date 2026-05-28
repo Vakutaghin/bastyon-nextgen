@@ -4,8 +4,7 @@
   </SC_VideoPlaceholder>
 </template>
 
-<script>
-import { postCardVideoPlaceholderOptions } from './post-card-video-placeholder.ts'
-
-export default postCardVideoPlaceholderOptions
+<script setup lang="ts">
+import { PlayCircleFilled } from '@ant-design/icons-vue'
+import { SC_VideoPlaceholder } from './styled'
 </script>

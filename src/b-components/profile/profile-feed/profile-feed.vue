@@ -1,8 +1,6 @@
 <template>
   <SC_ProfileFeed>
-    <SC_ErrorMessage v-if="error">
-      Произошла ошибка при загрузке ленты
-    </SC_ErrorMessage>
+    <SC_ErrorMessage v-if="error"> Произошла ошибка при загрузке ленты </SC_ErrorMessage>
 
     <SC_FeedContent>
       <PostCard
@@ -13,19 +11,19 @@
       />
     </SC_FeedContent>
 
-    <div v-if="isLoading && allPosts.length === 0" style="padding: 40px; text-align: center;">
+    <div v-if="isLoading && allPosts.length === 0" style="padding: 40px; text-align: center">
       <Spin tip="Загрузка ленты...">
         <template #indicator>
-          <LoadingOutlined :style="{ fontSize: '50px', color: 'rgb(0, 123, 255)' }" spin />
+          <LoadingOutlined :style="{ fontSize: '50px', color: 'var(--color-primary)' }" spin />
         </template>
       </Spin>
     </div>
 
-    <SC_LoadMoreTrigger ref="loadMoreTrigger" v-else>
+    <SC_LoadMoreTrigger v-else ref="loadMoreTrigger">
       <SC_LoadingSpinner v-if="isLoadingMore || isLoading">
         <Spin tip="Загрузка...">
           <template #indicator>
-            <LoadingOutlined :style="{ fontSize: '24px', color: 'rgb(0, 123, 255)' }" spin />
+            <LoadingOutlined :style="{ fontSize: '24px', color: 'var(--color-primary)' }" spin />
           </template>
         </Spin>
       </SC_LoadingSpinner>
@@ -39,7 +37,51 @@
   </SC_ProfileFeed>
 </template>
 
-<script lang="ts">
-import ProfileFeed from './profile-feed.ts'
-export default ProfileFeed
+<script setup lang="ts">
+import { computed, watch } from 'vue'
+import { LoadingOutlined } from '@ant-design/icons-vue'
+import PostCard from '@/b-components/content/post-card/post-card.vue'
+import Spin from '@/components/spin/spin.vue'
+import { useProfileFeed } from '@/composables/use-profile-feed'
+import type { UserProfile } from '@/types/rpc-responses/user-get'
+import {
+  SC_ProfileFeed,
+  SC_FeedContent,
+  SC_LoadMoreTrigger,
+  SC_LoadingSpinner,
+  SC_NoMorePosts,
+  SC_EmptyFeed,
+  SC_ErrorMessage,
+} from './styled'
+
+const props = defineProps<{
+  address: string
+  profile?: UserProfile | null
+  /** Язык контента для getprofilefeed: '' — все языки, 'ru'/'en' и т.д. Если не задан, используется 'ru'. */
+  lang?: string
+}>()
+
+const emit = defineEmits<{ 'profile-loaded': [profile: UserProfile] }>()
+
+const { allPosts, userProfile, isLoading, isLoadingMore, error, hasMore, loadMoreTrigger } =
+  useProfileFeed({
+    address: props.address,
+    ...(props.lang !== undefined && { lang: props.lang }),
+  })
+
+watch(userProfile, (newProfile) => {
+  if (newProfile) emit('profile-loaded', newProfile)
+})
+
+const authorOverride = computed(() => {
+  const p = props.profile || userProfile.value
+  if (!p) return null
+  return {
+    name: p.name || '',
+    address: p.address || '',
+    avatar: p.i || null,
+    reputation: p.reputation || 0,
+    letter: p.name ? p.name[0] : '?',
+  }
+})
 </script>

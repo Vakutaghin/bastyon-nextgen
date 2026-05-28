@@ -9,8 +9,15 @@
   </SC_ChatList>
 </template>
 
-<script lang="ts">
-import { chatListOptions } from './chat-list'
+<script setup lang="ts">
+import type { Dialog } from '../../types'
+import ChatListItem from '../chat-list-item/chat-list-item.vue'
+import { SC_ChatList } from './styled'
 
-export default chatListOptions
+defineProps<{ dialogs: Dialog[] }>()
+const emit = defineEmits<{ select: [id: string] }>()
+
+function onSelect(id: string): void {
+  emit('select', id)
+}
 </script>
