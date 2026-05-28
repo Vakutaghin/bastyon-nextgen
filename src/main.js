@@ -66,6 +66,7 @@ import '@/helpers/api/request'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { showToastsForNewNotifications } from '@/b-components/header/header-notifications/notification-toasts'
 import { bootMiniApps } from '@/mini-apps/ui/use-mini-app-bridge'
+import { installGlobalErrorHandler } from '@/composables/use-error-boundary'
 import { queryClient } from './query-client'
 import './style.css'
 
@@ -85,6 +86,11 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
 
 const app = createApp(App)
 const pinia = createPinia()
+
+// Глобальный обработчик ошибок (Vue + window + Promise rejections).
+// Должен быть установлен до монтирования, иначе ошибки во время бутстрапа
+// не попадают в обработчик.
+installGlobalErrorHandler(app)
 
 // Регистрируем Pinia
 app.use(pinia)
