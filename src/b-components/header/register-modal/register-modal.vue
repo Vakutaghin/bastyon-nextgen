@@ -11,11 +11,10 @@
   >
     <SC_RegisterForm>
       <SC_FormItem>
-        <SC_FormLabel>
-          Псевдоним
-        </SC_FormLabel>
+        <SC_FormLabel for="register-nickname"> Псевдоним </SC_FormLabel>
         <SC_InputWrapper>
           <input
+            id="register-nickname"
             class="ant-input"
             :value="nickname"
             placeholder="Введите псевдоним"
@@ -26,17 +25,19 @@
           />
         </SC_InputWrapper>
         <SC_FormHint>
-          Максимум 20 символов. Только латинские буквы, цифры и нижнее подчеркивание. Русские буквы автоматически транслитерируются.
+          Максимум 20 символов. Только латинские буквы, цифры и нижнее подчеркивание. Русские буквы
+          автоматически транслитерируются.
         </SC_FormHint>
       </SC_FormItem>
 
       <SC_FormItem>
-        <SC_FormLabel>
+        <SC_FormLabel for="register-email">
           Email
           <SC_FormLabelOptional>(необязательно)</SC_FormLabelOptional>
         </SC_FormLabel>
         <SC_InputWrapper>
           <input
+            id="register-email"
             :value="email"
             type="email"
             placeholder="Введите email"
@@ -53,17 +54,13 @@
 
       <SC_LinkToSignIn>
         Уже зарегистрированы?
-        <SC_LinkButton @click="handleOpenSignIn">
-          Войти
-        </SC_LinkButton>
+        <SC_LinkButton @click="handleOpenSignIn"> Войти </SC_LinkButton>
       </SC_LinkToSignIn>
     </SC_RegisterForm>
 
     <template #footer>
-      <div style="display: flex; justify-content: flex-end; gap: 8px;">
-        <Button type="default" @click="handleCancel" :disabled="loading">
-          Отмена
-        </Button>
+      <div style="display: flex; justify-content: flex-end; gap: 8px">
+        <Button type="default" @click="handleCancel" :disabled="loading"> Отмена </Button>
         <Button
           type="primary"
           :loading="loading"

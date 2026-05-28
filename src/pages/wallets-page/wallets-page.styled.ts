@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_WalletWork = styled.div`
   display: flex;
@@ -8,10 +9,10 @@ export const SC_WalletWork = styled.div`
   min-height: calc(100vh - 60px);
   padding: 0 0 25px;
   align-items: flex-start;
-  background: rgb(255, 255, 255);
+  background: ${COLORS.WHITE};
 `
 
-export const SC_WalletPage = styled.div`
+export const SC_WalletPage = styled.main`
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
@@ -21,7 +22,7 @@ export const SC_WalletPage = styled.div`
 export const SC_WalletTitle = styled.h1`
   font-size: 22px;
   font-weight: 600;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   margin: 24px 0;
 `
 
@@ -33,22 +34,22 @@ export const SC_WalletBalanceCards = styled.div`
 
 export const SC_WalletBalanceCard = styled.div`
   padding: 16px 20px;
-  background: rgb(249, 249, 249);
+  background: ${COLORS.BG_LIGHT};
   border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid ${COLORS.OVERLAY_6};
   width: 33%;
 `
 
 export const SC_WalletBalanceLabel = styled.div`
   font-size: 13px;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
   margin-bottom: 4px;
 `
 
 export const SC_WalletBalanceValue = styled.div`
   font-size: 20px;
   font-weight: 600;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 `
 
 export const SC_WalletTableSection = styled.section`
@@ -70,16 +71,16 @@ export const SC_WalletTableTitleRow = styled.div`
 export const SC_WalletTableTitle = styled.h2`
   font-size: 16px;
   font-weight: 600;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   margin: 10px;
 `
 
 export const SC_WalletAddButton = styled.button`
   font-size: 14px;
   font-weight: 500;
-  color: rgb(33, 33, 33);
-  background: rgb(249, 249, 249);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: ${COLORS.GRAY_212};
+  background: ${COLORS.BG_LIGHT};
+  border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   padding: 8px 14px;
   cursor: pointer;
@@ -95,7 +96,7 @@ export const SC_WalletAddButton = styled.button`
 `
 
 export const SC_WalletTable = styled.div`
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 10px;
   overflow: hidden;
 `
@@ -107,8 +108,8 @@ export const SC_WalletTableRow = styled.div`
   align-items: center;
   padding: 12px 16px;
   font-size: 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background: rgb(255, 255, 255);
+  border-bottom: 1px solid ${COLORS.OVERLAY_6};
+  background: ${COLORS.WHITE};
 
   &:last-child {
     border-bottom: none;
@@ -116,15 +117,15 @@ export const SC_WalletTableRow = styled.div`
 `
 
 export const SC_WalletTableHeader = styled(SC_WalletTableRow)`
-  background: rgb(249, 249, 249);
+  background: ${COLORS.BG_LIGHT};
   font-weight: 600;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 `
 
 export const SC_WalletTableAddress = styled.span`
   font-family: ui-monospace, monospace;
   font-size: 13px;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   word-break: break-all;
 `
 
@@ -141,29 +142,31 @@ export const SC_WalletExplorerLink = styled.a`
   justify-content: center;
   width: 24px;
   height: 24px;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
   cursor: pointer;
   border-radius: 4px;
   flex-shrink: 0;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
   text-decoration: none;
 
   &:hover {
-    color: rgb(0, 123, 255);
+    color: ${COLORS.PRIMARY};
     background: rgba(0, 123, 255, 0.08);
   }
 `
 
 export const SC_WalletTableBalance = styled.span`
   font-weight: 500;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 `
 
 export const SC_WalletLoading = styled.div`
   padding: 40px 0;
   text-align: center;
   font-size: 15px;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
 `
 
 export const SC_WalletError = styled.div`
@@ -178,7 +181,7 @@ export const SC_WalletTabPlaceholder = styled.div`
   padding: 40px 0;
   text-align: center;
   font-size: 14px;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
 `
 
 export const SC_WalletTabs = styled.div`
@@ -188,14 +191,14 @@ export const SC_WalletTabs = styled.div`
 export const SC_WalletTabList = styled.nav`
   display: flex;
   gap: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  border-bottom: 1px solid ${COLORS.OVERLAY_12};
   margin-bottom: 20px;
 `
 
 export const SC_WalletTabButton = styled.button`
   font-size: 14px;
   font-weight: 500;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
   background: none;
   border: none;
   padding: 10px 16px;
@@ -204,7 +207,7 @@ export const SC_WalletTabButton = styled.button`
   margin-bottom: -1px;
 
   &:hover {
-    color: rgb(33, 33, 33);
+    color: ${COLORS.GRAY_212};
   }
 
   &.active {

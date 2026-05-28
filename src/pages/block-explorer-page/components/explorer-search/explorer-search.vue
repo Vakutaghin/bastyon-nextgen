@@ -1,47 +1,46 @@
 <template>
   <div>
-    <SC_SearchWrapper ref='wrapperRef'>
-      <SC_ExplorerSearch @submit.prevent='submit'>
+    <SC_SearchWrapper ref="wrapperRef">
+      <SC_ExplorerSearch @submit.prevent="submit">
         <SC_ExplorerSearchInput
-          v-model='query'
-          type='text'
+          v-model="query"
+          type="text"
           :placeholder="placeholder"
-          autocomplete='off'
-          autocapitalize='off'
-          autocorrect='off'
-          spellcheck='false'
-          @focus='focused = true'
-          @keydown.escape='focused = false'
+          autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          @focus="focused = true"
+          @keydown.escape="focused = false"
         />
-        <SC_ExplorerSearchHint v-if='hintLabel'>{{ hintLabel }}</SC_ExplorerSearchHint>
-        <SC_ExplorerSearchButton
-          type='submit'
-          :disabled='!canSubmit || resolving'
-        >
+        <SC_ExplorerSearchHint v-if="hintLabel">{{ hintLabel }}</SC_ExplorerSearchHint>
+        <SC_ExplorerSearchButton type="submit" :disabled="!canSubmit || resolving">
           {{ resolving ? s.search.submitting : s.search.submit }}
         </SC_ExplorerSearchButton>
       </SC_ExplorerSearch>
 
-      <SC_SuggestionsDropdown v-if='dropdownVisible'>
+      <SC_SuggestionsDropdown v-if="dropdownVisible">
         <SC_SuggestionsHeader>
           <span>{{ s.search.suggestionsTitle }}</span>
-          <SC_ClearAllBtn type='button' @click='onClearAll'>
+          <SC_ClearAllBtn type="button" @click="onClearAll">
             {{ s.search.clearAll }}
           </SC_ClearAllBtn>
         </SC_SuggestionsHeader>
         <SC_SuggestionItem
-          v-for='entry in suggestions'
-          :key='`${entry.kind}-${entry.value}`'
-          type='button'
-          @click='pickSuggestion(entry)'
+          v-for="entry in suggestions"
+          :key="`${entry.kind}-${entry.value}`"
+          type="button"
+          @click="pickSuggestion(entry)"
         >
-          <SC_KindBadge :kind='entry.kind'>{{ kindLabel(entry.kind) }}</SC_KindBadge>
-          <SC_SuggestionValue :title='entry.value'>{{ shortenValue(entry.value) }}</SC_SuggestionValue>
+          <SC_KindBadge :kind="entry.kind">{{ kindLabel(entry.kind) }}</SC_KindBadge>
+          <SC_SuggestionValue :title="entry.value">{{
+            shortenValue(entry.value)
+          }}</SC_SuggestionValue>
           <SC_SuggestionAge>{{ ageLabel(entry.lastVisitedAt) }}</SC_SuggestionAge>
           <SC_RemoveItemBtn
-            role='button'
-            :title='s.search.removeFromHistory'
-            @click.stop='onRemoveEntry(entry)'
+            type="button"
+            :title="s.search.removeFromHistory"
+            @click.stop="onRemoveEntry(entry)"
           >
             ×
           </SC_RemoveItemBtn>
@@ -49,13 +48,13 @@
       </SC_SuggestionsDropdown>
     </SC_SearchWrapper>
 
-    <SC_ExplorerSearchError v-if='errorMessage'>
+    <SC_ExplorerSearchError v-if="errorMessage">
       {{ errorMessage }}
     </SC_ExplorerSearchError>
   </div>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getByPRC } from '@/helpers/api/request'
@@ -96,7 +95,7 @@ withDefaults(
   }>(),
   {
     placeholder: s.search.placeholder,
-  },
+  }
 )
 
 const router = useRouter()
@@ -113,10 +112,14 @@ const canSubmit = computed(() => classification.value.value.length > 0)
 
 const hintLabel = computed(() => {
   switch (classification.value.kind) {
-    case 'block-height': return s.search.hintBlock
-    case 'address':      return s.search.hintAddress
-    case 'hash64':       return s.search.hintHash
-    default:             return ''
+    case 'block-height':
+      return s.search.hintBlock
+    case 'address':
+      return s.search.hintAddress
+    case 'hash64':
+      return s.search.hintHash
+    default:
+      return ''
   }
 })
 
@@ -125,9 +128,12 @@ const dropdownVisible = computed(() => focused.value && suggestions.value.length
 
 function kindLabel(kind: HistoryKind): string {
   switch (kind) {
-    case 'block':   return s.search.suggestionsKindBlock
-    case 'tx':      return s.search.suggestionsKindTx
-    case 'address': return s.search.suggestionsKindAddress
+    case 'block':
+      return s.search.suggestionsKindBlock
+    case 'tx':
+      return s.search.suggestionsKindTx
+    case 'address':
+      return s.search.suggestionsKindAddress
   }
 }
 
@@ -144,13 +150,13 @@ function ageLabel(unixSeconds: number): string {
 function pickSuggestion(entry: HistoryEntry) {
   focused.value = false
   const name =
-    entry.kind === 'block' ? 'explorer-block'
-      : entry.kind === 'tx' ? 'explorer-tx'
+    entry.kind === 'block'
+      ? 'explorer-block'
+      : entry.kind === 'tx'
+        ? 'explorer-tx'
         : 'explorer-address'
   const paramKey =
-    entry.kind === 'block' ? 'hashOrHeight'
-      : entry.kind === 'tx' ? 'txid'
-        : 'address'
+    entry.kind === 'block' ? 'hashOrHeight' : entry.kind === 'tx' ? 'txid' : 'address'
   recordVisit(entry.value, entry.kind)
   router.push({ name, params: { [paramKey]: entry.value } })
   query.value = ''
@@ -189,11 +195,14 @@ async function submit() {
 async function resolveHash64(value: string) {
   resolving.value = true
   try {
-    const resp = (await getByPRC({
-      method: rpcEndpoints.searchByHash,
-      parameters: [value],
-      options: { auth: false },
-    }, getExplorerRpcConfig())) as SearchByHashResponse
+    const resp = (await getByPRC(
+      {
+        method: rpcEndpoints.searchByHash,
+        parameters: [value],
+        options: { auth: false },
+      },
+      getExplorerRpcConfig()
+    )) as SearchByHashResponse
     const type = resp?.data?.type
     if (type === 'block') return go('explorer-block', value)
     if (type === 'transaction') return go('explorer-tx', value)
@@ -209,15 +218,18 @@ async function resolveHash64(value: string) {
 async function fallbackServerSearch(value: string) {
   resolving.value = true
   try {
-    const resp = (await getByPRC({
-      method: rpcEndpoints.searchByHash,
-      parameters: [value],
-      options: { auth: false },
-    }, getExplorerRpcConfig())) as SearchByHashResponse
+    const resp = (await getByPRC(
+      {
+        method: rpcEndpoints.searchByHash,
+        parameters: [value],
+        options: { auth: false },
+      },
+      getExplorerRpcConfig()
+    )) as SearchByHashResponse
     const type = resp?.data?.type
-    if (type === 'block')        return go('explorer-block', value)
-    if (type === 'transaction')  return go('explorer-tx', value)
-    if (type === 'address')      return go('explorer-address', value)
+    if (type === 'block') return go('explorer-block', value)
+    if (type === 'transaction') return go('explorer-tx', value)
+    if (type === 'address') return go('explorer-address', value)
     errorMessage.value = s.search.errorUnknown
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : s.search.errorNetwork
@@ -228,14 +240,10 @@ async function fallbackServerSearch(value: string) {
 
 function go(name: 'explorer-block' | 'explorer-tx' | 'explorer-address', id: string) {
   const paramKey =
-    name === 'explorer-block' ? 'hashOrHeight'
-      : name === 'explorer-tx' ? 'txid'
-        : 'address'
+    name === 'explorer-block' ? 'hashOrHeight' : name === 'explorer-tx' ? 'txid' : 'address'
   // Записываем в историю как соответствующий kind.
   const kind: HistoryKind =
-    name === 'explorer-block' ? 'block'
-      : name === 'explorer-tx' ? 'tx'
-        : 'address'
+    name === 'explorer-block' ? 'block' : name === 'explorer-tx' ? 'tx' : 'address'
   recordVisit(id, kind)
   router.push({ name, params: { [paramKey]: id } })
   query.value = ''

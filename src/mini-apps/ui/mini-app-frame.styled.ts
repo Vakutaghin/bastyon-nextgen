@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 /**
  * Контейнер мини-приложения. Покрывает весь viewport поверх нашего хедера/сайдбара.
@@ -9,7 +10,7 @@ export const SC_Frame = styled.div`
   position: fixed;
   inset: 0;
   z-index: 500;
-  background: rgb(255, 255, 255);
+  background: ${COLORS.WHITE};
   display: flex;
   flex-direction: column;
 `
@@ -18,7 +19,7 @@ export const SC_IframeWrap = styled.div`
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: rgb(255, 255, 255);
+  background: ${COLORS.WHITE};
 `
 
 export const SC_Iframe = styled.iframe`
@@ -38,7 +39,7 @@ export const SC_Loader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background: rgb(255, 255, 255);
+  background: ${COLORS.WHITE};
   pointer-events: none;
   opacity: 1;
   transition: opacity 200ms ease;
@@ -69,7 +70,7 @@ export const SC_LoaderIcon = styled.img`
 
 export const SC_LoaderText = styled.div`
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.55);
+  color: ${COLORS.OVERLAY_55};
 `
 
 export const SC_Error = styled.div`
@@ -80,7 +81,7 @@ export const SC_Error = styled.div`
   justify-content: center;
   padding: 40px 24px;
   text-align: center;
-  color: rgba(0, 0, 0, 0.7);
+  color: ${COLORS.OVERLAY_70};
   font-size: 14px;
 `
 
@@ -91,7 +92,10 @@ export const SC_Error = styled.div`
  *
  * Идея: не отвлекать от контента миниаппы, но оставить affordance.
  */
-export const SC_ClosePetal = styled.div`
+export const SC_ClosePetal = styled.button`
+  appearance: none;
+  border: none;
+  font: inherit;
   position: fixed;
   top: 16px;
   right: 0;
@@ -101,7 +105,7 @@ export const SC_ClosePetal = styled.div`
   gap: 8px;
   height: 28px;
   padding: 0 14px 0 10px;
-  background: rgba(0, 0, 0, 0.15);
+  background: ${COLORS.OVERLAY_15};
   color: rgba(255, 255, 255, 0.75);
   border-radius: 14px 0 0 14px;
   cursor: pointer;
@@ -120,8 +124,8 @@ export const SC_ClosePetal = styled.div`
   &:hover,
   &:focus-visible {
     transform: translateX(0);
-    background: rgba(0, 0, 0, 0.7);
-    color: rgb(255, 255, 255);
+    background: ${COLORS.OVERLAY_70};
+    color: ${COLORS.WHITE};
     opacity: 1;
     outline: none;
   }

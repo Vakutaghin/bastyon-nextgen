@@ -1,18 +1,19 @@
 <template>
-  <SC_HomeWork class='adj' :class='{ "is-mobile": mobile }'>
-    <SidebarLeft v-if='!mobile' :collapsed='leftSidebarCollapsed' />
-    <SC_HomeMainContent :class='{ "sidebar-right-hidden": !rightSidebarVisible || mobile }'>
+  <SC_HomeWork class="adj" :class="{ 'is-mobile': mobile }">
+    <h1 class="visually-hidden">Лента Bastyon</h1>
+    <SidebarLeft v-if="!mobile" :collapsed="leftSidebarCollapsed" />
+    <SC_HomeMainContent :class="{ 'sidebar-right-hidden': !rightSidebarVisible || mobile }">
       <ContentFeed
-        :feedData='null'
-        :loading='false'
-        :error='null'
-        :right-sidebar-visible='!mobile && rightSidebarVisible'
-        :left-sidebar-collapsed='leftSidebarCollapsed'
-        @toggle-right-sidebar='rightSidebarVisible = !rightSidebarVisible'
-        @toggle-left-sidebar='leftSidebarCollapsed = !leftSidebarCollapsed'
+        :feedData="null"
+        :loading="false"
+        :error="null"
+        :right-sidebar-visible="!mobile && rightSidebarVisible"
+        :left-sidebar-collapsed="leftSidebarCollapsed"
+        @toggle-right-sidebar="rightSidebarVisible = !rightSidebarVisible"
+        @toggle-left-sidebar="leftSidebarCollapsed = !leftSidebarCollapsed"
       />
     </SC_HomeMainContent>
-    <SidebarRight v-if='!mobile && rightSidebarVisible' />
+    <SidebarRight v-if="!mobile && rightSidebarVisible" />
   </SC_HomeWork>
 </template>
 
@@ -35,7 +36,7 @@ export default defineComponent({
     SidebarRight,
     ContentFeed,
     SC_HomeWork,
-    SC_HomeMainContent
+    SC_HomeMainContent,
   },
   setup() {
     const rightSidebarVisible = ref(true)
@@ -46,7 +47,7 @@ export default defineComponent({
       try {
         const [right, left] = await Promise.all([
           settingsAPI.get(SETTING_KEY_RIGHT_SIDEBAR),
-          settingsAPI.get(SETTING_KEY_LEFT_SIDEBAR_COLLAPSED)
+          settingsAPI.get(SETTING_KEY_LEFT_SIDEBAR_COLLAPSED),
         ])
         if (right !== undefined) {
           rightSidebarVisible.value = right === true
@@ -77,19 +78,27 @@ export default defineComponent({
 
     onMounted(loadSidebarSettings)
 
-    watch(rightSidebarVisible, (visible) => {
-      settingsAPI.set(SETTING_KEY_RIGHT_SIDEBAR, visible).catch((e) =>
-        console.error('Failed to save right sidebar setting:', e)
-      )
-    }, { immediate: false })
+    watch(
+      rightSidebarVisible,
+      (visible) => {
+        settingsAPI
+          .set(SETTING_KEY_RIGHT_SIDEBAR, visible)
+          .catch((e) => console.error('Failed to save right sidebar setting:', e))
+      },
+      { immediate: false }
+    )
 
-    watch(leftSidebarCollapsed, (collapsed) => {
-      settingsAPI.set(SETTING_KEY_LEFT_SIDEBAR_COLLAPSED, collapsed).catch((e) =>
-        console.error('Failed to save left sidebar setting:', e)
-      )
-    }, { immediate: false })
+    watch(
+      leftSidebarCollapsed,
+      (collapsed) => {
+        settingsAPI
+          .set(SETTING_KEY_LEFT_SIDEBAR_COLLAPSED, collapsed)
+          .catch((e) => console.error('Failed to save left sidebar setting:', e))
+      },
+      { immediate: false }
+    )
 
     return { rightSidebarVisible, leftSidebarCollapsed, mobile }
-  }
+  },
 })
 </script>

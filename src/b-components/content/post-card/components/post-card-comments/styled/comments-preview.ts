@@ -120,7 +120,14 @@ export const SC_CommentsSortSelect = styled.select`
   }
 `
 
-export const SC_CommentRepliesLink = styled.span`
+export const SC_CommentRepliesLink = styled.button`
+  appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  font: inherit;
+  text-align: inherit;
   font-size: 13px;
   color: #00a4ff;
   cursor: pointer;

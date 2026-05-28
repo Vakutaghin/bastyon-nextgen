@@ -2,8 +2,7 @@ import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
-
-export const SC_LeftSidebar = styled.div`
+export const SC_LeftSidebar = styled.aside`
   width: 280px;
   min-width: 280px;
   max-height: calc(100vh - 70px);
@@ -21,7 +20,10 @@ export const SC_LeftSidebar = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   z-index: 10;
-  transition: width 0.2s ease, min-width 0.2s ease, padding 0.2s ease;
+  transition:
+    width 0.2s ease,
+    min-width 0.2s ease,
+    padding 0.2s ease;
 
   &.collapsed {
     width: 64px;

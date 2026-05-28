@@ -20,7 +20,9 @@ export const SC_ExplorerSearchInput = styled.input`
   border: 1px solid ${COLORS.BORDER};
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 
   &::placeholder {
     color: ${COLORS.TEXT_MUTED};
@@ -89,7 +91,7 @@ export const SC_SuggestionsDropdown = styled.div`
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px ${COLORS.OVERLAY_8};
   overflow: hidden;
 `
 
@@ -182,7 +184,12 @@ export const SC_SuggestionAge = styled.span`
   font-variant-numeric: tabular-nums;
 `
 
-export const SC_RemoveItemBtn = styled.span`
+export const SC_RemoveItemBtn = styled.button`
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -191,7 +198,9 @@ export const SC_RemoveItemBtn = styled.span`
   border-radius: 4px;
   color: ${COLORS.TEXT_MUTED};
   cursor: pointer;
-  transition: color 0.1s ease, background-color 0.1s ease;
+  transition:
+    color 0.1s ease,
+    background-color 0.1s ease;
 
   &:hover {
     color: ${COLORS.DANGER};
@@ -204,4 +213,3 @@ export const SC_SearchWrapper = styled.div`
   width: 100%;
   max-width: 720px;
 `
-

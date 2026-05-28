@@ -311,6 +311,17 @@ export const SC_CommentActions = styled.div`
   gap: 12px;
   margin-top: 2px;
 
+  button {
+    appearance: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    font: inherit;
+    text-align: inherit;
+  }
+
+  button,
   span {
     font-size: 14px;
     color: ${COLORS.TEXT_SECONDARY};

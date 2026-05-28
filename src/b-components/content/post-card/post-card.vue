@@ -63,8 +63,8 @@
 
         <SC_PostCardYoutube v-if="(youtubeEmbedUrls || []).length">
           <iframe
-            v-for="(embedUrl, i) in youtubeEmbedUrls"
-            :key="i"
+            v-for="embedUrl in youtubeEmbedUrls"
+            :key="embedUrl"
             :src="embedUrl"
             title="YouTube video player"
             frameborder="0"

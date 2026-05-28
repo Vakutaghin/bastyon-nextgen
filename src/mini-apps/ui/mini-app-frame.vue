@@ -23,14 +23,7 @@
     </SC_IframeWrap>
 
     <!-- Лепесток-закрывашка справа сверху. По дефолту виден только иконка-«язычок». -->
-    <SC_ClosePetal
-      role="button"
-      tabindex="0"
-      :title="`Закрыть «${app.manifest.name}»`"
-      @click="askClose"
-      @keydown.enter="askClose"
-      @keydown.space.prevent="askClose"
-    >
+    <SC_ClosePetal type="button" :title="`Закрыть «${app.manifest.name}»`" @click="askClose">
       <SC_ClosePetalIcon>
         <CloseOutlined />
       </SC_ClosePetalIcon>

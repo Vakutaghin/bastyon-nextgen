@@ -22,7 +22,7 @@ export const SC_SearchWork = styled.div`
 `
 
 /** Контентная колонка справа от сайдбара. */
-export const SC_SearchMainContent = styled.div`
+export const SC_SearchMainContent = styled.main`
   flex: 1;
   min-width: 0;
   background: ${COLORS.BG_PRIMARY};
@@ -49,7 +49,7 @@ export const SC_Header = styled.div`
   margin-bottom: 16px;
 `
 
-export const SC_QueryTitle = styled.h2`
+export const SC_QueryTitle = styled.h1`
   font-size: 20px;
   font-weight: 600;
   color: ${COLORS.TEXT_PRIMARY};

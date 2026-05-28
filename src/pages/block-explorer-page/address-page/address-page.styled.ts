@@ -9,7 +9,7 @@ export const SC_AddrPageWork = styled.div`
   background: ${COLORS.BG_PRIMARY};
 `
 
-export const SC_AddrPagePage = styled.div`
+export const SC_AddrPagePage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
@@ -26,7 +26,9 @@ export const SC_AddrBreadcrumb = styled.div`
     color: ${COLORS.LINK};
     text-decoration: none;
 
-    &:hover { text-decoration: underline; }
+    &:hover {
+      text-decoration: underline;
+    }
   }
 `
 
@@ -123,10 +125,23 @@ export const SC_AddrTxRow = styled.div`
     row-gap: 6px;
     padding: 12px 14px;
 
-    & > :nth-child(1) { order: 0; }                                       /* badge */
-    & > :nth-child(2) { order: 2; flex-basis: 100%; min-width: 0; }       /* hash */
-    & > :nth-child(3) { order: 3; flex-basis: 100%; text-align: left; }   /* block # */
-    & > :nth-child(4) { order: 1; margin-left: auto; }                    /* age */
+    & > :nth-child(1) {
+      order: 0;
+    } /* badge */
+    & > :nth-child(2) {
+      order: 2;
+      flex-basis: 100%;
+      min-width: 0;
+    } /* hash */
+    & > :nth-child(3) {
+      order: 3;
+      flex-basis: 100%;
+      text-align: left;
+    } /* block # */
+    & > :nth-child(4) {
+      order: 1;
+      margin-left: auto;
+    } /* age */
   }
 
   &:last-child {
@@ -180,7 +195,9 @@ export const SC_LoadMoreBtn = styled.button`
   border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 
   &:hover:not(:disabled) {
     background: ${COLORS.PRIMARY_LIGHT};

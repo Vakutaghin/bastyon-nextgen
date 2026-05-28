@@ -9,7 +9,10 @@
             Лента по тегам: {{ tagList.map((t) => '#' + t).join(' ') }}
           </SC_QueryTitle>
           <SC_QueryTitle v-else-if="query">Поиск по запросу: «{{ query }}»</SC_QueryTitle>
-          <SC_QueryHint v-else>Введите поисковый запрос в верхней строке</SC_QueryHint>
+          <template v-else>
+            <SC_QueryTitle class="visually-hidden">Поиск</SC_QueryTitle>
+            <SC_QueryHint>Введите поисковый запрос в верхней строке</SC_QueryHint>
+          </template>
         </SC_Header>
 
         <SC_Tabs v-if="query && visibleTabs.length > 1">

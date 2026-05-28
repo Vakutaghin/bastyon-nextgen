@@ -2,7 +2,7 @@ import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
-export const SC_RightSidebar = styled.div`
+export const SC_RightSidebar = styled.aside`
   width: 280px;
   min-width: 280px;
   max-height: calc(100vh - 70px);

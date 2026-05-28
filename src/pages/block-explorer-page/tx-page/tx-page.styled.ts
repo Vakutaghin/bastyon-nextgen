@@ -9,7 +9,7 @@ export const SC_TxPageWork = styled.div`
   background: ${COLORS.BG_PRIMARY};
 `
 
-export const SC_TxPagePage = styled.div`
+export const SC_TxPagePage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
@@ -26,7 +26,9 @@ export const SC_TxBreadcrumb = styled.div`
     color: ${COLORS.LINK};
     text-decoration: none;
 
-    &:hover { text-decoration: underline; }
+    &:hover {
+      text-decoration: underline;
+    }
   }
 `
 
@@ -172,7 +174,9 @@ export const SC_TxRawToggle = styled.button`
   cursor: pointer;
   padding: 0;
 
-  &:hover { text-decoration: underline; }
+  &:hover {
+    text-decoration: underline;
+  }
 `
 
 export const SC_TxRawPre = styled.pre`

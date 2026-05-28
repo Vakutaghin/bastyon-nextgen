@@ -1,6 +1,7 @@
 <template>
-  <SC_ProfileWork class='adj'>
+  <SC_ProfileWork class="adj">
     <SC_ProfilePage>
+      <h1 class="visually-hidden">{{ profile?.name || $route.params.userName || 'Профиль' }}</h1>
       <ProfileCover :profile="profile" />
 
       <SC_ProfileContentWrapper>

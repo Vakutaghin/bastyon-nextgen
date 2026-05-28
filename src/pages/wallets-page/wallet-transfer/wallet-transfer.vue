@@ -1,18 +1,10 @@
 <template>
   <SC_TransferWidget>
     <SC_TransferSwitch>
-      <SC_TransferSwitchBtn
-        type="button"
-        :active="mode === 'send'"
-        @click="mode = 'send'"
-      >
+      <SC_TransferSwitchBtn type="button" :active="mode === 'send'" @click="mode = 'send'">
         Отправка
       </SC_TransferSwitchBtn>
-      <SC_TransferSwitchBtn
-        type="button"
-        :active="mode === 'receive'"
-        @click="mode = 'receive'"
-      >
+      <SC_TransferSwitchBtn type="button" :active="mode === 'receive'" @click="mode = 'receive'">
         Получение
       </SC_TransferSwitchBtn>
     </SC_TransferSwitch>
@@ -21,9 +13,12 @@
       <!-- Отправка -->
       <template v-if="mode === 'send'">
         <SC_TransferField>
-          <SC_TransferLabel>Получатель (имя или адрес)</SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-receiver"
+            >Получатель (имя или адрес)</SC_TransferLabel
+          >
           <SC_TransferSearchWrap>
             <SC_TransferInput
+              id="wallet-transfer-receiver"
               v-model="receiverSearchQuery"
               type="text"
               placeholder="Введите имя аккаунта или адрес (P / Z)"
@@ -45,19 +40,27 @@
           <SC_TransferFieldError v-if="receiverAddressValidationError">
             {{ receiverAddressValidationError }}
           </SC_TransferFieldError>
-          <div v-else-if="searchLoading" style="font-size: 12px; color: rgb(120,120,120); margin-top: 4px;">
+          <div
+            v-else-if="searchLoading"
+            style="font-size: 12px; color: rgb(120, 120, 120); margin-top: 4px"
+          >
             Поиск…
           </div>
           <SC_TransferLoginChip v-else-if="receiverLogin">
             <SC_TransferLoginChipText>Логин: {{ receiverLogin }}</SC_TransferLoginChipText>
-            <SC_TransferLoginChipRemove type="button" aria-label="Удалить" @click="clearReceiverLink">
+            <SC_TransferLoginChipRemove
+              type="button"
+              aria-label="Удалить"
+              @click="clearReceiverLink"
+            >
               ×
             </SC_TransferLoginChipRemove>
           </SC_TransferLoginChip>
         </SC_TransferField>
         <SC_TransferField>
-          <SC_TransferLabel>Сумма (PKOIN)</SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-amount">Сумма (PKOIN)</SC_TransferLabel>
           <SC_TransferInput
+            id="wallet-transfer-amount"
             v-model="amount"
             type="number"
             step="0.00000001"
@@ -66,25 +69,24 @@
           />
         </SC_TransferField>
         <SC_TransferField>
-          <SC_TransferLabel>Сообщение (необязательно)</SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-message"
+            >Сообщение (необязательно)</SC_TransferLabel
+          >
           <SC_TransferTextarea
+            id="wallet-transfer-message"
             v-model="message"
             placeholder="Для чего эта транзакция?"
             maxlength="80"
           />
         </SC_TransferField>
         <SC_TransferField>
-          <SC_TransferLabel>Комиссия</SC_TransferLabel>
-          <SC_TransferSelect v-model="feemode">
+          <SC_TransferLabel for="wallet-transfer-feemode">Комиссия</SC_TransferLabel>
+          <SC_TransferSelect id="wallet-transfer-feemode" v-model="feemode">
             <option value="include">Получатель платит</option>
             <option value="exclude">Отправитель платит</option>
           </SC_TransferSelect>
         </SC_TransferField>
-        <SC_TransferSubmit
-          type="button"
-          :disabled="!canSend || sending"
-          @click="doSend"
-        >
+        <SC_TransferSubmit type="button" :disabled="!canSend || sending" @click="doSend">
           {{ sending ? 'Отправка...' : 'Рассчитать комиссию и отправить' }}
         </SC_TransferSubmit>
       </template>
@@ -92,13 +94,9 @@
       <!-- Получение -->
       <template v-else>
         <SC_TransferField v-if="receiveAddressOptions.length > 1">
-          <SC_TransferLabel>Получить на</SC_TransferLabel>
-          <SC_TransferSelect v-model="receiveTarget">
-            <option
-              v-for="opt in receiveAddressOptions"
-              :key="opt.value"
-              :value="opt.value"
-            >
+          <SC_TransferLabel for="wallet-transfer-receive-target">Получить на</SC_TransferLabel>
+          <SC_TransferSelect id="wallet-transfer-receive-target" v-model="receiveTarget">
+            <option v-for="opt in receiveAddressOptions" :key="opt.value" :value="opt.value">
               {{ opt.label }}
             </option>
           </SC_TransferSelect>
@@ -128,7 +126,7 @@
           </SC_TransferField>
         </template>
 
-        <div v-else-if="!currentAddress" style="color: rgb(120,120,120); font-size: 14px;">
+        <div v-else-if="!currentAddress" style="color: rgb(120, 120, 120); font-size: 14px">
           Войдите в аккаунт, чтобы получить адрес.
         </div>
       </template>

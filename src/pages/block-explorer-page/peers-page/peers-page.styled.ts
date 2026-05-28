@@ -9,7 +9,7 @@ export const SC_PeersWork = styled.div`
   background: ${COLORS.BG_PRIMARY};
 `
 
-export const SC_PeersPage = styled.div`
+export const SC_PeersPage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
@@ -25,7 +25,9 @@ export const SC_PeersBreadcrumb = styled.div`
     color: ${COLORS.LINK};
     text-decoration: none;
 
-    &:hover { text-decoration: underline; }
+    &:hover {
+      text-decoration: underline;
+    }
   }
 `
 
@@ -75,8 +77,12 @@ export const SC_NodeRow = styled.div`
   border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
   font-size: 13px;
 
-  &:last-child { border-bottom: none; }
-  &:hover     { background: ${COLORS.OVERLAY_3}; }
+  &:last-child {
+    border-bottom: none;
+  }
+  &:hover {
+    background: ${COLORS.OVERLAY_3};
+  }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     grid-template-columns: 22px minmax(0, 1fr) 80px;
@@ -151,8 +157,12 @@ export const SC_PeerRow = styled.div`
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 
-  &:last-child { border-bottom: none; }
-  &:hover      { background: ${COLORS.OVERLAY_3}; }
+  &:last-child {
+    border-bottom: none;
+  }
+  &:hover {
+    background: ${COLORS.OVERLAY_3};
+  }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     grid-template-columns: minmax(0, 1.4fr) 1fr 80px;

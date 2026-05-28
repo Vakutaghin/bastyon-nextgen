@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_LimitsWork = styled.div`
   display: flex;
@@ -9,10 +10,10 @@ export const SC_LimitsWork = styled.div`
   min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
-  background: rgb(255, 255, 255);
+  background: ${COLORS.WHITE};
 `
 
-export const SC_LimitsPage = styled.div`
+export const SC_LimitsPage = styled.main`
   width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;
@@ -22,7 +23,7 @@ export const SC_LimitsPage = styled.div`
 export const SC_LimitsTitle = styled.h1`
   font-size: 22px;
   font-weight: 600;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
   margin: 24px 0;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -47,9 +48,9 @@ export const SC_LimitRow = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: rgb(249, 249, 249);
+  background: ${COLORS.BG_LIGHT};
   border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid ${COLORS.OVERLAY_6};
   min-width: 0;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -59,26 +60,26 @@ export const SC_LimitRow = styled.div`
 
 export const SC_LimitLabel = styled.span`
   font-size: 15px;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 `
 
 export const SC_LimitValue = styled.span`
   font-size: 15px;
   font-weight: 500;
-  color: rgb(33, 33, 33);
+  color: ${COLORS.GRAY_212};
 `
 
 export const SC_LimitValueMuted = styled.span`
   font-size: 14px;
   font-weight: 400;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
 `
 
 export const SC_LimitsLoading = styled.div`
   padding: 40px 0;
   text-align: center;
   font-size: 15px;
-  color: rgb(120, 120, 120);
+  color: ${COLORS.GRAY_120};
 `
 
 export const SC_LimitsError = styled.div`

@@ -12,7 +12,7 @@ export const SC_ExplorerWork = styled.div`
   background: ${COLORS.BG_PRIMARY};
 `
 
-export const SC_ExplorerPage = styled.div`
+export const SC_ExplorerPage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
@@ -54,7 +54,9 @@ export const SC_LiveBadge = styled.span`
   border-radius: 12px;
   color: ${COLORS.TEXT_MUTED};
   background: ${COLORS.BG_DISABLED};
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 
   &.active {
     color: ${COLORS.SUCCESS};
@@ -75,8 +77,13 @@ export const SC_LiveDot = styled.span`
   }
 
   @keyframes live-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4); }
-    50%      { box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(40, 167, 69, 0);
+    }
   }
 `
 
@@ -195,10 +202,21 @@ export const SC_BlockRow = styled.div`
     row-gap: 6px;
     padding: 12px 14px;
 
-    & > :nth-child(1) { order: 0; }                                       /* height */
-    & > :nth-child(2) { order: 3; flex-basis: 100%; min-width: 0; }       /* hash */
-    & > :nth-child(3) { order: 1; margin-left: auto; }                    /* ntx */
-    & > :nth-child(4) { order: 2; }                                       /* age */
+    & > :nth-child(1) {
+      order: 0;
+    } /* height */
+    & > :nth-child(2) {
+      order: 3;
+      flex-basis: 100%;
+      min-width: 0;
+    } /* hash */
+    & > :nth-child(3) {
+      order: 1;
+      margin-left: auto;
+    } /* ntx */
+    & > :nth-child(4) {
+      order: 2;
+    } /* age */
   }
 
   &:last-child {

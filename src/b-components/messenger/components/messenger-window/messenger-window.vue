@@ -3,22 +3,26 @@
     <SC_Header>
       <slot name="actions" />
       <SC_Title>{{ title }}</SC_Title>
-      <div
+      <button
+        type="button"
         aria-label="Закрыть"
-        role="button"
         @click="$emit('close')"
         :style="{
+          appearance: 'none',
+          border: 'none',
+          padding: 0,
+          background: 'transparent',
           width: '24px',
           height: '24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          marginLeft: '8px'
+          marginLeft: '8px',
         }"
       >
-        <img :src="closeIcon" alt="Закрыть" width="12" height="12" />
-      </div>
+        <img :src="closeIcon" alt="" width="12" height="12" />
+      </button>
     </SC_Header>
 
     <SC_Content>
@@ -33,7 +37,7 @@ import closeIcon from './img/close.svg'
 
 export default {
   ...messengerWindowOptions,
-  data () {
+  data() {
     return { closeIcon }
   },
 }
