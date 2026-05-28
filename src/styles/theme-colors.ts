@@ -57,12 +57,23 @@ export const COLORS = {
 
   // Состояния
   SUCCESS: 'var(--color-success, rgb(40, 167, 69))',
+  SUCCESS_DEEP: 'var(--color-success-deep, rgb(34, 120, 60))',
+  SUCCESS_BG_SOFT: 'var(--color-success-bg-soft, rgba(40, 167, 69, 0.08))',
+  SUCCESS_BG_TINT: 'var(--color-success-bg-tint, rgba(40, 167, 69, 0.1))',
+  SUCCESS_BG_12: 'var(--color-success-bg-12, rgba(40, 167, 69, 0.12))',
+  SUCCESS_BG_PULSE: 'var(--color-success-bg-pulse, rgba(40, 167, 69, 0.4))',
   DANGER: 'var(--color-danger, rgb(220, 53, 69))',
   DANGER_HOVER: 'var(--color-danger-hover, rgb(200, 35, 51))',
   DANGER_ACTIVE: 'var(--color-danger-active, rgb(180, 20, 35))',
+  DANGER_DEEP: 'var(--color-danger-deep, rgb(180, 50, 50))',
+  DANGER_BG_SOFT: 'var(--color-danger-bg-soft, rgba(220, 53, 69, 0.08))',
   WARNING: 'var(--color-warning, rgb(255, 193, 7))',
   WARNING_HEX: 'var(--color-warning-hex, #fa8c16)',
+  WARNING_YELLOW: 'var(--color-warning-yellow, rgb(245, 180, 0))',
+  WARNING_BG_SOFT: 'var(--color-warning-bg-soft, rgba(250, 140, 22, 0.12))',
   INFO: 'var(--color-info, rgb(23, 162, 184))',
+  PRIMARY_BG_SOFT: 'var(--color-primary-bg-soft, rgba(0, 123, 255, 0.08))',
+  PRIMARY_BG_12: 'var(--color-primary-bg-12, rgba(0, 123, 255, 0.12))',
 
   // Красные оттенки (ошибки, удаление)
   RED_ANT: 'var(--color-red-ant, #ff4d4f)',
@@ -85,6 +96,7 @@ export const COLORS = {
   WHITE: 'var(--color-white, #ffffff)',
   WHITE_20: 'var(--color-white-20, rgba(255, 255, 255, 0.2))',
   WHITE_60: 'var(--color-white-60, rgba(255, 255, 255, 0.6))',
+  WHITE_75: 'var(--color-white-75, rgba(255, 255, 255, 0.75))',
   WHITE_85: 'var(--color-white-85, rgba(255, 255, 255, 0.85))',
   WHITE_95: 'var(--color-white-95, rgba(255, 255, 255, 0.95))',
 

@@ -87,7 +87,7 @@ export const SC_WalletAddButton = styled.button`
   white-space: nowrap;
 
   &:hover:not(:disabled) {
-    background: rgb(240, 240, 240);
+    background: ${COLORS.BG_HOVER};
   }
   &:disabled {
     opacity: 0.6;
@@ -153,7 +153,7 @@ export const SC_WalletExplorerLink = styled.a`
 
   &:hover {
     color: ${COLORS.PRIMARY};
-    background: rgba(0, 123, 255, 0.08);
+    background: ${COLORS.PRIMARY_BG_SOFT};
   }
 `
 
@@ -171,10 +171,10 @@ export const SC_WalletLoading = styled.div`
 
 export const SC_WalletError = styled.div`
   padding: 24px;
-  background: rgba(220, 53, 69, 0.08);
+  background: ${COLORS.DANGER_BG_SOFT};
   border-radius: 10px;
   font-size: 14px;
-  color: rgb(180, 50, 50);
+  color: ${COLORS.DANGER_DEEP};
 `
 
 export const SC_WalletTabPlaceholder = styled.div`
@@ -211,8 +211,8 @@ export const SC_WalletTabButton = styled.button`
   }
 
   &.active {
-    color: rgb(22, 119, 255);
-    border-bottom-color: rgb(22, 119, 255);
+    color: ${COLORS.PRIMARY};
+    border-bottom-color: ${COLORS.PRIMARY};
   }
 `
 

@@ -53,12 +53,23 @@
   --color-border-dark: rgb(222, 226, 230);
 
   --color-success: rgb(40, 167, 69);
+  --color-success-deep: rgb(34, 120, 60);
+  --color-success-bg-soft: rgba(40, 167, 69, 0.08);
+  --color-success-bg-tint: rgba(40, 167, 69, 0.1);
+  --color-success-bg-12: rgba(40, 167, 69, 0.12);
+  --color-success-bg-pulse: rgba(40, 167, 69, 0.4);
   --color-danger: rgb(220, 53, 69);
   --color-danger-hover: rgb(200, 35, 51);
   --color-danger-active: rgb(180, 20, 35);
+  --color-danger-deep: rgb(180, 50, 50);
+  --color-danger-bg-soft: rgba(220, 53, 69, 0.08);
   --color-warning: rgb(255, 193, 7);
   --color-warning-hex: #fa8c16;
+  --color-warning-yellow: rgb(245, 180, 0);
+  --color-warning-bg-soft: rgba(250, 140, 22, 0.12);
   --color-info: rgb(23, 162, 184);
+  --color-primary-bg-soft: rgba(0, 123, 255, 0.08);
+  --color-primary-bg-12: rgba(0, 123, 255, 0.12);
 
   --color-red-ant: #ff4d4f;
   --color-red-dark: #cf1322;
@@ -78,6 +89,7 @@
   --color-white: #ffffff;
   --color-white-20: rgba(255, 255, 255, 0.2);
   --color-white-60: rgba(255, 255, 255, 0.6);
+  --color-white-75: rgba(255, 255, 255, 0.75);
   --color-white-85: rgba(255, 255, 255, 0.85);
   --color-white-95: rgba(255, 255, 255, 0.95);
 

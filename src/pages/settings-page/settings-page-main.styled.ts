@@ -58,7 +58,7 @@ export const SC_SettingsMain = styled.main`
 
 export const SC_SettingsPlaceholder = styled.div`
   font-size: 15px;
-  color: rgb(102, 102, 102);
+  color: ${COLORS.GRAY_666};
   padding: 20px 0;
 `
 

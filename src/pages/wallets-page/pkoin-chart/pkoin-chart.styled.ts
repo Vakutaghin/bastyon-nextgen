@@ -52,9 +52,9 @@ export const SC_PkoinChartFilterBtn = styled.button`
     background: ${COLORS.BG_LIGHT};
   }
   &.active {
-    background: rgb(22, 119, 255);
+    background: ${COLORS.PRIMARY};
     color: ${COLORS.WHITE};
-    border-color: rgb(22, 119, 255);
+    border-color: ${COLORS.PRIMARY};
   }
 `
 
@@ -132,10 +132,10 @@ export const SC_PkoinChartChange = styled.div`
   line-height: 1.3;
 
   &.positive {
-    color: rgb(34, 120, 60);
+    color: ${COLORS.SUCCESS_DEEP};
   }
   &.negative {
-    color: rgb(180, 50, 50);
+    color: ${COLORS.DANGER_DEEP};
   }
   &.neutral {
     color: ${COLORS.GRAY_120};
@@ -175,8 +175,8 @@ export const SC_PkoinChartLoading = styled.div`
 export const SC_PkoinChartError = styled.div`
   padding: 16px;
   font-size: 14px;
-  color: rgb(180, 50, 50);
-  background: rgba(220, 53, 69, 0.08);
+  color: ${COLORS.DANGER_DEEP};
+  background: ${COLORS.DANGER_BG_SOFT};
   border-radius: 8px;
   margin-top: 12px;
 `

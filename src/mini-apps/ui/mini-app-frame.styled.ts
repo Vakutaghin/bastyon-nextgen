@@ -106,7 +106,7 @@ export const SC_ClosePetal = styled.button`
   height: 28px;
   padding: 0 14px 0 10px;
   background: ${COLORS.OVERLAY_15};
-  color: rgba(255, 255, 255, 0.75);
+  color: ${COLORS.WHITE_75};
   border-radius: 14px 0 0 14px;
   cursor: pointer;
   user-select: none;

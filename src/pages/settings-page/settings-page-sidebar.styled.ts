@@ -45,9 +45,9 @@ export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
     p.active &&
     css`
       color: ${COLORS.PRIMARY};
-      background: rgba(0, 123, 255, 0.08);
+      background: ${COLORS.PRIMARY_BG_SOFT};
       &:hover {
-        background: rgba(0, 123, 255, 0.12);
+        background: ${COLORS.PRIMARY_BG_12};
       }
     `}
 

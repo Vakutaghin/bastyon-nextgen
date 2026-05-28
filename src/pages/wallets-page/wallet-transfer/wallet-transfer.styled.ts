@@ -61,7 +61,7 @@ export const SC_TransferInput = styled.input`
   box-sizing: border-box;
 
   &::placeholder {
-    color: rgb(160, 160, 160);
+    color: ${COLORS.GRAY_999};
   }
   &:focus {
     outline: none;
@@ -82,7 +82,7 @@ export const SC_TransferTextarea = styled.textarea`
   resize: vertical;
 
   &::placeholder {
-    color: rgb(160, 160, 160);
+    color: ${COLORS.GRAY_999};
   }
   &:focus {
     outline: none;
@@ -133,7 +133,7 @@ export const SC_TransferCopyBtn = styled.button`
   white-space: nowrap;
 
   &:hover {
-    background: rgb(245, 245, 245);
+    background: ${COLORS.BG_TERTIARY};
   }
 `
 
@@ -150,7 +150,7 @@ export const SC_TransferSubmit = styled.button`
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: rgb(50, 50, 50);
+    background: ${COLORS.GRAY_333};
   }
   &:disabled {
     opacity: 0.6;
@@ -162,23 +162,23 @@ export const SC_TransferError = styled.div`
   margin-top: 12px;
   padding: 12px;
   font-size: 13px;
-  color: rgb(180, 50, 50);
-  background: rgba(220, 53, 69, 0.08);
+  color: ${COLORS.DANGER_DEEP};
+  background: ${COLORS.DANGER_BG_SOFT};
   border-radius: 8px;
 `
 
 export const SC_TransferFieldError = styled.div`
   margin-top: 6px;
   font-size: 12px;
-  color: rgb(180, 50, 50);
+  color: ${COLORS.DANGER_DEEP};
 `
 
 export const SC_TransferSuccess = styled.div`
   margin-top: 12px;
   padding: 12px;
   font-size: 13px;
-  color: rgb(34, 120, 60);
-  background: rgba(40, 167, 69, 0.08);
+  color: ${COLORS.SUCCESS_DEEP};
+  background: ${COLORS.SUCCESS_BG_SOFT};
   border-radius: 8px;
 `
 

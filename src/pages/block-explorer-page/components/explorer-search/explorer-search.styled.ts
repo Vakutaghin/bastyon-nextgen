@@ -162,8 +162,8 @@ export const SC_KindBadge = styled('span', badgeAttrs)`
     return COLORS.PRIMARY
   }};
   background: ${(p) => {
-    if (p.kind === 'tx') return 'rgba(40, 167, 69, 0.12)'
-    if (p.kind === 'address') return 'rgba(250, 140, 22, 0.12)'
+    if (p.kind === 'tx') return COLORS.SUCCESS_BG_12
+    if (p.kind === 'address') return COLORS.WARNING_BG_SOFT
     return COLORS.PRIMARY_LIGHT
   }};
 `

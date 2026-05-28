@@ -84,8 +84,8 @@ export const SC_LimitsLoading = styled.div`
 
 export const SC_LimitsError = styled.div`
   padding: 24px;
-  background: rgba(220, 53, 69, 0.08);
+  background: ${COLORS.DANGER_BG_SOFT};
   border-radius: 10px;
   font-size: 14px;
-  color: rgb(180, 50, 50);
+  color: ${COLORS.DANGER_DEEP};
 `

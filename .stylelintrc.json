@@ -35,7 +35,6 @@
         "stroke": ["/rgba?\\(\\d/"]
       },
       {
-        "severity": "warning",
         "message": "Хардкод rgb/rgba запрещён в стилях. Используй COLORS.* из src/styles/theme-colors.ts (см. OVERLAY_*, WHITE_*, и т.п.)."
       }
     ]

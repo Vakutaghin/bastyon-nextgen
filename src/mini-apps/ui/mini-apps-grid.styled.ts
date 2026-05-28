@@ -82,11 +82,11 @@ export const SC_FavoriteBtn = styled.button`
 
   &:hover {
     background: ${COLORS.OVERLAY_5};
-    color: rgb(245, 180, 0);
+    color: ${COLORS.WARNING_YELLOW};
   }
 
   &.active {
-    color: rgb(245, 180, 0);
+    color: ${COLORS.WARNING_YELLOW};
   }
 `
 
@@ -162,8 +162,8 @@ export const SC_Empty = styled.div`
 export const SC_Error = styled.div`
   padding: 16px;
   border-radius: 8px;
-  background: rgba(220, 0, 0, 0.06);
-  color: rgb(180, 30, 30);
+  background: ${COLORS.DANGER_BG_SOFT};
+  color: ${COLORS.DANGER_DEEP};
   font-size: 13px;
   margin: 12px 0;
 `

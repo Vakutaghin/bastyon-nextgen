@@ -60,7 +60,7 @@ export const SC_LiveBadge = styled.span`
 
   &.active {
     color: ${COLORS.SUCCESS};
-    background: rgba(40, 167, 69, 0.1);
+    background: ${COLORS.SUCCESS_BG_TINT};
   }
 `
 
@@ -79,10 +79,10 @@ export const SC_LiveDot = styled.span`
   @keyframes live-pulse {
     0%,
     100% {
-      box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+      box-shadow: 0 0 0 0 ${COLORS.SUCCESS_BG_PULSE};
     }
     50% {
-      box-shadow: 0 0 0 6px rgba(40, 167, 69, 0);
+      box-shadow: 0 0 0 6px transparent;
     }
   }
 `

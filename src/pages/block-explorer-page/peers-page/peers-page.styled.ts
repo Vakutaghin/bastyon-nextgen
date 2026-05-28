@@ -197,7 +197,7 @@ export const SC_DirectionBadge = styled('span', { dir: String })`
   border-radius: 4px;
   white-space: nowrap;
   color: ${(p) => (p.dir === 'in' ? COLORS.SUCCESS : COLORS.PRIMARY)};
-  background: ${(p) => (p.dir === 'in' ? 'rgba(40, 167, 69, 0.1)' : COLORS.PRIMARY_LIGHT)};
+  background: ${(p) => (p.dir === 'in' ? COLORS.SUCCESS_BG_TINT : COLORS.PRIMARY_LIGHT)};
 `
 
 export const SC_Placeholder = styled.div`
