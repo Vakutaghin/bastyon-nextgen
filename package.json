@@ -30,6 +30,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,vue,js,css,json}\"",
     "stylelint": "stylelint \"src/**/*.styled.ts\"",
     "stylelint:fix": "stylelint \"src/**/*.styled.ts\" --fix",
+    "check:inline-styles": "node scripts/check-inline-styles.mjs",
     "prepare": "husky"
   },
   "dependencies": {
@@ -49,7 +50,7 @@
     "ant-design-vue": "^4.2.6",
     "bech32": "^2.0.0",
     "bip174": "^3.0.0",
-    "bip32": "^5.0.0",
+    "bip32": "^5.0.1",
     "bip39": "^3.1.0",
     "bip39russian": "^1.0.7",
     "bip66": "^2.0.0",
@@ -60,7 +61,7 @@
     "crypto-js": "^4.2.0",
     "d3": "^7.9.0",
     "dexie": "^4.2.1",
-    "ecpair": "^3.0.0",
+    "ecpair": "^3.0.1",
     "hls.js": "^1.6.15",
     "matrix-js-sdk": "^40.1.0",
     "miscreant": "^0.3.2",
@@ -84,7 +85,7 @@
   "devDependencies": {
     "@babel/core": "^7.28.6",
     "@babel/preset-typescript": "^7.28.5",
-    "@capacitor/cli": "^8.0.1",
+    "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.0.1",
     "@eslint/js": "^10.0.1",
     "@pinia/testing": "^1.0.3",
@@ -98,29 +99,50 @@
     "@types/crypto-js": "^4.2.2",
     "@types/pbkdf2": "^3.1.2",
     "@types/qrcode": "^1.5.6",
-    "@vitejs/plugin-vue": "^5.1.4",
+    "@vitejs/plugin-vue": "^5.2.4",
     "@vue/test-utils": "^2.4.6",
     "babel-plugin-styled-components": "^2.1.4",
     "cross-env": "^7.0.3",
     "eslint": "^10.2.0",
     "eslint-plugin-vue": "^10.8.0",
-    "happy-dom": "^20.8.9",
+    "happy-dom": "^20.9.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "postcss-styled-syntax": "^0.7.1",
     "prettier": "^3.8.2",
+    "rollup-plugin-visualizer": "^7.0.1",
     "stylelint": "^17.6.0",
     "stylelint-config-standard": "^40.0.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.1",
-    "vite": "^5.4.10",
+    "vite": "^6.4.2",
     "vite-plugin-babel": "^1.4.1",
     "vite-plugin-node-polyfills": "^0.25.0",
     "vite-plugin-pwa": "^1.3.0",
     "vite-plugin-wasm": "^3.5.0",
-    "vitest": "^2.1.9"
+    "vitest": "^3.2.4"
   },
   "optionalDependencies": {
     "hex-captcha": "^2.0.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "tar": ">=7.5.11",
+      "picomatch": ">=4.0.4",
+      "minimatch": ">=3.1.4",
+      "rollup": ">=4.59.0",
+      "lodash": ">=4.17.24",
+      "lodash-es": ">=4.17.24",
+      "@xmldom/xmldom": ">=0.8.13",
+      "fast-uri": ">=3.1.2",
+      "js-cookie": ">=3.0.6",
+      "bn.js": ">=5.2.3",
+      "yaml": ">=2.9.0",
+      "postcss": ">=8.5.15",
+      "brace-expansion": ">=5.0.6",
+      "qs": ">=6.15.2",
+      "uuid": ">=13.0.2 <14",
+      "esbuild": ">=0.25.0"
+    }
   }
 }
