@@ -51,6 +51,12 @@ export const BREAKPOINT_VALUES = {
 } as const
 
 export const TRANSITIONS = {
+  // QUICK — мгновенный визуальный отклик (hover/focus в block-explorer, settings, sidebar).
+  // FAST — стандартные UI-переходы (открытие тостов, smooth-scrolling).
+  // NORMAL — крупные перестроения (модалки, выпадашки).
+  // SLOW — заметные переходы между состояниями.
+  // CUBIC — фирменный кривой ease для главных переключений.
+  QUICK: '0.15s ease',
   FAST: '0.2s ease',
   NORMAL: '0.3s ease',
   SLOW: '0.5s ease',
@@ -58,6 +64,12 @@ export const TRANSITIONS = {
 } as const
 
 export const Z_INDEX = {
+  // Локальные слои внутри секции — выше соседнего контента, ниже глобальных оверлеев.
+  LOCAL_DROPDOWN: 10,
+  LOCAL_DROPDOWN_HIGH: 100,
+  // Mini-apps iframe — выше обычного контента, ниже messenger-виджета.
+  MINIAPP_FRAME: 500,
+  MINIAPP_PETAL: 600,
   DROPDOWN: 1000,
   STICKY: 1020,
   MODAL_BACKDROP: 1040,

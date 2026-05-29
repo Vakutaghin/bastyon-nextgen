@@ -302,7 +302,11 @@
    получают компактный вид автоматически.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Брейкпоинты ниже ОБЯЗАНЫ совпадать с BREAKPOINTS.{TABLET,MOBILE} в src/styles/design-tokens.ts.
+   CSS не умеет переменные в @media — поэтому источник правды формально один (TS-токены),
+   а CSS-копии нужно держать в синхроне вручную. См. CODE_AUDIT.md §3.6. */
 @media (max-width: 768px) {
+  /* BREAKPOINTS.TABLET */
   :root {
     --spacing-md: 12px;
     --spacing-lg: 16px;
@@ -316,6 +320,7 @@
 }
 
 @media (max-width: 480px) {
+  /* BREAKPOINTS.MOBILE */
   :root {
     --spacing-md: 10px;
     --spacing-lg: 14px;
@@ -581,6 +586,7 @@ a:active {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
+  /* BREAKPOINTS.TABLET */
   .bastyon-card.ant-card {
     border-radius: 10px;
   }
@@ -590,6 +596,7 @@ a:active {
 }
 
 @media (max-width: 480px) {
+  /* BREAKPOINTS.MOBILE */
   .bastyon-card.ant-card {
     border-radius: 8px;
   }

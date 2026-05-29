@@ -37,6 +37,16 @@
       {
         "message": "Хардкод rgb/rgba запрещён в стилях. Используй COLORS.* из src/styles/theme-colors.ts (см. OVERLAY_*, WHITE_*, и т.п.)."
       }
+    ],
+    "declaration-property-value-allowed-list": [
+      {
+        "transition": ["/\\$\\{[^}]+\\}/", "/^(none|inherit|initial|unset)$/"],
+        "transition-duration": ["/\\$\\{[^}]+\\}/", "/^(inherit|initial|unset)$/"]
+      },
+      {
+        "severity": "warning",
+        "message": "Хардкод transition запрещён. Используй TRANSITIONS.* из src/styles/design-tokens.ts (FAST/NORMAL/SLOW/CUBIC). См. CODE_AUDIT.md §3.5."
+      }
     ]
   }
 }
