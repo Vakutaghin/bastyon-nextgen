@@ -1,5 +1,5 @@
 import styled, { css } from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
 
 const sidebarItemProps = { active: Boolean }
@@ -34,8 +34,8 @@ export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
   border-radius: 8px;
   cursor: pointer;
   transition:
-    background 0.15s,
-    color 0.15s;
+    background ${TRANSITIONS.QUICK},
+    color ${TRANSITIONS.QUICK};
 
   &:hover {
     background: ${COLORS.OVERLAY_4};

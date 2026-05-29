@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_TopCard = styled.section`
   background: ${COLORS.BG_PRIMARY};
@@ -48,7 +48,10 @@ export const SC_TopToggle = styled.button`
   font-weight: 500;
   color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color ${TRANSITIONS.QUICK},
+    border-color ${TRANSITIONS.QUICK},
+    background-color ${TRANSITIONS.QUICK};
 
   &:hover {
     color: ${COLORS.PRIMARY};
@@ -66,8 +69,12 @@ export const SC_TopRow = styled.div`
   border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
   font-size: 13px;
 
-  &:last-child { border-bottom: none; }
-  &:hover      { background: ${COLORS.OVERLAY_3}; }
+  &:last-child {
+    border-bottom: none;
+  }
+  &:hover {
+    background: ${COLORS.OVERLAY_3};
+  }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     grid-template-columns: 24px minmax(0, 1fr) 60px;

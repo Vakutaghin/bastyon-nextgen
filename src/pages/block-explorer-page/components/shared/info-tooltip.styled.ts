@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_InfoTooltipIcon = styled.span`
   display: inline-flex;
@@ -17,7 +18,9 @@ export const SC_InfoTooltipIcon = styled.span`
   cursor: help;
   user-select: none;
   vertical-align: middle;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color ${TRANSITIONS.QUICK},
+    background-color ${TRANSITIONS.QUICK};
 
   &:hover {
     color: ${COLORS.PRIMARY};

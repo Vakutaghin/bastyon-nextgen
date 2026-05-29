@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Search = styled.div`
@@ -43,9 +43,9 @@ export const SC_Card = styled.button`
   background: ${COLORS.WHITE};
   cursor: pointer;
   transition:
-    transform 120ms ease,
-    box-shadow 120ms ease,
-    border-color 120ms ease;
+    transform ${TRANSITIONS.QUICK},
+    box-shadow ${TRANSITIONS.QUICK},
+    border-color ${TRANSITIONS.QUICK};
   text-align: center;
   font: inherit;
   color: ${COLORS.GRAY_212};
@@ -77,8 +77,8 @@ export const SC_FavoriteBtn = styled.button`
   color: ${COLORS.OVERLAY_25};
   font-size: 14px;
   transition:
-    color 150ms ease,
-    background-color 150ms ease;
+    color ${TRANSITIONS.QUICK},
+    background-color ${TRANSITIONS.QUICK};
 
   &:hover {
     background: ${COLORS.OVERLAY_5};
@@ -140,7 +140,7 @@ export const SC_LoadMoreBtn = styled.button`
   font-size: 13px;
   color: ${COLORS.GRAY_212};
   cursor: pointer;
-  transition: background-color 120ms ease;
+  transition: background-color ${TRANSITIONS.QUICK};
 
   &:hover {
     background: ${COLORS.OVERLAY_4};

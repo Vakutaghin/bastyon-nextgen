@@ -1,15 +1,16 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 
 /**
  * Контейнер мини-приложения. Покрывает весь viewport поверх нашего хедера/сайдбара.
- * z-index 500 — выше всего обычного контента, но ниже messenger (1000) чтобы
- * виджет чата висел поверх iframe.
+ * MINIAPP_FRAME (500) — выше обычного контента, ниже messenger (DROPDOWN=1000),
+ * чтобы виджет чата висел поверх iframe.
  */
 export const SC_Frame = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 500;
+  z-index: ${Z_INDEX.MINIAPP_FRAME};
   background: ${COLORS.WHITE};
   display: flex;
   flex-direction: column;
@@ -42,7 +43,7 @@ export const SC_Loader = styled.div`
   background: ${COLORS.WHITE};
   pointer-events: none;
   opacity: 1;
-  transition: opacity 200ms ease;
+  transition: opacity ${TRANSITIONS.FAST};
 
   &.hidden {
     opacity: 0;
@@ -99,7 +100,7 @@ export const SC_ClosePetal = styled.button`
   position: fixed;
   top: 16px;
   right: 0;
-  z-index: 600;
+  z-index: ${Z_INDEX.MINIAPP_PETAL};
   display: flex;
   align-items: center;
   gap: 8px;
@@ -117,9 +118,9 @@ export const SC_ClosePetal = styled.button`
   transform: translateX(calc(100% - 14px));
   transition:
     transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    background-color 200ms ease,
-    opacity 200ms ease,
-    color 200ms ease;
+    background-color ${TRANSITIONS.FAST},
+    opacity ${TRANSITIONS.FAST},
+    color ${TRANSITIONS.FAST};
 
   &:hover,
   &:focus-visible {

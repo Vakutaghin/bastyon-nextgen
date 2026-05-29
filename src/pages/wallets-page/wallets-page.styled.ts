@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_WalletWork = styled.div`
   display: flex;
@@ -147,8 +148,8 @@ export const SC_WalletExplorerLink = styled.a`
   border-radius: 4px;
   flex-shrink: 0;
   transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
+    color ${TRANSITIONS.QUICK},
+    background-color ${TRANSITIONS.QUICK};
   text-decoration: none;
 
   &:hover {

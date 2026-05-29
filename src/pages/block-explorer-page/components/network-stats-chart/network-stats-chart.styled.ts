@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_StatsCard = styled.section`
   background: ${COLORS.BG_PRIMARY};
@@ -54,7 +55,9 @@ export const SC_StatsToggleBtn = styled.button`
   color: ${COLORS.TEXT_SECONDARY};
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color ${TRANSITIONS.QUICK},
+    color ${TRANSITIONS.QUICK};
 
   &.active {
     background: ${COLORS.PRIMARY};
@@ -124,7 +127,7 @@ export const SC_StatsTooltip = styled.div`
   white-space: nowrap;
   transform: translate(-50%, -100%);
   opacity: 0;
-  transition: opacity 0.1s ease;
+  transition: opacity ${TRANSITIONS.QUICK};
 
   &.visible {
     opacity: 1;

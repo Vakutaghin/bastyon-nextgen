@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_BlockPageWork = styled.div`
   display: flex;
@@ -220,8 +220,8 @@ export const SC_LoadMoreBtn = styled.button`
   border-radius: 6px;
   cursor: pointer;
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
+    background-color ${TRANSITIONS.QUICK},
+    border-color ${TRANSITIONS.QUICK};
 
   &:hover:not(:disabled) {
     background: ${COLORS.PRIMARY_LIGHT};

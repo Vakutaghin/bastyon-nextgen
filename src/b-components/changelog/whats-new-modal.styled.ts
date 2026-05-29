@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_Wrap = styled.div`
   display: flex;
@@ -22,7 +23,7 @@ export const SC_DismissButton = styled.button`
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color ${TRANSITIONS.QUICK};
 
   &:hover {
     background: ${COLORS.PRIMARY_HOVER};
@@ -45,7 +46,7 @@ export const SC_LangButton = styled.button<{ active: boolean }>`
   color: ${(p) => (p.active ? COLORS.WHITE : COLORS.TEXT_SECONDARY)};
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color ${TRANSITIONS.QUICK};
 
   & + & {
     border-left: 1px solid ${COLORS.BORDER};

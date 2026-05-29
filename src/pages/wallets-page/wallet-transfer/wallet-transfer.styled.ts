@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_TransferWidget = styled.div`
   max-width: 560px;
@@ -25,8 +26,8 @@ export const SC_TransferSwitchBtn = styled.button<{ active?: boolean }>`
   border: none;
   cursor: pointer;
   transition:
-    color 0.15s,
-    background 0.15s;
+    color ${TRANSITIONS.QUICK},
+    background ${TRANSITIONS.QUICK};
 
   &:hover {
     color: ${COLORS.GRAY_212};
@@ -198,7 +199,7 @@ export const SC_TransferSearchDropdown = styled.div`
   border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   box-shadow: 0 4px 12px ${COLORS.OVERLAY_10};
-  z-index: 10;
+  z-index: ${Z_INDEX.LOCAL_DROPDOWN};
 `
 
 export const SC_TransferSearchItem = styled.button`

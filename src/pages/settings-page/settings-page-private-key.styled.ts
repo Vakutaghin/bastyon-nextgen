@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_PrivateKeySection = styled.div`
   max-width: 560px;
@@ -58,9 +59,9 @@ export const SC_CopyIconBtn = styled.button`
   color: ${COLORS.OVERLAY_65};
   cursor: pointer;
   transition:
-    color 0.2s,
-    border-color 0.2s,
-    background 0.2s;
+    color ${TRANSITIONS.FAST},
+    border-color ${TRANSITIONS.FAST},
+    background ${TRANSITIONS.FAST};
 
   &:hover {
     color: ${COLORS.ANT_BLUE};
@@ -81,7 +82,7 @@ export const SC_ShowKeyButton = styled.button`
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background ${TRANSITIONS.FAST};
 
   &:hover {
     background: ${COLORS.ANT_BLUE_HOVER};
@@ -106,8 +107,8 @@ export const SC_HideKeyButton = styled.button`
   border-radius: 6px;
   cursor: pointer;
   transition:
-    color 0.2s,
-    border-color 0.2s;
+    color ${TRANSITIONS.FAST},
+    border-color ${TRANSITIONS.FAST};
 
   &:hover {
     color: ${COLORS.ANT_BLUE};
@@ -155,7 +156,7 @@ export const SC_ConfirmBtnPrimary = styled.button`
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background ${TRANSITIONS.FAST};
 
   &:hover {
     background: ${COLORS.ANT_BLUE_HOVER};
@@ -172,8 +173,8 @@ export const SC_ConfirmBtnDefault = styled.button`
   border-radius: 6px;
   cursor: pointer;
   transition:
-    color 0.2s,
-    border-color 0.2s;
+    color ${TRANSITIONS.FAST},
+    border-color ${TRANSITIONS.FAST};
 
   &:hover {
     color: ${COLORS.ANT_BLUE};

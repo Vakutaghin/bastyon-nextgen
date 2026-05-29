@@ -1,5 +1,6 @@
 import styled, { css } from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_ExplorerSettingsSection = styled.div`
   max-width: 720px;
@@ -35,7 +36,7 @@ export const SC_ExplorerOpenFullButton = styled.a`
   border-radius: 8px;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.2s;
+  transition: background ${TRANSITIONS.FAST};
   align-self: flex-start;
 
   &:hover {
@@ -64,8 +65,8 @@ export const SC_ExplorerNodeRow = styled('label', nodeRowProps)`
   font-size: 14px;
   color: ${COLORS.GRAY_212};
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background ${TRANSITIONS.QUICK},
+    border-color ${TRANSITIONS.QUICK};
 
   &:hover {
     background: ${COLORS.OVERLAY_2};

@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_PayloadCard = styled.div`
   background: ${COLORS.BG_PRIMARY};
@@ -89,7 +89,7 @@ export const SC_PayloadBtn = styled.a`
   border-radius: 6px;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color ${TRANSITIONS.QUICK};
 
   &:hover {
     background: ${COLORS.PRIMARY_LIGHT_15};

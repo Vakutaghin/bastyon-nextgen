@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 /** Контейнер всей страницы — повторяет SC_HomeWork: flex с сайдбаром слева. */
 export const SC_SearchWork = styled.div`
@@ -80,8 +80,8 @@ export const SC_Tab = styled.button<{ active: boolean }>`
   border-bottom: 2px solid ${(p) => (p.active ? COLORS.PRIMARY : 'transparent')};
   margin-bottom: -1px;
   transition:
-    color 0.15s,
-    border-color 0.15s;
+    color ${TRANSITIONS.QUICK},
+    border-color ${TRANSITIONS.QUICK};
 
   &:hover {
     color: ${COLORS.PRIMARY};
@@ -104,8 +104,8 @@ export const SC_ResultItem = styled.div`
   border: 1px solid ${COLORS.BORDER_LIGHTER};
   cursor: pointer;
   transition:
-    background-color 0.15s,
-    border-color 0.15s;
+    background-color ${TRANSITIONS.QUICK},
+    border-color ${TRANSITIONS.QUICK};
 
   &:hover {
     background: ${COLORS.BG_HOVER_BLUE};
@@ -181,8 +181,8 @@ export const SC_LoadMore = styled.button`
   font-size: 13px;
   cursor: pointer;
   transition:
-    background-color 0.15s,
-    border-color 0.15s;
+    background-color ${TRANSITIONS.QUICK},
+    border-color ${TRANSITIONS.QUICK};
 
   &:hover:not(:disabled) {
     background: ${COLORS.PRIMARY_LIGHT};

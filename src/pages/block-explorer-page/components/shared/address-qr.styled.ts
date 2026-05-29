@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_QrFrame = styled.button`
   display: inline-flex;
@@ -11,8 +12,8 @@ export const SC_QrFrame = styled.button`
   border-radius: 8px;
   cursor: zoom-in;
   transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color ${TRANSITIONS.QUICK},
+    box-shadow ${TRANSITIONS.QUICK};
 
   &:hover {
     border-color: ${COLORS.PRIMARY_LIGHT_50};
@@ -33,7 +34,7 @@ export const SC_QrModalBackdrop = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: ${Z_INDEX.MODAL};
   cursor: zoom-out;
 `
 

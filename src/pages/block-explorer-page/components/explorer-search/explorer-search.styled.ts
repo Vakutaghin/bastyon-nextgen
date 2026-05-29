@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_ExplorerSearch = styled.form`
   position: relative;
@@ -21,8 +22,8 @@ export const SC_ExplorerSearchInput = styled.input`
   border-radius: 8px;
   outline: none;
   transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color ${TRANSITIONS.QUICK},
+    box-shadow ${TRANSITIONS.QUICK};
 
   &::placeholder {
     color: ${COLORS.TEXT_MUTED};
@@ -63,7 +64,7 @@ export const SC_ExplorerSearchButton = styled.button`
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color ${TRANSITIONS.QUICK};
 
   &:hover {
     background: ${COLORS.PRIMARY_HOVER};
@@ -87,7 +88,7 @@ export const SC_SuggestionsDropdown = styled.div`
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: ${Z_INDEX.LOCAL_DROPDOWN_HIGH};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
   border-radius: 8px;
@@ -135,7 +136,7 @@ export const SC_SuggestionItem = styled('button', itemAttrs)`
   border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.1s ease;
+  transition: background-color ${TRANSITIONS.QUICK};
 
   &:last-child {
     border-bottom: none;
@@ -199,8 +200,8 @@ export const SC_RemoveItemBtn = styled.button`
   color: ${COLORS.TEXT_MUTED};
   cursor: pointer;
   transition:
-    color 0.1s ease,
-    background-color 0.1s ease;
+    color ${TRANSITIONS.QUICK},
+    background-color ${TRANSITIONS.QUICK};
 
   &:hover {
     color: ${COLORS.DANGER};

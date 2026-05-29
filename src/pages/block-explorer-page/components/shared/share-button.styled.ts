@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_ShareBtn = styled.button`
   display: inline-flex;
@@ -13,7 +14,10 @@ export const SC_ShareBtn = styled.button`
   border: 1px solid ${COLORS.BORDER_LIGHTER};
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color ${TRANSITIONS.QUICK},
+    border-color ${TRANSITIONS.QUICK},
+    color ${TRANSITIONS.QUICK};
 
   &:hover {
     color: ${COLORS.PRIMARY};

@@ -1,5 +1,6 @@
 import styled, { css } from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { TRANSITIONS } from '@/styles/design-tokens'
 
 const langRowProps = { active: Boolean }
 
@@ -43,7 +44,7 @@ export const SC_LangButton = styled('button', langRowProps)`
   color: ${COLORS.TEXT_SECONDARY};
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color ${TRANSITIONS.QUICK};
 
   & + & {
     border-left: 1px solid ${COLORS.BORDER};
