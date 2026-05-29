@@ -122,11 +122,29 @@ export default tseslint.config(
       'no-restricted-exports': ['warn', { restrictDefaultExports: { direct: true } }],
 
       // TypeScript-specific
-      '@typescript-eslint/no-explicit-any': 'off', // Too many existing usages
+      '@typescript-eslint/no-explicit-any': 'warn', // 345+ existing — снижаем постепенно, регрессы ловятся как warn
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
 
       // Vue
       'vue/multi-word-component-names': 'off',
+      // Заставляем новые компоненты быть на <script setup> (Options API закрыт).
+      'vue/component-api-style': ['error', ['script-setup', 'composition']],
+      // Inline-styles в шаблонах запрещены — используем *.styled.ts / src/styles.
+      // Жёсткий стоп на регрессиях — pre-commit baseline (scripts/check-inline-styles.mjs);
+      // здесь — warn для подсветки в IDE и `pnpm lint`. См. _DOCS/CODE_AUDIT.md §3.1.
+      'vue/no-restricted-syntax': [
+        'warn',
+        {
+          selector: "VAttribute[directive=true][key.name.name='bind'][key.argument.name='style']",
+          message:
+            'Inline :style запрещён — выноси в *.styled.ts или src/styles/. См. _DOCS/CODE_AUDIT.md §3.1.',
+        },
+        {
+          selector: "VAttribute[directive=false][key.name='style']",
+          message:
+            'Inline style="..." запрещён — выноси в *.styled.ts. См. _DOCS/CODE_AUDIT.md §3.1.',
+        },
+      ],
 
       // General quality
       'no-console': ['warn', { allow: ['warn', 'error'] }],
