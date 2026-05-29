@@ -18,7 +18,8 @@
     "noUncheckedIndexedAccess": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mobile/*": ["./src-mobile/*"]
     },
     "types": ["vite/client", "vitest/globals"]
   },
