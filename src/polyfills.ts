@@ -1,37 +1,60 @@
-// Полифиллы для работы криптобиблиотек в браузере
-// Загружаются первыми перед остальными модулями
+// Polyfills для работы криптобиблиотек в браузере.
+// Загружаются ПЕРВЫМИ в main.ts перед остальными модулями.
+//
+// До 2026-05 эта же логика дублировалась в main.js и inline-скрипте в index.html.
+// Консолидация (CODE_AUDIT.md §10/§7) позволяет:
+//   - убрать 'unsafe-inline' из CSP script-src (см. index.html);
+//   - удалить дубли;
+//   - выровнять Buffer/process под единый источник.
+//
+// Buffer    — bip39, bn.js, bs58, bitcoin-libs.
+// process   — btc17.js (вендорный CommonJS).
+//
+// Глобальные типы process/Buffer уже декларируются @types/node транзитивно
+// (через matrix-js-sdk и др.), поэтому используем точечные касты вместо `declare global`
+// — иначе TS-конфликт subsequent declarations.
 
-// Buffer — нужен для bip39 и других библиотек
-import { Buffer } from 'buffer'
+import { Buffer as BufferImpl } from 'buffer'
 
-if (typeof globalThis !== 'undefined') {
-  ;(globalThis as any).Buffer = Buffer
-}
-if (typeof window !== 'undefined') {
-  ;(window as any).Buffer = Buffer
-}
-if (typeof global !== 'undefined') {
-  ;(global as any).Buffer = Buffer
+type ProcessShim = {
+  env: Record<string, string | undefined>
+  browser: boolean
+  version: string
+  nextTick: (cb: () => void) => void
 }
 
-// process — нужен для btc17.js
-if (typeof process === 'undefined') {
-  const processPolyfill = {
+// Каст через unknown — @types/node транзитивно задаёт `process: Process` на globalThis,
+// что несовместимо с нашим частичным shim'ом. Полный Process нам не нужен (только env/nextTick),
+// поэтому осознанно «расширяем» тип.
+const g = globalThis as unknown as Record<string, unknown>
+const w: Record<string, unknown> | undefined =
+  typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>) : undefined
+
+if (!g.Buffer) g.Buffer = BufferImpl
+if (w && !w.Buffer) w.Buffer = BufferImpl
+
+if (typeof g.process === 'undefined') {
+  const processPolyfill: ProcessShim = {
     env: {},
     browser: true,
     version: 'v16.0.0',
-    nextTick: function (callback: () => void) {
-      setTimeout(callback, 0)
+    nextTick: (cb) => {
+      setTimeout(cb, 0)
     },
   }
+  g.process = processPolyfill
+  if (w) w.process = processPolyfill
+}
 
-  if (typeof globalThis !== 'undefined') {
-    ;(globalThis as any).process = processPolyfill
-  }
-  if (typeof window !== 'undefined') {
-    ;(window as any).process = processPolyfill
-  }
-  if (typeof global !== 'undefined') {
-    ;(global as any).process = processPolyfill
-  }
+// Ранние глобальные обработчики ошибок — ловят падения ДО монтирования Vue
+// (на стадии evaluate других модулей). `installGlobalErrorHandler(app)` ниже
+// делает то же самое и добавляет Vue-handler, но регистрируется позже.
+// Дублирование безопасно: оба пишут разными префиксами в console.error.
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (e: ErrorEvent) => {
+    console.error('[window.error]', e.message, e.filename, e.lineno, e.colno, e.error)
+  })
+  window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
+    console.error('[unhandledrejection]', e.reason)
+  })
 }

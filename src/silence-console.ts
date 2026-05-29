@@ -1,12 +1,15 @@
 /**
- * Globally silences chatty console calls and quiets the matrix-js-sdk logger.
+ * Подавляет шум `console.log` и приглушает matrix-js-sdk logger.
  *
- * To restore full output for debugging:
- *   localStorage.setItem('debug', '1') and reload,
- *   or open the app with `?debug=1` in the URL.
+ * Раскрыть обратно:
+ *   localStorage.setItem('debug', '1') + reload,
+ *   или открыть приложение с `?debug=1` в URL.
  *
- * Imported FIRST in `main.js` to take effect before any other module's
- * boot-time logs.
+ * Импортируется ПЕРВЫМ в `main.ts`, чтобы зацепить и boot-time логи модулей.
+ *
+ * Намеренно НЕ глушим `console.info` и `console.debug` — DevTools по умолчанию их прячет,
+ * но при включении уровней они помогают диагностике. `console.log` — основной источник
+ * мусора (legacy `console.log('foo')` из вендоров). См. CODE_AUDIT.md §7.
  */
 
 // @ts-expect-error — deep import has no types but resolves at runtime.
@@ -31,14 +34,9 @@ if (!shouldKeepVerbose()) {
   const noop = () => {}
   // eslint-disable-next-line no-console
   console.log = noop
-  // eslint-disable-next-line no-console
-  console.info = noop
-  // eslint-disable-next-line no-console
-  console.debug = noop
 
   // Filter known-noisy `console.warn` patterns; keep real warnings.
   const origWarn = console.warn.bind(console)
-  // eslint-disable-next-line no-console
   console.warn = (...args: unknown[]) => {
     const first = args[0]
     if (typeof first === 'string') {
@@ -52,5 +50,7 @@ if (!shouldKeepVerbose()) {
   // matrix-js-sdk uses loglevel under the hood; bump it to ERROR.
   try {
     ;(matrixLogger as { setLevel?: (lvl: string) => void }).setLevel?.('error')
-  } catch {}
+  } catch {
+    // ignore — logger may be missing in some matrix-js-sdk versions
+  }
 }
