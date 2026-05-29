@@ -1,10 +1,13 @@
 <template>
-  <VueEasyLightbox :visible="visible" :imgs="images" :index="index" @hide="handleHide" />
+  <SC_LightboxRoot>
+    <VueEasyLightbox :visible="visible" :imgs="images" :index="index" @hide="handleHide" />
+  </SC_LightboxRoot>
 </template>
 
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 import VueEasyLightbox from 'vue-easy-lightbox'
+import { SC_LightboxRoot } from './image-gallery.styled'
 
 const props = withDefaults(
   defineProps<{
@@ -78,5 +81,3 @@ function handleHide(): void {
   emit('hide')
 }
 </script>
-
-<style scoped src="./image-gallery.styles.css"></style>
