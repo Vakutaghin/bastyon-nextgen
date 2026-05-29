@@ -65,11 +65,35 @@ const appsStore = useAppsStore()
 
 const app = computed(() => appsStore.byId(props.appId))
 const loaded = ref(false)
-const iframeStatus = ref<'pending' | 'loaded-html' | 'load-error'>('pending')
+const iframeStatus = ref<'pending' | 'loaded-html' | 'load-error' | 'load-timeout'>('pending')
+
+// Таймаут на HTML-загрузку iframe. Если сервер миниаппы зависнет, без таймаута
+// спиннер останется навсегда. См. CODE_AUDIT.md §9.1.
+const IFRAME_LOAD_TIMEOUT_MS = 45_000
+let loadTimerId: ReturnType<typeof setTimeout> | null = null
+
+function clearLoadTimer() {
+  if (loadTimerId != null) {
+    clearTimeout(loadTimerId)
+    loadTimerId = null
+  }
+}
+
+function armLoadTimer() {
+  clearLoadTimer()
+  loadTimerId = setTimeout(() => {
+    if (iframeStatus.value === 'pending') {
+      iframeStatus.value = 'load-timeout'
+    }
+    loadTimerId = null
+  }, IFRAME_LOAD_TIMEOUT_MS)
+}
 
 const loaderText = computed(() => {
   if (!app.value) return ''
   if (iframeStatus.value === 'load-error') return `Не удалось загрузить ${app.value.manifest.name}`
+  if (iframeStatus.value === 'load-timeout')
+    return `${app.value.manifest.name} не отвечает — попробуйте позже`
   if (iframeStatus.value === 'loaded-html') return `${app.value.manifest.name} — инициализация…`
   return app.value.manifest.name
 })
@@ -98,9 +122,11 @@ const iframeAllow = computed(() => {
 
 const onIframeLoad = () => {
   iframeStatus.value = 'loaded-html'
+  clearLoadTimer()
 }
 const onIframeError = () => {
   iframeStatus.value = 'load-error'
+  clearLoadTimer()
 }
 
 // `event: 'loaded'` от миниаппы → снимаем спиннер
@@ -116,6 +142,12 @@ onIframeLifecycleEvent.add(onIframeEvent)
 const BODY_CLASS = 'miniapp-fullscreen'
 onMounted(() => {
   document.body.classList.add(BODY_CLASS)
+  armLoadTimer()
+})
+
+// При смене источника iframe (новое приложение / innerPath) — перезапускаем таймер.
+watch(iframeSrc, () => {
+  armLoadTimer()
 })
 
 watch(
@@ -147,6 +179,7 @@ const askClose = () => {
 onBeforeUnmount(() => {
   document.body.classList.remove(BODY_CLASS)
   onIframeLifecycleEvent.delete(onIframeEvent)
+  clearLoadTimer()
   if (app.value) {
     miniAppsBridge.unregisterApp(app.value.manifest.id)
   }
