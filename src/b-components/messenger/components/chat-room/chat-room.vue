@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch, watchEffect } from 'vue'
+import { computed, ref } from 'vue'
 import { debugLog } from '@/helpers/common/debug-log'
 import type { Message } from '../../types'
 import MessageList from '../message-list/message-list.vue'
@@ -146,9 +146,10 @@ import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import PkoinTransferModal from '../pkoin-transfer-modal/pkoin-transfer-modal.vue'
 import { useMessengerStore } from '../../store'
-import { formatDuration } from '../../helpers'
 import { usePasteDrop } from './use-paste-drop'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { useVoiceRecording } from './use-voice-recording'
+import { usePartnerInfo } from './use-partner-info'
+import { useChatInput } from './use-chat-input'
 import sendIcon from './img/send.svg'
 import emojiIcon from './img/emoji.svg'
 import micIcon from './img/mic.svg'
@@ -179,6 +180,8 @@ import {
   SC_StatValue,
 } from '@/b-components/profile/profile-sidebar/styled'
 
+// Inline style на dragover — выделение dashed-обводкой. Используется через
+// :style биндинг, не плодит регрессию (значение из объекта, не литерал).
 const DRAG_STYLE = {
   outline: '2px dashed #00A4DB',
   outlineOffset: '-4px',
@@ -204,88 +207,52 @@ const emit = defineEmits<{
 
 const store = useMessengerStore()
 
-const inputValue = ref('')
-const inputRef = ref<{ $el?: HTMLTextAreaElement } | null>(null)
-const showEmojiPicker = ref(false)
+// Карточка собеседника в invite-режиме.
+const {
+  partnerName,
+  partnerAvatar,
+  partnerInitial,
+  avatarLoadFailed,
+  reputation,
+  subscribersCount,
+  subscribesCount,
+  onAvatarError,
+} = usePartnerInfo(store)
 
-const isInitiated = ref<boolean>(props.messages && props.messages.length > 0 ? true : false)
-const partnerName = ref<string>('')
-const partnerAvatar = ref<string | null>(null)
-const avatarLoadFailed = ref(false)
-const reputation = ref<string>('0.0')
-const subscribersCount = ref<number>(0)
-const subscribesCount = ref<number>(0)
+// Поле ввода + emoji-пикер.
+const {
+  inputValue,
+  inputRef,
+  showEmojiPicker,
+  handleSend,
+  handleKeydown,
+  handleInput,
+  toggleEmojiPicker,
+  onEmojiSelect,
+  focusInput,
+} = useChatInput({
+  onSend: (text) => emit('send', text),
+})
 
-const isRecording = ref(false)
-const isLocked = ref(false)
-const isCancelling = ref(false)
-const recordingDuration = ref('00:00')
-const recordingTimer = ref<ReturnType<typeof setInterval> | null>(null)
-const mediaRecorder = ref<MediaRecorder | null>(null)
-const recordedChunks: BlobPart[] = []
-const recordStartAt = ref<number>(0)
-const touchStartX = ref(0)
-const touchStartY = ref(0)
+// Голосовая запись с touch-жестами.
+const {
+  isRecording,
+  isLocked,
+  recordingDuration,
+  startRecording,
+  cancelRecording,
+  stopRecording,
+  handleTouchMove,
+  handleTouchEnd,
+} = useVoiceRecording({
+  onAudioRecorded: async (blob, duration) => {
+    if (store.activeChatId) {
+      await store.sendAudio(store.activeChatId, blob, { duration, name: 'voice-message' })
+    }
+  },
+})
 
-const preferredTypes = [
-  'audio/webm;codecs=opus',
-  'audio/webm',
-  'audio/ogg;codecs=opus',
-  'audio/mp4',
-  'audio/aac',
-]
-
-function adjustHeight(): void {
-  const el = inputRef.value?.$el
-  if (el) {
-    el.style.height = 'auto'
-    el.style.height = el.scrollHeight + 2 + 'px'
-  }
-}
-
-function handleSend(): void {
-  if (inputValue.value.trim()) {
-    emit('send', inputValue.value.trim())
-    inputValue.value = ''
-    showEmojiPicker.value = false
-    nextTick(adjustHeight)
-  }
-}
-
-function handleKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    handleSend()
-  }
-}
-
-function handleInput(): void {
-  adjustHeight()
-}
-
-function toggleEmojiPicker(): void {
-  showEmojiPicker.value = !showEmojiPicker.value
-}
-
-function onEmojiSelect(emoji: string): void {
-  // Вставляем эмодзи в позицию курсора (или в конец, если нет input ref).
-  const el = inputRef.value?.$el
-  if (el) {
-    const start = el.selectionStart
-    const end = el.selectionEnd
-    const text = inputValue.value
-    inputValue.value = text.substring(0, start) + emoji + text.substring(end)
-
-    nextTick(() => {
-      el.focus()
-      el.selectionStart = el.selectionEnd = start + emoji.length
-      adjustHeight()
-    })
-  } else {
-    inputValue.value += emoji
-    adjustHeight()
-  }
-}
+const isInitiated = ref<boolean>(props.messages && props.messages.length > 0)
 
 async function startChatNow(): Promise<void> {
   const address = store.lastTargetAddress
@@ -297,228 +264,7 @@ async function startChatNow(): Promise<void> {
     console.error('[ChatRoom] Failed to start chat room:', e)
   }
   isInitiated.value = true
-  nextTick(() => {
-    const el = inputRef.value?.$el
-    if (el) {
-      el.focus()
-      adjustHeight()
-    }
-  })
-}
-
-function hexToAddress(hex: string): string {
-  if (!hex || hex.length % 2 !== 0) return ''
-  let result = ''
-  for (let i = 0; i < hex.length; i += 2) {
-    const chHex = hex.substring(i, i + 2)
-    if (!/^[0-9a-fA-F]{2}$/.test(chHex)) return ''
-    let charCode = parseInt(chHex, 16)
-    if (charCode >= 0x80) charCode += 0x350
-    result += String.fromCharCode(charCode)
-  }
-  return result
-}
-
-// Тонкая обёртка над `resolveImageUrl`: chat-room принимает уже извлечённый
-// хэш/URL, а не объект профиля целиком — поэтому используем именно нормализатор.
-function getAvatarUrlFromProfile(imageHash?: string): string | undefined {
-  return imageHash ? resolveImageUrl(imageHash) : undefined
-}
-
-async function updatePartnerInfo(): Promise<void> {
-  let address: string | null = null
-  const d = store.activeDialog
-  const isInviteMode = !d
-
-  if (d) {
-    partnerName.value = d.partner?.name || 'Чат'
-    partnerAvatar.value = d.partner?.avatar || null
-    avatarLoadFailed.value = false
-    const id = d.partner?.id
-    if (typeof id === 'string' && id.startsWith('@') && id.includes(':')) {
-      const parts = id.split(':')
-      const userId = parts[0]!.substring(1)
-      const looksHex = /^[0-9a-fA-F]+$/.test(userId) && userId.length % 2 === 0
-      address = looksHex ? hexToAddress(userId) : userId
-    }
-  }
-  if (!address) address = store.lastTargetAddress ?? null
-  if (!address) return
-
-  const cached = store.userProfiles[address]
-  if (!cached) await store.fetchProfiles([address])
-  const profile = store.userProfiles[address]
-  if (!profile) return
-
-  const r: unknown = profile.reputation ?? 0
-  const num = typeof r === 'number' ? r : Number(r || 0)
-  reputation.value = num.toFixed(1)
-  subscribersCount.value = profile.subscribers_count || 0
-  subscribesCount.value = profile.subscribes_count || 0
-
-  // В режиме приглашения всегда обновляем имя и аватар из профиля по
-  // текущему lastTargetAddress — иначе при смене собеседника без выхода
-  // через «Назад» остаются старые значения.
-  const profileAny = profile as { i?: string; avatar?: string; image?: string; name?: string }
-  if (isInviteMode) {
-    partnerName.value = profile.name || address || 'Новый чат'
-    const img = profileAny.i || profileAny.avatar || profileAny.image
-    partnerAvatar.value = img ? getAvatarUrlFromProfile(img) || null : null
-    avatarLoadFailed.value = false
-  } else {
-    if (!partnerAvatar.value) {
-      const img = profileAny.i || profileAny.avatar || profileAny.image
-      const url = getAvatarUrlFromProfile(img)
-      if (url) {
-        partnerAvatar.value = url
-        avatarLoadFailed.value = false
-      }
-    }
-    if (!partnerName.value && profile.name) {
-      partnerName.value = profile.name
-    }
-  }
-}
-
-function onAvatarError(): void {
-  avatarLoadFailed.value = true
-}
-
-const partnerInitial = computed<string>(() => {
-  const name = partnerName.value
-  return name ? name[0]!.toUpperCase() : 'U'
-})
-
-watch(
-  () => store.activeDialog?.id ?? null,
-  () => {
-    updatePartnerInfo()
-  },
-  { immediate: true }
-)
-
-watch(
-  () => store.userProfiles,
-  () => {
-    updatePartnerInfo()
-  },
-  { deep: true }
-)
-
-watchEffect(() => {
-  // Реагируем на смену активного диалога, профилей и lastTargetAddress
-  // (смена собеседника в режиме приглашения).
-  void store.activeDialog
-  void store.userProfiles
-  void store.lastTargetAddress
-  updatePartnerInfo()
-})
-
-function getSupportedType(): string | undefined {
-  const tmpEl = document.createElement('audio')
-  for (const t of preferredTypes) {
-    const mrSupported = (
-      window as Window & { MediaRecorder?: typeof MediaRecorder }
-    ).MediaRecorder?.isTypeSupported?.(t)
-    const audioCanPlay = tmpEl.canPlayType(t.split(';')[0]!)
-    if (mrSupported || audioCanPlay) return t
-  }
-  return undefined
-}
-
-async function startRecording(e?: MouseEvent | TouchEvent): Promise<void> {
-  if (isRecording.value) return
-
-  isLocked.value = false
-  isCancelling.value = false
-  recordingDuration.value = '00:00'
-  recordedChunks.length = 0
-
-  if (e && 'touches' in e && e.touches.length > 0) {
-    touchStartX.value = e.touches[0]!.clientX
-    touchStartY.value = e.touches[0]!.clientY
-  }
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    const type = getSupportedType()
-    const options: MediaRecorderOptions | undefined = type ? { mimeType: type } : undefined
-    const mr = new MediaRecorder(stream, options)
-    mediaRecorder.value = mr
-
-    mr.ondataavailable = (e: BlobEvent) => {
-      if (e.data && e.data.size > 0) recordedChunks.push(e.data)
-    }
-    mr.onstop = async () => {
-      isRecording.value = false
-      if (recordingTimer.value) clearInterval(recordingTimer.value)
-
-      if (isCancelling.value) {
-        // Освобождаем устройство, но запись не отправляем.
-        try {
-          stream.getTracks().forEach((t) => t.stop())
-        } catch {
-          /* ignore */
-        }
-        return
-      }
-
-      const blob = new Blob(recordedChunks, {
-        type: options?.mimeType || 'audio/webm',
-      })
-      const duration = (Date.now() - recordStartAt.value) / 1000
-      if (store.activeChatId) {
-        await store.sendAudio(store.activeChatId, blob, { duration, name: 'voice-message' })
-      }
-      try {
-        stream.getTracks().forEach((t) => t.stop())
-      } catch {
-        /* ignore */
-      }
-    }
-    recordStartAt.value = Date.now()
-    isRecording.value = true
-
-    recordingTimer.value = setInterval(() => {
-      const diff = (Date.now() - recordStartAt.value) / 1000
-      recordingDuration.value = formatDuration(diff)
-    }, 100)
-
-    mr.start()
-  } catch (e) {
-    console.error('[ChatRoom] Failed to start recording:', e)
-  }
-}
-
-function cancelRecording(): void {
-  isCancelling.value = true
-  mediaRecorder.value?.stop()
-  isLocked.value = false
-}
-
-function stopRecording(): void {
-  if (isRecording.value) mediaRecorder.value?.stop()
-  isLocked.value = false
-}
-
-function handleTouchMove(e: TouchEvent): void {
-  if (!isRecording.value || isLocked.value) return
-
-  const touch = e.touches[0]
-  if (!touch) return
-  const diffX = touch.clientX - touchStartX.value
-  const diffY = touch.clientY - touchStartY.value
-
-  // Свайп вверх → залочить запись (порог -50px).
-  if (diffY < -50) isLocked.value = true
-
-  // Свайп влево → отменить (порог -50px).
-  if (diffX < -50) cancelRecording()
-}
-
-function handleTouchEnd(): void {
-  if (isLocked.value) return
-  stopRecording()
+  focusInput()
 }
 
 // === Файлы: drag/drop, paste, кнопка-«скрепка». ===

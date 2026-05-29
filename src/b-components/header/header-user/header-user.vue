@@ -93,10 +93,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Dropdown, Menu } from 'ant-design-vue'
-import { debugLog } from '@/helpers/common/debug-log'
 import Button from '@/components/button/button.vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import Skeleton from '@/components/skeleton/skeleton.vue'
@@ -110,13 +109,8 @@ import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { extractAvatarFromProfile } from '@/helpers/common/profile-avatar'
-import { shouldShowMnemonic } from '@/helpers/common/mnemonic-storage'
-import { retryRegistrationBackgroundTx } from './helpers/retry-registration-tx'
-import { loadPendingMnemonic } from './helpers/pending-mnemonic'
-import {
-  createRegistrationStatusWatcher,
-  type RegistrationStatusWatcher,
-} from './helpers/registration-status-watcher'
+import { useRegistrationFlow } from './use-registration-flow'
+import { useAccountMenu } from './use-account-menu'
 import {
   SC_UserDetails,
   SC_UserName,
@@ -132,43 +126,57 @@ const authStore = useAuthStore()
 const modalStore = useModalStore()
 const router = useRouter()
 
-const signInModalOpen = ref(false)
-const registerModalOpen = ref(false)
-const mnemonicModalOpen = ref(false)
-const mnemonic = ref('')
-const privateKeyHex = ref('')
-const accountSwitcherOpen = ref(false)
-const confirmSignOutOpen = ref(false)
-const validationModalOpen = ref(false)
-const validationStatus = ref<string | null>(null)
-const registrationPending = ref(false)
-const pendingNickname = ref<string | null>(null)
-let registrationWatcher: RegistrationStatusWatcher | null = null
-const dropdownOverlayClass = ref('')
-const dropdownZindexFixRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
-
 const isAuthenticated = computed<boolean>(() => authStore.isUserAuthenticated)
 const isAuthRestoring = computed<boolean>(() => authStore.isAuthRestoring)
 const userAddress = computed(() => authStore.getUserAddress)
 const userProfile = computed(() => authStore.getUserProfile)
 
-const profileLink = computed<string>(() => {
-  if (userProfile.value?.name) return '/' + userProfile.value.name.toLowerCase()
-  if (userAddress.value) return '/' + userAddress.value
-  return '/'
+const dropdownOverlayClass = ref('')
+const dropdownZindexFixRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
+
+// === Регистрация ===
+const {
+  registerModalOpen,
+  mnemonicModalOpen,
+  mnemonic,
+  privateKeyHex,
+  validationModalOpen,
+  validationStatus,
+  registrationPending,
+  pendingNickname,
+  openRegisterModal,
+  handleRegisterSuccess,
+  handleRegisterValidation,
+  handleRegisterCancel,
+  handleMnemonicModalClose,
+  handleValidationModalUpdate,
+  onAvatarClick,
+} = useRegistrationFlow({ authStore, isAuthenticated })
+
+// === Меню профиля + sign-in / sign-out ===
+const {
+  signInModalOpen,
+  accountSwitcherOpen,
+  confirmSignOutOpen,
+  menuItems,
+  openSignInModal,
+  handleSignInSuccess,
+  handleSignInCancel,
+  handleOpenSignIn,
+  handleOpenRegister,
+  handleMenuClick,
+  handleAccountSwitcherClose,
+  handleConfirmSignOut,
+  handleCancelSignOut,
+} = useAccountMenu({
+  authStore,
+  modalStore,
+  router,
+  openRegister: openRegisterModal,
+  registerModalOpenRef: registerModalOpen,
 })
 
-const menuItems = computed(() => [
-  { key: profileLink.value, label: 'Профиль' },
-  { key: '/wallets', label: 'Кошельки' },
-  { key: '/limits', label: 'Лимиты' },
-  { key: '/my-videos', label: 'Мои видео' },
-  { key: 'settings', label: 'Настройки' },
-  { type: 'divider' },
-  { key: 'switchAccount', label: 'Сменить аккаунт' },
-  { key: 'signout', label: 'Выйти', danger: true },
-])
-
+// === Отображение пользователя в шапке ===
 const userName = computed<string>(() => {
   if (userProfile.value?.name) return userProfile.value.name
   // Показываем сохранённый ник, пока профиль не подтверждён в блокчейне.
@@ -229,321 +237,14 @@ const isUserVerified = computed<boolean>(() => {
   return real === 1 || real === '1' || real === true || real === 'true'
 })
 
-function openSignInModal(): void {
-  signInModalOpen.value = true
-}
-
-function openRegisterModal(): void {
-  registerModalOpen.value = true
-}
-
-function handleSignInSuccess(): void {
-  signInModalOpen.value = false
-  // Данные пользователя загружаются автоматически в auth-store после успешного входа.
-}
-
-function handleSignInCancel(): void {
-  signInModalOpen.value = false
-}
-
-function handleOpenRegister(): void {
-  registerModalOpen.value = true
-  signInModalOpen.value = false
-}
-
-function handleRegisterSuccess(m: string): void {
-  registerModalOpen.value = false
-  if (m) {
-    mnemonic.value = m
-    mnemonicModalOpen.value = true
-  }
-  // Данные пользователя загружаются автоматически в auth-store после успешной регистрации.
-}
-
-function handleRegisterValidation(data: {
-  status: string
-  mnemonic: string | undefined
-  nickname?: string
-}): void {
-  registerModalOpen.value = false
-
-  if (data.mnemonic) mnemonic.value = data.mnemonic
-
-  if (data.nickname) {
-    pendingNickname.value = data.nickname
-    try {
-      localStorage.setItem('pending_nickname', data.nickname)
-    } catch {
-      /* ignore */
-    }
-  }
-
-  validationStatus.value = data.status
-  registrationPending.value = true
-  validationModalOpen.value = true
-
-  startRegistrationStatusCheck()
-}
-
-async function startRegistrationStatusCheck(): Promise<void> {
-  registrationWatcher?.stop()
-  registrationWatcher = createRegistrationStatusWatcher({
-    onStatusUpdate: (status) => {
-      debugLog('[header-user] Status check:', status)
-      validationStatus.value = status
-    },
-    onComplete: async (status) => {
-      debugLog('[header-user] Registration complete:', status)
-      registrationPending.value = false
-      pendingNickname.value = null
-      try {
-        localStorage.removeItem('pending_nickname')
-        localStorage.removeItem('pending_registration')
-      } catch {
-        /* ignore */
-      }
-      validationModalOpen.value = false
-      if (mnemonic.value) mnemonicModalOpen.value = true
-      await authStore.fetchUserState()
-    },
-    onError: (err) => {
-      console.error('Failed to check registration status:', err)
-    },
-  })
-  await registrationWatcher.start()
-}
-
-function handleMnemonicModalClose(): void {
-  mnemonicModalOpen.value = false
-  mnemonic.value = ''
-  privateKeyHex.value = ''
-}
-
-function handleRegisterCancel(): void {
-  registerModalOpen.value = false
-}
-
-function handleOpenSignIn(): void {
-  signInModalOpen.value = true
-  registerModalOpen.value = false
-}
-
 function formatBalance(balance: number | null | undefined): string {
   // Хелпер конвертирует из минимальных единиц (аналог сатоши) в PKOIN.
   return formatPkoin(balance, 2, false)
 }
 
-async function handleMenuClick({ key }: { key: string }): Promise<void> {
-  if (key === 'signout') {
-    confirmSignOutOpen.value = true
-  } else if (key === 'settings') {
-    router.push('/settings')
-  } else if (key === 'switchAccount') {
-    accountSwitcherOpen.value = true
-  } else if (key.startsWith('/')) {
-    router.push(key)
-  }
-}
-
-function handleAccountSwitcherClose(): void {
-  accountSwitcherOpen.value = false
-}
-
-function handleConfirmSignOut(): void {
-  confirmSignOutOpen.value = false
-  handleSignOut()
-}
-
-function handleCancelSignOut(): void {
-  confirmSignOutOpen.value = false
-}
-
-/**
- * Повторяет фоновую отправку транзакции регистрации. Вызывается при
- * перезагрузке, если в localStorage висит step=2 (free/balance отправлен,
- * tx ещё нет).
- */
-async function retryBackgroundTransaction(nickname: string): Promise<void> {
-  const outcome = await retryRegistrationBackgroundTx({
-    address: authStore.getUserAddress,
-    keyPair: authStore.getKeyPair,
-    nickname,
-  })
-  if (outcome === 'fatal') {
-    // Хелпер уже очистил localStorage; снимаем pending в UI.
-    registrationPending.value = false
-    pendingNickname.value = null
-  }
-}
-
-function onAvatarClick(): void {
-  if (registrationPending.value) validationModalOpen.value = true
-}
-
-function handleValidationModalUpdate(value: boolean): void {
-  validationModalOpen.value = value
-  // НЕ останавливаем polling при закрытии модалки — проверка продолжается,
-  // пока `registrationPending` истинен.
-}
-
-async function handleSignOut(): Promise<void> {
-  try {
-    // Выходим только из текущего аккаунта, а не из всех.
-    const currentAddress = authStore.getUserAddress
-    if (currentAddress) {
-      await authStore.removeAccount(currentAddress)
-    } else {
-      // Если адреса нет — обычный signOut.
-      await authStore.signOut()
-    }
-  } catch {
-    // Игнорируем ошибки при выходе.
-  }
-  router.push('/')
-}
-
-async function checkRegistrationStatusOnLoad(): Promise<void> {
-  if (!isAuthenticated.value) return
-
-  // Восстанавливаем pending nickname из localStorage.
-  try {
-    const savedNickname = localStorage.getItem('pending_nickname')
-    if (savedNickname) {
-      pendingNickname.value = savedNickname
-      debugLog('[header-user] Restored pending nickname:', savedNickname)
-    }
-  } catch {
-    /* ignore */
-  }
-
-  // Быстрая проверка: если есть pending_nickname — сразу ставим pending
-  // (до async RPC-вызова, чтобы часики появились мгновенно).
-  if (pendingNickname.value) registrationPending.value = true
-
-  try {
-    const { getRegistrationStatus, isRegistrationInProgress } =
-      await import('@/blockchain/api/registration-status')
-    const status = await getRegistrationStatus()
-    debugLog('[header-user] Registration status on load:', status)
-
-    if (isRegistrationInProgress(status)) {
-      validationStatus.value = status
-      registrationPending.value = true
-      startRegistrationStatusCheck()
-
-      // Если транзакция ещё не отправлена (step=2), запускаем фоновую отправку.
-      try {
-        const pendingRaw = localStorage.getItem('pending_registration')
-        if (pendingRaw) {
-          const pending = JSON.parse(pendingRaw)
-          if (pending && pending.step >= 2 && pending.step < 3 && pending.nickname) {
-            debugLog('[header-user] Resuming background transaction for:', pending.nickname)
-            retryBackgroundTransaction(pending.nickname)
-          }
-        }
-      } catch {
-        /* ignore */
-      }
-    } else {
-      // Регистрация завершена — очищаем pending.
-      debugLog('[header-user] Registration complete, clearing pending')
-      registrationPending.value = false
-      pendingNickname.value = null
-      try {
-        localStorage.removeItem('pending_nickname')
-        localStorage.removeItem('pending_registration')
-      } catch {
-        /* ignore */
-      }
-      // Обновляем профиль, чтобы подтянуть имя.
-      authStore.fetchUserState().catch(() => {})
-    }
-  } catch (error) {
-    console.error('Failed to check registration status on load:', error)
-    // При ошибке: если есть pending_nickname — оставляем pending (лучше
-    // показать часики, чем потерять статус).
-    if (pendingNickname.value) {
-      registrationPending.value = true
-      startRegistrationStatusCheck()
-    }
-  }
-}
-
-async function checkAndShowMnemonic(): Promise<void> {
-  const address = authStore.getUserAddress
-  if (!address || !isAuthenticated.value) return
-  if (!shouldShowMnemonic(address)) return
-
-  const result = await loadPendingMnemonic()
-  if (!result) return
-
-  mnemonic.value = result.mnemonic
-  privateKeyHex.value = result.privateKeyHex
-  setTimeout(() => {
-    mnemonicModalOpen.value = true
-  }, 3000)
-}
-
-onMounted(async () => {
+onMounted(() => {
   const r = dropdownZindexFixRef.value
   const el = r && ('$el' in r ? r.$el : r)
   dropdownOverlayClass.value = el?.className ?? ''
-
-  // fetchUserState вызывается внутри restoreSession.
-  await authStore.restoreSession()
-
-  await checkRegistrationStatusOnLoad()
-  checkAndShowMnemonic()
-})
-
-// Синхронизация состояния модалок авторизации с глобальным store.
-watch(
-  () => modalStore.authModal.isOpen,
-  (isOpen) => {
-    if (isOpen) {
-      if (modalStore.authModal.mode === 'login') {
-        signInModalOpen.value = true
-        registerModalOpen.value = false
-      } else {
-        registerModalOpen.value = true
-        signInModalOpen.value = false
-      }
-    } else {
-      signInModalOpen.value = false
-      registerModalOpen.value = false
-    }
-  }
-)
-
-// Если пользователь закрыл модалку вручную — закрываем и в store.
-watch(signInModalOpen, (isOpen) => {
-  if (!isOpen && modalStore.authModal.isOpen && modalStore.authModal.mode === 'login') {
-    modalStore.closeAuthModal()
-  }
-})
-
-watch(registerModalOpen, (isOpen) => {
-  if (!isOpen && modalStore.authModal.isOpen && modalStore.authModal.mode === 'register') {
-    modalStore.closeAuthModal()
-  }
-})
-
-// При смене адреса загружаем полное состояние пользователя.
-watch(userAddress, async (newAddress, oldAddress) => {
-  if (newAddress && newAddress !== oldAddress && isAuthenticated.value) {
-    // Очистка профиля выполняется в `switchAccount`, но на всякий случай
-    // проверяем здесь, чтобы не показывать данные предыдущего аккаунта.
-    const profile = authStore.getUserProfile
-    if (profile) {
-      const profileAddress = (profile as { address?: string })?.address
-      if (profileAddress && profileAddress !== newAddress) {
-        await authStore.fetchUserState()
-      } else if (!profileAddress) {
-        await authStore.fetchUserState()
-      }
-    } else {
-      await authStore.fetchUserState()
-    }
-  }
 })
 </script>
