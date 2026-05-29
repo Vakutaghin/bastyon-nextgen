@@ -164,4 +164,32 @@ describe('parseManifest', () => {
     expect(m.scope).toBe('demo.bastyonapps.com')
     expect(m.startUrl).toBe('index.html')
   })
+
+  it('defaults fetchHosts to empty when missing', () => {
+    const m = parseManifestObject(valid())
+    expect(m.fetchHosts).toEqual([])
+  })
+
+  it('normalizes fetch_hosts to URL origin', () => {
+    const m = parseManifestObject(
+      valid({
+        fetch_hosts: [
+          'https://API.example.com/path/ignored',
+          'http://localhost:3000',
+          ' https://api.example.com ', // дубль с пробелами — тоже origin
+        ],
+      } as RawManifest)
+    )
+    expect(m.fetchHosts).toContain('https://api.example.com')
+    expect(m.fetchHosts).toContain('http://localhost:3000')
+  })
+
+  it('drops fetch_hosts with bad schemes / unparseable values', () => {
+    const m = parseManifestObject(
+      valid({
+        fetch_hosts: ['javascript:alert(1)', 'ftp://x.com', '', 'not-a-url'],
+      } as RawManifest)
+    )
+    expect(m.fetchHosts).toEqual([])
+  })
 })

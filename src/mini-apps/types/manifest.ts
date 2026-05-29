@@ -45,6 +45,10 @@ const RawManifestSchema = z
     start_url: z.string().max(HARD_MAX).optional(),
     develop: z.boolean().optional(),
     permissions: z.array(z.string()).max(64).optional(),
+    // Allowlist хостов для fetch-tunnel (core/fetch-tunnel.ts). Только origin
+    // (схема + host), без пути. Пример: "https://api.example.com".
+    // Если отсутствует — fetch-tunnel отвергает все запросы.
+    fetch_hosts: z.array(z.string().max(512)).max(32).optional(),
   })
   .passthrough()
 
@@ -65,6 +69,11 @@ export interface ParsedManifest {
   readonly startUrl?: string
   readonly develop: boolean
   readonly permissions: readonly PermissionId[]
+  /**
+   * Allowlist хостов (origin: `https://host[:port]`) для fetch-tunnel.
+   * Пустой массив или отсутствие → fetch-tunnel недоступен этому приложению.
+   */
+  readonly fetchHosts: readonly string[]
 }
 
 export class ManifestParseError extends Error {
@@ -185,6 +194,21 @@ export function parseManifestObject(raw: RawManifest): ParsedManifest {
     // Неизвестные permissions молча игнорируем (как legacy — он их просто не находит при проверке).
   }
 
+  const fetchHosts: string[] = []
+  for (const raw_origin of raw.fetch_hosts ?? []) {
+    if (typeof raw_origin !== 'string') continue
+    const trimmed = raw_origin.trim()
+    if (!trimmed) continue
+    try {
+      const u = new URL(trimmed)
+      // Только https/http origin. Без пути.
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') continue
+      fetchHosts.push(u.origin)
+    } catch {
+      // Невалидный URL — молча игнорируем (так же как с permissions).
+    }
+  }
+
   return {
     id,
     name,
@@ -197,5 +221,6 @@ export function parseManifestObject(raw: RawManifest): ParsedManifest {
     startUrl: raw.start_url ? normalizeText(raw.start_url, MAX_START_URL) : undefined,
     develop: raw.develop === true,
     permissions,
+    fetchHosts,
   }
 }

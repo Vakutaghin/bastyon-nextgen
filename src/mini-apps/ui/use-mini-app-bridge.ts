@@ -17,6 +17,7 @@
 import type { Router } from 'vue-router'
 import { Modal } from 'ant-design-vue'
 import { miniAppsBridge } from '@/mini-apps/core/bridge'
+import { createFetchTunnel } from '@/mini-apps/core/fetch-tunnel'
 import { PermissionResolver } from '@/mini-apps/core/permission-resolver'
 import type { PermissionId } from '@/mini-apps/types/permissions'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
@@ -151,10 +152,15 @@ export async function bootMiniApps(router: Router): Promise<void> {
     },
   })
 
+  // Fetch-tunnel (CODE_AUDIT §9.1) — allowlist хостов из manifest.fetchHosts
+  // + per-app rate limit. Без allowlist миниаппа не может ходить fetch'ом.
+  const fetchTunnel = createFetchTunnel()
+
   miniAppsBridge.start({
     resolver: appsStore.originResolver,
     dispatchRpc: async ({ app, action, data, signal }) =>
       registry.execute(action, app, data, signal),
+    onFetchRequest: (app, req) => fetchTunnel.handle(app, req),
     onIframeEvent: (app, event, data) => {
       for (const fn of onIframeLifecycleEvent) {
         try {
