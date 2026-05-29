@@ -38,7 +38,7 @@
             <SC_Overlay @click.stop="menuOpen = false" />
             <SC_Dropdown :style="dropdownStyle">
               <SC_DropdownItem @click.stop="onDelete">
-                <DeleteOutlined :style="{ marginRight: '8px', color: 'var(--color-red-ant)' }" />
+                <DeleteOutlined :style="ICON_DANGER_MR_8" />
                 Удалить диалог
               </SC_DropdownItem>
             </SC_Dropdown>
@@ -70,6 +70,7 @@ import { DeleteOutlined, EllipsisOutlined } from '@ant-design/icons-vue'
 import type { Dialog, Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import Avatar from '@/components/avatar/avatar.vue'
+import { ICON_DANGER_MR_8 } from '@/styles/icon-styles'
 import {
   SC_ListItem,
   SC_Info,

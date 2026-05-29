@@ -41,7 +41,13 @@
               @click="openProfile(u.address)"
             >
               <SC_Avatar>
-                <img v-if="u.i" :src="u.i" :alt="u.name || u.address" />
+                <img
+                  v-if="u.i"
+                  :src="u.i"
+                  :alt="u.name || u.address"
+                  loading="lazy"
+                  decoding="async"
+                />
                 <template v-else>{{ initialOf(u.name, u.address) }}</template>
               </SC_Avatar>
               <SC_ItemBody>

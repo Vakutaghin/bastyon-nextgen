@@ -9,8 +9,8 @@
             :title="leftSidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'"
             @click="emit('toggle-left-sidebar')"
           >
-            <MenuUnfoldOutlined v-if="leftSidebarCollapsed" :style="{ fontSize: '16px' }" />
-            <MenuFoldOutlined v-else :style="{ fontSize: '16px' }" />
+            <MenuUnfoldOutlined v-if="leftSidebarCollapsed" :style="ICON_SIZE_MD" />
+            <MenuFoldOutlined v-else :style="ICON_SIZE_MD" />
           </Button>
         </SC_SidebarToggleWrap>
         <SC_FeedTitle>Лента</SC_FeedTitle>
@@ -23,7 +23,7 @@
             @click="refetch"
           >
             <template #icon>
-              <ReloadOutlined :style="{ fontSize: '14px' }" />
+              <ReloadOutlined :style="ICON_SIZE_SM" />
             </template>
             Обновить ленту
           </Button>
@@ -45,8 +45,8 @@
             :title="rightSidebarVisible ? 'Скрыть боковую панель' : 'Показать боковую панель'"
             @click="emit('toggle-right-sidebar')"
           >
-            <MenuUnfoldOutlined v-if="rightSidebarVisible" :style="{ fontSize: '16px' }" />
-            <MenuFoldOutlined v-else :style="{ fontSize: '16px' }" />
+            <MenuUnfoldOutlined v-if="rightSidebarVisible" :style="ICON_SIZE_MD" />
+            <MenuFoldOutlined v-else :style="ICON_SIZE_MD" />
           </Button>
         </SC_SidebarToggleWrap>
       </SC_FeedHeaderActions>
@@ -56,7 +56,7 @@
       <SC_FeedLoading v-if="isLoading && allPosts.length === 0">
         <Spin tip="Загрузка ленты...">
           <template #indicator>
-            <LoadingOutlined :style="{ fontSize: '120px', color: 'var(--color-primary)' }" spin />
+            <LoadingOutlined :style="ICON_PRIMARY_120" spin />
           </template>
         </Spin>
       </SC_FeedLoading>
@@ -105,7 +105,7 @@
         <SC_FeedLoadingMore v-if="isLoadingMore">
           <Spin size="small" tip="Загрузка...">
             <template #indicator>
-              <LoadingOutlined :style="{ fontSize: '24px', color: 'var(--color-primary)' }" spin />
+              <LoadingOutlined :style="ICON_PRIMARY_24" spin />
             </template>
           </Spin>
         </SC_FeedLoadingMore>
@@ -129,33 +129,16 @@
       Наверх
     </SC_ScrollToTop>
 
-    <div
-      v-if="pickedPhotoDataUrl"
-      style="
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.85);
-        z-index: 3000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 16px;
-        gap: 16px;
-      "
-      @click="closePhotoPreview"
-    >
-      <img
-        :src="pickedPhotoDataUrl"
-        style="max-width: 100%; max-height: 70vh; border-radius: 8px"
-      />
-      <div style="color: white; font-size: 14px; opacity: 0.85">Тап в любом месте — закрыть</div>
-    </div>
+    <SC_PhotoPreviewOverlay v-if="pickedPhotoDataUrl" @click="closePhotoPreview">
+      <SC_PhotoPreviewImage :src="pickedPhotoDataUrl" />
+      <SC_PhotoPreviewHint>Тап в любом месте — закрыть</SC_PhotoPreviewHint>
+    </SC_PhotoPreviewOverlay>
   </SC_Feed>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { ICON_PRIMARY_24, ICON_PRIMARY_120, ICON_SIZE_MD, ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   PlusOutlined,
   ExclamationCircleOutlined,
@@ -188,6 +171,9 @@ import {
   SC_FeedEnd,
   SC_FeedRefreshWrap,
   SC_ScrollToTop,
+  SC_PhotoPreviewOverlay,
+  SC_PhotoPreviewImage,
+  SC_PhotoPreviewHint,
 } from './styled'
 
 withDefaults(

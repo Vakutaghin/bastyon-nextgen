@@ -22,7 +22,7 @@
 
             <!-- Полностью заполненная звезда поверх. -->
             <SC_StarFilled v-if="displayRating >= n">
-              <StarFilled class="star-fill" :style="{ color: 'var(--color-warning)' }" />
+              <StarFilled class="star-fill" :style="ICON_WARNING" />
             </SC_StarFilled>
           </SC_StarWrapper>
         </template>
@@ -42,6 +42,7 @@ import { Popover as APopover, Button as AButton } from 'ant-design-vue'
 import { StarOutlined, StarFilled, UserOutlined } from '@ant-design/icons-vue'
 import { useStarRating } from './use-star-rating'
 import { SC_AuthPopoverContent, SC_StarRating, SC_StarWrapper, SC_StarFilled } from './styled'
+import { ICON_WARNING } from '@/styles/icon-styles'
 
 const props = withDefaults(
   defineProps<{

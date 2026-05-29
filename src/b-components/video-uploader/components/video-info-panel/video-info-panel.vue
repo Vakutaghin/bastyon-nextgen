@@ -32,11 +32,8 @@
         <SC_InfoRow>
           <SC_InfoLabel>Аудио:</SC_InfoLabel>
           <SC_InfoValue>
-            <CheckCircleOutlined
-              v-if="sourceMetadata.hasAudio"
-              :style="{ color: 'var(--color-success)' }"
-            />
-            <CloseCircleOutlined v-else :style="{ color: 'var(--color-red-ant)' }" />
+            <CheckCircleOutlined v-if="sourceMetadata.hasAudio" :style="ICON_SUCCESS" />
+            <CloseCircleOutlined v-else :style="ICON_DANGER" />
             {{ sourceMetadata.hasAudio ? 'Есть' : 'Нет' }}
           </SC_InfoValue>
         </SC_InfoRow>
@@ -73,11 +70,8 @@
         <SC_InfoRow>
           <SC_InfoLabel>Аудио:</SC_InfoLabel>
           <SC_InfoValue>
-            <CheckCircleOutlined
-              v-if="sourceMetadata.hasAudio"
-              :style="{ color: 'var(--color-success)' }"
-            />
-            <CloseCircleOutlined v-else :style="{ color: 'var(--color-red-ant)' }" />
+            <CheckCircleOutlined v-if="sourceMetadata.hasAudio" :style="ICON_SUCCESS" />
+            <CloseCircleOutlined v-else :style="ICON_DANGER" />
             {{ sourceMetadata.hasAudio ? `Opus, ${MAX_AUDIO_BITRATE} kbps` : 'Нет' }}
           </SC_InfoValue>
         </SC_InfoRow>
@@ -100,14 +94,14 @@
         <SC_InfoRow v-if="isWorker">
           <SC_InfoLabel>Режим:</SC_InfoLabel>
           <SC_InfoValue>
-            <CheckCircleOutlined :style="{ color: 'var(--color-success)', marginRight: '4px' }" />
+            <CheckCircleOutlined :style="ICON_SUCCESS_MR_4" />
             Веб-воркер (фоновая обработка)
           </SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow v-else>
           <SC_InfoLabel>Режим:</SC_InfoLabel>
           <SC_InfoValue>
-            <InfoCircleOutlined :style="{ color: 'var(--color-ant-blue)', marginRight: '4px' }" />
+            <InfoCircleOutlined :style="ICON_ANT_BLUE_MR_4" />
             Основной поток
           </SC_InfoValue>
         </SC_InfoRow>
@@ -118,6 +112,12 @@
 
 <script setup lang="ts">
 import { CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined } from '@ant-design/icons-vue'
+import {
+  ICON_ANT_BLUE_MR_4,
+  ICON_DANGER,
+  ICON_SUCCESS,
+  ICON_SUCCESS_MR_4,
+} from '@/styles/icon-styles'
 import {
   SC_InfoPanel,
   SC_InfoSection,

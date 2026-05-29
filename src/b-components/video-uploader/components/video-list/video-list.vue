@@ -4,7 +4,7 @@
     <SC_VideosGrid v-if="!loading && videos.length > 0">
       <SC_VideoItem v-for="video in videos" :key="video.id" @click="$emit('play', video)">
         <SC_VideoIcon>
-          <PlayCircleOutlined :style="{ fontSize: '72px', color: 'var(--color-ant-blue)' }" />
+          <PlayCircleOutlined :style="ICON_ANT_BLUE_72" />
         </SC_VideoIcon>
         <SC_VideoName>{{ video.originalFileName }}</SC_VideoName>
         <SC_VideoResolution>{{ video.resolution }}</SC_VideoResolution>
@@ -37,6 +37,7 @@
 <script setup lang="ts">
 import { useVideoList } from './video-list'
 import type { VideoListProps, VideoListEmits } from './types'
+import { ICON_ANT_BLUE_72 } from '@/styles/icon-styles'
 
 defineProps<VideoListProps>()
 

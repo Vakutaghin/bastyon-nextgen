@@ -6,10 +6,10 @@
     :overlay-style="{ zIndex: 3000 }"
   >
     <SC_TorWrapper :variant="variant" @click="onTriggerClick">
-      <CheckCircleFilled v-if="variant === 'ready'" :style="{ fontSize: '20px' }" />
-      <LoadingOutlined v-else-if="variant === 'busy'" :style="{ fontSize: '20px' }" spin />
-      <WarningFilled v-else-if="variant === 'failed'" :style="{ fontSize: '20px' }" />
-      <SafetyOutlined v-else :style="{ fontSize: '20px' }" />
+      <CheckCircleFilled v-if="variant === 'ready'" :style="ICON_SIZE_XL" />
+      <LoadingOutlined v-else-if="variant === 'busy'" :style="ICON_SIZE_XL" spin />
+      <WarningFilled v-else-if="variant === 'failed'" :style="ICON_SIZE_XL" />
+      <SafetyOutlined v-else :style="ICON_SIZE_XL" />
     </SC_TorWrapper>
 
     <template #overlay>
@@ -61,6 +61,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Dropdown, Switch, Radio, Button, Modal } from 'ant-design-vue'
 import type { RadioChangeEvent } from 'ant-design-vue'
+import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import {
   SafetyOutlined,
   LoadingOutlined,

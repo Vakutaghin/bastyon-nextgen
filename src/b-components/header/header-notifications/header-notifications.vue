@@ -15,7 +15,7 @@
         :offset="[0, 5]"
         :number-style="{ backgroundColor: 'var(--color-ant-blue)' }"
       >
-        <BellOutlined :style="{ fontSize: '20px' }" />
+        <BellOutlined :style="ICON_SIZE_XL" />
       </Badge>
     </SC_NotificationsWrapper>
 
@@ -49,7 +49,12 @@
 
               <SC_NotificationActor>
                 <SC_NotificationAvatar v-if="getAvatar(item)">
-                  <img :src="getAvatar(item) ?? undefined" :alt="getDisplayName(item)" />
+                  <img
+                    :src="getAvatar(item) ?? undefined"
+                    :alt="getDisplayName(item)"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </SC_NotificationAvatar>
                 <SC_NotificationAvatarLetter v-else>
                   {{ getInitial(item) }}
@@ -116,6 +121,7 @@
 import { computed, onMounted, ref, watch, type Component } from 'vue'
 import { useRouter } from 'vue-router'
 import { Dropdown, Badge, Menu } from 'ant-design-vue'
+import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import {
   BellOutlined,
   EllipsisOutlined,

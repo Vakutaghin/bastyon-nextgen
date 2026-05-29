@@ -9,10 +9,7 @@
         @input="onInput"
         @keydown="onKeydown"
       />
-      <SC_LengthCounter
-        v-if="lengthHint"
-        :class="{ 'length-counter--bad': lengthHint.isOver }"
-      >
+      <SC_LengthCounter v-if="lengthHint" :class="{ 'length-counter--bad': lengthHint.isOver }">
         {{ lengthHint.text }}
       </SC_LengthCounter>
     </SC_ReplyInputWrap>
@@ -25,12 +22,8 @@
       >
         Отмена
       </SC_EditCancelBtn>
-      <SC_EditSaveBtn
-        type="button"
-        :disabled="!canSubmit"
-        @click.stop.prevent="emit('save')"
-      >
-        <LoadingOutlined v-if="editSubmitting" :style="{ fontSize: '14px' }" spin />
+      <SC_EditSaveBtn type="button" :disabled="!canSubmit" @click.stop.prevent="emit('save')">
+        <LoadingOutlined v-if="editSubmitting" :style="ICON_SIZE_SM" spin />
         <span v-else>Сохранить</span>
       </SC_EditSaveBtn>
     </SC_EditFormActions>
@@ -40,6 +33,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { LoadingOutlined } from '@ant-design/icons-vue'
+import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   SC_ReplyInputWrap,
   SC_ReplyTextarea,
@@ -60,7 +54,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:editDraft': [value: string]
   'request-close': []
-  'save': []
+  save: []
 }>()
 
 const textareaRef = ref<HTMLTextAreaElement | { $el?: HTMLTextAreaElement } | null>(null)
@@ -98,13 +92,18 @@ function onKeydown(e: KeyboardEvent) {
 onMounted(() => {
   // Автофокус и постановка курсора в конец
   const ref = textareaRef.value
-  const el = ref && typeof (ref as HTMLTextAreaElement).focus === 'function'
-    ? (ref as HTMLTextAreaElement)
-    : (ref as { $el?: HTMLTextAreaElement })?.$el
+  const el =
+    ref && typeof (ref as HTMLTextAreaElement).focus === 'function'
+      ? (ref as HTMLTextAreaElement)
+      : (ref as { $el?: HTMLTextAreaElement })?.$el
   if (el && typeof el.focus === 'function') {
     el.focus()
     const len = (props.editDraft || '').length
-    try { el.setSelectionRange(len, len) } catch { /* noop */ }
+    try {
+      el.setSelectionRange(len, len)
+    } catch {
+      /* noop */
+    }
   }
 })
 </script>

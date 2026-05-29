@@ -48,7 +48,7 @@
             :to="{ name: 'explorer-address', params: { address: userAddress } }"
           >
             <SC_ExplorerLink :href="href" @click="navigate">
-              <BlockOutlined :style="{ fontSize: '11px' }" />
+              <BlockOutlined :style="ICON_SIZE_11" />
               Открыть в блок-эксплорере
             </SC_ExplorerLink>
           </RouterLink>
@@ -74,7 +74,7 @@
     <SC_LoadingState v-else>
       <Spin>
         <template #indicator>
-          <LoadingOutlined :style="{ fontSize: '24px', color: 'var(--color-primary)' }" spin />
+          <LoadingOutlined :style="ICON_PRIMARY_24" spin />
         </template>
       </Spin>
     </SC_LoadingState>
@@ -88,6 +88,7 @@ import { LoadingOutlined, BlockOutlined } from '@ant-design/icons-vue'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { useMessengerStore } from '@/b-components/messenger/store'
+import { ICON_PRIMARY_24, ICON_SIZE_11 } from '@/styles/icon-styles'
 import {
   SC_ProfileSidebar,
   SC_UserAvatar,

@@ -15,8 +15,8 @@
         <HeaderNotifications />
         <HeaderReportBug v-if="!mobile" />
         <SC_MessengerWrapper v-if="showMessengerIcon" @click="toggleMessenger">
-          <CloseOutlined v-if="isFullScreen" :style="{ fontSize: '20px' }" />
-          <MessageOutlined v-else :style="{ fontSize: '20px' }" />
+          <CloseOutlined v-if="isFullScreen" :style="ICON_SIZE_XL" />
+          <MessageOutlined v-else :style="ICON_SIZE_XL" />
           <SC_UnreadBadge v-if="!isFullScreen && unreadBadge">
             {{ unreadBadge }}
           </SC_UnreadBadge>
@@ -45,6 +45,7 @@ import { MobileNavDrawer } from '@/b-components/mobile-nav-drawer'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
+import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import {
   SC_Header,
   SC_Sections,

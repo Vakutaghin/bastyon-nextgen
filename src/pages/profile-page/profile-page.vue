@@ -13,10 +13,7 @@
           <SC_LoadingProfile v-if="loading">
             <Spin tip="Загрузка профиля...">
               <template #indicator>
-                <LoadingOutlined
-                  :style="{ fontSize: '40px', color: 'var(--color-primary)' }"
-                  spin
-                />
+                <LoadingOutlined :style="ICON_PRIMARY_40" spin />
               </template>
             </Spin>
           </SC_LoadingProfile>
@@ -64,6 +61,7 @@ import ProfileCover from '@/b-components/profile/profile-cover/profile-cover.vue
 import ProfileSidebar from '@/b-components/profile/profile-sidebar/profile-sidebar.vue'
 import ProfileFeed from '@/b-components/profile/profile-feed/profile-feed.vue'
 import Spin from '@/components/spin/spin.vue'
+import { ICON_PRIMARY_40 } from '@/styles/icon-styles'
 import {
   SC_ProfileWork,
   SC_ProfileMainContent,

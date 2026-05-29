@@ -18,9 +18,7 @@
       />
 
       <template v-if="state === 'idle'">
-        <UploadOutlined
-          :style="{ fontSize: '64px', color: 'var(--color-ant-blue)', marginBottom: '16px' }"
-        />
+        <UploadOutlined :style="ICON_ANT_BLUE_64_MB" />
         <SC_DropZoneText>
           <strong>Перетащите видеофайл сюда</strong>
           <span>или нажмите для выбора</span>
@@ -29,9 +27,7 @@
       </template>
 
       <template v-else-if="state === 'completed'">
-        <CheckCircleOutlined
-          :style="{ fontSize: '64px', color: 'var(--color-success)', marginBottom: '16px' }"
-        />
+        <CheckCircleOutlined :style="ICON_SUCCESS_64" />
         <SC_DropZoneText>
           <strong>Видео успешно транскодировано!</strong>
         </SC_DropZoneText>
@@ -39,16 +35,14 @@
       </template>
 
       <template v-else-if="state === 'analyzing'">
-        <LoadingOutlined :style="{ fontSize: '64px', color: 'var(--color-ant-blue)' }" spin />
+        <LoadingOutlined :style="ICON_ANT_BLUE_64" spin />
         <SC_DropZoneText>
           <strong>Анализ видео...</strong>
         </SC_DropZoneText>
       </template>
 
       <template v-else-if="state === 'ready'">
-        <CheckCircleOutlined
-          :style="{ fontSize: '64px', color: 'var(--color-success)', marginBottom: '16px' }"
-        />
+        <CheckCircleOutlined :style="ICON_SUCCESS_64" />
         <SC_DropZoneText>
           <strong>Файл готов к кодированию</strong>
           <span>Проверьте параметры ниже и нажмите "Начать загрузку"</span>
@@ -60,7 +54,7 @@
       </template>
 
       <template v-else-if="state === 'transcoding' || state === 'saving'">
-        <LoadingOutlined :style="{ fontSize: '64px', color: 'var(--color-ant-blue)' }" spin />
+        <LoadingOutlined :style="ICON_ANT_BLUE_64" spin />
         <SC_DropZoneText>
           <strong v-if="state === 'transcoding'">Транскодирование видео...</strong>
           <strong v-else>Сохранение видео...</strong>
@@ -77,7 +71,7 @@
       </template>
 
       <template v-else-if="state === 'error'">
-        <CloseCircleOutlined :style="{ fontSize: '64px', color: 'var(--color-red-ant)' }" />
+        <CloseCircleOutlined :style="ICON_DANGER_64" />
         <SC_DropZoneText>
           <strong style="color: #ff4d4f">Ошибка: {{ error }}</strong>
         </SC_DropZoneText>
@@ -105,6 +99,12 @@
 <script setup lang="ts">
 import { Progress } from 'ant-design-vue'
 import Button from '@/components/button/button.vue'
+import {
+  ICON_ANT_BLUE_64,
+  ICON_ANT_BLUE_64_MB,
+  ICON_DANGER_64,
+  ICON_SUCCESS_64,
+} from '@/styles/icon-styles'
 import {
   UploadOutlined,
   LoadingOutlined,

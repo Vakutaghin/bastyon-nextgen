@@ -297,7 +297,7 @@
           title="Обновить"
           @click.stop.prevent="refreshComments"
         >
-          <LoadingOutlined v-if="allCommentsLoading" :style="{ fontSize: '14px' }" spin />
+          <LoadingOutlined v-if="allCommentsLoading" :style="ICON_SIZE_SM" spin />
           <SyncOutlined v-else />
         </SC_RefreshBtn>
       </SC_CommentsSortRow>
@@ -647,7 +647,7 @@
     <!-- Бар «написать комментарий к посту» -->
     <SC_ReplyPanel v-else-if="isRootReplyActive">
       <div v-if="currentUserAvatarUrl" class="reply-avatar">
-        <img :src="currentUserAvatarUrl" alt="" />
+        <img :src="currentUserAvatarUrl" alt="" loading="lazy" decoding="async" />
       </div>
       <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
       <SC_ReplyInputWrap>
@@ -694,7 +694,7 @@
         "
         @click.stop.prevent="sendReply"
       >
-        <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+        <LoadingOutlined v-if="replySubmitting" :style="ICON_SIZE_SM" spin />
         <SendOutlined v-else />
       </SC_ReplySendBtn>
     </SC_ReplyPanel>
@@ -703,6 +703,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
+import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   LoadingOutlined,
   CloseOutlined,

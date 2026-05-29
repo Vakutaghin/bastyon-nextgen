@@ -87,7 +87,7 @@
                           title="Открыть в блок-эксплорере"
                           @click="navigate"
                         >
-                          <BlockOutlined :style="{ fontSize: '14px' }" />
+                          <BlockOutlined :style="ICON_SIZE_SM" />
                         </SC_WalletExplorerLink>
                       </RouterLink>
                     </SC_WalletAddressCell>
@@ -129,7 +129,7 @@
                           title="Открыть в блок-эксплорере"
                           @click="navigate"
                         >
-                          <BlockOutlined :style="{ fontSize: '14px' }" />
+                          <BlockOutlined :style="ICON_SIZE_SM" />
                         </SC_WalletExplorerLink>
                       </RouterLink>
                     </SC_WalletAddressCell>
@@ -159,6 +159,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { BlockOutlined } from '@ant-design/icons-vue'
+import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   useAuthStore,
   getAdditionalWalletAddressesList,

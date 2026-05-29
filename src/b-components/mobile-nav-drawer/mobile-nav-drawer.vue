@@ -5,7 +5,7 @@
       <SC_DrawerHeader>
         <SC_DrawerTitle>Bastyon</SC_DrawerTitle>
         <SC_DrawerClose aria-label="Закрыть" @click="close">
-          <CloseOutlined :style="{ fontSize: '18px' }" />
+          <CloseOutlined :style="ICON_SIZE_LG" />
         </SC_DrawerClose>
       </SC_DrawerHeader>
 
@@ -28,6 +28,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ICON_SIZE_LG } from '@/styles/icon-styles'
 import {
   HomeOutlined,
   PlayCircleOutlined,

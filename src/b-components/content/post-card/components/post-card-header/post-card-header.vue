@@ -28,7 +28,7 @@
             aria-label="Начать чат"
             @click.stop.prevent="startChatWithAuthor"
           >
-            <MessageOutlined :style="{ fontSize: '16px' }" />
+            <MessageOutlined :style="ICON_SIZE_MD" />
           </SC_ChatBtn>
 
           <SC_PostAuthorRep>{{ formattedReputation }}</SC_PostAuthorRep>
@@ -54,10 +54,7 @@
     </SC_PostAuthor>
 
     <SC_PostBookmark @click="toggleBookmark">
-      <BookFilled
-        v-if="isBookmarked"
-        :style="{ color: 'var(--color-primary)', fontSize: '18px' }"
-      />
+      <BookFilled v-if="isBookmarked" :style="ICON_PRIMARY_18" />
       <BookOutlined v-else :style="{ fontSize: '18px', color: 'rgba(0, 0, 0, 0.45)' }" />
     </SC_PostBookmark>
   </SC_PostHeader>
@@ -70,6 +67,7 @@ import Avatar from '@/components/avatar/avatar.vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { favoritesAPI } from '@/db/apis/favorites-api'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
+import { ICON_PRIMARY_18, ICON_SIZE_MD } from '@/styles/icon-styles'
 import {
   SC_PostHeader,
   SC_PostAuthor,

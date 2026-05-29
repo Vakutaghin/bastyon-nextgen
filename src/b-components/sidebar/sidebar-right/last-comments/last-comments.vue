@@ -4,7 +4,7 @@
     <SC_LastCommentsLoading v-if="isLoading">
       <Spin size="small">
         <template #indicator>
-          <LoadingOutlined :style="{ fontSize: '24px', color: 'var(--color-primary)' }" spin />
+          <LoadingOutlined :style="ICON_PRIMARY_24" spin />
         </template>
       </Spin>
     </SC_LastCommentsLoading>
@@ -23,6 +23,8 @@
               v-if="getAvatarUrl(item.authorProfile)"
               :src="getAvatarUrl(item.authorProfile)!"
               :alt="getDisplayName(item.authorProfile, item.address)"
+              loading="lazy"
+              decoding="async"
             />
             <SC_LastCommentLetter v-else>
               {{ getDisplayName(item.authorProfile, item.address).charAt(0).toUpperCase() }}
@@ -34,6 +36,8 @@
               v-if="item.commentTo && getAvatarUrl(item.toProfile)"
               :src="getAvatarUrl(item.toProfile)!"
               :alt="item.commentTo ? getDisplayName(item.toProfile, item.commentTo) : ''"
+              loading="lazy"
+              decoding="async"
             />
             <SC_LastCommentLetter v-else>
               {{
@@ -69,6 +73,7 @@ import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import type { GetLastComment, CommentMessage } from '@/types/rpc-responses/get-last-comments'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
+import { ICON_PRIMARY_24 } from '@/styles/icon-styles'
 import {
   SC_LastCommentsRoot,
   SC_LastCommentsCaption,

@@ -1,7 +1,7 @@
 <template>
   <Tooltip v-if="isVisible" title="Сообщить об ошибке" placement="bottom">
     <SC_ReportBugWrapper @click="onClick">
-      <BugOutlined :style="{ fontSize: '20px' }" />
+      <BugOutlined :style="ICON_SIZE_XL" />
     </SC_ReportBugWrapper>
   </Tooltip>
 </template>
@@ -13,6 +13,7 @@ import { BugOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { SC_ReportBugWrapper } from './styled'
+import { ICON_SIZE_XL } from '@/styles/icon-styles'
 
 // TODO: заменить на реальный адрес аккаунта-приёмника багов
 const BUG_REPORT_ACCOUNT_ADDRESS = ''

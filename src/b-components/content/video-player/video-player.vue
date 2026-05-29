@@ -105,7 +105,7 @@
     <SC_HotkeysHelpOverlay v-if="showHotkeysHelp" @click.stop="toggleHotkeysHelp">
       <SC_HotkeysHelpContent @click.stop>
         <SC_HotkeysCloseButton @click.stop="toggleHotkeysHelp">
-          <CloseOutlined :style="{ fontSize: '20px' }" />
+          <CloseOutlined :style="ICON_SIZE_XL" />
         </SC_HotkeysCloseButton>
 
         <SC_HotkeysHelpTitle>Горячие клавиши</SC_HotkeysHelpTitle>
@@ -128,9 +128,9 @@
       <SC_VideoControlsBar>
         <!-- Кнопка Play/Pause -->
         <SC_VideoPlayPauseButton @click.stop="togglePlay">
-          <ReloadOutlined v-if="isEnded" :style="{ fontSize: '20px' }" />
-          <PlayCircleOutlined v-else-if="!isPlaying" :style="{ fontSize: '20px' }" />
-          <PauseCircleOutlined v-else :style="{ fontSize: '20px' }" />
+          <ReloadOutlined v-if="isEnded" :style="ICON_SIZE_XL" />
+          <PlayCircleOutlined v-else-if="!isPlaying" :style="ICON_SIZE_XL" />
+          <PauseCircleOutlined v-else :style="ICON_SIZE_XL" />
         </SC_VideoPlayPauseButton>
 
         <!-- Контрол громкости -->
@@ -166,7 +166,7 @@
         <!-- Контрол качества видео и скорости -->
         <SC_VideoQualityControl ref="qualityControlRef">
           <SC_VideoQualityButton @click.stop="toggleQualityMenu">
-            <SettingOutlined :style="{ fontSize: '18px' }" />
+            <SettingOutlined :style="ICON_SIZE_LG" />
           </SC_VideoQualityButton>
           <SC_VideoQualityDropdown ref="qualityDropdownRef" :isOpen="isQualityMenuOpen" @click.stop>
             <!-- Главное меню -->
@@ -252,8 +252,8 @@
 
         <!-- Кнопка полноэкранного режима -->
         <SC_VideoFullscreenButton v-if="!isAudio" @click.stop="toggleFullscreen">
-          <FullscreenExitOutlined v-if="isFullscreen" :style="{ fontSize: '20px' }" />
-          <FullscreenOutlined v-else :style="{ fontSize: '20px' }" />
+          <FullscreenExitOutlined v-if="isFullscreen" :style="ICON_SIZE_XL" />
+          <FullscreenOutlined v-else :style="ICON_SIZE_XL" />
         </SC_VideoFullscreenButton>
       </SC_VideoControlsBar>
     </SC_VideoControls>
@@ -262,6 +262,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
+import { ICON_SIZE_LG, ICON_SIZE_XL } from '@/styles/icon-styles'
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,

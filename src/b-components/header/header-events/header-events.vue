@@ -12,7 +12,7 @@
         :offset="[0, 5]"
         :number-style="{ backgroundColor: 'var(--color-ant-blue)' }"
       >
-        <HourglassOutlined :style="{ fontSize: '20px' }" />
+        <HourglassOutlined :style="ICON_SIZE_XL" />
       </Badge>
     </SC_EventsWrapper>
 
@@ -63,6 +63,7 @@ import { HourglassOutlined, StarFilled } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
 import { usePendingRatingsStore, useCommentsStore, usePostsStore } from '@/stores'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
+import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import {
   SC_EventsWrapper,
   SC_PendingEventsMenu,

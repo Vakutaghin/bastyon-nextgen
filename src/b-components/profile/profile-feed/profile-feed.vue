@@ -14,7 +14,7 @@
     <div v-if="isLoading && allPosts.length === 0" style="padding: 40px; text-align: center">
       <Spin tip="Загрузка ленты...">
         <template #indicator>
-          <LoadingOutlined :style="{ fontSize: '50px', color: 'var(--color-primary)' }" spin />
+          <LoadingOutlined :style="ICON_PRIMARY_50" spin />
         </template>
       </Spin>
     </div>
@@ -23,7 +23,7 @@
       <SC_LoadingSpinner v-if="isLoadingMore || isLoading">
         <Spin tip="Загрузка...">
           <template #indicator>
-            <LoadingOutlined :style="{ fontSize: '24px', color: 'var(--color-primary)' }" spin />
+            <LoadingOutlined :style="ICON_PRIMARY_24" spin />
           </template>
         </Spin>
       </SC_LoadingSpinner>
@@ -44,6 +44,7 @@ import PostCard from '@/b-components/content/post-card/post-card.vue'
 import Spin from '@/components/spin/spin.vue'
 import { useProfileFeed } from '@/composables/use-profile-feed'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
+import { ICON_PRIMARY_24, ICON_PRIMARY_50 } from '@/styles/icon-styles'
 import {
   SC_ProfileFeed,
   SC_FeedContent,

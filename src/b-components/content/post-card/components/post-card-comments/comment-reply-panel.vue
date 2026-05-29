@@ -1,7 +1,7 @@
 <template>
   <!-- Current user avatar -->
   <div v-if="currentUserAvatarUrl" class="reply-avatar">
-    <img :src="currentUserAvatarUrl" alt="" />
+    <img :src="currentUserAvatarUrl" alt="" loading="lazy" decoding="async" />
   </div>
   <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
 
@@ -9,10 +9,7 @@
   <SC_ConfirmWrap v-if="showCancelModal">
     <SC_ConfirmMessage>Введённый текст будет удалён.</SC_ConfirmMessage>
     <SC_ConfirmActions>
-      <SC_ConfirmBtn
-        type="button"
-        @click.stop.prevent="emit('update:showCancelModal', false)"
-      >
+      <SC_ConfirmBtn type="button" @click.stop.prevent="emit('update:showCancelModal', false)">
         Нет
       </SC_ConfirmBtn>
       <SC_ConfirmBtn
@@ -51,18 +48,11 @@
           {{ u.name }}
         </SC_MentionItem>
       </SC_MentionList>
-      <SC_LengthCounter
-        v-if="lengthHint"
-        :class="{ 'length-counter--bad': lengthHint.isOver }"
-      >
+      <SC_LengthCounter v-if="lengthHint" :class="{ 'length-counter--bad': lengthHint.isOver }">
         {{ lengthHint.text }}
       </SC_LengthCounter>
     </SC_ReplyInputWrap>
-    <SC_ReplyCancelBtn
-      type="button"
-      title="Отменить"
-      @click.stop.prevent="emit('request-close')"
-    >
+    <SC_ReplyCancelBtn type="button" title="Отменить" @click.stop.prevent="emit('request-close')">
       <CloseOutlined />
     </SC_ReplyCancelBtn>
     <SC_ReplySendBtn
@@ -71,7 +61,7 @@
       :disabled="!(replyDraft || '').trim() || replySubmitting || !lengthValid"
       @click.stop.prevent="emit('send')"
     >
-      <LoadingOutlined v-if="replySubmitting" :style="{ fontSize: '14px' }" spin />
+      <LoadingOutlined v-if="replySubmitting" :style="ICON_SIZE_SM" spin />
       <SendOutlined v-else />
     </SC_ReplySendBtn>
   </template>
@@ -80,6 +70,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { LoadingOutlined, CloseOutlined, SendOutlined } from '@ant-design/icons-vue'
+import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   SC_ConfirmWrap,
   SC_ConfirmMessage,
@@ -119,11 +110,11 @@ const emit = defineEmits<{
   'update:replyDraft': [value: string]
   'update:showCancelModal': [value: boolean]
   'confirm-cancel': []
-  'input': [event: Event]
-  'keydown': [event: KeyboardEvent]
+  input: [event: Event]
+  keydown: [event: KeyboardEvent]
   'select-mention': [user: MentionUser]
   'request-close': []
-  'send': []
+  send: []
 }>()
 
 const replyTextareaRef = ref<InstanceType<typeof SC_ReplyTextarea> | null>(null)

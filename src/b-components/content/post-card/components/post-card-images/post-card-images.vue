@@ -11,6 +11,8 @@
         :src="imageUrl"
         :alt="`Изображение ${idx + 1}`"
         :style="getImageStyle(idx)"
+        loading="lazy"
+        decoding="async"
         @error="handleImageError"
         @load="(e) => handleImageLoad(e, idx)"
       />

@@ -1,15 +1,16 @@
 <template>
-  <SC_ShareBtn type='button' :title='hoverTitle' @click='share'>
-    <ShareAltOutlined :style="{ fontSize: '13px' }" />
+  <SC_ShareBtn type="button" :title="hoverTitle" @click="share">
+    <ShareAltOutlined :style="ICON_SIZE_13" />
     {{ label }}
   </SC_ShareBtn>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { ShareAltOutlined } from '@ant-design/icons-vue'
 import { appToast } from '@/b-components/app-toast'
 import { SC_ShareBtn } from './share-button.styled'
+import { ICON_SIZE_13 } from '@/styles/icon-styles'
 
 const p = withDefaults(
   defineProps<{
@@ -25,7 +26,7 @@ const p = withDefaults(
   }>(),
   {
     label: 'Поделиться',
-  },
+  }
 )
 
 const hoverTitle = computed(() => p.title)
@@ -55,7 +56,10 @@ async function share() {
     await window.navigator.clipboard.writeText(targetUrl)
     appToast.success({ message: 'Ссылка скопирована', description: targetUrl })
   } catch {
-    appToast.error({ message: 'Не удалось поделиться', description: 'Скопируйте URL из адресной строки' })
+    appToast.error({
+      message: 'Не удалось поделиться',
+      description: 'Скопируйте URL из адресной строки',
+    })
   }
 }
 </script>

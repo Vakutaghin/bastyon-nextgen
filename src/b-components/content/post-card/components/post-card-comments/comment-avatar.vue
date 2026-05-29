@@ -9,7 +9,7 @@ const props = withDefaults(
   {
     url: null,
     name: '',
-  },
+  }
 )
 
 const initial = computed(() => {
@@ -20,7 +20,7 @@ const initial = computed(() => {
 
 <template>
   <div v-if="url" class="comment-avatar">
-    <img :src="url" :alt="name" />
+    <img :src="url" :alt="name" loading="lazy" decoding="async" />
   </div>
   <div v-else class="comment-avatar-placeholder">
     {{ initial }}
