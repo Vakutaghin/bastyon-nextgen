@@ -12,54 +12,50 @@ import type { UTXO } from '@/composables/use-wallet-queries'
 import { POCKETNET_NETWORK } from '../../constants/network'
 import { AMOUNT_MULTIPLIER, toSatoshis, DUST_VALUE } from '../../constants/transactions'
 
-// Импортируем кастомную версию bitcoinjs-lib от Pocketnet
-// Файл btc17.js использует browserify формат (UMD), поэтому используем динамический импорт
-// с обработкой как CommonJS модуля
-let pocketnetBitcoin: any = null
-let pocketnetBitcoinLib: any = null
+// Импортируем кастомную версию bitcoinjs-lib от Pocketnet.
+// btc17.js — browserify-форк bitcoinjs-lib, типы описаны в btc17.d.ts (см. CODE_AUDIT.md §2).
+import type { PocketnetBitcoin, BtcTransactionBuilder } from '../../lib/pocketnet/btc17.js'
 
-// Функция для инициализации библиотеки
-async function loadPocketnetBitcoin() {
+let pocketnetBitcoin: PocketnetBitcoin | null = null
+let pocketnetBitcoinLib: PocketnetBitcoin | null = null
+
+async function loadPocketnetBitcoin(): Promise<PocketnetBitcoin> {
   if (pocketnetBitcoin) return pocketnetBitcoin
 
   try {
-    // Пробуем динамический импорт
     try {
-      // @ts-expect-error - btc17.js не имеет TypeScript типов
       const module = await import('../../lib/pocketnet/btc17.js')
 
-      // Browserify модуль может экспортировать через default или напрямую
-      pocketnetBitcoin = module.default || module
-      pocketnetBitcoinLib = pocketnetBitcoin
+      // Browserify-модуль может отдавать API через default или напрямую — поддерживаем оба.
+      const fromImport = (module.default ?? module) as unknown as PocketnetBitcoin
+      pocketnetBitcoin = fromImport
+      pocketnetBitcoinLib = fromImport
 
-      // Если модуль пустой, пробуем получить из window (но только pocketnetBitcoin, не bitcoin)
-      if (
-        !pocketnetBitcoinLib ||
-        (!pocketnetBitcoinLib.TransactionBuilder &&
-          !pocketnetBitcoinLib.default?.TransactionBuilder)
-      ) {
-        if (typeof window !== 'undefined') {
-          // Используем только window.pocketnetBitcoin, чтобы не конфликтовать со стандартной библиотекой
-          const windowBitcoin = (window as any).pocketnetBitcoin
-
-          if (windowBitcoin) {
-            pocketnetBitcoinLib = windowBitcoin
-            pocketnetBitcoin = windowBitcoin
-          }
+      // Fallback на window.pocketnetBitcoin — btc17.js навешивает себя туда (см. lib/pocketnet/btc17.js:43-45).
+      // Нужен, если бандлер по каким-то причинам отдал пустой объект.
+      const hasTxBuilder = !!(
+        pocketnetBitcoinLib.TransactionBuilder ||
+        (pocketnetBitcoinLib as { default?: PocketnetBitcoin }).default?.TransactionBuilder
+      )
+      if (!hasTxBuilder && typeof window !== 'undefined') {
+        const windowBitcoin = (window as { pocketnetBitcoin?: PocketnetBitcoin }).pocketnetBitcoin
+        if (windowBitcoin) {
+          pocketnetBitcoinLib = windowBitcoin
+          pocketnetBitcoin = windowBitcoin
         }
       }
 
-      if (
-        pocketnetBitcoinLib &&
-        (pocketnetBitcoinLib.TransactionBuilder || pocketnetBitcoinLib.default?.TransactionBuilder)
-      ) {
-        return pocketnetBitcoin
-      } else {
-        console.error(
-          '[buildTransaction] Loaded module does not contain TransactionBuilder:',
-          pocketnetBitcoinLib
-        )
+      const hasTxBuilderNow = !!(
+        pocketnetBitcoinLib?.TransactionBuilder ||
+        (pocketnetBitcoinLib as { default?: PocketnetBitcoin } | null)?.default?.TransactionBuilder
+      )
+      if (pocketnetBitcoinLib && hasTxBuilderNow) {
+        return pocketnetBitcoin!
       }
+      console.error(
+        '[buildTransaction] Loaded module does not contain TransactionBuilder:',
+        pocketnetBitcoinLib
+      )
     } catch (e) {
       console.error('[buildTransaction] Dynamic import failed:', e)
     }
@@ -71,24 +67,19 @@ async function loadPocketnetBitcoin() {
   }
 }
 
-// Функция для получения TransactionBuilder из загруженной библиотеки
-function getTransactionBuilder(): any {
+function getTransactionBuilder(): typeof BtcTransactionBuilder {
   if (!pocketnetBitcoinLib) {
     throw new Error('Pocketnet bitcoinjs-lib is not loaded. Call loadPocketnetBitcoin() first.')
   }
 
-  // Пробуем разные способы доступа к TransactionBuilder
-  let TransactionBuilder: any = null
+  const direct = pocketnetBitcoinLib.TransactionBuilder
+  if (direct) return direct
 
-  if (pocketnetBitcoinLib.TransactionBuilder) {
-    TransactionBuilder = pocketnetBitcoinLib.TransactionBuilder
-  } else if (pocketnetBitcoinLib.default && pocketnetBitcoinLib.default.TransactionBuilder) {
-    TransactionBuilder = pocketnetBitcoinLib.default.TransactionBuilder
-  } else if ((pocketnetBitcoinLib as any).TransactionBuilder) {
-    TransactionBuilder = (pocketnetBitcoinLib as any).TransactionBuilder
-  }
+  const viaDefault = (pocketnetBitcoinLib as { default?: PocketnetBitcoin }).default
+    ?.TransactionBuilder
+  if (viaDefault) return viaDefault
 
-  return TransactionBuilder
+  throw new Error('TransactionBuilder not found in pocketnet bitcoinjs-lib')
 }
 
 /**
@@ -282,7 +273,7 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
   // Подписываем транзакцию
   // ВНИМАНИЕ: Pocketnet использует специфичную логику подписи
   // Если используется bitcoinjs-lib 5.x+, нужно передавать keyPair.network
-  unspents.forEach((unspent, index) => {
+  unspents.forEach((_unspent, index) => {
     // Для подписи нам нужен keyPair
     // В старом коде: txb.sign(index, keyPair)
     // ВНИМАНИЕ: keyPair здесь - это объект KeyPair из types/keys.ts, который содержит ecPair
@@ -420,7 +411,7 @@ export async function buildTransferTransaction(
     txb.addOutput(fromAddress, finalChangeAmount)
   }
 
-  unspents.forEach((unspent, index) => {
+  unspents.forEach((_unspent, index) => {
     txb.sign(index, keyPair.ecPair)
   })
 

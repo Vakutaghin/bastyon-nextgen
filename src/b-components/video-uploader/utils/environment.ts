@@ -90,14 +90,21 @@ export async function isTauriAsync(): Promise<boolean> {
     try {
       await invoke('__tauri_internal_check')
       return true
-    } catch (e: any) {
-      const msg = (e?.message || String(e)).toLowerCase()
+    } catch (e: unknown) {
+      const msg = ((e instanceof Error ? e.message : null) ?? String(e)).toLowerCase()
       // Только явная ошибка «команда не найдена» = мы в Tauri, команды нет
-      if ((msg.includes('command') && msg.includes('not found')) || msg.includes('unknown command')) {
+      if (
+        (msg.includes('command') && msg.includes('not found')) ||
+        msg.includes('unknown command')
+      ) {
         return true
       }
       // В браузере: "undefined", "not available" — не Tauri
-      if (msg.includes('undefined') || msg.includes('not available') || msg.includes('is not defined')) {
+      if (
+        msg.includes('undefined') ||
+        msg.includes('not available') ||
+        msg.includes('is not defined')
+      ) {
         return false
       }
     }
@@ -176,7 +183,7 @@ export function getBestMimeType(): string | null {
     'video/webm', // WebM без указания кодека
     'video/mp4;codecs=h264,aac', // H.264 + AAC
     'video/mp4;codecs=h264', // H.264 без аудио
-    'video/mp4' // MP4 без указания кодека
+    'video/mp4', // MP4 без указания кодека
   ]
 
   for (const mimeType of mimeTypes) {
@@ -207,6 +214,6 @@ export function getEnvironmentInfo() {
     supportsOffscreenCanvas: supportsOffscreenCanvas(),
     bestConverter: getBestConverter(),
     bestMimeType: getBestMimeType(),
-    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
   }
 }
