@@ -1,31 +1,18 @@
 <template>
   <SC_MessengerContainer>
     <SC_SidebarColumn :is-hidden="!!activeChatId || !!(lastTargetAddress && inviteViewActive)">
-      <div
-        style="
-          padding: 16px;
-          border-bottom: 1px solid #eee;
-          font-weight: bold;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        "
-      >
+      <SC_SidebarHeader>
         <span>Сообщения</span>
         <slot name="header-actions" />
-      </div>
-      <div
-        v-if="store.syncError"
-        style="padding: 8px; background: #ffebee; color: #c62828; font-size: 12px"
-      >
+      </SC_SidebarHeader>
+      <SC_SyncErrorBanner v-if="store.syncError">
         {{ store.syncError }}
-      </div>
-      <div
+      </SC_SyncErrorBanner>
+      <SC_SyncStatusBanner
         v-else-if="store.syncState !== 'PREPARED' && store.syncState !== 'SYNCING'"
-        style="padding: 8px; background: #e3f2fd; color: #1565c0; font-size: 12px"
       >
         Status: {{ store.syncState }}
-      </div>
+      </SC_SyncStatusBanner>
       <SC_MessengerDialogsLoader v-if="!store.dialogsLoadedOnce || store.isLoading">
         <SC_MessengerDialogsSpinner />
         <SC_MessengerDialogsLoaderText>Загрузка диалогов...</SC_MessengerDialogsLoaderText>
@@ -35,22 +22,14 @@
 
     <SC_ChatColumn :is-active="!!activeChatId || !!(lastTargetAddress && inviteViewActive)">
       <template v-if="activeChatId">
-        <div
-          style="
-            height: 56px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-          "
-        >
+        <SC_ChatTopBar>
           <SC_MobileBackButton
             @click="store.closeActiveChat ? store.closeActiveChat() : (store.activeChatId = null)"
           >
             <img :src="arrowBackIcon" alt="" width="24" height="24" />
           </SC_MobileBackButton>
-          <span style="font-weight: 600">{{ activeChatName }}</span>
-        </div>
+          <SC_PartnerName>{{ activeChatName }}</SC_PartnerName>
+        </SC_ChatTopBar>
         <ChatRoom
           :key="activeChatId"
           :messages="store.activeMessages"
@@ -61,20 +40,12 @@
         />
       </template>
       <template v-else-if="lastTargetAddress && inviteViewActive">
-        <div
-          style="
-            height: 56px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-          "
-        >
+        <SC_ChatTopBar>
           <SC_MobileBackButton @click="store.clearInviteTarget">
             <img :src="arrowBackIcon" alt="" width="24" height="24" />
           </SC_MobileBackButton>
-          <span style="font-weight: 600">{{ invitePartnerName }}</span>
-        </div>
+          <SC_PartnerName>{{ invitePartnerName }}</SC_PartnerName>
+        </SC_ChatTopBar>
         <ChatRoom
           :messages="[]"
           :invite-mode="true"
@@ -103,11 +74,16 @@ import {
   SC_MessengerContainer,
   SC_SidebarColumn,
   SC_ChatColumn,
+  SC_ChatTopBar,
   SC_EmptyState,
   SC_MobileBackButton,
   SC_MessengerDialogsLoader,
   SC_MessengerDialogsLoaderText,
   SC_MessengerDialogsSpinner,
+  SC_PartnerName,
+  SC_SidebarHeader,
+  SC_SyncErrorBanner,
+  SC_SyncStatusBanner,
 } from './styled'
 import arrowBackIcon from './img/arrow-back.svg'
 import chatEmptyIcon from './img/chat-empty.svg'

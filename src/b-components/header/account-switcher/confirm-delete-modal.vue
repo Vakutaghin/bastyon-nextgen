@@ -9,23 +9,21 @@
     @cancel="handleCancel"
   >
     <template #title>
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <ExclamationCircleOutlined style="font-size: 24px; color: #faad14;" />
+      <SC_ModalIconRow>
+        <ExclamationCircleOutlined :style="ICON_WARNING_24" />
         <span>Выйти?</span>
-      </div>
+      </SC_ModalIconRow>
     </template>
 
-    <div style="padding: 16px 0;">
+    <SC_ModalBody>
       <p>Вы уверены, что хотите выйти из аккаунта? Это действие нельзя отменить.</p>
-    </div>
+    </SC_ModalBody>
 
     <template #footer>
-      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <SC_ModalActions>
         <Button type="default" @click="handleCancel">Нет</Button>
-        <Button type="primary" danger @click="handleConfirm" :loading="loading">
-          Да, выйти
-        </Button>
-      </div>
+        <Button type="primary" danger @click="handleConfirm" :loading="loading"> Да, выйти </Button>
+      </SC_ModalActions>
     </template>
   </Modal>
 </template>
@@ -33,6 +31,8 @@
 <script setup lang="ts">
 import { useConfirmDeleteModal } from './confirm-delete-modal/confirm-delete-modal'
 import type { ConfirmDeleteModalProps, ConfirmDeleteModalEmits } from './confirm-delete-modal/types'
+import { SC_ModalActions, SC_ModalBody, SC_ModalIconRow } from '@/components/modal'
+import { ICON_WARNING_24 } from '@/styles/icon-styles'
 
 const p = withDefaults(defineProps<ConfirmDeleteModalProps>(), {
   open: false,
@@ -40,13 +40,6 @@ const p = withDefaults(defineProps<ConfirmDeleteModalProps>(), {
 
 const emit = defineEmits<ConfirmDeleteModalEmits>()
 
-const {
-  Modal,
-  Button,
-  ExclamationCircleOutlined,
-  visible,
-  loading,
-  handleConfirm,
-  handleCancel
-} = useConfirmDeleteModal(p, emit)
+const { Modal, Button, ExclamationCircleOutlined, visible, loading, handleConfirm, handleCancel } =
+  useConfirmDeleteModal(p, emit)
 </script>

@@ -47,6 +47,46 @@ export const SC_ChatColumn = styled('div', chatProps)`
   }
 `
 
+/** Шапка сайдбара со списком чатов. */
+export const SC_SidebarHeader = styled.div`
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`
+
+/** Красная плашка с ошибкой синка messenger. */
+export const SC_SyncErrorBanner = styled.div`
+  padding: 8px;
+  background: #ffebee;
+  color: #c62828;
+  font-size: 12px;
+`
+
+/** Синяя плашка со статусом синка messenger. */
+export const SC_SyncStatusBanner = styled.div`
+  padding: 8px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 12px;
+`
+
+/** Верхняя панель в активном чате (back-button + имя собеседника). */
+export const SC_ChatTopBar = styled.div`
+  height: 56px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+`
+
+/** Имя собеседника в шапке активного чата. */
+export const SC_PartnerName = styled.span`
+  font-weight: 600;
+`
+
 export const SC_EmptyState = styled.div`
   flex: 1;
   display: flex;

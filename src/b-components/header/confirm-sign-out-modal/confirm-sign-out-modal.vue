@@ -9,23 +9,21 @@
     @cancel="handleCancel"
   >
     <template #title>
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <ExclamationCircleOutlined style="font-size: 24px; color: #faad14;" />
+      <SC_ModalIconRow>
+        <ExclamationCircleOutlined :style="ICON_WARNING_24" />
         <span>Выйти?</span>
-      </div>
+      </SC_ModalIconRow>
     </template>
 
-    <div style="padding: 16px 0;">
+    <SC_ModalBody>
       <p>Вы уверены, что хотите выйти из аккаунта? Это действие нельзя отменить.</p>
-    </div>
+    </SC_ModalBody>
 
     <template #footer>
-      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <SC_ModalActions>
         <Button type="default" @click="handleCancel">Нет</Button>
-        <Button type="primary" danger @click="handleConfirm" :loading="loading">
-          Да, выйти
-        </Button>
-      </div>
+        <Button type="primary" danger @click="handleConfirm" :loading="loading"> Да, выйти </Button>
+      </SC_ModalActions>
     </template>
   </Modal>
 </template>
@@ -33,6 +31,8 @@
 <script setup lang="ts">
 import { useConfirmSignOutModal } from './confirm-sign-out-modal'
 import type { ConfirmSignOutModalProps, ConfirmSignOutModalEmits } from './types'
+import { SC_ModalActions, SC_ModalBody, SC_ModalIconRow } from '@/components/modal'
+import { ICON_WARNING_24 } from '@/styles/icon-styles'
 
 const p = withDefaults(defineProps<ConfirmSignOutModalProps>(), {
   open: false,
@@ -40,13 +40,6 @@ const p = withDefaults(defineProps<ConfirmSignOutModalProps>(), {
 
 const emit = defineEmits<ConfirmSignOutModalEmits>()
 
-const {
-  Modal,
-  Button,
-  ExclamationCircleOutlined,
-  visible,
-  loading,
-  handleConfirm,
-  handleCancel
-} = useConfirmSignOutModal(p, emit)
+const { Modal, Button, ExclamationCircleOutlined, visible, loading, handleConfirm, handleCancel } =
+  useConfirmSignOutModal(p, emit)
 </script>

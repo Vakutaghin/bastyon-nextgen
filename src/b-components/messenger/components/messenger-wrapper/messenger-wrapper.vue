@@ -14,7 +14,7 @@
           v-if="activeChatId || (lastTargetAddress && inviteViewActive)"
           @click="onWidgetBack"
         >
-          <img :src="icons.back" style="filter: brightness(0) invert(1)" />
+          <SC_WhiteIcon :src="icons.back" />
         </SC_BackButton>
       </template>
 
@@ -54,8 +54,8 @@
 
     <MessengerButton :unread-count="totalUnreadCount" :is-open="isOpen" @click="toggleMessenger">
       <template #icon>
-        <img v-if="!isOpen" :src="icons.chat" style="filter: brightness(0) invert(1)" />
-        <img v-else :src="icons.close" style="filter: brightness(0) invert(1)" />
+        <SC_WhiteIcon v-if="!isOpen" :src="icons.chat" />
+        <SC_WhiteIcon v-else :src="icons.close" />
       </template>
     </MessengerButton>
   </SC_MessengerWrapper>
@@ -83,6 +83,7 @@ import {
   SC_MessengerWrapperLoader,
   SC_MessengerWrapperLoaderText,
   SC_MessengerWrapperSpinner,
+  SC_WhiteIcon,
 } from './styled'
 
 const store = useMessengerStore()

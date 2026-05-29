@@ -1,5 +1,13 @@
 import styled from 'vue3-styled-components'
 
+/**
+ * Иконка-svg, перекрашенная в белый через filter (исходник чёрный).
+ * Заменяет inline `style="filter: brightness(0) invert(1)"`. CODE_AUDIT §3.1.
+ */
+export const SC_WhiteIcon = styled.img`
+  filter: brightness(0) invert(1);
+`
+
 export const SC_MessengerWrapper = styled.div`
   position: fixed;
   bottom: 14px;

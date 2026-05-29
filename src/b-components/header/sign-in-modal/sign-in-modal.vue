@@ -30,14 +30,11 @@
             {{ showPassword ? '👁️' : '👁️‍🗨️' }}
           </SC_PasswordToggle>
         </SC_InputWrapper>
-        <Alert
-          type="info"
-          :show-icon="true"
-          style="margin-top: 8px;"
-        >
+        <Alert type="info" :show-icon="true" style="margin-top: 8px">
           <template #description>
             <div>
-              <strong>Мнемоническая фраза:</strong> 12 слов через пробел (например: "word1 word2 word3 ...")<br>
+              <strong>Мнемоническая фраза:</strong> 12 слов через пробел (например: "word1 word2
+              word3 ...")<br />
               <strong>Приватный ключ:</strong> hex (64 символа) или WIF формат
             </div>
           </template>
@@ -50,26 +47,22 @@
 
       <SC_LinkToRegister>
         Еще не зарегистрированы?
-        <SC_LinkButton @click="handleOpenRegister">
-          Зарегистрироваться
-        </SC_LinkButton>
+        <SC_LinkButton @click="handleOpenRegister"> Зарегистрироваться </SC_LinkButton>
       </SC_LinkToRegister>
     </SC_SignInForm>
 
     <template #footer>
-      <div style="display: flex; justify-content: flex-end; gap: 8px;">
-        <Button type="default" @click="handleCancel" :disabled="loading">
-          Отмена
-        </Button>
+      <SC_ModalActions>
+        <Button type="default" @click="handleCancel" :disabled="loading"> Отмена </Button>
         <Button
           type="primary"
           :loading="loading"
           :disabled="!privateKey || loading"
-        @click="handleSignIn"
-      >
-        Войти
-      </Button>
-      </div>
+          @click="handleSignIn"
+        >
+          Войти
+        </Button>
+      </SC_ModalActions>
     </template>
   </Modal>
 </template>
@@ -77,9 +70,10 @@
 <script setup lang="ts">
 import { useSignInModal } from './sign-in-modal'
 import type { SignInModalProps, SignInModalEmits } from './types'
+import { SC_ModalActions } from '@/components/modal'
 
 const p = withDefaults(defineProps<SignInModalProps>(), {
-  open: false
+  open: false,
 })
 
 const emit = defineEmits<SignInModalEmits>()
@@ -105,6 +99,6 @@ const {
   isOpen,
   handleSignIn,
   handleCancel,
-  handleOpenRegister
+  handleOpenRegister,
 } = useSignInModal(p, emit)
 </script>
