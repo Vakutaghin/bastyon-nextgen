@@ -8,15 +8,15 @@
 
       <SC_BlockTitle>
         {{ s.block.breadcrumb }}
-        <span style="font-variant-numeric: tabular-nums">{{ heightLabel }}</span>
+        <SC_TabularNums>{{ heightLabel }}</SC_TabularNums>
       </SC_BlockTitle>
 
       <SC_BlockNav>
         <SC_BlockNavBtn type="button" :disabled="!prevHash" @click="goTo(prevHash)">
-          <LeftOutlined :style="{ fontSize: '12px' }" /> {{ s.block.navPrev }}
+          <LeftOutlined :style="ICON_SIZE_XS" /> {{ s.block.navPrev }}
         </SC_BlockNavBtn>
         <SC_BlockNavBtn type="button" :disabled="!nextHash" @click="goTo(nextHash)">
-          {{ s.block.navNext }} <RightOutlined :style="{ fontSize: '12px' }" />
+          {{ s.block.navNext }} <RightOutlined :style="ICON_SIZE_XS" />
         </SC_BlockNavBtn>
         <ShareButton v-if="block" :title="s.block.shareTitle(heightLabel)" />
       </SC_BlockNav>
@@ -55,9 +55,7 @@
             <SC_BlockMetaLabel>{{ s.block.metaTime }}</SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               {{ formatAbsTime(block.time) }}
-              <span style="color: rgb(173, 181, 189); font-size: 12px">
-                ({{ formatRelTime(block.time, now) }})
-              </span>
+              <SC_MutedSm> ({{ formatRelTime(block.time, now) }}) </SC_MutedSm>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
@@ -77,7 +75,7 @@
                   {{ s.block.metaConfirmationsTip }}
                 </span>
               </span>
-              <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
+              <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
@@ -87,7 +85,7 @@
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               {{ difficultyLabel }}
-              <span style="font-size: 12px; color: rgb(173, 181, 189)">· {{ block.bits }}</span>
+              <SC_MutedSm>· {{ block.bits }}</SC_MutedSm>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
@@ -99,7 +97,7 @@
             <SC_BlockMetaValue>
               <AddressLink v-if="coinstakeInfo" :address="coinstakeInfo.staker" />
               <Skeleton v-else-if="txLoading" :width="180" :height="14" />
-              <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
+              <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
@@ -112,7 +110,7 @@
                 >{{ formatExplorerPkoin(coinstakeInfo.reward) }} PKOIN</span
               >
               <Skeleton v-else-if="txLoading" :width="100" :height="14" />
-              <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
+              <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
@@ -187,15 +185,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue'
-import {
-  useBlockDetails,
-  useBlockTransactions,
-  useNodeInfo,
-} from '@/composables/use-block-explorer-queries'
-import { useExplorerWsUpdates } from '@/composables/use-explorer-ws-updates'
+import { ICON_SIZE_XS } from '@/styles/icon-styles'
 import HashLink from '../components/shared/hash-link.vue'
 import AddressLink from '../components/shared/address-link.vue'
 import InfoTooltip from '../components/shared/info-tooltip.vue'
@@ -207,13 +200,9 @@ import {
   formatRelativeTime as formatRelTime,
   formatAbsoluteTime as formatAbsTime,
 } from '../components/shared/format-explorer'
-import { labelForTxType } from '../components/shared/tx-type-labels'
-import { extractCoinstakeInfo, calcConfirmations } from '../components/shared/extract-coinstake'
-import { recordVisit } from '../components/shared/use-search-history'
-import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { explorerStrings as s } from '../block-explorer-strings'
-import type { Transaction } from '@/types/rpc-responses/get-transactions'
+import { useBlockData } from './use-block-data'
 import {
   SC_BlockPageWork,
   SC_BlockPagePage,
@@ -237,6 +226,11 @@ import {
   SC_Placeholder,
   SC_PlaceholderError,
 } from './block-page.styled'
+import {
+  SC_Muted,
+  SC_MutedSm,
+  SC_TabularNums,
+} from '@/pages/block-explorer-page/components/shared/text-utility.styled'
 
 defineOptions({ name: 'BlockPage' })
 
@@ -245,131 +239,31 @@ const router = useRouter()
 
 const queryInput = computed(() => p.hashOrHeight ?? '')
 
-const { data: blockResp, isLoading: blockLoading, error: blockError } = useBlockDetails(queryInput)
-
-const block = computed(() => blockResp.value?.data)
-
-// Регистрируем визит, когда блок реально загрузился. Сохраняем то, что было в URL
-// (height или hash) — пусть автокомплит соответствует тому, что вводил пользователь.
-watch(
-  () => block.value?.hash,
-  (h) => {
-    if (h) recordVisit(p.hashOrHeight, 'block')
-  }
-)
-
-const blockHash = computed(() => block.value?.hash ?? '')
-
-const TX_PAGE_SIZE = 50
-const txCount = ref(TX_PAGE_SIZE)
-
-// Сбрасываем счётчик показа при переходе на другой блок.
-watch(blockHash, () => {
-  txCount.value = TX_PAGE_SIZE
-})
-
 const {
-  data: txResp,
-  isLoading: txLoading,
-  isFetching: txFetching,
-  error: txError,
-} = useBlockTransactions(blockHash, 0, txCount)
-
-const txList = computed<Transaction[]>(() => txResp.value?.data ?? [])
-
-const canLoadMoreTx = computed(() => {
-  const total = block.value?.nTx ?? 0
-  return total > txList.value.length
-})
-
-function loadMoreTx() {
-  const total = block.value?.nTx ?? Number.POSITIVE_INFINITY
-  txCount.value = Math.min(txCount.value + TX_PAGE_SIZE, total)
-}
-
-// Подключаем real-time обновление tip-а: confirmations растут на новом блоке.
-useExplorerWsUpdates()
-
-const { data: nodeInfo } = useNodeInfo()
-const tipHeight = computed(() => nodeInfo.value?.data?.lastblock?.height ?? 0)
-
-const confirmations = computed(() => {
-  const h = block.value?.height
-  if (h === undefined) return 0
-  return calcConfirmations(h, tipHeight.value)
-})
-
-const coinstakeInfo = computed(() => extractCoinstakeInfo(txList.value))
-
-const coinstakeLabel = computed(() => {
-  if (!coinstakeInfo.value) return s.block.metaStaker
-  return coinstakeInfo.value.kind === 'pow' ? s.block.metaMinerPow : s.block.metaStakerPos
-})
-
-const prevHash = computed(() => block.value?.prevhash ?? '')
-const nextHash = computed(() => block.value?.nexthash ?? '')
-
-const heightLabel = computed(() => {
-  if (block.value) return `#${formatNumber(block.value.height)}`
-  // если параметр — число, покажем сразу
-  return /^\d+$/.test(p.hashOrHeight)
-    ? `#${formatNumber(Number(p.hashOrHeight))}`
-    : s.common.ellipsis
-})
+  block,
+  blockLoading,
+  blockError,
+  blockErrorMessage,
+  txList,
+  txLoading,
+  txFetching,
+  txError,
+  canLoadMoreTx,
+  loadMoreTx,
+  pagerLabel,
+  loadMoreLabel,
+  confirmations,
+  coinstakeInfo,
+  coinstakeLabel,
+  prevHash,
+  nextHash,
+  heightLabel,
+  difficultyLabel,
+  goTo,
+  typeLabel,
+  txTotalLabel,
+  now,
+} = useBlockData(queryInput, router)
 
 useDocumentTitle(() => `Блок ${heightLabel.value}`)
-
-const difficultyLabel = computed(() => {
-  const d = block.value?.difficulty
-  return d ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(d) : s.common.em
-})
-
-const pagerLabel = computed(() => {
-  const total = block.value?.nTx ?? 0
-  const shown = txList.value.length
-  return s.block.txPager(shown, total)
-})
-
-const blockErrorMessage = computed(() => {
-  const e = blockError.value
-  if (!e) return ''
-  const msg = extractErrorMessage(e)
-  if (msg.toLowerCase().includes('block not found')) {
-    return s.block.notFound
-  }
-  return s.block.errorPrefix(msg)
-})
-
-const loadMoreLabel = computed(() => {
-  const total = block.value?.nTx ?? 0
-  const remaining = Math.max(0, total - txList.value.length)
-  const next = Math.min(TX_PAGE_SIZE, remaining)
-  return s.block.loadMoreNext(next)
-})
-
-function typeLabel(type: number): string {
-  return labelForTxType(type)
-}
-
-function txTotalLabel(tx: Transaction): string {
-  const sum = (tx.vout ?? []).reduce((s, v) => s + (v.value ?? 0), 0)
-  return sum > 0 ? `${formatExplorerPkoin(sum)} PKOIN` : ''
-}
-
-function goTo(hash: string) {
-  if (!hash) return
-  router.push({ name: 'explorer-block', params: { hashOrHeight: hash } })
-}
-
-// Live тикер для пересчёта «N минут назад».
-const now = ref(Math.floor(Date.now() / 1000))
-let tickHandle: number | null = null
-onMounted(() => {
-  tickHandle = window.setInterval(() => {
-    now.value = Math.floor(Date.now() / 1000)
-  }, 1000)
-})
-onBeforeUnmount(() => {
-  if (tickHandle !== null) window.clearInterval(tickHandle)
-})
 </script>

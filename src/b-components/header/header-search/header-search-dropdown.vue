@@ -16,7 +16,12 @@
         @click="onSelectRecent(entry)"
       >
         <SC_Avatar v-if="entry.kind === 'user' && entry.meta?.avatar">
-          <img :src="entry.meta.avatar" :alt="entry.label || entry.value" />
+          <img
+            :src="entry.meta.avatar"
+            :alt="entry.label || entry.value"
+            loading="lazy"
+            decoding="async"
+          />
         </SC_Avatar>
         <SC_RecentIcon v-else>
           {{ iconForKind(entry.kind) }}
@@ -47,7 +52,7 @@
           <SC_DropdownSectionHeader> Приложения </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="a in apps" :key="a.id" @click="onSelectApp(a)">
             <SC_Avatar>
-              <img v-if="a.icon" :src="a.icon" :alt="a.name" />
+              <img v-if="a.icon" :src="a.icon" :alt="a.name" loading="lazy" decoding="async" />
               <template v-else>{{ initialOfApp(a.name) }}</template>
             </SC_Avatar>
             <SC_ItemBody>
@@ -66,7 +71,13 @@
           </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="u in users" :key="u.address" @click="onSelectUser(u)">
             <SC_Avatar>
-              <img v-if="u.i" :src="u.i" :alt="u.name || u.address" />
+              <img
+                v-if="u.i"
+                :src="u.i"
+                :alt="u.name || u.address"
+                loading="lazy"
+                decoding="async"
+              />
               <template v-else>{{ initialOf(u) }}</template>
             </SC_Avatar>
             <SC_ItemBody>
@@ -111,21 +122,11 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  useSearchUsers,
-  useSearchTags,
-  useSearchPosts,
-  useSearchApps,
-  MIN_QUERY_LENGTH,
-} from '@/composables/use-search-query'
-import { useSearchStore } from '@/stores/search-store'
-import { useAppsStore } from '@/mini-apps/store/apps-store'
+import { MIN_QUERY_LENGTH } from '@/composables/use-search-query'
 import { safeDecode } from '@/composables/use-feed'
-import type { RemoteAppEntry } from '@/mini-apps/registry/remote-registry'
-import type { SearchHistoryEntry, SearchHistoryKind } from '@/stores/search-store-consts'
-import type { SearchUserResult } from '@/types/rpc-responses/search-users'
-import type { SearchPost } from '@/types/rpc-responses/search-posts'
-import type { SearchTag } from '@/types/rpc-responses/search-tags'
+import { useSearchResults } from './use-search-results'
+import { useSearchRecent } from './use-search-recent'
+import { useSearchNavigation } from './use-search-navigation'
 import {
   SC_Dropdown,
   SC_DropdownSection,
@@ -154,155 +155,32 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-const searchStore = useSearchStore()
-const appsStore = useAppsStore()
-
 const queryRef = toRef(props, 'query')
 
 const showResults = computed(() => props.query.length >= MIN_QUERY_LENGTH)
 
-// Три раздельных RPC (users / tags / posts) + apps. Объединение в один
-// вызов `search` с type='all' зафиксировано в SEARCH_TODO §9: формат
-// ответа от ноды нужно проверить, иначе users/tags/posts оказываются
-// пустыми, как только что произошло в проде.
-const usersQuery = useSearchUsers(queryRef, 5)
-const tagsQuery = useSearchTags(queryRef, 5)
-const postsQuery = useSearchPosts(queryRef, 5)
-const appsQuery = useSearchApps(queryRef, 4)
+const { users, tags, posts, apps, isLoading, hasAny } = useSearchResults(queryRef)
 
-const users = computed<SearchUserResult[]>(() => usersQuery.data.value ?? [])
-const tags = computed<SearchTag[]>(() => tagsQuery.data.value ?? [])
-const posts = computed<SearchPost[]>(() => postsQuery.data.value ?? [])
-const apps = computed<RemoteAppEntry[]>(() => appsQuery.data.value ?? [])
+const emitClose = () => emit('close')
+const {
+  recentEntries,
+  showRecent,
+  iconForKind,
+  secondaryFor,
+  onSelectRecent,
+  onRemoveRecent,
+  onClearHistory,
+} = useSearchRecent(router, showResults, emitClose)
 
-const isLoading = computed(
-  () =>
-    usersQuery.isFetching.value ||
-    tagsQuery.isFetching.value ||
-    postsQuery.isFetching.value ||
-    appsQuery.isFetching.value
-)
-
-const hasAny = computed(
-  () => users.value.length + tags.value.length + posts.value.length + apps.value.length > 0
-)
-
-const recentEntries = computed<SearchHistoryEntry[]>(() => searchStore.recentHistory)
-const showRecent = computed(() => !showResults.value && recentEntries.value.length > 0)
-
-function initialOf(u: SearchUserResult): string {
-  const src = u.name || u.address
-  return (src?.[0] ?? '?').toUpperCase()
-}
-
-function truncate(text: string, max: number): string {
-  if (!text) return ''
-  return text.length > max ? text.slice(0, max - 1) + '…' : text
-}
-
-function postTitle(p: SearchPost): string {
-  // Поля `c` и `m` приходят URL-encoded — без декода в UI получаются
-  // кракозябры (см. safeDecode в use-feed.ts, используется в adaptPostData).
-  const caption = safeDecode(p.c || '')
-  if (caption) return caption
-  const message = safeDecode(p.m || '')
-  if (message) return message.slice(0, 80)
-  return p.txid || 'Пост'
-}
-
-function commitAndClose(): string {
-  const value = searchStore.commit(props.query)
-  emit('close')
-  return value
-}
-
-function onSelectUser(u: SearchUserResult): void {
-  searchStore.commitUser(u.address, u.name, u.i)
-  emit('close')
-  router.push({ name: 'profile', params: { userName: u.address } })
-}
-
-function onSelectTag(t: SearchTag): void {
-  searchStore.commitTag(t.tag)
-  emit('close')
-  router.push({ path: '/search', query: { q: `#${t.tag}`, type: 'posts' } })
-}
-
-function onSelectPost(p: SearchPost): void {
-  const value = commitAndClose()
-  router.push({ path: '/search', query: { q: value, type: 'posts', focus: p.txid || p.hash } })
-}
-
-function onSeeAll(type: 'users' | 'tags' | 'posts'): void {
-  const value = commitAndClose()
-  if (!value) return
-  router.push({ path: '/search', query: { q: value, type } })
-}
-
-function initialOfApp(name: string): string {
-  return (name?.[0] ?? '?').toUpperCase()
-}
-
-function onSelectApp(entry: RemoteAppEntry): void {
-  // Открываем mini-app по той же схеме, что и mini-apps-grid:
-  // если приложение ещё не установлено — регистрируем его в локальном
-  // сторе, затем переходим на /app/<id>.
-  appsStore.installFromRemoteEntry(entry)
-  searchStore.commitApp(entry.id, entry.name, entry.icon)
-  emit('close')
-  router.push(`/app/${encodeURIComponent(entry.id)}`)
-}
-
-function iconForKind(kind: SearchHistoryKind): string {
-  switch (kind) {
-    case 'query':
-      return '⌕'
-    case 'tag':
-      return '#'
-    case 'user':
-      return '@'
-    case 'app':
-      return '▦'
-  }
-}
-
-function secondaryFor(entry: SearchHistoryEntry): string | undefined {
-  if (entry.kind === 'user' && entry.meta?.name && entry.meta.name !== entry.label) {
-    return entry.value
-  }
-  return undefined
-}
-
-function onSelectRecent(entry: SearchHistoryEntry): void {
-  emit('close')
-  switch (entry.kind) {
-    case 'query':
-      searchStore.setQuery(entry.value)
-      searchStore.commit(entry.value)
-      router.push({ path: '/search', query: { q: entry.value } })
-      return
-    case 'tag':
-      searchStore.commitTag(entry.value)
-      router.push({ path: '/search', query: { q: `#${entry.value}`, type: 'posts' } })
-      return
-    case 'user':
-      searchStore.commitUser(entry.value, entry.meta?.name, entry.meta?.avatar)
-      router.push({ name: 'profile', params: { userName: entry.value } })
-      return
-    case 'app':
-      // Запись в истории создаётся только когда приложение уже было
-      // открыто из dropdown — значит оно зарегистрировано в appsStore через
-      // installFromRemoteEntry и доступно по /app/<id>.
-      router.push(`/app/${encodeURIComponent(entry.value)}`)
-      return
-  }
-}
-
-function onRemoveRecent(entry: SearchHistoryEntry): void {
-  searchStore.removeFromHistory(entry)
-}
-
-function onClearHistory(): void {
-  searchStore.clearHistory()
-}
+const {
+  onSelectUser,
+  onSelectTag,
+  onSelectPost,
+  onSelectApp,
+  onSeeAll,
+  initialOf,
+  initialOfApp,
+  postTitle,
+  truncate,
+} = useSearchNavigation(router, queryRef, emitClose)
 </script>

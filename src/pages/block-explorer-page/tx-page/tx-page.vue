@@ -67,13 +67,11 @@
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
               <span v-if="confirmations > 0">{{ formatNumber(confirmations) }}</span>
-              <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
-              <span style="color: rgb(173, 181, 189); font-size: 12px; margin-left: 8px">
-                · {{ formatRelTime(tx.nTime, now) }}
-              </span>
-              <div style="font-size: 11px; color: rgb(173, 181, 189); margin-top: 2px">
+              <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
+              <SC_MutedSmInline> · {{ formatRelTime(tx.nTime, now) }} </SC_MutedSmInline>
+              <SC_MutedXs>
                 {{ formatAbsTime(tx.nTime) }}
-              </div>
+              </SC_MutedXs>
             </SC_TxMetaValue>
           </SC_TxMetaCell>
 
@@ -103,7 +101,7 @@
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
               <span v-if="feeLabel">{{ feeLabel }} PKOIN</span>
-              <span v-else style="color: rgb(173, 181, 189)">{{ s.tx.metaFeeUnknown }}</span>
+              <SC_Muted v-else>{{ s.tx.metaFeeUnknown }}</SC_Muted>
             </SC_TxMetaValue>
           </SC_TxMetaCell>
           <SC_TxMetaCell>
@@ -112,10 +110,10 @@
               <InfoTooltip term-key="pocketPayload" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
-              <span v-if="pocketPayload" style="color: rgb(108, 117, 125)">
+              <SC_Subtle v-if="pocketPayload">
                 {{ payloadKindLabel }} — {{ s.tx.metaPocketnetCardHint }}
-              </span>
-              <span v-else style="color: rgb(173, 181, 189)">{{ s.tx.metaPocketnetEmpty }}</span>
+              </SC_Subtle>
+              <SC_Muted v-else>{{ s.tx.metaPocketnetEmpty }}</SC_Muted>
             </SC_TxMetaValue>
           </SC_TxMetaCell>
         </SC_TxMetaGrid>
@@ -128,10 +126,8 @@
             <SC_TxIOItem v-for="(vin, i) in tx.vin" :key="`vin-${i}`">
               <SC_TxIOAddress>
                 <AddressLink v-if="vin.address" :address="vin.address" />
-                <span v-else-if="vin.coinbase" style="color: rgb(108, 117, 125)">{{
-                  s.tx.ioCoinbase
-                }}</span>
-                <span v-else style="color: rgb(173, 181, 189)">{{ s.common.em }}</span>
+                <SC_Subtle v-else-if="vin.coinbase">{{ s.tx.ioCoinbase }}</SC_Subtle>
+                <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
               </SC_TxIOAddress>
               <SC_TxIOValue v-if="vin.value !== undefined">
                 {{ formatExplorerPkoin(vin.value) }} PKOIN
@@ -155,9 +151,9 @@
             <SC_TxIOItem v-for="(vout, i) in tx.vout" :key="`vout-${i}`">
               <SC_TxIOAddress>
                 <AddressLink v-if="firstAddress(vout)" :address="firstAddress(vout)" />
-                <span v-else style="color: rgb(108, 117, 125)">
+                <SC_Subtle v-else>
                   {{ s.tx.ioOpReturn }}
-                </span>
+                </SC_Subtle>
               </SC_TxIOAddress>
               <SC_TxIOValue>{{ formatExplorerPkoin(vout.value) }} PKOIN</SC_TxIOValue>
               <SC_TxIOAnnotation>#{{ vout.n }}</SC_TxIOAnnotation>
@@ -175,16 +171,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { useTransactionDetails, useNodeInfo } from '@/composables/use-block-explorer-queries'
-import { useExplorerWsUpdates } from '@/composables/use-explorer-ws-updates'
 import HashLink from '../components/shared/hash-link.vue'
 import AddressLink from '../components/shared/address-link.vue'
 import InfoTooltip from '../components/shared/info-tooltip.vue'
 import ShareButton from '../components/shared/share-button.vue'
 import TxPayloadCard from '../components/shared/tx-payload-card.vue'
-import { parsePocketnetPayload } from '../components/shared/parse-pocketnet-payload'
 import { Skeleton } from '@/components'
 import {
   formatExplorerNumber as formatNumber,
@@ -193,13 +186,9 @@ import {
   formatAbsoluteTime as formatAbsTime,
   shortenHash,
 } from '../components/shared/format-explorer'
-import { labelForTxType } from '../components/shared/tx-type-labels'
-import { calcConfirmations } from '../components/shared/extract-coinstake'
-import { recordVisit } from '../components/shared/use-search-history'
 import { explorerStrings as s } from '../block-explorer-strings'
-import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import { useDocumentTitle } from '@/composables/use-document-title'
-import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions'
+import { useTxData } from './use-tx-data'
 import {
   SC_TxPageWork,
   SC_TxPagePage,
@@ -223,6 +212,12 @@ import {
   SC_TxRawPre,
   SC_PlaceholderError,
 } from './tx-page.styled'
+import {
+  SC_Muted,
+  SC_MutedSmInline,
+  SC_MutedXs,
+  SC_Subtle,
+} from '@/pages/block-explorer-page/components/shared/text-utility.styled'
 
 defineOptions({ name: 'TxPage' })
 
@@ -232,84 +227,21 @@ useDocumentTitle(() => `Транзакция ${shortenHash(p.txid)}`)
 
 const txidRef = computed(() => p.txid ?? '')
 
-const { data: txResp, isLoading: txLoading, error: txError } = useTransactionDetails(txidRef)
-
-const tx = computed<Transaction | undefined>(() => txResp.value?.data?.[0])
-
-// Регистрируем визит, когда tx реально загрузилась.
-watch(
-  () => tx.value?.txid,
-  (id) => {
-    if (id) recordVisit(p.txid, 'tx')
-  }
-)
-
-// Real-time tip → confirmations растёт без рефреша страницы.
-useExplorerWsUpdates()
-
-const { data: nodeInfo } = useNodeInfo()
-const tipHeight = computed(() => nodeInfo.value?.data?.lastblock?.height ?? 0)
-const confirmations = computed(() => {
-  const h = tx.value?.height
-  if (h === undefined) return 0
-  return calcConfirmations(h, tipHeight.value)
-})
-
-const typeLabel = computed(() => (tx.value ? labelForTxType(tx.value.type) : ''))
-
-const totalIn = computed(() => {
-  if (!tx.value) return 0
-  return tx.value.vin.reduce((s, v) => s + (v.value ?? 0), 0)
-})
-
-const totalOut = computed(() => {
-  if (!tx.value) return 0
-  return tx.value.vout.reduce((s, v) => s + (v.value ?? 0), 0)
-})
-
-const feeLabel = computed(() => {
-  if (!tx.value) return ''
-  const anyZeroIn = tx.value.vin.some((v) => v.value === undefined)
-  if (anyZeroIn) return '' // не все входы имеют value (coinbase / неизвестные)
-  const fee = totalIn.value - totalOut.value
-  if (fee < 0) return ''
-  return formatExplorerPkoin(fee)
-})
-
-const pocketPayload = computed(() => parsePocketnetPayload(tx.value ?? null))
-
-const payloadKindLabel = computed(() => {
-  const k = pocketPayload.value?.kind
-  return k ? (s.tx.payloadKindLabels[k] ?? k) : ''
-})
-
-function firstAddress(vout: TxVout): string {
-  const a = vout.scriptPubKey?.addresses?.[0]
-  return a && a.length > 0 ? a : ''
-}
-
-const showRaw = ref(false)
-const rawJson = computed(() => (tx.value ? JSON.stringify(tx.value, null, 2) : ''))
-
-const errorMessage = computed(() => {
-  if (txError.value) {
-    return s.tx.errorPrefix(extractErrorMessage(txError.value))
-  }
-  if (!tx.value && !txLoading.value) {
-    return s.tx.notFound
-  }
-  return ''
-})
-
-// Live тикер
-const now = ref(Math.floor(Date.now() / 1000))
-let tickHandle: number | null = null
-onMounted(() => {
-  tickHandle = window.setInterval(() => {
-    now.value = Math.floor(Date.now() / 1000)
-  }, 1000)
-})
-onBeforeUnmount(() => {
-  if (tickHandle !== null) window.clearInterval(tickHandle)
-})
+const {
+  tx,
+  txLoading,
+  txError,
+  confirmations,
+  typeLabel,
+  totalIn,
+  totalOut,
+  feeLabel,
+  pocketPayload,
+  payloadKindLabel,
+  errorMessage,
+  rawJson,
+  showRaw,
+  now,
+  firstAddress,
+} = useTxData(txidRef)
 </script>
