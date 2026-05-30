@@ -87,13 +87,7 @@ export const SC_Spinner = styled.div`
   border: 3px solid rgba(255, 255, 255, 0.3);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  animation: spin 1s linear infinite; /* @keyframes spin — глобально в style.css */
 `
 
 export const SC_DurationBadge = styled.div`

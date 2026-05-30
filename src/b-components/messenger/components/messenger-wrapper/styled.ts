@@ -124,13 +124,7 @@ export const SC_MessengerWrapperSpinner = styled.span`
   border: 3px solid #e0e0e0;
   border-top-color: #666;
   border-radius: 50%;
-  animation: messenger-wrapper-spin 0.8s linear infinite;
-
-  @keyframes messenger-wrapper-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `
 
 export const SC_MessengerWrapperLoaderText = styled.span`

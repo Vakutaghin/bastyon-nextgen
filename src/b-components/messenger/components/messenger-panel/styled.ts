@@ -137,13 +137,7 @@ export const SC_MessengerDialogsSpinner = styled.span`
   border: 3px solid #e0e0e0;
   border-top-color: #666;
   border-radius: 50%;
-  animation: messenger-dialogs-spin 0.8s linear infinite;
-
-  @keyframes messenger-dialogs-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `
 
 export const SC_MessengerDialogsLoaderText = styled.span`

@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 
-
 export const SC_MessageInputArea = styled.div`
   padding: 12px;
   background-color: #f9f9f9;
@@ -28,7 +27,7 @@ export const SC_MessageInput = styled.textarea`
   font-family: inherit;
 
   &:focus {
-    border-color: #00A3F7;
+    border-color: #00a3f7;
   }
 
   &::-webkit-scrollbar {
@@ -50,7 +49,7 @@ export const SC_SendButton = styled.button`
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: #00A3F7;
+  background-color: #00a3f7;
   color: white;
   display: flex;
   align-items: center;
@@ -87,11 +86,13 @@ export const SC_EmojiToggleButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: color 0.2s, background-color 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
   flex-shrink: 0;
 
   &:hover {
-    color: #00A3F7;
+    color: #00a3f7;
     background-color: #f0f0f0;
   }
 
@@ -113,7 +114,9 @@ export const SC_VoiceButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.05s;
+  transition:
+    background-color 0.2s,
+    transform 0.05s;
   flex-shrink: 0;
   z-index: 10;
   user-select: none;
@@ -153,9 +156,15 @@ export const SC_RecordingTimer = styled.div`
   }
 
   @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 `
 
@@ -168,9 +177,18 @@ export const SC_SwipeHint = styled.div`
   animation: slideLeft 1.5s infinite;
 
   @keyframes slideLeft {
-    0% { transform: translateX(0); opacity: 1; }
-    50% { transform: translateX(-5px); opacity: 0.8; }
-    100% { transform: translateX(0); opacity: 1; }
+    0% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    50% {
+      transform: translateX(-5px);
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 `
 
@@ -200,7 +218,7 @@ export const SC_StartChatButton = styled.button`
   padding: 10px 16px;
   border-radius: 8px;
   border: none;
-  background-color: #00A3F7;
+  background-color: #00a3f7;
   color: #fff;
   font-weight: 600;
   font-size: 14px;
@@ -264,7 +282,7 @@ export const SC_PartnerInfoCard = styled.div`
   flex-direction: column;
   align-items: center;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 `
 
 export const SC_ChatRoomLoader = styled.div`
@@ -285,11 +303,7 @@ export const SC_ChatRoomSpinner = styled.span`
   border: 3px solid #e0e0e0;
   border-top-color: #666;
   border-radius: 50%;
-  animation: chat-room-spin 0.8s linear infinite;
-
-  @keyframes chat-room-spin {
-    to { transform: rotate(360deg); }
-  }
+  animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `
 
 export const SC_ChatRoomLoaderText = styled.span`

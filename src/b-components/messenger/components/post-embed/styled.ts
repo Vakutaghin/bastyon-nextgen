@@ -162,13 +162,7 @@ export const SC_Spinner = styled.div`
   border: 2px solid #cfd8dc;
   border-top-color: #00a4db;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  animation: spin 1s linear infinite; /* @keyframes spin — глобально в style.css */
 `
 
 export const SC_FailedHint = styled.a`

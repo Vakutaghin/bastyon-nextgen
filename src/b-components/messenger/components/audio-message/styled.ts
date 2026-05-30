@@ -22,7 +22,7 @@ export const SC_PlayButton = styled.button`
   flex-shrink: 0;
 
   &.playing {
-    border-color: #00A4DB;
+    border-color: #00a4db;
   }
 
   &:disabled {
@@ -32,9 +32,9 @@ export const SC_PlayButton = styled.button`
 `
 
 export const SC_WaveContainer = styled('div', { compact: Boolean })`
-  flex: 1 1 ${(p: any) => p.compact ? '120px' : '240px'};
+  flex: 1 1 ${(p: any) => (p.compact ? '120px' : '240px')};
   width: 100%;
-  max-width: ${(p: any) => p.compact ? '120px' : '240px'};
+  max-width: ${(p: any) => (p.compact ? '120px' : '240px')};
   min-width: 0;
   height: 36px;
   position: relative;
@@ -58,9 +58,9 @@ export const SC_WaveContainer = styled('div', { compact: Boolean })`
 `
 
 export const SC_WavePlaceholder = styled('div', { compact: Boolean })`
-  flex: 1 1 ${(props: any) => props.compact ? '160px' : '240px'};
+  flex: 1 1 ${(props: any) => (props.compact ? '160px' : '240px')};
   width: 100%;
-  max-width: ${(props: any) => props.compact ? '160px' : '240px'};
+  max-width: ${(props: any) => (props.compact ? '160px' : '240px')};
   min-width: 0;
   height: 36px;
   display: flex;
@@ -92,13 +92,7 @@ export const SC_Spinner = styled.div`
   width: 16px;
   height: 16px;
   border: 2px solid #cfd8dc;
-  border-top-color: #00A4DB;
+  border-top-color: #00a4db;
   border-radius: 50%;
-  animation: sc-spin 0.8s linear infinite;
-
-  @keyframes sc-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `
