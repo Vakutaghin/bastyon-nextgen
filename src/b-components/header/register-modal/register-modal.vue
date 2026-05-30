@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { debugLog } from '@/helpers/common/debug-log'
 import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
@@ -143,11 +143,26 @@ watch(
       email.value = ''
       error.value = null
       loading.value = false
+      // При закрытии модалки гасим debounce-таймер — иначе он сработает после
+      // unmount и попытается записать в `nickname.value` уже мёртвой ref.
+      if (nicknameTimer) {
+        clearTimeout(nicknameTimer)
+        nicknameTimer = null
+      }
     } else {
       checkPendingRegistration()
     }
   }
 )
+
+// Страховка от ранней размонтировки (роутинг увёз нас в момент, когда модалка
+// открыта и timer заряжен): cleanup перед unmount гарантированно снимет setTimeout.
+onBeforeUnmount(() => {
+  if (nicknameTimer) {
+    clearTimeout(nicknameTimer)
+    nicknameTimer = null
+  }
+})
 
 function onNicknameInput(eventOrValue: Event | string): void {
   const value =
