@@ -5,6 +5,21 @@ import {
   categoriesData,
   type Category,
 } from '@/b-components/sidebar/sidebar-categories/categories-data'
+
+// Локальные типы, синхронизированные с формой tabsData / filtersData.
+// Когда сами *-data.ts получат свои интерфейсы — удалить отсюда.
+interface FeedTab {
+  id: number
+  name: string
+  icon: string
+  active: boolean
+  disabled: boolean
+}
+interface FeedFilter {
+  id: number
+  name: string
+  active: boolean
+}
 import {
   FEED_MODE_TO_TAB_ID,
   SORT_FILTER_MAP,
@@ -22,11 +37,11 @@ export const useFiltersStore = defineStore('filters', {
     // Дефолтный таб — либо помеченный active в tabsData, либо первый, либо id=1.
     const fromUrl = feedMode ? FEED_MODE_TO_TAB_ID[feedMode] : undefined
     const initialTabId =
-      fromUrl ?? (tabsData.find((tab: any) => tab.active)?.id || tabsData[0]?.id || 1)
+      fromUrl ?? (tabsData.find((tab: FeedTab) => tab.active)?.id || tabsData[0]?.id || 1)
 
     // Подготавливаем табы с правильным активным состоянием
     const initialTabs = JSON.parse(JSON.stringify(tabsData))
-    initialTabs.forEach((tab: any) => {
+    initialTabs.forEach((tab: FeedTab) => {
       tab.active = tab.id === initialTabId
     })
 
@@ -69,7 +84,7 @@ export const useFiltersStore = defineStore('filters', {
      * Получает активный фильтр времени
      */
     activeTimeFilter(): string | number | null {
-      const active = this.timeFilters.find((filter: any) => filter.active)
+      const active = this.timeFilters.find((filter: FeedFilter) => filter.active)
       return active?.id || null
     },
 
@@ -77,7 +92,7 @@ export const useFiltersStore = defineStore('filters', {
      * Получает активный фильтр сортировки
      */
     activeSortFilter(): string | number | null {
-      const active = this.sortFilters.find((filter: any) => filter.active)
+      const active = this.sortFilters.find((filter: FeedFilter) => filter.active)
       return active?.id || null
     },
 
@@ -100,8 +115,8 @@ export const useFiltersStore = defineStore('filters', {
      * Инициализация настроек из IndexedDB
      */
     async init() {
-      if (this.isInitialized || (this as any).isInitializing) return
-      ;(this as any).isInitializing = true
+      if (this.isInitialized || this.isInitializing) return
+      this.isInitializing = true
 
       const snapshot = await loadFiltersFromSettings()
       if (snapshot.customCategories) this.customCategories = snapshot.customCategories
@@ -110,7 +125,7 @@ export const useFiltersStore = defineStore('filters', {
       if (snapshot.topFirst !== undefined) this.topFirst = snapshot.topFirst
 
       this.isInitialized = true
-      ;(this as any).isInitializing = false
+      this.isInitializing = false
     },
 
     /** Сохранение настроек в IndexedDB. */
@@ -135,7 +150,7 @@ export const useFiltersStore = defineStore('filters', {
      * Выбирает фильтр времени
      */
     selectTimeFilter(filterId: string | number): void {
-      this.timeFilters.forEach((filter: any) => {
+      this.timeFilters.forEach((filter: FeedFilter) => {
         filter.active = filter.id === filterId
       })
     },
@@ -144,7 +159,7 @@ export const useFiltersStore = defineStore('filters', {
      * Выбирает фильтр сортировки
      */
     selectSortFilter(filterId: string | number): void {
-      this.sortFilters.forEach((filter: any) => {
+      this.sortFilters.forEach((filter: FeedFilter) => {
         filter.active = filter.id === filterId
       })
     },
@@ -187,7 +202,7 @@ export const useFiltersStore = defineStore('filters', {
      * Выбирает таб
      */
     selectTab(tabId: string | number): void {
-      this.tabs.forEach((tab: any) => {
+      this.tabs.forEach((tab: FeedTab) => {
         tab.active = tab.id === tabId
       })
       this.activeTab = tabId
@@ -197,7 +212,7 @@ export const useFiltersStore = defineStore('filters', {
      * Обновляет доступность табов в зависимости от авторизации
      */
     updateTabsAvailability(isAuthorized: boolean): void {
-      const subsTab = this.tabs.find((tab: any) => tab.id === 2)
+      const subsTab = this.tabs.find((tab: FeedTab) => tab.id === 2)
       if (subsTab) {
         subsTab.disabled = !isAuthorized
 
@@ -287,10 +302,10 @@ export const useFiltersStore = defineStore('filters', {
      * Сбрасывает все фильтры
      */
     resetFilters(): void {
-      this.timeFilters.forEach((filter: any, index: number) => {
+      this.timeFilters.forEach((filter: FeedFilter, index: number) => {
         filter.active = index === 0
       })
-      this.sortFilters.forEach((filter: any, index: number) => {
+      this.sortFilters.forEach((filter: FeedFilter, index: number) => {
         filter.active = index === 0
       })
     },

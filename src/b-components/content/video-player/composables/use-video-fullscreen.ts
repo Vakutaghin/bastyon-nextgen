@@ -3,44 +3,56 @@ import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { resolveVideoElement } from './utils'
 
+// Vendor-префиксы для Fullscreen API — Safari/старый Firefox/IE. Типизируем
+// одним местом, чтобы не сыпать `as any` по всему файлу.
+type VendorDocument = Document & {
+  webkitFullscreenElement?: Element | null
+  mozFullScreenElement?: Element | null
+  msFullscreenElement?: Element | null
+  webkitExitFullscreen?: () => Promise<void>
+  mozCancelFullScreen?: () => Promise<void>
+  msExitFullscreen?: () => Promise<void>
+}
 
-export function useVideoFullscreen(videoElement: Ref<any>, containerRef?: Ref<HTMLElement | null>) {
+type VendorElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void>
+  mozRequestFullScreen?: () => Promise<void>
+  msRequestFullscreen?: () => Promise<void>
+}
+
+// videoElement может быть raw <video> либо обёрткой `{ $el }` от vue3-styled-components,
+// поэтому держим расширенный Ref-тип на стороне вызывающего.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type VideoRef = Ref<any>
+
+function getVendorFullscreenElement(): Element | null {
+  const d = document as VendorDocument
+  return (
+    document.fullscreenElement ||
+    d.webkitFullscreenElement ||
+    d.mozFullScreenElement ||
+    d.msFullscreenElement ||
+    null
+  )
+}
+
+export function useVideoFullscreen(
+  videoElement: VideoRef,
+  containerRef?: Ref<HTMLElement | null | { $el?: HTMLElement }>
+) {
   const isFullscreen = ref(false)
 
-  /**
-   * Обработка изменения полноэкранного режима
-   */
+  /** Обработка изменения полноэкранного режима. */
   const handleFullscreenChange = () => {
-    // Обновляем состояние на основе реального состояния DOM
-    const isFullscreenElement = !!(
-      document.fullscreenElement ||
-      (document as any).webkitFullscreenElement ||
-      (document as any).mozFullScreenElement ||
-      (document as any).msFullscreenElement
-    )
-
     // Если мы в Tauri и используется CSS fallback (без native API),
-    // то мы не должны сбрасывать isFullscreen, если событие пришло от чего-то другого
-    // Но обычно fullscreenchange срабатывает только при реальном изменении.
-    // Если мы используем только CSS режим, то событие не придет.
-
-    isFullscreen.value = isFullscreenElement
+    // то событие fullscreenchange не придёт — но если пришло, значит реально вышли.
+    isFullscreen.value = !!getVendorFullscreenElement()
   }
 
-  /**
-   * Переключение полноэкранного режима
-   */
+  /** Переключение полноэкранного режима. */
   const toggleFullscreen = async () => {
-    // Определяем текущее состояние (учитываем и нативное, и наш флаг)
-    const isNativeFullscreen = !!(
-      document.fullscreenElement ||
-      (document as any).webkitFullscreenElement ||
-      (document as any).mozFullScreenElement ||
-      (document as any).msFullscreenElement
-    )
-
-    // Если мы уже в полноэкранном режиме (нативном или CSS), то выходим
-    const shouldExit = isNativeFullscreen || isFullscreen.value
+    // Учитываем и нативное состояние, и наш флаг (для CSS-fallback в Tauri).
+    const shouldExit = !!getVendorFullscreenElement() || isFullscreen.value
 
     if (shouldExit) {
       // --- EXIT ---
@@ -56,22 +68,26 @@ export function useVideoFullscreen(videoElement: Ref<any>, containerRef?: Ref<HT
       }
 
       // 2. Element Exit
-      const exitFullscreen = document.exitFullscreen ||
-                            (document as any).webkitExitFullscreen ||
-                            (document as any).mozCancelFullScreen ||
-                            (document as any).msExitFullscreen
+      const d = document as VendorDocument
+      const exitFullscreen =
+        document.exitFullscreen ||
+        d.webkitExitFullscreen ||
+        d.mozCancelFullScreen ||
+        d.msExitFullscreen
 
       if (exitFullscreen) {
-        exitFullscreen.call(document).then(() => {
-          isFullscreen.value = false
-        }).catch((err: any) => {
-          console.error('Error attempting to exit fullscreen:', err)
-          isFullscreen.value = false // Force reset
-        })
+        exitFullscreen
+          .call(document)
+          .then(() => {
+            isFullscreen.value = false
+          })
+          .catch((err: unknown) => {
+            console.error('Error attempting to exit fullscreen:', err)
+            isFullscreen.value = false // Force reset
+          })
       } else {
         isFullscreen.value = false
       }
-
     } else {
       // --- ENTER ---
 
@@ -91,7 +107,13 @@ export function useVideoFullscreen(videoElement: Ref<any>, containerRef?: Ref<HT
 
       let container: HTMLElement | null = null
       if (containerRef && containerRef.value) {
-        container = (containerRef.value as any).$el || containerRef.value
+        const raw = containerRef.value
+        container =
+          raw instanceof HTMLElement
+            ? raw
+            : (raw as { $el?: HTMLElement }).$el instanceof HTMLElement
+              ? (raw as { $el: HTMLElement }).$el
+              : null
       }
 
       if (!container) {
@@ -110,19 +132,24 @@ export function useVideoFullscreen(videoElement: Ref<any>, containerRef?: Ref<HT
 
       if (!container) return
 
-      const requestFullscreen = container.requestFullscreen ||
-                                (container as any).webkitRequestFullscreen ||
-                                (container as any).mozRequestFullScreen ||
-                                (container as any).msRequestFullscreen
+      const el = container as VendorElement
+      const requestFullscreen =
+        el.requestFullscreen ||
+        el.webkitRequestFullscreen ||
+        el.mozRequestFullScreen ||
+        el.msRequestFullscreen
 
       if (requestFullscreen) {
-        requestFullscreen.call(container).then(() => {
-          isFullscreen.value = true
-        }).catch((err: any) => {
-          console.error('Error attempting to enable fullscreen:', err)
-          // Fallback: force state to true for CSS
-          isFullscreen.value = true
-        })
+        requestFullscreen
+          .call(container)
+          .then(() => {
+            isFullscreen.value = true
+          })
+          .catch((err: unknown) => {
+            console.error('Error attempting to enable fullscreen:', err)
+            // Fallback: force state to true for CSS
+            isFullscreen.value = true
+          })
       } else {
         // Fallback if API not available
         isFullscreen.value = true
@@ -146,6 +173,6 @@ export function useVideoFullscreen(videoElement: Ref<any>, containerRef?: Ref<HT
 
   return {
     isFullscreen,
-    toggleFullscreen
+    toggleFullscreen,
   }
 }
