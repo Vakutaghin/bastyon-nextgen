@@ -19,12 +19,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref } from 'vue'
+import { computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { Dropdown, Menu } from 'ant-design-vue'
 import type { MenuProps } from 'ant-design-vue'
 import { CaretDownOutlined, CheckOutlined } from '@ant-design/icons-vue'
-import { logoData as initialLogoData } from '@/b-components/header/dummy-data/logo-data'
+import { logoData } from '@/b-components/header/dummy-data/logo-data'
+import { useLocale } from '@/composables/use-locale'
+import type { Locale } from '@/i18n'
 import {
   SC_Logo,
   SC_LogoLink,
@@ -35,26 +37,27 @@ import {
 } from './styled'
 
 const router = useRouter()
+const { locale, setLocale, available } = useLocale()
 
-// Реактивная копия — currentLanguage обновляется без мутации модуля.
-const logoData = ref({
-  ...initialLogoData,
-  languages: initialLogoData.languages.slice(),
-})
+// Из всего dummy-data списка показываем только локали, для которых есть словари
+// в src/locales/. По мере добавления переводов SUPPORTED_LOCALES расширяется.
+const languageOptions = computed(() =>
+  logoData.languages.filter((l) => (available.value as readonly string[]).includes(l.code))
+)
 
 const currentLanguageName = computed<string>(() => {
-  const lang = logoData.value.languages.find((l) => l.code === logoData.value.currentLanguage)
+  const lang = languageOptions.value.find((l) => l.code === locale.value)
   return lang ? lang.name : 'Русский'
 })
 
 const currentLanguageFlag = computed<string>(() => {
-  const lang = logoData.value.languages.find((l) => l.code === logoData.value.currentLanguage)
+  const lang = languageOptions.value.find((l) => l.code === locale.value)
   return lang ? lang.flag : '🇷🇺'
 })
 
 const languageMenuItems = computed<MenuProps['items']>(() =>
-  logoData.value.languages.map((lang) => {
-    const isSelected = lang.code === logoData.value.currentLanguage
+  languageOptions.value.map((lang) => {
+    const isSelected = lang.code === locale.value
     return {
       key: lang.code,
       label: h(
@@ -86,8 +89,11 @@ const languageMenuItems = computed<MenuProps['items']>(() =>
 )
 
 function handleLanguageChange({ key }: { key: string }): void {
-  logoData.value.currentLanguage = key
-  // TODO: интегрировать с useLocale() — сейчас словари есть только для ru/en.
+  // Защита: only known locales (отфильтрованы в languageOptions, но проверяем
+  // ещё раз — мало ли key пришёл со старого dropdown).
+  if ((available.value as readonly string[]).includes(key)) {
+    setLocale(key as Locale)
+  }
 }
 
 function handleLogoClick(): void {
