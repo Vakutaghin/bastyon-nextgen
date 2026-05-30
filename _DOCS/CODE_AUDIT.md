@@ -10,7 +10,7 @@
 | # | Категория | Что не так | Приоритет |
 |---|-----------|------------|-----------|
 | 1 | God-объекты | `messenger-chat-store.ts` 1401, `post-card-comments.vue` 1198, `video-player.vue` 888, `matrix-service.ts` 451 (после частичного разноса — нужно sync/encryption/transport) | Средний |
-| 2 | TS-качество | 333 вхождений `any`/`as any` в коде (без тестов); `no-explicit-any: warn` уже включён, нужен план снижения до ~50 | Средний |
+| 2 | TS-качество | 310 вхождений `any`/`as any` в коде (без тестов); `no-explicit-any: warn` уже включён, нужен план снижения до ~50 | Средний |
 | 3 | i18n | Инфраструктура подключена; словари `ru.ts`/`en.ts` пока ~30 ключей, UI-строки компонентов почти не вынесены | Средний |
 | 4 | Тесты | ~11% покрытие (84 теста на 753 исходных файла); critical-модули (`blockchain/`, `messenger/`, `video-player`, `mini-apps/`) почти без тестов | Средний |
 | 5 | Inline `:style` (миграция) | 27 vue-`:style` literal + 56 plain HTML `style="..."`. Регрессии заблокированы baseline-скриптом; остаток — мелкие one-off | Низкий |
@@ -32,7 +32,7 @@
 
 ## 2. TS-качество
 
-333 вхождения `: any` / `as any` в `src/**/*.{ts,vue}` (без тестов). `@typescript-eslint/no-explicit-any: warn` уже включён — теперь нужна постепенная чистка. Основной долг — `messenger/`, `matrix-service.ts`.
+310 вхождений `: any` / `as any` в `src/**/*.{ts,vue}` (без тестов). `@typescript-eslint/no-explicit-any: warn` уже включён — теперь нужна постепенная чистка. Основной долг — `messenger/store/messenger-chat-store.ts` (36), `composables/use-feed.ts` (21), `messenger/store/messenger-store.ts` (16), `messenger/helpers.ts` (15).
 
 Когда счётчик опустится до ~50, поднять lint-правило с `warn` до `error`.
 
@@ -61,8 +61,10 @@
 
 Большая часть — block-explorer и wallets. Вынести общие SC-токены (`SC_StatCard`, `SC_SectionTitle`, `SC_Table`) в `src/pages/block-explorer-page/components/shared/` и `src/pages/wallets-page/components/shared/`.
 
-### 3.4. Keyframes — дубли
-Похожие keyframes в разных файлах: `@keyframes pulse` (`mini-app-frame.styled.ts:57`), `@keyframes live-pulse` (`block-explorer-page.styled.ts:77`), а также 5+ дублей `@keyframes spin` в messenger-компонентах. Завести `src/styles/keyframes.ts` с общими анимациями.
+### 3.4. Keyframes — остаточные
+`@keyframes spin` (и aliases `chat-room-spin`/`sc-spin`/`messenger-dialogs-spin`/`messenger-wrapper-spin`) консолидированы в один глобальный `@keyframes spin` в `src/style.css`.
+
+Остаются неконсолидированными разные по семантике pulse-анимации: `@keyframes pulse` (chat-room — opacity blink), `@keyframes pulse` (mini-app-frame — scale+opacity breathing), `@keyframes nx-pulse` (header-notifications — shimmer), `@keyframes live-pulse` (block-explorer — box-shadow ring). Это разные визуальные эффекты, дедупить нельзя без потери дизайна.
 
 ### 3.5. Дублирование брейкпоинтов (мягкое)
 `BREAKPOINTS` в токенах, плюс `style.css` имеет свои `@media (max-width: 480px / 768px)`. Значения зафиксированы комментариями `BREAKPOINTS.TABLET/MOBILE`, но формально не связаны. Долгосрочно — генерация `@media` из токенов через PostCSS-плагин либо CI-проверка соответствия.
@@ -78,7 +80,6 @@
 Осталось:
 - Пройти по компонентам и заменить захардкоженные русские строки на `t('...')`.
 - Добавить ключи в `src/locales/{ru,en}.ts` для компонентов, форм, тостов, label'ов.
-- Обновить language switcher в [header-logo.vue:89](src/b-components/header/header-logo/header-logo.vue#L89) — сейчас мутирует локальный `logoData.value.currentLanguage`, а должен дёргать `useLocale().setLocale()` (TODO висит в коде).
 
 ---
 
@@ -93,7 +94,7 @@
 
 ## 6. HTML / семантика / a11y
 
-- Inconsistent `alt=""` для смысловых изображений — нужно пройти отдельно.
+- Аватары (chat-room partner, current user reply) и icon-only buttons (send/emoji/mic в chat-room) получили `alt`/`aria-label`. Остался хвост `alt=""` на чисто декоративных иконках (closeIcon, arrowBackIcon в messenger-window/panel, playIcon/pauseIcon в audio-message) — большая часть OK, но желательно навесить `aria-label` на родительские кнопки.
 - `<article>` для `post-card` не реализовано (требует ревизии каскада `SC_PostCard`).
 - `<footer>` для приложения — добавить когда появится контент.
 
@@ -101,7 +102,6 @@
 
 ## 7. Архитектурные риски
 
-- `register-modal.vue` и серия `setTimeout` — корректная очистка не везде проверена, особенно при ранней размонтировке (используется `withDefaults` + локальный `nicknameTimer` без cleanup в `onUnmounted`).
 - `package.json` указывает `"vue-router": "^5.0.1"` — это alias, фактически используется API v4. Свериться, тот ли пакет в lockfile.
 - `vue3-styled-components@1.2.1` — без релизов с мая 2023, тянет уязвимый `node-fetch`. Решение архитектурного уровня: заменить на `pinceau`, нативные CSS Modules или форкнуть.
 
