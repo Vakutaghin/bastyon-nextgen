@@ -7,7 +7,7 @@
             <img
               v-if="partnerAvatar && !avatarLoadFailed"
               :src="partnerAvatar"
-              alt=""
+              :alt="`Аватар ${partnerName}`"
               @error="onAvatarError"
             />
 
@@ -63,7 +63,7 @@
         <template v-if="isLocked">
           <SC_CancelButton @click="cancelRecording">Отмена</SC_CancelButton>
 
-          <SC_SendButton @click="stopRecording">
+          <SC_SendButton aria-label="Отправить голосовое сообщение" @click="stopRecording">
             <img :src="sendIcon" alt="" width="24" height="24" />
           </SC_SendButton>
         </template>
@@ -94,7 +94,7 @@
           @input="handleInput"
         />
 
-        <SC_EmojiToggleButton @click="toggleEmojiPicker">
+        <SC_EmojiToggleButton aria-label="Открыть выбор эмодзи" @click="toggleEmojiPicker">
           <img :src="emojiIcon" alt="" width="24" height="24" />
         </SC_EmojiToggleButton>
       </template>
@@ -112,6 +112,7 @@
         @touchstart.prevent="startRecording"
         @touchend.prevent="handleTouchEnd"
         @touchmove.prevent="handleTouchMove"
+        :aria-label="isRecording ? 'Идёт запись голосового' : 'Записать голосовое сообщение'"
       >
         <img :src="micIcon" alt="" width="24" height="24" />
       </SC_VoiceButton>
@@ -120,6 +121,7 @@
       <SC_SendButton
         v-if="inputValue.trim() && !isRecording && !isLocked"
         :disabled="!inputValue.trim()"
+        aria-label="Отправить сообщение"
         @click="handleSend"
       >
         <img :src="sendIcon" alt="" width="24" height="24" />

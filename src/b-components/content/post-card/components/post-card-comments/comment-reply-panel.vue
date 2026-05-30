@@ -1,7 +1,7 @@
 <template>
   <!-- Current user avatar -->
   <div v-if="currentUserAvatarUrl" class="reply-avatar">
-    <img :src="currentUserAvatarUrl" alt="" loading="lazy" decoding="async" />
+    <img :src="currentUserAvatarUrl" alt="Ваш аватар" loading="lazy" decoding="async" />
   </div>
   <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
 
