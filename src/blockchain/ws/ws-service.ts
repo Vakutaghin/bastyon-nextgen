@@ -36,6 +36,7 @@ type WsHandler = (data: WsMessage) => void
 
 const RECONNECT_BASE_DELAY = 2000
 const RECONNECT_MAX_DELAY = 30000
+const CONNECT_TIMEOUT_MS = 10000
 
 // --- Service ---
 
@@ -46,8 +47,11 @@ class PocketnetWsService {
   private closing = false
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private reconnectAttempt = 0
+  private connectTimer: ReturnType<typeof setTimeout> | null = null
   /** Адреса, ожидающие подписки (если WS ещё не открыт) */
   private pendingSubscriptions: string[] = []
+  /** Адреса, для которых SUBSCRIBE-сообщение уже в полёте — защита от гонок */
+  private subscribingAddresses = new Set<string>()
 
   // Public state
   isConnected = false
@@ -108,8 +112,24 @@ class PocketnetWsService {
       return
     }
 
+    // Таймаут на установление соединения: зависший SYN иначе держал бы сокет вечно.
+    this.clearConnectTimer()
+    this.connectTimer = setTimeout(() => {
+      this.connectTimer = null
+      if (this.socket && this.socket.readyState !== WebSocket.OPEN) {
+        console.error('[WS] Connect timeout, forcing reconnect')
+        try {
+          this.socket.close()
+        } catch {
+          /* noop */
+        }
+        if (!this.closing) this.scheduleReconnect()
+      }
+    }, CONNECT_TIMEOUT_MS)
+
     this.socket.onopen = () => {
       debugLog('[WS] Connected!')
+      this.clearConnectTimer()
       this.isConnected = true
       this.reconnectAttempt = 0
       this.connected.clear()
@@ -133,6 +153,7 @@ class PocketnetWsService {
 
     this.socket.onclose = (event) => {
       debugLog('[WS] Closed, code:', event.code, 'reason:', event.reason)
+      this.clearConnectTimer()
       this.isConnected = false
       this.emit('close', {})
 
@@ -143,6 +164,23 @@ class PocketnetWsService {
 
     this.socket.onerror = (event) => {
       console.error('[WS] Error:', event)
+      // Без этого сокет остаётся в зомби-состоянии (onclose не всегда срабатывает).
+      // Закрываем явно — onclose штатно зашедулит reconnect; scheduleReconnect идемпотентен.
+      if (this.socket && this.socket.readyState !== WebSocket.CLOSED) {
+        try {
+          this.socket.close()
+        } catch {
+          /* noop */
+        }
+      }
+      if (!this.closing) this.scheduleReconnect()
+    }
+  }
+
+  private clearConnectTimer() {
+    if (this.connectTimer) {
+      clearTimeout(this.connectTimer)
+      this.connectTimer = null
     }
   }
 
@@ -183,44 +221,55 @@ class PocketnetWsService {
       debugLog('[WS] Already subscribed to', address)
       return
     }
-
-    // Если WS ещё не открыт, откладываем подписку
-    if (!this.isConnected) {
-      if (!this.pendingSubscriptions.includes(address)) {
-        this.pendingSubscriptions.push(address)
-      }
-      debugLog('[WS] WS not connected yet, queued subscription for', address)
+    // Race-guard: одновременный двойной вызов раньше проходил эту проверку до того,
+    // как connected.set отрабатывал по ответу сервера.
+    if (this.subscribingAddresses.has(address)) {
+      debugLog('[WS] Subscription already in flight for', address)
       return
     }
 
-    if (!keyPair) {
-      const { useAuthStore } = await import('@/blockchain/store/auth-store')
-      const authStore = useAuthStore()
-      keyPair = authStore.getKeyPair
-    }
-
-    if (!keyPair) {
-      debugLog('[WS] No keyPair available for subscription')
-      return
-    }
-
-    let signature: ApiSignature
+    this.subscribingAddresses.add(address)
     try {
-      const { generateApiSignature } = await import('@/blockchain/core/signatures')
-      signature = generateApiSignature(keyPair, address)
-    } catch (e) {
-      console.error('[WS] Failed to generate signature:', e)
-      return
-    }
+      // Если WS ещё не открыт, откладываем подписку
+      if (!this.isConnected) {
+        if (!this.pendingSubscriptions.includes(address)) {
+          this.pendingSubscriptions.push(address)
+        }
+        debugLog('[WS] WS not connected yet, queued subscription for', address)
+        return
+      }
 
-    const message = {
-      signature,
-      address,
-      block: 0,
-    }
+      if (!keyPair) {
+        const { useAuthStore } = await import('@/blockchain/store/auth-store')
+        const authStore = useAuthStore()
+        keyPair = authStore.getKeyPair
+      }
 
-    debugLog('[WS] Subscribing to address:', address)
-    this.send(JSON.stringify(message))
+      if (!keyPair) {
+        debugLog('[WS] No keyPair available for subscription')
+        return
+      }
+
+      let signature: ApiSignature
+      try {
+        const { generateApiSignature } = await import('@/blockchain/core/signatures')
+        signature = generateApiSignature(keyPair, address)
+      } catch (e) {
+        console.error('[WS] Failed to generate signature:', e)
+        return
+      }
+
+      const message = {
+        signature,
+        address,
+        block: 0,
+      }
+
+      debugLog('[WS] Subscribing to address:', address)
+      this.send(JSON.stringify(message))
+    } finally {
+      this.subscribingAddresses.delete(address)
+    }
   }
 
   // --- Message handling ---
@@ -278,6 +327,8 @@ class PocketnetWsService {
 
   private scheduleReconnect() {
     if (this.closing) return
+    // Idempotent: onerror + onclose из-за одной аварии иначе зашедулили бы два reconnect-а подряд.
+    if (this.reconnectTimer) return
 
     this.reconnectAttempt++
     const delay = Math.min(
@@ -309,6 +360,8 @@ class PocketnetWsService {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
+    this.clearConnectTimer()
+    this.subscribingAddresses.clear()
 
     if (this.socket) {
       this.socket.onclose = null
