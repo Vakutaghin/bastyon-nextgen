@@ -174,9 +174,14 @@ export function detectPrivateKeyFormat(privateKey: PrivateKey): PrivateKeyFormat
     if (validateMnemonic(normalizedMnemonic2)) return 'mnemonic'
   }
 
-  // Проверка на WIF формат
+  // Проверка на WIF формат.
+  // ВАЖНО: WIF (Base58Check) регистрозависим, а `trimmed` приведён к нижнему
+  // регистру (нужно для мнемоники/hex). Сжатые WIF начинаются с 'K'/'L' —
+  // после toLowerCase() они становятся невалидными, поэтому для WIF используем
+  // строку без понижения регистра.
+  const trimmedRaw = privateKey.trim()
   try {
-    ECPair.fromWIF(trimmed)
+    ECPair.fromWIF(trimmedRaw)
     return 'wif'
   } catch {
     // Не WIF
@@ -252,9 +257,12 @@ export function detectMnemonicWordlist(mnemonic: Mnemonic): any {
     const wl = bip39.wordlists || {}
     const bip39Russian = getBip39Russian()
 
-    if (bip39Russian?.validateMnemonic?.(normalized) && bip39Russian?.wordlists?.russian) {
-      return bip39Russian.wordlists.russian
-    }
+    // ВНИМАНИЕ: НЕ используем bip39Russian.validateMnemonic как признак «русской»
+    // фразы — он по умолчанию валидирует ПО АНГЛИЙСКОМУ wordlist, поэтому
+    // английская мнемоника ошибочно определялась как русская, и последующая
+    // seed-деривация (mnemonicToSeed против русского словаря) падала
+    // ('Invalid mnemonic phrase'). Проверка именно против русского wordlist
+    // выполняется ниже (после английской и стандартной).
     // Явно английский первым (как в validateMnemonic)
     if (wl.english && Array.isArray(wl.english)) {
       try {

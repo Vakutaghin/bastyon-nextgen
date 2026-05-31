@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest'
+import { setI18nLocale } from '@/i18n'
 import {
   formatRelativeTime,
   formatRelativeTimeMs,
@@ -6,6 +7,11 @@ import {
   formatDateTimeFull,
   formatDateTimeFromString,
 } from './date-formatter'
+
+// formatRelativeTime теперь резолвит относительное время через i18n; фиксируем
+// локаль 'ru', т.к. ассерты ниже сравнивают с русскими строками (в тест-окружении
+// navigator.language → en, иначе вернулся бы английский).
+beforeAll(() => setI18nLocale('ru'))
 
 describe('formatRelativeTime', () => {
   afterEach(() => {

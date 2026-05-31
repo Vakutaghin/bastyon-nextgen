@@ -10,8 +10,11 @@
 import { Buffer } from '../../utils/buffer-polyfill'
 // @ts-expect-error - no types for bs58/bech32
 import bs58 from 'bs58'
+// bech32 экспортирует только именованные { bech32, bech32m } — дефолтного
+// экспорта нет, поэтому `import bech32 from 'bech32'` давал namespace без
+// .toWords/.encode и ронял toBech32() (генерацию P2WPKH-адресов).
 // @ts-expect-error - no types for bs58/bech32
-import bech32 from 'bech32'
+import { bech32 } from 'bech32'
 import CryptoJS from 'crypto-js'
 
 export function localHash256(buffer: Buffer): Buffer {

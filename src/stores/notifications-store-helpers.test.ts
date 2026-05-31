@@ -88,7 +88,7 @@ describe('mapMissedEventToNotification', () => {
     expect(result).not.toBeNull()
     expect(result!.id).toBe('abc123')
     expect(result!.type).toBe('rating')
-    expect(result!.title).toBe('Оценка поста')
+    expect(result!.title).toBe('notif.titleUpvoteShare')
     expect(result!.description).toBe('Оценка: 5')
     expect(result!.time).toBe(1700000000)
     expect(result!.read).toBe(false)
@@ -104,7 +104,7 @@ describe('mapMissedEventToNotification', () => {
     })
     expect(result).not.toBeNull()
     expect(result!.type).toBe('subscribe')
-    expect(result!.title).toBe('Новый подписчик')
+    expect(result!.title).toBe('notif.titleSubscribe')
   })
 
   it('maps comment event', () => {
@@ -115,7 +115,7 @@ describe('mapMissedEventToNotification', () => {
     })
     expect(result).not.toBeNull()
     expect(result!.type).toBe('comment')
-    expect(result!.title).toBe('Ответ на комментарий')
+    expect(result!.title).toBe('notif.titleAnswer')
   })
 
   it('maps unknown mesType to "other" (which is allowed)', () => {
@@ -126,7 +126,7 @@ describe('mapMissedEventToNotification', () => {
     })
     expect(result).not.toBeNull()
     expect(result!.type).toBe('other')
-    expect(result!.title).toBe('Уведомление')
+    expect(result!.title).toBe('notif.titleDefault')
   })
 
   it('uses fallback time when time is missing', () => {

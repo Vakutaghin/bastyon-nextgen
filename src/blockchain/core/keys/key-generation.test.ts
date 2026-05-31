@@ -8,6 +8,7 @@ import {
   generateKeyPairFromMnemonic,
   generateKeys,
   clearKeyCache,
+  deriveMessengerKeys,
 } from './key-generator'
 import {
   recoverKeyPairFromHex,
@@ -670,5 +671,42 @@ describe('clearKeyCache', () => {
       clearKeyCache()
       clearKeyCache()
     }).not.toThrow()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// deriveMessengerKeys — legacy-ключи мессенджера по пути m/33'/0'/0'/n'.
+// Используются в messenger-chat-store и retry-registration-tx.
+// ---------------------------------------------------------------------------
+describe('deriveMessengerKeys', () => {
+  // 32-байтный seed (как privateKey/seed для BIP32.fromSeed)
+  const SEED = Buffer.from('11'.repeat(32), 'hex')
+
+  it('возвращает 12 ключей', () => {
+    expect(deriveMessengerKeys(SEED)).toHaveLength(12)
+  })
+
+  it('каждый ключ: приватный 64 hex (32 байта), публичный 66 hex (33 байта)', () => {
+    for (const k of deriveMessengerKeys(SEED)) {
+      expect(k.private).toMatch(/^[0-9a-f]{64}$/)
+      expect(k.public).toMatch(/^[0-9a-f]{66}$/)
+    }
+  })
+
+  it('детерминирован для одного seed', () => {
+    const a = deriveMessengerKeys(SEED)
+    const b = deriveMessengerKeys(SEED)
+    expect(a).toEqual(b)
+  })
+
+  it('разные индексы дают разные ключи (деривация по пути)', () => {
+    const keys = deriveMessengerKeys(SEED)
+    const uniquePrivates = new Set(keys.map((k) => k.private))
+    expect(uniquePrivates.size).toBe(12)
+  })
+
+  it('разные seed дают разные наборы ключей', () => {
+    const other = deriveMessengerKeys(Buffer.from('22'.repeat(32), 'hex'))
+    expect(other[0].private).not.toBe(deriveMessengerKeys(SEED)[0].private)
   })
 })
