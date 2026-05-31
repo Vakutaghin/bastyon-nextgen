@@ -6,6 +6,7 @@ import wasm from 'vite-plugin-wasm'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import babel from 'vite-plugin-babel'
 import { VitePWA } from 'vite-plugin-pwa'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
 
@@ -136,6 +137,11 @@ export default defineConfig(({ mode }) => ({
     }),
     // Плагин для добавления data-styled-name только в dev-режиме
     // ...(mode === 'development' ? [ styledDataAttr() ] : []),
+    // Визуализатор бандла: включается через BUNDLE_ANALYZE=1 pnpm build.
+    // Открывает stats.html после билда (treemap), помогает находить раздутые чанки.
+    ...(process.env.BUNDLE_ANALYZE === '1'
+      ? [visualizer({ filename: 'dist/stats.html', open: true, gzipSize: true, brotliSize: true })]
+      : []),
   ],
 
   resolve: {
@@ -180,13 +186,17 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'esnext', // Поддержка top-level await для WebAssembly
     minify: 'esbuild',
-    // Настройки для больших файлов (btc17.js ~900KB)
-    chunkSizeWarningLimit: 1000,
+    // 500 KB — порог, выше которого rollup ругается. Понижено с 1000, чтобы регрессы ловились на CI.
+    // Известные чанки выше порога: pocketnet-bitcoin (~900 KB) — это вендоренный btc17.js, выше не оптимизируется.
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
-        // Оптимизация для больших модулей
         manualChunks: {
           'pocketnet-bitcoin': ['src/blockchain/lib/pocketnet/btc17.js'],
+          // Тяжёлые runtime-либы — отдельные чанки, не попадают в mainBundle.
+          'matrix-sdk': ['matrix-js-sdk'],
+          'video-hls': ['hls.js'],
+          pixi: ['pixi.js'],
         },
       },
     },
