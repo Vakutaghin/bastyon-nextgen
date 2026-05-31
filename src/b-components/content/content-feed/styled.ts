@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-
+import { Z_INDEX } from '@/styles/design-tokens'
 
 export const SC_Feed = styled.div`
   width: 100%;
@@ -148,7 +148,10 @@ export const SC_ScrollToTop = styled.button`
   border-radius: 8px;
   cursor: pointer;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
 
   &:hover {
     background: ${COLORS.WHITE_95};
@@ -163,4 +166,29 @@ export const SC_ScrollToTop = styled.button`
   .anticon {
     font-size: 14px;
   }
+`
+
+export const SC_PhotoPreviewOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: ${Z_INDEX.MODAL};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  gap: 16px;
+`
+
+export const SC_PhotoPreviewImage = styled.img`
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+`
+
+export const SC_PhotoPreviewHint = styled.div`
+  color: ${COLORS.WHITE};
+  font-size: 14px;
+  opacity: 0.85;
 `
