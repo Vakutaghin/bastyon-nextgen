@@ -1,7 +1,7 @@
 <template>
   <Modal
     v-model:open="isOpen"
-    title="Регистрация"
+    :title="t('auth.registerTitle')"
     :width="500"
     :centered="true"
     :closable="true"
@@ -11,13 +11,13 @@
   >
     <SC_RegisterForm>
       <SC_FormItem>
-        <SC_FormLabel for="register-nickname"> Псевдоним </SC_FormLabel>
+        <SC_FormLabel for="register-nickname"> {{ t('auth.nickname') }} </SC_FormLabel>
         <SC_InputWrapper>
           <input
             id="register-nickname"
             class="ant-input"
             :value="nickname"
-            placeholder="Введите псевдоним"
+            :placeholder="t('auth.nicknamePlaceholder')"
             :disabled="loading"
             maxlength="20"
             @input="onNicknameInput"
@@ -25,22 +25,21 @@
           />
         </SC_InputWrapper>
         <SC_FormHint>
-          Максимум 20 символов. Только латинские буквы, цифры и нижнее подчеркивание. Русские буквы
-          автоматически транслитерируются.
+          {{ t('auth.nicknameHint') }}
         </SC_FormHint>
       </SC_FormItem>
 
       <SC_FormItem>
         <SC_FormLabel for="register-email">
-          Email
-          <SC_FormLabelOptional>(необязательно)</SC_FormLabelOptional>
+          {{ t('auth.email') }}
+          <SC_FormLabelOptional>{{ t('auth.optional') }}</SC_FormLabelOptional>
         </SC_FormLabel>
         <SC_InputWrapper>
           <input
             id="register-email"
             :value="email"
             type="email"
-            placeholder="Введите email"
+            :placeholder="t('auth.emailPlaceholder')"
             :disabled="loading"
             @input="onEmailInput"
             @keyup.enter="handleRegister"
@@ -53,21 +52,21 @@
       </SC_ErrorMessage>
 
       <SC_LinkToSignIn>
-        Уже зарегистрированы?
-        <SC_LinkButton @click="handleOpenSignIn"> Войти </SC_LinkButton>
+        {{ t('auth.alreadyRegistered') }}
+        <SC_LinkButton @click="handleOpenSignIn"> {{ t('auth.signIn') }} </SC_LinkButton>
       </SC_LinkToSignIn>
     </SC_RegisterForm>
 
     <template #footer>
       <div style="display: flex; justify-content: flex-end; gap: 8px">
-        <Button type="default" :disabled="loading" @click="handleCancel"> Отмена </Button>
+        <Button type="default" :disabled="loading" @click="handleCancel"> {{ t('auth.cancel') }} </Button>
         <Button
           type="primary"
           :loading="loading"
           :disabled="!isFormValid || loading"
           @click="handleRegister"
         >
-          Зарегистрироваться
+          {{ t('auth.register') }}
         </Button>
       </div>
     </template>
@@ -76,6 +75,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { debugLog } from '@/helpers/common/debug-log'
 import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
@@ -120,6 +120,7 @@ const emit = defineEmits<{
   openSignIn: []
 }>()
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const nickname = ref('')
@@ -237,7 +238,7 @@ async function handleRegister(): Promise<void> {
     })
 
     if (!registrationResult?.address) {
-      throw new Error('Не удалось создать аккаунт')
+      throw new Error(t('auth.errorCreateAccount'))
     }
     debugLog('[REG] Step 2: keys generated, address:', registrationResult.address)
 
@@ -271,7 +272,7 @@ async function handleRegister(): Promise<void> {
     sendTransactionInBackground(nickname.value)
   } catch (err) {
     console.error('[REG] ERROR:', err)
-    error.value = err instanceof Error ? err.message : 'Произошла ошибка при регистрации'
+    error.value = err instanceof Error ? err.message : t('auth.errorRegistration')
     const pending = loadPendingRegistration()
     if (!pending || pending.step < 1) {
       authStore.resetAuthOnRegistrationError()
@@ -388,11 +389,13 @@ async function checkNameAvailability(name: string): Promise<void> {
     if (Array.isArray(response) && response.length > 0 && response[0]?.address) {
       const existingAddress = response[0].address
       if (existingAddress !== authStore.getUserAddress) {
-        throw new Error('Это имя уже занято. Пожалуйста, выберите другое.')
+        const nameTakenError = new Error(t('auth.errorNameTaken'))
+        ;(nameTakenError as Error & { isNameTaken?: boolean }).isNameTaken = true
+        throw nameTakenError
       }
     }
   } catch (err) {
-    if (err instanceof Error && err.message.includes('уже занято')) throw err
+    if ((err as { isNameTaken?: boolean })?.isNameTaken) throw err
   }
 }
 

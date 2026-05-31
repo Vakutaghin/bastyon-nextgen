@@ -1,5 +1,5 @@
 <template>
-  <SC_SettingsSectionTitle>Общие</SC_SettingsSectionTitle>
+  <SC_SettingsSectionTitle>{{ t('settings.tabs.general') }}</SC_SettingsSectionTitle>
   <SC_GeneralBlock>
     <SC_GeneralRow>
       <SC_GeneralLabel>{{ languageLabel }}</SC_GeneralLabel>
@@ -16,7 +16,7 @@
       </SC_LangSwitcher>
     </SC_GeneralRow>
     <SC_GeneralRow>
-      <SC_GeneralLabel>Тема оформления</SC_GeneralLabel>
+      <SC_GeneralLabel>{{ t('settings.general.theme') }}</SC_GeneralLabel>
       <SC_LangSwitcher>
         <SC_LangButton
           v-for="opt in themeOptions"
@@ -25,7 +25,7 @@
           type="button"
           @click="setTheme(opt.value)"
         >
-          {{ opt.label }}
+          {{ t(opt.labelKey) }}
         </SC_LangButton>
       </SC_LangSwitcher>
     </SC_GeneralRow>
@@ -60,9 +60,9 @@ async function onSetLanguage(language: AppLanguage): Promise<void> {
 }
 
 const { mode: themeMode, setMode: setTheme } = useTheme()
-const themeOptions: { value: ThemeMode; label: string }[] = [
-  { value: 'auto', label: 'Авто' },
-  { value: 'light', label: 'Светлая' },
-  { value: 'dark', label: 'Тёмная' },
+const themeOptions: { value: ThemeMode; labelKey: string }[] = [
+  { value: 'auto', labelKey: 'settings.general.themeAuto' },
+  { value: 'light', labelKey: 'settings.general.themeLight' },
+  { value: 'dark', labelKey: 'settings.general.themeDark' },
 ]
 </script>

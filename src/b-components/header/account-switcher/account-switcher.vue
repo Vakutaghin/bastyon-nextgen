@@ -1,7 +1,7 @@
 <template>
   <Modal
     v-model:open="isOpen"
-    title="Сменить аккаунт"
+    :title="t('accounts.switchAccount')"
     :width="500"
     :centered="true"
     :closable="true"
@@ -12,7 +12,7 @@
   >
     <SC_AccountSwitcher>
       <SC_EmptyState v-if="accounts.length === 0">
-        <p>Нет сохраненных аккаунтов</p>
+        <p>{{ t('accounts.noSavedAccounts') }}</p>
       </SC_EmptyState>
 
       <SC_AccountsList v-else>
@@ -39,20 +39,20 @@
                 {{ formatBalance(account.balance) }} PKOIN
               </SC_AccountBalance>
 
-              <SC_AccountLoading v-else-if="account.loading"> Загрузка... </SC_AccountLoading>
+              <SC_AccountLoading v-else-if="account.loading"> {{ t('accounts.loading') }} </SC_AccountLoading>
             </SC_AccountInfo>
 
-            <SC_AccountBadge v-if="account.address === currentAddress"> Текущий </SC_AccountBadge>
+            <SC_AccountBadge v-if="account.address === currentAddress"> {{ t('accounts.current') }} </SC_AccountBadge>
           </SC_AccountItemContent>
 
           <SC_AccountActions>
             <SC_KeyIcon
-              title="Показать сид-фразу"
+              :title="t('accounts.showSeedPhrase')"
               @click.stop="handleShowMnemonic(account.address)"
             >
               <img :src="keyIcon" alt="Key" />
             </SC_KeyIcon>
-            <SC_LogoutIcon title="Выйти" @click.stop="handleDeleteAccount(account.address)">
+            <SC_LogoutIcon :title="t('accounts.logout')" @click.stop="handleDeleteAccount(account.address)">
               <LogoutOutlined />
             </SC_LogoutIcon>
           </SC_AccountActions>
@@ -61,7 +61,7 @@
 
       <SC_AddAccountSection>
         <Button type="primary" block :loading="addingAccount" @click="handleAddAccount">
-          + Добавить аккаунт
+          {{ t('accounts.addAccount') }}
         </Button>
       </SC_AddAccountSection>
     </SC_AccountSwitcher>
@@ -95,6 +95,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { LogoutOutlined } from '@ant-design/icons-vue'
 import Modal from '@/components/modal/modal.vue'
 import Avatar from '@/components/avatar/avatar.vue'
@@ -134,6 +135,8 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const { t } = useI18n()
+
 const authStore = useAuthStore()
 
 const accounts = ref<AccountDisplayInfo[]>([])
@@ -162,7 +165,7 @@ async function loadAccounts(): Promise<void> {
 }
 
 function formatAddress(address: Address): string {
-  if (!address) return 'Пользователь'
+  if (!address) return t('accounts.user')
   return address.substring(0, 8) + '...'
 }
 

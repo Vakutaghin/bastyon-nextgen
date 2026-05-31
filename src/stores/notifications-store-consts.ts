@@ -15,17 +15,17 @@ export const RETRY_DELAY_MS = 2000
 /** Количество уведомлений в одном запросе */
 export const NOTIFICATIONS_BATCH_LIMIT = 30
 
-/** Маппинг типов событий RPC → отображаемые заголовки */
-export const MESSAGE_TYPE_TITLES: Record<string, string> = {
-  upvoteShare: 'Оценка поста',
-  subscribe: 'Новый подписчик',
-  unsubscribe: 'Отписка',
-  subscribePrivate: 'Приватная подписка',
-  answer: 'Ответ на комментарий',
-  post: 'Новый пост',
-  userInfo: 'Обновление профиля',
-  comment: 'Комментарий',
-  repost: 'Репост',
+/** Маппинг типов событий RPC → i18n-ключи отображаемых заголовков (домен `notif`) */
+export const MESSAGE_TYPE_TITLE_KEYS: Record<string, string> = {
+  upvoteShare: 'notif.titleUpvoteShare',
+  subscribe: 'notif.titleSubscribe',
+  unsubscribe: 'notif.titleUnsubscribe',
+  subscribePrivate: 'notif.titleSubscribePrivate',
+  answer: 'notif.titleAnswer',
+  post: 'notif.titlePost',
+  userInfo: 'notif.titleUserInfo',
+  comment: 'notif.titleComment',
+  repost: 'notif.titleRepost',
 }
 
 /** Маппинг типов событий RPC → нормализованные типы NotificationItem */

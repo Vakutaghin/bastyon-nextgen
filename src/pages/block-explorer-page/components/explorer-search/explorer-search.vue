@@ -5,7 +5,7 @@
         <SC_ExplorerSearchInput
           v-model="query"
           type="text"
-          :placeholder="placeholder"
+          :placeholder="placeholder ?? t('explorerPage.searchPlaceholder')"
           autocomplete="off"
           autocapitalize="off"
           autocorrect="off"
@@ -15,15 +15,15 @@
         />
         <SC_ExplorerSearchHint v-if="hintLabel">{{ hintLabel }}</SC_ExplorerSearchHint>
         <SC_ExplorerSearchButton type="submit" :disabled="!canSubmit || resolving">
-          {{ resolving ? s.search.submitting : s.search.submit }}
+          {{ resolving ? t('explorerPage.searchSubmitting') : t('explorerPage.searchSubmit') }}
         </SC_ExplorerSearchButton>
       </SC_ExplorerSearch>
 
       <SC_SuggestionsDropdown v-if="dropdownVisible">
         <SC_SuggestionsHeader>
-          <span>{{ s.search.suggestionsTitle }}</span>
+          <span>{{ t('explorerPage.searchSuggestionsTitle') }}</span>
           <SC_ClearAllBtn type="button" @click="onClearAll">
-            {{ s.search.clearAll }}
+            {{ t('explorerPage.searchClearAll') }}
           </SC_ClearAllBtn>
         </SC_SuggestionsHeader>
         <SC_SuggestionItem
@@ -39,7 +39,7 @@
           <SC_SuggestionAge>{{ ageLabel(entry.lastVisitedAt) }}</SC_SuggestionAge>
           <SC_RemoveItemBtn
             type="button"
-            :title="s.search.removeFromHistory"
+            :title="t('explorerPage.searchRemoveFromHistory')"
             @click.stop="onRemoveEntry(entry)"
           >
             ×
@@ -56,6 +56,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -71,7 +72,6 @@ import {
   type HistoryKind,
 } from '../../components/shared/use-search-history'
 import { shortenHash, formatRelativeTime } from '../../components/shared/format-explorer'
-import { explorerStrings as s } from '../../block-explorer-strings'
 import {
   SC_ExplorerSearch,
   SC_ExplorerSearchInput,
@@ -89,15 +89,11 @@ import {
   SC_RemoveItemBtn,
 } from './explorer-search.styled'
 
-withDefaults(
-  defineProps<{
-    placeholder?: string
-  }>(),
-  {
-    placeholder: s.search.placeholder,
-  }
-)
+defineProps<{
+  placeholder?: string
+}>()
 
+const { t } = useI18n()
 const router = useRouter()
 const query = ref('')
 const resolving = ref(false)
@@ -113,11 +109,11 @@ const canSubmit = computed(() => classification.value.value.length > 0)
 const hintLabel = computed(() => {
   switch (classification.value.kind) {
     case 'block-height':
-      return s.search.hintBlock
+      return t('explorerPage.searchHintBlock')
     case 'address':
-      return s.search.hintAddress
+      return t('explorerPage.searchHintAddress')
     case 'hash64':
-      return s.search.hintHash
+      return t('explorerPage.searchHintHash')
     default:
       return ''
   }
@@ -129,11 +125,11 @@ const dropdownVisible = computed(() => focused.value && suggestions.value.length
 function kindLabel(kind: HistoryKind): string {
   switch (kind) {
     case 'block':
-      return s.search.suggestionsKindBlock
+      return t('explorerPage.searchSuggestionsKindBlock')
     case 'tx':
-      return s.search.suggestionsKindTx
+      return t('explorerPage.searchSuggestionsKindTx')
     case 'address':
-      return s.search.suggestionsKindAddress
+      return t('explorerPage.searchSuggestionsKindAddress')
   }
 }
 
@@ -230,9 +226,9 @@ async function fallbackServerSearch(value: string) {
     if (type === 'block') return go('explorer-block', value)
     if (type === 'transaction') return go('explorer-tx', value)
     if (type === 'address') return go('explorer-address', value)
-    errorMessage.value = s.search.errorUnknown
+    errorMessage.value = t('explorerPage.searchErrorUnknown')
   } catch (e) {
-    errorMessage.value = e instanceof Error ? e.message : s.search.errorNetwork
+    errorMessage.value = e instanceof Error ? e.message : t('explorerPage.searchErrorNetwork')
   } finally {
     resolving.value = false
   }

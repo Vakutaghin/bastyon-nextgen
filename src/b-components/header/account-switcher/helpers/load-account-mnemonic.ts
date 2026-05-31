@@ -5,6 +5,7 @@
 import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
 import { parseMnemonicOrKey, type ParsedMnemonicOrKey } from '@/helpers/common/mnemonic-parser'
 import type { Address } from '@/blockchain/types/addresses'
+import { t } from '@/i18n'
 
 /** Загружает и парсит мнемонику аккаунта. Бросает с человекочитаемым сообщением. */
 export async function loadAccountMnemonic(address: Address): Promise<ParsedMnemonicOrKey> {
@@ -23,10 +24,10 @@ export async function loadAccountMnemonic(address: Address): Promise<ParsedMnemo
   }
 
   if (!rawData || !rawData.trim()) {
-    throw new Error('Нет сохранённой сид-фразы или ключа для этого аккаунта')
+    throw new Error(t('accountMsg.noSavedSeedOrKey'))
   }
 
   const parsed = parseMnemonicOrKey(rawData)
-  if (!parsed) throw new Error('Неизвестный формат данных')
+  if (!parsed) throw new Error(t('accountMsg.unknownDataFormat'))
   return parsed
 }

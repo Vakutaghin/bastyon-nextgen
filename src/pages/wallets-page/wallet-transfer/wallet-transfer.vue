@@ -2,10 +2,10 @@
   <SC_TransferWidget>
     <SC_TransferSwitch>
       <SC_TransferSwitchBtn type="button" :active="mode === 'send'" @click="mode = 'send'">
-        Отправка
+        {{ t('wallet.send') }}
       </SC_TransferSwitchBtn>
       <SC_TransferSwitchBtn type="button" :active="mode === 'receive'" @click="mode = 'receive'">
-        Получение
+        {{ t('wallet.receive') }}
       </SC_TransferSwitchBtn>
     </SC_TransferSwitch>
 
@@ -14,14 +14,14 @@
       <template v-if="mode === 'send'">
         <SC_TransferField>
           <SC_TransferLabel for="wallet-transfer-receiver">
-            Получатель (имя или адрес)
+            {{ t('wallet.receiverLabel') }}
           </SC_TransferLabel>
           <SC_TransferSearchWrap>
             <SC_TransferInput
               id="wallet-transfer-receiver"
               v-model="receiverSearchQuery"
               type="text"
-              placeholder="Введите имя аккаунта или адрес (P / Z)"
+              :placeholder="t('wallet.receiverPlaceholder')"
               autocomplete="off"
               @input="onSearchInput"
               @blur="onReceiverBlur"
@@ -44,13 +44,13 @@
             v-else-if="searchLoading"
             style="font-size: 12px; color: var(--color-gray-120); margin-top: 4px"
           >
-            Поиск…
+            {{ t('wallet.searching') }}
           </div>
           <SC_TransferLoginChip v-else-if="receiverLogin">
-            <SC_TransferLoginChipText>Логин: {{ receiverLogin }}</SC_TransferLoginChipText>
+            <SC_TransferLoginChipText>{{ t('wallet.login', { login: receiverLogin }) }}</SC_TransferLoginChipText>
             <SC_TransferLoginChipRemove
               type="button"
-              aria-label="Удалить"
+              :aria-label="t('wallet.remove')"
               @click="clearReceiverLink"
             >
               ×
@@ -58,7 +58,7 @@
           </SC_TransferLoginChip>
         </SC_TransferField>
         <SC_TransferField>
-          <SC_TransferLabel for="wallet-transfer-amount">Сумма (PKOIN)</SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-amount">{{ t('wallet.amountLabel') }}</SC_TransferLabel>
           <SC_TransferInput
             id="wallet-transfer-amount"
             v-model="amount"
@@ -70,31 +70,31 @@
         </SC_TransferField>
         <SC_TransferField>
           <SC_TransferLabel for="wallet-transfer-message">
-            Сообщение (необязательно)
+            {{ t('wallet.messageLabel') }}
           </SC_TransferLabel>
           <SC_TransferTextarea
             id="wallet-transfer-message"
             v-model="message"
-            placeholder="Для чего эта транзакция?"
+            :placeholder="t('wallet.messagePlaceholder')"
             maxlength="80"
           />
         </SC_TransferField>
         <SC_TransferField>
-          <SC_TransferLabel for="wallet-transfer-feemode">Комиссия</SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-feemode">{{ t('wallet.feeLabel') }}</SC_TransferLabel>
           <SC_TransferSelect id="wallet-transfer-feemode" v-model="feemode">
-            <option value="include">Получатель платит</option>
-            <option value="exclude">Отправитель платит</option>
+            <option value="include">{{ t('wallet.feeReceiverPays') }}</option>
+            <option value="exclude">{{ t('wallet.feeSenderPays') }}</option>
           </SC_TransferSelect>
         </SC_TransferField>
         <SC_TransferSubmit type="button" :disabled="!canSend || sending" @click="doSend">
-          {{ sending ? 'Отправка...' : 'Рассчитать комиссию и отправить' }}
+          {{ sending ? t('wallet.sending') : t('wallet.calcAndSend') }}
         </SC_TransferSubmit>
       </template>
 
       <!-- Получение -->
       <template v-else>
         <SC_TransferField v-if="receiveAddressOptions.length > 1">
-          <SC_TransferLabel for="wallet-transfer-receive-target"> Получить на </SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-receive-target"> {{ t('wallet.receiveTo') }} </SC_TransferLabel>
           <SC_TransferSelect id="wallet-transfer-receive-target" v-model="receiveTarget">
             <option v-for="opt in receiveAddressOptions" :key="opt.value" :value="opt.value">
               {{ opt.label }}
@@ -103,31 +103,31 @@
         </SC_TransferField>
         <template v-else-if="receiveAddressOptions.length === 1">
           <SC_TransferField>
-            <SC_TransferLabel>Получить на</SC_TransferLabel>
+            <SC_TransferLabel>{{ t('wallet.receiveTo') }}</SC_TransferLabel>
             <div>{{ receiveAddressOptions[0]?.label }}</div>
           </SC_TransferField>
         </template>
 
         <SC_TransferField v-if="!showReceiveAddress && selectedReceiveAddress">
           <SC_TransferSubmit type="button" @click="showReceiveAddress = true">
-            Показать адрес для получения
+            {{ t('wallet.showReceiveAddress') }}
           </SC_TransferSubmit>
         </SC_TransferField>
 
         <template v-if="showReceiveAddress && selectedReceiveAddress">
           <SC_TransferField>
-            <SC_TransferLabel>Адрес для получения PKOIN</SC_TransferLabel>
+            <SC_TransferLabel>{{ t('wallet.receiveAddressLabel') }}</SC_TransferLabel>
             <SC_TransferRow>
               <SC_TransferAddress>{{ selectedReceiveAddress }}</SC_TransferAddress>
               <SC_TransferCopyBtn type="button" @click="copyAddress">
-                {{ copied ? 'Скопировано' : 'Скопировать' }}
+                {{ copied ? t('wallet.copied') : t('wallet.copy') }}
               </SC_TransferCopyBtn>
             </SC_TransferRow>
           </SC_TransferField>
         </template>
 
         <div v-else-if="!currentAddress" style="color: var(--color-gray-120); font-size: 14px">
-          Войдите в аккаунт, чтобы получить адрес.
+          {{ t('wallet.loginToGetAddress') }}
         </div>
       </template>
 
@@ -139,6 +139,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore, getAdditionalWalletAddressesList } from '@/blockchain'
 import {
   getUnspents,
@@ -181,6 +182,7 @@ interface SearchUser {
   name?: string
 }
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const mode = ref<'receive' | 'send'>('send')
@@ -214,8 +216,10 @@ const receiveAddressOptions = computed(() => {
   const hasMain = !!currentAddress.value
   const hasAdditional = additionalAddresses.value.length > 0
   return [
-    ...(hasMain ? [{ value: 'main' as const, label: 'Основной кошелёк' }] : []),
-    ...(hasAdditional ? [{ value: 'additional' as const, label: 'Дополнительный кошелёк' }] : []),
+    ...(hasMain ? [{ value: 'main' as const, label: t('wallet.mainWallet') }] : []),
+    ...(hasAdditional
+      ? [{ value: 'additional' as const, label: t('wallet.additionalWallet') }]
+      : []),
   ]
 })
 
@@ -325,8 +329,8 @@ function onReceiverBlur(): void {
   if (!result.isValid) {
     receiverAddressValidationError.value =
       result.error === 'Invalid address format'
-        ? 'Некорректный формат адреса кошелька'
-        : result.error || 'Некорректный адрес'
+        ? t('wallet.errorInvalidAddressFormat')
+        : result.error || t('wallet.errorInvalidAddress')
   }
 }
 
@@ -347,14 +351,14 @@ async function doSend(): Promise<void> {
   const num = Number(amount.value)
   if (!addr || num <= 0) return
   if (feemode.value === 'include' && num <= DEFAULT_TX_FEE) {
-    error.value = 'Сумма должна быть больше комиссии (получатель платит)'
+    error.value = t('wallet.errorAmountLessThanFee')
     return
   }
 
   const mainAddr = currentAddress.value
   const keyPair = authStore.getKeyPair
   if (!mainAddr || !keyPair) {
-    error.value = 'Требуется авторизация'
+    error.value = t('wallet.errorAuthRequired')
     return
   }
 
@@ -371,7 +375,7 @@ async function doSend(): Promise<void> {
     const requiredAmount = feemode.value === 'exclude' ? num + DEFAULT_TX_FEE : num
     const selected = selectBestUnspents(unspents, requiredAmount)
     if (!selected.length) {
-      throw new Error('Недостаточно средств для перевода с учётом комиссии')
+      throw new Error(t('wallet.errorInsufficientFunds'))
     }
 
     const built = await buildTransferTransaction({
@@ -390,14 +394,14 @@ async function doSend(): Promise<void> {
       messageData: built.messageData,
       operationType: 'transaction',
     })
-    success.value = `Перевод отправлен. TXID: ${txid.slice(0, 16)}…`
+    success.value = t('wallet.transferSent', { txid: txid.slice(0, 16) })
     receiverAddress.value = ''
     receiverLogin.value = null
     receiverSearchQuery.value = ''
     amount.value = ''
     message.value = ''
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Не удалось отправить перевод'
+    error.value = e instanceof Error ? e.message : t('wallet.errorTransferFailed')
   } finally {
     sending.value = false
   }

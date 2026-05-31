@@ -2,7 +2,7 @@
   <SC_PostModalWrapper>
     <Modal
       :open="isModalOpen"
-      title="Пост"
+      :title="t('postCard.postTitle')"
       :full-width="fullWidth"
       :centered="true"
       :closable="true"
@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
@@ -45,6 +46,7 @@ const emit = defineEmits<{
   share: [postId: string | number]
 }>()
 
+const { t } = useI18n()
 const modalStore = useModalStore()
 const postsStore = usePostsStore()
 const { postModal } = storeToRefs(modalStore)

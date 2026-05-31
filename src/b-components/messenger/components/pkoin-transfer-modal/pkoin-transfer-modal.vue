@@ -4,17 +4,17 @@
       <SC_Modal>
         <SC_Header>
           <span aria-hidden="true">💎</span>
-          <span>Отправить PKOIN</span>
+          <span>{{ t('messenger.sendPkoin') }}</span>
         </SC_Header>
 
         <SC_Body>
           <SC_Field>
-            <SC_Label>Получатель</SC_Label>
+            <SC_Label>{{ t('messenger.recipient') }}</SC_Label>
             <SC_Recipient>{{ toAddress }}</SC_Recipient>
           </SC_Field>
 
           <SC_Field>
-            <SC_Label for="pkoin-amount-input">Сумма (PKOIN)</SC_Label>
+            <SC_Label for="pkoin-amount-input">{{ t('messenger.amountPkoin') }}</SC_Label>
             <SC_Input
               id="pkoin-amount-input"
               :ref="setAmountInputRef"
@@ -29,11 +29,11 @@
           </SC_Field>
 
           <SC_Field>
-            <SC_Label for="pkoin-msg-input">Сообщение (необязательно)</SC_Label>
+            <SC_Label for="pkoin-msg-input">{{ t('messenger.messageOptional') }}</SC_Label>
             <SC_Textarea
               id="pkoin-msg-input"
               v-model="messageText"
-              placeholder="За кофе, спасибо…"
+              :placeholder="t('messenger.pkoinMessagePlaceholder')"
               rows="2"
               maxlength="200"
               :disabled="sending"
@@ -44,14 +44,14 @@
         </SC_Body>
 
         <SC_Footer>
-          <SC_Button type="button" :disabled="sending" @click="onCancel">Отмена</SC_Button>
+          <SC_Button type="button" :disabled="sending" @click="onCancel">{{ t('messenger.cancel') }}</SC_Button>
           <SC_Button
             type="button"
             :primary="true"
             :disabled="!canSubmit || sending"
             @click="onSubmit"
           >
-            {{ sending ? 'Отправляем…' : 'Отправить' }}
+            {{ sending ? t('messenger.sending') : t('messenger.send') }}
           </SC_Button>
         </SC_Footer>
       </SC_Modal>
@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMessengerStore } from '../../store'
 import {
   SC_Backdrop,
@@ -89,6 +90,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useMessengerStore()
+const { t } = useI18n()
 
 const amount = ref('')
 const messageText = ref('')
@@ -158,10 +160,10 @@ const onSubmit = async () => {
       reset()
       emit('close')
     } else {
-      submitError.value = 'Не удалось отправить транзакцию'
+      submitError.value = t('messenger.transactionFailed')
     }
   } catch (e) {
-    submitError.value = e instanceof Error ? e.message : 'Ошибка отправки'
+    submitError.value = e instanceof Error ? e.message : t('messenger.sendError')
   } finally {
     sending.value = false
   }

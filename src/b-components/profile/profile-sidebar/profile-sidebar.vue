@@ -12,27 +12,27 @@
 
       <SC_UserStats>
         <SC_StatItem>
-          <SC_StatLabel>Репутация</SC_StatLabel>
+          <SC_StatLabel>{{ t('profile.reputation') }}</SC_StatLabel>
           <SC_StatValue>{{ formattedReputation }}</SC_StatValue>
         </SC_StatItem>
 
         <SC_StatItem>
-          <SC_StatLabel>Подписчики</SC_StatLabel>
+          <SC_StatLabel>{{ t('profile.subscribers') }}</SC_StatLabel>
           <SC_StatValue>{{ profile.subscribers_count || 0 }}</SC_StatValue>
         </SC_StatItem>
 
         <SC_StatItem>
-          <SC_StatLabel>Подписки</SC_StatLabel>
+          <SC_StatLabel>{{ t('profile.subscriptions') }}</SC_StatLabel>
           <SC_StatValue>{{ profile.subscribes_count || 0 }}</SC_StatValue>
         </SC_StatItem>
       </SC_UserStats>
 
       <SC_StartChatButton :disabled="!userAddress" @click="startChatWithUser">
-        Начать чат
+        {{ t('profile.startChat') }}
       </SC_StartChatButton>
 
       <SC_UserAbout v-if="formattedUserAbout">
-        <h3>Информация</h3>
+        <h3>{{ t('profile.info') }}</h3>
 
         <p v-html="formattedUserAbout" />
         <hr />
@@ -49,7 +49,7 @@
           >
             <SC_ExplorerLink :href="href" @click="navigate">
               <BlockOutlined :style="ICON_SIZE_11" />
-              Открыть в блок-эксплорере
+              {{ t('profile.openInExplorer') }}
             </SC_ExplorerLink>
           </RouterLink>
         </SC_ExplorerLinkRow>
@@ -59,13 +59,13 @@
         </SC_UserSite>
 
         <div>
-          <span>Публикации: </span>
+          <span>{{ t('profile.publications') }} </span>
           <strong>{{ publicationsCount }}</strong>
         </div>
 
         <div v-if="profile.regdate">
           <span
-            >Регистрация: <strong>{{ formattedDate }}</strong></span
+            >{{ t('profile.registered') }} <strong>{{ formattedDate }}</strong></span
           >
         </div>
       </SC_UserAbout>
@@ -84,6 +84,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { LoadingOutlined, BlockOutlined } from '@ant-design/icons-vue'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -114,6 +115,7 @@ interface ProfileWithAccSet extends UserProfile {
 }
 
 const props = defineProps<{ profile?: UserProfile | null }>()
+const { t } = useI18n()
 const messengerStore = useMessengerStore()
 
 const userAvatar = computed<string | null>(() => {

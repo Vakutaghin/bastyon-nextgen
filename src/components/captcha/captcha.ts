@@ -5,6 +5,7 @@
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import type { CaptchaData } from '@/blockchain/api/captcha-api'
 import { captchaAPI } from '@/blockchain/api/captcha-api'
+import { t } from '@/i18n'
 
 // Типы для HexCaptcha
 interface HexCaptchaInstance {
@@ -79,8 +80,8 @@ export function useCaptcha(
   const reasonText = computed(() => {
     if (!p.reason) return ''
     const reasons: Record<string, string> = {
-      registration: 'Регистрация аккаунта',
-      balance: 'Пополнение баланса',
+      registration: t('accountMsg.reasonRegistration'),
+      balance: t('accountMsg.reasonBalance'),
     }
     return reasons[p.reason] || p.reason
   })
@@ -169,23 +170,23 @@ export function useCaptcha(
         // Капча успешно решена - сразу эмитим success
         emit('success', result)
       } else {
-        emit('error', 'Не удалось решить капчу')
+        emit('error', t('accountMsg.captchaSolveFailed'))
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
 
       if (errorMessage === 'captchashots') {
-        emit('error', 'Превышено количество попыток. Пожалуйста, обновите капчу.')
+        emit('error', t('accountMsg.captchaTooManyAttempts'))
         handleRedo()
         return
       }
 
       if (errorMessage === 'captchanotequal_angles') {
-        emit('error', 'Углы не совпадают. Попробуйте еще раз.')
+        emit('error', t('accountMsg.captchaAnglesMismatch'))
         return
       }
 
-      emit('error', errorMessage || 'Ошибка при решении капчи')
+      emit('error', errorMessage || t('accountMsg.captchaError'))
     }
   }
 

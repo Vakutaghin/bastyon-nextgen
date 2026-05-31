@@ -10,6 +10,7 @@ import { ref, computed, h, type Ref, type ComputedRef } from 'vue'
 import { Modal } from 'ant-design-vue'
 import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
 import { haptic } from '@/helpers/common/haptics'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { UserState } from '@/types/rpc-responses/user-state'
@@ -57,13 +58,12 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
     if (value < 0 && shouldShowScamWarningOnDislike(opts.currentUserStateData.value)) {
       const confirmed = await new Promise<boolean>((resolve) => {
         Modal.confirm({
-          title: 'Поставить дизлайк?',
+          title: t('commentsMsg.dislikeConfirmTitle'),
           icon: h(ExclamationCircleOutlined),
-          content:
-            'Слишком много дизлайков может негативно сказаться на вашей репутации. Продолжить?',
-          okText: 'Поставить дизлайк',
+          content: t('commentsMsg.dislikeConfirmContent'),
+          okText: t('commentsMsg.dislikeConfirmOk'),
           okType: 'danger',
-          cancelText: 'Отмена',
+          cancelText: t('commentsMsg.cancel'),
           centered: true,
           onOk: () => resolve(true),
           onCancel: () => resolve(false),
@@ -125,7 +125,7 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
     } catch (e) {
       lastCommentVote.value = prev
       appToast.error({
-        message: e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию',
+        message: e instanceof Error ? e.message : t('commentsMsg.likeError'),
       })
     } finally {
       commentScoreSubmitting.value = null
@@ -146,7 +146,7 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
     } catch (e) {
       lastCommentVote.value = prev
       appToast.error({
-        message: e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию',
+        message: e instanceof Error ? e.message : t('commentsMsg.dislikeError'),
       })
     } finally {
       commentScoreSubmitting.value = null
@@ -169,7 +169,7 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
       delete rest[comment.id]
       commentVotes.value = { ...rest, ...next }
       appToast.error({
-        message: e instanceof Error ? e.message : 'Не удалось поставить лайк комментарию',
+        message: e instanceof Error ? e.message : t('commentsMsg.likeError'),
       })
     } finally {
       commentScoreSubmitting.value = null
@@ -191,7 +191,7 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
       delete rest[comment.id]
       commentVotes.value = { ...rest, ...next }
       appToast.error({
-        message: e instanceof Error ? e.message : 'Не удалось поставить дизлайк комментарию',
+        message: e instanceof Error ? e.message : t('commentsMsg.dislikeError'),
       })
     } finally {
       commentScoreSubmitting.value = null

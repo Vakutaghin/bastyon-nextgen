@@ -39,17 +39,20 @@ const DEFAULT_FILTERS: NotificationFiltersState = {
   commentScore: true
 }
 
-/** Подписи для настроек (как в старом приложении) */
-export const NOTIFICATION_FILTER_LABELS: Record<NotificationFilterKey, string> = {
-  sound: 'Звук',
-  win: 'Coinstake выигрыш',
-  transactions: 'Транзакция получена',
-  upvotes: 'Новая оценка (лайки)',
-  downvotes: 'Новая негативная оценка',
-  comments: 'Новый комментарий',
-  answers: 'Новый ответ на комментарий',
-  followers: 'Новый подписчик',
-  commentScore: 'Рейтинг комментария'
+/**
+ * i18n-ключи подписей для настроек (домен `notif`).
+ * Значения — ключи, резолвятся через t() в компоненте при рендере.
+ */
+export const NOTIFICATION_FILTER_LABEL_KEYS: Record<NotificationFilterKey, string> = {
+  sound: 'notif.filterSound',
+  win: 'notif.filterWin',
+  transactions: 'notif.filterTransactions',
+  upvotes: 'notif.filterUpvotes',
+  downvotes: 'notif.filterDownvotes',
+  comments: 'notif.filterComments',
+  answers: 'notif.filterAnswers',
+  followers: 'notif.filterFollowers',
+  commentScore: 'notif.filterCommentScore'
 }
 
 export const useNotificationSettingsStore = defineStore('notificationSettings', {

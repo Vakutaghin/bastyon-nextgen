@@ -2,8 +2,8 @@
   <APopover v-model:open="authPopoverVisible" trigger="click" placement="bottom">
     <template #content>
       <SC_AuthPopoverContent>
-        <p>Войдите или зарегистрируйтесь, чтобы оценивать посты</p>
-        <AButton type="primary" size="small" @click="openAuthModal">Войти</AButton>
+        <p>{{ t('postCard.authPrompt') }}</p>
+        <AButton type="primary" size="small" @click="openAuthModal">{{ t('postCard.login') }}</AButton>
       </SC_AuthPopoverContent>
     </template>
     <!-- Обёртка перехватывает клик до popover, чтобы решить — открывать его или сразу
@@ -18,7 +18,7 @@
             @click="(e) => handleStarClick(n, e)"
           >
             <!-- Пустая контурная звезда (фон) — всегда видна. -->
-            <StarOutlined class="star-bg" :style="{ color: 'rgba(255, 193, 7, 0.3)' }" />
+            <StarOutlined class="star-bg" :style="{ color: 'var(--color-warning-track)' }" />
 
             <!-- Полностью заполненная звезда поверх. -->
             <SC_StarFilled v-if="displayRating >= n">
@@ -38,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { Popover as APopover, Button as AButton } from 'ant-design-vue'
 import { StarOutlined, StarFilled, UserOutlined } from '@ant-design/icons-vue'
 import { useStarRating } from './use-star-rating'
@@ -61,6 +62,8 @@ const emit = defineEmits<{
   'rating-change': [rating: number]
   error: [error: unknown]
 }>()
+
+const { t } = useI18n()
 
 const {
   authPopoverVisible,

@@ -1,9 +1,9 @@
 <template>
   <a-modal
     :open="isOpen && !!payment"
-    title="Подтверждение платежа"
-    :ok-text="sending ? 'Отправка…' : 'Подтвердить'"
-    cancel-text="Отмена"
+    :title="t('miniapps.paymentTitle')"
+    :ok-text="sending ? t('miniapps.sending') : t('miniapps.confirm')"
+    :cancel-text="t('miniapps.cancel')"
     :ok-button-props="{ disabled: sending }"
     :cancel-button-props="{ disabled: sending }"
     :closable="!sending"
@@ -13,7 +13,7 @@
     @cancel="onCancel"
   >
     <SC_Wrap v-if="payment">
-      <SC_AppRow v-if="appName">Запросило: {{ appName }}</SC_AppRow>
+      <SC_AppRow v-if="appName">{{ t('miniapps.paymentRequestedBy', { name: appName }) }}</SC_AppRow>
       <SC_RecieverList>
         <SC_RecieverRow v-for="(r, idx) in payment.recievers" :key="idx">
           <SC_RecieverAddr>{{ r.address }}</SC_RecieverAddr>
@@ -21,13 +21,15 @@
         </SC_RecieverRow>
       </SC_RecieverList>
       <SC_TotalRow>
-        <span>Итого:</span>
+        <span>{{ t('miniapps.paymentTotal') }}</span>
         <SC_TotalAmount>{{ formatAmount(total) }} PKOIN</SC_TotalAmount>
       </SC_TotalRow>
       <SC_FeeRow>
-        Комиссия: {{ formatAmount(DEFAULT_TX_FEE) }} PKOIN ({{ feemodeLabel }})
+        {{ t('miniapps.paymentFee', { amount: formatAmount(DEFAULT_TX_FEE), mode: feemodeLabel }) }}
       </SC_FeeRow>
-      <SC_MessageRow v-if="payment.message">Сообщение: {{ payment.message }}</SC_MessageRow>
+      <SC_MessageRow v-if="payment.message">{{
+        t('miniapps.paymentMessage', { message: payment.message })
+      }}</SC_MessageRow>
       <SC_Error v-if="error">{{ error }}</SC_Error>
     </SC_Wrap>
   </a-modal>
@@ -35,6 +37,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Modal as AModal } from 'ant-design-vue'
 import { useAuthStore } from '@/blockchain'
 import {
@@ -72,13 +75,16 @@ void _
 
 defineProps<{ appName?: string }>()
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const isOpen = computed(() => isPaymentModalOpen.value)
 const payment = computed(() => currentPaymentPayload.value)
 const total = computed(() => (payment.value?.recievers ?? []).reduce((s, r) => s + r.amount, 0))
 const feemodeLabel = computed(() =>
-  payment.value?.feemode === 'exclude' ? 'отправитель платит' : 'получатель платит'
+  payment.value?.feemode === 'exclude'
+    ? t('miniapps.feemodeSenderPays')
+    : t('miniapps.feemodeReceiverPays')
 )
 const sending = ref(false)
 const error = ref<string | null>(null)
@@ -92,7 +98,7 @@ async function onConfirm() {
   const mainAddr = authStore.getUserAddress
   const keyPair = authStore.getKeyPair
   if (!mainAddr || !keyPair) {
-    error.value = 'Требуется авторизация'
+    error.value = t('miniapps.errorAuthRequired')
     return
   }
 
@@ -107,7 +113,7 @@ async function onConfirm() {
     const available = filterAvailableUnspents(all, false)
     const selected = selectBestUnspents(available, requiredAmount)
     if (!selected.length) {
-      throw new Error('Недостаточно средств для платежа с учётом комиссии')
+      throw new Error(t('miniapps.errorInsufficientFunds'))
     }
 
     const built = await buildTransferTransaction({
@@ -131,7 +137,7 @@ async function onConfirm() {
     })
     resolvePaymentModal({ transaction: txid, completed: true })
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Не удалось отправить платёж'
+    error.value = e instanceof Error ? e.message : t('miniapps.errorPaymentFailed')
   } finally {
     sending.value = false
   }

@@ -2,7 +2,7 @@
   <SC_StatsCard>
     <SC_StatsHeader>
       <SC_StatsTitleGroup>
-        <SC_StatsTitle>{{ s.stats.title }}</SC_StatsTitle>
+        <SC_StatsTitle>{{ t('explorerPage.statsTitle') }}</SC_StatsTitle>
         <SC_StatsSubtitle>
           {{ subtitle }}
         </SC_StatsSubtitle>
@@ -13,21 +13,21 @@
           :class="{ active: granularity === 'hours' }"
           @click="granularity = 'hours'"
         >
-          {{ s.stats.toggleHours }}
+          {{ t('explorerPage.statsToggleHours') }}
         </SC_StatsToggleBtn>
         <SC_StatsToggleBtn
           type="button"
           :class="{ active: granularity === 'days' }"
           @click="granularity = 'days'"
         >
-          {{ s.stats.toggleDays }}
+          {{ t('explorerPage.statsToggleDays') }}
         </SC_StatsToggleBtn>
       </SC_StatsToggle>
     </SC_StatsHeader>
 
-    <SC_StatsPlaceholder v-if="isLoading">{{ s.common.loading }}</SC_StatsPlaceholder>
-    <SC_StatsPlaceholder v-else-if="error">{{ s.stats.error }}</SC_StatsPlaceholder>
-    <SC_StatsPlaceholder v-else-if="!points.length">{{ s.stats.empty }}</SC_StatsPlaceholder>
+    <SC_StatsPlaceholder v-if="isLoading">{{ t('explorerPage.loading') }}</SC_StatsPlaceholder>
+    <SC_StatsPlaceholder v-else-if="error">{{ t('explorerPage.statsError') }}</SC_StatsPlaceholder>
+    <SC_StatsPlaceholder v-else-if="!points.length">{{ t('explorerPage.statsEmpty') }}</SC_StatsPlaceholder>
     <SC_ChartHost v-else ref="hostRef">
       <svg ref="svgRef" :viewBox="`0 0 ${WIDTH} ${HEIGHT}`" preserveAspectRatio="none" />
     </SC_ChartHost>
@@ -35,7 +35,7 @@
     <SC_Legend v-if="points.length">
       <SC_LegendItem v-for="cat in CATEGORIES" :key="cat.key">
         <SC_LegendDot :style="{ background: cat.color }" />
-        <span>{{ cat.label }}</span>
+        <span>{{ t(cat.labelKey) }}</span>
       </SC_LegendItem>
     </SC_Legend>
   </SC_StatsCard>
@@ -43,10 +43,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
 import { useStatsByHours, useStatsByDays } from '@/composables/use-block-explorer-queries'
 import { aggregateStats, sumTotals, type StatsPoint } from './aggregate-stats'
-import { explorerStrings as s } from '../../block-explorer-strings'
 import {
   SC_StatsCard,
   SC_StatsHeader,
@@ -64,6 +64,8 @@ import {
 
 defineOptions({ name: 'NetworkStatsChart' })
 
+const { t } = useI18n()
+
 const WIDTH = 1200
 const HEIGHT = 280
 const MARGIN = { top: 12, right: 12, bottom: 28, left: 44 }
@@ -73,17 +75,17 @@ interface CategorySpec {
     StatsPoint,
     'content' | 'ratings' | 'subscriptions' | 'accounts' | 'moderation' | 'other'
   >
-  label: string
+  labelKey: string
   color: string
 }
 
 const CATEGORIES: CategorySpec[] = [
-  { key: 'content', label: s.stats.legend.content, color: 'var(--color-ant-blue)' },
-  { key: 'ratings', label: s.stats.legend.ratings, color: 'var(--color-success)' },
-  { key: 'subscriptions', label: s.stats.legend.subscriptions, color: 'var(--color-warning-icon)' },
-  { key: 'accounts', label: s.stats.legend.accounts, color: '#722ed1' },
-  { key: 'moderation', label: s.stats.legend.moderation, color: '#eb2f96' },
-  { key: 'other', label: s.stats.legend.other, color: '#8c8c8c' },
+  { key: 'content', labelKey: 'explorerPage.statsLegendContent', color: 'var(--color-ant-blue)' },
+  { key: 'ratings', labelKey: 'explorerPage.statsLegendRatings', color: 'var(--color-success)' },
+  { key: 'subscriptions', labelKey: 'explorerPage.statsLegendSubscriptions', color: 'var(--color-warning-icon)' },
+  { key: 'accounts', labelKey: 'explorerPage.statsLegendAccounts', color: '#722ed1' },
+  { key: 'moderation', labelKey: 'explorerPage.statsLegendModeration', color: '#eb2f96' },
+  { key: 'other', labelKey: 'explorerPage.statsLegendOther', color: '#8c8c8c' },
 ]
 
 const granularity = ref<'hours' | 'days'>('hours')
@@ -107,7 +109,11 @@ const subtitle = computed(() => {
   const n = points.value.length
   const total = sumTotals(points.value)
   if (!n) return ''
-  return s.stats.subtitle(total, n, granularity.value)
+  const unit =
+    granularity.value === 'hours'
+      ? t('explorerPage.statsUnitHours', { n })
+      : t('explorerPage.statsUnitDays', { n })
+  return t('explorerPage.statsSubtitle', { total: total.toLocaleString('en-US'), unit })
 })
 
 const svgRef = ref<SVGSVGElement | null>(null)
@@ -192,8 +198,12 @@ function renderChart() {
     .style('font-size', '11px')
     .text((i) => {
       const fromEnd = pts.length - 1 - i
-      if (fromEnd === 0) return s.stats.xTickNow
-      return s.stats.xTick(fromEnd, granularity.value)
+      if (fromEnd === 0) return t('explorerPage.statsXTickNow')
+      const suffix =
+        granularity.value === 'hours'
+          ? t('explorerPage.statsUnitSuffixHours')
+          : t('explorerPage.statsUnitSuffixDays')
+      return `-${fromEnd}${suffix}`
     })
 }
 

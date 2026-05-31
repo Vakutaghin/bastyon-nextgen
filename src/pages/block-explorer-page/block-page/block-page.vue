@@ -2,23 +2,23 @@
   <SC_BlockPageWork>
     <SC_BlockPagePage>
       <SC_BlockBreadcrumb>
-        <RouterLink :to="{ name: 'explorer' }">{{ s.common.breadcrumbRoot }}</RouterLink>
-        <span> / {{ s.block.breadcrumb }}</span>
+        <RouterLink :to="{ name: 'explorer' }">{{ t('explorerPage.breadcrumbRoot') }}</RouterLink>
+        <span> / {{ t('explorerPage.blockBreadcrumb') }}</span>
       </SC_BlockBreadcrumb>
 
       <SC_BlockTitle>
-        {{ s.block.breadcrumb }}
+        {{ t('explorerPage.blockBreadcrumb') }}
         <SC_TabularNums>{{ heightLabel }}</SC_TabularNums>
       </SC_BlockTitle>
 
       <SC_BlockNav>
         <SC_BlockNavBtn type="button" :disabled="!prevHash" @click="goTo(prevHash)">
-          <LeftOutlined :style="ICON_SIZE_XS" /> {{ s.block.navPrev }}
+          <LeftOutlined :style="ICON_SIZE_XS" /> {{ t('explorerPage.blockNavPrev') }}
         </SC_BlockNavBtn>
         <SC_BlockNavBtn type="button" :disabled="!nextHash" @click="goTo(nextHash)">
-          {{ s.block.navNext }} <RightOutlined :style="ICON_SIZE_XS" />
+          {{ t('explorerPage.blockNavNext') }} <RightOutlined :style="ICON_SIZE_XS" />
         </SC_BlockNavBtn>
-        <ShareButton v-if="block" :title="s.block.shareTitle(heightLabel)" />
+        <ShareButton v-if="block" :title="t('explorerPage.blockShareTitle', { height: heightLabel })" />
       </SC_BlockNav>
 
       <SC_BlockMetaGrid v-if="blockLoading && !block">
@@ -36,7 +36,7 @@
         <SC_BlockMetaGrid>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              {{ s.block.metaHash }}
+              {{ t('explorerPage.blockMetaHash') }}
               <InfoTooltip term-key="hash" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
@@ -45,42 +45,42 @@
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              {{ s.block.metaHeight }}
+              {{ t('explorerPage.blockMetaHeight') }}
               <InfoTooltip term-key="height" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>#{{ formatNumber(block.height) }}</SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
           <SC_BlockMetaCell>
-            <SC_BlockMetaLabel>{{ s.block.metaTime }}</SC_BlockMetaLabel>
+            <SC_BlockMetaLabel>{{ t('explorerPage.blockMetaTime') }}</SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               {{ formatAbsTime(block.time) }}
               <SC_MutedSm> ({{ formatRelTime(block.time, now) }}) </SC_MutedSm>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
-            <SC_BlockMetaLabel>{{ s.block.metaNTx }}</SC_BlockMetaLabel>
+            <SC_BlockMetaLabel>{{ t('explorerPage.blockMetaNTx') }}</SC_BlockMetaLabel>
             <SC_BlockMetaValue>{{ block.nTx }}</SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              {{ s.block.metaConfirmations }}
+              {{ t('explorerPage.blockMetaConfirmations') }}
               <InfoTooltip term-key="confirmations" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               <span v-if="confirmations > 0">
                 {{ formatNumber(confirmations) }}
-                <span v-if="confirmations === 1" style="font-size: 12px; color: rgb(255, 174, 0)">
-                  {{ s.block.metaConfirmationsTip }}
+                <span v-if="confirmations === 1" style="font-size: 12px; color: var(--color-warning-icon)">
+                  {{ t('explorerPage.blockMetaConfirmationsTip') }}
                 </span>
               </span>
-              <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
+              <SC_Muted v-else>{{ EM_DASH }}</SC_Muted>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              {{ s.block.metaDifficulty }}
+              {{ t('explorerPage.blockMetaDifficulty') }}
               <InfoTooltip term-key="difficulty" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
@@ -97,12 +97,12 @@
             <SC_BlockMetaValue>
               <AddressLink v-if="coinstakeInfo" :address="coinstakeInfo.staker" />
               <Skeleton v-else-if="txLoading" :width="180" :height="14" />
-              <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
+              <SC_Muted v-else>{{ EM_DASH }}</SC_Muted>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              {{ s.block.metaReward }}
+              {{ t('explorerPage.blockMetaReward') }}
               <InfoTooltip term-key="blockReward" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
@@ -110,13 +110,13 @@
                 >{{ formatExplorerPkoin(coinstakeInfo.reward) }} PKOIN</span
               >
               <Skeleton v-else-if="txLoading" :width="100" :height="14" />
-              <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
+              <SC_Muted v-else>{{ EM_DASH }}</SC_Muted>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
 
           <SC_BlockMetaCell>
             <SC_BlockMetaLabel>
-              {{ s.block.metaMerkle }}
+              {{ t('explorerPage.blockMetaMerkle') }}
               <InfoTooltip term-key="merkleRoot" />
             </SC_BlockMetaLabel>
             <SC_BlockMetaValue>
@@ -124,7 +124,7 @@
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
           <SC_BlockMetaCell>
-            <SC_BlockMetaLabel>{{ s.block.metaSiblings }}</SC_BlockMetaLabel>
+            <SC_BlockMetaLabel>{{ t('explorerPage.blockMetaSiblings') }}</SC_BlockMetaLabel>
             <SC_BlockMetaValue>
               <div v-if="block.prevhash" style="margin-bottom: 4px">
                 ←
@@ -140,8 +140,8 @@
                   :to="{ name: 'explorer-block', params: { hashOrHeight: block.nexthash } }"
                 />
               </div>
-              <div v-if="!block.prevhash && !block.nexthash" style="color: rgb(173, 181, 189)">
-                {{ s.common.em }}
+              <div v-if="!block.prevhash && !block.nexthash" style="color: var(--color-text-muted)">
+                {{ EM_DASH }}
               </div>
             </SC_BlockMetaValue>
           </SC_BlockMetaCell>
@@ -149,7 +149,7 @@
 
         <SC_TxSection>
           <SC_TxSectionHeader>
-            <SC_TxSectionTitle>{{ s.block.sectionTxTitle }}</SC_TxSectionTitle>
+            <SC_TxSectionTitle>{{ t('explorerPage.blockSectionTxTitle') }}</SC_TxSectionTitle>
             <SC_TxSectionPager>
               {{ pagerLabel }}
             </SC_TxSectionPager>
@@ -162,8 +162,8 @@
               <SC_TxValue><Skeleton :width="80" :height="12" /></SC_TxValue>
             </SC_TxRow>
           </div>
-          <SC_PlaceholderError v-else-if="txError">{{ s.block.txError }}</SC_PlaceholderError>
-          <SC_Placeholder v-else-if="!txList.length">{{ s.block.txEmpty }}</SC_Placeholder>
+          <SC_PlaceholderError v-else-if="txError">{{ t('explorerPage.blockTxError') }}</SC_PlaceholderError>
+          <SC_Placeholder v-else-if="!txList.length">{{ t('explorerPage.blockTxEmpty') }}</SC_Placeholder>
           <div v-else>
             <SC_TxRow v-for="tx in txList" :key="tx.txid">
               <SC_TxTypeBadge>{{ typeLabel(tx.type) }}</SC_TxTypeBadge>
@@ -174,7 +174,7 @@
             </SC_TxRow>
             <SC_LoadMoreFooter v-if="canLoadMoreTx">
               <SC_LoadMoreBtn type="button" :disabled="txFetching" @click="loadMoreTx">
-                {{ txFetching ? s.common.loading : loadMoreLabel }}
+                {{ txFetching ? t('explorerPage.loading') : loadMoreLabel }}
               </SC_LoadMoreBtn>
             </SC_LoadMoreFooter>
           </div>
@@ -186,6 +186,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
 import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue'
 import { ICON_SIZE_XS } from '@/styles/icon-styles'
@@ -201,7 +202,6 @@ import {
   formatAbsoluteTime as formatAbsTime,
 } from '../components/shared/format-explorer'
 import { useDocumentTitle } from '@/composables/use-document-title'
-import { explorerStrings as s } from '../block-explorer-strings'
 import { useBlockData } from './use-block-data'
 import {
   SC_BlockPageWork,
@@ -234,6 +234,11 @@ import {
 
 defineOptions({ name: 'BlockPage' })
 
+const { t } = useI18n()
+
+// Технический placeholder (em-dash) — не локализуется.
+const EM_DASH = '—'
+
 const p = defineProps<{ hashOrHeight: string }>()
 const router = useRouter()
 
@@ -265,5 +270,5 @@ const {
   now,
 } = useBlockData(queryInput, router)
 
-useDocumentTitle(() => `Блок ${heightLabel.value}`)
+useDocumentTitle(() => t('explorerPage.blockShareTitle', { height: heightLabel.value }))
 </script>

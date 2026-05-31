@@ -3,7 +3,7 @@
 import type { GetMissedInfoEventItem } from '@/types/rpc-responses/get-missed-info'
 
 import {
-  MESSAGE_TYPE_TITLES,
+  MESSAGE_TYPE_TITLE_KEYS,
   MESSAGE_TYPE_MAP,
   ALLOWED_NOTIFICATION_TYPES,
 } from './notifications-store-consts'
@@ -34,7 +34,8 @@ export function mapMissedEventToNotification(
   const nblock = Number(n.nblock ?? 0) || 0
   const mesType = (n.mesType ?? n.type) as string
   const time = Number(n.time ?? n.nTime ?? n.nblock ?? 0) || Math.floor(Date.now() / 1000)
-  const title = MESSAGE_TYPE_TITLES[mesType] ?? 'Уведомление'
+  // i18n-ключ заголовка; резолвится через t() в месте рендера.
+  const title = MESSAGE_TYPE_TITLE_KEYS[mesType] ?? 'notif.titleDefault'
 
   let description: string | undefined
   if (n.upvoteVal != null) description = `Оценка: ${n.upvoteVal}`

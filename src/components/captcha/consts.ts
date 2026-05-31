@@ -1,5 +1,7 @@
 // Константы компонента капчи
 
+import { t } from '@/i18n'
+
 /** Путь к CSS файлу HexCaptcha */
 export const CAPTCHA_CSS_PATH = '/node_modules/hex-captcha/css/captcha.css'
 
@@ -19,13 +21,13 @@ export const MOBILE_SCROLL_DELAY = 200
 export const MOBILE_BREAKPOINT = 768
 
 /** Маппинг причины → отображаемый текст */
-export const REASON_TITLES: Record<string, string> = {
-  registration: 'Регистрация аккаунта',
-  balance: 'Пополнение баланса',
-}
+export const getReasonTitles = (): Record<string, string> => ({
+  registration: t('accountMsg.reasonRegistration'),
+  balance: t('accountMsg.reasonBalance'),
+})
 
 /** Маппинг типа ошибки → текст сообщения */
-export const ERROR_MESSAGES: Record<string, string> = {
-  captchashots: 'Превышено количество попыток. Попробуйте позже.',
-  captchanotequal_angles: 'Углы не совпадают. Попробуйте ещё раз.',
-}
+export const getErrorMessages = (): Record<string, string> => ({
+  captchashots: t('accountMsg.captchaTooManyAttemptsShort'),
+  captchanotequal_angles: t('accountMsg.captchaAnglesMismatch'),
+})

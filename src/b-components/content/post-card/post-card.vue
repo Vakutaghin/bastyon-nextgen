@@ -5,7 +5,7 @@
     <component :is="isRepost ? SC_RepostInnerCard : 'div'">
       <SC_RepostDeleted v-if="isRepost && post.repostDeleted">
         <DeleteOutlined class="repost-deleted-icon" />
-        <span>Публикация удалена</span>
+        <span>{{ t('postCard.repostDeleted') }}</span>
       </SC_RepostDeleted>
 
       <template v-else>
@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { DeleteOutlined } from '@ant-design/icons-vue'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
@@ -226,6 +227,7 @@ const emit = defineEmits<{
   share: [postId: string | number]
 }>()
 
+const { t } = useI18n()
 const modalStore = useModalStore()
 const postsStore = usePostsStore()
 

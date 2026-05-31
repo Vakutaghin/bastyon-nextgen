@@ -26,15 +26,15 @@
         </SC_TorProgressOuter>
 
         <SC_TorBridgeBlock>
-          <SC_TorTitle style="font-size: 12px">Мосты</SC_TorTitle>
+          <SC_TorTitle style="font-size: 12px">{{ t('header.torBridges') }}</SC_TorTitle>
           <RadioGroup
             :value="localKind"
             @change="(e: RadioChangeEvent) => onSelectKind(e.target.value as TorBridgeKind)"
           >
-            <Radio value="none">Без мостов</Radio>
+            <Radio value="none">{{ t('header.torBridgesNone') }}</Radio>
             <Radio value="snowflake">Snowflake</Radio>
-            <Radio value="obfs4">OBFS4 (встроенные)</Radio>
-            <Radio value="custom">Свои OBFS4</Radio>
+            <Radio value="obfs4">{{ t('header.torBridgesObfs4') }}</Radio>
+            <Radio value="custom">{{ t('header.torBridgesCustom') }}</Radio>
           </RadioGroup>
           <SC_TorTextarea
             v-if="localKind === 'custom'"
@@ -44,13 +44,13 @@
           />
           <SC_TorActions>
             <Button size="small" type="primary" :disabled="!dirty" @click="onApplyBridges">
-              Применить
+              {{ t('header.apply') }}
             </Button>
           </SC_TorActions>
-          <SC_TorHint> Изменение мостов перезапустит Tor. </SC_TorHint>
+          <SC_TorHint> {{ t('header.torBridgesRestartHint') }} </SC_TorHint>
         </SC_TorBridgeBlock>
 
-        <SC_TorHint v-if="!available"> Доступно только в десктопном приложении. </SC_TorHint>
+        <SC_TorHint v-if="!available"> {{ t('header.torDesktopOnly') }} </SC_TorHint>
       </SC_TorMenu>
     </template>
   </Dropdown>
@@ -59,6 +59,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import { Dropdown, Switch, Radio, Button, Modal } from 'ant-design-vue'
 import type { RadioChangeEvent } from 'ant-design-vue'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
@@ -84,6 +85,8 @@ import {
 } from './styled'
 
 const RadioGroup = Radio.Group
+
+const { t } = useI18n()
 
 const tor = useTorStore()
 const {
@@ -134,19 +137,22 @@ const variant = computed<'off' | 'busy' | 'ready' | 'failed'>(() => {
 const statusLine = computed<string>(() => {
   switch (status.value) {
     case 'off':
-      return enabled.value ? 'Tor выключается…' : 'Tor выключен'
+      return enabled.value ? t('header.torStatusStopping') : t('header.torStatusOff')
     case 'installing':
       return install.value
-        ? `Загрузка: ${Math.round(install.value.fraction * 100)}% — ${install.value.message}`
-        : 'Установка Tor…'
+        ? t('header.torStatusInstalling', {
+            pct: Math.round(install.value.fraction * 100),
+            message: install.value.message,
+          })
+        : t('header.torStatusInstallingShort')
     case 'starting':
-      return 'Запуск процесса…'
+      return t('header.torStatusStarting')
     case 'bootstrapping':
-      return `Подключение к сети Tor: ${bootstrapPct.value}%`
+      return t('header.torStatusBootstrapping', { pct: bootstrapPct.value })
     case 'ready':
-      return 'Подключено к сети Tor'
+      return t('header.torStatusReady')
     case 'failed':
-      return message.value ? `Ошибка: ${message.value}` : 'Ошибка'
+      return message.value ? t('header.torStatusError', { message: message.value }) : t('header.torError')
     default:
       return ''
   }
@@ -169,9 +175,8 @@ const showProgress = computed<boolean>(
 async function onTriggerClick(): Promise<void> {
   if (!available.value) {
     Modal.info({
-      title: 'Tor доступен только в десктопном приложении',
-      content:
-        'Откройте Bastyon в приложении для рабочего стола — браузерная версия не поддерживает встроенный Tor.',
+      title: t('header.torDesktopOnlyTitle'),
+      content: t('header.torDesktopOnlyContent'),
     })
     return
   }
@@ -194,13 +199,10 @@ async function onToggleSwitch(...args: unknown[]): Promise<void> {
     if (!seen) {
       const ok = await new Promise<boolean>((resolve) => {
         Modal.confirm({
-          title: 'Включить Tor?',
-          content:
-            'При первом запуске будет загружен Tor (~30 МБ). Это может занять минуту. ' +
-            'После подключения весь сетевой трафик приложения пойдёт через сеть Tor. ' +
-            'Чат Matrix может работать с задержками.',
-          okText: 'Включить',
-          cancelText: 'Отмена',
+          title: t('header.torEnableTitle'),
+          content: t('header.torEnableContent'),
+          okText: t('header.torEnableOk'),
+          cancelText: t('header.cancel'),
           onOk: () => {
             localStorage.setItem('tor:seen-consent', '1')
             resolve(true)

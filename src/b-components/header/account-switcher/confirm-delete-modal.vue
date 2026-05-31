@@ -11,24 +11,25 @@
     <template #title>
       <SC_ModalIconRow>
         <ExclamationCircleOutlined :style="ICON_WARNING_24" />
-        <span>Выйти?</span>
+        <span>{{ t('accounts.logoutConfirm') }}</span>
       </SC_ModalIconRow>
     </template>
 
     <SC_ModalBody>
-      <p>Вы уверены, что хотите выйти из аккаунта? Это действие нельзя отменить.</p>
+      <p>{{ t('accounts.logoutQuestion') }}</p>
     </SC_ModalBody>
 
     <template #footer>
       <SC_ModalActions>
-        <Button type="default" @click="handleCancel">Нет</Button>
-        <Button type="primary" danger @click="handleConfirm" :loading="loading"> Да, выйти </Button>
+        <Button type="default" @click="handleCancel">{{ t('accounts.no') }}</Button>
+        <Button type="primary" danger @click="handleConfirm" :loading="loading"> {{ t('accounts.yesLogout') }} </Button>
       </SC_ModalActions>
     </template>
   </Modal>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useConfirmDeleteModal } from './confirm-delete-modal/confirm-delete-modal'
 import type { ConfirmDeleteModalProps, ConfirmDeleteModalEmits } from './confirm-delete-modal/types'
 import { SC_ModalActions, SC_ModalBody, SC_ModalIconRow } from '@/components/modal'
@@ -39,6 +40,8 @@ const p = withDefaults(defineProps<ConfirmDeleteModalProps>(), {
 })
 
 const emit = defineEmits<ConfirmDeleteModalEmits>()
+
+const { t } = useI18n()
 
 const { Modal, Button, ExclamationCircleOutlined, visible, loading, handleConfirm, handleCancel } =
   useConfirmDeleteModal(p, emit)

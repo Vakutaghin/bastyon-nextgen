@@ -9,6 +9,7 @@
 
 import type { Ref } from 'vue'
 import Hls from 'hls.js'
+import { t } from '@/i18n'
 
 export function attachHlsErrorRecovery(
   hls: Hls,
@@ -52,7 +53,7 @@ export function attachHlsErrorRecovery(
           setTimeout(() => hls.startLoad(), delay)
           return
         }
-        error.value = 'Ошибка сети при загрузке видео'
+        error.value = t('videoMsg.networkError')
         isLoading.value = false
         break
       case Hls.ErrorTypes.MEDIA_ERROR:
@@ -65,11 +66,11 @@ export function attachHlsErrorRecovery(
           hls.recoverMediaError()
           return
         }
-        error.value = 'Ошибка воспроизведения видео'
+        error.value = t('videoMsg.playbackError')
         isLoading.value = false
         break
       default:
-        error.value = 'Ошибка загрузки видео'
+        error.value = t('videoMsg.loadError')
         hls.destroy()
         isLoading.value = false
         break

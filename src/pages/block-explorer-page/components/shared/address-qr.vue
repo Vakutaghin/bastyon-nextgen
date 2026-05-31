@@ -1,17 +1,17 @@
 <template>
   <SC_QrFrame
     type='button'
-    :title='`QR-код адреса ${address}`'
+    :title="t('explorerShared.qrCodeOfAddress', { address })"
     @click='expanded = true'
   >
     <SC_QrPlaceholder v-if='!dataUrl' />
-    <img v-else :src='dataUrl' :alt='`QR-код адреса ${address}`' />
+    <img v-else :src='dataUrl' :alt="t('explorerShared.qrCodeOfAddress', { address })" />
   </SC_QrFrame>
 
   <Teleport to='body'>
     <SC_QrModalBackdrop v-if='expanded' @click.self='expanded = false'>
       <SC_QrModalCard>
-        <SC_QrModalImage v-if='dataUrl' :src='dataUrl' :alt='`QR-код адреса ${address}`' />
+        <SC_QrModalImage v-if='dataUrl' :src='dataUrl' :alt="t('explorerShared.qrCodeOfAddress', { address })" />
         <SC_QrModalAddr>{{ address }}</SC_QrModalAddr>
       </SC_QrModalCard>
     </SC_QrModalBackdrop>
@@ -20,6 +20,7 @@
 
 <script setup lang='ts'>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { generateQRCode } from '@/blockchain/utils/qr-code'
 import {
   SC_QrFrame,
@@ -29,6 +30,8 @@ import {
   SC_QrModalImage,
   SC_QrModalAddr,
 } from './address-qr.styled'
+
+const { t } = useI18n()
 
 const p = defineProps<{
   address: string

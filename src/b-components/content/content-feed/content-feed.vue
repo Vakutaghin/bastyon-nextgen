@@ -6,26 +6,26 @@
           <Button
             type="text"
             size="small"
-            :title="leftSidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'"
+            :title="leftSidebarCollapsed ? t('postCard.expandMenu') : t('postCard.collapseMenu')"
             @click="emit('toggle-left-sidebar')"
           >
             <MenuUnfoldOutlined v-if="leftSidebarCollapsed" :style="ICON_SIZE_MD" />
             <MenuFoldOutlined v-else :style="ICON_SIZE_MD" />
           </Button>
         </SC_SidebarToggleWrap>
-        <SC_FeedTitle>Лента</SC_FeedTitle>
+        <SC_FeedTitle>{{ t('postCard.feedTitle') }}</SC_FeedTitle>
         <SC_FeedRefreshWrap>
           <Button
             type="text"
             size="small"
-            title="Обновить ленту"
+            :title="t('postCard.refreshFeed')"
             :loading="isLoading && allPosts.length > 0"
             @click="refetch"
           >
             <template #icon>
               <ReloadOutlined :style="ICON_SIZE_SM" />
             </template>
-            Обновить ленту
+            {{ t('postCard.refreshFeed') }}
           </Button>
         </SC_FeedRefreshWrap>
       </SC_FeedHeaderLeft>
@@ -35,14 +35,14 @@
           <template #icon>
             <PlusOutlined />
           </template>
-          Создать пост
+          {{ t('postCard.createPost') }}
         </Button>
 
         <SC_SidebarToggleWrap>
           <Button
             type="text"
             size="small"
-            :title="rightSidebarVisible ? 'Скрыть боковую панель' : 'Показать боковую панель'"
+            :title="rightSidebarVisible ? t('postCard.hideSidebar') : t('postCard.showSidebar')"
             @click="emit('toggle-right-sidebar')"
           >
             <MenuUnfoldOutlined v-if="rightSidebarVisible" :style="ICON_SIZE_MD" />
@@ -54,7 +54,7 @@
 
     <SC_FeedContent>
       <SC_FeedLoading v-if="isLoading && allPosts.length === 0">
-        <Spin tip="Загрузка ленты...">
+        <Spin :tip="t('postCard.loadingFeed')">
           <template #indicator>
             <LoadingOutlined :style="ICON_PRIMARY_120" spin />
           </template>
@@ -73,10 +73,10 @@
               color: 'var(--color-danger)',
             }"
           />
-          <p>Сервер временно недоступен</p>
+          <p>{{ t('postCard.serverUnavailable') }}</p>
           <Button type="primary" ghost style="margin-top: 10px" @click="refetch">
             <template #icon><ReloadOutlined /></template>
-            Обновить
+            {{ t('postCard.refresh') }}
           </Button>
         </div>
         <div v-else style="display: flex; flex-direction: column; align-items: center">
@@ -103,41 +103,42 @@
         <!-- Триггер для lazy-loading с минимальной высотой. -->
         <div ref="loadMoreTrigger" :style="{ height: '1px', width: '100%' }" />
         <SC_FeedLoadingMore v-if="isLoadingMore">
-          <Spin size="small" tip="Загрузка...">
+          <Spin size="small" :tip="t('postCard.loading')">
             <template #indicator>
               <LoadingOutlined :style="ICON_PRIMARY_24" spin />
             </template>
           </Spin>
         </SC_FeedLoadingMore>
         <SC_FeedEnd v-else-if="!hasMore && allPosts.length > 0 && !isFavoritesTab">
-          <p>Все посты загружены</p>
+          <p>{{ t('postCard.allPostsLoaded') }}</p>
         </SC_FeedEnd>
       </template>
-      <Empty v-else-if="!isLoading" description="Лента пуста" />
+      <Empty v-else-if="!isLoading" :description="t('postCard.feedEmpty')" />
     </SC_FeedContent>
 
     <SC_ScrollToTop
       v-show="showScrollToTopVisible"
       type="button"
-      aria-label="Наверх"
+      :aria-label="t('postCard.scrollToTop')"
       :style="scrollToTopButtonStyle"
       @click="scrollToTop"
       @mouseenter="isHoveringScrollToTop = true"
       @mouseleave="isHoveringScrollToTop = false"
     >
       <UpOutlined />
-      Наверх
+      {{ t('postCard.scrollToTop') }}
     </SC_ScrollToTop>
 
     <SC_PhotoPreviewOverlay v-if="pickedPhotoDataUrl" @click="closePhotoPreview">
       <SC_PhotoPreviewImage :src="pickedPhotoDataUrl" />
-      <SC_PhotoPreviewHint>Тап в любом месте — закрыть</SC_PhotoPreviewHint>
+      <SC_PhotoPreviewHint>{{ t('postCard.tapToClose') }}</SC_PhotoPreviewHint>
     </SC_PhotoPreviewOverlay>
   </SC_Feed>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ICON_PRIMARY_24, ICON_PRIMARY_120, ICON_SIZE_MD, ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   PlusOutlined,
@@ -189,6 +190,7 @@ const emit = defineEmits<{
   'toggle-left-sidebar': []
 }>()
 
+const { t } = useI18n()
 const postsStore = usePostsStore()
 const filtersStore = useFiltersStore()
 

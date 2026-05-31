@@ -1,7 +1,7 @@
 <template>
   <SC_Page>
     <h1 class="visually-hidden">
-      {{ appsStore.byId(appId)?.manifest?.name || 'Мини-приложение' }}
+      {{ appsStore.byId(appId)?.manifest?.name || t('miniapps.appFallbackName') }}
     </h1>
     <MiniAppFrame :app-id="appId" :inner-path="innerPath" />
   </SC_Page>
@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import MiniAppFrame from '@/mini-apps/ui/mini-app-frame.vue'
 import { bootMiniApps } from '@/mini-apps/ui/use-mini-app-bridge'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
@@ -18,6 +19,7 @@ import { SC_Page } from './mini-app-page.styled'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const appsStore = useAppsStore()
 
 const appId = computed(() => {
@@ -33,7 +35,7 @@ const innerPath = computed(() => {
   return (raw as string | undefined) ?? ''
 })
 
-useDocumentTitle(() => appsStore.byId(appId.value)?.manifest?.name ?? 'Мини-приложение')
+useDocumentTitle(() => appsStore.byId(appId.value)?.manifest?.name ?? t('miniapps.appFallbackName'))
 
 onMounted(async () => {
   await bootMiniApps(router)

@@ -2,7 +2,7 @@
   <!-- ➀ Загрузка -->
   <SC_Loading v-if="isLoading">
     <SC_Spinner />
-    <span>Загружаем пост…</span>
+    <span>{{ t('chat.postLoading') }}</span>
   </SC_Loading>
 
   <!-- ➁ Ошибка/нет такого поста — даём fallback-ссылку -->
@@ -13,7 +13,7 @@
     rel="noopener noreferrer"
   >
     <span aria-hidden="true">🔗</span>
-    <span>Пост в Бастионе</span>
+    <span>{{ t('chat.postInBastyon') }}</span>
     <span style="opacity: 0.6; font-size: 11px; margin-left: auto">{{ shortTxid }}</span>
   </SC_FailedHint>
 
@@ -34,7 +34,7 @@
       <SC_HeaderInfo>
         <SC_AuthorName :title="post.author.name">{{ post.author.name }}</SC_AuthorName>
         <SC_BadgeRow>
-          <span v-if="isVideoTarget" title="Видеопост">🎬</span>
+          <span v-if="isVideoTarget" :title="t('chat.videoPost')">🎬</span>
           <span>{{ formattedDate }}</span>
         </SC_BadgeRow>
       </SC_HeaderInfo>
@@ -56,6 +56,7 @@
 
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useModalStore } from '@/stores/modal-store'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
@@ -85,6 +86,7 @@ const props = defineProps<{
   target: BastyonLinkTarget
 }>()
 
+const { t } = useI18n()
 const modalStore = useModalStore()
 
 const txidRef = toRef(() => props.target.txid)
@@ -93,8 +95,8 @@ const { post, isLoading, isError, isMissing } = usePostByTxid(txidRef)
 const isVideoTarget = computed(() => props.target.isVideo)
 
 const shortTxid = computed(() => {
-  const t = props.target.txid
-  return `${t.slice(0, 6)}…${t.slice(-4)}`
+  const txid = props.target.txid
+  return `${txid.slice(0, 6)}…${txid.slice(-4)}`
 })
 
 const httpsUrl = computed(() => toBasytonHttpsUrl(props.target))

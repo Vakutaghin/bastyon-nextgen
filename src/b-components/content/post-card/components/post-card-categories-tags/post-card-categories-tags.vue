@@ -17,6 +17,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Tag from '@/components/tag/tag.vue'
 import { useFiltersStore } from '@/stores/filters-store'
 import { SC_PostCategoriesAndTags } from './styled'
@@ -33,6 +34,7 @@ interface DisplayItem {
 }
 
 const props = defineProps<{ post: PostCategoriesTagsPost }>()
+const { t } = useI18n()
 const filtersStore = useFiltersStore()
 
 function decodeUrlEncoded(str: string): string {
@@ -68,7 +70,9 @@ const displayItems = computed<DisplayItem[]>(() => {
       uniqueTags.some((postTag) => postTag.toLowerCase() === catTag.toLowerCase())
     )
     if (matching.length > 0) {
-      categories.push({ type: 'category', id: cat.id, name: cat.name, icon: cat.icon })
+      // Статические категории несут labelKey (i18n), кастомные/временные — сырое name.
+      const displayName = cat.labelKey ? t(cat.labelKey) : (cat.name ?? '')
+      categories.push({ type: 'category', id: cat.id, name: displayName, icon: cat.icon })
     }
   }
 

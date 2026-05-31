@@ -1,9 +1,9 @@
 <template>
   <SC_Tags>
     <SC_TagsHeader style="cursor: pointer" @click="toggleExpanded">
-      <SC_TagsTitle>Актуальные теги</SC_TagsTitle>
+      <SC_TagsTitle>{{ t('sidebar.trendingTags') }}</SC_TagsTitle>
       <SC_TagsControls v-if="hasSelection">
-        <SC_TagsReset title="Сбросить теги" @click.stop="clearSelection">
+        <SC_TagsReset :title="t('sidebar.resetTags')" @click.stop="clearSelection">
           <StopOutlined />
         </SC_TagsReset>
       </SC_TagsControls>
@@ -37,6 +37,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   CaretUpOutlined,
   CaretDownOutlined,
@@ -76,6 +77,7 @@ interface RawTag {
   count?: number
 }
 
+const { t } = useI18n()
 const filtersStore = useFiltersStore()
 const isExpanded = ref(false)
 

@@ -12,6 +12,7 @@ import { ref, h, type Ref } from 'vue'
 import { Modal } from 'ant-design-vue'
 import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
 import { haptic } from '@/helpers/common/haptics'
 import { useCommentsStore } from '@/stores'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
@@ -74,12 +75,12 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
   // --- Delete ---
   const confirmDeleteComment = (comment: GetComment): void => {
     Modal.confirm({
-      title: 'Удалить комментарий?',
+      title: t('commentsMsg.deleteConfirmTitle'),
       icon: h(ExclamationCircleOutlined),
-      content: 'Действие нельзя отменить — комментарий будет помечен как удалённый.',
-      okText: 'Удалить',
+      content: t('commentsMsg.deleteConfirmContent'),
+      okText: t('commentsMsg.deleteConfirmOk'),
       okType: 'danger',
-      cancelText: 'Отмена',
+      cancelText: t('commentsMsg.cancel'),
       centered: true,
       onOk: () => deleteCommentInternal(comment),
     })
@@ -100,10 +101,12 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
         answerId: comment.answerid || '',
       })
       haptic('medium')
-      appToast.success({ message: 'Комментарий удалён' })
+      appToast.success({ message: t('commentsMsg.deleteSuccess') })
     } catch (e) {
       commentsStore.unmarkDeleted(comment.id)
-      appToast.error({ message: e instanceof Error ? e.message : 'Не удалось удалить комментарий' })
+      appToast.error({
+        message: e instanceof Error ? e.message : t('commentsMsg.deleteError'),
+      })
     } finally {
       commentDeleteSubmitting.value = null
     }
@@ -144,11 +147,11 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       return
     }
     Modal.confirm({
-      title: 'Отменить изменения?',
+      title: t('commentsMsg.discardEditTitle'),
       icon: h(ExclamationCircleOutlined),
-      content: 'Введённый текст не будет сохранён.',
-      okText: 'Да, отменить',
-      cancelText: 'Нет',
+      content: t('commentsMsg.discardEditContent'),
+      okText: t('commentsMsg.discardEditOk'),
+      cancelText: t('commentsMsg.no'),
       centered: true,
       onOk: () => closeEdit(),
     })
@@ -175,7 +178,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     const text = (editDraft.value || '').trim()
     if (!text) return
     if (!isCommentLengthValid(text)) {
-      appToast.error({ message: 'Текст комментария превышает допустимую длину' })
+      appToast.error({ message: t('commentsMsg.tooLong') })
       return
     }
     if (text === (editInitialDraft.value || '').trim()) {
@@ -184,7 +187,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     }
     const comment = findCommentById(id)
     if (!comment) {
-      appToast.error({ message: 'Комментарий не найден' })
+      appToast.error({ message: t('commentsMsg.notFound') })
       return
     }
     editSubmitting.value = true
@@ -199,11 +202,11 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       haptic('small')
       // Optimistic: подменяем текст до прихода обновлённой версии (через стор)
       useCommentsStore().setEditedMessage(id, text)
-      appToast.success({ message: 'Комментарий отредактирован' })
+      appToast.success({ message: t('commentsMsg.editSuccess') })
       closeEdit()
     } catch (e) {
       appToast.error({
-        message: e instanceof Error ? e.message : 'Не удалось отредактировать комментарий',
+        message: e instanceof Error ? e.message : t('commentsMsg.editError'),
       })
     } finally {
       editSubmitting.value = false

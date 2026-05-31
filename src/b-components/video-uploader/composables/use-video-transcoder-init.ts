@@ -1,18 +1,19 @@
 import { ref } from 'vue'
 import { transcoder } from '../transcoder'
+import { t } from '@/i18n'
 
 function getFfmpegMissingInstruction(): string {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
   if (/mac|darwin/i.test(ua)) {
-    return 'Для транскодирования видео требуется FFmpeg. Установите его: brew install ffmpeg'
+    return t('videoMsg.ffmpegMissingMac')
   }
   if (/win/i.test(ua)) {
-    return 'Для транскодирования видео требуется FFmpeg. Установите его: winget install ffmpeg (или скачайте с ffmpeg.org)'
+    return t('videoMsg.ffmpegMissingWin')
   }
   if (/linux/i.test(ua)) {
-    return 'Для транскодирования видео требуется FFmpeg. Установите его: sudo apt install ffmpeg (или через ваш пакетный менеджер)'
+    return t('videoMsg.ffmpegMissingLinux')
   }
-  return 'Для транскодирования видео требуется FFmpeg. Установите его системно (ffmpeg + ffprobe должны быть в PATH).'
+  return t('videoMsg.ffmpegMissingGeneric')
 }
 
 export function useVideoTranscoderInit() {

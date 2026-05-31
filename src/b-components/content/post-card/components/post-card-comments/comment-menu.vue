@@ -13,7 +13,7 @@
           @click.stop.prevent="onAction('edit')"
         >
           <EditOutlined />
-          <span>Редактировать</span>
+          <span>{{ t('comments.edit') }}</span>
         </SC_MenuItem>
 
         <SC_MenuItem
@@ -23,14 +23,14 @@
           @click.stop.prevent="onAction('delete')"
         >
           <DeleteOutlined />
-          <span>Удалить</span>
+          <span>{{ t('comments.delete') }}</span>
         </SC_MenuItem>
       </SC_MenuList>
     </template>
 
     <SC_MenuTrigger
       type="button"
-      :title="'Действия'"
+      :title="t('comments.actions')"
       @click.stop
     >
       <MoreOutlined />
@@ -40,6 +40,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Popover } from 'ant-design-vue'
 import { MoreOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { SC_MenuList, SC_MenuItem, SC_MenuTrigger } from './styled'
@@ -56,6 +57,8 @@ defineProps<{
 const emit = defineEmits<{
   action: [action: CommentMenuAction]
 }>()
+
+const { t } = useI18n()
 
 const open = ref(false)
 

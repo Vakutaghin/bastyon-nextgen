@@ -1,69 +1,51 @@
 /**
- * Словарь технических терминов блок-эксплорера → краткое пояснение на русском.
+ * Словарь технических терминов блок-эксплорера → i18n-ключ пояснения.
  *
  * Используется компонентом InfoTooltip рядом с лейблами в meta-grid и стат-карточках.
  * Один источник истины — добавлять новые термины сюда, не разводить inline-tooltip-ы
  * по компонентам.
+ *
+ * Значения — ключи i18n в домене `glossary`. Сами тексты лежат в src/locales/*
+ * и резолвятся через t(...) в компоненте-потребителе (НЕ на уровне модуля —
+ * иначе сломается реактивность смены языка).
  */
 
-export const EXPLORER_GLOSSARY: Record<string, string> = {
+export const EXPLORER_GLOSSARY = {
   // Сетевая статистика и tip
-  height:
-    'Порядковый номер блока в цепочке. Растёт на 1 с каждым новым блоком (примерно раз в минуту).',
-  hash:
-    'Криптографический отпечаток блока (SHA-256). Уникально идентифицирует блок во всей истории сети.',
-  emission:
-    'Количество PKOIN, выпущенных сетью за всё время (текущий supply). Растёт с каждой PoS-наградой.',
-  netStakeWeight:
-    'Суммарный вес монет, участвующих в стейкинге. Чем выше — тем сложнее атаковать сеть.',
-  chain:
-    'Какая сеть: «main» — основная Pocketnet, «test» — тестовая. На testnet PKOIN не имеют ценности.',
-  difficulty:
-    'Текущая сложность подбора блока. Автоматически подстраивается, чтобы блок появлялся ~раз в минуту.',
-  bits:
-    'Сложность в компактной форме (заголовок блока). Чем меньше bits — тем выше difficulty.',
-  merkleRoot:
-    'Корень меркл-дерева транзакций блока. Доказывает, что транзакция включена в блок.',
-  prevHash:
-    'Хеш предыдущего блока — то, что делает блокчейн цепочкой. Изменение одного блока ломает всё, что после него.',
-  nextHash:
-    'Хеш следующего блока. У последнего блока (tip) его нет — следующий блок ещё не появился.',
-  confirmations:
-    'Сколько блоков подтвердили эту транзакцию или этот блок. ~6 подтверждений считаются «финальными».',
-  blockReward:
-    'Награда, которую получил стейкер за создание блока. Это разница между всеми выходами coinstake-tx и её входами.',
-  staker:
-    'Адрес, который застейкал монеты и подписал блок. Получает награду блока.',
+  height: 'glossary.height',
+  hash: 'glossary.hash',
+  emission: 'glossary.emission',
+  netStakeWeight: 'glossary.netStakeWeight',
+  chain: 'glossary.chain',
+  difficulty: 'glossary.difficulty',
+  bits: 'glossary.bits',
+  merkleRoot: 'glossary.merkleRoot',
+  prevHash: 'glossary.prevHash',
+  nextHash: 'glossary.nextHash',
+  confirmations: 'glossary.confirmations',
+  blockReward: 'glossary.blockReward',
+  staker: 'glossary.staker',
 
   // Транзакции
-  vin:
-    'Входы (vin) — какие неизрасходованные выходы предыдущих транзакций тратятся. Сумма входов = сумма выходов + комиссия.',
-  vout:
-    'Выходы (vout) — куда идут монеты. Каждый выход адресован на конкретный адрес и имеет сумму.',
-  fee:
-    'Разница между суммой входов и суммой выходов. Уходит стейкеру блока вместе с PoS-наградой.',
-  opReturn:
-    'Специальный выход с пометкой OP_RETURN — не несёт монет, хранит данные. В Pocketnet используется для записи постов, комментов, оценок.',
-  scriptPubKey:
-    'Скрипт, который описывает условие траты выхода. У обычных адресов это «расходовать может тот, кто знает приватный ключ».',
-  coinbase:
-    'Особая первая транзакция блока в PoW-цепях. У Pocketnet (PoS) её роль играет coinstake — type=3.',
-  coinstake:
-    'PoS-аналог coinbase: входы стейкера + награда возвращаются ему же. Всегда первая транзакция в блоке.',
-  txid:
-    'Уникальный идентификатор транзакции (SHA-256 от её содержимого). По нему транзакция всегда находится в сети.',
+  vin: 'glossary.vin',
+  vout: 'glossary.vout',
+  fee: 'glossary.fee',
+  opReturn: 'glossary.opReturn',
+  scriptPubKey: 'glossary.scriptPubKey',
+  coinbase: 'glossary.coinbase',
+  coinstake: 'glossary.coinstake',
+  txid: 'glossary.txid',
 
   // Pocketnet payload
-  pocketPayload:
-    'Социальная нагрузка транзакции (пост/коммент/оценка/подписка/буст). Хранится в OP_RETURN и в специальных слотах.',
-  cScore:
-    'Оценка комментария: +1 или −1. Влияет на репутацию автора и сортировку.',
-  upvoteShare:
-    'Оценка поста по шкале 1–5. Влияет на рейтинг автора и видимость поста в ленте.',
-  boost:
-    'Бустер платит автору PKOIN, чтобы поднять пост в ленте. Сумма буста и адрес поста зафиксированы в транзакции.',
-}
+  pocketPayload: 'glossary.pocketPayload',
+  cScore: 'glossary.cScore',
+  upvoteShare: 'glossary.upvoteShare',
+  boost: 'glossary.boost',
+} as const satisfies Record<string, string>
 
-export function glossary(key: keyof typeof EXPLORER_GLOSSARY): string {
-  return EXPLORER_GLOSSARY[key]
+export type GlossaryTerm = keyof typeof EXPLORER_GLOSSARY
+
+/** Возвращает i18n-ключ пояснения для термина. Резолвить через t(...) в компоненте. */
+export function glossaryKey(term: GlossaryTerm): string {
+  return EXPLORER_GLOSSARY[term]
 }

@@ -1,6 +1,6 @@
 <template>
   <SC_ProfileFeed>
-    <SC_ErrorMessage v-if="error"> Произошла ошибка при загрузке ленты </SC_ErrorMessage>
+    <SC_ErrorMessage v-if="error"> {{ t('profile.feedError') }} </SC_ErrorMessage>
 
     <SC_FeedContent>
       <PostCard
@@ -12,7 +12,7 @@
     </SC_FeedContent>
 
     <div v-if="isLoading && allPosts.length === 0" style="padding: 40px; text-align: center">
-      <Spin tip="Загрузка ленты...">
+      <Spin :tip="t('profile.loadingFeed')">
         <template #indicator>
           <LoadingOutlined :style="ICON_PRIMARY_50" spin />
         </template>
@@ -21,17 +21,17 @@
 
     <SC_LoadMoreTrigger v-else ref="loadMoreTrigger">
       <SC_LoadingSpinner v-if="isLoadingMore || isLoading">
-        <Spin tip="Загрузка...">
+        <Spin :tip="t('profile.loading')">
           <template #indicator>
             <LoadingOutlined :style="ICON_PRIMARY_24" spin />
           </template>
         </Spin>
       </SC_LoadingSpinner>
       <SC_NoMorePosts v-else-if="!hasMore && allPosts.length > 0">
-        Больше постов нет
+        {{ t('profile.noMorePosts') }}
       </SC_NoMorePosts>
       <SC_EmptyFeed v-else-if="!hasMore && allPosts.length === 0">
-        У пользователя пока нет постов
+        {{ t('profile.emptyFeed') }}
       </SC_EmptyFeed>
     </SC_LoadMoreTrigger>
   </SC_ProfileFeed>
@@ -39,6 +39,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { LoadingOutlined } from '@ant-design/icons-vue'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import Spin from '@/components/spin/spin.vue'
@@ -63,6 +64,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ 'profile-loaded': [profile: UserProfile] }>()
+
+const { t } = useI18n()
 
 const { allPosts, userProfile, isLoading, isLoadingMore, error, hasMore, loadMoreTrigger } =
   useProfileFeed({

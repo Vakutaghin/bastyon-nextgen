@@ -6,12 +6,12 @@
       <SC_SearchPage>
         <SC_Header>
           <SC_QueryTitle v-if="isTagFilterMode">
-            Лента по тегам: {{ tagList.map((t) => '#' + t).join(' ') }}
+            {{ t('search.feedByTags', { tags: tagList.map((t) => '#' + t).join(' ') }) }}
           </SC_QueryTitle>
-          <SC_QueryTitle v-else-if="query">Поиск по запросу: «{{ query }}»</SC_QueryTitle>
+          <SC_QueryTitle v-else-if="query">{{ t('search.queryTitle', { query }) }}</SC_QueryTitle>
           <template v-else>
-            <SC_QueryTitle class="visually-hidden">Поиск</SC_QueryTitle>
-            <SC_QueryHint>Введите поисковый запрос в верхней строке</SC_QueryHint>
+            <SC_QueryTitle class="visually-hidden">{{ t('search.title') }}</SC_QueryTitle>
+            <SC_QueryHint>{{ t('search.hint') }}</SC_QueryHint>
           </template>
         </SC_Header>
 
@@ -23,14 +23,16 @@
             type="button"
             @click="setType(tab.key)"
           >
-            {{ tab.label }}
+            {{ t(tab.labelKey) }}
           </SC_Tab>
         </SC_Tabs>
 
-        <SC_LoadingState v-if="query && isFetching && !hasResults"> Загрузка… </SC_LoadingState>
+        <SC_LoadingState v-if="query && isFetching && !hasResults">
+          {{ t('search.loading') }}
+        </SC_LoadingState>
 
         <SC_Empty v-else-if="query && !isFetching && !hasResults">
-          По запросу «{{ query }}» ничего не найдено
+          {{ t('search.nothingFound', { query }) }}
         </SC_Empty>
 
         <template v-else-if="query">
@@ -58,11 +60,11 @@
           </SC_ResultsList>
 
           <SC_ResultsList v-else-if="activeType === 'tags'">
-            <SC_ResultItem v-for="t in tagsResults" :key="t.tag" @click="goTagSearch(t.tag)">
+            <SC_ResultItem v-for="tag in tagsResults" :key="tag.tag" @click="goTagSearch(tag.tag)">
               <SC_ItemBody>
                 <SC_ItemTitle>
-                  #{{ t.tag }}
-                  <SC_TagBadge>{{ t.count }} постов</SC_TagBadge>
+                  #{{ tag.tag }}
+                  <SC_TagBadge>{{ t('search.postsCount', { count: tag.count }) }}</SC_TagBadge>
                 </SC_ItemTitle>
               </SC_ItemBody>
             </SC_ResultItem>
@@ -74,7 +76,7 @@
 
           <SC_LoadMoreWrapper v-if="canLoadMore">
             <SC_LoadMore type="button" :disabled="isFetching" @click="loadMore">
-              {{ isFetching ? 'Загрузка…' : 'Показать ещё' }}
+              {{ isFetching ? t('search.loading') : t('search.loadMore') }}
             </SC_LoadMore>
           </SC_LoadMoreWrapper>
         </template>
@@ -85,6 +87,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useSearchStore } from '@/stores/search-store'
 import {
@@ -130,6 +133,7 @@ const SETTING_KEY_LEFT_SIDEBAR_COLLAPSED = 'bastyonLeftSidebarCollapsed'
 
 const PAGE_SIZE = 20
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const searchStore = useSearchStore()
@@ -150,10 +154,10 @@ onMounted(async () => {
   }
 })
 
-const tabs: { key: SearchTabType; label: string }[] = [
-  { key: 'users', label: 'Пользователи' },
-  { key: 'posts', label: 'Посты' },
-  { key: 'tags', label: 'Теги' },
+const tabs: { key: SearchTabType; labelKey: string }[] = [
+  { key: 'users', labelKey: 'search.tabUsers' },
+  { key: 'posts', labelKey: 'search.tabPosts' },
+  { key: 'tags', labelKey: 'search.tabTags' },
 ]
 
 const queryRaw = computed(() => {

@@ -9,12 +9,15 @@ export const COPIED_RESET_TIMEOUT = 2000
 /** Регулярное выражение для валидации Pocketnet-адреса */
 export const POCKETNET_ADDRESS_REGEX = /^[PZ][a-zA-Z0-9]{25,}$/
 
-/** Сообщения об ошибках */
+/**
+ * Сообщения об ошибках. Значения — i18n-ключи домена `labels`;
+ * резолвятся через t(...) в потребляющем компоненте.
+ */
 export const ERROR_MESSAGES = {
-  INVALID_ADDRESS_FORMAT: 'Некорректный формат адреса кошелька',
-  INVALID_ADDRESS: 'Некорректный адрес',
-  AMOUNT_LESS_THAN_FEE: 'Сумма должна быть больше комиссии (получатель платит)',
-  AUTH_REQUIRED: 'Требуется авторизация',
-  INSUFFICIENT_FUNDS: 'Недостаточно средств для перевода с учётом комиссии',
-  SEND_FAILED: 'Не удалось отправить перевод',
+  INVALID_ADDRESS_FORMAT: 'labels.walletTransferInvalidAddressFormat',
+  INVALID_ADDRESS: 'labels.walletTransferInvalidAddress',
+  AMOUNT_LESS_THAN_FEE: 'labels.walletTransferAmountLessThanFee',
+  AUTH_REQUIRED: 'labels.walletTransferAuthRequired',
+  INSUFFICIENT_FUNDS: 'labels.walletTransferInsufficientFunds',
+  SEND_FAILED: 'labels.walletTransferSendFailed',
 } as const

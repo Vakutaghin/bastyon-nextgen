@@ -2,77 +2,81 @@
   <SC_InfoPanel v-if="sourceMetadata">
     <SC_InfoSection>
       <SC_SectionHeader>
-        <SC_SectionTitle>Исходное видео</SC_SectionTitle>
+        <SC_SectionTitle>{{ t('videoUploader.sourceVideo') }}</SC_SectionTitle>
       </SC_SectionHeader>
       <SC_InfoContent>
         <SC_InfoRow>
-          <SC_InfoLabel>Имя файла:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.fileName') }}</SC_InfoLabel>
           <SC_InfoValue>{{ fileName }}</SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>Размер файла:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.fileSize') }}</SC_InfoLabel>
           <SC_InfoValue>{{ formatFileSize(fileSize) }}</SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>Разрешение:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.resolution') }}</SC_InfoLabel>
           <SC_InfoValue>{{ sourceMetadata.width }} × {{ sourceMetadata.height }}</SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>Длительность:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.duration') }}</SC_InfoLabel>
           <SC_InfoValue>{{ formatDuration(sourceMetadata.duration) }}</SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>FPS:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.fps') }}</SC_InfoLabel>
           <SC_InfoValue>{{ sourceMetadata.fps }}</SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>Битрейт видео:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.videoBitrate') }}</SC_InfoLabel>
           <SC_InfoValue>{{ sourceVideoBitrate }} kbps</SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>Аудио:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.audio') }}</SC_InfoLabel>
           <SC_InfoValue>
             <CheckCircleOutlined v-if="sourceMetadata.hasAudio" :style="ICON_SUCCESS" />
             <CloseCircleOutlined v-else :style="ICON_DANGER" />
-            {{ sourceMetadata.hasAudio ? 'Есть' : 'Нет' }}
+            {{ sourceMetadata.hasAudio ? t('videoUploader.audioYes') : t('videoUploader.audioNo') }}
           </SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>MIME-тип:</SC_InfoLabel>
-          <SC_InfoValue>{{ sourceMetadata.mimeType || 'Неизвестно' }}</SC_InfoValue>
+          <SC_InfoLabel>{{ t('videoUploader.mimeType') }}</SC_InfoLabel>
+          <SC_InfoValue>{{ sourceMetadata.mimeType || t('videoUploader.unknown') }}</SC_InfoValue>
         </SC_InfoRow>
       </SC_InfoContent>
     </SC_InfoSection>
 
     <SC_InfoSection>
       <SC_SectionHeader>
-        <SC_SectionTitle>Целевое видео</SC_SectionTitle>
+        <SC_SectionTitle>{{ t('videoUploader.targetVideo') }}</SC_SectionTitle>
       </SC_SectionHeader>
       <SC_InfoContent>
         <SC_InfoRow>
-          <SC_InfoLabel>Разрешение:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.resolution') }}</SC_InfoLabel>
           <SC_InfoValue
             >{{ targetWidth }} × {{ targetHeight }} ({{ targetResolution }})</SC_InfoValue
           >
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>Битрейт видео:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.videoBitrate') }}</SC_InfoLabel>
           <SC_InfoValue>{{ targetVideoBitrate }} kbps</SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>FPS:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.fps') }}</SC_InfoLabel>
           <SC_InfoValue>{{ targetFps }}</SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>Формат:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.format') }}</SC_InfoLabel>
           <SC_InfoValue>{{ targetMimeType }}</SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow>
-          <SC_InfoLabel>Аудио:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.audio') }}</SC_InfoLabel>
           <SC_InfoValue>
             <CheckCircleOutlined v-if="sourceMetadata.hasAudio" :style="ICON_SUCCESS" />
             <CloseCircleOutlined v-else :style="ICON_DANGER" />
-            {{ sourceMetadata.hasAudio ? `Opus, ${MAX_AUDIO_BITRATE} kbps` : 'Нет' }}
+            {{
+              sourceMetadata.hasAudio
+                ? t('videoUploader.audioOpus', { bitrate: MAX_AUDIO_BITRATE })
+                : t('videoUploader.audioNo')
+            }}
           </SC_InfoValue>
         </SC_InfoRow>
       </SC_InfoContent>
@@ -80,11 +84,11 @@
 
     <SC_InfoSection>
       <SC_SectionHeader>
-        <SC_SectionTitle>Транскодер</SC_SectionTitle>
+        <SC_SectionTitle>{{ t('videoUploader.transcoder') }}</SC_SectionTitle>
       </SC_SectionHeader>
       <SC_InfoContent>
         <SC_InfoRow>
-          <SC_InfoLabel>Метод:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.method') }}</SC_InfoLabel>
           <SC_InfoValue>
             <SC_TranscoderBadge :is-worker="isWorker">
               {{ transcoderName }}
@@ -92,17 +96,17 @@
           </SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow v-if="isWorker">
-          <SC_InfoLabel>Режим:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.mode') }}</SC_InfoLabel>
           <SC_InfoValue>
             <CheckCircleOutlined :style="ICON_SUCCESS_MR_4" />
-            Веб-воркер (фоновая обработка)
+            {{ t('videoUploader.modeWorker') }}
           </SC_InfoValue>
         </SC_InfoRow>
         <SC_InfoRow v-else>
-          <SC_InfoLabel>Режим:</SC_InfoLabel>
+          <SC_InfoLabel>{{ t('videoUploader.mode') }}</SC_InfoLabel>
           <SC_InfoValue>
             <InfoCircleOutlined :style="ICON_ANT_BLUE_MR_4" />
-            Основной поток
+            {{ t('videoUploader.modeMain') }}
           </SC_InfoValue>
         </SC_InfoRow>
       </SC_InfoContent>
@@ -111,6 +115,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined } from '@ant-design/icons-vue'
 import {
   ICON_ANT_BLUE_MR_4,
@@ -133,6 +138,8 @@ import { formatFileSize, formatDuration, calculateVideoBitrate } from './video-i
 import type { VideoMetadata } from '../../transcoder/types'
 import { MAX_AUDIO_BITRATE } from '../../utils/constants'
 import { computed } from 'vue'
+
+const { t } = useI18n()
 
 const p = defineProps<{
   sourceMetadata: VideoMetadata | null

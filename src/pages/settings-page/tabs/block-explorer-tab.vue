@@ -1,11 +1,10 @@
 <template>
   <SC_ExplorerSettingsSection>
-    <SC_SettingsSectionTitle>Блок-эксплорер</SC_SettingsSectionTitle>
+    <SC_SettingsSectionTitle>{{ t('settings.explorer.title') }}</SC_SettingsSectionTitle>
 
     <SC_ExplorerSettingsBlock>
       <SC_ExplorerSettingsLead>
-        Встроенный блок-эксплорер работает на тех же нодах, что и остальное приложение — без внешних
-        редиректов.
+        {{ t('settings.explorer.lead') }}
       </SC_ExplorerSettingsLead>
       <RouterLink v-slot="{ navigate, href }" custom :to="{ name: 'explorer' }">
         <SC_ExplorerOpenFullButton
@@ -17,19 +16,17 @@
             }
           "
         >
-          Открыть эксплорер →
+          {{ t('settings.explorer.openFull') }}
         </SC_ExplorerOpenFullButton>
       </RouterLink>
     </SC_ExplorerSettingsBlock>
 
     <SC_ExplorerSettingsBlock>
       <SC_SettingsSectionTitle as="h3" style="font-size: 14px; margin: 0">
-        Предпочитаемая нода
+        {{ t('settings.explorer.preferredNode') }}
       </SC_SettingsSectionTitle>
       <SC_ExplorerSettingsLead>
-        По умолчанию эксплорер использует автоматический round-robin по списку публичных нод. Можно
-        закрепить конкретную ноду — все запросы эксплорера будут идти к ней. На остальное приложение
-        это не влияет.
+        {{ t('settings.explorer.preferredLead') }}
       </SC_ExplorerSettingsLead>
 
       <SC_ExplorerNodeList>
@@ -40,8 +37,8 @@
             :checked="!preferredNode"
             @change="onPickPreferredNode(null)"
           />
-          <SC_ExplorerNodeLabel>Авто (round-robin)</SC_ExplorerNodeLabel>
-          <SC_ExplorerNodeHint>По умолчанию</SC_ExplorerNodeHint>
+          <SC_ExplorerNodeLabel>{{ t('settings.explorer.autoNode') }}</SC_ExplorerNodeLabel>
+          <SC_ExplorerNodeHint>{{ t('settings.explorer.default') }}</SC_ExplorerNodeHint>
         </SC_ExplorerNodeRow>
 
         <SC_ExplorerNodeRow
@@ -56,7 +53,7 @@
             @change="onPickPreferredNode(node)"
           />
           <SC_ExplorerNodeLabel>{{ node.host }}:{{ node.port }}</SC_ExplorerNodeLabel>
-          <SC_ExplorerNodeHint v-if="isNodePinned(node)">Закреплена</SC_ExplorerNodeHint>
+          <SC_ExplorerNodeHint v-if="isNodePinned(node)">{{ t('settings.explorer.pinned') }}</SC_ExplorerNodeHint>
         </SC_ExplorerNodeRow>
       </SC_ExplorerNodeList>
     </SC_ExplorerSettingsBlock>
@@ -65,6 +62,7 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   useExplorerPreferredNode,
   type AvailableNode,
@@ -84,6 +82,7 @@ import {
   SC_ExplorerNodeHint,
 } from '../settings-page.styled'
 
+const { t } = useI18n()
 const {
   preferredNode,
   availableNodes: availableExplorerNodes,
@@ -98,7 +97,9 @@ function isNodePinned(node: AvailableNode): boolean {
 function onPickPreferredNode(node: AvailableNode | null): void {
   setPreferredNode(node ? { host: node.host, port: node.port } : null)
   appToast.success({
-    message: node ? `Закреплена нода ${node.host}` : 'Включён авто-режим',
+    message: node
+      ? t('settings.explorer.toastPinned', { host: node.host })
+      : t('settings.explorer.toastAuto'),
   })
 }
 </script>

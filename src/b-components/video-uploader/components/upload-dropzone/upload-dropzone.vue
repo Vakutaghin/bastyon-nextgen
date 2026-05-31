@@ -1,6 +1,6 @@
 <template>
   <SC_UploadSection>
-    <SC_SectionTitle>Загрузка и транскодирование видео</SC_SectionTitle>
+    <SC_SectionTitle>{{ t('videoUploader.uploadSectionTitle') }}</SC_SectionTitle>
 
     <SC_DropZone
       :uploading="isUploading"
@@ -20,44 +20,44 @@
       <template v-if="state === 'idle'">
         <UploadOutlined :style="ICON_ANT_BLUE_64_MB" />
         <SC_DropZoneText>
-          <strong>Перетащите видеофайл сюда</strong>
-          <span>или нажмите для выбора</span>
+          <strong>{{ t('videoUploader.dropHere') }}</strong>
+          <span>{{ t('videoUploader.orClickToSelect') }}</span>
         </SC_DropZoneText>
-        <Button type="primary" @click="fileInput?.click()"> Выбрать видеофайл </Button>
+        <Button type="primary" @click="fileInput?.click()"> {{ t('videoUploader.selectVideoFile') }} </Button>
       </template>
 
       <template v-else-if="state === 'completed'">
         <CheckCircleOutlined :style="ICON_SUCCESS_64" />
         <SC_DropZoneText>
-          <strong>Видео успешно транскодировано!</strong>
+          <strong>{{ t('videoUploader.transcodedSuccess') }}</strong>
         </SC_DropZoneText>
-        <Button type="primary" @click="$emit('reset')"> Загрузить еще </Button>
+        <Button type="primary" @click="$emit('reset')"> {{ t('videoUploader.uploadMore') }} </Button>
       </template>
 
       <template v-else-if="state === 'analyzing'">
         <LoadingOutlined :style="ICON_ANT_BLUE_64" spin />
         <SC_DropZoneText>
-          <strong>Анализ видео...</strong>
+          <strong>{{ t('videoUploader.analyzing') }}</strong>
         </SC_DropZoneText>
       </template>
 
       <template v-else-if="state === 'ready'">
         <CheckCircleOutlined :style="ICON_SUCCESS_64" />
         <SC_DropZoneText>
-          <strong>Файл готов к кодированию</strong>
-          <span>Проверьте параметры ниже и нажмите "Начать загрузку"</span>
+          <strong>{{ t('videoUploader.fileReady') }}</strong>
+          <span>{{ t('videoUploader.checkParamsAndStart') }}</span>
         </SC_DropZoneText>
-        <Button type="primary" size="large" @click="$emit('start')"> Начать загрузку </Button>
+        <Button type="primary" size="large" @click="$emit('start')"> {{ t('videoUploader.startUpload') }} </Button>
         <Button type="secondary" style="margin-top: 8px" @click="$emit('reset')">
-          Выбрать другой файл
+          {{ t('videoUploader.selectAnotherFile') }}
         </Button>
       </template>
 
       <template v-else-if="state === 'transcoding' || state === 'saving'">
         <LoadingOutlined :style="ICON_ANT_BLUE_64" spin />
         <SC_DropZoneText>
-          <strong v-if="state === 'transcoding'">Транскодирование видео...</strong>
-          <strong v-else>Сохранение видео...</strong>
+          <strong v-if="state === 'transcoding'">{{ t('videoUploader.transcoding') }}</strong>
+          <strong v-else>{{ t('videoUploader.saving') }}</strong>
         </SC_DropZoneText>
         <Progress
           :percent="progress"
@@ -65,7 +65,7 @@
           :stroke-color="state === 'error' ? '#ff4d4f' : '#1890ff'"
         />
         <SC_ProgressText>{{ Math.round(progress) }}%</SC_ProgressText>
-        <div v-if="fileName" style="margin-top: 8px; color: #666; font-size: 12px">
+        <div v-if="fileName" style="margin-top: 8px; color: var(--color-text-secondary); font-size: 12px">
           {{ fileName }}
         </div>
       </template>
@@ -73,9 +73,9 @@
       <template v-else-if="state === 'error'">
         <CloseCircleOutlined :style="ICON_DANGER_64" />
         <SC_DropZoneText>
-          <strong style="color: #ff4d4f">Ошибка: {{ error }}</strong>
+          <strong style="color: var(--color-red-ant)">{{ t('videoUploader.errorPrefix', { error }) }}</strong>
         </SC_DropZoneText>
-        <Button type="primary" @click="$emit('reset')"> Попробовать снова </Button>
+        <Button type="primary" @click="$emit('reset')"> {{ t('videoUploader.tryAgain') }} </Button>
       </template>
     </SC_DropZone>
 
@@ -97,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { Progress } from 'ant-design-vue'
 import Button from '@/components/button/button.vue'
 import {
@@ -121,6 +122,8 @@ import {
 import { VideoInfoPanel } from '../video-info-panel'
 import { useUploadDropzone } from './upload-dropzone'
 import type { UploadDropzoneProps, UploadDropzoneEmits } from './types'
+
+const { t } = useI18n()
 
 const p = defineProps<UploadDropzoneProps>()
 

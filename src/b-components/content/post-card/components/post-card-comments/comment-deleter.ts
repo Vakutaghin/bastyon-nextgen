@@ -10,6 +10,7 @@ import { buildTransaction } from '@/blockchain/core/transactions/transaction-bui
 import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } from '@/blockchain/core/transactions/unspents-manager'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
+import { t } from '@/i18n'
 import type { CommentMessagePayload } from '@/types/rpc-requests/send-raw-transaction-with-message'
 
 import { COMMENT_TX_FEE } from './consts'
@@ -38,8 +39,8 @@ export async function deleteComment(params: DeleteCommentParams): Promise<string
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error('Нужна авторизация для удаления комментария')
-  if (!postId || !commentId) throw new Error('postId и commentId обязательны')
+  if (!keyPair || !address) throw new Error(t('commentsMsg.errAuthRequiredDelete'))
+  if (!postId || !commentId) throw new Error(t('commentsMsg.errPostAndCommentRequired'))
 
   const messagePayload: CommentMessagePayload = {
     postid: postId,
@@ -53,10 +54,10 @@ export async function deleteComment(params: DeleteCommentParams): Promise<string
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error('Нет доступных unspents')
+  if (!unspents?.length) throw new Error(t('commentsMsg.errNoUnspents'))
 
   const selectedUnspents = selectBestUnspents(unspents, COMMENT_TX_FEE)
-  if (selectedUnspents.length === 0) throw new Error('Не удалось выбрать unspents для транзакции')
+  if (selectedUnspents.length === 0) throw new Error(t('commentsMsg.errSelectUnspents'))
 
   lockUTXOs(selectedUnspents)
 
@@ -84,5 +85,5 @@ export async function deleteComment(params: DeleteCommentParams): Promise<string
   }
 
   const err = response && typeof response === 'object' && 'error' in response ? (response as any).error : null
-  throw err instanceof Error ? err : new Error(String(err ?? 'Ошибка удаления комментария'))
+  throw err instanceof Error ? err : new Error(String(err ?? t('commentsMsg.errDeleteFailed')))
 }

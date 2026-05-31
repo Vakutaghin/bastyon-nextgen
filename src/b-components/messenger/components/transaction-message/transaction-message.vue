@@ -3,7 +3,7 @@
     <SC_Row>
       <SC_Icon aria-hidden="true">💎</SC_Icon>
       <SC_Body>
-        <SC_Caption>{{ isOutgoing ? 'Перевод PKOIN' : 'Получено PKOIN' }}</SC_Caption>
+        <SC_Caption>{{ isOutgoing ? t('chat.pkoinSent') : t('chat.pkoinReceived') }}</SC_Caption>
         <SC_Amount>{{ amountLabel }}</SC_Amount>
       </SC_Body>
     </SC_Row>
@@ -13,7 +13,7 @@
     <SC_Footer>
       <SC_Txid :title="tx.txid">{{ shortTxid }}</SC_Txid>
       <SC_ExplorerLink :href="explorerUrl" target="_blank" rel="noopener noreferrer">
-        В эксплорере
+        {{ t('chat.viewInExplorer') }}
       </SC_ExplorerLink>
     </SC_Footer>
   </SC_Card>
@@ -21,6 +21,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import {
@@ -48,6 +49,7 @@ const props = defineProps<{
   message: Message
 }>()
 
+const { t } = useI18n()
 const store = useMessengerStore()
 
 const tx = computed<PkoinTx>(() => (props.message.info?.transaction as PkoinTx) || ({} as PkoinTx))
@@ -65,9 +67,9 @@ const amountLabel = computed<string>(() => {
 })
 
 const shortTxid = computed<string>(() => {
-  const t = tx.value.txid || ''
-  if (t.length < 12) return t
-  return `${t.slice(0, 6)}…${t.slice(-4)}`
+  const txid = tx.value.txid || ''
+  if (txid.length < 12) return txid
+  return `${txid.slice(0, 6)}…${txid.slice(-4)}`
 })
 
 const explorerUrl = computed<string>(() => {

@@ -9,6 +9,7 @@ import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 import type { Router } from 'vue-router'
 import type { useAuthStore } from '@/blockchain'
 import type { useModalStore } from '@/stores/modal-store'
+import { t } from '@/i18n'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 type ModalStore = ReturnType<typeof useModalStore>
@@ -56,14 +57,14 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
   })
 
   const menuItems = computed(() => [
-    { key: profileLink.value, label: 'Профиль' },
-    { key: '/wallets', label: 'Кошельки' },
-    { key: '/limits', label: 'Лимиты' },
-    { key: '/my-videos', label: 'Мои видео' },
-    { key: 'settings', label: 'Настройки' },
+    { key: profileLink.value, label: t('accountMsg.menuProfile') },
+    { key: '/wallets', label: t('accountMsg.menuWallets') },
+    { key: '/limits', label: t('accountMsg.menuLimits') },
+    { key: '/my-videos', label: t('accountMsg.menuMyVideos') },
+    { key: 'settings', label: t('accountMsg.menuSettings') },
     { type: 'divider' },
-    { key: 'switchAccount', label: 'Сменить аккаунт' },
-    { key: 'signout', label: 'Выйти', danger: true },
+    { key: 'switchAccount', label: t('accountMsg.menuSwitchAccount') },
+    { key: 'signout', label: t('accountMsg.menuSignOut'), danger: true },
   ])
 
   function openSignInModal(): void {

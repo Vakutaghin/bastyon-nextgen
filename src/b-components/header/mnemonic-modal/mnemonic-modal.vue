@@ -11,54 +11,53 @@
   >
     <template #title>
       <div style="display: flex; align-items: center; gap: 12px">
-        <SafetyOutlined style="font-size: 24px; color: #1890ff" />
-        <span>Сохраните вашу сид-фразу</span>
+        <SafetyOutlined style="font-size: 24px; color: var(--color-ant-blue)" />
+        <span>{{ t('auth.saveSeedTitle') }}</span>
       </div>
     </template>
     <SC_MnemonicModalContent>
       <SC_WarningBox>
-        <SC_WarningTitle>⚠️ ВАЖНО!</SC_WarningTitle>
+        <SC_WarningTitle>⚠️ {{ t('auth.important') }}</SC_WarningTitle>
         <SC_WarningText>
-          Сохраните сид-фразу и/или приватный ключ в безопасном месте. Если вы потеряете оба, вы не
-          сможете восстановить доступ к аккаунту.
-          <strong> Никогда не делитесь ими ни с кем!</strong>
+          {{ t('auth.saveSeedWarning') }}
+          <strong> {{ t('auth.neverShare') }}</strong>
         </SC_WarningText>
       </SC_WarningBox>
 
       <SC_EquivalenceNote v-if="hasMnemonic && hasPrivateKey">
-        Сид-фраза и приватный ключ (hex) равнозначны для восстановления доступа — достаточно
-        сохранить что-то одно.
+        {{ t('auth.equivalenceNote') }}
       </SC_EquivalenceNote>
 
       <SC_MnemonicBox v-if="hasMnemonic">
-        <SC_PrivateKeyLabel>Сид-фраза</SC_PrivateKeyLabel>
+        <SC_PrivateKeyLabel>{{ t('auth.seedPhrase') }}</SC_PrivateKeyLabel>
         <SC_MnemonicText>
           {{ formattedMnemonic }}
         </SC_MnemonicText>
-        <SC_CopyIconBtn type="button" title="Копировать сид-фразу" @click="copyMnemonic">
+        <SC_CopyIconBtn type="button" :title="t('auth.copySeed')" @click="copyMnemonic">
           <CopyOutlined />
         </SC_CopyIconBtn>
       </SC_MnemonicBox>
 
       <SC_PrivateKeyBox v-if="hasPrivateKey">
-        <SC_PrivateKeyLabel>Приватный ключ (hex)</SC_PrivateKeyLabel>
+        <SC_PrivateKeyLabel>{{ t('auth.privateKeyHex') }}</SC_PrivateKeyLabel>
         <SC_PrivateKeyText>
           {{ displayPrivateKeyHex }}
         </SC_PrivateKeyText>
-        <SC_CopyIconBtn type="button" title="Копировать приватный ключ" @click="copyPrivateKey">
+        <SC_CopyIconBtn type="button" :title="t('auth.copyKey')" @click="copyPrivateKey">
           <CopyOutlined />
         </SC_CopyIconBtn>
       </SC_PrivateKeyBox>
     </SC_MnemonicModalContent>
 
     <template #footer>
-      <Button type="primary" @click="handleOk"> Понятно </Button>
+      <Button type="primary" @click="handleOk"> {{ t('auth.gotIt') }} </Button>
     </template>
   </Modal>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
 import { SafetyOutlined, CopyOutlined } from '@ant-design/icons-vue'
@@ -77,6 +76,8 @@ import {
   SC_PrivateKeyText,
   SC_CopyIconBtn,
 } from './styled'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -179,13 +180,13 @@ async function copyToClipboard(text: string): Promise<boolean> {
 async function copyMnemonic(): Promise<void> {
   if (!formattedMnemonic.value) return
   const ok = await copyToClipboard(formattedMnemonic.value)
-  if (ok) appToast.success({ message: 'Сид-фраза скопирована' })
+  if (ok) appToast.success({ message: t('auth.seedCopied') })
 }
 
 async function copyPrivateKey(): Promise<void> {
   if (!displayPrivateKeyHex.value) return
   const ok = await copyToClipboard(displayPrivateKeyHex.value)
-  if (ok) appToast.success({ message: 'Приватный ключ скопирован' })
+  if (ok) appToast.success({ message: t('auth.keyCopied') })
 }
 
 function handleClose(): void {

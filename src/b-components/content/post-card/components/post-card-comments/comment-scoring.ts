@@ -7,6 +7,7 @@ import { buildTransaction } from '@/blockchain/core/transactions/transaction-bui
 import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } from '@/blockchain/core/transactions/unspents-manager'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
+import { t } from '@/i18n'
 
 import { COMMENT_TX_FEE } from './consts'
 
@@ -24,7 +25,7 @@ function extractTxidFromResponse(response: any): string {
   }
 
   const err = response && typeof response === 'object' && 'error' in response ? response.error : null
-  throw err instanceof Error ? err : new Error(String(err ?? 'Ошибка отправки транзакции'))
+  throw err instanceof Error ? err : new Error(String(err ?? t('commentsMsg.errTxFailed')))
 }
 
 /**
@@ -33,10 +34,10 @@ function extractTxidFromResponse(response: any): string {
 async function prepareUnspents(address: string) {
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error('Нет доступных unspents')
+  if (!unspents?.length) throw new Error(t('commentsMsg.errNoUnspents'))
 
   const selected = selectBestUnspents(unspents, COMMENT_TX_FEE)
-  if (selected.length === 0) throw new Error('Не удалось выбрать unspents для транзакции')
+  if (selected.length === 0) throw new Error(t('commentsMsg.errSelectUnspents'))
 
   lockUTXOs(selected)
   return selected
@@ -61,8 +62,8 @@ export async function sendCommentScore(
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error('Нужна авторизация для оценки комментария')
-  if (!commentAuthorAddress) throw new Error('Адрес автора комментария обязателен')
+  if (!keyPair || !address) throw new Error(t('commentsMsg.errAuthRequiredScore'))
+  if (!commentAuthorAddress) throw new Error(t('commentsMsg.errAuthorAddressRequired'))
 
   const selectedUnspents = await prepareUnspents(address)
 

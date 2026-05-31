@@ -1,6 +1,6 @@
 <template>
   <SC_EmojiPickerContainer>
-    <SC_EmojiHeader>Эмодзи</SC_EmojiHeader>
+    <SC_EmojiHeader>{{ t('chat.emoji') }}</SC_EmojiHeader>
     <SC_EmojiGrid>
       <SC_EmojiButton v-for="emoji in commonEmojis" :key="emoji" @click="handleSelect(emoji)">
         {{ emoji }}
@@ -10,7 +10,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { SC_EmojiPickerContainer, SC_EmojiHeader, SC_EmojiGrid, SC_EmojiButton } from './styled'
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   select: [emoji: string]

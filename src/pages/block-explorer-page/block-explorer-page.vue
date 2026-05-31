@@ -3,14 +3,14 @@
     <SC_ExplorerPage>
       <SC_ExplorerHeader>
         <SC_ExplorerTitleRow>
-          <SC_ExplorerTitle>{{ s.main.title }}</SC_ExplorerTitle>
-          <SC_LiveBadge :class='{ active: wsConnected }' :title='wsConnected ? s.common.liveTooltipOn : s.common.liveTooltipOff'>
+          <SC_ExplorerTitle>{{ t('explorerPage.mainTitle') }}</SC_ExplorerTitle>
+          <SC_LiveBadge :class='{ active: wsConnected }' :title='wsConnected ? t("explorerPage.liveTooltipOn") : t("explorerPage.liveTooltipOff")'>
             <SC_LiveDot :class='{ active: wsConnected }' />
-            {{ wsConnected ? s.common.live : s.common.offline }}
+            {{ wsConnected ? t('explorerPage.live') : t('explorerPage.offline') }}
           </SC_LiveBadge>
         </SC_ExplorerTitleRow>
         <SC_ExplorerSubtitle>
-          {{ s.main.subtitle(chainLabel, tipHeightLabel, tipAgeLabel) }}
+          {{ t('explorerPage.mainSubtitle', { chain: chainLabel, height: tipHeightLabel, age: tipAgeLabel }) }}
         </SC_ExplorerSubtitle>
         <ExplorerSearch />
       </SC_ExplorerHeader>
@@ -18,30 +18,30 @@
       <SC_ExplorerStatsRow>
         <SC_StatCard>
           <SC_StatCardLabel>
-            {{ s.main.statHeight }}
+            {{ t('explorerPage.statHeight') }}
             <InfoTooltip term-key='height' />
           </SC_StatCardLabel>
           <SC_StatCardValue>
             <Skeleton v-if='!nodeInfoData' :width='90' :height='22' />
             <template v-else>{{ tipHeightLabel }}</template>
           </SC_StatCardValue>
-          <SC_StatCardHint>{{ s.main.statHeightHint }}</SC_StatCardHint>
+          <SC_StatCardHint>{{ t('explorerPage.statHeightHint') }}</SC_StatCardHint>
         </SC_StatCard>
 
         <SC_StatCard>
           <SC_StatCardLabel>
-            {{ s.main.statEmission }}
+            {{ t('explorerPage.statEmission') }}
             <InfoTooltip term-key='emission' />
           </SC_StatCardLabel>
           <SC_StatCardValue>
-            <Skeleton v-if='emissionLabel === s.common.em' :width='110' :height='22' />
+            <Skeleton v-if='emissionLabel === EM_DASH' :width='110' :height='22' />
             <template v-else>{{ emissionLabel }}</template>
           </SC_StatCardValue>
-          <SC_StatCardHint>{{ s.main.statEmissionHint }}</SC_StatCardHint>
+          <SC_StatCardHint>{{ t('explorerPage.statEmissionHint') }}</SC_StatCardHint>
         </SC_StatCard>
 
         <SC_StatCard>
-          <SC_StatCardLabel>{{ s.main.statNodeVersion }}</SC_StatCardLabel>
+          <SC_StatCardLabel>{{ t('explorerPage.statNodeVersion') }}</SC_StatCardLabel>
           <SC_StatCardValue>
             <Skeleton v-if='!nodeInfoData' :width='70' :height='22' />
             <template v-else>{{ versionLabel }}</template>
@@ -51,14 +51,14 @@
 
         <SC_StatCard>
           <SC_StatCardLabel>
-            {{ s.main.statNetStakeWeight }}
+            {{ t('explorerPage.statNetStakeWeight') }}
             <InfoTooltip term-key='netStakeWeight' />
           </SC_StatCardLabel>
           <SC_StatCardValue>
             <Skeleton v-if='!nodeInfoData' :width='80' :height='22' />
             <template v-else>{{ netStakeLabel }}</template>
           </SC_StatCardValue>
-          <SC_StatCardHint>{{ s.main.statNetStakeWeightHint }}</SC_StatCardHint>
+          <SC_StatCardHint>{{ t('explorerPage.statNetStakeWeightHint') }}</SC_StatCardHint>
         </SC_StatCard>
       </SC_ExplorerStatsRow>
 
@@ -69,7 +69,7 @@
       <SC_ExplorerGrid>
         <SC_SectionCard>
           <SC_SectionHeader>
-            <SC_SectionTitle>{{ s.main.sectionLatestBlocks }}</SC_SectionTitle>
+            <SC_SectionTitle>{{ t('explorerPage.sectionLatestBlocks') }}</SC_SectionTitle>
           </SC_SectionHeader>
 
           <SC_RowList v-if='lastBlocksLoading && !lastBlocks.length'>
@@ -81,7 +81,7 @@
             </SC_BlockRow>
           </SC_RowList>
           <SC_ErrorPlaceholder v-else-if='lastBlocksError'>
-            {{ s.main.errorLoadBlocks }}
+            {{ t('explorerPage.errorLoadBlocks') }}
           </SC_ErrorPlaceholder>
           <SC_RowList v-else>
             <SC_BlockRow v-for='b in lastBlocks' :key='b.hash'>
@@ -100,7 +100,7 @@
                 :hash='b.hash'
                 :to='{ name: "explorer-block", params: { hashOrHeight: b.hash } }'
               />
-              <SC_BlockNtx>{{ s.main.txCount(b.ntx) }}</SC_BlockNtx>
+              <SC_BlockNtx>{{ t('explorerPage.txCount', { n: b.ntx }) }}</SC_BlockNtx>
               <SC_BlockAge :title='formatAbsTime(b.time)'>
                 {{ formatRelTime(b.time, now) }}
               </SC_BlockAge>
@@ -110,7 +110,7 @@
 
         <SC_SectionCard>
           <SC_SectionHeader>
-            <SC_SectionTitle>{{ s.main.sectionNetworkInfo }}</SC_SectionTitle>
+            <SC_SectionTitle>{{ t('explorerPage.sectionNetworkInfo') }}</SC_SectionTitle>
             <RouterLink
               v-slot='{ navigate, href }'
               custom
@@ -118,10 +118,10 @@
             >
               <a
                 :href='href'
-                style='font-size: 12px; color: rgb(0, 123, 255); text-decoration: none;'
+                style='font-size: 12px; color: var(--color-primary); text-decoration: none;'
                 @click='navigate'
               >
-                {{ s.main.linkPeers }}
+                {{ t('explorerPage.linkPeers') }}
               </a>
             </RouterLink>
           </SC_SectionHeader>
@@ -135,11 +135,11 @@
             </SC_BlockRow>
           </SC_RowList>
           <SC_ErrorPlaceholder v-else-if='nodeInfoError'>
-            {{ s.main.errorNodeUnavailable }}
+            {{ t('explorerPage.errorNodeUnavailable') }}
           </SC_ErrorPlaceholder>
           <SC_RowList v-else>
             <SC_BlockRow v-if='tipHash'>
-              <SC_BlockHeight>{{ s.main.tip }}</SC_BlockHeight>
+              <SC_BlockHeight>{{ t('explorerPage.tip') }}</SC_BlockHeight>
               <HashLink
                 :hash='tipHash'
                 :to='{ name: "explorer-block", params: { hashOrHeight: tipHash } }'
@@ -149,8 +149,8 @@
                 {{ formatRelTime(tipTime, now) }}
               </SC_BlockAge>
             </SC_BlockRow>
-            <div style='padding: 16px 18px; font-size: 13px; color: rgb(108, 117, 125);'>
-              {{ s.main.decentralizationNote(serverLabel) }}
+            <div style='padding: 16px 18px; font-size: 13px; color: var(--color-text-secondary);'>
+              {{ t('explorerPage.decentralizationNote', { server: serverLabel }) }}
             </div>
           </SC_RowList>
         </SC_SectionCard>
@@ -161,6 +161,7 @@
 
 <script setup lang='ts'>
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import {
   useNodeInfo,
@@ -179,7 +180,6 @@ import {
   formatRelativeTime as formatRelTime,
   formatAbsoluteTime as formatAbsTime,
 } from './components/shared/format-explorer'
-import { explorerStrings as s } from './block-explorer-strings'
 import {
   SC_ExplorerWork,
   SC_ExplorerPage,
@@ -207,6 +207,11 @@ import {
 } from './block-explorer-page.styled'
 
 defineOptions({ name: 'BlockExplorerPage' })
+
+const { t } = useI18n()
+
+// Технический placeholder (em-dash) — не локализуется.
+const EM_DASH = '—'
 
 const { isConnected: wsConnected } = useExplorerWsUpdates()
 
@@ -239,31 +244,32 @@ const nodeInfoData = computed(() => nodeInfo.value?.data)
 
 const tipHeightLabel = computed(() => {
   const h = nodeInfoData.value?.lastblock?.height
-  return h !== undefined ? `#${formatNumber(h)}` : s.common.em
+  return h !== undefined ? `#${formatNumber(h)}` : EM_DASH
 })
 
 const tipHash = computed(() => nodeInfoData.value?.lastblock?.hash ?? '')
 const tipTime = computed(() => nodeInfoData.value?.lastblock?.time ?? 0)
 const tipNtxLabel = computed(() => {
   const n = nodeInfoData.value?.lastblock?.ntx
-  return n !== undefined ? s.main.txCount(n) : s.common.em
+  return n !== undefined ? t('explorerPage.txCount', { n }) : EM_DASH
 })
 
 const tipAgeLabel = computed(() => {
-  const t = tipTime.value
-  return t > 0 ? formatRelTime(t, now.value) : s.common.em
+  const tm = tipTime.value
+  return tm > 0 ? formatRelTime(tm, now.value) : EM_DASH
 })
 
 const chainLabel = computed(() => {
   const c = nodeInfoData.value?.chain
-  return c === 'main' ? s.main.chainMain : c === 'test' ? s.main.chainTest : s.common.em
+  // Названия сетей — технические идентификаторы, не локализуются.
+  return c === 'main' ? 'main' : c === 'test' ? 'testnet' : EM_DASH
 })
 
-const versionLabel = computed(() => nodeInfoData.value?.version ?? s.common.em)
+const versionLabel = computed(() => nodeInfoData.value?.version ?? EM_DASH)
 
 const netStakeLabel = computed(() => {
   const w = nodeInfoData.value?.netstakeweight
-  if (!w) return s.common.em
+  if (!w) return EM_DASH
   // Огромные числа — показываем в компактной форме.
   return new Intl.NumberFormat('en-US', {
     notation: 'compact',
@@ -273,7 +279,7 @@ const netStakeLabel = computed(() => {
 
 const emissionLabel = computed(() => {
   const e = coinInfo.value?.data?.emission
-  if (e === null || e === undefined) return s.common.em
+  if (e === null || e === undefined) return EM_DASH
   return formatNumber(e)
 })
 
@@ -284,5 +290,5 @@ const lastBlocks = computed(() => {
   return [...arr].sort((a, b) => b.height - a.height)
 })
 
-const serverLabel = computed(() => nodeInfo.value?.node ?? s.main.serverNoteFallback)
+const serverLabel = computed(() => nodeInfo.value?.node ?? 'pocketnet.app')
 </script>

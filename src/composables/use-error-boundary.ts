@@ -12,6 +12,7 @@
 
 import type { App } from 'vue'
 import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
 
 type LoggableError = unknown
 
@@ -46,14 +47,14 @@ function reportError(err: LoggableError, context: string): void {
   // чтобы не пугать пользователя стек-трейсами.
   if (import.meta.env.DEV) {
     appToast.error({
-      message: `Ошибка (${context})`,
+      message: t('appMsg.error.devTitle', { context }),
       description: msg,
       duration: 6,
     })
   } else {
     appToast.error({
-      message: 'Что-то пошло не так',
-      description: 'Попробуйте перезагрузить страницу',
+      message: t('appMsg.error.genericTitle'),
+      description: t('appMsg.error.genericReload'),
       duration: 4,
     })
   }

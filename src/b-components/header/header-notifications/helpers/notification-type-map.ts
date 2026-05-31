@@ -1,4 +1,4 @@
-// Маппинг тип-уведомления → иконка/русская подпись.
+// Маппинг тип-уведомления → иконка/i18n-ключ подписи.
 // Используется для отрисовки бейджей и кратких меток в дропдауне.
 
 import type { NotificationItem } from '@/stores/notifications-store'
@@ -16,48 +16,51 @@ export const ICON_BY_TYPE: Record<string, string> = {
 }
 
 /**
- * Короткая русская метка типа — для цветной плашки рядом с записью.
+ * i18n-ключ короткой метки типа — для цветной плашки рядом с записью.
  * Для answer/post различаем подтипы (mesType), чтобы пользователь сразу видел
  * «это ответ на мой коммент» vs «это просто новый коммент».
+ * Резолвится через t() в компоненте при рендере (реактивно к смене языка).
  */
-export function notificationTypeLabel(item: NotificationItem): string {
+export function notificationTypeLabelKey(item: NotificationItem): string {
   switch (item.mesType) {
     case 'upvoteShare':
-      return item.upvoteVal != null && item.upvoteVal < 0 ? 'Низкая оценка' : 'Оценка'
+      return item.upvoteVal != null && item.upvoteVal < 0
+        ? 'notif.typeLowRating'
+        : 'notif.typeRating'
     case 'comment':
-      return 'Комментарий'
+      return 'notif.typeComment'
     case 'answer':
-      return 'Ответ'
+      return 'notif.typeAnswer'
     case 'subscribe':
-      return 'Подписка'
+      return 'notif.typeSubscribe'
     case 'subscribePrivate':
-      return 'Приватная подписка'
+      return 'notif.typeSubscribePrivate'
     case 'unsubscribe':
-      return 'Отписка'
+      return 'notif.typeUnsubscribe'
     case 'repost':
-      return 'Репост'
+      return 'notif.typeRepost'
     case 'post':
-      return 'Новый пост'
+      return 'notif.typePost'
     case 'userInfo':
-      return 'Профиль обновлён'
+      return 'notif.typeUserInfo'
     default:
       break
   }
   switch (item.type) {
     case 'rating':
     case 'like':
-      return 'Оценка'
+      return 'notif.typeRating'
     case 'comment':
-      return 'Комментарий'
+      return 'notif.typeComment'
     case 'subscribe':
-      return 'Подписка'
+      return 'notif.typeSubscribe'
     case 'repost':
-      return 'Репост'
+      return 'notif.typeRepost'
     case 'tip':
-      return 'Донат'
+      return 'notif.typeTip'
     case 'mention':
-      return 'Упоминание'
+      return 'notif.typeMention'
     default:
-      return 'Уведомление'
+      return 'notif.typeDefault'
   }
 }

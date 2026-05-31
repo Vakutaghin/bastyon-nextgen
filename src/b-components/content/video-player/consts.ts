@@ -28,12 +28,12 @@ export const ASPECT_RATIO_CONTAIN_THRESHOLD = 1 / 1.5
 
 /** Список горячих клавиш для отображения в справке */
 export const HOTKEYS_LIST: HotkeyItem[] = [
-  { key: 'Space', description: 'Воспроизведение / Пауза' },
-  { key: 'M', description: 'Включить / Выключить звук' },
-  { key: 'F', description: 'На весь экран' },
-  { key: 'Shift + >', description: 'Увеличить скорость' },
-  { key: 'Shift + <', description: 'Уменьшить скорость' },
-  { key: 'Shift + / (?)', description: 'Показать эту справку' },
-  { key: '← / →', description: 'Перемотка на 10 сек' },
-  { key: '↑ / ↓', description: 'Громкость' },
+  { key: 'Space', labelKey: 'hotkeys.playPause' },
+  { key: 'M', labelKey: 'hotkeys.toggleMute' },
+  { key: 'F', labelKey: 'hotkeys.fullscreen' },
+  { key: 'Shift + >', labelKey: 'hotkeys.speedUp' },
+  { key: 'Shift + <', labelKey: 'hotkeys.speedDown' },
+  { key: 'Shift + / (?)', labelKey: 'hotkeys.showHelp' },
+  { key: '← / →', labelKey: 'hotkeys.seek' },
+  { key: '↑ / ↓', labelKey: 'hotkeys.volume' },
 ]

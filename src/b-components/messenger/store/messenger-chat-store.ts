@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { ref, reactive } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
+import { t } from '@/i18n'
 import { deriveMessengerKeys } from '@/blockchain/core/keys'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC } from '@/helpers/api/request'
@@ -69,7 +70,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const messages = reactive<Record<string, Message[]>>({})
   const currentUser = ref<User>({
     id: 'me',
-    name: 'Я',
+    name: t('appMsg.messenger.me'),
     avatar: 'https://via.placeholder.com/150',
   })
 
@@ -520,7 +521,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     const senderId = getEventSender(event)
     let senderName = senderId
     if (senderId === currentUser.value.id || senderId === 'me') {
-      senderName = currentUser.value.name || 'Вы'
+      senderName = currentUser.value.name || t('appMsg.messenger.you')
     } else {
       const address = getAddressFromMatrixId(senderId)
       if (address) {
@@ -1214,7 +1215,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
       const unspents = filterAvailableUnspents(rawUnspents, false)
       const requiredAmount = amount + DEFAULT_TX_FEE
       const selected = selectBestUnspents(unspents, requiredAmount)
-      if (!selected.length) throw new Error('Недостаточно средств для перевода с учётом комиссии')
+      if (!selected.length) throw new Error(t('appMsg.messenger.insufficientFunds'))
 
       const built = await buildTransferTransaction({
         unspents: selected,
@@ -1358,7 +1359,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   /** Полный сброс при логауте */
   const reset = () => {
     Object.keys(messages).forEach((key) => delete messages[key])
-    currentUser.value = { id: 'me', name: 'Я', avatar: 'https://via.placeholder.com/150' }
+    currentUser.value = { id: 'me', name: t('appMsg.messenger.me'), avatar: 'https://via.placeholder.com/150' }
     pcryptoService.value = null
     localMessengerKeys.value = null
     decryptionCache.resetInMemory()

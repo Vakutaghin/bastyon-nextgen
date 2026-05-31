@@ -4,6 +4,7 @@
 
 import { computed } from 'vue'
 import type { RegistrationValidationModalProps, RegistrationValidationModalEmits } from './types'
+import { t } from '@/i18n'
 
 export function useRegistrationValidationModal(
   p: RegistrationValidationModalProps,
@@ -17,11 +18,11 @@ export function useRegistrationValidationModal(
   })
 
   const title = computed(() => {
-    return 'Валидация аккаунта в блокчейне'
+    return t('accountMsg.validationTitle')
   })
 
   const message = computed(() => {
-    return 'Ваш аккаунт проходит валидацию в блокчейне. Пожалуйста, подождите...'
+    return t('accountMsg.validationMessage')
   })
 
   const handleUpdateOpen = (value: boolean) => {

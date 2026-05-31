@@ -3,14 +3,17 @@
 /** URL API CoinGecko для данных о цене */
 export const COINGECKO_API_URL = 'https://api.coingecko.com/api/v3/coins/pocketcoin/market_chart'
 
-/** Варианты периодов для отображения графика */
+/**
+ * Варианты периодов для отображения графика. `labelKey` — i18n-ключ домена
+ * `labels`; резолвится через t(...) в потребляющем компоненте.
+ */
 export const PERIOD_OPTIONS = [
-  { value: 1, label: '1 день' },
-  { value: 7, label: '7 дней' },
-  { value: 30, label: '30 дней' },
-  { value: 90, label: '3 мес.' },
-  { value: 180, label: '6 мес.' },
-  { value: 365, label: '12 мес.' },
+  { value: 1, labelKey: 'labels.pkoinChartPeriod1d' },
+  { value: 7, labelKey: 'labels.pkoinChartPeriod7d' },
+  { value: 30, labelKey: 'labels.pkoinChartPeriod30d' },
+  { value: 90, labelKey: 'labels.pkoinChartPeriod3m' },
+  { value: 180, labelKey: 'labels.pkoinChartPeriod6m' },
+  { value: 365, labelKey: 'labels.pkoinChartPeriod12m' },
 ] as const
 
 /** Отступы графика (пиксели) */

@@ -23,20 +23,25 @@
     </SC_IframeWrap>
 
     <!-- Лепесток-закрывашка справа сверху. По дефолту виден только иконка-«язычок». -->
-    <SC_ClosePetal type="button" :title="`Закрыть «${app.manifest.name}»`" @click="askClose">
+    <SC_ClosePetal
+      type="button"
+      :title="t('miniapps.closeAppTitle', { name: app.manifest.name })"
+      @click="askClose"
+    >
       <SC_ClosePetalIcon>
         <CloseOutlined />
       </SC_ClosePetalIcon>
-      <SC_ClosePetalLabel>Закрыть</SC_ClosePetalLabel>
+      <SC_ClosePetalLabel>{{ t('miniapps.close') }}</SC_ClosePetalLabel>
     </SC_ClosePetal>
   </SC_Frame>
 
-  <SC_Error v-else> Мини-приложение не найдено. </SC_Error>
+  <SC_Error v-else> {{ t('miniapps.appNotFound') }} </SC_Error>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { CloseOutlined } from '@ant-design/icons-vue'
 import { Modal } from 'ant-design-vue'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
@@ -61,6 +66,7 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
+const { t } = useI18n()
 const appsStore = useAppsStore()
 
 const app = computed(() => appsStore.byId(props.appId))
@@ -91,10 +97,12 @@ function armLoadTimer() {
 
 const loaderText = computed(() => {
   if (!app.value) return ''
-  if (iframeStatus.value === 'load-error') return `Не удалось загрузить ${app.value.manifest.name}`
+  if (iframeStatus.value === 'load-error')
+    return t('miniapps.loadFailed', { name: app.value.manifest.name })
   if (iframeStatus.value === 'load-timeout')
-    return `${app.value.manifest.name} не отвечает — попробуйте позже`
-  if (iframeStatus.value === 'loaded-html') return `${app.value.manifest.name} — инициализация…`
+    return t('miniapps.notResponding', { name: app.value.manifest.name })
+  if (iframeStatus.value === 'loaded-html')
+    return t('miniapps.initializing', { name: app.value.manifest.name })
   return app.value.manifest.name
 })
 
@@ -164,10 +172,10 @@ const askClose = () => {
     return
   }
   Modal.confirm({
-    title: `Закрыть «${app.value.manifest.name}»?`,
-    content: 'Несохранённые данные в приложении могут быть потеряны.',
-    okText: 'Закрыть',
-    cancelText: 'Остаться',
+    title: t('miniapps.closeConfirmTitle', { name: app.value.manifest.name }),
+    content: t('miniapps.closeConfirmContent'),
+    okText: t('miniapps.close'),
+    cancelText: t('miniapps.stay'),
     okType: 'danger',
     centered: true,
     onOk: () => {

@@ -4,7 +4,7 @@
     <SC_FavoriteBtn
       type="button"
       :class="{ active: isFav }"
-      :title="isFav ? 'Убрать из избранного' : 'В избранное'"
+      :title="isFav ? t('miniapps.removeFromFavorites') : t('miniapps.addToFavorites')"
       @click.stop="emit('toggleFavorite')"
     >
       <StarFilled v-if="isFav" />
@@ -23,6 +23,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { StarOutlined, StarFilled } from '@ant-design/icons-vue'
 import {
   SC_Card,
@@ -45,6 +46,7 @@ const emit = defineEmits<{
   toggleFavorite: []
 }>()
 
+const { t } = useI18n()
 const broken = ref(false)
 
 watch(

@@ -5,7 +5,7 @@
     </SC_Reason>
 
     <SC_Subcaption>
-      <span>{{ captcha?.hex ? 'Решите hex капчу' : 'Введите текст с изображения' }}</span>
+      <span>{{ captcha?.hex ? t('misc.solveHexCaptcha') : t('misc.enterTextFromImage') }}</span>
     </SC_Subcaption>
 
     <SC_CaptchaImageWrapper :shown="imageShown">
@@ -20,7 +20,7 @@
           ref="captchaInputRef"
           v-model="inputText"
           type="text"
-          placeholder="Введите текст"
+          :placeholder="t('misc.enterText')"
           @keyup="handleInput"
           @focus="handleFocus"
         />
@@ -31,10 +31,10 @@
           :disabled="!isValid"
           @click="handleSubmit"
         >
-          Далее
+          {{ t('misc.next') }}
         </SC_SubmitButton>
         <SC_RedoButton @click="handleRedo">
-          Обновить
+          {{ t('misc.refresh') }}
         </SC_RedoButton>
       </SC_ButtonsContainer>
     </SC_Controls>
@@ -43,6 +43,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { CaptchaData } from '@/blockchain/api/captcha-api'
 import { useCaptcha } from './captcha'
 import {
@@ -71,6 +72,8 @@ const emit = defineEmits<{
   (e: 'error', error: string): void
   (e: 'redo'): void
 }>()
+
+const { t } = useI18n()
 
 const captchaInputRef = ref<HTMLInputElement | null>(null)
 

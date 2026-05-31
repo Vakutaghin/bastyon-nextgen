@@ -5,7 +5,7 @@
       <SC_Title>{{ title }}</SC_Title>
       <button
         type="button"
-        aria-label="Закрыть"
+        :aria-label="t('chat.close')"
         :style="{
           appearance: 'none',
           border: 'none',
@@ -32,8 +32,11 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { SC_Window, SC_Header, SC_Title, SC_Content } from './styled'
 import closeIcon from './img/close.svg'
+
+const { t } = useI18n()
 
 withDefaults(defineProps<{ isOpen: boolean; title?: string }>(), { title: 'Messenger' })
 const emit = defineEmits<{ close: [] }>()

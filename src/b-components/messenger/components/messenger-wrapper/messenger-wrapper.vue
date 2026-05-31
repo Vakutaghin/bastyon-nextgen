@@ -26,7 +26,7 @@
         "
       >
         <SC_MessengerWrapperSpinner />
-        <SC_MessengerWrapperLoaderText> Загрузка диалогов... </SC_MessengerWrapperLoaderText>
+        <SC_MessengerWrapperLoaderText> {{ t('messenger.loadingDialogs') }} </SC_MessengerWrapperLoaderText>
       </SC_MessengerWrapperLoader>
 
       <ChatRoom
@@ -64,6 +64,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import closeIcon from '../../img/close.svg'
 import backIcon from '../../img/back.svg'
 import chatIcon from '../../img/chat.svg'
@@ -100,6 +101,7 @@ const {
   inviteViewActive,
 } = storeToRefs(store)
 
+const { t } = useI18n()
 const totalUnreadCount = store.totalUnreadCount
 const authStore = useAuthStore()
 const { isMobileOrTablet } = useViewport()
@@ -139,13 +141,13 @@ watch(isMobileOrTablet, (mobile) => {
 const widgetTitle = computed<string>(() => {
   if (activeChatId.value) {
     const dialog = dialogs.value.find((d) => d.id === activeChatId.value)
-    return dialog?.partner.name || 'Чат'
+    return dialog?.partner.name || t('messenger.chat')
   }
   if (lastTargetAddress.value) {
     const profile = store.userProfiles[lastTargetAddress.value]
-    return profile?.name || lastTargetAddress.value || 'Новый чат'
+    return profile?.name || lastTargetAddress.value || t('messenger.newChat')
   }
-  return 'Сообщения'
+  return t('messenger.messages')
 })
 
 function onWidgetBack(): void {

@@ -16,8 +16,8 @@
       <SC_Spinner v-else-if="isLoading" />
       <SC_ErrorBadge v-else-if="decryptFailed" type="button" @click.stop="retry">
         <span aria-hidden="true">⚠️</span>
-        <span>Не удалось загрузить</span>
-        <span style="opacity: 0.8; text-decoration: underline">повторить</span>
+        <span>{{ t('chat.loadFailed') }}</span>
+        <span style="opacity: 0.8; text-decoration: underline">{{ t('chat.retry') }}</span>
       </SC_ErrorBadge>
 
       <SC_ProgressBadge v-if="uploadProgress != null && uploadProgress < 100">
@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import {
@@ -52,6 +53,7 @@ const props = defineProps<{
   message: Message
 }>()
 
+const { t } = useI18n()
 const store = useMessengerStore()
 
 const isLocal = computed(

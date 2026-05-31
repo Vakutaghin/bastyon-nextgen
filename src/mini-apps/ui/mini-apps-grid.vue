@@ -1,14 +1,16 @@
 <template>
   <div>
     <SC_Search>
-      <InputSearch v-model:value="search" placeholder="Поиск по приложениям…" />
+      <InputSearch v-model:value="search" :placeholder="t('miniapps.searchPlaceholder')" />
     </SC_Search>
 
-    <SC_Error v-if="error"> Не удалось загрузить каталог: {{ error.message }} </SC_Error>
+    <SC_Error v-if="error">
+      {{ t('miniapps.catalogLoadFailed', { message: error.message }) }}
+    </SC_Error>
 
     <!-- Установленные (built-in + локальные) -->
     <SC_Section v-if="filteredInstalled.length > 0">
-      <SC_SectionTitle>Установленные</SC_SectionTitle>
+      <SC_SectionTitle>{{ t('miniapps.sectionInstalled') }}</SC_SectionTitle>
       <SC_Grid>
         <CardItem
           v-for="app in filteredInstalled"
@@ -25,7 +27,7 @@
 
     <!-- Каталог из RPC getapps -->
     <SC_Section v-if="filteredRemote.length > 0">
-      <SC_SectionTitle>Каталог</SC_SectionTitle>
+      <SC_SectionTitle>{{ t('miniapps.sectionCatalog') }}</SC_SectionTitle>
       <SC_Grid>
         <CardItem
           v-for="entry in filteredRemote"
@@ -41,13 +43,13 @@
 
       <SC_LoadMore v-if="hasMore">
         <SC_LoadMoreBtn type="button" :disabled="isLoading" @click="loadMore">
-          {{ isLoading ? 'Загрузка…' : 'Загрузить ещё' }}
+          {{ isLoading ? t('miniapps.loading') : t('miniapps.loadMore') }}
         </SC_LoadMoreBtn>
       </SC_LoadMore>
     </SC_Section>
 
     <SC_Empty v-if="!isLoading && filteredInstalled.length === 0 && filteredRemote.length === 0">
-      {{ search ? 'Ничего не найдено.' : 'Каталог пуст.' }}
+      {{ search ? t('miniapps.nothingFound') : t('miniapps.catalogEmpty') }}
     </SC_Empty>
   </div>
 </template>
@@ -55,6 +57,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'
 import { useRemoteApps } from './use-remote-apps'
@@ -75,6 +78,7 @@ import {
 } from './mini-apps-grid.styled'
 
 const router = useRouter()
+const { t } = useI18n()
 const appsStore = useAppsStore()
 const favStore = useFavoriteMiniAppsStore()
 

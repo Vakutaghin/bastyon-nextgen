@@ -7,16 +7,16 @@
       <SC_FileMeta>
         <span>{{ sizeLabel }}</span>
         <SC_Progress v-if="uploadProgress != null && uploadProgress < 100"
-          >· загрузка {{ uploadProgress }}%</SC_Progress
+          >· {{ t('chat.uploading', { progress: uploadProgress }) }}</SC_Progress
         >
-        <SC_ErrorText v-else-if="downloadError">· ошибка скачивания</SC_ErrorText>
+        <SC_ErrorText v-else-if="downloadError">· {{ t('chat.downloadError') }}</SC_ErrorText>
       </SC_FileMeta>
     </SC_FileBody>
 
     <SC_DownloadButton
       v-if="canDownload"
       type="button"
-      :title="'Скачать'"
+      :title="t('chat.download')"
       :disabled="isDownloading"
       @click="onDownload"
     >
@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { iconForMime, formatFileSize } from './helpers'
@@ -47,6 +48,7 @@ const props = defineProps<{
   message: Message
 }>()
 
+const { t } = useI18n()
 const store = useMessengerStore()
 
 const fileName = computed<string>(() => props.message.info?.name || 'file')

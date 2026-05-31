@@ -1,7 +1,7 @@
 <template>
   <SC_SettingsWork>
     <SC_SettingsPage>
-      <h1 class="visually-hidden">Настройки</h1>
+      <h1 class="visually-hidden">{{ t('settings.title') }}</h1>
       <SC_SettingsContentWrapper>
         <SC_SettingsSidebar>
           <SC_SettingsSidebarItem
@@ -11,7 +11,7 @@
             type="button"
             @click="activeTab = tab.key"
           >
-            {{ tab.label }}
+            {{ t(tab.labelKey) }}
           </SC_SettingsSidebarItem>
         </SC_SettingsSidebar>
 
@@ -32,6 +32,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useNotificationSettingsStore } from '@/stores'
 import { useUIStore } from '@/stores/ui-store'
 import GeneralTab from './tabs/general-tab.vue'
@@ -61,17 +62,19 @@ export type T_SettingsTabKey =
   | 'blockExplorer'
   | 'whatsNew'
 
-const SETTINGS_TABS: { key: T_SettingsTabKey; label: string }[] = [
-  { key: 'general', label: 'Общие' },
-  { key: 'notifications', label: 'Уведомления' },
-  { key: 'wallets', label: 'Кошельки' },
-  { key: 'accounts', label: 'Аккаунты' },
-  { key: 'system', label: 'Система' },
-  { key: 'privateKey', label: 'Приватный ключ' },
-  { key: 'blockExplorer', label: 'Block Explorer' },
-  { key: 'whatsNew', label: 'Что нового' },
+// labelKey — ключ i18n; рендерим через t(), чтобы метки реактивно следовали за локалью.
+const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
+  { key: 'general', labelKey: 'settings.tabs.general' },
+  { key: 'notifications', labelKey: 'settings.tabs.notifications' },
+  { key: 'wallets', labelKey: 'settings.tabs.wallets' },
+  { key: 'accounts', labelKey: 'settings.tabs.accounts' },
+  { key: 'system', labelKey: 'settings.tabs.system' },
+  { key: 'privateKey', labelKey: 'settings.tabs.privateKey' },
+  { key: 'blockExplorer', labelKey: 'settings.tabs.blockExplorer' },
+  { key: 'whatsNew', labelKey: 'settings.tabs.whatsNew' },
 ]
 
+const { t } = useI18n()
 const activeTab = ref<T_SettingsTabKey>('notifications')
 
 // Подгружаем стартовые состояния (язык, фильтры) до того, как соответствующие
@@ -86,6 +89,6 @@ onMounted(() => {
 
 const placeholderText = computed(() => {
   const item = SETTINGS_TABS.find((tab) => tab.key === activeTab.value)
-  return item ? `Раздел «${item.label}» — контент будет добавлен позже.` : ''
+  return item ? t('settings.placeholder', { section: t(item.labelKey) }) : ''
 })
 </script>

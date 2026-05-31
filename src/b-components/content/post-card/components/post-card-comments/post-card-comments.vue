@@ -1,6 +1,6 @@
 <template>
   <SC_CommentsPreview>
-    <h3>Комментарии ({{ totalCommentsCount }})</h3>
+    <h3>{{ t('comments.title', { count: totalCommentsCount }) }}</h3>
 
     <!-- Компактный вид: комментарии ещё не загружены -->
     <template v-if="!allComments">
@@ -57,11 +57,13 @@
                 type="button"
                 @click.stop.prevent="onLastCommentRepliesClick"
               >
-                Ответы ({{ lastCommentChildren }})
+                {{ t('comments.replies', { count: lastCommentChildren }) }}
               </SC_CommentRepliesLink>
-              <button type="button" @click.stop.prevent="onLastCommentReply">Ответить</button>
+              <button type="button" @click.stop.prevent="onLastCommentReply">
+                {{ t('comments.reply') }}
+              </button>
               <button type="button" @click.stop.prevent="onLastCommentReplyToAuthor">
-                Ответить автору
+                {{ t('comments.replyToAuthor') }}
               </button>
             </SC_CommentActions>
           </SC_CommentContent>
@@ -106,18 +108,18 @@
                     }}</SC_CommentDate>
                     <SC_TxStatusBadge
                       v-if="isCommentPending(reply)"
-                      title="Ожидает подтверждения сетью"
+                      :title="t('comments.txPending')"
                     >
                       <ClockCircleOutlined />
-                      <span>Ожидание</span>
+                      <span>{{ t('comments.txPendingShort') }}</span>
                     </SC_TxStatusBadge>
                     <SC_TxStatusBadge
                       v-else-if="isCommentRejected(reply)"
                       class="tx-status--rejected"
-                      title="Транзакция отклонена"
+                      :title="t('comments.txRejected')"
                     >
                       <StopOutlined />
-                      <span>Ошибка</span>
+                      <span>{{ t('comments.txRejectedShort') }}</span>
                     </SC_TxStatusBadge>
                   </SC_CommentMetaRight>
                 </SC_CommentMeta>
@@ -132,16 +134,16 @@
       <SC_CommentsActionsRow v-if="totalCommentsCount > 0">
         <SC_CommentsActionsLeft>
           <SC_CommentsLoading v-if="allCommentsLoading">
-            <LoadingOutlined :style="{ fontSize: '18px', color: '#00a4ff' }" spin />
+            <LoadingOutlined :style="{ fontSize: '18px', color: 'var(--color-brand-cyan)' }" spin />
           </SC_CommentsLoading>
 
           <template v-else>
             <SC_ShowCommentsBtn type="button" @click.stop.prevent="loadAllComments(false)">
-              Показать ещё 15
+              {{ t('comments.showMoreFixed', { count: 15 }) }}
             </SC_ShowCommentsBtn>
 
             <SC_ShowCommentsBtnSecondary type="button" @click.stop.prevent="loadAllComments(true)">
-              Показать все
+              {{ t('comments.showAll') }}
             </SC_ShowCommentsBtnSecondary>
           </template>
         </SC_CommentsActionsLeft>
@@ -202,11 +204,13 @@
                 type="button"
                 @click.stop.prevent="onLastCommentRepliesClick"
               >
-                Ответы ({{ lastCommentChildren }})
+                {{ t('comments.replies', { count: lastCommentChildren }) }}
               </SC_CommentRepliesLink>
-              <button type="button" @click.stop.prevent="onLastCommentReply">Ответить</button>
+              <button type="button" @click.stop.prevent="onLastCommentReply">
+                {{ t('comments.reply') }}
+              </button>
               <button type="button" @click.stop.prevent="onLastCommentReplyToAuthor">
-                Ответить автору
+                {{ t('comments.replyToAuthor') }}
               </button>
             </SC_CommentActions>
           </SC_CommentContent>
@@ -250,18 +254,18 @@
                     }}</SC_CommentDate>
                     <SC_TxStatusBadge
                       v-if="isCommentPending(reply)"
-                      title="Ожидает подтверждения сетью"
+                      :title="t('comments.txPending')"
                     >
                       <ClockCircleOutlined />
-                      <span>Ожидание</span>
+                      <span>{{ t('comments.txPendingShort') }}</span>
                     </SC_TxStatusBadge>
                     <SC_TxStatusBadge
                       v-else-if="isCommentRejected(reply)"
                       class="tx-status--rejected"
-                      title="Транзакция отклонена"
+                      :title="t('comments.txRejected')"
                     >
                       <StopOutlined />
-                      <span>Ошибка</span>
+                      <span>{{ t('comments.txRejectedShort') }}</span>
                     </SC_TxStatusBadge>
                   </SC_CommentMetaRight>
                 </SC_CommentMeta>
@@ -274,27 +278,27 @@
       </SC_CommentWithReplies>
 
       <SC_ShowCommentsBtn type="button" @click.stop.prevent="expandComments">
-        Развернуть комментарии ({{ actualCommentsCount }})
+        {{ t('comments.expand', { count: actualCommentsCount }) }}
       </SC_ShowCommentsBtn>
     </template>
 
     <!-- Развёрнутый вид: сортировка + список с пагинацией -->
     <template v-else>
       <SC_CommentsSortRow>
-        <label for="comments-sort">Сортировка:</label>
+        <label for="comments-sort">{{ t('comments.sortLabel') }}</label>
         <SC_CommentsSortSelect
           id="comments-sort"
           :value="commentsSortOrder"
           @change="setCommentsSortOrder($event)"
         >
-          <option value="interesting">Сначала интересные</option>
-          <option value="newest">Сначала новые</option>
-          <option value="oldest">Сначала старые</option>
+          <option value="interesting">{{ t('comments.sortInteresting') }}</option>
+          <option value="newest">{{ t('comments.sortNewest') }}</option>
+          <option value="oldest">{{ t('comments.sortOldest') }}</option>
         </SC_CommentsSortSelect>
         <SC_RefreshBtn
           type="button"
           :disabled="allCommentsLoading"
-          title="Обновить"
+          :title="t('comments.refresh')"
           @click.stop.prevent="refreshComments"
         >
           <LoadingOutlined v-if="allCommentsLoading" :style="ICON_SIZE_SM" spin />
@@ -324,22 +328,22 @@
                 }}</SC_CommentDate>
                 <SC_TxStatusBadge
                   v-if="isCommentPending(comment)"
-                  title="Ожидает подтверждения сетью"
+                  :title="t('comments.txPending')"
                 >
                   <ClockCircleOutlined />
-                  <span>Ожидание</span>
+                  <span>{{ t('comments.txPendingShort') }}</span>
                 </SC_TxStatusBadge>
                 <SC_TxStatusBadge
                   v-else-if="isCommentRejected(comment)"
                   class="tx-status--rejected"
-                  title="Транзакция отклонена"
+                  :title="t('comments.txRejected')"
                 >
                   <StopOutlined />
-                  <span>Ошибка</span>
+                  <span>{{ t('comments.txRejectedShort') }}</span>
                 </SC_TxStatusBadge>
                 <SC_EditedMark
                   v-else-if="!isCommentDeleted(comment) && isCommentEdited(comment)"
-                  title="Отредактировано"
+                  :title="t('comments.edited')"
                 >
                   <EditOutlined />
                 </SC_EditedMark>
@@ -353,7 +357,7 @@
             </SC_CommentMeta>
 
             <SC_CommentDeleted v-if="isCommentDeleted(comment)">
-              Комментарий был удалён
+              {{ t('comments.deleted') }}
             </SC_CommentDeleted>
             <CommentEditForm
               v-else-if="isEditingComment(comment)"
@@ -365,9 +369,9 @@
               @save="submitEdit"
             />
             <SC_HiddenBanner v-else-if="shouldHideContent(comment)">
-              <span>Скрыто из-за низкой репутации автора</span>
+              <span>{{ t('comments.hiddenLowReputation') }}</span>
               <SC_RevealBtn type="button" @click.stop.prevent="revealHiddenComment(comment)">
-                Показать всё равно
+                {{ t('comments.showAnyway') }}
               </SC_RevealBtn>
             </SC_HiddenBanner>
             <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
@@ -423,13 +427,13 @@
                 type="button"
                 @click.stop.prevent="onRepliesClick(comment)"
               >
-                Ответы ({{ comment.children }})
+                {{ t('comments.replies', { count: comment.children }) }}
               </SC_CommentRepliesLink>
               <button type="button" @click.stop.prevent="onReplyToFirstLevel(comment)">
-                Ответить
+                {{ t('comments.reply') }}
               </button>
               <button type="button" @click.stop.prevent="onReplyToAuthorFirstLevel(comment)">
-                Ответить автору
+                {{ t('comments.replyToAuthor') }}
               </button>
             </SC_CommentActions>
           </SC_CommentContent>
@@ -480,22 +484,22 @@
                       }}</SC_CommentDate>
                       <SC_TxStatusBadge
                         v-if="isCommentPending(reply)"
-                        title="Ожидает подтверждения сетью"
+                        :title="t('comments.txPending')"
                       >
                         <ClockCircleOutlined />
-                        <span>Ожидание</span>
+                        <span>{{ t('comments.txPendingShort') }}</span>
                       </SC_TxStatusBadge>
                       <SC_TxStatusBadge
                         v-else-if="isCommentRejected(reply)"
                         class="tx-status--rejected"
-                        title="Транзакция отклонена"
+                        :title="t('comments.txRejected')"
                       >
                         <StopOutlined />
-                        <span>Ошибка</span>
+                        <span>{{ t('comments.txRejectedShort') }}</span>
                       </SC_TxStatusBadge>
                       <SC_EditedMark
                         v-else-if="!isCommentDeleted(reply) && isCommentEdited(reply)"
-                        title="Отредактировано"
+                        :title="t('comments.edited')"
                       >
                         <EditOutlined />
                       </SC_EditedMark>
@@ -508,7 +512,7 @@
                     </SC_CommentMetaRight>
                   </SC_CommentMeta>
                   <SC_CommentDeleted v-if="isCommentDeleted(reply)">
-                    Комментарий был удалён
+                    {{ t('comments.deleted') }}
                   </SC_CommentDeleted>
                   <CommentEditForm
                     v-else-if="isEditingComment(reply)"
@@ -520,9 +524,9 @@
                     @save="submitEdit"
                   />
                   <SC_HiddenBanner v-else-if="shouldHideContent(reply)">
-                    <span>Скрыто из-за низкой репутации автора</span>
+                    <span>{{ t('comments.hiddenLowReputation') }}</span>
                     <SC_RevealBtn type="button" @click.stop.prevent="revealHiddenComment(reply)">
-                      Показать всё равно
+                      {{ t('comments.showAnyway') }}
                     </SC_RevealBtn>
                   </SC_HiddenBanner>
                   <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
@@ -571,10 +575,10 @@
                       👎 {{ formatScore(reply.scoreDown) }}
                     </button>
                     <button type="button" @click.stop.prevent="onReplyToSecondLevel(reply)">
-                      Ответить
+                      {{ t('comments.reply') }}
                     </button>
                     <button type="button" @click.stop.prevent="onReplyToComment(reply)">
-                      Ответить автору
+                      {{ t('comments.replyToAuthor') }}
                     </button>
                   </SC_CommentActions>
                 </SC_CommentContent>
@@ -606,10 +610,14 @@
             type="button"
             @click.stop.prevent="toggleRepliesExpanded(comment.id)"
           >
-            {{ getReplies(comment.id).length > 0 ? 'Свернуть ответы' : 'Свернуть' }}
+            {{
+              getReplies(comment.id).length > 0
+                ? t('comments.collapseReplies')
+                : t('comments.collapse')
+            }}
           </SC_CommentRepliesToggle>
           <SC_CommentsLoading v-if="isRepliesLoading(comment.id)">
-            <LoadingOutlined :style="{ fontSize: '16px', color: '#00a4ff' }" spin />
+            <LoadingOutlined :style="{ fontSize: '16px', color: 'var(--color-brand-cyan)' }" spin />
           </SC_CommentsLoading>
         </template>
       </SC_CommentWithReplies>
@@ -621,7 +629,7 @@
             type="button"
             @click.stop.prevent="showMoreComments"
           >
-            Показать ещё {{ nextCommentsPageSize }}
+            {{ t('comments.showMore', { count: nextCommentsPageSize }) }}
           </SC_ShowCommentsBtn>
 
           <SC_ShowCommentsBtnSecondary
@@ -629,12 +637,12 @@
             type="button"
             @click.stop.prevent="showAllComments"
           >
-            Показать все
+            {{ t('comments.showAll') }}
           </SC_ShowCommentsBtnSecondary>
         </SC_CommentsActionsLeft>
 
         <SC_ShowCommentsBtnCollapse type="button" @click.stop.prevent="collapseComments">
-          Свернуть
+          {{ t('comments.collapse') }}
         </SC_ShowCommentsBtnCollapse>
       </SC_CommentsActionsRow>
     </template>
@@ -647,7 +655,7 @@
     <!-- Бар «написать комментарий к посту» -->
     <SC_ReplyPanel v-else-if="isRootReplyActive">
       <div v-if="currentUserAvatarUrl" class="reply-avatar">
-        <img :src="currentUserAvatarUrl" alt="Ваш аватар" loading="lazy" decoding="async" />
+        <img :src="currentUserAvatarUrl" :alt="t('comments.yourAvatar')" loading="lazy" decoding="async" />
       </div>
       <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
       <SC_ReplyInputWrap>
@@ -655,7 +663,7 @@
           :key="'root-' + replyPanelKey"
           ref="rootReplyTextareaRef"
           :value="isRootReplyActive ? replyDraft : ''"
-          placeholder="Введите комментарий... (введите @ чтобы упомянуть пользователя)"
+          :placeholder="t('comments.composerPlaceholder')"
           rows="2"
           @input="
             (e) => {
@@ -688,7 +696,7 @@
       </SC_ReplyInputWrap>
       <SC_ReplySendBtn
         type="button"
-        title="Отправить"
+        :title="t('comments.send')"
         :disabled="
           !isRootReplyActive || !(replyDraft || '').trim() || replySubmitting || !rootLengthValid
         "
@@ -703,6 +711,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   LoadingOutlined,
@@ -800,6 +809,8 @@ const emit = defineEmits<{
   replyToComment: []
   comment: []
 }>()
+
+const { t } = useI18n()
 
 // --- Базовая идентификация поста / пользователя. ---
 const postId = computed<string>(

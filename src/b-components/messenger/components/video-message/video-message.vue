@@ -14,8 +14,8 @@
 
         <SC_ErrorBadge v-if="loadError" type="button" @click="retry">
           <span aria-hidden="true">⚠️</span>
-          <span>Не удалось загрузить</span>
-          <span style="opacity: 0.8; text-decoration: underline">повторить</span>
+          <span>{{ t('chat.loadFailed') }}</span>
+          <span style="opacity: 0.8; text-decoration: underline">{{ t('chat.retry') }}</span>
         </SC_ErrorBadge>
 
         <SC_DurationBadge v-if="durationLabel">{{ durationLabel }}</SC_DurationBadge>
@@ -41,6 +41,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import {
@@ -61,6 +62,7 @@ const props = defineProps<{
   message: Message
 }>()
 
+const { t } = useI18n()
 const store = useMessengerStore()
 
 const isLocal = computed(

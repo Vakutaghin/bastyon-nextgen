@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { transcodedVideoAPI } from '@/db/apis/transcoded-video-api'
 import type { TranscodedVideo } from '@/db'
 import { isTauri } from '../utils/environment'
+import { t } from '@/i18n'
 
 export interface UseVideoManagerOptions {
   onDeleteError?: (message: string) => void
@@ -141,7 +142,7 @@ export function useVideoManager(options: UseVideoManagerOptions = {}) {
       const deletedVideo = await transcodedVideoAPI.get(videoIdToDelete)
       if (deletedVideo) {
         console.error('Видео не было удалено из базы данных')
-        throw new Error('Не удалось удалить видео из базы данных')
+        throw new Error(t('videoMsg.deleteFromDbFailed'))
       }
 
       await loadVideos()
@@ -150,8 +151,8 @@ export function useVideoManager(options: UseVideoManagerOptions = {}) {
       deleteVideo.value = null
     } catch (error) {
       console.error('Ошибка при удалении видео:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка'
-      options.onDeleteError?.(`Не удалось удалить видео: ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : t('videoMsg.unknownError')
+      options.onDeleteError?.(t('videoMsg.deleteVideoFailed', { message: errorMessage }))
     }
   }
 

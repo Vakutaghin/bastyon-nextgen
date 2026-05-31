@@ -9,9 +9,9 @@
     </SC_AuthSkeleton>
   </template>
   <template v-else-if="!isAuthenticated">
-    <Button type="default" @click="openSignInModal"> Войти </Button>
+    <Button type="default" @click="openSignInModal"> {{ t('header.signIn') }} </Button>
 
-    <Button type="default" @click="openRegisterModal"> Регистрация </Button>
+    <Button type="default" @click="openRegisterModal"> {{ t('header.register') }} </Button>
   </template>
   <template v-else>
     <Dropdown
@@ -39,7 +39,7 @@
           </SC_UserBalance>
 
           <SC_UserLoading v-else-if="authStore.isLoading || authStore.isFetchingUserState">
-            Загрузка...
+            {{ t('header.loading') }}
           </SC_UserLoading>
         </SC_UserDetails>
       </SC_UserInfoTrigger>
@@ -95,6 +95,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Dropdown, Menu } from 'ant-design-vue'
 import Button from '@/components/button/button.vue'
 import Avatar from '@/components/avatar/avatar.vue'
@@ -121,6 +122,8 @@ import {
   SC_AuthSkeleton,
   SC_SkeletonLines,
 } from './styled'
+
+const { t } = useI18n()
 
 const authStore = useAuthStore()
 const modalStore = useModalStore()
@@ -186,7 +189,7 @@ const userName = computed<string>(() => {
   const cached = authStore.getCachedAccountName
   if (cached) return cached
   if (userAddress.value) return userAddress.value.substring(0, 8) + '...'
-  return 'Пользователь'
+  return t('header.user')
 })
 
 const userAvatar = computed<string | null>(() => {

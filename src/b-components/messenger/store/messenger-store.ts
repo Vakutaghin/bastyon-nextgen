@@ -5,6 +5,7 @@ import { defineStore, storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
+import { t } from '@/i18n'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { logger } from '@/services/logger'
@@ -69,7 +70,7 @@ export const useMessengerStore = defineStore('messenger', () => {
         )
     }
 
-    const roomName = room.name || (otherMember ? otherMember.name : 'Чат')
+    const roomName = room.name || (otherMember ? otherMember.name : t('appMsg.messenger.chat'))
     const partnerId = isDirect ? (otherMember ? otherMember.userId : room.roomId) : null
     const member = partnerId && room.getMember ? room.getMember(partnerId) : null
 
@@ -352,7 +353,7 @@ export const useMessengerStore = defineStore('messenger', () => {
 
           matrixService.on('sync', (state: string) => {
             uiStore.syncState = state
-            if (state === 'ERROR') uiStore.syncError = 'Sync Error'
+            if (state === 'ERROR') uiStore.syncError = t('appMsg.messenger.syncError')
             else if (state === 'PREPARED') {
               uiStore.syncError = null
               loadDialogs(true).then(() => {

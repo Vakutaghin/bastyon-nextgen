@@ -4,6 +4,7 @@
 
 import { ref, computed, watch } from 'vue'
 import type { CaptchaData } from '@/blockchain/api/captcha-api'
+import { t } from '@/i18n'
 
 // Типы для использования в composable и других местах
 export interface CaptchaModalProps {
@@ -35,12 +36,12 @@ export function useCaptchaModal(
   const error = ref<string | null>(null)
 
   const title = computed(() => {
-    if (!p.reason) return 'Капча'
+    if (!p.reason) return t('accountMsg.captchaTitle')
     const titles: Record<string, string> = {
-      registration: 'Регистрация аккаунта',
-      balance: 'Пополнение баланса',
+      registration: t('accountMsg.reasonRegistration'),
+      balance: t('accountMsg.reasonBalance'),
     }
-    return titles[p.reason] || 'Капча'
+    return titles[p.reason] || t('accountMsg.captchaTitle')
   })
 
   const handleUpdateOpen = (value: boolean) => {

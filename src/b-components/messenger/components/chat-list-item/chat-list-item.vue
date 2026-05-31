@@ -14,7 +14,7 @@
       <SC_Name>{{ dialog.partner.name }}</SC_Name>
 
       <SC_LastMessage v-if="dialog.lastMessage">
-        <span v-if="isMine(dialog.lastMessage)">Вы: </span>
+        <span v-if="isMine(dialog.lastMessage)">{{ t('chat.youPrefix') }}</span>
         {{ dialog.lastMessage.text }}
       </SC_LastMessage>
     </SC_Info>
@@ -39,7 +39,7 @@
             <SC_Dropdown :style="dropdownStyle">
               <SC_DropdownItem @click.stop="onDelete">
                 <DeleteOutlined :style="ICON_DANGER_MR_8" />
-                Удалить диалог
+                {{ t('chat.deleteDialog') }}
               </SC_DropdownItem>
             </SC_Dropdown>
           </div>
@@ -50,13 +50,13 @@
     <Teleport to="body">
       <SC_ConfirmOverlay v-if="showConfirm" @click="showConfirm = false">
         <SC_ConfirmDialog @click.stop>
-          <SC_ConfirmTitle>Удалить диалог?</SC_ConfirmTitle>
+          <SC_ConfirmTitle>{{ t('chat.deleteDialogConfirmTitle') }}</SC_ConfirmTitle>
           <SC_ConfirmText>
-            Диалог с {{ dialog.partner.name }} будет удалён. Это действие нельзя отменить.
+            {{ t('chat.deleteDialogConfirmText', { name: dialog.partner.name }) }}
           </SC_ConfirmText>
           <SC_ConfirmButtons>
-            <SC_CancelBtn @click="showConfirm = false">Отмена</SC_CancelBtn>
-            <SC_ConfirmDeleteBtn @click="confirmDelete">Удалить</SC_ConfirmDeleteBtn>
+            <SC_CancelBtn @click="showConfirm = false">{{ t('chat.cancel') }}</SC_CancelBtn>
+            <SC_ConfirmDeleteBtn @click="confirmDelete">{{ t('chat.delete') }}</SC_ConfirmDeleteBtn>
           </SC_ConfirmButtons>
         </SC_ConfirmDialog>
       </SC_ConfirmOverlay>
@@ -66,6 +66,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { DeleteOutlined, EllipsisOutlined } from '@ant-design/icons-vue'
 import type { Dialog, Message } from '../../types'
 import { useMessengerStore } from '../../store'
@@ -94,6 +95,7 @@ import {
 } from './styled'
 
 const props = defineProps<{ dialog: Dialog }>()
+const { t } = useI18n()
 const store = useMessengerStore()
 
 const menuOpen = ref(false)

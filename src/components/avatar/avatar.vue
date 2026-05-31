@@ -65,7 +65,7 @@
         height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px'
       }"
     >
-      <ClockCircleOutlined style="color: #fff; font-size: 9px;" />
+      <ClockCircleOutlined style="color: var(--color-white); font-size: 9px;" />
     </div>
     <div
       v-else-if="p.verified"
@@ -75,7 +75,7 @@
         height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px'
       }"
     >
-      <CheckOutlined style="color: #fff; font-size: 10px;" />
+      <CheckOutlined style="color: var(--color-white); font-size: 10px;" />
     </div>
   </SC_Avatar>
 </template>

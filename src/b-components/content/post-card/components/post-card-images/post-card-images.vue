@@ -9,7 +9,7 @@
     >
       <img
         :src="imageUrl"
-        :alt="`Изображение ${idx + 1}`"
+        :alt="t('postCard.imageAlt', { index: idx + 1 })"
         :style="getImageStyle(idx)"
         loading="lazy"
         decoding="async"
@@ -27,12 +27,14 @@
 
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ZoomInOutlined } from '@ant-design/icons-vue'
 import { useModalStore } from '@/stores/modal-store'
 import { SC_PostImage, SC_ImageWrapper, SC_ImageOverlay, SC_ZoomIconCircle } from './styled'
 
 const props = defineProps<{ images: string[] }>()
 
+const { t } = useI18n()
 const modalStore = useModalStore()
 
 const imageAspectRatios = reactive<

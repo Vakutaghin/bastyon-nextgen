@@ -13,6 +13,7 @@
 
 import { ref, computed, nextTick, type Ref, type ComputedRef } from 'vue'
 import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
 import { haptic } from '@/helpers/common/haptics'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 import { useCommentsStore, usePostsStore } from '@/stores'
@@ -256,7 +257,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     const text = (replyDraft.value || '').trim()
     if (!text || replySubmitting.value) return
     if (!isCommentLengthValid(text)) {
-      appToast.error({ message: 'Текст комментария превышает допустимую длину' })
+      appToast.error({ message: t('commentsMsg.tooLong') })
       return
     }
     const disableReason = opts.composerDisableReason.value
@@ -315,7 +316,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     try {
       const txid = await sendComment(opts.postId.value, parentId, answerId, text)
       haptic('small')
-      appToast.success({ message: 'Комментарий отправлен' })
+      appToast.success({ message: t('commentsMsg.sendSuccess') })
       if (txid) {
         commentsStore.replacePendingId(opts.postId.value, localId, txid)
       }
@@ -329,7 +330,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
       }
       replyDraft.value = text
       appToast.error({
-        message: e instanceof Error ? e.message : 'Не удалось отправить комментарий',
+        message: e instanceof Error ? e.message : t('commentsMsg.sendError'),
       })
     } finally {
       replySubmitting.value = false

@@ -1,7 +1,7 @@
 <template>
   <SC_WalletWork>
     <SC_WalletPage>
-      <SC_WalletTitle>Кошельки</SC_WalletTitle>
+      <SC_WalletTitle>{{ t('wallet.title') }}</SC_WalletTitle>
 
       <SC_WalletTabs>
         <SC_WalletTabList>
@@ -10,27 +10,27 @@
             :class="{ active: activeTabKey === 'balances' }"
             @click="activeTabKey = 'balances'"
           >
-            Балансы
+            {{ t('wallet.tabBalances') }}
           </SC_WalletTabButton>
           <SC_WalletTabButton
             type="button"
             :class="{ active: activeTabKey === 'transfers' }"
             @click="activeTabKey = 'transfers'"
           >
-            Переводы
+            {{ t('wallet.tabTransfers') }}
           </SC_WalletTabButton>
           <SC_WalletTabButton
             type="button"
             :class="{ active: activeTabKey === 'buy' }"
             @click="activeTabKey = 'buy'"
           >
-            Покупка/продажа
+            {{ t('wallet.tabBuySell') }}
           </SC_WalletTabButton>
         </SC_WalletTabList>
 
         <SC_WalletTabPanels>
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'balances' }">
-            <SC_WalletLoading v-if="loading && !hasAddresses"> Загрузка... </SC_WalletLoading>
+            <SC_WalletLoading v-if="loading && !hasAddresses"> {{ t('wallet.loading') }} </SC_WalletLoading>
 
             <SC_WalletError v-else-if="error">
               {{ error }}
@@ -39,7 +39,7 @@
             <template v-else>
               <SC_WalletBalanceCards>
                 <SC_WalletBalanceCard>
-                  <SC_WalletBalanceLabel>Баланс основного кошелька</SC_WalletBalanceLabel>
+                  <SC_WalletBalanceLabel>{{ t('wallet.mainWalletBalance') }}</SC_WalletBalanceLabel>
                   <SC_WalletBalanceValue>
                     {{ formatBalance(accountBalance) }}
                   </SC_WalletBalanceValue>
@@ -47,7 +47,7 @@
 
                 <SC_WalletBalanceCard>
                   <SC_WalletBalanceLabel>
-                    Суммарный баланс на адресах всех дополнительных кошельков
+                    {{ t('wallet.additionalWalletsBalance') }}
                   </SC_WalletBalanceLabel>
                   <SC_WalletBalanceValue>
                     {{ formatBalance(sumWalletsBalance) }}
@@ -55,7 +55,7 @@
                 </SC_WalletBalanceCard>
 
                 <SC_WalletBalanceCard>
-                  <SC_WalletBalanceLabel>Суммарный баланс всех кошельков</SC_WalletBalanceLabel>
+                  <SC_WalletBalanceLabel>{{ t('wallet.totalBalance') }}</SC_WalletBalanceLabel>
                   <SC_WalletBalanceValue>
                     {{ formatBalance(totalBalance) }}
                   </SC_WalletBalanceValue>
@@ -63,12 +63,12 @@
               </SC_WalletBalanceCards>
 
               <SC_WalletTableSection>
-                <SC_WalletTableTitle>Основной кошелёк</SC_WalletTableTitle>
+                <SC_WalletTableTitle>{{ t('wallet.mainWallet') }}</SC_WalletTableTitle>
 
                 <SC_WalletTable>
                   <SC_WalletTableHeader>
-                    <SC_WalletTableAddress>Адрес</SC_WalletTableAddress>
-                    <SC_WalletTableBalance>Баланс</SC_WalletTableBalance>
+                    <SC_WalletTableAddress>{{ t('wallet.address') }}</SC_WalletTableAddress>
+                    <SC_WalletTableBalance>{{ t('wallet.balance') }}</SC_WalletTableBalance>
                   </SC_WalletTableHeader>
 
                   <SC_WalletTableRow v-for="row in mainTableRows" :key="row.address">
@@ -84,7 +84,7 @@
                       >
                         <SC_WalletExplorerLink
                           :href="href"
-                          title="Открыть в блок-эксплорере"
+                          :title="t('wallet.openInExplorer')"
                           @click="navigate"
                         >
                           <BlockOutlined :style="ICON_SIZE_SM" />
@@ -100,17 +100,17 @@
 
               <SC_WalletTableSectionSecondary>
                 <SC_WalletTableTitleRow>
-                  <SC_WalletTableTitle>Дополнительные кошельки</SC_WalletTableTitle>
+                  <SC_WalletTableTitle>{{ t('wallet.additionalWallets') }}</SC_WalletTableTitle>
 
                   <SC_WalletAddButton type="button" :disabled="!canAddWallet" @click="onAddWallet">
-                    {{ addingWallet ? 'Добавление...' : 'Добавить кошелёк' }}
+                    {{ addingWallet ? t('wallet.adding') : t('wallet.addWallet') }}
                   </SC_WalletAddButton>
                 </SC_WalletTableTitleRow>
 
                 <SC_WalletTable>
                   <SC_WalletTableHeader>
-                    <SC_WalletTableAddress>Адрес</SC_WalletTableAddress>
-                    <SC_WalletTableBalance>Баланс</SC_WalletTableBalance>
+                    <SC_WalletTableAddress>{{ t('wallet.address') }}</SC_WalletTableAddress>
+                    <SC_WalletTableBalance>{{ t('wallet.balance') }}</SC_WalletTableBalance>
                   </SC_WalletTableHeader>
 
                   <SC_WalletTableRow v-for="row in additionalTableRows" :key="row.address">
@@ -126,7 +126,7 @@
                       >
                         <SC_WalletExplorerLink
                           :href="href"
-                          title="Открыть в блок-эксплорере"
+                          :title="t('wallet.openInExplorer')"
                           @click="navigate"
                         >
                           <BlockOutlined :style="ICON_SIZE_SM" />
@@ -157,6 +157,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter, RouterLink } from 'vue-router'
 import { BlockOutlined } from '@ant-design/icons-vue'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
@@ -203,6 +204,7 @@ import {
 
 const MAX_ADDITIONAL_WALLETS = 20
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -357,7 +359,7 @@ async function loadBalances(): Promise<void> {
 
     accountsWithBalances.value = result
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Не удалось загрузить балансы'
+    error.value = e instanceof Error ? e.message : t('wallet.errorLoadBalances')
     accountsWithBalances.value = addresses.map((addr) => ({
       address: addr,
       balance: null,
@@ -408,7 +410,7 @@ async function onAddWallet(): Promise<void> {
       walletListVersion.value += 1
       await loadBalances()
     } else {
-      error.value = result.error ?? 'Не удалось добавить кошелёк'
+      error.value = result.error ?? t('wallet.errorAddWallet')
     }
   } finally {
     addingWallet.value = false

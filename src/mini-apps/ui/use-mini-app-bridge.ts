@@ -37,60 +37,27 @@ import { createDefaultHostContext } from '@/mini-apps/actions/host-context'
 import { setupEventSources } from '@/mini-apps/events/sources'
 import type { InstalledApp } from '@/mini-apps/types/app'
 import { logger } from '@/services/logger'
+import { t } from '@/i18n'
 
 const log = logger.scope('[mini-apps:ui]')
 
 /**
- * Описания permissions для UI-prompt'а. Дублируют `permissions_descriptions_*`
- * i18n-ключи из legacy, но nextgen пока без i18n — храним ru-строки локально.
- * При появлении i18n заменить на `t(meta.descriptionKey)`.
+ * i18n-ключи описаний permissions для UI-prompt'а. Имя/описание берутся из
+ * `appMsg.permission.<id>.{name,description}`.
  */
-const PERMISSION_DESCRIPTIONS: Record<PermissionId, { name: string; description: string }> = {
-  account: {
-    name: 'Аккаунт',
-    description: 'Доступ к адресу вашего аккаунта.',
-  },
-  authFetch: {
-    name: 'Подписанные запросы',
-    description: 'Отправка запросов к серверу приложения от вашего имени.',
-  },
-  sign: {
-    name: 'Подпись данных',
-    description: 'Подпись произвольных данных приватным ключом аккаунта.',
-  },
-  messaging: {
-    name: 'Сообщения',
-    description: 'Получение push-сообщений от приложения.',
-  },
-  mobilecamera: {
-    name: 'Камера',
-    description: 'Доступ к камере и галерее устройства.',
-  },
-  payment: {
-    name: 'Платежи',
-    description: 'Открытие диалога платежа от вашего имени.',
-  },
-  chat: {
-    name: 'Чат',
-    description: 'Создание комнат и отправка сообщений в Matrix-чат.',
-  },
-  geolocation: {
-    name: 'Геолокация',
-    description: 'Доступ к текущим координатам устройства.',
-  },
-  externallink: {
-    name: 'Внешние ссылки',
-    description: 'Открытие ссылок в системном браузере.',
-  },
-  zaddress: {
-    name: 'Zcash-адрес',
-    description: 'Доступ к скрытому Zcash-адресу аккаунта.',
-  },
-  notifications: {
-    name: 'Уведомления',
-    description: 'Отправка push-уведомлений на устройство.',
-  },
-}
+const PERMISSION_I18N_IDS: readonly PermissionId[] = [
+  'account',
+  'authFetch',
+  'sign',
+  'messaging',
+  'mobilecamera',
+  'payment',
+  'chat',
+  'geolocation',
+  'externallink',
+  'zaddress',
+  'notifications',
+]
 
 /** Шина для подписки UI-компонентов на iframe-события (`loaded`, `changestate`, ...). */
 export const onIframeLifecycleEvent = new Set<
@@ -114,17 +81,22 @@ export async function bootMiniApps(router: Router): Promise<void> {
 
   const resolver = new PermissionResolver({
     promptUser: ({ app, permission }) => {
-      const meta = PERMISSION_DESCRIPTIONS[permission as PermissionId]
-      const title = meta
-        ? `«${app.manifest.name}» запрашивает доступ: ${meta.name}`
-        : `«${app.manifest.name}» запрашивает разрешение: ${permission}`
-      const description = meta?.description ?? `Разрешить действие «${permission}»?`
+      const hasMeta = PERMISSION_I18N_IDS.includes(permission as PermissionId)
+      const title = hasMeta
+        ? t('appMsg.permission.promptTitle', {
+            app: app.manifest.name,
+            name: t(`appMsg.permission.${permission}.name`),
+          })
+        : t('appMsg.permission.promptTitleRaw', { app: app.manifest.name, permission })
+      const description = hasMeta
+        ? t(`appMsg.permission.${permission}.description`)
+        : t('appMsg.permission.promptFallback', { permission })
       return new Promise<'granted' | 'denied'>((resolve) => {
         Modal.confirm({
           title,
           content: description,
-          okText: 'Разрешить',
-          cancelText: 'Отказать',
+          okText: t('appMsg.permission.allow'),
+          cancelText: t('appMsg.permission.deny'),
           okType: 'primary',
           centered: true,
           onOk: () => resolve('granted'),

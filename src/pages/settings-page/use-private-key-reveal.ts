@@ -18,6 +18,7 @@ import { useAuthStore } from '@/stores'
 import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
 import { detectPrivateKeyFormat, recoverKeyPair } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
 
 export interface PrivateKeyReveal {
   pkConfirmVisible: Ref<boolean>
@@ -80,7 +81,7 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
 
     try {
       const address = authStore.getUserAddress
-      if (!address) throw new Error('Нет активного аккаунта')
+      if (!address) throw new Error(t('accountMsg.noActiveAccount'))
 
       const { loadEncryptedData, loadEncryptedMnemonic } = await import('@/blockchain/storage')
 
@@ -99,7 +100,7 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
             })()
 
       if (!rawData || !rawData.trim()) {
-        throw new Error('Нет сохранённой сид-фразы или ключа для этого аккаунта')
+        throw new Error(t('accountMsg.noSavedSeedOrKey'))
       }
 
       const trimmed = rawData.trim()
@@ -130,17 +131,17 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
               : String(keyPair.privateKey)
             : ''
         } catch {
-          throw new Error('Не удалось прочитать ключ')
+          throw new Error(t('accountMsg.keyReadFailed'))
         }
       } else {
-        throw new Error('Неизвестный формат данных')
+        throw new Error(t('accountMsg.unknownDataFormat'))
       }
 
       pkRevealed.value = true
     } catch (error) {
       console.error('Failed to load private key:', error)
       appToast.error({
-        message: error instanceof Error ? error.message : 'Не удалось загрузить ключ',
+        message: error instanceof Error ? error.message : t('accountMsg.keyLoadFailed'),
       })
     } finally {
       pkLoading.value = false
@@ -157,14 +158,14 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
   async function pkCopyMnemonic(): Promise<void> {
     if (!pkMnemonic.value) return
     if (await copyToClipboard(pkMnemonic.value)) {
-      appToast.success({ message: 'Сид-фраза скопирована' })
+      appToast.success({ message: t('accountMsg.seedCopied') })
     }
   }
 
   async function pkCopyKey(): Promise<void> {
     if (!pkPrivateKeyHex.value) return
     if (await copyToClipboard(pkPrivateKeyHex.value)) {
-      appToast.success({ message: 'Приватный ключ скопирован' })
+      appToast.success({ message: t('accountMsg.privateKeyCopied') })
     }
   }
 

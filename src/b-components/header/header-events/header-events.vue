@@ -18,13 +18,13 @@
 
     <template #overlay>
       <SC_PendingEventsMenu @click.stop @mousedown.stop>
-        <SC_EmptyMessage v-if="pendingItems.length === 0"> Нет активных событий </SC_EmptyMessage>
+        <SC_EmptyMessage v-if="pendingItems.length === 0"> {{ t('header.noActiveEvents') }} </SC_EmptyMessage>
         <SC_EventsList v-else>
           <SC_EventItem v-for="item in pendingItems" :key="item.key" @click.stop @mousedown.stop>
             <template v-if="item.kind === 'rating'">
-              <SC_EventHeader>Оценка поста</SC_EventHeader>
+              <SC_EventHeader>{{ t('header.postRating') }}</SC_EventHeader>
               <SC_EventContent>
-                <SC_PostTitle :title="item.postTitle || 'Без названия'">
+                <SC_PostTitle :title="item.postTitle || t('header.untitled')">
                   {{ truncateTitle(item.postTitle) }}
                 </SC_PostTitle>
                 <SC_RatingDisplay>
@@ -41,8 +41,8 @@
             </template>
 
             <template v-else>
-              <SC_EventHeader>Комментарий</SC_EventHeader>
-              <SC_PostTitle :title="item.postTitle || 'Без названия'">
+              <SC_EventHeader>{{ t('header.comment') }}</SC_EventHeader>
+              <SC_PostTitle :title="item.postTitle || t('header.untitled')">
                 {{ truncateTitle(item.postTitle) }}
               </SC_PostTitle>
               <SC_CommentSnippet :title="item.message">
@@ -58,6 +58,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Dropdown, Badge } from 'ant-design-vue'
 import { HourglassOutlined, StarFilled } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
@@ -95,6 +96,8 @@ type CommentPendingItem = {
 }
 
 export type PendingHeaderItem = RatingPendingItem | CommentPendingItem
+
+const { t } = useI18n()
 
 const authStore = useAuthStore()
 const pendingStore = usePendingRatingsStore()
@@ -143,12 +146,12 @@ const pendingItems = computed<PendingHeaderItem[]>(() => {
 })
 
 function truncateTitle(title?: string): string {
-  const t = title || 'Без названия'
-  return t.length <= 100 ? t : t.slice(0, 100) + '...'
+  const value = title || t('header.untitled')
+  return value.length <= 100 ? value : value.slice(0, 100) + '...'
 }
 
 function truncateMessage(msg?: string): string {
-  const t = (msg || '').replace(/\s+/g, ' ').trim()
-  return t.length <= 140 ? t : t.slice(0, 140) + '...'
+  const value = (msg || '').replace(/\s+/g, ' ').trim()
+  return value.length <= 140 ? value : value.slice(0, 140) + '...'
 }
 </script>

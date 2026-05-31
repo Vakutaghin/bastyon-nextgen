@@ -1,6 +1,6 @@
 <template>
   <SC_LastCommentsRoot>
-    <SC_LastCommentsCaption>Последние комментарии</SC_LastCommentsCaption>
+    <SC_LastCommentsCaption>{{ t('sidebar.lastComments') }}</SC_LastCommentsCaption>
     <SC_LastCommentsLoading v-if="isLoading">
       <Spin size="small">
         <template #indicator>
@@ -9,7 +9,7 @@
       </Spin>
     </SC_LastCommentsLoading>
     <SC_LastCommentsEmpty v-else-if="!displayComments.length">
-      Нет комментариев
+      {{ t('sidebar.noComments') }}
     </SC_LastCommentsEmpty>
     <SC_LastCommentsList v-else>
       <SC_LastCommentItem
@@ -65,6 +65,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { LoadingOutlined } from '@ant-design/icons-vue'
 import Spin from '@/components/spin/spin.vue'
 import { useLastComments } from '@/composables/use-comments-queries'
@@ -135,6 +136,7 @@ function getDisplayName(profile: UserProfile | undefined, address: string): stri
   return profile?.name?.trim() || address.slice(0, 8) + '…'
 }
 
+const { t } = useI18n()
 const modalStore = useModalStore()
 const postsStore = usePostsStore()
 

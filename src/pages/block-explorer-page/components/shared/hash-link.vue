@@ -7,7 +7,7 @@
     </RouterLink>
     <SC_HashLinkText v-else>{{ display }}</SC_HashLinkText>
 
-    <SC_HashLinkCopy v-if="copyable" type="button" title="Копировать" @click.stop="copy">
+    <SC_HashLinkCopy v-if="copyable" type="button" :title="t('explorerShared.copy')" @click.stop="copy">
       <CopyOutlined :style="ICON_SIZE_XS" />
     </SC_HashLinkCopy>
   </SC_HashLink>
@@ -15,6 +15,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import { CopyOutlined } from '@ant-design/icons-vue'
 import { appToast } from '@/b-components/app-toast'
@@ -45,14 +46,16 @@ const p = withDefaults(
   }
 )
 
+const { t } = useI18n()
+
 const display = computed(() => (p.full ? p.hash : shortenHash(p.hash, p.head, p.tail)))
 
 async function copy() {
   try {
     await window.navigator.clipboard.writeText(p.hash)
-    appToast.success({ message: 'Скопировано' })
+    appToast.success({ message: t('explorerShared.copied') })
   } catch {
-    appToast.error({ message: 'Не удалось скопировать' })
+    appToast.error({ message: t('explorerShared.copyFailed') })
   }
 }
 </script>

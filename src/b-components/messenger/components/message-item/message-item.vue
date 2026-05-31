@@ -51,7 +51,7 @@
           v-if="canReact"
           ref="reactionTriggerRef"
           type="button"
-          title="Реакция"
+          :title="t('messenger.reaction')"
           @click="toggleReactionPicker"
         >
           <span style="font-size: 14px">😀</span>
@@ -88,6 +88,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { matrixFetch } from '@/helpers/api/request'
 import { useMessengerStore } from '../../store'
@@ -129,6 +130,7 @@ const props = withDefaults(
 )
 
 const store = useMessengerStore()
+const { t } = useI18n()
 
 const isMine = computed<boolean>(
   () => props.message.senderId === 'me' || props.message.senderId === store.currentUser.id
@@ -152,7 +154,7 @@ const senderProfile = computed(() => {
 })
 
 const displayName = computed<string>(() => {
-  if (isMine.value) return store.currentUser.name || 'Вы'
+  if (isMine.value) return store.currentUser.name || t('messenger.you')
   const profile = senderProfile.value
   if (profile?.name) return profile.name
   return props.message.senderName || props.message.senderId

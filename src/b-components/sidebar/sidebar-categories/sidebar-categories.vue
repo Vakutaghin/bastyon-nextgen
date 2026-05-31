@@ -1,19 +1,19 @@
 <template>
   <SC_Categories>
     <SC_TopFirstWrapper>
-      <SC_TopFirstLabel>Сначала лучшее</SC_TopFirstLabel>
+      <SC_TopFirstLabel>{{ t('sidebar.topFirst') }}</SC_TopFirstLabel>
       <ASwitch :checked="topFirst" size="small" @change="toggleTopFirst" />
     </SC_TopFirstWrapper>
 
     <SC_CategoriesHeader @click="toggleExpanded">
-      <SC_CategoriesTitle>Категории</SC_CategoriesTitle>
+      <SC_CategoriesTitle>{{ t('sidebar.categories') }}</SC_CategoriesTitle>
 
       <SC_CategoriesControls>
-        <SC_ControlBtn title="Добавить категорию" @click.stop="openModal">
+        <SC_ControlBtn :title="t('sidebar.addCategory')" @click.stop="openModal">
           <PlusOutlined />
         </SC_ControlBtn>
 
-        <SC_ControlBtn v-if="hasSelection" title="Сбросить фильтр" @click.stop="clearSelection">
+        <SC_ControlBtn v-if="hasSelection" :title="t('sidebar.resetFilter')" @click.stop="clearSelection">
           <StopOutlined />
         </SC_ControlBtn>
       </SC_CategoriesControls>
@@ -36,7 +36,7 @@
         </SC_CategoriesIcon>
 
         <SC_CategoriesName :selected="category.selected">
-          {{ category.name }}
+          {{ category.labelKey ? t(category.labelKey) : category.name }}
         </SC_CategoriesName>
 
         <!-- Кнопка удаления для кастомных/временных категорий -->
@@ -52,21 +52,21 @@
 
     <AModal
       v-model:open="isModalVisible"
-      title="Добавить категорию"
-      ok-text="Добавить"
-      cancel-text="Отмена"
+      :title="t('sidebar.addCategory')"
+      :ok-text="t('sidebar.add')"
+      :cancel-text="t('sidebar.cancel')"
       :body-style="{ padding: '20px' }"
       :width="400"
       @ok="addCategory"
       @cancel="closeModal"
     >
-      <div style="margin-bottom: 10px; font-size: 13px; color: #888">
-        Введите тег (буквы, цифры, _):
+      <div style="margin-bottom: 10px; font-size: 13px; color: var(--color-gray-888)">
+        {{ t('sidebar.enterTag') }}
       </div>
 
       <AInput
         v-model:value="newCategoryName"
-        placeholder="Например: crypto_news"
+        :placeholder="t('sidebar.tagPlaceholder')"
         allow-clear
         @input="handleInput"
         @press-enter="addCategory"
@@ -75,17 +75,17 @@
 
     <AModal
       v-model:open="isDeleteModalVisible"
-      title="Удалить категорию?"
-      ok-text="Удалить"
+      :title="t('sidebar.deleteCategoryTitle')"
+      :ok-text="t('sidebar.delete')"
       ok-type="danger"
-      cancel-text="Отмена"
+      :cancel-text="t('sidebar.cancel')"
       :width="400"
       @ok="confirmDeleteCategory"
       @cancel="closeDeleteModal"
     >
       <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0">
-        <ExclamationCircleOutlined style="font-size: 22px; color: #faad14" />
-        <span>Вы уверены, что хотите удалить эту категорию?</span>
+        <ExclamationCircleOutlined style="font-size: 22px; color: var(--color-warning-icon)" />
+        <span>{{ t('sidebar.deleteCategoryConfirm') }}</span>
       </div>
     </AModal>
   </SC_Categories>
@@ -93,6 +93,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Switch as ASwitch, Modal as AModal, Input as AInput, message } from 'ant-design-vue'
 import {
   CaretUpOutlined,
@@ -126,6 +127,7 @@ interface RawTag {
   name?: string
 }
 
+const { t } = useI18n()
 const filtersStore = useFiltersStore()
 const isExpanded = ref(false)
 const isModalVisible = ref(false)
@@ -228,7 +230,7 @@ function addCategory(): void {
 
   if (existingCategory) {
     filtersStore.toggleCategorySelection(existingCategory.id)
-    message.info('Такой тег существует, он был выбран')
+    message.info(t('sidebar.tagExistsSelected'))
     closeModal()
     return
   }
@@ -250,7 +252,7 @@ function addCategory(): void {
   )
 
   if (isServerTag) {
-    message.info('Такой тег существует, он был выбран')
+    message.info(t('sidebar.tagExistsSelected'))
   }
 
   filtersStore.addCustomCategory(tagName)

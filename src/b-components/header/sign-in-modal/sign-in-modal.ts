@@ -3,6 +3,7 @@ import { Alert } from 'ant-design-vue'
 import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
 import { useAuthStore } from '@/blockchain'
+import { t } from '@/i18n'
 import type { SignInModalProps, SignInModalEmits } from './types'
 import {
   SC_SignInForm,
@@ -54,7 +55,7 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
 
   const handleSignIn = async () => {
     if (!privateKey.value.trim()) {
-      error.value = 'Введите мнемоническую фразу или приватный ключ'
+      error.value = t('accountMsg.enterMnemonicOrKey')
       return
     }
 
@@ -71,10 +72,10 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
         emit('success')
         emit('update:open', false)
       } else {
-        error.value = result.error || 'Ошибка входа'
+        error.value = result.error || t('accountMsg.signInError')
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Произошла ошибка при входе'
+      error.value = err instanceof Error ? err.message : t('accountMsg.signInUnexpectedError')
     } finally {
       loading.value = false
     }

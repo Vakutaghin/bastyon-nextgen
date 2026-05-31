@@ -2,8 +2,8 @@
   <SC_AddrPageWork>
     <SC_AddrPagePage>
       <SC_AddrBreadcrumb>
-        <RouterLink :to="{ name: 'explorer' }">{{ s.common.breadcrumbRoot }}</RouterLink>
-        <span> / {{ s.address.breadcrumb }}</span>
+        <RouterLink :to="{ name: 'explorer' }">{{ t('explorerPage.breadcrumbRoot') }}</RouterLink>
+        <span> / {{ t('explorerPage.addressBreadcrumb') }}</span>
       </SC_AddrBreadcrumb>
 
       <SC_AddrTitleRow>
@@ -11,41 +11,41 @@
           <HashLink :hash="address" full :copyable="true" :to="undefined" />
         </SC_AddrTitle>
         <SC_AddrTitleActions>
-          <ShareButton v-if="address" :title="s.address.shareTitle(address)" />
+          <ShareButton v-if="address" :title="t('explorerPage.addressShareTitle', { address })" />
           <AddressQr v-if="address" :address="address" />
         </SC_AddrTitleActions>
       </SC_AddrTitleRow>
 
       <SC_AddrSummary>
         <SC_AddrSummaryCard>
-          <SC_AddrSummaryLabel>{{ s.address.summaryBalance }}</SC_AddrSummaryLabel>
+          <SC_AddrSummaryLabel>{{ t('explorerPage.summaryBalance') }}</SC_AddrSummaryLabel>
           <SC_AddrSummaryValue>
             <Skeleton v-if="infoLoading && !info" :width="160" :height="22" />
             <template v-else>{{ balanceLabel }}</template>
           </SC_AddrSummaryValue>
         </SC_AddrSummaryCard>
         <SC_AddrSummaryCard>
-          <SC_AddrSummaryLabel>{{ s.address.summaryLastChange }}</SC_AddrSummaryLabel>
+          <SC_AddrSummaryLabel>{{ t('explorerPage.summaryLastChange') }}</SC_AddrSummaryLabel>
           <SC_AddrSummaryValue>
             <Skeleton v-if="infoLoading && !info" :width="120" :height="22" />
             <template v-else>{{ lastChangeLabel }}</template>
           </SC_AddrSummaryValue>
         </SC_AddrSummaryCard>
         <SC_AddrSummaryCard>
-          <SC_AddrSummaryLabel>{{ s.address.summaryProfileLink }}</SC_AddrSummaryLabel>
+          <SC_AddrSummaryLabel>{{ t('explorerPage.summaryProfileLink') }}</SC_AddrSummaryLabel>
           <SC_AddrSummaryValue style="font-size: 14px; font-weight: 500">
             <RouterLink
               :to="{ name: 'profile', params: { userName: address } }"
-              style="color: rgb(0, 123, 255); text-decoration: none"
+              style="color: var(--color-primary); text-decoration: none"
             >
-              {{ s.address.openProfile }}
+              {{ t('explorerPage.openProfile') }}
             </RouterLink>
           </SC_AddrSummaryValue>
         </SC_AddrSummaryCard>
       </SC_AddrSummary>
 
       <SC_AddrTxSection>
-        <SC_AddrTxSectionHeader>{{ s.address.sectionTx }}</SC_AddrTxSectionHeader>
+        <SC_AddrTxSectionHeader>{{ t('explorerPage.addressSectionTx') }}</SC_AddrTxSectionHeader>
 
         <div v-if="txLoading && !txList.length">
           <SC_AddrTxRow v-for="i in 5" :key="`addr-tx-sk-${i}`">
@@ -56,9 +56,9 @@
           </SC_AddrTxRow>
         </div>
         <SC_PlaceholderError v-else-if="txError">
-          {{ s.address.txError }}
+          {{ t('explorerPage.addressTxError') }}
         </SC_PlaceholderError>
-        <SC_Placeholder v-else-if="!txList.length">{{ s.address.txEmpty }}</SC_Placeholder>
+        <SC_Placeholder v-else-if="!txList.length">{{ t('explorerPage.addressTxEmpty') }}</SC_Placeholder>
         <div v-else>
           <SC_AddrTxRow v-for="tx in txList" :key="tx.txid">
             <SC_AddrTxTypeBadge>{{ typeLabel(tx.type) }}</SC_AddrTxTypeBadge>
@@ -77,7 +77,7 @@
           </SC_AddrTxRow>
           <SC_LoadMoreFooter v-if="hasMoreTx">
             <SC_LoadMoreBtn type="button" :disabled="txLoading" @click="loadTxPage(false)">
-              {{ txLoading ? s.common.loading : s.common.loadMore }}
+              {{ txLoading ? t('explorerPage.loading') : t('explorerPage.loadMore') }}
             </SC_LoadMoreBtn>
           </SC_LoadMoreFooter>
         </div>
@@ -88,6 +88,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { useAddressInfo } from '@/composables/use-block-explorer-queries'
 import { getByPRC } from '@/helpers/api/request'
@@ -106,7 +107,6 @@ import {
 } from '../components/shared/format-explorer'
 import { labelForTxType } from '../components/shared/tx-type-labels'
 import { recordVisit } from '../components/shared/use-search-history'
-import { explorerStrings as s } from '../block-explorer-strings'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 import {
@@ -134,14 +134,19 @@ import {
 
 defineOptions({ name: 'AddressPage' })
 
+const { t } = useI18n()
+
+// Технический placeholder (em-dash) — не локализуется.
+const EM_DASH = '—'
+
 const p = defineProps<{ address: string }>()
 const addressRef = computed(() => p.address ?? '')
 
 useDocumentTitle(() => {
   const addr = p.address ?? ''
-  if (!addr) return 'Адрес'
+  if (!addr) return t('explorerPage.addressBreadcrumb')
   const short = addr.length > 12 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr
-  return `Адрес ${short}`
+  return t('explorerPage.addressShareTitle', { address: short })
 })
 
 const { data: infoResp, isLoading: infoLoading } = useAddressInfo(addressRef)
@@ -219,14 +224,14 @@ const address = computed(() => p.address ?? '')
 
 const balanceLabel = computed(() => {
   const b = info.value?.balance
-  if (b === undefined || b === null) return s.common.em
+  if (b === undefined || b === null) return EM_DASH
   return `${formatExplorerPkoin(b)} PKOIN`
 })
 
 const lastChangeLabel = computed(() => {
   const lc = info.value?.lastChange
-  if (lc === undefined || lc === null || lc === -1) return s.common.em
-  return s.address.lastChangeAtBlock(formatNumber(lc))
+  if (lc === undefined || lc === null || lc === -1) return EM_DASH
+  return t('explorerPage.lastChangeAtBlock', { height: formatNumber(lc) })
 })
 
 function typeLabel(type: number): string {

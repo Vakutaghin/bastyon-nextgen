@@ -11,6 +11,7 @@
  * store в будущем — функции-заглушки оставлены расширяемыми через `BlockedAddrSet`.
  */
 
+import { t } from '@/i18n'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { UserState as UserStateData } from '@/types/rpc-responses/user-state'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -79,7 +80,7 @@ export function getCommentPostingDisableReason(
   state: UserStateData | UserProfile | null,
 ): DisableReason | null {
   if (!isAuthenticated) {
-    return { kind: 'unauthenticated', message: 'Войдите, чтобы оставить комментарий' }
+    return { kind: 'unauthenticated', message: t('commentsMsg.disableLoginToComment') }
   }
   if (!state) return null
 
@@ -88,7 +89,7 @@ export function getCommentPostingDisableReason(
   if (typeof stateData.comment_unspent === 'number' && stateData.comment_unspent <= 0) {
     return {
       kind: 'limit-exhausted',
-      message: 'Дневной лимит комментариев исчерпан. Попробуйте позже.',
+      message: t('commentsMsg.disableCommentLimit'),
     }
   }
   // Репутация ниже порога (упрощённый аналог reputationBlockedMe)
@@ -96,7 +97,7 @@ export function getCommentPostingDisableReason(
   if (typeof rep === 'number' && rep < SELF_REP_BLOCK_THRESHOLD) {
     return {
       kind: 'reputation-blocked',
-      message: 'Ваша репутация слишком низка для публикации.',
+      message: t('commentsMsg.disableRepComment'),
     }
   }
   return null
@@ -110,16 +111,16 @@ export function getCommentScoringDisableReason(
   state: UserStateData | UserProfile | null,
 ): DisableReason | null {
   if (!isAuthenticated) {
-    return { kind: 'unauthenticated', message: 'Войдите, чтобы голосовать' }
+    return { kind: 'unauthenticated', message: t('commentsMsg.disableLoginToVote') }
   }
   if (!state) return null
   const stateData = state as UserStateData
   if (typeof stateData.comment_score_unspent === 'number' && stateData.comment_score_unspent <= 0) {
-    return { kind: 'limit-exhausted', message: 'Дневной лимит оценок исчерпан' }
+    return { kind: 'limit-exhausted', message: t('commentsMsg.disableScoreLimit') }
   }
   const rep = (state as UserProfile).reputation
   if (typeof rep === 'number' && rep < SELF_REP_BLOCK_THRESHOLD) {
-    return { kind: 'reputation-blocked', message: 'Ваша репутация слишком низка для оценки' }
+    return { kind: 'reputation-blocked', message: t('commentsMsg.disableRepScore') }
   }
   return null
 }

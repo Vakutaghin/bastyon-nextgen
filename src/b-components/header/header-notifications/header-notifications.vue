@@ -22,18 +22,18 @@
     <template #overlay>
       <SC_NotificationsMenu @click.stop @mousedown.stop>
         <SC_NotificationsHeader>
-          <SC_NotificationsTitle>Уведомления</SC_NotificationsTitle>
+          <SC_NotificationsTitle>{{ t('header.notifications') }}</SC_NotificationsTitle>
           <SC_NotificationsHeaderActions v-if="list.length > 0">
             <SC_ClearAllButton type="button" @click.stop="onClearAll">
-              Убрать все
+              {{ t('header.clearAll') }}
             </SC_ClearAllButton>
           </SC_NotificationsHeaderActions>
         </SC_NotificationsHeader>
 
         <SC_EnrichingHint v-if="isEnriching && list.length > 0" />
 
-        <SC_LoaderWrap v-if="isLoading && list.length === 0"> Загрузка... </SC_LoaderWrap>
-        <SC_EmptyMessage v-else-if="list.length === 0"> Нет новых уведомлений </SC_EmptyMessage>
+        <SC_LoaderWrap v-if="isLoading && list.length === 0"> {{ t('header.loading') }} </SC_LoaderWrap>
+        <SC_EmptyMessage v-else-if="list.length === 0"> {{ t('header.noNewNotifications') }} </SC_EmptyMessage>
         <SC_NotificationsList v-else>
           <SC_NotificationItem v-for="item in list" :key="item.id" :seen="isSeen(item)">
             <SC_NotificationItemBody @click="onItemClick(item)">
@@ -85,11 +85,11 @@
                   type="button"
                   @click.stop="toggleExpand(item.id)"
                 >
-                  {{ isExpanded(item.id) ? 'Свернуть' : 'Показать полностью' }}
+                  {{ isExpanded(item.id) ? t('header.collapse') : t('header.showFull') }}
                 </SC_ExpandToggle>
 
                 <SC_PostRef v-if="getPostCaption(item)">
-                  <SC_PostRefLabel>Пост:</SC_PostRefLabel>
+                  <SC_PostRefLabel>{{ t('header.postLabel') }}</SC_PostRefLabel>
                   <SC_PostRefText>{{ getPostCaption(item) }}</SC_PostRefText>
                 </SC_PostRef>
               </SC_NotificationPreview>
@@ -104,7 +104,7 @@
                 <SC_NotificationItemTrigger><EllipsisOutlined /></SC_NotificationItemTrigger>
                 <template #overlay>
                   <Menu
-                    :items="[{ key: item.id, label: 'Скрыть уведомление' }]"
+                    :items="[{ key: item.id, label: t('header.hideNotification') }]"
                     @click="onItemMenuClick"
                   />
                 </template>
@@ -120,6 +120,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, type Component } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Dropdown, Badge, Menu } from 'ant-design-vue'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import {
@@ -144,7 +145,7 @@ import {
   COMMENT_PREVIEW_LIMIT,
   POST_REF_PREVIEW_LIMIT,
 } from './helpers/notification-formatter'
-import { ICON_BY_TYPE, notificationTypeLabel } from './helpers/notification-type-map'
+import { ICON_BY_TYPE, notificationTypeLabelKey } from './helpers/notification-type-map'
 import {
   SC_NotificationsWrapper,
   SC_NotificationsMenu,
@@ -188,6 +189,8 @@ const ICON_COMPONENTS: Record<string, Component> = {
   NotificationOutlined,
   EditOutlined,
 }
+
+const { t } = useI18n()
 
 const authStore = useAuthStore()
 const notificationsStore = useNotificationsStore()
@@ -235,7 +238,7 @@ function iconComponentFor(item: NotificationItem): Component {
 }
 
 function getTypeLabel(item: NotificationItem): string {
-  return notificationTypeLabel(item)
+  return t(notificationTypeLabelKey(item))
 }
 
 function enrichmentFor(item: NotificationItem) {
@@ -248,7 +251,7 @@ function getDisplayName(item: NotificationItem): string {
   if (name) return name
   const addr = item.from ?? e.from?.address
   if (addr) return addr.slice(0, 8) + '…'
-  return 'Кто-то'
+  return t('header.someone')
 }
 
 function getInitial(item: NotificationItem): string {
@@ -264,26 +267,27 @@ function getActionLine(item: NotificationItem): string {
   switch (item.mesType) {
     case 'upvoteShare':
       return item.upvoteVal != null && item.upvoteVal < 0
-        ? 'поставил низкую оценку посту'
-        : 'оценил ваш пост'
+        ? t('header.actionLowRating')
+        : t('header.actionRated')
     case 'comment':
-      return 'прокомментировал ваш пост'
+      return t('header.actionCommented')
     case 'answer':
-      return 'ответил на ваш комментарий'
+      return t('header.actionAnswered')
     case 'subscribe':
-      return 'подписался на вас'
+      return t('header.actionSubscribed')
     case 'subscribePrivate':
-      return 'оформил приватную подписку'
+      return t('header.actionSubscribedPrivate')
     case 'unsubscribe':
-      return 'отписался от вас'
+      return t('header.actionUnsubscribed')
     case 'repost':
-      return 'поделился вашим постом'
+      return t('header.actionReposted')
     case 'post':
-      return 'опубликовал новый пост'
+      return t('header.actionPosted')
     case 'userInfo':
-      return 'обновил профиль'
+      return t('header.actionUpdatedProfile')
     default:
-      return item.title
+      // item.title — i18n-ключ заголовка (см. notifications-mappers).
+      return item.title ? t(item.title) : ''
   }
 }
 
@@ -336,7 +340,7 @@ function getRatingDisplay(item: NotificationItem): { label: string; positive: bo
     const stars = Math.max(1, Math.min(5, Math.round(v)))
     return { label: '★'.repeat(stars) + '☆'.repeat(5 - stars), positive: true }
   }
-  return { label: 'Низкая оценка', positive: false }
+  return { label: t('header.lowRating'), positive: false }
 }
 
 function openPostFromItem(item: NotificationItem): boolean {

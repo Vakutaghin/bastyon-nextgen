@@ -4,13 +4,13 @@
     <SC_Drawer :isOpen="isOpen" @click.stop>
       <SC_DrawerHeader>
         <SC_DrawerTitle>Bastyon</SC_DrawerTitle>
-        <SC_DrawerClose aria-label="Закрыть" @click="close">
+        <SC_DrawerClose :aria-label="t('sidebar.close')" @click="close">
           <CloseOutlined :style="ICON_SIZE_LG" />
         </SC_DrawerClose>
       </SC_DrawerHeader>
 
       <SC_DrawerSection>
-        <SC_DrawerSectionTitle>Навигация</SC_DrawerSectionTitle>
+        <SC_DrawerSectionTitle>{{ t('sidebar.navigation') }}</SC_DrawerSectionTitle>
         <SC_DrawerItem
           v-for="item in items"
           :key="item.path"
@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { ICON_SIZE_LG } from '@/styles/icon-styles'
 import {
@@ -52,13 +53,14 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
-const items = [
-  { path: '/', label: 'Лента', icon: HomeOutlined },
-  { path: '/my-videos', label: 'Видео', icon: PlayCircleOutlined },
-  { path: '/wallets', label: 'Кошелёк', icon: WalletOutlined },
-  { path: '/settings', label: 'Настройки', icon: SettingOutlined },
-]
+const items = computed(() => [
+  { path: '/', label: t('sidebar.feed'), icon: HomeOutlined },
+  { path: '/my-videos', label: t('sidebar.video'), icon: PlayCircleOutlined },
+  { path: '/wallets', label: t('sidebar.wallet'), icon: WalletOutlined },
+  { path: '/settings', label: t('sidebar.settings'), icon: SettingOutlined },
+])
 
 const currentPath = computed(() => route.path)
 

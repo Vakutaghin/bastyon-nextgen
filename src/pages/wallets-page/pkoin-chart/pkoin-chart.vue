@@ -1,9 +1,9 @@
 <template>
   <SC_PkoinChartWrap>
-    <SC_PkoinChartTitle>Курс PKOIN (USD)</SC_PkoinChartTitle>
+    <SC_PkoinChartTitle>{{ t('wallet.pkoinRateTitle') }}</SC_PkoinChartTitle>
     <SC_PkoinChartFilters>
       <SC_PkoinChartFilterGroup>
-        <SC_PkoinChartFilterLabel>Период:</SC_PkoinChartFilterLabel>
+        <SC_PkoinChartFilterLabel>{{ t('wallet.periodLabel') }}</SC_PkoinChartFilterLabel>
         <SC_PkoinChartFilterBtn
           v-for="opt in PERIOD_OPTIONS"
           :key="opt.value"
@@ -20,21 +20,21 @@
         <SC_PkoinChartContainer>
           <div ref="containerRef" class="chart-inner" />
           <SC_PkoinChartLoading v-if="loading" class="chart-loading">
-            Загрузка графика…
+            {{ t('wallet.chartLoading') }}
           </SC_PkoinChartLoading>
         </SC_PkoinChartContainer>
       </SC_PkoinChartArea>
       <SC_PkoinChartSidebar v-if="!error">
         <template v-if="loading">
-          <SC_PkoinChartPriceLabel>Текущий курс</SC_PkoinChartPriceLabel>
+          <SC_PkoinChartPriceLabel>{{ t('wallet.currentRate') }}</SC_PkoinChartPriceLabel>
           <SC_PkoinChartPriceValue>—</SC_PkoinChartPriceValue>
         </template>
         <template v-else-if="currentPrice != null">
-          <SC_PkoinChartPriceLabel>Текущий курс</SC_PkoinChartPriceLabel>
+          <SC_PkoinChartPriceLabel>{{ t('wallet.currentRate') }}</SC_PkoinChartPriceLabel>
           <SC_PkoinChartPriceValue>${{ currentPrice.toFixed(4) }}</SC_PkoinChartPriceValue>
           <template v-if="priceChange != null">
             <SC_PkoinChartStatRow>
-              <SC_PkoinChartStatLabel>За {{ chartDaysLabel }}</SC_PkoinChartStatLabel>
+              <SC_PkoinChartStatLabel>{{ t('wallet.statFor', { period: chartDaysLabel }) }}</SC_PkoinChartStatLabel>
               <SC_PkoinChartChange
                 :class="priceChange > 0 ? 'positive' : priceChange < 0 ? 'negative' : 'neutral'"
               >
@@ -44,7 +44,7 @@
           </template>
           <template v-if="priceChange24h != null">
             <SC_PkoinChartStatRow>
-              <SC_PkoinChartStatLabel>За 24 ч</SC_PkoinChartStatLabel>
+              <SC_PkoinChartStatLabel>{{ t('wallet.statFor24h') }}</SC_PkoinChartStatLabel>
               <SC_PkoinChartChange
                 :class="
                   priceChange24h > 0 ? 'positive' : priceChange24h < 0 ? 'negative' : 'neutral'
@@ -56,13 +56,13 @@
           </template>
           <template v-if="priceHigh30d != null">
             <SC_PkoinChartStatRow>
-              <SC_PkoinChartStatLabel>Макс. за {{ chartDaysLabel }}</SC_PkoinChartStatLabel>
+              <SC_PkoinChartStatLabel>{{ t('wallet.statMaxFor', { period: chartDaysLabel }) }}</SC_PkoinChartStatLabel>
               <SC_PkoinChartStatValue>${{ priceHigh30d.toFixed(4) }}</SC_PkoinChartStatValue>
             </SC_PkoinChartStatRow>
           </template>
           <template v-if="priceLow30d != null">
             <SC_PkoinChartStatRow>
-              <SC_PkoinChartStatLabel>Мин. за {{ chartDaysLabel }}</SC_PkoinChartStatLabel>
+              <SC_PkoinChartStatLabel>{{ t('wallet.statMinFor', { period: chartDaysLabel }) }}</SC_PkoinChartStatLabel>
               <SC_PkoinChartStatValue>${{ priceLow30d.toFixed(4) }}</SC_PkoinChartStatValue>
             </SC_PkoinChartStatRow>
           </template>
@@ -77,6 +77,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
 import {
   SC_PkoinChartWrap,
@@ -101,14 +102,16 @@ import {
 
 const COINGECKO_API = 'https://api.coingecko.com/api/v3/coins/pocketcoin/market_chart'
 
-const PERIOD_OPTIONS = [
-  { value: 1, label: '1 день' },
-  { value: 7, label: '7 дней' },
-  { value: 30, label: '30 дней' },
-  { value: 90, label: '3 мес.' },
-  { value: 180, label: '6 мес.' },
-  { value: 365, label: '12 мес.' },
-] as const
+const { t } = useI18n()
+
+const PERIOD_OPTIONS = computed(() => [
+  { value: 1, label: t('wallet.period1d') },
+  { value: 7, label: t('wallet.period7d') },
+  { value: 30, label: t('wallet.period30d') },
+  { value: 90, label: t('wallet.period3m') },
+  { value: 180, label: t('wallet.period6m') },
+  { value: 365, label: t('wallet.period12m') },
+])
 
 interface MarketChartResponse {
   prices: [number, number][]
@@ -130,11 +133,11 @@ let resizeObserver: ResizeObserver | null = null
 
 const chartDaysLabel = computed<string>(() => {
   const p = periodDays.value
-  if (p === 1) return '1 дн.'
-  if (p <= 31) return `${p} дн.`
-  if (p <= 100) return '3 мес.'
-  if (p <= 200) return '6 мес.'
-  return '12 мес.'
+  if (p === 1) return t('wallet.days1')
+  if (p <= 31) return t('wallet.daysN', { count: p })
+  if (p <= 100) return t('wallet.months3')
+  if (p <= 200) return t('wallet.months6')
+  return t('wallet.months12')
 })
 
 function setPeriod(days: number): void {
@@ -144,10 +147,10 @@ function setPeriod(days: number): void {
 async function fetchFromCoinGecko(days: number): Promise<[number, number][]> {
   const url = `${COINGECKO_API}?vs_currency=usd&days=${days}`
   const res = await fetch(url)
-  if (!res.ok) throw new Error('Не удалось загрузить данные CoinGecko')
+  if (!res.ok) throw new Error(t('wallet.errorCoinGeckoLoad'))
   const data = (await res.json()) as MarketChartResponse
   if (!Array.isArray(data.prices) || data.prices.length === 0) {
-    throw new Error('Нет данных по курсу')
+    throw new Error(t('wallet.errorNoRateData'))
   }
   return data.prices
 }
@@ -346,7 +349,7 @@ async function loadAndRender(): Promise<void> {
     }
     renderChart(data)
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Ошибка загрузки графика'
+    error.value = e instanceof Error ? e.message : t('wallet.errorChartLoad')
   } finally {
     loading.value = false
   }

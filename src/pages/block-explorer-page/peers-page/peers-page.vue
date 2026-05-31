@@ -33,7 +33,7 @@
             <SC_NodeMetric>
               <SC_NodeMetricLabel>{{ s.peers.nodeMetricPing }}</SC_NodeMetricLabel>
               <span v-if='node.latencyMs !== null'>{{ node.latencyMs }} ms</span>
-              <span v-else style='color: rgb(220, 53, 69);'>{{ s.common.em }}</span>
+              <span v-else style='color: var(--color-danger);'>{{ s.common.em }}</span>
             </SC_NodeMetric>
             <SC_NodeMetric class='secondary'>
               <SC_NodeMetricLabel>{{ s.peers.nodeMetricHeight }}</SC_NodeMetricLabel>
@@ -94,13 +94,13 @@
               {{ peer.inbound ? s.peers.dirIn : s.peers.dirOut }}
             </SC_DirectionBadge>
           </div>
-          <div class='col-hide-mobile' style='font-size: 12px; color: rgb(108, 117, 125);'>
+          <div class='col-hide-mobile' style='font-size: 12px; color: var(--color-text-secondary);'>
             {{ pingLabel(peer.pingtime) }}
           </div>
-          <div class='col-hide-mobile' style='font-size: 12px; color: rgb(108, 117, 125);'>
+          <div class='col-hide-mobile' style='font-size: 12px; color: var(--color-text-secondary);'>
             #{{ formatNumber(peer.synced_blocks) }}
           </div>
-          <div class='col-hide-mobile' style='font-size: 12px; color: rgb(108, 117, 125);'>
+          <div class='col-hide-mobile' style='font-size: 12px; color: var(--color-text-secondary);'>
             {{ ageLabel(peer.conntime) }}
           </div>
         </SC_PeerRow>

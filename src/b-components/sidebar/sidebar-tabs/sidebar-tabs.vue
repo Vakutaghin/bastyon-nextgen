@@ -19,7 +19,7 @@
         <MessageOutlined v-else-if="tab.icon === 'MessageOutlined'" />
         <BlockOutlined v-else-if="tab.icon === 'BlockOutlined'" />
         <AppstoreOutlined v-else />
-        <SC_TabsLabel v-if="!collapsed">{{ tab.name }}</SC_TabsLabel>
+        <SC_TabsLabel v-if="!collapsed">{{ t(tab.labelKey) }}</SC_TabsLabel>
       </SC_TabsItem>
     </SC_Tabs>
 
@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
   HomeOutlined,
@@ -51,6 +52,7 @@ import { SC_Tabs, SC_TabsItem, SC_TabsLabel } from './styled'
 withDefaults(defineProps<{ collapsed?: boolean }>(), { collapsed: false })
 const emit = defineEmits<{ 'tab-changed': [tabId: string | number] }>()
 
+const { t } = useI18n()
 const filtersStore = useFiltersStore()
 const authStore = useAuthStore()
 const router = useRouter()
@@ -115,7 +117,7 @@ function updateUrlParam(mode: string | null): void {
 }
 
 function selectTab(tabId: string | number): void {
-  const tab = filtersStore.tabs.find((t) => t.id === tabId)
+  const tab = filtersStore.tabs.find((item) => item.id === tabId)
   if (tab && tab.disabled) return
 
   filtersStore.selectTab(tabId)

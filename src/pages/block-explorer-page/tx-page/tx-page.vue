@@ -2,8 +2,8 @@
   <SC_TxPageWork>
     <SC_TxPagePage>
       <SC_TxBreadcrumb>
-        <RouterLink :to="{ name: 'explorer' }">{{ s.common.breadcrumbRoot }}</RouterLink>
-        <span> / {{ s.tx.breadcrumb }}</span>
+        <RouterLink :to="{ name: 'explorer' }">{{ t('explorerPage.breadcrumbRoot') }}</RouterLink>
+        <span> / {{ t('explorerPage.txBreadcrumb') }}</span>
       </SC_TxBreadcrumb>
 
       <template v-if="txLoading && !tx">
@@ -25,15 +25,15 @@
 
       <template v-else>
         <SC_TxTitleRow>
-          <SC_TxTitle>{{ s.tx.title }}</SC_TxTitle>
+          <SC_TxTitle>{{ t('explorerPage.txTitle') }}</SC_TxTitle>
           <SC_TxTypeBadge>{{ typeLabel }}</SC_TxTypeBadge>
-          <ShareButton :title="s.tx.shareTitle(tx.txid)" />
+          <ShareButton :title="t('explorerPage.txShareTitle', { txid: tx.txid })" />
         </SC_TxTitleRow>
 
         <SC_TxMetaGrid>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              {{ s.tx.metaTxid }}
+              {{ t('explorerPage.txMetaTxid') }}
               <InfoTooltip term-key="txid" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
@@ -41,16 +41,16 @@
             </SC_TxMetaValue>
           </SC_TxMetaCell>
           <SC_TxMetaCell>
-            <SC_TxMetaLabel>{{ s.tx.metaType }}</SC_TxMetaLabel>
+            <SC_TxMetaLabel>{{ t('explorerPage.txMetaType') }}</SC_TxMetaLabel>
             <SC_TxMetaValue>{{ typeLabel }} ({{ tx.type }})</SC_TxMetaValue>
           </SC_TxMetaCell>
 
           <SC_TxMetaCell>
-            <SC_TxMetaLabel>{{ s.tx.metaBlock }}</SC_TxMetaLabel>
+            <SC_TxMetaLabel>{{ t('explorerPage.txMetaBlock') }}</SC_TxMetaLabel>
             <SC_TxMetaValue>
               <RouterLink
                 :to="{ name: 'explorer-block', params: { hashOrHeight: tx.blockHash } }"
-                style="color: rgb(0, 123, 255); text-decoration: none; margin-right: 6px"
+                style="color: var(--color-primary); text-decoration: none; margin-right: 6px"
               >
                 #{{ formatNumber(tx.height) }}
               </RouterLink>
@@ -62,12 +62,12 @@
           </SC_TxMetaCell>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              {{ s.tx.metaConfirmationsTime }}
+              {{ t('explorerPage.txMetaConfirmationsTime') }}
               <InfoTooltip term-key="confirmations" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
               <span v-if="confirmations > 0">{{ formatNumber(confirmations) }}</span>
-              <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
+              <SC_Muted v-else>{{ EM_DASH }}</SC_Muted>
               <SC_MutedSmInline> · {{ formatRelTime(tx.nTime, now) }} </SC_MutedSmInline>
               <SC_MutedXs>
                 {{ formatAbsTime(tx.nTime) }}
@@ -77,7 +77,7 @@
 
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              {{ s.tx.metaVin }}
+              {{ t('explorerPage.txMetaVin') }}
               <InfoTooltip term-key="vin" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue
@@ -86,7 +86,7 @@
           </SC_TxMetaCell>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              {{ s.tx.metaVout }}
+              {{ t('explorerPage.txMetaVout') }}
               <InfoTooltip term-key="vout" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue
@@ -96,24 +96,24 @@
 
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              {{ s.tx.metaFee }}
+              {{ t('explorerPage.txMetaFee') }}
               <InfoTooltip term-key="fee" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
               <span v-if="feeLabel">{{ feeLabel }} PKOIN</span>
-              <SC_Muted v-else>{{ s.tx.metaFeeUnknown }}</SC_Muted>
+              <SC_Muted v-else>{{ t('explorerPage.txMetaFeeUnknown') }}</SC_Muted>
             </SC_TxMetaValue>
           </SC_TxMetaCell>
           <SC_TxMetaCell>
             <SC_TxMetaLabel>
-              {{ s.tx.metaPocketnet }}
+              {{ t('explorerPage.txMetaPocketnet') }}
               <InfoTooltip term-key="pocketPayload" />
             </SC_TxMetaLabel>
             <SC_TxMetaValue>
               <SC_Subtle v-if="pocketPayload">
-                {{ payloadKindLabel }} — {{ s.tx.metaPocketnetCardHint }}
+                {{ payloadKindLabel }} — {{ t('explorerPage.txMetaPocketnetCardHint') }}
               </SC_Subtle>
-              <SC_Muted v-else>{{ s.tx.metaPocketnetEmpty }}</SC_Muted>
+              <SC_Muted v-else>{{ t('explorerPage.txMetaPocketnetEmpty') }}</SC_Muted>
             </SC_TxMetaValue>
           </SC_TxMetaCell>
         </SC_TxMetaGrid>
@@ -122,21 +122,21 @@
 
         <SC_TxIOGrid>
           <SC_TxIOColumn>
-            <SC_TxIOHeader>{{ s.tx.ioHeaderVin }}</SC_TxIOHeader>
+            <SC_TxIOHeader>{{ t('explorerPage.txIoHeaderVin') }}</SC_TxIOHeader>
             <SC_TxIOItem v-for="(vin, i) in tx.vin" :key="`vin-${i}`">
               <SC_TxIOAddress>
                 <AddressLink v-if="vin.address" :address="vin.address" />
-                <SC_Subtle v-else-if="vin.coinbase">{{ s.tx.ioCoinbase }}</SC_Subtle>
-                <SC_Muted v-else>{{ s.common.em }}</SC_Muted>
+                <SC_Subtle v-else-if="vin.coinbase">{{ t('explorerPage.txIoCoinbase') }}</SC_Subtle>
+                <SC_Muted v-else>{{ EM_DASH }}</SC_Muted>
               </SC_TxIOAddress>
               <SC_TxIOValue v-if="vin.value !== undefined">
                 {{ formatExplorerPkoin(vin.value) }} PKOIN
               </SC_TxIOValue>
               <SC_TxIOAnnotation v-if="vin.txid">
-                {{ s.tx.ioVinFrom }}
+                {{ t('explorerPage.txIoVinFrom') }}
                 <RouterLink
                   :to="{ name: 'explorer-tx', params: { txid: vin.txid } }"
-                  style="color: rgb(0, 123, 255); text-decoration: none"
+                  style="color: var(--color-primary); text-decoration: none"
                 >
                   {{ shortenHash(vin.txid, 6, 6) }}:{{ vin.vout }}
                 </RouterLink>
@@ -147,12 +147,12 @@
           <SC_TxArrow>→</SC_TxArrow>
 
           <SC_TxIOColumn>
-            <SC_TxIOHeader>{{ s.tx.ioHeaderVout }}</SC_TxIOHeader>
+            <SC_TxIOHeader>{{ t('explorerPage.txIoHeaderVout') }}</SC_TxIOHeader>
             <SC_TxIOItem v-for="(vout, i) in tx.vout" :key="`vout-${i}`">
               <SC_TxIOAddress>
                 <AddressLink v-if="firstAddress(vout)" :address="firstAddress(vout)" />
                 <SC_Subtle v-else>
-                  {{ s.tx.ioOpReturn }}
+                  {{ t('explorerPage.txIoOpReturn') }}
                 </SC_Subtle>
               </SC_TxIOAddress>
               <SC_TxIOValue>{{ formatExplorerPkoin(vout.value) }} PKOIN</SC_TxIOValue>
@@ -162,7 +162,7 @@
         </SC_TxIOGrid>
 
         <SC_TxRawToggle type="button" @click="showRaw = !showRaw">
-          {{ showRaw ? s.common.rawJsonHide : s.common.rawJsonShow }}
+          {{ showRaw ? t('explorerPage.rawJsonHide') : t('explorerPage.rawJsonShow') }}
         </SC_TxRawToggle>
         <SC_TxRawPre v-if="showRaw">{{ rawJson }}</SC_TxRawPre>
       </template>
@@ -172,6 +172,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import HashLink from '../components/shared/hash-link.vue'
 import AddressLink from '../components/shared/address-link.vue'
@@ -186,7 +187,6 @@ import {
   formatAbsoluteTime as formatAbsTime,
   shortenHash,
 } from '../components/shared/format-explorer'
-import { explorerStrings as s } from '../block-explorer-strings'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { useTxData } from './use-tx-data'
 import {
@@ -221,9 +221,14 @@ import {
 
 defineOptions({ name: 'TxPage' })
 
+const { t } = useI18n()
+
+// Технический placeholder (em-dash) — не локализуется.
+const EM_DASH = '—'
+
 const p = defineProps<{ txid: string }>()
 
-useDocumentTitle(() => `Транзакция ${shortenHash(p.txid)}`)
+useDocumentTitle(() => t('explorerPage.txShareTitle', { txid: shortenHash(p.txid) }))
 
 const txidRef = computed(() => p.txid ?? '')
 

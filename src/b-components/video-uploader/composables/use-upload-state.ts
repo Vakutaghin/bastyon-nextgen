@@ -12,6 +12,7 @@ import { getBitrateForResolution, TARGET_FPS, MAX_FPS } from '../utils/constants
 import { getBestMimeType } from '../utils/environment'
 import { calculateVideoBitrate } from '../components/video-info-panel/video-info-panel'
 import { formatFileSize } from '../utils/video-formatter'
+import { t } from '@/i18n'
 import type { UploadState } from '../types'
 
 export interface UseUploadStateOptions {
@@ -39,14 +40,17 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
 
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('video/')) {
-      uploadError.value = 'Пожалуйста, выберите видеофайл'
+      uploadError.value = t('videoMsg.selectVideoFile')
       uploadState.value = 'error'
       return
     }
 
     const maxSize = 500 * 1024 * 1024
     if (file.size > maxSize) {
-      uploadError.value = `Файл слишком большой (${formatFileSize(file.size)}). Максимальный размер: ${formatFileSize(maxSize)}`
+      uploadError.value = t('videoMsg.fileTooLarge', {
+        size: formatFileSize(file.size),
+        max: formatFileSize(maxSize),
+      })
       uploadState.value = 'error'
       return
     }
@@ -79,16 +83,17 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
       targetVideoBitrate.value = Math.min(calculatedTargetBitrate, sourceBitrate)
 
       targetFps.value = Math.min(TARGET_FPS, MAX_FPS)
-      targetMimeType.value = getBestMimeType() || 'Неизвестно'
+      targetMimeType.value = getBestMimeType() || t('videoMsg.unknown')
 
       const transcoderInfo = transcoder.getTranscoderInfo()
-      transcoderName.value = transcoderInfo.method === 'tauri' ? 'TauriTranscoder' : 'Неизвестно'
+      transcoderName.value =
+        transcoderInfo.method === 'tauri' ? 'TauriTranscoder' : t('videoMsg.unknown')
       isWorker.value = false
 
       uploadState.value = 'ready'
     } catch (error) {
       uploadState.value = 'error'
-      const errorMessage = error instanceof Error ? error.message : 'Ошибка анализа файла'
+      const errorMessage = error instanceof Error ? error.message : t('videoMsg.analyzeError')
       uploadError.value = errorMessage
       console.error('File analysis error:', error)
     }
@@ -115,7 +120,7 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
 
   const startTranscoding = async (file: File, metadata?: VideoMetadata) => {
     if (isTranscoding) {
-      uploadError.value = 'Транскодирование уже выполняется'
+      uploadError.value = t('videoMsg.transcodeInProgress')
       uploadState.value = 'error'
       return
     }
@@ -159,7 +164,7 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
       )
 
       if (currentTranscodeAbortController?.signal.aborted) {
-        throw new Error('Транскодирование отменено')
+        throw new Error(t('videoMsg.transcodeCancelled'))
       }
 
       uploadState.value = 'saving'
@@ -194,16 +199,16 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
       }, 3000)
     } catch (error) {
       uploadState.value = 'error'
-      const errorMessage = error instanceof Error ? error.message : 'Ошибка транскодирования'
+      const errorMessage = error instanceof Error ? error.message : t('videoMsg.transcodeError')
       let displayMessage: string
       if (errorMessage.includes('Storage limit')) {
-        displayMessage = 'Превышен лимит хранилища. Удалите старые видео.'
+        displayMessage = t('videoMsg.storageLimitReached')
       } else if (errorMessage.includes('not supported')) {
-        displayMessage = 'Транскодирование не поддерживается в вашем браузере'
+        displayMessage = t('videoMsg.transcodeNotSupported')
       } else {
-        displayMessage = errorMessage.startsWith('Ошибка')
+        displayMessage = errorMessage.startsWith(t('videoMsg.transcodeError'))
           ? errorMessage
-          : 'Ошибка транскодирования: ' + errorMessage
+          : t('videoMsg.transcodeErrorPrefix', { message: errorMessage })
         const lower = errorMessage.toLowerCase()
         if (
           (lower.includes('ffmpeg') &&
@@ -212,8 +217,7 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
               lower.includes('command not found'))) ||
           lower.includes('failed to execute ffmpeg')
         ) {
-          displayMessage +=
-            ' Установите FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.'
+          displayMessage += ' ' + t('videoMsg.installFfmpegHint')
         }
       }
       uploadError.value = displayMessage
@@ -225,14 +229,14 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
 
   const startTranscodingFromReady = async () => {
     if (!selectedFile.value) {
-      uploadError.value = 'Файл не выбран'
+      uploadError.value = t('videoMsg.fileNotSelected')
       uploadState.value = 'error'
       return
     }
 
     const metadata = sourceMetadata.value
     if (!metadata) {
-      uploadError.value = 'Метаданные файла не найдены'
+      uploadError.value = t('videoMsg.metadataNotFound')
       uploadState.value = 'error'
       return
     }
@@ -252,7 +256,7 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
       isTranscoding = false
       uploadState.value = 'idle'
       uploadProgress.value = 0
-      uploadError.value = 'Транскодирование отменено'
+      uploadError.value = t('videoMsg.transcodeCancelled')
       selectedFile.value = null
       resetUploadState()
     }

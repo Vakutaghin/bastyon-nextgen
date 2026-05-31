@@ -1,34 +1,33 @@
 <template>
   <SC_ShareBtn type="button" :title="hoverTitle" @click="share">
     <ShareAltOutlined :style="ICON_SIZE_13" />
-    {{ label }}
+    {{ labelText }}
   </SC_ShareBtn>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ShareAltOutlined } from '@ant-design/icons-vue'
 import { appToast } from '@/b-components/app-toast'
 import { SC_ShareBtn } from './share-button.styled'
 import { ICON_SIZE_13 } from '@/styles/icon-styles'
 
-const p = withDefaults(
-  defineProps<{
-    /** Заголовок sharing-диалога (title в Web Share API). */
-    title: string
-    /** Что показать на кнопке. По умолчанию «Поделиться». */
-    label?: string
-    /**
-     * Конкретный URL для шеринга. Если не задан — берём window.location.href
-     * (это работает для permalinks эксплорера, у которых URL = permalink).
-     */
-    url?: string
-  }>(),
-  {
-    label: 'Поделиться',
-  }
-)
+const p = defineProps<{
+  /** Заголовок sharing-диалога (title в Web Share API). */
+  title: string
+  /** Что показать на кнопке. По умолчанию «Поделиться». */
+  label?: string
+  /**
+   * Конкретный URL для шеринга. Если не задан — берём window.location.href
+   * (это работает для permalinks эксплорера, у которых URL = permalink).
+   */
+  url?: string
+}>()
 
+const { t } = useI18n()
+
+const labelText = computed(() => p.label ?? t('explorerShared.share'))
 const hoverTitle = computed(() => p.title)
 
 async function share() {
@@ -54,11 +53,11 @@ async function share() {
   // 2. Fallback — clipboard.
   try {
     await window.navigator.clipboard.writeText(targetUrl)
-    appToast.success({ message: 'Ссылка скопирована', description: targetUrl })
+    appToast.success({ message: t('explorerShared.linkCopied'), description: targetUrl })
   } catch {
     appToast.error({
-      message: 'Не удалось поделиться',
-      description: 'Скопируйте URL из адресной строки',
+      message: t('explorerShared.shareFailed'),
+      description: t('explorerShared.copyUrlFromAddressBar'),
     })
   }
 }

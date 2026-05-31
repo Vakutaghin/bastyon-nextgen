@@ -46,8 +46,8 @@ export const i18n = createI18n({
 })
 
 /** Глобальный t() для использования вне setup() — например, в router meta. */
-export function t(key: string): string {
-  return i18n.global.t(key)
+export function t(key: string, named?: Record<string, unknown>): string {
+  return named ? i18n.global.t(key, named) : i18n.global.t(key)
 }
 
 /**

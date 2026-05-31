@@ -7,7 +7,7 @@
             <img
               v-if="partnerAvatar && !avatarLoadFailed"
               :src="partnerAvatar"
-              :alt="`Аватар ${partnerName}`"
+              :alt="t('messenger.partnerAvatarAlt', { name: partnerName })"
               @error="onAvatarError"
             />
 
@@ -19,37 +19,37 @@
 
         <SC_UserStats style="justify-content: center; gap: 16px">
           <SC_StatItem>
-            <SC_StatLabel>Репутация</SC_StatLabel>
+            <SC_StatLabel>{{ t('messenger.reputation') }}</SC_StatLabel>
             <SC_StatValue>{{ reputation }}</SC_StatValue>
           </SC_StatItem>
 
           <SC_StatItem>
-            <SC_StatLabel>Подписчики</SC_StatLabel>
+            <SC_StatLabel>{{ t('messenger.subscribers') }}</SC_StatLabel>
             <SC_StatValue>{{ subscribersCount }}</SC_StatValue>
           </SC_StatItem>
 
           <SC_StatItem>
-            <SC_StatLabel>Подписки</SC_StatLabel>
+            <SC_StatLabel>{{ t('messenger.subscriptions') }}</SC_StatLabel>
             <SC_StatValue>{{ subscribesCount }}</SC_StatValue>
           </SC_StatItem>
         </SC_UserStats>
       </SC_PartnerInfoCard>
 
       <SC_StartChatContainer>
-        <SC_StartChatButton @click="startChatNow">Начать чат</SC_StartChatButton>
+        <SC_StartChatButton @click="startChatNow">{{ t('messenger.startChat') }}</SC_StartChatButton>
       </SC_StartChatContainer>
     </template>
 
     <template v-else-if="isLoading">
       <SC_ChatRoomLoader>
         <SC_ChatRoomSpinner />
-        <SC_ChatRoomLoaderText>Загрузка сообщений...</SC_ChatRoomLoaderText>
+        <SC_ChatRoomLoaderText>{{ t('messenger.loadingMessages') }}</SC_ChatRoomLoaderText>
       </SC_ChatRoomLoader>
     </template>
 
     <template v-else>
       <SC_ChatRoomEmptyHint v-if="!messages || messages.length === 0">
-        Пока сообщений нет. Вы можете написать первое.
+        {{ t('messenger.noMessagesHint') }}
       </SC_ChatRoomEmptyHint>
 
       <MessageList :messages="messages" @load-more="emit('load-more')" />
@@ -61,16 +61,16 @@
         <SC_RecordingTimer>{{ recordingDuration }}</SC_RecordingTimer>
 
         <template v-if="isLocked">
-          <SC_CancelButton @click="cancelRecording">Отмена</SC_CancelButton>
+          <SC_CancelButton @click="cancelRecording">{{ t('messenger.cancel') }}</SC_CancelButton>
 
-          <SC_SendButton aria-label="Отправить голосовое сообщение" @click="stopRecording">
+          <SC_SendButton :aria-label="t('messenger.sendVoiceMessage')" @click="stopRecording">
             <img :src="sendIcon" alt="" width="24" height="24" />
           </SC_SendButton>
         </template>
 
         <template v-else>
           <SC_SwipeHint>
-            <span>&lt; Влево - отмена, Вверх - замок</span>
+            <span>{{ t('messenger.swipeHint') }}</span>
           </SC_SwipeHint>
         </template>
       </template>
@@ -88,13 +88,13 @@
         <SC_MessageInput
           ref="inputRef"
           v-model="inputValue"
-          placeholder="Введите сообщение..."
+          :placeholder="t('messenger.inputPlaceholder')"
           rows="1"
           @keydown="handleKeydown"
           @input="handleInput"
         />
 
-        <SC_EmojiToggleButton aria-label="Открыть выбор эмодзи" @click="toggleEmojiPicker">
+        <SC_EmojiToggleButton :aria-label="t('messenger.openEmojiPicker')" @click="toggleEmojiPicker">
           <img :src="emojiIcon" alt="" width="24" height="24" />
         </SC_EmojiToggleButton>
       </template>
@@ -112,7 +112,7 @@
         @touchstart.prevent="startRecording"
         @touchend.prevent="handleTouchEnd"
         @touchmove.prevent="handleTouchMove"
-        :aria-label="isRecording ? 'Идёт запись голосового' : 'Записать голосовое сообщение'"
+        :aria-label="isRecording ? t('messenger.recordingInProgress') : t('messenger.recordVoiceMessage')"
       >
         <img :src="micIcon" alt="" width="24" height="24" />
       </SC_VoiceButton>
@@ -121,7 +121,7 @@
       <SC_SendButton
         v-if="inputValue.trim() && !isRecording && !isLocked"
         :disabled="!inputValue.trim()"
-        aria-label="Отправить сообщение"
+        :aria-label="t('messenger.sendMessage')"
         @click="handleSend"
       >
         <img :src="sendIcon" alt="" width="24" height="24" />
@@ -141,6 +141,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { debugLog } from '@/helpers/common/debug-log'
 import type { Message } from '../../types'
 import MessageList from '../message-list/message-list.vue'
@@ -208,6 +209,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useMessengerStore()
+const { t } = useI18n()
 
 // Карточка собеседника в invite-режиме.
 const {

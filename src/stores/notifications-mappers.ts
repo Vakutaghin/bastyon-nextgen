@@ -8,7 +8,7 @@ import type {
   NotificationCommentSnapshot,
   NotificationUserSnapshot,
 } from './notifications-types'
-import { MES_TYPE_TITLES } from './notifications-constants'
+import { MES_TYPE_TITLE_KEYS } from './notifications-constants'
 
 /** Первая непустая строка по списку ключей. */
 export function pickStr(
@@ -133,7 +133,8 @@ export function mapMissedEventToNotification(n: Record<string, any>): Notificati
   const nblock = Number(n.nblock ?? 0) || 0
   const mesType = (n.mesType ?? n.type) as string
   const time = Number(n.time ?? n.nTime ?? n.nblock ?? 0) || Math.floor(Date.now() / 1000)
-  const title = MES_TYPE_TITLES[mesType] ?? 'Уведомление'
+  // i18n-ключ заголовка; резолвится через t() в месте рендера (toast/дропдаун).
+  const title = MES_TYPE_TITLE_KEYS[mesType] ?? 'notif.titleDefault'
   const description = n.upvoteVal != null ? `Оценка: ${n.upvoteVal}` : undefined
   const link = (n.url ?? n.link) as string | undefined
 

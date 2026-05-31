@@ -26,8 +26,8 @@ export interface AspectRatio {
 export interface HotkeyItem {
   /** Отображаемое название клавиши/комбинации */
   key: string
-  /** Описание действия */
-  description: string
+  /** Ключ i18n для описания действия */
+  labelKey: string
 }
 
 /**

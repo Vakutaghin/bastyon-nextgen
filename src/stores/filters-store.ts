@@ -10,14 +10,14 @@ import {
 // Когда сами *-data.ts получат свои интерфейсы — удалить отсюда.
 interface FeedTab {
   id: number
-  name: string
+  labelKey: string
   icon: string
   active: boolean
   disabled: boolean
 }
 interface FeedFilter {
   id: number
-  name: string
+  labelKey: string
   active: boolean
 }
 import {

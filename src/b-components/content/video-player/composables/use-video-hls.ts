@@ -1,5 +1,6 @@
 import { ref, computed, type Ref, onBeforeUnmount } from 'vue'
 import Hls from 'hls.js'
+import { t } from '@/i18n'
 import { getHlsPlaylistFromUrl } from '@/helpers/api/peertube-url'
 import { resolveVideoElement } from './utils'
 import {
@@ -187,11 +188,11 @@ export function useVideoHls(
    */
   const getCurrentQualityLabel = computed(() => {
     if (currentQualityLevel.value === null || !hls.value || !hls.value.levels) {
-      return 'Авто'
+      return t('videoMsg.qualityAuto')
     }
 
     const level = hls.value.levels[currentQualityLevel.value]
-    if (!level) return 'Авто'
+    if (!level) return t('videoMsg.qualityAuto')
 
     return formatQualityLabel(level.height || 0)
   })
@@ -201,7 +202,7 @@ export function useVideoHls(
    */
   const initPlayer = async (forcePlay = false) => {
     if (!p.videoUrl) {
-      error.value = 'URL видео не указан'
+      error.value = t('videoMsg.videoUrlMissing')
       isLoading.value = false
       return
     }
@@ -242,7 +243,7 @@ export function useVideoHls(
       const playlistUrl = await getHlsPlaylistFromUrl(p.videoUrl)
 
       if (!playlistUrl) {
-        throw new Error('HLS плейлист не найден')
+        throw new Error(t('videoMsg.hlsPlaylistNotFound'))
       }
 
       if (Hls.isSupported()) {
@@ -259,10 +260,10 @@ export function useVideoHls(
         // Нативная поддержка HLS (Safari)
         initNativeHlsVideo(video, playlistUrl, ctx)
       } else {
-        throw new Error('HLS не поддерживается в этом браузере')
+        throw new Error(t('videoMsg.hlsNotSupported'))
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке видео'
+      error.value = err instanceof Error ? err.message : t('videoMsg.videoLoadUnknownError')
       isLoading.value = false
       console.error('Video player initialization error:', err)
     }

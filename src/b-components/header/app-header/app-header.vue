@@ -1,7 +1,7 @@
 <template>
   <SC_Header>
     <SC_Sections>
-      <SC_HamburgerButton aria-label="Меню" @click="openDrawer">
+      <SC_HamburgerButton :aria-label="t('header.menu')" @click="openDrawer">
         <MenuOutlined />
       </SC_HamburgerButton>
 
@@ -22,6 +22,8 @@
           </SC_UnreadBadge>
         </SC_MessengerWrapper>
 
+        <HeaderThemeToggle />
+
         <HeaderUser />
       </SC_Right>
     </SC_Sections>
@@ -33,6 +35,7 @@
 <script setup lang="ts">
 import { computed, ref, type Directive } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import { MessageOutlined, CloseOutlined, MenuOutlined } from '@ant-design/icons-vue'
 import HeaderLogo from '@/b-components/header/header-logo/header-logo.vue'
 import HeaderSearch from '@/b-components/header/header-search/header-search.vue'
@@ -41,6 +44,7 @@ import HeaderEvents from '@/b-components/header/header-events/header-events.vue'
 import HeaderNotifications from '@/b-components/header/header-notifications/header-notifications.vue'
 import HeaderTor from '@/b-components/header/header-tor/header-tor.vue'
 import HeaderReportBug from '@/b-components/header/header-report-bug/header-report-bug.vue'
+import HeaderThemeToggle from '@/b-components/header/header-theme-toggle/header-theme-toggle.vue'
 import { MobileNavDrawer } from '@/b-components/mobile-nav-drawer'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain'
@@ -54,6 +58,8 @@ import {
   SC_UnreadBadge,
   SC_HamburgerButton,
 } from './styled'
+
+const { t } = useI18n()
 
 const messengerStore = useMessengerStore()
 const authStore = useAuthStore()

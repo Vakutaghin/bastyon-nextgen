@@ -3,6 +3,7 @@
 // которые показываются в register-modal.
 
 import { normalizeNickname, validateNickname } from '@/helpers/common/transliterate'
+import { t } from '@/i18n'
 
 /** Максимальная допустимая длина ника. */
 export const NICKNAME_MAX_LENGTH = 20
@@ -18,12 +19,12 @@ export type NicknameValidationError = string | null
  * Порядок проверок: непустой → паттерн → длина.
  */
 export function validateRegistrationNickname(nickname: string): NicknameValidationError {
-  if (!nickname.trim()) return 'Введите псевдоним'
+  if (!nickname.trim()) return t('accountMsg.enterNickname')
   if (!NICKNAME_PATTERN.test(nickname)) {
-    return 'Псевдоним может содержать только латинские буквы, цифры и нижнее подчеркивание'
+    return t('accountMsg.nicknameInvalidChars')
   }
   if (nickname.length > NICKNAME_MAX_LENGTH) {
-    return `Псевдоним не может быть длиннее ${NICKNAME_MAX_LENGTH} символов`
+    return t('accountMsg.nicknameTooLong', { max: NICKNAME_MAX_LENGTH })
   }
   return null
 }

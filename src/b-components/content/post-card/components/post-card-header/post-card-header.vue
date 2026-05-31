@@ -25,7 +25,7 @@
           <SC_ChatBtn
             v-if="displayAuthor.address"
             type="button"
-            aria-label="Начать чат"
+            :aria-label="t('postCard.startChat')"
             @click.stop.prevent="startChatWithAuthor"
           >
             <MessageOutlined :style="ICON_SIZE_MD" />
@@ -38,9 +38,9 @@
 
         <SC_RepostLine v-if="post.repost">
           <ShareAltOutlined class="repost-icon" />
-          <span class="repost-text">Репост</span>
+          <span class="repost-text">{{ t('postCard.repost') }}</span>
           <template v-if="post.repostAuthor">
-            <span class="repost-from"> от </span>
+            <span class="repost-from"> {{ t('postCard.repostFrom') }} </span>
             <router-link
               :to="'/' + (post.repostAuthor.name || post.repostAuthor.address)"
               class="repost-author"
@@ -48,20 +48,21 @@
               {{ post.repostAuthor.name || post.repostAuthor.address }}
             </router-link>
           </template>
-          <span v-else class="repost-record"> записи</span>
+          <span v-else class="repost-record"> {{ t('postCard.repostRecord') }}</span>
         </SC_RepostLine>
       </SC_PostAuthorInfo>
     </SC_PostAuthor>
 
     <SC_PostBookmark @click="toggleBookmark">
       <BookFilled v-if="isBookmarked" :style="ICON_PRIMARY_18" />
-      <BookOutlined v-else :style="{ fontSize: '18px', color: 'rgba(0, 0, 0, 0.45)' }" />
+      <BookOutlined v-else :style="{ fontSize: '18px', color: 'var(--color-overlay-45)' }" />
     </SC_PostBookmark>
   </SC_PostHeader>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { BookOutlined, BookFilled, MessageOutlined, ShareAltOutlined } from '@ant-design/icons-vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
@@ -124,6 +125,8 @@ const props = withDefaults(
   }>(),
   { authorOverride: null }
 )
+
+const { t } = useI18n()
 
 const isBookmarked = ref(false)
 

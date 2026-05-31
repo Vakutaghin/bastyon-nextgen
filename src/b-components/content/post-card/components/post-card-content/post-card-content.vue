@@ -38,6 +38,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from '@/components/button/button.vue'
 import BlockContent from '@/b-components/content/block-content/block-content.vue'
 import { useModalStore } from '@/stores/modal-store'
@@ -79,6 +80,7 @@ const emit = defineEmits<{
   'seek-timecode': [seconds: number]
 }>()
 
+const { t } = useI18n()
 const modalStore = useModalStore()
 const contentRoot = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
 
@@ -186,7 +188,7 @@ const formattedTruncatedText = computed<string>(() => {
 })
 
 const readMoreLabel = computed<string>(() =>
-  props.post.type === 'article' ? 'Читать статью' : 'Показать полностью'
+  props.post.type === 'article' ? t('postCard.readArticle') : t('postCard.showFull')
 )
 
 function openPostModal(event?: Event): void {

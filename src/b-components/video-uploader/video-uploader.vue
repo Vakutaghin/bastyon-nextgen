@@ -16,8 +16,8 @@
     >
       <SC_ModalBox @click.stop>
         <SC_ModalHeader>
-          <SC_ModalTitle id="video-uploader-title">Загрузчик видео</SC_ModalTitle>
-          <SC_ModalClose type="button" aria-label="Закрыть" @click="closeModal">×</SC_ModalClose>
+          <SC_ModalTitle id="video-uploader-title">{{ t('videoUploader.title') }}</SC_ModalTitle>
+          <SC_ModalClose type="button" :aria-label="t('videoUploader.close')" @click="closeModal">×</SC_ModalClose>
         </SC_ModalHeader>
         <SC_ModalBody>
           <SC_ModalContent>
@@ -69,6 +69,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { transcoder } from './transcoder'
 import { useVideoTranscoderInit } from './composables/use-video-transcoder-init'
 import { useVideoManager } from './composables/use-video-manager'
@@ -88,6 +89,8 @@ import {
   SC_ModalBody,
   SC_ModalContent,
 } from './styled'
+
+const { t } = useI18n()
 
 const isModalOpen = ref(false)
 

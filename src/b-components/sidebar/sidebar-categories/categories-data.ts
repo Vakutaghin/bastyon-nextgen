@@ -1,6 +1,15 @@
 export interface Category {
   id: string
-  name: string
+  /**
+   * i18n-ключ названия категории (для статических категорий из этого файла).
+   * Резолвится через t() в компоненте-потребителе.
+   */
+  labelKey?: string
+  /**
+   * Сырое название (для кастомных/временных категорий, созданных пользователем
+   * во время работы приложения — там лежит введённый тег, а не ключ).
+   */
+  name?: string
   icon: string
   tags: string[]
 }
@@ -8,7 +17,7 @@ export interface Category {
 export const categoriesData: Category[] = [
   {
     id: 'c7',
-    name: 'Автомобили/Гонки',
+    labelKey: 'sidebarData.categories.auto',
     icon: '🏎️',
     tags: [
       'auto',
@@ -17,7 +26,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c55',
-    name: 'Вера/Религия',
+    labelKey: 'sidebarData.categories.religion',
     icon: '🛐',
     tags: [
       'вера',
@@ -26,7 +35,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c14',
-    name: 'Время историй',
+    labelKey: 'sidebarData.categories.stories',
     icon: '🔖',
     tags: [
       'истории'
@@ -34,7 +43,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c9',
-    name: 'Игры',
+    labelKey: 'sidebarData.categories.games',
     icon: '🎮',
     tags: [
       'игры'
@@ -42,7 +51,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c11',
-    name: 'Искусство/Музыка',
+    labelKey: 'sidebarData.categories.artMusic',
     icon: '🎨',
     tags: [
       'искусство',
@@ -51,7 +60,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c13',
-    name: 'История',
+    labelKey: 'sidebarData.categories.history',
     icon: '📜',
     tags: [
       'история'
@@ -59,7 +68,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c15',
-    name: 'Кино/Анимация',
+    labelKey: 'sidebarData.categories.cinema',
     icon: '🎬',
     tags: [
       'кино',
@@ -68,7 +77,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c10',
-    name: 'Космос',
+    labelKey: 'sidebarData.categories.space',
     icon: '🚀',
     tags: [
       'космос'
@@ -76,7 +85,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c4',
-    name: 'Криптовалюта',
+    labelKey: 'sidebarData.categories.crypto',
     icon: '₿',
     tags: [
       'Криптовалюта'
@@ -84,7 +93,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c2',
-    name: 'Мемы/Юмор',
+    labelKey: 'sidebarData.categories.memes',
     icon: '😂',
     tags: [
       'мемы',
@@ -93,7 +102,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c5',
-    name: 'Наука/Технологии',
+    labelKey: 'sidebarData.categories.science',
     icon: '🔬',
     tags: [
       'технологии',
@@ -102,7 +111,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c12',
-    name: 'Новости/Комментарии',
+    labelKey: 'sidebarData.categories.news',
     icon: '📰',
     tags: [
       'новости',
@@ -111,7 +120,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c3',
-    name: 'Политика',
+    labelKey: 'sidebarData.categories.politics',
     icon: '⚖️',
     tags: [
       'политика'
@@ -119,7 +128,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c16',
-    name: 'Природа/Животные',
+    labelKey: 'sidebarData.categories.nature',
     icon: '🐾',
     tags: [
       'Природа',
@@ -128,7 +137,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c17',
-    name: 'Путешествия/Архитектура',
+    labelKey: 'sidebarData.categories.travel',
     icon: '🗺️',
     tags: [
       'путешествия',
@@ -137,7 +146,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c18',
-    name: 'Сделай сам',
+    labelKey: 'sidebarData.categories.diy',
     icon: '🔨',
     tags: [
       'сделайсам'
@@ -145,7 +154,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c8',
-    name: 'Спорт',
+    labelKey: 'sidebarData.categories.sport',
     icon: '⚽',
     tags: [
       'спорт'
@@ -153,7 +162,7 @@ export const categoriesData: Category[] = [
   },
   {
     id: 'c6',
-    name: 'Финансы/Инвестиции',
+    labelKey: 'sidebarData.categories.finance',
     icon: '💰',
     tags: [
       'финансы',

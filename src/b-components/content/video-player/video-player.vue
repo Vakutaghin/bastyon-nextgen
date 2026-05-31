@@ -49,12 +49,12 @@
 
     <!-- Индикатор загрузки (при инициализации) -->
     <SC_VideoLoading v-if="isLoading && !error">
-      <LoadingOutlined :style="{ fontSize: '48px', color: 'rgba(255, 255, 255, 0.8)' }" spin />
+      <LoadingOutlined :style="{ fontSize: '48px', color: 'var(--color-white-85)' }" spin />
     </SC_VideoLoading>
 
     <!-- Индикатор загрузки чанков (во время воспроизведения) -->
     <SC_VideoLoading v-if="isBuffering && isInitialized && !error && isPlaying">
-      <LoadingOutlined :style="{ fontSize: '48px', color: 'rgba(255, 255, 255, 0.8)' }" spin />
+      <LoadingOutlined :style="{ fontSize: '48px', color: 'var(--color-white-85)' }" spin />
     </SC_VideoLoading>
 
     <!-- Сообщение об ошибке -->
@@ -64,7 +64,7 @@
 
     <!-- Кнопка Play для неинициализированного проигрывателя -->
     <SC_VideoPlayButton v-if="!isInitialized && !isLoading && !error" @click.stop="togglePlay">
-      <PlayCircleOutlined :style="{ fontSize: '64px', color: '#ffffff' }" />
+      <PlayCircleOutlined :style="{ fontSize: '64px', color: 'var(--color-white)' }" />
     </SC_VideoPlayButton>
 
     <!-- Уведомление о скорости воспроизведения -->
@@ -90,7 +90,7 @@
 
     <!-- Иконка Play -->
     <SC_SeekNotification v-if="showPlayNotification && isInitialized" :show="showPlayNotification">
-      <PlayCircleOutlined :style="{ fontSize: '24px', color: '#eee' }" />
+      <PlayCircleOutlined :style="{ fontSize: '24px', color: 'var(--color-gray-eee)' }" />
     </SC_SeekNotification>
 
     <!-- Иконка Pause -->
@@ -98,7 +98,7 @@
       v-if="showPauseNotification && isInitialized"
       :show="showPauseNotification"
     >
-      <PauseCircleOutlined :style="{ fontSize: '24px', color: '#eee' }" />
+      <PauseCircleOutlined :style="{ fontSize: '24px', color: 'var(--color-gray-eee)' }" />
     </SC_SeekNotification>
 
     <!-- Справка по горячим клавишам -->
@@ -108,12 +108,12 @@
           <CloseOutlined :style="ICON_SIZE_XL" />
         </SC_HotkeysCloseButton>
 
-        <SC_HotkeysHelpTitle>Горячие клавиши</SC_HotkeysHelpTitle>
+        <SC_HotkeysHelpTitle>{{ t('videoPlayer.hotkeysTitle') }}</SC_HotkeysHelpTitle>
 
         <SC_HotkeysHelpList>
           <SC_HotkeysHelpItem v-for="item in hotkeysList" :key="item.key">
             <SC_HotkeysKey>{{ item.key }}</SC_HotkeysKey>
-            <SC_HotkeysDescription>{{ item.description }}</SC_HotkeysDescription>
+            <SC_HotkeysDescription>{{ t(item.labelKey) }}</SC_HotkeysDescription>
           </SC_HotkeysHelpItem>
         </SC_HotkeysHelpList>
       </SC_HotkeysHelpContent>
@@ -174,16 +174,16 @@
               <!-- Пункт меню: Качество видео -->
               <SC_VideoQualityMenuSection v-if="!isAudio && availableQualityLevels.length > 0">
                 <SC_VideoQualitySubmenuItem @click.stop="openQualityMenu">
-                  <span>Качество</span>
-                  <span style="font-size: 10px; color: #999; margin-left: 8px">▶</span>
+                  <span>{{ t('videoPlayer.quality') }}</span>
+                  <span style="font-size: 10px; color: var(--color-gray-999); margin-left: 8px">▶</span>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
 
               <!-- Пункт меню: Скорость воспроизведения -->
               <SC_VideoQualityMenuSection>
                 <SC_VideoQualitySubmenuItem @click.stop="openSpeedMenu">
-                  <span>Скорость</span>
-                  <span style="font-size: 10px; color: #999; margin-left: 8px">▶</span>
+                  <span>{{ t('videoPlayer.speed') }}</span>
+                  <span style="font-size: 10px; color: var(--color-gray-999); margin-left: 8px">▶</span>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
             </template>
@@ -192,7 +192,7 @@
             <template v-if="currentMenuScreen === 'quality'">
               <SC_VideoQualityMenuSection>
                 <SC_VideoQualitySubmenuItem @click.stop="goBackToMainMenu">
-                  <span>← Назад</span>
+                  <span>← {{ t('videoPlayer.back') }}</span>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
               <SC_VideoQualityMenuSection>
@@ -211,7 +211,7 @@
             <template v-if="currentMenuScreen === 'speed'">
               <SC_VideoQualityMenuSection>
                 <SC_VideoQualitySubmenuItem @click.stop="goBackToMainMenu">
-                  <span>← Назад</span>
+                  <span>← {{ t('videoPlayer.back') }}</span>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
               <SC_VideoQualityMenuSection>
@@ -262,6 +262,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ICON_SIZE_LG, ICON_SIZE_XL } from '@/styles/icon-styles'
 import {
   PlayCircleOutlined,
@@ -350,6 +351,8 @@ const props = withDefaults(
   }>(),
   { autoplay: false, isAudio: false, chapters: () => [], title: '', artist: '' }
 )
+
+const { t } = useI18n()
 
 const videoElement = ref<HTMLVideoElement | null>(null)
 const videoContainer = ref<HTMLElement | null>(null)
@@ -526,7 +529,7 @@ const { isInBackground, refreshMetadata } = useBackgroundPlayback({
   isPlaying,
   isAudio: toRef(props, 'isAudio'),
   getMetadata: () => ({
-    title: props.title || 'Видео',
+    title: props.title || t('videoPlayer.defaultTitle'),
     artist: props.artist || '',
     artworkUrl: thumbnailUrl.value || undefined,
   }),

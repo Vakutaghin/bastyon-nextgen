@@ -2,7 +2,7 @@
   <SC_ProfileWork class="adj">
     <SC_ProfilePage>
       <h1 class="visually-hidden">
-        {{ profile?.name || ($route.params.userName as string) || 'Профиль' }}
+        {{ profile?.name || ($route.params.userName as string) || t('profile.title') }}
       </h1>
       <ProfileCover :profile="profile" />
 
@@ -11,7 +11,7 @@
 
         <SC_ProfileMainContent>
           <SC_LoadingProfile v-if="loading">
-            <Spin tip="Загрузка профиля...">
+            <Spin :tip="t('profile.loadingProfile')">
               <template #indicator>
                 <LoadingOutlined :style="ICON_PRIMARY_40" spin />
               </template>
@@ -26,10 +26,9 @@
             <div class="pending-icon">
               <ClockCircleOutlined />
             </div>
-            <div class="pending-title">Регистрация в процессе</div>
+            <div class="pending-title">{{ t('profile.pendingTitle') }}</div>
             <div>
-              Ваш аккаунт проходит регистрацию в блокчейне. Обычно это занимает несколько минут.
-              После завершения профиль станет полностью доступен.
+              {{ t('profile.pendingDescription') }}
             </div>
           </SC_PendingProfile>
 
@@ -50,6 +49,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { LoadingOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -77,6 +77,7 @@ interface ProfileWithAccSet extends UserProfile {
 }
 
 const route = useRoute()
+const { t } = useI18n()
 const authStore = useAuthStore()
 const userAddress = ref<string>('')
 const profile = ref<ProfileWithAccSet | null>(null)
@@ -129,7 +130,7 @@ async function fetchUserProfile(identifier: string): Promise<void> {
         ) {
           address = addressResponse.data[0].address
         } else {
-          throw new Error('Пользователь не найден')
+          throw new Error(t('profile.userNotFound'))
         }
       }
     }
@@ -206,7 +207,7 @@ async function fetchUserProfile(identifier: string): Promise<void> {
     }
   } catch (e) {
     console.error('Failed to load profile:', e)
-    error.value = e instanceof Error ? e.message : 'Не удалось загрузить профиль'
+    error.value = e instanceof Error ? e.message : t('profile.loadFailed')
   } finally {
     loading.value = false
   }
@@ -228,7 +229,7 @@ watch(
   { immediate: true }
 )
 
-useDocumentTitle(() => profile.value?.name ?? (route.params.userName as string) ?? 'Профиль')
+useDocumentTitle(() => profile.value?.name ?? (route.params.userName as string) ?? t('profile.title'))
 
 // Наш профиль без id — регистрация в процессе.
 watch(profile, (p) => {

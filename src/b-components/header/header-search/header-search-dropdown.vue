@@ -5,9 +5,9 @@
          даёт что-то полезное, не только после первого ввода. -->
     <SC_DropdownSection v-if="showRecent">
       <SC_DropdownSectionHeader>
-        Недавнее
+        {{ t('search.recent') }}
         <SC_RecentClearButton type="button" @click="onClearHistory">
-          Очистить
+          {{ t('search.clear') }}
         </SC_RecentClearButton>
       </SC_DropdownSectionHeader>
       <SC_DropdownItem
@@ -34,7 +34,7 @@
         </SC_ItemBody>
         <SC_RecentRemoveButton
           type="button"
-          aria-label="Убрать из истории"
+          :aria-label="t('search.removeFromHistory')"
           @click.stop="onRemoveRecent(entry)"
         >
           ×
@@ -43,13 +43,13 @@
     </SC_DropdownSection>
 
     <template v-if="showResults">
-      <SC_LoadingHint v-if="isLoading && !hasAny"> Поиск… </SC_LoadingHint>
+      <SC_LoadingHint v-if="isLoading && !hasAny"> {{ t('search.searching') }} </SC_LoadingHint>
 
-      <SC_EmptyHint v-else-if="!hasAny"> Ничего не найдено </SC_EmptyHint>
+      <SC_EmptyHint v-else-if="!hasAny"> {{ t('search.noResults') }} </SC_EmptyHint>
 
       <template v-else>
         <SC_DropdownSection v-if="apps.length">
-          <SC_DropdownSectionHeader> Приложения </SC_DropdownSectionHeader>
+          <SC_DropdownSectionHeader> {{ t('search.apps') }} </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="a in apps" :key="a.id" @click="onSelectApp(a)">
             <SC_Avatar>
               <img v-if="a.icon" :src="a.icon" :alt="a.name" loading="lazy" decoding="async" />
@@ -66,8 +66,8 @@
 
         <SC_DropdownSection v-if="users.length">
           <SC_DropdownSectionHeader>
-            Пользователи
-            <SC_DropdownSeeAll @click="onSeeAll('users')">Все →</SC_DropdownSeeAll>
+            {{ t('search.tabUsers') }}
+            <SC_DropdownSeeAll @click="onSeeAll('users')">{{ t('search.seeAll') }}</SC_DropdownSeeAll>
           </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="u in users" :key="u.address" @click="onSelectUser(u)">
             <SC_Avatar>
@@ -89,14 +89,14 @@
 
         <SC_DropdownSection v-if="tags.length">
           <SC_DropdownSectionHeader>
-            Теги
-            <SC_DropdownSeeAll @click="onSeeAll('tags')">Все →</SC_DropdownSeeAll>
+            {{ t('search.tabTags') }}
+            <SC_DropdownSeeAll @click="onSeeAll('tags')">{{ t('search.seeAll') }}</SC_DropdownSeeAll>
           </SC_DropdownSectionHeader>
-          <SC_DropdownItem v-for="t in tags" :key="t.tag" @click="onSelectTag(t)">
+          <SC_DropdownItem v-for="tag in tags" :key="tag.tag" @click="onSelectTag(tag)">
             <SC_ItemBody>
               <SC_ItemPrimary>
-                #{{ t.tag }}
-                <SC_TagCount>{{ t.count }}</SC_TagCount>
+                #{{ tag.tag }}
+                <SC_TagCount>{{ tag.count }}</SC_TagCount>
               </SC_ItemPrimary>
             </SC_ItemBody>
           </SC_DropdownItem>
@@ -104,8 +104,8 @@
 
         <SC_DropdownSection v-if="posts.length">
           <SC_DropdownSectionHeader>
-            Посты
-            <SC_DropdownSeeAll @click="onSeeAll('posts')">Все →</SC_DropdownSeeAll>
+            {{ t('search.tabPosts') }}
+            <SC_DropdownSeeAll @click="onSeeAll('posts')">{{ t('search.seeAll') }}</SC_DropdownSeeAll>
           </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="p in posts" :key="p.txid || p.hash" @click="onSelectPost(p)">
             <SC_ItemBody>
@@ -121,6 +121,7 @@
 
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { MIN_QUERY_LENGTH } from '@/composables/use-search-query'
 import { safeDecode } from '@/composables/use-feed'
@@ -154,6 +155,7 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
+const { t } = useI18n()
 const router = useRouter()
 const queryRef = toRef(props, 'query')
 

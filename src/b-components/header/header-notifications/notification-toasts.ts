@@ -1,6 +1,7 @@
 import type { Pinia } from 'pinia'
 import { useNotificationSettingsStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
 import type { NotificationItem } from '@/stores/notifications-store'
 
 /**
@@ -75,7 +76,8 @@ export function showToastsForNewNotifications(pinia: Pinia, items: NotificationI
   const toShow = allowed.length > MAX_TOASTS_AT_ONCE ? allowed.slice(0, MAX_TOASTS_AT_ONCE) : allowed
   for (const item of toShow) {
     appToast.info({
-      message: item.title,
+      // item.title — i18n-ключ заголовка (см. notifications-mappers).
+      message: item.title ? t(item.title) : '',
       description: item.description ?? (item.from ? `От: ${item.from}` : undefined),
       key: item.id,
       duration: 4

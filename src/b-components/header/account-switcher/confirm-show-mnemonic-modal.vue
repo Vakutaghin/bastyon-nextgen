@@ -11,7 +11,7 @@
     <template #title>
       <SC_ModalIconRow>
         <WarningOutlined :style="ICON_WARNING_24" />
-        <span>Показать сид-фразу?</span>
+        <span>{{ t('accounts.showSeedPhraseConfirm') }}</span>
       </SC_ModalIconRow>
     </template>
 
@@ -25,25 +25,25 @@
           border-radius: 4px;
         "
       >
-        <p style="margin: 0; color: #856404; font-weight: 500">⚠️ Внимание!</p>
-        <p style="margin: 8px 0 0 0; color: #856404">
-          Передавать сид-фразу кому-либо небезопасно. Любой, кто получит доступ к вашей сид-фразе,
-          сможет получить полный контроль над вашим аккаунтом и средствами.
+        <p style="margin: 0; color: var(--color-warning-text); font-weight: 500">{{ t('accounts.warning') }}</p>
+        <p style="margin: 8px 0 0 0; color: var(--color-warning-text)">
+          {{ t('accounts.seedPhraseWarningText') }}
         </p>
       </div>
-      <p>Вы уверены, что хотите показать сид-фразу?</p>
+      <p>{{ t('accounts.showSeedPhraseQuestion') }}</p>
     </SC_ModalBody>
 
     <template #footer>
       <SC_ModalActions>
-        <Button type="default" @click="handleCancel">Нет</Button>
-        <Button type="primary" @click="handleConfirm" :loading="loading"> Да, показать </Button>
+        <Button type="default" @click="handleCancel">{{ t('accounts.no') }}</Button>
+        <Button type="primary" @click="handleConfirm" :loading="loading"> {{ t('accounts.yesShow') }} </Button>
       </SC_ModalActions>
     </template>
   </Modal>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useConfirmShowMnemonicModal } from './confirm-show-mnemonic-modal/confirm-show-mnemonic-modal'
 import type {
   ConfirmShowMnemonicModalProps,
@@ -57,6 +57,8 @@ const p = withDefaults(defineProps<ConfirmShowMnemonicModalProps>(), {
 })
 
 const emit = defineEmits<ConfirmShowMnemonicModalEmits>()
+
+const { t } = useI18n()
 
 const { Modal, Button, WarningOutlined, visible, loading, handleConfirm, handleCancel } =
   useConfirmShowMnemonicModal(p, emit)

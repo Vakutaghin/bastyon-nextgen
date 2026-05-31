@@ -20,7 +20,7 @@
         <SC_Message>{{ message }}</SC_Message>
 
         <SC_Info>
-          Обычно это занимает не более 10 минут. Вы можете закрыть это окно и вернуться позже.
+          {{ t('auth.validationInfo') }}
         </SC_Info>
       </SC_Content>
     </Modal>
@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/modal.vue'
 import { useRegistrationValidationModal } from './registration-validation-modal'
 import type { RegistrationValidationModalProps, RegistrationValidationModalEmits } from './types'
@@ -40,6 +41,8 @@ import {
   SC_Message,
   SC_Info,
 } from './registration-validation-modal.styled'
+
+const { t } = useI18n()
 
 const p = defineProps<RegistrationValidationModalProps>()
 

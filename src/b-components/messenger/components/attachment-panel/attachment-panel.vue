@@ -4,13 +4,13 @@
 
     <SC_Menu v-if="menuOpen">
       <SC_MenuItem type="button" @click="pickImage">
-        <span aria-hidden="true">🖼️</span> Фото
+        <span aria-hidden="true">🖼️</span> {{ t('messenger.photo') }}
       </SC_MenuItem>
       <SC_MenuItem type="button" @click="pickFile">
-        <span aria-hidden="true">📄</span> Файл
+        <span aria-hidden="true">📄</span> {{ t('messenger.file') }}
       </SC_MenuItem>
       <SC_MenuItem v-if="canSendPkoin" type="button" @click="pickPkoin">
-        <span aria-hidden="true">💎</span> Отправить PKOIN
+        <span aria-hidden="true">💎</span> {{ t('messenger.sendPkoin') }}
       </SC_MenuItem>
     </SC_Menu>
 
@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { SC_AttachmentRoot, SC_AttachButton, SC_Menu, SC_MenuItem, SC_HiddenInput } from './styled'
 
 const props = defineProps<{
@@ -40,7 +41,8 @@ const emit = defineEmits<{
   (e: 'pickPkoin'): void
 }>()
 
-const title = props.title ?? 'Прикрепить'
+const { t } = useI18n()
+const title = props.title ?? t('messenger.attach')
 
 const menuOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)

@@ -4,7 +4,7 @@
       <SC_ReplyTextarea
         ref="textareaRef"
         :value="editDraft"
-        placeholder="Текст комментария…"
+        :placeholder="t('comments.editPlaceholder')"
         rows="3"
         @input="onInput"
         @keydown="onKeydown"
@@ -20,11 +20,11 @@
         :disabled="editSubmitting"
         @click.stop.prevent="emit('request-close')"
       >
-        Отмена
+        {{ t('comments.cancelEdit') }}
       </SC_EditCancelBtn>
       <SC_EditSaveBtn type="button" :disabled="!canSubmit" @click.stop.prevent="emit('save')">
         <LoadingOutlined v-if="editSubmitting" :style="ICON_SIZE_SM" spin />
-        <span v-else>Сохранить</span>
+        <span v-else>{{ t('comments.save') }}</span>
       </SC_EditSaveBtn>
     </SC_EditFormActions>
   </SC_EditFormWrap>
@@ -32,6 +32,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { LoadingOutlined } from '@ant-design/icons-vue'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
@@ -56,6 +57,8 @@ const emit = defineEmits<{
   'request-close': []
   save: []
 }>()
+
+const { t } = useI18n()
 
 const textareaRef = ref<HTMLTextAreaElement | { $el?: HTMLTextAreaElement } | null>(null)
 
