@@ -1,11 +1,12 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_FileMessage = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.03);
+  background: ${COLORS.OVERLAY_3};
   border-radius: 10px;
   width: 100%;
   max-width: min(320px, 100%);
@@ -17,8 +18,8 @@ export const SC_FileIcon = styled.div`
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #00a4db;
-  color: #fff;
+  background: ${COLORS.BRAND_CYAN};
+  color: ${COLORS.WHITE};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -36,7 +37,7 @@ export const SC_FileBody = styled.div`
 export const SC_FileName = styled.div`
   font-size: 14px;
   font-weight: 600;
-  color: #263238;
+  color: ${COLORS.TEXT_PRIMARY};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -45,7 +46,7 @@ export const SC_FileName = styled.div`
 
 export const SC_FileMeta = styled.div`
   font-size: 12px;
-  color: #607d8b;
+  color: ${COLORS.BLUE_GRAY};
   display: flex;
   align-items: center;
   gap: 6px;
@@ -56,8 +57,8 @@ export const SC_DownloadButton = styled.button`
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid #cfd8dc;
-  background: #fff;
+  border: 1px solid ${COLORS.BORDER};
+  background: ${COLORS.BG_PRIMARY};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,10 +66,10 @@ export const SC_DownloadButton = styled.button`
   padding: 0;
   flex-shrink: 0;
   font-size: 16px;
-  color: #00a4db;
+  color: ${COLORS.BRAND_CYAN};
 
   &:hover:not(:disabled) {
-    background: #f0f6fa;
+    background: ${COLORS.BG_HOVER_BLUE};
   }
 
   &:disabled {
@@ -80,19 +81,19 @@ export const SC_DownloadButton = styled.button`
 export const SC_Spinner = styled.div`
   width: 18px;
   height: 18px;
-  border: 2px solid #cfd8dc;
-  border-top-color: #00a4db;
+  border: 2px solid ${COLORS.BG_TERTIARY};
+  border-top-color: ${COLORS.BRAND_CYAN};
   border-radius: 50%;
   animation: spin 1s linear infinite; /* @keyframes spin — глобально в style.css */
 `
 
 export const SC_Progress = styled.div`
   font-size: 11px;
-  color: #00a4db;
+  color: ${COLORS.BRAND_CYAN};
   font-weight: 600;
 `
 
 export const SC_ErrorText = styled.div`
   font-size: 11px;
-  color: #c62828;
+  color: ${COLORS.RED_DARK};
 `

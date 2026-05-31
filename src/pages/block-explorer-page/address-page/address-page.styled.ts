@@ -13,7 +13,7 @@ export const SC_AddrPagePage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  // 60px top clears the fixed app-header.
+  /* 60px top clears the fixed app-header. */
   padding: 88px 24px 48px;
 `
 
@@ -121,8 +121,7 @@ export const SC_AddrTxRow = styled.div`
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    column-gap: 12px;
-    row-gap: 6px;
+    gap: 6px 12px;
     padding: 12px 14px;
 
     & > :nth-child(1) {

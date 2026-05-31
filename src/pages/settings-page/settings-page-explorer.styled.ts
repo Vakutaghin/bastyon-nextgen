@@ -60,7 +60,7 @@ export const SC_ExplorerNodeRow = styled('label', nodeRowProps)`
   padding: 10px 14px;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 8px;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   cursor: pointer;
   font-size: 14px;
   color: ${COLORS.GRAY_212};

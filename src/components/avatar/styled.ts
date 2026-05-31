@@ -4,23 +4,23 @@ import { COLORS } from '@/styles/theme-colors'
 export const SC_Avatar = styled.div<{
   backgroundColor?: string
   color?: string
-  shape?: 'circle' | 'square',
+  shape?: 'circle' | 'square'
 }>`
   position: relative;
-  border-radius: ${(p) => p.shape === 'square' ? '4px' : '50%'};
+  border-radius: ${(p) => (p.shape === 'square' ? '4px' : '50%')};
   overflow: visible;
 
   :deep(.ant-avatar) {
     background: ${(p) => p.backgroundColor || COLORS.PRIMARY};
-    color: ${(p) => p.color || 'white'};
+    color: ${(p) => p.color || COLORS.WHITE};
     border: 2px solid ${COLORS.BORDER_LIGHT};
-    border-radius: ${(p) => p.shape === 'square' ? '4px' : '50%'};
+    border-radius: ${(p) => (p.shape === 'square' ? '4px' : '50%')};
     font-weight: 600;
   }
 
   :deep(.ant-avatar img) {
     object-fit: cover;
-    border-radius: ${(p) => p.shape === 'square' ? '4px' : '50%'};
+    border-radius: ${(p) => (p.shape === 'square' ? '4px' : '50%')};
   }
 
   .verified-badge {
@@ -30,12 +30,12 @@ export const SC_Avatar = styled.div<{
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #1890ff;
-    border: 2px solid #ffffff;
+    background: ${COLORS.ANT_BLUE};
+    border: 2px solid ${COLORS.WHITE};
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+    box-shadow: ${COLORS.SHADOW_SM};
     z-index: 2;
   }
 
@@ -46,12 +46,12 @@ export const SC_Avatar = styled.div<{
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #faad14;
-    border: 2px solid #ffffff;
+    background: ${COLORS.WARNING_ICON};
+    border: 2px solid ${COLORS.WHITE};
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+    box-shadow: ${COLORS.SHADOW_SM};
     z-index: 2;
   }
 `

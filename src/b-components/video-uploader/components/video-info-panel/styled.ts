@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_InfoPanel = styled.div`
   display: grid !important;
@@ -15,8 +16,8 @@ export const SC_InfoPanel = styled.div`
 `
 
 export const SC_InfoSection = styled.div`
-  background: #fafafa !important;
-  border: 1px solid #e8e8e8 !important;
+  background: ${COLORS.BG_INPUT} !important;
+  border: 1px solid ${COLORS.GRAY_E8} !important;
   border-radius: 8px !important;
   padding: 16px !important;
   box-sizing: border-box !important;
@@ -25,14 +26,14 @@ export const SC_InfoSection = styled.div`
 export const SC_SectionHeader = styled.div`
   margin-bottom: 12px !important;
   padding-bottom: 12px !important;
-  border-bottom: 1px solid #e8e8e8 !important;
+  border-bottom: 1px solid ${COLORS.GRAY_E8} !important;
 `
 
 export const SC_SectionTitle = styled.h4`
   margin: 0 !important;
   font-size: 16px !important;
   font-weight: 600 !important;
-  color: #333 !important;
+  color: ${COLORS.TEXT_PRIMARY} !important;
 `
 
 export const SC_InfoContent = styled.div`
@@ -50,14 +51,14 @@ export const SC_InfoRow = styled.div`
 `
 
 export const SC_InfoLabel = styled.span`
-  color: #666 !important;
+  color: ${COLORS.TEXT_SECONDARY} !important;
   font-weight: 500 !important;
   flex-shrink: 0 !important;
   margin-right: 12px !important;
 `
 
 export const SC_InfoValue = styled.span`
-  color: #333 !important;
+  color: ${COLORS.TEXT_PRIMARY} !important;
   text-align: right !important;
   display: flex !important;
   align-items: center !important;
@@ -72,7 +73,7 @@ export const SC_TranscoderBadge = styled.span<{ isWorker: boolean }>`
   border-radius: 4px !important;
   font-size: 12px !important;
   font-weight: 600 !important;
-  background-color: ${(p) => p.isWorker ? '#e6f7ff' : '#fff7e6'} !important;
-  color: ${(p) => p.isWorker ? '#1890ff' : '#fa8c16'} !important;
-  border: 1px solid ${(p) => p.isWorker ? '#91d5ff' : '#ffd591'} !important;
+  background-color: ${(p) => (p.isWorker ? COLORS.ANT_BLUE_BG : COLORS.ORANGE_BG)} !important;
+  color: ${(p) => (p.isWorker ? COLORS.ANT_BLUE : COLORS.WARNING_HEX)} !important;
+  border: 1px solid ${(p) => (p.isWorker ? COLORS.ANT_BLUE_LIGHT : COLORS.ORANGE_BORDER)} !important;
 `

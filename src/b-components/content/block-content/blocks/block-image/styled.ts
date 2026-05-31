@@ -1,5 +1,7 @@
 import styled from 'vue3-styled-components'
 
+import { COLORS } from '@/styles/theme-colors'
+
 export const SC_BlockImage = styled.figure`
   margin: 1em 0;
   text-align: center;
@@ -16,6 +18,6 @@ export const SC_BlockImageImg = styled.img`
 export const SC_BlockImageCaption = styled.figcaption`
   margin-top: 0.5em;
   font-size: 0.9em;
-  color: rgb(var(--color-txt-gray, 100, 100, 100));
+  color: ${COLORS.TEXT_SECONDARY};
   font-style: italic;
 `

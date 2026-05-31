@@ -1,19 +1,21 @@
 import styled from 'vue3-styled-components'
 
+import { COLORS } from '@/styles/theme-colors'
+
 export const SC_BlockCode = styled.pre`
   margin: 1em 0;
   padding: 1em;
-  background-color: rgba(var(--background-main, 1, 22, 33), 0.8);
+  background-color: ${COLORS.DARK_BG};
   border-radius: 4px;
   overflow-x: auto;
-  border: 1px solid rgba(var(--color-txt-gray, 100, 100, 100), 0.2);
+  border: 1px solid ${COLORS.TEXT_SECONDARY};
 `
 
 export const SC_BlockCodeCode = styled.code`
   font-family: 'Courier New', Courier, monospace;
   font-size: 0.9em;
   line-height: 1.5;
-  color: rgb(var(--text-color, 255, 255, 255));
+  color: ${COLORS.WHITE};
   white-space: pre;
   word-wrap: normal;
   overflow-wrap: normal;

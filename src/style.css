@@ -27,6 +27,11 @@
   --color-ant-blue-bg: #e6f7ff;
   --color-ant-blue-bg-light: #e6f4ff;
 
+  --color-brand-cyan: #00a4db;
+  --color-brand-cyan-hover: #0091c2;
+  --color-brand-cyan-light: rgba(0, 164, 219, 0.12);
+  --color-brand-cyan-soft: rgba(0, 164, 219, 0.06);
+
   --color-text-primary: rgb(33, 37, 41);
   --color-text-secondary: rgb(108, 117, 125);
   --color-text-muted: rgb(173, 181, 189);
@@ -43,6 +48,7 @@
   --color-bg-hover: #f0f0f0;
   --color-bg-hover-blue: #f0f7ff;
   --color-bg-input: #fafafa;
+  --color-surface-frosted: rgba(248, 249, 250, 0.8);
   /* Legacy-алиас для старых правил, опирающихся на --color-bg */
   --color-bg: var(--color-bg-primary);
 
@@ -71,6 +77,16 @@
   --color-primary-bg-soft: rgba(0, 123, 255, 0.08);
   --color-primary-bg-12: rgba(0, 123, 255, 0.12);
 
+  --color-purple: #722ed1;
+  --color-purple-deep: #531dab;
+  --color-purple-soft: rgba(114, 46, 209, 0.12);
+  --color-pink: #c41d7f;
+  --color-pink-soft: rgba(235, 47, 150, 0.12);
+  --color-green-ant: #52c41a;
+  --color-green-ant-deep: #389e0d;
+  --color-green-ant-soft: rgba(82, 196, 26, 0.14);
+  --color-amber-soft: rgba(245, 166, 35, 0.14);
+
   --color-red-ant: #ff4d4f;
   --color-red-dark: #cf1322;
   --color-red-bright: #ff3b30;
@@ -80,6 +96,7 @@
   --color-warning-bg: #fff3cd;
   --color-warning-border: #ffc107;
   --color-warning-text: #856404;
+  --color-warning-track: rgba(255, 193, 7, 0.3);
   --color-warning-border-light: #ffe58f;
   --color-warning-icon: #faad14;
   --color-orange-bg: #fff7e6;
@@ -126,6 +143,7 @@
   --color-gray-aaa: #aeb8c2;
   --color-gray-ccc: #ccc;
   --color-gray-ddd: #ddd;
+  --color-gray-eee: #eee;
   --color-gray-e0: #e0e0e0;
   --color-gray-e8: #e8e8e8;
   --color-gray-f0: #f0f2f5;
@@ -202,9 +220,9 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Dark theme — активируется через `<html data-theme="dark">`. Переключатель
-   живёт в composable `use-theme.ts` и UI настроек. Также можно автоматически
-   следовать системным предпочтениям пользователя — см. блок ниже под
-   `prefers-color-scheme: dark`.
+   живёт в composable `use-theme.ts` и UI настроек. Режим `auto` резолвится в
+   JS (use-theme.ts) и тоже выставляет data-theme="dark", поэтому этот блок —
+   ЕДИНСТВЕННЫЙ источник тёмной палитры (никаких дублей в @media).
 
    Подход: переопределяем только основные семантические токены (фоны, текст,
    границы, overlays). Status-цвета (primary/success/danger/warning) остаются
@@ -221,6 +239,7 @@
   --color-bg-hover: rgb(38, 42, 50);
   --color-bg-hover-blue: rgba(0, 123, 255, 0.18);
   --color-bg-input: rgb(28, 31, 38);
+  --color-surface-frosted: rgba(28, 31, 38, 0.8);
 
   /* Текст: инверсия с поддержкой иерархии */
   --color-text-primary: rgb(232, 234, 237);
@@ -259,9 +278,24 @@
   --color-gray-888: rgb(140, 146, 156);
   --color-gray-999: rgb(126, 132, 142);
 
+  /* Светлые серые (в светлой теме — фоны/границы/разделители) → тёмные эквиваленты.
+     Без этих override-ов они оставались бы светлыми = «светлое на тёмном». */
+  --color-gray-aaa: rgb(126, 132, 142); /* приглушённый текст/иконки */
+  --color-gray-ccc: rgb(60, 64, 72); /* границы/disabled */
+  --color-gray-ddd: rgb(52, 56, 64); /* границы/разделители */
+  --color-gray-eee: rgb(40, 43, 50); /* фоны/разделители */
+  --color-gray-e0: rgb(45, 48, 55);
+  --color-gray-e8: rgb(40, 43, 50);
+  --color-gray-f0: rgb(35, 38, 45);
+  --color-gray-f1: rgb(35, 38, 45);
+
   /* Светлые ant-blue и hover-фоны — затемнённые версии */
   --color-ant-blue-bg: rgba(24, 144, 255, 0.16);
   --color-ant-blue-bg-light: rgba(24, 144, 255, 0.12);
+
+  /* Акценты — чуть ярче, чтобы читались на тёмном фоне */
+  --color-purple: #9254de;
+  --color-pink: #f759ab;
 
   /* Status-фоны — приглушаем под тёмный контекст */
   --color-red-bg: rgba(255, 59, 48, 0.16);
@@ -271,30 +305,21 @@
   --color-orange-bg: rgba(250, 140, 22, 0.16);
   --color-orange-border: rgba(250, 140, 22, 0.3);
 
+  /* Тёмно-коричневый/оранжевый текст плашек → светлый янтарь на тёмном фоне */
+  --color-warning-text: rgb(255, 209, 102);
+  --color-orange-text: rgb(243, 167, 58);
+
   /* Тени — на тёмном фоне сильнее (но всё равно полупрозрачные чёрные) */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
 }
 
-/* Авто-следование системной теме, если пользователь не выбрал явно через UI.
-   Атрибут data-theme=light/dark на <html>, выставленный composable'ом, имеет
-   более высокую специфичность и перекрывает этот блок. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']):not([data-theme='dark']) {
-    --color-bg-primary: rgb(20, 23, 28);
-    --color-bg-secondary: rgb(28, 31, 38);
-    --color-bg-tertiary: rgb(35, 38, 45);
-    --color-bg-disabled: rgb(45, 48, 55);
-    --color-bg-light: rgb(28, 31, 38);
-    --color-bg-hover: rgb(38, 42, 50);
-    --color-text-primary: rgb(232, 234, 237);
-    --color-text-secondary: rgb(170, 174, 180);
-    --color-text-muted: rgb(126, 132, 142);
-    --color-border: rgba(255, 255, 255, 0.12);
-    --color-border-light: rgba(255, 255, 255, 0.08);
-  }
-}
+/* Авто-следование системной теме (`prefers-color-scheme`) выполняется в JS:
+   `use-theme.ts` резолвит режим `auto` в data-theme="light|dark" и слушает
+   изменения через matchMedia. Поэтому отдельного `@media`-блока здесь НЕТ —
+   тёмная палитра живёт в одном месте (`:root[data-theme="dark"]`), без риска
+   рассинхрона дубля. */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mobile overrides — на узких экранах уменьшаем spacing, layout-высоты,

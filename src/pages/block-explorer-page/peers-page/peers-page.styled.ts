@@ -80,12 +80,14 @@ export const SC_NodeRow = styled.div`
   &:last-child {
     border-bottom: none;
   }
+
   &:hover {
     background: ${COLORS.OVERLAY_3};
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     grid-template-columns: 22px minmax(0, 1fr) 80px;
+
     & > .secondary {
       display: none;
     }
@@ -141,6 +143,7 @@ export const SC_PeerTableHeader = styled.div`
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     grid-template-columns: minmax(0, 1.4fr) 1fr 80px;
+
     & > .col-hide-mobile {
       display: none;
     }
@@ -160,12 +163,14 @@ export const SC_PeerRow = styled.div`
   &:last-child {
     border-bottom: none;
   }
+
   &:hover {
     background: ${COLORS.OVERLAY_3};
   }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     grid-template-columns: minmax(0, 1.4fr) 1fr 80px;
+
     & > .col-hide-mobile {
       display: none;
     }

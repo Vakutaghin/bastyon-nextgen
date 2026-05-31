@@ -1,5 +1,7 @@
 import styled from 'vue3-styled-components'
 
+import { COLORS } from '@/styles/theme-colors'
+
 export const SC_CaptchaWrapper = styled.div`
   padding: 1em;
 `
@@ -12,7 +14,7 @@ export const SC_Reason = styled.div`
   span {
     font-size: 1.2em;
     font-weight: 700;
-    color: rgb(var(--color-txt-orange, 255, 165, 0));
+    color: ${COLORS.WARNING_HEX};
   }
 `
 
@@ -25,7 +27,7 @@ export const SC_Subcaption = styled.div`
 `
 
 export const SC_CaptchaImageWrapper = styled.div<{ shown: boolean }>`
-  opacity: ${(p) => p.shown ? 1 : 0};
+  opacity: ${(p) => (p.shown ? 1 : 0)};
   transition: opacity 0.3s;
 `
 
@@ -39,7 +41,7 @@ export const SC_CaptchaSvgImage = styled.div`
 `
 
 export const SC_Controls = styled.div<{ shown: boolean }>`
-  opacity: ${(p) => p.shown ? 1 : 0};
+  opacity: ${(p) => (p.shown ? 1 : 0)};
   transition: opacity 0.3s;
 `
 
@@ -53,7 +55,7 @@ export const SC_InputWrapper = styled.div`
 export const SC_CaptchaInput = styled.input`
   font-size: 1.4em;
   border: 0;
-  border-bottom: 1px solid rgb(var(--neutral-grad-2, 200, 200, 200));
+  border-bottom: 1px solid ${COLORS.GRAY_CCC};
   transition: border-color 0.3s;
   border-radius: 0;
   width: 100%;
@@ -62,7 +64,7 @@ export const SC_CaptchaInput = styled.input`
 
   &:focus {
     outline: none;
-    border-bottom-color: rgb(var(--color-txt-ac, 0, 122, 255));
+    border-bottom-color: ${COLORS.PRIMARY};
   }
 `
 
@@ -81,11 +83,11 @@ export const SC_SubmitButton = styled.button<{ disabled: boolean }>`
   border: none;
   border-radius: 4px;
   font-size: 1em;
-  cursor: ${(p) => p.disabled ? 'not-allowed' : 'pointer'};
+  cursor: ${(p) => (p.disabled ? 'not-allowed' : 'pointer')};
   transition: all 0.3s;
-  background: rgb(var(--color-txt-ac, 0, 122, 255));
-  color: white;
-  opacity: ${(p) => p.disabled ? 0.5 : 1};
+  background: ${COLORS.PRIMARY};
+  color: ${COLORS.WHITE};
+  opacity: ${(p) => (p.disabled ? 0.5 : 1)};
 
   &:hover:not(:disabled) {
     opacity: 0.9;
@@ -95,15 +97,15 @@ export const SC_SubmitButton = styled.button<{ disabled: boolean }>`
 export const SC_RedoButton = styled.button`
   min-width: 180px;
   padding: 0.75em 1.5em;
-  border: 1px solid rgb(var(--neutral-grad-2, 200, 200, 200));
+  border: 1px solid ${COLORS.GRAY_CCC};
   border-radius: 4px;
   font-size: 1em;
   cursor: pointer;
   transition: all 0.3s;
   background: transparent;
-  color: rgb(var(--color-txt, 0, 0, 0));
+  color: ${COLORS.TEXT_PRIMARY};
 
   &:hover {
-    background: rgb(var(--neutral-grad-1, 240, 240, 240));
+    background: ${COLORS.BG_HOVER};
   }
 `

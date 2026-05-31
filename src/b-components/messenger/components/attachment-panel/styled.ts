@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_AttachmentRoot = styled.div`
   position: relative;
@@ -10,8 +11,8 @@ export const SC_AttachButton = styled.button`
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid #cfd8dc;
-  background: #fff;
+  border: 1px solid ${COLORS.BORDER};
+  background: ${COLORS.BG_PRIMARY};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -20,10 +21,10 @@ export const SC_AttachButton = styled.button`
   flex-shrink: 0;
   font-size: 18px;
   line-height: 1;
-  color: #607d8b;
+  color: ${COLORS.BLUE_GRAY};
 
   &:hover {
-    background: #f0f6fa;
+    background: ${COLORS.BG_HOVER_BLUE};
   }
 
   &:disabled {
@@ -36,10 +37,10 @@ export const SC_Menu = styled.div`
   position: absolute;
   bottom: calc(100% + 6px);
   left: 0;
-  background: #fff;
-  border: 1px solid #e0e6eb;
+  background: ${COLORS.BG_PRIMARY};
+  border: 1px solid ${COLORS.BORDER};
   border-radius: 10px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: ${COLORS.SHADOW_MD};
   padding: 6px;
   min-width: 160px;
   z-index: 1000;
@@ -59,10 +60,10 @@ export const SC_MenuItem = styled.button`
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #263238;
+  color: ${COLORS.TEXT_PRIMARY};
 
   &:hover:not(:disabled) {
-    background: #f0f6fa;
+    background: ${COLORS.BG_HOVER_BLUE};
   }
 
   &:disabled {

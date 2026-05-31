@@ -13,7 +13,7 @@ export const SC_Section = styled.section`
 export const SC_SectionTitle = styled.h2`
   font-size: 14px;
   font-weight: 600;
-  color: ${COLORS.OVERLAY_70};
+  color: ${COLORS.TEXT_PRIMARY};
   margin: 0 0 12px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -40,7 +40,7 @@ export const SC_Card = styled.button`
   padding: 20px 12px 16px;
   border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 14px;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   cursor: pointer;
   transition:
     transform ${TRANSITIONS.QUICK},
@@ -74,7 +74,7 @@ export const SC_FavoriteBtn = styled.button`
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  color: ${COLORS.OVERLAY_25};
+  color: ${COLORS.TEXT_MUTED};
   font-size: 14px;
   transition:
     color ${TRANSITIONS.QUICK},
@@ -111,7 +111,7 @@ export const SC_Icon = styled.img`
 export const SC_IconFallback = styled.div`
   font-size: 22px;
   font-weight: 600;
-  color: ${COLORS.OVERLAY_55};
+  color: ${COLORS.TEXT_SECONDARY};
 `
 
 export const SC_Name = styled.div`
@@ -135,7 +135,7 @@ export const SC_LoadMore = styled.div`
 export const SC_LoadMoreBtn = styled.button`
   padding: 8px 20px;
   border: 1px solid ${COLORS.OVERLAY_12};
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border-radius: 8px;
   font-size: 13px;
   color: ${COLORS.GRAY_212};
@@ -155,7 +155,7 @@ export const SC_LoadMoreBtn = styled.button`
 export const SC_Empty = styled.div`
   padding: 40px 16px;
   text-align: center;
-  color: ${COLORS.OVERLAY_55};
+  color: ${COLORS.TEXT_SECONDARY};
   font-size: 14px;
 `
 

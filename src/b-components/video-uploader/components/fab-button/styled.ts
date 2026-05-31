@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_FabButton = styled.button`
   position: fixed !important;
@@ -7,11 +8,11 @@ export const SC_FabButton = styled.button`
   width: 56px !important;
   height: 56px !important;
   border-radius: 50% !important;
-  background-color: #1890ff !important;
-  color: white !important;
+  background-color: ${COLORS.ANT_BLUE} !important;
+  color: ${COLORS.WHITE} !important;
   border: none !important;
   cursor: pointer !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: ${COLORS.SHADOW_MD} !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -20,8 +21,8 @@ export const SC_FabButton = styled.button`
   transition: all 0.3s ease !important;
 
   &:hover {
-    background-color: #40a9ff !important;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+    background-color: ${COLORS.ANT_BLUE_HOVER} !important;
+    box-shadow: ${COLORS.SHADOW_LG} !important;
     transform: scale(1.05) !important;
   }
 

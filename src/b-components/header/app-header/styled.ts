@@ -14,7 +14,7 @@ export const SC_Header = styled.header`
   background: ${COLORS.BG_PRIMARY};
   border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
   z-index: 1000;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: ${COLORS.SHADOW_SM};
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
@@ -46,10 +46,10 @@ export const SC_MessengerWrapper = styled.div`
   padding: 8px;
   border-radius: 50%;
   transition: background-color 0.2s;
-  color: var(--text-primary, #000);
+  color: ${COLORS.TEXT_PRIMARY};
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: ${COLORS.OVERLAY_4};
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -65,8 +65,8 @@ export const SC_UnreadBadge = styled.span`
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background: rgb(220, 53, 69);
-  color: #fff;
+  background: ${COLORS.DANGER};
+  color: ${COLORS.WHITE};
   font-size: 11px;
   font-weight: 600;
   line-height: 18px;
@@ -95,7 +95,7 @@ export const SC_HamburgerButton = styled.button`
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.06);
+    background: ${COLORS.OVERLAY_6};
   }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {

@@ -29,7 +29,7 @@ export const SC_PrivateKeyBox = styled.div`
 
 export const SC_PrivateKeyLabel = styled.div`
   font-size: 13px;
-  color: ${COLORS.OVERLAY_45};
+  color: ${COLORS.TEXT_SECONDARY};
   margin-bottom: 8px;
   font-weight: 600;
 `
@@ -38,7 +38,7 @@ export const SC_PrivateKeyValue = styled.div`
   font-family: 'Courier New', monospace;
   font-size: 14px;
   line-height: 1.6;
-  color: ${COLORS.BLACK};
+  color: ${COLORS.TEXT_PRIMARY};
   word-break: break-all;
   user-select: all;
 `
@@ -55,8 +55,8 @@ export const SC_CopyIconBtn = styled.button`
   padding: 0;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 6px;
-  background: ${COLORS.WHITE};
-  color: ${COLORS.OVERLAY_65};
+  background: ${COLORS.BG_PRIMARY};
+  color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
   transition:
     color ${TRANSITIONS.FAST},
@@ -101,7 +101,7 @@ export const SC_HideKeyButton = styled.button`
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: ${COLORS.OVERLAY_65};
+  color: ${COLORS.TEXT_SECONDARY};
   background: transparent;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 6px;
@@ -118,7 +118,7 @@ export const SC_HideKeyButton = styled.button`
 
 export const SC_ConfirmOverlay = styled.div`
   padding: 20px;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.WARNING_BORDER_LIGHT};
   border-radius: 8px;
   max-width: 480px;
@@ -167,8 +167,8 @@ export const SC_ConfirmBtnDefault = styled.button`
   padding: 8px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.OVERLAY_65};
-  background: ${COLORS.WHITE};
+  color: ${COLORS.TEXT_SECONDARY};
+  background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 6px;
   cursor: pointer;

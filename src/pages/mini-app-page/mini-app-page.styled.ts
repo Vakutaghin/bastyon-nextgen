@@ -5,5 +5,5 @@ export const SC_Page = styled.main`
   display: flex;
   flex-direction: column;
   width: 100%;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 `

@@ -31,7 +31,7 @@ export const SC_PostAuthorName = styled.div`
 
 export const SC_PostAuthorRep = styled.div`
   color: ${COLORS.TEXT_SECONDARY};
-  border: 1px solid rgb(222, 226, 230);
+  border: 1px solid ${COLORS.BORDER_DARK};
   border-radius: 6px;
   padding: 0 6px;
   line-height: 1.4;
@@ -64,14 +64,14 @@ export const SC_ChatBtn = styled.button`
   margin: 0;
   border: none;
   background: transparent;
-  color: rgba(0, 0, 0, 0.45);
+  color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
   border-radius: 4px;
   line-height: 1;
 
   &:hover {
-    color: #00a4ff;
-    background: rgba(0, 164, 255, 0.08);
+    color: ${COLORS.BRAND_CYAN};
+    background: ${COLORS.BRAND_CYAN_LIGHT};
   }
 `
 
@@ -107,8 +107,9 @@ export const SC_RepostLine = styled.div`
   }
 
   .repost-author {
-    color: #00a4ff;
+    color: ${COLORS.BRAND_CYAN};
     text-decoration: none;
+
     &:hover {
       text-decoration: underline;
     }

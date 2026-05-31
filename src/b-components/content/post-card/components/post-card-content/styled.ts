@@ -70,7 +70,7 @@ export const SC_PostPreview = styled.div`
   word-break: break-word;
 
   p {
-    margin: 0 0 7.50px 0;
+    margin: 0 0 7.5px;
     color: ${COLORS.TEXT_PRIMARY} !important;
 
     &:last-child {

@@ -12,7 +12,7 @@ export const SC_TransferWidget = styled.div`
 
 export const SC_TransferSwitch = styled.div`
   display: flex;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border-bottom: 1px solid ${COLORS.OVERLAY_8};
 `
 
@@ -56,7 +56,7 @@ export const SC_TransferInput = styled.input`
   padding: 10px 14px;
   font-size: 14px;
   color: ${COLORS.GRAY_212};
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   box-sizing: border-box;
@@ -64,6 +64,7 @@ export const SC_TransferInput = styled.input`
   &::placeholder {
     color: ${COLORS.GRAY_999};
   }
+
   &:focus {
     outline: none;
     border-color: ${COLORS.OVERLAY_25};
@@ -76,7 +77,7 @@ export const SC_TransferTextarea = styled.textarea`
   padding: 10px 14px;
   font-size: 14px;
   color: ${COLORS.GRAY_212};
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   box-sizing: border-box;
@@ -85,6 +86,7 @@ export const SC_TransferTextarea = styled.textarea`
   &::placeholder {
     color: ${COLORS.GRAY_999};
   }
+
   &:focus {
     outline: none;
     border-color: ${COLORS.OVERLAY_25};
@@ -96,7 +98,7 @@ export const SC_TransferSelect = styled.select`
   padding: 10px 14px;
   font-size: 14px;
   color: ${COLORS.GRAY_212};
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   cursor: pointer;
@@ -117,7 +119,7 @@ export const SC_TransferAddress = styled.div`
   color: ${COLORS.GRAY_212};
   word-break: break-all;
   padding: 10px 14px;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 8px;
 `
@@ -127,7 +129,7 @@ export const SC_TransferCopyBtn = styled.button`
   font-size: 14px;
   font-weight: 500;
   color: ${COLORS.GRAY_212};
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   cursor: pointer;
@@ -153,6 +155,7 @@ export const SC_TransferSubmit = styled.button`
   &:hover:not(:disabled) {
     background: ${COLORS.GRAY_333};
   }
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -195,7 +198,7 @@ export const SC_TransferSearchDropdown = styled.div`
   margin-top: 4px;
   max-height: 220px;
   overflow-y: auto;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
   border-radius: 8px;
   box-shadow: 0 4px 12px ${COLORS.OVERLAY_10};
@@ -217,6 +220,7 @@ export const SC_TransferSearchItem = styled.button`
   &:last-child {
     border-bottom: none;
   }
+
   &:hover {
     background: ${COLORS.BG_LIGHT};
   }
@@ -230,7 +234,7 @@ export const SC_TransferLoginChip = styled.div`
   padding: 8px 12px;
   font-size: 13px;
   color: ${COLORS.GRAY_120};
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 8px;
   max-width: fit-content;

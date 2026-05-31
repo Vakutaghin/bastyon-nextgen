@@ -1,11 +1,18 @@
 /**
  * Управление темой оформления (light / dark / auto).
  *
- * Состояние применяется к корневому `<html>` через атрибут `data-theme`:
- *   - `light` → `<html data-theme="light">` (принудительно светлая)
- *   - `dark`  → `<html data-theme="dark">`  (принудительно тёмная)
- *   - `auto`  → атрибут не выставляется, тема следует системному
- *               `prefers-color-scheme: dark` через CSS @media.
+ * Состояние применяется к корневому `<html>` через атрибут `data-theme`,
+ * который всегда содержит *разрешённую* тему (light|dark):
+ *   - `light` → `<html data-theme="light">`
+ *   - `dark`  → `<html data-theme="dark">`
+ *   - `auto`  → разрешается в light|dark по системному `prefers-color-scheme`
+ *               прямо в JS (см. `applyMode`), а matchMedia-listener в `initTheme`
+ *               переключает тему вживую при смене системной.
+ *
+ * Почему не CSS `@media (prefers-color-scheme)`: тёмная палитра объявлена ТОЛЬКО
+ * в `:root[data-theme="dark"]` — один источник правды. Дублировать ~60 токенов
+ * во второй `@media`-блок означало бы неизбежный рассинхрон (так и было: auto-блок
+ * перекрывал лишь ~11 токенов → «светлое на тёмном» у дефолтных пользователей).
  *
  * Выбор сохраняется в `localStorage` под ключом `bastyon_theme`. При первом
  * заходе используется `auto`.
@@ -37,15 +44,23 @@ function loadStoredMode(): ThemeMode {
   return 'auto'
 }
 
-/** Применить режим к DOM (атрибут на <html>). */
+/** Тёмная ли системная тема прямо сейчас. */
+function prefersDark(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    !!window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
+}
+
+/**
+ * Применить режим к DOM. На `<html>` всегда выставляется *разрешённая* тема
+ * (`light`|`dark`); `auto` резолвится по системному `prefers-color-scheme`.
+ */
 function applyMode(mode: ThemeMode): void {
   if (typeof document === 'undefined') return
-  const root = document.documentElement
-  if (mode === 'auto') {
-    root.removeAttribute('data-theme')
-  } else {
-    root.setAttribute('data-theme', mode)
-  }
+  const resolved: 'light' | 'dark' = mode === 'auto' ? (prefersDark() ? 'dark' : 'light') : mode
+  document.documentElement.setAttribute('data-theme', resolved)
 }
 
 const mode: Ref<ThemeMode> = ref<ThemeMode>('auto')
@@ -58,6 +73,18 @@ export function initTheme(): void {
   const stored = loadStoredMode()
   mode.value = stored
   applyMode(stored)
+
+  // Живое следование системной теме, пока активен режим `auto`. Слушатель —
+  // глобальный синглтон (как и `mode`): живёт всё время работы приложения,
+  // отдельная очистка не нужна.
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => {
+      if (mode.value === 'auto') applyMode('auto')
+    }
+    if (mq.addEventListener) mq.addEventListener('change', onChange)
+    else if (mq.addListener) mq.addListener(onChange) // Safari < 14
+  }
 }
 
 /** Установить режим темы. Сохраняет в localStorage и применяет к DOM. */

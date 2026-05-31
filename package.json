@@ -28,8 +28,8 @@
     "lint:fix": "eslint src/ --ext .ts,.tsx,.vue,.js --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,vue,js,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,vue,js,css,json}\"",
-    "stylelint": "stylelint \"src/**/*.styled.ts\"",
-    "stylelint:fix": "stylelint \"src/**/*.styled.ts\" --fix",
+    "stylelint": "stylelint \"src/**/*styled.ts\"",
+    "stylelint:fix": "stylelint \"src/**/*styled.ts\" --fix",
     "check:inline-styles": "node scripts/check-inline-styles.mjs",
     "prepare": "husky"
   },

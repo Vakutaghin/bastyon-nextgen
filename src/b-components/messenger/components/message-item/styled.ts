@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_MessageItem = styled.div`
   max-width: 80%;
@@ -14,14 +15,14 @@ export const SC_MessageItem = styled.div`
   overflow: hidden;
 
   &.mine {
-    background-color: #d6ecff;
-    color: #1b1f24;
+    background-color: ${COLORS.ANT_BLUE_BG};
+    color: ${COLORS.TEXT_PRIMARY};
     border-bottom-right-radius: 4px;
   }
 
   &.others {
-    background-color: #f1f2f4;
-    color: #1b1f24;
+    background-color: ${COLORS.GRAY_F1};
+    color: ${COLORS.TEXT_PRIMARY};
     border-bottom-left-radius: 4px;
   }
 `
@@ -80,14 +81,14 @@ export const SC_ReactionPill = styled.span`
   font-size: 12px;
   padding: 2px 6px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.06);
+  background: ${COLORS.OVERLAY_6};
   cursor: default;
   display: inline-flex;
   align-items: center;
   gap: 2px;
 
   &.mine {
-    background: rgba(0, 100, 200, 0.15);
+    background: ${COLORS.PRIMARY_LIGHT_15};
   }
 `
 
@@ -104,7 +105,7 @@ export const SC_ReactionButton = styled.button`
 
   &:hover {
     opacity: 1;
-    background: rgba(0, 0, 0, 0.06);
+    background: ${COLORS.OVERLAY_6};
   }
 `
 
@@ -114,9 +115,9 @@ export const SC_ReactionPicker = styled.div`
   right: 0;
   margin-bottom: 4px;
   padding: 6px 8px;
-  background: #fff;
+  background: ${COLORS.BG_PRIMARY};
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: ${COLORS.SHADOW_MD};
   display: flex;
   gap: 4px;
   z-index: 10;
@@ -131,6 +132,6 @@ export const SC_ReactionPickerEmoji = styled.button`
   border-radius: 6px;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.06);
+    background: ${COLORS.OVERLAY_6};
   }
 `

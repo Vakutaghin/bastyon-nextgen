@@ -49,7 +49,7 @@ export const SC_LastCommentAvatar = styled.div`
   height: 28px;
   border-radius: 50%;
   overflow: hidden;
-  background: rgb(222, 226, 230);
+  background: ${COLORS.BORDER_DARK};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -70,7 +70,7 @@ export const SC_LastCommentLetter = styled.span`
 
 export const SC_LastCommentArrow = styled.i`
   font-size: 10px;
-  color: rgba(33, 37, 41, 0.5);
+  color: ${COLORS.TEXT_MUTED};
   flex-shrink: 0;
 `
 
@@ -96,12 +96,12 @@ export const SC_LastCommentsLoading = styled.div`
   align-items: center;
   justify-content: center;
   padding: 16px 0;
-  color: rgb(134, 142, 150);
+  color: ${COLORS.TEXT_HINT};
   font-size: 13px;
 `
 
 export const SC_LastCommentsEmpty = styled.div`
   padding: 16px 0;
-  color: rgb(134, 142, 150);
+  color: ${COLORS.TEXT_HINT};
   font-size: 13px;
 `

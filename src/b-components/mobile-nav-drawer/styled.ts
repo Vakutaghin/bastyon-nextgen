@@ -6,7 +6,7 @@ const overlayProps = { isOpen: Boolean }
 export const SC_Backdrop = styled('div', overlayProps)`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: ${COLORS.OVERLAY_45};
   z-index: 1100;
   opacity: ${(p) => (p.isOpen ? 1 : 0)};
   pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')};
@@ -24,7 +24,7 @@ export const SC_Drawer = styled('aside', overlayProps)`
   z-index: 1101;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 18px rgba(0, 0, 0, 0.18);
+  box-shadow: ${COLORS.SHADOW_LG};
   transform: translateX(${(p) => (p.isOpen ? '0' : '-100%')});
   transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
   padding-top: var(--safe-top);
@@ -62,12 +62,12 @@ export const SC_DrawerClose = styled.button`
   -webkit-tap-highlight-color: transparent;
 
   &:active {
-    background: rgba(0, 0, 0, 0.06);
+    background: ${COLORS.OVERLAY_6};
   }
 `
 
 export const SC_DrawerSection = styled.div`
-  padding: 8px 8px;
+  padding: 8px;
 `
 
 export const SC_DrawerSectionTitle = styled.div`
@@ -89,7 +89,7 @@ export const SC_DrawerItem = styled('button', itemProps)`
   min-height: 48px;
   padding: 10px 14px;
   border: none;
-  background: ${(p) => (p.active ? 'rgba(0, 123, 255, 0.08)' : 'transparent')};
+  background: ${(p) => (p.active ? COLORS.PRIMARY_BG_SOFT : 'transparent')};
   color: ${(p) => (p.active ? COLORS.PRIMARY : COLORS.TEXT_PRIMARY)};
   font-size: 15px;
   font-weight: ${(p) => (p.active ? 600 : 500)};
@@ -105,6 +105,6 @@ export const SC_DrawerItem = styled('button', itemProps)`
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.05);
+    background: ${COLORS.OVERLAY_5};
   }
 `

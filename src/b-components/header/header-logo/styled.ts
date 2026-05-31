@@ -24,7 +24,6 @@ export const SC_LogoLink = styled.button`
   height: 40px;
   background: none;
   border: none;
-  cursor: pointer;
   padding: 0;
   transition: opacity 0.3s;
   cursor: pointer;
@@ -73,7 +72,7 @@ export const SC_LogoLang = styled.button`
   }
 
   &:hover {
-    background: rgba(206, 212, 218, 0.1);
+    background: ${COLORS.BORDER_LIGHTER};
     border-color: ${COLORS.BORDER_LIGHTER};
   }
 `

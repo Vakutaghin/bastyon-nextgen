@@ -12,9 +12,7 @@ export const SC_BlockList = styled.ul<{ style?: 'ordered' | 'unordered' }>`
 
   ${(p) => {
     const style = p.style || 'unordered'
-    return style === 'ordered'
-      ? 'list-style-type: decimal;'
-      : 'list-style-type: disc;'
+    return style === 'ordered' ? 'list-style-type: decimal;' : 'list-style-type: disc;'
   }}
 `
 

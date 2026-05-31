@@ -10,7 +10,7 @@ export const SC_LimitsWork = styled.div`
   min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 `
 
 export const SC_LimitsPage = styled.main`

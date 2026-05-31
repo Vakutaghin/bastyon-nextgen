@@ -10,7 +10,7 @@ export const SC_SettingsWork = styled.div`
   min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 `
 
 export const SC_SettingsPage = styled.div`
@@ -43,7 +43,7 @@ export const SC_SettingsContentWrapper = styled.div`
 export const SC_SettingsMain = styled.main`
   flex: 1;
   min-width: 0;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   padding: 24px;
   border-radius: 8px;
 

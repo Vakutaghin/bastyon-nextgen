@@ -10,7 +10,7 @@ export const SC_WalletWork = styled.div`
   min-height: calc(100vh - 60px);
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 `
 
 export const SC_WalletPage = styled.main`
@@ -90,6 +90,7 @@ export const SC_WalletAddButton = styled.button`
   &:hover:not(:disabled) {
     background: ${COLORS.BG_HOVER};
   }
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -110,7 +111,7 @@ export const SC_WalletTableRow = styled.div`
   padding: 12px 16px;
   font-size: 14px;
   border-bottom: 1px solid ${COLORS.OVERLAY_6};
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 
   &:last-child {
     border-bottom: none;
@@ -223,6 +224,7 @@ export const SC_WalletTabPanels = styled.div`
 
 export const SC_WalletTabPanel = styled.div`
   display: none;
+
   &.active {
     display: block;
   }

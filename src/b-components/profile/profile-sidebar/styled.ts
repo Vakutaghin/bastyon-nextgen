@@ -28,8 +28,8 @@ export const SC_UserAvatar = styled.div`
   border-radius: 50%;
   overflow: hidden;
   margin: 0 auto 20px;
-  border: 4px solid #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 4px solid ${COLORS.WHITE};
+  box-shadow: ${COLORS.SHADOW_SM};
 
   img {
     width: 100%;
@@ -42,15 +42,15 @@ export const SC_UserAvatarPlaceholder = styled.div`
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: #f0f2f5;
-  color: #aeb8c2;
+  background: ${COLORS.GRAY_F0};
+  color: ${COLORS.GRAY_AAA};
   font-size: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
-  border: 4px solid #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 4px solid ${COLORS.WHITE};
+  box-shadow: ${COLORS.SHADOW_SM};
 `
 
 export const SC_UserName = styled.h2`
@@ -75,8 +75,8 @@ export const SC_StartChatButton = styled.button`
   padding: 10px 14px;
   border-radius: 8px;
   border: none;
-  background-color: #00A3F7;
-  color: #fff;
+  background-color: ${COLORS.BRAND_CYAN};
+  color: ${COLORS.WHITE};
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -85,12 +85,14 @@ export const SC_StartChatButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 2px 6px rgba(0, 163, 247, 0.25);
+  box-shadow: 0 2px 6px ${COLORS.BRAND_CYAN_LIGHT};
+
   &:hover {
-    background-color: #0088d1;
+    background-color: ${COLORS.BRAND_CYAN_HOVER};
   }
+
   &:disabled {
-    background-color: #ccc;
+    background-color: ${COLORS.GRAY_CCC};
     cursor: not-allowed;
     box-shadow: none;
   }
@@ -98,7 +100,7 @@ export const SC_StartChatButton = styled.button`
 
 export const SC_UserAddress = styled.div`
   font-size: 12px;
-  color: #999;
+  color: ${COLORS.GRAY_999};
   word-break: break-all;
   display: flex;
   align-items: center;
@@ -116,7 +118,7 @@ export const SC_ExplorerLink = styled.a`
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: rgb(0, 123, 255);
+  color: ${COLORS.PRIMARY};
   text-decoration: none;
   cursor: pointer;
 
@@ -127,7 +129,7 @@ export const SC_ExplorerLink = styled.a`
 
 export const SC_UserSite = styled.a`
   font-size: 13px;
-  color: #00a4ff;
+  color: ${COLORS.BRAND_CYAN};
   text-decoration: none;
   word-break: break-all;
   display: flex;
@@ -149,27 +151,27 @@ export const SC_StatItem = styled.div`
 
 export const SC_StatLabel = styled.span`
   font-size: 12px;
-  color: #666;
+  color: ${COLORS.TEXT_SECONDARY};
   line-height: 1.2;
 `
 
 export const SC_StatValue = styled.span`
   margin-top: 2px;
   font-weight: 600;
-  color: #000;
+  color: ${COLORS.TEXT_PRIMARY};
   line-height: 1.2;
 `
 
 export const SC_UserAbout = styled.div`
   margin-top: 20px;
   font-size: 14px;
-  color: #333;
+  color: ${COLORS.TEXT_PRIMARY};
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
 
   a {
-    color: #00a4ff;
+    color: ${COLORS.BRAND_CYAN};
     text-decoration: none;
 
     &:hover {
@@ -181,11 +183,11 @@ export const SC_UserAbout = styled.div`
 
 export const SC_UserJoined = styled.div`
   font-size: 12px;
-  color: #999;
+  color: ${COLORS.GRAY_999};
 `
 
 export const SC_LoadingState = styled.div`
   text-align: center;
   padding: 20px;
-  color: #999;
+  color: ${COLORS.GRAY_999};
 `

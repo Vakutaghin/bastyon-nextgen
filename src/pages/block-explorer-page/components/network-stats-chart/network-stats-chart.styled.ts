@@ -64,7 +64,7 @@ export const SC_StatsToggleBtn = styled.button`
     color: ${COLORS.WHITE};
   }
 
-  &:hover:not(.active):not(:disabled) {
+  &:hover:not(.active, :disabled) {
     background: ${COLORS.BG_HOVER};
   }
 

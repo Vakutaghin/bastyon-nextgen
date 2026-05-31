@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_EmojiPickerContainer = styled.div`
   position: absolute;
@@ -6,10 +7,10 @@ export const SC_EmojiPickerContainer = styled.div`
   right: 16px;
   width: 300px;
   height: 350px;
-  background: white;
+  background: ${COLORS.BG_PRIMARY};
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  border: 1px solid #eee;
+  box-shadow: ${COLORS.SHADOW_LG};
+  border: 1px solid ${COLORS.GRAY_EEE};
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -18,9 +19,9 @@ export const SC_EmojiPickerContainer = styled.div`
 
 export const SC_EmojiHeader = styled.div`
   padding: 10px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid ${COLORS.GRAY_EEE};
   font-weight: 600;
-  background: #f9f9f9;
+  background: ${COLORS.BG_LIGHT};
 `
 
 export const SC_EmojiGrid = styled.div`
@@ -30,12 +31,13 @@ export const SC_EmojiGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 4px;
-  
+
   &::-webkit-scrollbar {
     width: 4px;
   }
+
   &::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: ${COLORS.GRAY_CCC};
     border-radius: 2px;
   }
 `
@@ -51,8 +53,8 @@ export const SC_EmojiButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
   &:hover {
-    background: #f0f0f0;
+    background: ${COLORS.BG_HOVER};
   }
 `

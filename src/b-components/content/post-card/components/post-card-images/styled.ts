@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_PostImage = styled.div`
   margin-bottom: 15px;
@@ -11,7 +12,9 @@ export const SC_PostImage = styled.div`
   box-sizing: border-box;
 
   /* 1 изображение */
-  ${(p: any) => p.imageCount === 1 && `
+  ${(p: any) =>
+    p.imageCount === 1 &&
+    `
     flex-direction: column;
     gap: 0;
 
@@ -32,7 +35,9 @@ export const SC_PostImage = styled.div`
   `}
 
   /* 2 изображения - splitscreen */
-  ${(p: any) => p.imageCount === 2 && `
+  ${(p: any) =>
+    p.imageCount === 2 &&
+    `
     flex-direction: row;
     gap: 2px;
 
@@ -61,7 +66,9 @@ export const SC_PostImage = styled.div`
   `}
 
   /* 3 изображения - левая половина, правая половина с двумя по вертикали */
-  ${(p: any) => p.imageCount === 3 && `
+  ${(p: any) =>
+    p.imageCount === 3 &&
+    `
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
@@ -97,7 +104,9 @@ export const SC_PostImage = styled.div`
   `}
 
   /* 4 изображения - по 2 в строке */
-  ${(p: any) => p.imageCount === 4 && `
+  ${(p: any) =>
+    p.imageCount === 4 &&
+    `
     flex-wrap: wrap;
     flex-direction: row;
     gap: 2px;
@@ -134,7 +143,9 @@ export const SC_PostImage = styled.div`
   `}
 
   /* 5 и более изображений - 2 в верхней строке, 3 в нижней */
-  ${(p: any) => p.imageCount >= 5 && `
+  ${(p: any) =>
+    p.imageCount >= 5 &&
+    `
     flex-wrap: wrap;
     flex-direction: row;
     gap: 2px;
@@ -209,10 +220,7 @@ export const SC_ImageWrapper = styled.div`
 
 export const SC_ImageOverlay = styled.div`
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -222,19 +230,19 @@ export const SC_ImageOverlay = styled.div`
 `
 
 export const SC_ZoomIconCircle = styled.div`
-  background: rgba(128, 128, 128, 0.7);
+  background: ${COLORS.TEXT_MUTED};
   border-radius: 50%;
   width: 48px;
   height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: ${COLORS.SHADOW_SM};
   pointer-events: none;
 
   .zoom-icon {
     font-size: 24px;
-    color: white;
+    color: ${COLORS.WHITE};
     display: flex;
     align-items: center;
     justify-content: center;

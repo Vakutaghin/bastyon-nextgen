@@ -43,7 +43,7 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
   line-height: 1.5;
   border-radius: 4px;
   transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-  width: ${(p) => p.block ? '100%' : 'auto'};
+  width: ${(p) => (p.block ? '100%' : 'auto')};
 
   /* Primary variant */
   &.bastyon-button-primary {
@@ -81,7 +81,7 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
 
   /* Secondary variant (default) */
   &.bastyon-button-secondary,
-  &:not(.bastyon-button-primary):not(.bastyon-button-danger) {
+  &:not(.bastyon-button-primary, .bastyon-button-danger) {
     background: ${COLORS.BG_PRIMARY};
     border-color: ${COLORS.BORDER};
     color: ${COLORS.TEXT_PRIMARY};

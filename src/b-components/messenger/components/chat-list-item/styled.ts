@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_ListItem = styled.div`
   display: flex;
@@ -7,10 +7,10 @@ export const SC_ListItem = styled.div`
   padding: 12px;
   cursor: pointer;
   transition: background-color 0.2s;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid ${COLORS.BG_HOVER};
 
   &:hover {
-    background-color: #f5f5f5;
+    background-color: ${COLORS.BG_TERTIARY};
   }
 
   &:hover .dots-btn {
@@ -18,11 +18,11 @@ export const SC_ListItem = styled.div`
   }
 
   &.active {
-    background-color: #e6f4ff;
+    background-color: ${COLORS.ANT_BLUE_BG_LIGHT};
   }
 
   &.active:hover {
-    background-color: #d6ecff;
+    background-color: ${COLORS.ANT_BLUE_BG};
   }
 
   &.active .dots-btn {
@@ -38,13 +38,13 @@ export const SC_Info = styled.div`
 export const SC_Name = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: #333;
+  color: ${COLORS.TEXT_PRIMARY};
   margin-bottom: 4px;
 `
 
 export const SC_LastMessage = styled.div`
   font-size: 13px;
-  color: #666;
+  color: ${COLORS.TEXT_SECONDARY};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -60,13 +60,13 @@ export const SC_Meta = styled.div`
 
 export const SC_Time = styled.span`
   font-size: 11px;
-  color: #999;
+  color: ${COLORS.GRAY_999};
   margin-bottom: 4px;
 `
 
 export const SC_Badge = styled.span`
-  background-color: #00A3F7;
-  color: white;
+  background-color: ${COLORS.BRAND_CYAN};
+  color: ${COLORS.WHITE};
   font-size: 11px;
   font-weight: bold;
   padding: 2px 6px;
@@ -88,24 +88,26 @@ export const SC_DotsBtn = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: #999;
+  color: ${COLORS.GRAY_999};
   padding: 2px 4px;
   border-radius: 4px;
-  transition: opacity 0.2s, color 0.2s;
+  transition:
+    opacity 0.2s,
+    color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
 
   &:hover {
-    color: #333;
+    color: ${COLORS.TEXT_PRIMARY};
   }
 `
 
 export const SC_Dropdown = styled.div`
-  background: white;
+  background: ${COLORS.BG_PRIMARY};
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: ${COLORS.SHADOW_MD};
   min-width: 180px;
   padding: 4px 0;
 `
@@ -115,32 +117,26 @@ export const SC_DropdownItem = styled.div`
   align-items: center;
   padding: 8px 12px;
   font-size: 14px;
-  color: #333;
+  color: ${COLORS.TEXT_PRIMARY};
   cursor: pointer;
   transition: background-color 0.15s;
   white-space: nowrap;
 
   &:hover {
-    background-color: #f5f5f5;
+    background-color: ${COLORS.BG_TERTIARY};
   }
 `
 
 export const SC_Overlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 10000;
 `
 
 export const SC_ConfirmOverlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  inset: 0;
+  background: ${COLORS.OVERLAY_40};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,25 +144,25 @@ export const SC_ConfirmOverlay = styled.div`
 `
 
 export const SC_ConfirmDialog = styled.div`
-  background: white;
+  background: ${COLORS.BG_PRIMARY};
   border-radius: 12px;
   padding: 24px;
   width: 95%;
   max-width: 480px;
   box-sizing: border-box;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: ${COLORS.SHADOW_LG};
 `
 
 export const SC_ConfirmTitle = styled.div`
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: ${COLORS.TEXT_PRIMARY};
   margin-bottom: 8px;
 `
 
 export const SC_ConfirmText = styled.div`
   font-size: 14px;
-  color: #666;
+  color: ${COLORS.TEXT_SECONDARY};
   margin-bottom: 20px;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -181,16 +177,16 @@ export const SC_ConfirmButtons = styled.div`
 
 export const SC_CancelBtn = styled.button`
   padding: 8px 16px;
-  border: 1px solid #ddd;
+  border: 1px solid ${COLORS.GRAY_DDD};
   border-radius: 8px;
-  background: white;
-  color: #333;
+  background: ${COLORS.BG_PRIMARY};
+  color: ${COLORS.TEXT_PRIMARY};
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #f5f5f5;
+    background-color: ${COLORS.BG_TERTIARY};
   }
 `
 
@@ -198,13 +194,13 @@ export const SC_ConfirmDeleteBtn = styled.button`
   padding: 8px 16px;
   border: none;
   border-radius: 8px;
-  background: #e53935;
-  color: white;
+  background: ${COLORS.RED_ANT};
+  color: ${COLORS.WHITE};
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #c62828;
+    background-color: ${COLORS.RED_DARK};
   }
 `

@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 /**
  * Иконка-svg, перекрашенная в белый через filter (исходник чёрный).
@@ -22,7 +23,7 @@ export const SC_MessengerWrapper = styled.div`
 export const SC_BackButton = styled.button`
   background: none;
   border: none;
-  color: white;
+  color: ${COLORS.WHITE};
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -31,7 +32,7 @@ export const SC_BackButton = styled.button`
   border-radius: 4px;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: ${COLORS.WHITE_20};
   }
 
   svg,
@@ -45,14 +46,11 @@ export const SC_BackButton = styled.button`
 
 export const SC_FullScreenOverlay = styled.div`
   position: fixed;
-  top: var(--header-height-total);
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: var(--header-height-total) 0 0 0;
   width: 100%;
   height: calc(100vh - var(--header-height-total));
   z-index: 2500;
-  background-color: #fff;
+  background-color: ${COLORS.BG_PRIMARY};
   display: flex;
   flex-direction: column;
   padding-bottom: var(--safe-bottom);
@@ -68,11 +66,11 @@ export const SC_CloseOverlayButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: ${COLORS.TEXT_SECONDARY};
 
   &:hover {
-    color: #333;
-    background-color: #f5f5f5;
+    color: ${COLORS.TEXT_PRIMARY};
+    background-color: ${COLORS.BG_TERTIARY};
     border-radius: 50%;
   }
 
@@ -88,8 +86,8 @@ export const SC_OverlayHeader = styled.div`
   padding: 16px;
   display: flex;
   justify-content: flex-end;
-  background: #fff;
-  border-bottom: 1px solid #eee;
+  background: ${COLORS.BG_PRIMARY};
+  border-bottom: 1px solid ${COLORS.GRAY_EEE};
 `
 
 export const SC_OverlayContent = styled.div`
@@ -100,7 +98,7 @@ export const SC_OverlayContent = styled.div`
   margin: 0 auto;
   max-width: var(--content-max-width);
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 0;
   }
 `
@@ -113,7 +111,7 @@ export const SC_MessengerWrapperLoader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #888;
+  color: ${COLORS.GRAY_888};
   font-size: 14px;
 `
 
@@ -121,8 +119,8 @@ export const SC_MessengerWrapperSpinner = styled.span`
   display: inline-block;
   width: 32px;
   height: 32px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #666;
+  border: 3px solid ${COLORS.GRAY_E0};
+  border-top-color: ${COLORS.TEXT_SECONDARY};
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `

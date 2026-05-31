@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_UploadSection = styled.div`
   flex-shrink: 0 !important;
@@ -16,21 +17,21 @@ export const SC_UploadSection = styled.div`
 `
 
 export const SC_SectionTitle = styled.h3`
-  margin: 0 0 16px 0 !important;
+  margin: 0 0 16px !important;
   font-size: 18px !important;
   font-weight: 600 !important;
-  color: #333 !important;
+  color: ${COLORS.TEXT_PRIMARY} !important;
   width: 100% !important;
   box-sizing: border-box !important;
   display: block !important;
 `
 
 export const SC_DropZone = styled.div<{ uploading?: boolean; disabled?: boolean }>`
-  border: 2px dashed #d9d9d9 !important;
+  border: 2px dashed ${COLORS.BORDER_DEFAULT} !important;
   border-radius: 8px !important;
   padding: 48px 24px !important;
   text-align: center !important;
-  background-color: #fafafa !important;
+  background-color: ${COLORS.BG_INPUT} !important;
   transition: all 0.3s ease !important;
   cursor: pointer !important;
   min-height: 200px !important;
@@ -47,23 +48,27 @@ export const SC_DropZone = styled.div<{ uploading?: boolean; disabled?: boolean 
   flex-shrink: 0 !important;
 
   &:hover {
-    border-color: #1890ff !important;
-    background-color: #f0f7ff !important;
+    border-color: ${COLORS.ANT_BLUE} !important;
+    background-color: ${COLORS.BG_HOVER_BLUE} !important;
   }
 
   &.drag-over {
-    border-color: #1890ff !important;
-    background-color: #e6f7ff !important;
+    border-color: ${COLORS.ANT_BLUE} !important;
+    background-color: ${COLORS.ANT_BLUE_BG} !important;
     border-style: solid !important;
   }
 
-  ${(p) => p.uploading && `
-    border-color: #1890ff !important;
-    background-color: #f0f7ff !important;
+  ${(p) =>
+    p.uploading &&
+    `
+    border-color: ${COLORS.ANT_BLUE} !important;
+    background-color: ${COLORS.BG_HOVER_BLUE} !important;
     cursor: wait !important;
   `}
 
-  ${(p) => p.disabled && `
+  ${(p) =>
+    p.disabled &&
+    `
     cursor: default !important;
     opacity: 0.7 !important;
   `}
@@ -91,12 +96,12 @@ export const SC_DropZoneText = styled.div`
 
   strong {
     font-size: 16px !important;
-    color: #333 !important;
+    color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
   span {
     font-size: 16px !important;
-    color: #666 !important;
+    color: ${COLORS.TEXT_SECONDARY} !important;
   }
 `
 
@@ -104,5 +109,5 @@ export const SC_ProgressText = styled.div`
   margin-top: 8px !important;
   font-size: 16px !important;
   font-weight: 500 !important;
-  color: #1890ff !important;
+  color: ${COLORS.ANT_BLUE} !important;
 `

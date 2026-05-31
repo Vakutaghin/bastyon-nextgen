@@ -12,7 +12,7 @@ export const SC_HomeWork = styled.div`
   gap: 20px;
   padding: 58px 0 25px;
   align-items: flex-start;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 
   &.is-mobile {
     gap: 0;
@@ -23,7 +23,7 @@ export const SC_HomeWork = styled.div`
 export const SC_HomeMainContent = styled.main`
   flex: 1;
   min-width: 0;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   padding: 20px 0;
   border-radius: 8px;
 

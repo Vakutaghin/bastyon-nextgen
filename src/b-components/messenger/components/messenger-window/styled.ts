@@ -1,30 +1,33 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 const props = {
-  isOpen: Boolean
+  isOpen: Boolean,
 }
 
 export const SC_Window = styled('div', props)`
   width: 360px;
   height: 500px;
-  background-color: white;
+  background-color: ${COLORS.BG_PRIMARY};
   border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: ${COLORS.SHADOW_LG};
   display: flex;
   flex-direction: column;
   margin-bottom: 14px;
   overflow: hidden;
   transform-origin: bottom right;
-  transition: opacity 0.2s, transform 0.2s;
-  opacity: ${props => props.isOpen ? '1' : '0'};
-  transform: ${props => props.isOpen ? 'scale(1)' : 'scale(0.9)'};
-  pointer-events: ${props => props.isOpen ? 'auto' : 'none'};
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  opacity: ${(props) => (props.isOpen ? '1' : '0')};
+  transform: ${(props) => (props.isOpen ? 'scale(1)' : 'scale(0.9)')};
+  pointer-events: ${(props) => (props.isOpen ? 'auto' : 'none')};
 `
 
 export const SC_Header = styled.div`
   height: 56px;
-  background-color: #00A3F7;
-  color: white;
+  background-color: ${COLORS.BRAND_CYAN};
+  color: ${COLORS.WHITE};
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -43,5 +46,5 @@ export const SC_Content = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: white;
+  background-color: ${COLORS.BG_PRIMARY};
 `

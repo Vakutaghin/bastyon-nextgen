@@ -58,7 +58,7 @@ export const SC_TabsItem = styled('button', tabProps)`
   ${(props) =>
     props.active &&
     css`
-      background: rgba(0, 123, 255, 0.1);
+      background: ${COLORS.PRIMARY_LIGHT};
       color: ${COLORS.PRIMARY};
       font-weight: 600;
 
@@ -75,7 +75,7 @@ export const SC_TabsItem = styled('button', tabProps)`
       }
 
       &:hover {
-        background: rgba(0, 123, 255, 0.15);
+        background: ${COLORS.PRIMARY_LIGHT_15};
       }
     `}
 
@@ -140,7 +140,7 @@ export const SC_FavoritesItem = styled('button', favItemProps)`
   ${(props) =>
     props.active &&
     css`
-      background: rgba(0, 123, 255, 0.1);
+      background: ${COLORS.PRIMARY_LIGHT};
       color: ${COLORS.PRIMARY};
       font-weight: 600;
 
@@ -157,7 +157,7 @@ export const SC_FavoritesItem = styled('button', favItemProps)`
       }
 
       &:hover {
-        background: rgba(0, 123, 255, 0.15);
+        background: ${COLORS.PRIMARY_LIGHT_15};
       }
     `}
 `

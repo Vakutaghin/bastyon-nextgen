@@ -142,21 +142,21 @@ export const SC_ScrollToTop = styled.button`
   padding: 10px 16px;
   font-size: 14px;
   color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.WHITE_85};
+  background: ${COLORS.SURFACE_FROSTED};
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: ${COLORS.SHADOW_MD};
   transition:
     background 0.2s,
     transform 0.2s,
     box-shadow 0.2s;
 
   &:hover {
-    background: ${COLORS.WHITE_95};
+    background: ${COLORS.BG_PRIMARY};
     transform: translate(-50%, -1px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    box-shadow: ${COLORS.SHADOW_MD};
   }
 
   &:active {
@@ -171,7 +171,7 @@ export const SC_ScrollToTop = styled.button`
 export const SC_PhotoPreviewOverlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: ${COLORS.OVERLAY_85};
   z-index: ${Z_INDEX.MODAL};
   display: flex;
   flex-direction: column;

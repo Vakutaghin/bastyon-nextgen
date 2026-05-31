@@ -59,7 +59,7 @@ export const SC_SidebarRight = styled.div`
   background: ${COLORS.BG_PRIMARY};
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: ${COLORS.SHADOW_SM};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
 
   @media (max-width: ${BREAKPOINTS.DESKTOP}) {

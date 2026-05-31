@@ -1,9 +1,10 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_MessageInputArea = styled.div`
   padding: 12px;
-  background-color: #f9f9f9;
-  border-top: 1px solid #eee;
+  background-color: ${COLORS.BG_LIGHT};
+  border-top: 1px solid ${COLORS.GRAY_EEE};
   display: flex;
   align-items: center;
   gap: 8px;
@@ -13,7 +14,7 @@ export const SC_MessageInputArea = styled.div`
 export const SC_MessageInput = styled.textarea`
   flex: 1;
   box-sizing: border-box;
-  border: 1px solid #ddd;
+  border: 1px solid ${COLORS.GRAY_DDD};
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 14px;
@@ -27,7 +28,7 @@ export const SC_MessageInput = styled.textarea`
   font-family: inherit;
 
   &:focus {
-    border-color: #00a3f7;
+    border-color: ${COLORS.BRAND_CYAN};
   }
 
   &::-webkit-scrollbar {
@@ -39,7 +40,7 @@ export const SC_MessageInput = styled.textarea`
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: ${COLORS.GRAY_CCC};
     border-radius: 2px;
   }
 `
@@ -49,8 +50,8 @@ export const SC_SendButton = styled.button`
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: #00a3f7;
-  color: white;
+  background-color: ${COLORS.BRAND_CYAN};
+  color: ${COLORS.WHITE};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -59,12 +60,12 @@ export const SC_SendButton = styled.button`
   flex-shrink: 0;
 
   &:disabled {
-    background-color: #ccc;
+    background-color: ${COLORS.GRAY_CCC};
     cursor: not-allowed;
   }
 
   &:not(:disabled):hover {
-    background-color: #0088d1;
+    background-color: ${COLORS.BRAND_CYAN_HOVER};
   }
 
   svg {
@@ -81,7 +82,7 @@ export const SC_EmojiToggleButton = styled.button`
   border-radius: 50%;
   border: none;
   background-color: transparent;
-  color: #888;
+  color: ${COLORS.GRAY_888};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,8 +93,8 @@ export const SC_EmojiToggleButton = styled.button`
   flex-shrink: 0;
 
   &:hover {
-    color: #00a3f7;
-    background-color: #f0f0f0;
+    color: ${COLORS.BRAND_CYAN};
+    background-color: ${COLORS.BG_HOVER};
   }
 
   svg {
@@ -108,8 +109,8 @@ export const SC_VoiceButton = styled.button`
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: #ef5350;
-  color: #fff;
+  background-color: ${COLORS.RED_ANT};
+  color: ${COLORS.WHITE};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -123,7 +124,7 @@ export const SC_VoiceButton = styled.button`
   -webkit-user-select: none;
 
   &.recording {
-    background-color: #d32f2f;
+    background-color: ${COLORS.RED_DARK};
     transform: scale(1.1);
   }
 
@@ -136,7 +137,7 @@ export const SC_VoiceButton = styled.button`
 
 export const SC_RecordingTimer = styled.div`
   font-family: monospace;
-  color: #d32f2f;
+  color: ${COLORS.RED_DARK};
   font-size: 16px;
   font-weight: bold;
   margin-right: auto;
@@ -151,7 +152,7 @@ export const SC_RecordingTimer = styled.div`
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #d32f2f;
+    background-color: ${COLORS.RED_DARK};
     animation: pulse 1s infinite;
   }
 
@@ -159,9 +160,11 @@ export const SC_RecordingTimer = styled.div`
     0% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.5;
     }
+
     100% {
       opacity: 1;
     }
@@ -169,7 +172,7 @@ export const SC_RecordingTimer = styled.div`
 `
 
 export const SC_SwipeHint = styled.div`
-  color: #888;
+  color: ${COLORS.GRAY_888};
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -181,10 +184,12 @@ export const SC_SwipeHint = styled.div`
       transform: translateX(0);
       opacity: 1;
     }
+
     50% {
       transform: translateX(-5px);
       opacity: 0.8;
     }
+
     100% {
       transform: translateX(0);
       opacity: 1;
@@ -193,7 +198,7 @@ export const SC_SwipeHint = styled.div`
 `
 
 export const SC_CancelButton = styled.button`
-  color: #ef5350;
+  color: ${COLORS.RED_ANT};
   background: none;
   border: none;
   font-weight: 600;
@@ -218,20 +223,21 @@ export const SC_StartChatButton = styled.button`
   padding: 10px 16px;
   border-radius: 8px;
   border: none;
-  background-color: #00a3f7;
-  color: #fff;
+  background-color: ${COLORS.BRAND_CYAN};
+  color: ${COLORS.WHITE};
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
-  box-shadow: 0 2px 6px rgba(0, 163, 247, 0.25);
+  box-shadow: ${COLORS.SHADOW_SM};
+
   &:hover {
-    background-color: #0088d1;
+    background-color: ${COLORS.BRAND_CYAN_HOVER};
   }
 `
 
 export const SC_PartnerHeader = styled.div`
-  padding: 16px 20px 0 20px;
+  padding: 16px 20px 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -243,20 +249,22 @@ export const SC_PartnerAvatar = styled.div`
   height: 44px;
   border-radius: 50%;
   overflow: hidden;
-  background: #e0e4e8;
+  background: ${COLORS.GRAY_E0};
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+
   .avatar-fallback {
     font-size: 18px;
     font-weight: 600;
-    color: #5c6370;
+    color: ${COLORS.SLATE};
     user-select: none;
   }
 `
@@ -264,7 +272,7 @@ export const SC_PartnerAvatar = styled.div`
 export const SC_PartnerName = styled.div`
   font-weight: 600;
   font-size: 15px;
-  color: #000;
+  color: ${COLORS.TEXT_PRIMARY};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -272,8 +280,8 @@ export const SC_PartnerName = styled.div`
 
 export const SC_PartnerInfoCard = styled.div`
   margin: 16px auto 12px;
-  padding: 16px 16px 6px 16px;
-  border: 1px solid #e9e9e9;
+  padding: 16px 16px 6px;
+  border: 1px solid ${COLORS.GRAY_EEE};
   border-radius: 12px;
   max-width: 380px;
   box-sizing: border-box;
@@ -281,8 +289,8 @@ export const SC_PartnerInfoCard = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: ${COLORS.BG_PRIMARY};
+  box-shadow: ${COLORS.SHADOW_SM};
 `
 
 export const SC_ChatRoomLoader = styled.div`
@@ -292,7 +300,7 @@ export const SC_ChatRoomLoader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #888;
+  color: ${COLORS.GRAY_888};
   font-size: 14px;
 `
 
@@ -300,8 +308,8 @@ export const SC_ChatRoomSpinner = styled.span`
   display: inline-block;
   width: 32px;
   height: 32px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #666;
+  border: 3px solid ${COLORS.GRAY_E0};
+  border-top-color: ${COLORS.TEXT_SECONDARY};
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `
@@ -312,7 +320,7 @@ export const SC_ChatRoomLoaderText = styled.span`
 
 export const SC_ChatRoomEmptyHint = styled.div`
   padding: 12px 16px;
-  color: #888;
+  color: ${COLORS.GRAY_888};
   font-size: 14px;
   line-height: 1.4;
   flex-shrink: 0;

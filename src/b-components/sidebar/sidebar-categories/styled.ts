@@ -2,15 +2,15 @@ import styled, { css } from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 
 const activeProps = {
-  active: Boolean
+  active: Boolean,
 }
 
 const selectedProps = {
-  selected: Boolean
+  selected: Boolean,
 }
 
 const excludedProps = {
-  excluded: Boolean
+  excluded: Boolean,
 }
 
 export const SC_Categories = styled.div`
@@ -69,12 +69,14 @@ export const SC_ControlBtn = styled('button', activeProps)`
 
   &:hover {
     color: ${COLORS.TEXT_PRIMARY};
-    background: rgba(0, 0, 0, 0.05);
+    background: ${COLORS.OVERLAY_5};
   }
 
-  ${props => props.active && css`
-    color: ${COLORS.PRIMARY};
-  `}
+  ${(props) =>
+    props.active &&
+    css`
+      color: ${COLORS.PRIMARY};
+    `}
 `
 
 export const SC_CategoriesList = styled.div`
@@ -104,15 +106,17 @@ export const SC_CategoriesItem = styled('div', selectedProps)`
     background: ${COLORS.BG_SECONDARY};
   }
 
-  ${props => props.selected && css`
-    background: rgba(0, 123, 255, 0.1);
-    color: ${COLORS.PRIMARY};
-    font-weight: 600;
+  ${(props) =>
+    props.selected &&
+    css`
+      background: ${COLORS.PRIMARY_LIGHT};
+      color: ${COLORS.PRIMARY};
+      font-weight: 600;
 
-    &:hover {
-      background: rgba(0, 123, 255, 0.15);
-    }
-  `}
+      &:hover {
+        background: ${COLORS.PRIMARY_LIGHT_15};
+      }
+    `}
 `
 
 export const SC_CategoriesIcon = styled('span', selectedProps)`

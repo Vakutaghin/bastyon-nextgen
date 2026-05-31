@@ -11,7 +11,7 @@ export const SC_Frame = styled.div`
   position: fixed;
   inset: 0;
   z-index: ${Z_INDEX.MINIAPP_FRAME};
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   display: flex;
   flex-direction: column;
 `
@@ -20,7 +20,7 @@ export const SC_IframeWrap = styled.div`
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 `
 
 export const SC_Iframe = styled.iframe`
@@ -40,7 +40,7 @@ export const SC_Loader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   pointer-events: none;
   opacity: 1;
   transition: opacity ${TRANSITIONS.FAST};
@@ -62,6 +62,7 @@ export const SC_LoaderIcon = styled.img`
       transform: scale(1);
       opacity: 0.85;
     }
+
     50% {
       transform: scale(0.92);
       opacity: 0.55;
@@ -71,7 +72,7 @@ export const SC_LoaderIcon = styled.img`
 
 export const SC_LoaderText = styled.div`
   font-size: 13px;
-  color: ${COLORS.OVERLAY_55};
+  color: ${COLORS.TEXT_SECONDARY};
 `
 
 export const SC_Error = styled.div`
@@ -82,7 +83,7 @@ export const SC_Error = styled.div`
   justify-content: center;
   padding: 40px 24px;
   text-align: center;
-  color: ${COLORS.OVERLAY_70};
+  color: ${COLORS.TEXT_PRIMARY};
   font-size: 14px;
 `
 
@@ -114,6 +115,7 @@ export const SC_ClosePetal = styled.button`
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   opacity: 0.6;
+
   /* Прячем за правый край, оставляя 14px видимого язычка — заметно но ненавязчиво. */
   transform: translateX(calc(100% - 14px));
   transition:

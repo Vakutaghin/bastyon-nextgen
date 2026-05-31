@@ -4,9 +4,15 @@
   "rules": {
     "no-empty-source": null,
     "declaration-empty-line-before": null,
+    "comment-empty-line-before": null,
     "value-keyword-case": null,
     "function-name-case": null,
     "selector-class-pattern": null,
+    "media-query-no-invalid": null,
+    "no-descending-specificity": null,
+    "property-no-vendor-prefix": null,
+    "value-no-vendor-prefix": null,
+    "keyframes-name-pattern": null,
     "selector-pseudo-class-no-unknown": [
       true,
       {

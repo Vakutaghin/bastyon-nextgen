@@ -2,7 +2,7 @@ import styled, { css } from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 
 const selectedProps = {
-  selected: Boolean
+  selected: Boolean,
 }
 
 export const SC_Tags = styled.div``
@@ -83,7 +83,7 @@ export const SC_TagsList = styled.div`
 export const SC_TagsCount = styled.span`
   font-size: 10px;
   color: ${COLORS.TEXT_SECONDARY};
-  background: rgba(173, 181, 189, 0.2);
+  background: ${COLORS.TEXT_MUTED};
   padding: 1.88px 4px;
   border-radius: 8px;
   font-weight: 600;
@@ -95,8 +95,8 @@ export const SC_TagsItem = styled('button', selectedProps)`
   align-items: center;
   gap: 4px;
   padding: 4px 7px;
-  background: rgba(0, 123, 255, 0.1);
-  border: 1px solid rgba(0, 123, 255, 0.3);
+  background: ${COLORS.PRIMARY_LIGHT};
+  border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
   border-radius: 12px;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -105,29 +105,31 @@ export const SC_TagsItem = styled('button', selectedProps)`
   font-weight: 500;
 
   &:hover {
-    background: rgba(0, 123, 255, 0.2);
-    border-color: rgba(0, 123, 255, 0.5);
+    background: ${COLORS.PRIMARY_LIGHT_20};
+    border-color: ${COLORS.PRIMARY_LIGHT_50};
   }
 
   &:focus {
     outline: none;
   }
 
-  ${props => props.selected && css`
-    background: ${COLORS.PRIMARY};
-    color: white;
-    border-color: ${COLORS.PRIMARY};
+  ${(props) =>
+    props.selected &&
+    css`
+      background: ${COLORS.PRIMARY};
+      color: ${COLORS.WHITE};
+      border-color: ${COLORS.PRIMARY};
 
-    &:hover {
-      background: ${COLORS.PRIMARY_HOVER};
-      border-color: rgb(0, 98, 204);
-    }
+      &:hover {
+        background: ${COLORS.PRIMARY_HOVER};
+        border-color: ${COLORS.PRIMARY_ACTIVE};
+      }
 
-    ${SC_TagsCount} {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-    }
-  `}
+      ${SC_TagsCount} {
+        background: ${COLORS.WHITE_20};
+        color: ${COLORS.WHITE};
+      }
+    `}
 `
 
 export const SC_TagsName = styled.span`

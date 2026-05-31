@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_ImageMessage = styled.div`
   display: flex;
@@ -12,7 +13,7 @@ export const SC_ImageFrame = styled('div', { aspect: String, isLocal: Boolean })
   width: 100%;
   max-width: min(280px, 100%);
   aspect-ratio: ${(p: any) => p.aspect || '4 / 3'};
-  background: #eceff1;
+  background: ${COLORS.BG_SECONDARY};
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
@@ -32,8 +33,8 @@ export const SC_Image = styled.img`
 export const SC_Spinner = styled.div`
   width: 28px;
   height: 28px;
-  border: 3px solid #cfd8dc;
-  border-top-color: #00a4db;
+  border: 3px solid ${COLORS.BG_TERTIARY};
+  border-top-color: ${COLORS.BRAND_CYAN};
   border-radius: 50%;
   animation: spin 1s linear infinite; /* @keyframes spin — глобально в style.css */
 `
@@ -44,8 +45,8 @@ export const SC_ProgressBadge = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.25);
-  color: #fff;
+  background: ${COLORS.OVERLAY_25};
+  color: ${COLORS.WHITE};
   font-size: 13px;
   font-weight: 600;
 `
@@ -58,8 +59,8 @@ export const SC_ErrorBadge = styled.button`
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
+  background: ${COLORS.OVERLAY_45};
+  color: ${COLORS.WHITE};
   font-size: 12px;
   border: 0;
   cursor: pointer;
@@ -69,7 +70,7 @@ export const SC_ErrorBadge = styled.button`
 export const SC_Lightbox = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: ${COLORS.OVERLAY_85};
   display: flex;
   align-items: center;
   justify-content: center;

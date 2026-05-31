@@ -11,13 +11,13 @@ export const SC_ProfileWork = styled.div`
   gap: var(--content-gap);
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 `
 
 export const SC_ProfileMainContent = styled.main`
   flex: 1;
   min-width: 0;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
   padding: 20px 0;
   border-radius: 8px;
 

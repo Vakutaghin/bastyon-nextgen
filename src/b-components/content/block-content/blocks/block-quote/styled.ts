@@ -5,7 +5,7 @@ export const SC_BlockQuote = styled.blockquote`
   margin: 1em 0;
   padding: 1em 1.5em;
   border-left: 4px solid ${COLORS.PRIMARY};
-  background-color: rgba(248, 249, 250, 0.8);
+  background-color: ${COLORS.SURFACE_FROSTED};
   font-style: italic;
   color: ${COLORS.TEXT_PRIMARY} !important;
   word-wrap: break-word;

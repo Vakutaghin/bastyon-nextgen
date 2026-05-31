@@ -48,7 +48,7 @@ export const SC_Modal = styled.div`
 
   :deep(.ant-modal-close:hover) {
     color: ${COLORS.TEXT_PRIMARY};
-    background: rgba(248, 249, 250, 0.8);
+    background: ${COLORS.SURFACE_FROSTED};
   }
 
   :deep(.ant-modal-body) {
@@ -71,7 +71,7 @@ export const SC_Modal = styled.div`
 
   /* Стили для маски модального окна */
   :deep(.bastyon-modal-wrap .ant-modal-mask) {
-    background-color: rgba(0, 0, 0, 0.45) !important;
+    background-color: ${COLORS.OVERLAY_45} !important;
     backdrop-filter: blur(4px);
   }
 `

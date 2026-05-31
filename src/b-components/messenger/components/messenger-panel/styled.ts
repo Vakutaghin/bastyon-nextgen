@@ -1,14 +1,17 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_MessengerContainer = styled.div`
   flex: 1;
   display: flex;
-  background: white;
+  background: ${COLORS.BG_PRIMARY};
   border-radius: 8px;
-  border: 1px solid #eee;
+  border: 1px solid ${COLORS.GRAY_EEE};
   overflow: hidden;
+
   /* Remove margin here, let parent control it */
+
   /* margin: 20px 0; */
   height: 100%;
 `
@@ -19,10 +22,10 @@ const sidebarProps = {
 
 export const SC_SidebarColumn = styled('div', sidebarProps)`
   width: 320px;
-  border-right: 1px solid #eee;
+  border-right: 1px solid ${COLORS.GRAY_EEE};
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: ${COLORS.BG_PRIMARY};
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     width: 100%;
@@ -38,7 +41,7 @@ export const SC_ChatColumn = styled('div', chatProps)`
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: ${COLORS.BG_PRIMARY};
   position: relative;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
@@ -50,7 +53,7 @@ export const SC_ChatColumn = styled('div', chatProps)`
 /** Шапка сайдбара со списком чатов. */
 export const SC_SidebarHeader = styled.div`
   padding: 16px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid ${COLORS.GRAY_EEE};
   font-weight: bold;
   display: flex;
   align-items: center;
@@ -60,23 +63,23 @@ export const SC_SidebarHeader = styled.div`
 /** Красная плашка с ошибкой синка messenger. */
 export const SC_SyncErrorBanner = styled.div`
   padding: 8px;
-  background: #ffebee;
-  color: #c62828;
+  background: ${COLORS.RED_BG};
+  color: ${COLORS.RED_DARK};
   font-size: 12px;
 `
 
 /** Синяя плашка со статусом синка messenger. */
 export const SC_SyncStatusBanner = styled.div`
   padding: 8px;
-  background: #e3f2fd;
-  color: #1565c0;
+  background: ${COLORS.ANT_BLUE_BG};
+  color: ${COLORS.PRIMARY_DARK};
   font-size: 12px;
 `
 
 /** Верхняя панель в активном чате (back-button + имя собеседника). */
 export const SC_ChatTopBar = styled.div`
   height: 56px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid ${COLORS.GRAY_EEE};
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -92,7 +95,7 @@ export const SC_EmptyState = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #999;
+  color: ${COLORS.GRAY_999};
   font-size: 16px;
   flex-direction: column;
   gap: 16px;
@@ -100,7 +103,7 @@ export const SC_EmptyState = styled.div`
   svg {
     width: 64px;
     height: 64px;
-    fill: #eee;
+    fill: ${COLORS.GRAY_EEE};
   }
 `
 
@@ -126,7 +129,7 @@ export const SC_MessengerDialogsLoader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #888;
+  color: ${COLORS.GRAY_888};
   font-size: 14px;
 `
 
@@ -134,8 +137,8 @@ export const SC_MessengerDialogsSpinner = styled.span`
   display: inline-block;
   width: 32px;
   height: 32px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #666;
+  border: 3px solid ${COLORS.GRAY_E0};
+  border-top-color: ${COLORS.TEXT_SECONDARY};
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `

@@ -1,24 +1,25 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_LinkPreview = styled.a`
   display: flex;
   text-decoration: none;
-  border-left: 3px solid #00a4db;
-  background: rgba(0, 164, 219, 0.06);
+  border-left: 3px solid ${COLORS.BRAND_CYAN};
+  background: ${COLORS.BRAND_CYAN_SOFT};
   border-radius: 0 8px 8px 0;
   padding: 8px 10px;
   margin-top: 4px;
   width: 100%;
   max-width: min(320px, 100%);
   box-sizing: border-box;
-  color: #263238;
+  color: ${COLORS.TEXT_PRIMARY};
   gap: 10px;
   align-items: flex-start;
   cursor: pointer;
   overflow: hidden;
 
   &:hover {
-    background: rgba(0, 164, 219, 0.12);
+    background: ${COLORS.BRAND_CYAN_LIGHT};
   }
 `
 
@@ -33,7 +34,7 @@ export const SC_Body = styled.div`
 export const SC_SiteName = styled.div`
   font-size: 11px;
   font-weight: 600;
-  color: #00a4db;
+  color: ${COLORS.BRAND_CYAN};
   text-transform: uppercase;
   letter-spacing: 0.3px;
   overflow: hidden;
@@ -44,7 +45,7 @@ export const SC_SiteName = styled.div`
 export const SC_Title = styled.div`
   font-size: 13px;
   font-weight: 600;
-  color: #263238;
+  color: ${COLORS.TEXT_PRIMARY};
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -54,7 +55,7 @@ export const SC_Title = styled.div`
 
 export const SC_Description = styled.div`
   font-size: 12px;
-  color: #455a64;
+  color: ${COLORS.TEXT_DARK};
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -68,5 +69,5 @@ export const SC_Thumb = styled.img`
   object-fit: cover;
   border-radius: 6px;
   flex-shrink: 0;
-  background: #eceff1;
+  background: ${COLORS.BG_SECONDARY};
 `

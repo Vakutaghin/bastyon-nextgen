@@ -11,10 +11,10 @@ export const SC_VideoPlaceholder = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed rgba(206, 212, 218, 0.6);
+  border: 2px dashed ${COLORS.BORDER_LIGHT};
 
   .video-icon {
     font-size: 60px;
-    color: rgba(33, 37, 41, 0.4);
+    color: ${COLORS.TEXT_MUTED};
   }
 `

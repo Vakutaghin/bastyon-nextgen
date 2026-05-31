@@ -13,7 +13,7 @@ export const SC_BlockPagePage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  // 60px top clears the fixed app-header.
+  /* 60px top clears the fixed app-header. */
   padding: 88px 24px 48px;
 `
 
@@ -157,18 +157,19 @@ export const SC_TxRow = styled.div`
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    column-gap: 12px;
-    row-gap: 6px;
+    gap: 6px 12px;
     padding: 12px 14px;
 
     & > :nth-child(1) {
       order: 0;
     }
+
     & > :nth-child(2) {
       order: 2;
       flex-basis: 100%;
       min-width: 0;
     }
+
     & > :nth-child(3) {
       order: 1;
       margin-left: auto;

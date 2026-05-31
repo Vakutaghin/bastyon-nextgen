@@ -32,7 +32,7 @@ export const SC_StarRating = styled.div`
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: rgba(33, 37, 41, 0.7) !important;
+    color: ${COLORS.TEXT_SECONDARY} !important;
     font-size: 14px;
     margin-left: 11px;
 
@@ -82,7 +82,7 @@ export const SC_StarWrapper = styled.div`
 
   .star-bg {
     font-size: 22px;
-    color: rgba(255, 193, 7, 0.3) !important;
+    color: ${COLORS.WARNING_TRACK} !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -99,9 +99,9 @@ export const SC_StarWrapper = styled.div`
       display: block;
       margin: 0;
       padding: 0;
-      fill: rgba(255, 193, 7, 0.3) !important;
-      color: rgba(255, 193, 7, 0.3) !important;
-      stroke: rgba(255, 193, 7, 0.3) !important;
+      fill: ${COLORS.WARNING_TRACK} !important;
+      color: ${COLORS.WARNING_TRACK} !important;
+      stroke: ${COLORS.WARNING_TRACK} !important;
     }
   }
 `

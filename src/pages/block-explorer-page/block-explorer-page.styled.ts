@@ -16,7 +16,7 @@ export const SC_ExplorerPage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  // 60px top clears the fixed app-header; remaining 28px is visual gap before content.
+  /* 60px top clears the fixed app-header; remaining 28px is visual gap before content. */
   padding: 88px 24px 48px;
 `
 
@@ -81,6 +81,7 @@ export const SC_LiveDot = styled.span`
     100% {
       box-shadow: 0 0 0 0 ${COLORS.SUCCESS_BG_PULSE};
     }
+
     50% {
       box-shadow: 0 0 0 6px transparent;
     }
@@ -198,8 +199,7 @@ export const SC_BlockRow = styled.div`
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    column-gap: 10px;
-    row-gap: 6px;
+    gap: 6px 10px;
     padding: 12px 14px;
 
     & > :nth-child(1) {

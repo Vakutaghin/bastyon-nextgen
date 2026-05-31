@@ -13,7 +13,7 @@ export const SC_TxPagePage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  // 60px top clears the fixed app-header.
+  /* 60px top clears the fixed app-header. */
   padding: 88px 24px 48px;
 `
 

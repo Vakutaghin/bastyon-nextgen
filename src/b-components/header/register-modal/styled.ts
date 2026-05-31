@@ -13,11 +13,11 @@ export const SC_FormLabel = styled.label`
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.85);
+  color: ${COLORS.TEXT_PRIMARY};
 `
 
 export const SC_FormLabelOptional = styled.span`
-  color: rgba(0, 0, 0, 0.45);
+  color: ${COLORS.TEXT_MUTED};
   font-weight: normal;
   margin-left: 4px;
 `
@@ -33,7 +33,7 @@ export const SC_InputWrapper = styled.div`
     font-size: 14px;
     line-height: 1.5715;
     color: ${COLORS.TEXT_PRIMARY};
-    background: #fff;
+    background: ${COLORS.BG_PRIMARY};
     border: 1px solid ${COLORS.BORDER};
     border-radius: 6px;
     outline: none;
@@ -64,17 +64,17 @@ export const SC_InputWrapper = styled.div`
 export const SC_FormHint = styled.div`
   margin-top: 8px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: ${COLORS.TEXT_MUTED};
   line-height: 1.5;
 `
 
 export const SC_ErrorMessage = styled.div`
   margin-top: 16px;
   padding: 12px;
-  background-color: #fff2f0;
-  border: 1px solid #ffccc7;
+  background-color: ${COLORS.RED_BG};
+  border: 1px solid ${COLORS.RED_BORDER};
   border-radius: 4px;
-  color: #cf1322;
+  color: ${COLORS.RED_DARK};
   font-size: 16px;
 `
 
@@ -82,11 +82,11 @@ export const SC_LinkToSignIn = styled.div`
   margin-top: 16px;
   text-align: center;
   font-size: 16px;
-  color: rgba(0, 0, 0, 0.65);
+  color: ${COLORS.TEXT_SECONDARY};
 `
 
 export const SC_LinkButton = styled.a`
-  color: #1890ff;
+  color: ${COLORS.ANT_BLUE};
   cursor: pointer;
   text-decoration: none;
 

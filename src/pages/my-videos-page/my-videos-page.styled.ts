@@ -9,7 +9,7 @@ export const SC_MyVideosWork = styled.div`
   min-height: calc(100vh - 60px);
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 `
 
 export const SC_MyVideosPage = styled.main`

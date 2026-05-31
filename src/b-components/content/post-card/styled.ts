@@ -27,14 +27,14 @@ export const SC_PostHeader = styled.div`
 `
 
 export const SC_PostTitle = styled.h3`
-  margin: 0 0 15px 0;
+  margin: 0 0 15px;
   font-size: 16px;
   font-weight: 600;
   color: ${COLORS.TEXT_PRIMARY};
   line-height: 1.4;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    margin: 0 0 10px 0;
+    margin: 0 0 10px;
     font-size: 15px;
   }
 `
@@ -62,7 +62,7 @@ export const SC_PostAuthorName = styled.div`
 
 export const SC_PostAuthorRep = styled.div`
   color: ${COLORS.TEXT_SECONDARY};
-  border: 1px solid rgb(222, 226, 230);
+  border: 1px solid ${COLORS.BORDER_DARK};
   border-radius: 6px;
   padding: 0 6px;
   line-height: 1.4;
@@ -129,7 +129,7 @@ export const SC_StarRating = styled.div`
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: rgba(33, 37, 41, 0.7) !important;
+    color: ${COLORS.TEXT_SECONDARY} !important;
     font-size: 14px;
     margin-left: 11px;
 
@@ -152,7 +152,7 @@ export const SC_StarWrapper = styled.div`
 
   .star-bg {
     font-size: 22px;
-    color: rgba(255, 193, 7, 0.3) !important;
+    color: ${COLORS.WARNING_TRACK} !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -169,9 +169,9 @@ export const SC_StarWrapper = styled.div`
       display: block;
       margin: 0;
       padding: 0;
-      fill: rgba(255, 193, 7, 0.3) !important;
-      color: rgba(255, 193, 7, 0.3) !important;
-      stroke: rgba(255, 193, 7, 0.3) !important;
+      fill: ${COLORS.WARNING_TRACK} !important;
+      color: ${COLORS.WARNING_TRACK} !important;
+      stroke: ${COLORS.WARNING_TRACK} !important;
     }
   }
 `
@@ -246,14 +246,14 @@ export const SC_ChatBtn = styled.button`
   margin: 0;
   border: none;
   background: transparent;
-  color: rgba(0, 0, 0, 0.45);
+  color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
   border-radius: 4px;
   line-height: 1;
 
   &:hover {
-    color: #00a4ff;
-    background: rgba(0, 164, 255, 0.08);
+    color: ${COLORS.BRAND_CYAN};
+    background: ${COLORS.BRAND_CYAN_LIGHT};
   }
 `
 
@@ -285,8 +285,8 @@ export const SC_AuthorLinkWrap = styled.div`
 export const SC_RepostInnerCard = styled.div`
   margin-top: 8px;
   padding: 12px 14px;
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: ${COLORS.OVERLAY_3};
+  border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 10px;
 `
 
@@ -315,8 +315,9 @@ export const SC_RepostOriginalAuthorName = styled.div`
   a {
     color: inherit;
     text-decoration: none;
+
     &:hover {
-      color: #00a4ff;
+      color: ${COLORS.BRAND_CYAN};
       text-decoration: underline;
     }
   }

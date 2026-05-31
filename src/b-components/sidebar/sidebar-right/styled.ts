@@ -18,7 +18,6 @@ export const SC_RightSidebar = styled.aside`
   border-radius: 8px;
   padding: 20px;
   overflow-y: auto;
-  overflow-x: hidden;
   z-index: 10;
 
   @media (max-width: ${BREAKPOINTS.DESKTOP}) {
@@ -39,6 +38,6 @@ export const SC_RightSidebar = styled.aside`
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background: rgba(173, 181, 189, 0.7);
+    background: ${COLORS.TEXT_MUTED};
   }
 `

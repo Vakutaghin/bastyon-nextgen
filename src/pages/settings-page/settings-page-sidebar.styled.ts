@@ -14,8 +14,7 @@ export const SC_SettingsSidebar = styled.nav`
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-flow: row wrap;
     gap: 6px;
     padding: 4px 0;
   }
@@ -46,6 +45,7 @@ export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
     css`
       color: ${COLORS.PRIMARY};
       background: ${COLORS.PRIMARY_BG_SOFT};
+
       &:hover {
         background: ${COLORS.PRIMARY_BG_12};
       }

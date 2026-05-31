@@ -72,12 +72,14 @@ export const SC_TopRow = styled.div`
   &:last-child {
     border-bottom: none;
   }
+
   &:hover {
     background: ${COLORS.OVERLAY_3};
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     grid-template-columns: 24px minmax(0, 1fr) 60px;
+
     & > :nth-child(4) {
       display: none;
     }

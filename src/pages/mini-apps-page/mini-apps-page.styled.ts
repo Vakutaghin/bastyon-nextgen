@@ -7,7 +7,7 @@ export const SC_Page = styled.main`
   margin: 0 auto;
   padding: var(--header-height-total) var(--content-padding-x) 24px;
   min-height: calc(100vh - var(--header-height));
-  background: ${COLORS.WHITE};
+  background: ${COLORS.BG_PRIMARY};
 `
 
 export const SC_Title = styled.h1`
@@ -19,6 +19,6 @@ export const SC_Title = styled.h1`
 
 export const SC_Subtitle = styled.p`
   font-size: 13px;
-  color: ${COLORS.OVERLAY_55};
+  color: ${COLORS.TEXT_SECONDARY};
   margin: 0 0 16px;
 `

@@ -6,7 +6,7 @@ export const SC_Card = styled.div`
     background: ${COLORS.BG_PRIMARY} !important;
     border-color: ${COLORS.BORDER_LIGHT} !important;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: ${COLORS.SHADOW_SM};
   }
 
   :deep(.ant-card-head) {
@@ -41,6 +41,6 @@ export const SC_Card = styled.div`
   }
 
   :deep(.ant-card:hover) {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: ${COLORS.SHADOW_MD};
   }
 `

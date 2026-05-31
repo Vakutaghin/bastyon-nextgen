@@ -25,7 +25,7 @@ export const SC_PostModalWrapper = styled.div`
 
   :deep(.ant-modal-close:hover) {
     color: ${COLORS.TEXT_PRIMARY};
-    background: rgba(248, 249, 250, 0.8);
+    background: ${COLORS.SURFACE_FROSTED};
   }
 
   :deep(.ant-modal-body) {

@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
 
 export const SC_AudioMessage = styled.div`
   display: flex;
@@ -12,8 +13,8 @@ export const SC_PlayButton = styled.button`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid #cfd8dc;
-  background: #fff;
+  border: 1px solid ${COLORS.BORDER};
+  background: ${COLORS.BG_PRIMARY};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,7 +23,7 @@ export const SC_PlayButton = styled.button`
   flex-shrink: 0;
 
   &.playing {
-    border-color: #00a4db;
+    border-color: ${COLORS.BRAND_CYAN};
   }
 
   &:disabled {
@@ -79,20 +80,20 @@ export const SC_WaveSpinnerOverlay = styled.div`
 
 export const SC_TimeLabel = styled.div`
   font-size: 12px;
-  color: #607d8b;
+  color: ${COLORS.BLUE_GRAY};
   user-select: none;
   flex-shrink: 0;
 `
 
 export const SC_Error = styled.div`
   font-size: 12px;
-  color: #c62828;
+  color: ${COLORS.RED_DARK};
 `
 export const SC_Spinner = styled.div`
   width: 16px;
   height: 16px;
-  border: 2px solid #cfd8dc;
-  border-top-color: #00a4db;
+  border: 2px solid ${COLORS.BG_TERTIARY};
+  border-top-color: ${COLORS.BRAND_CYAN};
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `

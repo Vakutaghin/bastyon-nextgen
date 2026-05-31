@@ -31,6 +31,12 @@ export const COLORS = {
   ANT_BLUE_BG: 'var(--color-ant-blue-bg, #e6f7ff)',
   ANT_BLUE_BG_LIGHT: 'var(--color-ant-blue-bg-light, #e6f4ff)',
 
+  // Бренд-акцент (PKOIN / мессенджер) — фирменный циан. Общий для обеих тем.
+  BRAND_CYAN: 'var(--color-brand-cyan, #00a4db)',
+  BRAND_CYAN_HOVER: 'var(--color-brand-cyan-hover, #0091c2)',
+  BRAND_CYAN_LIGHT: 'var(--color-brand-cyan-light, rgba(0, 164, 219, 0.12))',
+  BRAND_CYAN_SOFT: 'var(--color-brand-cyan-soft, rgba(0, 164, 219, 0.06))',
+
   // Текст
   TEXT_PRIMARY: 'var(--color-text-primary, rgb(33, 37, 41))',
   TEXT_SECONDARY: 'var(--color-text-secondary, rgb(108, 117, 125))',
@@ -47,6 +53,8 @@ export const COLORS = {
   BG_HOVER: 'var(--color-bg-hover, #f0f0f0)',
   BG_HOVER_BLUE: 'var(--color-bg-hover-blue, #f0f7ff)',
   BG_INPUT: 'var(--color-bg-input, #fafafa)',
+  // Полупрозрачная «матовая» поверхность (sticky-бары, backdrop-blur). Флипается.
+  SURFACE_FROSTED: 'var(--color-surface-frosted, rgba(248, 249, 250, 0.8))',
 
   // Границы
   BORDER: 'var(--color-border, rgb(206, 212, 218))',
@@ -71,9 +79,22 @@ export const COLORS = {
   WARNING_HEX: 'var(--color-warning-hex, #fa8c16)',
   WARNING_YELLOW: 'var(--color-warning-yellow, rgb(245, 180, 0))',
   WARNING_BG_SOFT: 'var(--color-warning-bg-soft, rgba(250, 140, 22, 0.12))',
+  WARNING_TRACK: 'var(--color-warning-track, rgba(255, 193, 7, 0.3))', // пустые звёзды рейтинга
   INFO: 'var(--color-info, rgb(23, 162, 184))',
   PRIMARY_BG_SOFT: 'var(--color-primary-bg-soft, rgba(0, 123, 255, 0.08))',
   PRIMARY_BG_12: 'var(--color-primary-bg-12, rgba(0, 123, 255, 0.12))',
+
+  // Акцентные оттенки (бейджи статусов/категорий в хедере). *_SOFT — полупрозрачные
+  // фоны пилюль (общие для тем: акцент с альфой читается и на светлом, и на тёмном).
+  PURPLE: 'var(--color-purple, #722ed1)',
+  PURPLE_DEEP: 'var(--color-purple-deep, #531dab)',
+  PURPLE_SOFT: 'var(--color-purple-soft, rgba(114, 46, 209, 0.12))',
+  PINK: 'var(--color-pink, #c41d7f)',
+  PINK_SOFT: 'var(--color-pink-soft, rgba(235, 47, 150, 0.12))',
+  GREEN_ANT: 'var(--color-green-ant, #52c41a)',
+  GREEN_ANT_DEEP: 'var(--color-green-ant-deep, #389e0d)',
+  GREEN_ANT_SOFT: 'var(--color-green-ant-soft, rgba(82, 196, 26, 0.14))',
+  AMBER_SOFT: 'var(--color-amber-soft, rgba(245, 166, 35, 0.14))',
 
   // Красные оттенки (ошибки, удаление)
   RED_ANT: 'var(--color-red-ant, #ff4d4f)',
@@ -135,6 +156,7 @@ export const COLORS = {
   GRAY_AAA: 'var(--color-gray-aaa, #aeb8c2)',
   GRAY_CCC: 'var(--color-gray-ccc, #ccc)',
   GRAY_DDD: 'var(--color-gray-ddd, #ddd)',
+  GRAY_EEE: 'var(--color-gray-eee, #eee)',
   GRAY_E0: 'var(--color-gray-e0, #e0e0e0)',
   GRAY_E8: 'var(--color-gray-e8, #e8e8e8)',
   GRAY_F0: 'var(--color-gray-f0, #f0f2f5)',
