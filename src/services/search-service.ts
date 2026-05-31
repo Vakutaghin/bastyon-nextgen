@@ -13,7 +13,7 @@
 
 import { rpcCall, getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import type { SearchUsersData, SearchUserResult } from '@/types/rpc-responses/search-users'
+import type { SearchUsersData } from '@/types/rpc-responses/search-users'
 import type { SearchPostsData, SearchPost } from '@/types/rpc-responses/search-posts'
 import type { SearchTagsData, SearchTag } from '@/types/rpc-responses/search-tags'
 
@@ -130,57 +130,17 @@ export async function searchPosts(query: string, paging: SearchPaging = {}): Pro
 }
 
 /**
- * Объединённый ответ `search` при type='all' — нода возвращает все три
- * выдачи одним RPC, что заметно дешевле трёх параллельных запросов
- * (см. SEARCH_TODO §9). Поля:
- *   - users — плоский массив профилей
- *   - posts — `{ data: [...] }`
- *   - tags  — `{ data: [...] }` (значения могут быть URL-encoded дважды,
- *             как и в `searchTags` — нормализуем здесь же)
+ * Объединённого поиска (`search` с type='all') НЕТ: проверено живым
+ * запросом к `4.pocketnet.app` — нода на любой запрос отвечает
+ * `{ result: 'success', data: {} }` (пустой объект). Метод просто не
+ * реализован на текущей версии ноды, поэтому dropdown использует три
+ * раздельных хука (searchUsers + searchPosts + searchTags). Подробности и
+ * историю см. в SEARCH_TODO §9. Если в будущем нода начнёт поддерживать
+ * type='all', формат по-типам известен:
+ *   - users → плоский массив (как у `searchusers`)
+ *   - posts → `{ data: [...] }`
+ *   - tags  → `{ data: [...] }`
  */
-export interface SearchAllResult {
-  users: SearchUserResult[]
-  posts: SearchPost[]
-  tags: SearchTag[]
-}
-
-export async function searchAll(
-  query: string,
-  paging: SearchPaging = {}
-): Promise<SearchAllResult> {
-  const value = sanitizeSearchQuery(query)
-  const empty: SearchAllResult = { users: [], posts: [], tags: [] }
-  if (!value) return empty
-
-  const { start = 0, count = 10, fixedBlock = 0 } = paging
-
-  const data = await rpcCall<{
-    users?: SearchUserResult[]
-    posts?: { data?: SearchPost[] }
-    tags?: { data?: SearchTag[] }
-  }>({
-    method: rpcEndpoints.search,
-    parameters: [value, 'all', fixedBlock, start, count],
-    options: { auth: false },
-  })
-
-  const tagsRaw = data?.tags?.data ?? []
-  const tags = tagsRaw
-    .map((t) => {
-      try {
-        return { tag: decodeURIComponent(decodeURIComponent(t.tag)), count: t.count }
-      } catch {
-        return t
-      }
-    })
-    .filter((t): t is SearchTag => Boolean(t?.tag))
-
-  return {
-    users: Array.isArray(data?.users) ? data.users : [],
-    posts: data?.posts?.data ?? [],
-    tags,
-  }
-}
 
 export async function searchTags(query: string, paging: SearchPaging = {}): Promise<SearchTag[]> {
   const value = sanitizeSearchQuery(query)

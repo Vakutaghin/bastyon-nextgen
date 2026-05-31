@@ -11,11 +11,9 @@ import {
   searchUsers,
   searchPosts,
   searchTags,
-  searchAll,
   sanitizeSearchQuery,
   getCurrentBlockHeight,
   type SearchPaging,
-  type SearchAllResult,
 } from '@/services/search-service'
 import type { SearchUsersData } from '@/types/rpc-responses/search-users'
 import type { SearchPost } from '@/types/rpc-responses/search-posts'
@@ -77,36 +75,6 @@ export function useSearchPosts(query: Ref<string>, count = 5) {
     gcTime: SEARCH_GC_TIME,
     placeholderData: (prev) => prev,
   })
-}
-
-/**
- * Объединённый поиск (users + posts + tags) одним RPC `search` с
- * `type='all'`. Используется в header-dropdown, чтобы заменить три
- * параллельных запроса одним (см. SEARCH_TODO §9). На странице
- * /search оставляем раздельные хуки — там пагинация по типам.
- */
-export function useSearchAll(query: Ref<string>, count = 5) {
-  const q = normalizedQuery(query)
-  const enabled = isQueryEnabled(query)
-
-  const result = useQuery<SearchAllResult>({
-    queryKey: ['search', 'all', q, count] as const,
-    queryFn: () => searchAll(q.value, { count }),
-    enabled,
-    staleTime: SEARCH_STALE_TIME,
-    gcTime: SEARCH_GC_TIME,
-    placeholderData: (prev) => prev,
-  })
-
-  // Регистрируем найденных пользователей в name→address кеше.
-  watch(
-    () => result.data.value,
-    (data) => {
-      if (data?.users?.length) registerNameAddress(data.users)
-    }
-  )
-
-  return result
 }
 
 /**
