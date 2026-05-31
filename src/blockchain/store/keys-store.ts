@@ -14,6 +14,7 @@ import {
   mnemonicToSeed,
   seedToKeyPair,
   deriveMessengerKeys,
+  clearKeyCache,
 } from '../core/keys'
 import {
   saveEncryptedMnemonic,
@@ -63,6 +64,7 @@ export const useKeysStore = defineStore('keys', {
       this.keyPair = null
       this.address = null
       this.accountsList = null
+      clearKeyCache()
     },
 
     /**
@@ -131,6 +133,8 @@ export const useKeysStore = defineStore('keys', {
         storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}`,
       })
       if (!mnemonicResult.success || !mnemonicResult.data) return null
+
+      clearKeyCache()
 
       const mnemonic = mnemonicResult.data
       const recoveryResult = recoverKeyPair(mnemonic)

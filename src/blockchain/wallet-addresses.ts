@@ -91,7 +91,8 @@ function getSeedForDerivation(
     const seed = mnemonicToSeed(mnemonicResult.data, true)
     const seedBuffer = Buffer.isBuffer(seed) ? seed : Buffer.from(seed as ArrayBuffer)
     return { seed: seedBuffer }
-  } catch {
+  } catch (e) {
+    console.error('[wallet-addresses] mnemonicToSeed failed:', e)
     return { seed: Buffer.alloc(0), error: 'Не удалось получить seed из мнемоники' }
   }
 }

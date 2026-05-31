@@ -42,12 +42,9 @@ export function recoverKeyPairFromMnemonic(
   }
 
   const normalized = normalizeMnemonic(mnemonic)
-  console.debug('[recoverKeyPairFromMnemonic] Normalized mnemonic:', normalized.substring(0, 20) + '...')
 
-  // Валидация мнемоники с поддержкой разных языков
   const isValid = validateMnemonic(normalized)
-  console.debug('[recoverKeyPairFromMnemonic] Validation result:', isValid)
-  
+
   if (!isValid) {
     console.error('[recoverKeyPairFromMnemonic] Invalid mnemonic phrase. Words count:', normalized.split(/\s+/).length)
     throw new Error('Invalid mnemonic phrase')
