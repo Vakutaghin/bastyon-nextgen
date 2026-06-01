@@ -20,8 +20,35 @@
 
 import CryptoJS from 'crypto-js'
 import type { PcryptoService, User as PcryptoUser } from './pcrypto'
+import type { DecryptableEvent } from './pcrypto'
 import { getAddressFromMatrixId, getMatrixId, parseProfileKeys } from '../helpers'
 import { matrixService } from './matrix-service'
+
+/**
+ * Структурные (duck-typed) представления matrix-объектов, которые приходят из
+ * сторов мессенджера. Намеренно НЕ импортируем SDK `Room`/`MatrixEvent` —
+ * вызывающий код оперирует собственными узкими типами (`MxRoom`/`MxEvent`),
+ * и строгие SDK-типы их бы отвергли. Описываем лишь читаемые поля.
+ */
+interface StateEventLike {
+  getStateKey?: () => string | undefined
+  getSender?: () => string | null | undefined
+  getContent?: () => Record<string, unknown>
+  event?: Record<string, unknown>
+}
+
+interface RoomStateLike {
+  // Единая широкая сигнатура: SDK-перегрузки getStateEvents(type) / (type, key)
+  // и узкие `MxRoomState` сторов сводятся к этому контракту.
+  getStateEvents?: (
+    type: string,
+    stateKey?: string
+  ) => StateEventLike | StateEventLike[] | null | undefined
+}
+
+interface RoomLike {
+  currentState?: RoomStateLike
+}
 
 export interface ProfileCacheLike {
   userProfiles: Record<string, { k?: string; id?: number; [k: string]: unknown }>
@@ -46,20 +73,20 @@ export function computeGroupUsershash(users: PcryptoUser[], myMatrixIdLocal: str
 }
 
 export function findCommonKeyStateEvent(
-  room: any,
+  room: RoomLike | null | undefined,
   senderMatrixIdLocal: string,
   hash: string
-): any | null {
+): StateEventLike | null {
   if (!room?.currentState?.getStateEvents) return null
   const stateKey = `pcrypto.${senderMatrixIdLocal}.${hash}`
   const single = room.currentState.getStateEvents('m.room.encryption', stateKey)
-  if (single) return single
+  if (single && !Array.isArray(single)) return single
   const events = room.currentState.getStateEvents('m.room.encryption')
   if (!Array.isArray(events)) return null
   return (
-    events.find((e: any) => {
+    events.find((e: StateEventLike) => {
       const sk =
-        typeof e.getStateKey === 'function' ? e.getStateKey() : e.event?.state_key || e.state_key
+        typeof e.getStateKey === 'function' ? e.getStateKey() : (e.event?.state_key as string)
       return sk === stateKey
     }) || null
   )
@@ -67,23 +94,24 @@ export function findCommonKeyStateEvent(
 
 export async function decryptGroupCommonKey(
   pcryptoService: PcryptoService | null,
-  stateEvent: any,
+  stateEvent: StateEventLike | null,
   users: PcryptoUser[]
 ): Promise<string | null> {
   if (!pcryptoService || !stateEvent) return null
-  const raw = stateEvent.event || stateEvent
+  const raw = stateEvent.event
   const senderId =
     typeof stateEvent.getSender === 'function'
       ? stateEvent.getSender()
-      : raw?.sender || raw?.user_id
+      : (raw?.sender as string | undefined)
   const content =
-    typeof stateEvent.getContent === 'function' ? stateEvent.getContent() : raw?.content
+    typeof stateEvent.getContent === 'function'
+      ? (stateEvent.getContent() as DecryptableEvent['content'])
+      : (raw?.content as DecryptableEvent['content'])
   if (!content?.keys) return null
-  const fakeStateEvent = {
+  const fakeStateEvent: DecryptableEvent = {
     type: 'm.room.encryption',
-    sender: senderId,
+    sender: senderId ?? undefined,
     content,
-    origin_server_ts: raw?.origin_server_ts || Date.now(),
   }
   try {
     return await pcryptoService.decryptEvent(fakeStateEvent, users)
@@ -98,7 +126,9 @@ export async function decryptGroupCommonKey(
  * Достаточный сигнал: есть content.hash и body выглядит как hex-кодированный
  * AES-CBC ciphertext (только hex-символы, длина кратна 32 — 1 блок = 16 байт = 32 hex).
  */
-export function isGroupEncryptedContent(content: any): boolean {
+export function isGroupEncryptedContent(
+  content: { hash?: unknown; body?: unknown } | null | undefined
+): boolean {
   if (!content) return false
   if (typeof content.hash !== 'string' || content.hash.length === 0) return false
   if (typeof content.body !== 'string' || content.body.length === 0) return false
@@ -143,7 +173,7 @@ export async function collectPcryptoUsers(
         users.push({
           id: memberId,
           keys: parseProfileKeys(opts.profileCache.userProfiles[address].k as string),
-          dbId: (opts.profileCache.userProfiles[address] as any).id,
+          dbId: opts.profileCache.userProfiles[address].id,
         })
         continue
       }
@@ -153,7 +183,7 @@ export async function collectPcryptoUsers(
           keys: opts.localMessengerKeys.map((k) => k.public),
           dbId:
             address && opts.profileCache.userProfiles[address]
-              ? (opts.profileCache.userProfiles[address] as any).id
+              ? opts.profileCache.userProfiles[address].id
               : undefined,
         })
         continue
@@ -164,7 +194,7 @@ export async function collectPcryptoUsers(
       users.push({
         id: memberId,
         keys: parseProfileKeys(opts.profileCache.userProfiles[address].k as string),
-        dbId: (opts.profileCache.userProfiles[address] as any).id,
+        dbId: opts.profileCache.userProfiles[address].id,
       })
     }
   }

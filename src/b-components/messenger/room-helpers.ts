@@ -6,6 +6,8 @@
  * - тестировать без зависимости от Pinia.
  */
 
+import type { Room, RoomMember } from 'matrix-js-sdk'
+
 import { matrixService } from './services/matrix-service'
 import { resolveMatrixHost } from './helpers'
 
@@ -14,14 +16,17 @@ import { resolveMatrixHost } from './helpers'
  * Если по join'ам не нашли — пробует currentState.getMembers (включая invited).
  * Fallback: возвращает roomId, чтобы вызывающий мог отличить «нет партнёра» от ошибки.
  */
-export const getPartnerMatrixId = (room: any): string | null => {
+export const getPartnerMatrixId = (room: Room | null | undefined): string | null => {
   if (!room) return null
   const myUserId = matrixService.getClient()?.getUserId()
-  let otherMember = room.getJoinedMembers?.().find((m: any) => m.userId !== myUserId)
+  let otherMember: RoomMember | undefined = room
+    .getJoinedMembers?.()
+    .find((m: RoomMember) => m.userId !== myUserId)
   if (!otherMember && room.currentState?.getMembers) {
     const allMembers = room.currentState.getMembers()
     otherMember = allMembers.find(
-      (m: any) => m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
+      (m: RoomMember) =>
+        m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
     )
   }
   return otherMember ? otherMember.userId : room.roomId || null

@@ -4,45 +4,96 @@ import CryptoJS from 'crypto-js'
 
 import { matrixService } from './services/matrix-service'
 
+/**
+ * Универсальное представление Matrix-события: либо обёртка SDK (`MatrixEvent` с
+ * методами `getId`/`getContent`/...), либо «сырой» JSON-объект (поля `event_id`,
+ * `content`, `type`, ...). Хелперы ниже принимают оба варианта, поэтому опираемся
+ * на структурный тип с опциональными методами и полями.
+ */
+export interface EventLike {
+  getId?: () => string
+  getContent?: () => Record<string, unknown>
+  getType?: () => string
+  getRoomId?: () => string
+  getSender?: () => string
+  getTs?: () => number
+  getStateKey?: () => string | undefined
+  event_id?: string
+  id?: string
+  content?: Record<string, unknown>
+  type?: string
+  room_id?: string
+  sender?: string
+  origin_server_ts?: number
+  // Поля «сырого» события и подмножества MxEvent — чтобы события из разных частей
+  // кода (SDK `MatrixEvent`, локальный `MxEvent`, raw JSON) были присваиваемы
+  // этому типу (без них срабатывает weak-type-проверка «нет общих свойств»).
+  event?: Record<string, unknown>
+  state_key?: string
+}
+
+/** Минимальное представление комнаты для хелперов (SDK Room или сырой объект). */
+export interface RoomLike {
+  tetatet?: boolean
+  name?: string
+  timeline?: unknown[]
+  getJoinedMembers?: () => MemberLike[]
+  currentState?: { getMembers?: () => MemberLike[] }
+  getCanonicalAlias?: () => string | null | undefined
+  getLiveTimeline?: () => { getEvents?: () => unknown[] } | null | undefined
+}
+
+/** Минимальное представление участника комнаты. */
+export interface MemberLike {
+  userId: string
+}
+
 // --- Извлечение данных из Matrix-событий ---
 
 /** Безопасное извлечение ID события (обёртка SDK или raw JSON) */
-export const getEventId = (event: any): string => {
+export const getEventId = (event: EventLike | null | undefined): string => {
   if (!event) return 'unknown'
   if (typeof event.getId === 'function') return event.getId()
   return event.event_id || event.id || 'unknown'
 }
 
-/** Извлечение содержимого события */
-export const getEventContent = (event: any): any => {
+/**
+ * Извлечение содержимого события.
+ * Возвращает `any`, т.к. вызывающий код (messenger-chat-store) выполняет глубокий
+ * динамический доступ/мутации полей расшифрованного Matrix-контента
+ * (`content.info.secrets = ...`, `content.msgtype`, `content.file?.url` и т.д.),
+ * для которых строгий тип неприменим без каскада ошибок.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- расшифрованный Matrix-контент: динамический доступ/мутации полей у вызывающих
+export const getEventContent = (event: EventLike | null | undefined): any => {
   if (!event) return {}
   if (typeof event.getContent === 'function') return event.getContent()
   return event.content || {}
 }
 
 /** Извлечение типа события */
-export const getEventType = (event: any): string => {
+export const getEventType = (event: EventLike | null | undefined): string => {
   if (!event) return 'unknown'
   if (typeof event.getType === 'function') return event.getType()
   return event.type || 'unknown'
 }
 
 /** Извлечение roomId события */
-export const getEventRoomId = (event: any): string => {
+export const getEventRoomId = (event: EventLike | null | undefined): string => {
   if (!event) return 'unknown'
   if (typeof event.getRoomId === 'function') return event.getRoomId()
   return event.room_id || 'unknown'
 }
 
 /** Извлечение отправителя события */
-export const getEventSender = (event: any): string => {
+export const getEventSender = (event: EventLike | null | undefined): string => {
   if (!event) return 'unknown'
   if (typeof event.getSender === 'function') return event.getSender()
   return event.sender || 'unknown'
 }
 
 /** Извлечение timestamp события */
-export const getEventTs = (event: any): number => {
+export const getEventTs = (event: EventLike | null | undefined): number => {
   if (!event) return 0
   if (typeof event.getTs === 'function') return event.getTs()
   return event.origin_server_ts || 0
@@ -54,7 +105,7 @@ export const getEventTs = (event: any): number => {
  * Проверяет, является ли событие отображаемым сообщением
  * (текст, аудио, зашифрованное сообщение)
  */
-export const isRenderableMessageEvent = (event: any): boolean => {
+export const isRenderableMessageEvent = (event: EventLike | null | undefined): boolean => {
   const type = getEventType(event)
   if (type === 'm.room.encrypted') return true
   if (type !== 'm.room.message') return false
@@ -75,7 +126,7 @@ export const isRenderableMessageEvent = (event: any): boolean => {
 }
 
 /** Событие — именно сообщение (не реакция). Нужно для lastMessage/сортировки диалогов */
-export const isMessageEvent = (event: any): boolean => {
+export const isMessageEvent = (event: EventLike | null | undefined): boolean => {
   const type = getEventType(event)
   return type === 'm.room.message' || type === 'm.room.encrypted'
 }
@@ -103,7 +154,7 @@ export const tetatetid = (user1: string, user2: string): string | null => {
 }
 
 /** Определяет, является ли комната тет-а-тет (DM) */
-export const isTetatetchat = (room: any): boolean => {
+export const isTetatetchat = (room: RoomLike | null | undefined): boolean => {
   if (!room) return false
   if (typeof room.tetatet !== 'undefined') return room.tetatet
 
@@ -116,10 +167,10 @@ export const isTetatetchat = (room: any): boolean => {
 
   if (!members || members.length !== 2) return false
 
-  const ids = members.map((m: any) => getMatrixId(m.userId)).filter(Boolean)
+  const ids = members.map((m: MemberLike) => getMatrixId(m.userId)).filter(Boolean)
   if (ids.length !== 2) return false
 
-  const tid = tetatetid(ids[0], ids[1])
+  const tid = tetatetid(ids[0]!, ids[1]!)
   if (!tid) return false
 
   const roomName = room.name || ''
@@ -154,13 +205,20 @@ export const getAddressFromMatrixId = (matrixId: string): string | null => {
 
 // --- Работа с таймлайном ---
 
-/** Извлекает события из таймлайна комнаты */
-export const getRoomTimelineEvents = (room: any): any[] => {
+/**
+ * Извлекает события из таймлайна комнаты.
+ * Возвращает `any[]`: события передаются дальше двум вызывающим (messenger-store
+ * и messenger-chat-store), каждый из которых трактует их под собственным узким
+ * интерфейсом события (`EventLike` / `MxEvent`); общий строгий тип здесь дал бы
+ * каскад несовместимостей у вызывающих.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- события таймлайна потребляются под разными узкими интерфейсами у вызывающих
+export const getRoomTimelineEvents = (room: RoomLike | null | undefined): any[] => {
   if (!room) return []
   if (typeof room.getLiveTimeline === 'function') {
     const liveTimeline = room.getLiveTimeline()
     if (liveTimeline && typeof liveTimeline.getEvents === 'function') {
-      return liveTimeline.getEvents()
+      return liveTimeline.getEvents() ?? []
     }
   }
   return Array.isArray(room.timeline) ? room.timeline : []
@@ -209,12 +267,13 @@ export const detectAudioMime = (bytes: Uint8Array): string | null => {
 // --- Вспомогательные утилиты ---
 
 /** Извлекает URL из различных форматов (строка, объект с uri/url) */
-export const extractUrl = (u: any): string | null => {
+export const extractUrl = (u: unknown): string | null => {
   if (!u) return null
   if (typeof u === 'string') return u
   if (typeof u === 'object') {
-    if (typeof u.uri === 'string') return u.uri
-    if (typeof u.url === 'string') return u.url
+    const obj = u as { uri?: unknown; url?: unknown }
+    if (typeof obj.uri === 'string') return obj.uri
+    if (typeof obj.url === 'string') return obj.url
   }
   return null
 }
@@ -228,8 +287,19 @@ export const parseProfileKeys = (keys?: string): string[] => {
     .filter(Boolean)
 }
 
+/** Содержимое события с (опциональными) секретами шифрования. */
+interface SecretsHolder {
+  block?: number
+}
+interface BlockableContent {
+  info?: { secrets?: SecretsHolder }
+  pbody?: { secrets?: SecretsHolder }
+  secrets?: SecretsHolder
+  block?: number
+}
+
 /** Применяет номер блока к содержимому события (для шифрования) */
-export const applyBlockToContent = (content: any, block: number) => {
+export const applyBlockToContent = (content: BlockableContent | null | undefined, block: number) => {
   if (!content || !block) return
   if (content.info?.secrets) content.info.secrets.block = block
   if (content.pbody?.secrets) content.pbody.secrets.block = block

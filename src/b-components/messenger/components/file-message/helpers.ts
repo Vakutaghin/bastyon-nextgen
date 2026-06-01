@@ -1,7 +1,8 @@
 /**
  * Хелперы для file-message: иконка по mime + форматирование размера.
- * Чистые функции, легко тестируются.
  */
+
+import { t } from '@/i18n'
 
 export const iconForMime = (mime?: string, name?: string): string => {
   const m = (mime || '').toLowerCase()
@@ -70,11 +71,11 @@ export const iconForMime = (mime?: string, name?: string): string => {
  */
 export const formatFileSize = (bytes: number): string => {
   if (!Number.isFinite(bytes) || bytes < 0) return ''
-  if (bytes < 1024) return `${bytes} Б`
+  if (bytes < 1024) return `${bytes} ${t('appMsg.bytes.b')}`
   const kb = bytes / 1024
-  if (kb < 1024) return `${kb < 10 ? kb.toFixed(1) : Math.round(kb)} КБ`
+  if (kb < 1024) return `${kb < 10 ? kb.toFixed(1) : Math.round(kb)} ${t('appMsg.bytes.kb')}`
   const mb = kb / 1024
-  if (mb < 1024) return `${mb < 10 ? mb.toFixed(1) : mb.toFixed(0)} МБ`
+  if (mb < 1024) return `${mb < 10 ? mb.toFixed(1) : mb.toFixed(0)} ${t('appMsg.bytes.mb')}`
   const gb = mb / 1024
-  return `${gb < 10 ? gb.toFixed(2) : gb.toFixed(1)} ГБ`
+  return `${gb < 10 ? gb.toFixed(2) : gb.toFixed(1)} ${t('appMsg.bytes.gb')}`
 }

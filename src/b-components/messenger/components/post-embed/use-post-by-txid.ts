@@ -41,20 +41,25 @@ export const usePostByTxid = (txidRef: Ref<string | null | undefined>) => {
    * Формат ответа RPC может отличаться: массив, {data: [...]}, {contents: [...]}, и т.п.
    */
   const post = computed<AdaptedPost | null>(() => {
-    const raw = query.data.value as any
-    if (!raw) return null
-    const list: any[] = Array.isArray(raw)
+    const raw = query.data.value
+    if (!raw || typeof raw !== 'object') return null
+    const wrapper = raw as {
+      data?: unknown
+      contents?: unknown
+    }
+    const dataObj = wrapper.data as { contents?: unknown } | undefined
+    const list: unknown[] = Array.isArray(raw)
       ? raw
-      : Array.isArray(raw?.data)
-        ? raw.data
-        : Array.isArray(raw?.contents)
-          ? raw.contents
-          : Array.isArray(raw?.data?.contents)
-            ? raw.data.contents
+      : Array.isArray(wrapper.data)
+        ? wrapper.data
+        : Array.isArray(wrapper.contents)
+          ? wrapper.contents
+          : Array.isArray(dataObj?.contents)
+            ? dataObj.contents
             : []
     const first = list[0]
-    if (!first) return null
-    return adaptPostData(first, 0)
+    if (!first || typeof first !== 'object') return null
+    return adaptPostData(first as Parameters<typeof adaptPostData>[0], 0)
   })
 
   const isMissing = computed<boolean>(() => {

@@ -25,6 +25,38 @@ export interface UserPrivate {
   public: string // Hex string
 }
 
+/** Зашифрованный пакет ключей внутри секрета: либо строка, либо {encrypted, nonce}. */
+interface EncryptedKeyPacket {
+  encrypted?: string
+  nonce?: string
+}
+
+/** Контейнер секретов внутри content.info / content.pbody. */
+interface SecretsContainer {
+  keys?: string
+  block?: number
+  version?: number
+  v?: number
+}
+
+/**
+ * Минимальная структура matrix-события (raw или fake), которую читает decryptEvent.
+ * Описывает только поля, к которым обращается метод.
+ */
+export interface DecryptableEvent {
+  type?: string
+  sender?: string
+  content?: {
+    hash?: string
+    version?: number
+    keys?: string
+    body?: string
+    block?: number
+    info?: { secrets?: SecretsContainer }
+    pbody?: { secrets?: SecretsContainer }
+  }
+}
+
 const f = {
   sha224: (str: string) => CryptoJS.SHA224(str).toString(CryptoJS.enc.Hex),
 
@@ -208,7 +240,7 @@ export class PcryptoService {
   }
 
   // Helper matching bastyon-chat/src/application/functions.js getmatrixid
-  private getmatrixid(str: string): string {
+  private getmatrixid(str: string | undefined): string {
     return str?.split(':')[0]?.replace('@', '') || ''
   }
 
@@ -217,7 +249,7 @@ export class PcryptoService {
     return Number(id.replace(/[^0-9]/g, ''))
   }
 
-  public async decryptEvent(event: any, users: User[]) {
+  public async decryptEvent(event: DecryptableEvent, users: User[]) {
     // Групповое m.room.message с hash идёт через отдельный путь decryptGroupMessage в chat-store.
     // А вот state-событие m.room.encryption (которое содержит общий ключ) тоже имеет hash —
     // его необходимо обработать здесь.
@@ -230,20 +262,20 @@ export class PcryptoService {
     let version = event?.content?.version
 
     if (event?.content?.info?.secrets) {
-      secrets = event.content.info.secrets.keys
-      block = event.content.info.secrets.block
+      secrets = event.content.info.secrets.keys || ''
+      block = event.content.info.secrets.block || 0
       if (!version) {
         version = event.content.info.secrets.version || event.content.info.secrets.v
       }
     } else if (event?.content?.pbody?.secrets) {
-      secrets = event.content.pbody.secrets.keys
-      block = event.content.pbody.secrets.block
+      secrets = event.content.pbody.secrets.keys || ''
+      block = event.content.pbody.secrets.block || 0
       if (!version) {
         version = event.content.pbody.secrets.version || event.content.pbody.secrets.v
       }
     } else if (event?.type === 'm.room.encryption') {
-      secrets = event.content.keys
-      block = event.content.block
+      secrets = event.content?.keys || ''
+      block = event.content?.block || 0
     } else {
       if (event?.content?.keys) secrets = event.content.keys
       else if (event?.content?.body) secrets = event.content.body
@@ -261,7 +293,7 @@ export class PcryptoService {
     const sender = this.getmatrixid(event.sender)
     const me = this.getmatrixid(this.myId)
 
-    let body: Record<string, any>
+    let body: Record<string, EncryptedKeyPacket | string>
     try {
       const bytes = new Uint8Array(f._base64ToArrayBuffer(secrets))
       const decodedStr = new TextDecoder().decode(bytes)
@@ -315,9 +347,12 @@ export class PcryptoService {
       throw new Error('emptykey')
     }
 
-    const encryptedKeyData = body[bodyindex]
-    const encrypted = encryptedKeyData.encrypted || encryptedKeyData
-    const nonce = encryptedKeyData.nonce || ''
+    const encryptedKeyData = body[bodyindex]!
+    const encrypted =
+      typeof encryptedKeyData === 'string'
+        ? encryptedKeyData
+        : encryptedKeyData.encrypted || ''
+    const nonce = typeof encryptedKeyData === 'string' ? '' : encryptedKeyData.nonce || ''
 
     return await this.decryptSIV(keys[keyindex]!, encrypted, nonce)
   }

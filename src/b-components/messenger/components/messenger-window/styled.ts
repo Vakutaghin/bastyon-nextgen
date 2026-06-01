@@ -48,3 +48,17 @@ export const SC_Content = styled.div`
   overflow: hidden;
   background-color: ${COLORS.BG_PRIMARY};
 `
+
+export const SC_CloseButton = styled.button`
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 8px;
+`

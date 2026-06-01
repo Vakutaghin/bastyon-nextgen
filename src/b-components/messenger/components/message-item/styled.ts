@@ -27,6 +27,20 @@ export const SC_MessageItem = styled.div`
   }
 `
 
+export const SC_AudioUrlMissing = styled.div`
+  font-size: 0.8em;
+  color: ${COLORS.RED_ANT};
+`
+
+export const SC_ReactionEmojiIcon = styled.span`
+  font-size: 14px;
+`
+
+export const SC_ReactionCount = styled.span`
+  font-size: 10px;
+  opacity: 0.8;
+`
+
 export const SC_MessageTime = styled.span`
   font-size: 10px;
   opacity: 0.7;

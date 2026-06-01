@@ -16,7 +16,7 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
   // Очередь и резолверы для батчирования запросов
   const pendingResolvers = new Map<string, Array<() => void>>()
   let fetchQueue: string[] = []
-  let fetchTimeout: any = null
+  let fetchTimeout: ReturnType<typeof setTimeout> | null = null
 
   /**
    * Обрабатывает очередь адресов — загружает профили батчами.
@@ -38,9 +38,11 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
           method: rpcEndpoints.getUserProfile,
           parameters: [[...batch]],
           cachehash: Date.now().toString() + Math.random().toString(),
-        }) as any
+        })
 
-        const profiles = Array.isArray(result) ? result : (result?.data || [])
+        const profiles = Array.isArray(result)
+          ? result
+          : ((result as { data?: unknown } | null)?.data ?? [])
 
         if (Array.isArray(profiles)) {
           profiles.forEach((profile: UserProfile) => {

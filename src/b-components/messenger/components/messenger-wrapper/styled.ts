@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 /**
  * Иконка-svg, перекрашенная в белый через filter (исходник чёрный).
@@ -98,7 +99,7 @@ export const SC_OverlayContent = styled.div`
   margin: 0 auto;
   max-width: var(--content-max-width);
 
-  @media (width <= 768px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     padding: 0;
   }
 `

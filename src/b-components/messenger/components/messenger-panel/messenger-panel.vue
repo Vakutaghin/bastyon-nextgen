@@ -24,6 +24,7 @@
       <template v-if="activeChatId">
         <SC_ChatTopBar>
           <SC_MobileBackButton
+            :aria-label="t('chat.back')"
             @click="store.closeActiveChat ? store.closeActiveChat() : (store.activeChatId = null)"
           >
             <img :src="arrowBackIcon" alt="" width="24" height="24" />
@@ -41,7 +42,7 @@
       </template>
       <template v-else-if="lastTargetAddress && inviteViewActive">
         <SC_ChatTopBar>
-          <SC_MobileBackButton @click="store.clearInviteTarget">
+          <SC_MobileBackButton :aria-label="t('chat.back')" @click="store.clearInviteTarget">
             <img :src="arrowBackIcon" alt="" width="24" height="24" />
           </SC_MobileBackButton>
           <SC_PartnerName>{{ invitePartnerName }}</SC_PartnerName>

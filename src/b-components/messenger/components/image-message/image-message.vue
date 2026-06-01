@@ -17,7 +17,7 @@
       <SC_ErrorBadge v-else-if="decryptFailed" type="button" @click.stop="retry">
         <span aria-hidden="true">⚠️</span>
         <span>{{ t('chat.loadFailed') }}</span>
-        <span style="opacity: 0.8; text-decoration: underline">{{ t('chat.retry') }}</span>
+        <SC_RetryLink>{{ t('chat.retry') }}</SC_RetryLink>
       </SC_ErrorBadge>
 
       <SC_ProgressBadge v-if="uploadProgress != null && uploadProgress < 100">
@@ -45,6 +45,7 @@ import {
   SC_Spinner,
   SC_ProgressBadge,
   SC_ErrorBadge,
+  SC_RetryLink,
   SC_Lightbox,
   SC_LightboxImg,
 } from './styled'

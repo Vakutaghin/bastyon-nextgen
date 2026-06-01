@@ -1,5 +1,10 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import Avatar from '@/components/avatar/avatar.vue'
+
+export const SC_Avatar = styled(Avatar)`
+  margin-right: 12px;
+`
 
 export const SC_ListItem = styled.div`
   display: flex;

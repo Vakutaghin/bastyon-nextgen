@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { setI18nLocale } from '@/i18n'
 import { iconForMime, formatFileSize } from './helpers'
+
+// formatFileSize резолвит единицы (Б/КБ/МБ/ГБ) через i18n; фиксируем 'ru'.
+beforeAll(() => setI18nLocale('ru'))
 
 describe('file-message helpers', () => {
   describe('iconForMime', () => {

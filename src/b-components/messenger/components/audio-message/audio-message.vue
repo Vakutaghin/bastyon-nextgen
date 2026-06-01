@@ -1,12 +1,13 @@
 <template>
   <SC_AudioMessage>
-    <SC_PlayButton v-if="isLoadingWave || isBlocked" :disabled="true">
+    <SC_PlayButton v-if="isLoadingWave || isBlocked" :disabled="true" :aria-label="t('chat.audioLoading')">
       <SC_Spinner />
     </SC_PlayButton>
     <SC_PlayButton
       v-else
       :class="{ playing: isPlaying }"
       :disabled="!!hasError"
+      :aria-label="isPlaying ? t('chat.pause') : t('chat.play')"
       @click="togglePlay"
     >
       <img v-if="!isPlaying" :src="playIcon" alt="" width="20" height="20" />
@@ -15,15 +16,12 @@
 
     <SC_WaveContainer ref="container" :compact="compact" @click="onSeekByClick">
       <SC_WaveSpinnerOverlay v-if="isLoadingWave || isBlocked">
-        <div style="display: flex; align-items: center; gap: 6px">
+        <SC_SpinnerRow>
           <SC_Spinner />
-          <span
-            v-if="message?.info?.uploadProgress"
-            style="font-size: 11px; color: var(--color-blue-gray)"
-          >
+          <SC_UploadProgress v-if="message?.info?.uploadProgress">
             {{ message.info.uploadProgress }}%
-          </span>
-        </div>
+          </SC_UploadProgress>
+        </SC_SpinnerRow>
       </SC_WaveSpinnerOverlay>
     </SC_WaveContainer>
     <SC_TimeLabel>{{ timeLabel }}</SC_TimeLabel>
@@ -33,6 +31,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { usePixiWaveform } from './use-pixi-waveform'
@@ -48,6 +47,8 @@ import {
   SC_Error,
   SC_WaveSpinnerOverlay,
   SC_Spinner,
+  SC_SpinnerRow,
+  SC_UploadProgress,
 } from './styled'
 
 const BAR_COUNT = 64
@@ -61,6 +62,7 @@ const props = withDefaults(
 )
 
 const store = useMessengerStore()
+const { t } = useI18n()
 
 // === Playback ===
 const playback = useAudioPlayback({

@@ -33,9 +33,9 @@ export const SC_PlayButton = styled.button`
 `
 
 export const SC_WaveContainer = styled('div', { compact: Boolean })`
-  flex: 1 1 ${(p: any) => (p.compact ? '120px' : '240px')};
+  flex: 1 1 ${(p) => (p.compact ? '120px' : '240px')};
   width: 100%;
-  max-width: ${(p: any) => (p.compact ? '120px' : '240px')};
+  max-width: ${(p) => (p.compact ? '120px' : '240px')};
   min-width: 0;
   height: 36px;
   position: relative;
@@ -59,9 +59,9 @@ export const SC_WaveContainer = styled('div', { compact: Boolean })`
 `
 
 export const SC_WavePlaceholder = styled('div', { compact: Boolean })`
-  flex: 1 1 ${(props: any) => (props.compact ? '160px' : '240px')};
+  flex: 1 1 ${(props) => (props.compact ? '160px' : '240px')};
   width: 100%;
-  max-width: ${(props: any) => (props.compact ? '160px' : '240px')};
+  max-width: ${(props) => (props.compact ? '160px' : '240px')};
   min-width: 0;
   height: 36px;
   display: flex;
@@ -76,6 +76,17 @@ export const SC_WaveSpinnerOverlay = styled.div`
   align-items: center;
   justify-content: center;
   pointer-events: none;
+`
+
+export const SC_SpinnerRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`
+
+export const SC_UploadProgress = styled.span`
+  font-size: 11px;
+  color: ${COLORS.BLUE_GRAY};
 `
 
 export const SC_TimeLabel = styled.div`

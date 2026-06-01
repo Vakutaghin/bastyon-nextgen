@@ -1,13 +1,12 @@
 import * as sdk from 'matrix-js-sdk'
-import CryptoJS from 'crypto-js'
 
 import type { KeyPair } from '@/blockchain/types/keys'
-import { isValidAddress } from '@/blockchain/core/addresses'
 import { matrixFetch } from '@/helpers/api/request'
-import { Buffer } from 'buffer'
-import servers from '@/servers.json'
 import { addressToHex, hexToAddress } from './matrix-service/address-codec'
 import { resolveMxcHttpUrl } from './matrix-service/mxc-resolver'
+import { normalizeLoginAddress, performMatrixLogin } from './matrix-service/auth'
+import { getDefaultMatrixBaseUrl, createIndexedDbStore } from './matrix-service/transport'
+import { runKeepAlive } from './matrix-service/keepalive'
 import {
   uploadContent as uploadContentImpl,
   sendAudio as sendAudioImpl,
@@ -21,35 +20,19 @@ import {
   type SendFileData,
   type SendPkoinPayload,
 } from './matrix-service/media-sender'
-import type { MatrixClient } from './matrix-service/types'
-
-const getDefaultMatrixBaseUrl = (): string => {
-  const host = servers.servers?.production?.matrix ?? 'matrix.pocketnet.app'
-  const prodUrl = host.startsWith('http') ? host : `https://${host}`
-  if (!import.meta.env.DEV) return prodUrl
-  // In Tauri tauriFetch isn't subject to CORS, so skip the Vite /_matrix proxy
-  // and talk to the homeserver directly (which is also what's allowed by the HTTP scope).
-  const inTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
-  return inTauri ? prodUrl : window.location.origin
-}
+import type { MatrixClient, MatrixEventContent } from './matrix-service/types'
+import type { MatrixClient as SdkMatrixClient, ICreateClientOpts } from 'matrix-js-sdk'
+import { Preset, Visibility } from 'matrix-js-sdk'
 
 export class MatrixService {
-  private client: any = null
+  private client: SdkMatrixClient | null = null
   // In development we use Vite proxy (relative); in production — URL из servers.json (matrix.pocketnet.app)
   private baseUrl: string = getDefaultMatrixBaseUrl()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event-bus прокидывает произвольные аргументы matrix-событий (room, event, state…); потребители подписываются с конкретными сигнатурами, поэтому листенер обязан быть bivariant `any[]`
   private eventQueue: Array<{ event: string; listener: (...args: any[]) => void }> = []
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null
   private keepAliveIntervalMs = 60000
-  private store: any = null
-
-  /**
-   * Имя БД для IndexedDBStore — отдельное на каждого matrix-юзера,
-   * чтобы при смене аккаунта sync-данные не пересекались.
-   */
-  private getStoreDbName(userId: string): string {
-    const safe = userId.replace(/[^a-zA-Z0-9_.-]/g, '_')
-    return `bastyon-matrix-sync:${safe}`
-  }
+  private store: InstanceType<typeof sdk.IndexedDBStore> | null = null
 
   public configure(baseUrl: string) {
     this.baseUrl = baseUrl
@@ -69,24 +52,10 @@ export class MatrixService {
     return hexToAddress(hex)
   }
 
-  private normalizeLoginAddress(address: string): string {
-    if (!address) return address
-    const trimmed = address.trim()
-    const looksHex = /^[0-9a-fA-F]+$/.test(trimmed) && trimmed.length % 2 === 0
-    if (!looksHex) return trimmed
-    try {
-      const decoded = Buffer.from(trimmed, 'hex').toString('utf8')
-      if (decoded && isValidAddress(decoded)) return decoded
-    } catch (e) {
-      return trimmed
-    }
-    return trimmed
-  }
-
   public async init(userId?: string, accessToken?: string, deviceId?: string) {
     if (this.client) return
 
-    const opts: any = {
+    const opts: ICreateClientOpts = {
       baseUrl: this.baseUrl,
       timelineSupport: true,
     }
@@ -104,27 +73,18 @@ export class MatrixService {
     // и при последующих запусках `getRooms()` сразу возвращает все комнаты из кэша,
     // без полного initial sync с сервера. Это самый дешёвый и крупный буст к скорости
     // первого отображения списка диалогов.
-    if (userId && typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined') {
-      try {
-        this.store = new sdk.IndexedDBStore({
-          indexedDB: window.indexedDB,
-          localStorage:
-            typeof window.localStorage !== 'undefined' ? window.localStorage : undefined,
-          dbName: this.getStoreDbName(userId),
-        })
-        await this.store.startup()
-        opts.store = this.store
-      } catch (e) {
-        console.warn('[MatrixService] IndexedDBStore init failed, falling back to MemoryStore:', e)
-        this.store = null
-      }
+    if (userId) {
+      this.store = await createIndexedDbStore(userId)
+      if (this.store) opts.store = this.store
     }
 
-    this.client = sdk.createClient(opts)
+    const client = sdk.createClient(opts)
+    this.client = client
 
-    // Re-attach listeners
+    // Re-attach listeners. Событие — динамическая строка из нашего fluent-API `on()`,
+    // приводим к типу события SDK (а не к any).
     this.eventQueue.forEach(({ event, listener }) => {
-      this.client.on(event, listener)
+      client.on(event as Parameters<SdkMatrixClient['on']>[0], listener)
     })
 
     if (accessToken) {
@@ -135,12 +95,12 @@ export class MatrixService {
 
   public async login(address: string, passwordOrKeyPair?: string | KeyPair, loginToken?: string) {
     try {
-      const loginOpts: any = { baseUrl: this.baseUrl }
+      const loginOpts: ICreateClientOpts = { baseUrl: this.baseUrl }
       loginOpts.fetchFn = (input: RequestInfo | URL, init?: RequestInit) => matrixFetch(input, init)
 
       const tempClient = sdk.createClient(loginOpts)
 
-      const normalizedAddress = this.normalizeLoginAddress(address)
+      const normalizedAddress = normalizeLoginAddress(address)
 
       let password = ''
       let keyPair: KeyPair | null = null
@@ -156,48 +116,12 @@ export class MatrixService {
 
       const userHex = this.addressToHex(normalizedAddress).toLowerCase()
 
-      let response
-      if (loginToken) {
-        response = await tempClient.login('m.login.token', {
-          token: loginToken,
-          user: userHex,
-        })
-      } else if (keyPair) {
-        const privateKeyHex = keyPair.privateKey.toString('hex')
-        const passwordHash = CryptoJS.SHA256(CryptoJS.SHA256(privateKeyHex)).toString(
-          CryptoJS.enc.Hex
-        )
-
-        const loginParams: any = {
-          user: userHex,
-          password: passwordHash,
-          initial_device_display_name: 'Bastyon Web',
-        }
-        try {
-          response = await tempClient.login('m.login.password', loginParams)
-        } catch (e) {
-          response = undefined
-        }
-
-        if (!response?.access_token) {
-          try {
-            const available = await tempClient.isUsernameAvailable(loginParams.user)
-
-            if (available) {
-              response = await tempClient.register(loginParams.user, loginParams.password, null, {
-                type: 'm.login.dummy',
-              })
-            }
-          } catch (e) {
-            response = undefined
-          }
-        }
-      } else if (password) {
-        response = await tempClient.login('m.login.password', {
-          user: userHex,
-          password,
-        })
-      }
+      const response = await performMatrixLogin(tempClient, {
+        userHex,
+        password,
+        keyPair,
+        loginToken,
+      })
 
       if (response && response.access_token) {
         if (this.client) {
@@ -216,32 +140,12 @@ export class MatrixService {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- см. eventQueue: листенер event-bus принимает произвольные сигнатуры matrix-событий
   public on(event: string, listener: (...args: any[]) => void) {
     this.eventQueue.push({ event, listener })
 
     if (this.client) {
-      this.client.on(event, listener)
-    }
-  }
-
-  private async runKeepAlive() {
-    if (!this.client) return
-
-    try {
-      if (typeof this.client.whoami === 'function') {
-        await this.client.whoami()
-        return
-      }
-
-      if (typeof this.client.getProfileInfo === 'function') {
-        const userId = typeof this.client.getUserId === 'function' ? this.client.getUserId() : null
-
-        if (userId) {
-          await this.client.getProfileInfo(userId)
-        }
-      }
-    } catch (e) {
-      console.warn('Matrix keep-alive failed:', e)
+      this.client.on(event as Parameters<SdkMatrixClient['on']>[0], listener)
     }
   }
 
@@ -249,10 +153,10 @@ export class MatrixService {
     if (this.keepAliveTimer || !this.client) return
 
     this.keepAliveTimer = setInterval(() => {
-      this.runKeepAlive()
+      runKeepAlive(this.client)
     }, intervalMs)
 
-    this.runKeepAlive()
+    runKeepAlive(this.client)
   }
 
   public stopKeepAlive() {
@@ -262,11 +166,13 @@ export class MatrixService {
     }
   }
 
-  public getClient() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- клиент matrix потребляется duck-typing'ом в десятке мест сторов (paginateEventTimeline/setRoomReadMarkers/mxcUrlToHttp/...); строгий SDK-тип потянул бы рефактор всех потребителей и здесь вне границ задачи
+  public getClient(): any {
     return this.client
   }
 
-  public getRooms() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- результат Room потребляется duck-typing'ом в десятке мест сторов (room.timeline/currentState/...); строгий matrix `Room` потянул бы рефактор всех потребителей и здесь вне границ задачи
+  public getRooms(): any[] {
     if (!this.client) return []
     const allRooms = this.client.getRooms()
 
@@ -274,7 +180,8 @@ export class MatrixService {
     return allRooms.length > 0 ? allRooms : []
   }
 
-  public getRoom(roomId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- см. getRooms: Room потребляется duck-typing'ом, строгий тип вне границ задачи
+  public getRoom(roomId: string): any {
     if (!this.client) return null
     return this.client.getRoom(roomId)
   }
@@ -290,11 +197,12 @@ export class MatrixService {
       const res = await this.client.createRoom({
         invite: [inviteeId],
         is_direct: true,
-        preset: 'trusted_private_chat',
-        visibility: 'private',
+        preset: Preset.TrustedPrivateChat,
+        visibility: Visibility.Private,
       })
 
-      const roomId = (res && (res.room_id || (res as any).roomId)) || null
+      const roomId =
+        (res && (res.room_id || (res as { roomId?: string }).roomId)) || null
       return typeof roomId === 'string' ? roomId : null
     } catch (e) {
       console.error('Matrix createDirectRoom failed:', e)
@@ -305,7 +213,7 @@ export class MatrixService {
   public async sendMessage(roomId: string, content: string) {
     if (!this.client) throw new Error('Client not initialized')
 
-    return this.client.sendEvent(roomId, 'm.room.message', {
+    return (this.client as MatrixClient).sendEvent(roomId, 'm.room.message', {
       msgtype: 'm.text',
       body: content,
     })
@@ -314,9 +222,14 @@ export class MatrixService {
   /**
    * Отправить state-событие (например `m.room.encryption` с общим ключом группы).
    */
-  public async sendStateEvent(roomId: string, type: string, content: any, stateKey: string) {
+  public async sendStateEvent(
+    roomId: string,
+    type: string,
+    content: MatrixEventContent,
+    stateKey: string
+  ) {
     if (!this.client) throw new Error('Client not initialized')
-    return this.client.sendStateEvent(roomId, type, content, stateKey)
+    return (this.client as MatrixClient).sendStateEvent(roomId, type, content, stateKey)
   }
 
   /**
@@ -329,7 +242,7 @@ export class MatrixService {
     payload: { body: string; hash: string; block: number }
   ) {
     if (!this.client) throw new Error('Client not initialized')
-    return this.client.sendEvent(roomId, 'm.room.message', {
+    return (this.client as MatrixClient).sendEvent(roomId, 'm.room.message', {
       msgtype: 'm.encrypted',
       body: payload.body,
       hash: payload.hash,
@@ -358,7 +271,7 @@ export class MatrixService {
   public async sendReaction(roomId: string, eventId: string, key: string) {
     if (!this.client) throw new Error('Client not initialized')
 
-    return this.client.sendEvent(roomId, 'm.reaction', {
+    return (this.client as MatrixClient).sendEvent(roomId, 'm.reaction', {
       'm.relates_to': {
         event_id: eventId,
         key,

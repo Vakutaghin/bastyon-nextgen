@@ -13,6 +13,27 @@ export interface MessageReaction {
   my?: boolean
 }
 
+/**
+ * Метаданные вложения (Matrix `content.info` + локальные поля прогресса).
+ * Свободная по форме структура декодированного Matrix-контента: известные поля
+ * типизированы, остальные доступны через индексную сигнатуру.
+ */
+export interface MessageInfo {
+  mimetype?: string
+  size?: number
+  duration?: number
+  w?: number
+  h?: number
+  uploadProgress?: number
+  url?: string
+  httpUrl?: string
+  posterUrl?: string | null
+  thumbnail_url?: string
+  thumbnail_info?: Record<string, unknown>
+  secrets?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 export interface Message {
   id: string
   chatId: string
@@ -21,8 +42,8 @@ export interface Message {
   text: string
   type?: 'text' | 'audio' | 'image' | 'video' | 'file' | 'transaction'
   url?: string
-  info?: any
-  rawContent?: any
+  info?: MessageInfo
+  rawContent?: Record<string, unknown> | null
   timestamp: number
   read: boolean
   status: 'sending' | 'sent' | 'read' | 'failed'

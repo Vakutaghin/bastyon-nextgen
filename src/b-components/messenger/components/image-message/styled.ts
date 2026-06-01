@@ -12,7 +12,7 @@ export const SC_ImageFrame = styled('div', { aspect: String, isLocal: Boolean })
   position: relative;
   width: 100%;
   max-width: min(280px, 100%);
-  aspect-ratio: ${(p: any) => p.aspect || '4 / 3'};
+  aspect-ratio: ${(p) => p.aspect || '4 / 3'};
   background: ${COLORS.BG_SECONDARY};
   border-radius: 10px;
   overflow: hidden;
@@ -20,7 +20,7 @@ export const SC_ImageFrame = styled('div', { aspect: String, isLocal: Boolean })
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: ${(p: any) => (p.isLocal ? 0.7 : 1)};
+  opacity: ${(p) => (p.isLocal ? 0.7 : 1)};
 `
 
 export const SC_Image = styled.img`
@@ -65,6 +65,11 @@ export const SC_ErrorBadge = styled.button`
   border: 0;
   cursor: pointer;
   padding: 8px;
+`
+
+export const SC_RetryLink = styled.span`
+  opacity: 0.8;
+  text-decoration: underline;
 `
 
 export const SC_Lightbox = styled.div`

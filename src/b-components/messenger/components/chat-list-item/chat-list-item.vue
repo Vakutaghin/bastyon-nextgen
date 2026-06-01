@@ -1,13 +1,12 @@
 <template>
   <SC_ListItem :class="{ active: isActive }">
-    <Avatar
+    <SC_Avatar
       :src="dialog.partner.avatar"
       :alt="dialog.partner.name || dialog.partner.id"
       :fallback-text="dialog.partner.name || dialog.partner.id"
       :size="48"
       :verified="dialog.partner.verified"
       shape="circle"
-      style="margin-right: 12px"
     />
 
     <SC_Info>
@@ -70,9 +69,9 @@ import { useI18n } from 'vue-i18n'
 import { DeleteOutlined, EllipsisOutlined } from '@ant-design/icons-vue'
 import type { Dialog, Message } from '../../types'
 import { useMessengerStore } from '../../store'
-import Avatar from '@/components/avatar/avatar.vue'
 import { ICON_DANGER_MR_8 } from '@/styles/icon-styles'
 import {
+  SC_Avatar,
   SC_ListItem,
   SC_Info,
   SC_Name,

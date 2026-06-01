@@ -14,7 +14,7 @@
   >
     <span aria-hidden="true">🔗</span>
     <span>{{ t('chat.postInBastyon') }}</span>
-    <span style="opacity: 0.6; font-size: 11px; margin-left: auto">{{ shortTxid }}</span>
+    <SC_ShortTxid>{{ shortTxid }}</SC_ShortTxid>
   </SC_FailedHint>
 
   <!-- ➂ Успех — компактная карточка -->
@@ -80,6 +80,7 @@ import {
   SC_Loading,
   SC_Spinner,
   SC_FailedHint,
+  SC_ShortTxid,
 } from './styled'
 
 const props = defineProps<{
@@ -138,6 +139,6 @@ const snippet = computed<string>(() => {
 
 const openPost = () => {
   if (!post.value) return
-  modalStore.openPostModal(post.value as any)
+  modalStore.openPostModal(post.value as Parameters<typeof modalStore.openPostModal>[0])
 }
 </script>

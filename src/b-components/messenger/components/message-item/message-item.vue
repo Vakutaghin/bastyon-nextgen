@@ -11,14 +11,14 @@
       />
     </SC_AvatarSlot>
 
-    <SC_MessageItem :class="isMine ? 'mine' : 'others'" style="position: relative">
+    <SC_MessageItem :class="isMine ? 'mine' : 'others'">
       <SC_MessageMeta v-if="showName && !isMine">
         <span>{{ displayName }}</span>
       </SC_MessageMeta>
 
       <div v-if="message.type === 'audio'" class="message-audio">
         <AudioMessage :message="message" :compact="isCompact" />
-        <div v-if="!message.url" style="font-size: 0.8em; color: red">Audio URL missing</div>
+        <SC_AudioUrlMissing v-if="!message.url">Audio URL missing</SC_AudioUrlMissing>
       </div>
 
       <div v-else-if="message.type === 'image'" class="message-image">
@@ -54,7 +54,7 @@
           :title="t('messenger.reaction')"
           @click="toggleReactionPicker"
         >
-          <span style="font-size: 14px">😀</span>
+          <SC_ReactionEmojiIcon>😀</SC_ReactionEmojiIcon>
         </SC_ReactionButton>
       </SC_MessageTime>
 
@@ -79,7 +79,7 @@
       <SC_ReactionsRow v-if="message.reactions?.length">
         <SC_ReactionPill v-for="r in message.reactions" :key="r.key" :class="{ mine: r.my }">
           {{ r.key }}
-          <span v-if="r.count > 1" style="font-size: 10px; opacity: 0.8">{{ r.count }}</span>
+          <SC_ReactionCount v-if="r.count > 1">{{ r.count }}</SC_ReactionCount>
         </SC_ReactionPill>
       </SC_ReactionsRow>
     </SC_MessageItem>
@@ -107,6 +107,9 @@ import LinkPreview from '../link-preview/link-preview.vue'
 import { formatMessageSegments, extractFirstExternalUrl } from './helpers'
 import {
   SC_MessageItem,
+  SC_AudioUrlMissing,
+  SC_ReactionEmojiIcon,
+  SC_ReactionCount,
   SC_MessageMeta,
   SC_MessageRow,
   SC_MessageTime,

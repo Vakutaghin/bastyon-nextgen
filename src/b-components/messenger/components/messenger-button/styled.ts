@@ -32,7 +32,7 @@ export const SC_MessengerButton = styled('button', { isOpen: Boolean })`
   img {
     width: 28px;
     height: 28px;
-    ${(props: any) =>
+    ${(props) =>
       !props.isOpen
         ? `
       position: relative;

@@ -1,5 +1,18 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { SC_UserStats } from '@/b-components/profile/profile-sidebar/styled'
+
+export const SC_ChatRoomContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+`
+
+export const SC_PartnerStats = styled(SC_UserStats)`
+  justify-content: center;
+  gap: 16px;
+`
 
 export const SC_MessageInputArea = styled.div`
   padding: 12px;

@@ -106,7 +106,7 @@ export const SC_Snippet = styled.div`
 
 export const SC_Thumb = styled('div', { aspect: String })`
   width: 100%;
-  aspect-ratio: ${(p: any) => p.aspect || '16 / 9'};
+  aspect-ratio: ${(p) => p.aspect || '16 / 9'};
   background: ${COLORS.BG_SECONDARY};
   position: relative;
   overflow: hidden;
@@ -164,6 +164,12 @@ export const SC_Spinner = styled.div`
   border-top-color: ${COLORS.BRAND_CYAN};
   border-radius: 50%;
   animation: spin 1s linear infinite; /* @keyframes spin — глобально в style.css */
+`
+
+export const SC_ShortTxid = styled.span`
+  opacity: 0.6;
+  font-size: 11px;
+  margin-left: auto;
 `
 
 export const SC_FailedHint = styled.a`

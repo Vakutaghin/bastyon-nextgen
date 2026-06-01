@@ -1,5 +1,5 @@
 <template>
-  <div style="display: flex; flex-direction: column; flex: 1; min-height: 0">
+  <SC_ChatRoomContainer>
     <template v-if="inviteMode">
       <SC_PartnerInfoCard>
         <SC_PartnerHeader>
@@ -17,7 +17,7 @@
           <SC_PartnerName>{{ partnerName }}</SC_PartnerName>
         </SC_PartnerHeader>
 
-        <SC_UserStats style="justify-content: center; gap: 16px">
+        <SC_PartnerStats>
           <SC_StatItem>
             <SC_StatLabel>{{ t('messenger.reputation') }}</SC_StatLabel>
             <SC_StatValue>{{ reputation }}</SC_StatValue>
@@ -32,7 +32,7 @@
             <SC_StatLabel>{{ t('messenger.subscriptions') }}</SC_StatLabel>
             <SC_StatValue>{{ subscribesCount }}</SC_StatValue>
           </SC_StatItem>
-        </SC_UserStats>
+        </SC_PartnerStats>
       </SC_PartnerInfoCard>
 
       <SC_StartChatContainer>
@@ -136,7 +136,7 @@
       @close="closePkoinModal"
       @sent="onPkoinSent"
     />
-  </div>
+  </SC_ChatRoomContainer>
 </template>
 
 <script setup lang="ts">
@@ -157,6 +157,8 @@ import sendIcon from './img/send.svg'
 import emojiIcon from './img/emoji.svg'
 import micIcon from './img/mic.svg'
 import {
+  SC_ChatRoomContainer,
+  SC_PartnerStats,
   SC_MessageInputArea,
   SC_MessageInput,
   SC_SendButton,
@@ -177,7 +179,6 @@ import {
   SC_ChatRoomEmptyHint,
 } from './styled'
 import {
-  SC_UserStats,
   SC_StatItem,
   SC_StatLabel,
   SC_StatValue,

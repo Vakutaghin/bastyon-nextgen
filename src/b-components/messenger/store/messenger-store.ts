@@ -1,6 +1,7 @@
 // Главный стор мессенджера — координация подсторов и инициализация Matrix
 // Всю тяжёлую логику делегирует в messenger-chat-store, messenger-ui-store и messenger-profile-cache
 
+import type { MatrixEvent } from 'matrix-js-sdk'
 import { defineStore, storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 
@@ -46,6 +47,24 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   // --- Маппинг комнаты в диалог ---
 
+  /**
+   * Участник комнаты в «старом» (loose) виде, как его отдаёт matrix-сервер в раннере:
+   * 4-аргументный `getAvatarUrl` и прямое поле `avatarUrl` — то, чего нет в строгом
+   * `RoomMember` из текущего matrix-js-sdk.
+   */
+  interface DialogMember {
+    userId: string
+    name?: string
+    membership?: string
+    avatarUrl?: string | null
+    getAvatarUrl?: (baseUrl: string, w: number, h: number, method: string) => string | undefined
+  }
+
+  // room остаётся `any`: объект приходит из matrix-сервера через legacy-API (4-арг
+  // `getAvatarUrl`, поле `avatarUrl` у участника, строковый аргумент
+  // `getUnreadNotificationCount('ns.total')`), который не моделируется строгим
+  // `Room` из matrix-js-sdk; строгий тип дал бы каскад ошибок арности/перечислений.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy loose Matrix Room API, не покрытый типами matrix-js-sdk
   const mapRoomToDialog = async (room: any): Promise<Dialog> => {
     if (room?.loadMembersIfNeeded) {
       try {
@@ -60,12 +79,12 @@ export const useMessengerStore = defineStore('messenger', () => {
     const joinedMembers = room.getJoinedMembers()
     const isDirect = joinedMembers.length === 2
 
-    let otherMember = joinedMembers.find((m: any) => m.userId !== myUserId)
+    let otherMember = joinedMembers.find((m: DialogMember) => m.userId !== myUserId)
     if (!otherMember) {
       otherMember = room.currentState
         .getMembers()
         .find(
-          (m: any) =>
+          (m: DialogMember) =>
             m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
         )
     }
@@ -102,17 +121,18 @@ export const useMessengerStore = defineStore('messenger', () => {
         if (!profileCache.userProfiles[address]) profileCache.fetchProfiles([address])
         const p = profileCache.userProfiles[address]
         if (p?.name) name = p.name
-        const img = p?.i || (p as any)?.avatar || (p as any)?.image
+        const imgCandidate = p?.i || p?.avatar || p?.image
+        const img = typeof imgCandidate === 'string' ? imgCandidate : undefined
         if (img) {
           const url = resolveImageUrl(img)
           if (url) avatar = url
         }
-        const badges = (p as any)?.badges
+        const badges = p?.badges
         if (Array.isArray(badges))
           verified = badges.includes('verificated') || badges.includes('verified')
         if (!verified) {
-          const flags = (p as any)?.flags
-          const real = (flags && (flags as any).real) ?? (p as any)?.real
+          const flags = p?.flags
+          const real = (flags && flags.real) ?? p?.real
           verified = real === 1 || real === '1' || real === true || real === 'true'
         }
       }
@@ -188,7 +208,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     try {
       const rooms = matrixService.getRooms()
       const partnerAddresses = rooms
-        .map((room: any) => getPartnerMatrixId(room))
+        .map((room) => getPartnerMatrixId(room))
         .map((id: string | null) => (id ? getAddressFromMatrixId(id) : null))
         .filter((a: string | null): a is string => Boolean(a))
       if (partnerAddresses.length > 0)
@@ -278,6 +298,7 @@ export const useMessengerStore = defineStore('messenger', () => {
           // Подписка на события
           matrixService.on(
             'Room.timeline',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- событие читается и как MatrixEvent (getId), и как сырой JSON (event_id), а room передаётся в приватный MxRoom-тип chat-store; единый строгий тип неприменим
             async (event: any, room: any, toStartOfTimeline: boolean) => {
               if (toStartOfTimeline) return
               const evType = getEventType(event)
@@ -401,7 +422,7 @@ export const useMessengerStore = defineStore('messenger', () => {
       const room = matrixService.getRoom(chatId)
       if (room) {
         const events = room.getLiveTimeline().getEvents()
-        const lastEvent = [...events].reverse().find((e: any) => e.getId()?.startsWith('$'))
+        const lastEvent = [...events].reverse().find((e: MatrixEvent) => e.getId()?.startsWith('$'))
         if (lastEvent) {
           const client = matrixService.getClient()
           if (client?.setRoomReadMarkers)
@@ -467,7 +488,8 @@ export const useMessengerStore = defineStore('messenger', () => {
       if (roomId) {
         const profile = profileCache.userProfiles[address]
         const partnerName = profile?.name || address || ''
-        const img = (profile as any)?.i || (profile as any)?.avatar
+        const imgCandidate = profile?.i || profile?.avatar
+        const img = typeof imgCandidate === 'string' ? imgCandidate : undefined
         const partnerAvatar = img ? resolveImageUrl(img) : undefined
 
         uiStore.prependDialog({
@@ -492,7 +514,7 @@ export const useMessengerStore = defineStore('messenger', () => {
         const room = matrixService.getRoom(roomId)
         if (room) {
           const events = room.getLiveTimeline().getEvents()
-          const lastEvent = [...events].reverse().find((e: any) => e.getId()?.startsWith('$'))
+          const lastEvent = [...events].reverse().find((e: MatrixEvent) => e.getId()?.startsWith('$'))
           if (lastEvent) {
             const client = matrixService.getClient()
             if (client?.setRoomReadMarkers)

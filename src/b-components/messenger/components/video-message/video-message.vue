@@ -15,7 +15,7 @@
         <SC_ErrorBadge v-if="loadError" type="button" @click="retry">
           <span aria-hidden="true">⚠️</span>
           <span>{{ t('chat.loadFailed') }}</span>
-          <span style="opacity: 0.8; text-decoration: underline">{{ t('chat.retry') }}</span>
+          <SC_RetryLink>{{ t('chat.retry') }}</SC_RetryLink>
         </SC_ErrorBadge>
 
         <SC_DurationBadge v-if="durationLabel">{{ durationLabel }}</SC_DurationBadge>
@@ -56,6 +56,7 @@ import {
   SC_DurationBadge,
   SC_ProgressBadge,
   SC_ErrorBadge,
+  SC_RetryLink,
 } from './styled'
 
 const props = defineProps<{
@@ -92,8 +93,8 @@ const frameStyle = computed(() => {
 const alt = computed(() => props.message.info?.name || 'video')
 
 const posterSrc = computed<string | null>(() => {
-  const info: any = props.message.info || {}
-  return info.posterUrl || info.thumbnail_url || null
+  const info = props.message.info
+  return info?.posterUrl || info?.thumbnail_url || null
 })
 
 const durationMs = computed<number>(() => {

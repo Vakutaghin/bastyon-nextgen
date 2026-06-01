@@ -10,6 +10,13 @@ export type MatrixEventContent = Record<string, any>
 export interface MatrixClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendEvent: (roomId: string, type: string, content: MatrixEventContent) => Promise<any>
+  sendStateEvent: (
+    roomId: string,
+    type: string,
+    content: MatrixEventContent,
+    stateKey: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<any>
   uploadContent: (
     file: Blob | File,
     opts: {

@@ -116,11 +116,11 @@ export const SC_Button = styled('button', { primary: Boolean })`
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  background: ${(p: any) => (p.primary ? COLORS.BRAND_CYAN : COLORS.BG_SECONDARY)};
-  color: ${(p: any) => (p.primary ? COLORS.WHITE : COLORS.TEXT_PRIMARY)};
+  background: ${(p) => (p.primary ? COLORS.BRAND_CYAN : COLORS.BG_SECONDARY)};
+  color: ${(p) => (p.primary ? COLORS.WHITE : COLORS.TEXT_PRIMARY)};
 
   &:hover:not(:disabled) {
-    background: ${(p: any) => (p.primary ? COLORS.BRAND_CYAN_HOVER : COLORS.GRAY_E0)};
+    background: ${(p) => (p.primary ? COLORS.BRAND_CYAN_HOVER : COLORS.GRAY_E0)};
   }
 
   &:disabled {
