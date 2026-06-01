@@ -4,6 +4,15 @@ import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { SC_PlayerSection } from './styled'
 import type { VideoPlayerModalProps, VideoPlayerModalEmits } from './types'
 
+/**
+ * Опциональные члены инстанса плеера, которые мы прощупываем в рантайме.
+ * Не все они присутствуют в публичном `defineExpose`, поэтому используются guard'ы.
+ */
+interface VideoPlayerProbe {
+  stopVideo?: () => void
+  videoElement?: HTMLVideoElement | null
+}
+
 export function useVideoPlayerModal(
   p: VideoPlayerModalProps,
   emit: VideoPlayerModalEmits,
@@ -16,22 +25,18 @@ export function useVideoPlayerModal(
     nextTick(() => {
       if (videoPlayerRef.value) {
         // Получаем доступ к методам компонента через ref
-        const playerInstance = videoPlayerRef.value as any
-        if (playerInstance) {
-          // Вызываем метод stopVideo если он доступен
-          if (typeof playerInstance.stopVideo === 'function') {
-            playerInstance.stopVideo()
-          }
-          // Также останавливаем через videoElement напрямую
-          if (playerInstance.videoElement) {
-            const videoElement = playerInstance.videoElement as HTMLVideoElement
-            if (videoElement) {
-              videoElement.pause()
-              videoElement.currentTime = 0
-              videoElement.src = ''
-              videoElement.load() // Сбрасываем видео элемент
-            }
-          }
+        const playerInstance: VideoPlayerProbe = videoPlayerRef.value
+        // Вызываем метод stopVideo если он доступен
+        if (typeof playerInstance.stopVideo === 'function') {
+          playerInstance.stopVideo()
+        }
+        // Также останавливаем через videoElement напрямую
+        const videoElement = playerInstance.videoElement
+        if (videoElement) {
+          videoElement.pause()
+          videoElement.currentTime = 0
+          videoElement.src = ''
+          videoElement.load() // Сбрасываем видео элемент
         }
       }
     })

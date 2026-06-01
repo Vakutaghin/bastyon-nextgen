@@ -7,9 +7,8 @@
       :content="post.content"
     />
 
-    <div
+    <SC_PreviewBlock
       v-else-if="post.preview && isCollapsed && shouldCollapse"
-      style="margin-bottom: 10px"
       v-html="formattedPreview"
     />
 
@@ -24,22 +23,20 @@
 
     <SC_PostPreview v-else v-html="formattedTruncatedText" />
 
-    <Button
+    <SC_ReadMoreButton
       v-if="!showFull && shouldCollapse && isCollapsed"
       type="text"
       block
-      style="margin-top: 10px; background-color: var(--color-bg-hover)"
       @click.stop.prevent="openPostModal"
     >
       <strong>{{ readMoreLabel }}</strong>
-    </Button>
+    </SC_ReadMoreButton>
   </SC_PostContent>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '@/components/button/button.vue'
 import BlockContent from '@/b-components/content/block-content/block-content.vue'
 import { useModalStore } from '@/stores/modal-store'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
@@ -49,7 +46,7 @@ import {
   timecodeMatchToSeconds,
   type Chapter,
 } from '@/helpers/content/timecode-parser'
-import { SC_PostContent, SC_PostPreview } from './styled'
+import { SC_PostContent, SC_PostPreview, SC_PreviewBlock, SC_ReadMoreButton } from './styled'
 
 export interface PostContentPost {
   id?: string | number

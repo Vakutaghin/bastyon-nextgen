@@ -1,7 +1,7 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 
-export const SC_PostImage = styled.div`
+export const SC_PostImage = styled.div<{ imageCount: number }>`
   margin-bottom: 15px;
   border-radius: 8px;
   overflow: hidden;
@@ -12,7 +12,7 @@ export const SC_PostImage = styled.div`
   box-sizing: border-box;
 
   /* 1 изображение */
-  ${(p: any) =>
+  ${(p) =>
     p.imageCount === 1 &&
     `
     flex-direction: column;
@@ -35,7 +35,7 @@ export const SC_PostImage = styled.div`
   `}
 
   /* 2 изображения - splitscreen */
-  ${(p: any) =>
+  ${(p) =>
     p.imageCount === 2 &&
     `
     flex-direction: row;
@@ -66,7 +66,7 @@ export const SC_PostImage = styled.div`
   `}
 
   /* 3 изображения - левая половина, правая половина с двумя по вертикали */
-  ${(p: any) =>
+  ${(p) =>
     p.imageCount === 3 &&
     `
     display: grid;
@@ -104,7 +104,7 @@ export const SC_PostImage = styled.div`
   `}
 
   /* 4 изображения - по 2 в строке */
-  ${(p: any) =>
+  ${(p) =>
     p.imageCount === 4 &&
     `
     flex-wrap: wrap;
@@ -143,7 +143,7 @@ export const SC_PostImage = styled.div`
   `}
 
   /* 5 и более изображений - 2 в верхней строке, 3 в нижней */
-  ${(p: any) =>
+  ${(p) =>
     p.imageCount >= 5 &&
     `
     flex-wrap: wrap;

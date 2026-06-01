@@ -1,5 +1,7 @@
 // Форматтеры для дропдауна нотификаций: время + обрезка текста.
 
+import { t } from '@/i18n'
+
 /** Лимит для превью текста комментария (символов). */
 export const COMMENT_PREVIEW_LIMIT = 160
 
@@ -17,10 +19,10 @@ export function formatNotificationTime(ts: number): string {
   const diffM = Math.floor(diffMs / 60000)
   const diffH = Math.floor(diffMs / 3600000)
   const diffD = Math.floor(diffMs / 86400000)
-  if (diffM < 1) return 'только что'
-  if (diffM < 60) return `${diffM} мин.`
-  if (diffH < 24) return `${diffH} ч.`
-  if (diffD < 7) return `${diffD} дн.`
+  if (diffM < 1) return t('appMsg.time.justNow')
+  if (diffM < 60) return t('appMsg.time.minutesShort', { n: diffM })
+  if (diffH < 24) return t('appMsg.time.hoursShort', { n: diffH })
+  if (diffD < 7) return t('appMsg.time.daysShort', { n: diffD })
   return d.toLocaleDateString()
 }
 

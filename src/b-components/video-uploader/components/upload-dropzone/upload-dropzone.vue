@@ -9,11 +9,14 @@
       @dragleave="handleDragLeave"
       @drop="handleDrop"
     >
+      <!-- Обычный <input>, скрыт HTML-атрибутом hidden: ref должен отдавать
+           реальный элемент для программного fileInput.click() (styled-обёртка
+           вернула бы инстанс компонента). -->
       <input
         ref="fileInput"
         type="file"
         accept="video/*"
-        style="display: none"
+        hidden
         @change="handleFileInputChange"
       />
 
@@ -48,9 +51,9 @@
           <span>{{ t('videoUploader.checkParamsAndStart') }}</span>
         </SC_DropZoneText>
         <Button type="primary" size="large" @click="$emit('start')"> {{ t('videoUploader.startUpload') }} </Button>
-        <Button type="secondary" style="margin-top: 8px" @click="$emit('reset')">
+        <SC_SecondaryButton type="secondary" @click="$emit('reset')">
           {{ t('videoUploader.selectAnotherFile') }}
-        </Button>
+        </SC_SecondaryButton>
       </template>
 
       <template v-else-if="state === 'transcoding' || state === 'saving'">
@@ -65,15 +68,15 @@
           :stroke-color="state === 'error' ? '#ff4d4f' : '#1890ff'"
         />
         <SC_ProgressText>{{ Math.round(progress) }}%</SC_ProgressText>
-        <div v-if="fileName" style="margin-top: 8px; color: var(--color-text-secondary); font-size: 12px">
+        <SC_FileNameText v-if="fileName">
           {{ fileName }}
-        </div>
+        </SC_FileNameText>
       </template>
 
       <template v-else-if="state === 'error'">
         <CloseCircleOutlined :style="ICON_DANGER_64" />
         <SC_DropZoneText>
-          <strong style="color: var(--color-red-ant)">{{ t('videoUploader.errorPrefix', { error }) }}</strong>
+          <SC_ErrorText>{{ t('videoUploader.errorPrefix', { error }) }}</SC_ErrorText>
         </SC_DropZoneText>
         <Button type="primary" @click="$emit('reset')"> {{ t('videoUploader.tryAgain') }} </Button>
       </template>
@@ -118,6 +121,9 @@ import {
   SC_DropZone,
   SC_DropZoneText,
   SC_ProgressText,
+  SC_SecondaryButton,
+  SC_FileNameText,
+  SC_ErrorText,
 } from './styled'
 import { VideoInfoPanel } from '../video-info-panel'
 import { useUploadDropzone } from './upload-dropzone'

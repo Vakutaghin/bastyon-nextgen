@@ -40,13 +40,12 @@
         </SC_CategoriesName>
 
         <!-- Кнопка удаления для кастомных/временных категорий -->
-        <div
+        <SC_CategoryRemoveBtn
           v-if="category.isRemovable"
-          style="margin-left: auto; padding: 0 5px; opacity: 0.6; cursor: pointer"
           @click="(e) => removeCategory(e, category.id)"
         >
-          <CloseOutlined style="font-size: 10px" />
-        </div>
+          <CloseOutlined :style="ICON_SIZE_10" />
+        </SC_CategoryRemoveBtn>
       </SC_CategoriesItem>
     </SC_CategoriesList>
 
@@ -60,9 +59,9 @@
       @ok="addCategory"
       @cancel="closeModal"
     >
-      <div style="margin-bottom: 10px; font-size: 13px; color: var(--color-gray-888)">
+      <SC_ModalHint>
         {{ t('sidebar.enterTag') }}
-      </div>
+      </SC_ModalHint>
 
       <AInput
         v-model:value="newCategoryName"
@@ -83,10 +82,10 @@
       @ok="confirmDeleteCategory"
       @cancel="closeDeleteModal"
     >
-      <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0">
-        <ExclamationCircleOutlined style="font-size: 22px; color: var(--color-warning-icon)" />
+      <SC_DeleteConfirmRow>
+        <ExclamationCircleOutlined :style="ICON_WARNING_ICON_22" />
         <span>{{ t('sidebar.deleteCategoryConfirm') }}</span>
-      </div>
+      </SC_DeleteConfirmRow>
     </AModal>
   </SC_Categories>
 </template>
@@ -107,6 +106,7 @@ import { useFiltersStore } from '@/stores/filters-store'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import type { GetTagsResponse } from '@/types/rpc-responses/get-tags'
+import { ICON_SIZE_10, ICON_WARNING_ICON_22 } from '@/styles/icon-styles'
 import {
   SC_Categories,
   SC_CategoriesHeader,
@@ -120,6 +120,9 @@ import {
   SC_CategoriesName,
   SC_TopFirstWrapper,
   SC_TopFirstLabel,
+  SC_CategoryRemoveBtn,
+  SC_ModalHint,
+  SC_DeleteConfirmRow,
 } from './styled'
 
 interface RawTag {

@@ -13,7 +13,7 @@
     </SC_LangSwitcher>
 
     <SC_Empty v-if='!entries.length'>
-      {{ language === 'ru' ? 'Журнал изменений пока пуст' : 'No release notes yet' }}
+      {{ t('changelog.empty') }}
     </SC_Empty>
 
     <SC_ChangelogList v-else>
@@ -33,6 +33,7 @@
 </template>
 
 <script setup lang='ts'>
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useChangelog } from '@/composables/use-changelog'
 import { useUIStore, type AppLanguage } from '@/stores/ui-store'
@@ -55,6 +56,7 @@ withDefaults(
   { showLanguageSwitcher: true }
 )
 
+const { t } = useI18n()
 const uiStore = useUIStore()
 const { language } = storeToRefs(uiStore)
 const { entries } = useChangelog()

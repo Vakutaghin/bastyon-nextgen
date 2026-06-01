@@ -1,8 +1,8 @@
 import { ref, computed, onBeforeUnmount, type Ref } from 'vue'
-import { resolveVideoElement } from './utils'
+import { resolveVideoElement, type ElementRefValue } from './utils'
 import { VIDEO_PLAYER_VOLUME_KEY } from '@/blockchain/constants/storage'
 
-export function useVideoVolume(videoElement: Ref<any>) {
+export function useVideoVolume(videoElement: Ref<ElementRefValue>) {
   // Ключ для сохранения громкости в localStorage
   const VOLUME_STORAGE_KEY = VIDEO_PLAYER_VOLUME_KEY
 

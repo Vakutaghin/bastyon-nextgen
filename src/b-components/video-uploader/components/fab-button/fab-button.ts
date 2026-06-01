@@ -4,7 +4,7 @@ import { SC_FabButton } from './styled'
 import { isTauri, isTauriAsync } from '../../utils/environment'
 
 const isTauriBuild =
-  typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_TAURI === 'true'
+  typeof import.meta !== 'undefined' && import.meta.env?.VITE_TAURI === 'true'
 
 export function useFabButton() {
   const isTauriEnv = ref(isTauri())

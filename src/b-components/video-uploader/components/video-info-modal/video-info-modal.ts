@@ -1,4 +1,5 @@
 import { Modal } from 'ant-design-vue'
+import { t } from '@/i18n'
 import {
   SC_InfoContent,
   SC_InfoRow,
@@ -7,10 +8,10 @@ import {
 } from './styled'
 
 export function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' Б'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' КБ'
-  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' МБ'
-  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' ГБ'
+  if (bytes < 1024) return bytes + ' ' + t('appMsg.bytes.b')
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' ' + t('appMsg.bytes.kb')
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' ' + t('appMsg.bytes.mb')
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' ' + t('appMsg.bytes.gb')
 }
 
 export function formatDuration(seconds: number): string {

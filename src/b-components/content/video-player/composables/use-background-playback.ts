@@ -34,10 +34,10 @@ export function useBackgroundPlayback(opts: Options) {
   let savedQualityLevel: number | null = null
 
   const resolveVideo = (): HTMLVideoElement | null => {
-    const v = videoElement.value as any
+    const v = videoElement.value
     if (!v) return null
     if (v instanceof HTMLVideoElement) return v
-    if (v.$el instanceof HTMLVideoElement) return v.$el
+    if ('$el' in v && v.$el instanceof HTMLVideoElement) return v.$el
     return null
   }
 

@@ -27,7 +27,7 @@
 
       <SC_Footer>
         <SC_DismissButton type='button' @click='close'>
-          {{ language === 'ru' ? 'Понятно' : 'Got it' }}
+          {{ t('changelog.gotIt') }}
         </SC_DismissButton>
       </SC_Footer>
     </SC_Wrap>
@@ -36,6 +36,7 @@
 
 <script setup lang='ts'>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Modal } from 'ant-design-vue'
 import { storeToRefs } from 'pinia'
 import { useChangelog, useWhatsNewGate } from '@/composables/use-changelog'
@@ -50,6 +51,7 @@ import {
   SC_MarkdownBody,
 } from './whats-new-modal.styled'
 
+const { t } = useI18n()
 const uiStore = useUIStore()
 const { language } = storeToRefs(uiStore)
 const { latest } = useChangelog()
@@ -59,8 +61,7 @@ const supportedLanguages = SUPPORTED_LANGUAGES
 
 const title = computed(() => {
   if (!latest.value) return ''
-  const prefix = language.value === 'ru' ? 'Что нового —' : "What's new —"
-  return `${prefix} ${latest.value.displayVersion}`
+  return `${t('changelog.whatsNewPrefix')} ${latest.value.displayVersion}`
 })
 
 async function close(): Promise<void> {

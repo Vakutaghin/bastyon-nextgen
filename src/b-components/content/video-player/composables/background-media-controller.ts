@@ -37,9 +37,15 @@ let nativeListeners: PluginListenerHandle[] = []
 let listenersAttached = false
 let sessionPayload: MediaSessionPayload | null = null
 
-const route = (fn: keyof ActivePlayerHandle, ...args: any[]) => {
+function route(fn: 'onPlay' | 'onPause' | 'onStop'): void
+function route(fn: 'onSeekTo', positionMs: number): void
+function route(fn: keyof ActivePlayerHandle, positionMs?: number): void {
   if (!activeHandle) return
-  ;(activeHandle[fn] as any)(...args)
+  if (fn === 'onSeekTo') {
+    activeHandle.onSeekTo(positionMs ?? 0)
+  } else {
+    activeHandle[fn]()
+  }
 }
 
 const attachNativeListenersOnce = async () => {
@@ -73,9 +79,9 @@ const setupMediaSessionApi = (payload: MediaSessionPayload, handle: ActivePlayer
     /* older browsers */
   }
 
-  const safeSet = (name: MediaSessionAction, cb: ((details?: any) => void) | null) => {
+  const safeSet = (name: MediaSessionAction, cb: MediaSessionActionHandler | null) => {
     try {
-      navigator.mediaSession.setActionHandler(name, cb as any)
+      navigator.mediaSession.setActionHandler(name, cb)
     } catch {
       /* unsupported action */
     }
@@ -83,16 +89,16 @@ const setupMediaSessionApi = (payload: MediaSessionPayload, handle: ActivePlayer
 
   safeSet('play', () => handle.onPlay())
   safeSet('pause', () => handle.onPause())
-  safeSet('seekto', (details: any) => {
-    if (typeof details?.seekTime === 'number') handle.onSeekTo(details.seekTime * 1000)
+  safeSet('seekto', (details) => {
+    if (typeof details.seekTime === 'number') handle.onSeekTo(details.seekTime * 1000)
   })
-  safeSet('seekbackward', (details: any) => {
-    const delta = (details?.seekOffset || 10) * 1000
+  safeSet('seekbackward', (details) => {
+    const delta = (details.seekOffset || 10) * 1000
     const current = (payload.position || 0) * 1000
     handle.onSeekTo(Math.max(0, current - delta))
   })
-  safeSet('seekforward', (details: any) => {
-    const delta = (details?.seekOffset || 10) * 1000
+  safeSet('seekforward', (details) => {
+    const delta = (details.seekOffset || 10) * 1000
     const current = (payload.position || 0) * 1000
     handle.onSeekTo(current + delta)
   })

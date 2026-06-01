@@ -1,5 +1,12 @@
 // @ts-expect-error vue3-styled-components types
 import styled from 'vue3-styled-components'
+import { COLORS } from '@/styles/theme-colors'
+
+export const SC_SubmenuArrow = styled.span`
+  font-size: 10px;
+  color: ${COLORS.GRAY_999};
+  margin-left: 8px;
+`
 
 export const SC_VideoQualityControl = styled.div`
   display: flex !important;

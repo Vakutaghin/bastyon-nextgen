@@ -15,6 +15,13 @@ import type { CommentMessagePayload } from '@/types/rpc-requests/send-raw-transa
 
 import { COMMENT_TX_FEE } from './consts'
 
+/** Минимальная форма ответа sendrawtransactionwithmessage: либо txid-строка, либо конверт. */
+interface SendTxResponse {
+  result?: string
+  data?: unknown
+  error?: unknown
+}
+
 export interface DeleteCommentParams {
   /** txid поста, к которому относится комментарий */
   postId: string
@@ -77,13 +84,14 @@ export async function deleteComment(params: DeleteCommentParams): Promise<string
   })
 
   if (typeof response === 'string') return response
-  if (response && typeof response === 'object' && 'data' in response && typeof (response as any).data === 'string') {
-    return (response as any).data
+  const res = response as SendTxResponse | null
+  if (res && typeof res === 'object' && typeof res.data === 'string') {
+    return res.data
   }
-  if (response && typeof response === 'object' && 'result' in response && (response as any).result === 'success' && 'data' in response) {
-    return (response as any).data
+  if (res && typeof res === 'object' && res.result === 'success' && typeof res.data === 'string') {
+    return res.data
   }
 
-  const err = response && typeof response === 'object' && 'error' in response ? (response as any).error : null
+  const err = res && typeof res === 'object' ? res.error : null
   throw err instanceof Error ? err : new Error(String(err ?? t('commentsMsg.errDeleteFailed')))
 }

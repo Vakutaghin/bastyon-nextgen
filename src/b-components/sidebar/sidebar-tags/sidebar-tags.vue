@@ -1,6 +1,6 @@
 <template>
   <SC_Tags>
-    <SC_TagsHeader style="cursor: pointer" @click="toggleExpanded">
+    <SC_TagsHeader @click="toggleExpanded">
       <SC_TagsTitle>{{ t('sidebar.trendingTags') }}</SC_TagsTitle>
       <SC_TagsControls v-if="hasSelection">
         <SC_TagsReset :title="t('sidebar.resetTags')" @click.stop="clearSelection">

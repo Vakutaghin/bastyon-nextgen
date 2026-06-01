@@ -1,6 +1,10 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 
+export const SC_InlineBlock = styled.div`
+  display: inline-block;
+`
+
 export const SC_AuthPopoverContent = styled.div`
   text-align: center;
   max-width: 200px;

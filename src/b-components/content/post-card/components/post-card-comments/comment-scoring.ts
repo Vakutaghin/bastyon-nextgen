@@ -14,13 +14,20 @@ import { COMMENT_TX_FEE } from './consts'
 /**
  * Извлекает txid из ответа RPC (поддержка нескольких форматов обёрток).
  */
-function extractTxidFromResponse(response: any): string {
+function extractTxidFromResponse(response: unknown): string {
   if (typeof response === 'string') return response
 
   if (response && typeof response === 'object' && 'data' in response && typeof response.data === 'string') {
     return response.data
   }
-  if (response && typeof response === 'object' && 'result' in response && response.result === 'success' && 'data' in response) {
+  if (
+    response &&
+    typeof response === 'object' &&
+    'result' in response &&
+    response.result === 'success' &&
+    'data' in response &&
+    typeof response.data === 'string'
+  ) {
     return response.data
   }
 

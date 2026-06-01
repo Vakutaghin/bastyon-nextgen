@@ -138,3 +138,22 @@ export const SC_LogoutIcon = styled.div`
     height: 20px;
   }
 `
+
+export const SC_WarningBox = styled.div`
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: ${COLORS.WARNING_BG};
+  border: 1px solid ${COLORS.WARNING_BORDER};
+  border-radius: 4px;
+`
+
+export const SC_WarningTitleText = styled.p`
+  margin: 0;
+  color: ${COLORS.WARNING_TEXT};
+  font-weight: 500;
+`
+
+export const SC_WarningBodyText = styled.p`
+  margin: 8px 0 0;
+  color: ${COLORS.WARNING_TEXT};
+`

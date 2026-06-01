@@ -94,3 +94,9 @@ export const SC_LinkButton = styled.a`
     text-decoration: underline;
   }
 `
+
+export const SC_FooterActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+`

@@ -35,3 +35,8 @@ export const SC_ErrorMessage = styled.div`
   padding: 20px;
   text-align: center;
 `
+
+export const SC_InitialLoading = styled.div`
+  padding: 40px;
+  text-align: center;
+`

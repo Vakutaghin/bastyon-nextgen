@@ -55,7 +55,7 @@
 
     <SC_PostBookmark @click="toggleBookmark">
       <BookFilled v-if="isBookmarked" :style="ICON_PRIMARY_18" />
-      <BookOutlined v-else :style="{ fontSize: '18px', color: 'var(--color-overlay-45)' }" />
+      <BookOutlined v-else :style="ICON_OVERLAY_45_18" />
     </SC_PostBookmark>
   </SC_PostHeader>
 </template>
@@ -68,7 +68,7 @@ import Avatar from '@/components/avatar/avatar.vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { favoritesAPI } from '@/db/apis/favorites-api'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
-import { ICON_PRIMARY_18, ICON_SIZE_MD } from '@/styles/icon-styles'
+import { ICON_PRIMARY_18, ICON_SIZE_MD, ICON_OVERLAY_45_18 } from '@/styles/icon-styles'
 import {
   SC_PostHeader,
   SC_PostAuthor,

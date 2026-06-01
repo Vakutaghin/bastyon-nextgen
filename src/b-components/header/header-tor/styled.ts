@@ -56,6 +56,10 @@ export const SC_TorTitle = styled.div`
   color: ${COLORS.TEXT_PRIMARY};
 `
 
+export const SC_TorBridgeTitle = styled(SC_TorTitle)`
+  font-size: 12px;
+`
+
 export const SC_TorStatusLine = styled.div`
   font-size: 12px;
   color: ${COLORS.TEXT_SECONDARY};

@@ -3,7 +3,7 @@
  * примешивание pending-ответов из commentsStore к серверным.
  */
 
-import { ref, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRC } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain'
@@ -59,21 +59,34 @@ export function useCommentsReplies(opts: UseCommentsRepliesOptions) {
   const isRepliesLoading = (commentId: string): boolean => !!repliesLoading.value[commentId]
 
   /**
-   * Возвращает ответы к ветке: реальные + pending для этой ветки.
+   * Карта «parentId → ответы» (реальные + pending), пересчитывается реактивно
+   * один раз на изменение, а не на каждый вызов из шаблона (audit §10.2).
    * Pending дедуплицируется: если уже среди реальных — серверный приоритет.
    */
-  const getReplies = (commentId: string): GetComment[] => {
-    const real = repliesByParentId.value[commentId] ?? []
+  const mergedRepliesByParent = computed<Record<string, GetComment[]>>(() => {
+    const real = repliesByParentId.value
     const pendingAll = useCommentsStore().getPendingForPost(opts.postId.value)
     if (!pendingAll.length) return real
-    const pendingForBranch = pendingAll
-      .filter((p) => p.parentId === commentId)
-      .map((p) => pendingToGetComment(p))
-    if (!pendingForBranch.length) return real
-    const seen = new Set(real.map((c) => c.id))
-    const extras = pendingForBranch.filter((c) => !seen.has(c.id))
-    return [...real, ...extras]
-  }
+
+    const result: Record<string, GetComment[]> = { ...real }
+    const byParent = new Map<string, typeof pendingAll>()
+    for (const p of pendingAll) {
+      if (p.parentId == null) continue
+      const arr = byParent.get(p.parentId) ?? []
+      arr.push(p)
+      byParent.set(p.parentId, arr)
+    }
+    for (const [parentId, pendings] of byParent) {
+      const branchReal = result[parentId] ?? []
+      const seen = new Set(branchReal.map((c) => c.id))
+      const extras = pendings.map((p) => pendingToGetComment(p)).filter((c) => !seen.has(c.id))
+      if (extras.length) result[parentId] = [...branchReal, ...extras]
+    }
+    return result
+  })
+
+  /** Ответы к ветке: O(1) чтение из мемоизированной карты. */
+  const getReplies = (commentId: string): GetComment[] => mergedRepliesByParent.value[commentId] ?? []
 
   const onRepliesClick = (comment: GetComment): void => {
     const id = comment.id

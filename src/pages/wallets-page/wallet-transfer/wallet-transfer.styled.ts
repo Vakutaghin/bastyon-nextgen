@@ -226,6 +226,17 @@ export const SC_TransferSearchItem = styled.button`
   }
 `
 
+export const SC_TransferSearchingHint = styled.div`
+  font-size: 12px;
+  color: ${COLORS.GRAY_120};
+  margin-top: 4px;
+`
+
+export const SC_TransferLoginRequired = styled.div`
+  color: ${COLORS.GRAY_120};
+  font-size: 14px;
+`
+
 export const SC_TransferLoginChip = styled.div`
   display: flex;
   align-items: center;

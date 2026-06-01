@@ -1,7 +1,9 @@
 // Правила, ограничивающие возможность голосования: возраст аккаунта, репутация, низкие оценки.
 
+import type { UserProfile } from '@/types/rpc-responses/user-get'
+
 /** "Новый" пользователь — зарегистрирован менее 24ч назад (или нет regdate). */
-export function isNewUser(userProfile: any): boolean {
+export function isNewUser(userProfile: UserProfile | null | undefined): boolean {
   if (!userProfile) return false
   const regdate = userProfile.regdate
   if (!regdate) return true
@@ -12,7 +14,7 @@ export function isNewUser(userProfile: any): boolean {
 }
 
 /** Репутация ≤ -12 — полная блокировка голосования. */
-export function isReputationBlocked(userProfile: any): boolean {
+export function isReputationBlocked(userProfile: UserProfile | null | undefined): boolean {
   if (!userProfile) return false
   const reputation = userProfile.reputation || 0
   return reputation <= -12
@@ -22,7 +24,10 @@ export function isReputationBlocked(userProfile: any): boolean {
  * Низкие оценки (≤3 звезд) разрешены только пользователям с репутацией ≥100 —
  * защита от массового даунвоутинга новичками.
  */
-export function isLowRatingBlocked(value: number, userProfile: any): boolean {
+export function isLowRatingBlocked(
+  value: number,
+  userProfile: UserProfile | null | undefined
+): boolean {
   const reputation = userProfile.reputation || 0
   return value <= 3 && reputation < 100
 }

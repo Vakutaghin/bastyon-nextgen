@@ -2,7 +2,7 @@ import { ref, computed, type Ref, onBeforeUnmount } from 'vue'
 import Hls from 'hls.js'
 import { t } from '@/i18n'
 import { getHlsPlaylistFromUrl } from '@/helpers/api/peertube-url'
-import { resolveVideoElement } from './utils'
+import { resolveVideoElement, type ElementRefValue } from './utils'
 import {
   initBlobVideo,
   initHlsJsVideo,
@@ -12,7 +12,7 @@ import {
 
 export function useVideoHls(
   p: { videoUrl: string; autoplay: boolean },
-  videoElement: Ref<any>,
+  videoElement: Ref<ElementRefValue>,
   volume: Ref<number>,
   playbackRate: Ref<number>,
   playerId: Ref<string>,
@@ -148,9 +148,10 @@ export function useVideoHls(
           if (!target) return
 
           // Проверяем, кликнули ли мы внутрь дропдауна или кнопки
-          const getElement = (ref: any) => {
-            if (!ref) return null
-            return ref instanceof HTMLElement ? ref : ref.$el || ref
+          const getElement = (refValue: ElementRefValue): Element | null => {
+            if (!refValue) return null
+            if (refValue instanceof Element) return refValue
+            return refValue.$el instanceof Element ? refValue.$el : null
           }
 
           const controlEl = getElement(qualityControlRef.value)

@@ -176,9 +176,11 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
     // Visual explosion effect
     if (event && event instanceof MouseEvent) {
       effectsStore.triggerExplosion(event.clientX, event.clientY)
-    } else if (event && (event as any).originalEvent instanceof MouseEvent) {
-      const mouseEvent = (event as any).originalEvent as MouseEvent
-      effectsStore.triggerExplosion(mouseEvent.clientX, mouseEvent.clientY)
+    } else {
+      const originalEvent = (event as { originalEvent?: unknown } | undefined)?.originalEvent
+      if (originalEvent instanceof MouseEvent) {
+        effectsStore.triggerExplosion(originalEvent.clientX, originalEvent.clientY)
+      }
     }
 
     try {
@@ -196,10 +198,11 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
 
       pendingStore.markSubmitted(props.shareId, txid)
       emit('rating-change', starNumber)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[StarRating] Vote failed:', error)
       optimisticRating.value = null
-      pendingStore.markFailed(props.shareId, error?.message)
+      const errorMessage = error instanceof Error ? error.message : undefined
+      pendingStore.markFailed(props.shareId, errorMessage)
 
       const classified = classifyVoteError(error)
       handleVoteError(classified, emit)

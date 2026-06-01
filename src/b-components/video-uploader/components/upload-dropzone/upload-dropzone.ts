@@ -13,9 +13,15 @@ export interface UploadDropzoneComposables {
 /**
  * Композиция для компонента UploadDropzone
  */
+/** Emit-функция, выводящая типы аргументов из карты событий {@link UploadDropzoneEmits}. */
+type DropzoneEmit = <E extends keyof UploadDropzoneEmits>(
+  event: E,
+  ...args: UploadDropzoneEmits[E]
+) => void
+
 export function useUploadDropzone(
   props: { state: UploadState },
-  emit: (event: 'fileSelect' | 'start' | 'reset', ...args: any[]) => void
+  emit: DropzoneEmit
 ): UploadDropzoneComposables {
   const isUploading = computed(() => props.state === 'transcoding' || props.state === 'saving')
   const fileInput = ref<HTMLInputElement | null>(null)
@@ -59,16 +65,17 @@ export function useUploadDropzone(
       dropZone.classList.remove('drag-over')
     }
 
-    const files = e.dataTransfer?.files
-    if (files && files.length > 0) {
-      emit('fileSelect', files[0])
+    const file = e.dataTransfer?.files?.[0]
+    if (file) {
+      emit('fileSelect', file)
     }
   }
 
   const handleFileInputChange = (e: Event) => {
     const target = e.target as HTMLInputElement
-    if (target.files && target.files.length > 0) {
-      emit('fileSelect', target.files[0])
+    const file = target.files?.[0]
+    if (file) {
+      emit('fileSelect', file)
     }
   }
 

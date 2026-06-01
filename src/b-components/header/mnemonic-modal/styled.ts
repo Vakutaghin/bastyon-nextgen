@@ -1,6 +1,12 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 
+export const SC_TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`
+
 export const SC_MnemonicModalContent = styled.div`
   padding: 20px 0;
 `

@@ -147,3 +147,23 @@ export const SC_TopFirstLabel = styled.span`
   color: ${COLORS.TEXT_PRIMARY};
   text-transform: uppercase;
 `
+
+export const SC_CategoryRemoveBtn = styled.div`
+  margin-left: auto;
+  padding: 0 5px;
+  opacity: 0.6;
+  cursor: pointer;
+`
+
+export const SC_ModalHint = styled.div`
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: ${COLORS.GRAY_888};
+`
+
+export const SC_DeleteConfirmRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+`

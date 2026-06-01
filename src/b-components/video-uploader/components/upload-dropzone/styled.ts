@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import Button from '@/components/button/button.vue'
 
 export const SC_UploadSection = styled.div`
   flex-shrink: 0 !important;
@@ -110,4 +111,18 @@ export const SC_ProgressText = styled.div`
   font-size: 16px !important;
   font-weight: 500 !important;
   color: ${COLORS.ANT_BLUE} !important;
+`
+
+export const SC_SecondaryButton = styled(Button)`
+  margin-top: 8px;
+`
+
+export const SC_FileNameText = styled.div`
+  margin-top: 8px;
+  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 12px;
+`
+
+export const SC_ErrorText = styled.strong`
+  color: ${COLORS.RED_ANT};
 `

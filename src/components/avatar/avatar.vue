@@ -65,7 +65,7 @@
         height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px'
       }"
     >
-      <ClockCircleOutlined style="color: var(--color-white); font-size: 9px;" />
+      <ClockCircleOutlined :style="ICON_WHITE_9" />
     </div>
     <div
       v-else-if="p.verified"
@@ -75,7 +75,7 @@
         height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px'
       }"
     >
-      <CheckOutlined style="color: var(--color-white); font-size: 10px;" />
+      <CheckOutlined :style="ICON_WHITE_10" />
     </div>
   </SC_Avatar>
 </template>
@@ -84,6 +84,7 @@
 import { useAvatar } from './avatar'
 import type { AvatarProps } from './types'
 import { CheckOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
+import { ICON_WHITE_9, ICON_WHITE_10 } from '@/styles/icon-styles'
 
 const p = withDefaults(defineProps<AvatarProps>(), {
   verified: false,

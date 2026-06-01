@@ -1,8 +1,8 @@
 import { ref, type Ref } from 'vue'
-import { resolveVideoElement } from './utils'
+import { resolveVideoElement, type ElementRefValue } from './utils'
 
 export function useVideoPlaybackRate(
-  videoElement: Ref<any>,
+  videoElement: Ref<ElementRefValue>,
   isPlaying: Ref<boolean>,
   startProgressAnimation: () => void
 ) {

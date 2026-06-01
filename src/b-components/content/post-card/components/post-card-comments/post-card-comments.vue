@@ -4,137 +4,12 @@
 
     <!-- Компактный вид: комментарии ещё не загружены -->
     <template v-if="!allComments">
-      <SC_CommentWithReplies v-if="hasUserComments">
-        <SC_CommentItem>
-          <router-link :to="lastCommentProfileLink">
-            <CommentAvatar :url="lastCommentAvatarUrl" :name="post.lastComment.authorName" />
-          </router-link>
-
-          <SC_CommentContent>
-            <SC_CommentMeta>
-              <router-link :to="lastCommentProfileLink">
-                <SC_CommentAuthor>{{ post.lastComment.authorName }}</SC_CommentAuthor>
-              </router-link>
-
-              <SC_CommentDate :title="lastCommentDateFull">{{
-                lastCommentDateOnly
-              }}</SC_CommentDate>
-            </SC_CommentMeta>
-
-            <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-            <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
-
-            <SC_CommentActions>
-              <button
-                type="button"
-                :class="[
-                  'comment-score',
-                  {
-                    'comment-score--voted': lastCommentUserLiked,
-                    'comment-score--clickable': lastCommentCanClickLike,
-                  },
-                ]"
-                @click.stop.prevent="onLastCommentScoreUp()"
-              >
-                👍 {{ formatScore(post.lastComment?.scoreUp) }}
-              </button>
-
-              <button
-                type="button"
-                :class="[
-                  'comment-score',
-                  {
-                    'comment-score--voted': lastCommentUserDisliked,
-                    'comment-score--clickable': lastCommentCanClickDislike,
-                  },
-                ]"
-                @click.stop.prevent="onLastCommentScoreDown()"
-              >
-                👎 {{ formatScore(post.lastComment?.scoreDown) }}
-              </button>
-              <SC_CommentRepliesLink
-                v-if="lastCommentChildren > 0"
-                type="button"
-                @click.stop.prevent="onLastCommentRepliesClick"
-              >
-                {{ t('comments.replies', { count: lastCommentChildren }) }}
-              </SC_CommentRepliesLink>
-              <button type="button" @click.stop.prevent="onLastCommentReply">
-                {{ t('comments.reply') }}
-              </button>
-              <button type="button" @click.stop.prevent="onLastCommentReplyToAuthor">
-                {{ t('comments.replyToAuthor') }}
-              </button>
-            </SC_CommentActions>
-          </SC_CommentContent>
-        </SC_CommentItem>
-        <SC_ReplyPanelNested v-if="lastCommentId && isReplyPanelOpen(lastCommentId)">
-          <CommentReplyPanel
-            :current-user-avatar-url="currentUserAvatarUrl"
-            :current-user-initial="currentUserInitial"
-            v-model:show-cancel-modal="showCancelReplyModal"
-            v-model:reply-draft="replyDraft"
-            :reply-panel-key="replyPanelKey"
-            :reply-submitting="replySubmitting"
-            :show-mention-list="showMentionList"
-            :filtered-mention-users="filteredMentionUsers"
-            :mention-highlight-index="mentionHighlightIndex"
-            @confirm-cancel="confirmCancelReply"
-            @input="handleReplyInput"
-            @keydown="handleReplyKeydown"
-            @select-mention="selectMentionUser"
-            @request-close="requestCloseReply"
-            @send="sendReply"
-          />
-        </SC_ReplyPanelNested>
-        <!-- Оптимистично-добавленные pending-ответы к lastComment.
-             В компактном виде real-ответы не подгружаются (клик «Ответы» переключает в развёрнутый),
-             поэтому getReplies здесь возвращает только pending — это и показываем. -->
-        <SC_CommentReplies v-if="lastCommentId && getReplies(lastCommentId).length > 0">
-          <SC_ReplyItemWrapper v-for="reply in getReplies(lastCommentId)" :key="reply.id">
-            <SC_CommentItem :class="{ 'is-pending': isCommentPending(reply) }">
-              <CommentAvatar
-                :url="getCommentAvatarUrl(reply.userprofile)"
-                :name="reply.userprofile?.name || '?'"
-              />
-              <SC_CommentContent>
-                <SC_CommentMeta>
-                  <SC_CommentAuthor>{{
-                    reply.userprofile?.name || reply.address
-                  }}</SC_CommentAuthor>
-                  <SC_CommentMetaRight>
-                    <SC_CommentDate :title="formatCommentDateFull(reply.time)">{{
-                      formatCommentDate(reply.time)
-                    }}</SC_CommentDate>
-                    <SC_TxStatusBadge
-                      v-if="isCommentPending(reply)"
-                      :title="t('comments.txPending')"
-                    >
-                      <ClockCircleOutlined />
-                      <span>{{ t('comments.txPendingShort') }}</span>
-                    </SC_TxStatusBadge>
-                    <SC_TxStatusBadge
-                      v-else-if="isCommentRejected(reply)"
-                      class="tx-status--rejected"
-                      :title="t('comments.txRejected')"
-                    >
-                      <StopOutlined />
-                      <span>{{ t('comments.txRejectedShort') }}</span>
-                    </SC_TxStatusBadge>
-                  </SC_CommentMetaRight>
-                </SC_CommentMeta>
-                <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-                <SC_CommentText v-html="formatCommentMessageHtml(reply)"></SC_CommentText>
-              </SC_CommentContent>
-            </SC_CommentItem>
-          </SC_ReplyItemWrapper>
-        </SC_CommentReplies>
-      </SC_CommentWithReplies>
+      <LastCommentPreview v-if="hasUserComments" :post="post" />
 
       <SC_CommentsActionsRow v-if="totalCommentsCount > 0">
         <SC_CommentsActionsLeft>
           <SC_CommentsLoading v-if="allCommentsLoading">
-            <LoadingOutlined :style="{ fontSize: '18px', color: 'var(--color-brand-cyan)' }" spin />
+            <LoadingOutlined :style="ICON_BRAND_CYAN_18" spin />
           </SC_CommentsLoading>
 
           <template v-else>
@@ -152,130 +27,7 @@
 
     <!-- Компактный вид: комментарии загружены, но свернуты -->
     <template v-else-if="commentsCollapsed">
-      <SC_CommentWithReplies v-if="hasUserComments">
-        <SC_CommentItem>
-          <router-link :to="lastCommentProfileLink">
-            <CommentAvatar :url="lastCommentAvatarUrl" :name="post.lastComment.authorName" />
-          </router-link>
-
-          <SC_CommentContent>
-            <SC_CommentMeta>
-              <router-link :to="lastCommentProfileLink">
-                <SC_CommentAuthor>{{ post.lastComment.authorName }}</SC_CommentAuthor>
-              </router-link>
-
-              <SC_CommentDate :title="lastCommentDateFull">{{
-                lastCommentDateOnly
-              }}</SC_CommentDate>
-            </SC_CommentMeta>
-
-            <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-            <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
-
-            <SC_CommentActions>
-              <button
-                type="button"
-                :class="[
-                  'comment-score',
-                  {
-                    'comment-score--voted': lastCommentUserLiked,
-                    'comment-score--clickable': lastCommentCanClickLike,
-                  },
-                ]"
-                @click.stop.prevent="onLastCommentScoreUp()"
-              >
-                👍 {{ formatScore(post.lastComment?.scoreUp) }}
-              </button>
-              <button
-                type="button"
-                :class="[
-                  'comment-score',
-                  {
-                    'comment-score--voted': lastCommentUserDisliked,
-                    'comment-score--clickable': lastCommentCanClickDislike,
-                  },
-                ]"
-                @click.stop.prevent="onLastCommentScoreDown()"
-              >
-                👎 {{ formatScore(post.lastComment?.scoreDown) }}
-              </button>
-              <SC_CommentRepliesLink
-                v-if="lastCommentChildren > 0"
-                type="button"
-                @click.stop.prevent="onLastCommentRepliesClick"
-              >
-                {{ t('comments.replies', { count: lastCommentChildren }) }}
-              </SC_CommentRepliesLink>
-              <button type="button" @click.stop.prevent="onLastCommentReply">
-                {{ t('comments.reply') }}
-              </button>
-              <button type="button" @click.stop.prevent="onLastCommentReplyToAuthor">
-                {{ t('comments.replyToAuthor') }}
-              </button>
-            </SC_CommentActions>
-          </SC_CommentContent>
-        </SC_CommentItem>
-        <SC_ReplyPanelNested v-if="lastCommentId && isReplyPanelOpen(lastCommentId)">
-          <CommentReplyPanel
-            :current-user-avatar-url="currentUserAvatarUrl"
-            :current-user-initial="currentUserInitial"
-            v-model:show-cancel-modal="showCancelReplyModal"
-            v-model:reply-draft="replyDraft"
-            :reply-panel-key="replyPanelKey"
-            :reply-submitting="replySubmitting"
-            :show-mention-list="showMentionList"
-            :filtered-mention-users="filteredMentionUsers"
-            :mention-highlight-index="mentionHighlightIndex"
-            @confirm-cancel="confirmCancelReply"
-            @input="handleReplyInput"
-            @keydown="handleReplyKeydown"
-            @select-mention="selectMentionUser"
-            @request-close="requestCloseReply"
-            @send="sendReply"
-          />
-        </SC_ReplyPanelNested>
-        <!-- Оптимистично-добавленные pending-ответы к lastComment в свёрнутом виде.
-             Аналогично первому компактному шаблону: getReplies возвращает только pending. -->
-        <SC_CommentReplies v-if="lastCommentId && getReplies(lastCommentId).length > 0">
-          <SC_ReplyItemWrapper v-for="reply in getReplies(lastCommentId)" :key="reply.id">
-            <SC_CommentItem :class="{ 'is-pending': isCommentPending(reply) }">
-              <CommentAvatar
-                :url="getCommentAvatarUrl(reply.userprofile)"
-                :name="reply.userprofile?.name || '?'"
-              />
-              <SC_CommentContent>
-                <SC_CommentMeta>
-                  <SC_CommentAuthor>{{
-                    reply.userprofile?.name || reply.address
-                  }}</SC_CommentAuthor>
-                  <SC_CommentMetaRight>
-                    <SC_CommentDate :title="formatCommentDateFull(reply.time)">{{
-                      formatCommentDate(reply.time)
-                    }}</SC_CommentDate>
-                    <SC_TxStatusBadge
-                      v-if="isCommentPending(reply)"
-                      :title="t('comments.txPending')"
-                    >
-                      <ClockCircleOutlined />
-                      <span>{{ t('comments.txPendingShort') }}</span>
-                    </SC_TxStatusBadge>
-                    <SC_TxStatusBadge
-                      v-else-if="isCommentRejected(reply)"
-                      class="tx-status--rejected"
-                      :title="t('comments.txRejected')"
-                    >
-                      <StopOutlined />
-                      <span>{{ t('comments.txRejectedShort') }}</span>
-                    </SC_TxStatusBadge>
-                  </SC_CommentMetaRight>
-                </SC_CommentMeta>
-                <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-                <SC_CommentText v-html="formatCommentMessageHtml(reply)"></SC_CommentText>
-              </SC_CommentContent>
-            </SC_CommentItem>
-          </SC_ReplyItemWrapper>
-        </SC_CommentReplies>
-      </SC_CommentWithReplies>
+      <LastCommentPreview v-if="hasUserComments" :post="post" />
 
       <SC_ShowCommentsBtn type="button" @click.stop.prevent="expandComments">
         {{ t('comments.expand', { count: actualCommentsCount }) }}
@@ -307,301 +59,21 @@
       </SC_CommentsSortRow>
 
       <SC_CommentWithReplies v-for="comment in visibleComments" :key="comment.id">
-        <SC_CommentRow :class="{ 'is-pending': isCommentPending(comment) }">
-          <router-link :to="getCommentProfileLink(comment)">
-            <CommentAvatar
-              :url="getCommentAvatarUrl(comment.userprofile)"
-              :name="comment.userprofile?.name || '?'"
-            />
-          </router-link>
-
-          <SC_CommentContent>
-            <SC_CommentMeta>
-              <router-link :to="getCommentProfileLink(comment)">
-                <SC_CommentAuthor>{{
-                  comment.userprofile?.name || comment.address
-                }}</SC_CommentAuthor>
-              </router-link>
-              <SC_CommentMetaRight>
-                <SC_CommentDate :title="formatCommentDateFull(comment.time)">{{
-                  formatCommentDate(comment.time)
-                }}</SC_CommentDate>
-                <SC_TxStatusBadge
-                  v-if="isCommentPending(comment)"
-                  :title="t('comments.txPending')"
-                >
-                  <ClockCircleOutlined />
-                  <span>{{ t('comments.txPendingShort') }}</span>
-                </SC_TxStatusBadge>
-                <SC_TxStatusBadge
-                  v-else-if="isCommentRejected(comment)"
-                  class="tx-status--rejected"
-                  :title="t('comments.txRejected')"
-                >
-                  <StopOutlined />
-                  <span>{{ t('comments.txRejectedShort') }}</span>
-                </SC_TxStatusBadge>
-                <SC_EditedMark
-                  v-else-if="!isCommentDeleted(comment) && isCommentEdited(comment)"
-                  :title="t('comments.edited')"
-                >
-                  <EditOutlined />
-                </SC_EditedMark>
-                <CommentMenu
-                  v-if="canShowMenu(comment)"
-                  :can-edit="canEditComment(comment)"
-                  :can-delete="canDeleteComment(comment)"
-                  @action="(a) => onCommentMenuAction(comment, a)"
-                />
-              </SC_CommentMetaRight>
-            </SC_CommentMeta>
-
-            <SC_CommentDeleted v-if="isCommentDeleted(comment)">
-              {{ t('comments.deleted') }}
-            </SC_CommentDeleted>
-            <CommentEditForm
-              v-else-if="isEditingComment(comment)"
-              :edit-draft="editDraft"
-              :initial-draft="editInitialDraft"
-              :edit-submitting="editSubmitting"
-              @update:edit-draft="(v) => (editDraft = v)"
-              @request-close="requestCloseEdit"
-              @save="submitEdit"
-            />
-            <SC_HiddenBanner v-else-if="shouldHideContent(comment)">
-              <span>{{ t('comments.hiddenLowReputation') }}</span>
-              <SC_RevealBtn type="button" @click.stop.prevent="revealHiddenComment(comment)">
-                {{ t('comments.showAnyway') }}
-              </SC_RevealBtn>
-            </SC_HiddenBanner>
-            <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-            <SC_CommentText v-else v-html="formatCommentMessageHtml(comment)"></SC_CommentText>
-
-            <SC_CommentImages
-              v-if="
-                !isCommentDeleted(comment) &&
-                !isEditingComment(comment) &&
-                !shouldHideContent(comment) &&
-                getCommentImagesList(comment).length > 0
-              "
-            >
-              <PostCardImages :images="getCommentImagesList(comment)" />
-            </SC_CommentImages>
-
-            <SC_CommentActions
-              v-if="
-                canInteractWithComment(comment) &&
-                !isEditingComment(comment) &&
-                !shouldHideContent(comment)
-              "
-            >
-              <button
-                type="button"
-                :class="[
-                  'comment-score',
-                  {
-                    'comment-score--voted': isCommentLiked(comment),
-                    'comment-score--clickable': commentCanClickLike(comment),
-                  },
-                ]"
-                @click.stop.prevent="onCommentScoreUp(comment)"
-              >
-                👍 {{ formatScore(comment.scoreUp) }}
-              </button>
-
-              <button
-                type="button"
-                :class="[
-                  'comment-score',
-                  {
-                    'comment-score--voted': isCommentDisliked(comment),
-                    'comment-score--clickable': commentCanClickDislike(comment),
-                  },
-                ]"
-                @click.stop.prevent="onCommentScoreDown(comment)"
-              >
-                👎 {{ formatScore(comment.scoreDown) }}
-              </button>
-              <SC_CommentRepliesLink
-                v-if="(comment.children ?? 0) > 0"
-                type="button"
-                @click.stop.prevent="onRepliesClick(comment)"
-              >
-                {{ t('comments.replies', { count: comment.children }) }}
-              </SC_CommentRepliesLink>
-              <button type="button" @click.stop.prevent="onReplyToFirstLevel(comment)">
-                {{ t('comments.reply') }}
-              </button>
-              <button type="button" @click.stop.prevent="onReplyToAuthorFirstLevel(comment)">
-                {{ t('comments.replyToAuthor') }}
-              </button>
-            </SC_CommentActions>
-          </SC_CommentContent>
-        </SC_CommentRow>
+        <CommentCard :comment="comment" :level="1" />
 
         <!-- Плашка ответа под комментарием первого уровня -->
         <SC_ReplyPanelNested v-if="isReplyPanelOpen(comment.id)">
-          <CommentReplyPanel
-            :current-user-avatar-url="currentUserAvatarUrl"
-            :current-user-initial="currentUserInitial"
-            v-model:show-cancel-modal="showCancelReplyModal"
-            v-model:reply-draft="replyDraft"
-            :reply-panel-key="replyPanelKey"
-            :reply-submitting="replySubmitting"
-            :show-mention-list="showMentionList"
-            :filtered-mention-users="filteredMentionUsers"
-            :mention-highlight-index="mentionHighlightIndex"
-            @confirm-cancel="confirmCancelReply"
-            @input="handleReplyInput"
-            @keydown="handleReplyKeydown"
-            @select-mention="selectMentionUser"
-            @request-close="requestCloseReply"
-            @send="sendReply"
-          />
+          <BoundReplyPanel />
         </SC_ReplyPanelNested>
 
         <!-- Ветка ответов второго уровня -->
         <template v-if="isRepliesExpanded(comment.id)">
           <SC_CommentReplies v-if="getReplies(comment.id).length > 0">
             <SC_ReplyItemWrapper v-for="reply in getReplies(comment.id)" :key="reply.id">
-              <SC_CommentItem :class="{ 'is-pending': isCommentPending(reply) }">
-                <router-link :to="getCommentProfileLink(reply)">
-                  <CommentAvatar
-                    :url="getCommentAvatarUrl(reply.userprofile)"
-                    :name="reply.userprofile?.name || '?'"
-                  />
-                </router-link>
-                <SC_CommentContent>
-                  <SC_CommentMeta>
-                    <router-link :to="getCommentProfileLink(reply)">
-                      <SC_CommentAuthor>{{
-                        reply.userprofile?.name || reply.address
-                      }}</SC_CommentAuthor>
-                    </router-link>
-                    <SC_CommentMetaRight>
-                      <SC_CommentDate :title="formatCommentDateFull(reply.time)">{{
-                        formatCommentDate(reply.time)
-                      }}</SC_CommentDate>
-                      <SC_TxStatusBadge
-                        v-if="isCommentPending(reply)"
-                        :title="t('comments.txPending')"
-                      >
-                        <ClockCircleOutlined />
-                        <span>{{ t('comments.txPendingShort') }}</span>
-                      </SC_TxStatusBadge>
-                      <SC_TxStatusBadge
-                        v-else-if="isCommentRejected(reply)"
-                        class="tx-status--rejected"
-                        :title="t('comments.txRejected')"
-                      >
-                        <StopOutlined />
-                        <span>{{ t('comments.txRejectedShort') }}</span>
-                      </SC_TxStatusBadge>
-                      <SC_EditedMark
-                        v-else-if="!isCommentDeleted(reply) && isCommentEdited(reply)"
-                        :title="t('comments.edited')"
-                      >
-                        <EditOutlined />
-                      </SC_EditedMark>
-                      <CommentMenu
-                        v-if="canShowMenu(reply)"
-                        :can-edit="canEditComment(reply)"
-                        :can-delete="canDeleteComment(reply)"
-                        @action="(a) => onCommentMenuAction(reply, a)"
-                      />
-                    </SC_CommentMetaRight>
-                  </SC_CommentMeta>
-                  <SC_CommentDeleted v-if="isCommentDeleted(reply)">
-                    {{ t('comments.deleted') }}
-                  </SC_CommentDeleted>
-                  <CommentEditForm
-                    v-else-if="isEditingComment(reply)"
-                    :edit-draft="editDraft"
-                    :initial-draft="editInitialDraft"
-                    :edit-submitting="editSubmitting"
-                    @update:edit-draft="(v) => (editDraft = v)"
-                    @request-close="requestCloseEdit"
-                    @save="submitEdit"
-                  />
-                  <SC_HiddenBanner v-else-if="shouldHideContent(reply)">
-                    <span>{{ t('comments.hiddenLowReputation') }}</span>
-                    <SC_RevealBtn type="button" @click.stop.prevent="revealHiddenComment(reply)">
-                      {{ t('comments.showAnyway') }}
-                    </SC_RevealBtn>
-                  </SC_HiddenBanner>
-                  <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-                  <SC_CommentText v-else v-html="formatCommentMessageHtml(reply)"></SC_CommentText>
-                  <SC_CommentImages
-                    v-if="
-                      !isCommentDeleted(reply) &&
-                      !isEditingComment(reply) &&
-                      !shouldHideContent(reply) &&
-                      getCommentImagesList(reply).length > 0
-                    "
-                  >
-                    <PostCardImages :images="getCommentImagesList(reply)" />
-                  </SC_CommentImages>
-                  <SC_CommentActions
-                    v-if="
-                      canInteractWithComment(reply) &&
-                      !isEditingComment(reply) &&
-                      !shouldHideContent(reply)
-                    "
-                  >
-                    <button
-                      type="button"
-                      :class="[
-                        'comment-score',
-                        {
-                          'comment-score--voted': isCommentLiked(reply),
-                          'comment-score--clickable': commentCanClickLike(reply),
-                        },
-                      ]"
-                      @click.stop.prevent="onCommentScoreUp(reply)"
-                    >
-                      👍 {{ formatScore(reply.scoreUp) }}
-                    </button>
-                    <button
-                      type="button"
-                      :class="[
-                        'comment-score',
-                        {
-                          'comment-score--voted': isCommentDisliked(reply),
-                          'comment-score--clickable': commentCanClickDislike(reply),
-                        },
-                      ]"
-                      @click.stop.prevent="onCommentScoreDown(reply)"
-                    >
-                      👎 {{ formatScore(reply.scoreDown) }}
-                    </button>
-                    <button type="button" @click.stop.prevent="onReplyToSecondLevel(reply)">
-                      {{ t('comments.reply') }}
-                    </button>
-                    <button type="button" @click.stop.prevent="onReplyToComment(reply)">
-                      {{ t('comments.replyToAuthor') }}
-                    </button>
-                  </SC_CommentActions>
-                </SC_CommentContent>
-              </SC_CommentItem>
+              <CommentCard :comment="reply" :level="2" />
               <!-- Плашка ответа под комментарием второго уровня -->
               <SC_ReplyPanelNestedLevel2 v-if="isReplyPanelOpen(reply.id)">
-                <CommentReplyPanel
-                  :current-user-avatar-url="currentUserAvatarUrl"
-                  :current-user-initial="currentUserInitial"
-                  v-model:show-cancel-modal="showCancelReplyModal"
-                  v-model:reply-draft="replyDraft"
-                  :reply-panel-key="replyPanelKey"
-                  :reply-submitting="replySubmitting"
-                  :show-mention-list="showMentionList"
-                  :filtered-mention-users="filteredMentionUsers"
-                  :mention-highlight-index="mentionHighlightIndex"
-                  @confirm-cancel="confirmCancelReply"
-                  @input="handleReplyInput"
-                  @keydown="handleReplyKeydown"
-                  @select-mention="selectMentionUser"
-                  @request-close="requestCloseReply"
-                  @send="sendReply"
-                />
+                <BoundReplyPanel />
               </SC_ReplyPanelNestedLevel2>
             </SC_ReplyItemWrapper>
           </SC_CommentReplies>
@@ -617,7 +89,7 @@
             }}
           </SC_CommentRepliesToggle>
           <SC_CommentsLoading v-if="isRepliesLoading(comment.id)">
-            <LoadingOutlined :style="{ fontSize: '16px', color: 'var(--color-brand-cyan)' }" spin />
+            <LoadingOutlined :style="ICON_BRAND_CYAN_16" spin />
           </SC_CommentsLoading>
         </template>
       </SC_CommentWithReplies>
@@ -655,7 +127,12 @@
     <!-- Бар «написать комментарий к посту» -->
     <SC_ReplyPanel v-else-if="isRootReplyActive">
       <div v-if="currentUserAvatarUrl" class="reply-avatar">
-        <img :src="currentUserAvatarUrl" :alt="t('comments.yourAvatar')" loading="lazy" decoding="async" />
+        <img
+          :src="currentUserAvatarUrl"
+          :alt="t('comments.yourAvatar')"
+          loading="lazy"
+          decoding="async"
+        />
       </div>
       <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
       <SC_ReplyInputWrap>
@@ -712,16 +189,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ICON_SIZE_SM } from '@/styles/icon-styles'
-import {
-  LoadingOutlined,
-  CloseOutlined,
-  SendOutlined,
-  EditOutlined,
-  ClockCircleOutlined,
-  StopOutlined,
-  SyncOutlined,
-} from '@ant-design/icons-vue'
+import { ICON_SIZE_SM, ICON_BRAND_CYAN_16, ICON_BRAND_CYAN_18 } from '@/styles/icon-styles'
+import { LoadingOutlined, SendOutlined, SyncOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
 import { useCommentsStore } from '@/stores'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
@@ -729,16 +198,11 @@ import { formatRelativeTime } from '@/helpers/common/date-formatter'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { PostForComments } from './types'
 import type { CommentMenuAction } from './comment-menu.vue'
-import CommentAvatar from './comment-avatar.vue'
-import CommentReplyPanel from './comment-reply-panel.vue'
-import CommentMenu from './comment-menu.vue'
-import CommentEditForm from './comment-edit-form.vue'
-import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
+import LastCommentPreview from './last-comment-preview.vue'
+import CommentCard from './comment-card.vue'
+import BoundReplyPanel from './bound-reply-panel.vue'
 import {
   formatCommentMessageHtml as formatCommentMessageHtmlRaw,
-  getCommentAvatarUrl,
-  getCommentProfileLink,
-  getInitial,
   formatCommentDateAndTime,
   getCommentImages,
   compressedNumber,
@@ -746,36 +210,20 @@ import {
 import { getCommentPostingDisableReason, type DisableReason } from './visibility'
 import {
   SC_CommentsPreview,
-  SC_CommentItem,
-  SC_CommentRow,
   SC_CommentWithReplies,
-  SC_CommentAuthor,
-  SC_CommentText,
-  SC_CommentContent,
-  SC_CommentMeta,
-  SC_CommentMetaRight,
-  SC_CommentDate,
-  SC_CommentImages,
-  SC_CommentDeleted,
-  SC_HiddenBanner,
-  SC_RevealBtn,
-  SC_ComposerDisabled,
-  SC_EditedMark,
-  SC_TxStatusBadge,
-  SC_CommentActions,
-  SC_CommentRepliesLink,
   SC_CommentReplies,
   SC_CommentRepliesToggle,
   SC_ReplyItemWrapper,
-  SC_ReplyPanel,
   SC_ReplyPanelNested,
   SC_ReplyPanelNestedLevel2,
   SC_ReplyInputWrap,
   SC_ReplyTextarea,
   SC_MentionList,
   SC_MentionItem,
+  SC_ReplyPanel,
   SC_ReplySendBtn,
   SC_LengthCounter,
+  SC_ComposerDisabled,
   SC_ShowCommentsBtn,
   SC_ShowCommentsBtnSecondary,
   SC_ShowCommentsBtnCollapse,
@@ -799,6 +247,7 @@ import { useCommentForm } from './composables/use-comment-form'
 import { useCommentEditDelete } from './composables/use-comment-edit-delete'
 import { useCommentVisibility } from './composables/use-comment-visibility'
 import { useCommentsWs } from './composables/use-comments-ws'
+import { provideCommentTree } from './comment-tree-context'
 
 export type { PostForComments }
 
@@ -925,35 +374,6 @@ const hasUserComments = computed<boolean>(() => {
   return !!lc && !!lc.message && (props.post.comments || 0) > 0
 })
 
-// --- Last comment отображение. ---
-const lastCommentMessageHtml = computed<string>(() =>
-  formatCommentMessageHtmlRaw({ msg: props.post.lastComment?.message || '' } as GetComment)
-)
-const lastCommentProfileLink = computed<string>(() => {
-  const lc = props.post.lastComment
-  if (!lc) return '/'
-  if (lc.address) return '/' + lc.address
-  const name = (lc.authorName || '').toLowerCase()
-  if (name) return '/' + name
-  return '/'
-})
-const lastCommentAvatarUrl = computed<string | null>(() => {
-  const img = props.post.lastComment?.avatar || null
-  if (!img) return null
-  return resolveImageUrl(img) || null
-})
-const lastCommentInitial = computed<string>(() => getInitial(props.post.lastComment?.authorName))
-const lastCommentDateOnly = computed<string>(() => {
-  // Зависимость от тика, чтобы относительное время авто-обновлялось каждую минуту.
-  void nowTick.value
-  return formatRelativeTime(props.post.lastComment?.time || 0)
-})
-const lastCommentDateFull = computed<string>(() =>
-  formatCommentDateAndTime(props.post.lastComment?.time || 0)
-)
-const lastCommentId = computed<string | null>(() => props.post.lastComment?.id ?? null)
-const lastCommentChildren = computed<number>(() => props.post.lastComment?.children ?? 0)
-
 // --- Текущий пользователь — аватар/инициал. ---
 const currentUserAvatarUrl = computed<string | null>(() => {
   const url = useAuthStore().getUserAvatarUrl
@@ -1024,36 +444,12 @@ const ws = useCommentsWs({
   reload: () => loader.loadAllComments(false),
 })
 
-// --- LastComment handlers (UI-события). ---
-async function onLastCommentRepliesClick(): Promise<void> {
-  const id = props.post.lastComment?.id
-  if (!id) return
-  if (!loader.allComments.value) {
-    await loader.loadAllComments(false)
-  } else if (loader.commentsCollapsed.value) {
-    loader.expandComments()
-  }
-  replies.repliesExpanded.value = { ...replies.repliesExpanded.value, [id]: true }
-  await replies.loadReplies(id)
-}
-
-function onLastCommentReply(): void {
-  const id = props.post.lastComment?.id
-  if (!id) return
-  form.openReplyEmpty(id, id)
-}
-function onLastCommentReplyToAuthor(): void {
-  const lc = props.post.lastComment
-  if (!lc?.id) return
-  form.openReplyToAuthor(lc.id, lc.id, lc.authorName || lc.address || '')
-}
-
 function collapseComments(): void {
   loader.collapseComments()
   emit('collapsed')
 }
 
-// --- Display helpers (методы для шаблона). ---
+// --- Display helpers (передаются детям через контекст дерева комментариев). ---
 function formatCommentDate(time: number): string {
   void nowTick.value
   return formatRelativeTime(time)
@@ -1098,6 +494,28 @@ function onCommentMenuAction(comment: GetComment, action: CommentMenuAction): vo
   }
 }
 
+// --- Provide контекста дерева комментариев для дочерних узлов. ---
+provideCommentTree({
+  loader,
+  replies,
+  scoring,
+  form,
+  editDelete,
+  visibility,
+  display: {
+    formatScore,
+    formatCommentDate,
+    formatCommentDateFull,
+    formatCommentMessageHtml,
+    isCommentEdited,
+    getCommentImagesList,
+  },
+  currentUserAvatarUrl,
+  currentUserInitial,
+  filteredMentionUsers,
+  onCommentMenuAction,
+})
+
 // --- Cleanup. ---
 onBeforeUnmount(() => {
   clearInterval(relativeTimer)
@@ -1107,8 +525,6 @@ onBeforeUnmount(() => {
 const {
   allComments,
   allCommentsLoading,
-  allCommentsError,
-  visibleCommentsCount,
   commentsCollapsed,
   commentsSortOrder,
   loadAllComments,
@@ -1118,43 +534,11 @@ const {
   showAllComments,
 } = loader
 
-const {
-  repliesByParentId,
-  repliesLoading,
-  repliesExpanded,
-  loadReplies,
-  toggleRepliesExpanded,
-  isRepliesExpanded,
-  isRepliesLoading,
-  getReplies,
-  onRepliesClick,
-} = replies
+const { getReplies, isRepliesExpanded, isRepliesLoading, toggleRepliesExpanded } = replies
 
 const {
-  lastCommentVote,
-  commentVotes,
-  commentScoreSubmitting,
-  scoringDisableReason,
-  lastCommentUserLiked,
-  lastCommentUserDisliked,
-  lastCommentCanClickLike,
-  lastCommentCanClickDislike,
-  isCommentLiked,
-  isCommentDisliked,
-  commentCanClickLike,
-  commentCanClickDislike,
-  onLastCommentScoreUp,
-  onLastCommentScoreDown,
-  onCommentScoreUp,
-  onCommentScoreDown,
-} = scoring
-
-const {
-  replyTarget,
   replyDraft,
-  showCancelReplyModal,
   showMentionList,
-  mentionQuery,
   mentionHighlightIndex,
   replySubmitting,
   replyPanelKey,
@@ -1162,49 +546,12 @@ const {
   rootLengthHint,
   rootLengthValid,
   isReplyPanelOpen,
-  openReplyToPost,
-  openReplyEmpty,
-  openReplyToAuthor,
-  requestCloseReply,
-  closeReply,
-  confirmCancelReply,
   onRootBarFocus,
   handleRootReplyInput,
-  handleReplyInput,
   handleReplyKeydown,
-  scrollMentionHighlightIntoView,
   selectMentionUser,
   sendReply,
-  onReplyToFirstLevel,
-  onReplyToAuthorFirstLevel,
-  onReplyToSecondLevel,
-  onReplyToComment,
 } = form
-
-const { isCommentHiddenByVisibility, isHiddenRevealed, shouldHideContent, revealHiddenComment } =
-  visibility
-
-const {
-  commentDeleteSubmitting,
-  editingCommentId,
-  editDraft,
-  editInitialDraft,
-  editSubmitting,
-  isCommentDeleted,
-  canEditComment,
-  canDeleteComment,
-  canShowMenu,
-  isCommentPending,
-  isCommentRejected,
-  canInteractWithComment,
-  isEditingComment,
-  confirmDeleteComment,
-  openEditComment,
-  requestCloseEdit,
-  closeEdit,
-  submitEdit,
-  getCommentMessagePlain,
-} = editDelete
 
 const refreshComments = ws.refresh
 </script>

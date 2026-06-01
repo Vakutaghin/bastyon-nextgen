@@ -18,16 +18,29 @@ export interface ClassifiedError {
   message: string
 }
 
-export function classifyVoteError(error: any): ClassifiedError {
-  const errorCode = error?.error?.code || error?.code
+/** Узкая форма ошибки голосования: RPC-обёртка с возможным вложенным `error`. */
+interface VoteErrorShape {
+  code?: number | string
+  message?: string
+  error?: string | { code?: number | string; message?: string }
+}
+
+function asVoteError(error: unknown): VoteErrorShape {
+  return typeof error === 'object' && error !== null ? (error as VoteErrorShape) : {}
+}
+
+export function classifyVoteError(error: unknown): ClassifiedError {
+  const e = asVoteError(error)
+  const nestedError = typeof e.error === 'object' && e.error !== null ? e.error : undefined
+  const errorCode = nestedError?.code ?? e.code
 
   let errorMessage = ''
-  if (error?.message && typeof error.message === 'string') {
-    errorMessage = error.message
-  } else if (error?.error?.message && typeof error.error.message === 'string') {
-    errorMessage = error.error.message
-  } else if (typeof error?.error === 'string') {
-    errorMessage = error.error
+  if (typeof e.message === 'string') {
+    errorMessage = e.message
+  } else if (nestedError?.message && typeof nestedError.message === 'string') {
+    errorMessage = nestedError.message
+  } else if (typeof e.error === 'string') {
+    errorMessage = e.error
   }
 
   let isDoubleScore = Number(errorCode) === 4
@@ -49,9 +62,9 @@ export function classifyVoteError(error: any): ClassifiedError {
   }
 
   const isNetworkFailed =
-    typeof error?.message === 'string' &&
-    (error.message.includes('All RPC servers failed') ||
-      error.message.includes('All HTTP servers failed'))
+    typeof e.message === 'string' &&
+    (e.message.includes('All RPC servers failed') ||
+      e.message.includes('All HTTP servers failed'))
 
   return {
     isDoubleScore,
@@ -59,7 +72,7 @@ export function classifyVoteError(error: any): ClassifiedError {
     isNotFound,
     isMempoolConflict,
     isNetworkFailed,
-    message: error?.message || 'Failed to submit vote',
+    message: e.message || 'Failed to submit vote',
   }
 }
 

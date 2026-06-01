@@ -49,12 +49,12 @@
 
     <!-- Индикатор загрузки (при инициализации) -->
     <SC_VideoLoading v-if="isLoading && !error">
-      <LoadingOutlined :style="{ fontSize: '48px', color: 'var(--color-white-85)' }" spin />
+      <LoadingOutlined :style="ICON_WHITE_85_48" spin />
     </SC_VideoLoading>
 
     <!-- Индикатор загрузки чанков (во время воспроизведения) -->
     <SC_VideoLoading v-if="isBuffering && isInitialized && !error && isPlaying">
-      <LoadingOutlined :style="{ fontSize: '48px', color: 'var(--color-white-85)' }" spin />
+      <LoadingOutlined :style="ICON_WHITE_85_48" spin />
     </SC_VideoLoading>
 
     <!-- Сообщение об ошибке -->
@@ -64,7 +64,7 @@
 
     <!-- Кнопка Play для неинициализированного проигрывателя -->
     <SC_VideoPlayButton v-if="!isInitialized && !isLoading && !error" @click.stop="togglePlay">
-      <PlayCircleOutlined :style="{ fontSize: '64px', color: 'var(--color-white)' }" />
+      <PlayCircleOutlined :style="ICON_WHITE_64" />
     </SC_VideoPlayButton>
 
     <!-- Уведомление о скорости воспроизведения -->
@@ -90,7 +90,7 @@
 
     <!-- Иконка Play -->
     <SC_SeekNotification v-if="showPlayNotification && isInitialized" :show="showPlayNotification">
-      <PlayCircleOutlined :style="{ fontSize: '24px', color: 'var(--color-gray-eee)' }" />
+      <PlayCircleOutlined :style="ICON_GRAY_EEE_24" />
     </SC_SeekNotification>
 
     <!-- Иконка Pause -->
@@ -98,7 +98,7 @@
       v-if="showPauseNotification && isInitialized"
       :show="showPauseNotification"
     >
-      <PauseCircleOutlined :style="{ fontSize: '24px', color: 'var(--color-gray-eee)' }" />
+      <PauseCircleOutlined :style="ICON_GRAY_EEE_24" />
     </SC_SeekNotification>
 
     <!-- Справка по горячим клавишам -->
@@ -137,22 +137,10 @@
         <SC_VideoVolumeControl>
           <SC_VideoVolumeButton @click.stop="toggleMute">
             <SC_VideoVolumeMutedIcon v-if="volume === 0">
-              <SoundOutlined
-                :style="{
-                  fontSize: '18px',
-                  color: '#999',
-                  position: 'relative',
-                  zIndex: 0,
-                }"
-              />
+              <SoundOutlined :style="ICON_MUTED_18" />
               <SC_VideoVolumeMutedCross />
             </SC_VideoVolumeMutedIcon>
-            <SoundOutlined
-              v-else
-              :style="{
-                fontSize: '18px',
-              }"
-            />
+            <SoundOutlined v-else :style="ICON_SIZE_LG" />
           </SC_VideoVolumeButton>
           <SC_VideoVolumeSlider
             ref="volumeSliderRef"
@@ -175,7 +163,7 @@
               <SC_VideoQualityMenuSection v-if="!isAudio && availableQualityLevels.length > 0">
                 <SC_VideoQualitySubmenuItem @click.stop="openQualityMenu">
                   <span>{{ t('videoPlayer.quality') }}</span>
-                  <span style="font-size: 10px; color: var(--color-gray-999); margin-left: 8px">▶</span>
+                  <SC_SubmenuArrow>▶</SC_SubmenuArrow>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
 
@@ -183,7 +171,7 @@
               <SC_VideoQualityMenuSection>
                 <SC_VideoQualitySubmenuItem @click.stop="openSpeedMenu">
                   <span>{{ t('videoPlayer.speed') }}</span>
-                  <span style="font-size: 10px; color: var(--color-gray-999); margin-left: 8px">▶</span>
+                  <SC_SubmenuArrow>▶</SC_SubmenuArrow>
                 </SC_VideoQualitySubmenuItem>
               </SC_VideoQualityMenuSection>
             </template>
@@ -263,7 +251,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ICON_SIZE_LG, ICON_SIZE_XL } from '@/styles/icon-styles'
+import {
+  ICON_SIZE_LG,
+  ICON_SIZE_XL,
+  ICON_MUTED_18,
+  ICON_WHITE_85_48,
+  ICON_WHITE_64,
+  ICON_GRAY_EEE_24,
+} from '@/styles/icon-styles'
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,
@@ -275,7 +270,6 @@ import {
   CloseOutlined,
   SettingOutlined,
 } from '@ant-design/icons-vue'
-import { getVideoThumbnailFromUrl } from '@/helpers/api/peertube-url'
 import { videoPlayerManager } from './video-player-manager'
 import type { Chapter } from '@/helpers/content/timecode-parser'
 import { findActiveChapterIndex } from '@/helpers/content/timecode-parser'
@@ -289,7 +283,10 @@ import { useVideoPlaybackRate } from './composables/use-video-playback-rate'
 import { useVideoFullscreen } from './composables/use-video-fullscreen'
 import { useVideoHls } from './composables/use-video-hls'
 import { useBackgroundPlayback } from './composables/use-background-playback'
-import { resolveVideoElement, resolveDomElement } from './composables/utils'
+import { useVideoNotifications } from './composables/use-video-notifications'
+import { useVideoThumbnail } from './composables/use-video-thumbnail'
+import { useVideoElementEvents } from './composables/use-video-element-events'
+import { resolveVideoElement } from './composables/utils'
 import AudioVisualizer from '@/b-components/content/video-player/components/audio-visualizer/audio-visualizer.vue'
 import {
   SC_VideoContainer,
@@ -338,6 +335,7 @@ import {
   SC_HotkeysCloseButton,
   SC_IconNotification,
   SC_SeekNotification,
+  SC_SubmenuArrow,
 } from './styled'
 
 const props = withDefaults(
@@ -358,71 +356,17 @@ const videoElement = ref<HTMLVideoElement | null>(null)
 const videoContainer = ref<HTMLElement | null>(null)
 const isPlaying = ref(false)
 const isEnded = ref(false)
-const thumbnailUrl = ref<string | null>(null)
-const isThumbnailLoaded = ref(false)
-const thumbnailAspectRatio = ref<{
-  width: number
-  height: number
-  useContain: boolean
-} | null>(null)
-const videoAspectRatio = ref<{
-  width: number
-  height: number
-  useContain: boolean
-} | null>(null)
 const playerId = ref(`video-player-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`)
-let intersectionObserver: IntersectionObserver | null = null
 
-// Notifications.
-const showPlayNotification = ref(false)
-const showPauseNotification = ref(false)
-const showSeekNotification = ref(false)
-const seekValue = ref('')
-let seekNotificationTimer: ReturnType<typeof setTimeout> | null = null
-let playPauseNotificationTimer: ReturnType<typeof setTimeout> | null = null
-
-function triggerSeekNotification(value: string): void {
-  // Сбрасываем существующий таймер и скрываем мгновенно, чтобы перезапустить
-  // анимацию (CSS transition должна стартовать заново).
-  if (seekNotificationTimer) {
-    clearTimeout(seekNotificationTimer)
-    seekNotificationTimer = null
-  }
-
-  showSeekNotification.value = false
-
-  // Force reflow / next tick — даём браузеру шанс применить hidden-state перед show.
-  setTimeout(() => {
-    seekValue.value = value
-    showSeekNotification.value = true
-
-    seekNotificationTimer = setTimeout(() => {
-      showSeekNotification.value = false
-      seekNotificationTimer = null
-    }, 500)
-  }, 0)
-}
-
-function triggerPlayPauseNotification(isPlay: boolean): void {
-  if (playPauseNotificationTimer) {
-    clearTimeout(playPauseNotificationTimer)
-    playPauseNotificationTimer = null
-  }
-
-  showPlayNotification.value = false
-  showPauseNotification.value = false
-
-  setTimeout(() => {
-    if (isPlay) showPlayNotification.value = true
-    else showPauseNotification.value = true
-
-    playPauseNotificationTimer = setTimeout(() => {
-      showPlayNotification.value = false
-      showPauseNotification.value = false
-      playPauseNotificationTimer = null
-    }, 500)
-  }, 0)
-}
+// Уведомления (play/pause/seek — кратковременные pop-up иконки в центре плеера).
+const {
+  showPlayNotification,
+  showPauseNotification,
+  showSeekNotification,
+  seekValue,
+  triggerSeekNotification,
+  triggerPlayPauseNotification,
+} = useVideoNotifications()
 
 const {
   showControls,
@@ -518,11 +462,27 @@ function getVideoElement(): HTMLVideoElement | null {
 }
 const domVideoElement = computed(() => resolveVideoElement(videoElement))
 
+// Превью + соотношение сторон. refreshMetadata определяется ниже
+// (useBackgroundPlayback); handleVideoMetadata дёргает его только по событию
+// loadedmetadata (уже после setup), поэтому связываем позднее.
+let refreshMetadata: () => void = () => {}
+const {
+  thumbnailUrl,
+  isThumbnailLoaded,
+  loadThumbnail,
+  handleThumbnailLoad,
+  handleThumbnailError,
+  handleVideoMetadata,
+  getVideoWrapperStyle,
+  getThumbnailStyle,
+  getVideoStyle,
+} = useVideoThumbnail(videoElement, toRef(props, 'videoUrl'), () => refreshMetadata())
+
 // Фоновое воспроизведение: native media session (Android) + MediaSession API
 // (iOS / web), даунгрейд качества при сворачивании, синхронизация контролов
 // с lock screen. Singleton-контроллер гарантирует, что в каждый момент
 // только один плеер владеет media notification.
-const { isInBackground, refreshMetadata } = useBackgroundPlayback({
+const { isInBackground, refreshMetadata: backgroundRefreshMetadata } = useBackgroundPlayback({
   playerId,
   videoElement,
   hls,
@@ -534,6 +494,25 @@ const { isInBackground, refreshMetadata } = useBackgroundPlayback({
     artworkUrl: thumbnailUrl.value || undefined,
   }),
 })
+refreshMetadata = backgroundRefreshMetadata
+
+// DOM-события <video> + IntersectionObserver (авто-пауза вне вьюпорта).
+// setup* — позднее связывание: их уже захватил useVideoHls выше.
+const videoElementEvents = useVideoElementEvents({
+  videoElement,
+  videoContainer,
+  playerId,
+  isPlaying,
+  isEnded,
+  isBuffering,
+  isInBackground,
+  stopProgressAnimation,
+  updateDuration,
+  updateBuffered,
+  handleVideoMetadata,
+})
+setupVideoEventListeners = videoElementEvents.setupVideoEventListeners
+setupIntersectionObserver = videoElementEvents.setupIntersectionObserver
 
 // === Главы (тайм-коды из описания). ===
 
@@ -655,18 +634,6 @@ function setPlaybackRate(rate: number): void {
   }
 }
 
-function loadThumbnail(): void {
-  getVideoThumbnailFromUrl(props.videoUrl)
-    .then((url) => {
-      thumbnailUrl.value = url
-    })
-    .catch(() => {
-      // Превью не критично: невалидный URL / PeerTube 5xx — просто
-      // показываем плеер без превью, не засоряя консоль.
-      thumbnailUrl.value = null
-    })
-}
-
 function stopVideo(): void {
   const video = getVideoElement()
   if (video) {
@@ -675,143 +642,6 @@ function stopVideo(): void {
   }
   isPlaying.value = false
   isEnded.value = false
-}
-
-function handleThumbnailLoad(e: Event): void {
-  isThumbnailLoaded.value = true
-
-  const img = e.target as HTMLImageElement
-  if (img.naturalWidth && img.naturalHeight) {
-    const aspectRatio = img.naturalWidth / img.naturalHeight
-    const useContain = aspectRatio > 1 / 1.5
-
-    thumbnailAspectRatio.value = {
-      width: img.naturalWidth,
-      height: img.naturalHeight,
-      useContain,
-    }
-  }
-}
-
-function handleThumbnailError(): void {
-  isThumbnailLoaded.value = true
-}
-
-function handleVideoMetadata(): void {
-  const video = getVideoElement()
-  if (!video) return
-
-  // Длительность стала известна — обновим media session, чтобы scrubber
-  // на lock screen / в notification получил корректный диапазон.
-  refreshMetadata()
-
-  const videoWidth = video.videoWidth
-  const videoHeight = video.videoHeight
-  if (videoWidth === 0 || videoHeight === 0) return
-
-  const aspectRatio = videoWidth / videoHeight
-  const useContain = aspectRatio > 1 / 1.5
-
-  videoAspectRatio.value = {
-    width: videoWidth,
-    height: videoHeight,
-    useContain,
-  }
-}
-
-// Реализация позднего связывания: видео-listener'ы.
-setupVideoEventListeners = () => {
-  const video = getVideoElement()
-  if (!video) return
-
-  video.addEventListener('play', () => {
-    isPlaying.value = true
-    isEnded.value = false
-    videoPlayerManager.pauseAllExcept(playerId.value)
-  })
-
-  video.addEventListener('pause', () => {
-    isPlaying.value = false
-  })
-
-  video.addEventListener('ended', () => {
-    isPlaying.value = false
-    isEnded.value = true
-    stopProgressAnimation()
-    if (document.fullscreenElement) document.exitFullscreen()
-  })
-
-  video.addEventListener('waiting', () => {
-    isBuffering.value = true
-  })
-
-  video.addEventListener('playing', () => {
-    isBuffering.value = false
-    isEnded.value = false
-  })
-
-  video.addEventListener('canplay', () => {
-    updateDuration()
-    updateBuffered()
-  })
-
-  video.addEventListener('loadedmetadata', () => {
-    updateDuration()
-    updateBuffered()
-    handleVideoMetadata()
-  })
-
-  video.addEventListener('durationchange', () => {
-    updateDuration()
-  })
-
-  video.addEventListener('progress', () => {
-    updateBuffered()
-  })
-}
-
-setupIntersectionObserver = () => {
-  if (intersectionObserver) intersectionObserver.disconnect()
-
-  const element = resolveDomElement(videoContainer)
-  if (!element) return
-
-  intersectionObserver = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) {
-          // Видео ушло с экрана — обычно ставим на паузу. Но если приложение
-          // ушло в фон (document.hidden / isInBackground), это «ложный» уход
-          // из вьюпорта и плеер должен продолжать играть звук.
-          if (isInBackground.value || document.hidden) return
-
-          const video = getVideoElement()
-          if (video && !video.paused) video.pause()
-        }
-      }
-    },
-    {
-      threshold: 0.5, // 50% видимости
-    }
-  )
-
-  intersectionObserver.observe(element)
-}
-
-// Стили
-function getVideoWrapperStyle(): Record<string, string> {
-  const aspectInfo = videoAspectRatio.value || thumbnailAspectRatio.value
-  if (aspectInfo && aspectInfo.useContain) {
-    return { backgroundColor: 'var(--color-bg-tertiary)' }
-  }
-  return {}
-}
-
-function getThumbnailStyle(): Record<string, string> {
-  return { objectFit: 'contain' }
-}
-function getVideoStyle(): Record<string, string> {
-  return { objectFit: 'contain' }
 }
 
 const shouldHideCursor = computed<boolean>(() => isFullscreen.value && !showControls.value)
@@ -863,7 +693,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (unregisterPlayer) unregisterPlayer()
-  if (intersectionObserver) intersectionObserver.disconnect()
   stopVideo()
 })
 

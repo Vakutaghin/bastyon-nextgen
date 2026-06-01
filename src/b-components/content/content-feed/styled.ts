@@ -1,6 +1,17 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 import { Z_INDEX } from '@/styles/design-tokens'
+import Button from '@/components/button/button.vue'
+
+export const SC_FeedErrorColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`
+
+export const SC_RetryButton = styled(Button)`
+  margin-top: 10px;
+`
 
 export const SC_Feed = styled.div`
   width: 100%;

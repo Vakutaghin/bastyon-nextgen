@@ -1,7 +1,7 @@
 import { ref, computed, type Ref, onBeforeUnmount, watch } from 'vue'
-import { resolveVideoElement } from './utils'
+import { resolveVideoElement, type ElementRefValue } from './utils'
 
-export function useVideoProgress(videoElement: Ref<any>, isPlaying: Ref<boolean>) {
+export function useVideoProgress(videoElement: Ref<ElementRefValue>, isPlaying: Ref<boolean>) {
   const currentTime = ref(0)
   const duration = ref(0)
   const progress = ref(0)

@@ -35,7 +35,7 @@ export interface SendRawTransactionRequest {
 export interface SendRawTransactionResponse {
   result: 'success' | 'error'
   data?: string // txid транзакции
-  error?: string | Record<string, any>
+  error?: string | Record<string, unknown>
   node?: string
   time?: {
     preparing?: number

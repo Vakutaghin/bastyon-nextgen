@@ -1,16 +1,23 @@
 import { type Ref } from 'vue'
 
 /**
+ * Значение ref'а на DOM-узел: либо сам элемент, либо инстанс Vue-компонента
+ * (styled component), у которого корневой узел лежит в $el.
+ */
+export type ElementRefValue = Element | { $el?: unknown } | null | undefined
+
+/**
  * Получает реальный DOM элемент из ref
  */
-export const resolveDomElement = (elementRef: Ref<any>): HTMLElement | null => {
-  if (!elementRef.value) return null
+export const resolveDomElement = (elementRef: Ref<ElementRefValue>): HTMLElement | null => {
+  const value = elementRef.value
+  if (!value) return null
 
-  if (elementRef.value instanceof HTMLElement) {
-    return elementRef.value
+  if (value instanceof HTMLElement) {
+    return value
   }
 
-  const element = (elementRef.value as any).$el || elementRef.value
+  const element = '$el' in value ? value.$el : value
 
   if (element instanceof HTMLElement) {
     return element
@@ -22,16 +29,19 @@ export const resolveDomElement = (elementRef: Ref<any>): HTMLElement | null => {
 /**
  * Получает реальный DOM элемент video из ref
  */
-export const resolveVideoElement = (videoElementRef: Ref<any>): HTMLVideoElement | null => {
-  if (!videoElementRef.value) return null
+export const resolveVideoElement = (
+  videoElementRef: Ref<ElementRefValue>
+): HTMLVideoElement | null => {
+  const value = videoElementRef.value
+  if (!value) return null
 
   // Если это уже HTMLVideoElement, возвращаем его
-  if (videoElementRef.value instanceof HTMLVideoElement) {
-    return videoElementRef.value
+  if (value instanceof HTMLVideoElement) {
+    return value
   }
 
   // Если это компонент Vue (styled component), получаем $el
-  const element = (videoElementRef.value as any).$el || videoElementRef.value
+  const element = '$el' in value ? value.$el : value
 
   // Проверяем, что это HTMLVideoElement
   if (element instanceof HTMLVideoElement) {
@@ -39,7 +49,7 @@ export const resolveVideoElement = (videoElementRef: Ref<any>): HTMLVideoElement
   }
 
   // Если это другой элемент, пытаемся найти video внутри
-  if (element && element.querySelector) {
+  if (element instanceof Element) {
     const video = element.querySelector('video')
     if (video instanceof HTMLVideoElement) {
       return video

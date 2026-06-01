@@ -36,10 +36,16 @@ export function formatUrlsInText(text: string): string {
   })
 }
 
+/** Минимальная форма профиля, нужная для отображаемого имени. */
+interface DisplayNameProfile {
+  name?: string
+  address?: string
+}
+
 /**
  * Извлекает отображаемое имя пользователя из профиля.
  */
-export function getDisplayName(profile: Record<string, any> | null): string {
+export function getDisplayName(profile: DisplayNameProfile | null): string {
   if (!profile) return ''
   return decodeProfileText(profile.name || profile.address || '')
 }

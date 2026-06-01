@@ -19,7 +19,7 @@ interface LoadAccountsContext {
  * Проверяет, что профиль помечен как «реальный» (verified):
  * badges содержат verificated/verified, ИЛИ flags.real / real-truthy.
  */
-function isProfileVerified(profile: any): boolean {
+function isProfileVerified(profile: UserProfile | null): boolean {
   if (!profile) return false
   const badges = profile.badges
   if (Array.isArray(badges) && (badges.includes('verificated') || badges.includes('verified'))) {
@@ -49,7 +49,7 @@ function buildDisplayInfo(
     address: acc.address,
     name: profile.name || acc.name || null,
     avatar: extractAvatarFromProfile(profile) ?? null,
-    balance: (profile as any).balance ?? null,
+    balance: profile.balance ?? null,
     loading: false,
     verified: isProfileVerified(profile),
   }

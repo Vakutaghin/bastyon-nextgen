@@ -11,13 +11,13 @@
       />
     </SC_FeedContent>
 
-    <div v-if="isLoading && allPosts.length === 0" style="padding: 40px; text-align: center">
+    <SC_InitialLoading v-if="isLoading && allPosts.length === 0">
       <Spin :tip="t('profile.loadingFeed')">
         <template #indicator>
           <LoadingOutlined :style="ICON_PRIMARY_50" spin />
         </template>
       </Spin>
-    </div>
+    </SC_InitialLoading>
 
     <SC_LoadMoreTrigger v-else ref="loadMoreTrigger">
       <SC_LoadingSpinner v-if="isLoadingMore || isLoading">
@@ -54,6 +54,7 @@ import {
   SC_NoMorePosts,
   SC_EmptyFeed,
   SC_ErrorMessage,
+  SC_InitialLoading,
 } from './styled'
 
 const props = defineProps<{

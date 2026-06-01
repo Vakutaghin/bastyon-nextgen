@@ -1,16 +1,15 @@
 <template>
   <SC_PostCategoriesAndTags v-if="displayItems && displayItems.length">
     <template v-for="item in displayItems" :key="item.id || item.name">
-      <Tag
+      <SC_ClickableTag
         v-if="item.type === 'category'"
-        style="cursor: pointer"
         @click.stop.prevent="handleTagClick(item)"
       >
         {{ item.icon }} {{ item.name }}
-      </Tag>
-      <Tag v-else style="cursor: pointer" @click.stop.prevent="handleTagClick(item)">
+      </SC_ClickableTag>
+      <SC_ClickableTag v-else @click.stop.prevent="handleTagClick(item)">
         #{{ item.name }}
-      </Tag>
+      </SC_ClickableTag>
     </template>
   </SC_PostCategoriesAndTags>
 </template>
@@ -18,9 +17,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Tag from '@/components/tag/tag.vue'
 import { useFiltersStore } from '@/stores/filters-store'
-import { SC_PostCategoriesAndTags } from './styled'
+import { SC_PostCategoriesAndTags, SC_ClickableTag } from './styled'
 
 export interface PostCategoriesTagsPost {
   tags?: string[]

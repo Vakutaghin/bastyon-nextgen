@@ -2,6 +2,17 @@
  * Утилиты для определения окружения и доступных API
  */
 
+/** Глобальные признаки нативных окружений (Capacitor / Tauri), инжектируемые рантаймом. */
+interface NativeRuntimeWindow {
+  Capacitor?: unknown
+  CapacitorWeb?: unknown
+  __TAURI__?: unknown
+  __TAURI_INTERNALS__?: unknown
+  __TAURI_METADATA__?: unknown
+  __TAURI_APP_READY__?: unknown
+  invoke?: unknown
+}
+
 /**
  * Проверка, запущено ли приложение в Capacitor
  */
@@ -12,14 +23,14 @@ export function isCapacitor(): boolean {
 
   try {
     // Проверяем наличие Capacitor в глобальном объекте
-    const win = window as any
+    const win = window as Window & NativeRuntimeWindow
     if (win.Capacitor || win.CapacitorWeb) {
       return true
     }
 
     // Проверяем через импорт (может быть не всегда доступен)
     // Это будет работать только если @capacitor/core установлен
-    if (typeof (window as any).Capacitor !== 'undefined') {
+    if (typeof win.Capacitor !== 'undefined') {
       return true
     }
   } catch {
@@ -40,7 +51,7 @@ export function isTauri(): boolean {
     return false
   }
 
-  const win = window as any
+  const win = window as Window & NativeRuntimeWindow
 
   // Tauri 1.x
   if (typeof win.__TAURI__ !== 'undefined') {

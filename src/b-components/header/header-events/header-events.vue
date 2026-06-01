@@ -28,13 +28,7 @@
                   {{ truncateTitle(item.postTitle) }}
                 </SC_PostTitle>
                 <SC_RatingDisplay>
-                  <StarFilled
-                    :style="{
-                      color: 'var(--color-warning)',
-                      fontSize: '18px',
-                      marginRight: '4px',
-                    }"
-                  />
+                  <StarFilled :style="ICON_STAR_18" />
                   <SC_RatingValue>{{ item.ratingValue }}</SC_RatingValue>
                 </SC_RatingDisplay>
               </SC_EventContent>
@@ -64,7 +58,7 @@ import { HourglassOutlined, StarFilled } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
 import { usePendingRatingsStore, useCommentsStore, usePostsStore } from '@/stores'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
-import { ICON_SIZE_XL } from '@/styles/icon-styles'
+import { ICON_SIZE_XL, ICON_STAR_18 } from '@/styles/icon-styles'
 import {
   SC_EventsWrapper,
   SC_PendingEventsMenu,

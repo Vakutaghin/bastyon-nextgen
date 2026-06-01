@@ -30,14 +30,14 @@
             {{ showPassword ? '👁️' : '👁️‍🗨️' }}
           </SC_PasswordToggle>
         </SC_InputWrapper>
-        <Alert type="info" :show-icon="true" style="margin-top: 8px">
+        <SC_InfoAlert type="info" :show-icon="true">
           <template #description>
             <div>
               <strong>{{ t('auth.mnemonicLabel') }}</strong> {{ t('auth.mnemonicHint') }}<br />
               <strong>{{ t('auth.privateKeyLabel') }}</strong> {{ t('auth.privateKeyHint') }}
             </div>
           </template>
-        </Alert>
+        </SC_InfoAlert>
       </SC_FormItem>
 
       <SC_ErrorMessage v-if="error">
@@ -71,6 +71,7 @@ import { useI18n } from 'vue-i18n'
 import { useSignInModal } from './sign-in-modal'
 import type { SignInModalProps, SignInModalEmits } from './types'
 import { SC_ModalActions } from '@/components/modal'
+import { SC_InfoAlert } from './styled'
 
 const { t } = useI18n()
 
@@ -83,7 +84,6 @@ const emit = defineEmits<SignInModalEmits>()
 const {
   Modal,
   Button,
-  Alert,
   SC_SignInForm,
   SC_FormItem,
   SC_FormLabel,

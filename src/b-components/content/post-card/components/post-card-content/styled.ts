@@ -1,5 +1,15 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import Button from '@/components/button/button.vue'
+
+export const SC_PreviewBlock = styled.div`
+  margin-bottom: 10px;
+`
+
+export const SC_ReadMoreButton = styled(Button)`
+  margin-top: 10px;
+  background-color: ${COLORS.BG_HOVER};
+`
 
 export const SC_PostContent = styled.div`
   margin-bottom: 15px;

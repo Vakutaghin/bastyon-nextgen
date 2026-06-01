@@ -12,6 +12,7 @@ export const SC_TagsHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   margin-bottom: 11px;
+  cursor: pointer;
 `
 
 export const SC_TagsControls = styled.div`

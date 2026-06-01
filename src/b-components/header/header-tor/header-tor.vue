@@ -26,7 +26,7 @@
         </SC_TorProgressOuter>
 
         <SC_TorBridgeBlock>
-          <SC_TorTitle style="font-size: 12px">{{ t('header.torBridges') }}</SC_TorTitle>
+          <SC_TorBridgeTitle>{{ t('header.torBridges') }}</SC_TorBridgeTitle>
           <RadioGroup
             :value="localKind"
             @change="(e: RadioChangeEvent) => onSelectKind(e.target.value as TorBridgeKind)"
@@ -75,6 +75,7 @@ import {
   SC_TorMenu,
   SC_TorRow,
   SC_TorTitle,
+  SC_TorBridgeTitle,
   SC_TorStatusLine,
   SC_TorProgressOuter,
   SC_TorProgressInner,

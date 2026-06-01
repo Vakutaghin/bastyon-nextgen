@@ -49,11 +49,7 @@
       </template>
     </Dropdown>
   </template>
-  <SC_HeaderDropdownZindexFix
-    ref="dropdownZindexFixRef"
-    style="position: absolute; left: -9999px; visibility: hidden; pointer-events: none"
-    aria-hidden="true"
-  />
+  <SC_HeaderDropdownZindexFix ref="dropdownZindexFixRef" aria-hidden="true" />
 
   <SignInModal
     v-model:open="signInModalOpen"

@@ -8,7 +8,7 @@
     </template>
     <!-- Обёртка перехватывает клик до popover, чтобы решить — открывать его или сразу
          засчитывать голос (через handleRatingClick). -->
-    <div style="display: inline-block" @click.capture="handleRatingClick">
+    <SC_InlineBlock @click.capture="handleRatingClick">
       <SC_StarRating class="star-rating">
         <template v-for="n in 5" :key="`star-${n}`">
           <SC_StarWrapper
@@ -18,7 +18,7 @@
             @click="(e) => handleStarClick(n, e)"
           >
             <!-- Пустая контурная звезда (фон) — всегда видна. -->
-            <StarOutlined class="star-bg" :style="{ color: 'var(--color-warning-track)' }" />
+            <StarOutlined class="star-bg" :style="ICON_WARNING_TRACK" />
 
             <!-- Полностью заполненная звезда поверх. -->
             <SC_StarFilled v-if="displayRating >= n">
@@ -33,7 +33,7 @@
           {{ optimisticVotersCount }}
         </span>
       </SC_StarRating>
-    </div>
+    </SC_InlineBlock>
   </APopover>
 </template>
 
@@ -42,8 +42,14 @@ import { useI18n } from 'vue-i18n'
 import { Popover as APopover, Button as AButton } from 'ant-design-vue'
 import { StarOutlined, StarFilled, UserOutlined } from '@ant-design/icons-vue'
 import { useStarRating } from './use-star-rating'
-import { SC_AuthPopoverContent, SC_StarRating, SC_StarWrapper, SC_StarFilled } from './styled'
-import { ICON_WARNING } from '@/styles/icon-styles'
+import {
+  SC_AuthPopoverContent,
+  SC_StarRating,
+  SC_StarWrapper,
+  SC_StarFilled,
+  SC_InlineBlock,
+} from './styled'
+import { ICON_WARNING, ICON_WARNING_TRACK } from '@/styles/icon-styles'
 
 const props = withDefaults(
   defineProps<{

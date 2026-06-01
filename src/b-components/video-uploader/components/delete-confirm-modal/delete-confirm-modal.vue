@@ -2,7 +2,7 @@
   <Modal :open="open" :width="400" :centered="true" :z-index="10004" @cancel="$emit('cancel')">
     <template #title>
       <SC_ModalIconRow>
-        <ExclamationCircleOutlined style="font-size: 24px; color: var(--color-red-ant)" />
+        <ExclamationCircleOutlined :style="ICON_DANGER_24" />
         <span>{{ t('videoUploader.deleteTitle') }}</span>
       </SC_ModalIconRow>
     </template>
@@ -26,6 +26,7 @@ import { useI18n } from 'vue-i18n'
 import { useDeleteConfirmModal } from './delete-confirm-modal'
 import type { DeleteConfirmModalProps, DeleteConfirmModalEmits } from './types'
 import { SC_ModalActions, SC_ModalIconRow } from '@/components/modal'
+import { ICON_DANGER_24 } from '@/styles/icon-styles'
 
 const { t } = useI18n()
 

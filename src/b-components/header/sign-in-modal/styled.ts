@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { Alert } from 'ant-design-vue'
 import { COLORS } from '@/styles/theme-colors'
 import Input from '@/components/input/input.vue'
 
@@ -46,6 +47,10 @@ export const SC_PasswordToggle = styled.span`
   &:hover {
     opacity: 1;
   }
+`
+
+export const SC_InfoAlert = styled(Alert)`
+  margin-top: 8px;
 `
 
 export const SC_ErrorMessage = styled.div`

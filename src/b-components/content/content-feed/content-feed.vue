@@ -62,33 +62,18 @@
       </SC_FeedLoading>
 
       <SC_FeedError v-else-if="error">
-        <div
-          v-if="isServerError"
-          style="display: flex; flex-direction: column; align-items: center"
-        >
-          <ExclamationCircleOutlined
-            :style="{
-              fontSize: '30px',
-              marginBottom: '15px',
-              color: 'var(--color-danger)',
-            }"
-          />
+        <SC_FeedErrorColumn v-if="isServerError">
+          <ExclamationCircleOutlined :style="ICON_DANGER_30_MB" />
           <p>{{ t('postCard.serverUnavailable') }}</p>
-          <Button type="primary" ghost style="margin-top: 10px" @click="refetch">
+          <SC_RetryButton type="primary" ghost @click="refetch">
             <template #icon><ReloadOutlined /></template>
             {{ t('postCard.refresh') }}
-          </Button>
-        </div>
-        <div v-else style="display: flex; flex-direction: column; align-items: center">
-          <ExclamationCircleOutlined
-            :style="{
-              fontSize: '30px',
-              marginBottom: '15px',
-              color: 'var(--color-danger)',
-            }"
-          />
+          </SC_RetryButton>
+        </SC_FeedErrorColumn>
+        <SC_FeedErrorColumn v-else>
+          <ExclamationCircleOutlined :style="ICON_DANGER_30_MB" />
           <p>{{ error }}</p>
-        </div>
+        </SC_FeedErrorColumn>
       </SC_FeedError>
       <template v-else-if="allPosts && allPosts.length > 0">
         <PostCard
@@ -100,7 +85,9 @@
           @comment="handleComment"
           @share="handleShare"
         />
-        <!-- Триггер для lazy-loading с минимальной высотой. -->
+        <!-- Триггер для lazy-loading с минимальной высотой.
+             Остаётся обычным <div>: ref напрямую отдаёт DOM-узел для
+             IntersectionObserver (styled-компонент вернул бы инстанс). -->
         <div ref="loadMoreTrigger" :style="{ height: '1px', width: '100%' }" />
         <SC_FeedLoadingMore v-if="isLoadingMore">
           <Spin size="small" :tip="t('postCard.loading')">
@@ -139,7 +126,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ICON_PRIMARY_24, ICON_PRIMARY_120, ICON_SIZE_MD, ICON_SIZE_SM } from '@/styles/icon-styles'
+import {
+  ICON_PRIMARY_24,
+  ICON_PRIMARY_120,
+  ICON_SIZE_MD,
+  ICON_SIZE_SM,
+  ICON_DANGER_30_MB,
+} from '@/styles/icon-styles'
 import {
   PlusOutlined,
   ExclamationCircleOutlined,
@@ -175,6 +168,8 @@ import {
   SC_PhotoPreviewOverlay,
   SC_PhotoPreviewImage,
   SC_PhotoPreviewHint,
+  SC_FeedErrorColumn,
+  SC_RetryButton,
 } from './styled'
 
 withDefaults(

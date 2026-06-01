@@ -1,5 +1,5 @@
 <template>
-  <SC_PostCard ref="postCardRef" hoverable>
+  <SC_PostCard ref="postCardRef" hoverable role="article">
     <PostCardHeader :post="post" :author-override="authorOverride" />
 
     <component :is="isRepost ? SC_RepostInnerCard : 'div'">

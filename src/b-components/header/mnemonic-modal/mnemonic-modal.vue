@@ -10,10 +10,10 @@
     @cancel="handleClose"
   >
     <template #title>
-      <div style="display: flex; align-items: center; gap: 12px">
-        <SafetyOutlined style="font-size: 24px; color: var(--color-ant-blue)" />
+      <SC_TitleRow>
+        <SafetyOutlined :style="ICON_ANT_BLUE_24" />
         <span>{{ t('auth.saveSeedTitle') }}</span>
-      </div>
+      </SC_TitleRow>
     </template>
     <SC_MnemonicModalContent>
       <SC_WarningBox>
@@ -63,7 +63,9 @@ import Button from '@/components/button/button.vue'
 import { SafetyOutlined, CopyOutlined } from '@ant-design/icons-vue'
 import { recoverKeyPair, detectPrivateKeyFormat } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
+import { ICON_ANT_BLUE_24 } from '@/styles/icon-styles'
 import {
+  SC_TitleRow,
   SC_MnemonicModalContent,
   SC_WarningBox,
   SC_WarningTitle,

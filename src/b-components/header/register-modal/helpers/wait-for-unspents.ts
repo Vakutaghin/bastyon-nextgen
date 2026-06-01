@@ -3,6 +3,7 @@
 // мы уже показали пользователю «часики». Таймаут — 5 минут.
 
 import { debugLog } from '@/helpers/common/debug-log'
+import type { UTXO } from '@/composables/use-wallet-queries'
 
 interface ProxyServer {
   host: string
@@ -14,9 +15,9 @@ type GetUnspentsFn = (
   minConf: number,
   maxConf: number,
   server?: ProxyServer
-) => Promise<any[]>
+) => Promise<UTXO[]>
 
-type FilterAvailableFn = (u: any[], onlyConfirmed: boolean) => any[]
+type FilterAvailableFn = (u: UTXO[], onlyConfirmed: boolean) => UTXO[]
 
 interface WaitOptions {
   address: string
@@ -35,7 +36,7 @@ const LOG_PREFIX = '[wait-for-unspents]'
  * Ждёт, пока у адреса появится хотя бы один доступный UTXO. Резолвится первым ненулевым
  * списком unspents. Реджектит по таймауту. Колбэки чистые — никакого component this.
  */
-export async function waitForUnspents(opts: WaitOptions): Promise<any[]> {
+export async function waitForUnspents(opts: WaitOptions): Promise<UTXO[]> {
   const {
     address,
     getUnspents,
@@ -47,7 +48,7 @@ export async function waitForUnspents(opts: WaitOptions): Promise<any[]> {
 
   const { wsService } = await import('@/blockchain/ws')
 
-  return new Promise<any[]>((resolve, reject) => {
+  return new Promise<UTXO[]>((resolve, reject) => {
     let resolved = false
     let pollTimer: ReturnType<typeof setInterval> | null = null
     let timeoutTimer: ReturnType<typeof setTimeout> | null = null

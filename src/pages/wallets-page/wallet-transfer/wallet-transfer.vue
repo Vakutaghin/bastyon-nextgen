@@ -40,12 +40,9 @@
           <SC_TransferFieldError v-if="receiverAddressValidationError">
             {{ receiverAddressValidationError }}
           </SC_TransferFieldError>
-          <div
-            v-else-if="searchLoading"
-            style="font-size: 12px; color: var(--color-gray-120); margin-top: 4px"
-          >
+          <SC_TransferSearchingHint v-else-if="searchLoading">
             {{ t('wallet.searching') }}
-          </div>
+          </SC_TransferSearchingHint>
           <SC_TransferLoginChip v-else-if="receiverLogin">
             <SC_TransferLoginChipText>{{ t('wallet.login', { login: receiverLogin }) }}</SC_TransferLoginChipText>
             <SC_TransferLoginChipRemove
@@ -126,9 +123,9 @@
           </SC_TransferField>
         </template>
 
-        <div v-else-if="!currentAddress" style="color: var(--color-gray-120); font-size: 14px">
+        <SC_TransferLoginRequired v-else-if="!currentAddress">
           {{ t('wallet.loginToGetAddress') }}
-        </div>
+        </SC_TransferLoginRequired>
       </template>
 
       <SC_TransferError v-if="error">{{ error }}</SC_TransferError>
@@ -169,6 +166,8 @@ import {
   SC_TransferError,
   SC_TransferFieldError,
   SC_TransferSuccess,
+  SC_TransferSearchingHint,
+  SC_TransferLoginRequired,
   SC_TransferSearchWrap,
   SC_TransferSearchDropdown,
   SC_TransferSearchItem,

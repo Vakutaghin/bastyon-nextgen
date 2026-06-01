@@ -16,20 +16,12 @@
     </template>
 
     <SC_ModalBody>
-      <div
-        style="
-          margin-bottom: 16px;
-          padding: 12px;
-          background-color: #fff3cd;
-          border: 1px solid #ffc107;
-          border-radius: 4px;
-        "
-      >
-        <p style="margin: 0; color: var(--color-warning-text); font-weight: 500">{{ t('accounts.warning') }}</p>
-        <p style="margin: 8px 0 0 0; color: var(--color-warning-text)">
+      <SC_WarningBox>
+        <SC_WarningTitleText>{{ t('accounts.warning') }}</SC_WarningTitleText>
+        <SC_WarningBodyText>
           {{ t('accounts.seedPhraseWarningText') }}
-        </p>
-      </div>
+        </SC_WarningBodyText>
+      </SC_WarningBox>
       <p>{{ t('accounts.showSeedPhraseQuestion') }}</p>
     </SC_ModalBody>
 
@@ -51,6 +43,7 @@ import type {
 } from './confirm-show-mnemonic-modal/types'
 import { SC_ModalActions, SC_ModalBody, SC_ModalIconRow } from '@/components/modal'
 import { ICON_WARNING_24 } from '@/styles/icon-styles'
+import { SC_WarningBox, SC_WarningTitleText, SC_WarningBodyText } from './styled'
 
 const p = withDefaults(defineProps<ConfirmShowMnemonicModalProps>(), {
   open: false,

@@ -56,7 +56,10 @@ export function useAudioVisualizer(
 
     try {
       if (!audioContext) {
-        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const AudioContextCtor =
+          window.AudioContext ||
+          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+        audioContext = new AudioContextCtor()
       }
 
       if (elementSourceMap.has(el)) {

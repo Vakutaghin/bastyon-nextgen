@@ -58,7 +58,7 @@
     </SC_RegisterForm>
 
     <template #footer>
-      <div style="display: flex; justify-content: flex-end; gap: 8px">
+      <SC_FooterActions>
         <Button type="default" :disabled="loading" @click="handleCancel"> {{ t('auth.cancel') }} </Button>
         <Button
           type="primary"
@@ -68,7 +68,7 @@
         >
           {{ t('auth.register') }}
         </Button>
-      </div>
+      </SC_FooterActions>
     </template>
   </Modal>
 </template>
@@ -90,6 +90,7 @@ import {
   SC_ErrorMessage,
   SC_LinkToSignIn,
   SC_LinkButton,
+  SC_FooterActions,
 } from './styled'
 import {
   savePendingRegistration,
