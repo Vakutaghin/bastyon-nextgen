@@ -1041,6 +1041,7 @@ export default {
     transcodeError: 'Transcoding error',
     transcodeErrorPrefix: 'Transcoding error: {message}',
     storageLimitReached: 'Storage limit exceeded. Delete old videos.',
+    autoCleanupNotice: 'Freed up space: old video drafts removed — {count}',
     transcodeNotSupported: 'Transcoding is not supported in your browser',
     wasmSlowNotice:
       'Transcoding runs right in your browser (no native acceleration) — it may take a few minutes. Defaults to 480p.',
@@ -1066,6 +1067,9 @@ export default {
     networkError: 'Network error while loading video',
     playbackError: 'Video playback error',
     loadError: 'Video loading error',
+    videoNotFound: 'Video not found on this node',
+    corsOrUnreachable:
+      'The node server is unreachable or not configured for CORS. The video cannot be loaded directly.',
   },
   accountMsg: {
     reasonRegistration: 'Account registration',

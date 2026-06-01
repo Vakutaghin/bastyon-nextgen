@@ -2,7 +2,7 @@ import {
   TARGET_RESOLUTIONS,
   MAX_RESOLUTION,
   MIN_RESOLUTION,
-  type TargetResolution
+  type TargetResolution,
 } from '../utils/constants'
 
 /**
@@ -11,12 +11,9 @@ import {
  *
  * @param width Исходная ширина
  * @param height Исходная высота
- * @returns Целевое разрешение по высоте (144, 240, 360, 480, или 720)
+ * @returns Целевое разрешение по высоте (144, 240, 360, 480, 720 или 1080)
  */
-export function selectTargetResolution(
-  width: number,
-  height: number
-): TargetResolution {
+export function selectTargetResolution(width: number, height: number): TargetResolution {
   if (width <= 0 || height <= 0) {
     return MIN_RESOLUTION
   }
@@ -80,7 +77,7 @@ export function calculateTargetDimensions(
 
   return {
     width: evenWidth,
-    height: evenHeight
+    height: evenHeight,
   }
 }
 

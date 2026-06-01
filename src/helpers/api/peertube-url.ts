@@ -8,8 +8,8 @@ import { getPeerTubeVideoInfo, type PeerTubeVideoInfo } from './peertube-api'
 // Re-exports для обратной совместимости с импортёрами.
 export { parsePeerTubeUrl } from './peertube-parser'
 export type { PeerTubeUrl } from './peertube-parser'
-export { getPeerTubeVideoInfo } from './peertube-api'
-export type { PeerTubeVideoInfo } from './peertube-api'
+export { getPeerTubeVideoInfo, PeerTubeFetchError } from './peertube-api'
+export type { PeerTubeVideoInfo, PeerTubeFetchErrorCode } from './peertube-api'
 
 /**
  * Извлекает HLS плейлист URL из информации о видео.

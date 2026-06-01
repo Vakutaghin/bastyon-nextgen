@@ -61,7 +61,18 @@ export const transcodedVideoAPI = {
       }
     } catch (error) {
       console.error(`Ошибка при удалении видео с ID ${id}:`, error)
-      throw error
+      // Наша собственная ошибка верификации уже несёт контекст — пробрасываем как есть.
+      if (error instanceof Error && error.message.startsWith('Не удалось удалить видео')) {
+        throw error
+      }
+      // Сбой самого IndexedDB (get/delete отклонены) приходит безымянным DOMException
+      // (например, "AbortError") — оборачиваем с контекстом, чтобы наверх ушла понятная причина.
+      throw new Error(
+        `Не удалось удалить видео ${id} из IndexedDB: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        { cause: error }
+      )
     }
   },
 
@@ -126,7 +137,7 @@ export const transcodedVideoAPI = {
       totalSize,
       totalSizeMB: Math.round(totalSizeMB * 100) / 100,
       averageSize,
-      averageSizeMB: Math.round(averageSizeMB * 100) / 100
+      averageSizeMB: Math.round(averageSizeMB * 100) / 100,
     }
   },
 
@@ -136,12 +147,9 @@ export const transcodedVideoAPI = {
    */
   async deleteOld(days: number = 30): Promise<number> {
     const cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000
-    const oldVideos = await db.transcodedVideos
-      .where('createdAt')
-      .below(cutoffDate)
-      .toArray()
+    const oldVideos = await db.transcodedVideos.where('createdAt').below(cutoffDate).toArray()
 
-    const ids = oldVideos.map(v => v.id)
+    const ids = oldVideos.map((v) => v.id)
     await db.transcodedVideos.bulkDelete(ids)
     return ids.length
   },
@@ -152,16 +160,14 @@ export const transcodedVideoAPI = {
    * @param limit Максимальное количество записей для хранения
    */
   async enforceLimit(limit: number): Promise<number> {
-    const allVideos = await db.transcodedVideos
-      .orderBy('createdAt')
-      .toArray()
+    const allVideos = await db.transcodedVideos.orderBy('createdAt').toArray()
 
     if (allVideos.length <= limit) {
       return 0
     }
 
     const toDelete = allVideos.slice(0, allVideos.length - limit)
-    const ids = toDelete.map(v => v.id)
+    const ids = toDelete.map((v) => v.id)
     await db.transcodedVideos.bulkDelete(ids)
     return ids.length
   },
@@ -173,9 +179,7 @@ export const transcodedVideoAPI = {
    */
   async enforceSizeLimit(maxSizeMB: number): Promise<number> {
     const maxSizeBytes = maxSizeMB * 1024 * 1024
-    const allVideos = await db.transcodedVideos
-      .orderBy('createdAt')
-      .toArray()
+    const allVideos = await db.transcodedVideos.orderBy('createdAt').toArray()
 
     let totalSize = allVideos.reduce((total, video) => total + video.transcodedBlob.size, 0)
 
@@ -203,11 +207,13 @@ export const transcodedVideoAPI = {
    * Очистить просроченные записи и применить лимиты
    * @param options Опции очистки
    */
-  async cleanup(options: {
-    maxAgeDays?: number
-    maxCount?: number
-    maxSizeMB?: number
-  } = {}): Promise<{
+  async cleanup(
+    options: {
+      maxAgeDays?: number
+      maxCount?: number
+      maxSizeMB?: number
+    } = {}
+  ): Promise<{
     deletedByAge: number
     deletedByCount: number
     deletedBySize: number
@@ -236,7 +242,7 @@ export const transcodedVideoAPI = {
       deletedByAge,
       deletedByCount,
       deletedBySize,
-      totalDeleted: deletedByAge + deletedByCount + deletedBySize
+      totalDeleted: deletedByAge + deletedByCount + deletedBySize,
     }
   },
 
@@ -244,20 +250,14 @@ export const transcodedVideoAPI = {
    * Получить видео по имени файла
    */
   async findByFileName(fileName: string): Promise<TranscodedVideo | undefined> {
-    return await db.transcodedVideos
-      .where('originalFileName')
-      .equals(fileName)
-      .first()
+    return await db.transcodedVideos.where('originalFileName').equals(fileName).first()
   },
 
   /**
    * Получить видео по разрешению
    */
   async findByResolution(resolution: string): Promise<TranscodedVideo[]> {
-    return await db.transcodedVideos
-      .where('resolution')
-      .equals(resolution)
-      .toArray()
+    return await db.transcodedVideos.where('resolution').equals(resolution).toArray()
   },
 
   /**
@@ -266,5 +266,5 @@ export const transcodedVideoAPI = {
   async exists(id: string): Promise<boolean> {
     const video = await db.transcodedVideos.get(id)
     return video !== undefined
-  }
+  },
 }

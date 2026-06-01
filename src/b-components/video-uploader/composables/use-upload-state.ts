@@ -13,6 +13,7 @@ import { getBestMimeType } from '../utils/environment'
 import { calculateVideoBitrate } from '../components/video-info-panel/video-info-panel'
 import { formatFileSize } from '../utils/video-formatter'
 import { t } from '@/i18n'
+import { message } from 'ant-design-vue'
 import type { UploadState } from '../types'
 
 export interface UseUploadStateOptions {
@@ -139,7 +140,11 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
       const canSave = await storageManager.canSave(estimatedSizeMB)
 
       if (!canSave.canSave) {
-        await storageManager.autoCleanup()
+        const cleanup = await storageManager.autoCleanup()
+        // Авто-очистка раньше была молчаливой — теперь уведомляем, что именно удалили.
+        if (cleanup.totalDeleted > 0) {
+          message.info(t('videoMsg.autoCleanupNotice', { count: cleanup.totalDeleted }))
+        }
         const canSaveAfterCleanup = await storageManager.canSave(estimatedSizeMB)
         if (!canSaveAfterCleanup.canSave) {
           throw new Error(canSaveAfterCleanup.reason || 'Storage limit reached')

@@ -1,7 +1,7 @@
 import { ref, computed, type Ref, onBeforeUnmount } from 'vue'
 import Hls from 'hls.js'
 import { t } from '@/i18n'
-import { getHlsPlaylistFromUrl } from '@/helpers/api/peertube-url'
+import { getHlsPlaylistFromUrl, PeerTubeFetchError } from '@/helpers/api/peertube-url'
 import { resolveVideoElement, type ElementRefValue } from './utils'
 import {
   initBlobVideo,
@@ -9,6 +9,27 @@ import {
   initNativeHlsVideo,
   type VideoInitContext,
 } from '../services/hls-initializer'
+
+/**
+ * Сопоставляет ошибку загрузки видео с понятным локализованным сообщением.
+ * Главное — отличить «нода не настроена на CORS / недоступна» от обычной сети,
+ * иначе пользователь видит загадочное "Failed to fetch".
+ */
+function resolvePlayerErrorMessage(err: unknown): string {
+  if (err instanceof PeerTubeFetchError) {
+    switch (err.code) {
+      case 'cors-or-network':
+        return t('videoMsg.corsOrUnreachable')
+      case 'timeout':
+        return t('videoMsg.networkError')
+      case 'not-found':
+        return t('videoMsg.videoNotFound')
+      default:
+        return err.message
+    }
+  }
+  return err instanceof Error ? err.message : t('videoMsg.videoLoadUnknownError')
+}
 
 export function useVideoHls(
   p: { videoUrl: string; autoplay: boolean },
@@ -39,7 +60,7 @@ export function useVideoHls(
   const currentMenuScreen = ref<MenuScreen>('main')
 
   /**
-   * Форматирует высоту видео в строку качества (144p, 240p, 360p, 480p, 720p)
+   * Форматирует высоту видео в строку качества (144p, 240p, 360p, 480p, 720p, 1080p)
    */
   const formatQualityLabel = (height: number): string => {
     // Округляем до ближайшего стандартного значения
@@ -264,7 +285,7 @@ export function useVideoHls(
         throw new Error(t('videoMsg.hlsNotSupported'))
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : t('videoMsg.videoLoadUnknownError')
+      error.value = resolvePlayerErrorMessage(err)
       isLoading.value = false
       console.error('Video player initialization error:', err)
     }
