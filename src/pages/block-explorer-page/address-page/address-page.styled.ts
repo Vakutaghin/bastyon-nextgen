@@ -1,6 +1,21 @@
 import styled from 'vue3-styled-components'
+import { RouterLink } from 'vue-router'
 import { COLORS } from '@/styles/theme-colors'
-import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS } from '@/styles/design-tokens'
+
+// Общие примитивы эксплорера (audit §3.1).
+export {
+  SC_InlineLink,
+  SC_Placeholder,
+  SC_PlaceholderError,
+  SC_LoadMoreFooter,
+  SC_LoadMoreBtn,
+} from '../components/shared/explorer-primitives.styled'
+
+export const SC_InlineLinkInherit = styled(RouterLink)`
+  color: inherit;
+  text-decoration: none;
+`
 
 export const SC_AddrPageWork = styled.div`
   display: flex;
@@ -88,6 +103,11 @@ export const SC_AddrSummaryValue = styled.div`
   color: ${COLORS.TEXT_PRIMARY};
   font-variant-numeric: tabular-nums;
   word-break: break-all;
+`
+
+export const SC_AddrSummaryValueProfile = styled(SC_AddrSummaryValue)`
+  font-size: 14px;
+  font-weight: 500;
 `
 
 export const SC_AddrTxSection = styled.section`
@@ -178,45 +198,3 @@ export const SC_AddrTxBlock = styled.div`
   text-align: right;
 `
 
-export const SC_LoadMoreFooter = styled.div`
-  display: flex;
-  justify-content: center;
-  padding: 14px 18px;
-  border-top: 1px solid ${COLORS.BORDER_LIGHTER};
-`
-
-export const SC_LoadMoreBtn = styled.button`
-  padding: 8px 18px;
-  font-size: 13px;
-  font-weight: 500;
-  color: ${COLORS.PRIMARY};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
-  border-radius: 6px;
-  cursor: pointer;
-  transition:
-    background-color ${TRANSITIONS.QUICK},
-    border-color ${TRANSITIONS.QUICK};
-
-  &:hover:not(:disabled) {
-    background: ${COLORS.PRIMARY_LIGHT};
-    border-color: ${COLORS.PRIMARY_LIGHT_50};
-  }
-
-  &:disabled {
-    color: ${COLORS.TEXT_MUTED};
-    background: ${COLORS.BG_DISABLED};
-    border-color: ${COLORS.BORDER_LIGHTER};
-    cursor: not-allowed;
-  }
-`
-
-export const SC_Placeholder = styled.div`
-  padding: 32px;
-  text-align: center;
-  color: ${COLORS.TEXT_MUTED};
-`
-
-export const SC_PlaceholderError = styled(SC_Placeholder)`
-  color: ${COLORS.DANGER};
-`

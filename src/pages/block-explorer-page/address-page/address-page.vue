@@ -33,14 +33,11 @@
         </SC_AddrSummaryCard>
         <SC_AddrSummaryCard>
           <SC_AddrSummaryLabel>{{ t('explorerPage.summaryProfileLink') }}</SC_AddrSummaryLabel>
-          <SC_AddrSummaryValue style="font-size: 14px; font-weight: 500">
-            <RouterLink
-              :to="{ name: 'profile', params: { userName: address } }"
-              style="color: var(--color-primary); text-decoration: none"
-            >
+          <SC_AddrSummaryValueProfile>
+            <SC_InlineLink :to="{ name: 'profile', params: { userName: address } }">
               {{ t('explorerPage.openProfile') }}
-            </RouterLink>
-          </SC_AddrSummaryValue>
+            </SC_InlineLink>
+          </SC_AddrSummaryValueProfile>
         </SC_AddrSummaryCard>
       </SC_AddrSummary>
 
@@ -55,21 +52,22 @@
             <SC_AddrTxAge><Skeleton :width="60" :height="12" /></SC_AddrTxAge>
           </SC_AddrTxRow>
         </div>
-        <SC_PlaceholderError v-else-if="txError">
-          {{ t('explorerPage.addressTxError') }}
-        </SC_PlaceholderError>
+        <ExplorerError
+          v-else-if="txError"
+          :message="t('explorerPage.addressTxError')"
+          @retry="loadTxPage(true)"
+        />
         <SC_Placeholder v-else-if="!txList.length">{{ t('explorerPage.addressTxEmpty') }}</SC_Placeholder>
         <div v-else>
           <SC_AddrTxRow v-for="tx in txList" :key="tx.txid">
             <SC_AddrTxTypeBadge>{{ typeLabel(tx.type) }}</SC_AddrTxTypeBadge>
             <HashLink :hash="tx.txid" :to="{ name: 'explorer-tx', params: { txid: tx.txid } }" />
             <SC_AddrTxBlock>
-              <RouterLink
+              <SC_InlineLinkInherit
                 :to="{ name: 'explorer-block', params: { hashOrHeight: tx.blockHash } }"
-                style="color: inherit; text-decoration: none"
               >
                 #{{ formatNumber(tx.height) }}
-              </RouterLink>
+              </SC_InlineLinkInherit>
             </SC_AddrTxBlock>
             <SC_AddrTxAge :title="formatAbsTime(tx.nTime)">
               {{ formatRelTime(tx.nTime, now) }}
@@ -98,6 +96,7 @@ import type { GetAddressTransactionsResponse } from '@/types/rpc-responses/get-a
 import HashLink from '../components/shared/hash-link.vue'
 import AddressQr from '../components/shared/address-qr.vue'
 import ShareButton from '../components/shared/share-button.vue'
+import ExplorerError from '../components/shared/explorer-error.vue'
 import { Skeleton } from '@/components'
 import {
   formatExplorerNumber as formatNumber,
@@ -120,6 +119,9 @@ import {
   SC_AddrSummaryCard,
   SC_AddrSummaryLabel,
   SC_AddrSummaryValue,
+  SC_AddrSummaryValueProfile,
+  SC_InlineLink,
+  SC_InlineLinkInherit,
   SC_AddrTxSection,
   SC_AddrTxSectionHeader,
   SC_AddrTxRow,
@@ -129,7 +131,6 @@ import {
   SC_LoadMoreFooter,
   SC_LoadMoreBtn,
   SC_Placeholder,
-  SC_PlaceholderError,
 } from './address-page.styled'
 
 defineOptions({ name: 'AddressPage' })

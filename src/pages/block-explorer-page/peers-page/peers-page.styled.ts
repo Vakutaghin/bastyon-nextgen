@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { SC_Placeholder as SC_PlaceholderBase } from '../components/shared/explorer-primitives.styled'
 
 export const SC_PeersWork = styled.div`
   display: flex;
@@ -205,10 +206,8 @@ export const SC_DirectionBadge = styled('span', { dir: String })`
   background: ${(p) => (p.dir === 'in' ? COLORS.SUCCESS_BG_TINT : COLORS.PRIMARY_LIGHT)};
 `
 
-export const SC_Placeholder = styled.div`
-  padding: 32px;
-  text-align: center;
-  color: ${COLORS.TEXT_MUTED};
+// Общий плейсхолдер (audit §3.1) + мелкий шрифт страницы пиров.
+export const SC_Placeholder = styled(SC_PlaceholderBase)`
   font-size: 13px;
 `
 

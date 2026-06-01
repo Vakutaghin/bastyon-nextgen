@@ -19,7 +19,7 @@ import { labelForTxType } from '../components/shared/tx-type-labels'
 import { extractCoinstakeInfo, calcConfirmations } from '../components/shared/extract-coinstake'
 import { recordVisit } from '../components/shared/use-search-history'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
-import { explorerStrings as s } from '../block-explorer-strings'
+import { t } from '@/i18n'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 
 const TX_PAGE_SIZE = 50
@@ -37,10 +37,17 @@ export function useBlockData(hashOrHeightRef: Ref<string>, router: Router) {
 
   // Регистрируем визит, когда блок реально загрузился. Сохраняем то, что было в URL
   // (height или hash) — пусть автокомплит соответствует тому, что вводил пользователь.
+  // Заодно подменяем URL на канонический permalink (план §5.5): если открыли по
+  // высоте, меняем её на иммутабельный hash блока. Hash не зависит от chain-state,
+  // поэтому share-ссылка переживёт реорганизации цепочки.
   watch(
     () => block.value?.hash,
     (h) => {
-      if (h) recordVisit(hashOrHeightRef.value, 'block')
+      if (!h) return
+      recordVisit(hashOrHeightRef.value, 'block')
+      if (/^\d+$/.test(hashOrHeightRef.value) && hashOrHeightRef.value !== h) {
+        router.replace({ name: 'explorer-block', params: { hashOrHeight: h } })
+      }
     }
   )
 
@@ -87,8 +94,10 @@ export function useBlockData(hashOrHeightRef: Ref<string>, router: Router) {
   const coinstakeInfo = computed(() => extractCoinstakeInfo(txList.value))
 
   const coinstakeLabel = computed(() => {
-    if (!coinstakeInfo.value) return s.block.metaStaker
-    return coinstakeInfo.value.kind === 'pow' ? s.block.metaMinerPow : s.block.metaStakerPos
+    if (!coinstakeInfo.value) return t('explorerPage.blockMetaStaker')
+    return coinstakeInfo.value.kind === 'pow'
+      ? t('explorerPage.blockMetaMinerPow')
+      : t('explorerPage.blockMetaStakerPos')
   })
 
   const prevHash = computed(() => block.value?.prevhash ?? '')
@@ -99,18 +108,18 @@ export function useBlockData(hashOrHeightRef: Ref<string>, router: Router) {
     // если параметр — число, покажем сразу
     return /^\d+$/.test(hashOrHeightRef.value)
       ? `#${formatNumber(Number(hashOrHeightRef.value))}`
-      : s.common.ellipsis
+      : t('explorerPage.ellipsis')
   })
 
   const difficultyLabel = computed(() => {
     const d = block.value?.difficulty
-    return d ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(d) : s.common.em
+    return d ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(d) : t('explorerPage.em')
   })
 
   const pagerLabel = computed(() => {
     const total = block.value?.nTx ?? 0
     const shown = txList.value.length
-    return s.block.txPager(shown, total)
+    return total > 0 ? t('explorerPage.blockTxPager', { shown, total }) : ''
   })
 
   const blockErrorMessage = computed(() => {
@@ -118,16 +127,16 @@ export function useBlockData(hashOrHeightRef: Ref<string>, router: Router) {
     if (!e) return ''
     const msg = extractErrorMessage(e)
     if (msg.toLowerCase().includes('block not found')) {
-      return s.block.notFound
+      return t('explorerPage.blockNotFound')
     }
-    return s.block.errorPrefix(msg)
+    return t('explorerPage.blockErrorPrefix', { msg })
   })
 
   const loadMoreLabel = computed(() => {
     const total = block.value?.nTx ?? 0
     const remaining = Math.max(0, total - txList.value.length)
     const next = Math.min(TX_PAGE_SIZE, remaining)
-    return s.block.loadMoreNext(next)
+    return next > 0 ? t('explorerPage.blockLoadMoreNext', { next }) : t('explorerPage.loadMore')
   })
 
   function typeLabel(type: number): string {

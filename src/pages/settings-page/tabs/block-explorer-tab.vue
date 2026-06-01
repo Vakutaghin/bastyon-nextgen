@@ -22,9 +22,9 @@
     </SC_ExplorerSettingsBlock>
 
     <SC_ExplorerSettingsBlock>
-      <SC_SettingsSectionTitle as="h3" style="font-size: 14px; margin: 0">
+      <SC_ExplorerSubsectionTitle as="h3">
         {{ t('settings.explorer.preferredNode') }}
-      </SC_SettingsSectionTitle>
+      </SC_ExplorerSubsectionTitle>
       <SC_ExplorerSettingsLead>
         {{ t('settings.explorer.preferredLead') }}
       </SC_ExplorerSettingsLead>
@@ -80,6 +80,7 @@ import {
   SC_ExplorerNodeRadio,
   SC_ExplorerNodeLabel,
   SC_ExplorerNodeHint,
+  SC_ExplorerSubsectionTitle,
 } from '../settings-page.styled'
 
 const { t } = useI18n()

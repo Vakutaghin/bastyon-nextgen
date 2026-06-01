@@ -11,7 +11,7 @@ import { labelForTxType } from '../components/shared/tx-type-labels'
 import { calcConfirmations } from '../components/shared/extract-coinstake'
 import { recordVisit } from '../components/shared/use-search-history'
 import { parsePocketnetPayload } from '../components/shared/parse-pocketnet-payload'
-import { explorerStrings as s } from '../block-explorer-strings'
+import { t } from '@/i18n'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions'
 
@@ -79,9 +79,21 @@ export function useTxData(txidRef: Ref<string>): TxData {
 
   const pocketPayload = computed(() => parsePocketnetPayload(tx.value ?? null))
 
+  const PAYLOAD_KIND_KEY: Record<string, string> = {
+    post: 'explorerPage.txPayloadKindPost',
+    comment: 'explorerPage.txPayloadKindComment',
+    'comment-edit': 'explorerPage.txPayloadKindCommentEdit',
+    'upvote-share': 'explorerPage.txPayloadKindUpvoteShare',
+    'c-score': 'explorerPage.txPayloadKindCScore',
+    subscribe: 'explorerPage.txPayloadKindSubscribe',
+    'block-user': 'explorerPage.txPayloadKindBlockUser',
+    boost: 'explorerPage.txPayloadKindBoost',
+    account: 'explorerPage.txPayloadKindAccount',
+  }
+
   const payloadKindLabel = computed(() => {
     const k = pocketPayload.value?.kind
-    return k ? (s.tx.payloadKindLabels[k] ?? k) : ''
+    return k ? t(PAYLOAD_KIND_KEY[k] ?? k) : ''
   })
 
   function firstAddress(vout: TxVout): string {
@@ -94,10 +106,10 @@ export function useTxData(txidRef: Ref<string>): TxData {
 
   const errorMessage = computed(() => {
     if (txError.value) {
-      return s.tx.errorPrefix(extractErrorMessage(txError.value))
+      return t('explorerPage.txErrorPrefix', { msg: extractErrorMessage(txError.value) })
     }
     if (!tx.value && !txLoading.value) {
-      return s.tx.notFound
+      return t('explorerPage.txNotFound')
     }
     return ''
   })

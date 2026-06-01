@@ -1,10 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { setI18nLocale } from '@/i18n'
 import {
   formatExplorerPkoin,
   formatExplorerNumber,
   shortenHash,
   formatRelativeTime,
 } from './format-explorer'
+
+// formatRelativeTime резолвит относительное время через i18n; фиксируем 'ru',
+// т.к. ассерты ниже сравнивают с русскими строками.
+beforeAll(() => setI18nLocale('ru'))
 
 describe('formatExplorerPkoin', () => {
   it('strips trailing zeros by default', () => {

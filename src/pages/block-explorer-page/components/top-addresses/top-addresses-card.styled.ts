@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
+import { SC_Placeholder as SC_PlaceholderBase } from '../shared/explorer-primitives.styled'
 
 export const SC_TopCard = styled.section`
   background: ${COLORS.BG_PRIMARY};
@@ -109,9 +110,7 @@ export const SC_TopCount = styled.div`
   font-variant-numeric: tabular-nums;
 `
 
-export const SC_Placeholder = styled.div`
-  padding: 32px;
-  text-align: center;
-  color: ${COLORS.TEXT_MUTED};
+// Общий плейсхолдер (audit §3.1) + мелкий шрифт карточки топ-адресов.
+export const SC_Placeholder = styled(SC_PlaceholderBase)`
   font-size: 13px;
 `

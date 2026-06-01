@@ -2,17 +2,17 @@
   <SC_PeersWork>
     <SC_PeersPage>
       <SC_PeersBreadcrumb>
-        <RouterLink :to='{ name: "explorer" }'>{{ s.common.breadcrumbRoot }}</RouterLink>
-        <span> / {{ s.peers.breadcrumb }}</span>
+        <RouterLink :to='{ name: "explorer" }'>{{ t('explorerPage.breadcrumbRoot') }}</RouterLink>
+        <span> / {{ t('explorerPage.peersBreadcrumb') }}</span>
       </SC_PeersBreadcrumb>
 
-      <SC_PeersTitle>{{ s.peers.title }}</SC_PeersTitle>
+      <SC_PeersTitle>{{ t('explorerPage.peersTitle') }}</SC_PeersTitle>
 
       <SC_PeersSection>
         <SC_PeersSectionHeader>
-          <SC_PeersSectionTitle>{{ s.peers.nodesSectionTitle }}</SC_PeersSectionTitle>
+          <SC_PeersSectionTitle>{{ t('explorerPage.peersNodesSectionTitle') }}</SC_PeersSectionTitle>
           <SC_PeersSectionHint>
-            {{ s.peers.nodesHealthHint(healthyCount, totalNodes) }}
+            {{ t('explorerPage.peersNodesHealthHint', { alive: healthyCount, total: totalNodes }) }}
           </SC_PeersSectionHint>
         </SC_PeersSectionHeader>
 
@@ -28,22 +28,22 @@
 
         <template v-else>
           <SC_NodeRow v-for='node in nodeHealth' :key='`${node.host}:${node.port}`'>
-            <SC_NodeDot :color='node.ok ? "#28a745" : "#dc3545"' :title='node.ok ? s.peers.nodeOk : (node.error || s.peers.nodeFail)' />
+            <SC_NodeDot :color='node.ok ? "#28a745" : "#dc3545"' :title='node.ok ? t("explorerPage.peersNodeOk") : (node.error || t("explorerPage.peersNodeFail"))' />
             <SC_NodeAddr>{{ node.host }}:{{ node.port }}</SC_NodeAddr>
             <SC_NodeMetric>
-              <SC_NodeMetricLabel>{{ s.peers.nodeMetricPing }}</SC_NodeMetricLabel>
+              <SC_NodeMetricLabel>{{ t('explorerPage.peersNodeMetricPing') }}</SC_NodeMetricLabel>
               <span v-if='node.latencyMs !== null'>{{ node.latencyMs }} ms</span>
-              <span v-else style='color: var(--color-danger);'>{{ s.common.em }}</span>
+              <span v-else style='color: var(--color-danger);'>{{ t('explorerPage.em') }}</span>
             </SC_NodeMetric>
             <SC_NodeMetric class='secondary'>
-              <SC_NodeMetricLabel>{{ s.peers.nodeMetricHeight }}</SC_NodeMetricLabel>
+              <SC_NodeMetricLabel>{{ t('explorerPage.peersNodeMetricHeight') }}</SC_NodeMetricLabel>
               <span v-if='node.height !== undefined'>{{ formatNumber(node.height) }}</span>
-              <span v-else>{{ s.common.em }}</span>
+              <span v-else>{{ t('explorerPage.em') }}</span>
             </SC_NodeMetric>
             <SC_NodeMetric class='secondary'>
-              <SC_NodeMetricLabel>{{ s.peers.nodeMetricVersion }}</SC_NodeMetricLabel>
+              <SC_NodeMetricLabel>{{ t('explorerPage.peersNodeMetricVersion') }}</SC_NodeMetricLabel>
               <span v-if='node.version'>{{ node.version }}</span>
-              <span v-else>{{ s.common.em }}</span>
+              <span v-else>{{ t('explorerPage.em') }}</span>
             </SC_NodeMetric>
           </SC_NodeRow>
         </template>
@@ -51,19 +51,19 @@
 
       <SC_PeersSection>
         <SC_PeersSectionHeader>
-          <SC_PeersSectionTitle>{{ s.peers.peersSectionTitle }}</SC_PeersSectionTitle>
+          <SC_PeersSectionTitle>{{ t('explorerPage.peersPeersSectionTitle') }}</SC_PeersSectionTitle>
           <SC_PeersSectionHint v-if='peers.length'>
-            {{ s.peers.peersCountHint(peers.length, inboundCount) }}
+            {{ t('explorerPage.peersPeersCountHint', { total: peers.length, inbound: inboundCount }) }}
           </SC_PeersSectionHint>
         </SC_PeersSectionHeader>
 
         <SC_PeerTableHeader>
-          <div>{{ s.peers.colAddress }}</div>
-          <div>{{ s.peers.colClient }}</div>
-          <div>{{ s.peers.colDirection }}</div>
-          <div class='col-hide-mobile'>{{ s.peers.colPing }}</div>
-          <div class='col-hide-mobile'>{{ s.peers.colSync }}</div>
-          <div class='col-hide-mobile'>{{ s.peers.colConnected }}</div>
+          <div>{{ t('explorerPage.peersColAddress') }}</div>
+          <div>{{ t('explorerPage.peersColClient') }}</div>
+          <div>{{ t('explorerPage.peersColDirection') }}</div>
+          <div class='col-hide-mobile'>{{ t('explorerPage.peersColPing') }}</div>
+          <div class='col-hide-mobile'>{{ t('explorerPage.peersColSync') }}</div>
+          <div class='col-hide-mobile'>{{ t('explorerPage.peersColConnected') }}</div>
         </SC_PeerTableHeader>
 
         <div v-if='peersLoading && !peers.length'>
@@ -77,12 +77,10 @@
           </SC_PeerRow>
         </div>
 
-        <SC_PlaceholderError v-else-if='peersError'>
-          {{ s.peers.peersError }}
-        </SC_PlaceholderError>
+        <ExplorerError v-else-if='peersError' :message='s.peers.peersError' />
 
         <SC_Placeholder v-else-if='!peers.length'>
-          {{ s.peers.peersEmpty }}
+          {{ t('explorerPage.peersPeersEmpty') }}
         </SC_Placeholder>
 
         <template v-else-if='peers.length'>
@@ -91,7 +89,7 @@
           <SC_PeerVersion :title='peer.version'>{{ shortenVersion(peer.version) }}</SC_PeerVersion>
           <div>
             <SC_DirectionBadge :dir='peer.inbound ? "in" : "out"'>
-              {{ peer.inbound ? s.peers.dirIn : s.peers.dirOut }}
+              {{ peer.inbound ? t('explorerPage.peersDirIn') : t('explorerPage.peersDirOut') }}
             </SC_DirectionBadge>
           </div>
           <div class='col-hide-mobile' style='font-size: 12px; color: var(--color-text-secondary);'>
@@ -115,12 +113,13 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { usePeerInfo } from '@/composables/use-block-explorer-queries'
 import { useNodeHealth, getProductionServersList } from '@/composables/use-node-health'
+import { useI18n } from 'vue-i18n'
 import { Skeleton } from '@/components'
+import ExplorerError from '../components/shared/explorer-error.vue'
 import {
   formatExplorerNumber as formatNumber,
   formatRelativeTime,
 } from '../components/shared/format-explorer'
-import { explorerStrings as s } from '../block-explorer-strings'
 import type { PeerInfo } from '@/types/rpc-responses/get-peer-info'
 import {
   SC_PeersWork,
@@ -142,10 +141,11 @@ import {
   SC_PeerVersion,
   SC_DirectionBadge,
   SC_Placeholder,
-  SC_PlaceholderError,
 } from './peers-page.styled'
 
 defineOptions({ name: 'PeersPage' })
+
+const { t } = useI18n()
 
 const { data: healthData, isLoading: healthLoading } = useNodeHealth()
 const { data: peerResp, isLoading: peersLoading, error: peersError } = usePeerInfo()
@@ -164,7 +164,7 @@ function shortenVersion(v: string): string {
 }
 
 function pingLabel(microseconds: number): string {
-  if (!microseconds || microseconds < 0) return s.common.em
+  if (!microseconds || microseconds < 0) return t('explorerPage.em')
   const ms = microseconds / 1000
   if (ms < 10)   return `${ms.toFixed(1)} ms`
   if (ms < 1000) return `${Math.round(ms)} ms`

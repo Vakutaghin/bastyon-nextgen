@@ -3,13 +3,13 @@
     <SC_TopHeader>
       <SC_TopTitleGroup>
         <SC_TopTitle>
-          {{ s.topAddresses.title }}
-          <InfoTooltip :text='s.topAddresses.tooltip' />
+          {{ t('explorerPage.topAddressesTitle') }}
+          <InfoTooltip :text='t("explorerPage.topAddressesTooltip")' />
         </SC_TopTitle>
         <SC_TopHint>{{ hint }}</SC_TopHint>
       </SC_TopTitleGroup>
       <SC_TopToggle type='button' :disabled='!hasMore' @click='toggleShowAll'>
-        {{ expanded ? s.topAddresses.collapse : s.topAddresses.expand(maxShown) }}
+        {{ expanded ? t('explorerPage.topAddressesCollapse') : t('explorerPage.topAddressesExpand', { n: maxShown }) }}
       </SC_TopToggle>
     </SC_TopHeader>
 
@@ -23,22 +23,22 @@
     </template>
 
     <SC_Placeholder v-else-if='error'>
-      {{ s.topAddresses.error }}
+      {{ t('explorerPage.topAddressesError') }}
     </SC_Placeholder>
 
     <SC_Placeholder v-else-if='!visibleAddresses.length'>
-      {{ s.topAddresses.empty }}
+      {{ t('explorerPage.topAddressesEmpty') }}
     </SC_Placeholder>
 
     <template v-else>
       <SC_TopRow v-for='(row, idx) in visibleAddresses' :key='row.address'>
         <SC_TopRank>{{ idx + 1 }}</SC_TopRank>
         <AddressLink :address='row.address' />
-        <SC_TopVolume :title='s.topAddresses.volumeTooltip'>
+        <SC_TopVolume :title='t("explorerPage.topAddressesVolumeTooltip")'>
           {{ formatExplorerPkoin(row.volumeIn + row.volumeOut) }} PKOIN
         </SC_TopVolume>
-        <SC_TopCount :title='s.topAddresses.countTooltip'>
-          {{ s.topAddresses.txCount(row.txCount) }}
+        <SC_TopCount :title='t("explorerPage.topAddressesCountTooltip")'>
+          {{ t('explorerPage.topAddressesTxCount', { n: row.txCount }) }}
         </SC_TopCount>
       </SC_TopRow>
     </template>
@@ -47,11 +47,11 @@
 
 <script setup lang='ts'>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useActiveAddresses } from '@/composables/use-active-addresses'
 import AddressLink from '../shared/address-link.vue'
 import InfoTooltip from '../shared/info-tooltip.vue'
 import { formatExplorerPkoin } from '../shared/format-explorer'
-import { explorerStrings as s } from '../../block-explorer-strings'
 import { Skeleton } from '@/components'
 import {
   SC_TopCard,
@@ -68,6 +68,8 @@ import {
 } from './top-addresses-card.styled'
 
 defineOptions({ name: 'TopAddressesCard' })
+
+const { t } = useI18n()
 
 const TOP_SHORT = 10
 const TOP_FULL = 30
@@ -89,7 +91,7 @@ const hint = computed(() => {
   const blocks = data.value?.blocksScanned ?? 0
   const txCount = data.value?.txCount ?? 0
   if (!blocks) return ''
-  return s.topAddresses.hint(blocks, txCount)
+  return t('explorerPage.topAddressesHint', { blocks, txCount: txCount.toLocaleString('en-US') })
 })
 
 function toggleShowAll() {

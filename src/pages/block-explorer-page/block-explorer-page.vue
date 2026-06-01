@@ -80,9 +80,7 @@
               <SC_BlockAge><Skeleton :width='60' :height='12' /></SC_BlockAge>
             </SC_BlockRow>
           </SC_RowList>
-          <SC_ErrorPlaceholder v-else-if='lastBlocksError'>
-            {{ t('explorerPage.errorLoadBlocks') }}
-          </SC_ErrorPlaceholder>
+          <ExplorerError v-else-if='lastBlocksError' :message="t('explorerPage.errorLoadBlocks')" />
           <SC_RowList v-else>
             <SC_BlockRow v-for='b in lastBlocks' :key='b.hash'>
               <SC_BlockHeight>
@@ -134,9 +132,7 @@
               <SC_BlockAge><Skeleton :width='60' :height='12' /></SC_BlockAge>
             </SC_BlockRow>
           </SC_RowList>
-          <SC_ErrorPlaceholder v-else-if='nodeInfoError'>
-            {{ t('explorerPage.errorNodeUnavailable') }}
-          </SC_ErrorPlaceholder>
+          <ExplorerError v-else-if='nodeInfoError' :message="t('explorerPage.errorNodeUnavailable')" />
           <SC_RowList v-else>
             <SC_BlockRow v-if='tipHash'>
               <SC_BlockHeight>{{ t('explorerPage.tip') }}</SC_BlockHeight>
@@ -174,6 +170,7 @@ import NetworkStatsChart from './components/network-stats-chart/network-stats-ch
 import TopAddressesCard from './components/top-addresses/top-addresses-card.vue'
 import HashLink from './components/shared/hash-link.vue'
 import InfoTooltip from './components/shared/info-tooltip.vue'
+import ExplorerError from './components/shared/explorer-error.vue'
 import { Skeleton } from '@/components'
 import {
   formatExplorerNumber as formatNumber,
@@ -203,7 +200,6 @@ import {
   SC_BlockHeight,
   SC_BlockNtx,
   SC_BlockAge,
-  SC_ErrorPlaceholder,
 } from './block-explorer-page.styled'
 
 defineOptions({ name: 'BlockExplorerPage' })

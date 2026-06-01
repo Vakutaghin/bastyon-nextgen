@@ -1,6 +1,12 @@
 import styled, { css } from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
+import { SC_SettingsSectionTitle } from './settings-page-main.styled'
+
+export const SC_ExplorerSubsectionTitle = styled(SC_SettingsSectionTitle)`
+  font-size: 14px;
+  margin: 0;
+`
 
 export const SC_ExplorerSettingsSection = styled.div`
   max-width: 720px;

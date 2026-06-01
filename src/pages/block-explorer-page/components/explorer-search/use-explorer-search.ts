@@ -43,3 +43,37 @@ export function classifyExplorerQuery(raw: string): SearchClassification {
   }
   return { kind: 'unknown', value: trimmed }
 }
+
+export type ExplorerEntityKind = 'block' | 'tx' | 'address'
+
+export interface ExplorerRouteSuggestion {
+  kind: ExplorerEntityKind
+  routeName: 'explorer-block' | 'explorer-tx' | 'explorer-address'
+  paramKey: 'hashOrHeight' | 'txid' | 'address'
+  value: string
+}
+
+/**
+ * Список маршрутов эксплорера для строки запроса — для подсказок в любом поиске
+ * (в т.ч. глобальном header-search). Чисто синхронно, без сети.
+ *
+ * 64-hex неоднозначен между блоком и транзакцией (локально не различить), поэтому
+ * для него возвращаем ДВА варианта — блок и транзакцию. Для height/address — один.
+ * `unknown` → пусто.
+ */
+export function explorerRouteSuggestions(raw: string): ExplorerRouteSuggestion[] {
+  const { kind, value } = classifyExplorerQuery(raw)
+  switch (kind) {
+    case 'block-height':
+      return [{ kind: 'block', routeName: 'explorer-block', paramKey: 'hashOrHeight', value }]
+    case 'address':
+      return [{ kind: 'address', routeName: 'explorer-address', paramKey: 'address', value }]
+    case 'hash64':
+      return [
+        { kind: 'block', routeName: 'explorer-block', paramKey: 'hashOrHeight', value },
+        { kind: 'tx', routeName: 'explorer-tx', paramKey: 'txid', value },
+      ]
+    default:
+      return []
+  }
+}

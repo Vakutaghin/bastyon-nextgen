@@ -158,14 +158,8 @@ export const SC_SectionHeader = styled.div`
   border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
 `
 
-export const SC_SectionTitle = styled.h2`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  margin: 0;
-`
+// Капс-заголовок секции — общий примитив (audit §3.2).
+export { SC_SectionTitleUpper as SC_SectionTitle } from '@/styles/shared'
 
 export const SC_SectionAction = styled.button`
   background: transparent;

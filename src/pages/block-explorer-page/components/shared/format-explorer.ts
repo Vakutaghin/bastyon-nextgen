@@ -6,6 +6,8 @@
  * из pkoin-formatter.ts здесь НЕ подходят — они делят на 10^8.
  */
 
+import { t } from '@/i18n'
+
 const PKOIN_LOCALE = 'en-US'
 
 /** Форматирует значение PKOIN из ответа эксплорера (уже в PKOIN). */
@@ -32,27 +34,26 @@ export function shortenHash(hash: string, head = 8, tail = 6): string {
   return `${hash.slice(0, head)}…${hash.slice(-tail)}`
 }
 
-const RELATIVE_TIME_UNITS: Array<[label: string, seconds: number]> = [
-  ['год', 365 * 24 * 3600],
-  ['мес', 30 * 24 * 3600],
-  ['д', 24 * 3600],
-  ['ч', 3600],
-  ['мин', 60],
-  ['с', 1],
+const RELATIVE_TIME_UNITS: Array<[key: string, seconds: number]> = [
+  ['years', 365 * 24 * 3600],
+  ['months', 30 * 24 * 3600],
+  ['days', 24 * 3600],
+  ['hours', 3600],
+  ['minutes', 60],
+  ['seconds', 1],
 ]
 
-/** «5 мин назад», «2 ч назад» и т.д. Без зависимостей. */
+/** «5 мин назад», «2 ч назад» и т.д. Локализуется через i18n. */
 export function formatRelativeTime(unixSeconds: number, nowSeconds: number = Math.floor(Date.now() / 1000)): string {
   const diff = nowSeconds - unixSeconds
-  if (diff < 0) return 'только что'
-  if (diff < 5) return 'только что'
-  for (const [label, secs] of RELATIVE_TIME_UNITS) {
+  if (diff < 5) return t('appMsg.relativeAgo.justNow')
+  for (const [key, secs] of RELATIVE_TIME_UNITS) {
     if (diff >= secs) {
       const n = Math.floor(diff / secs)
-      return `${n} ${label} назад`
+      return t(`appMsg.relativeAgo.${key}`, { n })
     }
   }
-  return 'только что'
+  return t('appMsg.relativeAgo.justNow')
 }
 
 export function formatAbsoluteTime(unixSeconds: number): string {

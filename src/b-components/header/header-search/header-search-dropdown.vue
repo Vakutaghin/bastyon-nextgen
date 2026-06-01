@@ -1,5 +1,23 @@
 <template>
   <SC_Dropdown @mousedown.prevent>
+    <!-- Эксплорер: если запрос похож на высоту/хеш/адрес — сразу предлагаем
+         открыть его в блок-эксплорере, не дожидаясь поисковых RPC. Для 64-hex
+         (block-hash ИЛИ txid различить локально нельзя) показываем оба пункта. -->
+    <SC_DropdownSection v-if="explorerSuggestions.length">
+      <SC_DropdownSectionHeader>{{ t('search.explorerSection') }}</SC_DropdownSectionHeader>
+      <SC_DropdownItem
+        v-for="s in explorerSuggestions"
+        :key="s.kind + ':' + s.value"
+        @click="onSelectExplorer(s)"
+      >
+        <SC_RecentIcon>{{ s.icon }}</SC_RecentIcon>
+        <SC_ItemBody>
+          <SC_ItemPrimary>{{ s.label }}</SC_ItemPrimary>
+          <SC_ItemSecondary>{{ s.display }}</SC_ItemSecondary>
+        </SC_ItemBody>
+      </SC_DropdownItem>
+    </SC_DropdownSection>
+
     <!-- Recent: показывается, когда запрос короче порога (или пуст), но
          история не пуста. Это паритет со старым меню: dropdown сразу
          даёт что-то полезное, не только после первого ввода. -->
@@ -45,7 +63,9 @@
     <template v-if="showResults">
       <SC_LoadingHint v-if="isLoading && !hasAny"> {{ t('search.searching') }} </SC_LoadingHint>
 
-      <SC_EmptyHint v-else-if="!hasAny"> {{ t('search.noResults') }} </SC_EmptyHint>
+      <SC_EmptyHint v-else-if="!hasAny && !explorerSuggestions.length">
+        {{ t('search.noResults') }}
+      </SC_EmptyHint>
 
       <template v-else>
         <SC_DropdownSection v-if="apps.length">
@@ -67,7 +87,9 @@
         <SC_DropdownSection v-if="users.length">
           <SC_DropdownSectionHeader>
             {{ t('search.tabUsers') }}
-            <SC_DropdownSeeAll @click="onSeeAll('users')">{{ t('search.seeAll') }}</SC_DropdownSeeAll>
+            <SC_DropdownSeeAll @click="onSeeAll('users')">{{
+              t('search.seeAll')
+            }}</SC_DropdownSeeAll>
           </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="u in users" :key="u.address" @click="onSelectUser(u)">
             <SC_Avatar>
@@ -90,7 +112,9 @@
         <SC_DropdownSection v-if="tags.length">
           <SC_DropdownSectionHeader>
             {{ t('search.tabTags') }}
-            <SC_DropdownSeeAll @click="onSeeAll('tags')">{{ t('search.seeAll') }}</SC_DropdownSeeAll>
+            <SC_DropdownSeeAll @click="onSeeAll('tags')">{{
+              t('search.seeAll')
+            }}</SC_DropdownSeeAll>
           </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="tag in tags" :key="tag.tag" @click="onSelectTag(tag)">
             <SC_ItemBody>
@@ -105,7 +129,9 @@
         <SC_DropdownSection v-if="posts.length">
           <SC_DropdownSectionHeader>
             {{ t('search.tabPosts') }}
-            <SC_DropdownSeeAll @click="onSeeAll('posts')">{{ t('search.seeAll') }}</SC_DropdownSeeAll>
+            <SC_DropdownSeeAll @click="onSeeAll('posts')">{{
+              t('search.seeAll')
+            }}</SC_DropdownSeeAll>
           </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="p in posts" :key="p.txid || p.hash" @click="onSelectPost(p)">
             <SC_ItemBody>
@@ -122,9 +148,15 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRouter, type RouteLocationRaw } from 'vue-router'
 import { MIN_QUERY_LENGTH } from '@/composables/use-search-query'
 import { safeDecode } from '@/composables/use-feed'
+import {
+  explorerRouteSuggestions,
+  type ExplorerEntityKind,
+} from '@/pages/block-explorer-page/components/explorer-search/use-explorer-search'
+import { recordVisit } from '@/pages/block-explorer-page/components/shared/use-search-history'
+import { shortenHash } from '@/pages/block-explorer-page/components/shared/format-explorer'
 import { useSearchResults } from './use-search-results'
 import { useSearchRecent } from './use-search-recent'
 import { useSearchNavigation } from './use-search-navigation'
@@ -162,6 +194,44 @@ const queryRef = toRef(props, 'query')
 const showResults = computed(() => props.query.length >= MIN_QUERY_LENGTH)
 
 const { users, tags, posts, apps, isLoading, hasAny } = useSearchResults(queryRef)
+
+interface ExplorerSuggestion {
+  kind: ExplorerEntityKind
+  icon: string
+  label: string
+  value: string
+  display: string
+  to: RouteLocationRaw
+}
+
+const EXPLORER_META: Record<ExplorerEntityKind, { icon: string; labelKey: string }> = {
+  block: { icon: '🧊', labelKey: 'search.explorerOpenBlock' },
+  tx: { icon: '🔗', labelKey: 'search.explorerOpenTx' },
+  address: { icon: '📍', labelKey: 'search.explorerOpenAddress' },
+}
+
+// Локальная классификация запроса (без сети). Маршруты считает
+// explorerRouteSuggestions; здесь только presentation — иконка/лейбл/превью.
+const explorerSuggestions = computed<ExplorerSuggestion[]>(() =>
+  explorerRouteSuggestions(props.query).map((s) => {
+    const meta = EXPLORER_META[s.kind]
+    return {
+      kind: s.kind,
+      icon: meta.icon,
+      label: t(meta.labelKey),
+      value: s.value,
+      display:
+        s.kind === 'block' && /^\d+$/.test(s.value) ? `#${s.value}` : shortenHash(s.value, 10, 8),
+      to: { name: s.routeName, params: { [s.paramKey]: s.value } },
+    }
+  })
+)
+
+function onSelectExplorer(s: ExplorerSuggestion): void {
+  recordVisit(s.value, s.kind)
+  emit('close')
+  router.push(s.to)
+}
 
 const emitClose = () => emit('close')
 const {

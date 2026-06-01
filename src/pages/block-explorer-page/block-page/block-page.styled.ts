@@ -1,6 +1,27 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS } from '@/styles/design-tokens'
+
+// Общие примитивы эксплорера (audit §3.1).
+export {
+  SC_Placeholder,
+  SC_PlaceholderError,
+  SC_LoadMoreFooter,
+  SC_LoadMoreBtn,
+} from '../components/shared/explorer-primitives.styled'
+
+export const SC_BlockConfirmationsTip = styled.span`
+  font-size: 12px;
+  color: ${COLORS.WARNING_ICON};
+`
+
+export const SC_BlockSiblingRow = styled.div`
+  margin-bottom: 4px;
+`
+
+export const SC_BlockSiblingsEmpty = styled.div`
+  color: ${COLORS.TEXT_MUTED};
+`
 
 export const SC_BlockPageWork = styled.div`
   display: flex;
@@ -204,45 +225,3 @@ export const SC_TxValue = styled.div`
   font-variant-numeric: tabular-nums;
 `
 
-export const SC_LoadMoreFooter = styled.div`
-  display: flex;
-  justify-content: center;
-  padding: 14px 18px;
-  border-top: 1px solid ${COLORS.BORDER_LIGHTER};
-`
-
-export const SC_LoadMoreBtn = styled.button`
-  padding: 8px 18px;
-  font-size: 13px;
-  font-weight: 500;
-  color: ${COLORS.PRIMARY};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
-  border-radius: 6px;
-  cursor: pointer;
-  transition:
-    background-color ${TRANSITIONS.QUICK},
-    border-color ${TRANSITIONS.QUICK};
-
-  &:hover:not(:disabled) {
-    background: ${COLORS.PRIMARY_LIGHT};
-    border-color: ${COLORS.PRIMARY_LIGHT_50};
-  }
-
-  &:disabled {
-    color: ${COLORS.TEXT_MUTED};
-    background: ${COLORS.BG_DISABLED};
-    border-color: ${COLORS.BORDER_LIGHTER};
-    cursor: not-allowed;
-  }
-`
-
-export const SC_Placeholder = styled.div`
-  padding: 32px;
-  text-align: center;
-  color: ${COLORS.TEXT_MUTED};
-`
-
-export const SC_PlaceholderError = styled(SC_Placeholder)`
-  color: ${COLORS.DANGER};
-`
