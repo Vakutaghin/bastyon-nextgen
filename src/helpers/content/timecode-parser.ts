@@ -57,7 +57,7 @@ export function extractPlainTextFromContent(content: string | object | null | un
 
   // Editor.js JSON
   if (typeof content === 'object') {
-    return editorJsToText(content as any)
+    return editorJsToText(content)
   }
 
   const str = String(content).trim()
@@ -74,10 +74,17 @@ export function extractPlainTextFromContent(content: string | object | null | un
   return str
 }
 
-function editorJsToText(data: any): string {
-  if (!data || !Array.isArray(data.blocks)) return ''
+/** Минимальная форма Editor.js блока, нужная для извлечения текста. */
+interface EditorJsTextBlock {
+  type?: string
+  data?: { text?: unknown; items?: unknown }
+}
+
+function editorJsToText(data: unknown): string {
+  const blocks = data && typeof data === 'object' ? (data as { blocks?: unknown }).blocks : undefined
+  if (!Array.isArray(blocks)) return ''
   const lines: string[] = []
-  for (const block of data.blocks) {
+  for (const block of blocks as EditorJsTextBlock[]) {
     if (!block || !block.data) continue
     switch (block.type) {
       case 'paragraph':

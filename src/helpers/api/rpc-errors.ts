@@ -12,18 +12,27 @@
  */
 
 export function isLogicError(error: unknown): boolean {
-  return Boolean(
-    error &&
-    typeof error === 'object' &&
-    ('code' in error || ('error' in error && 'code' in ((error as any).error ?? {})))
-  )
+  if (!error || typeof error !== 'object') return false
+  if ('code' in error) return true
+  if ('error' in error) {
+    const nested = (error as { error?: unknown }).error
+    return Boolean(nested && typeof nested === 'object' && 'code' in nested)
+  }
+  return false
+}
+
+interface RpcErrorShape {
+  httpStatus?: number
+  message?: string
+  error?: { message?: string }
 }
 
 export function isTimeout500(error: unknown): boolean {
-  const result = (error as any)?.httpStatus === 500
+  const err = (error ?? {}) as RpcErrorShape
+  const result = err.httpStatus === 500
   if (!result) return false
 
-  const errorMsg = (error as any)?.message || (error as any)?.error?.message || ''
+  const errorMsg = err.message || err.error?.message || ''
   const errorMsgLower = errorMsg.toLowerCase()
 
   // Прямая проверка на 'timeout'
@@ -34,7 +43,10 @@ export function isTimeout500(error: unknown): boolean {
   try {
     const jsonMatch = errorMsg.match(/\{.*\}/)
     if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0])
+      const parsed = JSON.parse(jsonMatch[0]) as {
+        message?: unknown
+        error?: unknown
+      }
       const parsedMsg = parsed.message || parsed.error
       if (typeof parsedMsg === 'string' && parsedMsg.toLowerCase().includes('timeout')) {
         return true

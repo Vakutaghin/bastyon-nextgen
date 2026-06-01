@@ -17,7 +17,7 @@ export interface VideoData extends BaseEntity<string> {
   title?: string
   thumbnail?: string
   duration?: number
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -25,7 +25,7 @@ export interface VideoData extends BaseEntity<string> {
  */
 export interface ContentCache extends BaseEntity {
   key: string
-  data: any
+  data: unknown
   expiresAt?: number
 }
 
@@ -66,7 +66,7 @@ export interface PendingPostRating extends BaseEntity {
  */
 export interface AppSettings extends BaseEntity<string> {
   key: string
-  value: any
+  value: unknown
 }
 
 /**

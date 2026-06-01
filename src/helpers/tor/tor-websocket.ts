@@ -287,22 +287,25 @@ export function installTorWebSocketGlobalGuard(): void {
   ) {
     try {
       // Synchronous access; the store is in memory after pinia install.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const mod = (globalThis as any).__torStoreSync as
-        | { shouldTorify: boolean }
-        | undefined
+      const mod = (globalThis as typeof globalThis & {
+        __torStoreSync?: { shouldTorify: boolean }
+      }).__torStoreSync
       if (mod?.shouldTorify) {
-        // eslint-disable-next-line new-cap
-        return new (Shim as any)(url, protocols)
+        return new Shim(url, protocols)
       }
     } catch {}
-    // eslint-disable-next-line new-cap
-    return new (Native as any)(url, protocols)
+    return new Native(url, protocols)
   } as unknown as typeof WebSocket
   Object.defineProperty(Hybrid, 'name', { value: 'WebSocket' })
-  ;(Hybrid as any).CONNECTING = CONNECTING
-  ;(Hybrid as any).OPEN = OPEN
-  ;(Hybrid as any).CLOSING = CLOSING
-  ;(Hybrid as any).CLOSED = CLOSED
+  const statics = Hybrid as unknown as {
+    CONNECTING: number
+    OPEN: number
+    CLOSING: number
+    CLOSED: number
+  }
+  statics.CONNECTING = CONNECTING
+  statics.OPEN = OPEN
+  statics.CLOSING = CLOSING
+  statics.CLOSED = CLOSED
   globalThis.WebSocket = Hybrid
 }

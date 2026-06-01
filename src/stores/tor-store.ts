@@ -33,12 +33,12 @@ const LS_BRIDGES_CUSTOM = 'tor:bridges:custom'
 
 function isTauriEnv(): boolean {
   if (typeof window === 'undefined') return false
-  const w = window as any
-  if (typeof w.__TAURI__ !== 'undefined') return true
-  if (typeof w.__TAURI_INTERNALS__ !== 'undefined') return true
-  if (typeof w.__TAURI_METADATA__ !== 'undefined') return true
+  // Tauri инжектит глобалы (__TAURI__ и т.п.) как реальные объекты — детектим через `in`.
+  if ('__TAURI__' in window) return true
+  if ('__TAURI_INTERNALS__' in window) return true
+  if ('__TAURI_METADATA__' in window) return true
   try {
-    return Object.keys(w).some((k) => k.startsWith('__TAURI'))
+    return Object.keys(window).some((k) => k.startsWith('__TAURI'))
   } catch {
     return false
   }

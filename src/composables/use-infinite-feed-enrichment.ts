@@ -4,6 +4,15 @@ import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCallWithAuth } from '@/helpers/api/request'
 import { generateCacheHash } from '@/helpers/common/cache-hash'
 import { mergeRepostContent, type AdaptedPost } from './use-feed'
+import type { GetPageScore } from '@/types/rpc-responses/get-page-scores'
+
+/** Сырой пост из API с минимальным набором полей, нужных для enrichment. */
+interface RawContentLike {
+  repost?: string
+  txid?: string
+  hash?: string
+  id?: string | number
+}
 
 /**
  * Подгружает контент оригинальных записей для репостов
@@ -14,18 +23,18 @@ import { mergeRepostContent, type AdaptedPost } from './use-feed'
  */
 export async function enrichRepostsWithContent(
   posts: AdaptedPost[],
-  contents: any[],
+  contents: RawContentLike[],
 ): Promise<void> {
   const repostTxids = [...new Set(
     contents
-      .filter((p: any) => p.repost)
-      .map((p: any) => p.repost),
+      .filter((p) => p.repost)
+      .map((p) => p.repost),
   )] as string[]
 
   if (repostTxids.length === 0) return
 
   try {
-    const result = await rpcCallWithAuth<any[]>({
+    const result = await rpcCallWithAuth<RawContentLike[]>({
       method: rpcEndpoints.getRawTransactionWithMessageById,
       parameters: [repostTxids],
       cachehash: generateCacheHash(),
@@ -36,7 +45,7 @@ export async function enrichRepostsWithContent(
     const originals = Array.isArray(result) ? result : []
 
     const originalMap = new Map(
-      (Array.isArray(originals) ? originals : []).map((p: any) => [p.txid || p.hash || p.id, p]),
+      (Array.isArray(originals) ? originals : []).map((p) => [p.txid || p.hash || p.id, p]),
     )
 
     posts.forEach((adapted) => {
@@ -71,18 +80,18 @@ export function enrichPostsWithScores(
   if (postIds.length === 0) return
 
   // Запускаем асинхронно, не блокируя UI
-  rpcCallWithAuth<any[]>({
+  rpcCallWithAuth<GetPageScore[]>({
     method: rpcEndpoints.getPageScores,
     parameters: [postIds, userAddress, []],
     cachehash: generateCacheHash(),
-  }).then((scores: any[]) => {
+  }).then((scores) => {
 
     if (!Array.isArray(scores)) return
 
-    scores.forEach((score: any) => {
+    scores.forEach((score) => {
       if (!score.posttxid || !score.value) return
       const post = allPosts.find((p) => p.txid === score.posttxid || p.hash === score.posttxid)
-      if (post) post.myVal = score.value
+      if (post) post.myVal = score.value as number
     })
   }).catch((err) => {
     console.error('[enrichPostsWithScores] Ошибка загрузки оценок:', err)

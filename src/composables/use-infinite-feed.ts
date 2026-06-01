@@ -101,7 +101,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   // Объединение тегов категорий + пользовательских тегов (для 4-го параметра RPC: tagsfilter).
   const buildAllTags = (): string[] => {
     const categoryTags = filtersStore.selectedCategories.flatMap((id) => {
-      const category = filtersStore.allCategories.find((c: any) => c.id === id)
+      const category = filtersStore.allCategories.find((c) => c.id === id)
       return category ? category.tags.map((tag: string) => encodeURIComponent(tag)) : []
     })
     const userSelectedTags = filtersStore.selectedTags.map((tag: string) => encodeURIComponent(tag))

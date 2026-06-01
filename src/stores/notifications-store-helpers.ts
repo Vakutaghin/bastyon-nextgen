@@ -43,7 +43,7 @@ export function mapMissedEventToNotification(
   const link = (n.url ?? n.link) as string | undefined
   const resolvedType = (MESSAGE_TYPE_MAP[mesType] ?? 'other') as NotificationItem['type']
 
-  if (!ALLOWED_NOTIFICATION_TYPES.includes(resolvedType as any)) {
+  if (!ALLOWED_NOTIFICATION_TYPES.includes(resolvedType)) {
     return null
   }
 
@@ -65,7 +65,7 @@ export function mapMissedEventToNotification(
 /**
  * Извлекает массив из различных форматов обёрток RPC-ответа.
  */
-export function unwrapNotificationResponse(raw: unknown): any[] {
+export function unwrapNotificationResponse(raw: unknown): unknown[] {
   if (Array.isArray(raw)) return raw
   if (raw && typeof raw === 'object') {
     const obj = raw as Record<string, unknown>

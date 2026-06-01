@@ -3,7 +3,10 @@
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCallWithAuth } from '@/helpers/api/request'
 import { generateCacheHash } from '@/helpers/common/cache-hash'
-import type { GetHierarchicalStripData } from '@/types/rpc-responses/get-hierarchical-strip'
+import type {
+  GetHierarchicalStripData,
+  GetHierarchicalStripPost,
+} from '@/types/rpc-responses/get-hierarchical-strip'
 import { favoritesAPI } from '@/db/apis/favorites-api'
 
 import { MOST_COMMENTED_WINDOW_MINUTES } from './use-infinite-feed-consts'
@@ -56,7 +59,7 @@ export async function fetchFavoritesFeed(params: FetchParams): Promise<GetHierar
     return { height: 0, contents: [] } as GetHierarchicalStripData
   }
 
-  const result = await rpcCallWithAuth<any[]>({
+  const result = await rpcCallWithAuth<GetHierarchicalStripPost[]>({
     method: rpcEndpoints.getRawTransactionWithMessageById,
     parameters: [idsToFetch],
     cachehash: generateCacheHash(),
@@ -65,12 +68,14 @@ export async function fetchFavoritesFeed(params: FetchParams): Promise<GetHierar
   })
 
   // rpcCallWithAuth unwraps the response; result is the inner data (array of posts)
-  let posts: any[] = Array.isArray(result) ? result : []
+  let posts: GetHierarchicalStripPost[] = Array.isArray(result) ? result : []
 
   // Сохраняем порядок запрошенных ID для корректной пагинации
   if (posts.length > 0) {
-    const postsMap = new Map(posts.map((p: any) => [p.txid || p.id, p]))
-    posts = idsToFetch.map((id) => postsMap.get(id)).filter((p) => p !== undefined)
+    const postsMap = new Map(posts.map((p) => [p.txid || p.id, p]))
+    posts = idsToFetch
+      .map((id) => postsMap.get(id))
+      .filter((p): p is GetHierarchicalStripPost => p !== undefined)
   }
 
   return { height: 0, contents: posts } as GetHierarchicalStripData

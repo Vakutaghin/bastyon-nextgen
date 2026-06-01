@@ -38,9 +38,11 @@ export interface ActionDefinition<TIn = unknown, TOut = unknown> {
 /**
  * Map имени action → определение.
  *
- * Используем `any` в варьируемых позициях, потому что на границе с `postMessage`
- * данные всегда `unknown` — type-safety живёт внутри каждой `ActionDefinition`,
- * а в registry-pipeline типы стираются.
+ * `any` в варьируемых позициях обязателен: `schema: z.ZodType<TIn>` инвариантна по
+ * `TIn`, поэтому ни `unknown`, ни `never` не делают конкретные `ActionDefinition<TIn, TOut>`
+ * присваиваемыми к значению map (нужно для `satisfies ActionMap` по всему модулю).
+ * Type-safety живёт внутри каждой `ActionDefinition`; на границе с `postMessage`
+ * данные всё равно `unknown`, а в registry-pipeline типы стираются.
  */
- 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- z.ZodType<TIn> инвариантна; any необходим для satisfies-присваивания гетерогенных ActionDefinition
 export type ActionMap = Record<string, ActionDefinition<any, any>>

@@ -9,7 +9,6 @@ import { useRpcQueryWithAuth } from './use-rpc-query'
 import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hierarchical-strip'
 import type { GetTopFeedResponse } from '@/types/rpc-responses/get-top-feed'
 import type { GetProfileFeedResponse, GetProfileFeedData } from '@/types/rpc-responses/get-profile-feed'
-import type { GetProfileFeedParameters } from '@/types/rpc-requests/get-profile-feed'
 import { extractPostsFromResponse } from './use-feed'
 import { useFiltersStore } from '@/stores/filters-store'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -127,8 +126,10 @@ export function useProfileFeed(
   orderby: string = '',
   ascdesc: 'asc' | 'desc' = 'desc'
 ) {
-  // Формируем правильный массив параметров согласно GetProfileFeedParameters
-  const parameters: GetProfileFeedParameters = address ? [
+  // Формируем массив параметров согласно GetProfileFeedParameters.
+  // Тип — unknown[] (как требует T_RpcRequestParams.parameters): рантайм-форма
+  // отличается от полного кортежа GetProfileFeedParameters.
+  const parameters: unknown[] = address ? [
     0,              // height - высота блока (0 = последние)
     '',             // txid - ID транзакции для пагинации ('' = с начала, offset не используется напрямую)
     limit,          // count - количество постов
@@ -142,7 +143,7 @@ export function useProfileFeed(
     '',             // keyword - ключевое слово для поиска
     orderby,        // orderby - поле для сортировки
     ascdesc         // ascdesc - направление сортировки
-  ] : [] as any
+  ] : []
 
   const { data, isLoading, error, refetch } = useRpcQueryWithAuth<GetProfileFeedResponse>(
     ['feed', 'profile', address || '', offset, limit, orderby, ascdesc],
@@ -202,7 +203,7 @@ export function useProfileFeedWithFilters(
   const ascdesc = computed(() => filtersStore.ascdesc)
 
   // Формируем правильный массив параметров согласно GetProfileFeedParameters
-  const parameters = computed<GetProfileFeedParameters>(() => address ? [
+  const parameters = computed<unknown[]>(() => address ? [
     0,              // height - высота блока (0 = последние)
     '',             // txid - ID транзакции для пагинации ('' = с начала)
     limit,          // count - количество постов
@@ -216,7 +217,7 @@ export function useProfileFeedWithFilters(
     '',             // keyword - ключевое слово для поиска
     orderby.value,  // orderby - поле для сортировки (реактивное)
     ascdesc.value   // ascdesc - направление сортировки (реактивное)
-  ] : [] as any)
+  ] : [])
 
   // Используем useQuery напрямую для полного контроля над реактивностью
   const { data, isLoading, error, refetch } = useQuery<GetProfileFeedData>({
@@ -235,7 +236,7 @@ export function useProfileFeedWithFilters(
     gcTime: 10 * 60 * 1000,
   })
 
-  const posts = computed(() => extractPostsFromResponse(data.value as any))
+  const posts = computed(() => extractPostsFromResponse(data.value))
 
   return {
     data,

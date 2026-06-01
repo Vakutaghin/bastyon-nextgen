@@ -16,7 +16,12 @@ const AVATAR_FIELDS = ['i', 'avatar', 'image', 'img', 'avatarUrl', 'avatar_url']
  * @param profile - объект профиля из RPC-ответа
  * @returns полный URL аватара или undefined
  */
-export function resolveAvatarUrl(profile: Record<string, any> | null | undefined): string | undefined {
+interface AvatarProfile {
+  accSet?: { image?: string }
+  [field: string]: unknown
+}
+
+export function resolveAvatarUrl(profile: AvatarProfile | null | undefined): string | undefined {
   if (!profile) return undefined
 
   // Приоритетный источник — настройки аккаунта

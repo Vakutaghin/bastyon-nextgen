@@ -17,9 +17,18 @@ export interface FiltersSnapshot {
  * (после флипа логики просто игнорируется — стартуем с пустыми selectedCategories).
  * Возвращает Partial — поля, которые удалось распарсить.
  */
+/** Сырой персистнутый блоб (включая legacy-поля), читаем защитно. */
+interface PersistedFilters {
+  customCategories?: Category[]
+  selectedCategories?: string[]
+  excludedCategories?: string[]
+  selectedTags?: string[]
+  topFirst?: boolean
+}
+
 export async function loadFiltersFromSettings(): Promise<Partial<FiltersSnapshot>> {
   try {
-    const settings = (await settingsAPI.get(FILTERS_SETTINGS_KEY)) as any
+    const settings = (await settingsAPI.get(FILTERS_SETTINGS_KEY)) as PersistedFilters | null | undefined
     if (!settings) return {}
 
     const snapshot: Partial<FiltersSnapshot> = {}

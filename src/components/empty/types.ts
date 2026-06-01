@@ -1,4 +1,6 @@
+import type { VNodeChild } from 'vue'
+
 export interface EmptyProps {
   description?: string
-  image?: any
+  image?: VNodeChild
 }

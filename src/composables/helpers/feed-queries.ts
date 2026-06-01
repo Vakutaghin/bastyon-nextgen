@@ -5,7 +5,22 @@
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import { favoritesAPI } from '@/db/apis/favorites-api'
-import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hierarchical-strip'
+import type {
+  GetHierarchicalStripResponse,
+  GetHierarchicalStripPost,
+} from '@/types/rpc-responses/get-hierarchical-strip'
+
+/** Сырой пост из RPC getrawtransactionwithmessagebyid (минимум полей для сортировки). */
+type RawFavoritePost = Partial<GetHierarchicalStripPost> & {
+  txid?: string
+  id?: string | number
+}
+
+/** Возможные обёртки RPC-ответа: голый массив либо `{ data }` / `{ result }`. */
+interface RpcArrayEnvelope<T> {
+  data?: T[]
+  result?: T[]
+}
 
 /** Контекст одного запроса ленты — собран наружу из useInfiniteFeed. */
 export interface FeedQueryContext {
@@ -114,26 +129,26 @@ export async function buildFavoritesFeedQuery(
     const lastIndex = allFavIds.indexOf(ctx.currentTxid)
     if (lastIndex === -1) {
       // Пост был удалён из избранного — останавливаем загрузку, иначе бесконечный цикл.
-      return { data: { contents: [] } } as any
+      return favoritesResponse([])
     }
     startIndex = lastIndex + 1
   }
 
   const idsToFetch = allFavIds.slice(startIndex, startIndex + ctx.count)
   if (idsToFetch.length === 0) {
-    return { data: { contents: [] } } as any
+    return favoritesResponse([])
   }
 
-  const result: any = await getByPRCWithAuth({
+  const result = (await getByPRCWithAuth({
     method: rpcEndpoints.getRawTransactionWithMessageById,
     parameters: [idsToFetch],
     cachehash: freshCacheHash(),
     options: {},
     state: 1,
-  })
+  })) as RawFavoritePost[] | RpcArrayEnvelope<RawFavoritePost>
 
   // RPC может вернуть результат в разных форматах: голый массив / {data} / {result}.
-  let posts: any[] = []
+  let posts: RawFavoritePost[] = []
   if (Array.isArray(result)) {
     posts = result
   } else if (result && typeof result === 'object') {
@@ -143,11 +158,24 @@ export async function buildFavoritesFeedQuery(
 
   // Сортируем посты в порядке запрошенных ID для корректной пагинации.
   if (posts.length > 0) {
-    const postsMap = new Map(posts.map((p: any) => [p.txid || p.id, p]))
-    posts = idsToFetch.map((id) => postsMap.get(id)).filter((p) => p !== undefined)
+    const postsMap = new Map(posts.map((p) => [p.txid || p.id, p]))
+    posts = idsToFetch
+      .map((id) => postsMap.get(id))
+      .filter((p): p is RawFavoritePost => p !== undefined)
   }
 
-  return { data: { contents: posts } } as any
+  return favoritesResponse(posts)
+}
+
+/**
+ * Строит частичный {@link GetHierarchicalStripResponse} для вкладки «Избранное».
+ * Потребитель ({@link extractPostsFromResponse}) читает только `data.contents`,
+ * поэтому остальные поля ответа опускаются.
+ */
+function favoritesResponse(posts: RawFavoritePost[]): GetHierarchicalStripResponse {
+  return {
+    data: { contents: posts as GetHierarchicalStripPost[] },
+  } as GetHierarchicalStripResponse
 }
 
 /**

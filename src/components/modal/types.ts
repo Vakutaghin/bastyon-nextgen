@@ -1,3 +1,5 @@
+import type { VNodeChild } from 'vue'
+
 export interface ModalProps {
   modelValue?: boolean
   open?: boolean
@@ -9,11 +11,12 @@ export interface ModalProps {
   closable?: boolean
   maskClosable?: boolean
   destroyOnClose?: boolean
-  footer?: any
+  /** Контент футера; `null` скрывает футер целиком. */
+  footer?: VNodeChild
   okText?: string
   cancelText?: string
-  okButtonProps?: any
-  cancelButtonProps?: any
+  okButtonProps?: Record<string, unknown>
+  cancelButtonProps?: Record<string, unknown>
   onOk?: () => void
   onCancel?: () => void
 }

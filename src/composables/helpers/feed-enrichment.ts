@@ -5,8 +5,23 @@
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import { mergeRepostContent, type AdaptedPost } from '../use-feed'
+import type { GetPageScore } from '@/types/rpc-responses/get-page-scores'
 
 const freshCacheHash = (): string => Date.now().toString(36) + Math.random().toString(36).slice(2)
+
+/** Сырой пост из API с минимальным набором полей, нужных для enrichment. */
+interface RawContentLike {
+  repost?: string
+  txid?: string
+  hash?: string
+  id?: string | number
+}
+
+/** Возможные обёртки RPC-ответа: голый массив либо `{ data }` / `{ result }`. */
+interface RpcArrayEnvelope<T> {
+  data?: T[]
+  result?: T[]
+}
 
 /**
  * Загружает оригинальные посты для репостов и мерджит их в адаптированные посты на месте.
@@ -14,26 +29,26 @@ const freshCacheHash = (): string => Date.now().toString(36) + Math.random().toS
  */
 export async function fetchAndMergeRepostOriginals(
   adaptedPosts: AdaptedPost[],
-  rawContents: any[]
+  rawContents: RawContentLike[]
 ): Promise<void> {
   const repostTxids = [
-    ...new Set(rawContents.filter((p: any) => p.repost).map((p: any) => p.repost)),
+    ...new Set(rawContents.filter((p) => p.repost).map((p) => p.repost)),
   ] as string[]
 
   if (repostTxids.length === 0) return
 
   try {
-    const result: any = await getByPRCWithAuth({
+    const result = (await getByPRCWithAuth({
       method: rpcEndpoints.getRawTransactionWithMessageById,
       parameters: [repostTxids],
       cachehash: freshCacheHash(),
       options: {},
       state: 1,
-    })
+    })) as RawContentLike[] | RpcArrayEnvelope<RawContentLike>
 
     const originals = Array.isArray(result) ? result : (result?.data ?? result?.result ?? [])
     const originalMap = new Map(
-      (Array.isArray(originals) ? originals : []).map((p: any) => [p.txid || p.hash || p.id, p])
+      (Array.isArray(originals) ? originals : []).map((p) => [p.txid || p.hash || p.id, p])
     )
 
     adaptedPosts.forEach((adapted) => {
@@ -67,17 +82,20 @@ export function enrichWithUserScores(
     parameters: [postIds, userAddress, []],
     cachehash: freshCacheHash(),
   })
-    .then((scoresResponse: any) => {
+    .then((rawResponse) => {
       // RPC может вернуть массив напрямую / {data} / {result}.
-      const scores = Array.isArray(scoresResponse)
+      const scoresResponse = rawResponse as
+        | GetPageScore[]
+        | RpcArrayEnvelope<GetPageScore>
+      const scores: GetPageScore[] = Array.isArray(scoresResponse)
         ? scoresResponse
         : scoresResponse?.data || scoresResponse?.result || []
 
       if (!Array.isArray(scores)) return
-      scores.forEach((score: any) => {
+      scores.forEach((score) => {
         if (!score.posttxid || !score.value) return
         const post = targetPool.find((p) => p.txid === score.posttxid || p.hash === score.posttxid)
-        if (post) post.myVal = score.value
+        if (post) post.myVal = score.value as number
       })
     })
     .catch((err) => {

@@ -13,21 +13,22 @@
  * @param response - ответ RPC-запроса
  * @returns извлечённые данные или null
  */
-export function unwrapRpcResponse<T>(response: any): T | null {
+export function unwrapRpcResponse<T>(response: unknown): T | null {
   if (response === null || response === undefined) return null
 
   // Прямой массив — возвращаем как есть
   if (Array.isArray(response)) return response as T
 
   if (typeof response === 'object') {
+    const obj = response as { result?: unknown; data?: unknown }
     // Формат { result: 'success', data: T }
-    if ('result' in response && response.result === 'success' && 'data' in response) {
-      return response.data as T
+    if ('result' in obj && obj.result === 'success' && 'data' in obj) {
+      return obj.data as T
     }
 
     // Формат { data: T }
-    if ('data' in response) {
-      return response.data as T
+    if ('data' in obj) {
+      return obj.data as T
     }
   }
 
@@ -41,7 +42,7 @@ export function unwrapRpcResponse<T>(response: any): T | null {
  * @param response - ответ RPC-запроса
  * @returns массив данных (пустой, если данные не найдены)
  */
-export function unwrapRpcArray<T>(response: any): T[] {
+export function unwrapRpcArray<T>(response: unknown): T[] {
   const data = unwrapRpcResponse<T[]>(response)
 
   if (Array.isArray(data)) return data

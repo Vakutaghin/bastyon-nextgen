@@ -9,7 +9,7 @@ export const settingsAPI = {
   /**
    * Сохранить настройку
    */
-  async set(key: string, value: any): Promise<string> {
+  async set(key: string, value: unknown): Promise<string> {
     const setting: AppSettings = {
       key,
       value,
@@ -21,7 +21,7 @@ export const settingsAPI = {
   /**
    * Получить настройку
    */
-  async get(key: string): Promise<any | undefined> {
+  async get(key: string): Promise<unknown> {
     const item = await db.settings.get(key)
     return item?.value
   }

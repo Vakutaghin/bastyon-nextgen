@@ -2,10 +2,12 @@ import { defineStore } from 'pinia'
 
 interface Post {
   id?: string | number
+  txid?: string
+  hash?: string
   likes?: number
   comments?: number
   shares?: number
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export const usePostsStore = defineStore('posts', {

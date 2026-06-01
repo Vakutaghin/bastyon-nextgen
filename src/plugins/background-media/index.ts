@@ -1,4 +1,4 @@
-import { registerPlugin } from '@capacitor/core'
+import { registerPlugin, type PluginListenerHandle } from '@capacitor/core'
 
 import type { BackgroundMediaPlugin } from './types'
 
@@ -9,7 +9,7 @@ const webFallback: BackgroundMediaPlugin = {
   update: async () => {},
   stop: async () => {},
   isSupported: async () => ({ supported: false }),
-  addListener: async () => ({ remove: async () => {} }) as any,
+  addListener: async (): Promise<PluginListenerHandle> => ({ remove: async () => {} }),
 }
 
 export const BackgroundMedia = registerPlugin<BackgroundMediaPlugin>('BackgroundMedia', {

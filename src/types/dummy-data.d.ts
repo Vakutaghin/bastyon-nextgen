@@ -10,9 +10,9 @@ declare module '@/b-components/sidebar/dummy-data/tabs-data' {
 }
 
 declare module '@/b-components/sidebar/dummy-data/footer-data' {
-  export const footerData: any;
+  export const footerData: unknown;
 }
 
 declare module '@/b-components/sidebar/dummy-data/tags-data' {
-  export const tagsData: any;
+  export const tagsData: unknown;
 }

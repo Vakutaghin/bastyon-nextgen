@@ -13,8 +13,16 @@ interface HexCaptchaInstance {
   show: (state: 'loading' | 'success' | 'error') => void
 }
 
+/** Конструктор опционального класса HexCaptcha (библиотека без типов) */
+interface HexCaptchaConstructor {
+  new (options: {
+    holder: HTMLElement
+    data: { frames: unknown; overlay: unknown; duration: number }
+  }): HexCaptchaInstance
+}
+
 // Динамический импорт HexCaptcha (если доступен)
-let HexCaptchaClass: any = null
+let HexCaptchaClass: HexCaptchaConstructor | null = null
 let hexCaptchaStylesLoaded = false
 
 async function loadHexCaptcha() {

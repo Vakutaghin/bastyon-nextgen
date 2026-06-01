@@ -1,10 +1,12 @@
+import type { CSSProperties, VNodeChild } from 'vue'
+
 export interface CardProps {
   title?: string
-  extra?: any
+  extra?: VNodeChild
   bordered?: boolean
   hoverable?: boolean
   loading?: boolean
   size?: 'default' | 'small'
-  headStyle?: any
-  bodyStyle?: any
+  headStyle?: CSSProperties
+  bodyStyle?: CSSProperties
 }

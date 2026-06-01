@@ -15,23 +15,35 @@ export function safeDecode(str: string): string {
   }
 }
 
+/** Элемент массива изображений в сыром формате API: строка URL или объект с полем url. */
+type RawImage = string | { url?: string } | null | undefined
+
 /**
  * Нормализует поле images из различных форматов API в string[].
  * Обрабатывает: строку, массив строк, массив объектов с url.
  */
-export function normalizeImages(raw: any): string[] {
+export function normalizeImages(raw: unknown): string[] {
   if (!raw) return []
   if (typeof raw === 'string') return raw ? [raw] : []
   if (Array.isArray(raw)) {
-    return raw.map((img: any) => (typeof img === 'string' ? img : img?.url || '')).filter(Boolean)
+    return (raw as RawImage[])
+      .map((img) => (typeof img === 'string' ? img : img?.url || ''))
+      .filter(Boolean)
   }
   return []
+}
+
+/** Минимальная форма профиля для проверки верификации. */
+interface VerifiableProfile {
+  badges?: unknown
+  flags?: { real?: unknown } | null
+  real?: unknown
 }
 
 /**
  * Проверяет верификацию пользователя по бейджам и флагам профиля.
  */
-export function isUserVerified(profile: Record<string, any> | null): boolean {
+export function isUserVerified(profile: VerifiableProfile | null): boolean {
   if (!profile) return false
 
   const badges = profile.badges
@@ -40,8 +52,8 @@ export function isUserVerified(profile: Record<string, any> | null): boolean {
   }
 
   const flags = profile.flags
-  const real = (flags && (flags as any).real) ?? profile.real
-  return VERIFICATION_FLAG_VALUES.includes(real as any)
+  const real = (flags && flags.real) ?? profile.real
+  return (VERIFICATION_FLAG_VALUES as readonly unknown[]).includes(real)
 }
 
 /**

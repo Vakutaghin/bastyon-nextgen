@@ -71,16 +71,18 @@ async function tryRpcRequest(
       return { data: null }
     }
 
+    const errorObj = responseData as { error?: unknown; message?: unknown } | null
+
     // Если ответ содержит JSON с ошибкой, выбрасываем его как объект
     if (responseData && typeof responseData === 'object' && 'error' in responseData) {
-      throw (responseData as any).error || responseData
+      throw errorObj?.error || responseData
     }
 
     const errorMessage =
-      (responseData as any)?.error ||
-      (responseData as any)?.message ||
+      errorObj?.error ||
+      errorObj?.message ||
       `RPC request failed: ${response.status} ${response.statusText}`
-    throw new Error(errorMessage)
+    throw new Error(String(errorMessage))
   }
 
   // Если статус OK, но есть error в ответе (нестандартное поведение некоторых методов)
@@ -88,9 +90,9 @@ async function tryRpcRequest(
     responseData &&
     typeof responseData === 'object' &&
     'error' in responseData &&
-    (responseData as any).error
+    (responseData as { error?: unknown }).error
   ) {
-    throw (responseData as any).error
+    throw (responseData as { error?: unknown }).error
   }
 
   return responseData

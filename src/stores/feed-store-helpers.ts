@@ -2,29 +2,38 @@
 
 import { RATING_MAX_STARS, RATING_ROUND_MULTIPLIER } from './feed-store-consts'
 
+/** Возможные обёртки ответа API, из которых извлекается массив постов. */
+interface ApiPostsEnvelope {
+  data?: { contents?: unknown[]; data?: unknown[] } | unknown[]
+  result?: unknown[]
+}
+
 /**
  * Извлекает массив постов из различных форматов API-ответа.
  * API может возвращать данные в 6+ разных обёртках.
  */
-export function extractPostsFromApiResponse(response: any): any[] {
+export function extractPostsFromApiResponse(response: unknown): unknown[] {
   if (!response) return []
 
   // Прямой массив
   if (Array.isArray(response)) return response
 
+  const envelope = response as ApiPostsEnvelope
+  const { data } = envelope
+
   // { data: { contents: [...] } } — hierarchical strip
-  if (response?.data?.contents && Array.isArray(response.data.contents)) {
-    return response.data.contents
+  if (data && !Array.isArray(data) && Array.isArray(data.contents)) {
+    return data.contents
   }
 
   // { data: [...] }
-  if (Array.isArray(response?.data)) return response.data
+  if (Array.isArray(data)) return data
 
   // { result: [...] }
-  if (Array.isArray(response?.result)) return response.result
+  if (Array.isArray(envelope.result)) return envelope.result
 
   // { data: { data: [...] } } — двойная обёртка
-  if (Array.isArray(response?.data?.data)) return response.data.data
+  if (data && !Array.isArray(data) && Array.isArray(data.data)) return data.data
 
   return []
 }
@@ -41,7 +50,7 @@ export function calculateRatingStars(scoreSum: number, scoreCnt: number): number
 /**
  * Проверяет верификацию пользователя.
  */
-export function isUserVerified(profile: Record<string, any> | null): boolean {
+export function isUserVerified(profile: Record<string, unknown> | null): boolean {
   if (!profile) return false
 
   const badges = profile.badges
@@ -50,6 +59,7 @@ export function isUserVerified(profile: Record<string, any> | null): boolean {
   }
 
   const flags = profile.flags
-  const real = (flags && (flags as any).real) ?? profile.real
+  const real =
+    (flags && typeof flags === 'object' ? (flags as Record<string, unknown>).real : undefined) ?? profile.real
   return real === 1 || real === '1' || real === true || real === 'true'
 }

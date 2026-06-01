@@ -12,12 +12,11 @@ import { recordTorRequest } from './request-debug'
 /** Tauri 1/2 detection: __TAURI__, __TAURI_INTERNALS__, __TAURI_METADATA__, or any __TAURI* key. */
 export function isTauriEnv(): boolean {
   if (typeof window === 'undefined') return false
-  const w = window as any
-  if (typeof w.__TAURI__ !== 'undefined') return true
-  if (typeof w.__TAURI_INTERNALS__ !== 'undefined') return true
-  if (typeof w.__TAURI_METADATA__ !== 'undefined') return true
+  if (typeof window.__TAURI__ !== 'undefined') return true
+  if (typeof window.__TAURI_INTERNALS__ !== 'undefined') return true
+  if (typeof window.__TAURI_METADATA__ !== 'undefined') return true
   try {
-    if (Object.keys(w).some((k) => k.startsWith('__TAURI'))) return true
+    if (Object.keys(window).some((k) => k.startsWith('__TAURI'))) return true
   } catch {
     /* ignore */
   }

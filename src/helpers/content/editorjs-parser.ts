@@ -2,19 +2,18 @@ import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 
 interface EditorJsBlock {
   type: string
-  data: any
+  data: unknown
 }
 
-interface EditorJsData {
-  time?: number
-  blocks: EditorJsBlock[]
-  version?: string
+/** Сужает произвольное значение data блока до записи с известными полями. */
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
 }
 
 /**
  * Пытается распарсить JSON, обрабатывая возможные проблемы
  */
-function parseJson(str: string): any {
+function parseJson(str: string): unknown {
   try {
     return JSON.parse(str)
   } catch (e) {
@@ -82,7 +81,7 @@ function extractTextFromRawJson(str: string): string {
 export function editorjsToHtml(content: string | object): string {
   if (!content) return ''
 
-  let data: EditorJsData
+  let data: unknown
 
   try {
     data = typeof content === 'string' ? parseJson(content) : content
@@ -101,7 +100,8 @@ export function editorjsToHtml(content: string | object): string {
     return formatPlainText(strContent)
   }
 
-  if (!data || !data.blocks || !Array.isArray(data.blocks)) {
+  const blocks = asRecord(data).blocks
+  if (!data || !Array.isArray(blocks)) {
     // Та же проверка для валидного JSON, но без нужной структуры
     const strContent = String(content).trim()
     if (strContent.startsWith('{"blocks":') || strContent.startsWith('{"time":')) {
@@ -115,7 +115,7 @@ export function editorjsToHtml(content: string | object): string {
     return formatPlainText(strContent)
   }
 
-  return data.blocks.map(block => {
+  return (blocks as EditorJsBlock[]).map(block => {
     switch (block.type) {
       case 'header':
         return parseHeader(block.data)
@@ -137,8 +137,9 @@ export function editorjsToHtml(content: string | object): string {
   }).join('')
 }
 
-function parseHeader(data: { text?: string; level?: number }): string {
-  if (!data || !data.text) return ''
+function parseHeader(raw: unknown): string {
+  const data = asRecord(raw) as { text?: string; level?: number }
+  if (!data.text) return ''
   const level = data.level && data.level >= 1 && data.level <= 6 ? data.level : 2
 
   // Унифицируем переносы строк и <br>
@@ -153,8 +154,9 @@ function parseHeader(data: { text?: string; level?: number }): string {
   return `<h${level}>${formatted}</h${level}>`
 }
 
-function parseParagraph(data: { text?: string }): string {
-  if (!data || !data.text) return ''
+function parseParagraph(raw: unknown): string {
+  const data = asRecord(raw) as { text?: string }
+  if (!data.text) return ''
 
   // Унифицируем переносы строк и <br>
   let text = data.text.replace(/<br\s*\/?>/gi, '\n')
@@ -168,8 +170,9 @@ function parseParagraph(data: { text?: string }): string {
   return `<p>${formatted}</p>`
 }
 
-function parseList(data: { style?: 'ordered' | 'unordered'; items?: string[] }): string {
-  if (!data || !data.items || !Array.isArray(data.items)) return ''
+function parseList(raw: unknown): string {
+  const data = asRecord(raw) as { style?: 'ordered' | 'unordered'; items?: string[] }
+  if (!data.items || !Array.isArray(data.items)) return ''
 
   const tag = data.style === 'ordered' ? 'ol' : 'ul'
   const items = data.items.map(item => `<li>${formatBastyonLinks(item)}</li>`).join('')
@@ -177,8 +180,15 @@ function parseList(data: { style?: 'ordered' | 'unordered'; items?: string[] }):
   return `<${tag}>${items}</${tag}>`
 }
 
-function parseImage(data: { file?: { url?: string }; caption?: string; withBorder?: boolean; withBackground?: boolean; stretched?: boolean }): string {
-  if (!data || !data.file || !data.file.url) return ''
+function parseImage(raw: unknown): string {
+  const data = asRecord(raw) as {
+    file?: { url?: string }
+    caption?: string
+    withBorder?: boolean
+    withBackground?: boolean
+    stretched?: boolean
+  }
+  if (!data.file || !data.file.url) return ''
 
   const classes = ['ce-image']
   if (data.withBorder) classes.push('ce-image--with-border')
@@ -198,8 +208,9 @@ function parseImage(data: { file?: { url?: string }; caption?: string; withBorde
   `
 }
 
-function parseQuote(data: { text?: string; caption?: string; alignment?: 'left' | 'center' }): string {
-  if (!data || !data.text) return ''
+function parseQuote(raw: unknown): string {
+  const data = asRecord(raw) as { text?: string; caption?: string; alignment?: 'left' | 'center' }
+  if (!data.text) return ''
 
   const alignment = data.alignment || 'left'
   let captionHtml = ''
@@ -220,8 +231,9 @@ function parseQuote(data: { text?: string; caption?: string; alignment?: 'left' 
   `
 }
 
-function parseCode(data: { code?: string }): string {
-  if (!data || !data.code) return ''
+function parseCode(raw: unknown): string {
+  const data = asRecord(raw) as { code?: string }
+  if (!data.code) return ''
   // Экранируем HTML в коде, чтобы он отображался как код
   const code = data.code
     .replace(/&/g, '&amp;')

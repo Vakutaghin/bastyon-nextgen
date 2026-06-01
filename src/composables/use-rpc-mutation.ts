@@ -26,14 +26,14 @@ export interface UseRpcMutationOptions<TData = unknown, TVariables = T_RpcReques
  * @returns Результат useMutation из Vue Query
  *
  */
-export function useRpcMutation<TData = unknown>(
-  params: T_RpcRequestParams | ((variables: any) => T_RpcRequestParams),
-  options?: UseRpcMutationOptions<TData>
+export function useRpcMutation<TData = unknown, TVariables = T_RpcRequestParams>(
+  params: T_RpcRequestParams | ((variables: TVariables) => T_RpcRequestParams),
+  options?: UseRpcMutationOptions<TData, TVariables>
 ) {
   const queryClient = useQueryClient()
 
-  return useMutation<TData, Error, any>({
-    mutationFn: async (variables?: any) => {
+  return useMutation<TData, Error, TVariables>({
+    mutationFn: async (variables: TVariables) => {
       const requestParams = typeof params === 'function' ? params(variables) : params
       return getByPRC(requestParams, options?.rpcConfig) as Promise<TData>
     },
@@ -69,14 +69,14 @@ export function useRpcMutation<TData = unknown>(
  * })
  * ```
  */
-export function useRpcMutationWithAuth<TData = unknown>(
-  params: T_RpcRequestParams | ((variables: any) => T_RpcRequestParams),
-  options?: UseRpcMutationOptions<TData>
+export function useRpcMutationWithAuth<TData = unknown, TVariables = T_RpcRequestParams>(
+  params: T_RpcRequestParams | ((variables: TVariables) => T_RpcRequestParams),
+  options?: UseRpcMutationOptions<TData, TVariables>
 ) {
   const queryClient = useQueryClient()
 
-  return useMutation<TData, Error, any>({
-    mutationFn: async (variables?: any) => {
+  return useMutation<TData, Error, TVariables>({
+    mutationFn: async (variables: TVariables) => {
       const requestParams = typeof params === 'function' ? params(variables) : params
       return getByPRCWithAuth(requestParams, options?.rpcConfig) as Promise<TData>
     },

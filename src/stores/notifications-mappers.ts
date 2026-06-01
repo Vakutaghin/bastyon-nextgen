@@ -128,7 +128,7 @@ const TYPE_MAP: Record<string, NotificationItem['type']> = {
  * Маппит сырое событие из getmissedinfo в NotificationItem.
  * Принимает либо строго типизированный GetMissedInfoEventItem, либо Record (legacy/неизвестные mesType).
  */
-export function mapMissedEventToNotification(n: Record<string, any>): NotificationItem | null {
+export function mapMissedEventToNotification(n: Record<string, unknown>): NotificationItem | null {
   const id = (n.txid ?? n.id ?? n.nblock ?? Math.random().toString(36)) as string
   const nblock = Number(n.nblock ?? 0) || 0
   const mesType = (n.mesType ?? n.type) as string

@@ -3,8 +3,21 @@ import { useQuery } from '@tanstack/vue-query'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCallWithAuth } from '@/helpers/api/request'
 import type { GetProfileFeedData } from '@/types/rpc-responses/get-profile-feed'
+import type { GetHierarchicalStripPost } from '@/types/rpc-responses/get-hierarchical-strip'
+import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { extractPostsFromResponse, mergeRepostContent } from '@/composables/use-feed'
 import type { AdaptedPost } from '@/composables/use-feed'
+
+/** Сырой пост из API с минимальным набором полей, нужных для merge репостов. */
+interface RawRepostPost {
+  repost?: string
+  txid?: string
+  hash?: string
+  id?: string | number
+}
+
+/** Элемент `contents` из getprofilefeed — пост либо профиль пользователя. */
+type ProfileFeedItem = GetHierarchicalStripPost | UserProfile
 
 /**
  * Параметры для useProfileFeed
@@ -33,7 +46,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
   const safeDistance = threshold ?? (typeof window !== 'undefined' ? window.innerHeight : 1000)
 
   const allPosts = ref<ReturnType<typeof extractPostsFromResponse>>([])
-  const userProfile = ref<any>(null)
+  const userProfile = ref<UserProfile | null>(null)
   const lastTxid = ref<string>('')
   const hasMore = ref(true)
   const isLoadingMore = ref(false)
@@ -101,18 +114,23 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       return
     }
 
-    let newPosts: AdaptedPost[] = extractPostsFromResponse(newData as any)
+    // getprofilefeed возвращает `GetProfileFeedData` (с полем `contents`), которое
+    // extractPostsFromResponse читает через ветку `feedData.contents`. Структуры
+    // пересекаются лишь частично, поэтому требуется широкое приведение через unknown.
+    let newPosts: AdaptedPost[] = extractPostsFromResponse(
+      newData as unknown as Parameters<typeof extractPostsFromResponse>[0]
+    )
     const contents = newData.contents
 
     // Подгружаем контент оригинальных записей для репостов
     const repostTxids = [...new Set(
-      contents
-        .filter((p: any) => p.repost)
-        .map((p: any) => p.repost)
+      (contents as RawRepostPost[])
+        .filter((p) => p.repost)
+        .map((p) => p.repost)
     )] as string[]
     if (repostTxids.length > 0) {
       try {
-        const result = await rpcCallWithAuth<any[]>({
+        const result = await rpcCallWithAuth<RawRepostPost[]>({
           method: rpcEndpoints.getRawTransactionWithMessageById,
           parameters: [repostTxids],
           cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
@@ -121,7 +139,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
         })
         const originals = Array.isArray(result) ? result : []
         const originalMap = new Map(
-          (Array.isArray(originals) ? originals : []).map((p: any) => [p.txid || p.hash || p.id, p])
+          (Array.isArray(originals) ? originals : []).map((p) => [p.txid || p.hash || p.id, p])
         )
         newPosts.forEach((adapted) => {
           if (!adapted.repost) return
@@ -134,7 +152,10 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     }
 
     // Извлекаем профиль пользователя из ответа
-    const profile = contents.find((item: any) => item.name && !item.txid)
+    const profile = (contents as ProfileFeedItem[]).find(
+      (item): item is UserProfile =>
+        'name' in item && Boolean(item.name) && !('txid' in item && item.txid)
+    )
     if (profile) {
       userProfile.value = profile
     }
@@ -155,8 +176,9 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       // Или ищем в contents с конца
       let lastContentTxid = ''
       for (let i = contents.length - 1; i >= 0; i--) {
-        if ((contents[i] as any).txid) {
-          lastContentTxid = (contents[i] as any).txid
+        const item = contents[i] as RawRepostPost
+        if (item.txid) {
+          lastContentTxid = item.txid
           break
         }
       }
@@ -196,7 +218,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
 
     const componentOrEl = loadMoreTrigger.value
     // Обработка случая, когда ref возвращает компонент, а не элемент
-    const el = (componentOrEl as any)?.$el ?? componentOrEl
+    const el = (componentOrEl as { $el?: Element } | null)?.$el ?? componentOrEl
 
     if (!el || !(el instanceof Element) || !hasMore.value) return
 

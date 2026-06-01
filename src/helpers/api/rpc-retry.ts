@@ -72,8 +72,8 @@ export async function retryWithBackoff<P, R>(
 
   if (lastError.length > 0) {
     const errorMessage = `All ${protocolName} servers failed. Last error: ${lastError[lastError.length - 1]!.message}`
-    const combinedError = new Error(errorMessage)
-    ;(combinedError as any).allErrors = lastError
+    const combinedError = new Error(errorMessage) as Error & { allErrors: Error[] }
+    combinedError.allErrors = lastError
     throw combinedError
   }
 

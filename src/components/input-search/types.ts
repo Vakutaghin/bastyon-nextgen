@@ -1,3 +1,5 @@
+import type { VNodeChild } from 'vue'
+
 export interface InputSearchProps {
   size?: 'large' | 'middle' | 'small'
   disabled?: boolean
@@ -5,7 +7,7 @@ export interface InputSearchProps {
   value?: string
   defaultValue?: string
   allowClear?: boolean
-  enterButton?: boolean | any
+  enterButton?: boolean | VNodeChild
   loading?: boolean
   onSearch?: (value: string) => void
   maxLength?: number

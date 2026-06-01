@@ -1,3 +1,5 @@
+import type { VNodeChild } from 'vue'
+
 export interface InputProps {
   size?: 'large' | 'middle' | 'small'
   disabled?: boolean
@@ -5,10 +7,10 @@ export interface InputProps {
   value?: string
   defaultValue?: string
   allowClear?: boolean
-  prefix?: any
-  suffix?: any
-  addonBefore?: any
-  addonAfter?: any
+  prefix?: VNodeChild
+  suffix?: VNodeChild
+  addonBefore?: VNodeChild
+  addonAfter?: VNodeChild
   type?: string
   maxLength?: number
 }
