@@ -172,6 +172,9 @@ export default defineConfig(({ mode }) => ({
   },
 
   optimizeDeps: {
+    // ffmpeg.wasm спавнит свой worker через `new Worker(new URL('./worker.js', import.meta.url))`.
+    // esbuild-пребандл ломает этот паттерн — исключаем, чтобы Vite сам корректно собрал worker.
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
     esbuildOptions: {
       define: {
         global: 'globalThis',

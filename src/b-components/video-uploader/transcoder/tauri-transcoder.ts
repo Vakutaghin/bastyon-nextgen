@@ -29,6 +29,8 @@ import { listen } from '@tauri-apps/api/event'
  * Самый быстрый и надежный способ транскодирования
  */
 export class TauriTranscoder implements Transcoder {
+  readonly kind = 'tauri' as const
+
   /**
    * Проверить поддержку
    */

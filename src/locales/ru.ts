@@ -1044,6 +1044,8 @@ export default {
     transcodeErrorPrefix: 'Ошибка транскодирования: {message}',
     storageLimitReached: 'Превышен лимит хранилища. Удалите старые видео.',
     transcodeNotSupported: 'Транскодирование не поддерживается в вашем браузере',
+    wasmSlowNotice:
+      'Транскодирование выполняется прямо в браузере (без нативного ускорения) — обработка может занять несколько минут. По умолчанию используется 480p.',
     installFfmpegHint:
       'Установите FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'Файл не выбран',

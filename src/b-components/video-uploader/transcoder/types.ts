@@ -94,9 +94,17 @@ export interface TranscodeResult {
 }
 
 /**
+ * Способ транскодирования: нативный ffmpeg через Tauri либо ffmpeg.wasm в браузере.
+ */
+export type TranscoderKind = 'tauri' | 'wasm'
+
+/**
  * Интерфейс транскодера
  */
 export interface Transcoder {
+  /** Каким способом реализован транскодер — для выбора UI-подсказок и приоритета. */
+  readonly kind: TranscoderKind
+
   /**
    * Транскодировать видео
    * @param file Исходный видеофайл
@@ -122,6 +130,9 @@ export interface Transcoder {
    * @returns true если поддерживается
    */
   isSupported(): boolean
+
+  /** Освободить ресурсы (если требуется реализации). */
+  destroy?(): void
 }
 
 /**

@@ -1042,6 +1042,8 @@ export default {
     transcodeErrorPrefix: 'Transcoding error: {message}',
     storageLimitReached: 'Storage limit exceeded. Delete old videos.',
     transcodeNotSupported: 'Transcoding is not supported in your browser',
+    wasmSlowNotice:
+      'Transcoding runs right in your browser (no native acceleration) — it may take a few minutes. Defaults to 480p.',
     installFfmpegHint:
       'Install FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'No file selected',

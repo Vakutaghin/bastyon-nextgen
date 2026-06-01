@@ -81,6 +81,18 @@ export const DATA_SAVER_PRESET = {
 } as const
 
 /**
+ * Потолок разрешения для браузерного (ffmpeg.wasm) пути. wasm в 5–10× медленнее
+ * нативного, поэтому по умолчанию не поднимаемся выше 480p (см. Phase 4).
+ */
+export const WASM_MAX_RESOLUTION: TargetResolution = 480
+
+/**
+ * Мягкий потолок размера входного файла для браузерного транскода. Выше этого
+ * ffmpeg.wasm рискует упереться в память вкладки — предлагаем десктоп-приложение.
+ */
+export const WASM_RECOMMENDED_MAX_SIZE = 200 * 1024 * 1024 // 200 MB
+
+/**
  * Получить рекомендуемый битрейт для разрешения
  */
 export function getBitrateForResolution(resolution: TargetResolution): number {

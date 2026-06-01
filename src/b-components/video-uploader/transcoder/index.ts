@@ -6,14 +6,15 @@ import type {
   VideoMetadata,
 } from './types'
 import { TauriTranscoder } from './tauri-transcoder'
-import { TranscodeError } from './types'
-import { isTauri } from '../utils/environment'
+import { TranscodeError, type TranscoderKind } from './types'
 
 /**
- * Главный транскодер
- * Использует только TauriTranscoder (работает только в Tauri)
+ * Главный транскодер.
+ * Выбирает реализацию по приоритету: Tauri (нативный ffmpeg) → ffmpeg.wasm (браузер) → нет.
+ * wasm-путь даёт standalone-работу без нативной обвязки (принцип децентрализации).
  */
 class UniversalTranscoder implements Transcoder {
+  readonly kind = 'tauri' as const // номинальное соответствие интерфейсу; реальный вид — getTranscoderInfo()
   private transcoder: Transcoder | null = null
   private initPromise: Promise<void> | null = null
 
@@ -34,41 +35,50 @@ class UniversalTranscoder implements Transcoder {
   }
 
   /**
-   * Выбрать транскодер
-   * Используется только TauriTranscoder
+   * Выбрать транскодер по приоритету Tauri → ffmpeg.wasm → null.
+   * wasm-модуль грузится лениво (динамический import), чтобы ничего ffmpeg-related
+   * не попадало в стартовый чанк до реальной надобности.
    */
   private async selectTranscoder(): Promise<void> {
-    // Используем только TauriTranscoder
+    // 1) Tauri — самый быстрый, нативный ffmpeg.
     try {
       const tauriTranscoder = new TauriTranscoder()
-
-      // Сначала проверяем синхронно
       if (tauriTranscoder.isSupported()) {
         this.transcoder = tauriTranscoder
         return
       }
-
-      // Если синхронная проверка не сработала, пробуем асинхронную
       const { isTauriAsync } = await import('../utils/environment')
       if (await isTauriAsync()) {
         this.transcoder = tauriTranscoder
         return
       }
     } catch {
-      // Игнорируем ошибки инициализации
+      // Игнорируем — пробуем браузерный путь.
     }
 
-    // Если Tauri не доступен
+    // 2) Браузер — ffmpeg.wasm (standalone, без нативной обвязки).
+    try {
+      const { WasmTranscoder } = await import('./wasm-transcoder')
+      const wasm = new WasmTranscoder()
+      if (wasm.isSupported()) {
+        this.transcoder = wasm
+        return
+      }
+    } catch {
+      // Игнорируем ошибки инициализации wasm.
+    }
+
+    // 3) Ничего не доступно.
     this.transcoder = null
   }
 
   /**
-   * Проверить поддержку (синхронная версия)
-   * Для более надежной проверки используйте isSupportedAsync()
+   * Проверить поддержку (синхронная версия).
+   * До завершения async-инициализации может вернуть false — для надёжности используйте
+   * isSupportedAsync().
    */
   isSupported(): boolean {
-    // Транскодирование поддерживается только в Tauri
-    return isTauri() && this.transcoder !== null && (this.transcoder?.isSupported() ?? false)
+    return this.transcoder !== null && this.transcoder.isSupported()
   }
 
   /**
@@ -141,28 +151,29 @@ class UniversalTranscoder implements Transcoder {
   }
 
   /**
-   * Получить информацию о текущем транскодере
+   * Получить информацию о текущем транскодере.
+   * `method`: 'tauri' (нативный) | 'wasm' (браузер) | 'none' (не поддерживается).
    */
-  getTranscoderInfo(): { method: string; supported: boolean } {
-    if (this.transcoder instanceof TauriTranscoder) {
-      return {
-        method: 'tauri',
-        supported: this.isSupported(),
-      }
-    }
+  getTranscoderInfo(): { method: TranscoderKind | 'none'; supported: boolean } {
     return {
-      method: 'none',
-      supported: false,
+      method: this.transcoder?.kind ?? 'none',
+      supported: this.isSupported(),
     }
+  }
+
+  /**
+   * Дождаться инициализации и вернуть актуальный метод транскодера.
+   */
+  async getTranscoderInfoAsync(): Promise<{ method: TranscoderKind | 'none'; supported: boolean }> {
+    await this.ensureInitialized()
+    return this.getTranscoderInfo()
   }
 
   /**
    * Уничтожить транскодер и освободить ресурсы
    */
   destroy(): void {
-    if (this.transcoder instanceof TauriTranscoder) {
-      this.transcoder.destroy()
-    }
+    this.transcoder?.destroy?.()
     this.transcoder = null
   }
 }

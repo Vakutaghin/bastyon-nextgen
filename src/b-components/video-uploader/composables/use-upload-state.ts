@@ -87,8 +87,12 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
 
       const transcoderInfo = transcoder.getTranscoderInfo()
       transcoderName.value =
-        transcoderInfo.method === 'tauri' ? 'TauriTranscoder' : t('videoMsg.unknown')
-      isWorker.value = false
+        transcoderInfo.method === 'tauri'
+          ? 'TauriTranscoder'
+          : transcoderInfo.method === 'wasm'
+            ? 'ffmpeg.wasm'
+            : t('videoMsg.unknown')
+      isWorker.value = transcoderInfo.method === 'wasm'
 
       uploadState.value = 'ready'
     } catch (error) {
