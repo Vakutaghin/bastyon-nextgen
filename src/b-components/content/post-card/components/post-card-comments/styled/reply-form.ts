@@ -108,6 +108,64 @@ export const SC_ReplySendBtn = styled.button`
   }
 `
 
+/** Сетка эмодзи внутри popover (без абсолютного позиционирования) */
+export const SC_EmojiGridPanel = styled.div`
+  width: 280px;
+  max-height: 240px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${COLORS.GRAY_CCC};
+    border-radius: 2px;
+  }
+`
+
+export const SC_EmojiCellBtn = styled.button`
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: ${COLORS.BG_HOVER};
+  }
+`
+
+/** Кнопка-триггер пикера эмодзи (рядом с полем ввода) */
+export const SC_EmojiTriggerBtn = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: ${COLORS.TEXT_SECONDARY};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: ${COLORS.TEXT_PRIMARY};
+  }
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`
+
 export const SC_ReplyCancelBtn = styled.button`
   width: 36px;
   height: 36px;

@@ -17,29 +17,36 @@ import type { UserState as UserStateData } from '@/types/rpc-responses/user-stat
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 
 /**
- * Порог репутации, ниже которого комментарий считается скрытым по умолчанию.
- * В legacy psdk.user.hiddenComment имел сложный набор проверок; для nextgen
- * стартуем с простого порога — будем уточнять по мере появления данных.
+ * Порог репутации автора для скрытия комментария (legacy psdk.user.hiddenComment:
+ * `ustate.reputation <= -0.5`, satolist.js:10520-10532).
  */
-export const HIDE_BY_REPUTATION_THRESHOLD = -50
+export const HIDE_REPUTATION_MAX = -0.5
+
+/**
+ * Минимум дизлайков, при котором низкорепутационный коммент скрывается
+ * (legacy: `comment.scoreDown >= 5`).
+ */
+export const HIDE_MIN_SCORE_DOWN = 5
 
 /** Порог репутации текущего пользователя ниже которого ему запрещено публиковать */
 export const SELF_REP_BLOCK_THRESHOLD = -50
 
 /**
  * Скрывать ли комментарий по репутации автора.
- * Возвращает true если репутация автора ниже порога и комментарий не свой/не админский.
+ *
+ * Портировано 1:1 с legacy `psdk.user.hiddenComment` (satolist.js:10520-10532):
+ * комментарий скрывается если репутация автора `<= -0.5` И у комментария
+ * набралось `>= 5` дизлайков. Свой комментарий и удалённый — не скрываются.
+ *
+ * Не портирован link-spam-критерий (`reputation < 20` + не-whitelist ссылки):
+ * требует legacy-whitelist доменов (`thislink`) — отдельная задача.
  */
-export function isHiddenByReputation(
-  comment: GetComment,
-  myAddress?: string,
-  threshold = HIDE_BY_REPUTATION_THRESHOLD,
-): boolean {
+export function isHiddenByReputation(comment: GetComment, myAddress?: string): boolean {
   if (myAddress && comment.address === myAddress) return false
   if (comment.deleted) return false
   const rep = comment.userprofile?.reputation
   if (typeof rep !== 'number') return false
-  return rep < threshold
+  return rep <= HIDE_REPUTATION_MAX && (comment.scoreDown ?? 0) >= HIDE_MIN_SCORE_DOWN
 }
 
 /**
@@ -49,7 +56,7 @@ export function isHiddenByReputation(
  */
 export function isBlockedByMe(
   comment: GetComment,
-  blockedSet?: ReadonlySet<string> | null,
+  blockedSet?: ReadonlySet<string> | null
 ): boolean {
   if (!blockedSet || blockedSet.size === 0) return false
   return blockedSet.has(comment.address)
@@ -71,13 +78,14 @@ export type DisableReason =
   | { kind: 'limit-exhausted'; message: string }
   | { kind: 'reputation-blocked'; message: string }
   | { kind: 'account-deleted'; message: string }
+  | { kind: 'banned'; message: string }
 
 /**
  * Может ли текущий пользователь публиковать комментарии. Возвращает причину запрета или null.
  */
 export function getCommentPostingDisableReason(
   isAuthenticated: boolean,
-  state: UserStateData | UserProfile | null,
+  state: UserStateData | UserProfile | null
 ): DisableReason | null {
   if (!isAuthenticated) {
     return { kind: 'unauthenticated', message: t('commentsMsg.disableLoginToComment') }
@@ -108,7 +116,7 @@ export function getCommentPostingDisableReason(
  */
 export function getCommentScoringDisableReason(
   isAuthenticated: boolean,
-  state: UserStateData | UserProfile | null,
+  state: UserStateData | UserProfile | null
 ): DisableReason | null {
   if (!isAuthenticated) {
     return { kind: 'unauthenticated', message: t('commentsMsg.disableLoginToVote') }

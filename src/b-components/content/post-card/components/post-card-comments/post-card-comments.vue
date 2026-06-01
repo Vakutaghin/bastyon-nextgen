@@ -1,5 +1,5 @@
 <template>
-  <SC_CommentsPreview>
+  <SC_CommentsPreview ref="commentsRootRef">
     <h3>{{ t('comments.title', { count: totalCommentsCount }) }}</h3>
 
     <!-- Компактный вид: комментарии ещё не загружены -->
@@ -147,7 +147,7 @@
               if (isRootReplyActive) handleRootReplyInput(e)
             }
           "
-          @focus="onRootBarFocus"
+          @focus="onComposerFocus"
           @keydown="handleReplyKeydown"
         />
         <SC_MentionList
@@ -171,6 +171,14 @@
           {{ rootLengthHint.text }}
         </SC_LengthCounter>
       </SC_ReplyInputWrap>
+      <APopover v-model:open="emojiOpenRoot" trigger="click" placement="topRight">
+        <template #content>
+          <CommentEmojiPicker @select="onRootEmojiSelect" />
+        </template>
+        <SC_EmojiTriggerBtn type="button" :title="t('comments.emoji')" @click.stop>
+          <SmileOutlined />
+        </SC_EmojiTriggerBtn>
+      </APopover>
       <SC_ReplySendBtn
         type="button"
         :title="t('comments.send')"
@@ -187,12 +195,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Popover } from 'ant-design-vue'
 import { ICON_SIZE_SM, ICON_BRAND_CYAN_16, ICON_BRAND_CYAN_18 } from '@/styles/icon-styles'
-import { LoadingOutlined, SendOutlined, SyncOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined, SendOutlined, SyncOutlined, SmileOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
-import { useCommentsStore } from '@/stores'
+import { useCommentsStore, useUserRelationsStore } from '@/stores'
+import { appToast } from '@/b-components/app-toast'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { formatRelativeTime } from '@/helpers/common/date-formatter'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
@@ -201,6 +211,7 @@ import type { CommentMenuAction } from './comment-menu.vue'
 import LastCommentPreview from './last-comment-preview.vue'
 import CommentCard from './comment-card.vue'
 import BoundReplyPanel from './bound-reply-panel.vue'
+import CommentEmojiPicker from './comment-emoji-picker.vue'
 import {
   formatCommentMessageHtml as formatCommentMessageHtmlRaw,
   formatCommentDateAndTime,
@@ -222,6 +233,7 @@ import {
   SC_MentionItem,
   SC_ReplyPanel,
   SC_ReplySendBtn,
+  SC_EmojiTriggerBtn,
   SC_LengthCounter,
   SC_ComposerDisabled,
   SC_ShowCommentsBtn,
@@ -251,7 +263,13 @@ import { provideCommentTree } from './comment-tree-context'
 
 export type { PostForComments }
 
-const props = defineProps<{ post: PostForComments }>()
+const props = defineProps<{
+  post: PostForComments
+  /** Deep-link: txid комментария, к которому проскроллить и подсветить (#40/#41). */
+  targetCommentId?: string
+  /** Deep-link: txid корневого коммента ветки, если цель — ответ (раскрыть ветку). */
+  targetParentId?: string
+}>()
 
 const emit = defineEmits<{
   collapsed: []
@@ -260,6 +278,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const APopover = Popover
 
 // --- Базовая идентификация поста / пользователя. ---
 const postId = computed<string>(
@@ -287,9 +307,17 @@ const currentUserStateData = computed<import('@/types/rpc-responses/user-state')
   }
 )
 
-const composerDisableReason = computed<DisableReason | null>(() =>
-  getCommentPostingDisableReason(isUserAuthenticated.value, currentUserStateData.value)
-)
+const composerDisableReason = computed<DisableReason | null>(() => {
+  // #34: автор поста заблокировал текущего пользователя → запрет комментировать.
+  if (
+    isUserAuthenticated.value &&
+    postAuthorAddress.value &&
+    useUserRelationsStore().isBannedBy(postAuthorAddress.value)
+  ) {
+    return { kind: 'banned', message: t('commentsMsg.disableBannedByAuthor') }
+  }
+  return getCommentPostingDisableReason(isUserAuthenticated.value, currentUserStateData.value)
+})
 
 // --- Тик для реактивного обновления относительного времени (раз в минуту). ---
 const nowTick = ref(0)
@@ -326,6 +354,13 @@ const visibility = useCommentVisibility({
   currentUserAddress,
   isDeleted: editDelete.isCommentDeleted,
 })
+
+// Гидрируем блок-лист текущего пользователя из ноды (один раз за сессию).
+if (isUserAuthenticated.value) void useUserRelationsStore().init()
+
+// --- Deep-link к комментарию (#40/#41): скролл + подсветка. ---
+const commentsRootRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
+const highlightedCommentId = ref<string | null>(null)
 
 // --- Вычисляемые списки. ---
 const pendingRootComments = computed<GetComment[]>(() => {
@@ -492,6 +527,45 @@ function onCommentMenuAction(comment: GetComment, action: CommentMenuAction): vo
     editDelete.openEditComment(comment)
     return
   }
+  if (action === 'block') {
+    editDelete.confirmBlockUser(comment)
+    return
+  }
+  if (action === 'unblock') {
+    void editDelete.unblockUser(comment)
+    return
+  }
+  if (action === 'share') {
+    void shareComment(comment)
+    return
+  }
+}
+
+// #16: ссылка-permalink на комментарий (deep-link на /post/:txid?commentid=&parentid=).
+// Web Share API на мобильных, иначе — копирование в буфер.
+async function shareComment(comment: GetComment): Promise<void> {
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const params = new URLSearchParams({ commentid: comment.id })
+  if (comment.parentid && comment.parentid !== comment.id) {
+    params.set('parentid', comment.parentid)
+  }
+  const url = `${origin}/post/${postId.value}?${params.toString()}`
+  const nav = window.navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
+  if (typeof nav.share === 'function') {
+    try {
+      await nav.share({ url })
+      return
+    } catch (e) {
+      // AbortError — пользователь закрыл диалог, не ошибка; иначе падаем в clipboard.
+      if ((e instanceof Error ? e.name : '') === 'AbortError') return
+    }
+  }
+  try {
+    await window.navigator.clipboard.writeText(url)
+    appToast.success({ message: t('commentsMsg.linkCopied'), description: url })
+  } catch {
+    appToast.error({ message: t('commentsMsg.shareFailed') })
+  }
 }
 
 // --- Provide контекста дерева комментариев для дочерних узлов. ---
@@ -513,6 +587,7 @@ provideCommentTree({
   currentUserAvatarUrl,
   currentUserInitial,
   filteredMentionUsers,
+  highlightedCommentId,
   onCommentMenuAction,
 })
 
@@ -520,6 +595,47 @@ provideCommentTree({
 onBeforeUnmount(() => {
   clearInterval(relativeTimer)
 })
+
+// --- Deep-link (#40/#41): развернуть комментарии, проскроллить и подсветить. ---
+onMounted(() => {
+  if (props.targetCommentId) void deepLinkToComment(props.targetCommentId, props.targetParentId)
+})
+
+async function deepLinkToComment(targetId: string, parentId?: string): Promise<void> {
+  try {
+    await loader.loadAllComments(true) // загрузить и показать все корневые
+  } catch {
+    /* игнорируем — поищем среди уже загруженных */
+  }
+  if (parentId && parentId !== targetId) {
+    try {
+      await replies.loadReplies(parentId) // загрузить + раскрыть ветку ответа
+    } catch {
+      /* noop */
+    }
+  }
+  void nextTick(() => tryScrollHighlight(targetId, 0))
+}
+
+function tryScrollHighlight(id: string, attempt: number): void {
+  const raw = commentsRootRef.value
+  const root =
+    raw && '$el' in (raw as object)
+      ? (raw as { $el?: HTMLElement }).$el
+      : (raw as HTMLElement | null)
+  // id — txid (hex) или pending `local-...`; кавычек не содержит → селектор безопасен.
+  const el = root?.querySelector?.(`[data-comment-id="${id}"]`) as HTMLElement | null
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    highlightedCommentId.value = id
+    window.setTimeout(() => {
+      if (highlightedCommentId.value === id) highlightedCommentId.value = null
+    }, 4000)
+    return
+  }
+  // DOM ещё не готов (async-загрузка) — повторяем до ~3.2 c.
+  if (attempt < 16) window.setTimeout(() => tryScrollHighlight(id, attempt + 1), 200)
+}
 
 // Деструктурируем композаблы в плоские const'ы — Vue в template распакует ref'ы автоматически.
 const {
@@ -550,8 +666,24 @@ const {
   handleRootReplyInput,
   handleReplyKeydown,
   selectMentionUser,
+  insertRootEmoji,
   sendReply,
 } = form
+
+const emojiOpenRoot = ref(false)
+function onRootEmojiSelect(emoji: string): void {
+  emojiOpenRoot.value = false
+  insertRootEmoji(emoji)
+}
+
+// Фокус composer = момент реальной вовлечённости: тут проверяем, не заблокировал
+// ли нас автор поста (#34). Кешируется в сторе, поэтому повторный фокус бесплатен.
+function onComposerFocus(): void {
+  if (isUserAuthenticated.value && postAuthorAddress.value) {
+    void useUserRelationsStore().checkBannedBy(postAuthorAddress.value)
+  }
+  onRootBarFocus()
+}
 
 const refreshComments = ws.refresh
 </script>

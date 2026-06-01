@@ -6,9 +6,22 @@ export const SC_CommentRow = styled.div`
   gap: 10px;
   align-items: flex-start;
   width: 100%;
+  box-sizing: border-box;
+  transition: box-shadow 0.4s ease-out;
 
   &.is-pending {
     opacity: 0.65;
+  }
+
+  &.is-mine {
+    background: rgba(0, 164, 255, 0.06);
+    border-radius: 10px;
+    padding: 6px 8px;
+  }
+
+  &.is-highlighted {
+    box-shadow: 0 0 0 2px rgba(0, 164, 255, 0.55);
+    border-radius: 10px;
   }
 
   a {
@@ -48,9 +61,22 @@ export const SC_CommentItem = styled.div`
   display: flex;
   gap: 10px;
   align-items: flex-start;
+  box-sizing: border-box;
+  transition: box-shadow 0.4s ease-out;
 
   &.is-pending {
     opacity: 0.65;
+  }
+
+  &.is-mine {
+    background: rgba(0, 164, 255, 0.06);
+    border-radius: 10px;
+    padding: 6px 8px;
+  }
+
+  &.is-highlighted {
+    box-shadow: 0 0 0 2px rgba(0, 164, 255, 0.55);
+    border-radius: 10px;
   }
 
   a {
@@ -223,6 +249,11 @@ export const SC_EditFormActions = styled.div`
   gap: 8px;
   justify-content: flex-end;
   align-items: center;
+`
+
+/** Распорка: толкает кнопки Отмена/Сохранить вправо, эмодзи — влево */
+export const SC_EditFormSpacer = styled.div`
+  flex: 1;
 `
 
 export const SC_EditCancelBtn = styled.button`

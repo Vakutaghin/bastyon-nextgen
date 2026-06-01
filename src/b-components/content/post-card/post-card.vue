@@ -98,7 +98,12 @@
           />
         </SC_PostActions>
 
-        <PostCardComments :post="post" @collapsed="onCommentsCollapsed" />
+        <PostCardComments
+          :post="post"
+          :target-comment-id="targetCommentId"
+          :target-parent-id="targetParentId"
+          @collapsed="onCommentsCollapsed"
+        />
       </template>
     </component>
   </SC_PostCard>
@@ -217,6 +222,10 @@ const props = withDefaults(
     /** Показывать ли текст полностью (отключает сворачивание). */
     showFull?: boolean
     authorOverride?: PostAuthor | null
+    /** Deep-link: проскроллить/подсветить указанный комментарий (#40/#41). */
+    targetCommentId?: string
+    /** Deep-link: корневой коммент ветки, если цель — ответ. */
+    targetParentId?: string
   }>(),
   { maxLength: 500, maxBlocks: 3, showFull: false, authorOverride: null }
 )

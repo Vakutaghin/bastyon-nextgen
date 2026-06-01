@@ -1,7 +1,12 @@
 <template>
   <!-- Current user avatar -->
   <div v-if="currentUserAvatarUrl" class="reply-avatar">
-    <img :src="currentUserAvatarUrl" :alt="t('comments.yourAvatar')" loading="lazy" decoding="async" />
+    <img
+      :src="currentUserAvatarUrl"
+      :alt="t('comments.yourAvatar')"
+      loading="lazy"
+      decoding="async"
+    />
   </div>
   <div v-else class="reply-avatar-placeholder">{{ currentUserInitial }}</div>
 
@@ -52,7 +57,19 @@
         {{ lengthHint.text }}
       </SC_LengthCounter>
     </SC_ReplyInputWrap>
-    <SC_ReplyCancelBtn type="button" :title="t('comments.cancel')" @click.stop.prevent="emit('request-close')">
+    <APopover v-model:open="emojiOpen" trigger="click" placement="topRight">
+      <template #content>
+        <CommentEmojiPicker @select="insertEmoji" />
+      </template>
+      <SC_EmojiTriggerBtn type="button" :title="t('comments.emoji')" @click.stop>
+        <SmileOutlined />
+      </SC_EmojiTriggerBtn>
+    </APopover>
+    <SC_ReplyCancelBtn
+      type="button"
+      :title="t('comments.cancel')"
+      @click.stop.prevent="emit('request-close')"
+    >
       <CloseOutlined />
     </SC_ReplyCancelBtn>
     <SC_ReplySendBtn
@@ -68,9 +85,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { LoadingOutlined, CloseOutlined, SendOutlined } from '@ant-design/icons-vue'
+import { Popover } from 'ant-design-vue'
+import { LoadingOutlined, CloseOutlined, SendOutlined, SmileOutlined } from '@ant-design/icons-vue'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   SC_ConfirmWrap,
@@ -84,8 +102,12 @@ import {
   SC_ReplyCancelBtn,
   SC_ReplySendBtn,
   SC_LengthCounter,
+  SC_EmojiTriggerBtn,
 } from './styled'
+import CommentEmojiPicker from './comment-emoji-picker.vue'
 import { getCommentLengthHint, isCommentLengthValid } from './helpers'
+
+const APopover = Popover
 
 interface MentionUser {
   address: string
@@ -122,11 +144,42 @@ const emit = defineEmits<{
 
 const replyTextareaRef = ref<InstanceType<typeof SC_ReplyTextarea> | null>(null)
 const mentionListRef = ref<InstanceType<typeof SC_MentionList> | null>(null)
+const emojiOpen = ref(false)
 
 const onInput = (e: Event) => {
   const target = e.target as HTMLTextAreaElement
   emit('update:replyDraft', target.value)
   emit('input', e)
+}
+
+function getTextareaEl(): HTMLTextAreaElement | null {
+  const r = replyTextareaRef.value as HTMLTextAreaElement | { $el?: HTMLTextAreaElement } | null
+  if (!r) return null
+  if (typeof (r as HTMLTextAreaElement).focus === 'function') return r as HTMLTextAreaElement
+  return (r as { $el?: HTMLTextAreaElement }).$el ?? null
+}
+
+function insertEmoji(emoji: string): void {
+  emojiOpen.value = false
+  const current = props.replyDraft || ''
+  const el = getTextareaEl()
+  if (!el) {
+    emit('update:replyDraft', current + emoji)
+    return
+  }
+  const start = el.selectionStart ?? current.length
+  const end = el.selectionEnd ?? current.length
+  const next = current.slice(0, start) + emoji + current.slice(end)
+  emit('update:replyDraft', next)
+  void nextTick(() => {
+    el.focus()
+    const pos = start + emoji.length
+    try {
+      el.setSelectionRange(pos, pos)
+    } catch {
+      /* noop */
+    }
+  })
 }
 
 defineExpose({

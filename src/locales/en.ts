@@ -21,6 +21,12 @@ export default {
     miniapps: 'Mini-apps',
     'mini-app': 'Mini-app',
     profile: 'Profile',
+    post: 'Post',
+  },
+  postPage: {
+    loading: 'Loading post…',
+    notFound: 'Post not found',
+    error: 'Failed to load the post',
   },
   language: {
     label: 'Language',
@@ -328,7 +334,8 @@ export default {
     registerTitle: 'Registration',
     nickname: 'Nickname',
     nicknamePlaceholder: 'Enter nickname',
-    nicknameHint: 'Maximum 20 characters. Only Latin letters, digits and underscores. Cyrillic letters are transliterated automatically.',
+    nicknameHint:
+      'Maximum 20 characters. Only Latin letters, digits and underscores. Cyrillic letters are transliterated automatically.',
     email: 'Email',
     optional: '(optional)',
     emailPlaceholder: 'Enter email',
@@ -342,9 +349,11 @@ export default {
     errorNameTaken: 'This name is already taken. Please choose another one.',
     saveSeedTitle: 'Save your seed phrase',
     important: 'IMPORTANT!',
-    saveSeedWarning: 'Store the seed phrase and/or private key in a safe place. If you lose both, you will not be able to recover access to your account.',
+    saveSeedWarning:
+      'Store the seed phrase and/or private key in a safe place. If you lose both, you will not be able to recover access to your account.',
     neverShare: 'Never share them with anyone!',
-    equivalenceNote: 'The seed phrase and the private key (hex) are equivalent for recovering access — saving just one is enough.',
+    equivalenceNote:
+      'The seed phrase and the private key (hex) are equivalent for recovering access — saving just one is enough.',
     seedPhrase: 'Seed phrase',
     privateKeyHex: 'Private key (hex)',
     copySeed: 'Copy seed phrase',
@@ -362,10 +371,12 @@ export default {
     privateKeyLabel: 'Private key:',
     privateKeyHint: 'hex (64 characters) or WIF format',
     signOutTitle: 'Sign out?',
-    signOutConfirm: 'Are you sure you want to sign out of your account? This action cannot be undone.',
+    signOutConfirm:
+      'Are you sure you want to sign out of your account? This action cannot be undone.',
     no: 'No',
     yesSignOut: 'Yes, sign out',
-    validationInfo: 'This usually takes no more than 10 minutes. You can close this window and come back later.',
+    validationInfo:
+      'This usually takes no more than 10 minutes. You can close this window and come back later.',
   },
   accounts: {
     switchAccount: 'Switch account',
@@ -384,7 +395,8 @@ export default {
     no: 'No',
     yesShow: 'Yes, show',
     logoutConfirm: 'Log out?',
-    logoutQuestion: 'Are you sure you want to log out of the account? This action cannot be undone.',
+    logoutQuestion:
+      'Are you sure you want to log out of the account? This action cannot be undone.',
     yesLogout: 'Yes, log out',
   },
   explorerPage: {
@@ -411,7 +423,8 @@ export default {
     linkPeers: 'All nodes and peers →',
     tip: 'Tip',
     txCount: '{n} tx',
-    decentralizationNote: 'The explorer uses the same set of nodes as the rest of the app ({server}). No external redirects to www.bastyon.com.',
+    decentralizationNote:
+      'The explorer uses the same set of nodes as the rest of the app ({server}). No external redirects to www.bastyon.com.',
     errorLoadBlocks: 'Failed to load blocks',
     errorNodeUnavailable: 'Node unavailable',
     errorRetry: 'Try again',
@@ -535,7 +548,8 @@ export default {
     peersPeersEmpty: 'No peers found',
     peersPeersError: 'Failed to load peers',
     topAddressesTitle: 'Active addresses',
-    topAddressesTooltip: 'Top addresses by transaction count over recent blocks. Computed locally from node data — no dependency on a central host.',
+    topAddressesTooltip:
+      'Top addresses by transaction count over recent blocks. Computed locally from node data — no dependency on a central host.',
     topAddressesCollapse: 'Collapse',
     topAddressesExpand: 'Show top {n}',
     topAddressesHint: 'Over the last {blocks} blocks · {txCount} tx',
@@ -634,7 +648,8 @@ export default {
     youPrefix: 'You: ',
     deleteDialog: 'Delete dialog',
     deleteDialogConfirmTitle: 'Delete dialog?',
-    deleteDialogConfirmText: 'The dialog with {name} will be deleted. This action cannot be undone.',
+    deleteDialogConfirmText:
+      'The dialog with {name} will be deleted. This action cannot be undone.',
     cancel: 'Cancel',
     delete: 'Delete',
     loadFailed: 'Failed to load',
@@ -782,6 +797,11 @@ export default {
     edit: 'Edit',
     delete: 'Delete',
     actions: 'Actions',
+    emoji: 'Emoji',
+    share: 'Share',
+    block: 'Block',
+    unblock: 'Unblock',
+    hiddenBlocked: 'Hidden: user is blocked',
   },
   limits: {
     title: 'My limits',
@@ -902,31 +922,48 @@ export default {
     filterCommentScore: 'Comment rating',
   },
   glossary: {
-    height: 'Sequential number of the block in the chain. Increases by 1 with each new block (roughly once a minute).',
+    height:
+      'Sequential number of the block in the chain. Increases by 1 with each new block (roughly once a minute).',
     hash: 'Cryptographic fingerprint of the block (SHA-256). Uniquely identifies the block across the entire network history.',
-    emission: 'Amount of PKOIN issued by the network over all time (current supply). Grows with each PoS reward.',
-    netStakeWeight: 'Total weight of coins participating in staking. The higher it is, the harder it is to attack the network.',
-    chain: 'Which network: "main" is the primary Pocketnet, "test" is the testnet. On testnet, PKOIN have no value.',
-    difficulty: 'Current difficulty of finding a block. Adjusts automatically so that a block appears roughly once a minute.',
+    emission:
+      'Amount of PKOIN issued by the network over all time (current supply). Grows with each PoS reward.',
+    netStakeWeight:
+      'Total weight of coins participating in staking. The higher it is, the harder it is to attack the network.',
+    chain:
+      'Which network: "main" is the primary Pocketnet, "test" is the testnet. On testnet, PKOIN have no value.',
+    difficulty:
+      'Current difficulty of finding a block. Adjusts automatically so that a block appears roughly once a minute.',
     bits: 'Difficulty in compact form (block header). The lower the bits, the higher the difficulty.',
-    merkleRoot: "Root of the block's transaction Merkle tree. Proves that a transaction is included in the block.",
-    prevHash: 'Hash of the previous block — what makes the blockchain a chain. Changing one block breaks everything after it.',
-    nextHash: 'Hash of the next block. The last block (tip) has none — the next block has not appeared yet.',
-    confirmations: 'How many blocks have confirmed this transaction or block. ~6 confirmations are considered "final".',
-    blockReward: 'Reward the staker received for creating the block. It is the difference between all coinstake-tx outputs and its inputs.',
+    merkleRoot:
+      "Root of the block's transaction Merkle tree. Proves that a transaction is included in the block.",
+    prevHash:
+      'Hash of the previous block — what makes the blockchain a chain. Changing one block breaks everything after it.',
+    nextHash:
+      'Hash of the next block. The last block (tip) has none — the next block has not appeared yet.',
+    confirmations:
+      'How many blocks have confirmed this transaction or block. ~6 confirmations are considered "final".',
+    blockReward:
+      'Reward the staker received for creating the block. It is the difference between all coinstake-tx outputs and its inputs.',
     staker: 'Address that staked coins and signed the block. Receives the block reward.',
     vin: 'Inputs (vin) — which unspent outputs of previous transactions are being spent. Sum of inputs = sum of outputs + fee.',
     vout: 'Outputs (vout) — where the coins go. Each output is addressed to a specific address and has an amount.',
     fee: 'Difference between the sum of inputs and the sum of outputs. Goes to the block staker together with the PoS reward.',
-    opReturn: 'A special output marked OP_RETURN — carries no coins, stores data. In Pocketnet it is used to record posts, comments, and ratings.',
-    scriptPubKey: 'Script that describes the spending condition of an output. For regular addresses it means "spendable by whoever knows the private key".',
-    coinbase: 'The special first transaction of a block in PoW chains. In Pocketnet (PoS), its role is played by coinstake — type=3.',
-    coinstake: "PoS counterpart of coinbase: the staker's inputs plus the reward are returned to the staker. Always the first transaction in a block.",
+    opReturn:
+      'A special output marked OP_RETURN — carries no coins, stores data. In Pocketnet it is used to record posts, comments, and ratings.',
+    scriptPubKey:
+      'Script that describes the spending condition of an output. For regular addresses it means "spendable by whoever knows the private key".',
+    coinbase:
+      'The special first transaction of a block in PoW chains. In Pocketnet (PoS), its role is played by coinstake — type=3.',
+    coinstake:
+      "PoS counterpart of coinbase: the staker's inputs plus the reward are returned to the staker. Always the first transaction in a block.",
     txid: 'Unique identifier of a transaction (SHA-256 of its contents). It always locates the transaction in the network.',
-    pocketPayload: 'Social payload of a transaction (post/comment/rating/subscription/boost). Stored in OP_RETURN and in dedicated slots.',
+    pocketPayload:
+      'Social payload of a transaction (post/comment/rating/subscription/boost). Stored in OP_RETURN and in dedicated slots.',
     cScore: "Comment rating: +1 or −1. Affects the author's reputation and sorting.",
-    upvoteShare: "Post rating on a 1–5 scale. Affects the author's rating and the post's visibility in the feed.",
-    boost: 'A booster pays the author PKOIN to push a post up in the feed. The boost amount and the post address are fixed in the transaction.',
+    upvoteShare:
+      "Post rating on a 1–5 scale. Affects the author's rating and the post's visibility in the feed.",
+    boost:
+      'A booster pays the author PKOIN to push a post up in the feed. The boost amount and the post address are fixed in the transaction.',
   },
   labels: {
     walletTransferInvalidAddressFormat: 'Invalid wallet address format',
@@ -981,6 +1018,18 @@ export default {
     disableLoginToVote: 'Sign in to vote',
     disableScoreLimit: 'Daily rating limit reached',
     disableRepScore: 'Your reputation is too low to rate',
+    blockConfirmTitle: 'Block this user?',
+    blockConfirmContent: 'Their comments will be hidden. You can unblock them at any time.',
+    blockConfirmOk: 'Block',
+    blockSuccess: 'User blocked',
+    blockError: 'Failed to block user',
+    unblockSuccess: 'User unblocked',
+    unblockError: 'Failed to unblock user',
+    errAuthRequiredBlock: 'Authorization required to block a user',
+    errBlockSelf: 'You cannot block yourself',
+    disableBannedByAuthor: 'The post author has restricted you from commenting',
+    linkCopied: 'Comment link copied',
+    shareFailed: 'Failed to share the link',
   },
   videoMsg: {
     selectVideoFile: 'Please select a video file',
@@ -993,16 +1042,20 @@ export default {
     transcodeErrorPrefix: 'Transcoding error: {message}',
     storageLimitReached: 'Storage limit exceeded. Delete old videos.',
     transcodeNotSupported: 'Transcoding is not supported in your browser',
-    installFfmpegHint: 'Install FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
+    installFfmpegHint:
+      'Install FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'No file selected',
     metadataNotFound: 'File metadata not found',
     deleteFromDbFailed: 'Failed to delete video from database',
     deleteVideoFailed: 'Failed to delete video: {message}',
     unknownError: 'Unknown error',
     ffmpegMissingMac: 'FFmpeg is required to transcode video. Install it: brew install ffmpeg',
-    ffmpegMissingWin: 'FFmpeg is required to transcode video. Install it: winget install ffmpeg (or download from ffmpeg.org)',
-    ffmpegMissingLinux: 'FFmpeg is required to transcode video. Install it: sudo apt install ffmpeg (or via your package manager)',
-    ffmpegMissingGeneric: 'FFmpeg is required to transcode video. Install it system-wide (ffmpeg + ffprobe must be in PATH).',
+    ffmpegMissingWin:
+      'FFmpeg is required to transcode video. Install it: winget install ffmpeg (or download from ffmpeg.org)',
+    ffmpegMissingLinux:
+      'FFmpeg is required to transcode video. Install it: sudo apt install ffmpeg (or via your package manager)',
+    ffmpegMissingGeneric:
+      'FFmpeg is required to transcode video. Install it system-wide (ffmpeg + ffprobe must be in PATH).',
     qualityAuto: 'Auto',
     videoUrlMissing: 'Video URL not specified',
     hlsPlaylistNotFound: 'HLS playlist not found',
@@ -1094,16 +1147,31 @@ export default {
       allow: 'Allow',
       deny: 'Deny',
       account: { name: 'Account', description: 'Access to your account address.' },
-      authFetch: { name: 'Signed requests', description: 'Sending requests to the app server on your behalf.' },
-      sign: { name: 'Data signing', description: 'Signing arbitrary data with your account private key.' },
+      authFetch: {
+        name: 'Signed requests',
+        description: 'Sending requests to the app server on your behalf.',
+      },
+      sign: {
+        name: 'Data signing',
+        description: 'Signing arbitrary data with your account private key.',
+      },
       messaging: { name: 'Messages', description: 'Receiving push messages from the app.' },
       mobilecamera: { name: 'Camera', description: 'Access to the device camera and gallery.' },
       payment: { name: 'Payments', description: 'Opening a payment dialog on your behalf.' },
       chat: { name: 'Chat', description: 'Creating rooms and sending messages to Matrix chat.' },
-      geolocation: { name: 'Geolocation', description: 'Access to the current device coordinates.' },
+      geolocation: {
+        name: 'Geolocation',
+        description: 'Access to the current device coordinates.',
+      },
       externallink: { name: 'External links', description: 'Opening links in the system browser.' },
-      zaddress: { name: 'Zcash address', description: 'Access to the hidden Zcash address of the account.' },
-      notifications: { name: 'Notifications', description: 'Sending push notifications to the device.' },
+      zaddress: {
+        name: 'Zcash address',
+        description: 'Access to the hidden Zcash address of the account.',
+      },
+      notifications: {
+        name: 'Notifications',
+        description: 'Sending push notifications to the device.',
+      },
     },
     messenger: {
       me: 'Me',

@@ -12,12 +12,8 @@ export { useAuthStore } from '@/blockchain/store/auth-store'
 export { usePendingRatingsStore } from './pending-ratings-store'
 export { useCommentsStore } from './comments-store'
 export type { PendingComment } from './comments-store'
+export { useUserRelationsStore } from './user-relations-store'
 export { useNotificationsStore } from './notifications-store'
 export { useNotificationSettingsStore } from './notification-settings-store'
 export { useTorStore } from './tor-store'
-export type {
-  TorStatus,
-  TorBridgeKind,
-  TorStateSnapshot,
-  TorInstallProgress,
-} from './tor-store'
+export type { TorStatus, TorBridgeKind, TorStateSnapshot, TorInstallProgress } from './tor-store'

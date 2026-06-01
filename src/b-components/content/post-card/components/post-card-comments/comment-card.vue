@@ -1,5 +1,13 @@
 <template>
-  <component :is="wrapper" :class="{ 'is-pending': isCommentPending(comment) }">
+  <component
+    :is="wrapper"
+    :data-comment-id="comment.id"
+    :class="{
+      'is-pending': isCommentPending(comment),
+      'is-mine': isMyComment(comment),
+      'is-highlighted': comment.id === highlightedCommentId,
+    }"
+  >
     <router-link :to="getCommentProfileLink(comment)">
       <CommentAvatar
         :url="getCommentAvatarUrl(comment.userprofile)"
@@ -38,6 +46,10 @@
             v-if="canShowMenu(comment)"
             :can-edit="canEditComment(comment)"
             :can-delete="canDeleteComment(comment)"
+            :can-share="canShareComment(comment)"
+            :can-block="canBlockUser(comment)"
+            :is-blocked="isUserBlocked(comment)"
+            :block-pending="isBlockPending(comment)"
             @action="(a) => onCommentMenuAction(comment, a)"
           />
         </SC_CommentMetaRight>
@@ -56,7 +68,11 @@
         @save="submitEdit"
       />
       <SC_HiddenBanner v-else-if="shouldHideContent(comment)">
-        <span>{{ t('comments.hiddenLowReputation') }}</span>
+        <span>{{
+          hiddenReason(comment) === 'blocked'
+            ? t('comments.hiddenBlocked')
+            : t('comments.hiddenLowReputation')
+        }}</span>
         <SC_RevealBtn type="button" @click.stop.prevent="revealHiddenComment(comment)">
           {{ t('comments.showAnyway') }}
         </SC_RevealBtn>
@@ -172,9 +188,15 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const ctx = useCommentTree()
-const { onCommentMenuAction } = ctx
-const { formatScore, formatCommentDate, formatCommentDateFull, formatCommentMessageHtml, isCommentEdited, getCommentImagesList } =
-  ctx.display
+const { onCommentMenuAction, highlightedCommentId } = ctx
+const {
+  formatScore,
+  formatCommentDate,
+  formatCommentDateFull,
+  formatCommentMessageHtml,
+  isCommentEdited,
+  getCommentImagesList,
+} = ctx.display
 const {
   isCommentLiked,
   isCommentDisliked,
@@ -191,6 +213,10 @@ const {
   canShowMenu,
   canEditComment,
   canDeleteComment,
+  canShareComment,
+  canBlockUser,
+  isUserBlocked,
+  isBlockPending,
   canInteractWithComment,
   editDraft,
   editInitialDraft,
@@ -198,7 +224,7 @@ const {
   requestCloseEdit,
   submitEdit,
 } = ctx.editDelete
-const { shouldHideContent, revealHiddenComment } = ctx.visibility
+const { shouldHideContent, hiddenReason, revealHiddenComment, isMyComment } = ctx.visibility
 const { onRepliesClick } = ctx.replies
 
 const wrapper = computed(() => (props.level === 1 ? SC_CommentRow : SC_CommentItem))

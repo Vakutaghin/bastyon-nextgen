@@ -45,6 +45,8 @@ export interface CommentTreeContext {
   currentUserAvatarUrl: Ref<string | null>
   currentUserInitial: Ref<string>
   filteredMentionUsers: Ref<MentionUser[]>
+  /** Текущий подсвеченный коммент (deep-link `?commentid=`), либо null. */
+  highlightedCommentId: Ref<string | null>
   onCommentMenuAction: (comment: GetComment, action: CommentMenuAction) => void
 }
 

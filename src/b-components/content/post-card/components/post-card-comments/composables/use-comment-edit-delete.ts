@@ -14,7 +14,7 @@ import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import { haptic } from '@/helpers/common/haptics'
-import { useCommentsStore } from '@/stores'
+import { useCommentsStore, useUserRelationsStore } from '@/stores'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import { sendComment } from '../comment-sender'
 import { deleteComment } from '../comment-deleter'
@@ -57,9 +57,71 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     if (opts.postAuthorAddress.value && opts.postAuthorAddress.value === me) return true
     return false
   }
+  // --- Block / Unblock автора (user-relations) ---
+  /** Можно ли (раз)блокировать автора: чужой коммент, авторизован, не temp/rejected. */
+  const canBlockUser = (comment: GetComment): boolean => {
+    const me = opts.currentUserAddress.value
+    if (!me) return false
+    if (!comment.address || comment.address === me) return false
+    if (getCommentTxState(comment) !== 'normal') return false
+    return true
+  }
+  const isUserBlocked = (comment: GetComment): boolean =>
+    useUserRelationsStore().isBlocked(comment.address)
+  const isBlockPending = (comment: GetComment): boolean =>
+    useUserRelationsStore().isPending(comment.address)
+
+  const blockUserFromComment = async (comment: GetComment): Promise<void> => {
+    const store = useUserRelationsStore()
+    if (store.isPending(comment.address)) return
+    try {
+      await store.block(comment.address)
+      haptic('medium')
+      appToast.success({ message: t('commentsMsg.blockSuccess') })
+    } catch (e) {
+      appToast.error({ message: e instanceof Error ? e.message : t('commentsMsg.blockError') })
+    }
+  }
+
+  const confirmBlockUser = (comment: GetComment): void => {
+    Modal.confirm({
+      title: t('commentsMsg.blockConfirmTitle'),
+      icon: h(ExclamationCircleOutlined),
+      content: t('commentsMsg.blockConfirmContent'),
+      okText: t('commentsMsg.blockConfirmOk'),
+      okType: 'danger',
+      cancelText: t('commentsMsg.cancel'),
+      centered: true,
+      onOk: () => blockUserFromComment(comment),
+    })
+  }
+
+  const unblockUser = async (comment: GetComment): Promise<void> => {
+    const store = useUserRelationsStore()
+    if (store.isPending(comment.address)) return
+    try {
+      await store.unblock(comment.address)
+      haptic('medium')
+      appToast.success({ message: t('commentsMsg.unblockSuccess') })
+    } catch (e) {
+      appToast.error({ message: e instanceof Error ? e.message : t('commentsMsg.unblockError') })
+    }
+  }
+
+  /** Можно ли поделиться ссылкой на коммент: реальный txid (не pending/rejected), не удалён. */
+  const canShareComment = (comment: GetComment): boolean => {
+    if (isCommentDeleted(comment)) return false
+    return getCommentTxState(comment) === 'normal'
+  }
+
   const canShowMenu = (comment: GetComment): boolean => {
     if (isCommentDeleted(comment)) return false
-    return canEditComment(comment) || canDeleteComment(comment)
+    return (
+      canEditComment(comment) ||
+      canDeleteComment(comment) ||
+      canBlockUser(comment) ||
+      canShareComment(comment)
+    )
   }
   const isCommentPending = (comment: GetComment): boolean =>
     getCommentTxState(comment) === 'pending'
@@ -222,6 +284,12 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     isCommentDeleted,
     canEditComment,
     canDeleteComment,
+    canBlockUser,
+    isUserBlocked,
+    isBlockPending,
+    confirmBlockUser,
+    unblockUser,
+    canShareComment,
     canShowMenu,
     isCommentPending,
     isCommentRejected,

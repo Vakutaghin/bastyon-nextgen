@@ -55,6 +55,41 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   const mentionHighlightIndex = ref(0)
   const replySubmitting = ref(false)
 
+  // --- Черновик корневого комментария: автосохранение в localStorage ---
+  // Сохраняется только текст корневой формы (composer к посту) по ключу postId,
+  // переживает unmount карточки. Черновики ответов на ветки эфемерны и не пишутся.
+  const draftKey = (): string => `bastyon_comment_draft:${opts.postId.value}`
+
+  const readSavedDraft = (): string => {
+    try {
+      return localStorage.getItem(draftKey()) || ''
+    } catch {
+      return ''
+    }
+  }
+
+  const writeSavedDraft = (text: string): void => {
+    try {
+      if (text.trim()) localStorage.setItem(draftKey(), text)
+      else localStorage.removeItem(draftKey())
+    } catch {
+      /* приватный режим — молча игнорируем */
+    }
+  }
+
+  const clearSavedDraft = (): void => {
+    try {
+      localStorage.removeItem(draftKey())
+    } catch {
+      /* noop */
+    }
+  }
+
+  // Восстанавливаем черновик корневой формы при создании композабла (mount карточки):
+  // на этом этапе replyTarget === null → активна корневая форма, бар покажет текст.
+  const savedRootDraft = readSavedDraft()
+  if (savedRootDraft) replyDraft.value = savedRootDraft
+
   const replyPanelKey = computed(() => {
     const t = replyTarget.value
     if (!t) return 'closed'
@@ -74,7 +109,8 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   // --- Открытие/закрытие формы ---
   const openReplyToPost = (): void => {
     replyTarget.value = { commentId: 'root', parentId: '', prefix: '' }
-    replyDraft.value = ''
+    // Восстанавливаем сохранённый черновик корневой формы, если он есть.
+    replyDraft.value = readSavedDraft()
     showCancelReplyModal.value = false
     showMentionList.value = false
     mentionQuery.value = ''
@@ -128,6 +164,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   }
 
   const confirmCancelReply = (): void => {
+    clearSavedDraft()
     closeReply()
   }
 
@@ -139,7 +176,11 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   const handleRootReplyInput = (e: Event): void => {
     if (!isRootReplyActive.value) return
     const el = e.target as HTMLTextAreaElement
-    if (el) replyDraft.value = el.value
+    if (el) {
+      replyDraft.value = el.value
+      // Персистим только корневой черновик (ответы на ветки эфемерны).
+      writeSavedDraft(el.value)
+    }
     handleReplyInput(e)
   }
 
@@ -252,6 +293,30 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     })
   }
 
+  // --- Вставка эмодзи в корневую форму (в позицию курсора) ---
+  const insertRootEmoji = (emoji: string): void => {
+    const current = replyDraft.value || ''
+    const raw = opts.rootReplyTextareaRef.value
+    const el =
+      raw && typeof (raw as HTMLTextAreaElement).focus === 'function'
+        ? (raw as HTMLTextAreaElement)
+        : ((raw as { $el?: HTMLTextAreaElement } | null)?.$el ?? null)
+    const start = el?.selectionStart ?? current.length
+    const end = el?.selectionEnd ?? current.length
+    replyDraft.value = current.slice(0, start) + emoji + current.slice(end)
+    if (isRootReplyActive.value) writeSavedDraft(replyDraft.value)
+    void nextTick(() => {
+      if (!el || typeof el.focus !== 'function') return
+      el.focus()
+      const pos = start + emoji.length
+      try {
+        el.setSelectionRange(pos, pos)
+      } catch {
+        /* noop */
+      }
+    })
+  }
+
   // --- Отправка ---
   const sendReply = async (): Promise<void> => {
     const text = (replyDraft.value || '').trim()
@@ -316,6 +381,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     try {
       const txid = await sendComment(opts.postId.value, parentId, answerId, text)
       haptic('small')
+      if (isRootComment) clearSavedDraft()
       appToast.success({ message: t('commentsMsg.sendSuccess') })
       if (txid) {
         commentsStore.replacePendingId(opts.postId.value, localId, txid)
@@ -378,6 +444,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     handleReplyKeydown,
     scrollMentionHighlightIntoView,
     selectMentionUser,
+    insertRootEmoji,
     sendReply,
     onReplyToFirstLevel,
     onReplyToAuthorFirstLevel,

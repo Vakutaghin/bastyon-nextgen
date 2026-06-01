@@ -47,8 +47,13 @@ export const SC_MenuItem = styled.button`
   cursor: pointer;
   text-align: left;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #f5f5f5;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   &.menu-item--danger {

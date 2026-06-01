@@ -21,6 +21,7 @@ const ExplorerPeersPage = () => import('@/pages/block-explorer-page/peers-page/p
 const SearchPage = () => import('@/pages/search-page/search-page.vue')
 const MiniAppsPage = () => import('@/pages/mini-apps-page/mini-apps-page.vue')
 const MiniAppPage = () => import('@/pages/mini-app-page/mini-app-page.vue')
+const PostPage = () => import('@/pages/post-page/post-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])
@@ -115,6 +116,15 @@ const router = createRouter({
       component: MiniAppPage,
       props: true,
       meta: { titleKey: 'routes.mini-app' },
+    },
+    // Отдельный пост (deep-link, в т.ч. на комментарий: /post/:txid?commentid=&parentid=).
+    // ДО catch-all /:userName.
+    {
+      path: '/post/:txid',
+      name: 'post',
+      component: PostPage,
+      props: true,
+      meta: { titleKey: 'routes.post' },
     },
     {
       path: '/:userName',

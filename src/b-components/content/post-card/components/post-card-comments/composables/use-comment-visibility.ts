@@ -6,11 +6,15 @@
 
 import type { Ref } from 'vue'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
-import { useCommentsStore } from '@/stores'
+import { useCommentsStore, useUserRelationsStore } from '@/stores'
 import {
   isHiddenByReputation as visIsHiddenByReputation,
   isAuthorAccountLocked as visIsAuthorAccountLocked,
+  isBlockedByMe as visIsBlockedByMe,
 } from '../visibility'
+
+/** Причина скрытия комментария (для выбора текста баннера). */
+export type HiddenReason = 'blocked' | 'reputation' | null
 
 export interface UseCommentVisibilityOptions {
   currentUserAddress: Ref<string>
@@ -18,12 +22,26 @@ export interface UseCommentVisibilityOptions {
 }
 
 export function useCommentVisibility(opts: UseCommentVisibilityOptions) {
-  /** Скрыт ли коммент по правилам видимости (репутация автора и т.п.) */
+  /** Заблокирован ли автор комментария текущим пользователем. */
+  const isBlockedAuthor = (comment: GetComment): boolean =>
+    visIsBlockedByMe(comment, useUserRelationsStore().blockedSet)
+
+  /** Скрыт ли коммент по правилам видимости (блок-лист, репутация автора и т.п.) */
   const isCommentHiddenByVisibility = (comment: GetComment): boolean => {
     const me = opts.currentUserAddress.value || undefined
+    if (isBlockedAuthor(comment)) return true
     if (visIsHiddenByReputation(comment, me)) return true
     if (visIsAuthorAccountLocked(comment)) return true
     return false
+  }
+
+  /** Причина скрытия (для текста баннера). Приоритет у блокировки. */
+  const hiddenReason = (comment: GetComment): HiddenReason => {
+    const me = opts.currentUserAddress.value || undefined
+    if (isBlockedAuthor(comment)) return 'blocked'
+    if (visIsHiddenByReputation(comment, me) || visIsAuthorAccountLocked(comment))
+      return 'reputation'
+    return null
   }
 
   /** Раскрыл ли пользователь скрытый коммент через «Показать всё равно» */
@@ -42,10 +60,18 @@ export function useCommentVisibility(opts: UseCommentVisibilityOptions) {
     useCommentsStore().revealHidden(comment.id)
   }
 
+  /** Принадлежит ли коммент текущему пользователю (для подсветки `.is-mine`). */
+  const isMyComment = (comment: GetComment): boolean => {
+    const me = opts.currentUserAddress.value
+    return !!me && comment.address === me
+  }
+
   return {
     isCommentHiddenByVisibility,
+    hiddenReason,
     isHiddenRevealed,
     shouldHideContent,
     revealHiddenComment,
+    isMyComment,
   }
 }
