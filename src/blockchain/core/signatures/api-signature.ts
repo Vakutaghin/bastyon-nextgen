@@ -110,13 +110,13 @@ export function generateApiSignature(
     ? signature.toString('hex')
     : typeof signature === 'string'
     ? signature
-    : Buffer.from(signature as any).toString('hex')
+    : Buffer.from(signature).toString('hex')
 
   const pubkeyHex = Buffer.isBuffer(keyPair.publicKey)
     ? keyPair.publicKey.toString('hex')
     : typeof keyPair.publicKey === 'string'
     ? keyPair.publicKey
-    : Buffer.from(keyPair.publicKey as any).toString('hex')
+    : Buffer.from(keyPair.publicKey as Uint8Array).toString('hex')
 
   const signatureObj: ApiSignature = {
     nonce,

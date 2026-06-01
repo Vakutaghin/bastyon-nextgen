@@ -1,9 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
+import { setI18nLocale } from '@/i18n'
 import {
   deriveAndSaveWalletAddresses,
   ensureDefaultAdditionalWallet,
   addOneWalletAddress,
 } from './wallet-addresses'
+
+// Ошибки деривации резолвятся через i18n; фиксируем 'ru' под русские ассерты.
+beforeAll(() => setI18nLocale('ru'))
 
 // ---------------------------------------------------------------------------
 // Деривация (mnemonicToSeed/generateWalletAddress) и storage мокаются —

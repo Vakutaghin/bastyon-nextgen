@@ -59,15 +59,14 @@ describe('signTransactionInput', () => {
     expect(builder.sign).toHaveBeenCalledWith(5, kp.ecPair)
   })
 
-  it('квирк: без options inputIndex берётся из дефолта {inputIndex:0}, позиционный игнорируется', () => {
-    // index = optIndex ?? inputIndex; дефолт options = {inputIndex:0} ⇒ optIndex=0,
-    // поэтому позиционный inputIndex (2) не используется.
+  it('без options используется позиционный inputIndex', () => {
+    // Дефолт options = {} ⇒ optIndex=undefined ⇒ index = позиционный inputIndex.
     const builder = makeBuilder()
     const kp = makeKeyPair()
 
     signTransactionInput(builder, 2, kp)
 
-    expect(builder.sign).toHaveBeenCalledWith(0, kp.ecPair)
+    expect(builder.sign).toHaveBeenCalledWith(2, kp.ecPair)
   })
 
   it('специальный тип: prevOutScript+prevOutScriptType → объектная форма sign()', () => {

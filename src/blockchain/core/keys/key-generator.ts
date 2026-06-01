@@ -7,6 +7,7 @@ import { Buffer } from '../../utils/buffer-polyfill'
 
 import { bip39, getBip39Russian } from './bip39-loader'
 import * as bip32Module from 'bip32'
+import type { BIP32API } from 'bip32'
 import * as ecc from 'tiny-secp256k1'
 import { ECPairFactory } from 'ecpair'
 import { POCKETNET_NETWORK } from '../../constants/network'
@@ -15,18 +16,26 @@ import { POCKETNET_NETWORK } from '../../constants/network'
 const ECPair = ECPairFactory(ecc)
 
 // Инициализируем BIP32 с криптографической библиотекой
-// В новой версии bip32 нужно использовать BIP32Factory
-let BIP32: any = null
+// В новой версии bip32 нужно использовать BIP32Factory.
+// Форма модуля (namespace / default / factory) меняется между сборками,
+// поэтому читаем поля через узкий локальный тип вместо `any`.
+type Bip32ModuleShape = {
+  BIP32Factory?: (ecc: unknown) => BIP32API
+  default?: (Partial<BIP32API> & { BIP32Factory?: (ecc: unknown) => BIP32API }) | undefined
+} & Partial<BIP32API>
+
+let BIP32: BIP32API | null = null
+const bip32Shape = bip32Module as unknown as Bip32ModuleShape
 try {
-  const bip32Factory = (bip32Module as any).BIP32Factory || (bip32Module as any).default?.BIP32Factory
+  const bip32Factory = bip32Shape.BIP32Factory || bip32Shape.default?.BIP32Factory
   if (bip32Factory) {
     BIP32 = bip32Factory(ecc)
   } else {
-    BIP32 = (bip32Module as any).default || bip32Module
+    BIP32 = (bip32Shape.default as BIP32API | undefined) || (bip32Shape as unknown as BIP32API)
   }
 } catch (e) {
   console.error('[key-generator] Failed to initialize BIP32:', e)
-  BIP32 = (bip32Module as any).default || bip32Module
+  BIP32 = (bip32Shape.default as BIP32API | undefined) || (bip32Shape as unknown as BIP32API)
 }
 import type {
   Mnemonic,
@@ -83,7 +92,7 @@ export function generateMnemonic(): Mnemonic {
  * @param wordlist - Wordlist для мнемоники (опционально, определяется автоматически)
  * @returns Seed (512 бит Buffer)
  */
-export function mnemonicToSeed(mnemonic: Mnemonic, useCache: boolean = true, wordlist?: any): Seed {
+export function mnemonicToSeed(mnemonic: Mnemonic, useCache: boolean = true, wordlist?: string[]): Seed {
   if (!mnemonic) {
     throw new Error('Mnemonic is required')
   }
@@ -186,9 +195,9 @@ export function seedToKeyPair(
     // Получаем WIF из BIP32 узла (как в оригинале)
     // Если метод toWIF() существует, используем его, иначе создаем ECPair и получаем WIF
     let wif: string
-    if (typeof (derived as any).toWIF === 'function') {
+    if (typeof derived.toWIF === 'function') {
       // Старая версия BIP32 с методом toWIF()
-      wif = (derived as any).toWIF()
+      wif = derived.toWIF()
     } else {
       // Новая версия BIP32 - создаем ECPair из приватного ключа и получаем WIF
       const privateKeyRaw = derived.privateKey
@@ -217,7 +226,7 @@ export function seedToKeyPair(
     const keyPair: KeyPair = {
       privateKey,
       publicKey,
-      ecPair: ecPair as any,
+      ecPair,
     }
 
     // Сохранение в кеш

@@ -105,7 +105,7 @@ export const useAuthStore = defineStore('auth', {
     getUserAvatarUrl(): string | null {
       if (this.userAvatarUrl) return this.userAvatarUrl
       const profile = this.userProfile
-      if (profile && (profile as any).i) return (profile as any).i
+      if (profile && profile.i) return profile.i
       return null
     },
 
@@ -428,7 +428,7 @@ export const useAuthStore = defineStore('auth', {
         this._syncFromProfileStore()
         // Persist nickname into AccountInfo so next session can show it
         // instantly instead of flashing the truncated address first.
-        const freshName = (result as any)?.name as string | undefined
+        const freshName: string | undefined = result?.name
         if (this.address && freshName && typeof freshName === 'string') {
           updateAccountName(this.address, freshName)
           const listResult = loadAccountsList()
@@ -571,7 +571,7 @@ export const useAuthStore = defineStore('auth', {
         const messengerStore = useMessengerStore()
         messengerStore.logout()
         if (relogin) {
-          messengerStore.initMatrix().catch((e: any) => {
+          messengerStore.initMatrix().catch((e: unknown) => {
             console.error('[auth-store] Failed to re-init matrix:', e)
           })
         }

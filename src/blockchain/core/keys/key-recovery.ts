@@ -7,7 +7,9 @@ import { Buffer } from '../../utils/buffer-polyfill'
 
 // Импортируем bip39 - пробуем разные способы для совместимости
 import * as bip39Module from 'bip39'
-const bip39 = (bip39Module as any).default || bip39Module
+const bip39: typeof import('bip39') =
+  (bip39Module as { default?: typeof import('bip39') }).default || bip39Module
+void bip39 // импорт сохранён ради side-effect совместимости
 import * as ecc from 'tiny-secp256k1'
 import { ECPairFactory } from 'ecpair'
 import { POCKETNET_NETWORK } from '../../constants/network'

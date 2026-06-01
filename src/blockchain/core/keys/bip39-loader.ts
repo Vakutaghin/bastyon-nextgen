@@ -6,25 +6,37 @@
 
 import * as bip39Module from 'bip39'
 
+/** Публичный API модуля bip39 (namespace или default-экспорт). */
+export type Bip39Module = typeof import('bip39')
+
+/**
+ * bip39russian — форк bip39 с тем же API плюс русский wordlist.
+ * Описываем только используемые поля поверх базового модуля.
+ */
+export type Bip39RussianModule = Bip39Module & {
+  wordlists?: Bip39Module['wordlists'] & { russian?: string[] }
+}
+
 // Получаем bip39 из модуля (может быть default или namespace)
-export const bip39 = (bip39Module as any).default || bip39Module
+export const bip39: Bip39Module =
+  (bip39Module as { default?: Bip39Module }).default || bip39Module
 
 // --- bip39russian lazy-loading ---
 
-let bip39Russian: any = null
+let bip39Russian: Bip39RussianModule | null = null
 let bip39RussianLoaded = false
 
 /**
  * Асинхронно загружает bip39russian модуль (ленивая загрузка)
  */
-export async function loadBip39Russian(): Promise<any> {
+export async function loadBip39Russian(): Promise<Bip39RussianModule | null> {
   if (bip39RussianLoaded) {
     return bip39Russian
   }
 
   try {
     if (typeof require !== 'undefined') {
-      bip39Russian = require('bip39russian')
+      bip39Russian = require('bip39russian') as Bip39RussianModule
       bip39RussianLoaded = true
       return bip39Russian
     }
@@ -33,8 +45,8 @@ export async function loadBip39Russian(): Promise<any> {
   }
 
   try {
-    const module = await import('bip39russian')
-    bip39Russian = module.default || module
+    const mod = (await import('bip39russian')) as { default?: Bip39RussianModule }
+    bip39Russian = mod.default ?? (mod as unknown as Bip39RussianModule)
     bip39RussianLoaded = true
     return bip39Russian
   } catch {
@@ -44,7 +56,7 @@ export async function loadBip39Russian(): Promise<any> {
 }
 
 /** Возвращает загруженный экземпляр bip39russian (или null) */
-export function getBip39Russian(): any {
+export function getBip39Russian(): Bip39RussianModule | null {
   return bip39Russian
 }
 
@@ -58,7 +70,7 @@ export function isBip39RussianLoaded(): boolean {
 // Пробуем загрузить синхронно при инициализации (для Node.js)
 try {
   if (typeof require !== 'undefined') {
-    bip39Russian = require('bip39russian')
+    bip39Russian = require('bip39russian') as Bip39RussianModule
     bip39RussianLoaded = true
   }
 } catch {
@@ -68,8 +80,9 @@ try {
 // Также пробуем загрузить через динамический импорт сразу (для браузера)
 if (!bip39RussianLoaded && typeof window !== 'undefined') {
   import('bip39russian')
-    .then((module) => {
-      bip39Russian = module.default || module
+    .then((mod) => {
+      const m = mod as { default?: Bip39RussianModule }
+      bip39Russian = m.default ?? (m as unknown as Bip39RussianModule)
       bip39RussianLoaded = true
     })
     .catch(() => {

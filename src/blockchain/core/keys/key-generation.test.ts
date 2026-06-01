@@ -57,7 +57,7 @@ const TEST_VECTORS_2 = {
  */
 function getEnglishWordlist(): string[] {
   const wl = bip39.wordlists || {}
-  return wl.english || wl.EN
+  return wl.english || wl.EN || []
 }
 
 // ---------------------------------------------------------------------------

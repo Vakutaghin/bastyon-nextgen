@@ -14,6 +14,7 @@ import {
   loadEncryptedData,
 } from './storage'
 import { ACCOUNT_STORAGE_PREFIX } from './constants/storage'
+import { t } from '@/i18n'
 
 /** По умолчанию создаём 3 кошелька (старый ключ BST_WALLET_ADDRS_, для обратной совместимости). */
 const DEFAULT_WALLET_ADDRESSES_COUNT = 3
@@ -85,7 +86,7 @@ function getSeedForDerivation(
     storageKey: `${ACCOUNT_STORAGE_PREFIX}${accountAddress}`,
   })
   if (!mnemonicResult.success || !mnemonicResult.data) {
-    return { seed: Buffer.alloc(0), error: 'Войдите с мнемоникой или приватным ключом, чтобы выводить дополнительные кошельки' }
+    return { seed: Buffer.alloc(0), error: t('appMsg.wallet.needAuth') }
   }
   try {
     const seed = mnemonicToSeed(mnemonicResult.data, true)
@@ -93,7 +94,7 @@ function getSeedForDerivation(
     return { seed: seedBuffer }
   } catch (e) {
     console.error('[wallet-addresses] mnemonicToSeed failed:', e)
-    return { seed: Buffer.alloc(0), error: 'Не удалось получить seed из мнемоники' }
+    return { seed: Buffer.alloc(0), error: t('appMsg.wallet.seedFailed') }
   }
 }
 
@@ -144,7 +145,7 @@ export async function addOneWalletAddress(
 ): Promise<AddWalletResult> {
   const list = getAdditionalWalletAddressesList(accountAddress)
   if (list.length >= MAX_ADDITIONAL_WALLET_ADDRESSES) {
-    return { success: false, error: `Максимум ${MAX_ADDITIONAL_WALLET_ADDRESSES} дополнительных кошельков` }
+    return { success: false, error: t('appMsg.wallet.maxWallets', { n: MAX_ADDITIONAL_WALLET_ADDRESSES }) }
   }
 
   const { seed, error: seedError } = getSeedForDerivation(accountAddress, privateKeyAsSeed)
@@ -156,7 +157,7 @@ export async function addOneWalletAddress(
     const nextIndex = deriveAdditionalWalletIndex(list.length)
     const result = generateWalletAddress(nextIndex, seed, true)
     if (!result?.addressInfo?.address) {
-      return { success: false, error: 'Не удалось вывести адрес' }
+      return { success: false, error: t('appMsg.wallet.deriveFailed') }
     }
     const newList = [...list, result.addressInfo.address]
     const saveResult = saveAdditionalWalletAddressesList(accountAddress, newList)

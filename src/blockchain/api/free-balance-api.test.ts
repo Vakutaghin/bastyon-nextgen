@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
+import { setI18nLocale } from '@/i18n'
 import { requestUnspents } from './free-balance-api'
+
+// Ошибки регистрации резолвятся через i18n; фиксируем 'ru' под русские ассерты.
+beforeAll(() => setI18nLocale('ru'))
 
 // ---------------------------------------------------------------------------
 // Оркестратор с множеством зависимостей — мокаем все внешние шаги.

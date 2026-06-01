@@ -55,8 +55,8 @@ export interface ApiSignatureOptions {
  * Опции для генерации подписи транзакции
  */
 export interface TransactionSignatureOptions {
-  /** Индекс входа для подписи */
-  inputIndex: number
+  /** Опциональный override индекса входа (по умолчанию берётся позиционный аргумент signTransactionInput). */
+  inputIndex?: number
   /** Скрипт предыдущего выхода */
   prevOutScript?: Buffer
   /** Тип скрипта предыдущего выхода */

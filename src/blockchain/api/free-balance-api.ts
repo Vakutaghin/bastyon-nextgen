@@ -11,6 +11,7 @@ import { showCaptchaModal } from '@/components/captcha'
 import { getProxyWithWalletCached } from './proxy-with-wallet'
 import { isCaptchaError, isRegistrationBlockingError } from '@/helpers/api/error-codes'
 import { logger } from '@/services/logger'
+import { t } from '@/i18n'
 
 const log = logger.scope('[requestUnspents]')
 
@@ -45,7 +46,7 @@ export async function requestUnspents(
 
   if (!proxyServer) {
     log.error('No proxy with wallet found!')
-    throw new Error('Не удалось найти прокси с регистрационным кошельком. Попробуйте позже.')
+    throw new Error(t('appMsg.registration.proxyNotFound'))
   }
 
   log.debug('Found proxy:', proxyServer.host, proxyServer.port)
@@ -59,7 +60,7 @@ export async function requestUnspents(
   const userAddress = authStore.getUserAddress
 
   if (!keyPair || !userAddress) {
-    throw new Error('Ключи не найдены. Пожалуйста, убедитесь, что вы зарегистрированы.')
+    throw new Error(t('appMsg.registration.keysNotFound'))
   }
 
   log.debug('Step 2: keys OK, address:', userAddress)
@@ -111,7 +112,7 @@ export async function requestUnspents(
     }
 
     log.error('Captcha error:', msg)
-    throw new Error('Не удалось решить капчу. Попробуйте позже.')
+    throw new Error(t('appMsg.registration.captchaFailed'))
   }
 
   // Шаг 4: Отправляем free/balance через тот же прокси

@@ -5,11 +5,14 @@
 
 import { Buffer } from 'buffer'
 
-if (typeof globalThis !== 'undefined' && !(globalThis as any).Buffer) {
-  (globalThis as any).Buffer = Buffer
+// Narrow shim type: only the Buffer slot we touch, without widening to `any`.
+type BufferGlobal = { Buffer?: typeof Buffer }
+
+if (typeof globalThis !== 'undefined' && !(globalThis as BufferGlobal).Buffer) {
+  (globalThis as BufferGlobal).Buffer = Buffer
 }
-if (typeof window !== 'undefined' && !(window as any).Buffer) {
-  (window as any).Buffer = Buffer
+if (typeof window !== 'undefined' && !(window as unknown as BufferGlobal).Buffer) {
+  (window as unknown as BufferGlobal).Buffer = Buffer
 }
 
 export { Buffer }

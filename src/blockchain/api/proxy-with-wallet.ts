@@ -30,6 +30,24 @@ export interface ProxyWithWalletResult {
   port: number
 }
 
+/** Состояние регистрационного кошелька, возвращаемое /info */
+interface ProxyRegistrationWallet {
+  ready?: boolean
+  unspents?: number
+  queue?: number
+}
+
+/** Структура ответа /info (используем только нужные поля) */
+interface ProxyInfo {
+  info?: {
+    wallet?: {
+      addresses?: {
+        registration?: ProxyRegistrationWallet
+      }
+    }
+  }
+}
+
 /**
  * Запрашивает /info у конкретного прокси (без авторизации — просто fetch)
  */
@@ -37,7 +55,7 @@ async function fetchProxyInfo(
   host: string,
   port: number,
   timeout: number = 8000,
-): Promise<any> {
+): Promise<ProxyInfo | null> {
   const url = `${PROXY_PROTOCOL}://${host}:${port}${PROXY_INFO_PATH}`
 
   const controller = new AbortController()
@@ -60,7 +78,7 @@ async function fetchProxyInfo(
       return null
     }
 
-    const result = await response.json()
+    const result = (await response.json()) as { data?: ProxyInfo } & ProxyInfo
     return result.data || result
   } catch {
     clearTimeout(timeoutId)

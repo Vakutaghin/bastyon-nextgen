@@ -23,7 +23,7 @@ export const useProfileStore = defineStore('profile', {
     getUserAvatarUrl(): string | null {
       if (this.userAvatarUrl) return this.userAvatarUrl
       const profile = this.userProfile
-      if (profile && (profile as any).i) return (profile as any).i
+      if (profile && profile.i) return profile.i
       return null
     },
 
@@ -52,7 +52,7 @@ export const useProfileStore = defineStore('profile', {
       // Если данные уже загружены для этого адреса, не делаем повторный запрос
       if (this.hasUserState) {
         const profile = this.userProfile
-        if (profile && (profile as any).address === address) {
+        if (profile && profile.address === address) {
           return profile as UserStateData
         }
         this.userProfile = null
@@ -98,7 +98,7 @@ export const useProfileStore = defineStore('profile', {
           if (Array.isArray(stateResponse.data)) {
             stateArray = stateResponse.data
           } else if (typeof stateResponse.data === 'object' && stateResponse.data !== null) {
-            const dataObj = stateResponse.data as any
+            const dataObj = stateResponse.data as { data?: UserStateData[] | UserStateData }
             if (dataObj.data && Array.isArray(dataObj.data)) stateArray = dataObj.data
             else if (dataObj.data && typeof dataObj.data === 'object') stateArray = [dataObj.data as UserStateData]
             else if (Object.keys(stateResponse.data).length > 0) stateArray = [stateResponse.data as UserStateData]

@@ -95,7 +95,7 @@ describe('generateP2SHAddress', () => {
     expect(validateAddress(info.address).isValid).toBe(true)
 
     // redeem script: 0x00 0x14 <20-байтный hash160(pubkey)>
-    const redeem = info.payment.redeem.output as Buffer
+    const redeem = info.payment.redeem!.output as Buffer
     expect(redeem.subarray(0, 2)).toEqual(Buffer.from([0x00, 0x14]))
     expect(redeem).toHaveLength(22)
   })

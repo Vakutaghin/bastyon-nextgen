@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { wsService } from './ws-service'
 import type { WsMessage } from './ws-service'
+import type { KeyPair } from '../types/keys'
 
 // ---------------------------------------------------------------------------
 // Fake WebSocket — управляемая вручную замена сокета. Сервис получает её
@@ -95,7 +96,8 @@ vi.mock('@/blockchain/store/auth-store', () => ({
 
 const FAKE_SIGNATURE = { nonce: 'n', signature: 'sig', pubkey: 'pub', address: 'addr', v: 1 }
 const ADDRESS = 'PUserAddress123'
-const KEY_PAIR = { ecPair: {} }
+// Минимальный мок: generateApiSignature замокан, поэтому полная форма KeyPair не нужна.
+const KEY_PAIR = { ecPair: {} } as unknown as KeyPair
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 

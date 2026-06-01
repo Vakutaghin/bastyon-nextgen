@@ -13,6 +13,11 @@ export interface Payment {
   output?: Buffer
   input?: Buffer
   signature?: Buffer
+  /** Redeem script (для P2SH-обёрток, например P2SH(P2WPKH)) */
+  redeem?: {
+    output?: Buffer
+    hash?: Buffer
+  }
 }
 
 /**

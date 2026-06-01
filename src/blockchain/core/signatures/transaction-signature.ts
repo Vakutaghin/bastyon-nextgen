@@ -46,7 +46,7 @@ export function signTransactionInput(
   transactionBuilder: TransactionBuilder,
   inputIndex: number,
   keyPair: KeyPair,
-  options: TransactionSignatureOptions = { inputIndex: 0 }
+  options: TransactionSignatureOptions = {}
 ): TransactionSignature {
   if (!transactionBuilder) {
     throw new Error('Transaction builder is required')
@@ -64,7 +64,7 @@ export function signTransactionInput(
       // Подпись для специальных типов (HTLC и т.д.)
       transactionBuilder.sign({
         prevOutScript: Buffer.isBuffer(prevOutScript) ? prevOutScript : Buffer.from(prevOutScript),
-        prevOutScriptType: prevOutScriptType as any,
+        prevOutScriptType,
         vin: index,
         keyPair: keyPair.ecPair,
       })
@@ -143,9 +143,8 @@ export function signTransactionForAddress(
     // В оригинальном коде это проверяется через список адресов
   }
 
-  const options: TransactionSignatureOptions = {
-    inputIndex,
-  }
+  // inputIndex передаётся позиционно в signTransactionInput; в options дублировать не нужно.
+  const options: TransactionSignatureOptions = {}
 
   // Для HTLC типов нужен скрипт предыдущего выхода
   if (input.type === 'htlc' && input.scriptPubKey) {

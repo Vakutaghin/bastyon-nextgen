@@ -12,6 +12,7 @@
 
 import servers from '@/servers.json'
 import type { ApiSignature } from '../types/signatures'
+import type { KeyPair } from '../types/keys'
 import { pickWebSocketCtor } from '@/helpers/tor/tor-websocket'
 import { debugLog } from '@/helpers/common/debug-log'
 
@@ -216,7 +217,7 @@ class PocketnetWsService {
   /**
    * Подписывается на транзакции для конкретного адреса.
    */
-  async subscribeAddress(address: string, keyPair?: any) {
+  async subscribeAddress(address: string, keyPair?: KeyPair | null) {
     if (this.connected.get(address)) {
       debugLog('[WS] Already subscribed to', address)
       return
@@ -347,14 +348,16 @@ class PocketnetWsService {
   // --- Lifecycle ---
 
   reconnect() {
-    this.close()
+    this.close() // сбрасывает reconnectAttempt
     this.closing = false
-    this.reconnectAttempt = 0
     void this.connect()
   }
 
   close() {
     this.closing = true
+    // Сбрасываем backoff: следующий цикл connect() начнётся с чистого счётчика,
+    // а не залипнет на RECONNECT_MAX_DELAY от прошлой неудачной серии.
+    this.reconnectAttempt = 0
 
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)

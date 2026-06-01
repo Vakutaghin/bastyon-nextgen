@@ -248,7 +248,7 @@ export function validatePrivateKey(privateKey: PrivateKey): boolean {
  * @param mnemonic - Мнемоническая фраза
  * @returns Wordlist или null если не удалось определить
  */
-export function detectMnemonicWordlist(mnemonic: Mnemonic): any {
+export function detectMnemonicWordlist(mnemonic: Mnemonic): string[] | undefined | null {
   if (!mnemonic || typeof mnemonic !== 'string') return null
   try {
     const normalized = normalizeMnemonic(mnemonic)

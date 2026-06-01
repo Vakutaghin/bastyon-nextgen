@@ -10,6 +10,7 @@ import type {
   AddressType,
   AddressGenerationResult,
   AddressGenerationOptions,
+  Payment,
 } from '../../types/addresses'
 import type { KeyPair } from '../../types/keys'
 import { getMainAddressPath } from '../../constants/paths'
@@ -46,7 +47,7 @@ export function generateP2PKHAddress(publicKey: Buffer): AddressInfo {
     // Manual Base58Check encoding
     const address = toBase58Check(hash, POCKETNET_NETWORK.pubKeyHash)
 
-    const payment: any = {
+    const payment: Payment = {
       name: 'p2pkh',
       network: POCKETNET_NETWORK,
       address,
@@ -97,7 +98,7 @@ export function generateP2WPKHAddress(publicKey: Buffer): AddressInfo {
     // Manual Bech32 encoding
     const address = toBech32(hash, 0, POCKETNET_NETWORK.bech32)
 
-    const payment: any = {
+    const payment: Payment = {
       name: 'p2wpkh',
       network: POCKETNET_NETWORK,
       address,
@@ -156,7 +157,7 @@ export function generateP2SHAddress(publicKey: Buffer): AddressInfo {
     // 3. Адрес P2SH
     const address = toBase58Check(scriptHash, POCKETNET_NETWORK.scriptHash)
 
-    const payment: any = {
+    const payment: Payment = {
       name: 'p2sh-p2wpkh',
       network: POCKETNET_NETWORK,
       address,
