@@ -31,6 +31,7 @@
     "stylelint": "stylelint \"src/**/*styled.ts\"",
     "stylelint:fix": "stylelint \"src/**/*styled.ts\" --fix",
     "check:inline-styles": "node scripts/check-inline-styles.mjs",
+    "check:breakpoints": "node scripts/check-breakpoints.mjs",
     "prepare": "husky"
   },
   "dependencies": {
@@ -142,7 +143,8 @@
       "brace-expansion": ">=5.0.6",
       "qs": ">=6.15.2",
       "uuid": ">=13.0.2 <14",
-      "esbuild": ">=0.25.0"
+      "esbuild": ">=0.25.0",
+      "node-fetch@<2.6.7": ">=2.6.7"
     }
   }
 }

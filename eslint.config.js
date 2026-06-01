@@ -122,7 +122,11 @@ export default tseslint.config(
       'no-restricted-exports': ['warn', { restrictDefaultExports: { direct: true } }],
 
       // TypeScript-specific
-      '@typescript-eslint/no-explicit-any': 'warn', // 345+ existing — снижаем постепенно, регрессы ловятся как warn
+      // Прод-код вычищен от `any` (CODE_AUDIT §2): жёсткий запрет на новые.
+      // Немногие неустранимые случаи (события matrix-js-sdk, legacy-формы) помечены
+      // точечным `// eslint-disable-next-line ... no-explicit-any -- <причина>`.
+      // В тестах правило ослаблено до warn (override ниже) — моки часто требуют any.
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
 
       // Vue
@@ -150,6 +154,14 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'prefer-const': 'warn',
       'no-var': 'error',
+    },
+  },
+
+  // Тесты: `any` в моках/фикстурах допустим — не прод-код. Ослабляем до warn.
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
     },
   }
 )
