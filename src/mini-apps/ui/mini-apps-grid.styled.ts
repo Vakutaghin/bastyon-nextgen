@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
+import { SC_SectionTitleUpper } from '@/styles/shared'
 
 export const SC_Search = styled.div`
   margin: 8px 0 16px;
@@ -10,13 +11,9 @@ export const SC_Section = styled.section`
   margin: 0 0 24px;
 `
 
-export const SC_SectionTitle = styled.h2`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+// Общий капс-заголовок секции (audit §3.2) + нижний отступ под grid.
+export const SC_SectionTitle = styled(SC_SectionTitleUpper)`
   margin: 0 0 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
 `
 
 export const SC_Grid = styled.div`

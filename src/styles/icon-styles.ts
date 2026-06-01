@@ -13,6 +13,8 @@
 import { COLORS } from './theme-colors'
 
 // Размеры
+export const ICON_SIZE_9 = { fontSize: '9px' } as const
+export const ICON_SIZE_10 = { fontSize: '10px' } as const
 export const ICON_SIZE_11 = { fontSize: '11px' } as const
 export const ICON_SIZE_XS = { fontSize: '12px' } as const
 export const ICON_SIZE_13 = { fontSize: '13px' } as const
@@ -59,3 +61,37 @@ export const ICON_STAR_18 = { color: COLORS.WARNING, fontSize: '18px', marginRig
 
 // Ant-blue с горизонтальным отступом (используется в нотификациях около текста)
 export const ICON_ANT_BLUE_MR_4 = { color: COLORS.ANT_BLUE, marginRight: '4px' }
+export const ICON_ANT_BLUE_24 = { fontSize: '24px', color: COLORS.ANT_BLUE }
+
+// Danger (ant-red) с фиксированным размером для шапок модалок подтверждения
+export const ICON_DANGER_24 = { fontSize: '24px', color: COLORS.RED_ANT }
+
+// Warning-icon (#faad14) нестандартного размера
+export const ICON_WARNING_ICON_22 = { fontSize: '22px', color: COLORS.WARNING_ICON }
+// Трек пустой звезды рейтинга
+export const ICON_WARNING_TRACK = { color: COLORS.WARNING_TRACK }
+
+// Brand-cyan (спиннеры загрузки комментариев)
+export const ICON_BRAND_CYAN_16 = { fontSize: '16px', color: COLORS.BRAND_CYAN }
+export const ICON_BRAND_CYAN_18 = { fontSize: '18px', color: COLORS.BRAND_CYAN }
+
+// Полупрозрачный тёмный (книжная иконка в шапке поста)
+export const ICON_OVERLAY_45_18 = { fontSize: '18px', color: COLORS.OVERLAY_45 }
+
+// Белые иконки оверлеев видеоплеера / бейджей аватара
+export const ICON_WHITE_9 = { fontSize: '9px', color: COLORS.WHITE }
+export const ICON_WHITE_10 = { fontSize: '10px', color: COLORS.WHITE }
+export const ICON_WHITE_64 = { fontSize: '64px', color: COLORS.WHITE }
+export const ICON_WHITE_85_48 = { fontSize: '48px', color: COLORS.WHITE_85 }
+// Светло-серая play/pause-иконка плеера
+export const ICON_GRAY_EEE_24 = { fontSize: '24px', color: COLORS.GRAY_EEE }
+// Приглушённая иконка mute видеоплеера (под крестом)
+export const ICON_MUTED_18 = {
+  fontSize: '18px',
+  color: COLORS.GRAY_999,
+  position: 'relative',
+  zIndex: 0,
+} as const
+
+// Danger-иконка плейсхолдера ошибки ленты (крупная, с отступом снизу)
+export const ICON_DANGER_30_MB = { fontSize: '30px', marginBottom: '15px', color: COLORS.DANGER }
