@@ -49,8 +49,12 @@
    в `src.vue`, открывается через `useDonateStore`; кнопка-подарок в шапке карточки поста и
    пункт «Чаевые» в меню комментария. *Live on-chain TX не верифицирован.*
    *Анимация монеток при донате (`donateAnimations`) и tip-уведомление получателю — отдельно (P2).*
-4. **История транзакций кошелька** (`transactionslist` + `transactionview`).
-   Сейчас своих отправленных/полученных PKOIN не видно (только косвенный explorer-by-address).
+4. 🟡 **История транзакций кошелька.** Реализована вкладка «История» в кошельке
+   (`wallets-page` → `wallet-history/`): постраничная подгрузка `getaddresstransactions`,
+   классификация received/sent по vin/vout (1:1 c legacy `transactionslist`, есть юнит-тест),
+   строки с суммой ±, контрагентом, временем и ссылкой на explorer-tx. *Live-данные не верифицированы.*
+   Осталось: история по доп. Z-адресам отдельным списком; резолв контрагента в ник;
+   семантичный `transactionview` (донат/стейк/буст) — сейчас детали через explorer-tx.
 5. **Загрузка видео на PeerTube** (`uploadpeertube`, `videoCabinet`). nextgen только
    транскодит в локальный IndexedDB; публикации на ноду нет; `pages/my-videos-page` — заглушка.
    *Метаданные при загрузке (название/описание/теги/NSFW/обложка) — тоже отсутствуют.*
@@ -262,7 +266,7 @@ UI присутствует и пишет в стор, но **значение �
 | Отправка PKOIN | wallet | ✅ | receiver по login/адресу, message, feemode |
 | Комиссии | wallet/fastsend | 🟡 | фикс `1e-8`, нет динамической оценки |
 | Форматирование сумм | platform.mp.coin | ✅ | `pkoin-formatter.ts` |
-| История транзакций | transactionslist | ❌ | см. P0-4 |
+| История транзакций | transactionslist | ✅ | P0-4: вкладка «История» (received/sent, пагинация) |
 | Детали транзакции (семантика) | transactionview | 🟡 | только generic explorer-tx |
 | Fast-send / батч | fastsend | ❌ | — |
 | Платёжные ссылки | createpaymentlink | ❌ | — |
