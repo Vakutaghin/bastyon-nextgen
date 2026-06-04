@@ -57,9 +57,13 @@
       <LoadingOutlined :style="ICON_WHITE_85_48" spin />
     </SC_VideoLoading>
 
-    <!-- Сообщение об ошибке -->
+    <!-- Сообщение об ошибке + кнопка повтора -->
     <SC_VideoError v-if="error">
       <p>{{ error }}</p>
+      <SC_VideoRetryButton type="button" @click.stop="retry">
+        <ReloadOutlined />
+        <span>{{ t('videoMsg.retry') }}</span>
+      </SC_VideoRetryButton>
     </SC_VideoError>
 
     <!-- Кнопка Play для неинициализированного проигрывателя -->
@@ -307,6 +311,7 @@ import {
   SC_VideoChapterTitle,
   SC_VideoLoading,
   SC_VideoError,
+  SC_VideoRetryButton,
   SC_VideoVolumeControl,
   SC_VideoVolumeButton,
   SC_VideoVolumeSlider,
@@ -439,6 +444,7 @@ const {
   qualityDropdownRef,
   currentMenuScreen,
   initPlayer,
+  retry,
   setQualityLevel,
   openQualityMenu,
   openSpeedMenu,

@@ -38,6 +38,53 @@ export function getHlsPlaylistUrl(videoInfo: PeerTubeVideoInfo): string | null {
   return null
 }
 
+/** Кандидат для прогрессивного воспроизведения: прямой файл + его высота (для выбора). */
+interface ProgressiveCandidate {
+  height: number
+  url: string
+}
+
+/** Собирает все прямые файлы (mp4) из top-level `files` и из `streamingPlaylists[].files`. */
+function collectProgressiveFiles(videoInfo: PeerTubeVideoInfo): ProgressiveCandidate[] {
+  const out: ProgressiveCandidate[] = []
+  const push = (files?: PeerTubeVideoInfo['files']): void => {
+    if (!Array.isArray(files)) return
+    for (const f of files) {
+      if (f?.fileUrl) out.push({ height: f.resolution?.id ?? 0, url: f.fileUrl })
+    }
+  }
+  push(videoInfo.files)
+  if (Array.isArray(videoInfo.streamingPlaylists)) {
+    for (const pl of videoInfo.streamingPlaylists) push(pl?.files)
+  }
+  return out
+}
+
+/**
+ * Прямой URL прогрессивного видеофайла (mp4) — для fallback, когда HLS фатально не
+ * воспроизводится. Берётся из той же ноды (данные уже в ответе API, отдельная инфра не нужна).
+ *
+ * Выбор: наибольшее разрешение ≤ 720p (баланс качество/вес для аварийного пути);
+ * если все выше 720p — наименьшее известное; иначе первый доступный файл.
+ */
+export function getProgressiveVideoUrl(videoInfo: PeerTubeVideoInfo): string | null {
+  if (!videoInfo) return null
+  const files = collectProgressiveFiles(videoInfo)
+  if (files.length === 0) return null
+
+  const atMost720 = files.filter((f) => f.height > 0 && f.height <= 720)
+  if (atMost720.length > 0) {
+    return atMost720.reduce((best, f) => (f.height > best.height ? f : best)).url
+  }
+
+  const known = files.filter((f) => f.height > 0)
+  if (known.length > 0) {
+    return known.reduce((min, f) => (f.height < min.height ? f : min)).url
+  }
+
+  return files[0].url
+}
+
 /**
  * URL превьюшки видео. Приоритет: thumbnailUrl → thumbnailPath → previewUrl → previewPath →
  * fallback по стандартному паттерну PeerTube /static/thumbnails/{uuid}.jpg.
@@ -84,4 +131,30 @@ export async function getHlsPlaylistFromUrl(peertubeUrl: string): Promise<string
 
   const videoInfo = await getPeerTubeVideoInfo(parsed.host, parsed.videoId)
   return getHlsPlaylistUrl(videoInfo)
+}
+
+/** Источники воспроизведения для плеера: настоящий HLS-плейлист и прогрессивный mp4-fallback. */
+export interface VideoSources {
+  /** URL HLS-плейлиста (.m3u8). null, если на ноде нет HLS-варианта. */
+  hlsPlaylistUrl: string | null
+  /** Прямой mp4 на той же ноде — fallback, если HLS не воспроизводится. null, если нет файлов. */
+  progressiveUrl: string | null
+}
+
+/**
+ * Источники видео из PeerTube URL за один сетевой запрос (parser + API + извлечение обоих URL).
+ *
+ * В отличие от {@link getHlsPlaylistFromUrl}, чётко разделяет HLS (только `streamingPlaylists`)
+ * и прогрессивный mp4 — чтобы плеер мог деградировать с HLS на прямой файл, а не кормить
+ * mp4 в hls.js (что сломало бы воспроизведение).
+ *
+ * Бросает Error если URL неверный или видео не найдено.
+ */
+export async function getVideoSourcesFromUrl(peertubeUrl: string): Promise<VideoSources> {
+  const parsed = parsePeerTubeUrl(peertubeUrl)
+  if (!parsed) throw new Error(`Invalid PeerTube URL: ${peertubeUrl}`)
+
+  const videoInfo = await getPeerTubeVideoInfo(parsed.host, parsed.videoId)
+  const hlsPlaylistUrl = videoInfo.streamingPlaylists?.[0]?.playlistUrl ?? null
+  return { hlsPlaylistUrl, progressiveUrl: getProgressiveVideoUrl(videoInfo) }
 }

@@ -5,6 +5,10 @@
  * - MEDIA_ERROR → recoverMediaError, со сменой аудиокодека на 2-й попытке
  *
  * Счётчики сбрасываются на каждом успешном фрагменте (FRAG_LOADED).
+ *
+ * Когда hls.js исчерпал все попытки восстановления, управление передаётся в
+ * `onExhausted` (если передан) — caller может, например, деградировать на прямой mp4.
+ * Без `onExhausted` поведение прежнее: выставляем локализованную ошибку.
  */
 
 import type { Ref } from 'vue'
@@ -14,13 +18,25 @@ import { t } from '@/i18n'
 export function attachHlsErrorRecovery(
   hls: Hls,
   error: Ref<string | null>,
-  isLoading: Ref<boolean>
+  isLoading: Ref<boolean>,
+  onExhausted?: () => void
 ): void {
   let networkRetryCount = 0
   let mediaRecoveryCount = 0
   let stallRecoveryAt = 0
   const MAX_NETWORK_RETRY = 3
   const MAX_MEDIA_RECOVERY = 2
+
+  // Все попытки восстановления исчерпаны. Если есть fallback (`onExhausted`) — отдаём
+  // ему; иначе показываем ошибку `fallbackMsgKey`.
+  const giveUp = (fallbackMsgKey: string): void => {
+    if (onExhausted) {
+      onExhausted()
+      return
+    }
+    error.value = t(fallbackMsgKey)
+    isLoading.value = false
+  }
 
   hls.on(Hls.Events.FRAG_LOADED, () => {
     networkRetryCount = 0
@@ -53,8 +69,7 @@ export function attachHlsErrorRecovery(
           setTimeout(() => hls.startLoad(), delay)
           return
         }
-        error.value = t('videoMsg.networkError')
-        isLoading.value = false
+        giveUp('videoMsg.networkError')
         break
       case Hls.ErrorTypes.MEDIA_ERROR:
         if (mediaRecoveryCount < MAX_MEDIA_RECOVERY) {
@@ -66,13 +81,10 @@ export function attachHlsErrorRecovery(
           hls.recoverMediaError()
           return
         }
-        error.value = t('videoMsg.playbackError')
-        isLoading.value = false
+        giveUp('videoMsg.playbackError')
         break
       default:
-        error.value = t('videoMsg.loadError')
-        hls.destroy()
-        isLoading.value = false
+        giveUp('videoMsg.loadError')
         break
     }
   })

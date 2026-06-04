@@ -26,6 +26,13 @@ export const VISIBILITY_THRESHOLD = 0.5
 /** Порог соотношения сторон для переключения contain/cover */
 export const ASPECT_RATIO_CONTAIN_THRESHOLD = 1 / 1.5
 
+/**
+ * Watchdog начальной загрузки (мс). Если за это время плеер так и не инициализировался
+ * (зависший манифест/сегмент, который не отдаёт даже ошибку) — показываем ошибку и кнопку
+ * «Повторить», вместо вечного спиннера. Бюджет покрывает и retry hls.js, и mp4-fallback.
+ */
+export const VIDEO_LOAD_WATCHDOG_MS = 30000
+
 /** Список горячих клавиш для отображения в справке */
 export const HOTKEYS_LIST: HotkeyItem[] = [
   { key: 'Space', labelKey: 'hotkeys.playPause' },

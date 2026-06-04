@@ -178,11 +178,33 @@ export const SC_VideoError = styled.div`
   padding: 20px 30px;
   border-radius: 8px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
 
   p {
     margin: 0;
     font-size: 16px;
     color: white !important;
+  }
+`
+
+export const SC_VideoRetryButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  font-size: 14px;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.22) !important;
   }
 `
 
