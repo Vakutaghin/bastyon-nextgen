@@ -98,6 +98,90 @@ export const SC_StartChatButton = styled.button`
   }
 `
 
+export const SC_SubscribeRow = styled.div`
+  display: flex;
+  gap: 8px;
+  margin: 0 20px 12px 0;
+`
+
+export const SC_SubscribeButton = styled.button`
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid ${COLORS.BRAND_CYAN};
+  background-color: ${COLORS.BRAND_CYAN};
+  color: ${COLORS.WHITE};
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  &:hover {
+    background-color: ${COLORS.BRAND_CYAN_HOVER};
+  }
+
+  &.subscribed {
+    background-color: transparent;
+    color: ${COLORS.BRAND_CYAN};
+  }
+
+  &.subscribed:hover {
+    background-color: ${COLORS.BRAND_CYAN_LIGHT};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .anticon {
+    font-size: 14px;
+  }
+`
+
+export const SC_BellButton = styled.button`
+  flex: 0 0 auto;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid ${COLORS.BORDER};
+  background-color: transparent;
+  color: ${COLORS.TEXT_SECONDARY};
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s;
+
+  &:hover {
+    border-color: ${COLORS.BRAND_CYAN};
+    color: ${COLORS.BRAND_CYAN};
+  }
+
+  &.active {
+    border-color: ${COLORS.BRAND_CYAN};
+    color: ${COLORS.BRAND_CYAN};
+    background-color: ${COLORS.BRAND_CYAN_LIGHT};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .anticon {
+    font-size: 16px;
+  }
+`
+
 export const SC_UserAddress = styled.div`
   font-size: 12px;
   color: ${COLORS.GRAY_999};

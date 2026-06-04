@@ -31,6 +31,20 @@
             <MessageOutlined :style="ICON_SIZE_MD" />
           </SC_ChatBtn>
 
+          <SC_FollowBtn
+            v-if="canShowFollow"
+            type="button"
+            :class="{ following: isFollowing }"
+            :disabled="isFollowPending"
+            :aria-label="isFollowing ? t('subscriptions.subscribed') : t('subscriptions.subscribe')"
+            :title="isFollowing ? t('subscriptions.subscribed') : t('subscriptions.subscribe')"
+            @click.stop.prevent="onToggleFollow"
+          >
+            <LoadingOutlined v-if="isFollowPending" spin />
+            <UserDeleteOutlined v-else-if="isFollowing" />
+            <UserAddOutlined v-else />
+          </SC_FollowBtn>
+
           <SC_PostAuthorRep>{{ formattedReputation }}</SC_PostAuthorRep>
         </SC_AuthorNameRow>
 
@@ -63,9 +77,20 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { BookOutlined, BookFilled, MessageOutlined, ShareAltOutlined } from '@ant-design/icons-vue'
+import {
+  BookOutlined,
+  BookFilled,
+  MessageOutlined,
+  ShareAltOutlined,
+  UserAddOutlined,
+  UserDeleteOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons-vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
+import { useAuthStore } from '@/blockchain/store/auth-store'
+import { useUserRelationsStore } from '@/stores'
+import { appToast } from '@/b-components/app-toast'
 import { favoritesAPI } from '@/db/apis/favorites-api'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
 import { ICON_PRIMARY_18, ICON_SIZE_MD, ICON_OVERLAY_45_18 } from '@/styles/icon-styles'
@@ -78,6 +103,7 @@ import {
   SC_PostAuthorRep,
   SC_PostTime,
   SC_ChatBtn,
+  SC_FollowBtn,
   SC_PostBookmark,
   SC_AuthorLinkWrap,
   SC_RepostLine,
@@ -127,6 +153,8 @@ const props = withDefaults(
 )
 
 const { t } = useI18n()
+const authStore = useAuthStore()
+const relations = useUserRelationsStore()
 
 const isBookmarked = ref(false)
 
@@ -176,6 +204,42 @@ async function checkBookmarkStatus(): Promise<void> {
   if (!postId.value) return
   isBookmarked.value = await favoritesAPI.has(postId.value)
 }
+
+// ── Подписка (follow) из ленты ──────────────────────────────────────
+const authorAddress = computed<string>(() => displayAuthor.value?.address || '')
+const isFollowing = computed<boolean>(() => relations.isSubscribed(authorAddress.value))
+const isFollowPending = computed<boolean>(() => relations.isSubscribePending(authorAddress.value))
+
+// Кнопка видна только авторизованному и не на собственных постах.
+const canShowFollow = computed<boolean>(
+  () =>
+    !!authorAddress.value &&
+    authStore.isAuthenticated &&
+    authStore.getUserAddress !== authorAddress.value
+)
+
+async function onToggleFollow(event: Event): Promise<void> {
+  event.preventDefault()
+  event.stopPropagation()
+  const address = authorAddress.value
+  if (!address || isFollowPending.value) return
+  try {
+    if (isFollowing.value) {
+      await relations.unsubscribe(address)
+      appToast.success({ message: t('subscriptions.unsubscribedToast') })
+    } else {
+      await relations.subscribe(address)
+      appToast.success({ message: t('subscriptions.subscribedToast') })
+    }
+  } catch (e) {
+    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
+  }
+}
+
+// Лениво гидрируем подписки (идемпотентно: load делает только первая карточка).
+onMounted(() => {
+  if (authStore.isAuthenticated) void relations.init()
+})
 
 async function startChatWithAuthor(event: Event): Promise<void> {
   event.preventDefault()

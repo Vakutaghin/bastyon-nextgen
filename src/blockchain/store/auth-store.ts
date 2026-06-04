@@ -21,11 +21,7 @@ import type { Address } from '../types/addresses'
 import type { UserProfile } from '../../types/rpc-responses/user-get'
 import type { UserState as UserStateData } from '../../types/rpc-responses/user-state'
 
-import {
-  generateKeys,
-  recoverKeyPair,
-  loadBip39Russian,
-} from '../core/keys'
+import { generateKeys, recoverKeyPair, loadBip39Russian } from '../core/keys'
 import {
   loadEncryptedMnemonic,
   saveWasLogged,
@@ -39,7 +35,6 @@ import { wsService } from '../ws'
 
 import { useKeysStore } from './keys-store'
 import { useProfileStore } from './profile-store'
-
 
 export const useAuthStore = defineStore('auth', {
   state: (): UserState & {
@@ -228,7 +223,8 @@ export const useAuthStore = defineStore('auth', {
       try {
         await loadBip39Russian()
 
-        if (!privateKey || typeof privateKey !== 'string') throw new Error('Private key is required')
+        if (!privateKey || typeof privateKey !== 'string')
+          throw new Error('Private key is required')
         const trimmedKey = privateKey.trim()
         if (!trimmedKey) throw new Error('Private key cannot be empty')
 
@@ -288,6 +284,7 @@ export const useAuthStore = defineStore('auth', {
         keys.clearKeys()
         const profile = useProfileStore()
         profile.clearProfile()
+        this.resetUserRelations()
 
         clearAllUserData()
 
@@ -332,7 +329,9 @@ export const useAuthStore = defineStore('auth', {
               return finishUnauthenticated()
             }
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
 
         await loadBip39Russian()
 
@@ -578,6 +577,16 @@ export const useAuthStore = defineStore('auth', {
       } catch (e) {
         console.error('[auth-store] Failed to reset messenger:', e)
       }
+    },
+
+    /**
+     * Сбрасывает блок-лист и подписки при разлогине. Динамический импорт —
+     * чтобы не создавать цикл (user-relations-store импортирует useAuthStore).
+     */
+    resetUserRelations(): void {
+      import('@/stores/user-relations-store')
+        .then(({ useUserRelationsStore }) => useUserRelationsStore().reset())
+        .catch((e: unknown) => console.error('[auth-store] Failed to reset relations:', e))
     },
 
     // ── Cache invalidation ──────────────────────────────────────────────

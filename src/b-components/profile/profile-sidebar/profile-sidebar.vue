@@ -27,6 +27,33 @@
         </SC_StatItem>
       </SC_UserStats>
 
+      <SC_SubscribeRow v-if="canShowSubscribe">
+        <SC_SubscribeButton
+          :class="{ subscribed: isSubscribed }"
+          :disabled="isSubscribePending"
+          @click="onPrimaryClick"
+        >
+          <LoadingOutlined v-if="isSubscribePending" spin />
+          <CheckOutlined v-else-if="isSubscribed" />
+          <PlusOutlined v-else />
+          {{ isSubscribed ? t('subscriptions.subscribed') : t('subscriptions.subscribe') }}
+        </SC_SubscribeButton>
+
+        <SC_BellButton
+          :class="{ active: isSubscribedPrivate }"
+          :disabled="isSubscribePending"
+          :title="
+            isSubscribedPrivate
+              ? t('subscriptions.disableNotifications')
+              : t('subscriptions.enableNotifications')
+          "
+          @click="onBellClick"
+        >
+          <BellFilled v-if="isSubscribedPrivate" />
+          <BellOutlined v-else />
+        </SC_BellButton>
+      </SC_SubscribeRow>
+
       <SC_StartChatButton :disabled="!userAddress" @click="startChatWithUser">
         {{ t('profile.startChat') }}
       </SC_StartChatButton>
@@ -82,13 +109,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { LoadingOutlined, BlockOutlined } from '@ant-design/icons-vue'
+import {
+  LoadingOutlined,
+  BlockOutlined,
+  CheckOutlined,
+  PlusOutlined,
+  BellFilled,
+  BellOutlined,
+} from '@ant-design/icons-vue'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { useMessengerStore } from '@/b-components/messenger/store'
+import { useAuthStore } from '@/blockchain/store/auth-store'
+import { useUserRelationsStore } from '@/stores'
+import { appToast } from '@/b-components/app-toast'
 import { ICON_PRIMARY_24, ICON_SIZE_11 } from '@/styles/icon-styles'
 import {
   SC_ProfileSidebar,
@@ -100,11 +137,13 @@ import {
   SC_StatLabel,
   SC_StatValue,
   SC_UserAbout,
-  SC_UserJoined,
   SC_LoadingState,
   SC_UserAddress,
   SC_UserSite,
   SC_StartChatButton,
+  SC_SubscribeRow,
+  SC_SubscribeButton,
+  SC_BellButton,
   SC_ExplorerLinkRow,
   SC_ExplorerLink,
 } from './styled'
@@ -117,6 +156,8 @@ interface ProfileWithAccSet extends UserProfile {
 const props = defineProps<{ profile?: UserProfile | null }>()
 const { t } = useI18n()
 const messengerStore = useMessengerStore()
+const authStore = useAuthStore()
+const relations = useUserRelationsStore()
 
 const userAvatar = computed<string | null>(() => {
   const p = props.profile as ProfileWithAccSet | null | undefined
@@ -209,6 +250,64 @@ const publicationsCount = computed<number>(() => {
   if (typeof fromContent === 'number' && !Number.isNaN(fromContent)) return fromContent
   return 0
 })
+
+// ── Подписка (follow) ───────────────────────────────────────────────
+const isSubscribed = computed<boolean>(() => relations.isSubscribed(userAddress.value))
+const isSubscribedPrivate = computed<boolean>(() =>
+  relations.isSubscribedPrivate(userAddress.value)
+)
+const isSubscribePending = computed<boolean>(() => relations.isSubscribePending(userAddress.value))
+
+// Кнопка видна только авторизованному пользователю и не на собственном профиле.
+const canShowSubscribe = computed<boolean>(
+  () =>
+    !!userAddress.value &&
+    authStore.isAuthenticated &&
+    authStore.getUserAddress !== userAddress.value
+)
+
+async function onPrimaryClick(): Promise<void> {
+  const address = userAddress.value
+  if (!address || isSubscribePending.value) return
+  try {
+    if (isSubscribed.value) {
+      await relations.unsubscribe(address)
+      appToast.success({ message: t('subscriptions.unsubscribedToast') })
+    } else {
+      await relations.subscribe(address)
+      appToast.success({ message: t('subscriptions.subscribedToast') })
+    }
+  } catch (e) {
+    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
+  }
+}
+
+async function onBellClick(): Promise<void> {
+  const address = userAddress.value
+  if (!address || isSubscribePending.value) return
+  try {
+    if (isSubscribedPrivate.value) {
+      // Выключить уведомления, оставшись подписанным (публичная подписка).
+      await relations.subscribe(address)
+      appToast.success({ message: t('subscriptions.notificationsDisabledToast') })
+    } else {
+      // Включить уведомления (приватная подписка); подпишет, если ещё не подписан.
+      await relations.subscribePrivate(address)
+      appToast.success({ message: t('subscriptions.notificationsEnabledToast') })
+    }
+  } catch (e) {
+    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
+  }
+}
+
+// Гидрируем подписки/блок-лист, как только пользователь авторизован.
+watch(
+  () => authStore.isAuthenticated,
+  (authed) => {
+    if (authed) void relations.init()
+  },
+  { immediate: true }
+)
 
 async function startChatWithUser(): Promise<void> {
   const address = userAddress.value

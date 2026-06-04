@@ -1,13 +1,17 @@
-// Блокировка / разблокировка пользователя через блокчейн-транзакции
-// `blocking` / `unblocking`.
+// On-chain операции отношений между пользователями: блокировка/разблокировка
+// (`blocking` / `unblocking`) и подписка/отписка (`subscribe` / `unsubscribe` /
+// `subscribePrivate`).
 //
-// Формат payload и serialize взяты 1:1 из legacy proxy16/lib/kit.js:145-239:
-//   - operationType: 'blocking' | 'unblocking'
-//   - serialize():   просто адрес блокируемого пользователя
-//   - export()/payload: { address: <адрес> }
+// Формат payload и serialize взяты 1:1 из legacy kit.js:
+//   - blocking/unblocking:  export() = { address }                  (kit.js:170-182, 219-231)
+//   - subscribe:            export() = { address }                  (kit.js:71-83)
+//   - subscribePrivate:     export() = { address }                  (kit.js:21-34)
+//   - unsubscribe:          export() = { type: 'unsubscribe', address } (kit.js:120-133)
+//   - serialize() во всех случаях возвращает просто адрес цели.
 //
-// Это самостоятельная on-chain операция отношений между пользователями
-// (не привязана к комментариям) — отсюда расположение в core/actions.
+// RPC-вызов 1:1 с legacy actions.js:800-808 — parameters = [hex, export(), optype].
+// Это самостоятельные on-chain операции (не привязаны к комментариям) — отсюда
+// расположение в core/actions.
 
 import { useAuthStore } from '@/blockchain'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
@@ -31,28 +35,52 @@ interface SendTxResponse {
   error?: unknown
 }
 
-type RelationOperation = 'blocking' | 'unblocking'
+type RelationOperation =
+  | 'blocking'
+  | 'unblocking'
+  | 'subscribe'
+  | 'unsubscribe'
+  | 'subscribePrivate'
 
-/** Тело сообщения для blocking/unblocking — только адрес цели (legacy export()). */
-interface RelationMessagePayload {
-  address: string
+/** i18n-ключи ошибок, специфичные для конкретной операции. */
+interface RelationErrorKeys {
+  /** Нет ключа/адреса (не авторизован). */
+  authRequired: string
+  /** Попытка применить операцию к самому себе. */
+  self: string
+}
+
+/**
+ * Тело сообщения (2-й параметр sendrawtransactionwithmessage) — legacy export().
+ * Для `unsubscribe` legacy добавляет поле `type` (kit.js:129-132); у остальных
+ * операций это просто `{ address }`.
+ */
+function buildMessagePayload(
+  operationType: RelationOperation,
+  targetAddress: string
+): Record<string, string> {
+  if (operationType === 'unsubscribe') {
+    return { type: 'unsubscribe', address: targetAddress }
+  }
+  return { address: targetAddress }
 }
 
 async function sendRelationTx(
   targetAddress: string,
-  operationType: RelationOperation
+  operationType: RelationOperation,
+  errorKeys: RelationErrorKeys
 ): Promise<string> {
   const authStore = useAuthStore()
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('commentsMsg.errAuthRequiredBlock'))
+  if (!keyPair || !address) throw new Error(t(errorKeys.authRequired))
   if (!targetAddress) throw new Error(t('commentsMsg.errAuthorAddressRequired'))
-  if (targetAddress === address) throw new Error(t('commentsMsg.errBlockSelf'))
+  if (targetAddress === address) throw new Error(t(errorKeys.self))
 
-  const messagePayload: RelationMessagePayload = { address: targetAddress }
+  const messagePayload = buildMessagePayload(operationType, targetAddress)
 
-  // serialize() в legacy для blocking/unblocking возвращает просто адрес.
+  // serialize() в legacy для всех этих операций возвращает просто адрес цели.
   const serializedData = targetAddress
 
   let unspents = await getUnspents(address, 1, 9999999)
@@ -92,12 +120,43 @@ async function sendRelationTx(
   throw err instanceof Error ? err : new Error(String(err ?? t('commentsMsg.errTxFailed')))
 }
 
+/** Ключи ошибок для block/unblock (legacy формулировки про блокировку). */
+const BLOCK_ERROR_KEYS: RelationErrorKeys = {
+  authRequired: 'commentsMsg.errAuthRequiredBlock',
+  self: 'commentsMsg.errBlockSelf',
+}
+
+/** Ключи ошибок для subscribe/unsubscribe/subscribePrivate. */
+const SUBSCRIBE_ERROR_KEYS: RelationErrorKeys = {
+  authRequired: 'subscriptions.errAuthRequired',
+  self: 'subscriptions.errSubscribeSelf',
+}
+
 /** Заблокировать пользователя. Возвращает txid отправленной транзакции. */
 export function blockUser(targetAddress: string): Promise<string> {
-  return sendRelationTx(targetAddress, 'blocking')
+  return sendRelationTx(targetAddress, 'blocking', BLOCK_ERROR_KEYS)
 }
 
 /** Разблокировать пользователя. Возвращает txid отправленной транзакции. */
 export function unblockUser(targetAddress: string): Promise<string> {
-  return sendRelationTx(targetAddress, 'unblocking')
+  return sendRelationTx(targetAddress, 'unblocking', BLOCK_ERROR_KEYS)
+}
+
+/** Подписаться на пользователя (публичная подписка). Возвращает txid. */
+export function subscribeUser(targetAddress: string): Promise<string> {
+  return sendRelationTx(targetAddress, 'subscribe', SUBSCRIBE_ERROR_KEYS)
+}
+
+/**
+ * Подписаться приватно (с уведомлениями). В legacy `subscribePrivate` коллизирует
+ * с `subscribe`/`unsubscribe` по тому же адресу — нода хранит последнюю операцию.
+ * Возвращает txid.
+ */
+export function subscribeUserPrivate(targetAddress: string): Promise<string> {
+  return sendRelationTx(targetAddress, 'subscribePrivate', SUBSCRIBE_ERROR_KEYS)
+}
+
+/** Отписаться от пользователя. Возвращает txid. */
+export function unsubscribeUser(targetAddress: string): Promise<string> {
+  return sendRelationTx(targetAddress, 'unsubscribe', SUBSCRIBE_ERROR_KEYS)
 }
