@@ -57,6 +57,30 @@ export const SC_MessengerWrapper = styled.div`
   }
 `
 
+export const SC_CreatePostButton = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  color: ${COLORS.TEXT_PRIMARY};
+
+  & .anticon {
+    font-size: 20px;
+  }
+
+  &:hover {
+    background-color: ${COLORS.OVERLAY_4};
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 6px;
+  }
+`
+
 export const SC_UnreadBadge = styled.span`
   position: absolute;
   top: 2px;

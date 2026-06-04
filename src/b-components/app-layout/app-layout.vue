@@ -12,6 +12,8 @@
 
     <PostModal />
 
+    <PostComposerModal />
+
     <WhatsNewModal />
   </SC_Application>
 </template>
@@ -21,6 +23,7 @@ import { onMounted } from 'vue'
 import AppHeader from '@/b-components/header/app-header/app-header.vue'
 import MessengerWrapper from '@/b-components/messenger/components/messenger-wrapper/messenger-wrapper.vue'
 import PostModal from '@/b-components/content/post-modal/post-modal.vue'
+import PostComposerModal from '@/b-components/content/post-composer/post-composer-modal.vue'
 import WhatsNewModal from '@/b-components/changelog/whats-new-modal.vue'
 import { StarExplosion } from '@/b-components/effects/star-explosion'
 import { useUIStore } from '@/stores/ui-store'

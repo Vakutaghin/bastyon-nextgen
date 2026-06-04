@@ -96,6 +96,26 @@
             @rating-change="handleRatingChange"
             @error="handleRatingError"
           />
+
+          <SC_PostActionBtn
+            v-if="canRepost"
+            type="button"
+            :aria-label="t('postCard.repostAction')"
+            @click="openRepost"
+          >
+            <ShareAltOutlined />
+            <span>{{ t('postCard.repostAction') }}</span>
+          </SC_PostActionBtn>
+
+          <SC_PostActionBtn
+            v-if="isOwnPost"
+            type="button"
+            :aria-label="t('postCard.editAction')"
+            @click="openEdit"
+          >
+            <EditOutlined />
+            <span>{{ t('postCard.editAction') }}</span>
+          </SC_PostActionBtn>
         </SC_PostActions>
 
         <PostCardComments
@@ -120,7 +140,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DeleteOutlined } from '@ant-design/icons-vue'
+import { DeleteOutlined, ShareAltOutlined, EditOutlined } from '@ant-design/icons-vue'
+import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
@@ -141,6 +162,7 @@ import {
   SC_PostCard,
   SC_PostTitle,
   SC_PostActions,
+  SC_PostActionBtn,
   SC_PostCardYoutube,
   SC_RepostInnerCard,
   SC_RepostOriginalAuthor,
@@ -239,6 +261,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const modalStore = useModalStore()
 const postsStore = usePostsStore()
+const authStore = useAuthStore()
 
 const isCollapsed = ref(true)
 const postCardRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
@@ -251,6 +274,20 @@ onMounted(() => {
 })
 
 const isRepost = computed<boolean>(() => !!props.post.repost)
+
+/** Свой ли это пост (для показа кнопки редактирования). */
+const isOwnPost = computed<boolean>(
+  () => !!props.post.author?.address && props.post.author.address === authStore.getUserAddress
+)
+/** Можно ли репостить (не показываем для удалённого оригинала). */
+const canRepost = computed<boolean>(() => !props.post.repostDeleted)
+
+function openRepost(): void {
+  modalStore.openPostComposerModal({ mode: 'repost', source: props.post })
+}
+function openEdit(): void {
+  modalStore.openPostComposerModal({ mode: 'edit', source: props.post })
+}
 
 const postId = computed<string>(
   () => props.post.txid || props.post.hash || String(props.post.id || '')

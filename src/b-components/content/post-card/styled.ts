@@ -87,6 +87,27 @@ export const SC_AuthorNameRow = styled.div`
   }
 `
 
+export const SC_PostActionBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  color: ${COLORS.TEXT_SECONDARY};
+  cursor: pointer;
+  font-size: 13px;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+
+  &:hover {
+    background: ${COLORS.BG_HOVER};
+    color: ${COLORS.PRIMARY};
+  }
+`
+
 export const SC_PostActions = styled.div`
   display: flex;
   align-items: center;

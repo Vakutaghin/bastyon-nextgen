@@ -22,6 +22,7 @@ const SearchPage = () => import('@/pages/search-page/search-page.vue')
 const MiniAppsPage = () => import('@/pages/mini-apps-page/mini-apps-page.vue')
 const MiniAppPage = () => import('@/pages/mini-app-page/mini-app-page.vue')
 const PostPage = () => import('@/pages/post-page/post-page.vue')
+const ComposePage = () => import('@/pages/compose-page/compose-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])
@@ -125,6 +126,13 @@ const router = createRouter({
       component: PostPage,
       props: true,
       meta: { titleKey: 'routes.post' },
+    },
+    // Композер поста (deep-link / мобильный full-screen). ДО catch-all /:userName.
+    {
+      path: '/compose',
+      name: 'compose',
+      component: ComposePage,
+      meta: { titleKey: 'routes.compose' },
     },
     {
       path: '/:userName',

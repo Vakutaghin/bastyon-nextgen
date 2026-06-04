@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { POST_MODAL_SCROLL_POSITION_KEY } from '@/blockchain/constants/storage'
 import type { GetTopFeedPost as Post } from '@/types/rpc-responses/get-top-feed'
+import type {
+  ComposerMode,
+  ComposerSource,
+} from '@/b-components/content/post-composer/composer-source'
 
 interface ImageGalleryState {
   isOpen: boolean
@@ -14,19 +18,25 @@ export const useModalStore = defineStore('modal', {
     postModal: {
       isOpen: false,
       post: null as Post | null,
-      scrollPosition: 0
+      scrollPosition: 0,
     },
     imageGallery: {
       isOpen: false,
       images: [] as string[],
       index: 0,
-      scrollPosition: 0
+      scrollPosition: 0,
     } as ImageGalleryState,
     // Модальное окно авторизации (управляется через store для вызова из любой части приложения)
     authModal: {
       isOpen: false,
-      mode: 'login' as 'login' | 'register'
-    }
+      mode: 'login' as 'login' | 'register',
+    },
+    // Модальное окно композера поста (создание / редактирование / репост)
+    postComposerModal: {
+      isOpen: false,
+      mode: 'create' as ComposerMode,
+      source: null as ComposerSource | null,
+    },
   }),
 
   actions: {
@@ -46,11 +56,32 @@ export const useModalStore = defineStore('modal', {
     },
 
     /**
+     * Открывает модалку композера поста.
+     * @param options.mode  create (по умолчанию) / edit / repost
+     * @param options.source источник для edit/repost (пост из ленты)
+     */
+    openPostComposerModal(
+      options: { mode?: ComposerMode; source?: ComposerSource | null } = {}
+    ): void {
+      this.postComposerModal.mode = options.mode ?? 'create'
+      this.postComposerModal.source = options.source ?? null
+      this.postComposerModal.isOpen = true
+    },
+
+    /**
+     * Закрывает модалку композера поста
+     */
+    closePostComposerModal(): void {
+      this.postComposerModal.isOpen = false
+    },
+
+    /**
      * Открывает модалку с постом
      */
     openPostModal(post: Post): void {
       // Сохраняем позицию скролла
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
       this.postModal.scrollPosition = scrollTop
 
       // Сохраняем в sessionStorage как резерв
@@ -76,7 +107,7 @@ export const useModalStore = defineStore('modal', {
         window.scrollTo({
           top: this.postModal.scrollPosition,
           left: 0,
-          behavior: 'instant'
+          behavior: 'instant',
         })
       })
     },
@@ -85,7 +116,8 @@ export const useModalStore = defineStore('modal', {
      * Открывает галерею изображений
      */
     openImageGallery(images: string[], index: number = 0): void {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
       this.imageGallery.scrollPosition = scrollTop
       this.imageGallery.images = images
       this.imageGallery.index = index
@@ -115,7 +147,7 @@ export const useModalStore = defineStore('modal', {
         window.scrollTo({
           top: scrollPosition,
           left: 0,
-          behavior: 'instant'
+          behavior: 'instant',
         })
       }
 
@@ -133,6 +165,6 @@ export const useModalStore = defineStore('modal', {
      */
     setImageGalleryIndex(index: number): void {
       this.imageGallery.index = index
-    }
-  }
+    },
+  },
 })

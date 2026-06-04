@@ -41,6 +41,56 @@ export interface CommentMessagePayload {
 }
 
 /**
+ * Настройки поста (поле `s` в SharePayload). Не участвуют в хэше serialize().
+ * См. blockchain/core/actions/post-action.ts (SharePostSettings) и legacy kit.js:1473.
+ */
+export interface SharePayloadSettings {
+  /** Порядок блоков в композере. */
+  a?: string[]
+  /** Тип контента: 'p' — пост, 'a' — статья. */
+  v?: string
+  /** Версия (для статей v2+). */
+  version?: number
+  /** Список видео (легаси). */
+  videos?: unknown[]
+  /** Режим OG-картинки для ссылок. */
+  image?: string
+  /** Видимость: '0' все, '1' подписчики, '2' зарегистрир., '3' платные. */
+  f?: string
+  /** id чат-комнаты стрима. */
+  c?: string
+  /** Unix-таймстамп отложенной публикации (> 1 — запланировано). */
+  t?: number
+}
+
+/**
+ * Тело сообщения поста (Share) — второй параметр RPC для типов
+ * 'share' / 'video' / 'audio' / 'article'. Краткие ключи (legacy kit.js:1731).
+ */
+export interface SharePayload {
+  /** Заголовок (caption). */
+  c: string
+  /** Тело поста (message). */
+  m: string
+  /** Внешняя ссылка / видео URL. */
+  u: string
+  /** Опрос { title, list }. */
+  p: { title: string; list: string[] } | Record<string, never>
+  /** Теги (макс. 5). */
+  t: string[]
+  /** URL картинок (макс. 10). */
+  i: string[]
+  /** Настройки. */
+  s: SharePayloadSettings
+  /** Язык. */
+  l: string
+  /** txid редактируемого поста ('' — новый). */
+  txidEdit: string
+  /** txid репостируемого поста ('' — не репост). */
+  txidRepost: string
+}
+
+/**
  * Тип операции для sendrawtransactionwithmessage
  */
 export type SendRawTransactionOperationType =
@@ -49,6 +99,10 @@ export type SendRawTransactionOperationType =
   | 'commentDelete'
   | 'cScore'
   | 'upvoteShare'
+  | 'share'
+  | 'video'
+  | 'audio'
+  | 'article'
   | string
 
 /**
@@ -58,7 +112,7 @@ export type SendRawTransactionOperationType =
 export type SendRawTransactionWithMessageParameters = [
   rawTxHex: string,
   messagePayload: CommentMessagePayload | Record<string, unknown>,
-  operationType: SendRawTransactionOperationType
+  operationType: SendRawTransactionOperationType,
 ]
 
 /**
