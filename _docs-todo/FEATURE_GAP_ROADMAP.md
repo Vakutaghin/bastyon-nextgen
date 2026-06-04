@@ -42,8 +42,13 @@
    `image-upload-service` (peertube). *Live on-chain TX не верифицирован.*
    Осталось: **обложка** (отдельный `accSet`-tx — нет write-кода), крипто-адреса.
    *«Соцссылки» в legacy-модели не существуют (поле `b`/addresses — это крипто-кошельки).*
-3. **Чаевые/донат автору** (на пост и на комментарий). `donate`/`pkoin` → `sendToAuthor`.
-   В nextgen `donate`-упоминания — только парсинг payload/веса, UI отправки нет.
+3. ✅ **Чаевые/донат автору** (на пост и на комментарий). Реализовано:
+   `blockchain/core/actions/donate-action.ts` (`donateToAuthor`) — обычный перевод PKOIN
+   на адрес автора с маркером `message: 'a:donate'` (1:1 с legacy `components/donate`),
+   feemode include. UI — синглтон-модал `donate/donate-modal.vue` (сумма + пресеты + баланс)
+   в `src.vue`, открывается через `useDonateStore`; кнопка-подарок в шапке карточки поста и
+   пункт «Чаевые» в меню комментария. *Live on-chain TX не верифицирован.*
+   *Анимация монеток при донате (`donateAnimations`) и tip-уведомление получателю — отдельно (P2).*
 4. **История транзакций кошелька** (`transactionslist` + `transactionview`).
    Сейчас своих отправленных/полученных PKOIN не видно (только косвенный explorer-by-address).
 5. **Загрузка видео на PeerTube** (`uploadpeertube`, `videoCabinet`). nextgen только
@@ -219,7 +224,7 @@ UI присутствует и пишет в стор, но **значение �
 | Embed-код (iframe) | embeding | ❌ | — |
 | Лайтбокс галереи | imagegallery | ✅ | `image-gallery.vue` |
 | Редактор изображений (crop/фильтры) | imageGalleryEdit | ❌ | — |
-| Донат на пост/коммент | donate | ❌ | см. P0-3 |
+| Донат на пост/коммент | donate | ✅ | P0-3: кнопка-подарок в шапке поста + пункт меню коммента |
 | Буст поста | boost | 🟡 | только парсинг в explorer |
 | Скачать медиа | downloadMedia | ❌ | (частично cordova-скоуп) |
 
@@ -261,7 +266,7 @@ UI присутствует и пишет в стор, но **значение �
 | Детали транзакции (семантика) | transactionview | 🟡 | только generic explorer-tx |
 | Fast-send / батч | fastsend | ❌ | — |
 | Платёжные ссылки | createpaymentlink | ❌ | — |
-| Чаевые/донат автору | donate | ❌ | см. P0-3 |
+| Чаевые/донат автору | donate | ✅ | P0-3: `donateToAuthor` (перевод + маркер `a:donate`) |
 | Анимация доната | donateAnimations | ❌ | только star-explosion |
 | Буст поста | boost | ❌ | — |
 | Стейкинг (калькулятор) | staking | ❌ | — |
