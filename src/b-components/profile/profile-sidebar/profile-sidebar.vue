@@ -27,6 +27,11 @@
         </SC_StatItem>
       </SC_UserStats>
 
+      <SC_EditProfileButton v-if="isOwnProfile" @click="editOpen = true">
+        <EditOutlined />
+        {{ t('editProfile.edit') }}
+      </SC_EditProfileButton>
+
       <SC_SubscribeRow v-if="canShowSubscribe">
         <SC_SubscribeButton
           :class="{ subscribed: isSubscribed }"
@@ -105,11 +110,18 @@
         </template>
       </Spin>
     </SC_LoadingState>
+
+    <EditProfileModal
+      :open="editOpen"
+      :profile="profile ?? null"
+      @close="editOpen = false"
+      @updated="onProfileUpdated"
+    />
   </SC_ProfileSidebar>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -119,6 +131,7 @@ import {
   PlusOutlined,
   BellFilled,
   BellOutlined,
+  EditOutlined,
 } from '@ant-design/icons-vue'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -126,6 +139,7 @@ import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
+import EditProfileModal from '@/b-components/profile/edit-profile-modal/edit-profile-modal.vue'
 import { ICON_PRIMARY_24, ICON_SIZE_11 } from '@/styles/icon-styles'
 import {
   SC_ProfileSidebar,
@@ -141,6 +155,7 @@ import {
   SC_UserAddress,
   SC_UserSite,
   SC_StartChatButton,
+  SC_EditProfileButton,
   SC_SubscribeRow,
   SC_SubscribeButton,
   SC_BellButton,
@@ -154,10 +169,13 @@ interface ProfileWithAccSet extends UserProfile {
 }
 
 const props = defineProps<{ profile?: UserProfile | null }>()
+const emit = defineEmits<{ (e: 'profile-updated', patch: Partial<UserProfile>): void }>()
 const { t } = useI18n()
 const messengerStore = useMessengerStore()
 const authStore = useAuthStore()
 const relations = useUserRelationsStore()
+
+const editOpen = ref(false)
 
 const userAvatar = computed<string | null>(() => {
   const p = props.profile as ProfileWithAccSet | null | undefined
@@ -265,6 +283,16 @@ const canShowSubscribe = computed<boolean>(
     authStore.isAuthenticated &&
     authStore.getUserAddress !== userAddress.value
 )
+
+// На собственном профиле вместо подписки показываем «Редактировать профиль».
+const isOwnProfile = computed<boolean>(
+  () => !!userAddress.value && authStore.getUserAddress === userAddress.value
+)
+
+function onProfileUpdated(patch: Partial<UserProfile>): void {
+  editOpen.value = false
+  emit('profile-updated', patch)
+}
 
 async function onPrimaryClick(): Promise<void> {
   const address = userAddress.value

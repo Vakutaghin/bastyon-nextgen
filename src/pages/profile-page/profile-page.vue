@@ -7,7 +7,7 @@
       <ProfileCover :profile="profile" />
 
       <SC_ProfileContentWrapper>
-        <ProfileSidebar :profile="profile" />
+        <ProfileSidebar :profile="profile" @profile-updated="onSidebarProfileUpdated" />
 
         <SC_ProfileMainContent>
           <SC_LoadingProfile v-if="loading">
@@ -221,6 +221,13 @@ function onProfileLoaded(newProfile: UserProfile): void {
   }
 }
 
+// Оптимистичный апдейт после редактирования профиля (edit-profile-modal).
+function onSidebarProfileUpdated(patch: Partial<UserProfile>): void {
+  if (patch) {
+    profile.value = { ...(profile.value ?? {}), ...patch } as ProfileWithAccSet
+  }
+}
+
 watch(
   () => route.params.userName,
   (newUserName) => {
@@ -229,7 +236,9 @@ watch(
   { immediate: true }
 )
 
-useDocumentTitle(() => profile.value?.name ?? (route.params.userName as string) ?? t('profile.title'))
+useDocumentTitle(
+  () => profile.value?.name ?? (route.params.userName as string) ?? t('profile.title')
+)
 
 // Наш профиль без id — регистрация в процессе.
 watch(profile, (p) => {

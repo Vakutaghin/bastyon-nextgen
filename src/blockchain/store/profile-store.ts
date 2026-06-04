@@ -5,7 +5,10 @@
 
 import { defineStore } from 'pinia'
 import type { UserProfile, GetUserProfileResponse } from '../../types/rpc-responses/user-get'
-import type { UserState as UserStateData, GetUserStateResponse } from '../../types/rpc-responses/user-state'
+import type {
+  UserState as UserStateData,
+  GetUserStateResponse,
+} from '../../types/rpc-responses/user-state'
 import type { Address } from '../types/addresses'
 
 export const useProfileStore = defineStore('profile', {
@@ -86,8 +89,11 @@ export const useProfileStore = defineStore('profile', {
         try {
           const { queryClient } = await import('../../query-client')
           if (stateResponse) queryClient.setQueryData(['user', 'state', address], stateResponse)
-          if (profileResponse) queryClient.setQueryData(['user', 'current-profile', address], profileResponse)
-        } catch { /* ignore cache errors */ }
+          if (profileResponse)
+            queryClient.setQueryData(['user', 'current-profile', address], profileResponse)
+        } catch {
+          /* ignore cache errors */
+        }
 
         let userStateData: UserStateData | null = null
         let userProfileData: UserProfile | null = null
@@ -100,17 +106,27 @@ export const useProfileStore = defineStore('profile', {
           } else if (typeof stateResponse.data === 'object' && stateResponse.data !== null) {
             const dataObj = stateResponse.data as { data?: UserStateData[] | UserStateData }
             if (dataObj.data && Array.isArray(dataObj.data)) stateArray = dataObj.data
-            else if (dataObj.data && typeof dataObj.data === 'object') stateArray = [dataObj.data as UserStateData]
-            else if (Object.keys(stateResponse.data).length > 0) stateArray = [stateResponse.data as UserStateData]
+            else if (dataObj.data && typeof dataObj.data === 'object')
+              stateArray = [dataObj.data as UserStateData]
+            else if (Object.keys(stateResponse.data).length > 0)
+              stateArray = [stateResponse.data as UserStateData]
           }
           if (stateArray.length > 0) {
-            userStateData = stateArray.find((item) => item?.address === address) || stateArray[0] || null
+            userStateData =
+              stateArray.find((item) => item?.address === address) || stateArray[0] || null
           }
         }
 
         // Extract profile
-        if (profileResponse.result === 'success' && profileResponse.data && Array.isArray(profileResponse.data)) {
-          userProfileData = profileResponse.data.find((item) => item?.address === address) || profileResponse.data[0] || null
+        if (
+          profileResponse.result === 'success' &&
+          profileResponse.data &&
+          Array.isArray(profileResponse.data)
+        ) {
+          userProfileData =
+            profileResponse.data.find((item) => item?.address === address) ||
+            profileResponse.data[0] ||
+            null
         }
 
         // Merge
@@ -146,20 +162,25 @@ export const useProfileStore = defineStore('profile', {
         const { getByPRCWithAuth } = await import('../../helpers/api/request')
         const { rpcEndpoints } = await import('../../helpers/api/rpc-endpoints')
 
-        const response = await getByPRCWithAuth({
+        const response = (await getByPRCWithAuth({
           method: rpcEndpoints.getUserProfile,
           parameters: [[targetAddress]],
           options: { auth: true },
-        }) as GetUserProfileResponse
+        })) as GetUserProfileResponse
 
         try {
           const { queryClient } = await import('../../query-client')
           queryClient.setQueryData(['user', 'profile', targetAddress], response)
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
 
         let userProfile: UserProfile | null = null
         if (response?.result === 'success' && response.data && Array.isArray(response.data)) {
-          userProfile = response.data.find((item) => item?.address === targetAddress) || response.data[0] || null
+          userProfile =
+            response.data.find((item) => item?.address === targetAddress) ||
+            response.data[0] ||
+            null
         } else if (response?.result === 'error') {
           throw new Error(response.error || 'Failed to fetch user profile')
         }
@@ -183,6 +204,17 @@ export const useProfileStore = defineStore('profile', {
       this.userProfile = null
       this.userAvatarUrl = null
       this.isFetchingUserState = false
+    },
+
+    /**
+     * Оптимистично патчит закэшированный профиль (после edit-profile).
+     * `image` дополнительно прокидывается в userAvatarUrl, чтобы аватар в
+     * хедере/сайдбаре обновился сразу, не дожидаясь подтверждения транзакции.
+     */
+    patchUserProfile(partial: Partial<UserProfile>): void {
+      if (!this.userProfile) return
+      this.userProfile = { ...this.userProfile, ...partial } as UserProfile | UserStateData
+      if (typeof partial.i === 'string') this.userAvatarUrl = partial.i
     },
   },
 })

@@ -98,6 +98,35 @@ export const SC_StartChatButton = styled.button`
   }
 `
 
+export const SC_EditProfileButton = styled.button`
+  width: 100%;
+  margin: 0 20px 16px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid ${COLORS.BORDER};
+  background-color: transparent;
+  color: ${COLORS.TEXT_PRIMARY};
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:hover {
+    border-color: ${COLORS.BRAND_CYAN};
+    color: ${COLORS.BRAND_CYAN};
+  }
+
+  .anticon {
+    font-size: 14px;
+  }
+`
+
 export const SC_SubscribeRow = styled.div`
   display: flex;
   gap: 8px;
