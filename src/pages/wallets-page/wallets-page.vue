@@ -21,6 +21,13 @@
           </SC_WalletTabButton>
           <SC_WalletTabButton
             type="button"
+            :class="{ active: activeTabKey === 'history' }"
+            @click="activeTabKey = 'history'"
+          >
+            {{ t('wallet.tabHistory') }}
+          </SC_WalletTabButton>
+          <SC_WalletTabButton
+            type="button"
             :class="{ active: activeTabKey === 'buy' }"
             @click="activeTabKey = 'buy'"
           >
@@ -30,7 +37,9 @@
 
         <SC_WalletTabPanels>
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'balances' }">
-            <SC_WalletLoading v-if="loading && !hasAddresses"> {{ t('wallet.loading') }} </SC_WalletLoading>
+            <SC_WalletLoading v-if="loading && !hasAddresses">
+              {{ t('wallet.loading') }}
+            </SC_WalletLoading>
 
             <SC_WalletError v-else-if="error">
               {{ error }}
@@ -146,6 +155,10 @@
             <WalletTransfer />
           </SC_WalletTabPanel>
 
+          <SC_WalletTabPanel :class="{ active: activeTabKey === 'history' }">
+            <WalletHistory v-if="activeTabKey === 'history'" />
+          </SC_WalletTabPanel>
+
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'buy' }">
             <PkoinChart />
           </SC_WalletTabPanel>
@@ -172,6 +185,7 @@ import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import type { GetUserProfileResponse } from '@/types/rpc-responses/user-get'
 import WalletTransfer from './wallet-transfer/wallet-transfer.vue'
+import WalletHistory from './wallet-history/wallet-history.vue'
 import PkoinChart from './pkoin-chart/pkoin-chart.vue'
 import {
   SC_WalletWork,
