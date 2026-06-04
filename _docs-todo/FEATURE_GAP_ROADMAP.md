@@ -35,8 +35,13 @@
    подписки в `profile-sidebar.vue`. Вкладка «Подписки» наполняется (`getsubscribesfeed` уже был
    подключён в `feed-queries.ts`, авто-enable по авторизации). *Live on-chain TX не верифицирован.*
    Осталось (опц.): кнопка фоллоу прямо в карточке поста, списки подписчиков/подписок (см. P2).
-2. **Редактирование профиля** — имя, about, аватар, обложка, сайт, соцссылки.
-   `serializeUserInfo` зовётся только один раз при регистрации; update-flow нет.
+2. 🟡 **Редактирование профиля** — реализован update-flow для **имя/about/сайт/язык/аватар**
+   (`blockchain/core/actions/profile-update-action.ts` шлёт `userInfo`-tx через готовый
+   serializeUserInfo; ключи мессенджера ре-деривятся, крипто-адреса сохраняются). UI —
+   `edit-profile-modal.vue` + кнопка «Редактировать» на своём профиле; аватар грузится через
+   `image-upload-service` (peertube). *Live on-chain TX не верифицирован.*
+   Осталось: **обложка** (отдельный `accSet`-tx — нет write-кода), крипто-адреса.
+   *«Соцссылки» в legacy-модели не существуют (поле `b`/addresses — это крипто-кошельки).*
 3. **Чаевые/донат автору** (на пост и на комментарий). `donate`/`pkoin` → `sendToAuthor`.
    В nextgen `donate`-упоминания — только парсинг payload/веса, UI отправки нет.
 4. **История транзакций кошелька** (`transactionslist` + `transactionview`).
@@ -306,7 +311,7 @@ UI присутствует и пишет в стор, но **значение �
 | Sign out / restore session | user.js | ✅ | AES-encrypted persist |
 | Просмотр профиля (аватар/обложка/bio/статы) | author, userpage | ✅ | profile-page/sidebar/cover |
 | Репутация / бейджи | author | 🟡 | репутация есть, бейджей нет |
-| **Редактирование профиля** | author, usersettings | ❌ | см. P0-2 |
+| **Редактирование профиля** | author, usersettings | 🟡 | P0-2: имя/about/сайт/язык/аватар ✅; обложка/крипто-адреса — нет |
 | **Follow/subscribe** | author | ✅ | P0-1: кнопка в `profile-sidebar`, on-chain (live TX не верифицирован) |
 | Subscribe-privately | author | ✅ | P0-1: тоггл-колокольчик уведомлений в `profile-sidebar` |
 | Block/mute юзера | author, usersettings | 🟡 | логика есть, кнопки/списка нет |
