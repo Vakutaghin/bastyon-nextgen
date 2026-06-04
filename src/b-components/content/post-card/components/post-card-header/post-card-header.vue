@@ -45,6 +45,16 @@
             <UserAddOutlined v-else />
           </SC_FollowBtn>
 
+          <SC_DonateBtn
+            v-if="canShowFollow"
+            type="button"
+            :aria-label="t('donate.tip')"
+            :title="t('donate.tip')"
+            @click.stop.prevent="onDonate"
+          >
+            <GiftOutlined />
+          </SC_DonateBtn>
+
           <SC_PostAuthorRep>{{ formattedReputation }}</SC_PostAuthorRep>
         </SC_AuthorNameRow>
 
@@ -85,11 +95,12 @@ import {
   UserAddOutlined,
   UserDeleteOutlined,
   LoadingOutlined,
+  GiftOutlined,
 } from '@ant-design/icons-vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
-import { useUserRelationsStore } from '@/stores'
+import { useUserRelationsStore, useDonateStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
 import { favoritesAPI } from '@/db/apis/favorites-api'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
@@ -104,6 +115,7 @@ import {
   SC_PostTime,
   SC_ChatBtn,
   SC_FollowBtn,
+  SC_DonateBtn,
   SC_PostBookmark,
   SC_AuthorLinkWrap,
   SC_RepostLine,
@@ -155,6 +167,7 @@ const props = withDefaults(
 const { t } = useI18n()
 const authStore = useAuthStore()
 const relations = useUserRelationsStore()
+const donateStore = useDonateStore()
 
 const isBookmarked = ref(false)
 
@@ -234,6 +247,12 @@ async function onToggleFollow(event: Event): Promise<void> {
   } catch (e) {
     appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
   }
+}
+
+function onDonate(): void {
+  const address = authorAddress.value
+  if (!address) return
+  donateStore.open({ address, name: displayAuthor.value?.name })
 }
 
 // Лениво гидрируем подписки (идемпотентно: load делает только первая карточка).

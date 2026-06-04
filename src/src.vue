@@ -5,6 +5,7 @@ import type { ThemeConfig } from 'ant-design-vue/es/config-provider'
 import AppLayout from '@/b-components/app-layout/app-layout.vue'
 import VideoUploader from '@/b-components/video-uploader/video-uploader.vue'
 import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
+import DonateModal from '@/b-components/donate/donate-modal.vue'
 import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
 
 // ContentFeed сам делает запрос через useInfiniteFeed, поэтому здесь не нужно делать запрос
@@ -38,5 +39,7 @@ const themeConfig = computed<ThemeConfig>(() => ({
     <VideoUploader />
     <!-- Mini-apps payment modal — singleton, управляется через payment-modal-controller -->
     <MiniAppPaymentModal />
+    <!-- Донат автору — singleton, открывается через useDonateStore -->
+    <DonateModal />
   </ConfigProvider>
 </template>

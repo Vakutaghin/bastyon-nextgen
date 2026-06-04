@@ -48,6 +48,7 @@
             :can-delete="canDeleteComment(comment)"
             :can-share="canShareComment(comment)"
             :can-block="canBlockUser(comment)"
+            :can-donate="canDonateComment(comment)"
             :is-blocked="isUserBlocked(comment)"
             :block-pending="isBlockPending(comment)"
             @action="(a) => onCommentMenuAction(comment, a)"
@@ -215,6 +216,7 @@ const {
   canDeleteComment,
   canShareComment,
   canBlockUser,
+  canDonateComment,
   isUserBlocked,
   isBlockPending,
   canInteractWithComment,

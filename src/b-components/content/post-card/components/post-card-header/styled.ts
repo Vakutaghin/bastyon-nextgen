@@ -107,6 +107,29 @@ export const SC_FollowBtn = styled.button`
   }
 `
 
+export const SC_DonateBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: ${COLORS.TEXT_SECONDARY};
+  cursor: pointer;
+  border-radius: 4px;
+  line-height: 1;
+
+  &:hover {
+    color: ${COLORS.BRAND_CYAN};
+    background: ${COLORS.BRAND_CYAN_LIGHT};
+  }
+
+  .anticon {
+    font-size: 16px;
+  }
+`
+
 export const SC_PostBookmark = styled.div`
   margin-left: auto;
   cursor: pointer;

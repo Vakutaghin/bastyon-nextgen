@@ -66,6 +66,14 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     if (getCommentTxState(comment) !== 'normal') return false
     return true
   }
+  /** Можно ли донатить автору коммента: чужой реальный коммент, авторизован. */
+  const canDonateComment = (comment: GetComment): boolean => {
+    const me = opts.currentUserAddress.value
+    if (!me) return false
+    if (!comment.address || comment.address === me) return false
+    return getCommentTxState(comment) === 'normal'
+  }
+
   const isUserBlocked = (comment: GetComment): boolean =>
     useUserRelationsStore().isBlocked(comment.address)
   const isBlockPending = (comment: GetComment): boolean =>
@@ -120,6 +128,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       canEditComment(comment) ||
       canDeleteComment(comment) ||
       canBlockUser(comment) ||
+      canDonateComment(comment) ||
       canShareComment(comment)
     )
   }
@@ -285,6 +294,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     canEditComment,
     canDeleteComment,
     canBlockUser,
+    canDonateComment,
     isUserBlocked,
     isBlockPending,
     confirmBlockUser,

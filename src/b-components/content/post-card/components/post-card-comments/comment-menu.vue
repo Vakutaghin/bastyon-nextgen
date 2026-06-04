@@ -17,6 +17,11 @@
           <span>{{ t('comments.share') }}</span>
         </SC_MenuItem>
 
+        <SC_MenuItem v-if="canDonate" type="button" @click.stop.prevent="onAction('donate')">
+          <GiftOutlined />
+          <span>{{ t('donate.tip') }}</span>
+        </SC_MenuItem>
+
         <SC_MenuItem
           v-if="canBlock"
           type="button"
@@ -55,10 +60,11 @@ import {
   DeleteOutlined,
   StopOutlined,
   ShareAltOutlined,
+  GiftOutlined,
 } from '@ant-design/icons-vue'
 import { SC_MenuList, SC_MenuItem, SC_MenuTrigger } from './styled'
 
-export type CommentMenuAction = 'edit' | 'delete' | 'block' | 'unblock' | 'share'
+export type CommentMenuAction = 'edit' | 'delete' | 'block' | 'unblock' | 'share' | 'donate'
 
 defineProps<{
   /** Можно ли редактировать (свой комментарий, не temp) */
@@ -69,6 +75,8 @@ defineProps<{
   canShare: boolean
   /** Можно ли (раз)блокировать автора (чужой комментарий, авторизован) */
   canBlock: boolean
+  /** Можно ли донатить автору (чужой комментарий, авторизован) */
+  canDonate: boolean
   /** Уже заблокирован ли автор (показываем «Разблокировать») */
   isBlocked: boolean
   /** Идёт ли block/unblock транзакция (дизейбл пункта) */
