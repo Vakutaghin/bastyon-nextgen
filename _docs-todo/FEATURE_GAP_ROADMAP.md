@@ -100,10 +100,16 @@ UI присутствовал и писал в стор, но **значение
 
 ### 🟡 P2 — крупные недостающие фичи (по доменам)
 
-**Социальный граф / профиль**
-- Списки подписчиков/подписок (есть только счётчики в `profile-sidebar.vue`, не кликабельны).
-- Кнопка block в UI (логика в сторе есть, контрола в профиле/посте нет) + экран чёрного списка.
-- Онбординг/welcome после регистрации.
+**Социальный граф / профиль** — ✅ закрыто (live TX не верифицирован)
+- ✅ Списки подписчиков/подписок: кликабельные счётчики в `profile-sidebar.vue` →
+  `followers-list-modal` (endpoint `getusersubscribers` + батч-резолв профилей
+  `useUserProfiles`, composable `use-followers-list`, client-side «показать ещё»).
+- ✅ Кнопка block в UI: `profile-sidebar` (реюз `user-relations-store.block/unblock`) +
+  вкладка «Чёрный список» в настройках (`settings/tabs/blacklist-tab`). *Block из
+  пост-карточки отложен — в шапке поста нет дропдауна автора (отдельный лифт).*
+- ✅ Онбординг/welcome: одноразовая модалка после регистрации (3 шага: интро →
+  настрой профиль → сохрани seed), показывается после закрытия mnemonic-модалки,
+  гейт — per-address флаг в localStorage (`welcome-storage`).
 
 **Лента / дискавери**
 - Виджет «Рекомендуемые пользователи» (правый сайдбар; сейчас там только LastComments).
@@ -217,8 +223,8 @@ UI присутствовал и писал в стор, но **значение
 | Избранное/закладки | lenta `r=saved` | ✅ | `fetchFavoritesFeed` (IDB) |
 | Левое меню / топ-панель | leftpanel, toppanel | ✅ | `sidebar-left`, `header/*` |
 | Мобильная нижняя навигация | bnavigation | 🟡 | drawer-гамбургер, не bottom-bar |
-| Профиль/канал | channel | 🟡 | subscribe-кнопка есть (P0-1); block-кнопки и списков фолловеров нет |
-| Список юзеров (followers/following) | userslist | ❌ | только счётчики |
+| Профиль/канал | channel | ✅ | subscribe (P0-1) + block-кнопка + кликабельные счётчики→списки |
+| Список юзеров (followers/following) | userslist | ✅ | `followers-list-modal` + `getusersubscribers`/`getusersubscribes` |
 | Бейджи «новые посты» на вкладках | leftpanel `lentaunseen` | ❌ | — |
 
 ### B. Посты, статьи, комментарии, голосование, шаринг, модерация
@@ -339,13 +345,13 @@ UI присутствовал и писал в стор, но **значение
 | **Редактирование профиля** | author, usersettings | 🟡 | P0-2: имя/about/сайт/язык/аватар ✅; обложка/крипто-адреса — нет |
 | **Follow/subscribe** | author | ✅ | P0-1: кнопка в `profile-sidebar`, on-chain (live TX не верифицирован) |
 | Subscribe-privately | author | ✅ | P0-1: тоггл-колокольчик уведомлений в `profile-sidebar` |
-| Block/mute юзера | author, usersettings | 🟡 | логика есть, кнопки/списка нет |
-| Списки подписчиков/подписок | userpage | ❌ | только счётчики |
+| Block/mute юзера | author, usersettings | ✅ | block-кнопка в профиле + вкладка «Чёрный список» (mute вне скоупа) |
+| Списки подписчиков/подписок | userpage | ✅ | `followers-list-modal` (кликабельные счётчики) |
 | Настройки: язык/тема/нотификации/key-export | usersettings | ✅ | settings-page tabs |
 | Настройки: NSFW/privacy | usersettings | ❌ | — |
 | Настройки: табы wallets/accounts/system | usersettings | 🟡 | заглушки |
 | Permission-requests (мини-аппы) | requestpermission | ✅ | `permission-resolver.ts` |
-| Онбординг/welcome | welcome | ❌ | — |
+| Онбординг/welcome | welcome | ✅ | одноразовая модалка после регистрации (`welcome-modal`) |
 | Инфо-страницы (about/FAQ/help/terms/CSAE/support/footer) | about/faq/... | ❌ | нужно для сторов |
 | Email/SSO/серверное восстановление | registration | ➖ | вне скоупа |
 
