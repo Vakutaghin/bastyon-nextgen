@@ -79,6 +79,12 @@
     @close="handleMnemonicModalClose"
   />
 
+  <WelcomeModal
+    v-model:open="welcomeModalOpen"
+    :nickname="pendingNickname || ''"
+    @close="handleWelcomeClose"
+  />
+
   <AccountSwitcher v-model:open="accountSwitcherOpen" @close="handleAccountSwitcherClose" />
 
   <ConfirmSignOutModal
@@ -99,6 +105,7 @@ import Skeleton from '@/components/skeleton/skeleton.vue'
 import SignInModal from '@/b-components/header/sign-in-modal/sign-in-modal.vue'
 import RegisterModal from '@/b-components/header/register-modal/register-modal.vue'
 import MnemonicModal from '@/b-components/header/mnemonic-modal/mnemonic-modal.vue'
+import WelcomeModal from '@/b-components/header/welcome-modal/welcome-modal.vue'
 import AccountSwitcher from '@/b-components/header/account-switcher/account-switcher.vue'
 import ConfirmSignOutModal from '@/b-components/header/confirm-sign-out-modal/confirm-sign-out-modal.vue'
 import RegistrationValidationModal from '@/b-components/header/registration-validation-modal/registration-validation-modal.vue'
@@ -143,6 +150,8 @@ const {
   validationStatus,
   registrationPending,
   pendingNickname,
+  welcomeModalOpen,
+  handleWelcomeClose,
   openRegisterModal,
   handleRegisterSuccess,
   handleRegisterValidation,

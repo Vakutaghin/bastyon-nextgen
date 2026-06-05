@@ -20,6 +20,7 @@ import { debugLog } from '@/helpers/common/debug-log'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 import { shouldShowMnemonic } from '@/helpers/common/mnemonic-storage'
+import { shouldShowWelcome, setWelcomeSeen } from '@/helpers/common/welcome-storage'
 import {
   createRegistrationStatusWatcher,
   type RegistrationStatusWatcher,
@@ -36,6 +37,8 @@ export interface RegistrationFlow {
   validationStatus: Ref<string | null>
   registrationPending: Ref<boolean>
   pendingNickname: Ref<string | null>
+  welcomeModalOpen: Ref<boolean>
+  handleWelcomeClose: () => void
   openRegisterModal: () => void
   handleRegisterSuccess: (mnemonic: string) => void
   handleRegisterValidation: (data: {
@@ -65,6 +68,10 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
   const validationStatus = ref<string | null>(null)
   const registrationPending = ref(false)
   const pendingNickname = ref<string | null>(null)
+  const welcomeModalOpen = ref(false)
+  // true между завершением регистрации и закрытием mnemonic-модалки — чтобы
+  // welcome показывался только после свежей регистрации, а не при любом показе seed.
+  const pendingWelcome = ref(false)
 
   let registrationWatcher: RegistrationStatusWatcher | null = null
 
@@ -77,6 +84,7 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     if (m) {
       mnemonic.value = m
       mnemonicModalOpen.value = true
+      pendingWelcome.value = true
     }
     // Данные пользователя загружаются автоматически в auth-store после успешной регистрации.
   }
@@ -114,6 +122,20 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     mnemonicModalOpen.value = false
     mnemonic.value = ''
     privateKeyHex.value = ''
+
+    // После свежей регистрации (и показа seed) — приветственный экран, один раз.
+    if (pendingWelcome.value) {
+      pendingWelcome.value = false
+      const address = authStore.getUserAddress
+      if (shouldShowWelcome(address)) {
+        setWelcomeSeen(address)
+        welcomeModalOpen.value = true
+      }
+    }
+  }
+
+  function handleWelcomeClose(): void {
+    welcomeModalOpen.value = false
   }
 
   function onAvatarClick(): void {
@@ -144,7 +166,10 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
           /* ignore */
         }
         validationModalOpen.value = false
-        if (mnemonic.value) mnemonicModalOpen.value = true
+        if (mnemonic.value) {
+          mnemonicModalOpen.value = true
+          pendingWelcome.value = true
+        }
         await authStore.fetchUserState()
       },
       onError: (err) => {
@@ -270,6 +295,8 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     validationStatus,
     registrationPending,
     pendingNickname,
+    welcomeModalOpen,
+    handleWelcomeClose,
     openRegisterModal,
     handleRegisterSuccess,
     handleRegisterValidation,

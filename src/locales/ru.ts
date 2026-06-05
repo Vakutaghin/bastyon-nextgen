@@ -109,6 +109,7 @@ export default {
       system: 'Система',
       privateKey: 'Приватный ключ',
       blockExplorer: 'Block Explorer',
+      blacklist: 'Чёрный список',
       whatsNew: 'Что нового',
     },
     general: {
@@ -116,6 +117,12 @@ export default {
       themeAuto: 'Авто',
       themeLight: 'Светлая',
       themeDark: 'Тёмная',
+    },
+    blacklist: {
+      title: 'Заблокированные пользователи',
+      lead: 'Пользователи, которых вы заблокировали. Они не видят ваш контент и не могут с ним взаимодействовать.',
+      loading: 'Загрузка…',
+      empty: 'Вы никого не заблокировали.',
     },
     notifications: {
       title: 'Фильтр уведомлений',
@@ -357,6 +364,22 @@ export default {
     sendError: 'Ошибка отправки',
   },
   auth: {
+    welcome: {
+      title: 'Добро пожаловать в Bastyon',
+      step1Title: 'Добро пожаловать в Bastyon',
+      step1Titlenamed: 'Добро пожаловать, {name}!',
+      step1Desc:
+        'Теперь вы в децентрализованной соцсети. Нет центральных серверов и посредников — аккаунт принадлежит только вам.',
+      step2Title: 'Настройте профиль',
+      step2Desc: 'Добавьте имя, фото и короткое описание, чтобы вас узнавали.',
+      step3Title: 'Сохраните сид-фразу',
+      step3Desc:
+        'Ваши 12 слов — единственный способ восстановить аккаунт. Сохраните их в надёжном месте и никому не показывайте.',
+      skip: 'Пропустить',
+      back: 'Назад',
+      next: 'Далее',
+      finish: 'Понятно',
+    },
     registerTitle: 'Регистрация',
     nickname: 'Псевдоним',
     nicknamePlaceholder: 'Введите псевдоним',
@@ -636,6 +659,16 @@ export default {
     errAuthRequired: 'Войдите, чтобы подписаться',
     errSubscribeSelf: 'Нельзя подписаться на себя',
     errFailed: 'Не удалось выполнить действие, попробуйте ещё раз',
+  },
+  relations: {
+    followersTitle: 'Подписчики',
+    followingTitle: 'Подписки',
+    followersEmpty: 'Пока нет подписчиков',
+    followingEmpty: 'Пока ни на кого не подписан',
+    loading: 'Загрузка…',
+    error: 'Не удалось загрузить список',
+    reputation: 'Репутация',
+    loadMore: 'Показать ещё',
   },
   editProfile: {
     title: 'Редактировать профиль',

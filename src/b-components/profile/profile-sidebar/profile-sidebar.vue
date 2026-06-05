@@ -16,15 +16,15 @@
           <SC_StatValue>{{ formattedReputation }}</SC_StatValue>
         </SC_StatItem>
 
-        <SC_StatItem>
+        <SC_StatButton type="button" @click="openList('followers')">
           <SC_StatLabel>{{ t('profile.subscribers') }}</SC_StatLabel>
           <SC_StatValue>{{ profile.subscribers_count || 0 }}</SC_StatValue>
-        </SC_StatItem>
+        </SC_StatButton>
 
-        <SC_StatItem>
+        <SC_StatButton type="button" @click="openList('following')">
           <SC_StatLabel>{{ t('profile.subscriptions') }}</SC_StatLabel>
           <SC_StatValue>{{ profile.subscribes_count || 0 }}</SC_StatValue>
-        </SC_StatItem>
+        </SC_StatButton>
       </SC_UserStats>
 
       <SC_EditProfileButton v-if="isOwnProfile" @click="editOpen = true">
@@ -62,6 +62,17 @@
       <SC_StartChatButton :disabled="!userAddress" @click="startChatWithUser">
         {{ t('profile.startChat') }}
       </SC_StartChatButton>
+
+      <SC_BlockButton
+        v-if="canShowSubscribe"
+        :class="{ blocked: isBlocked }"
+        :disabled="isBlockPending"
+        @click="onBlockClick"
+      >
+        <LoadingOutlined v-if="isBlockPending" spin />
+        <StopOutlined v-else />
+        {{ isBlocked ? t('comments.unblock') : t('comments.block') }}
+      </SC_BlockButton>
 
       <SC_UserAbout v-if="formattedUserAbout">
         <h3>{{ t('profile.info') }}</h3>
@@ -117,6 +128,13 @@
       @close="editOpen = false"
       @updated="onProfileUpdated"
     />
+
+    <FollowersListModal
+      v-if="userAddress"
+      v-model:open="listOpen"
+      :profile-address="userAddress"
+      :type="listType"
+    />
   </SC_ProfileSidebar>
 </template>
 
@@ -132,6 +150,7 @@ import {
   BellFilled,
   BellOutlined,
   EditOutlined,
+  StopOutlined,
 } from '@ant-design/icons-vue'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -140,6 +159,8 @@ import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
 import EditProfileModal from '@/b-components/profile/edit-profile-modal/edit-profile-modal.vue'
+import FollowersListModal from '@/b-components/profile/followers-list-modal/followers-list-modal.vue'
+import type { RelationListType } from '@/composables/use-followers-list'
 import { ICON_PRIMARY_24, ICON_SIZE_11 } from '@/styles/icon-styles'
 import {
   SC_ProfileSidebar,
@@ -159,6 +180,8 @@ import {
   SC_SubscribeRow,
   SC_SubscribeButton,
   SC_BellButton,
+  SC_BlockButton,
+  SC_StatButton,
   SC_ExplorerLinkRow,
   SC_ExplorerLink,
 } from './styled'
@@ -275,6 +298,35 @@ const isSubscribedPrivate = computed<boolean>(() =>
   relations.isSubscribedPrivate(userAddress.value)
 )
 const isSubscribePending = computed<boolean>(() => relations.isSubscribePending(userAddress.value))
+
+// ── Блокировка пользователя ─────────────────────────────────────────
+const isBlocked = computed<boolean>(() => relations.isBlocked(userAddress.value))
+const isBlockPending = computed<boolean>(() => relations.isPending(userAddress.value))
+
+async function onBlockClick(): Promise<void> {
+  const address = userAddress.value
+  if (!address || isBlockPending.value) return
+  try {
+    if (isBlocked.value) {
+      await relations.unblock(address)
+      appToast.success({ message: t('comments.unblocked') })
+    } else {
+      await relations.block(address)
+      appToast.success({ message: t('comments.blocked') })
+    }
+  } catch (e) {
+    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
+  }
+}
+
+// ── Списки подписчиков / подписок ───────────────────────────────────
+const listOpen = ref(false)
+const listType = ref<RelationListType>('followers')
+
+function openList(type: RelationListType): void {
+  listType.value = type
+  listOpen.value = true
+}
 
 // Кнопка видна только авторизованному пользователю и не на собственном профиле.
 const canShowSubscribe = computed<boolean>(

@@ -105,6 +105,7 @@ export default {
       system: 'System',
       privateKey: 'Private key',
       blockExplorer: 'Block Explorer',
+      blacklist: 'Blocked users',
       whatsNew: "What's new",
     },
     general: {
@@ -112,6 +113,12 @@ export default {
       themeAuto: 'Auto',
       themeLight: 'Light',
       themeDark: 'Dark',
+    },
+    blacklist: {
+      title: 'Blocked users',
+      lead: 'Users you have blocked. They cannot see or interact with your content.',
+      loading: 'Loading…',
+      empty: 'You have not blocked anyone.',
     },
     notifications: {
       title: 'Notification filter',
@@ -352,6 +359,22 @@ export default {
     sendError: 'Send error',
   },
   auth: {
+    welcome: {
+      title: 'Welcome to Bastyon',
+      step1Title: 'Welcome to Bastyon',
+      step1Titlenamed: 'Welcome, {name}!',
+      step1Desc:
+        'You are now part of a decentralized social network. No central servers, no middlemen — you own your account.',
+      step2Title: 'Set up your profile',
+      step2Desc: 'Add a name, photo and a short bio so people can recognize you.',
+      step3Title: 'Back up your seed phrase',
+      step3Desc:
+        'Your 12-word phrase is the only way to recover your account. Save it somewhere safe and never share it.',
+      skip: 'Skip',
+      back: 'Back',
+      next: 'Next',
+      finish: 'Got it',
+    },
     registerTitle: 'Registration',
     nickname: 'Nickname',
     nicknamePlaceholder: 'Enter nickname',
@@ -633,6 +656,16 @@ export default {
     errAuthRequired: 'Sign in to subscribe',
     errSubscribeSelf: 'You cannot subscribe to yourself',
     errFailed: 'Action failed, please try again',
+  },
+  relations: {
+    followersTitle: 'Followers',
+    followingTitle: 'Following',
+    followersEmpty: 'No followers yet',
+    followingEmpty: 'Not following anyone yet',
+    loading: 'Loading…',
+    error: 'Failed to load the list',
+    reputation: 'Reputation',
+    loadMore: 'Show more',
   },
   editProfile: {
     title: 'Edit profile',

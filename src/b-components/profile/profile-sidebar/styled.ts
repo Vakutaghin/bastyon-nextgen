@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_ProfileSidebar = styled.div`
   width: 280px;
@@ -211,6 +211,45 @@ export const SC_BellButton = styled.button`
   }
 `
 
+export const SC_BlockButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: calc(100% - 20px);
+  margin: 0 20px 12px 0;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid ${COLORS.BORDER};
+  background-color: transparent;
+  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    color ${TRANSITIONS.FAST},
+    border-color ${TRANSITIONS.FAST},
+    background-color ${TRANSITIONS.FAST};
+
+  &:hover:not(:disabled) {
+    border-color: ${COLORS.DANGER};
+    color: ${COLORS.DANGER};
+  }
+
+  &.blocked {
+    border-color: ${COLORS.DANGER};
+    color: ${COLORS.DANGER};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .anticon {
+    font-size: 14px;
+  }
+`
+
 export const SC_UserAddress = styled.div`
   font-size: 12px;
   color: ${COLORS.GRAY_999};
@@ -260,6 +299,25 @@ export const SC_StatItem = styled.div`
   align-items: center;
   text-align: center;
   min-width: 70px;
+`
+
+/** Кликабельный счётчик (подписчики/подписки) — открывает список. */
+export const SC_StatButton = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 70px;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background ${TRANSITIONS.FAST};
+
+  &:hover {
+    background: ${COLORS.BG_HOVER};
+  }
 `
 
 export const SC_StatLabel = styled.span`

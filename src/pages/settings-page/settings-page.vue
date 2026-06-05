@@ -21,6 +21,7 @@
           <NotificationsTab v-else-if="activeTab === 'notifications'" />
           <PrivateKeyTab v-else-if="activeTab === 'privateKey'" />
           <BlockExplorerTab v-else-if="activeTab === 'blockExplorer'" />
+          <BlacklistTab v-else-if="activeTab === 'blacklist'" />
           <SC_SettingsPlaceholder v-else>
             {{ placeholderText }}
           </SC_SettingsPlaceholder>
@@ -39,6 +40,7 @@ import GeneralTab from './tabs/general-tab.vue'
 import NotificationsTab from './tabs/notifications-tab.vue'
 import PrivateKeyTab from './tabs/private-key-tab.vue'
 import BlockExplorerTab from './tabs/block-explorer-tab.vue'
+import BlacklistTab from './tabs/blacklist-tab.vue'
 import WhatsNewTab from './tabs/whats-new-tab.vue'
 import {
   SC_SettingsWork,
@@ -60,6 +62,7 @@ export type T_SettingsTabKey =
   | 'system'
   | 'privateKey'
   | 'blockExplorer'
+  | 'blacklist'
   | 'whatsNew'
 
 // labelKey — ключ i18n; рендерим через t(), чтобы метки реактивно следовали за локалью.
@@ -71,6 +74,7 @@ const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
   { key: 'system', labelKey: 'settings.tabs.system' },
   { key: 'privateKey', labelKey: 'settings.tabs.privateKey' },
   { key: 'blockExplorer', labelKey: 'settings.tabs.blockExplorer' },
+  { key: 'blacklist', labelKey: 'settings.tabs.blacklist' },
   { key: 'whatsNew', labelKey: 'settings.tabs.whatsNew' },
 ]
 
