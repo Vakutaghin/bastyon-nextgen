@@ -49,6 +49,7 @@ export function makeMockHost(overrides: Partial<HostContext> = {}): HostContext 
     isTorActive: () => false,
     isUserAuthenticated: () => true,
     getUserAddress: () => 'PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM',
+    getUserWalletAddresses: () => ['Pwallet0', 'Pwallet1', 'Pwallet2'],
     getProject: () => ({
       url: 'bastyon.com',
       name: 'Bastyon',

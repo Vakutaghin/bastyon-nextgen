@@ -47,6 +47,7 @@ const BROWSER_GLOBALS = {
   SVGElement: 'readonly',
   SVGSVGElement: 'readonly',
   AudioContext: 'readonly',
+  MediaStream: 'readonly',
   MediaRecorder: 'readonly',
   MediaRecorderOptions: 'readonly',
   BlobEvent: 'readonly',

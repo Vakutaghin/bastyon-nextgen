@@ -38,6 +38,15 @@
             </div>
           </template>
         </SC_InfoAlert>
+
+        <SC_QrToggleRow>
+          <Button type="link" size="small" @click="toggleQrScanner">
+            <template #icon><QrcodeOutlined /></template>
+            {{ showQrScanner ? t('auth.qrHide') : t('auth.scanQr') }}
+          </Button>
+        </SC_QrToggleRow>
+
+        <QrScanner v-if="showQrScanner" @decoded="handleQrDecoded" />
       </SC_FormItem>
 
       <SC_ErrorMessage v-if="error">
@@ -52,7 +61,9 @@
 
     <template #footer>
       <SC_ModalActions>
-        <Button type="default" @click="handleCancel" :disabled="loading"> {{ t('auth.cancel') }} </Button>
+        <Button type="default" @click="handleCancel" :disabled="loading">
+          {{ t('auth.cancel') }}
+        </Button>
         <Button
           type="primary"
           :loading="loading"
@@ -68,10 +79,12 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { QrcodeOutlined } from '@ant-design/icons-vue'
 import { useSignInModal } from './sign-in-modal'
 import type { SignInModalProps, SignInModalEmits } from './types'
 import { SC_ModalActions } from '@/components/modal'
-import { SC_InfoAlert } from './styled'
+import { SC_InfoAlert, SC_QrToggleRow } from './styled'
+import QrScanner from '@/b-components/qr-scanner/qr-scanner.vue'
 
 const { t } = useI18n()
 
@@ -97,10 +110,13 @@ const {
   loading,
   error,
   showPassword,
+  showQrScanner,
   modalKey,
   isOpen,
   handleSignIn,
   handleCancel,
   handleOpenRegister,
+  toggleQrScanner,
+  handleQrDecoded,
 } = useSignInModal(p, emit)
 </script>

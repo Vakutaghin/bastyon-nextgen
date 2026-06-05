@@ -27,6 +27,16 @@
             </span>
           </SC_LimitRow>
         </SC_LimitsList>
+
+        <SC_LimitCtaNotice v-if="showCta">
+          <SC_LimitCtaHeading>{{ t('limits.ctaHeading') }}</SC_LimitCtaHeading>
+          <SC_LimitCtaText>{{ ctaMessage }}</SC_LimitCtaText>
+          <SC_LimitCtaActions>
+            <SC_LimitCtaButton type="button" @click="goToBuy">
+              {{ t('limits.ctaBuy') }}
+            </SC_LimitCtaButton>
+          </SC_LimitCtaActions>
+        </SC_LimitCtaNotice>
       </template>
 
       <SC_LimitsLoading v-else>
@@ -41,6 +51,7 @@ import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useUserState } from '@/composables/use-user-profile'
+import { computeAbilityGating, type AbilityUserState } from '@/composables/use-ability-increase'
 import { useAuthStore } from '@/blockchain'
 import {
   SC_LimitsWork,
@@ -51,6 +62,11 @@ import {
   SC_LimitLabel,
   SC_LimitValue,
   SC_LimitValueMuted,
+  SC_LimitCtaNotice,
+  SC_LimitCtaHeading,
+  SC_LimitCtaText,
+  SC_LimitCtaActions,
+  SC_LimitCtaButton,
   SC_LimitsLoading,
   SC_LimitsError,
 } from './limits-page.styled'
@@ -107,6 +123,32 @@ const statusValue = computed<string | null>(() => {
   if (s && typeof s === 'string') return s
   return state.trial ? t('limits.statusTrial') : t('limits.statusTop')
 })
+
+// Лимит «достигнут», если по какому-то типу не осталось доступных действий
+// (unspent === 0), но какие-то уже потрачены (spent > 0).
+const hasReachedLimits = computed<boolean>(() =>
+  limitRows.value.some((row) => row.unspent === 0 && row.spent > 0)
+)
+
+// Какой фактор блокирует повышение лимита (баланс/репутация) — по порогам legacy.
+const gating = computed(() =>
+  computeAbilityGating(userState.value as AbilityUserState | null, 'trial')
+)
+
+// CTA показываем только если лимит исчерпан И есть actionable-барьер
+// (недостаточно баланса/репутации). Иначе сообщение «Купи PKOIN» было бы
+// ложным для пользователя, который просто израсходовал период-лимит.
+const showCta = computed<boolean>(() => hasReachedLimits.value && gating.value.blocked)
+
+const ctaMessage = computed<string>(() => {
+  if (gating.value.balance && gating.value.reputation) return t('limits.ctaMessageBoth')
+  if (gating.value.reputation) return t('limits.ctaMessageReputation')
+  return t('limits.ctaMessageBalance')
+})
+
+function goToBuy(): void {
+  router.push({ name: 'wallets', query: { tab: 'buy' } })
+}
 
 const hasAnyData = computed<boolean>(
   () => limitRows.value.length > 0 || reputationValue.value != null || statusValue.value != null

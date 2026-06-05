@@ -3,6 +3,7 @@
  */
 
 import QRCode from 'qrcode'
+import jsQR from 'jsqr'
 
 /**
  * Генерирует QR-код из данных
@@ -59,7 +60,8 @@ export async function generateQRCode(
     return dataUrl
   } catch (error) {
     throw new Error(
-      `Failed to generate QR code: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to generate QR code: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -84,7 +86,7 @@ export async function generateMnemonicQRCode(
   // Используем высокий уровень коррекции ошибок для мнемоники
   const qrOptions = {
     ...options,
-    errorCorrectionLevel: options.errorCorrectionLevel || 'H' as const,
+    errorCorrectionLevel: options.errorCorrectionLevel || ('H' as const),
   }
 
   return generateQRCode(mnemonic, qrOptions)
@@ -110,46 +112,104 @@ export async function generatePrivateKeyQRCode(
   // Используем высокий уровень коррекции ошибок для приватного ключа
   const qrOptions = {
     ...options,
-    errorCorrectionLevel: options.errorCorrectionLevel || 'H' as const,
+    errorCorrectionLevel: options.errorCorrectionLevel || ('H' as const),
   }
 
   return generateQRCode(privateKey, qrOptions)
 }
 
 /**
- * Читает QR-код из изображения
- * @param image - Изображение (File, Blob, или data URL)
- * @returns Promise с данными из QR-кода
+ * Декодирует QR-код из сырых пиксельных данных (RGBA).
+ * Чистая функция-обёртка над jsQR — тестируема без DOM/canvas.
+ *
+ * @param data - Пиксели изображения в формате RGBA (Uint8ClampedArray)
+ * @param width - Ширина изображения в пикселях
+ * @param height - Высота изображения в пикселях
+ * @returns Декодированный текст или null, если QR-код не найден
  */
-export async function readQRCode(
-  image: File | Blob | string
-): Promise<string> {
-  // Для чтения QR-кодов нужна библиотека для декодирования
-  // В браузере можно использовать jsQR или другие библиотеки
-  // Но для простоты, если это строка (data URL), возвращаем её
-  // Для полноценного чтения нужно установить дополнительную библиотеку
+export function decodeQRFromImageData(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number
+): string | null {
+  if (!data || width <= 0 || height <= 0) return null
+  const result = jsQR(data, width, height, { inversionAttempts: 'attemptBoth' })
+  return result?.data ?? null
+}
 
-  if (typeof image === 'string') {
-    // Если это data URL, пытаемся извлечь данные
-    // В реальной реализации здесь должен быть декодер QR-кодов
-    throw new Error('QR code reading from string is not implemented. Use a QR code reader library.')
+/** Загружает источник изображения (data/object URL) в HTMLImageElement. */
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('qr:decode:image_load_failed'))
+    img.src = src
+  })
+}
+
+/**
+ * Читает (декодирует) QR-код из изображения.
+ *
+ * Рендерит изображение на offscreen-canvas, извлекает пиксели и декодирует через
+ * jsQR. Работает в браузерной среде (DOM + canvas 2D). В окружениях без canvas
+ * (node/тесты на happy-dom) бросает `qr:decode:unsupported_environment` — для
+ * таких сред используйте {@link decodeQRFromImageData} напрямую.
+ *
+ * @param image - Изображение (File, Blob, или data/object URL строка)
+ * @returns Promise с декодированным текстом (например, мнемоника/приватный ключ)
+ * @throws `Invalid image format` — неподдерживаемый тип входных данных
+ * @throws `qr:decode:unsupported_environment` — нет DOM/canvas
+ * @throws `qr:decode:failed` — QR-код не распознан в изображении
+ */
+export async function readQRCode(image: File | Blob | string): Promise<string> {
+  // 1) Валидация формата входа — синхронно, до любых side-effect'ов.
+  const isString = typeof image === 'string'
+  const isBlob = typeof Blob !== 'undefined' && image instanceof Blob // File наследует Blob
+  if (!isString && !isBlob) {
+    throw new Error('Invalid image format. Expected File, Blob, or data URL string.')
   }
 
-  if (image instanceof File || image instanceof Blob) {
-    // Конвертируем в data URL и затем декодируем
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string
-        // Здесь должен быть декодер QR-кодов
-        reject(new Error('QR code reading from File/Blob is not implemented. Use a QR code reader library.'))
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(image)
-    })
+  // 2) Проверяем доступность canvas 2D ДО загрузки изображения, иначе в средах
+  //    без рендеринга (happy-dom) промис загрузки Image мог бы зависнуть.
+  if (typeof document === 'undefined' || typeof Image === 'undefined') {
+    throw new Error('qr:decode:unsupported_environment')
+  }
+  const canvas = document.createElement('canvas')
+  const probeCtx = canvas.getContext('2d')
+  if (!probeCtx) {
+    throw new Error('qr:decode:unsupported_environment')
   }
 
-  throw new Error('Invalid image format. Expected File, Blob, or data URL string.')
+  // 3) Готовим источник: строку используем как есть, Blob/File — через object URL.
+  let src: string
+  let revoke: (() => void) | null = null
+  if (isString) {
+    src = image
+  } else {
+    src = URL.createObjectURL(image as Blob)
+    revoke = () => URL.revokeObjectURL(src)
+  }
+
+  try {
+    const img = await loadImageElement(src)
+    const width = img.naturalWidth || img.width
+    const height = img.naturalHeight || img.height
+    if (!width || !height) {
+      throw new Error('qr:decode:failed')
+    }
+    canvas.width = width
+    canvas.height = height
+    probeCtx.drawImage(img, 0, 0, width, height)
+    const { data } = probeCtx.getImageData(0, 0, width, height)
+
+    const text = decodeQRFromImageData(data, width, height)
+    if (!text) {
+      throw new Error('qr:decode:failed')
+    }
+    return text
+  } finally {
+    revoke?.()
+  }
 }
 
 /**
@@ -188,10 +248,7 @@ export async function generateQRCodeSVG(
     throw new Error('Data is required for QR code generation')
   }
 
-  const {
-    width = 300,
-    errorCorrectionLevel = 'M',
-  } = options
+  const { width = 300, errorCorrectionLevel = 'M' } = options
 
   try {
     const svg = await QRCode.toString(data, {
@@ -203,7 +260,8 @@ export async function generateQRCodeSVG(
     return svg
   } catch (error) {
     throw new Error(
-      `Failed to generate QR code SVG: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to generate QR code SVG: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }

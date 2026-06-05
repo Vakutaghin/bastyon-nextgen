@@ -11,6 +11,7 @@ import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hie
 import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useFiltersStore } from '@/stores/filters-store'
+import { useUIStore } from '@/stores/ui-store'
 import { buildFeedQueryByTab } from './helpers/feed-queries'
 import { fetchAndMergeRepostOriginals, enrichWithUserScores } from './helpers/feed-enrichment'
 
@@ -24,7 +25,7 @@ export interface UseInfiniteFeedOptions {
   pageSize?: number
   /** Безопасное расстояние до конца в пикселях (по умолчанию 100vh) */
   threshold?: number
-  /** Язык контента */
+  /** Язык контента. Если не задан — берётся реактивно из ui-store (язык приложения). */
   lang?: string
   /** Включен ли запрос */
   enabled?: boolean
@@ -35,10 +36,16 @@ export interface UseInfiniteFeedOptions {
 
  */
 export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
-  const { initialLimit = 20, pageSize = 20, threshold, lang = 'ru', enabled = true } = options
+  const { initialLimit = 20, pageSize = 20, threshold, enabled = true } = options
 
   const authStore = useAuthStore()
   const filtersStore = useFiltersStore()
+  const uiStore = useUIStore()
+
+  // Язык контента: явно переданный (options.lang) приоритетнее, иначе — язык
+  // приложения из ui-store (legacy брал `app.localization.key`). Реактивен:
+  // смена языка интерфейса перезагружает ленту.
+  const lang = computed(() => options.lang ?? uiStore.language)
 
   onMounted(() => {
     if (!filtersStore.isInitialized) {
@@ -66,6 +73,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       () => filtersStore.activeTab,
       () => filtersStore.timeFilters,
       () => filtersStore.sortFilters,
+      () => filtersStore.topFirst, // Тоггл «Сначала лучшее» → переключение источника на gettopfeed
+      () => lang.value, // Смена языка контента
       () => filtersStore.selectedCategories,
       () => filtersStore.selectedTags,
       () => filtersStore.customCategories, // Следим за изменением определений кастомных категорий
@@ -84,6 +93,9 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     'feed',
     'hierarchical-strip-infinite',
     filtersStore.activeTab,
+    filtersStore.topFirst,
+    filtersStore.topFeedDepth,
+    lang.value,
     currentTxidForQuery.value || 'initial',
     filtersStore.selectedCategories,
     filtersStore.selectedTags,
@@ -116,10 +128,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       return buildFeedQueryByTab(filtersStore.activeTab, {
         currentTxid,
         count: currentTxid === '' ? initialLimit : pageSize,
-        lang,
+        lang: lang.value,
         allTags: buildAllTags(),
         contentTypes: buildContentTypes(),
         userAddress: authStore.address || '',
+        topFirst: filtersStore.topFirst,
+        depth: filtersStore.topFeedDepth,
       })
     },
     enabled: computed(() => enabled && (hasMore.value || currentTxidForQuery.value === '')),

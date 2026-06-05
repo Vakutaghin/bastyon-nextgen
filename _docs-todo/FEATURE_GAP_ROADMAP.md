@@ -62,25 +62,41 @@
    включая CSAM). Удаление есть только у комментариев; модуля жалоб нет вовсе — это ещё и
    safety/легал-требование сторов.
 
-### 🟠 P1 — «нарисовано, но не работает» (дешёвый выигрыш)
+### 🟠 P1 — «нарисовано, но не работает» (дешёвый выигрыш) — ✅ закрыто
 
-UI присутствует и пишет в стор, но **значение не уходит в RPC** — выглядит готовым, но инертно.
-Чинится точечно, эффект заметный.
+UI присутствовал и писал в стор, но **значение не уходило в RPC**. Закрыто (live-данные на
+ноде не верифицированы — стенда нет, по конвенции репозитория). Важная поправка к исходной
+формулировке: **узел `gethierarchicalstrip` не поддерживает `orderby`/дату** (это есть только
+у `getprofilefeed` и у `gettopfeed` через `depth`), поэтому «сортировка/дата главной ленты»
+сделаны через переключение лоадера, а не через мнимый параметр.
 
-- **Фильтр по дате ленты** (сегодня/неделя/…): `activeTimeFilter` никуда не передаётся
-  (`stores/filters-store.ts`, `composables/use-infinite-feed.ts`).
-- **Сортировка главной ленты** (популярность/дата/рейтинг): `use-infinite-feed` игнорит
-  `orderby` (работает только в профиле — `useProfileFeedWithFilters`).
-- **Тоггл «Сначала лучшее»** (`topFirst`): переключается и сохраняется, ни на что не влияет
-  (`buildAllTags`/`buildContentTypes` его не читают).
-- **Язык контента захардкожен `'ru'`** (`content-feed.vue`, `use-infinite-feed.ts`) — нет
-  селектора, не-русские получают русскую ленту.
-- **`readQRCode()`** бросает «not implemented» (`blockchain/utils/qr-code.ts`) → нет логина по
-  QR и нет QR-сканера (`qrscanner`).
-- **`zaddress`** (мини-апп SDK) — стаб, бросает `broken:zaddresses` (`mini-apps/actions/account.ts`);
-  блокирован отсутствием `system16`. Любой апп на z-address ломается.
-- **`getaccountearning`** — TODO-заглушка типа (`rpc-requests/get-account-earning.ts`), UI нет.
-- **Limits page** — read-only; нет CTA «увеличить лимит/abilityincrease» когда лимит достигнут.
+- 🟡 **Фильтр по дате ленты** (сегодня/неделя/…): `activeTimeFilter` → `depth` (в днях,
+  `TIME_FILTER_DEPTH_MAP`) для ленты «Лучшее» (`gettopfeed`). Значение прокинуто в RPC и в
+  queryKey; отдельного UI-селектора периода нет (осознанно, см. P2 — узел не сортирует главную
+  hierarchical-ленту по дате). Дефолт — «месяц» (30).
+- 🟡 **Сортировка главной ленты**: узел не принимает `orderby` для `gethierarchicalstrip`.
+  Реализовано через смену лоадера: тоггл «Сначала лучшее» → `gettopfeed` (по score). Дропдаун
+  «популярность/дата/рейтинг/комментарии» не строился (избыточен: «дата» = hierarchical,
+  «лучшее» = gettopfeed, «обсуждаемое» = отдельная вкладка). Профильная лента `orderby` как и была.
+- ✅ **Тоггл «Сначала лучшее»** (`topFirst`): подключён к `gettopfeed`
+  (`buildTopFeedQuery` в `feed-queries.ts`, диспатч в `buildFeedQueryByTab`; пагинация по txid
+  сохранена). Дефолт переключён на `false` (opt-in): главная остаётся проверенной
+  hierarchical-лентой, тоггл ON переводит её на «Лучшее».
+- ✅ **Язык контента**: больше не захардкожен — берётся реактивно из `ui-store.language`
+  (`'ru' | 'en'`, как legacy `localization.key`). Смена языка интерфейса перезагружает ленту.
+- ✅ **`readQRCode()`** реализован на `jsqr` (декод из File/Blob/dataURL через canvas;
+  чистая `decodeQRFromImageData` для тестов). QR-логин подключён: компонент
+  `b-components/qr-scanner` (загрузка файла + живая камера через getUserMedia с graceful-фолбэком),
+  кнопка «Сканировать QR» в `sign-in-modal` → авто-логин по декоду.
+- ✅ **`zaddress`**: реализован — `host.getUserWalletAddresses()` (через `getWalletAddressesList`)
+  + выбор адреса `ads[strToNumHash(manifest.id, ads.length-1)]` (1:1 с legacy; `system16` к делу
+  не относился — блокером был доступ host-context к списку адресов кошелька).
+- ✅ **`getaccountearning`**: тип запроса исправлен (`[address, fromBlock, toBlock]`),
+  composable `useAccountEarnings` (сатоши→PKOIN, устойчив к bare-array/`{result,data}`),
+  UI — вкладка «Заработок» в кошельке (`wallet-earnings`, 3 карточки: лотерея/донаты/переводы).
+- ✅ **Limits page CTA**: при достигнутом лимите (`unspent===0 && spent>0`) — нотис
+  «Увеличить лимиты» → переход в кошелёк на вкладку Buy (`?tab=buy`). Гейтинг баланс/репутация
+  по порогам legacy `canincrease` (`use-ability-increase.ts`).
 
 ### 🟡 P2 — крупные недостающие фичи (по доменам)
 

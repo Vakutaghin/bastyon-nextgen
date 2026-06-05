@@ -194,7 +194,7 @@ const { allPosts, isLoading, isLoadingMore, error, hasMore, loadMoreTrigger, ref
     initialLimit: 20,
     pageSize: 20,
     threshold: undefined, // 100vh по умолчанию
-    lang: 'ru',
+    // lang не задаём — берётся из ui-store (язык приложения), реактивно.
     enabled: true,
   })
 

@@ -28,6 +28,13 @@
           </SC_WalletTabButton>
           <SC_WalletTabButton
             type="button"
+            :class="{ active: activeTabKey === 'earnings' }"
+            @click="activeTabKey = 'earnings'"
+          >
+            {{ t('wallet.tabEarnings') }}
+          </SC_WalletTabButton>
+          <SC_WalletTabButton
+            type="button"
             :class="{ active: activeTabKey === 'buy' }"
             @click="activeTabKey = 'buy'"
           >
@@ -159,6 +166,10 @@
             <WalletHistory v-if="activeTabKey === 'history'" />
           </SC_WalletTabPanel>
 
+          <SC_WalletTabPanel :class="{ active: activeTabKey === 'earnings' }">
+            <WalletEarnings v-if="activeTabKey === 'earnings'" />
+          </SC_WalletTabPanel>
+
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'buy' }">
             <PkoinChart />
           </SC_WalletTabPanel>
@@ -171,7 +182,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { BlockOutlined } from '@ant-design/icons-vue'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
@@ -186,6 +197,7 @@ import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import type { GetUserProfileResponse } from '@/types/rpc-responses/user-get'
 import WalletTransfer from './wallet-transfer/wallet-transfer.vue'
 import WalletHistory from './wallet-history/wallet-history.vue'
+import WalletEarnings from './wallet-earnings/wallet-earnings.vue'
 import PkoinChart from './pkoin-chart/pkoin-chart.vue'
 import {
   SC_WalletWork,
@@ -219,8 +231,12 @@ import {
 const MAX_ADDITIONAL_WALLETS = 20
 
 const { t } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+
+/** Допустимые ключи вкладок (для синка с ?tab= из CTA лимитов и т.п.). */
+const WALLET_TAB_KEYS = ['balances', 'transfers', 'history', 'earnings', 'buy']
 
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -384,6 +400,12 @@ async function loadBalances(): Promise<void> {
 }
 
 onMounted(async () => {
+  // Открываем вкладку из query (?tab=buy) — используется CTA на странице лимитов.
+  const requestedTab = route.query.tab
+  if (typeof requestedTab === 'string' && WALLET_TAB_KEYS.includes(requestedTab)) {
+    activeTabKey.value = requestedTab
+  }
+
   const cur = currentAddress.value
   if (cur && getAdditionalWalletAddressesList(cur).length < 3) {
     const privateKey = authStore.getKeyPair?.privateKey ?? undefined

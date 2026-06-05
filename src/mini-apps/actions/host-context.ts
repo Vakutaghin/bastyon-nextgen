@@ -56,6 +56,12 @@ export interface HostContext {
   isUserAuthenticated(): boolean
   /** Адрес текущего пользователя (для signature/account). null если не залогинен. */
   getUserAddress(): string | null
+  /**
+   * Список производных P2SH-адресов кошелька текущего пользователя
+   * (legacy `sdk.addresses.storage.addresses`). Пустой массив, если не залогинен
+   * или адреса ещё не выведены. Используется action'ом `zaddress`.
+   */
+  getUserWalletAddresses(): string[]
   getProject(): HostProject
 
   // ─── навигация ─────────────────────────────────────────────────────────
@@ -204,13 +210,14 @@ export async function createDefaultHostContext(
   const { useTorStore } = await import('@/stores/tor-store')
   const { isTauri, isCapacitor } = await import('@/b-components/video-uploader/utils/environment')
   const { generateApiSignature } = await import('@/blockchain/core/signatures/api-signature')
+  const { getWalletAddressesList } = await import('@/blockchain/storage')
   const { getByPRC } = await import('@/helpers/api/request')
   const { rpcEndpoints } = await import('@/helpers/api/rpc-endpoints')
   const { unwrapRpcResponse } = await import('@/helpers/common/response-parser')
 
   const device: HostDevice = opts.device ?? detectDevice(isTauri(), isCapacitor())
 
-  const auth = createAuthMethods({ useAuthStore, generateApiSignature })
+  const auth = createAuthMethods({ useAuthStore, generateApiSignature, getWalletAddressesList })
   const rpc = createRpcMethods({ useAuthStore, getByPRC, rpcEndpoints, unwrapRpcResponse })
   const content = createContentMethods({ router: opts.router })
   const payments = createPaymentMethods()

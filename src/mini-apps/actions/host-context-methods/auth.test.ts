@@ -9,13 +9,15 @@ vi.mock('@/stores/modal-store', () => ({
 
 type AuthState = { keyPair?: unknown; address?: string }
 
-function makeDeps(auth: AuthState) {
+function makeDeps(auth: AuthState, walletAddresses: string[] = []) {
   const generateApiSignature = vi.fn(() => 'SIG')
+  const getWalletAddressesList = vi.fn(() => walletAddresses)
   const deps: AuthDeps = {
     useAuthStore: (() => auth) as unknown as AuthDeps['useAuthStore'],
     generateApiSignature: generateApiSignature as unknown as AuthDeps['generateApiSignature'],
+    getWalletAddressesList: getWalletAddressesList as unknown as AuthDeps['getWalletAddressesList'],
   }
-  return { deps, generateApiSignature }
+  return { deps, generateApiSignature, getWalletAddressesList }
 }
 
 beforeEach(() => {
@@ -73,6 +75,7 @@ describe('signApiMessage', () => {
     const deps: AuthDeps = {
       useAuthStore: (() => auth) as unknown as AuthDeps['useAuthStore'],
       generateApiSignature: generateApiSignature as unknown as AuthDeps['generateApiSignature'],
+      getWalletAddressesList: (() => []) as unknown as AuthDeps['getWalletAddressesList'],
     }
     const methods = createAuthMethods(deps)
 
@@ -90,6 +93,24 @@ describe('getCurrentAccountStatus', () => {
     const methods = createAuthMethods(deps)
 
     expect(methods.getCurrentAccountStatus()).toBeUndefined()
+  })
+})
+
+describe('getUserWalletAddresses', () => {
+  it('возвращает список адресов из storage для адреса пользователя', () => {
+    const { deps, getWalletAddressesList } = makeDeps({ address: 'ADDR' }, ['w0', 'w1', 'w2'])
+    const methods = createAuthMethods(deps)
+
+    expect(methods.getUserWalletAddresses()).toEqual(['w0', 'w1', 'w2'])
+    expect(getWalletAddressesList).toHaveBeenCalledWith('ADDR')
+  })
+
+  it('возвращает [] если пользователь не залогинен (без обращения к storage)', () => {
+    const { deps, getWalletAddressesList } = makeDeps({}, ['w0'])
+    const methods = createAuthMethods(deps)
+
+    expect(methods.getUserWalletAddresses()).toEqual([])
+    expect(getWalletAddressesList).not.toHaveBeenCalled()
   })
 })
 

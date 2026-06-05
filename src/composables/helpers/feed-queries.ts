@@ -30,6 +30,10 @@ export interface FeedQueryContext {
   allTags: string[]
   contentTypes: string[]
   userAddress: string
+  /** Режим «Сначала лучшее»: дефолтная лента идёт через `gettopfeed`. */
+  topFirst: boolean
+  /** Окно (в днях) для `gettopfeed` — берётся из активного фильтра времени. */
+  depth: number
 }
 
 /** Уникальный cachehash чтобы обойти серверный кэш для свежих данных. */
@@ -54,6 +58,36 @@ export async function buildHierarchicalStripQuery(
       [],
       '',
       ctx.userAddress,
+    ],
+    cachehash: freshCacheHash(),
+    options: { ex: true },
+    state: 1,
+  }) as Promise<GetHierarchicalStripResponse>
+}
+
+/**
+ * Лента «Лучшее» (`gettopfeed`) — включается тогглом «Сначала лучшее» (topFirst)
+ * на дефолтной/контентных вкладках. Сигнатура 1:1 с legacy: базовые параметры
+ * hierarchical-strip + `['', depth]` (см. `js/satolist.js`, ветка
+ * `if (mtd == 'gettopfeed')`). `depth` — окно в днях. Поддерживает txid-пагинацию.
+ */
+export async function buildTopFeedQuery(
+  ctx: FeedQueryContext
+): Promise<GetHierarchicalStripResponse> {
+  return getByPRCWithAuth({
+    method: rpcEndpoints.getTopFeed,
+    parameters: [
+      0,
+      ctx.currentTxid,
+      ctx.count,
+      ctx.lang,
+      ctx.allTags,
+      ctx.contentTypes,
+      [],
+      [],
+      [],
+      '',
+      ctx.depth,
     ],
     cachehash: freshCacheHash(),
     options: { ex: true },
@@ -181,6 +215,11 @@ function favoritesResponse(posts: RawFavoritePost[]): GetHierarchicalStripRespon
 /**
  * Диспетчер запроса по типу вкладки. activeTab id:
  *   2 — подписки, 6 — избранное, 7 — обсуждаемое, остальное — hierarchical strip.
+ *
+ * На дефолтной и контентных вкладках (1, 3 video, 4 audio, 5 article) тоггл
+ * «Сначала лучшее» (`ctx.topFirst`) переключает источник на `gettopfeed` (лента
+ * «Лучшее» с окном `ctx.depth`). Выделенные вкладки (подписки/избранное/обсуждаемое)
+ * имеют собственные лоадеры и тоггл на них не влияет.
  */
 export async function buildFeedQueryByTab(
   activeTab: number,
@@ -189,5 +228,6 @@ export async function buildFeedQueryByTab(
   if (activeTab === 2) return buildSubscriptionsFeedQuery(ctx)
   if (activeTab === 6) return buildFavoritesFeedQuery(ctx)
   if (activeTab === 7) return buildMostCommentedFeedQuery(ctx)
+  if (ctx.topFirst) return buildTopFeedQuery(ctx)
   return buildHierarchicalStripQuery(ctx)
 }

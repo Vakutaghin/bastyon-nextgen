@@ -35,14 +35,16 @@
 import type { BaseRpcRequest } from './common'
 
 /**
- * Параметры запроса getaccountearning
+ * Параметры запроса getaccountearning: `[address, fromBlock, toBlock]`.
  *
- * TODO: Требуется уточнение структуры параметров из оригинального приложения.
- * Пример тела запроса пока не найден.
- *
- * Точная структура параметров требует уточнения из оригинального приложения.
+ * Сверено с legacy (`js/satolist.js`): `rpc('getaccountearning', [address, 0, 1627534])`.
+ * Сигнатура ноды (`proxy16/node/rpc.js`): `'str int int'`.
+ *  - `address` — Pocketnet-адрес пользователя
+ *  - `fromBlock` — нижняя граница окна (legacy: `0`)
+ *  - `toBlock` — верхняя граница окна (legacy: фикс. `1627534`; в nextgen передаём
+ *    заведомо большое значение, чтобы не обрезать недавний заработок).
  */
-export type GetAccountEarningParameters = unknown[]
+export type GetAccountEarningParameters = [address: string, fromBlock: number, toBlock: number]
 
 /**
  * Запрос getaccountearning API

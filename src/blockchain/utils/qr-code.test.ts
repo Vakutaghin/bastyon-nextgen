@@ -6,6 +6,7 @@ import {
   generateQRCodeDataURL,
   generateQRCodeSVG,
   readQRCode,
+  decodeQRFromImageData,
 } from './qr-code'
 
 // Пакет qrcode настоящий — работает в node без canvas.
@@ -72,16 +73,37 @@ describe('generateQRCodeSVG', () => {
   })
 })
 
-describe('readQRCode (заглушка — чтение не реализовано)', () => {
-  it('строка → not implemented', async () => {
-    await expect(readQRCode('data:image/png;base64,xxx')).rejects.toThrow('not implemented')
+describe('decodeQRFromImageData', () => {
+  it('возвращает null на пустом (белом) изображении без QR', () => {
+    const width = 32
+    const height = 32
+    const data = new Uint8ClampedArray(width * height * 4).fill(255) // сплошной белый RGBA
+    expect(decodeQRFromImageData(data, width, height)).toBeNull()
   })
 
-  it('Blob → not implemented', async () => {
-    await expect(readQRCode(new Blob(['payload']))).rejects.toThrow('not implemented')
+  it('возвращает null на нулевых размерах / пустых данных', () => {
+    expect(decodeQRFromImageData(new Uint8ClampedArray(0), 0, 0)).toBeNull()
+    expect(decodeQRFromImageData(null as unknown as Uint8ClampedArray, 10, 10)).toBeNull()
   })
+})
 
-  it('неподдерживаемый формат → ошибка', async () => {
+describe('readQRCode', () => {
+  it('неподдерживаемый формат → Invalid image format', async () => {
     await expect(readQRCode(42 as unknown as string)).rejects.toThrow('Invalid image format')
+  })
+
+  // happy-dom не предоставляет canvas 2D-контекст, поэтому реальный декод не
+  // запускается — readQRCode рано отклоняется как unsupported_environment.
+  // Браузерный путь декода покрывается e2e/ручной проверкой.
+  it('строка в среде без canvas → unsupported_environment', async () => {
+    await expect(readQRCode('data:image/png;base64,xxx')).rejects.toThrow(
+      'qr:decode:unsupported_environment'
+    )
+  })
+
+  it('Blob в среде без canvas → unsupported_environment', async () => {
+    await expect(readQRCode(new Blob(['payload']))).rejects.toThrow(
+      'qr:decode:unsupported_environment'
+    )
   })
 })

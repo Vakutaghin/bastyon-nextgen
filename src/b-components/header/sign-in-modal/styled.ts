@@ -63,6 +63,12 @@ export const SC_ErrorMessage = styled.div`
   font-size: 16px;
 `
 
+export const SC_QrToggleRow = styled.div`
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-start;
+`
+
 export const SC_LinkToRegister = styled.div`
   margin-top: 16px;
   text-align: center;

@@ -23,6 +23,7 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const showPassword = ref(false)
+  const showQrScanner = ref(false)
   const modalKey = ref(0)
 
   // Функция очистки формы
@@ -31,6 +32,7 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
     error.value = null
     loading.value = false
     showPassword.value = false
+    showQrScanner.value = false
   }
 
   // Локальное состояние для v-model
@@ -41,17 +43,21 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
         clearForm()
       }
       emit('update:open', value ?? false)
-    }
+    },
   })
 
   // Очистка формы при закрытии и пересоздание компонента
-  watch(() => p.open, (newValue, oldValue) => {
-    if (oldValue && !newValue) {
-      // Увеличиваем key для пересоздания компонента
-      modalKey.value++
-      clearForm()
-    }
-  }, { immediate: false })
+  watch(
+    () => p.open,
+    (newValue, oldValue) => {
+      if (oldValue && !newValue) {
+        // Увеличиваем key для пересоздания компонента
+        modalKey.value++
+        clearForm()
+      }
+    },
+    { immediate: false }
+  )
 
   const handleSignIn = async () => {
     if (!privateKey.value.trim()) {
@@ -93,6 +99,21 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
     emit('update:open', false)
   }
 
+  const toggleQrScanner = () => {
+    showQrScanner.value = !showQrScanner.value
+    if (showQrScanner.value) error.value = null
+  }
+
+  // QR закодирован мнемоникой/приватным ключом (legacy кодирует строку как есть).
+  // Декодированный текст подставляем в поле и сразу логинимся.
+  const handleQrDecoded = (text: string) => {
+    const value = (text ?? '').trim()
+    if (!value) return
+    privateKey.value = value
+    showQrScanner.value = false
+    handleSignIn()
+  }
+
   return {
     Modal,
     Button,
@@ -110,10 +131,13 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
     loading,
     error,
     showPassword,
+    showQrScanner,
     modalKey,
     isOpen,
     handleSignIn,
     handleCancel,
-    handleOpenRegister
+    handleOpenRegister,
+    toggleQrScanner,
+    handleQrDecoded,
   }
 }

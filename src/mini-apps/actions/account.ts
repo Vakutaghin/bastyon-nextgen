@@ -56,16 +56,37 @@ const sign: ActionDefinition<{ string?: string }, ApiSignature> = {
   },
 }
 
+/**
+ * Детерминированный hash строки в индекс [0, max). 1:1 с legacy `strToNumHash`
+ * (`js/functions.js`): сумма (charCode % max) по всем символам, затем `% max`.
+ * Должен совпадать с legacy побитно, иначе миниаппа получит другой адрес для
+ * того же manifest.id между legacy и nextgen.
+ */
+function strToNumHash(str: string, max: number): number {
+  if (max <= 0) return 0
+  let r = 0
+  for (let i = 0; i < str.length; i++) {
+    r += str.charCodeAt(i) % max
+  }
+  return r % max
+}
+
 const zaddress: ActionDefinition<unknown, string> = {
   schema: ActionSchemas.zaddress,
   permissions: ['zaddress'],
   authorization: true,
   rateLimitClass: 'cheap',
-  handler: async () => {
-    // Legacy выбирает один из 16 derived-адресов пользователя по hash(manifest.id).
-    // nextgen пока не хранит несколько адресов на сторону — фича отложена.
-    // Возвращаем явную ошибку, миниаппы её поймают через try/catch.
-    throw new Error('broken:zaddresses')
+  handler: async ({ app, host }) => {
+    // Legacy выбирает один из производных адресов пользователя по hash(manifest.id):
+    // `ads[strToNumHash(manifest.id, ads.length - 1)]` (index.js:362-368).
+    // «z» в названии — legacy-мисномер: это обычный P2SH-адрес из списка кошельков,
+    // а не Zcash sapling z-address.
+    const ads = host.getUserWalletAddresses()
+    if (!ads.length) {
+      throw new Error('broken:zaddresses')
+    }
+    const index = ads.length > 1 ? strToNumHash(app.manifest.id, ads.length - 1) : 0
+    return ads[index]
   },
 }
 

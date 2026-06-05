@@ -28,6 +28,28 @@ export const SORT_FILTER_MAP: Record<number, string> = {
   4: 'comment',
 }
 
+/**
+ * Маппинг ID активного фильтра времени → окно `depth` (в днях) для ленты «Лучшее»
+ * (`gettopfeed`). В legacy depth измеряется в днях (см. комментарий
+ * `//30 is a month depth` в `components/lenta/index.js`; рекомендации используют
+ * depth 7000/10000 ≈ all-time).
+ *  1 (Сегодня) → 1 день
+ *  2 (Неделя)  → 7 дней
+ *  3 (Месяц)   → 30 дней   ← дефолт активного фильтра
+ *  4 (Год)     → 365 дней
+ *  5 (Всё время) → 99999 дней
+ */
+export const TIME_FILTER_DEPTH_MAP: Record<number, number> = {
+  1: 1,
+  2: 7,
+  3: 30,
+  4: 365,
+  5: 99999,
+}
+
+/** Дефолтный `depth` (дни) для «Лучшее», если активный фильтр времени неизвестен. */
+export const DEFAULT_TOP_FEED_DEPTH = 30
+
 /** Префикс ID кастомных категорий (пользовательских, персистятся). */
 export const CUSTOM_CATEGORY_PREFIX = 'custom_'
 

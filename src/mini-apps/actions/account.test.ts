@@ -93,14 +93,25 @@ describe('zaddress action', () => {
     setupTestPinia()
   })
 
-  it('throws broken:zaddresses (feature deferred in nextgen)', async () => {
-    const { reg } = setup()
+  it('возвращает детерминированный адрес из списка кошельков по hash(manifest.id)', async () => {
+    const ads = ['Pwallet0', 'Pwallet1', 'Pwallet2']
+    const { reg } = setup({ getUserWalletAddresses: () => ads })
+    const r = await reg.execute('zaddress', TEST_APP, {}, new AbortController().signal)
+    // 1:1 с legacy strToNumHash(manifest.id, ads.length - 1): индекс из [0, len-1).
+    expect(ads).toContain(r)
+    // Детерминизм: повторный вызов с тем же manifest.id даёт тот же адрес.
+    const r2 = await reg.execute('zaddress', TEST_APP, {}, new AbortController().signal)
+    expect(r2).toBe(r)
+  })
+
+  it('throws broken:zaddresses если список кошельков пуст', async () => {
+    const { reg } = setup({ getUserWalletAddresses: () => [] })
     await expect(
       reg.execute('zaddress', TEST_APP, {}, new AbortController().signal)
     ).rejects.toThrow(/broken:zaddresses/)
   })
 
-  it('still requires authorization (gate before throw)', async () => {
+  it('still requires authorization (gate before resolve)', async () => {
     const { reg } = setup({ isUserAuthenticated: () => false })
     await expect(
       reg.execute('zaddress', TEST_APP, {}, new AbortController().signal)

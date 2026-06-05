@@ -23,6 +23,8 @@ interface FeedFilter {
 import {
   FEED_MODE_TO_TAB_ID,
   SORT_FILTER_MAP,
+  TIME_FILTER_DEPTH_MAP,
+  DEFAULT_TOP_FEED_DEPTH,
   CUSTOM_CATEGORY_ICON,
   TEMP_CATEGORY_ICON,
 } from './filters-store-consts'
@@ -54,7 +56,10 @@ export const useFiltersStore = defineStore('filters', {
       customCategories: [] as Category[], // Кастомные категории (сохраняются в IDB, создаются пользователем вручную)
       temporaryCategories: [] as Category[], // Временные категории (не сохраняются в IDB, создаются при клике на тег в посте, живут до перезагрузки)
       selectedTags: [] as string[],
-      topFirst: true,
+      // Дефолт OFF: главная лента остаётся проверенной gethierarchicalstrip
+      // (хронологическая). Включение тоггла «Сначала лучшее» переводит её на
+      // gettopfeed (лента «Лучшее») — opt-in, без сюрприза в дефолтном UX.
+      topFirst: false,
       isInitialized: false,
       isInitializing: false,
     }
@@ -99,6 +104,14 @@ export const useFiltersStore = defineStore('filters', {
     /** Значение orderby для активного фильтра сортировки (см. SORT_FILTER_MAP). */
     orderby(): string {
       return SORT_FILTER_MAP[this.activeSortFilter as number] || 'score'
+    },
+
+    /**
+     * Окно `depth` (в днях) для ленты «Лучшее» (`gettopfeed`), выведенное из
+     * активного фильтра времени. Используется только когда включён `topFirst`.
+     */
+    topFeedDepth(): number {
+      return TIME_FILTER_DEPTH_MAP[this.activeTimeFilter as number] ?? DEFAULT_TOP_FEED_DEPTH
     },
 
     /**

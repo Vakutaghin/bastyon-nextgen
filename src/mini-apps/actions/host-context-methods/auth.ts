@@ -11,16 +11,23 @@ import type { HostContext } from '../host-context'
 export interface AuthDeps {
   useAuthStore: typeof import('@/blockchain/store/auth-store').useAuthStore
   generateApiSignature: typeof import('@/blockchain/core/signatures/api-signature').generateApiSignature
+  getWalletAddressesList: typeof import('@/blockchain/storage').getWalletAddressesList
 }
 
 export type AuthMethods = Pick<
   HostContext,
-  'signApiMessage' | 'getCurrentAccountStatus' | 'openRegistration'
+  'signApiMessage' | 'getCurrentAccountStatus' | 'openRegistration' | 'getUserWalletAddresses'
 >
 
 export function createAuthMethods(deps: AuthDeps): AuthMethods {
-  const { useAuthStore, generateApiSignature } = deps
+  const { useAuthStore, generateApiSignature, getWalletAddressesList } = deps
   return {
+    getUserWalletAddresses: () => {
+      const auth = useAuthStore()
+      if (!auth.address) return []
+      return getWalletAddressesList(auth.address)
+    },
+
     signApiMessage: (data, options = {}) => {
       const auth = useAuthStore()
       if (!auth.keyPair || !auth.address) return null

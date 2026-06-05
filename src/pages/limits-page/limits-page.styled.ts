@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
 
 export const SC_LimitsWork = styled.div`
@@ -73,6 +73,60 @@ export const SC_LimitValueMuted = styled.span`
   font-size: 14px;
   font-weight: 400;
   color: ${COLORS.GRAY_120};
+`
+
+export const SC_LimitCtaNotice = styled.div`
+  margin-top: 20px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: ${COLORS.WARNING_BG_SOFT};
+  border: 1px solid ${COLORS.WARNING_BORDER_LIGHT};
+  border-radius: 10px;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 14px 16px;
+  }
+`
+
+export const SC_LimitCtaHeading = styled.h2`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: ${COLORS.GRAY_212};
+`
+
+export const SC_LimitCtaText = styled.p`
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: ${COLORS.GRAY_120};
+`
+
+export const SC_LimitCtaActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+`
+
+export const SC_LimitCtaButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: ${COLORS.WHITE};
+  background: ${COLORS.PRIMARY};
+  transition: background ${TRANSITIONS.FAST};
+
+  &:hover {
+    background: ${COLORS.PRIMARY_HOVER};
+  }
 `
 
 export const SC_LimitsLoading = styled.div`
