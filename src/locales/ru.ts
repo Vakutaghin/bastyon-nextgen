@@ -33,6 +33,10 @@ export default {
     notFound: 'Пост не найден',
     error: 'Не удалось загрузить пост',
   },
+  relatedVideos: {
+    title: 'Ещё видео автора',
+    untitled: 'Без названия',
+  },
   language: {
     label: 'Язык',
     ru: 'Русский',

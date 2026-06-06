@@ -96,7 +96,7 @@
 - Инфо-страницы: about / FAQ / help / terms / CSAE policy / support + footer
   (нужны для app-store/легал-комплаенса).
 - NSFW/privacy-секции в настройках; пустые табы настроек wallets/accounts/system — заглушки.
-- `slides` промо-тикер; related-видео на пост-странице.
+- `slides` промо-тикер.
 
 ---
 

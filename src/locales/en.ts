@@ -29,6 +29,10 @@ export default {
     notFound: 'Post not found',
     error: 'Failed to load the post',
   },
+  relatedVideos: {
+    title: 'More from this author',
+    untitled: 'Untitled',
+  },
   language: {
     label: 'Language',
     ru: 'Русский',

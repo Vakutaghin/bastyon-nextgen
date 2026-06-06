@@ -9,13 +9,20 @@
         </Spin>
       </SC_PostStatus>
 
-      <PostCard
-        v-else-if="post"
-        :post="post"
-        :show-full="true"
-        :target-comment-id="targetCommentId"
-        :target-parent-id="targetParentId"
-      />
+      <template v-else-if="post">
+        <PostCard
+          :post="post"
+          :show-full="true"
+          :target-comment-id="targetCommentId"
+          :target-parent-id="targetParentId"
+        />
+
+        <RelatedVideos
+          v-if="isVideoPost && post.author?.address"
+          :author-address="post.author.address"
+          :exclude-txid="String(post.txid || post.hash || post.id || '')"
+        />
+      </template>
 
       <SC_PostStatus v-else-if="isMissing">{{ t('postPage.notFound') }}</SC_PostStatus>
       <SC_PostStatus v-else-if="isError">{{ t('postPage.error') }}</SC_PostStatus>
@@ -31,6 +38,7 @@ import { LoadingOutlined } from '@ant-design/icons-vue'
 import { ICON_PRIMARY_40 } from '@/styles/icon-styles'
 import Spin from '@/components/spin/spin.vue'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
+import RelatedVideos from './related-videos/related-videos.vue'
 import { usePostByTxid } from '@/b-components/messenger/components/post-embed/use-post-by-txid'
 import { SC_PostPage, SC_PostPageInner, SC_PostStatus } from './post-page.styled'
 
@@ -54,4 +62,8 @@ const targetParentId = computed<string | undefined>(
 )
 
 const { post, isLoading, isMissing, isError } = usePostByTxid(txid)
+
+const isVideoPost = computed<boolean>(
+  () => post.value?.type === 'video' || post.value?.type === 'audio'
+)
 </script>
