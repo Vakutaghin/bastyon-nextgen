@@ -23,6 +23,7 @@
           <BlockExplorerTab v-else-if="activeTab === 'blockExplorer'" />
           <BlacklistTab v-else-if="activeTab === 'blacklist'" />
           <AppPermissionsTab v-else-if="activeTab === 'appPermissions'" />
+          <DiagnosticsTab v-else-if="activeTab === 'diagnostics'" />
           <SC_SettingsPlaceholder v-else>
             {{ placeholderText }}
           </SC_SettingsPlaceholder>
@@ -43,6 +44,7 @@ import PrivateKeyTab from './tabs/private-key-tab.vue'
 import BlockExplorerTab from './tabs/block-explorer-tab.vue'
 import BlacklistTab from './tabs/blacklist-tab.vue'
 import AppPermissionsTab from './tabs/app-permissions-tab.vue'
+import DiagnosticsTab from './tabs/diagnostics-tab.vue'
 import WhatsNewTab from './tabs/whats-new-tab.vue'
 import {
   SC_SettingsWork,
@@ -66,6 +68,7 @@ export type T_SettingsTabKey =
   | 'blockExplorer'
   | 'blacklist'
   | 'appPermissions'
+  | 'diagnostics'
   | 'whatsNew'
 
 // labelKey — ключ i18n; рендерим через t(), чтобы метки реактивно следовали за локалью.
@@ -79,6 +82,7 @@ const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
   { key: 'blockExplorer', labelKey: 'settings.tabs.blockExplorer' },
   { key: 'blacklist', labelKey: 'settings.tabs.blacklist' },
   { key: 'appPermissions', labelKey: 'settings.tabs.appPermissions' },
+  { key: 'diagnostics', labelKey: 'settings.tabs.diagnostics' },
   { key: 'whatsNew', labelKey: 'settings.tabs.whatsNew' },
 ]
 

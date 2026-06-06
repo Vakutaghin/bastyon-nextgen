@@ -84,7 +84,7 @@
 - Дев-тулинг: создать/редактировать/опубликовать своё приложение (`devapplications`).
 - Страница приложения с рейтингом/репортом (`applicationmeta`).
 - Выбор backend-ноды / SnowFlake / direct-proxy (`transportsmanagement`; сейчас авто-выбор).
-- Диагностика (`diagnosticsPage`), статистика контента (`statistic`).
+- Статистика контента (`statistic`).
 
 **Уведомления / прочее**
 - Лента активностей (`activities`); виджет репутации/бейджей (`ustate`) — сейчас частично.
@@ -213,7 +213,6 @@
 | Embed произвольного URL | anothersite | ❌ | — |
 | Node control / easy-node | nodecontrol, easynode | ➖ | вне скоупа |
 | Transports management (выбор ноды/SnowFlake) | transportsmanagement | 🟡 | Tor-toggle есть, выбора ноды нет |
-| Diagnostics page | diagnosticsPage | ❌ | — |
 | Статистика контента | statistic | ❌ | — |
 
 > **SDK мини-аппов** перенесён ≈1:1 (~40 экшенов, включая `zaddress`). Остаток расхождений:
