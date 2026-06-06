@@ -36,7 +36,9 @@
       </SC_PartnerInfoCard>
 
       <SC_StartChatContainer>
-        <SC_StartChatButton @click="startChatNow">{{ t('messenger.startChat') }}</SC_StartChatButton>
+        <SC_StartChatButton @click="startChatNow">{{
+          t('messenger.startChat')
+        }}</SC_StartChatButton>
       </SC_StartChatContainer>
     </template>
 
@@ -54,6 +56,10 @@
 
       <MessageList :messages="messages" @load-more="emit('load-more')" />
     </template>
+
+    <SC_TypingIndicator v-if="isTyping">
+      {{ typingName ? t('messenger.typingNamed', { name: typingName }) : t('messenger.typing') }}
+    </SC_TypingIndicator>
 
     <SC_MessageInputArea ref="inputAreaRef" :style="isDragging ? DRAG_STYLE : undefined">
       <!-- RECORDING STATE -->
@@ -94,7 +100,10 @@
           @input="handleInput"
         />
 
-        <SC_EmojiToggleButton :aria-label="t('messenger.openEmojiPicker')" @click="toggleEmojiPicker">
+        <SC_EmojiToggleButton
+          :aria-label="t('messenger.openEmojiPicker')"
+          @click="toggleEmojiPicker"
+        >
           <img :src="emojiIcon" alt="" width="24" height="24" />
         </SC_EmojiToggleButton>
       </template>
@@ -112,7 +121,9 @@
         @touchstart.prevent="startRecording"
         @touchend.prevent="handleTouchEnd"
         @touchmove.prevent="handleTouchMove"
-        :aria-label="isRecording ? t('messenger.recordingInProgress') : t('messenger.recordVoiceMessage')"
+        :aria-label="
+          isRecording ? t('messenger.recordingInProgress') : t('messenger.recordVoiceMessage')
+        "
       >
         <img :src="micIcon" alt="" width="24" height="24" />
       </SC_VoiceButton>
@@ -140,10 +151,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { debugLog } from '@/helpers/common/debug-log'
 import type { Message } from '../../types'
+import { matrixService } from '../../services/matrix-service'
+import { useMessengerUiStore } from '../../store/messenger-ui-store'
+import { useTypingIndicator } from './use-typing-indicator'
 import MessageList from '../message-list/message-list.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
@@ -177,6 +191,7 @@ import {
   SC_ChatRoomSpinner,
   SC_ChatRoomLoaderText,
   SC_ChatRoomEmptyHint,
+  SC_TypingIndicator,
 } from './styled'
 import {
   SC_StatItem,
@@ -210,7 +225,30 @@ const emit = defineEmits<{
 }>()
 
 const store = useMessengerStore()
+const uiStore = useMessengerUiStore()
 const { t } = useI18n()
+
+// Активная комната + typing-индикатор собеседника.
+const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
+const { isTyping, typingName } = useTypingIndicator(activeRoomId)
+
+// Отправка собственного typing-статуса (throttle: не чаще раза в 3с).
+let lastTypingSent = 0
+function notifyTyping(): void {
+  const rid = activeRoomId.value
+  if (!rid) return
+  const now = Date.now()
+  if (now - lastTypingSent > 3000) {
+    lastTypingSent = now
+    void matrixService.sendTyping(rid, true)
+  }
+}
+function stopTyping(): void {
+  const rid = activeRoomId.value
+  if (!rid) return
+  lastTypingSent = 0
+  void matrixService.sendTyping(rid, false)
+}
 
 // Карточка собеседника в invite-режиме.
 const {
@@ -236,7 +274,15 @@ const {
   onEmojiSelect,
   focusInput,
 } = useChatInput({
-  onSend: (text) => emit('send', text),
+  onSend: (text) => {
+    stopTyping()
+    emit('send', text)
+  },
+})
+
+// Шлём typing-нотификацию, пока пользователь печатает в активной комнате.
+watch(inputValue, (value) => {
+  if (value) notifyTyping()
 })
 
 // Голосовая запись с touch-жестами.

@@ -338,3 +338,11 @@ export const SC_ChatRoomEmptyHint = styled.div`
   line-height: 1.4;
   flex-shrink: 0;
 `
+
+export const SC_TypingIndicator = styled.div`
+  padding: 2px 16px 6px;
+  color: ${COLORS.GRAY_888};
+  font-size: 12px;
+  font-style: italic;
+  flex-shrink: 0;
+`

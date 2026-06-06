@@ -349,6 +349,8 @@ export default {
     noMessagesHint: 'Пока сообщений нет. Вы можете написать первое.',
     selectChatHint: 'Выберите чат, чтобы начать общение',
     inputPlaceholder: 'Введите сообщение...',
+    typing: 'печатает…',
+    typingNamed: '{name} печатает…',
     partnerAvatarAlt: 'Аватар {name}',
     reputation: 'Репутация',
     subscribers: 'Подписчики',

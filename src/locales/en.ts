@@ -344,6 +344,8 @@ export default {
     noMessagesHint: 'No messages yet. You can write the first one.',
     selectChatHint: 'Select a chat to start messaging',
     inputPlaceholder: 'Type a message...',
+    typing: 'typing…',
+    typingNamed: '{name} is typing…',
     partnerAvatarAlt: 'Avatar of {name}',
     reputation: 'Reputation',
     subscribers: 'Subscribers',

@@ -149,6 +149,20 @@ export class MatrixService {
     }
   }
 
+  /**
+   * Отправляет typing-нотификацию в комнату. `timeout` для isTyping=true — окно,
+   * в течение которого индикатор активен у собеседника (сбрасываем досрочно при отправке).
+   */
+  public async sendTyping(roomId: string, isTyping: boolean, timeout = 4000): Promise<void> {
+    if (!this.client || !roomId) return
+    try {
+      await this.client.sendTyping(roomId, isTyping, isTyping ? timeout : 0)
+    } catch (e) {
+      // Typing — не критично; не шумим в UI.
+      console.debug('[matrix] sendTyping failed', e)
+    }
+  }
+
   public startKeepAlive(intervalMs: number = this.keepAliveIntervalMs) {
     if (this.keepAliveTimer || !this.client) return
 
@@ -201,8 +215,7 @@ export class MatrixService {
         visibility: Visibility.Private,
       })
 
-      const roomId =
-        (res && (res.room_id || (res as { roomId?: string }).roomId)) || null
+      const roomId = (res && (res.room_id || (res as { roomId?: string }).roomId)) || null
       return typeof roomId === 'string' ? roomId : null
     } catch (e) {
       console.error('Matrix createDirectRoom failed:', e)
