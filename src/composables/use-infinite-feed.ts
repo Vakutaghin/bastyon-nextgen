@@ -67,6 +67,10 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   // Отслеживаем текущий txid для запроса
   const currentTxidForQuery = ref<string>('')
 
+  // Счётчик новых постов сверху ленты (lentaunseen-lite): фоновая проверка головы
+  // ленты vs отображаемой; пилюля «новые посты» в content-feed.
+  const newPostsCount = ref<number>(0)
+
   // Следим за изменениями фильтров
   watch(
     [
@@ -85,6 +89,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       hasMore.value = true
       allPosts.value = []
       isLoadingMore.value = false
+      newPostsCount.value = 0
     },
     { deep: true }
   )
@@ -222,6 +227,63 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   }
 
   /**
+   * Фоновая проверка «появились ли новые посты сверху». Тянет голову ленты тем же
+   * запросом (currentTxid='') и считает, сколько постов идёт ПЕРЕД текущей головой.
+   * Не мутирует ленту — только обновляет `newPostsCount` для пилюли.
+   */
+  const NEW_POSTS_PEEK = 20
+  const checkForNewPosts = async (): Promise<void> => {
+    if (!enabled || isLoading.value || isLoadingMore.value) return
+    const headId = String(allPosts.value[0]?.id ?? '')
+    if (!headId) return
+    try {
+      const resp = await buildFeedQueryByTab(filtersStore.activeTab, {
+        currentTxid: '',
+        count: NEW_POSTS_PEEK,
+        lang: lang.value,
+        allTags: buildAllTags(),
+        contentTypes: buildContentTypes(),
+        userAddress: authStore.address || '',
+        topFirst: filtersStore.topFirst,
+        depth: filtersStore.topFeedDepth,
+      })
+      const fresh = extractPostsFromResponse(resp)
+      if (!fresh.length) return
+      const idx = fresh.findIndex((p) => String(p.id) === headId)
+      newPostsCount.value = idx === -1 ? fresh.length : idx
+    } catch {
+      // Тихо игнорируем — фоновая проверка не должна шуметь.
+    }
+  }
+
+  /** Применяет новые посты: перезагружает голову ленты и сбрасывает счётчик. */
+  const showNewPosts = async (): Promise<void> => {
+    newPostsCount.value = 0
+    currentTxidForQuery.value = ''
+    hasMore.value = true
+    await refetch()
+  }
+
+  // Периодическая проверка новых постов + при возврате фокуса на вкладку.
+  const NEW_POSTS_INTERVAL = 90_000
+  let newPostsTimer: ReturnType<typeof setInterval> | null = null
+  onMounted(() => {
+    if (typeof window !== 'undefined') {
+      newPostsTimer = setInterval(() => void checkForNewPosts(), NEW_POSTS_INTERVAL)
+      window.addEventListener('focus', checkForNewPosts)
+    }
+  })
+  onBeforeUnmount(() => {
+    if (newPostsTimer) {
+      clearInterval(newPostsTimer)
+      newPostsTimer = null
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('focus', checkForNewPosts)
+    }
+  })
+
+  /**
    * Настраивает Intersection Observer для автоматической загрузки
    */
   const setupIntersectionObserver = () => {
@@ -307,6 +369,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       currentTxidForQuery.value = ''
       hasMore.value = true
       isLoadingMore.value = false
+      newPostsCount.value = 0
     }
   )
 
@@ -327,5 +390,9 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     loadMore,
     /** Функция для перезагрузки ленты */
     refetch,
+    /** Количество новых постов сверху (lentaunseen-lite); 0 — нет новых. */
+    newPostsCount: computed(() => newPostsCount.value),
+    /** Показать новые посты: перезагрузить голову ленты + сбросить счётчик. */
+    showNewPosts,
   }
 }

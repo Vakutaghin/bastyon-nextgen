@@ -6,6 +6,8 @@ export const rpcEndpoints = {
   getUserAddress: 'getuseraddress',
   getUserSubscribes: 'getusersubscribes',
   getUserSubscribers: 'getusersubscribers',
+  getRecommendedAccountByAddress: 'getrecommendedaccountbyaddress',
+  getTopAccounts: 'gettopaccounts',
   searchUsers: 'searchusers',
 
   // Search methods (generic — типы: posts, tags, videos, all)

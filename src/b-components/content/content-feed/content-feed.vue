@@ -53,6 +53,23 @@
     </SC_FeedHeader>
 
     <SC_FeedContent>
+      <SC_NewPostsPill v-if="newPostsCount > 0" type="button" @click="onShowNewPosts">
+        <UpOutlined />
+        {{ t('postCard.newPosts', { n: newPostsCount }) }}
+      </SC_NewPostsPill>
+
+      <SC_BoostedSection v-if="showBoosted && boostedPosts.length > 0">
+        <SC_BoostedCaption>{{ t('postCard.boosted') }}</SC_BoostedCaption>
+        <PostCard
+          v-for="(post, i) in boostedPosts"
+          :key="`boosted-${post.id || i}`"
+          :post="post"
+          @like="handleLike"
+          @comment="handleComment"
+          @share="handleShare"
+        />
+      </SC_BoostedSection>
+
       <SC_FeedLoading v-if="isLoading && allPosts.length === 0">
         <Spin :tip="t('postCard.loadingFeed')">
           <template #indicator>
@@ -145,6 +162,7 @@ import {
 import { usePostsStore } from '@/stores/posts-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useInfiniteFeed } from '@/composables/use-infinite-feed'
+import { useBoostedFeed } from '@/composables/use-boosted-feed'
 import { isMobile } from '@mobile/utils/platform'
 import { getPhoto } from '@mobile/adapters/capacitor-camera'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
@@ -170,6 +188,9 @@ import {
   SC_PhotoPreviewHint,
   SC_FeedErrorColumn,
   SC_RetryButton,
+  SC_NewPostsPill,
+  SC_BoostedSection,
+  SC_BoostedCaption,
 } from './styled'
 
 withDefaults(
@@ -189,17 +210,40 @@ const { t } = useI18n()
 const postsStore = usePostsStore()
 const filtersStore = useFiltersStore()
 
-const { allPosts, isLoading, isLoadingMore, error, hasMore, loadMoreTrigger, refetch } =
-  useInfiniteFeed({
-    initialLimit: 20,
-    pageSize: 20,
-    threshold: undefined, // 100vh по умолчанию
-    // lang не задаём — берётся из ui-store (язык приложения), реактивно.
-    enabled: true,
-  })
+const {
+  allPosts,
+  isLoading,
+  isLoadingMore,
+  error,
+  hasMore,
+  loadMoreTrigger,
+  refetch,
+  newPostsCount,
+  showNewPosts,
+} = useInfiniteFeed({
+  initialLimit: 20,
+  pageSize: 20,
+  threshold: undefined, // 100vh по умолчанию
+  // lang не задаём — берётся из ui-store (язык приложения), реактивно.
+  enabled: true,
+})
+
+// Продвигаемые посты (getboostfeed) — только на главной вкладке «Лента» (id=1).
+const showBoosted = computed<boolean>(() => filtersStore.activeTab === 1)
+const { posts: boostedPosts } = useBoostedFeed(3, () => filtersStore.activeTab === 1)
+
+async function onShowNewPosts(): Promise<void> {
+  await showNewPosts()
+  scrollToTop()
+}
 
 function registerPosts(): void {
   for (const post of allPosts.value) {
+    postsStore.registerPost(post)
+  }
+  // Продвигаемые посты тоже регистрируем — иначе like/comment/share по ним
+  // не находят пост в сторе.
+  for (const post of boostedPosts.value) {
     postsStore.registerPost(post)
   }
 }
@@ -209,7 +253,7 @@ onMounted(() => {
 })
 
 watch(
-  allPosts,
+  [allPosts, boostedPosts],
   () => {
     nextTick(registerPosts)
   },

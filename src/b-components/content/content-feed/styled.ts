@@ -1,7 +1,43 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-import { Z_INDEX } from '@/styles/design-tokens'
+import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 import Button from '@/components/button/button.vue'
+
+export const SC_NewPostsPill = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 auto 12px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 20px;
+  background: ${COLORS.PRIMARY};
+  color: ${COLORS.WHITE};
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: ${COLORS.SHADOW_SM};
+  transition: background ${TRANSITIONS.FAST};
+
+  &:hover {
+    background: ${COLORS.PRIMARY_HOVER};
+  }
+`
+
+export const SC_BoostedSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+`
+
+export const SC_BoostedCaption = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: ${COLORS.TEXT_MUTED};
+  margin: 0 0 8px 4px;
+`
 
 export const SC_FeedErrorColumn = styled.div`
   display: flex;
