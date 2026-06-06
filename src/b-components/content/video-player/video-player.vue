@@ -242,6 +242,26 @@
           {{ activeChapter.label }}
         </SC_VideoChapterTitle>
 
+        <!-- Picture-in-Picture (переиспользуем стиль кнопки fullscreen) -->
+        <SC_VideoFullscreenButton
+          v-if="!isAudio && isPipSupported"
+          :class="{ active: isPip }"
+          @click.stop="togglePip"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor" stroke="none" />
+          </svg>
+        </SC_VideoFullscreenButton>
+
         <!-- Кнопка полноэкранного режима -->
         <SC_VideoFullscreenButton v-if="!isAudio" @click.stop="toggleFullscreen">
           <FullscreenExitOutlined v-if="isFullscreen" :style="ICON_SIZE_XL" />
@@ -285,6 +305,7 @@ import { useVideoProgress } from './composables/use-video-progress'
 import { useVideoVolume } from './composables/use-video-volume'
 import { useVideoPlaybackRate } from './composables/use-video-playback-rate'
 import { useVideoFullscreen } from './composables/use-video-fullscreen'
+import { useVideoPip } from './composables/use-video-pip'
 import { useVideoHls } from './composables/use-video-hls'
 import { useBackgroundPlayback } from './composables/use-background-playback'
 import { useVideoNotifications } from './composables/use-video-notifications'
@@ -414,6 +435,7 @@ const {
 } = useVideoVolume(videoElement)
 
 const { isFullscreen, toggleFullscreen } = useVideoFullscreen(videoElement, videoContainer)
+const { isPip, isPipSupported, togglePip } = useVideoPip(videoElement)
 
 const {
   playbackRate,

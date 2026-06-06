@@ -68,7 +68,7 @@
 - Динамические комиссии (сейчас фикс `DEFAULT_TX_FEE = 1e-8`), реальный buy/sell (есть только график).
 
 **Видео**
-- Picture-in-Picture, субтитры/captions.
+- Субтитры/captions.
 - Редактирование/удаление **опубликованного** видео (`editVideoDescription`; сейчас удаляются
   только локальные блобы), квоты загрузки, выбор обложки.
 - Лайв-стриминг (`streampeertube`) — осознанно отложен как отдельная инициатива.
@@ -144,7 +144,6 @@
 
 | Capability | Оригинал | Статус | Заметки |
 |---|---|---|---|
-| Picture-in-Picture | Plyr/native | ❌ | — |
 | Субтитры/captions | peertube embed | ❌ | — |
 | Загрузка на PeerTube (chunked/resumable) | uploadpeertube + video-uploader.js | ❌ | только локальный транскод (см. P0-3) |
 | Импорт видео по URL | uploadpeertube | ❌ | — |
