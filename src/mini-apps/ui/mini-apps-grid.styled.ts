@@ -7,6 +7,37 @@ export const SC_Search = styled.div`
   margin: 8px 0 16px;
 `
 
+export const SC_Categories = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+`
+
+export const SC_CategoryChip = styled.button`
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  background: ${COLORS.BG_SECONDARY};
+  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background ${TRANSITIONS.FAST},
+    color ${TRANSITIONS.FAST},
+    border-color ${TRANSITIONS.FAST};
+
+  &:hover {
+    background: ${COLORS.BG_HOVER};
+  }
+
+  &.active {
+    background: ${COLORS.PRIMARY};
+    border-color: ${COLORS.PRIMARY};
+    color: ${COLORS.WHITE};
+  }
+`
+
 export const SC_Section = styled.section`
   margin: 0 0 24px;
 `

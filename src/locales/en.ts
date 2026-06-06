@@ -869,6 +869,7 @@ export default {
     notResponding: '{name} is not responding — try again later',
     initializing: '{name} — initializing…',
     searchPlaceholder: 'Search apps…',
+    allCategories: 'All',
     catalogLoadFailed: 'Failed to load catalog: {message}',
     sectionInstalled: 'Installed',
     sectionCatalog: 'Catalog',

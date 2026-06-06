@@ -83,7 +83,7 @@
 **Мини-аппы / инфра**
 - Дев-тулинг: создать/редактировать/опубликовать своё приложение (`devapplications`).
 - UI просмотра/отзыва пермишенов (граны персистятся, экрана нет).
-- Страница приложения с рейтингом/репортом (`applicationmeta`); фильтр каталога по категориям.
+- Страница приложения с рейтингом/репортом (`applicationmeta`).
 - Выбор backend-ноды / SnowFlake / direct-proxy (`transportsmanagement`; сейчас авто-выбор).
 - Диагностика (`diagnosticsPage`), статистика контента (`statistic`).
 
@@ -210,7 +210,6 @@
 | Capability | Оригинал | Статус | Заметки |
 |---|---|---|---|
 | Host→app push-события | index.js | 🟡 | нет `permissionchange`, action-status |
-| Каталог: фильтр по категориям | applications | ❌ | loader поддерживает `tags`, UI нет |
 | Страница аппа (рейтинг/репорт/install count) | applicationmeta | 🟡 | install/fav есть, остального нет |
 | UI отзыва пермишенов | applicationmeta | 🟡 | граны персистятся, экрана нет |
 | Дев-тулинг (create/edit/publish app) | devapplications | ❌ | — |

@@ -871,6 +871,7 @@ export default {
     notResponding: '{name} не отвечает — попробуйте позже',
     initializing: '{name} — инициализация…',
     searchPlaceholder: 'Поиск по приложениям…',
+    allCategories: 'Все',
     catalogLoadFailed: 'Не удалось загрузить каталог: {message}',
     sectionInstalled: 'Установленные',
     sectionCatalog: 'Каталог',

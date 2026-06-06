@@ -4,6 +4,25 @@
       <InputSearch v-model:value="search" :placeholder="t('miniapps.searchPlaceholder')" />
     </SC_Search>
 
+    <SC_Categories v-if="availableTags.length > 0">
+      <SC_CategoryChip
+        :class="{ active: activeTag === null }"
+        type="button"
+        @click="activeTag = null"
+      >
+        {{ t('miniapps.allCategories') }}
+      </SC_CategoryChip>
+      <SC_CategoryChip
+        v-for="tag in availableTags"
+        :key="tag"
+        :class="{ active: activeTag === tag }"
+        type="button"
+        @click="toggleTag(tag)"
+      >
+        {{ tag }}
+      </SC_CategoryChip>
+    </SC_Categories>
+
     <SC_Error v-if="error">
       {{ t('miniapps.catalogLoadFailed', { message: error.message }) }}
     </SC_Error>
@@ -68,6 +87,8 @@ import type { InstalledApp } from '@/mini-apps/types/app'
 import { getBuiltInIconUrl } from '@/mini-apps/registry/built-in'
 import {
   SC_Search,
+  SC_Categories,
+  SC_CategoryChip,
   SC_Section,
   SC_SectionTitle,
   SC_Grid,
@@ -86,7 +107,17 @@ onMounted(() => {
   void favStore.init()
 })
 
-const { search, items: remoteItems, hasMore, isLoading, error, loadMore } = useRemoteApps()
+const {
+  search,
+  items: remoteItems,
+  hasMore,
+  isLoading,
+  error,
+  loadMore,
+  activeTag,
+  availableTags,
+  toggleTag,
+} = useRemoteApps()
 
 const matchesSearch = (text: string): boolean => {
   if (!search.value) return true

@@ -8,7 +8,7 @@
  * Дебаунс на ввод поиска — 400 мс (как в legacy).
  */
 
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RemoteAppsLoader, type RemoteAppEntry } from '@/mini-apps/registry/remote-registry'
 import { logger } from '@/services/logger'
 
@@ -16,6 +16,8 @@ const log = logger.scope('[mini-apps:remote-ui]')
 
 const DEFAULT_PAGE_SIZE = 20
 const SEARCH_DEBOUNCE_MS = 400
+/** Сколько категорий-чипов показывать (топ по частоте среди загруженных аппов). */
+const MAX_CATEGORY_CHIPS = 12
 
 export interface UseRemoteAppsOptions {
   pageSize?: number
@@ -35,6 +37,31 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
   const hasMore = ref(true)
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
+  /** Активный фильтр по категории (тегу). Пусто — без фильтра. */
+  const activeTag = ref<string | null>(null)
+  // Частоты тегов среди всех загруженных аппов (накапливаем, чтобы чипы были
+  // стабильны при переключении фильтра). tag → count.
+  const tagCounts = ref<Map<string, number>>(new Map())
+
+  /** Топ категорий по частоте — для чипов фильтра. */
+  const availableTags = computed<string[]>(() =>
+    [...tagCounts.value.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, MAX_CATEGORY_CHIPS)
+      .map(([tag]) => tag)
+  )
+
+  function accumulateTags(apps: RemoteAppEntry[]): void {
+    const counts = tagCounts.value
+    for (const app of apps) {
+      for (const raw of app.tags ?? []) {
+        const tag = String(raw).trim().toLowerCase()
+        if (tag) counts.set(tag, (counts.get(tag) ?? 0) + 1)
+      }
+    }
+    // Триггерим реактивность (Map мутируется на месте).
+    tagCounts.value = new Map(counts)
+  }
 
   // Lazy default RPC — иначе getByPRC попадёт в SSR/test-окружение.
   let loaderPromise: Promise<RemoteAppsLoader> | null = null
@@ -64,15 +91,19 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
     const offset = reset ? 0 : pageStart.value
 
     try {
+      const startedTag = activeTag.value
       const loader = await getLoader()
       const page = await loader.load({
         pageStart: offset,
         pageSize,
         search: search.value,
+        tags: activeTag.value ? [activeTag.value] : [],
       })
 
-      // Если за время запроса search изменился — отбрасываем результат
-      if (startedFor !== search.value) return
+      // Если за время запроса search/фильтр изменились — отбрасываем результат
+      if (startedFor !== search.value || startedTag !== activeTag.value) return
+
+      accumulateTags(page.apps)
 
       if (reset) {
         items.value = page.apps
@@ -98,6 +129,18 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
 
   const refresh = (): Promise<void> => loadPage(true)
 
+  /** Переключить фильтр по категории (повторный клик — снять). */
+  function toggleTag(tag: string): void {
+    activeTag.value = activeTag.value === tag ? null : tag
+  }
+
+  // Смена категории — сброс пагинации и перезагрузка с серверным фильтром.
+  watch(activeTag, () => {
+    pageStart.value = 0
+    hasMore.value = true
+    void loadPage(true)
+  })
+
   // Дебаунс поиска: каждое изменение откидывает старый таймер.
   let searchTimer: ReturnType<typeof setTimeout> | null = null
   watch(search, () => {
@@ -121,5 +164,8 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
     error,
     loadMore,
     refresh,
+    activeTag,
+    availableTags,
+    toggleTag,
   }
 }
