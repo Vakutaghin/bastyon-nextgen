@@ -65,6 +65,7 @@ import { useI18n } from 'vue-i18n'
 import { Modal, Button } from 'ant-design-vue'
 import { appToast } from '@/b-components/app-toast'
 import { useDonateStore } from '@/stores'
+import { useEffectsStore } from '@/stores/effects-store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import {
@@ -87,6 +88,7 @@ const PRESETS = [1, 5, 10, 50]
 
 const { t } = useI18n()
 const donateStore = useDonateStore()
+const effectsStore = useEffectsStore()
 const authStore = useAuthStore()
 
 const amount = ref('')
@@ -154,6 +156,10 @@ async function onSend(): Promise<void> {
     await donateToAuthor(donateStore.address, numericAmount.value)
     appToast.success({ message: t('donate.sentToast') })
     donateStore.close()
+    // Празднуем донат всплеском монеток по центру экрана.
+    if (typeof window !== 'undefined') {
+      effectsStore.triggerCoins(window.innerWidth / 2, window.innerHeight / 3)
+    }
   } catch (e) {
     appToast.error({ message: e instanceof Error ? e.message : t('donate.errFailed') })
   } finally {

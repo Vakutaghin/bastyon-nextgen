@@ -1,5 +1,10 @@
 import { onMounted, onUnmounted, watch, type Ref } from 'vue'
 import { Application, Graphics, Sprite, Texture } from 'pixi.js'
+// Self-installing патч: подменяет шейдер/UBO-системы pixi на полифилы без
+// `new Function()`. Нужен, потому что CSP приложения запрещает unsafe-eval, и
+// иначе `app.init()` падает с «Current environment does not allow unsafe-eval».
+// Импорт-сайд-эффект, обязан стоять до создания Application.
+import 'pixi.js/unsafe-eval'
 import { useEffectsStore } from '@/stores/effects-store'
 
 function resolveContainerEl(
@@ -10,13 +15,11 @@ function resolveContainerEl(
   return c instanceof HTMLElement ? c : c.$el
 }
 
-export function useStarExplosion(
-  container: Ref<HTMLElement | { $el: HTMLElement } | null>
-) {
+export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement } | null>) {
   const effectsStore = useEffectsStore()
 
   let app: Application | null = null
-  let particles: Array<{
+  const particles: Array<{
     sprite: Sprite
     vx: number
     vy: number
@@ -25,6 +28,7 @@ export function useStarExplosion(
     rotationSpeed: number
   }> = []
   let starTexture: Texture | null = null
+  let coinTexture: Texture | null = null
 
   function createStarTexture(appInstance: Application): Texture {
     const graphics = new Graphics()
@@ -34,12 +38,24 @@ export function useStarExplosion(
     return appInstance.renderer.generateTexture(graphics)
   }
 
-  function createExplosion(x: number, y: number) {
-    if (!app || !starTexture) return
+  /** Монета: золотой круг с тёмным ободком и внутренним кольцом. */
+  function createCoinTexture(appInstance: Application): Texture {
+    const graphics = new Graphics()
+    graphics.circle(0, 0, 9)
+    graphics.fill({ color: 0xf5c518 })
+    graphics.stroke({ width: 2, color: 0xb8860b })
+    graphics.circle(0, 0, 5)
+    graphics.stroke({ width: 1, color: 0xe0a800 })
+    return appInstance.renderer.generateTexture(graphics)
+  }
+
+  function createExplosion(x: number, y: number, variant: 'star' | 'coin' = 'star') {
+    const texture = variant === 'coin' ? coinTexture : starTexture
+    if (!app || !texture) return
 
     const particleCount = 20
     for (let i = 0; i < particleCount; i++) {
-      const sprite = new Sprite(starTexture)
+      const sprite = new Sprite(texture)
       sprite.x = x
       sprite.y = y
       sprite.anchor.set(0.5)
@@ -58,7 +74,7 @@ export function useStarExplosion(
         vy: Math.sin(angle) * speed,
         life: 1.0,
         decay: 0.01 + Math.random() * 0.02,
-        rotationSpeed: (Math.random() - 0.5) * 0.2
+        rotationSpeed: (Math.random() - 0.5) * 0.2,
       })
     }
   }
@@ -94,7 +110,7 @@ export function useStarExplosion(
       resizeTo: window,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
-      autoDensity: true
+      autoDensity: true,
     })
 
     app.canvas.style.position = 'absolute'
@@ -105,6 +121,7 @@ export function useStarExplosion(
     el.appendChild(app.canvas)
 
     starTexture = createStarTexture(app)
+    coinTexture = createCoinTexture(app)
 
     app.ticker.add(update)
   })
@@ -119,8 +136,8 @@ export function useStarExplosion(
   watch(
     () => effectsStore.explosionEvents,
     (events) => {
-      [...events].forEach((event) => {
-        createExplosion(event.x, event.y)
+      ;[...events].forEach((event) => {
+        createExplosion(event.x, event.y, event.variant === 'coin' ? 'coin' : 'star')
         effectsStore.consumeExplosion(event.id)
       })
     },

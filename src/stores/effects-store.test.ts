@@ -35,6 +35,21 @@ describe('effects-store', () => {
       }
       expect(store.explosionEvents.length).toBeLessThanOrEqual(11)
     })
+
+    it('marks variant as star', () => {
+      store.triggerExplosion(1, 2)
+      expect(store.explosionEvents[0].variant).toBe('star')
+    })
+  })
+
+  describe('triggerCoins', () => {
+    it('adds a coin-variant event at the given point', () => {
+      store.triggerCoins(300, 400)
+      expect(store.explosionEvents).toHaveLength(1)
+      expect(store.explosionEvents[0].x).toBe(300)
+      expect(store.explosionEvents[0].y).toBe(400)
+      expect(store.explosionEvents[0].variant).toBe('coin')
+    })
   })
 
   describe('consumeExplosion', () => {

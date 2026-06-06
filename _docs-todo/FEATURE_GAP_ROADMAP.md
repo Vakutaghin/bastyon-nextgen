@@ -88,7 +88,6 @@
 - Диагностика (`diagnosticsPage`), статистика контента (`statistic`).
 
 **Уведомления / прочее**
-- Анимация монеток при донате (`donateAnimations`).
 - Лента активностей (`activities`); виджет репутации/бейджей (`ustate`) — сейчас частично.
 - Реалтайм-уведомления: сейчас polling 30с вместо WS-пуша `clbks.added`.
 - Реальные звуки уведомлений (сейчас синтез-бип; `sounds/*.mp3` не перенесены).
@@ -168,7 +167,6 @@
 | Детали транзакции (семантика) | transactionview | 🟡 | только generic explorer-tx |
 | Fast-send / батч | fastsend | ❌ | — |
 | Платёжные ссылки | createpaymentlink | ❌ | — |
-| Анимация доната | donateAnimations | ❌ | только star-explosion |
 | Буст поста | boost | ❌ | — |
 | Стейкинг (калькулятор) | staking | ❌ | — |
 | Cold-staking / HTLS tx | wallet/stake.html | ❌ | — |
@@ -235,7 +233,6 @@
 | Realtime-обновления | WS clbks.added | 🟡 | polling 30с вместо WS-пуша |
 | Звук-алерты | ion.sound + sounds/*.mp3 | 🟡 | синтез-бип, без ассетов |
 | Тег-облако (веса, clear-all) | tagcloud | 🟡 | список тегов есть, облака нет |
-| Анимация монеток при донате | donateAnimations | ❌ | — |
 | Лента активностей | activities | ❌ | только pending-ratings |
 | Виджет репутации (ustate) | ustate | 🟡 | частично (limits-page) |
 | `slides` промо-тикер | slides | ❌ | — |
