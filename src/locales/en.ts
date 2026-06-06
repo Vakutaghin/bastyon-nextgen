@@ -106,6 +106,7 @@ export default {
       privateKey: 'Private key',
       blockExplorer: 'Block Explorer',
       blacklist: 'Blocked users',
+      appPermissions: 'App permissions',
       whatsNew: "What's new",
     },
     general: {
@@ -119,6 +120,16 @@ export default {
       lead: 'Users you have blocked. They cannot see or interact with your content.',
       loading: 'Loading…',
       empty: 'You have not blocked anyone.',
+    },
+    appPermissions: {
+      title: 'App permissions',
+      lead: 'Permissions you granted to mini-apps. Revoking a permission makes the app ask again next time.',
+      loading: 'Loading…',
+      empty: 'No mini-app has been granted permissions yet.',
+      revoke: 'Revoke',
+      revokeAll: 'Revoke all',
+      denied: 'denied',
+      grantedAt: 'granted {date}',
     },
     notifications: {
       title: 'Notification filter',
