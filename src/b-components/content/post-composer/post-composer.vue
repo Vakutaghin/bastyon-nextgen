@@ -26,11 +26,23 @@
     <!-- Тело обычного поста -->
     <SC_Textarea
       v-if="!articleMode"
+      ref="textareaRef"
       :value="message"
       :placeholder="isRepost ? t('postComposer.repostPlaceholder') : t('postComposer.placeholder')"
       :aria-label="t('postComposer.placeholder')"
       @input="onMessageInput(($event.target as HTMLTextAreaElement).value)"
     />
+
+    <SC_EmojiRow v-if="!articleMode">
+      <APopover v-model:open="emojiOpen" trigger="click" placement="topLeft">
+        <template #content>
+          <CommentEmojiPicker @select="insertEmoji" />
+        </template>
+        <SC_EmojiBtn type="button" :title="t('postComposer.emoji')" @click.stop>
+          <SmileOutlined />
+        </SC_EmojiBtn>
+      </APopover>
+    </SC_EmojiRow>
 
     <!-- Превью видео по ссылке (youtube/vimeo/peertube), найденной в тексте -->
     <ComposerUrlPreview v-if="!articleMode && parsedVideo.kind" :parsed="parsedVideo" />
@@ -88,10 +100,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Popover } from 'ant-design-vue'
+import { SmileOutlined } from '@ant-design/icons-vue'
 
 import Button from '@/components/button'
+// Переиспользуем компактный пикер из формы комментария (общий список COMMON_EMOJIS).
+import CommentEmojiPicker from '@/b-components/content/post-card/components/post-card-comments/comment-emoji-picker.vue'
 
 import ComposerArticleEditor from './composer-article-editor.vue'
 import ComposerImages from './composer-images.vue'
@@ -104,6 +120,8 @@ import type { ComposerMode, ComposerSource } from './composer-source'
 import {
   SC_ArticleToggle,
   SC_Composer,
+  SC_EmojiBtn,
+  SC_EmojiRow,
   SC_Footer,
   SC_Hint,
   SC_Textarea,
@@ -166,6 +184,40 @@ const {
 
 const onToggleArticle = (e: Event): void => {
   articleMode.value = (e.target as HTMLInputElement).checked
+}
+
+// ── Эмодзи-пикер для тела поста ─────────────────────────────────────
+const APopover = Popover
+const textareaRef = ref<HTMLTextAreaElement | { $el?: HTMLTextAreaElement } | null>(null)
+const emojiOpen = ref(false)
+
+function getTextareaEl(): HTMLTextAreaElement | null {
+  const r = textareaRef.value
+  if (!r) return null
+  if (typeof (r as HTMLTextAreaElement).focus === 'function') return r as HTMLTextAreaElement
+  return (r as { $el?: HTMLTextAreaElement }).$el ?? null
+}
+
+function insertEmoji(emoji: string): void {
+  emojiOpen.value = false
+  const current = message.value || ''
+  const el = getTextareaEl()
+  if (!el) {
+    onMessageInput(current + emoji)
+    return
+  }
+  const start = el.selectionStart ?? current.length
+  const end = el.selectionEnd ?? current.length
+  onMessageInput(current.slice(0, start) + emoji + current.slice(end))
+  void nextTick(() => {
+    el.focus()
+    const pos = start + emoji.length
+    try {
+      el.setSelectionRange(pos, pos)
+    } catch {
+      /* noop */
+    }
+  })
 }
 
 const titlePlaceholder = computed(() =>

@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 
-import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
+import { BORDER_RADIUS, FONT_SIZE, SPACING, TRANSITIONS } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Composer = styled.div`
@@ -8,6 +8,31 @@ export const SC_Composer = styled.div`
   flex-direction: column;
   gap: ${SPACING.MD};
   width: 100%;
+`
+
+export const SC_EmojiRow = styled.div`
+  display: flex;
+  margin-top: -4px;
+`
+
+export const SC_EmojiBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: ${BORDER_RADIUS.SM};
+  background: none;
+  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 18px;
+  cursor: pointer;
+  transition: background ${TRANSITIONS.FAST};
+
+  &:hover {
+    background: ${COLORS.BG_HOVER};
+    color: ${COLORS.TEXT_PRIMARY};
+  }
 `
 
 export const SC_Textarea = styled.textarea`

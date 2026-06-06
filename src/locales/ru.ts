@@ -1211,6 +1211,7 @@ export default {
   postComposer: {
     title: 'Новый пост',
     placeholder: 'Что у вас нового?',
+    emoji: 'Эмодзи',
     tagsPlaceholder: 'Добавьте теги…',
     tagsCount: '{count}/{max} тегов',
     removeTag: 'Удалить тег {tag}',
