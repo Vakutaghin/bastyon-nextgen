@@ -9,6 +9,7 @@ import type {
   NotificationUserSnapshot,
 } from './notifications-types'
 import { MES_TYPE_TITLE_KEYS } from './notifications-constants'
+import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 
 /** Первая непустая строка по списку ключей. */
 export function pickStr(
@@ -133,16 +134,30 @@ export function mapMissedEventToNotification(n: Record<string, unknown>): Notifi
   const nblock = Number(n.nblock ?? 0) || 0
   const mesType = (n.mesType ?? n.type) as string
   const time = Number(n.time ?? n.nTime ?? n.nblock ?? 0) || Math.floor(Date.now() / 1000)
+
+  // Полученные PKOIN / донат: событие транзакции (`msg: 'transaction'` + `amount`,
+  // без mesType). Legacy показывал это как доход/донат; маппим в тип `tip`
+  // с суммой в описании. (Маркер `a:donate` в самом событии не приходит — сумма
+  // и факт получения уже информативны.)
+  const isTipEvent = (n.msg === 'transaction' || mesType === 'transaction') && n.amount != null
+
   // i18n-ключ заголовка; резолвится через t() в месте рендера (toast/дропдаун).
-  const title = MES_TYPE_TITLE_KEYS[mesType] ?? 'notif.titleDefault'
-  const description = n.upvoteVal != null ? `Оценка: ${n.upvoteVal}` : undefined
+  const title = isTipEvent
+    ? 'notif.titleTip'
+    : (MES_TYPE_TITLE_KEYS[mesType] ?? 'notif.titleDefault')
+  const description = isTipEvent
+    ? `+${formatPkoin(n.amount as string | number, 8, false)} PKOIN`
+    : n.upvoteVal != null
+      ? `Оценка: ${n.upvoteVal}`
+      : undefined
   const link = (n.url ?? n.link) as string | undefined
 
-  const safeType =
-    TYPE_MAP[mesType] ??
-    (ALLOWED_TYPES.includes(mesType as NotificationItem['type'])
-      ? (mesType as NotificationItem['type'])
-      : 'other')
+  const safeType: NotificationItem['type'] = isTipEvent
+    ? 'tip'
+    : (TYPE_MAP[mesType] ??
+      (ALLOWED_TYPES.includes(mesType as NotificationItem['type'])
+        ? (mesType as NotificationItem['type'])
+        : 'other'))
   const upvoteVal = n.upvoteVal != null ? Number(n.upvoteVal) : undefined
   const fromAddress = (n.addrFrom ?? (n.account as Record<string, unknown>)?.address) as
     | string

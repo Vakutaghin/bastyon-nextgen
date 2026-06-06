@@ -1050,6 +1050,7 @@ export default {
     titleUserInfo: 'Profile update',
     titleComment: 'Comment',
     titleRepost: 'Repost',
+    titleTip: 'Donation received',
     titleDefault: 'Notification',
     filterSound: 'Sound',
     filterWin: 'Coinstake win',

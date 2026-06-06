@@ -1052,6 +1052,7 @@ export default {
     titleUserInfo: 'Обновление профиля',
     titleComment: 'Комментарий',
     titleRepost: 'Репост',
+    titleTip: 'Получен донат',
     titleDefault: 'Уведомление',
     filterSound: 'Звук',
     filterWin: 'Coinstake выигрыш',

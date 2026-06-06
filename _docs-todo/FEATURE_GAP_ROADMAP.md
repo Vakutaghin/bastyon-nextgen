@@ -88,7 +88,6 @@
 - Диагностика (`diagnosticsPage`), статистика контента (`statistic`).
 
 **Уведомления / прочее**
-- Донат-уведомления: `tip` есть в типах, но нет маппинга `mesType→tip` (`notifications-mappers.ts`).
 - Анимация монеток при донате (`donateAnimations`).
 - Лента активностей (`activities`); виджет репутации/бейджей (`ustate`) — сейчас частично.
 - Реалтайм-уведомления: сейчас polling 30с вместо WS-пуша `clbks.added`.
@@ -233,7 +232,6 @@
 | Capability | Оригинал | Статус | Заметки |
 |---|---|---|---|
 | Тип: mention | (mention) | 🟡 | в union есть, маппинга нет |
-| Тип: донат/tip (PKOIN received) | transactions/win | ❌ | `tip` без `mesType`-маппинга |
 | Realtime-обновления | WS clbks.added | 🟡 | polling 30с вместо WS-пуша |
 | Звук-алерты | ion.sound + sounds/*.mp3 | 🟡 | синтез-бип, без ассетов |
 | Тег-облако (веса, clear-all) | tagcloud | 🟡 | список тегов есть, облака нет |
