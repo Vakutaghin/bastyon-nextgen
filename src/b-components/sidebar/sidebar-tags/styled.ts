@@ -3,6 +3,17 @@ import { COLORS } from '@/styles/theme-colors'
 
 const selectedProps = {
   selected: Boolean,
+  // Вес тега для облака (1..5) — задаёт размер шрифта.
+  weight: Number,
+}
+
+/** Размер шрифта по весу тега (бакеты 1..5). */
+const TAG_WEIGHT_FONT: Record<number, string> = {
+  1: '11px',
+  2: '13px',
+  3: '15px',
+  4: '17px',
+  5: '20px',
 }
 
 export const SC_Tags = styled.div``
@@ -76,9 +87,9 @@ export const SC_TagsLoading = styled.div`
 
 export const SC_TagsList = styled.div`
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 6px 8px;
 `
 
 export const SC_TagsCount = styled.span`
@@ -102,7 +113,8 @@ export const SC_TagsItem = styled('button', selectedProps)`
   cursor: pointer;
   transition: background-color 0.2s;
   color: ${COLORS.PRIMARY};
-  font-size: 11px;
+  font-size: ${(props) => TAG_WEIGHT_FONT[props.weight as number] ?? '11px'};
+  line-height: 1.2;
   font-weight: 500;
 
   &:hover {

@@ -20,11 +20,12 @@
         </template>
       </Spin>
     </SC_TagsLoading>
-    <SC_TagsList v-else-if="!error && visibleTags.length > 0">
+    <SC_TagsList v-else-if="!error && weightedTags.length > 0">
       <SC_TagsItem
-        v-for="tag in visibleTags"
+        v-for="tag in weightedTags"
         :key="tag.id"
         :selected="isTagSelected(tag.name)"
+        :weight="tag.weight"
         type="button"
         @click="selectTag(tag.name)"
       >
@@ -125,6 +126,20 @@ const tagsData = computed<TagItem[]>(() => {
 const visibleTags = computed<TagItem[]>(() =>
   isExpanded.value ? tagsData.value : tagsData.value.slice(0, 7)
 )
+
+// Облако с весами: размер шрифта тега пропорционален его частоте (count).
+// Нормализуем count по min/max видимых тегов в бакеты 1..5.
+const weightedTags = computed<(TagItem & { weight: number })[]>(() => {
+  const tags = visibleTags.value
+  if (tags.length === 0) return []
+  const counts = tags.map((tag) => tag.count)
+  const min = Math.min(...counts)
+  const max = Math.max(...counts)
+  return tags.map((tag) => {
+    const weight = max > min ? 1 + Math.round(((tag.count - min) / (max - min)) * 4) : 3
+    return { ...tag, weight }
+  })
+})
 const showToggle = computed<boolean>(() => tagsData.value.length > 7)
 const hasSelection = computed<boolean>(() => filtersStore.selectedTags.length > 0)
 

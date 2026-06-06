@@ -96,7 +96,7 @@
 - Инфо-страницы: about / FAQ / help / terms / CSAE policy / support + footer
   (нужны для app-store/легал-комплаенса).
 - NSFW/privacy-секции в настройках; пустые табы настроек wallets/accounts/system — заглушки.
-- Тег-облако с весами и clear-all (`tagcloud`); `slides` промо-тикер; related-видео на пост-странице.
+- `slides` промо-тикер; related-видео на пост-странице.
 
 ---
 
@@ -229,7 +229,6 @@
 | Тип: mention | (mention) | 🟡 | в union есть, маппинга нет |
 | Realtime-обновления | WS clbks.added | 🟡 | polling 30с вместо WS-пуша |
 | Звук-алерты | ion.sound + sounds/*.mp3 | 🟡 | синтез-бип, без ассетов |
-| Тег-облако (веса, clear-all) | tagcloud | 🟡 | список тегов есть, облака нет |
 | Лента активностей | activities | ❌ | только pending-ratings |
 | Виджет репутации (ustate) | ustate | 🟡 | частично (limits-page) |
 | `slides` промо-тикер | slides | ❌ | — |
