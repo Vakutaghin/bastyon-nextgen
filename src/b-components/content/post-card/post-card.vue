@@ -103,9 +103,19 @@
             :aria-label="t('postCard.repostAction')"
             @click="openRepost"
           >
-            <ShareAltOutlined />
+            <RetweetOutlined />
             <span>{{ t('postCard.repostAction') }}</span>
           </SC_PostActionBtn>
+
+          <Dropdown v-model:open="shareMenuOpen" :trigger="['click']" placement="bottomRight">
+            <SC_PostActionBtn type="button" :aria-label="t('postCard.shareAction')">
+              <ShareAltOutlined />
+              <span>{{ t('postCard.shareAction') }}</span>
+            </SC_PostActionBtn>
+            <template #overlay>
+              <PostShareMenu :url="postUrl" :text="shareText" @done="shareMenuOpen = false" />
+            </template>
+          </Dropdown>
 
           <SC_PostActionBtn
             v-if="isOwnPost"
@@ -140,7 +150,14 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DeleteOutlined, ShareAltOutlined, EditOutlined } from '@ant-design/icons-vue'
+import {
+  DeleteOutlined,
+  ShareAltOutlined,
+  EditOutlined,
+  RetweetOutlined,
+} from '@ant-design/icons-vue'
+import { Dropdown } from 'ant-design-vue'
+import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
@@ -291,6 +308,16 @@ function openEdit(): void {
 
 const postId = computed<string>(
   () => props.post.txid || props.post.hash || String(props.post.id || '')
+)
+
+// ── Внешний шаринг поста ────────────────────────────────────────────
+const shareMenuOpen = ref(false)
+const postUrl = computed<string>(() => {
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  return `${origin}/post/${postId.value}`
+})
+const shareText = computed<string>(
+  () => decodeUrlEncoded(props.post.title || '') || props.post.author?.name || 'Bastyon'
 )
 
 const isImageGalleryOpen = computed<boolean>({
