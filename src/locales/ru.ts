@@ -794,6 +794,7 @@ export default {
     newPosts: 'Показать новые посты ({n})',
     boosted: 'Продвигаемое',
     shareAction: 'Поделиться',
+    downloadImage: 'Скачать изображение',
     copyLink: 'Скопировать ссылку',
     shareVia: 'Поделиться через…',
     linkCopied: 'Ссылка скопирована',

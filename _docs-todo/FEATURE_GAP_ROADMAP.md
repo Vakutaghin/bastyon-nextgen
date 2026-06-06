@@ -140,7 +140,7 @@
 | Embed-код (iframe) | embeding | ❌ | — |
 | Редактор изображений (crop/фильтры) | imageGalleryEdit | ❌ | — |
 | Буст поста | boost | 🟡 | только парсинг в explorer |
-| Скачать медиа | downloadMedia | ❌ | (частично cordova-скоуп) |
+| Скачать медиа (видео) | downloadMedia | ❌ | картинки из лайтбокса сделаны (web blob); видео-HLS как файл не качается |
 
 ### C. Видео и медиа
 

@@ -739,6 +739,7 @@ export default {
     newPosts: 'Show new posts ({n})',
     boosted: 'Promoted',
     shareAction: 'Share',
+    downloadImage: 'Download image',
     copyLink: 'Copy link',
     shareVia: 'Share via…',
     linkCopied: 'Link copied',
