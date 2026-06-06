@@ -112,6 +112,22 @@ export const SC_TransferRow = styled.div`
   margin-top: 8px;
 `
 
+/** Контейнер QR на приём: белый фон для контраста (в т.ч. в тёмной теме). */
+export const SC_QrWrap = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 12px;
+
+  img {
+    width: 200px;
+    height: 200px;
+    padding: 10px;
+    background: ${COLORS.WHITE};
+    border: 1px solid ${COLORS.BORDER_DEFAULT};
+    border-radius: 10px;
+  }
+`
+
 export const SC_TransferAddress = styled.div`
   flex: 1;
   font-family: ui-monospace, monospace;

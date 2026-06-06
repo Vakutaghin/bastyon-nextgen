@@ -44,7 +44,9 @@
             {{ t('wallet.searching') }}
           </SC_TransferSearchingHint>
           <SC_TransferLoginChip v-else-if="receiverLogin">
-            <SC_TransferLoginChipText>{{ t('wallet.login', { login: receiverLogin }) }}</SC_TransferLoginChipText>
+            <SC_TransferLoginChipText>{{
+              t('wallet.login', { login: receiverLogin })
+            }}</SC_TransferLoginChipText>
             <SC_TransferLoginChipRemove
               type="button"
               :aria-label="t('wallet.remove')"
@@ -55,7 +57,9 @@
           </SC_TransferLoginChip>
         </SC_TransferField>
         <SC_TransferField>
-          <SC_TransferLabel for="wallet-transfer-amount">{{ t('wallet.amountLabel') }}</SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-amount">{{
+            t('wallet.amountLabel')
+          }}</SC_TransferLabel>
           <SC_TransferInput
             id="wallet-transfer-amount"
             v-model="amount"
@@ -77,7 +81,9 @@
           />
         </SC_TransferField>
         <SC_TransferField>
-          <SC_TransferLabel for="wallet-transfer-feemode">{{ t('wallet.feeLabel') }}</SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-feemode">{{
+            t('wallet.feeLabel')
+          }}</SC_TransferLabel>
           <SC_TransferSelect id="wallet-transfer-feemode" v-model="feemode">
             <option value="include">{{ t('wallet.feeReceiverPays') }}</option>
             <option value="exclude">{{ t('wallet.feeSenderPays') }}</option>
@@ -91,7 +97,9 @@
       <!-- Получение -->
       <template v-else>
         <SC_TransferField v-if="receiveAddressOptions.length > 1">
-          <SC_TransferLabel for="wallet-transfer-receive-target"> {{ t('wallet.receiveTo') }} </SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-receive-target">
+            {{ t('wallet.receiveTo') }}
+          </SC_TransferLabel>
           <SC_TransferSelect id="wallet-transfer-receive-target" v-model="receiveTarget">
             <option v-for="opt in receiveAddressOptions" :key="opt.value" :value="opt.value">
               {{ opt.label }}
@@ -114,6 +122,9 @@
         <template v-if="showReceiveAddress && selectedReceiveAddress">
           <SC_TransferField>
             <SC_TransferLabel>{{ t('wallet.receiveAddressLabel') }}</SC_TransferLabel>
+            <SC_QrWrap v-if="qrDataUrl">
+              <img :src="qrDataUrl" :alt="t('wallet.receiveQrAlt')" />
+            </SC_QrWrap>
             <SC_TransferRow>
               <SC_TransferAddress>{{ selectedReceiveAddress }}</SC_TransferAddress>
               <SC_TransferCopyBtn type="button" @click="copyAddress">
@@ -149,6 +160,7 @@ import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { validateAddress } from '@/blockchain/core/addresses'
+import { generateQRCode } from '@/blockchain/utils/qr-code'
 import {
   SC_TransferWidget,
   SC_TransferSwitch,
@@ -160,6 +172,7 @@ import {
   SC_TransferTextarea,
   SC_TransferSelect,
   SC_TransferRow,
+  SC_QrWrap,
   SC_TransferAddress,
   SC_TransferCopyBtn,
   SC_TransferSubmit,
@@ -227,6 +240,24 @@ const selectedReceiveAddress = computed<string>(() => {
   const add = additionalAddresses.value
   return add.length > 0 ? add[0] : ''
 })
+
+// QR-код адреса на приём — генерируется, когда адрес раскрыт.
+const qrDataUrl = ref<string>('')
+watch(
+  [showReceiveAddress, selectedReceiveAddress],
+  async ([show, addr]) => {
+    if (!show || !addr) {
+      qrDataUrl.value = ''
+      return
+    }
+    try {
+      qrDataUrl.value = await generateQRCode(addr, { width: 220 })
+    } catch {
+      qrDataUrl.value = ''
+    }
+  },
+  { immediate: true }
+)
 
 const canSend = computed<boolean>(() => {
   const addr = (receiverAddress.value || '').trim()

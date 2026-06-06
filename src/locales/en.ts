@@ -210,6 +210,7 @@ export default {
     receiveTo: 'Receive to',
     showReceiveAddress: 'Show receive address',
     receiveAddressLabel: 'Address to receive PKOIN',
+    receiveQrAlt: 'QR code of your receive address',
     copied: 'Copied',
     copy: 'Copy',
     loginToGetAddress: 'Sign in to get an address.',

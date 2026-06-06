@@ -59,7 +59,6 @@
 - NSFW-флаг поста.
 
 **Кошелёк / монетизация**
-- QR на приём (util `qr-code.ts` есть, в receive-флоу не подключён).
 - Платные подписки: подписаться за плату + управление условиями
   (`getpaidsubscription`/`managepaidsubscription`).
 - Стейкинг: калькулятор (`staking`) + реальные cold-staking/HTLS-транзакции (`wallet/stake.html`).
@@ -166,7 +165,6 @@
 | Capability | Оригинал | Статус | Заметки |
 |---|---|---|---|
 | Несколько адресов | wallet | 🟡 | add (max 20), без rename/remove/import |
-| Приём — QR | wallet/depositqrmaker | ❌ | util есть, не подключён в receive-флоу |
 | Комиссии | wallet/fastsend | 🟡 | фикс `1e-8`, нет динамической оценки |
 | Детали транзакции (семантика) | transactionview | 🟡 | только generic explorer-tx |
 | Fast-send / батч | fastsend | ❌ | — |

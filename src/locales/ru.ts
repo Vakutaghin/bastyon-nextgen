@@ -215,6 +215,7 @@ export default {
     receiveTo: 'Получить на',
     showReceiveAddress: 'Показать адрес для получения',
     receiveAddressLabel: 'Адрес для получения PKOIN',
+    receiveQrAlt: 'QR-код адреса для приёма',
     copied: 'Скопировано',
     copy: 'Скопировать',
     loginToGetAddress: 'Войдите в аккаунт, чтобы получить адрес.',
