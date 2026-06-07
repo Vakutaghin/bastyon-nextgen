@@ -7,6 +7,7 @@ import { computed, watch } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
 import { t } from '@/i18n'
+import { notifyMessage } from '@/composables/use-browser-notifications'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { logger } from '@/services/logger'
@@ -333,6 +334,15 @@ export const useMessengerStore = defineStore('messenger', () => {
                     } catch {
                       /* ignore */
                     }
+                    // Браузерное уведомление о новом сообщении (если вкладка в фоне
+                    // и пользователь включил браузерные уведомления).
+                    try {
+                      const senderName = room.getMember?.(senderId)?.name || senderId
+                      const body = (event.getContent?.()?.body as string) || ''
+                      notifyMessage(senderName, body)
+                    } catch {
+                      /* ignore */
+                    }
                   }
 
                   if (uiStore.activeChatId === roomId) {
@@ -514,7 +524,9 @@ export const useMessengerStore = defineStore('messenger', () => {
         const room = matrixService.getRoom(roomId)
         if (room) {
           const events = room.getLiveTimeline().getEvents()
-          const lastEvent = [...events].reverse().find((e: MatrixEvent) => e.getId()?.startsWith('$'))
+          const lastEvent = [...events]
+            .reverse()
+            .find((e: MatrixEvent) => e.getId()?.startsWith('$'))
           if (lastEvent) {
             const client = matrixService.getClient()
             if (client?.setRoomReadMarkers)

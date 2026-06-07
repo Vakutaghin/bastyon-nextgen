@@ -37,6 +37,7 @@ import { useMessengerStore } from '@/b-components/messenger/store'
 import { showToastsForNewNotifications } from '@/b-components/header/header-notifications/notification-toasts'
 import { bootMiniApps } from '@/mini-apps/ui/use-mini-app-bridge'
 import { installGlobalErrorHandler } from '@/composables/use-error-boundary'
+import { notifyNewNotifications } from '@/composables/use-browser-notifications'
 import { queryClient } from './query-client'
 import './style.css'
 
@@ -71,7 +72,10 @@ torStore.hydrate().catch(() => {})
 useUIStore(pinia)
   .loadLanguage()
   .catch((e) => console.warn('[main] loadLanguage failed:', e))
-notificationsStore.setOnNewNotifications((items) => showToastsForNewNotifications(pinia, items))
+notificationsStore.setOnNewNotifications((items) => {
+  showToastsForNewNotifications(pinia, items)
+  notifyNewNotifications(items)
+})
 
 const NOTIFICATIONS_POLL_INTERVAL_MS = 30 * 1000
 let notificationsPollTimerId: ReturnType<typeof setInterval> | null = null

@@ -6,6 +6,7 @@ const NOTIFICATION_FILTERS_KEY = 'notificationFilters'
 /** Ключи настроек фильтрации уведомлений (как в старом приложении) */
 export type NotificationFilterKey =
   | 'sound'
+  | 'browserNotif'
   | 'win'
   | 'transactions'
   | 'upvotes'
@@ -17,6 +18,8 @@ export type NotificationFilterKey =
 
 export interface NotificationFiltersState {
   sound: boolean
+  /** Браузерные (Web Notification API) уведомления, когда вкладка в фоне. Opt-in. */
+  browserNotif: boolean
   win: boolean
   transactions: boolean
   upvotes: boolean
@@ -29,6 +32,7 @@ export interface NotificationFiltersState {
 
 const DEFAULT_FILTERS: NotificationFiltersState = {
   sound: true,
+  browserNotif: false,
   win: true,
   transactions: true,
   upvotes: true,
@@ -36,7 +40,7 @@ const DEFAULT_FILTERS: NotificationFiltersState = {
   comments: true,
   answers: true,
   followers: true,
-  commentScore: true
+  commentScore: true,
 }
 
 /**
@@ -45,6 +49,7 @@ const DEFAULT_FILTERS: NotificationFiltersState = {
  */
 export const NOTIFICATION_FILTER_LABEL_KEYS: Record<NotificationFilterKey, string> = {
   sound: 'notif.filterSound',
+  browserNotif: 'notif.filterBrowser',
   win: 'notif.filterWin',
   transactions: 'notif.filterTransactions',
   upvotes: 'notif.filterUpvotes',
@@ -52,20 +57,25 @@ export const NOTIFICATION_FILTER_LABEL_KEYS: Record<NotificationFilterKey, strin
   comments: 'notif.filterComments',
   answers: 'notif.filterAnswers',
   followers: 'notif.filterFollowers',
-  commentScore: 'notif.filterCommentScore'
+  commentScore: 'notif.filterCommentScore',
 }
 
 export const useNotificationSettingsStore = defineStore('notificationSettings', {
   state: (): NotificationFiltersState => ({ ...DEFAULT_FILTERS }),
   getters: {
     /** Получить значение по ключу */
-    getFilter: (state) => (key: NotificationFilterKey): boolean => state[key] ?? DEFAULT_FILTERS[key],
+    getFilter:
+      (state) =>
+      (key: NotificationFilterKey): boolean =>
+        state[key] ?? DEFAULT_FILTERS[key],
   },
   actions: {
     /** Загрузить настройки из IDB (settings) */
     async load() {
       try {
-        const raw = await settingsAPI.get(NOTIFICATION_FILTERS_KEY) as Partial<NotificationFiltersState> | undefined
+        const raw = (await settingsAPI.get(NOTIFICATION_FILTERS_KEY)) as
+          | Partial<NotificationFiltersState>
+          | undefined
         if (raw && typeof raw === 'object') {
           const keys = Object.keys(DEFAULT_FILTERS) as NotificationFilterKey[]
           keys.forEach((key) => {
@@ -84,6 +94,7 @@ export const useNotificationSettingsStore = defineStore('notificationSettings', 
       try {
         const payload: NotificationFiltersState = {
           sound: this.sound,
+          browserNotif: this.browserNotif,
           win: this.win,
           transactions: this.transactions,
           upvotes: this.upvotes,
@@ -91,7 +102,7 @@ export const useNotificationSettingsStore = defineStore('notificationSettings', 
           comments: this.comments,
           answers: this.answers,
           followers: this.followers,
-          commentScore: this.commentScore
+          commentScore: this.commentScore,
         }
         await settingsAPI.set(NOTIFICATION_FILTERS_KEY, payload)
       } catch (e) {
@@ -105,5 +116,5 @@ export const useNotificationSettingsStore = defineStore('notificationSettings', 
       this[key] = value
       await this.save()
     },
-  }
+  },
 })
