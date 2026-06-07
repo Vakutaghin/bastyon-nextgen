@@ -37,6 +37,13 @@ export default {
   embed: {
     viewOnBastyon: 'View on Bastyon',
   },
+  bottomNav: {
+    home: 'Home',
+    search: 'Search',
+    apps: 'Apps',
+    messenger: 'Chats',
+    wallet: 'Wallet',
+  },
   postPage: {
     loading: 'Loading post…',
     notFound: 'Post not found',

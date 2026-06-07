@@ -41,6 +41,13 @@ export default {
   embed: {
     viewOnBastyon: 'Открыть в Bastyon',
   },
+  bottomNav: {
+    home: 'Главная',
+    search: 'Поиск',
+    apps: 'Приложения',
+    messenger: 'Чаты',
+    wallet: 'Кошелёк',
+  },
   postPage: {
     loading: 'Загрузка поста…',
     notFound: 'Пост не найден',

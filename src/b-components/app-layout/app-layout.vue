@@ -3,11 +3,13 @@
     <SC_Camera id="camera" />
     <StarExplosion />
 
-    <SC_Appcnt>
+    <SC_Appcnt :class="{ 'has-bottom-nav': isMobileOrTablet }">
       <AppHeader />
       <router-view />
       <SiteFooter />
     </SC_Appcnt>
+
+    <BottomNav v-if="isMobileOrTablet" />
 
     <MessengerWrapper />
 
@@ -29,11 +31,14 @@ import PostComposerModal from '@/b-components/content/post-composer/post-compose
 import WhatsNewModal from '@/b-components/changelog/whats-new-modal.vue'
 import { StarExplosion } from '@/b-components/effects/star-explosion'
 import SiteFooter from '@/b-components/site-footer/site-footer.vue'
+import BottomNav from '@/b-components/bottom-nav/bottom-nav.vue'
 import { useUIStore } from '@/stores/ui-store'
+import { useViewport } from '@/composables/use-viewport'
 import { SC_Application, SC_Camera, SC_Appcnt } from './styled'
 
 const uiStore = useUIStore()
 const router = useRouter()
+const { isMobileOrTablet } = useViewport()
 
 // @-меншены рендерятся как `<a class="mention-link" href="/ник">` внутри v-html
 // (см. text-formatter). Делегируем их клики в router, чтобы шла SPA-навигация,

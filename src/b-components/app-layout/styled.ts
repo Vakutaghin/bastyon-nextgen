@@ -18,6 +18,12 @@ export const SC_Appcnt = styled.div`
   display: flex;
   flex-direction: column;
   padding-bottom: var(--safe-bottom);
+
+  /* Когда видна нижняя навигация (моб/планшет) — резервируем под неё место,
+     чтобы фиксированный бар (высота 56px + safe-area) не перекрывал контент. */
+  &.has-bottom-nav {
+    padding-bottom: calc(56px + var(--safe-bottom));
+  }
 `
 
 export const SC_Work = styled.div`
