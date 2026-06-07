@@ -76,6 +76,7 @@
       @add="addImageFiles"
       @remove="removeImage"
       @rotate="rotateImage"
+      @edit="onEditImage"
     />
 
     <ComposerTags
@@ -205,6 +206,7 @@ const {
   addImageFiles,
   removeImage,
   rotateImage,
+  replaceImage,
   publish,
 } = usePostComposer({
   onPublished: (txid) => emit('published', txid),
@@ -214,6 +216,10 @@ const {
 
 const onToggleArticle = (e: Event): void => {
   articleMode.value = (e.target as HTMLInputElement).checked
+}
+
+const onEditImage = (payload: { id: string; base64: string }): void => {
+  replaceImage(payload.id, payload.base64)
 }
 
 // ── Эмодзи-пикер для тела поста ─────────────────────────────────────

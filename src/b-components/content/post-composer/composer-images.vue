@@ -9,6 +9,13 @@
       >
         <RotateRightOutlined />
       </SC_ImageRotate>
+      <SC_ImageEdit
+        type="button"
+        :aria-label="t('postComposer.editImage')"
+        @click="openEditor(img)"
+      >
+        <EditOutlined />
+      </SC_ImageEdit>
       <SC_ImageRemove
         type="button"
         :aria-label="t('postComposer.removeImage')"
@@ -30,20 +37,29 @@
       <input ref="inputRef" type="file" accept="image/*" multiple @change="onChange" />
     </SC_AddTile>
   </SC_ImagesGrid>
+
+  <ImageEditorModal
+    :open="!!editingId"
+    :image="editingBase64"
+    @apply="onEditApply"
+    @close="editingId = null"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RotateRightOutlined } from '@ant-design/icons-vue'
+import { RotateRightOutlined, EditOutlined } from '@ant-design/icons-vue'
 
 import {
   SC_AddTile,
   SC_ImageRemove,
   SC_ImageRotate,
+  SC_ImageEdit,
   SC_ImagesGrid,
   SC_ImageThumb,
 } from './composer-images.styled'
+import ImageEditorModal from './image-editor-modal.vue'
 import type { ComposerImage } from './use-post-images'
 
 defineProps<{ images: ComposerImage[]; full: boolean }>()
@@ -51,11 +67,26 @@ const emit = defineEmits<{
   (e: 'add', files: File[]): void
   (e: 'remove', id: string): void
   (e: 'rotate', id: string): void
+  (e: 'edit', payload: { id: string; base64: string }): void
 }>()
 
 const { t } = useI18n()
 const inputRef = ref<HTMLInputElement | null>(null)
 const dragover = ref(false)
+
+// Редактор (crop/фильтры/поворот) — модалка по конкретной картинке.
+const editingId = ref<string | null>(null)
+const editingBase64 = ref<string>('')
+
+const openEditor = (img: ComposerImage): void => {
+  editingId.value = img.id
+  editingBase64.value = img.base64
+}
+
+const onEditApply = (base64: string): void => {
+  if (editingId.value) emit('edit', { id: editingId.value, base64 })
+  editingId.value = null
+}
 
 const onChange = (e: Event): void => {
   const input = e.target as HTMLInputElement

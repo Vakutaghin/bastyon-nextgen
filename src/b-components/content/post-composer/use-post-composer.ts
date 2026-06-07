@@ -84,6 +84,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     addFiles,
     remove: removeImage,
     rotate: rotateImage,
+    replace: replaceImage,
     clear: clearImages,
     setFromUrls,
   } = usePostImages()
@@ -363,6 +364,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     addImageFiles: addFiles,
     removeImage,
     rotateImage,
+    replaceImage,
     reset,
     publish,
   }

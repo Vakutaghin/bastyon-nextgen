@@ -67,6 +67,11 @@ export function usePostImages() {
     }
   }
 
+  /** Заменяет base64 картинки (результат редактора crop/фильтры). */
+  const replace = (id: string, base64: string): void => {
+    images.value = images.value.map((i) => (i.id === id ? { ...i, base64 } : i))
+  }
+
   const clear = (): void => {
     images.value = []
   }
@@ -76,5 +81,5 @@ export function usePostImages() {
     images.value = urls.map((url) => ({ id: nextId(), base64: url }))
   }
 
-  return { images, full, base64List, addFiles, remove, rotate, clear, setFromUrls }
+  return { images, full, base64List, addFiles, remove, rotate, replace, clear, setFromUrls }
 }
