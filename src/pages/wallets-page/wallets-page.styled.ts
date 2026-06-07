@@ -229,3 +229,20 @@ export const SC_WalletTabPanel = styled.div`
     display: block;
   }
 `
+
+export const SC_BuyHelp = styled.div`
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+  color: ${COLORS.TEXT_SECONDARY};
+
+  a {
+    color: ${COLORS.PRIMARY};
+    text-decoration: none;
+    transition: color ${TRANSITIONS.FAST};
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+`

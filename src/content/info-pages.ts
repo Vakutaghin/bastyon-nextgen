@@ -26,7 +26,7 @@ export interface InfoPageContent {
   note?: 'legalReview'
 }
 
-/** Порядок слугов = порядок ссылок в футере. */
+/** Все инфо-страницы (для роутинга /info/:slug). */
 export const INFO_PAGE_SLUGS = [
   'about',
   'faq',
@@ -35,9 +35,21 @@ export const INFO_PAGE_SLUGS = [
   'terms',
   'privacy',
   'csae',
+  'howtobuy',
 ] as const
 
 export type InfoPageSlug = (typeof INFO_PAGE_SLUGS)[number]
+
+/** Подмножество в футере (howtobuy линкуется из кошелька, а не из футера). */
+export const FOOTER_PAGE_SLUGS: readonly InfoPageSlug[] = [
+  'about',
+  'faq',
+  'help',
+  'support',
+  'terms',
+  'privacy',
+  'csae',
+]
 
 const EN: Record<InfoPageSlug, InfoPageContent> = {
   about: {
@@ -242,6 +254,37 @@ const EN: Record<InfoPageSlug, InfoPageContent> = {
         heading: 'Cooperation with authorities',
         paragraphs: [
           'Confirmed CSAM is reported to the appropriate authorities, such as the National Center for Missing & Exploited Children (NCMEC) where applicable, and we cooperate with lawful requests from child-protection and law-enforcement agencies.',
+        ],
+      },
+    ],
+  },
+  howtobuy: {
+    title: 'How to get PKOIN',
+    lead: 'PKOIN is the coin that powers actions on the network.',
+    sections: [
+      {
+        heading: 'Why you need it',
+        paragraphs: [
+          'A small PKOIN balance covers network fees and unlocks actions like boosting posts and tipping authors. Browsing and posting basic content do not require a purchase.',
+        ],
+      },
+      {
+        heading: 'Earn it for free',
+        paragraphs: [
+          'You can receive PKOIN without buying: post good content and get upvotes, or ask someone to tip you. Share your address (Wallet → Receive) so others can send you coins.',
+        ],
+      },
+      {
+        heading: 'Buy on an exchange',
+        paragraphs: [
+          'PKOIN is listed on several cryptocurrency exchanges. Create an account on an exchange that lists PKOIN, buy the coins there, then withdraw them to your wallet address shown under Wallet → Receive.',
+          'Always double-check the address before sending — blockchain transfers are irreversible.',
+        ],
+      },
+      {
+        heading: 'Receiving into your wallet',
+        paragraphs: [
+          'Open the Wallet, copy your address or show the QR code, and use it as the withdrawal/destination address. Funds appear after the network confirms the transaction.',
         ],
       },
     ],
@@ -457,6 +500,37 @@ const RU: Record<InfoPageSlug, InfoPageContent> = {
       },
     ],
   },
+  howtobuy: {
+    title: 'Как получить PKOIN',
+    lead: 'PKOIN — монета, на которой работают действия в сети.',
+    sections: [
+      {
+        heading: 'Зачем она нужна',
+        paragraphs: [
+          'Небольшой баланс PKOIN покрывает сетевые комиссии и открывает действия — бусты постов и чаевые авторам. Просмотр и публикация базового контента покупки не требуют.',
+        ],
+      },
+      {
+        heading: 'Получить бесплатно',
+        paragraphs: [
+          'PKOIN можно получить и без покупки: публикуйте хороший контент и собирайте плюсы, или попросите кого-нибудь отправить вам чаевые. Поделитесь своим адресом (Кошелёк → Получить), чтобы вам могли перевести монеты.',
+        ],
+      },
+      {
+        heading: 'Купить на бирже',
+        paragraphs: [
+          'PKOIN торгуется на нескольких криптобиржах. Заведите аккаунт на бирже, где есть PKOIN, купите монеты и выведите их на адрес своего кошелька (Кошелёк → Получить).',
+          'Всегда перепроверяйте адрес перед отправкой — переводы в блокчейне необратимы.',
+        ],
+      },
+      {
+        heading: 'Получение в кошелёк',
+        paragraphs: [
+          'Откройте Кошелёк, скопируйте адрес или покажите QR-код и используйте его как адрес вывода/назначения. Средства появятся после подтверждения транзакции сетью.',
+        ],
+      },
+    ],
+  },
 }
 
 const CONTENT: Record<InfoLocale, Record<InfoPageSlug, InfoPageContent>> = { en: EN, ru: RU }
@@ -472,8 +546,8 @@ export function getInfoPage(slug: string, locale: string): InfoPageContent | nul
   return CONTENT[loc][slug]
 }
 
-/** Список (slug, title) для футера, в порядке INFO_PAGE_SLUGS. */
+/** Список (slug, title) для футера, в порядке FOOTER_PAGE_SLUGS. */
 export function getInfoPageLinks(locale: string): { slug: InfoPageSlug; title: string }[] {
   const loc: InfoLocale = locale === 'ru' ? 'ru' : 'en'
-  return INFO_PAGE_SLUGS.map((slug) => ({ slug, title: CONTENT[loc][slug].title }))
+  return FOOTER_PAGE_SLUGS.map((slug) => ({ slug, title: CONTENT[loc][slug].title }))
 }

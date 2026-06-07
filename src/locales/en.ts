@@ -215,6 +215,7 @@ export default {
     tabHistory: 'History',
     tabEarnings: 'Earnings',
     tabBuySell: 'Buy/Sell',
+    howToBuyLink: 'How to get PKOIN →',
     earningsTitle: 'Account earnings',
     earningsLoading: 'Loading earnings…',
     earningsError: 'Failed to load earnings',

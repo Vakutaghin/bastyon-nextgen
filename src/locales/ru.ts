@@ -220,6 +220,7 @@ export default {
     tabHistory: 'История',
     tabEarnings: 'Заработок',
     tabBuySell: 'Покупка/продажа',
+    howToBuyLink: 'Как получить PKOIN →',
     earningsTitle: 'Заработок аккаунта',
     earningsLoading: 'Загрузка заработка…',
     earningsError: 'Не удалось загрузить заработок',

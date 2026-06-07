@@ -172,6 +172,9 @@
 
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'buy' }">
             <PkoinChart />
+            <SC_BuyHelp>
+              <RouterLink to="/info/howtobuy">{{ t('wallet.howToBuyLink') }}</RouterLink>
+            </SC_BuyHelp>
           </SC_WalletTabPanel>
         </SC_WalletTabPanels>
       </SC_WalletTabs>
@@ -226,6 +229,7 @@ import {
   SC_WalletTabButton,
   SC_WalletTabPanels,
   SC_WalletTabPanel,
+  SC_BuyHelp,
 } from './wallets-page.styled'
 
 const MAX_ADDITIONAL_WALLETS = 20

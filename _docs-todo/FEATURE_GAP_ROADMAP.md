@@ -164,7 +164,6 @@
 | Дашборд заработка — периоды/breakdown | earnings | 🟡 | базовая вкладка (3 суммы), без периодов/детализации |
 | Реклама/boost-earnings | advertising | ❌ | — |
 | График цены | pkoin/staking | 🟡 | CoinGecko-график, без buy/sell |
-| How-to-buy | howtobuy | ❌ | — |
 
 ### E. Мессенджер / чат
 
