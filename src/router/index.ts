@@ -24,6 +24,7 @@ const MiniAppPage = () => import('@/pages/mini-app-page/mini-app-page.vue')
 const PostPage = () => import('@/pages/post-page/post-page.vue')
 const ComposePage = () => import('@/pages/compose-page/compose-page.vue')
 const InfoPage = () => import('@/pages/info-page/info-page.vue')
+const EmbedPostPage = () => import('@/pages/embed-post-page/embed-post-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])
@@ -141,6 +142,13 @@ const router = createRouter({
       name: 'info',
       component: InfoPage,
       meta: { titleKey: 'routes.info' },
+    },
+    // Встраиваемая (iframe) вьюха поста — без chrome (meta.embed). ДО catch-all /:userName.
+    {
+      path: '/embed/post/:txid',
+      name: 'embed-post',
+      component: EmbedPostPage,
+      meta: { titleKey: 'routes.post', embed: true },
     },
     {
       path: '/:userName',

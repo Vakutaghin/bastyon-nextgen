@@ -38,6 +38,9 @@ export default {
   footer: {
     brand: 'Bastyon — децентрализованная социальная сеть.',
   },
+  embed: {
+    viewOnBastyon: 'Открыть в Bastyon',
+  },
   postPage: {
     loading: 'Загрузка поста…',
     notFound: 'Пост не найден',
@@ -843,6 +846,8 @@ export default {
     shareAction: 'Поделиться',
     downloadImage: 'Скачать изображение',
     copyLink: 'Скопировать ссылку',
+    copyEmbed: 'Скопировать код вставки',
+    embedCopied: 'Код вставки скопирован',
     shareVia: 'Поделиться через…',
     linkCopied: 'Ссылка скопирована',
     shareFailed: 'Не удалось поделиться',

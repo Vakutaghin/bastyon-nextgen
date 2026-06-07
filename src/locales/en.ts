@@ -34,6 +34,9 @@ export default {
   footer: {
     brand: 'Bastyon — a decentralized social network.',
   },
+  embed: {
+    viewOnBastyon: 'View on Bastyon',
+  },
   postPage: {
     loading: 'Loading post…',
     notFound: 'Post not found',
@@ -788,6 +791,8 @@ export default {
     shareAction: 'Share',
     downloadImage: 'Download image',
     copyLink: 'Copy link',
+    copyEmbed: 'Copy embed code',
+    embedCopied: 'Embed code copied',
     shareVia: 'Share via…',
     linkCopied: 'Link copied',
     shareFailed: 'Failed to share',

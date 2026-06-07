@@ -5,6 +5,11 @@
       {{ t('postCard.copyLink') }}
     </SC_ShareItem>
 
+    <SC_ShareItem v-if="embedUrl" type="button" @click="copyEmbed">
+      <SC_ShareIcon><CodeOutlined /></SC_ShareIcon>
+      {{ t('postCard.copyEmbed') }}
+    </SC_ShareItem>
+
     <SC_ShareItem v-if="canNativeShare" type="button" @click="nativeShare">
       <SC_ShareIcon><ShareAltOutlined /></SC_ShareIcon>
       {{ t('postCard.shareVia') }}
@@ -29,7 +34,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CopyOutlined, ShareAltOutlined } from '@ant-design/icons-vue'
+import { CodeOutlined, CopyOutlined, ShareAltOutlined } from '@ant-design/icons-vue'
 import { appToast } from '@/b-components/app-toast'
 import { SHARE_TARGETS, type ShareTarget } from '@/helpers/common/share-targets'
 import { SC_ShareMenu, SC_ShareItem, SC_ShareIcon, SC_ShareDivider } from './styled'
@@ -43,10 +48,32 @@ const canNativeShare = computed<boolean>(
   () => typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 )
 
+// Embed-URL выводим из ссылки на пост (origin/post/<id> → origin/embed/post/<id>).
+const embedUrl = computed<string>(() =>
+  props.url.includes('/post/') ? props.url.replace('/post/', '/embed/post/') : ''
+)
+
+const embedCode = computed<string>(
+  () =>
+    `<iframe src="${embedUrl.value}" width="100%" height="640" frameborder="0" ` +
+    'allow="fullscreen; picture-in-picture" loading="lazy"></iframe>'
+)
+
 async function copyLink(): Promise<void> {
   try {
     await navigator.clipboard.writeText(props.url)
     appToast.success({ message: t('postCard.linkCopied'), description: props.url })
+  } catch {
+    appToast.error({ message: t('postCard.shareFailed') })
+  } finally {
+    emit('done')
+  }
+}
+
+async function copyEmbed(): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(embedCode.value)
+    appToast.success({ message: t('postCard.embedCopied') })
   } catch {
     appToast.error({ message: t('postCard.shareFailed') })
   } finally {
