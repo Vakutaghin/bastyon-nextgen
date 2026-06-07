@@ -76,6 +76,9 @@ export function clearAllUserData(): void {
       localStorage.removeItem(USER_ADDRESS_STORAGE_KEY)
       localStorage.removeItem(WAS_LOGGED_KEY)
       localStorage.removeItem(ACCOUNTS_LIST_KEY)
+      // Локальные данные кошельков (изоляция между аккаунтами на одном устройстве).
+      localStorage.removeItem(ADDITIONAL_WALLETS_LIST_KEY)
+      localStorage.removeItem(WALLET_LABELS_KEY)
     }
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem(ACCOUNTS_LIST_KEY)

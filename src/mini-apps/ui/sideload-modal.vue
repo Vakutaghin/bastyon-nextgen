@@ -1,5 +1,5 @@
 <template>
-  <SC_Overlay v-if="open" @click.self="emit('close')">
+  <SC_Overlay v-if="open" @click.self="!loading && emit('close')">
     <SC_Dialog>
       <SC_Title>{{ t('miniapps.sideloadTitle') }}</SC_Title>
 

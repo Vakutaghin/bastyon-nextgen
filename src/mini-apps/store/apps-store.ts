@@ -191,6 +191,7 @@ export const useAppsStore = defineStore('mini-apps:apps', {
      * устанавливает приложение.
      */
     async addLocal(scope: string, displayName?: string): Promise<InstalledApp> {
+      const idsBefore = new Set(Object.keys(this.installed))
       const app = await this.install(scope, { source: 'local' })
       const entry: LocalOverride = {
         id: app.manifest.id,
@@ -198,7 +199,14 @@ export const useAppsStore = defineStore('mini-apps:apps', {
         displayName: displayName ?? app.manifest.name,
         addedAt: Date.now(),
       }
-      await deps.overrides.upsert(entry)
+      try {
+        await deps.overrides.upsert(entry)
+      } catch (e) {
+        // Откатываем только что добавленное (непросистенное) приложение, чтобы оно
+        // не висело в гриде до перезагрузки. Уже установленное ранее — не трогаем.
+        if (!idsBefore.has(app.manifest.id)) delete this.installed[app.manifest.id]
+        throw e
+      }
       return app
     },
 

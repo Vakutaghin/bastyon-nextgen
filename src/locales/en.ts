@@ -235,6 +235,7 @@ export default {
     walletLabelPlaceholder: 'Wallet label (optional)',
     renameSave: 'Save',
     renameCancel: 'Cancel',
+    renameFailed: 'Failed to save the label',
     earningsTitle: 'Account earnings',
     earningsLoading: 'Loading earnings…',
     earningsError: 'Failed to load earnings',

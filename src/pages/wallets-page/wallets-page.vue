@@ -190,7 +190,7 @@
       </SC_WalletTabs>
     </SC_WalletPage>
 
-    <SC_RenameOverlay v-if="renameOpen" @click.self="renameOpen = false">
+    <SC_RenameOverlay v-if="renameOpen" @click.self="closeRename">
       <SC_RenameDialog>
         <SC_RenameTitle>{{ t('wallet.renameWallet') }}</SC_RenameTitle>
         <SC_RenameInput
@@ -200,7 +200,7 @@
           @keydown.enter="saveRename"
         />
         <SC_RenameActions>
-          <SC_RenameBtn type="button" @click="renameOpen = false">
+          <SC_RenameBtn type="button" @click="closeRename">
             {{ t('wallet.renameCancel') }}
           </SC_RenameBtn>
           <SC_RenameBtn type="button" :primary="true" @click="saveRename">
@@ -226,6 +226,7 @@ import {
   getWalletLabel,
   setWalletLabel,
 } from '@/blockchain'
+import { appToast } from '@/b-components/app-toast'
 import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
@@ -370,14 +371,30 @@ function openRename(address: string, currentLabel: string): void {
   renameOpen.value = true
 }
 
+function closeRename(): void {
+  renameOpen.value = false
+  renameAddress.value = ''
+  renameLabel.value = ''
+}
+
 function saveRename(): void {
   const cur = currentAddress.value
-  if (cur && renameAddress.value) {
-    setWalletLabel(cur, renameAddress.value, renameLabel.value)
-    walletListVersion.value++
+  if (!cur || !renameAddress.value) {
+    closeRename()
+    return
   }
-  renameOpen.value = false
+  const res = setWalletLabel(cur, renameAddress.value, renameLabel.value)
+  if (!res.success) {
+    appToast.error({ message: t('wallet.renameFailed') })
+    return // оставляем модалку открытой
+  }
+  walletListVersion.value++
+  closeRename()
 }
+
+// Смена аккаунта при открытой модалке — закрываем, чтобы не применить ярлык
+// к чужому кошельку.
+watch(currentAddress, () => closeRename())
 
 function formatBalance(bal: number | null | undefined): string {
   if (bal == null) return '—'

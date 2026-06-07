@@ -189,4 +189,10 @@ describe('wallet labels', () => {
     setWalletLabel('PAcc', 'W1', 'a'.repeat(60))
     expect(getWalletLabel('PAcc', 'W1').length).toBe(40)
   })
+
+  it('clearAllUserData снимает ярлыки (изоляция между аккаунтами)', () => {
+    setWalletLabel('PAcc', 'W1', 'Trading')
+    clearAllUserData()
+    expect(getWalletLabel('PAcc', 'W1')).toBe('')
+  })
 })

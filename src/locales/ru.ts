@@ -240,6 +240,7 @@ export default {
     walletLabelPlaceholder: 'Ярлык кошелька (необязательно)',
     renameSave: 'Сохранить',
     renameCancel: 'Отмена',
+    renameFailed: 'Не удалось сохранить ярлык',
     earningsTitle: 'Заработок аккаунта',
     earningsLoading: 'Загрузка заработка…',
     earningsError: 'Не удалось загрузить заработок',
