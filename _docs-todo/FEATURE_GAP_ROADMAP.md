@@ -66,7 +66,7 @@
 - Звонки voice/video (`BastyonCalls` + `m.call.*`) — весь WebRTC-стек.
 - Reply / edit / delete / forward сообщений (кроме реакций — ничего).
 - Создание групп, инвайты, управление участниками, инфо/настройки комнаты.
-- Поиск по сообщениям; block/mute; стикеры.
+- Block/mute; стикеры.
 - Браузерные/пуш-уведомления (сейчас только in-app звук-бип).
 
 **Мини-аппы / инфра**
@@ -166,7 +166,6 @@
 | Группы (чтение/отправка) | teamroom | 🟡 | можно читать/писать, **создавать нельзя** |
 | Read-receipts отображение чужих | mtrx | 🟡 | отправка есть; отображение чужих unread — нет |
 | Reply / edit / delete / forward | events/* | ❌ | только реакции |
-| Поиск по сообщениям | searchEngine.js | ❌ | — |
 | Создание комнат / инвайты / админ комнаты | chat/create, teamroom | ❌ | только `createDirectRoom` |
 | Звонки voice/video (WebRTC) | BastyonCalls | ❌ | весь стек отсутствует |
 | Block/unblock, mute | mtrx, chatInfo | ❌ | — |

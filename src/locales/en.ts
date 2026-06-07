@@ -406,6 +406,8 @@ export default {
     inputPlaceholder: 'Type a message...',
     typing: 'typing…',
     typingNamed: '{name} is typing…',
+    searchPlaceholder: 'Search in conversation…',
+    searchNoResults: 'Nothing found in this conversation.',
     partnerAvatarAlt: 'Avatar of {name}',
     reputation: 'Reputation',
     subscribers: 'Subscribers',

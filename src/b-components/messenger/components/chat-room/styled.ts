@@ -346,3 +346,38 @@ export const SC_TypingIndicator = styled.div`
   font-style: italic;
   flex-shrink: 0;
 `
+
+export const SC_SearchRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid ${COLORS.GRAY_EEE};
+  flex-shrink: 0;
+`
+
+export const SC_SearchIcon = styled.span`
+  display: inline-flex;
+  color: ${COLORS.GRAY_888};
+  font-size: 15px;
+`
+
+export const SC_SearchInput = styled.input`
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 14px;
+  color: ${COLORS.TEXT_PRIMARY};
+
+  &::placeholder {
+    color: ${COLORS.GRAY_888};
+  }
+`
+
+export const SC_SearchCount = styled.span`
+  flex-shrink: 0;
+  font-size: 12px;
+  color: ${COLORS.GRAY_888};
+`

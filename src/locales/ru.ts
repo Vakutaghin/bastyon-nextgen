@@ -411,6 +411,8 @@ export default {
     inputPlaceholder: 'Введите сообщение...',
     typing: 'печатает…',
     typingNamed: '{name} печатает…',
+    searchPlaceholder: 'Поиск в переписке…',
+    searchNoResults: 'В этой переписке ничего не найдено.',
     partnerAvatarAlt: 'Аватар {name}',
     reputation: 'Репутация',
     subscribers: 'Подписчики',

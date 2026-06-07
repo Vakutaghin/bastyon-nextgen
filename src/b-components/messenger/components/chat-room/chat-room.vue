@@ -50,11 +50,25 @@
     </template>
 
     <template v-else>
+      <SC_SearchRow v-if="messages && messages.length > 0">
+        <SC_SearchIcon><SearchOutlined /></SC_SearchIcon>
+        <SC_SearchInput
+          v-model="searchQuery"
+          :placeholder="t('messenger.searchPlaceholder')"
+          type="search"
+        />
+        <SC_SearchCount v-if="searchQuery.trim()">{{ displayedMessages.length }}</SC_SearchCount>
+      </SC_SearchRow>
+
       <SC_ChatRoomEmptyHint v-if="!messages || messages.length === 0">
         {{ t('messenger.noMessagesHint') }}
       </SC_ChatRoomEmptyHint>
 
-      <MessageList :messages="messages" @load-more="emit('load-more')" />
+      <SC_ChatRoomEmptyHint v-else-if="searchQuery.trim() && displayedMessages.length === 0">
+        {{ t('messenger.searchNoResults') }}
+      </SC_ChatRoomEmptyHint>
+
+      <MessageList :messages="displayedMessages" @load-more="emit('load-more')" />
     </template>
 
     <SC_TypingIndicator v-if="isTyping">
@@ -153,6 +167,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { SearchOutlined } from '@ant-design/icons-vue'
 import { debugLog } from '@/helpers/common/debug-log'
 import type { Message } from '../../types'
 import { matrixService } from '../../services/matrix-service'
@@ -192,6 +207,10 @@ import {
   SC_ChatRoomLoaderText,
   SC_ChatRoomEmptyHint,
   SC_TypingIndicator,
+  SC_SearchRow,
+  SC_SearchIcon,
+  SC_SearchInput,
+  SC_SearchCount,
 } from './styled'
 import {
   SC_StatItem,
@@ -231,6 +250,18 @@ const { t } = useI18n()
 // Активная комната + typing-индикатор собеседника.
 const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
 const { isTyping, typingName } = useTypingIndicator(activeRoomId)
+
+// Локальный поиск по сообщениям текущего диалога (фильтр по тексту).
+const searchQuery = ref('')
+const displayedMessages = computed<Message[]>(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return props.messages
+  return props.messages.filter((m) => (m.text || '').toLowerCase().includes(q))
+})
+// Сброс поиска при смене диалога.
+watch(activeRoomId, () => {
+  searchQuery.value = ''
+})
 
 // Отправка собственного typing-статуса (throttle: не чаще раза в 3с).
 let lastTypingSent = 0
