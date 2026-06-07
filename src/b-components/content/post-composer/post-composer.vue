@@ -24,14 +24,36 @@
     />
 
     <!-- Тело обычного поста -->
-    <SC_Textarea
-      v-if="!articleMode"
-      ref="textareaRef"
-      :value="message"
-      :placeholder="isRepost ? t('postComposer.repostPlaceholder') : t('postComposer.placeholder')"
-      :aria-label="t('postComposer.placeholder')"
-      @input="onMessageInput(($event.target as HTMLTextAreaElement).value)"
-    />
+    <SC_MentionAnchor v-if="!articleMode">
+      <SC_Textarea
+        ref="textareaRef"
+        :value="message"
+        :placeholder="
+          isRepost ? t('postComposer.repostPlaceholder') : t('postComposer.placeholder')
+        "
+        :aria-label="t('postComposer.placeholder')"
+        @input="onComposerInput"
+        @keydown="onMentionKeydown"
+        @keyup="updateMentions"
+        @click="updateMentions"
+        @blur="onComposerBlur"
+      />
+
+      <SC_MentionDropdown v-if="mentionShow">
+        <SC_MentionRow
+          v-for="(user, idx) in mentionResults"
+          :key="user.address"
+          :class="{ active: mentionHighlight === idx }"
+          @mousedown.prevent="selectMention(user)"
+        >
+          <SC_MentionAvatar>
+            <img v-if="user.avatar" :src="user.avatar" :alt="user.name || user.address" />
+            <span v-else>{{ (user.name || user.address).charAt(0).toUpperCase() }}</span>
+          </SC_MentionAvatar>
+          <SC_MentionName>{{ user.name || user.address }}</SC_MentionName>
+        </SC_MentionRow>
+      </SC_MentionDropdown>
+    </SC_MentionAnchor>
 
     <SC_EmojiRow v-if="!articleMode">
       <APopover v-model:open="emojiOpen" trigger="click" placement="topLeft">
@@ -117,6 +139,7 @@ import ComposerSettings from './composer-settings.vue'
 import ComposerTags from './composer-tags.vue'
 import ComposerUrlPreview from './composer-url-preview.vue'
 import type { ComposerMode, ComposerSource } from './composer-source'
+import { useComposerMentions } from './use-composer-mentions'
 import {
   SC_ArticleToggle,
   SC_Composer,
@@ -124,6 +147,11 @@ import {
   SC_EmojiRow,
   SC_Footer,
   SC_Hint,
+  SC_MentionAnchor,
+  SC_MentionAvatar,
+  SC_MentionDropdown,
+  SC_MentionName,
+  SC_MentionRow,
   SC_Textarea,
   SC_TitleInput,
 } from './post-composer.styled'
@@ -218,6 +246,31 @@ function insertEmoji(emoji: string): void {
       /* noop */
     }
   })
+}
+
+// ── @-меншены в теле поста ──────────────────────────────────────────
+const {
+  show: mentionShow,
+  results: mentionResults,
+  highlight: mentionHighlight,
+  update: updateMentions,
+  close: closeMentions,
+  select: selectMention,
+  onKeydown: onMentionKeydown,
+} = useComposerMentions({
+  getText: () => message.value || '',
+  getEl: getTextareaEl,
+  setText: onMessageInput,
+})
+
+function onComposerInput(e: Event): void {
+  onMessageInput((e.target as HTMLTextAreaElement).value)
+  updateMentions()
+}
+
+// Клик по строке (mousedown.prevent) успевает отработать до закрытия по blur.
+function onComposerBlur(): void {
+  window.setTimeout(closeMentions, 120)
 }
 
 const titlePlaceholder = computed(() =>

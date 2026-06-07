@@ -1,7 +1,73 @@
 import styled from 'vue3-styled-components'
 
-import { BORDER_RADIUS, FONT_SIZE, SPACING, TRANSITIONS } from '@/styles/design-tokens'
+import { BORDER_RADIUS, FONT_SIZE, SPACING, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
+
+export const SC_MentionAnchor = styled.div`
+  position: relative;
+  width: 100%;
+`
+
+export const SC_MentionDropdown = styled.ul`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: ${Z_INDEX.DROPDOWN};
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  background: ${COLORS.BG_PRIMARY};
+  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  border-radius: ${BORDER_RADIUS.MD};
+  box-shadow: 0 6px 24px ${COLORS.OVERLAY_20};
+`
+
+export const SC_MentionRow = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: ${BORDER_RADIUS.SM};
+  cursor: pointer;
+
+  &.active,
+  &:hover {
+    background: ${COLORS.BG_HOVER};
+  }
+`
+
+export const SC_MentionAvatar = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: ${COLORS.BG_SECONDARY};
+  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 13px;
+  font-weight: 600;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`
+
+export const SC_MentionName = styled.span`
+  min-width: 0;
+  font-size: 14px;
+  color: ${COLORS.TEXT_PRIMARY};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`
 
 export const SC_Composer = styled.div`
   display: flex;
