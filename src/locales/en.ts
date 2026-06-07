@@ -23,6 +23,16 @@ export default {
     profile: 'Profile',
     post: 'Post',
     compose: 'New post',
+    info: 'Info',
+  },
+  infoPage: {
+    legalReviewNote:
+      'This is a baseline template provided for completeness. It requires final legal review before being relied upon.',
+    notFound: 'Page not found.',
+    backHome: 'Back to home',
+  },
+  footer: {
+    brand: 'Bastyon — a decentralized social network.',
   },
   postPage: {
     loading: 'Loading post…',

@@ -23,6 +23,7 @@ const MiniAppsPage = () => import('@/pages/mini-apps-page/mini-apps-page.vue')
 const MiniAppPage = () => import('@/pages/mini-app-page/mini-app-page.vue')
 const PostPage = () => import('@/pages/post-page/post-page.vue')
 const ComposePage = () => import('@/pages/compose-page/compose-page.vue')
+const InfoPage = () => import('@/pages/info-page/info-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])
@@ -133,6 +134,13 @@ const router = createRouter({
       name: 'compose',
       component: ComposePage,
       meta: { titleKey: 'routes.compose' },
+    },
+    // Инфо/легал-страницы (about/faq/help/terms/privacy/csae/support). ДО catch-all /:userName.
+    {
+      path: '/info/:slug',
+      name: 'info',
+      component: InfoPage,
+      meta: { titleKey: 'routes.info' },
     },
     {
       path: '/:userName',

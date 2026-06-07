@@ -6,6 +6,7 @@
     <SC_Appcnt>
       <AppHeader />
       <router-view />
+      <SiteFooter />
     </SC_Appcnt>
 
     <MessengerWrapper />
@@ -26,6 +27,7 @@ import PostModal from '@/b-components/content/post-modal/post-modal.vue'
 import PostComposerModal from '@/b-components/content/post-composer/post-composer-modal.vue'
 import WhatsNewModal from '@/b-components/changelog/whats-new-modal.vue'
 import { StarExplosion } from '@/b-components/effects/star-explosion'
+import SiteFooter from '@/b-components/site-footer/site-footer.vue'
 import { useUIStore } from '@/stores/ui-store'
 import { SC_Application, SC_Camera, SC_Appcnt } from './styled'
 

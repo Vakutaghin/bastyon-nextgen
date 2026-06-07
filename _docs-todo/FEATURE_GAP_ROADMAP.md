@@ -93,8 +93,6 @@
 
 ### 🟢 P3 — инфо/легал/полировка
 
-- Инфо-страницы: about / FAQ / help / terms / CSAE policy / support + footer
-  (нужны для app-store/легал-комплаенса).
 - NSFW/privacy-секции в настройках; пустые табы настроек wallets/accounts/system — заглушки.
 - `slides` промо-тикер.
 
@@ -199,7 +197,6 @@
 | Редактирование профиля | author, usersettings | 🟡 | обложка/крипто-адреса — нет (см. P0-1) |
 | Настройки: NSFW/privacy | usersettings | ❌ | — |
 | Настройки: табы wallets/accounts/system | usersettings | 🟡 | заглушки |
-| Инфо-страницы (about/FAQ/help/terms/CSAE/support/footer) | about/faq/... | ❌ | нужно для сторов |
 | Email/SSO/серверное восстановление | registration | ➖ | вне скоупа |
 
 ### G. Мини-аппы, dev-tools, инфра
