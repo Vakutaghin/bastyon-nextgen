@@ -7,6 +7,28 @@ export const SC_Search = styled.div`
   margin: 8px 0 16px;
 `
 
+export const SC_SideloadBar = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 16px;
+`
+
+export const SC_SideloadBtn = styled.button`
+  padding: 5px 12px;
+  border: 1px dashed ${COLORS.BORDER_DEFAULT};
+  border-radius: 8px;
+  background: none;
+  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 13px;
+  cursor: pointer;
+  transition: color ${TRANSITIONS.FAST};
+
+  &:hover {
+    color: ${COLORS.PRIMARY};
+    border-color: ${COLORS.PRIMARY};
+  }
+`
+
 export const SC_Categories = styled.div`
   display: flex;
   flex-wrap: wrap;

@@ -186,7 +186,6 @@
 | Host→app push-события | index.js | 🟡 | нет `permissionchange`, action-status |
 | Страница аппа (рейтинг/репорт/install count) | applicationmeta | 🟡 | install/fav есть, остального нет |
 | Дев-тулинг (create/edit/publish app) | devapplications | ❌ | — |
-| Sideload/local-override манифеста | devapplication | 🟡 | есть в коде, UI нет |
 | Embed произвольного URL | anothersite | ❌ | — |
 | Node control / easy-node | nodecontrol, easynode | ➖ | вне скоупа |
 | Transports management (выбор ноды/SnowFlake) | transportsmanagement | 🟡 | Tor-toggle есть, выбора ноды нет |

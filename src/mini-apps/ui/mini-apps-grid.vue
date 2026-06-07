@@ -23,6 +23,12 @@
       </SC_CategoryChip>
     </SC_Categories>
 
+    <SC_SideloadBar>
+      <SC_SideloadBtn type="button" @click="sideloadOpen = true">
+        {{ t('miniapps.sideloadButton') }}
+      </SC_SideloadBtn>
+    </SC_SideloadBar>
+
     <SC_Error v-if="error">
       {{ t('miniapps.catalogLoadFailed', { message: error.message }) }}
     </SC_Error>
@@ -70,23 +76,28 @@
     <SC_Empty v-if="!isLoading && filteredInstalled.length === 0 && filteredRemote.length === 0">
       {{ search ? t('miniapps.nothingFound') : t('miniapps.catalogEmpty') }}
     </SC_Empty>
+
+    <SideloadModal :open="sideloadOpen" @close="sideloadOpen = false" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'
 import { useRemoteApps } from './use-remote-apps'
 import CardItem from './mini-apps-grid-card.vue'
+import SideloadModal from './sideload-modal.vue'
 import InputSearch from '@/components/input-search/input-search.vue'
 import type { RemoteAppEntry } from '@/mini-apps/registry/remote-registry'
 import type { InstalledApp } from '@/mini-apps/types/app'
 import { getBuiltInIconUrl } from '@/mini-apps/registry/built-in'
 import {
   SC_Search,
+  SC_SideloadBar,
+  SC_SideloadBtn,
   SC_Categories,
   SC_CategoryChip,
   SC_Section,
@@ -102,6 +113,7 @@ const router = useRouter()
 const { t } = useI18n()
 const appsStore = useAppsStore()
 const favStore = useFavoriteMiniAppsStore()
+const sideloadOpen = ref(false)
 
 onMounted(() => {
   void favStore.init()
