@@ -7,11 +7,11 @@
 > приоритетам. Сделанное здесь не перечисляется. Детальные таблицы по доменам
 > (только незакрытые строки) — в конце.
 
-**Легенда статусов:** 🟡 частично/заглушка · ❌ нет · 🔌 UI есть, не подключено к RPC · ➖ осознанно вне скоупа
+**Легенда статусов:** 🟡 частично/заглушка · ❌ нет · 🔌 UI есть, не подключено к RPC
 
 **Принцип** (см. память `principle_decentralization`): мнемоника-only, без SSO/посредников,
-работа standalone. Поэтому ряд легаси-фич (email/SSO, node-control, FCM-пуши, electron-обвязка)
-— **намеренно вне скоупа**, см. соответствующий раздел.
+работа standalone. Поэтому ряд легаси-фич (email/SSO, node-control, FCM-пуши, electron-обвязка,
+Olm/Megolm, cordova-камера/контакты, P2P-видео) — **намеренно вне скоупа** и здесь не перечисляются.
 
 > ⚠️ Статусы отражают состояние кода на дату правки — перед работой над пунктом
 > верифицировать, что он ещё актуален. Ряд реализованного **не верифицирован на живой
@@ -85,20 +85,6 @@
 
 ---
 
-## ➖ Осознанно вне скоупа (не считать пробелами)
-
-- Email/SSO/соц-логин/серверное восстановление аккаунта; управление сессиями/устройствами
-  (нет серверного аккаунта — модель self-custody).
-- `nodecontrol`, `easynode`, `updatenotifier`, `electronnav`, `testApi` — node-operator/electron.
-- Firebase/FCM фоновые пуши (`firebase-messaging-sw.js`) — зависимость от Google.
-- Нативная Matrix Olm/Megolm-крипта — обе стороны используют свой pcrypto (ECDH+AES на ключах профиля).
-- Импорт телефонных контактов (`invite/listPhoneContacts`) — cordova-only.
-- `dust`-sweep по приватному ключу — конфликтует с мнемоника-only.
-- P2P/WebRTC шеринг сегментов видео (`p2pvideo.js`) — отложено осознанно (`VIDEO_RELIABILITY_PLAN.md`).
-- `camerapreview`/`media.js` — cordova-камера; веб-захват камеры под вопросом (решение продукта).
-
----
-
 ## Приложение: детальные таблицы по доменам (только незакрытые строки)
 
 ### A. Лента, дискавери, навигация
@@ -134,8 +120,6 @@
 | Edit/Delete опубликованного видео | videoCabinet | 🟡 | удаляет только локальные блобы |
 | Квота загрузки / ability-gating | abilityincrease/ustate | ❌ | — |
 | Лайв-стриминг (go-live + watch) | streampeertube | ❌ | отложено осознанно |
-| P2P-шеринг сегментов | p2pvideo.js | ➖ | вне скоупа |
-| Камера/захват | camerapreview | ➖ | cordova; веб-захват — решение продукта |
 
 ### D. Кошелёк, платежи, монетизация
 
@@ -177,7 +161,6 @@
 | Редактирование профиля | author, usersettings | 🟡 | обложка/крипто-адреса — нет (см. P0-1) |
 | Настройки: NSFW/privacy | usersettings | ❌ | — |
 | Настройки: табы wallets/accounts/system | usersettings | 🟡 | заглушки |
-| Email/SSO/серверное восстановление | registration | ➖ | вне скоупа |
 
 ### G. Мини-аппы, dev-tools, инфра
 
@@ -187,7 +170,6 @@
 | Страница аппа (рейтинг/репорт/install count) | applicationmeta | 🟡 | install/fav есть, остального нет |
 | Дев-тулинг (create/edit/publish app) | devapplications | ❌ | — |
 | Embed произвольного URL | anothersite | ❌ | — |
-| Node control / easy-node | nodecontrol, easynode | ➖ | вне скоупа |
 | Transports management (выбор ноды/SnowFlake) | transportsmanagement | 🟡 | Tor-toggle есть, выбора ноды нет |
 | Статистика контента | statistic | ❌ | — |
 
