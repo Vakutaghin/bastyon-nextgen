@@ -42,4 +42,32 @@ describe('formatBastyonLinks', () => {
     const result = formatBastyonLinks('<b>bold</b> https://x.com')
     expect(result).toContain('&lt;b&gt;bold&lt;/b&gt;')
   })
+
+  it('linkifies @mentions to profile route', () => {
+    const result = formatBastyonLinks('hi @alice!')
+    expect(result).toContain("href='/alice'")
+    expect(result).toContain("class='mention-link'")
+    expect(result).toContain('@alice')
+  })
+
+  it('detects a mention at the start of text', () => {
+    expect(formatBastyonLinks('@bob hello')).toContain("href='/bob'")
+  })
+
+  it('does not treat an email as a mention', () => {
+    const result = formatBastyonLinks('mail me at user@example')
+    expect(result).not.toContain('mention-link')
+  })
+
+  it('does not mention-link inside a URL', () => {
+    const result = formatBastyonLinks('https://example.com/@handle')
+    expect(result).not.toContain('mention-link')
+    expect(result).toContain("href='https://example.com/@handle'")
+  })
+
+  it('handles a mention next to a link', () => {
+    const result = formatBastyonLinks('@alice see https://x.com')
+    expect(result).toContain("href='/alice'")
+    expect(result).toContain("href='https://x.com'")
+  })
 })

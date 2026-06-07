@@ -677,3 +677,15 @@ body.miniapp-fullscreen {
   white-space: nowrap;
   border: 0;
 }
+
+/* @-меншены в тексте постов/комментов (рендерит text-formatter, клик ловит app-layout). */
+.mention-link {
+  color: var(--color-primary);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.mention-link:hover {
+  text-decoration: underline;
+}
