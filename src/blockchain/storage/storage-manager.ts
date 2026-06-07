@@ -7,6 +7,7 @@ import type { StorageSaveResult } from '../types/storage'
 import {
   MNEMONIC_STORAGE_KEY,
   USER_ADDRESS_STORAGE_KEY,
+  WALLET_LABELS_KEY,
   WAS_LOGGED_KEY,
   WALLET_ADDRESSES_PREFIX,
   ADDITIONAL_WALLETS_LIST_KEY,
@@ -151,6 +152,49 @@ export function saveAdditionalWalletAddressesList(
     map[address] = addresses
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(ADDITIONAL_WALLETS_LIST_KEY, JSON.stringify(map))
+    }
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
+// ─── Ярлыки кошельков (локальные, косметические) ──────────────────────────────
+
+function getWalletLabelsMap(): Record<string, Record<string, string>> {
+  try {
+    const raw =
+      (typeof localStorage !== 'undefined' && localStorage.getItem(WALLET_LABELS_KEY)) || null
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+/** Ярлык конкретного кошелька аккаунта (пустая строка, если не задан). */
+export function getWalletLabel(accountAddress: Address, walletAddress: string): string {
+  const perAccount = getWalletLabelsMap()[accountAddress]
+  const label = perAccount?.[walletAddress]
+  return typeof label === 'string' ? label : ''
+}
+
+/** Устанавливает/снимает ярлык кошелька. Пустой `label` удаляет запись. */
+export function setWalletLabel(
+  accountAddress: Address,
+  walletAddress: string,
+  label: string
+): StorageSaveResult {
+  try {
+    const map = getWalletLabelsMap()
+    const perAccount = { ...(map[accountAddress] ?? {}) }
+    const trimmed = label.trim().slice(0, 40)
+    if (trimmed) perAccount[walletAddress] = trimmed
+    else delete perAccount[walletAddress]
+    map[accountAddress] = perAccount
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(WALLET_LABELS_KEY, JSON.stringify(map))
     }
     return { success: true }
   } catch (e) {

@@ -142,7 +142,7 @@
 
 | Capability | Оригинал | Статус | Заметки |
 |---|---|---|---|
-| Несколько адресов | wallet | 🟡 | add (max 20), без rename/remove/import |
+| Несколько адресов | wallet | 🟡 | add (max 20) + rename (локальный ярлык) есть; remove не делаем (HD-derived: удаление середины ломает восстановление), import — вне скоупа (мнемоника-only) |
 | Комиссии | wallet/fastsend | 🟡 | фикс `1e-8`, нет динамической оценки |
 | Детали транзакции (семантика) | transactionview | 🟡 | только generic explorer-tx |
 | Fast-send / батч | fastsend | ❌ | — |

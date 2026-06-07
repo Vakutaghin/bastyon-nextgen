@@ -9,6 +9,8 @@ import {
   saveWalletAddressesList,
   getAdditionalWalletAddressesList,
   saveAdditionalWalletAddressesList,
+  getWalletLabel,
+  setWalletLabel,
 } from './storage-manager'
 import {
   USER_ADDRESS_STORAGE_KEY,
@@ -162,5 +164,29 @@ describe('additional wallet addresses (общий map-ключ)', () => {
   it('фильтрует нестроковые элементы', () => {
     saveAdditionalWalletAddressesList('PAcc', ['ok', 5 as unknown as string, 'ok2'])
     expect(getAdditionalWalletAddressesList('PAcc')).toEqual(['ok', 'ok2'])
+  })
+})
+
+describe('wallet labels', () => {
+  it('возвращает пустую строку, если ярлык не задан', () => {
+    expect(getWalletLabel('PAcc', 'W1')).toBe('')
+  })
+
+  it('устанавливает и читает ярлык (trim + изоляция по аккаунту/адресу)', () => {
+    setWalletLabel('PAcc', 'W1', '  Trading  ')
+    expect(getWalletLabel('PAcc', 'W1')).toBe('Trading')
+    expect(getWalletLabel('PAcc', 'W2')).toBe('')
+    expect(getWalletLabel('PAcc2', 'W1')).toBe('')
+  })
+
+  it('пустой ярлык удаляет запись', () => {
+    setWalletLabel('PAcc', 'W1', 'X')
+    setWalletLabel('PAcc', 'W1', '   ')
+    expect(getWalletLabel('PAcc', 'W1')).toBe('')
+  })
+
+  it('обрезает ярлык до 40 символов', () => {
+    setWalletLabel('PAcc', 'W1', 'a'.repeat(60))
+    expect(getWalletLabel('PAcc', 'W1').length).toBe(40)
   })
 })

@@ -40,4 +40,6 @@ export {
   saveWalletAddressesList,
   getAdditionalWalletAddressesList,
   saveAdditionalWalletAddressesList,
+  getWalletLabel,
+  setWalletLabel,
 } from './storage-manager'

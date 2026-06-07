@@ -57,3 +57,11 @@ export const WALLET_ADDRESSES_PREFIX = 'BST_WALLET_ADDRS_'
 
 /** Ключ для списка дополнительных кошельков (адреса от индекса 1 и далее). Значение: JSON Record<address, string[]> */
 export const ADDITIONAL_WALLETS_LIST_KEY = 'BST_ADDITIONAL_WALLETS_LIST'
+
+/**
+ * Локальные ярлыки кошельков (только косметика). Значение: JSON
+ * Record<accountAddress, Record<walletAddress, label>>. Ярлыки хранятся отдельно
+ * от derivation-критичного списка адресов — на восстановление по мнемонике не
+ * влияют (адреса детерминированы, ярлыки локальны и при recovery теряются).
+ */
+export const WALLET_LABELS_KEY = 'BST_WALLET_LABELS'

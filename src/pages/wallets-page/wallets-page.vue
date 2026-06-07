@@ -131,7 +131,17 @@
 
                   <SC_WalletTableRow v-for="row in additionalTableRows" :key="row.address">
                     <SC_WalletAddressCell>
-                      <SC_WalletTableAddress>{{ row.address }}</SC_WalletTableAddress>
+                      <SC_WalletTableAddress>
+                        <SC_WalletLabel v-if="row.label">{{ row.label }}</SC_WalletLabel>
+                        {{ row.address }}
+                      </SC_WalletTableAddress>
+                      <SC_WalletRenameBtn
+                        type="button"
+                        :title="t('wallet.renameWallet')"
+                        @click="openRename(row.address, row.label)"
+                      >
+                        <EditOutlined :style="ICON_SIZE_SM" />
+                      </SC_WalletRenameBtn>
                       <RouterLink
                         v-slot="{ navigate, href }"
                         custom
@@ -179,6 +189,26 @@
         </SC_WalletTabPanels>
       </SC_WalletTabs>
     </SC_WalletPage>
+
+    <SC_RenameOverlay v-if="renameOpen" @click.self="renameOpen = false">
+      <SC_RenameDialog>
+        <SC_RenameTitle>{{ t('wallet.renameWallet') }}</SC_RenameTitle>
+        <SC_RenameInput
+          v-model="renameLabel"
+          :placeholder="t('wallet.walletLabelPlaceholder')"
+          maxlength="40"
+          @keydown.enter="saveRename"
+        />
+        <SC_RenameActions>
+          <SC_RenameBtn type="button" @click="renameOpen = false">
+            {{ t('wallet.renameCancel') }}
+          </SC_RenameBtn>
+          <SC_RenameBtn type="button" :primary="true" @click="saveRename">
+            {{ t('wallet.renameSave') }}
+          </SC_RenameBtn>
+        </SC_RenameActions>
+      </SC_RenameDialog>
+    </SC_RenameOverlay>
   </SC_WalletWork>
 </template>
 
@@ -186,13 +216,15 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
-import { BlockOutlined } from '@ant-design/icons-vue'
+import { BlockOutlined, EditOutlined } from '@ant-design/icons-vue'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   useAuthStore,
   getAdditionalWalletAddressesList,
   addOneWalletAddress,
   ensureDefaultAdditionalWallet,
+  getWalletLabel,
+  setWalletLabel,
 } from '@/blockchain'
 import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -220,7 +252,15 @@ import {
   SC_WalletTableHeader,
   SC_WalletTableAddress,
   SC_WalletAddressCell,
+  SC_WalletLabel,
+  SC_WalletRenameBtn,
   SC_WalletExplorerLink,
+  SC_RenameOverlay,
+  SC_RenameDialog,
+  SC_RenameTitle,
+  SC_RenameInput,
+  SC_RenameActions,
+  SC_RenameBtn,
   SC_WalletTableBalance,
   SC_WalletLoading,
   SC_WalletError,
@@ -301,16 +341,43 @@ const mainTableRows = computed(() => {
 })
 
 const additionalTableRows = computed(() => {
+  void walletListVersion.value // пересчёт после rename (мутирует localStorage)
+  const cur = currentAddress.value
   const addrs = additionalAddresses.value
   const withBalances = accountsWithBalances.value
+  const labelOf = (addr: string): string => (cur ? getWalletLabel(cur, addr) : '')
   if (withBalances.length === 0) {
-    return addrs.map((addr) => ({ address: addr, balance: null as number | null }))
+    return addrs.map((addr) => ({
+      address: addr,
+      balance: null as number | null,
+      label: labelOf(addr),
+    }))
   }
   return addrs.map((addr) => {
     const row = withBalances.find((a) => a.address === addr)
-    return { address: addr, balance: row?.balance ?? null }
+    return { address: addr, balance: row?.balance ?? null, label: labelOf(addr) }
   })
 })
+
+// ── Переименование (ярлык) доп-кошелька — локально, без влияния на деривацию ──
+const renameOpen = ref(false)
+const renameAddress = ref('')
+const renameLabel = ref('')
+
+function openRename(address: string, currentLabel: string): void {
+  renameAddress.value = address
+  renameLabel.value = currentLabel || ''
+  renameOpen.value = true
+}
+
+function saveRename(): void {
+  const cur = currentAddress.value
+  if (cur && renameAddress.value) {
+    setWalletLabel(cur, renameAddress.value, renameLabel.value)
+    walletListVersion.value++
+  }
+  renameOpen.value = false
+}
 
 function formatBalance(bal: number | null | undefined): string {
   if (bal == null) return '—'
