@@ -10,6 +10,7 @@ import { fileToBase64, resizeImageBase64 } from '@/helpers/common/resize-image'
 import { t } from '@/i18n'
 
 import { MAX_IMAGES, MAX_IMAGE_SIZE_BYTES } from './consts'
+import { rotateBase64 } from './image-transform'
 
 export interface ComposerImage {
   id: string
@@ -53,6 +54,19 @@ export function usePostImages() {
     images.value = images.value.filter((i) => i.id !== id)
   }
 
+  /** Поворот картинки на 90° по часовой стрелке (canvas, локально). */
+  const rotate = async (id: string): Promise<void> => {
+    const img = images.value.find((i) => i.id === id)
+    if (!img) return
+    try {
+      const rotated = await rotateBase64(img.base64, 90)
+      images.value = images.value.map((i) => (i.id === id ? { ...i, base64: rotated } : i))
+    } catch (e) {
+      console.warn('[post-composer] image rotate failed', e)
+      appToast.error({ message: t('postComposer.imageReadError') })
+    }
+  }
+
   const clear = (): void => {
     images.value = []
   }
@@ -62,5 +76,5 @@ export function usePostImages() {
     images.value = urls.map((url) => ({ id: nextId(), base64: url }))
   }
 
-  return { images, full, base64List, addFiles, remove, clear, setFromUrls }
+  return { images, full, base64List, addFiles, remove, rotate, clear, setFromUrls }
 }

@@ -47,6 +47,29 @@ export const SC_ImageRemove = styled.button`
   }
 `
 
+export const SC_ImageRotate = styled.button`
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: ${COLORS.OVERLAY_55};
+  color: ${COLORS.WHITE};
+  font-size: ${FONT_SIZE.SM};
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: ${COLORS.OVERLAY_70};
+  }
+`
+
 const tileProps = { dragover: Boolean }
 
 export const SC_AddTile = styled('label', tileProps)`

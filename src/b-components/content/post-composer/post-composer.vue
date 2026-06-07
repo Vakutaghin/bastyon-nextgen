@@ -75,6 +75,7 @@
       :full="imagesFull"
       @add="addImageFiles"
       @remove="removeImage"
+      @rotate="rotateImage"
     />
 
     <ComposerTags
@@ -203,6 +204,7 @@ const {
   onTagBackspace,
   addImageFiles,
   removeImage,
+  rotateImage,
   publish,
 } = usePostComposer({
   onPublished: (txid) => emit('published', txid),

@@ -83,6 +83,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     base64List,
     addFiles,
     remove: removeImage,
+    rotate: rotateImage,
     clear: clearImages,
     setFromUrls,
   } = usePostImages()
@@ -361,6 +362,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     onTagBackspace,
     addImageFiles: addFiles,
     removeImage,
+    rotateImage,
     reset,
     publish,
   }

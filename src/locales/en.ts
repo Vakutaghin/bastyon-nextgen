@@ -1265,6 +1265,7 @@ export default {
     publish: 'Publish',
     addImages: 'Add images',
     removeImage: 'Remove image',
+    rotateImage: 'Rotate image',
     imageAlt: 'Post image',
     imageTooLarge: 'Image is too large (maximum 30 MB)',
     imageReadError: 'Failed to process the image',

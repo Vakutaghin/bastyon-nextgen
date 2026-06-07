@@ -2,6 +2,13 @@
   <SC_ImagesGrid v-if="images.length || !full">
     <SC_ImageThumb v-for="img in images" :key="img.id">
       <img :src="img.base64" :alt="t('postComposer.imageAlt')" />
+      <SC_ImageRotate
+        type="button"
+        :aria-label="t('postComposer.rotateImage')"
+        @click="emit('rotate', img.id)"
+      >
+        <RotateRightOutlined />
+      </SC_ImageRotate>
       <SC_ImageRemove
         type="button"
         :aria-label="t('postComposer.removeImage')"
@@ -28,12 +35,23 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RotateRightOutlined } from '@ant-design/icons-vue'
 
-import { SC_AddTile, SC_ImageRemove, SC_ImagesGrid, SC_ImageThumb } from './composer-images.styled'
+import {
+  SC_AddTile,
+  SC_ImageRemove,
+  SC_ImageRotate,
+  SC_ImagesGrid,
+  SC_ImageThumb,
+} from './composer-images.styled'
 import type { ComposerImage } from './use-post-images'
 
 defineProps<{ images: ComposerImage[]; full: boolean }>()
-const emit = defineEmits<{ (e: 'add', files: File[]): void; (e: 'remove', id: string): void }>()
+const emit = defineEmits<{
+  (e: 'add', files: File[]): void
+  (e: 'remove', id: string): void
+  (e: 'rotate', id: string): void
+}>()
 
 const { t } = useI18n()
 const inputRef = ref<HTMLInputElement | null>(null)
