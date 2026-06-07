@@ -60,6 +60,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons-vue'
 import { useAuthStore, getAdditionalWalletAddressesList } from '@/blockchain'
+import { useUserProfiles } from '@/composables/use-user-profile'
 import { getByPRC } from '@/helpers/api/request'
 import { getExplorerRpcConfig } from '@/composables/use-explorer-preferred-node'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -103,6 +104,24 @@ const authStore = useAuthStore()
 const rows = ref<HistoryRow[]>([])
 const loading = ref(false)
 const error = ref(false)
+
+// Резолв адреса контрагента в ник (батч getuserprofile + Vue Query кэш).
+const uniqueCounterparties = computed<string[]>(() => {
+  const set = new Set<string>()
+  for (const row of rows.value) {
+    const first = row.counterparties[0]
+    if (first) set.add(first)
+  }
+  return [...set]
+})
+const { data: counterpartyProfiles } = useUserProfiles(uniqueCounterparties, true)
+const profileNameByAddress = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const p of counterpartyProfiles.value ?? []) {
+    if (p?.address && p.name) map[p.address] = p.name
+  }
+  return map
+})
 const hasMore = ref(true)
 let nextCursorHeight = -1
 
@@ -119,12 +138,13 @@ function counterpartyLabel(row: HistoryRow): string {
   const first = row.counterparties[0]
   if (!first)
     return row.direction === 'in' ? t('wallet.history.received') : t('wallet.history.sent')
-  const short = shortenHash(first, 8, 6)
+  // Ник, если профиль уже подгрузился; иначе укороченный адрес.
+  const display = profileNameByAddress.value[first] || shortenHash(first, 8, 6)
   const extra = row.counterparties.length - 1
   const base =
     row.direction === 'in'
-      ? t('wallet.history.from', { addr: short })
-      : t('wallet.history.to', { addr: short })
+      ? t('wallet.history.from', { addr: display })
+      : t('wallet.history.to', { addr: display })
   return extra > 0 ? `${base} +${extra}` : base
 }
 
