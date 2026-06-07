@@ -20,6 +20,21 @@ type LoggableError = unknown
 const recentErrorMessages = new Set<string>()
 const ERROR_DEDUPE_WINDOW_MS = 1500
 
+/**
+ * Безобидный шум браузера, который НЕ является ошибкой приложения. Chrome бросает
+ * это как window 'error', когда колбэк ResizeObserver вызывает повторный ресайз и
+ * браузер не успевает доставить все нотификации в одном кадре. Лечению не подлежит
+ * (это особенность спецификации), поэтому просто глушим — иначе засоряет консоль и
+ * триггерит тост. Покрываем обе формулировки (старую и новую).
+ */
+const BENIGN_ERROR_PATTERNS: RegExp[] = [
+  /^ResizeObserver loop (limit exceeded|completed with undelivered notifications)/,
+]
+
+function isBenignWindowError(msg: string): boolean {
+  return BENIGN_ERROR_PATTERNS.some((re) => re.test(msg))
+}
+
 function messageOf(err: LoggableError): string {
   if (err instanceof Error) return err.message || err.name || 'Unknown error'
   if (typeof err === 'string') return err
@@ -67,6 +82,12 @@ export function installGlobalErrorHandler(app: App): void {
 
   if (typeof window !== 'undefined') {
     window.addEventListener('error', (event) => {
+      // Глушим безобидный ResizeObserver-шум: preventDefault убирает и наш тост,
+      // и дефолтный лог браузера.
+      if (typeof event.message === 'string' && isBenignWindowError(event.message)) {
+        event.preventDefault()
+        return
+      }
       reportError(event.error ?? event.message, 'window')
     })
     window.addEventListener('unhandledrejection', (event) => {

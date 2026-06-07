@@ -91,6 +91,12 @@ export function showCaptchaModal(options: ShowCaptchaOptions): Promise<CaptchaDa
       },
     })
 
+    // См. main.ts: vue3-styled-components делает inject('theme') без дефолта в
+    // каждом styled-компоненте. Это отдельный app-инстанс (модалка вне основного
+    // дерева), поэтому стаб темы нужно отдать и здесь, иначе Vue снова сыпет
+    // «injection "theme" not found».
+    app.provide('theme', {})
+
     app.mount(container)
   })
 }

@@ -43,6 +43,14 @@ import './style.css'
 const app = createApp(App)
 const pinia = createPinia()
 
+// vue3-styled-components вызывает `inject('theme')` без дефолта в setup КАЖДОГО
+// styled-компонента (vue-styled-components.es.js:2981). Тема у нас живёт целиком в
+// CSS-переменных (COLORS → var(--…)), поэтому `provide('theme')` нигде нет — и Vue
+// сыпет «injection "theme" not found» на каждый тег. Отдаём пустой стаб на корне
+// приложения: styled-компоненты props.theme не читают, так что значение неважно —
+// важно лишь, чтобы inject разрешился и предупреждение исчезло.
+app.provide('theme', {})
+
 // Глобальный обработчик ошибок (Vue + window + Promise rejections).
 // Должен быть установлен до монтирования, иначе ошибки во время бутстрапа
 // не попадают в обработчик.

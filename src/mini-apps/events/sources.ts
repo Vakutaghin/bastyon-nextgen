@@ -108,6 +108,17 @@ export function setupEventSources(opts: SetupEventSourcesOptions): Unsubscribe {
  * Возвращает `() => void` для отписки, либо `null` если плагин недоступен.
  */
 async function attachKeyboard(): Promise<Unsubscribe | null> {
+  // Плагин Keyboard реализован только на нативных capacitor-сборках. На web
+  // динамический импорт резолвится (модуль забандлен), но addListener кидает
+  // «"Keyboard" plugin is not implemented on web». Поэтому отсекаем не-native
+  // окружение заранее — иначе каждый boot пишет warn в консоль.
+  try {
+    const core = await import('@capacitor/core')
+    if (!core.Capacitor?.isNativePlatform?.()) return null
+  } catch {
+    return null
+  }
+
   let mod: typeof import('@capacitor/keyboard')
   try {
     mod = await import('@capacitor/keyboard')
