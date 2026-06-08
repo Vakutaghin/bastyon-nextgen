@@ -1,5 +1,11 @@
 <template>
-  <SC_PostCard ref="postCardRef" hoverable role="article">
+  <SC_PostCard v-if="deleted" hoverable role="article">
+    <SC_RepostDeleted>
+      <DeleteOutlined class="repost-deleted-icon" />
+      <span>{{ t('postCard.deleted') }}</span>
+    </SC_RepostDeleted>
+  </SC_PostCard>
+  <SC_PostCard v-else ref="postCardRef" hoverable role="article">
     <PostCardHeader :post="post" :author-override="authorOverride" />
 
     <component :is="isRepost ? SC_RepostInnerCard : 'div'">
@@ -126,6 +132,17 @@
             <EditOutlined />
             <span>{{ t('postCard.editAction') }}</span>
           </SC_PostActionBtn>
+
+          <SC_PostActionBtn
+            v-if="isOwnPost"
+            type="button"
+            :disabled="deleting"
+            :aria-label="t('postCard.deleteAction')"
+            @click="confirmDelete"
+          >
+            <DeleteOutlined />
+            <span>{{ t('postCard.deleteAction') }}</span>
+          </SC_PostActionBtn>
         </SC_PostActions>
 
         <PostCardComments
@@ -156,8 +173,10 @@ import {
   EditOutlined,
   RetweetOutlined,
 } from '@ant-design/icons-vue'
-import { Dropdown } from 'ant-design-vue'
+import { Dropdown, Modal } from 'ant-design-vue'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
+import { appToast } from '@/b-components/app-toast'
+import { deletePost } from '@/b-components/content/post-card/post-deleter'
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
@@ -273,6 +292,7 @@ const emit = defineEmits<{
   like: [postId: string | number]
   comment: [postId: string | number]
   share: [postId: string | number]
+  deleted: [postId: string]
 }>()
 
 const { t } = useI18n()
@@ -304,6 +324,36 @@ function openRepost(): void {
 }
 function openEdit(): void {
   modalStore.openPostComposerModal({ mode: 'edit', source: props.post })
+}
+
+// ── Удаление своего поста (contentDelete) ───────────────────────────
+const deleting = ref(false)
+const deleted = ref(false)
+
+function confirmDelete(): void {
+  Modal.confirm({
+    title: t('postCard.deleteConfirmTitle'),
+    content: t('postCard.deleteConfirmText'),
+    okText: t('postCard.deleteAction'),
+    okType: 'danger',
+    cancelText: t('postCard.deleteCancel'),
+    onOk: doDelete,
+  })
+}
+
+async function doDelete(): Promise<void> {
+  if (deleting.value) return
+  deleting.value = true
+  try {
+    await deletePost(postId.value)
+    deleted.value = true
+    appToast.success({ message: t('postCard.deleted') })
+    emit('deleted', postId.value)
+  } catch (e) {
+    appToast.error({ message: e instanceof Error ? e.message : t('postCard.deleteFailed') })
+  } finally {
+    deleting.value = false
+  }
 }
 
 const postId = computed<string>(
