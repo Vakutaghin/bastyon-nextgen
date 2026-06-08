@@ -47,6 +47,7 @@
 
       <SC_MessageTime>
         {{ formatTime(message.timestamp) }}
+        <SC_SeenTick v-if="isSeen" :title="t('messenger.seen')">✓✓</SC_SeenTick>
         <SC_ReactionButton
           v-if="canReact"
           ref="reactionTriggerRef"
@@ -113,6 +114,7 @@ import {
   SC_MessageMeta,
   SC_MessageRow,
   SC_MessageTime,
+  SC_SeenTick,
   SC_ReactionsRow,
   SC_ReactionPill,
   SC_ReactionButton,
@@ -128,8 +130,10 @@ const props = withDefaults(
     /** Показывать аватарку. Передаём false для подряд идущих сообщений того же
      *  отправителя — слот всё равно остаётся, чтобы выровнять колонку. */
     showAvatar?: boolean
+    /** Время (ms), до которого собеседник прочитал переписку (read-receipts). */
+    seenUpToTs?: number
   }>(),
-  { showName: true, showAvatar: true }
+  { showName: true, showAvatar: true, seenUpToTs: 0 }
 )
 
 const store = useMessengerStore()
@@ -137,6 +141,11 @@ const { t } = useI18n()
 
 const isMine = computed<boolean>(
   () => props.message.senderId === 'me' || props.message.senderId === store.currentUser.id
+)
+
+/** Своё сообщение прочитано собеседником (read-receipt). */
+const isSeen = computed<boolean>(
+  () => isMine.value && props.seenUpToTs > 0 && props.message.timestamp <= props.seenUpToTs
 )
 
 const isCompact = computed<boolean>(() => !store.isFullScreen)

@@ -6,6 +6,7 @@
       :message="message"
       :show-name="isFirstInGroup(index)"
       :show-avatar="isFirstInGroup(index)"
+      :seen-up-to-ts="seenUpToTs"
     />
   </SC_MessageList>
 </template>
@@ -16,8 +17,9 @@ import type { Message } from '../../types'
 import MessageItem from '../message-item/message-item.vue'
 import { SC_MessageList } from './styled'
 
-const props = withDefaults(defineProps<{ messages?: Message[] }>(), {
+const props = withDefaults(defineProps<{ messages?: Message[]; seenUpToTs?: number }>(), {
   messages: () => [],
+  seenUpToTs: 0,
 })
 
 const emit = defineEmits<{

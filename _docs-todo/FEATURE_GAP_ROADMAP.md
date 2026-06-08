@@ -144,7 +144,6 @@ Olm/Megolm, cordova-камера/контакты, P2P-видео) — **нам�
 | Capability | Оригинал | Статус | Заметки |
 |---|---|---|---|
 | Группы (чтение/отправка) | teamroom | 🟡 | можно читать/писать, **создавать нельзя** |
-| Read-receipts отображение чужих | mtrx | 🟡 | отправка есть; отображение чужих unread — нет |
 | Reply / edit / delete / forward | events/* | ❌ | только реакции |
 | Создание комнат / инвайты / админ комнаты | chat/create, teamroom | ❌ | только `createDirectRoom` |
 | Звонки voice/video (WebRTC) | BastyonCalls | ❌ | весь стек отсутствует |

@@ -149,3 +149,11 @@ export const SC_ReactionPickerEmoji = styled.button`
     background: ${COLORS.OVERLAY_6};
   }
 `
+
+export const SC_SeenTick = styled.span`
+  margin-left: 4px;
+  font-size: 10px;
+  line-height: 1;
+  color: ${COLORS.PRIMARY};
+  letter-spacing: -2px;
+`

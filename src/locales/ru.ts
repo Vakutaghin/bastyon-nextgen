@@ -422,6 +422,7 @@ export default {
     typingNamed: '{name} печатает…',
     searchPlaceholder: 'Поиск в переписке…',
     searchNoResults: 'В этой переписке ничего не найдено.',
+    seen: 'Прочитано',
     partnerAvatarAlt: 'Аватар {name}',
     reputation: 'Репутация',
     subscribers: 'Подписчики',

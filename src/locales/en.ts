@@ -417,6 +417,7 @@ export default {
     typingNamed: '{name} is typing…',
     searchPlaceholder: 'Search in conversation…',
     searchNoResults: 'Nothing found in this conversation.',
+    seen: 'Seen',
     partnerAvatarAlt: 'Avatar of {name}',
     reputation: 'Reputation',
     subscribers: 'Subscribers',

@@ -68,7 +68,11 @@
         {{ t('messenger.searchNoResults') }}
       </SC_ChatRoomEmptyHint>
 
-      <MessageList :messages="displayedMessages" @load-more="emit('load-more')" />
+      <MessageList
+        :messages="displayedMessages"
+        :seen-up-to-ts="partnerSeenUpToTs"
+        @load-more="emit('load-more')"
+      />
     </template>
 
     <SC_TypingIndicator v-if="isTyping">
@@ -173,6 +177,7 @@ import type { Message } from '../../types'
 import { matrixService } from '../../services/matrix-service'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
 import { useTypingIndicator } from './use-typing-indicator'
+import { useReadReceipts } from './use-read-receipts'
 import MessageList from '../message-list/message-list.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
@@ -250,6 +255,7 @@ const { t } = useI18n()
 // Активная комната + typing-индикатор собеседника.
 const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
 const { isTyping, typingName } = useTypingIndicator(activeRoomId)
+const { partnerSeenUpToTs } = useReadReceipts(activeRoomId)
 
 // Локальный поиск по сообщениям текущего диалога (фильтр по тексту).
 const searchQuery = ref('')
