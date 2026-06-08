@@ -134,7 +134,7 @@
           </SC_PostActionBtn>
 
           <SC_PostActionBtn
-            v-if="isOwnPost"
+            v-if="isOwnPost && canDelete"
             type="button"
             :disabled="deleting"
             :aria-label="t('postCard.deleteAction')"
@@ -329,6 +329,9 @@ function openEdit(): void {
 // ── Удаление своего поста (contentDelete) ───────────────────────────
 const deleting = ref(false)
 const deleted = ref(false)
+// Удалять можно только при наличии реального txid/hash поста — числовой
+// surrogate-id не годится для contentDelete (хеш не совпадёт с оригиналом).
+const canDelete = computed<boolean>(() => !!(props.post.txid || props.post.hash))
 
 function confirmDelete(): void {
   Modal.confirm({

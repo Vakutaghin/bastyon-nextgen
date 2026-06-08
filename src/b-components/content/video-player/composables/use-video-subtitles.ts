@@ -46,22 +46,21 @@ export function useVideoSubtitles(videoUrl: Ref<string | undefined>) {
     if (my !== token || captions.length === 0) return
 
     const built: SubtitleTrack[] = []
+    const abandon = (): void => built.forEach((t) => URL.revokeObjectURL(t.src))
     for (const c of captions) {
       try {
         const res = await fetch(c.url)
+        if (my !== token) return abandon() // переключились — чистим уже собранное
         if (!res.ok) continue
         const text = await res.text()
-        if (my !== token) return // переключились на другое видео — откатываем
+        if (my !== token) return abandon()
         const blobUrl = URL.createObjectURL(new Blob([text], { type: 'text/vtt' }))
         built.push({ language: c.language, label: c.label, src: blobUrl })
       } catch {
         /* пропускаем недоступную дорожку */
       }
     }
-    if (my !== token) {
-      built.forEach((t) => URL.revokeObjectURL(t.src))
-      return
-    }
+    if (my !== token) return abandon()
     tracks.value = built
   }
 

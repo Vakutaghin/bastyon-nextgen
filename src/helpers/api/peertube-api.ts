@@ -208,7 +208,19 @@ export async function getPeerTubeCaptions(
         const language = c.language?.id || ''
         const label = c.language?.label || language
         // Предпочитаем captionPath через base (same-origin в dev); иначе fileUrl.
-        const url = c.captionPath ? `${base}${c.captionPath}` : c.fileUrl || ''
+        // Через URL-конструктор — корректно склеивает относительный путь с base.
+        let url = ''
+        try {
+          if (c.captionPath) {
+            url = base.startsWith('http')
+              ? new URL(c.captionPath, base).href
+              : `${base}${c.captionPath.startsWith('/') ? '' : '/'}${c.captionPath}`
+          } else if (c.fileUrl) {
+            url = c.fileUrl
+          }
+        } catch {
+          url = c.fileUrl || ''
+        }
         return { language, label, url }
       })
       .filter((c) => !!c.url && !!c.language)

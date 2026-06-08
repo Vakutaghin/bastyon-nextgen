@@ -49,7 +49,8 @@ export function useBlockUser(activeRoomId: Ref<string | null>) {
       await client.setIgnoredUsers?.([...ignored])
       isBlocked.value = ignored.has(pid)
     } catch {
-      /* откат состояния не требуется — refresh() при следующем заходе */
+      // Сервер не принял — пере-синхронизируемся с фактическим состоянием.
+      refresh()
     } finally {
       busy.value = false
     }

@@ -47,7 +47,7 @@
       >
         <track
           v-for="(tr, i) in subtitleTracks"
-          :key="tr.src"
+          :key="tr.language || i"
           kind="subtitles"
           :src="tr.src"
           :srclang="tr.language"

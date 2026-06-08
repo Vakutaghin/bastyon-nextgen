@@ -30,9 +30,14 @@ export function useReadReceipts(activeRoomId: Ref<string | null>) {
         return
       }
       const myId = client.getUserId?.()
-      const partner = room
-        .getJoinedMembers?.()
-        ?.find((m: { userId?: string }) => m.userId && m.userId !== myId)
+      const members = room.getJoinedMembers?.() ?? []
+      // Галочку «прочитано» показываем только в личных диалогах (2 участника):
+      // в группе read-up-to одного участника не отражает прочтение всеми.
+      if (members.length !== 2) {
+        partnerSeenUpToTs.value = 0
+        return
+      }
+      const partner = members.find((m: { userId?: string }) => m.userId && m.userId !== myId)
       if (!partner?.userId) {
         partnerSeenUpToTs.value = 0
         return
