@@ -6,11 +6,15 @@ const ME = 'PMyAddr1111111111111111111111111111'
 const OTHER = 'POther222222222222222222222222222222'
 const mine = new Set([ME])
 
-/** Минимальная tx-болванка с заданными vin/vout. */
-function tx(vin: { address?: string }[], vout: { value: number; address: string }[]): Transaction {
+/** Минимальная tx-болванка с заданными vin/vout (опц. on-chain type). */
+function tx(
+  vin: { address?: string }[],
+  vout: { value: number; address: string }[],
+  type = 4
+): Transaction {
   return {
     txid: 'tx',
-    type: 4,
+    type,
     height: 1,
     blockHash: 'b',
     nTime: 0,
@@ -57,5 +61,22 @@ describe('classifyWalletTx', () => {
     const r = classifyWalletTx(tx([{}], [{ value: 2, address: ME }]), mine)
     expect(r.direction).toBe('in')
     expect(r.amount).toBe(2)
+  })
+})
+
+describe('classifyWalletTx semantic', () => {
+  it('помечает boost (type 307)', () => {
+    const r = classifyWalletTx(tx([{ address: ME }], [{ value: 1, address: OTHER }], 307), mine)
+    expect(r.semantic).toBe('boost')
+  })
+
+  it('помечает stake (coinstake, type 3)', () => {
+    const r = classifyWalletTx(tx([{ address: OTHER }], [{ value: 1, address: ME }], 3), mine)
+    expect(r.semantic).toBe('stake')
+  })
+
+  it('обычный перевод — semantic null', () => {
+    const r = classifyWalletTx(tx([{ address: ME }], [{ value: 1, address: OTHER }], 4), mine)
+    expect(r.semantic).toBeNull()
   })
 })

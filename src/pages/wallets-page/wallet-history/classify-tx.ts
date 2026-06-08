@@ -11,12 +11,25 @@ import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions
 
 export type WalletTxDirection = 'in' | 'out' | 'change'
 
+/** Семантика по on-chain типу tx (надёжно есть в ответе getaddresstransactions). */
+export type WalletTxSemantic = 'boost' | 'stake' | null
+
 export interface ClassifiedWalletTx {
   direction: WalletTxDirection
   /** Сумма движения в PKOIN. Для in/out всегда > 0; для change — 0. */
   amount: number
   /** Адреса контрагентов (для in — отправители, для out — получатели). */
   counterparties: string[]
+  /** boost (type 307) / stake-coinstake (type 3) / null. Донат не детектится —
+   *  его маркер `a:donate` в message, которого нет в этом ответе. */
+  semantic: WalletTxSemantic
+}
+
+/** boost = 307 (BoostContent), stake = 3 (coinstake). */
+function semanticOf(type: number): WalletTxSemantic {
+  if (type === 307) return 'boost'
+  if (type === 3) return 'stake'
+  return null
 }
 
 /** Адрес выхода (у OP_RETURN-выходов — пустой). */
@@ -49,5 +62,5 @@ export function classifyWalletTx(tx: Transaction, mine: ReadonlySet<string>): Cl
     direction === 'in' ? vin.map((i) => i.address || '') : valueouts.map(voutAddress)
   const counterparties = Array.from(new Set(counterpartyAddrs.filter((a) => a && !mine.has(a))))
 
-  return { direction, amount, counterparties }
+  return { direction, amount, counterparties, semantic: semanticOf(tx.type) }
 }

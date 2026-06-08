@@ -31,6 +31,9 @@
           <SC_HistoryMid>
             <SC_HistoryDirLabel>
               {{ row.direction === 'in' ? t('wallet.history.received') : t('wallet.history.sent') }}
+              <SC_TxBadge v-if="row.semantic" :class="row.semantic">
+                {{ t('wallet.history.semantic.' + row.semantic) }}
+              </SC_TxBadge>
             </SC_HistoryDirLabel>
             <SC_HistoryCounterparty>{{ counterpartyLabel(row) }}</SC_HistoryCounterparty>
           </SC_HistoryMid>
@@ -72,7 +75,7 @@ import {
 } from '@/pages/block-explorer-page/components/shared/format-explorer'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 import type { GetAddressTransactionsResponse } from '@/types/rpc-responses/get-address-transactions'
-import { classifyWalletTx, type WalletTxDirection } from './classify-tx'
+import { classifyWalletTx, type WalletTxDirection, type WalletTxSemantic } from './classify-tx'
 import {
   SC_History,
   SC_HistoryHint,
@@ -80,6 +83,7 @@ import {
   SC_DirIcon,
   SC_HistoryMid,
   SC_HistoryDirLabel,
+  SC_TxBadge,
   SC_HistoryCounterparty,
   SC_HistoryAmount,
   SC_HistoryTime,
@@ -94,6 +98,7 @@ interface HistoryRow {
   direction: WalletTxDirection
   amount: number
   counterparties: string[]
+  semantic: WalletTxSemantic
 }
 
 const TX_PAGE_SIZE = 30
@@ -186,6 +191,7 @@ async function loadPage(reset = false): Promise<void> {
           direction: c.direction,
           amount: c.amount,
           counterparties: c.counterparties,
+          semantic: c.semantic,
         })
       }
     }

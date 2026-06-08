@@ -252,6 +252,10 @@ export default {
       sent: 'Sent',
       from: 'from {addr}',
       to: 'to {addr}',
+      semantic: {
+        boost: 'Boost',
+        stake: 'Stake',
+      },
       loadMore: 'Load more',
     },
     loading: 'Loading...',

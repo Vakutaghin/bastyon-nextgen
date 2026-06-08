@@ -1,6 +1,23 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 
+export const SC_TxBadge = styled.span`
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+  background: ${COLORS.PRIMARY_LIGHT};
+  color: ${COLORS.PRIMARY};
+
+  &.stake {
+    background: ${COLORS.SUCCESS_BG_TINT};
+    color: ${COLORS.SUCCESS};
+  }
+`
+
 export const SC_History = styled.div`
   display: flex;
   flex-direction: column;

@@ -257,6 +257,10 @@ export default {
       sent: 'Отправлено',
       from: 'от {addr}',
       to: 'на {addr}',
+      semantic: {
+        boost: 'Буст',
+        stake: 'Стейк',
+      },
       loadMore: 'Загрузить ещё',
     },
     loading: 'Загрузка...',
