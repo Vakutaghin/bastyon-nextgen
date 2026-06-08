@@ -158,3 +158,61 @@ export async function getPeerTubeVideoInfo(
     lastError ?? undefined
   )
 }
+
+/** Дорожка субтитров PeerTube (нормализованная). */
+export interface PeerTubeCaption {
+  /** Код языка (BCP-47-ish, напр. 'en', 'ru'). */
+  language: string
+  /** Человекочитаемая метка ('English'). */
+  label: string
+  /** URL VTT-файла (через dev-proxy / прямой хост) для последующего fetch→blob. */
+  url: string
+}
+
+/** dev → vite-proxy (same-origin, без CORS), prod → прямой хост. */
+function peertubeBase(host: string): string {
+  const isDevBrowser =
+    typeof import.meta !== 'undefined' &&
+    import.meta.env?.DEV === true &&
+    typeof window !== 'undefined'
+  return isDevBrowser ? `/api/peertube/${host}` : `https://${host}`
+}
+
+/**
+ * Список субтитров видео (`GET /api/v1/videos/{id}/captions`). Пустой массив, если
+ * субтитров нет или эндпоинт недоступен (не критично — видео работает без них).
+ */
+export async function getPeerTubeCaptions(
+  host: string,
+  videoId: string
+): Promise<PeerTubeCaption[]> {
+  if (!host || !videoId) return []
+  const base = peertubeBase(host)
+  try {
+    const response = await fetchWithTimeout(
+      `${base}/api/v1/videos/${videoId}/captions`,
+      { method: 'GET', redirect: 'follow', headers: { Accept: 'application/json' } },
+      PEERTUBE_FETCH_TIMEOUT_MS
+    )
+    if (!response.ok) return []
+    const json = (await response.json()) as {
+      data?: Array<{
+        language?: { id?: string; label?: string }
+        captionPath?: string
+        fileUrl?: string
+      }>
+    }
+    const list = Array.isArray(json?.data) ? json.data : []
+    return list
+      .map((c) => {
+        const language = c.language?.id || ''
+        const label = c.language?.label || language
+        // Предпочитаем captionPath через base (same-origin в dev); иначе fileUrl.
+        const url = c.captionPath ? `${base}${c.captionPath}` : c.fileUrl || ''
+        return { language, label, url }
+      })
+      .filter((c) => !!c.url && !!c.language)
+  } catch {
+    return []
+  }
+}

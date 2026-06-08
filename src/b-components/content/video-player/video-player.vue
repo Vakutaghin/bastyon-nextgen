@@ -44,7 +44,17 @@
         crossorigin="anonymous"
         :style="getVideoStyle()"
         @loadedmetadata="handleVideoMetadata"
-      />
+      >
+        <track
+          v-for="(tr, i) in subtitleTracks"
+          :key="tr.src"
+          kind="subtitles"
+          :src="tr.src"
+          :srclang="tr.language"
+          :label="tr.label"
+          :default="i === 0"
+        />
+      </SC_VideoElement>
     </SC_VideoWrapper>
 
     <!-- Индикатор загрузки (при инициализации) -->
@@ -310,6 +320,7 @@ import { useVideoHls } from './composables/use-video-hls'
 import { useBackgroundPlayback } from './composables/use-background-playback'
 import { useVideoNotifications } from './composables/use-video-notifications'
 import { useVideoThumbnail } from './composables/use-video-thumbnail'
+import { useVideoSubtitles } from './composables/use-video-subtitles'
 import { useVideoElementEvents } from './composables/use-video-element-events'
 import { resolveVideoElement } from './composables/utils'
 import AudioVisualizer from '@/b-components/content/video-player/components/audio-visualizer/audio-visualizer.vue'
@@ -505,6 +516,9 @@ const {
   getThumbnailStyle,
   getVideoStyle,
 } = useVideoThumbnail(videoElement, toRef(props, 'videoUrl'), () => refreshMetadata())
+
+// Субтитры (PeerTube captions → blob <track>).
+const { subtitleTracks } = useVideoSubtitles(toRef(props, 'videoUrl'))
 
 // Фоновое воспроизведение: native media session (Android) + MediaSession API
 // (iOS / web), даунгрейд качества при сворачивании, синхронизация контролов
