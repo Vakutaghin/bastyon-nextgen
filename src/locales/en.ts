@@ -717,6 +717,10 @@ export default {
     reputation: 'Reputation',
     subscribers: 'Subscribers',
     subscriptions: 'Subscriptions',
+    badges: {
+      verified: 'Verified',
+      established: 'Established',
+    },
     startChat: 'Start chat',
     info: 'Information',
     openInExplorer: 'Open in block explorer',

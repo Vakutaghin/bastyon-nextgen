@@ -10,6 +10,14 @@
 
       <SC_UserName>{{ displayName }}</SC_UserName>
 
+      <SC_BadgeRow v-if="profileBadges.length > 0">
+        <SC_Badge v-for="b in profileBadges" :key="b" :class="b">
+          <SafetyCertificateFilled v-if="b === 'verified'" />
+          <TrophyFilled v-else />
+          {{ t('profile.badges.' + b) }}
+        </SC_Badge>
+      </SC_BadgeRow>
+
       <SC_UserStats>
         <SC_StatItem>
           <SC_StatLabel>{{ t('profile.reputation') }}</SC_StatLabel>
@@ -151,9 +159,12 @@ import {
   BellOutlined,
   EditOutlined,
   StopOutlined,
+  SafetyCertificateFilled,
+  TrophyFilled,
 } from '@ant-design/icons-vue'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
+import { getProfileBadges } from '@/helpers/profile/profile-badges'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore } from '@/stores'
@@ -167,6 +178,8 @@ import {
   SC_UserAvatar,
   SC_UserAvatarPlaceholder,
   SC_UserName,
+  SC_BadgeRow,
+  SC_Badge,
   SC_UserStats,
   SC_StatItem,
   SC_StatLabel,
@@ -273,6 +286,8 @@ function copyAddress(): void {
     navigator.clipboard.writeText(userAddress.value)
   }
 }
+
+const profileBadges = computed(() => getProfileBadges(props.profile))
 
 const formattedReputation = computed<string>(() => {
   const r: unknown = props.profile?.reputation ?? 0

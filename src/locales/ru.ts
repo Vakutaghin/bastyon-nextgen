@@ -720,6 +720,10 @@ export default {
     reputation: 'Репутация',
     subscribers: 'Подписчики',
     subscriptions: 'Подписки',
+    badges: {
+      verified: 'Проверен',
+      established: 'Авторитетный',
+    },
     startChat: 'Начать чат',
     info: 'Информация',
     openInExplorer: 'Открыть в блок-эксплорере',

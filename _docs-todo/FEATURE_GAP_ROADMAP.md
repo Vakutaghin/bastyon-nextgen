@@ -157,7 +157,6 @@ Olm/Megolm, cordova-камера/контакты, P2P-видео) — **нам�
 
 | Capability | Оригинал | Статус | Заметки |
 |---|---|---|---|
-| Репутация / бейджи | author | 🟡 | репутация есть, бейджей нет |
 | Редактирование профиля | author, usersettings | 🟡 | обложка/крипто-адреса — нет (см. P0-1) |
 | Настройки: NSFW/privacy | usersettings | ❌ | — |
 | Настройки: табы wallets/accounts/system | usersettings | 🟡 | заглушки |

@@ -2,6 +2,31 @@ import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
+export const SC_BadgeRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+`
+
+export const SC_Badge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: ${COLORS.PRIMARY_LIGHT};
+  color: ${COLORS.PRIMARY};
+
+  &.established {
+    background: ${COLORS.SUCCESS_BG_TINT};
+    color: ${COLORS.SUCCESS};
+  }
+`
+
 export const SC_ProfileSidebar = styled.div`
   width: 280px;
   min-width: 280px;
