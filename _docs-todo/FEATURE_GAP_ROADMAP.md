@@ -65,7 +65,7 @@ Olm/Megolm, cordova-камера/контакты, P2P-видео) — **нам�
 - Звонки voice/video (`BastyonCalls` + `m.call.*`) — весь WebRTC-стек.
 - Reply / edit / delete / forward сообщений (кроме реакций — ничего).
 - Создание групп, инвайты, управление участниками, инфо/настройки комнаты.
-- Block/mute; стикеры.
+- Стикеры.
 
 **Мини-аппы / инфра**
 - Дев-тулинг: создать/редактировать/опубликовать своё приложение (`devapplications`).
@@ -147,7 +147,6 @@ Olm/Megolm, cordova-камера/контакты, P2P-видео) — **нам�
 | Reply / edit / delete / forward | events/* | ❌ | только реакции |
 | Создание комнат / инвайты / админ комнаты | chat/create, teamroom | ❌ | только `createDirectRoom` |
 | Звонки voice/video (WebRTC) | BastyonCalls | ❌ | весь стек отсутствует |
-| Block/unblock, mute | mtrx, chatInfo | ❌ | — |
 | Стикеры | emoji.js+стикеры | ❌ | эмодзи есть, стикеров нет |
 
 ### F. Авторизация, аккаунты, профиль, настройки

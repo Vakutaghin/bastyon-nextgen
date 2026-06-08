@@ -58,6 +58,15 @@
           type="search"
         />
         <SC_SearchCount v-if="searchQuery.trim()">{{ displayedMessages.length }}</SC_SearchCount>
+        <SC_BlockBtn
+          type="button"
+          :class="{ blocked: isBlocked }"
+          :title="isBlocked ? t('messenger.unblockUser') : t('messenger.blockUser')"
+          :disabled="blockBusy"
+          @click="toggleBlock"
+        >
+          <StopOutlined />
+        </SC_BlockBtn>
       </SC_SearchRow>
 
       <SC_ChatRoomEmptyHint v-if="!messages || messages.length === 0">
@@ -171,13 +180,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { SearchOutlined } from '@ant-design/icons-vue'
+import { SearchOutlined, StopOutlined } from '@ant-design/icons-vue'
 import { debugLog } from '@/helpers/common/debug-log'
 import type { Message } from '../../types'
 import { matrixService } from '../../services/matrix-service'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
 import { useTypingIndicator } from './use-typing-indicator'
 import { useReadReceipts } from './use-read-receipts'
+import { useBlockUser } from './use-block-user'
 import MessageList from '../message-list/message-list.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
@@ -216,6 +226,7 @@ import {
   SC_SearchIcon,
   SC_SearchInput,
   SC_SearchCount,
+  SC_BlockBtn,
 } from './styled'
 import {
   SC_StatItem,
@@ -256,6 +267,7 @@ const { t } = useI18n()
 const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
 const { isTyping, typingName } = useTypingIndicator(activeRoomId)
 const { partnerSeenUpToTs } = useReadReceipts(activeRoomId)
+const { isBlocked, busy: blockBusy, toggleBlock } = useBlockUser(activeRoomId)
 
 // Локальный поиск по сообщениям текущего диалога (фильтр по тексту).
 const searchQuery = ref('')

@@ -423,6 +423,8 @@ export default {
     searchPlaceholder: 'Поиск в переписке…',
     searchNoResults: 'В этой переписке ничего не найдено.',
     seen: 'Прочитано',
+    blockUser: 'Заблокировать',
+    unblockUser: 'Разблокировать',
     partnerAvatarAlt: 'Аватар {name}',
     reputation: 'Репутация',
     subscribers: 'Подписчики',

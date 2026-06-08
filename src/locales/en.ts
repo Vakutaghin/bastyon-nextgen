@@ -418,6 +418,8 @@ export default {
     searchPlaceholder: 'Search in conversation…',
     searchNoResults: 'Nothing found in this conversation.',
     seen: 'Seen',
+    blockUser: 'Block user',
+    unblockUser: 'Unblock user',
     partnerAvatarAlt: 'Avatar of {name}',
     reputation: 'Reputation',
     subscribers: 'Subscribers',

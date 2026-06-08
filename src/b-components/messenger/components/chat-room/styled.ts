@@ -381,3 +381,30 @@ export const SC_SearchCount = styled.span`
   font-size: 12px;
   color: ${COLORS.GRAY_888};
 `
+
+export const SC_BlockBtn = styled.button`
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: ${COLORS.GRAY_888};
+  font-size: 15px;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: ${COLORS.DANGER};
+  }
+
+  &.blocked {
+    color: ${COLORS.DANGER};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+`
