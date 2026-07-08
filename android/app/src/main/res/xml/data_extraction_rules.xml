@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    P1-11: self-custody кошелёк не должен выносить локальное хранилище
+    (зашифрованный сид в WebView localStorage/IndexedDB) в бэкапы.
+    Исключаем ВСЕ домены данных приложения и из облачного бэкапа, и из
+    device-to-device переноса (Android 12+).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

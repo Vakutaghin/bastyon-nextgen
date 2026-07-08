@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        Self-custody кошелёк: локальное хранилище содержит зашифрованный сид.
+        Бэкапы (Auto Backup / device-to-device transfer) вынесли бы его наружу,
+        поэтому отключены на всех уровнях API (P1-11):
+        - allowBackup="false"          — глобально запрещает Auto Backup;
+        - fullBackupContent="false"    — <12, отключает full-data backup;
+        - dataExtractionRules          — 12+, исключает cloud-backup И device-transfer.
+    -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

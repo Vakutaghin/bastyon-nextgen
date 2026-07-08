@@ -213,4 +213,35 @@ describe('authFetch action', () => {
     await reg.execute('authFetch', TEST_APP, { url: 'https://api.miniapp.com/x' }, ctrl.signal)
     expect(fetchMock).toHaveBeenCalledOnce()
   })
+
+  // P1-8: если манифест объявил fetchHosts — authFetch обязан бить только по ним.
+  it('enforces manifest fetchHosts allowlist when declared', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) })
+    const { reg } = setup()
+    const appWithHosts = {
+      ...TEST_APP,
+      manifest: { ...TEST_APP.manifest, fetchHosts: ['https://allowed.example.com'] },
+    }
+
+    // Разрешённый origin — проходит.
+    await reg.execute(
+      'authFetch',
+      appWithHosts,
+      { url: 'https://allowed.example.com/x' },
+      new AbortController().signal
+    )
+    expect(fetchMock).toHaveBeenCalledOnce()
+
+    // Чужой origin — отклоняется ДО сетевого вызова.
+    fetchMock.mockClear()
+    await expect(
+      reg.execute(
+        'authFetch',
+        appWithHosts,
+        { url: 'https://evil.example.com/x' },
+        new AbortController().signal
+      )
+    ).rejects.toThrow(/authFetch_forbidden_host/)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 })

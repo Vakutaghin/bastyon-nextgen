@@ -10,8 +10,11 @@
  *     При исчерпании — `rate_limit_exceeded` с `retryAfterMs` в payload.
  *  3. **Hard timeout** — `DEFAULT_FETCH_TIMEOUT_MS`, AbortController.
  *
- * Transport абстрагирован: по умолчанию — браузерный `fetch()`. Для Tor-режима
- * подменяется в `bootMiniApps()` (см. MINIAPPS_PLAN.md §3).
+ * Transport абстрагирован: по умолчанию — `appFetch`, который централизованно
+ * маршрутизирует запрос (Tor через `torFetch` когда включён в Tauri; plugin-http
+ * для CORS-bypass в Tauri; браузерный `fetch` иначе). Это делает реальный
+ * транспорт согласованным с `alttransport`-репортом хосту — миниаппа не утечёт
+ * IP мимо Tor (P1-6).
  *
  * HMAC: на iframe↔host hop не нужен — origin уже проверен `origin-guard`.
  * Подпись имеет смысл только если запросы идут через **внешний** реле/прокси,
@@ -25,6 +28,7 @@ import type { InstalledApp } from '../types/app'
 import type { FetchRequest, FetchResponse } from '../types/messages'
 import { fetchResponseError, fetchResponseOk } from '../types/messages'
 import { RateLimiter, RateLimitExceededError } from './rate-limiter'
+import { appFetch } from '@/helpers/api/fetch-strategies'
 
 export const DEFAULT_FETCH_TIMEOUT_MS = 30_000
 
@@ -62,7 +66,10 @@ function isAllowedOrigin(url: string, allowlist: readonly string[]): boolean {
 }
 
 function defaultTransport(): FetchTunnelTransport {
-  return { fetch: (input, init) => globalThis.fetch(input, init) }
+  // appFetch торифицирует (когда Tor включён в Tauri) и обходит CORS через
+  // plugin-http; в вебе деградирует до браузерного fetch. Не `globalThis.fetch`
+  // напрямую — иначе IP миниаппы утечёт мимо Tor (P1-6).
+  return { fetch: (input, init) => appFetch(input, init) }
 }
 
 function requestInitFrom(req: FetchRequest['request'], signal: AbortSignal): RequestInit {

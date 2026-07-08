@@ -32,8 +32,12 @@
 
         <SC_EnrichingHint v-if="isEnriching && list.length > 0" />
 
-        <SC_LoaderWrap v-if="isLoading && list.length === 0"> {{ t('header.loading') }} </SC_LoaderWrap>
-        <SC_EmptyMessage v-else-if="list.length === 0"> {{ t('header.noNewNotifications') }} </SC_EmptyMessage>
+        <SC_LoaderWrap v-if="isLoading && list.length === 0">
+          {{ t('header.loading') }}
+        </SC_LoaderWrap>
+        <SC_EmptyMessage v-else-if="list.length === 0">
+          {{ t('header.noNewNotifications') }}
+        </SC_EmptyMessage>
         <SC_NotificationsList v-else>
           <SC_NotificationItem v-for="item in list" :key="item.id" :seen="isSeen(item)">
             <SC_NotificationItemBody @click="onItemClick(item)">
@@ -377,6 +381,45 @@ function navigateToProfile(item: NotificationItem): boolean {
   return true
 }
 
+/** Доверенные хосты, на которые можно навигировать в том же окне (P1-5). */
+const TRUSTED_LINK_HOSTS = ['bastyon.com', 'pocketnet.app']
+
+function isTrustedLinkHost(hostname: string): boolean {
+  const h = hostname.toLowerCase()
+  return TRUSTED_LINK_HOSTS.some((d) => h === d || h.endsWith(`.${d}`))
+}
+
+/**
+ * Безопасно открывает `item.link` из уведомления (P1-5). `link` приходит с ноды —
+ * `startsWith('http')` пропускал `http://evil.com`, который полной навигацией
+ * подменял приложение (open-redirect/фишинг). Теперь: относительные пути → router;
+ * доверенный Bastyon-хост → та же вкладка; чужой http(s) → новая вкладка с
+ * noopener (приложение не подменяется); нестандартные схемы (javascript:) → игнор.
+ */
+function openNotificationLink(link: string): void {
+  let url: URL | null = null
+  try {
+    url = new URL(link.trim())
+  } catch {
+    /* не абсолютный URL — url остаётся null */
+  }
+
+  if (url) {
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return
+    if (isTrustedLinkHost(url.hostname)) {
+      window.location.href = url.href
+    } else {
+      window.open(url.href, '_blank', 'noopener,noreferrer')
+    }
+    return
+  }
+
+  // Не абсолютный URL → внутренний маршрут роутера (защита от protocol-relative).
+  const rel = link.trim()
+  if (rel.startsWith('//')) return
+  router.push(rel)
+}
+
 function onItemClick(item: NotificationItem): void {
   visible.value = false
 
@@ -390,11 +433,7 @@ function onItemClick(item: NotificationItem): void {
 
   // Фолбэк: прямая ссылка из уведомления.
   if (item.link) {
-    if (item.link.startsWith('http')) {
-      window.location.href = item.link
-    } else {
-      router.push(item.link)
-    }
+    openNotificationLink(item.link)
     return
   }
 

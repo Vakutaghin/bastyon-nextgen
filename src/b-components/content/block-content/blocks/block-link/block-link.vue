@@ -27,7 +27,22 @@ const props = defineProps<{
   index?: number
 }>()
 
-const linkUrl = computed<string>(() => props.block.data.url || props.block.data.href || '#')
+/**
+ * Безопасный href для link-блока (P1-3). Контент поста недоверенный — без
+ * проверки схемы `javascript:…` исполнялся бы по клику. Allowlist: относительные
+ * (внутренние) пути + абсолютные http/https/mailto/bastyon; всё прочее → '#'.
+ */
+function toSafeHref(raw: string): string {
+  const value = raw.trim()
+  if (!value || value === '#') return '#'
+  // Относительный внутренний путь (но не protocol-relative `//evil.com`).
+  if (value.startsWith('/') && !value.startsWith('//')) return value
+  return /^(https?:|mailto:|bastyon:)/i.test(value) ? value : '#'
+}
+
+const linkUrl = computed<string>(() =>
+  toSafeHref(props.block.data.url || props.block.data.href || '#')
+)
 const linkText = computed<string>(
   () => props.block.data.text || props.block.data.link || linkUrl.value
 )

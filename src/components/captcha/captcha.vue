@@ -10,7 +10,12 @@
 
     <SC_CaptchaImageWrapper :shown="imageShown">
       <SC_CaptchaImage ref="captchaImageRef">
-        <SC_CaptchaSvgImage v-if="captcha?.img && !captcha?.hex" v-html="captcha.img"></SC_CaptchaSvgImage>
+        <!-- SVG капчи приходит с ноды (недоверенный источник). Рендерим через
+             data-URI <img>, а не v-html: SVG внутри <img> исполняется в
+             sandbox-режиме (без скриптов/внешних запросов) — закрывает P1-4. -->
+        <SC_CaptchaSvgImage v-if="captchaImgSrc">
+          <img :src="captchaImgSrc" :alt="t('misc.enterTextFromImage')" />
+        </SC_CaptchaSvgImage>
       </SC_CaptchaImage>
     </SC_CaptchaImageWrapper>
 
@@ -27,10 +32,7 @@
       </SC_InputWrapper>
 
       <SC_ButtonsContainer>
-        <SC_SubmitButton
-          :disabled="!isValid"
-          @click="handleSubmit"
-        >
+        <SC_SubmitButton :disabled="!isValid" @click="handleSubmit">
           {{ t('misc.next') }}
         </SC_SubmitButton>
         <SC_RedoButton @click="handleRedo">
@@ -42,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CaptchaData } from '@/blockchain/api/captcha-api'
 import { useCaptcha } from './captcha'
@@ -77,6 +79,22 @@ const { t } = useI18n()
 
 const captchaInputRef = ref<HTMLInputElement | null>(null)
 
+/**
+ * SVG-капча как data-URI для рендера через <img> (P1-4). Кодируем в base64
+ * с поддержкой юникода. Только для текстовой капчи (hex-капча грузит свою
+ * библиотеку отдельно).
+ */
+const captchaImgSrc = computed<string>(() => {
+  const svg = p.captcha?.img
+  if (!svg || p.captcha?.hex) return ''
+  try {
+    const b64 = window.btoa(unescape(encodeURIComponent(svg)))
+    return `data:image/svg+xml;base64,${b64}`
+  } catch {
+    return ''
+  }
+})
+
 const {
   inputText,
   imageShown,
@@ -89,6 +107,5 @@ const {
   handleRedo,
 } = useCaptcha(p, emit, captchaInputRef)
 </script>
-
 
 <!-- Стили hex-captcha загружаются динамически через JS, если библиотека доступна -->

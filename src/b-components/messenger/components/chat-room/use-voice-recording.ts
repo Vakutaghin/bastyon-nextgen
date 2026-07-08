@@ -7,7 +7,7 @@
  *
  * См. CODE_AUDIT.md §1. Раньше всё это жило в chat-room.vue inline.
  */
-import { ref, type Ref } from 'vue'
+import { onBeforeUnmount, ref, type Ref } from 'vue'
 import { formatDuration } from '../../helpers'
 
 const PREFERRED_TYPES = [
@@ -55,6 +55,9 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
   const recordingDuration = ref('00:00')
   const recordingTimer = ref<ReturnType<typeof setInterval> | null>(null)
   const mediaRecorder = ref<MediaRecorder | null>(null)
+  // Держим ссылку на активный поток, чтобы освободить микрофон при unmount,
+  // даже если запись идёт (иначе трек висит и индикатор «микрофон занят» горит).
+  const activeStream = ref<MediaStream | null>(null)
   const recordedChunks: BlobPart[] = []
   const recordStartAt = ref(0)
   const touchStartX = ref(0)
@@ -75,6 +78,7 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      activeStream.value = stream
       const type = pickSupportedType()
       const options: MediaRecorderOptions | undefined = type ? { mimeType: type } : undefined
       const mr = new MediaRecorder(stream, options)
@@ -94,6 +98,7 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
           } catch {
             /* ignore */
           }
+          activeStream.value = null
           return
         }
 
@@ -107,6 +112,7 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
         } catch {
           /* ignore */
         }
+        activeStream.value = null
       }
       recordStartAt.value = Date.now()
       isRecording.value = true
@@ -152,6 +158,30 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
     if (isLocked.value) return
     stopRecording()
   }
+
+  // P1-13: при уходе со страницы во время записи — освобождаем микрофон,
+  // глушим таймер и останавливаем MediaRecorder. Без этого трек висит
+  // (индикатор «микрофон занят» горит), запись продолжается, setInterval течёт.
+  onBeforeUnmount(() => {
+    if (recordingTimer.value) {
+      clearInterval(recordingTimer.value)
+      recordingTimer.value = null
+    }
+    try {
+      if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
+        mediaRecorder.value.stop()
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      activeStream.value?.getTracks().forEach((t) => t.stop())
+    } catch {
+      /* ignore */
+    }
+    activeStream.value = null
+    isRecording.value = false
+  })
 
   return {
     isRecording,

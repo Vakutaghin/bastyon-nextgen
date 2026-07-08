@@ -1,4 +1,4 @@
-<!-- SC_BlockTable*Cell — styled.th/td; v-html на них безопасен. -->
+<!-- SC_BlockTable*Cell — styled.th/td; содержимое ячеек прогнано через sanitizeHtml (P1-2). -->
 <!-- eslint-disable vue/no-v-text-v-html-on-component -->
 <template>
   <SC_BlockTableWrapper>
@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { sanitizeHtml } from '@/helpers/content/sanitize-html'
 import {
   SC_BlockTableWrapper,
   SC_BlockTable,
@@ -60,10 +61,14 @@ const bodyRows = computed<string[][]>(() =>
 )
 
 function formatCell(cell: string): string {
+  let decoded: string
   try {
-    return decodeURIComponent(String(cell)).replace(/\n/g, '<br>')
+    decoded = decodeURIComponent(String(cell))
   } catch {
-    return String(cell).replace(/\n/g, '<br>')
+    decoded = String(cell)
   }
+  // Содержимое ячейки — недоверенный контент из блокчейна; рендерится через
+  // v-html, поэтому обязателен whitelist-прогон (P1-2).
+  return sanitizeHtml(decoded.replace(/\n/g, '<br>'))
 }
 </script>

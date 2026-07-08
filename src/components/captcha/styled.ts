@@ -38,6 +38,11 @@ export const SC_CaptchaImage = styled.div`
 export const SC_CaptchaSvgImage = styled.div`
   margin: 1.5em 0;
   text-align: center;
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
 `
 
 export const SC_Controls = styled.div<{ shown: boolean }>`

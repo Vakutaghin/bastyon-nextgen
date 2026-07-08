@@ -16,6 +16,7 @@ import type { z } from 'zod'
 import { ActionSchemas } from './_schema'
 import type { ActionDefinition, ActionMap } from './types'
 import type { ApiSignature } from '@/blockchain/types/signatures'
+import { appFetch } from '@/helpers/api/fetch-strategies'
 
 interface AccountResult {
   address: string
@@ -105,12 +106,28 @@ const authFetch: ActionDefinition<AuthFetchInput, unknown> = {
     })
     if (!signature) throw new Error('not_authenticated')
 
+    // Приватность/SSRF (P1-8): если манифест объявил fetchHosts — цель обязана
+    // быть в allowlist (как в fetch-tunnel). Пустой/отсутствующий список =
+    // legacy-поведение (миниаппа ходит на свой backend без ограничения хоста).
+    const allowlist = app.manifest.fetchHosts
+    if (allowlist && allowlist.length > 0) {
+      let originAllowed = false
+      try {
+        originAllowed = allowlist.includes(new URL(data.url).origin)
+      } catch {
+        /* невалидный URL — остаётся запрещённым */
+      }
+      if (!originAllowed) throw new Error('authFetch_forbidden_host')
+    }
+
     // Тело запроса: миниаппа передаёт произвольный data, мы добавляем подпись
     // и сериализуем в JSON. Это формат, который ожидают backend-ы legacy миниапп.
     const bodyData = data.data && typeof data.data === 'object' ? data.data : {}
     const body = { ...(bodyData as Record<string, unknown>), signature }
 
-    const res = await fetch(data.url, {
+    // appFetch, а не сырой fetch: торифицирует подписанный запрос (в Tauri) —
+    // иначе реальный IP + подпись утекают на app-provided URL мимо Tor (P1-8).
+    const res = await appFetch(data.url, {
       method: data.method ?? 'POST',
       headers: {
         'content-type': 'application/json',

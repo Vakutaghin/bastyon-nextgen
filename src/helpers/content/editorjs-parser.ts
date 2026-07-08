@@ -1,4 +1,5 @@
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
+import { sanitizeHtml } from '@/helpers/content/sanitize-html'
 
 interface EditorJsBlock {
   type: string
@@ -8,6 +9,21 @@ interface EditorJsBlock {
 /** Сужает произвольное значение data блока до записи с известными полями. */
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+}
+
+/**
+ * Экранирует значение перед вставкой в HTML-атрибут (`src`, `alt`). Editor.js
+ * `file.url`/`caption` — недоверенный ввод из блокчейна; без escape строка вроде
+ * `x" onerror="…` вырывается из атрибута и инжектит обработчик (P1-1). Финальный
+ * `sanitizeHtml` — второй рубеж (whitelist вырезает on*), это — первый.
+ */
+function escapeAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 /**
@@ -115,26 +131,33 @@ export function editorjsToHtml(content: string | object): string {
     return formatPlainText(strContent)
   }
 
-  return (blocks as EditorJsBlock[]).map(block => {
-    switch (block.type) {
-      case 'header':
-        return parseHeader(block.data)
-      case 'paragraph':
-        return parseParagraph(block.data)
-      case 'list':
-        return parseList(block.data)
-      case 'image':
-        return parseImage(block.data)
-      case 'quote':
-        return parseQuote(block.data)
-      case 'delimiter':
-        return '<hr class="ce-delimiter">'
-      case 'code':
-        return parseCode(block.data)
-      default:
-        return ''
-    }
-  }).join('')
+  const html = (blocks as EditorJsBlock[])
+    .map((block) => {
+      switch (block.type) {
+        case 'header':
+          return parseHeader(block.data)
+        case 'paragraph':
+          return parseParagraph(block.data)
+        case 'list':
+          return parseList(block.data)
+        case 'image':
+          return parseImage(block.data)
+        case 'quote':
+          return parseQuote(block.data)
+        case 'delimiter':
+          return '<hr class="ce-delimiter">'
+        case 'code':
+          return parseCode(block.data)
+        default:
+          return ''
+      }
+    })
+    .join('')
+
+  // Финальный whitelist-прогон всей сборки (P1-1): построчные части уже
+  // санитизируются через formatBastyonLinks, но img-атрибуты собираются
+  // интерполяцией — sanitizeHtml вырезает on*/опасные протоколы как второй рубеж.
+  return sanitizeHtml(html)
 }
 
 function parseHeader(raw: unknown): string {
@@ -143,7 +166,7 @@ function parseHeader(raw: unknown): string {
   const level = data.level && data.level >= 1 && data.level <= 6 ? data.level : 2
 
   // Унифицируем переносы строк и <br>
-  let text = data.text.replace(/<br\s*\/?>/gi, '\n')
+  const text = data.text.replace(/<br\s*\/?>/gi, '\n')
 
   // Форматируем ссылки и экранируем HTML (переносы \n сохраняются)
   let formatted = formatBastyonLinks(text)
@@ -159,7 +182,7 @@ function parseParagraph(raw: unknown): string {
   if (!data.text) return ''
 
   // Унифицируем переносы строк и <br>
-  let text = data.text.replace(/<br\s*\/?>/gi, '\n')
+  const text = data.text.replace(/<br\s*\/?>/gi, '\n')
 
   // Форматируем ссылки и экранируем HTML (переносы \n сохраняются)
   let formatted = formatBastyonLinks(text)
@@ -175,7 +198,7 @@ function parseList(raw: unknown): string {
   if (!data.items || !Array.isArray(data.items)) return ''
 
   const tag = data.style === 'ordered' ? 'ol' : 'ul'
-  const items = data.items.map(item => `<li>${formatBastyonLinks(item)}</li>`).join('')
+  const items = data.items.map((item) => `<li>${formatBastyonLinks(item)}</li>`).join('')
 
   return `<${tag}>${items}</${tag}>`
 }
@@ -202,7 +225,7 @@ function parseImage(raw: unknown): string {
 
   return `
     <div class="${classes.join(' ')}">
-      <img src="${data.file.url}" alt="${data.caption || ''}" />
+      <img src="${escapeAttr(data.file.url)}" alt="${escapeAttr(data.caption || '')}" />
       ${captionHtml}
     </div>
   `
@@ -248,12 +271,10 @@ function parseCode(raw: unknown): string {
 function formatPlainText(text: string): string {
   if (!text) return ''
 
-  // Преобразуем <br />, <br/>, <br> в \n для унификации
-  let normalized = text.replace(/<br\s*\/?>/gi, '\n')
+  // Переносы строк → <br>. Существующие <br> в контенте сохраняются. Контент
+  // форматируется и санитизируется ОДНИМ вызовом — иначе построчное дробление
+  // рвёт инлайн-теги, охватывающие несколько строк (напр. <b>…<br>…</b>).
+  const withBreaks = text.replace(/\r\n|\r|\n/g, '<br>')
 
-  // Разбиваем по \n и оборачиваем каждую строку в <p>
-  const lines = normalized.split('\n').filter((line) => line.trim() !== '')
-  if (lines.length === 0) return ''
-
-  return lines.map((line) => `<p>${formatBastyonLinks(line)}</p>`).join('')
+  return formatBastyonLinks(withBreaks)
 }

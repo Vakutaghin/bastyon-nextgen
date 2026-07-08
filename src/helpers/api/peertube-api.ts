@@ -103,9 +103,12 @@ export async function getPeerTubeVideoInfo(
     typeof import.meta !== 'undefined' &&
     import.meta.env?.DEV === true &&
     typeof window !== 'undefined'
+  // videoId — user-controlled: энкодим в path, иначе `../` или query-инъекция
+  // уводят запрос на другой эндпоинт/хост (P1-9). Транспорт — appFetch (Tor).
+  const encodedId = encodeURIComponent(videoId)
   const apiUrl = isDevBrowser
-    ? `/api/peertube/${host}/api/v1/videos/${videoId}`
-    : `https://${host}/api/v1/videos/${videoId}`
+    ? `/api/peertube/${host}/api/v1/videos/${encodedId}`
+    : `https://${host}/api/v1/videos/${encodedId}`
 
   const init: RequestInit = {
     method: 'GET',
@@ -190,7 +193,7 @@ export async function getPeerTubeCaptions(
   const base = peertubeBase(host)
   try {
     const response = await fetchWithTimeout(
-      `${base}/api/v1/videos/${videoId}/captions`,
+      `${base}/api/v1/videos/${encodeURIComponent(videoId)}/captions`,
       { method: 'GET', redirect: 'follow', headers: { Accept: 'application/json' } },
       PEERTUBE_FETCH_TIMEOUT_MS
     )

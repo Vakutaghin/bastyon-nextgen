@@ -1,6 +1,15 @@
 import { describe, it, expect, vi } from 'vitest'
+
+// P1-6: транспорт по умолчанию должен идти через appFetch (Tor-aware), а не
+// сырой globalThis.fetch. Мокаем модуль — остальные тесты дают явный transport,
+// поэтому на них мок не влияет.
+vi.mock('@/helpers/api/fetch-strategies', () => ({
+  appFetch: vi.fn(() => Promise.resolve(new Response('ok', { status: 200 }))),
+}))
+
 import { createFetchTunnel } from './fetch-tunnel'
 import { RateLimiter } from './rate-limiter'
+import { appFetch } from '@/helpers/api/fetch-strategies'
 import type { InstalledApp } from '../types/app'
 import type { FetchRequest } from '../types/messages'
 
@@ -132,5 +141,16 @@ describe('fetch-tunnel', () => {
     )
     expect(resp.success).toBe(false)
     expect(resp.error).toBe('network_error:TCP reset')
+  })
+
+  it('default transport routes through appFetch (Tor-aware) — P1-6', async () => {
+    vi.mocked(appFetch).mockClear()
+    const tunnel = createFetchTunnel() // без явного transport → defaultTransport()
+    const resp = await tunnel.handle(
+      makeApp(['https://api.example.com']),
+      makeReq('https://api.example.com/x')
+    )
+    expect(appFetch).toHaveBeenCalledTimes(1)
+    expect(resp.success).toBe(true)
   })
 })

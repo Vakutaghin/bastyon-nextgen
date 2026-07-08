@@ -34,7 +34,9 @@
           <SC_PkoinChartPriceValue>${{ currentPrice.toFixed(4) }}</SC_PkoinChartPriceValue>
           <template v-if="priceChange != null">
             <SC_PkoinChartStatRow>
-              <SC_PkoinChartStatLabel>{{ t('wallet.statFor', { period: chartDaysLabel }) }}</SC_PkoinChartStatLabel>
+              <SC_PkoinChartStatLabel>{{
+                t('wallet.statFor', { period: chartDaysLabel })
+              }}</SC_PkoinChartStatLabel>
               <SC_PkoinChartChange
                 :class="priceChange > 0 ? 'positive' : priceChange < 0 ? 'negative' : 'neutral'"
               >
@@ -56,13 +58,17 @@
           </template>
           <template v-if="priceHigh30d != null">
             <SC_PkoinChartStatRow>
-              <SC_PkoinChartStatLabel>{{ t('wallet.statMaxFor', { period: chartDaysLabel }) }}</SC_PkoinChartStatLabel>
+              <SC_PkoinChartStatLabel>{{
+                t('wallet.statMaxFor', { period: chartDaysLabel })
+              }}</SC_PkoinChartStatLabel>
               <SC_PkoinChartStatValue>${{ priceHigh30d.toFixed(4) }}</SC_PkoinChartStatValue>
             </SC_PkoinChartStatRow>
           </template>
           <template v-if="priceLow30d != null">
             <SC_PkoinChartStatRow>
-              <SC_PkoinChartStatLabel>{{ t('wallet.statMinFor', { period: chartDaysLabel }) }}</SC_PkoinChartStatLabel>
+              <SC_PkoinChartStatLabel>{{
+                t('wallet.statMinFor', { period: chartDaysLabel })
+              }}</SC_PkoinChartStatLabel>
               <SC_PkoinChartStatValue>${{ priceLow30d.toFixed(4) }}</SC_PkoinChartStatValue>
             </SC_PkoinChartStatRow>
           </template>
@@ -79,6 +85,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
+import { appFetch } from '@/helpers/api/request'
 import {
   SC_PkoinChartWrap,
   SC_PkoinChartTitle,
@@ -146,7 +153,9 @@ function setPeriod(days: number): void {
 
 async function fetchFromCoinGecko(days: number): Promise<[number, number][]> {
   const url = `${COINGECKO_API}?vs_currency=usd&days=${days}`
-  const res = await fetch(url)
+  // appFetch уважает Tor (в Tauri) — прямой fetch раскрывал бы реальный IP и факт
+  // «этот IP держит PKOIN-кошелёк» третьей стороне мимо Tor (P1-7).
+  const res = await appFetch(url)
   if (!res.ok) throw new Error(t('wallet.errorCoinGeckoLoad'))
   const data = (await res.json()) as MarketChartResponse
   if (!Array.isArray(data.prices) || data.prices.length === 0) {
