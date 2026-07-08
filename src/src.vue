@@ -7,6 +7,8 @@ import AppLayout from '@/b-components/app-layout/app-layout.vue'
 import VideoUploader from '@/b-components/video-uploader/video-uploader.vue'
 import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
+import ReportModal from '@/b-components/report/report-modal.vue'
+import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
 import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
 
 // Embed-роуты (`/embed/...`, meta.embed) рендерятся БЕЗ chrome (хедер/футер/
@@ -21,7 +23,10 @@ useGlobalKeyboard()
 
 // Явная конфигурация темы для устранения предупреждения о injection
 // Используем computed для реактивности и обеспечения правильной инициализации
-// Иконки и компоненты ant-design-vue требуют явной темы через ConfigProvider
+// Иконки и компоненты ant-design-vue требуют явной темы через ConfigProvider.
+// algorithm СОЗНАТЕЛЬНО остаётся defaultAlgorithm: antd темнится глобальными
+// CSS-variable оверрайдами в style.css (single source of truth), а не второй
+// палитрой darkAlgorithm. См. memory project_dark_theme.
 const themeConfig = computed<ThemeConfig>(() => ({
   algorithm: theme.defaultAlgorithm,
   token: {
@@ -50,6 +55,10 @@ const themeConfig = computed<ThemeConfig>(() => ({
       <MiniAppPaymentModal />
       <!-- Донат автору — singleton, открывается через useDonateStore -->
       <DonateModal />
+      <!-- Жалоба на контент — singleton, открывается через useReportStore -->
+      <ReportModal />
+      <!-- P0-1: разблокировка сейфа (passphrase-режим) — singleton, открывается мостом vault-unlock -->
+      <VaultUnlockModal />
     </template>
   </ConfigProvider>
 </template>

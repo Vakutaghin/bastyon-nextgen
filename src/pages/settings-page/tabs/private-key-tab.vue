@@ -29,7 +29,11 @@
       <SC_PrivateKeyBox v-if="pkMnemonic">
         <SC_PrivateKeyLabel>{{ t('settings.privateKey.seedPhrase') }}</SC_PrivateKeyLabel>
         <SC_PrivateKeyValue>{{ pkMnemonic }}</SC_PrivateKeyValue>
-        <SC_CopyIconBtn type="button" :title="t('settings.privateKey.copySeed')" @click="pkCopyMnemonic">
+        <SC_CopyIconBtn
+          type="button"
+          :title="t('settings.privateKey.copySeed')"
+          @click="pkCopyMnemonic"
+        >
           <CopyOutlined />
         </SC_CopyIconBtn>
       </SC_PrivateKeyBox>
@@ -42,7 +46,9 @@
         </SC_CopyIconBtn>
       </SC_PrivateKeyBox>
 
-      <SC_HideKeyButton type="button" @click="pkHide"> {{ t('settings.privateKey.hide') }} </SC_HideKeyButton>
+      <SC_HideKeyButton type="button" @click="pkHide">
+        {{ t('settings.privateKey.hide') }}
+      </SC_HideKeyButton>
     </template>
 
     <!-- Initial state: show button -->
@@ -54,6 +60,9 @@
         {{ pkLoading ? t('settings.privateKey.loading') : t('settings.privateKey.show') }}
       </SC_ShowKeyButton>
     </template>
+
+    <!-- P0-1: безопасность сида at-rest (passwordless по умолчанию + opt-in passphrase). -->
+    <SecuritySection />
   </SC_PrivateKeySection>
 </template>
 
@@ -61,6 +70,7 @@
 import { useI18n } from 'vue-i18n'
 import { CopyOutlined } from '@ant-design/icons-vue'
 import { usePrivateKeyReveal } from '../use-private-key-reveal'
+import SecuritySection from './security-section.vue'
 import {
   SC_PrivateKeySection,
   SC_SettingsSectionTitle,

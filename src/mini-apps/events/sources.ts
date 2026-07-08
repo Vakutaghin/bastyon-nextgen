@@ -9,11 +9,18 @@
  * - `theme.changed` — `useUIStore().theme`
  * - `locale.changed` — `useUIStore().language`
  * - `block`         — `wsService.on('block')` (новый tip-блок)
- * - `transaction`   — `wsService.on('transaction')` (любая tx через WS)
  * - `changestate`   — `router.afterEach` (синхронизация роутинга)
  * - `keyboard`      — Capacitor Keyboard show/hide (только на mobile)
  *
  * Принципиально:
+ * - Через `pushAll` рассылаются только **публичные** события (высота блока,
+ *   тема, локаль, роутинг). WS-поток `transaction` намеренно НЕ пробрасывается:
+ *   он user-scoped (подписка на адрес текущего юзера) и несёт txid + полные
+ *   vin/vout (контрагенты и суммы). `pushAll` доставил бы его КАЖДОМУ mini-app
+ *   с push-листенером без единого промпта — деанонимизация кошелька untrusted
+ *   iframe'ом. В legacy-SDK такого emitter'а нет вовсе; ближайший (`balance`)
+ *   гейтится за permission `account`. Если apps-контракту понадобится баланс/tx —
+ *   заводить отдельный account-gated emitter, а не вещать сырой WS всем.
  * - Sources не знают про конкретные iframe — рассылают через `pushAll`.
  *   Bridge сам фильтрует доставку по зарегистрированным `listenerId`.
  * - При отсутствии источника (e.g. Capacitor Keyboard в web) — silent skip,
@@ -62,15 +69,13 @@ export function setupEventSources(opts: SetupEventSourcesOptions): Unsubscribe {
     )
   )
 
-  // ─── ws: block / transaction ──────────────────────────────────────────────
+  // ─── ws: block ────────────────────────────────────────────────────────────
+  // Только `block` — публичная высота тип-блока. `transaction` НЕ вещаем: он
+  // user-scoped и раскрыл бы адрес + историю движений средств любому mini-app
+  // (см. шапку файла). Осознанно не подписываемся.
   cleanups.push(
     wsService.on('block', (data) => {
       miniAppsBridge.pushAll('block', data ?? {})
-    })
-  )
-  cleanups.push(
-    wsService.on('transaction', (data) => {
-      miniAppsBridge.pushAll('transaction', data ?? {})
     })
   )
 

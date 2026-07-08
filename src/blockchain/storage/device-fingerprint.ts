@@ -93,7 +93,9 @@ export function generateDeviceFingerprint(): DeviceFingerprint {
       const debugInfo = (gl as WebGLRenderingContext).getExtension('WEBGL_debug_renderer_info')
       if (debugInfo) {
         const vendor = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
-        const renderer = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+        const renderer = (gl as WebGLRenderingContext).getParameter(
+          debugInfo.UNMASKED_RENDERER_WEBGL
+        )
         components.push(vendor || '')
         components.push(renderer || '')
       }
@@ -105,6 +107,23 @@ export function generateDeviceFingerprint(): DeviceFingerprint {
   // Хешируем все компоненты через SHA-256
   const combined = components.join('|')
   return sha256Hex(combined)
+}
+
+/**
+ * Читает СОХРАНЁННЫЙ fingerprint как есть, НЕ генерируя новый (в отличие от
+ * getDeviceFingerprint). Нужен для legacy-миграции сейфа и heal-ветки чтения
+ * (P0-1): вернуть тот самый ключ, которым старые данные были зашифрованы, и
+ * `null`, когда fingerprint уже удалён после успешной миграции — чтобы не
+ * «оживлять» legacy-путь [P1-I].
+ */
+export function readStoredFingerprint(): string | null {
+  try {
+    if (typeof localStorage === 'undefined') return null
+    const saved = localStorage.getItem(DEVICE_FINGERPRINT_KEY)
+    return saved && saved.length >= 8 ? saved : null
+  } catch {
+    return null
+  }
 }
 
 /**

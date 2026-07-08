@@ -8,7 +8,8 @@ import type {
   EncryptedData,
 } from '../types/storage'
 import { encryptData, decryptData } from './encryption'
-import { getDeviceFingerprint } from './device-fingerprint'
+import { getVaultSecret, getVaultLegacyKey } from './vault/crypto-vault'
+import { looksLikeSecret } from './vault/plausibility'
 import { MNEMONIC_STORAGE_KEY } from '../constants/storage'
 
 /**
@@ -19,8 +20,10 @@ export function saveEncryptedData(data: string, options: StorageOptions = {}): S
   const { persistent = false, storageKey = MNEMONIC_STORAGE_KEY } = options
 
   try {
-    const fingerprint = getDeviceFingerprint()
-    const encrypted = encryptData(data, fingerprint)
+    // P0-1: ключ шифрования — секрет сейфа (не device-fingerprint). Бросит
+    // VaultLockedError, если сейф не разлочен → ниже перехватится в {success:false}
+    // (non-destructive). Пишущие пути (register/signIn) заранее делают ensureInitialized.
+    const encrypted = encryptData(data, getVaultSecret())
 
     const encryptedData: EncryptedData = {
       data: encrypted,
@@ -82,8 +85,36 @@ export function loadEncryptedData(options: StorageOptions = {}): StorageLoadResu
     }
 
     const encryptedData: EncryptedData = JSON.parse(stored)
-    const fingerprint = getDeviceFingerprint()
-    const decrypted = decryptData(encryptedData.data, fingerprint)
+    const blob = encryptedData.data
+    // P0-1 heal-ветка: сначала под секретом сейфа S; если не расшифровалось и есть
+    // legacy device-fingerprint (ещё не мигрировано) — под ним, и перешифровываем
+    // под S (ленивая миграция на чтении). getVaultSecret бросит, если сейф заблокирован.
+    const key = getVaultSecret()
+    const legacy = getVaultLegacyKey()
+    let decrypted: string
+    try {
+      decrypted = decryptData(blob, key)
+      // Во время миграционного окна (fingerprint ещё есть) неаутентифицированный
+      // AES-CBC может ~1/256 «расшифровать» fingerprint-данные под S в мусор —
+      // отсекаем по форме, чтобы уйти в legacy-ветку, а не вернуть мусор.
+      if (legacy && !looksLikeSecret(decrypted))
+        throw new Error('vault: implausible decrypt under S')
+    } catch (e) {
+      if (!legacy) throw e
+      decrypted = decryptData(blob, legacy) // бросит при настоящем повреждении
+      try {
+        storage.setItem(
+          storageKey,
+          JSON.stringify({
+            data: encryptData(decrypted, key),
+            timestamp: Date.now(),
+            version: '2.0',
+          })
+        )
+      } catch {
+        /* quota и пр.: возвращаем расшифрованное, чтение не проваливаем [C4] */
+      }
+    }
 
     return {
       success: true,

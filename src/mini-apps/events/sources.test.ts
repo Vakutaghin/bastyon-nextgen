@@ -77,20 +77,28 @@ describe('mini-apps event sources', () => {
     cleanup()
   })
 
-  it('block / transaction sources forward ws events to pushAll', () => {
+  it('block source forwards ws events to pushAll', () => {
     const router = makeRouter()
     const cleanup = setupEventSources({ router, enableKeyboard: false })
 
     const blockHandler = wsHandlers.get('block')
-    const txHandler = wsHandlers.get('transaction')
     expect(blockHandler).toBeTypeOf('function')
-    expect(txHandler).toBeTypeOf('function')
 
     blockHandler?.({ height: 12345 })
-    txHandler?.({ hash: '0xabc' })
 
     expect(mockedPushAll).toHaveBeenCalledWith('block', { height: 12345 })
-    expect(mockedPushAll).toHaveBeenCalledWith('transaction', { hash: '0xabc' })
+
+    cleanup()
+  })
+
+  it('does NOT broadcast user-scoped `transaction` WS events (privacy P0-4)', () => {
+    const router = makeRouter()
+    const cleanup = setupEventSources({ router, enableKeyboard: false })
+
+    // Никакой подписки на 'transaction' быть не должно: событие user-scoped
+    // (адрес + vin/vout) и утекло бы каждому mini-app через pushAll.
+    expect(wsHandlers.get('transaction')).toBeUndefined()
+    expect(mockedPushAll).not.toHaveBeenCalledWith('transaction', expect.anything())
 
     cleanup()
   })

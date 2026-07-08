@@ -151,6 +151,50 @@ describe('useAppsStore', () => {
     })
   })
 
+  describe('identity guard (P0-3)', () => {
+    it('rejects sideload whose manifest.id impersonates a built-in from a foreign origin', async () => {
+      // evil.com отдаёт манифест с id зарезервированного built-in Barteron.
+      const { store } = setupStore((url) =>
+        url.includes('evil.com')
+          ? { ok: true, text: manifestJson({ id: 'barteron.pocketnet.app' }) }
+          : { ok: true, text: manifestJson() }
+      )
+      await store.init()
+      const realBarteron = store.byId('barteron.pocketnet.app')!
+      expect(realBarteron.scope).toBe('barteron.club')
+
+      await expect(store.addLocal('evil.com')).rejects.toThrow(/id-impersonation/)
+
+      // Слот built-in НЕ перезаписан — по-прежнему указывает на канонический origin.
+      expect(store.byId('barteron.pocketnet.app')?.scope).toBe('barteron.club')
+      // evil.com не резолвится ни во что → не получает грантов Barteron.
+      expect(store.originResolver.resolveByOrigin('https://evil.com')).toBeNull()
+    })
+
+    it('rejects re-installing an existing app id from a different origin', async () => {
+      const { store } = setupStore((url) =>
+        url.includes('good.com')
+          ? { ok: true, text: manifestJson({ id: 'dup.app' }) }
+          : { ok: true, text: manifestJson({ id: 'dup.app' }) }
+      )
+      await store.install('good.com', { source: 'local' })
+      expect(store.byId('dup.app')?.scope).toBe('good.com')
+
+      // Тот же id, но с другого origin — угон.
+      await expect(store.install('attacker.com', { source: 'local' })).rejects.toThrow(
+        /id-origin-conflict/
+      )
+      expect(store.byId('dup.app')?.scope).toBe('good.com')
+    })
+
+    it('allows installing a non-colliding local app', async () => {
+      const { store } = setupStore()
+      await store.init()
+      await expect(store.addLocal('user.com')).resolves.toBeDefined()
+      expect(store.byId('user.app')?.scope).toBe('user.com')
+    })
+  })
+
   describe('uninstall', () => {
     it('removes a local app', async () => {
       const { store, overrides } = setupStore()

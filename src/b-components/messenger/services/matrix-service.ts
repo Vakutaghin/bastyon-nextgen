@@ -201,6 +201,24 @@ export class MatrixService {
   }
 
   /**
+   * Вступает в комнату, если у текущего пользователя по ней висит приглашение
+   * (membership === 'invite'). Без join'а Matrix запрещает отправку
+   * (M_FORBIDDEN: «not in room») — частый кейс, когда чат создал собеседник, а
+   * нас лишь пригласили. Идемпотентно: для уже joined-комнат ничего не делает.
+   */
+  public async joinIfInvited(roomId: string): Promise<void> {
+    if (!this.client || !roomId) return
+    try {
+      const room = this.client.getRoom?.(roomId)
+      const membership = room?.getMyMembership?.()
+      if (membership !== 'invite') return
+      await this.client.joinRoom?.(roomId)
+    } catch (e) {
+      console.warn('[matrix] joinIfInvited failed:', e)
+    }
+  }
+
+  /**
    * Создаёт личный чат (запрос _matrix/client/v3/createRoom), как в старом bastyon-chat.
    * Комната появляется в списке чатов после синка; в store добавляется оптимистичный диалог сразу.
    */
@@ -223,13 +241,34 @@ export class MatrixService {
     }
   }
 
-  public async sendMessage(roomId: string, content: string) {
+  public async sendMessage(
+    roomId: string,
+    content: string,
+    extraContent?: Record<string, unknown>
+  ) {
     if (!this.client) throw new Error('Client not initialized')
 
     return (this.client as MatrixClient).sendEvent(roomId, 'm.room.message', {
       msgtype: 'm.text',
       body: content,
+      // extraContent — relation-метаданные (m.relates_to / m.new_content) для
+      // ответа/редактирования. См. use-message-sending (reply/edit).
+      ...extraContent,
     })
+  }
+
+  /**
+   * Redact (удалить) событие — удаление своего сообщения.
+   * @param reason — опциональная причина (в content m.room.redaction).
+   */
+  public async redactEvent(roomId: string, eventId: string, reason?: string) {
+    if (!this.client) throw new Error('Client not initialized')
+    return (this.client as MatrixClient).redactEvent(
+      roomId,
+      eventId,
+      undefined,
+      reason ? { reason } : undefined
+    )
   }
 
   /**
@@ -252,7 +291,8 @@ export class MatrixService {
    */
   public async sendEncryptedTextMessage(
     roomId: string,
-    payload: { body: string; hash: string; block: number }
+    payload: { body: string; hash: string; block: number },
+    extraContent?: Record<string, unknown>
   ) {
     if (!this.client) throw new Error('Client not initialized')
     return (this.client as MatrixClient).sendEvent(roomId, 'm.room.message', {
@@ -260,6 +300,33 @@ export class MatrixService {
       body: payload.body,
       hash: payload.hash,
       block: payload.block,
+      // extraContent — relation-метаданные (m.relates_to / m.new_content).
+      ...extraContent,
+    })
+  }
+
+  /**
+   * Отправить личное (1:1) зашифрованное текстовое сообщение (E2E).
+   * Формат — как forta.chat / bastyon-chat `encryptEvent` для tetatet: m.room.message
+   * с msgtype 'm.encrypted', body = Base64(JSON per-user AES-SIV map), block +
+   * version на верхнем уровне content (БЕЗ `hash` — это признак группового пути).
+   * Приёмный путь (`tryDecrypt`) распознаёт такой body по base64-эвристике и
+   * расшифровывает через `pcrypto.decryptEvent`.
+   */
+  public async sendEncryptedDirectMessage(
+    roomId: string,
+    payload: { body: string; block: number; version: number },
+    extraContent?: Record<string, unknown>
+  ) {
+    if (!this.client) throw new Error('Client not initialized')
+    return (this.client as MatrixClient).sendEvent(roomId, 'm.room.message', {
+      msgtype: 'm.encrypted',
+      body: payload.body,
+      block: payload.block,
+      version: payload.version,
+      // extraContent — relation-метаданные (m.relates_to) для ответа. Лежат на
+      // внешнем (открытом) content, как и у группового зашифрованного сообщения.
+      ...extraContent,
     })
   }
 

@@ -6,6 +6,30 @@
 // Device fingerprint
 export { generateDeviceFingerprint, getDeviceFingerprint } from './device-fingerprint'
 
+// Сейф at-rest шифрования сида (P0-1): passwordless WebCrypto-ключ + opt-in passphrase.
+export {
+  ensureInitialized,
+  finalizeMigration,
+  destroyVault,
+  lockVault,
+  hasVault,
+  isVaultUnlocked,
+  getVaultLevel,
+  getVaultStatus,
+  enablePassphrase,
+  disablePassphrase,
+  configureVault,
+  type VaultLevel,
+  type VaultStatus,
+} from './vault/crypto-vault'
+export {
+  ensureVaultUnlocked,
+  configureUnlockUi,
+  submitUnlockPassphrase,
+  requestUnlockReset,
+  getUnlockAttemptState,
+} from './vault/vault-unlock'
+
 // Шифрование
 export { encryptData, decryptData, canDecrypt } from './encryption'
 

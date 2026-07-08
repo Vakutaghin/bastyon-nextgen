@@ -11,7 +11,8 @@ import type { ParsedManifest } from '../types/manifest'
 import type { PermissionId } from '../types/permissions'
 import type { ManifestLoader } from '../registry/manifest-loader'
 import type { RemoteAppEntry } from '../registry/remote-registry'
-import { getBuiltInIconUrl, type BuiltInApp } from '../registry/built-in'
+import { BUILT_IN_APPS, getBuiltInIconUrl, type BuiltInApp } from '../registry/built-in'
+import { safeNormalizeOrigin } from '../core/origin-guard'
 
 export interface DoInstallOptions {
   id?: AppId
@@ -38,6 +39,60 @@ export async function doInstall(
     source: opts.source ?? 'local',
     installedAt: Date.now(),
     grantedPermissions: [],
+  }
+}
+
+/**
+ * Защита от identity-спуфинга при установке (P0-3).
+ *
+ * Права и слот `installed[]` адресуются по `manifest.id`, который приложение
+ * объявляет само в `b_manifest.json` и который не связан с origin установки.
+ * Без этой проверки сайдлоад `https://evil.com` с `"id":"barteron.pocketnet.app"`
+ * перезаписал бы слот built-in Barteron (scope→evil.com) и унаследовал бы его
+ * pre-installed гранты (`account`/`chat`) — iframe evil.com получил бы права без
+ * единого промпта. Здесь отклоняем «угон» id с чужого origin:
+ *
+ *  1. Built-in id может занять только канонический origin самого built-in
+ *     (его `scope`/`tscope`).
+ *  2. Уже установленный id нельзя переустановить с другого origin.
+ *
+ * Бросаем ТОЛЬКО при доказанном расхождении origin (оба резолвятся и различны),
+ * чтобы не блокировать легитимные, но нестандартные scope. Вызывается из
+ * `apps-store.install()` перед записью в `installed[]`.
+ */
+export function assertInstallIdentity(
+  app: InstalledApp,
+  installed: Record<AppId, InstalledApp>
+): void {
+  const id = app.manifest.id
+  const appOrigin = safeNormalizeOrigin(app.scope)
+  if (!appOrigin) return // невалидный scope отсеется дальше (bridge/matchesOrigin)
+
+  // 1. Импресонация зарезервированного built-in id с чужого origin.
+  if (app.source !== 'built-in') {
+    const builtIn = BUILT_IN_APPS.find((b) => b.id === id)
+    if (builtIn) {
+      const allowed = [
+        safeNormalizeOrigin(builtIn.scope),
+        safeNormalizeOrigin(builtIn.tscope),
+      ].filter((o): o is string => !!o)
+      if (allowed.length > 0 && !allowed.includes(appOrigin)) {
+        throw new Error(
+          `id-impersonation: '${id}' зарезервирован built-in (${builtIn.scope}); origin ${appOrigin} не совпадает`
+        )
+      }
+    }
+  }
+
+  // 2. Угон id уже установленного приложения с другого origin.
+  const prev = installed[id]
+  if (prev && prev.scope !== app.scope) {
+    const prevOrigin = safeNormalizeOrigin(prev.scope)
+    if (prevOrigin && prevOrigin !== appOrigin) {
+      throw new Error(
+        `id-origin-conflict: '${id}' уже установлен с ${prev.scope}; origin ${appOrigin} не совпадает`
+      )
+    }
   }
 }
 

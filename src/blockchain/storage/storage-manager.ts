@@ -11,6 +11,12 @@ import {
   WAS_LOGGED_KEY,
   WALLET_ADDRESSES_PREFIX,
   ADDITIONAL_WALLETS_LIST_KEY,
+  ACCOUNT_STORAGE_PREFIX,
+  DEVICE_FINGERPRINT_KEY,
+  VAULT_ENVELOPE_KEY,
+  VAULT_ENVELOPE_BACKUP_KEY,
+  VAULT_MIGRATION_KEY,
+  VAULT_ATTEMPTS_KEY,
 } from '../constants/storage'
 import { ACCOUNTS_LIST_KEY } from './storage-constants'
 import { clearStoredData } from './storage-keys'
@@ -65,7 +71,14 @@ export function saveWasLogged(wasLogged: boolean): void {
   }
 }
 
-/** Очищает все данные пользователя из обоих storage. Вызывается при signOut. */
+/**
+ * Очищает все данные пользователя из обоих storage. Вызывается при signOut.
+ *
+ * P0-1/P1-12: помимо мнемоники и списка аккаунтов сносим ВСЕ per-account секреты
+ * (BST_ACCOUNT_*), device-fingerprint и артефакты сейфа — раньше зашифрованные
+ * приватники/мнемоники сиротели в localStorage после выхода. Асинхронное удаление
+ * device-ключа сейфа из IndexedDB делает destroyVault() (его дожидается signOut).
+ */
 export function clearAllUserData(): void {
   try {
     // Шифрованная мнемоника
@@ -79,6 +92,21 @@ export function clearAllUserData(): void {
       // Локальные данные кошельков (изоляция между аккаунтами на одном устройстве).
       localStorage.removeItem(ADDITIONAL_WALLETS_LIST_KEY)
       localStorage.removeItem(WALLET_LABELS_KEY)
+
+      // Per-account секреты (BST_ACCOUNT_<addr>) — собираем ключи, затем удаляем.
+      const accountKeys: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (k && k.startsWith(ACCOUNT_STORAGE_PREFIX)) accountKeys.push(k)
+      }
+      for (const k of accountKeys) localStorage.removeItem(k)
+
+      // Device-fingerprint + артефакты сейфа (конверт/backup/маркеры/троттлинг).
+      localStorage.removeItem(DEVICE_FINGERPRINT_KEY)
+      localStorage.removeItem(VAULT_ENVELOPE_KEY)
+      localStorage.removeItem(VAULT_ENVELOPE_BACKUP_KEY)
+      localStorage.removeItem(VAULT_MIGRATION_KEY)
+      localStorage.removeItem(VAULT_ATTEMPTS_KEY)
     }
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem(ACCOUNTS_LIST_KEY)

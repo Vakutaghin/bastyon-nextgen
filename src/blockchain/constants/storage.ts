@@ -23,6 +23,19 @@ export const WAS_LOGGED_KEY = 'BST_WAS_LOGGED'
 export const DEVICE_FINGERPRINT_KEY = 'BST_DEVICE_FINGERPRINT'
 
 /**
+ * Конверт сейфа (P0-1): обёрнутый секрет S + метаданные режима (device/passphrase).
+ * Хранится открытым — шифротекст бесполезен без device-ключа (IndexedDB) или passphrase.
+ * См. src/blockchain/storage/vault/crypto-vault.ts.
+ */
+export const VAULT_ENVELOPE_KEY = 'BST_VAULT'
+/** Байт-в-байт зеркало BST_VAULT — фолбэк при повреждении первичного конверта. */
+export const VAULT_ENVELOPE_BACKUP_KEY = 'BST_VAULT_BACKUP'
+/** Транзиентный маркер незавершённой миграции/enable/disable passphrase (crash-safety). */
+export const VAULT_MIGRATION_KEY = 'BST_VAULT_MIGRATION'
+/** Транзиентный счётчик неверных попыток passphrase (троттлинг; не секрет). */
+export const VAULT_ATTEMPTS_KEY = 'BST_VAULT_ATTEMPTS'
+
+/**
  * Ключ для громкости видео плеера
  */
 export const VIDEO_PLAYER_VOLUME_KEY = 'BST_VIDEO_PLAYER_VOLUME'

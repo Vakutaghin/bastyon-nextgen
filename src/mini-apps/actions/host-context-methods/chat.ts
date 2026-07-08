@@ -76,11 +76,15 @@ export function createChatMethods(deps: ChatDeps): ChatMethods {
             : ''
       if (!text) throw new Error('chat_empty_content')
 
-      const { matrixService } = await import('@/b-components/messenger/services/matrix-service')
       const { useMessengerStore } = await import('@/b-components/messenger/store/messenger-store')
+      const { useMessengerChatStore } =
+        await import('@/b-components/messenger/store/messenger-chat-store')
 
       await useMessengerStore().initMatrix()
-      const res = await matrixService.sendMessage(roomid, text)
+      // P0-2: НЕ шлём сырой m.text. sendTextContent шифрует DM (per-user pcrypto)
+      // и группы (общий ключ) точно так же, как UI-путь; открытый текст в личку
+      // (оседающий на homeserver'е) исключён.
+      const res = await useMessengerChatStore().sendTextContent(roomid, text)
       return (res as Record<string, unknown>) ?? { ok: true }
     },
   }

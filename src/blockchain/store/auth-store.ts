@@ -29,12 +29,21 @@ import {
   loadAccountsList,
   hasStoredSession,
   updateAccountName,
+  ensureVaultUnlocked,
+  ensureInitialized,
+  finalizeMigration,
+  destroyVault,
 } from '../storage'
 import { deriveAndSaveWalletAddresses } from '../wallet-addresses'
 import { wsService } from '../ws'
 
 import { useKeysStore } from './keys-store'
 import { useProfileStore } from './profile-store'
+
+// Общий промис активного restoreSession(). На старте restore зовётся и из
+// header-user onMounted, и из router beforeEach; без дедупа они параллельно
+// дешифруют мнемонику и деривируют ключи (дорогая CPU-работа, ~секунды).
+let restoreInFlight: Promise<boolean> | null = null
 
 export const useAuthStore = defineStore('auth', {
   state: (): UserState & {
@@ -190,6 +199,8 @@ export const useAuthStore = defineStore('auth', {
         if (this.address) deriveAndSaveWalletAddresses(mnemonic, this.address)
 
         if (saveAfterRegistration) {
+          // P0-1: создать/поднять сейф ДО первой записи секрета (degrade-not-throw).
+          await ensureInitialized()
           await keys.saveMnemonic(mnemonic)
           if (this.address) keys.addAccountForAddress(this.address, mnemonic)
           this._syncFromKeysStore()
@@ -215,10 +226,18 @@ export const useAuthStore = defineStore('auth', {
     async signIn(options: SignInOptions): Promise<SignInResult> {
       const { privateKey } = options
       const keys = useKeysStore()
+      const profile = useProfileStore()
 
       this.setLoading(true)
       this.setError(null)
       this.authState = 'authenticating'
+
+      // Сбрасываем профиль предыдущего аккаунта (как в switchAccount): при
+      // «Добавить аккаунт» signIn переключает адрес на новый, а профиль в сторе
+      // ещё прежний — иначе новый аккаунт временно показывается с данными старого
+      // (дубликат в SC_AccountSwitcher, чужой ник в хедере) до фоновой fetchUserState.
+      profile.clearProfile()
+      this._syncFromProfileStore()
 
       try {
         await loadBip39Russian()
@@ -235,6 +254,9 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = true
         this.authState = 'authenticated'
 
+        // P0-1: создать/поднять сейф ДО первой записи секрета (mnemonic/приватника).
+        await ensureInitialized()
+
         if (recoveryResult.format === 'mnemonic') {
           await keys.saveMnemonic(trimmedKey)
           if (this.address) {
@@ -242,13 +264,19 @@ export const useAuthStore = defineStore('auth', {
             keys.addAccountForAddress(this.address, trimmedKey)
           }
         } else if (this.address) {
-          keys.addAccountWithoutMnemonic(this.address)
+          // Вход по приватному ключу: сохраняем сам ключ (зашифрованным), чтобы
+          // restoreSession() поднял сессию после перезагрузки. Без этого вход по
+          // ключу не «держался» — секрет жил только в памяти keyPair.
+          keys.addAccountForKey(this.address, trimmedKey)
         }
         this._syncFromKeysStore()
 
         saveWasLogged(true)
 
-        if (this.address) await this.fetchUserState()
+        // Профиль подтягиваем в фоне — модалка закрывается сразу после подъёма
+        // ключей, как и в restoreSession(). Иначе кнопка "Войти" висит в loading
+        // до завершения сетевого RPC, хотя вход уже зафиксирован.
+        if (this.address) this.fetchUserState().catch(() => {})
 
         this.invalidateAllQueries().catch(() => {})
         this.resetMessenger(true).catch(() => {})
@@ -287,6 +315,9 @@ export const useAuthStore = defineStore('auth', {
         this.resetUserRelations()
 
         clearAllUserData()
+        // P0-1: снести device-ключ сейфа из IndexedDB + залочить память (async).
+        // clearAllUserData уже стёр LS-артефакты; здесь добиваем IDB.
+        await destroyVault()
 
         this.invalidateAllQueries().catch(() => {})
         this.resetMessenger(false).catch(() => {})
@@ -304,6 +335,23 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async restoreSession(): Promise<boolean> {
+      // Сессия уже поднята — не перезапускаем дорогой restore (дешифровка
+      // мнемоники + деривация ключей). Именно повторный прогон из router-guard
+      // вешал переходы по защищённым маршрутам (/wallets, /limits, …) на ~секунды.
+      if (this.isUserAuthenticated && this.keyPair) return true
+
+      // Дедуп конкурентных вызовов (boot onMounted + guard на deep-link).
+      if (restoreInFlight) return restoreInFlight
+
+      restoreInFlight = this._restoreSessionImpl()
+      try {
+        return await restoreInFlight
+      } finally {
+        restoreInFlight = null
+      }
+    },
+
+    async _restoreSessionImpl(): Promise<boolean> {
       this.setLoading(true)
       this.setError(null)
       const keys = useKeysStore()
@@ -317,6 +365,34 @@ export const useAuthStore = defineStore('auth', {
       }
 
       try {
+        // P0-1: разблокировать сейф ДО любой дешифровки секретов. Оба сайта
+        // restoreSession (onMounted + router-guard) дедупятся мемоизированным
+        // ensureVaultUnlocked. Passwordless — молча; passphrase — модалка.
+        const vault = await ensureVaultUnlocked()
+        if (vault.status === 'needs-passphrase' || vault.status === 'storage-unavailable') {
+          // Некому/нечем разлочить сейчас — не аутентифицируем, скелетон снимаем,
+          // ничего НЕ стираем (self-heal на следующем буте).
+          return finishUnauthenticated()
+        }
+        if (vault.status === 'needs-reset') {
+          // Забытая passphrase / вытеснен device-ключ / повреждён конверт → чистим
+          // локальные данные и уводим на импорт по 12 словам.
+          clearAllUserData()
+          return finishUnauthenticated()
+        }
+        if (vault.status === 'unlocked') {
+          // Отложенно добиваем legacy-миграцию (fingerprint→S) и удаляем fingerprint.
+          // Отложенно, т.к. crypto-js PBKDF2 блокирует поток; чтение до этого идёт
+          // через heal-ветку. Не await — не морозим восстановление сессии.
+          setTimeout(() => {
+            try {
+              finalizeMigration()
+            } catch {
+              /* self-heal на следующем буте */
+            }
+          }, 2500)
+        }
+
         // Check for incomplete registration
         try {
           const pendingRaw = localStorage.getItem('pending_registration')

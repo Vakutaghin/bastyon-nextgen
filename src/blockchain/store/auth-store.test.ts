@@ -10,7 +10,7 @@ import { useAuthStore } from './auth-store'
 const {
   _saveMnemonic,
   _addAccountForAddress,
-  _addAccountWithoutMnemonic,
+  _addAccountForKey,
   _getAccountsList,
   _getAccountsInfo,
   _recoverFromAccount,
@@ -21,7 +21,7 @@ const {
 } = vi.hoisted(() => ({
   _saveMnemonic: vi.fn().mockResolvedValue(undefined),
   _addAccountForAddress: vi.fn(),
-  _addAccountWithoutMnemonic: vi.fn(),
+  _addAccountForKey: vi.fn(),
   _getAccountsList: vi.fn().mockReturnValue({ accounts: [], currentAccount: null }),
   _getAccountsInfo: vi.fn().mockReturnValue([]),
   _recoverFromAccount: vi.fn().mockResolvedValue(null),
@@ -49,6 +49,11 @@ vi.mock('../storage', () => ({
   loadAccountsList: vi.fn().mockReturnValue({ success: false }),
   hasStoredSession: vi.fn().mockReturnValue(false),
   updateAccountName: vi.fn().mockReturnValue({ success: true }),
+  // P0-1 vault: 'empty' не блокирует restore-гейт и не запускает отложенный таймер миграции.
+  ensureVaultUnlocked: vi.fn().mockResolvedValue({ status: 'empty', level: 'none' }),
+  ensureInitialized: vi.fn().mockResolvedValue({ status: 'unlocked', level: 'device' }),
+  finalizeMigration: vi.fn(),
+  destroyVault: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../wallet-addresses', () => ({
@@ -83,7 +88,7 @@ vi.mock('./keys-store', () => ({
       },
       saveMnemonic: _saveMnemonic,
       addAccountForAddress: _addAccountForAddress,
-      addAccountWithoutMnemonic: _addAccountWithoutMnemonic,
+      addAccountForKey: _addAccountForKey,
       getAccountsList: _getAccountsList,
       getAccountsInfo: _getAccountsInfo,
       recoverFromAccount: _recoverFromAccount,
@@ -568,7 +573,9 @@ describe('auth-store', () => {
       const store = useAuthStore()
       const result = await store.register()
 
-      expect(result.mnemonic).toBe('word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12')
+      expect(result.mnemonic).toBe(
+        'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12'
+      )
       expect(result.keyPair).toEqual(kp)
       expect(store.isAuthenticated).toBe(true)
       expect(store.authState).toBe('authenticated')
@@ -658,6 +665,24 @@ describe('auth-store', () => {
       expect(store.isAuthenticated).toBe(true)
       expect(store.authState).toBe('authenticated')
       expect(store.isLoading).toBe(false)
+    })
+
+    it('should persist the raw key (so the session survives reload) for non-mnemonic login', async () => {
+      const { recoverKeyPair } = await import('../core/keys')
+      const kp = fakeKeyPair()
+      ;(recoverKeyPair as any).mockReturnValue({
+        keyPair: kp,
+        format: 'hex',
+        source: 'deadbeef',
+      })
+
+      const store = useAuthStore()
+      await store.signIn({ privateKey: 'deadbeef' })
+
+      // Регрессия: вход по приватному ключу обязан сохранить ключ, иначе
+      // restoreSession() не поднимет сессию после перезагрузки.
+      expect(_addAccountForKey).toHaveBeenCalledWith('PTestAddress123', 'deadbeef')
+      expect(_saveMnemonic).not.toHaveBeenCalled()
     })
 
     it('should call saveWasLogged after successful sign in', async () => {

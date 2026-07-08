@@ -7,7 +7,9 @@ const initMatrix = vi.fn(async () => {})
 const addressToHex = vi.fn((addr: string) => `HEX_${addr}`)
 const getRooms = vi.fn<() => unknown[]>(() => [])
 const createDirectRoom = vi.fn<(id: string) => Promise<string | undefined>>(async () => 'newRoom')
-const sendMessage = vi.fn<(roomid: string, text: string) => Promise<unknown>>(async () => ({
+// P0-2: mini-app chat action теперь шлёт через зашифрованный sendTextContent
+// (per-user pcrypto для DM), а НЕ через сырой matrixService.sendMessage.
+const sendTextContent = vi.fn<(roomid: string, text: string) => Promise<unknown>>(async () => ({
   event_id: 'e1',
 }))
 
@@ -16,7 +18,6 @@ vi.mock('@/b-components/messenger/services/matrix-service', () => ({
     addressToHex: (addr: string) => addressToHex(addr),
     getRooms: () => getRooms(),
     createDirectRoom: (id: string) => createDirectRoom(id),
-    sendMessage: (roomid: string, text: string) => sendMessage(roomid, text),
   },
 }))
 
@@ -28,6 +29,12 @@ vi.mock('@/b-components/messenger/store/messenger-store', () => ({
   useMessengerStore: () => ({ initMatrix: () => initMatrix() }),
 }))
 
+vi.mock('@/b-components/messenger/store/messenger-chat-store', () => ({
+  useMessengerChatStore: () => ({
+    sendTextContent: (roomid: string, text: string) => sendTextContent(roomid, text),
+  }),
+}))
+
 function makeRouter() {
   return { push: vi.fn(async () => {}) } as unknown as Router
 }
@@ -36,7 +43,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   getRooms.mockReturnValue([])
   createDirectRoom.mockResolvedValue('newRoom')
-  sendMessage.mockResolvedValue({ event_id: 'e1' })
+  sendTextContent.mockResolvedValue({ event_id: 'e1' })
 })
 
 describe('chatOpenRoom', () => {
@@ -58,15 +65,15 @@ describe('chatGetOrCreateRoom', () => {
 
   it('throw chat_no_users если передан не массив', async () => {
     const { chatGetOrCreateRoom } = createChatMethods({ router: makeRouter() })
-    await expect(
-      chatGetOrCreateRoom(undefined as unknown as string[], undefined),
-    ).rejects.toThrow('chat_no_users')
+    await expect(chatGetOrCreateRoom(undefined as unknown as string[], undefined)).rejects.toThrow(
+      'chat_no_users'
+    )
   })
 
   it('throw chat_group_rooms_not_supported при >1 пользователе', async () => {
     const { chatGetOrCreateRoom } = createChatMethods({ router: makeRouter() })
     await expect(chatGetOrCreateRoom(['a', 'b'], undefined)).rejects.toThrow(
-      'chat_group_rooms_not_supported',
+      'chat_group_rooms_not_supported'
     )
   })
 
@@ -76,9 +83,7 @@ describe('chatGetOrCreateRoom', () => {
   })
 
   it('возвращает существующую комнату не создавая новую', async () => {
-    getRooms.mockReturnValue([
-      { roomId: '!existing', getMember: () => ({ userId: 'x' }) },
-    ])
+    getRooms.mockReturnValue([{ roomId: '!existing', getMember: () => ({ userId: 'x' }) }])
     const { chatGetOrCreateRoom } = createChatMethods({ router: makeRouter() })
 
     const res = await chatGetOrCreateRoom(['ADDR1'], undefined)
@@ -100,9 +105,7 @@ describe('chatGetOrCreateRoom', () => {
   })
 
   it('создаёт новую DM-комнату если существующей нет', async () => {
-    getRooms.mockReturnValue([
-      { roomId: '!other', getMember: () => undefined },
-    ])
+    getRooms.mockReturnValue([{ roomId: '!other', getMember: () => undefined }])
     createDirectRoom.mockResolvedValue('!created')
     const { chatGetOrCreateRoom } = createChatMethods({ router: makeRouter() })
 
@@ -117,7 +120,7 @@ describe('chatGetOrCreateRoom', () => {
     const { chatGetOrCreateRoom } = createChatMethods({ router: makeRouter() })
 
     await expect(chatGetOrCreateRoom(['ADDR1'], undefined)).rejects.toThrow(
-      'chat_create_room_failed',
+      'chat_create_room_failed'
     )
   })
 })
@@ -130,19 +133,17 @@ describe('chatSendMessage', () => {
 
   it('throw chat_no_roomid если roomid не строка', async () => {
     const { chatSendMessage } = createChatMethods({ router: makeRouter() })
-    await expect(
-      chatSendMessage(123 as unknown as string, 'hi'),
-    ).rejects.toThrow('chat_no_roomid')
+    await expect(chatSendMessage(123 as unknown as string, 'hi')).rejects.toThrow('chat_no_roomid')
   })
 
-  it('отправляет строковый content', async () => {
-    sendMessage.mockResolvedValue({ event_id: 'e9' })
+  it('отправляет строковый content (через зашифрованный sendTextContent)', async () => {
+    sendTextContent.mockResolvedValue({ event_id: 'e9' })
     const { chatSendMessage } = createChatMethods({ router: makeRouter() })
 
     const res = await chatSendMessage('!r', 'hello')
 
     expect(initMatrix).toHaveBeenCalledTimes(1)
-    expect(sendMessage).toHaveBeenCalledWith('!r', 'hello')
+    expect(sendTextContent).toHaveBeenCalledWith('!r', 'hello')
     expect(res).toEqual({ event_id: 'e9' })
   })
 
@@ -151,7 +152,7 @@ describe('chatSendMessage', () => {
 
     await chatSendMessage('!r', { body: 'from-body' } as unknown as string)
 
-    expect(sendMessage).toHaveBeenCalledWith('!r', 'from-body')
+    expect(sendTextContent).toHaveBeenCalledWith('!r', 'from-body')
   })
 
   it('throw chat_empty_content при пустой строке', async () => {
@@ -161,13 +162,13 @@ describe('chatSendMessage', () => {
 
   it('throw chat_empty_content при объекте без body', async () => {
     const { chatSendMessage } = createChatMethods({ router: makeRouter() })
-    await expect(
-      chatSendMessage('!r', { foo: 'bar' } as unknown as string),
-    ).rejects.toThrow('chat_empty_content')
+    await expect(chatSendMessage('!r', { foo: 'bar' } as unknown as string)).rejects.toThrow(
+      'chat_empty_content'
+    )
   })
 
-  it('возвращает { ok: true } если sendMessage вернул null', async () => {
-    sendMessage.mockResolvedValue(null)
+  it('возвращает { ok: true } если sendTextContent вернул null', async () => {
+    sendTextContent.mockResolvedValue(null)
     const { chatSendMessage } = createChatMethods({ router: makeRouter() })
 
     const res = await chatSendMessage('!r', 'hi')

@@ -71,6 +71,11 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     loadMessages: loading.loadMessages,
     loadMoreMessages: loading.loadMoreMessages,
     sendMessage: sending.sendMessage,
+    // Throwing-вариант (в отличие от sendMessage, который глотает ошибки) —
+    // для вызывающих, которым нужен результат/ошибка (напр. mini-app chat action).
+    sendTextContent: sending.sendTextContent,
+    replyToMessage: sending.replyToMessage,
+    deleteMessage: sending.deleteMessage,
     sendReaction: sending.sendReaction,
     sendAudio: mediaSending.sendAudio,
     sendImage: mediaSending.sendImage,

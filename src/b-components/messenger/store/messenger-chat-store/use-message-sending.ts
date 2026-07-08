@@ -23,6 +23,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     pcryptoService,
     getOrderedMemberIds,
     collectPcryptoUsers,
+    pickRoomBlock,
   } = chatCrypto
 
   /** Возвращает Pocketnet-адрес собеседника в личном чате. null — если это не 1-на-1. */
@@ -43,7 +44,12 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
    *   3) AES-CBC шифруем тело общим ключом, отправляем m.room.message
    *      { msgtype: 'm.encrypted', body: hex, hash, block: 10 }.
    */
-  const sendGroupMessage = async (chatId: string, room: MxRoom, text: string) => {
+  const sendGroupMessage = async (
+    chatId: string,
+    room: MxRoom,
+    text: string,
+    extraContent?: Record<string, unknown>
+  ) => {
     await room.loadMembersIfNeeded?.()
 
     ensurePcryptoInitialized()
@@ -87,21 +93,105 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     }
 
     const bodyHex = await encryptTextWithSecret(text, commonSecret)
-    await matrixService.sendEncryptedTextMessage(chatId, { body: bodyHex, hash, block })
+    return matrixService.sendEncryptedTextMessage(
+      chatId,
+      { body: bodyHex, hash, block },
+      extraContent
+    )
+  }
+
+  /**
+   * Отправка личного (1:1) текста через pcrypto (E2E) — как медиа и группы.
+   *
+   * P0-2: раньше тет-а-тет шёл сырым `m.text` (открытый текст оседал на
+   * homeserver'е matrix.pocketnet.app — разрыв E2E-гарантии). Теперь шифруем так
+   * же, как forta.chat `encryptEvent` для tetatet: per-user AES-SIV (ECDH по
+   * ключам мессенджера участников), результат — Base64(JSON map) в `body`.
+   */
+  const sendDirectEncryptedText = async (
+    chatId: string,
+    room: MxRoom,
+    text: string,
+    extraContent?: Record<string, unknown>
+  ) => {
+    await room.loadMembersIfNeeded?.()
+
+    ensurePcryptoInitialized()
+    if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
+    if (!pcryptoService.value) throw new Error('PcryptoService not initialized')
+
+    const memberIds = getOrderedMemberIds(room, Date.now())
+    const users = await collectPcryptoUsers(memberIds)
+    const block = await pickRoomBlock(room)
+    const version = 2
+
+    const secrets = await pcryptoService.value.encryptKey(text, users, block, version)
+    return matrixService.sendEncryptedDirectMessage(
+      chatId,
+      { body: secrets.keys, block: secrets.block, version },
+      extraContent
+    )
+  }
+
+  /**
+   * Базовая отправка текста: тет-а-тет → per-user pcrypto (E2E), группа →
+   * протокол общего ключа. Сырой `m.text` не отправляется НИКОГДА (см. P0-2).
+   * `extraContent` — relation-метаданные (m.relates_to для ответа) подмешиваются
+   * во внешний (открытый) content зашифрованного сообщения.
+   */
+  const sendTextContent = async (
+    chatId: string,
+    text: string,
+    extraContent?: Record<string, unknown>
+  ) => {
+    // Если нас лишь пригласили в комнату — вступаем перед отправкой, иначе
+    // Matrix вернёт M_FORBIDDEN («not in room»). Идемпотентно для joined-комнат.
+    await matrixService.joinIfInvited(chatId)
+    const room = matrixService.getRoom(chatId)
+    // Без комнаты шифрование невозможно (нет участников/ключей). Не деградируем к
+    // открытому тексту — бросаем, как это делает и медиа-путь.
+    if (!room) throw new Error('Room not found')
+    if (!isTetatetchat(room)) {
+      return sendGroupMessage(chatId, room, text, extraContent)
+    }
+    return sendDirectEncryptedText(chatId, room, text, extraContent)
   }
 
   const sendMessage = async (chatId: string, text: string) => {
     try {
-      const room = matrixService.getRoom(chatId)
-      // Для тет-а-тет оставляем текущее поведение (отправка m.text).
-      // Для групп — протокол общего ключа.
-      if (room && !isTetatetchat(room)) {
-        await sendGroupMessage(chatId, room, text)
-        return
-      }
-      await matrixService.sendMessage(chatId, text)
+      await sendTextContent(chatId, text)
     } catch (e) {
       console.error('[ChatStore] Ошибка отправки сообщения:', e)
+    }
+  }
+
+  /**
+   * Ответ на сообщение (Matrix m.in_reply_to). Тело шифруется как обычное
+   * сообщение; добавляется только non-sensitive relation с event_id оригинала.
+   */
+  const replyToMessage = async (chatId: string, text: string, replyToEventId: string) => {
+    try {
+      await sendTextContent(chatId, text, {
+        'm.relates_to': { 'm.in_reply_to': { event_id: replyToEventId } },
+      })
+    } catch (e) {
+      console.error('[ChatStore] Ошибка отправки ответа:', e)
+      throw e
+    }
+  }
+
+  /** Удаление своего сообщения (redaction). Оптимистично убираем локально. */
+  const deleteMessage = async (chatId: string, eventId: string) => {
+    try {
+      await matrixService.redactEvent(chatId, eventId, 'deleted')
+      const list = messages[chatId]
+      if (list) {
+        const idx = list.findIndex((m) => m.id === eventId)
+        if (idx !== -1) list.splice(idx, 1)
+      }
+    } catch (e) {
+      console.error('[ChatStore] Ошибка удаления сообщения:', e)
+      throw e
     }
   }
 
@@ -211,7 +301,15 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     }
   }
 
-  return { getDirectPartnerAddress, sendMessage, sendReaction, sendPkoin }
+  return {
+    getDirectPartnerAddress,
+    sendTextContent,
+    sendMessage,
+    replyToMessage,
+    deleteMessage,
+    sendReaction,
+    sendPkoin,
+  }
 }
 
 export type MessageSending = ReturnType<typeof useMessageSending>

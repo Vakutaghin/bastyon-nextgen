@@ -31,6 +31,8 @@ import {
   useTorStore,
   useUIStore,
 } from '@/stores'
+import { useModalStore } from '@/stores/modal-store'
+import { configureUnlockUi, ensureVaultUnlocked } from '@/blockchain/storage/vault/vault-unlock'
 // Force-load request module so __torDebug is available in the console at boot.
 import '@/helpers/api/request'
 import { useMessengerStore } from '@/b-components/messenger/store'
@@ -68,6 +70,22 @@ const messengerStore = useMessengerStore(pinia)
 const notificationsStore = useNotificationsStore(pinia)
 const torStore = useTorStore(pinia)
 torStore.hydrate().catch(() => {})
+
+// P0-1: мост разблокировки сейфа (passphrase-режим) + ранний старт разлока.
+// Для passwordless — молчаливый авто-разлок; модалка не показывается. В embed
+// модалки нет (hostAvailable=false), поэтому passphrase-сейф там просто не
+// разлочится (публичный embed и не нуждается в доступе к кошельку).
+const isEmbedRoute = (): boolean => router.currentRoute.value?.meta?.embed === true
+configureUnlockUi({
+  open: () => useModalStore(pinia).openVaultUnlock(),
+  close: () => useModalStore(pinia).closeVaultUnlock(),
+  hostAvailable: () => !isEmbedRoute(),
+})
+if (!isEmbedRoute()) {
+  // Fire-and-forget: модалка (если нужна) появится сразу после mount; restoreSession
+  // дедупится тем же мемоизированным промисом (ensureVaultUnlocked) [A5].
+  ensureVaultUnlocked().catch(() => {})
+}
 // Подтягиваем сохранённый язык из IndexedDB и применяем к vue-i18n + <html lang>.
 useUIStore(pinia)
   .loadLanguage()

@@ -26,7 +26,12 @@ import {
 import type { RemoteAppEntry } from '../registry/remote-registry'
 import { matchesOrigin, type AppOriginResolver } from '../core/origin-guard'
 import { usePermissionsStore } from './permissions-store'
-import { builtInToInstalled, doInstall, remoteEntryToInstalled } from './apps-installer'
+import {
+  assertInstallIdentity,
+  builtInToInstalled,
+  doInstall,
+  remoteEntryToInstalled,
+} from './apps-installer'
 import { seedPreinstalledGrants } from './apps-permission-sync'
 
 const log = logger.scope('[mini-apps:store]')
@@ -163,6 +168,9 @@ export const useAppsStore = defineStore('mini-apps:apps', {
 
       const promise = this._doInstall(scope, opts)
         .then((app) => {
+          // P0-3: не даём чужому origin занять id built-in/уже установленного
+          // приложения и унаследовать его гранты. Бросает до записи в installed[].
+          assertInstallIdentity(app, this.installed)
           this.installed[app.manifest.id] = app
           delete this.installing[app.manifest.id]
           delete this.errors[app.manifest.id]

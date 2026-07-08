@@ -37,6 +37,11 @@ export const useModalStore = defineStore('modal', {
       mode: 'create' as ComposerMode,
       source: null as ComposerSource | null,
     },
+    // P0-1: недискардимая модалка разблокировки сейфа (passphrase-режим).
+    // Только UI-состояние; резолвер unlock живёт в vault-unlock.ts (module-scope).
+    vaultUnlock: {
+      isOpen: false,
+    },
   }),
 
   actions: {
@@ -73,6 +78,16 @@ export const useModalStore = defineStore('modal', {
      */
     closePostComposerModal(): void {
       this.postComposerModal.isOpen = false
+    },
+
+    /** Открывает модалку разблокировки сейфа (вызывается мостом vault-unlock). */
+    openVaultUnlock(): void {
+      this.vaultUnlock.isOpen = true
+    },
+
+    /** Закрывает модалку разблокировки сейфа. */
+    closeVaultUnlock(): void {
+      this.vaultUnlock.isOpen = false
     },
 
     /**

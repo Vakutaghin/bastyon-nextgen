@@ -6,7 +6,8 @@ import type { Address } from '../types/addresses'
 import type { StorageSaveResult, StorageLoadResult } from '../types/storage'
 
 import { encryptData, decryptData } from './encryption'
-import { getDeviceFingerprint } from './device-fingerprint'
+import { getVaultSecret, getVaultLegacyKey } from './vault/crypto-vault'
+import { looksLikeAccountsList } from './vault/plausibility'
 import { ACCOUNTS_LIST_KEY } from './storage-constants'
 
 /** Сохраняет зашифрованный список аккаунтов. */
@@ -16,7 +17,8 @@ export function saveAccountsList(accountsList: AccountsList): StorageSaveResult 
       return { success: false, error: 'localStorage is not available' }
     }
 
-    const encrypted = encryptData(JSON.stringify(accountsList), getDeviceFingerprint())
+    // P0-1: ключ — секрет сейфа (bare-шифротекст, без {data,…}-конверта).
+    const encrypted = encryptData(JSON.stringify(accountsList), getVaultSecret())
     localStorage.setItem(ACCOUNTS_LIST_KEY, encrypted)
 
     return { success: true, storageType: 'localStorage' }
@@ -44,7 +46,24 @@ export function loadAccountsList(): StorageLoadResult<AccountsList> {
       }
     }
 
-    const decrypted = decryptData(encrypted, getDeviceFingerprint())
+    // P0-1 heal-ветка (bare): под S, иначе под legacy fingerprint + перешифровать под S.
+    const key = getVaultSecret()
+    const legacy = getVaultLegacyKey()
+    let decrypted: string
+    try {
+      decrypted = decryptData(encrypted, key)
+      // Отсекаем ~1/256 ложную «расшифровку» fingerprint-списка под S (см. storage-keys).
+      if (legacy && !looksLikeAccountsList(decrypted))
+        throw new Error('vault: implausible accounts-list decrypt under S')
+    } catch (e) {
+      if (!legacy) throw e
+      decrypted = decryptData(encrypted, legacy)
+      try {
+        localStorage.setItem(ACCOUNTS_LIST_KEY, encryptData(decrypted, key))
+      } catch {
+        /* quota и пр.: чтение не проваливаем */
+      }
+    }
     const accountsList = JSON.parse(decrypted) as AccountsList
 
     return { success: true, data: accountsList, storageType: 'localStorage' }
