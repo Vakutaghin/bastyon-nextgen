@@ -153,13 +153,30 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     return s
   })
 
+  /**
+   * Указатель загруженного видео (peertube://…), пришедший из аплоадера, а НЕ из текста.
+   * Мост Фазы E: аплоадер кладёт сюда указатель → он питает post.url и needsCaption,
+   * даже когда пользователь ничего не писал в теле. Приоритет над авто-ссылкой из текста.
+   */
+  const uploadedVideoUrl = ref('')
+
   /** Видео-ссылка, авто-найденная в тексте поста (youtube/vimeo/peertube). */
   const videoUrl = computed(() => (articleMode.value ? '' : firstVideoUrl(message.value)))
-  const parsedVideo = computed(() => parseVideoUrl(videoUrl.value))
+  /** Эффективный url видео: загруженный указатель приоритетнее авто-ссылки из текста. */
+  const effectiveVideoUrl = computed(() => uploadedVideoUrl.value || videoUrl.value)
+  const parsedVideo = computed(() => parseVideoUrl(effectiveVideoUrl.value))
   /** peertube-видео/аудио требуют заголовок (caption) — показываем поле title. */
   const needsCaption = computed(
     () => parsedVideo.value.kind === 'peertube' || parsedVideo.value.kind === 'audio'
   )
+
+  /** Аплоадер вызывает после успешной загрузки: подставить указатель в пост. */
+  const setUploadedVideoUrl = (pointer: string): void => {
+    uploadedVideoUrl.value = pointer || ''
+  }
+  const clearUploadedVideoUrl = (): void => {
+    uploadedVideoUrl.value = ''
+  }
 
   /**
    * Текущий пост в форме SharePostData.
@@ -181,7 +198,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     return {
       message: message.value.trim(),
       caption: caption.value.trim(),
-      url: videoUrl.value || undefined,
+      url: effectiveVideoUrl.value || undefined,
       tags: tags.value,
       images: base64List.value,
       poll: cleanedPoll.value,
@@ -282,6 +299,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     pollTitle.value = ''
     pollOptions.value = ['', '']
     scheduledTime.value = 0
+    uploadedVideoUrl.value = ''
     clearImages()
     if (mode === 'create') writeDraft('')
   }
@@ -340,7 +358,9 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     articleContent,
     parsedVideo,
     needsCaption,
-    caption,
+    uploadedVideoUrl,
+    setUploadedVideoUrl,
+    clearUploadedVideoUrl,
     pollActive,
     pollTitle,
     pollOptions,

@@ -44,3 +44,29 @@ export function parsePeerTubeUrl(url: string): PeerTubeUrl | null {
 
   return { host, videoId, type }
 }
+
+/** Опции суффикса указателя (взаимоисключающие; audio имеет приоритет). */
+export interface ComposePeerTubeUrlOptions {
+  isAudio?: boolean
+  isLive?: boolean
+}
+
+/**
+ * Строит канонический указатель `peertube://host/videoid[/audio|/stream]`.
+ * Пара к parsePeerTubeUrl (kit.js composeLink:151-158): суффикс `/audio` для аудио,
+ * `/stream` для лайва. Именно эта строка кладётся в post.url (operationType выводится из неё).
+ *
+ * @example composePeerTubeUrl('h', 'abc') // 'peertube://h/abc'
+ * @example composePeerTubeUrl('h', 'abc', { isAudio: true }) // 'peertube://h/abc/audio'
+ */
+export function composePeerTubeUrl(
+  host: string,
+  videoId: string,
+  options: ComposePeerTubeUrlOptions = {}
+): string {
+  if (!host || !videoId) throw new Error('peertube_pointer_invalid')
+  const base = `peertube://${host}/${videoId}`
+  if (options.isAudio) return `${base}/audio`
+  if (options.isLive) return `${base}/stream`
+  return base
+}
