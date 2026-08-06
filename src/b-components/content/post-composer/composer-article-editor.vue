@@ -17,14 +17,25 @@ const props = defineProps<{ modelValue?: ArticleContent | null }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: ArticleContent): void }>()
 
 const { t } = useI18n()
-const holderRef = ref<HTMLElement | null>(null)
+// ref навешен на SC_ArticleEditor (styled.div) — Vue кладёт сюда инстанс-обёртку,
+// а Editor.js требует НАТИВНЫЙ Element (иначе «holder value must be an Element node»).
+// Достаём реальный DOM-узел через $el (как getInputEl/getTextareaEl в других композер-частях).
+const holderRef = ref<HTMLElement | { $el?: HTMLElement } | null>(null)
+
+function getHolderEl(): HTMLElement | null {
+  const r = holderRef.value
+  if (!r) return null
+  if (r instanceof HTMLElement) return r
+  return (r as { $el?: HTMLElement }).$el ?? null
+}
 
 // Тип Editor.js не импортируем статически (грузим динамически) — держим инстанс как unknown.
 let editor: { save: () => Promise<unknown>; destroy: () => void; isReady?: Promise<void> } | null =
   null
 
 onMounted(async () => {
-  if (!holderRef.value) return
+  const holderEl = getHolderEl()
+  if (!holderEl) return
 
   // Динамический импорт — Editor.js и инструменты только для браузера, вне основного чанка.
   const [{ default: EditorJS }, Header, EditorList, Quote, CodeTool, ImageTool, Delimiter] =
@@ -46,7 +57,7 @@ onMounted(async () => {
 
   /* eslint-disable @typescript-eslint/no-explicit-any -- инструменты Editor.js без точных типов */
   editor = new (EditorJS as any)({
-    holder: holderRef.value,
+    holder: holderEl,
     minHeight: 200,
     placeholder: t('postComposer.articlePlaceholder'),
     data: props.modelValue ?? undefined,
