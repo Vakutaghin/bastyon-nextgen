@@ -64,7 +64,16 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const inputRef = ref<HTMLInputElement | null>(null)
+// ref на SC_TagInput (styled.input) — Vue кладёт сюда инстанс обёртки, а не DOM-узел,
+// поэтому держим оба варианта и достаём нативный input через $el (как getTextareaEl в post-composer).
+const inputRef = ref<HTMLInputElement | { $el?: HTMLInputElement } | null>(null)
+
+function getInputEl(): HTMLInputElement | null {
+  const r = inputRef.value
+  if (!r) return null
+  if (typeof (r as HTMLInputElement).focus === 'function') return r as HTMLInputElement
+  return (r as { $el?: HTMLInputElement }).$el ?? null
+}
 const open = ref(false)
 const activeIndex = ref(0)
 
@@ -100,7 +109,7 @@ const cloud = computed<string[]>(() => {
 const suggestions = computed(() => filterTagSuggestions(cloud.value, props.inputValue, props.tags))
 
 const focusInput = (): void => {
-  inputRef.value?.focus()
+  getInputEl()?.focus()
 }
 
 const onInput = (e: Event): void => {
