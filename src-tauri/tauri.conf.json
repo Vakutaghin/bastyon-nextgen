@@ -21,11 +21,12 @@
         "fullscreen": false,
         "maximized": false,
         "center": false,
-        "zoomHotkeysEnabled": true
+        "zoomHotkeysEnabled": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost https://asset.localhost http://tauri.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' tauri: https://asset.localhost http://tauri.localhost; connect-src 'self' asset: ipc: http://ipc.localhost http://asset.localhost https://* http://* wss://* https://*.pocketnet.app https://*.pocketnet.app:8899 https://matrix.pocketnet.app https://*.matrix.pocketnet.app https://matrix.bastyon.com wss://matrix.pocketnet.app wss://*.matrix.pocketnet.app; style-src 'self' 'unsafe-inline' tauri:; img-src 'self' https: data: blob:; frame-src 'self' https://www.youtube.com https://youtube.com https://*.youtube.com; media-src 'self' blob: tauri: https:",
+      "csp": "default-src 'self' ipc: ipc://localhost http://ipc.localhost https://asset.localhost http://tauri.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' tauri: https://asset.localhost http://tauri.localhost; connect-src 'self' asset: ipc: ipc://localhost http://ipc.localhost http://asset.localhost https://* http://* wss://* https://*.pocketnet.app https://*.pocketnet.app:8899 https://matrix.pocketnet.app https://*.matrix.pocketnet.app https://matrix.bastyon.com wss://matrix.pocketnet.app wss://*.matrix.pocketnet.app; style-src 'self' 'unsafe-inline' tauri:; img-src 'self' https: data: blob:; frame-src 'self' https://www.youtube.com https://youtube.com https://*.youtube.com; media-src 'self' blob: tauri: https:",
       "assetProtocol": {
         "enable": true,
         "scope": ["$RESOURCE/**", "$TEMP/**"]

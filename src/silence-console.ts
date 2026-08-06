@@ -7,9 +7,11 @@
  *
  * Импортируется ПЕРВЫМ в `main.ts`, чтобы зацепить и boot-time логи модулей.
  *
- * Намеренно НЕ глушим `console.info` и `console.debug` — DevTools по умолчанию их прячет,
- * но при включении уровней они помогают диагностике. `console.log` — основной источник
- * мусора (legacy `console.log('foo')` из вендоров). См. CODE_AUDIT.md §7.
+ * Глушим `console.log` и `console.debug`: первый — legacy-мусор вендоров, второй —
+ * verbose-логи (наш scoped-logger, matrix-js-sdk `[Debug] sync`, mini-apps). Chrome DevTools
+ * прячет debug по умолчанию, но WebKit-инспектор Tauri его ПОКАЗЫВАЕТ — поэтому в десктопе
+ * это основной источник шума. `console.info` оставляем (его немного, помогает диагностике).
+ * См. CODE_AUDIT.md §7.
  */
 
 // @ts-expect-error — deep import has no types but resolves at runtime.
@@ -34,6 +36,10 @@ if (!shouldKeepVerbose()) {
   const noop = () => {}
   // eslint-disable-next-line no-console
   console.log = noop
+  // console.debug — verbose-логи (scoped-logger, matrix `[Debug] sync`); в WebKit-инспекторе
+  // Tauri видны по умолчанию, поэтому глушим тоже. Раскрыть: debug=1.
+  // eslint-disable-next-line no-console
+  console.debug = noop
 
   // Filter known-noisy `console.warn` patterns; keep real warnings.
   const origWarn = console.warn.bind(console)
