@@ -11,7 +11,15 @@
     @cancel="handleCancel"
   >
     <SC_AccountSwitcher>
-      <SC_EmptyState v-if="accounts.length === 0">
+      <SC_AccountsLoading v-if="isLoading">
+        <Spin>
+          <template #indicator>
+            <LoadingOutlined :style="ICON_PRIMARY_24" spin />
+          </template>
+        </Spin>
+      </SC_AccountsLoading>
+
+      <SC_EmptyState v-else-if="accounts.length === 0">
         <p>{{ t('accounts.noSavedAccounts') }}</p>
       </SC_EmptyState>
 
@@ -96,10 +104,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { LogoutOutlined } from '@ant-design/icons-vue'
+import { LogoutOutlined, LoadingOutlined } from '@ant-design/icons-vue'
 import Modal from '@/components/modal/modal.vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import Button from '@/components/button/button.vue'
+import Spin from '@/components/spin/spin.vue'
+import { ICON_PRIMARY_24 } from '@/styles/icon-styles'
 import SignInModal from '@/b-components/header/sign-in-modal/sign-in-modal.vue'
 import MnemonicModal from '@/b-components/header/mnemonic-modal/mnemonic-modal.vue'
 import ConfirmDeleteModal from './confirm-delete-modal.vue'
@@ -113,6 +123,7 @@ import { loadAccountMnemonic } from './helpers/load-account-mnemonic'
 import keyIcon from './key-icon.svg?url'
 import {
   SC_AccountSwitcher,
+  SC_AccountsLoading,
   SC_EmptyState,
   SC_AccountsList,
   SC_AccountItem,
@@ -140,6 +151,7 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 
 const accounts = ref<AccountDisplayInfo[]>([])
+const isLoading = ref(false)
 const signInModalOpen = ref(false)
 const addingAccount = ref(false)
 const confirmDeleteOpen = ref(false)
@@ -157,11 +169,18 @@ const isOpen = computed<boolean>({
 const currentAddress = computed<Address | null>(() => authStore.getUserAddress)
 
 async function loadAccounts(): Promise<void> {
-  accounts.value = await loadAccountsHelper({
-    accountsInfo: authStore.getAccountsInfo(),
-    currentAddress: authStore.getUserAddress,
-    currentUserProfile: authStore.getUserProfile,
-  })
+  // Показываем спиннер, пока идёт расшифровка/дозагрузка профилей (getuserprofile).
+  // Без флага окно на время await выглядело пустым («нет аккаунтов»).
+  isLoading.value = true
+  try {
+    accounts.value = await loadAccountsHelper({
+      accountsInfo: authStore.getAccountsInfo(),
+      currentAddress: authStore.getUserAddress,
+      currentUserProfile: authStore.getUserProfile,
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 
 function formatAddress(address: Address): string {

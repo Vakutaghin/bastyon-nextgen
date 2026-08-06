@@ -11,6 +11,14 @@ export const SC_EmptyState = styled.div`
   color: ${COLORS.TEXT_MUTED};
 `
 
+/** Прелоадер списка аккаунтов — пока идёт расшифровка/дозагрузка профилей. */
+export const SC_AccountsLoading = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+`
+
 export const SC_AccountsList = styled.div`
   margin-bottom: 20px;
 `
