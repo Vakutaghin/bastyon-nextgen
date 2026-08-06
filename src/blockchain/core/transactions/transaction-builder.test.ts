@@ -111,7 +111,10 @@ describe('buildTransaction', () => {
     expect(txb.calls.addNTime).toEqual([0])
     expect(txb.calls.addInput).toHaveLength(1)
     expect(txb.calls.addInput[0].slice(0, 3)).toEqual(['aa', 0, null]) // txid, vout, sequence
-    expect(txb.calls.sign).toEqual([[0, KEY_PAIR.ecPair]])
+    // Объектная форма TxbSignArg (p2pkh), а не позиционная sign(index, keyPair)
+    expect(txb.calls.sign).toEqual([
+      [{ prevOutScriptType: 'p2pkh', vin: 0, keyPair: KEY_PAIR.ecPair }],
+    ])
     // первый addOutput — OP_RETURN с amount 0
     expect(txb.calls.addOutput[0][1]).toBe(0)
     // второй — change в сатоши

@@ -40,13 +40,17 @@ describe('signTransactionInput', () => {
     ).toThrow('Valid key pair is required')
   })
 
-  it('обычная подпись: builder.sign(index, ecPair) и возврат pubkey', () => {
+  it('обычная подпись: builder.sign(TxbSignArg p2pkh) и возврат pubkey', () => {
     const builder = makeBuilder()
     const kp = makeKeyPair()
 
     const res = signTransactionInput(builder, 2, kp, { inputIndex: 2 })
 
-    expect(builder.sign).toHaveBeenCalledWith(2, kp.ecPair)
+    expect(builder.sign).toHaveBeenCalledWith({
+      prevOutScriptType: 'p2pkh',
+      vin: 2,
+      keyPair: kp.ecPair,
+    })
     expect(res).toEqual({ signature: '', pubkey: '02aabbcc', address: '' })
   })
 
@@ -56,7 +60,11 @@ describe('signTransactionInput', () => {
 
     signTransactionInput(builder, 0, kp, { inputIndex: 5 })
 
-    expect(builder.sign).toHaveBeenCalledWith(5, kp.ecPair)
+    expect(builder.sign).toHaveBeenCalledWith({
+      prevOutScriptType: 'p2pkh',
+      vin: 5,
+      keyPair: kp.ecPair,
+    })
   })
 
   it('без options используется позиционный inputIndex', () => {
@@ -66,7 +74,11 @@ describe('signTransactionInput', () => {
 
     signTransactionInput(builder, 2, kp)
 
-    expect(builder.sign).toHaveBeenCalledWith(2, kp.ecPair)
+    expect(builder.sign).toHaveBeenCalledWith({
+      prevOutScriptType: 'p2pkh',
+      vin: 2,
+      keyPair: kp.ecPair,
+    })
   })
 
   it('специальный тип: prevOutScript+prevOutScriptType → объектная форма sign()', () => {
@@ -136,13 +148,17 @@ describe('signTransactionForAddress', () => {
     ).toThrow('Unsupported address type for signing')
   })
 
-  it('p2pkh-адрес → обычная подпись по индексу', () => {
+  it('p2pkh-адрес → объектная форма sign (TxbSignArg)', () => {
     const builder = makeBuilder()
     const kp = makeKeyPair()
 
     signTransactionForAddress(builder, { address: 'Paddr' }, 3, kp)
 
-    expect(builder.sign).toHaveBeenCalledWith(3, kp.ecPair)
+    expect(builder.sign).toHaveBeenCalledWith({
+      prevOutScriptType: 'p2pkh',
+      vin: 3,
+      keyPair: kp.ecPair,
+    })
   })
 
   it('htlc-вход со scriptPubKey → объектная форма с prevOutScript', () => {

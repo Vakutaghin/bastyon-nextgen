@@ -69,8 +69,13 @@ export function signTransactionInput(
         keyPair: keyPair.ecPair,
       })
     } else {
-      // Обычная подпись входа
-      transactionBuilder.sign(index, keyPair.ecPair)
+      // Обычная подпись входа (p2pkh). Объектная форма TxbSignArg вместо
+      // позиционной sign(index, keyPair) — последняя выдаёт DEPRECATED-варнинг.
+      transactionBuilder.sign({
+        prevOutScriptType: 'p2pkh',
+        vin: index,
+        keyPair: keyPair.ecPair,
+      })
     }
 
     // Возвращаем информацию о подписи
@@ -81,7 +86,8 @@ export function signTransactionInput(
     }
   } catch (error) {
     throw new Error(
-      `Failed to sign transaction input: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to sign transaction input: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -190,7 +196,8 @@ export function createTransactionSignature(
     }
   } catch (error) {
     throw new Error(
-      `Failed to create transaction signature: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to create transaction signature: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }

@@ -22,11 +22,15 @@ export interface TransactionBuilder {
     witnessScript?: Buffer
   ): void;
 
+  // Объектная форма (TxbSignArg) — предпочтительна в bitcoinjs-lib v5+;
+  // позиционная форма выдаёт DEPRECATED-варнинг. Для p2pkh `prevOutScript`
+  // не нужен: builder берёт scriptPubKey из addInput.
   sign(options: {
-    prevOutScript: Buffer;
     prevOutScriptType: string;
     vin: number;
     keyPair: ECPairInterface;
+    prevOutScript?: Buffer;
+    redeemScript?: Buffer;
     witnessValue?: number;
     witnessScript?: Buffer;
     hashType?: number;

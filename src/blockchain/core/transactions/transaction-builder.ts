@@ -274,11 +274,11 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
   // ВНИМАНИЕ: Pocketnet использует специфичную логику подписи
   // Если используется bitcoinjs-lib 5.x+, нужно передавать keyPair.network
   unspents.forEach((_unspent, index) => {
-    // Для подписи нам нужен keyPair
-    // В старом коде: txb.sign(index, keyPair)
-    // ВНИМАНИЕ: keyPair здесь - это объект KeyPair из types/keys.ts, который содержит ecPair
-    // TransactionBuilder ожидает объект с интерфейсом Signer (ecPair)
-    txb.sign(index, keyPair.ecPair)
+    // Объектная форма (TxbSignArg) вместо позиционной txb.sign(index, keyPair) —
+    // последняя в bitcoinjs-lib v5+ выдаёт DEPRECATED-варнинг. Входы социальных
+    // транзакций всегда p2pkh (адрес пользователя P/T), prevOutScript builder
+    // берёт из addInput, поэтому передавать его не нужно.
+    txb.sign({ prevOutScriptType: 'p2pkh', vin: index, keyPair: keyPair.ecPair })
   })
 
   // Строим транзакцию
