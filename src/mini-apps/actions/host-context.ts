@@ -22,6 +22,7 @@ import { createRpcMethods } from './host-context-methods/rpc'
 import { createContentMethods } from './host-context-methods/content'
 import { createPaymentMethods } from './host-context-methods/payments'
 import { createMediaMethods } from './host-context-methods/media'
+import { createMediaUploadMethods } from './host-context-methods/media-upload'
 import { createChatMethods } from './host-context-methods/chat'
 
 export type HostDevice = 'browser' | 'capacitor_ios' | 'capacitor_android' | 'tauri' | 'electron'
@@ -167,6 +168,19 @@ export interface HostContext {
    */
   takePhoto(): Promise<{ images: Array<{ image: string }> }>
 
+  /**
+   * Загружает изображения (data-URL base64) через провайдера картинок,
+   * сохраняя порядок. Возвращает публичные URL. Legacy `images.upload`.
+   */
+  uploadImages(images: string[]): Promise<string[]>
+
+  /**
+   * Удаляет видео на PeerTube-инстансе по указателю `peertube://host/id[/audio]`
+   * (авторизуется токеном текущего пользователя). Legacy `videos.remove`.
+   * Throws `not_authenticated`, если пользователь не залогинен.
+   */
+  removeVideo(pointer: string): Promise<void>
+
   // ─── chat (5.7) ────────────────────────────────────────────────────────
   /** Открывает room в Matrix-чате. */
   chatOpenRoom(roomid: string): Promise<void>
@@ -214,6 +228,8 @@ export async function createDefaultHostContext(
   const { getByPRC } = await import('@/helpers/api/request')
   const { rpcEndpoints } = await import('@/helpers/api/rpc-endpoints')
   const { unwrapRpcResponse } = await import('@/helpers/common/response-parser')
+  const { uploadImages } = await import('@/services/image-upload-service')
+  const { removeVideoByPointer } = await import('@/services/peertube/peertube-videos')
 
   const device: HostDevice = opts.device ?? detectDevice(isTauri(), isCapacitor())
 
@@ -222,6 +238,7 @@ export async function createDefaultHostContext(
   const content = createContentMethods({ router: opts.router })
   const payments = createPaymentMethods()
   const media = createMediaMethods({ isCapacitor })
+  const mediaUpload = createMediaUploadMethods({ useAuthStore, uploadImages, removeVideoByPointer })
   const chat = createChatMethods({ router: opts.router })
 
   return {
@@ -286,6 +303,7 @@ export async function createDefaultHostContext(
     ...content,
     ...payments,
     ...media,
+    ...mediaUpload,
     ...chat,
   }
 }

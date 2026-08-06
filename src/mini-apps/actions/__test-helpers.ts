@@ -77,6 +77,10 @@ export function makeMockHost(overrides: Partial<HostContext> = {}): HostContext 
     openPost: vi.fn(async () => {}),
     openDonation: vi.fn(async () => {}),
     openExternalLink: vi.fn(async () => {}),
+    uploadImages: vi.fn(async (imgs: string[]) =>
+      imgs.map((_, i) => `https://cdn.test/img${i}.jpg`)
+    ),
+    removeVideo: vi.fn(async () => {}),
     share: vi.fn(async () => {}),
     openComplain: vi.fn(async () => {}),
     getPendingActions: vi.fn(() => []),
