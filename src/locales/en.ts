@@ -139,6 +139,7 @@ export default {
     noActiveEvents: 'No active events',
     postRating: 'Post rating',
     comment: 'Comment',
+    post: 'Post',
     untitled: 'Untitled',
     reportBug: 'Report a bug',
     themeLight: 'Light theme',
@@ -1359,6 +1360,8 @@ export default {
     errSelectUnspents: 'Failed to prepare funds for the transaction',
     errSendFailed: 'Failed to publish the post',
     publishSuccess: 'Post published',
+    txPending: 'Not yet published to the blockchain',
+    txPendingShort: 'Pending',
     validation: {
       empty: 'A post cannot be empty',
       language: 'Post language is not set',

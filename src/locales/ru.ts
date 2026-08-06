@@ -143,6 +143,7 @@ export default {
     noActiveEvents: 'Нет активных событий',
     postRating: 'Оценка поста',
     comment: 'Комментарий',
+    post: 'Пост',
     untitled: 'Без названия',
     reportBug: 'Сообщить об ошибке',
     themeLight: 'Светлая тема',
@@ -1360,6 +1361,8 @@ export default {
     errSelectUnspents: 'Не удалось подготовить средства для транзакции',
     errSendFailed: 'Не удалось опубликовать пост',
     publishSuccess: 'Пост опубликован',
+    txPending: 'Ещё не опубликовано в блокчейне',
+    txPendingShort: 'Ожидание',
     validation: {
       empty: 'Пост не может быть пустым',
       language: 'Не указан язык поста',

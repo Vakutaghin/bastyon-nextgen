@@ -7,6 +7,11 @@ import type { GetHierarchicalStripPost } from '@/types/rpc-responses/get-hierarc
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { extractPostsFromResponse, mergeRepostContent } from '@/composables/use-feed'
 import type { AdaptedPost } from '@/composables/use-feed'
+import { useAuthStore } from '@/blockchain'
+import { usePendingPostsStore } from '@/stores'
+import { pendingPostToAdapted } from '@/composables/pending-post-adapter'
+import { usePendingPostsRealtime } from '@/composables/use-pending-posts-realtime'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
 
 /** Сырой пост из API с минимальным набором полей, нужных для merge репостов. */
 interface RawRepostPost {
@@ -44,6 +49,25 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
 
   // Безопасное расстояние для подгрузки
   const safeDistance = threshold ?? (typeof window !== 'undefined' ? window.innerHeight : 1000)
+
+  const authStore = useAuthStore()
+  const pendingPostsStore = usePendingPostsStore()
+
+  // Это МОЯ лента? Оптимистичные посты показываем только автору в его профиле.
+  const isOwnFeed = computed(() => {
+    const my = authStore.getUserAddress
+    return !!my && my === address
+  })
+
+  // Автор для оптимистичных постов — текущий пользователь (профиль из auth-store).
+  const myAuthor = computed<AdaptedPost['author']>(() => {
+    const profile = authStore.getUserProfile
+    const myAddress = authStore.getUserAddress || ''
+    const name = (profile && 'name' in profile ? profile.name : '') || myAddress
+    const avatar = profile && profile.i ? (resolveImageUrl(profile.i) ?? null) : null
+    const reputation = profile && 'reputation' in profile ? Number(profile.reputation) || 0 : 0
+    return { name, address: myAddress, avatar, reputation, letter: name ? name[0]! : '?' }
+  })
 
   const allPosts = ref<ReturnType<typeof extractPostsFromResponse>>([])
   const userProfile = ref<UserProfile | null>(null)
@@ -168,6 +192,16 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       allPosts.value = [...allPosts.value, ...uniqueNewPosts]
     }
 
+    // Согласуем оптимистичный слой: если pending-пост уже пришёл из ленты
+    // (его txid среди загруженных) — снимаем pending. Плюс чистим просроченные.
+    if (isOwnFeed.value) {
+      const serverTxids = new Set(
+        allPosts.value.map((p) => p.txid).filter((x): x is string => !!x)
+      )
+      pendingPostsStore.reconcileWithServer(address, serverTxids)
+      pendingPostsStore.cleanupExpired()
+    }
+
     if (contents.length > 0) {
       // Ищем последний элемент с txid (это должен быть пост)
       // Используем extracted posts чтобы быть уверенным
@@ -252,8 +286,33 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     nextTick(setupIntersectionObserver)
   })
 
+  // WS-подтверждение: снимаем pending мгновенно и рефетчим свою ленту, чтобы
+  // оптимистичный пост заменился реальным (уже подтверждённым сетью).
+  usePendingPostsRealtime({
+    onConfirmed: () => {
+      if (isOwnFeed.value) void refetch()
+    },
+  })
+
+  // Оптимистичные посты автора — поверх ленты, только в своём профиле.
+  const pendingAdapted = computed<AdaptedPost[]>(() => {
+    if (!isOwnFeed.value) return []
+    return pendingPostsStore
+      .getPendingForAddress(address)
+      .map((p) => pendingPostToAdapted(p, myAuthor.value))
+  })
+
+  // Финальная лента: pending сверху; дедуп на случай гонки (реальный пост уже
+  // пришёл, а pending ещё не снят) — по txid.
+  const mergedPosts = computed<AdaptedPost[]>(() => {
+    if (!isOwnFeed.value || pendingAdapted.value.length === 0) return allPosts.value
+    const realTxids = new Set(allPosts.value.map((p) => p.txid).filter(Boolean))
+    const pend = pendingAdapted.value.filter((p) => !p.txid || !realTxids.has(p.txid))
+    return [...pend, ...allPosts.value]
+  })
+
   return {
-    allPosts: computed(() => allPosts.value),
+    allPosts: mergedPosts,
     userProfile: computed(() => userProfile.value),
     isLoading,
     isLoadingMore: computed(() => isLoadingMore.value),

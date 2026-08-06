@@ -65,6 +65,11 @@ export interface AdaptedPost {
   repostOriginalTimestamp?: number
   /** Оригинальная запись удалена */
   repostDeleted?: boolean
+  /**
+   * Оптимистичный пост: транзакция ушла в мемпул, но ещё не подтверждена сетью.
+   * Виден только автору в его ленте профиля, рисуется с пометкой «не опубликовано».
+   */
+  pending?: boolean
 }
 
 /**

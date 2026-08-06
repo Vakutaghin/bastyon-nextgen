@@ -6,6 +6,10 @@
     </SC_RepostDeleted>
   </SC_PostCard>
   <SC_PostCard v-else ref="postCardRef" hoverable role="article">
+    <SC_PendingBadge v-if="post.pending" :title="t('postMsg.txPending')">
+      <ClockCircleOutlined />
+      {{ t('postMsg.txPending') }}
+    </SC_PendingBadge>
     <PostCardHeader :post="post" :author-override="authorOverride" />
 
     <component :is="isRepost ? SC_RepostInnerCard : 'div'">
@@ -90,7 +94,7 @@
 
         <PostCardCategoriesTags :post="post" />
 
-        <SC_PostActions>
+        <SC_PostActions v-if="!post.pending">
           <StarRating
             v-if="post.hash || post.txid || post.id"
             :rating="averageRating"
@@ -146,6 +150,7 @@
         </SC_PostActions>
 
         <PostCardComments
+          v-if="!post.pending"
           :post="post"
           :target-comment-id="targetCommentId"
           :target-parent-id="targetParentId"
@@ -172,6 +177,7 @@ import {
   ShareAltOutlined,
   EditOutlined,
   RetweetOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons-vue'
 import { Dropdown, Modal } from 'ant-design-vue'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
@@ -206,6 +212,7 @@ import {
   SC_RepostOriginalAuthorName,
   SC_RepostOriginalAuthorTime,
   SC_RepostDeleted,
+  SC_PendingBadge,
 } from './styled'
 
 interface PostAuthor {

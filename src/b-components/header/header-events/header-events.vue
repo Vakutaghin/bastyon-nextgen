@@ -34,6 +34,16 @@
               </SC_EventContent>
             </template>
 
+            <template v-else-if="item.kind === 'post'">
+              <SC_EventHeader>{{ t('header.post') }}</SC_EventHeader>
+              <SC_PostTitle v-if="item.title" :title="item.title">
+                {{ truncateTitle(item.title) }}
+              </SC_PostTitle>
+              <SC_CommentSnippet :title="item.message">
+                {{ truncateMessage(item.message) }}
+              </SC_CommentSnippet>
+            </template>
+
             <template v-else>
               <SC_EventHeader>{{ t('header.comment') }}</SC_EventHeader>
               <SC_PostTitle :title="item.postTitle || t('header.untitled')">
@@ -56,7 +66,13 @@ import { useI18n } from 'vue-i18n'
 import { Dropdown, Badge } from 'ant-design-vue'
 import { HourglassOutlined, StarFilled } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
-import { usePendingRatingsStore, useCommentsStore, usePostsStore } from '@/stores'
+import {
+  usePendingRatingsStore,
+  useCommentsStore,
+  usePostsStore,
+  usePendingPostsStore,
+} from '@/stores'
+import { usePendingPostsRealtime } from '@/composables/use-pending-posts-realtime'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 import { ICON_SIZE_XL, ICON_STAR_18 } from '@/styles/icon-styles'
 import {
@@ -89,7 +105,15 @@ type CommentPendingItem = {
   postTitle?: string
 }
 
-export type PendingHeaderItem = RatingPendingItem | CommentPendingItem
+type PostPendingItem = {
+  kind: 'post'
+  key: string
+  id: string
+  title: string
+  message: string
+}
+
+export type PendingHeaderItem = RatingPendingItem | CommentPendingItem | PostPendingItem
 
 const { t } = useI18n()
 
@@ -97,13 +121,20 @@ const authStore = useAuthStore()
 const pendingStore = usePendingRatingsStore()
 const commentsStore = useCommentsStore()
 const postsStore = usePostsStore()
+const pendingPostsStore = usePendingPostsStore()
 
 pendingStore.init()
+
+// Снимаем pending-посты по WS-подтверждению даже когда пользователь не в своём
+// профиле (шапка живёт всегда) — счётчик «песочных часов» гаснет сам.
+usePendingPostsRealtime()
 
 const visible = ref(false)
 
 const isAuthenticated = computed(() => authStore.isUserAuthenticated)
-const pendingCount = computed(() => pendingStore.count + commentsStore.pendingCount)
+const pendingCount = computed(
+  () => pendingStore.count + commentsStore.pendingCount + pendingPostsStore.pendingCount
+)
 
 const pendingItems = computed<PendingHeaderItem[]>(() => {
   const items: PendingHeaderItem[] = []
@@ -133,6 +164,16 @@ const pendingItems = computed<PendingHeaderItem[]>(() => {
       postId: c.postId,
       message: c.message,
       postTitle: title,
+    })
+  }
+
+  for (const p of pendingPostsStore.allPending) {
+    items.push({
+      kind: 'post',
+      key: `post:${p.id}`,
+      id: p.id,
+      title: p.caption,
+      message: p.message,
     })
   }
 

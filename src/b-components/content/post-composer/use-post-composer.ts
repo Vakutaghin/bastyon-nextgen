@@ -15,10 +15,11 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore } from '@/blockchain'
 import type { ArticleContent, SharePostData } from '@/blockchain/core/actions/post-action'
+import { resolvePostOperationType } from '@/blockchain/core/actions/post-action'
 import { appToast } from '@/b-components/app-toast'
 import { haptic } from '@/helpers/common/haptics'
 import { uploadImages } from '@/services/image-upload-service'
-import { useModalStore } from '@/stores'
+import { useModalStore, usePendingPostsStore, PENDING_POST_TTL_MS } from '@/stores'
 import { t } from '@/i18n'
 
 import {
@@ -55,6 +56,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const { locale } = useI18n()
   const authStore = useAuthStore()
   const modalStore = useModalStore()
+  const pendingPostsStore = usePendingPostsStore()
   const queryClient = useQueryClient()
 
   const readDraft = (): string => {
@@ -323,7 +325,30 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     try {
       // Загружаем картинки (base64 → URL) до сборки транзакции.
       const imageUrls = await uploadImages(base64List.value)
-      const txid = await sendPost({ ...post.value, images: imageUrls })
+      const finalPost: SharePostData = { ...post.value, images: imageUrls }
+      const txid = await sendPost(finalPost)
+
+      // Оптимистичная публикация: пост уже в мемпуле (есть txid), но ещё не в
+      // блокчейне. Кладём его в pending-слой, чтобы автор сразу увидел пост в
+      // своей ленте профиля с пометкой «не опубликовано» + в «песочных часах».
+      // Для edit не добавляем — это правка существующего поста, а не новый.
+      const myAddress = authStore.getUserAddress
+      if (!isEdit && myAddress) {
+        const now = Date.now()
+        pendingPostsStore.addPending({
+          id: txid,
+          address: myAddress,
+          caption: finalPost.caption ?? '',
+          message: typeof finalPost.message === 'string' ? finalPost.message : '',
+          images: imageUrls,
+          tags: finalPost.tags ?? [],
+          url: finalPost.url,
+          type: resolvePostOperationType(finalPost),
+          createdAt: now,
+          expiresAt: now + PENDING_POST_TTL_MS,
+        })
+      }
+
       haptic('small')
       appToast.success({ message: t('postMsg.publishSuccess') })
       reset()

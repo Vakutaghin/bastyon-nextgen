@@ -15,6 +15,26 @@ export const SC_PostCard = styled(Card)`
   }
 `
 
+/** Бейдж оптимистичного поста: транзакция в мемпуле, ещё не в блокчейне. */
+export const SC_PendingBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: ${COLORS.WARNING_HEX};
+  background: ${COLORS.WARNING_BG_SOFT};
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`
+
 export const SC_PostHeader = styled.div`
   display: flex;
   justify-content: space-between;
