@@ -99,9 +99,11 @@
 
 ### Фаза F — Кабинет / управление / воспроизведение
 
-- [ ] **[should]** «Кабинет видео»: `GET users/me/videos` + merge с локальным `unpostedVideos[address]` + кросс-чек блокчейна (`searchlinks`) — что уже опубликовано, что черновик. `orig:components/videoCabinet/index.js:121-217`
-- [ ] **[should]** Удаление раздельно: `DELETE videos/:id` (видео на инстансе) и удаление поста (txid) — с retry на backup-host при 404. `orig:videoCabinet/index.js:1266-1360`
-- [ ] **[should]** Готовность транскодинга перед постингом: `peertube/videos {urls,update}`, готово при `state.id != 2 && != 3`. `orig:js/peertube.js:160-174`. `new:` для чтения переиспользовать [peertube-api.ts](../src/helpers/api/peertube-api.ts) + node read-эндпоинты
+> ✅ **Сервис-примитивы готовы (2026-08-06):** [`peertube-videos.ts`](../src/services/peertube/peertube-videos.ts) + тесты (12 кейсов). UI «кабинета» (рендер, merge с локальным черновик-стором) — отдельный шаг, не делался.
+
+- [~] **[should]** «Кабинет видео»: [`getMyAccountVideos`](../src/services/peertube/peertube-videos.ts) (GET users/me/videos, пагинация, Bearer) + [`findPostedVideos`](../src/services/peertube/peertube-videos.ts) (RPC `searchlinks` → Set опубликованных указателей). **Осталось [UI]:** merge с локальным `unpostedVideos[address]` + рендер кабинета. `orig:components/videoCabinet/index.js:121-217`
+- [x] **[should]** ✅ **DONE.** Удаление видео на инстансе: [`deleteInstanceVideo`](../src/services/peertube/peertube-videos.ts) (DELETE videos/:id, Bearer, **404 идемпотентно** = уже удалено). Удаление поста (txid) — существующий blockchain-путь, отдельно. `orig:videoCabinet/index.js:1266-1360`
+- [x] **[should]** ✅ **DONE.** Готовность транскодинга: [`checkTranscodingReady`](../src/services/peertube/peertube-videos.ts) через ноду `peertube/videos {urls,update}`, ready = `state.id ∉ {2,3}`; нет данных → false. `orig:js/peertube.js:160-174`
 - [ ] **[nice]** Shareable embed-ссылка / эквивалент `embedVideo.php?host=&id=&s=<txid>`. `orig:post/index.js:923-929`
 - [ ] **[nice]** Import-by-URL как альтернатива файлу: `POST videos/imports {targetUrl,channelId,privacy:1}` → тот же указатель. `orig:js/peertube.js:982-998`
 
@@ -116,7 +118,11 @@
 
 ### Фаза H — Mini-app media
 
-- [ ] **[should]** После появления shared-uploader'а подключить `videos.opendialog`/`videos.remove` (и `images.upload`) вместо заглушек. `new:`[media.ts](../src/mini-apps/actions/media.ts)
+> ✅ **Частично подключено (2026-08-06):** [media.ts](../src/mini-apps/actions/media.ts) + host-методы [media-upload.ts](../src/mini-apps/actions/host-context-methods/media-upload.ts) + тесты.
+
+- [x] **[should]** ✅ **`images.upload`** — `authorization:true`, делегирует `host.uploadImages` (→ [image-upload-service](../src/services/image-upload-service.ts)), лимит 10, возвращает `[{url}]`. `orig:index.js:930-963`
+- [x] **[should]** ✅ **`videos.remove`** — `authorization:true`, `host.removeVideo(pointer)` → [`removeVideoByPointer`](../src/services/peertube/peertube-videos.ts) (parse → авторизация на host → DELETE videos/:id). `orig:index.js:1011-1024`
+- [ ] **[should]** **`videos.opendialog`** — остаётся заглушкой: открывает UI-диалог загрузки, ждёт вычленения shared media-uploader'а из `video-uploader/` (UI-плумбинг Фазы E). `orig:index.js:966-1009`
 
 ---
 
