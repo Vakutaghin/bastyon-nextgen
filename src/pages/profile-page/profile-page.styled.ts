@@ -30,6 +30,17 @@ export const SC_ProfileMainContent = styled.main`
   }
 `
 
+/** Панель с кнопкой «Создать пост» над лентой своего профиля (только для себя). */
+export const SC_ProfileCreatePost = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    margin-bottom: 10px;
+  }
+`
+
 export const SC_ProfilePage = styled.div`
   width: 100%;
   display: flex;

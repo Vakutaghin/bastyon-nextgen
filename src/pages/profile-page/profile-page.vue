@@ -33,6 +33,15 @@
           </SC_PendingProfile>
 
           <div v-else-if="userAddress">
+            <SC_ProfileCreatePost v-if="isOwnProfile">
+              <Button type="primary" @click="openComposer">
+                <template #icon>
+                  <PlusOutlined />
+                </template>
+                {{ t('postCard.createPost') }}
+              </Button>
+            </SC_ProfileCreatePost>
+
             <ProfileFeed
               :address="userAddress"
               :profile="profile"
@@ -47,14 +56,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { LoadingOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined, ClockCircleOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain/store/auth-store'
+import { useModalStore } from '@/stores'
+import Button from '@/components/button/button.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type { GetUserAddressResponse } from '@/types/rpc-responses/get-user-address'
 import ProfileCover from '@/b-components/profile/profile-cover/profile-cover.vue'
@@ -70,6 +81,7 @@ import {
   SC_LoadingProfile,
   SC_ErrorProfile,
   SC_PendingProfile,
+  SC_ProfileCreatePost,
 } from './profile-page.styled'
 
 interface ProfileWithAccSet extends UserProfile {
@@ -79,11 +91,23 @@ interface ProfileWithAccSet extends UserProfile {
 const route = useRoute()
 const { t } = useI18n()
 const authStore = useAuthStore()
+const modalStore = useModalStore()
 const userAddress = ref<string>('')
 const profile = ref<ProfileWithAccSet | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const isOwnPendingProfile = ref(false)
+
+// Своя страница профиля: резолвнутый адрес совпадает с адресом текущего аккаунта.
+const isOwnProfile = computed<boolean>(() => {
+  const my = authStore.getUserAddress
+  return !!my && userAddress.value === my
+})
+
+// Открыть модалку композера поста (та же, что в шапке ленты).
+function openComposer(): void {
+  modalStore.openPostComposerModal()
+}
 
 function readPendingNickname(): string | null {
   try {
