@@ -26,12 +26,16 @@ class UniversalTranscoder implements Transcoder {
   }
 
   /**
-   * Дождаться завершения инициализации
+   * Дождаться завершения инициализации. Если memo сброшен (после destroy()),
+   * заново выбираем транскодер — иначе singleton «кирпичится» до перезагрузки.
    */
   private async ensureInitialized(): Promise<void> {
-    if (this.initPromise) {
-      await this.initPromise
+    if (!this.initPromise) {
+      this.initPromise = this.selectTranscoder().catch(() => {
+        // Игнорируем ошибки инициализации — getMetadata/transcode бросят NOT_SUPPORTED.
+      })
     }
+    await this.initPromise
   }
 
   /**
@@ -175,6 +179,10 @@ class UniversalTranscoder implements Transcoder {
   destroy(): void {
     this.transcoder?.destroy?.()
     this.transcoder = null
+    // Сбрасываем memo, чтобы следующий getMetadata/transcode заново выбрал
+    // транскодер. Без этого initPromise остаётся resolved, ensureInitialized
+    // не переинициализируется, и singleton навсегда остаётся с transcoder=null.
+    this.initPromise = null
   }
 }
 

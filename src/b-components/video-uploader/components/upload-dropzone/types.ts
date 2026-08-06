@@ -1,6 +1,13 @@
 import type { VideoMetadata } from '../../transcoder/types'
 
-export type UploadState = 'idle' | 'analyzing' | 'ready' | 'transcoding' | 'saving' | 'completed' | 'error'
+export type UploadState =
+  | 'idle'
+  | 'analyzing'
+  | 'ready'
+  | 'transcoding'
+  | 'saving'
+  | 'completed'
+  | 'error'
 
 export interface UploadDropzoneProps {
   state: UploadState
@@ -23,4 +30,5 @@ export interface UploadDropzoneEmits {
   fileSelect: [file: File]
   start: []
   reset: []
+  cancel: []
 }

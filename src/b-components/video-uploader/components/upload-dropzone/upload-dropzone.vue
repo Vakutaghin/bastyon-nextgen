@@ -12,13 +12,7 @@
       <!-- Обычный <input>, скрыт HTML-атрибутом hidden: ref должен отдавать
            реальный элемент для программного fileInput.click() (styled-обёртка
            вернула бы инстанс компонента). -->
-      <input
-        ref="fileInput"
-        type="file"
-        accept="video/*"
-        hidden
-        @change="handleFileInputChange"
-      />
+      <input ref="fileInput" type="file" accept="video/*" hidden @change="handleFileInputChange" />
 
       <template v-if="state === 'idle'">
         <UploadOutlined :style="ICON_ANT_BLUE_64_MB" />
@@ -26,7 +20,9 @@
           <strong>{{ t('videoUploader.dropHere') }}</strong>
           <span>{{ t('videoUploader.orClickToSelect') }}</span>
         </SC_DropZoneText>
-        <Button type="primary" @click="fileInput?.click()"> {{ t('videoUploader.selectVideoFile') }} </Button>
+        <Button type="primary" @click="fileInput?.click()">
+          {{ t('videoUploader.selectVideoFile') }}
+        </Button>
       </template>
 
       <template v-else-if="state === 'completed'">
@@ -34,7 +30,9 @@
         <SC_DropZoneText>
           <strong>{{ t('videoUploader.transcodedSuccess') }}</strong>
         </SC_DropZoneText>
-        <Button type="primary" @click="$emit('reset')"> {{ t('videoUploader.uploadMore') }} </Button>
+        <Button type="primary" @click="$emit('reset')">
+          {{ t('videoUploader.uploadMore') }}
+        </Button>
       </template>
 
       <template v-else-if="state === 'analyzing'">
@@ -50,7 +48,9 @@
           <strong>{{ t('videoUploader.fileReady') }}</strong>
           <span>{{ t('videoUploader.checkParamsAndStart') }}</span>
         </SC_DropZoneText>
-        <Button type="primary" size="large" @click="$emit('start')"> {{ t('videoUploader.startUpload') }} </Button>
+        <Button type="primary" size="large" @click="$emit('start')">
+          {{ t('videoUploader.startUpload') }}
+        </Button>
         <SC_SecondaryButton type="secondary" @click="$emit('reset')">
           {{ t('videoUploader.selectAnotherFile') }}
         </SC_SecondaryButton>
@@ -71,6 +71,14 @@
         <SC_FileNameText v-if="fileName">
           {{ fileName }}
         </SC_FileNameText>
+        <!-- Отмена доступна только на транскоде: 'saving' — быстрая запись в IndexedDB. -->
+        <SC_SecondaryButton
+          v-if="state === 'transcoding'"
+          type="secondary"
+          @click="$emit('cancel')"
+        >
+          {{ t('videoUploader.cancel') }}
+        </SC_SecondaryButton>
       </template>
 
       <template v-else-if="state === 'error'">

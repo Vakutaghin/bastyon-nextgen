@@ -50,6 +50,7 @@
               @file-select="handleFileSelect"
               @start="startTranscodingFromReady"
               @reset="resetUploadState"
+              @cancel="cancelTranscoding"
             />
           </SC_ModalContent>
         </SC_ModalBody>

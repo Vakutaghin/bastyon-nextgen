@@ -131,7 +131,11 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
     }
 
     isTranscoding = true
-    currentTranscodeAbortController = new AbortController()
+    // Захватываем контроллер локально: gate ниже читает именно ЭТОТ run, а не
+    // разделяемую ссылку. Иначе новый транскод, запущенный после отмены, обнулял
+    // бы проверку и сохранял отменённое старое видео (гонка).
+    const abort = new AbortController()
+    currentTranscodeAbortController = abort
 
     try {
       const fileMetadata = metadata || (await transcoder.getMetadata(file))
@@ -165,14 +169,14 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
         file,
         transcodeOptions,
         (progress: TranscodeProgress) => {
-          if (currentTranscodeAbortController?.signal.aborted) {
+          if (abort.signal.aborted) {
             return
           }
           uploadProgress.value = progress.progress
         }
       )
 
-      if (currentTranscodeAbortController?.signal.aborted) {
+      if (abort.signal.aborted) {
         throw new Error(t('videoMsg.transcodeCancelled'))
       }
 
@@ -207,6 +211,11 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
         }
       }, 3000)
     } catch (error) {
+      // Отмена этим run'ом — не ошибка: UI уже сброшен в cancelTranscoding,
+      // не перетираем его error-состоянием и (главное) не сохраняем отменённое видео.
+      if (abort.signal.aborted) {
+        return
+      }
       uploadState.value = 'error'
       const errorMessage = error instanceof Error ? error.message : t('videoMsg.transcodeError')
       let displayMessage: string
@@ -233,6 +242,11 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
       console.error('Transcoding error:', error)
     } finally {
       isTranscoding = false
+      // Чистим разделяемую ссылку только если она всё ещё указывает на НАШ run
+      // (новый транскод мог уже перезаписать её).
+      if (currentTranscodeAbortController === abort) {
+        currentTranscodeAbortController = null
+      }
     }
   }
 
@@ -254,21 +268,20 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
   }
 
   const cancelTranscoding = () => {
-    if (isTranscoding) {
-      if (currentTranscodeAbortController) {
-        currentTranscodeAbortController.abort()
-        currentTranscodeAbortController = null
-      }
+    if (!isTranscoding) return
 
-      transcoder.destroy()
+    // Сигналим текущему run'у через его же захваченный контроллер. Abort ДО
+    // обнуления — иначе gate в startTranscoding не увидит отмену и сохранит видео.
+    currentTranscodeAbortController?.abort()
+    currentTranscodeAbortController = null
 
-      isTranscoding = false
-      uploadState.value = 'idle'
-      uploadProgress.value = 0
-      uploadError.value = t('videoMsg.transcodeCancelled')
-      selectedFile.value = null
-      resetUploadState()
-    }
+    // destroy() теперь безопасен: singleton переинициализируется при следующем
+    // getMetadata/transcode (initPromise сбрасывается в transcoder.destroy()).
+    transcoder.destroy()
+
+    // Снимаем флаг ДО resetUploadState (он гейтится на isTranscoding) и сбрасываем UI.
+    isTranscoding = false
+    resetUploadState()
   }
 
   return {
