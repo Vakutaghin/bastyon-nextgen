@@ -10,48 +10,74 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
 
-// Прокси для PeerTube API в dev — обход CORS (запрос идёт через тот же origin)
+// Прокси для PeerTube API в dev — обход CORS (запрос идёт через тот же origin).
+// Пропускает любой метод: авторизация (POST users/token) и загрузка картинок/видео
+// (POST images/upload, multipart) идут тем же путём, что и чтение. Раньше здесь был
+// фильтр `method === 'GET'`, из-за которого POST проваливался в SPA-fallback и
+// возвращал 404 — наружу это выглядело как `peertube_image_token_404`.
 function peertubeProxyPlugin() {
   const PREFIX = '/api/peertube/'
+
+  // Тело от undici приходит уже распакованным, поэтому заголовки исходного сжатия
+  // и длины отдавать браузеру нельзя — он не сможет декодировать ответ.
+  const SKIP_RESPONSE_HEADERS = new Set([
+    'content-encoding',
+    'content-length',
+    'transfer-encoding',
+    'connection',
+  ])
+
+  const readBody = (req) =>
+    new Promise((resolve, reject) => {
+      const chunks = []
+      req.on('data', (chunk) => chunks.push(chunk))
+      req.on('end', () => resolve(Buffer.concat(chunks)))
+      req.on('error', reject)
+    })
 
   return {
     name: 'peertube-proxy',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (req.url?.startsWith(PREFIX) && req.method === 'GET') {
-          const rest = req.url.slice(PREFIX.length)
-          const i = rest.indexOf('/')
+        if (!req.url?.startsWith(PREFIX)) return next()
 
-          if (i === -1) return next()
+        const rest = req.url.slice(PREFIX.length)
+        const i = rest.indexOf('/')
 
-          const host = rest.slice(0, i)
-          const targetPath = rest.slice(i)
-          const targetUrl = `https://${host}${targetPath}`
+        if (i === -1) return next()
 
-          fetch(targetUrl, {
-            method: 'GET',
-            headers: {
-              Accept: req.headers.accept || 'application/json',
-            },
+        const host = rest.slice(0, i)
+        const targetPath = rest.slice(i)
+        const targetUrl = `https://${host}${targetPath}`
+        const method = req.method || 'GET'
+        const hasBody = method !== 'GET' && method !== 'HEAD'
+
+        // Пробрасываем только то, что нужно инстансу. Content-Type обязателен как есть:
+        // у multipart в нём лежит boundary, без него загрузка развалится.
+        const headers = { Accept: req.headers.accept || 'application/json' }
+        if (req.headers.authorization) headers.Authorization = req.headers.authorization
+        if (hasBody && req.headers['content-type'])
+          headers['Content-Type'] = req.headers['content-type']
+
+        const body = hasBody ? readBody(req) : Promise.resolve(undefined)
+
+        body
+          .then((payload) => fetch(targetUrl, { method, headers, body: payload }))
+          .then((fetchRes) => {
+            res.statusCode = fetchRes.status
+            fetchRes.headers.forEach((v, k) => {
+              if (!SKIP_RESPONSE_HEADERS.has(k.toLowerCase())) res.setHeader(k, v)
+            })
+            return fetchRes.arrayBuffer()
           })
-            .then((fetchRes) => {
-              res.statusCode = fetchRes.status
-              fetchRes.headers.forEach((v, k) => res.setHeader(k, v))
-              return fetchRes.arrayBuffer()
-            })
-            .then((buf) => {
-              res.end(Buffer.from(buf))
-            })
-            .catch((err) => {
-              res.statusCode = 502
-              res.setHeader('Content-Type', 'text/plain')
-              res.end('Proxy error: ' + String(err.message))
-            })
-
-          return
-        }
-
-        next()
+          .then((buf) => {
+            res.end(Buffer.from(buf))
+          })
+          .catch((err) => {
+            res.statusCode = 502
+            res.setHeader('Content-Type', 'text/plain')
+            res.end('Proxy error: ' + String(err.message))
+          })
       })
     },
   }

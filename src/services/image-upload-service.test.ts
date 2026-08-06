@@ -1,17 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const mocks = vi.hoisted(() => ({
-  fetchHttp: vi.fn(),
-  appFetch: vi.fn(),
+const { instanceFetch, resolveHost } = vi.hoisted(() => ({
+  instanceFetch: vi.fn(),
+  resolveHost: vi.fn(),
 }))
 
-vi.mock('@/helpers/api/request', () => ({
-  fetchHttp: mocks.fetchHttp,
-  appFetch: mocks.appFetch,
+vi.mock('@/services/peertube/peertube-host', () => ({
+  resolvePeertubeHost: resolveHost,
+}))
+
+vi.mock('@/services/peertube/peertube-instance', () => ({
+  peertubeInstanceFetch: instanceFetch,
+  serializeForm: (d: Record<string, unknown>) =>
+    Object.entries(d)
+      .filter(([, v]) => v != null)
+      .map(([k, v]) => `${k}=${v}`)
+      .join('&'),
 }))
 
 import {
   normalizeImageUrl,
+  dataUrlToBlob,
   peertubeImageProvider,
   uploadImage,
   uploadImages,
@@ -20,17 +29,27 @@ import {
 
 const DATA_URL = 'data:image/png;base64,AAAA'
 
+const jsonRes = (body: unknown, status = 200): Response =>
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+
 beforeEach(() => {
   vi.clearAllMocks()
+  resolveHost.mockResolvedValue('host.app')
 })
 
 describe('normalizeImageUrl', () => {
-  it('оставляет http/https как есть', () => {
+  it('оставляет http/https как есть; достраивает https для бессхемного', () => {
     expect(normalizeImageUrl('https://x/y.jpg')).toBe('https://x/y.jpg')
     expect(normalizeImageUrl('http://x/y.jpg')).toBe('http://x/y.jpg')
-  })
-  it('достраивает https для URL без схемы', () => {
     expect(normalizeImageUrl('cdn.x/y.jpg')).toBe('https://cdn.x/y.jpg')
+  })
+})
+
+describe('dataUrlToBlob', () => {
+  it('извлекает MIME и байты из data-URL', () => {
+    const blob = dataUrlToBlob(DATA_URL) // 'AAAA' → 3 нулевых байта
+    expect(blob.type).toBe('image/png')
+    expect(blob.size).toBe(3)
   })
 })
 
@@ -71,41 +90,44 @@ describe('uploadImages', () => {
   })
 })
 
-describe('peertubeImageProvider', () => {
-  it('резолвит host, постит base64, нормализует url', async () => {
-    mocks.fetchHttp.mockResolvedValue({ host: 'pt.example' })
-    mocks.appFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ url: 'pt.example/static/img/1.jpg' }),
+describe('peertubeImageProvider (реальный контракт)', () => {
+  it('резолв хоста → токен (oauth+users/token) → multipart images/upload → нормализованный url', async () => {
+    instanceFetch.mockImplementation(async (_host: string, path: string) => {
+      if (path === 'api/v1/oauth-clients/local')
+        return jsonRes({ client_id: 'cid', client_secret: 'csec' })
+      if (path === 'api/v1/users/token') return jsonRes({ access_token: 'IMGTOK' })
+      if (path === 'api/v1/images/upload') return jsonRes({ url: 'cdn.host/pic.jpg' })
+      return jsonRes({ error: 'not_found' }, 404)
     })
 
     const url = await peertubeImageProvider.upload(DATA_URL)
+    expect(url).toBe('https://cdn.host/pic.jpg')
 
-    expect(mocks.fetchHttp).toHaveBeenCalledWith({
-      path: 'peertube/best',
-      data: { type: 'upload' },
-    })
-    const [calledUrl, init] = mocks.appFetch.mock.calls[0]
-    expect(String(calledUrl)).toContain('/api/v1/')
+    // правильный эндпоинт + Bearer + multipart FormData (а НЕ голый /api/v1/ с JSON)
+    const uploadCall = instanceFetch.mock.calls.find((c) => c[1] === 'api/v1/images/upload')
+    expect(uploadCall).toBeDefined()
+    const init = uploadCall![2] as RequestInit
     expect(init.method).toBe('POST')
-    expect(JSON.parse(init.body)).toEqual({ base64: DATA_URL, Action: 'upload' })
-    expect(url).toBe('https://pt.example/static/img/1.jpg')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer IMGTOK')
+    expect(init.body).toBeInstanceOf(FormData)
   })
 
-  it('бросает при отсутствии host', async () => {
-    mocks.fetchHttp.mockResolvedValue({})
-    await expect(peertubeImageProvider.upload(DATA_URL)).rejects.toThrow('peertube_no_host')
+  it('404 на images/upload → падает с кодом', async () => {
+    instanceFetch.mockImplementation(async (_host: string, path: string) => {
+      if (path === 'api/v1/oauth-clients/local') return jsonRes({ client_id: 'c', client_secret: 's' })
+      if (path === 'api/v1/users/token') return jsonRes({ access_token: 'T' })
+      return jsonRes({}, 404)
+    })
+    await expect(peertubeImageProvider.upload(DATA_URL)).rejects.toThrow('peertube_upload_404')
   })
 
-  it('бросает при не-ok ответе', async () => {
-    mocks.fetchHttp.mockResolvedValue({ host: 'pt.example' })
-    mocks.appFetch.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) })
-    await expect(peertubeImageProvider.upload(DATA_URL)).rejects.toThrow('peertube_upload_500')
-  })
-
-  it('бросает при отсутствии url в ответе', async () => {
-    mocks.fetchHttp.mockResolvedValue({ host: 'pt.example' })
-    mocks.appFetch.mockResolvedValue({ ok: true, json: async () => ({}) })
+  it('нет url в ответе → peertube_upload_no_url', async () => {
+    instanceFetch.mockImplementation(async (_host: string, path: string) => {
+      if (path === 'api/v1/oauth-clients/local') return jsonRes({ client_id: 'c', client_secret: 's' })
+      if (path === 'api/v1/users/token') return jsonRes({ access_token: 'T' })
+      if (path === 'api/v1/images/upload') return jsonRes({})
+      return jsonRes({}, 404)
+    })
     await expect(peertubeImageProvider.upload(DATA_URL)).rejects.toThrow('peertube_upload_no_url')
   })
 })
