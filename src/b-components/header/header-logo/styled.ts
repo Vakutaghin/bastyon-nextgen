@@ -85,7 +85,12 @@ export const SC_LanguageFlag = styled.span`
 export const SC_LanguageName = styled.span`
   min-width: 0;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  /* На узком десктопе (769–1199px) в шапке одновременно видны поиск и полный
+     правый блок иконок; поиск уже сжат до своего пола (~88px, дальше не жмётся),
+     поэтому лишнюю ширину отдаёт логотип. Прячем текст локали, оставляя флаг и
+     caret (клик всё так же открывает меню) — это освобождает ~55px под кнопки
+     справа, чтобы шапка (position:fixed) не обрезала их за краем. */
+  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
     display: none;
   }
 `
