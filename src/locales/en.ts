@@ -446,6 +446,7 @@ export default {
     messages: 'Messages',
     chat: 'Chat',
     newChat: 'New chat',
+    close: 'Close',
     startChat: 'Start chat',
     loadingMessages: 'Loading messages...',
     loadingDialogs: 'Loading dialogs...',

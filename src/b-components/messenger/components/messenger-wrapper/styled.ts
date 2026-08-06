@@ -45,40 +45,58 @@ export const SC_BackButton = styled.button`
   }
 `
 
+/**
+ * Полноэкранный мессенджер: перекрывает ВЕСЬ экран, включая хедер (inset:0,
+ * z-index выше хедера=1000). Крестик закрытия живёт внутри окна (см. ниже),
+ * т.к. иконка в хедере оказывается под оверлеем.
+ */
 export const SC_FullScreenOverlay = styled.div`
   position: fixed;
-  inset: var(--header-height-total) 0 0 0;
+  inset: 0;
   width: 100%;
-  height: calc(100vh - var(--header-height-total));
+  height: 100vh;
   z-index: 2500;
   background-color: ${COLORS.BG_PRIMARY};
   display: flex;
   flex-direction: column;
+  padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
 `
 
+/**
+ * Крестик закрытия внутри окна мессенджера — плавающая круглая кнопка в правом
+ * верхнем углу оверлея (там, где раньше был хедер). Учитывает safe-area.
+ */
 export const SC_CloseOverlayButton = styled.button`
-  background: none;
+  position: absolute;
+  top: calc(var(--safe-top) + 10px);
+  right: calc(var(--safe-right) + 14px);
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: ${COLORS.BG_TERTIARY};
   border: none;
   cursor: pointer;
-  padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: ${COLORS.TEXT_SECONDARY};
+  transition:
+    color 0.2s,
+    background-color 0.2s;
 
   &:hover {
     color: ${COLORS.TEXT_PRIMARY};
-    background-color: ${COLORS.BG_TERTIARY};
-    border-radius: 50%;
+    background-color: ${COLORS.OVERLAY_6};
   }
 
   svg,
   img {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     fill: currentColor;
   }
 `

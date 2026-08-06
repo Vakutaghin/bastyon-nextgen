@@ -1,6 +1,9 @@
 <template>
-  <!-- Full Screen Overlay Mode -->
+  <!-- Full Screen Overlay Mode (перекрывает весь экран, включая хедер) -->
   <SC_FullScreenOverlay v-if="isFullScreen">
+    <SC_CloseOverlayButton :aria-label="t('messenger.close')" @click="closeFullScreen">
+      <CloseOutlined />
+    </SC_CloseOverlayButton>
     <SC_OverlayContent>
       <MessengerPanel />
     </SC_OverlayContent>
@@ -65,6 +68,7 @@
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { CloseOutlined } from '@ant-design/icons-vue'
 import closeIcon from '../../img/close.svg'
 import backIcon from '../../img/back.svg'
 import chatIcon from '../../img/chat.svg'
@@ -80,6 +84,7 @@ import {
   SC_MessengerWrapper,
   SC_BackButton,
   SC_FullScreenOverlay,
+  SC_CloseOverlayButton,
   SC_OverlayContent,
   SC_MessengerWrapperLoader,
   SC_MessengerWrapperLoaderText,

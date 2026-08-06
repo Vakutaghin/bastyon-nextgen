@@ -451,6 +451,7 @@ export default {
     messages: 'Сообщения',
     chat: 'Чат',
     newChat: 'Новый чат',
+    close: 'Закрыть',
     startChat: 'Начать чат',
     loadingMessages: 'Загрузка сообщений...',
     loadingDialogs: 'Загрузка диалогов...',
