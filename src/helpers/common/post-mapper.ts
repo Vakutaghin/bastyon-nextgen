@@ -3,6 +3,8 @@
  * Вынесено из feed-store для повторного использования в composables и сторах.
  */
 
+import { resolveImageUrl } from './url-transformer'
+
 export interface AdaptedPost {
   id: string | number
   hash?: string
@@ -77,7 +79,8 @@ interface RawFeedPost {
  */
 export function adaptPostData(post: RawFeedPost, index: number): AdaptedPost {
   const authorName = post.userprofile?.name || post.address || 'Неизвестный автор'
-  const avatar = post.userprofile?.i || null
+  // resolveImageUrl разворачивает голый хеш в полный URL + нормализует домен.
+  const avatar = resolveImageUrl(post.userprofile?.i) ?? null
   const reputation = post.userprofile?.reputation || 0
   const title = post.c || ''
   const content = post.m || ''
@@ -88,7 +91,9 @@ export function adaptPostData(post: RawFeedPost, index: number): AdaptedPost {
   const comments = post.comments || 0
   const shares = post.reposted || 0
   const tags = Array.isArray(post.t) ? post.t : []
-  const images = Array.isArray(post.i) ? post.i : []
+  const images = Array.isArray(post.i)
+    ? post.i.map((img) => resolveImageUrl(img)).filter((u): u is string => !!u)
+    : []
   const videoUrl = post.u || post.s?.v || undefined
 
   // hash/txid — строковые идентификаторы; числовой post.id используется как запасной вариант.

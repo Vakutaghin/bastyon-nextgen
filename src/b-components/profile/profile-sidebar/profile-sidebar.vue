@@ -5,7 +5,7 @@
         <img :src="userAvatar" :alt="displayName" />
       </SC_UserAvatar>
       <SC_UserAvatarPlaceholder v-else>
-        {{ userInitial }}
+        <UserOutlined />
       </SC_UserAvatarPlaceholder>
 
       <SC_UserName>{{ displayName }}</SC_UserName>
@@ -161,7 +161,9 @@ import {
   StopOutlined,
   SafetyCertificateFilled,
   TrophyFilled,
+  UserOutlined,
 } from '@ant-design/icons-vue'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { getProfileBadges } from '@/helpers/profile/profile-badges'
@@ -215,16 +217,16 @@ const editOpen = ref(false)
 
 const userAvatar = computed<string | null>(() => {
   const p = props.profile as ProfileWithAccSet | null | undefined
-  if (p?.accSet?.image) return p.accSet.image
-  if (p?.i) return p.i
-  return null
+  // resolveImageUrl нормализует домен и разворачивает голый хеш в полный URL —
+  // без этого аватар не грузился (в шапке работает по той же причине).
+  const raw = p?.accSet?.image || p?.i || null
+  return raw ? (resolveImageUrl(raw) ?? null) : null
 })
 
 const displayName = computed<string>(() => {
   return props.profile?.name || props.profile?.address || 'User'
 })
 
-const userInitial = computed<string>(() => displayName.value.charAt(0).toUpperCase())
 
 const formattedDate = computed<string>(() => {
   if (!props.profile?.regdate) return ''

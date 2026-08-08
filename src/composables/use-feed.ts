@@ -8,6 +8,7 @@ import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hie
 import type { GetTopFeedResponse } from '@/types/rpc-responses/get-top-feed'
 import type { GetProfileFeedResponse, GetProfileFeedData } from '@/types/rpc-responses/get-profile-feed'
 import { registerNameAddress } from '@/services/user-resolver'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
 
 /**
  * Интерфейс адаптированного поста
@@ -91,13 +92,14 @@ type RawImage = string | { url?: string; src?: string } | null | undefined
  */
 function normalizeImages(raw: unknown): string[] {
   if (!raw) return []
-  if (Array.isArray(raw)) {
-    return (raw as RawImage[])
-      .map((item) => (typeof item === 'string' ? item : (item?.url ?? item?.src ?? '')))
-      .filter(Boolean)
-  }
-  if (typeof raw === 'string') return [raw]
-  return []
+  const list = Array.isArray(raw)
+    ? (raw as RawImage[]).map((item) => (typeof item === 'string' ? item : (item?.url ?? item?.src ?? '')))
+    : typeof raw === 'string'
+      ? [raw]
+      : []
+  // resolveImageUrl разворачивает голый хеш в полный URL + нормализует домен
+  // (идемпотентен на уже полных URL).
+  return list.map((u) => resolveImageUrl(u)).filter((u): u is string => !!u)
 }
 
 /** Минимальный профиль автора/пользователя в сыром ответе ленты. */
@@ -182,7 +184,7 @@ export function adaptPostData(
 
   const authorName = userprofile?.name || post.address || 'Неизвестный автор'
 
-  const avatar = userprofile?.i || null
+  const avatar = resolveImageUrl(userprofile?.i) ?? null
   const reputation = userprofile?.reputation || 0
   const verified = Array.isArray(userprofile?.badges)
     ? userprofile.badges.includes('verificated') || userprofile.badges.includes('verified')
@@ -230,7 +232,7 @@ export function adaptPostData(
       ? usersMap[post.lastComment.address] || null
       : null
     const commenterName = commenterProfile?.name || post.lastComment.address || ''
-    const commenterAvatar = commenterProfile?.i || null
+    const commenterAvatar = resolveImageUrl(commenterProfile?.i) ?? null
 
     lastComment = {
       id: String(post.lastComment.id || ''),
@@ -322,7 +324,8 @@ export function mergeRepostContent(
   }
   const origAddress = originalRaw.address || ''
   const origName = originalRaw.userprofile?.name || origAddress || ''
-  const origAvatar = originalRaw.userprofile?.i ?? originalRaw.userprofile?.avatar ?? null
+  const origAvatar =
+    resolveImageUrl(originalRaw.userprofile?.i ?? originalRaw.userprofile?.avatar) ?? null
   if (!adapted.repostAuthor && (origAddress || origName)) {
     adapted.repostAuthor = {
       address: origAddress,

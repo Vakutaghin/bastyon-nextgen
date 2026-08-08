@@ -76,7 +76,8 @@ describe('adaptPostData', () => {
     expect(result.hash).toBe('hash123')
     expect(result.author.name).toBe('Alice')
     expect(result.author.address).toBe('P123abc')
-    expect(result.author.avatar).toBe('avatar.jpg')
+    // голый хеш разворачивается в полный URL через resolveImageUrl
+    expect(result.author.avatar).toBe('https://pocketnet.app:8092/i/avatar.jpg')
     expect(result.author.reputation).toBe(42)
     expect(result.author.letter).toBe('A')
     expect(result.author.verified).toBe(true)
@@ -86,7 +87,10 @@ describe('adaptPostData', () => {
     expect(result.comments).toBe(5)
     expect(result.shares).toBe(2)
     expect(result.tags).toEqual(['tag1', 'tag2'])
-    expect(result.images).toEqual(['img1.jpg', 'img2.jpg'])
+    expect(result.images).toEqual([
+      'https://pocketnet.app:8092/i/img1.jpg',
+      'https://pocketnet.app:8092/i/img2.jpg',
+    ])
     expect(result.videoUrl).toBe('peertube://host/videoid')
     expect(result.type).toBe('video')
   })

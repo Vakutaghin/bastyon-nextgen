@@ -5,6 +5,7 @@ import { generateNeutralColor, getContrastTextColor } from './color-utils'
 import { SC_Avatar } from './styled'
 import type { AvatarProps } from './types'
 import { getInitials as getInitialsUtil } from '@/helpers/common/initials'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
 
 
 export function useAvatar(p: AvatarProps) {
@@ -68,8 +69,9 @@ export function useAvatar(p: AvatarProps) {
   watch(() => p.src, (newSrc, oldSrc) => {
     if (newSrc && newSrc !== oldSrc) {
       showPlaceholder.value = false
-      const s = newSrc.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
-      actualSrc.value = s
+      // resolveImageUrl: разворачивает голый хеш в полный URL + нормализует домен
+      // (раньше тут был только swap домена — голый хеш оставался сломанным src).
+      actualSrc.value = resolveImageUrl(newSrc)
     } else if (!newSrc) {
       actualSrc.value = undefined
       showPlaceholder.value = true

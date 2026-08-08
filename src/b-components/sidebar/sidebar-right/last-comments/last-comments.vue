@@ -75,6 +75,7 @@ import { usePostsStore } from '@/stores/posts-store'
 import type { GetLastComment, CommentMessage } from '@/types/rpc-responses/get-last-comments'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { ICON_PRIMARY_24 } from '@/styles/icon-styles'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import {
   SC_LastCommentsRoot,
   SC_LastCommentsCaption,
@@ -92,7 +93,6 @@ import {
 } from './styled'
 
 const MESSAGE_TRIM_LENGTH = 120
-const AVATAR_BASE = 'https://pocketnet.app:8092/i/'
 
 function parseMessage(msg: string): string {
   if (!msg) return ''
@@ -123,13 +123,9 @@ function trimText(text: string, maxLen: number): string {
 }
 
 function getAvatarUrl(profile: UserProfile | undefined): string | null {
-  if (!profile) return null
-  const i = profile.i
-  if (!i) return null
-  if (i.startsWith('http://') || i.startsWith('https://')) {
-    return i.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
-  }
-  return `${AVATAR_BASE}${i}`
+  // Единый резолвер (голый хеш → полный URL + нормализация домена) вместо
+  // дублирующего хардкода хоста картинок.
+  return resolveImageUrl(profile?.i) ?? null
 }
 
 function getDisplayName(profile: UserProfile | undefined, address: string): string {
