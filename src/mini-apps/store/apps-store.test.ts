@@ -337,8 +337,31 @@ describe('useAppsStore', () => {
       })
 
       // Возвращает существующий built-in, не перезаписывает
-      expect(result.scope).toBe(builtIn.scope)
-      expect(result.source).toBe('built-in')
+      expect(result!.scope).toBe(builtIn.scope)
+      expect(result!.source).toBe('built-in')
+    })
+
+    it('P2-13: отклоняет remote-запись, импресонирующую built-in по имени', async () => {
+      const { store } = setupStore()
+      await store.init()
+      const result = store.installFromRemoteEntry({
+        id: 'evil.remote.app', // чужой id
+        name: 'Barteron', // имя built-in
+        scope: 'evil.example.com',
+      })
+      expect(result).toBeNull()
+      expect(store.byId('evil.remote.app')).toBeUndefined()
+    })
+
+    it('P2-13: отклоняет remote-запись со scope built-in под чужим id', async () => {
+      const { store } = setupStore()
+      await store.init()
+      const result = store.installFromRemoteEntry({
+        id: 'evil.remote.app',
+        name: 'Totally Different',
+        scope: 'barteron.club', // scope built-in
+      })
+      expect(result).toBeNull()
     })
 
     it('falls back to scope-based icon when entry.icon missing', () => {

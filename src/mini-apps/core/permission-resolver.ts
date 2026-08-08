@@ -26,6 +26,14 @@ import { usePermissionsStore, type GrantSource, type GrantState } from '../store
 
 const log = logger.scope('[mini-apps:perm-resolver]')
 
+/**
+ * Приложения, для которых прямо сейчас открыт prompt-модал (P2-12). Пока он
+ * открыт, повторные prompt-запросы того же приложения отклоняются ЭФЕМЕРНО —
+ * вредоносный iframe не может навалить стек consent-модалок (в т.ч. uniq
+ * sign/payment). Module-scope: один пользователь = один набор модалок.
+ */
+const promptsInFlight = new Set<string>()
+
 export interface PromptContext {
   readonly app: InstalledApp
   readonly permission: PermissionId
@@ -55,7 +63,8 @@ export class PermissionResolver {
   async request(
     app: InstalledApp,
     permission: PermissionId,
-    extra?: unknown
+    extra?: unknown,
+    signal?: AbortSignal
   ): Promise<PromptResult> {
     const meta = PERMISSIONS[permission]
     if (!meta) {
@@ -79,26 +88,38 @@ export class PermissionResolver {
     if (meta.auto) {
       result = 'granted'
       source = 'auto'
-    } else if (typeof this.opts.ensureRunner === 'function') {
-      // Не все permissions имеют ensure — если конкретный permission не поддерживает
-      // ensure, runner должен вернуть false и мы пойдём в prompt.
-      try {
-        const ensured = await this.opts.ensureRunner(permission, app)
-        if (ensured) {
-          result = 'granted'
-          source = 'ensure'
-        } else {
-          result = await this.opts.promptUser({ app, permission, extra })
-          source = 'user'
+    } else {
+      // ensure (если поддержан) может выдать grant без prompt'а.
+      let ensured = false
+      if (typeof this.opts.ensureRunner === 'function') {
+        try {
+          ensured = await this.opts.ensureRunner(permission, app)
+        } catch (e) {
+          log.warn('ensureRunner threw', e)
+          ensured = false
         }
-      } catch (e) {
-        log.warn('ensureRunner threw', e)
-        result = await this.opts.promptUser({ app, permission, extra })
+      }
+
+      if (ensured) {
+        result = 'granted'
+        source = 'ensure'
+      } else {
+        // Prompt-путь. Троттл + отмена по abort (P2-12): пока для приложения
+        // открыт один prompt — лишние отклоняются эфемерно (без persist), а
+        // отмена iframe (signal) закрывает ожидание.
+        const appId = app.manifest.id
+        if (signal?.aborted || promptsInFlight.has(appId)) {
+          log.warn('prompt throttled/aborted', appId, permission)
+          return 'denied'
+        }
+        promptsInFlight.add(appId)
+        try {
+          result = await this.promptWithAbort(app, permission, extra, signal)
+        } finally {
+          promptsInFlight.delete(appId)
+        }
         source = 'user'
       }
-    } else {
-      result = await this.opts.promptUser({ app, permission, extra })
-      source = 'user'
     }
 
     // uniq → не сохраняем
@@ -110,6 +131,32 @@ export class PermissionResolver {
     const state: GrantState = result === 'granted' && meta.session ? 'session' : result
     await store.set(app.manifest.id, permission, state, source)
     return result
+  }
+
+  /**
+   * Показывает prompt, но проигрывает гонку с `signal.abort` — если iframe
+   * закрыли/уничтожили во время ожидания, резолвим 'denied' (P2-12).
+   */
+  private promptWithAbort(
+    app: InstalledApp,
+    permission: PermissionId,
+    extra: unknown,
+    signal?: AbortSignal
+  ): Promise<PromptResult> {
+    const prompt = this.opts.promptUser({ app, permission, extra })
+    if (!signal) return prompt
+    return new Promise<PromptResult>((resolve) => {
+      let settled = false
+      const done = (r: PromptResult) => {
+        if (settled) return
+        settled = true
+        signal.removeEventListener('abort', onAbort)
+        resolve(r)
+      }
+      const onAbort = () => done('denied')
+      signal.addEventListener('abort', onAbort, { once: true })
+      prompt.then((r) => done(r)).catch(() => done('denied'))
+    })
   }
 
   /**

@@ -129,6 +129,37 @@ describe('PermissionResolver.request', () => {
     expect(store.stateOf('demo.app', 'sign')).toBeNull()
   })
 
+  // ─── P2-12: throttle + abort ──────────────────────────────────────────────
+
+  it('P2-12: троттлит одновременные prompt одного приложения (лишний → ephemeral denied)', async () => {
+    const { store } = setup()
+    let releaseFirst!: (r: 'granted' | 'denied') => void
+    const promptUser = vi.fn(
+      () => new Promise<'granted' | 'denied'>((res) => (releaseFirst = res))
+    )
+    const resolver = new PermissionResolver({ promptUser })
+
+    const p1 = resolver.request(APP, 'sign') // занимает слот, prompt висит
+    const denied = await resolver.request(APP, 'sign') // одновременный → троттл
+    expect(denied).toBe('denied')
+    expect(promptUser).toHaveBeenCalledTimes(1) // второй модал не открылся
+
+    releaseFirst('granted')
+    expect(await p1).toBe('granted')
+    expect(store.stateOf('demo.app', 'sign')).toBeNull() // ephemeral, не персистится
+  })
+
+  it('P2-12: отменяет ожидающий prompt по abort-сигналу iframe', async () => {
+    setup()
+    const promptUser = vi.fn(() => new Promise<'granted' | 'denied'>(() => {})) // не резолвится
+    const resolver = new PermissionResolver({ promptUser })
+    const ctrl = new AbortController()
+
+    const p = resolver.request(APP, 'sign', undefined, ctrl.signal)
+    ctrl.abort()
+    expect(await p).toBe('denied')
+  })
+
   // ─── policy: session ──────────────────────────────────────────────────────
 
   it('geolocation grant is session-state (in-memory only)', async () => {

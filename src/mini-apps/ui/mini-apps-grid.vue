@@ -152,7 +152,9 @@ const openInstalled = (appId: string) => {
 }
 
 const openRemote = (entry: RemoteAppEntry) => {
-  appsStore.installFromRemoteEntry(entry)
+  // null → запись отклонена как импресонатор built-in (P2-13), не открываем.
+  const app = appsStore.installFromRemoteEntry(entry)
+  if (!app) return
   void router.push(`/app/${encodeURIComponent(entry.id)}`)
 }
 

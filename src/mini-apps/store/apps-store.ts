@@ -226,9 +226,24 @@ export const useAppsStore = defineStore('mini-apps:apps', {
      * Если app с таким id уже установлен (built-in / local / ранее remote) — no-op,
      * возвращает существующий.
      */
-    installFromRemoteEntry(entry: RemoteAppEntry): InstalledApp {
+    installFromRemoteEntry(entry: RemoteAppEntry): InstalledApp | null {
       const existing = this.installed[entry.id]
       if (existing) return existing
+
+      // P2-13: неподписанный каталог ноды не должен занимать identity built-in.
+      // id-коллизия уже отсечена выше (built-in предустановлен → existing). Здесь
+      // ловим remote-запись с ЧУЖИМ id, но именем/scope built-in — иначе пиксель-
+      // в-пиксель импресонация built-in в гриде. Такие записи отклоняем.
+      const impersonated = BUILT_IN_APPS.find(
+        (b) =>
+          b.id !== entry.id &&
+          (b.scope === entry.scope ||
+            b.name.trim().toLowerCase() === (entry.name ?? '').trim().toLowerCase())
+      )
+      if (impersonated) {
+        log.warn('remote entry impersonates built-in — rejected', entry.id, '~', impersonated.id)
+        return null
+      }
 
       const app = remoteEntryToInstalled(entry)
       this.installed[entry.id] = app
