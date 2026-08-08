@@ -41,11 +41,16 @@ export async function enrichNotifications(
 
   const fresh = notifications.filter((n) => !caches.enrichedIds.has(n.id))
   if (fresh.length === 0) return
-  fresh.forEach((n) => caches.enrichedIds.add(n.id))
+  // P2-9: НЕ помечаем enriched заранее — иначе разовый сетевой сбой оставит
+  // уведомление необогащённым навсегда на сессию. Помечаем в конце, и только
+  // те, чьи батчи не упали (упавшие остаются на ретрай при следующем вызове).
 
   const postTxids = new Set<string>()
   const commentTxids = new Set<string>()
   const profileAddrs = new Set<string>()
+  let postsFailed = false
+  let commentsFailed = false
+  let profilesFailed = false
 
   for (const n of fresh) {
     // Пост — нужен для типов с shareId; либо если comment имеет postid, чтобы открыть родительский пост
@@ -93,6 +98,7 @@ export async function enrichNotifications(
           }
         })
         .catch((e) => {
+          postsFailed = true
           console.warn('[notifications] enrich posts failed', e)
         })
     )
@@ -116,6 +122,7 @@ export async function enrichNotifications(
           }
         })
         .catch((e) => {
+          commentsFailed = true
           console.warn('[notifications] enrich comments failed', e)
         })
     )
@@ -142,16 +149,36 @@ export async function enrichNotifications(
           }
         })
         .catch((e) => {
+          profilesFailed = true
           console.warn('[notifications] enrich profiles failed', e)
         })
     )
   }
 
-  if (tasks.length === 0) return
-  setEnriching(true)
-  try {
-    await Promise.all(tasks)
-  } finally {
-    setEnriching(false)
+  if (tasks.length > 0) {
+    setEnriching(true)
+    try {
+      await Promise.all(tasks)
+    } finally {
+      setEnriching(false)
+    }
+  }
+
+  // P2-9: помечаем enriched ПОСЛЕ сетевых вызовов и только уведомления, чьи
+  // требуемые батчи не упали. Зависящие от упавшего батча остаются на ретрай.
+  for (const n of fresh) {
+    const postId = n.shareId ?? n.commentSnapshot?.postid
+    const dependsPost = !!postId && postTxids.has(postId)
+    const dependsComment = n.type === 'comment' && commentTxids.has(n.id)
+    const addr = n.from ?? n.fromSnapshot?.address
+    const dependsProfile = !!addr && profileAddrs.has(addr)
+    if (
+      (dependsPost && postsFailed) ||
+      (dependsComment && commentsFailed) ||
+      (dependsProfile && profilesFailed)
+    ) {
+      continue
+    }
+    caches.enrichedIds.add(n.id)
   }
 }

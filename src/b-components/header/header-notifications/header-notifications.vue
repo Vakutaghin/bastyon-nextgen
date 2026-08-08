@@ -225,15 +225,17 @@ const unreadCount = computed(() => notificationsStore.unreadCount)
 const list = computed(() => notificationsStore.list.slice(0, 20))
 const isLoading = computed(() => notificationsStore.loading)
 const isEnriching = computed(() => notificationsStore.enriching)
-const lastBlock = computed(() => notificationsStore.lastBlock)
+// Read-pointer (P2-8): «прочитано до» двигается только по явному открытию
+// выпадашки, а не на head сети при каждом фоновом опросе.
+const readBlock = computed(() => notificationsStore.readBlock)
 
 function formatTime(n: NotificationItem): string {
   return formatNotificationTime(n.time)
 }
 
-/** Прочитано = `nblock` уведомления ниже указателя последнего просмотренного блока. */
+/** Прочитано = `nblock` уведомления ниже read-pointer последнего явного просмотра. */
 function isSeen(item: NotificationItem): boolean {
-  return (item.nblock ?? 0) <= lastBlock.value
+  return (item.nblock ?? 0) <= readBlock.value
 }
 
 function iconComponentFor(item: NotificationItem): Component {

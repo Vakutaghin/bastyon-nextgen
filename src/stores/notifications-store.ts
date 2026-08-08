@@ -49,7 +49,15 @@ export const useNotificationsStore = defineStore('notifications', {
     hiddenIds: new Set<string>() as Set<string>,
     loading: false,
     inited: false,
+    /** Курсор фетча getmissedinfo (двигается на head сети при каждом опросе). */
     lastBlock: 0 as number,
+    /**
+     * Read-pointer: до какого блока пользователь реально видел уведомления.
+     * Отдельно от lastBlock (P2-8) — двигается ТОЛЬКО по явному прочтению
+     * (persistReadPointer при открытии выпадашки), иначе новые уведомления
+     * мгновенно становились бы «seen» из-за скачка курсора фетча на head.
+     */
+    readBlock: 0 as number,
     /** Адрес, для которого загружали — при смене пользователя сбрасываем inited */
     initedForAddress: null as string | null,
     /** Колбэк при появлении новых уведомлений (тосты/звук). Вызывается после обновления items при опросе getmissedinfo. */
@@ -195,6 +203,10 @@ export const useNotificationsStore = defineStore('notifications', {
           this.lastBlock = 0
         }
       }
+      // Стартовый read-pointer = сохранённая позиция прочтения (P2-8). Курсор
+      // фетча (lastBlock) дальше уедет на head, а readBlock останется здесь,
+      // пока пользователь явно не откроет выпадашку (persistReadPointer).
+      this.readBlock = this.lastBlock
 
       // Преобразуем запись IDB в NotificationItem для state
       const toItem = (s: {
@@ -322,6 +334,7 @@ export const useNotificationsStore = defineStore('notifications', {
       this.inited = false
       this.initedForAddress = null
       this.lastBlock = 0
+      this.readBlock = 0
       this.onNewNotifications = null
       this.postCache = {}
       this.commentCache = {}
@@ -344,8 +357,11 @@ export const useNotificationsStore = defineStore('notifications', {
     async persistReadPointer() {
       const auth = useAuthStore()
       const address = auth.getUserAddress
-      if (address && this.lastBlock > 0) {
-        await this.saveLastBlockToSettings(address, this.lastBlock)
+      // Явное прочтение: двигаем read-pointer на текущий курсор фетча (P2-8)
+      // и персистим именно read-pointer.
+      this.readBlock = this.lastBlock
+      if (address && this.readBlock > 0) {
+        await this.saveLastBlockToSettings(address, this.readBlock)
       }
     },
 

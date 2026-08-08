@@ -141,6 +141,18 @@ export function mapMissedEventToNotification(n: Record<string, unknown>): Notifi
   // и факт получения уже информативны.)
   const isTipEvent = (n.msg === 'transaction' || mesType === 'transaction') && n.amount != null
 
+  // Сырые блокчейн-транзакции (собственная регистрация аккаунта `type:100`,
+  // пополнение `type:1` и т.п.) приходят с ЧИСЛОВЫМ `type` и без mesType/msg —
+  // это не уведомления «кто-то что-то сделал». Оригинал их отфильтровывает
+  // (показывает только события с известным mesType/msg); без фильтра они
+  // рендерятся как «Кто-то · Уведомление» без актора и деталей.
+  const hasEventMarker =
+    (typeof n.mesType === 'string' && n.mesType.length > 0) ||
+    (typeof n.msg === 'string' && n.msg.length > 0)
+  if (!isTipEvent && !hasEventMarker) {
+    return null
+  }
+
   // i18n-ключ заголовка; резолвится через t() в месте рендера (toast/дропдаун).
   const title = isTipEvent
     ? 'notif.titleTip'

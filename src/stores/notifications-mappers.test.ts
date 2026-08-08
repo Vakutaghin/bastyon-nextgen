@@ -36,6 +36,30 @@ describe('mapMissedEventToNotification — донат/tip', () => {
     expect(r!.type).not.toBe('tip')
   })
 
+  it('отбрасывает сырые блокчейн-транзакции без mesType/msg (регистрация/пополнение)', () => {
+    // Так выглядят элементы getmissedinfo для свежего аккаунта: числовой type,
+    // height/nTime/s1/vin — но НЕ уведомление. Должны отсеиваться (→ null),
+    // иначе в выпадашке появляется «Кто-то · Уведомление» без деталей.
+    const registration = mapMissedEventToNotification({
+      txid: '357cd6fb',
+      type: 100,
+      height: 3891369,
+      nTime: 1782209358,
+      s1: 'PRxP5HytUeMHQd9UEcyW1bg1ouuSdCkqvf',
+      vin: [{ txid: 'x', vout: 210 }],
+    })
+    expect(registration).toBeNull()
+
+    const funding = mapMissedEventToNotification({
+      txid: '4083f758',
+      type: 1,
+      height: 3891332,
+      vin: [{ address: 'PDUJ', value: 67 }],
+      vout: [{ n: 0, value: 0.00002 }],
+    })
+    expect(funding).toBeNull()
+  })
+
   it('обычные события сохраняют прежний маппинг', () => {
     const sub = mapMissedEventToNotification({ txid: 's', mesType: 'subscribe', nblock: 1 })
     expect(sub!.type).toBe('subscribe')

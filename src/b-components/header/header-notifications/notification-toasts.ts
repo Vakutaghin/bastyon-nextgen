@@ -3,6 +3,9 @@ import { useNotificationSettingsStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import type { NotificationItem } from '@/stores/notifications-store'
+// Реальный звук уведомления (портирован из legacy sounds/). Vite отдаёт URL —
+// тот же приём, что у мессенджера (messenger-store импортирует glass.mp3).
+import notificationSound from './sounds/notification.mp3'
 
 /**
  * Проверка: разрешено ли уведомление по настройкам пользователя.
@@ -35,22 +38,21 @@ function isAllowedBySettings(settings: ReturnType<typeof useNotificationSettings
 
 /** Один раз за сессию проигрываем короткий звук (чтобы при пачке уведомлений не было какофонии). */
 let soundPlayedInSession = false
+// Один аудио-инстанс на модуль — не плодим элементы при пачке уведомлений.
+let notificationAudio: HTMLAudioElement | null = null
 
 function playNotificationSoundOnce(): void {
   if (soundPlayedInSession) return
   soundPlayedInSession = true
   try {
-    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.frequency.value = 800
-    osc.type = 'sine'
-    gain.gain.setValueAtTime(0.15, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15)
-    osc.start(ctx.currentTime)
-    osc.stop(ctx.currentTime + 0.15)
+    if (!notificationAudio) {
+      notificationAudio = new Audio(notificationSound)
+      notificationAudio.volume = 0.5
+    }
+    notificationAudio.currentTime = 0
+    // Автоплей может быть заблокирован браузером до первого клика — глушим ошибку
+    // (как в messenger-store), синтез-бип больше не нужен.
+    void notificationAudio.play().catch(() => {})
     setTimeout(() => {
       soundPlayedInSession = false
     }, 2000)
