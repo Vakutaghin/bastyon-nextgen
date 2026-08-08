@@ -19,24 +19,12 @@ export const SC_NewPostsPill = styled.button`
   box-shadow: ${COLORS.SHADOW_SM};
   transition: background ${TRANSITIONS.FAST};
 
+  /* color/background заданы и в :hover, чтобы перебить глобальное правило
+     button:hover в style.css (оно делает текст синим → синее-на-синем). */
   &:hover {
     background: ${COLORS.PRIMARY_HOVER};
+    color: ${COLORS.WHITE};
   }
-`
-
-export const SC_BoostedSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 8px;
-`
-
-export const SC_BoostedCaption = styled.div`
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: ${COLORS.TEXT_MUTED};
-  margin: 0 0 8px 4px;
 `
 
 export const SC_FeedErrorColumn = styled.div`
@@ -109,26 +97,26 @@ export const SC_FeedLoading = styled.div`
   padding: 100px 20px;
   width: 100%;
 
-  :deep(.ant-spin) {
+  .ant-spin {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 32px;
   }
 
-  :deep(.ant-spin-spinning) {
+  .ant-spin-spinning {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 32px;
   }
 
-  :deep(.anticon) {
+  .anticon {
     font-size: 120px !important;
     color: ${COLORS.PRIMARY} !important;
   }
 
-  :deep(.ant-spin-text) {
+  .ant-spin-text {
     font-size: 24px !important;
     color: ${COLORS.TEXT_PRIMARY} !important;
     font-weight: 500;

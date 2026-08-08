@@ -6,6 +6,10 @@
     </SC_RepostDeleted>
   </SC_PostCard>
   <SC_PostCard v-else ref="postCardRef" hoverable role="article">
+    <SC_BoostedBadge v-if="boosted">
+      <RiseOutlined />
+      {{ t('postCard.boosted') }}
+    </SC_BoostedBadge>
     <SC_PendingBadge v-if="post.pending" :title="t('postMsg.txPending')">
       <ClockCircleOutlined />
       {{ t('postMsg.txPending') }}
@@ -183,6 +187,7 @@ import {
   ShareAltOutlined,
   EditOutlined,
   RetweetOutlined,
+  RiseOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons-vue'
 import { Dropdown, Modal } from 'ant-design-vue'
@@ -219,6 +224,7 @@ import {
   SC_RepostOriginalAuthorName,
   SC_RepostOriginalAuthorTime,
   SC_RepostDeleted,
+  SC_BoostedBadge,
   SC_PendingBadge,
 } from './styled'
 
@@ -298,8 +304,10 @@ const props = withDefaults(
     targetCommentId?: string
     /** Deep-link: корневой коммент ветки, если цель — ответ. */
     targetParentId?: string
+    /** Показывать метку «Продвигаемое» (буст, вплетённый в ленту). */
+    boosted?: boolean
   }>(),
-  { maxLength: 500, maxBlocks: 3, showFull: false, authorOverride: null }
+  { maxLength: 500, maxBlocks: 3, showFull: false, authorOverride: null, boosted: false }
 )
 
 const emit = defineEmits<{

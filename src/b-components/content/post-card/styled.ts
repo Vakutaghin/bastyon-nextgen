@@ -15,6 +15,24 @@ export const SC_PostCard = styled(Card)`
   }
 `
 
+/** Метка «Продвигаемое» для бустнутых постов, вплетённых в ленту. */
+export const SC_BoostedBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: ${COLORS.BRAND_CYAN};
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`
+
 /** Бейдж оптимистичного поста: транзакция в мемпуле, ещё не в блокчейне. */
 export const SC_PendingBadge = styled.div`
   display: inline-flex;

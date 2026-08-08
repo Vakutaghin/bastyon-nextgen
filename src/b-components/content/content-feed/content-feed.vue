@@ -58,18 +58,6 @@
         {{ t('postCard.newPosts', { n: newPostsCount }) }}
       </SC_NewPostsPill>
 
-      <SC_BoostedSection v-if="showBoosted && boostedPosts.length > 0">
-        <SC_BoostedCaption>{{ t('postCard.boosted') }}</SC_BoostedCaption>
-        <PostCard
-          v-for="(post, i) in boostedPosts"
-          :key="`boosted-${post.id || i}`"
-          :post="post"
-          @like="handleLike"
-          @comment="handleComment"
-          @share="handleShare"
-        />
-      </SC_BoostedSection>
-
       <SC_FeedLoading v-if="isLoading && allPosts.length === 0">
         <Spin :tip="t('postCard.loadingFeed')">
           <template #indicator>
@@ -94,10 +82,11 @@
       </SC_FeedError>
       <template v-else-if="allPosts && allPosts.length > 0">
         <PostCard
-          v-for="(post, index) in allPosts"
-          :key="`post-${post.id || index}`"
-          v-memo="[post.id, post.likes, post.comments, post.shares]"
+          v-for="(post, index) in displayedPosts"
+          :key="`${post.isBoosted ? 'boosted' : 'post'}-${post.id || index}`"
+          v-memo="[post.id, post.likes, post.comments, post.shares, post.isBoosted]"
           :post="post"
+          :boosted="post.isBoosted"
           @like="handleLike"
           @comment="handleComment"
           @share="handleShare"
@@ -161,8 +150,10 @@ import {
 } from '@ant-design/icons-vue'
 import { usePostsStore } from '@/stores/posts-store'
 import { useFiltersStore } from '@/stores/filters-store'
+import { useModalStore } from '@/stores'
 import { useInfiniteFeed } from '@/composables/use-infinite-feed'
 import { useBoostedFeed } from '@/composables/use-boosted-feed'
+import type { AdaptedPost } from '@/composables/use-feed'
 import { isMobile } from '@mobile/utils/platform'
 import { getPhoto } from '@mobile/adapters/capacitor-camera'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
@@ -189,8 +180,6 @@ import {
   SC_FeedErrorColumn,
   SC_RetryButton,
   SC_NewPostsPill,
-  SC_BoostedSection,
-  SC_BoostedCaption,
 } from './styled'
 
 withDefaults(
@@ -209,6 +198,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const postsStore = usePostsStore()
 const filtersStore = useFiltersStore()
+const modalStore = useModalStore()
 
 const {
   allPosts,
@@ -229,8 +219,41 @@ const {
 })
 
 // Продвигаемые посты (getboostfeed) — только на главной вкладке «Лента» (id=1).
+// Не отдельный блок сверху, а вплетаются в ленту (как в оригинале): один буст
+// примерно на каждые BOOST_INTERVAL обычных постов. Пул берём с запасом.
 const showBoosted = computed<boolean>(() => filtersStore.activeTab === 1)
-const { posts: boostedPosts } = useBoostedFeed(3, () => filtersStore.activeTab === 1)
+const { posts: boostedPosts } = useBoostedFeed(10, () => filtersStore.activeTab === 1)
+
+/** Как часто вплетать продвигаемый пост (1 на N обычных постов). */
+const BOOST_INTERVAL = 10
+
+type FeedItem = AdaptedPost & { isBoosted?: boolean }
+
+/** Ключ для дедупа (txid → hash → id). */
+function postKey(p: { txid?: string; hash?: string; id?: string | number }): string {
+  return String(p.txid ?? p.hash ?? p.id ?? '')
+}
+
+// Лента с вплетёнными бустами: после каждых BOOST_INTERVAL постов вставляем один
+// доступный буст (с пометкой isBoosted), пропуская те, что уже есть в ленте.
+const displayedPosts = computed<FeedItem[]>(() => {
+  const base = allPosts.value as FeedItem[]
+  if (!showBoosted.value || boostedPosts.value.length === 0) return base
+
+  const seen = new Set(base.map(postKey))
+  const pool = boostedPosts.value.filter((b) => !seen.has(postKey(b)))
+  if (pool.length === 0) return base
+
+  const result: FeedItem[] = []
+  let bi = 0
+  base.forEach((post, i) => {
+    result.push(post)
+    if ((i + 1) % BOOST_INTERVAL === 0 && bi < pool.length) {
+      result.push({ ...pool[bi++], isBoosted: true })
+    }
+  })
+  return result
+})
 
 async function onShowNewPosts(): Promise<void> {
   await showNewPosts()
@@ -333,7 +356,8 @@ const isPickingPhoto = ref(false)
 
 async function handleCreatePost(): Promise<void> {
   if (!isMobile()) {
-    // На вебе пока ничего не делаем — форма публикации ещё не реализована.
+    // На вебе открываем модалку композера (как в шапке app-header).
+    modalStore.openPostComposerModal()
     return
   }
 
