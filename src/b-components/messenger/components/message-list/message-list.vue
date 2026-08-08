@@ -7,6 +7,7 @@
       :show-name="isFirstInGroup(index)"
       :show-avatar="isFirstInGroup(index)"
       :seen-up-to-ts="seenUpToTs"
+      @reply="emit('reply', $event)"
     />
   </SC_MessageList>
 </template>
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<{ messages?: Message[]; seenUpToTs?: numb
 
 const emit = defineEmits<{
   'load-more': []
+  reply: [message: Message]
 }>()
 
 const listRef = ref<HTMLDivElement | { $el: HTMLDivElement } | null>(null)

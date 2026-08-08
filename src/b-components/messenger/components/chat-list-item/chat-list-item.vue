@@ -14,7 +14,7 @@
 
       <SC_LastMessage v-if="dialog.lastMessage">
         <span v-if="isMine(dialog.lastMessage)">{{ t('chat.youPrefix') }}</span>
-        {{ dialog.lastMessage.text }}
+        {{ lastMessagePreview }}
       </SC_LastMessage>
     </SC_Info>
 
@@ -103,6 +103,26 @@ const menuPos = ref({ top: 0, right: 0 })
 
 /** Этот диалог сейчас открыт в чат-комнате — подсвечиваем его в списке слева. */
 const isActive = computed<boolean>(() => store.activeChatId === props.dialog.id)
+
+// Превью последнего сообщения в списке. Для медиа показываем понятную метку
+// («Аудио сообщение» и т.п.), а не сырой body — у аудио/медиа это имя файла или
+// зашифрованная строка, и в списке она выглядела как набор букв.
+const lastMessagePreview = computed<string>(() => {
+  const m = props.dialog.lastMessage
+  if (!m) return ''
+  switch (m.type) {
+    case 'audio':
+      return t('chat.audioMessage')
+    case 'image':
+      return t('chat.imageMessage')
+    case 'video':
+      return t('chat.videoMessage')
+    case 'file':
+      return t('chat.fileMessage')
+    default:
+      return m.text
+  }
+})
 
 const dropdownStyle = computed(() => ({
   position: 'fixed' as const,

@@ -137,6 +137,59 @@ export const SC_ReactionPicker = styled.div`
   z-index: 10;
 `
 
+/** Кнопка «…» — открывает меню действий над сообщением (ответ/удаление). */
+export const SC_ActionsButton = styled.button`
+  padding: 2px 6px;
+  margin-left: 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.6;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+
+  &:hover {
+    opacity: 1;
+    background: ${COLORS.OVERLAY_6};
+  }
+`
+
+/** Контент Popover-меню действий. */
+export const SC_ActionsMenu = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+`
+
+export const SC_ActionsItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: ${COLORS.TEXT_PRIMARY};
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: ${COLORS.BG_HOVER};
+  }
+
+  &.danger {
+    color: ${COLORS.DANGER};
+  }
+
+  .anticon {
+    font-size: 15px;
+  }
+`
+
 export const SC_ReactionPickerEmoji = styled.button`
   padding: 4px 6px;
   border: none;
@@ -156,4 +209,30 @@ export const SC_SeenTick = styled.span`
   line-height: 1;
   color: ${COLORS.PRIMARY};
   letter-spacing: -2px;
+`
+
+/** Цитата сообщения, на которое отвечают (показывается над текстом). */
+export const SC_ReplyQuote = styled.div`
+  display: block;
+  margin-bottom: 4px;
+  padding: 4px 8px;
+  border-left: 3px solid ${COLORS.BRAND_CYAN};
+  border-radius: 4px;
+  background: ${COLORS.OVERLAY_6};
+  max-width: 100%;
+`
+
+export const SC_ReplyQuoteName = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${COLORS.BRAND_CYAN};
+`
+
+export const SC_ReplyQuoteText = styled.div`
+  font-size: 12px;
+  color: ${COLORS.TEXT_SECONDARY};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
 `

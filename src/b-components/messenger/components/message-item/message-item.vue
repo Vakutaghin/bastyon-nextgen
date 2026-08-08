@@ -16,6 +16,11 @@
         <span>{{ displayName }}</span>
       </SC_MessageMeta>
 
+      <SC_ReplyQuote v-if="repliedPreview">
+        <SC_ReplyQuoteName>{{ repliedPreview.name }}</SC_ReplyQuoteName>
+        <SC_ReplyQuoteText>{{ repliedPreview.text }}</SC_ReplyQuoteText>
+      </SC_ReplyQuote>
+
       <div v-if="message.type === 'audio'" class="message-audio">
         <AudioMessage :message="message" :compact="isCompact" />
         <SC_AudioUrlMissing v-if="!message.url">Audio URL missing</SC_AudioUrlMissing>
@@ -57,6 +62,35 @@
         >
           <SC_ReactionEmojiIcon>😀</SC_ReactionEmojiIcon>
         </SC_ReactionButton>
+
+        <APopover
+          v-if="canShowActions"
+          v-model:open="actionsOpen"
+          trigger="click"
+          placement="topRight"
+          :overlay-class-name="'message-actions-popover'"
+        >
+          <template #content>
+            <SC_ActionsMenu @click.stop>
+              <SC_ActionsItem v-if="canReply" type="button" @click.stop="onReply">
+                <RollbackOutlined />
+                <span>{{ t('messenger.reply') }}</span>
+              </SC_ActionsItem>
+              <SC_ActionsItem
+                v-if="canDelete"
+                type="button"
+                class="danger"
+                @click.stop="onDelete"
+              >
+                <DeleteOutlined />
+                <span>{{ t('messenger.deleteMessage') }}</span>
+              </SC_ActionsItem>
+            </SC_ActionsMenu>
+          </template>
+          <SC_ActionsButton type="button" :title="t('messenger.actions')" @click.stop>
+            <MoreOutlined />
+          </SC_ActionsButton>
+        </APopover>
       </SC_MessageTime>
 
       <Teleport to="body">
@@ -90,6 +124,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Popover, Modal } from 'ant-design-vue'
+import { MoreOutlined, DeleteOutlined, RollbackOutlined } from '@ant-design/icons-vue'
 import type { Message } from '../../types'
 import { matrixFetch } from '@/helpers/api/request'
 import { useMessengerStore } from '../../store'
@@ -121,7 +157,15 @@ import {
   SC_ReactionPicker,
   SC_ReactionPickerEmoji,
   SC_AvatarSlot,
+  SC_ActionsButton,
+  SC_ActionsMenu,
+  SC_ActionsItem,
+  SC_ReplyQuote,
+  SC_ReplyQuoteName,
+  SC_ReplyQuoteText,
 } from './styled'
+
+const APopover = Popover
 
 const props = withDefaults(
   defineProps<{
@@ -135,6 +179,8 @@ const props = withDefaults(
   }>(),
   { showName: true, showAvatar: true, seenUpToTs: 0 }
 )
+
+const emit = defineEmits<{ reply: [message: Message] }>()
 
 const store = useMessengerStore()
 const { t } = useI18n()
@@ -302,6 +348,59 @@ const canReact = computed<boolean>(() => {
   if (isMine.value) return false
   return true
 })
+
+// --- Действия над сообщением (ответ / удаление) ---
+const actionsOpen = ref(false)
+/** Реальное (отправленное) сообщение с matrix event-id ($...), не temp/pending. */
+const isRealMessage = computed<boolean>(
+  () => typeof props.message.id === 'string' && props.message.id.startsWith('$')
+)
+/** Ответить можно на любое реальное сообщение. */
+const canReply = computed<boolean>(() => isRealMessage.value)
+/** Удалить можно только своё реальное сообщение. */
+const canDelete = computed<boolean>(() => isRealMessage.value && isMine.value)
+const canShowActions = computed<boolean>(() => canReply.value || canDelete.value)
+
+/** Превью цитируемого сообщения (на которое отвечает текущее). Резолвится по
+ *  загруженным сообщениям диалога; если оригинал не в списке — общий плейсхолдер. */
+const repliedPreview = computed<{ name: string; text: string } | null>(() => {
+  const rid = props.message.replyTo?.id
+  if (!rid) return null
+  const chatId = props.message.chatId
+  const list = chatId ? store.messages[chatId] : null
+  const ref = list?.find((m) => m.id === rid)
+  if (!ref) return { name: '', text: t('messenger.reply') }
+  const isRefMine = ref.senderId === 'me' || ref.senderId === store.currentUser.id
+  const name = isRefMine ? store.currentUser.name || t('messenger.you') : ref.senderName || ''
+  const text = ref.type && ref.type !== 'text' ? `[${ref.type}]` : (ref.text || '').slice(0, 80)
+  return { name, text }
+})
+
+function onReply(): void {
+  actionsOpen.value = false
+  emit('reply', props.message)
+}
+
+function onDelete(): void {
+  actionsOpen.value = false
+  const chatId = props.message.chatId
+  if (!chatId) return
+  Modal.confirm({
+    title: t('messenger.deleteConfirmTitle'),
+    content: t('messenger.deleteConfirmText'),
+    okText: t('messenger.deleteMessage'),
+    okType: 'danger',
+    cancelText: t('messenger.cancel'),
+    centered: true,
+    onOk: async () => {
+      try {
+        await store.deleteMessage(chatId, props.message.id)
+      } catch {
+        /* ошибка залогирована в сторе */
+      }
+    },
+  })
+}
 
 function getScrollParent(el: HTMLElement | null): HTMLElement | null {
   if (!el) return null

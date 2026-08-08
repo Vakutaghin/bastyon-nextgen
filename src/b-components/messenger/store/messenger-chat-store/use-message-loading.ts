@@ -43,6 +43,10 @@ export function useMessageLoading(
 
       const room = matrixService.getRoom(chatId)
       if (room) {
+        // Если по комнате висит приглашение — вступаем при открытии. Иначе
+        // последующая отправка падает с M_FORBIDDEN («not in room»), а состояние
+        // комнаты (участники/история) подгружается не полностью.
+        await matrixService.joinIfInvited(chatId)
         await room.loadMembersIfNeeded()
         await paginateRoomHistory(room)
         const timelineEvents = getRoomTimelineEvents(room)

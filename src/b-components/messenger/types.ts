@@ -49,6 +49,9 @@ export interface Message {
   status: 'sending' | 'sent' | 'read' | 'failed'
   /** Реакции на сообщение (эмодзи), заполняется из Matrix m.reaction */
   reactions?: MessageReaction[]
+  /** Ответ на сообщение: event_id оригинала (Matrix m.in_reply_to). Превью
+   *  резолвится в message-item по store.messages текущего диалога. */
+  replyTo?: { id: string }
 }
 
 export interface Dialog {

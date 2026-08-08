@@ -104,10 +104,10 @@ const {
   activeMessages,
   lastTargetAddress,
   inviteViewActive,
+  totalUnreadCount,
 } = storeToRefs(store)
 
 const { t } = useI18n()
-const totalUnreadCount = store.totalUnreadCount
 const authStore = useAuthStore()
 const { isMobileOrTablet } = useViewport()
 

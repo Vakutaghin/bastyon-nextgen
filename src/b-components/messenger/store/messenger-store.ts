@@ -78,7 +78,15 @@ export const useMessengerStore = defineStore('messenger', () => {
     const timelineEvents = getRoomTimelineEvents(room)
     const myUserId = matrixService.getClient()?.getUserId()
     const joinedMembers = room.getJoinedMembers()
-    const isDirect = joinedMembers.length === 2
+    // Прямой чат определяем по сумме joined + invited (== 2), а не только по
+    // joined. У свежесозданного DM собеседник ещё лишь приглашён (особенно если
+    // он ни разу не заходил в мессенджер и matrix-аккаунта у него по сути нет),
+    // поэтому joined == 1 и чат ошибочно выглядел как группа.
+    const memberCount =
+      typeof room.getInvitedAndJoinedMemberCount === 'function'
+        ? room.getInvitedAndJoinedMemberCount()
+        : joinedMembers.length
+    const isDirect = memberCount === 2
 
     let otherMember = joinedMembers.find((m: DialogMember) => m.userId !== myUserId)
     if (!otherMember) {
@@ -121,7 +129,17 @@ export const useMessengerStore = defineStore('messenger', () => {
       if (address) {
         if (!profileCache.userProfiles[address]) profileCache.fetchProfiles([address])
         const p = profileCache.userProfiles[address]
-        if (p?.name) name = p.name
+        if (p?.name) {
+          name = p.name
+        } else {
+          // Логин ещё не подгрузился (свежий аккаунт / лаг распространения имени
+          // по нодам), а у matrix-юзера нет displayname — поэтому name сейчас
+          // равен hex-локалпарту matrix-id. Показываем читаемый Bastyon-адрес
+          // вместо сырого hex; как только профиль резолвится, profile-watcher
+          // перезагрузит диалоги и подставит логин.
+          const localpart = partnerId.slice(1).split(':')[0]
+          if (name === localpart) name = address
+        }
         const imgCandidate = p?.i || p?.avatar || p?.image
         const img = typeof imgCandidate === 'string' ? imgCandidate : undefined
         if (img) {
@@ -310,6 +328,26 @@ export const useMessengerStore = defineStore('messenger', () => {
                   const list = chatStore.messages[roomId]
                   if (client && list)
                     chatStore.enrichMessagesWithReactions(room, list, client.getUserId() || '')
+                }
+                return
+              }
+
+              // Redaction (удаление сообщения) — убираем целевое сообщение из ленты.
+              if (evType === 'm.room.redaction') {
+                const roomId = getEventRoomId(event)
+                const redactedId =
+                  (typeof event.getAssociatedId === 'function'
+                    ? event.getAssociatedId()
+                    : undefined) ||
+                  event.event?.redacts ||
+                  event.redacts ||
+                  (typeof event.getContent === 'function'
+                    ? event.getContent()?.redacts
+                    : undefined)
+                const list = roomId ? chatStore.messages[roomId] : null
+                if (list && typeof redactedId === 'string') {
+                  const idx = list.findIndex((m) => m.id === redactedId)
+                  if (idx !== -1) list.splice(idx, 1)
                 }
                 return
               }
@@ -628,7 +666,11 @@ export const useMessengerStore = defineStore('messenger', () => {
     // упадёт на `null.effect`. Обёртка `computed` делает поле reactive-ссылкой, безопасной
     // для storeToRefs.
     pcryptoService: computed(() => chatStore.pcryptoService),
-    totalUnreadCount: uiStore.totalUnreadCount,
+    // Та же ловушка, что с pcryptoService/activeDialog: `uiStore.totalUnreadCount`
+    // авто-разворачивается Pinia в голое число, и storeToRefs(messengerStore) не
+    // может сделать из него ref → в хедере totalUnreadCount === undefined и computed
+    // unreadBadge падает при появлении иконки мессенджера после входа.
+    totalUnreadCount: computed(() => uiStore.totalUnreadCount),
 
     // Методы
     loadDialogs,
@@ -638,6 +680,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     toggleMessenger,
     openMessenger,
     sendMessage: chatStore.sendMessage,
+    replyToMessage: chatStore.replyToMessage,
+    deleteMessage: chatStore.deleteMessage,
     sendReaction: chatStore.sendReaction,
     sendAudio: chatStore.sendAudio,
     sendImage: chatStore.sendImage,

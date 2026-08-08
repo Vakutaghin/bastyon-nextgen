@@ -408,3 +408,55 @@ export const SC_BlockBtn = styled.button`
     cursor: default;
   }
 `
+
+/** Баннер «отвечаем на сообщение» над полем ввода. */
+export const SC_ReplyBanner = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: ${COLORS.BG_LIGHT};
+  border-top: 1px solid ${COLORS.GRAY_EEE};
+`
+
+export const SC_ReplyBannerBar = styled.div`
+  width: 3px;
+  align-self: stretch;
+  border-radius: 2px;
+  background: ${COLORS.BRAND_CYAN};
+  flex-shrink: 0;
+`
+
+export const SC_ReplyBannerBody = styled.div`
+  flex: 1;
+  min-width: 0;
+`
+
+export const SC_ReplyBannerTitle = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${COLORS.BRAND_CYAN};
+`
+
+export const SC_ReplyBannerText = styled.div`
+  font-size: 13px;
+  color: ${COLORS.TEXT_SECONDARY};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`
+
+export const SC_ReplyBannerClose = styled.button`
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: ${COLORS.TEXT_SECONDARY};
+  padding: 0 4px;
+  flex-shrink: 0;
+
+  &:hover {
+    color: ${COLORS.TEXT_PRIMARY};
+  }
+`

@@ -58,15 +58,23 @@
           type="search"
         />
         <SC_SearchCount v-if="searchQuery.trim()">{{ displayedMessages.length }}</SC_SearchCount>
-        <SC_BlockBtn
-          type="button"
-          :class="{ blocked: isBlocked }"
-          :title="isBlocked ? t('messenger.unblockUser') : t('messenger.blockUser')"
-          :disabled="blockBusy"
-          @click="toggleBlock"
+        <Popconfirm
+          :title="isBlocked ? t('messenger.unblockConfirmTitle') : t('messenger.blockConfirmTitle')"
+          :ok-text="isBlocked ? t('messenger.unblockUser') : t('messenger.blockUser')"
+          :cancel-text="t('messenger.cancel')"
+          placement="bottomRight"
+          :overlay-style="BLOCK_CONFIRM_OVERLAY_STYLE"
+          @confirm="toggleBlock"
         >
-          <StopOutlined />
-        </SC_BlockBtn>
+          <SC_BlockBtn
+            type="button"
+            :class="{ blocked: isBlocked }"
+            :title="isBlocked ? t('messenger.unblockUser') : t('messenger.blockUser')"
+            :disabled="blockBusy"
+          >
+            <StopOutlined />
+          </SC_BlockBtn>
+        </Popconfirm>
       </SC_SearchRow>
 
       <SC_ChatRoomEmptyHint v-if="!messages || messages.length === 0">
@@ -81,8 +89,22 @@
         :messages="displayedMessages"
         :seen-up-to-ts="partnerSeenUpToTs"
         @load-more="emit('load-more')"
+        @reply="onReplyTo"
       />
     </template>
+
+    <SC_ReplyBanner v-if="replyingTo">
+      <SC_ReplyBannerBar />
+      <SC_ReplyBannerBody>
+        <SC_ReplyBannerTitle>
+          {{ t('messenger.replyingTo') }} {{ replyPreviewName }}
+        </SC_ReplyBannerTitle>
+        <SC_ReplyBannerText>{{ replyPreviewText }}</SC_ReplyBannerText>
+      </SC_ReplyBannerBody>
+      <SC_ReplyBannerClose type="button" :aria-label="t('messenger.cancel')" @click="cancelReply">
+        ×
+      </SC_ReplyBannerClose>
+    </SC_ReplyBanner>
 
     <SC_TypingIndicator v-if="isTyping">
       {{ typingName ? t('messenger.typingNamed', { name: typingName }) : t('messenger.typing') }}
@@ -181,6 +203,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { SearchOutlined, StopOutlined } from '@ant-design/icons-vue'
+import { Popconfirm } from 'ant-design-vue'
+import { Z_INDEX } from '@/styles/design-tokens'
 import { debugLog } from '@/helpers/common/debug-log'
 import type { Message } from '../../types'
 import { matrixService } from '../../services/matrix-service'
@@ -227,6 +251,12 @@ import {
   SC_SearchInput,
   SC_SearchCount,
   SC_BlockBtn,
+  SC_ReplyBanner,
+  SC_ReplyBannerBar,
+  SC_ReplyBannerBody,
+  SC_ReplyBannerTitle,
+  SC_ReplyBannerText,
+  SC_ReplyBannerClose,
 } from './styled'
 import {
   SC_StatItem,
@@ -241,6 +271,10 @@ const DRAG_STYLE = {
   outlineOffset: '-4px',
   background: 'rgba(0, 164, 219, 0.06)',
 }
+
+// Поповер подтверждения блокировки рендерится в body; мессенджер-обёртка имеет
+// z-index 2500, а дефолтный z-index ant-поповера ниже — поэтому поднимаем его.
+const BLOCK_CONFIRM_OVERLAY_STYLE = { zIndex: Z_INDEX.REACTION_PICKER }
 
 const props = withDefaults(
   defineProps<{
@@ -276,9 +310,28 @@ const displayedMessages = computed<Message[]>(() => {
   if (!q) return props.messages
   return props.messages.filter((m) => (m.text || '').toLowerCase().includes(q))
 })
-// Сброс поиска при смене диалога.
+// --- Ответ на сообщение (reply) ---
+const replyingTo = ref<Message | null>(null)
+const replyPreviewName = computed<string>(() => replyingTo.value?.senderName || '')
+const replyPreviewText = computed<string>(() => {
+  const m = replyingTo.value
+  if (!m) return ''
+  // Для медиа показываем тип-плейсхолдер, для текста — обрезанный текст.
+  if (m.type && m.type !== 'text') return `[${m.type}]`
+  return (m.text || '').slice(0, 80)
+})
+function onReplyTo(message: Message): void {
+  replyingTo.value = message
+  focusInput()
+}
+function cancelReply(): void {
+  replyingTo.value = null
+}
+
+// Сброс поиска и активного ответа при смене диалога.
 watch(activeRoomId, () => {
   searchQuery.value = ''
+  replyingTo.value = null
 })
 
 // Отправка собственного typing-статуса (throttle: не чаще раза в 3с).
@@ -325,6 +378,14 @@ const {
 } = useChatInput({
   onSend: (text) => {
     stopTyping()
+    // Активен ответ — шлём как reply (m.in_reply_to) напрямую через стор и
+    // сбрасываем баннер; обычная отправка идёт через @send родителю.
+    if (replyingTo.value && store.activeChatId) {
+      const replyId = replyingTo.value.id
+      replyingTo.value = null
+      void store.replyToMessage(store.activeChatId, text, replyId)
+      return
+    }
     emit('send', text)
   },
 })

@@ -173,6 +173,14 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
       }
     }
 
+    // Ответ (reply): event_id оригинала из m.relates_to.m.in_reply_to. Для
+    // зашифрованных сообщений relation лежит на внешнем (открытом) content.
+    const relatesTo = (finalContent as Record<string, unknown> | null)?.['m.relates_to'] as
+      | Record<string, unknown>
+      | undefined
+    const inReplyTo = relatesTo?.['m.in_reply_to'] as Record<string, unknown> | undefined
+    const replyToId = typeof inReplyTo?.event_id === 'string' ? inReplyTo.event_id : null
+
     return {
       id: eventId,
       chatId: getEventRoomId(event),
@@ -186,6 +194,7 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
       timestamp: getEventTs(event),
       read: false,
       status: 'sent',
+      ...(replyToId ? { replyTo: { id: replyToId } } : {}),
     }
   }
 
