@@ -97,6 +97,12 @@ export const SC_TorTextarea = styled.textarea`
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: 4px;
   resize: vertical;
+  background: ${COLORS.BG_INPUT};
+  color: ${COLORS.TEXT_PRIMARY};
+
+  &::placeholder {
+    color: ${COLORS.TEXT_MUTED};
+  }
 `
 
 export const SC_TorActions = styled.div`

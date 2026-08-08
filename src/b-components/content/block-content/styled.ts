@@ -14,28 +14,28 @@ export const SC_BlockContent = styled.div`
     margin-bottom: 0;
   }
 
-  :deep(*) {
+  * {
     color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
-  :deep(p) {
+  p {
     color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
-  :deep(div) {
+  div {
     color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
-  :deep(span) {
+  span {
     color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
-  :deep(h1),
-  :deep(h2),
-  :deep(h3),
-  :deep(h4),
-  :deep(h5),
-  :deep(h6) {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: ${COLORS.TEXT_PRIMARY} !important;
   }
 `

@@ -31,19 +31,19 @@ export const SC_ShowCommentsBtn = styled.button`
 `
 
 export const SC_ShowCommentsBtnSecondary = styled(SC_ShowCommentsBtn)`
-  color: rgba(0, 0, 0, 0.45);
+  color: ${COLORS.TEXT_SECONDARY};
   margin-left: 12px;
 
   &:hover:not(:disabled) {
-    color: rgba(0, 0, 0, 0.65);
+    color: ${COLORS.TEXT_PRIMARY};
   }
 `
 
 export const SC_ShowCommentsBtnCollapse = styled(SC_ShowCommentsBtn)`
-  color: rgba(0, 0, 0, 0.45);
+  color: ${COLORS.TEXT_SECONDARY};
 
   &:hover:not(:disabled) {
-    color: rgba(0, 0, 0, 0.65);
+    color: ${COLORS.TEXT_PRIMARY};
   }
 `
 
@@ -83,14 +83,14 @@ export const SC_RefreshBtn = styled.button`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid #ddd;
-  background: #fff;
+  border: 1px solid ${COLORS.GRAY_DDD};
+  background: ${COLORS.BG_PRIMARY};
   color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
   margin-left: auto;
 
   &:hover:not(:disabled) {
-    background: #f5f5f5;
+    background: ${COLORS.BG_TERTIARY};
     color: ${COLORS.TEXT_PRIMARY};
   }
   &:disabled {
@@ -108,9 +108,9 @@ export const SC_CommentsSortSelect = styled.select`
   font-size: 13px;
   color: ${COLORS.TEXT_PRIMARY};
   padding: 4px 8px;
-  border: 1px solid rgb(222, 226, 230);
+  border: 1px solid ${COLORS.BORDER_DARK};
   border-radius: 6px;
-  background: #fff;
+  background: ${COLORS.BG_PRIMARY};
   cursor: pointer;
   min-width: 180px;
 

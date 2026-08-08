@@ -17,11 +17,11 @@ export const SC_BlockParagraph = styled.p`
     margin-bottom: 0;
   }
 
-  :deep(*) {
+  * {
     color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
-  :deep(.bastyon-link) {
+  .bastyon-link {
     color: ${COLORS.PRIMARY} !important;
     text-decoration: underline;
     cursor: pointer;
@@ -30,7 +30,7 @@ export const SC_BlockParagraph = styled.p`
     word-wrap: break-word;
   }
 
-  :deep(.bastyon-link:hover) {
+  .bastyon-link:hover {
     color: ${COLORS.PRIMARY_ACTIVE} !important;
     text-decoration: underline;
   }

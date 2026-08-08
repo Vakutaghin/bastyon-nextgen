@@ -297,6 +297,13 @@
   --color-purple: #9254de;
   --color-pink: #f759ab;
 
+  /* «Глубокие» акценты используются как ТЕКСТ на полупрозрачном soft-фоне
+     (пилюли типов уведомлений SC_NotificationTypePill, ссылки в контенте). В
+     светлой теме они тёмные — на тёмной это «тёмное на тёмном», поэтому осветляем. */
+  --color-primary-active: #4096ff;
+  --color-purple-deep: #b37feb;
+  --color-green-ant-deep: #73d13d;
+
   /* Status-фоны — приглушаем под тёмный контекст */
   --color-red-bg: rgba(255, 59, 48, 0.16);
   --color-red-border: rgba(255, 59, 48, 0.3);
@@ -596,6 +603,264 @@ a:active {
 .ant-card-body h5,
 .ant-card-body h6 {
   color: var(--color-text) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Ant Design Modal — рендерится телепортом в <body>, поэтому :deep() из
+   vue3-styled-components (SC_Modal в components/modal/styled.ts и пр.) до него
+   НЕ доходит — ровно та же причина, что и у .ant-card выше. Тема целиком живёт
+   в CSS-переменных, поэтому глобальный override автоматически корректен и в
+   light, и в dark — без переключения algorithm у antd ConfigProvider.
+   Покрывает ВСЕ модалки проекта: общую обёртку (.bastyon-modal-wrap), «сырые»
+   antd-модалки и императивные Modal.confirm()/Modal.info().
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.ant-modal-content {
+  background: var(--color-bg-primary) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.ant-modal-header {
+  background: var(--color-bg-primary) !important;
+  border-bottom-color: var(--color-border-light) !important;
+}
+
+.ant-modal-title {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-modal-body {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-modal-footer {
+  border-top-color: var(--color-border-light) !important;
+}
+
+.ant-modal-close,
+.ant-modal-close-x {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-modal-close:hover {
+  background: var(--color-surface-frosted) !important;
+}
+
+/* Императивные Modal.confirm()/info()/warning() — заголовок и текст внутри
+   .ant-modal-content, у которых antd проставляет собственный тёмный цвет. */
+.ant-modal-confirm-title,
+.ant-modal-confirm-content {
+  color: var(--color-text-primary) !important;
+}
+
+/* Captcha-модалка — компактная ширина и паддинг. Раньше жило в
+   captcha-modal.styled.ts через :deep(.captcha-modal-wrap) (мёртвый код —
+   модалка телепортится в <body>). wrapClassName="captcha-modal-wrap". */
+.captcha-modal-wrap .ant-modal {
+  max-width: 450px;
+}
+
+.captcha-modal-wrap .ant-modal-body {
+  padding: 1.5em;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   vue-easy-lightbox (.vel-*) — компонент телепортит .vel-modal в <body>,
+   поэтому стили глобальные (раньше — мёртвый :deep в image-gallery.styled.ts).
+   Лайтбокс тёмный в обеих темах, цвета не флипаются.
+   ─────────────────────────────────────────────────────────────────────────── */
+.vel-modal {
+  background-color: var(--color-overlay-88, rgba(0, 0, 0, 0.88));
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.vel-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.vel-close,
+.vel-btn {
+  color: var(--color-white-85, rgba(255, 255, 255, 0.85));
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.vel-close {
+  font-size: 32px;
+}
+
+.vel-close:hover,
+.vel-btn:hover {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Ant Design teleport-оверлеи (Dropdown / Popover / Menu / message /
+   notification) — рендерятся в <body>, поэтому styled/:deep до них не достают,
+   а ConfigProvider у нас на defaultAlgorithm (light) → в тёмной теме они белые.
+   Темим глобально на CSS-переменных (автофлип; в light = дефолты antd).
+   Tooltip НЕ трогаем — antd по умолчанию делает его тёмным в обеих темах.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* antd v4 инжектит свои стили через cssinjs (runtime <style> ПОСЛЕ style.css),
+   поэтому для перебивания нужен !important — как у блоков .ant-card / .ant-modal
+   выше. (Alert antd оборачивает в :where() с 0-specificity, ему !important не
+   обязателен, но ставим для единообразия.) */
+
+/* Dropdown menu */
+.ant-dropdown-menu {
+  background-color: var(--color-bg-primary) !important;
+  border: 1px solid var(--color-border-light) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.ant-dropdown-menu-item,
+.ant-dropdown-menu-submenu-title {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-dropdown-menu-item:hover,
+.ant-dropdown-menu-submenu-title:hover,
+.ant-dropdown-menu-item-active {
+  background-color: var(--color-bg-hover) !important;
+}
+
+.ant-dropdown-menu-item-selected {
+  color: var(--color-primary) !important;
+  background-color: var(--color-bg-hover-blue) !important;
+}
+
+.ant-dropdown-menu-item-divider {
+  background-color: var(--color-border-light) !important;
+}
+
+/* Standalone Menu */
+.ant-menu {
+  background-color: var(--color-bg-primary) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.ant-menu-item,
+.ant-menu-submenu-title {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-menu-item:hover,
+.ant-menu-submenu-title:hover {
+  color: var(--color-primary) !important;
+}
+
+.ant-menu-item-selected {
+  color: var(--color-primary) !important;
+  background-color: var(--color-bg-hover-blue) !important;
+}
+
+/* Popover (и Popconfirm, на той же основе) */
+.ant-popover-inner {
+  background-color: var(--color-bg-primary) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.ant-popover-title {
+  color: var(--color-text-primary) !important;
+  border-bottom-color: var(--color-border-light) !important;
+}
+
+.ant-popover-inner-content {
+  color: var(--color-text-primary) !important;
+}
+
+/* Стрелка popover/dropdown (antd v4) */
+.ant-popover-arrow-content {
+  background-color: var(--color-bg-primary) !important;
+}
+
+/* Оверлей меню профиля (header-user) — поднимаем над хедером (z 1000) и триггером
+   (z 3000). Раньше z-index навешивался хаком через класс скрытого helper-div'а,
+   но тот класс тащил ещё и visibility:hidden/pointer-events:none → меню монтировалось
+   невидимым («не открывается»). Теперь — статический класс только с z-index. */
+.header-user-dropdown {
+  z-index: 3005 !important;
+}
+
+/* Badge задаёт `color` из светлой палитры antd (ConfigProvider=defaultAlgorithm),
+   и иконка-потомок (колокольчик/часы в хедере) наследует тёмный цвет → чёрная в
+   dark. Возвращаем наследование от обёртки (SC_*Wrapper c TEXT_PRIMARY). Счётчик
+   `.ant-badge-count` красится отдельно, его это не трогает. */
+.ant-badge {
+  color: inherit !important;
+}
+
+/* message — короткие тосты сверху */
+.ant-message-notice-content {
+  background-color: var(--color-bg-primary) !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* notification — карточки-тосты */
+.ant-notification-notice {
+  background-color: var(--color-bg-primary) !important;
+  border: 1px solid var(--color-border-light) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.ant-notification-notice-message {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-notification-notice-description {
+  color: var(--color-text-secondary) !important;
+}
+
+.ant-notification-notice-close {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Radio — используется внутри телепорт-оверлеев (Dropdown в header-tor, Modal в
+   report-modal), куда styled/:deep не достаёт, а antd на light-палитре → в dark
+   лейбл был тёмным на тёмном фоне. Текст + фон кружка темним на токенах; рамку и
+   точку (primary) НЕ трогаем, иначе ломается индикатор выбранного. */
+.ant-radio-wrapper {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-radio-inner {
+  background-color: var(--color-bg-input) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Ant Design Alert (инлайн) — type-цвета через токены: в light резолвятся в
+   дефолтные пастельные фоны antd, в dark — в затемнённые полупрозрачные тинты.
+   ─────────────────────────────────────────────────────────────────────────── */
+.ant-alert-info {
+  background-color: var(--color-ant-blue-bg) !important;
+  border-color: var(--color-ant-blue-bg-light) !important;
+}
+
+.ant-alert-success {
+  background-color: var(--color-success-bg-tint) !important;
+}
+
+.ant-alert-warning {
+  background-color: var(--color-warning-bg) !important;
+  border-color: var(--color-warning-border-light) !important;
+}
+
+.ant-alert-error {
+  background-color: var(--color-red-bg) !important;
+  border-color: var(--color-red-border) !important;
+}
+
+.ant-alert-message {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-alert-description {
+  color: var(--color-text-secondary) !important;
 }
 
 /* Star Rating */

@@ -11,16 +11,8 @@ export const SC_ErrorMessage = styled.div`
   font-size: 0.9em;
 `
 
+// Размеры/паддинг captcha-модалки заданы глобально в src/style.css
+// (.captcha-modal-wrap) — модалка телепортится в <body>, :deep сюда не доходил.
 export const SC_CaptchaModalWrapper = styled.div`
-  /* Стили для модального окна применяются через wrapClassName */
-
-  :deep(.captcha-modal-wrap) {
-    .ant-modal {
-      max-width: 450px;
-    }
-
-    .ant-modal-body {
-      padding: 1.5em;
-    }
-  }
+  display: contents;
 `

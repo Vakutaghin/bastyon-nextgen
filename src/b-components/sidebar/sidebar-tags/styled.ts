@@ -94,7 +94,10 @@ export const SC_TagsList = styled.div`
 
 export const SC_TagsCount = styled.span`
   font-size: 10px;
-  color: ${COLORS.TEXT_SECONDARY};
+  /* Белый текст: в тёмной теме TEXT_SECONDARY на фоне TEXT_MUTED давал серый на
+     сером (низкий контраст). Белый читается на бейдже в обеих темах и совпадает
+     с состоянием selected ниже. */
+  color: ${COLORS.WHITE};
   background: ${COLORS.TEXT_MUTED};
   padding: 1.88px 4px;
   border-radius: 8px;

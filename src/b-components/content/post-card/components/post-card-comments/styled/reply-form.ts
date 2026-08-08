@@ -5,8 +5,8 @@ import { COLORS } from '@/styles/theme-colors'
 export const SC_ReplyPanel = styled.div`
   margin-top: 10px;
   padding: 10px 12px;
-  background: #f5f5f5;
-  border: 1px solid #eee;
+  background: ${COLORS.BG_TERTIARY};
+  border: 1px solid ${COLORS.GRAY_EEE};
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -21,7 +21,7 @@ export const SC_ReplyPanel = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: rgb(222, 226, 230);
+    background: ${COLORS.BORDER_DARK};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -59,7 +59,7 @@ export const SC_ReplyInputWrap = styled.div`
 export const SC_ReplyTextarea = styled.textarea`
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #ddd;
+  border: 1px solid ${COLORS.GRAY_DDD};
   border-radius: 16px;
   padding: 8px 14px;
   font-size: 14px;
@@ -70,7 +70,8 @@ export const SC_ReplyTextarea = styled.textarea`
   max-height: 120px;
   line-height: 1.45;
   font-family: inherit;
-  background: #fff;
+  background: ${COLORS.BG_PRIMARY};
+  color: ${COLORS.TEXT_PRIMARY};
 
   &:focus {
     border-color: #00a4ff;
@@ -87,7 +88,7 @@ export const SC_ReplySendBtn = styled.button`
   border-radius: 50%;
   border: none;
   background: #00a4ff;
-  color: white;
+  color: ${COLORS.WHITE};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -95,7 +96,7 @@ export const SC_ReplySendBtn = styled.button`
   flex-shrink: 0;
 
   &:disabled {
-    background: #ccc;
+    background: ${COLORS.GRAY_CCC};
     cursor: not-allowed;
   }
   &:not(:disabled):hover {
@@ -157,7 +158,7 @@ export const SC_EmojiTriggerBtn = styled.button`
   cursor: pointer;
   flex-shrink: 0;
   &:hover {
-    background: rgba(0, 0, 0, 0.06);
+    background: ${COLORS.OVERLAY_6};
     color: ${COLORS.TEXT_PRIMARY};
   }
   svg {
@@ -179,7 +180,7 @@ export const SC_ReplyCancelBtn = styled.button`
   cursor: pointer;
   flex-shrink: 0;
   &:hover {
-    background: rgba(0, 0, 0, 0.06);
+    background: ${COLORS.OVERLAY_6};
     color: ${COLORS.TEXT_PRIMARY};
   }
   svg {
@@ -213,21 +214,21 @@ export const SC_ConfirmActions = styled.div`
 export const SC_ConfirmBtn = styled.button`
   padding: 6px 14px;
   border-radius: 8px;
-  border: 1px solid #ddd;
-  background: #fff;
+  border: 1px solid ${COLORS.GRAY_DDD};
+  background: ${COLORS.BG_PRIMARY};
   font-size: 13px;
   color: ${COLORS.TEXT_PRIMARY};
   cursor: pointer;
 
   &:hover {
-    background: #f5f5f5;
-    border-color: #ccc;
+    background: ${COLORS.BG_TERTIARY};
+    border-color: ${COLORS.GRAY_CCC};
   }
 
   &.confirm-btn--primary {
     background: #00a4ff;
     border-color: #00a4ff;
-    color: #fff;
+    color: ${COLORS.WHITE};
   }
   &.confirm-btn--primary:hover {
     background: #0088d1;
@@ -243,6 +244,6 @@ export const SC_LengthCounter = styled.div`
   line-height: 1.3;
 
   &.length-counter--bad {
-    color: #ff4d4f;
+    color: ${COLORS.RED_ANT};
   }
 `

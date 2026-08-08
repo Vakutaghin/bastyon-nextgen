@@ -4,8 +4,14 @@ import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_HeaderSearchWrapper = styled.div`
   position: relative;
-  width: 45%;
-  flex-shrink: 0;
+
+  /* Поиск — единственный эластичный элемент хедера: логотип и правый блок с
+     иконками имеют собственную ширину и не сжимаются. Поэтому при нехватке
+     места ужиматься должен именно инпут (базовые 45%, дальше по остатку), а не
+     выдавливаться кнопки справа. min-width: 0 обязателен — иначе flex-элемент
+     не сожмётся уже своей min-content ширины, которую задаёт сам <input>. */
+  flex: 0 1 45%;
+  min-width: 0;
 
   /* Чтобы InputSearch внутри занял всю ширину обёртки (он сам по себе тоже
      ставит width: 45%, что в нашей обёртке стало бы 20% от хедера). */
@@ -14,8 +20,7 @@ export const SC_HeaderSearchWrapper = styled.div`
   }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
-    width: 100%;
-    flex-shrink: 1;
+    flex-basis: 100%;
   }
 `
 

@@ -119,7 +119,7 @@ export const SC_KeyIcon = styled.div`
       brightness(100%) contrast(101%);
   }
 
-  :deep(svg) {
+  svg {
     width: 20px;
     height: 20px;
   }
@@ -141,7 +141,7 @@ export const SC_LogoutIcon = styled.div`
     transform: scale(1.1);
   }
 
-  :deep(svg) {
+  svg {
     width: 20px;
     height: 20px;
   }

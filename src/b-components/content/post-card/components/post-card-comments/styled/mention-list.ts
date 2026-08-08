@@ -9,10 +9,10 @@ export const SC_MentionList = styled.div`
   margin-top: 4px;
   max-height: 180px;
   overflow-y: auto;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: ${COLORS.BG_PRIMARY};
+  border: 1px solid ${COLORS.GRAY_DDD};
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: ${COLORS.SHADOW_MD};
   z-index: 10;
 `
 
@@ -28,10 +28,10 @@ export const SC_MentionItem = styled.button`
   cursor: pointer;
 
   &:hover {
-    background: #f0f0f0;
+    background: ${COLORS.BG_HOVER};
   }
 
   &.mention-item--highlighted {
-    background: #e6f4ff;
+    background: ${COLORS.ANT_BLUE_BG_LIGHT};
   }
 `

@@ -46,14 +46,6 @@ export const SC_UserInfoTrigger = styled(SC_UserInfo)`
   }
 `
 
-export const SC_HeaderDropdownZindexFix = styled.div`
-  z-index: 3005 !important;
-  position: absolute;
-  left: -9999px;
-  visibility: hidden;
-  pointer-events: none;
-`
-
 export const SC_AuthSkeleton = styled(SC_UserInfo)`
   pointer-events: none;
 `

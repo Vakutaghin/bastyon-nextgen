@@ -40,7 +40,7 @@ export const SC_StarRating = styled.div`
     font-size: 14px;
     margin-left: 11px;
 
-    :deep(svg) {
+    svg {
       width: 15px;
       height: 15px;
     }
@@ -97,7 +97,7 @@ export const SC_StarWrapper = styled.div`
     z-index: 0;
     flex-shrink: 0;
 
-    :deep(svg) {
+    svg {
       width: 22px;
       height: 22px;
       display: block;
@@ -130,7 +130,7 @@ export const SC_StarFilled = styled.div`
     height: 22px;
     line-height: 1;
 
-    :deep(svg) {
+    svg {
       width: 22px;
       height: 22px;
       display: block;

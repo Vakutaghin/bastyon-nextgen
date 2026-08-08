@@ -10,7 +10,7 @@ export const SC_Avatar = styled.div<{
   border-radius: ${(p) => (p.shape === 'square' ? '4px' : '50%')};
   overflow: visible;
 
-  :deep(.ant-avatar) {
+  .ant-avatar {
     background: ${(p) => p.backgroundColor || COLORS.PRIMARY};
     color: ${(p) => p.color || COLORS.WHITE};
     border: 2px solid ${COLORS.BORDER_LIGHT};
@@ -18,7 +18,7 @@ export const SC_Avatar = styled.div<{
     font-weight: 600;
   }
 
-  :deep(.ant-avatar img) {
+  .ant-avatar img {
     object-fit: cover;
     border-radius: ${(p) => (p.shape === 'square' ? '4px' : '50%')};
   }

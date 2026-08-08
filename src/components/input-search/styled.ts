@@ -11,40 +11,55 @@ export const SC_InputSearch = styled.div`
     flex-shrink: 1;
   }
 
-  :deep(.ant-input-search .ant-input) {
+  /* Antd Input.Search не телепортится — вложенные селекторы работают напрямую.
+     :deep() в vue3-styled-components не функционирует (см. .ant-card в
+     src/style.css), поэтому поле раньше оставалось белым в тёмной теме.
+     При allow-clear antd оборачивает input в .ant-input-affix-wrapper — именно
+     он рисует фон и рамку, поэтому темим и обёртку, и сам .ant-input. */
+  .ant-input-affix-wrapper,
+  .ant-input-search .ant-input {
     background: ${COLORS.BG_PRIMARY};
     color: ${COLORS.TEXT_PRIMARY};
     border-color: ${COLORS.BORDER};
     border-radius: 24px;
-    padding-left: 15px;
-    padding-right: 37px;
   }
 
-  :deep(.ant-input-search .ant-input:hover:not(:disabled)) {
+  .ant-input-affix-wrapper {
+    padding-left: 15px;
+  }
+
+  /* Внутренний input внутри affix-wrapper прозрачный — фон несёт обёртка. */
+  .ant-input-affix-wrapper > .ant-input {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .ant-input-affix-wrapper:hover,
+  .ant-input-search .ant-input:hover:not(:disabled) {
     border-color: ${COLORS.TEXT_MUTED};
   }
 
-  :deep(.ant-input-search .ant-input:focus),
-  :deep(.ant-input-search .ant-input-focused) {
+  .ant-input-affix-wrapper-focused,
+  .ant-input-search .ant-input:focus,
+  .ant-input-search .ant-input-focused {
     border-color: ${COLORS.PRIMARY};
     box-shadow: 0 0 0 2px ${COLORS.PRIMARY_LIGHT_20};
   }
 
-  :deep(.ant-input-search .ant-input::placeholder) {
+  .ant-input::placeholder {
     color: ${COLORS.TEXT_SECONDARY};
   }
 
-  :deep(.ant-input-search-icon) {
+  .ant-input-search-icon {
     color: ${COLORS.TEXT_SECONDARY};
-    right: 15px;
   }
 
-  :deep(.ant-input-clear-icon) {
+  .ant-input-clear-icon {
     color: ${COLORS.TEXT_SECONDARY};
-    right: 37px;
   }
 
-  :deep(.ant-input-clear-icon:hover) {
+  .ant-input-clear-icon:hover {
     color: ${COLORS.DANGER};
   }
 `

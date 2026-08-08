@@ -49,7 +49,9 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
   &.bastyon-button-primary {
     background: ${COLORS.PRIMARY};
     border-color: ${COLORS.PRIMARY};
-    color: ${COLORS.BG_PRIMARY};
+    /* Текст на насыщенной заливке — всегда белый. BG_PRIMARY флипается в тёмной
+       теме (становится тёмным) и давал серый текст на синем — низкий контраст. */
+    color: ${COLORS.WHITE};
 
     &:hover:not(:disabled) {
       background: ${COLORS.PRIMARY_ACTIVE};
@@ -66,7 +68,7 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
   &.bastyon-button-primary.bastyon-button-danger {
     background: ${COLORS.DANGER};
     border-color: ${COLORS.DANGER};
-    color: ${COLORS.BG_PRIMARY};
+    color: ${COLORS.WHITE};
 
     &:hover:not(:disabled) {
       background: ${COLORS.DANGER_HOVER};

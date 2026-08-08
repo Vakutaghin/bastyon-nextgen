@@ -14,11 +14,7 @@
     <Button type="default" @click="openRegisterModal"> {{ t('header.register') }} </Button>
   </template>
   <template v-else>
-    <Dropdown
-      :trigger="['click']"
-      placement="bottomRight"
-      :overlay-class-name="dropdownOverlayClass"
-    >
+    <Dropdown :trigger="['click']" placement="bottomRight" overlay-class-name="header-user-dropdown">
       <SC_UserInfoTrigger>
         <Avatar
           :src="userAvatar"
@@ -28,7 +24,7 @@
           :verified="isUserVerified"
           :pending="registrationPending"
           data-header-avatar="true"
-          @click.stop="onAvatarClick"
+          @click="onAvatarClick"
         />
 
         <SC_UserDetails>
@@ -49,7 +45,6 @@
       </template>
     </Dropdown>
   </template>
-  <SC_HeaderDropdownZindexFix ref="dropdownZindexFixRef" aria-hidden="true" />
 
   <SignInModal
     v-model:open="signInModalOpen"
@@ -95,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Dropdown, Menu } from 'ant-design-vue'
@@ -121,7 +116,6 @@ import {
   SC_UserBalance,
   SC_UserLoading,
   SC_UserInfoTrigger,
-  SC_HeaderDropdownZindexFix,
   SC_AuthSkeleton,
   SC_SkeletonLines,
 } from './styled'
@@ -136,9 +130,6 @@ const isAuthenticated = computed<boolean>(() => authStore.isUserAuthenticated)
 const isAuthRestoring = computed<boolean>(() => authStore.isAuthRestoring)
 const userAddress = computed(() => authStore.getUserAddress)
 const userProfile = computed(() => authStore.getUserProfile)
-
-const dropdownOverlayClass = ref('')
-const dropdownZindexFixRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
 
 // === Регистрация ===
 const {
@@ -249,10 +240,4 @@ function formatBalance(balance: number | null | undefined): string {
   // Хелпер конвертирует из минимальных единиц (аналог сатоши) в PKOIN.
   return formatPkoin(balance, 2, false)
 }
-
-onMounted(() => {
-  const r = dropdownZindexFixRef.value
-  const el = r && ('$el' in r ? r.$el : r)
-  dropdownOverlayClass.value = el?.className ?? ''
-})
 </script>

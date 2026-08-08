@@ -40,42 +40,42 @@ export const SC_MarkdownBody = styled.div`
   font-size: 14px;
   line-height: 1.55;
 
-  :deep(h1) {
+  h1 {
     font-size: 20px;
     font-weight: 700;
     margin: 0 0 12px;
     color: ${COLORS.TEXT_PRIMARY};
   }
 
-  :deep(h2) {
+  h2 {
     font-size: 16px;
     font-weight: 600;
     margin: 18px 0 8px;
     color: ${COLORS.TEXT_PRIMARY};
   }
 
-  :deep(h3) {
+  h3 {
     font-size: 14px;
     font-weight: 600;
     margin: 14px 0 6px;
     color: ${COLORS.TEXT_DARK};
   }
 
-  :deep(p) {
+  p {
     margin: 0 0 10px;
   }
 
-  :deep(ul),
-  :deep(ol) {
+  ul,
+  ol {
     margin: 0 0 12px;
     padding-left: 22px;
   }
 
-  :deep(li) {
+  li {
     margin: 4px 0;
   }
 
-  :deep(a) {
+  a {
     color: ${COLORS.PRIMARY};
     text-decoration: none;
 
@@ -84,7 +84,7 @@ export const SC_MarkdownBody = styled.div`
     }
   }
 
-  :deep(code) {
+  code {
     background: ${COLORS.OVERLAY_5};
     padding: 1px 5px;
     border-radius: 4px;
@@ -92,11 +92,11 @@ export const SC_MarkdownBody = styled.div`
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
 
-  :deep(strong) {
+  strong {
     font-weight: 600;
   }
 
-  :deep(hr) {
+  hr {
     border: none;
     border-top: 1px solid ${COLORS.BORDER_LIGHTER};
     margin: 16px 0;

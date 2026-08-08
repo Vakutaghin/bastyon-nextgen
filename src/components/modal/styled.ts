@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 /**
  * Утилитарные layout-обёртки для тела модалок — заменяют распространённые
@@ -24,54 +23,13 @@ export const SC_ModalBody = styled.div`
   padding: 16px 0;
 `
 
+// SC_Modal оборачивает antd <Modal>, но antd телепортит содержимое модалки в
+// <body>, поэтому стили .ant-modal-* отсюда через :deep() до него НЕ доходят
+// (vue3-styled-components не пробрасывает :deep сквозь телепорт — см. коммент у
+// .ant-card в src/style.css). Поэтому тема/оформление .ant-modal-* живут
+// глобально в src/style.css (блок «Ant Design Modal»), а маска модалки задаётся
+// инлайном через maskStyle в components/modal/modal.ts. Сама обёртка лейаут не
+// формирует — content уезжает в телепорт.
 export const SC_Modal = styled.div`
-  :deep(.ant-modal-content) {
-    background: ${COLORS.BG_PRIMARY};
-    border-radius: 12px;
-  }
-
-  :deep(.ant-modal-header) {
-    background: ${COLORS.BG_PRIMARY};
-    border-bottom: 1px solid ${COLORS.BORDER_LIGHT};
-    padding: 20px 24px;
-  }
-
-  :deep(.ant-modal-title) {
-    color: ${COLORS.TEXT_PRIMARY};
-    font-size: 20px;
-    font-weight: 600;
-  }
-
-  :deep(.ant-modal-close) {
-    color: ${COLORS.TEXT_PRIMARY};
-  }
-
-  :deep(.ant-modal-close:hover) {
-    color: ${COLORS.TEXT_PRIMARY};
-    background: ${COLORS.SURFACE_FROSTED};
-  }
-
-  :deep(.ant-modal-body) {
-    color: ${COLORS.TEXT_PRIMARY};
-    padding: 24px;
-  }
-
-  :deep(.ant-modal-footer) {
-    border-top: 1px solid ${COLORS.BORDER_LIGHT};
-    padding: 16px 24px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  /* Если в footer только одна кнопка или контент, выравниваем вправо */
-  :deep(.ant-modal-footer > *:not(:last-child)) {
-    margin-right: 0;
-  }
-
-  /* Стили для маски модального окна */
-  :deep(.bastyon-modal-wrap .ant-modal-mask) {
-    background-color: ${COLORS.OVERLAY_45} !important;
-    backdrop-filter: blur(4px);
-  }
+  display: contents;
 `

@@ -37,7 +37,7 @@ export const SC_CommentRow = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: rgb(222, 226, 230);
+    background: ${COLORS.BORDER_DARK};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -92,7 +92,7 @@ export const SC_CommentItem = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: rgb(222, 226, 230);
+    background: ${COLORS.BORDER_DARK};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -197,7 +197,7 @@ export const SC_HiddenBanner = styled.div`
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.04);
+  background: ${COLORS.OVERLAY_4};
   border-radius: 8px;
   font-size: 13px;
   color: ${COLORS.TEXT_SECONDARY};
@@ -227,8 +227,8 @@ export const SC_ComposerDisabled = styled.div`
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px dashed #ddd;
+  background: ${COLORS.OVERLAY_4};
+  border: 1px dashed ${COLORS.GRAY_DDD};
   border-radius: 12px;
   font-size: 13px;
   color: ${COLORS.TEXT_SECONDARY};
@@ -259,15 +259,15 @@ export const SC_EditFormSpacer = styled.div`
 export const SC_EditCancelBtn = styled.button`
   padding: 6px 14px;
   border-radius: 8px;
-  border: 1px solid #ddd;
-  background: #fff;
+  border: 1px solid ${COLORS.GRAY_DDD};
+  background: ${COLORS.BG_PRIMARY};
   font-size: 13px;
   color: ${COLORS.TEXT_PRIMARY};
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: #f5f5f5;
-    border-color: #ccc;
+    background: ${COLORS.BG_TERTIARY};
+    border-color: ${COLORS.GRAY_CCC};
   }
   &:disabled {
     cursor: not-allowed;
@@ -280,7 +280,7 @@ export const SC_EditSaveBtn = styled.button`
   border-radius: 8px;
   border: 1px solid #00a4ff;
   background: #00a4ff;
-  color: #fff;
+  color: ${COLORS.WHITE};
   font-size: 13px;
   cursor: pointer;
   display: inline-flex;
@@ -295,8 +295,8 @@ export const SC_EditSaveBtn = styled.button`
   }
   &:disabled {
     cursor: not-allowed;
-    background: #ccc;
-    border-color: #ccc;
+    background: ${COLORS.GRAY_CCC};
+    border-color: ${COLORS.GRAY_CCC};
   }
 `
 
@@ -322,7 +322,7 @@ export const SC_TxStatusBadge = styled.span`
   padding: 1px 6px;
   border-radius: 8px;
   margin-left: 6px;
-  background: rgba(0, 0, 0, 0.06);
+  background: ${COLORS.OVERLAY_6};
   color: ${COLORS.TEXT_SECONDARY};
 
   &.tx-status--rejected {

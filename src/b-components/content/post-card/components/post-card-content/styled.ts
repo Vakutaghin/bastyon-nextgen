@@ -27,24 +27,19 @@ export const SC_PostContent = styled.div`
     word-break: break-word;
   }
 
-  :deep(*) {
+  * {
     color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
-  :deep(p) {
-    margin: 6px 0;
+  div {
     color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
-  :deep(div) {
+  span {
     color: ${COLORS.TEXT_PRIMARY} !important;
   }
 
-  :deep(span) {
-    color: ${COLORS.TEXT_PRIMARY} !important;
-  }
-
-  :deep(.bastyon-link) {
+  .bastyon-link {
     color: ${COLORS.PRIMARY} !important;
     text-decoration: underline;
     cursor: pointer;
@@ -53,12 +48,12 @@ export const SC_PostContent = styled.div`
     word-wrap: break-word;
   }
 
-  :deep(.bastyon-link:hover) {
+  .bastyon-link:hover {
     color: ${COLORS.PRIMARY_ACTIVE} !important;
     text-decoration: underline;
   }
 
-  :deep(.timecode-link) {
+  .timecode-link {
     color: ${COLORS.PRIMARY} !important;
     text-decoration: none;
     cursor: pointer;
@@ -66,7 +61,7 @@ export const SC_PostContent = styled.div`
     border-bottom: 1px dashed currentColor;
   }
 
-  :deep(.timecode-link:hover) {
+  .timecode-link:hover {
     color: ${COLORS.PRIMARY_ACTIVE} !important;
     border-bottom-style: solid;
   }
@@ -88,7 +83,7 @@ export const SC_PostPreview = styled.div`
     }
   }
 
-  :deep(.bastyon-link) {
+  .bastyon-link {
     color: ${COLORS.PRIMARY} !important;
     text-decoration: underline;
     cursor: pointer;
@@ -97,7 +92,7 @@ export const SC_PostPreview = styled.div`
     word-wrap: break-word;
   }
 
-  :deep(.bastyon-link:hover) {
+  .bastyon-link:hover {
     color: ${COLORS.PRIMARY_ACTIVE} !important;
     text-decoration: underline;
   }

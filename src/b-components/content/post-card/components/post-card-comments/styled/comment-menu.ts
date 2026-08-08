@@ -16,7 +16,7 @@ export const SC_MenuTrigger = styled.button`
   padding: 0;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.06);
+    background: ${COLORS.OVERLAY_6};
     color: ${COLORS.TEXT_PRIMARY};
   }
 
@@ -48,7 +48,7 @@ export const SC_MenuItem = styled.button`
   text-align: left;
 
   &:hover:not(:disabled) {
-    background: #f5f5f5;
+    background: ${COLORS.BG_TERTIARY};
   }
 
   &:disabled {
@@ -57,7 +57,7 @@ export const SC_MenuItem = styled.button`
   }
 
   &.menu-item--danger {
-    color: #ff4d4f;
+    color: ${COLORS.RED_ANT};
   }
   &.menu-item--danger:hover {
     background: rgba(255, 77, 79, 0.08);
