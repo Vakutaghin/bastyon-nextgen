@@ -1,7 +1,7 @@
 <template>
   <SC_Logo>
     <SC_LogoLink @click="handleLogoClick">
-      <SC_LogoImg :src="logoData.logoWhite" :alt="logoData.siteName" />
+      <SC_LogoImg :src="logoSrc" :alt="logoData.siteName" />
     </SC_LogoLink>
 
     <Dropdown :trigger="['click']" placement="bottomLeft">
@@ -26,6 +26,7 @@ import type { MenuProps } from 'ant-design-vue'
 import { CaretDownOutlined, CheckOutlined } from '@ant-design/icons-vue'
 import { logoData } from '@/b-components/header/dummy-data/logo-data'
 import { useLocale } from '@/composables/use-locale'
+import { useTheme } from '@/composables/use-theme'
 import type { Locale } from '@/i18n'
 import {
   SC_Logo,
@@ -38,6 +39,10 @@ import {
 
 const router = useRouter()
 const { locale, setLocale, available } = useLocale()
+const { isDark } = useTheme()
+
+// Белый логотип на тёмной теме, чёрный — на светлой.
+const logoSrc = computed<string>(() => (isDark.value ? logoData.logoWhite : logoData.logoBlack))
 
 // Из всего dummy-data списка показываем только локали, для которых есть словари
 // в src/locales/. По мере добавления переводов SUPPORTED_LOCALES расширяется.

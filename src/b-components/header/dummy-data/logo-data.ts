@@ -1,5 +1,7 @@
 export const logoData = {
+  // Белый логотип — для тёмной темы, чёрный — для светлой (выбор в header-logo.vue).
   logoWhite: '/img/bastyon_logo_white.svg',
+  logoBlack: '/img/bastyon_logo_black.svg',
   siteName: 'Bastyon',
   currentLanguage: 'ru',
 
