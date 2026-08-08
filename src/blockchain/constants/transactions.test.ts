@@ -34,8 +34,12 @@ describe('toSatoshis', () => {
     expect(toSatoshis(0)).toBe(0)
   })
 
-  it('floors the result', () => {
-    expect(toSatoshis(0.000000015)).toBe(1)
+  // P2-7: округляем float-погрешность, а не усекаем — иначе теряется 1 сатоши.
+  it('rounds off float drift instead of truncating (P2-7)', () => {
+    // 2.3 * 1e8 = 229999999.99999997 в float → Math.floor дал бы 229999999.
+    expect(toSatoshis(2.3)).toBe(230_000_000)
+    // 0.29 * 1e8 = 28999999.999999996 → floor терял бы сатоши.
+    expect(toSatoshis(0.29)).toBe(29_000_000)
   })
 })
 

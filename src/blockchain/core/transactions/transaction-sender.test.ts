@@ -65,18 +65,25 @@ describe('sendTransactionWithMessage — успех', () => {
     expect(await sendTransactionWithMessage(validParams())).toBe('abc')
   })
 
-  it('fallback: непустой объект без txid сериализуется и принимается', async () => {
+  it('принимает txid из поля hash', async () => {
     _rpcCallWithAuth.mockResolvedValue({ hash: 'deadbeef' })
 
-    const res = await sendTransactionWithMessage(validParams())
-
-    expect(res).toBe(JSON.stringify({ hash: 'deadbeef' }))
+    expect(await sendTransactionWithMessage(validParams())).toBe('deadbeef')
   })
 })
 
 describe('sendTransactionWithMessage — ошибки', () => {
   it('пустой объект-ответ → ошибка неожиданного формата (обёрнута)', async () => {
     _rpcCallWithAuth.mockResolvedValue({})
+
+    await expect(sendTransactionWithMessage(validParams())).rejects.toThrow(
+      'Failed to send transaction: Unexpected response format'
+    )
+  })
+
+  // P2-6: непустой объект без известного txid-поля НЕ фабрикуется в псевдо-txid.
+  it('объект без txid/hash → бросает, не выдаёт JSON за txid', async () => {
+    _rpcCallWithAuth.mockResolvedValue({ foo: 'bar', ok: true })
 
     await expect(sendTransactionWithMessage(validParams())).rejects.toThrow(
       'Failed to send transaction: Unexpected response format'

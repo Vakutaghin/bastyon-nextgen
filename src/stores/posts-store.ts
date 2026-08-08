@@ -74,7 +74,20 @@ export const usePostsStore = defineStore('posts', {
      */
     registerPost(post: Post): void {
       if (post.id !== undefined) {
-        this.posts.set(post.id, { ...post })
+        const existing = this.posts.get(post.id)
+        if (existing) {
+          // Merge, а не overwrite (P2-2): ре-регистрация из ленты не должна
+          // ронять поля, которых нет в её снапшоте (напр. локальный голос/
+          // rating/like/comment, обновлённые через updatePost). Затираем
+          // только теми полями новой регистрации, что реально определены.
+          const merged: Record<string, unknown> = { ...existing }
+          for (const [k, v] of Object.entries(post)) {
+            if (v !== undefined) merged[k] = v
+          }
+          this.posts.set(post.id, merged as Post)
+        } else {
+          this.posts.set(post.id, { ...post })
+        }
 
         // Register mapping for txid/hash
         if (post.txid && post.txid !== post.id) {

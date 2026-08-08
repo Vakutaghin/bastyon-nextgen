@@ -43,10 +43,14 @@ export const COINBASE_MATURITY = 100
 export const POCKETNET_TX_MATURITY = 10
 
 /**
- * Конвертирует PKOIN в сатоши
+ * Конвертирует PKOIN в сатоши.
+ *
+ * `Math.round`, а не `Math.floor` (P2-7): float-арифметика даёт
+ * `2.3 * 1e8 = 229999999.99999997`, и `floor` терял бы 1 сатоши (→ 229999999).
+ * Округление к ближайшему целому корректно снимает эту дробную погрешность.
  */
 export function toSatoshis(pkoin: number): number {
-  return Math.floor(pkoin * AMOUNT_MULTIPLIER)
+  return Math.round(pkoin * AMOUNT_MULTIPLIER)
 }
 
 /**

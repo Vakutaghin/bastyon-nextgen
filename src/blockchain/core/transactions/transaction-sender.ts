@@ -58,16 +58,12 @@ export async function sendTransactionWithMessage(params: SendTransactionParams):
 
     if (response && typeof response === 'object') {
       const resp = response as Record<string, unknown>
-      // Если ответ - объект, ищем txid в разных возможных полях
-      if (typeof resp.txid === 'string') {
-        return resp.txid
-      }
-      // Fallback: если есть хоть какой-то непустой ответ — считаем успехом
-      // sendrawtransactionwithmessage может вернуть просто txid hash
-      const responseStr = JSON.stringify(response)
-      if (responseStr.length > 2 && responseStr !== '{}' && responseStr !== '[]') {
-        debugLog('[sendTransaction] Accepting response as txid:', responseStr.substring(0, 100))
-        return responseStr
+      // Ищем txid в известных полях. НЕ фабрикуем txid из произвольного
+      // непустого ответа (P2-6/P3-6): проваленный бродкаст не должен
+      // маскироваться под успех со «псевдо-txid» = JSON.stringify(тела).
+      const candidate = resp.txid ?? resp.hash ?? resp.txId
+      if (typeof candidate === 'string' && candidate.length > 0) {
+        return candidate
       }
     }
 
