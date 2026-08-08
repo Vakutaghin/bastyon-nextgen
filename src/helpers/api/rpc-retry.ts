@@ -1,13 +1,17 @@
 /**
- * Серверный retry-loop с backoff: пробуем каждый сервер по очереди, начиная с
- * `startIndex` (исторически 4.pocketnet.app), при ошибке — увеличиваем delay
- * для упавшего сервера, при успехе — сбрасываем.
+ * Failover-loop по прокси-серверам с health-aware выбором живой ноды.
+ *
+ * Порядок серверов даёт `node-selector` (живая нода первой, мёртвые в хвосте),
+ * сам запрос (`request`) имеет собственный таймаут — поэтому мёртвая нода
+ * отваливается быстро, а не висит до сетевого таймаута ОС. На успехе помечаем
+ * ноду живой (стикинесс), на ошибке транспорта — мёртвой (следующий запрос
+ * перевыберет).
  *
  * Используется и для RPC (getByPRC), и для HTTP (fetchHttp) — единая логика
  * с разным `request`-callback'ом и разной обработкой «логических» ошибок.
  */
 
-import { getBackoffDelay, markServerSuccess, markServerFailure } from './server-backoff'
+import { orderedProxies, markProxyAlive, markProxyDead } from './node-selector'
 import { isLogicError, isTimeout500 } from './rpc-errors'
 
 export interface ServerEndpoint {
@@ -17,8 +21,6 @@ export interface ServerEndpoint {
 
 export interface RetryWithBackoffOptions<P, R> {
   servers: ServerEndpoint[]
-  /** С какого индекса начинать (по кругу). По умолчанию 3 — 4.pocketnet.app. */
-  startIndex?: number
   /** Колбэк выполнения запроса к конкретному серверу. */
   request: (params: P, host: string, port: number) => Promise<R>
   /** Для RPC — выбрасывать `LogicError` сразу. Для HTTP — пытаемся другой сервер. */
@@ -29,53 +31,39 @@ export interface RetryWithBackoffOptions<P, R> {
 
 export async function retryWithBackoff<P, R>(
   params: P,
-  opts: RetryWithBackoffOptions<P, R>
+  opts: RetryWithBackoffOptions<P, R>,
 ): Promise<R> {
   const { servers, request, isLogicErrorThrowable = false, protocolName } = opts
-  const startIndex = opts.startIndex ?? 3
 
   if (!servers || servers.length === 0) {
     throw new Error(`No ${protocolName} servers available`)
   }
 
+  // Живая нода первой (с health-пингом на холодном старте), мёртвые в хвосте.
+  const ordered = await orderedProxies(servers)
   const lastError: Error[] = []
 
-  for (let i = 0; i < servers.length; i++) {
-    const serverIndex = (startIndex + i) % servers.length
-    const server = servers[serverIndex]!
-
-    const delay = getBackoffDelay(server.host, server.port)
-    if (delay > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delay))
-    }
-
+  for (const server of ordered) {
     try {
       const result = await request(params, server.host, server.port)
-      markServerSuccess(server.host, server.port)
+      markProxyAlive(server)
       return result
     } catch (error) {
-      // Для RPC: если это «логическая» ошибка ноды (валидация, дубль и т.п.) —
-      // другие серверы дадут тот же ответ. Исключение — HTTP-500 с timeout в теле:
-      // это сетевой сбой замаскированный под код ошибки, продолжаем перебор.
+      // Для RPC: «логическая» ошибка ноды (валидация, дубль и т.п.) — другие
+      // серверы дадут тот же ответ, не перебираем. Исключение — HTTP-500 с
+      // timeout в теле: сетевой сбой под видом кода ошибки, продолжаем перебор.
       if (isLogicErrorThrowable && isLogicError(error) && !isTimeout500(error)) {
         throw error
       }
 
-      markServerFailure(server.host, server.port)
+      markProxyDead(server)
       lastError.push(error instanceof Error ? error : new Error(String(error)))
-
-      if (i < servers.length - 1) {
-        continue
-      }
     }
   }
 
-  if (lastError.length > 0) {
-    const errorMessage = `All ${protocolName} servers failed. Last error: ${lastError[lastError.length - 1]!.message}`
-    const combinedError = new Error(errorMessage) as Error & { allErrors: Error[] }
-    combinedError.allErrors = lastError
-    throw combinedError
-  }
-
-  throw new Error(`${protocolName} request failed: unknown error`)
+  const last = lastError[lastError.length - 1]
+  const errorMessage = `All ${protocolName} servers failed. Last error: ${last?.message ?? 'unknown error'}`
+  const combinedError = new Error(errorMessage) as Error & { allErrors: Error[] }
+  combinedError.allErrors = lastError
+  throw combinedError
 }

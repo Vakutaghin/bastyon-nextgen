@@ -43,13 +43,32 @@ async function tryRpcRequest(
   const path = getRpcPath(params.method, useEx)
   const url = `https://${host}:${port}${path}`
 
-  const response = await appFetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json;charset=utf-8',
-    },
-    body: JSON.stringify(params),
-  })
+  // Принудительный таймаут: без него запрос к мёртвой ноде (TCP timeout, не
+  // refused) висит до сетевого таймаута ОС (~75с). Живая нода уже отобрана
+  // health-пингом (node-selector), поэтому потолок щадящий — это страховка на
+  // случай, если нода умерла «на лету».
+  const controller = new AbortController()
+  const timeout = params.options?.timeout ?? 30000
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+  let response: Response
+  try {
+    response = await appFetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8',
+      },
+      body: JSON.stringify(params),
+      signal: controller.signal,
+    })
+  } catch (error) {
+    clearTimeout(timeoutId)
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`RPC request timeout after ${timeout}ms`, { cause: error })
+    }
+    throw error
+  }
+  clearTimeout(timeoutId)
 
   // Для некоторых методов (например, user.get) 500 может означать "не найдено"
   // Пытаемся прочитать тело ответа, даже если статус не OK
@@ -73,16 +92,24 @@ async function tryRpcRequest(
 
     const errorObj = responseData as { error?: unknown; message?: unknown } | null
 
-    // Если ответ содержит JSON с ошибкой, выбрасываем его как объект
+    // Определяем, что бросаем. Если ответ содержит JSON с ошибкой — бросаем его.
+    let thrown: unknown
     if (responseData && typeof responseData === 'object' && 'error' in responseData) {
-      throw errorObj?.error || responseData
+      thrown = errorObj?.error || responseData
+    } else {
+      const errorMessage =
+        errorObj?.error ||
+        errorObj?.message ||
+        `RPC request failed: ${response.status} ${response.statusText}`
+      thrown = new Error(String(errorMessage))
     }
 
-    const errorMessage =
-      errorObj?.error ||
-      errorObj?.message ||
-      `RPC request failed: ${response.status} ${response.statusText}`
-    throw new Error(String(errorMessage))
+    // P2-3: прокидываем httpStatus на объект ошибки — без него isTimeout500
+    // никогда не срабатывал, и failover по HTTP-500-timeout был мёртв.
+    if (thrown && typeof thrown === 'object') {
+      ;(thrown as { httpStatus?: number }).httpStatus = response.status
+    }
+    throw thrown
   }
 
   // Если статус OK, но есть error в ответе (нестандартное поведение некоторых методов)
@@ -187,7 +214,8 @@ export async function fetchHttp(params: HttpRequestParams): Promise<unknown> {
  *
  * Логика работы:
  * 1. Если указан config.host/port — использует только указанный сервер (для обратной совместимости).
- * 2. Иначе начинает с сервера 4.pocketnet.app (индекс 3) и идёт по кругу.
+ * 2. Иначе порядок серверов даёт node-selector: живая нода (health-пинг /ping на
+ *    холодном старте, далее стикинесс) первой, мёртвые в хвосте.
  * 3. При «логической» ошибке (структурированной от ноды) — не пробует другие серверы,
  *    кроме случая HTTP-500 с timeout в теле — тогда пробует следующий.
  */
