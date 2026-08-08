@@ -1,3 +1,5 @@
+import { sanitizeHtml } from '@/helpers/content/sanitize-html'
+
 /**
  * Экранирует HTML символы для безопасности
  */
@@ -18,6 +20,9 @@ function escapeHtml(text: string): string {
  */
 const MENTION_REGEX = /(^|[^\w@/])@([A-Za-z0-9_]{2,30})/g
 
+// Текст между меншенами НЕ экранируем — инлайн-HTML постов (`<b>`, `<br>`,
+// `&nbsp;` …) должен сохраниться. Безопасность обеспечивает финальный
+// `sanitizeHtml` в `formatBastyonLinks` (whitelist через библиотеку `xss`).
 function linkifyMentions(text: string): string {
   let out = ''
   let lastIndex = 0
@@ -25,12 +30,12 @@ function linkifyMentions(text: string): string {
   MENTION_REGEX.lastIndex = 0
   while ((match = MENTION_REGEX.exec(text)) !== null) {
     const [full, prefix, name] = match
-    out += escapeHtml(text.slice(lastIndex, match.index))
-    out += escapeHtml(prefix)
+    out += text.slice(lastIndex, match.index)
+    out += prefix
     out += `<a href='/${encodeURIComponent(name)}' class='mention-link'>@${escapeHtml(name)}</a>`
     lastIndex = match.index + full.length
   }
-  out += escapeHtml(text.slice(lastIndex))
+  out += text.slice(lastIndex)
   return out
 }
 
@@ -93,13 +98,14 @@ export function formatBastyonLinks(text: string): string {
     }
   }
 
-  // Если ссылок не найдено — экранируем + линкифицируем меншены во всём тексте.
+  // Если ссылок не найдено — линкифицируем меншены и санитизируем весь текст.
   if (parts.length === 0) {
-    return linkifyMentions(text)
+    return sanitizeHtml(linkifyMentions(text))
   }
 
-  // Собираем результат
-  return parts
+  // Собираем результат и санитизируем целиком (whitelist через `xss`): инлайн-HTML
+  // постов сохраняется, опасные теги/атрибуты/протоколы вырезаются.
+  const html = parts
     .map((part) => {
       if (part.type === 'link' && part.url) {
         const escapedUrl = escapeHtml(part.content)
@@ -113,4 +119,5 @@ export function formatBastyonLinks(text: string): string {
       }
     })
     .join('')
+  return sanitizeHtml(html)
 }

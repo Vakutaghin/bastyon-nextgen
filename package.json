@@ -92,6 +92,7 @@
     "vue-i18n": "^11",
     "vue-router": "^5.0.1",
     "vue3-styled-components": "^1.2.1",
+    "xss": "^1.0.15",
     "zod": "^4.4.3"
   },
   "devDependencies": {
