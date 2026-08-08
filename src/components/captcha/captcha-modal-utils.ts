@@ -4,6 +4,7 @@
 
 import { createApp, h, ref } from 'vue'
 import type { CaptchaData } from '@/blockchain/api/captcha-api'
+import { i18n } from '@/i18n'
 import CaptchaModal from './captcha-modal.vue'
 
 export interface ShowCaptchaOptions {
@@ -96,6 +97,12 @@ export function showCaptchaModal(options: ShowCaptchaOptions): Promise<CaptchaDa
     // дерева), поэтому стаб темы нужно отдать и здесь, иначе Vue снова сыпет
     // «injection "theme" not found».
     app.provide('theme', {})
+
+    // Отдельный app-инстанс не наследует плагины основного приложения, поэтому
+    // i18n нужно установить вручную — иначе useI18n() в <Captcha> бросает ошибку
+    // в setup(), компонент капчи не монтируется, и регистрация падает с
+    // «Не удалось решить капчу».
+    app.use(i18n)
 
     app.mount(container)
   })

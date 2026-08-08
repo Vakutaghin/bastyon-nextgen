@@ -7,6 +7,8 @@
       :wrapClassName='wrapClassName'
       :maskStyle='maskStyle'
       :bodyStyle='bodyStyle'
+      :closable='closable'
+      :maskClosable='maskClosable'
       v-bind='otherAttrs'
       @update:open="handleUpdateOpen"
       @cancel="handleCancel"
@@ -40,6 +42,8 @@ const {
   width,
   maskStyle,
   bodyStyle,
+  closable,
+  maskClosable,
   handleUpdateOpen,
   handleCancel
 } = useModal(p, emit)

@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount } from 'vue'
+import { ref, onBeforeUnmount, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CameraOutlined, PictureOutlined } from '@ant-design/icons-vue'
 import Button from '@/components/button/button.vue'
@@ -59,10 +59,20 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
-const videoRef = ref<HTMLVideoElement | null>(null)
+// SC_QrVideo — styled-обёртка (vue3-styled-components), а не нативный <video>,
+// поэтому template-ref указывает на инстанс компонента. Реальный DOM-узел берём
+// через getVideoEl(); иначе video.play()/pause() падают «is not a function».
+const videoRef = ref<HTMLVideoElement | ComponentPublicInstance | null>(null)
 const cameraActive = ref(false)
 const busy = ref(false)
 const errorMessage = ref<string | null>(null)
+
+function getVideoEl(): HTMLVideoElement | null {
+  const v = videoRef.value
+  if (!v) return null
+  const el = v instanceof HTMLVideoElement ? v : (v.$el as HTMLElement | undefined)
+  return el instanceof HTMLVideoElement ? el : null
+}
 
 let stream: MediaStream | null = null
 let rafId: number | null = null
@@ -106,7 +116,7 @@ async function startCamera(): Promise<void> {
       audio: false,
     })
     cameraActive.value = true
-    const video = videoRef.value
+    const video = getVideoEl()
     if (!video) {
       stopCamera()
       return
@@ -124,7 +134,7 @@ async function startCamera(): Promise<void> {
 }
 
 function scanFrame(): void {
-  const video = videoRef.value
+  const video = getVideoEl()
   const canvas = scanCanvas
   if (!cameraActive.value || !video || !canvas) return
 
@@ -161,7 +171,7 @@ function stopCamera(): void {
     stream.getTracks().forEach((track) => track.stop())
     stream = null
   }
-  const video = videoRef.value
+  const video = getVideoEl()
   if (video) {
     video.pause()
     video.srcObject = null

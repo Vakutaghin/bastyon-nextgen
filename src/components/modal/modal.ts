@@ -34,6 +34,13 @@ export function useModal(p: ModalProps, emit: ModalEmits) {
   const modalClass = computed(() => ({}))
   const wrapClassName = computed(() => 'bastyon-modal-wrap')
 
+  // Пропсы объявлены в ModalProps, но раньше не прокидывались в AModal — из-за
+  // этого `:closable="false"` / `:maskClosable="false"` не работали (крестик и
+  // клик по маске оставались активны). Прокидываем явно; `undefined` оставляет
+  // дефолт ant (true), поэтому существующие модалки не меняют поведение.
+  const closable = computed(() => p.closable)
+  const maskClosable = computed(() => p.maskClosable)
+
   const width = computed(() =>
     p.fullWidth ? '95vw' : (p.width !== undefined ? p.width : (attrs as Record<string, unknown>).width)
   )
@@ -58,6 +65,8 @@ export function useModal(p: ModalProps, emit: ModalEmits) {
     width,
     maskStyle,
     bodyStyle,
+    closable,
+    maskClosable,
     handleUpdateOpen,
     handleCancel
   }
