@@ -26,6 +26,12 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
   const showQrScanner = ref(false)
   const modalKey = ref(0)
 
+  // Управление отменой активного входа. `abortController` прерывает signIn на
+  // ближайшей безопасной точке; `isCancelling` помечает, что закрытие было
+  // намеренной отменой, чтобы не показывать ошибку и гарантировать разлогин.
+  let abortController: AbortController | null = null
+  const isCancelling = ref(false)
+
   // Функция очистки формы
   const clearForm = () => {
     privateKey.value = ''
@@ -33,6 +39,8 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
     loading.value = false
     showPassword.value = false
     showQrScanner.value = false
+    isCancelling.value = false
+    abortController = null
   }
 
   // Локальное состояние для v-model
@@ -60,6 +68,9 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
   )
 
   const handleSignIn = async () => {
+    // Защита от повторного запуска, пока идёт вход (двойной клик / Enter + клик).
+    if (loading.value) return
+
     if (!privateKey.value.trim()) {
       error.value = t('accountMsg.enterMnemonicOrKey')
       return
@@ -67,11 +78,25 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
 
     loading.value = true
     error.value = null
+    isCancelling.value = false
+    abortController = new AbortController()
 
     try {
-      const result = await authStore.signIn({
-        privateKey: privateKey.value.trim(),
-      })
+      const result = await authStore.signIn(
+        { privateKey: privateKey.value.trim() },
+        { signal: abortController.signal }
+      )
+
+      // Пользователь нажал «Отмена» во время входа: гарантируем, что он не
+      // остался залогинен (если signIn всё же успел зафиксироваться), и молча
+      // закрываем модалку без сообщения об ошибке.
+      if (isCancelling.value || result.cancelled) {
+        if (result.success) await authStore.signOut()
+        clearForm()
+        emit('cancel')
+        emit('update:open', false)
+        return
+      }
 
       if (result.success) {
         clearForm()
@@ -81,25 +106,43 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
         error.value = result.error || t('accountMsg.signInError')
       }
     } catch (err) {
+      if (isCancelling.value) {
+        clearForm()
+        emit('cancel')
+        emit('update:open', false)
+        return
+      }
       error.value = err instanceof Error ? err.message : t('accountMsg.signInUnexpectedError')
     } finally {
       loading.value = false
+      abortController = null
     }
   }
 
   const handleCancel = () => {
+    // Отмена во время активного входа: прерываем запрос и ждём, пока handleSignIn
+    // доведёт откат и закроет модалку. Не закрываем здесь, чтобы не разорвать
+    // процесс на полпути (иначе signIn мог бы зафиксироваться уже после закрытия).
+    if (loading.value) {
+      isCancelling.value = true
+      abortController?.abort()
+      return
+    }
     clearForm()
     emit('cancel')
     emit('update:open', false)
   }
 
   const handleOpenRegister = () => {
+    // Во время входа переключение на регистрацию заблокировано.
+    if (loading.value) return
     clearForm()
     emit('openRegister')
     emit('update:open', false)
   }
 
   const toggleQrScanner = () => {
+    if (loading.value) return
     showQrScanner.value = !showQrScanner.value
     if (showQrScanner.value) error.value = null
   }
@@ -134,6 +177,7 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
     showQrScanner,
     modalKey,
     isOpen,
+    isCancelling,
     handleSignIn,
     handleCancel,
     handleOpenRegister,

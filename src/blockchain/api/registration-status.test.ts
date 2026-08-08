@@ -87,18 +87,22 @@ describe('getRegistrationStatus', () => {
     expect(await getRegistrationStatus()).toBe('in_progress_wait_unspents')
   })
 
-  it('ошибка getuserprofile + есть unspents → in_progress_transaction', async () => {
-    _rpcCall.mockRejectedValueOnce(new Error('not found'))
+  // P2-10: сетевой сбой getuserprofile больше НЕ понижает статус до in_progress —
+  // иначе зарегистрированному показывали бы ложные часики регистрации. Отдаём
+  // not_in_progress и не проваливаемся в unspents-проверку.
+  it('ошибка getuserprofile → not_in_progress (не in_progress по unspents)', async () => {
+    _rpcCall.mockRejectedValueOnce(new Error('network fail'))
     _filterAvailableUnspents.mockReturnValue([{ txid: 't', vout: 0, amount: 1 }])
 
-    expect(await getRegistrationStatus()).toBe('in_progress_transaction')
+    expect(await getRegistrationStatus()).toBe('not_in_progress')
   })
 
-  it('ошибка getuserprofile + ошибка unspents → undefined_status', async () => {
+  it('ошибка getuserprofile → not_in_progress даже без unspents-инфо', async () => {
     _rpcCall.mockRejectedValueOnce(new Error('rpc fail'))
-    _getUnspents.mockRejectedValueOnce(new Error('unspents fail'))
 
-    expect(await getRegistrationStatus()).toBe('undefined_status')
+    expect(await getRegistrationStatus()).toBe('not_in_progress')
+    // unspents-проверка не должна вызываться при сбое профиля.
+    expect(_getUnspents).not.toHaveBeenCalled()
   })
 
   it('ждёт завершения isFetchingUserState, затем продолжает проверку', async () => {

@@ -151,16 +151,31 @@ describe('addAccountForAddress', () => {
   })
 })
 
-describe('addAccountWithoutMnemonic', () => {
-  it('добавляет аккаунт с пустой мнемоникой', () => {
+describe('addAccountForKey', () => {
+  it('шифрует приватный ключ под BST_ACCOUNT_<addr> и добавляет аккаунт', () => {
     const store = useKeysStore()
+    h.saveEncryptedData.mockReturnValue({ success: true })
     h.addAccountToStore.mockReturnValue({ success: true })
 
-    store.addAccountWithoutMnemonic('P2')
+    store.addAccountForKey('P2', 'L1aWifPrivateKey')
 
+    // Ключ должен быть сохранён (а не потерян) — иначе сессия не переживёт перезагрузку.
+    expect(h.saveEncryptedData).toHaveBeenCalledWith('L1aWifPrivateKey', {
+      persistent: true,
+      storageKey: 'account_P2',
+    })
     expect(h.addAccountToStore).toHaveBeenCalledWith(
-      expect.objectContaining({ address: 'P2', encryptedMnemonic: '' })
+      expect.objectContaining({ address: 'P2' })
     )
+  })
+
+  it('не добавляет аккаунт, если сохранение ключа не удалось', () => {
+    const store = useKeysStore()
+    h.saveEncryptedData.mockReturnValue({ success: false })
+
+    store.addAccountForKey('P2', 'L1aWifPrivateKey')
+
+    expect(h.addAccountToStore).not.toHaveBeenCalled()
   })
 })
 

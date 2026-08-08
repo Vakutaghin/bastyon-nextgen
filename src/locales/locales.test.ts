@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { createI18n } from 'vue-i18n'
 import ru from './ru'
 import en from './en'
 
@@ -53,4 +54,36 @@ describe('симметрия словарей ru/en', () => {
       }
     }
   })
+})
+
+// Каждое сообщение vue-i18n компилирует лениво при первом обращении (legacy:false,
+// рантайм-компиляция). Невалидный синтаксис (например, голый `@` — это linked-формат
+// vue-i18n) роняет рендер уже в проде, а не на сборке. Прогоняем каждую строку через
+// настоящий t() того же рантайма, чтобы ловить такие строки тестом, а не в консоли.
+describe('все сообщения компилируются vue-i18n', () => {
+  const get = (dict: unknown, path: string) =>
+    path.split('.').reduce<unknown>((o, p) => (o as Record<string, unknown>)?.[p], dict)
+
+  for (const [name, dict] of [
+    ['ru', ru],
+    ['en', en],
+  ] as const) {
+    it(`${name}: нет строк с невалидным синтаксисом сообщений`, () => {
+      const i18n = createI18n({ legacy: false, locale: name, messages: { [name]: dict } })
+      const t = i18n.global.t as (key: string) => string
+
+      const broken: string[] = []
+      for (const key of collectKeyPaths(dict)) {
+        const val = get(dict, key)
+        if (typeof val !== 'string') continue
+        try {
+          t(key)
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e)
+          broken.push(`${key}: ${JSON.stringify(val)} → ${msg}`)
+        }
+      }
+      expect(broken, `сломанные сообщения:\n${broken.join('\n')}`).toEqual([])
+    })
+  }
 })

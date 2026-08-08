@@ -5,8 +5,9 @@
     :title="t('auth.signInTitle')"
     :width="500"
     :centered="true"
-    :closable="true"
-    :maskClosable="true"
+    :closable="!loading"
+    :maskClosable="!loading"
+    :keyboard="!loading"
     :destroyOnClose="true"
     :z-index="2700"
     @cancel="handleCancel"
@@ -24,7 +25,8 @@
             @keyup.enter="handleSignIn"
           />
           <SC_PasswordToggle
-            @click="showPassword = !showPassword"
+            :isDisabled="loading"
+            @click="!loading && (showPassword = !showPassword)"
             :title="showPassword ? t('auth.hide') : t('auth.show')"
           >
             {{ showPassword ? '👁️' : '👁️‍🗨️' }}
@@ -40,7 +42,7 @@
         </SC_InfoAlert>
 
         <SC_QrToggleRow>
-          <Button type="link" size="small" @click="toggleQrScanner">
+          <Button type="link" size="small" :disabled="loading" @click="toggleQrScanner">
             <template #icon><QrcodeOutlined /></template>
             {{ showQrScanner ? t('auth.qrHide') : t('auth.scanQr') }}
           </Button>
@@ -55,14 +57,18 @@
 
       <SC_LinkToRegister>
         {{ t('auth.notRegisteredYet') }}
-        <SC_LinkButton @click="handleOpenRegister"> {{ t('auth.register') }} </SC_LinkButton>
+        <SC_LinkButton :isDisabled="loading" @click="handleOpenRegister">
+          {{ t('auth.register') }}
+        </SC_LinkButton>
       </SC_LinkToRegister>
     </SC_SignInForm>
 
     <template #footer>
       <SC_ModalActions>
-        <Button type="default" @click="handleCancel" :disabled="loading">
-          {{ t('auth.cancel') }}
+        <!-- Во время входа «Отмена» остаётся активной — это единственный явный
+             способ прервать процесс (крестик/маска/Esc заблокированы). -->
+        <Button type="default" :disabled="isCancelling" @click="handleCancel">
+          {{ isCancelling ? t('auth.cancelling') : t('auth.cancel') }}
         </Button>
         <Button
           type="primary"
@@ -113,6 +119,7 @@ const {
   showQrScanner,
   modalKey,
   isOpen,
+  isCancelling,
   handleSignIn,
   handleCancel,
   handleOpenRegister,

@@ -731,6 +731,71 @@ describe('auth-store', () => {
 
       expect(_saveMnemonic).toHaveBeenCalledWith('word1 word2 word3')
     })
+
+    // ── отмена входа через AbortSignal ──────────────────────────────────
+    it('returns cancelled without touching state when signal is already aborted', async () => {
+      const controller = new AbortController()
+      controller.abort()
+
+      const store = useAuthStore()
+      const result = await store.signIn({ privateKey: 'deadbeef' }, { signal: controller.signal })
+
+      expect(result).toEqual({ success: false, cancelled: true })
+      expect(store.isAuthenticated).toBe(false)
+      expect(_saveMnemonic).not.toHaveBeenCalled()
+    })
+
+    it('aborts cleanly during dictionary load — no login, no secret written', async () => {
+      const { recoverKeyPair, loadBip39Russian } = await import('../core/keys')
+      const controller = new AbortController()
+      // Пользователь нажал «Отмена», пока грузился словарь bip39.
+      ;(loadBip39Russian as any).mockImplementationOnce(async () => {
+        controller.abort()
+      })
+      ;(recoverKeyPair as any).mockReturnValue({
+        keyPair: fakeKeyPair(),
+        format: 'mnemonic',
+        source: 'word1 word2 word3',
+      })
+
+      const store = useAuthStore()
+      const result = await store.signIn(
+        { privateKey: 'word1 word2 word3' },
+        { signal: controller.signal }
+      )
+
+      expect(result.cancelled).toBe(true)
+      expect(result.success).toBe(false)
+      expect(store.isAuthenticated).toBe(false)
+      expect(store.isLoading).toBe(false)
+      expect(_saveMnemonic).not.toHaveBeenCalled()
+    })
+
+    it('aborts before writing the secret when cancelled during vault init', async () => {
+      const { recoverKeyPair } = await import('../core/keys')
+      const { ensureInitialized } = await import('../storage')
+      const controller = new AbortController()
+      ;(recoverKeyPair as any).mockReturnValue({
+        keyPair: fakeKeyPair(),
+        format: 'mnemonic',
+        source: 'word1 word2 word3',
+      })
+      // Отмена приходит, пока поднимается сейф — секрет ещё не записан.
+      ;(ensureInitialized as any).mockImplementationOnce(async () => {
+        controller.abort()
+        return { status: 'unlocked', level: 'device' }
+      })
+
+      const store = useAuthStore()
+      const result = await store.signIn(
+        { privateKey: 'word1 word2 word3' },
+        { signal: controller.signal }
+      )
+
+      expect(result.cancelled).toBe(true)
+      expect(store.isAuthenticated).toBe(false)
+      expect(_saveMnemonic).not.toHaveBeenCalled()
+    })
   })
 
   // ── fetchUserState (delegated) ─────────────────────────────────────────

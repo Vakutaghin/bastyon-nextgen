@@ -49,7 +49,7 @@ export interface RegistrationFlow {
   handleRegisterCancel: () => void
   handleMnemonicModalClose: () => void
   handleValidationModalUpdate: (value: boolean) => void
-  onAvatarClick: () => void
+  onAvatarClick: (event?: Event) => void
 }
 
 export interface RegistrationFlowOptions {
@@ -138,8 +138,14 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     welcomeModalOpen.value = false
   }
 
-  function onAvatarClick(): void {
-    if (registrationPending.value) validationModalOpen.value = true
+  // Клик по аватару гасим ТОЛЬКО при незавершённой регистрации (тогда открываем
+  // модалку валидации). Иначе клик должен всплыть к ant Dropdown-триггеру, чтобы
+  // открылось меню профиля — без этого клик по аватару «проглатывался».
+  function onAvatarClick(event?: Event): void {
+    if (registrationPending.value) {
+      event?.stopPropagation()
+      validationModalOpen.value = true
+    }
   }
 
   function handleValidationModalUpdate(value: boolean): void {

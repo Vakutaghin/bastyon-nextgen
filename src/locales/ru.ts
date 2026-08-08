@@ -529,6 +529,7 @@ export default {
     signIn: 'Войти',
     register: 'Зарегистрироваться',
     cancel: 'Отмена',
+    cancelling: 'Отмена…',
     errorCreateAccount: 'Не удалось создать аккаунт',
     errorRegistration: 'Произошла ошибка при регистрации',
     errorNameTaken: 'Это имя уже занято. Пожалуйста, выберите другое.',

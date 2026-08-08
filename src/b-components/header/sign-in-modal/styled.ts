@@ -29,14 +29,15 @@ export const SC_InputWithToggle = styled(Input)`
   padding-right: 40px;
 `
 
-export const SC_PasswordToggle = styled.span`
+export const SC_PasswordToggle = styled('span', { isDisabled: Boolean })`
   position: absolute;
   right: 8px;
-  cursor: pointer;
+  cursor: ${(p) => (p.isDisabled ? 'not-allowed' : 'pointer')};
   user-select: none;
   padding: 4px 8px;
   font-size: 16px;
-  opacity: 0.6;
+  opacity: ${(p) => (p.isDisabled ? 0.35 : 0.6)};
+  pointer-events: ${(p) => (p.isDisabled ? 'none' : 'auto')};
   transition: opacity 0.2s;
   z-index: 1;
   background: ${COLORS.BG_PRIMARY};
@@ -45,7 +46,7 @@ export const SC_PasswordToggle = styled.span`
   height: 100%;
 
   &:hover {
-    opacity: 1;
+    opacity: ${(p) => (p.isDisabled ? 0.35 : 1)};
   }
 `
 
@@ -76,11 +77,13 @@ export const SC_LinkToRegister = styled.div`
   color: ${COLORS.TEXT_SECONDARY};
 `
 
-export const SC_LinkButton = styled.a`
+export const SC_LinkButton = styled('a', { isDisabled: Boolean })`
   color: ${COLORS.ANT_BLUE};
-  cursor: pointer;
+  cursor: ${(p) => (p.isDisabled ? 'not-allowed' : 'pointer')};
   text-decoration: none;
   margin-left: 4px;
+  opacity: ${(p) => (p.isDisabled ? 0.5 : 1)};
+  pointer-events: ${(p) => (p.isDisabled ? 'none' : 'auto')};
 
   &:hover {
     text-decoration: underline;

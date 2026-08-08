@@ -68,18 +68,24 @@ const freshCacheHash = (): string =>
 export async function loadAccounts(ctx: LoadAccountsContext): Promise<AccountDisplayInfo[]> {
   const { accountsInfo, currentAddress, currentUserProfile } = ctx
 
+  // Профиль из стора используем для текущего аккаунта ТОЛЬКО если он реально
+  // принадлежит этому адресу. При «Добавить аккаунт» signIn переключает адрес на
+  // новый, но профиль в сторе ещё прежний (fetchUserState идёт в фоне) — без этой
+  // проверки новый аккаунт отрисовывался бы с данными старого (дубликат).
+  const canUseStoreProfile = (addr: Address): boolean =>
+    addr === currentAddress && !!currentUserProfile && currentUserProfile.address === addr
+
   // Первичная сборка списка: для текущего юзера — из стора, остальные — с loading: true.
-  const accounts: AccountDisplayInfo[] = accountsInfo.map((acc) => {
-    if (acc.address === currentAddress && currentUserProfile) {
-      return buildDisplayInfo(acc, currentUserProfile, false)
-    }
-    return buildDisplayInfo(acc, null, true)
-  })
+  const accounts: AccountDisplayInfo[] = accountsInfo.map((acc) =>
+    canUseStoreProfile(acc.address)
+      ? buildDisplayInfo(acc, currentUserProfile, false)
+      : buildDisplayInfo(acc, null, true)
+  )
 
   // RPC только для тех, чьи профили ещё не загружены.
   const addressesToFetch = accountsInfo
     .map((acc) => acc.address)
-    .filter((addr) => !(addr === currentAddress && currentUserProfile))
+    .filter((addr) => !canUseStoreProfile(addr))
 
   if (addressesToFetch.length === 0) return accounts
 

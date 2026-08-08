@@ -17,6 +17,10 @@ import {
   WAS_LOGGED_KEY,
   MNEMONIC_STORAGE_KEY,
   WALLET_ADDRESSES_PREFIX,
+  ACCOUNT_STORAGE_PREFIX,
+  DEVICE_FINGERPRINT_KEY,
+  VAULT_ENVELOPE_KEY,
+  VAULT_ENVELOPE_BACKUP_KEY,
 } from '../constants/storage'
 import { ACCOUNTS_LIST_KEY } from './storage-constants'
 
@@ -33,6 +37,10 @@ function memStorage() {
     setItem: (k: string, v: string) => void store.set(k, String(v)),
     removeItem: (k: string) => void store.delete(k),
     clear: () => store.clear(),
+    key: (i: number) => Array.from(store.keys())[i] ?? null,
+    get length() {
+      return store.size
+    },
   }
 }
 
@@ -96,6 +104,22 @@ describe('clearAllUserData', () => {
     expect(localStorage.getItem(WAS_LOGGED_KEY)).toBeNull()
     expect(localStorage.getItem(ACCOUNTS_LIST_KEY)).toBeNull()
     expect(sessionStorage.getItem(ACCOUNTS_LIST_KEY)).toBeNull()
+  })
+
+  it('P0-1/P1-12: сносит per-account секреты, fingerprint и артефакты сейфа', () => {
+    localStorage.setItem(`${ACCOUNT_STORAGE_PREFIX}P1`, 'enc1')
+    localStorage.setItem(`${ACCOUNT_STORAGE_PREFIX}P2`, 'enc2')
+    localStorage.setItem(DEVICE_FINGERPRINT_KEY, 'fp')
+    localStorage.setItem(VAULT_ENVELOPE_KEY, '{}')
+    localStorage.setItem(VAULT_ENVELOPE_BACKUP_KEY, '{}')
+
+    clearAllUserData()
+
+    expect(localStorage.getItem(`${ACCOUNT_STORAGE_PREFIX}P1`)).toBeNull()
+    expect(localStorage.getItem(`${ACCOUNT_STORAGE_PREFIX}P2`)).toBeNull()
+    expect(localStorage.getItem(DEVICE_FINGERPRINT_KEY)).toBeNull()
+    expect(localStorage.getItem(VAULT_ENVELOPE_KEY)).toBeNull()
+    expect(localStorage.getItem(VAULT_ENVELOPE_BACKUP_KEY)).toBeNull()
   })
 })
 

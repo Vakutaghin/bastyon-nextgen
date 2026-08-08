@@ -130,15 +130,13 @@ async function fetchUserProfile(identifier: string): Promise<void> {
     // и резолвим в адрес. Иначе сразу используем как адрес.
     if (identifier.length < 30) {
       const myAddress = authStore.getUserAddress
-      const pendingNickname = readPendingNickname()
+      const myProfileName = (authStore.getUserProfile as { name?: string } | null)?.name
+      const myName = myProfileName || authStore.getCachedAccountName || readPendingNickname()
 
-      if (
-        myAddress &&
-        pendingNickname &&
-        identifier.toLowerCase() === pendingNickname.toLowerCase()
-      ) {
-        // Наш ещё незарегистрированный профиль — используем адрес из store
-        // (getuseraddress пока не отдаст, регистрация в процессе).
+      if (myAddress && myName && identifier.toLowerCase() === myName.toLowerCase()) {
+        // Это наш собственный профиль — берём адрес из store напрямую, без
+        // getuseraddress. Иначе свежезарегистрированное имя, ещё не
+        // распространившееся по всем нодам, давало бы «Пользователь не найден».
         address = myAddress
       } else {
         const addressResponse = (await getByPRC({

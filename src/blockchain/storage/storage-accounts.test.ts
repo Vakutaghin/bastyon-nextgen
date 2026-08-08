@@ -15,7 +15,12 @@ vi.mock('./encryption', () => ({
   encryptData: (d: string) => d,
   decryptData: (d: string) => d,
 }))
-vi.mock('./device-fingerprint', () => ({ getDeviceFingerprint: () => 'fp' }))
+// P0-1: seam берёт ключ из сейфа (не fingerprint). Heal-ветка не активна при
+// identity-шифровании и getVaultLegacyKey→null.
+vi.mock('./vault/crypto-vault', () => ({
+  getVaultSecret: () => 'fp',
+  getVaultLegacyKey: () => null,
+}))
 
 function memStorage() {
   const store = new Map<string, string>()

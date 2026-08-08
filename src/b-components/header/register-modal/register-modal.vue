@@ -4,8 +4,9 @@
     :title="t('auth.registerTitle')"
     :width="500"
     :centered="true"
-    :closable="true"
-    :mask-closable="true"
+    :closable="!loading"
+    :mask-closable="!loading"
+    :keyboard="!loading"
     :destroy-on-close="true"
     @cancel="handleCancel"
   >
@@ -53,13 +54,19 @@
 
       <SC_LinkToSignIn>
         {{ t('auth.alreadyRegistered') }}
-        <SC_LinkButton @click="handleOpenSignIn"> {{ t('auth.signIn') }} </SC_LinkButton>
+        <SC_LinkButton :isDisabled="loading" @click="handleOpenSignIn">
+          {{ t('auth.signIn') }}
+        </SC_LinkButton>
       </SC_LinkToSignIn>
     </SC_RegisterForm>
 
     <template #footer>
       <SC_FooterActions>
-        <Button type="default" :disabled="loading" @click="handleCancel"> {{ t('auth.cancel') }} </Button>
+        <!-- Во время регистрации «Отмена» остаётся активной — единственный явный
+             способ прервать процесс (крестик/маска/Esc заблокированы). -->
+        <Button type="default" :disabled="isCancelling" @click="handleCancel">
+          {{ isCancelling ? t('auth.cancelling') : t('auth.cancel') }}
+        </Button>
         <Button
           type="primary"
           :loading="loading"
@@ -130,6 +137,13 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 let nicknameTimer: ReturnType<typeof setTimeout> | null = null
 
+// Управление отменой активной регистрации. Прерываем на границах шагов (сетевые
+// вызовы не принимают внешний signal), затем откатываем аккаунт и pending-запись.
+let abortController: AbortController | null = null
+const isCancelling = ref(false)
+// Маркер отмены, чтобы отличить её от реальной ошибки в общем catch.
+const CANCELLED = Symbol('registration-cancelled')
+
 const isOpen = computed<boolean>({
   get: () => props.open ?? false,
   set: (value) => emit('update:open', value),
@@ -145,6 +159,8 @@ watch(
       email.value = ''
       error.value = null
       loading.value = false
+      isCancelling.value = false
+      abortController = null
       // При закрытии модалки гасим debounce-таймер — иначе он сработает после
       // unmount и попытается записать в `nickname.value` уже мёртвой ref.
       if (nicknameTimer) {
@@ -219,6 +235,9 @@ async function checkPendingRegistration(): Promise<void> {
 async function handleRegister(): Promise<void> {
   debugLog('[REG] === handleRegister START ===', nickname.value)
 
+  // Защита от повторного запуска, пока регистрация уже идёт.
+  if (loading.value) return
+
   const validationError = validateRegistrationNickname(nickname.value)
   if (validationError) {
     error.value = validationError
@@ -227,10 +246,19 @@ async function handleRegister(): Promise<void> {
 
   loading.value = true
   error.value = null
+  isCancelling.value = false
+  abortController = new AbortController()
+
+  // Отмена возможна только до «точки невозврата» (emit('validation')): сетевые
+  // вызовы не принимают signal, поэтому прерываемся на границах шагов.
+  const bailIfCancelled = (): void => {
+    if (abortController?.signal.aborted) throw CANCELLED
+  }
 
   try {
     debugLog('[REG] Step 1: checking name...')
     await checkNameAvailability(nickname.value)
+    bailIfCancelled()
 
     debugLog('[REG] Step 2: generating keys...')
     const registrationResult = await authStore.register({
@@ -242,6 +270,7 @@ async function handleRegister(): Promise<void> {
       throw new Error(t('auth.errorCreateAccount'))
     }
     debugLog('[REG] Step 2: keys generated, address:', registrationResult.address)
+    bailIfCancelled()
 
     savePendingRegistration({
       nickname: nickname.value,
@@ -254,6 +283,7 @@ async function handleRegister(): Promise<void> {
     const { requestUnspents } = await import('@/blockchain/api/free-balance-api')
     await requestUnspents(registrationResult.address, { reason: 'registration' })
     debugLog('[REG] Step 3: free/balance requested!')
+    bailIfCancelled()
 
     // step=2: free/balance отправлен в сервер, ждём подтверждения (UTXO).
     savePendingRegistration({
@@ -264,6 +294,7 @@ async function handleRegister(): Promise<void> {
     })
 
     debugLog('[REG] Step 4: optimistic — showing validation modal')
+    // Точка невозврата: аккаунт создан, дальше транзакция уходит в фон.
     emit('validation', {
       status: 'in_progress_transaction',
       mnemonic: registrationResult.mnemonic,
@@ -272,6 +303,18 @@ async function handleRegister(): Promise<void> {
 
     sendTransactionInBackground(nickname.value)
   } catch (err) {
+    // Отмена пользователем: откатываем созданный аккаунт и незавершённую
+    // pending-регистрацию, не показываем ошибку.
+    if (err === CANCELLED || isCancelling.value) {
+      authStore.resetAuthOnRegistrationError()
+      clearPendingRegistration()
+      nickname.value = ''
+      email.value = ''
+      error.value = null
+      emit('cancel')
+      emit('update:open', false)
+      return
+    }
     console.error('[REG] ERROR:', err)
     error.value = err instanceof Error ? err.message : t('auth.errorRegistration')
     const pending = loadPendingRegistration()
@@ -280,6 +323,7 @@ async function handleRegister(): Promise<void> {
     }
   } finally {
     loading.value = false
+    abortController = null
   }
 }
 
@@ -401,11 +445,20 @@ async function checkNameAvailability(name: string): Promise<void> {
 }
 
 function handleOpenSignIn(): void {
+  // Во время регистрации переключение на вход заблокировано.
+  if (loading.value) return
   emit('openSignIn')
   emit('update:open', false)
 }
 
 function handleCancel(): void {
+  // Отмена во время активной регистрации: прерываем процесс и ждём, пока
+  // handleRegister доведёт откат и закроет модалку.
+  if (loading.value) {
+    isCancelling.value = true
+    abortController?.abort()
+    return
+  }
   emit('cancel')
   emit('update:open', false)
 }

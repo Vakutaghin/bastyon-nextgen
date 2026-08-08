@@ -151,6 +151,20 @@ export const useAuthStore = defineStore('auth', {
       this.keyPair = null
     },
 
+    /**
+     * Тихий откат прерванного пользователем входа. Вызывается, когда signIn
+     * отменён через AbortSignal ДО записи секрета в сейф: сбрасывает ключи и
+     * статус в «не авторизован», НЕ выставляя error (отмена — не ошибка).
+     * Гарантирует, что после «Отмены» пользователь не остаётся залогинен.
+     */
+    _cancelSignIn(): SignInResult {
+      const keys = useKeysStore()
+      keys.clearKeys()
+      this.resetAuthOnRegistrationError()
+      this.setLoading(false)
+      return { success: false, cancelled: true }
+    },
+
     /** Sync key-pair state from keys-store into auth-store (local fields kept for backward compat) */
     _syncFromKeysStore(): void {
       const keys = useKeysStore()
@@ -223,10 +237,17 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async signIn(options: SignInOptions): Promise<SignInResult> {
+    async signIn(
+      options: SignInOptions,
+      opts: { signal?: AbortSignal } = {}
+    ): Promise<SignInResult> {
       const { privateKey } = options
+      const { signal } = opts
       const keys = useKeysStore()
       const profile = useProfileStore()
+
+      // Отмена ещё до старта процесса — состояние не трогаем.
+      if (signal?.aborted) return { success: false, cancelled: true }
 
       this.setLoading(true)
       this.setError(null)
@@ -241,6 +262,8 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         await loadBip39Russian()
+        // Отмена во время загрузки словаря — секрет ещё не тронут, выходим чисто.
+        if (signal?.aborted) return this._cancelSignIn()
 
         if (!privateKey || typeof privateKey !== 'string')
           throw new Error('Private key is required')
@@ -256,6 +279,8 @@ export const useAuthStore = defineStore('auth', {
 
         // P0-1: создать/поднять сейф ДО первой записи секрета (mnemonic/приватника).
         await ensureInitialized()
+        // Последнее окно чистой отмены: секрет ещё НЕ записан в сейф.
+        if (signal?.aborted) return this._cancelSignIn()
 
         if (recoveryResult.format === 'mnemonic') {
           await keys.saveMnemonic(trimmedKey)
@@ -285,6 +310,8 @@ export const useAuthStore = defineStore('auth', {
 
         return { success: true, address: this.address || undefined }
       } catch (error) {
+        // Прерывание пользователем (AbortError и т.п.) — не ошибка входа.
+        if (signal?.aborted) return this._cancelSignIn()
         const errorMessage = error instanceof Error ? error.message : 'Sign in failed'
         this.setError(errorMessage)
         this.setLoading(false)

@@ -76,10 +76,11 @@ export const useKeysStore = defineStore('keys', {
     },
 
     /**
-     * Добавляет аккаунт в хранилище мульти-аккаунтов
+     * Добавляет аккаунт в хранилище мульти-аккаунтов, шифруя его секрет
+     * (мнемонику или приватный ключ WIF/hex) под BST_ACCOUNT_<addr>.
      */
-    addAccountForAddress(address: Address, mnemonic: string): void {
-      const accountMnemonicResult = saveEncryptedData(mnemonic, {
+    addAccountForAddress(address: Address, secret: string): void {
+      const accountMnemonicResult = saveEncryptedData(secret, {
         persistent: true,
         storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}`,
       })
@@ -97,15 +98,18 @@ export const useKeysStore = defineStore('keys', {
     },
 
     /**
-     * Добавляет аккаунт без мнемоники (вход по приватному ключу)
+     * Добавляет аккаунт при входе по приватному ключу (WIF/hex).
+     *
+     * Сам ключ шифруется и сохраняется под тем же BST_ACCOUNT_<addr>, что и
+     * мнемоника, — чтобы restoreSession()/recoverFromAccount() мог поднять сессию
+     * после перезагрузки. recoverKeyPair() автоопределяет формат секрета
+     * (mnemonic/hex/wif), поэтому отдельная ветка восстановления не нужна.
+     *
+     * Раньше ключ нигде не сохранялся (encryptedMnemonic:'' + пустой BST_ACCOUNT_<addr>),
+     * поэтому вход по приватному ключу не переживал перезагрузку — сессия терялась.
      */
-    addAccountWithoutMnemonic(address: Address): void {
-      const accountInfo: AccountInfo = { address, encryptedMnemonic: '', lastUsed: Date.now() }
-      const addResult = addAccountToStore(accountInfo)
-      if (addResult.success) {
-        const listResult = loadAccountsList()
-        if (listResult.success && listResult.data) this.accountsList = listResult.data
-      }
+    addAccountForKey(address: Address, privateKey: string): void {
+      this.addAccountForAddress(address, privateKey)
     },
 
     getAccountsList(): AccountsList {
@@ -154,8 +158,8 @@ export const useKeysStore = defineStore('keys', {
      * Удаляет аккаунт из списка
      */
     removeAccount(address: Address): boolean {
-      clearStoredData({ persistent: true, storageKey: `account_${address}` })
-      clearStoredData({ persistent: false, storageKey: `account_${address}` })
+      clearStoredData({ persistent: true, storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}` })
+      clearStoredData({ persistent: false, storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}` })
       const result = removeAccountFromStore(address)
       if (result.success) {
         const listResult = loadAccountsList()

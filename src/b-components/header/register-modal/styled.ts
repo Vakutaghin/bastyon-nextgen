@@ -85,10 +85,12 @@ export const SC_LinkToSignIn = styled.div`
   color: ${COLORS.TEXT_SECONDARY};
 `
 
-export const SC_LinkButton = styled.a`
+export const SC_LinkButton = styled('a', { isDisabled: Boolean })`
   color: ${COLORS.ANT_BLUE};
-  cursor: pointer;
+  cursor: ${(p) => (p.isDisabled ? 'not-allowed' : 'pointer')};
   text-decoration: none;
+  opacity: ${(p) => (p.isDisabled ? 0.5 : 1)};
+  pointer-events: ${(p) => (p.isDisabled ? 'none' : 'auto')};
 
   &:hover {
     text-decoration: underline;

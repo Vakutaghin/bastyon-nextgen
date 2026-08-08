@@ -524,6 +524,7 @@ export default {
     signIn: 'Sign in',
     register: 'Sign up',
     cancel: 'Cancel',
+    cancelling: 'Cancelling…',
     errorCreateAccount: 'Failed to create account',
     errorRegistration: 'An error occurred during registration',
     errorNameTaken: 'This name is already taken. Please choose another one.',

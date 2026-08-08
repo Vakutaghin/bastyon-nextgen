@@ -11,6 +11,13 @@ import type {
 } from '../../types/rpc-responses/user-state'
 import type { Address } from '../types/addresses'
 
+/**
+ * Адрес самого свежего запроса состояния (P2-1). Обновляется в начале каждого
+ * `fetchUserState` (включая заблокированные isFetchingUserState-guard'ом), чтобы
+ * медленный in-flight ответ прежнего аккаунта не затёр профиль нового.
+ */
+let latestUserStateAddress: Address | null = null
+
 export const useProfileStore = defineStore('profile', {
   state: () => ({
     userProfile: null as UserProfile | UserStateData | null,
@@ -50,6 +57,9 @@ export const useProfileStore = defineStore('profile', {
      */
     async fetchUserState(address: Address | null): Promise<UserStateData | null> {
       if (!address) return null
+      // Фиксируем самый свежий запрошенный адрес ДО guard'а — даже если этот
+      // вызов будет пропущен, он «побеждает» устаревший in-flight (P2-1).
+      latestUserStateAddress = address
       if (this.isFetchingUserState) return null
 
       // Если данные уже загружены для этого адреса, не делаем повторный запрос
@@ -139,6 +149,13 @@ export const useProfileStore = defineStore('profile', {
         } as UserStateData
 
         if (!userState.i && userProfileData?.i) userState.i = userProfileData.i
+
+        // P2-1: за время await пользователь мог переключить аккаунт — не
+        // затираем профиль нового аккаунта устаревшим ответом старого.
+        if (latestUserStateAddress !== address) {
+          this.isFetchingUserState = false
+          return null
+        }
 
         const avatarUrl = userState.i
         this.userProfile = { ...userState, i: avatarUrl } as UserProfile & UserStateData

@@ -43,6 +43,8 @@ export interface SignInResult {
   address?: Address
   /** Сообщение об ошибке */
   error?: string
+  /** Вход прерван пользователем (не ошибка) — состояние откачено в «не авторизован» */
+  cancelled?: boolean
 }
 
 /**
