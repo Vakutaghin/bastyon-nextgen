@@ -73,6 +73,13 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     if (!comment.address || comment.address === me) return false
     return getCommentTxState(comment) === 'normal'
   }
+  /** Можно ли пожаловаться на коммент: чужой реальный коммент, авторизован. */
+  const canReportComment = (comment: GetComment): boolean => {
+    const me = opts.currentUserAddress.value
+    if (!me) return false
+    if (!comment.address || comment.address === me) return false
+    return getCommentTxState(comment) === 'normal'
+  }
 
   const isUserBlocked = (comment: GetComment): boolean =>
     useUserRelationsStore().isBlocked(comment.address)
@@ -129,6 +136,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       canDeleteComment(comment) ||
       canBlockUser(comment) ||
       canDonateComment(comment) ||
+      canReportComment(comment) ||
       canShareComment(comment)
     )
   }
@@ -295,6 +303,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     canDeleteComment,
     canBlockUser,
     canDonateComment,
+    canReportComment,
     isUserBlocked,
     isBlockPending,
     confirmBlockUser,

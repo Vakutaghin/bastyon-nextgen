@@ -49,6 +49,7 @@
             :can-share="canShareComment(comment)"
             :can-block="canBlockUser(comment)"
             :can-donate="canDonateComment(comment)"
+            :can-report="canReportComment(comment)"
             :is-blocked="isUserBlocked(comment)"
             :block-pending="isBlockPending(comment)"
             @action="(a) => onCommentMenuAction(comment, a)"
@@ -217,6 +218,7 @@ const {
   canShareComment,
   canBlockUser,
   canDonateComment,
+  canReportComment,
   isUserBlocked,
   isBlockPending,
   canInteractWithComment,

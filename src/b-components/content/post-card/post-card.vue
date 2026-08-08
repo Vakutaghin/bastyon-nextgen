@@ -123,7 +123,13 @@
               <span>{{ t('postCard.shareAction') }}</span>
             </SC_PostActionBtn>
             <template #overlay>
-              <PostShareMenu :url="postUrl" :text="shareText" @done="shareMenuOpen = false" />
+              <PostShareMenu
+                :url="postUrl"
+                :text="shareText"
+                :can-report="canReport"
+                @report="onReportPost"
+                @done="shareMenuOpen = false"
+              />
             </template>
           </Dropdown>
 
@@ -186,6 +192,7 @@ import { deletePost } from '@/b-components/content/post-card/post-deleter'
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
+import { useReportStore } from '@/stores/report-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { getInitials } from '@/helpers/common/initials'
 import { getYoutubeEmbedUrls } from '@/helpers/common/youtube-url'
@@ -369,6 +376,25 @@ async function doDelete(): Promise<void> {
 const postId = computed<string>(
   () => props.post.txid || props.post.hash || String(props.post.id || '')
 )
+
+// ── Жалоба на чужой пост (modFlag) ──────────────────────────────────
+// Доступна авторизованному пользователю на не-свой пост с реальным txid/hash.
+const canReport = computed<boolean>(
+  () =>
+    !isOwnPost.value &&
+    !!authStore.getUserAddress &&
+    !!props.post.author?.address &&
+    !!(props.post.txid || props.post.hash)
+)
+
+function onReportPost(): void {
+  if (!props.post.author?.address) return
+  useReportStore().open({
+    contentHash: postId.value,
+    authorAddress: props.post.author.address,
+    type: 'post',
+  })
+}
 
 // ── Внешний шаринг поста ────────────────────────────────────────────
 const shareMenuOpen = ref(false)

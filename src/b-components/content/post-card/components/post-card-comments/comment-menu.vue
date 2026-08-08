@@ -33,6 +33,16 @@
         </SC_MenuItem>
 
         <SC_MenuItem
+          v-if="canReport"
+          type="button"
+          class="menu-item--danger"
+          @click.stop.prevent="onAction('report')"
+        >
+          <FlagOutlined />
+          <span>{{ t('report.action') }}</span>
+        </SC_MenuItem>
+
+        <SC_MenuItem
           v-if="canDelete"
           type="button"
           class="menu-item--danger"
@@ -61,10 +71,18 @@ import {
   StopOutlined,
   ShareAltOutlined,
   GiftOutlined,
+  FlagOutlined,
 } from '@ant-design/icons-vue'
 import { SC_MenuList, SC_MenuItem, SC_MenuTrigger } from './styled'
 
-export type CommentMenuAction = 'edit' | 'delete' | 'block' | 'unblock' | 'share' | 'donate'
+export type CommentMenuAction =
+  | 'edit'
+  | 'delete'
+  | 'block'
+  | 'unblock'
+  | 'share'
+  | 'donate'
+  | 'report'
 
 defineProps<{
   /** Можно ли редактировать (свой комментарий, не temp) */
@@ -77,6 +95,8 @@ defineProps<{
   canBlock: boolean
   /** Можно ли донатить автору (чужой комментарий, авторизован) */
   canDonate: boolean
+  /** Можно ли пожаловаться (чужой комментарий, авторизован) */
+  canReport: boolean
   /** Уже заблокирован ли автор (показываем «Разблокировать») */
   isBlocked: boolean
   /** Идёт ли block/unblock транзакция (дизейбл пункта) */

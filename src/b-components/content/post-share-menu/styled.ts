@@ -32,6 +32,10 @@ export const SC_ShareItem = styled.button`
     background: ${COLORS.BG_HOVER};
   }
 
+  &.share-item--danger {
+    color: ${COLORS.DANGER};
+  }
+
   .anticon {
     font-size: 16px;
   }

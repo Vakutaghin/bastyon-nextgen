@@ -201,7 +201,7 @@ import { Popover } from 'ant-design-vue'
 import { ICON_SIZE_SM, ICON_BRAND_CYAN_16, ICON_BRAND_CYAN_18 } from '@/styles/icon-styles'
 import { LoadingOutlined, SendOutlined, SyncOutlined, SmileOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
-import { useCommentsStore, useUserRelationsStore, useDonateStore } from '@/stores'
+import { useCommentsStore, useUserRelationsStore, useDonateStore, useReportStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { formatRelativeTime } from '@/helpers/common/date-formatter'
@@ -543,6 +543,14 @@ function onCommentMenuAction(comment: GetComment, action: CommentMenuAction): vo
     useDonateStore().open({
       address: comment.address,
       name: (comment as GetComment & { userprofile?: { name?: string } }).userprofile?.name,
+    })
+    return
+  }
+  if (action === 'report') {
+    useReportStore().open({
+      contentHash: comment.id,
+      authorAddress: comment.address,
+      type: 'comment',
     })
     return
   }

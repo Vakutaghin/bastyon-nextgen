@@ -28,19 +28,27 @@
       </SC_ShareIcon>
       {{ target.label }}
     </SC_ShareItem>
+
+    <template v-if="canReport">
+      <SC_ShareDivider />
+      <SC_ShareItem type="button" class="share-item--danger" @click="onReport">
+        <SC_ShareIcon><FlagOutlined /></SC_ShareIcon>
+        {{ t('report.action') }}
+      </SC_ShareItem>
+    </template>
   </SC_ShareMenu>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CodeOutlined, CopyOutlined, ShareAltOutlined } from '@ant-design/icons-vue'
+import { CodeOutlined, CopyOutlined, ShareAltOutlined, FlagOutlined } from '@ant-design/icons-vue'
 import { appToast } from '@/b-components/app-toast'
 import { SHARE_TARGETS, type ShareTarget } from '@/helpers/common/share-targets'
 import { SC_ShareMenu, SC_ShareItem, SC_ShareIcon, SC_ShareDivider } from './styled'
 
-const props = defineProps<{ url: string; text: string }>()
-const emit = defineEmits<{ (e: 'done'): void }>()
+const props = defineProps<{ url: string; text: string; canReport?: boolean }>()
+const emit = defineEmits<{ (e: 'done'): void; (e: 'report'): void }>()
 
 const { t } = useI18n()
 
@@ -97,6 +105,11 @@ async function nativeShare(): Promise<void> {
 function openExternal(target: ShareTarget): void {
   const href = target.buildUrl(props.url, props.text)
   window.open(href, '_blank', 'noopener,noreferrer')
+  emit('done')
+}
+
+function onReport(): void {
+  emit('report')
   emit('done')
 }
 </script>

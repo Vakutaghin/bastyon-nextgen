@@ -16,6 +16,8 @@ export { usePendingPostsStore, PENDING_POST_TTL_MS } from './pending-posts-store
 export type { PendingPost } from './pending-posts-store'
 export { useUserRelationsStore } from './user-relations-store'
 export { useDonateStore } from './donate-store'
+export { useReportStore } from './report-store'
+export type { ReportTarget, ReportTargetType } from './report-store'
 export { useNotificationsStore } from './notifications-store'
 export { useNotificationSettingsStore } from './notification-settings-store'
 export { useTorStore } from './tor-store'
