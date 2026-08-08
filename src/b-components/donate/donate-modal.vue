@@ -73,6 +73,8 @@ import {
   filterAvailableUnspents,
 } from '@/blockchain/core/transactions/unspents-manager'
 import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
+// Звук успешного доната (портирован из legacy sounds/donate.mp3). Vite отдаёт URL.
+import donateSound from './sounds/donate.mp3'
 import {
   SC_DonateBody,
   SC_Recipient,
@@ -82,6 +84,21 @@ import {
   SC_BalanceHint,
   SC_FieldError,
 } from './styled'
+
+// Один аудио-инстанс на модуль.
+let donateAudio: HTMLAudioElement | null = null
+function playDonateSound(): void {
+  try {
+    if (!donateAudio) {
+      donateAudio = new Audio(donateSound)
+      donateAudio.volume = 0.5
+    }
+    donateAudio.currentTime = 0
+    void donateAudio.play().catch(() => {})
+  } catch {
+    // Автоплей мог быть заблокирован — не критично.
+  }
+}
 
 /** Пресеты быстрых сумм доната (PKOIN). */
 const PRESETS = [1, 5, 10, 50]
@@ -155,6 +172,7 @@ async function onSend(): Promise<void> {
     const { donateToAuthor } = await import('@/blockchain/core/actions/donate-action')
     await donateToAuthor(donateStore.address, numericAmount.value)
     appToast.success({ message: t('donate.sentToast') })
+    playDonateSound()
     donateStore.close()
     // Празднуем донат всплеском монеток по центру экрана.
     if (typeof window !== 'undefined') {
