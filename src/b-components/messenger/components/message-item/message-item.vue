@@ -127,11 +127,9 @@ import { useI18n } from 'vue-i18n'
 import { Popover, Modal } from 'ant-design-vue'
 import { MoreOutlined, DeleteOutlined, RollbackOutlined } from '@ant-design/icons-vue'
 import type { Message } from '../../types'
-import { matrixFetch } from '@/helpers/api/request'
 import { useMessengerStore } from '../../store'
 import { getAddressFromMatrixId, formatMessageTime as formatTime } from '../../helpers'
 import { QUICK_REACTION_EMOJIS } from '../../store/consts'
-import { decryptMatrixAttachment } from '../../services/media-decrypt'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import Avatar from '@/components/avatar/avatar.vue'
 import AudioMessage from '../audio-message/audio-message.vue'
@@ -241,92 +239,6 @@ const messageSegments = computed(() => formatMessageSegments(props.message.text 
 
 /** Первый внешний http(s)-URL для OG-превью (не bastyon-ссылка). */
 const previewUrl = computed<string | null>(() => extractFirstExternalUrl(props.message.text || ''))
-
-async function onAudioError(e: Event): Promise<void> {
-  const target = e.target as HTMLAudioElement
-  const src = target.src || props.message.url
-  if (!src) return
-
-  // Защита от бесконечной петли: blob уже наш фолбэк, повторять нет смысла.
-  if (src.startsWith('blob:')) {
-    console.error('[MessageItem] Blob playback failed for:', src)
-    return
-  }
-
-  console.error('[MessageItem] Audio error:', target.error?.code, src)
-
-  // MEDIA_ERR_SRC_NOT_SUPPORTED (4) часто значит «wrong content-type» —
-  // подменяем src на blob с правильным MIME.
-  if (target.error?.code === 4) {
-    try {
-      // Bastyon-шифрованные аудио (secrets) — расшифровываем через store.
-      if (props.message.info?.secrets) {
-        try {
-          const response = await matrixFetch(src, { mode: 'cors' })
-          if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
-          const blob = await response.blob()
-          const decryptedBlob = await store.decryptAudioData(blob, props.message)
-
-          if (decryptedBlob) {
-            const objectUrl = URL.createObjectURL(decryptedBlob)
-            target.src = objectUrl
-            target.load()
-            return
-          } else {
-            console.error('[MessageItem] Decryption returned null')
-          }
-        } catch (err) {
-          console.error('[MessageItem] Pcrypto decryption failed:', err)
-        }
-      }
-
-      const fileInfo = props.message.info?.file || props.message.info?.secrets?.file
-
-      if (fileInfo && fileInfo.key) {
-        const response = await matrixFetch(src, { mode: 'cors' })
-        const arrayBuffer = await response.arrayBuffer()
-
-        try {
-          const decryptedData = await decryptMatrixAttachment(arrayBuffer, fileInfo)
-          const blob = new Blob([decryptedData], { type: 'audio/mpeg' })
-          const objectUrl = URL.createObjectURL(blob)
-          target.src = objectUrl
-          target.load()
-          return
-        } catch (decryptErr) {
-          console.error('[MessageItem] Decryption failed:', decryptErr)
-        }
-      }
-
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000)
-
-      const response = await matrixFetch(src, {
-        mode: 'cors',
-        signal: controller.signal,
-      })
-      clearTimeout(timeoutId)
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
-      const blob = await response.blob()
-      // Принудительно ставим audio/mpeg — даже если сервер вернул octet-stream
-      // или encrypted/audio/mpeg, плеер сможет проиграть.
-      const newBlob = new Blob([blob], { type: 'audio/mpeg' })
-      const objectUrl = URL.createObjectURL(newBlob)
-      target.src = objectUrl
-      target.load()
-    } catch (err) {
-      console.error('[MessageItem] Failed to fetch audio blob:', err)
-    }
-  }
-}
-
-// Отмечаем как используемое, чтобы TS не жаловался — функция передана в audio[onError]
-// со стороны audio-message.vue через store; явный listener тут не нужен, но функция
-// доступна как часть API компонента для тестов.
-void onAudioError
 
 const showReactionPicker = ref(false)
 const reactionTriggerRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)

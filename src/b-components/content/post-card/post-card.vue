@@ -199,7 +199,6 @@ import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { useReportStore } from '@/stores/report-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
-import { getInitials } from '@/helpers/common/initials'
 import { getYoutubeEmbedUrls } from '@/helpers/common/youtube-url'
 import { parseTimecodes, type Chapter } from '@/helpers/content/timecode-parser'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
@@ -482,27 +481,8 @@ const youtubeEmbedUrls = computed<string[]>(() => {
   return Array.from(seen)
 })
 
-function getInitial(nameOrLetter?: string): string {
-  return getInitials(nameOrLetter, { maxLetters: 1 })
-}
-
 function closeImageGallery(): void {
   modalStore.closeImageGallery()
-}
-
-function handleLike(): void {
-  postsStore.likePost(postId.value)
-  emit('like', postId.value)
-}
-
-function handleComment(): void {
-  postsStore.commentPost(postId.value)
-  emit('comment', postId.value)
-}
-
-function handleShare(): void {
-  postsStore.sharePost(postId.value)
-  emit('share', postId.value)
 }
 
 function handleRatingChange(_rating: number): void {
@@ -537,9 +517,4 @@ function onCommentsCollapsed(): void {
   })
 }
 
-// Подавляем «unused»-предупреждение TS — функции используются как обработчики.
-void handleLike
-void handleComment
-void handleShare
-void getInitial
 </script>
