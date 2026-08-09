@@ -14,15 +14,10 @@
 // framework-free (без pinia); UI-оркестровка — в vault-unlock.ts.
 
 import {
-  MNEMONIC_STORAGE_KEY,
-  ACCOUNT_STORAGE_PREFIX,
   DEVICE_FINGERPRINT_KEY,
-  VAULT_ENVELOPE_KEY,
-  VAULT_ENVELOPE_BACKUP_KEY,
   VAULT_MIGRATION_KEY,
   VAULT_ATTEMPTS_KEY,
 } from '../../constants/storage'
-import { ACCOUNTS_LIST_KEY } from '../storage-constants'
 import { getDeviceFingerprint, readStoredFingerprint } from '../device-fingerprint'
 import { migrateLegacyToVault } from './vault-migration'
 import {
@@ -37,10 +32,23 @@ import {
   randomBytes,
   DEFAULT_PBKDF2_ITERATIONS,
   SALT_BYTES,
-  type Pbkdf2Hash,
-  type WrapEnvelope,
 } from './vault-crypto'
 import { indexedDbVaultKeyStore, type VaultKeyStore } from './vault-key-store'
+import { ls, lsRemove } from './vault-ls'
+import {
+  readEnvelope,
+  writeEnvelope,
+  clearEnvelope,
+  hasAnyEncryptedPayload,
+  type DeviceEnvelope,
+  type PassphraseEnvelope,
+} from './vault-envelope-store'
+import { recordFailedAttempt, clearAttempts } from './vault-attempts'
+
+// Публичный API сохранён: getAttemptState/AttemptState раньше жили здесь и
+// импортируются vault-unlock — реэкспортируем из vault-attempts.
+export { getAttemptState } from './vault-attempts'
+export type { AttemptState } from './vault-attempts'
 
 export type VaultStatus =
   | 'unknown'
@@ -63,21 +71,6 @@ export class VaultLockedError extends Error {
   }
 }
 
-interface DeviceEnvelope extends WrapEnvelope {
-  v: 1
-  mode: 'device'
-  migrated: boolean
-}
-interface PassphraseEnvelope extends WrapEnvelope {
-  v: 1
-  mode: 'passphrase'
-  kdf: 'PBKDF2'
-  hash: Pbkdf2Hash
-  iter: number
-  salt: string
-}
-type VaultEnvelope = DeviceEnvelope | PassphraseEnvelope
-
 interface Deps {
   keyStore: VaultKeyStore
 }
@@ -94,73 +87,6 @@ let readyPromise: Promise<VaultOutcome> | null = null
 /** Тесты инъектируют in-memory keyStore (happy-dom без indexedDB). */
 export function configureVault(newDeps: Partial<Deps>): void {
   deps = { ...deps, ...newDeps }
-}
-
-// ─── localStorage helpers ─────────────────────────────────────────────────────
-
-function ls(): Storage | null {
-  return typeof localStorage !== 'undefined' ? localStorage : null
-}
-function lsRemove(key: string): void {
-  try {
-    ls()?.removeItem(key)
-  } catch {
-    /* ignore */
-  }
-}
-
-function isEnvelope(e: unknown): e is VaultEnvelope {
-  if (!e || typeof e !== 'object') return false
-  const o = e as Record<string, unknown>
-  if (o.v !== 1 || typeof o.iv !== 'string' || typeof o.ct !== 'string') return false
-  if (o.mode === 'device') return typeof o.migrated === 'boolean'
-  if (o.mode === 'passphrase')
-    return typeof o.salt === 'string' && typeof o.iter === 'number' && typeof o.hash === 'string'
-  return false
-}
-
-/** Читает конверт: сначала первичный, затем backup — устойчиво к повреждению [A4/C5]. */
-function readEnvelope(): VaultEnvelope | null {
-  const store = ls()
-  if (!store) return null
-  for (const key of [VAULT_ENVELOPE_KEY, VAULT_ENVELOPE_BACKUP_KEY]) {
-    const raw = store.getItem(key)
-    if (!raw) continue
-    try {
-      const parsed = JSON.parse(raw)
-      if (isEnvelope(parsed)) return parsed
-    } catch {
-      /* пробуем backup */
-    }
-  }
-  return null
-}
-
-/** Пишет конверт: backup первым (валидная копия), затем первичный = commit. */
-function writeEnvelope(env: VaultEnvelope): void {
-  const store = ls()
-  if (!store) return
-  const raw = JSON.stringify(env)
-  store.setItem(VAULT_ENVELOPE_BACKUP_KEY, raw)
-  store.setItem(VAULT_ENVELOPE_KEY, raw)
-}
-
-function clearEnvelope(): void {
-  lsRemove(VAULT_ENVELOPE_KEY)
-  lsRemove(VAULT_ENVELOPE_BACKUP_KEY)
-  lsRemove(VAULT_MIGRATION_KEY)
-}
-
-function hasAnyEncryptedPayload(): boolean {
-  const store = ls()
-  if (!store) return false
-  if (store.getItem(MNEMONIC_STORAGE_KEY)) return true
-  if (store.getItem(ACCOUNTS_LIST_KEY)) return true
-  for (let i = 0; i < store.length; i++) {
-    const k = store.key(i)
-    if (k && k.startsWith(ACCOUNT_STORAGE_PREFIX)) return true
-  }
-  return false
 }
 
 // ─── cross-tab lock ───────────────────────────────────────────────────────────
@@ -528,53 +454,6 @@ export async function destroyVault(): Promise<void> {
     /* ignore */
   }
   lockVault()
-}
-
-// ─── passphrase attempt throttling ────────────────────────────────────────────
-
-export interface AttemptState {
-  attempts: number
-  cooldownUntil: number
-}
-
-export function getAttemptState(): AttemptState {
-  const raw = ls()?.getItem(VAULT_ATTEMPTS_KEY)
-  if (!raw) return { attempts: 0, cooldownUntil: 0 }
-  try {
-    const o = JSON.parse(raw) as Partial<AttemptState>
-    return {
-      attempts: typeof o.attempts === 'number' ? o.attempts : 0,
-      cooldownUntil: typeof o.cooldownUntil === 'number' ? o.cooldownUntil : 0,
-    }
-  } catch {
-    return { attempts: 0, cooldownUntil: 0 }
-  }
-}
-
-function backoffMs(attempts: number): number {
-  if (attempts <= 3) return 0
-  if (attempts === 4) return 5_000
-  if (attempts === 5) return 15_000
-  if (attempts === 6) return 30_000
-  return 60_000
-}
-
-function recordFailedAttempt(): AttemptState {
-  const cur = getAttemptState()
-  const attempts = cur.attempts + 1
-  // now берём из Date через переданный источник времени нельзя (framework-free) —
-  // используем Date.now(): это app-runtime, не workflow-скрипт.
-  const next: AttemptState = { attempts, cooldownUntil: Date.now() + backoffMs(attempts) }
-  try {
-    ls()?.setItem(VAULT_ATTEMPTS_KEY, JSON.stringify(next))
-  } catch {
-    /* ignore */
-  }
-  return next
-}
-
-function clearAttempts(): void {
-  lsRemove(VAULT_ATTEMPTS_KEY)
 }
 
 function writeMigrationMarker(phase: 'enable' | 'disable'): void {
