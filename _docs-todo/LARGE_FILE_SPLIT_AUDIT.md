@@ -12,6 +12,36 @@ _Дата: 2026-08-08 · Метод: по агенту на каждый код-
 
 ---
 
+## Статус исполнения (2026-08-08, запушено в `o/main`)
+
+Все quick-wins применены (кроме опровергнутого use-feed), плюс разбиения:
+
+| Файл | Извлечено | Коммит |
+|------|-----------|--------|
+| `transaction-builder.ts` | btc17-loader + 2 builder'а + barrel | d5d4876 |
+| `auth-store.ts` | restore-session | 4e2d213 |
+| `crypto-vault.ts` | vault-ls + envelope-store + attempts | cbe2dc8 |
+| `message-item.vue` | use-reaction-picker | 2a32bbd |
+| `register-modal.vue` | send-registration-transaction (Vue-free) | a88afe0 |
+| `notifications-store.ts` | notifications-settings + notifications-fetch | f8b5b51 |
+| `wallet-transfer.vue` | use-receive-address + use-receiver-search | c5c3430 |
+| `wallets-page.vue` | use-wallet-balances + parse-tx-unspent | 239a9ea |
+| `profile-sidebar.vue` | use-profile-relations-actions + format-about | 35360ac |
+| `use-post-composer.ts` | use-post-tags + post-draft | c267c92 |
+| `post-card.vue` | post-card.types + use-post-media | 23922a9 |
+| `use-comment-form.ts` | comment-draft-storage | b0fa4e8 |
+
+Каждый: поведение сохранено дословно, полный сьют **2072** зелёный, линт 0 ошибок.
+
+**Оставшиеся follow-up (сознательно не тронуто — связаны/риск без рантайм-тестов):**
+- `post-card.vue`: use-post-delete / use-post-share (share делит `decodeUrlEncoded` c `decodedTitle`; delete завязан на `emit` + порядок `postId`).
+- `use-post-composer.ts`: use-post-poll (связан через `post`), use-post-video (аудит: over-eager).
+- `use-comment-form.ts`: @mention-меню + оптимистичный send-reply (тесно связаны с reply/keyboard-state).
+- `post-card-comments.vue`: **уже хорошо скомпонован** (7 composables); deep-link (ref в template + `provideCommentTree`) и display (`setInterval`-lifecycle) — резать только с прогоном в приложении.
+- Косметика/консистентность: `wallets-page` balances → отдельный саб-компонент + релокация styled; over-eager (`peertube-upload`, `video-player`, `chat-room` микро-composables) — НЕ трогать.
+
+---
+
 ## Quick wins — сделать первыми (низкий риск, часть чинит реальные баги)
 
 > **Обновление после верификации (2026-08-08):** дедуп `use-feed.ts` **опровергнут** — см. ниже. Пункты post-card / message-item / wallet-transfer / use-video-hls / header-notifications / matrix-service применены (коммиты `fb00856`..`9db6898`).
