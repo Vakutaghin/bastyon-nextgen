@@ -10,6 +10,7 @@ import DonateModal from '@/b-components/donate/donate-modal.vue'
 import ReportModal from '@/b-components/report/report-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
 import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
+import { useIpfsLinks } from '@/composables/use-ipfs-links'
 
 // Embed-роуты (`/embed/...`, meta.embed) рендерятся БЕЗ chrome (хедер/футер/
 // сайдбар/глобальные модалки) — это самостоятельная вьюха для встраивания в iframe.
@@ -20,6 +21,9 @@ const isEmbed = computed<boolean>(() => route.meta?.embed === true)
 
 // Инициализируем глобальную обработку клавиатуры для управления видеоплеером
 useGlobalKeyboard()
+
+// Перехват кликов по IPFS-ссылкам → открытие в отдельном окне (только в Tauri).
+useIpfsLinks()
 
 // Явная конфигурация темы для устранения предупреждения о injection
 // Используем computed для реактивности и обеспечения правильной инициализации
