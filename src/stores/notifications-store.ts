@@ -1,31 +1,23 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { rpcCall, rpcCallArrayWithAuth } from '@/helpers/api/request'
-import { settingsAPI } from '@/db/apis/settings-api'
 import { notificationsAPI } from '@/db/apis/notifications-api'
-import type { GetMissedInfoParameters } from '@/types/rpc-requests/get-missed-info'
-import type {
-  GetMissedInfoBlockItem,
-  GetMissedInfoDataItem,
-} from '@/types/rpc-responses/get-missed-info'
-import type { GetNodeInfoData } from '@/types/rpc-responses/get-node-info'
+import type { GetMissedInfoBlockItem } from '@/types/rpc-responses/get-missed-info'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
-
-import {
-  NOTIFICATIONS_LAST_BLOCK_KEY,
-  NOTIFICATIONS_HIDDEN_IDS_KEY,
-} from './notifications-constants'
 import type {
   NotificationItem,
   NotificationPostSnapshot,
   NotificationCommentSnapshot,
   NotificationUserSnapshot,
-  LastBlockByAddress,
-  HiddenIdsByAddress,
 } from './notifications-types'
 import { mapMissedEventToNotification } from './notifications-mappers'
 import { enrichNotifications } from './notifications-enricher'
+import {
+  loadLastBlockFromSettings,
+  saveLastBlockToSettings,
+  loadHiddenIdsFromSettings,
+  saveHiddenIdsToSettings,
+} from './notifications-settings'
+import { fetchCurrentBlockHeight, isTimeoutError, fetchMissedInfo } from './notifications-fetch'
 
 // Реэкспорт типов: внешние модули продолжают импортировать из @/stores/notifications-store.
 export type {
@@ -88,95 +80,6 @@ export const useNotificationsStore = defineStore('notifications', {
     },
   },
   actions: {
-    /** Высота блока из IDB для адреса (с какого блока запрашивать уведомления). */
-    async loadLastBlockFromSettings(address: string): Promise<number | null> {
-      try {
-        const raw = (await settingsAPI.get(NOTIFICATIONS_LAST_BLOCK_KEY)) as
-          | LastBlockByAddress
-          | undefined
-        if (raw && typeof raw === 'object' && typeof raw[address] === 'number') {
-          return raw[address]
-        }
-        return null
-      } catch {
-        return null
-      }
-    },
-
-    /** Сохранить высоту блока в IDB для адреса (указатель «прочитано до» — двигаем при открытии выпадашки). */
-    async saveLastBlockToSettings(address: string, block: number): Promise<void> {
-      try {
-        const raw = (await settingsAPI.get(NOTIFICATIONS_LAST_BLOCK_KEY)) as
-          | LastBlockByAddress
-          | undefined
-        const next: LastBlockByAddress = {
-          ...(raw && typeof raw === 'object' ? raw : {}),
-          [address]: block,
-        }
-        await settingsAPI.set(NOTIFICATIONS_LAST_BLOCK_KEY, next)
-      } catch (e) {
-        console.error('[notifications] saveLastBlockToSettings failed', e)
-      }
-    },
-
-    /** Загрузить скрытые id для адреса из settings. */
-    async loadHiddenIdsFromSettings(address: string): Promise<Set<string>> {
-      try {
-        const raw = (await settingsAPI.get(NOTIFICATIONS_HIDDEN_IDS_KEY)) as
-          | HiddenIdsByAddress
-          | undefined
-        const arr =
-          raw && typeof raw === 'object' && Array.isArray(raw[address]) ? raw[address] : []
-        return new Set(arr)
-      } catch {
-        return new Set()
-      }
-    },
-
-    /** Сохранить скрытые id для адреса в settings. */
-    async saveHiddenIdsToSettings(address: string, ids: Set<string>): Promise<void> {
-      try {
-        const raw = (await settingsAPI.get(NOTIFICATIONS_HIDDEN_IDS_KEY)) as
-          | HiddenIdsByAddress
-          | undefined
-        const next: HiddenIdsByAddress = {
-          ...(raw && typeof raw === 'object' ? raw : {}),
-          [address]: [...ids],
-        }
-        await settingsAPI.set(NOTIFICATIONS_HIDDEN_IDS_KEY, next)
-      } catch (e) {
-        console.error('[notifications] saveHiddenIdsToSettings failed', e)
-      }
-    },
-
-    /** Текущая высота сети (getnodeinfo). Если нет сохранённого блока — запрашиваем с неё (0 новых уведомлений). */
-    async getCurrentBlockHeight(): Promise<number> {
-      const data = await rpcCall<GetNodeInfoData>({
-        method: rpcEndpoints.getNodeInfo,
-        parameters: [],
-        options: { auth: false },
-      })
-      const h = data?.lastblock?.height
-      if (typeof h === 'number' && h > 0) return h
-      return 0
-    },
-
-    _isTimeoutError(err: unknown): boolean {
-      if (!err || typeof err !== 'object') return false
-      const o = err as Record<string, unknown>
-      const code =
-        o?.code ??
-        (o?.error && typeof o.error === 'object' && (o.error as Record<string, unknown>)?.code)
-      const msg = String(
-        o?.message ??
-          (o?.error &&
-            typeof o.error === 'object' &&
-            (o.error as Record<string, unknown>)?.message) ??
-          ''
-      )
-      return code === 408 || code === 500 || /timeout/i.test(msg)
-    },
-
     async init(opts?: { forceRefresh?: boolean }) {
       const auth = useAuthStore()
       const address = auth.getUserAddress
@@ -188,9 +91,9 @@ export const useNotificationsStore = defineStore('notifications', {
       this.loading = true
 
       const [savedBlock, storedList, hiddenIds] = await Promise.all([
-        this.loadLastBlockFromSettings(address),
+        loadLastBlockFromSettings(address),
         notificationsAPI.getAllByAddress(address),
-        this.loadHiddenIdsFromSettings(address),
+        loadHiddenIdsFromSettings(address),
       ])
 
       this.hiddenIds = hiddenIds
@@ -198,7 +101,7 @@ export const useNotificationsStore = defineStore('notifications', {
         this.lastBlock = savedBlock
       } else {
         try {
-          this.lastBlock = (await this.getCurrentBlockHeight()) || 0
+          this.lastBlock = (await fetchCurrentBlockHeight()) || 0
         } catch {
           this.lastBlock = 0
         }
@@ -245,13 +148,7 @@ export const useNotificationsStore = defineStore('notifications', {
         }
         try {
           const blockToRequest = this.lastBlock || 0
-          const params: GetMissedInfoParameters = [address, blockToRequest, 30]
-          // getmissedinfo всегда без кэша — актуальные пропущенные события
-          const arr = await rpcCallArrayWithAuth<GetMissedInfoDataItem>({
-            method: rpcEndpoints.getMissedInfo,
-            parameters: params,
-            options: { cache: false },
-          })
+          const arr = await fetchMissedInfo(address, blockToRequest)
           const blockInfo = arr[0]
           if (
             blockInfo &&
@@ -309,7 +206,7 @@ export const useNotificationsStore = defineStore('notifications', {
           break
         } catch (e) {
           lastError = e
-          const isRetryable = attempt < maxRetries && this._isTimeoutError(e)
+          const isRetryable = attempt < maxRetries && isTimeoutError(e)
           if (!isRetryable) {
             // Keep cached items/hiddenIds — don't wipe data on transient errors.
             // Only mark as not-inited so next call retries the fetch.
@@ -361,7 +258,7 @@ export const useNotificationsStore = defineStore('notifications', {
       // и персистим именно read-pointer.
       this.readBlock = this.lastBlock
       if (address && this.readBlock > 0) {
-        await this.saveLastBlockToSettings(address, this.readBlock)
+        await saveLastBlockToSettings(address, this.readBlock)
       }
     },
 
@@ -372,7 +269,7 @@ export const useNotificationsStore = defineStore('notifications', {
       this.hiddenIds = new Set([...this.hiddenIds, id])
       const auth = useAuthStore()
       const address = auth.getUserAddress
-      if (address) await this.saveHiddenIdsToSettings(address, this.hiddenIds)
+      if (address) await saveHiddenIdsToSettings(address, this.hiddenIds)
     },
 
     /**
@@ -383,7 +280,7 @@ export const useNotificationsStore = defineStore('notifications', {
       this.hiddenIds = new Set([...this.hiddenIds, ...ids])
       const auth = useAuthStore()
       const address = auth.getUserAddress
-      if (address) await this.saveHiddenIdsToSettings(address, this.hiddenIds)
+      if (address) await saveHiddenIdsToSettings(address, this.hiddenIds)
     },
 
     /**
