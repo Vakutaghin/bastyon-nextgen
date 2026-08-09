@@ -1,9 +1,9 @@
 import { ref, computed, watch, type Ref, onBeforeUnmount } from 'vue'
 import Hls from 'hls.js'
 import { t } from '@/i18n'
-import { getVideoSourcesFromUrl, PeerTubeFetchError } from '@/helpers/api/peertube-url'
+import { getVideoSourcesFromUrl } from '@/helpers/api/peertube-url'
 import { VIDEO_LOAD_WATCHDOG_MS } from '../consts'
-import { resolveVideoElement, type ElementRefValue } from './utils'
+import { resolveVideoElement, resolvePlayerErrorMessage, type ElementRefValue } from './utils'
 import { applyNetworkQualityCap } from '../services/network-quality'
 import {
   initBlobVideo,
@@ -12,27 +12,6 @@ import {
   initProgressiveVideo,
   type VideoInitContext,
 } from '../services/hls-initializer'
-
-/**
- * Сопоставляет ошибку загрузки видео с понятным локализованным сообщением.
- * Главное — отличить «нода не настроена на CORS / недоступна» от обычной сети,
- * иначе пользователь видит загадочное "Failed to fetch".
- */
-function resolvePlayerErrorMessage(err: unknown): string {
-  if (err instanceof PeerTubeFetchError) {
-    switch (err.code) {
-      case 'cors-or-network':
-        return t('videoMsg.corsOrUnreachable')
-      case 'timeout':
-        return t('videoMsg.networkError')
-      case 'not-found':
-        return t('videoMsg.videoNotFound')
-      default:
-        return err.message
-    }
-  }
-  return err instanceof Error ? err.message : t('videoMsg.videoLoadUnknownError')
-}
 
 export function useVideoHls(
   p: { videoUrl: string; autoplay: boolean },

@@ -1,4 +1,6 @@
 import { type Ref } from 'vue'
+import { t } from '@/i18n'
+import { PeerTubeFetchError } from '@/helpers/api/peertube-url'
 
 /**
  * Значение ref'а на DOM-узел: либо сам элемент, либо инстанс Vue-компонента
@@ -84,4 +86,25 @@ export const tryAutoplay = async (
       return { played: false, muted: true }
     }
   }
+}
+
+/**
+ * Сопоставляет ошибку загрузки видео с понятным локализованным сообщением.
+ * Главное — отличить «нода не настроена на CORS / недоступна» от обычной сети,
+ * иначе пользователь видит загадочное "Failed to fetch".
+ */
+export function resolvePlayerErrorMessage(err: unknown): string {
+  if (err instanceof PeerTubeFetchError) {
+    switch (err.code) {
+      case 'cors-or-network':
+        return t('videoMsg.corsOrUnreachable')
+      case 'timeout':
+        return t('videoMsg.networkError')
+      case 'not-found':
+        return t('videoMsg.videoNotFound')
+      default:
+        return err.message
+    }
+  }
+  return err instanceof Error ? err.message : t('videoMsg.videoLoadUnknownError')
 }
