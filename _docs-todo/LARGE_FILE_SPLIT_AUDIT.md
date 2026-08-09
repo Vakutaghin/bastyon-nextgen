@@ -14,15 +14,17 @@ _Дата: 2026-08-08 · Метод: по агенту на каждый код-
 
 ## Quick wins — сделать первыми (низкий риск, часть чинит реальные баги)
 
-| Файл | Действие | Почему важно |
-|------|----------|--------------|
-| `composables/use-feed.ts` | Удалить пере-инлайненные `safeDecode`/`normalizeImages`, подключить `use-feed-helpers` | **Фикс бага**: у инлайн-копии дрейф `+`→`%20` / `item.src` vs протестированная версия. Проверить против `use-feed-helpers.test.ts` |
-| `content/post-card/post-card.vue` | Удалить мёртвые `handleLike/handleComment/handleShare/getInitial` (за `void`) | Чистое вычитание. `handleRatingChange` (пустой) **не трогать** — комментарий несущий |
-| `messenger/.../message-item.vue` | Удалить мёртвый `onAudioError` (~85 строк, только `void`-ссылка) | −85 строк без риска |
-| `wallets-page/wallet-transfer/wallet-transfer.vue` | Подключить уже отгруженные, но неиспользуемые `helpers.ts`/`consts.ts` | Убирает дубли (`looksLikeAddress`, debounce, regex, error-строки) |
-| `video-player/composables/use-video-hls.ts` | Вынести чистый `resolvePlayerErrorMessage` в `helpers` | ~20 строк, тестируемо, 0 влияния на потребителей |
-| `header/header-notifications/header-notifications.vue` | Вынести классификатор ссылок (open-redirect guard, P1-5) в чистый хелпер | **Делает security-логику юнит-тестируемой** без монтирования компонента |
-| `messenger/services/matrix-service.ts` | Вынести content-builder'ы в `messaging.ts` (по образцу `media-sender.ts`, `client` первым аргументом) | Публичный API не меняется, 0 churn |
+> **Обновление после верификации (2026-08-08):** дедуп `use-feed.ts` **опровергнут** — см. ниже. Пункты post-card / message-item / wallet-transfer / use-video-hls / header-notifications / matrix-service применены (коммиты `fb00856`..`9db6898`).
+
+| Файл | Действие | Почему важно | Статус |
+|------|----------|--------------|--------|
+| ~~`composables/use-feed.ts`~~ | ~~подключить `use-feed-helpers`~~ | Верификация показала: инлайн `normalizeImages` **богаче** (зовёт `resolveImageUrl`), хелпер слабее — замена сломала бы картинки в ленте | ❌ отклонён |
+| `content/post-card/post-card.vue` | Удалить мёртвые `handleLike/handleComment/handleShare/getInitial` (за `void`) | Чистое вычитание. `handleRatingChange` (пустой) **не трогать** — комментарий несущий | ✅ `fb00856` |
+| `messenger/.../message-item.vue` | Удалить мёртвый `onAudioError` (~85 строк, только `void`-ссылка) | −85 строк без риска | ✅ `fb00856` |
+| `wallet-transfer/wallet-transfer.vue` | Подключить уже отгруженные `helpers.ts`/`consts.ts` (`looksLikeAddress`, debounce/copied timeout) | Убирает дубли. `ERROR_MESSAGES` **не трогали** — меняет i18n namespace | ✅ `e64777e` |
+| `video-player/composables/use-video-hls.ts` | Вынести чистый `resolvePlayerErrorMessage` в `composables/utils.ts` (не `helpers.ts` — его нет) | ~20 строк, тестируемо, 0 влияния на потребителей | ✅ `9e83f3f` |
+| `header/header-notifications/header-notifications.vue` | Чистый классификатор `classifyNotificationLink` (open-redirect guard, P1-5) + тесты; исполнитель остаётся | **Security-логика юнит-тестируема** без монтирования | ✅ `ebc00a4` |
+| `messenger/services/matrix-service.ts` | Content-builder'ы в `messaging.ts` (по образцу `media-sender.ts`) + `redactEvent` в тип `MatrixClient` | Публичный API не меняется, 0 churn | ✅ `9db6898` |
 
 ---
 
@@ -77,7 +79,7 @@ _Дата: 2026-08-08 · Метод: по агенту на каждый код-
 
 ## Баги/долги, вскрытые аудитом (проверить и завести отдельно)
 
-- **`use-feed.ts` normalizeImages/safeDecode drift** — инлайн-копия обрабатывает `+`→`%20` и `item.src` иначе, чем протестированный `use-feed-helpers`. Реальный расхождение поведения на постах с `+` в URL.
+- **`use-feed.ts` дубли — НЕ дедупить наивно (верифицировано).** `normalizeImages` в `use-feed.ts` **богаче** хелпера: зовёт `resolveImageUrl` (разворот хеша + нормализация домена) и поддерживает `item.src`; хелпер отдаёт сырые строки. Замена на хелпер сломала бы картинки. Правильный ход — наоборот, подтянуть хелпер до инлайна и переиспользовать. Отдельный вопрос — `safeDecode`: инлайн делает `+`→`%20` (form-urlencoded), хелпер — нет; какая сторона корректна, **неоднозначно** (поля Bastyon приходят `encodeURIComponent`-кодированными, где литеральный `+` = `%2B`), нужно решение до унификации.
 - **Тройной `AdaptedPost`** — `use-feed.ts`, `helpers/common/post-mapper.ts` (+ ранее styled). Нужен один канонический контракт, иначе любое извлечение типов усилит дрейф.
 - **Мёртвый код** — `post-card.vue` (`handleLike/handleComment/handleShare/getInitial`), `message-item.vue` (`onAudioError`, ~85 строк). Оба спрятаны за `void`.
 - **Orphaned legacy** — упомянут `notifications-store` legacy-вариант `isRetryableError`; при консолидации учесть разницу (`e.error` nested vs `e.status/statusCode`).
