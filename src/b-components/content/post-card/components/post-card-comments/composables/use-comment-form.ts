@@ -20,6 +20,7 @@ import { useCommentsStore, usePostsStore } from '@/stores'
 import { sendComment } from '../comment-sender'
 import { isCommentLengthValid, getCommentLengthHint } from '../helpers'
 import { COMMENTS_PAGE_SIZE, COMMENTS_ALREADY_SHOWN } from '../consts'
+import { readCommentDraft, writeCommentDraft, clearCommentDraft } from './comment-draft-storage'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { MentionUser } from '../types'
 import type { DisableReason } from '../visibility'
@@ -57,33 +58,10 @@ export function useCommentForm(opts: UseCommentFormOptions) {
 
   // --- Черновик корневого комментария: автосохранение в localStorage ---
   // Сохраняется только текст корневой формы (composer к посту) по ключу postId,
-  // переживает unmount карточки. Черновики ответов на ветки эфемерны и не пишутся.
-  const draftKey = (): string => `bastyon_comment_draft:${opts.postId.value}`
-
-  const readSavedDraft = (): string => {
-    try {
-      return localStorage.getItem(draftKey()) || ''
-    } catch {
-      return ''
-    }
-  }
-
-  const writeSavedDraft = (text: string): void => {
-    try {
-      if (text.trim()) localStorage.setItem(draftKey(), text)
-      else localStorage.removeItem(draftKey())
-    } catch {
-      /* приватный режим — молча игнорируем */
-    }
-  }
-
-  const clearSavedDraft = (): void => {
-    try {
-      localStorage.removeItem(draftKey())
-    } catch {
-      /* noop */
-    }
-  }
+  // переживает unmount карточки. Логика персиста — в comment-draft-storage.
+  const readSavedDraft = (): string => readCommentDraft(opts.postId.value)
+  const writeSavedDraft = (text: string): void => writeCommentDraft(opts.postId.value, text)
+  const clearSavedDraft = (): void => clearCommentDraft(opts.postId.value)
 
   // Восстанавливаем черновик корневой формы при создании композабла (mount карточки):
   // на этом этапе replyTarget === null → активна корневая форма, бар покажет текст.
