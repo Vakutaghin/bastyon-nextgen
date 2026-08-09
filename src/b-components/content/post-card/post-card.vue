@@ -199,8 +199,6 @@ import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { useReportStore } from '@/stores/report-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
-import { getYoutubeEmbedUrls } from '@/helpers/common/youtube-url'
-import { parseTimecodes, type Chapter } from '@/helpers/content/timecode-parser'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { ImageGallery } from '@/components/image-gallery'
 import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
@@ -226,69 +224,8 @@ import {
   SC_BoostedBadge,
   SC_PendingBadge,
 } from './styled'
-
-interface PostAuthor {
-  name: string
-  address: string
-  avatar?: string | null
-  reputation: number
-  letter: string
-  verified?: boolean
-  subscribers_count?: number
-  subscribes_count?: number
-}
-
-interface Post {
-  id?: string | number
-  /** Хеш поста (share ID для upvote). */
-  hash?: string
-  /** ID транзакции (альтернатива hash). */
-  txid?: string
-  author: PostAuthor
-  title?: string
-  content?: string
-  timestamp: string
-  likes?: number
-  comments?: number
-  shares?: number
-  tags?: string[]
-  type?: string
-  category?: string
-  images?: string[]
-  ratingStars?: number
-  scoreCnt?: number
-  scoreSum?: number
-  /** Оценка текущего пользователя. */
-  myVal?: number
-  /** URL видео в формате peertube://host/videoid. */
-  videoUrl?: string
-  /** Текст превью для статей. */
-  preview?: string
-  lastComment?: {
-    id: string
-    address: string
-    authorName: string
-    avatar: string | null
-    time: number
-    message: string
-    children: number
-    scoreUp: number
-    scoreDown: number
-  }
-  /** txid оригинальной записи (если репост). */
-  repost?: string
-  /** Автор оригинальной записи. */
-  repostAuthor?: {
-    name: string
-    address: string
-    avatar?: string | null
-  }
-  /** Время публикации оригинала (unix sec). */
-  repostOriginalTimestamp?: number
-  /** Оригинал удалён. */
-  repostDeleted?: boolean
-}
-
+import { usePostMedia } from './use-post-media'
+import type { Post, PostAuthor } from './post-card.types'
 const props = withDefaults(
   defineProps<{
     post: Post
@@ -323,7 +260,9 @@ const authStore = useAuthStore()
 
 const isCollapsed = ref(true)
 const postCardRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
-const videoPlayerRef = ref<{ seekTo?: (s: number) => void } | null>(null)
+const { videoPlayerRef, chapters, youtubeEmbedUrls, handleSeekTimecode } = usePostMedia(
+  () => props.post
+)
 
 onMounted(() => {
   if (props.post.id !== undefined) {
@@ -459,28 +398,6 @@ const originalAuthorFormattedTime = computed<string>(() => {
   return formatDateTimeFull(ts)
 })
 
-/** Главы из тайм-кодов в описании (для video/audio постов). */
-const chapters = computed<Chapter[]>(() => {
-  const isMedia =
-    (props.post.type === 'video' || props.post.type === 'audio') && !!props.post.videoUrl
-  if (!isMedia) return []
-  return parseTimecodes(props.post.content)
-})
-
-const youtubeEmbedUrls = computed<string[]>(() => {
-  if (!props.post) return []
-  // Не показываем YouTube-эмбеды, если пост содержит внутриплатформенное видео —
-  // это привело бы к двум плеерам.
-  const hasInPlatformVideo =
-    (props.post.type === 'video' || props.post.type === 'audio') && !!props.post.videoUrl
-  if (hasInPlatformVideo) return []
-  const fromContent = getYoutubeEmbedUrls(props.post.content)
-  const fromPreview = getYoutubeEmbedUrls(props.post.preview)
-  const seen = new Set(fromContent)
-  for (const url of fromPreview) seen.add(url)
-  return Array.from(seen)
-})
-
 function closeImageGallery(): void {
   modalStore.closeImageGallery()
 }
@@ -497,15 +414,6 @@ function handleRatingChange(_rating: number): void {
 function handleRatingError(error: unknown): void {
   console.error('Failed to submit rating:', error)
 }
-
-/** Клик по тайм-коду в описании → плеер перематывает и запускает. */
-function handleSeekTimecode(seconds: number): void {
-  const player = videoPlayerRef.value
-  if (player && typeof player.seekTo === 'function') {
-    player.seekTo(seconds)
-  }
-}
-
 /** При сворачивании комментариев скроллим к карточке поста. */
 function onCommentsCollapsed(): void {
   nextTick(() => {
