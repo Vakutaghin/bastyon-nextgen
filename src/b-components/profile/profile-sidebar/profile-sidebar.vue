@@ -147,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -168,9 +168,8 @@ import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { getProfileBadges } from '@/helpers/profile/profile-badges'
 import { useMessengerStore } from '@/b-components/messenger/store'
-import { useAuthStore } from '@/blockchain/store/auth-store'
-import { useUserRelationsStore } from '@/stores'
-import { appToast } from '@/b-components/app-toast'
+import { formatAbout } from './format-about'
+import { useProfileRelationsActions } from './use-profile-relations-actions'
 import EditProfileModal from '@/b-components/profile/edit-profile-modal/edit-profile-modal.vue'
 import FollowersListModal from '@/b-components/profile/followers-list-modal/followers-list-modal.vue'
 import type { RelationListType } from '@/composables/use-followers-list'
@@ -210,8 +209,6 @@ const props = defineProps<{ profile?: UserProfile | null }>()
 const emit = defineEmits<{ (e: 'profile-updated', patch: Partial<UserProfile>): void }>()
 const { t } = useI18n()
 const messengerStore = useMessengerStore()
-const authStore = useAuthStore()
-const relations = useUserRelationsStore()
 
 const editOpen = ref(false)
 
@@ -252,36 +249,25 @@ const userSite = computed<string | null>(() => {
   return url
 })
 
-const formattedUserAbout = computed<string>(() => {
-  let text = props.profile?.a || props.profile?.r || ''
-  if (!text) return ''
-
-  // URI-encoded описание встречается в старых записях — декодируем оппортунистически.
-  if (typeof text === 'string' && /%[0-9A-Fa-f]{2}/.test(text)) {
-    try {
-      text = decodeURIComponent(text.replace(/\+/g, ' '))
-    } catch {
-      // оставляем как есть
-    }
-  }
-
-  const escapedText = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-
-  const urlRegex = /((https?:\/\/)|(www\.))[^\s]+/g
-
-  return escapedText.replace(urlRegex, (url) => {
-    let href = url
-    if (!href.match(/^https?:\/\//)) href = 'https://' + href
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`
-  })
-})
+const formattedUserAbout = computed<string>(() =>
+  formatAbout(props.profile?.a || props.profile?.r || '')
+)
 
 const userAddress = computed<string>(() => props.profile?.address || '')
+
+// Подписка / уведомления / блокировка + gating — в composable.
+const {
+  isSubscribed,
+  isSubscribedPrivate,
+  isSubscribePending,
+  isBlocked,
+  isBlockPending,
+  canShowSubscribe,
+  isOwnProfile,
+  onBlockClick,
+  onPrimaryClick,
+  onBellClick,
+} = useProfileRelationsActions(userAddress)
 
 function copyAddress(): void {
   if (userAddress.value) {
@@ -309,33 +295,6 @@ const publicationsCount = computed<number>(() => {
   return 0
 })
 
-// ── Подписка (follow) ───────────────────────────────────────────────
-const isSubscribed = computed<boolean>(() => relations.isSubscribed(userAddress.value))
-const isSubscribedPrivate = computed<boolean>(() =>
-  relations.isSubscribedPrivate(userAddress.value)
-)
-const isSubscribePending = computed<boolean>(() => relations.isSubscribePending(userAddress.value))
-
-// ── Блокировка пользователя ─────────────────────────────────────────
-const isBlocked = computed<boolean>(() => relations.isBlocked(userAddress.value))
-const isBlockPending = computed<boolean>(() => relations.isPending(userAddress.value))
-
-async function onBlockClick(): Promise<void> {
-  const address = userAddress.value
-  if (!address || isBlockPending.value) return
-  try {
-    if (isBlocked.value) {
-      await relations.unblock(address)
-      appToast.success({ message: t('comments.unblocked') })
-    } else {
-      await relations.block(address)
-      appToast.success({ message: t('comments.blocked') })
-    }
-  } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
-  }
-}
-
 // ── Списки подписчиков / подписок ───────────────────────────────────
 const listOpen = ref(false)
 const listType = ref<RelationListType>('followers')
@@ -345,66 +304,10 @@ function openList(type: RelationListType): void {
   listOpen.value = true
 }
 
-// Кнопка видна только авторизованному пользователю и не на собственном профиле.
-const canShowSubscribe = computed<boolean>(
-  () =>
-    !!userAddress.value &&
-    authStore.isAuthenticated &&
-    authStore.getUserAddress !== userAddress.value
-)
-
-// На собственном профиле вместо подписки показываем «Редактировать профиль».
-const isOwnProfile = computed<boolean>(
-  () => !!userAddress.value && authStore.getUserAddress === userAddress.value
-)
-
 function onProfileUpdated(patch: Partial<UserProfile>): void {
   editOpen.value = false
   emit('profile-updated', patch)
 }
-
-async function onPrimaryClick(): Promise<void> {
-  const address = userAddress.value
-  if (!address || isSubscribePending.value) return
-  try {
-    if (isSubscribed.value) {
-      await relations.unsubscribe(address)
-      appToast.success({ message: t('subscriptions.unsubscribedToast') })
-    } else {
-      await relations.subscribe(address)
-      appToast.success({ message: t('subscriptions.subscribedToast') })
-    }
-  } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
-  }
-}
-
-async function onBellClick(): Promise<void> {
-  const address = userAddress.value
-  if (!address || isSubscribePending.value) return
-  try {
-    if (isSubscribedPrivate.value) {
-      // Выключить уведомления, оставшись подписанным (публичная подписка).
-      await relations.subscribe(address)
-      appToast.success({ message: t('subscriptions.notificationsDisabledToast') })
-    } else {
-      // Включить уведомления (приватная подписка); подпишет, если ещё не подписан.
-      await relations.subscribePrivate(address)
-      appToast.success({ message: t('subscriptions.notificationsEnabledToast') })
-    }
-  } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
-  }
-}
-
-// Гидрируем подписки/блок-лист, как только пользователь авторизован.
-watch(
-  () => authStore.isAuthenticated,
-  (authed) => {
-    if (authed) void relations.init()
-  },
-  { immediate: true }
-)
 
 async function startChatWithUser(): Promise<void> {
   const address = userAddress.value
