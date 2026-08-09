@@ -23,15 +23,12 @@ import type { UserState as UserStateData } from '../../types/rpc-responses/user-
 
 import { generateKeys, recoverKeyPair, loadBip39Russian } from '../core/keys'
 import {
-  loadEncryptedMnemonic,
   saveWasLogged,
   clearAllUserData,
   loadAccountsList,
   hasStoredSession,
   updateAccountName,
-  ensureVaultUnlocked,
   ensureInitialized,
-  finalizeMigration,
   destroyVault,
 } from '../storage'
 import { deriveAndSaveWalletAddresses } from '../wallet-addresses'
@@ -39,6 +36,7 @@ import { wsService } from '../ws'
 
 import { useKeysStore } from './keys-store'
 import { useProfileStore } from './profile-store'
+import { restoreSessionImpl } from './auth-store/restore-session'
 
 // Общий промис активного restoreSession(). На старте restore зовётся и из
 // header-user onMounted, и из router beforeEach; без дедупа они параллельно
@@ -370,140 +368,13 @@ export const useAuthStore = defineStore('auth', {
       // Дедуп конкурентных вызовов (boot onMounted + guard на deep-link).
       if (restoreInFlight) return restoreInFlight
 
-      restoreInFlight = this._restoreSessionImpl()
+      // Тело boot-восстановления вынесено в ./auth-store/restore-session
+      // (см. LARGE_FILE_SPLIT_AUDIT.md). Дедуп остаётся здесь как владелец.
+      restoreInFlight = restoreSessionImpl(this)
       try {
         return await restoreInFlight
       } finally {
         restoreInFlight = null
-      }
-    },
-
-    async _restoreSessionImpl(): Promise<boolean> {
-      this.setLoading(true)
-      this.setError(null)
-      const keys = useKeysStore()
-
-      // Любой выход без успеха должен сбросить 'restoring' → 'unauthenticated',
-      // иначе UI-скелетон зависнет навсегда.
-      const finishUnauthenticated = (): false => {
-        if (this.authState === 'restoring') this.authState = 'unauthenticated'
-        this.setLoading(false)
-        return false
-      }
-
-      try {
-        // P0-1: разблокировать сейф ДО любой дешифровки секретов. Оба сайта
-        // restoreSession (onMounted + router-guard) дедупятся мемоизированным
-        // ensureVaultUnlocked. Passwordless — молча; passphrase — модалка.
-        const vault = await ensureVaultUnlocked()
-        if (vault.status === 'needs-passphrase' || vault.status === 'storage-unavailable') {
-          // Некому/нечем разлочить сейчас — не аутентифицируем, скелетон снимаем,
-          // ничего НЕ стираем (self-heal на следующем буте).
-          return finishUnauthenticated()
-        }
-        if (vault.status === 'needs-reset') {
-          // Забытая passphrase / вытеснен device-ключ / повреждён конверт → чистим
-          // локальные данные и уводим на импорт по 12 словам.
-          clearAllUserData()
-          return finishUnauthenticated()
-        }
-        if (vault.status === 'unlocked') {
-          // Отложенно добиваем legacy-миграцию (fingerprint→S) и удаляем fingerprint.
-          // Отложенно, т.к. crypto-js PBKDF2 блокирует поток; чтение до этого идёт
-          // через heal-ветку. Не await — не морозим восстановление сессии.
-          setTimeout(() => {
-            try {
-              finalizeMigration()
-            } catch {
-              /* self-heal на следующем буте */
-            }
-          }, 2500)
-        }
-
-        // Check for incomplete registration
-        try {
-          const pendingRaw = localStorage.getItem('pending_registration')
-          if (pendingRaw) {
-            const pending = JSON.parse(pendingRaw)
-            if (pending && pending.step < 2) {
-              localStorage.removeItem('pending_registration')
-              localStorage.removeItem('pending_nickname')
-              clearAllUserData()
-              return finishUnauthenticated()
-            }
-          }
-        } catch {
-          /* ignore */
-        }
-
-        await loadBip39Russian()
-
-        // Load accounts list
-        const accountsListResult = loadAccountsList()
-        if (accountsListResult.success && accountsListResult.data) {
-          keys.accountsList = accountsListResult.data
-          this._syncFromKeysStore()
-        }
-
-        // Try current account first
-        if (keys.accountsList?.currentAccount) {
-          const recovered = await keys.recoverFromAccount(keys.accountsList.currentAccount)
-          if (recovered) {
-            this._syncFromKeysStore()
-            this.isAuthenticated = true
-            this.authState = 'authenticated'
-
-            if (this.address) {
-              this.fetchUserState().catch(() => {})
-            }
-
-            wsService.connect()
-            this.setLoading(false)
-            return true
-          }
-        }
-
-        // Fallback: legacy mnemonic
-        const mnemonicResult = loadEncryptedMnemonic()
-        if (!mnemonicResult.success || !mnemonicResult.data) {
-          return finishUnauthenticated()
-        }
-
-        const mnemonic = mnemonicResult.data
-        let recoveryResult
-        try {
-          recoveryResult = recoverKeyPair(mnemonic)
-        } catch (error) {
-          console.error('[auth-store] Failed to recover key pair:', error)
-          this.setError(error instanceof Error ? error.message : 'Failed to recover key pair')
-          this.setLoading(false)
-          return false
-        }
-
-        if (!recoveryResult?.keyPair) {
-          console.error('[auth-store] Recovery result is invalid:', recoveryResult)
-          this.setError('Failed to recover key pair: invalid result')
-          this.setLoading(false)
-          return false
-        }
-
-        this.setKeyPair(recoveryResult.keyPair)
-        this.isAuthenticated = true
-        this.authState = 'authenticated'
-
-        if (this.address) deriveAndSaveWalletAddresses(mnemonic, this.address)
-        if (this.address) {
-          this.fetchUserState().catch(() => {})
-        }
-
-        wsService.connect()
-        this.setLoading(false)
-        return true
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to restore session'
-        this.setError(errorMessage)
-        this.setLoading(false)
-        return false
       }
     },
 
