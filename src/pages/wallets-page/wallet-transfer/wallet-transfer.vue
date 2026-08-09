@@ -148,7 +148,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAuthStore, getAdditionalWalletAddressesList } from '@/blockchain'
+import { useAuthStore } from '@/blockchain'
 import {
   getUnspents,
   filterAvailableUnspents,
@@ -157,12 +157,8 @@ import {
 import { buildTransferTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import { sendTransactionWithMessage } from '@/blockchain/core/transactions/transaction-sender'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
-import { getByPRC } from '@/helpers/api/request'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { validateAddress } from '@/blockchain/core/addresses'
-import { generateQRCode } from '@/blockchain/utils/qr-code'
-import { looksLikeAddress } from './helpers'
-import { SEARCH_DEBOUNCE_MS, COPIED_RESET_TIMEOUT } from './consts'
+import { useReceiveAddress } from './use-receive-address'
+import { useReceiverSearch } from './use-receiver-search'
 import {
   SC_TransferWidget,
   SC_TransferSwitch,
@@ -191,75 +187,43 @@ import {
   SC_TransferLoginChipRemove,
 } from './wallet-transfer.styled'
 
-interface SearchUser {
-  address: string
-  name?: string
-}
-
 const { t } = useI18n()
 const authStore = useAuthStore()
 
 const mode = ref<'receive' | 'send'>('send')
-const receiveTarget = ref<'main' | 'additional'>('main')
-const showReceiveAddress = ref(false)
-const receiverAddress = ref('')
 const amount = ref<string>('')
 const message = ref('')
 const feemode = ref<'include' | 'exclude'>('include')
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 const sending = ref(false)
-const copied = ref(false)
-const receiverSearchQuery = ref('')
-/** Имя аккаунта (логин), когда получатель выбран из поиска;
- *  при ручном изменении адреса сбрасывается. */
-const receiverLogin = ref<string | null>(null)
-const searchResults = ref<SearchUser[]>([])
-const searchLoading = ref(false)
-const showSearchDropdown = ref(false)
-const receiverAddressValidationError = ref<string | null>(null)
-let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const currentAddress = computed(() => authStore.getUserAddress)
-const additionalAddresses = computed<string[]>(() => {
-  const cur = currentAddress.value
-  return cur ? getAdditionalWalletAddressesList(cur) : []
-})
 
-const receiveAddressOptions = computed(() => {
-  const hasMain = !!currentAddress.value
-  const hasAdditional = additionalAddresses.value.length > 0
-  return [
-    ...(hasMain ? [{ value: 'main' as const, label: t('wallet.mainWallet') }] : []),
-    ...(hasAdditional
-      ? [{ value: 'additional' as const, label: t('wallet.additionalWallet') }]
-      : []),
-  ]
-})
+// Вкладка «Получить» (кошелёк/QR/копирование) и поиск получателя — в composables.
+const {
+  receiveTarget,
+  showReceiveAddress,
+  copied,
+  qrDataUrl,
+  receiveAddressOptions,
+  selectedReceiveAddress,
+  copyAddress,
+} = useReceiveAddress()
 
-const selectedReceiveAddress = computed<string>(() => {
-  if (receiveTarget.value === 'main') return currentAddress.value ?? ''
-  const add = additionalAddresses.value
-  return add.length > 0 ? add[0] : ''
-})
-
-// QR-код адреса на приём — генерируется, когда адрес раскрыт.
-const qrDataUrl = ref<string>('')
-watch(
-  [showReceiveAddress, selectedReceiveAddress],
-  async ([show, addr]) => {
-    if (!show || !addr) {
-      qrDataUrl.value = ''
-      return
-    }
-    try {
-      qrDataUrl.value = await generateQRCode(addr, { width: 220 })
-    } catch {
-      qrDataUrl.value = ''
-    }
-  },
-  { immediate: true }
-)
+const {
+  receiverAddress,
+  receiverSearchQuery,
+  receiverLogin,
+  searchResults,
+  searchLoading,
+  showSearchDropdown,
+  receiverAddressValidationError,
+  onSearchInput,
+  selectReceiver,
+  clearReceiverLink,
+  onReceiverBlur,
+} = useReceiverSearch()
 
 const canSend = computed<boolean>(() => {
   const addr = (receiverAddress.value || '').trim()
@@ -272,106 +236,6 @@ const canSend = computed<boolean>(() => {
   return true
 })
 
-async function searchUsers(query: string): Promise<void> {
-  const q = (query || '').trim()
-  if (q.length < 2) {
-    searchResults.value = []
-    showSearchDropdown.value = false
-    return
-  }
-  searchLoading.value = true
-  searchResults.value = []
-  try {
-    const res = await getByPRC({
-      method: rpcEndpoints.searchUsers,
-      parameters: [q],
-      options: { auth: false },
-    })
-    const data = Array.isArray(res) ? res : (res as { data?: unknown[] })?.data
-    if (Array.isArray(data)) {
-      searchResults.value = data
-        .filter((u: unknown): u is Record<string, unknown> => {
-          return !!u && typeof u === 'object' && ('address' in u || 'addr' in u)
-        })
-        .map((u) => ({
-          address: (u.address || u.addr) as string,
-          name: ((u.name ?? u.username ?? u.address) as string) || undefined,
-        }))
-      showSearchDropdown.value = searchResults.value.length > 0
-    }
-  } catch {
-    searchResults.value = []
-  } finally {
-    searchLoading.value = false
-  }
-}
-
-function onSearchInput(): void {
-  const q = (receiverSearchQuery.value || '').trim()
-  receiverAddressValidationError.value = null
-  if (receiverLogin.value) receiverLogin.value = null
-  if (looksLikeAddress(q)) {
-    receiverAddress.value = q
-    showSearchDropdown.value = false
-    searchResults.value = []
-    return
-  }
-  if (q.length === 0) {
-    receiverAddress.value = ''
-    receiverLogin.value = null
-    return
-  }
-  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
-  if (q.length < 2) {
-    searchResults.value = []
-    showSearchDropdown.value = false
-    return
-  }
-  searchDebounceTimer = setTimeout(() => searchUsers(q), SEARCH_DEBOUNCE_MS)
-}
-
-function selectReceiver(user: SearchUser): void {
-  receiverAddress.value = user.address
-  receiverLogin.value = user.name ?? null
-  receiverSearchQuery.value = user.address
-  receiverAddressValidationError.value = null
-  showSearchDropdown.value = false
-  searchResults.value = []
-}
-
-function clearReceiverLink(): void {
-  receiverAddress.value = ''
-  receiverLogin.value = null
-  receiverSearchQuery.value = ''
-  searchResults.value = []
-  showSearchDropdown.value = false
-  receiverAddressValidationError.value = null
-}
-
-function onReceiverBlur(): void {
-  const q = (receiverSearchQuery.value || '').trim()
-  receiverAddressValidationError.value = null
-  if (!q) return
-  if (!looksLikeAddress(q)) return
-  const result = validateAddress(q)
-  if (!result.isValid) {
-    receiverAddressValidationError.value =
-      result.error === 'Invalid address format'
-        ? t('wallet.errorInvalidAddressFormat')
-        : result.error || t('wallet.errorInvalidAddress')
-  }
-}
-
-function copyAddress(): void {
-  const addr = selectedReceiveAddress.value
-  if (!addr) return
-  navigator.clipboard.writeText(addr).then(() => {
-    copied.value = true
-    setTimeout(() => {
-      copied.value = false
-    }, COPIED_RESET_TIMEOUT)
-  })
-}
 
 async function doSend(): Promise<void> {
   if (!canSend.value || sending.value) return
@@ -423,9 +287,7 @@ async function doSend(): Promise<void> {
       operationType: 'transaction',
     })
     success.value = t('wallet.transferSent', { txid: txid.slice(0, 16) })
-    receiverAddress.value = ''
-    receiverLogin.value = null
-    receiverSearchQuery.value = ''
+    clearReceiverLink()
     amount.value = ''
     message.value = ''
   } catch (e) {
@@ -439,12 +301,4 @@ watch(mode, () => {
   error.value = null
   success.value = null
 })
-
-watch(
-  receiveAddressOptions,
-  (opts) => {
-    if (opts.length === 1) receiveTarget.value = opts[0]!.value
-  },
-  { immediate: true }
-)
 </script>
