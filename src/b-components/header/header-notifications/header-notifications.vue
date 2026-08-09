@@ -150,6 +150,7 @@ import {
   POST_REF_PREVIEW_LIMIT,
 } from './helpers/notification-formatter'
 import { ICON_BY_TYPE, notificationTypeLabelKey } from './helpers/notification-type-map'
+import { classifyNotificationLink } from './helpers/notification-link'
 import {
   SC_NotificationsWrapper,
   SC_NotificationsMenu,
@@ -383,43 +384,26 @@ function navigateToProfile(item: NotificationItem): boolean {
   return true
 }
 
-/** Доверенные хосты, на которые можно навигировать в том же окне (P1-5). */
-const TRUSTED_LINK_HOSTS = ['bastyon.com', 'pocketnet.app']
-
-function isTrustedLinkHost(hostname: string): boolean {
-  const h = hostname.toLowerCase()
-  return TRUSTED_LINK_HOSTS.some((d) => h === d || h.endsWith(`.${d}`))
-}
-
 /**
- * Безопасно открывает `item.link` из уведомления (P1-5). `link` приходит с ноды —
- * `startsWith('http')` пропускал `http://evil.com`, который полной навигацией
- * подменял приложение (open-redirect/фишинг). Теперь: относительные пути → router;
- * доверенный Bastyon-хост → та же вкладка; чужой http(s) → новая вкладка с
- * noopener (приложение не подменяется); нестандартные схемы (javascript:) → игнор.
+ * Безопасно открывает `item.link` из уведомления (P1-5, open-redirect guard).
+ * Решение — в чистом `classifyNotificationLink` (тестируемо); здесь только
+ * исполнение намерения.
  */
 function openNotificationLink(link: string): void {
-  let url: URL | null = null
-  try {
-    url = new URL(link.trim())
-  } catch {
-    /* не абсолютный URL — url остаётся null */
+  const action = classifyNotificationLink(link)
+  switch (action.kind) {
+    case 'same-tab':
+      window.location.href = action.href
+      break
+    case 'new-tab':
+      window.open(action.href, '_blank', 'noopener,noreferrer')
+      break
+    case 'router':
+      router.push(action.path)
+      break
+    case 'ignore':
+      break
   }
-
-  if (url) {
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return
-    if (isTrustedLinkHost(url.hostname)) {
-      window.location.href = url.href
-    } else {
-      window.open(url.href, '_blank', 'noopener,noreferrer')
-    }
-    return
-  }
-
-  // Не абсолютный URL → внутренний маршрут роутера (защита от protocol-relative).
-  const rel = link.trim()
-  if (rel.startsWith('//')) return
-  router.push(rel)
 }
 
 function onItemClick(item: NotificationItem): void {
