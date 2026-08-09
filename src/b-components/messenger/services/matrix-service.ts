@@ -20,6 +20,14 @@ import {
   type SendFileData,
   type SendPkoinPayload,
 } from './matrix-service/media-sender'
+import {
+  sendMessage as sendMessageImpl,
+  redactEvent as redactEventImpl,
+  sendStateEvent as sendStateEventImpl,
+  sendEncryptedTextMessage as sendEncryptedTextMessageImpl,
+  sendEncryptedDirectMessage as sendEncryptedDirectMessageImpl,
+  sendReaction as sendReactionImpl,
+} from './matrix-service/messaging'
 import type { MatrixClient, MatrixEventContent } from './matrix-service/types'
 import type { MatrixClient as SdkMatrixClient, ICreateClientOpts } from 'matrix-js-sdk'
 import { Preset, Visibility } from 'matrix-js-sdk'
@@ -247,14 +255,7 @@ export class MatrixService {
     extraContent?: Record<string, unknown>
   ) {
     if (!this.client) throw new Error('Client not initialized')
-
-    return (this.client as MatrixClient).sendEvent(roomId, 'm.room.message', {
-      msgtype: 'm.text',
-      body: content,
-      // extraContent — relation-метаданные (m.relates_to / m.new_content) для
-      // ответа/редактирования. См. use-message-sending (reply/edit).
-      ...extraContent,
-    })
+    return sendMessageImpl(this.client as MatrixClient, roomId, content, extraContent)
   }
 
   /**
@@ -263,12 +264,7 @@ export class MatrixService {
    */
   public async redactEvent(roomId: string, eventId: string, reason?: string) {
     if (!this.client) throw new Error('Client not initialized')
-    return (this.client as MatrixClient).redactEvent(
-      roomId,
-      eventId,
-      undefined,
-      reason ? { reason } : undefined
-    )
+    return redactEventImpl(this.client as MatrixClient, roomId, eventId, reason)
   }
 
   /**
@@ -281,7 +277,7 @@ export class MatrixService {
     stateKey: string
   ) {
     if (!this.client) throw new Error('Client not initialized')
-    return (this.client as MatrixClient).sendStateEvent(roomId, type, content, stateKey)
+    return sendStateEventImpl(this.client as MatrixClient, roomId, type, content, stateKey)
   }
 
   /**
@@ -295,14 +291,7 @@ export class MatrixService {
     extraContent?: Record<string, unknown>
   ) {
     if (!this.client) throw new Error('Client not initialized')
-    return (this.client as MatrixClient).sendEvent(roomId, 'm.room.message', {
-      msgtype: 'm.encrypted',
-      body: payload.body,
-      hash: payload.hash,
-      block: payload.block,
-      // extraContent — relation-метаданные (m.relates_to / m.new_content).
-      ...extraContent,
-    })
+    return sendEncryptedTextMessageImpl(this.client as MatrixClient, roomId, payload, extraContent)
   }
 
   /**
@@ -319,15 +308,7 @@ export class MatrixService {
     extraContent?: Record<string, unknown>
   ) {
     if (!this.client) throw new Error('Client not initialized')
-    return (this.client as MatrixClient).sendEvent(roomId, 'm.room.message', {
-      msgtype: 'm.encrypted',
-      body: payload.body,
-      block: payload.block,
-      version: payload.version,
-      // extraContent — relation-метаданные (m.relates_to) для ответа. Лежат на
-      // внешнем (открытом) content, как и у группового зашифрованного сообщения.
-      ...extraContent,
-    })
+    return sendEncryptedDirectMessageImpl(this.client as MatrixClient, roomId, payload, extraContent)
   }
 
   public async uploadContent(
@@ -350,14 +331,7 @@ export class MatrixService {
    */
   public async sendReaction(roomId: string, eventId: string, key: string) {
     if (!this.client) throw new Error('Client not initialized')
-
-    return (this.client as MatrixClient).sendEvent(roomId, 'm.reaction', {
-      'm.relates_to': {
-        event_id: eventId,
-        key,
-        rel_type: 'm.annotation',
-      },
-    })
+    return sendReactionImpl(this.client as MatrixClient, roomId, eventId, key)
   }
 
   /** Реализации медиа-отправки вынесены в `matrix-service/media-sender`. */

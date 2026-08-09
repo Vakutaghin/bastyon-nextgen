@@ -17,6 +17,13 @@ export interface MatrixClient {
     stateKey: string
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => Promise<any>
+  redactEvent: (
+    roomId: string,
+    eventId: string,
+    txnId?: string,
+    opts?: { reason?: string }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<any>
   uploadContent: (
     file: Blob | File,
     opts: {
