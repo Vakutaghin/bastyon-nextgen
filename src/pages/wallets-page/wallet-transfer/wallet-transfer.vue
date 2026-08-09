@@ -161,6 +161,8 @@ import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { validateAddress } from '@/blockchain/core/addresses'
 import { generateQRCode } from '@/blockchain/utils/qr-code'
+import { looksLikeAddress } from './helpers'
+import { SEARCH_DEBOUNCE_MS, COPIED_RESET_TIMEOUT } from './consts'
 import {
   SC_TransferWidget,
   SC_TransferSwitch,
@@ -304,10 +306,6 @@ async function searchUsers(query: string): Promise<void> {
   }
 }
 
-function looksLikeAddress(s: string): boolean {
-  return /^[PZ][a-zA-Z0-9]{25,}$/.test((s || '').trim())
-}
-
 function onSearchInput(): void {
   const q = (receiverSearchQuery.value || '').trim()
   receiverAddressValidationError.value = null
@@ -329,7 +327,7 @@ function onSearchInput(): void {
     showSearchDropdown.value = false
     return
   }
-  searchDebounceTimer = setTimeout(() => searchUsers(q), 300)
+  searchDebounceTimer = setTimeout(() => searchUsers(q), SEARCH_DEBOUNCE_MS)
 }
 
 function selectReceiver(user: SearchUser): void {
@@ -371,7 +369,7 @@ function copyAddress(): void {
     copied.value = true
     setTimeout(() => {
       copied.value = false
-    }, 2000)
+    }, COPIED_RESET_TIMEOUT)
   })
 }
 
