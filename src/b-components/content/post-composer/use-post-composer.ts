@@ -30,18 +30,13 @@ import {
   postToComposerData,
   sourceId,
 } from './composer-source'
-import { MAX_POLL_OPTIONS, MAX_TAGS } from './consts'
+import { MAX_POLL_OPTIONS } from './consts'
 import { firstVideoUrl, parseVideoUrl } from './parse-video-url'
 import { sendPost } from './post-sender'
 import { usePostImages } from './use-post-images'
+import { usePostTags } from './use-post-tags'
+import { readDraft, writeDraft } from './post-draft'
 import { validatePost } from './validate-post'
-
-const DRAFT_KEY = 'bastyon_post_draft'
-
-/** Нормализует тег: lowercase + только буквы/цифры (legacy regex kit.js). */
-export function normalizeTag(raw: string): string {
-  return raw.toLowerCase().replace(/[^0-9a-zа-яё]/gi, '')
-}
 
 export interface UsePostComposerOptions {
   /** Колбэк после успешной публикации (txid). Напр. закрыть модалку / перейти в ленту. */
@@ -58,22 +53,6 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const modalStore = useModalStore()
   const pendingPostsStore = usePendingPostsStore()
   const queryClient = useQueryClient()
-
-  const readDraft = (): string => {
-    try {
-      return localStorage.getItem(DRAFT_KEY) || ''
-    } catch {
-      return ''
-    }
-  }
-  const writeDraft = (text: string): void => {
-    try {
-      if (text.trim()) localStorage.setItem(DRAFT_KEY, text)
-      else localStorage.removeItem(DRAFT_KEY)
-    } catch {
-      /* приватный режим — игнорируем */
-    }
-  }
 
   const mode = options.mode ?? 'create'
   const isEdit = mode === 'edit'
@@ -107,8 +86,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
           : ''
   )
   const caption = ref(isEdit && prefill ? prefill.caption : '')
-  const tags = ref<string[]>(isEdit && prefill ? prefill.tags : [])
-  const tagInput = ref('')
+  const { tags, tagInput, tagsFull, addTag, commitTagInput, removeTag, onTagBackspace, resetTags } =
+    usePostTags(isEdit && prefill ? prefill.tags : [])
   const submitting = ref(false)
   const visibility = ref('0')
   const language = ref(locale.value)
@@ -213,8 +192,6 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
 
   const validationError = computed(() => validatePost(post.value))
   const canPublish = computed(() => !submitting.value && validationError.value === null)
-  const tagsFull = computed(() => tags.value.length >= MAX_TAGS)
-
   /** Лейбл кнопки публикации по режиму. */
   const publishLabel = computed(() => {
     if (isEdit) return t('postComposer.save')
@@ -264,35 +241,10 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     scheduledTime.value = unixSeconds > 1 ? unixSeconds : 0
   }
 
-  const addTag = (raw: string): void => {
-    const norm = normalizeTag(raw)
-    if (!norm) return
-    if (tags.value.includes(norm)) return
-    if (tags.value.length >= MAX_TAGS) return
-    tags.value.push(norm)
-    tagInput.value = ''
-  }
-
-  const commitTagInput = (): void => {
-    if (tagInput.value.trim()) addTag(tagInput.value)
-  }
-
-  const removeTag = (tag: string): void => {
-    tags.value = tags.value.filter((x) => x !== tag)
-  }
-
-  /** Backspace в пустом поле тега удаляет последний тег. */
-  const onTagBackspace = (): void => {
-    if (!tagInput.value && tags.value.length > 0) {
-      tags.value = tags.value.slice(0, -1)
-    }
-  }
-
   const reset = (): void => {
     message.value = ''
     caption.value = ''
-    tags.value = []
-    tagInput.value = ''
+    resetTags()
     visibility.value = '0'
     language.value = locale.value
     articleMode.value = false
