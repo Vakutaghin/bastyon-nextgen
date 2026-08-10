@@ -23,6 +23,16 @@
         </SC_ModalActions>
       </template>
 
+      <!-- Tor включён: публичный шлюз деанонимизировал бы — просим локальную ноду -->
+      <template v-else-if="ipfs.modalPhase === 'tor-blocked'">
+        <SC_IpfsText>{{ t('header.ipfsTorBlockedContent') }}</SC_IpfsText>
+        <SC_ModalActions>
+          <Button type="primary" block @click="ipfs.closeModal()">
+            {{ t('header.ipfsOk') }}
+          </Button>
+        </SC_ModalActions>
+      </template>
+
       <!-- Первый клик: предложение установить модуль -->
       <template v-else-if="ipfs.modalPhase === 'consent'">
         <SC_IpfsText>{{ t('header.ipfsConsentContent') }}</SC_IpfsText>
@@ -78,6 +88,8 @@ const title = computed<string>(() => {
   switch (ipfs.modalPhase) {
     case 'desktop-only':
       return t('header.ipfsDesktopOnlyTitle')
+    case 'tor-blocked':
+      return t('header.ipfsTorBlockedTitle')
     case 'consent':
       return t('header.ipfsConsentTitle')
     default:

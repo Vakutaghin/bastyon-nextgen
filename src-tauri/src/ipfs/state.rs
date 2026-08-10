@@ -27,6 +27,8 @@ pub struct IpfsStateSnapshot {
     pub gateway_port: u16,
     /// Бинарь kubo лежит на диске.
     pub installed: bool,
+    /// Установленная версия отличается от запиненной в приложении.
+    pub update_available: bool,
 }
 
 #[derive(Debug)]
@@ -37,6 +39,7 @@ pub struct IpfsState {
     pub gateway_port: u16,
     pub child_pid: Option<u32>,
     pub installed: bool,
+    pub update_available: bool,
 }
 
 impl Default for IpfsState {
@@ -48,6 +51,7 @@ impl Default for IpfsState {
             gateway_port: 0,
             child_pid: None,
             installed: false,
+            update_available: false,
         }
     }
 }
@@ -59,6 +63,7 @@ impl IpfsState {
             message: self.message.clone(),
             gateway_port: self.gateway_port,
             installed: self.installed,
+            update_available: self.update_available,
         }
     }
 }

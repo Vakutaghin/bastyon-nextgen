@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
 import { pickGatewaySource, type IpfsConsent } from '@/helpers/ipfs/ipfs-tier'
+import { useTorStore } from '@/stores/tor-store'
 
 // Оркестрация докачиваемого модуля Kubo (Tier 1) + fallback на публичный шлюз
 // (Tier 0). Клон паттерна tor-store: грубый `status` + тонкий `install`-прогресс,
@@ -14,6 +15,7 @@ export type IpfsStateSnapshot = {
   message?: string | null
   gateway_port: number
   installed: boolean
+  update_available: boolean
 }
 
 export type IpfsInstallProgress = {
@@ -22,7 +24,7 @@ export type IpfsInstallProgress = {
   message: string
 }
 
-export type IpfsModalPhase = 'consent' | 'progress' | 'desktop-only'
+export type IpfsModalPhase = 'consent' | 'progress' | 'desktop-only' | 'tor-blocked'
 
 /** Выбор пользователя в consent-модалке: установить / явный отказ / закрыл. */
 type ConsentChoice = 'install' | 'decline' | 'dismiss'
@@ -96,6 +98,7 @@ export const useIpfsStore = defineStore('ipfs', {
     gatewayPort: 0,
     message: null as string | null,
     installed: false,
+    updateAvailable: false,
     install: null as IpfsInstallProgress | null,
     consent: loadConsent() as IpfsConsent,
     modalOpen: false,
@@ -119,6 +122,14 @@ export const useIpfsStore = defineStore('ipfs', {
     },
     busy(state): boolean {
       return state.status === 'installing' || state.status === 'starting'
+    },
+    /** Tor сейчас реально торифицирует трафик (для privacy-guard публичного шлюза). */
+    torActive(): boolean {
+      try {
+        return useTorStore().shouldTorify
+      } catch {
+        return false
+      }
     },
   },
 
@@ -159,6 +170,7 @@ export const useIpfsStore = defineStore('ipfs', {
       this.gatewayPort = snap.gateway_port
       this.message = snap.message ?? null
       this.installed = snap.installed
+      this.updateAvailable = snap.update_available
     },
 
     setConsent(v: IpfsConsent): void {
@@ -183,6 +195,57 @@ export const useIpfsStore = defineStore('ipfs', {
 
     showDesktopOnly(): void {
       this.openModal('desktop-only')
+    },
+
+    /** При включённом Tor не открываем публичный шлюз (деанон) — просим локальную ноду. */
+    showTorBlocked(): void {
+      this.openModal('tor-blocked')
+    },
+
+    // --- явное управление из хедера ---
+    /** Установить (согласие явное) + запустить. Прогресс показывает хедер инлайном. */
+    async enable(): Promise<void> {
+      if (!this.available) {
+        this.showDesktopOnly()
+        return
+      }
+      this.setConsent('accepted')
+      await this.ensureRunning()
+    },
+
+    async stop(): Promise<void> {
+      if (!this.available) return
+      try {
+        const snap = await tauriInvoke<IpfsStateSnapshot>('ipfs_stop')
+        this.applySnapshot(snap)
+      } catch (e) {
+        this.message = String(e)
+      }
+    },
+
+    async uninstall(): Promise<void> {
+      if (!this.available) return
+      try {
+        const snap = await tauriInvoke<IpfsStateSnapshot>('ipfs_uninstall')
+        this.applySnapshot(snap)
+        // Сброс согласия: после удаления снова спросим на следующем клике.
+        this.setConsent('unknown')
+      } catch (e) {
+        this.message = String(e)
+      }
+    },
+
+    /** Обновление: снести бинарь (repo сохраняется) и переустановить запиненную версию. */
+    async update(): Promise<void> {
+      if (!this.available) return
+      try {
+        const snap = await tauriInvoke<IpfsStateSnapshot>('ipfs_update')
+        this.applySnapshot(snap)
+      } catch (e) {
+        this.message = String(e)
+        return
+      }
+      await this.ensureRunning()
     },
 
     // --- кнопки consent-модалки ---

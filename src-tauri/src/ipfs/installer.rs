@@ -119,6 +119,18 @@ pub fn archive_url(archive_name: &str) -> String {
     format!("{DIST_BASE}/{KUBO_VERSION}/{archive_name}")
 }
 
+/// Версия установленного бинаря из install.json (None — маркера нет).
+pub fn installed_version(paths: &IpfsPaths) -> Option<String> {
+    let raw = fs::read_to_string(&paths.install_marker).ok()?;
+    let v: serde_json::Value = serde_json::from_str(&raw).ok()?;
+    v.get("version")?.as_str().map(|s| s.to_string())
+}
+
+/// Установлено, но версия не совпадает с запиненной → предложить обновление.
+pub fn update_available(paths: &IpfsPaths) -> bool {
+    paths.binary.is_file() && installed_version(paths).as_deref() != Some(KUBO_VERSION)
+}
+
 /// Верхний уровень: гарантировать наличие бинаря kubo. No-op, если уже установлен.
 pub async fn ensure_installed(app: &AppHandle, paths: &IpfsPaths) -> Result<(), InstallError> {
     if paths.binary.is_file() {
@@ -338,5 +350,33 @@ mod tests {
             archive_url("kubo_v0.43.0_linux-amd64.tar.gz"),
             "https://dist.ipfs.tech/kubo/v0.43.0/kubo_v0.43.0_linux-amd64.tar.gz"
         );
+    }
+
+    #[test]
+    fn reads_installed_version_from_marker() {
+        let dir = std::env::temp_dir().join(format!("kubo-marker-test-{}", std::process::id()));
+        let _ = fs::create_dir_all(&dir);
+        let paths = IpfsPaths::new(dir.clone(), dir.join("repo"));
+        assert_eq!(installed_version(&paths), None);
+        fs::write(&paths.install_marker, r#"{"version":"v0.43.0","archive":"x"}"#).unwrap();
+        assert_eq!(installed_version(&paths).as_deref(), Some("v0.43.0"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn update_available_compares_to_pinned_version() {
+        let dir = std::env::temp_dir().join(format!("kubo-upd-test-{}", std::process::id()));
+        let paths = IpfsPaths::new(dir.clone(), dir.join("repo"));
+        // Нет бинаря → нечего обновлять.
+        let _ = fs::create_dir_all(paths.binary.parent().unwrap());
+        assert!(!update_available(&paths));
+        fs::write(&paths.binary, b"x").unwrap();
+        // Совпадает с запиненной → нет обновления.
+        fs::write(&paths.install_marker, format!(r#"{{"version":"{KUBO_VERSION}"}}"#)).unwrap();
+        assert!(!update_available(&paths));
+        // Старая версия → есть обновление.
+        fs::write(&paths.install_marker, r#"{"version":"v0.0.1"}"#).unwrap();
+        assert!(update_available(&paths));
+        let _ = fs::remove_dir_all(&dir);
     }
 }

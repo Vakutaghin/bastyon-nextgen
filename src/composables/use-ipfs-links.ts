@@ -48,15 +48,26 @@ async function openIpfsViewer(target: IpfsTarget): Promise<void> {
     }
 
     // Резолвим шлюз: локальная нода (с consent/установкой) либо публичный.
+    const torOn = store.torActive
     const gateway = await store.resolveGateway()
+
+    // Приватность: нативное окно грузит URL напрямую, минуя app-level Tor. Если Tor
+    // включён, публичный шлюз деанонимизировал бы (реальный IP → dweb.link) — не
+    // открываем, просим локальную ноду.
+    if (torOn && gateway === IPFS_GATEWAY) {
+      store.showTorBlocked()
+      return
+    }
+
     let url = buildIpfsViewerUrl(target, gateway)
 
     // Универсальный контент: пробуем тип и решаем render-vs-download, как браузер.
     let probed = await probeContent(url)
 
     // Per-CID fallback: локальная нода не отдала CID за таймаут (холодный swarm /
-    // файрвол) → пробуем публичный шлюз (Tier 1 → Tier 0).
-    if (!probed && gateway !== IPFS_GATEWAY) {
+    // файрвол) → публичный шлюз (Tier 1 → Tier 0). Под Tor НЕ падаем на публичный
+    // (деанон) — оставляем локальный URL, окно покажет ошибку ноды, но не потечёт.
+    if (!probed && gateway !== IPFS_GATEWAY && !torOn) {
       url = buildIpfsViewerUrl(target, IPFS_GATEWAY)
       probed = await probeContent(url)
     }

@@ -11,6 +11,7 @@
 
       <SC_Right v-hide-zero-width>
         <HeaderTor v-if="!mobile" />
+        <HeaderIpfs v-if="!mobile" />
         <HeaderEvents v-if="!mobile" />
         <HeaderNotifications />
         <HeaderReportBug v-if="!mobile" />
@@ -42,6 +43,7 @@ import HeaderUser from '@/b-components/header/header-user/header-user.vue'
 import HeaderEvents from '@/b-components/header/header-events/header-events.vue'
 import HeaderNotifications from '@/b-components/header/header-notifications/header-notifications.vue'
 import HeaderTor from '@/b-components/header/header-tor/header-tor.vue'
+import HeaderIpfs from '@/b-components/header/header-ipfs/header-ipfs.vue'
 import HeaderReportBug from '@/b-components/header/header-report-bug/header-report-bug.vue'
 import HeaderThemeToggle from '@/b-components/header/header-theme-toggle/header-theme-toggle.vue'
 import { MobileNavDrawer } from '@/b-components/mobile-nav-drawer'

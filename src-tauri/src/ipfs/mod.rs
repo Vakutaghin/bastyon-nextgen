@@ -48,8 +48,10 @@ fn err_string<E: std::fmt::Display>(e: E) -> String {
 #[tauri::command]
 pub async fn ipfs_status(mgr: State<'_, IpfsManager>) -> Result<IpfsStateSnapshot, String> {
     let installed = mgr.paths.binary.is_file();
+    let update_available = installer::update_available(&mgr.paths);
     let mut st = mgr.state.write().await;
     st.installed = installed;
+    st.update_available = update_available;
     Ok(st.snapshot())
 }
 
@@ -88,6 +90,7 @@ pub async fn ipfs_ensure(
             st.gateway_port = gw;
             st.status = IpfsStatus::Running;
             st.installed = true;
+            st.update_available = installer::update_available(&mgr.paths);
             st.message = None;
         }
         mgr.emit_state(&app).await;
@@ -107,6 +110,7 @@ pub async fn ipfs_ensure(
     {
         let mut st = mgr.state.write().await;
         st.installed = true;
+        st.update_available = installer::update_available(&mgr.paths);
     }
 
     // 3. Инициализация репозитория (один раз).
@@ -222,6 +226,34 @@ pub async fn ipfs_uninstall(
     {
         let mut st = mgr.state.write().await;
         *st = IpfsState::default();
+    }
+    mgr.emit_state(&app).await;
+    Ok(mgr.state.read().await.snapshot())
+}
+
+/// Обновление: гасим демон и сносим ТОЛЬКО бинарь (repo/кэш блоков сохраняем).
+/// Следующий `ipfs_ensure` докачает запиненную версию и переиспользует repo.
+#[tauri::command]
+pub async fn ipfs_update(
+    app: AppHandle,
+    mgr: State<'_, IpfsManager>,
+) -> Result<IpfsStateSnapshot, String> {
+    {
+        let mut guard = mgr.child.lock().expect("ipfs child mutex poisoned");
+        if let Some(mut c) = guard.take() {
+            let _ = process::kill(&mut c);
+        }
+    }
+    let _ = std::fs::remove_dir_all(&mgr.paths.bin_dir);
+    {
+        let mut st = mgr.state.write().await;
+        st.status = IpfsStatus::Off;
+        st.installed = false;
+        st.update_available = false;
+        st.gateway_port = 0;
+        st.api_port = 0;
+        st.child_pid = None;
+        st.message = None;
     }
     mgr.emit_state(&app).await;
     Ok(mgr.state.read().await.snapshot())
