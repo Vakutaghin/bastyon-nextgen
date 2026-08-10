@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseIpfsLink } from './ipfs-link'
-import { buildIpfsViewerUrl, buildIpfsShareLink } from './ipfs-viewer'
+import { parseIpfsLink, parseIpfsSecret } from './ipfs-link'
+import { buildIpfsViewerUrl, buildIpfsShareLink, buildIpfsSecretLink } from './ipfs-viewer'
 
 describe('parseIpfsLink', () => {
   it('scheme-форма ipfs:// с путём', () => {
@@ -79,5 +79,21 @@ describe('buildIpfsShareLink', () => {
 
   it('тримит пробелы CID', () => {
     expect(buildIpfsShareLink('  bafyCID\n')).toBe('ipfs://bafyCID')
+  })
+})
+
+describe('IPFS secret links (private sharing)', () => {
+  it('round-trip ключа (с +/=) и имени файла', () => {
+    const key = 'aB+/cd=='
+    const link = buildIpfsSecretLink('bafyCID', key, 'my photo.png')
+    expect(parseIpfsSecret(link)).toEqual({ key, name: 'my photo.png' })
+    // Базовый target по-прежнему парсится (фрагмент отброшен).
+    expect(parseIpfsLink(link)).toEqual({ namespace: 'ipfs', root: 'bafyCID', path: '' })
+  })
+
+  it('нет фрагмента / нет key → null', () => {
+    expect(parseIpfsSecret('ipfs://bafyCID')).toBeNull()
+    expect(parseIpfsSecret('ipfs://bafyCID#name=x')).toBeNull()
+    expect(parseIpfsSecret('https://example.com/page')).toBeNull()
   })
 })

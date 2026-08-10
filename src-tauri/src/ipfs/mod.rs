@@ -1,4 +1,5 @@
 pub mod config;
+pub mod crypto;
 pub mod installer;
 pub mod process;
 pub mod state;
@@ -277,6 +278,82 @@ pub async fn ipfs_add(path: String, mgr: State<'_, IpfsManager>) -> Result<Strin
         return Err("ipfs add returned empty CID".into());
     }
     Ok(cid)
+}
+
+#[derive(serde::Serialize)]
+pub struct EncryptedAddResult {
+    pub cid: String,
+    pub key: String,
+}
+
+/// Приватная публикация: шифруем файл случайным ключом (AES-256-GCM) и кладём
+/// ШИФРТЕКСТ в IPFS. Ключ возвращаем — он поедет во фрагменте ссылки, не на
+/// gateway. Публичным остаётся лишь непонятный блоб.
+#[tauri::command]
+pub async fn ipfs_add_encrypted(
+    path: String,
+    mgr: State<'_, IpfsManager>,
+) -> Result<EncryptedAddResult, String> {
+    let plaintext = std::fs::read(&path).map_err(err_string)?;
+    let (key, blob) = crypto::encrypt(&plaintext).map_err(err_string)?;
+
+    // Временный файл под шифртекст (ipfs add берёт путь).
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let tmp = std::env::temp_dir().join(format!("bastyon-ipfs-{}-{}.enc", std::process::id(), stamp));
+    std::fs::write(&tmp, &blob).map_err(err_string)?;
+
+    let add = run_ipfs(
+        &mgr.paths,
+        &[
+            "add",
+            "-Q",
+            "--cid-version=1",
+            "--pin=true",
+            &tmp.to_string_lossy(),
+        ],
+    )
+    .await;
+    let _ = std::fs::remove_file(&tmp);
+
+    let cid = add?.trim().to_string();
+    if cid.is_empty() {
+        return Err("ipfs add returned empty CID".into());
+    }
+    Ok(EncryptedAddResult { cid, key })
+}
+
+/// Открытие приватного файла: тянем ШИФРТЕКСТ с gateway, расшифровываем ключом из
+/// ссылки и пишем расшифрованное на диск (`dest`). gateway резолвит фронт (Tier1/0
+/// + Tor-guard), сюда приходит уже выбранный базовый URL.
+#[tauri::command]
+pub async fn ipfs_save_encrypted(
+    gateway: String,
+    cid: String,
+    key: String,
+    dest: String,
+) -> Result<(), String> {
+    let url = format!("{}/ipfs/{}", gateway.trim_end_matches('/'), cid);
+    // Таймаут: на «холодном» CID нода может не отдать блоки — не висим вечно.
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(60))
+        .build()
+        .map_err(err_string)?;
+    let bytes = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(err_string)?
+        .error_for_status()
+        .map_err(err_string)?
+        .bytes()
+        .await
+        .map_err(err_string)?;
+    let plain = crypto::decrypt(&key, &bytes).map_err(err_string)?;
+    std::fs::write(&dest, plain).map_err(err_string)?;
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

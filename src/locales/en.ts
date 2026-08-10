@@ -205,6 +205,13 @@ export default {
     ipfsShareDoneCopied: 'Link copied. Anyone with this link can open the file: {link}',
     ipfsShareDone: 'Anyone with this link can open the file: {link}',
     ipfsShareFailedTitle: 'Could not publish the file',
+    ipfsShareEncryptedBtn: 'Share a file privately…',
+    ipfsShareEncryptedDoneTitle: 'Private file published',
+    ipfsShareEncryptedCopied:
+      'Secret link copied. Only someone with this exact link can decrypt the file: {link}',
+    ipfsShareEncryptedDone: 'Only someone with this exact link can decrypt the file: {link}',
+    ipfsSaveDoneTitle: 'File saved',
+    ipfsSaveFailedTitle: 'Could not open the file (wrong key or unavailable)',
   },
   common: {
     cancel: 'Cancel',

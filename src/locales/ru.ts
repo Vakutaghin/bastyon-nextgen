@@ -209,6 +209,14 @@ export default {
     ipfsShareDoneCopied: 'Ссылка скопирована. Любой с этой ссылкой откроет файл: {link}',
     ipfsShareDone: 'Любой с этой ссылкой откроет файл: {link}',
     ipfsShareFailedTitle: 'Не удалось опубликовать файл',
+    ipfsShareEncryptedBtn: 'Поделиться приватно…',
+    ipfsShareEncryptedDoneTitle: 'Приватный файл опубликован',
+    ipfsShareEncryptedCopied:
+      'Секретная ссылка скопирована. Расшифровать файл сможет только тот, у кого есть именно эта ссылка: {link}',
+    ipfsShareEncryptedDone:
+      'Расшифровать файл сможет только тот, у кого есть именно эта ссылка: {link}',
+    ipfsSaveDoneTitle: 'Файл сохранён',
+    ipfsSaveFailedTitle: 'Не удалось открыть файл (неверный ключ или недоступен)',
   },
   common: {
     cancel: 'Отмена',

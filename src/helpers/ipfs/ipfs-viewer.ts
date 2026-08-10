@@ -21,3 +21,14 @@ export function buildIpfsViewerUrl(target: IpfsTarget, gateway: string = IPFS_GA
 export function buildIpfsShareLink(cid: string): string {
   return `ipfs://${cid.trim()}`
 }
+
+/**
+ * Приватная шаринг-ссылка: ключ и имя файла во ФРАГМENTE (`#…`) — фрагмент не
+ * уходит в HTTP-запросах на gateway, только клиент видит ключ. encodeURIComponent,
+ * т.к. base64 содержит `+/=`.
+ */
+export function buildIpfsSecretLink(cid: string, keyB64: string, filename: string): string {
+  const k = encodeURIComponent(keyB64)
+  const n = encodeURIComponent(filename)
+  return `ipfs://${cid.trim()}#key=${k}&name=${n}`
+}

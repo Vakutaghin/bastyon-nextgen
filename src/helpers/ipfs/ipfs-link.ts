@@ -29,6 +29,41 @@ function build(ns: string, root: string, rest: string): IpfsTarget | null {
   return { namespace: ns.toLowerCase() as IpfsNamespace, root: r, path }
 }
 
+/** Секрет приватной ссылки: симметричный ключ (base64) и исходное имя файла. */
+export interface IpfsSecret {
+  key: string
+  name: string
+}
+
+/**
+ * Извлекает ключ/имя из фрагмента приватной ссылки (`…#key=<b64>&name=<file>`).
+ * Фрагмент не уходит на gateway. Парсим вручную (не URLSearchParams): base64
+ * содержит `+`, который URLSearchParams превратил бы в пробел.
+ */
+export function parseIpfsSecret(href: string): IpfsSecret | null {
+  if (!href || typeof href !== 'string') return null
+  const hashIdx = href.indexOf('#')
+  if (hashIdx < 0) return null
+  const frag = href.slice(hashIdx + 1)
+  if (!frag) return null
+
+  let key = ''
+  let name = ''
+  for (const pair of frag.split('&')) {
+    const eq = pair.indexOf('=')
+    if (eq < 0) continue
+    const k = pair.slice(0, eq)
+    const v = pair.slice(eq + 1)
+    try {
+      if (k === 'key') key = decodeURIComponent(v)
+      else if (k === 'name') name = decodeURIComponent(v)
+    } catch {
+      /* битый компонент — игнорируем */
+    }
+  }
+  return key ? { key, name } : null
+}
+
 /**
  * Разбирает href в IpfsTarget или возвращает null, если это не IPFS/IPNS-ссылка.
  */

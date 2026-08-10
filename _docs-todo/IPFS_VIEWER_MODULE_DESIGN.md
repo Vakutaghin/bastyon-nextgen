@@ -212,6 +212,7 @@ export async function buildIpfsViewerUrl(target: IpfsTarget): Promise<string> {
 | Ф2 | ✅ готово (не запушено) | backend `src-tauri/src/ipfs/{state,process,config,installer,mod}.rs` (клон Tor); Kubo v0.43.0, запиненные SHA-512, Go-арх-маппинг, `/tcp/0`+чтение портов из `api`/`gateway`, `autoclient`+`Provide.Enabled=false`+`lowpower`, try_attach, kill на выходе. Команды `ipfs_status/ipfs_ensure/ipfs_stop/ipfs_uninstall`. `cargo check` без предупреждений, `cargo test ipfs::` 11/11. Живой запуск демона в Tauri-сборке — TODO. Не сделано (осознанно): cancellation-token отмены скачивания и `ipfs_update` — Ф3/Ф4 |
 | Ф3 | ✅ готово (не запушено) | фронт+Tier1: `stores/ipfs-store.ts` (consent/ensure/resolveGateway/tier), `helpers/ipfs/ipfs-tier.ts` (+6 тестов), `components/ipfs/ipfs-install-modal.vue`+styled, врезка в `use-ipfs-links.ts` (availability→resolveGateway→per-CID fallback), `probeContent` таймаут+loopback-байпас Tor, i18n `header.ipfs*`, CSP `frame-src`/`media-src http://127.0.0.1:*`, plugin-http allowlist (`127.0.0.1`+`dweb.link`). Прогнан adversarial-workflow (16 находок), 10 контейнированных пофикшены; сьют 2105 зелёный, линт 0. Живая проверка в Tauri-сборке — TODO |
 | Ф4 | ✅ частично (не запушено) | полировка: `header-ipfs.vue`+styled (статус/install/stop/uninstall/update, бейдж update) в шапке; backend `ipfs_update` + `update_available` (сравнение install.json с запиненной версией, cargo test 13/13); стор-действия `enable/stop/uninstall/update`; **privacy-at-Tor**: при включённом Tor не открываем публичный шлюз (деанон) — модалка `tor-blocked`, просим локальную ноду; i18n `header.ipfs*`. Сьют 2105 зелёный. **Отложено:** Linux pdf.js, subdomain-gateway для изоляции недоверенных CID |
+| Ф5b | ✅ шифрование (не запушено) | приватный шаринг: Rust `ipfs/crypto.rs` (AES-256-GCM, `nonce‖ct`, +4 теста), `ipfs_add_encrypted`→{cid,key} и `ipfs_save_encrypted` (fetch шифртекста→decrypt→на диск); ключ+имя во ФРАГМЕНТЕ ссылки `ipfs://<cid>#key=..&name=..` (не уходят на gateway); `parseIpfsSecret`/`buildIpfsSecretLink` (+2 теста); перехватчик: секрет→save decrypted, Tor-guard распространён на encrypted-фетч; кнопка «Поделиться приватно…» в header-ipfs. Крипта в одном языке (Rust), decrypt тоже Rust — без cross-lang. Сьют 2109 зелёный. **Осталось (Ф5c):** удалённый pin (durability) — см. ниже; инлайн-рендер зашифрованных медиа (сейчас только скачивание) |
 | Ф5 | ✅ MVP (не запушено) | файлообменник (write): backend `ipfs_add` (`add -Q --cid-version=1 --pin`); стор `addFile` (ensure→add); кнопка «Поделиться файлом…» в `header-ipfs` → dialog → CID → `ipfs://<cid>` в буфер + модалка с предупреждением «контент публичный»; `buildIpfsShareLink`(+2 теста), capability `dialog:allow-open`. Round-trip: шаринг-ссылка открывается тем же перехватчиком. Сьют 2107 зелёный. **Отложено (Ф5b):** шифрование приватных файлов (нужна расшифровка во вьювере) + удалённый pin (VPS-нода) для durability, когда автор офлайн |
 
 ### Файлообменник — важные оговорки (MVP Ф5)
@@ -219,6 +220,26 @@ export async function buildIpfsViewerUrl(target: IpfsTarget): Promise<string> {
 - **Контент публичный.** `ipfs add` не шифрует; любой с CID скачает файл. Модалка шаринга об этом предупреждает. Приватные файлы — шифрование на клиенте ДО `add` (Ф5b, поверх крипты Bastyon; ключ через зашифрованный DM).
 - **Durability = пока нода автора онлайн и достижима.** Локальный pin держит контент в repo, но провайдер-записи в DHT протухают, если нода офлайн. Для «жив всегда» нужен удалённый pin (твоя VPS-Kubo автопином или pinning-сервис) — Ф5b.
 - **NAT.** Прямая раздача требует dialable-ноды (relay/hole-punching Kubo умеет, корп-NAT может резать) — удалённый pin с публичным IP обходит.
+
+### Удалённый pin (Ф5c) — durability, требует инфры
+
+Локальный pin держит контент, пока нода автора онлайн. Чтобы файл жил всегда,
+CID надо запинить на постоянно доступной ноде. Варианты (нужно решение продакта):
+
+1. **Kubo remote pinning service** (стандарт, [IPFS Pinning Service API]): на публикацию
+   `ipfs pin remote add --service=<name> --background <cid>`, сервис заранее заведён
+   `ipfs pin remote service add <name> <endpoint> <key>`. Нужен endpoint+ключ pinning-сервиса.
+   Твоя VPS-Kubo сама по себе НЕ pinning-сервис — нужен ipfs-cluster/pinning-api поверх, либо
+   сторонний (Pinata/web3.storage).
+2. **Прямой pin на своей ноде через её API** (`POST http://vps:5001/api/v0/pin/add?arg=<cid>`) —
+   но публичный Kubo API = полный контроль над нодой, экспонировать опасно (нужен reverse-proxy
+   с авторизацией только на `/pin/add`).
+
+Реализация — тонкая (пара `ipfs` вызовов, гейт на конфиге endpoint+key) + поверхность
+настроек, где юзер вводит сервис. Отложено, т.к. без реального endpoint не проверить и это
+продуктовое решение (какой pinning-путь).
+
+[IPFS Pinning Service API]: https://ipfs.github.io/pinning-services-api-spec/
 
 ### Известные ограничения (из adversarial-ревью Фазы 3, отложено в Ф4)
 

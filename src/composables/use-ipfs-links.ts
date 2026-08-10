@@ -7,11 +7,13 @@
 // шлюзом резолвить (локальная нода Tier 1 vs публичный шлюз Tier 0), принимает
 // ipfs-store; в вебе показываем «только в приложении».
 import { onBeforeUnmount, onMounted } from 'vue'
-import { parseIpfsLink, type IpfsTarget } from '@/helpers/ipfs/ipfs-link'
+import { Modal } from 'ant-design-vue'
+import { parseIpfsLink, parseIpfsSecret, type IpfsSecret, type IpfsTarget } from '@/helpers/ipfs/ipfs-link'
 import { buildIpfsViewerUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
 import { classify, detectViewerOs, downloadFilename } from '@/helpers/ipfs/ipfs-content'
 import { probeContent, saveIpfsResource } from '@/helpers/ipfs/ipfs-download'
 import { useIpfsStore } from '@/stores/ipfs-store'
+import { t } from '@/i18n'
 
 /** Метка окна: одно окно на CID/имя (повторный клик — фокус, а не дубль). */
 function windowLabel(target: IpfsTarget): string {
@@ -24,7 +26,27 @@ function windowLabel(target: IpfsTarget): string {
 // иначе прошёл бы дедуп и создал два окна с одной меткой / два save-диалога.
 const inFlight = new Set<string>()
 
-async function openIpfsViewer(target: IpfsTarget): Promise<void> {
+type IpfsStore = ReturnType<typeof useIpfsStore>
+
+/** Приватная ссылка: сохранить расшифрованный файл на диск (рендер неприменим). */
+async function openEncrypted(
+  store: IpfsStore,
+  target: IpfsTarget,
+  secret: IpfsSecret,
+  gateway: string
+): Promise<void> {
+  const { save } = await import('@tauri-apps/plugin-dialog')
+  const dest = await save({ defaultPath: secret.name || `${target.root.slice(0, 16)}.bin` })
+  if (!dest) return
+  const ok = await store.saveEncrypted(gateway, target.root, secret.key, dest)
+  if (ok) {
+    Modal.success({ title: t('header.ipfsSaveDoneTitle') })
+  } else {
+    Modal.error({ title: t('header.ipfsSaveFailedTitle'), content: store.message ?? '' })
+  }
+}
+
+async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Promise<void> {
   const store = useIpfsStore()
 
   // Веб/мобилка: нативного окна и локальной ноды нет — фича только для десктопа.
@@ -38,24 +60,32 @@ async function openIpfsViewer(target: IpfsTarget): Promise<void> {
   inFlight.add(label)
 
   try {
+    // Резолвим шлюз: локальная нода (с consent/установкой) либо публичный.
+    const torOn = store.torActive
+    const gateway = await store.resolveGateway()
+
+    // Приватность: нативное окно/фетч грузят URL напрямую, минуя app-level Tor.
+    // Если Tor включён, публичный шлюз деанонимизировал бы (реальный IP → dweb.link) —
+    // не открываем, просим локальную ноду. (Для encrypted — тоже: даже фетч
+    // шифртекста утёк бы IP+CID.)
+    if (torOn && gateway === IPFS_GATEWAY) {
+      store.showTorBlocked()
+      return
+    }
+
+    // Приватная (зашифрованная) ссылка: тянем шифртекст, расшифровываем в Rust,
+    // сохраняем на диск. Рендер в окне тут неприменим (сырые байты — шифр).
+    if (secret?.key) {
+      await openEncrypted(store, target, secret, gateway)
+      return
+    }
+
     const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
 
     // Повторный клик по уже открытому CID — просто фокус (без резолва/докачки).
     const existing = await WebviewWindow.getByLabel(label)
     if (existing) {
       await existing.setFocus()
-      return
-    }
-
-    // Резолвим шлюз: локальная нода (с consent/установкой) либо публичный.
-    const torOn = store.torActive
-    const gateway = await store.resolveGateway()
-
-    // Приватность: нативное окно грузит URL напрямую, минуя app-level Tor. Если Tor
-    // включён, публичный шлюз деанонимизировал бы (реальный IP → dweb.link) — не
-    // открываем, просим локальную ноду.
-    if (torOn && gateway === IPFS_GATEWAY) {
-      store.showTorBlocked()
       return
     }
 
@@ -97,13 +127,20 @@ async function openIpfsViewer(target: IpfsTarget): Promise<void> {
   }
 }
 
-function findIpfsTargetFromClick(e: MouseEvent): IpfsTarget | null {
+function findIpfsTargetFromClick(
+  e: MouseEvent
+): { target: IpfsTarget; secret: IpfsSecret | null } | null {
   const start = e.target as HTMLElement | null
   const anchor = start?.closest?.('a')
   if (!anchor) return null
   // Сырой href важнее для scheme-формы (ipfs://…), .href — резолвнутый (path-форма).
   const raw = anchor.getAttribute('href') || ''
-  return parseIpfsLink(raw) || parseIpfsLink(anchor.href || '')
+  const resolved = anchor.href || ''
+  const target = parseIpfsLink(raw) || parseIpfsLink(resolved)
+  if (!target) return null
+  // Секрет (#key=..) берём из сырого href — резолвнутый может потерять фрагмент.
+  const secret = parseIpfsSecret(raw) || parseIpfsSecret(resolved)
+  return { target, secret }
 }
 
 // Активность перехвата (по умолчанию — всегда). На embed-роутах модалки нет,
@@ -116,11 +153,11 @@ function handleClick(e: MouseEvent): void {
   if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
     return
   }
-  const target = findIpfsTargetFromClick(e)
-  if (!target) return
+  const found = findIpfsTargetFromClick(e)
+  if (!found) return
   e.preventDefault()
   e.stopPropagation()
-  void openIpfsViewer(target)
+  void openIpfsViewer(found.target, found.secret)
 }
 
 /**

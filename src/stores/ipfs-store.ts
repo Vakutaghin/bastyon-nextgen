@@ -258,6 +258,42 @@ export const useIpfsStore = defineStore('ipfs', {
       }
     },
 
+    /**
+     * Приватная публикация: шифруем файл (Rust) и кладём шифртекст в IPFS.
+     * Возвращает { cid, key } или null. Ключ едет во фрагменте ссылки.
+     */
+    async addFileEncrypted(path: string): Promise<{ cid: string; key: string } | null> {
+      if (!this.available) {
+        this.showDesktopOnly()
+        return null
+      }
+      this.setConsent('accepted')
+      const port = await this.ensureRunning()
+      if (!port) return null
+      try {
+        return await tauriInvoke<{ cid: string; key: string }>('ipfs_add_encrypted', { path })
+      } catch (e) {
+        this.message = String(e)
+        return null
+      }
+    },
+
+    /** Тянет шифртекст с gateway, расшифровывает (Rust) и пишет в dest. */
+    async saveEncrypted(
+      gateway: string,
+      cid: string,
+      key: string,
+      dest: string
+    ): Promise<boolean> {
+      try {
+        await tauriInvoke('ipfs_save_encrypted', { gateway, cid, key, dest })
+        return true
+      } catch (e) {
+        this.message = String(e)
+        return false
+      }
+    },
+
     /** Обновление: снести бинарь (repo сохраняется) и переустановить запиненную версию. */
     async update(): Promise<void> {
       if (!this.available) return

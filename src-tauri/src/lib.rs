@@ -636,6 +636,8 @@ pub fn run() {
       ipfs::ipfs_uninstall,
       ipfs::ipfs_update,
       ipfs::ipfs_add,
+      ipfs::ipfs_add_encrypted,
+      ipfs::ipfs_save_encrypted,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]

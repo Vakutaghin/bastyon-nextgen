@@ -63,6 +63,15 @@
             {{ t('header.ipfsShareBtn') }}
           </Button>
 
+          <Button
+            size="small"
+            :loading="sharing"
+            :disabled="busy"
+            @click="onShareFileEncrypted"
+          >
+            {{ t('header.ipfsShareEncryptedBtn') }}
+          </Button>
+
           <Button v-if="installed && !busy" size="small" danger @click="onUninstall">
             {{ t('header.ipfsUninstallBtn') }}
           </Button>
@@ -87,7 +96,7 @@ import {
   CheckCircleFilled,
 } from '@ant-design/icons-vue'
 import { useIpfsStore } from '@/stores/ipfs-store'
-import { buildIpfsShareLink } from '@/helpers/ipfs/ipfs-viewer'
+import { buildIpfsShareLink, buildIpfsSecretLink } from '@/helpers/ipfs/ipfs-viewer'
 import {
   SC_IpfsWrapper,
   SC_IpfsDot,
@@ -199,6 +208,38 @@ async function onShareFile(): Promise<void> {
     Modal.success({
       title: t('header.ipfsShareDoneTitle'),
       content: t(copied ? 'header.ipfsShareDoneCopied' : 'header.ipfsShareDone', { link }),
+    })
+  } finally {
+    sharing.value = false
+  }
+}
+
+async function onShareFileEncrypted(): Promise<void> {
+  const { open } = await import('@tauri-apps/plugin-dialog')
+  const selected = await open({ multiple: false, directory: false })
+  if (!selected || Array.isArray(selected)) return
+
+  sharing.value = true
+  try {
+    const res = await ipfs.addFileEncrypted(selected)
+    if (!res) {
+      Modal.error({ title: t('header.ipfsShareFailedTitle'), content: ipfs.message ?? '' })
+      return
+    }
+    const name = selected.split(/[\\/]/).pop() || 'file'
+    const link = buildIpfsSecretLink(res.cid, res.key, name)
+    let copied = false
+    try {
+      await navigator.clipboard.writeText(link)
+      copied = true
+    } catch {
+      // клипборд недоступен — ссылку покажем в модалке
+    }
+    Modal.success({
+      title: t('header.ipfsShareEncryptedDoneTitle'),
+      content: t(copied ? 'header.ipfsShareEncryptedCopied' : 'header.ipfsShareEncryptedDone', {
+        link,
+      }),
     })
   } finally {
     sharing.value = false
