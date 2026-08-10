@@ -16,3 +16,8 @@ export function buildIpfsViewerUrl(target: IpfsTarget, gateway: string = IPFS_GA
   const suffix = target.path ? `/${target.path}` : ''
   return `${base}/${target.namespace}/${target.root}${suffix}`
 }
+
+/** Шаринг-ссылка на опубликованный (ipfs add) CID: `ipfs://<cid>`. */
+export function buildIpfsShareLink(cid: string): string {
+  return `ipfs://${cid.trim()}`
+}

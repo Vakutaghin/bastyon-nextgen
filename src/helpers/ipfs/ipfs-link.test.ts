@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseIpfsLink } from './ipfs-link'
-import { buildIpfsViewerUrl } from './ipfs-viewer'
+import { buildIpfsViewerUrl, buildIpfsShareLink } from './ipfs-viewer'
 
 describe('parseIpfsLink', () => {
   it('scheme-форма ipfs:// с путём', () => {
@@ -67,5 +67,17 @@ describe('buildIpfsViewerUrl', () => {
     expect(
       buildIpfsViewerUrl({ namespace: 'ipns', root: 'k51name', path: '' }, 'https://gw.example/')
     ).toBe('https://gw.example/ipns/k51name')
+  })
+})
+
+describe('buildIpfsShareLink', () => {
+  it('собирает ipfs://<cid> и round-trip через parseIpfsLink', () => {
+    const link = buildIpfsShareLink('bafyCID')
+    expect(link).toBe('ipfs://bafyCID')
+    expect(parseIpfsLink(link)).toEqual({ namespace: 'ipfs', root: 'bafyCID', path: '' })
+  })
+
+  it('тримит пробелы CID', () => {
+    expect(buildIpfsShareLink('  bafyCID\n')).toBe('ipfs://bafyCID')
   })
 })

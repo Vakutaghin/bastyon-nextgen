@@ -200,6 +200,11 @@ export default {
     ipfsUninstallConfirmTitle: 'Remove the IPFS module?',
     ipfsUninstallConfirmContent:
       'The Kubo binary and the local block cache will be deleted. IPFS links will fall back to a public gateway.',
+    ipfsShareBtn: 'Share a file…',
+    ipfsShareDoneTitle: 'File published to IPFS',
+    ipfsShareDoneCopied: 'Link copied. Anyone with this link can open the file: {link}',
+    ipfsShareDone: 'Anyone with this link can open the file: {link}',
+    ipfsShareFailedTitle: 'Could not publish the file',
   },
   common: {
     cancel: 'Cancel',

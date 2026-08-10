@@ -259,6 +259,26 @@ pub async fn ipfs_update(
     Ok(mgr.state.read().await.snapshot())
 }
 
+/// Публикация файла в IPFS (write-сторона / файлообменник). Нода должна быть
+/// поднята — гейтится на фронте через ensureRunning. `add` пинит локально по
+/// умолчанию (контент жив, пока эта нода онлайн и достижима). Возвращает CID.
+///
+/// ВАЖНО: контент ПУБЛИЧНЫЙ — любой с этим CID скачает его. Приватные файлы
+/// нужно шифровать на клиенте ДО публикации (см. дизайн-док §5, отдельный этап).
+#[tauri::command]
+pub async fn ipfs_add(path: String, mgr: State<'_, IpfsManager>) -> Result<String, String> {
+    let cid = run_ipfs(
+        &mgr.paths,
+        &["add", "-Q", "--cid-version=1", "--pin=true", &path],
+    )
+    .await?;
+    let cid = cid.trim().to_string();
+    if cid.is_empty() {
+        return Err("ipfs add returned empty CID".into());
+    }
+    Ok(cid)
+}
+
 // ---------------------------------------------------------------------------
 // Внутреннее
 // ---------------------------------------------------------------------------

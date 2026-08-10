@@ -235,6 +235,29 @@ export const useIpfsStore = defineStore('ipfs', {
       }
     },
 
+    /**
+     * Опубликовать файл в IPFS (write-сторона). Поднимает ноду (если надо),
+     * добавляет файл, возвращает CID (или null при ошибке/отмене). Контент
+     * ПУБЛИЧНЫЙ и жив, пока эта нода онлайн (или CID запинен где-то ещё).
+     */
+    async addFile(path: string): Promise<string | null> {
+      if (!this.available) {
+        this.showDesktopOnly()
+        return null
+      }
+      // Явная публикация = согласие на локальную ноду.
+      this.setConsent('accepted')
+      const port = await this.ensureRunning()
+      if (!port) return null
+      try {
+        const cid = await tauriInvoke<string>('ipfs_add', { path })
+        return cid || null
+      } catch (e) {
+        this.message = String(e)
+        return null
+      }
+    },
+
     /** Обновление: снести бинарь (repo сохраняется) и переустановить запиненную версию. */
     async update(): Promise<void> {
       if (!this.available) return

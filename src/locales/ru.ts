@@ -204,6 +204,11 @@ export default {
     ipfsUninstallConfirmTitle: 'Удалить модуль IPFS?',
     ipfsUninstallConfirmContent:
       'Бинарь Kubo и локальный кэш блоков будут удалены. IPFS-ссылки будут открываться через публичный шлюз.',
+    ipfsShareBtn: 'Поделиться файлом…',
+    ipfsShareDoneTitle: 'Файл опубликован в IPFS',
+    ipfsShareDoneCopied: 'Ссылка скопирована. Любой с этой ссылкой откроет файл: {link}',
+    ipfsShareDone: 'Любой с этой ссылкой откроет файл: {link}',
+    ipfsShareFailedTitle: 'Не удалось опубликовать файл',
   },
   common: {
     cancel: 'Отмена',

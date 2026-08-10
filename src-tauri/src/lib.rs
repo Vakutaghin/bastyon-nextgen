@@ -635,6 +635,7 @@ pub fn run() {
       ipfs::ipfs_stop,
       ipfs::ipfs_uninstall,
       ipfs::ipfs_update,
+      ipfs::ipfs_add,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]
