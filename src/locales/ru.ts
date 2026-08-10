@@ -172,6 +172,20 @@ export default {
     torEnableContent:
       'При первом запуске будет загружен Tor (~30 МБ). Это может занять минуту. После подключения весь сетевой трафик приложения пойдёт через сеть Tor. Чат Matrix может работать с задержками.',
     torEnableOk: 'Включить',
+    ipfsOk: 'ОК',
+    ipfsDesktopOnlyTitle: 'IPFS доступен только в десктопном приложении',
+    ipfsDesktopOnlyContent:
+      'Откройте Bastyon в приложении для рабочего стола — браузерная версия не умеет открывать IPFS-контент в окне-просмотрщике.',
+    ipfsConsentTitle: 'Открыть IPFS-контент',
+    ipfsConsentContent:
+      'Чтобы открыть эту ссылку приватно, установите локальный модуль IPFS (~80 МБ). Он качает контент напрямую из сети, без публичного шлюза. Либо можно открыть через публичный шлюз.',
+    ipfsConsentInstall: 'Установить модуль IPFS (~80 МБ)',
+    ipfsConsentPublic: 'Через публичный шлюз',
+    ipfsInstallTitle: 'Настройка IPFS',
+    ipfsPreparing: 'Подготовка IPFS…',
+    ipfsInstallingProgress: 'Загрузка: {pct}% — {message}',
+    ipfsStarting: 'Запуск демона IPFS…',
+    ipfsCancel: 'Через публичный шлюз',
   },
   common: {
     cancel: 'Отмена',

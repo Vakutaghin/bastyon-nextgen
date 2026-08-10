@@ -168,6 +168,20 @@ export default {
     torEnableContent:
       'On first launch Tor (~30 MB) will be downloaded. This may take a minute. Once connected, all app network traffic will go through the Tor network. Matrix chat may experience delays.',
     torEnableOk: 'Enable',
+    ipfsOk: 'OK',
+    ipfsDesktopOnlyTitle: 'IPFS is available only in the desktop app',
+    ipfsDesktopOnlyContent:
+      'Open Bastyon in the desktop app — the browser version cannot open IPFS content in a viewer window.',
+    ipfsConsentTitle: 'Open IPFS content',
+    ipfsConsentContent:
+      'To open this link privately, install the local IPFS module (~80 MB). It fetches content peer-to-peer without a public gateway. You can also open it via a public gateway instead.',
+    ipfsConsentInstall: 'Install IPFS module (~80 MB)',
+    ipfsConsentPublic: 'Use public gateway',
+    ipfsInstallTitle: 'Setting up IPFS',
+    ipfsPreparing: 'Preparing IPFS…',
+    ipfsInstallingProgress: 'Downloading: {pct}% — {message}',
+    ipfsStarting: 'Starting IPFS daemon…',
+    ipfsCancel: 'Use public gateway instead',
   },
   common: {
     cancel: 'Cancel',

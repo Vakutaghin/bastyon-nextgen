@@ -1,24 +1,17 @@
 // Глобальный перехват кликов по IPFS-ссылкам (ipfs:// / ipns:// / /ipfs/<cid> /
 // /ipns/<name>) и открытие их в отдельном нативном окне-просмотрщике (Tauri
-// WebviewWindow). Работает только в Tauri; в вебе/мобилке — no-op (ссылки идут
-// обычным путём). Один делегат на document ловит ссылки из любого места
+// WebviewWindow). Один делегат на document ловит ссылки из любого места
 // (v-html-контент постов, меншены, «о себе» и т.д.).
 //
-// Движок IPFS (какой URL грузить) изолирован в ipfs-viewer.buildIpfsViewerUrl —
-// см. комментарий там про gateway vs встроенная нода.
+// Слушатель вешается ВЕЗДЕ (веб/десктоп). Решение о доступности и о том, каким
+// шлюзом резолвить (локальная нода Tier 1 vs публичный шлюз Tier 0), принимает
+// ipfs-store; в вебе показываем «только в приложении».
 import { onBeforeUnmount, onMounted } from 'vue'
 import { parseIpfsLink, type IpfsTarget } from '@/helpers/ipfs/ipfs-link'
-import { buildIpfsViewerUrl } from '@/helpers/ipfs/ipfs-viewer'
+import { buildIpfsViewerUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
 import { classify, detectViewerOs, downloadFilename } from '@/helpers/ipfs/ipfs-content'
 import { probeContent, saveIpfsResource } from '@/helpers/ipfs/ipfs-download'
-
-/** Tauri v2/v1: наличие рантайма. Минимальная проверка, чтобы не тянуть
- *  зависимость от feature-утилит в core-композабл. */
-function inTauri(): boolean {
-  if (typeof window === 'undefined') return false
-  const w = window as unknown as Record<string, unknown>
-  return typeof w.__TAURI_INTERNALS__ !== 'undefined' || typeof w.__TAURI__ !== 'undefined'
-}
+import { useIpfsStore } from '@/stores/ipfs-store'
 
 /** Метка окна: одно окно на CID/имя (повторный клик — фокус, а не дубль). */
 function windowLabel(target: IpfsTarget): string {
@@ -26,23 +19,49 @@ function windowLabel(target: IpfsTarget): string {
   return `ipfs-${target.namespace}-${safe}`
 }
 
+// Коалесинг конкурентных открытий одного и того же CID. Между getByLabel и
+// созданием окна есть длинные await (resolveGateway/проба), поэтому двойной клик
+// иначе прошёл бы дедуп и создал два окна с одной меткой / два save-диалога.
+const inFlight = new Set<string>()
+
 async function openIpfsViewer(target: IpfsTarget): Promise<void> {
+  const store = useIpfsStore()
+
+  // Веб/мобилка: нативного окна и локальной ноды нет — фича только для десктопа.
+  if (!store.available) {
+    store.showDesktopOnly()
+    return
+  }
+
+  const label = windowLabel(target)
+  if (inFlight.has(label)) return
+  inFlight.add(label)
+
   try {
     const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
-    const label = windowLabel(target)
 
-    // Повторный клик по уже открытому CID — просто фокус (без пробы/докачки).
+    // Повторный клик по уже открытому CID — просто фокус (без резолва/докачки).
     const existing = await WebviewWindow.getByLabel(label)
     if (existing) {
       await existing.setFocus()
       return
     }
 
-    const url = buildIpfsViewerUrl(target)
+    // Резолвим шлюз: локальная нода (с consent/установкой) либо публичный.
+    const gateway = await store.resolveGateway()
+    let url = buildIpfsViewerUrl(target, gateway)
 
     // Универсальный контент: пробуем тип и решаем render-vs-download, как браузер.
-    // Проба не удалась → показываем в окне (поведение не хуже прежнего).
-    const probed = await probeContent(url)
+    let probed = await probeContent(url)
+
+    // Per-CID fallback: локальная нода не отдала CID за таймаут (холодный swarm /
+    // файрвол) → пробуем публичный шлюз (Tier 1 → Tier 0).
+    if (!probed && gateway !== IPFS_GATEWAY) {
+      url = buildIpfsViewerUrl(target, IPFS_GATEWAY)
+      probed = await probeContent(url)
+    }
+
+    // Проба не удалась вовсе → показываем в окне (поведение не хуже прежнего).
     const mode = probed
       ? classify(probed.contentType, probed.contentDisposition, detectViewerOs())
       : 'render'
@@ -62,6 +81,8 @@ async function openIpfsViewer(target: IpfsTarget): Promise<void> {
     })
   } catch (err) {
     console.error('[ipfs-viewer] ошибка открытия просмотрщика:', err)
+  } finally {
+    inFlight.delete(label)
   }
 }
 
@@ -74,7 +95,12 @@ function findIpfsTargetFromClick(e: MouseEvent): IpfsTarget | null {
   return parseIpfsLink(raw) || parseIpfsLink(anchor.href || '')
 }
 
+// Активность перехвата (по умолчанию — всегда). На embed-роутах модалки нет,
+// поэтому там перехват выключаем, чтобы клик не «проваливался» без фидбека.
+let isActive: () => boolean = () => true
+
 function handleClick(e: MouseEvent): void {
+  if (!isActive()) return
   // Только простой левый клик без модификаторов (Ctrl/Cmd-клик и пр. не трогаем).
   if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
     return
@@ -86,8 +112,21 @@ function handleClick(e: MouseEvent): void {
   void openIpfsViewer(target)
 }
 
-export function useIpfsLinks(): void {
-  if (!inTauri()) return
-  onMounted(() => document.addEventListener('click', handleClick, true))
+/**
+ * Вешает глобальный перехват IPFS-ссылок. `active` (по умолчанию true) позволяет
+ * отключить перехват там, где нет singleton-модалки (embed-роуты) — иначе клик
+ * был бы поглощён без визуального фидбека/зависал бы на неотрендеренной модалке.
+ */
+export function useIpfsLinks(active: () => boolean = () => true): void {
+  isActive = active
+  onMounted(() => {
+    document.addEventListener('click', handleClick, true)
+    // Подписка на события бэкенда + подтягивание статуса (no-op в вебе).
+    if (isActive()) {
+      useIpfsStore()
+        .hydrate()
+        .catch(() => {})
+    }
+  })
   onBeforeUnmount(() => document.removeEventListener('click', handleClick, true))
 }

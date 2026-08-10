@@ -9,6 +9,7 @@ import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
 import ReportModal from '@/b-components/report/report-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
+import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 
@@ -23,7 +24,8 @@ const isEmbed = computed<boolean>(() => route.meta?.embed === true)
 useGlobalKeyboard()
 
 // Перехват кликов по IPFS-ссылкам → открытие в отдельном окне (только в Tauri).
-useIpfsLinks()
+// На embed-роутах выключаем: там нет singleton-модалки IPFS.
+useIpfsLinks(() => !isEmbed.value)
 
 // Явная конфигурация темы для устранения предупреждения о injection
 // Используем computed для реактивности и обеспечения правильной инициализации
@@ -63,6 +65,8 @@ const themeConfig = computed<ThemeConfig>(() => ({
       <ReportModal />
       <!-- P0-1: разблокировка сейфа (passphrase-режим) — singleton, открывается мостом vault-unlock -->
       <VaultUnlockModal />
+      <!-- IPFS-модуль: consent/прогресс/desktop-only — singleton, открывается ipfs-store -->
+      <IpfsInstallModal />
     </template>
   </ConfigProvider>
 </template>

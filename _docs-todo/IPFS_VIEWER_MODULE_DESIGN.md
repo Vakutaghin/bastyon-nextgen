@@ -210,4 +210,13 @@ export async function buildIpfsViewerUrl(target: IpfsTarget): Promise<string> {
 | Ф0 | ✅ готово (не запушено) | `helpers/ipfs/ipfs-link.ts`, `ipfs-viewer.ts`, `use-ipfs-links.ts`, capabilities — коммит `825c1d3` |
 | Ф1 | ✅ готово (не запушено) | `helpers/ipfs/ipfs-content.ts` (17 тестов), `ipfs-download.ts`, врезка `use-ipfs-links.ts` — коммит `76cb24d`; сьют 2099 зелёный. Живая проверка render/download в Tauri-сборке — TODO |
 | Ф2 | ✅ готово (не запушено) | backend `src-tauri/src/ipfs/{state,process,config,installer,mod}.rs` (клон Tor); Kubo v0.43.0, запиненные SHA-512, Go-арх-маппинг, `/tcp/0`+чтение портов из `api`/`gateway`, `autoclient`+`Provide.Enabled=false`+`lowpower`, try_attach, kill на выходе. Команды `ipfs_status/ipfs_ensure/ipfs_stop/ipfs_uninstall`. `cargo check` без предупреждений, `cargo test ipfs::` 11/11. Живой запуск демона в Tauri-сборке — TODO. Не сделано (осознанно): cancellation-token отмены скачивания и `ipfs_update` — Ф3/Ф4 |
-| Ф3–Ф5 | ⬜ запланировано | см. §6 |
+| Ф3 | ✅ готово (не запушено) | фронт+Tier1: `stores/ipfs-store.ts` (consent/ensure/resolveGateway/tier), `helpers/ipfs/ipfs-tier.ts` (+6 тестов), `components/ipfs/ipfs-install-modal.vue`+styled, врезка в `use-ipfs-links.ts` (availability→resolveGateway→per-CID fallback), `probeContent` таймаут+loopback-байпас Tor, i18n `header.ipfs*`, CSP `frame-src`/`media-src http://127.0.0.1:*`, plugin-http allowlist (`127.0.0.1`+`dweb.link`). Прогнан adversarial-workflow (16 находок), 10 контейнированных пофикшены; сьют 2105 зелёный, линт 0. Живая проверка в Tauri-сборке — TODO |
+| Ф4–Ф5 | ⬜ запланировано | см. §6 |
+
+### Известные ограничения (из adversarial-ревью Фазы 3, отложено в Ф4)
+
+- **Публичный шлюз через нативное окно не торифицируется.** Окно грузит URL напрямую (OS-навигация), минуя app-level Tor. При включённом Tor + публичном шлюзе (или Tier1→Tier0 fallback) — деанон к `dweb.link`. Локальная нода (loopback) не течёт. Митигейшн-опция: при включённом Tor не делать публичный fallback (жертвуем «откроется всегда» ради приватности) — продуктовое решение.
+- **`torFetch` не honors AbortSignal.** Проба публичного шлюза через Tor может превысить 8с (таймаут не отменяет invoke). Трогает общий Tor-инфра (`request-tor.ts`) — не в скоупе IPFS-фазы.
+- **`saveIpfsResource` буферизует файл целиком** (blob→arrayBuffer). Крупные файлы → память. Стриминг на диск через Rust (`reqwest bytes_stream`) — Ф2/Ф4 хардненинг.
+- **Большой «холодный» CID** может дать преждевременный Tier1→Tier0 (8с проба). Адаптивный/раздельный таймаут — Ф4.
+- **Смена `IPFS_GATEWAY`** требует добавить хост в plugin-http allowlist (`capabilities/default.json`) — сейчас запинен `dweb.link`.
