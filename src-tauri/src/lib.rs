@@ -638,6 +638,10 @@ pub fn run() {
       ipfs::ipfs_add,
       ipfs::ipfs_add_encrypted,
       ipfs::ipfs_save_encrypted,
+      ipfs::ipfs_pin_service_set,
+      ipfs::ipfs_pin_service_status,
+      ipfs::ipfs_pin_service_clear,
+      ipfs::ipfs_pin_remote,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]

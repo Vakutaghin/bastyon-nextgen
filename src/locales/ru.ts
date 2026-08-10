@@ -217,6 +217,15 @@ export default {
       'Расшифровать файл сможет только тот, у кого есть именно эта ссылка: {link}',
     ipfsSaveDoneTitle: 'Файл сохранён',
     ipfsSaveFailedTitle: 'Не удалось открыть файл (неверный ключ или недоступен)',
+    ipfsPinConfigBtn: 'Удалённый pin (durability)…',
+    ipfsPinConfigTitle: 'Удалённый pin',
+    ipfsPinConfigContent:
+      'Чтобы расшаренные файлы оставались доступны, даже когда эта нода офлайн, пинуй их на pinning-сервис (ipfs-cluster на твоём сервере или Pinata / web3.storage). Введи endpoint и токен доступа.',
+    ipfsPinConfigured: 'Pinning-сервис настроен — расшаренные файлы пинятся удалённо.',
+    ipfsPinEndpointPlaceholder: 'Endpoint сервиса (https://…/api/v1)',
+    ipfsPinKeyPlaceholder: 'Токен доступа',
+    ipfsPinSaveBtn: 'Сохранить',
+    ipfsPinClearBtn: 'Удалить сервис',
   },
   common: {
     cancel: 'Отмена',

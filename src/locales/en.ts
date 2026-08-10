@@ -212,6 +212,15 @@ export default {
     ipfsShareEncryptedDone: 'Only someone with this exact link can decrypt the file: {link}',
     ipfsSaveDoneTitle: 'File saved',
     ipfsSaveFailedTitle: 'Could not open the file (wrong key or unavailable)',
+    ipfsPinConfigBtn: 'Remote pin (durability)…',
+    ipfsPinConfigTitle: 'Remote pinning',
+    ipfsPinConfigContent:
+      'Keep shared files available even when this node is offline by pinning them to a pinning service (ipfs-cluster on your own server, or Pinata / web3.storage). Enter its endpoint and access token.',
+    ipfsPinConfigured: 'A pinning service is configured — shared files are pinned remotely.',
+    ipfsPinEndpointPlaceholder: 'Service endpoint (https://…/api/v1)',
+    ipfsPinKeyPlaceholder: 'Access token',
+    ipfsPinSaveBtn: 'Save',
+    ipfsPinClearBtn: 'Remove service',
   },
   common: {
     cancel: 'Cancel',

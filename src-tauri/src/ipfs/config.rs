@@ -17,6 +17,9 @@ pub const IPFS_API_FILE: &str = "api";
 /// Файл с адресом gateway — HTTP-URL, напр. `http://127.0.0.1:8080`.
 pub const IPFS_GATEWAY_FILE: &str = "gateway";
 
+/// Имя удалённого pinning-сервиса в конфиге Kubo (Ф5c, durability).
+pub const REMOTE_PIN_SERVICE: &str = "bastyon-pin";
+
 /// Профиль инициализации репозитория. `lowpower` (v0.43.0): connmgr basic
 /// (LowWater 20 / HighWater 40), AutoNAT/relay-сервис выключены,
 /// `Routing.Type=autoclient` — участвуем в DHT как клиент, но не как сервер.

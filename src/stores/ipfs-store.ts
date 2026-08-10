@@ -24,7 +24,12 @@ export type IpfsInstallProgress = {
   message: string
 }
 
-export type IpfsModalPhase = 'consent' | 'progress' | 'desktop-only' | 'tor-blocked'
+export type IpfsModalPhase =
+  | 'consent'
+  | 'progress'
+  | 'desktop-only'
+  | 'tor-blocked'
+  | 'pin-config'
 
 /** Выбор пользователя в consent-модалке: установить / явный отказ / закрыл. */
 type ConsentChoice = 'install' | 'decline' | 'dismiss'
@@ -99,6 +104,7 @@ export const useIpfsStore = defineStore('ipfs', {
     message: null as string | null,
     installed: false,
     updateAvailable: false,
+    pinServiceConfigured: false,
     install: null as IpfsInstallProgress | null,
     consent: loadConsent() as IpfsConsent,
     modalOpen: false,
@@ -140,6 +146,7 @@ export const useIpfsStore = defineStore('ipfs', {
       try {
         const snap = await tauriInvoke<IpfsStateSnapshot>('ipfs_status')
         this.applySnapshot(snap)
+        if (this.status === 'running') void this.refreshPinService()
       } catch {
         // бэкенд ещё не готов — подтянем при первом действии
       }
@@ -197,6 +204,11 @@ export const useIpfsStore = defineStore('ipfs', {
       this.openModal('desktop-only')
     },
 
+    openPinConfig(): void {
+      this.openModal('pin-config')
+      void this.refreshPinService()
+    },
+
     /** При включённом Tor не открываем публичный шлюз (деанон) — просим локальную ноду. */
     showTorBlocked(): void {
       this.openModal('tor-blocked')
@@ -251,6 +263,7 @@ export const useIpfsStore = defineStore('ipfs', {
       if (!port) return null
       try {
         const cid = await tauriInvoke<string>('ipfs_add', { path })
+        if (cid && this.pinServiceConfigured) void this.pinRemote(cid)
         return cid || null
       } catch (e) {
         this.message = String(e)
@@ -271,7 +284,9 @@ export const useIpfsStore = defineStore('ipfs', {
       const port = await this.ensureRunning()
       if (!port) return null
       try {
-        return await tauriInvoke<{ cid: string; key: string }>('ipfs_add_encrypted', { path })
+        const res = await tauriInvoke<{ cid: string; key: string }>('ipfs_add_encrypted', { path })
+        if (res?.cid && this.pinServiceConfigured) void this.pinRemote(res.cid)
+        return res
       } catch (e) {
         this.message = String(e)
         return null
@@ -291,6 +306,53 @@ export const useIpfsStore = defineStore('ipfs', {
       } catch (e) {
         this.message = String(e)
         return false
+      }
+    },
+
+    // --- удалённый pin (Ф5c, durability) ---
+    async refreshPinService(): Promise<void> {
+      if (!this.available) return
+      try {
+        this.pinServiceConfigured = await tauriInvoke<boolean>('ipfs_pin_service_status')
+      } catch {
+        this.pinServiceConfigured = false
+      }
+    },
+
+    /** Настроить удалённый pinning-сервис (endpoint + токен). Нужна поднятая нода. */
+    async setPinService(endpoint: string, key: string): Promise<boolean> {
+      if (!this.available) {
+        this.showDesktopOnly()
+        return false
+      }
+      const port = await this.ensureRunning()
+      if (!port) return false
+      try {
+        await tauriInvoke('ipfs_pin_service_set', { endpoint, key })
+        await this.refreshPinService()
+        return this.pinServiceConfigured
+      } catch (e) {
+        this.message = String(e)
+        return false
+      }
+    },
+
+    async clearPinService(): Promise<void> {
+      if (!this.available) return
+      try {
+        await tauriInvoke('ipfs_pin_service_clear')
+      } catch {
+        // best-effort
+      }
+      this.pinServiceConfigured = false
+    },
+
+    /** Запинить CID на удалённом сервисе (best-effort, фоном). */
+    async pinRemote(cid: string): Promise<void> {
+      try {
+        await tauriInvoke('ipfs_pin_remote', { cid })
+      } catch {
+        // без сервиса/недоступен — durability просто не добавили
       }
     },
 

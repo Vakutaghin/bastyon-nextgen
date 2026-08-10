@@ -72,6 +72,10 @@
             {{ t('header.ipfsShareEncryptedBtn') }}
           </Button>
 
+          <Button v-if="status === 'running'" size="small" @click="ipfs.openPinConfig()">
+            {{ t('header.ipfsPinConfigBtn') }}
+          </Button>
+
           <Button v-if="installed && !busy" size="small" danger @click="onUninstall">
             {{ t('header.ipfsUninstallBtn') }}
           </Button>

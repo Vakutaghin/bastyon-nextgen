@@ -357,6 +357,78 @@ pub async fn ipfs_save_encrypted(
 }
 
 // ---------------------------------------------------------------------------
+// Удалённый pin (Ф5c) — durability через IPFS Pinning Service API.
+// Сервис (endpoint+token) хранит сам Kubo в своём конфиге. Работает со сторонним
+// провайдером (Pinata/web3.storage) или ipfs-cluster на своём VPS.
+// ---------------------------------------------------------------------------
+
+/// Задать/пересоздать удалённый pinning-сервис (идемпотентно: rm + add).
+#[tauri::command]
+pub async fn ipfs_pin_service_set(
+    endpoint: String,
+    key: String,
+    mgr: State<'_, IpfsManager>,
+) -> Result<(), String> {
+    let _ = run_ipfs(
+        &mgr.paths,
+        &["pin", "remote", "service", "rm", config::REMOTE_PIN_SERVICE],
+    )
+    .await;
+    run_ipfs(
+        &mgr.paths,
+        &[
+            "pin",
+            "remote",
+            "service",
+            "add",
+            config::REMOTE_PIN_SERVICE,
+            &endpoint,
+            &key,
+        ],
+    )
+    .await?;
+    Ok(())
+}
+
+/// Настроен ли удалённый pinning-сервис.
+#[tauri::command]
+pub async fn ipfs_pin_service_status(mgr: State<'_, IpfsManager>) -> Result<bool, String> {
+    let out = run_ipfs(&mgr.paths, &["pin", "remote", "service", "ls"])
+        .await
+        .unwrap_or_default();
+    Ok(out.contains(config::REMOTE_PIN_SERVICE))
+}
+
+/// Удалить настроенный удалённый pinning-сервис.
+#[tauri::command]
+pub async fn ipfs_pin_service_clear(mgr: State<'_, IpfsManager>) -> Result<(), String> {
+    let _ = run_ipfs(
+        &mgr.paths,
+        &["pin", "remote", "service", "rm", config::REMOTE_PIN_SERVICE],
+    )
+    .await;
+    Ok(())
+}
+
+/// Запинить CID на удалённом сервисе (в фоне). Best-effort: без сервиса вернёт Err.
+#[tauri::command]
+pub async fn ipfs_pin_remote(cid: String, mgr: State<'_, IpfsManager>) -> Result<(), String> {
+    run_ipfs(
+        &mgr.paths,
+        &[
+            "pin",
+            "remote",
+            "add",
+            &format!("--service={}", config::REMOTE_PIN_SERVICE),
+            "--background",
+            &cid,
+        ],
+    )
+    .await?;
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // Внутреннее
 // ---------------------------------------------------------------------------
 
