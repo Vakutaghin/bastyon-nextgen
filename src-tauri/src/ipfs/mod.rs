@@ -1,0 +1,318 @@
+pub mod config;
+pub mod installer;
+pub mod process;
+pub mod state;
+
+use crate::ipfs::process::IpfsChild;
+use crate::ipfs::state::{IpfsPaths, IpfsState, IpfsStateSnapshot, IpfsStatus, SharedIpfsState};
+use std::sync::{Arc, Mutex as StdMutex};
+use std::time::Duration;
+use tauri::{AppHandle, Manager, State};
+use tokio::sync::RwLock;
+
+pub struct IpfsManager {
+    pub state: SharedIpfsState,
+    pub paths: IpfsPaths,
+    /// Держится синхронно; kill в обработчике выхода не требует tokio-рантайма.
+    pub child: StdMutex<Option<IpfsChild>>,
+    /// Сериализует ensure/start: параллельные клики по IPFS-ссылкам не должны
+    /// поднимать два демона на один repo (второй упрётся в repo.lock).
+    pub start_lock: tokio::sync::Mutex<()>,
+}
+
+impl IpfsManager {
+    pub fn new(paths: IpfsPaths) -> Self {
+        Self {
+            state: Arc::new(RwLock::new(IpfsState::default())),
+            paths,
+            child: StdMutex::new(None),
+            start_lock: tokio::sync::Mutex::new(()),
+        }
+    }
+
+    pub async fn emit_state(&self, app: &AppHandle) {
+        use tauri::Emitter;
+        let snapshot = self.state.read().await.snapshot();
+        let _ = app.emit("ipfs:state", &snapshot);
+    }
+}
+
+fn err_string<E: std::fmt::Display>(e: E) -> String {
+    e.to_string()
+}
+
+// ---------------------------------------------------------------------------
+// Tauri commands
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub async fn ipfs_status(mgr: State<'_, IpfsManager>) -> Result<IpfsStateSnapshot, String> {
+    let installed = mgr.paths.binary.is_file();
+    let mut st = mgr.state.write().await;
+    st.installed = installed;
+    Ok(st.snapshot())
+}
+
+/// Идемпотентная точка входа для фронтенда: установить (если нужно) + запустить
+/// демон + вернуть снапшот с `gateway_port`. Повторные вызовы во время работы
+/// сразу возвращают текущее состояние.
+#[tauri::command]
+pub async fn ipfs_ensure(
+    app: AppHandle,
+    mgr: State<'_, IpfsManager>,
+) -> Result<IpfsStateSnapshot, String> {
+    // Быстрый путь без блокировки.
+    {
+        let st = mgr.state.read().await;
+        if st.status == IpfsStatus::Running && st.gateway_port != 0 {
+            return Ok(st.snapshot());
+        }
+    }
+
+    // Сериализуем весь цикл подготовки: конкурентные клики не плодят демонов.
+    let _guard = mgr.start_lock.lock().await;
+
+    // Другой клик мог всё поднять, пока мы ждали блокировку.
+    {
+        let st = mgr.state.read().await;
+        if st.status == IpfsStatus::Running && st.gateway_port != 0 {
+            return Ok(st.snapshot());
+        }
+    }
+
+    // 1. Присоединиться к осиротевшему демону от прошлого запуска, если жив.
+    if let Some((api, gw)) = try_attach(&mgr.paths).await {
+        {
+            let mut st = mgr.state.write().await;
+            st.api_port = api;
+            st.gateway_port = gw;
+            st.status = IpfsStatus::Running;
+            st.installed = true;
+            st.message = None;
+        }
+        mgr.emit_state(&app).await;
+        return Ok(mgr.state.read().await.snapshot());
+    }
+
+    // 2. Установка бинаря.
+    {
+        let mut st = mgr.state.write().await;
+        st.status = IpfsStatus::Installing;
+        st.message = Some("Preparing IPFS".into());
+    }
+    mgr.emit_state(&app).await;
+    installer::ensure_installed(&app, &mgr.paths)
+        .await
+        .map_err(err_string)?;
+    {
+        let mut st = mgr.state.write().await;
+        st.installed = true;
+    }
+
+    // 3. Инициализация репозитория (один раз).
+    if !mgr.paths.repo.join("config").exists() {
+        std::fs::create_dir_all(&mgr.paths.repo).map_err(err_string)?;
+        run_ipfs(
+            &mgr.paths,
+            &["init", &format!("--profile={}", config::INIT_PROFILE)],
+        )
+        .await?;
+    }
+
+    // 4. Конфигурация ноды-читателя (порты /tcp/0, autoclient, Provide off, CORS).
+    for args in config::config_commands() {
+        let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+        run_ipfs(&mgr.paths, &refs).await?;
+    }
+
+    {
+        let mut st = mgr.state.write().await;
+        st.status = IpfsStatus::Starting;
+        st.message = Some("Launching IPFS daemon".into());
+    }
+    mgr.emit_state(&app).await;
+
+    // 5. Запуск демона.
+    let child =
+        process::spawn_daemon(app.clone(), &mgr.paths, mgr.state.clone()).map_err(err_string)?;
+    let pid = child.pid();
+    {
+        let mut guard = mgr.child.lock().expect("ipfs child mutex poisoned");
+        *guard = Some(child);
+    }
+    {
+        let mut st = mgr.state.write().await;
+        st.child_pid = Some(pid);
+    }
+
+    // 6. Готовность: реальные порты из файлов api/gateway + живой API.
+    match wait_ready(&mgr.paths, config::DAEMON_READY_TIMEOUT_SECS).await {
+        Some((api, gw)) => {
+            let mut st = mgr.state.write().await;
+            st.api_port = api;
+            st.gateway_port = gw;
+            st.status = IpfsStatus::Running;
+            st.message = None;
+        }
+        None => {
+            // Гасим неподнявшийся демон, чтобы не завис.
+            if let Some(mut c) = mgr.child.lock().expect("ipfs child mutex poisoned").take() {
+                let _ = process::kill(&mut c);
+            }
+            {
+                let mut st = mgr.state.write().await;
+                st.status = IpfsStatus::Failed;
+                if st.message.is_none() {
+                    st.message = Some("IPFS daemon did not become ready".into());
+                }
+            }
+            mgr.emit_state(&app).await;
+            return Err("IPFS daemon did not become ready".into());
+        }
+    }
+    mgr.emit_state(&app).await;
+    Ok(mgr.state.read().await.snapshot())
+}
+
+#[tauri::command]
+pub async fn ipfs_stop(
+    app: AppHandle,
+    mgr: State<'_, IpfsManager>,
+) -> Result<IpfsStateSnapshot, String> {
+    // Пробуем graceful shutdown через API, затем добиваем процесс.
+    let api_port = mgr.state.read().await.api_port;
+    if api_port != 0 {
+        let _ = reqwest::Client::new()
+            .post(format!("http://127.0.0.1:{api_port}/api/v0/shutdown"))
+            .send()
+            .await;
+    }
+    {
+        let mut guard = mgr.child.lock().expect("ipfs child mutex poisoned");
+        if let Some(mut c) = guard.take() {
+            let _ = process::kill(&mut c);
+        }
+    }
+    {
+        let mut st = mgr.state.write().await;
+        st.status = IpfsStatus::Off;
+        st.message = None;
+        st.child_pid = None;
+        st.gateway_port = 0;
+        st.api_port = 0;
+    }
+    mgr.emit_state(&app).await;
+    Ok(mgr.state.read().await.snapshot())
+}
+
+#[tauri::command]
+pub async fn ipfs_uninstall(
+    app: AppHandle,
+    mgr: State<'_, IpfsManager>,
+) -> Result<IpfsStateSnapshot, String> {
+    {
+        let mut guard = mgr.child.lock().expect("ipfs child mutex poisoned");
+        if let Some(mut c) = guard.take() {
+            let _ = process::kill(&mut c);
+        }
+    }
+    // Освобождаем диск: и бинарь, и repo (кэш блоков может быть крупным).
+    let _ = std::fs::remove_dir_all(&mgr.paths.bin_dir);
+    let _ = std::fs::remove_dir_all(&mgr.paths.repo);
+    {
+        let mut st = mgr.state.write().await;
+        *st = IpfsState::default();
+    }
+    mgr.emit_state(&app).await;
+    Ok(mgr.state.read().await.snapshot())
+}
+
+// ---------------------------------------------------------------------------
+// Внутреннее
+// ---------------------------------------------------------------------------
+
+/// Короткоживущий вызов `ipfs <args>` с нашим IPFS_PATH. Ошибка → stderr текстом.
+async fn run_ipfs(paths: &IpfsPaths, args: &[&str]) -> Result<String, String> {
+    let out = tokio::process::Command::new(&paths.binary)
+        .args(args)
+        .env("IPFS_PATH", &paths.repo)
+        .env("IPFS_TELEMETRY", "off")
+        .output()
+        .await
+        .map_err(err_string)?;
+    if !out.status.success() {
+        return Err(String::from_utf8_lossy(&out.stderr).trim().to_string());
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+fn read_api_port(paths: &IpfsPaths) -> Option<u16> {
+    let raw = std::fs::read_to_string(paths.repo.join(config::IPFS_API_FILE)).ok()?;
+    config::parse_api_multiaddr(&raw)
+}
+
+fn read_gateway_port(paths: &IpfsPaths) -> Option<u16> {
+    let raw = std::fs::read_to_string(paths.repo.join(config::IPFS_GATEWAY_FILE)).ok()?;
+    config::parse_gateway_url(&raw)
+}
+
+/// Живой демон пишет свой адрес в `$IPFS_PATH/api`. Файл мог остаться и от
+/// мёртвого процесса — проверяем не наличие, а ответ API.
+async fn try_attach(paths: &IpfsPaths) -> Option<(u16, u16)> {
+    let api_port = read_api_port(paths)?;
+    let alive = reqwest::Client::new()
+        .post(format!("http://127.0.0.1:{api_port}/api/v0/id"))
+        .send()
+        .await
+        .map(|r| r.status().is_success())
+        .unwrap_or(false);
+    if !alive {
+        return None;
+    }
+    let gw_port = read_gateway_port(paths)?;
+    Some((api_port, gw_port))
+}
+
+/// Демон поднимается не мгновенно. Готовность = файлы api/gateway записаны
+/// (значит слушатели живы) И API отвечает. Возвращает (api_port, gateway_port).
+async fn wait_ready(paths: &IpfsPaths, timeout_secs: u64) -> Option<(u16, u16)> {
+    let client = reqwest::Client::new();
+    for _ in 0..(timeout_secs * 2) {
+        if let Some(api_port) = read_api_port(paths) {
+            let alive = client
+                .post(format!("http://127.0.0.1:{api_port}/api/v0/id"))
+                .send()
+                .await
+                .map(|r| r.status().is_success())
+                .unwrap_or(false);
+            if alive {
+                if let Some(gw_port) = read_gateway_port(paths) {
+                    return Some((api_port, gw_port));
+                }
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    None
+}
+
+/// Инициализация менеджера и регистрация в app state. Вызывается один раз из setup.
+pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    // Бинарь — в перекачиваемый cache; repo (IPFS_PATH) — в data.
+    let bin_dir = app
+        .path()
+        .app_cache_dir()
+        .or_else(|_| app.path().app_local_data_dir())?
+        .join("ipfs");
+    let repo = app
+        .path()
+        .app_data_dir()
+        .or_else(|_| app.path().app_local_data_dir())?
+        .join("ipfs")
+        .join("repo");
+    std::fs::create_dir_all(&bin_dir)?;
+    std::fs::create_dir_all(&repo)?;
+    let paths = IpfsPaths::new(bin_dir, repo);
+    app.manage(IpfsManager::new(paths));
+    Ok(())
+}

@@ -208,5 +208,6 @@ export async function buildIpfsViewerUrl(target: IpfsTarget): Promise<string> {
 | Фаза | Статус | Артефакты |
 |---|---|---|
 | Ф0 | ✅ готово (не запушено) | `helpers/ipfs/ipfs-link.ts`, `ipfs-viewer.ts`, `use-ipfs-links.ts`, capabilities — коммит `825c1d3` |
-| Ф1 | ✅ готово (не запушено) | `helpers/ipfs/ipfs-content.ts` (17 тестов), `ipfs-download.ts`, врезка `use-ipfs-links.ts` — коммит `ce4af14`; сьют 2099 зелёный. Живая проверка render/download в Tauri-сборке — TODO |
-| Ф2–Ф5 | ⬜ запланировано | см. §6 |
+| Ф1 | ✅ готово (не запушено) | `helpers/ipfs/ipfs-content.ts` (17 тестов), `ipfs-download.ts`, врезка `use-ipfs-links.ts` — коммит `76cb24d`; сьют 2099 зелёный. Живая проверка render/download в Tauri-сборке — TODO |
+| Ф2 | ✅ готово (не запушено) | backend `src-tauri/src/ipfs/{state,process,config,installer,mod}.rs` (клон Tor); Kubo v0.43.0, запиненные SHA-512, Go-арх-маппинг, `/tcp/0`+чтение портов из `api`/`gateway`, `autoclient`+`Provide.Enabled=false`+`lowpower`, try_attach, kill на выходе. Команды `ipfs_status/ipfs_ensure/ipfs_stop/ipfs_uninstall`. `cargo check` без предупреждений, `cargo test ipfs::` 11/11. Живой запуск демона в Tauri-сборке — TODO. Не сделано (осознанно): cancellation-token отмены скачивания и `ipfs_update` — Ф3/Ф4 |
+| Ф3–Ф5 | ⬜ запланировано | см. §6 |

@@ -1,3 +1,4 @@
+mod ipfs;
 mod tor;
 
 use tauri::{Emitter, Manager, RunEvent};
@@ -629,6 +630,10 @@ pub fn run() {
       tor::tor_ws_connect,
       tor::tor_ws_send,
       tor::tor_ws_close,
+      ipfs::ipfs_status,
+      ipfs::ipfs_ensure,
+      ipfs::ipfs_stop,
+      ipfs::ipfs_uninstall,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]
@@ -700,6 +705,9 @@ pub fn run() {
       // Tor manager — initialise app state holder.
       tor::init(app.handle()).map_err(|e| e.to_string())?;
 
+      // IPFS manager — initialise app state holder (Kubo module lifecycle).
+      ipfs::init(app.handle()).map_err(|e| e.to_string())?;
+
       // Подбираем осиротевшие temp-файлы транскодера старше 24 часов в фоне,
       // чтобы упавшие транскоды не накапливали гигабайты между запусками.
       std::thread::spawn(|| {
@@ -718,6 +726,15 @@ pub fn run() {
           if let Ok(mut guard) = mgr.child.lock() {
             if let Some(mut child) = guard.take() {
               let _ = tor::process::kill(&mut child);
+            }
+          }
+        }
+        // Same for the IPFS (Kubo) daemon — don't leave an orphan holding the
+        // repo lock and gateway port after the app exits.
+        if let Some(mgr) = app_handle.try_state::<ipfs::IpfsManager>() {
+          if let Ok(mut guard) = mgr.child.lock() {
+            if let Some(mut child) = guard.take() {
+              let _ = ipfs::process::kill(&mut child);
             }
           }
         }
