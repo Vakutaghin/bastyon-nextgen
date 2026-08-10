@@ -9,6 +9,8 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 import { parseIpfsLink, type IpfsTarget } from '@/helpers/ipfs/ipfs-link'
 import { buildIpfsViewerUrl } from '@/helpers/ipfs/ipfs-viewer'
+import { classify, detectViewerOs, downloadFilename } from '@/helpers/ipfs/ipfs-content'
+import { probeContent, saveIpfsResource } from '@/helpers/ipfs/ipfs-download'
 
 /** Tauri v2/v1: наличие рантайма. Минимальная проверка, чтобы не тянуть
  *  зависимость от feature-утилит в core-композабл. */
@@ -29,6 +31,7 @@ async function openIpfsViewer(target: IpfsTarget): Promise<void> {
     const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
     const label = windowLabel(target)
 
+    // Повторный клик по уже открытому CID — просто фокус (без пробы/докачки).
     const existing = await WebviewWindow.getByLabel(label)
     if (existing) {
       await existing.setFocus()
@@ -36,6 +39,18 @@ async function openIpfsViewer(target: IpfsTarget): Promise<void> {
     }
 
     const url = buildIpfsViewerUrl(target)
+
+    // Универсальный контент: пробуем тип и решаем render-vs-download, как браузер.
+    // Проба не удалась → показываем в окне (поведение не хуже прежнего).
+    const probed = await probeContent(url)
+    const mode = probed
+      ? classify(probed.contentType, probed.contentDisposition, detectViewerOs())
+      : 'render'
+    if (mode === 'download') {
+      await saveIpfsResource(url, downloadFilename(target, probed?.contentDisposition))
+      return
+    }
+
     const win = new WebviewWindow(label, {
       url,
       title: `IPFS · ${target.root.slice(0, 12)}…`,
