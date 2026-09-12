@@ -18,6 +18,8 @@ export interface Post {
   hash?: string
   /** ID транзакции (альтернатива hash). */
   txid?: string
+  /** Оптимистичный пост: отправлен, ещё не в блокчейне (бейдж, без действий/комментов). */
+  pending?: boolean
   author: PostAuthor
   title?: string
   content?: string

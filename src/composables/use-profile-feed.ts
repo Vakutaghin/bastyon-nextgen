@@ -10,8 +10,8 @@ import type { AdaptedPost } from '@/composables/use-feed'
 import { useAuthStore } from '@/blockchain'
 import { usePendingPostsStore } from '@/stores'
 import { pendingPostToAdapted } from '@/composables/pending-post-adapter'
+import { buildCurrentUserAuthor } from '@/helpers/common/current-user-author'
 import { usePendingPostsRealtime } from '@/composables/use-pending-posts-realtime'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
 
 /** Сырой пост из API с минимальным набором полей, нужных для merge репостов. */
 interface RawRepostPost {
@@ -39,13 +39,7 @@ export interface UseProfileFeedOptions {
  * Infinite scroll для ленты профиля
  */
 export function useProfileFeed(options: UseProfileFeedOptions) {
-  const {
-    address,
-    initialLimit = 10,
-    pageSize = 10,
-    threshold,
-    lang = 'ru'
-  } = options
+  const { address, initialLimit = 10, pageSize = 10, threshold, lang = 'ru' } = options
 
   // Безопасное расстояние для подгрузки
   const safeDistance = threshold ?? (typeof window !== 'undefined' ? window.innerHeight : 1000)
@@ -60,14 +54,10 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
   })
 
   // Автор для оптимистичных постов — текущий пользователь (профиль из auth-store).
-  const myAuthor = computed<AdaptedPost['author']>(() => {
-    const profile = authStore.getUserProfile
-    const myAddress = authStore.getUserAddress || ''
-    const name = (profile && 'name' in profile ? profile.name : '') || myAddress
-    const avatar = profile && profile.i ? (resolveImageUrl(profile.i) ?? null) : null
-    const reputation = profile && 'reputation' in profile ? Number(profile.reputation) || 0 : 0
-    return { name, address: myAddress, avatar, reputation, letter: name ? name[0]! : '?' }
-  })
+  // Тот же хелпер, что и в превью шапки, чтобы автор не расходился.
+  const myAuthor = computed<AdaptedPost['author']>(() =>
+    buildCurrentUserAuthor(authStore.getUserProfile, authStore.getUserAddress)
+  )
 
   const allPosts = ref<ReturnType<typeof extractPostsFromResponse>>([])
   const userProfile = ref<UserProfile | null>(null)
@@ -84,7 +74,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     'feed',
     'profile',
     address,
-    currentTxidForQuery.value || 'initial'
+    currentTxidForQuery.value || 'initial',
   ])
 
   const { data, isLoading, error, refetch } = useQuery<GetProfileFeedData>({
@@ -96,29 +86,29 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       return rpcCallWithAuth<GetProfileFeedData>({
         method: rpcEndpoints.getProfileFeed,
         parameters: [
-          0,              // height
-          currentTxid,    // txid
-          count,          // count
-          lang,           // lang
-          [],             // tagsfilter
-          [],             // type
-          [],             // _param6
-          [],             // _param7
-          [],             // tagsexcluded
-          '',             // _param9 (reserved)
-          address,        // address
-          '',             // keyword
-          '',             // orderby
-          'desc'          // ascdesc
+          0, // height
+          currentTxid, // txid
+          count, // count
+          lang, // lang
+          [], // tagsfilter
+          [], // type
+          [], // _param6
+          [], // _param7
+          [], // tagsexcluded
+          '', // _param9 (reserved)
+          address, // address
+          '', // keyword
+          '', // orderby
+          'desc', // ascdesc
         ],
         cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
         options: {
-          ex: true
-        }
+          ex: true,
+        },
       })
     },
     staleTime: 0, // Не кешируем, чтобы всегда получать свежие данные
-    gcTime: 0
+    gcTime: 0,
   })
 
   // Обработка ошибок
@@ -129,112 +119,118 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
   })
 
   // Обработка полученных данных
-  watch(data, async (newData) => {
-    if (!newData?.contents) {
-      if (currentTxidForQuery.value !== '') {
-        hasMore.value = false
-        isLoadingMore.value = false
+  watch(
+    data,
+    async (newData) => {
+      if (!newData?.contents) {
+        if (currentTxidForQuery.value !== '') {
+          hasMore.value = false
+          isLoadingMore.value = false
+        }
+        return
       }
-      return
-    }
 
-    // getprofilefeed возвращает `GetProfileFeedData` (с полем `contents`), которое
-    // extractPostsFromResponse читает через ветку `feedData.contents`. Структуры
-    // пересекаются лишь частично, поэтому требуется широкое приведение через unknown.
-    let newPosts: AdaptedPost[] = extractPostsFromResponse(
-      newData as unknown as Parameters<typeof extractPostsFromResponse>[0]
-    )
-    const contents = newData.contents
-
-    // Подгружаем контент оригинальных записей для репостов
-    const repostTxids = [...new Set(
-      (contents as RawRepostPost[])
-        .filter((p) => p.repost)
-        .map((p) => p.repost)
-    )] as string[]
-    if (repostTxids.length > 0) {
-      try {
-        const result = await rpcCallWithAuth<RawRepostPost[]>({
-          method: rpcEndpoints.getRawTransactionWithMessageById,
-          parameters: [repostTxids],
-          cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
-          options: {},
-          state: 1
-        })
-        const originals = Array.isArray(result) ? result : []
-        const originalMap = new Map(
-          (Array.isArray(originals) ? originals : []).map((p) => [p.txid || p.hash || p.id, p])
-        )
-        newPosts.forEach((adapted) => {
-          if (!adapted.repost) return
-          const orig = originalMap.get(adapted.repost)
-          if (orig) mergeRepostContent(adapted, orig)
-        })
-      } catch (err) {
-        console.error('[useProfileFeed] Failed to fetch repost content:', err)
-      }
-    }
-
-    // Извлекаем профиль пользователя из ответа
-    const profile = (contents as ProfileFeedItem[]).find(
-      (item): item is UserProfile =>
-        'name' in item && Boolean(item.name) && !('txid' in item && item.txid)
-    )
-    if (profile) {
-      userProfile.value = profile
-    }
-
-    if (currentTxidForQuery.value === '') {
-      allPosts.value = newPosts
-    } else {
-      const existingIds = new Set(allPosts.value.map(p => String(p.id)))
-      const uniqueNewPosts = newPosts.filter(p => !existingIds.has(String(p.id)))
-      allPosts.value = [...allPosts.value, ...uniqueNewPosts]
-    }
-
-    // Согласуем оптимистичный слой: если pending-пост уже пришёл из ленты
-    // (его txid среди загруженных) — снимаем pending. Плюс чистим просроченные.
-    if (isOwnFeed.value) {
-      const serverTxids = new Set(
-        allPosts.value.map((p) => p.txid).filter((x): x is string => !!x)
+      // getprofilefeed возвращает `GetProfileFeedData` (с полем `contents`), которое
+      // extractPostsFromResponse читает через ветку `feedData.contents`. Структуры
+      // пересекаются лишь частично, поэтому требуется широкое приведение через unknown.
+      const newPosts: AdaptedPost[] = extractPostsFromResponse(
+        newData as unknown as Parameters<typeof extractPostsFromResponse>[0]
       )
-      pendingPostsStore.reconcileWithServer(address, serverTxids)
-      pendingPostsStore.cleanupExpired()
-    }
+      const contents = newData.contents
 
-    if (contents.length > 0) {
-      // Ищем последний элемент с txid (это должен быть пост)
-      // Используем extracted posts чтобы быть уверенным
-      const lastPost = newPosts.length > 0 ? newPosts[newPosts.length - 1] : null
-
-      // Или ищем в contents с конца
-      let lastContentTxid = ''
-      for (let i = contents.length - 1; i >= 0; i--) {
-        const item = contents[i] as RawRepostPost
-        if (item.txid) {
-          lastContentTxid = item.txid
-          break
+      // Подгружаем контент оригинальных записей для репостов
+      const repostTxids = [
+        ...new Set((contents as RawRepostPost[]).filter((p) => p.repost).map((p) => p.repost)),
+      ] as string[]
+      if (repostTxids.length > 0) {
+        try {
+          const result = await rpcCallWithAuth<RawRepostPost[]>({
+            method: rpcEndpoints.getRawTransactionWithMessageById,
+            parameters: [repostTxids],
+            cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
+            options: {},
+            state: 1,
+          })
+          const originals = Array.isArray(result) ? result : []
+          const originalMap = new Map(
+            (Array.isArray(originals) ? originals : []).map((p) => [p.txid || p.hash || p.id, p])
+          )
+          newPosts.forEach((adapted) => {
+            if (!adapted.repost) return
+            const orig = originalMap.get(adapted.repost)
+            if (orig) mergeRepostContent(adapted, orig)
+          })
+        } catch (err) {
+          console.error('[useProfileFeed] Failed to fetch repost content:', err)
         }
       }
 
-      const newLastTxid = lastPost?.txid || lastContentTxid || ''
-      const expectedCount = currentTxidForQuery.value === '' ? initialLimit : pageSize
+      // Извлекаем профиль пользователя из ответа
+      const profile = (contents as ProfileFeedItem[]).find(
+        (item): item is UserProfile =>
+          'name' in item && Boolean(item.name) && !('txid' in item && item.txid)
+      )
+      if (profile) {
+        userProfile.value = profile
+      }
 
-      // Если txid не изменился или пришло меньше чем ожидали - конец
-      // Важно: contents может содержать профиль, поэтому сравниваем length с expectedCount
-      // Но если постов вообще нет, то скорее всего конец
-      if (newLastTxid && newLastTxid !== currentTxidForQuery.value && contents.length >= expectedCount) {
-        lastTxid.value = newLastTxid
-        hasMore.value = true
+      if (currentTxidForQuery.value === '') {
+        allPosts.value = newPosts
+      } else {
+        const existingIds = new Set(allPosts.value.map((p) => String(p.id)))
+        const uniqueNewPosts = newPosts.filter((p) => !existingIds.has(String(p.id)))
+        allPosts.value = [...allPosts.value, ...uniqueNewPosts]
+      }
+
+      // Согласуем оптимистичный слой: если pending-пост уже пришёл из ленты
+      // (его txid среди загруженных) — снимаем pending. Плюс чистим просроченные.
+      if (isOwnFeed.value) {
+        const serverTxids = new Set(
+          allPosts.value.map((p) => p.txid).filter((x): x is string => !!x)
+        )
+        pendingPostsStore.reconcileWithServer(address, serverTxids)
+        pendingPostsStore.cleanupExpired()
+      }
+
+      if (contents.length > 0) {
+        // Ищем последний элемент с txid (это должен быть пост)
+        // Используем extracted posts чтобы быть уверенным
+        const lastPost = newPosts.length > 0 ? newPosts[newPosts.length - 1] : null
+
+        // Или ищем в contents с конца
+        let lastContentTxid = ''
+        for (let i = contents.length - 1; i >= 0; i--) {
+          const item = contents[i] as RawRepostPost
+          if (item.txid) {
+            lastContentTxid = item.txid
+            break
+          }
+        }
+
+        const newLastTxid = lastPost?.txid || lastContentTxid || ''
+        const expectedCount = currentTxidForQuery.value === '' ? initialLimit : pageSize
+
+        // Если txid не изменился или пришло меньше чем ожидали - конец
+        // Важно: contents может содержать профиль, поэтому сравниваем length с expectedCount
+        // Но если постов вообще нет, то скорее всего конец
+        if (
+          newLastTxid &&
+          newLastTxid !== currentTxidForQuery.value &&
+          contents.length >= expectedCount
+        ) {
+          lastTxid.value = newLastTxid
+          hasMore.value = true
+        } else {
+          hasMore.value = false
+        }
       } else {
         hasMore.value = false
       }
-    } else {
-      hasMore.value = false
-    }
 
-    isLoadingMore.value = false
-  }, { immediate: true })
+      isLoadingMore.value = false
+    },
+    { immediate: true }
+  )
 
   const loadMore = async () => {
     if (isLoadingMore.value || !hasMore.value || isLoading.value) return
@@ -266,7 +262,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       },
       {
         rootMargin: `${safeDistance}px 0px`,
-        threshold: 0
+        threshold: 0,
       }
     )
     intersectionObserver.observe(el)
@@ -320,6 +316,6 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     hasMore: computed(() => hasMore.value),
     loadMoreTrigger,
     loadMore,
-    refetch
+    refetch,
   }
 }

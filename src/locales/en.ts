@@ -137,6 +137,13 @@ export default {
     actionPosted: 'published a new post',
     actionUpdatedProfile: 'updated their profile',
     noActiveEvents: 'No active events',
+    pendingTitle: 'Awaiting confirmation',
+    awaitingConfirmation: 'Not on-chain yet',
+    goToPost: 'Open post',
+    pendingPostPreviewTitle: 'Post preview',
+    pendingPostPreviewNote:
+      "The post has been sent but isn't on the blockchain yet. This is how it will look once confirmed — please wait.",
+    pendingPostConfirmedNote: 'The post has been confirmed by the network and is now published.',
     postRating: 'Post rating',
     comment: 'Comment',
     post: 'Post',

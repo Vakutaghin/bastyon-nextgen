@@ -18,53 +18,95 @@
 
     <template #overlay>
       <SC_PendingEventsMenu @click.stop @mousedown.stop>
-        <SC_EmptyMessage v-if="pendingItems.length === 0"> {{ t('header.noActiveEvents') }} </SC_EmptyMessage>
+        <SC_MenuHeader>
+          <HourglassOutlined />
+          <SC_MenuTitle>{{ t('header.pendingTitle') }}</SC_MenuTitle>
+        </SC_MenuHeader>
+
+        <SC_EmptyMessage v-if="pendingItems.length === 0">
+          {{ t('header.noActiveEvents') }}
+        </SC_EmptyMessage>
+
         <SC_EventsList v-else>
           <SC_EventItem v-for="item in pendingItems" :key="item.key" @click.stop @mousedown.stop>
-            <template v-if="item.kind === 'rating'">
-              <SC_EventHeader>{{ t('header.postRating') }}</SC_EventHeader>
+            <SC_EventTop>
+              <SC_KindChip>
+                <StarFilled v-if="item.kind === 'rating'" />
+                <FileTextOutlined v-else-if="item.kind === 'post'" />
+                <MessageOutlined v-else />
+                <span>{{ kindLabel(item.kind) }}</span>
+              </SC_KindChip>
+              <SC_PendingTag>
+                <ClockCircleOutlined />
+                {{ t('header.awaitingConfirmation') }}
+              </SC_PendingTag>
+            </SC_EventTop>
+
+            <!-- Оценка поста -->
+            <SC_EventPanel v-if="item.kind === 'rating'">
               <SC_EventContent>
                 <SC_PostTitle :title="item.postTitle || t('header.untitled')">
-                  {{ truncateTitle(item.postTitle) }}
+                  {{ item.postTitle || t('header.untitled') }}
                 </SC_PostTitle>
                 <SC_RatingDisplay>
                   <StarFilled :style="ICON_STAR_18" />
                   <SC_RatingValue>{{ item.ratingValue }}</SC_RatingValue>
                 </SC_RatingDisplay>
               </SC_EventContent>
-            </template>
+            </SC_EventPanel>
 
+            <!-- Пост -->
             <template v-else-if="item.kind === 'post'">
-              <SC_EventHeader>{{ t('header.post') }}</SC_EventHeader>
-              <SC_PostTitle v-if="item.title" :title="item.title">
-                {{ truncateTitle(item.title) }}
-              </SC_PostTitle>
-              <SC_CommentSnippet :title="item.message">
-                {{ truncateMessage(item.message) }}
-              </SC_CommentSnippet>
+              <SC_EventPanel>
+                <template v-if="item.title">
+                  <SC_PostTitle :title="item.title">{{ item.title }}</SC_PostTitle>
+                  <SC_SnippetSpaced :title="item.message">
+                    {{ cleanText(item.message) }}
+                  </SC_SnippetSpaced>
+                </template>
+                <SC_Snippet v-else :title="item.message">{{ cleanText(item.message) }}</SC_Snippet>
+              </SC_EventPanel>
+              <SC_ItemActions>
+                <Button type="link" size="small" @click="openPreview(item.id)">
+                  {{ t('header.goToPost') }}
+                </Button>
+              </SC_ItemActions>
             </template>
 
-            <template v-else>
-              <SC_EventHeader>{{ t('header.comment') }}</SC_EventHeader>
+            <!-- Комментарий -->
+            <SC_EventPanel v-else>
               <SC_PostTitle :title="item.postTitle || t('header.untitled')">
-                {{ truncateTitle(item.postTitle) }}
+                {{ item.postTitle || t('header.untitled') }}
               </SC_PostTitle>
-              <SC_CommentSnippet :title="item.message">
-                {{ truncateMessage(item.message) }}
-              </SC_CommentSnippet>
-            </template>
+              <SC_SnippetSpaced :title="item.message">
+                {{ cleanText(item.message) }}
+              </SC_SnippetSpaced>
+            </SC_EventPanel>
           </SC_EventItem>
         </SC_EventsList>
       </SC_PendingEventsMenu>
     </template>
   </Dropdown>
+
+  <PendingPostPreviewModal
+    v-model:open="previewOpen"
+    :post="previewPost"
+    :author="myAuthor"
+    :confirmed="previewConfirmed"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Badge } from 'ant-design-vue'
-import { HourglassOutlined, StarFilled } from '@ant-design/icons-vue'
+import { Dropdown, Badge, Button } from 'ant-design-vue'
+import {
+  HourglassOutlined,
+  StarFilled,
+  ClockCircleOutlined,
+  FileTextOutlined,
+  MessageOutlined,
+} from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
 import {
   usePendingRatingsStore,
@@ -74,19 +116,29 @@ import {
 } from '@/stores'
 import { usePendingPostsRealtime } from '@/composables/use-pending-posts-realtime'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
+import { buildCurrentUserAuthor } from '@/helpers/common/current-user-author'
+import type { PendingPost } from '@/stores/pending-posts-store'
 import { ICON_SIZE_XL, ICON_STAR_18 } from '@/styles/icon-styles'
+import PendingPostPreviewModal from './pending-post-preview-modal.vue'
 import {
   SC_EventsWrapper,
   SC_PendingEventsMenu,
+  SC_MenuHeader,
+  SC_MenuTitle,
   SC_EmptyMessage,
   SC_EventsList,
   SC_EventItem,
-  SC_EventHeader,
+  SC_EventTop,
+  SC_KindChip,
+  SC_PendingTag,
+  SC_EventPanel,
   SC_EventContent,
   SC_PostTitle,
   SC_RatingDisplay,
   SC_RatingValue,
-  SC_CommentSnippet,
+  SC_Snippet,
+  SC_SnippetSpaced,
+  SC_ItemActions,
 } from './styled'
 
 type RatingPendingItem = {
@@ -131,9 +183,30 @@ usePendingPostsRealtime()
 
 const visible = ref(false)
 
+// Превью pending-поста в модалке (как будто уже опубликован, с пометкой).
+const previewOpen = ref(false)
+const previewPost = ref<PendingPost | null>(null)
+// Пост подтвердился, пока модалка открыта: previewPost держит ссылку на объект,
+// снятие из стора его не обнуляет — следим сами и меняем пометку на «опубликован».
+const previewConfirmed = ref(false)
+watch(
+  () => pendingPostsStore.allPending.map((p) => p.id).join(','),
+  () => {
+    const id = previewPost.value?.id
+    if (previewOpen.value && id && !pendingPostsStore.allPending.some((p) => p.id === id)) {
+      previewConfirmed.value = true
+    }
+  }
+)
+
 const isAuthenticated = computed(() => authStore.isUserAuthenticated)
 const pendingCount = computed(
   () => pendingStore.count + commentsStore.pendingCount + pendingPostsStore.pendingCount
+)
+
+/** Автор превью — сам пользователь (pending-пост всегда его). */
+const myAuthor = computed(() =>
+  buildCurrentUserAuthor(authStore.getUserProfile, authStore.getUserAddress)
 )
 
 const pendingItems = computed<PendingHeaderItem[]>(() => {
@@ -180,13 +253,24 @@ const pendingItems = computed<PendingHeaderItem[]>(() => {
   return items
 })
 
-function truncateTitle(title?: string): string {
-  const value = title || t('header.untitled')
-  return value.length <= 100 ? value : value.slice(0, 100) + '...'
+function kindLabel(kind: PendingHeaderItem['kind']): string {
+  if (kind === 'rating') return t('header.postRating')
+  if (kind === 'post') return t('header.post')
+  return t('header.comment')
 }
 
-function truncateMessage(msg?: string): string {
-  const value = (msg || '').replace(/\s+/g, ' ').trim()
-  return value.length <= 140 ? value : value.slice(0, 140) + '...'
+/** Нормализуем пробелы; обрезку по строкам делает CSS (line-clamp: 2). */
+function cleanText(msg?: string): string {
+  return (msg || '').replace(/\s+/g, ' ').trim()
+}
+
+/** Открыть модалку-превью для конкретного pending-поста по его id (txid). */
+function openPreview(id: string): void {
+  const post = pendingPostsStore.allPending.find((p) => p.id === id)
+  if (!post) return
+  previewPost.value = post
+  previewConfirmed.value = false
+  previewOpen.value = true
+  visible.value = false
 }
 </script>

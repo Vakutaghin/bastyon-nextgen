@@ -18,13 +18,27 @@ export const SC_EventsWrapper = styled.div`
 
 export const SC_PendingEventsMenu = styled.div`
   background: ${COLORS.BG_PRIMARY};
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: ${COLORS.SHADOW_MD};
   padding: 8px;
-  min-width: 250px;
-  max-width: 350px;
+  min-width: 300px;
+  max-width: 380px;
   max-height: 80vh;
   overflow-y: auto;
+`
+
+/** Заголовок выпадашки — общий контекст «эти события ещё не в блокчейне». */
+export const SC_MenuHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 10px;
+  color: ${COLORS.TEXT_SECONDARY};
+`
+
+export const SC_MenuTitle = styled.div`
+  font-size: 13px;
+  font-weight: 600;
 `
 
 export const SC_EmptyMessage = styled.div`
@@ -41,61 +55,136 @@ export const SC_EventsList = styled.div`
 
 export const SC_EventItem = styled.div`
   border: 1px solid ${COLORS.GRAY_E8};
-  border-radius: 6px;
-  padding: 8px 12px;
-  background: ${COLORS.BG_INPUT};
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: ${COLORS.BG_PRIMARY};
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 `
 
-export const SC_EventHeader = styled.div`
-  font-weight: 600;
+/** Верхняя строка карточки: чип-тип слева, статус «в блокчейне ещё нет» справа. */
+export const SC_EventTop = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`
+
+/** Пилюля-метка типа события (иконка + подпись). */
+export const SC_KindChip = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: ${COLORS.ANT_BLUE_BG};
+  color: ${COLORS.ANT_BLUE};
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-weight: 600;
+`
+
+export const SC_PendingTag = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: ${COLORS.GRAY_999};
+  white-space: nowrap;
+`
+
+/** Панель с содержимым события (визуально отделяет текст от метаданных). */
+export const SC_EventPanel = styled.div`
+  background: ${COLORS.BG_INPUT};
+  border: 1px solid ${COLORS.GRAY_E8};
+  border-radius: 8px;
+  padding: 8px 10px;
 `
 
 export const SC_EventContent = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 12px;
 `
 
+/** Заголовок поста — одна строка с многоточием. */
 export const SC_PostTitle = styled.div`
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: ${COLORS.TEXT_PRIMARY};
-  word-break: break-word;
-  margin-right: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
+`
+
+/** Текст поста/коммента — аккуратные ДВЕ строки с многоточием. */
+export const SC_Snippet = styled.div`
+  font-size: 13px;
+  line-height: 1.4;
+  color: ${COLORS.GRAY_555};
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`
+
+/** Отступ сниппета от заголовка внутри панели. */
+export const SC_SnippetSpaced = styled(SC_Snippet)`
+  margin-top: 4px;
 `
 
 export const SC_RatingDisplay = styled.div`
   display: flex;
   align-items: center;
+  gap: 4px;
   background: ${COLORS.BG_PRIMARY};
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 12px;
   border: 1px solid ${COLORS.BG_HOVER};
+  white-space: nowrap;
 `
 
 export const SC_RatingValue = styled.span`
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: ${COLORS.TEXT_PRIMARY};
 `
 
-export const SC_CommentSnippet = styled.div`
+/** Строка действий карточки (кнопка «Перейти к посту»). */
+export const SC_ItemActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`
+
+// ── Модалка-превью pending-поста ──────────────────────────────────────
+
+/** Баннер-пометка: пост ещё не в блокчейне (confirmed → «опубликован»). */
+export const SC_PreviewNote = styled('div', { confirmed: Boolean })`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: ${(p) => (p.confirmed ? COLORS.SUCCESS_BG_TINT : COLORS.ANT_BLUE_BG)};
+  color: ${COLORS.TEXT_SECONDARY};
   font-size: 13px;
-  color: ${COLORS.GRAY_555};
-  word-break: break-word;
-  white-space: pre-wrap;
-  background: ${COLORS.BG_PRIMARY};
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid ${COLORS.BG_HOVER};
-  margin-top: 6px;
-  max-height: 4.5em;
+  line-height: 1.4;
+
+  .anticon {
+    color: ${(p) => (p.confirmed ? COLORS.SUCCESS : COLORS.ANT_BLUE)};
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+`
+
+export const SC_PreviewBody = styled.div`
+  border: 1px solid ${COLORS.GRAY_E8};
+  border-radius: 10px;
   overflow: hidden;
-  flex: 1;
 `

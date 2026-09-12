@@ -265,7 +265,10 @@ const { videoPlayerRef, chapters, youtubeEmbedUrls, handleSeekTimecode } = usePo
 )
 
 onMounted(() => {
-  if (props.post.id !== undefined) {
+  // Pending-пост НЕ регистрируем: он лёг бы под ключом txid и после подтверждения
+  // затенял бы реальный пост в getPostByShareId(txid) (реальный регистрируется
+  // под числовым id) — звёзды/голоса показывали бы 0 до перезагрузки.
+  if (props.post.id !== undefined && !props.post.pending) {
     postsStore.registerPost(props.post)
   }
 })
@@ -424,5 +427,4 @@ function onCommentsCollapsed(): void {
     }
   })
 }
-
 </script>

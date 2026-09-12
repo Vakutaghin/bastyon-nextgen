@@ -141,6 +141,13 @@ export default {
     actionPosted: 'опубликовал новый пост',
     actionUpdatedProfile: 'обновил профиль',
     noActiveEvents: 'Нет активных событий',
+    pendingTitle: 'Ожидают подтверждения',
+    awaitingConfirmation: 'В блокчейне ещё нет',
+    goToPost: 'Перейти к посту',
+    pendingPostPreviewTitle: 'Просмотр поста',
+    pendingPostPreviewNote:
+      'Пост отправлен, но ещё не попал в блокчейн. Так он будет выглядеть после подтверждения — дождитесь его.',
+    pendingPostConfirmedNote: 'Пост подтверждён сетью и опубликован.',
     postRating: 'Оценка поста',
     comment: 'Комментарий',
     post: 'Пост',
