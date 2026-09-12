@@ -143,8 +143,12 @@ export async function buildIpfsViewerUrl(target: IpfsTarget): Promise<string> {
 - **AV/SmartScreen false-positives (Windows).** Митигейшн: бинарь в `app_cache_dir` (не Roaming);
   в идеале подписать `kubo.exe` (EV-cert = мгновенная репутация SmartScreen). Для энтерпрайза Tier 0 спасает.
 - **Не раздавать чужое + не жрать батарею/диск.** Митигейшн: `Routing.Type=autoclient` (НЕ
-  `AcceleratedDHTClient` — OOM kubo#9990; НЕ `dhtclient` — медленнее), `Provide.Enabled=false`,
-  профиль `lowpower`, `Datastore.StorageMax` + периодический GC, API строго на loopback без CORS.
+  `AcceleratedDHTClient` — OOM kubo#9990; НЕ `dhtclient` — медленнее), профиль `lowpower`,
+  `Datastore.StorageMax` + периодический GC, API на loopback **с `API.Authorizations`**
+  (bearer-секрет в `app_data/ipfs/api-secret`, 0600). **Provide — НЕ выключать целиком**
+  (аудит B1: с `Provide.Enabled=false` свои опубликованные файлы никто не находил), а
+  `Provide.Strategy=pinned+entities`: анонсируются только явно запиненные (наши `add`),
+  кэш просмотрщика — нет. После `add` — `ipfs provide once` (в v0.43 `routing provide` deprecated).
   Порты — `Addresses.Gateway/API = /ip4/127.0.0.1/tcp/0`, реальный порт из `$IPFS_PATH/gateway` (+ сигнал живости) или stdout.
 - **Orphaned daemon держит `repo.lock`** (kill -9 минует `ExitRequested`). Митигейшн: `try_attach()`
   (`POST /api/v0/id` перед спавном); graceful shutdown (`POST /api/v0/shutdown`/SIGTERM → ждать → kill).
@@ -207,14 +211,15 @@ export async function buildIpfsViewerUrl(target: IpfsTarget): Promise<string> {
 
 | Фаза | Статус | Артефакты |
 |---|---|---|
-| Ф0 | ✅ готово (не запушено) | `helpers/ipfs/ipfs-link.ts`, `ipfs-viewer.ts`, `use-ipfs-links.ts`, capabilities — коммит `825c1d3` |
-| Ф1 | ✅ готово (не запушено) | `helpers/ipfs/ipfs-content.ts` (17 тестов), `ipfs-download.ts`, врезка `use-ipfs-links.ts` — коммит `76cb24d`; сьют 2099 зелёный. Живая проверка render/download в Tauri-сборке — TODO |
-| Ф2 | ✅ готово (не запушено) | backend `src-tauri/src/ipfs/{state,process,config,installer,mod}.rs` (клон Tor); Kubo v0.43.0, запиненные SHA-512, Go-арх-маппинг, `/tcp/0`+чтение портов из `api`/`gateway`, `autoclient`+`Provide.Enabled=false`+`lowpower`, try_attach, kill на выходе. Команды `ipfs_status/ipfs_ensure/ipfs_stop/ipfs_uninstall`. `cargo check` без предупреждений, `cargo test ipfs::` 11/11. Живой запуск демона в Tauri-сборке — TODO. Не сделано (осознанно): cancellation-token отмены скачивания и `ipfs_update` — Ф3/Ф4 |
-| Ф3 | ✅ готово (не запушено) | фронт+Tier1: `stores/ipfs-store.ts` (consent/ensure/resolveGateway/tier), `helpers/ipfs/ipfs-tier.ts` (+6 тестов), `components/ipfs/ipfs-install-modal.vue`+styled, врезка в `use-ipfs-links.ts` (availability→resolveGateway→per-CID fallback), `probeContent` таймаут+loopback-байпас Tor, i18n `header.ipfs*`, CSP `frame-src`/`media-src http://127.0.0.1:*`, plugin-http allowlist (`127.0.0.1`+`dweb.link`). Прогнан adversarial-workflow (16 находок), 10 контейнированных пофикшены; сьют 2105 зелёный, линт 0. Живая проверка в Tauri-сборке — TODO |
-| Ф4 | ✅ частично (не запушено) | полировка: `header-ipfs.vue`+styled (статус/install/stop/uninstall/update, бейдж update) в шапке; backend `ipfs_update` + `update_available` (сравнение install.json с запиненной версией, cargo test 13/13); стор-действия `enable/stop/uninstall/update`; **privacy-at-Tor**: при включённом Tor не открываем публичный шлюз (деанон) — модалка `tor-blocked`, просим локальную ноду; i18n `header.ipfs*`. Сьют 2105 зелёный. **Отложено:** Linux pdf.js, subdomain-gateway для изоляции недоверенных CID |
-| Ф5b | ✅ шифрование (не запушено) | приватный шаринг: Rust `ipfs/crypto.rs` (AES-256-GCM, `nonce‖ct`, +4 теста), `ipfs_add_encrypted`→{cid,key} и `ipfs_save_encrypted` (fetch шифртекста→decrypt→на диск); ключ+имя во ФРАГМЕНТЕ ссылки `ipfs://<cid>#key=..&name=..` (не уходят на gateway); `parseIpfsSecret`/`buildIpfsSecretLink` (+2 теста); перехватчик: секрет→save decrypted, Tor-guard распространён на encrypted-фетч; кнопка «Поделиться приватно…» в header-ipfs. Крипта в одном языке (Rust), decrypt тоже Rust — без cross-lang. Сьют 2109 зелёный. **Осталось:** инлайн-рендер зашифрованных медиа (сейчас только скачивание) |
-| Ф5c | ✅ механизм (не запушено) | удалённый pin (durability) через **IPFS Pinning Service API**: команды `ipfs_pin_service_set/status/clear` + `ipfs_pin_remote` (сервис `bastyon-pin` хранит сам Kubo); стор `pinServiceConfigured`+`setPinService/clearPinService/refreshPinService/pinRemote`; авто-pin CID после публикации (best-effort); UI — фаза `pin-config` (endpoint+токен) + кнопка «Удалённый pin…» в header-ipfs (при running). Работает со сторонним сервисом или ipfs-cluster на VPS. **Нужен реальный endpoint+токен для живой проверки.** Прямой Kubo-API — сознательно НЕ выбран (светит контроль над нодой) |
-| Ф5 | ✅ MVP (не запушено) | файлообменник (write): backend `ipfs_add` (`add -Q --cid-version=1 --pin`); стор `addFile` (ensure→add); кнопка «Поделиться файлом…» в `header-ipfs` → dialog → CID → `ipfs://<cid>` в буфер + модалка с предупреждением «контент публичный»; `buildIpfsShareLink`(+2 теста), capability `dialog:allow-open`. Round-trip: шаринг-ссылка открывается тем же перехватчиком. Сьют 2107 зелёный. **Отложено (Ф5b):** шифрование приватных файлов (нужна расшифровка во вьювере) + удалённый pin (VPS-нода) для durability, когда автор офлайн |
+| Ф0 | ✅ `825c1d3` | `helpers/ipfs/ipfs-link.ts`, `ipfs-viewer.ts`, `use-ipfs-links.ts`, capabilities — коммит `825c1d3` |
+| Ф1 | ✅ `76cb24d` | `helpers/ipfs/ipfs-content.ts` (17 тестов), `ipfs-download.ts`, врезка `use-ipfs-links.ts` — коммит `76cb24d`; сьют 2099 зелёный. Живая проверка render/download в Tauri-сборке — TODO |
+| Ф2 | ✅ `67b6c76` | backend `src-tauri/src/ipfs/{state,process,config,installer,mod}.rs` (клон Tor); Kubo v0.43.0, запиненные SHA-512, Go-арх-маппинг, `/tcp/0`+чтение портов из `api`/`gateway`, `autoclient`+`Provide.Enabled=false`+`lowpower`, try_attach, kill на выходе. Команды `ipfs_status/ipfs_ensure/ipfs_stop/ipfs_uninstall`. `cargo check` без предупреждений, `cargo test ipfs::` 11/11. Живой запуск демона в Tauri-сборке — TODO. Не сделано (осознанно): cancellation-token отмены скачивания и `ipfs_update` — Ф3/Ф4 |
+| Ф3 | ✅ `00e9e0a` | фронт+Tier1: `stores/ipfs-store.ts` (consent/ensure/resolveGateway/tier), `helpers/ipfs/ipfs-tier.ts` (+6 тестов), `components/ipfs/ipfs-install-modal.vue`+styled, врезка в `use-ipfs-links.ts` (availability→resolveGateway→per-CID fallback), `probeContent` таймаут+loopback-байпас Tor, i18n `header.ipfs*`, CSP `frame-src`/`media-src http://127.0.0.1:*`, plugin-http allowlist (`127.0.0.1`+`dweb.link`). Прогнан adversarial-workflow (16 находок), 10 контейнированных пофикшены; сьют 2105 зелёный, линт 0. Живая проверка в Tauri-сборке — TODO |
+| Ф4 | ✅ `6e71670` | полировка: `header-ipfs.vue`+styled (статус/install/stop/uninstall/update, бейдж update) в шапке; backend `ipfs_update` + `update_available` (сравнение install.json с запиненной версией, cargo test 13/13); стор-действия `enable/stop/uninstall/update`; **privacy-at-Tor**: при включённом Tor не открываем публичный шлюз (деанон) — модалка `tor-blocked`, просим локальную ноду; i18n `header.ipfs*`. Сьют 2105 зелёный. **Отложено:** Linux pdf.js, subdomain-gateway для изоляции недоверенных CID |
+| Ф5b | ✅ `66231d2` | приватный шаринг: Rust `ipfs/crypto.rs` (AES-256-GCM, `nonce‖ct`, +4 теста), `ipfs_add_encrypted`→{cid,key} и `ipfs_save_encrypted` (fetch шифртекста→decrypt→на диск); ключ+имя во ФРАГМЕНТЕ ссылки `ipfs://<cid>#key=..&name=..` (не уходят на gateway); `parseIpfsSecret`/`buildIpfsSecretLink` (+2 теста); перехватчик: секрет→save decrypted, Tor-guard распространён на encrypted-фетч; кнопка «Поделиться приватно…» в header-ipfs. Крипта в одном языке (Rust), decrypt тоже Rust — без cross-lang. Сьют 2109 зелёный. **Осталось:** инлайн-рендер зашифрованных медиа (сейчас только скачивание) |
+| Ф5c | ✅ `ee1e8d4` | удалённый pin (durability) через **IPFS Pinning Service API**: команды `ipfs_pin_service_set/status/clear` + `ipfs_pin_remote` (сервис `bastyon-pin` хранит сам Kubo); стор `pinServiceConfigured`+`setPinService/clearPinService/refreshPinService/pinRemote`; авто-pin CID после публикации (best-effort); UI — фаза `pin-config` (endpoint+токен) + кнопка «Удалённый pin…» в header-ipfs (при running). Работает со сторонним сервисом или ipfs-cluster на VPS. **Нужен реальный endpoint+токен для живой проверки.** Прямой Kubo-API — сознательно НЕ выбран (светит контроль над нодой) |
+| Ф5 | ✅ `0facdb4` | файлообменник (write): backend `ipfs_add` (`add -Q --cid-version=1 --pin`); стор `addFile` (ensure→add); кнопка «Поделиться файлом…» в `header-ipfs` → dialog → CID → `ipfs://<cid>` в буфер + модалка с предупреждением «контент публичный»; `buildIpfsShareLink`(+2 теста), capability `dialog:allow-open`. Round-trip: шаринг-ссылка открывается тем же перехватчиком. Сьют 2107 зелёный. **Отложено (Ф5b):** шифрование приватных файлов (нужна расшифровка во вьювере) + удалённый pin (VPS-нода) для durability, когда автор офлайн |
+| Аудит | ✅ `f82ab24`…`29482de` | `IPFS_SECURITY_AUDIT.md`: 26 фиксов + 4 принятых; subdomain-ссылки `ff68f05`; удаление Kubo → Настройки `fa1f2bd`; подпись ecpair v3/btc17 `f82ab24`. Не проверено живьём: нативные диалоги из Rust, `ipfs_open_viewer`, первый ensure с `API.Authorizations` — нужна Tauri-сборка |
 
 ### Файлообменник — важные оговорки (MVP Ф5)
 
@@ -240,10 +245,30 @@ bastyon-pin <endpoint> <key>`), на каждую публикацию — `ipfs
 
 [IPFS Pinning Service API]: https://ipfs.github.io/pinning-services-api-spec/
 
-### Известные ограничения (из adversarial-ревью Фазы 3, отложено в Ф4)
+### Аудит 2026-09-11 и принятые решения (см. `IPFS_SECURITY_AUDIT.md`)
 
-- **Публичный шлюз через нативное окно не торифицируется.** Окно грузит URL напрямую (OS-навигация), минуя app-level Tor. При включённом Tor + публичном шлюзе (или Tier1→Tier0 fallback) — деанон к `dweb.link`. Локальная нода (loopback) не течёт. Митигейшн-опция: при включённом Tor не делать публичный fallback (жертвуем «откроется всегда» ради приватности) — продуктовое решение.
-- **`torFetch` не honors AbortSignal.** Проба публичного шлюза через Tor может превысить 8с (таймаут не отменяет invoke). Трогает общий Tor-инфра (`request-tor.ts`) — не в скоупе IPFS-фазы.
-- **`saveIpfsResource` буферизует файл целиком** (blob→arrayBuffer). Крупные файлы → память. Стриминг на диск через Rust (`reqwest bytes_stream`) — Ф2/Ф4 хардненинг.
-- **Большой «холодный» CID** может дать преждевременный Tier1→Tier0 (8с проба). Адаптивный/раздельный таймаут — Ф4.
-- **Смена `IPFS_GATEWAY`** требует добавить хост в plugin-http allowlist (`capabilities/default.json`) — сейчас запинен `dweb.link`.
+Три независимых ревью + живая проверка на Kubo v0.43.0; все пункты закрыты в
+`29482de`. Решения, которые меняют дизайн выше:
+
+- **Tor = IPFS недоступен.** Ошибка прежней модели: «локальная нода не течёт» — неверно.
+  Kubo не торифицирован (DHT/Bitswap напрямую → реальный IP + запрашиваемый CID видны
+  пирам, включая того, кто засеял CID), а viewer-окно без прокси. Поэтому под Tor
+  запрещены просмотр, шаринг и запуск ноды (честный текст модалки), `torActive`
+  перечитывается после каждого await, при включении Tor работающая нода гасится.
+- **Ничего из webview не ходит в Rust путями/URL.** Диалоги открытия/сохранения — в Rust
+  (`tauri-plugin-dialog` blocking API); `ipfs_save_encrypted(source: local|public, cid, key,
+  suggested_name)` собирает URL по белому списку; имя из недоверенной ссылки санитизируется
+  в Rust; потолок 512 МБ. Причина: любой обход санитайзера `v-html` = полный IPC.
+- **Viewer-окно создаёт Rust** (`ipfs_open_viewer`): `incognito` (все IPFS-сайты на одном
+  origin `127.0.0.1:<gw>`), `on_navigation` только на наш gateway-порт и `*.dweb.link`.
+  У JS нет права создавать окна (capabilities урезаны). CSRF на RPC из viewer-окна Kubo
+  режет сам (403 на любой браузерный Origin/Referer) — проверено живьём.
+- **Жизненный цикл демона:** probe с таймаутом 2 с и сверкой PeerID, чистка протухших
+  `api`/`gateway` (после SIGKILL Kubo их не убирает), усыновлённый демон гасится по RPC в
+  stop/update/uninstall/exit, `start_lock` везде, lock-error → мгновенный Failed.
+- **Свои `ipfs://`-ссылки кликабельны** в постах (санитайзер/автолинк).
+
+Остаются (осознанно): секрет в argv `--api-auth` виден в `ps` на время команды (у Kubo CLI
+нет env/файлового варианта; уход — прямые RPC-вызовы вместо CLI); `torFetch` не honors
+AbortSignal (общая Tor-инфра); `saveIpfsResource` (незашифрованная загрузка) буферизует
+файл в JS — стриминг через Rust отдельно; CSP главного окна широкая (не IPFS-scope).
