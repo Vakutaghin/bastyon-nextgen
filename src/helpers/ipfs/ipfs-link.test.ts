@@ -39,6 +39,65 @@ describe('parseIpfsLink', () => {
     expect(parseIpfsLink('ipfs://bafyCID/page?x=1#frag')?.path).toBe('page')
   })
 
+  it('subdomain-форма <cid>.ipfs.dweb.link', () => {
+    expect(
+      parseIpfsLink(
+        'https://bafybeia3mpj3u3ljhaultrortqwy3nfnqwdzthi2bly6qkp4pimeol6d3m.ipfs.dweb.link/'
+      )
+    ).toEqual({
+      namespace: 'ipfs',
+      root: 'bafybeia3mpj3u3ljhaultrortqwy3nfnqwdzthi2bly6qkp4pimeol6d3m',
+      path: '',
+    })
+  })
+
+  it('subdomain-форма <name>.ipns.dweb.link с путём', () => {
+    expect(
+      parseIpfsLink(
+        'https://k51qzi5uqu5dkj3ptoum9xmmmbxmny5zhbkavmgvufjmitt3zawcxva1zyqi3k.ipns.dweb.link/blog/post.html'
+      )
+    ).toEqual({
+      namespace: 'ipns',
+      root: 'k51qzi5uqu5dkj3ptoum9xmmmbxmny5zhbkavmgvufjmitt3zawcxva1zyqi3k',
+      path: 'blog/post.html',
+    })
+  })
+
+  it('path-форма на ipfs.io/ipns/<name> (host сам содержит "ipfs")', () => {
+    expect(parseIpfsLink('https://ipfs.io/ipns/k51qzi5uqu5dkj3ptoum/')).toEqual({
+      namespace: 'ipns',
+      root: 'k51qzi5uqu5dkj3ptoum',
+      path: '',
+    })
+  })
+
+  it('path-форма важнее хоста: gateway.ipfs.io/ipfs/<cid> не ломается меткой "ipfs"', () => {
+    expect(
+      parseIpfsLink(
+        'https://gateway.ipfs.io/ipfs/bafybeia3mpj3u3ljhaultrortqwy3nfnqwdzthi2bly6qkp4pimeol6d3m/x'
+      )
+    ).toEqual({
+      namespace: 'ipfs',
+      root: 'bafybeia3mpj3u3ljhaultrortqwy3nfnqwdzthi2bly6qkp4pimeol6d3m',
+      path: 'x',
+    })
+  })
+
+  it('обычные сайты с меткой ipfs/ipns в хосте НЕ перехватываем', () => {
+    expect(parseIpfsLink('https://docs.ipfs.tech/concepts/')).toBeNull()
+    expect(parseIpfsLink('https://www.ipfs.io/')).toBeNull()
+    expect(parseIpfsLink('https://blog.ipfs.tech/2024/post')).toBeNull()
+    expect(parseIpfsLink('https://x.ipfs.attacker.com/')).toBeNull()
+  })
+
+  it('subdomain IPNS: инлайн-DNSLink раз-инлайнивается', () => {
+    expect(parseIpfsLink('https://en-wikipedia--on--ipfs-org.ipns.dweb.link/wiki/')).toEqual({
+      namespace: 'ipns',
+      root: 'en.wikipedia-on-ipfs.org',
+      path: 'wiki',
+    })
+  })
+
   it('обычные http(s)-ссылки → null (не трогаем)', () => {
     expect(parseIpfsLink('https://example.com/page')).toBeNull()
     expect(parseIpfsLink('https://bastyon.com/post/abc')).toBeNull()
@@ -47,6 +106,15 @@ describe('parseIpfsLink', () => {
   it('внутренние роут-пути (не /ipfs, /ipns) → null', () => {
     expect(parseIpfsLink('/post/123')).toBeNull()
     expect(parseIpfsLink('/profile/me')).toBeNull()
+  })
+
+  it('точечные сегменты не выводят URL за /ipfs/<root> (D1)', () => {
+    expect(parseIpfsLink('ipfs://../api/v0/id')).toBeNull()
+    expect(parseIpfsLink('ipfs://%2e%2e/x')).toBeNull()
+    expect(parseIpfsLink('/ipfs/..')).toBeNull()
+    expect(parseIpfsLink('ipfs://bafyCID/../../api/v0/id')?.path).toBe('api/v0/id')
+    expect(parseIpfsLink('ipfs://bafyCID/a/%2e%2e/b')?.path).toBe('a/b')
+    expect(parseIpfsLink('ipfs://bafyCID/./x//y/')?.path).toBe('x/y')
   })
 
   it('мусор → null', () => {
