@@ -31,7 +31,7 @@
           <Button v-if="status === 'running'" size="small" @click="ipfs.stop()">
             {{ t('header.ipfsStopBtn') }}
           </Button>
-          <Button v-else size="small" type="primary" :loading="busy" @click="ipfs.enable()">
+          <Button v-else size="small" type="primary" :loading="busy" @click="onEnable">
             {{ installed ? t('header.ipfsStartBtn') : t('header.ipfsInstallBtn') }}
           </Button>
 
@@ -147,16 +147,32 @@ function onTriggerClick(): void {
   visible.value = !visible.value
 }
 
-async function onShareFile(): Promise<void> {
-  const { open } = await import('@tauri-apps/plugin-dialog')
-  const selected = await open({ multiple: false, directory: false })
-  if (!selected || Array.isArray(selected)) return
+/**
+ * Под Tor модуль IPFS недоступен целиком: Kubo не торифицирован (светит IP, а при
+ * раздаче — ещё и становится провайдером файла под реальным IP). Показываем ту же
+ * модалку, что и при открытии ссылок.
+ */
+function torBlocked(): boolean {
+  if (!ipfs.torActive) return false
+  ipfs.showTorBlocked()
+  return true
+}
 
+function onEnable(): void {
+  if (torBlocked()) return
+  void ipfs.enable()
+}
+
+async function onShareFile(): Promise<void> {
+  if (torBlocked()) return
   sharing.value = true
   try {
-    const cid = await ipfs.addFile(selected)
+    // Файл выбирается в нативном диалоге на стороне Rust (путь в IPC не ходит).
+    const cid = await ipfs.addFile()
     if (!cid) {
-      Modal.error({ title: t('header.ipfsShareFailedTitle'), content: ipfs.message ?? '' })
+      if (ipfs.message) {
+        Modal.error({ title: t('header.ipfsShareFailedTitle'), content: ipfs.message })
+      }
       return
     }
     const link = buildIpfsShareLink(cid)
@@ -177,19 +193,17 @@ async function onShareFile(): Promise<void> {
 }
 
 async function onShareFileEncrypted(): Promise<void> {
-  const { open } = await import('@tauri-apps/plugin-dialog')
-  const selected = await open({ multiple: false, directory: false })
-  if (!selected || Array.isArray(selected)) return
-
+  if (torBlocked()) return
   sharing.value = true
   try {
-    const res = await ipfs.addFileEncrypted(selected)
+    const res = await ipfs.addFileEncrypted()
     if (!res) {
-      Modal.error({ title: t('header.ipfsShareFailedTitle'), content: ipfs.message ?? '' })
+      if (ipfs.message) {
+        Modal.error({ title: t('header.ipfsShareFailedTitle'), content: ipfs.message })
+      }
       return
     }
-    const name = selected.split(/[\\/]/).pop() || 'file'
-    const link = buildIpfsSecretLink(res.cid, res.key, name)
+    const link = buildIpfsSecretLink(res.cid, res.key, res.name || 'file')
     let copied = false
     try {
       await navigator.clipboard.writeText(link)

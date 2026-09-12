@@ -56,6 +56,10 @@ export async function probeContent(
       headers: { Range: 'bytes=0-0' },
       signal: controller.signal,
     })
+    // 4xx/5xx (504 шлюза, «not found» ноды) — это НЕ контент: иначе страница
+    // ошибки классифицировалась бы как text/plain→render, а per-CID fallback
+    // (`!probed`) не срабатывал бы на быстрый отказ.
+    if (!res.ok) return null
     const headers = {
       contentType: res.headers.get('content-type'),
       contentDisposition: res.headers.get('content-disposition'),
@@ -78,6 +82,8 @@ export async function probeContent(
  */
 export async function saveIpfsResource(url: string, filename: string): Promise<void> {
   const res = await ipfsFetch(url)
+  // Иначе 504 шлюза сохранился бы на диск под именем archive.zip.
+  if (!res.ok) throw new Error(`gateway responded ${res.status}`)
   const blob = await res.blob()
 
   if (inTauri()) {

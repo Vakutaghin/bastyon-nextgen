@@ -60,6 +60,7 @@ fn stream_log<R: std::io::Read>(reader: R, app: AppHandle, shared: SharedIpfsSta
 
         if is_lock_error(&line) {
             let snapshot = with_state(&shared, |state| {
+                state.lock_error = true;
                 state.message = Some(
                     "IPFS repo is locked by another process (orphaned daemon?)".to_string(),
                 );

@@ -6,19 +6,44 @@
 // Слушатель вешается ВЕЗДЕ (веб/десктоп). Решение о доступности и о том, каким
 // шлюзом резолвить (локальная нода Tier 1 vs публичный шлюз Tier 0), принимает
 // ipfs-store; в вебе показываем «только в приложении».
-import { onBeforeUnmount, onMounted } from 'vue'
+//
+// Tor: IPFS НЕ торифицирован ни в одном звене — окно-просмотрщик грузит URL без
+// прокси, а Kubo дозванивается DHT/Bitswap-пиров напрямую и светит реальный IP
+// вместе с запрашиваемым CID. Поэтому под Tor не открываем ВООБЩЕ (ни локально,
+// ни через публичный шлюз), а флаг перечитываем после каждого await — он мог
+// включиться, пока шли consent/установка (до 10 мин).
+import { onBeforeUnmount, onMounted, watch } from 'vue'
 import { Modal } from 'ant-design-vue'
-import { parseIpfsLink, parseIpfsSecret, type IpfsSecret, type IpfsTarget } from '@/helpers/ipfs/ipfs-link'
+import {
+  parseIpfsLink,
+  parseIpfsSecret,
+  type IpfsSecret,
+  type IpfsTarget,
+} from '@/helpers/ipfs/ipfs-link'
 import { buildIpfsViewerUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
 import { classify, detectViewerOs, downloadFilename } from '@/helpers/ipfs/ipfs-content'
 import { probeContent, saveIpfsResource } from '@/helpers/ipfs/ipfs-download'
-import { useIpfsStore } from '@/stores/ipfs-store'
+import { useIpfsStore, type IpfsGatewaySource } from '@/stores/ipfs-store'
 import { t } from '@/i18n'
 
-/** Метка окна: одно окно на CID/имя (повторный клик — фокус, а не дубль). */
-function windowLabel(target: IpfsTarget): string {
-  const safe = target.root.replace(/[^A-Za-z0-9]/g, '').slice(0, 40)
-  return `ipfs-${target.namespace}-${safe}`
+/** FNV-1a 32-bit → 8 hex: дешёвый стабильный хэш строки для меток окон. */
+function fnv1a(s: string): string {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h.toString(16).padStart(8, '0')
+}
+
+/**
+ * Метка окна: одно окно на CID/имя (повторный клик — фокус, а не дубль).
+ * Хвост — хэш ПОЛНОГО корня: одна лишь очистка от `.`/`-` склеивала бы
+ * `en.wikipedia-on-ipfs.org` и `enwikipedia-on-ipfs.org` в одну метку.
+ */
+export function windowLabel(target: IpfsTarget): string {
+  const safe = target.root.replace(/[^A-Za-z0-9]/g, '').slice(0, 24)
+  return `ipfs-${target.namespace}-${safe}-${fnv1a(target.root)}`
 }
 
 // Коалесинг конкурентных открытий одного и того же CID. Между getByLabel и
@@ -28,20 +53,33 @@ const inFlight = new Set<string>()
 
 type IpfsStore = ReturnType<typeof useIpfsStore>
 
-/** Приватная ссылка: сохранить расшифрованный файл на диск (рендер неприменим). */
+/**
+ * true = Tor включён → показали модалку, продолжать нельзя. Вызывать ПОСЛЕ каждого
+ * await (а не по снимку до него): consent/установка/диалог могут длиться минуты.
+ */
+function torBlocked(store: IpfsStore): boolean {
+  if (!store.torActive) return false
+  store.showTorBlocked()
+  return true
+}
+
+/**
+ * Приватная ссылка: сохранить расшифрованный файл на диск (рендер неприменим).
+ * Save-диалог и санитизация имени из НЕДОВЕРЕННОЙ ссылки — на стороне Rust
+ * (`name=/Users/u/.ssh/authorized_keys` иначе открыл бы диалог прямо в ~/.ssh);
+ * источник передаём как 'local' | 'public', URL Rust собирает сам.
+ */
 async function openEncrypted(
   store: IpfsStore,
   target: IpfsTarget,
   secret: IpfsSecret,
   gateway: string
 ): Promise<void> {
-  const { save } = await import('@tauri-apps/plugin-dialog')
-  const dest = await save({ defaultPath: secret.name || `${target.root.slice(0, 16)}.bin` })
-  if (!dest) return
-  const ok = await store.saveEncrypted(gateway, target.root, secret.key, dest)
-  if (ok) {
+  const source: IpfsGatewaySource = gateway === IPFS_GATEWAY ? 'public' : 'local'
+  const result = await store.saveEncrypted(source, target.root, secret.key, secret.name)
+  if (result === 'saved') {
     Modal.success({ title: t('header.ipfsSaveDoneTitle') })
-  } else {
+  } else if (result === 'failed') {
     Modal.error({ title: t('header.ipfsSaveFailedTitle'), content: store.message ?? '' })
   }
 }
@@ -55,37 +93,22 @@ async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Pr
     return
   }
 
+  // Под Tor — сразу отказ, до consent/запуска ноды (см. шапку файла).
+  if (torBlocked(store)) return
+
   const label = windowLabel(target)
   if (inFlight.has(label)) return
   inFlight.add(label)
 
   try {
     // Резолвим шлюз: локальная нода (с consent/установкой) либо публичный.
-    const torOn = store.torActive
     const gateway = await store.resolveGateway()
-
-    // Приватность: нативное окно/фетч грузят URL напрямую, минуя app-level Tor.
-    // Если Tor включён, публичный шлюз деанонимизировал бы (реальный IP → dweb.link) —
-    // не открываем, просим локальную ноду. (Для encrypted — тоже: даже фетч
-    // шифртекста утёк бы IP+CID.)
-    if (torOn && gateway === IPFS_GATEWAY) {
-      store.showTorBlocked()
-      return
-    }
+    if (torBlocked(store)) return
 
     // Приватная (зашифрованная) ссылка: тянем шифртекст, расшифровываем в Rust,
     // сохраняем на диск. Рендер в окне тут неприменим (сырые байты — шифр).
     if (secret?.key) {
       await openEncrypted(store, target, secret, gateway)
-      return
-    }
-
-    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
-
-    // Повторный клик по уже открытому CID — просто фокус (без резолва/докачки).
-    const existing = await WebviewWindow.getByLabel(label)
-    if (existing) {
-      await existing.setFocus()
       return
     }
 
@@ -95,9 +118,9 @@ async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Pr
     let probed = await probeContent(url)
 
     // Per-CID fallback: локальная нода не отдала CID за таймаут (холодный swarm /
-    // файрвол) → публичный шлюз (Tier 1 → Tier 0). Под Tor НЕ падаем на публичный
-    // (деанон) — оставляем локальный URL, окно покажет ошибку ноды, но не потечёт.
-    if (!probed && gateway !== IPFS_GATEWAY && !torOn) {
+    // файрвол) → публичный шлюз (Tier 1 → Tier 0).
+    if (!probed && gateway !== IPFS_GATEWAY) {
+      if (torBlocked(store)) return
       url = buildIpfsViewerUrl(target, IPFS_GATEWAY)
       probed = await probeContent(url)
     }
@@ -107,19 +130,22 @@ async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Pr
       ? classify(probed.contentType, probed.contentDisposition, detectViewerOs())
       : 'render'
     if (mode === 'download') {
-      await saveIpfsResource(url, downloadFilename(target, probed?.contentDisposition))
+      if (torBlocked(store)) return
+      try {
+        await saveIpfsResource(url, downloadFilename(target, probed?.contentDisposition))
+      } catch (err) {
+        Modal.error({ title: t('header.ipfsSaveFailedTitle'), content: String(err) })
+      }
       return
     }
 
-    const win = new WebviewWindow(label, {
-      url,
-      title: `IPFS · ${target.root.slice(0, 12)}…`,
-      width: 1100,
-      height: 780,
-    })
-    win.once('tauri://error', (e) => {
-      console.error('[ipfs-viewer] не удалось открыть окно:', e)
-    })
+    // Последняя проверка непосредственно перед окном без прокси.
+    if (torBlocked(store)) return
+
+    // Окно создаёт Rust: incognito (эфемерный storage — все IPFS-сайты на одном
+    // origin), on_navigation по белому списку (наш gateway-порт / dweb.link),
+    // повторный клик по открытому CID — фокус. URL проверяется там же.
+    await store.openViewer(label, url, `IPFS · ${target.root.slice(0, 12)}…`)
   } catch (err) {
     console.error('[ipfs-viewer] ошибка открытия просмотрщика:', err)
   } finally {
@@ -177,4 +203,14 @@ export function useIpfsLinks(active: () => boolean = () => true): void {
     }
   })
   onBeforeUnmount(() => document.removeEventListener('click', handleClick, true))
+
+  // Tor включили при работающей ноде — гасим её: фоновые DHT/Bitswap-соединения
+  // Kubo идут в обход Tor и светят реальный IP всё время, пока демон жив.
+  const store = useIpfsStore()
+  watch(
+    () => store.torActive,
+    (on) => {
+      if (on && store.status === 'running') void store.stop()
+    }
+  )
 }

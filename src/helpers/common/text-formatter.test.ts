@@ -12,6 +12,16 @@ describe('formatBastyonLinks', () => {
     expect(formatBastyonLinks('hello <world>')).toBe('hello &lt;world&gt;')
   })
 
+  it('converts ipfs:// and ipns:// share links (incl. private #key fragment)', () => {
+    const r1 = formatBastyonLinks('file: ipfs://bafyabc123 ok')
+    expect(r1).toContain('href="ipfs://bafyabc123"')
+    expect(r1).toContain('ipfs-link')
+    expect(r1).not.toContain('target=')
+    const r2 = formatBastyonLinks('ipfs://bafyabc#key=aB%2B%2Fcd%3D%3D&name=a.png')
+    expect(r2).toContain('href="ipfs://bafyabc#key=aB%2B%2Fcd%3D%3D&amp;name=a.png"')
+    expect(formatBastyonLinks('ipns://k51name/x')).toContain('href="ipns://k51name/x"')
+  })
+
   it('converts bastyon:// links', () => {
     const result = formatBastyonLinks('see bastyon://profile/user1 here')
     expect(result).toContain('class="bastyon-link"')

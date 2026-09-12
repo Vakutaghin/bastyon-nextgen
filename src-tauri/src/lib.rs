@@ -638,6 +638,7 @@ pub fn run() {
       ipfs::ipfs_add,
       ipfs::ipfs_add_encrypted,
       ipfs::ipfs_save_encrypted,
+      ipfs::ipfs_open_viewer,
       ipfs::ipfs_pin_service_set,
       ipfs::ipfs_pin_service_status,
       ipfs::ipfs_pin_service_clear,
@@ -738,13 +739,10 @@ pub fn run() {
           }
         }
         // Same for the IPFS (Kubo) daemon — don't leave an orphan holding the
-        // repo lock and gateway port after the app exits.
+        // repo lock and gateway port after the app exits. Covers an attached
+        // (adopted) daemon too, which `child.kill()` alone would never see.
         if let Some(mgr) = app_handle.try_state::<ipfs::IpfsManager>() {
-          if let Ok(mut guard) = mgr.child.lock() {
-            if let Some(mut child) = guard.take() {
-              let _ = ipfs::process::kill(&mut child);
-            }
-          }
+          ipfs::shutdown_on_exit(&mgr);
         }
       }
     });

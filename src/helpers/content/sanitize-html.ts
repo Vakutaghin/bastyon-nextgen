@@ -68,8 +68,11 @@ const filter = new FilterXSS({
   // Inline CSS запрещён.
   css: false,
   safeAttrValue(tag, name, value, cssFilter) {
-    // bastyon:// — наш внутренний протокол ссылок; xss по умолчанию его вырезает.
-    if (tag === 'a' && name === 'href' && /^bastyon:\/\//i.test(value)) {
+    // bastyon:// — наш внутренний протокол ссылок; ipfs:// и ipns:// — ссылки
+    // файлообмена/просмотрщика (перехватываются делегатом use-ipfs-links). xss по
+    // умолчанию режет нестандартные схемы — без этого своя же шаринг-ссылка
+    // в посте была бы просто текстом.
+    if (tag === 'a' && name === 'href' && /^(bastyon|ipfs|ipns):\/\//i.test(value)) {
       return value
     }
     return safeAttrValue(tag, name, value, cssFilter)

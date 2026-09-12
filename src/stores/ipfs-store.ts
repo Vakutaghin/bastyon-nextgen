@@ -24,12 +24,10 @@ export type IpfsInstallProgress = {
   message: string
 }
 
-export type IpfsModalPhase =
-  | 'consent'
-  | 'progress'
-  | 'desktop-only'
-  | 'tor-blocked'
-  | 'pin-config'
+/** Откуда тянуть контент: локальная нода или публичный шлюз (URL собирает Rust). */
+export type IpfsGatewaySource = 'local' | 'public'
+
+export type IpfsModalPhase = 'consent' | 'progress' | 'desktop-only' | 'tor-blocked' | 'pin-config'
 
 /** Выбор пользователя в consent-модалке: установить / явный отказ / закрыл. */
 type ConsentChoice = 'install' | 'decline' | 'dismiss'
@@ -119,6 +117,8 @@ export const useIpfsStore = defineStore('ipfs', {
     _decisionResolver: null as ((choice: ConsentChoice) => void) | null,
     // Кнопка Cancel в прогресс-модалке: перестать ЖДАТЬ (докачка идёт в фоне).
     _cancelResolver: null as (() => void) | null,
+    _cancelPromise: null as Promise<null> | null,
+    _ensureWaiters: 0,
     _lastFailedAt: 0,
   }),
 
@@ -166,7 +166,13 @@ export const useIpfsStore = defineStore('ipfs', {
           }
         )
       } catch (e) {
-        // Подписка не удалась — сбрасываем флаг, чтобы следующий hydrate повторил.
+        // Подписка не удалась (возможно, частично: первый listen прошёл, второй
+        // нет) — снимаем то, что успело повеситься, иначе следующий hydrate
+        // повесил бы `ipfs:state` второй раз.
+        this._stateUnlisten?.()
+        this._stateUnlisten = null
+        this._installUnlisten?.()
+        this._installUnlisten = null
         this._subscribed = false
         throw e
       }
@@ -252,7 +258,12 @@ export const useIpfsStore = defineStore('ipfs', {
      * добавляет файл, возвращает CID (или null при ошибке/отмене). Контент
      * ПУБЛИЧНЫЙ и жив, пока эта нода онлайн (или CID запинен где-то ещё).
      */
-    async addFile(path: string): Promise<string | null> {
+    /**
+     * Публикация файла. Файл выбирается в НАТИВНОМ диалоге на стороне Rust —
+     * путь из webview не передаётся (иначе XSS публиковал бы любой файл).
+     * Возвращает CID, null — отмена диалога или ошибка (см. message).
+     */
+    async addFile(): Promise<string | null> {
       if (!this.available) {
         this.showDesktopOnly()
         return null
@@ -262,7 +273,7 @@ export const useIpfsStore = defineStore('ipfs', {
       const port = await this.ensureRunning()
       if (!port) return null
       try {
-        const cid = await tauriInvoke<string>('ipfs_add', { path })
+        const cid = await tauriInvoke<string | null>('ipfs_add')
         if (cid && this.pinServiceConfigured) void this.pinRemote(cid)
         return cid || null
       } catch (e) {
@@ -272,10 +283,11 @@ export const useIpfsStore = defineStore('ipfs', {
     },
 
     /**
-     * Приватная публикация: шифруем файл (Rust) и кладём шифртекст в IPFS.
-     * Возвращает { cid, key } или null. Ключ едет во фрагменте ссылки.
+     * Приватная публикация: файл из нативного диалога (Rust), шифруем и кладём
+     * шифртекст в IPFS. Возвращает { cid, key, name } или null (отмена/ошибка).
+     * Ключ едет во фрагменте ссылки.
      */
-    async addFileEncrypted(path: string): Promise<{ cid: string; key: string } | null> {
+    async addFileEncrypted(): Promise<{ cid: string; key: string; name: string } | null> {
       if (!this.available) {
         this.showDesktopOnly()
         return null
@@ -284,7 +296,9 @@ export const useIpfsStore = defineStore('ipfs', {
       const port = await this.ensureRunning()
       if (!port) return null
       try {
-        const res = await tauriInvoke<{ cid: string; key: string }>('ipfs_add_encrypted', { path })
+        const res = await tauriInvoke<{ cid: string; key: string; name: string } | null>(
+          'ipfs_add_encrypted'
+        )
         if (res?.cid && this.pinServiceConfigured) void this.pinRemote(res.cid)
         return res
       } catch (e) {
@@ -293,20 +307,37 @@ export const useIpfsStore = defineStore('ipfs', {
       }
     },
 
-    /** Тянет шифртекст с gateway, расшифровывает (Rust) и пишет в dest. */
+    /**
+     * Тянет шифртекст (источник — не URL, а 'local' | 'public': URL собирает Rust
+     * по белому списку), расшифровывает и пишет туда, куда пользователь укажет в
+     * нативном save-диалоге (Rust). 'saved' | 'cancelled' | 'failed'.
+     */
     async saveEncrypted(
-      gateway: string,
+      source: IpfsGatewaySource,
       cid: string,
       key: string,
-      dest: string
-    ): Promise<boolean> {
+      suggestedName: string
+    ): Promise<'saved' | 'cancelled' | 'failed'> {
       try {
-        await tauriInvoke('ipfs_save_encrypted', { gateway, cid, key, dest })
-        return true
+        const saved = await tauriInvoke<boolean>('ipfs_save_encrypted', {
+          source,
+          cid,
+          key,
+          suggestedName,
+        })
+        return saved ? 'saved' : 'cancelled'
       } catch (e) {
         this.message = String(e)
-        return false
+        return 'failed'
       }
+    },
+
+    /**
+     * Окно-просмотрщик создаёт Rust (incognito + on_navigation по белому списку);
+     * повторный вызов с той же меткой — фокус существующего.
+     */
+    async openViewer(label: string, url: string, title: string): Promise<void> {
+      await tauriInvoke('ipfs_open_viewer', { label, url, title })
     },
 
     // --- удалённый pin (Ф5c, durability) ---
@@ -413,6 +444,9 @@ export const useIpfsStore = defineStore('ipfs', {
           )
           this.applySnapshot(snap)
           if (snap.status === 'running') return snap.gateway_port
+          // Не running без исключения (напр. демон не поднялся) — фиксируем как
+          // фейл, иначе _recentlyFailed() не даёт cooldown и ensure долбится.
+          this.status = 'failed'
           this._lastFailedAt = Date.now()
           return null
         } catch (e) {
@@ -427,13 +461,27 @@ export const useIpfsStore = defineStore('ipfs', {
       return this._ensurePromise
     },
 
-    /** Гонка «дождаться установки» против кнопки Cancel (докачка не прерывается). */
+    /**
+     * Гонка «дождаться установки» против кнопки Cancel (докачка не прерывается).
+     * Конкурентные вызовы делят ОДИН cancel-промис: иначе второй клик перезаписал
+     * бы резолвер, Cancel отпускал бы только последнего ждущего, а первый
+     * досиживал бы до 10 мин и потом закрывал бы чужую модалку.
+     */
     _ensureOrCancel(): Promise<number | null> {
-      const cancelled = new Promise<null>((resolve) => {
-        this._cancelResolver = () => resolve(null)
-      })
+      if (!this._cancelPromise) {
+        this._cancelPromise = new Promise<null>((resolve) => {
+          this._cancelResolver = () => resolve(null)
+        })
+      }
+      const cancelled = this._cancelPromise
+      const waiters = ++this._ensureWaiters
+      void waiters
       return Promise.race([this.ensureRunning(), cancelled]).finally(() => {
-        this._cancelResolver = null
+        if (--this._ensureWaiters <= 0) {
+          this._ensureWaiters = 0
+          this._cancelPromise = null
+          this._cancelResolver = null
+        }
       })
     },
 
@@ -476,7 +524,9 @@ export const useIpfsStore = defineStore('ipfs', {
       // src === 'ensure' или пользователь только что согласился — ставим/запускаем.
       this.openModal('progress')
       const port = await this._ensureOrCancel()
-      this.closeModal()
+      // Закрываем только СВОЮ прогресс-модалку: пока ждали, пользователь мог
+      // открыть другую (pin-config) — её не трогаем.
+      if (this.modalPhase === 'progress') this.closeModal()
       return port ? this.localBase : IPFS_GATEWAY
     },
   },

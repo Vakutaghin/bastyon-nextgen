@@ -50,9 +50,10 @@ export function formatBastyonLinks(text: string): string {
   }
 
   // Комбинированное регулярное выражение для поиска всех типов ссылок
-  // Порядок важен: сначала bastyon://, потом https?://, потом www.
+  // Порядок важен: сначала bastyon://, потом ipfs://|ipns:// (файлообмен;
+  // фрагмент `#key=…` приватной ссылки — часть URL), потом https?://, потом www.
   const linkRegex =
-    /(bastyon:\/\/[^\s<>'"]+|https?:\/\/[^\s<>'"]+[^\s<>"'.,;:!?]|www\.[^\s<>'"]+[^\s<>"'.,;:!?])/gi
+    /(bastyon:\/\/[^\s<>'"]+|ipfs:\/\/[^\s<>'"]+|ipns:\/\/[^\s<>'"]+|https?:\/\/[^\s<>'"]+[^\s<>"'.,;:!?]|www\.[^\s<>'"]+[^\s<>"'.,;:!?])/gi
 
   const parts: Array<{
     type: 'text' | 'link'
@@ -82,6 +83,10 @@ export function formatBastyonLinks(text: string): string {
     if (url.startsWith('bastyon://')) {
       className = 'bastyon-link'
       isExternal = false // bastyon:// ссылки внутренние
+    } else if (/^ipfs:\/\/|^ipns:\/\//i.test(url)) {
+      // Открывает наш просмотрщик (делегат кликов), не новую вкладку.
+      className = 'ipfs-link'
+      isExternal = false
     } else if (url.startsWith('www.')) {
       href = `https://${url}`
     }

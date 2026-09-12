@@ -40,6 +40,9 @@ pub struct IpfsState {
     pub child_pid: Option<u32>,
     pub installed: bool,
     pub update_available: bool,
+    /// Демон сообщил в stderr, что repo занят другим процессом: wait_ready
+    /// прекращает ждать сразу, а не досиживает таймаут.
+    pub lock_error: bool,
 }
 
 impl Default for IpfsState {
@@ -52,6 +55,7 @@ impl Default for IpfsState {
             child_pid: None,
             installed: false,
             update_available: false,
+            lock_error: false,
         }
     }
 }
@@ -83,14 +87,22 @@ pub struct IpfsPaths {
     pub repo: PathBuf,
     /// `bin_dir/install.json` — метка версии/хэша установленного бинаря.
     pub install_marker: PathBuf,
+    /// `app_data_dir/ipfs/api-secret` — bearer-секрет RPC Kubo (0600). Без него
+    /// RPC на loopback без auth читал/менял бы любой локальный процесс.
+    pub api_secret: PathBuf,
 }
 
 impl IpfsPaths {
     pub fn new(bin_dir: PathBuf, repo: PathBuf) -> Self {
         let bin_name = if cfg!(windows) { "ipfs.exe" } else { "ipfs" };
+        let api_secret = repo
+            .parent()
+            .map(|p| p.join("api-secret"))
+            .unwrap_or_else(|| repo.join("api-secret"));
         Self {
             binary: bin_dir.join("kubo").join(bin_name),
             install_marker: bin_dir.join("install.json"),
+            api_secret,
             bin_dir,
             repo,
         }
@@ -107,6 +119,8 @@ mod tests {
         let expected_bin = if cfg!(windows) { "ipfs.exe" } else { "ipfs" };
         assert!(p.binary.ends_with(format!("kubo/{expected_bin}")));
         assert!(p.install_marker.ends_with("install.json"));
+        // Секрет — РЯДОМ с repo (не внутри: repo может сноситься/мигрировать).
+        assert_eq!(p.api_secret, PathBuf::from("/data/ipfs/api-secret"));
     }
 
     #[test]

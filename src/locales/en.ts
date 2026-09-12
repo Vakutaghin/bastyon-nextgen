@@ -191,7 +191,7 @@ export default {
     ipfsCancel: 'Use public gateway instead',
     ipfsTorBlockedTitle: 'Tor is on',
     ipfsTorBlockedContent:
-      'Opening this via a public gateway would reveal your real IP (the viewer window is not routed through Tor). Install and start the local IPFS module to open it privately.',
+      'IPFS does not work over Tor: neither the viewer window nor the local Kubo node is routed through Tor, so they would reveal your real IP together with the requested address. Turn Tor off to open the link, share a file, or start the node.',
     ipfsStatusRunning: 'Local IPFS node running',
     ipfsStatusStopped: 'IPFS module installed (stopped)',
     ipfsStatusNotInstalled: 'IPFS module not installed',

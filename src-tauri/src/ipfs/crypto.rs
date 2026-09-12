@@ -18,6 +18,14 @@ pub enum CryptoError {
 
 const NONCE_LEN: usize = 12;
 
+/// `n` случайных байт из CSPRNG в hex (секрет RPC-авторизации Kubo).
+pub fn random_hex(n: usize) -> String {
+    use aes_gcm::aead::rand_core::RngCore;
+    let mut buf = vec![0u8; n];
+    OsRng.fill_bytes(&mut buf);
+    buf.iter().map(|b| format!("{b:02x}")).collect()
+}
+
 /// Шифрует байты случайным ключом. Возвращает (base64-ключ, nonce||ciphertext).
 pub fn encrypt(plaintext: &[u8]) -> Result<(String, Vec<u8>), CryptoError> {
     let key = Aes256Gcm::generate_key(&mut OsRng);
@@ -50,6 +58,15 @@ pub fn decrypt(key_b64: &str, blob: &[u8]) -> Result<Vec<u8>, CryptoError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn random_hex_is_hex_and_unique() {
+        let a = random_hex(32);
+        let b = random_hex(32);
+        assert_eq!(a.len(), 64);
+        assert!(a.chars().all(|c| c.is_ascii_hexdigit()));
+        assert_ne!(a, b);
+    }
 
     #[test]
     fn roundtrips_bytes() {

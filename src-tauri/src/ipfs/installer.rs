@@ -131,9 +131,12 @@ pub fn update_available(paths: &IpfsPaths) -> bool {
     paths.binary.is_file() && installed_version(paths).as_deref() != Some(KUBO_VERSION)
 }
 
-/// Верхний уровень: гарантировать наличие бинаря kubo. No-op, если уже установлен.
+/// Верхний уровень: гарантировать наличие бинаря kubo. No-op, если уже
+/// установлен. «Установлен» = бинарь И маркер: маркер пишется последним, так что
+/// усечённый бинарь после краша посреди распаковки (маркера нет) переставится,
+/// а не считался бы готовым («Exec format error» при spawn).
 pub async fn ensure_installed(app: &AppHandle, paths: &IpfsPaths) -> Result<(), InstallError> {
-    if paths.binary.is_file() {
+    if paths.binary.is_file() && paths.install_marker.is_file() {
         return Ok(());
     }
 
