@@ -30,6 +30,9 @@
       </SC_LangSwitcher>
     </SC_GeneralRow>
   </SC_GeneralBlock>
+
+  <!-- Управление десктоп-модулем IPFS (Kubo): сам блок скрыт, если не установлен. -->
+  <IpfsSection />
 </template>
 
 <script setup lang="ts">
@@ -38,6 +41,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useUIStore, type AppLanguage } from '@/stores/ui-store'
 import { useTheme, type ThemeMode } from '@/composables/use-theme'
+import IpfsSection from './ipfs-section.vue'
 import {
   SC_SettingsSectionTitle,
   SC_GeneralBlock,

@@ -28,56 +28,27 @@
         <SC_IpfsHint v-if="updateAvailable">{{ t('header.ipfsUpdateHint') }}</SC_IpfsHint>
 
         <SC_IpfsActions>
-          <Button
-            v-if="status === 'running'"
-            size="small"
-            @click="ipfs.stop()"
-          >
+          <Button v-if="status === 'running'" size="small" @click="ipfs.stop()">
             {{ t('header.ipfsStopBtn') }}
           </Button>
-          <Button
-            v-else
-            size="small"
-            type="primary"
-            :loading="busy"
-            @click="ipfs.enable()"
-          >
+          <Button v-else size="small" type="primary" :loading="busy" @click="ipfs.enable()">
             {{ installed ? t('header.ipfsStartBtn') : t('header.ipfsInstallBtn') }}
           </Button>
 
-          <Button
-            v-if="updateAvailable"
-            size="small"
-            :loading="busy"
-            @click="ipfs.update()"
-          >
+          <Button v-if="updateAvailable" size="small" :loading="busy" @click="ipfs.update()">
             {{ t('header.ipfsUpdateBtn') }}
           </Button>
 
-          <Button
-            size="small"
-            :loading="sharing"
-            :disabled="busy"
-            @click="onShareFile"
-          >
+          <Button size="small" :loading="sharing" :disabled="busy" @click="onShareFile">
             {{ t('header.ipfsShareBtn') }}
           </Button>
 
-          <Button
-            size="small"
-            :loading="sharing"
-            :disabled="busy"
-            @click="onShareFileEncrypted"
-          >
+          <Button size="small" :loading="sharing" :disabled="busy" @click="onShareFileEncrypted">
             {{ t('header.ipfsShareEncryptedBtn') }}
           </Button>
 
           <Button v-if="status === 'running'" size="small" @click="ipfs.openPinConfig()">
             {{ t('header.ipfsPinConfigBtn') }}
-          </Button>
-
-          <Button v-if="installed && !busy" size="small" danger @click="onUninstall">
-            {{ t('header.ipfsUninstallBtn') }}
           </Button>
         </SC_IpfsActions>
 
@@ -151,9 +122,7 @@ const statusLine = computed<string>(() => {
         ? t('header.ipfsStatusError', { message: message.value })
         : t('header.ipfsError')
     default:
-      return installed.value
-        ? t('header.ipfsStatusStopped')
-        : t('header.ipfsStatusNotInstalled')
+      return installed.value ? t('header.ipfsStatusStopped') : t('header.ipfsStatusNotInstalled')
   }
 })
 
@@ -176,17 +145,6 @@ function onTriggerClick(): void {
     return
   }
   visible.value = !visible.value
-}
-
-function onUninstall(): void {
-  Modal.confirm({
-    title: t('header.ipfsUninstallConfirmTitle'),
-    content: t('header.ipfsUninstallConfirmContent'),
-    okText: t('header.ipfsUninstallBtn'),
-    okType: 'danger',
-    cancelText: t('common.cancel'),
-    onOk: () => ipfs.uninstall(),
-  })
 }
 
 async function onShareFile(): Promise<void> {

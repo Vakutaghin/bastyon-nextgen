@@ -254,6 +254,14 @@ export default {
       themeLight: 'Light',
       themeDark: 'Dark',
     },
+    ipfs: {
+      title: 'IPFS module',
+      description:
+        'The downloaded Kubo module for viewing and seeding IPFS content. You can remove it from disk here.',
+      statusRunning: 'Installed · running',
+      statusStopped: 'Installed · stopped',
+      uninstall: 'Remove module',
+    },
     blacklist: {
       title: 'Blocked users',
       lead: 'Users you have blocked. They cannot see or interact with your content.',
