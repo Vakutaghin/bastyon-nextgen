@@ -43,7 +43,7 @@ export async function retryRegistrationBackgroundTx(
   try {
     const [
       { serializeUserInfo, exportUserInfo },
-      { getUnspents, selectBestUnspents, filterAvailableUnspents },
+      { getUnspents, selectAndLockUnspents, filterAvailableUnspents },
       { buildTransaction },
       { sendTransactionWithMessage },
       { DEFAULT_TX_FEE },
@@ -82,7 +82,7 @@ export async function retryRegistrationBackgroundTx(
       return 'no-funds'
     }
 
-    const selectedUnspents = selectBestUnspents(unspents, 0)
+    const selectedUnspents = selectAndLockUnspents(unspents, 0) // лок входов (S6)
     if (selectedUnspents.length === 0) return 'no-funds'
 
     debugLog(LOG_PREFIX, 'building transaction...')

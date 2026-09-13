@@ -252,7 +252,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
 
     try {
       const [
-        { getUnspents, filterAvailableUnspents, selectBestUnspents },
+        { getUnspents, filterAvailableUnspents, selectAndLockUnspents },
         { buildTransferTransaction },
         { sendTransactionWithMessage },
         { DEFAULT_TX_FEE },
@@ -266,7 +266,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
       const rawUnspents = await getUnspents(fromAddress, 1, 9999999)
       const unspents = filterAvailableUnspents(rawUnspents, false)
       const requiredAmount = amount + DEFAULT_TX_FEE
-      const selected = selectBestUnspents(unspents, requiredAmount)
+      const selected = selectAndLockUnspents(unspents, requiredAmount) // лок входов (S6)
       if (!selected.length) throw new Error(t('appMsg.messenger.insufficientFunds'))
 
       const built = await buildTransferTransaction({

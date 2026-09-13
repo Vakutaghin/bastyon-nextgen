@@ -21,7 +21,7 @@ export async function sendRegistrationTransaction(
   try {
     const { serializeUserInfo, exportUserInfo } =
       await import('@/blockchain/core/actions/user-info-action')
-    const { getUnspents, selectBestUnspents, filterAvailableUnspents } =
+    const { getUnspents, selectAndLockUnspents, filterAvailableUnspents } =
       await import('@/blockchain/core/transactions/unspents-manager')
     const { buildTransaction } = await import('@/blockchain/core/transactions/transaction-builder')
     const { sendTransactionWithMessage } =
@@ -71,7 +71,7 @@ export async function sendRegistrationTransaction(
       debugLog('[REG-BG] Got unspents after waiting:', unspents.length)
     }
 
-    const selectedUnspents = selectBestUnspents(unspents, 0)
+    const selectedUnspents = selectAndLockUnspents(unspents, 0) // лок входов (S6)
     if (selectedUnspents.length === 0) {
       console.error('[REG-BG] No usable unspents after waiting')
       return

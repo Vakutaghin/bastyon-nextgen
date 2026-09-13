@@ -13,7 +13,9 @@
     @cancel="onCancel"
   >
     <SC_Wrap v-if="payment">
-      <SC_AppRow v-if="appName">{{ t('miniapps.paymentRequestedBy', { name: appName }) }}</SC_AppRow>
+      <SC_AppRow v-if="appName">{{
+        t('miniapps.paymentRequestedBy', { name: appName })
+      }}</SC_AppRow>
       <SC_RecieverList>
         <SC_RecieverRow v-for="(r, idx) in payment.recievers" :key="idx">
           <SC_RecieverAddr>{{ r.address }}</SC_RecieverAddr>
@@ -43,9 +45,10 @@ import { useAuthStore } from '@/blockchain'
 import {
   getUnspents,
   filterAvailableUnspents,
-  selectBestUnspents,
+  selectAndLockUnspents,
 } from '@/blockchain/core/transactions/unspents-manager'
 import { buildTransferTransaction } from '@/blockchain/core/transactions/transaction-builder'
+import { splitFeeAcrossReceivers } from '@/blockchain/core/transactions/split-fee'
 import { sendTransactionWithMessage } from '@/blockchain/core/transactions/transaction-sender'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import {
@@ -111,7 +114,9 @@ async function onConfirm() {
   try {
     const all = await getUnspents(mainAddr, 1, 9_999_999)
     const available = filterAvailableUnspents(all, false)
-    const selected = selectBestUnspents(available, requiredAmount)
+    // Лок входов, как в контентных отправителях (P2-5): вторая оплата подряд не
+    // подберёт те же UTXO, пока нода не увидела первую транзакцию.
+    const selected = selectAndLockUnspents(available, requiredAmount)
     if (!selected.length) {
       throw new Error(t('miniapps.errorInsufficientFunds'))
     }
@@ -121,10 +126,7 @@ async function onConfirm() {
       fromAddress: mainAddr,
       sourceAddresses: [mainAddr],
       keyPair,
-      outputs: payment.value.recievers.map((r) => ({
-        address: r.address,
-        amount: feemode === 'include' ? r.amount : r.amount,
-      })),
+      outputs: splitFeeAcrossReceivers(payment.value.recievers, feemode, DEFAULT_TX_FEE),
       fee: DEFAULT_TX_FEE,
       message: payment.value.message ?? '',
       feemode,

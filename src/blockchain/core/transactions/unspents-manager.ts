@@ -12,8 +12,12 @@ import {
   COINBASE_MATURITY,
 } from '@/blockchain/constants/transactions'
 
-// Local cache of locked UTXOs to prevent double-spending in rapid transactions
-const lockedUTXOs = new Set<string>()
+// Локальный лок UTXO: пока нода не увидела нашу транзакцию, txunspent продолжает
+// отдавать потраченные входы — вторая отправка подряд подобрала бы те же UTXO и
+// либо получила бы reject, либо (при провале первой) молча уехала бы вместо неё.
+// Ключ → таймер авто-снятия: повторный лок ПРОДЛЕВАЕТ TTL (S6), а не оставляет
+// таймер первого лока, который снимал бы блокировку раньше времени.
+const lockedUTXOs = new Map<string, ReturnType<typeof setTimeout>>()
 
 /**
  * Lock UTXOs to prevent them from being used in subsequent transactions immediately
@@ -23,13 +27,30 @@ const lockedUTXOs = new Set<string>()
 export function lockUTXOs(utxos: UTXO[], ttl: number = 60000) {
   utxos.forEach((u) => {
     const key = `${u.txid}:${u.vout}`
-    lockedUTXOs.add(key)
-
-    // Auto-unlock after TTL
-    setTimeout(() => {
-      lockedUTXOs.delete(key)
-    }, ttl)
+    const prev = lockedUTXOs.get(key)
+    if (prev) clearTimeout(prev)
+    lockedUTXOs.set(
+      key,
+      setTimeout(() => lockedUTXOs.delete(key), ttl)
+    )
   })
+}
+
+/**
+ * Подбирает входы под сумму и сразу лочит их. Единая точка для ВСЕХ отправителей
+ * (контентные и value-транзакции): раньше лок был в 8 из 15 мест (аудит P2-5/S6).
+ * Пустой результат = не хватает средств (ничего не лочится).
+ * @param available - unspents, уже прошедшие filterAvailableUnspents
+ * @param requiredAmount - сумма в PKOIN (0 = «любой один вход», как для регистрации)
+ */
+export function selectAndLockUnspents(available: UTXO[], requiredAmount: number): UTXO[] {
+  const selected = selectBestUnspents(available, requiredAmount)
+  // selectBestUnspents при нехватке отдаёт «всё, что есть» — для отправителя это
+  // не подбор, а гарантированный reject билдера; не лочим и отдаём пусто.
+  const total = selected.reduce((sum, u) => sum + u.amount, 0)
+  if (!selected.length || total + 1e-9 < requiredAmount) return []
+  lockUTXOs(selected)
+  return selected
 }
 
 /**

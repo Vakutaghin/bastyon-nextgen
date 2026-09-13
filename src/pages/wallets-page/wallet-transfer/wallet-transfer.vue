@@ -152,7 +152,7 @@ import { useAuthStore } from '@/blockchain'
 import {
   getUnspents,
   filterAvailableUnspents,
-  selectBestUnspents,
+  selectAndLockUnspents,
 } from '@/blockchain/core/transactions/unspents-manager'
 import { buildTransferTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import { sendTransactionWithMessage } from '@/blockchain/core/transactions/transaction-sender'
@@ -236,7 +236,6 @@ const canSend = computed<boolean>(() => {
   return true
 })
 
-
 async function doSend(): Promise<void> {
   if (!canSend.value || sending.value) return
   const addr = (receiverAddress.value || '').trim()
@@ -265,7 +264,7 @@ async function doSend(): Promise<void> {
     // exclude = отправитель платит: ищем (сумма + комиссия) в UTXO.
     const receiverAmount = feemode.value === 'include' ? Math.max(0, num - DEFAULT_TX_FEE) : num
     const requiredAmount = feemode.value === 'exclude' ? num + DEFAULT_TX_FEE : num
-    const selected = selectBestUnspents(unspents, requiredAmount)
+    const selected = selectAndLockUnspents(unspents, requiredAmount) // лок входов (P2-5/S6)
     if (!selected.length) {
       throw new Error(t('wallet.errorInsufficientFunds'))
     }

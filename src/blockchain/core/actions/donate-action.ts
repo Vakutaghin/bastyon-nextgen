@@ -11,7 +11,7 @@ import { useAuthStore } from '@/blockchain'
 import {
   getUnspents,
   filterAvailableUnspents,
-  selectBestUnspents,
+  selectAndLockUnspents,
 } from '../transactions/unspents-manager'
 import { buildTransferTransaction } from '../transactions/transaction-builder'
 import { sendTransactionWithMessage } from '../transactions/transaction-sender'
@@ -40,7 +40,7 @@ export async function donateToAuthor(authorAddress: string, amount: number): Pro
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  const selected = selectBestUnspents(unspents, amount)
+  const selected = selectAndLockUnspents(unspents, amount) // лок входов (S6)
   if (!selected.length) throw new Error(t('donate.errInsufficient'))
 
   // include: комиссия вычитается из суммы перевода (получатель получает amount - fee).

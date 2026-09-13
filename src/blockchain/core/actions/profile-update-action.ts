@@ -14,7 +14,7 @@ import { sendTransactionWithMessage } from '../transactions/transaction-sender'
 import {
   getUnspents,
   filterAvailableUnspents,
-  selectBestUnspents,
+  selectAndLockUnspents,
 } from '../transactions/unspents-manager'
 import { deriveMessengerKeys } from '../keys/key-generator'
 import { DEFAULT_TX_FEE } from '../../constants/transactions'
@@ -68,7 +68,7 @@ export async function updateUserProfileInfo(input: ProfileUpdateInput): Promise<
   unspents = filterAvailableUnspents(unspents, false)
   if (!unspents?.length) throw new Error(t('editProfile.errNoUnspents'))
 
-  const selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
+  const selectedUnspents = selectAndLockUnspents(unspents, DEFAULT_TX_FEE) // лок входов (S6)
   if (selectedUnspents.length === 0) throw new Error(t('editProfile.errNoUnspents'))
 
   const builtTx = await buildTransaction({

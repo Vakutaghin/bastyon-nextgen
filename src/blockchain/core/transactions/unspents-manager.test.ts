@@ -3,6 +3,7 @@ import {
   selectBestUnspents,
   filterAvailableUnspents,
   lockUTXOs,
+  selectAndLockUnspents,
   getUnspents,
 } from './unspents-manager'
 import type { UTXO } from '@/composables/use-wallet-queries'
@@ -133,6 +134,41 @@ describe('lockUTXOs', () => {
 
     vi.advanceTimersByTime(60000)
     expect(filterAvailableUnspents([u])).toHaveLength(1)
+  })
+
+  it('повторный лок продлевает TTL, а не снимает блокировку по первому таймеру (S6)', () => {
+    const u = makeUTXO(1)
+
+    lockUTXOs([u], 60000)
+    vi.advanceTimersByTime(50000)
+    lockUTXOs([u], 60000) // через 50 с лочим снова — должно держать ещё 60 с
+
+    vi.advanceTimersByTime(20000) // 70 с от первого лока: первый таймер уже бы снял
+    expect(filterAvailableUnspents([u])).toHaveLength(0)
+
+    vi.advanceTimersByTime(40000) // 60 с от второго лока
+    expect(filterAvailableUnspents([u])).toHaveLength(1)
+  })
+
+  it('selectAndLockUnspents: подобранные входы сразу недоступны следующему отправителю', () => {
+    const a = makeUTXO(1)
+    const b = makeUTXO(1)
+
+    const first = selectAndLockUnspents(filterAvailableUnspents([a, b]), 0.5)
+    expect(first).toHaveLength(1)
+
+    const second = selectAndLockUnspents(filterAvailableUnspents([a, b]), 0.5)
+    expect(second).toHaveLength(1)
+    expect(keyOf(second[0]!)).not.toBe(keyOf(first[0]!))
+
+    // Всё залочено — третьему нечего подбирать, и он ничего не лочит.
+    expect(selectAndLockUnspents(filterAvailableUnspents([a, b]), 0.5)).toHaveLength(0)
+  })
+
+  it('selectAndLockUnspents: не хватает средств → пусто, ничего не залочено', () => {
+    const a = makeUTXO(1)
+    expect(selectAndLockUnspents(filterAvailableUnspents([a]), 5)).toHaveLength(0)
+    expect(filterAvailableUnspents([a])).toHaveLength(1)
   })
 })
 
