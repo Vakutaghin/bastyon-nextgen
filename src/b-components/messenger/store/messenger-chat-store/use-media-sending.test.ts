@@ -3,13 +3,19 @@ import { ref } from 'vue'
 
 const { room, matrix } = vi.hoisted(() => {
   const room = { roomId: '!c:host', loadMembersIfNeeded: vi.fn(async () => {}) }
+  type Send = (
+    chatId: string,
+    data: unknown,
+    onProgress: (l: number, t?: number) => void
+  ) => Promise<void>
+  const send = (): Send => async () => {}
   const matrix = {
     getClient: vi.fn(() => ({})),
     getRoom: vi.fn(() => room),
-    sendAudio: vi.fn(async () => {}),
-    sendImage: vi.fn(async () => {}),
-    sendVideo: vi.fn(async () => {}),
-    sendFile: vi.fn(async () => {}),
+    sendAudio: vi.fn(send()),
+    sendImage: vi.fn(send()),
+    sendVideo: vi.fn(send()),
+    sendFile: vi.fn(send()),
     uploadContent: vi.fn(async () => 'mxc://poster'),
   }
   return { room, matrix }
