@@ -13,7 +13,7 @@
  * (тайм-коды видео) — наши собственные кликабельные элементы.
  */
 
-import { FilterXSS, safeAttrValue } from 'xss'
+import { FilterXSS, safeAttrValue, escapeAttrValue, friendlyAttrValue } from 'xss'
 
 /** Разрешённые теги и атрибуты для контента постов/комментариев. */
 const WHITE_LIST = {
@@ -72,8 +72,15 @@ const filter = new FilterXSS({
     // файлообмена/просмотрщика (перехватываются делегатом use-ipfs-links). xss по
     // умолчанию режет нестандартные схемы — без этого своя же шаринг-ссылка
     // в посте была бы просто текстом.
-    if (tag === 'a' && name === 'href' && /^(bastyon|ipfs|ipns):\/\//i.test(value)) {
-      return value
+    //
+    // Значение обязательно ЭКРАНИРУЕТСЯ, как делает штатный safeAttrValue для
+    // http-ссылок: сырой возврат позволял кавычкой в href закрыть атрибут и
+    // дописать свои (`style="position:fixed…"`, `onmouseover=…`) — инъекция
+    // атрибутов из любого поста (аудит K1). friendlyAttrValue сначала снимает
+    // HTML-сущности, чтобы `&#x22;` не превратился в кавычку уже в DOM.
+    if (tag === 'a' && name === 'href') {
+      const plain = friendlyAttrValue(value).trim()
+      if (/^(bastyon|ipfs|ipns):\/\//i.test(plain)) return escapeAttrValue(plain)
     }
     return safeAttrValue(tag, name, value, cssFilter)
   },
