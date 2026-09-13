@@ -11,6 +11,14 @@ import { DEFAULT_ENCRYPTION_BLOCK } from '../consts'
 import type { Message } from '../../types'
 import type { ChatContext } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
+import {
+  createProgressHandler,
+  makeTempId,
+  markLastSendingFailed,
+  pushOptimistic,
+  removeOptimistic,
+  revokeObjectUrlQuiet,
+} from './media-sending-helpers'
 
 // Лимиты согласованы с bastyon-chat (input/index.js:141, 163): фото — 100 МБ, файлы — 25 МБ.
 // Тот же лимит применяется к видео (которые сейчас уходят как m.file).
@@ -29,25 +37,36 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     pickRoomBlock,
   } = chatCrypto
 
+  /**
+   * Общий preflight: клиент поднят, pcrypto инициализирован (или дожидаемся
+   * во время init), комната есть и участники подгружены.
+   */
+  const prepareRoom = async (
+    chatId: string
+  ): Promise<NonNullable<ReturnType<typeof matrixService.getRoom>>> => {
+    const client = matrixService.getClient()
+    if (!client) throw new Error('Matrix client not initialized')
+
+    ensurePcryptoInitialized()
+    if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
+
+    const room = matrixService.getRoom(chatId)
+    if (!room) throw new Error('Room not found')
+    await room.loadMembersIfNeeded?.()
+    return room
+  }
+
   const sendAudio = async (
     chatId: string,
     blob: Blob,
     meta?: { duration?: number; name?: string }
   ) => {
     try {
-      const client = matrixService.getClient()
-      if (!client) throw new Error('Matrix client not initialized')
-
-      ensurePcryptoInitialized()
-      if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
-
-      const room = matrixService.getRoom(chatId)
-      if (!room) throw new Error('Room not found')
-      await room.loadMembersIfNeeded?.()
+      const room = await prepareRoom(chatId)
 
       // Оптимистичное сообщение
       const objectUrl = URL.createObjectURL(blob)
-      const tempId = 'local-' + Math.random().toString(36).slice(2)
+      const tempId = makeTempId()
       const now = Date.now()
       const tempMessage: Message = {
         id: tempId,
@@ -68,17 +87,9 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         read: true,
         status: 'sending',
       }
-      if (!messages[chatId]) messages[chatId] = []
-      messages[chatId].push(tempMessage)
+      pushOptimistic(messages, chatId, tempMessage)
 
-      const onProgress = (loaded: number, total?: number) => {
-        const msg = messages[chatId]?.find((m) => m.id === tempId)
-        if (msg?.info) {
-          msg.info.uploadProgress = total
-            ? Math.min(100, Math.round((loaded / total) * 100))
-            : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
-        }
-      }
+      const onProgress = createProgressHandler(messages, chatId, tempId)
 
       // Шифрование
       const memberIds = getOrderedMemberIds(room, now)
@@ -108,20 +119,11 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
       )
 
       // Удаляем оптимистичное сообщение
-      const idx = messages[chatId]?.findIndex((m) => m.id === tempId)
-      if (typeof idx === 'number' && idx >= 0) messages[chatId].splice(idx, 1)
-      try {
-        URL.revokeObjectURL(objectUrl)
-      } catch {
-        /* ignore */
-      }
+      removeOptimistic(messages, chatId, tempId)
+      revokeObjectUrlQuiet(objectUrl)
     } catch (e) {
       console.error('[ChatStore] Ошибка отправки аудио:', e)
-      const arr = messages[chatId]
-      if (arr) {
-        const last = arr[arr.length - 1]
-        if (last?.status === 'sending' && last.type === 'audio') last.status = 'failed'
-      }
+      markLastSendingFailed(messages, chatId, 'audio')
     }
   }
 
@@ -131,21 +133,13 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         console.error('[ChatStore] Image too large:', file.size, 'limit:', IMAGE_SIZE_LIMIT_BYTES)
         return
       }
-      const client = matrixService.getClient()
-      if (!client) throw new Error('Matrix client not initialized')
-
-      ensurePcryptoInitialized()
-      if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
-
-      const room = matrixService.getRoom(chatId)
-      if (!room) throw new Error('Room not found')
-      await room.loadMembersIfNeeded?.()
+      const room = await prepareRoom(chatId)
 
       const mimetype = file.type || 'image/jpeg'
       const fileName = (file instanceof File ? file.name : undefined) || meta?.name || 'image'
       const dims = await extractImageDimensions(file)
       const objectUrl = URL.createObjectURL(file)
-      const tempId = 'local-' + Math.random().toString(36).slice(2)
+      const tempId = makeTempId()
       const now = Date.now()
 
       const tempMessage: Message = {
@@ -163,17 +157,9 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         status: 'sending',
       }
 
-      if (!messages[chatId]) messages[chatId] = []
-      messages[chatId].push(tempMessage)
+      pushOptimistic(messages, chatId, tempMessage)
 
-      const onProgress = (loaded: number, total?: number) => {
-        const msg = messages[chatId]?.find((m) => m.id === tempId)
-        if (msg?.info) {
-          msg.info.uploadProgress = total
-            ? Math.min(100, Math.round((loaded / total) * 100))
-            : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
-        }
-      }
+      const onProgress = createProgressHandler(messages, chatId, tempId)
 
       const memberIds = getOrderedMemberIds(room, now)
       const users = await collectPcryptoUsers(memberIds)
@@ -197,41 +183,24 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         onProgress
       )
 
-      const idx = messages[chatId]?.findIndex((m) => m.id === tempId)
-      if (typeof idx === 'number' && idx >= 0) messages[chatId].splice(idx, 1)
-      try {
-        URL.revokeObjectURL(objectUrl)
-      } catch {
-        /* ignore */
-      }
+      removeOptimistic(messages, chatId, tempId)
+      revokeObjectUrlQuiet(objectUrl)
     } catch (e) {
       console.error('[ChatStore] Failed to send image:', e)
-      const arr = messages[chatId]
-      if (arr) {
-        const last = arr[arr.length - 1]
-        if (last?.status === 'sending' && last.type === 'image') last.status = 'failed'
-      }
+      markLastSendingFailed(messages, chatId, 'image')
     }
   }
 
   const sendVideo = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
     try {
-      const client = matrixService.getClient()
-      if (!client) throw new Error('Matrix client not initialized')
-
-      ensurePcryptoInitialized()
-      if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
-
-      const room = matrixService.getRoom(chatId)
-      if (!room) throw new Error('Room not found')
-      await room.loadMembersIfNeeded?.()
+      const room = await prepareRoom(chatId)
 
       const mimetype = file.type || 'video/mp4'
       const fileName = (file instanceof File ? file.name : undefined) || meta?.name || 'video'
       const { duration, w, h, posterBlob } = await extractVideoMetadata(file)
       const objectUrl = URL.createObjectURL(file)
       const posterLocalUrl = posterBlob ? URL.createObjectURL(posterBlob) : null
-      const tempId = 'local-' + Math.random().toString(36).slice(2)
+      const tempId = makeTempId()
       const now = Date.now()
 
       const tempMessage: Message = {
@@ -257,17 +226,9 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         status: 'sending',
       }
 
-      if (!messages[chatId]) messages[chatId] = []
-      messages[chatId].push(tempMessage)
+      pushOptimistic(messages, chatId, tempMessage)
 
-      const onProgress = (loaded: number, total?: number) => {
-        const msg = messages[chatId]?.find((m) => m.id === tempId)
-        if (msg?.info) {
-          msg.info.uploadProgress = total
-            ? Math.min(100, Math.round((loaded / total) * 100))
-            : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
-        }
-      }
+      const onProgress = createProgressHandler(messages, chatId, tempId)
 
       const memberIds = getOrderedMemberIds(room, now)
       const users = await collectPcryptoUsers(memberIds)
@@ -304,25 +265,12 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         onProgress
       )
 
-      const idx = messages[chatId]?.findIndex((m) => m.id === tempId)
-      if (typeof idx === 'number' && idx >= 0) messages[chatId].splice(idx, 1)
-      try {
-        URL.revokeObjectURL(objectUrl)
-      } catch {
-        /* ignore */
-      }
-      try {
-        if (posterLocalUrl) URL.revokeObjectURL(posterLocalUrl)
-      } catch {
-        /* ignore */
-      }
+      removeOptimistic(messages, chatId, tempId)
+      revokeObjectUrlQuiet(objectUrl)
+      revokeObjectUrlQuiet(posterLocalUrl)
     } catch (e) {
       console.error('[ChatStore] Failed to send video:', e)
-      const arr = messages[chatId]
-      if (arr) {
-        const last = arr[arr.length - 1]
-        if (last?.status === 'sending' && last.type === 'video') last.status = 'failed'
-      }
+      markLastSendingFailed(messages, chatId, 'video')
     }
   }
 
@@ -332,19 +280,11 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         console.error('[ChatStore] File too large:', file.size, 'limit:', FILE_SIZE_LIMIT_BYTES)
         return
       }
-      const client = matrixService.getClient()
-      if (!client) throw new Error('Matrix client not initialized')
-
-      ensurePcryptoInitialized()
-      if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
-
-      const room = matrixService.getRoom(chatId)
-      if (!room) throw new Error('Room not found')
-      await room.loadMembersIfNeeded?.()
+      const room = await prepareRoom(chatId)
 
       const mimetype = file.type || 'application/octet-stream'
       const fileName = (file instanceof File ? file.name : undefined) || meta?.name || 'file'
-      const tempId = 'local-' + Math.random().toString(36).slice(2)
+      const tempId = makeTempId()
       const now = Date.now()
 
       const tempMessage: Message = {
@@ -362,17 +302,9 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         status: 'sending',
       }
 
-      if (!messages[chatId]) messages[chatId] = []
-      messages[chatId].push(tempMessage)
+      pushOptimistic(messages, chatId, tempMessage)
 
-      const onProgress = (loaded: number, total?: number) => {
-        const msg = messages[chatId]?.find((m) => m.id === tempId)
-        if (msg?.info) {
-          msg.info.uploadProgress = total
-            ? Math.min(100, Math.round((loaded / total) * 100))
-            : Math.min(100, Math.round((loaded / (msg.info.size || loaded)) * 100))
-        }
-      }
+      const onProgress = createProgressHandler(messages, chatId, tempId)
 
       const memberIds = getOrderedMemberIds(room, now)
       const users = await collectPcryptoUsers(memberIds)
@@ -394,15 +326,10 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         onProgress
       )
 
-      const idx = messages[chatId]?.findIndex((m) => m.id === tempId)
-      if (typeof idx === 'number' && idx >= 0) messages[chatId].splice(idx, 1)
+      removeOptimistic(messages, chatId, tempId)
     } catch (e) {
       console.error('[ChatStore] Failed to send file:', e)
-      const arr = messages[chatId]
-      if (arr) {
-        const last = arr[arr.length - 1]
-        if (last?.status === 'sending' && last.type === 'file') last.status = 'failed'
-      }
+      markLastSendingFailed(messages, chatId, 'file')
     }
   }
 
