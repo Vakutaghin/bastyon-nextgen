@@ -306,7 +306,6 @@ import {
 } from '@ant-design/icons-vue'
 import { videoPlayerManager } from './video-player-manager'
 import type { Chapter } from '@/helpers/content/timecode-parser'
-import { findActiveChapterIndex } from '@/helpers/content/timecode-parser'
 import { useVideoHotkeys } from './composables/use-video-hotkeys'
 import { useVideoControls } from './composables/use-video-controls'
 import { HOTKEYS_LIST, DOUBLE_CLICK_DELAY } from './consts'
@@ -314,6 +313,7 @@ import { createClickHandler } from './helpers'
 import { useVideoProgress } from './composables/use-video-progress'
 import { useVideoVolume } from './composables/use-video-volume'
 import { useVideoPlaybackRate } from './composables/use-video-playback-rate'
+import { useVideoChapters } from './composables/use-video-chapters'
 import { useVideoFullscreen } from './composables/use-video-fullscreen'
 import { useVideoPip } from './composables/use-video-pip'
 import { useVideoHls } from './composables/use-video-hls'
@@ -556,26 +556,12 @@ const videoElementEvents = useVideoElementEvents({
 setupVideoEventListeners = videoElementEvents.setupVideoEventListeners
 setupIntersectionObserver = videoElementEvents.setupIntersectionObserver
 
-// === Главы (тайм-коды из описания). ===
-
-// Маркеры на прогресс-баре (в процентах); пропускаем 0:00 и тайм-коды
-// за пределами длительности.
-const chapterMarkers = computed<number[]>(() => {
-  const chapters = props.chapters || []
-  const total = duration.value
-  if (!chapters.length || !total || !isFinite(total) || total <= 0) return []
-  return chapters
-    .filter((ch) => ch.start > 0 && ch.start < total)
-    .map((ch) => (ch.start / total) * 100)
-})
-
-// Текущая активная глава по currentTime (показывается рядом со временем).
-const activeChapter = computed<Chapter | null>(() => {
-  const chapters = props.chapters || []
-  if (!chapters.length) return null
-  const idx = findActiveChapterIndex(chapters, currentTime.value)
-  return idx >= 0 ? chapters[idx] : null
-})
+// === Главы (тайм-коды из описания) — в use-video-chapters. ===
+const { chapterMarkers, activeChapter } = useVideoChapters(
+  () => props.chapters,
+  duration,
+  currentTime
+)
 
 // Перемотка к моменту (вызывается извне через template ref).
 // Если плеер ещё не инициализирован — запускаем загрузку и применяем seek
