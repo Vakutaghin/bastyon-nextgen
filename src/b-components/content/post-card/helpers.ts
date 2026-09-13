@@ -1,41 +1,45 @@
-// Хелперы компонента post-card
+// Хелперы компонента post-card. Семантика — ровно та, что жила инлайном в
+// post-card.vue (аудит крупных файлов 2026-08: хелперы были отгружены заранее,
+// но разошлись с живым кодом и никем не использовались).
 
 import { URL_ENCODED_PATTERN, RATING_MAX_STARS, RATING_ROUND_MULTIPLIER } from './consts'
 
 /**
- * Безопасно декодирует URL-encoded строку.
+ * Безопасно декодирует URL-encoded строку. `+` НЕ трактуется как пробел —
+ * поля поста приходят `encodeURIComponent`-кодированными.
  */
 export function decodeUrlEncoded(str: string): string {
-  if (!str || typeof str !== 'string') return str || ''
+  if (!str || typeof str !== 'string') return str
+  // Префильтр — без %XX декодировать смысла нет.
   if (!URL_ENCODED_PATTERN.test(str)) return str
-
   try {
-    return decodeURIComponent(str.replace(/\+/g, ' '))
+    const decoded = decodeURIComponent(str)
+    if (decoded && decoded !== str) return decoded
   } catch {
     return str
   }
+  return str
 }
 
 /**
- * Извлекает первую букву имени для аватара-заглушки.
- */
-export function getUserInitial(nameOrLetter?: string): string {
-  if (!nameOrLetter) return '?'
-  if (nameOrLetter.length === 1) return nameOrLetter.toUpperCase()
-  return nameOrLetter.charAt(0).toUpperCase()
-}
-
-/**
- * Вычисляет средний рейтинг из суммы оценок и количества.
+ * Средний рейтинг в звёздах (0-5): готовое `ratingStars`, иначе из суммы и
+ * количества оценок.
  */
 export function calculateAverageRating(
-  ratingStars: number | undefined,
-  scoreSum: number | undefined,
-  scoreCnt: number | undefined,
+  ratingStars: number | null | undefined,
+  scoreSum: number | null | undefined,
+  scoreCnt: number | null | undefined
 ): number {
-  if (typeof ratingStars === 'number' && ratingStars > 0) return ratingStars
-  if (!scoreSum || !scoreCnt || scoreCnt === 0) return 0
-
-  const avg = scoreSum / scoreCnt
-  return Math.max(0, Math.min(RATING_MAX_STARS, Math.round(avg * RATING_ROUND_MULTIPLIER) / RATING_ROUND_MULTIPLIER))
+  if (ratingStars != null) return ratingStars
+  if (scoreCnt && scoreCnt > 0 && scoreSum != null) {
+    const avg = scoreSum / scoreCnt
+    return Math.max(
+      0,
+      Math.min(
+        RATING_MAX_STARS,
+        Math.round(avg * RATING_ROUND_MULTIPLIER) / RATING_ROUND_MULTIPLIER
+      )
+    )
+  }
+  return 0
 }

@@ -190,10 +190,8 @@ import {
   RiseOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons-vue'
-import { Dropdown, Modal } from 'ant-design-vue'
+import { Dropdown } from 'ant-design-vue'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
-import { appToast } from '@/b-components/app-toast'
-import { deletePost } from '@/b-components/content/post-card/post-deleter'
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
@@ -225,6 +223,9 @@ import {
   SC_PendingBadge,
 } from './styled'
 import { usePostMedia } from './use-post-media'
+import { usePostDelete } from './use-post-delete'
+import { calculateAverageRating, decodeUrlEncoded } from './helpers'
+import { DEFAULT_MAX_BLOCKS, DEFAULT_MAX_TEXT_LENGTH } from './consts'
 import type { Post, PostAuthor } from './post-card.types'
 const props = withDefaults(
   defineProps<{
@@ -243,7 +244,13 @@ const props = withDefaults(
     /** Показывать метку «Продвигаемое» (буст, вплетённый в ленту). */
     boosted?: boolean
   }>(),
-  { maxLength: 500, maxBlocks: 3, showFull: false, authorOverride: null, boosted: false }
+  {
+    maxLength: DEFAULT_MAX_TEXT_LENGTH,
+    maxBlocks: DEFAULT_MAX_BLOCKS,
+    showFull: false,
+    authorOverride: null,
+    boosted: false,
+  }
 )
 
 const emit = defineEmits<{
@@ -290,40 +297,15 @@ function openEdit(): void {
 }
 
 // ── Удаление своего поста (contentDelete) ───────────────────────────
-const deleting = ref(false)
-const deleted = ref(false)
+const postId = computed<string>(
+  () => props.post.txid || props.post.hash || String(props.post.id || '')
+)
 // Удалять можно только при наличии реального txid/hash поста — числовой
 // surrogate-id не годится для contentDelete (хеш не совпадёт с оригиналом).
 const canDelete = computed<boolean>(() => !!(props.post.txid || props.post.hash))
-
-function confirmDelete(): void {
-  Modal.confirm({
-    title: t('postCard.deleteConfirmTitle'),
-    content: t('postCard.deleteConfirmText'),
-    okText: t('postCard.deleteAction'),
-    okType: 'danger',
-    cancelText: t('postCard.deleteCancel'),
-    onOk: doDelete,
-  })
-}
-
-async function doDelete(): Promise<void> {
-  if (deleting.value) return
-  deleting.value = true
-  try {
-    await deletePost(postId.value)
-    deleted.value = true
-    appToast.success({ message: t('postCard.deleted') })
-    emit('deleted', postId.value)
-  } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('postCard.deleteFailed') })
-  } finally {
-    deleting.value = false
-  }
-}
-
-const postId = computed<string>(
-  () => props.post.txid || props.post.hash || String(props.post.id || '')
+const { deleting, deleted, confirmDelete } = usePostDelete(
+  () => postId.value,
+  (id) => emit('deleted', id)
 )
 
 // ── Жалоба на чужой пост (modFlag) ──────────────────────────────────
@@ -365,33 +347,9 @@ const isImageGalleryOpen = computed<boolean>({
 const galleryIndex = computed<number>(() => modalStore.imageGallery.index)
 
 /** Средний рейтинг в звёздах (0-5). */
-const averageRating = computed<number>(() => {
-  if (props.post.ratingStars != null) return props.post.ratingStars
-  if (
-    props.post.scoreCnt &&
-    props.post.scoreCnt > 0 &&
-    props.post.scoreSum != null &&
-    props.post.scoreSum !== undefined
-  ) {
-    const averageRating = props.post.scoreSum / props.post.scoreCnt
-    return Math.max(0, Math.min(5, Math.round(averageRating * 10) / 10))
-  }
-  return 0
-})
-
-function decodeUrlEncoded(str: string): string {
-  if (!str || typeof str !== 'string') return str
-  // Префильтр — без %XX декодировать смысла нет.
-  const urlEncodedPattern = /%[0-9A-Fa-f]{2}/g
-  if (!urlEncodedPattern.test(str)) return str
-  try {
-    const decoded = decodeURIComponent(str)
-    if (decoded && decoded !== str) return decoded
-  } catch {
-    return str
-  }
-  return str
-}
+const averageRating = computed<number>(() =>
+  calculateAverageRating(props.post.ratingStars, props.post.scoreSum, props.post.scoreCnt)
+)
 
 const decodedTitle = computed<string>(() => decodeUrlEncoded(props.post.title || ''))
 
