@@ -117,7 +117,8 @@ export class PcryptoService {
             // @ts-expect-error — privateKey здесь Buffer|Uint8Array, тип сужен runtime-проверкой
             privateKey = Buffer.from(privateKey).toString('hex')
           } catch (e) {
-            console.error('[Pcrypto] Failed to convert private key to hex', privateKey)
+            // Значение ключа в лог НЕ пишем (аудит P3-4): только факт и тип.
+            console.error('[Pcrypto] Failed to convert private key to hex', typeof privateKey)
           }
         }
 
@@ -349,9 +350,7 @@ export class PcryptoService {
 
     const encryptedKeyData = body[bodyindex]!
     const encrypted =
-      typeof encryptedKeyData === 'string'
-        ? encryptedKeyData
-        : encryptedKeyData.encrypted || ''
+      typeof encryptedKeyData === 'string' ? encryptedKeyData : encryptedKeyData.encrypted || ''
     const nonce = typeof encryptedKeyData === 'string' ? '' : encryptedKeyData.nonce || ''
 
     return await this.decryptSIV(keys[keyindex]!, encrypted, nonce)

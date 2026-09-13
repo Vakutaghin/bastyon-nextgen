@@ -24,7 +24,11 @@ export const loadAllDecryptedForUser = async (userId: string): Promise<Decrypted
 }
 
 /** Записать одну расшифровку (fire-and-forget вызывающей стороной). */
-export const saveDecrypted = async (userId: string, eventId: string, text: string): Promise<void> => {
+export const saveDecrypted = async (
+  userId: string,
+  eventId: string,
+  text: string
+): Promise<void> => {
   if (!userId || !eventId || typeof text !== 'string') return
   try {
     await db.decryptedMessages.put({
@@ -45,5 +49,18 @@ export const clearDecryptedForUser = async (userId: string): Promise<void> => {
     await db.decryptedMessages.where('userId').equals(userId).delete()
   } catch (e) {
     console.warn('[DecryptedMessagesApi] clearDecryptedForUser failed:', e)
+  }
+}
+
+/**
+ * Удалить кэш всех matrix-юзеров с данным префиксом id (`@<hex>:`) — для
+ * удаления аккаунта, чей homeserver-домен уже неизвестен (V15/Р6).
+ */
+export const clearDecryptedForUserPrefix = async (userIdPrefix: string): Promise<void> => {
+  if (!userIdPrefix) return
+  try {
+    await db.decryptedMessages.where('userId').startsWith(userIdPrefix).delete()
+  } catch (e) {
+    console.warn('[DecryptedMessagesApi] clearDecryptedForUserPrefix failed:', e)
   }
 }

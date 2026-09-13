@@ -121,6 +121,20 @@ describe('clearAllUserData', () => {
     expect(localStorage.getItem(VAULT_ENVELOPE_KEY)).toBeNull()
     expect(localStorage.getItem(VAULT_ENVELOPE_BACKUP_KEY)).toBeNull()
   })
+
+  it('P3-3/VP-8: сносит пины ключей собеседников и отметки бэкапа, чужие ключи не трогает', () => {
+    localStorage.setItem('BST_MSG_KEYPINS_P1', '{"PPeer":"k"}')
+    localStorage.setItem('BST_BACKUP_VERIFIED_P1', '123')
+    localStorage.setItem('BST_BACKUP_NUDGED_AT', '123')
+    localStorage.setItem('bastyon_locale', 'ru')
+
+    clearAllUserData()
+
+    expect(localStorage.getItem('BST_MSG_KEYPINS_P1')).toBeNull()
+    expect(localStorage.getItem('BST_BACKUP_VERIFIED_P1')).toBeNull()
+    expect(localStorage.getItem('BST_BACKUP_NUDGED_AT')).toBeNull()
+    expect(localStorage.getItem('bastyon_locale')).toBe('ru')
+  })
 })
 
 describe('wallet addresses list (per-account ключ)', () => {

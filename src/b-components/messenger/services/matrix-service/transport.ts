@@ -26,6 +26,41 @@ export function getStoreDbName(userId: string): string {
   return `bastyon-matrix-sync:${safe}`
 }
 
+const SYNC_DB_PREFIX = 'bastyon-matrix-sync:'
+
+function deleteDb(name: string): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      const req = window.indexedDB.deleteDatabase(name)
+      req.onsuccess = req.onerror = req.onblocked = () => resolve()
+    } catch {
+      resolve()
+    }
+  })
+}
+
+/**
+ * Стирает sync-state matrix-js-sdk с диска (V15/Р6): при выходе — БД текущего
+ * юзера; при удалении аккаунта — все БД с его hex-частью id (домен неизвестен,
+ * `indexedDB.databases()` есть в Chromium/WebKit ≥ 14; без него — только точное имя).
+ * Best-effort: открытые соединения должны быть закрыты до вызова (matrixService.stop()).
+ */
+export async function deleteSyncStores(opts: { userId?: string; userHex?: string }): Promise<void> {
+  if (typeof window === 'undefined' || typeof window.indexedDB === 'undefined') return
+  const names = new Set<string>()
+  if (opts.userId) names.add(getStoreDbName(opts.userId))
+  if (opts.userHex) {
+    const marker = `${SYNC_DB_PREFIX}_${opts.userHex.toLowerCase()}_`
+    try {
+      const listed = (await window.indexedDB.databases?.()) ?? []
+      for (const d of listed) if (d.name && d.name.startsWith(marker)) names.add(d.name)
+    } catch {
+      /* databases() недоступен — ограничиваемся точным именем */
+    }
+  }
+  await Promise.all([...names].map(deleteDb))
+}
+
 /**
  * Создаёт и поднимает IndexedDBStore для пользователя. matrix-js-sdk сохраняет
  * sync-state на диск, и при последующих запусках `getRooms()` сразу возвращает

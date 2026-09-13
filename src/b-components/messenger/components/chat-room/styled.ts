@@ -460,3 +460,37 @@ export const SC_ReplyBannerClose = styled.button`
     color: ${COLORS.TEXT_PRIMARY};
   }
 `
+
+// Баннер «ключи собеседника изменились» (TOFU, аудит P3-3).
+export const SC_KeyChangedBanner = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: ${COLORS.DANGER_BG_SOFT};
+  border-bottom: 1px solid ${COLORS.DANGER};
+  flex-shrink: 0;
+`
+
+export const SC_KeyChangedText = styled.span`
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.35;
+  color: ${COLORS.DANGER_DEEP};
+`
+
+export const SC_KeyChangedAccept = styled.button`
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid ${COLORS.DANGER};
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: ${COLORS.DANGER_DEEP};
+  cursor: pointer;
+
+  &:hover {
+    background: ${COLORS.DANGER};
+    color: #fff;
+  }
+`

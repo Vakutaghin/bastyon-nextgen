@@ -308,7 +308,12 @@ export class MatrixService {
     extraContent?: Record<string, unknown>
   ) {
     if (!this.client) throw new Error('Client not initialized')
-    return sendEncryptedDirectMessageImpl(this.client as MatrixClient, roomId, payload, extraContent)
+    return sendEncryptedDirectMessageImpl(
+      this.client as MatrixClient,
+      roomId,
+      payload,
+      extraContent
+    )
   }
 
   public async uploadContent(
@@ -395,6 +400,23 @@ export class MatrixService {
 
     await this.client.leave(roomId)
     await this.client.forget(roomId, true)
+  }
+
+  /**
+   * Стирает локальные данные мессенджера с диска (V15/Р6): sync-state
+   * matrix-js-sdk и кэш расшифрованных сообщений. Для текущего юзера — по id;
+   * для удаляемого аккаунта — по hex адреса. Клиент должен быть остановлен.
+   */
+  public async purgeLocalData(opts: { userId?: string; address?: string }): Promise<void> {
+    const userHex = opts.address ? this.addressToHex(opts.address).toLowerCase() : undefined
+    const { deleteSyncStores } = await import('./matrix-service/transport')
+    const { clearDecryptedForUser, clearDecryptedForUserPrefix } =
+      await import('@/db/apis/decrypted-messages-api')
+    await Promise.all([
+      deleteSyncStores({ userId: opts.userId, userHex }),
+      opts.userId ? clearDecryptedForUser(opts.userId) : Promise.resolve(),
+      userHex ? clearDecryptedForUserPrefix(`@${userHex}:`) : Promise.resolve(),
+    ])
   }
 
   public stop() {

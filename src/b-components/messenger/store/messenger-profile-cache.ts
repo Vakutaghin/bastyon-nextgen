@@ -7,11 +7,59 @@ import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { useAuthStore } from '@/blockchain/store/auth-store'
+import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
 
 import { PROFILE_BATCH_SIZE, PROFILE_FETCH_DELAY } from './consts'
+import { checkPeerKeys, acceptPeerKeys } from '../services/key-pinning'
 
 export const useMessengerProfileCache = defineStore('messenger-profile-cache', () => {
   const userProfiles = ref<Record<string, UserProfile>>({})
+
+  /**
+   * Собеседники, чьи ключи шифрования (`k`) отличаются от закреплённых при
+   * первом контакте (TOFU, аудит P3-3). Пока пользователь не примет новые ключи,
+   * чат показывает предупреждение. Ключ — адрес собеседника.
+   */
+  const changedKeyPeers = ref<Record<string, true>>({})
+  const warnedThisSession = new Set<string>()
+
+  const ownerAddress = (): string => useAuthStore().getUserAddress || ''
+
+  const verifyPeerKeys = (profile: UserProfile): void => {
+    const owner = ownerAddress()
+    if (!owner || !profile.address || profile.address === owner) return
+    const keys = typeof profile.k === 'string' ? profile.k : ''
+    if (!keys) return
+    const result = checkPeerKeys(owner, profile.address, keys)
+    if (result !== 'changed') {
+      if (changedKeyPeers.value[profile.address]) {
+        const next = { ...changedKeyPeers.value }
+        delete next[profile.address]
+        changedKeyPeers.value = next
+      }
+      return
+    }
+    changedKeyPeers.value = { ...changedKeyPeers.value, [profile.address]: true }
+    if (!warnedThisSession.has(profile.address)) {
+      warnedThisSession.add(profile.address)
+      console.warn('[ProfileCache] messenger keys changed for', profile.address)
+      appToast.warning({
+        message: t('appMsg.messenger.keyChanged', { name: profile.name || profile.address }),
+      })
+    }
+  }
+
+  /** Пользователь осознанно принял новые ключи собеседника — предупреждение снимается. */
+  const acceptChangedKeys = (address: string): void => {
+    const profile = userProfiles.value[address]
+    const keys = typeof profile?.k === 'string' ? profile.k : ''
+    if (keys) acceptPeerKeys(ownerAddress(), address, keys)
+    const next = { ...changedKeyPeers.value }
+    delete next[address]
+    changedKeyPeers.value = next
+  }
 
   // Очередь и резолверы для батчирования запросов
   const pendingResolvers = new Map<string, Array<() => void>>()
@@ -48,6 +96,7 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
           profiles.forEach((profile: UserProfile) => {
             if (profile?.address) {
               userProfiles.value[profile.address] = profile
+              verifyPeerKeys(profile)
             }
           })
         }
@@ -107,6 +156,8 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
   /** Полный сброс кэша при логауте */
   const reset = () => {
     userProfiles.value = {}
+    changedKeyPeers.value = {}
+    warnedThisSession.clear()
     pendingResolvers.clear()
     fetchQueue = []
     if (fetchTimeout) clearTimeout(fetchTimeout)
@@ -114,7 +165,9 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
 
   return {
     userProfiles,
+    changedKeyPeers,
     fetchProfiles,
+    acceptChangedKeys,
     getAvatarUrl,
     reset,
   }

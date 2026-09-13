@@ -17,6 +17,9 @@ import {
   VAULT_ENVELOPE_BACKUP_KEY,
   VAULT_MIGRATION_KEY,
   VAULT_ATTEMPTS_KEY,
+  MESSENGER_KEY_PINS_PREFIX,
+  BACKUP_VERIFIED_PREFIX,
+  BACKUP_NUDGED_AT_KEY,
 } from '../constants/storage'
 import { ACCOUNTS_LIST_KEY } from './storage-constants'
 import { clearStoredData } from './storage-keys'
@@ -100,6 +103,22 @@ export function clearAllUserData(): void {
         if (k && k.startsWith(ACCOUNT_STORAGE_PREFIX)) accountKeys.push(k)
       }
       for (const k of accountKeys) localStorage.removeItem(k)
+
+      // Пины ключей собеседников мессенджера (TOFU) и отметки «бэкап проверен» —
+      // список контактов/адресов не должен переживать выход и светиться другому
+      // аккаунту на устройстве.
+      const prefixed: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (
+          k &&
+          (k.startsWith(MESSENGER_KEY_PINS_PREFIX) || k.startsWith(BACKUP_VERIFIED_PREFIX))
+        ) {
+          prefixed.push(k)
+        }
+      }
+      for (const k of prefixed) localStorage.removeItem(k)
+      localStorage.removeItem(BACKUP_NUDGED_AT_KEY)
 
       // Device-fingerprint + артефакты сейфа (конверт/backup/маркеры/троттлинг).
       localStorage.removeItem(DEVICE_FINGERPRINT_KEY)

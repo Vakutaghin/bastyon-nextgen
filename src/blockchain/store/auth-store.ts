@@ -508,6 +508,14 @@ export const useAuthStore = defineStore('auth', {
 
         if (!success) return false
 
+        // Локальные данные мессенджера удалённого аккаунта (sync-state, кэш DM) —
+        // на диске не оставляем (V15/Р6). Для текущего аккаунта то же сделает signOut.
+        if (this.address !== address) {
+          import('@/b-components/messenger/store')
+            .then(({ useMessengerStore }) => useMessengerStore().purgeAccountData(address))
+            .catch((e: unknown) => console.warn('[auth-store] purgeAccountData failed:', e))
+        }
+
         if (!keys.accountsList?.accounts?.length) {
           this.accountsList = null
           clearAllUserData()
@@ -542,7 +550,9 @@ export const useAuthStore = defineStore('auth', {
       try {
         const { useMessengerStore } = await import('@/b-components/messenger/store')
         const messengerStore = useMessengerStore()
-        messengerStore.logout()
+        // Выход (без relogin) — стираем с диска sync-state и расшифрованные DM
+        // (V15/Р6); при смене аккаунта кэши per-user остаются.
+        messengerStore.logout({ purge: !relogin })
         if (relogin) {
           messengerStore.initMatrix().catch((e: unknown) => {
             console.error('[auth-store] Failed to re-init matrix:', e)

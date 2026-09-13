@@ -77,6 +77,16 @@
         </Popconfirm>
       </SC_SearchRow>
 
+      <!-- Ключи шифрования собеседника отличаются от закреплённых при первом
+           контакте (TOFU, аудит P3-3): возможная подмена нодой. Показываем,
+           пока пользователь явно не примет новые ключи. -->
+      <SC_KeyChangedBanner v-if="partnerKeyChanged" role="alert">
+        <SC_KeyChangedText>{{ t('messenger.keyChangedBanner') }}</SC_KeyChangedText>
+        <SC_KeyChangedAccept type="button" @click="acceptPartnerKeys">
+          {{ t('messenger.keyChangedAccept') }}
+        </SC_KeyChangedAccept>
+      </SC_KeyChangedBanner>
+
       <SC_ChatRoomEmptyHint v-if="!messages || messages.length === 0">
         {{ t('messenger.noMessagesHint') }}
       </SC_ChatRoomEmptyHint>
@@ -217,6 +227,7 @@ import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import PkoinTransferModal from '../pkoin-transfer-modal/pkoin-transfer-modal.vue'
 import { useMessengerStore } from '../../store'
+import { useMessengerProfileCache } from '../../store/messenger-profile-cache'
 import { usePasteDrop } from './use-paste-drop'
 import { useVoiceRecording } from './use-voice-recording'
 import { usePartnerInfo } from './use-partner-info'
@@ -257,6 +268,9 @@ import {
   SC_ReplyBannerTitle,
   SC_ReplyBannerText,
   SC_ReplyBannerClose,
+  SC_KeyChangedBanner,
+  SC_KeyChangedText,
+  SC_KeyChangedAccept,
 } from './styled'
 import {
   SC_StatItem,
@@ -456,6 +470,16 @@ const pkoinPartnerAddress = computed<string | null>(() => {
   return store.getDirectPartnerAddress(store.activeChatId)
 })
 const canSendPkoin = computed<boolean>(() => !!pkoinPartnerAddress.value)
+
+// === Смена ключей собеседника (TOFU, P3-3). ===
+const profileCache = useMessengerProfileCache()
+const partnerKeyChanged = computed<boolean>(() => {
+  const addr = pkoinPartnerAddress.value
+  return !!addr && !!profileCache.changedKeyPeers[addr]
+})
+function acceptPartnerKeys(): void {
+  if (pkoinPartnerAddress.value) profileCache.acceptChangedKeys(pkoinPartnerAddress.value)
+}
 const pkoinModalOpen = ref(false)
 
 function openPkoinModal(): void {

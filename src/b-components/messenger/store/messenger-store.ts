@@ -341,9 +341,7 @@ export const useMessengerStore = defineStore('messenger', () => {
                     : undefined) ||
                   event.event?.redacts ||
                   event.redacts ||
-                  (typeof event.getContent === 'function'
-                    ? event.getContent()?.redacts
-                    : undefined)
+                  (typeof event.getContent === 'function' ? event.getContent()?.redacts : undefined)
                 const list = roomId ? chatStore.messages[roomId] : null
                 if (list && typeof redactedId === 'string') {
                   const idx = list.findIndex((m) => m.id === redactedId)
@@ -615,12 +613,28 @@ export const useMessengerStore = defineStore('messenger', () => {
     })
   }
 
-  const logout = () => {
+  /**
+   * @param opts.purge — стереть с диска sync-state и кэш расшифровок текущего
+   *   юзера (signOut / удаление аккаунта, V15/Р6). При смене аккаунта — false:
+   *   кэши per-user и пригодятся при возврате.
+   */
+  const logout = (opts: { purge?: boolean } = {}) => {
+    // auth-store к этому моменту уже обнулил address — берём id из matrix-клиента.
+    const userId = matrixService.getClient()?.getUserId() || undefined
     matrixService.stop()
     uiStore.reset()
     chatStore.reset()
     profileCache.reset()
+    if (opts.purge && userId) {
+      matrixService.purgeLocalData({ userId }).catch((e: unknown) => {
+        console.warn('[MessengerStore] purgeLocalData failed:', e)
+      })
+    }
   }
+
+  /** Стереть локальные данные мессенджера удалённого (не текущего) аккаунта. */
+  const purgeAccountData = (address: string): Promise<void> =>
+    matrixService.purgeLocalData({ address })
 
   // Обновление диалогов при обновлении профилей
   // Вместо deep watch на весь объект — следим за количеством ключей (новые профили)
@@ -693,6 +707,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     initMatrix,
     deleteDialog,
     logout,
+    purgeAccountData,
     fetchProfiles: profileCache.fetchProfiles,
     decryptAudioData: chatStore.decryptAudioData,
     startChatWithAddress,

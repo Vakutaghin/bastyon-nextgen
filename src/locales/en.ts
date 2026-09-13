@@ -15,6 +15,10 @@ export default {
     cooldown: 'Too many attempts. Try again in {sec}s.',
     forgot: 'Forgot your passphrase?',
     restoreWithMnemonic: 'Restore with your 12-word recovery phrase',
+    resetTitle: 'Local wallet key is lost',
+    resetBody:
+      'The key that encrypts your seed on this device is unavailable (the browser cleared its storage or the data is corrupted). Saved accounts cannot be read. Restore the wallet from your 12 words — local data will be cleared. You can postpone: nothing is touched and the app keeps working signed out.',
+    resetLater: 'Later',
     resetConfirmTitle: 'Restore with recovery phrase?',
     resetConfirmBody:
       'This clears the wallet data on this device. You can only recover it with your 12-word recovery phrase. Continue?',
@@ -39,7 +43,29 @@ export default {
     passphraseTooShort: 'Use at least 8 characters.',
     enableWarning:
       'If you forget this passphrase, your only recovery is your 12-word recovery phrase. Make sure it is written down.',
+    backupTitle: 'Recovery backup',
+    backupStatusNever:
+      'Not verified. Make sure your 12 words are written down: they are the only way to restore the wallet if this device loses its key.',
+    backupStatusOk: 'Verified on {date}.',
+    backupStatusStale: 'Verified on {date} — a while ago. Make sure the copy is still in place.',
+    backupCheckButton: 'Verify 12 words',
+    backupCheckTitle: 'Backup check',
+    backupCheckSubmit: 'Verify',
+    backupCheckWordsHint:
+      'Enter the recovery-phrase words with the given numbers — this confirms you have the written copy.',
+    backupCheckKeyHint:
+      'This account has no 12-word phrase. Enter the last {n} characters of the private key from your copy.',
+    backupWordN: 'Word #{n}',
+    backupKeyTail: 'Last {n} characters of the key',
+    backupWordsWrong: 'The words do not match. Check your copy and try again.',
+    backupKeyWrong: 'Does not match the saved key.',
+    backupVerifiedToast: 'Backup verified.',
+    backupNudgeTitle: 'Verify your recovery backup',
+    backupNudgeBody:
+      'If this device loses its key, only your 12 words can restore the wallet. Click to verify them in Settings.',
     backupConfirm: 'I have saved my 12-word recovery phrase',
+    migrationIncomplete:
+      'Not all saved accounts could be moved to the protected store. Restart the app and try again; if it persists, re-import the accounts from their 12 words.',
     enabled: 'Passphrase enabled.',
     disabled: 'Passphrase removed.',
     save: 'Save',
@@ -516,6 +542,9 @@ export default {
     newChat: 'New chat',
     close: 'Close',
     startChat: 'Start chat',
+    keyChangedBanner:
+      "Your contact's encryption keys have changed. Unless they switched accounts, an intermediary may be reading messages — verify with them over another channel.",
+    keyChangedAccept: 'Accept new keys',
     loadingMessages: 'Loading messages...',
     loadingDialogs: 'Loading dialogs...',
     noMessagesHint: 'No messages yet. You can write the first one.',
@@ -1646,6 +1675,7 @@ export default {
       me: 'Me',
       you: 'You',
       chat: 'Chat',
+      keyChanged: 'Encryption keys of {name} have changed — verify your contact',
       insufficientFunds: 'Insufficient funds for the transfer including the fee',
       syncError: 'Sync error',
     },

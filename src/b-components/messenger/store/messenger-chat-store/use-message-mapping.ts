@@ -131,22 +131,17 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
         } catch {
           text = decrypted
         }
-      } else if (isGroupEncrypted) {
-        text = ENCRYPTED_MESSAGE_PLACEHOLDER
       } else {
-        text = content.body || ENCRYPTED_MESSAGE_PLACEHOLDER
+        // Не расшифровалось (нет ключей / чужой ключ / повреждено). Тело такого
+        // события — всегда шифротекст или base64-JSON с секретами, показывать
+        // его нельзя: раньше ветка `content.body || placeholder` отдавала в UI
+        // сырой hex legacy-формата (аудит P3-2).
+        text = ENCRYPTED_MESSAGE_PLACEHOLDER
       }
     } else if ((isEncryptedType || hasSecrets || isGroupEncrypted) && skipDecryption) {
-      if (
-        !isGroupEncrypted &&
-        content.body &&
-        !content.body.includes('***') &&
-        content.body.length < 100
-      ) {
-        text = content.body
-      } else {
-        text = ENCRYPTED_MESSAGE_PLACEHOLDER
-      }
+      // Без расшифровки у зашифрованного события нет читаемого текста —
+      // короткий hex-шифротекст (<100 символов) в превью тоже не текст.
+      text = ENCRYPTED_MESSAGE_PLACEHOLDER
     }
 
     let textToRender = typeof text === 'string' ? text : String(text || '')

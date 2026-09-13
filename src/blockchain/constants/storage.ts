@@ -35,6 +35,14 @@ export const VAULT_MIGRATION_KEY = 'BST_VAULT_MIGRATION'
 /** Транзиентный счётчик неверных попыток passphrase (троттлинг; не секрет). */
 export const VAULT_ATTEMPTS_KEY = 'BST_VAULT_ATTEMPTS'
 
+/** Префикс пинов ключей собеседников мессенджера (TOFU): `BST_MSG_KEYPINS_<ownAddress>`. */
+export const MESSENGER_KEY_PINS_PREFIX = 'BST_MSG_KEYPINS_'
+
+/** Отметка «бэкап 12 слов проверен»: `BST_BACKUP_VERIFIED_<address>` = timestamp (мс). */
+export const BACKUP_VERIFIED_PREFIX = 'BST_BACKUP_VERIFIED_'
+/** Когда в последний раз показывали напоминание о бэкапе (timestamp, мс). */
+export const BACKUP_NUDGED_AT_KEY = 'BST_BACKUP_NUDGED_AT'
+
 /**
  * Ключ для громкости видео плеера
  */
