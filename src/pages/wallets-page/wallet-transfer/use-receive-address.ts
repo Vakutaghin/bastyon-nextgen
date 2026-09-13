@@ -1,6 +1,6 @@
 // Вкладка «Получить»: выбор кошелька (основной/дополнительный), генерация QR на
 // раскрытии и копирование адреса. Самодостаточно — вынесено из wallet-transfer.vue
-// (см. LARGE_FILE_SPLIT_AUDIT.md).
+// (аудит крупных файлов 2026-08).
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, getAdditionalWalletAddressesList } from '@/blockchain'

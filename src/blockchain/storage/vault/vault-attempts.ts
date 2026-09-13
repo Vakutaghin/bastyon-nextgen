@@ -1,5 +1,5 @@
 // Троттлинг попыток ввода passphrase: экспоненциальный backoff после 3 промахов,
-// персист счётчика/кулдауна в localStorage. Чистый адаптер (см. LARGE_FILE_SPLIT_AUDIT.md).
+// персист счётчика/кулдауна в localStorage. Чистый адаптер (аудит крупных файлов 2026-08).
 
 import { VAULT_ATTEMPTS_KEY } from '../../constants/storage'
 import { ls, lsRemove } from './vault-ls'

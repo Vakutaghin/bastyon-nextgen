@@ -1,6 +1,6 @@
 // Персист черновика корневого комментария (composer к посту) в localStorage,
 // ключом по postId. Черновики ответов на ветки эфемерны и не пишутся. Чистые
-// функции — вынесено из use-comment-form (см. LARGE_FILE_SPLIT_AUDIT.md).
+// функции — вынесено из use-comment-form (аудит крупных файлов 2026-08).
 export function commentDraftKey(postId: string): string {
   return `bastyon_comment_draft:${postId}`
 }

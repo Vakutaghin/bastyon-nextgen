@@ -1,7 +1,7 @@
 /**
  * Сборка транзакций Pocketnet — barrel.
  *
- * Реализация разнесена по модулям (см. LARGE_FILE_SPLIT_AUDIT.md):
+ * Реализация разнесена по модулям (аудит крупных файлов 2026-08):
  * - btc17-loader          — ленивая загрузка кастомной btc17.js + доступ к ней
  * - build-content-transaction — контентные (социальные) транзакции с OP_RETURN
  * - build-transfer-transaction — переводы PKOIN

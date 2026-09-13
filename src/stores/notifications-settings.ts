@@ -1,8 +1,11 @@
 // Персист уведомлений в IDB, ключами по адресу: указатель «прочитано до» (блок)
 // и множество скрытых id. Чистые функции над settingsAPI — вынесено из
-// notifications-store (см. LARGE_FILE_SPLIT_AUDIT.md).
+// notifications-store (аудит крупных файлов 2026-08).
 import { settingsAPI } from '@/db/apis/settings-api'
-import { NOTIFICATIONS_LAST_BLOCK_KEY, NOTIFICATIONS_HIDDEN_IDS_KEY } from './notifications-constants'
+import {
+  NOTIFICATIONS_LAST_BLOCK_KEY,
+  NOTIFICATIONS_HIDDEN_IDS_KEY,
+} from './notifications-constants'
 import type { LastBlockByAddress, HiddenIdsByAddress } from './notifications-types'
 
 /** Высота блока из IDB для адреса (с какого блока запрашивать уведомления). */

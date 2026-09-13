@@ -1,6 +1,6 @@
 // Поиск получателя по логину (debounce), выпадашка, чип выбранного логина и
 // валидация введённого адреса. Владеет receiverAddress (его читает форма
-// отправки). Вынесено из wallet-transfer.vue (см. LARGE_FILE_SPLIT_AUDIT.md).
+// отправки). Вынесено из wallet-transfer.vue (аудит крупных файлов 2026-08).
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getByPRC } from '@/helpers/api/request'

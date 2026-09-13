@@ -5,7 +5,7 @@
 // walletListVersion — ручной триггер пересчёта localStorage-backed списков:
 // bump'ается при добавлении кошелька и успешном rename, иначе доп-список/ярлыки
 // не пересчитываются. Rename живёт здесь же (делит walletListVersion + currentAddress).
-// См. LARGE_FILE_SPLIT_AUDIT.md.
+// Аудит крупных файлов 2026-08.
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {

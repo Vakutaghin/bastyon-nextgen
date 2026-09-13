@@ -1,6 +1,6 @@
 // Сетевой слой уведомлений: текущая высота сети, распознавание таймаут-ошибок и
 // запрос пропущенных событий (getmissedinfo). Чистые функции — вынесено из
-// notifications-store, чтобы сеть/ретраи были тестируемы (см. LARGE_FILE_SPLIT_AUDIT.md).
+// notifications-store, чтобы сеть/ретраи были тестируемы (аудит крупных файлов 2026-08).
 import { rpcCall, rpcCallArrayWithAuth } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import type { GetMissedInfoParameters } from '@/types/rpc-requests/get-missed-info'

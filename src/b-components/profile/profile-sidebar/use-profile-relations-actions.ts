@@ -1,6 +1,6 @@
 // Действия отношений на сайдбаре профиля: подписка/уведомления (bell)/блокировка
 // с тостами, плюс gating (canShowSubscribe/isOwnProfile). Гидрирует relations при
-// авторизации. Вынесено из profile-sidebar.vue (см. LARGE_FILE_SPLIT_AUDIT.md).
+// авторизации. Вынесено из profile-sidebar.vue (аудит крупных файлов 2026-08).
 import { computed, watch, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/blockchain/store/auth-store'

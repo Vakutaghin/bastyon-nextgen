@@ -1,7 +1,7 @@
 // Durable-хранилище конверта BST_VAULT в localStorage: чтение (первичный+backup,
 // устойчиво к повреждению), запись (backup-first commit), очистка и детект
 // наличия любых зашифрованных данных. Чистый persistence-адаптер — не держит
-// секрет в памяти (стейт-машина живёт в crypto-vault). См. LARGE_FILE_SPLIT_AUDIT.md.
+// секрет в памяти (стейт-машина живёт в crypto-vault). Аудит крупных файлов 2026-08.
 
 import {
   MNEMONIC_STORAGE_KEY,

@@ -1,5 +1,5 @@
 // Автосохранение черновика текста поста в localStorage (только режим create).
-// Чистые функции — вынесено из use-post-composer (см. LARGE_FILE_SPLIT_AUDIT.md).
+// Чистые функции — вынесено из use-post-composer (аудит крупных файлов 2026-08).
 const DRAFT_KEY = 'bastyon_post_draft'
 
 export function readDraft(): string {

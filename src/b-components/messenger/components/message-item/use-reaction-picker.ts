@@ -3,7 +3,7 @@
 // скроллу, регистрация/снятие слушателей. Владеет template-ref'ами триггера и
 // пикера; DOM-узел резолвит через $el (styled-обёртки не отдают нативный узел).
 // Вызывать синхронно в setup — watch/onMounted/onUnmounted должны зарегистрироваться.
-// См. LARGE_FILE_SPLIT_AUDIT.md.
+// Аудит крупных файлов 2026-08.
 import { onMounted, onUnmounted, ref, watch, nextTick, type Ref } from 'vue'
 
 type ElementRefValue = { $el?: HTMLElement } | HTMLElement | null

@@ -1,6 +1,6 @@
 // Медиа-производные карточки поста: главы из тайм-кодов, YouTube-эмбеды (кроме
 // постов с внутриплатформенным видео) и перемотка плеера по тайм-коду. Владеет
-// ref'ом плеера. Вынесено из post-card.vue (см. LARGE_FILE_SPLIT_AUDIT.md).
+// ref'ом плеера. Вынесено из post-card.vue (аудит крупных файлов 2026-08).
 import { computed, ref } from 'vue'
 import { getYoutubeEmbedUrls } from '@/helpers/common/youtube-url'
 import { parseTimecodes, type Chapter } from '@/helpers/content/timecode-parser'

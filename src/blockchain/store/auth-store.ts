@@ -369,7 +369,7 @@ export const useAuthStore = defineStore('auth', {
       if (restoreInFlight) return restoreInFlight
 
       // Тело boot-восстановления вынесено в ./auth-store/restore-session
-      // (см. LARGE_FILE_SPLIT_AUDIT.md). Дедуп остаётся здесь как владелец.
+      // (аудит крупных файлов 2026-08). Дедуп остаётся здесь как владелец.
       restoreInFlight = restoreSessionImpl(this)
       try {
         return await restoreInFlight

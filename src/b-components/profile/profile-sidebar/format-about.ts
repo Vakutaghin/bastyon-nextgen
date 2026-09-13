@@ -1,6 +1,6 @@
 // Форматирование текста «О себе» профиля: оппортунистический URI-decode старых
 // записей, HTML-escape и линкификация URL. Чистая функция — вынесено из
-// profile-sidebar.vue (см. LARGE_FILE_SPLIT_AUDIT.md).
+// profile-sidebar.vue (аудит крупных файлов 2026-08).
 export function formatAbout(raw: string): string {
   let text = raw
   if (!text) return ''

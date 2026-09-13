@@ -1,5 +1,5 @@
 // Канонические типы карточки поста (source of truth). Вынесено из post-card.vue
-// (см. LARGE_FILE_SPLIT_AUDIT.md).
+// (аудит крупных файлов 2026-08).
 
 export interface PostAuthor {
   name: string

@@ -1,7 +1,7 @@
 // Vue-free фоновая оркестрация регистрационной транзакции: ждёт unspents →
 // строит userInfo-транзакцию → отправляет. Вынесено из register-modal.vue,
 // чтобы tx-путь стал юнит-тестируемым (authStore передаётся аргументом, а не
-// импортируется). См. LARGE_FILE_SPLIT_AUDIT.md.
+// импортируется). Аудит крупных файлов 2026-08.
 import { debugLog } from '@/helpers/common/debug-log'
 import type { useAuthStore } from '@/blockchain'
 import { waitForUnspents } from './helpers/wait-for-unspents'

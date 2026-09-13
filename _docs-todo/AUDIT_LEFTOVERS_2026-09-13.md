@@ -5,7 +5,9 @@
 > `git show f5fda70:_docs-todo/<имя>`):
 > - `CODE_REVIEW_AUDIT_2026-07-02.md` — ревью всего клиента (2026-07-02, актуализация 2026-08-05);
 > - `IPFS_SECURITY_AUDIT.md` — аудит IPFS-модуля Ф0–Ф5c (2026-09-11);
-> - `P0-1_VAULT_PLAN.md` — план сейфа сида (P0-1), реализован в `fad220c` (2026-07-08).
+> - `P0-1_VAULT_PLAN.md` — план сейфа сида (P0-1), реализован в `fad220c` (2026-07-08);
+> - `LARGE_FILE_SPLIT_AUDIT.md` — аудит разбиения крупных файлов (2026-08-08), удалён 2026-09-13 вечером
+>   (последняя версия — `git show 9435377:_docs-todo/LARGE_FILE_SPLIT_AUDIT.md`), хвост — §6.
 >
 > Каждый пункт ниже я перепроверил по коду сегодня; закрытое сюда не вошло (что именно закрыто и как
 > проверялось — §4). Статус: `[ ]` открыто · `[x]` закрыто · `[~]` осознанно принято · `[~ needs-live]` код есть,
@@ -21,6 +23,7 @@
 | CODE_REVIEW 2026-07-02 | 36 (P0 4 · P1 13 · P2 13 · P3 6) | 35 | 0 | **1** (P2-11, протокол) — §1 |
 | IPFS_SECURITY_AUDIT | 27 (B 6 · C 7 · D 14) | 25 (+ регресс C6→K1 закрыт) | 2 (D3, D13) | **3 `[~ needs-live]`** — §2 |
 | P0-1_VAULT_PLAN | план из 10 разделов | реализован; 11 из 12 недоделок закрыты 2026-09-13 | 4 решения | **VP-1 UI в Tauri `[~ needs-live]`, VP-12 AES-GCM (roadmap)** — §3 |
+| LARGE_FILE_SPLIT_AUDIT | 14 разбиений + 6 quick-wins + follow-up'ы | 13 разбиений + #14 частично, 5/6 quick-wins, follow-up'ы 2026-09-13 | 6 «не резать» | **3 вопроса семантики + 3 отложенных разбиения** — §6 |
 
 **Статус 2026-09-13 (вечер):** закрыто всё, что закрывается кодом и тестами — 7 из 8 пунктов ревью,
 регресс C6→K1, 11 из 12 недоделок сейфа (vitest 2178/2178, eslint 0 ошибок, `cargo test` 25/25,
@@ -29,6 +32,9 @@ e2e сейфа 6/6 на Chromium+WebKit, `npm run build` ок). Остаётся
 (`[~ needs-live]`), **AES-GCM для payload'ов** (roadmap), принятые D3/D13.
 
 Коммиты: `3b0931c` K1 · `a222413` P3-5/V19 · `fbc3c0e` P2-4/P2-5/S6 · `e18eeb7` P3-2/P3-3/P3-4/V15 · `5c73d18` сейф VP-2…VP-11/V12/N5 · `d13710f` VP-7/VP-8 · `915edad` P3-1/V41/N38. Не запушено.
+
+**Аудит крупных файлов (вечер 2026-09-13):** добит хвост `LARGE_FILE_SPLIT_AUDIT.md` — §6; vitest 2244/2244,
+eslint 0 ошибок, `tsc` 1415 (было 1418, новых нет), `npm run build` ок. Коммиты `d0a71aa`…`9435377` + этот. Не запушено.
 
 ---
 
@@ -210,3 +216,66 @@ vault-migration,vault-unlock,vault-envelope-store,vault-attempts,plausibility}.t
 | 6 | P2-4 | ✅ код+тесты; живая value-tx — при первом реальном платеже |
 | 7 `[~ needs-live]` | IPFS ×3 · VP-1 UI сейфа | ⏳ нужна Tauri-сборка |
 | отдельно | VP-2 · VP-5 · VP-7/VP-8 · VP-6/VP-9/VP-10 | ✅ (VP-2 — Preferences, не Keychain; на устройстве не гонялось) · D3 RPC вместо CLI — принято |
+
+---
+
+## 6. LARGE_FILE_SPLIT_AUDIT (2026-08-08) — хвост
+
+Сам аудит закрыт ещё 2026-08-09 (12 разбиений + 5 quick-wins, все в `o/main`). 2026-09-13 вечером я добил
+то, что там осталось «на потом», кроме двух вопросов семантики и трёх разбиений, которые без прогона в
+приложении делать не стоит.
+
+### Сделано 2026-09-13 (по коду, с тестами)
+
+- [x] **#9 `messenger-store.ts`** (718 → 441) → `messenger-store/use-dialog-mapping.ts` (`mapRoomToDialog`) +
+  `use-matrix-listeners.ts` (Room.timeline/sync) как фабрики по образцу chat-store: инстансы подсторов
+  аргументами, `loadDialogs`/`scheduleLoadDialogs` колбэками. 14 тестов на фейковой комнате/событиях. `d0a71aa`
+- [x] **`use-media-sending.ts` DRY** (412 → 337): общий `prepareRoom` + `media-sending-helpers.ts`
+  (optimistic push / progress / remove / revoke после await / markFailed) — мутируют тот же реактивный
+  `messages`. Порядок шагов по типам медиа не менялся; 12 тестов с мок-matrixService. `b96ca52`
+- [x] **Тройной `AdaptedPost`** → один контракт `src/types/adapted-post.ts`, `use-feed.ts` и `post-mapper.ts`
+  реэкспортируют; type-тест фиксирует тождество. `normalizeImages` в `use-feed-helpers` подтянут до
+  инлайна (url/src + `resolveImageUrl`) и переиспользован лентой; barrel `composables/index.ts` реэкспортирует
+  хелперы явно (ушёл TS2308). `f01de10`
+- [x] **#7 `wallet-transfer.vue` → `send-transfer.ts`** (Vue-free: unspents → лок → сборка → отправка,
+  `InsufficientFundsError` → i18n в компоненте; `computeTransferAmounts` и путь целиком в тестах с DI). `8425ae3`
+- [x] **#8 `wallets-page.vue`** (327 → 122): вкладка «Балансы» — саб-компонент `wallet-balances/` (свой lifecycle,
+  styled, `use-wallet-balances`, `parse-tx-unspent` рядом); mount-тест вкладки + тест парсера; мёртвый
+  `SC_WalletTabPlaceholder` удалён. `8425ae3`
+- [x] **#11 `post-card.vue`**: сиротские `helpers.ts`/`consts.ts` (никем не импортировались, семантика разошлась,
+  `URL_ENCODED_PATTERN` с `g`-флагом под `.test()`) приведены к живому поведению карточки и подключены;
+  `use-post-delete.ts` (confirm → contentDelete → тост → emit) с тестами. `use-post-share` не делал —
+  10 строк, микро-composable. `87e322b`
+- [x] **`peertube-upload.ts` resume-state** → `peertube-upload-resume.ts` (единственное, что аудит разрешал
+  здесь резать). `6fade50`
+- [x] **#14 `post-card-comments.vue` menu-actions** → `composables/use-comment-menu-actions.ts` + чистый
+  `buildCommentPermalink`; `CommentMenuAction` переехал в `types.ts` (ушёл TS2614 в `comment-tree-context.ts`). `5ee0e25`
+- [x] **#12 `use-post-poll`** (по образцу `use-post-tags`; «связан через post» оказался просто computed для
+  payload). `40f1062`
+- [x] **`video-player` `use-video-chapters`** — единственный кусок, «проходящий планку». `9435377`
+- [x] Ссылки `(см. LARGE_FILE_SPLIT_AUDIT.md)` в 19 файлах заменены на «аудит крупных файлов 2026-08».
+
+### Открыто — семантика, нужно решение (не трогать вслепую)
+
+- [ ] **`safeDecode`: `+` → пробел или нет.** Живой вариант (`use-feed.ts`, лента/поиск) делает `+`→`%20`;
+  орфанный в `use-feed-helpers.ts` — нет. Поля Bastyon приходят `encodeURIComponent`-кодированными
+  (литеральный `+` = `%2B`), так что живой вариант превращает настоящий плюс в пробел — вероятно, баг,
+  но проверять надо на реальных постах с `+` в заголовке. Пока оба сосуществуют, barrel экспортирует только
+  живой; комментарий с вопросом — у хелпера. Тот же вопрос в `post-card/helpers.decodeUrlEncoded`
+  (там `+` НЕ трогается — это поведение карточки сегодня).
+- [ ] **`post-mapper.adaptPostData` не декодирует `c`/`m`** (`safeDecode` не зовётся) — встраивание поста в
+  мессенджере может показывать `%D0%9F…` в заголовке. Второй, слабый адаптер; правильный ход — свести к
+  `use-feed.adaptPostData` (usersMap, preview, lastComment) после решения по `safeDecode`.
+- [ ] **`isUserVerified` ×3** (`use-feed` инлайн, `use-feed-helpers`, `feed-store-helpers`): инлайн ленты при
+  `badges: []` НЕ падает на `flags.real`, хелперы падают. Какая семантика верна — вместе с предыдущим.
+
+### Отложено осознанно (риск без прогона в приложении)
+
+- [ ] `use-comment-form.ts` (432): @mention-меню + оптимистичный `sendReply` — делят `replyDraft`, template-ref'ы
+  и keyboard-state; резать только с ручным прогоном формы ответа.
+- [ ] `post-card-comments.vue` (640): deep-link (`provideCommentTree` + ref в template) и display-форматтеры с
+  `setInterval`-lifecycle — только с прогоном.
+- [ ] Общий примитив «оптимистичное сообщение» для комментариев/мессенджера (паттерн 5) — отдельный дизайн,
+  6 call-site'ов.
+- «Не резать» из аудита остаётся в силе: `video-player` (кроме глав), `chat-room` микро-composables,
+  `matrix-service` `rooms.ts`, `use-post-video`, `use-post-share`.
