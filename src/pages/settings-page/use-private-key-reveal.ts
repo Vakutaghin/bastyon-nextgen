@@ -15,10 +15,10 @@
  */
 import { ref, type Ref } from 'vue'
 import { useAuthStore } from '@/stores'
-import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
-import { detectPrivateKeyFormat, recoverKeyPair } from '@/blockchain'
+import { recoverKeyPair } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
+import { loadAccountSecret } from './load-account-secret'
 
 export interface PrivateKeyReveal {
   pkConfirmVisible: Ref<boolean>
@@ -83,28 +83,15 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
       const address = authStore.getUserAddress
       if (!address) throw new Error(t('accountMsg.noActiveAccount'))
 
-      const { loadEncryptedData, loadEncryptedMnemonic } = await import('@/blockchain/storage')
-
-      const mnemonicResult = loadEncryptedData({
-        persistent: true,
-        storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}`,
-      })
-
-      const rawData =
-        mnemonicResult.success && mnemonicResult.data
-          ? mnemonicResult.data
-          : (() => {
-              const generalResult = loadEncryptedMnemonic()
-              if (generalResult.success && generalResult.data) return generalResult.data
-              return null
-            })()
-
-      if (!rawData || !rawData.trim()) {
-        throw new Error(t('accountMsg.noSavedSeedOrKey'))
+      let secret
+      try {
+        secret = await loadAccountSecret(address)
+      } catch {
+        throw new Error(t('accountMsg.unknownDataFormat'))
       }
+      if (!secret) throw new Error(t('accountMsg.noSavedSeedOrKey'))
 
-      const trimmed = rawData.trim()
-      const format = detectPrivateKeyFormat(trimmed)
+      const { format, raw: trimmed } = secret
       if (format === 'mnemonic') {
         pkMnemonic.value = trimmed
         // Derive hex из мнемоники, чтобы пользователь видел оба формата.
@@ -133,8 +120,6 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
         } catch {
           throw new Error(t('accountMsg.keyReadFailed'))
         }
-      } else {
-        throw new Error(t('accountMsg.unknownDataFormat'))
       }
 
       pkRevealed.value = true

@@ -13,17 +13,20 @@ export interface T_ToastOptions {
   description?: string
   duration?: number
   key?: string
+  /** Клик по тосту (например, переход в настройки). */
+  onClick?: () => void
 }
 
 type NotificationType = 'success' | 'error' | 'info' | 'warning'
 
-const createMethod = (type: NotificationType) =>
-  (options: T_ToastOptions) => notification[type]({
+const createMethod = (type: NotificationType) => (options: T_ToastOptions) =>
+  notification[type]({
     message: options.message,
     description: options.description,
     duration: options.duration || DEFAULT_DURATION,
     placement: PLACEMENT,
     key: options.key,
+    onClick: options.onClick,
   })
 
 export const appToast = {

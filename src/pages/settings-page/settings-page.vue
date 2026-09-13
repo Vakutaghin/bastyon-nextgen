@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useNotificationSettingsStore } from '@/stores'
 import { useUIStore } from '@/stores/ui-store'
 import GeneralTab from './tabs/general-tab.vue'
@@ -87,7 +88,10 @@ const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
 ]
 
 const { t } = useI18n()
-const activeTab = ref<T_SettingsTabKey>('notifications')
+// Глубокая ссылка `?tab=privateKey` (напоминание о бэкапе и т.п.).
+const route = useRoute()
+const tabFromQuery = SETTINGS_TABS.find((tab) => tab.key === route.query.tab)?.key
+const activeTab = ref<T_SettingsTabKey>(tabFromQuery ?? 'notifications')
 
 // Подгружаем стартовые состояния (язык, фильтры) до того, как соответствующие
 // табы будут открыты — иначе при первом переключении на «Уведомления» switch

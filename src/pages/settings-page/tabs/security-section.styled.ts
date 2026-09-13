@@ -22,6 +22,10 @@ export const SC_SecurityDesc = styled.p`
   font-size: 13px;
   line-height: 1.5;
   color: ${COLORS.TEXT_SECONDARY};
+
+  &.warn {
+    color: ${COLORS.DANGER};
+  }
 `
 
 export const SC_SecurityForm = styled.div`

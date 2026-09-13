@@ -12,6 +12,7 @@ import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
 import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
+import { useBackupNudge } from '@/composables/use-backup-nudge'
 
 // Embed-роуты (`/embed/...`, meta.embed) рендерятся БЕЗ chrome (хедер/футер/
 // сайдбар/глобальные модалки) — это самостоятельная вьюха для встраивания в iframe.
@@ -26,6 +27,9 @@ useGlobalKeyboard()
 // Перехват кликов по IPFS-ссылкам → открытие в отдельном окне (только в Tauri).
 // На embed-роутах выключаем: там нет singleton-модалки IPFS.
 useIpfsLinks(() => !isEmbed.value)
+
+// Напоминание о резервной копии 12 слов (раз в 7 дней, пока не проверена).
+useBackupNudge(() => !isEmbed.value)
 
 // Явная конфигурация темы для устранения предупреждения о injection
 // Используем computed для реактивности и обеспечения правильной инициализации

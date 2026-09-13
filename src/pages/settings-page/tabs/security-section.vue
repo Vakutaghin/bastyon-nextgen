@@ -13,7 +13,25 @@
     </div>
   </SC_SecurityCard>
 
-  <!-- Включение passphrase: обязательный бэкап 12 слов + пароль + повтор. -->
+  <!-- Резервная копия (VP-8): статус проверки + повторная проверка по желанию. -->
+  <SC_SecurityCard>
+    <SC_SecurityLevel>{{ t('vault.backupTitle') }}</SC_SecurityLevel>
+    <SC_SecurityDesc :class="{ warn: backupStatus.state !== 'ok' }">{{
+      backupStatusLabel
+    }}</SC_SecurityDesc>
+    <div>
+      <Button @click="openBackupCheck('standalone')">{{ t('vault.backupCheckButton') }}</Button>
+    </div>
+  </SC_SecurityCard>
+
+  <!-- Шаг 1 включения passphrase и самостоятельная проверка: челлендж по словам. -->
+  <BackupCheckModal
+    :open="backupCheckOpen"
+    @verified="onBackupVerified"
+    @cancel="backupCheckOpen = false"
+  />
+
+  <!-- Шаг 2 включения passphrase: пароль + повтор (только после проверенного бэкапа). -->
   <Modal
     :open="enableOpen"
     :title="t('vault.enablePassphrase')"
@@ -27,7 +45,6 @@
   >
     <SC_SecurityForm>
       <SC_SecurityWarning>{{ t('vault.enableWarning') }}</SC_SecurityWarning>
-      <Checkbox v-model:checked="backupConfirmed">{{ t('vault.backupConfirm') }}</Checkbox>
       <Input v-model:value="pw1" type="password" :placeholder="t('vault.setPassphrase')" />
       <Input
         v-model:value="pw2"
@@ -65,9 +82,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Button, Input, Checkbox } from 'ant-design-vue'
+import { Modal, Button, Input } from 'ant-design-vue'
 
 import { useVaultSecurity } from '../use-vault-security'
+import { getBackupStatus, type BackupState } from '@/helpers/backup/backup-verification'
+import { useAuthStore } from '@/stores'
+import { appToast } from '@/b-components/app-toast'
+import BackupCheckModal from './backup-check-modal.vue'
 import {
   SC_SecurityCard,
   SC_SecurityLevel,
@@ -96,8 +117,40 @@ onMounted(() => {
   requestPersistentStorage()
 })
 
+// ─── backup check (VP-7/VP-8) ─────────────────────────────────────────────────
+const authStore = useAuthStore()
+const backupStatus = ref<{ state: BackupState; verifiedAt: number | null }>(
+  getBackupStatus(authStore.getUserAddress || '')
+)
+const backupStatusLabel = computed(() => {
+  const st = backupStatus.value
+  if (st.state === 'never' || !st.verifiedAt) return t('vault.backupStatusNever')
+  const date = new Date(st.verifiedAt).toLocaleDateString()
+  return st.state === 'ok'
+    ? t('vault.backupStatusOk', { date })
+    : t('vault.backupStatusStale', { date })
+})
+
+const backupCheckOpen = ref(false)
+// Зачем открыли челлендж: сама по себе проверка или шаг 1 включения passphrase.
+let backupCheckPurpose: 'standalone' | 'enable' = 'standalone'
+
+function openBackupCheck(purpose: 'standalone' | 'enable'): void {
+  backupCheckPurpose = purpose
+  backupCheckOpen.value = true
+}
+
+function onBackupVerified(): void {
+  backupCheckOpen.value = false
+  backupStatus.value = getBackupStatus(authStore.getUserAddress || '')
+  appToast.success({ message: t('vault.backupVerifiedToast') })
+  if (backupCheckPurpose === 'enable') openEnableForm()
+}
+
 // ─── enable ───────────────────────────────────────────────────────────────────
 const enableOpen = ref(false)
+// Включение уничтожает device-ключ: забытый пароль = только 12 слов. Поэтому
+// сначала челлендж по словам (не галочка «я записал»), потом пароль.
 const backupConfirmed = ref(false)
 const pw1 = ref('')
 const pw2 = ref('')
@@ -109,6 +162,11 @@ const canEnable = computed(
 
 function openEnable(): void {
   backupConfirmed.value = false
+  openBackupCheck('enable')
+}
+
+function openEnableForm(): void {
+  backupConfirmed.value = true
   pw1.value = ''
   pw2.value = ''
   enableError.value = ''
