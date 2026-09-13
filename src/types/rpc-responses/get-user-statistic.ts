@@ -72,4 +72,4 @@ export interface GetUserStatisticItem {
  * - Используется для отображения статистики пользователя
  * - Включает информацию о рефералах и комментаторах
  */
-export interface GetUserStatisticResponse extends BaseRpcResponse<GetUserStatisticItem[], StandardRpcTime> {}
+export type GetUserStatisticResponse = BaseRpcResponse<GetUserStatisticItem[], StandardRpcTime>

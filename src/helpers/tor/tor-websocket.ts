@@ -21,9 +21,7 @@ const CLOSED = 3
 
 type BinaryType = 'blob' | 'arraybuffer'
 
-type IncomingMessage =
-  | { kind: 'text'; data: string }
-  | { kind: 'binary'; data_b64: string }
+type IncomingMessage = { kind: 'text'; data: string } | { kind: 'binary'; data_b64: string }
 
 export class TorWebSocket extends EventTarget implements WebSocket {
   static readonly CONNECTING = CONNECTING
@@ -107,10 +105,14 @@ export class TorWebSocket extends EventTarget implements WebSocket {
           id,
           payload: { kind: 'close', code: code ?? null, reason: reason ?? null },
         })
-      } catch {}
+      } catch {
+        /* best-effort */
+      }
       try {
         await invoke('tor_ws_close', { id })
-      } catch {}
+      } catch {
+        /* best-effort */
+      }
     })()
   }
 
@@ -133,9 +135,8 @@ export class TorWebSocket extends EventTarget implements WebSocket {
     this._unlisteners.push(
       await listen<unknown>(eventOpen, () => this._onOpen()),
       await listen<IncomingMessage>(eventMsg, (e) => this._onMessage(e.payload)),
-      await listen<{ code?: number | null; reason?: string | null }>(
-        eventClose,
-        (e) => this._onClose(e.payload?.code ?? 1000, e.payload?.reason ?? '')
+      await listen<{ code?: number | null; reason?: string | null }>(eventClose, (e) =>
+        this._onClose(e.payload?.code ?? 1000, e.payload?.reason ?? '')
       ),
       await listen<{ error: string }>(eventErr, (e) =>
         this._dispatchError(e.payload?.error ?? 'unknown')
@@ -202,7 +203,9 @@ export class TorWebSocket extends EventTarget implements WebSocket {
     for (const u of this._unlisteners) {
       try {
         u()
-      } catch {}
+      } catch {
+        /* best-effort */
+      }
     }
     this._unlisteners = []
   }
@@ -237,10 +240,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   let bin = ''
   const chunk = 0x8000
   for (let i = 0; i < bytes.length; i += chunk) {
-    bin += String.fromCharCode.apply(
-      null,
-      bytes.subarray(i, i + chunk) as unknown as number[]
-    )
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk) as unknown as number[])
   }
   return btoa(bin)
 }
@@ -263,7 +263,9 @@ export async function pickWebSocketCtor(): Promise<typeof WebSocket> {
     if (store.shouldTorify) {
       return TorWebSocket as unknown as typeof WebSocket
     }
-  } catch {}
+  } catch {
+    /* best-effort */
+  }
   return WebSocket
 }
 
@@ -280,20 +282,20 @@ export function installTorWebSocketGlobalGuard(): void {
   const Native = globalThis.WebSocket
   const Shim = TorWebSocket as unknown as typeof WebSocket
   // Proxy that decides per-construction.
-  const Hybrid = function (
-    this: unknown,
-    url: string | URL,
-    protocols?: string | string[]
-  ) {
+  const Hybrid = function (this: unknown, url: string | URL, protocols?: string | string[]) {
     try {
       // Synchronous access; the store is in memory after pinia install.
-      const mod = (globalThis as typeof globalThis & {
-        __torStoreSync?: { shouldTorify: boolean }
-      }).__torStoreSync
+      const mod = (
+        globalThis as typeof globalThis & {
+          __torStoreSync?: { shouldTorify: boolean }
+        }
+      ).__torStoreSync
       if (mod?.shouldTorify) {
         return new Shim(url, protocols)
       }
-    } catch {}
+    } catch {
+      /* best-effort */
+    }
     return new Native(url, protocols)
   } as unknown as typeof WebSocket
   Object.defineProperty(Hybrid, 'name', { value: 'WebSocket' })

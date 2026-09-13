@@ -63,4 +63,7 @@ import type { BaseRpcResponse, StandardRpcTime } from './common'
  * - Используется для получения и восстановления настроек пользователя
  * - Настройки могут храниться в различных форматах
  */
-export interface GetAccountSettingResponse extends BaseRpcResponse<string | Record<string, unknown>, StandardRpcTime> {}
+export type GetAccountSettingResponse = BaseRpcResponse<
+  string | Record<string, unknown>,
+  StandardRpcTime
+>

@@ -136,4 +136,4 @@ export function isGetMissedInfoEventItem(
  * data[0] — блок (GetMissedInfoBlockItem)
  * data[1..] — события (GetMissedInfoEventItem[])
  */
-export interface GetMissedInfoResponse extends BaseRpcResponse<GetMissedInfoDataItem[], StandardRpcTime> {}
+export type GetMissedInfoResponse = BaseRpcResponse<GetMissedInfoDataItem[], StandardRpcTime>

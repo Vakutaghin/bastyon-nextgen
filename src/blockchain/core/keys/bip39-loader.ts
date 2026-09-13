@@ -18,8 +18,7 @@ export type Bip39RussianModule = Bip39Module & {
 }
 
 // Получаем bip39 из модуля (может быть default или namespace)
-export const bip39: Bip39Module =
-  (bip39Module as { default?: Bip39Module }).default || bip39Module
+export const bip39: Bip39Module = (bip39Module as { default?: Bip39Module }).default || bip39Module
 
 // --- bip39russian lazy-loading ---
 
@@ -36,6 +35,7 @@ export async function loadBip39Russian(): Promise<Bip39RussianModule | null> {
 
   try {
     if (typeof require !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- синхронный Node-путь (SSR/тесты), в браузере require нет
       bip39Russian = require('bip39russian') as Bip39RussianModule
       bip39RussianLoaded = true
       return bip39Russian
@@ -70,6 +70,7 @@ export function isBip39RussianLoaded(): boolean {
 // Пробуем загрузить синхронно при инициализации (для Node.js)
 try {
   if (typeof require !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- синхронный Node-путь (SSR/тесты), в браузере require нет
     bip39Russian = require('bip39russian') as Bip39RussianModule
     bip39RussianLoaded = true
   }

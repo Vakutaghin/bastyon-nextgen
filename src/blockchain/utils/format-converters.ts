@@ -44,7 +44,8 @@ export function hexToWif(hex: string, network?: Network): string {
     return keyPair.toWIF()
   } catch (error) {
     throw new Error(
-      `Failed to convert hex to WIF: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to convert hex to WIF: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -61,7 +62,7 @@ export function wifToHex(wif: string): string {
 
   try {
     const keyPair = ECPair.fromWIF(wif)
-    
+
     if (!keyPair.privateKey) {
       throw new Error('Failed to extract private key from WIF')
     }
@@ -69,7 +70,8 @@ export function wifToHex(wif: string): string {
     return keyPair.privateKey.toString('hex')
   } catch (error) {
     throw new Error(
-      `Failed to convert WIF to hex: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to convert WIF to hex: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }

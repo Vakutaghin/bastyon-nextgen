@@ -72,7 +72,7 @@ export function deriveMessengerKeys(privateKey: Buffer): { private: string; publ
     if (child.privateKey) {
       keys.push({
         private: Buffer.from(child.privateKey).toString('hex'),
-        public: Buffer.from(child.publicKey).toString('hex')
+        public: Buffer.from(child.publicKey).toString('hex'),
       })
     }
   }
@@ -92,7 +92,11 @@ export function generateMnemonic(): Mnemonic {
  * @param wordlist - Wordlist для мнемоники (опционально, определяется автоматически)
  * @returns Seed (512 бит Buffer)
  */
-export function mnemonicToSeed(mnemonic: Mnemonic, useCache: boolean = true, wordlist?: string[]): Seed {
+export function mnemonicToSeed(
+  mnemonic: Mnemonic,
+  useCache: boolean = true,
+  wordlist?: string[]
+): Seed {
   if (!mnemonic) {
     throw new Error('Mnemonic is required')
   }
@@ -205,8 +209,8 @@ export function seedToKeyPair(
       const privateKeyArray = Buffer.isBuffer(privateKeyRaw)
         ? new Uint8Array(privateKeyRaw)
         : privateKeyRaw instanceof Uint8Array
-        ? privateKeyRaw
-        : new Uint8Array(privateKeyRaw)
+          ? privateKeyRaw
+          : new Uint8Array(privateKeyRaw)
       // ВАЖНО: Используем сеть Pocketnet для генерации WIF
       const tempEcPair = ECPair.fromPrivateKey(privateKeyArray, { network: POCKETNET_NETWORK })
       wif = tempEcPair.toWIF()
@@ -236,7 +240,10 @@ export function seedToKeyPair(
 
     return keyPair
   } catch (error) {
-    throw new Error(`Failed to generate key pair: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(
+      `Failed to generate key pair: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
+    )
   }
 }
 
@@ -264,9 +271,7 @@ export function generateKeyPairFromMnemonic(
  * @param options - Опции генерации
  * @returns Результат генерации
  */
-export function generateKeys(
-  options: KeyGenerationOptions = {}
-): KeyGenerationResult {
+export function generateKeys(options: KeyGenerationOptions = {}): KeyGenerationResult {
   const { useCache = true, derivationPath = getMainAddressPath(0) } = options
 
   // Генерируем новую мнемоническую фразу

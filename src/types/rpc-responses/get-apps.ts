@@ -44,4 +44,4 @@ import type { BaseRpcResponse, StandardRpcTime } from './common'
  * - Используется для получения каталога приложений
  * - Структура данных приложений может варьироваться
  */
-export interface GetAppsResponse extends BaseRpcResponse<unknown[], StandardRpcTime> {}
+export type GetAppsResponse = BaseRpcResponse<unknown[], StandardRpcTime>

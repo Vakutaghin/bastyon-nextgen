@@ -24,7 +24,12 @@ import type {
   PrivateKeyFormat,
 } from '../../types/keys'
 import { getMainAddressPath } from '../../constants/paths'
-import { detectPrivateKeyFormat, normalizeMnemonic, validateMnemonic, detectMnemonicWordlist } from './key-validator'
+import {
+  detectPrivateKeyFormat,
+  normalizeMnemonic,
+  validateMnemonic,
+  detectMnemonicWordlist,
+} from './key-validator'
 import { mnemonicToSeed, seedToKeyPair } from './key-generator'
 
 /**
@@ -48,7 +53,10 @@ export function recoverKeyPairFromMnemonic(
   const isValid = validateMnemonic(normalized)
 
   if (!isValid) {
-    console.error('[recoverKeyPairFromMnemonic] Invalid mnemonic phrase. Words count:', normalized.split(/\s+/).length)
+    console.error(
+      '[recoverKeyPairFromMnemonic] Invalid mnemonic phrase. Words count:',
+      normalized.split(/\s+/).length
+    )
     throw new Error('Invalid mnemonic phrase')
   }
 
@@ -92,11 +100,11 @@ export function recoverKeyPairFromHex(hexKey: PrivateKey): KeyPair {
     const ecPair = ECPair.fromPrivateKey(privateKeyBuffer, { network: POCKETNET_NETWORK })
 
     // Убеждаемся, что ключи являются Buffer
-    const privateKey = Buffer.isBuffer(ecPair.privateKey) 
-      ? ecPair.privateKey 
+    const privateKey = Buffer.isBuffer(ecPair.privateKey)
+      ? ecPair.privateKey
       : Buffer.from(ecPair.privateKey!)
-    const publicKey = Buffer.isBuffer(ecPair.publicKey) 
-      ? ecPair.publicKey 
+    const publicKey = Buffer.isBuffer(ecPair.publicKey)
+      ? ecPair.publicKey
       : Buffer.from(ecPair.publicKey)
 
     return {
@@ -106,7 +114,8 @@ export function recoverKeyPairFromHex(hexKey: PrivateKey): KeyPair {
     }
   } catch (error) {
     throw new Error(
-      `Failed to recover key pair from hex: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to recover key pair from hex: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -126,11 +135,11 @@ export function recoverKeyPairFromWIF(wifKey: PrivateKey): KeyPair {
     const ecPair = ECPair.fromWIF(wifKey, POCKETNET_NETWORK)
 
     // Убеждаемся, что ключи являются Buffer
-    const privateKey = Buffer.isBuffer(ecPair.privateKey) 
-      ? ecPair.privateKey 
+    const privateKey = Buffer.isBuffer(ecPair.privateKey)
+      ? ecPair.privateKey
       : Buffer.from(ecPair.privateKey!)
-    const publicKey = Buffer.isBuffer(ecPair.publicKey) 
-      ? ecPair.publicKey 
+    const publicKey = Buffer.isBuffer(ecPair.publicKey)
+      ? ecPair.publicKey
       : Buffer.from(ecPair.publicKey)
 
     return {
@@ -140,7 +149,8 @@ export function recoverKeyPairFromWIF(wifKey: PrivateKey): KeyPair {
     }
   } catch (error) {
     throw new Error(
-      `Failed to recover key pair from WIF: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to recover key pair from WIF: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -160,11 +170,7 @@ export function recoverKeyPair(
     throw new Error('Private key is required')
   }
 
-  const {
-    format,
-    derivationPath = getMainAddressPath(0),
-    useCache = true,
-  } = options
+  const { format, derivationPath = getMainAddressPath(0), useCache = true } = options
 
   // Определяем формат если не указан
   const detectedFormat = format || detectPrivateKeyFormat(privateKey)
@@ -204,7 +210,8 @@ export function recoverKeyPair(
     }
   } catch (error) {
     throw new Error(
-      `Failed to recover key pair: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to recover key pair: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }

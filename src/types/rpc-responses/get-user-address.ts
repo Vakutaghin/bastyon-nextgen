@@ -35,4 +35,4 @@ export interface UserAddressData {
  * Ответ RPC метода getuseraddress
  * Возвращает массив найденных пользователей (обычно один элемент при точном совпадении)
  */
-export interface GetUserAddressResponse extends BaseRpcResponse<UserAddressData[]> {}
+export type GetUserAddressResponse = BaseRpcResponse<UserAddressData[]>

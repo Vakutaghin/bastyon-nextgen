@@ -7,16 +7,12 @@
  */
 
 import CryptoJS from 'crypto-js'
-import type {
-  EncryptedData,
-  EncryptionOptions,
-  DecryptionOptions,
-} from '../types/storage'
+import type { EncryptedData, EncryptionOptions, DecryptionOptions } from '../types/storage'
 
 const V2_PREFIX = 'v2:'
-const SALT_SIZE = 128 / 8   // 16 bytes
-const IV_SIZE = 128 / 8     // 16 bytes (AES block size)
-const KEY_SIZE = 256 / 8    // 32 bytes (AES-256)
+const SALT_SIZE = 128 / 8 // 16 bytes
+const IV_SIZE = 128 / 8 // 16 bytes (AES block size)
+const KEY_SIZE = 256 / 8 // 32 bytes (AES-256)
 const PBKDF2_ITERATIONS = 100_000
 
 /**
@@ -26,7 +22,7 @@ function deriveKey(passphrase: string, salt: CryptoJS.lib.WordArray): CryptoJS.l
   return CryptoJS.PBKDF2(passphrase, salt, {
     keySize: KEY_SIZE / 4, // CryptoJS uses 32-bit words
     iterations: PBKDF2_ITERATIONS,
-    hasher: CryptoJS.algo.SHA256
+    hasher: CryptoJS.algo.SHA256,
   })
 }
 
@@ -64,18 +60,17 @@ export function encryptData(
     const encrypted = CryptoJS.AES.encrypt(data, derivedKey, {
       iv,
       mode: CryptoJS.mode.CBC,
-      padding: CryptoJS.pad.Pkcs7
+      padding: CryptoJS.pad.Pkcs7,
     })
 
     // Pack: salt + iv + ciphertext
-    const combined = salt
-      .concat(iv)
-      .concat(encrypted.ciphertext)
+    const combined = salt.concat(iv).concat(encrypted.ciphertext)
 
     return V2_PREFIX + CryptoJS.enc.Base64.stringify(combined)
   } catch (error) {
     throw new Error(
-      `Encryption failed: ${error instanceof Error ? error.message : String(error)}`
+      `Encryption failed: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -116,7 +111,10 @@ export function decryptData(
       const rawSigBytes = raw.sigBytes
 
       const salt = CryptoJS.lib.WordArray.create(rawWords.slice(0, SALT_SIZE / 4), SALT_SIZE)
-      const iv = CryptoJS.lib.WordArray.create(rawWords.slice(SALT_SIZE / 4, (SALT_SIZE + IV_SIZE) / 4), IV_SIZE)
+      const iv = CryptoJS.lib.WordArray.create(
+        rawWords.slice(SALT_SIZE / 4, (SALT_SIZE + IV_SIZE) / 4),
+        IV_SIZE
+      )
       const ciphertext = CryptoJS.lib.WordArray.create(
         rawWords.slice((SALT_SIZE + IV_SIZE) / 4),
         rawSigBytes - SALT_SIZE - IV_SIZE
@@ -128,7 +126,7 @@ export function decryptData(
       const decrypted = CryptoJS.AES.decrypt(cipherParams, derivedKey, {
         iv,
         mode: CryptoJS.mode.CBC,
-        padding: CryptoJS.pad.Pkcs7
+        padding: CryptoJS.pad.Pkcs7,
       })
 
       decryptedString = decrypted.toString(CryptoJS.enc.Utf8)
@@ -145,7 +143,8 @@ export function decryptData(
     return decryptedString
   } catch (error) {
     throw new Error(
-      `Decryption failed: ${error instanceof Error ? error.message : String(error)}`
+      `Decryption failed: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }

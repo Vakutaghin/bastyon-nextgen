@@ -176,4 +176,4 @@ export interface GetLastComment {
  * - Используется для виджетов последних комментариев
  * - Результат обрабатывается через `psdk.comment.get()`
  */
-export interface GetLastCommentsResponse extends BaseRpcResponse<GetLastComment[], StandardRpcTime> {}
+export type GetLastCommentsResponse = BaseRpcResponse<GetLastComment[], StandardRpcTime>

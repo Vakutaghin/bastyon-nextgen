@@ -14,7 +14,7 @@ export function getPlatform(): Platform {
     return 'web'
   }
 
-  const win = window as any
+  const win = window as unknown as Record<string, unknown>
 
   // Проверка Tauri (приоритет выше, так как Tauri может работать поверх Capacitor)
   if (

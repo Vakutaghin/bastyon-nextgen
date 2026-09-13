@@ -1,12 +1,6 @@
 import { defineStore } from 'pinia'
 
-export type TorStatus =
-  | 'off'
-  | 'installing'
-  | 'starting'
-  | 'bootstrapping'
-  | 'ready'
-  | 'failed'
+export type TorStatus = 'off' | 'installing' | 'starting' | 'bootstrapping' | 'ready' | 'failed'
 
 export type TorBridgeKind = 'none' | 'snowflake' | 'obfs4' | 'custom'
 
@@ -76,13 +70,17 @@ function loadString(key: string, def: string): string {
 function persistBool(key: string, value: boolean): void {
   try {
     localStorage.setItem(key, value ? '1' : '0')
-  } catch {}
+  } catch {
+    /* best-effort */
+  }
 }
 
 function persistString(key: string, value: string): void {
   try {
     localStorage.setItem(key, value)
-  } catch {}
+  } catch {
+    /* best-effort */
+  }
 }
 
 export const useTorStore = defineStore('tor', {
@@ -95,7 +93,7 @@ export const useTorStore = defineStore('tor', {
     socksPort: 9250,
     install: null as TorInstallProgress | null,
     useBridges: loadBool(LS_BRIDGES_USE, false),
-    bridgeKind: (loadString(LS_BRIDGES_KIND, 'none') as TorBridgeKind),
+    bridgeKind: loadString(LS_BRIDGES_KIND, 'none') as TorBridgeKind,
     customBridges: loadString(LS_BRIDGES_CUSTOM, ''),
     _subscribed: false,
     _stateUnlisten: null as (() => void) | null,

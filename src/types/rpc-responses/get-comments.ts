@@ -114,4 +114,4 @@ export interface GetComment {
 /**
  * Полный ответ RPC метода getcomments
  */
-export interface GetCommentsResponse extends BaseRpcResponse<GetComment[], StandardRpcTime> {}
+export type GetCommentsResponse = BaseRpcResponse<GetComment[], StandardRpcTime>

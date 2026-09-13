@@ -16,9 +16,8 @@ function withComposable<T>(fn: () => T): { api: T; queryClient: QueryClient } {
   const harness = defineComponent({
     setup() {
       captured = fn()
-      return {}
+      return () => h('div')
     },
-    render: () => h('div'),
   })
   mount(harness, {
     global: { plugins: [[VueQueryPlugin, { queryClient }]] },
@@ -64,17 +63,18 @@ describe('use-explorer-preferred-node', () => {
   it('invalidates explorer queries on change', async () => {
     const queryClient = new QueryClient()
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+    // Composition-only (vue/component-api-style): api ловим замыканием, а не через vm.
+    let api: ReturnType<typeof useExplorerPreferredNode> | null = null
     const harness = defineComponent({
       setup() {
-        const api = useExplorerPreferredNode()
-        return { api }
+        api = useExplorerPreferredNode()
+        return () => h('div')
       },
-      render: () => h('div'),
     })
-    const wrapper = mount(harness, {
+    mount(harness, {
       global: { plugins: [[VueQueryPlugin, { queryClient }]] },
     })
-    ;(wrapper.vm as any).api.setPreferredNode({ host: '5.pocketnet.app', port: 8899 })
+    api!.setPreferredNode({ host: '5.pocketnet.app', port: 8899 })
     await nextTick()
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['explorer'] })

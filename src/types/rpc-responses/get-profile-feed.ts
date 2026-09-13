@@ -118,4 +118,4 @@ export interface GetProfileFeedData {
  * - Результат кешируется в `storage['shares']`
  * - Поддерживает поиск и сортировку
  */
-export interface GetProfileFeedResponse extends BaseRpcResponse<GetProfileFeedData, StandardRpcTime> {}
+export type GetProfileFeedResponse = BaseRpcResponse<GetProfileFeedData, StandardRpcTime>

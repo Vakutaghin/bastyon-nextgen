@@ -43,4 +43,4 @@ export interface GetPageScore {
 /**
  * Полный ответ RPC метода getpagescores
  */
-export interface GetPageScoresResponse extends BaseRpcResponse<GetPageScore[], StandardRpcTime> {}
+export type GetPageScoresResponse = BaseRpcResponse<GetPageScore[], StandardRpcTime>

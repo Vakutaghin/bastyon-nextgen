@@ -83,4 +83,7 @@ export interface GetContentsStatisticItem {
  * - Используется для отображения статистики контента пользователя
  * - Включает агрегированную статистику по всем постам
  */
-export interface GetContentsStatisticResponse extends BaseRpcResponse<GetContentsStatisticItem[], StandardRpcTime> {}
+export type GetContentsStatisticResponse = BaseRpcResponse<
+  GetContentsStatisticItem[],
+  StandardRpcTime
+>

@@ -36,7 +36,7 @@ export async function requestUnspents(
   address: string,
   params: RequestUnspentsParams,
   onCaptchaRequired?: (captcha: CaptchaData) => Promise<CaptchaData>,
-  _retryCount: number = 0,
+  _retryCount: number = 0
 ): Promise<RequestUnspentsResult> {
   const { reason } = params
 
@@ -66,7 +66,7 @@ export async function requestUnspents(
   log.debug('Step 2: keys OK, address:', userAddress)
 
   // Шаг 3: Решаем капчу через тот же прокси
-  let captcha: CaptchaData | null = null
+  let captcha: CaptchaData | null
 
   log.debug('Step 3: solving captcha...')
 
@@ -106,20 +106,23 @@ export async function requestUnspents(
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
 
-    if ((msg === 'captcha_failed' || msg === 'captcha_cancelled') && _retryCount < MAX_CAPTCHA_RETRIES) {
+    if (
+      (msg === 'captcha_failed' || msg === 'captcha_cancelled') &&
+      _retryCount < MAX_CAPTCHA_RETRIES
+    ) {
       log.debug('Captcha retry', _retryCount + 1, 'of', MAX_CAPTCHA_RETRIES)
       return requestUnspents(address, params, onCaptchaRequired, _retryCount + 1)
     }
 
     log.error('Captcha error:', msg)
-    throw new Error(t('appMsg.registration.captchaFailed'))
+    throw new Error(t('appMsg.registration.captchaFailed'), { cause: error })
   }
 
   // Шаг 4: Отправляем free/balance через тот же прокси
   log.debug('Step 4: sending free/balance to', proxyServer.host, '...')
 
   try {
-    const response = await fetchHttp({
+    const response = (await fetchHttp({
       path: 'free/balance',
       data: {
         address,
@@ -130,7 +133,7 @@ export async function requestUnspents(
         auth: true,
         ...proxyOptions,
       },
-    }) as { action?: string }
+    })) as { action?: string }
 
     log.debug('free/balance response:', response)
 
@@ -147,7 +150,9 @@ export async function requestUnspents(
     }
 
     if (isRegistrationBlockingError(errorMessage)) {
-      throw new Error(`Ошибка регистрации: ${errorMessage}. Обратитесь в поддержку.`)
+      throw new Error(`Ошибка регистрации: ${errorMessage}. Обратитесь в поддержку.`, {
+        cause: error,
+      })
     }
 
     throw error

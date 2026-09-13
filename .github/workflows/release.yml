@@ -50,12 +50,20 @@ jobs:
         with:
           ref: ${{ env.TAG }}
 
+      # pnpm — единственный менеджер проекта (pnpm-lock.yaml + pnpm.overrides).
+      # Раньше здесь стоял npm по устаревшему package-lock.json — сборка релиза
+      # не проходила (аудит V41/P3-1).
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           # Windows: Node 20 надёжнее для нативных пакетов (canvas / hex-captcha)
           node-version: ${{ matrix.platform == 'windows-latest' && '20' || 'lts/*' }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -74,14 +82,14 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build and attach to release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tauriScript: npm run tauri
+          tauriScript: pnpm tauri
           tagName: ${{ env.TAG }}
           releaseName: ${{ env.TAG }}
           releaseBody: |
@@ -104,11 +112,16 @@ jobs:
         with:
           ref: ${{ env.TAG }}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Setup JDK 21
         uses: actions/setup-java@v4
@@ -118,11 +131,11 @@ jobs:
 
       - name: Install frontend dependencies and build web bundle
         run: |
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
 
       - name: Sync Capacitor Android project
-        run: npx cap sync android
+        run: pnpm exec cap sync android
 
       # TODO: для production-релизов подключить релизный keystore (через secrets
       # ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS /

@@ -24,7 +24,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "lint": "eslint src/ --ext .ts,.tsx,.vue,.js",
+    "lint": "eslint src/ src-mobile/ e2e/ --ext .ts,.tsx,.vue,.js",
     "lint:fix": "eslint src/ --ext .ts,.tsx,.vue,.js --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,vue,js,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,vue,js,css,json}\"",

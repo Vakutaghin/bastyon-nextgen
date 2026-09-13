@@ -82,4 +82,4 @@ export interface GetAccountEarningItem {
  * - Используется для отображения статистики доходов пользователя
  * - Суммы указаны в минимальных единицах (сатоши)
  */
-export interface GetAccountEarningResponse extends BaseRpcResponse<GetAccountEarningItem[], StandardRpcTime> {}
+export type GetAccountEarningResponse = BaseRpcResponse<GetAccountEarningItem[], StandardRpcTime>
