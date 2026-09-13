@@ -39,3 +39,13 @@ export interface MentionUser {
   address: string
   name: string
 }
+
+/** Действие контекстного меню комментария (comment-menu.vue). */
+export type CommentMenuAction =
+  | 'edit'
+  | 'delete'
+  | 'block'
+  | 'unblock'
+  | 'share'
+  | 'donate'
+  | 'report'

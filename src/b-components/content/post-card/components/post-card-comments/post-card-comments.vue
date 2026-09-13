@@ -201,13 +201,11 @@ import { Popover } from 'ant-design-vue'
 import { ICON_SIZE_SM, ICON_BRAND_CYAN_16, ICON_BRAND_CYAN_18 } from '@/styles/icon-styles'
 import { LoadingOutlined, SendOutlined, SyncOutlined, SmileOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/blockchain'
-import { useCommentsStore, useUserRelationsStore, useDonateStore, useReportStore } from '@/stores'
-import { appToast } from '@/b-components/app-toast'
+import { useCommentsStore, useUserRelationsStore } from '@/stores'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { formatRelativeTime } from '@/helpers/common/date-formatter'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { PostForComments } from './types'
-import type { CommentMenuAction } from './comment-menu.vue'
 import LastCommentPreview from './last-comment-preview.vue'
 import CommentCard from './comment-card.vue'
 import BoundReplyPanel from './bound-reply-panel.vue'
@@ -257,6 +255,7 @@ import { useCommentsReplies } from './composables/use-comments-replies'
 import { useCommentsScoring } from './composables/use-comments-scoring'
 import { useCommentForm } from './composables/use-comment-form'
 import { useCommentEditDelete } from './composables/use-comment-edit-delete'
+import { useCommentMenuActions } from './composables/use-comment-menu-actions'
 import { useCommentVisibility } from './composables/use-comment-visibility'
 import { useCommentsWs } from './composables/use-comments-ws'
 import { provideCommentTree } from './comment-tree-context'
@@ -517,71 +516,8 @@ function isCommentEdited(comment: GetComment): boolean {
   return !!comment.edit || comment.timeUpd > comment.time
 }
 
-// --- Menu action handler. ---
-function onCommentMenuAction(comment: GetComment, action: CommentMenuAction): void {
-  if (action === 'delete') {
-    editDelete.confirmDeleteComment(comment)
-    return
-  }
-  if (action === 'edit') {
-    editDelete.openEditComment(comment)
-    return
-  }
-  if (action === 'block') {
-    editDelete.confirmBlockUser(comment)
-    return
-  }
-  if (action === 'unblock') {
-    void editDelete.unblockUser(comment)
-    return
-  }
-  if (action === 'share') {
-    void shareComment(comment)
-    return
-  }
-  if (action === 'donate') {
-    useDonateStore().open({
-      address: comment.address,
-      name: (comment as GetComment & { userprofile?: { name?: string } }).userprofile?.name,
-    })
-    return
-  }
-  if (action === 'report') {
-    useReportStore().open({
-      contentHash: comment.id,
-      authorAddress: comment.address,
-      type: 'comment',
-    })
-    return
-  }
-}
-
-// #16: ссылка-permalink на комментарий (deep-link на /post/:txid?commentid=&parentid=).
-// Web Share API на мобильных, иначе — копирование в буфер.
-async function shareComment(comment: GetComment): Promise<void> {
-  const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const params = new URLSearchParams({ commentid: comment.id })
-  if (comment.parentid && comment.parentid !== comment.id) {
-    params.set('parentid', comment.parentid)
-  }
-  const url = `${origin}/post/${postId.value}?${params.toString()}`
-  const nav = window.navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
-  if (typeof nav.share === 'function') {
-    try {
-      await nav.share({ url })
-      return
-    } catch (e) {
-      // AbortError — пользователь закрыл диалог, не ошибка; иначе падаем в clipboard.
-      if ((e instanceof Error ? e.name : '') === 'AbortError') return
-    }
-  }
-  try {
-    await window.navigator.clipboard.writeText(url)
-    appToast.success({ message: t('commentsMsg.linkCopied'), description: url })
-  } catch {
-    appToast.error({ message: t('commentsMsg.shareFailed') })
-  }
-}
+// --- Действия меню комментария + permalink-шаринг — в composable. ---
+const { onCommentMenuAction } = useCommentMenuActions({ postId, editDelete })
 
 // --- Provide контекста дерева комментариев для дочерних узлов. ---
 provideCommentTree({

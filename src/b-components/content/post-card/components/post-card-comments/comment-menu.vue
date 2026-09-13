@@ -74,15 +74,7 @@ import {
   FlagOutlined,
 } from '@ant-design/icons-vue'
 import { SC_MenuList, SC_MenuItem, SC_MenuTrigger } from './styled'
-
-export type CommentMenuAction =
-  | 'edit'
-  | 'delete'
-  | 'block'
-  | 'unblock'
-  | 'share'
-  | 'donate'
-  | 'report'
+import type { CommentMenuAction } from './types'
 
 defineProps<{
   /** Можно ли редактировать (свой комментарий, не temp) */

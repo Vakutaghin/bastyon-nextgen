@@ -10,7 +10,7 @@ import { inject, provide, type InjectionKey, type Ref } from 'vue'
 
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { MentionUser } from './types'
-import type { CommentMenuAction } from './comment-menu.vue'
+import type { CommentMenuAction } from './types'
 import type { useCommentsLoader } from './composables/use-comments-loader'
 import type { useCommentsReplies } from './composables/use-comments-replies'
 import type { useCommentsScoring } from './composables/use-comments-scoring'
