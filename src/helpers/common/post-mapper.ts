@@ -3,39 +3,11 @@
  * Вынесено из feed-store для повторного использования в composables и сторах.
  */
 
+import type { AdaptedPost } from '@/types/adapted-post'
 import { resolveImageUrl } from './url-transformer'
 
-export interface AdaptedPost {
-  id: string | number
-  hash?: string
-  txid?: string
-  author: {
-    name: string
-    address: string
-    avatar: string | null
-    reputation: number
-    letter: string
-    verified?: boolean
-    subscribers_count?: number
-    subscribes_count?: number
-  }
-  title: string
-  content: string
-  timestamp: string
-  likes: number
-  comments: number
-  shares: number
-  tags: string[]
-  type: string
-  category: string
-  images: string[]
-  ratingStars: number
-  scoreCnt: number
-  scoreSum?: number
-  videoUrl?: string
-  repost?: string
-  repostAuthor?: { name: string; address: string }
-}
+/** Канонический контракт поста — см. `@/types/adapted-post`. */
+export type { AdaptedPost }
 
 /** Минимальный профиль автора в сыром посте. */
 interface RawUserProfile {
@@ -84,9 +56,7 @@ export function adaptPostData(post: RawFeedPost, index: number): AdaptedPost {
   const reputation = post.userprofile?.reputation || 0
   const title = post.c || ''
   const content = post.m || ''
-  const timestamp = post.time
-    ? new Date(post.time * 1000).toISOString()
-    : new Date().toISOString()
+  const timestamp = post.time ? new Date(post.time * 1000).toISOString() : new Date().toISOString()
   const likes = post.scoreCnt || 0
   const comments = post.comments || 0
   const shares = post.reposted || 0
@@ -161,7 +131,9 @@ interface RawFeedResponse {
 /**
  * Извлекает массив сырых постов из различных форматов ответа API
  */
-export function extractRawPosts(feedData: RawFeedResponse | RawFeedPost[] | null | undefined): RawFeedPost[] {
+export function extractRawPosts(
+  feedData: RawFeedResponse | RawFeedPost[] | null | undefined
+): RawFeedPost[] {
   if (!feedData) return []
   if (Array.isArray(feedData)) return feedData
   const data = feedData.data

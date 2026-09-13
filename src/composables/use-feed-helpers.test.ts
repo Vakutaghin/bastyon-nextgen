@@ -32,30 +32,45 @@ describe('safeDecode', () => {
 })
 
 describe('normalizeImages', () => {
+  const IMG = 'https://pocketnet.app:8092/i/'
+
   it('returns empty array for falsy input', () => {
     expect(normalizeImages(null)).toEqual([])
     expect(normalizeImages(undefined)).toEqual([])
     expect(normalizeImages('')).toEqual([])
   })
 
-  it('wraps single string in array', () => {
-    expect(normalizeImages('img.jpg')).toEqual(['img.jpg'])
+  it('wraps single string in array (bare hash is expanded to a full URL)', () => {
+    expect(normalizeImages('abc123')).toEqual([`${IMG}abc123`])
   })
 
-  it('returns string array as-is', () => {
-    expect(normalizeImages(['a.jpg', 'b.jpg'])).toEqual(['a.jpg', 'b.jpg'])
+  it('keeps full URLs as-is', () => {
+    expect(normalizeImages(['https://x/a.jpg', 'https://x/b.jpg'])).toEqual([
+      'https://x/a.jpg',
+      'https://x/b.jpg',
+    ])
   })
 
-  it('extracts url from objects', () => {
-    expect(normalizeImages([{ url: 'a.jpg' }, { url: 'b.jpg' }])).toEqual(['a.jpg', 'b.jpg'])
+  it('normalizes the legacy domain', () => {
+    expect(normalizeImages(['https://bastyon.com:8092/i/h1'])).toEqual([`${IMG}h1`])
+  })
+
+  it('extracts url or src from objects', () => {
+    expect(normalizeImages([{ url: 'https://x/a.jpg' }, { src: 'https://x/b.jpg' }])).toEqual([
+      'https://x/a.jpg',
+      'https://x/b.jpg',
+    ])
   })
 
   it('filters out empty values', () => {
-    expect(normalizeImages(['a.jpg', '', null])).toEqual(['a.jpg'])
+    expect(normalizeImages(['https://x/a.jpg', '', null, {}])).toEqual(['https://x/a.jpg'])
   })
 
   it('handles mixed array', () => {
-    expect(normalizeImages(['a.jpg', { url: 'b.jpg' }])).toEqual(['a.jpg', 'b.jpg'])
+    expect(normalizeImages(['h1', { url: 'https://x/b.jpg' }])).toEqual([
+      `${IMG}h1`,
+      'https://x/b.jpg',
+    ])
   })
 
   it('returns empty for non-string/non-array', () => {

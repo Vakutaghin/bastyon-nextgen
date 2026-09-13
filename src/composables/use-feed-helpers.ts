@@ -1,10 +1,21 @@
 // Хелперы для адаптации постов: декодирование, нормализация, верификация
 
-import { VERIFICATION_BADGES, VERIFICATION_FLAG_VALUES, RATING_MAX_STARS, RATING_ROUND_MULTIPLIER } from './use-feed-consts'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import {
+  VERIFICATION_BADGES,
+  VERIFICATION_FLAG_VALUES,
+  RATING_MAX_STARS,
+  RATING_ROUND_MULTIPLIER,
+} from './use-feed-consts'
 
 /**
  * Безопасное декодирование URL-encoded строки.
- * Используется для заголовков, имён авторов, описаний.
+ *
+ * ВНИМАНИЕ: не используется лентой — там живёт `safeDecode` из `use-feed.ts`,
+ * который дополнительно переводит `+` → пробел (form-urlencoded). Какая
+ * семантика верна для полей Bastyon (`encodeURIComponent`, где литеральный
+ * `+` = `%2B`) — открытый вопрос (аудит крупных файлов 2026-08); до решения
+ * два варианта сосуществуют и НЕ должны объединяться вслепую.
  */
 export function safeDecode(str: string): string {
   if (!str) return ''
@@ -15,22 +26,24 @@ export function safeDecode(str: string): string {
   }
 }
 
-/** Элемент массива изображений в сыром формате API: строка URL или объект с полем url. */
-type RawImage = string | { url?: string } | null | undefined
+/** Элемент массива изображений в сыром формате API: строка URL или объект с полями url/src. */
+type RawImage = string | { url?: string; src?: string } | null | undefined
 
 /**
- * Нормализует поле images из различных форматов API в string[].
- * Обрабатывает: строку, массив строк, массив объектов с url.
+ * Нормализует поле изображений из сырого ответа API (массив строк, одна строка,
+ * массив объектов с url/src) в string[] полных URL: `resolveImageUrl`
+ * разворачивает голый хеш в URL и нормализует домен (идемпотентен на полных URL).
  */
 export function normalizeImages(raw: unknown): string[] {
   if (!raw) return []
-  if (typeof raw === 'string') return raw ? [raw] : []
-  if (Array.isArray(raw)) {
-    return (raw as RawImage[])
-      .map((img) => (typeof img === 'string' ? img : img?.url || ''))
-      .filter(Boolean)
-  }
-  return []
+  const list = Array.isArray(raw)
+    ? (raw as RawImage[]).map((item) =>
+        typeof item === 'string' ? item : (item?.url ?? item?.src ?? '')
+      )
+    : typeof raw === 'string'
+      ? [raw]
+      : []
+  return list.map((u) => resolveImageUrl(u)).filter((u): u is string => !!u)
 }
 
 /** Минимальная форма профиля для проверки верификации. */
@@ -62,7 +75,10 @@ export function isUserVerified(profile: VerifiableProfile | null): boolean {
 export function calculateRatingStars(scoreSum: number, scoreCnt: number): number {
   if (!scoreCnt || scoreCnt === 0) return 0
   const avg = scoreSum / scoreCnt
-  return Math.max(0, Math.min(RATING_MAX_STARS, Math.round(avg * RATING_ROUND_MULTIPLIER) / RATING_ROUND_MULTIPLIER))
+  return Math.max(
+    0,
+    Math.min(RATING_MAX_STARS, Math.round(avg * RATING_ROUND_MULTIPLIER) / RATING_ROUND_MULTIPLIER)
+  )
 }
 
 /**

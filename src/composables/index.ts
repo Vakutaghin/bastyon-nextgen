@@ -10,7 +10,14 @@ export * from './use-user-queries-consts'
 export * from './use-feed-queries'
 export * from './use-feed'
 export * from './use-feed-consts'
-export * from './use-feed-helpers'
+// safeDecode намеренно не реэкспортируется: одноимённый (и живой) вариант уже
+// уходит из './use-feed', а этот — альтернативная семантика (см. комментарий там).
+export {
+  normalizeImages,
+  isUserVerified,
+  calculateRatingStars,
+  extractCommentMessage,
+} from './use-feed-helpers'
 export * from './use-comments-queries'
 export * from './use-global-keyboard'
 export * from './use-infinite-feed'

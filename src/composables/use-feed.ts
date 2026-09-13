@@ -6,72 +6,17 @@
 
 import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hierarchical-strip'
 import type { GetTopFeedResponse } from '@/types/rpc-responses/get-top-feed'
-import type { GetProfileFeedResponse, GetProfileFeedData } from '@/types/rpc-responses/get-profile-feed'
+import type {
+  GetProfileFeedResponse,
+  GetProfileFeedData,
+} from '@/types/rpc-responses/get-profile-feed'
 import { registerNameAddress } from '@/services/user-resolver'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import type { AdaptedPost } from '@/types/adapted-post'
+import { normalizeImages } from './use-feed-helpers'
 
-/**
- * Интерфейс адаптированного поста
- */
-export interface AdaptedPost {
-  id: string | number
-  hash?: string // Хеш поста (share ID для upvote)
-  txid?: string // ID транзакции (альтернатива hash)
-  author: {
-    name: string
-    address: string
-    avatar: string | null
-    reputation: number
-    letter: string
-    verified?: boolean
-    subscribers_count?: number
-    subscribes_count?: number
-  }
-  title: string
-  content: string
-  timestamp: string
-  likes: number
-  comments: number
-  shares: number
-  tags: string[]
-  type: string
-  category: string
-  images: string[]
-  ratingStars: number
-  scoreCnt: number
-  scoreSum?: number
-  myVal?: number
-  videoUrl?: string
-  preview?: string
-  lastComment?: {
-    id: string
-    address: string
-    authorName: string
-    avatar: string | null
-    time: number
-    message: string
-    children: number
-    scoreUp: number
-    scoreDown: number
-  }
-  /** txid оригинальной записи, если это репост */
-  repost?: string
-  /** Автор оригинальной записи (если есть в ответе API) */
-  repostAuthor?: {
-    name: string
-    address: string
-    avatar?: string | null
-  }
-  /** Время публикации оригинала (unix sec), для отображения даты в блоке репоста */
-  repostOriginalTimestamp?: number
-  /** Оригинальная запись удалена */
-  repostDeleted?: boolean
-  /**
-   * Оптимистичный пост: транзакция ушла в мемпул, но ещё не подтверждена сетью.
-   * Виден только автору в его ленте профиля, рисуется с пометкой «не опубликовано».
-   */
-  pending?: boolean
-}
+/** Канонический контракт поста — см. `@/types/adapted-post`. */
+export type { AdaptedPost }
 
 /**
  * Безопасное декодирование URL-encoded строк
@@ -82,24 +27,6 @@ export function safeDecode(str: string): string {
   } catch (e) {
     return str
   }
-}
-
-/** Элемент массива изображений в сыром формате API: строка URL или объект с полями url/src. */
-type RawImage = string | { url?: string; src?: string } | null | undefined
-
-/**
- * Нормализует поле изображений из сырого ответа API (разные форматы: массив строк, одна строка, массив объектов с url).
- */
-function normalizeImages(raw: unknown): string[] {
-  if (!raw) return []
-  const list = Array.isArray(raw)
-    ? (raw as RawImage[]).map((item) => (typeof item === 'string' ? item : (item?.url ?? item?.src ?? '')))
-    : typeof raw === 'string'
-      ? [raw]
-      : []
-  // resolveImageUrl разворачивает голый хеш в полный URL + нормализует домен
-  // (идемпотентен на уже полных URL).
-  return list.map((u) => resolveImageUrl(u)).filter((u): u is string => !!u)
 }
 
 /** Минимальный профиль автора/пользователя в сыром ответе ленты. */
