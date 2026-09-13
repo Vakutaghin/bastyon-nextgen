@@ -30,11 +30,11 @@ import {
   postToComposerData,
   sourceId,
 } from './composer-source'
-import { MAX_POLL_OPTIONS } from './consts'
 import { firstVideoUrl, parseVideoUrl } from './parse-video-url'
 import { sendPost } from './post-sender'
 import { usePostImages } from './use-post-images'
 import { usePostTags } from './use-post-tags'
+import { usePostPoll } from './use-post-poll'
 import { readDraft, writeDraft } from './post-draft'
 import { validatePost } from './validate-post'
 
@@ -92,10 +92,19 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const visibility = ref('0')
   const language = ref(locale.value)
 
-  /** Опрос. */
-  const pollActive = ref(false)
-  const pollTitle = ref('')
-  const pollOptions = ref<string[]>(['', ''])
+  /** Опрос — в use-post-poll. */
+  const {
+    pollActive,
+    pollTitle,
+    pollOptions,
+    cleanedPoll,
+    togglePoll,
+    setPollTitle,
+    setPollOption,
+    addPollOption,
+    removePollOption,
+    resetPoll,
+  } = usePostPoll()
 
   /** Отложенная публикация: unix-секунды (0 — сразу). */
   const scheduledTime = ref(0)
@@ -119,13 +128,6 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const isTrial = computed(() => authStore.getUserState?.trial === true)
   /** Эффективная видимость с учётом триал-гейтинга. */
   const effectiveVisibility = computed(() => (isTrial.value ? '0' : visibility.value))
-
-  /** Очищенный опрос (если активен и валиден по форме): { title, list } непустых опций. */
-  const cleanedPoll = computed(() => {
-    if (!pollActive.value) return undefined
-    const list = pollOptions.value.map((o) => o.trim()).filter(Boolean)
-    return { title: pollTitle.value.trim(), list }
-  })
 
   /** Базовые настройки: видимость + (опц.) отложенное время. */
   const baseSettings = computed(() => {
@@ -213,29 +215,6 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     articleContent.value = value
   }
 
-  // --- Опрос ---
-  const togglePoll = (active: boolean): void => {
-    pollActive.value = active
-    if (!active) {
-      pollTitle.value = ''
-      pollOptions.value = ['', '']
-    }
-  }
-  const setPollTitle = (value: string): void => {
-    pollTitle.value = value
-  }
-  const setPollOption = (index: number, value: string): void => {
-    pollOptions.value = pollOptions.value.map((o, i) => (i === index ? value : o))
-  }
-  const addPollOption = (): void => {
-    if (pollOptions.value.length < MAX_POLL_OPTIONS) pollOptions.value = [...pollOptions.value, '']
-  }
-  const removePollOption = (index: number): void => {
-    if (pollOptions.value.length > 2) {
-      pollOptions.value = pollOptions.value.filter((_, i) => i !== index)
-    }
-  }
-
   // --- Отложенная публикация ---
   const setScheduledTime = (unixSeconds: number): void => {
     scheduledTime.value = unixSeconds > 1 ? unixSeconds : 0
@@ -249,9 +228,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     language.value = locale.value
     articleMode.value = false
     articleContent.value = null
-    pollActive.value = false
-    pollTitle.value = ''
-    pollOptions.value = ['', '']
+    resetPoll()
     scheduledTime.value = 0
     uploadedVideoUrl.value = ''
     clearImages()
