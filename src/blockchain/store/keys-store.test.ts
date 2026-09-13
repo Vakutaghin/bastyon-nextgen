@@ -25,6 +25,7 @@ const h = vi.hoisted(() => ({
   loadEncryptedData: vi.fn(),
   saveEncryptedData: vi.fn(),
   clearStoredData: vi.fn(),
+  ensureVaultReady: vi.fn().mockResolvedValue({ status: 'unlocked', level: 'device' }),
   deriveAndSaveWalletAddresses: vi.fn(),
 }))
 
@@ -49,11 +50,18 @@ vi.mock('../storage', () => ({
   loadEncryptedData: h.loadEncryptedData,
   saveEncryptedData: h.saveEncryptedData,
   clearStoredData: h.clearStoredData,
+  ensureVaultReady: h.ensureVaultReady,
 }))
-vi.mock('../wallet-addresses', () => ({ deriveAndSaveWalletAddresses: h.deriveAndSaveWalletAddresses }))
+vi.mock('../wallet-addresses', () => ({
+  deriveAndSaveWalletAddresses: h.deriveAndSaveWalletAddresses,
+}))
 vi.mock('../constants/storage', () => ({ ACCOUNT_STORAGE_PREFIX: 'account_' }))
 
-const KP = { privateKey: Buffer.alloc(32, 1), publicKey: Buffer.alloc(33, 2), ecPair: {} } as unknown as KeyPair
+const KP = {
+  privateKey: Buffer.alloc(32, 1),
+  publicKey: Buffer.alloc(33, 2),
+  ecPair: {},
+} as unknown as KeyPair
 
 function memStorage() {
   const store = new Map<string, string>()
@@ -74,7 +82,10 @@ beforeEach(() => {
   Object.values(h).forEach((fn) => fn.mockReset?.())
   h.loadBip39Russian.mockResolvedValue(undefined)
   h.generateAddressFromKeyPair.mockReturnValue({ addressInfo: { address: 'PGenerated' } })
-  h.loadAccountsList.mockReturnValue({ success: true, data: { accounts: [], currentAccount: null } })
+  h.loadAccountsList.mockReturnValue({
+    success: true,
+    data: { accounts: [], currentAccount: null },
+  })
   warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
   errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 })
@@ -126,7 +137,10 @@ describe('addAccountForAddress', () => {
     h.addAccountToStore.mockReturnValue({ success: true })
     h.loadAccountsList.mockReturnValue({
       success: true,
-      data: { accounts: [{ address: 'P1', encryptedMnemonic: '', lastUsed: 1 }], currentAccount: 'P1' },
+      data: {
+        accounts: [{ address: 'P1', encryptedMnemonic: '', lastUsed: 1 }],
+        currentAccount: 'P1',
+      },
     })
 
     store.addAccountForAddress('P1', 'mnemonic words')
@@ -135,9 +149,7 @@ describe('addAccountForAddress', () => {
       persistent: true,
       storageKey: 'account_P1',
     })
-    expect(h.addAccountToStore).toHaveBeenCalledWith(
-      expect.objectContaining({ address: 'P1' })
-    )
+    expect(h.addAccountToStore).toHaveBeenCalledWith(expect.objectContaining({ address: 'P1' }))
     expect(store.accountsList?.currentAccount).toBe('P1')
   })
 
@@ -164,9 +176,7 @@ describe('addAccountForKey', () => {
       persistent: true,
       storageKey: 'account_P2',
     })
-    expect(h.addAccountToStore).toHaveBeenCalledWith(
-      expect.objectContaining({ address: 'P2' })
-    )
+    expect(h.addAccountToStore).toHaveBeenCalledWith(expect.objectContaining({ address: 'P2' }))
   })
 
   it('не добавляет аккаунт, если сохранение ключа не удалось', () => {
@@ -182,7 +192,10 @@ describe('addAccountForKey', () => {
 describe('getAccountsList / getAccountsInfo', () => {
   it('загружает список из хранилища и кеширует', () => {
     const store = useKeysStore()
-    const data = { accounts: [{ address: 'P1', encryptedMnemonic: 'enc', lastUsed: 1 }], currentAccount: 'P1' }
+    const data = {
+      accounts: [{ address: 'P1', encryptedMnemonic: 'enc', lastUsed: 1 }],
+      currentAccount: 'P1',
+    }
     h.loadAccountsList.mockReturnValue({ success: true, data })
 
     expect(store.getAccountsList()).toEqual(data)
@@ -196,7 +209,10 @@ describe('getAccountsList / getAccountsInfo', () => {
     const store = useKeysStore()
     h.loadAccountsList.mockReturnValue({
       success: true,
-      data: { accounts: [{ address: 'P1', encryptedMnemonic: 'secret', lastUsed: 1 }], currentAccount: 'P1' },
+      data: {
+        accounts: [{ address: 'P1', encryptedMnemonic: 'secret', lastUsed: 1 }],
+        currentAccount: 'P1',
+      },
     })
 
     const info = store.getAccountsInfo()

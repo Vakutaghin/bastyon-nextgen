@@ -5,6 +5,7 @@ import type {
   ComposerMode,
   ComposerSource,
 } from '@/b-components/content/post-composer/composer-source'
+import type { UnlockPhase } from '@/blockchain/storage/vault/vault-unlock'
 
 interface ImageGalleryState {
   isOpen: boolean
@@ -41,6 +42,7 @@ export const useModalStore = defineStore('modal', {
     // Только UI-состояние; резолвер unlock живёт в vault-unlock.ts (module-scope).
     vaultUnlock: {
       isOpen: false,
+      phase: 'passphrase' as UnlockPhase,
     },
   }),
 
@@ -80,8 +82,9 @@ export const useModalStore = defineStore('modal', {
       this.postComposerModal.isOpen = false
     },
 
-    /** Открывает модалку разблокировки сейфа (вызывается мостом vault-unlock). */
-    openVaultUnlock(): void {
+    /** Открывает модалку сейфа (вызывается мостом vault-unlock): ввод passphrase или reset. */
+    openVaultUnlock(phase: UnlockPhase = 'passphrase'): void {
+      this.vaultUnlock.phase = phase
       this.vaultUnlock.isOpen = true
     },
 

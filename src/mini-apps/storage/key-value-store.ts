@@ -1,8 +1,9 @@
 /**
  * Async-обёртка над key-value хранилищем для mini-apps.
  *
- * На mobile/Tauri-сборках использует `@capacitor/preferences` (на iOS — Keychain,
- * на Android — EncryptedSharedPreferences). В браузере деградирует до `localStorage`.
+ * На mobile-сборках использует `@capacitor/preferences` (UserDefaults на iOS,
+ * SharedPreferences на Android — данные приложения вне web-storage WebView, но НЕ
+ * Keychain/EncryptedSharedPreferences). В браузере деградирует до `localStorage`.
  * Это закрывает §1.6: legacy хранил permissions в plain `localStorage`, в нашем
  * новом коде permissions и реестр локальных приложений идут через защищённое хранилище.
  *

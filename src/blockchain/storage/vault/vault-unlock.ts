@@ -13,13 +13,19 @@ import {
   destroyVault,
   type VaultOutcome,
 } from './crypto-vault'
+import { clearAllUserData } from '../storage-manager'
+
+/** Что показывает модалка: ввод passphrase или «локальный ключ утерян → 12 слов». */
+export type UnlockPhase = 'passphrase' | 'reset'
 
 /** Мост к UI-хосту (модалка). Реализация подключается в main.ts поверх modal-store. */
 export interface UnlockUiBridge {
-  open(): void
+  open(phase: UnlockPhase): void
   close(): void
   /** Есть ли где показать модалку (false в embed/headless — тогда не вешаемся) [A4/H2]. */
   hostAvailable(): boolean
+  /** После подтверждённого сброса — открыть импорт по 12 словам. */
+  openImport(): void
 }
 
 let bridge: UnlockUiBridge | null = null
@@ -27,8 +33,10 @@ export function configureUnlockUi(b: UnlockUiBridge | null): void {
   bridge = b
 }
 
+type Choice = 'unlocked' | 'reset' | 'later'
+
 let unlockPromise: Promise<VaultOutcome> | null = null
-let pendingResolve: ((choice: 'unlocked' | 'reset') => void) | null = null
+let pendingResolve: ((choice: Choice) => void) | null = null
 
 /** Единая точка разлока на буте. Мемоизирована; дедуп с обоими restoreSession-сайтами [A5]. */
 export function ensureVaultUnlocked(): Promise<VaultOutcome> {
@@ -47,27 +55,37 @@ async function drive(): Promise<VaultOutcome> {
   ) {
     return out
   }
-  // Транзиентные/восстановительные исходы не мемоизируем — дать шанс ретраю/re-import.
-  if (out.status === 'storage-unavailable' || out.status === 'needs-reset') {
+  // Транзиентный исход не мемоизируем — дать шанс ретраю.
+  if (out.status === 'storage-unavailable') {
     unlockPromise = null
     return out
   }
 
-  // status === 'needs-passphrase'
+  // 'needs-passphrase' | 'needs-reset' — нужна модалка.
   if (!bridge || !bridge.hostAvailable()) {
     unlockPromise = null
     return out // некому показать модалку → трактуется как «не аутентифицирован»
   }
 
-  const choice = await new Promise<'unlocked' | 'reset'>((resolve) => {
+  // needs-reset (вытеснен device-ключ / повреждён конверт): раньше restore-session
+  // молча стирал все локальные данные. Теперь — объяснение и явное подтверждение,
+  // как и предусматривал план сейфа (VP-4/V12); «Позже» ничего не трогает.
+  const phase: UnlockPhase = out.status === 'needs-reset' ? 'reset' : 'passphrase'
+  const choice = await new Promise<Choice>((resolve) => {
     pendingResolve = resolve
-    bridge!.open()
+    bridge!.open(phase)
   })
   bridge.close()
   pendingResolve = null
 
   if (choice === 'reset') {
     await destroyVault()
+    clearAllUserData()
+    unlockPromise = null
+    bridge.openImport()
+    return { status: 'needs-reset', level: 'none' }
+  }
+  if (choice === 'later') {
     unlockPromise = null
     return { status: 'needs-reset', level: 'none' }
   }
@@ -90,9 +108,18 @@ export async function submitUnlockPassphrase(pw: string): Promise<UnlockAttemptR
   return { ok: res.ok, attempts: st.attempts, cooldownUntil: st.cooldownUntil }
 }
 
-/** «Забыл пароль → восстановить по 12 словам». Резолвит ожидающий unlock как reset. */
+/**
+ * «Забыл пароль» / «Восстановить по 12 словам» — после подтверждения в модалке.
+ * Резолвит ожидающий unlock как reset: сейф и локальные данные стираются,
+ * открывается импорт.
+ */
 export function requestUnlockReset(): void {
   pendingResolve?.('reset')
+}
+
+/** «Позже» в фазе reset: закрыть модалку, ничего не стирать (вернётся на следующем запуске). */
+export function dismissUnlockReset(): void {
+  pendingResolve?.('later')
 }
 
 export function getUnlockAttemptState(): { attempts: number; cooldownUntil: number } {

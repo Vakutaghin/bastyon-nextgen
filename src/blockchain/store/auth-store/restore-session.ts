@@ -41,15 +41,15 @@ export async function restoreSessionImpl(store: AuthStore): Promise<boolean> {
     // restoreSession (onMounted + router-guard) дедупятся мемоизированным
     // ensureVaultUnlocked. Passwordless — молча; passphrase — модалка.
     const vault = await ensureVaultUnlocked()
-    if (vault.status === 'needs-passphrase' || vault.status === 'storage-unavailable') {
+    if (
+      vault.status === 'needs-passphrase' ||
+      vault.status === 'storage-unavailable' ||
+      vault.status === 'needs-reset'
+    ) {
       // Некому/нечем разлочить сейчас — не аутентифицируем, скелетон снимаем,
-      // ничего НЕ стираем (self-heal на следующем буте).
-      return finishUnauthenticated()
-    }
-    if (vault.status === 'needs-reset') {
-      // Забытая passphrase / вытеснен device-ключ / повреждён конверт → чистим
-      // локальные данные и уводим на импорт по 12 словам.
-      clearAllUserData()
+      // ничего НЕ стираем. needs-reset (забытая passphrase / вытеснен device-ключ /
+      // повреждён конверт): стирание и переход к импорту делает vault-unlock —
+      // только после явного подтверждения в модалке; «Позже» оставляет данные.
       return finishUnauthenticated()
     }
     if (vault.status === 'unlocked') {

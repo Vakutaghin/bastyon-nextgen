@@ -9,9 +9,22 @@
     :z-index="3000"
     :footer="null"
   >
-    <template #title>{{ t('vault.unlockTitle') }}</template>
+    <template #title>{{ isReset ? t('vault.resetTitle') : t('vault.unlockTitle') }}</template>
 
-    <SC_VaultBody>
+    <!-- Фаза reset: device-ключ вытеснен / конверт повреждён — локальные секреты
+         нечитаемы. Объясняем и просим явное подтверждение перед стиранием;
+         «Позже» ничего не трогает (модалка вернётся на следующем запуске). -->
+    <SC_VaultBody v-if="isReset">
+      <SC_VaultPrompt>{{ t('vault.resetBody') }}</SC_VaultPrompt>
+      <SC_ModalActions>
+        <Button type="primary" block @click="onForgot">
+          {{ t('vault.restoreWithMnemonic') }}
+        </Button>
+        <Button block @click="onLater">{{ t('vault.resetLater') }}</Button>
+      </SC_ModalActions>
+    </SC_VaultBody>
+
+    <SC_VaultBody v-else>
       <SC_VaultPrompt>{{ t('vault.unlockPrompt') }}</SC_VaultPrompt>
 
       <Input
@@ -54,6 +67,7 @@ import { useModalStore } from '@/stores/modal-store'
 import {
   submitUnlockPassphrase,
   requestUnlockReset,
+  dismissUnlockReset,
   getUnlockAttemptState,
 } from '@/blockchain/storage/vault/vault-unlock'
 import { SC_ModalActions } from '@/components/modal'
@@ -61,6 +75,7 @@ import { SC_VaultBody, SC_VaultPrompt, SC_VaultError, SC_VaultForgot } from './s
 
 const { t } = useI18n()
 const modalStore = useModalStore()
+const isReset = computed(() => modalStore.vaultUnlock.phase === 'reset')
 
 const pw = ref('')
 const error = ref('')
@@ -123,6 +138,10 @@ async function onSubmit(): Promise<void> {
   } finally {
     submitting.value = false
   }
+}
+
+function onLater(): void {
+  dismissUnlockReset()
 }
 
 function onForgot(): void {

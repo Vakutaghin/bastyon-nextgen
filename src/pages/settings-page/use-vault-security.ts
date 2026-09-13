@@ -7,6 +7,7 @@ import {
   getVaultStatus,
   enablePassphrase,
   disablePassphrase,
+  VaultMigrationIncompleteError,
   type VaultLevel,
 } from '@/blockchain/storage'
 import { appToast } from '@/b-components/app-toast'
@@ -39,7 +40,14 @@ export function useVaultSecurity() {
       appToast.success({ message: t('vault.enabled') })
       return true
     } catch (e) {
-      appToast.error({ message: e instanceof Error ? e.message : t('vault.wrongPassphrase') })
+      // Часть секретов ещё под fingerprint — passphrase дала бы ложную защиту (N5/VP-11).
+      const message =
+        e instanceof VaultMigrationIncompleteError
+          ? t('vault.migrationIncomplete')
+          : e instanceof Error
+            ? e.message
+            : t('vault.wrongPassphrase')
+      appToast.error({ message })
       return false
     } finally {
       busy.value = false

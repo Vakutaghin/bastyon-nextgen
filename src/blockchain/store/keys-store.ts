@@ -28,6 +28,7 @@ import {
   loadEncryptedData,
   saveEncryptedData,
   clearStoredData,
+  ensureVaultReady,
 } from '../storage'
 import { ACCOUNT_STORAGE_PREFIX } from '../constants/storage'
 import { deriveAndSaveWalletAddresses } from '../wallet-addresses'
@@ -130,7 +131,12 @@ export const useKeysStore = defineStore('keys', {
     /**
      * Восстанавливает ключевую пару из мнемоники аккаунта
      */
-    async recoverFromAccount(address: Address): Promise<{ keyPair: KeyPair; mnemonic: string } | null> {
+    async recoverFromAccount(
+      address: Address
+    ): Promise<{ keyPair: KeyPair; mnemonic: string } | null> {
+      // Страховка (VP-10): сейф мог быть ещё не поднят (ранний вызов вне restore-
+      // session) — без этого loadEncryptedData отдаст {success:false} и «аккаунта нет».
+      await ensureVaultReady()
       await loadBip39Russian()
       const mnemonicResult = loadEncryptedData({
         persistent: true,
@@ -174,6 +180,7 @@ export const useKeysStore = defineStore('keys', {
      */
     async getMessengerKeys(): Promise<{ private: string; public: string }[] | null> {
       try {
+        await ensureVaultReady() // страховка (VP-10), см. recoverFromAccount
         let privateKey: Buffer | null = null
 
         if (this.keyPair?.privateKey) {

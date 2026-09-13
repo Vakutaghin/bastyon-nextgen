@@ -1,18 +1,29 @@
 // Инъектируемый бэкенд для device-ключа обёртки сейфа (P0-1).
 //
-// Дефолт — сырой IndexedDB (отдельная БД `bastyon-vault`, НЕ Dexie/BastyonDB, чтобы
-// доступность сейфа не зависела от схемы/миграций приложения). Хранит один
-// non-extractable CryptoKey под фиксированным id. Каждая операция гонится против
-// таймаута — залипшая IDB не должна вешать бут (fix [B1]).
+// Бэкенд сам МИНТИТ ключ (createKey) — так Capacitor-бэкенд может хранить сырые
+// байты в нативном хранилище и импортировать их как non-extractable CryptoKey,
+// а IndexedDB-бэкенд — держать non-extractable ключ, который в JS не выгружается.
+//
+// Дефолт в браузере/Tauri — сырой IndexedDB (отдельная БД `bastyon-vault`, НЕ
+// Dexie/BastyonDB, чтобы доступность сейфа не зависела от схемы/миграций
+// приложения). Хранит один non-extractable CryptoKey под фиксированным id. Каждая
+// операция гонится против таймаута — залипшая IDB не должна вешать бут (fix [B1]).
+//
+// На мобиле (Capacitor native) — vault-key-store-capacitor: IndexedDB в WKWebView
+// вытесняется ITP через 7 дней неактивности, что превращалось в потерю аккаунта (VP-2).
 //
 // Тесты инъектируют createMemoryVaultKeyStore() (happy-dom не даёт indexedDB).
-// Интерфейс — точка расширения для нативного keychain-бэкенда на мобиле
-// (@capacitor/preferences, iOS Keychain / Android EncryptedSharedPreferences) как fast-follow.
+
+import { generateDeviceKey } from './vault-crypto'
 
 export interface VaultKeyStore {
   getKey(): Promise<CryptoKey | null>
-  /** ВАЖНО: ждём transaction.oncomplete (не request.onsuccess), иначе ключ может не долежать до коммита [C3]. */
-  setKey(key: CryptoKey): Promise<void>
+  /**
+   * Создаёт НОВЫЙ device-ключ и durable сохраняет его (для IDB — ждём
+   * transaction.oncomplete, не request.onsuccess, иначе ключ может не долежать
+   * до коммита [C3]). Заменяет прежний ключ.
+   */
+  createKey(): Promise<CryptoKey>
   deleteKey(): Promise<void>
 }
 
@@ -99,8 +110,10 @@ export const indexedDbVaultKeyStore: VaultKeyStore = {
   getKey() {
     return runTx<CryptoKey | null>('readonly', (s) => s.get(RECORD_ID), true, 'getKey')
   },
-  setKey(key: CryptoKey) {
-    return runTx<void>('readwrite', (s) => s.put(key, RECORD_ID), false, 'setKey')
+  async createKey() {
+    const key = await generateDeviceKey()
+    await runTx<void>('readwrite', (s) => s.put(key, RECORD_ID), false, 'createKey')
+    return key
   },
   deleteKey() {
     return runTx<void>('readwrite', (s) => s.delete(RECORD_ID), false, 'deleteKey')
@@ -114,11 +127,47 @@ export function createMemoryVaultKeyStore(): VaultKeyStore {
     async getKey() {
       return stored
     },
-    async setKey(key: CryptoKey) {
-      stored = key
+    async createKey() {
+      stored = await generateDeviceKey()
+      return stored
     },
     async deleteKey() {
       stored = null
     },
+  }
+}
+
+/**
+ * Дефолтный бэкенд приложения: на нативной платформе Capacitor — нативное
+ * хранилище (см. vault-key-store-capacitor), иначе IndexedDB. Выбор ленивый и
+ * однократный: `@capacitor/core` подгружается динамически (в браузере и vitest
+ * его web-реализация не нужна).
+ */
+export function createPlatformVaultKeyStore(): VaultKeyStore {
+  let backend: Promise<VaultKeyStore> | null = null
+  const pick = (): Promise<VaultKeyStore> => {
+    if (!backend) {
+      backend = (async () => {
+        try {
+          const core = await import('@capacitor/core')
+          if (core.Capacitor?.isNativePlatform?.()) {
+            const [{ Preferences }, { createCapacitorVaultKeyStore }] = await Promise.all([
+              import('@capacitor/preferences'),
+              import('./vault-key-store-capacitor'),
+            ])
+            return createCapacitorVaultKeyStore(Preferences)
+          }
+        } catch {
+          /* не Capacitor — IndexedDB */
+        }
+        return indexedDbVaultKeyStore
+      })()
+    }
+    return backend
+  }
+  return {
+    getKey: () => pick().then((b) => b.getKey()),
+    createKey: () => pick().then((b) => b.createKey()),
+    deleteKey: () => pick().then((b) => b.deleteKey()),
   }
 }

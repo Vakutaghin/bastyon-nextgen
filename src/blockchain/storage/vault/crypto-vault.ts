@@ -23,7 +23,6 @@ import { migrateLegacyToVault } from './vault-migration'
 import {
   isSubtleAvailable,
   generateSecret,
-  generateDeviceKey,
   derivePassphraseKey,
   wrapSecret,
   unwrapSecret,
@@ -33,7 +32,7 @@ import {
   DEFAULT_PBKDF2_ITERATIONS,
   SALT_BYTES,
 } from './vault-crypto'
-import { indexedDbVaultKeyStore, type VaultKeyStore } from './vault-key-store'
+import { createPlatformVaultKeyStore, type VaultKeyStore } from './vault-key-store'
 import { ls, lsRemove } from './vault-ls'
 import {
   readEnvelope,
@@ -71,10 +70,35 @@ export class VaultLockedError extends Error {
   }
 }
 
+/** Passphrase нельзя включить, пока часть секретов ещё лежит под fingerprint (N5/VP-11). */
+export class VaultMigrationIncompleteError extends Error {
+  constructor() {
+    super('legacy fingerprint payloads still present')
+    this.name = 'VaultMigrationIncompleteError'
+  }
+}
+
+/**
+ * Просим браузер не вытеснять storage (IndexedDB с device-ключом). Best-effort:
+ * Safari/WKWebView игнорируют, Chromium даёт persistent при установленном PWA
+ * или высокой вовлечённости. Раньше вызывалось только из Settings → Security,
+ * куда большинство не заходит (VP-3/V12) — теперь при каждом создании device-ключа.
+ */
+function requestPersistentStorage(): void {
+  try {
+    const nav = globalThis.navigator as
+      | { storage?: { persist?: () => Promise<boolean> } }
+      | undefined
+    void nav?.storage?.persist?.()?.catch(() => {})
+  } catch {
+    /* не поддерживается — не критично */
+  }
+}
+
 interface Deps {
   keyStore: VaultKeyStore
 }
-let deps: Deps = { keyStore: indexedDbVaultKeyStore }
+let deps: Deps = { keyStore: createPlatformVaultKeyStore() }
 
 // In-memory состояние (НЕ pinia/reactive — это модульный синглтон).
 let secret: Uint8Array | null = null
@@ -183,6 +207,14 @@ async function runReadyInner(): Promise<VaultOutcome> {
       return { status, level: 'device' }
     }
     if (!key) {
+      // Ключ вытеснен (iOS ITP / очистка site data). Если payload'ы ещё не
+      // перешли под S (миграция отложена/упала) и fingerprint на месте — они
+      // читаются под ним: заводим device-сейф заново вместо стирания (VP-4).
+      const fp = readStoredFingerprint()
+      if (!env.migrated && fp) {
+        clearEnvelope()
+        return bootstrapFromLegacy(fp)
+      }
       status = 'needs-reset'
       return { status, level: 'device' }
     }
@@ -228,8 +260,7 @@ async function bootstrapFromLegacy(_fp: string): Promise<VaultOutcome> {
   const s = generateSecret()
   let key: CryptoKey
   try {
-    key = await generateDeviceKey()
-    await deps.keyStore.setKey(key)
+    key = await deps.keyStore.createKey()
   } catch {
     // Не смогли создать/сохранить ключ → остаёмся на fingerprint (payload'ы целы), ретрай позже [D2].
     degraded = true
@@ -237,6 +268,8 @@ async function bootstrapFromLegacy(_fp: string): Promise<VaultOutcome> {
     level = 'none'
     return outcome()
   }
+
+  requestPersistentStorage()
 
   let env: DeviceEnvelope
   try {
@@ -278,6 +311,13 @@ export function ensureInitialized(): Promise<VaultOutcome> {
   return withLock(async () => {
     const out = await runReadyInner()
     if (out.status === 'empty') return mintDeviceVault()
+    // Вход по 12 словам поверх мёртвого сейфа (ключ вытеснен, конверт повреждён):
+    // старые payload'ы всё равно нечитаемы — сносим сейф и минтим свежий, иначе
+    // getVaultSecret() бросал бы и свежий сид не сохранился бы (V8-подобная ловушка).
+    if (out.status === 'needs-reset') {
+      await destroyVault()
+      return mintDeviceVault()
+    }
     return out
   }).catch(() => {
     // Инфра-сбой (navigator.locks reject / бросок в readEnvelope) НЕ должен ронять
@@ -291,14 +331,22 @@ export function ensureInitialized(): Promise<VaultOutcome> {
 
 async function mintDeviceVault(): Promise<VaultOutcome> {
   const s = generateSecret()
-  let key: CryptoKey
   try {
-    key = await generateDeviceKey()
-    await deps.keyStore.setKey(key)
+    const key = await deps.keyStore.createKey()
+    requestPersistentStorage()
     const wrap = await wrapSecret(key, s)
-    writeEnvelope({ v: 1, mode: 'device', iv: wrap.iv, ct: wrap.ct, migrated: true })
+    const env: DeviceEnvelope = { v: 1, mode: 'device', iv: wrap.iv, ct: wrap.ct, migrated: true }
+    writeEnvelope(env)
+    // round-trip verify, как в bootstrapFromLegacy: ключ реально долежал до IDB и
+    // конверт разворачивается — иначе первый же перезапуск дал бы needs-reset (V12).
+    const k2 = await deps.keyStore.getKey()
+    if (!k2) throw new Error('key vanished')
+    const s2 = await unwrapSecret(k2, env)
+    if (bytesToB64(s2) !== bytesToB64(s)) throw new Error('verify mismatch')
   } catch {
     // Нет subtle/IDB → фоллбек на fingerprint (level 0). Свежий секрет НЕ теряем: getVaultSecret→fingerprint.
+    clearEnvelope()
+    await deps.keyStore.deleteKey().catch(() => {})
     degraded = true
     status = 'degraded-fingerprint'
     level = 'none'
@@ -342,16 +390,44 @@ export interface SubmitResult {
 export async function submitPassphrase(pw: string): Promise<SubmitResult> {
   const env = readEnvelope()
   if (env?.mode !== 'passphrase') return { ok: false, reason: 'no-vault' }
+  let s: Uint8Array
   try {
     const key = await derivePassphraseKey(pw, b64ToBytes(env.salt), env.iter, env.hash)
-    const s = await unwrapSecret(key, env) // throws на неверном пароле (AES-GCM auth)
-    setUnlocked(s, 'passphrase')
-    readyPromise = Promise.resolve(outcome())
-    clearAttempts()
-    return { ok: true }
+    s = await unwrapSecret(key, env) // throws на неверном пароле (AES-GCM auth)
   } catch {
     recordFailedAttempt()
     return { ok: false, reason: 'bad-passphrase' }
+  }
+  setUnlocked(s, 'passphrase')
+  readyPromise = Promise.resolve(outcome())
+  clearAttempts()
+  // Self-tuning KDF (VP-6): конверт, созданный при меньшем счётчике итераций,
+  // прозрачно перезаворачиваем на текущий target (свежие соль и IV). Best-effort:
+  // сбой оставляет старый конверт, который только что успешно развернулся.
+  if (env.iter < DEFAULT_PBKDF2_ITERATIONS) {
+    try {
+      writeEnvelope(await buildPassphraseEnvelope(pw, s))
+    } catch {
+      /* старый конверт валиден */
+    }
+  }
+  return { ok: true }
+}
+
+/** Свежие соль/IV, текущие параметры KDF; общий для enablePassphrase и self-tuning. */
+async function buildPassphraseEnvelope(pw: string, s: Uint8Array): Promise<PassphraseEnvelope> {
+  const salt = randomBytes(SALT_BYTES)
+  const key = await derivePassphraseKey(pw, salt, DEFAULT_PBKDF2_ITERATIONS, 'SHA-256')
+  const wrap = await wrapSecret(key, s)
+  return {
+    v: 1,
+    mode: 'passphrase',
+    kdf: 'PBKDF2',
+    hash: 'SHA-256',
+    iter: DEFAULT_PBKDF2_ITERATIONS,
+    salt: bytesToB64(salt),
+    iv: wrap.iv,
+    ct: wrap.ct,
   }
 }
 
@@ -367,23 +443,15 @@ export async function enablePassphrase(pw: string): Promise<void> {
     // иначе fingerprint-копия сида осталась бы навсегда (finalizeMigration
     // работает только в device-режиме) и «апгрейд» дал бы ложную защиту.
     finalizeMigration()
+    // Если что-то так и не перешло под S (allOk=false → fingerprint остался),
+    // passphrase-режим дал бы ложную защиту: fingerprint-копия сида лежала бы
+    // рядом. Отказываем с понятной ошибкой вместо тихого «включено» (N5/VP-11).
+    if (readStoredFingerprint()) throw new VaultMigrationIncompleteError()
     writeMigrationMarker('enable')
     try {
-      const salt = randomBytes(SALT_BYTES)
-      const key = await derivePassphraseKey(pw, salt, DEFAULT_PBKDF2_ITERATIONS, 'SHA-256')
-      const wrap = await wrapSecret(key, s)
-      const env: PassphraseEnvelope = {
-        v: 1,
-        mode: 'passphrase',
-        kdf: 'PBKDF2',
-        hash: 'SHA-256',
-        iter: DEFAULT_PBKDF2_ITERATIONS,
-        salt: bytesToB64(salt),
-        iv: wrap.iv,
-        ct: wrap.ct,
-      }
+      const env = await buildPassphraseEnvelope(pw, s)
       writeEnvelope(env) // commit
-      const vkey = await derivePassphraseKey(pw, salt, env.iter, env.hash)
+      const vkey = await derivePassphraseKey(pw, b64ToBytes(env.salt), env.iter, env.hash)
       const s2 = await unwrapSecret(vkey, env)
       if (bytesToB64(s2) !== bytesToB64(s)) throw new Error('enablePassphrase verify failed')
       await deps.keyStore.deleteKey().catch(() => {}) // только после verify
@@ -409,8 +477,7 @@ export async function disablePassphrase(pw: string): Promise<void> {
     await unwrapSecret(cur, env) // throws при неверном пароле
     writeMigrationMarker('disable')
     try {
-      const key = await generateDeviceKey()
-      await deps.keyStore.setKey(key) // durable до commit
+      const key = await deps.keyStore.createKey() // durable до commit
       const wrap = await wrapSecret(key, s)
       const devEnv: DeviceEnvelope = {
         v: 1,
@@ -485,5 +552,5 @@ export function __resetVaultForTests(): void {
   status = 'unknown'
   degraded = false
   readyPromise = null
-  deps = { keyStore: indexedDbVaultKeyStore }
+  deps = { keyStore: createPlatformVaultKeyStore() }
 }

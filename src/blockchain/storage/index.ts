@@ -19,6 +19,8 @@ export {
   enablePassphrase,
   disablePassphrase,
   configureVault,
+  ensureVaultReady,
+  VaultMigrationIncompleteError,
   type VaultLevel,
   type VaultStatus,
 } from './vault/crypto-vault'
@@ -27,7 +29,9 @@ export {
   configureUnlockUi,
   submitUnlockPassphrase,
   requestUnlockReset,
+  dismissUnlockReset,
   getUnlockAttemptState,
+  type UnlockPhase,
 } from './vault/vault-unlock'
 
 // Шифрование

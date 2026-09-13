@@ -77,9 +77,11 @@ torStore.hydrate().catch(() => {})
 // разлочится (публичный embed и не нуждается в доступе к кошельку).
 const isEmbedRoute = (): boolean => router.currentRoute.value?.meta?.embed === true
 configureUnlockUi({
-  open: () => useModalStore(pinia).openVaultUnlock(),
+  open: (phase) => useModalStore(pinia).openVaultUnlock(phase),
   close: () => useModalStore(pinia).closeVaultUnlock(),
   hostAvailable: () => !isEmbedRoute(),
+  // После подтверждённого сброса (ключ утерян / забыта passphrase) — сразу импорт по 12 словам.
+  openImport: () => useModalStore(pinia).openAuthModal('login'),
 })
 if (!isEmbedRoute()) {
   // Fire-and-forget: модалка (если нужна) появится сразу после mount; restoreSession
