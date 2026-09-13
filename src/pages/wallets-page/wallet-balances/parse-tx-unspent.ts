@@ -1,6 +1,6 @@
 // Чистый парсер ответа txunspent: суммирует amount всех UTXO. Ответ ноды бывает
 // либо {result,data:[...]}, либо голым массивом. Вынесено из wallets-page
-// (см. LARGE_FILE_SPLIT_AUDIT.md) — юнит-тестируемо.
+// (аудит крупных файлов 2026-08) — юнит-тестируемо.
 export function parseTxUnspentResponse(res: unknown): number {
   if (!res || typeof res !== 'object') return 0
   let list: { amount?: number }[] = []

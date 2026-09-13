@@ -149,14 +149,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/blockchain'
-import {
-  getUnspents,
-  filterAvailableUnspents,
-  selectAndLockUnspents,
-} from '@/blockchain/core/transactions/unspents-manager'
-import { buildTransferTransaction } from '@/blockchain/core/transactions/transaction-builder'
-import { sendTransactionWithMessage } from '@/blockchain/core/transactions/transaction-sender'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
+import { InsufficientFundsError, sendTransfer } from './send-transfer'
 import { useReceiveAddress } from './use-receive-address'
 import { useReceiverSearch } from './use-receiver-search'
 import {
@@ -258,39 +252,23 @@ async function doSend(): Promise<void> {
   sending.value = true
 
   try {
-    let unspents = await getUnspents(mainAddr, 1, 9999999)
-    unspents = filterAvailableUnspents(unspents, false)
-    // include = получатель платит: комиссия вычитается из суммы перевода.
-    // exclude = отправитель платит: ищем (сумма + комиссия) в UTXO.
-    const receiverAmount = feemode.value === 'include' ? Math.max(0, num - DEFAULT_TX_FEE) : num
-    const requiredAmount = feemode.value === 'exclude' ? num + DEFAULT_TX_FEE : num
-    const selected = selectAndLockUnspents(unspents, requiredAmount) // лок входов (P2-5/S6)
-    if (!selected.length) {
-      throw new Error(t('wallet.errorInsufficientFunds'))
-    }
-
-    const built = await buildTransferTransaction({
-      unspents: selected,
+    // Сам tx-путь (unspents → лок входов → сборка → отправка) — в send-transfer.ts.
+    const txid = await sendTransfer({
       fromAddress: mainAddr,
-      sourceAddresses: [mainAddr],
       keyPair,
-      outputs: [{ address: addr, amount: receiverAmount }],
-      fee: DEFAULT_TX_FEE,
-      message: (message.value || '').trim(),
+      toAddress: addr,
+      amount: num,
       feemode: feemode.value,
-    })
-
-    const txid = await sendTransactionWithMessage({
-      hex: built.hex,
-      messageData: built.messageData,
-      operationType: 'transaction',
+      message: message.value,
+      fee: DEFAULT_TX_FEE,
     })
     success.value = t('wallet.transferSent', { txid: txid.slice(0, 16) })
     clearReceiverLink()
     amount.value = ''
     message.value = ''
   } catch (e) {
-    error.value = e instanceof Error ? e.message : t('wallet.errorTransferFailed')
+    if (e instanceof InsufficientFundsError) error.value = t('wallet.errorInsufficientFunds')
+    else error.value = e instanceof Error ? e.message : t('wallet.errorTransferFailed')
   } finally {
     sending.value = false
   }
