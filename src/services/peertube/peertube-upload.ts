@@ -20,6 +20,15 @@
  */
 
 import { peertubeInstanceFetch, type InstanceFetch } from './peertube-instance'
+import {
+  clearResumableState,
+  loadResumableState,
+  resumableStorageKey,
+  saveResumableState,
+} from './peertube-upload-resume'
+
+// Ключ resume-состояния нужен потребителям/тестам транспорта — реэкспорт из адаптера.
+export { resumableStorageKey }
 
 /** Приватность PUBLIC в терминах PeerTube. */
 const PUBLIC_PRIVACY = 1
@@ -36,8 +45,6 @@ const RETRY_CAP_MS = 15000
 const CHUNK_TIMEOUT_MS = 60000
 /** Сколько раз готовы переинициализировать upload при 404. */
 const MAX_REINITS = 2
-/** TTL resume-состояния — возобновляем незавершённую загрузку в пределах 12 ч. */
-const RESUME_TTL_MS = 12 * 60 * 60 * 1000
 
 /** Ошибка транспорта. `cancelled` — пользователь прервал; `status` — HTTP-код инстанса. */
 export class PeertubeUploadError extends Error {
@@ -79,14 +86,6 @@ export interface UploadVideoResult {
   isAudio: boolean
 }
 
-/** Resume-состояние в localStorage (ключ = host+address+videoKey). */
-interface ResumableState {
-  uploadHost: string
-  uploadId: string
-  resumeFrom: number
-  lastOperation: number
-}
-
 // ── утилиты ───────────────────────────────────────────────────────────────────
 
 const defaultNow = (): number => Date.now()
@@ -124,46 +123,10 @@ export function parseUploadId(location: string | null | undefined): string | nul
   return m?.[1] ? decodeURIComponent(m[1]) : null
 }
 
-/** Ключ resume-состояния — как в оригинале: `resumable_${host}_${address}_${videoKey}`. */
-export function resumableStorageKey(host: string, address: string, videoKey: string): string {
-  return `resumable_${host}_${address}_${videoKey}`
-}
-
 /** Стабильный ключ файла без хеширования содержимого (достаточно для resume в сессии). */
 function defaultVideoKey(file: File): string {
   const lastModified = typeof file.lastModified === 'number' ? file.lastModified : 0
   return `${file.name}_${file.size}_${lastModified}`
-}
-
-function loadResumableState(key: string, now: number): ResumableState | null {
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return null
-    const s = JSON.parse(raw) as Partial<ResumableState>
-    if (!s?.uploadId || typeof s.resumeFrom !== 'number' || typeof s.lastOperation !== 'number') {
-      return null
-    }
-    if (now - s.lastOperation > RESUME_TTL_MS) return null // протух — заставим переинициализировать
-    return s as ResumableState
-  } catch {
-    return null
-  }
-}
-
-function saveResumableState(key: string, state: ResumableState): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(state))
-  } catch {
-    // недоступность storage не критична — просто не сможем возобновить.
-  }
-}
-
-function clearResumableState(key: string): void {
-  try {
-    localStorage.removeItem(key)
-  } catch {
-    // no-op
-  }
 }
 
 function isCancelled(e: unknown): boolean {
