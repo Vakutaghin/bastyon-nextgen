@@ -6,35 +6,24 @@ import { defineStore, storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
-import { t } from '@/i18n'
-import { notifyMessage } from '@/composables/use-browser-notifications'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { logger } from '@/services/logger'
 
 import { matrixService } from '../services/matrix-service'
-import glassSound from '../sounds/glass.mp3'
-import type { Dialog, Message } from '../types'
 
-import {
-  getEventType,
-  getEventRoomId,
-  getEventSender,
-  getEventTs,
-  isRenderableMessageEvent,
-  getAddressFromMatrixId,
-  getRoomTimelineEvents,
-  isMessageEvent,
-  resolveMatrixHost,
-} from '../helpers'
+import { getAddressFromMatrixId, resolveMatrixHost } from '../helpers'
 import { findExistingRoomByAddress, getPartnerMatrixId } from '../room-helpers'
 
-import { SOUND_MAX_AGE, PROFILE_UPDATE_DEBOUNCE, PCRYPTO_DIALOG_TIMEOUT } from './consts'
+import { PROFILE_UPDATE_DEBOUNCE } from './consts'
 
 const log = logger.scope('[MessengerStore]')
 import { useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerProfileCache } from './messenger-profile-cache'
 import { useMessengerChatStore } from './messenger-chat-store'
+import type { MessengerStoreContext } from './messenger-store/types'
+import { useDialogMapping } from './messenger-store/use-dialog-mapping'
+import { registerMatrixListeners } from './messenger-store/use-matrix-listeners'
 
 export const useMessengerStore = defineStore('messenger', () => {
   const authStore = useAuthStore()
@@ -46,164 +35,9 @@ export const useMessengerStore = defineStore('messenger', () => {
   // (store.isOpen = false, store.isFullScreen = true, store.activeChatId = null).
   const uiRefs = storeToRefs(uiStore)
 
-  // --- Маппинг комнаты в диалог ---
-
-  /**
-   * Участник комнаты в «старом» (loose) виде, как его отдаёт matrix-сервер в раннере:
-   * 4-аргументный `getAvatarUrl` и прямое поле `avatarUrl` — то, чего нет в строгом
-   * `RoomMember` из текущего matrix-js-sdk.
-   */
-  interface DialogMember {
-    userId: string
-    name?: string
-    membership?: string
-    avatarUrl?: string | null
-    getAvatarUrl?: (baseUrl: string, w: number, h: number, method: string) => string | undefined
-  }
-
-  // room остаётся `any`: объект приходит из matrix-сервера через legacy-API (4-арг
-  // `getAvatarUrl`, поле `avatarUrl` у участника, строковый аргумент
-  // `getUnreadNotificationCount('ns.total')`), который не моделируется строгим
-  // `Room` из matrix-js-sdk; строгий тип дал бы каскад ошибок арности/перечислений.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy loose Matrix Room API, не покрытый типами matrix-js-sdk
-  const mapRoomToDialog = async (room: any): Promise<Dialog> => {
-    if (room?.loadMembersIfNeeded) {
-      try {
-        await room.loadMembersIfNeeded()
-      } catch {
-        /* ignore */
-      }
-    }
-
-    const timelineEvents = getRoomTimelineEvents(room)
-    const myUserId = matrixService.getClient()?.getUserId()
-    const joinedMembers = room.getJoinedMembers()
-    // Прямой чат определяем по сумме joined + invited (== 2), а не только по
-    // joined. У свежесозданного DM собеседник ещё лишь приглашён (особенно если
-    // он ни разу не заходил в мессенджер и matrix-аккаунта у него по сути нет),
-    // поэтому joined == 1 и чат ошибочно выглядел как группа.
-    const memberCount =
-      typeof room.getInvitedAndJoinedMemberCount === 'function'
-        ? room.getInvitedAndJoinedMemberCount()
-        : joinedMembers.length
-    const isDirect = memberCount === 2
-
-    let otherMember = joinedMembers.find((m: DialogMember) => m.userId !== myUserId)
-    if (!otherMember) {
-      otherMember = room.currentState
-        .getMembers()
-        .find(
-          (m: DialogMember) =>
-            m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
-        )
-    }
-
-    const roomName = room.name || (otherMember ? otherMember.name : t('appMsg.messenger.chat'))
-    const partnerId = isDirect ? (otherMember ? otherMember.userId : room.roomId) : null
-    const member = partnerId && room.getMember ? room.getMember(partnerId) : null
-
-    // Резолв аватара: комната → участник → Matrix профиль
-    let avatarUrl: string | undefined = undefined
-    if (!isDirect && room.getAvatarUrl) {
-      avatarUrl = room.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
-    }
-    if (!avatarUrl && member?.getAvatarUrl)
-      avatarUrl = member.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
-    if (!avatarUrl && member?.avatarUrl)
-      avatarUrl = chatStore.getMatrixAvatarUrl(member.avatarUrl, 40)
-    if (!avatarUrl && isDirect && room.getAvatarUrl)
-      avatarUrl = room.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
-    if (!avatarUrl && otherMember?.getAvatarUrl)
-      avatarUrl = otherMember.getAvatarUrl(matrixService.getBaseUrl(), 40, 40, 'crop')
-    if (!avatarUrl && otherMember?.avatarUrl)
-      avatarUrl = chatStore.getMatrixAvatarUrl(otherMember.avatarUrl, 40)
-
-    let name = roomName
-    if (isDirect && member?.name) name = member.name
-    let avatar = avatarUrl
-    let verified = false
-
-    // Резолв из кэша профилей
-    if (partnerId) {
-      const address = getAddressFromMatrixId(partnerId)
-      if (address) {
-        if (!profileCache.userProfiles[address]) profileCache.fetchProfiles([address])
-        const p = profileCache.userProfiles[address]
-        if (p?.name) {
-          name = p.name
-        } else {
-          // Логин ещё не подгрузился (свежий аккаунт / лаг распространения имени
-          // по нодам), а у matrix-юзера нет displayname — поэтому name сейчас
-          // равен hex-локалпарту matrix-id. Показываем читаемый Bastyon-адрес
-          // вместо сырого hex; как только профиль резолвится, profile-watcher
-          // перезагрузит диалоги и подставит логин.
-          const localpart = partnerId.slice(1).split(':')[0]
-          if (name === localpart) name = address
-        }
-        const imgCandidate = p?.i || p?.avatar || p?.image
-        const img = typeof imgCandidate === 'string' ? imgCandidate : undefined
-        if (img) {
-          const url = resolveImageUrl(img)
-          if (url) avatar = url
-        }
-        const badges = p?.badges
-        if (Array.isArray(badges))
-          verified = badges.includes('verificated') || badges.includes('verified')
-        if (!verified) {
-          const flags = p?.flags
-          const real = (flags && flags.real) ?? p?.real
-          verified = real === 1 || real === '1' || real === true || real === 'true'
-        }
-      }
-    }
-
-    if (!avatar && partnerId) {
-      const client = matrixService.getClient()
-      if (client?.getProfileInfo) {
-        try {
-          const profile = await client.getProfileInfo(partnerId)
-          const matrixAvatar = chatStore.getMatrixAvatarUrl(profile?.avatar_url, 40)
-          if (matrixAvatar) avatar = matrixAvatar
-          if (profile?.displayname && !name) name = profile.displayname
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-
-    chatStore.ensurePcryptoInitialized()
-    if (!chatStore.pcryptoService && uiStore.isInitInProgress)
-      await chatStore.waitForPcrypto(PCRYPTO_DIALOG_TIMEOUT)
-
-    let lastMessage: Message | undefined = undefined
-    for (let i = timelineEvents.length - 1; i >= 0; i--) {
-      if (!isMessageEvent(timelineEvents[i])) continue
-      const mapped = await chatStore.mapEventToMessage(timelineEvents[i], false)
-      if (mapped) {
-        lastMessage = mapped
-        break
-      }
-    }
-
-    const createdAt = timelineEvents.length
-      ? Math.min(...timelineEvents.map(getEventTs))
-      : undefined
-
-    const unreadCount =
-      uiStore.activeChatId === room.roomId
-        ? 0
-        : room.getUnreadNotificationCount('total') ||
-          room.getUnreadNotificationCount('ns.total') ||
-          0
-
-    return {
-      id: room.roomId,
-      partner: { id: partnerId || room.roomId, name, avatar, verified },
-      unreadCount,
-      lastMessage,
-      createdAt,
-    }
-  }
+  // Маппинг комнаты в диалог и подписки на Matrix — в messenger-store/*.
+  const ctx: MessengerStoreContext = { uiStore, chatStore, profileCache }
+  const { mapRoomToDialog } = useDialogMapping(ctx)
 
   // --- Загрузка диалогов ---
 
@@ -314,120 +148,9 @@ export const useMessengerStore = defineStore('messenger', () => {
       if (!matrixService.getClient()) {
         uiStore.isLoading = true
         try {
-          // Подписка на события
-          matrixService.on(
-            'Room.timeline',
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- событие читается и как MatrixEvent (getId), и как сырой JSON (event_id), а room передаётся в приватный MxRoom-тип chat-store; единый строгий тип неприменим
-            async (event: any, room: any, toStartOfTimeline: boolean) => {
-              if (toStartOfTimeline) return
-              const evType = getEventType(event)
-              if (evType === 'm.reaction') {
-                const roomId = getEventRoomId(event)
-                if (uiStore.activeChatId === roomId) {
-                  const client = matrixService.getClient()
-                  const list = chatStore.messages[roomId]
-                  if (client && list)
-                    chatStore.enrichMessagesWithReactions(room, list, client.getUserId() || '')
-                }
-                return
-              }
-
-              // Redaction (удаление сообщения) — убираем целевое сообщение из ленты.
-              if (evType === 'm.room.redaction') {
-                const roomId = getEventRoomId(event)
-                const redactedId =
-                  (typeof event.getAssociatedId === 'function'
-                    ? event.getAssociatedId()
-                    : undefined) ||
-                  event.event?.redacts ||
-                  event.redacts ||
-                  (typeof event.getContent === 'function' ? event.getContent()?.redacts : undefined)
-                const list = roomId ? chatStore.messages[roomId] : null
-                if (list && typeof redactedId === 'string') {
-                  const idx = list.findIndex((m) => m.id === redactedId)
-                  if (idx !== -1) list.splice(idx, 1)
-                }
-                return
-              }
-
-              try {
-                if (isRenderableMessageEvent(event)) {
-                  const roomId = getEventRoomId(event)
-                  if (chatStore.currentUser.id === 'me') {
-                    const client = matrixService.getClient()
-                    if (client) chatStore.currentUser.id = client.getUserId() || 'me'
-                  }
-
-                  const senderId = getEventSender(event)
-                  const isRecent = Date.now() - getEventTs(event) < SOUND_MAX_AGE
-                  if (
-                    senderId !== chatStore.currentUser.id &&
-                    uiStore.activeChatId !== roomId &&
-                    isRecent
-                  ) {
-                    try {
-                      new Audio(glassSound).play().catch(() => {})
-                    } catch {
-                      /* ignore */
-                    }
-                    // Браузерное уведомление о новом сообщении (если вкладка в фоне
-                    // и пользователь включил браузерные уведомления).
-                    try {
-                      const senderName = room.getMember?.(senderId)?.name || senderId
-                      const body = (event.getContent?.()?.body as string) || ''
-                      notifyMessage(senderName, body)
-                    } catch {
-                      /* ignore */
-                    }
-                  }
-
-                  if (uiStore.activeChatId === roomId) {
-                    const msg = await chatStore.mapEventToMessage(event)
-                    if (!msg) return
-                    if (!chatStore.messages[roomId]) chatStore.messages[roomId] = []
-                    if (!chatStore.messages[roomId].find((m) => m.id === msg.id))
-                      chatStore.messages[roomId].push(msg)
-                    const c = matrixService.getClient()
-                    if (c)
-                      chatStore.enrichMessagesWithReactions(
-                        room,
-                        chatStore.messages[roomId],
-                        c.getUserId() || ''
-                      )
-
-                    try {
-                      const client = matrixService.getClient()
-                      const evId =
-                        typeof event.getId === 'function' ? event.getId() : event.event_id
-                      if (client && typeof evId === 'string' && evId.startsWith('$')) {
-                        if (typeof client.setRoomReadMarkers === 'function')
-                          await client.setRoomReadMarkers(room.roomId, evId, event)
-                        else if (typeof client.sendReadReceipt === 'function')
-                          await client.sendReadReceipt(event)
-                      }
-                    } catch {
-                      /* ignore */
-                    }
-                  }
-
-                  scheduleLoadDialogs()
-                }
-              } catch (e) {
-                log.error('Ошибка в Room.timeline:', e)
-              }
-            }
-          )
-
-          matrixService.on('sync', (state: string) => {
-            uiStore.syncState = state
-            if (state === 'ERROR') uiStore.syncError = t('appMsg.messenger.syncError')
-            else if (state === 'PREPARED') {
-              uiStore.syncError = null
-              loadDialogs(true).then(() => {
-                uiStore.dialogsLoadedOnce = true
-              })
-            }
-          })
+          // Подписка на события (Room.timeline / sync) — до login, matrixService
+          // копит подписки до создания клиента.
+          registerMatrixListeners(ctx, { loadDialogs, scheduleLoadDialogs })
 
           const success = await matrixService.login(authStore.address, authStore.keyPair)
           if (!success) throw new Error('Matrix login failed')
