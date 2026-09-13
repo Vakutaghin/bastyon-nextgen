@@ -2,7 +2,10 @@ mod ipfs;
 mod tor;
 
 use tauri::{Emitter, Manager, RunEvent};
-use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut, ShortcutState};
+// register() нужен только там, где хоткеи регистрируются (debug / фича devtools).
+#[cfg(any(debug_assertions, feature = "devtools"))]
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
@@ -590,7 +593,9 @@ pub fn run() {
           #[cfg(not(target_os = "macos"))]
           let cmd_r_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyR);
 
+          #[cfg(any(debug_assertions, feature = "devtools"))]
           let f12_shortcut = Shortcut::new(None, Code::F12);
+          #[cfg(any(debug_assertions, feature = "devtools"))]
           let ctrl_shift_i = Shortcut::new(
             Some(Modifiers::CONTROL | Modifiers::SHIFT),
             Code::KeyI,
@@ -603,8 +608,12 @@ pub fn run() {
               } else if let Some(window) = app.webview_windows().values().next() {
                 let _ = window.eval("window.location.reload()");
               }
-            } else if shortcut == &f12_shortcut || shortcut == &ctrl_shift_i {
-              // F12 или Ctrl+Shift+I — открыть DevTools (работает и в release для отладки)
+            }
+            // F12 / Ctrl+Shift+I — DevTools. Только там, где инспектор вообще
+            // собран (debug или фича `devtools`): в обычном release хоткеи не
+            // регистрируются (см. setup), а open_devtools там не существует.
+            #[cfg(any(debug_assertions, feature = "devtools"))]
+            if shortcut == &f12_shortcut || shortcut == &ctrl_shift_i {
               if let Some(window) = app.get_webview_window("main") {
                 window.open_devtools();
               } else if let Some(window) = app.webview_windows().values().next() {
@@ -691,14 +700,21 @@ pub fn run() {
         )?;
       }
 
-      // F12 и Ctrl+Shift+I — открыть DevTools (и в release, чтобы отлаживать пустой экран и т.п.)
-      let f12 = Shortcut::new(None, Code::F12);
-      let ctrl_shift_i = Shortcut::new(
-        Some(Modifiers::CONTROL | Modifiers::SHIFT),
-        Code::KeyI,
-      );
-      let _ = app.handle().global_shortcut().register(f12);
-      let _ = app.handle().global_shortcut().register(ctrl_shift_i);
+      // F12 и Ctrl+Shift+I — открыть DevTools. Хоткеи плагина global-shortcut
+      // ОС-глобальные: в release они перехватывали F12/Ctrl+Shift+I у всех
+      // приложений и открывали инспектор Bastyon из любого окна (аудит V19).
+      // Поэтому только в debug или в сборке с фичей `devtools`
+      // (`tauri build -- --features devtools`) — для отладки пустого экрана.
+      #[cfg(any(debug_assertions, feature = "devtools"))]
+      {
+        let f12 = Shortcut::new(None, Code::F12);
+        let ctrl_shift_i = Shortcut::new(
+          Some(Modifiers::CONTROL | Modifiers::SHIFT),
+          Code::KeyI,
+        );
+        let _ = app.handle().global_shortcut().register(f12);
+        let _ = app.handle().global_shortcut().register(ctrl_shift_i);
+      }
 
       // Флаг для фронтенда (кнопка загрузки видео и др.) — и в debug, и в release
       let app_handle = app.handle().clone();
