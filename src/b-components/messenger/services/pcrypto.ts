@@ -206,9 +206,8 @@ export class PcryptoService {
     encrypted: Uint8Array,
     ad: Uint8Array | Uint8Array[]
   ): Promise<Uint8Array> {
-    // @ts-expect-error — miscreant.SIV.importKey: типы не описывают полную сигнатуру
     const key = await miscreant.SIV.importKey(keyData, 'AES-SIV')
-    // @ts-expect-error — key.open принимает Uint8Array|Uint8Array[] (ad), типы miscreant узкие
+    // @ts-expect-error — legacy-совместимость: ad передаётся и как Uint8Array (nonce), и как список; API miscreant ждёт Uint8Array[]
     return await key.open(encrypted, ad)
   }
 
@@ -224,9 +223,8 @@ export class PcryptoService {
     plaintext: Uint8Array,
     ad: Uint8Array | Uint8Array[]
   ): Promise<Uint8Array> {
-    // @ts-expect-error — miscreant.SIV.importKey: типы не описывают полную сигнатуру
     const key = await miscreant.SIV.importKey(keyData, 'AES-SIV')
-    // @ts-expect-error — key.seal принимает Uint8Array|Uint8Array[] (ad), типы miscreant узкие
+    // @ts-expect-error — legacy-совместимость: ad передаётся и как Uint8Array (nonce), и как список; API miscreant ждёт Uint8Array[]
     return await key.seal(plaintext, ad)
   }
 

@@ -19,7 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@mobile/*": ["./src-mobile/*"]
+      "@mobile/*": ["./src-mobile/*"],
+      "miscreant": ["./src/types/miscreant.d.ts"]
     },
     "types": ["vite/client", "vitest/globals"]
   },

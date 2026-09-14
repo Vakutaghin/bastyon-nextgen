@@ -1,7 +1,7 @@
-# CI-гейт (аудит P3-1): lint + vitest + сборка + Rust-тесты на каждый push/PR.
-# Без него регрессии уезжали в релизы: `vite build` не тайпчекает, тесты никто
-# не запускал. Typecheck .vue через vue-tsc — отдельный шаг, когда vue-tsc будет
-# в devDependencies и baseline зафиксирован (APP_AUDIT N28).
+# CI-гейт (аудит P3-1): lint + typecheck-baseline + vitest + сборка + Rust-тесты
+# на каждый push/PR. Без него регрессии уезжали в релизы: `vite build` не
+# тайпчекает, тесты никто не запускал. vue-tsc проверяет и .vue; число ошибок
+# не должно расти относительно typecheck-baseline.json (APP_AUDIT N28).
 name: CI
 
 on:
@@ -35,6 +35,9 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      - name: Typecheck (не хуже baseline)
+        run: pnpm typecheck:baseline
 
       - name: Unit tests
         run: pnpm test

@@ -44,10 +44,10 @@ export function useProfileRelationsActions(userAddress: Ref<string>) {
     try {
       if (isBlocked.value) {
         await relations.unblock(address)
-        appToast.success({ message: t('comments.unblocked') })
+        appToast.success({ message: t('commentsMsg.unblockSuccess') })
       } else {
         await relations.block(address)
-        appToast.success({ message: t('comments.blocked') })
+        appToast.success({ message: t('commentsMsg.blockSuccess') })
       }
     } catch (e) {
       appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })

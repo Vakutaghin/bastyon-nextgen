@@ -86,7 +86,7 @@ async function unblock(address: string): Promise<void> {
   if (relations.isPending(address)) return
   try {
     await relations.unblock(address)
-    appToast.success({ message: t('comments.unblocked') })
+    appToast.success({ message: t('commentsMsg.unblockSuccess') })
   } catch (e) {
     appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
   }
