@@ -1,7 +1,7 @@
 /**
  * Типы и хелперы для работы с лентой постов
  *
- * Основные composables находятся в use-feed-queries.ts
+ * Composables ленты — use-infinite-feed / use-profile-feed / use-boosted-feed.
  */
 
 import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hierarchical-strip'
@@ -336,9 +336,3 @@ export function extractPostsFromResponse(
 
   return rawPosts.map((post, index) => adaptPostData(post, index, usersMap))
 }
-
-/**
- * @deprecated Используйте useHierarchicalStrip из use-feed-queries.ts
- * Оставлено для обратной совместимости
- */
-export { useHierarchicalStrip, useTopFeed } from './use-feed-queries'

@@ -34,20 +34,25 @@ export function useRelatedVideos(
     queryFn: () =>
       getByPRCWithAuth({
         method: rpcEndpoints.getProfileFeed,
+        // Раскладка getprofilefeed — как в use-profile-feed (14 параметров):
+        // адрес на индексе 10, перед ним зарезервированный ''. С 13 параметрами
+        // (адрес на 9) нода отвечала «No profile address» и блок никогда не
+        // показывался (K7, проверено живой пробой).
         parameters: [
-          0,
-          '',
-          limit + 6, // запас под исключение текущего поста
-          uiStore.language,
-          [],
-          VIDEO_TYPES,
-          [],
-          [],
-          [],
-          address.value,
-          '',
-          '',
-          'desc',
+          0, // height
+          '', // txid
+          limit + 6, // count — запас под исключение текущего поста
+          uiStore.language, // lang
+          [], // tagsfilter
+          VIDEO_TYPES, // type
+          [], // _param6
+          [], // _param7
+          [], // tagsexcluded
+          '', // _param9 (reserved)
+          address.value, // address
+          '', // keyword
+          '', // orderby
+          'desc', // ascdesc
         ],
         cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
         options: { ex: true },

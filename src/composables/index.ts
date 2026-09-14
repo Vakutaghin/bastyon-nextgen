@@ -7,7 +7,6 @@ export * from './use-rpc-mutation'
 export * from './use-user-profile'
 export * from './use-wallet-queries'
 export * from './use-user-queries-consts'
-export * from './use-feed-queries'
 export * from './use-feed'
 export * from './use-feed-consts'
 // safeDecode намеренно не реэкспортируется: одноимённый (и живой) вариант уже
