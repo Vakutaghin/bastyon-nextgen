@@ -54,6 +54,8 @@ export function useWalletBalances() {
     () => !!currentAddress.value && additionalAddresses.value.length < MAX_ADDITIONAL_WALLETS
   )
 
+  // Все балансы здесь — в САТОШИ: `getuserprofile.balance` так и приходит,
+  // `parseTxUnspentResponse` приводит txunspent к той же шкале (V5).
   const accountBalance = computed<number | null>(() => {
     const profile = currentProfile.value
     const bal = (profile as { balance?: number | null } | null)?.balance
@@ -108,6 +110,7 @@ export function useWalletBalances() {
     return formatPkoin(bal, 2, false) + ' PKOIN'
   }
 
+  /** Баланс адреса по txunspent, в сатоши. */
   async function fetchBalanceTxUnspent(address: string): Promise<number> {
     try {
       const res = await getByPRC({

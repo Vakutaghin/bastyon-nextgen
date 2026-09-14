@@ -6,6 +6,7 @@ import {
   formatSmallestUnitsFromPkoin,
   PKOIN_DECIMALS,
   PKOIN_DIVISOR,
+  formatPkoinAmount,
 } from './pkoin-formatter'
 
 describe('PKOIN constants', () => {
@@ -109,5 +110,18 @@ describe('formatSmallestUnitsFromPkoin', () => {
   it('rounds to nearest integer', () => {
     // 0.000000015 * 100_000_000 = 1.5 → Math.round = 2, but floating point: actually 1.4999... → 1
     expect(formatSmallestUnitsFromPkoin(0.123)).toBe(12300000)
+  })
+})
+
+describe('formatPkoinAmount (V4/V5: вход уже в PKOIN)', () => {
+  it('не делит на 1e8 и режет хвостовые нули', () => {
+    expect(formatPkoinAmount(12.5, 4)).toBe('12.5')
+    expect(formatPkoinAmount(0.06249995, 4)).toBe('0.0625')
+    expect(formatPkoinAmount(3, 2)).toBe('3')
+  })
+  it('пусто/0/NaN → "0"', () => {
+    expect(formatPkoinAmount(0)).toBe('0')
+    expect(formatPkoinAmount(null)).toBe('0')
+    expect(formatPkoinAmount(NaN)).toBe('0')
   })
 })

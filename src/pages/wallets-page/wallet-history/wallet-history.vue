@@ -39,7 +39,7 @@
           </SC_HistoryMid>
 
           <SC_HistoryAmount :class="row.direction">
-            {{ row.direction === 'in' ? '+' : '−' }}{{ formatPkoin(row.amount, 4, false) }} PKOIN
+            {{ row.direction === 'in' ? '+' : '−' }}{{ formatPkoinAmount(row.amount, 4) }} PKOIN
           </SC_HistoryAmount>
 
           <SC_HistoryTime :title="formatAbsTime(row.tx.nTime)">
@@ -67,7 +67,7 @@ import { useUserProfiles } from '@/composables/use-user-profile'
 import { getByPRC } from '@/helpers/api/request'
 import { getExplorerRpcConfig } from '@/composables/use-explorer-preferred-node'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { formatPkoin } from '@/helpers/common/pkoin-formatter'
+import { formatPkoinAmount } from '@/helpers/common/pkoin-formatter'
 import {
   formatRelativeTime as formatRelTime,
   formatAbsoluteTime as formatAbsTime,
