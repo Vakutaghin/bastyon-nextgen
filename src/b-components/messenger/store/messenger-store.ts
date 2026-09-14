@@ -344,7 +344,11 @@ export const useMessengerStore = defineStore('messenger', () => {
   const logout = (opts: { purge?: boolean } = {}) => {
     // auth-store к этому моменту уже обнулил address — берём id из matrix-клиента.
     const userId = matrixService.getClient()?.getUserId() || undefined
-    matrixService.stop()
+    // Серверную сессию отзываем всегда (N21): следующий вход всё равно делает
+    // новый login, а без отзыва на homeserver'е копятся device'ы с токенами.
+    // Остановка синхронная (initMatrix сразу после должен увидеть «клиента нет»),
+    // отзыв — в фоне.
+    matrixService.stop({ revoke: true })
     uiStore.reset()
     chatStore.reset()
     profileCache.reset()

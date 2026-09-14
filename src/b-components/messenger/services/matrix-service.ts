@@ -419,10 +419,42 @@ export class MatrixService {
     ])
   }
 
-  public stop() {
+  /**
+   * Отзыв серверной сессии (N21): раньше `client.logout()` не вызывался
+   * никогда, и каждый запуск оставлял на homeserver'е новый device с вечным
+   * токеном. Best-effort с таймаутом на уже остановленном клиенте (HTTP-вызов
+   * не требует sync): выход и смена аккаунта его не ждут.
+   */
+  public static async revokeSession(
+    client: { logout?: (stopClient?: boolean) => Promise<unknown> } | null,
+    timeoutMs = 4000
+  ): Promise<boolean> {
+    if (!client || typeof client.logout !== 'function') return false
+    try {
+      await Promise.race([
+        client.logout(false),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('logout timeout')), timeoutMs)
+        ),
+      ])
+      return true
+    } catch (e) {
+      console.warn('[matrix] logout failed (session left on the server):', e)
+      return false
+    }
+  }
+
+  /** `revoke` — отозвать серверную сессию (в фоне) после локальной остановки. */
+  public stop(opts: { revoke?: boolean } = {}) {
+    const client = this.client
     if (this.client) {
       this.client.stopClient()
       this.client = null
+    }
+    if (opts.revoke && client) {
+      void MatrixService.revokeSession(
+        client as unknown as Parameters<typeof MatrixService.revokeSession>[0]
+      )
     }
     if (this.store) {
       try {
