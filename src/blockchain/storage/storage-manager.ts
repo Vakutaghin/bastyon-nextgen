@@ -129,7 +129,9 @@ export function clearAllUserData(): void {
       }
       for (const k of prefixed) localStorage.removeItem(k)
       localStorage.removeItem(BACKUP_NUDGED_AT_KEY)
+      // Черновик поста: legacy-ключ и per-account `bastyon_post_draft:<addr>` (N8).
       localStorage.removeItem(POST_DRAFT_KEY)
+      removeLocalKeysWithPrefix(`${POST_DRAFT_KEY}:`)
       // Брошенная регистрация не должна пережить выход и стереть следующий
       // аккаунт на буте (V8).
       localStorage.removeItem(PENDING_REGISTRATION_KEY)
@@ -147,6 +149,30 @@ export function clearAllUserData(): void {
     }
   } catch {
     // Игнорируем ошибки
+  }
+}
+
+function removeLocalKeysWithPrefix(prefix: string): void {
+  const keys: string[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i)
+    if (k && k.startsWith(prefix)) keys.push(k)
+  }
+  for (const k of keys) localStorage.removeItem(k)
+}
+
+/**
+ * Локальные данные одного аккаунта при его удалении (Р5): per-account
+ * черновики поста/комментариев в localStorage. IDB-часть (избранное, история
+ * поиска, фильтры уведомлений) — в auth-store.removeAccount через API таблиц.
+ */
+export function clearAccountScopedLocalData(address: Address): void {
+  try {
+    if (typeof localStorage === 'undefined') return
+    localStorage.removeItem(`${POST_DRAFT_KEY}:${address}`)
+    removeLocalKeysWithPrefix(`${COMMENT_DRAFT_PREFIX}${address}:`)
+  } catch {
+    /* ignore */
   }
 }
 

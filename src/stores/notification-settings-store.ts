@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { settingsAPI } from '@/db/apis/settings-api'
+import { accountScopedKey, adoptLegacySettingsKey } from '@/blockchain/storage/account-scoped-key'
 
-const NOTIFICATION_FILTERS_KEY = 'notificationFilters'
+export const NOTIFICATION_FILTERS_KEY = 'notificationFilters'
 
 /** Ключи настроек фильтрации уведомлений (как в старом приложении) */
 export type NotificationFilterKey =
@@ -60,8 +61,21 @@ export const NOTIFICATION_FILTER_LABEL_KEYS: Record<NotificationFilterKey, strin
   commentScore: 'notif.filterCommentScore',
 }
 
+/** Владелец настроек: адрес текущего аккаунта, аноним — null (legacy-ключ). */
+async function currentOwner(): Promise<string | null> {
+  try {
+    const { useAuthStore } = await import('@/blockchain/store/auth-store')
+    return useAuthStore().getUserAddress
+  } catch {
+    return null
+  }
+}
+
 export const useNotificationSettingsStore = defineStore('notificationSettings', {
-  state: (): NotificationFiltersState => ({ ...DEFAULT_FILTERS }),
+  state: (): NotificationFiltersState & { owner: string | null } => ({
+    ...DEFAULT_FILTERS,
+    owner: null,
+  }),
   getters: {
     /** Получить значение по ключу */
     getFilter:
@@ -70,10 +84,14 @@ export const useNotificationSettingsStore = defineStore('notificationSettings', 
         state[key] ?? DEFAULT_FILTERS[key],
   },
   actions: {
-    /** Загрузить настройки из IDB (settings) */
+    /** Загрузить настройки из IDB (settings) для текущего аккаунта (N25/Р5). */
     async load() {
       try {
-        const raw = (await settingsAPI.get(NOTIFICATION_FILTERS_KEY)) as
+        const owner = await currentOwner()
+        this.owner = owner
+        // Чужие значения (прежнего аккаунта) в памяти не оставляем.
+        Object.assign(this, DEFAULT_FILTERS)
+        const raw = (await adoptLegacySettingsKey(settingsAPI, NOTIFICATION_FILTERS_KEY, owner)) as
           | Partial<NotificationFiltersState>
           | undefined
         if (raw && typeof raw === 'object') {
@@ -104,7 +122,7 @@ export const useNotificationSettingsStore = defineStore('notificationSettings', 
           followers: this.followers,
           commentScore: this.commentScore,
         }
-        await settingsAPI.set(NOTIFICATION_FILTERS_KEY, payload)
+        await settingsAPI.set(accountScopedKey(NOTIFICATION_FILTERS_KEY, this.owner), payload)
       } catch (e) {
         console.error('[notificationSettings] save failed', e)
       }

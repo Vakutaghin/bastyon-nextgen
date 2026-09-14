@@ -156,7 +156,7 @@ export async function buildMostCommentedFeedQuery(
 export async function buildFavoritesFeedQuery(
   ctx: FeedQueryContext
 ): Promise<GetHierarchicalStripResponse> {
-  const allFavIds = await favoritesAPI.getAllIds()
+  const allFavIds = await favoritesAPI.getAllIds(ctx.userAddress || '')
 
   let startIndex = 0
   if (ctx.currentTxid) {

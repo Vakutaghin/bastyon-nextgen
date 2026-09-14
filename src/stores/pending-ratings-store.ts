@@ -17,6 +17,20 @@ type T_PendingItem = {
 // Polling timer lives outside reactive state to avoid serialization/reactivity issues
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 
+// Операции IDB по одному shareId выполняются строго по очереди (N10): `add`
+// вызывается без await, и `markFailed`/`markSubmitted` раньше могли искать
+// строку до того, как `add` её записал — строка оставалась 'pending' навсегда
+// (фантомный pending после перезагрузки).
+const ioChains = new Map<string, Promise<void>>()
+function serialize(shareId: string, op: () => Promise<void>): Promise<void> {
+  const prev = ioChains.get(shareId) ?? Promise.resolve()
+  const next = prev.then(op, op).finally(() => {
+    if (ioChains.get(shareId) === next) ioChains.delete(shareId)
+  })
+  ioChains.set(shareId, next)
+  return next
+}
+
 export const usePendingRatingsStore = defineStore('pendingRatings', {
   state: () => ({
     items: new Map<string, T_PendingItem>(),
@@ -67,28 +81,34 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
       const auth = useAuthStore()
       const address = auth.getUserAddress
       if (!address) return
-      await postRatingPendingAPI.addPending({
-        shareId,
-        userAddress: address,
-        ratingValue,
-        ttlMs,
-        postTitle,
-      })
       this.items.set(shareId, { shareId, ratingValue, expiresAt: Date.now() + ttlMs, postTitle })
       this.ensurePolling()
+      await serialize(shareId, async () => {
+        await postRatingPendingAPI.addPending({
+          shareId,
+          userAddress: address,
+          ratingValue,
+          ttlMs,
+          postTitle,
+        })
+      })
     },
     async markSubmitted(shareId: string, txid?: string) {
       const auth = useAuthStore()
       const address = auth.getUserAddress
       if (!address) return
-      await postRatingPendingAPI.markSubmitted({ shareId, userAddress: address, txid })
+      await serialize(shareId, () =>
+        postRatingPendingAPI.markSubmitted({ shareId, userAddress: address, txid })
+      )
       this.ensurePolling()
     },
     async markConfirmed(shareId: string) {
       const auth = useAuthStore()
       const address = auth.getUserAddress
       if (!address) return
-      await postRatingPendingAPI.markConfirmed({ shareId, userAddress: address })
+      await serialize(shareId, () =>
+        postRatingPendingAPI.markConfirmed({ shareId, userAddress: address })
+      )
       this.items.delete(shareId)
       this.ensurePolling()
     },
@@ -96,7 +116,9 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
       const auth = useAuthStore()
       const address = auth.getUserAddress
       if (!address) return
-      await postRatingPendingAPI.markFailed({ shareId, userAddress: address, reason })
+      await serialize(shareId, () =>
+        postRatingPendingAPI.markFailed({ shareId, userAddress: address, reason })
+      )
       this.items.delete(shareId)
       this.ensurePolling()
     },

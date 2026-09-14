@@ -73,6 +73,8 @@ export interface AppSettings extends BaseEntity<string> {
  * Интерфейс для избранных постов
  */
 export interface FavoritePost {
+  /** Владелец (Р5): избранное per-account. '' — legacy-записи до привязки/аноним. */
+  address: string
   id: string
   addedAt: number
 }

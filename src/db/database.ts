@@ -1,5 +1,13 @@
 import Dexie, { Table } from 'dexie'
-import type { VideoData, TranscodedVideo, PendingPostRating, AppSettings, FavoritePost, StoredNotification, DecryptedMessage } from './types'
+import type {
+  VideoData,
+  TranscodedVideo,
+  PendingPostRating,
+  AppSettings,
+  FavoritePost,
+  StoredNotification,
+  DecryptedMessage,
+} from './types'
 
 /**
  * Класс базы данных с использованием Dexie
@@ -9,7 +17,7 @@ export class AppDatabase extends Dexie {
   transcodedVideos!: Table<TranscodedVideo, string>
   postRatingsPending!: Table<PendingPostRating, number>
   settings!: Table<AppSettings, string>
-  favorites!: Table<FavoritePost, string>
+  favorites!: Table<FavoritePost, [string, string]>
   notifications!: Table<StoredNotification, [string, string]>
   decryptedMessages!: Table<DecryptedMessage, [string, string]>
 
@@ -36,6 +44,27 @@ export class AppDatabase extends Dexie {
       notifications: '[address+id], address, nblock',
       decryptedMessages: '[userId+eventId], userId, createdAt',
     })
+
+    // v3: избранное привязано к аккаунту (N10/Р5). Старые записи получают
+    // address '' и при первом обращении аккаунта переезжают к нему
+    // (favoritesAPI.adoptLegacy) — «миграция на текущий адрес».
+    this.version(3)
+      .stores({
+        transcodedVideos: 'id, originalFileName, resolution, createdAt',
+        postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
+        settings: 'key, createdAt',
+        favorites: '[address+id], address, addedAt',
+        notifications: '[address+id], address, nblock',
+        decryptedMessages: '[userId+eventId], userId, createdAt',
+      })
+      .upgrade((tx) =>
+        tx
+          .table('favorites')
+          .toCollection()
+          .modify((row: { address?: string }) => {
+            if (typeof row.address !== 'string') row.address = ''
+          })
+      )
   }
 }
 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { sanitizeSearchQuery } from '@/services/search-service'
 import { settingsAPI } from '@/db/apis/settings-api'
+import { accountScopedKey, adoptLegacySettingsKey } from '@/blockchain/storage/account-scoped-key'
 import {
   MAX_HISTORY_LENGTH,
   SEARCH_HISTORY_STORAGE_KEY,
@@ -17,10 +18,23 @@ import {
  * только то, чем управляет пользователь напрямую: текущий ввод и историю.
  *
  * История персистится в IndexedDB через settingsAPI: ключ
- * SEARCH_HISTORY_STORAGE_KEY, значение — массив SearchHistoryEntry. Запись
- * происходит асинхронно после каждого мутирующего действия; чтение — один
- * раз через `ensureLoaded()` при первом использовании.
+ * SEARCH_HISTORY_STORAGE_KEY + адрес аккаунта (N25/Р5 — история per-account,
+ * legacy без адреса переезжает к первому аккаунту), значение — массив
+ * SearchHistoryEntry. Запись происходит асинхронно после каждого мутирующего
+ * действия; чтение — один раз через `ensureLoaded()` для текущего владельца.
+ * Смена аккаунта (`resetForAccount`) зовёт `reset()` — следующий
+ * `ensureLoaded()` поднимет историю нового владельца.
  */
+
+/** Владелец истории: адрес текущего аккаунта, аноним — null (legacy-ключ). */
+async function currentOwner(): Promise<string | null> {
+  try {
+    const { useAuthStore } = await import('@/blockchain/store/auth-store')
+    return useAuthStore().getUserAddress
+  } catch {
+    return null
+  }
+}
 
 function isValidEntry(value: unknown): value is SearchHistoryEntry {
   if (!value || typeof value !== 'object') return false
@@ -38,6 +52,8 @@ export const useSearchStore = defineStore('search', {
     history: [] as SearchHistoryEntry[],
     maxHistoryLength: MAX_HISTORY_LENGTH,
     isHistoryLoaded: false,
+    /** Чья история в памяти (адрес или null для анонима). */
+    historyOwner: null as string | null,
   }),
 
   getters: {
@@ -77,13 +93,23 @@ export const useSearchStore = defineStore('search', {
       if (this.isHistoryLoaded) return
       this.isHistoryLoaded = true
       try {
-        const raw = await settingsAPI.get(SEARCH_HISTORY_STORAGE_KEY)
+        const owner = await currentOwner()
+        this.historyOwner = owner
+        const raw = await adoptLegacySettingsKey(settingsAPI, SEARCH_HISTORY_STORAGE_KEY, owner)
         if (Array.isArray(raw) && this.history.length === 0) {
           this.history = raw.filter(isValidEntry).slice(0, this.maxHistoryLength)
         }
       } catch (e) {
         console.error('Failed to load search history:', e)
       }
+    },
+
+    /** Смена/выход аккаунта: история в памяти — чужая, забываем (X9). */
+    reset(): void {
+      this.query = ''
+      this.history = []
+      this.isHistoryLoaded = false
+      this.historyOwner = null
     },
 
     /**
@@ -175,7 +201,8 @@ export const useSearchStore = defineStore('search', {
         // IndexedDB structured clone не справляется с Vue reactive Proxy
         // (внутренние Symbol-поля), поэтому сериализуем в plain JSON.
         const plain = JSON.parse(JSON.stringify(this.history)) as SearchHistoryEntry[]
-        await settingsAPI.set(SEARCH_HISTORY_STORAGE_KEY, plain)
+        const owner = this.isHistoryLoaded ? this.historyOwner : await currentOwner()
+        await settingsAPI.set(accountScopedKey(SEARCH_HISTORY_STORAGE_KEY, owner), plain)
       } catch (e) {
         console.error('Failed to persist search history:', e)
       }

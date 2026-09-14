@@ -213,9 +213,12 @@ const formattedReputation = computed<string>(() => {
   return `${rounded}K`
 })
 
+/** Владелец избранного — текущий аккаунт (N10/Р5); аноним — '' (устройство). */
+const favoritesOwner = (): string => authStore.getUserAddress || ''
+
 async function checkBookmarkStatus(): Promise<void> {
   if (!postId.value) return
-  isBookmarked.value = await favoritesAPI.has(postId.value)
+  isBookmarked.value = await favoritesAPI.has(favoritesOwner(), postId.value)
 }
 
 // ── Подписка (follow) из ленты ──────────────────────────────────────
@@ -288,10 +291,10 @@ async function toggleBookmark(event: Event): Promise<void> {
   event.stopPropagation()
   if (!postId.value) return
   if (isBookmarked.value) {
-    await favoritesAPI.remove(postId.value)
+    await favoritesAPI.remove(favoritesOwner(), postId.value)
     isBookmarked.value = false
   } else {
-    await favoritesAPI.add(postId.value)
+    await favoritesAPI.add(favoritesOwner(), postId.value)
     isBookmarked.value = true
   }
 }
@@ -301,6 +304,8 @@ function formatTime(timestamp: string): string {
 }
 
 watch(() => props.post, checkBookmarkStatus, { deep: true })
+// Смена аккаунта — избранное другого владельца (N10/Р5).
+watch(() => authStore.getUserAddress, checkBookmarkStatus)
 
 onMounted(checkBookmarkStatus)
 </script>

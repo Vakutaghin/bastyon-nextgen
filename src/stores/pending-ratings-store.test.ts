@@ -71,3 +71,34 @@ describe('pending-ratings-store × смена аккаунта', () => {
     expect(mocks.getActiveByUser).toHaveBeenLastCalledWith('PB')
   })
 })
+
+describe('pending-ratings-store × порядок записей IDB (N10)', () => {
+  it('markFailed ждёт незавершённый add — строка не остаётся фантомным pending', async () => {
+    setActivePinia(createPinia())
+    mocks.auth.getUserAddress = 'PA'
+    const { postRatingPendingAPI } = await import('@/db/apis/post-rating-pending-api')
+    const calls: string[] = []
+    let releaseAdd: () => void = () => {}
+    vi.mocked(postRatingPendingAPI.addPending).mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          releaseAdd = () => {
+            calls.push('add')
+            r({} as never)
+          }
+        })
+    )
+    vi.mocked(postRatingPendingAPI.markFailed).mockImplementationOnce(async () => {
+      calls.push('markFailed')
+    })
+    const store = usePendingRatingsStore()
+    void store.add('tx9', 5, 60_000)
+    const failed = store.markFailed('tx9', 'boom')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(calls).toEqual([]) // markFailed не обогнал add
+    releaseAdd()
+    await failed
+    expect(calls).toEqual(['add', 'markFailed'])
+    expect(store.count).toBe(0)
+  })
+})

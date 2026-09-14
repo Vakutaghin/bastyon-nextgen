@@ -18,6 +18,8 @@ export async function resetAccountScopedStores(): Promise<void> {
     { usePendingPostsStore },
     { useCommentsStore },
     { usePostsStore },
+    { useSearchStore },
+    { useNotificationSettingsStore },
   ] = await Promise.all([
     import('@/stores/pending-ratings-store'),
     import('@/stores/notifications-store'),
@@ -25,6 +27,8 @@ export async function resetAccountScopedStores(): Promise<void> {
     import('@/stores/pending-posts-store'),
     import('@/stores/comments-store'),
     import('@/stores/posts-store'),
+    import('@/stores/search-store'),
+    import('@/stores/notification-settings-store'),
   ])
   usePendingRatingsStore().reset()
   useNotificationsStore().reset()
@@ -34,4 +38,8 @@ export async function resetAccountScopedStores(): Promise<void> {
   // Адаптированные посты несут per-user поля (`myVal`, liked/shared) — после
   // смены аккаунта их значения принадлежат прежнему пользователю.
   usePostsStore().clearPosts()
+  // История поиска и фильтры уведомлений — per-account (N25/Р5): память чистим,
+  // следующий ensureLoaded/load поднимет данные нового владельца.
+  useSearchStore().reset()
+  useNotificationSettingsStore().$reset()
 }

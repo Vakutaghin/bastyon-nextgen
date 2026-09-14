@@ -6,7 +6,13 @@ function now() {
 }
 
 export const postRatingPendingAPI = {
-  async addPending(params: { shareId: string; userAddress: string; ratingValue: number; ttlMs: number; postTitle?: string }) {
+  async addPending(params: {
+    shareId: string
+    userAddress: string
+    ratingValue: number
+    ttlMs: number
+    postTitle?: string
+  }) {
     const item: PendingPostRating = {
       shareId: params.shareId,
       userAddress: params.userAddress,
@@ -15,9 +21,17 @@ export const postRatingPendingAPI = {
       expiresAt: now() + params.ttlMs,
       createdAt: now(),
       updatedAt: now(),
-      postTitle: params.postTitle
+      postTitle: params.postTitle,
     }
-    const id = await db.postRatingsPending.add(item)
+    // Upsert по (shareId, userAddress): повторная оценка того же поста не должна
+    // плодить строки, из которых одна навсегда остаётся 'pending' (N10).
+    const id = await db.transaction('rw', db.postRatingsPending, async () => {
+      const stale = await db.postRatingsPending
+        .where({ shareId: params.shareId, userAddress: params.userAddress })
+        .primaryKeys()
+      if (stale.length) await db.postRatingsPending.bulkDelete(stale)
+      return db.postRatingsPending.add(item)
+    })
     return { ...item, id }
   },
 
@@ -29,7 +43,7 @@ export const postRatingPendingAPI = {
     await db.postRatingsPending.update(existing.id!, {
       status: 'submitted',
       txid: params.txid,
-      updatedAt: now()
+      updatedAt: now(),
     })
   },
 
@@ -49,17 +63,16 @@ export const postRatingPendingAPI = {
     await db.postRatingsPending.update(existing.id!, {
       status: 'failed',
       lastError: params.reason,
-      updatedAt: now()
+      updatedAt: now(),
     })
   },
 
   async getActiveByUser(userAddress: string) {
-    const items = await db.postRatingsPending
-      .where('userAddress')
-      .equals(userAddress)
-      .toArray()
+    const items = await db.postRatingsPending.where('userAddress').equals(userAddress).toArray()
     const time = now()
-    return items.filter((i) => i.expiresAt > time && (i.status === 'pending' || i.status === 'submitted'))
+    return items.filter(
+      (i) => i.expiresAt > time && (i.status === 'pending' || i.status === 'submitted')
+    )
   },
 
   async cleanupExpired() {
@@ -70,5 +83,5 @@ export const postRatingPendingAPI = {
       await db.postRatingsPending.bulkDelete(ids)
     }
     return ids.length
-  }
+  },
 }

@@ -61,6 +61,7 @@ vi.mock('../storage', () => ({
   peekPendingRegistration: _peekPendingRegistration,
   clearPendingRegistration: _clearPendingRegistration,
   clearPendingRegistrationFor: vi.fn(),
+  clearAccountScopedLocalData: vi.fn(),
 }))
 
 vi.mock('../wallet-addresses', () => ({

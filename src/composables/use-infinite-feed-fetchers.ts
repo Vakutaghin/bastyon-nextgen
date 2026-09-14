@@ -41,7 +41,8 @@ export function fetchSubscribesFeed(params: FetchParams): Promise<GetHierarchica
 export async function fetchFavoritesFeed(params: FetchParams): Promise<GetHierarchicalStripData> {
   const { currentTxid, count } = params
 
-  const allFavIds = await favoritesAPI.getAllIds()
+  const { useAuthStore } = await import('@/blockchain/store/auth-store')
+  const allFavIds = await favoritesAPI.getAllIds(useAuthStore().getUserAddress || '')
 
   let startIndex = 0
   if (currentTxid) {
@@ -89,7 +90,19 @@ export function fetchMostCommentedFeed(params: FetchParams): Promise<GetHierarch
 
   return rpcCallWithAuth<GetHierarchicalStripData>({
     method: rpcEndpoints.getMostCommentedFeed,
-    parameters: [0, currentTxid, count, lang, allTags, contentTypes, [], [], [], '', MOST_COMMENTED_WINDOW_MINUTES],
+    parameters: [
+      0,
+      currentTxid,
+      count,
+      lang,
+      allTags,
+      contentTypes,
+      [],
+      [],
+      [],
+      '',
+      MOST_COMMENTED_WINDOW_MINUTES,
+    ],
     cachehash: generateCacheHash(),
     options: { ex: true, cache: false },
     state: 1,

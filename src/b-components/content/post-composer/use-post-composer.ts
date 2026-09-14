@@ -82,7 +82,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       : isRepost
         ? ''
         : !isEdit
-          ? readDraft()
+          ? readDraft(authStore.getUserAddress)
           : ''
   )
   const caption = ref(isEdit && prefill ? prefill.caption : '')
@@ -204,7 +204,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const onMessageInput = (value: string): void => {
     message.value = value
     // Черновик персистим только в режиме создания (edit/repost не засоряют его).
-    if (mode === 'create') writeDraft(value)
+    if (mode === 'create') writeDraft(authStore.getUserAddress, value)
   }
 
   const onCaptionInput = (value: string): void => {
@@ -232,7 +232,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     scheduledTime.value = 0
     uploadedVideoUrl.value = ''
     clearImages()
-    if (mode === 'create') writeDraft('')
+    if (mode === 'create') writeDraft(authStore.getUserAddress, '')
   }
 
   const publish = async (): Promise<void> => {

@@ -64,6 +64,7 @@ export {
   saveWasLogged,
   hasStoredSession,
   clearAllUserData,
+  clearAccountScopedLocalData,
   getWalletAddressesList,
   saveWalletAddressesList,
   getAdditionalWalletAddressesList,

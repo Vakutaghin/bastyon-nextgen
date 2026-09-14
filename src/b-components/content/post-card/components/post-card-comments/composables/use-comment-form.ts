@@ -59,9 +59,12 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   // --- Черновик корневого комментария: автосохранение в localStorage ---
   // Сохраняется только текст корневой формы (composer к посту) по ключу postId,
   // переживает unmount карточки. Логика персиста — в comment-draft-storage.
-  const readSavedDraft = (): string => readCommentDraft(opts.postId.value)
-  const writeSavedDraft = (text: string): void => writeCommentDraft(opts.postId.value, text)
-  const clearSavedDraft = (): void => clearCommentDraft(opts.postId.value)
+  // Владелец черновика — текущий адрес (caller провайдит его же для формы).
+  const draftOwner = (): string | null => opts.currentUserAddress.value || null
+  const readSavedDraft = (): string => readCommentDraft(draftOwner(), opts.postId.value)
+  const writeSavedDraft = (text: string): void =>
+    writeCommentDraft(draftOwner(), opts.postId.value, text)
+  const clearSavedDraft = (): void => clearCommentDraft(draftOwner(), opts.postId.value)
 
   // Восстанавливаем черновик корневой формы при создании композабла (mount карточки):
   // на этом этапе replyTarget === null → активна корневая форма, бар покажет текст.

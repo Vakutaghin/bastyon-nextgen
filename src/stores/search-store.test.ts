@@ -170,11 +170,37 @@ describe('search-store', () => {
   describe('persistence', () => {
     it('persists commits to settings storage', async () => {
       store.commit('hello')
-      // persistHistory вызывается асинхронно — дождёмся следующего тика
-      await new Promise((r) => setTimeout(r, 0))
+      // persistHistory асинхронный (определяет владельца через auth-store) — ждём запись.
+      await vi.waitFor(() => expect(mockStorage.get('bastyonSearchHistory')).toBeTruthy())
       const saved = mockStorage.get('bastyonSearchHistory') as Array<{ value: string }>
-      expect(saved).toBeTruthy()
       expect(saved.map((e) => e.value)).toContain('hello')
+    })
+
+    it('N25/Р5: с аккаунтом история пишется под ключ аккаунта, legacy мигрирует к нему', async () => {
+      const { useAuthStore } = await import('@/blockchain/store/auth-store')
+      const auth = useAuthStore()
+      auth.address = 'PA' as never
+      mockStorage.set('bastyonSearchHistory', [
+        { kind: 'query', value: 'legacy', addedAt: 1, label: 'legacy' },
+      ])
+      const fresh = useSearchStore()
+      await fresh.ensureLoaded()
+      expect(fresh.history.map((e) => e.value)).toEqual(['legacy'])
+      expect(mockStorage.get('bastyonSearchHistory')).toBeUndefined()
+      fresh.commit('mine')
+      await vi.waitFor(() =>
+        expect(
+          (mockStorage.get('bastyonSearchHistory:PA') as Array<{ value: string }>)?.map(
+            (e) => e.value
+          )
+        ).toContain('mine')
+      )
+      // Смена аккаунта: память чистится, следующий аккаунт legacy не получает.
+      fresh.reset()
+      expect(fresh.history).toEqual([])
+      auth.address = 'PB' as never
+      await fresh.ensureLoaded()
+      expect(fresh.history).toEqual([])
     })
 
     it('ensureLoaded restores history from storage', async () => {

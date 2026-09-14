@@ -31,6 +31,7 @@ import {
   ensureInitialized,
   destroyVault,
   clearPendingRegistrationFor,
+  clearAccountScopedLocalData,
 } from '../storage'
 import { deriveAndSaveWalletAddresses } from '../wallet-addresses'
 import { wsService } from '../ws'
@@ -44,6 +45,24 @@ import { resetAccountScopedStores } from './auth-store/account-scoped'
 interface PreviousSession {
   address: Address
   keyPair: KeyPair
+}
+
+/** IDB-часть per-account данных при удалении аккаунта (Р5). */
+async function purgeAccountScopedIdb(address: Address): Promise<void> {
+  const [
+    { favoritesAPI },
+    { settingsAPI },
+    { SEARCH_HISTORY_STORAGE_KEY },
+    { NOTIFICATION_FILTERS_KEY },
+  ] = await Promise.all([
+    import('@/db/apis/favorites-api'),
+    import('@/db/apis/settings-api'),
+    import('@/stores/search-store-consts'),
+    import('@/stores/notification-settings-store'),
+  ])
+  await favoritesAPI.purge(address)
+  await settingsAPI.set(`${SEARCH_HISTORY_STORAGE_KEY}:${address}`, undefined)
+  await settingsAPI.set(`${NOTIFICATION_FILTERS_KEY}:${address}`, undefined)
 }
 
 // Общий промис активного restoreSession(). На старте restore зовётся и из
@@ -597,6 +616,11 @@ export const useAuthStore = defineStore('auth', {
             .then(({ useMessengerStore }) => useMessengerStore().purgeAccountData(address))
             .catch((e: unknown) => console.warn('[auth-store] purgeAccountData failed:', e))
         }
+        // Per-account данные (Р5): черновики, избранное, история поиска, фильтры.
+        clearAccountScopedLocalData(address)
+        purgeAccountScopedIdb(address).catch((e: unknown) =>
+          console.warn('[auth-store] purgeAccountScopedIdb failed:', e)
+        )
 
         if (!keys.accountsList?.accounts?.length) {
           this.accountsList = null
