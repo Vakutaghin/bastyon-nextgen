@@ -3,7 +3,6 @@ import { COLORS } from '@/styles/theme-colors'
 
 const props = {
   hasImage: Boolean,
-  image: String,
   isBlur: Boolean,
 }
 
@@ -21,13 +20,14 @@ export const SC_ProfileCover = styled('div', props)`
     `}
 `
 
-export const SC_CoverImage = styled('div', props)`
+// <img>, а не div с background-image: URL из блокчейна остаётся атрибутом и не
+// попадает в CSS (V16). object-fit: cover — тот же результат, что background-size.
+export const SC_CoverImage = styled('img', props)`
+  display: block;
   width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-image: url(${(props) => props.image});
+  object-fit: cover;
+  object-position: center;
 
   ${(props) =>
     props.isBlur &&
