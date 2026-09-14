@@ -4,7 +4,11 @@ import { ref } from 'vue'
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
 vi.mock('../../services/matrix-service', () => ({
   matrixService: {
-    getClient: () => ({ mxcUrlToHttp: (u: string) => `https://hs/media/${u.slice(6)}` }),
+    // baseUrl задаёт доверенный origin медиа (S34): всё, что не на https://hs, отбрасывается.
+    getClient: () => ({
+      baseUrl: 'https://hs',
+      mxcUrlToHttp: (u: string) => `https://hs/media/${u.slice(6)}`,
+    }),
   },
 }))
 vi.mock('../../services/group-encryption', () => ({
@@ -139,6 +143,43 @@ describe('mapEventToMessage — медиа и транзакции (K3)', () => 
       true
     )
     expect(msg).toMatchObject({ type: 'audio', url: 'https://hs/media/hs/a', text: '' })
+  })
+
+  it('S34: абсолютный URL медиа с чужого хоста не попадает в message.url/info', async () => {
+    const { mapEventToMessage } = mapping(async () => null)
+    const msg = await mapEventToMessage(
+      mxEvent('m.room.message', {
+        msgtype: 'm.image',
+        body: 'track.png',
+        url: 'https://evil.example/track.png',
+        info: {
+          httpUrl: 'https://evil.example/track2.png',
+          thumbnail_url: 'https://evil.example/t.png',
+        },
+      })
+    )
+    expect(msg?.type).toBe('image')
+    expect(msg?.url).toBeFalsy()
+    expect(msg?.info).not.toHaveProperty('httpUrl')
+    expect(msg?.info).not.toHaveProperty('thumbnail_url')
+  })
+
+  it('S33: encrypted=true для E2E-событий, false для открытого m.text', async () => {
+    const { mapEventToMessage } = mapping(async () =>
+      JSON.stringify({ msgtype: 'm.text', body: 'hi' })
+    )
+    const enc = await mapEventToMessage(
+      mxEvent('m.room.encrypted', { msgtype: 'm.text', body: 'deadbeef' })
+    )
+    expect(enc?.encrypted).toBe(true)
+    const legacy = await mapEventToMessage(
+      mxEvent('m.room.message', { msgtype: 'm.encrypted', body: 'deadbeef' })
+    )
+    expect(legacy?.encrypted).toBe(true)
+    const plain = await mapEventToMessage(
+      mxEvent('m.room.message', { msgtype: 'm.text', body: 'https://example.org' })
+    )
+    expect(plain?.encrypted).toBe(false)
   })
 
   it('m.text с pocketnet_transaction → карточка транзакции', async () => {

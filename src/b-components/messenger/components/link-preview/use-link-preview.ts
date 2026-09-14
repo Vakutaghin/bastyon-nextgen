@@ -30,15 +30,15 @@ const trimDescription = (s?: string): string | undefined => {
   return cleaned.slice(0, DESCRIPTION_MAX_LEN).trimEnd() + '…'
 }
 
-/** mxc:// → http(s) для og:image. */
+/**
+ * og:image — только `mxc://` (homeserver сам скачал и отдаёт через свой
+ * media-repo). Абсолютный http(s) из ответа грузился бы с произвольного
+ * хоста напрямую — IP читателя уходил бы мимо Tor и на сайт из ссылки (S33/Р4).
+ */
 const resolveImage = (mxc?: string): string | undefined => {
-  if (!mxc) return undefined
-  if (mxc.startsWith('http://') || mxc.startsWith('https://')) return mxc
-  if (mxc.startsWith('mxc://')) {
-    const http = matrixService.mxcToHttp(mxc)
-    return http || undefined
-  }
-  return undefined
+  if (!mxc || !mxc.startsWith('mxc://')) return undefined
+  const http = matrixService.mxcToHttp(mxc)
+  return http || undefined
 }
 
 const lruTouch = (url: string) => {

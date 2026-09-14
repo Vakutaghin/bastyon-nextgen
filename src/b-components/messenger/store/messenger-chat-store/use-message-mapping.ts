@@ -15,6 +15,7 @@ import {
   getAddressFromMatrixId,
 } from '../../helpers'
 import { matrixService } from '../../services/matrix-service'
+import { isTrustedMediaUrl, resolveMxcHttpUrl } from '../../services/matrix-service/mxc-resolver'
 import { isGroupEncryptedContent } from '../../services/group-encryption'
 import type { Message, MessageReaction } from '../../types'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../consts'
@@ -26,11 +27,15 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
   const { currentUser, profileCache } = ctx
   const { tryDecrypt } = decryption
 
-  /** mxc:// → http через клиент; http и неизвестное — как есть. */
+  /**
+   * mxc:// → http через homeserver; абсолютный http(s) — только с origin
+   * homeserver'а, чужой хост → '' (медиа «недоступно»). Иначе любой URL из
+   * контента отправителя фетчился при открытии чата и отдавал IP читателя (S34).
+   */
   const resolveMxc = (mxcOrHttp: string): string => {
-    if (mxcOrHttp.startsWith('http')) return mxcOrHttp
     const client = matrixService.getClient()
-    return (client?.mxcUrlToHttp ? client.mxcUrlToHttp(mxcOrHttp) : null) || mxcOrHttp
+    if (mxcOrHttp.startsWith('mxc://')) return resolveMxcHttpUrl(client, mxcOrHttp) || ''
+    return isTrustedMediaUrl(client, mxcOrHttp) ? mxcOrHttp : ''
   }
 
   const mapEventToMessage = async (
@@ -71,6 +76,12 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
     }
 
     const isEncryptedType = getEventType(event) === 'm.room.encrypted'
+    // Сообщение из E2E-переписки: превью ссылок для таких не запрашиваем (S33/Р4).
+    const encrypted =
+      isEncryptedType ||
+      content.msgtype === 'm.encrypted' ||
+      !!(content.info?.secrets || content.pbody?.secrets || content.secrets) ||
+      isGroupEncryptedContent(content)
     // У медиа `info.secrets` — обёрнутый ключ файла, а не зашифрованный текст.
     let hasSecrets =
       !mediaType && !!(content.info?.secrets || content.pbody?.secrets || content.secrets)
@@ -192,6 +203,7 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
       timestamp: getEventTs(event),
       read: false,
       status: 'sent',
+      encrypted,
       ...(replyToId ? { replyTo: { id: replyToId } } : {}),
     }
   }

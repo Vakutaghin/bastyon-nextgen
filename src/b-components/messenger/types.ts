@@ -52,6 +52,8 @@ export interface Message {
   /** Ответ на сообщение: event_id оригинала (Matrix m.in_reply_to). Превью
    *  резолвится в message-item по store.messages текущего диалога. */
   replyTo?: { id: string }
+  /** Пришло зашифрованным (E2E): OG-превью ссылок для таких не запрашиваем (S33). */
+  encrypted?: boolean
 }
 
 export interface Dialog {

@@ -18,24 +18,39 @@ describe('fetchPreview (use-link-preview)', () => {
     expect(cache.get('https://example.com')).toBeNull()
   })
 
-  it('maps OG fields and trims long description', async () => {
+  it('maps OG fields and trims long description; og:image only via mxc (S33)', async () => {
     const longText = 'x'.repeat(500)
     vi.spyOn(matrixService, 'getClient').mockReturnValue({
       getUrlPreview: async () => ({
         'og:title': 'Hello',
         'og:description': longText,
-        'og:image': 'https://cdn.example.com/img.png',
+        'og:image': 'mxc://hs/img',
         'og:site_name': 'Example',
       }),
     } as any)
+    vi.spyOn(matrixService, 'mxcToHttp').mockReturnValue(
+      'https://hs/_matrix/media/v3/download/hs/img'
+    )
 
     const r = await fetchPreview('https://example.com/post')
     expect(r).not.toBeNull()
     expect(r!.title).toBe('Hello')
-    expect(r!.imageUrl).toBe('https://cdn.example.com/img.png')
+    expect(r!.imageUrl).toBe('https://hs/_matrix/media/v3/download/hs/img')
     expect(r!.siteName).toBe('Example')
     expect(r!.description!.length).toBeLessThanOrEqual(201)
     expect(r!.description!.endsWith('…')).toBe(true)
+  })
+
+  it('og:image с произвольного http(s) отбрасывается — картинка грузилась бы напрямую (S33)', async () => {
+    vi.spyOn(matrixService, 'getClient').mockReturnValue({
+      getUrlPreview: async () => ({
+        'og:title': 'Hello',
+        'og:image': 'https://cdn.example.com/img.png',
+      }),
+    } as unknown as ReturnType<typeof matrixService.getClient>)
+    const r = await fetchPreview('https://example.com/post2')
+    expect(r!.title).toBe('Hello')
+    expect(r!.imageUrl).toBeUndefined()
   })
 
   it('returns null when no OG fields are present (title/description/image)', async () => {

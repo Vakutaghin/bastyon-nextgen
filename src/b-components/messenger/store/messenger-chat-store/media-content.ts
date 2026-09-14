@@ -81,10 +81,20 @@ export function mapMediaContent(
   const rawUrl = (parsed?.url && extractUrl(parsed.url)) || pickUrl(content)
   const url = typeof rawUrl === 'string' && rawUrl.length > 0 ? resolveMxc(rawUrl) : undefined
 
+  // Абсолютные URL из контента отправителя проходят тот же резолвер: чужой
+  // хост → поле убираем, иначе <img>/<video> отдали бы ему IP читателя (S34).
+  for (const key of ['httpUrl', 'thumbnail_url'] as const) {
+    const value = info[key]
+    if (typeof value !== 'string' || !value) continue
+    const safe = resolveMxc(value)
+    if (safe) info[key] = safe
+    else delete info[key]
+  }
+
   if (type === 'video') {
-    // Постер: mxc → http, чтобы показать сразу, без расшифровки видео.
+    // Постер: mxc → http (уже резолвлен выше), чтобы показать сразу, без расшифровки видео.
     const thumb = info.thumbnail_url
-    if (typeof thumb === 'string' && thumb.startsWith('mxc://')) info.posterUrl = resolveMxc(thumb)
+    if (typeof thumb === 'string' && thumb) info.posterUrl = thumb
   }
 
   if (type === 'file') {

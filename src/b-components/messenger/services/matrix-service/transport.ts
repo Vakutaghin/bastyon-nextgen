@@ -5,17 +5,7 @@
  */
 import * as sdk from 'matrix-js-sdk'
 
-import servers from '@/servers.json'
-
-export function getDefaultMatrixBaseUrl(): string {
-  const host = servers.servers?.production?.matrix ?? 'matrix.pocketnet.app'
-  const prodUrl = host.startsWith('http') ? host : `https://${host}`
-  if (!import.meta.env.DEV) return prodUrl
-  // In Tauri tauriFetch isn't subject to CORS, so skip the Vite /_matrix proxy
-  // and talk to the homeserver directly (which is also what's allowed by the HTTP scope).
-  const inTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
-  return inTauri ? prodUrl : window.location.origin
-}
+export { getDefaultMatrixBaseUrl, getProductionMatrixBaseUrl } from './matrix-base-url'
 
 /**
  * Имя БД для IndexedDBStore — отдельное на каждого matrix-юзера,

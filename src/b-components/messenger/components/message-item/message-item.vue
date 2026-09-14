@@ -76,12 +76,7 @@
                 <RollbackOutlined />
                 <span>{{ t('messenger.reply') }}</span>
               </SC_ActionsItem>
-              <SC_ActionsItem
-                v-if="canDelete"
-                type="button"
-                class="danger"
-                @click.stop="onDelete"
-              >
+              <SC_ActionsItem v-if="canDelete" type="button" class="danger" @click.stop="onDelete">
                 <DeleteOutlined />
                 <span>{{ t('messenger.deleteMessage') }}</span>
               </SC_ActionsItem>
@@ -239,7 +234,11 @@ watch(senderAddress, ensureSenderProfile, { immediate: true })
 const messageSegments = computed(() => formatMessageSegments(props.message.text || ''))
 
 /** Первый внешний http(s)-URL для OG-превью (не bastyon-ссылка). */
-const previewUrl = computed<string | null>(() => extractFirstExternalUrl(props.message.text || ''))
+// OG-превью запрашивается у homeserver'а с userId — для E2E-переписки не
+// делаем этого по умолчанию, как Element (S33/Р4).
+const previewUrl = computed<string | null>(() =>
+  props.message.encrypted ? null : extractFirstExternalUrl(props.message.text || '')
+)
 
 const canReact = computed<boolean>(() => {
   if (typeof props.message.id !== 'string' || !props.message.id.startsWith('$')) return false

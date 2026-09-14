@@ -47,6 +47,47 @@ describe('mapMediaContent (K3)', () => {
     expect(m.info.duration).toBe(3)
   })
 
+  it('S34: httpUrl/thumbnail_url из контента проходят резолвер — чужой хост убирается', () => {
+    // Резолвер «доверяет» только hs: чужой абсолютный URL → ''.
+    const strict = (u: string) =>
+      u.startsWith('mxc://')
+        ? `https://hs/media/${u.slice(6)}`
+        : u.startsWith('https://hs/')
+          ? u
+          : ''
+    const m = mapMediaContent(
+      {
+        msgtype: 'm.video',
+        body: 'clip.mp4',
+        url: 'https://evil.example/track.mp4',
+        info: {
+          httpUrl: 'https://evil.example/track2.mp4',
+          thumbnail_url: 'https://evil.example/t.png',
+        },
+      },
+      'video',
+      strict
+    )
+    expect(m.url).toBeFalsy()
+    expect(m.info).not.toHaveProperty('httpUrl')
+    expect(m.info).not.toHaveProperty('thumbnail_url')
+    expect(m.info).not.toHaveProperty('posterUrl')
+
+    const ok = mapMediaContent(
+      {
+        msgtype: 'm.video',
+        body: 'clip.mp4',
+        url: 'mxc://hs/v',
+        info: { httpUrl: 'https://hs/media/hs/v', thumbnail_url: 'https://hs/media/hs/t' },
+      },
+      'video',
+      strict
+    )
+    expect(ok.url).toBe('https://hs/media/hs/v')
+    expect(ok.info.httpUrl).toBe('https://hs/media/hs/v')
+    expect(ok.info.posterUrl).toBe('https://hs/media/hs/t')
+  })
+
   it('m.file legacy: body — JSON с name/type/size/url/secrets', () => {
     const body = JSON.stringify({
       name: 'doc.pdf',
