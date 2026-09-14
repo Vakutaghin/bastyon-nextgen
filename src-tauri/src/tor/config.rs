@@ -16,7 +16,11 @@ pub fn render_torrc(state: &TorState, paths: &TorPaths) -> String {
     let mut out = String::new();
 
     out.push_str(&format!("SocksPort 127.0.0.1:{}\n", state.socks_port));
-    out.push_str(&format!("ControlPort 127.0.0.1:{}\n", state.control_port));
+    // Без ControlPort: приложение им не пользуется, а открытый контрол-порт без
+    // аутентификации (CookieAuthentication 0) позволял любому локальному
+    // процессу `AUTHENTICATE` → `SETEVENTS STREAM` (все хосты назначения) и
+    // `SETCONF` (аудит V18). Нужен станет — только с CookieAuthentication 1 и
+    // CookieAuthFile под 0600.
     out.push_str(&format!("DataDirectory {}\n", q(&paths.data_dir)));
 
     // Ensure Tor exits if our process disappears (force-quit, crash) so we
@@ -38,7 +42,6 @@ pub fn render_torrc(state: &TorState, paths: &TorPaths) -> String {
     out.push_str("ClientUseIPv6 1\n");
     out.push_str("AvoidDiskWrites 1\n");
     out.push_str("Log notice stdout\n");
-    out.push_str("CookieAuthentication 0\n");
 
     if state.use_bridges {
         out.push_str("UseBridges 1\n");
@@ -119,3 +122,20 @@ const DEFAULT_OBFS4_BRIDGES: &[&str] = &[
     "obfs4 38.229.33.83:80 0BAC39417268B96B9F514E7F63FA6FBA1A788955 cert=VwEFpk9F/UN9JED7XpG1XOjm/O8ZCXK80oPecgWnNDZDv5pdkhq1OpbAH0wNqOT6H6BmRQ iat-mode=1",
     "obfs4 37.218.245.14:38224 D9A82D2F9C2F65A18407B1D2B764F130847F8B5D cert=bjRaMrr1BRiAW8IE9U5z27fQaYgOhX1UCmOpg2pFpoMvo6ZgQMzLsaTzzQNTlm7hNcb+Sg iat-mode=0",
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn torrc_has_no_control_port_and_no_cookie_auth_off() {
+        let state = TorState::default();
+        let paths = TorPaths::from_root(PathBuf::from("/tmp/bastyon-tor-test"));
+        let torrc = render_torrc(&state, &paths);
+        assert!(torrc.contains("SocksPort 127.0.0.1:9250\n"));
+        assert!(!torrc.contains("ControlPort"), "{torrc}");
+        assert!(!torrc.contains("CookieAuthentication 0"), "{torrc}");
+        assert!(torrc.contains("__OwningControllerProcess"));
+    }
+}

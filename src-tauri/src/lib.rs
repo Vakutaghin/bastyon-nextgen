@@ -35,15 +35,70 @@ struct TranscodeResult {
     file_size: u64,
 }
 
+/// Префиксы временных файлов транскодера. Только такие пути принимают
+/// команды `delete_temp_file` / `get_video_metadata` / `transcode_video`
+/// (аудит V17): раньше webview мог подсунуть любой путь — удалить произвольный
+/// файл, отдать ffprobe чужой файл, перезаписать что угодно через `ffmpeg -y`.
+const TEMP_INPUT_PREFIX: &str = "tauri_video_";
+const TEMP_OUTPUT_PREFIX: &str = "tauri_output_";
+
+/// Имя без директорий и служебных символов — для `save_temp_file`.
+fn sanitize_temp_file_name(name: &str) -> String {
+    let base = std::path::Path::new(name)
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let cleaned: String = base
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == '.' || c == '-' || c == '_' { c } else { '_' })
+        .collect();
+    if cleaned.is_empty() || cleaned == "." || cleaned == ".." {
+        "file".to_string()
+    } else {
+        cleaned
+    }
+}
+
+/// Путь, который команды принимают от webview: лежит прямо в `temp_dir()`
+/// (без `..`) и начинается с одного из наших префиксов. Возвращает путь,
+/// собранный заново из temp_dir + имени файла.
+fn ensure_transcoder_temp_path(raw: &str) -> Result<std::path::PathBuf, String> {
+    use std::path::{Component, Path};
+
+    let path = Path::new(raw);
+    if path.components().any(|c| matches!(c, Component::ParentDir)) {
+        return Err("Path traversal is not allowed".to_string());
+    }
+    let file_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| "Invalid temp file path".to_string())?;
+    if !(file_name.starts_with(TEMP_INPUT_PREFIX) || file_name.starts_with(TEMP_OUTPUT_PREFIX)) {
+        return Err("Path is not a transcoder temp file".to_string());
+    }
+    let parent = path
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .ok_or_else(|| "Invalid temp file path".to_string())?;
+    let temp_dir = env::temp_dir();
+    // Канонические формы: на macOS /tmp и /var — симлинки на /private/...
+    let canon = |p: &Path| p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
+    if canon(parent) != canon(&temp_dir) {
+        return Err("Path is outside the temp directory".to_string());
+    }
+    Ok(temp_dir.join(file_name))
+}
+
 /// Сохранить файл во временную директорию
 #[tauri::command]
 async fn save_temp_file(file_name: String, data: Vec<u8>) -> Result<String, String> {
     // Получаем временную директорию через std::env
     let temp_dir = env::temp_dir();
-    let file_path = temp_dir.join(format!("tauri_video_{}_{}",
+    let file_path = temp_dir.join(format!("{}{}_{}",
+        TEMP_INPUT_PREFIX,
         std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
             .unwrap().as_secs(),
-        file_name));
+        sanitize_temp_file_name(&file_name)));
 
     let mut file = fs::File::create(&file_path)
         .map_err(|e| format!("Failed to create temp file: {}", e))?;
@@ -54,10 +109,11 @@ async fn save_temp_file(file_name: String, data: Vec<u8>) -> Result<String, Stri
     Ok(file_path.to_string_lossy().to_string())
 }
 
-/// Удалить временный файл
+/// Удалить временный файл (только наш temp-файл транскодера, см. V17)
 #[tauri::command]
 async fn delete_temp_file(file_path: String) -> Result<(), String> {
-    fs::remove_file(&file_path)
+    let path = ensure_transcoder_temp_path(&file_path)?;
+    fs::remove_file(&path)
         .map_err(|e| format!("Failed to delete temp file: {}", e))?;
     Ok(())
 }
@@ -116,13 +172,6 @@ fn cleanup_orphaned_temp_files(max_age_secs: u64) {
     }
 }
 
-/// Читать файл
-#[tauri::command]
-async fn read_file(file_path: String) -> Result<Vec<u8>, String> {
-    fs::read(&file_path)
-        .map_err(|e| format!("Failed to read file: {}", e))
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 struct FfmpegAvailability {
     ffmpeg: bool,
@@ -158,6 +207,11 @@ async fn check_ffmpeg_available() -> Result<FfmpegAvailability, String> {
 #[tauri::command]
 async fn get_video_metadata(file_path: String) -> Result<VideoMetadata, String> {
     use std::process::Command;
+
+    // Только наш temp-файл (V17): ffprobe не должен читать произвольные пути.
+    let file_path = ensure_transcoder_temp_path(&file_path)?
+        .to_string_lossy()
+        .to_string();
 
     // Используем ffprobe для получения метаданных (быстрее и надежнее)
     // Получаем все потоки (видео и аудио), чтобы проверить наличие аудио
@@ -305,16 +359,20 @@ async fn transcode_video(
         other => return Err(format!("Unsupported codec: {}", other)),
     };
 
-    // Создаем выходной файл
-    let output_path = if output_path.is_empty() {
+    // Вход — только наш temp-файл; выход генерируем сами, путь от webview не
+    // принимаем (V17: раньше `ffmpeg -y` перезаписывал любой указанный файл).
+    let input_path = ensure_transcoder_temp_path(&input_path)?
+        .to_string_lossy()
+        .to_string();
+    let _ = output_path;
+    let output_path = {
         let temp_dir = env::temp_dir();
-        temp_dir.join(format!("tauri_output_{}.{}",
+        temp_dir.join(format!("{}{}.{}",
+            TEMP_OUTPUT_PREFIX,
             std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
                 .unwrap().as_secs(),
             extension))
             .to_string_lossy().to_string()
-    } else {
-        output_path
     };
 
     // Строим команду FFmpeg
@@ -627,7 +685,6 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       save_temp_file,
       delete_temp_file,
-      read_file,
       get_video_metadata,
       transcode_video,
       check_ffmpeg_available,
@@ -762,4 +819,44 @@ pub fn run() {
         }
       }
     });
+}
+
+#[cfg(test)]
+mod temp_path_tests {
+    use super::*;
+
+    #[test]
+    fn accepts_only_our_files_inside_temp_dir() {
+        let temp = env::temp_dir();
+        let ok = temp.join("tauri_video_1_clip.mp4");
+        assert_eq!(
+            ensure_transcoder_temp_path(&ok.to_string_lossy()).unwrap(),
+            temp.join("tauri_video_1_clip.mp4")
+        );
+        let out = temp.join("tauri_output_2.webm");
+        assert!(ensure_transcoder_temp_path(&out.to_string_lossy()).is_ok());
+    }
+
+    #[test]
+    fn rejects_foreign_paths_traversal_and_other_names() {
+        let temp = env::temp_dir();
+        // чужая директория
+        assert!(ensure_transcoder_temp_path("/etc/tauri_video_1_x").is_err());
+        // обход через ..
+        let traversal = temp.join("tauri_video_1_a").join("..").join("tauri_video_1_b");
+        assert!(ensure_transcoder_temp_path(&traversal.to_string_lossy()).is_err());
+        // не наш префикс (любой другой файл в temp)
+        let other = temp.join("passwd");
+        assert!(ensure_transcoder_temp_path(&other.to_string_lossy()).is_err());
+        // голое имя без директории
+        assert!(ensure_transcoder_temp_path("tauri_video_1_x").is_err());
+    }
+
+    #[test]
+    fn sanitizes_upload_file_names() {
+        assert_eq!(sanitize_temp_file_name("../../etc/passwd"), "passwd");
+        assert_eq!(sanitize_temp_file_name("my clip (1).mp4"), "my_clip__1_.mp4");
+        assert_eq!(sanitize_temp_file_name(""), "file");
+        assert_eq!(sanitize_temp_file_name(".."), "file");
+    }
 }
