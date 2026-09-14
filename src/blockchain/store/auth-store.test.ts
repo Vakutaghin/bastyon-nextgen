@@ -18,6 +18,8 @@ const {
   _fetchUserState,
   _fetchUserProfile,
   _clearProfile,
+  _peekPendingRegistration,
+  _clearPendingRegistration,
 } = vi.hoisted(() => ({
   _saveMnemonic: vi.fn().mockResolvedValue(undefined),
   _addAccountForAddress: vi.fn(),
@@ -29,6 +31,8 @@ const {
   _fetchUserState: vi.fn().mockResolvedValue(null),
   _fetchUserProfile: vi.fn().mockResolvedValue(null),
   _clearProfile: vi.fn(),
+  _peekPendingRegistration: vi.fn().mockReturnValue(null),
+  _clearPendingRegistration: vi.fn(),
 }))
 
 // ---------------------------------------------------------------------------
@@ -54,6 +58,9 @@ vi.mock('../storage', () => ({
   ensureInitialized: vi.fn().mockResolvedValue({ status: 'unlocked', level: 'device' }),
   finalizeMigration: vi.fn(),
   destroyVault: vi.fn().mockResolvedValue(undefined),
+  peekPendingRegistration: _peekPendingRegistration,
+  clearPendingRegistration: _clearPendingRegistration,
+  clearPendingRegistrationFor: vi.fn(),
 }))
 
 vi.mock('../wallet-addresses', () => ({
@@ -867,6 +874,149 @@ describe('auth-store', () => {
       expect(result).toBeNull()
       expect(store.error).toBe('Profile fetch failed')
       expect(store.isLoading).toBe(false)
+    })
+  })
+
+  // ── V11: «Добавить аккаунт» поверх живой сессии ─────────────────────────
+  describe('signIn поверх существующей сессии (V11)', () => {
+    async function authenticatedAs(address: string) {
+      const { recoverKeyPair } = await import('../core/keys')
+      const kp = fakeKeyPair()
+      ;(recoverKeyPair as any).mockReturnValue({ keyPair: kp, format: 'hex', source: 'k1' })
+      const store = useAuthStore()
+      await store.signIn({ privateKey: 'k1' })
+      // мок keys-store всегда выводит PTestAddress123; фиксируем адрес явно
+      store.address = address
+      return { store, kp }
+    }
+
+    it('опечатка в мнемонике не роняет текущую сессию', async () => {
+      const { store, kp } = await authenticatedAs('PPrev')
+      const { recoverKeyPair } = await import('../core/keys')
+      ;(recoverKeyPair as any).mockReturnValue(null)
+
+      const result = await store.signIn({ privateKey: 'typo' })
+
+      expect(result.success).toBe(false)
+      expect(result.previousAddress).toBe('PPrev')
+      expect(store.isUserAuthenticated).toBe(true)
+      expect(store.keyPair?.privateKey).toEqual(kp.privateKey)
+      expect(store.error).toContain('Failed to recover key pair')
+    })
+
+    it('отмена во время входа возвращает прежнюю сессию, а не «не авторизован»', async () => {
+      const { store, kp } = await authenticatedAs('PPrev')
+      const { recoverKeyPair } = await import('../core/keys')
+      ;(recoverKeyPair as any).mockReturnValue({
+        keyPair: fakeKeyPair(),
+        format: 'hex',
+        source: 'k2',
+      })
+      const ctrl = new AbortController()
+      ctrl.abort()
+      // aborted до старта — состояние вообще не трогается
+      expect(await store.signIn({ privateKey: 'k2' }, { signal: ctrl.signal })).toEqual({
+        success: false,
+        cancelled: true,
+      })
+
+      const late = new AbortController()
+      const { loadBip39Russian } = await import('../core/keys')
+      ;(loadBip39Russian as any).mockImplementationOnce(async () => late.abort())
+      const result = await store.signIn({ privateKey: 'k2' }, { signal: late.signal })
+      expect(result).toMatchObject({ success: false, cancelled: true, previousAddress: 'PPrev' })
+      expect(store.isUserAuthenticated).toBe(true)
+      expect(store.keyPair?.privateKey).toEqual(kp.privateKey)
+    })
+
+    it('без прежней сессии ошибка входа по-прежнему оставляет «не авторизован»', async () => {
+      const { recoverKeyPair } = await import('../core/keys')
+      ;(recoverKeyPair as any).mockReturnValue(null)
+      const store = useAuthStore()
+      const result = await store.signIn({ privateKey: 'typo' })
+      expect(result.success).toBe(false)
+      expect(result.previousAddress).toBeUndefined()
+      expect(store.isAuthenticated).toBe(false)
+    })
+
+    it('revertSignIn удаляет новый аккаунт и переключается на прежний', async () => {
+      const store = useAuthStore()
+      _recoverFromAccount.mockResolvedValueOnce({ keyPair: fakeKeyPair() })
+      await store.revertSignIn('PNew', 'PPrev')
+      expect(_removeAccount).toHaveBeenCalledWith('PNew')
+      expect(_recoverFromAccount).toHaveBeenCalledWith('PPrev')
+      expect(store.isUserAuthenticated).toBe(true)
+    })
+
+    it('discardRegistration без прежней сессии → аккаунт снят, состояние «не авторизован»', async () => {
+      const { clearPendingRegistrationFor } = await import('../storage')
+      const store = useAuthStore()
+      await store.discardRegistration('PNew', null)
+      expect(clearPendingRegistrationFor).toHaveBeenCalledWith('PNew')
+      expect(_removeAccount).toHaveBeenCalledWith('PNew')
+      expect(store.isAuthenticated).toBe(false)
+      expect(store.authState).toBe('unauthenticated')
+    })
+  })
+
+  // ── V8: брошенная регистрация на буте ───────────────────────────────────
+  describe('restoreSession — брошенная регистрация (V8)', () => {
+    it('снимает только аккаунт брошенной регистрации и поднимает оставшийся', async () => {
+      const { loadAccountsList, clearAllUserData } = await import('../storage')
+      _peekPendingRegistration.mockReturnValueOnce({
+        nickname: 'b',
+        address: 'PNew',
+        step: 1,
+        timestamp: 1,
+      })
+      ;(loadAccountsList as any).mockReturnValue({
+        success: true,
+        data: {
+          accounts: [{ address: 'PPrev', encryptedMnemonic: 'x', lastUsed: 1 }],
+          currentAccount: 'PPrev',
+        },
+      })
+      _recoverFromAccount.mockResolvedValueOnce({ keyPair: fakeKeyPair() })
+
+      const store = useAuthStore()
+      const ok = await store.restoreSession()
+
+      expect(ok).toBe(true)
+      expect(_clearPendingRegistration).toHaveBeenCalled()
+      expect(_removeAccount).toHaveBeenCalledWith('PNew')
+      expect(clearAllUserData).not.toHaveBeenCalled()
+      expect(_recoverFromAccount).toHaveBeenCalledWith('PPrev')
+      ;(loadAccountsList as any).mockReturnValue({ success: false })
+    })
+
+    it('если других аккаунтов нет — чистит всё и остаётся «не авторизован»', async () => {
+      const { clearAllUserData } = await import('../storage')
+      _peekPendingRegistration.mockReturnValueOnce({
+        nickname: 'b',
+        address: 'PNew',
+        step: 1,
+        timestamp: 1,
+      })
+      const store = useAuthStore()
+      const ok = await store.restoreSession()
+      expect(ok).toBe(false)
+      expect(_removeAccount).toHaveBeenCalledWith('PNew')
+      expect(clearAllUserData).toHaveBeenCalled()
+      expect(store.authState).toBe('unauthenticated')
+    })
+
+    it('step ≥ 2 (free/balance уже запрошен) ничего не снимает', async () => {
+      const { clearAllUserData } = await import('../storage')
+      _peekPendingRegistration.mockReturnValueOnce({
+        nickname: 'b',
+        address: 'PNew',
+        step: 2,
+        timestamp: 1,
+      })
+      const store = useAuthStore()
+      await store.restoreSession()
+      expect(_removeAccount).not.toHaveBeenCalled()
+      expect(clearAllUserData).not.toHaveBeenCalled()
     })
   })
 })

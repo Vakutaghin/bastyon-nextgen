@@ -30,6 +30,7 @@ import {
   updateAccountName,
   ensureInitialized,
   destroyVault,
+  clearPendingRegistrationFor,
 } from '../storage'
 import { deriveAndSaveWalletAddresses } from '../wallet-addresses'
 import { wsService } from '../ws'
@@ -37,6 +38,12 @@ import { wsService } from '../ws'
 import { useKeysStore } from './keys-store'
 import { useProfileStore } from './profile-store'
 import { restoreSessionImpl } from './auth-store/restore-session'
+
+/** Сессия, активная до «Добавить аккаунт» — для отката при ошибке/отмене (V11). */
+interface PreviousSession {
+  address: Address
+  keyPair: KeyPair
+}
 
 // Общий промис активного restoreSession(). На старте restore зовётся и из
 // header-user onMounted, и из router beforeEach; без дедупа они параллельно
@@ -155,12 +162,67 @@ export const useAuthStore = defineStore('auth', {
      * статус в «не авторизован», НЕ выставляя error (отмена — не ошибка).
      * Гарантирует, что после «Отмены» пользователь не остаётся залогинен.
      */
-    _cancelSignIn(): SignInResult {
+    _cancelSignIn(prev?: PreviousSession): SignInResult {
+      if (prev?.keyPair) {
+        this._restorePreviousSession(prev)
+        return { success: false, cancelled: true, previousAddress: prev.address ?? undefined }
+      }
       const keys = useKeysStore()
       keys.clearKeys()
       this.resetAuthOnRegistrationError()
       this.setLoading(false)
       return { success: false, cancelled: true }
+    },
+
+    /**
+     * Возвращает прежнюю сессию после неудачного/отменённого «Добавить аккаунт»
+     * (V11): ключи прежнего аккаунта обратно в память, статус — авторизован,
+     * профиль подтягивается заново. Раньше опечатка в мнемонике роняла текущую
+     * сессию в «не авторизован».
+     */
+    _restorePreviousSession(prev: PreviousSession): void {
+      const keys = useKeysStore()
+      if (prev.keyPair) keys.setKeyPair(prev.keyPair)
+      this._syncFromKeysStore()
+      this.isAuthenticated = true
+      this.authState = 'authenticated'
+      this.error = null
+      if (this.address) this.fetchUserState().catch(() => {})
+      this.setLoading(false)
+    },
+
+    /**
+     * Откат «Добавить аккаунт», если вход уже успел зафиксироваться, а
+     * пользователь нажал «Отмена»: новый аккаунт удаляется, возвращаемся к
+     * прежнему (или выходим, если прежнего не было).
+     */
+    async revertSignIn(newAddress: Address, previousAddress?: Address | null): Promise<void> {
+      const keys = useKeysStore()
+      if (previousAddress && previousAddress !== newAddress) {
+        keys.removeAccount(newAddress)
+        await this.switchAccount(previousAddress)
+        return
+      }
+      await this.signOut()
+    },
+
+    /**
+     * Откат регистрации после того, как аккаунт уже персистнут (отмена или
+     * «начать заново»): удаляем его секрет/запись и pending, возвращаемся к
+     * прежней сессии, если она была (V9).
+     */
+    async discardRegistration(address: Address, previousAddress?: Address | null): Promise<void> {
+      const keys = useKeysStore()
+      clearPendingRegistrationFor(address)
+      keys.removeAccount(address)
+      this._syncFromKeysStore()
+      if (previousAddress && previousAddress !== address) {
+        await this.switchAccount(previousAddress)
+        return
+      }
+      keys.clearKeys()
+      this.resetAuthOnRegistrationError()
+      this.setLoading(false)
     },
 
     /** Sync key-pair state from keys-store into auth-store (local fields kept for backward compat) */
@@ -247,6 +309,13 @@ export const useAuthStore = defineStore('auth', {
       // Отмена ещё до старта процесса — состояние не трогаем.
       if (signal?.aborted) return { success: false, cancelled: true }
 
+      // Снимок текущей сессии («Добавить аккаунт» поверх A): при ошибке или
+      // отмене возвращаемся к ней, а не в «не авторизован» (V11).
+      const prev: PreviousSession | undefined =
+        this.isAuthenticated && this.keyPair && this.address
+          ? { address: this.address, keyPair: this.keyPair }
+          : undefined
+
       this.setLoading(true)
       this.setError(null)
       this.authState = 'authenticating'
@@ -261,7 +330,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         await loadBip39Russian()
         // Отмена во время загрузки словаря — секрет ещё не тронут, выходим чисто.
-        if (signal?.aborted) return this._cancelSignIn()
+        if (signal?.aborted) return this._cancelSignIn(prev)
 
         if (!privateKey || typeof privateKey !== 'string')
           throw new Error('Private key is required')
@@ -278,7 +347,7 @@ export const useAuthStore = defineStore('auth', {
         // P0-1: создать/поднять сейф ДО первой записи секрета (mnemonic/приватника).
         await ensureInitialized()
         // Последнее окно чистой отмены: секрет ещё НЕ записан в сейф.
-        if (signal?.aborted) return this._cancelSignIn()
+        if (signal?.aborted) return this._cancelSignIn(prev)
 
         if (recoveryResult.format === 'mnemonic') {
           await keys.saveMnemonic(trimmedKey)
@@ -306,11 +375,22 @@ export const useAuthStore = defineStore('auth', {
         wsService.connect()
         this.setLoading(false)
 
-        return { success: true, address: this.address || undefined }
+        return {
+          success: true,
+          address: this.address || undefined,
+          previousAddress: prev?.address ?? undefined,
+        }
       } catch (error) {
         // Прерывание пользователем (AbortError и т.п.) — не ошибка входа.
-        if (signal?.aborted) return this._cancelSignIn()
+        if (signal?.aborted) return this._cancelSignIn(prev)
         const errorMessage = error instanceof Error ? error.message : 'Sign in failed'
+        if (prev) {
+          // Неудачная попытка добавить аккаунт не должна ронять текущую сессию.
+          this._restorePreviousSession(prev)
+          this.setError(errorMessage)
+          this.authState = 'authenticated'
+          return { success: false, error: errorMessage, previousAddress: prev.address }
+        }
         this.setError(errorMessage)
         this.setLoading(false)
         this.isAuthenticated = false
@@ -503,6 +583,7 @@ export const useAuthStore = defineStore('auth', {
     async removeAccount(address: Address): Promise<boolean> {
       try {
         const keys = useKeysStore()
+        clearPendingRegistrationFor(address)
         const success = keys.removeAccount(address)
         this._syncFromKeysStore()
 

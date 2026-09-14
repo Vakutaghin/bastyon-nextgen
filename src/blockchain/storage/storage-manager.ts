@@ -24,6 +24,8 @@ import {
   PEERTUBE_RESUME_PREFIX,
   POST_DRAFT_KEY,
   COMMENT_DRAFT_PREFIX,
+  PENDING_REGISTRATION_KEY,
+  PENDING_NICKNAME_KEY,
 } from '../constants/storage'
 import { ACCOUNTS_LIST_KEY } from './storage-constants'
 import { clearStoredData } from './storage-keys'
@@ -128,6 +130,10 @@ export function clearAllUserData(): void {
       for (const k of prefixed) localStorage.removeItem(k)
       localStorage.removeItem(BACKUP_NUDGED_AT_KEY)
       localStorage.removeItem(POST_DRAFT_KEY)
+      // Брошенная регистрация не должна пережить выход и стереть следующий
+      // аккаунт на буте (V8).
+      localStorage.removeItem(PENDING_REGISTRATION_KEY)
+      localStorage.removeItem(PENDING_NICKNAME_KEY)
 
       // Device-fingerprint + артефакты сейфа (конверт/backup/маркеры/троттлинг).
       localStorage.removeItem(DEVICE_FINGERPRINT_KEY)

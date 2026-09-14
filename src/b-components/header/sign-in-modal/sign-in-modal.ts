@@ -87,11 +87,14 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
         { signal: abortController.signal }
       )
 
-      // Пользователь нажал «Отмена» во время входа: гарантируем, что он не
-      // остался залогинен (если signIn всё же успел зафиксироваться), и молча
+      // Пользователь нажал «Отмена» во время входа: если signIn всё же успел
+      // зафиксироваться — откатываем именно новый аккаунт и возвращаемся к
+      // прежнему (V11; раньше signOut() выкидывал все аккаунты), и молча
       // закрываем модалку без сообщения об ошибке.
       if (isCancelling.value || result.cancelled) {
-        if (result.success) await authStore.signOut()
+        if (result.success && result.address) {
+          await authStore.revertSignIn(result.address, result.previousAddress)
+        }
         clearForm()
         emit('cancel')
         emit('update:open', false)

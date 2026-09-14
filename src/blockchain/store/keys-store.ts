@@ -166,6 +166,10 @@ export const useKeysStore = defineStore('keys', {
     removeAccount(address: Address): boolean {
       clearStoredData({ persistent: true, storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}` })
       clearStoredData({ persistent: false, storageKey: `${ACCOUNT_STORAGE_PREFIX}${address}` })
+      // Общий legacy BST_MNEMONIC: если он принадлежит удаляемому аккаунту —
+      // убираем, иначе «Показать сид» покажет чужую фразу, а restore-fallback
+      // воскресит удалённый аккаунт (S10/V8).
+      this.clearSharedMnemonicIfOwnedBy(address)
       const result = removeAccountFromStore(address)
       if (result.success) {
         const listResult = loadAccountsList()
@@ -173,6 +177,26 @@ export const useKeysStore = defineStore('keys', {
         return true
       }
       return false
+    },
+
+    /**
+     * Стирает общий BST_MNEMONIC, если из него выводится именно этот адрес.
+     * Не трогает, если расшифровать нельзя (сейф залочен) или адрес другой.
+     */
+    clearSharedMnemonicIfOwnedBy(address: Address): void {
+      try {
+        const stored = loadEncryptedMnemonic()
+        if (!stored.success || !stored.data) return
+        const recovered = recoverKeyPair(stored.data)
+        if (!recovered?.keyPair) return
+        const owner = generateAddressFromKeyPair(recovered.keyPair).addressInfo.address
+        if (owner === address) {
+          clearStoredData({ persistent: true })
+          clearStoredData({ persistent: false })
+        }
+      } catch {
+        /* нечего чистить */
+      }
     },
 
     /**

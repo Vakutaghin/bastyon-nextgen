@@ -104,6 +104,7 @@ import {
   loadPendingRegistration,
   clearPendingRegistration,
 } from './helpers/pending-registration-store'
+import { loadPendingMnemonic } from '@/b-components/header/header-user/helpers/pending-mnemonic'
 import { sendRegistrationTransaction } from './send-registration-transaction'
 import {
   isFormNicknameValid,
@@ -248,6 +249,13 @@ async function handleRegister(): Promise<void> {
   isCancelling.value = false
   abortController = new AbortController()
 
+  // Сессия, поверх которой регистрируем («Добавить аккаунт»): при отмене
+  // возвращаемся к ней, а не в «не авторизован» (V9).
+  const previousAddress = authStore.isUserAuthenticated ? authStore.getUserAddress : null
+  // Адрес аккаунта, созданного в этой попытке (или переиспользованного из
+  // прошлой неудачной), — чтобы откат снимал именно его.
+  let createdAddress: string | null = null
+
   // Отмена возможна только до «точки невозврата» (emit('validation')): сетевые
   // вызовы не принимают signal, поэтому прерываемся на границах шагов.
   const bailIfCancelled = (): void => {
@@ -259,16 +267,26 @@ async function handleRegister(): Promise<void> {
     await checkNameAvailability(nickname.value)
     bailIfCancelled()
 
-    debugLog('[REG] Step 2: generating keys...')
-    const registrationResult = await authStore.register({
-      generateNew: true,
-      saveAfterRegistration: true,
-    })
-
-    if (!registrationResult?.address) {
-      throw new Error(t('auth.errorCreateAccount'))
+    // Повтор после ошибки шага 3: ключи прошлой попытки уже персистнуты и
+    // pending указывает на них — переиспользуем, а не минтим сироту (V9).
+    // При смене ника — сироту снимаем и начинаем заново.
+    const stale = loadPendingRegistration()
+    let registrationResult: { address: string; mnemonic?: string }
+    if (stale && stale.step >= 1 && stale.address === authStore.getUserAddress) {
+      if (stale.nickname !== nickname.value) {
+        await authStore.discardRegistration(stale.address, previousAddress)
+        registrationResult = await freshRegistration()
+      } else {
+        debugLog('[REG] Step 2: reusing keys from the previous attempt:', stale.address)
+        registrationResult = {
+          address: stale.address,
+          mnemonic: (await loadPendingMnemonic())?.mnemonic,
+        }
+      }
+    } else {
+      registrationResult = await freshRegistration()
     }
-    debugLog('[REG] Step 2: keys generated, address:', registrationResult.address)
+    createdAddress = registrationResult.address
     bailIfCancelled()
 
     savePendingRegistration({
@@ -302,10 +320,12 @@ async function handleRegister(): Promise<void> {
 
     sendRegistrationTransaction(nickname.value, authStore)
   } catch (err) {
-    // Отмена пользователем: откатываем созданный аккаунт и незавершённую
-    // pending-регистрацию, не показываем ошибку.
+    // Отмена пользователем: снимаем созданный аккаунт (секрет, запись в списке,
+    // pending) и возвращаемся к прежней сессии, если она была (V9); ошибку не
+    // показываем.
     if (err === CANCELLED || isCancelling.value) {
-      authStore.resetAuthOnRegistrationError()
+      if (createdAddress) await authStore.discardRegistration(createdAddress, previousAddress)
+      else authStore.resetAuthOnRegistrationError()
       clearPendingRegistration()
       nickname.value = ''
       email.value = ''
@@ -316,15 +336,26 @@ async function handleRegister(): Promise<void> {
     }
     console.error('[REG] ERROR:', err)
     error.value = err instanceof Error ? err.message : t('auth.errorRegistration')
+    // Аккаунт уже персистнут (step ≥ 1) — оставляем: повтор переиспользует его.
     const pending = loadPendingRegistration()
     if (!pending || pending.step < 1) {
-      authStore.resetAuthOnRegistrationError()
+      if (createdAddress) await authStore.discardRegistration(createdAddress, previousAddress)
+      else authStore.resetAuthOnRegistrationError()
     }
   } finally {
     loading.value = false
     abortController = null
   }
 }
+/** Новые ключи + персист аккаунта (шаг 2). */
+async function freshRegistration(): Promise<{ address: string; mnemonic?: string }> {
+  debugLog('[REG] Step 2: generating keys...')
+  const result = await authStore.register({ generateNew: true, saveAfterRegistration: true })
+  if (!result?.address) throw new Error(t('auth.errorCreateAccount'))
+  debugLog('[REG] Step 2: keys generated, address:', result.address)
+  return { address: result.address, mnemonic: result.mnemonic }
+}
+
 async function checkNameAvailability(name: string): Promise<void> {
   const { getByPRCWithAuth } = await import('@/helpers/api/request')
 

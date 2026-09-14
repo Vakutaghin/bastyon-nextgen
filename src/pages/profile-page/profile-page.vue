@@ -83,6 +83,7 @@ import {
   SC_PendingProfile,
   SC_ProfileCreatePost,
 } from './profile-page.styled'
+import { loadPendingRegistration } from '@/blockchain/storage/pending-registration'
 
 interface ProfileWithAccSet extends UserProfile {
   accSet?: unknown
@@ -109,12 +110,11 @@ function openComposer(): void {
   modalStore.openPostComposerModal()
 }
 
+// Ник незавершённой регистрации — только если она про текущий аккаунт (V10).
 function readPendingNickname(): string | null {
-  try {
-    return localStorage.getItem('pending_nickname')
-  } catch {
-    return null
-  }
+  const pending = loadPendingRegistration()
+  const my = authStore.getUserAddress
+  return pending && my && pending.address === my ? pending.nickname || null : null
 }
 
 async function fetchUserProfile(identifier: string): Promise<void> {

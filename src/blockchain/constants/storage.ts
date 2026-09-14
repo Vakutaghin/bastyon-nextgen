@@ -99,3 +99,11 @@ export const ADDITIONAL_WALLETS_LIST_KEY = 'BST_ADDITIONAL_WALLETS_LIST'
  * влияют (адреса детерминированы, ярлыки локальны и при recovery теряются).
  */
 export const WALLET_LABELS_KEY = 'BST_WALLET_LABELS'
+
+/**
+ * Незавершённая регистрация: `{ nickname, address, step, timestamp }` и
+ * дублирующий ник для быстрого чтения. Чистятся в clearAllUserData и при
+ * удалении своего аккаунта (аудит V8/X10).
+ */
+export const PENDING_REGISTRATION_KEY = 'pending_registration'
+export const PENDING_NICKNAME_KEY = 'pending_nickname'

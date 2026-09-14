@@ -27,6 +27,24 @@ import {
 } from './helpers/registration-status-watcher'
 import { retryRegistrationBackgroundTx } from './helpers/retry-registration-tx'
 import { loadPendingMnemonic } from './helpers/pending-mnemonic'
+import {
+  clearPendingRegistration,
+  loadPendingRegistration,
+  type PendingRegistration,
+} from '@/blockchain/storage/pending-registration'
+
+/**
+ * Pending-регистрация, относящаяся к ТЕКУЩЕМУ аккаунту (V10): после
+ * «Добавить аккаунт» чужая запись не должна вешать часики и модалки на новую
+ * сессию, но и стирать её нельзя — она ещё нужна тому аккаунту.
+ */
+export function pendingForAddress(
+  pending: PendingRegistration | null,
+  address: string | null | undefined
+): PendingRegistration | null {
+  if (!pending || !address) return null
+  return pending.address === address ? pending : null
+}
 
 export interface RegistrationFlow {
   registerModalOpen: Ref<boolean>
@@ -74,6 +92,9 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
   const pendingWelcome = ref(false)
 
   let registrationWatcher: RegistrationStatusWatcher | null = null
+  // Адрес аккаунта, чью регистрацию ждём: watcher и показ сида привязаны к
+  // нему, а не к «текущему пользователю» на момент тика (V10).
+  let registrationAddress: string | null = null
 
   function openRegisterModal(): void {
     registerModalOpen.value = true
@@ -97,15 +118,10 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     registerModalOpen.value = false
 
     if (data.mnemonic) mnemonic.value = data.mnemonic
+    registrationAddress = authStore.getUserAddress
 
-    if (data.nickname) {
-      pendingNickname.value = data.nickname
-      try {
-        localStorage.setItem('pending_nickname', data.nickname)
-      } catch {
-        /* ignore */
-      }
-    }
+    // pending_nickname уже записан register-modal вместе с pending_registration.
+    if (data.nickname) pendingNickname.value = data.nickname
 
     validationStatus.value = data.status
     registrationPending.value = true
@@ -154,23 +170,36 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     // пока `registrationPending` истинен.
   }
 
+  /**
+   * Сессия сменилась (добавили/переключили аккаунт), пока шёл поллинг: статус
+   * с ноды теперь про другой адрес. Останавливаем watcher, снимаем UI-pending,
+   * pending_registration НЕ трогаем — он про прежний аккаунт.
+   */
+  function abandonIfSessionChanged(): boolean {
+    if (registrationAddress && authStore.getUserAddress === registrationAddress) return false
+    registrationWatcher?.stop()
+    registrationPending.value = false
+    pendingNickname.value = null
+    validationModalOpen.value = false
+    mnemonic.value = ''
+    return true
+  }
+
   async function startRegistrationStatusCheck(): Promise<void> {
     registrationWatcher?.stop()
+    if (!registrationAddress) registrationAddress = authStore.getUserAddress
     registrationWatcher = createRegistrationStatusWatcher({
       onStatusUpdate: (status) => {
+        if (abandonIfSessionChanged()) return
         debugLog('[header-user] Status check:', status)
         validationStatus.value = status
       },
       onComplete: async (status) => {
+        if (abandonIfSessionChanged()) return
         debugLog('[header-user] Registration complete:', status)
         registrationPending.value = false
         pendingNickname.value = null
-        try {
-          localStorage.removeItem('pending_nickname')
-          localStorage.removeItem('pending_registration')
-        } catch {
-          /* ignore */
-        }
+        clearPendingRegistration()
         validationModalOpen.value = false
         if (mnemonic.value) {
           mnemonicModalOpen.value = true
@@ -205,18 +234,16 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
   async function checkRegistrationStatusOnLoad(): Promise<void> {
     if (!isAuthenticated.value) return
 
-    // Восстанавливаем pending nickname из localStorage.
-    try {
-      const savedNickname = localStorage.getItem('pending_nickname')
-      if (savedNickname) {
-        pendingNickname.value = savedNickname
-        debugLog('[header-user] Restored pending nickname:', savedNickname)
-      }
-    } catch {
-      /* ignore */
+    // Pending только своего адреса: чужая запись (другой аккаунт устройства)
+    // не должна ни вешать часики, ни стираться отсюда (V10).
+    const pending = pendingForAddress(loadPendingRegistration(), authStore.getUserAddress)
+    registrationAddress = authStore.getUserAddress
+    if (pending?.nickname) {
+      pendingNickname.value = pending.nickname
+      debugLog('[header-user] Restored pending nickname:', pending.nickname)
     }
 
-    // Быстрая проверка: если есть pending_nickname — сразу ставим pending
+    // Быстрая проверка: если есть pending — сразу ставим pending
     // (до async RPC-вызова, чтобы часики появились мгновенно).
     if (pendingNickname.value) registrationPending.value = true
 
@@ -232,29 +259,16 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
         startRegistrationStatusCheck()
 
         // Если транзакция ещё не отправлена (step=2), запускаем фоновую отправку.
-        try {
-          const pendingRaw = localStorage.getItem('pending_registration')
-          if (pendingRaw) {
-            const pending = JSON.parse(pendingRaw)
-            if (pending && pending.step >= 2 && pending.step < 3 && pending.nickname) {
-              debugLog('[header-user] Resuming background transaction for:', pending.nickname)
-              retryBackgroundTransaction(pending.nickname)
-            }
-          }
-        } catch {
-          /* ignore */
+        if (pending && pending.step >= 2 && pending.step < 3 && pending.nickname) {
+          debugLog('[header-user] Resuming background transaction for:', pending.nickname)
+          retryBackgroundTransaction(pending.nickname)
         }
       } else {
-        // Регистрация завершена — очищаем pending.
+        // Регистрация завершена — очищаем pending (только свой).
         debugLog('[header-user] Registration complete, clearing pending')
         registrationPending.value = false
         pendingNickname.value = null
-        try {
-          localStorage.removeItem('pending_nickname')
-          localStorage.removeItem('pending_registration')
-        } catch {
-          /* ignore */
-        }
+        if (pending) clearPendingRegistration()
         // Обновляем профиль, чтобы подтянуть имя.
         authStore.fetchUserState().catch(() => {})
       }

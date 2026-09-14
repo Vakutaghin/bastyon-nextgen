@@ -9,7 +9,12 @@ import type { UserProfile } from '../../types/rpc-responses/user-get'
 /**
  * Состояние авторизации пользователя
  */
-export type AuthState = 'unauthenticated' | 'restoring' | 'authenticating' | 'authenticated' | 'error'
+export type AuthState =
+  | 'unauthenticated'
+  | 'restoring'
+  | 'authenticating'
+  | 'authenticated'
+  | 'error'
 
 /**
  * Состояние пользователя
@@ -43,8 +48,10 @@ export interface SignInResult {
   address?: Address
   /** Сообщение об ошибке */
   error?: string
-  /** Вход прерван пользователем (не ошибка) — состояние откачено в «не авторизован» */
+  /** Вход прерван пользователем (не ошибка) — состояние откачено к прежней сессии или в «не авторизован» */
   cancelled?: boolean
+  /** Адрес сессии, которая была активна до этого входа («Добавить аккаунт»); для отката */
+  previousAddress?: Address
 }
 
 /**

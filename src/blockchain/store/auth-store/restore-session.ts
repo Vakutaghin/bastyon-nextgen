@@ -16,6 +16,8 @@ import {
   loadAccountsList,
   ensureVaultUnlocked,
   finalizeMigration,
+  peekPendingRegistration,
+  clearPendingRegistration,
 } from '../../storage'
 import { deriveAndSaveWalletAddresses } from '../../wallet-addresses'
 import { wsService } from '../../ws'
@@ -65,14 +67,19 @@ export async function restoreSessionImpl(store: AuthStore): Promise<boolean> {
       }, 2500)
     }
 
-    // Check for incomplete registration
+    // Брошенная регистрация (ключи сгенерированы, free/balance не запрошен):
+    // снимаем ТОЛЬКО её аккаунт. Раньше здесь был clearAllUserData() — он стирал
+    // все аккаунты устройства (V8): брошенная регистрация → «Выйти» → вход по
+    // мнемонике A → следующий запуск сносил A.
     try {
-      const pendingRaw = localStorage.getItem('pending_registration')
-      if (pendingRaw) {
-        const pending = JSON.parse(pendingRaw)
-        if (pending && pending.step < 2) {
-          localStorage.removeItem('pending_registration')
-          localStorage.removeItem('pending_nickname')
+      const pending = peekPendingRegistration()
+      if (pending && pending.step < 2) {
+        clearPendingRegistration()
+        if (pending.address) keys.removeAccount(pending.address)
+        const remaining = loadAccountsList()
+        if (!remaining.success || !remaining.data?.accounts.length) {
+          // Других аккаунтов нет — legacy BST_MNEMONIC тоже принадлежит брошенной
+          // регистрации, вычищаем всё, чтобы она не воскресла через fallback.
           clearAllUserData()
           return finishUnauthenticated()
         }

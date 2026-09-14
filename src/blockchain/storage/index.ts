@@ -71,3 +71,14 @@ export {
   getWalletLabel,
   setWalletLabel,
 } from './storage-manager'
+
+// Незавершённая регистрация (X10) — один читатель на проект.
+export {
+  savePendingRegistration,
+  loadPendingRegistration,
+  peekPendingRegistration,
+  clearPendingRegistration,
+  clearPendingRegistrationFor,
+  markPendingRegistrationStep,
+  type PendingRegistration,
+} from './pending-registration'
