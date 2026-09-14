@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { calculateAverageRating, decodeUrlEncoded } from './helpers'
+import { calculateAverageRating, decodeUrlEncoded, getPostShareId } from './helpers'
 
 describe('decodeUrlEncoded', () => {
   it('декодирует %XX и не трогает строки без кодирования', () => {
@@ -33,5 +33,16 @@ describe('calculateAverageRating', () => {
     expect(calculateAverageRating(undefined, undefined, 0)).toBe(0)
     expect(calculateAverageRating(undefined, 10, undefined)).toBe(0)
     expect(calculateAverageRating(undefined, undefined, 3)).toBe(0)
+  })
+})
+
+describe('getPostShareId (K5)', () => {
+  it('отредактированный пост: txid оригинала, а не hash правки', () => {
+    expect(getPostShareId({ txid: 'orig', hash: 'edit', id: 7 })).toBe('orig')
+  })
+  it('без txid — hash, без hash — числовой id строкой, ничего — пустая строка', () => {
+    expect(getPostShareId({ hash: 'h', id: 7 })).toBe('h')
+    expect(getPostShareId({ id: 7 })).toBe('7')
+    expect(getPostShareId({})).toBe('')
   })
 })

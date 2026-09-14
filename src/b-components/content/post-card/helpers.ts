@@ -36,3 +36,17 @@ export function calculateAverageRating(
   }
   return 0
 }
+
+/**
+ * Идентификатор поста для транзакций и опросов ноды (upvoteShare, getpagescores,
+ * contentDelete, modFlag): `txid` оригинала, иначе `hash`, иначе числовой id.
+ * `hash` у отредактированного поста — хеш последней правки: оценка по нему
+ * уходит не на тот контент и никогда не подтверждается (K5).
+ */
+export function getPostShareId(post: {
+  txid?: string
+  hash?: string
+  id?: string | number
+}): string {
+  return post.txid || post.hash || String(post.id ?? '')
+}

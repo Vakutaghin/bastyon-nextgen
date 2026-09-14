@@ -105,7 +105,7 @@
             :user-vote="post.myVal"
             :voters-count="post.scoreCnt || 0"
             :score-sum="post.scoreSum || 0"
-            :share-id="String(post.hash || post.txid || post.id || '')"
+            :share-id="postId"
             :content-author-address="post.author?.address || ''"
             @rating-change="handleRatingChange"
             @error="handleRatingError"
@@ -224,7 +224,7 @@ import {
 } from './styled'
 import { usePostMedia } from './use-post-media'
 import { usePostDelete } from './use-post-delete'
-import { calculateAverageRating, decodeUrlEncoded } from './helpers'
+import { calculateAverageRating, decodeUrlEncoded, getPostShareId } from './helpers'
 import { DEFAULT_MAX_BLOCKS, DEFAULT_MAX_TEXT_LENGTH } from './consts'
 import type { Post, PostAuthor } from './post-card.types'
 const props = withDefaults(
@@ -297,9 +297,8 @@ function openEdit(): void {
 }
 
 // ── Удаление своего поста (contentDelete) ───────────────────────────
-const postId = computed<string>(
-  () => props.post.txid || props.post.hash || String(props.post.id || '')
-)
+// txid || hash || id — общий с оценкой (K5), удалением и жалобой.
+const postId = computed<string>(() => getPostShareId(props.post))
 // Удалять можно только при наличии реального txid/hash поста — числовой
 // surrogate-id не годится для contentDelete (хеш не совпадёт с оригиналом).
 const canDelete = computed<boolean>(() => !!(props.post.txid || props.post.hash))
