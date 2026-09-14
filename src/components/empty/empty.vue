@@ -1,23 +1,25 @@
 <template>
   <SC_Empty>
-    <Empty v-bind='$attrs' :class="['bastyon-empty', emptyClass]">
-      <template #description>
-        <slot name='description'>
-          {{ description }}
-        </slot>
+    <Empty v-bind="{ ...$attrs, ...forwarded }" :class="['bastyon-empty', emptyClass]">
+      <template v-if="$slots.description" #description>
+        <slot name="description" />
       </template>
-      <template #image>
-        <slot name='image' />
+      <template v-if="$slots.image" #image>
+        <slot name="image" />
       </template>
     </Empty>
   </SC_Empty>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { useEmpty } from './empty'
 import type { EmptyProps } from './types'
 
-const p = defineProps<EmptyProps>()
+defineOptions({ inheritAttrs: false })
 
-const { Empty, SC_Empty, emptyClass } = useEmpty(p)
+// `image?: VNodeChild` включает boolean → без default Vue кастует отсутствие в false
+// и antd теряет иллюстрацию.
+const p = withDefaults(defineProps<EmptyProps>(), { image: undefined })
+
+const { Empty, SC_Empty, emptyClass, forwarded } = useEmpty(p)
 </script>

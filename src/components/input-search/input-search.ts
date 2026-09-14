@@ -2,6 +2,7 @@ import { computed, h } from 'vue'
 import { Input } from 'ant-design-vue'
 import { KeyOutlined } from '@ant-design/icons-vue'
 import { SC_InputSearch } from './styled'
+import { definedProps } from '../forward-props'
 import type { InputSearchProps } from './types'
 
 export function useInputSearch(p: InputSearchProps) {
@@ -18,11 +19,16 @@ export function useInputSearch(p: InputSearchProps) {
     return h(KeyOutlined)
   })
 
+  // Объявленные пропсы (onSearch/value/placeholder/allowClear/maxLength/…) в
+  // antd — см. forward-props.ts; enterButton собирается отдельно выше.
+  const forwarded = computed<Record<string, unknown>>(() => definedProps(p, ['enterButton']))
+
   return {
     Input,
     KeyOutlined,
     SC_InputSearch,
     searchClass,
-    enterButtonValue
+    enterButtonValue,
+    forwarded,
   }
 }

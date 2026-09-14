@@ -1,34 +1,48 @@
 <template>
   <SC_Modal>
     <Modal
+      v-bind="{ ...$attrs, ...forwarded }"
       :open="isOpen"
       :width="width"
+      :footer="footer"
       :class="['bastyon-modal', modalClass]"
-      :wrapClassName='wrapClassName'
-      :maskStyle='maskStyle'
-      :bodyStyle='bodyStyle'
-      :closable='closable'
-      :maskClosable='maskClosable'
-      v-bind='otherAttrs'
+      :wrapClassName="wrapClassName"
+      :maskStyle="maskStyle"
+      :bodyStyle="bodyStyle"
+      :closable="closable"
+      :maskClosable="maskClosable"
       @update:open="handleUpdateOpen"
       @cancel="handleCancel"
     >
-      <template #title>
-        <slot name='title' />
+      <template v-if="$slots.title" #title>
+        <slot name="title" />
       </template>
-      <template #footer>
-        <slot name='footer' />
+      <template v-if="$slots.footer" #footer>
+        <slot name="footer" />
       </template>
       <slot />
     </Modal>
   </SC_Modal>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
+import { useSlots } from 'vue'
 import { useModal } from './modal'
 import type { ModalProps, ModalEmits } from './types'
 
-const p = defineProps<ModalProps>()
+defineOptions({ inheritAttrs: false })
+
+const p = withDefaults(defineProps<ModalProps>(), {
+  modelValue: undefined,
+  open: undefined,
+  fullWidth: undefined,
+  centered: undefined,
+  closable: undefined,
+  maskClosable: undefined,
+  destroyOnClose: undefined,
+  // VNodeChild включает boolean → без default Vue кастует отсутствие в false.
+  footer: undefined,
+})
 
 const emit = defineEmits<ModalEmits>()
 
@@ -36,7 +50,8 @@ const {
   Modal,
   SC_Modal,
   isOpen,
-  otherAttrs,
+  forwarded,
+  footer,
   modalClass,
   wrapClassName,
   width,
@@ -45,6 +60,6 @@ const {
   closable,
   maskClosable,
   handleUpdateOpen,
-  handleCancel
-} = useModal(p, emit)
+  handleCancel,
+} = useModal(p, emit, useSlots())
 </script>

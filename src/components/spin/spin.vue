@@ -1,8 +1,8 @@
 <template>
   <SC_Spin>
-    <Spin v-bind='$attrs' :class="['bastyon-spin', spinClass]">
+    <Spin v-bind="{ ...$attrs, ...forwarded }" :class="['bastyon-spin', spinClass]">
       <template #indicator>
-        <slot name='indicator'>
+        <slot name="indicator">
           <LoadingOutlined spin />
         </slot>
       </template>
@@ -11,11 +11,13 @@
   </SC_Spin>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { useSpin } from './spin'
 import type { SpinProps } from './types'
 
-const p = defineProps<SpinProps>()
+defineOptions({ inheritAttrs: false })
 
-const { Spin, LoadingOutlined, SC_Spin, spinClass } = useSpin(p)
+const p = withDefaults(defineProps<SpinProps>(), { spinning: undefined })
+
+const { Spin, LoadingOutlined, SC_Spin, spinClass, forwarded } = useSpin(p)
 </script>

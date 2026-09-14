@@ -1,22 +1,41 @@
-import { computed, useAttrs } from 'vue'
+import { computed, type CSSProperties, type Slots } from 'vue'
 import { Modal } from 'ant-design-vue'
 import { SC_Modal } from './styled'
+import { definedProps } from '../forward-props'
 import type { ModalProps, ModalEmits } from './types'
 
-export function useModal(p: ModalProps, emit: ModalEmits) {
-  const attrs = useAttrs()
-  const { open: _o, width: _w, ...restAttrs } = attrs as Record<string, unknown>
+export function useModal(p: ModalProps, emit: ModalEmits, slots: Slots) {
+  // Объявленные пропсы (title/centered/destroyOnClose/okText/onOk/…) в antd —
+  // см. forward-props.ts. Исключены те, что обёртка обрабатывает сама.
+  const forwarded = computed<Record<string, unknown>>(() =>
+    definedProps(p, [
+      'modelValue',
+      'open',
+      'width',
+      'fullWidth',
+      'closable',
+      'maskClosable',
+      'footer',
+      'onCancel',
+    ])
+  )
 
-  const otherAttrs = restAttrs as Omit<Record<string, unknown>, 'open' | 'width'>
+  // Футер: явный проп (в т.ч. `null` — без футера) → слот потребителя → без
+  // футера. Дефолтные кнопки antd (OK/Cancel) обёртка не показывает никогда:
+  // ни одна модалка проекта на них не рассчитывает, а раньше пустой слот
+  // #footer их и так подавлял.
+  const footer = computed(() =>
+    p.footer !== undefined ? p.footer : slots.footer ? undefined : null
+  )
 
   const isOpen = computed({
     get: () => {
-      return p.open !== undefined ? p.open : (p.modelValue !== undefined ? p.modelValue : false)
+      return p.open !== undefined ? p.open : p.modelValue !== undefined ? p.modelValue : false
     },
     set: (value: boolean) => {
       emit('update:open', value)
       emit('update:modelValue', value)
-    }
+    },
   })
 
   const handleUpdateOpen = (value: boolean) => {
@@ -25,10 +44,9 @@ export function useModal(p: ModalProps, emit: ModalEmits) {
 
   const handleCancel = () => {
     isOpen.value = false
+    // emit('cancel') сам вызывает onCancel/@cancel родителя — явный p.onCancel()
+    // здесь давал двойной вызов.
     emit('cancel')
-    if (p.onCancel) {
-      p.onCancel()
-    }
   }
 
   const modalClass = computed(() => ({}))
@@ -41,25 +59,24 @@ export function useModal(p: ModalProps, emit: ModalEmits) {
   const closable = computed(() => p.closable)
   const maskClosable = computed(() => p.maskClosable)
 
-  const width = computed(() =>
-    p.fullWidth ? '95vw' : (p.width !== undefined ? p.width : (attrs as Record<string, unknown>).width)
-  )
+  const width = computed(() => (p.fullWidth ? '95vw' : p.width))
 
   const maskStyle = computed(() => ({
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    backdropFilter: 'blur(4px)'
+    backdropFilter: 'blur(4px)',
   }))
 
-  const bodyStyle = computed(() => ({
+  const bodyStyle = computed<CSSProperties>(() => ({
     maxHeight: '90vh',
-    overflowY: 'auto'
+    overflowY: 'auto',
   }))
 
   return {
     Modal,
     SC_Modal,
     isOpen,
-    otherAttrs,
+    forwarded,
+    footer,
     modalClass,
     wrapClassName,
     width,
@@ -68,6 +85,6 @@ export function useModal(p: ModalProps, emit: ModalEmits) {
     closable,
     maskClosable,
     handleUpdateOpen,
-    handleCancel
+    handleCancel,
   }
 }
