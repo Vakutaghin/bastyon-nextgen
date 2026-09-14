@@ -66,7 +66,9 @@ app.use(router)
 app.use(i18n)
 
 const authStore = useAuthStore(pinia)
-const messengerStore = useMessengerStore(pinia)
+// Стор мессенджера поднимаем на буте: его watch'и (профили → диалоги) должны
+// жить до первого initMatrix из auth-store.
+useMessengerStore(pinia)
 const notificationsStore = useNotificationsStore(pinia)
 const torStore = useTorStore(pinia)
 torStore.hydrate().catch(() => {})
@@ -100,14 +102,17 @@ notificationsStore.setOnNewNotifications((items) => {
 const NOTIFICATIONS_POLL_INTERVAL_MS = 30 * 1000
 let notificationsPollTimerId: ReturnType<typeof setInterval> | null = null
 
+// Ключ — адрес, а не флаг авторизации: при смене аккаунта флаг не меняется,
+// и уведомления раньше оставались от прежнего пользователя (X9/S14).
+// Сброс сторов делает auth-store.resetForAccount; здесь — только подъём.
 watch(
-  () => authStore.isUserAuthenticated,
-  (isAuthenticated) => {
+  () => (authStore.isUserAuthenticated ? authStore.getUserAddress : null),
+  (address) => {
     if (notificationsPollTimerId != null) {
       clearInterval(notificationsPollTimerId)
       notificationsPollTimerId = null
     }
-    if (isAuthenticated) {
+    if (address) {
       useNotificationSettingsStore(pinia).load()
       notificationsStore.init()
       notificationsPollTimerId = setInterval(() => {
@@ -117,16 +122,8 @@ watch(
   },
   { immediate: true }
 )
-
-watch(
-  () => authStore.isUserAuthenticated,
-  (isAuthenticated) => {
-    if (isAuthenticated) {
-      messengerStore.initMatrix()
-    }
-  },
-  { immediate: true }
-)
+// Matrix-логин запускает только auth-store (signIn/switchAccount/restoreSession →
+// resetMessenger) — второй watcher здесь давал два параллельных логина (S11).
 
 // Поднимаем mini-apps bridge как можно раньше — нужно чтобы window.message listener
 // был активен до того как iframe миниаппы успеет загрузить SDK и отправить первое

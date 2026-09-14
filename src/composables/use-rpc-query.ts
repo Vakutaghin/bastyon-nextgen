@@ -2,6 +2,7 @@
  * Composable для выполнения RPC запросов с кэшированием через Vue Query
  */
 
+import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { useQuery, type UseQueryOptions } from '@tanstack/vue-query'
 import type { T_RpcRequestParams, RpcRequestConfig } from '@/helpers/api/request'
 import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
@@ -10,8 +11,12 @@ import { getByPRC, getByPRCWithAuth } from '@/helpers/api/request'
  * Опции для useRpcQuery
  */
 export interface UseRpcQueryOptions<TData = unknown> {
-  /** Включен ли запрос (можно использовать для условных запросов) */
-  enabled?: boolean
+  /**
+   * Включен ли запрос. Может быть ref/getter: `enabled: () => !!address.value`
+   * — иначе, если компонент смонтирован до появления адреса, запрос остаётся
+   * выключенным навсегда (S5).
+   */
+  enabled?: MaybeRefOrGetter<boolean>
   /** Время, в течение которого данные считаются свежими (в миллисекундах) */
   staleTime?: number
   /** Время хранения кэша после последнего использования (в миллисекундах) */
@@ -51,14 +56,16 @@ export interface UseRpcQueryOptions<TData = unknown> {
  * ```
  */
 export function useRpcQuery<TData = unknown>(
-  queryKey: readonly unknown[],
-  params: T_RpcRequestParams,
+  queryKey: MaybeRefOrGetter<readonly unknown[]>,
+  params: MaybeRefOrGetter<T_RpcRequestParams>,
   options?: UseRpcQueryOptions<TData>
 ) {
+  // Ключ/параметры/enabled — реактивные: смена аккаунта меняет адрес в ключе,
+  // и запрос перевыполняется для нового, а не отдаёт кэш старого (S5).
   return useQuery<TData>({
-    queryKey,
-    queryFn: () => getByPRC(params, options?.rpcConfig) as Promise<TData>,
-    enabled: options?.enabled ?? true,
+    queryKey: computed(() => [...toValue(queryKey)]),
+    queryFn: () => getByPRC(toValue(params), options?.rpcConfig) as Promise<TData>,
+    enabled: computed(() => toValue(options?.enabled ?? true)),
     staleTime: options?.staleTime,
     gcTime: options?.gcTime,
     retry: options?.retry,
@@ -90,14 +97,14 @@ export function useRpcQuery<TData = unknown>(
  * ```
  */
 export function useRpcQueryWithAuth<TData = unknown>(
-  queryKey: readonly unknown[],
-  params: T_RpcRequestParams,
+  queryKey: MaybeRefOrGetter<readonly unknown[]>,
+  params: MaybeRefOrGetter<T_RpcRequestParams>,
   options?: UseRpcQueryOptions<TData>
 ) {
   return useQuery<TData>({
-    queryKey,
-    queryFn: () => getByPRCWithAuth(params, options?.rpcConfig) as Promise<TData>,
-    enabled: options?.enabled ?? true,
+    queryKey: computed(() => [...toValue(queryKey)]),
+    queryFn: () => getByPRCWithAuth(toValue(params), options?.rpcConfig) as Promise<TData>,
+    enabled: computed(() => toValue(options?.enabled ?? true)),
     staleTime: options?.staleTime,
     gcTime: options?.gcTime,
     retry: options?.retry,

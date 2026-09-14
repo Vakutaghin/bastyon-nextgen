@@ -14,6 +14,8 @@ import servers from '@/servers.json'
 import type { ApiSignature } from '../types/signatures'
 import type { KeyPair } from '../types/keys'
 import { pickWebSocketCtor } from '@/helpers/tor/tor-websocket'
+import { orderedProxies } from '@/helpers/api/node-selector'
+import type { ServerEndpoint } from '@/helpers/api/rpc-retry'
 import { debugLog } from '@/helpers/common/debug-log'
 
 // --- Types ---
@@ -98,8 +100,21 @@ class PocketnetWsService {
       return
     }
 
-    const proxy = proxyList[0]
+    // Та же живая нода, что и у RPC (node-selector), а не жёстко proxy[0]:
+    // мёртвый первый прокси раньше означал вечный reconnect (S2). Каждая
+    // попытка берёт текущую живую — это и есть failover.
+    type WsProxy = (typeof proxyList)[number]
+    let first: ServerEndpoint | undefined
+    try {
+      first = (await orderedProxies(proxyList))[0]
+    } catch {
+      first = undefined
+    }
+    // wss-порт берём из конфига по host — node-selector знает только host/port.
+    const proxy: WsProxy | undefined =
+      (first && proxyList.find((p) => p.host === first!.host)) ?? proxyList[0]
     if (!proxy) return
+    if (this.closing) return
     const url = `wss://${proxy.host}:${proxy.wss}`
 
     debugLog('[WS] Connecting to', url)
@@ -353,6 +368,19 @@ class PocketnetWsService {
     void this.connect()
   }
 
+  /**
+   * Смена аккаунта (X9/S2): подписка живёт только в `onopen`, поэтому новому
+   * адресу нужен новый сокет — иначе push'и приходили бы по адресу A.
+   * Без адреса — просто закрываем.
+   */
+  switchAccount(address: string | null) {
+    if (!address) {
+      this.close()
+      return
+    }
+    this.reconnect()
+  }
+
   close() {
     this.closing = true
     // Сбрасываем backoff: следующий цикл connect() начнётся с чистого счётчика,
@@ -365,6 +393,8 @@ class PocketnetWsService {
     }
     this.clearConnectTimer()
     this.subscribingAddresses.clear()
+    // Отложенные подписки прежней сессии не должны уйти в следующий сокет (S2).
+    this.pendingSubscriptions = []
 
     if (this.socket) {
       // onopen тоже: поздний open на брошенном сокете иначе запускал authorize()

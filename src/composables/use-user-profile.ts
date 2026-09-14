@@ -125,17 +125,19 @@ export function useUserState(enabled: boolean = true) {
   const authStore = useAuthStore()
   const address = computed(() => authStore.getUserAddress)
 
+  // Геттеры, не снимки: после смены аккаунта /limits показывал лимиты старого
+  // адреса, а смонтированный до адреса запрос оставался выключенным (S5).
   return useRpcQueryWithAuth<GetUserStateResponse>(
-    ['user', 'state', address.value],
-    {
+    () => ['user', 'state', address.value],
+    () => ({
       method: rpcEndpoints.getUserState,
       parameters: address.value ? [[address.value]] : [], // getuserstate принимает массив с адресом пользователя
       options: {
         auth: true,
       },
-    },
+    }),
     {
-      enabled: enabled && !!address.value && authStore.isUserAuthenticated,
+      enabled: () => enabled && !!address.value && authStore.isUserAuthenticated,
       staleTime: 2 * 60 * 1000, // 2 минуты - лимиты могут быстро меняться
       gcTime: 5 * 60 * 1000,
       refetchOnWindowFocus: true, // Обновляем при фокусе для актуальных лимитов
@@ -154,16 +156,16 @@ export function useCurrentUserProfile(enabled: boolean = true) {
   const address = computed(() => authStore.getUserAddress)
 
   return useRpcQueryWithAuth<GetUserProfileResponse>(
-    ['user', 'current-profile', address.value],
-    {
+    () => ['user', 'current-profile', address.value],
+    () => ({
       method: rpcEndpoints.getUserProfile,
       parameters: address.value ? [[address.value]] : [],
       options: {
         auth: true,
       },
-    },
+    }),
     {
-      enabled: enabled && !!address.value && authStore.isUserAuthenticated,
+      enabled: () => enabled && !!address.value && authStore.isUserAuthenticated,
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
     }

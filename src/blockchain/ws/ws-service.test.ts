@@ -69,9 +69,10 @@ class FakeWebSocket {
 // Моки зависимостей
 // ---------------------------------------------------------------------------
 
-const { _pickWebSocketCtor, _generateApiSignature, mockAuth } = vi.hoisted(() => ({
+const { _pickWebSocketCtor, _generateApiSignature, _orderedProxies, mockAuth } = vi.hoisted(() => ({
   _pickWebSocketCtor: vi.fn(),
   _generateApiSignature: vi.fn(),
+  _orderedProxies: vi.fn(),
   mockAuth: {
     getKeyPair: null as unknown,
     getUserAddress: null as unknown,
@@ -80,6 +81,12 @@ const { _pickWebSocketCtor, _generateApiSignature, mockAuth } = vi.hoisted(() =>
 
 vi.mock('@/helpers/tor/tor-websocket', () => ({
   pickWebSocketCtor: _pickWebSocketCtor,
+}))
+
+// node-selector: по умолчанию — исходный порядок (proxy[0]); отдельные тесты
+// подставляют «живую» ноду первой (S2 failover).
+vi.mock('@/helpers/api/node-selector', () => ({
+  orderedProxies: _orderedProxies,
 }))
 
 vi.mock('@/helpers/common/debug-log', () => ({
@@ -117,6 +124,7 @@ describe('PocketnetWsService', () => {
   beforeEach(() => {
     FakeWebSocket.instances = []
     _pickWebSocketCtor.mockReset().mockResolvedValue(FakeWebSocket)
+    _orderedProxies.mockReset().mockImplementation(async (list: unknown[]) => list)
     _generateApiSignature.mockReset().mockReturnValue(FAKE_SIGNATURE)
     mockAuth.getKeyPair = null
     mockAuth.getUserAddress = null
@@ -153,6 +161,52 @@ describe('PocketnetWsService', () => {
       await wsService.connect()
       await wsService.connect()
 
+      expect(FakeWebSocket.instances).toHaveLength(1)
+    })
+
+    it('S2: берёт живую ноду из node-selector, а не жёстко proxy[0]', async () => {
+      _orderedProxies.mockImplementation(async (list: Array<{ host: string; wss: number }>) => [
+        ...list.slice(1),
+        list[0]!,
+      ])
+      await wsService.connect()
+      const url = FakeWebSocket.instances[0]?.url
+      expect(url).not.toBe('wss://1.pocketnet.app:8099')
+      expect(url).toMatch(/^wss:\/\/.+:8099$/)
+    })
+  })
+
+  describe('switchAccount (X9/S2)', () => {
+    it('новый адрес → новый сокет с подпиской на него; старые pending-подписки не тянутся', async () => {
+      mockAuth.getKeyPair = KEY_PAIR
+      mockAuth.getUserAddress = ADDRESS
+      const ws1 = await openConnection()
+      expect(ws1.sent.map((m) => JSON.parse(m).address)).toEqual([ADDRESS])
+
+      // Отложенная подписка A (сокет уже открыт, но представим очередь).
+      wsService.close()
+      await wsService.subscribeAddress('PQueuedFromA')
+      mockAuth.getUserAddress = 'PUserB'
+      wsService.switchAccount('PUserB')
+      await flush() // connect() асинхронный: node-selector + конструктор сокета
+      const ws2 = FakeWebSocket.instances[FakeWebSocket.instances.length - 1]!
+      expect(ws2).not.toBe(ws1)
+      ws2._open()
+      await flush()
+      const subscribed = ws2.sent.map((m) => JSON.parse(m).address)
+      expect(subscribed).toContain('PUserB')
+      expect(subscribed).not.toContain(ADDRESS)
+      expect(subscribed).not.toContain('PQueuedFromA')
+    })
+
+    it('без адреса (выход) — закрывает сокет и не переподключается', async () => {
+      mockAuth.getKeyPair = KEY_PAIR
+      mockAuth.getUserAddress = ADDRESS
+      await openConnection()
+      vi.useFakeTimers()
+      wsService.switchAccount(null)
+      expect(wsService.isConnected).toBe(false)
+      await vi.advanceTimersByTimeAsync(30_000)
       expect(FakeWebSocket.instances).toHaveLength(1)
     })
   })

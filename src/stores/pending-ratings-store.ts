@@ -7,7 +7,6 @@ import { rpcCallArrayWithAuth } from '@/helpers/api/request'
 import { calculateRatingUpdate } from '@/helpers/common/rating-calculator'
 import type { GetPageScore } from '@/types/rpc-responses/get-page-scores'
 
-
 type T_PendingItem = {
   shareId: string
   ratingValue: number
@@ -21,7 +20,9 @@ let pollingTimer: ReturnType<typeof setInterval> | null = null
 export const usePendingRatingsStore = defineStore('pendingRatings', {
   state: () => ({
     items: new Map<string, T_PendingItem>(),
-    isInitialized: false
+    isInitialized: false,
+    /** Для какого адреса подняты items — смена аккаунта переинициализирует (X9). */
+    initedForAddress: null as string | null,
   }),
   getters: {
     count(): number {
@@ -35,26 +36,28 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
     },
     getPendingItem(): (shareId: string) => T_PendingItem | undefined {
       return (shareId: string) => this.items.get(shareId)
-    }
+    },
   },
   actions: {
     async init() {
-      if (this.isInitialized) return
-
       const auth = useAuthStore()
       const address = auth.getUserAddress
       if (!address) return
+      if (this.isInitialized && this.initedForAddress === address) return
 
       this.isInitialized = true
+      this.initedForAddress = address
 
       const active = await postRatingPendingAPI.getActiveByUser(address)
+      // Пока ждали IDB, аккаунт сменился — этот ответ уже чужой.
+      if (this.initedForAddress !== address) return
       this.items.clear()
       active.forEach((i) => {
         this.items.set(i.shareId, {
           shareId: i.shareId,
           ratingValue: i.ratingValue,
           expiresAt: i.expiresAt,
-          postTitle: i.postTitle
+          postTitle: i.postTitle,
         })
       })
       await postRatingPendingAPI.cleanupExpired()
@@ -64,7 +67,13 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
       const auth = useAuthStore()
       const address = auth.getUserAddress
       if (!address) return
-      await postRatingPendingAPI.addPending({ shareId, userAddress: address, ratingValue, ttlMs, postTitle })
+      await postRatingPendingAPI.addPending({
+        shareId,
+        userAddress: address,
+        ratingValue,
+        ttlMs,
+        postTitle,
+      })
       this.items.set(shareId, { shareId, ratingValue, expiresAt: Date.now() + ttlMs, postTitle })
       this.ensurePolling()
     },
@@ -102,11 +111,22 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
       if (pollingTimer) return
       pollingTimer = setInterval(() => this.poll(), 5000)
     },
+    /** Останавливает поллинг и забывает pending прежнего аккаунта (X9/V32). */
+    reset() {
+      if (pollingTimer) {
+        clearInterval(pollingTimer)
+        pollingTimer = null
+      }
+      this.items = new Map()
+      this.isInitialized = false
+      this.initedForAddress = null
+    },
     async poll() {
       const auth = useAuthStore()
       const postsStore = usePostsStore()
       const address = auth.getUserAddress
-      if (!address || this.count === 0) return
+      // Оценки подняты для другого адреса — не слать `getpagescores(postIds_A, B)`.
+      if (!address || this.count === 0 || this.initedForAddress !== address) return
       const postIds = Array.from(this.items.keys())
 
       try {
@@ -115,7 +135,7 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
           parameters: [postIds, address, []],
           options: { auth: false },
           // Add a unique cachehash to bypass cache
-          cachehash: `${Date.now()}-${Math.random()}`
+          cachehash: `${Date.now()}-${Math.random()}`,
         })
 
         arr.forEach((entry) => {
@@ -160,6 +180,6 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
       } catch (e) {
         console.warn('[PendingRatings] Polling error:', e)
       }
-    }
-  }
+    },
+  },
 })

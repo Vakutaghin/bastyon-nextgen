@@ -110,6 +110,9 @@ export async function restoreSessionImpl(store: AuthStore): Promise<boolean> {
         }
 
         wsService.connect()
+        // Matrix-логин принадлежит auth-store (S11) — раньше его запускал
+        // watcher в main.ts, параллельно с resetMessenger из signIn.
+        store.resetMessenger(true).catch(() => {})
         store.setLoading(false)
         return true
       }
@@ -149,6 +152,7 @@ export async function restoreSessionImpl(store: AuthStore): Promise<boolean> {
     }
 
     wsService.connect()
+    store.resetMessenger(true).catch(() => {})
     store.setLoading(false)
     return true
   } catch (error) {

@@ -52,6 +52,10 @@ export const useNotificationsStore = defineStore('notifications', {
     readBlock: 0 as number,
     /** Адрес, для которого загружали — при смене пользователя сбрасываем inited */
     initedForAddress: null as string | null,
+    /** Идёт init (boot/поллер/смена аккаунта) — второй параллельный не запускаем. */
+    initInFlight: false,
+    /** Номер запуска init: ответ старого запуска после reset/смены аккаунта игнорируется. */
+    initSeq: 0,
     /** Колбэк при появлении новых уведомлений (тосты/звук). Вызывается после обновления items при опросе getmissedinfo. */
     onNewNotifications: null as ((items: NotificationItem[]) => void) | null,
     /** Кэш постов по txid — для превью и открытия PostModal */
@@ -85,24 +89,50 @@ export const useNotificationsStore = defineStore('notifications', {
       const address = auth.getUserAddress
       if (!auth.isUserAuthenticated || !address) return
       if (!opts?.forceRefresh && this.inited && this.initedForAddress === address) return
+      // In-flight guard: параллельный init (boot + поллер) дописывал бы items дважды.
+      if (this.initInFlight) return
 
+      const run = ++this.initSeq
+      // Ответ, пришедший после смены аккаунта или более позднего init — чужой:
+      // уведомления и тосты A иначе показывались пользователю B (S14).
+      const stale = () => run !== this.initSeq || useAuthStore().getUserAddress !== address
+
+      this.initInFlight = true
       this.initedForAddress = address
       this.inited = true
       this.loading = true
+      try {
+        await this.initFor(address, stale, opts)
+      } catch (e) {
+        // Исключение из IDB/сети раньше оставляло loading=true навсегда.
+        console.warn('[notifications] init failed', e)
+        if (!stale()) this.inited = false
+      } finally {
+        if (run === this.initSeq) {
+          this.initInFlight = false
+          this.loading = false
+        }
+      }
+    },
 
+    async initFor(address: string, stale: () => boolean, opts?: { forceRefresh?: boolean }) {
       const [savedBlock, storedList, hiddenIds] = await Promise.all([
         loadLastBlockFromSettings(address),
         notificationsAPI.getAllByAddress(address),
         loadHiddenIdsFromSettings(address),
       ])
+      if (stale()) return
 
       this.hiddenIds = hiddenIds
       if (savedBlock != null && savedBlock > 0) {
         this.lastBlock = savedBlock
       } else {
         try {
-          this.lastBlock = (await fetchCurrentBlockHeight()) || 0
+          const height = (await fetchCurrentBlockHeight()) || 0
+          if (stale()) return
+          this.lastBlock = height
         } catch {
+          if (stale()) return
           this.lastBlock = 0
         }
       }
@@ -149,6 +179,7 @@ export const useNotificationsStore = defineStore('notifications', {
         try {
           const blockToRequest = this.lastBlock || 0
           const arr = await fetchMissedInfo(address, blockToRequest)
+          if (stale()) return
           const blockInfo = arr[0]
           if (
             blockInfo &&
@@ -193,6 +224,7 @@ export const useNotificationsStore = defineStore('notifications', {
               })
             )
             await notificationsAPI.putMany(address, toStore)
+            if (stale()) return
             this.items = [...newItems, ...this.items]
           }
           if (opts?.forceRefresh && newItems.length > 0 && this.onNewNotifications) {
@@ -220,19 +252,25 @@ export const useNotificationsStore = defineStore('notifications', {
         console.warn('[notifications] All retry attempts exhausted', lastError)
         this.inited = false
       }
-      this.loading = false
     },
     setOnNewNotifications(cb: ((items: NotificationItem[]) => void) | null) {
       this.onNewNotifications = cb
     },
+    /**
+     * Сброс при смене/выходе аккаунта (X9). Колбэк тостов не трогаем — его
+     * ставит main.ts один раз на всё приложение; после выхода и нового входа
+     * тосты иначе переставали приходить.
+     */
     reset() {
+      this.initSeq++ // обесценивает ответы init, которые ещё в полёте
+      this.initInFlight = false
+      this.loading = false
       this.items = []
       this.hiddenIds = new Set()
       this.inited = false
       this.initedForAddress = null
       this.lastBlock = 0
       this.readBlock = 0
-      this.onNewNotifications = null
       this.postCache = {}
       this.commentCache = {}
       this.profileCache = {}

@@ -38,6 +38,7 @@ import { wsService } from '../ws'
 import { useKeysStore } from './keys-store'
 import { useProfileStore } from './profile-store'
 import { restoreSessionImpl } from './auth-store/restore-session'
+import { resetAccountScopedStores } from './auth-store/account-scoped'
 
 /** Сессия, активная до «Добавить аккаунт» — для отката при ошибке/отмене (V11). */
 interface PreviousSession {
@@ -341,8 +342,6 @@ export const useAuthStore = defineStore('auth', {
         if (!recoveryResult?.keyPair) throw new Error('Failed to recover key pair from private key')
 
         this.setKeyPair(recoveryResult.keyPair)
-        this.isAuthenticated = true
-        this.authState = 'authenticated'
 
         // P0-1: создать/поднять сейф ДО первой записи секрета (mnemonic/приватника).
         await ensureInitialized()
@@ -365,14 +364,18 @@ export const useAuthStore = defineStore('auth', {
 
         saveWasLogged(true)
 
+        // `isAuthenticated` — только после персиста и последнего окна отмены:
+        // раньше флаг ставился до них, и подписчики (Matrix-логин, поллеры)
+        // стартовали на сессию, которой могло не стать (S11).
+        this.isAuthenticated = true
+        this.authState = 'authenticated'
+
         // Профиль подтягиваем в фоне — модалка закрывается сразу после подъёма
         // ключей, как и в restoreSession(). Иначе кнопка "Войти" висит в loading
         // до завершения сетевого RPC, хотя вход уже зафиксирован.
         if (this.address) this.fetchUserState().catch(() => {})
 
-        this.invalidateAllQueries().catch(() => {})
-        this.resetMessenger(true).catch(() => {})
-        wsService.connect()
+        await this.resetForAccount(this.address)
         this.setLoading(false)
 
         return {
@@ -402,8 +405,6 @@ export const useAuthStore = defineStore('auth', {
     async signOut(): Promise<void> {
       this.setLoading(true)
       try {
-        wsService.close()
-
         this.isAuthenticated = false
         this.authState = 'unauthenticated'
         this.address = null
@@ -417,15 +418,13 @@ export const useAuthStore = defineStore('auth', {
         keys.clearKeys()
         const profile = useProfileStore()
         profile.clearProfile()
-        this.resetUserRelations()
 
         clearAllUserData()
         // P0-1: снести device-ключ сейфа из IndexedDB + залочить память (async).
         // clearAllUserData уже стёр LS-артефакты; здесь добиваем IDB.
         await destroyVault()
 
-        this.invalidateAllQueries().catch(() => {})
-        this.resetMessenger(false).catch(() => {})
+        await this.resetForAccount(null)
         this.setLoading(false)
       } catch {
         this.isAuthenticated = false
@@ -560,13 +559,15 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = true
         this.authState = 'authenticated'
 
+        // Сначала сброс пер-аккаунтного состояния, потом сеть для нового адреса:
+        // иначе fetchUserState/поллеры успевают отработать на данных прежнего (X9).
+        await this.resetForAccount(this.address)
+
         if (this.address) {
           profile.isFetchingUserState = false
           await this.fetchUserState()
         }
 
-        this.invalidateAllQueries().catch(() => {})
-        this.resetMessenger(true).catch(() => {})
         this.setLoading(false)
 
         return { success: true, address: this.address || undefined }
@@ -645,13 +646,22 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * Сбрасывает блок-лист и подписки при разлогине. Динамический импорт —
-     * чтобы не создавать цикл (user-relations-store импортирует useAuthStore).
+     * Единая точка при входе/смене/выходе (X9): сбрасывает всё пер-аккаунтное
+     * в памяти (relations, pending-посты/комментарии/оценки, уведомления,
+     * posts-store), переподключает WS на новый адрес (или закрывает), сбрасывает
+     * кэш запросов и перелогинивает мессенджер — единственный владелец
+     * Matrix-логина, чтобы не было двух параллельных сессий (S11).
+     * `address = null` — выход.
      */
-    resetUserRelations(): void {
-      import('@/stores/user-relations-store')
-        .then(({ useUserRelationsStore }) => useUserRelationsStore().reset())
-        .catch((e: unknown) => console.error('[auth-store] Failed to reset relations:', e))
+    async resetForAccount(address: Address | null): Promise<void> {
+      try {
+        await resetAccountScopedStores()
+      } catch (e) {
+        console.error('[auth-store] resetAccountScopedStores failed:', e)
+      }
+      wsService.switchAccount(address)
+      this.invalidateAllQueries().catch(() => {})
+      this.resetMessenger(!!address).catch(() => {})
     },
 
     // ── Cache invalidation ──────────────────────────────────────────────

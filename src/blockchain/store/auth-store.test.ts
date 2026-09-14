@@ -71,7 +71,15 @@ vi.mock('../ws', () => ({
   wsService: {
     connect: vi.fn(),
     close: vi.fn(),
+    switchAccount: vi.fn(),
   },
+}))
+
+const { _resetAccountScopedStores } = vi.hoisted(() => ({
+  _resetAccountScopedStores: vi.fn(async () => {}),
+}))
+vi.mock('./auth-store/account-scoped', () => ({
+  resetAccountScopedStores: _resetAccountScopedStores,
 }))
 
 // We use the *same* `defineStore` from pinia ESM so that mock stores
@@ -506,11 +514,12 @@ describe('auth-store', () => {
       expect(store.isLoading).toBe(false)
     })
 
-    it('should call wsService.close()', async () => {
+    it('X9: выход сбрасывает пер-аккаунтные сторы и закрывает WS (switchAccount(null))', async () => {
       const { wsService } = await import('../ws')
       const store = useAuthStore()
       await store.signOut()
-      expect(wsService.close).toHaveBeenCalled()
+      expect(_resetAccountScopedStores).toHaveBeenCalled()
+      expect(wsService.switchAccount).toHaveBeenCalledWith(null)
     })
 
     it('should call clearAllUserData()', async () => {
@@ -721,7 +730,23 @@ describe('auth-store', () => {
       const store = useAuthStore()
       await store.signIn({ privateKey: 'deadbeef' })
 
-      expect(wsService.connect).toHaveBeenCalled()
+      // X9: WS переподключается на новый адрес через switchAccount, сторы сброшены.
+      expect(wsService.switchAccount).toHaveBeenCalledWith(store.address)
+      expect(_resetAccountScopedStores).toHaveBeenCalled()
+    })
+
+    it('S11: isAuthenticated ставится только после персиста ключей', async () => {
+      const { recoverKeyPair } = await import('../core/keys')
+      const kp = fakeKeyPair()
+      vi.mocked(recoverKeyPair).mockReturnValue({ keyPair: kp, format: 'hex', source: 'deadbeef' })
+      const store = useAuthStore()
+      let authenticatedAtPersist: boolean | null = null
+      _addAccountForKey.mockImplementationOnce(() => {
+        authenticatedAtPersist = store.isAuthenticated
+      })
+      await store.signIn({ privateKey: 'deadbeef' })
+      expect(authenticatedAtPersist).toBe(false)
+      expect(store.isAuthenticated).toBe(true)
     })
 
     it('should save mnemonic when recovery format is "mnemonic"', async () => {
