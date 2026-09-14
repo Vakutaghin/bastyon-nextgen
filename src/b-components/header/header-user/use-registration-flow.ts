@@ -16,22 +16,25 @@
  */
 import { onMounted, ref, type Ref } from 'vue'
 import type { useAuthStore } from '@/blockchain'
+import { appToast } from '@/b-components/app-toast'
 import { debugLog } from '@/helpers/common/debug-log'
+import { t } from '@/i18n'
 
 type AuthStore = ReturnType<typeof useAuthStore>
-import { shouldShowMnemonic } from '@/helpers/common/mnemonic-storage'
+import { setDontShowMnemonic, shouldShowMnemonic } from '@/helpers/common/mnemonic-storage'
 import { shouldShowWelcome, setWelcomeSeen } from '@/helpers/common/welcome-storage'
 import {
   createRegistrationStatusWatcher,
   type RegistrationStatusWatcher,
 } from './helpers/registration-status-watcher'
-import { retryRegistrationBackgroundTx } from './helpers/retry-registration-tx'
-import { loadPendingMnemonic } from './helpers/pending-mnemonic'
+import { loadAccountMnemonic } from '@/b-components/header/account-switcher/helpers/load-account-mnemonic'
+import { sendRegistrationUserInfoTx } from '@/blockchain/registration/user-info-tx'
 import {
   clearPendingRegistration,
   loadPendingRegistration,
   type PendingRegistration,
 } from '@/blockchain/storage/pending-registration'
+import type { Address } from '@/blockchain/types/addresses'
 
 /**
  * Pending-регистрация, относящаяся к ТЕКУЩЕМУ аккаунту (V10): после
@@ -128,6 +131,9 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     validationModalOpen.value = true
 
     startRegistrationStatusCheck()
+    // Транзакция уходит отсюда, а не из модалки: один путь с досылом после
+    // перезагрузки, и исход (отказ ноды) виден флоу (S13/S15).
+    if (data.nickname) void runRegistrationTx(data.nickname, { waitForFunds: true })
   }
 
   function handleRegisterCancel(): void {
@@ -138,6 +144,9 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     mnemonicModalOpen.value = false
     mnemonic.value = ''
     privateKeyHex.value = ''
+    // Сид показан — после перезагрузки его больше не поднимаем (S12).
+    const shownFor = registrationAddress || authStore.getUserAddress
+    if (shownFor) setDontShowMnemonic(shownFor)
 
     // После свежей регистрации (и показа seed) — приветственный экран, один раз.
     if (pendingWelcome.value) {
@@ -185,9 +194,42 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     return true
   }
 
+  /** Снять «часики» и поллинг; pending-запись — по флагу. */
+  function finishPending(opts: { clearPending: boolean }): void {
+    registrationWatcher?.stop()
+    registrationPending.value = false
+    pendingNickname.value = null
+    validationModalOpen.value = false
+    if (opts.clearPending && registrationAddress) {
+      const pending = loadPendingRegistration()
+      if (pending?.address === registrationAddress) clearPendingRegistration()
+    }
+  }
+
+  /**
+   * Сид после регистрации: из памяти (та же сессия) или из хранилища аккаунта
+   * (после перезагрузки — раньше в этом случае 12 слов не показывались
+   * никогда, S12). Флаг «показать» ставит register-modal при создании ключей.
+   */
+  async function showMnemonicFor(address: Address): Promise<void> {
+    if (!mnemonic.value) {
+      if (!shouldShowMnemonic(address)) return
+      try {
+        const parsed = await loadAccountMnemonic(address)
+        mnemonic.value = parsed.mnemonic
+        privateKeyHex.value = parsed.privateKeyHex
+      } catch {
+        return
+      }
+    }
+    mnemonicModalOpen.value = true
+    pendingWelcome.value = true
+  }
+
   async function startRegistrationStatusCheck(): Promise<void> {
     registrationWatcher?.stop()
     if (!registrationAddress) registrationAddress = authStore.getUserAddress
+    const address = registrationAddress
     registrationWatcher = createRegistrationStatusWatcher({
       onStatusUpdate: (status) => {
         if (abandonIfSessionChanged()) return
@@ -197,37 +239,47 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
       onComplete: async (status) => {
         if (abandonIfSessionChanged()) return
         debugLog('[header-user] Registration complete:', status)
-        registrationPending.value = false
-        pendingNickname.value = null
-        clearPendingRegistration()
-        validationModalOpen.value = false
-        if (mnemonic.value) {
-          mnemonicModalOpen.value = true
-          pendingWelcome.value = true
-        }
+        finishPending({ clearPending: true })
+        if (address) await showMnemonicFor(address as Address)
         await authStore.fetchUserState()
       },
       onError: (err) => {
         console.error('Failed to check registration status:', err)
+      },
+      onTimeout: () => {
+        if (abandonIfSessionChanged()) return
+        // pending оставляем: перезагрузка возобновит ожидание, TTL снимет сам.
+        finishPending({ clearPending: false })
+        appToast.warning({ message: t('accountMsg.registrationTimeout') })
       },
     })
     await registrationWatcher.start()
   }
 
   /**
-   * Если в localStorage висит step=2 (free/balance уже отправлены, но tx ещё нет),
-   * пытается дослать транзакцию в фоне. `fatal` — хелпер уже почистил localStorage,
-   * нужно снять pending в UI.
+   * Отправка/досыл userInfo-транзакции. Один путь для «сразу после модалки»
+   * (ждём UTXO) и «после перезагрузки при step=2» (одна проба; UTXO ещё нет —
+   * повторим на следующем тике статуса).
    */
-  async function retryBackgroundTransaction(nickname: string): Promise<void> {
-    const outcome = await retryRegistrationBackgroundTx({
-      address: authStore.getUserAddress,
+  async function runRegistrationTx(
+    nickname: string,
+    opts: { waitForFunds: boolean }
+  ): Promise<void> {
+    const address = registrationAddress
+    const result = await sendRegistrationUserInfoTx({
+      address,
       keyPair: authStore.getKeyPair,
       nickname,
+      waitForFunds: opts.waitForFunds,
     })
-    if (outcome === 'fatal') {
-      registrationPending.value = false
-      pendingNickname.value = null
+    if (!address || authStore.getUserAddress !== address) return
+    if (result.outcome === 'sent') {
+      // Ключи мессенджера уходят в userInfo — перелогин Matrix с ними.
+      authStore.resetMessenger(true).catch(() => {})
+    } else if (result.outcome === 'fatal') {
+      // Отказ ноды виден пользователю, а не глотается «часиками» (S13).
+      finishPending({ clearPending: false })
+      appToast.error({ message: t('accountMsg.registrationRejected', { message: result.message }) })
     }
   }
 
@@ -238,14 +290,25 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     // не должна ни вешать часики, ни стираться отсюда (V10).
     const pending = pendingForAddress(loadPendingRegistration(), authStore.getUserAddress)
     registrationAddress = authStore.getUserAddress
-    if (pending?.nickname) {
+
+    // «Регистрация в процессе» — только когда есть своя pending-запись. Аккаунт
+    // без on-chain профиля и без pending — просто незарегистрирован: раньше он
+    // крутил часики и поллил два RPC каждые 5 с бесконечно (S13).
+    if (!pending) {
+      registrationPending.value = false
+      return
+    }
+    if (pending.error) {
+      // Нода уже отвергла эту регистрацию — ждать нечего, причину покажет модалка.
+      registrationPending.value = false
+      return
+    }
+    if (pending.nickname) {
       pendingNickname.value = pending.nickname
       debugLog('[header-user] Restored pending nickname:', pending.nickname)
     }
-
-    // Быстрая проверка: если есть pending — сразу ставим pending
-    // (до async RPC-вызова, чтобы часики появились мгновенно).
-    if (pendingNickname.value) registrationPending.value = true
+    // Часики сразу, до async RPC-вызова.
+    registrationPending.value = true
 
     try {
       const { getRegistrationStatus, isRegistrationInProgress } =
@@ -255,46 +318,40 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
 
       if (isRegistrationInProgress(status)) {
         validationStatus.value = status
-        registrationPending.value = true
         startRegistrationStatusCheck()
 
-        // Если транзакция ещё не отправлена (step=2), запускаем фоновую отправку.
-        if (pending && pending.step >= 2 && pending.step < 3 && pending.nickname) {
+        // Транзакция ещё не отправлена (step=2) — досылаем тем же путём.
+        if (pending.step >= 2 && pending.step < 3 && pending.nickname) {
           debugLog('[header-user] Resuming background transaction for:', pending.nickname)
-          retryBackgroundTransaction(pending.nickname)
+          void runRegistrationTx(pending.nickname, { waitForFunds: false })
         }
       } else {
-        // Регистрация завершена — очищаем pending (только свой).
+        // Регистрация завершилась, пока приложение было закрыто.
         debugLog('[header-user] Registration complete, clearing pending')
-        registrationPending.value = false
-        pendingNickname.value = null
-        if (pending) clearPendingRegistration()
-        // Обновляем профиль, чтобы подтянуть имя.
+        finishPending({ clearPending: true })
+        if (registrationAddress) await showMnemonicFor(registrationAddress as Address)
         authStore.fetchUserState().catch(() => {})
       }
     } catch (error) {
       console.error('Failed to check registration status on load:', error)
-      // При ошибке: если есть pending_nickname — оставляем pending (лучше
-      // показать часики, чем потерять статус).
-      if (pendingNickname.value) {
-        registrationPending.value = true
-        startRegistrationStatusCheck()
-      }
+      // Сеть недоступна: pending есть — оставляем часики и продолжаем проверять.
+      startRegistrationStatusCheck()
     }
   }
 
+  /**
+   * Сид ещё не показан (флаг «показать» стоит) и регистрация не в процессе —
+   * например, регистрация завершилась в прошлой сессии до показа (S12).
+   */
   async function checkAndShowMnemonic(): Promise<void> {
     const address = authStore.getUserAddress
-    if (!address || !isAuthenticated.value) return
+    if (!address || !isAuthenticated.value || registrationPending.value) return
     if (!shouldShowMnemonic(address)) return
-
-    const result = await loadPendingMnemonic()
-    if (!result) return
-
-    mnemonic.value = result.mnemonic
-    privateKeyHex.value = result.privateKeyHex
+    registrationAddress = address
     setTimeout(() => {
-      mnemonicModalOpen.value = true
+      if (authStore.getUserAddress === address && !mnemonicModalOpen.value) {
+        void showMnemonicFor(address as Address)
+      }
     }, 3000)
   }
 
@@ -303,7 +360,7 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     await authStore.restoreSession()
 
     await checkRegistrationStatusOnLoad()
-    checkAndShowMnemonic()
+    await checkAndShowMnemonic()
   })
 
   return {

@@ -11,12 +11,19 @@ interface WatcherCallbacks {
   onComplete: (status: RegistrationStatus) => void
   /** Ошибка запроса/импорта. Watcher продолжает работать — пробует на следующем тике. */
   onError?: (err: unknown) => void
+  /** Регистрация не подтвердилась за maxDurationMs — watcher остановлен (S13). */
+  onTimeout?: () => void
 }
 
 interface WatcherOptions extends WatcherCallbacks {
   /** Период между чеками (мс). По умолчанию 5000. */
   intervalMs?: number
+  /** Потолок поллинга (мс). По умолчанию 30 минут — как TTL pending-записи. */
+  maxDurationMs?: number
 }
+
+/** Совпадает с TTL `pending_registration`: дольше ждать нечего. */
+export const DEFAULT_MAX_POLL_MS = 30 * 60 * 1000
 
 export interface RegistrationStatusWatcher {
   /** Запускает поллинг: сразу делает один чек, дальше — каждые intervalMs. */
@@ -32,13 +39,25 @@ export interface RegistrationStatusWatcher {
  * Повторный start() сначала корректно останавливает старый интервал.
  */
 export function createRegistrationStatusWatcher(opts: WatcherOptions): RegistrationStatusWatcher {
-  const { onStatusUpdate, onComplete, onError, intervalMs = 5000 } = opts
+  const {
+    onStatusUpdate,
+    onComplete,
+    onError,
+    onTimeout,
+    intervalMs = 5000,
+    maxDurationMs = DEFAULT_MAX_POLL_MS,
+  } = opts
   let timer: ReturnType<typeof setInterval> | null = null
+  let deadline: ReturnType<typeof setTimeout> | null = null
 
   const stop = () => {
     if (timer) {
       clearInterval(timer)
       timer = null
+    }
+    if (deadline) {
+      clearTimeout(deadline)
+      deadline = null
     }
   }
 
@@ -63,6 +82,11 @@ export function createRegistrationStatusWatcher(opts: WatcherOptions): Registrat
     timer = setInterval(() => {
       void checkOnce()
     }, intervalMs)
+    // Раньше поллинг двух RPC каждые 5 с шёл бесконечно (S13).
+    deadline = setTimeout(() => {
+      stop()
+      onTimeout?.()
+    }, maxDurationMs)
     await checkOnce()
   }
 

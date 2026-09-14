@@ -1599,6 +1599,10 @@ export default {
     menuSignOut: 'Sign out',
     noActiveAccount: 'No active account',
     noSavedSeedOrKey: 'No saved seed phrase or key for this account',
+    registrationRejected:
+      'Registration rejected by the network: {message}. Pick another name and try again.',
+    registrationTimeout:
+      'Registration was not confirmed within 30 minutes. Check your connection and try registering again.',
     keyReadFailed: 'Failed to read the key',
     unknownDataFormat: 'Unknown data format',
     keyLoadFailed: 'Failed to load the key',

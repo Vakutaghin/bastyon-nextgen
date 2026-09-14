@@ -104,8 +104,9 @@ import {
   loadPendingRegistration,
   clearPendingRegistration,
 } from './helpers/pending-registration-store'
-import { loadPendingMnemonic } from '@/b-components/header/header-user/helpers/pending-mnemonic'
-import { sendRegistrationTransaction } from './send-registration-transaction'
+import { loadAccountMnemonic } from '@/b-components/header/account-switcher/helpers/load-account-mnemonic'
+import type { Address } from '@/blockchain/types/addresses'
+import { setNeedShowMnemonic } from '@/helpers/common/mnemonic-storage'
 import {
   isFormNicknameValid,
   normalizeAndCapNickname,
@@ -203,23 +204,17 @@ function onEmailInput(event: Event): void {
   email.value = (event.target as HTMLInputElement).value
 }
 
-/** Проверяет незавершённую регистрацию после перезагрузки страницы. */
-async function checkPendingRegistration(): Promise<void> {
+/**
+ * Незавершённая регистрация текущего аккаунта при открытии модалки: подставляем
+ * ник и показываем причину отказа ноды, если он был (S13). Досыл транзакции
+ * здесь не делаем — этим владеет флоу шапки (один путь, S15); чужую запись
+ * (другой аккаунт устройства) не трогаем (V10).
+ */
+function checkPendingRegistration(): void {
   const pending = loadPendingRegistration()
-  if (!pending) return
-
-  const address = authStore.getUserAddress
-  const keyPair = authStore.getKeyPair
-
-  if (!address || !keyPair || address !== pending.address) {
-    clearPendingRegistration()
-    return
-  }
-
-  // step >= 2 — free/balance уже запрошен, осталось отправить транзакцию.
-  if (pending.step >= 2 && pending.step < 3) {
-    sendRegistrationTransaction(pending.nickname, authStore)
-  }
+  if (!pending || pending.address !== authStore.getUserAddress) return
+  if (pending.nickname && !nickname.value) nickname.value = pending.nickname
+  if (pending.error) error.value = t('accountMsg.registrationRejected', { message: pending.error })
 }
 
 /**
@@ -280,7 +275,10 @@ async function handleRegister(): Promise<void> {
         debugLog('[REG] Step 2: reusing keys from the previous attempt:', stale.address)
         registrationResult = {
           address: stale.address,
-          mnemonic: (await loadPendingMnemonic())?.mnemonic,
+          // Секрет именно этого адреса (per-account, с проверкой владельца — S10).
+          mnemonic: await loadAccountMnemonic(stale.address as Address)
+            .then((r) => r.mnemonic || undefined)
+            .catch(() => undefined),
         }
       }
     } else {
@@ -311,14 +309,13 @@ async function handleRegister(): Promise<void> {
     })
 
     debugLog('[REG] Step 4: optimistic — showing validation modal')
-    // Точка невозврата: аккаунт создан, дальше транзакция уходит в фон.
+    // Точка невозврата: аккаунт создан, транзакцию дальше ведёт флоу шапки
+    // (handleRegisterValidation → sendRegistrationUserInfoTx).
     emit('validation', {
       status: 'in_progress_transaction',
       mnemonic: registrationResult.mnemonic,
       nickname: nickname.value,
     })
-
-    sendRegistrationTransaction(nickname.value, authStore)
   } catch (err) {
     // Отмена пользователем: снимаем созданный аккаунт (секрет, запись в списке,
     // pending) и возвращаемся к прежней сессии, если она была (V9); ошибку не
@@ -353,6 +350,9 @@ async function freshRegistration(): Promise<{ address: string; mnemonic?: string
   const result = await authStore.register({ generateNew: true, saveAfterRegistration: true })
   if (!result?.address) throw new Error(t('auth.errorCreateAccount'))
   debugLog('[REG] Step 2: keys generated, address:', result.address)
+  // Сид надо показать после завершения регистрации — даже если приложение
+  // перезагрузят посередине (S12): флаг переживает сессию, память — нет.
+  setNeedShowMnemonic(result.address)
   return { address: result.address, mnemonic: result.mnemonic }
 }
 

@@ -80,5 +80,6 @@ export {
   clearPendingRegistration,
   clearPendingRegistrationFor,
   markPendingRegistrationStep,
+  markPendingRegistrationError,
   type PendingRegistration,
 } from './pending-registration'

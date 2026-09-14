@@ -14,6 +14,12 @@ export interface PendingRegistration {
   /** 1 = keys generated, 2 = free/balance requested (optimistic done), 3 = tx sent */
   step: number
   timestamp: number
+  /**
+   * Нода отвергла регистрацию (имя занято/длинное): ключи остаются, чтобы
+   * повтор с другим ником их переиспользовал, но «часики» и поллинг не
+   * поднимаются, а причина показывается пользователю (S13).
+   */
+  error?: string
 }
 
 export function savePendingRegistration(data: PendingRegistration): void {
@@ -37,6 +43,7 @@ export function peekPendingRegistration(): PendingRegistration | null {
       address: typeof data.address === 'string' ? data.address : '',
       step: data.step,
       timestamp: typeof data.timestamp === 'number' ? data.timestamp : 0,
+      ...(typeof data.error === 'string' && data.error ? { error: data.error } : {}),
     }
   } catch {
     return null
@@ -76,4 +83,11 @@ export function markPendingRegistrationStep(step: number): void {
   const current = loadPendingRegistration()
   if (!current) return
   savePendingRegistration({ ...current, step })
+}
+
+/** Фатальный отказ ноды для pending этого адреса; чужую запись не трогает. */
+export function markPendingRegistrationError(address: string, message: string): void {
+  const current = peekPendingRegistration()
+  if (!current || current.address !== address) return
+  savePendingRegistration({ ...current, error: message })
 }
