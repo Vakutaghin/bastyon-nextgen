@@ -114,6 +114,16 @@ describe('ManifestLoader', () => {
     expect(fetchImpl).toHaveBeenCalledOnce()
   })
 
+  it('V25: приватный/LAN scope не грузим, localhost (sideload) — грузим', async () => {
+    const fetchImpl = mockFetch(() => ({ ok: true, text: manifestJson() }))
+    const loader = new ManifestLoader({ fetchImpl })
+    for (const scope of ['192.168.1.10', '10.0.0.5:8080', '169.254.169.254', 'printer.local']) {
+      await expect(loader.load(scope), scope).rejects.toThrow(/manifest_forbidden_host/)
+    }
+    expect(fetchImpl).not.toHaveBeenCalled()
+    await expect(loader.load('localhost:3000')).resolves.toBeTruthy()
+  })
+
   it('throws on HTTP error', async () => {
     const fetchImpl = mockFetch(() => ({ ok: false, status: 404, text: '' }))
     const loader = new ManifestLoader({ fetchImpl })

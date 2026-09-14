@@ -6,6 +6,12 @@
  *
  *  1. **Allowlist хостов** — `manifest.fetchHosts` (origin: схема + host[:port]).
  *     Если массив пуст / нет совпадения — `forbidden_host`.
+ *  1a. **SSRF-фильтр** (V25) — allowlist объявляет автор манифеста, поэтому
+ *     поверх него: только https, без loopback/приватных/link-local адресов
+ *     (`helpers/common/safe-external-url`); редиректы не следуем
+ *     (`redirect: 'manual'` / `maxRedirections: 0`), 3xx уходит миниаппе как
+ *     есть. Sideload-приложению (`source: 'local'`) разрешён http+loopback —
+ *     его dev-бэкенд.
  *  2. **Per-app rate limit** — класс `expensive` через {@link RateLimiter}.
  *     При исчерпании — `rate_limit_exceeded` с `retryAfterMs` в payload.
  *  3. **Hard timeout** — `DEFAULT_FETCH_TIMEOUT_MS`, AbortController.
@@ -29,6 +35,7 @@ import type { FetchRequest, FetchResponse } from '../types/messages'
 import { fetchResponseError, fetchResponseOk } from '../types/messages'
 import { RateLimiter, RateLimitExceededError } from './rate-limiter'
 import { appFetch } from '@/helpers/api/fetch-strategies'
+import { isSafeExternalUrl } from '@/helpers/common/safe-external-url'
 
 export const DEFAULT_FETCH_TIMEOUT_MS = 30_000
 
@@ -72,11 +79,25 @@ function defaultTransport(): FetchTunnelTransport {
   return { fetch: (input, init) => appFetch(input, init) }
 }
 
+/** Опции sideload-приложения: разработчик ходит на свой localhost. */
+export function externalUrlOptionsFor(app: InstalledApp): {
+  allowHttp: boolean
+  allowLoopback: boolean
+} {
+  const local = app.source === 'local'
+  return { allowHttp: local, allowLoopback: local }
+}
+
+/** `redirect: 'manual'` — браузер/torFetch; `maxRedirections: 0` — plugin-http (Tauri). */
+export const NO_REDIRECT_INIT = { redirect: 'manual', maxRedirections: 0 } as const
+
 function requestInitFrom(req: FetchRequest['request'], signal: AbortSignal): RequestInit {
   const init: RequestInit = {
     method: req.method ?? 'GET',
     headers: req.headers,
     signal,
+    credentials: 'omit',
+    ...NO_REDIRECT_INIT,
   }
   if (req.body && req.body.length > 0) {
     init.body = new Uint8Array(req.body)
@@ -105,8 +126,11 @@ export function createFetchTunnel(opts: FetchTunnelOptions = {}): FetchTunnel {
 
   return {
     async handle(app, req) {
-      // 1. Allowlist
-      if (!isAllowedOrigin(req.request.url, app.manifest.fetchHosts)) {
+      // 1. Allowlist + SSRF-фильтр (V25).
+      if (
+        !isAllowedOrigin(req.request.url, app.manifest.fetchHosts) ||
+        !isSafeExternalUrl(req.request.url, externalUrlOptionsFor(app))
+      ) {
         return fetchResponseError(req.requestId, 'forbidden_host')
       }
 
@@ -128,6 +152,11 @@ export function createFetchTunnel(opts: FetchTunnelOptions = {}): FetchTunnel {
           req.request.url,
           requestInitFrom(req.request, ctrl.signal)
         )
+        // Браузерный fetch с redirect:'manual' отдаёт opaqueredirect (status 0):
+        // редирект не следуем и не раскрываем.
+        if (resp.type === 'opaqueredirect') {
+          return fetchResponseError(req.requestId, 'redirect_not_followed')
+        }
         const data = await responseToWire(resp)
         return fetchResponseOk(req.requestId, data)
       } catch (e) {

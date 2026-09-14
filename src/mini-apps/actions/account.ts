@@ -17,6 +17,8 @@ import { ActionSchemas } from './_schema'
 import type { ActionDefinition, ActionMap } from './types'
 import type { ApiSignature } from '@/blockchain/types/signatures'
 import { appFetch } from '@/helpers/api/fetch-strategies'
+import { isSafeExternalUrl } from '@/helpers/common/safe-external-url'
+import { NO_REDIRECT_INIT, externalUrlOptionsFor } from '../core/fetch-tunnel'
 
 interface AccountResult {
   address: string
@@ -119,6 +121,11 @@ const authFetch: ActionDefinition<AuthFetchInput, unknown> = {
       }
       if (!originAllowed) throw new Error('authFetch_forbidden_host')
     }
+    // V25: подпись с адресом не должна уходить на loopback/приватные хосты и
+    // по http; без allowlist это единственная преграда.
+    if (!isSafeExternalUrl(data.url, externalUrlOptionsFor(app))) {
+      throw new Error('authFetch_forbidden_host')
+    }
 
     // Тело запроса: миниаппа передаёт произвольный data, мы добавляем подпись
     // и сериализуем в JSON. Это формат, который ожидают backend-ы legacy миниапп.
@@ -136,7 +143,12 @@ const authFetch: ActionDefinition<AuthFetchInput, unknown> = {
       body: JSON.stringify(body),
       signal,
       credentials: 'omit',
+      // Редирект унёс бы тело с подписью на другой хост (V25).
+      ...NO_REDIRECT_INIT,
     })
+    if (res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400)) {
+      throw new Error('authFetch_redirect_not_followed')
+    }
 
     if (!res.ok) {
       throw new Error(`authFetch_http_${res.status}`)

@@ -48,6 +48,59 @@ describe('fetch-tunnel', () => {
     expect(resp.error).toBe('forbidden_host')
   })
 
+  it('V25: loopback/приватный хост из allowlist всё равно forbidden_host', async () => {
+    const transport = { fetch: vi.fn() }
+    const tunnel = createFetchTunnel({ transport })
+    for (const url of [
+      'https://127.0.0.1:8080/x',
+      'https://localhost/x',
+      'https://192.168.1.5/x',
+      'https://169.254.169.254/latest/meta-data',
+      'https://[::1]/x',
+      'http://api.example.com/x',
+    ]) {
+      const resp = await tunnel.handle(makeApp([new URL(url).origin]), makeReq(url))
+      expect(resp.error, url).toBe('forbidden_host')
+    }
+    expect(transport.fetch).not.toHaveBeenCalled()
+  })
+
+  it('V25: sideload-приложению (source: local) разрешён http/loopback', async () => {
+    const transport = { fetch: vi.fn(async () => new Response('ok', { status: 200 })) }
+    const tunnel = createFetchTunnel({ transport })
+    const app = { ...makeApp(['http://localhost:3000']), source: 'local' } as InstalledApp
+    const resp = await tunnel.handle(app, makeReq('http://localhost:3000/api'))
+    expect(resp.success).toBe(true)
+  })
+
+  it('V25: редиректы не следуем — init содержит redirect manual + maxRedirections 0', async () => {
+    const fetchFn = vi.fn<(input: string, init: RequestInit) => Promise<Response>>(
+      async () => new Response('ok', { status: 200 })
+    )
+    const tunnel = createFetchTunnel({ transport: { fetch: fetchFn } })
+    await tunnel.handle(makeApp(['https://api.example.com']), makeReq('https://api.example.com/x'))
+    const init = fetchFn.mock.calls[0]![1] as RequestInit & { maxRedirections?: number }
+    expect(init.redirect).toBe('manual')
+    expect(init.maxRedirections).toBe(0)
+    expect(init.credentials).toBe('omit')
+  })
+
+  it('V25: opaqueredirect от браузерного fetch → redirect_not_followed', async () => {
+    const opaque = {
+      type: 'opaqueredirect',
+      status: 0,
+      headers: new Headers(),
+    } as unknown as Response
+    const transport = { fetch: vi.fn(async () => opaque) }
+    const tunnel = createFetchTunnel({ transport })
+    const resp = await tunnel.handle(
+      makeApp(['https://api.example.com']),
+      makeReq('https://api.example.com/x')
+    )
+    expect(resp.success).toBe(false)
+    expect(resp.error).toBe('redirect_not_followed')
+  })
+
   it('rejects host not in allowlist', async () => {
     const tunnel = createFetchTunnel({
       transport: { fetch: vi.fn() },

@@ -6,10 +6,14 @@
  * Реализация:
  * - in-memory LRU кэш с TTL (по умолчанию 10 минут);
  * - таймаут на fetch через `AbortSignal` (default 10s);
+ * - транспорт — `appFetch` (под Tor — torFetch; раньше сырой `fetch` уводил
+ *   запрос мимо Tor, N24); scope с loopback/приватным хостом не грузим (V25);
  * - валидация через `parseManifest` (этап 1);
  * - параллельные запросы на один и тот же scope coalesce-ятся в один in-flight Promise.
  */
 
+import { appFetch } from '@/helpers/api/fetch-strategies'
+import { isSafeExternalUrl } from '@/helpers/common/safe-external-url'
 import { logger } from '@/services/logger'
 import { parseManifest, type ParsedManifest } from '../types/manifest'
 
@@ -43,7 +47,7 @@ export class ManifestLoader {
   constructor(opts: ManifestLoaderOptions = {}) {
     this.ttlMs = opts.ttlMs ?? DEFAULT_TTL_MS
     this.timeoutMs = opts.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS
-    this.fetchImpl = opts.fetchImpl ?? fetch.bind(globalThis)
+    this.fetchImpl = opts.fetchImpl ?? appFetch
   }
 
   /**
@@ -87,6 +91,10 @@ export class ManifestLoader {
   }
 
   private async fetchAndParse(url: string): Promise<ParsedManifest> {
+    // sideload на localhost проходит (allowLoopback); приватные LAN-адреса — нет.
+    if (!isSafeExternalUrl(url, { allowLoopback: true })) {
+      throw new Error('manifest_forbidden_host')
+    }
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(new Error('manifest_timeout')), this.timeoutMs)
     try {

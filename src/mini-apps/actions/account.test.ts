@@ -214,6 +214,41 @@ describe('authFetch action', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
+  // V25: loopback/приватные/http — запрещены даже без allowlist, редиректы не следуем.
+  it('rejects loopback, private and http targets before any network call (V25)', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) })
+    const { reg } = setup()
+    for (const url of [
+      'https://127.0.0.1:8080/x',
+      'https://localhost/x',
+      'https://192.168.1.5/x',
+      'https://169.254.169.254/latest/meta-data',
+      'http://api.miniapp.com/x',
+    ]) {
+      await expect(
+        reg.execute('authFetch', TEST_APP, { url }, new AbortController().signal),
+        url
+      ).rejects.toThrow(/authFetch_forbidden_host/)
+    }
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not follow redirects: 3xx → authFetch_redirect_not_followed (V25)', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 302, json: async () => ({}) })
+    const { reg } = setup()
+    await expect(
+      reg.execute(
+        'authFetch',
+        TEST_APP,
+        { url: 'https://api.miniapp.com/x' },
+        new AbortController().signal
+      )
+    ).rejects.toThrow(/authFetch_redirect_not_followed/)
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit & { maxRedirections?: number }]
+    expect(init.redirect).toBe('manual')
+    expect(init.maxRedirections).toBe(0)
+  })
+
   // P1-8: если манифест объявил fetchHosts — authFetch обязан бить только по ним.
   it('enforces manifest fetchHosts allowlist when declared', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) })
