@@ -73,11 +73,12 @@ export function useReceiverSearch() {
       searchResults.value = []
       return
     }
-    if (q.length === 0) {
-      receiverAddress.value = ''
-      receiverLogin.value = null
-      return
-    }
+    // Ввод больше не похож на адрес (пусто или поиск по нику): прежний адрес
+    // не должен пережить правку поля — иначе «bob» в поле, а перевод уйдёт на
+    // прежний адрес (аудит V3). Адрес появится снова только из выбора результата.
+    receiverAddress.value = ''
+    receiverLogin.value = null
+    if (q.length === 0) return
     if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
     if (q.length < 2) {
       searchResults.value = []
