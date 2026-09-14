@@ -2,7 +2,11 @@ import { describe, it, expect, vi } from 'vitest'
 import { ref } from 'vue'
 
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
-vi.mock('../../services/matrix-service', () => ({ matrixService: { getClient: () => null } }))
+vi.mock('../../services/matrix-service', () => ({
+  matrixService: {
+    getClient: () => ({ mxcUrlToHttp: (u: string) => `https://hs/media/${u.slice(6)}` }),
+  },
+}))
 vi.mock('../../services/group-encryption', () => ({
   isGroupEncryptedContent: (c: { msgtype?: string }) => c.msgtype === 'm.group.encrypted',
 }))
@@ -69,5 +73,94 @@ describe('mapEventToMessage — нерасшифрованное сообщен�
       mxEvent('m.room.encrypted', { msgtype: 'm.text', body: 'deadbeef' })
     )
     expect(msg?.text).toBe('hi')
+  })
+})
+
+describe('mapEventToMessage — медиа и транзакции (K3)', () => {
+  const secrets = { keys: 'wrapped', block: 10 }
+
+  it('m.image → type image, url http, info с секретами; tryDecrypt не зовётся, hex в text не попадает', async () => {
+    const tryDecrypt = vi.fn(async () => 'deadbeef'.repeat(8))
+    const { mapEventToMessage } = mapping(tryDecrypt)
+    const msg = await mapEventToMessage(
+      mxEvent('m.room.message', {
+        msgtype: 'm.image',
+        body: 'cat.jpg',
+        url: 'mxc://hs/img',
+        info: { mimetype: 'image/jpeg', w: 1, h: 2, size: 3, secrets },
+      })
+    )
+    expect(tryDecrypt).not.toHaveBeenCalled()
+    expect(msg).toMatchObject({ type: 'image', url: 'https://hs/media/hs/img', text: 'cat.jpg' })
+    expect(msg?.info).toMatchObject({ secrets, name: 'cat.jpg', w: 1, h: 2 })
+  })
+
+  it('m.video → type video с posterUrl; m.file legacy-JSON → type file с именем/размером', async () => {
+    const { mapEventToMessage } = mapping(async () => null)
+    const video = await mapEventToMessage(
+      mxEvent('m.room.message', {
+        msgtype: 'm.video',
+        body: 'v.mp4',
+        url: 'mxc://hs/v',
+        info: { thumbnail_url: 'mxc://hs/p', secrets },
+      })
+    )
+    expect(video).toMatchObject({ type: 'video', url: 'https://hs/media/hs/v' })
+    expect(video?.info?.posterUrl).toBe('https://hs/media/hs/p')
+
+    const body = JSON.stringify({
+      name: 'doc.pdf',
+      type: 'application/pdf',
+      size: 9,
+      url: 'https://hs/f',
+      secrets,
+    })
+    const file = await mapEventToMessage(
+      mxEvent('m.room.message', { msgtype: 'm.file', body, info: {} })
+    )
+    expect(file).toMatchObject({ type: 'file', url: 'https://hs/f', text: 'doc.pdf' })
+    expect(file?.info).toMatchObject({
+      name: 'doc.pdf',
+      mimetype: 'application/pdf',
+      size: 9,
+      secrets,
+    })
+  })
+
+  it('медиа не теряется в превью (skipDecryption) и без текста не отбрасывается', async () => {
+    const { mapEventToMessage } = mapping(async () => null)
+    const msg = await mapEventToMessage(
+      mxEvent('m.room.message', {
+        msgtype: 'm.audio',
+        body: '',
+        url: 'mxc://hs/a',
+        info: { secrets },
+      }),
+      true
+    )
+    expect(msg).toMatchObject({ type: 'audio', url: 'https://hs/media/hs/a', text: '' })
+  })
+
+  it('m.text с pocketnet_transaction → карточка транзакции', async () => {
+    const { mapEventToMessage } = mapping(async () => null)
+    const tx = { txid: 'T', amount: 1.5, from: 'A', to: 'B', message: 'hi' }
+    const msg = await mapEventToMessage(
+      mxEvent('m.room.message', {
+        msgtype: 'm.text',
+        body: '💎 1.5 PKOIN · hi',
+        pocketnet_transaction: tx,
+      })
+    )
+    expect(msg).toMatchObject({ type: 'transaction', text: '💎 1.5 PKOIN · hi' })
+    expect(msg?.info?.transaction).toEqual(tx)
+  })
+
+  it('медиа внутри расшифрованного m.room.encrypted тоже маппится по msgtype', async () => {
+    const inner = { msgtype: 'm.image', body: 'secret.png', url: 'mxc://hs/s', info: { secrets } }
+    const { mapEventToMessage } = mapping(async () => JSON.stringify(inner))
+    const msg = await mapEventToMessage(
+      mxEvent('m.room.encrypted', { msgtype: 'm.text', body: 'deadbeef' })
+    )
+    expect(msg).toMatchObject({ type: 'image', url: 'https://hs/media/hs/s', text: 'secret.png' })
   })
 })

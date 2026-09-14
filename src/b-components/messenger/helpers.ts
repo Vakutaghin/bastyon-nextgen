@@ -118,7 +118,10 @@ export const isRenderableMessageEvent = (event: EventLike | null | undefined): b
     msgtype === 'm.notice' ||
     msgtype === 'm.emote' ||
     msgtype === 'm.encrypted' ||
-    msgtype === 'm.audio'
+    msgtype === 'm.audio' ||
+    msgtype === 'm.image' ||
+    msgtype === 'm.video' ||
+    msgtype === 'm.file'
   )
     return true
 
@@ -299,7 +302,10 @@ interface BlockableContent {
 }
 
 /** Применяет номер блока к содержимому события (для шифрования) */
-export const applyBlockToContent = (content: BlockableContent | null | undefined, block: number) => {
+export const applyBlockToContent = (
+  content: BlockableContent | null | undefined,
+  block: number
+) => {
   if (!content || !block) return
   if (content.info?.secrets) content.info.secrets.block = block
   if (content.pbody?.secrets) content.pbody.secrets.block = block

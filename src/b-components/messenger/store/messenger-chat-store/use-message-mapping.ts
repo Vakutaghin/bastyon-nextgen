@@ -1,5 +1,6 @@
-// Построение отображаемого Message из matrix-события: разрешение url аудио,
-// расшифровка (через use-message-decryption) и обогащение реакциями.
+// Построение отображаемого Message из matrix-события: медиа (аудио/фото/
+// видео/файл — через media-content), PKOIN-транзакция, расшифровка текста
+// (через use-message-decryption) и обогащение реакциями.
 
 import { t } from '@/i18n'
 
@@ -12,35 +13,24 @@ import {
   getEventTs,
   isRenderableMessageEvent,
   getAddressFromMatrixId,
-  extractUrl,
 } from '../../helpers'
 import { matrixService } from '../../services/matrix-service'
 import { isGroupEncryptedContent } from '../../services/group-encryption'
 import type { Message, MessageReaction } from '../../types'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../consts'
-import type { ChatContext, MxAudioContent, MxEvent, MxReactionEvent, MxRoom } from './types'
+import type { ChatContext, MxEvent, MxReactionEvent, MxRoom } from './types'
 import type { MessageDecryption } from './use-message-decryption'
+import { mapMediaContent, mediaTypeOf, type MediaContent } from './media-content'
 
 export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryption) {
   const { currentUser, profileCache } = ctx
   const { tryDecrypt } = decryption
 
-  const resolveAudioUrl = (content: MxAudioContent): string | undefined => {
-    const audioUrl =
-      extractUrl(content.url) ||
-      extractUrl(content.file?.url) ||
-      extractUrl(content.info?.url) ||
-      extractUrl(content.info?.file?.url) ||
-      (typeof content.body === 'string' && content.body.startsWith('http') ? content.body : null)
-
-    if (typeof audioUrl !== 'string' || !audioUrl.length) return undefined
-
-    if (audioUrl.startsWith('http')) return audioUrl
-
+  /** mxc:// → http через клиент; http и неизвестное — как есть. */
+  const resolveMxc = (mxcOrHttp: string): string => {
+    if (mxcOrHttp.startsWith('http')) return mxcOrHttp
     const client = matrixService.getClient()
-    if (client?.mxcUrlToHttp) return client.mxcUrlToHttp(audioUrl)
-
-    return audioUrl
+    return (client?.mxcUrlToHttp ? client.mxcUrlToHttp(mxcOrHttp) : null) || mxcOrHttp
   }
 
   const mapEventToMessage = async (
@@ -52,30 +42,45 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
     const eventId = getEventId(event)
     const content = getEventContent(event)
     let text = content.body || ''
-    let type: 'text' | 'audio' | 'image' | 'file' = 'text'
+    let type: Message['type'] = 'text'
     let url: string | undefined = undefined
     let info: Record<string, unknown> | undefined = undefined
     let finalContent = content
 
-    if (content.msgtype === 'm.audio') {
-      type = 'audio'
-      url = resolveAudioUrl(content)
-      info = content.info
-      if (content.file) {
-        if (!info) info = {}
-        info.file = content.file
-      }
+    // Медиа: url/info/имя из контента; секреты медиа-ключа остаются в info и
+    // расшифровываются лениво в use-media-transfer (не как текст сообщения).
+    const mediaType = mediaTypeOf(content.msgtype)
+    if (mediaType) {
+      const media = mapMediaContent(content as MediaContent, mediaType, resolveMxc)
+      type = media.type
+      url = media.url
+      info = media.info
+      text = media.text
+    }
+
+    // PKOIN-донат — обычное m.text с extra-полем `pocketnet_transaction`:
+    // сторонние клиенты видят body, мы — карточку. Только текстовые msgtype.
+    if (
+      content.pocketnet_transaction &&
+      typeof content.pocketnet_transaction === 'object' &&
+      (content.msgtype === 'm.text' || content.msgtype === 'm.notice' || !content.msgtype)
+    ) {
+      type = 'transaction'
+      info = { ...(info || {}), transaction: content.pocketnet_transaction }
+      text = typeof content.body === 'string' ? content.body : ''
     }
 
     const isEncryptedType = getEventType(event) === 'm.room.encrypted'
-    let hasSecrets = !!(content.info?.secrets || content.pbody?.secrets || content.secrets)
-    const isGroupEncrypted = content.msgtype !== 'm.audio' && isGroupEncryptedContent(content)
+    // У медиа `info.secrets` — обёрнутый ключ файла, а не зашифрованный текст.
+    let hasSecrets =
+      !mediaType && !!(content.info?.secrets || content.pbody?.secrets || content.secrets)
+    const isGroupEncrypted = !mediaType && isGroupEncryptedContent(content)
 
     // body может быть base64 JSON с секретами
     if (
       !hasSecrets &&
       !isGroupEncrypted &&
-      content.msgtype !== 'm.audio' &&
+      !mediaType &&
       content.body &&
       typeof content.body === 'string' &&
       content.body.startsWith('ey')
@@ -111,15 +116,13 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
           const parsed = JSON.parse(decrypted)
           if (parsed && typeof parsed === 'object') {
             finalContent = parsed
-            if (parsed.msgtype === 'm.audio') {
-              type = 'audio'
-              url = resolveAudioUrl(parsed)
-              if (parsed.info) info = parsed.info
-              if (parsed.file) {
-                if (!info) info = {}
-                info.file = parsed.file
-              }
-              text = parsed.body || ''
+            const parsedMedia = mediaTypeOf(parsed.msgtype)
+            if (parsedMedia) {
+              const media = mapMediaContent(parsed as MediaContent, parsedMedia, resolveMxc)
+              type = media.type
+              url = media.url
+              info = media.info
+              text = media.text
             } else if (parsed.body) {
               text = parsed.body
             } else {
@@ -145,7 +148,7 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
     }
 
     let textToRender = typeof text === 'string' ? text : String(text || '')
-    if (!textToRender.trim() && type !== 'audio') {
+    if (!textToRender.trim() && type === 'text') {
       if (isEncryptedType || content.msgtype === 'm.encrypted') {
         textToRender = ENCRYPTED_MESSAGE_PLACEHOLDER
       } else {
@@ -223,7 +226,7 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
     })
   }
 
-  return { resolveAudioUrl, mapEventToMessage, getReactionsForEventId, enrichMessagesWithReactions }
+  return { mapEventToMessage, getReactionsForEventId, enrichMessagesWithReactions }
 }
 
 export type MessageMapping = ReturnType<typeof useMessageMapping>
