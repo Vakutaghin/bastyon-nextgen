@@ -52,16 +52,18 @@ describe('mini-apps event sources', () => {
     wsHandlers.clear()
   })
 
-  it('theme.changed fires on ui-store theme switch', async () => {
+  it('theme.changed fires on use-theme mode switch (V42)', async () => {
+    const { setThemeMode } = await import('@/composables/use-theme')
+    setThemeMode('light')
     const router = makeRouter()
     const cleanup = setupEventSources({ router, enableKeyboard: false })
 
-    const ui = useUIStore()
-    ui.setTheme('dark')
+    setThemeMode('dark')
     await Promise.resolve()
 
     expect(mockedPushAll).toHaveBeenCalledWith('theme.changed', { rootid: 'dark' })
     cleanup()
+    setThemeMode('auto')
   })
 
   it('locale.changed fires on ui-store language switch', async () => {
@@ -123,10 +125,13 @@ describe('mini-apps event sources', () => {
     mockedPushAll.mockClear()
 
     // Эти изменения не должны вызывать pushAll после cleanup.
+    const { setThemeMode } = await import('@/composables/use-theme')
+    setThemeMode('dark')
     const ui = useUIStore()
-    ui.setTheme('dark')
+    ui.language = ui.language === 'ru' ? 'en' : 'ru'
     await Promise.resolve()
 
     expect(mockedPushAll).not.toHaveBeenCalled()
+    setThemeMode('auto')
   })
 })

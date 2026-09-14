@@ -5,9 +5,10 @@
  *   const { t } = useI18n()
  *   t('routes.home')
  *
- * Смена языка: useLocale().setLocale('en') — composable обновляет <html lang>
- * и сохраняет выбор в localStorage. Здесь экспортируется только базовый
- * инстанс i18n + утилиты для использования вне Vue-контекста (router и т.п.).
+ * Смена языка: ui-store.setLanguage (единственный владелец, V42) — он зовёт
+ * setI18nLocale (vue-i18n + <html lang> + localStorage) и персистит в IDB.
+ * Здесь экспортируется только базовый инстанс i18n + утилиты для
+ * использования вне Vue-контекста (router и т.п.).
  */
 
 import { createI18n } from 'vue-i18n'
@@ -24,13 +25,24 @@ function isLocale(v: unknown): v is Locale {
   return typeof v === 'string' && (SUPPORTED_LOCALES as readonly string[]).includes(v)
 }
 
-function detectInitialLocale(): Locale {
+/** Явный выбор пользователя из localStorage (последний по времени источник). */
+export function readStoredLocale(): Locale | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (isLocale(stored)) return stored
+    return isLocale(stored) ? stored : null
   } catch {
-    /* приватный режим — фолбэк ниже */
+    return null
   }
+}
+
+/**
+ * Единственный детектор языка (V42): localStorage → язык браузера → `ru`.
+ * Раньше ui-store держал второй детектор с дефолтом `en`, и на старте UI
+ * мигал ru→en, а вкладка «Общие» подсвечивала не тот язык.
+ */
+export function detectInitialLocale(): Locale {
+  const stored = readStoredLocale()
+  if (stored) return stored
   if (typeof navigator !== 'undefined') {
     const code = navigator.language?.split('-')[0]?.toLowerCase()
     if (isLocale(code)) return code

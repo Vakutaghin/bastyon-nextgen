@@ -33,6 +33,7 @@ import { watch } from 'vue'
 import { miniAppsBridge } from '@/mini-apps/core/bridge'
 import { wsService } from '@/blockchain/ws/ws-service'
 import { useUIStore } from '@/stores/ui-store'
+import { useTheme } from '@/composables/use-theme'
 import { logger } from '@/services/logger'
 
 const log = logger.scope('[mini-apps:events]')
@@ -49,14 +50,14 @@ export function setupEventSources(opts: SetupEventSourcesOptions): Unsubscribe {
   const cleanups: Unsubscribe[] = []
 
   // ─── theme.changed ────────────────────────────────────────────────────────
+  // Источник темы — use-theme (data-theme на <html>), а не ui-store: его поле
+  // `theme` никто не менял, и событие не приходило никогда (V42).
   const uiStore = useUIStore()
+  const { isDark } = useTheme()
   cleanups.push(
-    watch(
-      () => uiStore.theme,
-      (theme) => {
-        miniAppsBridge.pushAll('theme.changed', { rootid: theme })
-      }
-    )
+    watch(isDark, (dark) => {
+      miniAppsBridge.pushAll('theme.changed', { rootid: dark ? 'dark' : 'light' })
+    })
   )
 
   // ─── locale.changed ───────────────────────────────────────────────────────

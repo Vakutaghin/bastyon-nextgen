@@ -1,28 +1,22 @@
 import { defineStore } from 'pinia'
 import { SCROLL_POSITION_PREFIX } from '@/blockchain/constants/storage'
 import { settingsAPI } from '@/db/apis/settings-api'
-import { setI18nLocale } from '@/i18n'
+import { detectInitialLocale, readStoredLocale, setI18nLocale, type Locale } from '@/i18n'
 
-export type AppLanguage = 'ru' | 'en'
+export type AppLanguage = Locale
 
 const SETTING_KEY_LANGUAGE = 'bastyonAppLanguage'
 
-function detectDefaultLanguage(): AppLanguage {
-  try {
-    const nav = (navigator?.language ?? '').slice(0, 2).toLowerCase()
-    return nav === 'ru' ? 'ru' : 'en'
-  } catch {
-    return 'ru'
-  }
-}
-
+// Тема живёт в composables/use-theme (data-theme на <html>, localStorage) —
+// здесь её нет: поле `theme` в сторе никто не писал, и мини-аппы никогда не
+// получали theme.changed (V42).
 export const useUIStore = defineStore('ui', {
   state: () => ({
     scrollPositions: new Map<string, number>(),
     loadingStates: new Map<string, boolean>(),
-    theme: 'light' as 'light' | 'dark',
     sidebarCollapsed: false,
-    language: detectDefaultLanguage(),
+    // Тот же детектор, что у vue-i18n на буте: стор и i18n стартуют с одного значения.
+    language: detectInitialLocale() as AppLanguage,
     languageLoaded: false,
   }),
 
@@ -102,20 +96,6 @@ export const useUIStore = defineStore('ui', {
     },
 
     /**
-     * Переключает тему
-     */
-    toggleTheme(): void {
-      this.theme = this.theme === 'light' ? 'dark' : 'light'
-    },
-
-    /**
-     * Устанавливает тему
-     */
-    setTheme(theme: 'light' | 'dark'): void {
-      this.theme = theme
-    },
-
-    /**
      * Переключает состояние сайдбара
      */
     toggleSidebar(): void {
@@ -144,21 +124,24 @@ export const useUIStore = defineStore('ui', {
     },
 
     /**
-     * Подтягивает сохранённый язык из IndexedDB. Если ничего не сохранено —
-     * остаётся то, что определилось из navigator.language.
-     * Применяет язык к vue-i18n и <html lang>.
+     * Старт: явный выбор в localStorage (`bastyon_locale`) — главный, он уже
+     * применён к vue-i18n на буте, ничего не трогаем. Без него — переносим
+     * старое значение из IndexedDB (`bastyonAppLanguage`), если оно есть.
+     * Раньше IDB-значение (с дефолтом `en`) перебивало выбор в шапке после
+     * перезагрузки (V42).
      */
     async loadLanguage(): Promise<void> {
       try {
+        if (readStoredLocale()) return
         const stored = await settingsAPI.get(SETTING_KEY_LANGUAGE)
-        if (stored === 'ru' || stored === 'en') {
+        if ((stored === 'ru' || stored === 'en') && stored !== this.language) {
           this.language = stored
+          setI18nLocale(stored)
         }
       } catch (err) {
         console.error('Failed to load language setting:', err)
       } finally {
         this.languageLoaded = true
-        setI18nLocale(this.language)
       }
     },
 

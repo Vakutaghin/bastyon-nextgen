@@ -1,11 +1,18 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+
+vi.mock('@/db/apis/settings-api', () => ({
+  settingsAPI: { get: vi.fn(async () => undefined), set: vi.fn(async (k: string) => k) },
+}))
+
+import { memStorage } from '@/blockchain/storage/vault/test-mem-storage'
 import { useUIStore } from './ui-store'
 
 describe('ui-store', () => {
   let store: ReturnType<typeof useUIStore>
 
   beforeEach(() => {
+    vi.stubGlobal('localStorage', memStorage())
     setActivePinia(createPinia())
     store = useUIStore()
   })
@@ -54,21 +61,42 @@ describe('ui-store', () => {
     })
   })
 
-  describe('theme', () => {
-    it('defaults to light', () => {
-      expect(store.theme).toBe('light')
+  describe('language (V42)', () => {
+    it('явный выбор в localStorage главнее старого IDB-значения', async () => {
+      localStorage.setItem('bastyon_locale', 'en')
+      const { settingsAPI } = await import('@/db/apis/settings-api')
+      vi.mocked(settingsAPI.get).mockClear().mockResolvedValue('ru')
+      setActivePinia(createPinia())
+      const fresh = useUIStore()
+      expect(fresh.language).toBe('en')
+      await fresh.loadLanguage()
+      expect(fresh.language).toBe('en')
+      expect(fresh.languageLoaded).toBe(true)
+      expect(settingsAPI.get).not.toHaveBeenCalled()
     })
 
-    it('toggles theme', () => {
-      store.toggleTheme()
-      expect(store.theme).toBe('dark')
-      store.toggleTheme()
-      expect(store.theme).toBe('light')
+    it('без localStorage старое IDB-значение переносится и применяется', async () => {
+      const { settingsAPI } = await import('@/db/apis/settings-api')
+      vi.mocked(settingsAPI.get).mockResolvedValue('en')
+      const { i18n } = await import('@/i18n')
+      i18n.global.locale.value = 'ru'
+      setActivePinia(createPinia())
+      const fresh = useUIStore()
+      fresh.language = 'ru'
+      await fresh.loadLanguage()
+      expect(fresh.language).toBe('en')
+      expect(i18n.global.locale.value).toBe('en')
+      expect(localStorage.getItem('bastyon_locale')).toBe('en')
     })
 
-    it('sets theme directly', () => {
-      store.setTheme('dark')
-      expect(store.theme).toBe('dark')
+    it('setLanguage меняет i18n, localStorage и IDB вместе', async () => {
+      const { settingsAPI } = await import('@/db/apis/settings-api')
+      const { i18n } = await import('@/i18n')
+      await store.setLanguage('en')
+      expect(store.language).toBe('en')
+      expect(i18n.global.locale.value).toBe('en')
+      expect(localStorage.getItem('bastyon_locale')).toBe('en')
+      expect(settingsAPI.set).toHaveBeenCalledWith('bastyonAppLanguage', 'en')
     })
   })
 

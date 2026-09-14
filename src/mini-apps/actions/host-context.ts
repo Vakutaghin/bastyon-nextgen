@@ -222,6 +222,7 @@ export async function createDefaultHostContext(
   opts: DefaultHostContextOptions
 ): Promise<HostContext> {
   const { useUIStore } = await import('@/stores/ui-store')
+  const { useTheme } = await import('@/composables/use-theme')
   const { useAuthStore } = await import('@/blockchain/store/auth-store')
   const { useTorStore } = await import('@/stores/tor-store')
   const { isTauri, isCapacitor } = await import('@/b-components/video-uploader/utils/environment')
@@ -260,7 +261,8 @@ export async function createDefaultHostContext(
     transactionsApiVersion: 8,
 
     getLocale: () => useUIStore().language,
-    getTheme: () => ({ rootid: useUIStore().theme }),
+    // Тема — из use-theme (data-theme на <html>): поле ui-store.theme никто не писал (V42).
+    getTheme: () => ({ rootid: useTheme().isDark.value ? 'dark' : 'light' }),
     getMarginTop: () =>
       document.documentElement.style.getPropertyValue('--app-margin-top') || '0px',
     isTorActive: () => useTorStore().isReady,
