@@ -44,6 +44,19 @@ export const BACKUP_VERIFIED_PREFIX = 'BST_BACKUP_VERIFIED_'
 export const BACKUP_NUDGED_AT_KEY = 'BST_BACKUP_NUDGED_AT'
 
 /**
+ * Пользовательские данные вне `BST_*`, которые тоже обязаны уходить при
+ * выходе (аудит V14): OAuth-токены PeerTube `token_<address>_<host>`
+ * (access+refresh — доступ к каналу пользователя), resume-состояние загрузок
+ * `resumable_<host>_<address>_<key>`, черновик поста `bastyon_post_draft` и
+ * черновики комментариев `bastyon_comment_draft:<postId>` (текст следующему
+ * аккаунту на устройстве не принадлежит).
+ */
+export const PEERTUBE_TOKEN_PREFIX = 'token_'
+export const PEERTUBE_RESUME_PREFIX = 'resumable_'
+export const POST_DRAFT_KEY = 'bastyon_post_draft'
+export const COMMENT_DRAFT_PREFIX = 'bastyon_comment_draft:'
+
+/**
  * Ключ для громкости видео плеера
  */
 export const VIDEO_PLAYER_VOLUME_KEY = 'BST_VIDEO_PLAYER_VOLUME'

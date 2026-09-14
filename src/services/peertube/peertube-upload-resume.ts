@@ -2,6 +2,8 @@
 // persistence-адаптер (ключ = host+address+videoKey, TTL 12 ч). Вынесен из
 // peertube-upload.ts, чтобы транспорт не знал про storage.
 
+import { PEERTUBE_RESUME_PREFIX } from '@/blockchain/constants/storage'
+
 /** TTL resume-состояния — возобновляем незавершённую загрузку в пределах 12 ч. */
 export const RESUME_TTL_MS = 12 * 60 * 60 * 1000
 
@@ -15,7 +17,7 @@ export interface ResumableState {
 
 /** Ключ resume-состояния — как в оригинале: `resumable_${host}_${address}_${videoKey}`. */
 export function resumableStorageKey(host: string, address: string, videoKey: string): string {
-  return `resumable_${host}_${address}_${videoKey}`
+  return `${PEERTUBE_RESUME_PREFIX}${host}_${address}_${videoKey}`
 }
 
 /** Валидное и не протухшее состояние, иначе null (в т.ч. при недоступном storage). */

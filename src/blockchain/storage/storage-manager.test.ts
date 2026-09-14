@@ -233,4 +233,18 @@ describe('wallet labels', () => {
     clearAllUserData()
     expect(getWalletLabel('PAcc', 'W1')).toBe('')
   })
+
+  it('clearAllUserData убирает токены PeerTube, resume-состояние и черновики (V14)', () => {
+    localStorage.setItem('token_PAcc_peertube.host', '{"access_token":"a"}')
+    localStorage.setItem('resumable_h_PAcc_VK', '{}')
+    localStorage.setItem('bastyon_post_draft', 'мой текст')
+    localStorage.setItem('bastyon_comment_draft:post1', 'черновик')
+    localStorage.setItem('unrelated', 'keep')
+    clearAllUserData()
+    expect(localStorage.getItem('token_PAcc_peertube.host')).toBeNull()
+    expect(localStorage.getItem('resumable_h_PAcc_VK')).toBeNull()
+    expect(localStorage.getItem('bastyon_post_draft')).toBeNull()
+    expect(localStorage.getItem('bastyon_comment_draft:post1')).toBeNull()
+    expect(localStorage.getItem('unrelated')).toBe('keep')
+  })
 })

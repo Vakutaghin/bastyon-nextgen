@@ -17,6 +17,7 @@ import type { ApiSignature } from '@/blockchain/types/signatures'
 import type { KeyPair } from '@/blockchain/types/keys'
 import type { Address } from '@/blockchain/types/addresses'
 import { peertubeInstanceFetch, serializeForm, type InstanceFetch } from './peertube-instance'
+import { PEERTUBE_TOKEN_PREFIX } from '@/blockchain/constants/storage'
 
 export type { InstanceFetch }
 
@@ -48,7 +49,7 @@ export function buildPeertubeSignature(keyPair: KeyPair, address: Address): ApiS
 // ── кэш токенов (пер-user-пер-host) ──────────────────────────────────────────
 
 export function peertubeTokenKey(address: string, host: string): string {
-  return `token_${address}_${host}`
+  return `${PEERTUBE_TOKEN_PREFIX}${address}_${host}`
 }
 
 export function loadPeertubeToken(address: string, host: string): PeertubeToken | null {

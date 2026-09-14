@@ -20,6 +20,10 @@ import {
   MESSENGER_KEY_PINS_PREFIX,
   BACKUP_VERIFIED_PREFIX,
   BACKUP_NUDGED_AT_KEY,
+  PEERTUBE_TOKEN_PREFIX,
+  PEERTUBE_RESUME_PREFIX,
+  POST_DRAFT_KEY,
+  COMMENT_DRAFT_PREFIX,
 } from '../constants/storage'
 import { ACCOUNTS_LIST_KEY } from './storage-constants'
 import { clearStoredData } from './storage-keys'
@@ -107,18 +111,23 @@ export function clearAllUserData(): void {
       // Пины ключей собеседников мессенджера (TOFU) и отметки «бэкап проверен» —
       // список контактов/адресов не должен переживать выход и светиться другому
       // аккаунту на устройстве.
+      // Плюс токены PeerTube, resume-состояние загрузок и черновики комментариев
+      // (V14) — тоже per-user и тоже не должны переживать выход.
+      const purgePrefixes = [
+        MESSENGER_KEY_PINS_PREFIX,
+        BACKUP_VERIFIED_PREFIX,
+        PEERTUBE_TOKEN_PREFIX,
+        PEERTUBE_RESUME_PREFIX,
+        COMMENT_DRAFT_PREFIX,
+      ]
       const prefixed: string[] = []
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i)
-        if (
-          k &&
-          (k.startsWith(MESSENGER_KEY_PINS_PREFIX) || k.startsWith(BACKUP_VERIFIED_PREFIX))
-        ) {
-          prefixed.push(k)
-        }
+        if (k && purgePrefixes.some((prefix) => k.startsWith(prefix))) prefixed.push(k)
       }
       for (const k of prefixed) localStorage.removeItem(k)
       localStorage.removeItem(BACKUP_NUDGED_AT_KEY)
+      localStorage.removeItem(POST_DRAFT_KEY)
 
       // Device-fingerprint + артефакты сейфа (конверт/backup/маркеры/троттлинг).
       localStorage.removeItem(DEVICE_FINGERPRINT_KEY)
