@@ -7,18 +7,20 @@
       <SC_Title v-if="preview.title">{{ preview.title }}</SC_Title>
       <SC_Description v-if="preview.description">{{ preview.description }}</SC_Description>
     </SC_Body>
-    <SC_Thumb
-      v-if="preview.imageUrl && !thumbFailed"
-      :src="preview.imageUrl"
-      :alt="preview.title || ''"
-      loading="lazy"
-      @error="thumbFailed = true"
-    />
+    <SC_Thumb v-if="preview.imageUrl && !thumbFailed">
+      <TorImage
+        :src="preview.imageUrl"
+        :alt="preview.title || ''"
+        loading="lazy"
+        @error="thumbFailed = true"
+      />
+    </SC_Thumb>
   </SC_LinkPreview>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, toRef } from 'vue'
+import TorImage from '@/components/tor-image'
 import { useLinkPreview } from './use-link-preview'
 import { SC_LinkPreview, SC_Body, SC_SiteName, SC_Title, SC_Description, SC_Thumb } from './styled'
 

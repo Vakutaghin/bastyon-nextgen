@@ -1,6 +1,9 @@
 // Скачивание медиа (картинка/файл) в браузере. Для кросс-доменных URL (peertube)
-// тянем blob через fetch и отдаём через временный object URL; если fetch упал
-// (нет CORS) — фолбэк: открываем в новой вкладке, пользователь сохранит вручную.
+// тянем blob через appFetch (под Tor — torFetch, в Tauri — plugin-http без CORS)
+// и отдаём через временный object URL; если fetch упал (нет CORS) — фолбэк:
+// открываем в новой вкладке, пользователь сохранит вручную.
+
+import { appFetch } from '@/helpers/api/fetch-strategies'
 
 /** Имя файла из URL: последний сегмент pathname (без query/hash), иначе дефолт. */
 export function deriveFilename(url: string, fallback = 'download'): string {
@@ -33,7 +36,7 @@ export async function downloadMedia(url: string, filename?: string): Promise<boo
   if (!url) return false
   const name = filename || deriveFilename(url)
   try {
-    const res = await fetch(url)
+    const res = await appFetch(url, { credentials: 'omit' })
     if (!res.ok) throw new Error(`http ${res.status}`)
     const blob = await res.blob()
     const objectUrl = URL.createObjectURL(blob)

@@ -1,5 +1,9 @@
 <template>
-  <SC_Frame v-if="app">
+  <!-- Под Tor iframe мини-аппы грузился бы напрямую с её хоста, с реальным IP (V21). -->
+  <SC_Error v-if="app && mediaBlocked">
+    <TorBlockedNotice :message="t('torMedia.miniAppBlocked')" />
+  </SC_Error>
+  <SC_Frame v-else-if="app">
     <SC_IframeWrap>
       <!--
         :key="iframeSrc" — принудительный re-mount iframe при смене src.
@@ -47,6 +51,8 @@ import { Modal } from 'ant-design-vue'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { miniAppsBridge } from '@/mini-apps/core/bridge'
 import { onIframeLifecycleEvent } from './use-mini-app-bridge'
+import TorBlockedNotice from '@/components/tor-blocked-notice'
+import { useTorMedia } from '@/composables/use-tor-media'
 import {
   SC_Frame,
   SC_IframeWrap,
@@ -70,6 +76,7 @@ const { t } = useI18n()
 const appsStore = useAppsStore()
 
 const app = computed(() => appsStore.byId(props.appId))
+const { mediaBlocked } = useTorMedia()
 const loaded = ref(false)
 const iframeStatus = ref<'pending' | 'loaded-html' | 'load-error' | 'load-timeout'>('pending')
 

@@ -6,11 +6,13 @@ import { SC_Avatar } from './styled'
 import type { AvatarProps } from './types'
 import { getInitials as getInitialsUtil } from '@/helpers/common/initials'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
-
+import { useTorMedia } from '@/composables/use-tor-media'
 
 export function useAvatar(p: AvatarProps) {
   // Получаем attrs для проверки header avatar
   const attrs = useAttrs()
+  // Под Tor аватар не грузим вовсе (CSP всё равно заблокирует) — сразу инициалы (V21).
+  const { mediaBlocked } = useTorMedia()
 
   const showPlaceholder = ref(false)
   const actualSrc = ref<string | undefined>(undefined)
@@ -66,17 +68,21 @@ export function useAvatar(p: AvatarProps) {
   }
 
   // Обновляем фактический src сразу
-  watch(() => p.src, (newSrc, oldSrc) => {
-    if (newSrc && newSrc !== oldSrc) {
-      showPlaceholder.value = false
-      // resolveImageUrl: разворачивает голый хеш в полный URL + нормализует домен
-      // (раньше тут был только swap домена — голый хеш оставался сломанным src).
-      actualSrc.value = resolveImageUrl(newSrc)
-    } else if (!newSrc) {
-      actualSrc.value = undefined
-      showPlaceholder.value = true
-    }
-  }, { immediate: true })
+  watch(
+    [() => p.src, mediaBlocked],
+    ([newSrc, blocked], [oldSrc]) => {
+      if (blocked || !newSrc) {
+        actualSrc.value = undefined
+        showPlaceholder.value = true
+      } else if (newSrc !== oldSrc || !actualSrc.value) {
+        showPlaceholder.value = false
+        // resolveImageUrl: разворачивает голый хеш в полный URL + нормализует домен
+        // (раньше тут был только swap домена — голый хеш оставался сломанным src).
+        actualSrc.value = resolveImageUrl(newSrc)
+      }
+    },
+    { immediate: true }
+  )
 
   return {
     Avatar,
@@ -93,6 +99,6 @@ export function useAvatar(p: AvatarProps) {
     handleImageError,
     handleImageLoad,
     actualSrc,
-    rootEl
+    rootEl,
   }
 }

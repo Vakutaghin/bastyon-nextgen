@@ -199,8 +199,10 @@ export default {
       'Open Bastyon in the desktop app — the browser version does not support built-in Tor.',
     torEnableTitle: 'Enable Tor?',
     torEnableContent:
-      'On first launch Tor (~30 MB) will be downloaded. This may take a minute. Once connected, all app network traffic will go through the Tor network. Matrix chat may experience delays.',
+      'On first launch Tor (~30 MB) is downloaded; this may take a minute. Node requests, chat and the app API go through Tor. Images, video and embeds (YouTube, mini-apps) do not — so while Tor is on they are blocked: an image can be loaded through Tor on click, video only directly, with your IP, after confirmation. Turning Tor off reloads the app.',
     torEnableOk: 'Enable',
+    torMediaHint:
+      'Through Tor: nodes, chat, API. Images — through Tor on click; video, YouTube and mini-apps — disabled or directly with your IP after confirmation. Turning Tor off reloads the app.',
     ipfsOk: 'OK',
     ipfsDesktopOnlyTitle: 'IPFS is available only in the desktop app',
     ipfsDesktopOnlyContent:
@@ -1242,6 +1244,19 @@ export default {
       'You have reached your limit for this action. Raise your reputation to increase your limits.',
     ctaMessageBoth:
       'You have reached your limit for this action. Buy PKOIN and raise your reputation to increase your limits.',
+  },
+  torMedia: {
+    loadImage: 'Load through Tor',
+    loading: 'Loading through Tor…',
+    loadFailed: 'Failed to load through Tor',
+    retry: 'Retry',
+    embedBlocked: 'Embeds are disabled while Tor is on: they would load directly, with your IP.',
+    miniAppBlocked:
+      'Mini-apps are unavailable while Tor is on: they load directly, bypassing Tor. Turn Tor off to open the app.',
+    videoBypassTitle: 'Video will bypass Tor',
+    videoBypassBody:
+      'The player loads video directly from the PeerTube server — the server will see your IP address. Node requests and chat stay in Tor.',
+    videoBypassOk: 'Watch bypassing Tor',
   },
   misc: {
     bastyonFeed: 'Bastyon Feed',

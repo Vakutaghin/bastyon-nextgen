@@ -75,7 +75,12 @@
           @seek-timecode="handleSeekTimecode"
         />
 
-        <SC_PostCardYoutube v-if="(youtubeEmbedUrls || []).length">
+        <!-- Под Tor iframe YouTube ушёл бы напрямую, с реальным IP (V21). -->
+        <TorBlockedNotice
+          v-if="(youtubeEmbedUrls || []).length && mediaBlocked"
+          :message="t('torMedia.embedBlocked')"
+        />
+        <SC_PostCardYoutube v-else-if="(youtubeEmbedUrls || []).length">
           <iframe
             v-for="embedUrl in youtubeEmbedUrls"
             :key="embedUrl"
@@ -207,6 +212,8 @@ import PostCardImages from '@/b-components/content/post-card/components/post-car
 import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
 import PostCardCategoriesTags from '@/b-components/content/post-card/components/post-card-categories-tags/post-card-categories-tags.vue'
 import PostCardVideoPlaceholder from '@/b-components/content/post-card/components/post-card-video-placeholder/post-card-video-placeholder.vue'
+import TorBlockedNotice from '@/components/tor-blocked-notice'
+import { useTorMedia } from '@/composables/use-tor-media'
 import {
   SC_PostCard,
   SC_PostTitle,
@@ -267,6 +274,7 @@ const authStore = useAuthStore()
 
 const isCollapsed = ref(true)
 const postCardRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
+const { mediaBlocked } = useTorMedia()
 const { videoPlayerRef, chapters, youtubeEmbedUrls, handleSeekTimecode } = usePostMedia(
   () => props.post
 )

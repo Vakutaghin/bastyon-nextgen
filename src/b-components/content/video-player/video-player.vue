@@ -76,8 +76,25 @@
       </SC_VideoRetryButton>
     </SC_VideoError>
 
+    <!-- Под Tor видео идёт напрямую с PeerTube (мимо Tor) — играем только после подтверждения (V21). -->
+    <SC_VideoError v-if="torNoticeVisible && !error" @click.stop>
+      <p>{{ t('torMedia.videoBypassTitle') }}</p>
+      <SC_VideoTorBody>{{ t('torMedia.videoBypassBody') }}</SC_VideoTorBody>
+      <SC_VideoTorActions>
+        <SC_VideoRetryButton type="button" @click.stop="acceptTorBypass">
+          <span>{{ t('torMedia.videoBypassOk') }}</span>
+        </SC_VideoRetryButton>
+        <SC_VideoRetryButton type="button" @click.stop="torNoticeVisible = false">
+          <span>{{ t('common.cancel') }}</span>
+        </SC_VideoRetryButton>
+      </SC_VideoTorActions>
+    </SC_VideoError>
+
     <!-- Кнопка Play для неинициализированного проигрывателя -->
-    <SC_VideoPlayButton v-if="!isInitialized && !isLoading && !error" @click.stop="togglePlay">
+    <SC_VideoPlayButton
+      v-if="!isInitialized && !isLoading && !error && !torNoticeVisible"
+      @click.stop="togglePlay"
+    >
       <PlayCircleOutlined :style="ICON_WHITE_64" />
     </SC_VideoPlayButton>
 
@@ -322,6 +339,7 @@ import { useVideoNotifications } from './composables/use-video-notifications'
 import { useVideoThumbnail } from './composables/use-video-thumbnail'
 import { useVideoSubtitles } from './composables/use-video-subtitles'
 import { useVideoElementEvents } from './composables/use-video-element-events'
+import { useTorMedia } from '@/composables/use-tor-media'
 import { resolveVideoElement } from './composables/utils'
 import AudioVisualizer from '@/b-components/content/video-player/components/audio-visualizer/audio-visualizer.vue'
 import {
@@ -343,6 +361,8 @@ import {
   SC_VideoChapterTitle,
   SC_VideoLoading,
   SC_VideoError,
+  SC_VideoTorBody,
+  SC_VideoTorActions,
   SC_VideoRetryButton,
   SC_VideoVolumeControl,
   SC_VideoVolumeButton,
@@ -476,7 +496,7 @@ const {
   qualityControlRef,
   qualityDropdownRef,
   currentMenuScreen,
-  initPlayer,
+  initPlayer: hlsInitPlayer,
   retry,
   setQualityLevel,
   openQualityMenu,
@@ -619,6 +639,29 @@ watch(isInitialized, (initialized) => {
     tryApply()
   }
 })
+
+// Tor: плеер грузит HLS/MP4 напрямую с PeerTube — сервер увидит IP. Первый
+// запуск под Tor показывает предупреждение, initPlayer идёт только после
+// согласия (на этот плеер). Автоплей под Tor тоже упирается в предупреждение.
+const { mediaBlocked } = useTorMedia()
+const torBypassAccepted = ref(false)
+const torNoticeVisible = ref(false)
+let torPendingForcePlay = false
+
+function initPlayer(forcePlay = false): ReturnType<typeof hlsInitPlayer> | undefined {
+  if (mediaBlocked.value && !torBypassAccepted.value) {
+    torPendingForcePlay = forcePlay
+    torNoticeVisible.value = true
+    return undefined
+  }
+  return hlsInitPlayer(forcePlay)
+}
+
+function acceptTorBypass(): void {
+  torBypassAccepted.value = true
+  torNoticeVisible.value = false
+  void hlsInitPlayer(torPendingForcePlay)
+}
 
 function togglePlay(showNotification = false): void {
   const video = getVideoElement()

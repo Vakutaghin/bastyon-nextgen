@@ -7,6 +7,7 @@
 
 import { onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import { parsePeerTubeUrl } from '@/helpers/api/peertube-parser'
+import { appFetch } from '@/helpers/api/fetch-strategies'
 import { getPeerTubeCaptions } from '@/helpers/api/peertube-api'
 
 export interface SubtitleTrack {
@@ -49,7 +50,8 @@ export function useVideoSubtitles(videoUrl: Ref<string | undefined>) {
     const abandon = (): void => built.forEach((t) => URL.revokeObjectURL(t.src))
     for (const c of captions) {
       try {
-        const res = await fetch(c.url)
+        // appFetch: под Tor субтитры идут через torFetch, а не сырым fetch (V21).
+        const res = await appFetch(c.url, { credentials: 'omit' })
         if (my !== token) return abandon() // переключились — чистим уже собранное
         if (!res.ok) continue
         const text = await res.text()

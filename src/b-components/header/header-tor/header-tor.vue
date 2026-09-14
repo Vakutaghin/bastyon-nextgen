@@ -20,6 +20,8 @@
         </SC_TorRow>
 
         <SC_TorStatusLine>{{ statusLine }}</SC_TorStatusLine>
+        <!-- Честно о границах: через Tor идёт только appFetch, медиа/фреймы — нет (V21). -->
+        <SC_TorHint v-if="enabled">{{ t('header.torMediaHint') }}</SC_TorHint>
 
         <SC_TorProgressOuter v-if="showProgress">
           <SC_TorProgressInner :pct="progressPct" />
@@ -87,6 +89,8 @@ import {
 
 const RadioGroup = Radio.Group
 
+const TOR_CONSENT_KEY = 'tor:seen-consent:v2'
+
 const { t } = useI18n()
 
 const tor = useTorStore()
@@ -153,7 +157,9 @@ const statusLine = computed<string>(() => {
     case 'ready':
       return t('header.torStatusReady')
     case 'failed':
-      return message.value ? t('header.torStatusError', { message: message.value }) : t('header.torError')
+      return message.value
+        ? t('header.torStatusError', { message: message.value })
+        : t('header.torError')
     default:
       return ''
   }
@@ -195,8 +201,9 @@ async function onToggleSwitch(...args: unknown[]): Promise<void> {
     }
   }
   if (!enabled.value) {
-    // First-run consent if Tor is not yet installed.
-    const seen = localStorage.getItem('tor:seen-consent') === '1'
+    // Согласие при первом включении. Ключ с версией: текст стал честнее (V21 —
+    // медиа мимо Tor), и старое «да» на старый текст не считается.
+    const seen = localStorage.getItem(TOR_CONSENT_KEY) === '1'
     if (!seen) {
       const ok = await new Promise<boolean>((resolve) => {
         Modal.confirm({
@@ -205,7 +212,7 @@ async function onToggleSwitch(...args: unknown[]): Promise<void> {
           okText: t('header.torEnableOk'),
           cancelText: t('header.cancel'),
           onOk: () => {
-            localStorage.setItem('tor:seen-consent', '1')
+            localStorage.setItem(TOR_CONSENT_KEY, '1')
             resolve(true)
           },
           onCancel: () => resolve(false),

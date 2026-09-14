@@ -954,3 +954,9 @@ body.miniapp-fullscreen {
 .mention-link:hover {
   text-decoration: underline;
 }
+
+/* Tor (V21): meta-CSP блокирует загрузку удалённых картинок — вместо «битой»
+   иконки прячем сам <img>; blob:/data: (TorImage, QR, локальные файлы) не трогаем. */
+html.tor-media-blocked img[src^='http'] {
+  visibility: hidden;
+}

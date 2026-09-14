@@ -1,6 +1,6 @@
 <template>
   <SC_BlockImage>
-    <SC_BlockImageImg :src="imageUrl" :alt="imageAlt" @error="imageError = true" />
+    <TorImage :src="imageUrl" :alt="imageAlt" @error="imageError = true" />
     <SC_BlockImageCaption v-if="imageCaption">
       {{ decodedCaption }}
     </SC_BlockImageCaption>
@@ -9,7 +9,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { SC_BlockImage, SC_BlockImageImg, SC_BlockImageCaption } from './styled'
+import TorImage from '@/components/tor-image'
+import { SC_BlockImage, SC_BlockImageCaption } from './styled'
 import { safeDecode } from '@/helpers/content/safe-decode'
 
 interface BlockImageData {

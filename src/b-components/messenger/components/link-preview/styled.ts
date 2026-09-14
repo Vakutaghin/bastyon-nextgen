@@ -63,11 +63,26 @@ export const SC_Description = styled.div`
   overflow: hidden;
 `
 
-export const SC_Thumb = styled.img`
+/** Обёртка превью-картинки: внутри TorImage (под Tor — заглушка, не <img>). */
+export const SC_Thumb = styled.div`
   width: 64px;
   height: 64px;
-  object-fit: cover;
   border-radius: 6px;
   flex-shrink: 0;
+  overflow: hidden;
   background: ${COLORS.BG_SECONDARY};
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  button {
+    min-height: 64px;
+    padding: 4px;
+    font-size: 10px;
+    border-radius: 6px;
+  }
 `

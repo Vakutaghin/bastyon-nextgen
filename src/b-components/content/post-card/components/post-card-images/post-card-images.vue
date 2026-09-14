@@ -7,14 +7,14 @@
       :style="getImageWrapperStyle(idx)"
       @click.stop="openImageGallery(idx)"
     >
-      <img
+      <TorImage
         :src="imageUrl"
         :alt="t('postCard.imageAlt', { index: idx + 1 })"
         :style="getImageStyle(idx)"
         loading="lazy"
         decoding="async"
         @error="handleImageError"
-        @load="(e) => handleImageLoad(e, idx)"
+        @load="(e: Event) => handleImageLoad(e, idx)"
       />
       <SC_ImageOverlay @click.stop="openImageGallery(idx)">
         <SC_ZoomIconCircle>
@@ -30,6 +30,7 @@ import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ZoomInOutlined } from '@ant-design/icons-vue'
 import { useModalStore } from '@/stores/modal-store'
+import TorImage, { getTorImageUrl } from '@/components/tor-image'
 import { SC_PostImage, SC_ImageWrapper, SC_ImageOverlay, SC_ZoomIconCircle } from './styled'
 
 const props = defineProps<{ images: string[] }>()
@@ -81,7 +82,10 @@ function getImageStyle(imageIndex: number): Record<string, string> {
 
 function openImageGallery(index: number): void {
   if (props.images && props.images.length > 0) {
-    modalStore.openImageGallery(props.images, index)
+    // Под Tor лайтбокс получает blob-URL уже загруженных через Tor картинок;
+    // незагруженные остаются заблокированными CSP — сначала клик по заглушке.
+    const images = props.images.map((u) => getTorImageUrl(u) ?? u)
+    modalStore.openImageGallery(images, index)
   }
 }
 </script>

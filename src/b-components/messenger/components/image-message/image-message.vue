@@ -38,6 +38,7 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
+import { useTorMedia } from '@/composables/use-tor-media'
 import {
   SC_ImageMessage,
   SC_ImageFrame,
@@ -56,6 +57,7 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const store = useMessengerStore()
+const { mediaBlocked } = useTorMedia()
 
 const isLocal = computed(
   () => typeof props.message.url === 'string' && props.message.url.startsWith('blob:')
@@ -101,11 +103,14 @@ const ensureSrc = async () => {
     resolvedSrc.value = props.message.url || null
     return
   }
-  if (!needsDecrypt.value) {
+  if (!needsDecrypt.value && !mediaBlocked.value) {
     // Не зашифровано — браузер сам подтянет mxc/http
     resolvedSrc.value = props.message.info?.httpUrl || props.message.url || null
     return
   }
+  // Зашифровано — или Tor: webview не грузит <img> сам (CSP), тянем через
+  // matrixFetch (torified) в blob (V21). Незашифрованное fetchAndDecryptMedia
+  // пропускает как есть.
   isLoading.value = true
   decryptFailed.value = false
   try {

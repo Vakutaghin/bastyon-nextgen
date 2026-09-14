@@ -44,6 +44,7 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
+import { useTorMedia } from '@/composables/use-tor-media'
 import {
   SC_VideoMessage,
   SC_VideoFrame,
@@ -65,6 +66,7 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const store = useMessengerStore()
+const { mediaBlocked } = useTorMedia()
 
 const isLocal = computed(
   () => typeof props.message.url === 'string' && props.message.url.startsWith('blob:')
@@ -126,11 +128,12 @@ const startPlayback = async () => {
     playerActive.value = true
     return
   }
-  if (!needsDecrypt.value) {
+  if (!needsDecrypt.value && !mediaBlocked.value) {
     resolvedSrc.value = props.message.info?.httpUrl || props.message.url || null
     playerActive.value = true
     return
   }
+  // Зашифровано — или Tor: видео тянем через matrixFetch (torified) в blob (V21).
   if (resolvedSrc.value) {
     playerActive.value = true
     return

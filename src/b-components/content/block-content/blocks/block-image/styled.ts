@@ -5,14 +5,15 @@ import { COLORS } from '@/styles/theme-colors'
 export const SC_BlockImage = styled.figure`
   margin: 1em 0;
   text-align: center;
-`
 
-export const SC_BlockImageImg = styled.img`
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-  display: block;
-  margin: 0 auto;
+  /* Картинка — TorImage (под Tor заглушка вместо <img>), поэтому стили на figure. */
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    display: block;
+    margin: 0 auto;
+  }
 `
 
 export const SC_BlockImageCaption = styled.figcaption`
