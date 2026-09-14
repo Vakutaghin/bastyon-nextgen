@@ -388,11 +388,19 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   const onReplyToAuthorFirstLevel = (comment: GetComment): void => {
     openReplyToAuthor(comment.id, comment.id, comment.userprofile?.name || comment.address || '')
   }
+  // Ответ на ответ (второй уровень): как в legacy, `parentid` — корневой
+  // комментарий ветки, `answerid` — сам ответ. Раньше сюда уходил
+  // `parentid = reply.id` (третий уровень): нода принимала tx, но ни pending,
+  // ни `getcomments(post, root)` такой комментарий не показывали (K4).
   const onReplyToSecondLevel = (reply: GetComment): void => {
-    openReplyEmpty(reply.id, reply.id)
+    openReplyEmpty(reply.id, reply.parentid || reply.id)
   }
   const onReplyToComment = (reply: GetComment): void => {
-    openReplyToAuthor(reply.id, reply.id, reply.userprofile?.name || reply.address || '')
+    openReplyToAuthor(
+      reply.id,
+      reply.parentid || reply.id,
+      reply.userprofile?.name || reply.address || ''
+    )
   }
 
   return {
