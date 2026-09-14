@@ -143,7 +143,6 @@ dependencies = [
  "tokio-socks",
  "tokio-tungstenite",
  "url",
- "uuid",
  "zip",
 ]
 

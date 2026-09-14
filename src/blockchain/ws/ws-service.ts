@@ -367,6 +367,9 @@ class PocketnetWsService {
     this.subscribingAddresses.clear()
 
     if (this.socket) {
+      // onopen тоже: поздний open на брошенном сокете иначе запускал authorize()
+      // с подписью в уже закрытое соединение (S3).
+      this.socket.onopen = null
       this.socket.onclose = null
       this.socket.onerror = null
       this.socket.onmessage = null

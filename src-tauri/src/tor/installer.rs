@@ -5,6 +5,7 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::Write;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tar::Archive;
 use tauri::{AppHandle, Emitter};
 use thiserror::Error;
@@ -31,6 +32,8 @@ pub enum InstallError {
     ExtractedFileMissing(String),
     #[error("zip error: {0}")]
     Zip(#[from] zip::result::ZipError),
+    #[error("installation cancelled")]
+    Cancelled,
 }
 
 #[derive(Debug, Clone)]
@@ -77,6 +80,7 @@ pub fn detect_platform() -> Result<PlatformInfo, InstallError> {
 pub async fn ensure_installed(
     app: &AppHandle,
     paths: &TorPaths,
+    cancel: &AtomicBool,
 ) -> Result<(), InstallError> {
     if paths.binary.is_file() && paths.geoip.is_file() {
         return Ok(());
@@ -100,7 +104,11 @@ pub async fn ensure_installed(
 
     let archive_path = paths.root.join(&platform.archive_name);
 
-    download_with_progress(app, &archive_url, &archive_path).await?;
+    download_with_progress(app, &archive_url, &archive_path, cancel).await?;
+    if cancel.load(Ordering::SeqCst) {
+        let _ = fs::remove_file(&archive_path);
+        return Err(InstallError::Cancelled);
+    }
 
     emit_progress(app, "verifying", 0.95, "Verifying SHA256");
     verify_sha256(&archive_path, &platform.archive_name, &sha_url).await?;
@@ -156,6 +164,7 @@ async fn download_with_progress(
     app: &AppHandle,
     url: &str,
     dest: &Path,
+    cancel: &AtomicBool,
 ) -> Result<(), InstallError> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(600))
@@ -169,6 +178,12 @@ async fn download_with_progress(
     let mut stream = resp.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
+        // `tor_stop` во время загрузки: бросаем архив, не дописываем (S59).
+        if cancel.load(Ordering::SeqCst) {
+            drop(file);
+            let _ = fs::remove_file(dest);
+            return Err(InstallError::Cancelled);
+        }
         let chunk = chunk?;
         file.write_all(&chunk)?;
         downloaded += chunk.len() as u64;

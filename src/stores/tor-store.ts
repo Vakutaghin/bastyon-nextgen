@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 
+import { routingModeOf, type TorRoutingMode } from '@/helpers/tor/tor-gate'
+import { applyTorMediaPolicy, isTorMediaPolicyApplied } from '@/helpers/tor/tor-media-policy'
+
 export type TorStatus = 'off' | 'installing' | 'starting' | 'bootstrapping' | 'ready' | 'failed'
 
 export type TorBridgeKind = 'none' | 'snowflake' | 'obfs4' | 'custom'
@@ -83,6 +86,17 @@ function persistString(key: string, value: string): void {
   }
 }
 
+/** Вынесено, чтобы тесты стора подменяли перезагрузку. */
+export const torStoreHooks = {
+  reload: (): void => {
+    if (typeof window !== 'undefined') window.location.reload()
+  },
+}
+
+function reloadDocument(): void {
+  torStoreHooks.reload()
+}
+
 export const useTorStore = defineStore('tor', {
   state: () => ({
     available: isTauriEnv(),
@@ -104,7 +118,18 @@ export const useTorStore = defineStore('tor', {
     isReady(state): boolean {
       return state.enabled && state.status === 'ready'
     },
-    /** Whether outgoing requests should be torified now. */
+    /**
+     * Пользователь включил Tor в десктопе. Пока он не `ready`, запросы ждут
+     * или падают — но не идут напрямую (V20). Медиа-политика тоже от этого флага.
+     */
+    wantsTor(state): boolean {
+      return state.enabled && state.available
+    },
+    /** direct | tor | wait | failed — см. `helpers/tor/tor-gate`. */
+    routingMode(state): TorRoutingMode {
+      return routingModeOf(state)
+    },
+    /** Tor реально готов принимать трафик прямо сейчас. */
     shouldTorify(state): boolean {
       return state.enabled && state.status === 'ready' && state.available
     },
@@ -120,6 +145,8 @@ export const useTorStore = defineStore('tor', {
   actions: {
     async hydrate(): Promise<void> {
       if (!this.available) return
+      // Флаг из localStorage: политика нужна до первого рендера, не после tor_start.
+      if (this.enabled) applyTorMediaPolicy()
       await this.subscribe()
       try {
         const snap = await tauriInvoke<TorStateSnapshot>('tor_status')
@@ -166,6 +193,8 @@ export const useTorStore = defineStore('tor', {
       if (!this.available) return
       this.enabled = true
       persistBool(LS_ENABLED, true)
+      // До tor_start: картинки/фреймы не должны успеть уйти мимо Tor (V21).
+      applyTorMediaPolicy()
       try {
         await this.pushBridges()
         const snap = await tauriInvoke<TorStateSnapshot>('tor_start')
@@ -176,7 +205,12 @@ export const useTorStore = defineStore('tor', {
       }
     },
 
-    async disable(): Promise<void> {
+    /**
+     * `keepPolicy` — для перезапуска (мосты): CSP остаётся, перезагрузки нет.
+     * Иначе, если медиа-политика была применена, документ перезагружается —
+     * meta-CSP снять нельзя, а без этого картинки так и не загрузятся.
+     */
+    async disable(opts: { keepPolicy?: boolean } = {}): Promise<void> {
       this.enabled = false
       persistBool(LS_ENABLED, false)
       if (!this.available) return
@@ -185,6 +219,9 @@ export const useTorStore = defineStore('tor', {
         this.applySnapshot(snap)
       } catch {
         // backend already stopped or unreachable
+      }
+      if (!opts.keepPolicy && isTorMediaPolicyApplied()) {
+        reloadDocument()
       }
     },
 
@@ -238,7 +275,7 @@ export const useTorStore = defineStore('tor', {
       this.setBridgeConfig(opts)
       await this.pushBridges()
       if (this.enabled) {
-        await this.disable()
+        await this.disable({ keepPolicy: true })
         await this.enable()
       }
     },

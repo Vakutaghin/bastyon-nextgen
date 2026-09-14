@@ -1,7 +1,9 @@
 /**
  * Стратегии fetch'а в зависимости от окружения и URL:
  * - Same-origin → browser fetch (Vite dev proxy продолжает работать)
- * - Tor включён → torFetch через Tauri-команду
+ * - Tor включён → torFetch через Tauri-команду; пока Tor не готов — ждём,
+ *   при `failed` — `TorNotReadyError`. Прямого соединения при включённом Tor
+ *   нет (V20, fail-closed).
  * - Tauri → plugin-http (CORS bypass)
  * - Browser → globalThis.fetch
  *
@@ -9,7 +11,8 @@
  * запросов Matrix/chat (на случай если в будущем понадобится особое поведение).
  */
 
-import { getTauriFetch, isSameOriginUrl, shouldTorifyRequest, torFetch } from './request-tor'
+import { TorNotReadyError, torRoutingMode, waitForTorRouting } from '@/helpers/tor/tor-gate'
+import { getTauriFetch, isSameOriginUrl, torFetch } from './request-tor'
 
 export { getTauriFetch } from './request-tor'
 
@@ -21,7 +24,20 @@ export async function appFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   if (isSameOriginUrl(url)) {
     return globalThis.fetch(input, init)
   }
-  if (await shouldTorifyRequest()) {
+
+  let mode = await torRoutingMode()
+  if (mode === 'wait') {
+    // Установка/бутстрап: запрос ждёт готовности, а не уходит напрямую.
+    // Abort-сигнал вызывающего (таймаут RPC) прерывает ожидание.
+    mode = await waitForTorRouting({ signal: init?.signal ?? undefined })
+  }
+  if (mode === 'failed') {
+    throw new TorNotReadyError(
+      'failed',
+      `Tor is enabled but failed; refusing direct request to ${url}`
+    )
+  }
+  if (mode === 'tor') {
     return torFetch(input, init)
   }
   const tauriF = await getTauriFetch()

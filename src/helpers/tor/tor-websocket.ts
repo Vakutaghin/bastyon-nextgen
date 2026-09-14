@@ -5,6 +5,11 @@
  * Behaviour mirrors the WebSocket DOM interface closely enough that libraries
  * (e.g. matrix-js-sdk, simple-ws clients) can use it as a transport.
  *
+ * Протокол с Rust (V22): id соединения генерирует JS и подписывается на
+ * `tor:ws:<id>:*` ДО `tor_ws_connect`; успешный invoke = OPEN. Раньше Rust
+ * эмитил `open` синхронно до возврата id, JS подписывался после — событие
+ * терялось, и под Tor сокет никогда не открывался.
+ *
  * Notes:
  * - `bufferedAmount` is approximated and updates only when send completes.
  * - `protocol` and `extensions` are not negotiated through the shim yet
@@ -13,6 +18,18 @@
  */
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
+
+import { TorNotReadyError, waitForTorRouting } from './tor-gate'
+
+/** Сколько сокет ждёт готовности Tor до отказа (ws-service сам закрывает через 10 с). */
+export const TOR_WS_WAIT_TIMEOUT_MS = 60_000
+
+/** id попадает в имена событий: только [A-Za-z0-9-] (Rust валидирует так же). */
+export function generateWsId(): string {
+  const c = globalThis.crypto
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID()
+  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
+}
 
 const CONNECTING = 0
 const OPEN = 1
@@ -42,14 +59,47 @@ export class TorWebSocket extends EventTarget implements WebSocket {
 
   private _readyState: 0 | 1 | 2 | 3 = CONNECTING
   private _bufferedAmount = 0
-  private _id: string | null = null
+  private readonly _id: string = generateWsId()
+  /** Rust держит сокет с момента успешного `tor_ws_connect` до `tor_ws_close`. */
+  private _rustOpen = false
+  private _closeSent = false
   private _unlisteners: UnlistenFn[] = []
   private _pendingSends: Array<() => void> = []
 
-  onopen: ((this: WebSocket, ev: Event) => unknown) | null = null
-  onmessage: ((this: WebSocket, ev: MessageEvent) => unknown) | null = null
-  onerror: ((this: WebSocket, ev: Event) => unknown) | null = null
-  onclose: ((this: WebSocket, ev: CloseEvent) => unknown) | null = null
+  // on* — аксессоры на прототипе, а не поля экземпляра: обработчик вызывается
+  // ровно один раз из _onOpen/_onMessage/…; поле-свойство happy-dom вызывал бы
+  // ещё раз сам при dispatchEvent (как IDL-атрибут), браузер — нет.
+  private _handlers: {
+    open: ((this: WebSocket, ev: Event) => unknown) | null
+    message: ((this: WebSocket, ev: MessageEvent) => unknown) | null
+    error: ((this: WebSocket, ev: Event) => unknown) | null
+    close: ((this: WebSocket, ev: CloseEvent) => unknown) | null
+  } = { open: null, message: null, error: null, close: null }
+
+  get onopen(): ((this: WebSocket, ev: Event) => unknown) | null {
+    return this._handlers.open
+  }
+  set onopen(fn: ((this: WebSocket, ev: Event) => unknown) | null) {
+    this._handlers.open = fn
+  }
+  get onmessage(): ((this: WebSocket, ev: MessageEvent) => unknown) | null {
+    return this._handlers.message
+  }
+  set onmessage(fn: ((this: WebSocket, ev: MessageEvent) => unknown) | null) {
+    this._handlers.message = fn
+  }
+  get onerror(): ((this: WebSocket, ev: Event) => unknown) | null {
+    return this._handlers.error
+  }
+  set onerror(fn: ((this: WebSocket, ev: Event) => unknown) | null) {
+    this._handlers.error = fn
+  }
+  get onclose(): ((this: WebSocket, ev: CloseEvent) => unknown) | null {
+    return this._handlers.close
+  }
+  set onclose(fn: ((this: WebSocket, ev: CloseEvent) => unknown) | null) {
+    this._handlers.close = fn
+  }
 
   constructor(url: string | URL, _protocols?: string | string[]) {
     super()
@@ -75,7 +125,6 @@ export class TorWebSocket extends EventTarget implements WebSocket {
     if (this._readyState !== OPEN) return
 
     const id = this._id
-    if (!id) return
 
     const send = async () => {
       const { invoke } = await import('@tauri-apps/api/core')
@@ -96,24 +145,16 @@ export class TorWebSocket extends EventTarget implements WebSocket {
   close(code?: number, reason?: string): void {
     if (this._readyState === CLOSING || this._readyState === CLOSED) return
     this._readyState = CLOSING
-    const id = this._id
-    if (!id) return
-    void (async () => {
-      const { invoke } = await import('@tauri-apps/api/core')
-      try {
-        await invoke('tor_ws_send', {
-          id,
-          payload: { kind: 'close', code: code ?? null, reason: reason ?? null },
-        })
-      } catch {
-        /* best-effort */
-      }
-      try {
-        await invoke('tor_ws_close', { id })
-      } catch {
-        /* best-effort */
-      }
-    })()
+    if (!this._rustOpen) {
+      // Ещё CONNECTING: как в браузере — сразу CLOSED (1006). Если invoke в
+      // полёте, `_init` после него увидит не-CONNECTING и закроет Rust-сторону
+      // сам — иначе оставался зомби-сокет (S3).
+      this._onClose(1006, 'closed before open')
+      return
+    }
+    void this._closeRust(code ?? 1000, reason ?? '').then(() =>
+      this._onClose(code ?? 1000, reason ?? '')
+    )
   }
 
   // ------------------------------------------------------------------------
@@ -121,35 +162,76 @@ export class TorWebSocket extends EventTarget implements WebSocket {
   // ------------------------------------------------------------------------
 
   private async _init(): Promise<void> {
+    // Fail-closed (V20): при включённом, но не готовом Tor ждём, а не
+    // открываем нативный сокет с адресом и подписью мимо Tor.
+    const mode = await waitForTorRouting({ timeoutMs: TOR_WS_WAIT_TIMEOUT_MS })
+    if (this._readyState !== CONNECTING) return
+    if (mode !== 'tor') {
+      throw new TorNotReadyError(mode === 'failed' ? 'failed' : 'off')
+    }
+
     const { invoke } = await import('@tauri-apps/api/core')
     const { listen } = await import('@tauri-apps/api/event')
+    const id = this._id
 
-    const id = await invoke<string>('tor_ws_connect', { url: this.url })
-    this._id = id
-
-    const eventOpen = `tor:ws:${id}:open`
-    const eventMsg = `tor:ws:${id}:message`
-    const eventClose = `tor:ws:${id}:close`
-    const eventErr = `tor:ws:${id}:error`
-
+    // Подписки ДО invoke: Tauri не буферизует события (V22).
     this._unlisteners.push(
-      await listen<unknown>(eventOpen, () => this._onOpen()),
-      await listen<IncomingMessage>(eventMsg, (e) => this._onMessage(e.payload)),
-      await listen<{ code?: number | null; reason?: string | null }>(eventClose, (e) =>
-        this._onClose(e.payload?.code ?? 1000, e.payload?.reason ?? '')
+      await listen<IncomingMessage>(`tor:ws:${id}:message`, (e) => this._onMessage(e.payload)),
+      await listen<{ code?: number | null; reason?: string | null }>(`tor:ws:${id}:close`, (e) =>
+        this._onServerClose(e.payload?.code ?? 1006, e.payload?.reason ?? '')
       ),
-      await listen<{ error: string }>(eventErr, (e) =>
+      await listen<{ error: string }>(`tor:ws:${id}:error`, (e) =>
         this._dispatchError(e.payload?.error ?? 'unknown')
       )
     )
+    if (this._readyState !== CONNECTING) {
+      this._cleanupListeners()
+      return
+    }
+
+    await invoke('tor_ws_connect', { id, url: this.url })
+    this._rustOpen = true
+
+    if (this._readyState !== CONNECTING) {
+      // close() успел раньше — Rust уже держит сокет (S3).
+      this._cleanupListeners()
+      await this._closeRust(1000, '')
+      return
+    }
+    this._onOpen()
+  }
+
+  private async _closeRust(code: number, reason: string): Promise<void> {
+    if (this._closeSent) return
+    this._closeSent = true
+    const id = this._id
+    const { invoke } = await import('@tauri-apps/api/core')
+    try {
+      await invoke('tor_ws_send', { id, payload: { kind: 'close', code, reason } })
+    } catch {
+      /* best-effort */
+    }
+    try {
+      await invoke('tor_ws_close', { id })
+    } catch {
+      /* best-effort */
+    }
   }
 
   private _onOpen(): void {
+    if (this._readyState !== CONNECTING) return
     this._readyState = OPEN
     const ev = new Event('open')
     this.dispatchEvent(ev)
     this.onopen?.call(this as unknown as WebSocket, ev)
     this._drain()
+  }
+
+  /** Close/ошибка со стороны сервера: Rust уже убрал сокет из карты (S60). */
+  private _onServerClose(code: number, reason: string): void {
+    this._rustOpen = false
+    this._closeSent = true
+    this._onClose(code, reason)
   }
 
   private _onMessage(payload: IncomingMessage): void {
@@ -189,7 +271,9 @@ export class TorWebSocket extends EventTarget implements WebSocket {
   }
 
   private _fail(err: unknown): void {
+    if (this._readyState === CLOSED) return
     this._dispatchError(err instanceof Error ? err.message : String(err))
+    if (this._rustOpen) void this._closeRust(1006, 'connect failed')
     this._onClose(1006, 'connect failed')
   }
 
@@ -253,61 +337,19 @@ function base64ToBytes(b64: string): Uint8Array {
 }
 
 /**
- * Returns the WebSocket constructor that should be used for new connections:
- * `TorWebSocket` if Tor is enabled and ready, otherwise the native one.
+ * Конструктор для новых соединений: `TorWebSocket`, когда Tor включён в
+ * десктопе (даже если ещё бутстрапится — сокет дождётся готовности), иначе
+ * нативный. Раньше при `enabled && !ready` уходил нативный сокет (V20).
  */
 export async function pickWebSocketCtor(): Promise<typeof WebSocket> {
   try {
     const { useTorStore } = await import('@/stores/tor-store')
     const store = useTorStore()
-    if (store.shouldTorify) {
+    if (store.wantsTor) {
       return TorWebSocket as unknown as typeof WebSocket
     }
   } catch {
     /* best-effort */
   }
   return WebSocket
-}
-
-let _patched = false
-
-/**
- * Optionally swap `globalThis.WebSocket` for our shim while Tor is active.
- * Call once at app startup if you want libraries that capture the global at
- * import-time to pick up the change.
- */
-export function installTorWebSocketGlobalGuard(): void {
-  if (_patched) return
-  _patched = true
-  const Native = globalThis.WebSocket
-  const Shim = TorWebSocket as unknown as typeof WebSocket
-  // Proxy that decides per-construction.
-  const Hybrid = function (this: unknown, url: string | URL, protocols?: string | string[]) {
-    try {
-      // Synchronous access; the store is in memory after pinia install.
-      const mod = (
-        globalThis as typeof globalThis & {
-          __torStoreSync?: { shouldTorify: boolean }
-        }
-      ).__torStoreSync
-      if (mod?.shouldTorify) {
-        return new Shim(url, protocols)
-      }
-    } catch {
-      /* best-effort */
-    }
-    return new Native(url, protocols)
-  } as unknown as typeof WebSocket
-  Object.defineProperty(Hybrid, 'name', { value: 'WebSocket' })
-  const statics = Hybrid as unknown as {
-    CONNECTING: number
-    OPEN: number
-    CLOSING: number
-    CLOSED: number
-  }
-  statics.CONNECTING = CONNECTING
-  statics.OPEN = OPEN
-  statics.CLOSING = CLOSING
-  statics.CLOSED = CLOSED
-  globalThis.WebSocket = Hybrid
 }

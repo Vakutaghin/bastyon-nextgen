@@ -8,6 +8,7 @@
 
 import type { TorFetchRequest, TorFetchResponse } from './types/request'
 import { recordTorRequest } from './request-debug'
+import { TorNotReadyError, torRoutingMode } from '@/helpers/tor/tor-gate'
 
 /** Tauri 1/2 detection: __TAURI__, __TAURI_INTERNALS__, __TAURI_METADATA__, or any __TAURI* key. */
 export function isTauriEnv(): boolean {
@@ -47,15 +48,32 @@ export function isSameOriginUrl(url: string): boolean {
   }
 }
 
+/** Tor готов прямо сейчас. Для маршрутизации с ожиданием см. `appFetch`/tor-gate. */
 export async function shouldTorifyRequest(): Promise<boolean> {
   if (!isTauriEnv()) return false
-  try {
-    const { useTorStore } = await import('@/stores/tor-store')
-    const store = useTorStore()
-    return store.shouldTorify
-  } catch {
-    return false
-  }
+  return (await torRoutingMode()) === 'tor'
+}
+
+/** Префикс ошибки Rust-команд при незапущенном Tor (`tor::TOR_NOT_READY`). */
+const TOR_NOT_READY_PREFIX = 'tor_not_ready'
+
+/**
+ * Invoke нельзя отменить, но ждать его после abort незачем: сигнал (таймаут
+ * RPC, health-пинг ноды) раньше игнорировался, и под Tor запрос висел до
+ * reqwest-таймаута 120 с (S1). Rust-запрос доживает в фоне сам.
+ */
+function raceWithAbort<T>(p: Promise<T>, signal: AbortSignal | null | undefined): Promise<T> {
+  if (!signal) return p
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new DOMException('Aborted', 'AbortError'))
+    if (signal.aborted) {
+      onAbort()
+      p.catch(() => {})
+      return
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    p.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort))
+  })
 }
 
 export async function torFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
@@ -73,19 +91,30 @@ export async function torFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     method,
     headers,
     body_b64: bodyBytes ? bytesToBase64(bodyBytes) : undefined,
+    // `redirect: 'manual'` (fetch-tunnel мини-апп, V25): 3xx возвращается как есть.
+    no_redirect: init?.redirect === 'manual',
   }
 
   const { invoke } = await import('@tauri-apps/api/core')
   let resp: TorFetchResponse
   const startedAt = performance.now()
   try {
-    resp = await invoke<TorFetchResponse>('tor_fetch', { req })
+    resp = await raceWithAbort(invoke<TorFetchResponse>('tor_fetch', { req }), init?.signal)
   } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') throw e
     const message = typeof e === 'string' ? e : ((e as Error)?.message ?? JSON.stringify(e))
     recordTorRequest(url, false, performance.now() - startedAt, message)
+    if (message.startsWith(TOR_NOT_READY_PREFIX)) {
+      throw new TorNotReadyError('off', `tor_fetch refused (${url}): ${message}`)
+    }
     throw new Error(`tor_fetch failed (${url}): ${message}`, { cause: e })
   }
   recordTorRequest(url, resp.used_tor, performance.now() - startedAt)
+  // Rust теперь fail-closed и `used_tor` всегда true; проверка — страховка от
+  // старого бэкенда, который отдавал прямой ответ (V20).
+  if (resp.used_tor === false) {
+    throw new TorNotReadyError('off', `tor_fetch answered without Tor (${url})`)
+  }
 
   const responseHeaders = new Headers()
   for (const [k, v] of resp.headers) {

@@ -70,6 +70,8 @@ export type TorFetchRequest = {
   headers: Record<string, string>
   body_b64?: string
   timeout_ms?: number
+  /** `redirect: 'manual'`: Rust не следует за 3xx (отдельный reqwest-клиент). */
+  no_redirect?: boolean
 }
 
 /** Ответ от Tauri-команды `tor_fetch`. */
