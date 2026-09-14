@@ -95,7 +95,9 @@ describe('media actions', () => {
       { url: 'peertube://h.app/VID' },
       new AbortController().signal
     )
-    expect(removeVideo).toHaveBeenCalledWith('peertube://h.app/VID')
+    expect(removeVideo).toHaveBeenCalledWith('peertube://h.app/VID', {
+      appName: TEST_APP.manifest.name,
+    })
     expect(res).toEqual({ removed: true })
   })
 

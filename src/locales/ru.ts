@@ -1642,6 +1642,11 @@ export default {
       genericTitle: 'Что-то пошло не так',
       genericReload: 'Попробуйте перезагрузить страницу',
     },
+    miniapps: {
+      videoRemoveTitle: '«{app}» хочет удалить видео',
+      videoRemoveBody: 'Видео {id} на {host} будет удалено с инстанса безвозвратно. Разрешить?',
+      videoRemoveOk: 'Удалить',
+    },
     permission: {
       promptTitle: '«{app}» запрашивает доступ: {name}',
       promptTitleRaw: '«{app}» запрашивает разрешение: {permission}',

@@ -1638,6 +1638,11 @@ export default {
       genericTitle: 'Something went wrong',
       genericReload: 'Try reloading the page',
     },
+    miniapps: {
+      videoRemoveTitle: '“{app}” wants to delete a video',
+      videoRemoveBody: 'Video {id} on {host} will be permanently removed from the instance. Allow?',
+      videoRemoveOk: 'Delete',
+    },
     permission: {
       promptTitle: '“{app}” requests access: {name}',
       promptTitleRaw: '“{app}” requests permission: {permission}',

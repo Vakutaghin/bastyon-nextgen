@@ -6,7 +6,8 @@
  *
  * - `images.upload` — загружает переданные base64-картинки через провайдера
  *   (host.uploadImages), возвращает `[{url}]` (legacy `images.upload`).
- * - `videos.remove` — удаляет видео по указателю (host.removeVideo → DELETE на инстансе).
+ * - `videos.remove` — удаляет видео по указателю (host.removeVideo → allowlist хостов от
+ *   ноды + подтверждение пользователя → DELETE на инстансе).
  * - `videos.opendialog` — открывает UI-диалог загрузки; всё ещё stub, ждёт вычленения
  *   shared media-uploader'а из `src/b-components/video-uploader/` (UI-плумбинг Фазы E).
  *
@@ -55,10 +56,11 @@ const videosRemove: ActionDefinition<unknown, { removed: true }> = {
   authorization: true,
   permissions: [],
   rateLimitClass: 'normal',
-  handler: async ({ data, host }) => {
+  handler: async ({ data, app, host }) => {
     const url = (data as { url?: string })?.url
     if (!url) throw new Error('videos:remove:no_url')
-    await host.removeVideo(url)
+    // Allowlist хостов + подтверждение пользователя — внутри host.removeVideo (K2).
+    await host.removeVideo(url, { appName: app.manifest.name })
     return { removed: true }
   },
 }

@@ -177,9 +177,11 @@ export interface HostContext {
   /**
    * Удаляет видео на PeerTube-инстансе по указателю `peertube://host/id[/audio]`
    * (авторизуется токеном текущего пользователя). Legacy `videos.remove`.
-   * Throws `not_authenticated`, если пользователь не залогинен.
+   * Хост сверяется со списком инстансов от ноды, удаление подтверждает
+   * пользователь (K2/Р7). Throws `not_authenticated`, `videos:remove:host_not_allowed`,
+   * `videos:remove:denied`, `videos:remove:hosts_unavailable`.
    */
-  removeVideo(pointer: string): Promise<void>
+  removeVideo(pointer: string, opts: { appName: string }): Promise<void>
 
   // ─── chat (5.7) ────────────────────────────────────────────────────────
   /** Открывает room в Matrix-чате. */
@@ -230,6 +232,9 @@ export async function createDefaultHostContext(
   const { unwrapRpcResponse } = await import('@/helpers/common/response-parser')
   const { uploadImages } = await import('@/services/image-upload-service')
   const { removeVideoByPointer } = await import('@/services/peertube/peertube-videos')
+  const { fetchPeertubeHostAllowlist } = await import('@/services/peertube/peertube-host')
+  const { parsePeerTubeUrl } = await import('@/helpers/api/peertube-parser')
+  const { confirmVideoRemoval } = await import('./host-context-methods/confirm-video-removal')
 
   const device: HostDevice = opts.device ?? detectDevice(isTauri(), isCapacitor())
 
@@ -238,7 +243,14 @@ export async function createDefaultHostContext(
   const content = createContentMethods({ router: opts.router })
   const payments = createPaymentMethods()
   const media = createMediaMethods({ isCapacitor })
-  const mediaUpload = createMediaUploadMethods({ useAuthStore, uploadImages, removeVideoByPointer })
+  const mediaUpload = createMediaUploadMethods({
+    useAuthStore,
+    uploadImages,
+    removeVideoByPointer,
+    parsePointer: parsePeerTubeUrl,
+    fetchHostAllowlist: () => fetchPeertubeHostAllowlist(),
+    confirmRemoval: confirmVideoRemoval,
+  })
   const chat = createChatMethods({ router: opts.router })
 
   return {
