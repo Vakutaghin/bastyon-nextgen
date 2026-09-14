@@ -34,6 +34,7 @@ import {
   SC_BlockTableHeaderCell,
   SC_BlockTableCell,
 } from './styled'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 interface BlockTableData {
   content?: string[][]
@@ -61,12 +62,7 @@ const bodyRows = computed<string[][]>(() =>
 )
 
 function formatCell(cell: string): string {
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(String(cell))
-  } catch {
-    decoded = String(cell)
-  }
+  const decoded = safeDecode(String(cell))
   // Содержимое ячейки — недоверенный контент из блокчейна; рендерится через
   // v-html, поэтому обязателен whitelist-прогон (P1-2).
   return sanitizeHtml(decoded.replace(/\n/g, '<br>'))

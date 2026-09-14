@@ -27,6 +27,7 @@ import { useI18n } from 'vue-i18n'
 import { PlayCircleOutlined, SoundOutlined } from '@ant-design/icons-vue'
 import { useRelatedVideos } from '@/composables/use-related-videos'
 import type { AdaptedPost } from '@/composables/use-feed'
+import { safeDecode } from '@/helpers/content/safe-decode'
 import {
   SC_Related,
   SC_RelatedTitle,
@@ -49,16 +50,9 @@ const { videos } = useRelatedVideos(
 )
 
 function titleOf(video: AdaptedPost): string {
-  const raw = video.title || ''
-  let title = raw
-  if (/%[0-9A-Fa-f]{2}/.test(raw)) {
-    try {
-      title = decodeURIComponent(raw.replace(/\+/g, ' '))
-    } catch {
-      title = raw
-    }
-  }
-  return title.trim() || t('relatedVideos.untitled')
+  // Заголовок уже декодирован адаптером; повторный safeDecode — для старых
+  // дважды кодированных записей (идемпотентен на чистом тексте).
+  return safeDecode(video.title || '').trim() || t('relatedVideos.untitled')
 }
 
 function open(video: AdaptedPost): void {

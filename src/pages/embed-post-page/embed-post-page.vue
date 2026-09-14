@@ -49,6 +49,7 @@ import PostCardContent from '@/b-components/content/post-card/components/post-ca
 import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { usePostByTxid } from '@/b-components/messenger/components/post-embed/use-post-by-txid'
+import { safeDecode } from '@/helpers/content/safe-decode'
 import {
   SC_Embed,
   SC_EmbedHeader,
@@ -89,17 +90,9 @@ const postUrl = computed<string>(() => {
   return id ? `${origin}/post/${id}` : origin
 })
 
-const decodedTitle = computed<string>(() => {
-  const raw = post.value?.title || ''
-  if (/%[0-9A-Fa-f]{2}/.test(raw)) {
-    try {
-      return decodeURIComponent(raw.replace(/\+/g, ' '))
-    } catch {
-      return raw
-    }
-  }
-  return raw
-})
+// post-mapper уже декодирует заголовок; повторный safeDecode — для старых
+// дважды кодированных записей (идемпотентен на чистом тексте).
+const decodedTitle = computed<string>(() => safeDecode(post.value?.title || ''))
 
 const formattedTime = computed<string>(() => {
   const ts = Number(post.value?.time)

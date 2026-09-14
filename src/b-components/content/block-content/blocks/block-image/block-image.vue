@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { SC_BlockImage, SC_BlockImageImg, SC_BlockImageCaption } from './styled'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 interface BlockImageData {
   url?: string
@@ -41,10 +42,6 @@ const imageCaption = computed<string>(
   () => props.block.data.caption || props.block.data.captionText || ''
 )
 const decodedCaption = computed<string>(() => {
-  try {
-    return decodeURIComponent(String(imageCaption.value))
-  } catch {
-    return String(imageCaption.value)
-  }
+  return safeDecode(String(imageCaption.value))
 })
 </script>

@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { SC_BlockHeader } from './styled'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 interface BlockHeaderData {
   level?: number
@@ -32,12 +33,7 @@ const headerTag = computed<string>(() => {
 
 const formattedText = computed<string>(() => {
   const text = props.block.data.text || ''
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(String(text))
-  } catch {
-    decoded = String(text)
-  }
+  const decoded = safeDecode(String(text))
   return formatBastyonLinks(decoded)
 })
 </script>

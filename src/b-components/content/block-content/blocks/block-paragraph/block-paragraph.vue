@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { SC_BlockParagraph } from './styled'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 interface BlockParagraphData {
   text?: string
@@ -26,12 +27,7 @@ const props = defineProps<{
 
 const formattedText = computed<string>(() => {
   const text = props.block.data.text || ''
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(String(text))
-  } catch {
-    decoded = String(text)
-  }
+  const decoded = safeDecode(String(text))
   const withBreaks = decoded.replace(/\n/g, '<br>').replace(/\r\n/g, '<br>')
   return formatBastyonLinks(withBreaks)
 })

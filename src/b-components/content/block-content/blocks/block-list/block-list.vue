@@ -10,6 +10,7 @@
 import { computed } from 'vue'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { SC_BlockList, SC_BlockListItem } from './styled'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 interface BlockListData {
   style?: 'ordered' | 'unordered'
@@ -35,12 +36,7 @@ const listItems = computed<string[]>(() => {
 })
 
 function formatItem(item: string): string {
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(String(item))
-  } catch {
-    decoded = String(item)
-  }
+  const decoded = safeDecode(String(item))
   return formatBastyonLinks(decoded.replace(/\n/g, '<br>'))
 }
 </script>

@@ -4,6 +4,8 @@
  */
 
 import type { AdaptedPost } from '@/types/adapted-post'
+import { safeDecode } from '@/helpers/content/safe-decode'
+import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import { resolveImageUrl } from './url-transformer'
 
 /** Канонический контракт поста — см. `@/types/adapted-post`. */
@@ -54,8 +56,9 @@ export function adaptPostData(post: RawFeedPost, index: number): AdaptedPost {
   // resolveImageUrl разворачивает голый хеш в полный URL + нормализует домен.
   const avatar = resolveImageUrl(post.userprofile?.i) ?? null
   const reputation = post.userprofile?.reputation || 0
-  const title = post.c || ''
-  const content = post.m || ''
+  // Поля приходят URL-encoded, как и в ленте (legacy trydecode).
+  const title = safeDecode(post.c || '')
+  const content = safeDecode(post.m || '')
   const timestamp = post.time ? new Date(post.time * 1000).toISOString() : new Date().toISOString()
   const likes = post.scoreCnt || 0
   const comments = post.comments || 0
@@ -76,14 +79,7 @@ export function adaptPostData(post: RawFeedPost, index: number): AdaptedPost {
     ratingStars = Math.max(0, Math.min(5, Math.round(averageRating * 10) / 10))
   }
 
-  const isVerified = Array.isArray(post.userprofile?.badges)
-    ? post.userprofile.badges.includes('verificated') ||
-      post.userprofile.badges.includes('verified')
-    : (() => {
-        const flags = post.userprofile?.flags
-        const real = (flags && flags.real) ?? post.userprofile?.real
-        return real === 1 || real === '1' || real === true || real === 'true'
-      })()
+  const isVerified = isUserVerified(post.userprofile)
 
   return {
     id: post.id || post.txid || post.hash || index,

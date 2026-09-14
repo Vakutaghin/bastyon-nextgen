@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { SC_BlockCode, SC_BlockCodeCode } from './styled'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 interface BlockCodeData {
   code?: string
@@ -26,10 +27,6 @@ const props = defineProps<{
 
 const decodedCode = computed<string>(() => {
   const code = props.block.data.code || props.block.data.text || ''
-  try {
-    return decodeURIComponent(String(code))
-  } catch {
-    return String(code)
-  }
+  return safeDecode(String(code))
 })
 </script>

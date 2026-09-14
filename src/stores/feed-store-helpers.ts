@@ -44,22 +44,11 @@ export function extractPostsFromApiResponse(response: unknown): unknown[] {
 export function calculateRatingStars(scoreSum: number, scoreCnt: number): number {
   if (!scoreCnt || scoreCnt === 0) return 0
   const avg = scoreSum / scoreCnt
-  return Math.max(0, Math.min(RATING_MAX_STARS, Math.round(avg * RATING_ROUND_MULTIPLIER) / RATING_ROUND_MULTIPLIER))
+  return Math.max(
+    0,
+    Math.min(RATING_MAX_STARS, Math.round(avg * RATING_ROUND_MULTIPLIER) / RATING_ROUND_MULTIPLIER)
+  )
 }
 
-/**
- * Проверяет верификацию пользователя.
- */
-export function isUserVerified(profile: Record<string, unknown> | null): boolean {
-  if (!profile) return false
-
-  const badges = profile.badges
-  if (Array.isArray(badges) && (badges.includes('verificated') || badges.includes('verified'))) {
-    return true
-  }
-
-  const flags = profile.flags
-  const real =
-    (flags && typeof flags === 'object' ? (flags as Record<string, unknown>).real : undefined) ?? profile.real
-  return real === 1 || real === '1' || real === true || real === 'true'
-}
+/** Проверка верификации — каноническая реализация в helpers/profile. */
+export { isUserVerified } from '@/helpers/profile/is-user-verified'

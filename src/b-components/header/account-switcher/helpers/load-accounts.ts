@@ -4,6 +4,7 @@
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import { extractAvatarFromProfile } from '@/helpers/common/profile-avatar'
+import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import type { Address } from '@/blockchain/types/addresses'
 import type { UserProfile, GetUserProfileResponse } from '@/types/rpc-responses/user-get'
 import type { AccountInfo } from '@/blockchain/types/auth'
@@ -13,20 +14,6 @@ interface LoadAccountsContext {
   accountsInfo: AccountInfo[]
   currentAddress: Address | null
   currentUserProfile: UserProfile | null
-}
-
-/**
- * Проверяет, что профиль помечен как «реальный» (verified):
- * badges содержат verificated/verified, ИЛИ flags.real / real-truthy.
- */
-function isProfileVerified(profile: UserProfile | null): boolean {
-  if (!profile) return false
-  const badges = profile.badges
-  if (Array.isArray(badges) && (badges.includes('verificated') || badges.includes('verified'))) {
-    return true
-  }
-  const real = (profile.flags && profile.flags.real) ?? profile.real
-  return real === 1 || real === '1' || real === true || real === 'true'
 }
 
 /** Маппит профиль (или null) в AccountDisplayInfo с учётом fallback'ов. */
@@ -51,7 +38,7 @@ function buildDisplayInfo(
     avatar: extractAvatarFromProfile(profile) ?? null,
     balance: profile.balance ?? null,
     loading: false,
-    verified: isProfileVerified(profile),
+    verified: isUserVerified(profile),
   }
 }
 

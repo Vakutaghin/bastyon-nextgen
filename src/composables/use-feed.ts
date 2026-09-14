@@ -14,20 +14,14 @@ import { registerNameAddress } from '@/services/user-resolver'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import type { AdaptedPost } from '@/types/adapted-post'
 import { normalizeImages } from './use-feed-helpers'
+import { safeDecode } from '@/helpers/content/safe-decode'
+import { isUserVerified } from '@/helpers/profile/is-user-verified'
 
 /** Канонический контракт поста — см. `@/types/adapted-post`. */
 export type { AdaptedPost }
 
-/**
- * Безопасное декодирование URL-encoded строк
- */
-export function safeDecode(str: string): string {
-  try {
-    return decodeURIComponent((str + '').replace(/\+/g, '%20'))
-  } catch (e) {
-    return str
-  }
-}
+/** Декодер полей поста — канонический `safeDecode` (семантика legacy `trydecode`). */
+export { safeDecode }
 
 /** Минимальный профиль автора/пользователя в сыром ответе ленты. */
 export interface RawUserProfile {
@@ -113,13 +107,7 @@ export function adaptPostData(
 
   const avatar = resolveImageUrl(userprofile?.i) ?? null
   const reputation = userprofile?.reputation || 0
-  const verified = Array.isArray(userprofile?.badges)
-    ? userprofile.badges.includes('verificated') || userprofile.badges.includes('verified')
-    : (() => {
-        const flags = userprofile?.flags
-        const real = (flags && flags.real) ?? userprofile?.real
-        return real === 1 || real === '1' || real === true || real === 'true'
-      })()
+  const verified = isUserVerified(userprofile)
   const title = safeDecode(post.c || '')
   const content = safeDecode(post.m || '')
   const timestamp = post.time

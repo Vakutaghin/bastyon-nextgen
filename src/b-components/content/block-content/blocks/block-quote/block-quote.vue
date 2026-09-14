@@ -13,6 +13,7 @@
 import { computed } from 'vue'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { SC_BlockQuote, SC_BlockQuoteContent, SC_BlockQuoteCaption } from './styled'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 interface BlockQuoteData {
   text?: string
@@ -37,19 +38,10 @@ const caption = computed<string>(
   () => props.block.data.caption || props.block.data.captionText || ''
 )
 const decodedCaption = computed<string>(() => {
-  try {
-    return decodeURIComponent(String(caption.value))
-  } catch {
-    return String(caption.value)
-  }
+  return safeDecode(String(caption.value))
 })
 const formattedText = computed<string>(() => {
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(String(text.value))
-  } catch {
-    decoded = String(text.value)
-  }
+  const decoded = safeDecode(String(text.value))
   return formatBastyonLinks(decoded.replace(/\n/g, '<br>'))
 })
 </script>

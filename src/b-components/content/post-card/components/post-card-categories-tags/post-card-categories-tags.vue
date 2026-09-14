@@ -1,10 +1,7 @@
 <template>
   <SC_PostCategoriesAndTags v-if="displayItems && displayItems.length">
     <template v-for="item in displayItems" :key="item.id || item.name">
-      <SC_ClickableTag
-        v-if="item.type === 'category'"
-        @click.stop.prevent="handleTagClick(item)"
-      >
+      <SC_ClickableTag v-if="item.type === 'category'" @click.stop.prevent="handleTagClick(item)">
         {{ item.icon }} {{ item.name }}
       </SC_ClickableTag>
       <SC_ClickableTag v-else @click.stop.prevent="handleTagClick(item)">
@@ -19,6 +16,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useFiltersStore } from '@/stores/filters-store'
 import { SC_PostCategoriesAndTags, SC_ClickableTag } from './styled'
+import { decodeUrlEncoded } from '@/b-components/content/post-card/helpers'
 
 export interface PostCategoriesTagsPost {
   tags?: string[]
@@ -34,19 +32,6 @@ interface DisplayItem {
 const props = defineProps<{ post: PostCategoriesTagsPost }>()
 const { t } = useI18n()
 const filtersStore = useFiltersStore()
-
-function decodeUrlEncoded(str: string): string {
-  if (!str || typeof str !== 'string') return str
-  const urlEncodedPattern = /%[0-9A-Fa-f]{2}/g
-  if (!urlEncodedPattern.test(str)) return str
-  try {
-    const decoded = decodeURIComponent(str)
-    if (decoded && decoded !== str) return decoded
-  } catch {
-    // ignore
-  }
-  return str
-}
 
 const decodedTags = computed<string[]>(() => {
   const tags = props.post.tags

@@ -7,27 +7,11 @@ import {
   extractCommentMessage,
 } from './use-feed-helpers'
 
-describe('safeDecode', () => {
-  it('returns empty string for falsy input', () => {
-    expect(safeDecode('')).toBe('')
-    expect(safeDecode(null as any)).toBe('')
-    expect(safeDecode(undefined as any)).toBe('')
-  })
-
-  it('decodes URL-encoded string', () => {
+describe('safeDecode (реэкспорт канонического)', () => {
+  it('decodes and keeps a literal plus', () => {
     expect(safeDecode('hello%20world')).toBe('hello world')
-  })
-
-  it('decodes cyrillic', () => {
-    expect(safeDecode('%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82')).toBe('Привет')
-  })
-
-  it('returns original string on decode error', () => {
-    expect(safeDecode('%E0%A4%A')).toBe('%E0%A4%A')
-  })
-
-  it('returns plain string unchanged', () => {
-    expect(safeDecode('hello')).toBe('hello')
+    expect(safeDecode('a%2Bb+c')).toBe('a+b+c')
+    expect(safeDecode('')).toBe('')
   })
 })
 

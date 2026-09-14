@@ -9,8 +9,5 @@ export const RATING_MAX_STARS = 5
 /** Множитель для округления рейтинга */
 export const RATING_ROUND_MULTIPLIER = 10
 
-/** Значения бейджей верификации */
-export const VERIFICATION_BADGES = ['verificated', 'verified'] as const
-
-/** Значения флага реальности профиля */
-export const VERIFICATION_FLAG_VALUES = [1, '1', true, 'true'] as const
+/** Значения верификации живут рядом с isUserVerified; здесь — реэкспорт для барреля. */
+export { VERIFICATION_BADGES, VERIFICATION_FLAG_VALUES } from '@/helpers/profile/is-user-verified'

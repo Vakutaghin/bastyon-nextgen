@@ -5,6 +5,7 @@
 
 import { t } from '@/i18n'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { isUserVerified } from '@/helpers/profile/is-user-verified'
 
 import { matrixService } from '../../services/matrix-service'
 import type { Dialog, Message } from '../../types'
@@ -118,14 +119,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
           const url = resolveImageUrl(img)
           if (url) avatar = url
         }
-        const badges = p?.badges
-        if (Array.isArray(badges))
-          verified = badges.includes('verificated') || badges.includes('verified')
-        if (!verified) {
-          const flags = p?.flags
-          const real = (flags && flags.real) ?? p?.real
-          verified = real === 1 || real === '1' || real === true || real === 'true'
-        }
+        verified = isUserVerified(p)
       }
     }
 

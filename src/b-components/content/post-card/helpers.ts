@@ -2,23 +2,16 @@
 // post-card.vue (аудит крупных файлов 2026-08: хелперы были отгружены заранее,
 // но разошлись с живым кодом и никем не использовались).
 
-import { URL_ENCODED_PATTERN, RATING_MAX_STARS, RATING_ROUND_MULTIPLIER } from './consts'
+import { safeDecode } from '@/helpers/content/safe-decode'
+import { RATING_MAX_STARS, RATING_ROUND_MULTIPLIER } from './consts'
 
 /**
- * Безопасно декодирует URL-encoded строку. `+` НЕ трактуется как пробел —
- * поля поста приходят `encodeURIComponent`-кодированными.
+ * Декодирует URL-encoded поле поста (общий `safeDecode`, семантика legacy
+ * `trydecode`); не-строки возвращает как есть.
  */
 export function decodeUrlEncoded(str: string): string {
   if (!str || typeof str !== 'string') return str
-  // Префильтр — без %XX декодировать смысла нет.
-  if (!URL_ENCODED_PATTERN.test(str)) return str
-  try {
-    const decoded = decodeURIComponent(str)
-    if (decoded && decoded !== str) return decoded
-  } catch {
-    return str
-  }
-  return str
+  return safeDecode(str)
 }
 
 /**

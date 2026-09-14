@@ -6,6 +6,7 @@ import { resolveImageUrl } from '@/helpers/common/url-transformer'
 
 import type { CommentsSortOrder } from './types'
 import { SORT_WEIGHTS, COMMENT_MAX_LENGTH, COMMENT_LENGTH_WARN_THRESHOLD } from './consts'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 /**
  * Возвращает текст-индикатор оставшихся символов или null, если показывать не нужно.
@@ -99,9 +100,7 @@ export function getCommentImages(comment: GetComment): string[] {
     for (const raw of arr) {
       if (typeof raw !== 'string' || !raw) continue
       // legacy кодировал картинки через encodeURIComponent — попробуем декодировать
-      let decoded = raw
-      try { decoded = decodeURIComponent(raw) } catch { /* keep raw */ }
-      const resolved = resolveImageUrl(decoded)
+      const resolved = resolveImageUrl(safeDecode(raw))
       if (resolved) out.push(resolved)
     }
     return out
@@ -243,7 +242,7 @@ export function commentPoint(comment: GetComment, ctx: CommentSortContext = {}):
 export function sortComments(
   comments: GetComment[],
   order: CommentsSortOrder,
-  ctx: CommentSortContext = {},
+  ctx: CommentSortContext = {}
 ): GetComment[] {
   if (!comments.length) return comments
 

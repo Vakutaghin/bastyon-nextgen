@@ -4,6 +4,8 @@
  * пробует первый блок content; для видео-постов возвращает «Видео».
  */
 
+import { safeDecode } from '@/helpers/content/safe-decode'
+
 interface PostLike {
   title?: string
   content?: string
@@ -35,15 +37,7 @@ export function resolvePostTitleFromPost(post: PostLike | undefined | null): Res
     }
   }
 
-  if (postTitle) {
-    try {
-      if (/%[0-9A-Fa-f]{2}/.test(postTitle)) {
-        postTitle = decodeURIComponent(postTitle)
-      }
-    } catch {
-      // ignore decoding errors
-    }
-  }
+  if (postTitle) postTitle = safeDecode(postTitle)
 
   if (usedContent && postTitle.length > 200) {
     postTitle = postTitle.substring(0, 200) + '...'

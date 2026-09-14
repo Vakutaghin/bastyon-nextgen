@@ -124,4 +124,21 @@ describe('adaptPostData', () => {
     const result = adaptPostData(post, 0)
     expect(result.author.verified).toBe(true)
   })
+
+  it('decodes URL-encoded caption/message like the feed adapter (legacy trydecode)', () => {
+    const result = adaptPostData(
+      { c: '%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82', m: 'C%2B%2B%20tips' },
+      0
+    )
+    expect(result.title).toBe('Привет')
+    expect(result.content).toBe('C++ tips')
+  })
+
+  it('verified via flags.real even when badges is an empty array', () => {
+    const result = adaptPostData(
+      { userprofile: { name: 'Bob', badges: [], flags: { real: '1' } } },
+      0
+    )
+    expect(result.author.verified).toBe(true)
+  })
 })

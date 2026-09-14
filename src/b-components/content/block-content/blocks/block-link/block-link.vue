@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { SC_BlockLink } from './styled'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 interface BlockLinkData {
   url?: string
@@ -47,11 +48,7 @@ const linkText = computed<string>(
   () => props.block.data.text || props.block.data.link || linkUrl.value
 )
 const decodedText = computed<string>(() => {
-  try {
-    return decodeURIComponent(String(linkText.value))
-  } catch {
-    return String(linkText.value)
-  }
+  return safeDecode(String(linkText.value))
 })
 const linkTarget = computed<string>(() => props.block.data.target || '_blank')
 </script>

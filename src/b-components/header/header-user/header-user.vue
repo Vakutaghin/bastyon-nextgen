@@ -14,7 +14,11 @@
     <Button type="default" @click="openRegisterModal"> {{ t('header.register') }} </Button>
   </template>
   <template v-else>
-    <Dropdown :trigger="['click']" placement="bottomRight" overlay-class-name="header-user-dropdown">
+    <Dropdown
+      :trigger="['click']"
+      placement="bottomRight"
+      overlay-class-name="header-user-dropdown"
+    >
       <SC_UserInfoTrigger>
         <Avatar
           :src="userAvatar"
@@ -119,6 +123,7 @@ import {
   SC_AuthSkeleton,
   SC_SkeletonLines,
 } from './styled'
+import { isUserVerified as isVerifiedProfile } from '@/helpers/profile/is-user-verified'
 
 const { t } = useI18n()
 
@@ -224,17 +229,7 @@ const userInitial = computed<string>(() => {
   return 'U'
 })
 
-const isUserVerified = computed<boolean>(() => {
-  const profile = userProfile.value as Record<string, unknown> | null
-  if (!profile) return false
-  const badges = profile.badges
-  if (Array.isArray(badges)) {
-    if (badges.includes('verificated') || badges.includes('verified')) return true
-  }
-  const flags = profile.flags as Record<string, unknown> | undefined
-  const real = (flags?.real ?? profile.real) as unknown
-  return real === 1 || real === '1' || real === true || real === 'true'
-})
+const isUserVerified = computed<boolean>(() => isVerifiedProfile(userProfile.value))
 
 function formatBalance(balance: number | null | undefined): string {
   // Хелпер конвертирует из минимальных единиц (аналог сатоши) в PKOIN.
