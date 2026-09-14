@@ -5,9 +5,10 @@
 > живые пробы к `1.pocketnet.app:8899` (read-only RPC), runtime-пробы обёрток antd через vitest, прогон `tsc`/`eslint`/скриптов.
 > Каждая находка имеет `file:line`, конкретный сценарий и фикс. Подробные отчёты по зонам — `app-audit-2026-09/zone-*.md`.
 >
-> **Не входит:** IPFS-модуль (закрыт вчера); остатки трёх прежних аудитов (ревью 2026-07-02, IPFS, план сейфа) —
-> сведены в `AUDIT_LEFTOVERS_2026-09-13.md` (P2-4, P2-5, P2-11, P3-1…P3-5, VP-1…VP-12) и здесь не дублируются, но план учитывает их;
-> нереализованные фичи из `FEATURE_GAP_ROADMAP.md` (кроме случаев, когда UI делает вид, что фича работает).
+> **Не входит:** IPFS-модуль (закрыт 2026-09-12); нереализованные фичи из `FEATURE_GAP_ROADMAP.md` (кроме случаев,
+> когда UI делает вид, что фича работает). Остатки трёх прежних аудитов и аудита крупных файлов (`AUDIT_LEFTOVERS_2026-09-13.md`)
+> закрыты 2026-09-13/14; сам реестр удалён 2026-09-14 (`git show 1de0abe:_docs-todo/AUDIT_LEFTOVERS_2026-09-13.md`), незакрытое
+> перенесено сюда с пометкой «←LEFTOVERS»: S72, `[~ needs-live]` в волнах 1/7, roadmap в волне 5/8.
 >
 > **Статусы:** `[ ]` открыто · `[x]` закрыто (коммит) · `[~]` принято как есть / отложено с причиной.
 > Статус вести здесь, в разделе 7 (план). Разделы 1–5 — реестр; при закрытии пункта ставить `[x]` и хэш рядом.
@@ -125,7 +126,7 @@
 - [ ] **V31 · [C4]** — `post-card-comments.vue` читает `post.address`, которого нет в `AdaptedPost` (`author.address`) → `postAuthorAddress=''`: модерация автором, `disableBannedByAuthor`, буст автора в сортировке — мертвы. `post-card-comments.vue:279-282,339-347,705-710`. **Фикс:** `props.post.author?.address`.
 - [ ] **V32 · [C5, G6]** — `switchAccount`/`signIn` не сбрасывают `user-relations` (гард `isInitialized`), `pending-posts`, `comments`, `pending-ratings`, `posts-store` → B видит подписки, блок-лист (и кликает «Разблокировать» от B), pending-элементы A; `poll()` шлёт `getpagescores(postIds_A, B)`. `auth-store.ts:463-505,340`, `user-relations-store.ts:90-94`, `pending-ratings-store.ts:41-48`. **Фикс:** reset всех сторов в `switchAccount`/`signOut`; `initedForAddress`.
 - [ ] **V33 · [C6]** — «Сначала лучшее»: `depth` передаётся в днях (30), нода считает блоками → 2 поста и «всё загружено»; «всё время» (99999) → `sql request timeout`. Legacy шлёт 7000–10000. `filters-store-consts.ts:31-51`, `feed-queries.ts:74-96`. **Фикс:** `depth` в блоках (≈1440/сутки), «всё время» ограничить.
-- [ ] **V34 · [C7 + моя проверка]** — `safeDecode` в `use-feed.ts:79-85` заменяет `+`→пробел до `decodeURIComponent`; живые посты не URL-кодированы → «C++» → «C   », «+7 900…» → « 7 900…». Применяется к title/content/preview/lastComment и в поиске. **Фикс:** декодировать только при `%[0-9A-F]{2}`, `+` не трогать; один декодер на проект (X3).
+- [x] **V34 · [C7 + моя проверка]** — `safeDecode` в `use-feed.ts:79-85` заменяет `+`→пробел до `decodeURIComponent`; живые посты не URL-кодированы → «C++» → «C   », «+7 900…» → « 7 900…». Применяется к title/content/preview/lastComment и в поиске. **Фикс:** декодировать только при `%[0-9A-F]{2}`, `+` не трогать; один декодер на проект (X3). ✅ закрыто 2026-09-14 `1de0abe`: один `helpers/content/safe-decode.ts` с семантикой legacy `trydecode` (сверено с `pocketnet.gui`), все 15 декодеров контента на нём; заодно `post-mapper` начал декодировать `c/m` и восемь `isUserVerified` сведены в `helpers/profile/is-user-verified.ts`
 - [ ] **V35 · [C8]** — Неудачная подгрузка страницы: `await refetch()` vue-query глотает ошибку → `isLoadingMore=true` навсегда; `content-feed.vue:69-82` показывает ошибку ВМЕСТО 60 загруженных постов. `use-infinite-feed.ts:211-227`. **Фикс:** `watch(error)` → сброс флага; ошибку страницы под списком.
 - [ ] **V36 · [D4]** — Редактирование теряет `url` (видео/аудио → `share` вместо `video`, `u:''`), `settings` (пост «только подписчикам» `f:'1'` после правки опечатки становится публичным) и `language`. `composer-source.ts:12-29,77-85`, `use-post-composer.ts:77-93,167-191`; legacy `Share.import` сохраняет. **Фикс:** расширить `ComposerSource`, инициализировать `uploadedVideoUrl/visibility/language` из источника.
 - [ ] **V37 · [D5]** — Tauri-транскод: `result.push(...Array.from(chunk))` на 100 МБ → `RangeError` детерминированно для файлов >100 МБ (лимит UI 500 МБ); 5–100 МБ гонятся `number[]`-JSON'ом (8–10× памяти). `file-worker.ts:26-30`, `tauri-transcoder.ts:255-333`, `lib.rs:37`. **Фикс:** raw-тело `invoke` чанками или путь из dialog-плагина без копирования.
@@ -167,7 +168,7 @@
 - [ ] **S19 · [C12]** — WS-финализация pending-постов/комментов ждёт `transaction.type ∈ {share,video,…}`/`{comment,…}`, которых в словаре WS нет; TTL/reconcile pending-постов только в ленте профиля → «песочные часы» до перезагрузки; `comments-store` overrides ищутся по txid правки вместо id. `use-pending-posts-realtime.ts:30-36`, `use-comments-ws.ts:46-57`.
 - [ ] **S20 · [C13]** — Ссылки «поделиться/копировать/embed» от `window.location.origin` → в Tauri `tauri://localhost/post/…`, в Capacitor `https://localhost`. `post-card.vue:350-353`, `post-share-menu.vue:60-68`.
 - [ ] **S21 · [C14]** — Блок-лист применяется к комментам/профилю, но не к лентам/бустам/рекомендациям (legacy фильтрует клиентски).
-- [ ] **S22 · [C15, E20, C21]** — `post-mapper.adaptPostData` (страница поста, embed, чат) — усечённая модель: нет decode, `myVal` (повторная оценка → `DoubleScore`), `lastComment`, `preview`, `repostAuthor`, `pending`; `embed-post-page` читает `post.time` (в модели `timestamp`) → дата никогда; превью статьи в чате = сырой JSON. **Фикс:** один адаптер (X3).
+- [ ] **S22 · [C15, E20, C21]** — `post-mapper.adaptPostData` (страница поста, embed, чат) — усечённая модель: ~~нет decode~~ (✅ `1de0abe`), `myVal` (повторная оценка → `DoubleScore`), `lastComment`, `preview`, `repostAuthor`, `pending`; `embed-post-page` читает `post.time` (в модели `timestamp`) → дата никогда; превью статьи в чате = сырой JSON. **Фикс:** один адаптер (X3).
 
 ### Композер, контент, плеер, видео
 - [ ] **S23 · [D7, A16, D25]** — Глобальный keydown (capture, `stopPropagation`) после первого play съедает Space/M у сфокусированных кнопок/select/ссылок и модалок; `use-video-hotkeys` для этих клавиш фактически мёртв. `use-global-keyboard.ts:12-33,51-70,105`.
@@ -193,6 +194,7 @@
 - [ ] **S41 · [E15]** — OS-уведомление о сообщении показывает шифротекст (base64 JSON / hex) и hex-локалпарт вместо ника. `messenger-store.ts:377-383`.
 - [ ] **S42 · [E19]** — Три определения «личного чата»; комнаты, созданные nextgen (`createDirectRoom` без `room_alias_name: tetatetid`), не проходят ни своё `isTetatetchat` (текст идёт групповым протоколом, кнопка PKOIN скрыта), ни legacy-поиск (собеседник на legacy создаёт вторую комнату).
 - [ ] **S43 · [E21]** — Два несвязанных чёрных списка: matrix `m.ignored_user_list` в чате и on-chain blacklist в профиле; одинаковая надпись, разные эффекты (решение Р3).
+- [~] **S72 · [P2-11 ←LEFTOVERS]** — Групповые сообщения: AES-CBC с фиксированным IV (`store/consts.ts` `AES_CBC_IV`) под долгоживущим ключом комнаты — детерминированный шифропрефикс, homeserver видит повторы. `encryption-service.ts:99-124`. Формат общий с legacy `bastyon-chat` (`pcryptoFile.encrypt`) → это протокол, не локальный баг: фикс = версия формата со случайным IV, синхронно с legacy-клиентом. ⏸ до координации с legacy.
 
 ### Mini-apps
 - [ ] **S44 · [F8]** — Built-in/remote-session приложения без `fetchHosts` (ошибка типов) → fetch-tunnel `TypeError` → под Tor (`alttransport:true`) Barteron не может сделать ни одного запроса. `apps-installer.ts:101,131`, `fetch-tunnel.ts:56`.
@@ -270,7 +272,7 @@
 - [ ] **N34 · [I15]** — Changelog: «что нового» по последней папке, а не по версии приложения; Android `versionName "1.0"` отдельно; текст changelog про язык устарел.
 - [ ] **N35 · [I16]** — `check-inline-styles.mjs` не видит `style='…'` (9 пропущенных); e2e привязаны к RU-локали, Playwright en-US → `getByText` падают; никто их не запускает.
 - [ ] **N36 · [I19]** — Мёртвые модули: `src-mobile/components/mobile-bottom-nav` (RU-хардкод), `avatar-resolver.ts` (только тест) vs `profile-avatar.ts`, `scroll-utils.ts` при трёх ad-hoc `body.style.overflow` без счётчика (дровер снимает лок мессенджера), `sidebar-categories/{helpers,consts}.ts`, `sidebar-tags/consts.ts`, `effects-store` setup-style, закомментированный `vite-plugin-styled-data-attr.js`, `feedMode` через `history.replaceState` мимо роутера, pixi-ticker `star-explosion` крутится постоянно.
-- [ ] **N37 · [мои]** — Мёртвые дубли ядра ленты: `feed-store-helpers.ts` (никем не импортируется, есть тест), `use-feed-queries.ts` (второй `useProfileFeed`, неверная раскладка), `use-infinite-feed-fetchers/-enrichment/-consts.ts`, `use-feed-helpers.ts` (другой `safeDecode`), `mapMissedEventToNotification` ×2, `post-card/helpers.ts::decodeUrlEncoded` (мёртвый + stateful `/g`-regex в `.test()`), шесть вариантов URL-декодера, конфликт экспорта `safeDecode` в `composables/index.ts` (TS2308), четыре константы fee `=0.00000001` (`COMMENT_TX_FEE`, `POST_TX_FEE`, `RELATION_TX_FEE`, `DEFAULT_TX_FEE`).
+- [ ] **N37 · [мои]** — Мёртвые дубли ядра ленты: `feed-store-helpers.ts` (никем не импортируется, есть тест), `use-feed-queries.ts` (второй `useProfileFeed`, неверная раскладка), `use-infinite-feed-fetchers/-enrichment/-consts.ts`, ~~`use-feed-helpers.ts` (другой `safeDecode`)~~, `mapMissedEventToNotification` ×2, ~~`post-card/helpers.ts::decodeUrlEncoded` (мёртвый + stateful `/g`-regex в `.test()`), шесть вариантов URL-декодера, конфликт экспорта `safeDecode` в `composables/index.ts` (TS2308)~~ (✅ `87e322b`, `f01de10`, `1de0abe`), четыре константы fee `=0.00000001` (`COMMENT_TX_FEE`, `POST_TX_FEE`, `RELATION_TX_FEE`, `DEFAULT_TX_FEE`).
 - [~] **N38 · [мои]** — ESLint: 33 ошибки / 256 предупреждений при `npm run lint` (в основном `preserve-caught-error`, `no-empty` в tor-websocket/tor-store, `no-empty-object-type` в rpc-типах, `no-require-imports` в bip39-loader); lint-staged видит только изменённые файлы. ✅ частично 2026-09-13: 0 ошибок eslint, `lint` покрывает `src-mobile/` и `e2e/`; 256 предупреждений остаются
 - [ ] **N39 · [I20]** — Light-only hex-цвета в шаблонах эксплорера (`network-stats-chart.vue:75-80,169-176`, `peers-page.vue:31-33`) — в dark-теме светлые оси/сетка; stylelint проверяет только `*styled.ts`.
 - [ ] **N40 · [H7-смежное]** — `environment/env.dev`, `env.prod` — пустые файлы в репе; `_docs-todo/ASR.md` — чужой чат-дамп про распознавание речи, не документ проекта.
@@ -283,7 +285,7 @@
 |---|---|---|---|
 | X1 | Язык интерфейса | V42 | LS `bastyon_locale` (i18n) vs IDB `bastyonAppLanguage` (ui-store); два детектора дефолта (`ru` vs `en`) |
 | X2 | Даты и время | S71 | 8 форматтеров, `'ru-RU'` хардкод, 2 набора i18n-ключей относительного времени |
-| X3 | Модель поста и декодирование | K7, V34, S22, N37 | два `adaptPostData` (`use-feed.ts` vs `post-mapper.ts`), шесть URL-декодеров с разной обработкой `+`/`%` |
+| X3 | Модель поста и декодирование | K7, ~~V34~~, S22, N37 | два `adaptPostData` (`use-feed.ts` vs `post-mapper.ts`); ~~шесть URL-декодеров~~ → один `safe-decode.ts` (✅ `1de0abe`), один `AdaptedPost` (✅ `f01de10`) |
 | X4 | Выбор ноды | S7, S2, S66 | node-selector / `proxy[0]` для WS / explorer-preferred (управляет и кошельком) / proxy-with-wallet |
 | X5 | Чёрный список | S43, S21, V32 | on-chain blacklist (user-relations-store) vs matrix ignore-list; в лентах не применяется; не сбрасывается при смене аккаунта |
 | X6 | Tor «весь трафик» | V20, V21, V22, S1, S3, S33, S34, S59, S60, N24 | торифицирован только `appFetch`; webview-прокси нет; fail-open; TorWS не открывается |
@@ -325,6 +327,7 @@
 - [ ] V8/V9/V10/V11 регистрация и добавление аккаунта (X10, одним коммитом с тестами на `restore-session`) · ~~V12 persist + модалка needs-reset~~ ✅.
 - [ ] V14 токены PeerTube/черновики в `clearAllUserData` · ~~V15 кэш переписки при выходе (Р6)~~ ✅ · V16 обложка профиля · V17 Tauri-пути · V18 ControlPort · ~~V19 глобальные хоткеи~~ ✅.
 - Проверка: vitest полный, `cargo test --lib`, ручной прогон: вход по мнемонике (маскировка), поиск Enter, ответ на ответ, оценка отредактированного поста, фото в чате.
+- `[~ needs-live]` **VP-1 ←LEFTOVERS** — UI сейфа в Tauri-сборке: модалки passphrase/reset («Восстановить по 12 словам»/«Позже»), Settings → Security (включение/смена/отключение passphrase, «Проверить 12 слов»), миграция legacy-кошелька на fingerprint. Движок проверен e2e (`e2e/vault.spec.ts`, Chromium+WebKit).
 
 ### Волна 2 — Tor честность (после Р1)
 - [ ] V20 fail-closed (JS + Rust `pick_client`) · V22 TorWS open-гонка · S1 abort/timeout в `torFetch` · S3/S60 зомби-сокеты · S59 lifecycle `tor_start/stop` · V21 по Р1 · V25 SSRF-фильтр + V27 скоуп plugin-http · S33/S34 (Р4) · N24 manifest-loader через `appFetch`.
@@ -342,6 +345,7 @@
 ### Волна 5 — мессенджер
 - [ ] V28 голосовое по chatId · V29 paste только в поле чата · V30 read-markers при видимом окне · S35 статус отправки/ретрай · S36 merge во время загрузки · S37 листенеры один раз + ошибка логина · S38 сброс syncError · S39 ошибка «нет ключей» · S40 DM-фильтр + дабл-клик · S41 текст OS-уведомления · S42 `room_alias_name: tetatetid` + один хелпер «direct» · S43 (Р3) · N19 revoke blob-URL + localEchoUpdated · N20 shared PIXI/2D canvas · Р6 шифрование кэша (если решено).
 - Проверка `[~ needs-live]`: кросс-клиентный round-trip с legacy-чатом после S42 (обязательно — меняется формат комнат).
+- Roadmap **←LEFTOVERS**: S72 (IV групповых — с legacy); VP-12 — payload'ы сейфа (`encryption.ts`, AES-CBC без аутентификации, отсюда плаузибилити-проверки при миграции) → AES-GCM с версией формата.
 
 ### Волна 6 — mini-apps
 - [ ] V23 не персистить denied по таймауту · V24 origin в гранте · V26 одна CSP `[~ needs-live: prod-бандл]` · S44 `fetchHosts` у built-in · S45 маркер «отозвано» · S46 install из favorites/recent · S48 сверка `event.source` с iframe · S49 `extra` в промпте + текст zaddress · S50 запрет `useOldFormat` · S51 кнопка «Удалить» · N22/N23.
@@ -350,8 +354,10 @@
 ### Волна 7 — платформа, Tauri, видео, эксплорер
 - [ ] V40 opener + `openExternal` · V37 бинарный IPC/путь из диалога · S27 `cancel_transcode` · S32 PATH ffmpeg · S23 хоткеи (один обработчик в плеере) · S24 линкификация только текстовых нод · S25 один рендерер Editor.js · S26/S30 листенеры и AudioContext · S28 media session · S29 композер при публикации · S31 общий парсер YouTube · S61 `dbUnavailable` · S64/S65/S66/S68/S69/N31 эксплорер · S67 embed (`_top` + `frame-ancestors` на деплое) · N7 `router.isReady()` · N15 делегат `bastyon://` · N29/N30/N32/N33/N34.
 - Проверка `[~ needs-live]`: macOS-бандл — внешние ссылки открываются, ffmpeg из Dock, транскод 150 МБ.
+- `[~ needs-live]` **IPFS ←LEFTOVERS** (та же Tauri-сборка): (1) нативные диалоги из Rust — «Поделиться файлом…», «Поделиться приватно…», сохранение приватной ссылки (`blocking_pick_file`/`blocking_save_file` в `spawn_blocking`, macOS + Windows); (2) `ipfs_open_viewer` — окно `incognito`, `on_navigation` пускает только `127.0.0.1:<gw>` и `*.dweb.link`, storage не общий между CID; (3) первый `ensure` с `API.Authorizations` на репо пользователя — апгрейд с усыновлённым демоном, рестарт с `--api-auth`, probe/shutdown с `Authorization`, gateway без auth, `provide once` после `add` уходит (лог демона).
 
 ### Волна 8 — гигиена и консистентность
+- [ ] **←LEFTOVERS (аудит крупных файлов)**: `use-comment-form.ts` — @mention-меню и оптимистичный `sendReply` в отдельные composables (делят `replyDraft`, template-ref'ы, keyboard-state — только с ручным прогоном формы ответа); `post-card-comments.vue` — deep-link (`provideCommentTree` + ref) и display-форматтеры с `setInterval` (только с прогоном); общий примитив «оптимистичное сообщение» для комментариев/мессенджера (6 call-site'ов, отдельный дизайн). «Не резать»: `video-player` (кроме глав), `chat-room` микро-composables, `matrix-service` `rooms.ts`, `use-post-video`, `use-post-share`.
 - [ ] S62 все хардкоды в i18n · S71 один модуль дат на `Intl` + плюрализация · S7 одна нода для WS (из node-selector) и честный текст настройки · S8 bip32-версии · S9 WIF · N3/N18/N27/N36/N37 удалить мёртвые модули и их тесты · N4 README/EXAMPLES · ~~N5~~ ✅/N6/N9 · N16/N17 · N35 check-inline-styles + `use.locale` в Playwright · N39 цвета через токены · N40 мусорные файлы.
 
 ---
@@ -360,9 +366,9 @@
 
 | Проверка | Результат | Команда |
 |---|---|---|
-| vitest | 2128 passed / 1 skipped (177 файлов; часть тестов покрывает мёртвые модули — X11) | `node_modules/.bin/vitest run` |
-| eslint | 33 ошибки / 256 предупреждений | `node_modules/.bin/eslint src/ --ext .ts,.tsx,.vue,.js` |
-| tsc | 1433 ошибки (TS2345 ×1008 в styled; miscreant 69); `.vue` не проверяются | `node_modules/.bin/tsc --noEmit -p tsconfig.json` |
+| vitest | 2128 passed / 1 skipped (177 файлов; часть тестов покрывает мёртвые модули — X11) → **2248/2248 (199 файлов) на 2026-09-14** | `node_modules/.bin/vitest run` |
+| eslint | 33 ошибки / 256 предупреждений → **0 / 252 на 2026-09-14** | `node_modules/.bin/eslint src/ src-mobile/ e2e/ --ext .ts,.tsx,.vue,.js` |
+| tsc | 1433 ошибки (TS2345 ×1008 в styled; miscreant 69); `.vue` не проверяются → **1415 на 2026-09-14** | `node_modules/.bin/tsc --noEmit -p tsconfig.json` |
 | vue-tsc | не установлен; `npx vue-tsc@2` падает на TypeScript из npx-кэша (`./lib/tsc` не экспортируется) — ставить pinned в devDeps | — |
 | i18n | ru/en симметричны 1436/1436; 2 ключа из кода отсутствуют (S55); 140 ключей не используются | скрипт zone-H |
 | Rust | `cargo test --lib` 24/24 (ipfs), `cargo build` ok | `cd src-tauri && cargo test --lib` |
@@ -383,5 +389,6 @@
 - **Мессенджер:** DM — AES-SIV с nonce (аутентифицирован), пароль Matrix = SHA256², токен только в памяти, sync-БД per-user, ключи BIP32 `m/33'/…` как legacy, `seg.html` через `escapeHtml`, лимиты вложений = legacy.
 - **Mini-apps:** origin-guard строгий, `targetOrigin` канонический, iframe sandbox без `allow-top-navigation`, `rpc` не подписывает, WS-поток не пушится приложениям, rate-limiter и payment-modal snapshot корректны.
 - **Tor-installer:** HTTPS + SHA256, tar/zip защищены от traversal, порты только loopback, `__OwningControllerProcess`, `ws.rs` fail-closed через SOCKS.
+- **IPFS (←LEFTOVERS, принято 2026-09-13):** D3 — токен pin-сервиса и `--api-auth` в argv локального демона (`https://` обязателен, `--` перед позиционными); D13 — широкая CSP главного окна (`'unsafe-inline' 'unsafe-eval'` нужны antd/inline-стилям; `on*` держит meta-CSP). Список «проверено-безопасно» по IPFS — в `IPFS_VIEWER_MODULE_DESIGN.md`.
 - **Mobile/build:** `allowBackup=false`, провайдеры не exported, iOS usage-descriptions есть, ATS без исключений, SW не регистрируется в Tauri, CSP meta для веба строгая, release permissions минимальные.
 - **Лента/поиск/профиль:** дедуп страниц по id нужен и работает; `getboostfeed`/`getmostcommentedfeed`/`getcomments` сверены с нодой; stale-ответы поиска исключены; `bastyon-input-link` без open-redirect; отношения с корректным откатом; `complain`/`user-info` payload = legacy; QR-сканер чистит стрим и не логирует.

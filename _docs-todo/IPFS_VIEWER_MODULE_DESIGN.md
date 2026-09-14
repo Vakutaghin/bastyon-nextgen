@@ -219,7 +219,7 @@ export async function buildIpfsViewerUrl(target: IpfsTarget): Promise<string> {
 | Ф5b | ✅ `66231d2` | приватный шаринг: Rust `ipfs/crypto.rs` (AES-256-GCM, `nonce‖ct`, +4 теста), `ipfs_add_encrypted`→{cid,key} и `ipfs_save_encrypted` (fetch шифртекста→decrypt→на диск); ключ+имя во ФРАГМЕНТЕ ссылки `ipfs://<cid>#key=..&name=..` (не уходят на gateway); `parseIpfsSecret`/`buildIpfsSecretLink` (+2 теста); перехватчик: секрет→save decrypted, Tor-guard распространён на encrypted-фетч; кнопка «Поделиться приватно…» в header-ipfs. Крипта в одном языке (Rust), decrypt тоже Rust — без cross-lang. Сьют 2109 зелёный. **Осталось:** инлайн-рендер зашифрованных медиа (сейчас только скачивание) |
 | Ф5c | ✅ `ee1e8d4` | удалённый pin (durability) через **IPFS Pinning Service API**: команды `ipfs_pin_service_set/status/clear` + `ipfs_pin_remote` (сервис `bastyon-pin` хранит сам Kubo); стор `pinServiceConfigured`+`setPinService/clearPinService/refreshPinService/pinRemote`; авто-pin CID после публикации (best-effort); UI — фаза `pin-config` (endpoint+токен) + кнопка «Удалённый pin…» в header-ipfs (при running). Работает со сторонним сервисом или ipfs-cluster на VPS. **Нужен реальный endpoint+токен для живой проверки.** Прямой Kubo-API — сознательно НЕ выбран (светит контроль над нодой) |
 | Ф5 | ✅ `0facdb4` | файлообменник (write): backend `ipfs_add` (`add -Q --cid-version=1 --pin`); стор `addFile` (ensure→add); кнопка «Поделиться файлом…» в `header-ipfs` → dialog → CID → `ipfs://<cid>` в буфер + модалка с предупреждением «контент публичный»; `buildIpfsShareLink`(+2 теста), capability `dialog:allow-open`. Round-trip: шаринг-ссылка открывается тем же перехватчиком. Сьют 2107 зелёный. **Отложено (Ф5b):** шифрование приватных файлов (нужна расшифровка во вьювере) + удалённый pin (VPS-нода) для durability, когда автор офлайн |
-| Аудит | ✅ `f82ab24`…`29482de` | аудит 2026-09-11 (документ удалён 2026-09-13, остатки в `AUDIT_LEFTOVERS_2026-09-13.md`, полный текст — `git show f5fda70:_docs-todo/IPFS_SECURITY_AUDIT.md`): 25 фиксов + 2 принятых; subdomain-ссылки `ff68f05`; удаление Kubo → Настройки `fa1f2bd`; подпись ecpair v3/btc17 `f82ab24`. Не проверено живьём: нативные диалоги из Rust, `ipfs_open_viewer`, первый ensure с `API.Authorizations` — нужна Tauri-сборка |
+| Аудит | ✅ `f82ab24`…`29482de` | аудит 2026-09-11 (документ удалён 2026-09-13, остатки в `APP_AUDIT_2026-09.md` (волна 7, «←LEFTOVERS»)`, полный текст — `git show f5fda70:_docs-todo/IPFS_SECURITY_AUDIT.md`): 25 фиксов + 2 принятых; subdomain-ссылки `ff68f05`; удаление Kubo → Настройки `fa1f2bd`; подпись ecpair v3/btc17 `f82ab24`. Не проверено живьём: нативные диалоги из Rust, `ipfs_open_viewer`, первый ensure с `API.Authorizations` — нужна Tauri-сборка |
 
 ### Файлообменник — важные оговорки (MVP Ф5)
 
@@ -245,7 +245,7 @@ bastyon-pin <endpoint> <key>`), на каждую публикацию — `ipfs
 
 [IPFS Pinning Service API]: https://ipfs.github.io/pinning-services-api-spec/
 
-### Аудит 2026-09-11 и принятые решения (остатки — `AUDIT_LEFTOVERS_2026-09-13.md` §2; полный текст — `git show f5fda70:_docs-todo/IPFS_SECURITY_AUDIT.md`)
+### Аудит 2026-09-11 и принятые решения (остатки — `APP_AUDIT_2026-09.md`, волна 7 «←LEFTOVERS»; полный текст — `git show f5fda70:_docs-todo/IPFS_SECURITY_AUDIT.md`)
 
 Три независимых ревью + живая проверка на Kubo v0.43.0; все пункты закрыты в
 `29482de`. Решения, которые меняют дизайн выше:
