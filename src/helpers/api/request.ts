@@ -16,6 +16,7 @@ import servers from '@/servers.json'
 import { getRpcPath } from './rpc-endpoints'
 import { appFetch } from './fetch-strategies'
 import { retryWithBackoff, type ServerEndpoint } from './rpc-retry'
+import { orderedProxies } from './node-selector'
 import { signRpcParamsIfNeeded, signHttpDataIfNeeded } from './request-signing'
 import type { T_RpcRequestParams, RpcRequestConfig, HttpRequestParams } from './types/request'
 
@@ -227,8 +228,18 @@ export async function getByPRC(
     return tryRpcRequest(params, config.host, config.port)
   }
 
+  const proxies = servers.servers.production.proxy as ServerEndpoint[]
+
+  // Неидемпотентные вызовы (бродкаст транзакции, V1): один сервер и никакого
+  // перебора — таймаут первой ноды не должен отправлять тот же hex второй.
+  if (params.options?.noFailover === true) {
+    const [server] = await orderedProxies(proxies)
+    if (!server) throw new Error('No RPC servers available')
+    return tryRpcRequest(params, server.host, server.port)
+  }
+
   return retryWithBackoff(params, {
-    servers: servers.servers.production.proxy as ServerEndpoint[],
+    servers: proxies,
     request: tryRpcRequest,
     isLogicErrorThrowable: true,
     protocolName: 'RPC',

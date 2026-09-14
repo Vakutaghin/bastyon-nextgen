@@ -14,6 +14,13 @@ export type RpcOptions = {
   auth?: boolean
   /** Сессия для подписи */
   session?: string
+  /** Таймаут запроса, мс (по умолчанию 30 000). */
+  timeout?: number
+  /**
+   * Не перебирать ноды при ошибке — только одна попытка на одном сервере.
+   * Для неидемпотентных запросов (sendrawtransactionwithmessage).
+   */
+  noFailover?: boolean
   [key: string]: unknown
 }
 

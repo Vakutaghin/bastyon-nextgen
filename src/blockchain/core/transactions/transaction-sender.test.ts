@@ -1,11 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { sendTransactionWithMessage } from './transaction-sender'
+import {
+  BroadcastStatusUnknownError,
+  computeTxidFromHex,
+  isAlreadyKnownError,
+  sendTransactionWithMessage,
+} from './transaction-sender'
 
-const _rpcCallWithAuth = vi.hoisted(() => vi.fn())
+const { _rpcCallWithAuth, _getByPRC } = vi.hoisted(() => ({
+  _rpcCallWithAuth: vi.fn(),
+  _getByPRC: vi.fn(),
+}))
 
-vi.mock('@/helpers/api/request', () => ({ rpcCallWithAuth: _rpcCallWithAuth }))
+vi.mock('@/helpers/api/request', () => ({ rpcCallWithAuth: _rpcCallWithAuth, getByPRC: _getByPRC }))
 vi.mock('@/helpers/api/rpc-endpoints', () => ({
-  rpcEndpoints: { sendRawTransactionWithMessage: 'sendrawtransactionwithmessage' },
+  rpcEndpoints: {
+    sendRawTransactionWithMessage: 'sendrawtransactionwithmessage',
+    getRawTransaction: 'getrawtransaction',
+  },
 }))
 vi.mock('@/helpers/common/debug-log', () => ({ debugLog: vi.fn() }))
 
@@ -19,6 +30,7 @@ let errSpy: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
   _rpcCallWithAuth.mockReset()
+  _getByPRC.mockReset()
   errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
@@ -26,9 +38,9 @@ afterEach(() => errSpy.mockRestore())
 
 describe('sendTransactionWithMessage — валидация', () => {
   it('бросает при невалидном hex', async () => {
-    await expect(
-      sendTransactionWithMessage({ ...validParams(), hex: '' })
-    ).rejects.toThrow('Invalid transaction hex')
+    await expect(sendTransactionWithMessage({ ...validParams(), hex: '' })).rejects.toThrow(
+      'Invalid transaction hex'
+    )
     expect(_rpcCallWithAuth).not.toHaveBeenCalled()
   })
 
@@ -52,10 +64,11 @@ describe('sendTransactionWithMessage — успех', () => {
     const res = await sendTransactionWithMessage(validParams())
 
     expect(res).toBe('txid-123')
+    // Один сервер, без перебора нод, длинный таймаут (V1).
     expect(_rpcCallWithAuth).toHaveBeenCalledWith({
       method: 'sendrawtransactionwithmessage',
       parameters: ['0100aabb', { source: { v: ['Pa'] } }, 'transaction'],
-      options: { auth: true },
+      options: { auth: true, noFailover: true, timeout: 90_000 },
     })
   })
 
@@ -106,5 +119,57 @@ describe('sendTransactionWithMessage — ошибки', () => {
     await expect(sendTransactionWithMessage(validParams())).rejects.toThrow(
       'Failed to send transaction: {"code":-25,"message":"bad tx"}'
     )
+  })
+})
+
+// Локальный txid для hex '0100aabb' (hash256 в обратном порядке) — вычисляем
+// тем же кодом; важно лишь, что он детерминирован и совпадает с verify-путём.
+const localTxid = async () => (await computeTxidFromHex('0100aabb'))!
+
+describe('sendTransactionWithMessage — бродкаст без повторной отправки (V1)', () => {
+  const deps = () => ({
+    rpcCallWithAuth: _rpcCallWithAuth,
+    getByPRC: _getByPRC,
+    sleep: async () => {},
+  })
+
+  it('computeTxidFromHex: детерминирован, 64 hex; мусор → null', async () => {
+    const a = await computeTxidFromHex('0100aabb')
+    expect(a).toMatch(/^[0-9a-f]{64}$/)
+    expect(await computeTxidFromHex('0100aabb')).toBe(a)
+    expect(await computeTxidFromHex('zz')).toBeNull()
+    expect(await computeTxidFromHex('abc')).toBeNull()
+  })
+
+  it('«already in chain/mempool» от ноды = успех с локальным txid', async () => {
+    _rpcCallWithAuth.mockRejectedValueOnce({
+      code: -27,
+      message: 'transaction already in block chain',
+    })
+    expect(await sendTransactionWithMessage(validParams(), deps())).toBe(await localTxid())
+    _rpcCallWithAuth.mockRejectedValueOnce(new Error('txn-already-in-mempool'))
+    expect(await sendTransactionWithMessage(validParams(), deps())).toBe(await localTxid())
+    expect(isAlreadyKnownError(new Error('bad-txns-inputs-missingorspent'))).toBe(false)
+  })
+
+  it('таймаут: транзакция видна по getrawtransaction → успех, повторного бродкаста нет', async () => {
+    _rpcCallWithAuth.mockRejectedValueOnce(new Error('RPC request timeout after 90000ms'))
+    const txid = await localTxid()
+    _getByPRC.mockRejectedValueOnce({ code: -5 }).mockResolvedValueOnce({ data: { txid } })
+    expect(await sendTransactionWithMessage(validParams(), deps())).toBe(txid)
+    expect(_rpcCallWithAuth).toHaveBeenCalledTimes(1)
+    expect(_getByPRC).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'getrawtransaction', parameters: [txid] })
+    )
+  })
+
+  it('таймаут и ноды tx не знают → BroadcastStatusUnknownError с txid, без повторной отправки', async () => {
+    _rpcCallWithAuth.mockRejectedValueOnce(new Error('RPC request timeout after 90000ms'))
+    _getByPRC.mockRejectedValue({ code: -5 })
+    const err = await sendTransactionWithMessage(validParams(), deps()).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(BroadcastStatusUnknownError)
+    expect((err as BroadcastStatusUnknownError).txid).toBe(await localTxid())
+    expect(_rpcCallWithAuth).toHaveBeenCalledTimes(1)
+    expect(_getByPRC).toHaveBeenCalledTimes(3)
   })
 })

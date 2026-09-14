@@ -1,4 +1,4 @@
 {
-  "errors": 1399,
+  "errors": 1398,
   "note": "число ошибок vue-tsc, считающееся нормой; гейт scripts/check-typecheck-baseline.mjs не даёт ему расти (аудит N28)"
 }
