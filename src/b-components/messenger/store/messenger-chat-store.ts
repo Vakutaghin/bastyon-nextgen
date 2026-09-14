@@ -82,6 +82,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     sendVideo: mediaSending.sendVideo,
     sendFile: mediaSending.sendFile,
     sendPkoin: sending.sendPkoin,
+    sendPkoinMessage: sending.sendPkoinMessage,
     getDirectPartnerAddress: sending.getDirectPartnerAddress,
     fetchAndDecryptMedia: mediaTransfer.fetchAndDecryptMedia,
     decryptAudioData: mediaTransfer.decryptAudioData,

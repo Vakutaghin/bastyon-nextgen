@@ -425,6 +425,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     sendVideo: chatStore.sendVideo,
     sendFile: chatStore.sendFile,
     sendPkoin: chatStore.sendPkoin,
+    sendPkoinMessage: chatStore.sendPkoinMessage,
     getDirectPartnerAddress: chatStore.getDirectPartnerAddress,
     fetchAndDecryptMedia: chatStore.fetchAndDecryptMedia,
     initMatrix,

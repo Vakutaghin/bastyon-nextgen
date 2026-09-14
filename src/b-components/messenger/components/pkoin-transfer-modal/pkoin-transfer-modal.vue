@@ -44,8 +44,22 @@
         </SC_Body>
 
         <SC_Footer>
-          <SC_Button type="button" :disabled="sending" @click="onCancel">{{ t('messenger.cancel') }}</SC_Button>
+          <SC_Button type="button" :disabled="sending" @click="onCancel">{{
+            t('messenger.cancel')
+          }}</SC_Button>
+          <!-- Перевод уже в сети, не доставлено только сообщение: повторяем
+               сообщение, а не транзакцию (V2). -->
           <SC_Button
+            v-if="undelivered"
+            type="button"
+            :primary="true"
+            :disabled="sending"
+            @click="onRetryMessage"
+          >
+            {{ sending ? t('messenger.sending') : t('messenger.retryMessage') }}
+          </SC_Button>
+          <SC_Button
+            v-else
             type="button"
             :primary="true"
             :disabled="!canSubmit || sending"
@@ -63,6 +77,8 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMessengerStore } from '../../store'
+import { PkoinMessageDeliveryError } from '../../store/messenger-chat-store/use-message-sending'
+import type { SendPkoinPayload } from '../../services/matrix-service/media-sender'
 import {
   SC_Backdrop,
   SC_Modal,
@@ -130,23 +146,32 @@ const onAmountInput = (e: Event) => {
   submitError.value = null
 }
 
+/**
+ * Транзакция ушла, сообщение в чат — нет: держим txid+payload, чтобы повторить
+ * только сообщение. Пока не null, кнопка «Отправить» недоступна (V2).
+ */
+const undelivered = ref<{ txid: string; payload: SendPkoinPayload } | null>(null)
+
 const reset = () => {
   amount.value = ''
   messageText.value = ''
   amountError.value = null
   submitError.value = null
   sending.value = false
+  undelivered.value = null
 }
 
 const onCancel = () => {
   if (sending.value) return
+  // Деньги уже ушли — родитель должен узнать txid даже при отказе от повтора.
+  if (undelivered.value) emit('sent', undelivered.value.txid)
   reset()
   emit('close')
 }
 
 const onSubmit = async () => {
   if (sending.value) return
-  if (!canSubmit.value) return
+  if (!canSubmit.value || undelivered.value) return
   sending.value = true
   submitError.value = null
   try {
@@ -163,7 +188,30 @@ const onSubmit = async () => {
       submitError.value = t('messenger.transactionFailed')
     }
   } catch (e) {
-    submitError.value = e instanceof Error ? e.message : t('messenger.sendError')
+    if (e instanceof PkoinMessageDeliveryError) {
+      undelivered.value = { txid: e.txid, payload: e.payload }
+      submitError.value = t('messenger.pkoinSentMessageFailed', { txid: e.txid.slice(0, 12) })
+    } else {
+      submitError.value = e instanceof Error ? e.message : t('messenger.sendError')
+    }
+  } finally {
+    sending.value = false
+  }
+}
+
+const onRetryMessage = async () => {
+  if (sending.value || !undelivered.value) return
+  sending.value = true
+  submitError.value = null
+  const { txid, payload } = undelivered.value
+  try {
+    await store.sendPkoinMessage(props.chatId, payload)
+    emit('sent', txid)
+    reset()
+    emit('close')
+  } catch (e) {
+    submitError.value = t('messenger.pkoinSentMessageFailed', { txid: txid.slice(0, 12) })
+    console.error('[PkoinTransfer] retry message failed:', e)
   } finally {
     sending.value = false
   }

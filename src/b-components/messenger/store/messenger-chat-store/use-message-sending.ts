@@ -14,6 +14,23 @@ import { getAddressFromMatrixId, getMatrixId, isTetatetchat } from '../../helper
 import { getPartnerMatrixId } from '../../room-helpers'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
+import type { SendPkoinPayload } from '../../services/matrix-service/media-sender'
+
+/**
+ * Транзакция ушла в сеть, а сообщение о ней в Matrix — нет. Носит txid и
+ * payload, чтобы UI предложил повторить ТОЛЬКО сообщение (аудит V2: раньше
+ * повторная кнопка «Отправить» делала вторую транзакцию).
+ */
+export class PkoinMessageDeliveryError extends Error {
+  constructor(
+    public readonly txid: string,
+    public readonly payload: SendPkoinPayload,
+    cause: unknown
+  ) {
+    super('pkoin_message_not_delivered', { cause })
+    this.name = 'PkoinMessageDeliveryError'
+  }
+}
 
 export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
   const { messages, authStore, uiStore } = ctx
@@ -286,19 +303,32 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         operationType: 'transaction',
       })
 
-      await matrixService.sendPkoinTransaction(chatId, {
+      // Фаза 2: сообщение в комнату. С этого момента деньги уже ушли — любая
+      // ошибка ниже НЕ должна приводить к повторной транзакции.
+      const payload: SendPkoinPayload = {
         txid,
         amount,
         fromAddress,
         toAddress,
         message: messageText,
-      })
+      }
+      try {
+        await matrixService.sendPkoinTransaction(chatId, payload)
+      } catch (e) {
+        console.error('[ChatStore] sendPkoin: tx sent, chat message failed:', e)
+        throw new PkoinMessageDeliveryError(txid, payload, e)
+      }
 
       return txid
     } catch (e) {
       console.error('[ChatStore] sendPkoin failed:', e)
       throw e
     }
+  }
+
+  /** Повтор только сообщения о переводе (после PkoinMessageDeliveryError). */
+  const sendPkoinMessage = async (chatId: string, payload: SendPkoinPayload): Promise<void> => {
+    await matrixService.sendPkoinTransaction(chatId, payload)
   }
 
   return {
@@ -309,6 +339,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     deleteMessage,
     sendReaction,
     sendPkoin,
+    sendPkoinMessage,
   }
 }
 

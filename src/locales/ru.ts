@@ -595,6 +595,9 @@ export default {
     messageOptional: 'Сообщение (необязательно)',
     pkoinMessagePlaceholder: 'За кофе, спасибо…',
     transactionFailed: 'Не удалось отправить транзакцию',
+    pkoinSentMessageFailed:
+      'Перевод отправлен (tx {txid}…), но сообщение в чат не доставлено. Повторите отправку сообщения — второй перевод не нужен.',
+    retryMessage: 'Повторить сообщение',
     sendError: 'Ошибка отправки',
   },
   auth: {

@@ -589,6 +589,9 @@ export default {
     messageOptional: 'Message (optional)',
     pkoinMessagePlaceholder: 'For coffee, thanks…',
     transactionFailed: 'Failed to send transaction',
+    pkoinSentMessageFailed:
+      'The transfer was sent (tx {txid}…), but the chat message was not delivered. Retry the message — no second transfer is needed.',
+    retryMessage: 'Retry message',
     sendError: 'Send error',
   },
   auth: {
