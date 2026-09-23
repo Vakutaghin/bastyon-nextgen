@@ -9,6 +9,7 @@
 import { APP_NAME } from '@/config/app-name'
 import { t } from '@/i18n'
 import { useNotificationSettingsStore } from '@/stores/notification-settings-store'
+import { isNotificationAllowed } from '@/stores/notification-filtering'
 import type { NotificationItem } from '@/stores/notifications-types'
 
 function supported(): boolean {
@@ -68,7 +69,12 @@ function show(title: string, body: string, tag: string): void {
  */
 export function notifyNewNotifications(items: NotificationItem[]): void {
   if (!items || items.length === 0 || !canShow()) return
-  show(APP_NAME, bodyFor(items), 'bastyon-notifications')
+  // Тумблеры типов («Оценки», «Комментарии», «Транзакции», …) до этого
+  // фильтровали только тосты — системные уведомления шли мимо них (S56).
+  const settings = useNotificationSettingsStore()
+  const allowed = items.filter((item) => isNotificationAllowed(settings, item))
+  if (allowed.length === 0) return
+  show(APP_NAME, bodyFor(allowed), 'bastyon-notifications')
 }
 
 /** Браузерное уведомление о новом сообщении мессенджера (вкладка в фоне). */

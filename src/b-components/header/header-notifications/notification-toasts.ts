@@ -1,40 +1,12 @@
 import type { Pinia } from 'pinia'
 import { useNotificationSettingsStore } from '@/stores'
+import { isNotificationAllowed } from '@/stores/notification-filtering'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import type { NotificationItem } from '@/stores/notifications-store'
 // Реальный звук уведомления (портирован из legacy sounds/). Vite отдаёт URL —
 // тот же приём, что у мессенджера (messenger-store импортирует glass.mp3).
 import notificationSound from './sounds/notification.mp3'
-
-/**
- * Проверка: разрешено ли уведомление по настройкам пользователя.
- * mesType из getmissedinfo: comment, answer, upvoteShare, subscribe, subscribePrivate, unsubscribe, post, userInfo, repost.
- */
-function isAllowedBySettings(settings: ReturnType<typeof useNotificationSettingsStore>, item: NotificationItem): boolean {
-  const mesType = item.mesType ?? item.type
-  switch (mesType) {
-    case 'comment':
-      return settings.comments
-    case 'answer':
-      return settings.answers
-    case 'upvoteShare': {
-      const val = item.upvoteVal ?? 0
-      return val > 2 ? settings.upvotes : settings.downvotes
-    }
-    case 'subscribe':
-    case 'subscribePrivate':
-      return settings.followers
-    case 'unsubscribe':
-      return false
-    case 'post':
-    case 'userInfo':
-    case 'repost':
-      return true
-    default:
-      return true
-  }
-}
 
 /** Один раз за сессию проигрываем короткий звук (чтобы при пачке уведомлений не было какофонии). */
 let soundPlayedInSession = false
@@ -72,17 +44,18 @@ const MAX_TOASTS_AT_ONCE = 2
 export function showToastsForNewNotifications(pinia: Pinia, items: NotificationItem[]): void {
   if (items.length === 0) return
   const settings = useNotificationSettingsStore(pinia)
-  const allowed = items.filter((item) => isAllowedBySettings(settings, item))
+  const allowed = items.filter((item) => isNotificationAllowed(settings, item))
   if (allowed.length === 0) return
 
-  const toShow = allowed.length > MAX_TOASTS_AT_ONCE ? allowed.slice(0, MAX_TOASTS_AT_ONCE) : allowed
+  const toShow =
+    allowed.length > MAX_TOASTS_AT_ONCE ? allowed.slice(0, MAX_TOASTS_AT_ONCE) : allowed
   for (const item of toShow) {
     appToast.info({
       // item.title — i18n-ключ заголовка (см. notifications-mappers).
       message: item.title ? t(item.title) : '',
       description: item.description ?? (item.from ? `От: ${item.from}` : undefined),
       key: item.id,
-      duration: 4
+      duration: 4,
     })
   }
 

@@ -1,6 +1,7 @@
 // Маппинг тип-уведомления → иконка/i18n-ключ подписи.
 // Используется для отрисовки бейджей и кратких меток в дропдауне.
 
+import { isLowRatingValue } from '@/stores/notification-filtering'
 import type { NotificationItem } from '@/stores/notifications-store'
 
 /** Имя ant-design-icon-компонента для каждого типа уведомления. */
@@ -24,9 +25,7 @@ export const ICON_BY_TYPE: Record<string, string> = {
 export function notificationTypeLabelKey(item: NotificationItem): string {
   switch (item.mesType) {
     case 'upvoteShare':
-      return item.upvoteVal != null && item.upvoteVal < 0
-        ? 'notif.typeLowRating'
-        : 'notif.typeRating'
+      return isLowRatingValue(item.upvoteVal) ? 'notif.typeLowRating' : 'notif.typeRating'
     case 'comment':
       return 'notif.typeComment'
     case 'answer':

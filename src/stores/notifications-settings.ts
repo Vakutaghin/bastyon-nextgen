@@ -4,6 +4,7 @@
 import { settingsAPI } from '@/db/apis/settings-api'
 import {
   NOTIFICATIONS_LAST_BLOCK_KEY,
+  NOTIFICATIONS_FETCH_BLOCK_KEY,
   NOTIFICATIONS_HIDDEN_IDS_KEY,
 } from './notifications-constants'
 import type { LastBlockByAddress, HiddenIdsByAddress } from './notifications-types'
@@ -36,6 +37,40 @@ export async function saveLastBlockToSettings(address: string, block: number): P
     await settingsAPI.set(NOTIFICATIONS_LAST_BLOCK_KEY, next)
   } catch (e) {
     console.error('[notifications] saveLastBlockToSettings failed', e)
+  }
+}
+
+/**
+ * Курсор фетча из IDB: с какого блока запрашивать getmissedinfo. Отдельный от
+ * read-pointer, поэтому события приходят и до первого открытия выпадашки (V38).
+ */
+export async function loadFetchBlockFromSettings(address: string): Promise<number | null> {
+  try {
+    const raw = (await settingsAPI.get(NOTIFICATIONS_FETCH_BLOCK_KEY)) as
+      | LastBlockByAddress
+      | undefined
+    if (raw && typeof raw === 'object' && typeof raw[address] === 'number') {
+      return raw[address]
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+/** Сохранить курсор фетча (вызывается при каждом опросе). */
+export async function saveFetchBlockToSettings(address: string, block: number): Promise<void> {
+  try {
+    const raw = (await settingsAPI.get(NOTIFICATIONS_FETCH_BLOCK_KEY)) as
+      | LastBlockByAddress
+      | undefined
+    const next: LastBlockByAddress = {
+      ...(raw && typeof raw === 'object' ? raw : {}),
+      [address]: block,
+    }
+    await settingsAPI.set(NOTIFICATIONS_FETCH_BLOCK_KEY, next)
+  } catch (e) {
+    console.error('[notifications] saveFetchBlockToSettings failed', e)
   }
 }
 

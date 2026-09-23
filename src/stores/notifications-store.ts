@@ -14,9 +14,14 @@ import { enrichNotifications } from './notifications-enricher'
 import {
   loadLastBlockFromSettings,
   saveLastBlockToSettings,
+  loadFetchBlockFromSettings,
+  saveFetchBlockToSettings,
   loadHiddenIdsFromSettings,
   saveHiddenIdsToSettings,
 } from './notifications-settings'
+import { NOTIFICATIONS_KEEP_LIMIT } from './notifications-constants'
+import { isNotificationAllowed } from './notification-filtering'
+import { useNotificationSettingsStore } from './notification-settings-store'
 import { fetchCurrentBlockHeight, isTimeoutError, fetchMissedInfo } from './notifications-fetch'
 
 // Реэкспорт типов: внешние модули продолжают импортировать из @/stores/notifications-store.
@@ -70,17 +75,27 @@ export const useNotificationsStore = defineStore('notifications', {
     enrichedIds: new Set<string>() as Set<string>,
   }),
   getters: {
-    /** Список без скрытых, по убыванию nblock/time */
+    /**
+     * Список без скрытых и без запрещённых настройками, по убыванию nblock/time.
+     * Фильтры раньше действовали только на тосты, а список показывал всё (S56).
+     */
     list(): NotificationItem[] {
-      const filtered = this.items.filter((n) => !this.hiddenIds.has(n.id))
+      const filters = useNotificationSettingsStore()
+      const filtered = this.items.filter(
+        (n) => !this.hiddenIds.has(n.id) && isNotificationAllowed(filters, n)
+      )
       return [...filtered].sort((a, b) => (b.nblock ?? b.time) - (a.nblock ?? a.time))
     },
-    /** Счётчик: количество уведомлений в списке, которые не скрыты */
+    /**
+     * Бейдж — именно НЕПРОЧИТАННЫЕ: те, что новее read-pointer. Раньше считались
+     * все нескрытые за всё время, и цифра не обнулялась никогда (S53).
+     */
     unreadCount(): number {
-      return this.list.length
+      return this.unreadList.length
     },
     unreadList(): NotificationItem[] {
-      return this.list
+      const read = this.readBlock
+      return this.list.filter((n) => (n.nblock ?? 0) > read)
     },
   },
   actions: {
@@ -116,16 +131,20 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     async initFor(address: string, stale: () => boolean, opts?: { forceRefresh?: boolean }) {
-      const [savedBlock, storedList, hiddenIds] = await Promise.all([
+      const [savedReadBlock, savedFetchBlock, storedList, hiddenIds] = await Promise.all([
         loadLastBlockFromSettings(address),
+        loadFetchBlockFromSettings(address),
         notificationsAPI.getAllByAddress(address),
         loadHiddenIdsFromSettings(address),
       ])
       if (stale()) return
 
       this.hiddenIds = hiddenIds
-      if (savedBlock != null && savedBlock > 0) {
-        this.lastBlock = savedBlock
+      // Курсор фетча: свой персист (V38). Пока его нет — берём позицию
+      // прочтения, а если и её нет (первый запуск) — голову сети.
+      const startBlock = savedFetchBlock ?? savedReadBlock
+      if (startBlock != null && startBlock > 0) {
+        this.lastBlock = startBlock
       } else {
         try {
           const height = (await fetchCurrentBlockHeight()) || 0
@@ -136,10 +155,9 @@ export const useNotificationsStore = defineStore('notifications', {
           this.lastBlock = 0
         }
       }
-      // Стартовый read-pointer = сохранённая позиция прочтения (P2-8). Курсор
-      // фетча (lastBlock) дальше уедет на head, а readBlock останется здесь,
-      // пока пользователь явно не откроет выпадашку (persistReadPointer).
-      this.readBlock = this.lastBlock
+      // Read-pointer (P2-8) двигается ТОЛЬКО по явному просмотру выпадашки;
+      // курсор фетча уедет на head, а этот останется здесь.
+      this.readBlock = savedReadBlock ?? this.lastBlock
 
       // Преобразуем запись IDB в NotificationItem для state
       const toItem = (s: {
@@ -168,7 +186,11 @@ export const useNotificationsStore = defineStore('notifications', {
         mesType: s.mesType,
         upvoteVal: s.upvoteVal,
       })
-      this.items = storedList.map(toItem)
+      // Полный пересбор из IDB терял снапшоты (их там нет) и вместе с
+      // `enrichedIds` оставлял карточки без имени актора и текста коммента до
+      // перезагрузки (V39). Поэтому уже имеющиеся в памяти записи сохраняем.
+      const inMemory = new Map(this.items.map((n) => [n.id, n]))
+      this.items = storedList.map((s) => inMemory.get(s.id) ?? toItem(s))
 
       const maxRetries = 2
       let lastError: unknown
@@ -196,6 +218,9 @@ export const useNotificationsStore = defineStore('notifications', {
           const existingIds = new Set(this.items.map((i) => i.id))
           const newItems = mapped.filter((n) => !existingIds.has(n.id))
           if (newItems.length > 0) {
+            // Снимки из события живут только в памяти (в IDB их нет) — кладём
+            // их в кэши обогащения, чтобы пережить пересбор списка (V39).
+            this.cacheSnapshots(newItems)
             const toStore = newItems.map(
               ({
                 id,
@@ -227,6 +252,14 @@ export const useNotificationsStore = defineStore('notifications', {
             if (stale()) return
             this.items = [...newItems, ...this.items]
           }
+          // Курсор фетча персистится при КАЖДОМ опросе, иначе следующий запуск
+          // снова начал бы с головы сети (V38).
+          if (this.lastBlock > 0) {
+            void saveFetchBlockToSettings(address, this.lastBlock)
+          }
+          if (newItems.length > 0) {
+            void this.pruneStored(address)
+          }
           if (opts?.forceRefresh && newItems.length > 0 && this.onNewNotifications) {
             try {
               this.onNewNotifications(newItems)
@@ -253,6 +286,49 @@ export const useNotificationsStore = defineStore('notifications', {
         this.inited = false
       }
     },
+    /** Кладёт снимки события в кэши обогащения (переживают пересбор списка). */
+    cacheSnapshots(items: NotificationItem[]) {
+      for (const n of items) {
+        const postId = n.shareId ?? n.commentSnapshot?.postid
+        if (n.postSnapshot && postId) {
+          this.postCache[postId] = { ...this.postCache[postId], ...n.postSnapshot }
+        }
+        if (n.commentSnapshot) {
+          this.commentCache[n.id] = { ...this.commentCache[n.id], ...n.commentSnapshot }
+        }
+        const fromAddr = n.from ?? n.fromSnapshot?.address
+        if (n.fromSnapshot && fromAddr) {
+          this.profileCache[fromAddr] = { ...this.profileCache[fromAddr], ...n.fromSnapshot }
+        }
+      }
+    },
+
+    /**
+     * Обрезает хранилище до NOTIFICATIONS_KEEP_LIMIT последних записей и
+     * выбрасывает скрытые id, которых уже нет в базе: иначе и то и другое
+     * росло вечно, а каждый опрос читал тысячи записей (S53).
+     */
+    async pruneStored(address: string) {
+      try {
+        const stored = await notificationsAPI.getAllByAddress(address)
+        if (stored.length > NOTIFICATIONS_KEEP_LIMIT) {
+          const extra = stored.slice(NOTIFICATIONS_KEEP_LIMIT)
+          await notificationsAPI.deleteMany(
+            address,
+            extra.map((s) => s.id)
+          )
+        }
+        const keep = new Set(stored.slice(0, NOTIFICATIONS_KEEP_LIMIT).map((s) => s.id))
+        const hidden = [...this.hiddenIds].filter((id) => keep.has(id))
+        if (hidden.length !== this.hiddenIds.size) {
+          this.hiddenIds = new Set(hidden)
+          await saveHiddenIdsToSettings(address, this.hiddenIds)
+        }
+      } catch (e) {
+        console.warn('[notifications] prune failed', e)
+      }
+    },
+
     setOnNewNotifications(cb: ((items: NotificationItem[]) => void) | null) {
       this.onNewNotifications = cb
     },

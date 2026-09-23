@@ -38,9 +38,17 @@ export const notificationsAPI = {
   },
 
   /**
+   * Удалить пачку уведомлений по address+id (чистка старых записей, S53)
+   */
+  async deleteMany(address: string, ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+    await db.notifications.bulkDelete(ids.map((id) => [address, id]))
+  },
+
+  /**
    * Удалить все уведомления для адреса
    */
   async deleteAllByAddress(address: string): Promise<void> {
     await db.notifications.where('address').equals(address).delete()
-  }
+  },
 }

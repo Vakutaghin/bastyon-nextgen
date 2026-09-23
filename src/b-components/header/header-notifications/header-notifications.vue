@@ -141,6 +141,7 @@ import {
 import { useAuthStore, useNotificationsStore } from '@/stores'
 import { useModalStore } from '@/stores/modal-store'
 import type { NotificationItem } from '@/stores/notifications-store'
+import { isLowRatingValue } from '@/stores/notification-filtering'
 import { adaptPostData } from '@/composables/use-feed'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import {
@@ -239,6 +240,8 @@ function isSeen(item: NotificationItem): boolean {
   return (item.nblock ?? 0) <= readBlock.value
 }
 
+// Бейдж в шапке — непрочитанные (новее read-pointer), а не «все нескрытые» (S53).
+
 function iconComponentFor(item: NotificationItem): Component {
   const name = ICON_BY_TYPE[item.type] ?? 'EditOutlined'
   return ICON_COMPONENTS[name] ?? EditOutlined
@@ -273,7 +276,7 @@ function getAvatar(item: NotificationItem): string | null {
 function getActionLine(item: NotificationItem): string {
   switch (item.mesType) {
     case 'upvoteShare':
-      return item.upvoteVal != null && item.upvoteVal < 0
+      return isLowRatingValue(item.upvoteVal)
         ? t('header.actionLowRating')
         : t('header.actionRated')
     case 'comment':
@@ -342,12 +345,18 @@ function hasPreview(item: NotificationItem): boolean {
 }
 
 function getRatingDisplay(item: NotificationItem): { label: string; positive: boolean } {
+  // upvoteVal — звёзды 1..5. Низкая оценка (<= 2) показывается словами, как в
+  // legacy; раньше «низкой» считалась только отрицательная, которой не бывает.
   const v = item.upvoteVal ?? 0
-  if (v > 0) {
+  if (!isLowRatingValue(item.upvoteVal) && v > 0) {
     const stars = Math.max(1, Math.min(5, Math.round(v)))
     return { label: '★'.repeat(stars) + '☆'.repeat(5 - stars), positive: true }
   }
-  return { label: t('header.lowRating'), positive: false }
+  const stars = Math.max(1, Math.min(5, Math.round(v)))
+  return {
+    label: `${t('header.lowRating')} · ${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}`,
+    positive: false,
+  }
 }
 
 function openPostFromItem(item: NotificationItem): boolean {
@@ -430,12 +439,16 @@ function onItemClick(item: NotificationItem): void {
 function onOpenChange(open: boolean): void {
   visible.value = open
   if (open) {
-    notificationsStore.persistReadPointer()
+    // Read-pointer НЕ двигаем на открытии: раньше это происходило синхронно, до
+    // рендера, и подсветка «новых» не показывалась ни разу (S52). Двигаем на
+    // закрытии — пользователь к этому моменту список действительно видел.
     if (notificationsStore.list.length === 0 && !notificationsStore.loading) {
       notificationsStore.init({ forceRefresh: true })
     }
     notificationsStore.enrichVisible(list.value)
+    return
   }
+  void notificationsStore.persistReadPointer()
 }
 
 function onItemMenuClick({ key }: { key: string }): void {
