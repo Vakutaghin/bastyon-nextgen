@@ -97,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Dropdown, Badge, Button } from 'ant-design-vue'
 import {
@@ -180,6 +180,28 @@ pendingStore.init()
 // Снимаем pending-посты по WS-подтверждению даже когда пользователь не в своём
 // профиле (шапка живёт всегда) — счётчик «песочных часов» гаснет сам.
 usePendingPostsRealtime()
+
+// TTL-страховка. Раньше просроченные pending чистились только в ленте своего
+// профиля, поэтому «песочные часы» в шапке висели до перезагрузки, даже если
+// подтверждение потерялось (S19).
+const PENDING_SWEEP_MS = 60_000
+let pendingSweepTimer: ReturnType<typeof setInterval> | null = null
+
+function sweepExpiredPending(): void {
+  pendingPostsStore.cleanupExpired()
+  commentsStore.cleanupExpired()
+}
+
+onMounted(() => {
+  sweepExpiredPending()
+  pendingSweepTimer = setInterval(sweepExpiredPending, PENDING_SWEEP_MS)
+})
+onBeforeUnmount(() => {
+  if (pendingSweepTimer) {
+    clearInterval(pendingSweepTimer)
+    pendingSweepTimer = null
+  }
+})
 
 const visible = ref(false)
 

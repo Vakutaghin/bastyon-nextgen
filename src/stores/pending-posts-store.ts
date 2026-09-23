@@ -123,6 +123,12 @@ export const usePendingPostsStore = defineStore('pending-posts', {
      * Применить подтверждение TX из WS: снять pending по txid во всех адресах
      * (адрес заранее неизвестен подписчику; практически это всегда наш адрес).
      */
+    /** Есть ли среди ожидающих постов транзакция с таким txid. */
+    hasPendingTx(txid: string): boolean {
+      if (!txid) return false
+      return Object.values(this.pendingByAddress).some((list) => list.some((p) => p.id === txid))
+    },
+
     applyConfirmedTx(txid: string): void {
       if (!txid) return
       for (const [address, list] of Object.entries(this.pendingByAddress)) {

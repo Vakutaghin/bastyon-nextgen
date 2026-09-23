@@ -2,9 +2,11 @@
  * WS-подтверждение оптимистичных постов.
  *
  * Слушает событие `transaction` (приходит для транзакций с нашего/на наш адрес,
- * т.к. WS подписан на адрес пользователя) и, если тип соответствует публикации
- * поста (share/video/audio/article), снимает pending по txid. Это мгновенная
- * финализация; резервный путь — reconcileWithServer при загрузке ленты + TTL.
+ * т.к. WS подписан на адрес пользователя) и снимает pending по txid. Матч идёт
+ * ИМЕННО по txid: в WS-событии `type` — это `mesType` уведомления (post, answer,
+ * upvoteShare, …), а не тип операции публикации, поэтому проверка
+ * `type ∈ {share,video,audio,article}` не срабатывала никогда (S19). Резервный
+ * путь остаётся: reconcileWithServer при загрузке ленты + TTL.
  *
  * Монтируется в компонентах, которые постоянно живут на экране и должны реагировать
  * на подтверждение: «песочные часы» в шапке (HeaderEvents) и лента профиля.
@@ -15,7 +17,6 @@
 import { onMounted, onBeforeUnmount } from 'vue'
 import { wsService } from '@/blockchain/ws/ws-service'
 import { usePendingPostsStore } from '@/stores'
-import { isPostOpType } from '@/composables/pending-post-adapter'
 
 export interface UsePendingPostsRealtimeOptions {
   /** Вызывается после снятия pending по подтверждённой TX (напр. рефетч ленты). */
@@ -28,10 +29,11 @@ export function usePendingPostsRealtime(opts: UsePendingPostsRealtimeOptions = {
   const subscribe = () => {
     if (unsub) return
     unsub = wsService.on('transaction', (data) => {
-      const type = (data?.type as string | undefined) || ''
       const txid = (data?.txid as string | undefined) || ''
-      if (!txid || !isPostOpType(type)) return
-      usePendingPostsStore().applyConfirmedTx(txid)
+      if (!txid) return
+      const store = usePendingPostsStore()
+      if (!store.hasPendingTx(txid)) return
+      store.applyConfirmedTx(txid)
       opts.onConfirmed?.(txid)
     })
   }

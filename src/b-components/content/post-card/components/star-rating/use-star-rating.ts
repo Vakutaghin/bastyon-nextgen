@@ -12,7 +12,9 @@ import {
   isNewUser,
   isReputationBlocked,
   isLowRatingBlocked,
+  isOwnContent,
 } from './helpers/star-rating-validation'
+import { t } from '@/i18n'
 import { sendUpvoteTransaction } from './helpers/star-rating-transaction'
 import { classifyVoteError, handleVoteError } from './helpers/star-rating-errors'
 
@@ -45,6 +47,14 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
   const effectiveUserVote = computed(() => confirmedPost.value?.myVal ?? props.userVote)
   const effectiveScoreSum = computed(() => confirmedPost.value?.scoreSum ?? props.scoreSum)
   const effectiveVotersCount = computed(() => confirmedPost.value?.scoreCnt ?? props.votersCount)
+
+  /**
+   * Свой пост: нода отвергает такую оценку (код 5). Раньше звёзды оставались
+   * кликабельными, транзакция уходила и ошибка не классифицировалась (S18).
+   */
+  const isOwnPost = computed(() =>
+    isOwnContent(props.contentAuthorAddress, useAuthStore().getUserAddress)
+  )
 
   // ── Pending / voted state ────────────────────────────────────────────
   const pendingValue = computed(() => pendingStore.getPendingValue(props.shareId))
@@ -147,6 +157,12 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
 
     const authStore = useAuthStore()
 
+    if (isOwnPost.value) {
+      if (event) event.stopPropagation()
+      appToast.error({ message: t('postCard.ratingOwnPost') })
+      return
+    }
+
     if (!authStore.isUserAuthenticated) {
       // Let the event bubble so the auth popover opens
       return
@@ -160,15 +176,20 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
     const userProfile = authStore.userProfile
 
     // Validation checks
+    // Каждая причина отказа теперь видна пользователю: раньше она уходила в
+    // `emit('error')`, а родитель писал её только в консоль (S18).
     if (isNewUser(userProfile)) {
+      appToast.error({ message: t('postCard.ratingNewAccount') })
       emit('error', new Error('Voting is allowed only 24 hours after registration'))
       return
     }
     if (isReputationBlocked(userProfile)) {
+      appToast.error({ message: t('postCard.ratingLowReputation') })
       emit('error', new Error('Your reputation is too low to vote'))
       return
     }
     if (isLowRatingBlocked(starNumber, userProfile)) {
+      appToast.error({ message: t('postCard.ratingLowStarsNeedReputation') })
       emit('error', new Error('You need at least 100 reputation to rate 1-3 stars'))
       return
     }
@@ -224,6 +245,7 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
     optimisticAverageRating,
     optimisticVotersCount,
     hasVoted,
+    isOwnPost,
 
     // Methods
     openAuthModal,

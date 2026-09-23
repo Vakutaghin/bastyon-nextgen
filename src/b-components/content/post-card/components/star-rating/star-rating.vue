@@ -3,7 +3,9 @@
     <template #content>
       <SC_AuthPopoverContent>
         <p>{{ t('postCard.authPrompt') }}</p>
-        <AButton type="primary" size="small" @click="openAuthModal">{{ t('postCard.login') }}</AButton>
+        <AButton type="primary" size="small" @click="openAuthModal">{{
+          t('postCard.login')
+        }}</AButton>
       </SC_AuthPopoverContent>
     </template>
     <!-- Обёртка перехватывает клик до popover, чтобы решить — открывать его или сразу
@@ -12,7 +14,8 @@
       <SC_StarRating class="star-rating">
         <template v-for="n in 5" :key="`star-${n}`">
           <SC_StarWrapper
-            :class="{ disabled: disabled || isSubmitting, readonly: hasVoted }"
+            :class="{ disabled: disabled || isSubmitting || isOwnPost, readonly: hasVoted }"
+            :title="isOwnPost ? t('postCard.ratingOwnPost') : undefined"
             @mouseenter="handleStarHover(n)"
             @mouseleave="handleStarLeave"
             @click="(e) => handleStarClick(n, e)"
@@ -78,6 +81,7 @@ const {
   displayRating,
   optimisticAverageRating,
   optimisticVotersCount,
+  isOwnPost,
   handleStarHover,
   handleStarLeave,
   handleStarClick,

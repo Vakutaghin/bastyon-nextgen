@@ -49,6 +49,12 @@ export const useCommentsStore = defineStore('comments', {
   state: () => ({
     /** commentId → новый текст (после commentEdit) */
     editedMessages: {} as Record<string, string>,
+    /**
+     * txid транзакции правки/удаления → id комментария. WS приносит только
+     * txid самой транзакции, а оверрайды лежат по id комментария — без этой
+     * карты подтверждение снимало не то, что нужно (S19).
+     */
+    txToCommentId: {} as Record<string, string>,
     /** commentId → true (после commentDelete TX, до подтверждения сетью) */
     deletedCommentIds: {} as Record<string, true>,
     /**
@@ -224,14 +230,39 @@ export const useCommentsStore = defineStore('comments', {
      * потому что локально мы тоже ключуем по txid от sendrawtransactionwithmessage. Если матч
      * по id найден — снимаем соответствующий локальный флаг.
      */
+    /** Ждём ли подтверждения этой транзакции: pending-комментарий или правка/удаление. */
+    hasPendingTx(postId: string, txid: string): boolean {
+      if (!txid) return false
+      if (this.txToCommentId[txid]) return true
+      return (this.pendingCreates[postId] ?? []).some((p) => p.id === txid)
+    },
+
+    /** Запоминает, какой комментарий правила/удаляла транзакция `txid` (S19). */
+    rememberTxForComment(txid: string, commentId: string): void {
+      if (!txid || !commentId) return
+      this.txToCommentId = { ...this.txToCommentId, [txid]: commentId }
+    },
+
     applyConfirmedTx(postId: string, txid: string, optype?: string): void {
       if (!txid) return
       // Pending create — снимаем
       this.removePending(postId, txid)
-      // Edit — снимаем override (сервер должен отдать новый текст в getcomments)
-      if (optype === 'commentEdit' || !optype) this.clearEditedMessage(txid)
-      // Delete — снимаем локальную метку (сервер пометит deleted)
-      if (optype === 'commentDelete' || !optype) this.unmarkDeleted(txid)
+      // Оверрайды лежат по id комментария; txid правки/удаления переводим
+      // через карту, а сам txid оставляем как запасной ключ (S19).
+      const commentId = this.txToCommentId[txid]
+      if (optype === 'commentEdit' || !optype) {
+        this.clearEditedMessage(commentId ?? txid)
+        if (commentId) this.clearEditedMessage(txid)
+      }
+      if (optype === 'commentDelete' || !optype) {
+        this.unmarkDeleted(commentId ?? txid)
+        if (commentId) this.unmarkDeleted(txid)
+      }
+      if (commentId) {
+        const next = { ...this.txToCommentId }
+        delete next[txid]
+        this.txToCommentId = next
+      }
     },
 
     // --- Reveal hidden ---
@@ -246,6 +277,7 @@ export const useCommentsStore = defineStore('comments', {
       this.deletedCommentIds = {}
       this.pendingCreates = {}
       this.revealedHiddenIds = {}
+      this.txToCommentId = {}
     },
   },
 })

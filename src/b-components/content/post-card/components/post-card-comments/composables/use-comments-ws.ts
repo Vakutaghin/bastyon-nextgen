@@ -41,12 +41,23 @@ export function useCommentsWs(opts: UseCommentsWsOptions) {
       // транзакции, относящиеся к нашему посту: comment / commentEdit / commentDelete / cScore.
       const type = (data?.type as string | undefined) || ''
       if (!opts.postId.value) return
+
+      const txid = (data?.txid as string | undefined) || ''
+      const store = useCommentsStore()
+
+      // В WS-событии `type` — это mesType уведомления (post, answer, …), а не
+      // тип операции комментария, поэтому по типу подтверждение не ловилось.
+      // Матчим по txid своей транзакции (S19).
+      if (txid && store.hasPendingTx(opts.postId.value, txid)) {
+        store.applyConfirmedTx(opts.postId.value, txid, type || undefined)
+        scheduleRefresh()
+        return
+      }
+
       if (!type) return
 
       if (type === 'comment' || type === 'commentEdit' || type === 'commentDelete') {
-        // Снимаем локальный optimistic-флаг по txid (если совпадает с pending)
-        const txid = (data?.txid as string | undefined) || ''
-        if (txid) useCommentsStore().applyConfirmedTx(opts.postId.value, txid, type)
+        if (txid) store.applyConfirmedTx(opts.postId.value, txid, type)
         scheduleRefresh()
         return
       }

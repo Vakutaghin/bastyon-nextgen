@@ -28,6 +28,16 @@ export function isLowRatingBlocked(
   value: number,
   userProfile: UserProfile | null | undefined
 ): boolean {
-  const reputation = userProfile.reputation || 0
+  // Профиль может быть ещё не загружен — обращение к полю напрямую роняло
+  // обработчик клика (S18).
+  const reputation = userProfile?.reputation || 0
   return value <= 3 && reputation < 100
+}
+
+/** Свой же пост: нода отвергает такую оценку (код 5, SelfScore). */
+export function isOwnContent(
+  contentAuthorAddress: string | undefined | null,
+  userAddress: string | undefined | null
+): boolean {
+  return !!contentAuthorAddress && !!userAddress && contentAuthorAddress === userAddress
 }

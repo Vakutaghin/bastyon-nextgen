@@ -2,6 +2,7 @@
 // в семантические признаки + показывает соответствующий toast.
 
 import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
 import type { StarRatingEmits } from '../types'
 
 export interface ClassifiedError {
@@ -11,6 +12,8 @@ export interface ClassifiedError {
   isBlocking: boolean
   /** Контент не найден / удалён (RPC code 12). */
   isNotFound: boolean
+  /** Оценка собственного контента (RPC code 5, SelfScore) — нода отвергает. */
+  isSelfScore: boolean
   /** Конфликт mempool (RPC code -26 или специфичные сообщения). */
   isMempoolConflict: boolean
   /** Все доступные сервера упали — сетевая проблема, не бизнес-логика. */
@@ -46,6 +49,7 @@ export function classifyVoteError(error: unknown): ClassifiedError {
   let isDoubleScore = Number(errorCode) === 4
   let isBlocking = Number(errorCode) === 32
   let isNotFound = Number(errorCode) === 12
+  let isSelfScore = Number(errorCode) === 5
   let isMempoolConflict = Number(errorCode) === -26
 
   if (errorMessage) {
@@ -53,6 +57,7 @@ export function classifyVoteError(error: unknown): ClassifiedError {
       isDoubleScore = true
     if (errorMessage.includes('Blocking') || errorMessage.includes('result 32')) isBlocking = true
     if (errorMessage.includes('NotFound') || errorMessage.includes('result 12')) isNotFound = true
+    if (errorMessage.includes('SelfScore') || errorMessage.includes('result 5')) isSelfScore = true
     if (
       errorMessage.includes('txn-mempool-conflict') ||
       errorMessage.includes('too-long-mempool-chain')
@@ -63,13 +68,13 @@ export function classifyVoteError(error: unknown): ClassifiedError {
 
   const isNetworkFailed =
     typeof e.message === 'string' &&
-    (e.message.includes('All RPC servers failed') ||
-      e.message.includes('All HTTP servers failed'))
+    (e.message.includes('All RPC servers failed') || e.message.includes('All HTTP servers failed'))
 
   return {
     isDoubleScore,
     isBlocking,
     isNotFound,
+    isSelfScore,
     isMempoolConflict,
     isNetworkFailed,
     message: e.message || 'Failed to submit vote',
@@ -79,28 +84,27 @@ export function classifyVoteError(error: unknown): ClassifiedError {
 /** Реакция на классифицированную ошибку: соответствующий toast + `emit('error')` для сети. */
 export function handleVoteError(classified: ClassifiedError, emit: StarRatingEmits): void {
   if (classified.isMempoolConflict) {
-    appToast.error({ message: 'Слишком частые оценки. Пожалуйста, подождите пару секунд.' })
+    appToast.error({ message: t('postCard.ratingTooFast') })
     return
   }
   if (classified.isDoubleScore) {
-    appToast.error({ message: 'Вы уже оценили этот пост' })
+    appToast.error({ message: t('postCard.ratingAlreadyVoted') })
     return
   }
   if (classified.isBlocking) {
-    appToast.error({
-      message: 'Невозможно поставить оценку, так как вы были заблокированы этим аккаунтом.',
-    })
+    appToast.error({ message: t('postCard.ratingBlockedByAuthor') })
+    return
+  }
+  if (classified.isSelfScore) {
+    appToast.error({ message: t('postCard.ratingOwnPost') })
     return
   }
   if (classified.isNotFound) {
-    appToast.error({ message: 'Оцениваемый контент не найден или был удален.' })
+    appToast.error({ message: t('postCard.ratingNotFound') })
     return
   }
   if (classified.isNetworkFailed) {
-    appToast.error({
-      message:
-        'Не удалось записать вашу оценку из‑за временных технических неполадок. Попробуйте позже.',
-    })
+    appToast.error({ message: t('postCard.ratingNetworkFailed') })
     emit('error', new Error(classified.message))
     return
   }

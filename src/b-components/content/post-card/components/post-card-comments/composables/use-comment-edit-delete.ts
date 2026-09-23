@@ -173,12 +173,13 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     // при ошибке откатываем — иначе оверрайд снимется при reconcile с RPC / при WS подтверждении.
     commentsStore.markDeleted(comment.id)
     try {
-      await deleteComment({
+      const deleteTxid = await deleteComment({
         postId: opts.postId.value,
         commentId: comment.id,
         parentId: comment.parentid || '',
         answerId: comment.answerid || '',
       })
+      commentsStore.rememberTxForComment(deleteTxid, comment.id)
       haptic('medium')
       appToast.success({ message: t('commentsMsg.deleteSuccess') })
     } catch (e) {
@@ -271,7 +272,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     }
     editSubmitting.value = true
     try {
-      await sendComment(
+      const editTxid = await sendComment(
         opts.postId.value,
         comment.parentid || '',
         comment.answerid || '',
@@ -280,7 +281,10 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       )
       haptic('small')
       // Optimistic: подменяем текст до прихода обновлённой версии (через стор)
-      useCommentsStore().setEditedMessage(id, text)
+      const commentsStore = useCommentsStore()
+      commentsStore.setEditedMessage(id, text)
+      // WS принесёт txid правки — по нему находим, какой комментарий обновлён (S19).
+      commentsStore.rememberTxForComment(editTxid, id)
       appToast.success({ message: t('commentsMsg.editSuccess') })
       closeEdit()
     } catch (e) {

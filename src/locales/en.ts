@@ -974,6 +974,16 @@ export default {
     failed: 'Failed to submit the report',
   },
   postCard: {
+    ratingOwnPost: 'You cannot rate your own post.',
+    ratingNotFound: 'The rated content was not found or has been deleted.',
+    ratingTooFast: 'Too many ratings in a row. Wait a couple of seconds.',
+    ratingAlreadyVoted: 'You have already rated this post.',
+    ratingBlockedByAuthor: 'The author blocked you, so you cannot rate this post.',
+    ratingNetworkFailed:
+      'Could not record your rating because of a temporary failure. Try again later.',
+    ratingNewAccount: 'Voting is allowed 24 hours after registration.',
+    ratingLowReputation: 'Your reputation is too low to vote.',
+    ratingLowStarsNeedReputation: 'Ratings of 1-3 stars require reputation of 100 or more.',
     retry: 'Retry',
     repostDeleted: 'Post deleted',
     readArticle: 'Read article',
