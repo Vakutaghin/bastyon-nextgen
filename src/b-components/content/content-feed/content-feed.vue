@@ -164,6 +164,7 @@ import { useFiltersStore } from '@/stores/filters-store'
 import { useModalStore } from '@/stores'
 import { useInfiniteFeed } from '@/composables/use-infinite-feed'
 import { useBoostedFeed } from '@/composables/use-boosted-feed'
+import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import type { AdaptedPost } from '@/composables/use-feed'
 import { isMobile } from '@mobile/utils/platform'
 import { getPhoto } from '@mobile/adapters/capacitor-camera'
@@ -236,6 +237,7 @@ const {
 // примерно на каждые BOOST_INTERVAL обычных постов. Пул берём с запасом.
 const showBoosted = computed<boolean>(() => filtersStore.activeTab === 1)
 const { posts: boostedPosts } = useBoostedFeed(10, () => filtersStore.activeTab === 1)
+const { filterBlocked } = useBlockedAuthors()
 
 /** Как часто вплетать продвигаемый пост (1 на N обычных постов). */
 const BOOST_INTERVAL = 10
@@ -259,11 +261,12 @@ function isDeleted(post: FeedItem): boolean {
 }
 
 const displayedPosts = computed<FeedItem[]>(() => {
-  const base = (allPosts.value as FeedItem[]).filter((p) => !isDeleted(p))
+  // Блок-лист применяется и к ленте, и к продвигаемым (решение Р3 по S21).
+  const base = filterBlocked((allPosts.value as FeedItem[]).filter((p) => !isDeleted(p)))
   if (!showBoosted.value || boostedPosts.value.length === 0) return base
 
   const seen = new Set(base.map(postKey))
-  const pool = boostedPosts.value.filter((b) => !seen.has(postKey(b)))
+  const pool = filterBlocked(boostedPosts.value.filter((b) => !seen.has(postKey(b))))
   if (pool.length === 0) return base
 
   const result: FeedItem[] = []

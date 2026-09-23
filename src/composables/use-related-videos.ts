@@ -7,6 +7,7 @@
  */
 
 import { computed, unref, type MaybeRefOrGetter } from 'vue'
+import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import { useQuery } from '@tanstack/vue-query'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -62,15 +63,18 @@ export function useRelatedVideos(
     gcTime: 10 * 60 * 1000,
   })
 
+  // Рекомендации тоже уважают блок-лист (решение Р3 по S21).
+  const { filterBlocked } = useBlockedAuthors()
+
   const videos = computed<AdaptedPost[]>(() => {
     const posts = extractPostsFromResponse(data.value)
     const ex = exclude.value
-    return posts
-      .filter((p) => {
+    return filterBlocked(
+      posts.filter((p) => {
         const id = String(p.txid || p.hash || p.id || '')
         return id !== ex && (p.type === 'video' || p.type === 'audio')
       })
-      .slice(0, limit)
+    ).slice(0, limit)
   })
 
   return { videos, isLoading, error }
