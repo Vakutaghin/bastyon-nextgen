@@ -35,6 +35,14 @@ export interface BuiltTransferTransaction {
   hex: string
   totalInputAmount: number
   totalOutputAmount: number
+  /**
+   * Комиссия, которую реально заберёт сеть, в сатоши: заявленная плюс сдача,
+   * не дотянувшая до dust (её нельзя оформить выходом, и она уходит майнеру).
+   * UI показывал заявленный 1 сатоши и молчал про сожжённые до 700 (N1).
+   */
+  feePaidSatoshis: number
+  /** Сколько из комиссии — это сгоревшая сдача (0, если сдача вышла выходом). */
+  burnedChangeSatoshis: number
   usedUnspents: UTXO[]
   outputs: Array<{ address: string; amount: number }>
   /** Данные для sendrawtransactionwithmessage (второй параметр) */
@@ -83,8 +91,12 @@ export async function buildTransferTransaction(
     throw new Error('Insufficient funds for the transfer, taking into account the commission')
   }
 
+  // Сдача меньше dust не может стать выходом — она достаётся сети как часть
+  // комиссии. Считаем это честно и отдаём наружу (N1).
   const finalChangeAmount =
     changeAmountSatoshis >= toSatoshis(DUST_VALUE) ? changeAmountSatoshis : 0
+  const burnedChangeSatoshis = finalChangeAmount === 0 ? changeAmountSatoshis : 0
+  const feePaidSatoshis = feeSatoshis + burnedChangeSatoshis
 
   const txb = new TransactionBuilder(POCKETNET_NETWORK)
   txb.addNTime(0)
@@ -133,6 +145,8 @@ export async function buildTransferTransaction(
     hex,
     totalInputAmount,
     totalOutputAmount: outputsAmount,
+    feePaidSatoshis,
+    burnedChangeSatoshis,
     usedUnspents: unspents,
     outputs,
     messageData,

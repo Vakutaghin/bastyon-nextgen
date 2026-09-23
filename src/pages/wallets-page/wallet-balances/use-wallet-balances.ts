@@ -57,12 +57,14 @@ export function useWalletBalances() {
   // Все балансы здесь — в САТОШИ: `getuserprofile.balance` так и приходит,
   // `parseTxUnspentResponse` приводит txunspent к той же шкале (V5).
   const accountBalance = computed<number | null>(() => {
-    const profile = currentProfile.value
-    const bal = (profile as { balance?: number | null } | null)?.balance
-    if (bal != null) return Number(bal)
+    // Свежезагруженный баланс приоритетнее профиля: `profile.balance` берётся
+    // на момент логина и после перевода остаётся прежним (S47).
     const cur = currentAddress.value
     const row = accountsWithBalances.value.find((a) => a.address === cur)
-    return row?.balance ?? null
+    if (row?.balance != null) return row.balance
+    const profile = currentProfile.value
+    const bal = (profile as { balance?: number | null } | null)?.balance
+    return bal != null ? Number(bal) : null
   })
 
   const sumWalletsBalance = computed<number>(() => {

@@ -6,6 +6,7 @@ import {
   isValidAddress,
   getAddressType,
   normalizeAddress,
+  FOREIGN_NETWORK_ERROR,
 } from './address-validator'
 import { toBase58Check } from './address-hash-utils'
 
@@ -53,16 +54,29 @@ describe('validateAddress', () => {
     expect(validateAddress(P2PKH)).toEqual({ isValid: true, type: 'p2pkh' })
   })
 
-  it('валиден P2SH (3-префикс) с типом p2sh', () => {
-    expect(validateAddress(P2SH3)).toEqual({ isValid: true, type: 'p2sh' })
+  it('отклоняет P2SH чужой сети (3-префикс, версия 5) — N2', () => {
+    // Формат Base58Check верный, но это Bitcoin. Раньше такой адрес проходил
+    // проверку и падал уже внутри btc17 с английским текстом библиотеки.
+    expect(validateAddress(P2SH3)).toEqual({
+      isValid: false,
+      error: FOREIGN_NETWORK_ERROR,
+    })
   })
 
   it('валиден bech32 с типом p2wpkh', () => {
     expect(validateAddress(BECH32)).toEqual({ isValid: true, type: 'p2wpkh' })
   })
 
-  it('квирк: Z-кошелёк валиден, но тип по умолчанию p2pkh (не распознан префикс)', () => {
-    expect(validateAddress(ZWALLET)).toEqual({ isValid: true, type: 'p2pkh' })
+  it('отклоняет bech32 чужого префикса (N2)', () => {
+    expect(validateAddress('tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx')).toEqual({
+      isValid: false,
+      error: FOREIGN_NETWORK_ERROR,
+    })
+  })
+
+  it('Z-кошелёк валиден и определяется как p2sh (N2)', () => {
+    // Версия 0x50 — наш P2SH; раньше тип молча падал в дефолтный p2pkh.
+    expect(validateAddress(ZWALLET)).toEqual({ isValid: true, type: 'p2sh' })
   })
 
   it('игнорирует обрамляющие пробелы', () => {

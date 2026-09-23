@@ -136,6 +136,14 @@ export const SC_WalletTableTitleRow = styled.div`
   gap: 12px;
 `
 
+/** Пояснение под заголовком доп. кошельков: почему они только для просмотра. */
+export const SC_WalletReadOnlyNote = styled.p`
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  margin: 0 10px 12px;
+`
+
 export const SC_WalletTableTitle = styled.h2`
   font-size: 16px;
   font-weight: 600;

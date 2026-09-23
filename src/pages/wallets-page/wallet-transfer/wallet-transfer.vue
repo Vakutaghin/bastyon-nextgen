@@ -150,6 +150,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/blockchain'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
+import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { InsufficientFundsError, sendTransfer } from './send-transfer'
 import { useReceiveAddress } from './use-receive-address'
 import { useReceiverSearch } from './use-receiver-search'
@@ -180,6 +181,8 @@ import {
   SC_TransferLoginChipText,
   SC_TransferLoginChipRemove,
 } from './wallet-transfer.styled'
+
+const emit = defineEmits<{ sent: [] }>()
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -253,7 +256,7 @@ async function doSend(): Promise<void> {
 
   try {
     // Сам tx-путь (unspents → лок входов → сборка → отправка) — в send-transfer.ts.
-    const txid = await sendTransfer({
+    const { txid, feePaidSatoshis } = await sendTransfer({
       fromAddress: mainAddr,
       keyPair,
       toAddress: addr,
@@ -262,7 +265,15 @@ async function doSend(): Promise<void> {
       message: message.value,
       fee: DEFAULT_TX_FEE,
     })
-    success.value = t('wallet.transferSent', { txid: txid.slice(0, 16) })
+    // Показываем комиссию, которую реально забрала сеть: если сдача не дотянула
+    // до dust, она ушла майнеру, а в интерфейсе стоял заявленный 1 сатоши (N1).
+    success.value = t('wallet.transferSentWithFee', {
+      txid: txid.slice(0, 16),
+      fee: formatPkoin(feePaidSatoshis, 8),
+    })
+    // Баланс во вкладке «Балансы» пересчитываем сразу — раньше он оставался
+    // тем, что пришёл в профиле при логине (S47).
+    emit('sent')
     clearReceiverLink()
     amount.value = ''
     message.value = ''

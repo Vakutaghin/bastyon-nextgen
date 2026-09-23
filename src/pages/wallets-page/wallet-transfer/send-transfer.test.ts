@@ -15,7 +15,9 @@ function deps(over: Partial<SendTransferDeps> = {}) {
     getUnspents: vi.fn(async () => [{ txid: 'a', vout: 0, amount: 5 }] as never),
     filterAvailableUnspents: vi.fn((u) => u),
     selectAndLockUnspents: vi.fn((u) => u),
-    buildTransferTransaction: vi.fn(async () => ({ hex: 'HEX', messageData: { m: 1 } }) as never),
+    buildTransferTransaction: vi.fn(
+      async () => ({ hex: 'HEX', messageData: { m: 1 }, feePaidSatoshis: 1_000_000 }) as never
+    ),
     sendTransactionWithMessage: vi.fn(async () => 'TXID'),
     ...over,
   }
@@ -41,9 +43,9 @@ describe('computeTransferAmounts', () => {
 })
 
 describe('sendTransfer', () => {
-  it('собирает и отправляет перевод, возвращает txid', async () => {
+  it('собирает и отправляет перевод, возвращает txid и фактическую комиссию (N1)', async () => {
     const d = deps()
-    const txid = await sendTransfer(
+    const { txid, feePaidSatoshis } = await sendTransfer(
       {
         fromAddress: 'FROM',
         keyPair,
@@ -56,6 +58,8 @@ describe('sendTransfer', () => {
       d
     )
     expect(txid).toBe('TXID')
+    // Комиссия приходит из сборки: заявленная + сгоревшая сдача.
+    expect(feePaidSatoshis).toBe(1_000_000)
     expect(d.getUnspents).toHaveBeenCalledWith('FROM', 1, 9999999)
     expect(d.filterAvailableUnspents).toHaveBeenCalledWith(expect.any(Array), false)
     expect(d.selectAndLockUnspents).toHaveBeenCalledWith(expect.any(Array), 2.01)

@@ -365,6 +365,9 @@ export default {
     },
   },
   wallet: {
+    errorForeignNetworkAddress: 'Это адрес другой сети. Нужен адрес Bastyon — он начинается с «P».',
+    additionalWalletsReadOnly:
+      'Дополнительные кошельки пока только для просмотра: этот клиент не умеет подписывать их вход (P2SH), поэтому монеты с них не отправить. Приём идёт на основной кошелёк.',
     title: 'Кошельки',
     tabBalances: 'Балансы',
     tabTransfers: 'Переводы',
@@ -441,6 +444,7 @@ export default {
     errorAuthRequired: 'Требуется авторизация',
     errorInsufficientFunds: 'Недостаточно средств для перевода с учётом комиссии',
     transferSent: 'Перевод отправлен. TXID: {txid}…',
+    transferSentWithFee: 'Перевод отправлен. TXID: {txid}… Комиссия: {fee} PKOIN',
     errorTransferFailed: 'Не удалось отправить перевод',
     pkoinRateTitle: 'Курс PKOIN (USD)',
     periodLabel: 'Период:',

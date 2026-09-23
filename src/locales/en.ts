@@ -359,6 +359,10 @@ export default {
     },
   },
   wallet: {
+    errorForeignNetworkAddress:
+      'This address belongs to another network. A Bastyon address starts with "P".',
+    additionalWalletsReadOnly:
+      'Additional wallets are view-only for now: this client cannot sign their P2SH input, so coins on them cannot be sent. Incoming transfers go to the main wallet.',
     title: 'Wallets',
     tabBalances: 'Balances',
     tabTransfers: 'Transfers',
@@ -435,6 +439,7 @@ export default {
     errorAuthRequired: 'Authorization required',
     errorInsufficientFunds: 'Insufficient funds for transfer including the fee',
     transferSent: 'Transfer sent. TXID: {txid}…',
+    transferSentWithFee: 'Transfer sent. TXID: {txid}… Fee: {fee} PKOIN',
     errorTransferFailed: 'Failed to send transfer',
     pkoinRateTitle: 'PKOIN Rate (USD)',
     periodLabel: 'Period:',

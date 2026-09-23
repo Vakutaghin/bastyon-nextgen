@@ -3,7 +3,7 @@
 // (аудит крупных файлов 2026-08).
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAuthStore, getAdditionalWalletAddressesList } from '@/blockchain'
+import { useAuthStore } from '@/blockchain'
 import { generateQRCode } from '@/blockchain/utils/qr-code'
 import { COPIED_RESET_TIMEOUT } from './consts'
 
@@ -17,27 +17,22 @@ export function useReceiveAddress() {
   const qrDataUrl = ref<string>('')
 
   const currentAddress = computed(() => authStore.getUserAddress)
-  const additionalAddresses = computed<string[]>(() => {
-    const cur = currentAddress.value
-    return cur ? getAdditionalWalletAddressesList(cur) : []
-  })
 
+  /**
+   * Приём — только на основной кошелёк (решение Р2 по V6).
+   *
+   * Дополнительные кошельки — P2SH-P2WPKH, а ни один путь отправки в этом
+   * клиенте не подписывает P2SH-вход (`addInput` без redeemScript). Монеты,
+   * пришедшие на такой адрес, отсюда не потратить, поэтому предлагать его для
+   * приёма нечестно. Баланс доп. кошельков виден во вкладке «Балансы», трата —
+   * в roadmap.
+   */
   const receiveAddressOptions = computed(() => {
     const hasMain = !!currentAddress.value
-    const hasAdditional = additionalAddresses.value.length > 0
-    return [
-      ...(hasMain ? [{ value: 'main' as const, label: t('wallet.mainWallet') }] : []),
-      ...(hasAdditional
-        ? [{ value: 'additional' as const, label: t('wallet.additionalWallet') }]
-        : []),
-    ]
+    return hasMain ? [{ value: 'main' as const, label: t('wallet.mainWallet') }] : []
   })
 
-  const selectedReceiveAddress = computed<string>(() => {
-    if (receiveTarget.value === 'main') return currentAddress.value ?? ''
-    const add = additionalAddresses.value
-    return add.length > 0 ? add[0] : ''
-  })
+  const selectedReceiveAddress = computed<string>(() => currentAddress.value ?? '')
 
   // QR-код адреса на приём — генерируется, когда адрес раскрыт.
   watch(

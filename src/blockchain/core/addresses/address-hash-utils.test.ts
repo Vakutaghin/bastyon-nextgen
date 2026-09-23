@@ -49,7 +49,9 @@ describe('toBase58Check', () => {
   it('версия задаёт префикс (5 → 3, p2sh)', () => {
     const address = toBase58Check(Buffer.alloc(20, 0x02), 0x05)
     expect(address.startsWith('3')).toBe(true)
-    expect(validateAddress(address)).toEqual({ isValid: true, type: 'p2sh' })
+    // Формат корректный, но версия 5 — это Bitcoin, а не Pocketnet: валидатор
+    // такие адреса отклоняет (N2).
+    expect(validateAddress(address).isValid).toBe(false)
   })
 })
 

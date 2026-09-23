@@ -44,11 +44,11 @@
 
         <SC_WalletTabPanels>
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'balances' }">
-            <WalletBalances />
+            <WalletBalances ref="balancesRef" />
           </SC_WalletTabPanel>
 
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'transfers' }">
-            <WalletTransfer />
+            <WalletTransfer @sent="reloadBalances" />
           </SC_WalletTabPanel>
 
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'history' }">
@@ -79,6 +79,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/blockchain'
 import WalletBalances from './wallet-balances/wallet-balances.vue'
+// Ссылка на вкладку балансов — чтобы обновить цифры сразу после перевода (S47).
 import WalletTransfer from './wallet-transfer/wallet-transfer.vue'
 import WalletHistory from './wallet-history/wallet-history.vue'
 import WalletEarnings from './wallet-earnings/wallet-earnings.vue'
@@ -101,6 +102,13 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 // Ключи вкладок кошелька — для ?tab= deep-link (CTA со страницы лимитов).
+const balancesRef = ref<{ reload: () => Promise<void> } | null>(null)
+
+/** Перевод ушёл — пересчитываем балансы, не дожидаясь перезахода (S47). */
+function reloadBalances(): void {
+  void balancesRef.value?.reload()
+}
+
 const WALLET_TAB_KEYS = ['balances', 'transfers', 'history', 'earnings', 'buy']
 const activeTabKey = ref<string>('balances')
 

@@ -21,4 +21,6 @@ export {
   isValidAddress,
   getAddressType,
   normalizeAddress,
+  FOREIGN_NETWORK_ERROR,
+  INVALID_FORMAT_ERROR,
 } from './address-validator'

@@ -67,13 +67,20 @@ const defaultDeps: SendTransferDeps = {
 }
 
 /**
- * Отправляет перевод и возвращает txid. Бросает InsufficientFundsError, если
- * входов не хватает; остальные ошибки (сборка/сеть) пробрасываются как есть.
+ * Отправляет перевод и возвращает txid с фактической комиссией. Бросает
+ * InsufficientFundsError, если входов не хватает; остальные ошибки
+ * (сборка/сеть) пробрасываются как есть.
  */
+export interface SendTransferResult {
+  txid: string
+  /** Сколько реально забрала сеть, в сатоши (с учётом сгоревшей сдачи, N1). */
+  feePaidSatoshis: number
+}
+
 export async function sendTransfer(
   params: SendTransferParams,
   deps: SendTransferDeps = defaultDeps
-): Promise<string> {
+): Promise<SendTransferResult> {
   const fee = params.fee ?? DEFAULT_TX_FEE
   let unspents = await deps.getUnspents(params.fromAddress, 1, 9999999)
   unspents = deps.filterAvailableUnspents(unspents, false)
@@ -96,9 +103,11 @@ export async function sendTransfer(
     feemode: params.feemode,
   })
 
-  return deps.sendTransactionWithMessage({
+  const txid = await deps.sendTransactionWithMessage({
     hex: built.hex,
     messageData: built.messageData,
     operationType: 'transaction',
   })
+
+  return { txid, feePaidSatoshis: built.feePaidSatoshis }
 }

@@ -5,7 +5,11 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { validateAddress } from '@/blockchain/core/addresses'
+import {
+  validateAddress,
+  FOREIGN_NETWORK_ERROR,
+  INVALID_FORMAT_ERROR,
+} from '@/blockchain/core/addresses'
 import { looksLikeAddress } from './helpers'
 import { SEARCH_DEBOUNCE_MS } from './consts'
 
@@ -113,10 +117,14 @@ export function useReceiverSearch() {
     if (!looksLikeAddress(q)) return
     const result = validateAddress(q)
     if (!result.isValid) {
-      receiverAddressValidationError.value =
-        result.error === 'Invalid address format'
-          ? t('wallet.errorInvalidAddressFormat')
-          : result.error || t('wallet.errorInvalidAddress')
+      // Тексты валидатора — служебные маркеры, пользователю показываем свои.
+      if (result.error === FOREIGN_NETWORK_ERROR) {
+        receiverAddressValidationError.value = t('wallet.errorForeignNetworkAddress')
+      } else if (result.error === INVALID_FORMAT_ERROR) {
+        receiverAddressValidationError.value = t('wallet.errorInvalidAddressFormat')
+      } else {
+        receiverAddressValidationError.value = result.error || t('wallet.errorInvalidAddress')
+      }
     }
   }
 

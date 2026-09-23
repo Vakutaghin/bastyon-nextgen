@@ -34,7 +34,9 @@ const {
 }))
 
 vi.mock('./core/keys/key-generator', () => ({ mnemonicToSeed: _mnemonicToSeed }))
-vi.mock('./core/addresses/address-generator', () => ({ generateWalletAddress: _generateWalletAddress }))
+vi.mock('./core/addresses/address-generator', () => ({
+  generateWalletAddress: _generateWalletAddress,
+}))
 vi.mock('./storage', () => ({
   getWalletAddressesList: _getWalletList,
   saveWalletAddressesList: _saveWalletList,
@@ -106,13 +108,25 @@ describe('ensureDefaultAdditionalWallet', () => {
     expect(_generateWalletAddress).not.toHaveBeenCalled()
   })
 
-  it('деривирует через privateKeyAsSeed (без обращения к хранилищу мнемоники)', async () => {
+  it('мнемоника аккаунта важнее переданного приватного ключа (V7)', async () => {
+    // Страница кошельков всегда передаёт keyPair.privateKey. Если брать его как
+    // seed при живой мнемонике, у аккаунта получаются ДВА набора доп. адресов:
+    // один от mnemonicToSeed (регистрация), другой от ключа (эта страница).
     const pk = Buffer.alloc(32, 1)
 
     const res = await ensureDefaultAdditionalWallet(ADDR, pk)
 
     expect(res).toEqual({ success: true })
-    expect(_loadEncryptedData).not.toHaveBeenCalled()
+    expect(_loadEncryptedData).toHaveBeenCalled()
+    expect(_saveAdditionalList).toHaveBeenCalledWith(ADDR, ['WAddr0', 'WAddr1', 'WAddr2'])
+  })
+
+  it('без мнемоники деривирует от приватного ключа (вход по ключу)', async () => {
+    _loadEncryptedData.mockReturnValue({ success: false })
+
+    const res = await ensureDefaultAdditionalWallet(ADDR, Buffer.alloc(32, 1))
+
+    expect(res).toEqual({ success: true })
     expect(_saveAdditionalList).toHaveBeenCalledWith(ADDR, ['WAddr0', 'WAddr1', 'WAddr2'])
   })
 

@@ -71,21 +71,27 @@ function deriveAdditionalWalletIndex(listLength: number): number {
 }
 
 /**
- * Возвращает seed (Buffer) для деривации: либо из мнемоники в хранилище, либо переданный приватный ключ (32 байта).
- * При входе по приватному ключу тот же ключ используется как seed для BIP32 — дополнительные кошельки выводятся детерминированно.
+ * Возвращает seed (Buffer) для деривации дополнительных кошельков.
+ *
+ * Приоритет — мнемоника аккаунта; приватный ключ как seed берётся только при
+ * входе БЕЗ мнемоники. Раньше было наоборот, а страница кошельков всегда
+ * передавала `keyPair.privateKey` — в итоге у одного аккаунта получалось два
+ * несовпадающих набора адресов: один от `mnemonicToSeed` (при регистрации),
+ * другой от приватного ключа (на странице кошельков). Мини-аппы видели первый,
+ * пользователь — второй (V7).
  */
 function getSeedForDerivation(
   accountAddress: Address,
   privateKeyAsSeed?: Buffer | null
 ): { seed: Buffer; error?: string } {
-  if (privateKeyAsSeed && Buffer.isBuffer(privateKeyAsSeed) && privateKeyAsSeed.length >= 16) {
-    return { seed: privateKeyAsSeed }
-  }
   const mnemonicResult = loadEncryptedData({
     persistent: true,
     storageKey: `${ACCOUNT_STORAGE_PREFIX}${accountAddress}`,
   })
   if (!mnemonicResult.success || !mnemonicResult.data) {
+    if (privateKeyAsSeed && Buffer.isBuffer(privateKeyAsSeed) && privateKeyAsSeed.length >= 16) {
+      return { seed: privateKeyAsSeed }
+    }
     return { seed: Buffer.alloc(0), error: t('appMsg.wallet.needAuth') }
   }
   try {
@@ -145,7 +151,10 @@ export async function addOneWalletAddress(
 ): Promise<AddWalletResult> {
   const list = getAdditionalWalletAddressesList(accountAddress)
   if (list.length >= MAX_ADDITIONAL_WALLET_ADDRESSES) {
-    return { success: false, error: t('appMsg.wallet.maxWallets', { n: MAX_ADDITIONAL_WALLET_ADDRESSES }) }
+    return {
+      success: false,
+      error: t('appMsg.wallet.maxWallets', { n: MAX_ADDITIONAL_WALLET_ADDRESSES }),
+    }
   }
 
   const { seed, error: seedError } = getSeedForDerivation(accountAddress, privateKeyAsSeed)

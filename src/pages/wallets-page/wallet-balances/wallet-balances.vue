@@ -72,11 +72,11 @@
     <SC_WalletTableSectionSecondary>
       <SC_WalletTableTitleRow>
         <SC_WalletTableTitle>{{ t('wallet.additionalWallets') }}</SC_WalletTableTitle>
-
-        <SC_WalletAddButton type="button" :disabled="!canAddWallet" @click="onAddWallet">
-          {{ addingWallet ? t('wallet.adding') : t('wallet.addWallet') }}
-        </SC_WalletAddButton>
       </SC_WalletTableTitleRow>
+
+      <!-- Решение Р2 (V6): P2SH-входы этот клиент подписывать не умеет, поэтому
+           доп. кошельки — только просмотр: ни приёма, ни создания новых. -->
+      <SC_WalletReadOnlyNote>{{ t('wallet.additionalWalletsReadOnly') }}</SC_WalletReadOnlyNote>
 
       <SC_WalletTable>
         <SC_WalletTableHeader>
@@ -164,7 +164,7 @@ import {
   SC_WalletTableSectionSecondary,
   SC_WalletTableTitleRow,
   SC_WalletTableTitle,
-  SC_WalletAddButton,
+  SC_WalletReadOnlyNote,
   SC_WalletTable,
   SC_WalletTableRow,
   SC_WalletTableHeader,
@@ -190,10 +190,8 @@ const authStore = useAuthStore()
 const {
   loading,
   error,
-  addingWallet,
   currentAddress,
   allAddresses,
-  canAddWallet,
   accountBalance,
   sumWalletsBalance,
   totalBalance,
@@ -202,7 +200,6 @@ const {
   additionalTableRows,
   formatBalance,
   loadBalances,
-  onAddWallet,
   initBalances,
   renameOpen,
   renameLabel,
@@ -210,6 +207,10 @@ const {
   closeRename,
   saveRename,
 } = useWalletBalances()
+
+// Родитель (страница кошелька) перезагружает балансы после отправки перевода —
+// иначе цифра остаётся прежней до перезахода в аккаунт (S47).
+defineExpose({ reload: loadBalances })
 
 onMounted(() => {
   initBalances()

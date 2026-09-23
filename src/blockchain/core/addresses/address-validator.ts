@@ -11,6 +11,13 @@ import { bech32 } from 'bech32'
 
 import type { Address, AddressType, AddressValidationResult } from '../../types/addresses'
 import { hash256 } from '../../utils/crypto-hash'
+import { POCKETNET_NETWORK } from '../../constants/network'
+
+/** Адрес чужой сети: формат верный, но байт версии/префикс не наш. */
+export const FOREIGN_NETWORK_ERROR = 'Address belongs to another network'
+
+/** Формат не распознан вовсе. */
+export const INVALID_FORMAT_ERROR = 'Invalid address format'
 
 function fromBase58Check(address: string): { version: number; hash: Buffer } {
   try {
@@ -111,29 +118,29 @@ export function validateAddress(address: Address): AddressValidationResult {
     }
   }
 
-  // Проверка через локальные функции
+  // Валидна ТОЛЬКО сеть Pocketnet. Раньше принимался любой корректный
+  // Base58Check и любой bech32, поэтому bitcoin-адрес проходил проверку,
+  // а падало уже в btc17 — с английским текстом из библиотеки (N2).
   try {
     // Попытка декодировать как base58 адрес
     try {
       const decoded = fromBase58Check(trimmed)
       if (decoded) {
-        // Определяем тип по версии
         const version = decoded.version
-
-        // Версия 0 обычно P2PKH, версия 5 обычно P2SH
-        // Но для Pocketnet могут быть другие версии
+        // 20 байт hash160 — единственная длина, которую мы умеем тратить.
+        if (decoded.hash.length !== 20) {
+          return { isValid: false, error: INVALID_FORMAT_ERROR }
+        }
         let type: AddressType | undefined
-
-        if (trimmed.startsWith('P')) {
+        if (version === POCKETNET_NETWORK.pubKeyHash) {
           type = 'p2pkh'
-        } else if (trimmed.startsWith('3')) {
+        } else if (version === POCKETNET_NETWORK.scriptHash) {
           type = 'p2sh'
         }
-
-        return {
-          isValid: true,
-          type: type || 'p2pkh', // По умолчанию P2PKH
+        if (!type) {
+          return { isValid: false, error: FOREIGN_NETWORK_ERROR }
         }
+        return { isValid: true, type }
       }
     } catch {
       // Не base58 адрес, пробуем bech32
@@ -141,8 +148,11 @@ export function validateAddress(address: Address): AddressValidationResult {
 
     // Попытка декодировать как bech32 адрес (SegWit)
     try {
-      const decoded = fromBech32(trimmed)
+      const decoded = fromBech32(trimmed) as { prefix?: string } | null
       if (decoded) {
+        if (decoded.prefix !== POCKETNET_NETWORK.bech32) {
+          return { isValid: false, error: FOREIGN_NETWORK_ERROR }
+        }
         return {
           isValid: true,
           type: 'p2wpkh',
@@ -155,7 +165,7 @@ export function validateAddress(address: Address): AddressValidationResult {
     // Если не удалось декодировать, адрес невалиден
     return {
       isValid: false,
-      error: 'Invalid address format',
+      error: INVALID_FORMAT_ERROR,
     }
   } catch (error) {
     return {
