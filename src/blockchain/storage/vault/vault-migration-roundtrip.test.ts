@@ -36,5 +36,7 @@ describe('migrateLegacyToVault (real crypto-js round-trip)', () => {
     const stored = JSON.parse(localStorage.getItem(MNEMONIC_STORAGE_KEY)!) as { data: string }
     expect(decryptData(stored.data, S)).toBe(MNEMONIC)
     expect(() => decryptData(stored.data, FP)).toThrow() // больше не под fingerprint
-  })
+    // Три деривации PBKDF2-100k подряд: на моей машине ~3 с, на раннере GitHub
+    // упирались в общий лимит 15 с (CI 35885428022). Лимит только для этого теста.
+  }, 60_000)
 })
