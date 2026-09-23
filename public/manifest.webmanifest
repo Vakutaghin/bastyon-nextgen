@@ -1,7 +1,7 @@
 {
-  "name": "Bastyon",
-  "short_name": "Bastyon",
-  "description": "Bastyon — децентрализованная социальная сеть на блокчейне: посты, видео, мессенджер, мини-приложения и кошелёк PKOIN. Без посредников и SSO.",
+  "name": "Bastyon NextGen",
+  "short_name": "NextGen",
+  "description": "Bastyon NextGen — клиент децентрализованной социальной сети Bastyon: посты, видео, мессенджер, мини-приложения и кошелёк PKOIN. Без посредников и SSO.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

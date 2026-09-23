@@ -8,7 +8,7 @@
 
 export default {
   app: {
-    name: 'Bastyon',
+    name: 'Bastyon NextGen',
   },
   vault: {
     unlockTitle: 'Разблокируйте кошелёк',

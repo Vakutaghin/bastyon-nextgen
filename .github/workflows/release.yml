@@ -154,7 +154,7 @@ jobs:
       - name: Rename APK with tag
         id: rename
         run: |
-          OUT="bastyon-${TAG}-android.apk"
+          OUT="bastyon-nextgen-${TAG}-android.apk"
           mv android/app/build/outputs/apk/debug/app-debug.apk "$OUT"
           echo "apk=$OUT" >> "$GITHUB_OUTPUT"
 

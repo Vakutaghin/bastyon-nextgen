@@ -3,7 +3,7 @@
     <SC_Backdrop :isOpen="isOpen" @click="close" />
     <SC_Drawer :isOpen="isOpen" @click.stop>
       <SC_DrawerHeader>
-        <SC_DrawerTitle>Bastyon</SC_DrawerTitle>
+        <SC_DrawerTitle>{{ t('app.name') }}</SC_DrawerTitle>
         <SC_DrawerClose :aria-label="t('sidebar.close')" @click="close">
           <CloseOutlined :style="ICON_SIZE_LG" />
         </SC_DrawerClose>

@@ -4,7 +4,7 @@
 
 export default {
   app: {
-    name: 'Bastyon',
+    name: 'Bastyon NextGen',
   },
   vault: {
     unlockTitle: 'Unlock your wallet',

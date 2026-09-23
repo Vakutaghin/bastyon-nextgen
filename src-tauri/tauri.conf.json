@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Bastyon",
+  "productName": "Bastyon NextGen",
   "version": "0.2.0",
   "identifier": "com.bastyon.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Bastyon",
+        "title": "Bastyon NextGen",
         "width": 1200,
         "height": 800,
         "minWidth": 800,

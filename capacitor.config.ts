@@ -1,13 +1,13 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'com.bastyon.app',
-  appName: 'Bastyon',
+  appName: 'Bastyon NextGen',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    iosScheme: 'https'
-  }
-};
+    iosScheme: 'https',
+  },
+}
 
-export default config;
+export default config

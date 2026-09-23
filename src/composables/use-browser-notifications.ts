@@ -6,6 +6,7 @@
  * через getmissedinfo событий.
  */
 
+import { APP_NAME } from '@/config/app-name'
 import { t } from '@/i18n'
 import { useNotificationSettingsStore } from '@/stores/notification-settings-store'
 import type { NotificationItem } from '@/stores/notifications-types'
@@ -67,11 +68,11 @@ function show(title: string, body: string, tag: string): void {
  */
 export function notifyNewNotifications(items: NotificationItem[]): void {
   if (!items || items.length === 0 || !canShow()) return
-  show('Bastyon', bodyFor(items), 'bastyon-notifications')
+  show(APP_NAME, bodyFor(items), 'bastyon-notifications')
 }
 
 /** Браузерное уведомление о новом сообщении мессенджера (вкладка в фоне). */
 export function notifyMessage(senderName: string, text: string): void {
   if (!canShow()) return
-  show(senderName || 'Bastyon', text || '', 'bastyon-message')
+  show(senderName || APP_NAME, text || '', 'bastyon-message')
 }

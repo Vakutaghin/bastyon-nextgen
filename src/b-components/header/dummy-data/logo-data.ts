@@ -1,8 +1,10 @@
+import { APP_NAME } from '@/config/app-name'
+
 export const logoData = {
   // Белый логотип — для тёмной темы, чёрный — для светлой (выбор в header-logo.vue).
   logoWhite: '/img/bastyon_logo_white.svg',
   logoBlack: '/img/bastyon_logo_black.svg',
-  siteName: 'Bastyon',
+  siteName: APP_NAME,
   currentLanguage: 'ru',
 
   languages: [
@@ -13,6 +15,6 @@ export const logoData = {
     { code: 'kr', name: '한국어', flag: '🇰🇷' },
     { code: 'es', name: 'Español', flag: '🇪🇸' },
     { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-    { code: 'zh', name: '官話', flag: '🇨🇳' }
-  ]
+    { code: 'zh', name: '官話', flag: '🇨🇳' },
+  ],
 }

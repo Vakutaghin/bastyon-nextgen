@@ -1,5 +1,5 @@
 /**
- * Управление `document.title` на странице. Шаблон: «{title} — Bastyon».
+ * Управление `document.title` на странице. Шаблон: «{title} — Bastyon NextGen».
  *
  * Базовый title задаётся через `meta.title` маршрута в [src/router/index.ts]
  * и применяется в `router.afterEach`. Динамическим страницам (профиль,
@@ -13,7 +13,7 @@
 import { watch, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-const APP_NAME = 'Bastyon'
+import { APP_NAME } from '@/config/app-name'
 
 export function buildDocumentTitle(pageTitle: string | null | undefined): string {
   const trimmed = pageTitle?.trim()
