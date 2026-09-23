@@ -14,7 +14,7 @@
 
           <template v-else>
             <SC_ShowCommentsBtn type="button" @click.stop.prevent="loadAllComments(false)">
-              {{ t('comments.showMoreFixed', { count: 15 }) }}
+              {{ t('comments.showMoreFixed', { count: COMMENTS_PAGE_SIZE }) }}
             </SC_ShowCommentsBtn>
 
             <SC_ShowCommentsBtnSecondary type="button" @click.stop.prevent="loadAllComments(true)">
@@ -259,6 +259,7 @@ import { useCommentMenuActions } from './composables/use-comment-menu-actions'
 import { useCommentVisibility } from './composables/use-comment-visibility'
 import { useCommentsWs } from './composables/use-comments-ws'
 import { provideCommentTree } from './comment-tree-context'
+import { COMMENTS_PAGE_SIZE } from './consts'
 
 export type { PostForComments }
 
@@ -398,9 +399,8 @@ const remainingCommentsCount = computed<number>(() =>
 
 const nextCommentsPageSize = computed<number>(() => {
   if (remainingCommentsCount.value <= 0) return 0
-  // COMMENTS_PAGE_SIZE используется в loader; дублирование захардкодом здесь
-  // дешевле, чем поднимать из consts ради одного computed.
-  return Math.min(20, remainingCommentsCount.value)
+  // Кнопка обещала 20, а загрузчик добавлял COMMENTS_PAGE_SIZE = 15 (N14).
+  return Math.min(COMMENTS_PAGE_SIZE, remainingCommentsCount.value)
 })
 
 const hasMoreCommentsToShow = computed<boolean>(() => remainingCommentsCount.value > 0)

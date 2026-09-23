@@ -10,12 +10,8 @@ import type {
   GetProfileFeedResponse,
   GetProfileFeedData,
 } from '@/types/rpc-responses/get-profile-feed'
-import { registerNameAddress } from '@/services/user-resolver'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import type { AdaptedPost } from '@/types/adapted-post'
-import { normalizeImages } from './use-feed-helpers'
 import { safeDecode } from '@/helpers/content/safe-decode'
-import { isUserVerified } from '@/helpers/profile/is-user-verified'
 
 /** Канонический контракт поста — см. `@/types/adapted-post`. */
 export type { AdaptedPost }
@@ -23,241 +19,14 @@ export type { AdaptedPost }
 /** Декодер полей поста — канонический `safeDecode` (семантика legacy `trydecode`). */
 export { safeDecode }
 
-/** Минимальный профиль автора/пользователя в сыром ответе ленты. */
-export interface RawUserProfile {
-  name?: string
-  address?: string
-  i?: string
-  avatar?: string | null
-  reputation?: number
-  badges?: unknown
-  flags?: { real?: unknown } | null
-  real?: unknown
-  subscribers_count?: number
-  subscribes_count?: number
-}
+// Адаптация поста и merge репоста живут в одном общем модуле (S22/X3) —
+// здесь только реэкспорт, чтобы существующие импорты `@/composables/use-feed`
+// продолжали работать.
+export type { RawUserProfile, RawFeedPost } from '@/helpers/common/adapt-post'
+export { adaptPostData, mergeRepostContent } from '@/helpers/common/adapt-post'
 
-/** Последний комментарий в сыром формате API. */
-interface RawLastComment {
-  id?: string | number
-  address?: string
-  time?: number | string
-  msg?: string
-  children?: number
-  scoreUp?: number
-  scoreDown?: number
-}
-
-/**
- * Сырой пост из ответа RPC-ленты. Описывает только поля, к которым обращаются
- * адаптер и merge-логика (включая нестандартные поля вроде preview/repostAddress).
- */
-export interface RawFeedPost {
-  id?: string | number
-  txid?: string
-  hash?: string
-  address?: string
-  userprofile?: RawUserProfile
-  c?: string
-  m?: string
-  time?: number | string
-  scoreCnt?: number
-  scoreSum?: number
-  myVal?: number
-  comments?: number
-  reposted?: number
-  t?: string[]
-  i?: unknown
-  images?: unknown
-  u?: string
-  s?: { v?: string }
-  type?: string
-  preview?: string
-  p?: string
-  repost?: string
-  deleted?: unknown
-  lastComment?: RawLastComment | null
-  repostAddress?: string
-  repost_author_address?: string
-}
-
-/**
- * Адаптирует данные поста из API в формат компонента
- */
-export function adaptPostData(
-  post: RawFeedPost,
-  index: number,
-  usersMap: Record<string, RawUserProfile> = {}
-): AdaptedPost {
-  let userprofile: RawUserProfile | undefined = post.userprofile
-
-  // Если профиля нет в посте, пробуем найти его в карте пользователей по адресу
-  if (!userprofile && post.address && usersMap[post.address]) {
-    userprofile = usersMap[post.address]
-  }
-
-  // Регистрируем (name, address) для быстрого резолва ника в шапочном поиске.
-  // Внутри user-resolver защита от дублей, persist debounced — повторные
-  // вызовы для уже знакомых имён почти бесплатны.
-  if (userprofile?.name && userprofile?.address) {
-    registerNameAddress([{ name: userprofile.name, address: userprofile.address }])
-  }
-
-  const authorName = userprofile?.name || post.address || 'Неизвестный автор'
-
-  const avatar = resolveImageUrl(userprofile?.i) ?? null
-  const reputation = userprofile?.reputation || 0
-  const verified = isUserVerified(userprofile)
-  const title = safeDecode(post.c || '')
-  const content = safeDecode(post.m || '')
-  const timestamp = post.time
-    ? new Date(Number(post.time) * 1000).toISOString()
-    : new Date().toISOString()
-  const likes = post.scoreCnt || 0
-  const comments = post.comments || 0
-  const shares = post.reposted || 0
-  const tags = Array.isArray(post.t) ? post.t : []
-  const images =
-    normalizeImages(post.i).length > 0 ? normalizeImages(post.i) : normalizeImages(post.images)
-  const videoUrl = post.u || post.s?.v || undefined
-  const myVal = post.myVal
-  const preview = safeDecode(post.preview || post.p || '')
-
-  // hash/txid — строковые идентификаторы; числовой post.id используется как запасной вариант.
-  const idAsString = post.id != null ? String(post.id) : undefined
-
-  let ratingStars = 0
-  const scoreCnt = post.scoreCnt ?? 0
-  if (scoreCnt > 0 && post.scoreSum !== undefined && post.scoreSum !== null) {
-    const averageRating = post.scoreSum / scoreCnt
-    ratingStars = Math.max(0, Math.min(5, Math.round(averageRating * 10) / 10))
-  }
-
-  let lastComment
-  if (post.lastComment && post.lastComment.msg) {
-    let msg: string
-    try {
-      const parsed = JSON.parse(post.lastComment.msg)
-      msg = safeDecode(parsed?.message || '')
-    } catch {
-      msg = safeDecode(String(post.lastComment.msg || ''))
-    }
-
-    const commenterProfile = post.lastComment.address
-      ? usersMap[post.lastComment.address] || null
-      : null
-    const commenterName = commenterProfile?.name || post.lastComment.address || ''
-    const commenterAvatar = resolveImageUrl(commenterProfile?.i) ?? null
-
-    lastComment = {
-      id: String(post.lastComment.id || ''),
-      address: String(post.lastComment.address || ''),
-      authorName: String(commenterName || ''),
-      avatar: commenterAvatar || null,
-      time: Number(post.lastComment.time || 0),
-      message: msg,
-      children: Number(post.lastComment.children || 0),
-      scoreUp: Number(post.lastComment.scoreUp || 0),
-      scoreDown: Number(post.lastComment.scoreDown || 0),
-    }
-  }
-
-  return {
-    id: post.id || post.txid || post.hash || index,
-    hash: post.hash || post.txid || idAsString,
-    txid: post.txid || post.hash || idAsString,
-    author: {
-      name: authorName,
-      address: post.address || '',
-      avatar: avatar,
-      reputation: reputation,
-      letter: authorName.charAt(0).toUpperCase(),
-      verified,
-      subscribers_count: userprofile?.subscribers_count,
-      subscribes_count: userprofile?.subscribes_count,
-    },
-    title: title,
-    content: content,
-    timestamp: timestamp,
-    likes: likes,
-    comments: comments,
-    shares: shares,
-    tags: tags,
-    type: post.type || '',
-    category: post.type || '',
-    images: images,
-    ratingStars: ratingStars,
-    scoreCnt: post.scoreCnt || 0,
-    scoreSum: post.scoreSum,
-    myVal: myVal,
-    videoUrl: videoUrl,
-    preview: preview,
-    lastComment,
-    repost: post.repost || undefined,
-    repostDeleted: !!post.deleted,
-    repostAuthor: (() => {
-      const addr = post.repostAddress || post.repost_author_address
-      if (!addr) return undefined
-      const profile = usersMap[addr]
-      if (!profile) return undefined
-      return {
-        name: profile.name || addr,
-        address: addr,
-      }
-    })(),
-  }
-}
-
-/**
- * Подмешивает контент оригинальной записи в адаптированный пост-репост.
- * Вызывать после получения оригинала через getrawtransactionwithmessagebyid.
- */
-export function mergeRepostContent(
-  adapted: AdaptedPost,
-  originalRaw: RawFeedPost | null | undefined
-): void {
-  if (!originalRaw) return
-  adapted.title = safeDecode(originalRaw.c || '')
-  adapted.content = safeDecode(originalRaw.m || '')
-  adapted.images =
-    normalizeImages(originalRaw.i).length > 0
-      ? normalizeImages(originalRaw.i)
-      : normalizeImages(originalRaw.images)
-  adapted.videoUrl = originalRaw.u || originalRaw.s?.v || undefined
-  adapted.tags = Array.isArray(originalRaw.t) ? originalRaw.t : []
-  adapted.type = originalRaw.type || adapted.type
-  adapted.category = originalRaw.type || adapted.category
-  adapted.preview = safeDecode(originalRaw.preview || originalRaw.p || '')
-  const origScoreCnt = originalRaw.scoreCnt ?? 0
-  if (origScoreCnt > 0 && originalRaw.scoreSum != null) {
-    adapted.ratingStars = Math.max(
-      0,
-      Math.min(5, Math.round((originalRaw.scoreSum / origScoreCnt) * 10) / 10)
-    )
-    adapted.scoreCnt = origScoreCnt
-    adapted.scoreSum = originalRaw.scoreSum
-  }
-  const origAddress = originalRaw.address || ''
-  const origName = originalRaw.userprofile?.name || origAddress || ''
-  const origAvatar =
-    resolveImageUrl(originalRaw.userprofile?.i ?? originalRaw.userprofile?.avatar) ?? null
-  if (!adapted.repostAuthor && (origAddress || origName)) {
-    adapted.repostAuthor = {
-      address: origAddress,
-      name: origName,
-      avatar: origAvatar,
-    }
-  } else if (adapted.repostAuthor) {
-    if (!adapted.repostAuthor.avatar && origAvatar) adapted.repostAuthor.avatar = origAvatar
-  }
-  if (originalRaw.time != null) {
-    adapted.repostOriginalTimestamp =
-      typeof originalRaw.time === 'number' ? originalRaw.time : parseInt(originalRaw.time, 10)
-  }
-  if (originalRaw.deleted) {
-    adapted.repostDeleted = true
-  }
-}
+import { adaptPostData } from '@/helpers/common/adapt-post'
+import type { RawFeedPost, RawUserProfile } from '@/helpers/common/adapt-post'
 
 /**
  * Преобразует данные API в массив адаптированных постов
@@ -303,33 +72,34 @@ export function extractPostsFromResponse(
   const asArray = (value: unknown): RawFeedItem[] | undefined =>
     Array.isArray(value) ? (value as RawFeedItem[]) : undefined
 
+  /**
+   * Отделяет профили от постов и попутно наполняет usersMap. Раньше это делала
+   * только ветка `data.contents`, поэтому в остальных форматах профиль попадал
+   * в ленту как пустой пост (N14).
+   */
+  const takePosts = (items: RawFeedItem[]): RawFeedItem[] =>
+    items.filter((item) => {
+      if (item.name && !item.txid && !item.type) {
+        if (item.address) usersMap[item.address] = item
+        return false
+      }
+      return true
+    })
+
   // API может возвращать данные в разных форматах
   if (Array.isArray(feedData)) {
-    rawPosts = feedData
+    rawPosts = takePosts(feedData)
   } else if (data && !Array.isArray(data) && Array.isArray(data.contents)) {
     // getprofilefeed может возвращать смешанный контент (посты + профили)
-    const contents = data.contents
-
-    // Разделяем посты и профили
-    rawPosts = contents.filter((item) => {
-      // Если есть поле 'name' и нет 'txid', это профиль пользователя
-      // (согласно документации getprofilefeed)
-      if (item.name && !item.txid && !item.type) {
-        if (item.address) {
-          usersMap[item.address] = item
-        }
-        return false // Не включаем в посты
-      }
-      return true // Это пост
-    })
+    rawPosts = takePosts(data.contents)
   } else if (Array.isArray(data)) {
-    rawPosts = data
+    rawPosts = takePosts(data)
   } else if (asArray(feedRecord.result)) {
-    rawPosts = asArray(feedRecord.result)!
+    rawPosts = takePosts(asArray(feedRecord.result)!)
   } else if (asArray(feedRecord.posts)) {
-    rawPosts = asArray(feedRecord.posts)!
+    rawPosts = takePosts(asArray(feedRecord.posts)!)
   } else if (asArray(feedRecord.contents)) {
-    rawPosts = asArray(feedRecord.contents)!
+    rawPosts = takePosts(asArray(feedRecord.contents)!)
   } else {
     return []
   }

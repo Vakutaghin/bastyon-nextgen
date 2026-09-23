@@ -36,6 +36,24 @@ export interface AdaptedPost {
   myVal?: number
   videoUrl?: string
   preview?: string
+  /**
+   * Язык поста (поле `l`). Нужен при редактировании: без него правка
+   * переписывала язык на текущий язык интерфейса (V36).
+   */
+  language?: string
+  /**
+   * Настройки поста (поле `s`): `f` — видимость («только подписчикам»),
+   * `v`/`version` — маркер статьи. При правке их надо сохранить, иначе пост
+   * «только для подписчиков» после исправления опечатки становился публичным
+   * (V36).
+   */
+  settings?: {
+    f?: string
+    t?: number
+    v?: string
+    version?: number
+    [key: string]: unknown
+  }
   lastComment?: {
     id: string
     address: string

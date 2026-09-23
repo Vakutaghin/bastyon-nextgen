@@ -4,115 +4,16 @@
  */
 
 import type { AdaptedPost } from '@/types/adapted-post'
-import { safeDecode } from '@/helpers/content/safe-decode'
-import { isUserVerified } from '@/helpers/profile/is-user-verified'
-import { resolveImageUrl } from './url-transformer'
 
 /** Канонический контракт поста — см. `@/types/adapted-post`. */
 export type { AdaptedPost }
 
-/** Минимальный профиль автора в сыром посте. */
-interface RawUserProfile {
-  name?: string
-  i?: string
-  reputation?: number
-  badges?: unknown
-  flags?: { real?: unknown } | null
-  real?: unknown
-  subscribers_count?: number
-  subscribes_count?: number
-}
+// Адаптер один на всё приложение (S22/X3) — см. `adapt-post.ts`. Здесь
+// остаётся только извлечение сырых постов из разных форматов ответа.
+export type { RawUserProfile, RawFeedPost } from './adapt-post'
+export { adaptPostData, mergeRepostContent } from './adapt-post'
 
-/**
- * Сырой пост из ответа RPC-ленты (gettopfeed / gethierarchicalstrip / getprofilefeed).
- * Описывает только поля, к которым обращается адаптер.
- */
-interface RawFeedPost {
-  id?: string | number
-  txid?: string
-  hash?: string
-  address?: string
-  userprofile?: RawUserProfile
-  c?: string
-  m?: string
-  time?: number
-  scoreCnt?: number
-  scoreSum?: number
-  comments?: number
-  reposted?: number
-  t?: string[]
-  i?: string[]
-  u?: string
-  s?: { v?: string }
-  type?: string
-  repost?: string
-}
-
-/**
- * Адаптирует данные поста из API в формат компонента
- */
-export function adaptPostData(post: RawFeedPost, index: number): AdaptedPost {
-  const authorName = post.userprofile?.name || post.address || 'Неизвестный автор'
-  // resolveImageUrl разворачивает голый хеш в полный URL + нормализует домен.
-  const avatar = resolveImageUrl(post.userprofile?.i) ?? null
-  const reputation = post.userprofile?.reputation || 0
-  // Поля приходят URL-encoded, как и в ленте (legacy trydecode).
-  const title = safeDecode(post.c || '')
-  const content = safeDecode(post.m || '')
-  const timestamp = post.time ? new Date(post.time * 1000).toISOString() : new Date().toISOString()
-  const likes = post.scoreCnt || 0
-  const comments = post.comments || 0
-  const shares = post.reposted || 0
-  const tags = Array.isArray(post.t) ? post.t : []
-  const images = Array.isArray(post.i)
-    ? post.i.map((img) => resolveImageUrl(img)).filter((u): u is string => !!u)
-    : []
-  const videoUrl = post.u || post.s?.v || undefined
-
-  // hash/txid — строковые идентификаторы; числовой post.id используется как запасной вариант.
-  const idAsString = post.id != null ? String(post.id) : undefined
-
-  let ratingStars = 0
-  const scoreCnt = post.scoreCnt ?? 0
-  if (scoreCnt > 0 && post.scoreSum !== undefined && post.scoreSum !== null) {
-    const averageRating = post.scoreSum / scoreCnt
-    ratingStars = Math.max(0, Math.min(5, Math.round(averageRating * 10) / 10))
-  }
-
-  const isVerified = isUserVerified(post.userprofile)
-
-  return {
-    id: post.id || post.txid || post.hash || index,
-    hash: post.hash || post.txid || idAsString,
-    txid: post.txid || post.hash || idAsString,
-    author: {
-      name: authorName,
-      address: post.address || '',
-      avatar,
-      reputation,
-      verified: isVerified,
-      letter: authorName.charAt(0).toUpperCase(),
-      subscribers_count: post.userprofile?.subscribers_count,
-      subscribes_count: post.userprofile?.subscribes_count,
-    },
-    title,
-    content,
-    timestamp,
-    likes,
-    comments,
-    shares,
-    tags,
-    type: post.type || '',
-    category: post.type || '',
-    images,
-    ratingStars,
-    scoreCnt: post.scoreCnt || 0,
-    scoreSum: post.scoreSum,
-    videoUrl,
-    repost: post.repost || undefined,
-    repostAuthor: undefined,
-  }
-}
+import type { RawFeedPost } from './adapt-post'
 
 /** Возможные формы ответа ленты, из которых извлекаются сырые посты. */
 interface RawFeedResponse {

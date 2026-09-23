@@ -26,6 +26,19 @@ export interface ComposerSource {
   author?: { name?: string; address?: string; avatar?: string | null }
   /** Время публикации (для превью репоста). */
   timestamp?: string
+  /** Ссылка на видео/аудио: сырое `u`, нормализованное `videoUrl` или `s.v`. */
+  url?: string
+  videoUrl?: string
+  /** Язык поста (`l`). */
+  language?: string
+  /** Настройки поста (`s`): `f` — видимость, `v`/`version` — маркер статьи. */
+  settings?: {
+    f?: string
+    t?: number
+    v?: string
+    version?: number
+    [key: string]: unknown
+  }
 }
 
 /** Похоже ли содержимое на документ Editor.js (`{ blocks: [...] }`). */
@@ -71,15 +84,26 @@ export interface PrefillData {
   caption: string
   tags: string[]
   images: string[]
+  /** Ссылка на видео/аудио — иначе правка превращала видео в обычный пост (V36). */
+  url: string
+  /** Видимость из `settings.f` — «только подписчикам» переживает правку (V36). */
+  visibility: string
+  /** Язык поста; пусто — значит берём язык интерфейса (V36). */
+  language: string
 }
 
 /** Извлекает поля для префилла формы при редактировании (обычный пост). */
 export function postToComposerData(src: ComposerSource): PrefillData {
   const contentStr = typeof src.content === 'string' ? src.content : ''
+  const settingsVideo = typeof src.settings?.v === 'string' ? src.settings.v : ''
   return {
     message: src.message ?? contentStr,
     caption: src.caption ?? src.title ?? '',
     tags: src.tags ? [...src.tags] : [],
     images: src.images ? [...src.images] : [],
+    // `settings.v` для статьи хранит маркер 'a', а не ссылку — его не берём.
+    url: src.url ?? src.videoUrl ?? (settingsVideo === 'a' ? '' : settingsVideo),
+    visibility: typeof src.settings?.f === 'string' ? src.settings.f : '0',
+    language: src.language ?? '',
   }
 }

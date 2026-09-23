@@ -89,8 +89,11 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const { tags, tagInput, tagsFull, addTag, commitTagInput, removeTag, onTagBackspace, resetTags } =
     usePostTags(isEdit && prefill ? prefill.tags : [])
   const submitting = ref(false)
-  const visibility = ref('0')
-  const language = ref(locale.value)
+  // При правке сохраняем видимость и язык оригинала: раньше они сбрасывались
+  // на дефолт, и пост «только подписчикам» после исправления опечатки
+  // становился публичным, а язык — текущим языком интерфейса (V36).
+  const visibility = ref(isEdit && prefill ? prefill.visibility : '0')
+  const language = ref(isEdit && prefill && prefill.language ? prefill.language : locale.value)
 
   /** Опрос — в use-post-poll. */
   const {
@@ -141,7 +144,9 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
    * Мост Фазы E: аплоадер кладёт сюда указатель → он питает post.url и needsCaption,
    * даже когда пользователь ничего не писал в теле. Приоритет над авто-ссылкой из текста.
    */
-  const uploadedVideoUrl = ref('')
+  // При правке — ссылка оригинала: без неё видео/аудио-пост сохранялся как
+  // обычный `share` с пустым `u` (V36).
+  const uploadedVideoUrl = ref(isEdit && prefill ? prefill.url : '')
 
   /** Видео-ссылка, авто-найденная в тексте поста (youtube/vimeo/peertube). */
   const videoUrl = computed(() => (articleMode.value ? '' : firstVideoUrl(message.value)))

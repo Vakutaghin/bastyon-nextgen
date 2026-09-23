@@ -33,6 +33,9 @@ describe('postToComposerData', () => {
       caption: 'raw cap',
       tags: [],
       images: [],
+      url: '',
+      visibility: '0',
+      language: '',
     })
   })
 
@@ -43,6 +46,9 @@ describe('postToComposerData', () => {
       caption: 'Title',
       tags: ['a'],
       images: ['u1'],
+      url: '',
+      visibility: '0',
+      language: '',
     })
   })
 
@@ -57,7 +63,15 @@ describe('postToComposerData', () => {
   })
 
   it('дефолты для пустого источника', () => {
-    expect(postToComposerData({})).toEqual({ message: '', caption: '', tags: [], images: [] })
+    expect(postToComposerData({})).toEqual({
+      message: '',
+      caption: '',
+      tags: [],
+      images: [],
+      url: '',
+      visibility: '0',
+      language: '',
+    })
   })
 
   it('объектный content (статья) не попадает в message', () => {
@@ -97,5 +111,33 @@ describe('parseArticleContent', () => {
     expect(parseArticleContent({ content: 'not json' })).toBeNull()
     expect(parseArticleContent({ content: '{"foo":1}' })).toBeNull()
     expect(parseArticleContent({})).toBeNull()
+  })
+})
+
+describe('postToComposerData: поля, которые терялись при правке (V36)', () => {
+  it('сохраняет ссылку на видео, видимость и язык', () => {
+    const src: ComposerSource = {
+      content: 'body',
+      videoUrl: 'peertube://server/xyz',
+      language: 'en',
+      settings: { f: '1' },
+    }
+
+    const data = postToComposerData(src)
+
+    expect(data.url).toBe('peertube://server/xyz')
+    expect(data.visibility).toBe('1')
+    expect(data.language).toBe('en')
+  })
+
+  it('берёт ссылку из settings.v, но не принимает маркер статьи', () => {
+    expect(postToComposerData({ settings: { v: 'https://youtu.be/x' } }).url).toBe(
+      'https://youtu.be/x'
+    )
+    expect(postToComposerData({ settings: { v: 'a', version: 2 } }).url).toBe('')
+  })
+
+  it('пустой язык означает «взять язык интерфейса»', () => {
+    expect(postToComposerData({ content: 'x' }).language).toBe('')
   })
 })
