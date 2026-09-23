@@ -106,6 +106,9 @@ jobs:
   android:
     permissions:
       contents: write
+    # Release создаёт tauri-action в джобе desktop. Без этой зависимости android
+    # добегал до аплоада раньше и падал на `release not found` (v0.2.0).
+    needs: desktop
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
