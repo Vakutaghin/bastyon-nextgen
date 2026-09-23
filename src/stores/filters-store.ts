@@ -107,7 +107,7 @@ export const useFiltersStore = defineStore('filters', {
     },
 
     /**
-     * Окно `depth` (в днях) для ленты «Лучшее» (`gettopfeed`), выведенное из
+     * Окно `depth` (в БЛОКАХ) для ленты «Лучшее» (`gettopfeed`), выведенное из
      * активного фильтра времени. Используется только когда включён `topFirst`.
      */
     topFeedDepth(): number {

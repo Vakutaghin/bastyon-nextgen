@@ -6,6 +6,14 @@ export interface PostForComments {
   hash?: string
   txid?: string
   comments?: number
+  /**
+   * Автор поста. В `AdaptedPost` адрес лежит именно здесь; плоского `address`
+   * у адаптированного поста нет — на этом ломались модерация автором,
+   * `disableBannedByAuthor` и буст автора в сортировке (V31).
+   */
+  author?: {
+    address?: string
+  }
   lastComment?: {
     id: string
     address: string

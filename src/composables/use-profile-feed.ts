@@ -70,6 +70,11 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
   // Текущий txid для запроса
   const currentTxidForQuery = ref<string>('')
 
+  // Поколение ленты: растёт при перезагрузке с головы. Обработчик ответа держит
+  // паузу на догрузке оригиналов репостов — за это время лента могла уехать,
+  // и старая страница доклеивалась поверх новой (S16).
+  const feedGeneration = ref(0)
+
   const queryKey = computed(() => [
     'feed',
     'profile',
@@ -122,8 +127,11 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
   watch(
     data,
     async (newData) => {
+      const generation = feedGeneration.value
+      const requestedTxid = currentTxidForQuery.value
+
       if (!newData?.contents) {
-        if (currentTxidForQuery.value !== '') {
+        if (requestedTxid !== '') {
           hasMore.value = false
           isLoadingMore.value = false
         }
@@ -165,6 +173,10 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
         }
       }
 
+      // Пока грузились оригиналы репостов, ленту могли перезагрузить с головы —
+      // эта страница относится к прошлому поколению (S16).
+      if (generation !== feedGeneration.value) return
+
       // Извлекаем профиль пользователя из ответа
       const profile = (contents as ProfileFeedItem[]).find(
         (item): item is UserProfile =>
@@ -174,7 +186,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
         userProfile.value = profile
       }
 
-      if (currentTxidForQuery.value === '') {
+      if (requestedTxid === '') {
         allPosts.value = newPosts
       } else {
         const existingIds = new Set(allPosts.value.map((p) => String(p.id)))
@@ -208,16 +220,12 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
         }
 
         const newLastTxid = lastPost?.txid || lastContentTxid || ''
-        const expectedCount = currentTxidForQuery.value === '' ? initialLimit : pageSize
+        const expectedCount = requestedTxid === '' ? initialLimit : pageSize
 
         // Если txid не изменился или пришло меньше чем ожидали - конец
         // Важно: contents может содержать профиль, поэтому сравниваем length с expectedCount
         // Но если постов вообще нет, то скорее всего конец
-        if (
-          newLastTxid &&
-          newLastTxid !== currentTxidForQuery.value &&
-          contents.length >= expectedCount
-        ) {
+        if (newLastTxid && newLastTxid !== requestedTxid && contents.length >= expectedCount) {
           lastTxid.value = newLastTxid
           hasMore.value = true
         } else {
@@ -238,6 +246,24 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     isLoadingMore.value = true
     currentTxidForQuery.value = lastTxid.value
     // await refetch() - удалено, так как изменение currentTxidForQuery автоматически запускает запрос
+  }
+
+  /**
+   * Перезагрузка ленты профиля С ГОЛОВЫ. Голый `refetch()` повторяет текущую
+   * страницу N, поэтому подтверждённый по WS пост не появлялся до перезагрузки
+   * страницы (S17).
+   */
+  const refreshFeed = async (): Promise<void> => {
+    feedGeneration.value += 1
+    isLoadingMore.value = false
+    hasMore.value = true
+    lastTxid.value = ''
+    if (currentTxidForQuery.value !== '') {
+      // Смена ключа сама запустит запрос головы.
+      currentTxidForQuery.value = ''
+      return
+    }
+    await refetch()
   }
 
   const setupIntersectionObserver = () => {
@@ -286,7 +312,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
   // оптимистичный пост заменился реальным (уже подтверждённым сетью).
   usePendingPostsRealtime({
     onConfirmed: () => {
-      if (isOwnFeed.value) void refetch()
+      if (isOwnFeed.value) void refreshFeed()
     },
   })
 
@@ -316,6 +342,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     hasMore: computed(() => hasMore.value),
     loadMoreTrigger,
     loadMore,
-    refetch,
+    /** Перезагрузка с головы (кнопка «Обновить», подтверждение по WS) */
+    refetch: refreshFeed,
   }
 }

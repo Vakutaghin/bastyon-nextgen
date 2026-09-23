@@ -969,6 +969,7 @@ export default {
     failed: 'Failed to submit the report',
   },
   postCard: {
+    retry: 'Retry',
     repostDeleted: 'Post deleted',
     readArticle: 'Read article',
     showFull: 'Show full',
@@ -1312,10 +1313,8 @@ export default {
     },
     timeFilters: {
       today: 'Today',
+      threeDays: 'Last 3 days',
       week: 'This week',
-      month: 'This month',
-      year: 'This year',
-      allTime: 'All time',
     },
     sortFilters: {
       popularity: 'By popularity',

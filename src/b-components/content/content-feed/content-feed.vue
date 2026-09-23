@@ -66,7 +66,7 @@
         </Spin>
       </SC_FeedLoading>
 
-      <SC_FeedError v-else-if="error">
+      <SC_FeedError v-else-if="error && allPosts.length === 0">
         <SC_FeedErrorColumn v-if="isServerError">
           <ExclamationCircleOutlined :style="ICON_DANGER_30_MB" />
           <p>{{ t('postCard.serverUnavailable') }}</p>
@@ -102,6 +102,17 @@
             </template>
           </Spin>
         </SC_FeedLoadingMore>
+        <!-- Ошибка ДОГРУЗКИ страницы: лента остаётся на экране, под ней —
+             причина и кнопка повтора (V35). -->
+        <SC_FeedError v-else-if="loadMoreError">
+          <SC_FeedErrorColumn>
+            <p>{{ loadMoreError }}</p>
+            <SC_RetryButton type="primary" ghost @click="retryLoadMore">
+              <template #icon><ReloadOutlined /></template>
+              {{ t('postCard.retry') }}
+            </SC_RetryButton>
+          </SC_FeedErrorColumn>
+        </SC_FeedError>
         <SC_FeedEnd v-else-if="!hasMore && allPosts.length > 0 && !isFavoritesTab">
           <p>{{ t('postCard.allPostsLoaded') }}</p>
         </SC_FeedEnd>
@@ -206,6 +217,8 @@ const {
   isLoadingMore,
   error,
   hasMore,
+  loadMoreError,
+  retryLoadMore,
   loadMoreTrigger,
   refetch,
   newPostsCount,

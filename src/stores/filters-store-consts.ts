@@ -28,27 +28,28 @@ export const SORT_FILTER_MAP: Record<number, string> = {
   4: 'comment',
 }
 
+/** Блоков в сутках: у Bastyon целевое время блока — минута. */
+export const BLOCKS_PER_DAY = 1440
+
 /**
- * Маппинг ID активного фильтра времени → окно `depth` (в днях) для ленты «Лучшее»
- * (`gettopfeed`). В legacy depth измеряется в днях (см. комментарий
- * `//30 is a month depth` в `components/lenta/index.js`; рекомендации используют
- * depth 7000/10000 ≈ all-time).
- *  1 (Сегодня) → 1 день
- *  2 (Неделя)  → 7 дней
- *  3 (Месяц)   → 30 дней   ← дефолт активного фильтра
- *  4 (Год)     → 365 дней
- *  5 (Всё время) → 99999 дней
+ * Маппинг ID активного фильтра времени → окно `depth` для ленты «Лучшее»
+ * (`gettopfeed`). `depth` у ноды измеряется в БЛОКАХ, не в днях: с depth=30
+ * лента отдаёт полчаса цепочки (проба к 1.pocketnet.app:8899 — 14 постов и
+ * «всё загружено»), а с месяцем в блоках (43200) запрос падает в
+ * `GetTopFeed: sql request timeout`. Отсюда потолок в неделю — столько же
+ * просит legacy (depth 7000–10000 в `satolist.js`).
+ *  1 (Сегодня)    → 1 сутки
+ *  2 (За 3 дня)   → 3 суток
+ *  3 (За неделю)  → 7 суток  ← дефолт активного фильтра
  */
 export const TIME_FILTER_DEPTH_MAP: Record<number, number> = {
-  1: 1,
-  2: 7,
-  3: 30,
-  4: 365,
-  5: 99999,
+  1: BLOCKS_PER_DAY,
+  2: 3 * BLOCKS_PER_DAY,
+  3: 7 * BLOCKS_PER_DAY,
 }
 
-/** Дефолтный `depth` (дни) для «Лучшее», если активный фильтр времени неизвестен. */
-export const DEFAULT_TOP_FEED_DEPTH = 30
+/** Дефолтный `depth` (блоки) для «Лучшее», если активный фильтр времени неизвестен. */
+export const DEFAULT_TOP_FEED_DEPTH = 7 * BLOCKS_PER_DAY
 
 /** Префикс ID кастомных категорий (пользовательских, персистятся). */
 export const CUSTOM_CATEGORY_PREFIX = 'custom_'

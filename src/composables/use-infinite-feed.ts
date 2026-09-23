@@ -14,6 +14,7 @@ import { useFiltersStore } from '@/stores/filters-store'
 import { useUIStore } from '@/stores/ui-store'
 import { buildFeedQueryByTab } from './helpers/feed-queries'
 import { fetchAndMergeRepostOriginals, enrichWithUserScores } from './helpers/feed-enrichment'
+import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 
 /**
  * Параметры для useInfiniteFeed
@@ -67,6 +68,15 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   // Отслеживаем текущий txid для запроса
   const currentTxidForQuery = ref<string>('')
 
+  // Поколение ленты. Растёт при любом сбросе (смена фильтров/вкладки/языка).
+  // Обработчик ответа держит паузу на `await` внутри — за это время фильтр мог
+  // смениться, и раньше страница старого таба доклеивалась в новую ленту (S16).
+  const feedGeneration = ref(0)
+
+  // Ошибка догрузки СТРАНИЦЫ (не первой загрузки): показывается под лентой,
+  // уже загруженные посты остаются на экране (V35).
+  const loadMoreError = ref<string | null>(null)
+
   // Счётчик новых постов сверху ленты (lentaunseen-lite): фоновая проверка головы
   // ленты vs отображаемой; пилюля «новые посты» в content-feed.
   const newPostsCount = ref<number>(0)
@@ -85,10 +95,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     ],
     () => {
       // Сбрасываем состояние при изменении фильтров
+      feedGeneration.value += 1
       currentTxidForQuery.value = ''
       hasMore.value = true
       allPosts.value = []
       isLoadingMore.value = false
+      loadMoreError.value = null
       newPostsCount.value = 0
     },
     { deep: true }
@@ -150,6 +162,9 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   watch(
     data,
     async (newData) => {
+      const generation = feedGeneration.value
+      const requestedTxid = currentTxidForQuery.value
+
       if (!newData?.data?.contents) {
         if (newData && currentTxidForQuery.value !== '') {
           // Если получили пустой ответ при загрузке следующей страницы, значит больше нет постов
@@ -165,8 +180,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       // Подгружаем контент оригиналов для репостов (мутирует newPosts на месте).
       await fetchAndMergeRepostOriginals(newPosts, contents)
 
+      // За время догрузки оригиналов фильтр/вкладка могли смениться — тогда эта
+      // страница относится к прошлой ленте и клеить её некуда (S16).
+      if (generation !== feedGeneration.value) return
+
       let postsToEnrich: AdaptedPost[]
-      if (currentTxidForQuery.value === '') {
+      if (requestedTxid === '') {
         // Первая загрузка — заменяем все посты.
         allPosts.value = newPosts
         postsToEnrich = newPosts
@@ -189,9 +208,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
         const newLastTxid = lastPost?.txid || ''
 
         // Если получили меньше постов, чем запрашивали, значит это последняя страница
-        const expectedCount = currentTxidForQuery.value === '' ? initialLimit : pageSize
-        hasMore.value =
-          contents.length >= expectedCount && newLastTxid !== currentTxidForQuery.value
+        const expectedCount = requestedTxid === '' ? initialLimit : pageSize
+        hasMore.value = contents.length >= expectedCount && newLastTxid !== requestedTxid
 
         if (hasMore.value) {
           lastTxid.value = newLastTxid
@@ -200,6 +218,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
         hasMore.value = false
       }
 
+      loadMoreError.value = null
       isLoadingMore.value = false
     },
     { immediate: true }
@@ -214,16 +233,46 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     }
 
     isLoadingMore.value = true
+    loadMoreError.value = null
 
     try {
       // Обновляем txid для следующего запроса
       currentTxidForQuery.value = lastTxid.value
-      // Обновляем query key, что заставит useQuery выполнить новый запрос
-      await refetch()
+      // Обновляем query key, что заставит useQuery выполнить новый запрос.
+      // `refetch()` vue-query НЕ бросает — ошибку отдаёт в результате, поэтому
+      // старый catch никогда не срабатывал и лента залипала в «загружаю» (V35).
+      const result = await refetch()
+      if (result?.isError) {
+        loadMoreError.value = extractErrorMessage(result.error)
+        isLoadingMore.value = false
+      }
     } catch (err) {
-      console.error('Failed to load more posts:', err)
+      loadMoreError.value = extractErrorMessage(err)
       isLoadingMore.value = false
     }
+  }
+
+  /** Повтор последней неудавшейся догрузки страницы. */
+  const retryLoadMore = async (): Promise<void> => {
+    if (isLoadingMore.value) return
+    loadMoreError.value = null
+    await loadMore()
+  }
+
+  /**
+   * Перезагружает ленту С ГОЛОВЫ. Кнопка «Обновить ленту» и WS-подтверждение
+   * раньше дёргали `refetch()` напрямую — а он повторяет ТЕКУЩУЮ страницу N,
+   * из-за чего только что подтверждённый пост не появлялся до перезагрузки (S17).
+   */
+  const refreshFeed = async (): Promise<void> => {
+    feedGeneration.value += 1
+    currentTxidForQuery.value = ''
+    lastTxid.value = ''
+    hasMore.value = true
+    isLoadingMore.value = false
+    loadMoreError.value = null
+    newPostsCount.value = 0
+    await refetch()
   }
 
   /**
@@ -258,10 +307,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
 
   /** Применяет новые посты: перезагружает голову ленты и сбрасывает счётчик. */
   const showNewPosts = async (): Promise<void> => {
-    newPostsCount.value = 0
-    currentTxidForQuery.value = ''
-    hasMore.value = true
-    await refetch()
+    await refreshFeed()
   }
 
   // Периодическая проверка новых постов + при возврате фокуса на вкладку.
@@ -352,10 +398,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     () => enabled,
     (newEnabled) => {
       if (!newEnabled) {
+        feedGeneration.value += 1
         allPosts.value = []
         lastTxid.value = ''
         hasMore.value = true
         isLoadingMore.value = false
+        loadMoreError.value = null
       }
     }
   )
@@ -364,11 +412,13 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   watch(
     () => filtersStore.activeTab,
     () => {
+      feedGeneration.value += 1
       allPosts.value = []
       lastTxid.value = ''
       currentTxidForQuery.value = ''
       hasMore.value = true
       isLoadingMore.value = false
+      loadMoreError.value = null
       newPostsCount.value = 0
     }
   )
@@ -386,10 +436,14 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     hasMore: computed(() => hasMore.value),
     /** Ref для элемента-триггера загрузки */
     loadMoreTrigger,
+    /** Ошибка догрузки следующей страницы (лента при этом остаётся на экране) */
+    loadMoreError: computed(() => loadMoreError.value),
     /** Функция для ручной загрузки следующей порции */
     loadMore,
-    /** Функция для перезагрузки ленты */
-    refetch,
+    /** Повторить неудавшуюся догрузку страницы */
+    retryLoadMore,
+    /** Перезагрузка ленты с головы (кнопка «Обновить», подтверждение по WS) */
+    refetch: refreshFeed,
     /** Количество новых постов сверху (lentaunseen-lite); 0 — нет новых. */
     newPostsCount: computed(() => newPostsCount.value),
     /** Показать новые посты: перезагрузить голову ленты + сбросить счётчик. */

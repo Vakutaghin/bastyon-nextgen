@@ -291,7 +291,11 @@ const currentUserAddress = computed<string>(() => {
 })
 
 const postAuthorAddress = computed<string>(() => {
+  // Адаптированный пост держит адрес в `author.address`; плоский `address`
+  // приходит только из сырых ответов ноды — оставлен как запасной путь (V31).
   const p = props.post as PostForComments & { address?: string }
+  const fromAuthor = p?.author?.address
+  if (typeof fromAuthor === 'string' && fromAuthor) return fromAuthor
   return typeof p?.address === 'string' ? p.address : ''
 })
 

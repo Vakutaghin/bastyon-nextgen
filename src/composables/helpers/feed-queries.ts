@@ -32,7 +32,7 @@ export interface FeedQueryContext {
   userAddress: string
   /** Режим «Сначала лучшее»: дефолтная лента идёт через `gettopfeed`. */
   topFirst: boolean
-  /** Окно (в днях) для `gettopfeed` — берётся из активного фильтра времени. */
+  /** Окно для `gettopfeed` в БЛОКАХ цепочки (TIME_FILTER_DEPTH_MAP), не в днях. */
   depth: number
 }
 
@@ -69,7 +69,8 @@ export async function buildHierarchicalStripQuery(
  * Лента «Лучшее» (`gettopfeed`) — включается тогглом «Сначала лучшее» (topFirst)
  * на дефолтной/контентных вкладках. Сигнатура 1:1 с legacy: базовые параметры
  * hierarchical-strip + `['', depth]` (см. `js/satolist.js`, ветка
- * `if (mtd == 'gettopfeed')`). `depth` — окно в днях. Поддерживает txid-пагинацию.
+ * `if (mtd == 'gettopfeed')`). `depth` — окно в БЛОКАХ (см. TIME_FILTER_DEPTH_MAP).
+ * Поддерживает txid-пагинацию.
  */
 export async function buildTopFeedQuery(
   ctx: FeedQueryContext

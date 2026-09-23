@@ -1028,6 +1028,7 @@ export default {
     audioLoading: 'Загрузка аудио',
   },
   postCard: {
+    retry: 'Повторить',
     repostDeleted: 'Публикация удалена',
     readArticle: 'Читать статью',
     showFull: 'Показать полностью',
@@ -1315,10 +1316,8 @@ export default {
     },
     timeFilters: {
       today: 'За сегодня',
+      threeDays: 'За 3 дня',
       week: 'За неделю',
-      month: 'За месяц',
-      year: 'За год',
-      allTime: 'Все время',
     },
     sortFilters: {
       popularity: 'По популярности',
