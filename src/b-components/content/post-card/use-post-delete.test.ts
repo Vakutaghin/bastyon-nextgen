@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
 
 const { confirm, deletePost, toast } = vi.hoisted(() => ({
   confirm: vi.fn(),
@@ -12,8 +13,12 @@ vi.mock('@/b-components/app-toast', () => ({ appToast: toast }))
 vi.mock('./post-deleter', () => ({ deletePost }))
 
 import { usePostDelete } from './use-post-delete'
+import { usePostsStore } from '@/stores/posts-store'
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  setActivePinia(createPinia())
+})
 
 describe('usePostDelete', () => {
   it('confirmDelete открывает подтверждение, удаление идёт только по onOk', async () => {
@@ -28,6 +33,8 @@ describe('usePostDelete', () => {
     expect(deleted.value).toBe(true)
     expect(toast.success).toHaveBeenCalledWith({ message: 'postCard.deleted' })
     expect(onDeleted).toHaveBeenCalledWith('tx1')
+    // Пост прячется везде, а не только в этой карточке (N12).
+    expect(usePostsStore().isPostDeleted('tx1')).toBe(true)
   })
 
   it('ошибка транзакции: тост с текстом ошибки, deleted не выставляется, колбэк не зовётся', async () => {

@@ -8,6 +8,8 @@ import { Modal } from 'ant-design-vue'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 
+import { usePostsStore } from '@/stores/posts-store'
+
 import { deletePost } from './post-deleter'
 
 export function usePostDelete(getPostId: () => string, onDeleted: (postId: string) => void) {
@@ -21,6 +23,9 @@ export function usePostDelete(getPostId: () => string, onDeleted: (postId: strin
       const postId = getPostId()
       await deletePost(postId)
       deleted.value = true
+      // Прячем пост везде, а не только в этой карточке: `emit('deleted')`
+      // никто не слушал, и он продолжал висеть в ленте и модалке (N12).
+      usePostsStore().markDeleted(postId)
       appToast.success({ message: t('postCard.deleted') })
       onDeleted(postId)
     } catch (e) {

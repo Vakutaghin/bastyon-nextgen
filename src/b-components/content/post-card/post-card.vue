@@ -202,6 +202,7 @@ import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { useReportStore } from '@/stores/report-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
+import { publicPostUrl } from '@/helpers/common/share-origin'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { ImageGallery } from '@/components/image-gallery'
 import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
@@ -336,10 +337,9 @@ function onReportPost(): void {
 
 // ── Внешний шаринг поста ────────────────────────────────────────────
 const shareMenuOpen = ref(false)
-const postUrl = computed<string>(() => {
-  const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  return `${origin}/post/${postId.value}`
-})
+// Ссылка уходит наружу, поэтому origin — публичный: в Tauri свой origin
+// выглядит как `tauri://localhost`, в Capacitor — `https://localhost` (S20).
+const postUrl = computed<string>(() => publicPostUrl(postId.value))
 const shareText = computed<string>(
   () => decodeUrlEncoded(props.post.title || '') || props.post.author?.name || 'Bastyon'
 )

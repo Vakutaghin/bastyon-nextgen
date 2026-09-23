@@ -94,8 +94,8 @@
           <SC_DropdownItem v-for="u in users" :key="u.address" @click="onSelectUser(u)">
             <SC_Avatar>
               <img
-                v-if="u.i"
-                :src="u.i"
+                v-if="avatarOf(u)"
+                :src="avatarOf(u)!"
                 :alt="u.name || u.address"
                 loading="lazy"
                 decoding="async"
@@ -251,6 +251,7 @@ const {
   onSelectApp,
   onSeeAll,
   initialOf,
+  avatarOf,
   initialOfApp,
   postTitle,
   truncate,

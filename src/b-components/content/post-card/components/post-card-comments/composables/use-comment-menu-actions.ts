@@ -8,6 +8,7 @@
 import type { Ref } from 'vue'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
+import { publicShareOrigin } from '@/helpers/common/share-origin'
 import { useDonateStore, useReportStore } from '@/stores'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { CommentMenuAction } from '../types'
@@ -36,8 +37,9 @@ export function useCommentMenuActions(opts: UseCommentMenuActionsOptions) {
 
   // Web Share API на мобильных, иначе — копирование в буфер.
   async function shareComment(comment: GetComment): Promise<void> {
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    const url = buildCommentPermalink(origin, opts.postId.value, comment)
+    // Публичный origin: ссылкой делятся, а `tauri://localhost` получатель не
+    // откроет (S20).
+    const url = buildCommentPermalink(publicShareOrigin(), opts.postId.value, comment)
     const nav = window.navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
     if (typeof nav.share === 'function') {
       try {

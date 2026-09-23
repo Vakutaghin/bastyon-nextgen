@@ -44,6 +44,8 @@ import { LoadingOutlined } from '@ant-design/icons-vue'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import Spin from '@/components/spin/spin.vue'
 import { useProfileFeed } from '@/composables/use-profile-feed'
+import { usePostsStore } from '@/stores/posts-store'
+import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { ICON_PRIMARY_24, ICON_PRIMARY_50 } from '@/styles/icon-styles'
 import {
@@ -68,11 +70,30 @@ const emit = defineEmits<{ 'profile-loaded': [profile: UserProfile] }>()
 
 const { t } = useI18n()
 
-const { allPosts, userProfile, isLoading, isLoadingMore, error, hasMore, loadMoreTrigger } =
-  useProfileFeed({
-    address: props.address,
-    ...(props.lang !== undefined && { lang: props.lang }),
-  })
+const {
+  allPosts: loadedPosts,
+  userProfile,
+  isLoading,
+  isLoadingMore,
+  error,
+  hasMore,
+  loadMoreTrigger,
+} = useProfileFeed({
+  address: props.address,
+  ...(props.lang !== undefined && { lang: props.lang }),
+})
+
+const postsStore = usePostsStore()
+
+/** Удалённый в этой сессии пост исчезает из ленты сразу, а не после F5 (N12). */
+const allPosts = computed(() =>
+  loadedPosts.value.filter(
+    (p) =>
+      !postsStore.isPostDeleted(p.id) &&
+      !postsStore.isPostDeleted(p.txid) &&
+      !postsStore.isPostDeleted(p.hash)
+  )
+)
 
 watch(userProfile, (newProfile) => {
   if (newProfile) emit('profile-loaded', newProfile)
@@ -84,7 +105,7 @@ const authorOverride = computed(() => {
   return {
     name: p.name || '',
     address: p.address || '',
-    avatar: p.i || null,
+    avatar: resolveAvatarUrl(p) ?? null,
     reputation: p.reputation || 0,
     letter: p.name ? p.name[0] : '?',
   }

@@ -224,7 +224,6 @@ const displayName = computed<string>(() => {
   return props.profile?.name || props.profile?.address || 'User'
 })
 
-
 const formattedDate = computed<string>(() => {
   if (!props.profile?.regdate) return ''
   return new Date(props.profile.regdate * 1000).toLocaleDateString()
@@ -249,9 +248,9 @@ const userSite = computed<string | null>(() => {
   return url
 })
 
-const formattedUserAbout = computed<string>(() =>
-  formatAbout(props.profile?.a || props.profile?.r || '')
-)
+// «О себе» — только поле `a`. `r` — это адрес реферера, и он показывался в
+// описании профиля, а при редактировании ещё и уходил обратно в цепочку (S54).
+const formattedUserAbout = computed<string>(() => formatAbout(props.profile?.a || ''))
 
 const userAddress = computed<string>(() => props.profile?.address || '')
 

@@ -50,6 +50,7 @@ import PostCardImages from '@/b-components/content/post-card/components/post-car
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { usePostByTxid } from '@/b-components/messenger/components/post-embed/use-post-by-txid'
 import { safeDecode } from '@/helpers/content/safe-decode'
+import { publicShareOrigin } from '@/helpers/common/share-origin'
 import {
   SC_Embed,
   SC_EmbedHeader,
@@ -71,7 +72,8 @@ const txid = computed<string>(() =>
 )
 const { post, isLoading, isMissing, isError } = usePostByTxid(txid)
 
-const origin = typeof window !== 'undefined' ? window.location.origin : ''
+// og:url и ссылки на профиль в embed читают внешние потребители (S20).
+const origin = publicShareOrigin()
 
 const authorName = computed<string>(
   () => post.value?.author?.name || post.value?.author?.address || ''

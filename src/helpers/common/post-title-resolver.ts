@@ -27,7 +27,10 @@ export function resolvePostTitleFromPost(post: PostLike | undefined | null): Res
       try {
         const json = JSON.parse(content)
         if (json?.blocks && Array.isArray(json.blocks) && json.blocks.length > 0) {
-          postTitle = json.blocks[0].text || ''
+          // Editor.js держит текст в `data.text`; `blocks[0].text` не существует,
+          // из-за чего статьи в «песочных часах» были «без названия» (N13).
+          const first = json.blocks[0]
+          postTitle = first?.data?.text || first?.data?.caption || first?.text || ''
         }
       } catch {
         postTitle = content

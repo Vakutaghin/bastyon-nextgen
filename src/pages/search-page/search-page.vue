@@ -44,8 +44,8 @@
             >
               <SC_Avatar>
                 <img
-                  v-if="u.i"
-                  :src="u.i"
+                  v-if="avatarOf(u)"
+                  :src="avatarOf(u)!"
                   :alt="u.name || u.address"
                   loading="lazy"
                   decoding="async"
@@ -100,6 +100,7 @@ import {
 } from '@/composables/use-search-query'
 import { sanitizeSearchQuery, type SearchPaging } from '@/services/search-service'
 import { adaptPostData, type AdaptedPost } from '@/composables/use-feed'
+import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import SidebarLeft from '@/b-components/sidebar/sidebar-left/sidebar-left.vue'
 import { settingsAPI } from '@/db/apis/settings-api'
@@ -302,6 +303,11 @@ function openProfile(address: string): void {
 
 function goTagSearch(tag: string): void {
   router.push({ path: '/search', query: { q: `#${tag}`, type: 'posts' } })
+}
+
+/** Аватар пользователя из результатов поиска — через общий резолвер (S58). */
+function avatarOf(u: unknown): string | null {
+  return resolveAvatarUrl(u as Record<string, unknown>) ?? null
 }
 
 function initialOf(name?: string, address?: string): string {

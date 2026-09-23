@@ -249,8 +249,17 @@ function postKey(p: { txid?: string; hash?: string; id?: string | number }): str
 
 // Лента с вплетёнными бустами: после каждых BOOST_INTERVAL постов вставляем один
 // доступный буст (с пометкой isBoosted), пропуская те, что уже есть в ленте.
+/** Пост, удалённый в этой сессии, из ленты убираем сразу (N12). */
+function isDeleted(post: FeedItem): boolean {
+  return (
+    postsStore.isPostDeleted(post.id) ||
+    postsStore.isPostDeleted(post.txid) ||
+    postsStore.isPostDeleted(post.hash)
+  )
+}
+
 const displayedPosts = computed<FeedItem[]>(() => {
-  const base = allPosts.value as FeedItem[]
+  const base = (allPosts.value as FeedItem[]).filter((p) => !isDeleted(p))
   if (!showBoosted.value || boostedPosts.value.length === 0) return base
 
   const seen = new Set(base.map(postKey))

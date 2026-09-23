@@ -169,14 +169,28 @@ export async function buildFavoritesFeedQuery(
     startIndex = lastIndex + 1
   }
 
-  const idsToFetch = allFavIds.slice(startIndex, startIndex + ctx.count)
-  if (idsToFetch.length === 0) {
-    return favoritesResponse([])
+  // Добираем страницу до полного размера: удалённые посты нода просто не
+  // возвращает, и неполная страница означала для ленты «больше ничего нет» —
+  // из-за одного удалённого поста остальное избранное становилось недоступным
+  // (N11).
+  const collected: RawFavoritePost[] = []
+  let index = startIndex
+  while (collected.length < ctx.count && index < allFavIds.length) {
+    const idsToFetch = allFavIds.slice(index, index + ctx.count)
+    index += idsToFetch.length
+    collected.push(...(await fetchFavoritePostsByIds(idsToFetch)))
   }
+
+  return favoritesResponse(collected.slice(0, ctx.count))
+}
+
+/** Тянет посты по списку id и возвращает их в порядке запроса (без пропавших). */
+async function fetchFavoritePostsByIds(ids: string[]): Promise<RawFavoritePost[]> {
+  if (ids.length === 0) return []
 
   const result = (await getByPRCWithAuth({
     method: rpcEndpoints.getRawTransactionWithMessageById,
-    parameters: [idsToFetch],
+    parameters: [ids],
     cachehash: freshCacheHash(),
     options: {},
     state: 1,
@@ -191,15 +205,11 @@ export async function buildFavoritesFeedQuery(
     else if (Array.isArray(result.result)) posts = result.result
   }
 
-  // Сортируем посты в порядке запрошенных ID для корректной пагинации.
-  if (posts.length > 0) {
-    const postsMap = new Map(posts.map((p) => [p.txid || p.id, p]))
-    posts = idsToFetch
-      .map((id) => postsMap.get(id))
-      .filter((p): p is RawFavoritePost => p !== undefined)
-  }
+  if (posts.length === 0) return []
 
-  return favoritesResponse(posts)
+  // Сортируем посты в порядке запрошенных ID для корректной пагинации.
+  const postsMap = new Map(posts.map((p) => [p.txid || p.id, p]))
+  return ids.map((id) => postsMap.get(id)).filter((p): p is RawFavoritePost => p !== undefined)
 }
 
 /**

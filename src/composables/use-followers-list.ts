@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { rpcCall } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useUserProfiles } from './use-user-profile'
+import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 
 export type RelationListType = 'followers' | 'following'
@@ -41,8 +42,9 @@ function resolve<T>(v: MaybeRefOrGetter<T>): T {
 
 /** Аватар из профиля: accSet.image приоритетнее legacy-поля `i`. */
 function avatarFromProfile(p: UserProfile | undefined): string | null {
-  const withAcc = p as (UserProfile & { accSet?: { image?: string } }) | undefined
-  return withAcc?.accSet?.image || withAcc?.i || null
+  // Через resolveAvatarUrl: в профиле лежит голый хеш или ссылка на
+  // `pocketnet.app:8092`, и без нормализации картинка не грузится (S58).
+  return resolveAvatarUrl(p) ?? null
 }
 
 function isPrivateSub(value: unknown): boolean {

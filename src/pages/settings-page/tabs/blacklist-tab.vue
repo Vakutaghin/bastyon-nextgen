@@ -36,6 +36,7 @@ import { useI18n } from 'vue-i18n'
 import { useUserRelationsStore } from '@/stores'
 import { useUserProfiles } from '@/composables/use-user-profile'
 import { appToast } from '@/b-components/app-toast'
+import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import {
   SC_Blacklist,
@@ -59,8 +60,9 @@ const blockedAddresses = computed<string[]>(() => Array.from(relations.blocked))
 const { data: profiles } = useUserProfiles(blockedAddresses)
 
 function avatarFromProfile(p: UserProfile | undefined): string | null {
-  const withAcc = p as (UserProfile & { accSet?: { image?: string } }) | undefined
-  return withAcc?.accSet?.image || withAcc?.i || null
+  // Через resolveAvatarUrl: в профиле лежит голый хеш или ссылка на
+  // `pocketnet.app:8092`, и без нормализации картинка не грузится (S58).
+  return resolveAvatarUrl(p) ?? null
 }
 
 const rows = computed(() => {

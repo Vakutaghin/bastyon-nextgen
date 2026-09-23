@@ -6,6 +6,7 @@
  *
  * См. CODE_AUDIT.md §1.
  */
+import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import type { Ref } from 'vue'
 import type { Router } from 'vue-router'
 import { useSearchStore } from '@/stores/search-store'
@@ -23,6 +24,8 @@ export interface SearchNavigation {
   onSelectApp: (entry: RemoteAppEntry) => void
   onSeeAll: (type: 'users' | 'tags' | 'posts') => void
   initialOf: (u: SearchUserResult) => string
+  /** Нормализованный URL аватара (голый хеш и `pocketnet.app:8092` — не URL, S58) */
+  avatarOf: (u: SearchUserResult) => string | null
   initialOfApp: (name: string) => string
   postTitle: (p: SearchPost) => string
   truncate: (text: string, max: number) => string
@@ -75,6 +78,9 @@ export function useSearchNavigation(
     router.push({ path: '/search', query: { q: value, type } })
   }
 
+  function avatarOf(u: SearchUserResult): string | null {
+    return resolveAvatarUrl(u as unknown as Record<string, unknown>) ?? null
+  }
   function initialOf(u: SearchUserResult): string {
     const src = u.name || u.address
     return (src?.[0] ?? '?').toUpperCase()
@@ -106,6 +112,7 @@ export function useSearchNavigation(
     onSelectApp,
     onSeeAll,
     initialOf,
+    avatarOf,
     initialOfApp,
     postTitle,
     truncate,

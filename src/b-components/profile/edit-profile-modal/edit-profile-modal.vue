@@ -165,7 +165,8 @@ const avatarInitial = computed<string>(() => (name.value.trim()[0] || '?').toUpp
 function resetFromProfile(): void {
   const p = props.profile
   name.value = p?.name || ''
-  about.value = p?.a || p?.r || ''
+  // Только `a`: `r` — адрес реферера, его нельзя подставлять в «О себе» (S54).
+  about.value = p?.a || ''
   site.value = p?.s || ''
   language.value = p?.l || 'en'
   avatarPreview.value = p?.i || ''

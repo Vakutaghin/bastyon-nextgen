@@ -151,3 +151,30 @@ describe('posts-store', () => {
     })
   })
 })
+
+describe('удалённые посты (N12)', () => {
+  it('markDeleted прячет пост по всем его идентификаторам', () => {
+    const store = usePostsStore()
+    store.registerPost({ id: '1', txid: 'TX1', hash: 'H1' } as never)
+
+    store.markDeleted('1')
+
+    expect(store.isPostDeleted('1')).toBe(true)
+    expect(store.isPostDeleted('TX1')).toBe(true)
+    expect(store.isPostDeleted('H1')).toBe(true)
+    expect(store.getPost('1')).toBeUndefined()
+  })
+
+  it('чужие посты не задеты, а clearPosts снимает пометки', () => {
+    const store = usePostsStore()
+    store.registerPost({ id: '1', txid: 'TX1' } as never)
+    store.registerPost({ id: '2', txid: 'TX2' } as never)
+
+    store.markDeleted('1')
+    expect(store.isPostDeleted('2')).toBe(false)
+    expect(store.isPostDeleted(undefined)).toBe(false)
+
+    store.clearPosts()
+    expect(store.isPostDeleted('1')).toBe(false)
+  })
+})

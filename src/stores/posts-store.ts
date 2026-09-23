@@ -15,13 +15,24 @@ export const usePostsStore = defineStore('posts', {
     posts: new Map<string | number, Post>(),
     txidMap: new Map<string, string | number>(), // txid/hash -> id
     likedPosts: new Set<string | number>(),
-    sharedPosts: new Set<string | number>()
+    sharedPosts: new Set<string | number>(),
+    /**
+     * Удалённые в этой сессии посты (по id, txid и hash). Пока нода не
+     * перестала их отдавать, ленты и модалка должны их прятать: раньше
+     * надгробие появлялось только в той карточке, где нажали «Удалить» (N12).
+     */
+    deletedIds: new Set<string>(),
   }),
 
   getters: {
     /**
      * Проверяет, лайкнут ли пост
      */
+    /** Удалён ли пост в этой сессии (по любому из его идентификаторов). */
+    isPostDeleted(): (postId: string | number | undefined | null) => boolean {
+      return (postId) => (postId == null ? false : this.deletedIds.has(String(postId)))
+    },
+
     isPostLiked(): (postId: string | number) => boolean {
       return (postId: string | number) => {
         return this.likedPosts.has(postId)
@@ -65,7 +76,7 @@ export const usePostsStore = defineStore('posts', {
 
         return undefined
       }
-    }
+    },
   },
 
   actions: {
@@ -172,6 +183,19 @@ export const usePostsStore = defineStore('posts', {
     },
 
     /**
+     * Помечает пост удалённым: убирает из стора и запоминает все его id,
+     * чтобы ленты и модалка не показывали его до перезагрузки (N12).
+     */
+    markDeleted(postId: string | number): void {
+      const post = this.posts.get(postId) ?? this.posts.get(String(postId))
+      this.deletedIds.add(String(postId))
+      if (post?.txid) this.deletedIds.add(String(post.txid))
+      if (post?.hash) this.deletedIds.add(String(post.hash))
+      if (post?.id != null) this.deletedIds.add(String(post.id))
+      this.removePost(postId)
+    },
+
+    /**
      * Удаляет пост из store
      */
     removePost(postId: string | number): void {
@@ -193,6 +217,7 @@ export const usePostsStore = defineStore('posts', {
       this.txidMap.clear()
       this.likedPosts.clear()
       this.sharedPosts.clear()
-    }
-  }
+      this.deletedIds.clear()
+    },
+  },
 })
