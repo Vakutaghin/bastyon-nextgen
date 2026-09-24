@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { nextAddressTxCursor } from '@/helpers/explorer/address-tx-cursor'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons-vue'
@@ -196,13 +197,16 @@ async function loadPage(reset = false): Promise<void> {
       }
     }
 
-    const minHeight = page.reduce((mn, t2) => Math.min(mn, t2.height), Number.POSITIVE_INFINITY)
-    if (Number.isFinite(minHeight) && minHeight > 0) {
-      nextCursorHeight = minHeight - 1
-    } else {
-      hasMore.value = false
-    }
-    if (page.length < TX_PAGE_SIZE) hasMore.value = false
+    // Тот же курсор, что в эксплорере (S66): включительно + дедуп по txid,
+    // иначе на границе страницы терялся хвост блока.
+    const cursor = nextAddressTxCursor({
+      heights: page.map((t2) => t2.height),
+      freshCount: page.filter((tx) => !seen.has(tx.txid)).length,
+      currentCursor: nextCursorHeight,
+      pageSize: TX_PAGE_SIZE,
+    })
+    nextCursorHeight = cursor.nextCursor
+    hasMore.value = cursor.hasMore
   } catch {
     error.value = true
   } finally {

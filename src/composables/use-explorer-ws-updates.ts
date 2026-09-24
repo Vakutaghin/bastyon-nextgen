@@ -6,10 +6,13 @@
  * Это эквивалент refetchInterval-а, но мгновенный — UI обновляется ровно
  * тогда, когда нода присылает блок.
  *
- * Конкретные detail-страницы (block, tx, address) НЕ инвалидируем — там
- * данные привязаны к конкретному hash/txid/addr, которые сами не меняются;
- * confirmations пересчитываются автоматически через computed от tipHeight,
- * который уже наблюдает за node-info.
+ * Детали блока инвалидируем тоже (N31): у блока-вершины поле `nexthash` пустое
+ * ровно до появления следующего блока, а `staleTime` исторических данных —
+ * сутки, поэтому без инвалидации «Следующий блок» не появлялся до перезагрузки
+ * страницы. Обновляется только активный (открытый) запрос — это один блок.
+ *
+ * Детали tx и адреса НЕ инвалидируем: они привязаны к txid/адресу и сами не
+ * меняются, а confirmations пересчитываются через computed от tipHeight.
  *
  * Если WS ещё не подключён, инициируем connect(). Не закрываем на unmount —
  * соединение разделяемое с остальным приложением.
@@ -38,16 +41,23 @@ export function useExplorerWsUpdates(): ExplorerWsState {
     queryClient.invalidateQueries({ queryKey: ['explorer', 'coin-info'] })
     // last-blocks ключ — ['explorer', 'last-blocks', N], invalidateQueries матчит по префиксу.
     queryClient.invalidateQueries({ queryKey: ['explorer', 'last-blocks'] })
+    // N31: у открытого блока мог появиться `nexthash`. Префикс ['explorer','block']
+    // не задевает 'block-transactions' — это другой элемент ключа.
+    queryClient.invalidateQueries({ queryKey: ['explorer', 'block'] })
   }
 
   onMounted(() => {
     unsubscribers.push(
-      wsService.on('open', () => { isConnected.value = true }),
-      wsService.on('close', () => { isConnected.value = false }),
+      wsService.on('open', () => {
+        isConnected.value = true
+      }),
+      wsService.on('close', () => {
+        isConnected.value = false
+      }),
       wsService.on('block', () => {
         lastBlockAt.value = Math.floor(Date.now() / 1000)
         invalidateTipQueries()
-      }),
+      })
     )
 
     // Connect WS if not already (works for guests too — node broadcasts 'new block'

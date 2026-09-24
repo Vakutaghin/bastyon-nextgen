@@ -4,6 +4,7 @@
  * helper-функции для строки tx и переходов. CODE_AUDIT.md §1.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
+import { useQueryClient } from '@tanstack/vue-query'
 import type { Router } from 'vue-router'
 import {
   useBlockDetails,
@@ -40,12 +41,26 @@ export function useBlockData(hashOrHeightRef: Ref<string>, router: Router) {
   // Заодно подменяем URL на канонический permalink (план §5.5): если открыли по
   // высоте, меняем её на иммутабельный hash блока. Hash не зависит от chain-state,
   // поэтому share-ссылка переживёт реорганизации цепочки.
+  const queryClient = useQueryClient()
+  /** Блоки, которые уже записаны в историю просмотров в этой сессии (S69). */
+  let recordedBlockHash = ''
+
   watch(
     () => block.value?.hash,
     (h) => {
       if (!h) return
-      recordVisit(hashOrHeightRef.value, 'block')
+      // Открытие по высоте заканчивается заменой URL на hash — это тот же блок,
+      // и второй записи в истории быть не должно (S69).
+      if (recordedBlockHash !== h) {
+        recordedBlockHash = h
+        recordVisit(hashOrHeightRef.value, 'block')
+      }
       if (/^\d+$/.test(hashOrHeightRef.value) && hashOrHeightRef.value !== h) {
+        // Прогреваем кэш по hash тем же ответом: иначе после replace уходит
+        // второй RPC за тем же блоком, и страница мигает скелетоном (S69).
+        if (blockResp.value) {
+          queryClient.setQueryData(['explorer', 'block', h], blockResp.value)
+        }
         router.replace({ name: 'explorer-block', params: { hashOrHeight: h } })
       }
     }
@@ -113,7 +128,9 @@ export function useBlockData(hashOrHeightRef: Ref<string>, router: Router) {
 
   const difficultyLabel = computed(() => {
     const d = block.value?.difficulty
-    return d ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(d) : t('explorerPage.em')
+    return d
+      ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(d)
+      : t('explorerPage.em')
   })
 
   const pagerLabel = computed(() => {

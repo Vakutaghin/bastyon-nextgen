@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ConfigProvider, theme } from 'ant-design-vue'
 import type { ThemeConfig } from 'ant-design-vue/es/config-provider'
 import AppLayout from '@/b-components/app-layout/app-layout.vue'
@@ -13,11 +14,35 @@ import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
+import { publicShareOrigin } from '@/helpers/common/share-origin'
+import { SC_FramedNotice, SC_FramedLink } from './src.styled'
 
 // Embed-роуты (`/embed/...`, meta.embed) рендерятся БЕЗ chrome (хедер/футер/
 // сайдбар/глобальные модалки) — это самостоятельная вьюха для встраивания в iframe.
+const { t } = useI18n()
 const route = useRoute()
 const isEmbed = computed<boolean>(() => route.meta?.embed === true)
+
+/**
+ * Приложение во фрейме чужого сайта (S67).
+ *
+ * `frame-ancestors` браузер читает только из HTTP-заголовка (в meta директива
+ * игнорируется), поэтому окончательный запрет framing'а — на деплое. Здесь
+ * страховка на клиенте: всё, кроме `/embed/*`, во фрейме не рендерим — иначе
+ * чужая страница может показать залогиненный кошелёк и ловить клики поверх.
+ */
+const isFramed = (() => {
+  try {
+    return window.top !== window.self
+  } catch {
+    // Кросс-доменный доступ к window.top бросает — значит мы точно во фрейме.
+    return true
+  }
+})()
+const isFramedApp = computed<boolean>(() => isFramed && !isEmbed.value)
+
+const publicAppUrl =
+  publicShareOrigin() + (typeof window !== 'undefined' ? window.location.pathname : '')
 
 // ContentFeed сам делает запрос через useInfiniteFeed, поэтому здесь не нужно делать запрос
 
@@ -55,8 +80,16 @@ const themeConfig = computed<ThemeConfig>(() => ({
 
 <template>
   <ConfigProvider prefixCls="ant" :theme="themeConfig">
+    <!-- Приложение во фрейме чужого сайта не показываем (S67). -->
+    <SC_FramedNotice v-if="isFramedApp">
+      <p>{{ t('appMsg.framedNotice') }}</p>
+      <SC_FramedLink :href="publicAppUrl" target="_top" rel="noopener">
+        {{ t('appMsg.framedOpen') }}
+      </SC_FramedLink>
+    </SC_FramedNotice>
+
     <!-- Embed: только маршрут, без chrome и глобальных синглтонов. -->
-    <router-view v-if="isEmbed" />
+    <router-view v-else-if="isEmbed" />
     <template v-else>
       <AppLayout />
       <!-- Video Uploader - fixed кнопка и модалка (на верхнем уровне) -->

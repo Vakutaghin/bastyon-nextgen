@@ -1657,6 +1657,8 @@ export default {
     empty: 'Журнал изменений пока пуст',
   },
   appMsg: {
+    framedNotice: 'Bastyon NextGen не открывается внутри другого сайта.',
+    framedOpen: 'Открыть в новой вкладке',
     time: {
       justNow: 'только что',
       minutesShort: '{n} мин.',

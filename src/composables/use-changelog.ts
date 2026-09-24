@@ -12,7 +12,7 @@ import {
   CURRENT_APP_VERSION,
   getAllChangelogEntries,
   getChangelogText,
-  getLatestChangelogEntry,
+  getChangelogEntryForVersion,
   type ChangelogEntry,
 } from '@/helpers/changelog/changelog-loader'
 import { renderMarkdown } from '@/helpers/changelog/markdown'
@@ -39,8 +39,10 @@ export function useChangelog() {
 
   const entries = computed<RenderedChangelogEntry[]>(() => renderEntries(language.value))
 
+  // Модалка «Что нового» показывает changelog ТЕКУЩЕЙ версии приложения, а не
+  // самой свежей папки: заранее подготовленный релиз иначе всплывал бы у всех (N34).
   const latest = computed<RenderedChangelogEntry | undefined>(() => {
-    const e = getLatestChangelogEntry()
+    const e = getChangelogEntryForVersion()
     if (!e) return undefined
     return {
       ...e,
@@ -72,7 +74,7 @@ export function useWhatsNewGate() {
       console.error('Failed to load last-seen changelog version:', e)
     } finally {
       ready.value = true
-      const latest = getLatestChangelogEntry()
+      const latest = getChangelogEntryForVersion()
       if (latest && latest.version !== lastSeenVersion.value) {
         open.value = true
       }
@@ -81,7 +83,7 @@ export function useWhatsNewGate() {
 
   async function dismiss(): Promise<void> {
     open.value = false
-    const latest = getLatestChangelogEntry()
+    const latest = getChangelogEntryForVersion()
     if (!latest) return
     lastSeenVersion.value = latest.version
     try {

@@ -57,7 +57,9 @@
           :message="t('explorerPage.addressTxError')"
           @retry="loadTxPage(true)"
         />
-        <SC_Placeholder v-else-if="!txList.length">{{ t('explorerPage.addressTxEmpty') }}</SC_Placeholder>
+        <SC_Placeholder v-else-if="!txList.length">{{
+          t('explorerPage.addressTxEmpty')
+        }}</SC_Placeholder>
         <div v-else>
           <SC_AddrTxRow v-for="tx in txList" :key="tx.txid">
             <SC_AddrTxTypeBadge>{{ typeLabel(tx.type) }}</SC_AddrTxTypeBadge>
@@ -90,6 +92,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { useAddressInfo } from '@/composables/use-block-explorer-queries'
 import { getByPRC } from '@/helpers/api/request'
+import { nextAddressTxCursor } from '@/helpers/explorer/address-tx-cursor'
 import { getExplorerRpcConfig } from '@/composables/use-explorer-preferred-node'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import type { GetAddressTransactionsResponse } from '@/types/rpc-responses/get-address-transactions'
@@ -153,13 +156,16 @@ useDocumentTitle(() => {
 const { data: infoResp, isLoading: infoLoading } = useAddressInfo(addressRef)
 
 // Кастомная cursor-пагинация: API getaddresstransactions(addr, fromHeight, count)
-// принимает курсор-высоту. Для «загрузить ещё» используем minHeight(текущей страницы)-1.
+// принимает курсор-высоту. Курсор считает общий helper (S66) — включительно,
+// с дедупом по txid, иначе терялся хвост блока на границе страницы.
 const TX_PAGE_SIZE = 25
 const txList = ref<Transaction[]>([])
 const txLoading = ref(false)
 const txError = ref<unknown>(null)
 const hasMoreTx = ref(true)
 let nextCursorHeight = -1
+/** Номер запроса: ответ по прошлому адресу не должен долиться к новому (S65). */
+let txRequestId = 0
 
 async function loadTxPage(reset = false) {
   if (reset) {
@@ -168,41 +174,46 @@ async function loadTxPage(reset = false) {
     hasMoreTx.value = true
   }
   if (!hasMoreTx.value || !addressRef.value) return
+  const requestId = ++txRequestId
+  const requestedAddress = addressRef.value
   txLoading.value = true
   txError.value = null
   try {
     const resp = (await getByPRC(
       {
         method: rpcEndpoints.getAddressTransactions,
-        parameters: [addressRef.value, nextCursorHeight, TX_PAGE_SIZE],
+        parameters: [requestedAddress, nextCursorHeight, TX_PAGE_SIZE],
         options: { auth: false },
       },
       getExplorerRpcConfig()
     )) as GetAddressTransactionsResponse
+
+    // Пока ходили в ноду, пользователь мог открыть другой адрес (S65).
+    if (requestId !== txRequestId || requestedAddress !== addressRef.value) return
+
     const page = resp?.data ?? []
     if (page.length === 0) {
       hasMoreTx.value = false
       return
     }
-    // Дедуп по txid: на границе страниц нода может вернуть одну и ту же tx.
+    // Дедуп по txid: включительный курсор намеренно повторяет граничный блок.
     const seen = new Set(txList.value.map((t) => t.txid))
     const fresh = page.filter((t) => !seen.has(t.txid))
     txList.value = txList.value.concat(fresh)
 
-    // Следующий курсор — минимальная высота на странице, минус 1.
-    const minHeight = page.reduce((m, t) => Math.min(m, t.height), Number.POSITIVE_INFINITY)
-    if (Number.isFinite(minHeight) && minHeight > 0) {
-      nextCursorHeight = minHeight - 1
-    } else {
-      hasMoreTx.value = false
-    }
-
-    // Если меньше PAGE_SIZE — больше точно нет.
-    if (page.length < TX_PAGE_SIZE) hasMoreTx.value = false
+    const cursor = nextAddressTxCursor({
+      heights: page.map((t) => t.height),
+      freshCount: fresh.length,
+      currentCursor: nextCursorHeight,
+      pageSize: TX_PAGE_SIZE,
+    })
+    nextCursorHeight = cursor.nextCursor
+    hasMoreTx.value = cursor.hasMore
   } catch (e) {
+    if (requestId !== txRequestId) return
     txError.value = e
   } finally {
-    txLoading.value = false
+    if (requestId === txRequestId) txLoading.value = false
   }
 }
 

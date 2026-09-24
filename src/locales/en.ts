@@ -1654,6 +1654,8 @@ export default {
     empty: 'No release notes yet',
   },
   appMsg: {
+    framedNotice: 'Bastyon NextGen does not open inside another site.',
+    framedOpen: 'Open in a new tab',
     time: {
       justNow: 'just now',
       minutesShort: '{n} min',

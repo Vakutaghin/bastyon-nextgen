@@ -14,7 +14,7 @@
  */
 
 import { computed, unref, type MaybeRef } from 'vue'
-import { useQuery, type QueryClient } from '@tanstack/vue-query'
+import { keepPreviousData, useQuery, type QueryClient } from '@tanstack/vue-query'
 import type { RouteLocationRaw } from 'vue-router'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -47,7 +47,7 @@ function fetchBlockDetails(hashOrHeight: string) {
       parameters: [hashOrHeight, -1],
       options: { auth: false },
     },
-    getExplorerRpcConfig(),
+    getExplorerRpcConfig()
   ) as Promise<GetCompactBlockResponse>
 }
 
@@ -58,7 +58,7 @@ function fetchTransactionDetails(txid: string) {
       parameters: [[txid]],
       options: { auth: false },
     },
-    getExplorerRpcConfig(),
+    getExplorerRpcConfig()
   ) as Promise<GetTransactionsResponse>
 }
 
@@ -69,7 +69,7 @@ function fetchAddressInfo(address: string) {
       parameters: [address],
       options: { auth: false },
     },
-    getExplorerRpcConfig(),
+    getExplorerRpcConfig()
   ) as Promise<GetAddressInfoResponse>
 }
 
@@ -84,7 +84,7 @@ export function useNodeInfo() {
           parameters: [],
           options: { auth: false },
         },
-        getExplorerRpcConfig(),
+        getExplorerRpcConfig()
       ) as Promise<GetNodeInfoResponse>,
     staleTime: STALE_TIP,
     refetchInterval: 15_000,
@@ -103,7 +103,7 @@ export function useCoinInfo() {
           parameters: [],
           options: { auth: false },
         },
-        getExplorerRpcConfig(),
+        getExplorerRpcConfig()
       ) as Promise<GetCoinInfoResponse>,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
@@ -121,7 +121,7 @@ export function useLastBlocks(count: number = 20) {
           parameters: [count, -1, false],
           options: { auth: false },
         },
-        getExplorerRpcConfig(),
+        getExplorerRpcConfig()
       ) as Promise<GetLastBlocksResponse>,
     staleTime: STALE_TIP,
     refetchInterval: 15_000,
@@ -145,7 +145,7 @@ export function useBlockDetails(hashOrHeight: MaybeRef<string>) {
 export function useBlockTransactions(
   blockHash: MaybeRef<string>,
   offset: MaybeRef<number> = 0,
-  count: MaybeRef<number> = 50,
+  count: MaybeRef<number> = 50
 ) {
   return useQuery<GetBlockTransactionsResponse>({
     queryKey: ['explorer', 'block-transactions', blockHash, offset, count] as const,
@@ -156,11 +156,14 @@ export function useBlockTransactions(
           parameters: [unref(blockHash), unref(offset), unref(count)],
           options: { auth: false },
         },
-        getExplorerRpcConfig(),
+        getExplorerRpcConfig()
       ) as Promise<GetBlockTransactionsResponse>,
     enabled: computed(() => unref(blockHash).length > 0),
     staleTime: STALE_HISTORICAL,
     refetchOnWindowFocus: false,
+    // «Загрузить ещё» меняет count, то есть queryKey — без этого список
+    // схлопывался в скелетон на каждой подгрузке (S69).
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -190,7 +193,7 @@ export function useAddressInfo(address: MaybeRef<string>) {
 export function useAddressTransactions(
   address: MaybeRef<string>,
   fromHeight: MaybeRef<number> = -1,
-  count: MaybeRef<number> = 25,
+  count: MaybeRef<number> = 25
 ) {
   return useQuery<GetAddressTransactionsResponse>({
     queryKey: ['explorer', 'address-transactions', address, fromHeight, count] as const,
@@ -201,7 +204,7 @@ export function useAddressTransactions(
           parameters: [unref(address), unref(fromHeight), unref(count)],
           options: { auth: false },
         },
-        getExplorerRpcConfig(),
+        getExplorerRpcConfig()
       ) as Promise<GetAddressTransactionsResponse>,
     enabled: computed(() => unref(address).length > 0),
     staleTime: STALE_FRESH,
@@ -224,7 +227,7 @@ export function useStatsByHours(hours: MaybeRef<number> = 48) {
           parameters: [9_999_999, unref(hours)],
           options: { auth: false },
         },
-        getExplorerRpcConfig(),
+        getExplorerRpcConfig()
       ) as Promise<GetStatisticResponse>,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
@@ -242,7 +245,7 @@ export function useStatsByDays(days: MaybeRef<number> = 30) {
           parameters: [9_999_999, unref(days)],
           options: { auth: false },
         },
-        getExplorerRpcConfig(),
+        getExplorerRpcConfig()
       ) as Promise<GetStatisticResponse>,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
@@ -263,7 +266,7 @@ export function usePeerInfo() {
           parameters: [],
           options: { auth: false },
         },
-        getExplorerRpcConfig(),
+        getExplorerRpcConfig()
       ) as Promise<GetPeerInfoResponse>,
     staleTime: STALE_FRESH,
     refetchInterval: 30_000,
@@ -282,7 +285,7 @@ export function useSearchByHash(query: MaybeRef<string>, enabled: MaybeRef<boole
           parameters: [unref(query)],
           options: { auth: false },
         },
-        getExplorerRpcConfig(),
+        getExplorerRpcConfig()
       ) as Promise<SearchByHashResponse>,
     enabled: computed(() => unref(enabled) && unref(query).length > 0),
     staleTime: 60_000,
@@ -298,7 +301,7 @@ export function useSearchByHash(query: MaybeRef<string>, enabled: MaybeRef<boole
  */
 export function prefetchExplorerTarget(
   queryClient: QueryClient,
-  to: RouteLocationRaw | undefined,
+  to: RouteLocationRaw | undefined
 ): void {
   if (!to || typeof to === 'string' || !('name' in to)) return
   const params = (to.params ?? {}) as Record<string, unknown>

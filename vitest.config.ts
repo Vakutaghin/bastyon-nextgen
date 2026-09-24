@@ -1,8 +1,18 @@
 import { defineConfig } from 'vitest/config'
 import path from 'path'
+import { readFileSync } from 'node:fs'
 import vue from '@vitejs/plugin-vue'
 
+// Vite подставляет версию из package.json через define; в vitest нужен тот же
+// глобал, иначе модули, читающие `__APP_VERSION__` (changelog), падают.
+const appVersion = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8')
+).version
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   plugins: [
     vue({
       script: {

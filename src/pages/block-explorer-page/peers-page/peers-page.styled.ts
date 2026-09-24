@@ -214,3 +214,14 @@ export const SC_Placeholder = styled(SC_PlaceholderBase)`
 export const SC_PlaceholderError = styled(SC_Placeholder)`
   color: ${COLORS.DANGER};
 `
+
+/** Второстепенная ячейка таблицы пиров (ping/sync/возраст). */
+export const SC_PeerMetaCell = styled.div`
+  font-size: 12px;
+  color: ${COLORS.TEXT_SECONDARY};
+`
+
+/** Прочерк «нет данных» в карточке ноды. */
+export const SC_NodeMetricEmpty = styled.span`
+  color: ${COLORS.DANGER};
+`

@@ -21,6 +21,9 @@ export interface ChangelogEntry {
   byLanguage: Partial<Record<AppLanguage, string>>
 }
 
+/** Текущая версия приложения (инжектится Vite из package.json). */
+export const CURRENT_APP_VERSION: string = __APP_VERSION__
+
 const rawModules = import.meta.glob('/changelogs/v*/*.desc.md', {
   eager: true,
   query: '?raw',
@@ -78,20 +81,31 @@ export function getLatestChangelogEntry(): ChangelogEntry | undefined {
 }
 
 /**
+ * Запись, соответствующая версии приложения (N34).
+ *
+ * «Что нового» раньше ключевалось на САМОЙ СВЕЖЕЙ папке `changelogs/`, а не на
+ * версии сборки: подготовленный заранее changelog следующего релиза всплывал у
+ * пользователей текущей версии. Берём точное совпадение, иначе — ближайшую
+ * версию не новее текущей.
+ */
+export function getChangelogEntryForVersion(
+  version: string = CURRENT_APP_VERSION
+): ChangelogEntry | undefined {
+  const exact = ENTRIES.find((e) => e.version === version)
+  if (exact) return exact
+  // ENTRIES отсортированы по убыванию — первая подходящая и есть ближайшая.
+  return ENTRIES.find((e) => compareSemver(e.version, version) <= 0)
+}
+
+/**
  * Возвращает markdown для версии в нужном языке. Если для запрошенного языка
  * перевода нет — берём fallback (en), затем любой доступный.
  */
-export function getChangelogText(
-  entry: ChangelogEntry,
-  language: AppLanguage,
-): string {
+export function getChangelogText(entry: ChangelogEntry, language: AppLanguage): string {
   return (
-    entry.byLanguage[language]
-    ?? entry.byLanguage[FALLBACK_LANGUAGE]
-    ?? Object.values(entry.byLanguage)[0]
-    ?? ''
+    entry.byLanguage[language] ??
+    entry.byLanguage[FALLBACK_LANGUAGE] ??
+    Object.values(entry.byLanguage)[0] ??
+    ''
   )
 }
-
-/** Текущая версия приложения (инжектится Vite из package.json). */
-export const CURRENT_APP_VERSION: string = __APP_VERSION__

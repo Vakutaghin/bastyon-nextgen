@@ -1,9 +1,10 @@
 <template>
-  <SC_EmbedState v-if="isLoading">{{ t('postPage.loading') }}</SC_EmbedState>
+  <SC_EmbedState v-if="isInvalidTxid">{{ t('postPage.notFound') }}</SC_EmbedState>
+  <SC_EmbedState v-else-if="isLoading">{{ t('postPage.loading') }}</SC_EmbedState>
   <SC_EmbedState v-else-if="isMissing">{{ t('postPage.notFound') }}</SC_EmbedState>
   <SC_EmbedState v-else-if="isError">{{ t('postPage.error') }}</SC_EmbedState>
 
-  <SC_Embed v-else-if="post">
+  <SC_Embed v-else-if="post" @click="onEmbedClick">
     <SC_EmbedHeader :href="profileUrl" target="_top" rel="noopener">
       <SC_EmbedAvatar>
         <img v-if="post.author?.avatar" :src="post.author.avatar" :alt="authorName" />
@@ -39,11 +40,22 @@
       </SC_EmbedCta>
     </SC_EmbedFooter>
   </SC_Embed>
+
+  <!-- Галерея внутри embed: без неё клик по картинке ничего не делал (N33). -->
+  <ImageGallery
+    v-if="post?.images?.length"
+    v-model:visible="isGalleryOpen"
+    :images="post.images"
+    :initial-index="galleryIndex"
+    @hide="closeGallery"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { ImageGallery } from '@/components/image-gallery'
+import { useModalStore } from '@/stores/modal-store'
 import { useI18n } from 'vue-i18n'
 import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
 import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
@@ -66,11 +78,26 @@ import {
 
 const route = useRoute()
 const { t, locale } = useI18n()
+const modalStore = useModalStore()
 
 const txid = computed<string>(() =>
   typeof route.params.txid === 'string' ? route.params.txid : ''
 )
 const { post, isLoading, isMissing, isError } = usePostByTxid(txid)
+
+/** Битый txid: запрос даже не стартует, и раньше это был пустой iframe (N33). */
+const isInvalidTxid = computed<boolean>(() => !/^[a-f0-9]{64}$/i.test(txid.value))
+
+const isGalleryOpen = computed<boolean>({
+  get: () => modalStore.imageGallery.isOpen,
+  set: (value) => {
+    if (!value) modalStore.closeImageGallery()
+  },
+})
+const galleryIndex = computed<number>(() => modalStore.imageGallery.index)
+function closeGallery(): void {
+  modalStore.closeImageGallery()
+}
 
 // og:url и ссылки на профиль в embed читают внешние потребители (S20).
 const origin = publicShareOrigin()
@@ -95,6 +122,21 @@ const postUrl = computed<string>(() => {
 // post-mapper уже декодирует заголовок; повторный safeDecode — для старых
 // дважды кодированных записей (идемпотентен на чистом тексте).
 const decodedTitle = computed<string>(() => safeDecode(post.value?.title || ''))
+
+/**
+ * Клик по внутренней ссылке внутри embed (меншен, тег) открывал полное
+ * приложение ПРЯМО В IFRAME на чужом сайте — с восстановленной сессией
+ * посетителя (S67). Уводим такие переходы в верхнее окно, на публичный домен.
+ */
+function onEmbedClick(event: MouseEvent): void {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey) return
+  const link = (event.target as HTMLElement | null)?.closest('a') as HTMLAnchorElement | null
+  if (!link) return
+  const href = link.getAttribute('href') ?? ''
+  if (!href.startsWith('/')) return
+  event.preventDefault()
+  window.open(`${origin}${href}`, '_top', 'noopener')
+}
 
 const formattedTime = computed<string>(() => {
   const ts = Number(post.value?.time)
