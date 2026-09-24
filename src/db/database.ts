@@ -1,11 +1,12 @@
 import Dexie, { Table } from 'dexie'
 import type {
-  TranscodedVideo,
-  PendingPostRating,
   AppSettings,
-  FavoritePost,
-  StoredNotification,
   DecryptedMessage,
+  FavoritePost,
+  PendingPostRating,
+  StoredNotification,
+  TranscodedVideo,
+  VideoProgress,
 } from './types'
 
 /**
@@ -19,6 +20,7 @@ export class AppDatabase extends Dexie {
   favorites!: Table<FavoritePost, [string, string]>
   notifications!: Table<StoredNotification, [string, string]>
   decryptedMessages!: Table<DecryptedMessage, [string, string]>
+  videoProgress!: Table<VideoProgress, string>
 
   constructor() {
     super('BastyonDB')
@@ -64,6 +66,18 @@ export class AppDatabase extends Dexie {
             if (typeof row.address !== 'string') row.address = ''
           })
       )
+
+    // v4: позиция просмотра видео. Новая таблица, старые данные не трогаем —
+    // Dexie доводит схему сам, апгрейд не нужен.
+    this.version(4).stores({
+      transcodedVideos: 'id, originalFileName, resolution, createdAt',
+      postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
+      settings: 'key, createdAt',
+      favorites: '[address+id], address, addedAt',
+      notifications: '[address+id], address, nblock',
+      decryptedMessages: '[userId+eventId], userId, createdAt',
+      videoProgress: 'id, updatedAt',
+    })
   }
 }
 

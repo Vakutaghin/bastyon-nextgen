@@ -334,6 +334,7 @@ import { useVideoChapters } from './composables/use-video-chapters'
 import { useVideoFullscreen } from './composables/use-video-fullscreen'
 import { useVideoPip } from './composables/use-video-pip'
 import { useVideoHls } from './composables/use-video-hls'
+import { useVideoResume } from './composables/use-video-resume'
 import { useBackgroundPlayback } from './composables/use-background-playback'
 import { useVideoNotifications } from './composables/use-video-notifications'
 import { useVideoThumbnail } from './composables/use-video-thumbnail'
@@ -575,6 +576,9 @@ const videoElementEvents = useVideoElementEvents({
 })
 setupVideoEventListeners = videoElementEvents.setupVideoEventListeners
 setupIntersectionObserver = videoElementEvents.setupIntersectionObserver
+
+// Продолжение просмотра с последней позиции — по самому ролику, не по посту.
+useVideoResume({ videoElement, videoUrl: () => props.videoUrl })
 
 // === Главы (тайм-коды из описания) — в use-video-chapters. ===
 const { chapterMarkers, activeChapter } = useVideoChapters(

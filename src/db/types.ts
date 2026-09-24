@@ -108,3 +108,17 @@ export interface StoredNotification {
   mesType?: string
   upvoteVal?: number
 }
+
+/**
+ * Позиция просмотра видео. Ключ — стабильная часть ссылки (хост + путь),
+ * см. `helpers/common/video-progress`. Не per-account: это удобство плеера на
+ * устройстве, а не данные аккаунта.
+ */
+export interface VideoProgress {
+  id: string
+  /** Секунды от начала. */
+  position: number
+  /** Длительность на момент сохранения — чтобы не продолжать чужой/обрезанный ролик. */
+  duration: number
+  updatedAt: number
+}
