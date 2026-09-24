@@ -50,7 +50,9 @@ function mxEvent(type: string, over: Record<string, unknown> = {}) {
 
 const room = { roomId: ROOM, getMember: (id: string) => ({ name: `name-of-${id}` }) }
 
-function setup(activeChatId: string | null) {
+function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}) {
+  // Виджет по умолчанию открыт и на экране — read-marker шлём только тогда (V30).
+  const onScreen = options.onScreen ?? true
   const chatStore = {
     messages: {} as Record<string, { id: string }[]>,
     currentUser: { id: 'me', name: 'me' },
@@ -62,6 +64,7 @@ function setup(activeChatId: string | null) {
     syncState: 'STOPPED',
     syncError: null as string | null,
     dialogsLoadedOnce: false,
+    isChatOnScreen: (chatId: string | null) => onScreen && !!chatId && chatId === activeChatId,
   }
   const loadDialogs = vi.fn(async () => {})
   const scheduleLoadDialogs = vi.fn()
@@ -172,5 +175,54 @@ describe('registerMatrixListeners — sync', () => {
     await Promise.resolve()
     await Promise.resolve()
     expect(uiStore.dialogsLoadedOnce).toBe(true)
+  })
+})
+
+describe('Room.timeline — свёрнутый виджет (V30)', () => {
+  it('не шлёт read-marker, если чат выбран, но окно свёрнуто', async () => {
+    const { chatStore } = setup(ROOM, { onScreen: false })
+    const ev = mxEvent('m.room.message', { id: '$ev-hidden' })
+
+    await handlers['Room.timeline']!(ev, room, false)
+
+    // Сообщение в ленту всё равно попадает (чат выбран), но «прочитано»
+    // собеседнику не уходит — окно свёрнуто.
+    expect(chatStore.messages[ROOM]?.map((m) => m.id)).toEqual(['$ev-hidden'])
+    expect(client.setRoomReadMarkers).not.toHaveBeenCalled()
+  })
+
+  it('свёрнутое окно ведёт себя как неактивный чат: звук и уведомление приходят', async () => {
+    setup(ROOM, { onScreen: false })
+
+    await handlers['Room.timeline']!(
+      mxEvent('m.room.message', { id: '$ev-hidden-2', sender: '@peer:host' }),
+      room,
+      false
+    )
+
+    expect(audioPlay).toHaveBeenCalledTimes(1)
+    expect(notifyMessage).toHaveBeenCalled()
+  })
+})
+
+describe('sync — баннер ошибки (S38)', () => {
+  it('гаснет после восстановления связи, а не только на PREPARED', async () => {
+    const { uiStore } = setup(null)
+
+    handlers['sync']!('ERROR')
+    expect(uiStore.syncError).toBe('appMsg.messenger.syncError')
+
+    // Повторный PREPARED за жизнь клиента не приходит — связь восстанавливается
+    // переходом в SYNCING.
+    handlers['sync']!('SYNCING')
+    expect(uiStore.syncError).toBeNull()
+    expect(uiStore.syncState).toBe('SYNCING')
+  })
+
+  it('CATCHUP тоже снимает баннер', () => {
+    const { uiStore } = setup(null)
+    handlers['sync']!('ERROR')
+    handlers['sync']!('CATCHUP')
+    expect(uiStore.syncError).toBeNull()
   })
 })

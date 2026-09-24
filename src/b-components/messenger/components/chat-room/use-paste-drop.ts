@@ -76,6 +76,7 @@ export const usePasteDrop = (options: UsePasteDropOptions) => {
     dropTarget.removeEventListener('dragover', handleDragOver)
     dropTarget.removeEventListener('dragleave', handleDragLeave)
     dropTarget.removeEventListener('drop', handleDrop)
+    dropTarget.removeEventListener('paste', handlePaste)
     dropTarget = null
   }
 
@@ -87,6 +88,11 @@ export const usePasteDrop = (options: UsePasteDropOptions) => {
     el.addEventListener('dragover', handleDragOver)
     el.addEventListener('dragleave', handleDragLeave)
     el.addEventListener('drop', handleDrop)
+    // paste — только на поле чата. Глобальный слушатель на document жил, пока
+    // виджет просто спрятан (он скрывается opacity, ChatRoom остаётся
+    // смонтированным), и Ctrl+V скриншота в композер поста молча улетал
+    // собеседнику (V29).
+    el.addEventListener('paste', handlePaste)
   }
 
   /**
@@ -101,7 +107,8 @@ export const usePasteDrop = (options: UsePasteDropOptions) => {
   }
 
   /**
-   * Слушает изменения ref-элемента и переподписывается. Также вешает глобальный paste.
+   * Слушает изменения ref-элемента и переподписывается. Все обработчики —
+   * включая paste — живут на самом элементе, а не на document (V29).
    */
   const bindToRef = <T>(elementRef: Ref<T>) => {
     watch(
@@ -113,11 +120,7 @@ export const usePasteDrop = (options: UsePasteDropOptions) => {
       },
       { immediate: true, flush: 'post' }
     )
-    document.addEventListener('paste', handlePaste)
-    onUnmounted(() => {
-      detach()
-      document.removeEventListener('paste', handlePaste)
-    })
+    onUnmounted(detach)
   }
 
   return {

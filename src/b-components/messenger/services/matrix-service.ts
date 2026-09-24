@@ -150,6 +150,13 @@ export class MatrixService {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- см. eventQueue: листенер event-bus принимает произвольные сигнатуры matrix-событий
   public on(event: string, listener: (...args: any[]) => void) {
+    // Один и тот же листенер не подписываем дважды: при неудачном логине
+    // клиента ещё нет, очередь копилась, и после удачного входа каждое
+    // событие обрабатывалось по разу на каждую попытку — двойной звук и
+    // двойной read-marker (S37).
+    const already = this.eventQueue.some((q) => q.event === event && q.listener === listener)
+    if (already) return
+
     this.eventQueue.push({ event, listener })
 
     if (this.client) {

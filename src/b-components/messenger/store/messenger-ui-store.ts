@@ -44,6 +44,30 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     activeChatId.value = id
   }
 
+  /**
+   * Закрыть виджет. Активный чат сбрасываем: свёрнутое окно продолжало
+   * считаться «открытым чатом» — сообщения приходили без звука и бейджа, зато
+   * серверу уходил read-marker, и собеседник видел «прочитано» (V30).
+   */
+  const closeWidget = (): void => {
+    isOpen.value = false
+    activeChatId.value = null
+    inviteViewActive.value = false
+  }
+
+  /**
+   * Виден ли чат на экране прямо сейчас: виджет открыт и вкладка не в фоне.
+   * От этого зависят read-markers, звук и уведомления (V30).
+   */
+  const isChatOnScreen = (chatId: string | null): boolean => {
+    // Полноэкранный режим специально гасит `isOpen` (два окна мессенджера
+    // одновременно не показываем), но чат при этом виден.
+    if (!isOpen.value && !isFullScreen.value) return false
+    if (!chatId || activeChatId.value !== chatId) return false
+    if (typeof document !== 'undefined' && document.hidden) return false
+    return true
+  }
+
   /** Переключиться на чат: сбросить invite и установить активный чат */
   const switchToChat = (chatId: string): void => {
     inviteViewActive.value = false
@@ -123,6 +147,8 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     totalUnreadCount,
     setDialogs,
     setActiveChatId,
+    closeWidget,
+    isChatOnScreen,
     switchToChat,
     showInvite,
     clearInviteTarget,

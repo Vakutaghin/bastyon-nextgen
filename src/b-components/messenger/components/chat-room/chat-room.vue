@@ -420,9 +420,11 @@ const {
   handleTouchMove,
   handleTouchEnd,
 } = useVoiceRecording({
-  onAudioRecorded: async (blob, duration) => {
-    if (store.activeChatId) {
-      await store.sendAudio(store.activeChatId, blob, { duration, name: 'voice-message' })
+  currentChatId: () => store.activeChatId,
+  onAudioRecorded: async (blob, duration, chatId) => {
+    // Отправляем ИМЕННО в тот чат, где записывали (V28).
+    if (chatId) {
+      await store.sendAudio(chatId, blob, { duration, name: 'voice-message' })
     }
   },
 })

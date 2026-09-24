@@ -29,7 +29,9 @@
         "
       >
         <SC_MessengerWrapperSpinner />
-        <SC_MessengerWrapperLoaderText> {{ t('messenger.loadingDialogs') }} </SC_MessengerWrapperLoaderText>
+        <SC_MessengerWrapperLoaderText>
+          {{ t('messenger.loadingDialogs') }}
+        </SC_MessengerWrapperLoaderText>
       </SC_MessengerWrapperLoader>
 
       <ChatRoom
@@ -170,12 +172,14 @@ function onChatStarted(roomId: string): void {
 function closeFullScreen(): void {
   store.isFullScreen = false
   store.clearInviteTarget()
-  store.isOpen = false
+  // closeWidget сбрасывает и активный чат — иначе скрытое окно продолжает
+  // слать read-markers за пользователя (V30).
+  store.closeWidget()
 }
 
 function closeWidget(): void {
   store.clearInviteTarget()
-  store.isOpen = false
+  store.closeWidget()
 }
 
 function handleLoadMore(): void {
@@ -242,7 +246,7 @@ function handleKeydown(e: KeyboardEvent): void {
     store.activeChatId = null
     return
   }
-  store.isOpen = false
+  store.closeWidget()
 }
 
 onMounted(async () => {

@@ -12,6 +12,8 @@ import {
 } from '../../services/group-encryption'
 import { getAddressFromMatrixId, getMatrixId, isTetatetchat } from '../../helpers'
 import { getPartnerMatrixId } from '../../room-helpers'
+import type { Message } from '../../types'
+import { makeTempId, pushOptimistic, removeOptimistic } from './media-sending-helpers'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
 import type { SendPkoinPayload } from '../../services/matrix-service/media-sender'
@@ -174,11 +176,54 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     return sendDirectEncryptedText(chatId, room, text, extraContent)
   }
 
+  /**
+   * Отправка текста с локальным эхо. Поле ввода очищается сразу, поэтому без
+   * эхо неудачная отправка просто теряла текст: статус всегда был `sent`,
+   * ошибка уходила в консоль, повторить было нечем (S35).
+   */
   const sendMessage = async (chatId: string, text: string) => {
+    const tempId = makeTempId()
+    const optimistic: Message = {
+      id: tempId,
+      chatId,
+      senderId: ctx.currentUser.value.id,
+      senderName: ctx.currentUser.value.name,
+      text,
+      type: 'text',
+      rawContent: null,
+      timestamp: Date.now(),
+      read: true,
+      status: 'sending',
+    }
+    pushOptimistic(messages, chatId, optimistic)
+
     try {
       await sendTextContent(chatId, text)
+      // Реальное событие придёт по таймлайну — эхо снимаем.
+      removeOptimistic(messages, chatId, tempId)
     } catch (e) {
       console.error('[ChatStore] Ошибка отправки сообщения:', e)
+      const failed = messages[chatId]?.find((m) => m.id === tempId)
+      if (failed) failed.status = 'failed'
+    }
+  }
+
+  /**
+   * Повторная отправка сообщения, которое не ушло. Текст берём из самого
+   * неудавшегося эхо, так что второй транзакции/дубля не возникает (S35).
+   */
+  const retryMessage = async (chatId: string, messageId: string) => {
+    const list = messages[chatId]
+    const failed = list?.find((m) => m.id === messageId)
+    if (!failed || failed.status !== 'failed' || failed.type !== 'text') return
+    failed.status = 'sending'
+    try {
+      await sendTextContent(chatId, failed.text)
+      removeOptimistic(messages, chatId, messageId)
+    } catch (e) {
+      console.error('[ChatStore] Повтор отправки не удался:', e)
+      const again = messages[chatId]?.find((m) => m.id === messageId)
+      if (again) again.status = 'failed'
     }
   }
 
@@ -335,6 +380,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     getDirectPartnerAddress,
     sendTextContent,
     sendMessage,
+    retryMessage,
     replyToMessage,
     deleteMessage,
     sendReaction,

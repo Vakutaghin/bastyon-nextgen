@@ -52,6 +52,18 @@ export function useMessageLoading(
         const timelineEvents = getRoomTimelineEvents(room)
         const mapped = await Promise.all(timelineEvents.map((e) => mapEventToMessage(e)))
         const list = mapped.filter((m): m is Message => Boolean(m))
+
+        // Пока грузилась история, по WS могло прийти новое сообщение (и на него
+        // уже ушёл read-receipt). Голое присваивание снимка затирало его —
+        // сообщение пропадало из ленты до перезахода в чат (S36). Поэтому
+        // снимок сливаем с тем, что успело появиться, по id.
+        const arrivedWhileLoading = messages[chatId] ?? []
+        const knownIds = new Set(list.map((m) => m.id))
+        const extra = arrivedWhileLoading.filter((m) => !knownIds.has(m.id))
+        if (extra.length > 0) {
+          list.push(...extra)
+          list.sort((a, b) => a.timestamp - b.timestamp)
+        }
         messages[chatId] = list
         const client = matrixService.getClient()
         if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')

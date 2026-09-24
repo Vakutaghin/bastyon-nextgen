@@ -83,11 +83,11 @@ export function registerMatrixListeners(
 
           const senderId = getEventSender(event)
           const isRecent = Date.now() - getEventTs(event) < SOUND_MAX_AGE
-          if (
-            senderId !== chatStore.currentUser.id &&
-            uiStore.activeChatId !== roomId &&
-            isRecent
-          ) {
+          // «Чат открыт» = виджет виден и это его комната. Свёрнутое окно с
+          // выбранным чатом раньше считалось открытым: ни звука, ни бейджа, но
+          // серверу уходило «прочитано» (V30).
+          const onScreen = uiStore.isChatOnScreen(roomId)
+          if (senderId !== chatStore.currentUser.id && !onScreen && isRecent) {
             try {
               new Audio(glassSound).play().catch(() => {})
             } catch {
@@ -121,7 +121,7 @@ export function registerMatrixListeners(
             try {
               const client = matrixService.getClient()
               const evId = typeof event.getId === 'function' ? event.getId() : event.event_id
-              if (client && typeof evId === 'string' && evId.startsWith('$')) {
+              if (onScreen && client && typeof evId === 'string' && evId.startsWith('$')) {
                 if (typeof client.setRoomReadMarkers === 'function')
                   await client.setRoomReadMarkers(room.roomId, evId, event)
                 else if (typeof client.sendReadReceipt === 'function')
@@ -142,9 +142,17 @@ export function registerMatrixListeners(
 
   matrixService.on('sync', (state: string) => {
     uiStore.syncState = state
-    if (state === 'ERROR') uiStore.syncError = t('appMsg.messenger.syncError')
-    else if (state === 'PREPARED') {
+    if (state === 'ERROR') {
+      uiStore.syncError = t('appMsg.messenger.syncError')
+      return
+    }
+    // Баннер «Ошибка синхронизации» раньше гас только на 'PREPARED', а он
+    // бывает раз за жизнь клиента — после восстановления связи (SYNCING)
+    // надпись висела навсегда (S38).
+    if (state === 'PREPARED' || state === 'SYNCING' || state === 'CATCHUP') {
       uiStore.syncError = null
+    }
+    if (state === 'PREPARED') {
       loadDialogs(true).then(() => {
         uiStore.dialogsLoadedOnce = true
       })

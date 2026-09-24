@@ -549,6 +549,8 @@ export default {
     explorerOpenAddress: 'Открыть адрес',
   },
   messenger: {
+    notSent: 'Не отправлено',
+    retrySend: 'Повторить',
     messages: 'Сообщения',
     chat: 'Чат',
     newChat: 'Новый чат',
@@ -1713,6 +1715,7 @@ export default {
       },
     },
     messenger: {
+      loginFailed: 'Не удалось войти в мессенджер. Проверьте связь и попробуйте открыть его снова.',
       me: 'Я',
       you: 'Вы',
       chat: 'Чат',

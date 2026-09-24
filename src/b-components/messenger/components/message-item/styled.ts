@@ -236,3 +236,28 @@ export const SC_ReplyQuoteText = styled.div`
   text-overflow: ellipsis;
   max-width: 240px;
 `
+
+/** Плашка «не отправлено» под сообщением с кнопкой повтора (S35). */
+export const SC_SendFailed = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-danger);
+`
+
+export const SC_RetryButton = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-danger);
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`

@@ -544,6 +544,8 @@ export default {
     explorerOpenAddress: 'Open address',
   },
   messenger: {
+    notSent: 'Not sent',
+    retrySend: 'Retry',
     messages: 'Messages',
     chat: 'Chat',
     newChat: 'New chat',
@@ -1713,6 +1715,7 @@ export default {
       },
     },
     messenger: {
+      loginFailed: 'Could not sign in to the messenger. Check the connection and open it again.',
       me: 'Me',
       you: 'You',
       chat: 'Chat',

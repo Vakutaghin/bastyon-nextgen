@@ -32,8 +32,14 @@ export interface VoiceRecording {
 }
 
 export interface VoiceRecordingOptions {
-  /** Куда отдать записанный blob после mr.stop(). Длительность — в секундах. */
-  onAudioRecorded: (blob: Blob, durationSec: number) => Promise<void> | void
+  /**
+   * Куда отдать записанный blob после mr.stop(). Длительность — в секундах,
+   * `chatId` — тот чат, в котором запись НАЧАЛАСЬ: пока писали, пользователь
+   * мог переключиться, и голосовое для A уходило B (V28).
+   */
+  onAudioRecorded: (blob: Blob, durationSec: number, chatId: string | null) => Promise<void> | void
+  /** Чат, в котором идёт запись — снимается в момент старта. */
+  currentChatId?: () => string | null
 }
 
 function pickSupportedType(): string | undefined {
@@ -60,6 +66,8 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
   const activeStream = ref<MediaStream | null>(null)
   const recordedChunks: BlobPart[] = []
   const recordStartAt = ref(0)
+  /** Чат, в котором началась запись (V28). */
+  const recordingChatId = ref<string | null>(null)
   const touchStartX = ref(0)
   const touchStartY = ref(0)
 
@@ -68,6 +76,9 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
 
     isLocked.value = false
     isCancelling.value = false
+    // Чат фиксируем на старте: `onstop` срабатывает позже, и читать активный
+    // чат оттуда нельзя — он мог смениться (V28).
+    recordingChatId.value = opts.currentChatId?.() ?? null
     recordingDuration.value = '00:00'
     recordedChunks.length = 0
 
@@ -106,7 +117,7 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
           type: options?.mimeType || 'audio/webm',
         })
         const durationSec = (Date.now() - recordStartAt.value) / 1000
-        await opts.onAudioRecorded(blob, durationSec)
+        await opts.onAudioRecorded(blob, durationSec, recordingChatId.value)
         try {
           stream.getTracks().forEach((t) => t.stop())
         } catch {
@@ -169,6 +180,9 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
     }
     try {
       if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
+        // Размонтирование — это не «отправить»: недописанное голосовое
+        // отменяем, иначе оно уходило в чат, который открыли следом (V28).
+        isCancelling.value = true
         mediaRecorder.value.stop()
       }
     } catch {

@@ -71,6 +71,8 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     loadMessages: loading.loadMessages,
     loadMoreMessages: loading.loadMoreMessages,
     sendMessage: sending.sendMessage,
+    /** Повтор неудавшейся отправки текста (S35). */
+    retryMessage: sending.retryMessage,
     // Throwing-вариант (в отличие от sendMessage, который глотает ошибки) —
     // для вызывающих, которым нужен результат/ошибка (напр. mini-app chat action).
     sendTextContent: sending.sendTextContent,

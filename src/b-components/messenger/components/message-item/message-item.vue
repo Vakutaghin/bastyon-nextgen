@@ -50,6 +50,14 @@
         <LinkPreview v-if="previewUrl" :url="previewUrl" />
       </div>
 
+      <!-- Не ушло в сеть: текст остаётся на экране с кнопкой повтора (S35). -->
+      <SC_SendFailed v-if="message.status === 'failed'">
+        <span>{{ t('messenger.notSent') }}</span>
+        <SC_RetryButton type="button" @click.stop="onRetry">
+          {{ t('messenger.retrySend') }}
+        </SC_RetryButton>
+      </SC_SendFailed>
+
       <SC_MessageTime>
         {{ formatTime(message.timestamp) }}
         <SC_SeenTick v-if="isSeen" :title="t('messenger.seen')">✓✓</SC_SeenTick>
@@ -144,6 +152,8 @@ import {
   SC_MessageMeta,
   SC_MessageRow,
   SC_MessageTime,
+  SC_SendFailed,
+  SC_RetryButton,
   SC_SeenTick,
   SC_ReactionsRow,
   SC_ReactionPill,
@@ -182,6 +192,11 @@ const { t } = useI18n()
 const isMine = computed<boolean>(
   () => props.message.senderId === 'me' || props.message.senderId === store.currentUser.id
 )
+
+/** Повторная отправка текста, который не ушёл (S35). */
+function onRetry(): void {
+  void store.retryMessage(props.message.chatId, props.message.id)
+}
 
 /** Своё сообщение прочитано собеседником (read-receipt). */
 const isSeen = computed<boolean>(

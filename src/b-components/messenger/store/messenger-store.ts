@@ -9,6 +9,7 @@ import { useAuthStore } from '@/blockchain'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { logger } from '@/services/logger'
+import { t } from '@/i18n'
 
 import { matrixService } from '../services/matrix-service'
 
@@ -133,6 +134,14 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   // --- Инициализация Matrix ---
 
+  /**
+   * Подписки на события Matrix регистрируются ОДИН раз на клиента. Раньше при
+   * каждой неудачной попытке логина `registerMatrixListeners` добавлял новый
+   * комплект в очередь matrixService, и после успешного входа каждое событие
+   * обрабатывалось по разу на попытку: двойной звук, двойной read-marker (S37).
+   */
+  let listenersRegistered = false
+
   const initMatrix = async () => {
     if (!authStore.isUserAuthenticated || !authStore.address || !authStore.keyPair) return
     if (uiStore.isInitInProgress) return
@@ -149,14 +158,23 @@ export const useMessengerStore = defineStore('messenger', () => {
         uiStore.isLoading = true
         try {
           // Подписка на события (Room.timeline / sync) — до login, matrixService
-          // копит подписки до создания клиента.
-          registerMatrixListeners(ctx, { loadDialogs, scheduleLoadDialogs })
+          // копит подписки до создания клиента. Ровно один раз (S37).
+          if (!listenersRegistered) {
+            registerMatrixListeners(ctx, { loadDialogs, scheduleLoadDialogs })
+            listenersRegistered = true
+          }
 
           const success = await matrixService.login(authStore.address, authStore.keyPair)
           if (!success) throw new Error('Matrix login failed')
+          uiStore.syncError = null
           await syncCurrentUser()
         } catch (e) {
           log.error('Ошибка инициализации Matrix:', e)
+          // Провал логина был виден только в консоли — пользователь смотрел на
+          // вечную «Загрузку диалогов» (S37).
+          uiStore.syncState = 'ERROR'
+          uiStore.syncError = t('appMsg.messenger.loginFailed')
+          uiStore.dialogsLoadedOnce = true
         } finally {
           uiStore.isLoading = false
         }
@@ -188,7 +206,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     await chatStore.loadMessages(chatId)
 
     try {
-      const room = matrixService.getRoom(chatId)
+      // Read-marker уходит, только если чат действительно на экране (V30).
+      const room = uiStore.isChatOnScreen(chatId) ? matrixService.getRoom(chatId) : null
       if (room) {
         const events = room.getLiveTimeline().getEvents()
         const lastEvent = [...events].reverse().find((e: MatrixEvent) => e.getId()?.startsWith('$'))
@@ -205,7 +224,13 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   const toggleMessenger = async () => {
-    uiStore.isOpen = !uiStore.isOpen
+    if (uiStore.isOpen) {
+      // Сворачивание — через closeWidget: иначе свёрнутое окно продолжает
+      // держать активный чат и слать read-markers (V30).
+      uiStore.closeWidget()
+      return
+    }
+    uiStore.isOpen = true
     if (uiStore.isOpen) {
       const needDialogs = uiStore.dialogs.length === 0
       if (needDialogs) uiStore.isLoading = true
@@ -349,6 +374,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     // Остановка синхронная (initMatrix сразу после должен увидеть «клиента нет»),
     // отзыв — в фоне.
     matrixService.stop({ revoke: true })
+    // stop() чистит очередь подписок — при следующем входе регистрируем заново.
+    listenersRegistered = false
     uiStore.reset()
     chatStore.reset()
     profileCache.reset()
@@ -420,7 +447,12 @@ export const useMessengerStore = defineStore('messenger', () => {
     openChat,
     toggleMessenger,
     openMessenger,
+    /** Свернуть виджет: сбрасывает активный чат вместе с видимостью (V30). */
+    closeWidget: uiStore.closeWidget,
+    /** Виден ли чат на экране (для read-markers/звука/уведомлений). */
+    isChatOnScreen: uiStore.isChatOnScreen,
     sendMessage: chatStore.sendMessage,
+    retryMessage: chatStore.retryMessage,
     replyToMessage: chatStore.replyToMessage,
     deleteMessage: chatStore.deleteMessage,
     sendReaction: chatStore.sendReaction,
