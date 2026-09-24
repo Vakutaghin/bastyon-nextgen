@@ -21,7 +21,7 @@
       v-for="target in SHARE_TARGETS"
       :key="target.key"
       type="button"
-      @click="openExternal(target)"
+      @click="openShareTarget(target)"
     >
       <SC_ShareIcon :color="target.color">
         <component :is="target.icon" />
@@ -41,6 +41,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { openExternal } from '@/helpers/common/open-external'
 import { useI18n } from 'vue-i18n'
 import { CodeOutlined, CopyOutlined, ShareAltOutlined, FlagOutlined } from '@ant-design/icons-vue'
 import { appToast } from '@/b-components/app-toast'
@@ -102,9 +103,10 @@ async function nativeShare(): Promise<void> {
   }
 }
 
-function openExternal(target: ShareTarget): void {
+function openShareTarget(target: ShareTarget): void {
   const href = target.buildUrl(props.url, props.text)
-  window.open(href, '_blank', 'noopener,noreferrer')
+  // Через общий openExternal: в десктопной сборке window.open — no-op (V40).
+  void openExternal(href)
   emit('done')
 }
 

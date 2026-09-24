@@ -4,6 +4,7 @@
  */
 
 import type { Router } from 'vue-router'
+import { openExternal } from '@/helpers/common/open-external'
 import type { HostContext } from '../host-context'
 
 export interface ContentDeps {
@@ -30,11 +31,9 @@ export function createContentMethods(deps: ContentDeps): ContentMethods {
     },
 
     openExternalLink: async (url) => {
-      // В Tauri/Capacitor желательно открывать в системном браузере, но `window.open`
-      // в обоих окружениях обычно делегируется правильно.
-      if (typeof window !== 'undefined') {
-        window.open(url, '_blank', 'noopener,noreferrer')
-      }
+      // Системный браузер в Tauri, новая вкладка в вебе. Прямой `window.open`
+      // на десктопе не работал вовсе (V40).
+      await openExternal(url)
     },
 
     share: async (data, sharePref = {}) => {

@@ -241,6 +241,9 @@ importers:
       '@tauri-apps/plugin-http':
         specifier: ^2.5.7
         version: 2.5.7
+      '@tauri-apps/plugin-opener':
+        specifier: ^2
+        version: 2.5.5
       '@types/bn.js':
         specifier: ^5.2.0
         version: 5.2.0
@@ -1744,6 +1747,9 @@ packages:
   '@tauri-apps/api@2.10.1':
     resolution: {integrity: sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw==}
 
+  '@tauri-apps/api@2.11.1':
+    resolution: {integrity: sha512-M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA==}
+
   '@tauri-apps/cli-darwin-arm64@2.10.0':
     resolution: {integrity: sha512-avqHD4HRjrMamE/7R/kzJPcAJnZs0IIS+1nkDP5b+TNBn3py7N2aIo9LIpy+VQq0AkN8G5dDpZtOOBkmWt/zjA==}
     engines: {node: '>= 10'}
@@ -1823,6 +1829,9 @@ packages:
 
   '@tauri-apps/plugin-http@2.5.7':
     resolution: {integrity: sha512-+F2lEH/c9b0zSsOXKq+5hZNcd9F4IIKCK1T17RqMwpCmVnx2aoqY8yIBccCd25HTYUb3j6NPVbRax/m00hKG8A==}
+
+  '@tauri-apps/plugin-opener@2.5.5':
+    resolution: {integrity: sha512-xvzGai5aQds8j8R8RsUK/lW6pGG50YgOYIPLzvkqmkwAj7dfySOD7sGtejRzvVdMmv1EQfKVEFh1MvmDp8QR0g==}
 
   '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1':
     resolution: {integrity: sha512-/67zpWDBLV+oYAEL682s1ktXL0HgqX76f6gaVGkGnVZlBbm1zd0v4Bz8MFF2GGhoX9rvfq3KSQHubFHwa6w6/Q==}
@@ -6932,6 +6941,8 @@ snapshots:
 
   '@tauri-apps/api@2.10.1': {}
 
+  '@tauri-apps/api@2.11.1': {}
+
   '@tauri-apps/cli-darwin-arm64@2.10.0':
     optional: true
 
@@ -6990,6 +7001,10 @@ snapshots:
   '@tauri-apps/plugin-http@2.5.7':
     dependencies:
       '@tauri-apps/api': 2.10.1
+
+  '@tauri-apps/plugin-opener@2.5.5':
+    dependencies:
+      '@tauri-apps/api': 2.11.1
 
   '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1':
     dependencies:

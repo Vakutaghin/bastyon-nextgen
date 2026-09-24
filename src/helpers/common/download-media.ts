@@ -4,6 +4,7 @@
 // открываем в новой вкладке, пользователь сохранит вручную.
 
 import { appFetch } from '@/helpers/api/fetch-strategies'
+import { openExternal } from '@/helpers/common/open-external'
 
 /** Имя файла из URL: последний сегмент pathname (без query/hash), иначе дефолт. */
 export function deriveFilename(url: string, fallback = 'download'): string {
@@ -44,8 +45,9 @@ export async function downloadMedia(url: string, filename?: string): Promise<boo
     setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
     return true
   } catch {
-    // CORS/сетевой сбой — открываем в новой вкладке как запасной вариант.
-    window.open(url, '_blank', 'noopener,noreferrer')
+    // CORS/сетевой сбой — открываем снаружи как запасной вариант (в Tauri это
+    // системный браузер: window.open там no-op, V40).
+    void openExternal(url)
     return false
   }
 }

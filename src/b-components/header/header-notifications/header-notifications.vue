@@ -123,6 +123,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, type Component } from 'vue'
+import { openExternal } from '@/helpers/common/open-external'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Dropdown, Badge, Menu } from 'ant-design-vue'
@@ -405,7 +406,8 @@ function openNotificationLink(link: string): void {
       window.location.href = action.href
       break
     case 'new-tab':
-      window.open(action.href, '_blank', 'noopener,noreferrer')
+      // Общий openExternal: в десктопной сборке window.open ничего не делает (V40).
+      void openExternal(action.href)
       break
     case 'router':
       router.push(action.path)

@@ -85,11 +85,15 @@ configureUnlockUi({
   // После подтверждённого сброса (ключ утерян / забыта passphrase) — сразу импорт по 12 словам.
   openImport: () => useModalStore(pinia).openAuthModal('login'),
 })
-if (!isEmbedRoute()) {
+// N7: до `router.isReady()` текущий маршрут — START_LOCATION с пустым meta,
+// поэтому проверка «это embed?» здесь всегда возвращала false и разлок сейфа
+// запускался в том числе на публичной embed-странице. Ждём готовности роутера.
+void router.isReady().then(() => {
+  if (isEmbedRoute()) return
   // Fire-and-forget: модалка (если нужна) появится сразу после mount; restoreSession
   // дедупится тем же мемоизированным промисом (ensureVaultUnlocked) [A5].
   ensureVaultUnlocked().catch(() => {})
-}
+})
 // Подтягиваем сохранённый язык из IndexedDB и применяем к vue-i18n + <html lang>.
 useUIStore(pinia)
   .loadLanguage()

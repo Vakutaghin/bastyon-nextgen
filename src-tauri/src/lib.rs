@@ -640,6 +640,11 @@ async fn transcode_video(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
+    // Внешние ссылки: без opener-плагина `window.open(_, '_blank')` и
+    // `<a target="_blank">` в WKWebView/webkitgtk — no-op (wry возвращает nil,
+    // навигация отменяется). Фронт зовёт его через `helpers/common/open-external`
+    // (V40).
+    .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_http::init())

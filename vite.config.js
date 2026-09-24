@@ -136,8 +136,9 @@ export default defineConfig(({ mode }) => ({
               globIgnores: ['**/pocketnet-bitcoin-*.js', '**/*.wasm'],
               maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
               navigateFallback: '/index.html',
-              // /app/* и /_matrix/* — не SPA, оставляем сети.
-              navigateFallbackDenylist: [/^\/app\//, /^\/_matrix\//, /^\/api\//],
+              // /_matrix/* и /api/* — не SPA, оставляем сети. `/app/:appId` —
+              // обычный маршрут приложения, из denylist убран (N29).
+              navigateFallbackDenylist: [/^\/_matrix\//, /^\/api\//],
               runtimeCaching: [
                 {
                   urlPattern: ({ request }) => request.destination === 'image',

@@ -33,6 +33,9 @@ import { StarExplosion } from '@/b-components/effects/star-explosion'
 import SiteFooter from '@/b-components/site-footer/site-footer.vue'
 import BottomNav from '@/b-components/bottom-nav/bottom-nav.vue'
 import { useUIStore } from '@/stores/ui-store'
+import { classifyContentLink } from '@/helpers/common/content-link'
+import { openExternal } from '@/helpers/common/open-external'
+import { isTauriEnv } from '@/helpers/api/request-tor'
 import { useViewport } from '@/composables/use-viewport'
 import { SC_Application, SC_Camera, SC_Appcnt } from './styled'
 
@@ -40,20 +43,33 @@ const uiStore = useUIStore()
 const router = useRouter()
 const { isMobileOrTablet } = useViewport()
 
-// @-меншены рендерятся как `<a class="mention-link" href="/ник">` внутри v-html
-// (см. text-formatter). Делегируем их клики в router, чтобы шла SPA-навигация,
-// а не полная перезагрузка. Modifier-клик (открыть в новой вкладке) не трогаем.
+// Ссылки внутри v-html (посты, комментарии, сообщения) разбирает
+// `classifyContentLink`: меншен и `bastyon://` уходят в router (N15), внешняя
+// ссылка в десктопной сборке — в системный браузер, потому что там
+// `target="_blank"` не работает (V40). Modifier-клик не трогаем.
 function onDocumentClick(e: MouseEvent): void {
   if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
     return
   }
   const target = e.target as HTMLElement | null
-  const link = target?.closest('a.mention-link') as HTMLAnchorElement | null
+  const link = target?.closest('a') as HTMLAnchorElement | null
   if (!link) return
-  const path = link.getAttribute('href')
-  if (!path || !path.startsWith('/')) return
-  e.preventDefault()
-  void router.push(path)
+
+  const action = classifyContentLink(link.getAttribute('href') ?? '', {
+    className: link.getAttribute('class') ?? '',
+    isTauri: isTauriEnv(),
+    origin: window.location.origin,
+  })
+
+  if (action.kind === 'router') {
+    e.preventDefault()
+    void router.push(action.path)
+    return
+  }
+  if (action.kind === 'external') {
+    e.preventDefault()
+    void openExternal(action.href)
+  }
 }
 
 onMounted(() => {

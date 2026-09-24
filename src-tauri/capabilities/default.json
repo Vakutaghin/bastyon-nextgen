@@ -1,14 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "enables the default permissions; http scope: any https host + local IPFS gateway (V27) — mini-app URLs are filtered client-side (safe-external-url, V25)",
+  "description": "default permissions + set-fullscreen (video player) and opener (external links, V40); http scope: any https host + local IPFS gateway (V27) — mini-app URLs are filtered client-side (safe-external-url, V25). Global shortcuts are registered from Rust, so the webview does not need them (N30)",
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "core:webview:allow-set-webview-zoom",
-    "global-shortcut:allow-is-registered",
-    "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister",
+    "core:window:allow-set-fullscreen",
+    "opener:allow-open-url",
     "dialog:allow-save",
     "dialog:allow-open",
     "dialog:default",
