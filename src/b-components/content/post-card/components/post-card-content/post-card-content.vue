@@ -40,6 +40,7 @@ import { useI18n } from 'vue-i18n'
 import BlockContent from '@/b-components/content/block-content/block-content.vue'
 import { useModalStore } from '@/stores/modal-store'
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
+import { truncateTextKeepingLinks } from '@/helpers/common/truncate-text'
 import { editorjsToHtml } from '@/helpers/content/editorjs-parser'
 import {
   TIMECODE_REGEX,
@@ -141,7 +142,7 @@ const formattedPreview = computed<string>(() => {
   tempDiv.innerHTML = html
   let textContent = tempDiv.textContent || tempDiv.innerText || ''
   if (textContent.length > MAX_PREVIEW_LENGTH) {
-    textContent = textContent.substring(0, MAX_PREVIEW_LENGTH) + '...'
+    textContent = truncateTextKeepingLinks(textContent, MAX_PREVIEW_LENGTH)
     return editorjsToHtml(textContent)
   }
   return html
@@ -168,16 +169,15 @@ const formattedTruncatedText = computed<string>(() => {
       tempDiv.innerHTML = html
       let textContent = tempDiv.textContent || tempDiv.innerText || ''
       if (textContent.length > MAX_PREVIEW_LENGTH) {
-        textContent = textContent.substring(0, MAX_PREVIEW_LENGTH) + '...'
+        textContent = truncateTextKeepingLinks(textContent, MAX_PREVIEW_LENGTH)
         return editorjsToHtml(textContent)
       }
       return html
     }
   }
-  let text = String(props.post.content)
-  if (text.length > props.maxLength) {
-    text = text.substring(0, props.maxLength) + '...'
-  }
+  // Режем так, чтобы граница не пришлась на середину ссылки: иначе обрезанный
+  // кусок уезжал в href и копировался вместо настоящего адреса.
+  let text = truncateTextKeepingLinks(String(props.post.content), props.maxLength)
   text = text.replace(/<br\s*\/?>/gi, '\n')
   const lines = text.split('\n').filter((line) => line.trim() !== '')
   if (lines.length === 0) return ''
