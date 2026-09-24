@@ -10,7 +10,10 @@ export const SC_Header = styled.header`
   height: var(--header-height-total);
   padding-top: var(--safe-top);
   padding-left: var(--safe-left);
-  padding-right: var(--safe-right);
+  /* Хедер fixed: когда полноэкранный оверлей убирает скроллбар, он должен
+     сдвинуться на ту же ширину, иначе содержимое прыгает вправо. Переменную
+     ставит use-page-overlay; вне оверлея она пустая и остаётся один safe-area. */
+  padding-right: calc(var(--safe-right) + var(--overlay-scrollbar-pad, 0px));
   background: ${COLORS.BG_PRIMARY};
   border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
   z-index: 1000;

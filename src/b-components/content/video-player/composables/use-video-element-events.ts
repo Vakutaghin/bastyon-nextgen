@@ -7,6 +7,7 @@
 
 import { onBeforeUnmount, type Ref } from 'vue'
 
+import { isPageOverlaid } from '@/composables/use-page-overlay'
 import { videoPlayerManager } from '../video-player-manager'
 import { VISIBILITY_THRESHOLD } from '../consts'
 import { resolveDomElement, resolveVideoElement } from './utils'
@@ -146,7 +147,11 @@ export function useVideoElementEvents(opts: VideoElementEventsOptions) {
             // Видео ушло с экрана — обычно ставим на паузу. Но если приложение
             // ушло в фон (document.hidden / isInBackground), это «ложный» уход
             // из вьюпорта и плеер должен продолжать играть звук.
-            if (isInBackground.value || document.hidden) return
+            //
+            // Полноэкранный оверлей (мессенджер) — тот же случай: страница под
+            // ним никуда не делась, пользователь её просто закрыл сверху и
+            // ждёт, что ролик продолжит играть, пока он отвечает в чате.
+            if (isInBackground.value || document.hidden || isPageOverlaid.value) return
 
             const video = resolveVideoElement(videoElement)
             if (video && !video.paused) video.pause()

@@ -82,6 +82,7 @@ import MessengerPanel from '../messenger-panel/messenger-panel.vue'
 import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
+import { closePageOverlay, openPageOverlay } from '@/composables/use-page-overlay'
 import {
   SC_MessengerWrapper,
   SC_BackButton,
@@ -194,35 +195,18 @@ function handleSendMessage(text: string): void {
   }
 }
 
-function getScrollbarWidth(): number {
-  return window.innerWidth - document.documentElement.clientWidth
-}
-
 watch(
   () => store.isFullScreen,
   (isFull) => {
-    const scrollbarWidth = getScrollbarWidth()
-    const header = document.querySelector('header') as HTMLElement | null
-
     if (isFull) {
       // Закрываем widget при открытии full-screen, чтобы не было одновременно
       // двух открытых режимов мессенджера.
       store.isOpen = false
-
-      // Блокируем скролл body и компенсируем ширину скроллбара, чтобы layout
-      // не «прыгал» вправо от исчезновения скроллбара.
-      document.body.style.overflow = 'hidden'
-      if (scrollbarWidth > 0) {
-        document.body.style.paddingRight = `${scrollbarWidth}px`
-        if (header) header.style.paddingRight = `${scrollbarWidth}px`
-      }
+      openPageOverlay()
     } else {
       // Сброс активного чата при выходе из full-screen — возвращаемся к списку.
       store.activeChatId = null
-
-      document.body.style.overflow = ''
-      document.body.style.paddingRight = ''
-      if (header) header.style.paddingRight = ''
+      closePageOverlay()
     }
   }
 )
@@ -258,10 +242,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
-  document.body.style.overflow = ''
-  document.body.style.paddingRight = ''
-  const header = document.querySelector('header') as HTMLElement | null
-  if (header) header.style.paddingRight = ''
+  if (store.isFullScreen) closePageOverlay()
 })
 
 const openChat = store.openChat
