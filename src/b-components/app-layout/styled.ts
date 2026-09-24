@@ -22,7 +22,9 @@ export const SC_Appcnt = styled.div`
   /* Когда видна нижняя навигация (моб/планшет) — резервируем под неё место,
      чтобы фиксированный бар (высота 56px + safe-area) не перекрывал контент. */
   &.has-bottom-nav {
-    padding-bottom: calc(56px + var(--safe-bottom));
+    /* Та же переменная, что задаёт высоту самого бара, — чтобы отступ контента
+       и бар не разъезжались. */
+    padding-bottom: var(--bottom-nav-height-total);
   }
 `
 

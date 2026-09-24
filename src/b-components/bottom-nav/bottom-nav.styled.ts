@@ -12,7 +12,10 @@ export const SC_BottomNav = styled.nav`
   z-index: ${Z_INDEX.STICKY};
   display: flex;
   align-items: stretch;
-  height: 56px;
+  /* Высота включает safe-area: при box-sizing: border-box отступ съедал её из
+     тех же 56px, на контент оставалось меньше, и иконки с подписями вылезали
+     поверх ленты. --bottom-nav-height-total = 56px + safe-area. */
+  height: var(--bottom-nav-height-total);
   padding-bottom: var(--safe-bottom);
   background: ${COLORS.BG_PRIMARY};
   border-top: 1px solid ${COLORS.BORDER_LIGHTER};
