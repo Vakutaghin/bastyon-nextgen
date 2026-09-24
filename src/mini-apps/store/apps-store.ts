@@ -252,6 +252,19 @@ export const useAppsStore = defineStore('mini-apps:apps', {
     },
 
     /**
+     * Снимает эфемерную регистрацию каталожного приложения (S48). Вызывается
+     * при закрытии миниаппы: пока запись висит в `installed`, её origin
+     * продолжает резолвиться, и любое окно этого хоста считается «своим».
+     * Built-in и local не трогаем — они установлены осознанно.
+     */
+    dropSession(appId: AppId): void {
+      const app = this.installed[appId]
+      if (!app || app.source !== 'remote-session') return
+      delete this.installed[appId]
+      log.debug('dropped session app', appId)
+    },
+
+    /**
      * Promotes a session-only remote app into persisted local override. UI этого
      * пока не цепляет, но метод готов: подключите кнопку «📌 закрепить» в
      * `mini-app-frame` шапке.

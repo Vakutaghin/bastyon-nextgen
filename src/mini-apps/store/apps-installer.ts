@@ -32,8 +32,11 @@ export async function doInstall(
   if (opts.id && manifest.id !== opts.id) {
     throw new Error(`discrepancy:id (expected ${opts.id}, got ${manifest.id})`)
   }
+  // Свой origin в allowlist всегда: приложение имеет право ходить к своему же
+  // бэкенду, иначе под Tor туннель отрезает его от него (S44).
+  const fetchHosts = [...new Set([...ownFetchHosts(scope), ...manifest.fetchHosts])]
   return {
-    manifest,
+    manifest: { ...manifest, fetchHosts },
     scope,
     icon: getBuiltInIconUrl(scope),
     source: opts.source ?? 'local',
@@ -96,6 +99,23 @@ export function assertInstallIdentity(
   }
 }
 
+/**
+ * Allowlist fetch-tunnel для приложения без загруженного манифеста (S44).
+ *
+ * У built-in и каталожных записей манифеста нет — мы синтезируем его сами,
+ * и поле `fetchHosts` раньше просто отсутствовало: `isAllowedOrigin` падал с
+ * TypeError на `undefined.length`, а под Tor (весь fetch идёт через туннель)
+ * приложение не могло сделать ни одного запроса. Минимально достаточный
+ * allowlist — собственные origin'ы приложения: туда iframe и так ходит
+ * напрямую, когда туннель не нужен.
+ */
+export function ownFetchHosts(scope: string, tscope?: string): string[] {
+  const origins = [safeNormalizeOrigin(scope), safeNormalizeOrigin(tscope)].filter(
+    (o): o is string => !!o
+  )
+  return [...new Set(origins)]
+}
+
 /** Конвертирует built-in запись в InstalledApp с синтетическим манифестом. */
 export function builtInToInstalled(b: BuiltInApp): InstalledApp {
   const synthetic: ParsedManifest = {
@@ -109,6 +129,7 @@ export function builtInToInstalled(b: BuiltInApp): InstalledApp {
     scope: b.scope,
     develop: false,
     permissions: [...(b.grantedPermissions ?? [])] as PermissionId[],
+    fetchHosts: [...ownFetchHosts(b.scope, b.tscope), ...(b.fetchHosts ?? [])],
   }
 
   return {
@@ -139,6 +160,7 @@ export function remoteEntryToInstalled(entry: RemoteAppEntry): InstalledApp {
       scope: entry.scope,
       develop: false,
       permissions: [],
+      fetchHosts: ownFetchHosts(entry.scope),
     },
     scope: entry.scope,
     icon: entry.icon ?? getBuiltInIconUrl(entry.scope),

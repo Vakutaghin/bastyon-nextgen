@@ -129,7 +129,8 @@ export interface HostContext {
    * MVP: возвращает `{rejected: true, reason: 'not_implemented'}` пока не
    * подключим реальный wallet/payment UI nextgen.
    */
-  openPaymentDialog(payment: unknown): Promise<Record<string, unknown>>
+  /** `appName` показывается в модале — пользователь видит, кто просит денег (N22). */
+  openPaymentDialog(payment: unknown, appName?: string): Promise<Record<string, unknown>>
   /**
    * Открывает закодированный платёж по `ext` хэшу. Эквивалент `sdk.ext(payment)`.
    * MVP: throws `not_implemented`.

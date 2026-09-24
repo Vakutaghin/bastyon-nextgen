@@ -43,7 +43,14 @@ const log = logger.scope('[mini-apps:bridge]')
 
 export class MiniAppsBridge {
   private connections = new Map<AppId, AppConnection>()
-  private inflight = new Map<string, AbortController>() // requestId → controller
+  /**
+   * appId → окно смонтированного iframe (S48). Сообщения принимаются только от
+   * него: резолва по origin мало — popup, открытый миниаппой, имеет тот же
+   * origin и через `opener.top.postMessage` продолжал слать RPC (в том числе
+   * платежи) после закрытия самой миниаппы.
+   */
+  private frames = new Map<AppId, MessageEventSource>()
+  private inflight = new Map<string, AbortController>() // `${appId}:${requestId}` → controller
   private opts: BridgeOptions | null = null
   private started = false
   private boundHandler = this.onMessage.bind(this)
@@ -67,6 +74,7 @@ export class MiniAppsBridge {
     for (const ctrl of this.inflight.values()) ctrl.abort()
     this.inflight.clear()
     this.connections.clear()
+    this.frames.clear()
     this.opts = null
     this.started = false
     log.debug('stopped')
@@ -87,12 +95,33 @@ export class MiniAppsBridge {
     }
   }
 
+  /**
+   * Привязывает окно iframe к приложению (S48). Вызывается UI при монтировании
+   * фрейма и при каждой его перезагрузке. `null` снимает привязку.
+   */
+  attachFrame(appId: AppId, win: MessageEventSource | null): void {
+    if (win) this.frames.set(appId, win)
+    else this.frames.delete(appId)
+  }
+
+  /** Есть ли у приложения смонтированный фрейм. */
+  hasFrame(appId: AppId): boolean {
+    return this.frames.has(appId)
+  }
+
   /** Удаляет состояние приложения. Вызывается при размонтировании iframe. */
   unregisterApp(appId: AppId): void {
     this.connections.delete(appId)
-    // Прерывать inflight RPC по appId дороже, чем нужно — RPC сам уйдёт в void
-    // когда не сможет отправить ответ. Но если очень хочется — можно фильтровать
-    // inflight по appId-префиксу в requestId. Пока оставим как есть.
+    this.frames.delete(appId)
+    // Незавершённые RPC этого приложения отменяем: ключ inflight начинается с
+    // appId (N23), так что отобрать свои — дёшево, а висящий RPC закрытой
+    // миниаппы всё равно некому ответить.
+    for (const [key, ctrl] of this.inflight) {
+      if (key.startsWith(`${appId}:`)) {
+        ctrl.abort()
+        this.inflight.delete(key)
+      }
+    }
   }
 
   /** Список текущих активных приложений (зарегистрировавших окно). */
@@ -114,6 +143,14 @@ export class MiniAppsBridge {
     const app = this.opts.resolver.resolveByOrigin(event.origin)
     if (!app) {
       // Cross-origin сообщения от чужих окон (HMR, devtools, расширения) — игнорим тихо.
+      return
+    }
+
+    // S48: принимаем только от окна смонтированного iframe. Без фрейма
+    // (миниаппа закрыта) и от любых других окон того же origin — молча мимо.
+    const frame = this.frames.get(app.manifest.id)
+    if (!frame || !event.source || event.source !== frame) {
+      log.debug('message from non-attached window — ignored', app.manifest.id)
       return
     }
 

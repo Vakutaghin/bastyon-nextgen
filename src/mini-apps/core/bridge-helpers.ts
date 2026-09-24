@@ -106,7 +106,9 @@ export function normalizeError(err: unknown, signal: AbortSignal): RpcError['err
     const out: RpcError['error'] = {
       message: err.message || 'unknown error',
       name: err.name,
-      stack: err.stack,
+      // Стек — это внутренности хоста (пути к модулям, имена приватных функций);
+      // в iframe миниаппы ему не место. Оставляем только в dev-сборке (N23).
+      stack: import.meta.env.DEV ? err.stack : undefined,
     }
     // Известные action-registry / rate-limiter ошибки несут машинно-читаемый
     // `code` и (для rate-limit) `retryAfterMs`. Пробрасываем их в `RpcError`,

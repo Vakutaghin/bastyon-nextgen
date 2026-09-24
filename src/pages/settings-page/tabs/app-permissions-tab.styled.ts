@@ -138,3 +138,20 @@ export const SC_RevokeAllBtn = styled.button`
     background: ${COLORS.BG_HOVER};
   }
 `
+
+/** Удаление сайдлоад-приложения из настроек (S51). */
+export const SC_DeleteAppBtn = styled.button`
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid ${COLORS.DANGER};
+  background: none;
+  color: ${COLORS.DANGER};
+  font-size: 13px;
+  cursor: pointer;
+  transition: background ${TRANSITIONS.FAST};
+
+  &:hover {
+    background: ${COLORS.BG_HOVER};
+  }
+`

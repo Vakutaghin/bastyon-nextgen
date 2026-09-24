@@ -24,7 +24,11 @@ function makeFakeWindow() {
   return { win, sent }
 }
 
-/** Шлёт MessageEvent в `window` от лица фейкового iframe. */
+/**
+ * Шлёт MessageEvent в `window` от лица фейкового iframe. Окно должно быть
+ * предварительно привязано через `bridge.attachFrame` — bridge принимает
+ * сообщения только от смонтированного фрейма (S48).
+ */
 function dispatchFromIframe(opts: { source: object; origin: string; data: unknown }): void {
   const event = new MessageEvent('message', {
     data: opts.data,
@@ -62,6 +66,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: 'https://evil.com',
@@ -80,6 +85,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win, sent } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -101,6 +107,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win, sent } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -122,6 +129,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win, sent } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -140,6 +148,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win, sent } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -177,6 +186,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -196,6 +206,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win, sent } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -224,6 +235,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win, sent } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -245,6 +257,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win, sent } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -278,6 +291,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win, sent } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -304,6 +318,7 @@ describe('MiniAppsBridge', () => {
     bridge.stop()
 
     const { win } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -320,6 +335,7 @@ describe('MiniAppsBridge', () => {
     bridge.start({ resolver: createInMemoryResolver([APP]), dispatchRpc: dispatch })
 
     const { win } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -337,6 +353,7 @@ describe('MiniAppsBridge', () => {
     })
 
     const { win } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
     dispatchFromIframe({
       source: win,
       origin: APP_ORIGIN,
@@ -348,5 +365,43 @@ describe('MiniAppsBridge', () => {
     bridge.unregisterApp('demo.app')
     expect(bridge.activeApps()).not.toContain('demo.app')
     expect(bridge.push('demo.app', 'theme', {})).toBe(false)
+  })
+
+  // ─── S48: доступ живёт ровно столько, сколько смонтирован iframe ──────────
+
+  it('игнорирует сообщения от чужого окна того же origin (popup)', async () => {
+    const dispatch = vi.fn().mockResolvedValue({})
+    bridge.start({ resolver: createInMemoryResolver([APP]), dispatchRpc: dispatch })
+
+    const frame = makeFakeWindow()
+    const popup = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, frame.win as MessageEventSource)
+
+    // popup открыт самой миниаппой: тот же origin, но это не её iframe.
+    dispatchFromIframe({
+      source: popup.win,
+      origin: APP_ORIGIN,
+      data: { id: 'r1', action: 'payment' },
+    })
+
+    await tick()
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('перестаёт принимать RPC после размонтирования фрейма', async () => {
+    const dispatch = vi.fn().mockResolvedValue({})
+    bridge.start({ resolver: createInMemoryResolver([APP]), dispatchRpc: dispatch })
+
+    const { win } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
+    dispatchFromIframe({ source: win, origin: APP_ORIGIN, data: { id: 'r1', action: 'account' } })
+    await tick()
+    expect(dispatch).toHaveBeenCalledTimes(1)
+
+    bridge.unregisterApp(APP.manifest.id)
+    dispatchFromIframe({ source: win, origin: APP_ORIGIN, data: { id: 'r2', action: 'account' } })
+    await tick()
+    expect(dispatch).toHaveBeenCalledTimes(1)
+    expect(bridge.hasFrame(APP.manifest.id)).toBe(false)
   })
 })

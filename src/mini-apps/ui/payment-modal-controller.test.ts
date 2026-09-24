@@ -4,6 +4,7 @@ import {
   resolvePaymentModal,
   isPaymentModalOpen,
   currentPaymentPayload,
+  currentPaymentAppName,
   _resetPaymentModalForTests,
 } from './payment-modal-controller'
 
@@ -60,5 +61,36 @@ describe('payment-modal-controller', () => {
       feemode: 'weird',
     })
     expect(r.rejected).toBe(true)
+  })
+
+  // ─── N22: payload проверяется по-настоящему ───────────────────────────────
+
+  it('отклоняет получателя с невалидным адресом', async () => {
+    const r = await openPaymentModal({
+      recievers: [{ address: 'not-a-pocketnet-address', amount: 1 }],
+    })
+    expect(r.rejected).toBe(true)
+    expect(r.reason).toMatch(/invalid_address/)
+    expect(isPaymentModalOpen.value).toBe(false)
+  })
+
+  it('отклоняет сумму ниже порога пыли', async () => {
+    const r = await openPaymentModal({
+      recievers: [{ address: 'PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM', amount: 1e-9 }],
+    })
+    expect(r.rejected).toBe(true)
+    expect(r.reason).toMatch(/amount_below_dust/)
+  })
+
+  it('запоминает имя приложения для строки «Запросило»', async () => {
+    const p = openPaymentModal(
+      { recievers: [{ address: 'PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM', amount: 1 }] },
+      'Demo app'
+    )
+    expect(currentPaymentAppName.value).toBe('Demo app')
+
+    resolvePaymentModal({ rejected: true, reason: 'user_cancelled' })
+    await p
+    expect(currentPaymentAppName.value).toBe('')
   })
 })

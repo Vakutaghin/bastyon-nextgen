@@ -1190,6 +1190,10 @@ export default {
     catalogEmpty: 'Каталог пуст.',
     addToFavorites: 'В избранное',
     removeFromFavorites: 'Убрать из избранного',
+    deleteApp: 'Удалить',
+    deleteConfirmTitle: 'Удалить «{name}»?',
+    deleteConfirmContent:
+      'Приложение и все выданные ему разрешения будут удалены. Добавить его снова можно тем же адресом.',
     paymentTitle: 'Подтверждение платежа',
     sending: 'Отправка…',
     confirm: 'Подтвердить',

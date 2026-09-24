@@ -44,8 +44,10 @@
           :name="app.manifest.name"
           :icon="app.icon"
           :is-fav="favStore.isFavorite(app.manifest.id)"
+          :can-delete="app.source === 'local'"
           @open="openInstalled(app.manifest.id)"
           @toggle-favorite="toggleFavInstalled(app)"
+          @remove="askRemove(app)"
         />
       </SC_Grid>
     </SC_Section>
@@ -85,6 +87,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { Modal } from 'ant-design-vue'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'
 import { useRemoteApps } from './use-remote-apps'
@@ -164,6 +167,26 @@ const toggleFavInstalled = (app: InstalledApp) => {
     name: app.manifest.name,
     scope: app.scope,
     icon: app.icon || getBuiltInIconUrl(app.scope),
+  })
+}
+
+/**
+ * Удаление сайдлоад-приложения (S51). Сносит локальный оверрайд, его
+ * permissions и запись в избранном — иначе манифест чужого хоста
+ * перечитывается при каждом старте.
+ */
+const askRemove = (app: InstalledApp) => {
+  Modal.confirm({
+    title: t('miniapps.deleteConfirmTitle', { name: app.manifest.name }),
+    content: t('miniapps.deleteConfirmContent'),
+    okText: t('miniapps.deleteApp'),
+    cancelText: t('miniapps.cancel'),
+    okType: 'danger',
+    centered: true,
+    onOk: async () => {
+      await appsStore.uninstall(app.manifest.id)
+      await favStore.remove(app.manifest.id)
+    },
   })
 }
 

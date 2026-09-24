@@ -54,6 +54,7 @@ import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import {
   isPaymentModalOpen,
   currentPaymentPayload,
+  currentPaymentAppName,
   resolvePaymentModal,
 } from './payment-modal-controller'
 import {
@@ -76,12 +77,12 @@ import {
 const _ = AModal
 void _
 
-defineProps<{ appName?: string }>()
-
 const { t } = useI18n()
 const authStore = useAuthStore()
 
 const isOpen = computed(() => isPaymentModalOpen.value)
+// Имя приходит из контроллера вместе с payload — prop никто не передавал (N22).
+const appName = computed(() => currentPaymentAppName.value)
 const payment = computed(() => currentPaymentPayload.value)
 const total = computed(() => (payment.value?.recievers ?? []).reduce((s, r) => s + r.amount, 0))
 const feemodeLabel = computed(() =>

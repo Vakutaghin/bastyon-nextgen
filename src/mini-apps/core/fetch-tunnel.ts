@@ -59,8 +59,10 @@ export interface FetchTunnel {
   reset: () => void
 }
 
-function isAllowedOrigin(url: string, allowlist: readonly string[]): boolean {
-  if (allowlist.length === 0) return false
+function isAllowedOrigin(url: string, allowlist: readonly string[] | undefined): boolean {
+  // `undefined` — манифест собран не парсером (built-in/каталог до S44) либо
+  // пришёл из старого кэша. Отсутствие allowlist = запрет, но не TypeError.
+  if (!allowlist || allowlist.length === 0) return false
   let parsed: URL
   try {
     parsed = new URL(url)

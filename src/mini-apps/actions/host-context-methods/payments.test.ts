@@ -20,10 +20,11 @@ describe('openPaymentDialog', () => {
     const methods = createPaymentMethods()
 
     const payment = { recievers: [{ address: 'ADDR', amount: 1 }] }
-    const out = await methods.openPaymentDialog(payment as never)
+    const out = await methods.openPaymentDialog(payment as never, 'Demo app')
 
     expect(openPaymentModalMock).toHaveBeenCalledTimes(1)
-    expect(openPaymentModalMock).toHaveBeenCalledWith(payment)
+    // Имя приложения едет в модал вместе с payload (N22).
+    expect(openPaymentModalMock).toHaveBeenCalledWith(payment, 'Demo app')
     expect(out).toBe(result)
   })
 
@@ -42,7 +43,7 @@ describe('openExternalPayment', () => {
     const methods = createPaymentMethods()
 
     await expect(methods.openExternalPayment('ext-hash' as never)).rejects.toThrow(
-      'ext_payment_not_implemented',
+      'ext_payment_not_implemented'
     )
   })
 })

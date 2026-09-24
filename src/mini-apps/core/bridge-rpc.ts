@@ -17,8 +17,11 @@ export async function handleRpc(
   action: string,
   data: unknown
 ): Promise<void> {
+  // Ключ с appId: requestId выбирает сама миниаппа, и без префикса два
+  // приложения с одинаковым id запроса делили бы один AbortController (N23).
+  const inflightKey = `${app.manifest.id}:${requestId}`
   const ctrl = new AbortController()
-  state.inflight.set(requestId, ctrl)
+  state.inflight.set(inflightKey, ctrl)
 
   const timeoutMs = state.opts.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS
   const timer = setTimeout(() => {
@@ -42,6 +45,6 @@ export async function handleRpc(
     log.debug('rpc err', app.manifest.id, action, err)
   } finally {
     clearTimeout(timer)
-    state.inflight.delete(requestId)
+    state.inflight.delete(inflightKey)
   }
 }

@@ -17,8 +17,8 @@ export type PaymentMethods = Pick<HostContext, 'openPaymentDialog' | 'openExtern
 
 export function createPaymentMethods(): PaymentMethods {
   return {
-    openPaymentDialog: async (payment) => {
-      const result = await openPaymentModal(payment)
+    openPaymentDialog: async (payment, appName) => {
+      const result = await openPaymentModal(payment, appName)
       // Возвращаем как Record — формат совместим с legacy SDK actionHelper:
       //   transaction (txid) → relay=true (после post-process)
       //   rejected=true → миниаппа покажет ошибку

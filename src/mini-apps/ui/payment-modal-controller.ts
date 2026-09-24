@@ -16,10 +16,20 @@
 
 import { ref, computed } from 'vue'
 import { z } from 'zod'
+import { isValidAddress } from '@/blockchain/core/addresses/address-validator'
+import { DUST_VALUE } from '@/blockchain/constants/transactions'
 
 const RecieverSchema = z.object({
-  address: z.string().min(1).max(128),
-  amount: z.number().positive(),
+  // Адрес проверяем по-настоящему (N22): `min(1)` пропускал любую строку, и
+  // опечатка миниаппы доезжала до подписи транзакции.
+  address: z
+    .string()
+    .min(1)
+    .max(128)
+    .refine((a) => isValidAddress(a), { message: 'invalid_address' }),
+  // `positive()` пропускал 1e-9 — такой выход всё равно сгорел бы как пыль,
+  // а пользователь видел бы платёж «почти ноль» с полной комиссией.
+  amount: z.number().min(DUST_VALUE, { message: 'amount_below_dust' }),
   message: z.string().max(256).optional(),
 })
 
@@ -47,13 +57,16 @@ export interface PaymentResult {
 
 const isOpenRef = ref(false)
 const currentPaymentRef = ref<PaymentPayload | null>(null)
+const currentAppNameRef = ref<string>('')
 let currentResolve: ((r: PaymentResult) => void) | null = null
 
 export const isPaymentModalOpen = computed(() => isOpenRef.value)
 export const currentPaymentPayload = computed(() => currentPaymentRef.value)
+/** Имя приложения, запросившего платёж — для строки «Запросило: …» (N22). */
+export const currentPaymentAppName = computed(() => currentAppNameRef.value)
 
 /** Открывает модал и возвращает Promise с результатом подтверждения / отказа. */
-export function openPaymentModal(raw: unknown): Promise<PaymentResult> {
+export function openPaymentModal(raw: unknown, appName = ''): Promise<PaymentResult> {
   const parsed = PaymentPayloadSchema.safeParse(raw)
   if (!parsed.success) {
     return Promise.resolve({
@@ -66,6 +79,7 @@ export function openPaymentModal(raw: unknown): Promise<PaymentResult> {
   }
 
   currentPaymentRef.value = parsed.data
+  currentAppNameRef.value = appName
   isOpenRef.value = true
   return new Promise<PaymentResult>((resolve) => {
     currentResolve = resolve
@@ -76,6 +90,7 @@ export function openPaymentModal(raw: unknown): Promise<PaymentResult> {
 export function resolvePaymentModal(result: PaymentResult): void {
   isOpenRef.value = false
   currentPaymentRef.value = null
+  currentAppNameRef.value = ''
   const r = currentResolve
   currentResolve = null
   if (r) r(result)
@@ -85,6 +100,7 @@ export function resolvePaymentModal(result: PaymentResult): void {
 export function _resetPaymentModalForTests(): void {
   isOpenRef.value = false
   currentPaymentRef.value = null
+  currentAppNameRef.value = ''
   if (currentResolve) {
     currentResolve({ rejected: true, reason: 'reset' })
     currentResolve = null

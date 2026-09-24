@@ -140,6 +140,32 @@ export const SC_FavoriteBtn = styled.button`
   }
 `
 
+/** Кнопка удаления сайдлоад-приложения (S51). Рядом со звёздочкой, слева от неё. */
+export const SC_DeleteBtn = styled.button`
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: ${COLORS.TEXT_MUTED};
+  font-size: 14px;
+  transition:
+    color ${TRANSITIONS.QUICK},
+    background-color ${TRANSITIONS.QUICK};
+
+  &:hover {
+    background: ${COLORS.OVERLAY_5};
+    color: ${COLORS.DANGER};
+  }
+`
+
 export const SC_IconWrap = styled.div`
   width: 56px;
   height: 56px;

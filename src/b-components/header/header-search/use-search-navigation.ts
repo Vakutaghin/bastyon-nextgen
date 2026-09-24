@@ -67,7 +67,8 @@ export function useSearchNavigation(
     // если приложение ещё не установлено — регистрируем его в локальном
     // сторе, затем переходим на /app/<id>.
     appsStore.installFromRemoteEntry(entry)
-    searchStore.commitApp(entry.id, entry.name, entry.icon)
+    // scope в истории — чтобы «Недавнее» открывалось и после перезапуска (S46).
+    searchStore.commitApp(entry.id, entry.name, entry.icon, entry.scope)
     emitClose()
     router.push(`/app/${encodeURIComponent(entry.id)}`)
   }

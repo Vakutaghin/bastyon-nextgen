@@ -156,15 +156,19 @@ export const useSearchStore = defineStore('search', {
       })
     },
 
-    /** Запомнить открытие mini-app из dropdown поиска. */
-    commitApp(appId: string, name?: string, icon?: string): void {
+    /**
+     * Запомнить открытие mini-app из dropdown поиска. `scope` обязателен для
+     * восстановления после перезапуска — каталожные приложения не персистятся
+     * (S46).
+     */
+    commitApp(appId: string, name?: string, icon?: string, scope?: string): void {
       if (!appId) return
       this.pushEntry({
         kind: 'app',
         value: appId,
         label: name || appId,
         addedAt: Date.now(),
-        meta: icon || name ? { icon, name } : undefined,
+        meta: icon || name || scope ? { icon, name, scope } : undefined,
       })
     },
 

@@ -30,6 +30,11 @@ export interface BuiltInApp {
   readonly includeInSearch?: boolean
   /** Включать в сетку мини-приложений на главной (legacy `includeminiapps`). */
   readonly includeInMiniApps?: boolean
+  /**
+   * Дополнительные origin'ы для fetch-tunnel (S44). Собственный scope
+   * добавляется всегда, здесь — только сторонние API приложения.
+   */
+  readonly fetchHosts?: readonly string[]
 }
 
 export const BUILT_IN_APPS: readonly BuiltInApp[] = [

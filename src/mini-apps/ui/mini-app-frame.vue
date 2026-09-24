@@ -11,6 +11,7 @@
       -->
       <SC_Iframe
         :key="iframeSrc"
+        ref="iframeRef"
         :src="iframeSrc"
         credentialless
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
@@ -43,12 +44,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { CloseOutlined } from '@ant-design/icons-vue'
 import { Modal } from 'ant-design-vue'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
+import { usePermissionsStore } from '@/mini-apps/store/permissions-store'
 import { miniAppsBridge } from '@/mini-apps/core/bridge'
 import { onIframeLifecycleEvent } from './use-mini-app-bridge'
 import TorBlockedNotice from '@/components/tor-blocked-notice'
@@ -135,9 +137,27 @@ const iframeAllow = computed(() => {
   return ['clipboard-write', ...features].join('; ')
 })
 
+// Окно iframe — единственный источник сообщений, который bridge принимает от
+// этого приложения (S48). Привязываем при монтировании и на каждой перезагрузке
+// фрейма: popup, открытый миниаппой, имеет тот же origin, но это не её фрейм.
+const iframeRef = ref<{ $el?: HTMLIFrameElement } | HTMLIFrameElement | null>(null)
+
+function iframeElement(): HTMLIFrameElement | null {
+  const raw = iframeRef.value
+  if (!raw) return null
+  const el = '$el' in raw ? raw.$el : raw
+  return el instanceof HTMLIFrameElement ? el : null
+}
+
+function attachFrameWindow() {
+  const win = iframeElement()?.contentWindow ?? null
+  miniAppsBridge.attachFrame(props.appId, win)
+}
+
 const onIframeLoad = () => {
   iframeStatus.value = 'loaded-html'
   clearLoadTimer()
+  attachFrameWindow()
 }
 const onIframeError = () => {
   iframeStatus.value = 'load-error'
@@ -158,20 +178,36 @@ const BODY_CLASS = 'miniapp-fullscreen'
 onMounted(() => {
   document.body.classList.add(BODY_CLASS)
   armLoadTimer()
+  attachFrameWindow()
 })
 
-// При смене источника iframe (новое приложение / innerPath) — перезапускаем таймер.
-watch(iframeSrc, () => {
+// При смене источника iframe (новое приложение / innerPath) — перезапускаем
+// таймер и заново привязываем окно: :key пересоздаёт элемент.
+watch(iframeSrc, async () => {
   armLoadTimer()
+  await nextTick()
+  attachFrameWindow()
 })
 
 watch(
   () => props.appId,
-  () => {
+  (_next, prev) => {
     loaded.value = false
     iframeStatus.value = 'pending'
+    if (prev) releaseApp(prev)
   }
 )
+
+/**
+ * Закрытие миниаппы = конец доступа: снимаем окно и соединение, гасим
+ * session-гранты и убираем каталожную регистрацию, иначе её origin продолжает
+ * резолвиться и любое окно этого хоста считается «своим» (S48).
+ */
+function releaseApp(appId: string) {
+  miniAppsBridge.unregisterApp(appId)
+  usePermissionsStore().clearSessionGrants(appId)
+  appsStore.dropSession(appId)
+}
 
 const askClose = () => {
   if (!app.value) {
@@ -195,8 +231,6 @@ onBeforeUnmount(() => {
   document.body.classList.remove(BODY_CLASS)
   onIframeLifecycleEvent.delete(onIframeEvent)
   clearLoadTimer()
-  if (app.value) {
-    miniAppsBridge.unregisterApp(app.value.manifest.id)
-  }
+  releaseApp(props.appId)
 })
 </script>

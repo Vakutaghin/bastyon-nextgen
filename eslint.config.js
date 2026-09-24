@@ -38,6 +38,7 @@ const BROWSER_GLOBALS = {
   HTMLVideoElement: 'readonly',
   HTMLButtonElement: 'readonly',
   HTMLCanvasElement: 'readonly',
+  HTMLIFrameElement: 'readonly',
   HTMLSelectElement: 'readonly',
   Element: 'readonly',
   Text: 'readonly',

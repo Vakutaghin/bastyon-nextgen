@@ -1190,6 +1190,10 @@ export default {
     catalogEmpty: 'Catalog is empty.',
     addToFavorites: 'Add to favorites',
     removeFromFavorites: 'Remove from favorites',
+    deleteApp: 'Delete',
+    deleteConfirmTitle: 'Delete “{name}”?',
+    deleteConfirmContent:
+      'The app and every permission granted to it will be removed. You can add it again with the same address.',
     paymentTitle: 'Payment confirmation',
     sending: 'Sending…',
     confirm: 'Confirm',

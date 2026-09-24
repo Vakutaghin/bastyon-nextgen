@@ -11,6 +11,16 @@
       <StarOutlined v-else />
     </SC_FavoriteBtn>
 
+    <!-- Удаление сайдлоад-приложения (S51): установить было можно, удалить — нет. -->
+    <SC_DeleteBtn
+      v-if="canDelete"
+      type="button"
+      :title="t('miniapps.deleteApp')"
+      @click.stop="emit('remove')"
+    >
+      <DeleteOutlined />
+    </SC_DeleteBtn>
+
     <SC_IconWrap>
       <SC_Icon v-if="!broken && icon" :src="icon" :alt="name" @error="broken = true" />
       <SC_IconFallback v-else>
@@ -24,7 +34,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { StarOutlined, StarFilled } from '@ant-design/icons-vue'
+import { StarOutlined, StarFilled, DeleteOutlined } from '@ant-design/icons-vue'
 import {
   SC_Card,
   SC_IconWrap,
@@ -32,6 +42,7 @@ import {
   SC_IconFallback,
   SC_Name,
   SC_FavoriteBtn,
+  SC_DeleteBtn,
 } from './mini-apps-grid.styled'
 
 const props = defineProps<{
@@ -39,11 +50,14 @@ const props = defineProps<{
   name: string
   icon: string
   isFav?: boolean
+  /** Показать кнопку удаления — только у сайдлоад-приложений (S51). */
+  canDelete?: boolean
 }>()
 
 const emit = defineEmits<{
   open: [id: string]
   toggleFavorite: []
+  remove: []
 }>()
 
 const { t } = useI18n()

@@ -29,7 +29,9 @@ const payment: ActionDefinition<unknown, Record<string, unknown>> = {
   permissions: ['account', 'payment'],
   authorization: true,
   rateLimitClass: 'expensive',
-  handler: async ({ data, host }) => host.openPaymentDialog(data),
+  // Имя приложения — в модал: без него строка «Запросило: …» никогда не
+  // показывалась, и пользователь не видел, кто инициировал платёж (N22).
+  handler: async ({ data, app, host }) => host.openPaymentDialog(data, app.manifest.name),
 }
 
 const ext: ActionDefinition<{ ext: string }, string> = {

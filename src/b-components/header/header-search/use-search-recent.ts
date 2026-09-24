@@ -68,9 +68,8 @@ export function useSearchRecent(
         router.push({ name: 'profile', params: { userName: entry.value } })
         return
       case 'app':
-        // Запись в истории создаётся только когда приложение уже было
-        // открыто из dropdown — значит оно зарегистрировано в appsStore через
-        // installFromRemoteEntry и доступно по /app/<id>.
+        // Приложение могло быть каталожным (регистрация только на сессию) —
+        // страница миниаппы восстановит его из этой же записи по scope (S46).
         router.push(`/app/${encodeURIComponent(entry.value)}`)
         return
     }

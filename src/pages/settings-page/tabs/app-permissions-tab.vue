@@ -22,6 +22,10 @@
           <SC_RevokeAllBtn type="button" @click="revokeAll(app.appId)">
             {{ t('settings.appPermissions.revokeAll') }}
           </SC_RevokeAllBtn>
+          <!-- S51: сайдлоад-приложение можно было установить, но не удалить. -->
+          <SC_DeleteAppBtn v-if="app.canDelete" type="button" @click="askRemove(app)">
+            {{ t('miniapps.deleteApp') }}
+          </SC_DeleteAppBtn>
         </SC_AppHead>
 
         <SC_PermRow v-for="grant in app.grants" :key="grant.permission">
@@ -46,8 +50,10 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Modal } from 'ant-design-vue'
 import { usePermissionsStore } from '@/mini-apps/store/permissions-store'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
+import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'
 import type { PermissionId } from '@/mini-apps/types/permissions'
 import {
   SC_Perms,
@@ -65,6 +71,7 @@ import {
   SC_DeniedBadge,
   SC_RevokeBtn,
   SC_RevokeAllBtn,
+  SC_DeleteAppBtn,
 } from './app-permissions-tab.styled'
 
 const { t, te, locale } = useI18n()
@@ -83,6 +90,8 @@ const apps = computed(() =>
       name: installed?.manifest.name || appId,
       icon: installed?.icon || '',
       grants: permissionsStore.forApp(appId),
+      // Удалить можно только то, что пользователь добавил сам (S51).
+      canDelete: installed?.source === 'local',
     }
   })
 )
@@ -104,5 +113,20 @@ function revoke(appId: string, permission: PermissionId): void {
 
 function revokeAll(appId: string): void {
   void permissionsStore.revokeAll(appId)
+}
+
+function askRemove(app: { appId: string; name: string }): void {
+  Modal.confirm({
+    title: t('miniapps.deleteConfirmTitle', { name: app.name }),
+    content: t('miniapps.deleteConfirmContent'),
+    okText: t('miniapps.deleteApp'),
+    cancelText: t('miniapps.cancel'),
+    okType: 'danger',
+    centered: true,
+    onOk: async () => {
+      await appsStore.uninstall(app.appId)
+      await useFavoriteMiniAppsStore().remove(app.appId)
+    },
+  })
 }
 </script>

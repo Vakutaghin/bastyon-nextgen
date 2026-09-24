@@ -8,12 +8,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import MiniAppFrame from '@/mini-apps/ui/mini-app-frame.vue'
 import { bootMiniApps } from '@/mini-apps/ui/use-mini-app-bridge'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
+import { ensureAppAvailable } from '@/mini-apps/store/app-restore'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { SC_Page } from './mini-app-page.styled'
 
@@ -39,5 +40,12 @@ useDocumentTitle(() => appsStore.byId(appId.value)?.manifest?.name ?? t('miniapp
 
 onMounted(async () => {
   await bootMiniApps(router)
+  // Каталожная миниаппа живёт только в памяти сессии: после перезапуска
+  // «Избранное»/«Недавнее» вели на «Приложение не найдено» (S46).
+  await ensureAppAvailable(appId.value)
+})
+
+watch(appId, (id) => {
+  void ensureAppAvailable(id)
 })
 </script>

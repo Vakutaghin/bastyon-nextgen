@@ -33,6 +33,12 @@ export interface SearchHistoryEntry {
     avatar?: string
     icon?: string
     name?: string
+    /**
+     * Для `kind: 'app'` — scope миниаппы. Каталожные приложения не
+     * персистятся, и без scope запись «Недавнее» после перезапуска вела на
+     * «Приложение не найдено» (G17/S46).
+     */
+    scope?: string
   }
 }
 
