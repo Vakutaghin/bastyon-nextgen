@@ -71,3 +71,43 @@ describe('buildFavoritesFeedQuery (N11)', () => {
     expect(resp.data.contents).toHaveLength(1)
   })
 })
+
+// Пост сохраняется в избранное под тем id, что был у карточки (адаптер берёт
+// `txid || hash`), а нода может вернуть его под другим — у отредактированного
+// поста txid и hash различаются. Такой пост пропадал из «Избранного».
+describe('buildFavoritesFeedQuery: id сохранения ≠ id в ответе ноды', () => {
+  it('находит пост, сохранённый по hash, когда нода вернула его с другим txid', async () => {
+    favIds.list = ['hash-1']
+    rpc.call.mockImplementation(() =>
+      Promise.resolve([{ txid: 'txid-1', hash: 'hash-1', content: 'ok' }])
+    )
+
+    const res = await buildFavoritesFeedQuery(ctx({ count: 3 }))
+    expect(res.data.contents).toHaveLength(1)
+    expect(res.data.contents[0]).toMatchObject({ hash: 'hash-1' })
+  })
+
+  it('находит пост, сохранённый по числовому id', async () => {
+    favIds.list = ['42']
+    rpc.call.mockImplementation(() => Promise.resolve([{ id: 42, content: 'ok' }]))
+
+    const res = await buildFavoritesFeedQuery(ctx({ count: 3 }))
+    expect(res.data.contents).toHaveLength(1)
+  })
+
+  it('сохраняет порядок избранного, когда id разнородные', async () => {
+    favIds.list = ['hash-1', 'txid-2']
+    rpc.call.mockImplementation(() =>
+      Promise.resolve([
+        { txid: 'txid-2', hash: 'hash-2' },
+        { txid: 'txid-1', hash: 'hash-1' },
+      ])
+    )
+
+    const res = await buildFavoritesFeedQuery(ctx({ count: 3 }))
+    expect(res.data.contents.map((p) => (p as { hash?: string }).hash)).toEqual([
+      'hash-1',
+      'hash-2',
+    ])
+  })
+})

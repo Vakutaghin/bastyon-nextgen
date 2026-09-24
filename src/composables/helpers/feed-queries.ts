@@ -208,7 +208,19 @@ async function fetchFavoritePostsByIds(ids: string[]): Promise<RawFavoritePost[]
   if (posts.length === 0) return []
 
   // Сортируем посты в порядке запрошенных ID для корректной пагинации.
-  const postsMap = new Map(posts.map((p) => [p.txid || p.id, p]))
+  //
+  // Индексируем по ВСЕМ идентификаторам поста, а не только по txid. В избранное
+  // попадает тот id, что был у карточки в момент клика (адаптер берёт
+  // `txid || hash`), а нода может вернуть тот же пост под другим: у
+  // отредактированного поста txid и hash различаются. Раньше такой пост не
+  // находился в карте и молча пропадал из «Избранного».
+  const postsMap = new Map<string, RawFavoritePost>()
+  for (const post of posts) {
+    const keys = [post.txid, post.hash, post.id != null ? String(post.id) : undefined]
+    for (const key of keys) {
+      if (key && !postsMap.has(key)) postsMap.set(key, post)
+    }
+  }
   return ids.map((id) => postsMap.get(id)).filter((p): p is RawFavoritePost => p !== undefined)
 }
 
