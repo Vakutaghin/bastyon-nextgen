@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Popover } from 'ant-design-vue'
 import { SmileOutlined } from '@ant-design/icons-vue'
@@ -161,7 +161,11 @@ import { MAX_TAGS } from './consts'
 import { usePostComposer } from './use-post-composer'
 
 const props = defineProps<{ mode?: ComposerMode; source?: ComposerSource | null }>()
-const emit = defineEmits<{ (e: 'published', txid: string): void }>()
+const emit = defineEmits<{
+  (e: 'published', txid: string): void
+  /** Идёт публикация — модалку закрывать нельзя (S29). */
+  (e: 'busyChange', busy: boolean): void
+}>()
 
 const { t } = useI18n()
 
@@ -213,6 +217,10 @@ const {
   mode: props.mode,
   source: props.source,
 })
+
+// Пока идёт публикация, модалку закрывать нельзя: закрытая посреди отправки
+// она оставляла черновик, и повторная публикация давала дубль поста (S29).
+watch(submitting, (busy) => emit('busyChange', busy))
 
 const onToggleArticle = (e: Event): void => {
   articleMode.value = (e.target as HTMLInputElement).checked

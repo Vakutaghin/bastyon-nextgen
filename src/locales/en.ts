@@ -1690,6 +1690,9 @@ export default {
       devTitle: 'Error ({context})',
       genericTitle: 'Something went wrong',
       genericReload: 'Try reloading the page',
+      dbUnavailableTitle: 'Local storage is unavailable',
+      dbUnavailableText:
+        'The app works, but nothing is cached on this device: notifications, favourites and history will be fetched again. Reloading the page or leaving private browsing usually helps.',
     },
     miniapps: {
       videoRemoveTitle: '“{app}” wants to delete a video',

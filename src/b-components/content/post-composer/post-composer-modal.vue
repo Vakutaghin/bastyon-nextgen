@@ -5,20 +5,24 @@
     :width="600"
     :centered="true"
     :footer="null"
-    @cancel="modalStore.closePostComposerModal()"
+    :closable="!publishing"
+    :mask-closable="!publishing"
+    :keyboard="!publishing"
+    @cancel="onCancel"
   >
     <!-- v-if пересоздаёт композер при каждом открытии — чтобы префилл edit/repost инициализировался заново. -->
     <PostComposer
       v-if="modalStore.postComposerModal.isOpen"
       :mode="modalStore.postComposerModal.mode"
       :source="modalStore.postComposerModal.source"
-      @published="modalStore.closePostComposerModal()"
+      @published="onPublished"
+      @busy-change="publishing = $event"
     />
   </Modal>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Modal from '@/components/modal/modal.vue'
@@ -28,6 +32,23 @@ import PostComposer from './post-composer.vue'
 
 const { t } = useI18n()
 const modalStore = useModalStore()
+
+/**
+ * Идёт публикация — крестик, маска и Esc не закрывают модалку (S29). Иначе
+ * закрытая посреди отправки модалка оставляла черновик, и пользователь
+ * публиковал пост второй раз.
+ */
+const publishing = ref(false)
+
+const onCancel = (): void => {
+  if (publishing.value) return
+  modalStore.closePostComposerModal()
+}
+
+const onPublished = (): void => {
+  publishing.value = false
+  modalStore.closePostComposerModal()
+}
 
 const modalTitle = computed(() => {
   const mode = modalStore.postComposerModal.mode

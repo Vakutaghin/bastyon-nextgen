@@ -1,4 +1,4 @@
-import { db } from '../database'
+import { db, withDb } from '../database'
 import type { StoredNotification } from '../types'
 
 /**
@@ -11,7 +11,8 @@ export const notificationsAPI = {
    */
   async put(address: string, item: Omit<StoredNotification, 'address'>): Promise<void> {
     const record: StoredNotification = { ...item, address }
-    await db.notifications.put(record)
+    // Кэш уведомлений не критичен: при недоступной базе просто не пишем (S61).
+    await withDb(undefined, () => db.notifications.put(record).then(() => undefined))
   },
 
   /**
@@ -19,22 +20,24 @@ export const notificationsAPI = {
    */
   async putMany(address: string, items: Omit<StoredNotification, 'address'>[]): Promise<void> {
     const records: StoredNotification[] = items.map((item) => ({ ...item, address }))
-    await db.notifications.bulkPut(records)
+    await withDb(undefined, () => db.notifications.bulkPut(records).then(() => undefined))
   },
 
   /**
    * Все уведомления для адреса, отсортированные по nblock по убыванию (новые сверху)
    */
   async getAllByAddress(address: string): Promise<StoredNotification[]> {
-    const list = await db.notifications.where('address').equals(address).toArray()
-    return list.sort((a, b) => b.nblock - a.nblock)
+    return withDb<StoredNotification[]>([], async () => {
+      const list = await db.notifications.where('address').equals(address).toArray()
+      return list.sort((a, b) => b.nblock - a.nblock)
+    })
   },
 
   /**
    * Удалить одно уведомление по address+id
    */
   async delete(address: string, id: string): Promise<void> {
-    await db.notifications.delete([address, id])
+    await withDb(undefined, () => db.notifications.delete([address, id]))
   },
 
   /**
@@ -42,13 +45,19 @@ export const notificationsAPI = {
    */
   async deleteMany(address: string, ids: string[]): Promise<void> {
     if (ids.length === 0) return
-    await db.notifications.bulkDelete(ids.map((id) => [address, id]))
+    await withDb(undefined, () => db.notifications.bulkDelete(ids.map((id) => [address, id])))
   },
 
   /**
    * Удалить все уведомления для адреса
    */
   async deleteAllByAddress(address: string): Promise<void> {
-    await db.notifications.where('address').equals(address).delete()
+    await withDb(undefined, () =>
+      db.notifications
+        .where('address')
+        .equals(address)
+        .delete()
+        .then(() => undefined)
+    )
   },
 }

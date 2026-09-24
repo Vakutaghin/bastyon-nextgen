@@ -7,6 +7,10 @@ import { notification } from 'ant-design-vue'
 
 const DEFAULT_DURATION = 4.5
 const PLACEMENT = 'bottomLeft'
+// Слой тостов (N32) задаётся глобально в `style.css` — `.ant-notification`
+// поднят до Z_INDEX.TOAST (3000). У ant по умолчанию 1050, а маски модалок
+// начинаются с 2000, поэтому «Скопировано» из модалки с мнемоникой было не
+// видно. Контейнер создаёт сама библиотека, задать слой из этого модуля нельзя.
 
 export interface T_ToastOptions {
   message: string

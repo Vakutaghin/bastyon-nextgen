@@ -12,6 +12,7 @@
 
 import type { App } from 'vue'
 import { appToast } from '@/b-components/app-toast'
+import { isDbUnavailable, isFatalDbError, markDbUnavailable } from '@/db/database'
 import { t } from '@/i18n'
 
 type LoggableError = unknown
@@ -35,6 +36,21 @@ function isBenignWindowError(msg: string): boolean {
   return BENIGN_ERROR_PATTERNS.some((re) => re.test(msg))
 }
 
+/**
+ * Ошибка недоступной локальной базы (S61).
+ *
+ * `VersionError` после отката билда или `InvalidStateError` в приватном окне
+ * Firefox — это не сбой приложения: кэш просто не работает. Раньше каждый
+ * такой промах (поллер уведомлений раз в 30 с, избранное на каждой карточке)
+ * показывал «Что-то пошло не так».
+ */
+function isDatabaseError(err: LoggableError): boolean {
+  if (isFatalDbError(err)) return true
+  if (!isDbUnavailable()) return false
+  const msg = messageOf(err).toLowerCase()
+  return msg.includes('indexeddb') || msg.includes('dexie') || msg.includes('database')
+}
+
 function messageOf(err: LoggableError): string {
   if (err instanceof Error) return err.message || err.name || 'Unknown error'
   if (typeof err === 'string') return err
@@ -45,8 +61,25 @@ function messageOf(err: LoggableError): string {
   }
 }
 
+/** Предупреждение о выключенном кэше показываем один раз за сессию. */
+let dbWarningShown = false
+
 function reportError(err: LoggableError, context: string): void {
   const msg = messageOf(err)
+
+  if (isDatabaseError(err)) {
+    markDbUnavailable(err)
+    console.warn(`[error-boundary:${context}] local database unavailable:`, err)
+    if (!dbWarningShown) {
+      dbWarningShown = true
+      appToast.warning({
+        message: t('appMsg.error.dbUnavailableTitle'),
+        description: t('appMsg.error.dbUnavailableText'),
+        duration: 6,
+      })
+    }
+    return
+  }
 
   // Подавляем повторные одинаковые ошибки в коротком окне — типично для
   // циклов в watcher'е (один логический баг, сотни срабатываний).

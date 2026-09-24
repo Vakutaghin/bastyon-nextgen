@@ -1,6 +1,5 @@
 import Dexie, { Table } from 'dexie'
 import type {
-  VideoData,
   TranscodedVideo,
   PendingPostRating,
   AppSettings,
@@ -74,6 +73,74 @@ export class AppDatabase extends Dexie {
 export const db = new AppDatabase()
 
 /**
+ * Локальная база недоступна (S61).
+ *
+ * `open()` падает в реальных ситуациях: `VersionError` после отката билда
+ * (схема новее кода), `InvalidStateError` в приватном окне Firefox, закрытая
+ * пользователем база. Приложение при этом монтируется и работает без кэша —
+ * но каждый вызов к Dexie уходил в unhandled rejection, а глобальный
+ * обработчик показывал «Что-то пошло не так» каждые 30 секунд (поллер
+ * уведомлений) и на каждую карточку поста (избранное).
+ */
+let dbUnavailableError: Error | null = null
+
+/** `true`, если локальная база не открылась. */
+export function isDbUnavailable(): boolean {
+  return dbUnavailableError !== null
+}
+
+/** Причина недоступности — для диагностики и одноразового предупреждения. */
+export function dbUnavailableReason(): Error | null {
+  return dbUnavailableError
+}
+
+/** Помечает базу недоступной. Идемпотентно (первая причина важнее). */
+export function markDbUnavailable(error: unknown): void {
+  if (dbUnavailableError) return
+  dbUnavailableError = error instanceof Error ? error : new Error(String(error))
+  console.warn('[db] local database is unavailable:', dbUnavailableError)
+}
+
+/** Только для тестов: вернуть базу в «доступное» состояние. */
+export function resetDbAvailabilityForTests(): void {
+  dbUnavailableError = null
+}
+
+/**
+ * Best-effort обращение к базе: если база не открылась (или упала на этом
+ * вызове) — возвращаем fallback вместо исключения. Кэш — не критичный путь,
+ * приложение обязано работать и без него (S61).
+ */
+export async function withDb<T>(fallback: T, run: () => Promise<T>): Promise<T> {
+  if (isDbUnavailable()) return fallback
+  try {
+    return await run()
+  } catch (error) {
+    // Отличаем «база сломана» от обычной ошибки запроса: первое выключает кэш
+    // целиком, второе просто отдаёт fallback.
+    if (isFatalDbError(error)) markDbUnavailable(error)
+    else console.warn('[db] request failed:', error)
+    return fallback
+  }
+}
+
+/** Ошибки, после которых обращаться к базе бессмысленно. */
+const FATAL_DB_ERROR_NAMES = new Set([
+  'VersionError',
+  'InvalidStateError',
+  'DatabaseClosedError',
+  'MissingAPIError',
+  'UnknownError',
+  'QuotaExceededError',
+])
+
+export function isFatalDbError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const name = (error as { name?: unknown }).name
+  return typeof name === 'string' && FATAL_DB_ERROR_NAMES.has(name)
+}
+
+/**
  * Инициализация базы данных
  * Вызывается при старте приложения
  */
@@ -83,6 +150,9 @@ export async function initDatabase(): Promise<void> {
     await db.open()
   } catch (error) {
     console.error('Failed to initialize IndexedDB:', error)
+    // Дальше работаем без локального кэша, а не заваливаем пользователя
+    // повторяющимися тостами об ошибке (S61).
+    markDbUnavailable(error)
     throw error
   }
 }

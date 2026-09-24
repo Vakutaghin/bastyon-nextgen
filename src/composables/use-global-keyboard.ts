@@ -2,111 +2,118 @@ import { onMounted, onBeforeUnmount } from 'vue'
 import { videoPlayerManager } from '@/b-components/content/video-player/video-player-manager'
 
 /**
- * Composable для глобальной обработки клавиатуры
- * Обрабатывает нажатие Space, M, Shift+>, Shift+<, Shift+/ для управления видеоплеером
+ * Глобальные горячие клавиши видеоплеера: Space, M, Shift+>, Shift+<, Shift+/.
+ *
+ * Почему так аккуратно (S23): обработчик висел в capture-фазе и звал
+ * `stopPropagation`, то есть съедал Space и M у ЛЮБОГО сфокусированного
+ * элемента — кнопки не нажимались пробелом, select не открывался, модалки не
+ * получали клавиши, а собственные хоткеи плеера (`use-video-hotkeys`) вообще
+ * не доходили. Теперь: слушаем на `window` (после всех обработчиков документа),
+ * уважаем `defaultPrevented` и не трогаем интерактивные элементы и диалоги.
  */
+
+/** Элементы, для которых клавиша — их собственное действие. */
+const INTERACTIVE_TAGS = new Set([
+  'INPUT',
+  'TEXTAREA',
+  'SELECT',
+  'BUTTON',
+  'OPTION',
+  'SUMMARY',
+  'AUDIO',
+  'VIDEO',
+])
+
+/** Роли ARIA, которые реагируют на Space/Enter сами. */
+const INTERACTIVE_ROLES = new Set([
+  'button',
+  'checkbox',
+  'radio',
+  'switch',
+  'menuitem',
+  'option',
+  'tab',
+  'combobox',
+  'textbox',
+  'slider',
+])
+
+/**
+ * `true`, если элемент (или его предок) сам обрабатывает клавиши: поле ввода,
+ * кнопка, ссылка, элемент с ролью, открытый диалог.
+ */
+export function isHotkeyBlockedBy(element: Element | null): boolean {
+  if (!element) return false
+
+  const tagName = element.tagName?.toUpperCase?.() ?? ''
+  if (INTERACTIVE_TAGS.has(tagName)) return true
+  if (tagName === 'A' && element.hasAttribute('href')) return true
+
+  const contentEditable = element.getAttribute('contenteditable')
+  if (contentEditable === 'true' || contentEditable === '') return true
+
+  const role = element.getAttribute('role')
+  if (role && INTERACTIVE_ROLES.has(role)) return true
+
+  // Внутри модалки/диалога клавиши принадлежат ей, а не фоновому видео.
+  if (element.closest?.('[role="dialog"], .ant-modal-wrap, .ant-drawer')) return true
+
+  // Элемент в фокусной ловушке (tabindex) — тоже чужая территория.
+  if (element.closest?.('[contenteditable="true"], [contenteditable=""]')) return true
+
+  return false
+}
+
 export function useGlobalKeyboard() {
-  /**
-   * Проверяет, находится ли фокус на элементе ввода (input, textarea, contenteditable)
-   */
-  const isInputFocused = (): boolean => {
-    const activeElement = document.activeElement
-
-    if (!activeElement) {
-      return false
-    }
-
-    const tagName = activeElement.tagName.toLowerCase()
-
-    // Проверяем input и textarea
-    if (tagName === 'input' || tagName === 'textarea') {
-      return true
-    }
-
-    // Проверяем contenteditable элементы
-    const contentEditable = activeElement.getAttribute('contenteditable')
-    if (contentEditable === 'true' || contentEditable === '') {
-      return true
-    }
-
-    return false
-  }
-
-  /**
-   * Обработчик нажатия клавиш
-   */
   const handleKeyDown = (event: KeyboardEvent): void => {
-    // Игнорируем, если фокус на элементе ввода
-    if (isInputFocused()) {
-      return
-    }
+    // Кто-то уже обработал (например хоткеи самого плеера) — не дублируем.
+    if (event.defaultPrevented) return
 
-    // Проверяем, был ли запущен хотя бы один плеер
-    // Горячие клавиши работают только если пользователь уже взаимодействовал с видео
-    if (!videoPlayerManager.getHasUserInteracted()) {
-      return
-    }
+    const target = event.target instanceof Element ? event.target : null
+    if (isHotkeyBlockedBy(target) || isHotkeyBlockedBy(document.activeElement)) return
 
-    // Обрабатываем Space для play/pause
+    // Горячие клавиши работают только если пользователь уже взаимодействовал с видео.
+    if (!videoPlayerManager.getHasUserInteracted()) return
+
+    // Space — play/pause (и не даём странице прокрутиться).
     if (event.code === 'Space' || event.key === ' ') {
-      // Предотвращаем стандартное поведение (прокрутку страницы)
       event.preventDefault()
-      event.stopPropagation()
-
-      // Переключаем воспроизведение активного или последнего активного видеоплеера
       videoPlayerManager.toggleCurrentPlaying()
       return
     }
 
-    // Обрабатываем M (латинская) для mute/unmute
-    // Используем event.code для независимости от раскладки
+    // M (по коду — независимо от раскладки) — mute/unmute.
     if (event.code === 'KeyM') {
       event.preventDefault()
-      event.stopPropagation()
-
-      // Переключаем mute/unmute активного или последнего активного видеоплеера
       videoPlayerManager.toggleMute()
       return
     }
 
-    // Обрабатываем Shift+> (Period) для увеличения скорости
     if (event.code === 'Period' && event.shiftKey) {
       event.preventDefault()
-      event.stopPropagation()
-
-      // Увеличиваем скорость воспроизведения
       videoPlayerManager.increasePlaybackRate()
       return
     }
 
-    // Обрабатываем Shift+< (Comma) для уменьшения скорости
     if (event.code === 'Comma' && event.shiftKey) {
       event.preventDefault()
-      event.stopPropagation()
-
-      // Уменьшаем скорость воспроизведения
       videoPlayerManager.decreasePlaybackRate()
       return
     }
 
-    // Обрабатываем Shift+/ (Slash) для показа справки по горячим клавишам (символ ?)
     if (event.code === 'Slash' && event.shiftKey) {
       event.preventDefault()
-      event.stopPropagation()
-
-      // Показываем/скрываем справку
       videoPlayerManager.toggleHotkeysHelp()
-      return
     }
   }
 
   onMounted(() => {
-    // Добавляем обработчик на уровне документа
-    document.addEventListener('keydown', handleKeyDown, true) // useCapture = true для перехвата до других обработчиков
+    // window, а не document: событие доходит сюда ПОСЛЕ обработчиков документа,
+    // поэтому хоткеи плеера успевают пометить его обработанным.
+    window.addEventListener('keydown', handleKeyDown)
   })
 
   onBeforeUnmount(() => {
-    // Удаляем обработчик при размонтировании
-    document.removeEventListener('keydown', handleKeyDown, true)
+    window.removeEventListener('keydown', handleKeyDown)
   })
 }

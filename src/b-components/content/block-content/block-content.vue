@@ -20,6 +20,7 @@ import BlockCode from './blocks/block-code/block-code.vue'
 import BlockImage from './blocks/block-image/block-image.vue'
 import BlockLink from './blocks/block-link/block-link.vue'
 import BlockTable from './blocks/block-table/block-table.vue'
+import BlockDelimiter from './blocks/block-delimiter/block-delimiter.vue'
 import { SC_BlockContent } from './styled'
 
 export interface BlockContentBlock {
@@ -53,6 +54,8 @@ const COMPONENT_MAP: Record<string, Component> = {
   image: BlockImage,
   link: BlockLink,
   table: BlockTable,
+  // Раньше delimiter падал в BlockParagraph и рисовался пустым абзацем (S25).
+  delimiter: BlockDelimiter,
 }
 
 function getBlockComponent(type: string): Component {

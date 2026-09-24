@@ -881,6 +881,13 @@ a:active {
   z-index: 3000 !important;
 }
 
+/* Тосты — выше модалок и их масок (N32, Z_INDEX.TOAST = 3000).
+   У ant контейнер уведомлений идёт с z-index 1050, а маски модалок — 2000+,
+   поэтому «Скопировано» из модалки с мнемоникой было не видно. */
+.ant-notification {
+  z-index: 3000 !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Mobile compactness for Ant Design Card body — vue3-styled-components не
    доводит :deep() до .ant-card-body, поэтому override живёт здесь как глобал.

@@ -92,3 +92,39 @@ describe('formatBastyonLinks', () => {
     expect(result).toContain('href="https://x.com"')
   })
 })
+
+// S24: регулярка шла по сырой строке и вставляла <a> внутрь значений
+// атрибутов — инлайновые ссылки и картинки теряли href/src.
+describe('formatBastyonLinks — линкификация только текстовых узлов (S24)', () => {
+  it('не ломает href существующей ссылки', () => {
+    const result = formatBastyonLinks('<a href="https://example.com/page">тут</a>')
+    expect(result).toContain('href="https://example.com/page"')
+    expect(result).not.toContain('<a href="<a')
+    // Внутрь ссылки вложенная ссылка не попадает.
+    expect(result.match(/<a /g)).toHaveLength(1)
+  })
+
+  it('не ломает src картинки', () => {
+    const result = formatBastyonLinks('<img src="https://example.com/pic.png">')
+    expect(result).toContain('src="https://example.com/pic.png"')
+    expect(result).not.toContain('<a ')
+  })
+
+  it('линкифицирует текст рядом с готовой разметкой', () => {
+    const result = formatBastyonLinks('<b>жирный</b> и https://example.com/next')
+    expect(result).toContain('<b>жирный</b>')
+    expect(result).toContain('href="https://example.com/next"')
+  })
+
+  it('не трогает ссылки внутри code/pre', () => {
+    const result = formatBastyonLinks('<code>https://example.com</code>')
+    expect(result).not.toContain('<a ')
+    expect(result).toContain('<code>https://example.com</code>')
+  })
+
+  it('меншен внутри существующей ссылки не превращается во вложенную', () => {
+    const result = formatBastyonLinks('<a href="/somewhere">@alice</a>')
+    expect(result.match(/<a /g)).toHaveLength(1)
+    expect(result).not.toContain('mention-link')
+  })
+})

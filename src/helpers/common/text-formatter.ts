@@ -40,49 +40,34 @@ function linkifyMentions(text: string): string {
 }
 
 /**
- * Форматирует текст, преобразуя bastyon:// ссылки и обычные URL в кликабельные HTML ссылки
- * @param text - Текст для форматирования
- * @returns HTML строка с преобразованными ссылками
+ * Разбирает ПЛОСКИЙ текст (без разметки) на ссылки и остальной текст,
+ * возвращая безопасный HTML. Вызывается только для текстовых узлов.
  */
-export function formatBastyonLinks(text: string): string {
-  if (!text || typeof text !== 'string') {
-    return text || ''
-  }
-
-  // Комбинированное регулярное выражение для поиска всех типов ссылок
+function linkifyPlainText(text: string): string {
   // Порядок важен: сначала bastyon://, потом ipfs://|ipns:// (файлообмен;
   // фрагмент `#key=…` приватной ссылки — часть URL), потом https?://, потом www.
   const linkRegex =
     /(bastyon:\/\/[^\s<>'"]+|ipfs:\/\/[^\s<>'"]+|ipns:\/\/[^\s<>'"]+|https?:\/\/[^\s<>'"]+[^\s<>"'.,;:!?]|www\.[^\s<>'"]+[^\s<>"'.,;:!?])/gi
 
-  const parts: Array<{
-    type: 'text' | 'link'
-    content: string
-    url?: string
-    className?: string
-    isExternal?: boolean
-  }> = []
+  let out = ''
   let lastIndex = 0
+  let match: RegExpExecArray | null
 
-  let match
+  linkRegex.lastIndex = 0
   while ((match = linkRegex.exec(text)) !== null) {
-    // Добавляем текст до ссылки
     if (match.index > lastIndex) {
-      const textPart = text.substring(lastIndex, match.index)
-      if (textPart) {
-        parts.push({ type: 'text', content: textPart })
-      }
+      out += linkifyMentions(escapeHtml(text.slice(lastIndex, match.index)))
     }
 
-    // Определяем тип ссылки и обрабатываем
     const url = match[0]
     let href = url
     let className: string | undefined
-    let isExternal = true // По умолчанию все ссылки внешние
+    let isExternal = true
 
     if (url.startsWith('bastyon://')) {
+      // Внутренняя ссылка: клик перехватывает делегат app-layout (N15).
       className = 'bastyon-link'
-      isExternal = false // bastyon:// ссылки внутренние
+      isExternal = false
     } else if (/^ipfs:\/\/|^ipns:\/\//i.test(url)) {
       // Открывает наш просмотрщик (делегат кликов), не новую вкладку.
       className = 'ipfs-link'
@@ -91,38 +76,61 @@ export function formatBastyonLinks(text: string): string {
       href = `https://${url}`
     }
 
-    parts.push({ type: 'link', content: url, url: href, className, isExternal })
-    lastIndex = match.index + match[0].length
+    const classAttr = className ? ` class='${escapeHtml(className)}'` : ''
+    const targetAttr = isExternal ? " target='_blank' rel='noopener noreferrer'" : ''
+    out += `<a href='${escapeHtml(href)}'${classAttr}${targetAttr}>${escapeHtml(url)}</a>`
+
+    lastIndex = match.index + url.length
   }
 
-  // Добавляем оставшийся текст
   if (lastIndex < text.length) {
-    const textPart = text.substring(lastIndex)
-    if (textPart) {
-      parts.push({ type: 'text', content: textPart })
+    out += linkifyMentions(escapeHtml(text.slice(lastIndex)))
+  }
+
+  return out
+}
+
+/**
+ * Узлы, внутрь которых линкификация не заходит: в `<a>` вложенная ссылка
+ * невалидна, в `<code>`/`<pre>` ссылка — часть кода.
+ */
+const SKIP_TAGS = new Set(['A', 'CODE', 'PRE', 'SCRIPT', 'STYLE', 'TEXTAREA'])
+
+/** Обходит дерево и линкифицирует ТОЛЬКО текстовые узлы (S24). */
+function linkifyTextNodes(root: ParentNode): void {
+  for (const child of Array.from(root.childNodes)) {
+    if (child.nodeType === 3) {
+      const text = child.textContent ?? ''
+      if (!text) continue
+      const html = linkifyPlainText(text)
+      const holder = document.createElement('template')
+      holder.innerHTML = html
+      child.replaceWith(...Array.from(holder.content.childNodes))
+      continue
+    }
+    if (child.nodeType === 1 && !SKIP_TAGS.has((child as Element).tagName)) {
+      linkifyTextNodes(child as ParentNode)
     }
   }
+}
 
-  // Если ссылок не найдено — линкифицируем меншены и санитизируем весь текст.
-  if (parts.length === 0) {
-    return sanitizeHtml(linkifyMentions(text))
+/**
+ * Форматирует текст поста: bastyon://, ipfs://, обычные URL и @меншены
+ * становятся ссылками.
+ *
+ * Сначала санитайзер (whitelist через `xss`), потом линкификация по дереву —
+ * и только по текстовым узлам. Раньше регулярка шла по сырой строке и
+ * вставляла `<a>` ВНУТРЬ значений атрибутов: инлайновая `<a href="https://…">`
+ * или `<img src="https://…">` в теле поста теряли href/src (S24).
+ */
+export function formatBastyonLinks(text: string): string {
+  if (!text || typeof text !== 'string') {
+    return text || ''
   }
 
-  // Собираем результат и санитизируем целиком (whitelist через `xss`): инлайн-HTML
-  // постов сохраняется, опасные теги/атрибуты/протоколы вырезаются.
-  const html = parts
-    .map((part) => {
-      if (part.type === 'link' && part.url) {
-        const escapedUrl = escapeHtml(part.content)
-        const escapedHref = escapeHtml(part.url)
-        const classAttr = part.className ? ` class='${escapeHtml(part.className)}'` : ''
-        // Только внешние ссылки (не bastyon://) открываются в новой вкладке
-        const targetAttr = part.isExternal ? " target='_blank' rel='noopener noreferrer'" : ''
-        return `<a href='${escapedHref}'${classAttr}${targetAttr}>${escapedUrl}</a>`
-      } else {
-        return linkifyMentions(part.content)
-      }
-    })
-    .join('')
-  return sanitizeHtml(html)
+  const safe = sanitizeHtml(text)
+  const template = document.createElement('template')
+  template.innerHTML = safe
+  linkifyTextNodes(template.content)
+  return template.innerHTML
 }

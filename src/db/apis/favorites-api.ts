@@ -1,4 +1,4 @@
-import { db } from '../database'
+import { db, withDb } from '../database'
 import type { FavoritePost } from '../types'
 
 /**
@@ -13,11 +13,14 @@ export const favoritesAPI = {
   async adoptLegacy(address: string): Promise<void> {
     if (!address || adopted.has(address)) return
     adopted.add(address)
-    await db.transaction('rw', db.favorites, async () => {
-      const legacy = await db.favorites.where('address').equals('').toArray()
-      if (legacy.length === 0) return
-      await db.favorites.bulkDelete(legacy.map((r) => [r.address, r.id] as [string, string]))
-      await db.favorites.bulkPut(legacy.map((r) => ({ ...r, address })))
+    // Недоступная база не должна ронять карточку поста (S61) — см. withDb.
+    await withDb(undefined, async () => {
+      await db.transaction('rw', db.favorites, async () => {
+        const legacy = await db.favorites.where('address').equals('').toArray()
+        if (legacy.length === 0) return
+        await db.favorites.bulkDelete(legacy.map((r) => [r.address, r.id] as [string, string]))
+        await db.favorites.bulkPut(legacy.map((r) => ({ ...r, address })))
+      })
     })
   },
 
@@ -25,14 +28,16 @@ export const favoritesAPI = {
    * Добавить пост в избранное
    */
   async add(address: string, id: string): Promise<void> {
-    await db.favorites.put({ address, id, addedAt: Date.now() })
+    await withDb(undefined, () =>
+      db.favorites.put({ address, id, addedAt: Date.now() }).then(() => undefined)
+    )
   },
 
   /**
    * Удалить пост из избранного
    */
   async remove(address: string, id: string): Promise<void> {
-    await db.favorites.delete([address, id])
+    await withDb(undefined, () => db.favorites.delete([address, id]))
   },
 
   /**
@@ -40,8 +45,7 @@ export const favoritesAPI = {
    */
   async has(address: string, id: string): Promise<boolean> {
     await this.adoptLegacy(address)
-    const item = await db.favorites.get([address, id])
-    return !!item
+    return withDb(false, async () => !!(await db.favorites.get([address, id])))
   },
 
   /**
@@ -49,11 +53,13 @@ export const favoritesAPI = {
    */
   async getList(address: string, limit?: number, offset?: number): Promise<FavoritePost[]> {
     await this.adoptLegacy(address)
-    const items = await db.favorites.where('address').equals(address).sortBy('addedAt')
-    let list = items.reverse()
-    if (offset) list = list.slice(offset)
-    if (limit) list = list.slice(0, limit)
-    return list
+    return withDb<FavoritePost[]>([], async () => {
+      const items = await db.favorites.where('address').equals(address).sortBy('addedAt')
+      let list = items.reverse()
+      if (offset) list = list.slice(offset)
+      if (limit) list = list.slice(0, limit)
+      return list
+    })
   },
 
   /**
@@ -61,13 +67,21 @@ export const favoritesAPI = {
    */
   async getAllIds(address: string): Promise<string[]> {
     await this.adoptLegacy(address)
-    const items = await db.favorites.where('address').equals(address).sortBy('addedAt')
-    return items.reverse().map((item) => item.id)
+    return withDb<string[]>([], async () => {
+      const items = await db.favorites.where('address').equals(address).sortBy('addedAt')
+      return items.reverse().map((item) => item.id)
+    })
   },
 
   /** Стереть избранное аккаунта (удаление аккаунта). */
   async purge(address: string): Promise<void> {
-    await db.favorites.where('address').equals(address).delete()
+    await withDb(undefined, () =>
+      db.favorites
+        .where('address')
+        .equals(address)
+        .delete()
+        .then(() => undefined)
+    )
   },
 
   /** Для тестов: забыть, кому уже мигрировали legacy. */

@@ -1,5 +1,6 @@
 import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { sanitizeHtml } from '@/helpers/content/sanitize-html'
+import { normalizeListItems, normalizeTableRows } from '@/helpers/content/editorjs-blocks'
 
 interface EditorJsBlock {
   type: string
@@ -148,6 +149,10 @@ export function editorjsToHtml(content: string | object): string {
           return '<hr class="ce-delimiter">'
         case 'code':
           return parseCode(block.data)
+        case 'link':
+          return parseLink(block.data)
+        case 'table':
+          return parseTable(block.data)
         default:
           return ''
       }
@@ -194,13 +199,42 @@ function parseParagraph(raw: unknown): string {
 }
 
 function parseList(raw: unknown): string {
-  const data = asRecord(raw) as { style?: 'ordered' | 'unordered'; items?: string[] }
-  if (!data.items || !Array.isArray(data.items)) return ''
+  const data = asRecord(raw) as { style?: 'ordered' | 'unordered'; items?: unknown }
+  // Элементы могут быть строками (v1) или объектами `{content, items}` (v2) —
+  // без нормализации в вёрстку уезжало `[object Object]` (S25).
+  const items = normalizeListItems(data.items)
+  if (items.length === 0) return ''
 
   const tag = data.style === 'ordered' ? 'ol' : 'ul'
-  const items = data.items.map((item) => `<li>${formatBastyonLinks(item)}</li>`).join('')
+  const html = items.map((item) => `<li>${formatBastyonLinks(item)}</li>`).join('')
 
-  return `<${tag}>${items}</${tag}>`
+  return `<${tag}>${html}</${tag}>`
+}
+
+/** Ссылка-карточка (`link`): превью раньше её теряло целиком (S25). */
+function parseLink(raw: unknown): string {
+  const data = asRecord(raw) as { link?: string; meta?: { title?: string; description?: string } }
+  const url = typeof data.link === 'string' ? data.link : ''
+  if (!url) return ''
+  const title = data.meta?.title || url
+  return `<p class="ce-link">${formatBastyonLinks(title === url ? url : `${title} — ${url}`)}</p>`
+}
+
+/** Таблица: превью раньше её теряло целиком (S25). */
+function parseTable(raw: unknown): string {
+  const data = asRecord(raw) as { content?: unknown; withHeadings?: boolean }
+  const rows = normalizeTableRows(data.content)
+  if (rows.length === 0) return ''
+
+  const cell = (text: string, tag: 'td' | 'th') => `<${tag}>${formatBastyonLinks(text)}</${tag}>`
+  const body = rows
+    .map((row, index) => {
+      const tag = data.withHeadings && index === 0 ? 'th' : 'td'
+      return `<tr>${row.map((text) => cell(text, tag)).join('')}</tr>`
+    })
+    .join('')
+
+  return `<table class="ce-table">${body}</table>`
 }
 
 function parseImage(raw: unknown): string {

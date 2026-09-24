@@ -1,4 +1,4 @@
-import { db } from '../database'
+import { db, withDb } from '../database'
 import { setTimestamps } from '../utils'
 import type { AppSettings } from '../types'
 
@@ -13,16 +13,16 @@ export const settingsAPI = {
     const setting: AppSettings = {
       key,
       value,
-      ...setTimestamps({} as AppSettings, true)
+      ...setTimestamps({} as AppSettings, true),
     }
-    return await db.settings.put(setting)
+    // Настройки переживут отсутствие базы: вызов не должен бросать (S61).
+    return await withDb(key, () => db.settings.put(setting))
   },
 
   /**
    * Получить настройку
    */
   async get(key: string): Promise<unknown> {
-    const item = await db.settings.get(key)
-    return item?.value
-  }
+    return withDb<unknown>(undefined, async () => (await db.settings.get(key))?.value)
+  },
 }
