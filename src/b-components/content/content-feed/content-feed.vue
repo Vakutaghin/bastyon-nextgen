@@ -117,7 +117,9 @@
           <p>{{ t('postCard.allPostsLoaded') }}</p>
         </SC_FeedEnd>
       </template>
-      <Empty v-else-if="!isLoading" :description="t('postCard.feedEmpty')" />
+      <!-- «Пусто» только после того, как ответ разобран: иначе мигает между
+           окончанием загрузки и раскладкой постов. -->
+      <Empty v-else-if="!isLoading && hasSettled" :description="t('postCard.feedEmpty')" />
     </SC_FeedContent>
 
     <SC_ScrollToTop
@@ -215,6 +217,7 @@ const modalStore = useModalStore()
 const {
   allPosts,
   isLoading,
+  hasSettled,
   isLoadingMore,
   error,
   hasMore,

@@ -81,6 +81,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   // ленты vs отображаемой; пилюля «новые посты» в content-feed.
   const newPostsCount = ref<number>(0)
 
+  // Ответ по текущему фильтру уже разобран и разложен в allPosts. Без этого
+  // признака «Лента пуста» мигала: между «isLoading стал false» и «посты
+  // разложены» проходит асинхронная догрузка оригиналов репостов, и в это
+  // окно лента выглядела пустой и загруженной одновременно.
+  const hasSettled = ref(false)
+
   // Следим за изменениями фильтров
   watch(
     [
@@ -97,6 +103,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       // Сбрасываем состояние при изменении фильтров
       feedGeneration.value += 1
       currentTxidForQuery.value = ''
+      hasSettled.value = false
       hasMore.value = true
       allPosts.value = []
       isLoadingMore.value = false
@@ -166,6 +173,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       const requestedTxid = currentTxidForQuery.value
 
       if (!newData?.data?.contents) {
+        // Пустой, но состоявшийся ответ — это «постов нет», а не «ещё грузим».
+        if (newData) hasSettled.value = true
         if (newData && currentTxidForQuery.value !== '') {
           // Если получили пустой ответ при загрузке следующей страницы, значит больше нет постов
           hasMore.value = false
@@ -220,6 +229,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
 
       loadMoreError.value = null
       isLoadingMore.value = false
+      hasSettled.value = true
     },
     { immediate: true }
   )
@@ -428,6 +438,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     allPosts: computed(() => allPosts.value),
     /** Загружается ли первая порция */
     isLoading,
+    /** Ответ по текущему фильтру разобран: до этого «пусто» показывать нельзя */
+    hasSettled: computed(() => hasSettled.value),
     /** Загружается ли следующая порция */
     isLoadingMore: computed(() => isLoadingMore.value),
     /** Есть ли ошибка */
