@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import { cspSingleSource } from './vite-plugin-csp.js'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import { readFileSync } from 'node:fs'
@@ -92,6 +93,9 @@ const base = process.env.VITE_TAURI === 'true' ? './' : '/'
 export default defineConfig(({ mode }) => ({
   base,
   plugins: [
+    // V26: в бандле Tauri действовала бы вторая CSP из index.html, и пересечение
+    // двух политик резало iframe мини-апп и локальный IPFS-шлюз.
+    cspSingleSource({ isTauri: process.env.VITE_TAURI === 'true' }),
     peertubeProxyPlugin(),
     babel({
       babelConfig: {
