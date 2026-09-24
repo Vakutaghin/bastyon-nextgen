@@ -28,5 +28,11 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+bastyon",
+      "url": "/?deeplink=%s"
+    }
   ]
 }

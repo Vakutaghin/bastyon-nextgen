@@ -12,9 +12,19 @@
     "dialog:default",
     "fs:allow-write-file",
     "fs:scope-download",
+    "deep-link:default",
+    "deep-link:allow-register",
+    "deep-link:allow-is-registered",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://**:*/**" }, { "url": "http://127.0.0.1:*/**" }]
+      "allow": [
+        {
+          "url": "https://**:*/**"
+        },
+        {
+          "url": "http://127.0.0.1:*/**"
+        }
+      ]
     }
   ]
 }

@@ -32,6 +32,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!--
+                Системные ссылки приложения: bastyon:// и историческая
+                pocketnet://. Активность уже singleTask, поэтому ссылка
+                приходит в запущенный экземпляр (onNewIntent → appUrlOpen),
+                а не поднимает второй.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="bastyon" />
+                <data android:scheme="pocketnet" />
+            </intent-filter>
+
         </activity>
 
         <provider

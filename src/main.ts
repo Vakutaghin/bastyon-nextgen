@@ -23,6 +23,7 @@ import 'ant-design-vue/dist/reset.css'
 import App from '@/src.vue'
 import router from '@/router'
 import { initCapacitor } from '@mobile/bootstrap'
+import { setupDeepLinks } from '@/composables/use-deep-links'
 import { initDatabase } from '@/db/database'
 import { useAuthStore } from '@/blockchain'
 import {
@@ -88,6 +89,9 @@ configureUnlockUi({
 // N7: до `router.isReady()` текущий маршрут — START_LOCATION с пустым meta,
 // поэтому проверка «это embed?» здесь всегда возвращала false и разлок сейфа
 // запускался в том числе на публичной embed-странице. Ждём готовности роутера.
+// Системные ссылки `bastyon://…` (deep links) — Tauri, Android/iOS, PWA.
+void router.isReady().then(() => setupDeepLinks(router))
+
 void router.isReady().then(() => {
   if (isEmbedRoute()) return
   // Fire-and-forget: модалка (если нужна) появится сразу после mount; restoreSession

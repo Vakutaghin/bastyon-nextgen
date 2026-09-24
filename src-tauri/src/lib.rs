@@ -805,6 +805,17 @@ async fn transcode_video(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
+    // Ссылки `bastyon://…` из системы (V40/deep links). На Windows и Linux ОС
+    // запускает ВТОРОЙ экземпляр приложения с URL в argv, поэтому
+    // single-instance с фичей `deep-link` обязателен: он передаёт ссылку уже
+    // запущенному окну и закрывает дубль. Регистрируем его первым — так
+    // требует плагин.
+    .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+      if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_focus();
+      }
+    }))
+    .plugin(tauri_plugin_deep_link::init())
     // Внешние ссылки: без opener-плагина `window.open(_, '_blank')` и
     // `<a target="_blank">` в WKWebView/webkitgtk — no-op (wry возвращает nil,
     // навигация отменяется). Фронт зовёт его через `helpers/common/open-external`

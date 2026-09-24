@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Этот файл мержится в Info.plist macOS-бандла (Tauri подхватывает
+  `src-tauri/Info.plist` автоматически).
+
+  CFBundleURLTypes регистрирует приложение обработчиком `bastyon://` и
+  исторической схемы `pocketnet://` в LaunchServices. Плагин deep-link знает
+  схемы из `tauri.conf.json`, но на macOS решает именно Info.plist бандла —
+  держим их здесь явно, чтобы регистрация не зависела от версии CLI.
+-->
+<plist version="1.0">
+  <dict>
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLName</key>
+        <string>com.bastyon.app</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>bastyon</string>
+          <string>pocketnet</string>
+        </array>
+      </dict>
+    </array>
+  </dict>
+</plist>

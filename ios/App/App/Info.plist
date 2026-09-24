@@ -59,5 +59,19 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.bastyon.app</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>bastyon</string>
+				<string>pocketnet</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

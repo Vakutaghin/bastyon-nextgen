@@ -49,5 +49,12 @@
     "category": "Utility",
     "shortDescription": "Bastyon Desktop Application",
     "longDescription": "Bastyon - Decentralized Social Network Desktop Application"
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["bastyon", "pocketnet"]
+      }
+    }
   }
 }

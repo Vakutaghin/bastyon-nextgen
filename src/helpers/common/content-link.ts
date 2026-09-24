@@ -15,7 +15,7 @@
  * Функция чистая: DOM и роутер — на стороне вызывающего.
  */
 
-import { parseBasytonLink } from '@/b-components/messenger/lib/bastyon-link'
+import { resolveDeepLink } from '@/helpers/common/deep-link'
 
 export type ContentLinkAction =
   /** Внутренняя навигация роутером. */
@@ -34,11 +34,6 @@ export interface ContentLinkContext {
   origin: string
 }
 
-/** Маршрут поста по разобранной `bastyon://`-ссылке. */
-function postPath(txid: string, commentId?: string): string {
-  return commentId ? `/post/${txid}?commentid=${commentId}` : `/post/${txid}`
-}
-
 export function classifyContentLink(href: string, ctx: ContentLinkContext): ContentLinkAction {
   const raw = (href ?? '').trim()
   if (!raw) return { kind: 'none' }
@@ -48,12 +43,13 @@ export function classifyContentLink(href: string, ctx: ContentLinkContext): Cont
     return raw.startsWith('/') ? { kind: 'router', path: raw } : { kind: 'none' }
   }
 
-  if (/^bastyon:\/\//i.test(raw)) {
-    const target = parseBasytonLink(raw)
-    // Неразобранную bastyon-ссылку никуда не ведём: в Tauri навигация на
-    // неизвестную схему выкидывает webview из приложения.
-    if (!target) return { kind: 'router', path: '/' }
-    return { kind: 'router', path: postPath(target.txid, target.commentId) }
+  if (/^bastyon:\/\/|^pocketnet:\/\//i.test(raw)) {
+    // Тот же разбор, что у системных ссылок (deep links), — клик по ссылке в
+    // посте и клик по ней же в почте ведут в одно место.
+    const path = resolveDeepLink(raw)
+    // Неразобранную ссылку никуда не ведём: в Tauri навигация на неизвестную
+    // схему выкидывает webview из приложения.
+    return { kind: 'router', path: path ?? '/' }
   }
 
   let parsed: URL
