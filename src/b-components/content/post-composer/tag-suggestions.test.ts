@@ -43,3 +43,15 @@ describe('filterTagSuggestions', () => {
     expect(filterTagSuggestions(cloud, 'zzz', [])).toEqual([])
   })
 })
+
+describe('filterTagSuggestions: по умолчанию показываем весь список', () => {
+  const big = Array.from({ length: 60 }, (_, i) => `tag${i}`)
+
+  it('без явного limit отдаёт всё облако', () => {
+    expect(filterTagSuggestions(big, '', [])).toHaveLength(60)
+  })
+
+  it('без явного limit отдаёт все совпадения', () => {
+    expect(filterTagSuggestions(big, 'tag1', [])).toHaveLength(11) // tag1 + tag10..tag19
+  })
+})

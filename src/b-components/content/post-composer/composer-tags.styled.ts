@@ -73,8 +73,11 @@ export const SC_Dropdown = styled.ul`
   border: 1px solid ${COLORS.BORDER};
   border-radius: ${BORDER_RADIUS.MD};
   box-shadow: 0 6px 20px ${COLORS.OVERLAY_12};
-  max-height: 240px;
+  max-height: min(320px, 50vh);
   overflow-y: auto;
+  /* Скролл выпадашки не уезжает в модалку: без этого колесо докручивало список
+     до конца и продолжало листать саму модалку, унося подсказки с экрана. */
+  overscroll-behavior: contain;
 `
 
 const itemProps = { active: Boolean }

@@ -17,8 +17,10 @@ export const SC_MentionDropdown = styled.ul`
   margin: 4px 0 0;
   padding: 4px;
   list-style: none;
-  max-height: 240px;
+  max-height: min(320px, 50vh);
   overflow-y: auto;
+  /* Тот же случай, что и у подсказок тегов: скролл списка не должен листать модалку. */
+  overscroll-behavior: contain;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   border-radius: ${BORDER_RADIUS.MD};
