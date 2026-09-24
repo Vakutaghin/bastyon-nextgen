@@ -21,7 +21,7 @@ export const SC_VideoVolumeButton = styled.button`
   justify-content: center !important;
   border-radius: 4px !important;
   transition: background-color 0.2s ease !important;
-  color: #333 !important;
+  color: var(--color-text-primary) !important;
   flex-shrink: 0 !important;
   width: 32px !important;
   height: 32px !important;
@@ -38,11 +38,11 @@ export const SC_VideoVolumeButton = styled.button`
   }
 
   &:hover {
-    background: rgba(0, 0, 0, 0.1) !important;
+    background: var(--color-overlay-8) !important;
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.15) !important;
+    background: var(--color-overlay-12) !important;
   }
 
   &:focus {
@@ -77,7 +77,7 @@ export const SC_VideoVolumeMutedCross = styled.div`
     transform: translate(-50%, -50%) rotate(45deg) !important;
     width: 2px !important;
     height: 14px !important;
-    background-color: #999 !important;
+    background-color: var(--color-text-muted) !important;
     border-radius: 1px !important;
   }
 
@@ -89,7 +89,7 @@ export const SC_VideoVolumeMutedCross = styled.div`
     transform: translate(-50%, -50%) rotate(45deg) !important;
     width: 14px !important;
     height: 2px !important;
-    background-color: #999 !important;
+    background-color: var(--color-text-muted) !important;
     border-radius: 1px !important;
   }
 `

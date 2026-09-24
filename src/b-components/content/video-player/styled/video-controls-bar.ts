@@ -8,7 +8,9 @@ export const SC_VideoControlsBar = styled.div`
   justify-content: flex-start !important;
   gap: 12px !important;
   padding: 10px 14px !important;
-  background: rgba(255, 255, 255, 0.6) !important;
+  /* Подложка панели следует теме: в тёмной она была белой, а иконки на ней
+     глобальное правило ant-карточки перекрашивало в светлые — белое на белом. */
+  background: var(--color-surface-frosted) !important;
   backdrop-filter: blur(10px) !important;
   -webkit-backdrop-filter: blur(10px) !important;
   position: relative !important;
@@ -19,16 +21,20 @@ export const SC_VideoControlsBar = styled.div`
   height: 50px !important;
   pointer-events: auto !important;
 
+  button span {
+    color: inherit !important;
+  }
+
   @media (max-width: 768px) {
     gap: 6px !important;
-    padding: 8px 10px calc(8px + var(--safe-bottom)) 10px !important;
+    padding: 8px 10px !important;
     min-height: 56px !important;
     height: auto !important;
   }
 
   @media (max-width: 480px) {
     gap: 4px !important;
-    padding: 6px 8px calc(6px + var(--safe-bottom)) 8px !important;
+    padding: 6px 8px !important;
   }
 `
 
@@ -42,7 +48,7 @@ export const SC_VideoPlayPauseButton = styled.button`
   justify-content: center !important;
   border-radius: 4px !important;
   transition: background-color 0.2s ease !important;
-  color: #333 !important;
+  color: var(--color-text-primary) !important;
   flex-shrink: 0 !important;
   width: 40px !important;
   height: 40px !important;
@@ -58,11 +64,11 @@ export const SC_VideoPlayPauseButton = styled.button`
   }
 
   &:hover {
-    background: rgba(0, 0, 0, 0.1) !important;
+    background: var(--color-overlay-8) !important;
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.15) !important;
+    background: var(--color-overlay-12) !important;
   }
 
   &:focus {
@@ -106,7 +112,7 @@ export const SC_VideoPlayButton = styled.button`
 `
 
 export const SC_VideoTimeDisplay = styled.span`
-  color: #333 !important;
+  color: var(--color-text-primary) !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   user-select: none !important;
@@ -135,7 +141,7 @@ export const SC_VideoChapterMarker = styled.div`
 `
 
 export const SC_VideoChapterTitle = styled.span`
-  color: #333 !important;
+  color: var(--color-text-primary) !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   user-select: none !important;

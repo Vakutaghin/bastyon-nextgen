@@ -1,14 +1,25 @@
 // @ts-expect-error vue3-styled-components types
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_SubmenuArrow = styled.span`
   font-size: 10px;
-  color: ${COLORS.GRAY_999};
+  /* Не свой цвет, а приглушённый цвет пункта: так стрелка остаётся читаемой
+     в обеих темах и не зависит от того, кто выиграет за color этого span. */
+  color: inherit;
+  opacity: 0.6;
   margin-left: 8px;
 `
 
 export const SC_VideoQualityControl = styled.div`
+  /* Плеер лежит внутри ant-карточки поста, а её глобальное правило в style.css
+     (.ant-card-body span -> color: var(--color-text) !important) перекрашивает
+     любой вложенный span. В тёмной теме подписи пунктов меню становились
+     белыми на белом. Здесь специфичность выше (класс + два типа), поэтому
+     span берёт цвет своей кнопки. */
+  button span {
+    color: inherit !important;
+  }
+
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -28,7 +39,7 @@ export const SC_VideoQualityButton = styled.button`
   justify-content: center !important;
   border-radius: 4px !important;
   transition: background-color 0.2s ease !important;
-  color: #333 !important;
+  color: var(--color-text-primary) !important;
   flex-shrink: 0 !important;
   width: 40px !important;
   height: 40px !important;
@@ -38,11 +49,11 @@ export const SC_VideoQualityButton = styled.button`
   position: relative !important;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.1) !important;
+    background: var(--color-overlay-8) !important;
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.15) !important;
+    background: var(--color-overlay-12) !important;
   }
 
   &:focus {
@@ -57,11 +68,11 @@ export const SC_VideoQualityDropdown = styled.div<{
   bottom: 100% !important;
   left: 0 !important;
   margin-bottom: 8px !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
+  background: var(--color-bg-primary) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-lighter) !important;
   border-radius: 8px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: var(--shadow-md) !important;
   min-width: 140px !important;
   overflow: visible !important;
   opacity: ${(p) => (p.isOpen ? 1 : 0)} !important;
@@ -90,7 +101,7 @@ export const SC_VideoQualitySubmenuItem = styled.button<{ isOpen?: boolean }>`
   background: transparent !important;
   border: none !important;
   cursor: pointer !important;
-  color: #333 !important;
+  color: var(--color-text-primary) !important;
   font-size: 12px !important;
   font-weight: 400 !important;
   font-family:
@@ -101,11 +112,11 @@ export const SC_VideoQualitySubmenuItem = styled.button<{ isOpen?: boolean }>`
   position: relative !important;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.08) !important;
+    background: var(--color-overlay-8) !important;
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.12) !important;
+    background: var(--color-overlay-12) !important;
   }
 
   &:focus {
@@ -113,7 +124,7 @@ export const SC_VideoQualitySubmenuItem = styled.button<{ isOpen?: boolean }>`
   }
 
   &:not(:last-child) {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-bottom: 1px solid var(--color-border-lighter) !important;
   }
 `
 
@@ -122,11 +133,11 @@ export const SC_VideoQualitySubmenu = styled.div<{ isOpen?: boolean }>`
   left: 0 !important;
   bottom: 100% !important;
   margin-bottom: 4px !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
+  background: var(--color-bg-primary) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-lighter) !important;
   border-radius: 8px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: var(--shadow-md) !important;
   min-width: 90px !important;
   max-width: 110px !important;
   overflow: hidden !important;
@@ -149,7 +160,7 @@ export const SC_VideoQualitySubmenuItemInner = styled.button<{ isActive?: boolea
   background: transparent !important;
   border: none !important;
   cursor: pointer !important;
-  color: ${(p) => (p.isActive ? '#ff0000' : '#333')} !important;
+  color: ${(p) => (p.isActive ? '#ff0000' : 'var(--color-text-primary)')} !important;
   font-size: 11px !important;
   font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
   font-family:
@@ -162,11 +173,11 @@ export const SC_VideoQualitySubmenuItemInner = styled.button<{ isActive?: boolea
   white-space: nowrap !important;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.08) !important;
+    background: var(--color-overlay-8) !important;
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.12) !important;
+    background: var(--color-overlay-12) !important;
   }
 
   &:focus {
@@ -174,7 +185,7 @@ export const SC_VideoQualitySubmenuItemInner = styled.button<{ isActive?: boolea
   }
 
   &:not(:last-child) {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-bottom: 1px solid var(--color-border-lighter) !important;
   }
 `
 
@@ -187,7 +198,7 @@ export const SC_VideoQualityMenuItem = styled.button<{ isActive?: boolean }>`
   background: transparent !important;
   border: none !important;
   cursor: pointer !important;
-  color: ${(p) => (p.isActive ? '#ff0000' : '#333')} !important;
+  color: ${(p) => (p.isActive ? '#ff0000' : 'var(--color-text-primary)')} !important;
   font-size: 12px !important;
   font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
   font-family:
@@ -199,11 +210,11 @@ export const SC_VideoQualityMenuItem = styled.button<{ isActive?: boolean }>`
   box-sizing: border-box !important;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.08) !important;
+    background: var(--color-overlay-8) !important;
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.12) !important;
+    background: var(--color-overlay-12) !important;
   }
 
   &:focus {
@@ -211,6 +222,6 @@ export const SC_VideoQualityMenuItem = styled.button<{ isActive?: boolean }>`
   }
 
   &:not(:last-child) {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-bottom: 1px solid var(--color-border-lighter) !important;
   }
 `

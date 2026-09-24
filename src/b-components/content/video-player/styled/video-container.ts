@@ -26,7 +26,7 @@ export const SC_VideoContainer = styled.div`
   position: relative !important;
   width: 100% !important;
   max-width: 100% !important;
-  background-color: #f2f2f2 !important;
+  background-color: var(--color-bg-tertiary) !important;
   border-radius: 8px !important;
   overflow: hidden !important;
   margin-bottom: 15px !important;
@@ -232,7 +232,7 @@ export const SC_VideoFullscreenButton = styled.button`
   justify-content: center !important;
   border-radius: 4px !important;
   transition: background-color 0.2s ease !important;
-  color: #333 !important;
+  color: var(--color-text-primary) !important;
   flex-shrink: 0 !important;
   width: 40px !important;
   height: 40px !important;
@@ -249,11 +249,11 @@ export const SC_VideoFullscreenButton = styled.button`
   }
 
   &:hover {
-    background: rgba(0, 0, 0, 0.1) !important;
+    background: var(--color-overlay-8) !important;
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.15) !important;
+    background: var(--color-overlay-12) !important;
   }
 
   &:focus {

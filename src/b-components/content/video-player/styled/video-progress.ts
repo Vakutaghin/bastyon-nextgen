@@ -8,7 +8,7 @@ export const SC_VideoProgressBar = styled.div`
   height: 6px !important;
   min-height: 6px !important;
   max-height: 6px !important;
-  background-color: rgba(0, 0, 0, 0.3) !important;
+  background-color: var(--color-overlay-20) !important;
   border-radius: 3px !important;
   cursor: pointer !important;
   position: relative !important;
@@ -35,7 +35,7 @@ export const SC_VideoProgressBar = styled.div`
     height: 8px !important;
     min-height: 8px !important;
     max-height: 8px !important;
-    background-color: rgba(0, 0, 0, 0.4) !important;
+    background-color: var(--color-overlay-30) !important;
 
     /* Применяем красный цвет только к полоске прогресса, исключая первый дочерний элемент (полоску загрузки) */
     > *:not(:first-child) {
