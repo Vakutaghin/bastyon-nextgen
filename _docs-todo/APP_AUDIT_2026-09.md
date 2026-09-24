@@ -40,7 +40,8 @@ V34/X3-декодеры. Волна 2 закрыта (Р1 = вариант B, Р
 Волна 4 закрыта 2026-09-23 (Р2 = спрятать приём на доп. кошельки + починить seed, Р3 = да):
 V6, V7, V31, V33, V35, V36, V38, V39, S16–S22, S47, S52–S54, S56–S58, N1, N2, N11–N14.
 Волна 5 закрыта 2026-09-24: V28, V29, V30, S35–S43, N19, N20 (S43 — по тому же решению Р3).
-Дальше — волна 6 (mini-apps).
+Волна 6 закрыта 2026-09-24: V23, V24, V26, S44, S45, S46, S48, S49, S50, S51, N22, N23.
+Дальше — волна 7 (платформа, Tauri, видео, эксплорер).
 
 **Десять вещей, которые ломают продукт прямо сейчас (не «когда-нибудь»):**
 1. K1 — обход HTML-санитайзера через `bastyon://`/`ipfs://` href: любой пост накрывает экран всем читателям (и XSS, если уедет meta-CSP).
@@ -121,10 +122,10 @@ V6, V7, V31, V33, V35, V36, V38, V39, S16–S22, S47, S52–S54, S56–S58, N1, 
 - [x] **V22 · [H3]** — `TorWebSocket` никогда не OPEN: `spawn_ws_loops` эмитит `tor:ws:<id>:open` синхронно до возврата `id` из `tor_ws_connect`, а JS подписывается после `await invoke` — Tauri не буферизует события. Итог: под Tor realtime (pending-посты, комментарии, explorer) не работает никогда, бесконечный reconnect. `src-tauri/src/tor/ws.rs:94,99,121`, `tor-websocket.ts:124-141`. **Фикс:** id генерировать на JS и подписываться до `invoke`, либо эмитить `open` по отдельной команде. ✅ 2026-09-14 `7f5322b`: id генерирует JS, подписки до invoke, успешный `tor_ws_connect` = OPEN
 
 ### Mini-apps
-- [ ] **V23 · [F2]** — Промпт разрешения по 30-секундному RPC-таймауту резолвится `denied` и **персистится** как отказ пользователя; модалка остаётся, «Разрешить» игнорируется. `permission-resolver.ts:111-133`, `bridge-rpc.ts:24-26`. **Фикс:** при abort не персистить и закрывать модалку.
-- [ ] **V24 · [F3]** — Гранты ключуются только `manifest.id`; remote-session/сайдлоад не персистятся → после перезапуска любой origin с тем же id наследует `account/chat/authFetch` без промпта (`assertInstallIdentity` защищает только built-in). `permissions-store.ts:41,128-152`, `apps-store.ts:229-252`. **Фикс:** хранить канонический origin в гранте, сверять при `isGranted`.
+- [x] ~~**V23 · [F2]** — Промпт разрешения по 30-секундному RPC-таймауту резолвится `denied` и **персистится** как отказ пользователя; модалка остаётся, «Разрешить» игнорируется. `permission-resolver.ts:111-133`, `bridge-rpc.ts:24-26`. **Фикс:** при abort не персистить и закрывать модалку.~~ ✅ `078e649`
+- [x] ~~**V24 · [F3]** — Гранты ключуются только `manifest.id`; remote-session/сайдлоад не персистятся → после перезапуска любой origin с тем же id наследует `account/chat/authFetch` без промпта (`assertInstallIdentity` защищает только built-in). `permissions-store.ts:41,128-152`, `apps-store.ts:229-252`. **Фикс:** хранить канонический origin в гранте, сверять при `isGranted`.~~ ✅ `078e649`
 - [x] **V25 · [F4]** — SSRF: allowlist fetch-tunnel объявляет автор манифеста, loopback/private не фильтруются, `authFetch` без allowlist = любой URL с подписью, редиректы следуются; Tauri-скоуп разрешает `http://127.0.0.1:*`, `tor_fetch` без скоупа. `fetch-tunnel.ts:55-66,107-111`, `types/manifest.ts:197-210`, `actions/account.ts:109-121`, `capabilities/default.json:22`. **Фикс:** запрет loopback/private/не-https, `redirect:'manual'`, permission-гейт для tunnel. ✅ 2026-09-14 `0936741`: `safe-external-url.ts` (https, без loopback/private/link-local/.local, IPv4-mapped IPv6) в fetch-tunnel, `authFetch`, manifest-loader; `redirect: manual` + `maxRedirections: 0`, torFetch → `no_redirect`-клиент; sideload (`source: local`) — http+loopback; Rust `is_private_target`
-- [ ] **V26 · [H4]** — В prod-бандле Tauri действуют ДВЕ CSP (meta `index.html` + заголовок `tauri.conf.json`), пересечение `frame-src` запрещает iframe удалённых мини-апп (и `http://127.0.0.1:*` для IPFS-viewer). В `tauri dev` не воспроизводится. `index.html:22`, `tauri.conf.json:29`. **Фикс:** один источник CSP (убрать meta при `VITE_TAURI` или синхронизировать).
+- [x] ~~**V26 · [H4]** — В prod-бандле Tauri действуют ДВЕ CSP (meta `index.html` + заголовок `tauri.conf.json`), пересечение `frame-src` запрещает iframe удалённых мини-апп (и `http://127.0.0.1:*` для IPFS-viewer). В `tauri dev` не воспроизводится. `index.html:22`, `tauri.conf.json:29`. **Фикс:** один источник CSP (убрать meta при `VITE_TAURI` или синхронизировать).~~ ✅ `fb65860`
 - [x] **V27 · [H8, F13]** — Десктоп без Tor: `appFetch` → plugin-http со скоупом `*.pocketnet.app`/matrix/127.0.0.1/dweb → CoinGecko (график PKOIN всегда «ошибка»), бэкенды мини-апп, PeerTube вне pocketnet.app — `url not allowed`. Под Tor тех же ограничений нет. `capabilities/default.json:17-29`, `fetch-strategies.ts:24-28`. **Фикс:** расширить скоуп (`api.coingecko.com`, `https://**` с клиентским фильтром из V25) или fallback. ✅ 2026-09-14 `0936741`: скоуп `https://**:*/**` + `http://127.0.0.1:*/**`; граница безопасности — клиентский фильтр V25, не скоуп
 
 ### Мессенджер
@@ -207,14 +208,14 @@ V6, V7, V31, V33, V35, V36, V38, V39, S16–S22, S47, S52–S54, S56–S58, N1, 
 - [~] **S72 · [P2-11 ←LEFTOVERS]** — Групповые сообщения: AES-CBC с фиксированным IV (`store/consts.ts` `AES_CBC_IV`) под долгоживущим ключом комнаты — детерминированный шифропрефикс, homeserver видит повторы. `encryption-service.ts:99-124`. Формат общий с legacy `bastyon-chat` (`pcryptoFile.encrypt`) → это протокол, не локальный баг: фикс = версия формата со случайным IV, синхронно с legacy-клиентом. ⏸ до координации с legacy.
 
 ### Mini-apps
-- [ ] **S44 · [F8]** — Built-in/remote-session приложения без `fetchHosts` (ошибка типов) → fetch-tunnel `TypeError` → под Tor (`alttransport:true`) Barteron не может сделать ни одного запроса. `apps-installer.ts:101,131`, `fetch-tunnel.ts:56`.
-- [ ] **S45 · [F9]** — Отзыв предустановленного permission у built-in отменяется при следующем запуске (`seedPreinstalledGrants` при `null`). `apps-permission-sync.ts:18-22`.
-- [ ] **S46 · [F10, G17]** — «Избранное»/«Недавнее» для каталожных мини-апп после перезапуска → «Приложение не найдено» (remote-session не персистятся, `installFromRemoteEntry` только в гриде).
+- [x] ~~**S44 · [F8]** — Built-in/remote-session приложения без `fetchHosts` (ошибка типов) → fetch-tunnel `TypeError` → под Tor (`alttransport:true`) Barteron не может сделать ни одного запроса. `apps-installer.ts:101,131`, `fetch-tunnel.ts:56`.~~ ✅ `dc14cc2`
+- [x] ~~**S45 · [F9]** — Отзыв предустановленного permission у built-in отменяется при следующем запуске (`seedPreinstalledGrants` при `null`). `apps-permission-sync.ts:18-22`.~~ ✅ `078e649`
+- [x] ~~**S46 · [F10, G17]** — «Избранное»/«Недавнее» для каталожных мини-апп после перезапуска → «Приложение не найдено» (remote-session не персистятся, `installFromRemoteEntry` только в гриде).~~ ✅ `dc14cc2`
 - [x] **S47 · [F11]** — «Баланс основного кошелька» = `profile.balance` на момент логина, не обновляется после перевода. `use-wallet-balances.ts:57-64`. ✅ закрыто 2026-09-23 `3835891`
-- [ ] **S48 · [F12]** — Закрытие мини-аппы не отзывает доступ: popup через `opener.top.postMessage` продолжает RPC (промпты, payment) — резолв по origin, `event.source` не сверяется с iframe. `bridge.ts:91-137`.
-- [ ] **S49 · [F14]** — Промпт `sign` не показывает подписываемую строку (`extra` не передаётся); `zaddress` обещает «Zcash-адрес», выдаёт производный PKOIN-кошелёк. `registry.ts:105`, `actions/account.ts:45-91`.
-- [ ] **S50 · [F15]** — `authFetch`: приложение выбирает `useOldFormat` → подпись голого nonce = формат авторизации прокси → replay в `auth:true`-эндпоинты. `actions/account.ts:104-106`.
-- [ ] **S51 · [F16]** — Сайдлоад есть, удаления нет: `uninstall()` не вызывается ни из одного UI; манифест чужого хоста перечитывается при каждом старте.
+- [x] ~~**S48 · [F12]** — Закрытие мини-аппы не отзывает доступ: popup через `opener.top.postMessage` продолжает RPC (промпты, payment) — резолв по origin, `event.source` не сверяется с iframe. `bridge.ts:91-137`.~~ ✅ `dc14cc2`
+- [x] ~~**S49 · [F14]** — Промпт `sign` не показывает подписываемую строку (`extra` не передаётся); `zaddress` обещает «Zcash-адрес», выдаёт производный PKOIN-кошелёк. `registry.ts:105`, `actions/account.ts:45-91`.~~ ✅ `078e649`
+- [x] ~~**S50 · [F15]** — `authFetch`: приложение выбирает `useOldFormat` → подпись голого nonce = формат авторизации прокси → replay в `auth:true`-эндпоинты. `actions/account.ts:104-106`.~~ ✅ `078e649`
+- [x] ~~**S51 · [F16]** — Сайдлоад есть, удаления нет: `uninstall()` не вызывается ни из одного UI; манифест чужого хоста перечитывается при каждом старте.~~ ✅ `dc14cc2`
 
 ### Уведомления, профиль, настройки
 - [x] **S52 · [G4]** — Подсветка «новых» уведомлений никогда не видна: `persistReadPointer()` синхронно при открытии, до рендера. `header-notifications.vue:430-438`. ✅ закрыто 2026-09-23 `79e7a12`
@@ -267,8 +268,8 @@ V6, V7, V31, V33, V35, V36, V38, V39, S16–S22, S47, S52–S54, S56–S58, N1, 
 - [x] **N19 · [E16]** — Blob-URL расшифрованного медиа не ревокаются и не чистятся при логауте; local-echo `~`-id персистится в IDB и лишает свежие сообщения действий. ✅ закрыто 2026-09-24 `6d8df4c`
 - [x] **N20 · [E17]** — `PIXI.Application` (WebGL-контекст) на каждое аудио-сообщение + полный download/decrypt/decode при монтировании. ✅ закрыто 2026-09-24 `6d8df4c`
 - [x] **N21 · [E18]** — Matrix-сессия никогда не отзывается (`client.logout()` не вызывается), каждый запуск — новый device с вечным токеном. ✅ 2026-09-15 `6e5a3f2`: `matrixService.stop({ revoke: true })` → `client.logout(false)` в фоне с таймаутом при выходе и смене аккаунта
-- [ ] **N22 · [F19]** — Payment modal: `appName` не передаётся (`miniapps.paymentRequestedBy` мёртв); получатели не валидируются как адреса; `positive()` пропускает `1e-9`.
-- [ ] **N23 · [F20]** — `normalizeError` отдаёт в iframe `err.stack` хоста; `inflight` ключуется только `requestId`.
+- [x] ~~**N22 · [F19]** — Payment modal: `appName` не передаётся (`miniapps.paymentRequestedBy` мёртв); получатели не валидируются как адреса; `positive()` пропускает `1e-9`.~~ ✅ `dc14cc2`
+- [x] ~~**N23 · [F20]** — `normalizeError` отдаёт в iframe `err.stack` хоста; `inflight` ключуется только `requestId`.~~ ✅ `dc14cc2`
 - [~] **N24 · [FX2, FX4, FX7]** — `manifest-loader.ts:46,93` сырой `fetch` (мимо Tor); дубли `pkoin-chart/consts.ts`, `ERROR_MESSAGES`, `PERMISSION_I18N_IDS`, `iconFromScope`; заглушки `registerForNotifications`/`complain`/`currency` возвращают «успех». ✅ 2026-09-14 `0936741`: manifest-loader через `appFetch`; дубли (`pkoin-chart/consts.ts`, `ERROR_MESSAGES`, `PERMISSION_I18N_IDS`, `iconFromScope`) и заглушки `registerForNotifications`/`complain`/`currency` — остаются (волна 6/8)
 - [x] **N25 · [G18]** — История поиска, кэш ник→адрес, фильтры уведомлений глобальные и переживают выход (PII на общем устройстве). ✅ 2026-09-15 `cc39ca4`: история поиска и фильтры уведомлений — под ключом аккаунта (миграция legacy), сброс в `resetForAccount`, purge в `removeAccount`; кэш ник→адрес остаётся общим — публичные данные цепочки
 - [ ] **N26 · [G19]** — `edit-profile-modal` не валидирует имя (только длина) → `a/b` ломает `/:userName`; предзаполняет сырой URL-encoded `a`.
@@ -363,8 +364,9 @@ V6, V7, V31, V33, V35, V36, V38, V39, S16–S22, S47, S52–S54, S56–S58, N1, 
 - Roadmap **←LEFTOVERS**: S72 (IV групповых — с legacy); VP-12 — payload'ы сейфа (`encryption.ts`, AES-CBC без аутентификации, отсюда плаузибилити-проверки при миграции) → AES-GCM с версией формата.
 
 ### Волна 6 — mini-apps
-- [ ] V23 не персистить denied по таймауту · V24 origin в гранте · V26 одна CSP `[~ needs-live: prod-бандл]` · S44 `fetchHosts` у built-in · S45 маркер «отозвано» · S46 install из favorites/recent · S48 сверка `event.source` с iframe · S49 `extra` в промпте + текст zaddress · S50 запрет `useOldFormat` · S51 кнопка «Удалить» · N22/N23.
-- Проверка: тесты в `mini-apps/__tests__` на каждый пункт (инфраструктура есть).
+- [x] ~~V23 не персистить denied по таймауту (и закрывать модалку) · V24 origin в гранте · S45 маркер «уже засеяно» · S49 подписываемая строка в промпте + честный текст zaddress · S50 запрет `useOldFormat`~~ ✅ `078e649` · ~~S48 сообщения только от смонтированного iframe + снятие сессии при закрытии · S46 восстановление каталожной миниаппы из избранного/недавнего · S44 `fetchHosts` у built-in и каталожных · S51 кнопка «Удалить» (карточка + настройки) · N22 имя приложения и валидация платежа · N23 без `stack` в проде, ключ inflight с appId~~ ✅ `dc14cc2` · ~~V26 одна CSP в бандле Tauri~~ ✅ `fb65860` — 2026-09-24.
+- Проверка: vitest 2537/2537 (245 файлов), typecheck = baseline 1395, eslint 0/255, `cargo test --lib` 35/35, `npm run build` ок (web и `VITE_TAURI=true`: meta-CSP остаётся в вебе и уходит в Tauri).
+- Проверка `[~ needs-live]`: **прод-бандл Tauri (V26) — удалённая мини-аппа открывается в iframe (не спиннер до `notResponding`), IPFS-viewer на `127.0.0.1` жив**; открыть и закрыть миниаппу, затем убедиться, что popup от неё больше ничего не может (платёж не открывается); каталожная миниаппа из «Избранного»/«Недавнего» открывается после перезапуска; Barteron под Tor делает запросы; отзыв предустановленного разрешения Barteron держится после перезапуска; промпт `sign` показывает подписываемую строку; удаление сайдлоад-приложения (карточка и настройки) — после перезапуска не возвращается; платёж из миниаппы показывает её имя, а получатель с битым адресом отвергается до модалки.
 
 ### Волна 7 — платформа, Tauri, видео, эксплорер
 - [ ] V40 opener + `openExternal` · V37 бинарный IPC/путь из диалога · S27 `cancel_transcode` · S32 PATH ffmpeg · S23 хоткеи (один обработчик в плеере) · S24 линкификация только текстовых нод · S25 один рендерер Editor.js · S26/S30 листенеры и AudioContext · S28 media session · S29 композер при публикации · S31 общий парсер YouTube · S61 `dbUnavailable` · S64/S65/S66/S68/S69/N31 эксплорер · S67 embed (`_top` + `frame-ancestors` на деплое) · N7 `router.isReady()` · N15 делегат `bastyon://` · N29/N30/N32/N33/N34.
@@ -381,7 +383,7 @@ V6, V7, V31, V33, V35, V36, V38, V39, S16–S22, S47, S52–S54, S56–S58, N1, 
 
 | Проверка | Результат | Команда |
 |---|---|---|
-| vitest | 2128 passed / 1 skipped (177 файлов) → **2496/2496 (240 файлов) на 2026-09-24, после волны 5** | `node_modules/.bin/vitest run` |
+| vitest | 2128 passed / 1 skipped (177 файлов) → **2537/2537 (245 файлов) на 2026-09-24, после волны 6** | `node_modules/.bin/vitest run` |
 | eslint | 33 ошибки / 256 предупреждений → **0 / 255 на 2026-09-23** | `node_modules/.bin/eslint src/ src-mobile/ e2e/ --ext .ts,.tsx,.vue,.js` |
 | tsc | 1433 ошибки (TS2345 ×1008 в styled; miscreant 69) → см. vue-tsc | `node_modules/.bin/tsc --noEmit -p tsconfig.json` |
 | vue-tsc | **3.1.8 в devDeps; `pnpm typecheck` — 1395 ошибок (.ts + .vue), планка опущена 2026-09-23; гейт `pnpm typecheck:baseline` (pre-push + CI) не даёт числу расти** | `node scripts/check-typecheck-baseline.mjs [--update]` |
