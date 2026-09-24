@@ -816,6 +816,18 @@ pub fn run() {
       }
     }))
     .plugin(tauri_plugin_deep_link::init())
+    // Окно открывается там же и такого же размера, каким его оставили.
+    // Полноэкранный режим и видимость сознательно НЕ восстанавливаем: выход
+    // из приложения в фуллскрине не должен запирать в нём следующий запуск.
+    .plugin(
+      tauri_plugin_window_state::Builder::default()
+        .with_state_flags(
+          tauri_plugin_window_state::StateFlags::SIZE
+            | tauri_plugin_window_state::StateFlags::POSITION
+            | tauri_plugin_window_state::StateFlags::MAXIMIZED,
+        )
+        .build(),
+    )
     // Внешние ссылки: без opener-плагина `window.open(_, '_blank')` и
     // `<a target="_blank">` в WKWebView/webkitgtk — no-op (wry возвращает nil,
     // навигация отменяется). Фронт зовёт его через `helpers/common/open-external`
