@@ -28,6 +28,7 @@ import {
   sendEncryptedDirectMessage as sendEncryptedDirectMessageImpl,
   sendReaction as sendReactionImpl,
 } from './matrix-service/messaging'
+import { tetatetid, getMatrixId, resolveMatrixHost } from '../helpers'
 import type { MatrixClient, MatrixEventContent } from './matrix-service/types'
 import type { MatrixClient as SdkMatrixClient, ICreateClientOpts } from 'matrix-js-sdk'
 import { Preset, Visibility } from 'matrix-js-sdk'
@@ -240,18 +241,43 @@ export class MatrixService {
   public async createDirectRoom(inviteeId: string): Promise<string | null> {
     if (!this.client) throw new Error('Client not initialized')
 
+    const myUserId = this.client.getUserId() || ''
+    // Алиас комнаты = tetatetid(я, собеседник), как в bastyon-chat
+    // (`application/index.js`: `room_alias_name: commonAliasName`). Без него
+    // комната не проходила ни наш `isTetatetchat` (текст уходил групповым
+    // протоколом, кнопка PKOIN пропадала), ни поиск legacy-клиента — тот
+    // создавал ВТОРУЮ комнату с тем же собеседником (S42).
+    const tid = tetatetid(getMatrixId(myUserId), getMatrixId(inviteeId))
+
     try {
       const res = await this.client.createRoom({
         invite: [inviteeId],
         is_direct: true,
         preset: Preset.TrustedPrivateChat,
         visibility: Visibility.Private,
+        ...(tid ? { room_alias_name: tid, name: `#${tid}` } : {}),
       })
 
       const roomId = (res && (res.room_id || (res as { roomId?: string }).roomId)) || null
       return typeof roomId === 'string' ? roomId : null
     } catch (e) {
+      // Алиас занят — значит комната с этим собеседником уже есть (её мог
+      // создать legacy-клиент). Берём её вместо создания второй.
+      const existing = tid ? await this.resolveRoomByAlias(tid) : null
+      if (existing) return existing
       console.error('Matrix createDirectRoom failed:', e)
+      return null
+    }
+  }
+
+  /** roomId по локальной части алиаса (`#<localpart>:<host>`), либо null. */
+  public async resolveRoomByAlias(localpart: string): Promise<string | null> {
+    if (!this.client || !localpart) return null
+    try {
+      const host = resolveMatrixHost()
+      const res = await this.client.getRoomIdForAlias(`#${localpart}:${host}`)
+      return res?.room_id ?? null
+    } catch {
       return null
     }
   }

@@ -16,7 +16,9 @@ import {
   getEventSender,
   getEventTs,
   isRenderableMessageEvent,
+  getAddressFromMatrixId,
 } from '../../helpers'
+import { notificationPreviewFor, senderDisplayName } from './notification-preview'
 import { SOUND_MAX_AGE } from '../consts'
 import type { MessengerStoreContext } from './types'
 
@@ -96,9 +98,24 @@ export function registerMatrixListeners(
             // Браузерное уведомление о новом сообщении (если вкладка в фоне
             // и пользователь включил браузерные уведомления).
             try {
-              const senderName = room.getMember?.(senderId)?.name || senderId
-              const body = (event.getContent?.()?.body as string) || ''
-              notifyMessage(senderName, body)
+              // Имя — из профиля Bastyon, а не hex-локалпарт матрикса; текст —
+              // человеческое описание, а не шифротекст (S41).
+              let address: string | null = null
+              try {
+                address = getAddressFromMatrixId(senderId)
+              } catch {
+                address = null
+              }
+              const profileName = address
+                ? ctx.profileCache?.userProfiles?.[address]?.name
+                : undefined
+              const senderName = senderDisplayName({
+                profileName,
+                roomMemberName: room.getMember?.(senderId)?.name,
+                address,
+                matrixId: senderId,
+              })
+              notifyMessage(senderName, notificationPreviewFor(event))
             } catch {
               /* ignore */
             }

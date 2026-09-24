@@ -9,7 +9,7 @@
 import type { Room, RoomMember } from 'matrix-js-sdk'
 
 import { matrixService } from './services/matrix-service'
-import { resolveMatrixHost } from './helpers'
+import { resolveMatrixHost, getMatrixId, isTetatetchat, tetatetid } from './helpers'
 
 /**
  * Находит «партнёра» в DM-комнате: первого участника, отличного от текущего пользователя.
@@ -40,8 +40,24 @@ export const findExistingRoomByAddress = (address: string): string | null => {
   const hex = matrixService.addressToHex(address).toLowerCase()
   const host = resolveMatrixHost()
   const partnerId = `@${hex}:${host}`
+  const myUserId = matrixService.getClient()?.getUserId() || ''
+  // Канонический признак личного чата — алиас `#<tetatetid>` (так делает и
+  // legacy). Сначала ищем по нему.
+  const tid = myUserId ? tetatetid(getMatrixId(myUserId), hex) : null
   const rooms = matrixService.getRooms()
+
+  if (tid) {
+    for (const room of rooms) {
+      const alias = room.getCanonicalAlias?.() || ''
+      if (alias.includes(tid)) return room.roomId
+    }
+  }
+
   for (const room of rooms) {
+    // Раньше DM-ом считалась ЛЮБАЯ комната, где нужный адрес оказался первым
+    // чужим участником — в том числе группа с этим человеком: сообщение уходило
+    // в групповой чат вместо личного (S40).
+    if (!isTetatetchat(room)) continue
     if (getPartnerMatrixId(room) === partnerId) return room.roomId
   }
   return null

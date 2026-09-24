@@ -549,6 +549,11 @@ export default {
     explorerOpenAddress: 'Открыть адрес',
   },
   messenger: {
+    notifyEncrypted: 'Новое сообщение',
+    notifyImage: 'Изображение',
+    notifyVideo: 'Видео',
+    notifyAudio: 'Голосовое сообщение',
+    notifyFile: 'Файл',
     notSent: 'Не отправлено',
     retrySend: 'Повторить',
     messages: 'Сообщения',
@@ -1715,6 +1720,8 @@ export default {
       },
     },
     messenger: {
+      recipientNoKeys:
+        'Собеседник ещё не опубликовал ключи шифрования — зашифровать сообщение для него нечем. Попросите его зайти в приложение и повторите.',
       loginFailed: 'Не удалось войти в мессенджер. Проверьте связь и попробуйте открыть его снова.',
       me: 'Я',
       you: 'Вы',

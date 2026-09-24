@@ -544,6 +544,11 @@ export default {
     explorerOpenAddress: 'Open address',
   },
   messenger: {
+    notifyEncrypted: 'New message',
+    notifyImage: 'Image',
+    notifyVideo: 'Video',
+    notifyAudio: 'Voice message',
+    notifyFile: 'File',
     notSent: 'Not sent',
     retrySend: 'Retry',
     messages: 'Messages',
@@ -1715,6 +1720,8 @@ export default {
       },
     },
     messenger: {
+      recipientNoKeys:
+        'This user has not published encryption keys yet, so the message cannot be encrypted for them. Ask them to open the app and try again.',
       loginFailed: 'Could not sign in to the messenger. Check the connection and open it again.',
       me: 'Me',
       you: 'You',

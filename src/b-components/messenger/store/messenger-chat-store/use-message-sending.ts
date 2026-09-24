@@ -2,6 +2,7 @@
 // реакций и PKOIN-донатов. Медиа-вложения — в use-media-sending.
 
 import { t } from '@/i18n'
+import { appToast } from '@/b-components/app-toast'
 
 import { matrixService } from '../../services/matrix-service'
 import { encryptTextWithSecret } from '../../services/encryption-service'
@@ -23,6 +24,18 @@ import type { SendPkoinPayload } from '../../services/matrix-service/media-sende
  * payload, чтобы UI предложил повторить ТОЛЬКО сообщение (аудит V2: раньше
  * повторная кнопка «Отправить» делала вторую транзакцию).
  */
+/**
+ * У получателя нет опубликованных ключей (`profile.k`), поэтому зашифровать для
+ * него нечего. Раньше отправка «удавалась», а собеседник видел вечное
+ * `*** Encrypted ***` — сообщение было зашифровано только для отправителя (S39).
+ */
+export class RecipientKeysMissingError extends Error {
+  constructor(public readonly recipients: string[]) {
+    super('recipient_keys_missing')
+    this.name = 'RecipientKeysMissingError'
+  }
+}
+
 export class PkoinMessageDeliveryError extends Error {
   constructor(
     public readonly txid: string,
@@ -32,6 +45,21 @@ export class PkoinMessageDeliveryError extends Error {
     super('pkoin_message_not_delivered', { cause })
     this.name = 'PkoinMessageDeliveryError'
   }
+}
+
+/**
+ * Проверяет, что у КАЖДОГО участника (кроме меня) есть ключи для шифрования.
+ * `collectPcryptoUsers` молча пропускает тех, у кого в профиле нет `k`, и
+ * сообщение уходило зашифрованным только для отправителя (S39).
+ */
+function assertRecipientsHaveKeys(
+  memberIds: string[],
+  users: { id: string }[],
+  myMatrixId?: string
+): void {
+  const withKeys = new Set(users.map((u) => u.id))
+  const missing = memberIds.filter((id) => id !== myMatrixId && !withKeys.has(id))
+  if (missing.length > 0) throw new RecipientKeysMissingError(missing)
 }
 
 export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
@@ -86,6 +114,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     if (!users.find((u) => u.id === myMatrixId)) {
       throw new Error('My pcrypto keys are not available')
     }
+    assertRecipientsHaveKeys(memberIds, users, myMatrixId)
 
     const hash = computeGroupUsershash(users, myLocal)
     const block = 10
@@ -141,6 +170,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
 
     const memberIds = getOrderedMemberIds(room, Date.now())
     const users = await collectPcryptoUsers(memberIds)
+    assertRecipientsHaveKeys(memberIds, users)
     const block = await pickRoomBlock(room)
     const version = 2
 
@@ -205,6 +235,11 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
       console.error('[ChatStore] Ошибка отправки сообщения:', e)
       const failed = messages[chatId]?.find((m) => m.id === tempId)
       if (failed) failed.status = 'failed'
+      // У собеседника нет опубликованных ключей — объясняем, иначе повтор
+      // будет так же бесполезен (S39).
+      if (e instanceof RecipientKeysMissingError) {
+        appToast.error({ message: t('appMsg.messenger.recipientNoKeys') })
+      }
     }
   }
 

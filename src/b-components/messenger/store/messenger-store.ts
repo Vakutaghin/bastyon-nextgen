@@ -261,8 +261,24 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
   }
 
+  /**
+   * Адреса, для которых прямо сейчас создаётся комната. Без этого два быстрых
+   * клика по «Начать чат» создавали ДВЕ комнаты с одним собеседником (S40).
+   */
+  const startingChats = new Map<string, Promise<string | null>>()
+
   const startChatWithAddress = async (address: string): Promise<string | null> => {
     if (!address || !authStore.isUserAuthenticated) return null
+    const inFlight = startingChats.get(address)
+    if (inFlight) return inFlight
+    const run = startChatWithAddressInner(address).finally(() => {
+      startingChats.delete(address)
+    })
+    startingChats.set(address, run)
+    return run
+  }
+
+  const startChatWithAddressInner = async (address: string): Promise<string | null> => {
     uiStore.lastTargetAddress = address
     try {
       await profileCache.fetchProfiles([address])
