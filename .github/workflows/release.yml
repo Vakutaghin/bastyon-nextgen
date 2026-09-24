@@ -8,8 +8,14 @@
 #   - desktop (Tauri): macOS arm64, macOS x64, Linux (Ubuntu 22.04), Windows
 #   - mobile (Capacitor): Android debug APK (без релизного keystore — позже)
 #
-# Все артефакты загружаются на release, помеченный соответствующим тегом.
-# Если release ещё не существует — tauri-action создаст его (не draft).
+# Имена файлов задаются здесь, а не tauri-action: у неё они вида
+# `Bastyon.NextGen_0.3.0_aarch64.dmg` — по такому имени человек не понимает, что
+# качать. Здесь платформа идёт ПЕРВОЙ, поэтому сортировка по алфавиту сама
+# группирует файлы по системам.
+#
+# Релиз создаёт отдельная джоба до сборок: tauri-action больше не создаёт его
+# сама (иначе она же и заливала бы файлы под своими именами), а android раньше
+# падал на `release not found`, если добегал первым.
 
 name: Release
 
@@ -29,7 +35,33 @@ env:
   TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
+  create-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      # Тело релиза собирает тот же скрипт, которым его можно перегенерировать
+      # руками: инструкция «что скачать и как поставить» на двух языках плюс
+      # заметки из changelogs/<tag>/.
+      - name: Create or refresh the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/release-body.sh
+          ./scripts/release-body.sh "$TAG" > /tmp/release-body.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" --notes-file /tmp/release-body.md
+          else
+            gh release create "$TAG" --title "$TAG" --notes-file /tmp/release-body.md
+          fi
+
   desktop:
+    needs: create-release
     permissions:
       contents: write
     strategy:
@@ -38,12 +70,16 @@ jobs:
         include:
           - platform: macos-latest
             args: --target aarch64-apple-darwin
+            variant: Apple-Silicon
           - platform: macos-latest
             args: --target x86_64-apple-darwin
+            variant: Intel
           - platform: ubuntu-22.04
             args: ''
+            variant: x86_64
           - platform: windows-latest
             args: ''
+            variant: x64
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -84,31 +120,54 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build and attach to release
+      # Без tagName/releaseName action только собирает и ничего не заливает.
+      - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: pnpm tauri
-          tagName: ${{ env.TAG }}
-          releaseName: ${{ env.TAG }}
-          releaseBody: |
-            Скачайте подходящий установщик из Assets ниже.
-
-            **Подпись:** сборки не подписаны — на macOS возможно сообщение «приложение повреждено»
-            (обойти: ПКМ → Открыть), на Windows — предупреждение SmartScreen. Подписи добавим позже.
-
-            Полные release notes — см. `changelogs/${{ env.TAG }}/` в репозитории.
-          releaseDraft: false
-          prerelease: false
           args: ${{ matrix.args }}
+
+      # `.app.tar.gz` сознательно не заливаем: это артефакты Tauri-апдейтера,
+      # который не настроен, а человеку они выглядят как ещё один установщик.
+      # `rw.*.dmg` — промежуточный образ упаковщика в bundle/macos/: если он
+      # переживёт сборку, find возьмёт его вместо готового dmg.
+      - name: Rename installers and upload
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          OUT="release-assets"
+          mkdir -p "$OUT"
+
+          while IFS= read -r f; do
+            case "$f" in
+              *.dmg)      cp "$f" "$OUT/macOS-Bastyon-NextGen-${VERSION}-${VARIANT}.dmg" ;;
+              *.msi)      cp "$f" "$OUT/Windows-Bastyon-NextGen-${VERSION}-${VARIANT}.msi" ;;
+              *.AppImage) cp "$f" "$OUT/Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.AppImage" ;;
+              *.deb)      cp "$f" "$OUT/Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.deb" ;;
+            esac
+          done < <(find src-tauri/target -type f \
+                     ! -name 'rw.*' \
+                     \( -name '*.dmg' -o -name '*.msi' -o -name '*.AppImage' -o -name '*.deb' \))
+
+          if [ -z "$(ls -A "$OUT")" ]; then
+            echo "Не найдено ни одного установщика — сборка что-то не положила в bundle/" >&2
+            find src-tauri/target -type d -name bundle >&2 || true
+            exit 1
+          fi
+
+          ls -la "$OUT"
+          gh release upload "$TAG" "$OUT"/* --clobber
 
   android:
     permissions:
       contents: write
-    # Release создаёт tauri-action в джобе desktop. Без этой зависимости android
-    # добегал до аплоада раньше и падал на `release not found` (v0.2.0).
-    needs: desktop
+    needs: create-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -151,14 +210,13 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Rename APK with tag
-        id: rename
-        run: |
-          OUT="bastyon-nextgen-${TAG}-android.apk"
-          mv android/app/build/outputs/apk/debug/app-debug.apk "$OUT"
-          echo "apk=$OUT" >> "$GITHUB_OUTPUT"
-
-      - name: Attach APK to release
+      - name: Rename APK and upload
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${TAG}" "${{ steps.rename.outputs.apk }}" --clobber
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          OUT="Android-Bastyon-NextGen-${VERSION}.apk"
+          mv android/app/build/outputs/apk/debug/app-debug.apk "$OUT"
+          gh release upload "$TAG" "$OUT" --clobber
