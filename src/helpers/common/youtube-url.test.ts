@@ -44,3 +44,27 @@ describe('getYoutubeEmbedUrls', () => {
     expect(result).toEqual(['https://www.youtube.com/embed/dQw4w9WgXcQ'])
   })
 })
+
+// S31: композер и лента раньше жили на разных парсерах — shorts и хвостовая
+// пунктуация вели себя по-разному.
+describe('getYoutubeEmbedUrls — общий экстрактор (S31)', () => {
+  it('видит shorts и embed, а не только watch?v=', () => {
+    expect(getYoutubeEmbedUrls('https://youtube.com/shorts/dQw4w9WgXcQ')).toEqual([
+      'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    ])
+    expect(getYoutubeEmbedUrls('https://www.youtube.com/embed/dQw4w9WgXcQ')).toEqual([
+      'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    ])
+  })
+
+  it('обрезает хвостовую пунктуацию', () => {
+    expect(getYoutubeEmbedUrls('смотри https://youtu.be/dQw4w9WgXcQ.')).toEqual([
+      'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    ])
+  })
+
+  it('не дублирует один и тот же ролик из разных форм ссылки', () => {
+    const text = 'https://youtu.be/dQw4w9WgXcQ и https://youtube.com/watch?v=dQw4w9WgXcQ'
+    expect(getYoutubeEmbedUrls(text)).toHaveLength(1)
+  })
+})

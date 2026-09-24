@@ -254,88 +254,26 @@ export class TauriTranscoder implements Transcoder {
    */
   private async saveFileToTemp(file: File): Promise<string> {
     try {
-      // Для файлов больше 5MB используем Worker, чтобы не блокировать UI
-      let data: number[]
-
-      if (file.size > 5 * 1024 * 1024) {
-        // > 5MB
-        // Используем Worker для больших файлов (до 4GB)
-        data = await this.readFileInWorker(file)
-      } else {
-        // Для маленьких файлов читаем напрямую
-        const arrayBuffer = await file.arrayBuffer()
-        const uint8Array = new Uint8Array(arrayBuffer)
-        data = Array.from(uint8Array)
-      }
-
-      const filePath = await invoke<string>('save_temp_file', {
-        fileName: file.name,
-        data,
+      // Сырое тело IPC вместо JSON-массива чисел (V37): `number[]` стоил
+      // 8–10× памяти файла, а на файлах больше 100 МБ конвертация падала с
+      // RangeError — то есть при лимите UI в 500 МБ транскод был сломан
+      // детерминированно. Имя файла едет заголовком (там только ASCII,
+      // поэтому percent-encoding).
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      return await invoke<string>('save_temp_file', bytes, {
+        headers: { 'x-file-name': encodeURIComponent(file.name) },
       })
-
-      return filePath
     } catch (error) {
       throw new TranscodeError('Failed to save file to temp', 'FILE_SAVE_ERROR', error as Error)
     }
   }
 
   /**
-   * Читать файл в Web Worker
-   * Для больших файлов (до 4GB) обрабатывает порциями, чтобы не блокировать UI
-   */
-  private async readFileInWorker(file: File): Promise<number[]> {
-    // Сначала читаем файл в ArrayBuffer в основном потоке
-    // (это необходимо, так как File нельзя передать в Worker напрямую)
-    // Для очень больших файлов это может занять время, но это неизбежно
-    const arrayBuffer = await file.arrayBuffer()
-
-    return new Promise((resolve, reject) => {
-      // Создаем Worker динамически
-      const worker = new Worker(new URL('./file-worker.ts', import.meta.url), { type: 'module' })
-
-      const timeout = setTimeout(() => {
-        worker.terminate()
-        reject(new Error('File reading timeout'))
-      }, 600000) // 10 минут таймаут для очень больших файлов (до 4GB)
-
-      worker.onmessage = (event: MessageEvent) => {
-        const { type, payload } = event.data
-
-        if (type === 'FILE_READ') {
-          clearTimeout(timeout)
-          worker.terminate()
-          resolve(payload.data)
-        } else if (type === 'FILE_READ_PROGRESS') {
-          // Игнорируем прогресс чтения (можно использовать для отображения, если нужно)
-        } else if (type === 'ERROR') {
-          clearTimeout(timeout)
-          worker.terminate()
-          reject(new Error(payload.error))
-        }
-      }
-
-      worker.onerror = (error) => {
-        clearTimeout(timeout)
-        worker.terminate()
-        reject(error)
-      }
-
-      // Отправляем ArrayBuffer в Worker через Transferable для эффективности
-      // Это передает владение ArrayBuffer в Worker, освобождая память в основном потоке
-      worker.postMessage(
-        {
-          type: 'READ_FILE',
-          payload: { arrayBuffer },
-        },
-        [arrayBuffer]
-      )
-    })
-  }
-
-  /**
    * Уничтожить транскодер и освободить ресурсы
    */
   destroy(): void {
-    // Tauri транскодер не требует очистки
+    // S27: «Отмена» обязана убить ffmpeg, иначе процесс продолжает жечь CPU и
+    // дописывать temp-файл на гигабайты, а UI уже закрыт.
+    void invoke<boolean>('cancel_transcode').catch(() => false)
   }
 }

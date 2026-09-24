@@ -59,6 +59,82 @@ fn sanitize_temp_file_name(name: &str) -> String {
     }
 }
 
+/// Кандидаты на путь к ffmpeg/ffprobe помимо PATH (S32).
+///
+/// GUI-процесс на macOS наследует PATH от launchd, а не от shell: `/opt/homebrew/bin`
+/// и `/usr/local/bin` туда не попадают, поэтому запущенное из Dock приложение
+/// говорило «установите ffmpeg», а то же самое из терминала работало.
+#[cfg(target_os = "macos")]
+const EXTRA_TOOL_DIRS: &[&str] = &[
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/opt/local/bin",
+    "/usr/bin",
+];
+#[cfg(target_os = "linux")]
+const EXTRA_TOOL_DIRS: &[&str] = &["/usr/bin", "/usr/local/bin", "/snap/bin", "/var/lib/flatpak/exports/bin"];
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+const EXTRA_TOOL_DIRS: &[&str] = &[];
+
+/// Ищет бинарь в известных каталогах. `None` — пусть решает PATH.
+fn find_tool_in_known_dirs(name: &str) -> Option<String> {
+    for dir in EXTRA_TOOL_DIRS {
+        let candidate = std::path::Path::new(dir).join(name);
+        if candidate.is_file() {
+            return Some(candidate.to_string_lossy().to_string());
+        }
+    }
+    None
+}
+
+/// Имя/путь бинаря для `Command::new`. Сначала PATH (там он и должен быть),
+/// потом известные каталоги пакетных менеджеров.
+fn tool_command(name: &str) -> String {
+    if Command::new(name)
+        .arg("-version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|st| st.success())
+        .unwrap_or(false)
+    {
+        return name.to_string();
+    }
+    find_tool_in_known_dirs(name).unwrap_or_else(|| name.to_string())
+}
+
+/// Текущий процесс ffmpeg транскода — чтобы `cancel_transcode` мог его убить
+/// (S27: раньше «Отмена» только прятала UI, а ffmpeg продолжал жечь CPU и
+/// дописывать 4-гигабайтный temp).
+static TRANSCODE_CHILD: std::sync::Mutex<Option<std::process::Child>> =
+    std::sync::Mutex::new(None);
+/// Пользователь нажал «Отмена» — отличаем от падения ffmpeg.
+static TRANSCODE_CANCELLED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Убивает текущий транскод, если он идёт. Идемпотентна.
+#[tauri::command]
+async fn cancel_transcode() -> Result<bool, String> {
+    let mut guard = TRANSCODE_CHILD.lock().map_err(|_| "transcode lock poisoned".to_string())?;
+    match guard.as_mut() {
+        Some(child) => {
+            TRANSCODE_CANCELLED.store(true, std::sync::atomic::Ordering::SeqCst);
+            let _ = child.kill();
+            log::info!("transcode cancelled by user");
+            Ok(true)
+        }
+        None => Ok(false),
+    }
+}
+
+fn ffmpeg_command() -> Command {
+    Command::new(tool_command("ffmpeg"))
+}
+
+fn ffprobe_command() -> Command {
+    Command::new(tool_command("ffprobe"))
+}
+
 /// Путь, который команды принимают от webview: лежит прямо в `temp_dir()`
 /// (без `..`) и начинается с одного из наших префиксов. Возвращает путь,
 /// собранный заново из temp_dir + имени файла.
@@ -89,9 +165,47 @@ fn ensure_transcoder_temp_path(raw: &str) -> Result<std::path::PathBuf, String> 
     Ok(temp_dir.join(file_name))
 }
 
-/// Сохранить файл во временную директорию
+/// Percent-decode (`%D0%BA` → байты) — имя файла приезжает заголовком IPC,
+/// а туда можно только ASCII.
+fn percent_decode(raw: &str) -> String {
+    let bytes = raw.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).ok();
+            if let Some(byte) = hex.and_then(|h| u8::from_str_radix(h, 16).ok()) {
+                out.push(byte);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).to_string()
+}
+
+/// Сохранить файл во временную директорию.
+///
+/// Тело приходит сырыми байтами (`InvokeBody::Raw`), а не JSON-массивом чисел:
+/// раньше фронт гнал `number[]`, то есть 8–10× памяти на файл, а на файлах
+/// больше 100 МБ конвертация детерминированно падала с `RangeError` (V37).
+/// Имя файла — в заголовке `x-file-name`, percent-encoded.
 #[tauri::command]
-async fn save_temp_file(file_name: String, data: Vec<u8>) -> Result<String, String> {
+async fn save_temp_file(request: tauri::ipc::Request<'_>) -> Result<String, String> {
+    let file_name = request
+        .headers()
+        .get("x-file-name")
+        .and_then(|v| v.to_str().ok())
+        .map(percent_decode)
+        .unwrap_or_else(|| "file".to_string());
+
+    let data: &[u8] = match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => bytes.as_slice(),
+        _ => return Err("save_temp_file expects a raw body".to_string()),
+    };
+
     // Получаем временную директорию через std::env
     let temp_dir = env::temp_dir();
     let file_path = temp_dir.join(format!("{}{}_{}",
@@ -103,7 +217,7 @@ async fn save_temp_file(file_name: String, data: Vec<u8>) -> Result<String, Stri
     let mut file = fs::File::create(&file_path)
         .map_err(|e| format!("Failed to create temp file: {}", e))?;
 
-    file.write_all(&data)
+    file.write_all(data)
         .map_err(|e| format!("Failed to write temp file: {}", e))?;
 
     Ok(file_path.to_string_lossy().to_string())
@@ -184,8 +298,8 @@ struct FfmpegAvailability {
 /// до того, как пользователь выберет файл и упрётся в невнятную ошибку "Failed to execute ffprobe".
 #[tauri::command]
 async fn check_ffmpeg_available() -> Result<FfmpegAvailability, String> {
-    let ffmpeg_output = Command::new("ffmpeg").arg("-version").output();
-    let ffprobe_output = Command::new("ffprobe").arg("-version").output();
+    let ffmpeg_output = ffmpeg_command().arg("-version").output();
+    let ffprobe_output = ffprobe_command().arg("-version").output();
 
     let ffmpeg_version = ffmpeg_output.as_ref().ok().and_then(|out| {
         if !out.status.success() {
@@ -206,8 +320,6 @@ async fn check_ffmpeg_available() -> Result<FfmpegAvailability, String> {
 /// Получить метаданные видео через FFmpeg (используя системный ffmpeg через команду)
 #[tauri::command]
 async fn get_video_metadata(file_path: String) -> Result<VideoMetadata, String> {
-    use std::process::Command;
-
     // Только наш temp-файл (V17): ffprobe не должен читать произвольные пути.
     let file_path = ensure_transcoder_temp_path(&file_path)?
         .to_string_lossy()
@@ -215,7 +327,7 @@ async fn get_video_metadata(file_path: String) -> Result<VideoMetadata, String> 
 
     // Используем ffprobe для получения метаданных (быстрее и надежнее)
     // Получаем все потоки (видео и аудио), чтобы проверить наличие аудио
-    let output = Command::new("ffprobe")
+    let output = ffprobe_command()
         .arg("-v")
         .arg("error")
         .arg("-show_entries")
@@ -375,8 +487,8 @@ async fn transcode_video(
             .to_string_lossy().to_string()
     };
 
-    // Строим команду FFmpeg
-    let mut ffmpeg_cmd = Command::new("ffmpeg");
+    // Строим команду FFmpeg (путь ищем и вне PATH — см. tool_command, S32)
+    let mut ffmpeg_cmd = ffmpeg_command();
 
     ffmpeg_cmd
         .arg("-i")
@@ -458,6 +570,8 @@ async fn transcode_video(
         .spawn()
         .map_err(|e| format!("Failed to execute ffmpeg: {}", e))?;
 
+    TRANSCODE_CANCELLED.store(false, std::sync::atomic::Ordering::SeqCst);
+
     // Отправляем прогресс инициализации (3%)
     let _ = app.emit("transcode-progress", serde_json::json!({
         "progress": 3.0,
@@ -474,9 +588,14 @@ async fn transcode_video(
     // Используем канал для синхронизации завершения чтения прогресса
     let (tx, rx) = tokio::sync::oneshot::channel::<f64>();
 
+    // Последние строки stderr — единственный внятный текст ошибки ffmpeg:
+    // поток забирает ридер прогресса, поэтому сохраняем хвост здесь (S27).
+    let stderr_tail: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+
     if let Some(stderr) = child.stderr.take() {
         let reader = BufReader::new(stderr);
         let encoding_started_clone = encoding_started.clone();
+        let stderr_tail_clone = stderr_tail.clone();
         let tx = tx; // Перемещаем tx в замыкание
 
         tokio::spawn(async move {
@@ -485,6 +604,13 @@ async fn transcode_video(
 
             for line in reader.lines() {
                 if let Ok(line) = line {
+                    {
+                        let mut tail = stderr_tail_clone.lock().await;
+                        tail.push(line.clone());
+                        if tail.len() > 20 {
+                            tail.remove(0);
+                        }
+                    }
                     // Парсим строку вида "frame=  123 fps= 25 q=28.0 size=    1024kB time=00:00:05.00 bitrate=1677.7kbits/s speed=1.2x"
                     if line.contains("time=") && line.contains("frame=") {
                         // Отмечаем, что кодирование началось
@@ -587,13 +713,52 @@ async fn transcode_video(
         }
     });
 
-    // Ждем завершения процесса и получаем вывод
-    let output = child.wait_with_output()
-        .map_err(|e| format!("Failed to wait for ffmpeg: {}", e))?;
+    // Отдаём процесс под глобальный замок — теперь его может убить
+    // `cancel_transcode` (S27). Ждём короткими шагами, а не блокирующим
+    // `wait_with_output`, иначе отмене некуда вклиниться.
+    {
+        let mut guard = TRANSCODE_CHILD.lock().map_err(|_| "transcode lock poisoned".to_string())?;
+        *guard = Some(child);
+    }
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("FFmpeg error: {}", stderr));
+    let status = loop {
+        {
+            let mut guard =
+                TRANSCODE_CHILD.lock().map_err(|_| "transcode lock poisoned".to_string())?;
+            let child = match guard.as_mut() {
+                Some(c) => c,
+                None => break None,
+            };
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    *guard = None;
+                    break Some(status);
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    *guard = None;
+                    return Err(format!("Failed to wait for ffmpeg: {}", e));
+                }
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+    };
+
+    let cancelled = TRANSCODE_CANCELLED.swap(false, std::sync::atomic::Ordering::SeqCst);
+    if cancelled {
+        // Недописанный выход не оставляем в temp — он может весить гигабайты.
+        let _ = fs::remove_file(&output_path);
+        return Err("transcode_cancelled".to_string());
+    }
+
+    let success = status.map(|s| s.success()).unwrap_or(false);
+    if !success {
+        let tail = {
+            let lines = stderr_tail.lock().await;
+            lines.join("\n")
+        };
+        let _ = fs::remove_file(&output_path);
+        return Err(format!("FFmpeg error: {}", tail));
     }
 
     // Ждем завершения чтения прогресса (с таймаутом 1 секунда)
@@ -692,6 +857,7 @@ pub fn run() {
       delete_temp_file,
       get_video_metadata,
       transcode_video,
+      cancel_transcode,
       check_ffmpeg_available,
       tor::tor_status,
       tor::tor_start,
@@ -855,6 +1021,23 @@ mod temp_path_tests {
         assert!(ensure_transcoder_temp_path(&other.to_string_lossy()).is_err());
         // голое имя без директории
         assert!(ensure_transcoder_temp_path("tauri_video_1_x").is_err());
+    }
+
+    #[test]
+    fn decodes_percent_encoded_file_names() {
+        // Имя файла едет заголовком IPC — туда можно только ASCII (V37).
+        assert_eq!(percent_decode("clip.mp4"), "clip.mp4");
+        assert_eq!(percent_decode("%D0%B2%D0%B8%D0%B4%D0%B5%D0%BE.mp4"), "видео.mp4");
+        assert_eq!(percent_decode("my%20clip.mp4"), "my clip.mp4");
+        // Битые escape-последовательности не должны ломать имя.
+        assert_eq!(percent_decode("a%zz%2"), "a%zz%2");
+    }
+
+    #[test]
+    fn tool_command_falls_back_to_bare_name() {
+        // Несуществующий бинарь: ни PATH, ни известные каталоги не дадут пути,
+        // возвращаем имя как есть — ошибку покажет сам Command (S32).
+        assert_eq!(tool_command("definitely-not-a-real-binary-xyz"), "definitely-not-a-real-binary-xyz");
     }
 
     #[test]

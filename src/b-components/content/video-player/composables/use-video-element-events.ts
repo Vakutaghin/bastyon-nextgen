@@ -41,55 +41,96 @@ export function useVideoElementEvents(opts: VideoElementEventsOptions) {
   } = opts
 
   let intersectionObserver: IntersectionObserver | null = null
+  /**
+   * Снятие слушателей прошлой инициализации (S26). `initPlayer` вызывается
+   * заново на retry и на fallback в mp4, и без этого на одном `<video>`
+   * копились по комплекту обработчиков на каждую попытку: `pauseAllExcept`
+   * дёргался N раз, буферизация мигала.
+   */
+  let detachVideoListeners: (() => void) | null = null
 
   function setupVideoEventListeners(): void {
     const video = resolveVideoElement(videoElement)
     if (!video) return
 
-    video.addEventListener('play', () => {
-      isPlaying.value = true
-      isEnded.value = false
-      videoPlayerManager.pauseAllExcept(playerId.value)
-    })
+    detachVideoListeners?.()
 
-    video.addEventListener('pause', () => {
-      isPlaying.value = false
-    })
+    const handlers: Array<[keyof HTMLMediaElementEventMap, () => void]> = [
+      [
+        'play',
+        () => {
+          isPlaying.value = true
+          isEnded.value = false
+          videoPlayerManager.pauseAllExcept(playerId.value)
+        },
+      ],
+      [
+        'pause',
+        () => {
+          isPlaying.value = false
+        },
+      ],
+      [
+        'ended',
+        () => {
+          isPlaying.value = false
+          isEnded.value = true
+          stopProgressAnimation()
+          if (document.fullscreenElement) document.exitFullscreen()
+        },
+      ],
+      [
+        'waiting',
+        () => {
+          isBuffering.value = true
+        },
+      ],
+      [
+        'playing',
+        () => {
+          isBuffering.value = false
+          isEnded.value = false
+        },
+      ],
+      [
+        'canplay',
+        () => {
+          updateDuration()
+          updateBuffered()
+        },
+      ],
+      [
+        'loadedmetadata',
+        () => {
+          updateDuration()
+          updateBuffered()
+          handleVideoMetadata()
+        },
+      ],
+      [
+        'durationchange',
+        () => {
+          updateDuration()
+        },
+      ],
+      [
+        'progress',
+        () => {
+          updateBuffered()
+        },
+      ],
+    ]
 
-    video.addEventListener('ended', () => {
-      isPlaying.value = false
-      isEnded.value = true
-      stopProgressAnimation()
-      if (document.fullscreenElement) document.exitFullscreen()
-    })
+    for (const [event, handler] of handlers) {
+      video.addEventListener(event, handler)
+    }
 
-    video.addEventListener('waiting', () => {
-      isBuffering.value = true
-    })
-
-    video.addEventListener('playing', () => {
-      isBuffering.value = false
-      isEnded.value = false
-    })
-
-    video.addEventListener('canplay', () => {
-      updateDuration()
-      updateBuffered()
-    })
-
-    video.addEventListener('loadedmetadata', () => {
-      updateDuration()
-      updateBuffered()
-      handleVideoMetadata()
-    })
-
-    video.addEventListener('durationchange', () => {
-      updateDuration()
-    })
-
-    video.addEventListener('progress', () => {
-      updateBuffered()
-    })
+    detachVideoListeners = () => {
+      for (const [event, handler] of handlers) {
+        video.removeEventListener(event, handler)
+      }
+      detachVideoListeners = null
+    }
   }
 
   function setupIntersectionObserver(): void {
@@ -122,6 +163,7 @@ export function useVideoElementEvents(opts: VideoElementEventsOptions) {
 
   onBeforeUnmount(() => {
     if (intersectionObserver) intersectionObserver.disconnect()
+    detachVideoListeners?.()
   })
 
   return { setupVideoEventListeners, setupIntersectionObserver }

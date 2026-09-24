@@ -65,6 +65,16 @@ const attachNativeListenersOnce = async () => {
   }
 }
 
+/**
+ * Текущая позиция для относительной перемотки (S28).
+ *
+ * Обработчики ±10 с ставятся один раз в `claim()`, поэтому замыкание с
+ * `payload.position` держало позицию МОМЕНТА claim'а: кнопка на lock screen
+ * через десять минут просмотра отматывала не «на 10 секунд назад», а к началу.
+ * Берём из общего `sessionPayload`, который обновляет ticker.
+ */
+const currentPositionMs = (): number => (sessionPayload?.position || 0) * 1000
+
 const setupMediaSessionApi = (payload: MediaSessionPayload, handle: ActivePlayerHandle) => {
   if (!('mediaSession' in navigator)) return
   try {
@@ -94,13 +104,13 @@ const setupMediaSessionApi = (payload: MediaSessionPayload, handle: ActivePlayer
   })
   safeSet('seekbackward', (details) => {
     const delta = (details.seekOffset || 10) * 1000
-    const current = (payload.position || 0) * 1000
-    handle.onSeekTo(Math.max(0, current - delta))
+    handle.onSeekTo(Math.max(0, currentPositionMs() - delta))
   })
   safeSet('seekforward', (details) => {
     const delta = (details.seekOffset || 10) * 1000
-    const current = (payload.position || 0) * 1000
-    handle.onSeekTo(current + delta)
+    const durationMs = (sessionPayload?.duration || 0) * 1000
+    const next = currentPositionMs() + delta
+    handle.onSeekTo(durationMs > 0 ? Math.min(next, durationMs) : next)
   })
   safeSet('stop', () => handle.onStop())
 }

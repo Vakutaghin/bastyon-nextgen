@@ -29,6 +29,10 @@ export function useVideoHls(
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
+  // Номер текущей инициализации: всё, что стартовало раньше, после await
+  // молча выходит (S26 — повторный клик по спиннеру плодил вторые Hls).
+  let initGeneration = 0
+
   // Watchdog начальной загрузки: гасит вечный спиннер, если плеер так и не
   // инициализировался (зависший манифест/сегмент, не отдающий даже ошибку).
   let watchdogTimer: ReturnType<typeof setTimeout> | null = null
@@ -230,6 +234,16 @@ export function useVideoHls(
     clearWatchdog()
     let hasFallenBack = false
 
+    // S26: инициализация асинхронная (getVideoSourcesFromUrl), и второй клик
+    // по спиннеру запускал её повторно — появлялся второй `new Hls()`, а
+    // первый оставался сиротой и продолжал качать сегменты. Поколение
+    // отсекает обогнанную попытку, а прошлый инстанс сносим сразу.
+    const generation = ++initGeneration
+    if (hls.value) {
+      hls.value.destroy()
+      hls.value = null
+    }
+
     try {
       isLoading.value = true
       error.value = null
@@ -278,6 +292,10 @@ export function useVideoHls(
 
       // Для PeerTube URL берём оба источника одним запросом: HLS и прямой mp4 (fallback).
       const { hlsPlaylistUrl, progressiveUrl } = await getVideoSourcesFromUrl(p.videoUrl)
+
+      // Пока ходили за источниками, плеер мог переинициализироваться — тогда
+      // этот проход больше никому не нужен (S26).
+      if (generation !== initGeneration) return
 
       // Деградация на прямой mp4 на той же ноде, когда HLS фатально не воспроизводится.
       // Срабатывает максимум один раз; если файла нет — показываем ошибку.
@@ -341,6 +359,7 @@ export function useVideoHls(
         throw new Error(t('videoMsg.hlsNotSupported'))
       }
     } catch (err) {
+      if (generation !== initGeneration) return
       clearWatchdog()
       error.value = resolvePlayerErrorMessage(err)
       isLoading.value = false

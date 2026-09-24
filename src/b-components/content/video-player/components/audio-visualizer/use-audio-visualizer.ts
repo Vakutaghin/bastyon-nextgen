@@ -1,6 +1,45 @@
 import { onMounted, onBeforeUnmount, watch, type Ref } from 'vue'
 import * as PIXI from 'pixi.js'
 
+/**
+ * Один AudioContext и один source-узел на элемент — на всё приложение (S30).
+ *
+ * `createMediaElementSource(el)` можно позвать для элемента РОВНО один раз:
+ * повторный вызов (после retry плеера, когда визуализатор смонтировался
+ * заново) бросает `InvalidStateError`, и бары навсегда оставались плоскими.
+ * Контекст при этом не закрываем и не суспендим: после подключения звук
+ * элемента идёт ЧЕРЕЗ него, и закрытие сделало бы видео немым.
+ */
+let sharedAudioContext: AudioContext | null = null
+const sourceByElement = new WeakMap<HTMLVideoElement, MediaElementAudioSourceNode>()
+
+function getSharedAudioContext(): AudioContext | null {
+  if (sharedAudioContext) return sharedAudioContext
+  const AudioContextCtor =
+    window.AudioContext ||
+    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  if (!AudioContextCtor) return null
+  sharedAudioContext = new AudioContextCtor()
+  return sharedAudioContext
+}
+
+/** Source-узел элемента: создаём один раз, дальше переиспользуем. */
+function getElementSource(
+  el: HTMLVideoElement
+): { context: AudioContext; source: MediaElementAudioSourceNode } | null {
+  const context = getSharedAudioContext()
+  if (!context) return null
+
+  let source = sourceByElement.get(el)
+  if (!source) {
+    source = context.createMediaElementSource(el)
+    sourceByElement.set(el, source)
+  }
+  // Звук всегда должен доходить до выхода, даже когда визуализатор снят.
+  source.connect(context.destination)
+  return { context, source }
+}
+
 function resolveContainerEl(
   ref: Ref<HTMLElement | { $el: HTMLElement } | null>
 ): HTMLElement | null {
@@ -20,8 +59,6 @@ export function useAudioVisualizer(
   let source: MediaElementAudioSourceNode | null = null
   let dataArray: Uint8Array | null = null
   let graphics: PIXI.Graphics | null = null
-
-  const elementSourceMap = new WeakMap<HTMLVideoElement, MediaElementAudioSourceNode>()
 
   const initVisualizer = async () => {
     const el = resolveContainerEl(container)
@@ -55,37 +92,37 @@ export function useAudioVisualizer(
     if (!el) return
 
     try {
-      if (!audioContext) {
-        const AudioContextCtor =
-          window.AudioContext ||
-          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-        audioContext = new AudioContextCtor()
-      }
-
-      if (elementSourceMap.has(el)) {
-        source = elementSourceMap.get(el)!
-      } else {
-        source = audioContext.createMediaElementSource(el)
-        elementSourceMap.set(el, source)
-      }
+      const shared = getElementSource(el)
+      if (!shared) return
+      audioContext = shared.context
+      source = shared.source
 
       if (!analyser) {
         analyser = audioContext.createAnalyser()
         analyser.fftSize = 256
       }
 
-      try {
-        source.connect(analyser)
-        analyser.connect(audioContext.destination)
-      } catch (e) {
-        // Already connected or similar benign issue
-      }
+      source.connect(analyser)
 
       const bufferLength = analyser.frequencyBinCount
       dataArray = new Uint8Array(bufferLength)
     } catch (e) {
       console.error('AudioVisualizer setup error:', e)
     }
+  }
+
+  /** Снимаем только свой анализатор: source→destination остаётся, звук не рвём. */
+  const teardownAudio = () => {
+    try {
+      if (source && analyser) source.disconnect(analyser)
+      analyser?.disconnect()
+    } catch {
+      /* узел уже отключён */
+    }
+    analyser = null
+    dataArray = null
+    source = null
+    audioContext = null
   }
 
   const drawWave = () => {
@@ -169,6 +206,8 @@ export function useAudioVisualizer(
   onBeforeUnmount(() => {
     if (app) {
       app.destroy(true, { children: true, texture: true })
+      app = null
     }
+    teardownAudio()
   })
 }
