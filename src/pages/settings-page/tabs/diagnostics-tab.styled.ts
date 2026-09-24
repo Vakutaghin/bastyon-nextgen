@@ -56,3 +56,34 @@ export const SC_DiagValue = styled.span`
   text-align: right;
   word-break: break-all;
 `
+
+/* Новые ячейки — на CSS-переменных: интерполяция COLORS.* в styled стоит ошибок
+   типизации, а планка vue-tsc зафиксирована базовой линией. */
+export const SC_DiagUpdateCell = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+`
+
+export const SC_DiagUpdateButton = styled.button`
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 3px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+`

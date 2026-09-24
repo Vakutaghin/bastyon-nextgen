@@ -7,6 +7,7 @@
  * пересобрать приложение — никакой регистрации в коде не нужно.
  */
 
+import { compareSemver } from '@/helpers/common/semver'
 import type { AppLanguage } from '@/stores/ui-store'
 
 export const SUPPORTED_LANGUAGES: AppLanguage[] = ['ru', 'en']
@@ -55,19 +56,6 @@ function buildEntries(): ChangelogEntry[] {
   }
 
   return [...byVersion.values()].sort((a, b) => compareSemver(b.version, a.version))
-}
-
-/** Compares "1.2.3" vs "1.2.4" — returns positive if `a > b`, like Array.sort. */
-function compareSemver(a: string, b: string): number {
-  const ap = a.split('.').map((n) => parseInt(n, 10) || 0)
-  const bp = b.split('.').map((n) => parseInt(n, 10) || 0)
-  const len = Math.max(ap.length, bp.length)
-  for (let i = 0; i < len; i++) {
-    const av = ap[i] ?? 0
-    const bv = bp[i] ?? 0
-    if (av !== bv) return av - bv
-  }
-  return 0
 }
 
 const ENTRIES = buildEntries()

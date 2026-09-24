@@ -16,6 +16,15 @@
         <SC_DiagLabel>{{ t('settings.diagnostics.platform') }}</SC_DiagLabel>
         <SC_DiagValue>{{ platform }}</SC_DiagValue>
       </SC_DiagRow>
+      <SC_DiagRow>
+        <SC_DiagLabel>{{ t('settings.diagnostics.updates') }}</SC_DiagLabel>
+        <SC_DiagUpdateCell>
+          <SC_DiagValue>{{ updateStatus }}</SC_DiagValue>
+          <SC_DiagUpdateButton type="button" :disabled="updateChecking" @click="onCheckForUpdates">
+            {{ t('update.checkNow') }}
+          </SC_DiagUpdateButton>
+        </SC_DiagUpdateCell>
+      </SC_DiagRow>
     </SC_DiagGroup>
 
     <SC_DiagGroup>
@@ -65,6 +74,7 @@ import { useTorStore } from '@/stores/tor-store'
 import { useNodeInfo } from '@/composables/use-block-explorer-queries'
 import { getExplorerPreferredNode } from '@/composables/use-explorer-preferred-node'
 import { isTauri, isCapacitor } from '@/b-components/video-uploader/utils/environment'
+import { useAppUpdate } from '@/composables/use-app-update'
 import {
   SC_Diag,
   SC_DiagTitle,
@@ -73,6 +83,8 @@ import {
   SC_DiagRow,
   SC_DiagLabel,
   SC_DiagValue,
+  SC_DiagUpdateCell,
+  SC_DiagUpdateButton,
 } from './diagnostics-tab.styled'
 
 declare const __APP_VERSION__: string
@@ -90,6 +102,28 @@ const platform = isTauri() ? 'Tauri (desktop)' : isCapacitor() ? 'Capacitor (mob
 const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
 function syncOnline(): void {
   if (typeof navigator !== 'undefined') isOnline.value = navigator.onLine
+}
+
+// Ручная проверка обновлений. Состояние общее с модалкой: найденная версия
+// сразу показывается предложением, а не только строкой в диагностике.
+const {
+  available: updateAvailable,
+  checking: updateChecking,
+  failed: updateFailed,
+  checked: updateChecked,
+  check: runUpdateCheck,
+} = useAppUpdate()
+
+const updateStatus = computed<string>(() => {
+  if (updateChecking.value) return t('update.checking')
+  if (updateFailed.value) return t('update.failed')
+  if (updateAvailable.value) return t('update.newVersion', { version: updateAvailable.value.tag })
+  if (updateChecked.value) return t('update.upToDate')
+  return DASH
+})
+
+async function onCheckForUpdates(): Promise<void> {
+  await runUpdateCheck()
 }
 
 const torStatus = computed<string>(() =>
