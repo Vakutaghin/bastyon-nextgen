@@ -54,6 +54,9 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
 
   /** Полный сброс при логауте. */
   const reset = () => {
+    // Blob-URL расшифрованного медиа отзываем: после выхода ссылки на
+    // расшифрованные файлы жить не должны (N19).
+    mediaTransfer.revokeDecryptedMedia()
     Object.keys(messages).forEach((key) => delete messages[key])
     currentUser.value = {
       id: 'me',

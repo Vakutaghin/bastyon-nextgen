@@ -270,6 +270,27 @@ export class MatrixService {
     }
   }
 
+  /**
+   * Добавляет/убирает Bastyon-адрес в matrix-ignore (`m.ignored_user_list`).
+   * Решение Р3: on-chain блокировка дополнительно глушит сообщения этого
+   * человека в чате — раньше это были два несвязанных списка с одинаковой
+   * надписью и разным эффектом (S43).
+   */
+  public async setIgnoredByAddress(address: string, ignored: boolean): Promise<void> {
+    if (!this.client || !address) return
+    const host = resolveMatrixHost()
+    const userId = `@${this.addressToHex(address).toLowerCase()}:${host}`
+    const current = new Set<string>(this.client.getIgnoredUsers?.() ?? [])
+    if (ignored) {
+      if (current.has(userId)) return
+      current.add(userId)
+    } else {
+      if (!current.has(userId)) return
+      current.delete(userId)
+    }
+    await this.client.setIgnoredUsers?.([...current])
+  }
+
   /** roomId по локальной части алиаса (`#<localpart>:<host>`), либо null. */
   public async resolveRoomByAlias(localpart: string): Promise<string | null> {
     if (!this.client || !localpart) return null

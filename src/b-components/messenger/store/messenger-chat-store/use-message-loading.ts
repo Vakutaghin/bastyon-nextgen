@@ -49,7 +49,15 @@ export function useMessageLoading(
         await matrixService.joinIfInvited(chatId)
         await room.loadMembersIfNeeded()
         await paginateRoomHistory(room)
-        const timelineEvents = getRoomTimelineEvents(room)
+        // Local-echo события matrix-js-sdk (id вида `~…`) попадают в
+        // IndexedDB-стор и возвращаются при следующем запуске: сообщение висит
+        // навсегда без ответа/удаления, потому что действия требуют `$`-id.
+        // Своё только что отправленное сообщение показывает наш собственный
+        // оптимистичный слой, так что терять нечего (N19).
+        const timelineEvents = getRoomTimelineEvents(room).filter((e) => {
+          const id = typeof e?.getId === 'function' ? e.getId() : e?.event_id
+          return typeof id !== 'string' || !id.startsWith('~')
+        })
         const mapped = await Promise.all(timelineEvents.map((e) => mapEventToMessage(e)))
         const list = mapped.filter((m): m is Message => Boolean(m))
 

@@ -1,6 +1,10 @@
 <template>
   <SC_AudioMessage>
-    <SC_PlayButton v-if="isLoadingWave || isBlocked" :disabled="true" :aria-label="t('chat.audioLoading')">
+    <SC_PlayButton
+      v-if="isLoadingWave || isBlocked"
+      :disabled="true"
+      :aria-label="t('chat.audioLoading')"
+    >
       <SC_Spinner />
     </SC_PlayButton>
     <SC_PlayButton
@@ -34,7 +38,7 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
-import { usePixiWaveform } from './use-pixi-waveform'
+import { useCanvasWaveform } from './use-canvas-waveform'
 import { useAudioPlayback } from './use-audio-playback'
 import { useAudioDecoding } from './use-audio-decoding'
 import playIcon from './img/play.svg'
@@ -94,8 +98,8 @@ const {
 // === Декод waveform ===
 const decoding = useAudioDecoding()
 
-// === PIXI ===
-const waveform = usePixiWaveform({
+// === Waveform (2D-canvas; WebGL-контекст на каждое сообщение не тянем, N20) ===
+const waveform = useCanvasWaveform({
   barCount: BAR_COUNT,
   currentTime,
   duration,

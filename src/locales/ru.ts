@@ -549,6 +549,12 @@ export default {
     explorerOpenAddress: 'Открыть адрес',
   },
   messenger: {
+    muteUser: 'Скрыть сообщения',
+    unmuteUser: 'Показать сообщения',
+    muteConfirmTitle: 'Скрыть сообщения этого человека?',
+    unmuteConfirmTitle: 'Снова показывать сообщения?',
+    muteExplain:
+      'Это только чат: вы перестанете видеть его сообщения. Блокировка в профиле действует шире — она убирает человека из ленты и тоже скрывает переписку.',
     notifyEncrypted: 'Новое сообщение',
     notifyImage: 'Изображение',
     notifyVideo: 'Видео',

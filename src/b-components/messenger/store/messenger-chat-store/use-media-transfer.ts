@@ -106,7 +106,23 @@ export function useMediaTransfer(chatCrypto: ChatCrypto) {
     }
   }
 
-  return { decryptAudioData, decryptMediaBlob, fetchAndDecryptMedia }
+  /**
+   * Отзывает все blob-URL расшифрованного медиа. Раньше они жили до перезагрузки
+   * страницы и после выхода из аккаунта: расшифрованная картинка оставалась
+   * доступной по ссылке, а память не освобождалась (N19).
+   */
+  const revokeDecryptedMedia = (): void => {
+    for (const url of decryptedMediaUrls.values()) {
+      try {
+        URL.revokeObjectURL(url)
+      } catch {
+        /* ignore */
+      }
+    }
+    decryptedMediaUrls.clear()
+  }
+
+  return { decryptAudioData, decryptMediaBlob, fetchAndDecryptMedia, revokeDecryptedMedia }
 }
 
 export type MediaTransfer = ReturnType<typeof useMediaTransfer>

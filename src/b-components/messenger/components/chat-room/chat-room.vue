@@ -58,9 +58,13 @@
           type="search"
         />
         <SC_SearchCount v-if="searchQuery.trim()">{{ displayedMessages.length }}</SC_SearchCount>
+        <!-- Здесь именно «скрыть сообщения» (matrix-ignore), а не блокировка в
+             социальном графе: она живёт в профиле и дополнительно глушит чат
+             (решение Р3, S43). -->
         <Popconfirm
-          :title="isBlocked ? t('messenger.unblockConfirmTitle') : t('messenger.blockConfirmTitle')"
-          :ok-text="isBlocked ? t('messenger.unblockUser') : t('messenger.blockUser')"
+          :title="isBlocked ? t('messenger.unmuteConfirmTitle') : t('messenger.muteConfirmTitle')"
+          :description="t('messenger.muteExplain')"
+          :ok-text="isBlocked ? t('messenger.unmuteUser') : t('messenger.muteUser')"
           :cancel-text="t('messenger.cancel')"
           placement="bottomRight"
           :overlay-style="BLOCK_CONFIRM_OVERLAY_STYLE"
@@ -69,7 +73,7 @@
           <SC_BlockBtn
             type="button"
             :class="{ blocked: isBlocked }"
-            :title="isBlocked ? t('messenger.unblockUser') : t('messenger.blockUser')"
+            :title="isBlocked ? t('messenger.unmuteUser') : t('messenger.muteUser')"
             :disabled="blockBusy"
           >
             <StopOutlined />

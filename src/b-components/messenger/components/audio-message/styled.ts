@@ -43,8 +43,8 @@ export const SC_WaveContainer = styled('div', { compact: Boolean })`
   overflow: hidden;
 
   /*
-   * Critical: PIXI canvas is positioned absolutely. Иначе его style.width (которую
-   * PIXI выставляет в момент init на основе текущего dom.clientWidth) становится
+   * Critical: canvas волны позиционируется абсолютно. Иначе его style.width (которую
+   * рендер выставляет по текущему dom.clientWidth) становится
    * «intrinsic content size» этого контейнера, и в flex-row родителе пузырь
    * усыхает до canvas-размера. Получается петля — контейнер ужался до маленького
    * canvas → max-content пузыря маленький → flex-basis 240 не получает простора →

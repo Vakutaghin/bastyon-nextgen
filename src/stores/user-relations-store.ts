@@ -34,6 +34,21 @@ function isPrivateSub(value: unknown): boolean {
   return value === true || value === 'true' || value === 1 || value === '1'
 }
 
+/**
+ * Синхронизирует matrix-ignore с on-chain блокировкой (решение Р3, S43).
+ * Импорт динамический: сторы отношений не должны тянуть мессенджер в бандл,
+ * а без запущенного matrix-клиента вызов просто ничего не делает.
+ */
+async function applyMatrixIgnore(address: string, ignored: boolean): Promise<void> {
+  try {
+    const { matrixService } = await import('@/b-components/messenger/services/matrix-service')
+    if (!matrixService.getClient()) return
+    await matrixService.setIgnoredByAddress(address, ignored)
+  } catch (e) {
+    console.warn('[userRelations] matrix ignore sync failed', e)
+  }
+}
+
 export const useUserRelationsStore = defineStore('userRelations', {
   state: () => ({
     /** Адреса, заблокированные текущим пользователем. */
@@ -150,6 +165,8 @@ export const useUserRelationsStore = defineStore('userRelations', {
       this.blocked.add(address)
       try {
         await blockUserTx(address)
+        // Решение Р3: блокировка в социальном графе глушит и чат (S43).
+        void applyMatrixIgnore(address, true)
       } catch (e) {
         this.blocked.delete(address)
         throw e
@@ -165,6 +182,7 @@ export const useUserRelationsStore = defineStore('userRelations', {
       this.blocked.delete(address)
       try {
         await unblockUserTx(address)
+        void applyMatrixIgnore(address, false)
       } catch (e) {
         this.blocked.add(address)
         throw e

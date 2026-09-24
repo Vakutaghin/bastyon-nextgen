@@ -544,6 +544,12 @@ export default {
     explorerOpenAddress: 'Open address',
   },
   messenger: {
+    muteUser: 'Hide messages',
+    unmuteUser: 'Show messages',
+    muteConfirmTitle: 'Hide this person\u2019s messages?',
+    unmuteConfirmTitle: 'Show their messages again?',
+    muteExplain:
+      'This affects the chat only: you stop seeing their messages. Blocking from the profile goes further - it removes them from your feed and hides the chat too.',
     notifyEncrypted: 'New message',
     notifyImage: 'Image',
     notifyVideo: 'Video',
