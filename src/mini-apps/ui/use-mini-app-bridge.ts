@@ -14,6 +14,7 @@
  * чтобы `mini-app-frame.vue` ловил `loaded`/`changestate` от миниаппы.
  */
 
+import { h } from 'vue'
 import type { Router } from 'vue-router'
 import { Modal } from 'ant-design-vue'
 import { miniAppsBridge } from '@/mini-apps/core/bridge'
@@ -64,6 +65,22 @@ export const onIframeLifecycleEvent = new Set<
   (app: InstalledApp, event: string, data: unknown) => void
 >()
 
+/** Максимум символов подписываемой строки в промпте — длинное режем. */
+const PROMPT_DETAIL_MAX = 300
+
+/**
+ * Дополнительная строка промпта: что именно уйдёт в подпись (S49). Без неё
+ * `sign` спрашивал «подписать произвольные данные?», не показывая данных.
+ */
+function promptDetail(permission: PermissionId, extra: unknown): string {
+  if (permission !== 'sign') return ''
+  const payload = extra as { string?: unknown } | undefined
+  const text = typeof payload?.string === 'string' ? payload.string.trim() : ''
+  if (!text) return ''
+  const shown = text.length > PROMPT_DETAIL_MAX ? `${text.slice(0, PROMPT_DETAIL_MAX)}…` : text
+  return t('appMsg.permission.signPayload', { text: shown })
+}
+
 let started = false
 
 /**
@@ -80,7 +97,7 @@ export async function bootMiniApps(router: Router): Promise<void> {
   const host = await createDefaultHostContext({ router })
 
   const resolver = new PermissionResolver({
-    promptUser: ({ app, permission }) => {
+    promptUser: ({ app, permission, extra, signal }) => {
       const hasMeta = PERMISSION_I18N_IDS.includes(permission as PermissionId)
       const title = hasMeta
         ? t('appMsg.permission.promptTitle', {
@@ -91,10 +108,13 @@ export async function bootMiniApps(router: Router): Promise<void> {
       const description = hasMeta
         ? t(`appMsg.permission.${permission}.description`)
         : t('appMsg.permission.promptFallback', { permission })
+      const detail = promptDetail(permission, extra)
       return new Promise<'granted' | 'denied'>((resolve) => {
-        Modal.confirm({
+        const modal = Modal.confirm({
           title,
-          content: description,
+          // Два блока, а не строка с переводом строки: ant рендерит content
+          // как HTML, `\n` в нём схлопывается.
+          content: detail ? h('div', [h('div', description), h('div', detail)]) : description,
           okText: t('appMsg.permission.allow'),
           cancelText: t('appMsg.permission.deny'),
           okType: 'primary',
@@ -102,6 +122,9 @@ export async function bootMiniApps(router: Router): Promise<void> {
           onOk: () => resolve('granted'),
           onCancel: () => resolve('denied'),
         })
+        // V23: запрос миниаппы уже отвалился (таймаут RPC / закрытый iframe) —
+        // убираем модалку, иначе пользователь жмёт «Разрешить» в пустоту.
+        signal?.addEventListener('abort', () => modal.destroy(), { once: true })
       })
     },
   })

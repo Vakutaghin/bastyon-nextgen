@@ -34,7 +34,7 @@ export function createAuthMethods(deps: AuthDeps): AuthMethods {
       return generateApiSignature(auth.keyPair, auth.address, {
         data,
         expiration: options.expiration,
-        useOldFormat: options.useOldFormat,
+        // useOldFormat не прокидывается: миниаппа не выбирает формат подписи (S50).
       })
     },
 

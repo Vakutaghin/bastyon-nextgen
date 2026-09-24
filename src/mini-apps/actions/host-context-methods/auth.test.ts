@@ -29,18 +29,17 @@ describe('signApiMessage', () => {
     const { deps, generateApiSignature } = makeDeps({ keyPair: 'KP', address: 'ADDR' })
     const methods = createAuthMethods(deps)
 
-    const result = methods.signApiMessage('payload', { expiration: 42, useOldFormat: true })
+    const result = methods.signApiMessage('payload', { expiration: 42 })
 
     expect(result).toBe('SIG')
     expect(generateApiSignature).toHaveBeenCalledTimes(1)
     expect(generateApiSignature).toHaveBeenCalledWith('KP', 'ADDR', {
       data: 'payload',
       expiration: 42,
-      useOldFormat: true,
     })
   })
 
-  it('options по умолчанию = {} → expiration/useOldFormat undefined', () => {
+  it('options по умолчанию = {} → expiration undefined, формат всегда новый (S50)', () => {
     const { deps, generateApiSignature } = makeDeps({ keyPair: 'KP', address: 'ADDR' })
     const methods = createAuthMethods(deps)
 
@@ -49,7 +48,6 @@ describe('signApiMessage', () => {
     expect(generateApiSignature).toHaveBeenCalledWith('KP', 'ADDR', {
       data: 'payload',
       expiration: undefined,
-      useOldFormat: undefined,
     })
   })
 

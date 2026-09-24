@@ -1696,6 +1696,7 @@ export default {
       promptTitle: '“{app}” requests access: {name}',
       promptTitleRaw: '“{app}” requests permission: {permission}',
       promptFallback: 'Allow action “{permission}”?',
+      signPayload: 'To be signed: {text}',
       allow: 'Allow',
       deny: 'Deny',
       account: { name: 'Account', description: 'Access to your account address.' },
@@ -1717,8 +1718,9 @@ export default {
       },
       externallink: { name: 'External links', description: 'Opening links in the system browser.' },
       zaddress: {
-        name: 'Zcash address',
-        description: 'Access to the hidden Zcash address of the account.',
+        name: 'Separate wallet address',
+        description:
+          'Access to one of your derived PKOIN addresses — the app will be able to link your activity to it. This is an ordinary wallet address, not a shielded Zcash address, despite the historical name.',
       },
       notifications: {
         name: 'Notifications',

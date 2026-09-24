@@ -55,8 +55,8 @@ export const ActionSchemas = {
     data: z.unknown().optional(),
     method: z.string().max(16).optional(),
     headers: z.record(z.string(), z.string()).optional(),
-    /** Опт-ин в legacy формат подписи (без nonce+ttl). По умолчанию используется новый. */
-    useOldFormat: z.boolean().optional(),
+    // `useOldFormat` из legacy-SDK намеренно не описан: формат подписи выбирает
+    // хост, а не приложение (S50). Поле в payload просто игнорируется.
   }),
 
   // rpc

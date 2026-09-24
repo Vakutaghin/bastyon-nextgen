@@ -1699,6 +1699,7 @@ export default {
       promptTitle: '«{app}» запрашивает доступ: {name}',
       promptTitleRaw: '«{app}» запрашивает разрешение: {permission}',
       promptFallback: 'Разрешить действие «{permission}»?',
+      signPayload: 'Будет подписано: {text}',
       allow: 'Разрешить',
       deny: 'Отказать',
       account: { name: 'Аккаунт', description: 'Доступ к адресу вашего аккаунта.' },
@@ -1719,7 +1720,11 @@ export default {
         name: 'Внешние ссылки',
         description: 'Открытие ссылок в системном браузере.',
       },
-      zaddress: { name: 'Zcash-адрес', description: 'Доступ к скрытому Zcash-адресу аккаунта.' },
+      zaddress: {
+        name: 'Отдельный адрес кошелька',
+        description:
+          'Доступ к одному из ваших производных PKOIN-адресов — приложение сможет связать ваши операции с этим адресом. Это обычный адрес кошелька, а не скрытый Zcash-адрес, несмотря на историческое название.',
+      },
       notifications: {
         name: 'Уведомления',
         description: 'Отправка push-уведомлений на устройство.',

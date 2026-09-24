@@ -134,9 +134,7 @@ describe('PermissionResolver.request', () => {
   it('P2-12: троттлит одновременные prompt одного приложения (лишний → ephemeral denied)', async () => {
     const { store } = setup()
     let releaseFirst!: (r: 'granted' | 'denied') => void
-    const promptUser = vi.fn(
-      () => new Promise<'granted' | 'denied'>((res) => (releaseFirst = res))
-    )
+    const promptUser = vi.fn(() => new Promise<'granted' | 'denied'>((res) => (releaseFirst = res)))
     const resolver = new PermissionResolver({ promptUser })
 
     const p1 = resolver.request(APP, 'sign') // занимает слот, prompt висит
@@ -228,5 +226,107 @@ describe('PermissionResolver.request', () => {
     setup()
     const resolver = new PermissionResolver({ promptUser: vi.fn() })
     expect(resolver.check(APP, 'account')).toBe(false)
+  })
+})
+
+// ─── V23: отмена ожидания ≠ ответ пользователя ──────────────────────────────
+
+describe('PermissionResolver — prompt, оборванный таймаутом RPC (V23)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('не персистит denied, если ждать перестали до ответа пользователя', async () => {
+    const { store } = setup()
+    const ctrl = new AbortController()
+    // Пользователь читает промпт — ответа нет, пока не оборвём ожидание.
+    const promptUser = vi.fn(() => new Promise<'granted' | 'denied'>(() => {}))
+    const resolver = new PermissionResolver({ promptUser })
+
+    const pending = resolver.request(APP, 'account', undefined, ctrl.signal)
+    ctrl.abort(new Error('rpc_timeout'))
+
+    expect(await pending).toBe('denied')
+    expect(store.stateOf('demo.app', 'account')).toBeNull()
+
+    // Следующий вызов снова спрашивает, а не отбивается сохранённым отказом.
+    const resolver2 = new PermissionResolver({ promptUser: vi.fn().mockResolvedValue('granted') })
+    expect(await resolver2.request(APP, 'account')).toBe('granted')
+  })
+
+  it('отдаёт promptUser signal, чтобы UI закрыл модалку', async () => {
+    setup()
+    const ctrl = new AbortController()
+    let seen: AbortSignal | undefined
+    const promptUser = vi.fn((ctx: { signal?: AbortSignal }) => {
+      seen = ctx.signal
+      return new Promise<'granted' | 'denied'>(() => {})
+    })
+    const resolver = new PermissionResolver({ promptUser })
+
+    const pending = resolver.request(APP, 'account', undefined, ctrl.signal)
+    expect(seen).toBe(ctrl.signal)
+    ctrl.abort()
+    await pending
+  })
+
+  it('обычный отказ пользователя по-прежнему сохраняется', async () => {
+    const { store } = setup()
+    const resolver = new PermissionResolver({
+      promptUser: vi.fn().mockResolvedValue('denied'),
+    })
+
+    expect(await resolver.request(APP, 'account', undefined, new AbortController().signal)).toBe(
+      'denied'
+    )
+    expect(store.stateOf('demo.app', 'account')).toBe('denied')
+  })
+})
+
+// ─── V24: грант привязан к origin ───────────────────────────────────────────
+
+describe('PermissionResolver — гранты не наследуются чужим origin (V24)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const SIDELOADED: InstalledApp = {
+    manifest: { id: 'somegame.app', name: 'Game' } as ParsedManifest,
+    scope: 'evil.example',
+    icon: '',
+    source: 'local',
+    installedAt: 0,
+  }
+
+  const CATALOG: InstalledApp = { ...SIDELOADED, scope: 'somegame.app' }
+
+  it('приложение с тем же id, но другим origin, спрашивает заново', async () => {
+    const { store } = setup()
+    const resolver = new PermissionResolver({ promptUser: vi.fn().mockResolvedValue('granted') })
+
+    await resolver.request(CATALOG, 'account')
+    expect(store.forApp('somegame.app')[0]?.origin).toBe('https://somegame.app')
+
+    const promptUser = vi.fn().mockResolvedValue('denied')
+    const resolver2 = new PermissionResolver({ promptUser })
+    expect(await resolver2.request(SIDELOADED, 'account')).toBe('denied')
+    expect(promptUser).toHaveBeenCalledTimes(1)
+  })
+
+  it('check() не видит грант чужого origin', async () => {
+    const { store } = setup()
+    await store.set('somegame.app', 'account', 'granted', 'user', 'https://somegame.app')
+    const resolver = new PermissionResolver({ promptUser: vi.fn() })
+
+    expect(resolver.check(CATALOG, 'account')).toBe(true)
+    expect(resolver.check(SIDELOADED, 'account')).toBe(false)
+  })
+
+  it('тот же origin через tscope считается своим', async () => {
+    const { store } = setup()
+    await store.set('somegame.app', 'account', 'granted', 'user', 'https://test.somegame.app')
+    const resolver = new PermissionResolver({ promptUser: vi.fn() })
+
+    expect(resolver.check({ ...CATALOG, tscope: 'test.somegame.app' }, 'account')).toBe(true)
   })
 })

@@ -8,6 +8,7 @@ import {
   PermissionDeniedError,
 } from './registry'
 import type { ActionDefinition, ActionMap } from './types'
+import { PermissionResolver } from '../core/permission-resolver'
 import { TEST_APP, makeMockHost, setupTestPinia, makeResolver } from './__test-helpers'
 
 describe('ActionRegistry', () => {
@@ -103,6 +104,30 @@ describe('ActionRegistry', () => {
     await expect(
       reg.execute('restricted', TEST_APP, {}, new AbortController().signal)
     ).rejects.toBeInstanceOf(PermissionDeniedError)
+  })
+
+  // S49: промпт `sign` обязан показывать, что именно подписывается — значит
+  // данные вызова доходят до promptUser.
+  it('передаёт валидированные данные вызова в permission-prompt', async () => {
+    const promptUser = vi.fn().mockResolvedValue('granted')
+    const actions = {
+      signit: {
+        schema: z.object({ string: z.string().optional() }),
+        permissions: ['sign'],
+        handler: vi.fn().mockResolvedValue('ok'),
+      } satisfies ActionDefinition,
+    }
+    const reg = new ActionRegistry({
+      host: makeMockHost(),
+      resolver: new PermissionResolver({ promptUser }),
+      actions,
+    })
+
+    await reg.execute('signit', TEST_APP, { string: 'login:42' }, new AbortController().signal)
+
+    expect(promptUser).toHaveBeenCalledWith(
+      expect.objectContaining({ permission: 'sign', extra: { string: 'login:42' } })
+    )
   })
 
   it('passes through handler errors', async () => {

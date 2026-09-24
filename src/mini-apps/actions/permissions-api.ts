@@ -24,7 +24,7 @@ const checkPermission: ActionDefinition<{ permission: string }, boolean> = {
   rateLimitClass: 'cheap',
   handler: async ({ data, app }) => {
     if (!isKnownPermission(data.permission)) return false
-    return usePermissionsStore().isGranted(app.manifest.id, data.permission)
+    return usePermissionsStore().isGrantedForApp(app, data.permission)
   },
 }
 

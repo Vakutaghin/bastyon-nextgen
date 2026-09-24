@@ -22,7 +22,12 @@
 import { logger } from '@/services/logger'
 import type { InstalledApp } from '../types/app'
 import { PERMISSIONS, type PermissionId } from '../types/permissions'
-import { usePermissionsStore, type GrantSource, type GrantState } from '../store/permissions-store'
+import {
+  appOrigins,
+  usePermissionsStore,
+  type GrantSource,
+  type GrantState,
+} from '../store/permissions-store'
 
 const log = logger.scope('[mini-apps:perm-resolver]')
 
@@ -37,8 +42,14 @@ const promptsInFlight = new Set<string>()
 export interface PromptContext {
   readonly app: InstalledApp
   readonly permission: PermissionId
-  /** Произвольные данные от вызывающего action'а (например для `payment` — сумма). */
+  /** Произвольные данные от вызывающего action'а (например для `sign` — подписываемая строка). */
   readonly extra?: unknown
+  /**
+   * Отменяется, когда запрос миниаппы уже завершён (таймаут RPC, закрытие
+   * iframe). UI обязан закрыть свою модалку по этому сигналу — иначе
+   * пользователь отвечает на вопрос, ответ на который уже никому не нужен (V23).
+   */
+  readonly signal?: AbortSignal
 }
 
 export type PromptResult = 'granted' | 'denied'
@@ -76,7 +87,9 @@ export class PermissionResolver {
 
     // uniq-permissions (sign, payment) — никогда не используем сохранённое состояние
     if (!meta.uniq) {
-      const current = store.stateOf(app.manifest.id, permission)
+      // stateForApp, а не stateOf: грант, выданный другому origin с тем же
+      // manifest.id, не наследуется (V24) — будет обычный prompt.
+      const current = store.stateForApp(app, permission)
       if (current === 'granted' || current === 'session') return 'granted'
       if (current === 'denied') return 'denied'
     }
@@ -113,10 +126,19 @@ export class PermissionResolver {
           return 'denied'
         }
         promptsInFlight.add(appId)
+        let outcome: { result: PromptResult; aborted: boolean }
         try {
-          result = await this.promptWithAbort(app, permission, extra, signal)
+          outcome = await this.promptWithAbort(app, permission, extra, signal)
         } finally {
           promptsInFlight.delete(appId)
+        }
+        result = outcome.result
+        // V23: запрос миниаппы отвалился по таймауту (или iframe закрыли) —
+        // это НЕ ответ пользователя. Не персистим, иначе «Разрешить», нажатое
+        // на 35-й секунде, превращалось в вечный отказ без единого prompt'а.
+        if (outcome.aborted) {
+          log.debug('prompt aborted — not persisting', appId, permission)
+          return 'denied'
         }
         source = 'user'
       }
@@ -129,33 +151,35 @@ export class PermissionResolver {
     }
 
     const state: GrantState = result === 'granted' && meta.session ? 'session' : result
-    await store.set(app.manifest.id, permission, state, source)
+    await store.set(app.manifest.id, permission, state, source, appOrigins(app)[0])
     return result
   }
 
   /**
    * Показывает prompt, но проигрывает гонку с `signal.abort` — если iframe
-   * закрыли/уничтожили во время ожидания, резолвим 'denied' (P2-12).
+   * закрыли/уничтожили во время ожидания, резолвим 'denied' (P2-12). Флаг
+   * `aborted` отличает «пользователь отказал» от «мы перестали ждать» (V23):
+   * второе не сохраняется в журнал.
    */
   private promptWithAbort(
     app: InstalledApp,
     permission: PermissionId,
     extra: unknown,
     signal?: AbortSignal
-  ): Promise<PromptResult> {
-    const prompt = this.opts.promptUser({ app, permission, extra })
-    if (!signal) return prompt
-    return new Promise<PromptResult>((resolve) => {
+  ): Promise<{ result: PromptResult; aborted: boolean }> {
+    const prompt = this.opts.promptUser({ app, permission, extra, signal })
+    if (!signal) return prompt.then((result) => ({ result, aborted: false }))
+    return new Promise((resolve) => {
       let settled = false
-      const done = (r: PromptResult) => {
+      const done = (result: PromptResult, aborted: boolean) => {
         if (settled) return
         settled = true
         signal.removeEventListener('abort', onAbort)
-        resolve(r)
+        resolve({ result, aborted })
       }
-      const onAbort = () => done('denied')
+      const onAbort = () => done('denied', true)
       signal.addEventListener('abort', onAbort, { once: true })
-      prompt.then((r) => done(r)).catch(() => done('denied'))
+      prompt.then((r) => done(r, false)).catch(() => done('denied', false))
     })
   }
 
@@ -165,6 +189,6 @@ export class PermissionResolver {
    */
   check(app: InstalledApp, permission: PermissionId): boolean {
     const store = usePermissionsStore()
-    return store.isGranted(app.manifest.id, permission)
+    return store.isGrantedForApp(app, permission)
   }
 }

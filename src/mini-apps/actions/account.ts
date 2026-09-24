@@ -7,9 +7,12 @@
  * - `zaddress` — [index.js:351-377](../../../../___original-repos/pocketnet.gui/js/lib/apps/index.js#L351-L377)
  * - `authFetch` — [index.js:437-472](../../../../___original-repos/pocketnet.gui/js/lib/apps/index.js#L437-L472)
  *
- * Главное отличие от legacy — `authFetch` теперь по умолчанию использует подпись
- * с nonce+ttl (новый формат `v: 1`), что закрывает §1.14. Старые backend-ы
- * могут опт-инить legacy формат через `data.useOldFormat: true`.
+ * Главное отличие от legacy — `authFetch` подписывает ТОЛЬКО новым форматом
+ * (nonce `date=…,exp=…,s=hex(manifest.id)` + `v: 1`), что закрывает §1.14.
+ * Старый формат подписывал голый nonce — ровно то, что принимает авторизация
+ * прокси, поэтому подпись, выданную миниаппе, можно было переиграть в
+ * `auth:true`-эндпоинтах от имени пользователя (S50). Выбор формата больше не
+ * за приложением.
  */
 
 import type { z } from 'zod'
@@ -101,11 +104,10 @@ const authFetch: ActionDefinition<AuthFetchInput, unknown> = {
   authorization: true,
   rateLimitClass: 'expensive',
   handler: async ({ data, app, host, signal }) => {
-    // Подпись над manifest.id, как в legacy. Новый формат с nonce+ttl даёт
-    // backend-у возможность отвергать replay и устаревшие запросы.
-    const signature = host.signApiMessage(app.manifest.id, {
-      useOldFormat: data.useOldFormat === true,
-    })
+    // Подпись над manifest.id, как в legacy, но всегда в новом формате: nonce
+    // c `s=hex(manifest.id)` и ttl не годится для авторизации прокси, а старый
+    // (голый nonce) годился — это и был replay-вектор (S50).
+    const signature = host.signApiMessage(app.manifest.id)
     if (!signature) throw new Error('not_authenticated')
 
     // Приватность/SSRF (P1-8): если манифест объявил fetchHosts — цель обязана

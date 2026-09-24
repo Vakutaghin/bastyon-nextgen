@@ -100,9 +100,11 @@ export class ActionRegistry {
       throw new AuthorizationRequiredError()
     }
 
-    // Permissions gate. Прокидываем signal — троттл/отмена prompt'ов (P2-12).
+    // Permissions gate. Прокидываем signal — троттл/отмена prompt'ов (P2-12),
+    // и валидированные данные вызова — чтобы prompt показывал, на что именно
+    // соглашается пользователь (S49: подписываемая строка, сумма платежа).
     for (const permission of def.permissions ?? []) {
-      const result = await this.deps.resolver.request(app, permission, undefined, signal)
+      const result = await this.deps.resolver.request(app, permission, parsed.data, signal)
       if (result !== 'granted') throw new PermissionDeniedError(permission)
     }
 

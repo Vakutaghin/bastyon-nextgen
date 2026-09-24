@@ -153,7 +153,7 @@ describe('authFetch action', () => {
     expect(sentBody.signature).toEqual(FAKE_SIGNATURE)
   })
 
-  it('uses new signature format by default', async () => {
+  it('uses new signature format', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) })
     const { reg, host } = setup()
     await reg.execute(
@@ -162,10 +162,12 @@ describe('authFetch action', () => {
       { url: 'https://api.miniapp.com/x' },
       new AbortController().signal
     )
-    expect(host.signApiMessage).toHaveBeenCalledWith('test.app', { useOldFormat: false })
+    expect(host.signApiMessage).toHaveBeenCalledWith('test.app')
   })
 
-  it('switches to legacy format when useOldFormat:true', async () => {
+  // S50: старый формат подписывает голый nonce — то же, что принимает
+  // авторизация прокси. Приложение не должно иметь возможности его попросить.
+  it('ignores useOldFormat from the app payload', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) })
     const { reg, host } = setup()
     await reg.execute(
@@ -174,7 +176,7 @@ describe('authFetch action', () => {
       { url: 'https://api.miniapp.com/x', useOldFormat: true },
       new AbortController().signal
     )
-    expect(host.signApiMessage).toHaveBeenCalledWith('test.app', { useOldFormat: true })
+    expect(host.signApiMessage).toHaveBeenCalledWith('test.app')
   })
 
   it('throws on non-2xx response', async () => {

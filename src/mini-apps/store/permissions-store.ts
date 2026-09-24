@@ -18,8 +18,9 @@
 
 import { defineStore } from 'pinia'
 import { logger } from '@/services/logger'
-import type { AppId } from '../types/app'
+import type { AppId, InstalledApp } from '../types/app'
 import { isKnownPermission, PERMISSIONS, type PermissionId } from '../types/permissions'
+import { safeNormalizeOrigin } from '../core/origin-guard'
 import { kvStore, type KeyValueStore } from '../storage/key-value-store'
 
 const log = logger.scope('[mini-apps:perms]')
@@ -34,11 +35,31 @@ export interface PermissionGrant {
   readonly state: GrantState
   readonly source: GrantSource
   readonly grantedAt: number
+  /**
+   * Канонический origin приложения на момент выдачи (V24). Журнал адресуется
+   * `manifest.id`, который приложение объявляет само, поэтому без origin чужая
+   * сборка с тем же id унаследовала бы чужие гранты. Отсутствует у записей,
+   * сделанных до появления поля.
+   */
+  readonly origin?: string
+}
+
+/** Канонические origin'ы приложения: основной scope + опциональный testnet-scope. */
+export function appOrigins(app: InstalledApp): string[] {
+  return [safeNormalizeOrigin(app.scope), safeNormalizeOrigin(app.tscope)].filter(
+    (o): o is string => !!o
+  )
 }
 
 interface PermissionsState {
   /** appId → permission → grant. Включает persisted + in-memory session grants. */
   grants: Record<AppId, Partial<Record<PermissionId, PermissionGrant>>>
+  /**
+   * appId → permissions, которые уже засевались как preinstalled (S45). Отзыв
+   * предустановленного разрешения иначе отменялся бы на следующем запуске:
+   * `seedPreinstalledGrants` видит пустой журнал и снова пишет `granted`.
+   */
+  seeded: Record<AppId, PermissionId[]>
   ready: boolean
 }
 
@@ -49,10 +70,12 @@ interface Deps {
 let deps: Deps = { kv: kvStore }
 const ENTRY_PREFIX = 'perms:' // ENTRY_PREFIX + appId → JSON PermissionGrant[]
 const INDEX_KEY = 'perms-index' // JSON массив appId
+const SEEDED_KEY = 'perms-seeded' // JSON Record<appId, PermissionId[]>
 
 export const usePermissionsStore = defineStore('mini-apps:permissions', {
   state: (): PermissionsState => ({
     grants: {},
+    seeded: {},
     ready: false,
   }),
 
@@ -68,6 +91,46 @@ export const usePermissionsStore = defineStore('mini-apps:permissions', {
         const s = this.stateOf(appId, permission)
         return s === 'granted' || s === 'session'
       }
+    },
+
+    /**
+     * Грант с проверкой origin (V24). `null`, если гранта нет либо он выдан
+     * другому origin — тогда вызывающий обязан спросить пользователя заново.
+     */
+    grantForApp(state): (app: InstalledApp, permission: PermissionId) => PermissionGrant | null {
+      return (app, permission) => {
+        const grant = state.grants[app.manifest.id]?.[permission]
+        if (!grant) return null
+        const origins = appOrigins(app)
+        if (!grant.origin) {
+          // Запись из версии без origin. Для built-in id занят `assertInstallIdentity`,
+          // поэтому ей можно верить; для остальных — спрашиваем заново.
+          return app.source === 'built-in' ? grant : null
+        }
+        if (origins.length > 0 && !origins.includes(grant.origin)) {
+          log.warn('grant origin mismatch — ignoring', app.manifest.id, permission, grant.origin)
+          return null
+        }
+        return grant
+      }
+    },
+
+    /** Состояние разрешения с учётом origin. */
+    stateForApp(): (app: InstalledApp, permission: PermissionId) => GrantState | null {
+      return (app, permission) => this.grantForApp(app, permission)?.state ?? null
+    },
+
+    /** `true` если разрешение granted/session **и** выдано этому же origin. */
+    isGrantedForApp(): (app: InstalledApp, permission: PermissionId) => boolean {
+      return (app, permission) => {
+        const s = this.stateForApp(app, permission)
+        return s === 'granted' || s === 'session'
+      }
+    },
+
+    /** `true` если permission уже засевался как preinstalled (S45). */
+    wasSeeded(state): (appId: AppId, permission: PermissionId) => boolean {
+      return (appId, permission) => (state.seeded[appId] ?? []).includes(permission)
     },
 
     /** Полный список grants для приложения — для UI настроек. */
@@ -119,6 +182,8 @@ export const usePermissionsStore = defineStore('mini-apps:permissions', {
           log.warn('corrupted permissions for', appId, e)
         }
       }
+
+      this.seeded = await this.readSeeded()
       this.ready = true
     },
 
@@ -129,7 +194,8 @@ export const usePermissionsStore = defineStore('mini-apps:permissions', {
       appId: AppId,
       permission: PermissionId,
       state: GrantState,
-      source: GrantSource
+      source: GrantSource,
+      origin?: string
     ): Promise<PermissionGrant> {
       const meta = PERMISSIONS[permission]
       if (!meta) throw new Error(`unknown permission: ${permission}`)
@@ -138,10 +204,10 @@ export const usePermissionsStore = defineStore('mini-apps:permissions', {
       if (meta.uniq) {
         log.debug('skip persisting uniq permission', appId, permission)
         // Но возвращаем grant для текущего вызова — ephemeral
-        return { permission, state, source, grantedAt: Date.now() }
+        return { permission, state, source, grantedAt: Date.now(), origin }
       }
 
-      const grant: PermissionGrant = { permission, state, source, grantedAt: Date.now() }
+      const grant: PermissionGrant = { permission, state, source, grantedAt: Date.now(), origin }
       if (!this.grants[appId]) this.grants[appId] = {}
       this.grants[appId]![permission] = grant
 
@@ -172,6 +238,18 @@ export const usePermissionsStore = defineStore('mini-apps:permissions', {
       await deps.kv.remove(ENTRY_PREFIX + appId)
       await this.removeFromIndex(appId)
       log.debug('revoked all for', appId)
+    },
+
+    /**
+     * Помечает permission как «уже засеянный» (S45). После этого
+     * `seedPreinstalledGrants` больше не восстановит его при следующем запуске,
+     * и отзыв предустановленного разрешения держится.
+     */
+    async markSeeded(appId: AppId, permission: PermissionId): Promise<void> {
+      const list = this.seeded[appId] ?? []
+      if (list.includes(permission)) return
+      this.seeded[appId] = [...list, permission]
+      await deps.kv.set(SEEDED_KEY, JSON.stringify(this.seeded))
     },
 
     /** Удаляет только session-grants приложения (на выход из миниаппы, например). */
@@ -214,6 +292,23 @@ export const usePermissionsStore = defineStore('mini-apps:permissions', {
     async removeFromIndex(appId: AppId): Promise<void> {
       const ids = (await this.readIndex()).filter((x) => x !== appId)
       await deps.kv.set(INDEX_KEY, JSON.stringify(ids))
+    },
+
+    async readSeeded(): Promise<Record<AppId, PermissionId[]>> {
+      const raw = await deps.kv.get(SEEDED_KEY)
+      if (!raw) return {}
+      try {
+        const parsed: unknown = JSON.parse(raw)
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+        const out: Record<AppId, PermissionId[]> = {}
+        for (const [appId, perms] of Object.entries(parsed as Record<string, unknown>)) {
+          if (!Array.isArray(perms)) continue
+          out[appId] = perms.filter((p): p is PermissionId => isKnownPermission(p))
+        }
+        return out
+      } catch {
+        return {}
+      }
     },
 
     async readIndex(): Promise<string[]> {
