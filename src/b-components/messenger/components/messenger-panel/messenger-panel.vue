@@ -29,7 +29,7 @@
             :aria-label="t('chat.back')"
             @click="store.closeActiveChat ? store.closeActiveChat() : (store.activeChatId = null)"
           >
-            <ArrowLeftIcon :style="ICON_SIZE_XXL" />
+            <ArrowLeftIcon />
           </SC_MobileBackButton>
           <SC_PartnerName>{{ activeChatName }}</SC_PartnerName>
         </SC_ChatTopBar>
@@ -45,7 +45,7 @@
       <template v-else-if="lastTargetAddress && inviteViewActive">
         <SC_ChatTopBar>
           <SC_MobileBackButton :aria-label="t('chat.back')" @click="store.clearInviteTarget">
-            <ArrowLeftIcon :style="ICON_SIZE_XXL" />
+            <ArrowLeftIcon />
           </SC_MobileBackButton>
           <SC_PartnerName>{{ invitePartnerName }}</SC_PartnerName>
         </SC_ChatTopBar>
@@ -90,7 +90,6 @@ import {
   SC_SyncStatusBanner,
 } from './styled'
 import { ArrowLeftIcon, MessagesIcon } from '@/components/icons'
-import { ICON_SIZE_XXL } from '@/styles/icon-styles'
 
 const store = useMessengerStore()
 const { activeChatId, lastTargetAddress, inviteViewActive } = storeToRefs(store)

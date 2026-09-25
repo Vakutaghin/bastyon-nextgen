@@ -111,6 +111,8 @@ export const SC_MobileBackButton = styled.button`
   margin-right: 12px;
   background: none;
   border: none;
+  color: var(--ui-text);
+  font-size: 24px;
   cursor: pointer;
   display: none;
   align-items: center;

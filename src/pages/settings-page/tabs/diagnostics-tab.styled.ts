@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Diag = styled.section`
   display: flex;
