@@ -762,6 +762,131 @@ body .ant-notification .ant-notification-notice .ant-notification-notice-descrip
   color: var(--ui-text-muted);
 }
 
+/* Появление оверлеев antd — как у Nuxt UI: из 95% размера вместе с
+   прозрачностью, кривая ease-out; выпадашки, списки Select, поповеры и тултипы —
+   за 100 мс, модалки — за 200 мс. У antd выпадашки растягивались по вертикали,
+   а модалки вырастали из 20% размера от точки клика за 300 мс.
+   Селекторы на класс сильнее, чем у antd: у выпадашки там четыре класса
+   (с классом размещения). */
+@keyframes ui-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ui-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* С «уменьшить движение» — только проявление, как у Nuxt. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes ui-scale-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes ui-scale-out {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+}
+
+body
+  :is(.ant-dropdown, .ant-select-dropdown):is(
+    .ant-slide-up-enter,
+    .ant-slide-up-appear,
+    .ant-slide-up-leave,
+    .ant-slide-down-enter,
+    .ant-slide-down-appear,
+    .ant-slide-down-leave
+  ),
+body .ant-popover:is(.ant-zoom-big-enter, .ant-zoom-big-appear, .ant-zoom-big-leave),
+body
+  .ant-tooltip:is(.ant-zoom-big-fast-enter, .ant-zoom-big-fast-appear, .ant-zoom-big-fast-leave) {
+  animation-duration: 100ms;
+  animation-timing-function: var(--ui-ease-out);
+}
+
+body
+  :is(.ant-dropdown, .ant-select-dropdown):is(
+    .ant-slide-up-enter.ant-slide-up-enter-active,
+    .ant-slide-up-appear.ant-slide-up-appear-active,
+    .ant-slide-down-enter.ant-slide-down-enter-active,
+    .ant-slide-down-appear.ant-slide-down-appear-active
+  )[class*='-placement-'],
+body
+  .ant-popover:is(
+    .ant-zoom-big-enter.ant-zoom-big-enter-active,
+    .ant-zoom-big-appear.ant-zoom-big-appear-active
+  ),
+body
+  .ant-tooltip:is(
+    .ant-zoom-big-fast-enter.ant-zoom-big-fast-enter-active,
+    .ant-zoom-big-fast-appear.ant-zoom-big-fast-appear-active
+  ) {
+  animation-name: ui-scale-in;
+}
+
+body
+  :is(.ant-dropdown, .ant-select-dropdown):is(
+    .ant-slide-up-leave.ant-slide-up-leave-active,
+    .ant-slide-down-leave.ant-slide-down-leave-active
+  )[class*='-placement-'],
+body .ant-popover.ant-zoom-big-leave.ant-zoom-big-leave-active,
+body .ant-tooltip.ant-zoom-big-fast-leave.ant-zoom-big-fast-leave-active {
+  animation-name: ui-scale-out;
+}
+
+/* Выпадашка растёт от края, у которого кнопка. */
+body :is(.ant-dropdown, .ant-select-dropdown)[class*='-placement-bottom'] {
+  transform-origin: top;
+}
+
+body :is(.ant-dropdown, .ant-select-dropdown)[class*='-placement-top'] {
+  transform-origin: bottom;
+}
+
+body .ant-modal-root .ant-modal:is(.ant-zoom-enter, .ant-zoom-appear, .ant-zoom-leave) {
+  animation-duration: 200ms;
+  animation-timing-function: var(--ui-ease-out);
+  /* antd ставит инлайном точку клика, у Nuxt окно растёт из центра. */
+  transform-origin: 50% 50% !important;
+}
+
+body
+  .ant-modal-root
+  .ant-modal:is(.ant-zoom-enter.ant-zoom-enter-active, .ant-zoom-appear.ant-zoom-appear-active) {
+  animation-name: ui-scale-in;
+}
+
+body .ant-modal-root .ant-modal.ant-zoom-leave.ant-zoom-leave-active {
+  animation-name: ui-scale-out;
+}
+
 /* Выпадающий список Select (components/select) — как у USelect Nuxt. Он
    рисуется вне обёртки, поэтому правило глобальное. Текст пункта стоит там же,
    где текст в поле (4 + 8 = 12px от края), подсвеченный пункт — highlighted,
