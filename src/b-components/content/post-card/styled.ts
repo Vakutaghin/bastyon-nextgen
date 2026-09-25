@@ -150,7 +150,8 @@ export const SC_PostActionBtn = styled.button`
   /* На узком экране — только иконка: подпись не помещалась и обрезалась краем
      карточки. Для скринридеров остаётся aria-label. */
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    & > span {
+    /* Иконка — тоже span (.anticon), её оставляем. */
+    & > span:not(.anticon) {
       display: none;
     }
   }
