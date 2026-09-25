@@ -7,7 +7,6 @@
       :footer="footer"
       :class="['bastyon-modal', modalClass]"
       :wrapClassName="wrapClassName"
-      :maskStyle="maskStyle"
       :bodyStyle="bodyStyle"
       :closable="closable"
       :maskClosable="maskClosable"
@@ -55,7 +54,6 @@ const {
   modalClass,
   wrapClassName,
   width,
-  maskStyle,
   bodyStyle,
   closable,
   maskClosable,

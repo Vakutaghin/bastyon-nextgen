@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ConfigProvider, theme } from 'ant-design-vue'
-import type { ThemeConfig } from 'ant-design-vue/es/config-provider'
+import { ConfigProvider } from 'ant-design-vue'
 import AppLayout from '@/b-components/app-layout/app-layout.vue'
 import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
@@ -14,6 +13,8 @@ import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
+import { useTheme } from '@/composables/use-theme'
+import { buildAntdTheme, setStaticApiTheme } from '@/styles/antd-theme'
 import { SC_FramedNotice, SC_FramedLink } from './src.styled'
 
 const isTauriBuild = import.meta.env.VITE_TAURI === 'true'
@@ -60,26 +61,15 @@ useIpfsLinks(() => !isEmbed.value)
 // Напоминание о резервной копии 12 слов (раз в 7 дней, пока не проверена).
 useBackupNudge(() => !isEmbed.value)
 
-// Явная конфигурация темы для устранения предупреждения о injection
-// Используем computed для реактивности и обеспечения правильной инициализации
-// Иконки и компоненты ant-design-vue требуют явной темы через ConfigProvider.
-// algorithm СОЗНАТЕЛЬНО остаётся defaultAlgorithm: antd темнится глобальными
-// CSS-variable оверрайдами в style.css (single source of truth), а не второй
-// палитрой darkAlgorithm. См. memory project_dark_theme.
-const themeConfig = computed<ThemeConfig>(() => ({
-  algorithm: theme.defaultAlgorithm,
-  token: {
-    // Используем дефолтные значения
-    colorPrimary: '#1890ff',
-    fontSize: 16,
-  },
-  // Добавляем конфигурацию для Card компонента, чтобы избежать проблем с injection
-  components: {
-    Card: {
-      // Дефолтные значения для Card
-    },
-  },
-}))
+// Тема antd — палитра Nuxt UI из styles/antd-theme.ts, своя для светлой и
+// тёмной темы. Раньше antd всегда был светлым, а тёмным его делали
+// !important-правила в style.css.
+const { isDark } = useTheme()
+const themeConfig = computed(() => buildAntdTheme(isDark.value))
+
+// Modal.confirm, notification и message рендерятся вне дерева приложения и
+// берут тему из глобального конфига, а не из <ConfigProvider>.
+watch(themeConfig, setStaticApiTheme, { immediate: true })
 </script>
 
 <template>

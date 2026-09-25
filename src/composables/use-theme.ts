@@ -60,6 +60,7 @@ function prefersDark(): boolean {
 function applyMode(mode: ThemeMode): void {
   if (typeof document === 'undefined') return
   const resolved: 'light' | 'dark' = mode === 'auto' ? (prefersDark() ? 'dark' : 'light') : mode
+  resolvedTheme.value = resolved
   document.documentElement.setAttribute('data-theme', resolved)
   syncBrowserThemeColor()
 }
@@ -76,6 +77,13 @@ function syncBrowserThemeColor(): void {
 }
 
 const mode: Ref<ThemeMode> = ref<ThemeMode>('auto')
+
+/**
+ * Тема, которая сейчас на `<html>`. Реактивна и к смене системной темы в режиме
+ * `auto`: раньше `isDark` читал matchMedia напрямую и её не замечал, а по нему
+ * строится тема antd.
+ */
+const resolvedTheme: Ref<'light' | 'dark'> = ref<'light' | 'dark'>('light')
 
 /**
  * Инициализация темы. Вызвать ОДИН РАЗ при бутстрапе приложения, до монтирования
@@ -119,12 +127,7 @@ export function setThemeMode(next: ThemeMode): void {
  */
 export function useTheme() {
   /** Является ли текущая активная тема тёмной (учитывая `auto` + системный). */
-  const isDark = computed<boolean>(() => {
-    if (mode.value === 'dark') return true
-    if (mode.value === 'light') return false
-    if (typeof window === 'undefined' || !window.matchMedia) return false
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
+  const isDark = computed<boolean>(() => resolvedTheme.value === 'dark')
 
   return {
     mode: readonly(mode),

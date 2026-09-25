@@ -61,11 +61,6 @@ export function useModal(p: ModalProps, emit: ModalEmits, slots: Slots) {
 
   const width = computed(() => (p.fullWidth ? '95vw' : p.width))
 
-  const maskStyle = computed(() => ({
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    backdropFilter: 'blur(4px)',
-  }))
-
   const bodyStyle = computed<CSSProperties>(() => ({
     maxHeight: '90vh',
     overflowY: 'auto',
@@ -80,7 +75,6 @@ export function useModal(p: ModalProps, emit: ModalEmits, slots: Slots) {
     modalClass,
     wrapClassName,
     width,
-    maskStyle,
     bodyStyle,
     closable,
     maskClosable,
