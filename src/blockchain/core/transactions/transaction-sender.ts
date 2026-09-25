@@ -16,6 +16,7 @@
 import { debugLog } from '@/helpers/common/debug-log'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCallWithAuth, getByPRC } from '@/helpers/api/request'
+import { t } from '@/i18n'
 
 /** Потолок ожидания ответа ноды на бродкаст (мс). */
 export const BROADCAST_TIMEOUT_MS = 90_000
@@ -29,22 +30,22 @@ const VERIFY_DELAY_MS = 2_000
 export interface SendTransactionParams {
   /** Hex представление транзакции */
   hex: string
-  /** Экспортированные данные для сообщения */
-  messageData: Record<string, unknown>
+  /** Экспортированные данные для сообщения (payload операции: объект любой формы). */
+  messageData: object
   /** Тип операции (например, 'userInfo') */
   operationType: string
 }
 
-/** Нода не ответила, и по txid транзакцию пока не видно: слать повторно нельзя вслепую. */
+/**
+ * Нода не ответила, и по txid транзакцию пока не видно: слать повторно нельзя
+ * вслепую. Сообщение — для человека (его показывают как есть), txid — в поле.
+ */
 export class BroadcastStatusUnknownError extends Error {
   constructor(
     public readonly txid: string | null,
     cause: unknown
   ) {
-    super(
-      `Broadcast status unknown: node timed out and tx ${txid ?? '?'} is not visible yet — check before resending`,
-      { cause }
-    )
+    super(t('appMsg.broadcastStatusUnknown'), { cause })
     this.name = 'BroadcastStatusUnknownError'
   }
 }
@@ -199,5 +200,31 @@ export async function sendTransactionWithMessage(
     }
     // Если ошибка — объект с кодом (от RPC)
     throw new Error(`Failed to send transaction: ${errorText(error)}`, { cause: error })
+  }
+}
+
+/**
+ * Бродкаст социальных транзакций: посты, комментарии, оценки, удаления,
+ * жалобы, подписки и блокировки. Защиты те же, что у денег (V1): одна нода,
+ * длинный таймаут, «already in mempool» = успех, таймаут → проверка по txid.
+ *
+ * Раньше эти отправители звали RPC сами — с перебором нод и таймаутом 30 с:
+ * таймаут первой ноды отправлял тот же hex второй, её «уже в mempool»
+ * считалось ошибкой, человек жал ещё раз — и получал дубль поста.
+ *
+ * От sendTransactionWithMessage отличается только ошибкой: отказ ноды
+ * отдаётся как есть (объект с `code`), потому что вызывающие различают по нему
+ * DoubleScore, Blocking и т. п.
+ */
+export async function broadcastTransaction(
+  params: SendTransactionParams,
+  deps: SendTransactionDeps = defaultDeps
+): Promise<string> {
+  try {
+    return await sendTransactionWithMessage(params, deps)
+  } catch (error) {
+    if (error instanceof BroadcastStatusUnknownError) throw error
+    const cause = error instanceof Error ? error.cause : undefined
+    throw cause ?? error
   }
 }

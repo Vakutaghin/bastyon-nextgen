@@ -12,9 +12,6 @@ export const COMMENT_LOAD_TIMEOUT_MS = 25_000
 /** Максимальное количество пользователей в списке @упоминаний */
 export const MENTION_LIST_LIMIT = 15
 
-/** Минимальная комиссия транзакции для отправки комментария/оценки */
-export const COMMENT_TX_FEE = 0.00000001
-
 /** Максимальная длина текста комментария (как в legacy: components/comments/index.js:2272) */
 export const COMMENT_MAX_LENGTH = 915
 

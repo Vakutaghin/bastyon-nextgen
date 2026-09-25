@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   BroadcastStatusUnknownError,
+  broadcastTransaction,
   computeTxidFromHex,
   isAlreadyKnownError,
   sendTransactionWithMessage,
@@ -171,5 +172,42 @@ describe('sendTransactionWithMessage — бродкаст без повторн�
     expect((err as BroadcastStatusUnknownError).txid).toBe(await localTxid())
     expect(_rpcCallWithAuth).toHaveBeenCalledTimes(1)
     expect(_getByPRC).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('broadcastTransaction — социальные транзакции с защитами V1', () => {
+  const deps = () => ({
+    rpcCallWithAuth: _rpcCallWithAuth,
+    getByPRC: _getByPRC,
+    sleep: async () => {},
+  })
+
+  it('шлёт на одну ноду с длинным таймаутом, без перебора', async () => {
+    _rpcCallWithAuth.mockResolvedValueOnce('txid-1')
+    expect(await broadcastTransaction(validParams(), deps())).toBe('txid-1')
+    expect(_rpcCallWithAuth).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ noFailover: true, timeout: 90_000 }),
+      })
+    )
+  })
+
+  it('«уже в mempool» — успех с локальным txid, а не ошибка, после которой жмут ещё раз', async () => {
+    _rpcCallWithAuth.mockRejectedValueOnce(new Error('txn-already-in-mempool'))
+    expect(await broadcastTransaction(validParams(), deps())).toBe(await localTxid())
+  })
+
+  it('отказ ноды отдаётся как есть — вызывающие различают по code (DoubleScore и т. п.)', async () => {
+    const nodeError = { code: 4, message: 'DoubleScore' }
+    _rpcCallWithAuth.mockRejectedValueOnce(nodeError)
+    await expect(broadcastTransaction(validParams(), deps())).rejects.toBe(nodeError)
+  })
+
+  it('неизвестный статус после таймаута пробрасывается с txid', async () => {
+    _rpcCallWithAuth.mockRejectedValueOnce(new Error('RPC request timeout after 90000ms'))
+    _getByPRC.mockRejectedValue({ code: -5 })
+    const err = await broadcastTransaction(validParams(), deps()).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(BroadcastStatusUnknownError)
+    expect((err as BroadcastStatusUnknownError).txid).toBe(await localTxid())
   })
 })

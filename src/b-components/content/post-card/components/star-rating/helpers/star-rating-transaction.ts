@@ -3,8 +3,6 @@
 
 import { Buffer } from 'buffer'
 
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import {
@@ -13,7 +11,7 @@ import {
   selectBestUnspents,
   lockUTXOs,
 } from '@/blockchain/core/transactions/unspents-manager'
-import type { SendRawTransactionResponse } from '../types'
+import { broadcastTransaction } from '@/blockchain/core/transactions/transaction-sender'
 
 /** Сериализация полезной нагрузки для подписи transaction-builder. */
 function serializeUpvoteData(shareId: string, value: number): string {
@@ -64,28 +62,9 @@ export async function sendUpvoteTransaction(
     fee: 0.00000001,
   })
 
-  const response = (await getByPRCWithAuth({
-    method: rpcEndpoints.sendRawTransactionWithMessage,
-    parameters: [builtTx.hex, rpcData, 'upvoteShare'],
-    options: { auth: true },
-  })) as SendRawTransactionResponse | string
-
-  if (typeof response === 'string') return response
-
-  if (response && typeof response === 'object') {
-    if (
-      'result' in response &&
-      response.result === 'success' &&
-      'data' in response &&
-      typeof response.data === 'string'
-    ) {
-      return response.data
-    }
-    if ('error' in response && response.error) {
-      if (typeof response.error === 'object') throw response.error
-      throw new Error(String(response.error))
-    }
-  }
-
-  throw new Error('Unexpected response format from sendrawtransactionwithmessage')
+  return broadcastTransaction({
+    hex: builtTx.hex,
+    messageData: rpcData,
+    operationType: 'upvoteShare',
+  })
 }

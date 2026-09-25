@@ -1695,6 +1695,8 @@ export default {
     empty: 'No release notes yet',
   },
   appMsg: {
+    broadcastStatusUnknown:
+      'The node did not answer in time. The transaction may have gone through — check before sending it again.',
     framedNotice: 'Bastyon NextGen does not open inside another site.',
     framedOpen: 'Open in a new tab',
     time: {

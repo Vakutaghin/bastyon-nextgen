@@ -17,15 +17,8 @@ import {
   lockUTXOs,
 } from '@/blockchain/core/transactions/unspents-manager'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
 import { t } from '@/i18n'
-
-interface SendTxResponse {
-  result?: string
-  data?: unknown
-  error?: unknown
-}
+import { broadcastTransaction } from '@/blockchain/core/transactions/transaction-sender'
 
 /**
  * Удаляет пост пользователя (contentDelete). Возвращает txid транзакции.
@@ -60,18 +53,9 @@ export async function deletePost(postId: string): Promise<string> {
     fee: DEFAULT_TX_FEE,
   })
 
-  const response = await getByPRCWithAuth({
-    method: rpcEndpoints.sendRawTransactionWithMessage,
-    parameters: [builtTx.hex, messagePayload, 'contentDelete'],
-    options: { auth: true },
+  return broadcastTransaction({
+    hex: builtTx.hex,
+    messageData: messagePayload,
+    operationType: 'contentDelete',
   })
-
-  if (typeof response === 'string') return response
-  const res = response as SendTxResponse | null
-  if (res && typeof res === 'object' && typeof res.data === 'string') return res.data
-  if (res && typeof res === 'object' && res.result === 'success' && typeof res.data === 'string') {
-    return res.data
-  }
-  const err = res && typeof res === 'object' ? res.error : null
-  throw err instanceof Error ? err : new Error(String(err ?? t('postCard.deleteFailed')))
 }

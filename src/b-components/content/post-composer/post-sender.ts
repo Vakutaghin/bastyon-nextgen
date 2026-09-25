@@ -15,32 +15,11 @@ import {
   lockUTXOs,
   selectBestUnspents,
 } from '@/blockchain/core/transactions/unspents-manager'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
 import { t } from '@/i18n'
 
-import { POST_TX_FEE } from './consts'
+import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { validatePost } from './validate-post'
-
-/** Минимальная форма ответа sendrawtransactionwithmessage: либо txid-строка, либо конверт. */
-interface SendTxResponse {
-  result?: string
-  data?: unknown
-  error?: unknown
-}
-
-/** Извлекает txid из ответа ноды (поддерживает строку и конверт { result, data }). */
-function extractTxid(response: unknown): string {
-  if (typeof response === 'string') return response
-
-  const res = response as SendTxResponse | null
-  if (res && typeof res === 'object' && typeof res.data === 'string') {
-    return res.data
-  }
-
-  const err = res && typeof res === 'object' ? res.error : null
-  throw err instanceof Error ? err : new Error(String(err ?? t('postMsg.errSendFailed')))
-}
+import { broadcastTransaction } from '@/blockchain/core/transactions/transaction-sender'
 
 /**
  * Публикует пост (новый, репост или редактирование — определяется полями post).
@@ -72,7 +51,7 @@ export async function sendPost(post: SharePostData): Promise<string> {
   unspents = filterAvailableUnspents(unspents, false)
   if (!unspents?.length) throw new Error(t('postMsg.errNoUnspents'))
 
-  const selectedUnspents = selectBestUnspents(unspents, POST_TX_FEE)
+  const selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
   if (selectedUnspents.length === 0) throw new Error(t('postMsg.errSelectUnspents'))
 
   lockUTXOs(selectedUnspents)
@@ -86,15 +65,13 @@ export async function sendPost(post: SharePostData): Promise<string> {
     keyPair,
     serializedData,
     operationType,
-    fee: POST_TX_FEE,
+    fee: DEFAULT_TX_FEE,
     ...(delayedNtime ? { delayedNtime } : {}),
   })
 
-  const response = await getByPRCWithAuth({
-    method: rpcEndpoints.sendRawTransactionWithMessage,
-    parameters: [builtTx.hex, payload, operationType],
-    options: { auth: true },
+  return broadcastTransaction({
+    hex: builtTx.hex,
+    messageData: payload,
+    operationType: operationType,
   })
-
-  return extractTxid(response)
 }

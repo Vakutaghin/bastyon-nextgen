@@ -5,9 +5,7 @@ import {
   serializePost,
   type SharePostData,
 } from '@/blockchain/core/actions/post-action'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-
-import { POST_TX_FEE } from './consts'
+import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 
 // --- Моки IO-границ (pure serialize/export/validate — реальные) ---
 const mocks = vi.hoisted(() => ({
@@ -18,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   filterAvailableUnspents: vi.fn(),
   selectBestUnspents: vi.fn(),
   lockUTXOs: vi.fn(),
-  getByPRCWithAuth: vi.fn(),
+  broadcastTransaction: vi.fn(),
 }))
 
 vi.mock('@/blockchain', () => ({
@@ -33,7 +31,9 @@ vi.mock('@/blockchain/core/transactions/unspents-manager', () => ({
   selectBestUnspents: mocks.selectBestUnspents,
   lockUTXOs: mocks.lockUTXOs,
 }))
-vi.mock('@/helpers/api/request', () => ({ getByPRCWithAuth: mocks.getByPRCWithAuth }))
+vi.mock('@/blockchain/core/transactions/transaction-sender', () => ({
+  broadcastTransaction: mocks.broadcastTransaction,
+}))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 import { sendPost } from './post-sender'
@@ -55,7 +55,7 @@ beforeEach(() => {
     usedUnspents: utxos,
     outputs: [],
   })
-  mocks.getByPRCWithAuth.mockResolvedValue('txid-happy')
+  mocks.broadcastTransaction.mockResolvedValue('txid-happy')
 })
 
 describe('sendPost', () => {
@@ -96,23 +96,18 @@ describe('sendPost', () => {
         fromAddress: 'PSenderAddr',
         serializedData: serializePost(validPost),
         operationType: 'share',
-        fee: POST_TX_FEE,
+        fee: DEFAULT_TX_FEE,
       })
     )
   })
 
-  it('happy path: отправляет sendrawtransactionwithmessage с [hex, payload, operationType]', async () => {
-    await sendPost(validPost)
-    expect(mocks.getByPRCWithAuth).toHaveBeenCalledWith({
-      method: rpcEndpoints.sendRawTransactionWithMessage,
-      parameters: ['deadbeef', exportPost(validPost), 'share'],
-      options: { auth: true },
+  it('happy path: бродкастит через общий отправитель с защитами V1', async () => {
+    await expect(sendPost(validPost)).resolves.toBe('txid-happy')
+    expect(mocks.broadcastTransaction).toHaveBeenCalledWith({
+      hex: 'deadbeef',
+      messageData: exportPost(validPost),
+      operationType: 'share',
     })
-  })
-
-  it('извлекает txid из конверта { result, data }', async () => {
-    mocks.getByPRCWithAuth.mockResolvedValue({ result: 'success', data: 'txid-env' })
-    await expect(sendPost(validPost)).resolves.toBe('txid-env')
   })
 
   it('отложенная публикация (settings.t > 1) → передаёт delayedNtime', async () => {

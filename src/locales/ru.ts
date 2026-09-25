@@ -1698,6 +1698,8 @@ export default {
     empty: 'Журнал изменений пока пуст',
   },
   appMsg: {
+    broadcastStatusUnknown:
+      'Нода не ответила вовремя. Транзакция могла уйти — проверьте, прежде чем отправлять снова.',
     framedNotice: 'Bastyon NextGen не открывается внутри другого сайта.',
     framedOpen: 'Открыть в новой вкладке',
     time: {

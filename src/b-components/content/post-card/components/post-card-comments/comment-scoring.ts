@@ -4,36 +4,16 @@ import { Buffer } from 'buffer'
 
 import { useAuthStore } from '@/blockchain'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
-import { getUnspents, filterAvailableUnspents, selectBestUnspents, lockUTXOs } from '@/blockchain/core/transactions/unspents-manager'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRCWithAuth } from '@/helpers/api/request'
+import {
+  getUnspents,
+  filterAvailableUnspents,
+  selectBestUnspents,
+  lockUTXOs,
+} from '@/blockchain/core/transactions/unspents-manager'
 import { t } from '@/i18n'
 
-import { COMMENT_TX_FEE } from './consts'
-
-/**
- * Извлекает txid из ответа RPC (поддержка нескольких форматов обёрток).
- */
-function extractTxidFromResponse(response: unknown): string {
-  if (typeof response === 'string') return response
-
-  if (response && typeof response === 'object' && 'data' in response && typeof response.data === 'string') {
-    return response.data
-  }
-  if (
-    response &&
-    typeof response === 'object' &&
-    'result' in response &&
-    response.result === 'success' &&
-    'data' in response &&
-    typeof response.data === 'string'
-  ) {
-    return response.data
-  }
-
-  const err = response && typeof response === 'object' && 'error' in response ? response.error : null
-  throw err instanceof Error ? err : new Error(String(err ?? t('commentsMsg.errTxFailed')))
-}
+import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
+import { broadcastTransaction } from '@/blockchain/core/transactions/transaction-sender'
 
 /**
  * Подготавливает unspents для транзакции.
@@ -43,7 +23,7 @@ async function prepareUnspents(address: string) {
   unspents = filterAvailableUnspents(unspents, false)
   if (!unspents?.length) throw new Error(t('commentsMsg.errNoUnspents'))
 
-  const selected = selectBestUnspents(unspents, COMMENT_TX_FEE)
+  const selected = selectBestUnspents(unspents, DEFAULT_TX_FEE)
   if (selected.length === 0) throw new Error(t('commentsMsg.errSelectUnspents'))
 
   lockUTXOs(selected)
@@ -63,7 +43,7 @@ async function prepareUnspents(address: string) {
 export async function sendCommentScore(
   commentId: string,
   value: 1 | -1,
-  commentAuthorAddress: string,
+  commentAuthorAddress: string
 ): Promise<string> {
   const authStore = useAuthStore()
   const keyPair = authStore.getKeyPair
@@ -86,14 +66,8 @@ export async function sendCommentScore(
     serializedData,
     operationType: 'cScore',
     opReturnData,
-    fee: COMMENT_TX_FEE,
+    fee: DEFAULT_TX_FEE,
   })
 
-  const response = await getByPRCWithAuth({
-    method: rpcEndpoints.sendRawTransactionWithMessage,
-    parameters: [builtTx.hex, rpcData, 'cScore'],
-    options: { auth: true },
-  })
-
-  return extractTxidFromResponse(response)
+  return broadcastTransaction({ hex: builtTx.hex, messageData: rpcData, operationType: 'cScore' })
 }
