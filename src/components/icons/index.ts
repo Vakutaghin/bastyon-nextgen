@@ -7,8 +7,7 @@
  * внутри. Поэтому размеры через font-size (styles/icon-styles.ts) и стили,
  * завязанные на `.anticon`, работают по-прежнему.
  *
- * Логотипов брендов в Lucide нет: WhatsApp, Twitter, Reddit и Facebook
- * по-прежнему берутся из @ant-design/icons-vue.
+ * Логотипов брендов в Lucide нет: они в ./brands.ts, из Simple Icons.
  */
 
 import { h, type Component, type FunctionalComponent } from 'vue'

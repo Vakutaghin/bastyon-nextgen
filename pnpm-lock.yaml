@@ -27,9 +27,6 @@ importers:
 
   .:
     dependencies:
-      '@ant-design/icons-vue':
-        specifier: ^7.0.1
-        version: 7.0.1(vue@3.5.26(typescript@5.9.3))
       '@capacitor/android':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.0.1)
@@ -168,6 +165,9 @@ importers:
       randombytes:
         specifier: ^2.1.0
         version: 2.1.0
+      simple-icons:
+        specifier: ^16.32.0
+        version: 16.32.0
       stream-browserify:
         specifier: ^3.0.0
         version: 3.0.0
@@ -4465,6 +4465,10 @@ packages:
   signal-exit@4.1.0:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
+
+  simple-icons@16.32.0:
+    resolution: {integrity: sha512-BwqATHxAulx7X6kNdTkecy7PBjLkgtAHcgrwYLd9iA+cD2At9DzhJwdwaSELk2+aZe01IfiM/Wxtyp68Dvup2A==}
+    engines: {node: '>=0.12.18'}
 
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
@@ -9876,6 +9880,8 @@ snapshots:
   signal-exit@3.0.7: {}
 
   signal-exit@4.1.0: {}
+
+  simple-icons@16.32.0: {}
 
   sisteransi@1.0.5: {}
 

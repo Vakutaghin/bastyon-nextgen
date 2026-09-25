@@ -37,7 +37,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@ant-design/icons-vue": "^7.0.1",
     "@capacitor/android": "^8.0.1",
     "@capacitor/app": "^8.0.0",
     "@capacitor/camera": "^8.0.0",
@@ -84,6 +83,7 @@
     "pixi.js": "^8.15.0",
     "qrcode": "^1.5.4",
     "randombytes": "^2.1.0",
+    "simple-icons": "^16.32.0",
     "stream-browserify": "^3.0.0",
     "tiny-secp256k1": "^2.2.4",
     "typeforce": "^1.18.0",
