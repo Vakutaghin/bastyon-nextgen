@@ -1,17 +1,14 @@
 <template>
-  <ATooltip
-    :title='text'
-    placement='top'
-    :overlay-style="{ maxWidth: '320px' }"
-  >
-    <SC_InfoTooltipIcon>?</SC_InfoTooltipIcon>
+  <ATooltip :title="text" placement="top" :overlay-style="{ maxWidth: '320px' }">
+    <SC_InfoTooltipIcon><QuestionCircleOutlined /></SC_InfoTooltipIcon>
   </ATooltip>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Tooltip as ATooltip } from 'ant-design-vue'
+import { QuestionCircleOutlined } from '@/components/icons'
 import { EXPLORER_GLOSSARY, type GlossaryTerm } from './explorer-glossary'
 import { SC_InfoTooltipIcon } from './info-tooltip.styled'
 

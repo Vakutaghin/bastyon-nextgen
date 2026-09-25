@@ -5,12 +5,13 @@ export const SC_ShareBtn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
+  padding: 5px 10px;
+  font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary);
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-lighter);
+  line-height: 20px;
+  color: var(--ui-text);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border-accented);
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
@@ -19,8 +20,7 @@ export const SC_ShareBtn = styled.button`
     color ${TRANSITIONS.QUICK};
 
   &:hover {
-    color: var(--color-primary);
-    background: var(--color-primary-light);
-    border-color: var(--color-primary-light-30);
+    color: var(--ui-text);
+    background: var(--ui-bg-elevated);
   }
 `

@@ -16,10 +16,12 @@ export const SC_MutedSm = styled.span`
   font-size: 12px;
 `
 
-/** Сильно мельче, со смещением — слабо-видный счётчик/timestamp. */
+/** Подпись отдельной строкой под значением (точное время под «7 лет назад»).
+ * Раньше была строчной и прилипала к предыдущему тексту без пробела. */
 export const SC_MutedXs = styled.span`
+  display: block;
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 2px;
 `
 

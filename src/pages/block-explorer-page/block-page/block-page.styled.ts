@@ -69,21 +69,24 @@ export const SC_BlockNavBtn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-lighter);
+  padding: 5px 10px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border-accented);
   border-radius: var(--ui-radius-md);
-  color: var(--color-text-primary);
+  color: var(--ui-text);
   cursor: pointer;
 
   &:disabled {
-    color: var(--color-text-muted);
+    opacity: 0.75;
     cursor: not-allowed;
   }
 
   &:hover:not(:disabled) {
-    background: var(--color-bg-hover);
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text);
   }
 `
 
@@ -91,8 +94,8 @@ export const SC_BlockMetaGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-lighter);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;

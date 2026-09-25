@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 import { SC_Placeholder as SC_PlaceholderBase } from '../components/shared/explorer-primitives.styled'
 
@@ -143,8 +142,7 @@ export const SC_PeerTableHeader = styled.div`
   grid-template-columns: minmax(0, 1.4fr) 1fr 70px 70px 90px 70px;
   gap: 10px;
   padding: 10px 18px;
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border-lighter);
+  border-bottom: 1px solid var(--ui-border);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -206,13 +204,14 @@ export const SC_PeerVersion = styled.div`
 export const SC_DirectionBadge = styled('span', { dir: String })`
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: var(--ui-radius-sm);
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--ui-radius-md);
   white-space: nowrap;
-  color: ${(p) => (p.dir === 'in' ? COLORS.SUCCESS : COLORS.PRIMARY)};
-  background: ${(p) => (p.dir === 'in' ? COLORS.SUCCESS_BG_TINT : COLORS.PRIMARY_LIGHT)};
+  color: ${(p) => (p.dir === 'in' ? 'var(--ui-info)' : 'var(--ui-primary)')};
+  background: ${(p) =>
+    p.dir === 'in' ? 'rgb(var(--ui-info-rgb) / 10%)' : 'rgb(var(--ui-primary-rgb) / 10%)'};
 `
 
 // Общий плейсхолдер (audit §3.1) + мелкий шрифт страницы пиров.

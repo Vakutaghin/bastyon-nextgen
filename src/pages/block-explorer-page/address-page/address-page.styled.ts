@@ -55,13 +55,19 @@ export const SC_AddrTitleRow = styled.div`
   flex-wrap: wrap;
 `
 
+/** Заголовок страницы — сам адрес. HashLink задаёт 13px, как в таблицах;
+ * здесь он крупнее и переносится, а не уходит под «Поделиться». */
 export const SC_AddrTitle = styled.h1`
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 0;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 280px;
+
+  & > span {
+    font-size: 16px;
+  }
 `
 
 export const SC_AddrTitleActions = styled.div`
@@ -83,8 +89,8 @@ export const SC_AddrSummary = styled.div`
 
 export const SC_AddrSummaryCard = styled.div`
   padding: 16px 18px;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-lighter);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
 `
 

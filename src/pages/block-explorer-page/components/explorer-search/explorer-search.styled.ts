@@ -104,8 +104,7 @@ export const SC_SuggestionsHeader = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--color-text-secondary);
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border-lighter);
+  border-bottom: 1px solid var(--ui-border);
 `
 
 export const SC_ClearAllBtn = styled.button`

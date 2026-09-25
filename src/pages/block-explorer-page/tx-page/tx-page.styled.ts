@@ -73,8 +73,8 @@ export const SC_TxTypeBadge = styled.span`
 export const SC_TxMetaGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-lighter);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;
@@ -144,10 +144,10 @@ export const SC_TxIOHeader = styled.h3`
 
 export const SC_TxIOItem = styled.div`
   padding: 10px 12px;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-lighter);
+  background: rgb(var(--ui-bg-elevated-rgb) / 50%);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
-  font-size: 13px;
+  font-size: 14px;
 `
 
 export const SC_TxIOAddress = styled.div`

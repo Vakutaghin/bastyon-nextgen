@@ -31,6 +31,7 @@ import {
   CircleCheck,
   CirclePause,
   CirclePlay,
+  CircleQuestionMark,
   CircleX,
   Clapperboard,
   Clock,
@@ -195,6 +196,7 @@ export const PictureOutlined = lucideIcon('PictureOutlined', Image)
 export const PlayCircleFilled = lucideIcon('PlayCircleFilled', CirclePlay, 'soft')
 export const PlayCircleOutlined = lucideIcon('PlayCircleOutlined', CirclePlay)
 export const PlusOutlined = lucideIcon('PlusOutlined', Plus)
+export const QuestionCircleOutlined = lucideIcon('QuestionCircleOutlined', CircleQuestionMark)
 export const QrcodeOutlined = lucideIcon('QrcodeOutlined', QrCode)
 export const ReloadOutlined = lucideIcon('ReloadOutlined', RefreshCw)
 export const RetweetOutlined = lucideIcon('RetweetOutlined', Repeat2)
