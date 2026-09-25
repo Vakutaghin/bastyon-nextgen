@@ -1,10 +1,12 @@
 import { onBeforeUnmount } from 'vue'
-import { Empty, Spin } from 'ant-design-vue'
+import { Spin } from 'ant-design-vue'
+import Empty from '@/components/empty/empty.vue'
 import {
   PlayCircleOutlined,
   InfoCircleOutlined,
   CloseOutlined,
   DownloadOutlined,
+  VideoCameraAddOutlined,
 } from '@/components/icons'
 import {
   SC_VideosSection,
@@ -35,6 +37,7 @@ export function useVideoList() {
     InfoCircleOutlined,
     CloseOutlined,
     DownloadOutlined,
+    VideoCameraAddOutlined,
     SC_VideosSection,
     SC_SectionTitle,
     SC_VideosGrid,

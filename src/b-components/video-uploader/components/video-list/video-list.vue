@@ -38,7 +38,7 @@
     </SC_VideosGrid>
 
     <SC_EmptyState v-else-if="!loading">
-      <Empty :description="t('videoUploader.noVideos')" />
+      <Empty :description="t('videoUploader.noVideos')" :icon="VideoCameraAddOutlined" />
     </SC_EmptyState>
 
     <SC_LoadingState v-else>
@@ -66,6 +66,7 @@ const {
   InfoCircleOutlined,
   CloseOutlined,
   DownloadOutlined,
+  VideoCameraAddOutlined,
   SC_VideosSection,
   SC_SectionTitle,
   SC_VideosGrid,

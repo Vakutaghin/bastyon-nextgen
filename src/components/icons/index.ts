@@ -49,6 +49,7 @@ import {
   Hourglass,
   House,
   Image,
+  Inbox,
   Info,
   Key,
   LayoutGrid,
@@ -180,6 +181,7 @@ export const GiftOutlined = lucideIcon('GiftOutlined', Gift)
 export const GlobalOutlined = lucideIcon('GlobalOutlined', Globe)
 export const HomeOutlined = lucideIcon('HomeOutlined', House)
 export const HourglassOutlined = lucideIcon('HourglassOutlined', Hourglass)
+export const InboxOutlined = lucideIcon('InboxOutlined', Inbox)
 export const InfoCircleOutlined = lucideIcon('InfoCircleOutlined', Info)
 export const KeyOutlined = lucideIcon('KeyOutlined', Key)
 export const LeftOutlined = lucideIcon('LeftOutlined', ChevronLeft)

@@ -12,6 +12,7 @@ import Card from './card/card.vue'
 import Empty from './empty/empty.vue'
 import Spin from './spin/spin.vue'
 import Select from './select/select.vue'
+import { CloseOutlined } from './icons'
 
 const mounted: Array<{ unmount: () => void }> = []
 const keep = <T extends { unmount: () => void }>(w: T): T => (mounted.push(w), w)
@@ -127,10 +128,21 @@ describe('Card / Empty / Spin (обёртки)', () => {
     expect(w.find('.ant-card').classes()).not.toContain('ant-card-bordered')
   })
 
-  it('Empty: описание из пропа и дефолтная иллюстрация', () => {
+  it('Empty: подпись из пропа и иконка в круге, как UEmpty', () => {
     const w = keep(mount(Empty, { props: { description: 'Пусто' } }))
-    expect(w.find('.ant-empty-description').text()).toBe('Пусто')
-    expect(w.find('.ant-empty-image svg').exists()).toBe(true)
+    expect(w.text()).toBe('Пусто')
+    expect(w.find('.anticon svg').exists()).toBe(true)
+  })
+
+  it('Empty: заголовок и своя иконка', () => {
+    const w = keep(
+      mount(Empty, {
+        props: { title: 'Нет видео', description: 'Загрузите первое', icon: CloseOutlined },
+      })
+    )
+    expect(w.text()).toContain('Нет видео')
+    expect(w.text()).toContain('Загрузите первое')
+    expect(w.find('.anticon').exists()).toBe(true)
   })
 
   it('Spin: spinning/tip доходят до antd', () => {
