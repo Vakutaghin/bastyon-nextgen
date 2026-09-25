@@ -70,29 +70,30 @@ export const SC_ClearAllButton = styled.button`
 export const SC_NotificationsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   padding-right: 2px;
 `
 
+/** Строка списка как пункт меню Nuxt UI: без рамки, подложка на hover;
+ * непрочитанное — лёгкий тинт акцента. */
 export const SC_NotificationItem = styled.div<{ seen?: boolean }>`
-  border-radius: var(--ui-radius-lg);
-  padding: 10px 12px;
-  background: ${(p) => (p.seen ? COLORS.BG_INPUT : COLORS.ANT_BLUE_BG_LIGHT)};
-  border: 1px solid ${(p) => (p.seen ? COLORS.GRAY_EEE : COLORS.ANT_BLUE_BG)};
+  border-radius: var(--ui-radius-md);
+  padding: 8px 10px;
+  background: ${(p) => (p.seen ? 'transparent' : 'rgb(var(--ui-primary-rgb) / 6%)')};
+  border: 0;
   cursor: pointer;
-  transition:
-    background-color 0.15s,
-    border-color 0.15s;
+  transition: background-color 0.15s;
   display: flex;
   align-items: stretch;
   gap: 8px;
   position: relative;
 
   &:hover {
-    background: ${(p) => (p.seen ? COLORS.BG_TERTIARY : COLORS.ANT_BLUE_BG_LIGHT)};
+    background: ${(p) =>
+      p.seen ? 'rgb(var(--ui-bg-elevated-rgb) / 50%)' : 'rgb(var(--ui-primary-rgb) / 10%)'};
   }
 `
 

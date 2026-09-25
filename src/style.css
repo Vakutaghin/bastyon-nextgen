@@ -561,18 +561,17 @@ html {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Buttons
-
-   `button:hover` сильнее класса styled-компонента, поэтому кнопки без своего
-   hover при наведении становятся прозрачными с акцентным текстом. На этом
-   держится hover многих иконок-кнопок — правило поменяется вместе с ними
-   (этап 3 в _docs-todo/REDESIGN_NUXT_UI.md).
+   Buttons — значения по умолчанию для кнопок без своих стилей: сплошная
+   кнопка Nuxt UI. :where() обнуляет специфичность. Раньше `button:hover` был
+   сильнее класса styled-компонента: кнопки без своего hover становились
+   прозрачными, а у тех, где hover задаёт только фон, текст красился акцентом
+   (на акцентной кнопке — зелёный на зелёном).
    ═══════════════════════════════════════════════════════════════════════════ */
 
-button {
-  background: var(--color-primary);
+:where(button) {
+  background: var(--ui-primary);
   color: var(--ui-text-inverted);
-  border: 1px solid var(--color-primary);
+  border: 1px solid transparent;
   text-align: center;
   border-radius: var(--ui-radius-md);
   font-size: 0.9em;
@@ -582,12 +581,11 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  background: transparent;
-  color: var(--color-primary);
+:where(button):hover {
+  background: rgb(var(--ui-primary-rgb) / 75%);
 }
 
-button.disabled {
+:where(button.disabled) {
   cursor: not-allowed;
   opacity: 0.75;
 }

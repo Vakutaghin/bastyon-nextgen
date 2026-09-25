@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_Wrap = styled.div`
@@ -15,46 +14,52 @@ export const SC_Footer = styled.div`
 `
 
 export const SC_DismissButton = styled.button`
-  background: var(--color-primary);
-  color: var(--color-white);
+  background: var(--ui-primary);
+  color: var(--ui-text-inverted);
   border: none;
-  border-radius: var(--ui-radius-lg);
-  padding: 8px 20px;
+  border-radius: var(--ui-radius-md);
+  padding: 6px 12px;
   font-size: 14px;
   font-weight: 500;
+  line-height: 20px;
   cursor: pointer;
   transition: background-color ${TRANSITIONS.QUICK};
 
+  /* Цвет задан и здесь: иначе глобальный button:hover красил текст акцентом
+     — зелёный на зелёном. */
   &:hover {
-    background: var(--color-primary-hover);
+    background: rgb(var(--ui-primary-rgb) / 75%);
+    color: var(--ui-text-inverted);
   }
 `
 
+/** Вкладки-pill, как переключатель языка в настройках. */
 export const SC_LangSwitcher = styled.div`
   display: inline-flex;
   align-self: flex-start;
-  border: 1px solid var(--color-border);
+  gap: 2px;
+  padding: 4px;
+  background: var(--ui-bg-elevated);
   border-radius: var(--ui-radius-lg);
-  overflow: hidden;
 `
 
 export const SC_LangButton = styled.button<{ active: boolean }>`
-  padding: 4px 10px;
+  padding: 2px 10px;
   font-size: 12px;
-  font-weight: 600;
-  background: ${(p) => (p.active ? COLORS.PRIMARY : 'transparent')};
-  color: ${(p) => (p.active ? COLORS.WHITE : COLORS.TEXT_SECONDARY)};
+  font-weight: 500;
+  line-height: 20px;
+  background: ${(p) => (p.active ? 'var(--ui-primary)' : 'transparent')};
+  color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text-muted)')};
   border: none;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
-  transition: background-color ${TRANSITIONS.QUICK};
-
-  & + & {
-    border-left: 1px solid var(--color-border);
-  }
+  transition:
+    background-color ${TRANSITIONS.QUICK},
+    color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${(p) => (p.active ? COLORS.PRIMARY : COLORS.PRIMARY_LIGHT)};
-    color: ${(p) => (p.active ? COLORS.WHITE : COLORS.PRIMARY)};
+    background: ${(p) => (p.active ? 'var(--ui-primary)' : 'transparent')};
+    color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text-highlighted)')};
   }
 `
 
