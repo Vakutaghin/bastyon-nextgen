@@ -81,11 +81,11 @@ interface CategorySpec {
   color: string
 }
 
-// Серии — разными цветами палитры: акцент (зелёный) совпадает с «успехом»,
-// поэтому контент — синий, иначе он сливался бы с оценками.
+// Серии — разными цветами палитры. Оценки — зелёным «успехом», а не акцентом:
+// в светлой теме акцент синий и сливался бы с контентом (info).
 const CATEGORIES: CategorySpec[] = [
   { key: 'content', labelKey: 'explorerPage.statsLegendContent', color: 'var(--ui-info)' },
-  { key: 'ratings', labelKey: 'explorerPage.statsLegendRatings', color: 'var(--ui-primary)' },
+  { key: 'ratings', labelKey: 'explorerPage.statsLegendRatings', color: 'var(--ui-success)' },
   {
     key: 'subscriptions',
     labelKey: 'explorerPage.statsLegendSubscriptions',

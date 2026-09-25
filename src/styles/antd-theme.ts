@@ -14,7 +14,10 @@ import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context'
 /** Семантические цвета одной темы — те же, что `--ui-*` в style.css. */
 export interface UiThemeColors {
   primary: string
+  /** Нажатие и hover ссылок — как `a:hover` в style.css. */
+  primaryStrong: string
   primaryText: string
+  success: string
   info: string
   warning: string
   error: string
@@ -36,8 +39,10 @@ export interface UiThemeColors {
 
 export const UI_THEME_COLORS: Record<'light' | 'dark', UiThemeColors> = {
   light: {
-    primary: '#00c16a',
-    primaryText: '#007f45',
+    primary: '#155dfc',
+    primaryStrong: '#1447e6',
+    primaryText: '#155dfc',
+    success: '#00c16a',
     info: '#2b7fff',
     warning: '#f0b100',
     error: '#fb2c36',
@@ -53,11 +58,13 @@ export const UI_THEME_COLORS: Record<'light' | 'dark', UiThemeColors> = {
     border: '#e2e8f0',
     borderAccented: '#cad5e2',
     bgElevatedRgb: '241, 245, 249',
-    primaryRgb: '0, 193, 106',
+    primaryRgb: '21, 93, 252',
   },
   dark: {
     primary: '#00dc82',
+    primaryStrong: '#75edae',
     primaryText: '#00dc82',
+    success: '#00dc82',
     info: '#51a2ff',
     warning: '#fdc700',
     error: '#ff6467',
@@ -92,12 +99,12 @@ export function buildAntdTheme(isDark: boolean): ThemeConfig {
     algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: {
       colorPrimary: c.primary,
-      colorSuccess: c.primary,
+      colorSuccess: c.success,
       colorWarning: c.warning,
       colorError: c.error,
       colorInfo: c.info,
       colorLink: c.primaryText,
-      colorLinkHover: c.primary,
+      colorLinkHover: c.primaryStrong,
 
       colorText: c.text,
       colorTextHeading: c.textHighlighted,
@@ -156,7 +163,7 @@ export function buildAntdTheme(isDark: boolean): ThemeConfig {
     },
     components: {
       // Ширина ореола у antd рисует ещё и «тень» под кнопками — у Nuxt её нет.
-      // Текст на заливке — --ui-text-inverted: в тёмной теме тёмный на зелёном.
+      // Текст на заливке — --ui-text-inverted: белый на синем, в тёмной теме тёмный на зелёном.
       Button: { controlOutlineWidth: 0, colorTextLightSolid: c.textInverted },
       // Шапка и футер отделены линиями, как у модалки Nuxt.
       Modal: { wireframe: true },

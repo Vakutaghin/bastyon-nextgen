@@ -26,7 +26,7 @@ export const SC_DismissButton = styled.button`
   transition: background-color ${TRANSITIONS.QUICK};
 
   /* Цвет задан и здесь: иначе глобальный button:hover красил текст акцентом
-     — зелёный на зелёном. */
+     — акцент на акценте. */
   &:hover {
     background: rgb(var(--ui-primary-rgb) / 75%);
     color: var(--ui-text-inverted);

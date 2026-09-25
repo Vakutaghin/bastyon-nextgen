@@ -208,9 +208,9 @@ export const SC_DirectionBadge = styled('span', { dir: String })`
   font-weight: 500;
   border-radius: var(--ui-radius-md);
   white-space: nowrap;
-  color: ${(p) => (p.dir === 'in' ? 'var(--ui-info)' : 'var(--ui-primary)')};
+  color: ${(p) => (p.dir === 'in' ? 'var(--ui-info)' : 'var(--ui-success)')};
   background: ${(p) =>
-    p.dir === 'in' ? 'rgb(var(--ui-info-rgb) / 10%)' : 'rgb(var(--ui-primary-rgb) / 10%)'};
+    p.dir === 'in' ? 'rgb(var(--ui-info-rgb) / 10%)' : 'rgb(var(--ui-success-rgb) / 10%)'};
 `
 
 // Общий плейсхолдер (audit §3.1) + мелкий шрифт страницы пиров.

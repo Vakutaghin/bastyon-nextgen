@@ -13,22 +13,23 @@
 // (например, в Storybook без глобального CSS). Фолбэки — значения светлой темы.
 //
 // С редизайна под Nuxt UI (_docs-todo/REDESIGN_NUXT_UI.md) старые `--color-*`
-// перенаправлены на семантические `--ui-*`. В новом коде пиши `var(--ui-…)`
-// прямо в шаблоне styled-компонента: интерполяция `${COLORS.X}` стоит ошибок
-// vue-tsc. Синие ANT_BLUE* и BRAND_CYAN* и шкала GRAY_* удалены: их заменили
-// семантические токены с теми же значениями.
+// перенаправлены на семантические `--ui-*`. Акцент (PRIMARY*, LINK) в светлой
+// теме синий, в тёмной зелёный; «успех» (SUCCESS*, GREEN_ANT*) зелёный в обеих.
+// В новом коде пиши `var(--ui-…)` прямо в шаблоне styled-компонента:
+// интерполяция `${COLORS.X}` стоит ошибок vue-tsc. Синие ANT_BLUE* и BRAND_CYAN*
+// и шкала GRAY_* удалены: их заменили семантические токены с теми же значениями.
 
 export const COLORS = {
   // Основные цвета
-  PRIMARY: 'var(--color-primary, #00c16a)',
-  PRIMARY_HOVER: 'var(--color-primary-hover, rgb(0 193 106 / 0.75))',
-  PRIMARY_ACTIVE: 'var(--color-primary-active, #00a155)',
-  PRIMARY_DARK: 'var(--color-primary-dark, #007f45)',
-  PRIMARY_LIGHT: 'var(--color-primary-light, rgb(0 193 106 / 0.1))',
-  PRIMARY_LIGHT_15: 'var(--color-primary-light-15, rgb(0 193 106 / 0.15))',
-  PRIMARY_LIGHT_20: 'var(--color-primary-light-20, rgb(0 193 106 / 0.25))',
-  PRIMARY_LIGHT_30: 'var(--color-primary-light-30, rgb(0 193 106 / 0.25))',
-  PRIMARY_LIGHT_50: 'var(--color-primary-light-50, rgb(0 193 106 / 0.5))',
+  PRIMARY: 'var(--color-primary, #155dfc)',
+  PRIMARY_HOVER: 'var(--color-primary-hover, rgb(21 93 252 / 0.75))',
+  PRIMARY_ACTIVE: 'var(--color-primary-active, #1447e6)',
+  PRIMARY_DARK: 'var(--color-primary-dark, #193cb8)',
+  PRIMARY_LIGHT: 'var(--color-primary-light, rgb(21 93 252 / 0.1))',
+  PRIMARY_LIGHT_15: 'var(--color-primary-light-15, rgb(21 93 252 / 0.15))',
+  PRIMARY_LIGHT_20: 'var(--color-primary-light-20, rgb(21 93 252 / 0.25))',
+  PRIMARY_LIGHT_30: 'var(--color-primary-light-30, rgb(21 93 252 / 0.25))',
+  PRIMARY_LIGHT_50: 'var(--color-primary-light-50, rgb(21 93 252 / 0.5))',
 
   // Бывший синий antd — теперь тот же акцент, что PRIMARY.
 
@@ -78,8 +79,8 @@ export const COLORS = {
   WARNING_BG_SOFT: 'var(--color-warning-bg-soft, rgb(240 177 0 / 0.12))',
   WARNING_TRACK: 'var(--color-warning-track, rgb(240 177 0 / 0.3))', // пустые звёзды рейтинга
   INFO: 'var(--color-info, #2b7fff)',
-  PRIMARY_BG_SOFT: 'var(--color-primary-bg-soft, rgb(0 193 106 / 0.08))',
-  PRIMARY_BG_12: 'var(--color-primary-bg-12, rgb(0 193 106 / 0.12))',
+  PRIMARY_BG_SOFT: 'var(--color-primary-bg-soft, rgb(21 93 252 / 0.08))',
+  PRIMARY_BG_12: 'var(--color-primary-bg-12, rgb(21 93 252 / 0.12))',
 
   // Акцентные оттенки (бейджи статусов/категорий в хедере). *_SOFT — полупрозрачные
   // фоны пилюль (общие для тем: акцент с альфой читается и на светлом, и на тёмном).
@@ -151,7 +152,7 @@ export const COLORS = {
     'var(--shadow-lg, 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1))',
 
   // Специфические цвета
-  LINK: 'var(--color-link, #007f45)',
+  LINK: 'var(--color-link, #155dfc)',
   DARK_BG: 'var(--color-dark-bg, #0f172b)',
   SLATE: 'var(--color-slate, #62748e)',
   BLUE_GRAY: 'var(--color-blue-gray, #62748e)',

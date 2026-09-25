@@ -3,7 +3,8 @@
 
    Оформление повторяет Nuxt UI (ui.nuxt.com): палитра, семантические токены,
    радиусы и тени сняты с их сайта и из пакета @nuxt/ui 4.11.2. Значения и
-   решения — в _docs-todo/REDESIGN_NUXT_UI.md.
+   решения — в _docs-todo/REDESIGN_NUXT_UI.md. Одно отступление: акцент светлой
+   темы синий, а не зелёный Nuxt — белый текст на зелёном плохо читается.
 
    Три слоя:
    1. Палитра `--ui-color-*` — hex, а не oklch, как у Tailwind v4: старые
@@ -35,22 +36,33 @@
   --ui-color-neutral-900: #0f172b;
   --ui-color-neutral-950: #020618;
 
-  /* primary = зелёный Nuxt */
-  --ui-color-primary-50: #effdf5;
-  --ui-color-primary-100: #d9fbe8;
-  --ui-color-primary-200: #b3f5d1;
-  --ui-color-primary-300: #75edae;
-  --ui-color-primary-400: #00dc82;
-  --ui-color-primary-500: #00c16a;
-  --ui-color-primary-600: #00a155;
-  --ui-color-primary-700: #007f45;
-  --ui-color-primary-800: #016538;
-  --ui-color-primary-900: #0a5331;
-  --ui-color-primary-950: #052e16;
+  /* green = зелёный Nuxt: акцент тёмной темы и «успех» в обеих */
+  --ui-color-green-50: #effdf5;
+  --ui-color-green-100: #d9fbe8;
+  --ui-color-green-200: #b3f5d1;
+  --ui-color-green-300: #75edae;
+  --ui-color-green-400: #00dc82;
+  --ui-color-green-500: #00c16a;
+  --ui-color-green-600: #00a155;
+  --ui-color-green-700: #007f45;
+  --ui-color-green-800: #016538;
+  --ui-color-green-900: #0a5331;
+  --ui-color-green-950: #052e16;
+
+  /* blue = синий Tailwind: акцент светлой темы и «инфо» в обеих */
+  --ui-color-blue-50: #eff6ff;
+  --ui-color-blue-100: #dbeafe;
+  --ui-color-blue-200: #bedbff;
+  --ui-color-blue-300: #8ec5ff;
+  --ui-color-blue-400: #51a2ff;
+  --ui-color-blue-500: #2b7fff;
+  --ui-color-blue-600: #155dfc;
+  --ui-color-blue-700: #1447e6;
+  --ui-color-blue-800: #193cb8;
+  --ui-color-blue-900: #1c398e;
+  --ui-color-blue-950: #162456;
 
   /* Статусы и акценты — только используемые оттенки */
-  --ui-color-info-400: #51a2ff;
-  --ui-color-info-500: #2b7fff;
   --ui-color-warning-300: #ffdf20;
   --ui-color-warning-400: #fdc700;
   --ui-color-warning-500: #f0b100;
@@ -70,17 +82,22 @@
 
   /* ── Семантика: светлая тема ──────────────────────────────────────────────── */
 
-  --ui-primary: var(--ui-color-primary-500);
-  --ui-primary-rgb: 0 193 106;
+  /* Акцент синий: белый текст на blue-600 — 5.3:1, на зелёном Nuxt было 2.4:1. */
+  --ui-primary: var(--ui-color-blue-600);
+  --ui-primary-rgb: 21 93 252;
   /* Нажатие и «глубокий» текст на мягкой подложке. */
-  --ui-primary-strong: var(--ui-color-primary-600);
-  --ui-primary-deep: var(--ui-color-primary-700);
-  /* Ссылки в тексте: primary-500 на белом даёт 2.4:1, 700 — 5.1:1. */
-  --ui-primary-text: var(--ui-color-primary-700);
+  --ui-primary-strong: var(--ui-color-blue-700);
+  --ui-primary-deep: var(--ui-color-blue-800);
+  /* Ссылки в тексте: у blue-600 на белом те же 5.3:1, отдельный оттенок не нужен. */
+  --ui-primary-text: var(--ui-color-blue-600);
+  /* Акцент на тёмной подложке в любой теме (плеер поверх видео) — яркий оттенок. */
+  --ui-primary-on-dark: var(--ui-color-blue-400);
 
-  --ui-success: var(--ui-primary);
-  --ui-success-rgb: var(--ui-primary-rgb);
-  --ui-info: var(--ui-color-info-500);
+  /* «Успех» зелёный в обеих темах, а не акцентом: галочки, приходы, «готово». */
+  --ui-success: var(--ui-color-green-500);
+  --ui-success-rgb: 0 193 106;
+  --ui-success-deep: var(--ui-color-green-700);
+  --ui-info: var(--ui-color-blue-500);
   --ui-info-rgb: 43 127 255;
   --ui-warning: var(--ui-color-warning-500);
   --ui-warning-rgb: 240 177 0;
@@ -184,7 +201,7 @@
   --color-border-dark: var(--ui-border-accented);
 
   --color-success: var(--ui-success);
-  --color-success-deep: var(--ui-primary-deep);
+  --color-success-deep: var(--ui-success-deep);
   --color-success-bg-soft: rgb(var(--ui-success-rgb) / 0.08);
   --color-success-bg-tint: rgb(var(--ui-success-rgb) / 0.1);
   --color-success-bg-12: rgb(var(--ui-success-rgb) / 0.12);
@@ -206,7 +223,7 @@
   --color-pink: var(--ui-pink);
   --color-pink-soft: rgb(var(--ui-pink-rgb) / 0.12);
   --color-green-ant: var(--ui-success);
-  --color-green-ant-deep: var(--ui-primary-deep);
+  --color-green-ant-deep: var(--ui-success-deep);
   --color-green-ant-soft: rgb(var(--ui-success-rgb) / 0.14);
   --color-amber-soft: rgb(var(--ui-amber-rgb) / 0.14);
 
@@ -353,13 +370,18 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --ui-primary: var(--ui-color-primary-400);
+  /* Акцент зелёный Nuxt: на заливке тёмный текст, контраст 9.8:1. */
+  --ui-primary: var(--ui-color-green-400);
   --ui-primary-rgb: 0 220 130;
-  --ui-primary-strong: var(--ui-color-primary-300);
-  --ui-primary-deep: var(--ui-color-primary-200);
-  --ui-primary-text: var(--ui-color-primary-400);
+  --ui-primary-strong: var(--ui-color-green-300);
+  --ui-primary-deep: var(--ui-color-green-200);
+  --ui-primary-text: var(--ui-color-green-400);
+  --ui-primary-on-dark: var(--ui-color-green-400);
 
-  --ui-info: var(--ui-color-info-400);
+  --ui-success: var(--ui-color-green-400);
+  --ui-success-rgb: 0 220 130;
+  --ui-success-deep: var(--ui-color-green-200);
+  --ui-info: var(--ui-color-blue-400);
   --ui-info-rgb: 81 162 255;
   --ui-warning: var(--ui-color-warning-400);
   --ui-warning-rgb: 253 199 0;
@@ -539,7 +561,7 @@ html {
    кнопка Nuxt UI. :where() обнуляет специфичность. Раньше `button:hover` был
    сильнее класса styled-компонента: кнопки без своего hover становились
    прозрачными, а у тех, где hover задаёт только фон, текст красился акцентом
-   (на акцентной кнопке — зелёный на зелёном).
+   (на акцентной кнопке — акцент на акценте).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :where(button) {

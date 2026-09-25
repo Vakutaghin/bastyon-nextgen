@@ -32,7 +32,9 @@ function resolveVar(decls: Record<string, string>, name: string): string {
 
 const CSS_NAMES: Record<keyof UiThemeColors, string> = {
   primary: '--ui-primary',
+  primaryStrong: '--ui-primary-strong',
   primaryText: '--ui-primary-text',
+  success: '--ui-success',
   info: '--ui-info',
   warning: '--ui-warning',
   error: '--ui-error',
@@ -62,9 +64,11 @@ describe('antd theme', () => {
     }
   })
 
-  it('алгоритм и акцент следуют теме', () => {
-    expect(buildAntdTheme(false).token?.colorPrimary).toBe('#00c16a')
+  it('алгоритм и акцент следуют теме, «успех» зелёный в обеих', () => {
+    expect(buildAntdTheme(false).token?.colorPrimary).toBe('#155dfc')
     expect(buildAntdTheme(true).token?.colorPrimary).toBe('#00dc82')
+    expect(buildAntdTheme(false).token?.colorSuccess).toBe('#00c16a')
+    expect(buildAntdTheme(true).token?.colorSuccess).toBe('#00dc82')
     expect(buildAntdTheme(true).algorithm).not.toBe(buildAntdTheme(false).algorithm)
   })
 })

@@ -13,7 +13,7 @@ import { onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 // Canvas не понимает var(--…): цвета темы берём из вычисленных стилей
 // контейнера при каждой отрисовке, фолбэки — светлая тема.
 const BAR_BG_FALLBACK = '#cad5e2'
-const BAR_PROGRESS_FALLBACK = '#00c16a'
+const BAR_PROGRESS_FALLBACK = '#155dfc'
 
 function themeColor(el: HTMLElement, name: string, fallback: string): string {
   return getComputedStyle(el).getPropertyValue(name).trim() || fallback

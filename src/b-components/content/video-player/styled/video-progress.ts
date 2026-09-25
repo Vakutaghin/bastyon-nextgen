@@ -39,7 +39,7 @@ export const SC_VideoProgressBar = styled.div`
 
     /* Акцент — только полоске прогресса, не первому ребёнку (полоске загрузки). */
     > *:not(:first-child) {
-      background: var(--ui-color-primary-400);
+      background: var(--ui-primary-on-dark);
       box-shadow: none;
     }
   }
@@ -74,9 +74,9 @@ export const SC_VideoProgressBar = styled.div`
 export const SC_VideoProgressFill = styled.div`
   height: 100%;
   width: 0%;
-  /* Акцент Nuxt UI вместо красного YouTube. Плеер тёмный в обеих темах,
-     поэтому всегда яркий оттенок (400). */
-  background: var(--ui-color-primary-400);
+  /* Акцент вместо красного YouTube. Плеер тёмный в обеих темах, поэтому
+     яркий оттенок акцента, а не --ui-primary. */
+  background: var(--ui-primary-on-dark);
   border-radius: var(--ui-radius-xs);
   transition:
     background 0.15s ease,
