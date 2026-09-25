@@ -103,23 +103,27 @@ export const SC_RenameBtn = styled('button', { primary: Boolean })`
   }
 `
 
+/** Три суммы в ряд на широком экране, одна колонка на телефоне: раньше карточки
+ * стояли по 33% без переноса, и длинные подписи вылезали за край. */
 export const SC_WalletBalanceCards = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
   margin-bottom: 28px;
 `
 
+/** Карточка суммы — как карточка статистики у Nuxt UI (и в эксплорере). */
 export const SC_WalletBalanceCard = styled.div`
+  min-width: 0;
   padding: 16px 20px;
-  background: var(--color-bg-light);
+  background: var(--ui-bg);
   border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--color-overlay-6);
-  width: 33%;
+  border: 1px solid var(--ui-border);
 `
 
 export const SC_WalletBalanceLabel = styled.div`
-  font-size: 13px;
-  color: var(--color-gray-120);
+  font-size: 14px;
+  color: var(--ui-text-muted);
   margin-bottom: 4px;
 `
 
