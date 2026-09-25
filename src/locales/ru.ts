@@ -1697,6 +1697,10 @@ export default {
     validationTitle: 'Валидация аккаунта в блокчейне',
     validationMessage: 'Ваш аккаунт проходит валидацию в блокчейне. Пожалуйста, подождите...',
   },
+  tray: {
+    open: 'Открыть Bastyon',
+    quit: 'Выйти',
+  },
   update: {
     title: 'Доступно обновление',
     available: 'Вышла версия {version}',

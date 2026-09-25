@@ -28,7 +28,8 @@ tauri-build = { version = "2.5.3", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.10", features = ["protocol-asset"] }
+# tray-icon — значок в трее на Windows и Linux (src/tray.rs).
+tauri = { version = "2.10", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-log = "2"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-dialog = "2"
@@ -63,3 +64,8 @@ tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tauri-plugin-window-state = "2"
 # Автозапуск при входе в систему (десктоп).
 tauri-plugin-autostart = "2"
+
+# Linux: до создания значка в трее проверяем, что appindicator вообще есть
+# (иначе tray-icon паникует). Та же версия, что уже тянет tray-icon.
+[target.'cfg(target_os = "linux")'.dependencies]
+libloading = "0.7"

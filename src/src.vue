@@ -12,6 +12,7 @@ import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
+import { useTrayLabels } from '@/composables/use-tray-labels'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
 import { useTheme } from '@/composables/use-theme'
 import { buildAntdTheme, setStaticApiTheme } from '@/styles/antd-theme'
@@ -60,6 +61,9 @@ useIpfsLinks(() => !isEmbed.value)
 
 // Напоминание о резервной копии 12 слов (раз в 7 дней, пока не проверена).
 useBackupNudge(() => !isEmbed.value)
+
+// Меню значка в трее — на языке приложения (только десктоп).
+if (isTauriBuild) useTrayLabels()
 
 // Тема antd — палитра Nuxt UI из styles/antd-theme.ts, своя для светлой и
 // тёмной темы. Раньше antd всегда был светлым, а тёмным его делали

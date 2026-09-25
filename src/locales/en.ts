@@ -1693,6 +1693,10 @@ export default {
     validationTitle: 'Account validation on the blockchain',
     validationMessage: 'Your account is being validated on the blockchain. Please wait...',
   },
+  tray: {
+    open: 'Open Bastyon',
+    quit: 'Quit',
+  },
   update: {
     title: 'Update available',
     available: 'Version {version} has been released',

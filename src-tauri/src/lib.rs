@@ -1,5 +1,6 @@
 mod ipfs;
 mod tor;
+mod tray;
 
 use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut, ShortcutState};
@@ -909,6 +910,7 @@ pub fn run() {
       ipfs::ipfs_pin_service_status,
       ipfs::ipfs_pin_service_clear,
       ipfs::ipfs_pin_remote,
+      tray::tray_set_labels,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]
@@ -989,6 +991,11 @@ pub fn run() {
 
       // IPFS manager — initialise app state holder (Kubo module lifecycle).
       ipfs::init(app.handle()).map_err(|e| e.to_string())?;
+
+      // Значок в трее (Windows, Linux). Не вышло — работаем без него.
+      if let Err(e) = tray::init(app.handle()) {
+        log::warn!("tray: {e}");
+      }
 
       // Подбираем осиротевшие temp-файлы транскодера старше 24 часов в фоне,
       // чтобы упавшие транскоды не накапливали гигабайты между запусками.

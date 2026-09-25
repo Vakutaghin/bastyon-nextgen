@@ -48,7 +48,12 @@
     "copyright": "",
     "category": "Utility",
     "shortDescription": "Bastyon Desktop Application",
-    "longDescription": "Bastyon - Decentralized Social Network Desktop Application"
+    "longDescription": "Bastyon - Decentralized Social Network Desktop Application",
+    "linux": {
+      "deb": {
+        "recommends": ["libayatana-appindicator3-1"]
+      }
+    }
   },
   "plugins": {
     "deep-link": {
