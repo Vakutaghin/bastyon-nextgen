@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ConfigProvider, theme } from 'ant-design-vue'
 import type { ThemeConfig } from 'ant-design-vue/es/config-provider'
 import AppLayout from '@/b-components/app-layout/app-layout.vue'
-import VideoUploader from '@/b-components/video-uploader/video-uploader.vue'
 import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
 import ReportModal from '@/b-components/report/report-modal.vue'
@@ -16,6 +15,11 @@ import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
 import { SC_FramedNotice, SC_FramedLink } from './src.styled'
+
+const isTauriBuild = import.meta.env.VITE_TAURI === 'true'
+const VideoUploader = defineAsyncComponent(
+  () => import('@/b-components/video-uploader/video-uploader.vue')
+)
 
 // Embed-роуты (`/embed/...`, meta.embed) рендерятся БЕЗ chrome (хедер/футер/
 // сайдбар/глобальные модалки) — это самостоятельная вьюха для встраивания в iframe.
@@ -92,8 +96,9 @@ const themeConfig = computed<ThemeConfig>(() => ({
     <router-view v-else-if="isEmbed" />
     <template v-else>
       <AppLayout />
-      <!-- Video Uploader - fixed кнопка и модалка (на верхнем уровне) -->
-      <VideoUploader />
+      <!-- Перекодирование видео — только в десктопе (нативный ffmpeg): в вебе
+           кнопки нет, и модуль там даже не загружается (N17). -->
+      <VideoUploader v-if="isTauriBuild" />
       <!-- Mini-apps payment modal — singleton, управляется через payment-modal-controller -->
       <MiniAppPaymentModal />
       <!-- Донат автору — singleton, открывается через useDonateStore -->

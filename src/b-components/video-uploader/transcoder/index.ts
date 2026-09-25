@@ -7,11 +7,16 @@ import type {
 } from './types'
 import { TauriTranscoder } from './tauri-transcoder'
 import { TranscodeError, type TranscoderKind } from './types'
+import { t } from '@/i18n'
 
 /**
- * Главный транскодер.
- * Выбирает реализацию по приоритету: Tauri (нативный ffmpeg) → ffmpeg.wasm (браузер) → нет.
- * wasm-путь даёт standalone-работу без нативной обвязки (принцип децентрализации).
+ * Главный транскодер: нативный ffmpeg через Tauri, иначе — нет.
+ *
+ * Путь через ffmpeg.wasm убран (N17): загрузчик видео есть только в десктопе,
+ * а там всегда выбирается нативный ffmpeg — wasm был недостижим, но его ядро
+ * (31 МБ) лежало в каждой сборке, в том числе внутри бинарника десктопа и APK.
+ * Для будущей загрузки на PeerTube из веба транскод тоже не нужен: старый
+ * клиент в вебе отдаёт исходный файл, перекодирует сам PeerTube.
  */
 class UniversalTranscoder implements Transcoder {
   readonly kind = 'tauri' as const // номинальное соответствие интерфейсу; реальный вид — getTranscoderInfo()
@@ -38,13 +43,8 @@ class UniversalTranscoder implements Transcoder {
     await this.initPromise
   }
 
-  /**
-   * Выбрать транскодер по приоритету Tauri → ffmpeg.wasm → null.
-   * wasm-модуль грузится лениво (динамический import), чтобы ничего ffmpeg-related
-   * не попадало в стартовый чанк до реальной надобности.
-   */
+  /** Выбрать транскодер: нативный через Tauri или никакого. */
   private async selectTranscoder(): Promise<void> {
-    // 1) Tauri — самый быстрый, нативный ffmpeg.
     try {
       const tauriTranscoder = new TauriTranscoder()
       if (tauriTranscoder.isSupported()) {
@@ -57,22 +57,9 @@ class UniversalTranscoder implements Transcoder {
         return
       }
     } catch {
-      // Игнорируем — пробуем браузерный путь.
+      // Вне Tauri — транскодера нет.
     }
 
-    // 2) Браузер — ffmpeg.wasm (standalone, без нативной обвязки).
-    try {
-      const { WasmTranscoder } = await import('./wasm-transcoder')
-      const wasm = new WasmTranscoder()
-      if (wasm.isSupported()) {
-        this.transcoder = wasm
-        return
-      }
-    } catch {
-      // Игнорируем ошибки инициализации wasm.
-    }
-
-    // 3) Ничего не доступно.
     this.transcoder = null
   }
 
@@ -101,10 +88,7 @@ class UniversalTranscoder implements Transcoder {
     await this.ensureInitialized()
 
     if (!this.transcoder) {
-      throw new TranscodeError(
-        'Транскодирование видео доступно только в Tauri приложении. В браузере эта функция не поддерживается.',
-        'NOT_SUPPORTED'
-      )
+      throw new TranscodeError(t('videoMsg.transcodeNotSupported'), 'NOT_SUPPORTED')
     }
 
     return this.transcoder.getMetadata(file)
@@ -122,17 +106,11 @@ class UniversalTranscoder implements Transcoder {
     await this.ensureInitialized()
 
     if (!this.transcoder) {
-      throw new TranscodeError(
-        'Транскодирование видео доступно только в Tauri приложении. В браузере эта функция не поддерживается.',
-        'NOT_SUPPORTED'
-      )
+      throw new TranscodeError(t('videoMsg.transcodeNotSupported'), 'NOT_SUPPORTED')
     }
 
     if (!this.transcoder.isSupported()) {
-      throw new TranscodeError(
-        'Транскодирование видео не поддерживается в этом окружении',
-        'NOT_SUPPORTED'
-      )
+      throw new TranscodeError(t('videoMsg.transcodeNotSupported'), 'NOT_SUPPORTED')
     }
 
     return await this.transcoder.transcode(file, options, onProgress)
@@ -140,7 +118,7 @@ class UniversalTranscoder implements Transcoder {
 
   /**
    * Проверить, доступен ли системный ffmpeg в Tauri.
-   * Браузер всегда возвращает { ffmpeg: false } — там и должен сработать другой fallback (Phase 4).
+   * Вне Tauri всегда `{ ffmpeg: false }`.
    */
   async checkFfmpegAvailable(): Promise<{
     ffmpeg: boolean
@@ -156,7 +134,7 @@ class UniversalTranscoder implements Transcoder {
 
   /**
    * Получить информацию о текущем транскодере.
-   * `method`: 'tauri' (нативный) | 'wasm' (браузер) | 'none' (не поддерживается).
+   * `method`: 'tauri' (нативный ffmpeg) | 'none' (не поддерживается).
    */
   getTranscoderInfo(): { method: TranscoderKind | 'none'; supported: boolean } {
     return {
@@ -205,20 +183,3 @@ export {
   calculateTargetDimensions,
   getResolutionString,
 } from './resolution-selector'
-
-// Экспортируем функции для прямого использования
-export async function transcodeVideo(
-  file: File,
-  options?: TranscodeOptions,
-  onProgress?: (progress: TranscodeProgress) => void
-): Promise<TranscodeResult> {
-  return transcoder.transcode(file, options, onProgress)
-}
-
-export async function getVideoMetadata(file: File): Promise<VideoMetadata> {
-  return transcoder.getMetadata(file)
-}
-
-export function isTranscodingSupported(): boolean {
-  return transcoder.isSupported()
-}

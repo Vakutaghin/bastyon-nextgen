@@ -64,7 +64,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 beforeEach(() => {
   vi.clearAllMocks()
   _getMetadata.mockResolvedValue(metadata)
-  _getTranscoderInfo.mockReturnValue({ method: 'wasm', supported: true })
+  _getTranscoderInfo.mockReturnValue({ method: 'tauri', supported: true })
   _canSave.mockResolvedValue({ canSave: true })
   _saveWithCleanup.mockResolvedValue('video_id')
 })

@@ -23,7 +23,6 @@ export interface UploadDropzoneProps {
   targetFps: number
   targetMimeType: string
   transcoderName: string
-  isWorker: boolean
 }
 
 export interface UploadDropzoneEmits {

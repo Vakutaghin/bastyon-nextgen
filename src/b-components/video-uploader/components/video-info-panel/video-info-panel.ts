@@ -11,7 +11,6 @@ export interface VideoInfoPanelProps {
   targetFps: number
   targetMimeType: string
   transcoderName: string
-  isWorker: boolean
 }
 
 /**

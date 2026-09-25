@@ -37,7 +37,6 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
   const targetFps = ref(0)
   const targetMimeType = ref('')
   const transcoderName = ref('')
-  const isWorker = ref(false)
 
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('video/')) {
@@ -87,13 +86,7 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
       targetMimeType.value = getBestMimeType() || t('videoMsg.unknown')
 
       const transcoderInfo = transcoder.getTranscoderInfo()
-      transcoderName.value =
-        transcoderInfo.method === 'tauri'
-          ? 'TauriTranscoder'
-          : transcoderInfo.method === 'wasm'
-            ? 'ffmpeg.wasm'
-            : t('videoMsg.unknown')
-      isWorker.value = transcoderInfo.method === 'wasm'
+      transcoderName.value = transcoderInfo.method === 'tauri' ? 'FFmpeg' : t('videoMsg.unknown')
 
       uploadState.value = 'ready'
     } catch (error) {
@@ -120,7 +113,6 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
     targetFps.value = 0
     targetMimeType.value = ''
     transcoderName.value = ''
-    isWorker.value = false
   }
 
   const startTranscoding = async (file: File, metadata?: VideoMetadata) => {
@@ -298,7 +290,6 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
     targetFps,
     targetMimeType,
     transcoderName,
-    isWorker,
 
     handleFileSelect,
     resetUploadState,

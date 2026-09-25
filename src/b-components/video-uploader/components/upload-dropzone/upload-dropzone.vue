@@ -102,7 +102,6 @@
       :target-fps="targetFps"
       :target-mime-type="targetMimeType"
       :transcoder-name="transcoderName"
-      :is-worker="isWorker"
     />
   </SC_UploadSection>
 </template>

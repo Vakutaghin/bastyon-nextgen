@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 
-// Мок нативного транскодера: «поддерживается» → selectTranscoder выбирает его и
-// НЕ трогает динамический import ffmpeg.wasm (несовместим с vitest env).
+// Мок нативного транскодера: «поддерживается» → selectTranscoder выбирает его.
 vi.mock('./tauri-transcoder', () => ({
   TauriTranscoder: class {
     kind = 'tauri' as const

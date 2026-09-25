@@ -90,23 +90,9 @@
         <SC_InfoRow>
           <SC_InfoLabel>{{ t('videoUploader.method') }}</SC_InfoLabel>
           <SC_InfoValue>
-            <SC_TranscoderBadge :is-worker="isWorker">
+            <SC_TranscoderBadge>
               {{ transcoderName }}
             </SC_TranscoderBadge>
-          </SC_InfoValue>
-        </SC_InfoRow>
-        <SC_InfoRow v-if="isWorker">
-          <SC_InfoLabel>{{ t('videoUploader.mode') }}</SC_InfoLabel>
-          <SC_InfoValue>
-            <CheckCircleOutlined :style="ICON_SUCCESS_MR_4" />
-            {{ t('videoUploader.modeWorker') }}
-          </SC_InfoValue>
-        </SC_InfoRow>
-        <SC_InfoRow v-else>
-          <SC_InfoLabel>{{ t('videoUploader.mode') }}</SC_InfoLabel>
-          <SC_InfoValue>
-            <InfoCircleOutlined :style="ICON_ANT_BLUE_MR_4" />
-            {{ t('videoUploader.modeMain') }}
           </SC_InfoValue>
         </SC_InfoRow>
       </SC_InfoContent>
@@ -116,13 +102,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined } from '@ant-design/icons-vue'
-import {
-  ICON_ANT_BLUE_MR_4,
-  ICON_DANGER,
-  ICON_SUCCESS,
-  ICON_SUCCESS_MR_4,
-} from '@/styles/icon-styles'
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons-vue'
+import { ICON_DANGER, ICON_SUCCESS } from '@/styles/icon-styles'
 import {
   SC_InfoPanel,
   SC_InfoSection,
@@ -152,7 +133,6 @@ const p = defineProps<{
   targetFps: number
   targetMimeType: string
   transcoderName: string
-  isWorker: boolean
 }>()
 
 // Вычисляем битрейт исходного видео

@@ -46,7 +46,6 @@
               :target-fps="targetFps"
               :target-mime-type="targetMimeType"
               :transcoder-name="transcoderName"
-              :is-worker="isWorker"
               @file-select="handleFileSelect"
               @start="startTranscodingFromReady"
               @reset="resetUploadState"
@@ -73,7 +72,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { message } from 'ant-design-vue'
 import { transcoder } from './transcoder'
 import { useVideoTranscoderInit } from './composables/use-video-transcoder-init'
 import { useVideoManager } from './composables/use-video-manager'
@@ -98,15 +96,7 @@ const { t } = useI18n()
 
 const isModalOpen = ref(false)
 
-const { isInitialized, initError, transcoderNotice, initialize } = useVideoTranscoderInit()
-// Чтобы не показывать «wasm медленный» при каждом открытии модалки.
-let transcoderNoticeShown = false
-
-function showTranscoderNoticeOnce(): void {
-  if (transcoderNoticeShown || !transcoderNotice.value) return
-  transcoderNoticeShown = true
-  message.info(transcoderNotice.value)
-}
+const { isInitialized, initError, initialize } = useVideoTranscoderInit()
 
 // Порядок: сначала manager, потом upload — onSaved/onDeleteError ссылаются
 // друг на друга через замыкания, поэтому одна из ссылок будет резолвлена
@@ -157,7 +147,6 @@ const {
   targetFps,
   targetMimeType,
   transcoderName,
-  isWorker,
 } = upload
 
 if (initError.value) {
@@ -169,7 +158,6 @@ async function openModal(): Promise<void> {
     await initialize()
     if (initError.value) uploadError.value = initError.value
   }
-  showTranscoderNoticeOnce()
   isModalOpen.value = true
   await manager.loadVideos()
 }

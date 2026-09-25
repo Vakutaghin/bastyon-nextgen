@@ -22,8 +22,6 @@ export function useVideoTranscoderInit() {
   const initError = ref<string | null>(null)
   /** Активный способ транскодинга — для подсказок в UI. */
   const transcoderMethod = ref<TranscoderKind | 'none'>('none')
-  /** Не-блокирующее предупреждение (например, «wasm медленный, ожидайте ~N минут»). */
-  const transcoderNotice = ref<string | null>(null)
 
   const initialize = async () => {
     if (isInitialized.value) return
@@ -38,9 +36,6 @@ export function useVideoTranscoderInit() {
         if (!ffmpegStatus.ffmpeg || !ffmpegStatus.ffprobe) {
           initError.value = getFfmpegMissingInstruction()
         }
-      } else if (info.method === 'wasm') {
-        // Браузерный путь работает standalone, но в разы медленнее — предупреждаем.
-        transcoderNotice.value = t('videoMsg.wasmSlowNotice')
       } else {
         initError.value = t('videoMsg.transcodeNotSupported')
       }
@@ -54,7 +49,6 @@ export function useVideoTranscoderInit() {
     isInitialized,
     initError,
     transcoderMethod,
-    transcoderNotice,
     initialize,
   }
 }

@@ -67,13 +67,13 @@ export const SC_InfoValue = styled.span`
   justify-content: flex-end !important;
 `
 
-export const SC_TranscoderBadge = styled.span<{ isWorker: boolean }>`
+export const SC_TranscoderBadge = styled.span`
   display: inline-block !important;
   padding: 4px 8px !important;
   border-radius: 4px !important;
   font-size: 12px !important;
   font-weight: 600 !important;
-  background-color: ${(p) => (p.isWorker ? COLORS.ANT_BLUE_BG : COLORS.ORANGE_BG)} !important;
-  color: ${(p) => (p.isWorker ? COLORS.ANT_BLUE : COLORS.WARNING_HEX)} !important;
-  border: 1px solid ${(p) => (p.isWorker ? COLORS.ANT_BLUE_LIGHT : COLORS.ORANGE_BORDER)} !important;
+  background-color: var(--color-bg-secondary) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border) !important;
 `

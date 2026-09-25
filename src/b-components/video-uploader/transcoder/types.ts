@@ -94,9 +94,9 @@ export interface TranscodeResult {
 }
 
 /**
- * Способ транскодирования: нативный ffmpeg через Tauri либо ffmpeg.wasm в браузере.
+ * Способ транскодирования: нативный ffmpeg через Tauri (единственный).
  */
-export type TranscoderKind = 'tauri' | 'wasm'
+export type TranscoderKind = 'tauri'
 
 /**
  * Интерфейс транскодера
