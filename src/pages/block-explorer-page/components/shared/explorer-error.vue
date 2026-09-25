@@ -42,7 +42,7 @@ function retry() {
 
 function resetNode() {
   // Сброс закреплённой ноды сам инвалидирует ['explorer'] и уводит запросы на
-  // round-robin по servers.json — это и есть «попробовать другую ноду».
+  // общую живую ноду приложения — это и есть «попробовать другую ноду».
   clearPreferredNode()
   emit('retry')
 }

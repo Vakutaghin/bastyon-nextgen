@@ -164,6 +164,46 @@ describe('PocketnetWsService', () => {
       expect(FakeWebSocket.instances).toHaveLength(1)
     })
 
+    it('S4: параллельные connect() во время выбора ноды создают один сокет', async () => {
+      await Promise.all([wsService.connect(), wsService.connect(), wsService.connect()])
+
+      expect(FakeWebSocket.instances).toHaveLength(1)
+      expect(_orderedProxies).toHaveBeenCalledTimes(1)
+    })
+
+    it('S4: close() во время подключения — сокет не создаётся', async () => {
+      let releaseCtor: (ctor: typeof FakeWebSocket) => void = () => {}
+      _pickWebSocketCtor.mockReturnValue(
+        new Promise<typeof FakeWebSocket>((resolve) => {
+          releaseCtor = resolve
+        })
+      )
+      const pending = wsService.connect()
+      await flush()
+      wsService.close()
+      releaseCtor(FakeWebSocket)
+      await pending
+
+      expect(FakeWebSocket.instances).toHaveLength(0)
+    })
+
+    it('S4: reconnect() во время подключения поднимает ровно один новый сокет', async () => {
+      let releaseCtor: (ctor: typeof FakeWebSocket) => void = () => {}
+      _pickWebSocketCtor.mockReturnValueOnce(
+        new Promise<typeof FakeWebSocket>((resolve) => {
+          releaseCtor = resolve
+        })
+      )
+      const first = wsService.connect()
+      await flush()
+      wsService.reconnect()
+      releaseCtor(FakeWebSocket)
+      await first
+      await flush()
+
+      expect(FakeWebSocket.instances).toHaveLength(1)
+    })
+
     it('S2: берёт живую ноду из node-selector, а не жёстко proxy[0]', async () => {
       _orderedProxies.mockImplementation(async (list: Array<{ host: string; wss: number }>) => [
         ...list.slice(1),

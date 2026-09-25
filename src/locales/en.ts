@@ -382,8 +382,8 @@ export default {
       openFull: 'Open explorer →',
       preferredNode: 'Preferred node',
       preferredLead:
-        'By default the explorer uses automatic round-robin over the list of public nodes. You can pin a specific node — all explorer requests will go to it. This does not affect the rest of the app.',
-      autoNode: 'Auto (round-robin)',
+        'By default the explorer talks to the same node as the rest of the app: the first live one from the list of public nodes. You can pin a specific node — then explorer requests go to it only. This does not affect the rest of the app.',
+      autoNode: 'Auto (first live node)',
       default: 'Default',
       pinned: 'Pinned',
       toastPinned: 'Pinned node {host}',

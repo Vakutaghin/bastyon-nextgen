@@ -55,6 +55,14 @@ class PocketnetWsService {
   private pendingSubscriptions: string[] = []
   /** Адреса, для которых SUBSCRIBE-сообщение уже в полёте — защита от гонок */
   private subscribingAddresses = new Set<string>()
+  /**
+   * Подключение в полёте: между проверкой readyState и созданием сокета идут
+   * два await (выбор ноды, конструктор под Tor), и параллельные connect()
+   * (restoreSession + эксплорер) раньше создавали два сокета (S4).
+   */
+  private connecting: Promise<void> | null = null
+  /** Растёт на каждом close(): подключение, начатое до него, сокет уже не создаёт. */
+  private generation = 0
 
   // Public state
   isConnected = false
@@ -84,15 +92,26 @@ class PocketnetWsService {
 
   // --- Connection ---
 
-  async connect() {
+  connect(): Promise<void> {
     if (
       this.socket &&
       (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)
     ) {
-      return
+      return Promise.resolve()
     }
+    if (this.connecting) return this.connecting
 
+    const attempt = this.openSocket().finally(() => {
+      if (this.connecting === attempt) this.connecting = null
+    })
+    this.connecting = attempt
+    return attempt
+  }
+
+  private async openSocket(): Promise<void> {
     this.closing = false
+    const generation = this.generation
+    const superseded = () => this.closing || generation !== this.generation
 
     const proxyList = servers.servers.production.proxy
     if (!proxyList?.length) {
@@ -114,13 +133,16 @@ class PocketnetWsService {
     const proxy: WsProxy | undefined =
       (first && proxyList.find((p) => p.host === first!.host)) ?? proxyList[0]
     if (!proxy) return
-    if (this.closing) return
+    if (superseded()) return
     const url = `wss://${proxy.host}:${proxy.wss}`
 
     debugLog('[WS] Connecting to', url)
 
     try {
       const Ctor = await pickWebSocketCtor()
+      // close() во время ожидания конструктора: сокет больше не нужен — иначе
+      // он открылся бы после закрытия сервиса и жил бы без хозяина.
+      if (superseded()) return
       this.socket = new Ctor(url)
     } catch (e) {
       console.error('[WS] Failed to create WebSocket:', e)
@@ -383,6 +405,8 @@ class PocketnetWsService {
 
   close() {
     this.closing = true
+    this.generation++
+    this.connecting = null
     // Сбрасываем backoff: следующий цикл connect() начнётся с чистого счётчика,
     // а не залипнет на RECONNECT_MAX_DELAY от прошлой неудачной серии.
     this.reconnectAttempt = 0

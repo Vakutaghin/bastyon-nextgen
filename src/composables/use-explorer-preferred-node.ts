@@ -3,7 +3,8 @@
  *
  * Хранит выбранную пользователем ноду из servers.json в localStorage и предоставляет
  * её как RpcRequestConfig для use-block-explorer-queries. Если ничего не выбрано —
- * запросы идут через обычный round-robin из request.ts.
+ * запросы идут к общей ноде приложения (node-selector: первая живая из списка).
+ * Кошелёк этой настройкой не управляется — она только про эксплорер (S7).
  *
  * Состояние модуль-левел ref-а синхронизировано между всеми инстансами composable-а.
  * При смене ноды все explorer-запросы инвалидуются, чтобы получить свежие данные с
@@ -47,8 +48,8 @@ export function getExplorerPreferredNode(): PreferredNode | null {
 }
 
 /**
- * Конфиг для getByPRC. Возвращает undefined для «авто» — тогда getByPRC использует
- * стандартный round-robin по servers.json.
+ * Конфиг для getByPRC. Возвращает undefined для «авто» — тогда getByPRC берёт
+ * общую ноду приложения из node-selector.
  */
 export function getExplorerRpcConfig(): RpcRequestConfig | undefined {
   const n = preferredNodeRef.value

@@ -66,7 +66,6 @@ import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons-vue'
 import { useAuthStore, getAdditionalWalletAddressesList } from '@/blockchain'
 import { useUserProfiles } from '@/composables/use-user-profile'
 import { getByPRC } from '@/helpers/api/request'
-import { getExplorerRpcConfig } from '@/composables/use-explorer-preferred-node'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { formatPkoinAmount } from '@/helpers/common/pkoin-formatter'
 import {
@@ -166,14 +165,13 @@ async function loadPage(reset = false): Promise<void> {
   loading.value = true
   error.value = false
   try {
-    const resp = (await getByPRC(
-      {
-        method: rpcEndpoints.getAddressTransactions,
-        parameters: [addr, nextCursorHeight, TX_PAGE_SIZE],
-        options: { auth: false },
-      },
-      getExplorerRpcConfig()
-    )) as GetAddressTransactionsResponse
+    // Нода — общая для приложения, а не закреплённая в настройках эксплорера:
+    // та настройка обещает «на остальное приложение не влияет» (S7).
+    const resp = (await getByPRC({
+      method: rpcEndpoints.getAddressTransactions,
+      parameters: [addr, nextCursorHeight, TX_PAGE_SIZE],
+      options: { auth: false },
+    })) as GetAddressTransactionsResponse
     const page = resp?.data ?? []
     if (page.length === 0) {
       hasMore.value = false
