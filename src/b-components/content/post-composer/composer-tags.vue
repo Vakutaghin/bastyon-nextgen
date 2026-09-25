@@ -53,7 +53,7 @@ import {
   SC_TagsField,
   SC_TagsRow,
 } from './composer-tags.styled'
-import { filterTagSuggestions } from './tag-suggestions'
+import { filterTagSuggestions, NO_ACTIVE_SUGGESTION, resolveTagOnEnter } from './tag-suggestions'
 
 const props = defineProps<{ tags: string[]; full: boolean; inputValue: string }>()
 const emit = defineEmits<{
@@ -75,7 +75,7 @@ function getInputEl(): HTMLInputElement | null {
   return (r as { $el?: HTMLInputElement }).$el ?? null
 }
 const open = ref(false)
-const activeIndex = ref(0)
+const activeIndex = ref(NO_ACTIVE_SUGGESTION)
 
 // Облако трендовых тегов (gettags не умеет префикс-поиск — фильтруем на клиенте).
 const { data: tagsResponse } = useRpcQuery(
@@ -115,13 +115,13 @@ const focusInput = (): void => {
 const onInput = (e: Event): void => {
   emit('update:inputValue', (e.target as HTMLInputElement).value)
   open.value = true
-  activeIndex.value = 0
+  activeIndex.value = NO_ACTIVE_SUGGESTION
 }
 
 const select = (tag: string): void => {
   emit('add', tag)
   open.value = false
-  activeIndex.value = 0
+  activeIndex.value = NO_ACTIVE_SUGGESTION
 }
 
 const onBlur = (): void => {
@@ -140,7 +140,8 @@ const onKeydown = (e: KeyboardEvent): void => {
       return
     }
     if (e.key === 'ArrowUp') {
-      activeIndex.value = Math.max(activeIndex.value - 1, 0)
+      // Выше первой подсказки — обратно к набранному слову.
+      activeIndex.value = Math.max(activeIndex.value - 1, NO_ACTIVE_SUGGESTION)
       e.preventDefault()
       return
     }
@@ -148,14 +149,16 @@ const onKeydown = (e: KeyboardEvent): void => {
       open.value = false
       return
     }
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      select(list[activeIndex.value])
-      return
-    }
   }
 
-  if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    const tag = resolveTagOnEnter(open.value ? list : [], activeIndex.value, props.inputValue)
+    if (tag) select(tag)
+    return
+  }
+
+  if (e.key === ',' || e.key === ' ') {
     if (props.inputValue.trim()) {
       e.preventDefault()
       emit('add', props.inputValue)

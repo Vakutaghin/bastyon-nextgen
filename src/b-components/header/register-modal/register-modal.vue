@@ -109,7 +109,7 @@ import {
   isFormNicknameValid,
   normalizeAndCapNickname,
   validateRegistrationNickname,
-} from './helpers/nickname-validation'
+} from '@/helpers/profile/nickname-validation'
 
 /**
  * Сид в событии не передаётся: шапка поднимает его из сейфа, когда регистрация

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { filterTagSuggestions } from './tag-suggestions'
+import { filterTagSuggestions, NO_ACTIVE_SUGGESTION, resolveTagOnEnter } from './tag-suggestions'
 
 const cloud = ['news', 'crypto', 'newyork', 'tech', 'art', 'newsletter']
 
@@ -53,5 +53,26 @@ describe('filterTagSuggestions: по умолчанию показываем в�
 
   it('без явного limit отдаёт все совпадения', () => {
     expect(filterTagSuggestions(big, 'tag1', [])).toHaveLength(11) // tag1 + tag10..tag19
+  })
+})
+
+describe('resolveTagOnEnter (N16)', () => {
+  const list = ['vuejs', 'vue3', 'vite']
+
+  it('без выбора стрелками добавляет набранное слово, а не первую подсказку', () => {
+    expect(resolveTagOnEnter(list, NO_ACTIVE_SUGGESTION, 'vue')).toBe('vue')
+  })
+
+  it('пустое поле по Enter ничего не добавляет, даже при открытом списке', () => {
+    expect(resolveTagOnEnter(list, NO_ACTIVE_SUGGESTION, '')).toBeNull()
+    expect(resolveTagOnEnter(list, NO_ACTIVE_SUGGESTION, '   ')).toBeNull()
+  })
+
+  it('выбранная стрелками подсказка побеждает набранный текст', () => {
+    expect(resolveTagOnEnter(list, 1, 'vu')).toBe('vue3')
+  })
+
+  it('индекс за пределами списка — набранное слово', () => {
+    expect(resolveTagOnEnter([], 0, 'vue')).toBe('vue')
   })
 })

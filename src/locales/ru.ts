@@ -981,7 +981,6 @@ export default {
     cancel: 'Отмена',
     savedToast: 'Профиль обновлён',
     uploadingAvatar: 'Загрузка аватара…',
-    nameTooLong: 'Слишком длинное имя (макс. {max})',
     errAuthRequired: 'Войдите, чтобы редактировать профиль',
     errNameRequired: 'Имя не может быть пустым',
     errNoUnspents: 'Недостаточно средств для транзакции',
@@ -1681,6 +1680,7 @@ export default {
     nicknameInvalidChars:
       'Псевдоним может содержать только латинские буквы, цифры и нижнее подчеркивание',
     nicknameTooLong: 'Псевдоним не может быть длиннее {max} символов',
+    nicknameReserved: 'Псевдоним не может содержать «bastyon» или «pocketnet»',
     validationTitle: 'Валидация аккаунта в блокчейне',
     validationMessage: 'Ваш аккаунт проходит валидацию в блокчейне. Пожалуйста, подождите...',
   },

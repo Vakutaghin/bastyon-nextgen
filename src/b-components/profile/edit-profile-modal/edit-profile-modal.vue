@@ -104,6 +104,8 @@ import { appToast } from '@/b-components/app-toast'
 import { useProfileStore } from '@/blockchain/store/profile-store'
 import { resizeImageBase64, fileToBase64 } from '@/helpers/common/resize-image'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
+import { safeDecode } from '@/helpers/content/safe-decode'
+import { NICKNAME_MAX_LENGTH, validateProfileNickname } from '@/helpers/profile/nickname-validation'
 import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
 import {
   SC_Form,
@@ -121,7 +123,7 @@ import {
 } from './styled'
 
 /** Максимум имени — как в legacy (NICKNAME, 20 символов). */
-const NAME_MAX = 20
+const NAME_MAX = NICKNAME_MAX_LENGTH
 
 /** Языки контента (value — ISO-код для поля `l` профиля). */
 const LANGUAGES = [
@@ -166,7 +168,8 @@ function resetFromProfile(): void {
   const p = props.profile
   name.value = p?.name || ''
   // Только `a`: `r` — адрес реферера, его нельзя подставлять в «О себе» (S54).
-  about.value = p?.a || ''
+  // Старые записи бывают URL-кодированы — в поле показываем текст, как в профиле.
+  about.value = safeDecode(p?.a || '')
   site.value = p?.s || ''
   language.value = p?.l || 'en'
   avatarPreview.value = p?.i || ''
@@ -229,12 +232,9 @@ function handleCancel(): void {
 
 async function onSave(): Promise<void> {
   const trimmedName = name.value.trim()
-  if (!trimmedName) {
-    appToast.error({ message: t('editProfile.errNameRequired') })
-    return
-  }
-  if (trimmedName.length > NAME_MAX) {
-    appToast.error({ message: t('editProfile.nameTooLong', { max: NAME_MAX }) })
+  const nameError = validateProfileNickname(trimmedName, props.profile?.name)
+  if (nameError) {
+    appToast.error({ message: nameError })
     return
   }
 

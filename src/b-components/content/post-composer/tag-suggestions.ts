@@ -33,3 +33,22 @@ export function filterTagSuggestions(
   }
   return [...starts, ...contains].slice(0, limit)
 }
+
+/** Подсказка не выбрана: Enter добавляет набранное слово. */
+export const NO_ACTIVE_SUGGESTION = -1
+
+/**
+ * Что добавить по Enter. Подсказка — только если человек сам выбрал её
+ * стрелками; иначе набранное слово. Раньше первая подсказка была выбрана
+ * заранее: «vue» превращался в «vuejs», а Enter в пустом поле добавлял
+ * случайный трендовый тег (N16).
+ */
+export function resolveTagOnEnter(
+  suggestions: string[],
+  activeIndex: number,
+  typed: string
+): string | null {
+  const picked = activeIndex >= 0 ? suggestions[activeIndex] : undefined
+  if (picked) return picked
+  return typed.trim() ? typed : null
+}
