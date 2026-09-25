@@ -229,7 +229,8 @@
   --color-red-border: rgb(var(--ui-error-rgb) / 0.25);
 
   --color-warning-bg: rgb(var(--ui-warning-rgb) / 0.1);
-  --color-warning-border: var(--ui-warning);
+  /* Рамка предупреждения как у алерта Nuxt (subtle): цвет на 25%. */
+  --color-warning-border: rgb(var(--ui-warning-rgb) / 0.25);
   --color-warning-text: var(--ui-warning-text);
   --color-warning-track: rgb(var(--ui-warning-rgb) / 0.3);
   --color-warning-border-light: rgb(var(--ui-warning-rgb) / 0.25);
@@ -595,10 +596,10 @@ button.disabled {
    Inputs
    ═══════════════════════════════════════════════════════════════════════════ */
 
-input[type='text'],
-input[type='email'],
-input[type='password'],
-input[type='number'] {
+/* :where() обнуляет специфичность: это значения по умолчанию. Раньше селектор
+   с атрибутом был сильнее класса styled-компонента и перебивал его отступы и
+   рамку (в поиске эксплорера текст уходил под кнопку «Открыть»). */
+:where(input[type='text'], input[type='email'], input[type='password'], input[type='number']) {
   color: var(--ui-text-highlighted);
   border-radius: var(--ui-radius-md);
   padding: 0 0.5em;

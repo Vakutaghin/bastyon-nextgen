@@ -25,7 +25,7 @@
             <template #icon>
               <ReloadOutlined :style="ICON_SIZE_SM" />
             </template>
-            {{ t('postCard.refreshFeed') }}
+            <span class="feed-refresh-label">{{ t('postCard.refreshFeed') }}</span>
           </Button>
         </SC_FeedRefreshWrap>
       </SC_FeedHeaderLeft>

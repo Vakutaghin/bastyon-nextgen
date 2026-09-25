@@ -65,7 +65,7 @@
         <Progress
           :percent="progress"
           :status="state === 'error' ? 'exception' : 'active'"
-          :stroke-color="state === 'error' ? '#ff4d4f' : '#1890ff'"
+          :stroke-color="state === 'error' ? 'var(--ui-error)' : 'var(--ui-primary)'"
         />
         <SC_ProgressText>{{ Math.round(progress) }}%</SC_ProgressText>
         <SC_FileNameText v-if="fileName">

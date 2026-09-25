@@ -17,7 +17,7 @@ export const SC_ShowCommentsBtn = styled.button`
   border: none;
   background: none;
   font-size: 13px;
-  color: #00a4ff;
+  color: var(--ui-primary-text);
   cursor: pointer;
   text-align: left;
 
@@ -116,7 +116,8 @@ export const SC_CommentsSortSelect = styled.select`
 
   &:focus {
     outline: none;
-    border-color: #00a4ff;
+    border-color: var(--ui-primary);
+    box-shadow: 0 0 0 3px rgb(var(--ui-primary-rgb) / 25%);
   }
 `
 
@@ -129,7 +130,7 @@ export const SC_CommentRepliesLink = styled.button`
   font: inherit;
   text-align: inherit;
   font-size: 13px;
-  color: #00a4ff;
+  color: var(--ui-primary-text);
   cursor: pointer;
   user-select: none;
 

@@ -12,8 +12,8 @@ export const SC_SystemRow = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--color-border-lighter);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ui-border);
 
   &:last-child {
     border-bottom: 0;
@@ -27,64 +27,72 @@ export const SC_SystemLabel = styled.div`
   min-width: 0;
 `
 
+/** Подпись и описание строки — как у поля формы Nuxt UI. */
 export const SC_SystemTitle = styled.span`
   font-size: 14px;
-  color: var(--color-text-primary);
+  font-weight: 500;
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_SystemHint = styled.span`
-  font-size: 12px;
-  color: var(--color-text-secondary);
+  font-size: 14px;
+  color: var(--ui-text-muted);
 `
 
+/** Выбор варианта — вкладки-pill Nuxt UI, как язык и тема. */
 export const SC_ScaleRow = styled.div`
   display: inline-flex;
   flex-shrink: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  gap: 2px;
+  padding: 4px;
+  background: var(--ui-bg-elevated);
+  border-radius: var(--ui-radius-lg);
 `
 
 const scaleProps = { active: Boolean }
 
 export const SC_ScaleButton = styled('button', scaleProps)`
-  padding: 5px 12px;
-  font-size: 13px;
+  padding: 4px 12px;
+  font-size: 14px;
   font-weight: 500;
+  line-height: 20px;
   cursor: pointer;
   border: none;
-  background: ${(p) => (p.active ? 'var(--color-primary)' : 'transparent')};
-  color: ${(p) => (p.active ? 'var(--color-white)' : 'var(--color-text-secondary)')};
-  transition: background-color var(--transition-fast);
-
-  & + & {
-    border-left: 1px solid var(--color-border);
-  }
+  border-radius: var(--ui-radius-md);
+  background: ${(p) => (p.active ? 'var(--ui-primary)' : 'transparent')};
+  color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text-muted)')};
+  box-shadow: ${(p) => (p.active ? 'var(--ui-shadow-xs)' : 'none')};
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
 
   &:hover {
-    background: ${(p) => (p.active ? 'var(--color-primary)' : 'var(--color-overlay-8)')};
-    color: ${(p) => (p.active ? 'var(--color-white)' : 'var(--color-text-primary)')};
+    background: ${(p) => (p.active ? 'var(--ui-primary)' : 'transparent')};
+    color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text-highlighted)')};
   }
 `
 
 export const SC_DangerButton = styled.button`
   flex-shrink: 0;
+  /* Outline-кнопка цветом ошибки, как у Nuxt UI. */
   background: transparent;
-  color: var(--color-danger);
-  border: 1px solid var(--color-danger);
-  border-radius: var(--radius-md);
-  padding: 6px 16px;
-  font-size: 13px;
+  color: var(--ui-error);
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgb(var(--ui-error-rgb) / 50%);
+  border-radius: var(--ui-radius-md);
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: background-color var(--transition-fast);
 
   &:hover:not(:disabled) {
-    background: var(--color-danger-bg-soft);
-    color: var(--color-danger);
+    background: rgb(var(--ui-error-rgb) / 10%);
+    color: var(--ui-error);
   }
 
   &:disabled {
-    cursor: default;
-    opacity: 0.6;
+    cursor: not-allowed;
+    opacity: 0.75;
   }
 `

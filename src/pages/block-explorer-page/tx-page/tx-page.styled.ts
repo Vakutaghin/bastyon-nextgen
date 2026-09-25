@@ -137,11 +137,9 @@ export const SC_TxIOColumn = styled.div`
 `
 
 export const SC_TxIOHeader = styled.h3`
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--ui-text-highlighted);
   margin: 0 0 4px;
 `
 

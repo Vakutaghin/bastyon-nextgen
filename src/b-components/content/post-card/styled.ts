@@ -68,7 +68,7 @@ export const SC_PostTitle = styled.h3`
   margin: 0 0 15px;
   font-size: 16px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
   line-height: 1.4;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -95,22 +95,23 @@ export const SC_PostAuthorInfo = styled.div`
 export const SC_PostAuthorName = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
 `
 
+/** Репутация — нейтральный outline-бейдж Nuxt UI. */
 export const SC_PostAuthorRep = styled.div`
-  color: ${COLORS.TEXT_SECONDARY};
-  border: 1px solid ${COLORS.BORDER_DARK};
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border-accented);
   border-radius: var(--ui-radius-md);
-  padding: 0 6px;
-  line-height: 1.4;
+  padding: 1px 6px;
+  line-height: 16px;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 12px;
 `
 
 export const SC_PostTime = styled.time`
-  font-size: 11px;
-  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 12px;
+  color: var(--ui-text-muted);
   margin-top: 2px;
 `
 
@@ -129,20 +130,30 @@ export const SC_PostActionBtn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border: none;
   background: none;
-  border-radius: var(--ui-radius-lg);
-  color: ${COLORS.TEXT_SECONDARY};
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-muted);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   transition:
-    background-color 0.2s,
-    color 0.2s;
+    background-color 0.15s,
+    color 0.15s;
 
+  /* Ghost-кнопка Nuxt UI: подложка на hover, текст ярче. */
   &:hover {
-    background: ${COLORS.BG_HOVER};
-    color: ${COLORS.PRIMARY};
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text-highlighted);
+  }
+
+  /* На узком экране — только иконка: подпись не помещалась и обрезалась краем
+     карточки. Для скринридеров остаётся aria-label. */
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    & > span {
+      display: none;
+    }
   }
 `
 
@@ -313,8 +324,8 @@ export const SC_AuthorLinkWrap = styled.div`
 export const SC_RepostInnerCard = styled.div`
   margin-top: 8px;
   padding: 12px 14px;
-  background: ${COLORS.OVERLAY_3};
-  border: 1px solid ${COLORS.OVERLAY_8};
+  background: rgb(var(--ui-bg-elevated-rgb) / 50%);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
 `
 
@@ -338,22 +349,22 @@ export const SC_RepostOriginalAuthorInfo = styled.div`
 export const SC_RepostOriginalAuthorName = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
 
   a {
     color: inherit;
     text-decoration: none;
 
     &:hover {
-      color: ${COLORS.BRAND_CYAN};
-      text-decoration: underline;
+      color: var(--ui-primary);
+      text-decoration: none;
     }
   }
 `
 
 export const SC_RepostOriginalAuthorTime = styled.time`
-  font-size: 11px;
-  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 12px;
+  color: var(--ui-text-muted);
   margin-top: 2px;
 `
 

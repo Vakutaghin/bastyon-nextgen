@@ -8,6 +8,8 @@ import styled from 'vue3-styled-components'
 // secondary        → нейтральная outline: кольцо accented, hover — подложка
 // danger           → outline цветом ошибки
 // link             → только текст акцентом
+// text             → ghost: без рамки, подложка на hover
+// primary + ghost  → outline акцентом
 
 /** Спиннер цветом текста кнопки (раньше — <img>, где currentColor не работает). */
 export const SC_ButtonSpinner = styled.span`
@@ -73,7 +75,12 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
   }
 
   &.bastyon-button-secondary,
-  &:not(.bastyon-button-primary, .bastyon-button-danger, .bastyon-button-link) {
+  &:not(
+    .bastyon-button-primary,
+    .bastyon-button-danger,
+    .bastyon-button-link,
+    .bastyon-button-text
+  ) {
     background: var(--ui-bg);
     color: var(--ui-text);
     box-shadow: inset 0 0 0 1px var(--ui-border-accented);
@@ -96,6 +103,33 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
       background: rgb(var(--ui-error-rgb) / 10%);
       color: var(--ui-error);
     }
+  }
+
+  &.bastyon-button-text {
+    background: transparent;
+    color: var(--ui-text);
+
+    &:hover:not(:disabled),
+    &:active:not(:disabled) {
+      background: var(--ui-bg-elevated);
+      color: var(--ui-text);
+    }
+  }
+
+  &.bastyon-button-primary.bastyon-button-ghost {
+    background: transparent;
+    color: var(--ui-primary);
+    box-shadow: inset 0 0 0 1px rgb(var(--ui-primary-rgb) / 50%);
+
+    &:hover:not(:disabled),
+    &:active:not(:disabled) {
+      background: rgb(var(--ui-primary-rgb) / 10%);
+      color: var(--ui-primary);
+    }
+  }
+
+  & > .anticon {
+    font-size: 1.15em;
   }
 
   &.bastyon-button-link {

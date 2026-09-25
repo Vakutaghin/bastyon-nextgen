@@ -1,6 +1,5 @@
 import styled, { css } from 'vue3-styled-components'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 
 const sidebarItemProps = { active: Boolean }
 
@@ -20,34 +19,38 @@ export const SC_SettingsSidebar = styled.nav`
   }
 `
 
+/** Пункт навигации в оформлении Nuxt UI, как в сайдбаре ленты. */
 export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
   display: block;
   width: 100%;
-  padding: 10px 14px;
+  padding: 6px 10px;
   text-align: left;
   font-size: 14px;
-  line-height: 1.4;
-  color: ${COLORS.GRAY_212};
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--ui-text-muted);
   background: transparent;
   border: none;
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
     background ${TRANSITIONS.QUICK},
     color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.OVERLAY_4};
+    background: rgb(var(--ui-bg-elevated-rgb) / 50%);
+    color: var(--ui-text-highlighted);
   }
 
   ${(p: { active?: boolean }) =>
     p.active &&
     css`
-      color: ${COLORS.PRIMARY};
-      background: ${COLORS.PRIMARY_BG_SOFT};
+      color: var(--ui-primary);
+      background: var(--ui-bg-elevated);
 
       &:hover {
-        background: ${COLORS.PRIMARY_BG_12};
+        background: var(--ui-bg-elevated);
+        color: var(--ui-primary);
       }
     `}
 

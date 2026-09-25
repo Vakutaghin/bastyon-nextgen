@@ -13,7 +13,8 @@ export const SC_ReadMoreButton = styled(Button)`
 
 export const SC_PostContent = styled.div`
   margin-bottom: 15px;
-  line-height: 1.2;
+  /* Как текст у Nuxt UI: 1.2 было тесно для длинных постов. */
+  line-height: 1.5;
   color: ${COLORS.TEXT_PRIMARY} !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -40,7 +41,7 @@ export const SC_PostContent = styled.div`
   }
 
   .bastyon-link {
-    color: ${COLORS.PRIMARY} !important;
+    color: var(--ui-primary-text) !important;
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
@@ -49,12 +50,12 @@ export const SC_PostContent = styled.div`
   }
 
   .bastyon-link:hover {
-    color: ${COLORS.PRIMARY_ACTIVE} !important;
+    color: var(--ui-primary) !important;
     text-decoration: underline;
   }
 
   .timecode-link {
-    color: ${COLORS.PRIMARY} !important;
+    color: var(--ui-primary-text) !important;
     text-decoration: none;
     cursor: pointer;
     font-variant-numeric: tabular-nums;
@@ -62,13 +63,14 @@ export const SC_PostContent = styled.div`
   }
 
   .timecode-link:hover {
-    color: ${COLORS.PRIMARY_ACTIVE} !important;
+    color: var(--ui-primary) !important;
     border-bottom-style: solid;
   }
 `
 
 export const SC_PostPreview = styled.div`
   position: relative;
+  line-height: 1.5;
   overflow: hidden;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -84,7 +86,7 @@ export const SC_PostPreview = styled.div`
   }
 
   .bastyon-link {
-    color: ${COLORS.PRIMARY} !important;
+    color: var(--ui-primary-text) !important;
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
@@ -93,7 +95,7 @@ export const SC_PostPreview = styled.div`
   }
 
   .bastyon-link:hover {
-    color: ${COLORS.PRIMARY_ACTIVE} !important;
+    color: var(--ui-primary) !important;
     text-decoration: underline;
   }
 `

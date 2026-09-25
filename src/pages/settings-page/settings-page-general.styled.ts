@@ -29,36 +29,45 @@ export const SC_GeneralLabel = styled.span`
   color: ${COLORS.GRAY_212};
 `
 
+/** Переключатель как вкладки-pill у Nuxt UI (UTabs): подложка elevated с
+ * отступом, активный вариант — заливка акцентом. */
 export const SC_LangSwitcher = styled.div`
   display: inline-flex;
-  border: 1px solid ${COLORS.BORDER};
+  gap: 2px;
+  padding: 4px;
+  background: var(--ui-bg-elevated);
   border-radius: var(--ui-radius-lg);
-  overflow: hidden;
 `
 
 export const SC_LangButton = styled('button', langRowProps)`
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 4px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
   background: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--ui-text-muted);
   border: none;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
-  transition: background-color ${TRANSITIONS.QUICK};
+  transition:
+    background-color ${TRANSITIONS.QUICK},
+    color ${TRANSITIONS.QUICK};
 
-  & + & {
-    border-left: 1px solid ${COLORS.BORDER};
+  &:hover {
+    background: transparent;
+    color: var(--ui-text-highlighted);
   }
 
   ${(p: { active?: boolean }) =>
     p.active &&
     css`
-      background: ${COLORS.PRIMARY};
-      color: ${COLORS.WHITE};
-    `}
+      background: var(--ui-primary);
+      color: var(--ui-text-inverted);
+      box-shadow: var(--ui-shadow-xs);
 
-  &:hover {
-    background: ${(p: { active?: boolean }) => (p.active ? COLORS.PRIMARY : COLORS.PRIMARY_LIGHT)};
-    color: ${(p: { active?: boolean }) => (p.active ? COLORS.WHITE : COLORS.PRIMARY)};
-  }
+      &:hover {
+        background: var(--ui-primary);
+        color: var(--ui-text-inverted);
+      }
+    `}
 `

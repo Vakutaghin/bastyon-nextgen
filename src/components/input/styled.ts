@@ -10,6 +10,13 @@ import styled from 'vue3-styled-components'
 // функционирует). При allow-clear / prefix / suffix antd оборачивает input в
 // .ant-input-affix-wrapper — фон и рамку рисует он.
 export const SC_Input = styled.div`
+  /* Поле тянется на ширину контейнера (w-full у Nuxt). Класс styled-обёртки
+     уходит во внутренний antd-инпут, а этот div во flex-строке сжимался до
+     ширины содержимого — поле мнемоники при входе было узким. */
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+
   .ant-input,
   .ant-input-affix-wrapper {
     background: var(--ui-bg);

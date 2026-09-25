@@ -111,7 +111,7 @@ export const COLORS = {
 
   // Жёлтые/оранжевые оттенки (предупреждения)
   WARNING_BG: 'var(--color-warning-bg, rgb(240 177 0 / 0.1))',
-  WARNING_BORDER: 'var(--color-warning-border, #f0b100)',
+  WARNING_BORDER: 'var(--color-warning-border, rgb(240 177 0 / 0.25))',
   WARNING_TEXT: 'var(--color-warning-text, #a65f00)',
   WARNING_BORDER_LIGHT: 'var(--color-warning-border-light, rgb(240 177 0 / 0.25))',
   WARNING_ICON: 'var(--color-warning-icon, #f0b100)',

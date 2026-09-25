@@ -159,7 +159,7 @@ export const SC_VideoQualitySubmenuItemInner = styled.button<{ isActive?: boolea
   background: transparent !important;
   border: none !important;
   cursor: pointer !important;
-  color: ${(p) => (p.isActive ? '#ff0000' : 'var(--color-text-primary)')} !important;
+  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--color-text-primary)')} !important;
   font-size: 11px !important;
   font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
   font-family: var(--font-family) !important;
@@ -196,7 +196,7 @@ export const SC_VideoQualityMenuItem = styled.button<{ isActive?: boolean }>`
   background: transparent !important;
   border: none !important;
   cursor: pointer !important;
-  color: ${(p) => (p.isActive ? '#ff0000' : 'var(--color-text-primary)')} !important;
+  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--color-text-primary)')} !important;
   font-size: 12px !important;
   font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
   font-family: var(--font-family) !important;

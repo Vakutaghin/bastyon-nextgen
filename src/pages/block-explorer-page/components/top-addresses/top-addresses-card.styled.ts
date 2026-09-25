@@ -27,11 +27,9 @@ export const SC_TopTitleGroup = styled.div`
 `
 
 export const SC_TopTitle = styled.h2`
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
   margin: 0;
 `
 

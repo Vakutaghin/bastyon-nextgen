@@ -120,11 +120,9 @@ export const SC_AddrTxSection = styled.section`
 export const SC_AddrTxSectionHeader = styled.div`
   padding: 14px 18px;
   border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_AddrTxRow = styled.div`

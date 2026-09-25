@@ -25,7 +25,7 @@ export function formatMessageText(text: string): string {
     .map((part) => {
       if (part.match(MESSAGE_URL_PATTERN)) {
         const escapedHref = escapeHtml(part)
-        return `<a href="${escapedHref}" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: none;">${escapedHref}</a>`
+        return `<a href="${escapedHref}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">${escapedHref}</a>`
       }
       return escapeHtml(part)
     })

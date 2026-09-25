@@ -26,22 +26,23 @@ export const SC_PostAuthorInfo = styled.div`
 export const SC_PostAuthorName = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_PostAuthorRep = styled.div`
-  color: ${COLORS.TEXT_SECONDARY};
-  border: 1px solid ${COLORS.BORDER_DARK};
+  /* Нейтральный outline-бейдж Nuxt UI. */
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border-accented);
   border-radius: var(--ui-radius-md);
-  padding: 0 6px;
-  line-height: 1.4;
+  padding: 1px 6px;
+  line-height: 16px;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 12px;
 `
 
 export const SC_PostTime = styled.time`
-  font-size: 11px;
-  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 12px;
+  color: var(--ui-text-muted);
   margin-top: 2px;
 `
 

@@ -37,10 +37,10 @@ export const SC_VideoProgressBar = styled.div`
     max-height: 8px !important;
     background-color: var(--color-overlay-30) !important;
 
-    /* Применяем красный цвет только к полоске прогресса, исключая первый дочерний элемент (полоску загрузки) */
+    /* Акцент — только полоске прогресса, не первому ребёнку (полоске загрузки). */
     > *:not(:first-child) {
-      background: linear-gradient(90deg, #ff3333 0%, #ff0000 100%) !important;
-      box-shadow: 0 0 6px rgba(255, 0, 0, 0.5) !important;
+      background: var(--ui-color-primary-400) !important;
+      box-shadow: none !important;
     }
   }
 
@@ -74,8 +74,9 @@ export const SC_VideoProgressBar = styled.div`
 export const SC_VideoProgressFill = styled.div`
   height: 100% !important;
   width: 0%;
-  background-color: #ff0000 !important;
-  background: linear-gradient(90deg, #ff0000 0%, #cc0000 100%) !important;
+  /* Акцент Nuxt UI вместо красного YouTube. Плеер тёмный в обеих темах,
+     поэтому всегда яркий оттенок (400). */
+  background: var(--ui-color-primary-400) !important;
   border-radius: var(--ui-radius-xs) !important;
   transition:
     background 0.15s ease,
@@ -85,7 +86,6 @@ export const SC_VideoProgressFill = styled.div`
   left: 0 !important;
   bottom: 0 !important;
   right: auto !important;
-  box-shadow: 0 0 4px rgba(255, 0, 0, 0.4) !important;
   display: block !important;
   pointer-events: none !important;
   box-sizing: border-box !important;
@@ -99,12 +99,8 @@ export const SC_VideoProgressFill = styled.div`
 export const SC_VideoBufferFill = styled.div`
   height: 100% !important;
   width: 0%;
-  background-color: rgba(100, 150, 255, 0.5) !important;
-  background: linear-gradient(
-    90deg,
-    rgba(120, 170, 255, 0.6) 0%,
-    rgba(80, 130, 255, 0.4) 100%
-  ) !important;
+  background: var(--color-white-60) !important;
+  opacity: 0.5;
   border-radius: var(--ui-radius-xs) !important;
   transition: width 0.2s ease !important;
   position: absolute !important;

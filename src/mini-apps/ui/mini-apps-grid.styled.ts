@@ -1,7 +1,7 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
-import { SC_SectionTitleUpper } from '@/styles/shared'
+import { SC_SectionTitle as SC_SharedSectionTitle } from '@/styles/shared'
 
 export const SC_Search = styled.div`
   margin: 8px 0 16px;
@@ -14,12 +14,13 @@ export const SC_SideloadBar = styled.div`
 `
 
 export const SC_SideloadBtn = styled.button`
-  padding: 5px 12px;
-  border: 1px dashed ${COLORS.BORDER_DEFAULT};
-  border-radius: var(--ui-radius-lg);
+  padding: 6px 10px;
+  border: 1px dashed var(--ui-border-accented);
+  border-radius: var(--ui-radius-md);
   background: none;
-  color: ${COLORS.TEXT_SECONDARY};
-  font-size: 13px;
+  color: var(--ui-text-muted);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: color ${TRANSITIONS.FAST};
 
@@ -36,13 +37,17 @@ export const SC_Categories = styled.div`
   margin: 0 0 16px;
 `
 
+/** Фильтр — маленькая кнопка Nuxt UI: нейтральная outline, выбранный — solid. */
 export const SC_CategoryChip = styled.button`
-  padding: 5px 12px;
-  border-radius: 16px;
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
-  background: ${COLORS.BG_SECONDARY};
-  color: ${COLORS.TEXT_SECONDARY};
-  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: var(--ui-radius-md);
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--ui-border-accented);
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
   cursor: pointer;
   transition:
     background ${TRANSITIONS.FAST},
@@ -50,13 +55,14 @@ export const SC_CategoryChip = styled.button`
     border-color ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text);
   }
 
   &.active {
-    background: ${COLORS.PRIMARY};
-    border-color: ${COLORS.PRIMARY};
-    color: ${COLORS.WHITE};
+    background: var(--ui-primary);
+    box-shadow: none;
+    color: var(--ui-text-inverted);
   }
 `
 
@@ -64,8 +70,8 @@ export const SC_Section = styled.section`
   margin: 0 0 24px;
 `
 
-// Общий капс-заголовок секции (audit §3.2) + нижний отступ под grid.
-export const SC_SectionTitle = styled(SC_SectionTitleUpper)`
+// Общий заголовок секции (audit §3.2) + нижний отступ под grid.
+export const SC_SectionTitle = styled(SC_SharedSectionTitle)`
   margin: 0 0 12px;
 `
 

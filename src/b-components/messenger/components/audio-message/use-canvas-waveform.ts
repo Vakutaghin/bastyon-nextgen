@@ -1,6 +1,6 @@
 /**
- * Waveform голосового сообщения на обычном 2D-canvas: серая «фоновая» волна и
- * синяя «прогресс»-волна поверх. Ширина баров фиксирована, их количество
+ * Waveform голосового сообщения на обычном 2D-canvas: приглушённая «фоновая»
+ * волна и акцентная «прогресс»-волна поверх. Ширина баров фиксирована, их количество
  * подбирается под актуальную ширину контейнера (как в Telegram/WhatsApp).
  *
  * Раньше это рисовал PIXI, то есть КАЖДОЕ аудио-сообщение поднимало свой
@@ -10,8 +10,14 @@
  */
 import { onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 
-const BAR_BG_COLOR = '#d0d7e2'
-const BAR_PROGRESS_COLOR = '#00a4db'
+// Canvas не понимает var(--…): цвета темы берём из вычисленных стилей
+// контейнера при каждой отрисовке, фолбэки — светлая тема.
+const BAR_BG_FALLBACK = '#cad5e2'
+const BAR_PROGRESS_FALLBACK = '#00c16a'
+
+function themeColor(el: HTMLElement, name: string, fallback: string): string {
+  return getComputedStyle(el).getPropertyValue(name).trim() || fallback
+}
 const TARGET_BAR_WIDTH = 2
 const TARGET_BAR_SPACING = 2
 
@@ -99,6 +105,9 @@ export function useCanvasWaveform(opts: CanvasWaveformOptions): CanvasWaveform {
     const sourceBars = waveformBars.value
     if (sourceBars.length === 0) return
 
+    const barBgColor = themeColor(dom, '--ui-border-accented', BAR_BG_FALLBACK)
+    const barProgressColor = themeColor(dom, '--ui-primary', BAR_PROGRESS_FALLBACK)
+
     let barWidth = TARGET_BAR_WIDTH
     let spacing = TARGET_BAR_SPACING
     const step = TARGET_BAR_WIDTH + TARGET_BAR_SPACING
@@ -143,10 +152,10 @@ export function useCanvasWaveform(opts: CanvasWaveformOptions): CanvasWaveform {
       const x = startX + i * (barWidth + spacing)
       const yTop = centerY - Math.floor(barHeight / 2)
 
-      ctx.fillStyle = BAR_BG_COLOR
+      ctx.fillStyle = barBgColor
       barPath(ctx, x, yTop, barWidth, barHeight, radius)
 
-      ctx.fillStyle = BAR_PROGRESS_COLOR
+      ctx.fillStyle = barProgressColor
       if (i < progressCutIndex) {
         barPath(ctx, x, yTop, barWidth, barHeight, radius)
       } else if (i === progressCutIndex && partialCut > 0) {

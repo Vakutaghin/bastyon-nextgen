@@ -211,7 +211,7 @@ export const SC_HiddenBanner = styled.div`
 export const SC_RevealBtn = styled.button`
   border: none;
   background: transparent;
-  color: #00a4ff;
+  color: var(--ui-primary-text);
   font-size: 13px;
   cursor: pointer;
   padding: 0;
@@ -276,12 +276,13 @@ export const SC_EditCancelBtn = styled.button`
 `
 
 export const SC_EditSaveBtn = styled.button`
-  padding: 6px 16px;
-  border-radius: var(--ui-radius-lg);
-  border: 1px solid #00a4ff;
-  background: #00a4ff;
-  color: ${COLORS.WHITE};
-  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: var(--ui-radius-md);
+  border: 0;
+  background: var(--ui-primary);
+  color: var(--ui-text-inverted);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -290,13 +291,12 @@ export const SC_EditSaveBtn = styled.button`
   min-height: 30px;
 
   &:hover:not(:disabled) {
-    background: #0088d1;
-    border-color: #0088d1;
+    background: rgb(var(--ui-primary-rgb) / 75%);
+    color: var(--ui-text-inverted);
   }
   &:disabled {
     cursor: not-allowed;
-    background: ${COLORS.GRAY_CCC};
-    border-color: ${COLORS.GRAY_CCC};
+    opacity: 0.75;
   }
 `
 

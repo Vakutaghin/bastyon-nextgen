@@ -3,8 +3,8 @@ import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_StatsCard = styled.section`
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   padding: 18px 20px 20px;
   margin-bottom: 24px;
@@ -26,50 +26,54 @@ export const SC_StatsTitleGroup = styled.div`
 `
 
 export const SC_StatsTitle = styled.h2`
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
   margin: 0;
 `
 
 export const SC_StatsSubtitle = styled.div`
-  font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 14px;
+  color: var(--ui-text-muted);
   font-variant-numeric: tabular-nums;
 `
 
+/** Вкладки-pill Nuxt UI: подложка elevated, активная — заливка акцентом. */
 export const SC_StatsToggle = styled.div`
   display: inline-flex;
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  gap: 2px;
+  padding: 4px;
+  background: var(--ui-bg-elevated);
   border-radius: var(--ui-radius-lg);
-  overflow: hidden;
 `
 
 export const SC_StatsToggleBtn = styled.button`
-  padding: 6px 14px;
+  padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  background: ${COLORS.BG_PRIMARY};
-  color: ${COLORS.TEXT_SECONDARY};
+  line-height: 16px;
+  background: transparent;
+  color: var(--ui-text-muted);
   border: none;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
     background-color ${TRANSITIONS.QUICK},
     color ${TRANSITIONS.QUICK};
 
   &.active {
-    background: ${COLORS.PRIMARY};
-    color: ${COLORS.WHITE};
+    background: var(--ui-primary);
+    color: var(--ui-text-inverted);
+    box-shadow: var(--ui-shadow-xs);
   }
 
   &:hover:not(.active, :disabled) {
-    background: ${COLORS.BG_HOVER};
+    background: transparent;
+    color: var(--ui-text-highlighted);
   }
 
   &:disabled {
-    color: ${COLORS.TEXT_MUTED};
+    opacity: 0.75;
     cursor: not-allowed;
   }
 `

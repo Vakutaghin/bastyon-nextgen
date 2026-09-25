@@ -37,7 +37,7 @@ export const SC_ExplorerTitleRow = styled.div`
 export const SC_ExplorerTitle = styled.h1`
   font-size: 28px;
   font-weight: 700;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
   margin: 0;
   letter-spacing: -0.5px;
 `
@@ -46,12 +46,12 @@ export const SC_LiveBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--ui-radius-md);
   color: ${COLORS.TEXT_MUTED};
   background: ${COLORS.BG_DISABLED};
   transition:
@@ -116,30 +116,31 @@ export const SC_ExplorerStatsRow = styled.div`
 `
 
 export const SC_StatCard = styled.div`
-  padding: 16px 18px;
-  background: ${COLORS.BG_SECONDARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  /* Карточка статистики как в Dashboard Nuxt UI: фон страницы и рамка. */
+  padding: 16px 20px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
 `
 
 export const SC_StatCardLabel = styled.div`
-  font-size: 11px;
-  color: ${COLORS.TEXT_SECONDARY};
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.6px;
   margin-bottom: 6px;
 `
 
 export const SC_StatCardValue = styled.div`
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
   font-variant-numeric: tabular-nums;
 `
 
 export const SC_StatCardHint = styled.div`
-  font-size: 11px;
-  color: ${COLORS.TEXT_MUTED};
+  font-size: 12px;
+  color: var(--ui-text-dimmed);
   margin-top: 4px;
 `
 
@@ -154,12 +155,12 @@ export const SC_SectionHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ui-border);
 `
 
 // Капс-заголовок секции — общий примитив (audit §3.2).
-export { SC_SectionTitleUpper as SC_SectionTitle } from '@/styles/shared'
+export { SC_SectionTitle } from '@/styles/shared'
 
 export const SC_RowList = styled.div`
   display: flex;
@@ -171,9 +172,9 @@ export const SC_BlockRow = styled.div`
   grid-template-columns: 90px minmax(0, 1fr) 70px 110px;
   align-items: center;
   gap: 12px;
-  padding: 12px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
-  font-size: 13px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--ui-border);
+  font-size: 14px;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     /* Card layout: [height] [ntx] [age], затем [hash] на новой строке. */
@@ -211,7 +212,7 @@ export const SC_BlockRow = styled.div`
 
 export const SC_BlockHeight = styled.div`
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
   font-variant-numeric: tabular-nums;
 `
 
@@ -236,8 +237,9 @@ export const SC_PlainLink = styled.a`
 
 /** Ссылка в заголовке секции («Пиры»). */
 export const SC_SectionLink = styled.a`
-  font-size: 12px;
-  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ui-primary-text);
   text-decoration: none;
 
   &:hover {

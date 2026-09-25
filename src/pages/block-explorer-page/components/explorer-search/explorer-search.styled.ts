@@ -12,30 +12,26 @@ export const SC_ExplorerSearch = styled.form`
 
 export const SC_ExplorerSearchInput = styled.input`
   flex: 1;
-  height: 44px;
-  padding: 0 110px 0 16px;
+  height: 40px;
+  padding: 0 110px 0 12px;
   font-size: 14px;
   line-height: 1.2;
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER};
-  border-radius: var(--ui-radius-lg);
+  color: var(--ui-text-highlighted);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border-accented);
+  border-radius: var(--ui-radius-md);
   outline: none;
   transition:
     border-color ${TRANSITIONS.QUICK},
     box-shadow ${TRANSITIONS.QUICK};
 
   &::placeholder {
-    color: ${COLORS.TEXT_MUTED};
-  }
-
-  &:hover {
-    border-color: ${COLORS.PRIMARY_LIGHT_50};
+    color: var(--ui-text-dimmed);
   }
 
   &:focus {
-    border-color: ${COLORS.PRIMARY};
-    box-shadow: 0 0 0 3px ${COLORS.PRIMARY_LIGHT_15};
+    border-color: var(--ui-primary);
+    box-shadow: 0 0 0 3px rgb(var(--ui-primary-rgb) / 25%);
   }
 `
 
@@ -56,23 +52,25 @@ export const SC_ExplorerSearchButton = styled.button`
   right: 4px;
   top: 4px;
   bottom: 4px;
-  padding: 0 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: ${COLORS.WHITE};
-  background: ${COLORS.PRIMARY};
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ui-text-inverted);
+  background: var(--ui-primary);
   border: none;
-  border-radius: var(--ui-radius-md);
+  border-radius: var(--ui-radius-sm);
   cursor: pointer;
   transition: background-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.PRIMARY_HOVER};
+    background: rgb(var(--ui-primary-rgb) / 75%);
+    color: var(--ui-text-inverted);
   }
 
   &:disabled {
-    background: ${COLORS.BG_DISABLED};
-    color: ${COLORS.TEXT_MUTED};
+    background: var(--ui-primary);
+    color: var(--ui-text-inverted);
+    opacity: 0.75;
     cursor: not-allowed;
   }
 `

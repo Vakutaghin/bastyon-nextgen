@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS, Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 import Button from '@/components/button/button.vue'
 
 export const SC_NewPostsPill = styled.button`
@@ -8,22 +8,22 @@ export const SC_NewPostsPill = styled.button`
   align-items: center;
   gap: 6px;
   margin: 0 auto 12px;
-  padding: 8px 18px;
+  padding: 6px 12px;
   border: none;
-  border-radius: 20px;
-  background: ${COLORS.PRIMARY};
-  color: ${COLORS.WHITE};
-  font-size: 13px;
+  border-radius: 999px;
+  background: var(--ui-primary);
+  color: var(--ui-text-inverted);
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: ${COLORS.SHADOW_SM};
+  box-shadow: var(--ui-shadow-lg);
   transition: background ${TRANSITIONS.FAST};
 
   /* color/background заданы и в :hover, чтобы перебить глобальное правило
-     button:hover в style.css (оно делает текст синим → синее-на-синем). */
+     button:hover в style.css (оно делает фон прозрачным, а текст акцентным). */
   &:hover {
-    background: ${COLORS.PRIMARY_HOVER};
-    color: ${COLORS.WHITE};
+    background: rgb(var(--ui-primary-rgb) / 75%);
+    color: var(--ui-text-inverted);
   }
 `
 
@@ -55,14 +55,14 @@ export const SC_FeedHeaderLeft = styled.div`
 `
 
 export const SC_SidebarToggleWrap = styled.div`
-  height: 38px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
 
   button {
     height: 100% !important;
     min-height: 100% !important;
-    padding: 0 12px;
+    padding: 0 8px;
   }
 
   .anticon {
@@ -78,9 +78,10 @@ export const SC_FeedHeaderActions = styled.div`
 
 export const SC_FeedTitle = styled.h2`
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  line-height: 28px;
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_FeedContent = styled.div`
@@ -162,6 +163,14 @@ export const SC_FeedEnd = styled.div`
 export const SC_FeedRefreshWrap = styled.div`
   display: inline-flex;
   align-items: center;
+
+  /* На телефоне — только иконка, иначе «Создать пост» упирался в край экрана
+     (подсказка остаётся в title кнопки). */
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    .feed-refresh-label {
+      display: none;
+    }
+  }
 `
 
 export const SC_ScrollToTop = styled.button`
@@ -174,24 +183,27 @@ export const SC_ScrollToTop = styled.button`
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 16px;
+  padding: 6px 12px;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.SURFACE_FROSTED};
+  font-weight: 500;
+  color: var(--ui-text);
+  background: rgb(var(--ui-bg-rgb) / 75%);
   backdrop-filter: blur(8px);
-  border: 1px solid ${COLORS.OVERLAY_8};
-  border-radius: var(--ui-radius-lg);
+  border: 0;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
-  box-shadow: ${COLORS.SHADOW_MD};
+  box-shadow:
+    0 0 0 1px var(--ui-border-accented),
+    var(--ui-shadow-lg);
   transition:
     background 0.2s,
     transform 0.2s,
     box-shadow 0.2s;
 
   &:hover {
-    background: ${COLORS.BG_PRIMARY};
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text);
     transform: translate(-50%, -1px);
-    box-shadow: ${COLORS.SHADOW_MD};
   }
 
   &:active {

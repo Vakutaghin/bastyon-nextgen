@@ -26,6 +26,12 @@ export function useButton(p: ButtonProps) {
       classes.push('bastyon-button-danger')
     } else if (buttonType.value === 'link') {
       classes.push('bastyon-button-link')
+    } else if (buttonType.value === 'text') {
+      classes.push('bastyon-button-text')
+    }
+
+    if (p.ghost) {
+      classes.push('bastyon-button-ghost')
     }
 
     // Если есть проп danger, добавляем класс danger

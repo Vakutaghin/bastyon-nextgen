@@ -59,9 +59,9 @@ export const SC_ReplyInputWrap = styled.div`
 export const SC_ReplyTextarea = styled.textarea`
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid ${COLORS.GRAY_DDD};
-  border-radius: 16px;
-  padding: 8px 14px;
+  border: 1px solid var(--ui-border-accented);
+  border-radius: var(--ui-radius-lg);
+  padding: 8px 12px;
   font-size: 14px;
   outline: none;
   resize: none;
@@ -74,21 +74,22 @@ export const SC_ReplyTextarea = styled.textarea`
   color: ${COLORS.TEXT_PRIMARY};
 
   &:focus {
-    border-color: #00a4ff;
+    border-color: var(--ui-primary);
+    box-shadow: 0 0 0 3px rgb(var(--ui-primary-rgb) / 25%);
   }
 
   &::placeholder {
-    color: ${COLORS.TEXT_SECONDARY};
+    color: var(--ui-text-dimmed);
   }
 `
 
 export const SC_ReplySendBtn = styled.button`
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-md);
   border: none;
-  background: #00a4ff;
-  color: ${COLORS.WHITE};
+  background: var(--ui-primary);
+  color: var(--ui-text-inverted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,11 +97,13 @@ export const SC_ReplySendBtn = styled.button`
   flex-shrink: 0;
 
   &:disabled {
-    background: ${COLORS.GRAY_CCC};
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text-dimmed);
     cursor: not-allowed;
   }
   &:not(:disabled):hover {
-    background: #0088d1;
+    background: rgb(var(--ui-primary-rgb) / 75%);
+    color: var(--ui-text-inverted);
   }
   svg {
     width: 18px;
@@ -226,13 +229,14 @@ export const SC_ConfirmBtn = styled.button`
   }
 
   &.confirm-btn--primary {
-    background: #00a4ff;
-    border-color: #00a4ff;
-    color: ${COLORS.WHITE};
+    background: var(--ui-primary);
+    border-color: var(--ui-primary);
+    color: var(--ui-text-inverted);
   }
   &.confirm-btn--primary:hover {
-    background: #0088d1;
-    border-color: #0088d1;
+    background: rgb(var(--ui-primary-rgb) / 75%);
+    border-color: transparent;
+    color: var(--ui-text-inverted);
   }
 `
 
