@@ -4,11 +4,9 @@
  */
 
 import { computed, ref, type Ref } from 'vue'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRC } from '@/helpers/api/request'
-import { useAuthStore } from '@/blockchain'
 import { useCommentsStore } from '@/stores'
-import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
+import type { GetComment } from '@/types/rpc-responses/get-comments'
+import { fetchComments } from '../helpers/fetch-comments'
 import { pendingToGetComment } from '../helpers/pending-comments'
 
 export interface UseCommentsRepliesOptions {
@@ -24,22 +22,12 @@ export function useCommentsReplies(opts: UseCommentsRepliesOptions) {
     if (!opts.postId.value || repliesLoading.value[commentId]) return
     repliesLoading.value = { ...repliesLoading.value, [commentId]: true }
     repliesExpanded.value = { ...repliesExpanded.value, [commentId]: true }
-    const authStore = useAuthStore()
-    const userAddress = authStore.getUserAddress ?? ''
     try {
-      const res = await getByPRC({
-        method: rpcEndpoints.getComments,
-        parameters: [opts.postId.value, commentId, userAddress],
-        cachehash: `replies-${commentId}-${Date.now()}`,
-        options: { auth: authStore.isUserAuthenticated },
-      })
-      let list: GetComment[] = []
-      if (Array.isArray(res)) {
-        list = res as GetComment[]
-      } else if (res && typeof res === 'object' && 'data' in res) {
-        const data = (res as GetCommentsResponse).data
-        list = Array.isArray(data) ? data : []
-      }
+      const list = await fetchComments(
+        opts.postId.value,
+        commentId,
+        `replies-${commentId}-${Date.now()}`
+      )
       repliesByParentId.value = { ...repliesByParentId.value, [commentId]: list }
     } catch {
       repliesByParentId.value = { ...repliesByParentId.value, [commentId]: [] }
@@ -86,7 +74,8 @@ export function useCommentsReplies(opts: UseCommentsRepliesOptions) {
   })
 
   /** Ответы к ветке: O(1) чтение из мемоизированной карты. */
-  const getReplies = (commentId: string): GetComment[] => mergedRepliesByParent.value[commentId] ?? []
+  const getReplies = (commentId: string): GetComment[] =>
+    mergedRepliesByParent.value[commentId] ?? []
 
   const onRepliesClick = (comment: GetComment): void => {
     const id = comment.id

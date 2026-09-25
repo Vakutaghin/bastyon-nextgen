@@ -11,11 +11,9 @@
  */
 
 import { ref, type Ref } from 'vue'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { getByPRC } from '@/helpers/api/request'
-import { useAuthStore } from '@/blockchain'
 import { useCommentsStore } from '@/stores'
-import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
+import type { GetComment } from '@/types/rpc-responses/get-comments'
+import { fetchComments } from '../helpers/fetch-comments'
 import { COMMENTS_PAGE_SIZE, COMMENTS_ALREADY_SHOWN, COMMENT_LOAD_TIMEOUT_MS } from '../consts'
 import type { CommentsSortOrder } from '../types'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
@@ -44,24 +42,14 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error(t('commentsMsg.loadTimeout'))), COMMENT_LOAD_TIMEOUT_MS)
       })
-      const authStore = useAuthStore()
-      const userAddress = authStore.getUserAddress ?? ''
-      const res = await Promise.race([
-        getByPRC({
-          method: rpcEndpoints.getComments,
-          parameters: [opts.postId.value, '', userAddress],
-          cachehash: Date.now().toString(36) + Math.random().toString(36).slice(2),
-          options: { auth: authStore.isUserAuthenticated },
-        }),
+      const list = await Promise.race([
+        fetchComments(
+          opts.postId.value,
+          '',
+          Date.now().toString(36) + Math.random().toString(36).slice(2)
+        ),
         timeoutPromise,
       ])
-      let list: GetComment[] = []
-      if (Array.isArray(res)) {
-        list = res as GetComment[]
-      } else if (res && typeof res === 'object' && 'data' in res) {
-        const data = (res as GetCommentsResponse).data
-        list = Array.isArray(data) ? data : []
-      }
       allComments.value = list
       // Согласовываем локальные оверрайды с серверными данными:
       // если сервер уже знает о наших правках/удалениях/созданиях — снимаем локальные метки.
