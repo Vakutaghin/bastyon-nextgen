@@ -19,6 +19,7 @@ import {
   videoProgressKey,
 } from '@/helpers/common/video-progress'
 import { logger } from '@/services/logger'
+import { resolveVideoElement, type ElementRefValue } from './utils'
 
 const log = logger.scope('[video-resume]')
 
@@ -26,7 +27,8 @@ const log = logger.scope('[video-resume]')
 const SAVE_INTERVAL_MS = 5000
 
 interface Options {
-  videoElement: Ref<HTMLVideoElement | null>
+  /** ref на `<video>` или на styled-обёртку, у которой элемент лежит в `$el`. */
+  videoElement: Ref<ElementRefValue>
   /** Текущая ссылка на ролик (меняется при переключении качества/поста). */
   videoUrl: () => string
 }
@@ -93,11 +95,15 @@ export function useVideoResume({ videoElement, videoUrl }: Options) {
 
   watch(
     [videoElement, () => videoUrl()],
-    ([video, url]) => {
+    ([, url]) => {
       detach?.()
       key = videoProgressKey(url)
       restored = false
       lastSavedAt = 0
+      // В ref плеера лежит инстанс styled-компонента, а не сам <video>. Раньше
+      // слушатели вешались прямо на него и падали: продолжение с места не
+      // работало, а на каждом ролике всплывал тост с ошибкой.
+      const video = resolveVideoElement(videoElement)
       if (video && key) attach(video)
     },
     { immediate: true }
