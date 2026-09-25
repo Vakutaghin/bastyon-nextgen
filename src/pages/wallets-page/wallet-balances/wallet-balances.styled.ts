@@ -2,6 +2,7 @@
 // Перенесены из wallets-page.styled.ts вместе с выделением саб-компонента.
 import styled from 'vue3-styled-components'
 import { BORDER_RADIUS, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_WalletLabel = styled.span`
   display: inline-block;
@@ -62,18 +63,7 @@ export const SC_RenameTitle = styled.h3`
 `
 
 export const SC_RenameInput = styled.input`
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--color-border-default);
-  border-radius: ${BORDER_RADIUS.MD};
-  background: var(--color-bg-input);
-  color: var(--color-text-primary);
-  font-size: 14px;
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-primary);
-  }
+  ${nuxtField}
 `
 
 export const SC_RenameActions = styled.div`

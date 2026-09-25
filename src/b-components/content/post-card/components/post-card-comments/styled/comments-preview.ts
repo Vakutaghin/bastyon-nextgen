@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_CommentsPreview = styled.div`
   display: flex;
@@ -92,6 +93,7 @@ export const SC_RefreshBtn = styled.button`
     background: var(--color-bg-tertiary);
     color: var(--color-text-primary);
   }
+
   &:disabled {
     cursor: not-allowed;
     opacity: 0.6;
@@ -104,20 +106,12 @@ export const SC_RefreshBtn = styled.button`
 `
 
 export const SC_CommentsSortSelect = styled.select`
-  font-size: 13px;
-  color: var(--color-text-primary);
-  padding: 4px 8px;
-  border: 1px solid var(--color-border-dark);
-  border-radius: var(--ui-radius-md);
-  background: var(--color-bg-primary);
-  cursor: pointer;
+  ${nuxtField}
+  /* Размер md (32px): селект в строке заголовка комментариев. */
+  width: auto;
   min-width: 180px;
-
-  &:focus {
-    outline: none;
-    border-color: var(--ui-primary);
-    box-shadow: 0 0 0 3px rgb(var(--ui-primary-rgb) / 25%);
-  }
+  padding: 5px 10px;
+  cursor: pointer;
 `
 
 export const SC_CommentRepliesLink = styled.button`

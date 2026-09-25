@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
 
-import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
+import { FONT_SIZE, SPACING } from '@/styles/design-tokens'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_Settings = styled.div`
   display: flex;
@@ -22,37 +23,14 @@ export const SC_Label = styled.label`
 `
 
 export const SC_Select = styled.select`
-  padding: ${SPACING.XS} ${SPACING.SM};
-  font-size: ${FONT_SIZE.MD};
-  color: var(--color-text-primary);
-  background: var(--color-bg-input);
-  border: 1px solid var(--color-border);
-  border-radius: ${BORDER_RADIUS.MD};
-  outline: none;
+  ${nuxtField}
+  width: auto;
   cursor: pointer;
-
-  &:focus {
-    border-color: var(--color-primary);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    color: var(--color-text-muted);
-  }
 `
 
 export const SC_DateInput = styled.input`
-  padding: ${SPACING.XS} ${SPACING.SM};
-  font-size: ${FONT_SIZE.MD};
-  color: var(--color-text-primary);
-  background: var(--color-bg-input);
-  border: 1px solid var(--color-border);
-  border-radius: ${BORDER_RADIUS.MD};
-  outline: none;
-
-  &:focus {
-    border-color: var(--color-primary);
-  }
+  ${nuxtField}
+  width: auto;
 `
 
 export const SC_TrialHint = styled.span`

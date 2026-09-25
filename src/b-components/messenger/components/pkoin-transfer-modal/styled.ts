@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_Backdrop = styled.div`
   position: fixed;
@@ -56,34 +57,13 @@ export const SC_Label = styled.label`
 `
 
 export const SC_Input = styled.input`
-  border: 1px solid var(--color-border);
-  border-radius: var(--ui-radius-lg);
-  padding: 10px 12px;
-  font-size: 14px;
-  color: var(--color-dark-bg);
-  background: var(--color-bg-primary);
-  outline: none;
-
-  &:focus {
-    border-color: var(--color-brand-cyan);
-  }
+  ${nuxtField}
 `
 
 export const SC_Textarea = styled.textarea`
-  border: 1px solid var(--color-border);
-  border-radius: var(--ui-radius-lg);
-  padding: 10px 12px;
-  font-size: 14px;
-  color: var(--color-dark-bg);
-  background: var(--color-bg-primary);
-  outline: none;
+  ${nuxtField}
   resize: vertical;
   min-height: 60px;
-  font-family: inherit;
-
-  &:focus {
-    border-color: var(--color-brand-cyan);
-  }
 `
 
 export const SC_Recipient = styled.div`

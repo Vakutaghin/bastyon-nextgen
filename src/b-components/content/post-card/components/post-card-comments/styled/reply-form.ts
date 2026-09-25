@@ -1,11 +1,12 @@
 import styled from 'vue3-styled-components'
+import { nuxtField } from '@/styles/field-styles'
 
 /** Плашка ответа под комментарием: аватар + textarea + кнопки */
 export const SC_ReplyPanel = styled.div`
   margin-top: 10px;
   padding: 10px 12px;
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-gray-eee);
+  background: rgb(var(--ui-bg-elevated-rgb) / 50%);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   display: flex;
   align-items: center;
@@ -25,12 +26,14 @@ export const SC_ReplyPanel = styled.div`
     align-items: center;
     justify-content: center;
   }
+
   .reply-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
   }
+
   .reply-avatar-placeholder {
     color: var(--color-text-primary);
     font-weight: 600;
@@ -56,30 +59,12 @@ export const SC_ReplyInputWrap = styled.div`
 `
 
 export const SC_ReplyTextarea = styled.textarea`
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid var(--ui-border-accented);
-  border-radius: var(--ui-radius-lg);
-  padding: 8px 12px;
-  font-size: 14px;
-  outline: none;
+  ${nuxtField}
   resize: none;
   overflow-y: auto;
   min-height: 36px;
   max-height: 120px;
   line-height: 1.45;
-  font-family: inherit;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-
-  &:focus {
-    border-color: var(--ui-primary);
-    box-shadow: 0 0 0 3px rgb(var(--ui-primary-rgb) / 25%);
-  }
-
-  &::placeholder {
-    color: var(--ui-text-dimmed);
-  }
 `
 
 export const SC_ReplySendBtn = styled.button`
@@ -100,10 +85,12 @@ export const SC_ReplySendBtn = styled.button`
     color: var(--ui-text-dimmed);
     cursor: not-allowed;
   }
+
   &:not(:disabled):hover {
     background: rgb(var(--ui-primary-rgb) / 75%);
     color: var(--ui-text-inverted);
   }
+
   svg {
     width: 18px;
     height: 18px;
@@ -122,6 +109,7 @@ export const SC_EmojiGridPanel = styled.div`
   &::-webkit-scrollbar {
     width: 4px;
   }
+
   &::-webkit-scrollbar-thumb {
     background: var(--color-gray-ccc);
     border-radius: var(--ui-radius-xs);
@@ -158,10 +146,12 @@ export const SC_EmojiTriggerBtn = styled.button`
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
+
   &:hover {
     background: var(--color-overlay-6);
     color: var(--color-text-primary);
   }
+
   svg {
     width: 20px;
     height: 20px;
@@ -180,10 +170,12 @@ export const SC_ReplyCancelBtn = styled.button`
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
+
   &:hover {
     background: var(--color-overlay-6);
     color: var(--color-text-primary);
   }
+
   svg {
     width: 18px;
     height: 18px;
@@ -231,6 +223,7 @@ export const SC_ConfirmBtn = styled.button`
     border-color: var(--ui-primary);
     color: var(--ui-text-inverted);
   }
+
   &.confirm-btn--primary:hover {
     background: rgb(var(--ui-primary-rgb) / 75%);
     border-color: transparent;

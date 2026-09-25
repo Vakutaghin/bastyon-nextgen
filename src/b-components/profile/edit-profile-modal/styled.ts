@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_Form = styled.div`
   display: flex;
@@ -19,54 +20,18 @@ export const SC_Label = styled.label`
 `
 
 export const SC_Input = styled.input`
-  width: 100%;
-  padding: 9px 12px;
-  border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface-frosted);
-  color: var(--color-text-primary);
-  font-size: 14px;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-brand-cyan);
-  }
+  ${nuxtField}
 `
 
 export const SC_Textarea = styled.textarea`
-  width: 100%;
+  ${nuxtField}
   min-height: 88px;
   resize: vertical;
-  padding: 9px 12px;
-  border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface-frosted);
-  color: var(--color-text-primary);
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-brand-cyan);
-  }
 `
 
 export const SC_Select = styled.select`
-  width: 100%;
-  padding: 9px 12px;
-  border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface-frosted);
-  color: var(--color-text-primary);
-  font-size: 14px;
+  ${nuxtField}
   cursor: pointer;
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-brand-cyan);
-  }
 `
 
 export const SC_AvatarRow = styled.div`
@@ -92,7 +57,7 @@ export const SC_AvatarPlaceholder = styled.div`
   justify-content: center;
   font-size: 28px;
   font-weight: 600;
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   background-color: var(--color-brand-cyan);
 `
 

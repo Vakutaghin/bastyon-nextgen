@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { nuxtField } from '@/styles/field-styles'
 
 type Variant = 'off' | 'busy' | 'ready' | 'failed'
 
@@ -90,20 +91,12 @@ export const SC_TorBridgeBlock = styled.div`
 `
 
 export const SC_TorTextarea = styled.textarea`
-  width: 100%;
+  ${nuxtField}
   min-height: 80px;
-  font-family: var(--font-family-mono);
-  font-size: 11px;
-  padding: 6px 8px;
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--ui-radius-sm);
   resize: vertical;
-  background: var(--color-bg-input);
-  color: var(--color-text-primary);
-
-  &::placeholder {
-    color: var(--color-text-muted);
-  }
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  line-height: 18px;
 `
 
 export const SC_TorActions = styled.div`

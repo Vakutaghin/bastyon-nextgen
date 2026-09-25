@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_RegisterForm = styled.div`
   padding: 20px 0;
@@ -27,36 +28,7 @@ export const SC_InputWrapper = styled.div`
   align-items: center;
 
   > input {
-    width: 100%;
-    padding: 4px 11px;
-    font-size: 14px;
-    line-height: 1.5715;
-    color: var(--color-text-primary);
-    background: var(--color-bg-primary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--ui-radius-md);
-    outline: none;
-    transition: all 0.2s;
-
-    &::placeholder {
-      color: var(--color-text-secondary);
-    }
-
-    &:hover:not(:disabled) {
-      border-color: var(--color-text-muted);
-    }
-
-    &:focus {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 2px var(--color-primary-light-20);
-    }
-
-    &:disabled {
-      background: var(--color-bg-secondary);
-      color: var(--color-text-secondary);
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
+    ${nuxtField}
   }
 `
 
@@ -74,18 +46,19 @@ export const SC_ErrorMessage = styled.div`
   border: 1px solid var(--color-red-border);
   border-radius: var(--ui-radius-sm);
   color: var(--color-red-dark);
-  font-size: 16px;
+  font-size: 14px;
 `
 
 export const SC_LinkToSignIn = styled.div`
   margin-top: 16px;
   text-align: center;
-  font-size: 16px;
+  font-size: 14px;
   color: var(--color-text-secondary);
 `
 
 export const SC_LinkButton = styled('a', { isDisabled: Boolean })`
-  color: var(--color-ant-blue);
+  color: var(--ui-primary-text);
+  font-weight: 500;
   cursor: ${(p) => (p.isDisabled ? 'not-allowed' : 'pointer')};
   text-decoration: none;
   opacity: ${(p) => (p.isDisabled ? 0.5 : 1)};

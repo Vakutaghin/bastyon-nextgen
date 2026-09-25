@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_CaptchaWrapper = styled.div`
   padding: 1em;
@@ -56,19 +57,11 @@ export const SC_InputWrapper = styled.div`
 `
 
 export const SC_CaptchaInput = styled.input`
-  font-size: 1.4em;
-  border: 0;
-  border-bottom: 1px solid var(--color-gray-ccc);
-  transition: border-color 0.3s;
-  border-radius: 0;
-  width: 100%;
-  background: transparent;
-  padding: 0.5em 0;
-
-  &:focus {
-    outline: none;
-    border-bottom-color: var(--color-primary);
-  }
+  ${nuxtField}
+  /* Код с картинки — крупнее обычного поля. */
+  padding: 9px 12px;
+  font-size: 16px;
+  letter-spacing: 0.05em;
 `
 
 export const SC_ButtonsContainer = styled.div`
@@ -89,7 +82,7 @@ export const SC_SubmitButton = styled.button<{ disabled: boolean }>`
   cursor: ${(p) => (p.disabled ? 'not-allowed' : 'pointer')};
   transition: all 0.3s;
   background: var(--color-primary);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   opacity: ${(p) => (p.disabled ? 0.5 : 1)};
 
   &:hover:not(:disabled) {

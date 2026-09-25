@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
 
 import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_Poll = styled.div`
   display: flex;
@@ -37,22 +38,7 @@ export const SC_PollBody = styled.div`
 `
 
 export const SC_PollInput = styled.input`
-  width: 100%;
-  padding: ${SPACING.XS} ${SPACING.SM};
-  font-size: ${FONT_SIZE.MD};
-  color: var(--color-text-primary);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: ${BORDER_RADIUS.SM};
-  outline: none;
-
-  &:focus {
-    border-color: var(--color-primary);
-  }
-
-  &::placeholder {
-    color: var(--color-text-muted);
-  }
+  ${nuxtField}
 `
 
 export const SC_PollOptionRow = styled.div`

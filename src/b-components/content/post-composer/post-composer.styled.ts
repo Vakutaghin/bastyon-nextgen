@@ -2,6 +2,7 @@ import styled from 'vue3-styled-components'
 
 import { BORDER_RADIUS, FONT_SIZE, SPACING, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_MentionAnchor = styled.div`
   position: relative;
@@ -104,26 +105,13 @@ export const SC_EmojiBtn = styled.button`
 `
 
 export const SC_Textarea = styled.textarea`
-  width: 100%;
+  ${nuxtField}
+  /* Текст поста — 16px, как в ленте. */
   min-height: 140px;
   resize: vertical;
-  padding: ${SPACING.SM} ${SPACING.MD};
-  font-size: ${FONT_SIZE.LG};
+  padding: 8px 12px;
+  font-size: 16px;
   line-height: 1.5;
-  color: var(--color-text-primary);
-  background: var(--color-bg-input);
-  border: 1px solid var(--color-border);
-  border-radius: ${BORDER_RADIUS.MD};
-  outline: none;
-  transition: border-color 0.15s ease;
-
-  &::placeholder {
-    color: var(--color-text-muted);
-  }
-
-  &:focus {
-    border-color: var(--color-primary);
-  }
 `
 
 export const SC_ArticleToggle = styled.label`
@@ -145,23 +133,14 @@ export const SC_ArticleToggle = styled.label`
 `
 
 export const SC_TitleInput = styled.input`
-  width: 100%;
-  padding: ${SPACING.SM} ${SPACING.MD};
-  font-size: ${FONT_SIZE.XL};
+  ${nuxtField}
+  padding: 8px 12px;
+  font-size: 18px;
+  line-height: 24px;
   font-weight: 600;
-  color: var(--color-text-primary);
-  background: var(--color-bg-input);
-  border: 1px solid var(--color-border);
-  border-radius: ${BORDER_RADIUS.MD};
-  outline: none;
 
   &::placeholder {
-    color: var(--color-text-muted);
     font-weight: 400;
-  }
-
-  &:focus {
-    border-color: var(--color-primary);
   }
 `
 
