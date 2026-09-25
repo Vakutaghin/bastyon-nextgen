@@ -11,6 +11,9 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:1980',
     trace: 'on-first-retry',
+    // Тексты в e2e — русские; без этого браузер отдаёт en-US, и getByText
+    // не находит ни одной подписи (N35).
+    locale: 'ru-RU',
   },
 
   projects: [

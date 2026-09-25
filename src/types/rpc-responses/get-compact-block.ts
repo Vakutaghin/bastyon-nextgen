@@ -1,7 +1,7 @@
 import type { BaseRpcResponse, StandardRpcTime } from './common'
 
 /**
- * Компактное представление блока, возвращаемое getcompactblock(hashOrHeight, count=-1).
+ * Компактное представление блока, возвращаемое getcompactblock(hash, -1) или getcompactblock("", height).
  *
  * Поле nexthash отсутствует у tip-а (последнего блока в цепочке).
  * Поле prevhash присутствует у всех блоков, кроме генезиса.

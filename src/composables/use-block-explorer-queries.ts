@@ -4,7 +4,7 @@
  * Все запросы идут без авторизации (auth: false) — данные публичные.
  * staleTime подобран под характер данных:
  *   - tip / последние блоки — короткий (~10 с);
- *   - getcompactblock по hash старых блоков — долгий (24 ч), блоки иммутабельны;
+ *   - getcompactblock по hash или высоте старых блоков — долгий (24 ч), блоки иммутабельны;
  *   - getaddressinfo / getaddresstransactions — средний (~30 с), баланс может меняться.
  *
  * Все запросы уважают preferred-node из use-explorer-preferred-node:
@@ -38,11 +38,18 @@ const STALE_HISTORICAL = 24 * 60 * 60 * 1000
 // Голые fetch-функции — переиспользуются и в useQuery (queryFn ниже), и в
 // prefetchExplorerTarget при наведении на ссылку. Конфиг ноды читается через
 // геттер при каждом вызове, поэтому смена preferred-node работает без пересоздания.
+/** Параметры getcompactblock: хеш — первым, высота — вторым (числом). */
+export function compactBlockParams(hashOrHeight: string): [string, number] {
+  // `["1", -1]` нода ищет как хеш и отвечает «Block not found», поэтому блок,
+  // открытый по высоте, не открывался никогда (нашёл e2e, N35).
+  return /^\d{1,10}$/.test(hashOrHeight) ? ['', Number(hashOrHeight)] : [hashOrHeight, -1]
+}
+
 function fetchBlockDetails(hashOrHeight: string) {
   return getByPRC(
     {
       method: rpcEndpoints.getCompactBlock,
-      parameters: [hashOrHeight, -1],
+      parameters: compactBlockParams(hashOrHeight),
       options: { auth: false },
     },
     getExplorerRpcConfig()

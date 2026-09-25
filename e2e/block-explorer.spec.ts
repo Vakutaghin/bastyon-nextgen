@@ -15,6 +15,12 @@ import { test, expect, type Page } from '@playwright/test'
 
 async function waitForAppMount(page: Page) {
   await page.waitForSelector('#app > *', { timeout: 30_000 })
+  // Чистый профиль браузера — первый запуск: всплывает «Что нового» и
+  // перекрывает страницу. Закрываем его, если появился.
+  await page
+    .getByRole('button', { name: 'Понятно' })
+    .click({ timeout: 5_000 })
+    .catch(() => {})
 }
 
 test.describe('Block explorer routes', () => {
@@ -56,7 +62,8 @@ test.describe('Block explorer routes', () => {
 
     // Metadata-карточки: Хеш блока + Высота.
     await expect(page.getByText('Хеш блока')).toBeVisible({ timeout: 30_000 })
-    await expect(page.getByText('Высота', { exact: true })).toBeVisible()
+    // У подписи рядом значок подсказки «?», поэтому точное совпадение не годится.
+    await expect(page.getByText(/^Высота/).first()).toBeVisible()
     // Секция транзакций.
     await expect(page.getByText('Транзакции в блоке')).toBeVisible({ timeout: 30_000 })
   })
