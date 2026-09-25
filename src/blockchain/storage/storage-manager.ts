@@ -41,17 +41,6 @@ export function saveUserAddress(address: string): void {
   }
 }
 
-export function loadUserAddress(): string | null {
-  try {
-    if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem(USER_ADDRESS_STORAGE_KEY)
-    }
-  } catch {
-    // Игнорируем ошибки
-  }
-  return null
-}
-
 /**
  * Синхронная проверка: есть ли в localStorage следы сохранённой сессии.
  * Не расшифровывает данные — только смотрит на наличие ключей.

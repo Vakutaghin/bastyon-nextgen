@@ -84,8 +84,6 @@ function peertubeProxyPlugin() {
   }
 }
 
-// import { styledDataAttr } from './vite-plugin-styled-data-attr.js'
-
 // В production Tauri загружает фронт через asset-протокол; относительный base гарантирует
 // корректное разрешение путей к JS/CSS (иначе возможен пустой экран, нет запросов)
 const base = process.env.VITE_TAURI === 'true' ? './' : '/'
@@ -190,8 +188,6 @@ export default defineConfig(({ mode }) => ({
       // Включаем require для загрузки CommonJS модулей (btc17.js)
       include: ['module', 'buffer', 'process'],
     }),
-    // Плагин для добавления data-styled-name только в dev-режиме
-    // ...(mode === 'development' ? [ styledDataAttr() ] : []),
     // Визуализатор бандла: включается через BUNDLE_ANALYZE=1 pnpm build.
     // Открывает stats.html после билда (treemap), помогает находить раздутые чанки.
     ...(process.env.BUNDLE_ANALYZE === '1'

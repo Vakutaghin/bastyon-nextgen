@@ -21,7 +21,7 @@ export const API_ERROR = {
   TIMEOUT: 'timeout',
 } as const
 
-export type ApiErrorCode = typeof API_ERROR[keyof typeof API_ERROR]
+export type ApiErrorCode = (typeof API_ERROR)[keyof typeof API_ERROR]
 
 /** Registration-blocking error codes that the user cannot resolve by retrying. */
 const REGISTRATION_BLOCKING_ERRORS: ReadonlySet<string> = new Set([
@@ -30,19 +30,6 @@ const REGISTRATION_BLOCKING_ERRORS: ReadonlySet<string> = new Set([
   API_ERROR.IP_LIMIT,
   API_ERROR.UNIQUE_VIOLATION,
 ])
-
-/**
- * Match an error message string to a known API error code.
- * Returns the matched code or null if no match.
- */
-export function matchApiError(message: string): ApiErrorCode | null {
-  if (!message) return null
-  const lower = message.toLowerCase()
-  for (const code of Object.values(API_ERROR)) {
-    if (lower.includes(code.toLowerCase())) return code
-  }
-  return null
-}
 
 /**
  * Returns true if the error message indicates a registration-blocking error.

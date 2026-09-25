@@ -36,14 +36,6 @@ export function getPlatform(): Platform {
 }
 
 /**
- * Проверить, является ли платформа нативной (Tauri или Capacitor)
- */
-export function isNative(): boolean {
-  const platform = getPlatform()
-  return platform !== 'web'
-}
-
-/**
  * Проверить, является ли платформа мобильной (iOS или Android через Capacitor)
  */
 export function isMobile(): boolean {
@@ -56,42 +48,4 @@ export function isMobile(): boolean {
  */
 export function isTauri(): boolean {
   return getPlatform() === 'tauri'
-}
-
-/**
- * Проверить, является ли платформа веб-браузером
- */
-export function isWeb(): boolean {
-  return getPlatform() === 'web'
-}
-
-/**
- * Проверить, является ли платформа iOS
- */
-export function isIOS(): boolean {
-  return getPlatform() === 'capacitor-ios'
-}
-
-/**
- * Проверить, является ли платформа Android
- */
-export function isAndroid(): boolean {
-  return getPlatform() === 'capacitor-android'
-}
-
-/**
- * Получить информацию о платформе
- */
-export function getPlatformInfo() {
-  const platform = getPlatform()
-  return {
-    platform,
-    isNative: isNative(),
-    isMobile: isMobile(),
-    isTauri: isTauri(),
-    isWeb: isWeb(),
-    isIOS: isIOS(),
-    isAndroid: isAndroid(),
-    capacitorPlatform: Capacitor.isNativePlatform() ? Capacitor.getPlatform() : null,
-  }
 }

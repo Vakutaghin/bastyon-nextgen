@@ -35,7 +35,7 @@ export {
 } from './vault/vault-unlock'
 
 // Шифрование
-export { encryptData, decryptData, canDecrypt } from './encryption'
+export { encryptData, decryptData } from './encryption'
 
 // Шифрование/мнемоника
 export {
@@ -60,7 +60,6 @@ export {
 // Сессия / адрес пользователя / wallet addresses / общий клин-ап
 export {
   saveUserAddress,
-  loadUserAddress,
   saveWasLogged,
   hasStoredSession,
   clearAllUserData,

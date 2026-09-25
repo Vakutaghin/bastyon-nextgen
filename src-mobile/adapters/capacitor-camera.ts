@@ -37,37 +37,3 @@ export async function getPhoto(options: CameraAdapterOptions = {}): Promise<stri
     return null
   }
 }
-
-/**
- * Проверить доступность камеры
- */
-export async function checkCameraPermission(): Promise<boolean> {
-  if (!isMobile()) {
-    return false
-  }
-
-  try {
-    const status = await Camera.checkPermissions()
-    return status.camera === 'granted'
-  } catch (error) {
-    console.error('Error checking camera permission:', error)
-    return false
-  }
-}
-
-/**
- * Запросить разрешение на использование камеры
- */
-export async function requestCameraPermission(): Promise<boolean> {
-  if (!isMobile()) {
-    return false
-  }
-
-  try {
-    const status = await Camera.requestPermissions()
-    return status.camera === 'granted'
-  } catch (error) {
-    console.error('Error requesting camera permission:', error)
-    return false
-  }
-}

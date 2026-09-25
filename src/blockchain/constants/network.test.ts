@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { POCKETNET_NETWORK, isPocketnetNetwork } from './network'
+import { POCKETNET_NETWORK } from './network'
 import { bitcoin as vendoredNetwork } from '../lib/pocketnet/modules/networks.js'
 
 describe('POCKETNET_NETWORK', () => {
@@ -27,24 +27,5 @@ describe('POCKETNET_NETWORK', () => {
   it('matches the vendored legacy network as a whole (S8)', () => {
     // The two copies of the network parameters had already drifted apart once.
     expect(POCKETNET_NETWORK).toEqual(vendoredNetwork)
-  })
-})
-
-describe('isPocketnetNetwork', () => {
-  it('returns true for Pocketnet network', () => {
-    expect(isPocketnetNetwork(POCKETNET_NETWORK)).toBe(true)
-  })
-
-  it('returns false for undefined', () => {
-    expect(isPocketnetNetwork(undefined)).toBe(false)
-  })
-
-  it('returns false for different network', () => {
-    expect(
-      isPocketnetNetwork({
-        ...POCKETNET_NETWORK,
-        pubKeyHash: 0x00,
-      })
-    ).toBe(false)
   })
 })

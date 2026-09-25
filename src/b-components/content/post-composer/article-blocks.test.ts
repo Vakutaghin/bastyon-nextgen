@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { flattenListItems, isEmptyArticle, normalizeArticleBlocks } from './article-blocks'
+import { flattenListItems, normalizeArticleBlocks } from './article-blocks'
 
 describe('flattenListItems', () => {
   it('v1: массив строк остаётся как есть', () => {
@@ -52,15 +52,5 @@ describe('normalizeArticleBlocks', () => {
   it('мусор → { blocks: [] }', () => {
     expect(normalizeArticleBlocks(null)).toEqual({ blocks: [] })
     expect(normalizeArticleBlocks('x')).toEqual({ blocks: [] })
-  })
-})
-
-describe('isEmptyArticle', () => {
-  it('null / без блоков → true', () => {
-    expect(isEmptyArticle(null)).toBe(true)
-    expect(isEmptyArticle({ blocks: [] })).toBe(true)
-  })
-  it('с блоками → false', () => {
-    expect(isEmptyArticle({ blocks: [{ type: 'paragraph', data: {} }] })).toBe(false)
   })
 })

@@ -8,7 +8,7 @@
 
 import type { TorFetchRequest, TorFetchResponse } from './types/request'
 import { recordTorRequest } from './request-debug'
-import { TorNotReadyError, torRoutingMode } from '@/helpers/tor/tor-gate'
+import { TorNotReadyError } from '@/helpers/tor/tor-gate'
 
 /** Tauri 1/2 detection: __TAURI__, __TAURI_INTERNALS__, __TAURI_METADATA__, or any __TAURI* key. */
 export function isTauriEnv(): boolean {
@@ -46,12 +46,6 @@ export function isSameOriginUrl(url: string): boolean {
   } catch {
     return false
   }
-}
-
-/** Tor готов прямо сейчас. Для маршрутизации с ожиданием см. `appFetch`/tor-gate. */
-export async function shouldTorifyRequest(): Promise<boolean> {
-  if (!isTauriEnv()) return false
-  return (await torRoutingMode()) === 'tor'
 }
 
 /** Префикс ошибки Rust-команд при незапущенном Tor (`tor::TOR_NOT_READY`). */

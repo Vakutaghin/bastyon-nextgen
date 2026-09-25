@@ -266,37 +266,6 @@ export const SC_StarFilled = styled.div`
   }
 `
 
-export const SC_StarPartial = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 1;
-
-  .star-fill {
-    font-size: 22px;
-    color: ${COLORS.WARNING} !important;
-    display: block;
-    width: 22px;
-    height: 22px;
-    line-height: 1;
-
-    svg {
-      width: 22px;
-      height: 22px;
-      display: block;
-      fill: ${COLORS.WARNING} !important;
-      color: ${COLORS.WARNING} !important;
-      stroke: none !important;
-    }
-  }
-`
-
 export const SC_ChatBtn = styled.button`
   display: inline-flex;
   align-items: center;

@@ -11,9 +11,6 @@ export const VOLUME_STEP = 0.1
 /** Длительность показа уведомлений (мс) */
 export const NOTIFICATION_DURATION = 500
 
-/** Длительность показа уведомления скорости (мс) */
-export const PLAYBACK_RATE_NOTIFICATION_DURATION = 1000
-
 /** Длительность показа уведомления громкости (мс) */
 export const VOLUME_NOTIFICATION_DURATION = 1000
 

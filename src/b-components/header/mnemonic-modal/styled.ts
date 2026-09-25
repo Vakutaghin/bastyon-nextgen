@@ -112,26 +112,3 @@ export const SC_PrivateKeyText = styled.div`
   word-break: break-all;
   user-select: all;
 `
-
-export const SC_DontShowAgain = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid ${COLORS.OVERLAY_10};
-`
-
-export const SC_CheckboxLabel = styled.label`
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-  font-size: 16px;
-  color: ${COLORS.TEXT_SECONDARY};
-`
-
-export const SC_Checkbox = styled.input`
-  margin-right: 8px;
-  cursor: pointer;
-`

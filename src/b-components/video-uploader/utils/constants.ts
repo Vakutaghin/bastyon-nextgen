@@ -37,24 +37,9 @@ export const MAX_AUDIO_BITRATE = 128 // kbps
 export const TARGET_FPS = 30
 
 /**
- * Минимальный FPS
- */
-export const MIN_FPS = 15
-
-/**
  * Максимальный FPS
  */
 export const MAX_FPS = 60
-
-/**
- * Параметры кодирования по умолчанию
- */
-export const DEFAULT_ENCODING_OPTIONS = {
-  videoBitrate: MAX_VIDEO_BITRATE,
-  audioBitrate: MAX_AUDIO_BITRATE,
-  fps: TARGET_FPS,
-  preserveAspectRatio: true,
-} as const
 
 /**
  * Соответствие разрешений и рекомендуемых битрейтов
@@ -69,66 +54,13 @@ export const RESOLUTION_BITRATE_MAP: Record<TargetResolution, number> = {
 }
 
 /**
- * Data-saver preset — для слабых сетей или старых устройств.
- * Совпадает со старым потолком (720p / 1.5 Mbps / 30fps), чтобы поведение прошлых
- * сборок было воспроизводимо через явный preset.
- */
-export const DATA_SAVER_PRESET = {
-  resolution: 720 as TargetResolution,
-  videoBitrate: 1500,
-  audioBitrate: 96,
-  fps: 30,
-} as const
-
-/**
  * Получить рекомендуемый битрейт для разрешения
  */
 export function getBitrateForResolution(resolution: TargetResolution): number {
   return Math.min(RESOLUTION_BITRATE_MAP[resolution] || MAX_VIDEO_BITRATE, MAX_VIDEO_BITRATE)
 }
 
-/**
- * MIME-типы для различных форматов
- */
-export const MIME_TYPES = {
-  MP4: 'video/mp4',
-  WEBM: 'video/webm',
-  MP4_H264: 'video/mp4;codecs=h264',
-  MP4_H264_AAC: 'video/mp4;codecs=h264,aac',
-  WEBM_VP9: 'video/webm;codecs=vp9',
-  WEBM_VP9_OPUS: 'video/webm;codecs=vp9,opus',
-  WEBM_VP8: 'video/webm;codecs=vp8',
-  WEBM_VP8_OPUS: 'video/webm;codecs=vp8,opus',
-} as const
-
-/**
- * Расширения файлов
- */
-export const FILE_EXTENSIONS = {
-  MP4: '.mp4',
-  WEBM: '.webm',
-} as const
-
-/**
- * Лимиты размера файлов
- */
-export const FILE_SIZE_LIMITS = {
-  MAX_ORIGINAL_SIZE: 4 * 1024 * 1024 * 1024, // 4 GB
-  MAX_TRANSCODED_SIZE: 2 * 1024 * 1024 * 1024, // 2 GB
-} as const
-
-/**
- * Таймауты (в миллисекундах)
- */
-export const TIMEOUTS = {
-  VIDEO_LOAD: 30000, // 30 секунд на загрузку метаданных видео
-  TRANSCODING: 3600000, // 1 час на транскодирование (для очень больших файлов)
-} as const
-
-/**
- * Интервал обновления прогресса (в миллисекундах)
- */
-export const PROGRESS_UPDATE_INTERVAL = 100 // 100ms
+// 100ms
 
 /**
  * Лимиты хранилища IndexedDB

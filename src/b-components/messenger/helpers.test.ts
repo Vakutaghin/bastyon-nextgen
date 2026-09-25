@@ -13,7 +13,6 @@ import {
   getAddressFromMatrixId,
   getRoomTimelineEvents,
   hexStringToUint8Array,
-  base64StringToUint8Array,
   detectAudioMime,
   extractUrl,
   parseProfileKeys,
@@ -165,9 +164,6 @@ describe('getRoomTimelineEvents', () => {
 describe('конвертеры байтов', () => {
   it('hexStringToUint8Array', () => {
     expect([...hexStringToUint8Array('48656c6c6f')]).toEqual([72, 101, 108, 108, 111])
-  })
-  it('base64StringToUint8Array', () => {
-    expect([...base64StringToUint8Array(btoa('Hi'))]).toEqual([72, 105])
   })
 })
 

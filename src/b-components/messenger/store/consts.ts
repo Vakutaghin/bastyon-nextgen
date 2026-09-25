@@ -38,9 +38,6 @@ export const PBKDF2_SALT = 'matrix.pocketnet'
 /** Количество итераций PBKDF2 */
 export const PBKDF2_ITERATIONS = 10_000
 
-/** Резервный Matrix-хост */
-export const DEFAULT_MATRIX_HOST = 'matrix.pocketnet.app'
-
 /** Текст-заглушка для нерасшифрованных сообщений */
 export const ENCRYPTED_MESSAGE_PLACEHOLDER = '*** Encrypted Message ***'
 

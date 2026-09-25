@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { signRequest, createRequestSigner } from './request-signer'
+import { signRequest } from './request-signer'
 import type { KeyPair } from '../types/keys'
 import type { Address } from '../types/addresses'
 import type { ApiSignature } from '../types/signatures'
@@ -170,60 +170,6 @@ describe('signRequest', () => {
       signRequest({ method: 'x' }, KEY_PAIR, ADDRESS)
 
       expect(errSpy).toHaveBeenCalledWith('Failed to sign request:', boom)
-    })
-  })
-})
-
-describe('createRequestSigner', () => {
-  beforeEach(() => {
-    _generateApiSignature.mockReset()
-    _generateApiSignature.mockReturnValue(FAKE_SIGNATURE)
-  })
-
-  it('создаёт функцию, использующую текущие keyPair и address', () => {
-    const getKeyPair = vi.fn(() => KEY_PAIR)
-    const getAddress = vi.fn(() => ADDRESS)
-    const sign = createRequestSigner(getKeyPair, getAddress)
-
-    const result = sign({ method: 'getposts' })
-
-    expect(result).toEqual({ method: 'getposts', signature: FAKE_SIGNATURE })
-    expect(getKeyPair).toHaveBeenCalledTimes(1)
-    expect(getAddress).toHaveBeenCalledTimes(1)
-  })
-
-  it('читает ключи заново на каждый вызов (отражает logout/login)', () => {
-    let keyPair: KeyPair | null = null
-    let address: Address | null = null
-    const sign = createRequestSigner(
-      () => keyPair,
-      () => address
-    )
-
-    // Пользователь не авторизован — подпись не добавляется.
-    const before = sign({ method: 'x' })
-    expect('signature' in before).toBe(false)
-    expect(_generateApiSignature).not.toHaveBeenCalled()
-
-    // После логина те же геттеры отдают ключи — подпись появляется.
-    keyPair = KEY_PAIR
-    address = ADDRESS
-    const after = sign({ method: 'x' })
-    expect(after).toEqual({ method: 'x', signature: FAKE_SIGNATURE })
-  })
-
-  it('пробрасывает options в signRequest', () => {
-    const sign = createRequestSigner(
-      () => KEY_PAIR,
-      () => ADDRESS
-    )
-
-    sign({ method: 'x' }, { expiration: 120, data: 'dd' })
-
-    expect(_generateApiSignature).toHaveBeenCalledWith(KEY_PAIR, ADDRESS, {
-      data: 'dd',
-      session: undefined,
-      expiration: 120,
     })
   })
 })

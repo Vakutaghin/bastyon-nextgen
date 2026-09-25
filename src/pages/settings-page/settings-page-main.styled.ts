@@ -56,12 +56,6 @@ export const SC_SettingsMain = styled.main`
   }
 `
 
-export const SC_SettingsPlaceholder = styled.div`
-  font-size: 15px;
-  color: ${COLORS.GRAY_666};
-  padding: 20px 0;
-`
-
 export const SC_SettingsSectionTitle = styled.h2`
   font-size: 16px;
   font-weight: 600;

@@ -40,15 +40,3 @@ export const SC_Subtle = styled.span`
 export const SC_TabularNums = styled.span`
   font-variant-numeric: tabular-nums;
 `
-
-/** Простой primary-link — для inline-ссылок в значениях. */
-export const SC_LinkPrimary = styled.a`
-  color: ${COLORS.PRIMARY};
-  text-decoration: none;
-`
-
-export const SC_LinkPrimaryInline = styled.a`
-  color: ${COLORS.PRIMARY};
-  text-decoration: none;
-  margin-right: 6px;
-`

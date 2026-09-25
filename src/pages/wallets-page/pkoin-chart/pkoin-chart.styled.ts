@@ -184,17 +184,3 @@ export const SC_PkoinChartError = styled.div`
   border-radius: 8px;
   margin-top: 12px;
 `
-
-export const SC_PkoinChartLegend = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 12px;
-  font-size: 13px;
-  color: ${COLORS.GRAY_120};
-`
-
-export const SC_PkoinChartLegendPrice = styled.span`
-  font-weight: 600;
-  color: ${COLORS.GRAY_212};
-`

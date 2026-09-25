@@ -59,10 +59,7 @@ export const SC_FullScreenOverlay = styled.div`
   background-color: ${COLORS.BG_PRIMARY};
   display: flex;
   flex-direction: column;
-  padding-top: var(--safe-top);
-  padding-bottom: var(--safe-bottom);
-  padding-left: var(--safe-left);
-  padding-right: var(--safe-right);
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
 `
 
 /**
@@ -99,14 +96,6 @@ export const SC_CloseOverlayButton = styled.button`
     height: 20px;
     fill: currentColor;
   }
-`
-
-export const SC_OverlayHeader = styled.div`
-  padding: 16px;
-  display: flex;
-  justify-content: flex-end;
-  background: ${COLORS.BG_PRIMARY};
-  border-bottom: 1px solid ${COLORS.GRAY_EEE};
 `
 
 export const SC_OverlayContent = styled.div`

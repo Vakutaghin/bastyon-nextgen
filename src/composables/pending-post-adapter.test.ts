@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pendingPostToAdapted, isPostOpType, POST_OP_TYPES } from './pending-post-adapter'
+import { pendingPostToAdapted } from './pending-post-adapter'
 import type { PendingPost } from '@/stores/pending-posts-store'
 
 const author = { name: 'Me', address: 'PAddr', avatar: null, reputation: 5, letter: 'M' }
@@ -16,16 +16,6 @@ const pending: PendingPost = {
   createdAt: 1_700_000_000_000,
   expiresAt: 1_700_000_600_000,
 }
-
-describe('isPostOpType', () => {
-  it('распознаёт типы постов и отсекает прочее', () => {
-    for (const t of POST_OP_TYPES) expect(isPostOpType(t)).toBe(true)
-    expect(isPostOpType('comment')).toBe(false)
-    expect(isPostOpType('cScore')).toBe(false)
-    expect(isPostOpType(undefined)).toBe(false)
-    expect(isPostOpType('')).toBe(false)
-  })
-})
 
 describe('pendingPostToAdapted', () => {
   it('разворачивает pending в AdaptedPost с флагом pending и переносит поля', () => {

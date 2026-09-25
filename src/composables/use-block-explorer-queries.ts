@@ -28,8 +28,6 @@ import type {
   GetBlockTransactionsResponse,
 } from '@/types/rpc-responses/get-transactions'
 import type { GetAddressInfoResponse } from '@/types/rpc-responses/get-address-info'
-import type { GetAddressTransactionsResponse } from '@/types/rpc-responses/get-address-transactions'
-import type { SearchByHashResponse } from '@/types/rpc-responses/search-by-hash'
 import type { GetStatisticResponse } from '@/types/rpc-responses/get-statistic'
 import type { GetPeerInfoResponse } from '@/types/rpc-responses/get-peer-info'
 
@@ -189,29 +187,6 @@ export function useAddressInfo(address: MaybeRef<string>) {
   })
 }
 
-/** Транзакции адреса. fromHeight=-1 — с tip-а вниз. */
-export function useAddressTransactions(
-  address: MaybeRef<string>,
-  fromHeight: MaybeRef<number> = -1,
-  count: MaybeRef<number> = 25
-) {
-  return useQuery<GetAddressTransactionsResponse>({
-    queryKey: ['explorer', 'address-transactions', address, fromHeight, count] as const,
-    queryFn: () =>
-      getByPRC(
-        {
-          method: rpcEndpoints.getAddressTransactions,
-          parameters: [unref(address), unref(fromHeight), unref(count)],
-          options: { auth: false },
-        },
-        getExplorerRpcConfig()
-      ) as Promise<GetAddressTransactionsResponse>,
-    enabled: computed(() => unref(address).length > 0),
-    staleTime: STALE_FRESH,
-    refetchOnWindowFocus: false,
-  })
-}
-
 /**
  * Сетевая статистика по часам. `depth` — широкий лимит, `hours` — сколько последних
  * часов берём. Под капотом параметры nodе: [depth=9999999, hours=N].
@@ -270,25 +245,6 @@ export function usePeerInfo() {
       ) as Promise<GetPeerInfoResponse>,
     staleTime: STALE_FRESH,
     refetchInterval: 30_000,
-    refetchOnWindowFocus: false,
-  })
-}
-
-/** Серверный детектор типа строки. Используем как fallback. */
-export function useSearchByHash(query: MaybeRef<string>, enabled: MaybeRef<boolean> = true) {
-  return useQuery<SearchByHashResponse>({
-    queryKey: ['explorer', 'search-by-hash', query] as const,
-    queryFn: () =>
-      getByPRC(
-        {
-          method: rpcEndpoints.searchByHash,
-          parameters: [unref(query)],
-          options: { auth: false },
-        },
-        getExplorerRpcConfig()
-      ) as Promise<SearchByHashResponse>,
-    enabled: computed(() => unref(enabled) && unref(query).length > 0),
-    staleTime: 60_000,
     refetchOnWindowFocus: false,
   })
 }

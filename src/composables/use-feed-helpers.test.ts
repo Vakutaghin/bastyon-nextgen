@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  safeDecode,
-  normalizeImages,
-  isUserVerified,
-  calculateRatingStars,
-  extractCommentMessage,
-} from './use-feed-helpers'
+import { safeDecode, normalizeImages, isUserVerified } from './use-feed-helpers'
 
 describe('safeDecode (реэкспорт канонического)', () => {
   it('decodes and keeps a literal plus', () => {
@@ -89,50 +83,5 @@ describe('isUserVerified', () => {
 
   it('returns false for unverified profile', () => {
     expect(isUserVerified({ badges: [], flags: {} })).toBe(false)
-  })
-})
-
-describe('calculateRatingStars', () => {
-  it('returns 0 for zero count', () => {
-    expect(calculateRatingStars(100, 0)).toBe(0)
-  })
-
-  it('returns 0 for NaN count', () => {
-    expect(calculateRatingStars(100, NaN)).toBe(0)
-  })
-
-  it('calculates average correctly', () => {
-    expect(calculateRatingStars(25, 5)).toBe(5)
-  })
-
-  it('clamps to max 5', () => {
-    expect(calculateRatingStars(100, 1)).toBe(5)
-  })
-
-  it('clamps to min 0', () => {
-    expect(calculateRatingStars(-100, 1)).toBe(0)
-  })
-
-  it('rounds to nearest 0.1', () => {
-    expect(calculateRatingStars(7, 2)).toBe(3.5)
-  })
-})
-
-describe('extractCommentMessage', () => {
-  it('returns empty for falsy input', () => {
-    expect(extractCommentMessage('')).toBe('')
-    expect(extractCommentMessage(null as any)).toBe('')
-  })
-
-  it('extracts message from JSON', () => {
-    expect(extractCommentMessage('{"message":"hello"}')).toBe('hello')
-  })
-
-  it('returns original string if not JSON', () => {
-    expect(extractCommentMessage('plain text')).toBe('plain text')
-  })
-
-  it('returns original string if JSON has no message', () => {
-    expect(extractCommentMessage('{"foo":"bar"}')).toBe('{"foo":"bar"}')
   })
 })

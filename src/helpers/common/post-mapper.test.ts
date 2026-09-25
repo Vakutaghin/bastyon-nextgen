@@ -1,46 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { adaptPostData, extractRawPosts } from './post-mapper'
-
-describe('extractRawPosts', () => {
-  it('returns [] for falsy input', () => {
-    expect(extractRawPosts(null)).toEqual([])
-    expect(extractRawPosts(undefined)).toEqual([])
-  })
-
-  it('returns array as-is', () => {
-    const posts = [{ id: 1 }, { id: 2 }]
-    expect(extractRawPosts(posts)).toBe(posts)
-  })
-
-  it('extracts from data.contents', () => {
-    const contents = [{ id: 1 }]
-    expect(extractRawPosts({ data: { contents } })).toBe(contents)
-  })
-
-  it('extracts from data[]', () => {
-    const data = [{ id: 1 }]
-    expect(extractRawPosts({ data })).toBe(data)
-  })
-
-  it('extracts from result[]', () => {
-    const result = [{ id: 1 }]
-    expect(extractRawPosts({ result })).toBe(result)
-  })
-
-  it('extracts from posts[]', () => {
-    const posts = [{ id: 1 }]
-    expect(extractRawPosts({ posts })).toBe(posts)
-  })
-
-  it('extracts from contents[]', () => {
-    const contents = [{ id: 1 }]
-    expect(extractRawPosts({ contents })).toBe(contents)
-  })
-
-  it('returns [] for unknown shape', () => {
-    expect(extractRawPosts({ foo: 'bar' })).toEqual([])
-  })
-})
+import { adaptPostData } from './post-mapper'
 
 describe('adaptPostData', () => {
   const rawPost = {

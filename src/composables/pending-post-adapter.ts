@@ -9,14 +9,6 @@
 import type { AdaptedPost } from '@/composables/use-feed'
 import type { PendingPost } from '@/stores/pending-posts-store'
 
-/** Типы операций Pocketnet, соответствующие публикации поста (для матча WS-события). */
-export const POST_OP_TYPES: readonly string[] = ['share', 'video', 'audio', 'article']
-
-/** Является ли тип WS-транзакции публикацией поста. */
-export function isPostOpType(type?: string): boolean {
-  return !!type && POST_OP_TYPES.includes(type)
-}
-
 /** Разворачивает pending-пост в AdaptedPost для рендера в ленте профиля. */
 export function pendingPostToAdapted(
   pending: PendingPost,

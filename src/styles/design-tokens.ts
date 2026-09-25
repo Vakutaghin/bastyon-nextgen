@@ -12,17 +12,6 @@ export const SPACING = {
   XXL: '48px',
 } as const
 
-// Mobile-уменьшенная шкала — используется в styled-components,
-// где нельзя положиться на CSS-переменные (например, прямые значения в JS-логике).
-export const MOBILE_SPACING = {
-  XS: '2px',
-  SM: '6px',
-  MD: '12px',
-  LG: '16px',
-  XL: '20px',
-  XXL: '32px',
-} as const
-
 export const BORDER_RADIUS = {
   SM: '4px',
   MD: '8px',
@@ -137,14 +126,4 @@ export const FLUID_SPACING = {
   LG: fluid(14, 24),
   XL: fluid(20, 32),
   XXL: fluid(28, 48),
-} as const
-
-export const FLUID_FONT_SIZE = {
-  XS: fluid(10, 11),
-  SM: fluid(11, 12),
-  MD: fluid(13, 14),
-  LG: fluid(14, 16),
-  XL: fluid(16, 18),
-  XXL: fluid(20, 24),
-  HEADING: fluid(17, 20),
 } as const

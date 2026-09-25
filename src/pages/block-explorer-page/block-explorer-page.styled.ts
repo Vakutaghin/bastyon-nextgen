@@ -161,19 +161,6 @@ export const SC_SectionHeader = styled.div`
 // Капс-заголовок секции — общий примитив (audit §3.2).
 export { SC_SectionTitleUpper as SC_SectionTitle } from '@/styles/shared'
 
-export const SC_SectionAction = styled.button`
-  background: transparent;
-  border: none;
-  font-size: 12px;
-  color: ${COLORS.LINK};
-  cursor: pointer;
-  padding: 4px 6px;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`
-
 export const SC_RowList = styled.div`
   display: flex;
   flex-direction: column;
@@ -239,18 +226,4 @@ export const SC_BlockAge = styled.div`
   color: ${COLORS.TEXT_MUTED};
   text-align: right;
   white-space: nowrap;
-`
-
-export const SC_LoadingPlaceholder = styled.div`
-  padding: 24px;
-  text-align: center;
-  color: ${COLORS.TEXT_MUTED};
-  font-size: 13px;
-`
-
-export const SC_ErrorPlaceholder = styled.div`
-  padding: 24px;
-  text-align: center;
-  color: ${COLORS.DANGER};
-  font-size: 13px;
 `

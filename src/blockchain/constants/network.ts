@@ -26,11 +26,3 @@ export const POCKETNET_NETWORK: Network = {
   scriptHash: 0x50, // 80 — адреса кошельков (P2SH) начинаются с 'Z', как в старом приложении (lib/pocketnet/modules/networks.js)
   wif: 0x21, // 33 — WIF ключи (как в Pocketnet mainnet)
 }
-
-/**
- * Проверяет, используется ли сеть Pocketnet
- */
-export function isPocketnetNetwork(network?: Network): boolean {
-  if (!network) return false
-  return network.pubKeyHash === POCKETNET_NETWORK.pubKeyHash
-}

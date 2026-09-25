@@ -1,40 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  API_ERROR,
-  matchApiError,
-  isRegistrationBlockingError,
-  isCaptchaError,
-} from './error-codes'
-
-describe('matchApiError', () => {
-  it('returns correct code for known error message containing "iplimit"', () => {
-    expect(matchApiError('Request rejected: iplimit reached')).toBe(API_ERROR.IP_LIMIT)
-  })
-
-  it('returns correct code for "captcha" error', () => {
-    expect(matchApiError('captcha required')).toBe(API_ERROR.CAPTCHA_REQUIRED)
-  })
-
-  it('matches case-insensitively', () => {
-    expect(matchApiError('TIMEOUT on request')).toBe(API_ERROR.TIMEOUT)
-  })
-
-  it('returns null for unknown error message', () => {
-    expect(matchApiError('something completely unrelated xyz')).toBeNull()
-  })
-
-  it('returns null for empty string', () => {
-    expect(matchApiError('')).toBeNull()
-  })
-
-  it('returns correct code for "DoubleScore"', () => {
-    expect(matchApiError('DoubleScore detected')).toBe(API_ERROR.DOUBLE_SCORE)
-  })
-
-  it('returns correct code for "MempoolConflict"', () => {
-    expect(matchApiError('MempoolConflict detected in tx')).toBe(API_ERROR.MEMPOOL_CONFLICT)
-  })
-})
+import { API_ERROR, isRegistrationBlockingError, isCaptchaError } from './error-codes'
 
 describe('isRegistrationBlockingError', () => {
   it('returns true for noproxywithwallet', () => {

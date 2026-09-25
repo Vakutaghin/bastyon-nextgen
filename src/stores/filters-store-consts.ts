@@ -51,12 +51,6 @@ export const TIME_FILTER_DEPTH_MAP: Record<number, number> = {
 /** Дефолтный `depth` (блоки) для «Лучшее», если активный фильтр времени неизвестен. */
 export const DEFAULT_TOP_FEED_DEPTH = 7 * BLOCKS_PER_DAY
 
-/** Префикс ID кастомных категорий (пользовательских, персистятся). */
-export const CUSTOM_CATEGORY_PREFIX = 'custom_'
-
-/** Префикс ID временных категорий (создаются по клику на тег в посте, не персистятся). */
-export const TEMP_CATEGORY_PREFIX = 'temp_'
-
 /** Иконка кастомной категории. */
 export const CUSTOM_CATEGORY_ICON = '⭐'
 

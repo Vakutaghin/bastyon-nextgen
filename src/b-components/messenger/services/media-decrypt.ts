@@ -121,38 +121,3 @@ export const sniffMimeFromBytes = (bytes: Uint8Array): string | null => {
 
   return null
 }
-
-/**
- * Matrix-native encrypted attachments (m.room.encrypted msgtype или info.file):
- * AES-CTR с JWK-ключом. Используется как fallback для не-наших клиентов.
- * info структура: { key: JWK, iv: base64url, hashes?, ... }
- */
-const base64UrlToBytes = (b64u: string): Uint8Array => {
-  const b64 = b64u.replace(/-/g, '+').replace(/_/g, '/')
-  const str = atob(b64)
-  const bytes = new Uint8Array(str.length)
-  for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i)
-  return bytes
-}
-
-export const decryptMatrixAttachment = async (
-  ciphertext: ArrayBuffer,
-  info: { key?: { k?: string }; iv?: string }
-): Promise<ArrayBuffer> => {
-  if (!info?.key?.k || !info.iv) {
-    throw new MediaDecryptError('missing key or iv for Matrix attachment')
-  }
-  const keyBytes = base64UrlToBytes(info.key.k)
-  const ivBytes = base64UrlToBytes(info.iv)
-
-  const key = await window.crypto.subtle.importKey('raw', keyBytes, { name: 'AES-CTR' }, false, [
-    'encrypt',
-    'decrypt',
-  ])
-
-  return window.crypto.subtle.decrypt(
-    { name: 'AES-CTR', counter: ivBytes, length: 64 },
-    key,
-    ciphertext
-  )
-}

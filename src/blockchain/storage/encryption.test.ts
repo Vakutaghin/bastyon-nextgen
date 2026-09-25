@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import CryptoJS from 'crypto-js'
-import { encryptData, decryptData, canDecrypt } from './encryption'
+import { encryptData, decryptData } from './encryption'
 
 describe('encryptData', () => {
   it('produces output with v2: prefix', () => {
@@ -75,18 +75,6 @@ describe('randomness / IV uniqueness', () => {
     // But both should decrypt to the same value
     expect(decryptData(enc1, key)).toBe(data)
     expect(decryptData(enc2, key)).toBe(data)
-  })
-})
-
-describe('canDecrypt', () => {
-  it('returns true for correct key', () => {
-    const encrypted = encryptData('test data', 'my-key')
-    expect(canDecrypt(encrypted, 'my-key')).toBe(true)
-  })
-
-  it('returns false for wrong key', () => {
-    const encrypted = encryptData('test data', 'correct-key')
-    expect(canDecrypt(encrypted, 'wrong-key')).toBe(false)
   })
 })
 

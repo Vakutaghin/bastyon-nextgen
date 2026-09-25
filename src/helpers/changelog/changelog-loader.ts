@@ -64,10 +64,6 @@ export function getAllChangelogEntries(): ChangelogEntry[] {
   return ENTRIES
 }
 
-export function getLatestChangelogEntry(): ChangelogEntry | undefined {
-  return ENTRIES[0]
-}
-
 /**
  * Запись, соответствующая версии приложения (N34).
  *

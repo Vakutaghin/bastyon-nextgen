@@ -103,11 +103,6 @@ export function isDbUnavailable(): boolean {
   return dbUnavailableError !== null
 }
 
-/** Причина недоступности — для диагностики и одноразового предупреждения. */
-export function dbUnavailableReason(): Error | null {
-  return dbUnavailableError
-}
-
 /** Помечает базу недоступной. Идемпотентно (первая причина важнее). */
 export function markDbUnavailable(error: unknown): void {
   if (dbUnavailableError) return
@@ -167,20 +162,6 @@ export async function initDatabase(): Promise<void> {
     // Дальше работаем без локального кэша, а не заваливаем пользователя
     // повторяющимися тостами об ошибке (S61).
     markDbUnavailable(error)
-    throw error
-  }
-}
-
-/**
- * Очистка базы данных (для тестирования или сброса)
- */
-export async function clearDatabase(): Promise<void> {
-  try {
-    await db.delete()
-    await initDatabase()
-    console.info('Database cleared and reinitialized')
-  } catch (error) {
-    console.error('Failed to clear database:', error)
     throw error
   }
 }

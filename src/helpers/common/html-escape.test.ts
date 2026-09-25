@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { escapeHtml, unescapeHtml } from './html-escape'
+import { escapeHtml } from './html-escape'
 
 describe('escapeHtml', () => {
   it('escapes ampersand', () => {
@@ -12,7 +12,7 @@ describe('escapeHtml', () => {
 
   it('escapes quotes', () => {
     expect(escapeHtml('"hello"')).toBe('&quot;hello&quot;')
-    expect(escapeHtml("'hello'")).toBe("&#039;hello&#039;")
+    expect(escapeHtml("'hello'")).toBe('&#039;hello&#039;')
   })
 
   it('escapes all special chars together', () => {
@@ -25,29 +25,5 @@ describe('escapeHtml', () => {
 
   it('handles empty string', () => {
     expect(escapeHtml('')).toBe('')
-  })
-})
-
-describe('unescapeHtml', () => {
-  it('unescapes ampersand', () => {
-    expect(unescapeHtml('a &amp; b')).toBe('a & b')
-  })
-
-  it('unescapes angle brackets', () => {
-    expect(unescapeHtml('&lt;script&gt;')).toBe('<script>')
-  })
-
-  it('unescapes quotes', () => {
-    expect(unescapeHtml('&quot;hello&quot;')).toBe('"hello"')
-    expect(unescapeHtml('&#039;hello&#039;')).toBe("'hello'")
-  })
-
-  it('is inverse of escapeHtml', () => {
-    const original = '<a href="test">&\'foo\''
-    expect(unescapeHtml(escapeHtml(original))).toBe(original)
-  })
-
-  it('handles empty string', () => {
-    expect(unescapeHtml('')).toBe('')
   })
 })

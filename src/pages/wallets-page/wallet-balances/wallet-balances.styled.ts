@@ -151,27 +151,6 @@ export const SC_WalletTableTitle = styled.h2`
   margin: 10px;
 `
 
-export const SC_WalletAddButton = styled.button`
-  font-size: 14px;
-  font-weight: 500;
-  color: ${COLORS.GRAY_212};
-  background: ${COLORS.BG_LIGHT};
-  border: 1px solid ${COLORS.OVERLAY_12};
-  border-radius: 8px;
-  padding: 8px 14px;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover:not(:disabled) {
-    background: ${COLORS.BG_HOVER};
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`
-
 export const SC_WalletTable = styled.div`
   border: 1px solid ${COLORS.OVERLAY_8};
   border-radius: 10px;

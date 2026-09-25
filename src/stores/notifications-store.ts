@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
 import { notificationsAPI } from '@/db/apis/notifications-api'
-import type { GetMissedInfoBlockItem } from '@/types/rpc-responses/get-missed-info'
+import type {
+  GetMissedInfoBlockItem,
+  GetMissedInfoEventItem,
+} from '@/types/rpc-responses/get-missed-info'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type {
   NotificationItem,

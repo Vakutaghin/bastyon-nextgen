@@ -156,27 +156,6 @@ export function supportsMimeType(mimeType: string): boolean {
 }
 
 /**
- * Получить лучший доступный метод транскодирования
- * @returns 'tauri' | 'capacitor' | 'webcodecs' | 'mediarecorder' | null
- */
-export function getBestConverter(): 'tauri' | 'capacitor' | 'webcodecs' | 'mediarecorder' | null {
-  if (isTauri()) {
-    return 'tauri'
-  }
-  if (isCapacitor()) {
-    // В Capacitor можно использовать нативные плагины для транскодирования
-    return 'capacitor'
-  }
-  if (supportsWebCodecs()) {
-    return 'webcodecs'
-  }
-  if (supportsMediaRecorder()) {
-    return 'mediarecorder'
-  }
-  return null
-}
-
-/**
  * Получить лучший доступный MIME-тип для кодирования
  * Проверяет поддержку различных кодеков в порядке приоритета
  */
@@ -204,27 +183,4 @@ export function getBestMimeType(): string | null {
   }
 
   return null
-}
-
-/**
- * Проверка поддержки OffscreenCanvas (для Web Workers)
- */
-export function supportsOffscreenCanvas(): boolean {
-  return typeof OffscreenCanvas !== 'undefined'
-}
-
-/**
- * Получить информацию о доступных возможностях окружения
- */
-export function getEnvironmentInfo() {
-  return {
-    isTauri: isTauri(),
-    isCapacitor: isCapacitor(),
-    supportsWebCodecs: supportsWebCodecs(),
-    supportsMediaRecorder: supportsMediaRecorder(),
-    supportsOffscreenCanvas: supportsOffscreenCanvas(),
-    bestConverter: getBestConverter(),
-    bestMimeType: getBestMimeType(),
-    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
-  }
 }

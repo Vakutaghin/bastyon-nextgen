@@ -148,18 +148,3 @@ export function decryptData(
     )
   }
 }
-
-/**
- * Проверяет, можно ли расшифровать данные с указанным ключом
- * @param encryptedData - Зашифрованные данные
- * @param key - Ключ для проверки
- * @returns true если данные можно расшифровать, false иначе
- */
-export function canDecrypt(encryptedData: EncryptedData, key: string): boolean {
-  try {
-    const decrypted = decryptData(encryptedData, key)
-    return decrypted.length > 0
-  } catch {
-    return false
-  }
-}

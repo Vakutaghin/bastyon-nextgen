@@ -113,24 +113,6 @@ export interface GetMissedInfoEventItem {
 export type GetMissedInfoDataItem = GetMissedInfoBlockItem | GetMissedInfoEventItem
 
 /**
- * Проверка, что элемент — сводка по блоку (а не событие)
- */
-export function isGetMissedInfoBlockItem(
-  item: GetMissedInfoDataItem
-): item is GetMissedInfoBlockItem {
-  return 'contentsLang' in item && 'cntposts' in item
-}
-
-/**
- * Проверка, что элемент — событие/уведомление
- */
-export function isGetMissedInfoEventItem(
-  item: GetMissedInfoDataItem
-): item is GetMissedInfoEventItem {
-  return 'mesType' in item && 'txid' in item
-}
-
-/**
  * Ответ getmissedinfo
  *
  * data[0] — блок (GetMissedInfoBlockItem)

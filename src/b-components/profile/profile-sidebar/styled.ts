@@ -377,11 +377,6 @@ export const SC_UserAbout = styled.div`
   }
 `
 
-export const SC_UserJoined = styled.div`
-  font-size: 12px;
-  color: ${COLORS.GRAY_999};
-`
-
 export const SC_LoadingState = styled.div`
   text-align: center;
   padding: 20px;

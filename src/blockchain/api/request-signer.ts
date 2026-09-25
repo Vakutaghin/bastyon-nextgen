@@ -2,7 +2,6 @@
  * Подпись запросов к API
  */
 
-import type { ApiSignature } from '../types/signatures'
 import type { KeyPair } from '../types/keys'
 import type { Address } from '../types/addresses'
 import { generateApiSignature } from '../core/signatures'
@@ -51,15 +50,11 @@ export function signRequest<T extends Record<string, unknown>>(
 
   try {
     // Генерируем подпись
-    const signature = generateApiSignature(
-      keyPair,
-      address,
-      {
-        data: signatureData || session || 'pocketnetproxy',
-        session,
-        expiration,
-      }
-    )
+    const signature = generateApiSignature(keyPair, address, {
+      data: signatureData || session || 'pocketnetproxy',
+      session,
+      expiration,
+    })
 
     // Добавляем подпись к данным
     return {
@@ -73,23 +68,5 @@ export function signRequest<T extends Record<string, unknown>>(
       ...data,
       state: 1,
     } as T
-  }
-}
-
-/**
- * Создает функцию для автоматической подписи запросов
- * @param getKeyPair - Функция для получения ключевой пары
- * @param getAddress - Функция для получения адреса
- * @returns Функция для подписи запросов
- */
-export function createRequestSigner(
-  getKeyPair: () => KeyPair | null,
-  getAddress: () => Address | null
-) {
-  return <T extends Record<string, unknown>>(
-    data: T,
-    options: RequestSignOptions = {}
-  ): T => {
-    return signRequest(data, getKeyPair(), getAddress(), options)
   }
 }

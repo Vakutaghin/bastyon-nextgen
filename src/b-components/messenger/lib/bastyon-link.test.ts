@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseBasytonLink, toBasytonUrl, toBasytonHttpsUrl, BASTYON_LINK_RE } from './bastyon-link'
+import { parseBasytonLink, toBasytonHttpsUrl, BASTYON_LINK_RE } from './bastyon-link'
 
 const TXID = 'a'.repeat(64)
 const COMMENT_ID = 'b'.repeat(64)
@@ -134,24 +134,6 @@ describe('parseBasytonLink', () => {
 
   it('rejects bastyon host with wrong path', () => {
     expect(parseBasytonLink(`https://bastyon.com/profile?s=${TXID}`)).toBeNull()
-  })
-})
-
-// ─── toBasytonUrl ────────────────────────────────────────────────
-
-describe('toBasytonUrl', () => {
-  it('generates post URL', () => {
-    expect(toBasytonUrl({ txid: TXID, isVideo: false })).toBe(`bastyon://post?s=${TXID}`)
-  })
-
-  it('generates video URL', () => {
-    expect(toBasytonUrl({ txid: TXID, isVideo: true })).toBe(`bastyon://index?v=${TXID}`)
-  })
-
-  it('includes commentId', () => {
-    expect(toBasytonUrl({ txid: TXID, commentId: COMMENT_ID, isVideo: false })).toBe(
-      `bastyon://post?s=${TXID}&c=${COMMENT_ID}`
-    )
   })
 })
 

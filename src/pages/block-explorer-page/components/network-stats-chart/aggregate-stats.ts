@@ -54,12 +54,12 @@ export function aggregateStats(buckets: StatisticBuckets | null | undefined): St
       if (!Number.isFinite(n) || n <= 0) continue
       total += n
       const type = Number(typeStr)
-      if (CONTENT_TYPES.has(type))           content += n
-      else if (RATING_TYPES.has(type))        ratings += n
-      else if (SUBSCRIPTION_TYPES.has(type))  subscriptions += n
-      else if (ACCOUNT_TYPES.has(type))       accounts += n
-      else if (MODERATION_TYPES.has(type))    moderation += n
-      else                                    other += n
+      if (CONTENT_TYPES.has(type)) content += n
+      else if (RATING_TYPES.has(type)) ratings += n
+      else if (SUBSCRIPTION_TYPES.has(type)) subscriptions += n
+      else if (ACCOUNT_TYPES.has(type)) accounts += n
+      else if (MODERATION_TYPES.has(type)) moderation += n
+      else other += n
     }
     return { bucket, total, content, ratings, subscriptions, accounts, moderation, other }
   })
@@ -68,9 +68,4 @@ export function aggregateStats(buckets: StatisticBuckets | null | undefined): St
 /** Сколько активности всего по точкам — для подписи под графиком. */
 export function sumTotals(points: StatsPoint[]): number {
   return points.reduce((s, p) => s + p.total, 0)
-}
-
-/** Максимальный total в наборе — для оси Y. */
-export function maxTotal(points: StatsPoint[]): number {
-  return points.reduce((m, p) => (p.total > m ? p.total : m), 0)
 }

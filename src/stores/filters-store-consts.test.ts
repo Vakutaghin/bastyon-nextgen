@@ -5,8 +5,6 @@ import {
   TIME_FILTER_DEPTH_MAP,
   DEFAULT_TOP_FEED_DEPTH,
   BLOCKS_PER_DAY,
-  CUSTOM_CATEGORY_PREFIX,
-  TEMP_CATEGORY_PREFIX,
 } from './filters-store-consts'
 import { filtersData } from '@/b-components/sidebar/filters-data'
 
@@ -52,11 +50,5 @@ describe('filters-store-consts', () => {
       expect(TIME_FILTER_DEPTH_MAP[id as number]).toBeGreaterThan(0)
     }
     expect(filtersData.timeFilters.filter((f) => f.active)).toHaveLength(1)
-  })
-
-  it('has distinct category prefixes', () => {
-    expect(CUSTOM_CATEGORY_PREFIX).not.toBe(TEMP_CATEGORY_PREFIX)
-    expect(CUSTOM_CATEGORY_PREFIX).toBe('custom_')
-    expect(TEMP_CATEGORY_PREFIX).toBe('temp_')
   })
 })

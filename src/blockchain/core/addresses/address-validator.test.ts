@@ -1,13 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Buffer } from 'buffer'
-import {
-  detectAddressType,
-  validateAddress,
-  isValidAddress,
-  getAddressType,
-  normalizeAddress,
-  FOREIGN_NETWORK_ERROR,
-} from './address-validator'
+import { validateAddress, isValidAddress, FOREIGN_NETWORK_ERROR } from './address-validator'
 import { toBase58Check } from './address-hash-utils'
 
 // ---------------------------------------------------------------------------
@@ -21,33 +14,6 @@ const P2PKH = toBase58Check(HASH, 0x37) // версия 0x37 → префикс 
 const P2SH3 = toBase58Check(HASH, 0x05) // версия 5 → префикс '3' (как Bitcoin P2SH)
 const ZWALLET = toBase58Check(HASH, 0x50) // версия 0x50 → префикс 'Z' (кошелёк Pocketnet)
 const BECH32 = 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'
-
-describe('detectAddressType', () => {
-  it('классифицирует P-адрес как p2pkh', () => {
-    expect(detectAddressType(P2PKH)).toBe('p2pkh')
-  })
-
-  it('классифицирует 3-адрес как p2sh', () => {
-    expect(detectAddressType(P2SH3)).toBe('p2sh')
-  })
-
-  it('классифицирует bech32-адрес как p2wpkh', () => {
-    expect(detectAddressType(BECH32)).toBe('p2wpkh')
-  })
-
-  it('возвращает null для валидного base58 без префикса P/3 (Z-кошелёк)', () => {
-    // По дизайну detectAddressType отдаёт тип только по префиксу; base58-ветка
-    // намеренно возвращает null (тип «определяется через валидацию»).
-    expect(detectAddressType(ZWALLET)).toBeNull()
-  })
-
-  it('возвращает null для пустого/не-строкового/мусорного входа', () => {
-    expect(detectAddressType('')).toBeNull()
-    expect(detectAddressType(null as unknown as string)).toBeNull()
-    expect(detectAddressType(123 as unknown as string)).toBeNull()
-    expect(detectAddressType('!!!not-an-address')).toBeNull()
-  })
-})
 
 describe('validateAddress', () => {
   it('валиден P2PKH с типом p2pkh', () => {
@@ -118,27 +84,5 @@ describe('isValidAddress', () => {
 
   it('false для мусора', () => {
     expect(isValidAddress('nope')).toBe(false)
-  })
-})
-
-describe('getAddressType', () => {
-  it('возвращает тип для валидного адреса', () => {
-    expect(getAddressType(P2PKH)).toBe('p2pkh')
-    expect(getAddressType(BECH32)).toBe('p2wpkh')
-  })
-
-  it('возвращает null для невалидного адреса', () => {
-    expect(getAddressType('nope')).toBeNull()
-  })
-})
-
-describe('normalizeAddress', () => {
-  it('обрезает пробелы', () => {
-    expect(normalizeAddress(`  ${P2PKH}  `)).toBe(P2PKH)
-  })
-
-  it('возвращает пустую строку для falsy-входа', () => {
-    expect(normalizeAddress('')).toBe('')
-    expect(normalizeAddress(null as unknown as string)).toBe('')
   })
 })

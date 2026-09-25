@@ -1,13 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  generateQRCode,
-  generateMnemonicQRCode,
-  generatePrivateKeyQRCode,
-  generateQRCodeDataURL,
-  generateQRCodeSVG,
-  readQRCode,
-  decodeQRFromImageData,
-} from './qr-code'
+import { generateQRCode, readQRCode, decodeQRFromImageData } from './qr-code'
 
 // Пакет qrcode настоящий — работает в node без canvas.
 
@@ -30,46 +22,6 @@ describe('generateQRCode', () => {
 
   it('оборачивает ошибку генерации (слишком длинные данные)', async () => {
     await expect(generateQRCode('x'.repeat(10000))).rejects.toThrow('Failed to generate QR code')
-  })
-})
-
-describe('generateMnemonicQRCode', () => {
-  it('бросает на пустой мнемонике', async () => {
-    await expect(generateMnemonicQRCode('')).rejects.toThrow('Mnemonic is required')
-  })
-
-  it('возвращает data URL', async () => {
-    const res = await generateMnemonicQRCode('twelve words here')
-    expect(res).toMatch(/^data:image\/png;base64,/)
-  })
-})
-
-describe('generatePrivateKeyQRCode', () => {
-  it('бросает на пустом ключе', async () => {
-    await expect(generatePrivateKeyQRCode('')).rejects.toThrow('Private key is required')
-  })
-
-  it('возвращает data URL', async () => {
-    const res = await generatePrivateKeyQRCode('Kxxxxprivatekey')
-    expect(res).toMatch(/^data:image\/png;base64,/)
-  })
-})
-
-describe('generateQRCodeDataURL', () => {
-  it('возвращает PNG data URL', async () => {
-    expect(await generateQRCodeDataURL('data')).toMatch(/^data:image\/png;base64,/)
-  })
-})
-
-describe('generateQRCodeSVG', () => {
-  it('бросает на пустых данных', async () => {
-    await expect(generateQRCodeSVG('')).rejects.toThrow('Data is required')
-  })
-
-  it('возвращает SVG-разметку', async () => {
-    const svg = await generateQRCodeSVG('hello')
-    expect(svg).toContain('<svg')
-    expect(svg).toContain('</svg>')
   })
 })
 

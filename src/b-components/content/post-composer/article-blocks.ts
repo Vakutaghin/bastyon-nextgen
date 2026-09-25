@@ -45,8 +45,3 @@ export function normalizeArticleBlocks(data: unknown): ArticleContent {
 
   return { ...source, blocks } as ArticleContent
 }
-
-/** Пустой ли документ статьи (нет блоков). */
-export function isEmptyArticle(data: ArticleContent | null | undefined): boolean {
-  return !data || !Array.isArray(data.blocks) || data.blocks.length === 0
-}

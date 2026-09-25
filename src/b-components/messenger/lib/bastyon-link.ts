@@ -104,17 +104,6 @@ export const parseBasytonLink = (url: string): BastyonLinkTarget | null => {
 }
 
 /**
- * Generate canonical bastyon:// URL from a parsed target.
- */
-export const toBasytonUrl = (target: BastyonLinkTarget): string => {
-  const path = target.isVideo ? 'index' : 'post'
-  const param = target.isVideo ? 'v' : 's'
-  let url = `bastyon://${path}?${param}=${target.txid}`
-  if (target.commentId) url += `&c=${target.commentId}`
-  return url
-}
-
-/**
  * Generate HTTPS sharing URL from a parsed target.
  */
 export const toBasytonHttpsUrl = (target: BastyonLinkTarget): string => {

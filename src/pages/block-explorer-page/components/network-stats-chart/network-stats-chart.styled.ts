@@ -113,23 +113,3 @@ export const SC_StatsPlaceholder = styled.div`
   color: ${COLORS.TEXT_MUTED};
   font-size: 13px;
 `
-
-export const SC_StatsTooltip = styled.div`
-  position: absolute;
-  pointer-events: none;
-  padding: 8px 12px;
-  font-size: 12px;
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER};
-  border-radius: 6px;
-  box-shadow: ${COLORS.SHADOW_MD};
-  white-space: nowrap;
-  transform: translate(-50%, -100%);
-  opacity: 0;
-  transition: opacity ${TRANSITIONS.QUICK};
-
-  &.visible {
-    opacity: 1;
-  }
-`

@@ -22,11 +22,6 @@ export const DEFAULT_TX_FEE = 1 / AMOUNT_MULTIPLIER
 export const DUST_VALUE = 700 / AMOUNT_MULTIPLIER
 
 /**
- * Минимальное количество unspents для оптимизации
- */
-export const OPTIMIZE_UNSPENTS_MIN = 80
-
-/**
  * Максимальное количество unspents для оптимизации
  */
 export const OPTIMIZE_UNSPENTS_MAX = 300

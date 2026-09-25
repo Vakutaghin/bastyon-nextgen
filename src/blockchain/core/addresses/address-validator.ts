@@ -51,52 +51,6 @@ function fromBech32(address: string) {
 }
 
 /**
- * Определяет тип адреса по его префиксу
- * @param address - Адрес для проверки
- * @returns Тип адреса или null если не удалось определить
- */
-export function detectAddressType(address: Address): AddressType | null {
-  if (!address || typeof address !== 'string') {
-    return null
-  }
-
-  const trimmed = address.trim()
-
-  // P2PKH адреса начинаются с 'P' (основной тип)
-  if (trimmed.startsWith('P')) {
-    return 'p2pkh'
-  }
-
-  // P2SH адреса начинаются с '3' (кошельки)
-  if (trimmed.startsWith('3')) {
-    return 'p2sh'
-  }
-
-  // P2WPKH адреса (SegWit) начинаются с 'bc1' для Bitcoin, но для Pocketnet могут быть другие
-  // Проверяем через локальную функцию
-  try {
-    const decoded = fromBase58Check(trimmed)
-    // Если успешно декодирован, это может быть P2PKH или P2SH
-    // Дополнительная проверка через платежи
-    return null // Будет определено через валидацию
-  } catch {
-    // Не base58 адрес
-  }
-
-  // Попытка определить через bech32 (SegWit)
-  try {
-    const decoded = fromBech32(trimmed)
-    if (decoded) {
-      return 'p2wpkh'
-    }
-  } catch {
-    // Не bech32 адрес
-  }
-
-  return null
-}
-
-/**
  * Валидирует адрес Pocketnet
  * @param address - Адрес для проверки
  * @returns Результат валидации
@@ -182,29 +136,4 @@ export function validateAddress(address: Address): AddressValidationResult {
  */
 export function isValidAddress(address: Address): boolean {
   return validateAddress(address).isValid
-}
-
-/**
- * Получает тип адреса (если валиден)
- * @param address - Адрес для проверки
- * @returns Тип адреса или null если адрес невалиден
- */
-export function getAddressType(address: Address): AddressType | null {
-  const validation = validateAddress(address)
-  if (!validation.isValid) {
-    return null
-  }
-  return validation.type || null
-}
-
-/**
- * Нормализует адрес (убирает пробелы, приводит к нужному регистру)
- * @param address - Адрес для нормализации
- * @returns Нормализованный адрес
- */
-export function normalizeAddress(address: Address): Address {
-  if (!address) {
-    return ''
-  }
-  return address.trim()
 }

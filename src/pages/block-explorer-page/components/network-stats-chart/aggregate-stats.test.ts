@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aggregateStats, sumTotals, maxTotal } from './aggregate-stats'
+import { aggregateStats } from './aggregate-stats'
 
 describe('aggregateStats', () => {
   it('sorts buckets ascending by numeric key', () => {
@@ -14,14 +14,14 @@ describe('aggregateStats', () => {
   it('categorizes tx types correctly', () => {
     const out = aggregateStats({
       '1': {
-        '200': 10,    // content
-        '204': 5,     // content
-        '300': 20,    // ratings
-        '301': 7,     // ratings
-        '302': 3,     // subscriptions
-        '100': 2,     // accounts
-        '305': 1,     // moderation
-        '99999': 4,   // other
+        '200': 10, // content
+        '204': 5, // content
+        '300': 20, // ratings
+        '301': 7, // ratings
+        '302': 3, // subscriptions
+        '100': 2, // accounts
+        '305': 1, // moderation
+        '99999': 4, // other
       },
     })
     expect(out).toHaveLength(1)
@@ -59,9 +59,18 @@ describe('aggregateStats', () => {
     // Уменьшенный пример с реальной ноды.
     const out = aggregateStats({
       '64046': {
-        '1': 11, '100': 14, '103': 4, '104': 6,
-        '200': 194, '201': 112, '204': 605, '205': 31,
-        '300': 1885, '301': 1006, '302': 38, '303': 87,
+        '1': 11,
+        '100': 14,
+        '103': 4,
+        '104': 6,
+        '200': 194,
+        '201': 112,
+        '204': 605,
+        '205': 31,
+        '300': 1885,
+        '301': 1006,
+        '302': 38,
+        '303': 87,
       },
     })
     expect(out[0].content).toBe(194 + 112 + 605 + 31)
@@ -69,22 +78,5 @@ describe('aggregateStats', () => {
     expect(out[0].subscriptions).toBe(38 + 87)
     expect(out[0].accounts).toBe(14 + 4 + 6)
     expect(out[0].other).toBe(11)
-  })
-})
-
-describe('sumTotals / maxTotal', () => {
-  it('computes sum and max over points', () => {
-    const points = aggregateStats({
-      '1': { '200': 10 },
-      '2': { '200': 5 },
-      '3': { '200': 20 },
-    })
-    expect(sumTotals(points)).toBe(35)
-    expect(maxTotal(points)).toBe(20)
-  })
-
-  it('returns 0 for empty input', () => {
-    expect(sumTotals([])).toBe(0)
-    expect(maxTotal([])).toBe(0)
   })
 })

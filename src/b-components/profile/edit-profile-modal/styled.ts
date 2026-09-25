@@ -70,12 +70,6 @@ export const SC_Select = styled.select`
   }
 `
 
-export const SC_CharCount = styled.span`
-  align-self: flex-end;
-  font-size: 11px;
-  color: ${COLORS.GRAY_999};
-`
-
 export const SC_AvatarRow = styled.div`
   display: flex;
   align-items: center;

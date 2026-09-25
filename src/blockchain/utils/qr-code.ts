@@ -67,58 +67,6 @@ export async function generateQRCode(
 }
 
 /**
- * Генерирует QR-код для мнемонической фразы
- * @param mnemonic - Мнемоническая фраза
- * @param options - Опции генерации
- * @returns Promise с base64 строкой изображения QR-кода
- */
-export async function generateMnemonicQRCode(
-  mnemonic: string,
-  options: {
-    width?: number
-    errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H'
-  } = {}
-): Promise<string> {
-  if (!mnemonic) {
-    throw new Error('Mnemonic is required')
-  }
-
-  // Используем высокий уровень коррекции ошибок для мнемоники
-  const qrOptions = {
-    ...options,
-    errorCorrectionLevel: options.errorCorrectionLevel || ('H' as const),
-  }
-
-  return generateQRCode(mnemonic, qrOptions)
-}
-
-/**
- * Генерирует QR-код для приватного ключа
- * @param privateKey - Приватный ключ (hex, WIF или мнемоника)
- * @param options - Опции генерации
- * @returns Promise с base64 строкой изображения QR-кода
- */
-export async function generatePrivateKeyQRCode(
-  privateKey: string,
-  options: {
-    width?: number
-    errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H'
-  } = {}
-): Promise<string> {
-  if (!privateKey) {
-    throw new Error('Private key is required')
-  }
-
-  // Используем высокий уровень коррекции ошибок для приватного ключа
-  const qrOptions = {
-    ...options,
-    errorCorrectionLevel: options.errorCorrectionLevel || ('H' as const),
-  }
-
-  return generateQRCode(privateKey, qrOptions)
-}
-
-/**
  * Декодирует QR-код из сырых пиксельных данных (RGBA).
  * Чистая функция-обёртка над jsQR — тестируема без DOM/canvas.
  *
@@ -209,59 +157,5 @@ export async function readQRCode(image: File | Blob | string): Promise<string> {
     return text
   } finally {
     revoke?.()
-  }
-}
-
-/**
- * Создает data URL для QR-кода (для использования в img src)
- * @param data - Данные для кодирования
- * @param options - Опции генерации
- * @returns Promise с data URL
- */
-export async function generateQRCodeDataURL(
-  data: string,
-  options: {
-    width?: number
-    errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H'
-  } = {}
-): Promise<string> {
-  return generateQRCode(data, {
-    ...options,
-    type: 'data-url',
-  })
-}
-
-/**
- * Создает SVG QR-код
- * @param data - Данные для кодирования
- * @param options - Опции генерации
- * @returns Promise с SVG строкой
- */
-export async function generateQRCodeSVG(
-  data: string,
-  options: {
-    width?: number
-    errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H'
-  } = {}
-): Promise<string> {
-  if (!data || typeof data !== 'string') {
-    throw new Error('Data is required for QR code generation')
-  }
-
-  const { width = 300, errorCorrectionLevel = 'M' } = options
-
-  try {
-    const svg = await QRCode.toString(data, {
-      type: 'svg',
-      width,
-      errorCorrectionLevel,
-    })
-
-    return svg
-  } catch (error) {
-    throw new Error(
-      `Failed to generate QR code SVG: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error }
-    )
   }
 }

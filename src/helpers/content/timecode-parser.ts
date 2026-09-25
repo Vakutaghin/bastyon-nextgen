@@ -81,7 +81,8 @@ interface EditorJsTextBlock {
 }
 
 function editorJsToText(data: unknown): string {
-  const blocks = data && typeof data === 'object' ? (data as { blocks?: unknown }).blocks : undefined
+  const blocks =
+    data && typeof data === 'object' ? (data as { blocks?: unknown }).blocks : undefined
   if (!Array.isArray(blocks)) return ''
   const lines: string[] = []
   for (const block of blocks as EditorJsTextBlock[]) {
@@ -141,9 +142,7 @@ export function parseTimecodes(content: string | object | null | undefined): Cha
     // Метка = строка без тайм-кода, обрезанная от разделителей и пробелов.
     const before = line.slice(0, match.index)
     const after = line.slice(match.index + raw.length)
-    let label = (before + ' ' + after)
-      .replace(/[-–—•:|·›»→\s]+/g, ' ')
-      .trim()
+    let label = (before + ' ' + after).replace(/[-–—•:|·›»→\s]+/g, ' ').trim()
 
     if (!label) label = raw
 
@@ -159,23 +158,6 @@ export function parseTimecodes(content: string | object | null | undefined): Cha
   }
 
   return chapters
-}
-
-/**
- * Форматирует секунды в `M:SS` или `H:MM:SS`.
- */
-export function formatTimecode(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
-  const total = Math.floor(seconds)
-  const h = Math.floor(total / 3600)
-  const m = Math.floor((total % 3600) / 60)
-  const s = total % 60
-  const ss = String(s).padStart(2, '0')
-  if (h > 0) {
-    const mm = String(m).padStart(2, '0')
-    return `${h}:${mm}:${ss}`
-  }
-  return `${m}:${ss}`
 }
 
 /**

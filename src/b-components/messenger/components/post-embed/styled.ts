@@ -63,11 +63,6 @@ export const SC_AuthorName = styled.div`
   white-space: nowrap;
 `
 
-export const SC_AuthorMeta = styled.div`
-  font-size: 11px;
-  color: ${COLORS.BLUE_GRAY};
-`
-
 export const SC_BadgeRow = styled.div`
   display: flex;
   align-items: center;

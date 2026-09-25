@@ -44,8 +44,3 @@ export const EXPLORER_GLOSSARY = {
 } as const satisfies Record<string, string>
 
 export type GlossaryTerm = keyof typeof EXPLORER_GLOSSARY
-
-/** Возвращает i18n-ключ пояснения для термина. Резолвить через t(...) в компоненте. */
-export function glossaryKey(term: GlossaryTerm): string {
-  return EXPLORER_GLOSSARY[term]
-}

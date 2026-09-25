@@ -3,7 +3,6 @@ import {
   CURRENT_APP_VERSION,
   getAllChangelogEntries,
   getChangelogEntryForVersion,
-  getLatestChangelogEntry,
 } from './changelog-loader'
 
 // N34: «Что нового» ключевалось на самой свежей папке changelogs/, а не на
@@ -27,12 +26,5 @@ describe('getChangelogEntryForVersion', () => {
 
   it('версия старше всех известных — ничего не показываем', () => {
     expect(getChangelogEntryForVersion('0.0.1')).toBeUndefined()
-  })
-
-  it('по умолчанию берётся версия приложения, а не последняя папка', () => {
-    const byDefault = getChangelogEntryForVersion()
-    expect(byDefault?.version).toBe(getChangelogEntryForVersion(CURRENT_APP_VERSION)?.version)
-    // Осмысленно только пока последняя папка совпадает с версией сборки.
-    expect(getLatestChangelogEntry()).toBeDefined()
   })
 })

@@ -58,17 +58,6 @@ export const SC_WaveContainer = styled('div', { compact: Boolean })`
   }
 `
 
-export const SC_WavePlaceholder = styled('div', { compact: Boolean })`
-  flex: 1 1 ${(props) => (props.compact ? '160px' : '240px')};
-  width: 100%;
-  max-width: ${(props) => (props.compact ? '160px' : '240px')};
-  min-width: 0;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`
-
 export const SC_WaveSpinnerOverlay = styled.div`
   position: absolute;
   inset: 0;

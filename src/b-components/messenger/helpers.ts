@@ -238,16 +238,6 @@ export function hexStringToUint8Array(hexString: string): Uint8Array {
   return bytes
 }
 
-/** Конвертация base64-строки в Uint8Array */
-export function base64StringToUint8Array(base64String: string): Uint8Array {
-  const binaryString = atob(base64String)
-  const bytes = new Uint8Array(binaryString.length)
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
-  }
-  return bytes
-}
-
 // --- Детекция MIME-типа аудио ---
 
 /** Определяет MIME-тип аудио по магическим байтам */

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   saveUserAddress,
-  loadUserAddress,
   hasStoredSession,
   saveWasLogged,
   clearAllUserData,
@@ -51,17 +50,6 @@ beforeEach(() => {
 })
 
 afterEach(() => vi.unstubAllGlobals())
-
-describe('user address', () => {
-  it('сохраняет и читает адрес', () => {
-    saveUserAddress('PUser')
-    expect(loadUserAddress()).toBe('PUser')
-  })
-
-  it('loadUserAddress возвращает null, если не сохранён', () => {
-    expect(loadUserAddress()).toBeNull()
-  })
-})
 
 describe('hasStoredSession', () => {
   it('false на чистом хранилище', () => {
