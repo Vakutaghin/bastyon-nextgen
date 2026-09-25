@@ -1,46 +1,31 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
+// Карточка в оформлении Nuxt UI (UCard, outline): фон страницы, рамка
+// --ui-border, радиус 8, без тени.
+//
+// Раньше здесь было `.ant-card-body * { color: … !important }` — оно красило в
+// основной цвет весь текст карточки поста, и вложенным компонентам приходилось
+// перебивать его своими !important. Цвет теперь наследуется от тела карточки.
 export const SC_Card = styled.div`
   .ant-card {
-    background: ${COLORS.BG_PRIMARY} !important;
-    border-color: ${COLORS.BORDER_LIGHT} !important;
-    border-radius: 12px;
-    box-shadow: ${COLORS.SHADOW_SM};
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-lg);
+    box-shadow: none;
   }
 
   .ant-card-head {
-    border-bottom: 1px solid ${COLORS.BORDER_LIGHT};
+    border-bottom: 1px solid var(--ui-border);
     background: transparent;
   }
 
   .ant-card-head-title {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--ui-text-highlighted);
     font-weight: 600;
   }
 
-  .ant-card-extra {
-    color: ${COLORS.TEXT_PRIMARY} !important;
-  }
-
   .ant-card-body {
-    color: ${COLORS.TEXT_PRIMARY} !important;
-    background: ${COLORS.BG_PRIMARY} !important;
-  }
-
-  .ant-card-body * {
-    color: ${COLORS.TEXT_PRIMARY} !important;
-  }
-
-  .ant-card-body p {
-    color: ${COLORS.TEXT_PRIMARY} !important;
-  }
-
-  .ant-card-body div {
-    color: ${COLORS.TEXT_PRIMARY} !important;
-  }
-
-  .ant-card:hover {
-    box-shadow: ${COLORS.SHADOW_MD};
+    color: var(--ui-text);
+    background: transparent;
   }
 `

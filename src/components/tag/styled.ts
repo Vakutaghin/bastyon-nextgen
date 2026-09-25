@@ -1,30 +1,31 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
+// Тег в оформлении Nuxt UI — нейтральный бейдж (UBadge, soft): подложка
+// elevated, 12px/500, радиус 6. Акцентом — только выбранный.
 export const SC_Tag = styled.div`
   .ant-tag {
-    background: ${COLORS.PRIMARY_LIGHT};
-    color: ${COLORS.PRIMARY};
-    border-color: ${COLORS.PRIMARY_LIGHT_30};
-    border-radius: 12px;
-    padding: 4px 7px;
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: var(--ui-radius-md);
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text);
+    font-size: 12px;
     font-weight: 500;
-    transition: background-color 0.2s;
+    line-height: 16px;
+    transition: background-color 0.15s;
   }
 
   .ant-tag:hover {
-    background: ${COLORS.PRIMARY_LIGHT_20};
-    border-color: ${COLORS.PRIMARY_LIGHT_50};
+    background: var(--ui-bg-accented);
   }
 
-  .ant-tag-checkable:hover:not(.ant-tag-checkable-checked) {
-    background: ${COLORS.PRIMARY_LIGHT_15};
-  }
-
-  .ant-tag-checkable-checked {
-    background: ${COLORS.PRIMARY};
-    color: ${COLORS.BG_PRIMARY};
-    border-color: ${COLORS.PRIMARY};
+  .ant-tag-checkable-checked,
+  .ant-tag-checkable-checked:hover {
+    background: var(--ui-primary);
+    color: var(--ui-text-inverted);
   }
 `

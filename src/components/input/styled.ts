@@ -1,21 +1,21 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
-// Antd Input НЕ телепортится — он живёт внутри этой обёртки, поэтому вложенный
-// селектор .ant-input работает напрямую. :deep() в vue3-styled-components не
-// функционирует (см. коммент у .ant-card в src/style.css), из-за чего эти стили
-// раньше не применялись и поле оставалось белым в тёмной теме.
+// Поле ввода в оформлении Nuxt UI (UInput, вариант outline): фон страницы,
+// рамка accented, радиус 6; на hover рамка не меняется, в фокусе — акцентная
+// рамка и ореол 3px. Цвета antd уже задаёт тема (styles/antd-theme.ts), здесь —
+// то, в чём Nuxt расходится с antd.
 //
-// При allow-clear / prefix / suffix antd оборачивает input в
-// .ant-input-affix-wrapper — именно он рисует фон и рамку (внутренний .ant-input
-// становится прозрачным), поэтому темим и обёртку тоже.
+// Antd Input НЕ телепортится — он живёт внутри этой обёртки, поэтому вложенный
+// селектор .ant-input работает напрямую (:deep() в vue3-styled-components не
+// функционирует). При allow-clear / prefix / suffix antd оборачивает input в
+// .ant-input-affix-wrapper — фон и рамку рисует он.
 export const SC_Input = styled.div`
   .ant-input,
   .ant-input-affix-wrapper {
-    background: ${COLORS.BG_PRIMARY};
-    color: ${COLORS.TEXT_PRIMARY};
-    border-color: ${COLORS.BORDER};
-    border-radius: 6px;
+    background: var(--ui-bg);
+    color: var(--ui-text-highlighted);
+    border-color: var(--ui-border-accented);
+    border-radius: var(--ui-radius-md);
   }
 
   .ant-input-affix-wrapper > .ant-input {
@@ -26,34 +26,32 @@ export const SC_Input = styled.div`
 
   .ant-input:hover:not(:disabled),
   .ant-input-affix-wrapper:hover {
-    border-color: ${COLORS.TEXT_MUTED};
+    border-color: var(--ui-border-accented);
   }
 
   .ant-input:focus,
   .ant-input-focused,
   .ant-input-affix-wrapper-focused {
-    border-color: ${COLORS.PRIMARY};
-    box-shadow: 0 0 0 2px ${COLORS.PRIMARY_LIGHT_20};
+    border-color: var(--ui-primary);
+    box-shadow: 0 0 0 3px rgb(var(--ui-primary-rgb) / 25%);
   }
 
   .ant-input::placeholder {
-    color: ${COLORS.TEXT_SECONDARY};
+    color: var(--ui-text-dimmed);
   }
 
-  /* Иконка очистки (allow-clear) — видимый цвет в тёмной теме. */
   .ant-input-clear-icon {
-    color: ${COLORS.TEXT_SECONDARY};
+    color: var(--ui-text-dimmed);
   }
 
   .ant-input-clear-icon:hover {
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--ui-text);
   }
 
   .ant-input:disabled,
   .ant-input-affix-wrapper-disabled {
-    background: ${COLORS.BG_SECONDARY};
-    color: ${COLORS.TEXT_SECONDARY};
+    background: var(--ui-bg);
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.75;
   }
 `

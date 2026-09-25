@@ -1,149 +1,128 @@
-import styled, { keyframes } from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
+import styled from 'vue3-styled-components'
 
-const spinKeyframes = keyframes`
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-`
+// Кнопка в оформлении Nuxt UI (UButton): высота 28 / 32 / 40, 500-е начертание,
+// радиус 6. Рамка — кольцом (box-shadow), чтобы не менять размеры.
+//
+// primary          → solid: заливка акцентом, текст --ui-text-inverted
+// primary + danger → solid цветом ошибки
+// secondary        → нейтральная outline: кольцо accented, hover — подложка
+// danger           → outline цветом ошибки
+// link             → только текст акцентом
 
-export const SC_ButtonLoadingWrap = styled.span`
-  margin-right: 8px;
-  display: inline-flex;
-
-  img {
-    animation: ${spinKeyframes} 1s linear infinite;
-  }
+/** Спиннер цветом текста кнопки (раньше — <img>, где currentColor не работает). */
+export const SC_ButtonSpinner = styled.span`
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+  margin-right: 6px;
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 `
 
 export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 400;
+  gap: 6px;
+  width: ${(p) => (p.block ? '100%' : 'auto')};
+  padding: ${(p) => (p.size === 'large' ? '8px 12px' : '6px 10px')};
+  border: 0;
+  border-radius: var(--ui-radius-md);
+  font-size: ${(p) => {
+    if (p.size === 'large') return '16px'
+    if (p.size === 'small') return '12px'
+    return '14px'
+  }};
+  font-weight: 500;
+  line-height: ${(p) => {
+    if (p.size === 'large') return '24px'
+    if (p.size === 'small') return '16px'
+    return '20px'
+  }};
   text-align: center;
   white-space: nowrap;
   vertical-align: middle;
   cursor: pointer;
   user-select: none;
-  border: 1px solid transparent;
-  padding: ${(p) => {
-    if (p.size === 'large') return '8px 20px'
-    if (p.size === 'small') return '4px 12px'
-    return '6px 16px'
-  }};
-  font-size: ${(p) => {
-    if (p.size === 'large') return '16px'
-    if (p.size === 'small') return '12px'
-    return '16px'
-  }};
-  line-height: 1.5;
-  border-radius: 4px;
-  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-  width: ${(p) => (p.block ? '100%' : 'auto')};
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
 
-  /* Primary variant */
   &.bastyon-button-primary {
-    background: ${COLORS.PRIMARY};
-    border-color: ${COLORS.PRIMARY};
-    /* Текст на насыщенной заливке — всегда белый. BG_PRIMARY флипается в тёмной
-       теме (становится тёмным) и давал серый текст на синем — низкий контраст. */
-    color: ${COLORS.WHITE};
+    background: var(--ui-primary);
+    color: var(--ui-text-inverted);
 
-    &:hover:not(:disabled) {
-      background: ${COLORS.PRIMARY_ACTIVE};
-      border-color: ${COLORS.PRIMARY_ACTIVE};
-    }
-
+    &:hover:not(:disabled),
     &:active:not(:disabled) {
-      background: ${COLORS.PRIMARY_DARK};
-      border-color: ${COLORS.PRIMARY_DARK};
+      background: rgb(var(--ui-primary-rgb) / 75%);
+      color: var(--ui-text-inverted);
     }
   }
 
-  /* Primary danger variant */
   &.bastyon-button-primary.bastyon-button-danger {
-    background: ${COLORS.DANGER};
-    border-color: ${COLORS.DANGER};
-    color: ${COLORS.WHITE};
+    background: var(--ui-error);
 
-    &:hover:not(:disabled) {
-      background: ${COLORS.DANGER_HOVER};
-      border-color: ${COLORS.DANGER_HOVER};
-    }
-
+    &:hover:not(:disabled),
     &:active:not(:disabled) {
-      background: ${COLORS.DANGER_ACTIVE};
-      border-color: ${COLORS.DANGER_ACTIVE};
+      background: rgb(var(--ui-error-rgb) / 75%);
     }
   }
 
-  /* Secondary variant (default) */
   &.bastyon-button-secondary,
-  &:not(.bastyon-button-primary, .bastyon-button-danger) {
-    background: ${COLORS.BG_PRIMARY};
-    border-color: ${COLORS.BORDER};
-    color: ${COLORS.TEXT_PRIMARY};
+  &:not(.bastyon-button-primary, .bastyon-button-danger, .bastyon-button-link) {
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    box-shadow: inset 0 0 0 1px var(--ui-border-accented);
 
-    &:hover:not(:disabled) {
-      background: ${COLORS.BG_SECONDARY};
-      border-color: ${COLORS.PRIMARY};
-      color: ${COLORS.PRIMARY};
-    }
-
+    &:hover:not(:disabled),
     &:active:not(:disabled) {
-      background: ${COLORS.BG_DISABLED};
-      border-color: ${COLORS.PRIMARY_ACTIVE};
-      color: ${COLORS.PRIMARY_ACTIVE};
+      background: var(--ui-bg-elevated);
+      color: var(--ui-text);
     }
   }
 
-  /* Secondary danger variant */
   &.bastyon-button-secondary.bastyon-button-danger,
   &.bastyon-button-danger:not(.bastyon-button-primary) {
-    background: ${COLORS.BG_PRIMARY};
-    border-color: ${COLORS.DANGER};
-    color: ${COLORS.DANGER};
+    background: transparent;
+    color: var(--ui-error);
+    box-shadow: inset 0 0 0 1px rgb(var(--ui-error-rgb) / 50%);
 
-    &:hover:not(:disabled) {
-      background: ${COLORS.BG_SECONDARY};
-      border-color: ${COLORS.DANGER_HOVER};
-      color: ${COLORS.DANGER_HOVER};
-    }
-
+    &:hover:not(:disabled),
     &:active:not(:disabled) {
-      background: ${COLORS.BG_DISABLED};
-      border-color: ${COLORS.DANGER_ACTIVE};
-      color: ${COLORS.DANGER_ACTIVE};
+      background: rgb(var(--ui-error-rgb) / 10%);
+      color: var(--ui-error);
     }
   }
 
-  /* Disabled state */
-  &:disabled {
-    background: ${COLORS.BG_DISABLED} !important;
-    border-color: ${COLORS.BORDER} !important;
-    color: ${COLORS.TEXT_SECONDARY} !important;
-    cursor: not-allowed !important;
-    opacity: 0.6;
+  &.bastyon-button-link {
+    background: transparent;
+    color: var(--ui-primary-text);
+
+    &:hover:not(:disabled),
+    &:active:not(:disabled) {
+      background: transparent;
+      color: rgb(var(--ui-primary-rgb) / 75%);
+    }
   }
 
-  /* Loading state */
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
+  }
+
   &.bastyon-button-loading {
     pointer-events: none;
-    opacity: 0.65;
-    cursor: not-allowed;
   }
 
-  /* Focus state */
   &:focus {
     outline: 0;
-    box-shadow: 0 0 0 2px ${COLORS.PRIMARY_LIGHT_20};
   }
 
-  &:focus:not(:focus-visible) {
-    box-shadow: none;
+  &:focus-visible {
+    outline: var(--ui-focus-outline);
   }
 `

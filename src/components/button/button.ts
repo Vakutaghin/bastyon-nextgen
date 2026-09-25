@@ -24,6 +24,8 @@ export function useButton(p: ButtonProps) {
       // Если type="danger", это secondary с danger стилями
       classes.push('bastyon-button-secondary')
       classes.push('bastyon-button-danger')
+    } else if (buttonType.value === 'link') {
+      classes.push('bastyon-button-link')
     }
 
     // Если есть проп danger, добавляем класс danger
@@ -42,12 +44,12 @@ export function useButton(p: ButtonProps) {
     size: p.size || 'middle',
     disabled: p.disabled || p.loading,
     block: p.block,
-    htmlType: p.htmlType || 'button'
+    htmlType: p.htmlType || 'button',
   }))
 
   return {
     SC_ButtonMore,
     buttonProps,
-    buttonClass
+    buttonClass,
   }
 }

@@ -1,7 +1,7 @@
 import { ref, computed, watch, useAttrs } from 'vue'
 import { Avatar } from 'ant-design-vue'
 
-import { generateNeutralColor, getContrastTextColor } from './color-utils'
+import { avatarFallbackBackground, avatarFallbackText, avatarHue } from './color-utils'
 import { SC_Avatar } from './styled'
 import type { AvatarProps } from './types'
 import { getInitials as getInitialsUtil } from '@/helpers/common/initials'
@@ -42,22 +42,12 @@ export function useAvatar(p: AvatarProps) {
     return getInitialsUtil(text, { fallback: '' })
   }
 
-  /**
-   * Генерирует цвет фона для фолбэка
-   */
-  const fallbackColor = computed(() => {
-    // Если есть текст, используем его как seed для детерминированного цвета
-    const text = p.fallbackText || p.alt
-    const seed = text || p.src || undefined
-    return generateNeutralColor(seed)
-  })
+  /** Оттенок пользователя: имя или адрес дают один и тот же цвет. */
+  const hue = computed(() => avatarHue(p.fallbackText || p.alt || p.src || undefined))
 
-  /**
-   * Генерирует цвет текста для контраста с фоном
-   */
-  const textColor = computed(() => {
-    return getContrastTextColor(fallbackColor.value)
-  })
+  /** Подложка и инициалы аватара без фото (см. color-utils.ts). */
+  const fallbackColor = computed(() => avatarFallbackBackground(hue.value))
+  const textColor = computed(() => avatarFallbackText(hue.value))
 
   const handleImageError = (_e: Event) => {
     showPlaceholder.value = true

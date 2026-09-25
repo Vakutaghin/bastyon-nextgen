@@ -1,15 +1,13 @@
 // @ts-expect-error vue3-styled-components types
 import styled, { keyframes } from 'vue3-styled-components'
 
-const shimmer = keyframes`
-  0% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0 50%;
+const pulse = keyframes`
+  50% {
+    opacity: 0.5;
   }
 `
 
+/** Заглушка до загрузки ролика — как скелетон Nuxt UI (раньше светлый блик и в тёмной теме). */
 export const SC_VideoSkeleton = styled.div`
   position: absolute;
   top: 0;
@@ -17,9 +15,8 @@ export const SC_VideoSkeleton = styled.div`
   width: 100%;
   height: 100%;
   z-index: 3;
-  background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 37%, #f2f2f2 63%);
-  background-size: 400% 100%;
-  animation: ${shimmer} 1.4s ease infinite;
+  background: var(--ui-bg-elevated);
+  animation: ${pulse} 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 `
 
 export const SC_VideoContainer = styled.div`

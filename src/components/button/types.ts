@@ -1,5 +1,6 @@
 export interface ButtonProps {
-  type?: 'primary' | 'secondary' | 'danger' | 'default'
+  /** `link` — только текст акцентом, без рамки и подложки. */
+  type?: 'primary' | 'secondary' | 'danger' | 'default' | 'link'
   size?: 'large' | 'middle' | 'small'
   disabled?: boolean
   loading?: boolean

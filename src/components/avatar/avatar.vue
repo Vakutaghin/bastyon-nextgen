@@ -3,8 +3,7 @@
     ref="rootEl"
     :shape="shape"
     :style="{
-      backgroundColor: fallbackColor,
-      color: textColor
+      color: textColor,
     }"
   >
     <template v-if="actualSrc && !showPlaceholder">
@@ -12,7 +11,12 @@
         :src="actualSrc"
         :alt="alt"
         crossorigin="anonymous"
-        :style="{ width: sizePx + 'px', height: sizePx + 'px', borderRadius: borderRadius, objectFit: 'cover' }"
+        :style="{
+          width: sizePx + 'px',
+          height: sizePx + 'px',
+          borderRadius: borderRadius,
+          objectFit: 'cover',
+        }"
         @error="handleImageError"
         @load="handleImageLoad"
       />
@@ -29,8 +33,8 @@
           justifyContent: 'center',
           backgroundColor: fallbackColor,
           color: textColor,
-          fontWeight: 600,
-          fontSize: Math.max(12, sizePx * 0.4) + 'px'
+          fontWeight: 500,
+          fontSize: Math.max(12, sizePx * 0.4) + 'px',
         }"
       >
         {{ getInitials() }}
@@ -39,20 +43,20 @@
 
     <Avatar
       v-else
-      v-bind='$attrs'
-      :size='size'
-      :src='actualSrc && !showPlaceholder ? actualSrc : undefined'
+      v-bind="$attrs"
+      :size="size"
+      :src="actualSrc && !showPlaceholder ? actualSrc : undefined"
       :class="['bastyon-avatar', avatarClass]"
       :style="{
-        backgroundColor: (!src || showPlaceholder) ? fallbackColor : undefined,
-        color: (!src || showPlaceholder) ? textColor : undefined,
+        backgroundColor: !src || showPlaceholder ? fallbackColor : undefined,
+        color: !src || showPlaceholder ? textColor : undefined,
         marginRight: 0,
       }"
-      @error='handleImageError'
-      @load='handleImageLoad'
+      @error="handleImageError"
+      @load="handleImageLoad"
     >
       <slot>
-        <template v-if='!actualSrc || showPlaceholder'>
+        <template v-if="!actualSrc || showPlaceholder">
           {{ getInitials() }}
         </template>
       </slot>
@@ -62,7 +66,7 @@
       class="pending-badge"
       :style="{
         width: Math.max(14, Math.floor(sizePx * 0.35)) + 'px',
-        height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px'
+        height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px',
       }"
     >
       <ClockCircleOutlined :style="ICON_WHITE_9" />
@@ -72,7 +76,7 @@
       class="verified-badge"
       :style="{
         width: Math.max(14, Math.floor(sizePx * 0.35)) + 'px',
-        height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px'
+        height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px',
       }"
     >
       <CheckOutlined :style="ICON_WHITE_10" />
@@ -80,7 +84,7 @@
   </SC_Avatar>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { useAvatar } from './avatar'
 import type { AvatarProps } from './types'
 import { CheckOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'

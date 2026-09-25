@@ -1,12 +1,11 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Spin = styled.div`
   .ant-spin-dot-item {
-    background-color: ${COLORS.PRIMARY};
+    background-color: var(--ui-primary);
   }
 
   .ant-spin-text {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--ui-text-muted);
   }
 `

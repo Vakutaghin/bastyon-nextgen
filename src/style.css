@@ -117,6 +117,9 @@
   --ui-border-accented: var(--ui-color-neutral-300);
   --ui-border-inverted: var(--ui-color-neutral-900);
 
+  /* Светлота инициалов аватара без фото (components/avatar/color-utils.ts). */
+  --ui-avatar-text-l: 38%;
+
   /* ── Форма: радиусы, тени, фокус, анимации (одинаковые в обеих темах) ────── */
 
   --ui-radius-xs: 2px;
@@ -416,6 +419,8 @@
   --ui-border-accented: var(--ui-color-neutral-700);
   --ui-border-inverted: #fff;
 
+  --ui-avatar-text-l: 78%;
+
   --color-overlay-2: rgba(255, 255, 255, 0.02);
   --color-overlay-3: rgba(255, 255, 255, 0.03);
   --color-overlay-4: rgba(255, 255, 255, 0.04);
@@ -504,6 +509,8 @@ body {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Нативные чекбоксы, радио и ползунки — акцентом темы. */
+  accent-color: var(--ui-primary);
 }
 
 html {
@@ -825,29 +832,15 @@ body .ant-notification .ant-notification-notice .ant-notification-notice-descrip
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Mobile compactness for Ant Design Card body — vue3-styled-components не
-   доводит :deep() до .ant-card-body, поэтому override живёт здесь как глобал.
-   Применяется только к нашим Card-обёрткам (.bastyon-card), не ломая другие
-   ant-card в приложении (модалки, всплывашки и т.д.).
+   Отступ тела карточки (.bastyon-card): как у Nuxt UI — 24px, на узких
+   экранах 16px. vue3-styled-components не доводит :deep() до .ant-card-body,
+   поэтому правило глобальное; другие ant-card (модалки и т.д.) не задевает.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
   /* BREAKPOINTS.TABLET */
-  .bastyon-card.ant-card {
-    border-radius: 10px;
-  }
   .bastyon-card .ant-card-body {
-    padding: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  /* BREAKPOINTS.MOBILE */
-  .bastyon-card.ant-card {
-    border-radius: 8px;
-  }
-  .bastyon-card .ant-card-body {
-    padding: 12px;
+    padding: 16px;
   }
 }
 

@@ -5,24 +5,16 @@
     :disabled="buttonProps.disabled"
     :class="buttonClass"
   >
-    <SC_ButtonLoadingWrap v-if="loading">
-      <img
-        :src="loadingSpinnerIcon"
-        alt=""
-        width="14"
-        height="14"
-      />
-    </SC_ButtonLoadingWrap>
+    <SC_ButtonSpinner v-if="loading" aria-hidden="true" />
     <slot />
   </SC_ButtonMore>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useButton } from './button'
 import type { ButtonProps } from './types'
-import loadingSpinnerIcon from './img/loading-spinner.svg'
-import { SC_ButtonLoadingWrap } from './styled'
+import { SC_ButtonSpinner } from './styled'
 
 const p = defineProps<ButtonProps>()
 

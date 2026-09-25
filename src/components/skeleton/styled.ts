@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 interface SkeletonAttrs {
   w: string
@@ -9,27 +8,19 @@ interface SkeletonAttrs {
 
 const skeletonAttrs = { w: String, h: String, br: String }
 
+// Скелетон в оформлении Nuxt UI (USkeleton): подложка elevated и пульсация
+// прозрачностью вместо бегущего блика.
 export const SC_Skeleton = styled<SkeletonAttrs>('div', skeletonAttrs)`
+  display: inline-block;
   width: ${(p) => p.w};
   height: ${(p) => p.h};
   border-radius: ${(p) => p.br};
-  background: linear-gradient(
-    90deg,
-    ${COLORS.GRAY_F1} 0%,
-    ${COLORS.GRAY_E8} 50%,
-    ${COLORS.GRAY_F1} 100%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.4s ease-in-out infinite;
-  display: inline-block;
+  background: var(--ui-bg-elevated);
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
-  @keyframes skeleton-shimmer {
-    0% {
-      background-position: 200% 0;
-    }
-
-    100% {
-      background-position: -200% 0;
+  @keyframes skeleton-pulse {
+    50% {
+      opacity: 0.5;
     }
   }
 `
