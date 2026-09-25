@@ -75,7 +75,7 @@ export const SC_EmbedCta = styled.a`
   padding: 7px 14px;
   border-radius: var(--ui-radius-lg);
   background: var(--color-primary);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;

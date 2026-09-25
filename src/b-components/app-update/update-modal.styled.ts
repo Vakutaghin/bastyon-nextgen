@@ -27,7 +27,7 @@ export const SC_Footer = styled.div`
 
 export const SC_PrimaryButton = styled.button`
   background: var(--color-primary);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-md);
   padding: 8px 20px;
@@ -39,7 +39,7 @@ export const SC_PrimaryButton = styled.button`
   &:hover {
     background: var(--color-primary-hover);
     border-color: var(--color-primary-hover);
-    color: var(--color-white);
+    color: var(--ui-text-inverted);
   }
 `
 

@@ -95,7 +95,7 @@ export const SC_WelcomeNext = styled.button`
   border-radius: var(--ui-radius-lg);
   border: none;
   background: var(--color-primary);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;

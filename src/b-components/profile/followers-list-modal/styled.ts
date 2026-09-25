@@ -85,7 +85,7 @@ export const SC_FollowBtn = styled.button`
   border-radius: var(--ui-radius-md);
   border: 1px solid var(--color-primary);
   background: var(--color-primary);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   font-size: 13px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};

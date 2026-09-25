@@ -101,7 +101,7 @@ export const SC_StartChatButton = styled.button`
   border-radius: var(--ui-radius-lg);
   border: none;
   background-color: var(--color-brand-cyan);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -164,7 +164,7 @@ export const SC_SubscribeButton = styled.button`
   border-radius: var(--ui-radius-lg);
   border: 1px solid var(--color-brand-cyan);
   background-color: var(--color-brand-cyan);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;

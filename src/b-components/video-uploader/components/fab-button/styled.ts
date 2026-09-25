@@ -9,7 +9,7 @@ export const SC_FabButton = styled.button`
   height: 56px !important;
   border-radius: 50% !important;
   background-color: var(--color-ant-blue) !important;
-  color: var(--color-white) !important;
+  color: var(--ui-text-inverted) !important;
   border: none !important;
   cursor: pointer !important;
   box-shadow: var(--shadow-md) !important;

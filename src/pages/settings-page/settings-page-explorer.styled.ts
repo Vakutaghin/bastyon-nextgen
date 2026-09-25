@@ -35,7 +35,7 @@ export const SC_ExplorerOpenFullButton = styled.a`
   padding: 12px 22px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   background: var(--color-ant-blue);
   border: none;
   border-radius: var(--ui-radius-lg);
@@ -46,7 +46,7 @@ export const SC_ExplorerOpenFullButton = styled.a`
 
   &:hover {
     background: var(--color-ant-blue-hover);
-    color: var(--color-white);
+    color: var(--ui-text-inverted);
   }
 `
 

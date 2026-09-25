@@ -76,7 +76,7 @@ export const SC_ShowKeyButton = styled.button`
   padding: 10px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   background: var(--color-ant-blue);
   border: none;
   border-radius: var(--ui-radius-lg);
@@ -150,7 +150,7 @@ export const SC_ConfirmBtnPrimary = styled.button`
   padding: 8px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   background: var(--color-ant-blue);
   border: none;
   border-radius: var(--ui-radius-md);
