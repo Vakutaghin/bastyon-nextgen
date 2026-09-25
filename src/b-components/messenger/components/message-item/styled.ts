@@ -16,13 +16,13 @@ export const SC_MessageItem = styled.div`
   &.mine {
     background-color: rgb(var(--ui-primary-rgb) / 10%);
     color: var(--color-text-primary);
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: var(--ui-radius-sm);
   }
 
   &.others {
     background-color: var(--ui-bg-elevated);
     color: var(--color-text-primary);
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: var(--ui-radius-sm);
   }
 `
 

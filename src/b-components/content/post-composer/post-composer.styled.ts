@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 
-import { BORDER_RADIUS, FONT_SIZE, SPACING, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
+import { FONT_SIZE, SPACING, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
 import { nuxtField } from '@/styles/field-styles'
 
@@ -24,7 +24,7 @@ export const SC_MentionDropdown = styled.ul`
   overscroll-behavior: contain;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-default);
-  border-radius: ${BORDER_RADIUS.MD};
+  border-radius: var(--ui-radius-lg);
   box-shadow: 0 6px 24px var(--color-overlay-20);
 `
 
@@ -33,7 +33,7 @@ export const SC_MentionRow = styled.li`
   align-items: center;
   gap: 10px;
   padding: 7px 10px;
-  border-radius: ${BORDER_RADIUS.SM};
+  border-radius: var(--ui-radius-sm);
   cursor: pointer;
 
   &.active,
@@ -91,7 +91,7 @@ export const SC_EmojiBtn = styled.button`
   width: 34px;
   height: 34px;
   border: none;
-  border-radius: ${BORDER_RADIUS.SM};
+  border-radius: var(--ui-radius-sm);
   background: none;
   color: var(--color-text-secondary);
   font-size: 18px;

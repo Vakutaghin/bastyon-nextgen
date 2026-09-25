@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 
-import { BORDER_RADIUS, FONT_SIZE, SPACING, Z_INDEX } from '@/styles/design-tokens'
+import { FONT_SIZE, SPACING, Z_INDEX } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
 
 export const SC_TagsField = styled.div`
@@ -14,7 +14,7 @@ export const SC_TagsRow = styled.div`
   gap: ${SPACING.XS};
   padding: ${SPACING.XS} ${SPACING.SM};
   border: 1px solid var(--color-border);
-  border-radius: ${BORDER_RADIUS.MD};
+  border-radius: var(--ui-radius-lg);
   background: var(--color-bg-input);
 `
 
@@ -26,7 +26,7 @@ export const SC_TagChip = styled.span`
   font-size: ${FONT_SIZE.SM};
   color: var(--color-primary);
   background: var(--color-primary-light);
-  border-radius: ${BORDER_RADIUS.SM};
+  border-radius: var(--ui-radius-sm);
   white-space: nowrap;
 `
 
@@ -76,7 +76,7 @@ export const SC_Dropdown = styled.ul`
   list-style: none;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
-  border-radius: ${BORDER_RADIUS.MD};
+  border-radius: var(--ui-radius-lg);
   box-shadow: 0 6px 20px var(--color-overlay-12);
   max-height: min(320px, 50vh);
   overflow-y: auto;
@@ -91,7 +91,7 @@ export const SC_Suggestion = styled('li', itemProps)`
   padding: ${SPACING.XS} ${SPACING.SM};
   font-size: ${FONT_SIZE.MD};
   color: var(--color-text-primary);
-  border-radius: ${BORDER_RADIUS.SM};
+  border-radius: var(--ui-radius-sm);
   cursor: pointer;
   background: ${(props) => (props.active ? COLORS.BG_HOVER : 'transparent')};
 

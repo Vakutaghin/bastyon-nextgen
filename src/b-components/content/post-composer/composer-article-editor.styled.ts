@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 
-import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
+import { FONT_SIZE, SPACING } from '@/styles/design-tokens'
 
 export const SC_ArticleEditor = styled.div`
   min-height: 240px;
@@ -10,7 +10,7 @@ export const SC_ArticleEditor = styled.div`
   color: var(--color-text-primary);
   background: var(--color-bg-input);
   border: 1px solid var(--color-border);
-  border-radius: ${BORDER_RADIUS.MD};
+  border-radius: var(--ui-radius-lg);
 
   /* Editor.js рисует своё контент-поле внутри — даём ему цвет темы и убираем лишние отступы. */
   & .codex-editor__redactor {

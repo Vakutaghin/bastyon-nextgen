@@ -68,7 +68,7 @@ export const SC_DiagUpdateButton = styled.button`
   background: transparent;
   color: var(--color-primary);
   border: 1px solid var(--color-primary);
-  border-radius: var(--radius-sm);
+  border-radius: var(--ui-radius-sm);
   padding: 3px 12px;
   font-size: 14px;
   cursor: pointer;

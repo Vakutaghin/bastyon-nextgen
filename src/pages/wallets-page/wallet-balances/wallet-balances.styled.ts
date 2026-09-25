@@ -1,7 +1,7 @@
 // Стили вкладки «Балансы» (карточки сумм, таблицы кошельков, диалог переименования).
 // Перенесены из wallets-page.styled.ts вместе с выделением саб-компонента.
 import styled from 'vue3-styled-components'
-import { BORDER_RADIUS, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
+import { TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 import { nuxtField } from '@/styles/field-styles'
 
 export const SC_WalletLabel = styled.span`
@@ -51,7 +51,7 @@ export const SC_RenameDialog = styled.div`
   width: 100%;
   max-width: 360px;
   padding: 18px;
-  border-radius: ${BORDER_RADIUS.LG};
+  border-radius: var(--ui-radius-lg);
   background: var(--color-bg-primary);
 `
 

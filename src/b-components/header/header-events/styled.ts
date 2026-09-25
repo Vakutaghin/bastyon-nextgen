@@ -79,7 +79,7 @@ export const SC_KindChip = styled.div`
   align-items: center;
   gap: 6px;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius: var(--ui-radius-full);
   background: rgb(var(--ui-primary-rgb) / 10%);
   color: var(--ui-primary);
   font-size: 12px;

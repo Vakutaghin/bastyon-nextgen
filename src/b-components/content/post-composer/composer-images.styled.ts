@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 
-import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
+import { FONT_SIZE, SPACING } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
 
 export const SC_ImagesGrid = styled.div`
@@ -12,7 +12,7 @@ export const SC_ImagesGrid = styled.div`
 export const SC_ImageThumb = styled.div`
   position: relative;
   aspect-ratio: 1 / 1;
-  border-radius: ${BORDER_RADIUS.MD};
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   background: var(--color-bg-tertiary);
 
@@ -101,7 +101,7 @@ export const SC_AddTile = styled('label', tileProps)`
   justify-content: center;
   aspect-ratio: 1 / 1;
   border: 1px dashed ${(props) => (props.dragover ? COLORS.PRIMARY : COLORS.BORDER)};
-  border-radius: ${BORDER_RADIUS.MD};
+  border-radius: var(--ui-radius-lg);
   color: var(--color-text-secondary);
   font-size: 28px;
   cursor: pointer;

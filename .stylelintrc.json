@@ -44,6 +44,14 @@
         "message": "Хардкод rgb/rgba запрещён в стилях. Используй COLORS.* из src/styles/theme-colors.ts (см. OVERLAY_*, WHITE_*, и т.п.)."
       }
     ],
+    "declaration-property-unit-allowed-list": [
+      {
+        "/radius$/": ["%"]
+      },
+      {
+        "message": "Радиус — токен var(--ui-radius-*) из src/style.css (шкала Nuxt UI: xs 2, sm 4, md 6, lg 8, xl 12, 2xl 16, 3xl 24, full), 50% или 0."
+      }
+    ],
     "declaration-property-value-allowed-list": [
       {
         "transition": [

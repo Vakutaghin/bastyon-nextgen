@@ -9,7 +9,7 @@ export const SC_NewPostsPill = styled.button`
   margin: 0 auto 12px;
   padding: 6px 12px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--ui-radius-full);
   background: var(--ui-primary);
   color: var(--ui-text-inverted);
   font-size: 14px;

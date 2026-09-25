@@ -12,13 +12,8 @@ export const SPACING = {
   XXL: '48px',
 } as const
 
-export const BORDER_RADIUS = {
-  SM: '4px',
-  MD: '8px',
-  LG: '12px',
-  XL: '16px',
-  ROUND: '50%',
-} as const
+// Радиусы — только CSS-переменные --ui-radius-* из style.css (шкала Nuxt UI);
+// stylelint не пускает в border-radius другие значения, кроме 50% и 0.
 
 export const BREAKPOINTS = {
   SMALL_MOBILE: '360px',
@@ -69,7 +64,6 @@ export const Z_INDEX = {
 } as const
 
 export const FONT_SIZE = {
-  XS: '11px',
   SM: '12px',
   MD: '14px',
   LG: '16px',

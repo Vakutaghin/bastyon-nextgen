@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
-import { BORDER_RADIUS, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
+import { TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 
 const activeProps = { active: Boolean }
 
@@ -24,7 +24,7 @@ export const SC_Dialog = styled.div`
   max-height: 90vh;
   overflow: auto;
   padding: 16px;
-  border-radius: ${BORDER_RADIUS.LG};
+  border-radius: var(--ui-radius-lg);
   background: var(--color-bg-primary);
 `
 
@@ -34,7 +34,7 @@ export const SC_Stage = styled.div`
   align-items: center;
   justify-content: center;
   background: var(--color-bg-secondary);
-  border-radius: ${BORDER_RADIUS.MD};
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   user-select: none;
   touch-action: none;
@@ -85,7 +85,7 @@ export const SC_ToolBtn = styled('button', activeProps)`
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: ${BORDER_RADIUS.MD};
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${(p) => (p.active ? COLORS.PRIMARY : COLORS.BORDER_DEFAULT)};
   background: ${(p) => (p.active ? COLORS.PRIMARY_LIGHT : COLORS.BG_SECONDARY)};
   color: ${(p) => (p.active ? COLORS.PRIMARY : COLORS.TEXT_PRIMARY)};

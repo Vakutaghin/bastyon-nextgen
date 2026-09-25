@@ -1,10 +1,10 @@
 <template>
   <template v-if="isAuthRestoring">
     <SC_AuthSkeleton aria-hidden="true">
-      <Skeleton :width="32" :height="32" :radius="16" />
+      <Skeleton :width="32" :height="32" radius="50%" />
       <SC_SkeletonLines>
-        <Skeleton :width="90" :height="12" :radius="4" />
-        <Skeleton :width="60" :height="10" :radius="4" />
+        <Skeleton :width="90" :height="12" />
+        <Skeleton :width="60" :height="10" />
       </SC_SkeletonLines>
     </SC_AuthSkeleton>
   </template>

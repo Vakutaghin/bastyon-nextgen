@@ -28,6 +28,6 @@ export const SC_DateInput = styled.input`
 `
 
 export const SC_TrialHint = styled.span`
-  font-size: ${FONT_SIZE.XS};
+  font-size: ${FONT_SIZE.SM};
   color: var(--color-text-muted);
 `

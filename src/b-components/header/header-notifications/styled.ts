@@ -154,7 +154,7 @@ export const SC_NotificationTypePill = styled.div<{ variant?: string }>`
   align-items: center;
   gap: 6px;
   padding: 3px 8px 3px 6px;
-  border-radius: 999px;
+  border-radius: var(--ui-radius-full);
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.2px;

@@ -145,6 +145,9 @@
   --ui-radius-lg: 8px;
   --ui-radius-xl: 12px;
   --ui-radius-2xl: 16px;
+  --ui-radius-3xl: 24px;
+  /* «Пилюля»: полностью скруглённые концы у чипов и счётчиков. */
+  --ui-radius-full: 9999px;
 
   /* В тёмной теме тени почти не видны — регионы там отделяют рамки. */
   --ui-shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -335,16 +338,6 @@
   --font-family-mono:
     'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono',
     monospace;
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-md: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 18px;
-
-  /* ── Border radius (старая шкала; новая — --ui-radius-*, перевод на этапе 7) ── */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
 
   /* ── Transitions ── */
   --transition-quick: 0.15s ease; /* TRANSITIONS.QUICK: hover и фокус */
@@ -515,7 +508,8 @@ body {
 }
 
 html {
-  font-size: var(--font-size-lg);
+  /* На 16px держатся rem; текст интерфейса — 14px, в компонентах. */
+  font-size: 16px;
   line-height: 1.4;
   min-height: 100%;
   position: relative;
@@ -542,7 +536,7 @@ html::-webkit-scrollbar-track {
 
 html::-webkit-scrollbar-thumb {
   background-color: var(--ui-border-accented);
-  border-radius: var(--radius-sm);
+  border-radius: var(--ui-radius-sm);
 }
 
 html::-webkit-scrollbar-thumb:hover {
@@ -693,7 +687,7 @@ a:active {
 .customscroll::-webkit-scrollbar-thumb {
   background-color: var(--ui-border-accented);
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--ui-radius-sm);
 }
 
 .customscroll::-webkit-scrollbar-thumb:hover {

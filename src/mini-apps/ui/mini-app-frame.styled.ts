@@ -52,7 +52,7 @@ export const SC_Loader = styled.div`
 export const SC_LoaderIcon = styled.img`
   width: 72px;
   height: 72px;
-  border-radius: 18px;
+  border-radius: var(--ui-radius-2xl);
   animation: pulse 1.6s ease-in-out infinite;
 
   @keyframes pulse {

@@ -23,7 +23,7 @@ export const SC_VersionLabel = styled.div`
   font-weight: 500;
   color: var(--color-primary);
   background: var(--color-primary-light);
-  border-radius: 999px;
+  border-radius: var(--ui-radius-full);
   padding: 3px 10px;
   margin-bottom: 12px;
 `

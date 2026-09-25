@@ -28,7 +28,7 @@ export const SC_MessageInput = styled.textarea`
   flex: 1;
   box-sizing: border-box;
   border: 1px solid var(--ui-border-accented);
-  border-radius: 20px;
+  border-radius: var(--ui-radius-3xl);
   padding: 8px 16px;
   font-size: 14px;
   color: var(--ui-text-highlighted);

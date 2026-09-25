@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 
-import { BORDER_RADIUS, FONT_SIZE, LAYOUT, SPACING } from '@/styles/design-tokens'
+import { FONT_SIZE, LAYOUT, SPACING } from '@/styles/design-tokens'
 
 export const SC_ComposePage = styled.div`
   display: flex;
@@ -21,7 +21,7 @@ export const SC_ComposeCard = styled.div`
      с цветом рамок полей внутри. */
   background: var(--ui-bg);
   border: 1px solid var(--ui-border);
-  border-radius: ${BORDER_RADIUS.LG};
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_ComposeTitle = styled.h1`

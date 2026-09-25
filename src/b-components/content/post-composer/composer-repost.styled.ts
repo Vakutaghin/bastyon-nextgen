@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 
-import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
+import { FONT_SIZE, SPACING } from '@/styles/design-tokens'
 
 export const SC_RepostPreview = styled.div`
   display: flex;
@@ -8,7 +8,7 @@ export const SC_RepostPreview = styled.div`
   gap: ${SPACING.SM};
   padding: ${SPACING.SM} ${SPACING.MD};
   border: 1px solid var(--color-border);
-  border-radius: ${BORDER_RADIUS.MD};
+  border-radius: var(--ui-radius-lg);
   background: var(--color-bg-secondary);
 `
 
@@ -38,5 +38,5 @@ export const SC_RepostThumb = styled.img`
   width: 100%;
   max-height: 180px;
   object-fit: cover;
-  border-radius: ${BORDER_RADIUS.SM};
+  border-radius: var(--ui-radius-sm);
 `

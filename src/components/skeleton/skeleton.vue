@@ -1,8 +1,8 @@
 <template>
-  <SC_Skeleton :w='w' :h='h' :br='br' />
+  <SC_Skeleton :w="w" :h="h" :br="br" />
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { SC_Skeleton } from './styled'
 
@@ -12,21 +12,21 @@ const p = withDefaults(
     width?: number | string
     /** Высота: число (px) или CSS-строка. */
     height?: number | string
-    /** Радиус скругления: число (px) или CSS-строка. По умолчанию 4px. */
+    /** Радиус скругления: число (px) или CSS-строка. По умолчанию 6px, как у USkeleton. */
     radius?: number | string
   }>(),
   {
     width: '100%',
     height: 16,
-    radius: 4,
-  },
+    radius: 'var(--ui-radius-md)',
+  }
 )
 
 function cssSize(v: number | string): string {
   return typeof v === 'number' ? `${v}px` : v
 }
 
-const w  = computed(() => cssSize(p.width))
-const h  = computed(() => cssSize(p.height))
+const w = computed(() => cssSize(p.width))
+const h = computed(() => cssSize(p.height))
 const br = computed(() => cssSize(p.radius))
 </script>

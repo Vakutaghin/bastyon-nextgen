@@ -34,7 +34,7 @@ export function useAvatar(p: AvatarProps) {
 
   // Вычисляем border-radius в зависимости от shape
   const borderRadius = computed(() => {
-    return p.shape === 'square' ? '4px' : '50%'
+    return p.shape === 'square' ? 'var(--ui-radius-sm)' : '50%'
   })
 
   const getInitials = (): string => {
