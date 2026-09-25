@@ -115,6 +115,12 @@ export const SC_MobileBackButton = styled.button`
   font-size: 24px;
   cursor: pointer;
   display: none;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--ui-text-highlighted);
+  }
+
   align-items: center;
   justify-content: center;
   padding: 0;

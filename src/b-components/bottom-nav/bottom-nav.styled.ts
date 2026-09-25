@@ -44,6 +44,13 @@ export const SC_NavItem = styled('button', activeProps)`
   &:active {
     opacity: 0.7;
   }
+
+  /* Только с мышью: на телефоне :hover «залипает» после тапа. */
+  @media (hover: hover) {
+    &:hover {
+      color: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-text-highlighted)')};
+    }
+  }
 `
 
 export const SC_NavIcon = styled.span`

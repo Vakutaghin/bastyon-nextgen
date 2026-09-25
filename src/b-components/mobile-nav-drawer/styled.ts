@@ -67,6 +67,14 @@ export const SC_DrawerClose = styled.button`
   &:active {
     background: var(--ui-bg-elevated);
   }
+
+  @media (hover: hover) {
+    &:hover {
+      color: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-text-highlighted)')};
+      background: ${(p) =>
+        p.active ? 'var(--ui-bg-elevated)' : 'rgb(var(--ui-bg-elevated-rgb) / 50%)'};
+    }
+  }
 `
 
 export const SC_DrawerSection = styled.div`

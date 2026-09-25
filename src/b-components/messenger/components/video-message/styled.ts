@@ -58,6 +58,11 @@ export const SC_PlayOverlay = styled.button`
   cursor: pointer;
   padding: 0;
   margin: 0;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--color-overlay-15);
+  }
 `
 
 export const SC_PlayIcon = styled.div`
@@ -129,6 +134,11 @@ export const SC_ErrorBadge = styled.button`
   border: 0;
   cursor: pointer;
   padding: 8px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--color-overlay-70);
+  }
 `
 
 export const SC_RetryLink = styled.span`

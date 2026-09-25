@@ -1,3 +1,5 @@
+import { BREAKPOINTS } from './design-tokens'
+
 /**
  * Нативное поле ввода (input, textarea, select) в оформлении Nuxt UI — как
  * UInput, вариант outline, размер lg: фон страницы, рамка accented, радиус 6,
@@ -47,7 +49,7 @@ export const nuxtField = (): string => `
     opacity: 0.75;
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     font-size: 16px;
   }
 `

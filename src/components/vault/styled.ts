@@ -27,6 +27,10 @@ export const SC_VaultForgot = styled.button`
   color: var(--color-link);
   cursor: pointer;
 
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
   &:disabled {
     opacity: 0.5;
     cursor: default;

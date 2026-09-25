@@ -39,6 +39,11 @@ export const SC_TagRemove = styled.button`
   cursor: pointer;
   font-size: ${FONT_SIZE.MD};
   line-height: 1;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--ui-text-highlighted);
+  }
 `
 
 export const SC_TagInput = styled.input`
