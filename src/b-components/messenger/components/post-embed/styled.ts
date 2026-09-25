@@ -56,7 +56,7 @@ export const SC_HeaderInfo = styled.div`
 export const SC_AuthorName = styled.div`
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -77,7 +77,7 @@ export const SC_Body = styled.div`
 export const SC_Title = styled.div`
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   line-height: 1.3;
   margin-bottom: 4px;
   display: -webkit-box;

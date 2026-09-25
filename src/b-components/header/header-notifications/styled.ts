@@ -43,7 +43,7 @@ export const SC_NotificationsHeader = styled.div`
 export const SC_NotificationsTitle = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_NotificationsHeaderActions = styled.div`
@@ -212,7 +212,7 @@ export const SC_NotificationActorText = styled.div`
 
 export const SC_NotificationActorName = styled.span`
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   margin-right: 4px;
 `
 

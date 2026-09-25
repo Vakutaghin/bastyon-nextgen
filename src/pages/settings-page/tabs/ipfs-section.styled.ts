@@ -20,7 +20,7 @@ export const SC_IpfsHead = styled.div`
 export const SC_IpfsTitle = styled.div`
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_IpfsStatus = styled.div`

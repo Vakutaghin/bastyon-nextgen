@@ -13,7 +13,7 @@ export const SC_SecurityCard = styled.div`
 export const SC_SecurityLevel = styled.div`
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_SecurityDesc = styled.p`

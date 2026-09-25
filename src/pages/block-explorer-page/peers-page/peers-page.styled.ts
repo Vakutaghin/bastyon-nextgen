@@ -35,7 +35,7 @@ export const SC_PeersBreadcrumb = styled.div`
 export const SC_PeersTitle = styled.h1`
   font-size: 24px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   margin: 0 0 24px;
 `
 

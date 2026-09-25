@@ -7,7 +7,7 @@ export const SC_Wrap = styled.div`
 `
 
 export const SC_Headline = styled.div`
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   font-size: 15px;
   font-weight: 600;
 `

@@ -11,7 +11,7 @@ export const SC_BlacklistTitle = styled.h2`
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_BlacklistLead = styled.p`
@@ -71,7 +71,7 @@ export const SC_BlacklistAvatar = styled.div`
 export const SC_BlacklistName = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

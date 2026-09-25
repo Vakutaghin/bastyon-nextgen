@@ -11,7 +11,7 @@ export const SC_PermsTitle = styled.h2`
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_PermsLead = styled.p`
@@ -67,7 +67,7 @@ export const SC_AppName = styled.span`
   min-width: 0;
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

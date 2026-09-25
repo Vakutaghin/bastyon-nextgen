@@ -65,7 +65,7 @@ export const SC_RowInfo = styled.div`
 export const SC_RowName = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

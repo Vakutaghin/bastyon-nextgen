@@ -284,7 +284,7 @@ export const SC_PartnerAvatar = styled.div`
 export const SC_PartnerName = styled.div`
   font-weight: 600;
   font-size: 15px;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -9,7 +9,7 @@ export const SC_RelatedTitle = styled.h2`
   margin: 0 0 12px;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_RelatedList = styled.div`
@@ -58,7 +58,7 @@ export const SC_RelatedInfo = styled.span`
 export const SC_RelatedName = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

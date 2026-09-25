@@ -12,7 +12,7 @@ export const SC_Page = styled.main`
 export const SC_Title = styled.h1`
   font-size: 22px;
   font-weight: 600;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   margin: 24px 0 8px;
 `
 

@@ -58,6 +58,6 @@ export const SC_SettingsMain = styled.main`
 export const SC_SettingsSectionTitle = styled.h2`
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   margin: 0 0 16px;
 `

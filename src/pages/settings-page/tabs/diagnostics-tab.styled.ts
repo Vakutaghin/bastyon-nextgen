@@ -11,7 +11,7 @@ export const SC_DiagTitle = styled.h2`
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_DiagGroup = styled.div`
@@ -51,7 +51,7 @@ export const SC_DiagLabel = styled.span`
 export const SC_DiagValue = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   font-family: var(--font-family-mono);
   text-align: right;
   word-break: break-all;

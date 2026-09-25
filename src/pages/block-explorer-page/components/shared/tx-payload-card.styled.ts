@@ -33,7 +33,7 @@ export const SC_PayloadIcon = styled.span`
 export const SC_PayloadTitle = styled.h3`
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   margin: 0;
 `
 

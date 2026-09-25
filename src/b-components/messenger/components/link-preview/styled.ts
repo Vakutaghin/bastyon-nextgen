@@ -44,7 +44,7 @@ export const SC_SiteName = styled.div`
 export const SC_Title = styled.div`
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;

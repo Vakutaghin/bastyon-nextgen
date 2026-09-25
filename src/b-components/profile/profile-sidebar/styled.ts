@@ -81,6 +81,7 @@ export const SC_UserName = styled.h2`
   text-align: center;
   font-size: 20px;
   font-weight: 600;
+  color: var(--ui-text-highlighted);
   margin-bottom: 20px;
   word-break: break-word;
 `
@@ -353,7 +354,7 @@ export const SC_StatLabel = styled.span`
 export const SC_StatValue = styled.span`
   margin-top: 2px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   line-height: 1.2;
 `
 

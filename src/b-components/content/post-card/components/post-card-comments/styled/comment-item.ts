@@ -114,7 +114,7 @@ export const SC_CommentItem = styled.div`
 export const SC_CommentAuthor = styled.div`
   font-weight: 600;
   font-size: 13px;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_CommentText = styled.div`

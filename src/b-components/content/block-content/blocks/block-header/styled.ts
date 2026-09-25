@@ -4,7 +4,7 @@ export const SC_BlockHeader = styled.h1<{ level?: number }>`
   margin: 1.5em 0 0.5em;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--color-text-primary) !important;
+  color: var(--ui-text-highlighted) !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;

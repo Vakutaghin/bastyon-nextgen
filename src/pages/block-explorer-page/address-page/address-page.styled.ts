@@ -58,7 +58,7 @@ export const SC_AddrTitleRow = styled.div`
 export const SC_AddrTitle = styled.h1`
   font-size: 22px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   margin: 0;
   min-width: 0;
   flex: 1;
@@ -99,7 +99,7 @@ export const SC_AddrSummaryLabel = styled.div`
 export const SC_AddrSummaryValue = styled.div`
   font-size: 18px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   font-variant-numeric: tabular-nums;
   word-break: break-all;
 `

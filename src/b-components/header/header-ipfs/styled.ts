@@ -66,7 +66,7 @@ export const SC_IpfsRow = styled.div`
 export const SC_IpfsTitle = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_IpfsStatusLine = styled.div`

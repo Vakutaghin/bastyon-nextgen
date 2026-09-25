@@ -22,7 +22,7 @@ export const SC_LimitsPage = styled.main`
 export const SC_LimitsTitle = styled.h1`
   font-size: 22px;
   font-weight: 600;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   margin: 24px 0;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -65,7 +65,7 @@ export const SC_LimitLabel = styled.span`
 export const SC_LimitValue = styled.span`
   font-size: 15px;
   font-weight: 500;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_LimitValueMuted = styled.span`
@@ -93,7 +93,7 @@ export const SC_LimitCtaHeading = styled.h2`
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_LimitCtaText = styled.p`

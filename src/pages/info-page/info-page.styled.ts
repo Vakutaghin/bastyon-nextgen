@@ -11,7 +11,7 @@ export const SC_InfoTitle = styled.h1`
   margin: 0 0 8px;
   font-size: 26px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_InfoLead = styled.p`
@@ -39,7 +39,7 @@ export const SC_InfoHeading = styled.h2`
   margin: 0 0 8px;
   font-size: 17px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_InfoParagraph = styled.p`

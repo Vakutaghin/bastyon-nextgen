@@ -14,7 +14,7 @@ export const SC_SectionTitle = styled.h3`
   margin: 0 0 16px !important;
   font-size: 18px !important;
   font-weight: 600 !important;
-  color: var(--color-text-primary) !important;
+  color: var(--ui-text-highlighted) !important;
 `
 
 export const SC_VideosGrid = styled.div`
@@ -72,7 +72,7 @@ export const SC_VideoIcon = styled.div`
 export const SC_VideoName = styled.div`
   font-size: 12px !important;
   font-weight: 500 !important;
-  color: var(--color-text-primary) !important;
+  color: var(--ui-text-highlighted) !important;
   text-align: center !important;
   word-break: break-word !important;
   max-width: 100% !important;

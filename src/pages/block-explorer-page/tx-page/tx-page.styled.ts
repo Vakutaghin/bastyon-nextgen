@@ -55,7 +55,7 @@ export const SC_TxTitleRow = styled.div`
 export const SC_TxTitle = styled.h1`
   font-size: 22px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   margin: 0;
 `
 
@@ -157,7 +157,7 @@ export const SC_TxIOAddress = styled.div`
 export const SC_TxIOValue = styled.div`
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_TxIOAnnotation = styled.div`

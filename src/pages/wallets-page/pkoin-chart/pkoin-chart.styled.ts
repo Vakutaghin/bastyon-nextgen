@@ -10,7 +10,7 @@ export const SC_PkoinChartWrap = styled.div`
 export const SC_PkoinChartTitle = styled.h2`
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   margin: 0 0 16px;
 `
 
@@ -123,7 +123,7 @@ export const SC_PkoinChartPriceLabel = styled.div`
 export const SC_PkoinChartPriceValue = styled.div`
   font-size: 28px;
   font-weight: 700;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   line-height: 1.2;
 `
 
@@ -161,7 +161,7 @@ export const SC_PkoinChartStatLabel = styled.span`
 export const SC_PkoinChartStatValue = styled.span`
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_PkoinChartLoading = styled.div`

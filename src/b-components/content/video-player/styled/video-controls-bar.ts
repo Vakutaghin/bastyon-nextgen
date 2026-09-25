@@ -140,7 +140,7 @@ export const SC_VideoChapterMarker = styled.div`
 `
 
 export const SC_VideoChapterTitle = styled.span`
-  color: var(--color-text-primary) !important;
+  color: var(--ui-text-highlighted) !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   user-select: none !important;

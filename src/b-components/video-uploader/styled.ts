@@ -40,7 +40,7 @@ export const SC_ModalHeader = styled.div`
 export const SC_ModalTitle = styled.span`
   font-size: 16px !important;
   font-weight: 600 !important;
-  color: var(--color-text-primary) !important;
+  color: var(--ui-text-highlighted) !important;
 `
 
 export const SC_ModalClose = styled.button`

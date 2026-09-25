@@ -55,7 +55,7 @@ export const SC_BlockBreadcrumb = styled.div`
 export const SC_BlockTitle = styled.h1`
   font-size: 24px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   margin: 0 0 16px;
 `
 

@@ -114,7 +114,7 @@ export const SC_EventContent = styled.div`
 export const SC_PostTitle = styled.div`
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -153,7 +153,7 @@ export const SC_RatingDisplay = styled.div`
 export const SC_RatingValue = styled.span`
   font-size: 15px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 /** Строка действий карточки (кнопка «Перейти к посту»). */

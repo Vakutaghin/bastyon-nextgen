@@ -30,7 +30,7 @@ export const SC_Title = styled.h2`
   font-size: 1.5em;
   font-weight: 700;
   margin-bottom: 1em;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_Message = styled.p`

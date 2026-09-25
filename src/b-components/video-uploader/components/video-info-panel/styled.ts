@@ -32,7 +32,7 @@ export const SC_SectionTitle = styled.h4`
   margin: 0 !important;
   font-size: 16px !important;
   font-weight: 600 !important;
-  color: var(--color-text-primary) !important;
+  color: var(--ui-text-highlighted) !important;
 `
 
 export const SC_InfoContent = styled.div`

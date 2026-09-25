@@ -56,7 +56,7 @@ export const SC_AmountInput = styled.input`
   border-radius: var(--ui-radius-lg);
   border: 1px solid var(--color-border);
   background-color: var(--color-surface-frosted);
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   font-size: 16px;
   font-weight: 600;
   transition: border-color 0.2s;

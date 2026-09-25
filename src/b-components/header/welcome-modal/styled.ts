@@ -20,7 +20,7 @@ export const SC_WelcomeTitle = styled.h2`
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_WelcomeDesc = styled.p`

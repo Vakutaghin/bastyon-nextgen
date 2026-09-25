@@ -36,7 +36,7 @@ export const SC_FileBody = styled.div`
 export const SC_FileName = styled.div`
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

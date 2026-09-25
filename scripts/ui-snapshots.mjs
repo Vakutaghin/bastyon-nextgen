@@ -56,6 +56,15 @@ const SCREENS = [
   { name: 'search', path: '/search?q=bastyon', mobile: false },
   { name: 'miniapps', path: '/miniapps' },
   {
+    // Профиль — первого автора из ленты: своего у свежего аккаунта нет.
+    name: 'profile',
+    path: '/',
+    action: async (page) => {
+      await page.locator('a.author-link').first().click()
+      await page.waitForTimeout(SETTLE_MS)
+    },
+  },
+  {
     name: 'signin-modal',
     path: '/',
     action: async (page) => {

@@ -60,7 +60,7 @@ export const SC_AccountInfo = styled.div`
 export const SC_AccountName = styled.div`
   font-size: 16px;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_AccountBalance = styled.div`

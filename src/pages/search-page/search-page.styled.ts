@@ -52,7 +52,7 @@ export const SC_Header = styled.div`
 export const SC_QueryTitle = styled.h1`
   font-size: 20px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   margin: 0;
   word-break: break-word;
 `
@@ -145,7 +145,7 @@ export const SC_ItemBody = styled.div`
 
 export const SC_ItemTitle = styled.div`
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

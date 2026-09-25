@@ -8,7 +8,7 @@ export const SC_EarningsTitle = styled.h3`
   margin: 0 0 16px;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_EarningsCards = styled.div`
@@ -35,7 +35,7 @@ export const SC_EarningsLabel = styled.span`
 export const SC_EarningsValue = styled.span`
   font-size: 18px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_EarningsUnit = styled.span`

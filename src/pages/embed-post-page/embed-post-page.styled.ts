@@ -43,7 +43,7 @@ export const SC_EmbedAvatar = styled.span`
 export const SC_EmbedAuthor = styled.span`
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_EmbedTime = styled.span`

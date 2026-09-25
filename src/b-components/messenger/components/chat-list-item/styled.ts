@@ -43,7 +43,7 @@ export const SC_Info = styled.div`
 export const SC_Name = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   margin-bottom: 4px;
 `
 
@@ -161,7 +161,7 @@ export const SC_ConfirmDialog = styled.div`
 export const SC_ConfirmTitle = styled.div`
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--ui-text-highlighted);
   margin-bottom: 8px;
 `
 
