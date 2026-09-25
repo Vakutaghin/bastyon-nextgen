@@ -1,4 +1,4 @@
-// Тема ant-design-vue в оформлении Nuxt UI (_docs-todo/REDESIGN_NUXT_UI.md).
+// Тема ant-design-vue в оформлении Nuxt UI (см. шапку src/style.css).
 //
 // antd считает оттенки (hover, active, фоны алертов) из настоящих цветов, поэтому
 // сюда нельзя передать var(--ui-*) — значения продублированы из палитры
