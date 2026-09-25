@@ -1,36 +1,45 @@
 import styled from 'vue3-styled-components'
-import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
+import { Z_INDEX } from '@/styles/design-tokens'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_TransferWidget = styled.div`
   max-width: 560px;
-  background: var(--color-bg-light);
-  border: 1px solid var(--color-overlay-8);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 
+/** «Отправка / Получение» — вкладки pill, как у Nuxt UI (и переключатель
+ * периода графика в эксплорере). */
 export const SC_TransferSwitch = styled.div`
   display: flex;
-  background: var(--color-bg-primary);
-  border-bottom: 1px solid var(--color-overlay-8);
+  gap: 2px;
+  margin: 24px 24px 0;
+  padding: 4px;
+  background: var(--ui-bg-elevated);
+  border-radius: var(--ui-radius-lg);
 `
 
-export const SC_TransferSwitchBtn = styled.button<{ active?: boolean }>`
+export const SC_TransferSwitchBtn = styled('button', { active: Boolean })`
   flex: 1;
-  padding: 14px 20px;
-  font-size: 15px;
-  font-weight: 600;
-  color: ${(p) => (p.active ? 'var(--color-gray-212)' : 'var(--color-gray-120)')};
-  background: ${(p) => (p.active ? 'var(--color-bg-light)' : 'transparent')};
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text-muted)')};
+  background: ${(p) => (p.active ? 'var(--ui-primary)' : 'transparent')};
+  box-shadow: ${(p) => (p.active ? 'var(--ui-shadow-xs)' : 'none')};
   border: none;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
-    color ${TRANSITIONS.QUICK},
-    background ${TRANSITIONS.QUICK};
+    color 0.15s ease,
+    background 0.15s ease;
 
   &:hover {
-    color: var(--color-gray-212);
-    background: var(--color-bg-light);
+    color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text-highlighted)')};
+    background: ${(p) => (p.active ? 'var(--ui-primary)' : 'transparent')};
   }
 `
 
@@ -44,64 +53,27 @@ export const SC_TransferField = styled.div`
 
 export const SC_TransferLabel = styled.label`
   display: block;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: var(--color-gray-120);
+  color: var(--ui-text);
   margin-bottom: 6px;
 `
 
+/** Поля формы — как UInput у Nuxt (outline, размер lg): рамка accented,
+ * в фокусе акцентная рамка и ореол. */
 export const SC_TransferInput = styled.input`
-  width: 100%;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: var(--color-gray-212);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-overlay-12);
-  border-radius: var(--ui-radius-lg);
-  box-sizing: border-box;
-
-  &::placeholder {
-    color: var(--color-gray-999);
-  }
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-overlay-25);
-  }
+  ${nuxtField}
 `
 
 export const SC_TransferTextarea = styled.textarea`
-  width: 100%;
+  ${nuxtField}
   min-height: 72px;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: var(--color-gray-212);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-overlay-12);
-  border-radius: var(--ui-radius-lg);
-  box-sizing: border-box;
   resize: vertical;
-
-  &::placeholder {
-    color: var(--color-gray-999);
-  }
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-overlay-25);
-  }
 `
 
 export const SC_TransferSelect = styled.select`
-  width: 100%;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: var(--color-gray-212);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-overlay-12);
-  border-radius: var(--ui-radius-lg);
+  ${nuxtField}
   cursor: pointer;
-  box-sizing: border-box;
 `
 
 export const SC_TransferRow = styled.div`
@@ -155,24 +127,28 @@ export const SC_TransferCopyBtn = styled.button`
   }
 `
 
+/** Главная кнопка формы — solid-акцент Nuxt размера xl. Раньше фон был
+ * «цветом заголовков»: в тёмной теме это белый, и белая подпись пропадала. */
 export const SC_TransferSubmit = styled.button`
   width: 100%;
   margin-top: 20px;
-  padding: 12px 20px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-white);
-  background: var(--color-gray-212);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--ui-text-inverted);
+  background: var(--ui-primary);
   border: none;
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: var(--color-gray-333);
+    color: var(--ui-text-inverted);
+    background: rgb(var(--ui-primary-rgb) / 75%);
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.75;
     cursor: not-allowed;
   }
 `
@@ -213,11 +189,11 @@ export const SC_TransferSearchDropdown = styled.div`
   margin-top: 4px;
   max-height: 220px;
   overflow-y: auto;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-overlay-12);
-  border-radius: var(--ui-radius-lg);
-  box-shadow: 0 4px 12px var(--color-overlay-10);
-  z-index: ${Z_INDEX.LOCAL_DROPDOWN};
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-lg);
+  z-index: ${() => Z_INDEX.LOCAL_DROPDOWN};
 `
 
 export const SC_TransferSearchItem = styled.button`

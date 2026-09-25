@@ -20,20 +20,21 @@ export const SC_EarningsCards = styled.div`
 export const SC_EarningsCard = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 16px;
-  border: 1px solid var(--color-border-default);
+  gap: 4px;
+  padding: 16px 20px;
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
-  background: var(--color-bg-secondary);
+  background: var(--ui-bg);
 `
 
+/** Карточки — как карточки сумм на вкладке «Балансы» (и статистика у Nuxt). */
 export const SC_EarningsLabel = styled.span`
-  font-size: 13px;
-  color: var(--color-text-secondary);
+  font-size: 14px;
+  color: var(--ui-text-muted);
 `
 
 export const SC_EarningsValue = styled.span`
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
 `

@@ -47,9 +47,9 @@ export const SC_LimitRow = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: var(--color-bg-light);
+  background: var(--ui-bg);
   border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--color-overlay-6);
+  border: 1px solid var(--ui-border);
   min-width: 0;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -119,7 +119,7 @@ export const SC_LimitCtaButton = styled.button`
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   background: var(--color-primary);
   transition: background ${TRANSITIONS.FAST};
 
