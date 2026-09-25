@@ -816,6 +816,12 @@ pub fn run() {
       }
     }))
     .plugin(tauri_plugin_deep_link::init())
+    // Автозапуск при входе в систему: включается из настроек, состоянием
+    // владеет ОС (LaunchAgent на macOS, реестр на Windows, .desktop на Linux).
+    .plugin(tauri_plugin_autostart::init(
+      tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+      None,
+    ))
     // Окно открывается там же и такого же размера, каким его оставили.
     // Полноэкранный режим и видимость сознательно НЕ восстанавливаем: выход
     // из приложения в фуллскрине не должен запирать в нём следующий запуск.

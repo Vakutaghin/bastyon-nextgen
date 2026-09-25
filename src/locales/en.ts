@@ -262,12 +262,9 @@ export default {
   },
   settings: {
     title: 'Settings',
-    placeholder: 'Section “{section}” — content will be added later.',
     tabs: {
       general: 'General',
       notifications: 'Notifications',
-      wallets: 'Wallets',
-      accounts: 'Accounts',
       system: 'System',
       privateKey: 'Private key',
       blockExplorer: 'Block Explorer',
@@ -275,6 +272,40 @@ export default {
       appPermissions: 'App permissions',
       diagnostics: 'Diagnostics',
       whatsNew: "What's new",
+    },
+    content: {
+      title: 'Content',
+      embeddedVideo: 'Show embedded videos',
+      embeddedVideoHint: 'YouTube and Vimeo players inside the post. Turned off, a link remains.',
+      videoAutoplay: 'Autoplay videos',
+      videoAutoplayHint: 'Start a video once it appears on screen.',
+      linkPreviews: 'Link previews',
+      linkPreviewsHint: 'A card with the title and image under a link.',
+      commentsOrder: 'Comments order',
+      commentsOrderHint: 'The order a discussion opens in. It can still be changed inside a post.',
+      messenger: 'Messenger',
+      messengerHint:
+        'Turns the chat off entirely: the widget, the header icon and the bottom bar item.',
+    },
+    system: {
+      animations: 'Animations',
+      animationsHint: 'Smooth transitions in the interface. Turn off if the app feels sluggish.',
+      uiScale: 'Interface scale',
+      uiScaleHint: 'The size of the whole window. Ctrl and + or - change the same scale.',
+      autostart: 'Launch at login',
+      autostartHint: 'The app will open automatically after the computer starts.',
+      autostartFailed: 'The system refused to change the autostart setting',
+      storageTitle: 'Local data',
+      clearCache: 'Clear cache',
+      clearCacheHint:
+        'Removes transcoded videos, playback positions, decrypted messages and stored notifications. Accounts, keys, settings and favorites are kept.',
+      clearButton: 'Clear',
+      clearing: 'Clearing…',
+      cancel: 'Cancel',
+      clearConfirmTitle: 'Clear the cache?',
+      clearConfirmText:
+        'The data is fetched again when it is next needed. Accounts and keys are untouched.',
+      cleared: 'Cache cleared, entries removed: {count}',
     },
     general: {
       theme: 'Theme',

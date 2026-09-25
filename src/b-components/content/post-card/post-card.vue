@@ -53,6 +53,7 @@
           v-else-if="(post.type === 'video' || post.type === 'audio') && post.videoUrl"
           ref="videoPlayerRef"
           :video-url="post.videoUrl"
+          :autoplay="prefs.videoAutoplay"
           :is-audio="post.type === 'audio'"
           :chapters="chapters"
           :title="decodedTitle || post.author?.name || 'Bastyon'"
@@ -80,7 +81,7 @@
           v-if="(youtubeEmbedUrls || []).length && mediaBlocked"
           :message="t('torMedia.embedBlocked')"
         />
-        <SC_PostCardYoutube v-else-if="(youtubeEmbedUrls || []).length">
+        <SC_PostCardYoutube v-else-if="(youtubeEmbedUrls || []).length && prefs.embeddedVideo">
           <iframe
             v-for="embedUrl in youtubeEmbedUrls"
             :key="embedUrl"
@@ -204,6 +205,7 @@ import { useReportStore } from '@/stores/report-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { publicPostUrl } from '@/helpers/common/share-origin'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
+import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { ImageGallery } from '@/components/image-gallery'
 import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
 import PostCardComments from '@/b-components/content/post-card/components/post-card-comments/post-card-comments.vue'
@@ -276,6 +278,9 @@ const authStore = useAuthStore()
 const isCollapsed = ref(true)
 const postCardRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
 const { mediaBlocked } = useTorMedia()
+// Настройки содержимого: встроенные плееры и автоплей — выбор пользователя.
+const prefs = useAppPreferencesStore()
+
 const { videoPlayerRef, chapters, youtubeEmbedUrls, handleSeekTimecode } = usePostMedia(
   () => props.post
 )

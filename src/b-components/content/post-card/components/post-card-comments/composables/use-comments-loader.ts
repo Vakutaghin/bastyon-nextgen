@@ -18,6 +18,7 @@ import { useCommentsStore } from '@/stores'
 import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-comments'
 import { COMMENTS_PAGE_SIZE, COMMENTS_ALREADY_SHOWN, COMMENT_LOAD_TIMEOUT_MS } from '../consts'
 import type { CommentsSortOrder } from '../types'
+import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 
 export interface UseCommentsLoaderOptions {
   postId: Ref<string>
@@ -31,7 +32,9 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
   const allCommentsError = ref<Error | null>(null)
   const visibleCommentsCount = ref(0)
   const commentsCollapsed = ref(false)
-  const commentsSortOrder = ref<CommentsSortOrder>('newest')
+  // Порядок, с которого открывается обсуждение, берём из настроек: в самом
+  // посте переключатель по-прежнему меняет его для этого поста.
+  const commentsSortOrder = ref<CommentsSortOrder>(useAppPreferencesStore().commentsOrder)
 
   const loadAllCommentsInternal = async (showAll = false): Promise<void> => {
     if (!opts.postId.value) return

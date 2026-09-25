@@ -61,3 +61,5 @@ tauri-plugin-deep-link = "2"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 # Размер и позиция окна между запусками (десктоп).
 tauri-plugin-window-state = "2"
+# Автозапуск при входе в систему (десктоп).
+tauri-plugin-autostart = "2"

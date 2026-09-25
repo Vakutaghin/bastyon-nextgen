@@ -29,6 +29,7 @@ import {
   MessageOutlined,
   WalletOutlined,
 } from '@ant-design/icons-vue'
+import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { SC_BottomNav, SC_NavItem, SC_NavIcon, SC_NavLabel, SC_NavBadge } from './bottom-nav.styled'
 
@@ -46,11 +47,14 @@ const router = useRouter()
 const { t } = useI18n()
 const messengerStore = useMessengerStore()
 const { isFullScreen, totalUnreadCount } = storeToRefs(messengerStore)
+const prefs = useAppPreferencesStore()
 
 function go(path: string): void {
   if (route.path !== path) void router.push(path)
 }
 
+// Выключенный в настройках мессенджер убирает и пункт нижней панели —
+// иначе он вёл бы в пустоту.
 const items = computed<NavItem[]>(() => [
   {
     key: 'home',
@@ -73,16 +77,20 @@ const items = computed<NavItem[]>(() => [
     active: (route.path === '/miniapps' || route.path.startsWith('/app/')) && !isFullScreen.value,
     onClick: () => go('/miniapps'),
   },
-  {
-    key: 'messenger',
-    label: t('bottomNav.messenger'),
-    icon: MessageOutlined,
-    active: isFullScreen.value,
-    badge: totalUnreadCount.value,
-    onClick: () => {
-      messengerStore.isFullScreen = !messengerStore.isFullScreen
-    },
-  },
+  ...(prefs.messengerEnabled
+    ? [
+        {
+          key: 'messenger',
+          label: t('bottomNav.messenger'),
+          icon: MessageOutlined,
+          active: isFullScreen.value,
+          badge: totalUnreadCount.value,
+          onClick: (): void => {
+            messengerStore.isFullScreen = !messengerStore.isFullScreen
+          },
+        },
+      ]
+    : []),
   {
     key: 'wallet',
     label: t('bottomNav.wallet'),

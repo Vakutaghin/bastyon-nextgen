@@ -24,6 +24,7 @@ import App from '@/src.vue'
 import router from '@/router'
 import { initCapacitor } from '@mobile/bootstrap'
 import { setupDeepLinks } from '@/composables/use-deep-links'
+import { setupAppPreferences } from '@/composables/use-app-preferences-effects'
 import { initDatabase } from '@/db/database'
 import { useAuthStore } from '@/blockchain'
 import {
@@ -91,6 +92,8 @@ configureUnlockUi({
 // запускался в том числе на публичной embed-странице. Ждём готовности роутера.
 // Системные ссылки `bastyon://…` (deep links) — Tauri, Android/iOS, PWA.
 void router.isReady().then(() => setupDeepLinks(router))
+// Настройки устройства (анимации, масштаб) применяем до первой отрисовки ленты.
+void setupAppPreferences()
 
 void router.isReady().then(() => {
   if (isEmbedRoute()) return

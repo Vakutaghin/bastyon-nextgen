@@ -1,5 +1,11 @@
 <template>
-  <SC_LinkPreview v-if="preview" :href="preview.url" target="_blank" rel="noopener noreferrer">
+  <!-- Настройка «Предпросмотр ссылок»: выключенная, она убирает карточку целиком. -->
+  <SC_LinkPreview
+    v-if="preview && prefs.linkPreviews"
+    :href="preview.url"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
     <SC_Body>
       <SC_SiteName v-if="preview.siteName || siteFromUrl">{{
         preview.siteName || siteFromUrl
@@ -22,6 +28,7 @@
 import { ref, computed, toRef } from 'vue'
 import TorImage from '@/components/tor-image'
 import { useLinkPreview } from './use-link-preview'
+import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { SC_LinkPreview, SC_Body, SC_SiteName, SC_Title, SC_Description, SC_Thumb } from './styled'
 
 const props = defineProps<{
@@ -29,6 +36,7 @@ const props = defineProps<{
 }>()
 
 const urlRef = toRef(() => props.url)
+const prefs = useAppPreferencesStore()
 const { preview } = useLinkPreview(urlRef)
 const thumbFailed = ref(false)
 

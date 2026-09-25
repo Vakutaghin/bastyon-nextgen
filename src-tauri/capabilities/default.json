@@ -16,6 +16,8 @@
     "deep-link:allow-register",
     "deep-link:allow-is-registered",
     "window-state:default",
+    "autostart:default",
+    "core:webview:allow-set-webview-zoom",
     {
       "identifier": "http:default",
       "allow": [

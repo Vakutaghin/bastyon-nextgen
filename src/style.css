@@ -967,3 +967,24 @@ body.miniapp-fullscreen {
 html.tor-media-blocked img[src^='http'] {
   visibility: hidden;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Настройка «Включить анимации» (в старом клиенте — useanimations).
+   Класс вешает use-app-preferences-effects при выключенной настройке.
+   Не `animation: none`: некоторые компоненты ждут события animationend,
+   а нулевая длительность их всё равно присылает.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html.no-animations *,
+html.no-animations *::before,
+html.no-animations *::after {
+  animation-duration: 0.001ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  transition-delay: 0ms !important;
+}
+
+html.no-animations,
+html.no-animations body {
+  scroll-behavior: auto !important;
+}

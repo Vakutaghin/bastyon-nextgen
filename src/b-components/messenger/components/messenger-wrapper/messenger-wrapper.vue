@@ -83,6 +83,7 @@ import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
 import { closePageOverlay, openPageOverlay } from '@/composables/use-page-overlay'
+import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import {
   SC_MessengerWrapper,
   SC_BackButton,
@@ -120,7 +121,9 @@ const icons = {
   chat: chatIcon,
 }
 
-const isVisible = computed<boolean>(() => authStore.isUserAuthenticated)
+// Выключенный в настройках мессенджер не показываем и не инициализируем.
+const prefs = useAppPreferencesStore()
+const isVisible = computed<boolean>(() => authStore.isUserAuthenticated && prefs.messengerEnabled)
 
 // На мобилке/планшете НЕ показываем плавающий floating-widget — мессенджер
 // открывается только в full-screen режиме по клику на иконку в header.

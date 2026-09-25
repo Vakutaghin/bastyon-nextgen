@@ -50,6 +50,7 @@ import { MobileNavDrawer } from '@/b-components/mobile-nav-drawer'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
+import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import {
   SC_Header,
@@ -84,7 +85,10 @@ function closeDrawer(): void {
 
 /** Иконка чата в хедере всегда видна авторизованному пользователю —
  *  на десктопе это альтернатива floating-кнопке, на мобилке единственный способ. */
-const showMessengerIcon = computed<boolean>(() => authStore.isUserAuthenticated)
+const prefs = useAppPreferencesStore()
+const showMessengerIcon = computed<boolean>(
+  () => authStore.isUserAuthenticated && prefs.messengerEnabled
+)
 
 const unreadBadge = computed<string>(() => {
   const n = totalUnreadCount.value

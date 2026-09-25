@@ -23,10 +23,8 @@
           <BlockExplorerTab v-else-if="activeTab === 'blockExplorer'" />
           <BlacklistTab v-else-if="activeTab === 'blacklist'" />
           <AppPermissionsTab v-else-if="activeTab === 'appPermissions'" />
+          <SystemTab v-else-if="activeTab === 'system'" />
           <DiagnosticsTab v-else-if="activeTab === 'diagnostics'" />
-          <SC_SettingsPlaceholder v-else>
-            {{ placeholderText }}
-          </SC_SettingsPlaceholder>
         </SC_SettingsMain>
       </SC_SettingsContentWrapper>
     </SC_SettingsPage>
@@ -34,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useNotificationSettingsStore } from '@/stores'
@@ -45,6 +43,7 @@ import PrivateKeyTab from './tabs/private-key-tab.vue'
 import BlockExplorerTab from './tabs/block-explorer-tab.vue'
 import BlacklistTab from './tabs/blacklist-tab.vue'
 import AppPermissionsTab from './tabs/app-permissions-tab.vue'
+import SystemTab from './tabs/system-tab.vue'
 import DiagnosticsTab from './tabs/diagnostics-tab.vue'
 import WhatsNewTab from './tabs/whats-new-tab.vue'
 import {
@@ -54,7 +53,6 @@ import {
   SC_SettingsSidebar,
   SC_SettingsSidebarItem,
   SC_SettingsMain,
-  SC_SettingsPlaceholder,
 } from './settings-page.styled'
 
 defineOptions({ name: 'SettingsPage' })
@@ -62,8 +60,6 @@ defineOptions({ name: 'SettingsPage' })
 export type T_SettingsTabKey =
   | 'general'
   | 'notifications'
-  | 'wallets'
-  | 'accounts'
   | 'system'
   | 'privateKey'
   | 'blockExplorer'
@@ -76,8 +72,6 @@ export type T_SettingsTabKey =
 const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
   { key: 'general', labelKey: 'settings.tabs.general' },
   { key: 'notifications', labelKey: 'settings.tabs.notifications' },
-  { key: 'wallets', labelKey: 'settings.tabs.wallets' },
-  { key: 'accounts', labelKey: 'settings.tabs.accounts' },
   { key: 'system', labelKey: 'settings.tabs.system' },
   { key: 'privateKey', labelKey: 'settings.tabs.privateKey' },
   { key: 'blockExplorer', labelKey: 'settings.tabs.blockExplorer' },
@@ -101,10 +95,5 @@ const uiStore = useUIStore()
 onMounted(() => {
   notificationSettings.load()
   void uiStore.loadLanguage()
-})
-
-const placeholderText = computed(() => {
-  const item = SETTINGS_TABS.find((tab) => tab.key === activeTab.value)
-  return item ? t('settings.placeholder', { section: t(item.labelKey) }) : ''
 })
 </script>
