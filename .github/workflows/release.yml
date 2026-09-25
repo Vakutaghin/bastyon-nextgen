@@ -120,6 +120,40 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      # macOS: без секретов Apple бандл подписывается ad-hoc (signingIdentity "-"
+      # в tauri.conf.json). Такое приложение macOS не называет повреждённым, но
+      # первый запуск разрешают в «Конфиденциальность и безопасность» — оно не
+      # нотаризовано. С сертификатом Developer ID в секретах репозитория Tauri
+      # подпишет им и отправит сборку на нотаризацию. Пустую переменную Tauri
+      # считает заданной и пытается ею подписать, поэтому передаём только
+      # заполненные.
+      - name: Apple signing and notarization (when configured)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "Секретов Apple нет: подпись ad-hoc, без нотаризации"
+            exit 0
+          fi
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY \
+                      APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            value="${!name}"
+            if [ -z "$value" ]; then
+              echo "::error::Секрет $name не задан, а APPLE_CERTIFICATE задан" >&2
+              exit 1
+            fi
+            delimiter="EOF_$(openssl rand -hex 8)"
+            { echo "$name<<$delimiter"; echo "$value"; echo "$delimiter"; } >> "$GITHUB_ENV"
+          done
+
       # Без tagName/releaseName action только собирает и ничего не заливает.
       - name: Build the app
         uses: tauri-apps/tauri-action@v0

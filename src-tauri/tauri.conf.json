@@ -49,6 +49,9 @@
     "category": "Utility",
     "shortDescription": "Bastyon Desktop Application",
     "longDescription": "Bastyon - Decentralized Social Network Desktop Application",
+    "macOS": {
+      "signingIdentity": "-"
+    },
     "linux": {
       "deb": {
         "recommends": ["libayatana-appindicator3-1"]

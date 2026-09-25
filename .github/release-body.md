@@ -13,7 +13,7 @@
 
 ### Как установить
 
-**macOS.** Откройте .dmg и перетащите приложение в «Программы». Сборка не подписана, поэтому при первом запуске система скажет, что приложение повреждено или что разработчик не проверен. Нажмите на приложение правой кнопкой и выберите «Открыть», затем подтвердите. Если не помогло, выполните в Терминале:
+**macOS.** Откройте .dmg и перетащите приложение в «Программы». Приложение не нотаризовано в Apple, поэтому первый запуск macOS заблокирует. Откройте «Системные настройки» → «Конфиденциальность и безопасность», прокрутите до сообщения «Файл „Bastyon NextGen“ заблокирован для защиты Вашего Mac», нажмите «Все равно открыть» и подтвердите паролем. Кнопка видна около часа после попытки запуска. На macOS 14 и старше вместо этого можно нажать на приложение правой кнопкой и выбрать «Открыть». Если macOS пишет, что приложение повреждено, выполните в Терминале:
 
 ```
 xattr -dr com.apple.quarantine "/Applications/Bastyon NextGen.app"
@@ -57,7 +57,7 @@ Not sure which processor your Mac has: Apple menu → "About This Mac". A line l
 
 ### How to install
 
-**macOS.** Open the .dmg and drag the app into Applications. The build is not signed, so on first launch the system will say the app is damaged or the developer cannot be verified. Right-click the app, choose "Open", then confirm. If that does not help, run in Terminal:
+**macOS.** Open the .dmg and drag the app into Applications. The app is not notarized by Apple, so macOS blocks the first launch. Open System Settings → Privacy & Security, scroll down to "“Bastyon NextGen” was blocked to protect your Mac", click "Open Anyway" and confirm with your password. The button stays there for about an hour after the launch attempt. On macOS 14 and earlier you can instead right-click the app and choose "Open". If macOS says the app is damaged, run in Terminal:
 
 ```
 xattr -dr com.apple.quarantine "/Applications/Bastyon NextGen.app"
