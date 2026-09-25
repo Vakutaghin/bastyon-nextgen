@@ -72,7 +72,7 @@ describe('btc17 TransactionBuilder ↔ ecpair v3 (end-to-end)', () => {
     assertSignedByUs(hex, kp.publicKey, prevOut)
   })
 
-  it('позиционная форма sign(vin, keyPair) — как переводы', () => {
+  it('позиционная форма sign(vin, keyPair) — совместимость библиотеки (приложение подписывает объектной)', () => {
     const kp = ECPair.fromPrivateKey(PRIV, { network: POCKETNET_NETWORK })
     const prevOut = ourPrevOutScript(kp.publicKey)
     const txb = buildUnsigned(prevOut)

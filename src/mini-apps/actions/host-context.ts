@@ -22,6 +22,7 @@ import { createRpcMethods } from './host-context-methods/rpc'
 import { createContentMethods } from './host-context-methods/content'
 import { createPaymentMethods } from './host-context-methods/payments'
 import { createMediaMethods } from './host-context-methods/media'
+import { createCurrencyMethods } from './host-context-methods/currency'
 import { createMediaUploadMethods } from './host-context-methods/media-upload'
 import { createChatMethods } from './host-context-methods/chat'
 
@@ -243,6 +244,12 @@ export async function createDefaultHostContext(
   const content = createContentMethods({ router: opts.router })
   const payments = createPaymentMethods()
   const media = createMediaMethods({ isCapacitor })
+  const currency = createCurrencyMethods({
+    fetchProxy: async (path) => {
+      const { fetchHttp } = await import('@/helpers/api/request')
+      return fetchHttp({ path, data: {}, options: { auth: false } })
+    },
+  })
   const mediaUpload = createMediaUploadMethods({
     useAuthStore,
     uploadImages,
@@ -302,20 +309,13 @@ export async function createDefaultHostContext(
 
     getGeolocation: (signal) => browserGeolocation(signal),
 
-    fetchCurrencyRates: async () => {
-      // TODO(etap 5.4): подключить к pocketnet exchanges API через blockchain RPC.
-      // Legacy: `app.api.fetch('exchanges/history').then(r => r.prices)`. До появления
-      // нужного эндпоинта в nextgen возвращаем пустой объект — миниаппы получат пустой
-      // ответ вместо ошибки.
-      return {}
-    },
-
     // ─── domain methods (вынесены в host-context-methods/*) ────────────────
     ...auth,
     ...rpc,
     ...content,
     ...payments,
     ...media,
+    ...currency,
     ...mediaUpload,
     ...chat,
   }

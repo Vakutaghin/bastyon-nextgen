@@ -110,7 +110,7 @@ import RegistrationValidationModal from '@/b-components/header/registration-vali
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
-import { extractAvatarFromProfile } from '@/helpers/common/profile-avatar'
+import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import { useRegistrationFlow } from './use-registration-flow'
 import { useAccountMenu } from './use-account-menu'
 import {
@@ -193,11 +193,11 @@ const userName = computed<string>(() => {
 
 const userAvatar = computed<string | null>(() => {
   // Сначала пытаемся взять из store, иначе — fallback на поля профиля.
-  // resolveImageUrl внутри extractAvatarFromProfile нормализует домен и
+  // resolveImageUrl внутри resolveAvatarUrl нормализует домен и
   // достраивает URL от хэша.
   const fromStore = authStore.getUserAvatarUrl
   if (fromStore) return fromStore
-  return extractAvatarFromProfile(userProfile.value) ?? null
+  return resolveAvatarUrl(userProfile.value) ?? null
 })
 
 const userBalance = computed<number | null>(() => {

@@ -7,13 +7,13 @@ const IMAGE_SERVICE_URL = 'https://pocketnet.app:8092'
 const IMAGE_PATH_PREFIX = '/i/'
 
 /**
- * Нормализует URL изображения: заменяет устаревший домен на актуальный.
- * Используется для аватаров, обложек профилей и медиаконтента.
+ * Заменяет устаревший домен сервиса изображений на актуальный
+ * (`bastyon.com:8092` → `pocketnet.app:8092`).
  *
  * @param url - URL изображения (может содержать старый домен)
- * @returns нормализованный URL или исходное значение
+ * @returns URL с актуальным доменом или исходное значение
  */
-export function normalizeImageUrl(url: string): string {
+export function migrateLegacyImageHost(url: string): string {
   if (!url) return url
 
   return url.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
@@ -33,7 +33,7 @@ export function resolveImageUrl(imageHashOrUrl: string | undefined | null): stri
   if (!imageHashOrUrl) return undefined
 
   if (imageHashOrUrl.startsWith('http://') || imageHashOrUrl.startsWith('https://')) {
-    return imageHashOrUrl.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
+    return migrateLegacyImageHost(imageHashOrUrl)
   }
 
   return `${IMAGE_SERVICE_URL}${IMAGE_PATH_PREFIX}${imageHashOrUrl}`

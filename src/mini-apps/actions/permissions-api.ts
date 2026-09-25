@@ -3,7 +3,7 @@
  *
  * - `checkPermission` — синхронная проверка текущего состояния (returns boolean)
  * - `requestPermissions` — запросить разрешения у пользователя (через resolver)
- * - `registerForNotifications` — зарегистрироваться в Firebase для push
+ * - `registerForNotifications` — push для мини-аппы; здесь push нет → `notifications:notsupported`
  *
  * Legacy эквиваленты:
  * - `checkPermission` — [index.js:573-581](../../../../___original-repos/pocketnet.gui/js/lib/apps/index.js#L573-L581)
@@ -73,11 +73,11 @@ const registerForNotifications: ActionDefinition<unknown, boolean> = {
   authorization: true,
   rateLimitClass: 'normal',
   handler: async () => {
-    // TODO(future): подключить @/blockchain/api или отдельный firebase-service.
-    // Legacy зовёт `app.platform.firebase.api.addMiniappToken(appId, userAddress, proxy)`.
-    // Для v1 возвращаем `true` — миниаппа думает что подписана, но реальной
-    // отправки токена нет. Real push в etap 9+.
-    return true
+    // Старый клиент регистрирует Firebase-токен мини-аппы
+    // (`firebase.api.addMiniappToken`). Push-уведомлений здесь нет, поэтому
+    // отвечаем ошибкой, как старый клиент при неудаче: раньше возвращался `true`,
+    // и мини-аппа считала, что уведомления придут.
+    throw new Error('notifications:notsupported')
   },
 }
 

@@ -101,18 +101,18 @@ describe('createContentMethods.share', () => {
     vi.stubGlobal('window', { location: { origin: 'https://b.io', href: 'https://b.io/cur' } })
     vi.stubGlobal('navigator', {})
     await expect(
-      createContentMethods({ router }).share({ url: 'https://x.io/p' }),
+      createContentMethods({ router }).share({ url: 'https://x.io/p' })
     ).resolves.toBeUndefined()
     expect(router.push).not.toHaveBeenCalled()
   })
 })
 
 describe('createContentMethods.openComplain', () => {
-  it('резолвится без побочных эффектов (заглушка)', async () => {
+  it('отвечает «не поддерживается», а не ложным успехом', async () => {
     const router = makeRouter()
     await expect(
-      createContentMethods({ router }).openComplain({ txid: 'x' } as never),
-    ).resolves.toBeUndefined()
+      createContentMethods({ router }).openComplain({ txid: 'x' } as never)
+    ).rejects.toThrow('complain:notsupported')
     expect(router.push).not.toHaveBeenCalled()
   })
 })

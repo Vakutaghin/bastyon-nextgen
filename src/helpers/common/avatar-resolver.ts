@@ -8,21 +8,23 @@ import { resolveImageUrl } from './url-transformer'
  */
 const AVATAR_FIELDS = ['i', 'avatar', 'image', 'img', 'avatarUrl', 'avatar_url'] as const
 
-/**
- * Извлекает URL аватара из профиля пользователя.
- * Проверяет несколько полей (accSet.image, i, avatar, image, ...)
- * с нормализацией домена через resolveImageUrl.
- *
- * @param profile - объект профиля из RPC-ответа
- * @returns полный URL аватара или undefined
- */
 interface AvatarProfile {
   accSet?: { image?: string }
   [field: string]: unknown
 }
 
-export function resolveAvatarUrl(profile: AvatarProfile | null | undefined): string | undefined {
-  if (!profile) return undefined
+/**
+ * Извлекает URL аватара из профиля пользователя. Реализация одна на всё
+ * приложение: раньше рядом жила копия, которая не смотрела accSet (N36).
+ * Проверяет несколько полей (accSet.image, i, avatar, image, ...)
+ * с нормализацией домена через resolveImageUrl.
+ *
+ * @param input - объект профиля из RPC-ответа (любой формы)
+ * @returns полный URL аватара или undefined
+ */
+export function resolveAvatarUrl(input: unknown): string | undefined {
+  if (!input || typeof input !== 'object') return undefined
+  const profile = input as AvatarProfile
 
   // Приоритетный источник — настройки аккаунта
   if (profile.accSet?.image) {

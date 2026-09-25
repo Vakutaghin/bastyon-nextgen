@@ -26,10 +26,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { ICON_SIZE_LG } from '@/styles/icon-styles'
+import { closePageOverlay, openPageOverlay } from '@/composables/use-page-overlay'
 import {
   HomeOutlined,
   PlayCircleOutlined,
@@ -78,16 +79,23 @@ function go(path: string) {
   close()
 }
 
-// Lock body scroll while drawer is open.
+// Пока меню открыто, страница под ним не скроллится. Через общий счётчик
+// оверлеев: прямой `body.style.overflow = ''` при закрытии снимал блокировку,
+// которую держал полноэкранный мессенджер (N36).
+let lockHeld = false
 watch(
   () => props.isOpen,
   (open) => {
-    if (typeof document === 'undefined') return
-    if (open) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
+    if (open && !lockHeld) {
+      lockHeld = true
+      openPageOverlay()
+    } else if (!open && lockHeld) {
+      lockHeld = false
+      closePageOverlay()
     }
   }
 )
+onBeforeUnmount(() => {
+  if (lockHeld) closePageOverlay()
+})
 </script>

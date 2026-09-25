@@ -55,7 +55,6 @@ function txData(over: Record<string, unknown> = {}) {
     rawJson: ref('{"raw":true}'),
     showRaw: ref(false),
     now: ref(1700000000),
-    firstAddress: () => '',
     ...over,
   }
 }

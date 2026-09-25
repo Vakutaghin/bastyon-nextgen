@@ -20,18 +20,15 @@ describe('resolveAvatarUrl', () => {
   })
 
   it('falls back to "i" field', () => {
-    expect(resolveAvatarUrl({ i: 'hash456' }))
-      .toBe('https://pocketnet.app:8092/i/hash456')
+    expect(resolveAvatarUrl({ i: 'hash456' })).toBe('https://pocketnet.app:8092/i/hash456')
   })
 
   it('falls back to "avatar" field', () => {
-    expect(resolveAvatarUrl({ avatar: 'hash789' }))
-      .toBe('https://pocketnet.app:8092/i/hash789')
+    expect(resolveAvatarUrl({ avatar: 'hash789' })).toBe('https://pocketnet.app:8092/i/hash789')
   })
 
   it('falls back to "image" field', () => {
-    expect(resolveAvatarUrl({ image: 'hashABC' }))
-      .toBe('https://pocketnet.app:8092/i/hashABC')
+    expect(resolveAvatarUrl({ image: 'hashABC' })).toBe('https://pocketnet.app:8092/i/hashABC')
   })
 
   it('handles full URL in avatar field', () => {
@@ -40,12 +37,19 @@ describe('resolveAvatarUrl', () => {
   })
 
   it('normalizes old domain URL', () => {
-    expect(resolveAvatarUrl({ i: 'https://bastyon.com:8092/i/hash' }))
-      .toBe('https://pocketnet.app:8092/i/hash')
+    expect(resolveAvatarUrl({ i: 'https://bastyon.com:8092/i/hash' })).toBe(
+      'https://pocketnet.app:8092/i/hash'
+    )
   })
 
   it('skips non-string values', () => {
-    expect(resolveAvatarUrl({ i: 123, avatar: null, image: 'hash' }))
-      .toBe('https://pocketnet.app:8092/i/hash')
+    expect(resolveAvatarUrl({ i: 123, avatar: null, image: 'hash' })).toBe(
+      'https://pocketnet.app:8092/i/hash'
+    )
+  })
+
+  it('не падает на не-объекте', () => {
+    expect(resolveAvatarUrl('hash')).toBeUndefined()
+    expect(resolveAvatarUrl(null)).toBeUndefined()
   })
 })

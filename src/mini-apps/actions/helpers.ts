@@ -4,7 +4,7 @@
  * - `appinfo` — метаданные хоста для миниаппы (legacy [index.js:808-830](../../../../___original-repos/pocketnet.gui/js/lib/apps/index.js#L808-L830))
  * - `alert` — показать сообщение пользователю
  * - `userstate` — проверить, авторизован ли пользователь
- * - `currency` — курсы валют (пока stub — см. TODO в host-context)
+ * - `currency` — курсы PKOIN с прокси (`exchanges/history`), как в старом клиенте
  * - `registration` — открыть форму регистрации
  * - `channel` — открыть профиль пользователя по адресу
  * - `opensettings` — открыть настройки приложения

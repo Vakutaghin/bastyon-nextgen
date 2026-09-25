@@ -13,7 +13,7 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { rpcCall } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { extractAvatarFromProfile } from '@/helpers/common/profile-avatar'
+import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useUserRelationsStore } from '@/stores'
@@ -87,7 +87,7 @@ export function useRecommendedUsers(limit = 8) {
       out.push({
         address: addr,
         name: item.name?.trim() || addr.slice(0, 8) + '…',
-        avatar: extractAvatarFromProfile(item) ?? null,
+        avatar: resolveAvatarUrl(item) ?? null,
         subscribersCount: Number.isFinite(rep) ? rep : 0,
       })
       if (out.length >= limit) break

@@ -19,7 +19,7 @@ vi.mock('@/services/peertube/peertube-instance', () => ({
 }))
 
 import {
-  normalizeImageUrl,
+  withHttpsScheme,
   dataUrlToBlob,
   peertubeImageProvider,
   uploadImage,
@@ -37,11 +37,11 @@ beforeEach(() => {
   resolveHost.mockResolvedValue('host.app')
 })
 
-describe('normalizeImageUrl', () => {
+describe('withHttpsScheme', () => {
   it('оставляет http/https как есть; достраивает https для бессхемного', () => {
-    expect(normalizeImageUrl('https://x/y.jpg')).toBe('https://x/y.jpg')
-    expect(normalizeImageUrl('http://x/y.jpg')).toBe('http://x/y.jpg')
-    expect(normalizeImageUrl('cdn.x/y.jpg')).toBe('https://cdn.x/y.jpg')
+    expect(withHttpsScheme('https://x/y.jpg')).toBe('https://x/y.jpg')
+    expect(withHttpsScheme('http://x/y.jpg')).toBe('http://x/y.jpg')
+    expect(withHttpsScheme('cdn.x/y.jpg')).toBe('https://cdn.x/y.jpg')
   })
 })
 
@@ -114,7 +114,8 @@ describe('peertubeImageProvider (реальный контракт)', () => {
 
   it('404 на images/upload → падает с кодом', async () => {
     instanceFetch.mockImplementation(async (_host: string, path: string) => {
-      if (path === 'api/v1/oauth-clients/local') return jsonRes({ client_id: 'c', client_secret: 's' })
+      if (path === 'api/v1/oauth-clients/local')
+        return jsonRes({ client_id: 'c', client_secret: 's' })
       if (path === 'api/v1/users/token') return jsonRes({ access_token: 'T' })
       return jsonRes({}, 404)
     })
@@ -123,7 +124,8 @@ describe('peertubeImageProvider (реальный контракт)', () => {
 
   it('нет url в ответе → peertube_upload_no_url', async () => {
     instanceFetch.mockImplementation(async (_host: string, path: string) => {
-      if (path === 'api/v1/oauth-clients/local') return jsonRes({ client_id: 'c', client_secret: 's' })
+      if (path === 'api/v1/oauth-clients/local')
+        return jsonRes({ client_id: 'c', client_secret: 's' })
       if (path === 'api/v1/users/token') return jsonRes({ access_token: 'T' })
       if (path === 'api/v1/images/upload') return jsonRes({})
       return jsonRes({}, 404)

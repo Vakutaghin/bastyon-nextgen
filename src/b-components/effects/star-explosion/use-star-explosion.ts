@@ -77,6 +77,7 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
         rotationSpeed: (Math.random() - 0.5) * 0.2,
       })
     }
+    app.ticker.start()
   }
 
   function update() {
@@ -97,6 +98,9 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
         particles.splice(i, 1)
       }
     }
+    // Частицы кончились — цикл больше не нужен. Отрисовка этого тика (пустая
+    // сцена, стирает последний кадр) всё равно пройдёт: она идёт после update.
+    if (particles.length === 0) app?.ticker.stop()
   }
 
   onMounted(async () => {
@@ -105,7 +109,11 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
 
     app = new Application()
 
+    // Цикл не крутим постоянно: раньше пустой полноэкранный WebGL-холст
+    // перерисовывался 60 раз в секунду всё время работы приложения (N36).
+    // Запускается взрывом и сам останавливается, когда частицы догорели.
     await app.init({
+      autoStart: false,
       backgroundAlpha: 0,
       resizeTo: window,
       antialias: true,

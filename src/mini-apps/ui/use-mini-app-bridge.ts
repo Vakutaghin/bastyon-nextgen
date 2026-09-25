@@ -20,7 +20,7 @@ import { Modal } from 'ant-design-vue'
 import { miniAppsBridge } from '@/mini-apps/core/bridge'
 import { createFetchTunnel } from '@/mini-apps/core/fetch-tunnel'
 import { PermissionResolver } from '@/mini-apps/core/permission-resolver'
-import type { PermissionId } from '@/mini-apps/types/permissions'
+import { isKnownPermission, type PermissionId } from '@/mini-apps/types/permissions'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { ActionRegistry } from '@/mini-apps/actions/registry'
 import { HELPER_ACTIONS } from '@/mini-apps/actions/helpers'
@@ -41,24 +41,6 @@ import { logger } from '@/services/logger'
 import { t } from '@/i18n'
 
 const log = logger.scope('[mini-apps:ui]')
-
-/**
- * i18n-ключи описаний permissions для UI-prompt'а. Имя/описание берутся из
- * `appMsg.permission.<id>.{name,description}`.
- */
-const PERMISSION_I18N_IDS: readonly PermissionId[] = [
-  'account',
-  'authFetch',
-  'sign',
-  'messaging',
-  'mobilecamera',
-  'payment',
-  'chat',
-  'geolocation',
-  'externallink',
-  'zaddress',
-  'notifications',
-]
 
 /** Шина для подписки UI-компонентов на iframe-события (`loaded`, `changestate`, ...). */
 export const onIframeLifecycleEvent = new Set<
@@ -98,7 +80,8 @@ export async function bootMiniApps(router: Router): Promise<void> {
 
   const resolver = new PermissionResolver({
     promptUser: ({ app, permission, extra, signal }) => {
-      const hasMeta = PERMISSION_I18N_IDS.includes(permission as PermissionId)
+      // Описание есть у каждого известного permission: `appMsg.permission.<id>.*`.
+      const hasMeta = isKnownPermission(permission)
       const title = hasMeta
         ? t('appMsg.permission.promptTitle', {
             app: app.manifest.name,

@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useModalStore } from './modal-store'
+import {
+  closePageOverlay,
+  openPageOverlay,
+  resetPageOverlayForTests,
+} from '@/composables/use-page-overlay'
 
 describe('modal-store', () => {
   let store: ReturnType<typeof useModalStore>
@@ -77,6 +82,23 @@ describe('modal-store', () => {
       store.openImageGallery(['img1.jpg'])
       store.closeImageGallery()
       expect(store.imageGallery.isOpen).toBe(false)
+    })
+
+    it('закрытие галереи снимает залипший overflow страницы', () => {
+      document.body.style.overflow = 'hidden'
+      store.openImageGallery(['img1.jpg'])
+      store.closeImageGallery()
+      expect(document.body.style.overflow).toBe('')
+    })
+
+    it('не снимает блокировку, которую держит полноэкранный оверлей (N36)', () => {
+      resetPageOverlayForTests()
+      openPageOverlay()
+      store.openImageGallery(['img1.jpg'])
+      store.closeImageGallery()
+      expect(document.body.style.overflow).toBe('hidden')
+      closePageOverlay()
+      expect(document.body.style.overflow).toBe('')
     })
 
     it('updates gallery index', () => {

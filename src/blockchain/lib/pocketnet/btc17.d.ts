@@ -21,6 +21,17 @@ export interface BtcNetwork {
   wif: number
 }
 
+/** Аргументы объектной формы `sign` (TxbSignArg bitcoinjs-lib v5). */
+export interface BtcSignArgs {
+  prevOutScriptType: 'p2pkh' | 'p2sh-p2pkh' | 'p2wpkh' | 'p2sh-p2wpkh' | 'p2ms' | 'p2sh-p2ms'
+  vin: number
+  keyPair: BtcSigner
+  redeemScript?: NodeBuffer
+  witnessValue?: number
+  witnessScript?: NodeBuffer
+  hashType?: number
+}
+
 export interface BtcTransaction {
   toHex: () => string
 }
@@ -32,7 +43,12 @@ export declare class BtcTransactionBuilder {
   setNTime?: (time: number) => void
   addInput: (txid: string, vout: number, sequence: number | null, scriptPubKey?: NodeBuffer) => void
   addOutput: (addressOrScript: string | NodeBuffer, amount: number) => void
-  sign: (index: number, signer: BtcSigner) => void
+  /**
+   * Объектная форма (TxbSignArg) — ею подписывает приложение. Позиционная
+   * `sign(vin, signer)` работает, но печатает DEPRECATED на каждый вход.
+   */
+  sign(args: BtcSignArgs): void
+  sign(index: number, signer: BtcSigner): void
   build: () => BtcTransaction
 }
 

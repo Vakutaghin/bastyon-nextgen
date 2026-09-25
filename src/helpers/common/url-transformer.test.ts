@@ -1,24 +1,25 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeImageUrl, resolveImageUrl } from './url-transformer'
+import { migrateLegacyImageHost, resolveImageUrl } from './url-transformer'
 
-describe('normalizeImageUrl', () => {
+describe('migrateLegacyImageHost', () => {
   it('replaces old bastyon.com domain', () => {
-    expect(normalizeImageUrl('https://bastyon.com:8092/i/abc'))
-      .toBe('https://pocketnet.app:8092/i/abc')
+    expect(migrateLegacyImageHost('https://bastyon.com:8092/i/abc')).toBe(
+      'https://pocketnet.app:8092/i/abc'
+    )
   })
 
   it('keeps pocketnet.app domain as-is', () => {
     const url = 'https://pocketnet.app:8092/i/abc'
-    expect(normalizeImageUrl(url)).toBe(url)
+    expect(migrateLegacyImageHost(url)).toBe(url)
   })
 
   it('returns empty string for empty input', () => {
-    expect(normalizeImageUrl('')).toBe('')
+    expect(migrateLegacyImageHost('')).toBe('')
   })
 
   it('returns non-matching URL as-is', () => {
     const url = 'https://example.com/image.jpg'
-    expect(normalizeImageUrl(url)).toBe(url)
+    expect(migrateLegacyImageHost(url)).toBe(url)
   })
 })
 
@@ -33,13 +34,13 @@ describe('resolveImageUrl', () => {
   })
 
   it('builds full URL from hash', () => {
-    expect(resolveImageUrl('abc123'))
-      .toBe('https://pocketnet.app:8092/i/abc123')
+    expect(resolveImageUrl('abc123')).toBe('https://pocketnet.app:8092/i/abc123')
   })
 
   it('normalizes http URL with old domain', () => {
-    expect(resolveImageUrl('https://bastyon.com:8092/i/abc'))
-      .toBe('https://pocketnet.app:8092/i/abc')
+    expect(resolveImageUrl('https://bastyon.com:8092/i/abc')).toBe(
+      'https://pocketnet.app:8092/i/abc'
+    )
   })
 
   it('keeps http URL with correct domain', () => {

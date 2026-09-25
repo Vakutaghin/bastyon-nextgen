@@ -117,8 +117,12 @@ export async function buildTransferTransaction(
     txb.addOutput(fromAddress, finalChangeAmount)
   }
 
+  // Объектная форма, как в build-content-transaction: позиционная
+  // txb.sign(index, keyPair) печатала DEPRECATED на каждый вход перевода (N3).
+  // Входы — только p2pkh основного адреса: трата с Z-адресов не поддерживается
+  // (Р2), и чужой тип входа теперь даёт внятную ошибку вместо невнятной.
   unspents.forEach((_unspent, index) => {
-    txb.sign(index, keyPair.ecPair)
+    txb.sign({ prevOutScriptType: 'p2pkh', vin: index, keyPair: keyPair.ecPair })
   })
 
   const tx = txb.build()

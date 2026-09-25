@@ -13,7 +13,7 @@ import { recordVisit } from '../components/shared/use-search-history'
 import { parsePocketnetPayload } from '../components/shared/parse-pocketnet-payload'
 import { t } from '@/i18n'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
-import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions'
+import type { Transaction } from '@/types/rpc-responses/get-transactions'
 
 export interface TxData {
   tx: ComputedRef<Transaction | undefined>
@@ -30,7 +30,6 @@ export interface TxData {
   rawJson: ComputedRef<string>
   showRaw: Ref<boolean>
   now: Ref<number>
-  firstAddress: (vout: TxVout) => string
 }
 
 export function useTxData(txidRef: Ref<string>): TxData {
@@ -96,11 +95,6 @@ export function useTxData(txidRef: Ref<string>): TxData {
     return k ? t(PAYLOAD_KIND_KEY[k] ?? k) : ''
   })
 
-  function firstAddress(vout: TxVout): string {
-    const a = vout.scriptPubKey?.addresses?.[0]
-    return a && a.length > 0 ? a : ''
-  }
-
   const showRaw = ref(false)
   const rawJson = computed(() => (tx.value ? JSON.stringify(tx.value, null, 2) : ''))
 
@@ -141,6 +135,5 @@ export function useTxData(txidRef: Ref<string>): TxData {
     rawJson,
     showRaw,
     now,
-    firstAddress,
   }
 }

@@ -1,17 +1,5 @@
 import { sanitizeHtml } from '@/helpers/content/sanitize-html'
-
-/**
- * Экранирует HTML символы для безопасности
- */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/'/g, '&#039;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
+import { escapeHtml } from '@/helpers/common/html-escape'
 
 /**
  * @-меншены: `@<ник>` в начале строки или после не-словного символа. Рендерим

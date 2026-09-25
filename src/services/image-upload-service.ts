@@ -29,7 +29,7 @@ export interface ImageUploadProvider {
 const IMAGE_UPLOAD_CREDS = { username: 'test_bastyon', password: 'test_bastyon' }
 
 /** Достраивает протокол, если узел вернул URL без схемы. */
-export function normalizeImageUrl(url: string): string {
+export function withHttpsScheme(url: string): string {
   if (!url) return url
   if (url.startsWith('http://') || url.startsWith('https://')) return url
   return `https://${url}`
@@ -48,7 +48,9 @@ export function dataUrlToBlob(dataUrl: string): Blob {
 }
 
 /** oauth-clients/local → { client_id, client_secret } (нужны для password-гранта). */
-async function fetchOauthClient(host: string): Promise<{ client_id: string; client_secret: string }> {
+async function fetchOauthClient(
+  host: string
+): Promise<{ client_id: string; client_secret: string }> {
   const res = await peertubeInstanceFetch(host, 'api/v1/oauth-clients/local', {
     method: 'GET',
     headers: { Accept: 'application/json' },
@@ -98,7 +100,7 @@ export const peertubeImageProvider: ImageUploadProvider = {
 
     const data = (await res.json()) as { url?: string } | null
     if (!data?.url) throw new Error('peertube_upload_no_url')
-    return normalizeImageUrl(data.url)
+    return withHttpsScheme(data.url)
   },
 }
 

@@ -15,6 +15,7 @@
  */
 
 import { logger } from '@/services/logger'
+import { getBuiltInIconUrl } from './built-in'
 
 const log = logger.scope('[mini-apps:remote]')
 
@@ -213,18 +214,13 @@ function normalizeEntry(entry: unknown): RemoteAppEntry | null {
     id,
     name,
     scope,
-    icon: typeof r.icon === 'string' && r.icon ? r.icon : iconFromScope(scope),
+    icon: typeof r.icon === 'string' && r.icon ? r.icon : getBuiltInIconUrl(scope),
     description,
     address: typeof r.address === 'string' ? r.address : undefined,
     author,
     tags,
     height: typeof r.height === 'number' ? r.height : undefined,
   }
-}
-
-function iconFromScope(scope: string): string {
-  const trimmed = scope.replace(/^https?:\/\//, '').replace(/\/$/, '')
-  return `https://${trimmed}/b_icon.png`
 }
 
 /** Снимает обёртку `{result, data}` или `{data}`, оставляя сырой массив. */

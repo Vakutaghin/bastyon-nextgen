@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { isPageOverlaid } from '@/composables/use-page-overlay'
 import { POST_MODAL_SCROLL_POSITION_KEY } from '@/blockchain/constants/storage'
 import type { GetTopFeedPost as Post } from '@/types/rpc-responses/get-top-feed'
 import type {
@@ -149,9 +150,10 @@ export const useModalStore = defineStore('modal', {
       this.imageGallery.isOpen = false
       const scrollPosition = this.imageGallery.scrollPosition
 
-      // Убираем блокировки скролла
+      // Убираем блокировки скролла. overflow не трогаем, пока страницу держит
+      // полноэкранный оверлей (мессенджер, меню): это его блокировка, не наша (N36).
       const ensureScrollUnlocked = (): void => {
-        if (document.body.style.overflow === 'hidden') {
+        if (!isPageOverlaid.value && document.body.style.overflow === 'hidden') {
           document.body.style.overflow = ''
         }
         if (document.body.style.position === 'fixed') {

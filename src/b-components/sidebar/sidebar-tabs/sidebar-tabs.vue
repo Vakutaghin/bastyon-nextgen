@@ -101,19 +101,21 @@ watch(
   { immediate: true }
 )
 
+/**
+ * `?feedMode=` в адресе — через роутер. Раньше это был
+ * `history.replaceState({}, …)` мимо него: пустой объект затирал состояние,
+ * которое vue-router держит в history.state для «Назад», а сам роутер про
+ * query не знал (N36). router-view без ключа, scrollBehavior нет — смена
+ * query страницу не пересоздаёт и не прокручивает.
+ */
 function updateUrlParam(mode: string | null): void {
-  const url = new URL(window.location.href)
-  const current = url.searchParams.get('feedMode')
+  const current = typeof route.query.feedMode === 'string' ? route.query.feedMode : null
+  if (current === mode) return
 
-  if (mode === null) {
-    if (current !== null) {
-      url.searchParams.delete('feedMode')
-      window.history.replaceState({}, '', url.toString())
-    }
-  } else if (current !== mode) {
-    url.searchParams.set('feedMode', mode)
-    window.history.replaceState({}, '', url.toString())
-  }
+  const query = { ...route.query }
+  if (mode === null) delete query.feedMode
+  else query.feedMode = mode
+  void router.replace({ query })
 }
 
 function selectTab(tabId: string | number): void {

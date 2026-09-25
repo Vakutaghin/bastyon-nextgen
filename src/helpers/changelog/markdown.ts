@@ -9,17 +9,7 @@
  * на тексте всё равно делаем — защита от случайных < и & в описаниях.
  */
 
-const ESCAPE_MAP: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ESCAPE_MAP[c]!)
-}
+import { escapeHtml } from '@/helpers/common/html-escape'
 
 function renderInline(text: string): string {
   let s = escapeHtml(text)

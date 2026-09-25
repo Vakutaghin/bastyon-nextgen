@@ -53,13 +53,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Modal, Switch, message } from 'ant-design-vue'
 
 import { cacheAPI } from '@/db/apis/cache-api'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
-import { setAutostart } from '@/composables/use-autostart'
+import { isAutostartEnabled, setAutostart } from '@/composables/use-autostart'
 import { UI_SCALES, useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { SC_SettingsSectionTitle } from '../settings-page-main.styled'
 import {
@@ -99,6 +99,14 @@ async function onScale(scale: number): Promise<void> {
 function onAutostart(checked: SwitchValue): void {
   void applyAutostart(Boolean(checked))
 }
+
+// Автозапуск могли выключить в настройках системы, минуя приложение: при
+// открытии вкладки сверяем тумблер с тем, что на самом деле записано в ОС.
+onMounted(async () => {
+  if (!isDesktop) return
+  const actual = await isAutostartEnabled()
+  if (actual !== prefs.autostart) await prefs.set('autostart', actual)
+})
 
 async function applyAutostart(checked: boolean): Promise<void> {
   autostartBusy.value = true

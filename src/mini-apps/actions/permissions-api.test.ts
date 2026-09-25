@@ -128,17 +128,13 @@ describe('registerForNotifications', () => {
     setupTestPinia()
   })
 
-  it('returns true (stub implementation)', async () => {
+  it('fails honestly: there is no push here, so the app must not think it subscribed', async () => {
     const store = usePermissionsStore()
     await store.set(TEST_APP.manifest.id, 'notifications', 'granted', 'user')
     const { reg } = setupReg()
-    const r = await reg.execute(
-      'registerForNotifications',
-      TEST_APP,
-      {},
-      new AbortController().signal
-    )
-    expect(r).toBe(true)
+    await expect(
+      reg.execute('registerForNotifications', TEST_APP, {}, new AbortController().signal)
+    ).rejects.toThrow('notifications:notsupported')
   })
 
   it('requires authorization', async () => {

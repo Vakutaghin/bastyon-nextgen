@@ -67,8 +67,11 @@ export function createContentMethods(deps: ContentDeps): ContentMethods {
     },
 
     openComplain: async (_data) => {
-      // TODO(etap 7+): подключить complain modal. Сейчас игнорим silently —
-      // миниаппа получает успех, пользовательский UI отсутствует.
+      // Старый клиент такую жалобу только писал в свою телеметрию
+      // (Logger.info MINIAPP_COMPLAIN) — ни транзакции, ни модерации. Телеметрии
+      // здесь нет намеренно, поэтому честно отвечаем «не поддерживается»:
+      // раньше мини-аппа получала успех и говорила человеку «жалоба отправлена».
+      throw new Error('complain:notsupported')
     },
 
     getPendingActions: () => {

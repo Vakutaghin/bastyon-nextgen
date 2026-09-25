@@ -3,7 +3,7 @@
 
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
-import { extractAvatarFromProfile } from '@/helpers/common/profile-avatar'
+import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import type { Address } from '@/blockchain/types/addresses'
 import type { UserProfile, GetUserProfileResponse } from '@/types/rpc-responses/user-get'
@@ -35,7 +35,7 @@ function buildDisplayInfo(
   return {
     address: acc.address,
     name: profile.name || acc.name || null,
-    avatar: extractAvatarFromProfile(profile) ?? null,
+    avatar: resolveAvatarUrl(profile) ?? null,
     balance: profile.balance ?? null,
     loading: false,
     verified: isUserVerified(profile),
