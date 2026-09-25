@@ -32,7 +32,7 @@ export const SC_VaultForgot = styled.button`
   }
 
   &:disabled {
-    opacity: 0.5;
-    cursor: default;
+    opacity: 0.75;
+    cursor: not-allowed;
   }
 `

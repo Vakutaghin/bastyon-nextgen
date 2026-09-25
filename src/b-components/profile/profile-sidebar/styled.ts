@@ -190,7 +190,7 @@ export const SC_SubscribeButton = styled.button`
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.75;
     cursor: not-allowed;
   }
 
@@ -227,7 +227,7 @@ export const SC_BellButton = styled.button`
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.75;
     cursor: not-allowed;
   }
 
@@ -266,7 +266,7 @@ export const SC_BlockButton = styled.button`
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.75;
     cursor: not-allowed;
   }
 

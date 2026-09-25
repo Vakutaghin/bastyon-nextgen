@@ -102,8 +102,8 @@ export const SC_FollowBtn = styled.button`
   }
 
   &:disabled {
-    opacity: 0.6;
-    cursor: default;
+    opacity: 0.75;
+    cursor: not-allowed;
   }
 
   &.subscribed {

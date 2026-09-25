@@ -80,7 +80,7 @@ export const SC_DiagUpdateButton = styled.button`
   }
 
   &:disabled {
-    cursor: default;
-    opacity: 0.6;
+    cursor: not-allowed;
+    opacity: 0.75;
   }
 `

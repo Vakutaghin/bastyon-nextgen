@@ -228,8 +228,8 @@ export const SC_LoadMoreBtn = styled.button`
   }
 
   &:disabled {
-    opacity: 0.5;
-    cursor: default;
+    opacity: 0.75;
+    cursor: not-allowed;
   }
 `
 

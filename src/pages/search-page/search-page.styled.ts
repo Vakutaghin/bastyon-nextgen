@@ -191,7 +191,7 @@ export const SC_LoadMore = styled.button`
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.75;
     cursor: not-allowed;
   }
 `

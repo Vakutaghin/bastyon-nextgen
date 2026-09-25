@@ -47,7 +47,7 @@ export const SC_ReasonItem = styled('button', reasonProps)`
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.75;
     cursor: not-allowed;
   }
 `

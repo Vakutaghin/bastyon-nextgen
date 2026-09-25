@@ -32,7 +32,7 @@ export const SC_AttachButton = styled.button`
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.75;
     cursor: not-allowed;
   }
 `

@@ -95,7 +95,7 @@ export const SC_RefreshBtn = styled.button`
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.75;
   }
 
   svg {
