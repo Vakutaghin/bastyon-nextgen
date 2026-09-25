@@ -1653,6 +1653,8 @@ export default {
   },
   accountMsg: {
     registrationBlocked: 'Registration failed: {reason}. Please contact support.',
+    registrationIpLimit:
+      'Several accounts were registered from your IP address recently, so the network is not handing out registration coins to it for now. Try again in a few days or from another network, or contact support to get the coins manually.',
     reasonRegistration: 'Account registration',
     reasonBalance: 'Balance top-up',
     captchaTitle: 'Captcha',
@@ -1667,8 +1669,11 @@ export default {
     menuSettings: 'Settings',
     menuSwitchAccount: 'Switch account',
     menuSignOut: 'Sign out',
+    menuFinishRegistration: 'Finish registration',
     noActiveAccount: 'No active account',
     noSavedSeedOrKey: 'No saved seed phrase or key for this account',
+    rejectNameTaken: 'this name is already taken',
+    rejectNameLong: 'the name is longer than 20 characters',
     registrationRejected:
       'Registration rejected by the network: {message}. Pick another name and try again.',
     registrationTimeout:

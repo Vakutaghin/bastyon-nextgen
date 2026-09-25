@@ -25,7 +25,10 @@
             @keyup.enter="handleRegister"
           />
         </SC_InputWrapper>
-        <SC_FormHint>
+        <SC_FormHintError v-if="nameTaken" role="alert">
+          {{ t('auth.errorNameTaken') }}
+        </SC_FormHintError>
+        <SC_FormHint v-else>
           {{ t('auth.nicknameHint') }}
         </SC_FormHint>
       </SC_FormItem>
@@ -94,6 +97,7 @@ import {
   SC_FormLabelOptional,
   SC_InputWrapper,
   SC_FormHint,
+  SC_FormHintError,
   SC_ErrorMessage,
   SC_LinkToSignIn,
   SC_LinkButton,
@@ -102,9 +106,10 @@ import {
 import {
   savePendingRegistration,
   loadPendingRegistration,
-  clearPendingRegistration,
 } from './helpers/pending-registration-store'
+import { registrationRejectionReason } from './helpers/rejection-reason'
 import { setNeedShowMnemonic } from '@/helpers/common/mnemonic-storage'
+import type { UserAddressData } from '@/types/rpc-responses/get-user-address'
 import {
   isFormNicknameValid,
   normalizeAndCapNickname,
@@ -138,6 +143,13 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 let nicknameTimer: ReturnType<typeof setTimeout> | null = null
 
+// Занятость имени проверяем, пока его набирают, а не только по нажатию: иначе
+// о занятом имени человек узнавал уже после капчи. Номер запроса отсекает
+// ответы на имя, которое успели изменить.
+const nameTaken = ref(false)
+let nameCheckTimer: ReturnType<typeof setTimeout> | null = null
+let nameCheckSeq = 0
+
 // Управление отменой активной регистрации. Прерываем на границах шагов (сетевые
 // вызовы не принимают внешний signal), затем откатываем аккаунт и pending-запись.
 let abortController: AbortController | null = null
@@ -150,7 +162,7 @@ const isOpen = computed<boolean>({
   set: (value) => emit('update:open', value),
 })
 
-const isFormValid = computed<boolean>(() => isFormNicknameValid(nickname.value))
+const isFormValid = computed<boolean>(() => isFormNicknameValid(nickname.value) && !nameTaken.value)
 
 watch(
   () => props.open,
@@ -168,11 +180,14 @@ watch(
         clearTimeout(nicknameTimer)
         nicknameTimer = null
       }
+      cancelNameCheck()
     } else {
       checkPendingRegistration()
     }
   }
 )
+
+watch(nickname, scheduleNameCheck)
 
 // Страховка от ранней размонтировки (роутинг увёз нас в момент, когда модалка
 // открыта и timer заряжен): cleanup перед unmount гарантированно снимет setTimeout.
@@ -181,6 +196,7 @@ onBeforeUnmount(() => {
     clearTimeout(nicknameTimer)
     nicknameTimer = null
   }
+  cancelNameCheck()
 })
 
 function onNicknameInput(eventOrValue: Event | string): void {
@@ -214,7 +230,11 @@ function checkPendingRegistration(): void {
   const pending = loadPendingRegistration()
   if (!pending || pending.address !== authStore.getUserAddress) return
   if (pending.nickname && !nickname.value) nickname.value = pending.nickname
-  if (pending.error) error.value = t('accountMsg.registrationRejected', { message: pending.error })
+  if (pending.error) {
+    error.value = t('accountMsg.registrationRejected', {
+      message: registrationRejectionReason(pending.error),
+    })
+  }
 }
 
 /**
@@ -250,6 +270,20 @@ async function handleRegister(): Promise<void> {
   // Адрес аккаунта, созданного в этой попытке (или переиспользованного из
   // прошлой неудачной), — чтобы откат снимал именно его.
   let createdAddress: string | null = null
+  // До создания ключей сессию не трогаем: ошибка проверки имени при
+  // «Добавить аккаунт» не должна разлогинивать текущий аккаунт.
+  let keysTouched = false
+
+  // Повтор после неудачной попытки: ключи прошлой уже сохранены, и pending
+  // указывает на них — берём их с любым именем, а не минтим сироту (V9). Имя
+  // с ключами не связано до userInfo-транзакции, а монеты на регистрацию уже
+  // могли прийти на этот адрес: новые ключи просили бы их заново, и после
+  // нескольких попыток сервер раздачи отвечал iplimit.
+  const stale = loadPendingRegistration()
+  const reuse = !!stale && stale.step >= 1 && stale.address === authStore.getUserAddress
+  // Монеты этому адресу уже запрошены (step ≥ 2): аккаунт и его pending
+  // переживают и отмену, и ошибку — других ключей с монетами нет.
+  const funded = !!stale && reuse && stale.step >= 2
 
   // Отмена возможна только до «точки невозврата» (emit('validation')): сетевые
   // вызовы не принимают signal, поэтому прерываемся на границах шагов.
@@ -259,40 +293,40 @@ async function handleRegister(): Promise<void> {
 
   try {
     debugLog('[REG] Step 1: checking name...')
-    await checkNameAvailability(nickname.value)
+    if (await checkNameTaken(nickname.value)) {
+      // Об этом уже говорит подсказка под полем — отдельной плашки не нужно.
+      nameTaken.value = true
+      return
+    }
     bailIfCancelled()
 
-    // Повтор после ошибки шага 3: ключи прошлой попытки уже персистнуты и
-    // pending указывает на них — переиспользуем, а не минтим сироту (V9).
-    // При смене ника — сироту снимаем и начинаем заново.
-    const stale = loadPendingRegistration()
     let registrationResult: { address: string }
-    if (stale && stale.step >= 1 && stale.address === authStore.getUserAddress) {
-      if (stale.nickname !== nickname.value) {
-        await authStore.discardRegistration(stale.address, previousAddress)
-        registrationResult = await freshRegistration()
-      } else {
-        debugLog('[REG] Step 2: reusing keys from the previous attempt:', stale.address)
-        registrationResult = { address: stale.address }
-      }
+    if (stale && reuse) {
+      debugLog('[REG] Step 2: reusing keys from the previous attempt:', stale.address)
+      registrationResult = { address: stale.address }
     } else {
+      keysTouched = true
       registrationResult = await freshRegistration()
     }
     createdAddress = registrationResult.address
     bailIfCancelled()
 
-    savePendingRegistration({
-      nickname: nickname.value,
-      address: registrationResult.address,
-      step: 1,
-      timestamp: Date.now(),
-    })
+    // Монеты этому адресу уже запрошены — второй раз не просим: сервер
+    // раздачи ответил бы uniq или iplimit, а капча была бы зря.
+    if (!funded) {
+      savePendingRegistration({
+        nickname: nickname.value,
+        address: registrationResult.address,
+        step: 1,
+        timestamp: Date.now(),
+      })
 
-    debugLog('[REG] Step 3: requesting free balance...')
-    const { requestUnspents } = await import('@/blockchain/api/free-balance-api')
-    await requestUnspents(registrationResult.address, { reason: 'registration' })
-    debugLog('[REG] Step 3: free/balance requested!')
-    bailIfCancelled()
+      debugLog('[REG] Step 3: requesting free balance...')
+      const { requestUnspents } = await import('@/blockchain/api/free-balance-api')
+      await requestUnspents(registrationResult.address, { reason: 'registration' })
+      debugLog('[REG] Step 3: free/balance requested!')
+      bailIfCancelled()
+    }
 
     // step=2: free/balance отправлен в сервер, ждём подтверждения (UTXO).
     savePendingRegistration({
@@ -314,9 +348,12 @@ async function handleRegister(): Promise<void> {
     // pending) и возвращаемся к прежней сессии, если она была (V9); ошибку не
     // показываем.
     if (err === CANCELLED || isCancelling.value) {
-      if (createdAddress) await authStore.discardRegistration(createdAddress, previousAddress)
-      else authStore.resetAuthOnRegistrationError()
-      clearPendingRegistration()
+      // pending созданного аккаунта снимает discardRegistration; чужой или
+      // прошлой попытки с монетами не трогаем.
+      if (!funded) {
+        if (createdAddress) await authStore.discardRegistration(createdAddress, previousAddress)
+        else if (keysTouched) authStore.resetAuthOnRegistrationError()
+      }
       nickname.value = ''
       email.value = ''
       error.value = null
@@ -330,7 +367,7 @@ async function handleRegister(): Promise<void> {
     const pending = loadPendingRegistration()
     if (!pending || pending.step < 1) {
       if (createdAddress) await authStore.discardRegistration(createdAddress, previousAddress)
-      else authStore.resetAuthOnRegistrationError()
+      else if (keysTouched) authStore.resetAuthOnRegistrationError()
     }
   } finally {
     loading.value = false
@@ -349,27 +386,57 @@ async function freshRegistration(): Promise<{ address: string }> {
   return { address: result.address }
 }
 
-async function checkNameAvailability(name: string): Promise<void> {
-  const { getByPRCWithAuth } = await import('@/helpers/api/request')
+/**
+ * Имя занято другим адресом? Прокси отвечает конвертом `{ result, data: [...] }`
+ * (раньше здесь ждали голый массив, и занятое имя не ловилось никогда); нода
+ * ищет без учёта регистра. Сеть недоступна — бросает, решает вызывающий.
+ */
+async function isNameTaken(name: string): Promise<boolean> {
+  const { rpcCallArray } = await import('@/helpers/api/request')
+  const users = await rpcCallArray<UserAddressData>({
+    method: 'getuseraddress',
+    parameters: [name],
+    options: { auth: false },
+  })
+  const owner = users[0]?.address
+  return !!owner && owner !== authStore.getUserAddress
+}
 
+async function checkNameTaken(name: string): Promise<boolean> {
   try {
-    const response = (await getByPRCWithAuth({
-      method: 'getuseraddress',
-      parameters: [name],
-      options: { auth: false },
-    })) as { address?: string }[] | null
-
-    if (Array.isArray(response) && response.length > 0 && response[0]?.address) {
-      const existingAddress = response[0].address
-      if (existingAddress !== authStore.getUserAddress) {
-        const nameTakenError = new Error(t('auth.errorNameTaken'))
-        ;(nameTakenError as Error & { isNameTaken?: boolean }).isNameTaken = true
-        throw nameTakenError
-      }
-    }
+    return await isNameTaken(name)
   } catch (err) {
-    if ((err as { isNameTaken?: boolean })?.isNameTaken) throw err
+    // Нода недоступна — не блокируем: занятое имя отвергнет сама нода, а
+    // повтор с другим именем пойдёт с теми же ключами и монетами.
+    console.warn('[REG] name check failed:', err)
+    return false
   }
+}
+
+function cancelNameCheck(): void {
+  if (nameCheckTimer) {
+    clearTimeout(nameCheckTimer)
+    nameCheckTimer = null
+  }
+  nameCheckSeq++
+  nameTaken.value = false
+}
+
+/** Проверка на лету: через полсекунды после ввода, только для допустимого имени. */
+function scheduleNameCheck(): void {
+  cancelNameCheck()
+  const name = nickname.value
+  if (!isFormNicknameValid(name)) return
+  const seq = nameCheckSeq
+  nameCheckTimer = setTimeout(async () => {
+    nameCheckTimer = null
+    try {
+      const taken = await isNameTaken(name)
+      if (seq === nameCheckSeq) nameTaken.value = taken
+    } catch {
+      // Сеть — проверим ещё раз по нажатию «Зарегистрироваться».
+    }
+  }, 500)
 }
 
 function handleOpenSignIn(): void {

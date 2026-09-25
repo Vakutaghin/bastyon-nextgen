@@ -3,6 +3,8 @@
 // header-user (retry на ребуте) и restore-session (чистка брошенной регистрации).
 // Запись TTL — 30 минут: `loadPendingRegistration` протухшее удаляет,
 // `peekPendingRegistration` читает как есть (для решений об очистке на буте).
+// Запись с отказом ноды не протухает: на её адрес уже пришли монеты, и повтор
+// с другим именем должен идти с этих ключей, а не просить монеты заново.
 
 import { PENDING_NICKNAME_KEY, PENDING_REGISTRATION_KEY } from '../constants/storage'
 
@@ -53,7 +55,7 @@ export function peekPendingRegistration(): PendingRegistration | null {
 export function loadPendingRegistration(): PendingRegistration | null {
   const data = peekPendingRegistration()
   if (!data) return null
-  if (Date.now() - data.timestamp > TTL_MS) {
+  if (!data.error && Date.now() - data.timestamp > TTL_MS) {
     clearPendingRegistration()
     return null
   }

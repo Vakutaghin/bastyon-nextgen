@@ -39,6 +39,11 @@ export const SC_FormHint = styled.div`
   line-height: 1.5;
 `
 
+/** Подсказка-ошибка вместо обычной: имя уже занято. */
+export const SC_FormHintError = styled(SC_FormHint)`
+  color: var(--ui-error-strong);
+`
+
 export const SC_ErrorMessage = styled.div`
   margin-top: 16px;
   padding: 12px;

@@ -133,6 +133,9 @@ describe('useRegistrationFlow', () => {
     await settle()
     expect(flow.registrationPending.value).toBe(false)
     expect(mocks.getRegistrationStatus).not.toHaveBeenCalled()
+    // Без имени аккаунт ничего не может: сразу модалка с причиной и пункт в меню.
+    expect(flow.registerModalOpen.value).toBe(true)
+    expect(flow.registrationUnfinished.value).toBe(true)
   })
 
   it('отказ ноды при отправке из модалки: часики снимаются, тост с причиной, pending остаётся', async () => {
@@ -146,9 +149,24 @@ describe('useRegistrationFlow', () => {
     await settle()
     expect(flow.registrationPending.value).toBe(false)
     expect(mocks.toastError).toHaveBeenCalledWith({
-      message: 'accountMsg.registrationRejected:{"message":"NicknameDouble"}',
+      message: 'accountMsg.registrationRejected:{"message":"accountMsg.rejectNameTaken"}',
     })
     expect(loadPendingRegistration()).not.toBeNull()
+    // Сразу можно выбрать другое имя: модалка снова открыта.
+    expect(flow.registerModalOpen.value).toBe(true)
+  })
+
+  it('модалку закрыли после ошибки: в меню «Завершить регистрацию», пока pending свой', async () => {
+    const auth = makeAuth('PA')
+    const flow = mountFlow(auth)
+    await settle()
+    expect(flow.registrationUnfinished.value).toBe(false)
+    flow.openRegisterModal()
+    await settle()
+    savePendingRegistration({ nickname: 'bob', address: 'PA', step: 1, timestamp: Date.now() })
+    flow.handleRegisterCancel()
+    await settle()
+    expect(flow.registrationUnfinished.value).toBe(true)
   })
 
   it('N6: пока регистрация идёт, сид в памяти не держится — по завершении поднимается из сейфа', async () => {

@@ -14,7 +14,7 @@
  *
  * См. CODE_AUDIT.md §1.
  */
-import { onMounted, ref, type Ref } from 'vue'
+import { onMounted, ref, watch, type Ref } from 'vue'
 import type { useAuthStore } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
 import { debugLog } from '@/helpers/common/debug-log'
@@ -35,6 +35,7 @@ import {
   type PendingRegistration,
 } from '@/blockchain/storage/pending-registration'
 import type { Address } from '@/blockchain/types/addresses'
+import { registrationRejectionReason } from '@/b-components/header/register-modal/helpers/rejection-reason'
 
 /**
  * Pending-регистрация, относящаяся к ТЕКУЩЕМУ аккаунту (V10): после
@@ -57,6 +58,12 @@ export interface RegistrationFlow {
   validationModalOpen: Ref<boolean>
   validationStatus: Ref<string | null>
   registrationPending: Ref<boolean>
+  /**
+   * У текущего аккаунта есть незавершённая регистрация, которая сейчас не
+   * идёт (нода отвергла имя, закрыли модалку после ошибки): в меню аватара
+   * появляется «Завершить регистрацию» — иначе вернуться к ней было некуда.
+   */
+  registrationUnfinished: Ref<boolean>
   pendingNickname: Ref<string | null>
   welcomeModalOpen: Ref<boolean>
   handleWelcomeClose: () => void
@@ -83,6 +90,7 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
   const validationModalOpen = ref(false)
   const validationStatus = ref<string | null>(null)
   const registrationPending = ref(false)
+  const registrationUnfinished = ref(false)
   const pendingNickname = ref<string | null>(null)
   const welcomeModalOpen = ref(false)
   // true между завершением регистрации и закрытием mnemonic-модалки — чтобы
@@ -98,6 +106,18 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     registerModalOpen.value = true
   }
 
+  function refreshUnfinished(): void {
+    registrationUnfinished.value =
+      !registrationPending.value &&
+      !!pendingForAddress(loadPendingRegistration(), authStore.getUserAddress)
+  }
+
+  // Модалку закрыли (отмена, ошибка шага) или сменился аккаунт — пересчитать.
+  watch(registerModalOpen, (open) => {
+    if (!open) refreshUnfinished()
+  })
+  watch(() => authStore.getUserAddress, refreshUnfinished)
+
   function handleRegisterValidation(data: { status: string; nickname?: string }): void {
     registerModalOpen.value = false
 
@@ -110,6 +130,7 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
 
     validationStatus.value = data.status
     registrationPending.value = true
+    registrationUnfinished.value = false
     validationModalOpen.value = true
 
     startRegistrationStatusCheck()
@@ -186,6 +207,7 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
       const pending = loadPendingRegistration()
       if (pending?.address === registrationAddress) clearPendingRegistration()
     }
+    refreshUnfinished()
   }
 
   /**
@@ -259,9 +281,16 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
       // Ключи мессенджера уходят в userInfo — перелогин Matrix с ними.
       authStore.resetMessenger(true).catch(() => {})
     } else if (result.outcome === 'fatal') {
-      // Отказ ноды виден пользователю, а не глотается «часиками» (S13).
+      // Отказ ноды виден пользователю, а не глотается «часиками» (S13), и сразу
+      // можно выбрать другое имя: модалка открывается снова с причиной, повтор
+      // идёт с этими же ключами и монетами.
       finishPending({ clearPending: false })
-      appToast.error({ message: t('accountMsg.registrationRejected', { message: result.message }) })
+      appToast.error({
+        message: t('accountMsg.registrationRejected', {
+          message: registrationRejectionReason(result.message),
+        }),
+      })
+      registerModalOpen.value = true
     }
   }
 
@@ -281,8 +310,11 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
       return
     }
     if (pending.error) {
-      // Нода уже отвергла эту регистрацию — ждать нечего, причину покажет модалка.
+      // Нода уже отвергла эту регистрацию — ждать нечего. Без имени аккаунт
+      // ничего не может, поэтому сразу модалка с причиной и полем для имени.
       registrationPending.value = false
+      registrationUnfinished.value = true
+      registerModalOpen.value = true
       return
     }
     if (pending.nickname) {
@@ -353,6 +385,7 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     validationModalOpen,
     validationStatus,
     registrationPending,
+    registrationUnfinished,
     pendingNickname,
     welcomeModalOpen,
     handleWelcomeClose,

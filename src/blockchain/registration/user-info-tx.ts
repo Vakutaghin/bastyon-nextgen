@@ -11,6 +11,7 @@
 
 import { debugLog } from '@/helpers/common/debug-log'
 import type { KeyPair } from '@/blockchain/types/keys'
+import type { UTXO } from '@/composables/use-wallet-queries'
 import {
   loadPendingRegistration,
   markPendingRegistrationError,
@@ -57,6 +58,9 @@ export async function sendRegistrationUserInfoTx(
 ): Promise<RegistrationTxOutcome> {
   const { address, keyPair, nickname, waitForFunds = false } = opts
   if (!address || !keyPair) return { outcome: 'transient', message: 'no keys/address' }
+
+  // Входы этой попытки: при отказе ноды лок снимаем, чтобы повтор их видел.
+  let lockedInputs: UTXO[] = []
 
   try {
     const [
@@ -112,6 +116,7 @@ export async function sendRegistrationUserInfoTx(
 
     const selectedUnspents = selectAndLockUnspents(unspents, 0) // лок входов (S6)
     if (selectedUnspents.length === 0) return { outcome: 'no-funds' }
+    lockedInputs = selectedUnspents
 
     const builtTx = await buildTransaction({
       unspents: selectedUnspents,
@@ -136,9 +141,13 @@ export async function sendRegistrationUserInfoTx(
   } catch (err) {
     console.error(LOG_PREFIX, 'error:', err)
     if (isFatalRegistrationError(err)) {
-      // Ключи не стираем: повтор с другим ником переиспользует/снимет их сам
-      // (register-modal), а причину пользователь должен увидеть (S13).
+      // Ключи не стираем: монеты уже на этом адресе, повтор с другим ником
+      // идёт с него (register-modal), а причину пользователь должен увидеть (S13).
       markPendingRegistrationError(address, errorMessage(err))
+      if (lockedInputs.length) {
+        const { unlockUTXOs } = await import('@/blockchain/core/transactions/unspents-manager')
+        unlockUTXOs(lockedInputs)
+      }
       return { outcome: 'fatal', message: errorMessage(err) }
     }
     return { outcome: 'transient', message: errorMessage(err) }

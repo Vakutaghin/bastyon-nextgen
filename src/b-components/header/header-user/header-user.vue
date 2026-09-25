@@ -144,6 +144,7 @@ const {
   validationModalOpen,
   validationStatus,
   registrationPending,
+  registrationUnfinished,
   pendingNickname,
   welcomeModalOpen,
   handleWelcomeClose,
@@ -176,6 +177,7 @@ const {
   router,
   openRegister: openRegisterModal,
   registerModalOpenRef: registerModalOpen,
+  registrationUnfinished,
 })
 
 // === Отображение пользователя в шапке ===

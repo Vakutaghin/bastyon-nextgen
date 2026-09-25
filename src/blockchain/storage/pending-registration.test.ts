@@ -22,6 +22,12 @@ describe('pending-registration (X10)', () => {
     expect(peekPendingRegistration()).toBeNull()
   })
 
+  it('запись с отказом ноды не протухает: повтор идёт с её ключами', () => {
+    const old = Date.now() - 2 * 24 * 60 * 60_000
+    savePendingRegistration({ ...rec, step: 2, timestamp: old, error: 'NicknameDouble' })
+    expect(loadPendingRegistration()).toMatchObject({ address: 'PB', error: 'NicknameDouble' })
+  })
+
   it('clearPendingRegistrationFor чистит только запись своего адреса', () => {
     savePendingRegistration(rec)
     clearPendingRegistrationFor('POTHER')

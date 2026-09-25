@@ -37,6 +37,19 @@ export function lockUTXOs(utxos: UTXO[], ttl: number = 60000) {
 }
 
 /**
+ * Снимает лок входов транзакции, которую нода отвергла: иначе повтор (другое имя
+ * при регистрации) до минуты не видит этих монет.
+ */
+export function unlockUTXOs(utxos: UTXO[]): void {
+  utxos.forEach((u) => {
+    const key = `${u.txid}:${u.vout}`
+    const timer = lockedUTXOs.get(key)
+    if (timer) clearTimeout(timer)
+    lockedUTXOs.delete(key)
+  })
+}
+
+/**
  * Подбирает входы под сумму и сразу лочит их. Единая точка для ВСЕХ отправителей
  * (контентные и value-транзакции): раньше лок был в 8 из 15 мест (аудит P2-5/S6).
  * Пустой результат = не хватает средств (ничего не лочится).

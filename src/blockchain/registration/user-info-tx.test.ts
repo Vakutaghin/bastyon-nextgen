@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getUnspents: vi.fn(),
   sendTransactionWithMessage: vi.fn(),
   waitForUnspents: vi.fn(),
+  unlockUTXOs: vi.fn(),
 }))
 vi.mock('@/blockchain/core/actions/user-info-action', () => ({
   serializeUserInfo: () => 'serialized',
@@ -18,6 +19,7 @@ vi.mock('@/blockchain/core/transactions/unspents-manager', () => ({
   getUnspents: mocks.getUnspents,
   filterAvailableUnspents: (u: unknown[]) => u,
   selectAndLockUnspents: (u: unknown[]) => u,
+  unlockUTXOs: mocks.unlockUTXOs,
 }))
 vi.mock('@/blockchain/core/transactions/transaction-builder', () => ({
   buildTransaction: async () => ({ hex: 'deadbeef' }),
@@ -52,6 +54,7 @@ describe('sendRegistrationUserInfoTx', () => {
     mocks.getUnspents.mockReset().mockResolvedValue(utxo)
     mocks.sendTransactionWithMessage.mockReset().mockResolvedValue('txid1')
     mocks.waitForUnspents.mockReset()
+    mocks.unlockUTXOs.mockReset()
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -78,6 +81,8 @@ describe('sendRegistrationUserInfoTx', () => {
     const pending = loadPendingRegistration()
     expect(pending?.step).toBe(2)
     expect(pending?.error).toContain('NicknameDouble')
+    // Монеты отвергнутой транзакции сразу доступны повтору с другим именем.
+    expect(mocks.unlockUTXOs).toHaveBeenCalledWith(utxo)
   })
 
   it('сетевая ошибка → transient, pending без изменений', async () => {

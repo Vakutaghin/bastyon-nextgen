@@ -37,10 +37,13 @@ export interface AccountMenuOptions {
   /** Открыть register-модалку (нужен флоу регистрации, который держится в use-registration-flow). */
   openRegister: () => void
   registerModalOpenRef: Ref<boolean>
+  /** Незавершённая регистрация текущего аккаунта — пункт «Завершить регистрацию». */
+  registrationUnfinished?: Ref<boolean>
 }
 
 export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
   const { authStore, modalStore, router, openRegister, registerModalOpenRef } = opts
+  const registrationUnfinished = opts.registrationUnfinished ?? ref(false)
 
   const signInModalOpen = ref(false)
   const accountSwitcherOpen = ref(false)
@@ -57,6 +60,12 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
   })
 
   const menuItems = computed(() => [
+    ...(registrationUnfinished.value
+      ? [
+          { key: 'finishRegistration', label: t('accountMsg.menuFinishRegistration') },
+          { type: 'divider' },
+        ]
+      : []),
     { key: profileLink.value, label: t('accountMsg.menuProfile') },
     { key: '/wallets', label: t('accountMsg.menuWallets') },
     { key: '/limits', label: t('accountMsg.menuLimits') },
@@ -93,6 +102,8 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
   async function handleMenuClick({ key }: { key: string }): Promise<void> {
     if (key === 'signout') {
       confirmSignOutOpen.value = true
+    } else if (key === 'finishRegistration') {
+      openRegister()
     } else if (key === 'settings') {
       router.push('/settings')
     } else if (key === 'switchAccount') {

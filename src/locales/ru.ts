@@ -1656,6 +1656,8 @@ export default {
   },
   accountMsg: {
     registrationBlocked: 'Ошибка регистрации: {reason}. Обратитесь в поддержку.',
+    registrationIpLimit:
+      'С вашего IP-адреса недавно регистрировали несколько аккаунтов, и сеть пока не выдаёт на него монеты для регистрации. Попробуйте через несколько дней или из другой сети — или напишите в поддержку, чтобы монеты начислили вручную.',
     reasonRegistration: 'Регистрация аккаунта',
     reasonBalance: 'Пополнение баланса',
     captchaTitle: 'Капча',
@@ -1670,8 +1672,11 @@ export default {
     menuSettings: 'Настройки',
     menuSwitchAccount: 'Сменить аккаунт',
     menuSignOut: 'Выйти',
+    menuFinishRegistration: 'Завершить регистрацию',
     noActiveAccount: 'Нет активного аккаунта',
     noSavedSeedOrKey: 'Нет сохранённой сид-фразы или ключа для этого аккаунта',
+    rejectNameTaken: 'это имя уже занято',
+    rejectNameLong: 'имя длиннее 20 символов',
     registrationRejected:
       'Регистрация отклонена сетью: {message}. Выберите другое имя и попробуйте снова.',
     registrationTimeout:

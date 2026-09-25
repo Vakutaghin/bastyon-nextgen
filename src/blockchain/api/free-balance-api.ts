@@ -9,7 +9,7 @@ import { captchaAPI } from './captcha-api'
 import type { CaptchaData } from './captcha-api'
 import { showCaptchaModal } from '@/components/captcha'
 import { getProxyWithWalletCached } from './proxy-with-wallet'
-import { isCaptchaError, isRegistrationBlockingError } from '@/helpers/api/error-codes'
+import { API_ERROR, isCaptchaError, isRegistrationBlockingError } from '@/helpers/api/error-codes'
 import { logger } from '@/services/logger'
 import { t } from '@/i18n'
 
@@ -142,6 +142,19 @@ export async function requestUnspents(
 
     if (isCaptchaError(errorMessage) && _retryCount < MAX_CAPTCHA_RETRIES) {
       return requestUnspents(address, params, onCaptchaRequired, _retryCount + 1)
+    }
+
+    // Адрес уже получал монеты на регистрацию (прошлая попытка дошла до
+    // сервера, а ответ потерялся): монеты пришли или придут, ждём их дальше.
+    if (errorMessage === API_ERROR.UNIQUE_VIOLATION && reason === 'registration') {
+      log.debug('free/balance: address already funded')
+      return { action: '', proxy: proxyServer }
+    }
+
+    // Раздача ограничена по IP: больше пяти запросов, последний — меньше 10 дней
+    // назад (proxy16/wallet/wallet.js). Код ничего не говорит человеку.
+    if (errorMessage === API_ERROR.IP_LIMIT) {
+      throw new Error(t('accountMsg.registrationIpLimit'), { cause: error })
     }
 
     if (isRegistrationBlockingError(errorMessage)) {

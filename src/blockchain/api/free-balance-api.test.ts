@@ -31,7 +31,8 @@ vi.mock('./proxy-with-wallet', () => ({ getProxyWithWalletCached: _getProxy }))
 vi.mock('./captcha-api', () => ({ captchaAPI: { get: _getCaptcha } }))
 vi.mock('@/components/captcha', () => ({ showCaptchaModal: _showModal }))
 vi.mock('@/helpers/api/request', () => ({ fetchHttp: _fetchHttp }))
-vi.mock('@/helpers/api/error-codes', () => ({
+vi.mock('@/helpers/api/error-codes', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/helpers/api/error-codes')>()),
   isCaptchaError: _isCaptchaError,
   isRegistrationBlockingError: _isRegBlocking,
 }))
@@ -130,6 +131,25 @@ describe('requestUnspents', () => {
     await expect(requestUnspents('PAddr', PARAMS)).rejects.toThrow(
       'Ошибка регистрации: reg blocked'
     )
+  })
+
+  it('iplimit → объяснение лимита по IP, а не код', async () => {
+    _isRegBlocking.mockReturnValue(true)
+    _fetchHttp.mockRejectedValue(new Error('iplimit'))
+
+    await expect(requestUnspents('PAddr', PARAMS)).rejects.toThrow(
+      'С вашего IP-адреса недавно регистрировали несколько аккаунтов'
+    )
+  })
+
+  it('uniq при регистрации: монеты адресу уже выданы — не ошибка', async () => {
+    _isRegBlocking.mockReturnValue(true)
+    _fetchHttp.mockRejectedValue(new Error('uniq'))
+
+    await expect(requestUnspents('PAddr', PARAMS)).resolves.toEqual({
+      action: '',
+      proxy: { host: 'proxy', port: 8899 },
+    })
   })
 
   it('прочая ошибка free/balance пробрасывается как есть', async () => {
