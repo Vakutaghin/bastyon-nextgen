@@ -105,14 +105,23 @@ export const SC_FilterRow = styled.div`
 `
 
 export const SC_FilterChip = styled('button', activeProps)`
-  padding: 5px 11px;
-  border-radius: var(--ui-radius-lg);
-  border: 1px solid ${(p) => (p.active ? COLORS.PRIMARY : COLORS.BORDER_DEFAULT)};
-  background: ${(p) => (p.active ? COLORS.PRIMARY : COLORS.BG_SECONDARY)};
-  color: ${(p) => (p.active ? COLORS.WHITE : COLORS.TEXT_SECONDARY)};
-  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: var(--ui-radius-md);
+  border: 0;
+  box-shadow: ${(p) => (p.active ? 'none' : 'inset 0 0 0 1px var(--ui-border-accented)')};
+  background: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-bg)')};
+  color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text)')};
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
+
+  /* Как у Nuxt UI: сплошная — акцент на 75%, контурная — подложка. */
+  &:hover {
+    background: ${(p) => (p.active ? 'rgb(var(--ui-primary-rgb) / 75%)' : 'var(--ui-bg-elevated)')};
+    color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text)')};
+  }
 `
 
 export const SC_Actions = styled.div`
@@ -122,13 +131,22 @@ export const SC_Actions = styled.div`
 `
 
 export const SC_ActionBtn = styled('button', { primary: Boolean })`
-  padding: 8px 18px;
-  border-radius: ${BORDER_RADIUS.MD};
-  border: 1px solid ${(p) => (p.primary ? COLORS.PRIMARY : COLORS.BORDER_DEFAULT)};
-  background: ${(p) => (p.primary ? COLORS.PRIMARY : 'none')};
-  color: ${(p) => (p.primary ? COLORS.WHITE : COLORS.TEXT_PRIMARY)};
+  padding: 6px 12px;
+  border-radius: var(--ui-radius-md);
+  border: 0;
+  box-shadow: ${(p) => (p.primary ? 'none' : 'inset 0 0 0 1px var(--ui-border-accented)')};
+  background: ${(p) => (p.primary ? 'var(--ui-primary)' : 'var(--ui-bg)')};
+  color: ${(p) => (p.primary ? 'var(--ui-text-inverted)' : 'var(--ui-text)')};
   font-size: 14px;
   font-weight: 500;
+  line-height: 20px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
+
+  /* Как у Nuxt UI: сплошная — акцент на 75%, контурная — подложка. */
+  &:hover {
+    background: ${(p) =>
+      p.primary ? 'rgb(var(--ui-primary-rgb) / 75%)' : 'var(--ui-bg-elevated)'};
+    color: ${(p) => (p.primary ? 'var(--ui-text-inverted)' : 'var(--ui-text)')};
+  }
 `

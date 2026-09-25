@@ -1,7 +1,6 @@
 // Стили вкладки «Балансы» (карточки сумм, таблицы кошельков, диалог переименования).
 // Перенесены из wallets-page.styled.ts вместе с выделением саб-компонента.
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BORDER_RADIUS, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 
 export const SC_WalletLabel = styled.span`
@@ -84,14 +83,24 @@ export const SC_RenameActions = styled.div`
 `
 
 export const SC_RenameBtn = styled('button', { primary: Boolean })`
-  padding: 8px 16px;
-  border-radius: ${BORDER_RADIUS.MD};
-  border: 1px solid ${(p) => (p.primary ? COLORS.PRIMARY : COLORS.BORDER_DEFAULT)};
-  background: ${(p) => (p.primary ? COLORS.PRIMARY : 'none')};
-  color: ${(p) => (p.primary ? COLORS.WHITE : COLORS.TEXT_PRIMARY)};
+  padding: 6px 12px;
+  border-radius: var(--ui-radius-md);
+  border: 0;
+  box-shadow: ${(p) => (p.primary ? 'none' : 'inset 0 0 0 1px var(--ui-border-accented)')};
+  background: ${(p) => (p.primary ? 'var(--ui-primary)' : 'var(--ui-bg)')};
+  color: ${(p) => (p.primary ? 'var(--ui-text-inverted)' : 'var(--ui-text)')};
   font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
+
+  /* Как у Nuxt UI: сплошная — акцент на 75%, контурная — подложка. */
+  &:hover {
+    background: ${(p) =>
+      p.primary ? 'rgb(var(--ui-primary-rgb) / 75%)' : 'var(--ui-bg-elevated)'};
+    color: ${(p) => (p.primary ? 'var(--ui-text-inverted)' : 'var(--ui-text)')};
+  }
 `
 
 export const SC_WalletBalanceCards = styled.div`

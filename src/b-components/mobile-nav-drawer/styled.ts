@@ -63,6 +63,7 @@ export const SC_DrawerClose = styled.button`
   color: var(--ui-text);
   -webkit-tap-highlight-color: transparent;
 
+  &:hover,
   &:active {
     background: var(--ui-bg-elevated);
   }

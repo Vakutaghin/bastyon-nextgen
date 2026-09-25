@@ -81,9 +81,14 @@ export const SC_PollAddBtn = styled.button`
   padding: ${SPACING.XS} ${SPACING.SM};
   border: none;
   background: none;
-  color: var(--color-primary);
+  color: var(--ui-primary-text);
   cursor: pointer;
   font-size: ${FONT_SIZE.SM};
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    color: var(--ui-primary);
+  }
 
   &:disabled {
     color: var(--color-text-muted);

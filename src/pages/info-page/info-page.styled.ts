@@ -58,11 +58,18 @@ export const SC_InfoNotFound = styled.div`
 
 export const SC_InfoBack = styled.button`
   margin-top: 16px;
-  padding: 8px 16px;
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--ui-radius-lg);
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
+  padding: 6px 12px;
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--ui-border-accented);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg);
+  color: var(--ui-text);
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text);
+  }
 `

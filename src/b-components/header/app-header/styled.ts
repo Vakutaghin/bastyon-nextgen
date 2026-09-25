@@ -98,6 +98,7 @@ export const SC_HamburgerButton = styled.button`
     font-size: 22px;
   }
 
+  &:hover,
   &:active {
     background: var(--ui-bg-elevated);
   }
