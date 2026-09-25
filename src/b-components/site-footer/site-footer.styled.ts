@@ -1,10 +1,9 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_Footer = styled.footer`
   width: 100%;
-  border-top: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-top: 1px solid var(--ui-border);
   padding: 16px;
   margin-top: auto;
 `
@@ -24,21 +23,22 @@ export const SC_FooterLinks = styled.nav`
   justify-content: center;
   gap: 6px 16px;
 
+  /* Ссылки футера как у Nuxt: приглушённые, на hover — основной цвет текста. */
   a {
-    color: ${COLORS.TEXT_SECONDARY};
-    font-size: 13px;
+    color: var(--ui-text-muted);
+    font-size: 14px;
     text-decoration: none;
     transition: color ${TRANSITIONS.FAST};
   }
 
   a:hover {
-    color: ${COLORS.PRIMARY};
-    text-decoration: underline;
+    color: var(--ui-text-highlighted);
+    text-decoration: none;
   }
 `
 
 export const SC_FooterBrand = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--ui-text-dimmed);
   text-align: center;
 `

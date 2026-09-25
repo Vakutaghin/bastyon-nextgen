@@ -6,12 +6,12 @@ export const SC_ReportBugWrapper = styled.div`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
+  padding: 6px;
+  border-radius: var(--ui-radius-md);
   transition: background-color 0.2s;
   color: ${COLORS.TEXT_PRIMARY};
 
   &:hover {
-    background-color: ${COLORS.OVERLAY_4};
+    background-color: var(--ui-bg-elevated);
   }
 `

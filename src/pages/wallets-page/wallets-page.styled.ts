@@ -7,7 +7,7 @@ export const SC_WalletWork = styled.div`
   flex: 1;
   margin: 0 auto;
   width: 100%;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
   background: ${COLORS.BG_PRIMARY};

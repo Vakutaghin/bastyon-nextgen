@@ -28,8 +28,8 @@ export const SC_AddrPagePage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  /* 60px top clears the fixed app-header. */
-  padding: 88px 24px 48px;
+  /* Отступ сверху — высота фиксированной шапки плюс 28px воздуха. */
+  padding: calc(var(--header-height-total) + 28px) 24px 48px;
 `
 
 export const SC_AddrBreadcrumb = styled.div`
@@ -197,4 +197,3 @@ export const SC_AddrTxBlock = styled.div`
   font-variant-numeric: tabular-nums;
   text-align: right;
 `
-

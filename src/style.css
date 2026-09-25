@@ -315,7 +315,8 @@
   --fluid-xxl: clamp(28px, 2.78vw + 14.67px, 48px);
 
   /* ── Layout (высоты ключевых элементов каркаса) ── */
-  --header-height: 60px;
+  /* Шапка 64px, как у Nuxt UI (--ui-header-height: 4rem); на узких — 56px. */
+  --header-height: 64px;
   /* safe-area c fallback: на iOS работает env(); на Android те же значения
      пробрасываются нативно из MainActivity в --android-inset-*.
      max() гарантирует, что используется источник, который действительно
@@ -458,7 +459,7 @@
     --spacing-xl: 20px;
     --spacing-xxl: 32px;
 
-    --header-height: 52px;
+    --header-height: 56px;
     --content-gap: 12px;
     --content-padding-x: 12px;
   }

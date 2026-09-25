@@ -37,7 +37,7 @@ export const SC_ProfileSidebar = styled.div`
   position: sticky;
   align-self: flex-start;
   flex-shrink: 0;
-  top: 60px;
+  top: var(--header-height-total);
   border-radius: 8px;
   padding: 20px 0 20px 20px;
   z-index: 10;

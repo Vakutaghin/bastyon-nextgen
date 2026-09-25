@@ -14,7 +14,7 @@ export const SC_PeersPage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 88px 24px 48px;
+  padding: calc(var(--header-height-total) + 28px) 24px 48px;
 `
 
 export const SC_PeersBreadcrumb = styled.div`

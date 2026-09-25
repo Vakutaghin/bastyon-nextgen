@@ -7,7 +7,7 @@ export const SC_ExplorerWork = styled.div`
   flex: 1;
   margin: 0 auto;
   width: 100%;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - var(--header-height));
   align-items: flex-start;
   background: ${COLORS.BG_PRIMARY};
 `
@@ -16,8 +16,8 @@ export const SC_ExplorerPage = styled.main`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  /* 60px top clears the fixed app-header; remaining 28px is visual gap before content. */
-  padding: 88px 24px 48px;
+  /* Отступ сверху — высота фиксированной шапки плюс 28px воздуха. */
+  padding: calc(var(--header-height-total) + 28px) 24px 48px;
 `
 
 export const SC_ExplorerHeader = styled.header`

@@ -9,26 +9,26 @@ export const SC_IpfsWrapper = styled.div<{ variant?: Variant }>`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
+  padding: 6px;
+  border-radius: var(--ui-radius-md);
   transition:
     background-color 0.2s,
     color 0.2s;
   color: ${(p) => {
     switch (p.variant) {
       case 'ready':
-        return COLORS.GREEN_ANT
+        return 'var(--ui-success)'
       case 'busy':
-        return COLORS.ANT_BLUE
+        return 'var(--ui-info)'
       case 'failed':
-        return COLORS.RED_ANT
+        return 'var(--ui-error)'
       default:
-        return COLORS.GRAY_888
+        return 'var(--ui-text-dimmed)'
     }
   }};
 
   &:hover {
-    background-color: ${COLORS.OVERLAY_4};
+    background-color: var(--ui-bg-elevated);
   }
 `
 
@@ -44,9 +44,11 @@ export const SC_IpfsDot = styled.div`
 `
 
 export const SC_IpfsMenu = styled.div`
-  background: ${COLORS.BG_PRIMARY};
-  border-radius: 8px;
-  box-shadow: ${COLORS.SHADOW_MD};
+  background: var(--ui-bg);
+  border-radius: var(--ui-radius-md);
+  box-shadow:
+    0 0 0 1px var(--ui-border),
+    var(--ui-shadow-lg);
   padding: 12px;
   min-width: 280px;
   max-width: 340px;

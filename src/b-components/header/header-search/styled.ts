@@ -29,21 +29,22 @@ export const SC_Dropdown = styled.div`
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHT};
-  border-radius: 12px;
-  box-shadow: ${COLORS.SHADOW_LG};
+  background: var(--ui-bg);
+  border-radius: var(--ui-radius-md);
+  box-shadow:
+    0 0 0 1px var(--ui-border),
+    var(--ui-shadow-lg);
   z-index: 2000;
   max-height: 70vh;
   overflow-y: auto;
-  padding: 8px;
+  padding: 4px;
 `
 
 export const SC_DropdownSection = styled.div`
   & + & {
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid ${COLORS.BORDER_LIGHTER};
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--ui-border);
   }
 `
 
@@ -51,27 +52,24 @@ export const SC_DropdownSectionHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 8px;
-  font-size: 11px;
+  padding: 6px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_DropdownSeeAll = styled.button`
   background: none;
   border: none;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   cursor: pointer;
-  font-size: 11px;
-  color: ${COLORS.PRIMARY};
-  text-transform: none;
-  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-primary-text);
 
   &:hover {
-    background: ${COLORS.PRIMARY_LIGHT};
+    background: rgb(var(--ui-primary-rgb) / 10%);
   }
 `
 
@@ -80,17 +78,18 @@ export const SC_DropdownItem = styled.button`
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 6px;
   border: none;
   background: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   text-align: left;
-  color: ${COLORS.TEXT_PRIMARY};
-  font-size: 13px;
+  color: var(--ui-text);
+  font-size: 14px;
 
   &:hover {
-    background: ${COLORS.BG_HOVER_BLUE};
+    background: rgb(var(--ui-bg-elevated-rgb) / 50%);
+    color: var(--ui-text-highlighted);
   }
 `
 
@@ -100,12 +99,12 @@ export const SC_Avatar = styled.div`
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: ${COLORS.GRAY_E8};
+  background: var(--ui-bg-elevated);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: ${COLORS.WHITE};
-  font-weight: 600;
+  color: var(--ui-text-muted);
+  font-weight: 500;
   font-size: 12px;
 
   img {

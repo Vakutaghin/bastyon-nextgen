@@ -8,8 +8,8 @@ export const SC_LastCommentsRoot = styled.div`
 
 export const SC_LastCommentsCaption = styled.div`
   font-weight: 600;
-  font-size: 15px;
-  color: ${COLORS.TEXT_PRIMARY};
+  font-size: 14px;
+  color: var(--ui-text-highlighted);
   margin-bottom: 12px;
 `
 
@@ -26,7 +26,7 @@ export const SC_LastCommentItem = styled.div`
   align-items: flex-start;
   cursor: pointer;
   padding: 8px 0;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--ui-border);
 
   &:last-child {
     border-bottom: 0;
@@ -49,7 +49,7 @@ export const SC_LastCommentAvatar = styled.div`
   height: 28px;
   border-radius: 50%;
   overflow: hidden;
-  background: ${COLORS.BORDER_DARK};
+  background: var(--ui-bg-elevated);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,8 +63,8 @@ export const SC_LastCommentAvatar = styled.div`
 `
 
 export const SC_LastCommentLetter = styled.span`
-  color: ${COLORS.TEXT_PRIMARY};
-  font-weight: 600;
+  color: var(--ui-text-muted);
+  font-weight: 500;
   font-size: 12px;
 `
 
@@ -83,8 +83,8 @@ export const SC_LastCommentContent = styled.div`
 `
 
 export const SC_LastCommentNames = styled.span`
-  font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  font-weight: 500;
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_LastCommentMessage = styled.span`

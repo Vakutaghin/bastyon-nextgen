@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_Logo = styled.div`
@@ -38,7 +37,7 @@ export const SC_LogoLink = styled.button`
   }
 
   &:focus {
-    border-radius: 4px;
+    border-radius: var(--ui-radius-sm);
   }
 `
 
@@ -56,15 +55,15 @@ export const SC_LogoLang = styled.button`
   align-items: center;
   gap: 6px;
   height: 100%;
-  color: ${COLORS.TEXT_PRIMARY};
-  font-size: 13px;
-  font-weight: 400;
+  color: var(--ui-text);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 6px;
-  transition: all 0.3s;
+  padding: 6px 10px;
+  border-radius: var(--ui-radius-md);
+  transition: background-color 0.15s;
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
   white-space: nowrap;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -72,8 +71,8 @@ export const SC_LogoLang = styled.button`
   }
 
   &:hover {
-    background: ${COLORS.BORDER_LIGHTER};
-    border-color: ${COLORS.BORDER_LIGHTER};
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text);
   }
 `
 

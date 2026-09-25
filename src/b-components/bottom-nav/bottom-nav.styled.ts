@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 
 const activeProps = { active: Boolean }
@@ -17,8 +16,11 @@ export const SC_BottomNav = styled.nav`
      поверх ленты. --bottom-nav-height-total = 56px + safe-area. */
   height: var(--bottom-nav-height-total);
   padding-bottom: var(--safe-bottom);
-  background: ${COLORS.BG_PRIMARY};
-  border-top: 1px solid ${COLORS.BORDER_LIGHTER};
+  /* Как шапка: фон страницы на 75% с размытием, линия сверху. */
+  background: rgb(var(--ui-bg-rgb) / 75%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid var(--ui-border);
 `
 
 export const SC_NavItem = styled('button', activeProps)`
@@ -33,7 +35,7 @@ export const SC_NavItem = styled('button', activeProps)`
   background: none;
   cursor: pointer;
   padding: 4px 0;
-  color: ${(p) => (p.active ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY)};
+  color: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-text-muted)')};
   transition: color ${TRANSITIONS.FAST};
 
   &:active {
@@ -49,6 +51,7 @@ export const SC_NavIcon = styled.span`
 
 export const SC_NavLabel = styled.span`
   font-size: 10px;
+  font-weight: 500;
   line-height: 1.2;
   white-space: nowrap;
 `
@@ -61,8 +64,9 @@ export const SC_NavBadge = styled.span`
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: ${COLORS.DANGER};
-  color: ${COLORS.WHITE};
+  background: var(--ui-error);
+  color: var(--ui-text-inverted);
+  box-shadow: 0 0 0 2px var(--ui-bg);
   font-size: 10px;
   font-weight: 600;
   line-height: 16px;

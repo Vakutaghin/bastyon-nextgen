@@ -26,10 +26,9 @@ export const SC_CategoriesHeader = styled.div`
 `
 
 export const SC_CategoriesTitle = styled.h3`
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
-  text-transform: uppercase;
+  color: var(--ui-text-highlighted);
   margin: 0;
 `
 
@@ -82,39 +81,44 @@ export const SC_ControlBtn = styled('button', activeProps)`
 export const SC_CategoriesList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
 `
 
+/** Категория — пункт навигации в оформлении Nuxt UI, как SC_TabsItem. */
 export const SC_CategoriesItem = styled('div', selectedProps)`
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 0;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--ui-radius-md);
   background: none;
   border: none;
   cursor: pointer;
-  transition: all 0.3s;
-  color: ${COLORS.TEXT_PRIMARY};
-  font-size: 13px;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+  color: var(--ui-text-muted);
+  font-size: 14px;
   font-weight: 500;
+  line-height: 20px;
   text-align: left;
   position: relative;
   opacity: 1;
 
   &:hover {
-    background: ${COLORS.BG_SECONDARY};
+    background: rgb(var(--ui-bg-elevated-rgb) / 50%);
+    color: var(--ui-text-highlighted);
   }
 
   ${(props) =>
     props.selected &&
     css`
-      background: ${COLORS.PRIMARY_LIGHT};
-      color: ${COLORS.PRIMARY};
-      font-weight: 600;
+      background: var(--ui-bg-elevated);
+      color: var(--ui-primary);
 
       &:hover {
-        background: ${COLORS.PRIMARY_LIGHT_15};
+        background: var(--ui-bg-elevated);
+        color: var(--ui-primary);
       }
     `}
 `
@@ -142,10 +146,9 @@ export const SC_TopFirstWrapper = styled.div`
 `
 
 export const SC_TopFirstLabel = styled.span`
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
-  text-transform: uppercase;
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_CategoryRemoveBtn = styled.div`

@@ -10,8 +10,8 @@ export const SC_RecRoot = styled.div`
 
 export const SC_RecCaption = styled.div`
   font-weight: 600;
-  font-size: 15px;
-  color: ${COLORS.TEXT_PRIMARY};
+  font-size: 14px;
+  color: var(--ui-text-highlighted);
   margin-bottom: 12px;
 `
 
@@ -74,9 +74,9 @@ export const SC_RecInfo = styled.div`
 `
 
 export const SC_RecName = styled.span`
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text-highlighted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -92,22 +92,25 @@ export const SC_RecFollow = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: 1px solid ${COLORS.PRIMARY};
-  background: ${COLORS.PRIMARY};
-  color: ${COLORS.WHITE};
+  padding: 6px 10px;
+  border-radius: var(--ui-radius-md);
+  border: 0;
+  background: var(--ui-primary);
+  color: var(--ui-text-inverted);
   font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover:not(:disabled) {
-    background: ${COLORS.PRIMARY_HOVER};
+    background: rgb(var(--ui-primary-rgb) / 75%);
+    color: var(--ui-text-inverted);
   }
 
   &:disabled {
-    opacity: 0.6;
-    cursor: default;
+    opacity: 0.75;
+    cursor: not-allowed;
   }
 `
 

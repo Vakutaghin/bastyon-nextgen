@@ -6,20 +6,22 @@ export const SC_EventsWrapper = styled.div`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
+  padding: 6px;
+  border-radius: var(--ui-radius-md);
   transition: background-color 0.2s;
   color: ${COLORS.TEXT_PRIMARY};
 
   &:hover {
-    background-color: ${COLORS.OVERLAY_4};
+    background-color: var(--ui-bg-elevated);
   }
 `
 
 export const SC_PendingEventsMenu = styled.div`
-  background: ${COLORS.BG_PRIMARY};
-  border-radius: 10px;
-  box-shadow: ${COLORS.SHADOW_MD};
+  background: var(--ui-bg);
+  border-radius: var(--ui-radius-md);
+  box-shadow:
+    0 0 0 1px var(--ui-border),
+    var(--ui-shadow-lg);
   padding: 8px;
   min-width: 300px;
   max-width: 380px;

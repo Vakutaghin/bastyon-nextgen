@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_Header = styled.header`
@@ -14,10 +13,12 @@ export const SC_Header = styled.header`
      сдвинуться на ту же ширину, иначе содержимое прыгает вправо. Переменную
      ставит use-page-overlay; вне оверлея она пустая и остаётся один safe-area. */
   padding-right: calc(var(--safe-right) + var(--overlay-scrollbar-pad, 0px));
-  background: ${COLORS.BG_PRIMARY};
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  /* Как шапка Nuxt UI: фон страницы на 75% с размытием и линия снизу, без тени. */
+  background: rgb(var(--ui-bg-rgb) / 75%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--ui-border);
   z-index: 1000;
-  box-shadow: ${COLORS.SHADOW_SM};
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
@@ -46,13 +47,13 @@ export const SC_MessengerWrapper = styled.div`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
+  padding: 6px;
+  border-radius: var(--ui-radius-md);
   transition: background-color 0.2s;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text);
 
   &:hover {
-    background-color: ${COLORS.OVERLAY_4};
+    background-color: var(--ui-bg-elevated);
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -68,28 +69,28 @@ export const SC_UnreadBadge = styled.span`
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background: ${COLORS.DANGER};
-  color: ${COLORS.WHITE};
+  background: var(--ui-error);
+  color: var(--ui-text-inverted);
   font-size: 11px;
   font-weight: 600;
   line-height: 18px;
   text-align: center;
   pointer-events: none;
-  box-shadow: 0 0 0 2px ${COLORS.BG_PRIMARY};
+  box-shadow: 0 0 0 2px var(--ui-bg);
 `
 
 export const SC_HamburgerButton = styled.button`
   display: none;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   margin-right: 4px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--ui-text);
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
 
@@ -98,7 +99,7 @@ export const SC_HamburgerButton = styled.button`
   }
 
   &:active {
-    background: ${COLORS.OVERLAY_6};
+    background: var(--ui-bg-elevated);
   }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
