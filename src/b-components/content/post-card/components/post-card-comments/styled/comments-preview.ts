@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { nuxtField } from '@/styles/field-styles'
 
 export const SC_CommentsPreview = styled.div`
   display: flex;
@@ -105,13 +104,10 @@ export const SC_RefreshBtn = styled.button`
   }
 `
 
-export const SC_CommentsSortSelect = styled.select`
-  ${nuxtField}
-  /* Размер md (32px): селект в строке заголовка комментариев. */
-  width: auto;
-  min-width: 180px;
-  padding: 5px 10px;
-  cursor: pointer;
+/** Место под селект сортировки (размер md, 32px) в строке заголовка комментариев. */
+export const SC_CommentsSortSelect = styled.div`
+  flex: none;
+  width: 200px;
 `
 
 export const SC_CommentRepliesLink = styled.button`

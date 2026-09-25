@@ -765,6 +765,28 @@ body .ant-notification .ant-notification-notice .ant-notification-notice-descrip
   color: var(--ui-text-muted);
 }
 
+/* Выпадающий список Select (components/select) — как у USelect Nuxt. Он
+   рисуется вне обёртки, поэтому правило глобальное. Текст пункта стоит там же,
+   где текст в поле (4 + 8 = 12px от края), подсвеченный пункт — highlighted,
+   галочка выбранного 16px. Фон, тень с кольцом, hover и выбранный — из темы. */
+body .ui-select-dropdown .ant-select-item {
+  padding-inline: 8px;
+}
+
+/* В модалке список рисуется в .ant-modal-wrap, а у центрированной модалки
+   там text-align: center — пункты вставали по центру. */
+body .ui-select-dropdown {
+  text-align: start;
+}
+
+body .ui-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  color: var(--ui-text-highlighted);
+}
+
+body .ui-select-dropdown .ant-select-item-option-state {
+  font-size: 16px;
+}
+
 /* Captcha-модалка — компактная ширина и паддинг. Раньше жило в
    captcha-modal.styled.ts через :deep(.captcha-modal-wrap) (мёртвый код —
    модалка телепортится в <body>). wrapClassName="captcha-modal-wrap". */

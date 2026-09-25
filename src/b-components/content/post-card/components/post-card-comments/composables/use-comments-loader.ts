@@ -94,8 +94,7 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
   const expandComments = (): void => {
     commentsCollapsed.value = false
   }
-  const setCommentsSortOrder = (event: Event): void => {
-    const value = (event.target as HTMLSelectElement)?.value
+  const setCommentsSortOrder = (value: unknown): void => {
     if (value === 'interesting' || value === 'newest' || value === 'oldest') {
       commentsSortOrder.value = value
     }

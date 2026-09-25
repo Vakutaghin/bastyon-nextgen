@@ -175,6 +175,15 @@ export function buildAntdTheme(isDark: boolean): ThemeConfig {
         controlHeight: 24,
         borderRadius: 4,
       },
+      // Select как USelect (обёртка components/select): радиус 6 и у поля, и у
+      // списка с пунктами; большой (36px) — с текстом 14px, как поля форм;
+      // выбранный пункт отмечен галочкой, а не жирным.
+      Select: {
+        borderRadiusLG: 6,
+        borderRadiusSM: 6,
+        fontSizeLG: 14,
+        fontWeightStrong: 400,
+      },
       // 36×20 с бегунком 16, выключенный — bg-accented.
       Switch: {
         fontSize: 14,

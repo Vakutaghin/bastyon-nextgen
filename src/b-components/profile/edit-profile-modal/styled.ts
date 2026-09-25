@@ -29,11 +29,6 @@ export const SC_Textarea = styled.textarea`
   resize: vertical;
 `
 
-export const SC_Select = styled.select`
-  ${nuxtField}
-  cursor: pointer;
-`
-
 export const SC_AvatarRow = styled.div`
   display: flex;
   align-items: center;

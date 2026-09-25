@@ -74,11 +74,12 @@
 
         <SC_Field>
           <SC_Label for="edit-profile-language">{{ t('editProfile.language') }}</SC_Label>
-          <SC_Select id="edit-profile-language" v-model="language" :disabled="saving">
-            <option v-for="lang in LANGUAGES" :key="lang.value" :value="lang.value">
-              {{ lang.label }}
-            </option>
-          </SC_Select>
+          <Select
+            id="edit-profile-language"
+            v-model:value="language"
+            :options="LANGUAGES"
+            :disabled="saving"
+          />
         </SC_Field>
       </SC_Form>
     </SC_ModalBody>
@@ -107,13 +108,13 @@ import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { safeDecode } from '@/helpers/content/safe-decode'
 import { NICKNAME_MAX_LENGTH, validateProfileNickname } from '@/helpers/profile/nickname-validation'
 import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
+import Select from '@/components/select'
 import {
   SC_Form,
   SC_Field,
   SC_Label,
   SC_Input,
   SC_Textarea,
-  SC_Select,
   SC_AvatarRow,
   SC_AvatarPreview,
   SC_AvatarPlaceholder,

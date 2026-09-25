@@ -38,14 +38,14 @@
     <template v-else>
       <SC_CommentsSortRow>
         <label for="comments-sort">{{ t('comments.sortLabel') }}</label>
-        <SC_CommentsSortSelect
-          id="comments-sort"
-          :value="commentsSortOrder"
-          @change="setCommentsSortOrder($event)"
-        >
-          <option value="interesting">{{ t('comments.sortInteresting') }}</option>
-          <option value="newest">{{ t('comments.sortNewest') }}</option>
-          <option value="oldest">{{ t('comments.sortOldest') }}</option>
+        <SC_CommentsSortSelect>
+          <Select
+            id="comments-sort"
+            size="middle"
+            :value="commentsSortOrder"
+            :options="commentSortOptions"
+            @change="setCommentsSortOrder"
+          />
         </SC_CommentsSortSelect>
         <SC_RefreshBtn
           type="button"
@@ -200,6 +200,7 @@ import { useI18n } from 'vue-i18n'
 import { Popover } from 'ant-design-vue'
 import { ICON_SIZE_SM, ICON_PRIMARY_16, ICON_PRIMARY_18 } from '@/styles/icon-styles'
 import { LoadingOutlined, SendOutlined, SyncOutlined, SmileOutlined } from '@/components/icons'
+import Select, { type SelectOption } from '@/components/select'
 import { useAuthStore } from '@/blockchain'
 import { useCommentsStore, useUserRelationsStore } from '@/stores'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
@@ -278,6 +279,12 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const commentSortOptions = computed<SelectOption[]>(() => [
+  { value: 'interesting', label: t('comments.sortInteresting') },
+  { value: 'newest', label: t('comments.sortNewest') },
+  { value: 'oldest', label: t('comments.sortOldest') },
+])
 
 const APopover = Popover
 

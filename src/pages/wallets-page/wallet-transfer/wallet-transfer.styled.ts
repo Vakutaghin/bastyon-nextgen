@@ -71,11 +71,6 @@ export const SC_TransferTextarea = styled.textarea`
   resize: vertical;
 `
 
-export const SC_TransferSelect = styled.select`
-  ${nuxtField}
-  cursor: pointer;
-`
-
 export const SC_TransferRow = styled.div`
   display: flex;
   align-items: center;

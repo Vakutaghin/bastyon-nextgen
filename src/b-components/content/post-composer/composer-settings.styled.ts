@@ -22,12 +22,6 @@ export const SC_Label = styled.label`
   color: var(--color-text-secondary);
 `
 
-export const SC_Select = styled.select`
-  ${nuxtField}
-  width: auto;
-  cursor: pointer;
-`
-
 export const SC_DateInput = styled.input`
   ${nuxtField}
   width: auto;

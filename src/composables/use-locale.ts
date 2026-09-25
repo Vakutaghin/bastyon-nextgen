@@ -3,9 +3,11 @@
  *
  * Пример:
  *   const { locale, setLocale, available } = useLocale()
- *   <select :value="locale" @change="setLocale($event.target.value)">
- *     <option v-for="l in available" :key="l" :value="l">{{ t(`language.${l}`) }}</option>
- *   </select>
+ *   <Select
+ *     :value="locale"
+ *     :options="available.map((l) => ({ value: l, label: t(`language.${l}`) }))"
+ *     @change="setLocale"
+ *   />
  *
  * Смена идёт через ui-store — единственного владельца языка (V42): vue-i18n,
  * `<html lang>`, localStorage и IndexedDB меняются вместе, и переключатель в

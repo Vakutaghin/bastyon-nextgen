@@ -84,10 +84,7 @@
           <SC_TransferLabel for="wallet-transfer-feemode">{{
             t('wallet.feeLabel')
           }}</SC_TransferLabel>
-          <SC_TransferSelect id="wallet-transfer-feemode" v-model="feemode">
-            <option value="include">{{ t('wallet.feeReceiverPays') }}</option>
-            <option value="exclude">{{ t('wallet.feeSenderPays') }}</option>
-          </SC_TransferSelect>
+          <Select id="wallet-transfer-feemode" v-model:value="feemode" :options="feeOptions" />
         </SC_TransferField>
         <SC_TransferSubmit type="button" :disabled="!canSend || sending" @click="doSend">
           {{ sending ? t('wallet.sending') : t('wallet.calcAndSend') }}
@@ -100,11 +97,11 @@
           <SC_TransferLabel for="wallet-transfer-receive-target">
             {{ t('wallet.receiveTo') }}
           </SC_TransferLabel>
-          <SC_TransferSelect id="wallet-transfer-receive-target" v-model="receiveTarget">
-            <option v-for="opt in receiveAddressOptions" :key="opt.value" :value="opt.value">
-              {{ opt.label }}
-            </option>
-          </SC_TransferSelect>
+          <Select
+            id="wallet-transfer-receive-target"
+            v-model:value="receiveTarget"
+            :options="receiveAddressOptions"
+          />
         </SC_TransferField>
         <template v-else-if="receiveAddressOptions.length === 1">
           <SC_TransferField>
@@ -149,6 +146,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/blockchain'
+import Select, { type SelectOption } from '@/components/select'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { InsufficientFundsError, sendTransfer } from './send-transfer'
@@ -163,7 +161,6 @@ import {
   SC_TransferLabel,
   SC_TransferInput,
   SC_TransferTextarea,
-  SC_TransferSelect,
   SC_TransferRow,
   SC_QrWrap,
   SC_TransferAddress,
@@ -191,6 +188,10 @@ const mode = ref<'receive' | 'send'>('send')
 const amount = ref<string>('')
 const message = ref('')
 const feemode = ref<'include' | 'exclude'>('include')
+const feeOptions = computed<SelectOption[]>(() => [
+  { value: 'include', label: t('wallet.feeReceiverPays') },
+  { value: 'exclude', label: t('wallet.feeSenderPays') },
+])
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 const sending = ref(false)

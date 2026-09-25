@@ -2,26 +2,24 @@
   <SC_Settings>
     <SC_SettingItem>
       <SC_Label for="composer-visibility">{{ t('postComposer.visibility') }}</SC_Label>
-      <SC_Select
+      <Select
         id="composer-visibility"
         :value="visibility"
+        :options="visibilityOptions"
         :disabled="isTrial"
         @change="onVisibilityChange"
-      >
-        <option v-for="opt in VISIBILITY_OPTIONS" :key="opt.value" :value="opt.value">
-          {{ t(opt.labelKey) }}
-        </option>
-      </SC_Select>
+      />
       <SC_TrialHint v-if="isTrial">{{ t('postComposer.trialVisibilityHint') }}</SC_TrialHint>
     </SC_SettingItem>
 
     <SC_SettingItem>
       <SC_Label for="composer-language">{{ t('postComposer.language') }}</SC_Label>
-      <SC_Select id="composer-language" :value="language" @change="onLanguageChange">
-        <option v-for="lang in LANGUAGE_OPTIONS" :key="lang.value" :value="lang.value">
-          {{ lang.label }}
-        </option>
-      </SC_Select>
+      <Select
+        id="composer-language"
+        :value="language"
+        :options="LANGUAGE_OPTIONS"
+        @change="onLanguageChange"
+      />
     </SC_SettingItem>
 
     <SC_SettingItem>
@@ -42,10 +40,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Select, { type SelectOption } from '@/components/select'
 import {
   SC_DateInput,
   SC_Label,
-  SC_Select,
   SC_SettingItem,
   SC_Settings,
   SC_TrialHint,
@@ -90,15 +88,19 @@ const VISIBILITY_OPTIONS = [
   { value: '3', labelKey: 'postComposer.visibilityPaid' },
 ] as const
 
-const LANGUAGE_OPTIONS = [
+const visibilityOptions = computed<SelectOption[]>(() =>
+  VISIBILITY_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))
+)
+
+const LANGUAGE_OPTIONS: SelectOption[] = [
   { value: 'ru', label: 'Русский' },
   { value: 'en', label: 'English' },
-] as const
+]
 
-const onVisibilityChange = (e: Event): void => {
-  emit('update:visibility', (e.target as HTMLSelectElement).value)
+const onVisibilityChange = (value: unknown): void => {
+  emit('update:visibility', String(value))
 }
-const onLanguageChange = (e: Event): void => {
-  emit('update:language', (e.target as HTMLSelectElement).value)
+const onLanguageChange = (value: unknown): void => {
+  emit('update:language', String(value))
 }
 </script>
