@@ -10,7 +10,7 @@
 
 ## 0. TL;DR — где мы сейчас и что нужно
 
-**Что уже есть в новом приложении:** полный локальный пайплайн — выбор файла → анализ → транскод (Tauri native ffmpeg / ffmpeg.wasm) → сохранение blob в IndexedDB. Картинки грузятся ([image-upload-service.ts](../src/services/image-upload-service.ts)), mini-app `videos.*` — заглушки ([media.ts](../src/mini-apps/actions/media.ts)).
+**Что уже есть в новом приложении:** полный локальный пайплайн — выбор файла → анализ → транскод (нативный ffmpeg в Tauri; ffmpeg.wasm удалён 2026-09-25 — загрузке из веба он не нужен: старый клиент шлёт исходный файл, перекодирует PeerTube) → сохранение blob в IndexedDB. Картинки грузятся ([image-upload-service.ts](../src/services/image-upload-service.ts)), mini-app `videos.*` — заглушки ([media.ts](../src/mini-apps/actions/media.ts)).
 
 **Прогресс порта (сервисный слой `src/services/peertube/`):** ✅ **Фаза A** (выбор хоста, минимум) · ✅ **Фаза B** (blockChainAuth OAuth + кэш/refresh + channelId) · ✅ **Фаза C** (resumable-транспорт поверх `appFetch`: init/PUT-чанки/отмена/resume/retry/прогресс — 13 юнит-тестов). Всё покрыто на инъектируемом транспорте; **живой прогон под Tor/Tauri не делался** (§3). Осталось соединить транспорт с UI: пайплайн `use-upload-state.ts` по-прежнему завершается на IndexedDB ([use-upload-state.ts:199](../src/b-components/video-uploader/composables/use-upload-state.ts#L199)) — **сетевой загрузки из UI ещё нет** (это Фазы D/E: валидация/квота + мост в композер).
 
