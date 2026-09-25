@@ -227,3 +227,27 @@ export const SC_BlockAge = styled.div`
   text-align: right;
   white-space: nowrap;
 `
+
+/** Номер блока — ссылка без собственного оформления, цвет от строки. */
+export const SC_PlainLink = styled.a`
+  color: inherit;
+  text-decoration: none;
+`
+
+/** Ссылка в заголовке секции («Пиры»). */
+export const SC_SectionLink = styled.a`
+  font-size: 12px;
+  color: var(--color-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
+/** Пояснение под списком блоков. */
+export const SC_SectionNote = styled.div`
+  padding: 16px 18px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+`

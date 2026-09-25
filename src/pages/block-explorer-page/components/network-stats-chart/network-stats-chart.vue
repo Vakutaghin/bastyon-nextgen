@@ -27,7 +27,9 @@
 
     <SC_StatsPlaceholder v-if="isLoading">{{ t('explorerPage.loading') }}</SC_StatsPlaceholder>
     <SC_StatsPlaceholder v-else-if="error">{{ t('explorerPage.statsError') }}</SC_StatsPlaceholder>
-    <SC_StatsPlaceholder v-else-if="!points.length">{{ t('explorerPage.statsEmpty') }}</SC_StatsPlaceholder>
+    <SC_StatsPlaceholder v-else-if="!points.length">{{
+      t('explorerPage.statsEmpty')
+    }}</SC_StatsPlaceholder>
     <SC_ChartHost v-else ref="hostRef">
       <svg ref="svgRef" :viewBox="`0 0 ${WIDTH} ${HEIGHT}`" preserveAspectRatio="none" />
     </SC_ChartHost>
@@ -82,7 +84,11 @@ interface CategorySpec {
 const CATEGORIES: CategorySpec[] = [
   { key: 'content', labelKey: 'explorerPage.statsLegendContent', color: 'var(--color-ant-blue)' },
   { key: 'ratings', labelKey: 'explorerPage.statsLegendRatings', color: 'var(--color-success)' },
-  { key: 'subscriptions', labelKey: 'explorerPage.statsLegendSubscriptions', color: 'var(--color-warning-icon)' },
+  {
+    key: 'subscriptions',
+    labelKey: 'explorerPage.statsLegendSubscriptions',
+    color: 'var(--color-warning-icon)',
+  },
   { key: 'accounts', labelKey: 'explorerPage.statsLegendAccounts', color: '#722ed1' },
   { key: 'moderation', labelKey: 'explorerPage.statsLegendModeration', color: '#eb2f96' },
   { key: 'other', labelKey: 'explorerPage.statsLegendOther', color: '#8c8c8c' },
@@ -177,8 +183,17 @@ function renderChart() {
     .attr('class', 'y-axis')
     .call(yAxis)
     .call((sel) => sel.select('.domain').remove())
-    .call((sel) => sel.selectAll('text').attr('fill', '#6c757d').style('font-size', '11px'))
-    .call((sel) => sel.selectAll('line').attr('stroke', '#e9ecef').attr('stroke-dasharray', '2,2'))
+    // Цвета осей и сетки — из токенов темы (через style: в SVG-атрибуте var()
+    // поддерживается не везде). Светлая сетка #e9ecef в тёмной теме слепила (N39).
+    .call((sel) =>
+      sel.selectAll('text').style('fill', 'var(--color-text-secondary)').style('font-size', '11px')
+    )
+    .call((sel) =>
+      sel
+        .selectAll('line')
+        .style('stroke', 'var(--color-border-lighter)')
+        .attr('stroke-dasharray', '2,2')
+    )
 
   // X-axis: «N{ч|д} назад» каждый ~6-й тик.
   const step = Math.max(1, Math.ceil(pts.length / 6))
@@ -194,7 +209,7 @@ function renderChart() {
     .attr('x', (i) => x(i))
     .attr('y', 18)
     .attr('text-anchor', 'middle')
-    .attr('fill', '#6c757d')
+    .style('fill', 'var(--color-text-secondary)')
     .style('font-size', '11px')
     .text((i) => {
       const fromEnd = pts.length - 1 - i

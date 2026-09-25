@@ -1,5 +1,5 @@
 <template>
-  <SC_PayloadCard v-if='payload'>
+  <SC_PayloadCard v-if="payload">
     <SC_PayloadHeader>
       <SC_PayloadIcon>{{ icon }}</SC_PayloadIcon>
       <SC_PayloadTitle>{{ title }}</SC_PayloadTitle>
@@ -7,130 +7,156 @@
 
     <SC_PayloadFields>
       <!-- POST / VIDEO / ARTICLE / STREAM -->
-      <template v-if='payload.kind === "post"'>
+      <template v-if="payload.kind === 'post'">
         <SC_PayloadFieldLabel>{{ t('explorerShared.author') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.author' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue><AddressLink :address="payload.author" /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.contentId') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><HashLink :hash='payload.postId' :to='undefined' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue
+          ><HashLink :hash="payload.postId" :to="undefined"
+        /></SC_PayloadFieldValue>
       </template>
 
       <!-- COMMENT -->
-      <template v-else-if='payload.kind === "comment"'>
+      <template v-else-if="payload.kind === 'comment'">
         <SC_PayloadFieldLabel>{{ t('explorerShared.author') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.author' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue><AddressLink :address="payload.author" /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.commentId') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><HashLink :hash='payload.commentId' :to='undefined' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue
+          ><HashLink :hash="payload.commentId" :to="undefined"
+        /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.toPost') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><HashLink :hash='payload.parentPostId' :to='undefined' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue
+          ><HashLink :hash="payload.parentPostId" :to="undefined"
+        /></SC_PayloadFieldValue>
       </template>
 
       <!-- COMMENT EDIT -->
-      <template v-else-if='payload.kind === "comment-edit"'>
+      <template v-else-if="payload.kind === 'comment-edit'">
         <SC_PayloadFieldLabel>{{ t('explorerShared.author') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.author' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue><AddressLink :address="payload.author" /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.edit') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><HashLink :hash='payload.editTxId' :to='undefined' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue
+          ><HashLink :hash="payload.editTxId" :to="undefined"
+        /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.original') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><HashLink :hash='payload.originalCommentId' :to='undefined' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue
+          ><HashLink :hash="payload.originalCommentId" :to="undefined"
+        /></SC_PayloadFieldValue>
       </template>
 
       <!-- UPVOTE SHARE -->
-      <template v-else-if='payload.kind === "upvote-share"'>
+      <template v-else-if="payload.kind === 'upvote-share'">
         <SC_PayloadFieldLabel>{{ t('explorerShared.vote') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue>
           <SC_PayloadScore>{{ payload.value }}/5</SC_PayloadScore>
-          <span style='font-size: 12px; color: var(--color-text-secondary);'>{{ t('explorerShared.stars') }}</span>
+          <SC_PayloadMuted>{{ t('explorerShared.stars') }}</SC_PayloadMuted>
         </SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.votes') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.voter' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue><AddressLink :address="payload.voter" /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.forPost') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><HashLink :hash='payload.postId' :to='undefined' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue
+          ><HashLink :hash="payload.postId" :to="undefined"
+        /></SC_PayloadFieldValue>
       </template>
 
       <!-- C-SCORE -->
-      <template v-else-if='payload.kind === "c-score"'>
+      <template v-else-if="payload.kind === 'c-score'">
         <SC_PayloadFieldLabel>{{ t('explorerShared.vote') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue>
-          <component :is='payload.value >= 0 ? SC_PayloadScore : SC_PayloadScoreNeg'>
+          <component :is="payload.value >= 0 ? SC_PayloadScore : SC_PayloadScoreNeg">
             {{ payload.value > 0 ? '+1' : payload.value }}
           </component>
         </SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.votes') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.voter' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue><AddressLink :address="payload.voter" /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.forComment') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><HashLink :hash='payload.commentId' :to='undefined' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue
+          ><HashLink :hash="payload.commentId" :to="undefined"
+        /></SC_PayloadFieldValue>
       </template>
 
       <!-- SUBSCRIBE / UNSUBSCRIBE -->
-      <template v-else-if='payload.kind === "subscribe"'>
-        <SC_PayloadFieldLabel>{{ payload.isUnsubscribe ? t('explorerShared.unsubscribed') : t('explorerShared.subscribed') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.from' /></SC_PayloadFieldValue>
+      <template v-else-if="payload.kind === 'subscribe'">
+        <SC_PayloadFieldLabel>{{
+          payload.isUnsubscribe ? t('explorerShared.unsubscribed') : t('explorerShared.subscribed')
+        }}</SC_PayloadFieldLabel>
+        <SC_PayloadFieldValue><AddressLink :address="payload.from" /></SC_PayloadFieldValue>
 
-        <SC_PayloadFieldLabel>{{ payload.isUnsubscribe ? t('explorerShared.fromWhom') : t('explorerShared.toWhom') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.to' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldLabel>{{
+          payload.isUnsubscribe ? t('explorerShared.fromWhom') : t('explorerShared.toWhom')
+        }}</SC_PayloadFieldLabel>
+        <SC_PayloadFieldValue><AddressLink :address="payload.to" /></SC_PayloadFieldValue>
       </template>
 
       <!-- BLOCK / UNBLOCK -->
-      <template v-else-if='payload.kind === "block-user"'>
-        <SC_PayloadFieldLabel>{{ payload.isUnblock ? t('explorerShared.unblocked') : t('explorerShared.blocked') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.actor' /></SC_PayloadFieldValue>
+      <template v-else-if="payload.kind === 'block-user'">
+        <SC_PayloadFieldLabel>{{
+          payload.isUnblock ? t('explorerShared.unblocked') : t('explorerShared.blocked')
+        }}</SC_PayloadFieldLabel>
+        <SC_PayloadFieldValue><AddressLink :address="payload.actor" /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.whom') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.target' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue><AddressLink :address="payload.target" /></SC_PayloadFieldValue>
       </template>
 
       <!-- BOOST -->
-      <template v-else-if='payload.kind === "boost"'>
+      <template v-else-if="payload.kind === 'boost'">
         <SC_PayloadFieldLabel>{{ t('explorerShared.amount') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue>
           <SC_PayloadScore>{{ formatExplorerPkoin(payload.amount) }} PKOIN</SC_PayloadScore>
         </SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.boosts') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.booster' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue><AddressLink :address="payload.booster" /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.post') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><HashLink :hash='payload.postId' :to='undefined' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue
+          ><HashLink :hash="payload.postId" :to="undefined"
+        /></SC_PayloadFieldValue>
       </template>
 
       <!-- ACCOUNT (setting / set) -->
-      <template v-else-if='payload.kind === "account"'>
+      <template v-else-if="payload.kind === 'account'">
         <SC_PayloadFieldLabel>{{ t('explorerShared.account') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue><AddressLink :address='payload.account' /></SC_PayloadFieldValue>
+        <SC_PayloadFieldValue><AddressLink :address="payload.account" /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.type') }}</SC_PayloadFieldLabel>
-        <SC_PayloadFieldValue style='font-size: 12px; color: var(--color-text-secondary);'>
-          {{ payload.isSetting ? t('explorerShared.profileSettingsChange') : t('explorerShared.accountCreateUpdate') }}
+        <SC_PayloadFieldValue>
+          <SC_PayloadMuted>
+            {{
+              payload.isSetting
+                ? t('explorerShared.profileSettingsChange')
+                : t('explorerShared.accountCreateUpdate')
+            }}
+          </SC_PayloadMuted>
         </SC_PayloadFieldValue>
       </template>
     </SC_PayloadFields>
 
-    <SC_PayloadActions v-if='actions.length > 0'>
+    <SC_PayloadActions v-if="actions.length > 0">
       <RouterLink
-        v-for='action in actions'
-        :key='action.label'
-        v-slot='{ navigate, href }'
+        v-for="action in actions"
+        :key="action.label"
+        v-slot="{ navigate, href }"
         custom
-        :to='action.to'
+        :to="action.to"
       >
-        <SC_PayloadBtn :href='href' @click='navigate'>
-          {{ action.label }} →
-        </SC_PayloadBtn>
+        <SC_PayloadBtn :href="href" @click="navigate"> {{ action.label }} → </SC_PayloadBtn>
       </RouterLink>
     </SC_PayloadActions>
   </SC_PayloadCard>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
@@ -150,6 +176,7 @@ import {
   SC_PayloadBtn,
   SC_PayloadScore,
   SC_PayloadScoreNeg,
+  SC_PayloadMuted,
 } from './tx-payload-card.styled'
 
 const { t } = useI18n()
@@ -166,16 +193,26 @@ interface PayloadAction {
 const icon = computed(() => {
   const k = p.payload?.kind
   switch (k) {
-    case 'post':         return '📝'
-    case 'comment':      return '💬'
-    case 'comment-edit': return '✏️'
-    case 'upvote-share': return '⭐'
-    case 'c-score':      return '👍'
-    case 'subscribe':    return p.payload?.kind === 'subscribe' && p.payload.isUnsubscribe ? '➖' : '➕'
-    case 'block-user':   return p.payload?.kind === 'block-user' && p.payload.isUnblock ? '🔓' : '🚫'
-    case 'boost':        return '🚀'
-    case 'account':      return '👤'
-    default:             return '◆'
+    case 'post':
+      return '📝'
+    case 'comment':
+      return '💬'
+    case 'comment-edit':
+      return '✏️'
+    case 'upvote-share':
+      return '⭐'
+    case 'c-score':
+      return '👍'
+    case 'subscribe':
+      return p.payload?.kind === 'subscribe' && p.payload.isUnsubscribe ? '➖' : '➕'
+    case 'block-user':
+      return p.payload?.kind === 'block-user' && p.payload.isUnblock ? '🔓' : '🚫'
+    case 'boost':
+      return '🚀'
+    case 'account':
+      return '👤'
+    default:
+      return '◆'
   }
 })
 
@@ -192,16 +229,32 @@ const title = computed((): string => {
       }
       return labels[pl.type] ?? t('explorerShared.titleContent')
     }
-    case 'comment':      return t('explorerShared.titleComment')
-    case 'comment-edit': return t('explorerShared.titleCommentEdit')
-    case 'upvote-share': return t('explorerShared.titlePostScore')
-    case 'c-score':      return t('explorerShared.titleCommentScore')
+    case 'comment':
+      return t('explorerShared.titleComment')
+    case 'comment-edit':
+      return t('explorerShared.titleCommentEdit')
+    case 'upvote-share':
+      return t('explorerShared.titlePostScore')
+    case 'c-score':
+      return t('explorerShared.titleCommentScore')
     case 'subscribe':
-      return pl.isUnsubscribe ? t('explorerShared.titleUnsubscribe') : (pl.isPrivate ? t('explorerShared.titleSubscribePrivate') : t('explorerShared.titleSubscribe'))
-    case 'block-user':   return pl.isUnblock ? t('explorerShared.titleUnblockUser') : t('explorerShared.titleBlockUser')
-    case 'boost':        return t('explorerShared.titleBoostPost')
-    case 'account':      return pl.isSetting ? t('explorerShared.titleProfileChange') : t('explorerShared.titleAccountAction')
-    default:             return ''
+      return pl.isUnsubscribe
+        ? t('explorerShared.titleUnsubscribe')
+        : pl.isPrivate
+          ? t('explorerShared.titleSubscribePrivate')
+          : t('explorerShared.titleSubscribe')
+    case 'block-user':
+      return pl.isUnblock
+        ? t('explorerShared.titleUnblockUser')
+        : t('explorerShared.titleBlockUser')
+    case 'boost':
+      return t('explorerShared.titleBoostPost')
+    case 'account':
+      return pl.isSetting
+        ? t('explorerShared.titleProfileChange')
+        : t('explorerShared.titleAccountAction')
+    default:
+      return ''
   }
 })
 
@@ -231,7 +284,12 @@ const actions = computed<PayloadAction[]>(() => {
       out.push(profile(pl.voter, t('explorerShared.openVoterProfile')))
       break
     case 'subscribe':
-      out.push(profile(pl.to, pl.isUnsubscribe ? t('explorerShared.openProfile') : t('explorerShared.openAuthorProfile')))
+      out.push(
+        profile(
+          pl.to,
+          pl.isUnsubscribe ? t('explorerShared.openProfile') : t('explorerShared.openAuthorProfile')
+        )
+      )
       break
     case 'block-user':
       out.push(profile(pl.target, t('explorerShared.openProfile')))

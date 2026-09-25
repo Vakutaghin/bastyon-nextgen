@@ -4,13 +4,24 @@
       <SC_ExplorerHeader>
         <SC_ExplorerTitleRow>
           <SC_ExplorerTitle>{{ t('explorerPage.mainTitle') }}</SC_ExplorerTitle>
-          <SC_LiveBadge :class='{ active: wsConnected }' :title='wsConnected ? t("explorerPage.liveTooltipOn") : t("explorerPage.liveTooltipOff")'>
-            <SC_LiveDot :class='{ active: wsConnected }' />
+          <SC_LiveBadge
+            :class="{ active: wsConnected }"
+            :title="
+              wsConnected ? t('explorerPage.liveTooltipOn') : t('explorerPage.liveTooltipOff')
+            "
+          >
+            <SC_LiveDot :class="{ active: wsConnected }" />
             {{ wsConnected ? t('explorerPage.live') : t('explorerPage.offline') }}
           </SC_LiveBadge>
         </SC_ExplorerTitleRow>
         <SC_ExplorerSubtitle>
-          {{ t('explorerPage.mainSubtitle', { chain: chainLabel, height: tipHeightLabel, age: tipAgeLabel }) }}
+          {{
+            t('explorerPage.mainSubtitle', {
+              chain: chainLabel,
+              height: tipHeightLabel,
+              age: tipAgeLabel,
+            })
+          }}
         </SC_ExplorerSubtitle>
         <ExplorerSearch />
       </SC_ExplorerHeader>
@@ -19,10 +30,10 @@
         <SC_StatCard>
           <SC_StatCardLabel>
             {{ t('explorerPage.statHeight') }}
-            <InfoTooltip term-key='height' />
+            <InfoTooltip term-key="height" />
           </SC_StatCardLabel>
           <SC_StatCardValue>
-            <Skeleton v-if='!nodeInfoData' :width='90' :height='22' />
+            <Skeleton v-if="!nodeInfoData" :width="90" :height="22" />
             <template v-else>{{ tipHeightLabel }}</template>
           </SC_StatCardValue>
           <SC_StatCardHint>{{ t('explorerPage.statHeightHint') }}</SC_StatCardHint>
@@ -31,10 +42,10 @@
         <SC_StatCard>
           <SC_StatCardLabel>
             {{ t('explorerPage.statEmission') }}
-            <InfoTooltip term-key='emission' />
+            <InfoTooltip term-key="emission" />
           </SC_StatCardLabel>
           <SC_StatCardValue>
-            <Skeleton v-if='emissionLabel === EM_DASH' :width='110' :height='22' />
+            <Skeleton v-if="emissionLabel === EM_DASH" :width="110" :height="22" />
             <template v-else>{{ emissionLabel }}</template>
           </SC_StatCardValue>
           <SC_StatCardHint>{{ t('explorerPage.statEmissionHint') }}</SC_StatCardHint>
@@ -43,7 +54,7 @@
         <SC_StatCard>
           <SC_StatCardLabel>{{ t('explorerPage.statNodeVersion') }}</SC_StatCardLabel>
           <SC_StatCardValue>
-            <Skeleton v-if='!nodeInfoData' :width='70' :height='22' />
+            <Skeleton v-if="!nodeInfoData" :width="70" :height="22" />
             <template v-else>{{ versionLabel }}</template>
           </SC_StatCardValue>
           <SC_StatCardHint>{{ chainLabel }}</SC_StatCardHint>
@@ -52,10 +63,10 @@
         <SC_StatCard>
           <SC_StatCardLabel>
             {{ t('explorerPage.statNetStakeWeight') }}
-            <InfoTooltip term-key='netStakeWeight' />
+            <InfoTooltip term-key="netStakeWeight" />
           </SC_StatCardLabel>
           <SC_StatCardValue>
-            <Skeleton v-if='!nodeInfoData' :width='80' :height='22' />
+            <Skeleton v-if="!nodeInfoData" :width="80" :height="22" />
             <template v-else>{{ netStakeLabel }}</template>
           </SC_StatCardValue>
           <SC_StatCardHint>{{ t('explorerPage.statNetStakeWeightHint') }}</SC_StatCardHint>
@@ -72,34 +83,34 @@
             <SC_SectionTitle>{{ t('explorerPage.sectionLatestBlocks') }}</SC_SectionTitle>
           </SC_SectionHeader>
 
-          <SC_RowList v-if='lastBlocksLoading && !lastBlocks.length'>
-            <SC_BlockRow v-for='i in 8' :key='`sk-${i}`'>
-              <SC_BlockHeight><Skeleton :width='60' :height='16' /></SC_BlockHeight>
-              <Skeleton width='100%' :height='16' />
-              <SC_BlockNtx><Skeleton :width='40' :height='12' /></SC_BlockNtx>
-              <SC_BlockAge><Skeleton :width='60' :height='12' /></SC_BlockAge>
+          <SC_RowList v-if="lastBlocksLoading && !lastBlocks.length">
+            <SC_BlockRow v-for="i in 8" :key="`sk-${i}`">
+              <SC_BlockHeight><Skeleton :width="60" :height="16" /></SC_BlockHeight>
+              <Skeleton width="100%" :height="16" />
+              <SC_BlockNtx><Skeleton :width="40" :height="12" /></SC_BlockNtx>
+              <SC_BlockAge><Skeleton :width="60" :height="12" /></SC_BlockAge>
             </SC_BlockRow>
           </SC_RowList>
-          <ExplorerError v-else-if='lastBlocksError' :message="t('explorerPage.errorLoadBlocks')" />
+          <ExplorerError v-else-if="lastBlocksError" :message="t('explorerPage.errorLoadBlocks')" />
           <SC_RowList v-else>
-            <SC_BlockRow v-for='b in lastBlocks' :key='b.hash'>
+            <SC_BlockRow v-for="b in lastBlocks" :key="b.hash">
               <SC_BlockHeight>
                 <RouterLink
-                  v-slot='{ navigate, href }'
+                  v-slot="{ navigate, href }"
                   custom
-                  :to='{ name: "explorer-block", params: { hashOrHeight: b.hash } }'
+                  :to="{ name: 'explorer-block', params: { hashOrHeight: b.hash } }"
                 >
-                  <a :href='href' style='color: inherit; text-decoration: none' @click='navigate'>
+                  <SC_PlainLink :href="href" @click="navigate">
                     #{{ formatNumber(b.height) }}
-                  </a>
+                  </SC_PlainLink>
                 </RouterLink>
               </SC_BlockHeight>
               <HashLink
-                :hash='b.hash'
-                :to='{ name: "explorer-block", params: { hashOrHeight: b.hash } }'
+                :hash="b.hash"
+                :to="{ name: 'explorer-block', params: { hashOrHeight: b.hash } }"
               />
               <SC_BlockNtx>{{ t('explorerPage.txCount', { n: b.ntx }) }}</SC_BlockNtx>
-              <SC_BlockAge :title='formatAbsTime(b.time)'>
+              <SC_BlockAge :title="formatAbsTime(b.time)">
                 {{ formatRelTime(b.time, now) }}
               </SC_BlockAge>
             </SC_BlockRow>
@@ -109,45 +120,40 @@
         <SC_SectionCard>
           <SC_SectionHeader>
             <SC_SectionTitle>{{ t('explorerPage.sectionNetworkInfo') }}</SC_SectionTitle>
-            <RouterLink
-              v-slot='{ navigate, href }'
-              custom
-              :to='{ name: "explorer-peers" }'
-            >
-              <a
-                :href='href'
-                style='font-size: 12px; color: var(--color-primary); text-decoration: none;'
-                @click='navigate'
-              >
+            <RouterLink v-slot="{ navigate, href }" custom :to="{ name: 'explorer-peers' }">
+              <SC_SectionLink :href="href" @click="navigate">
                 {{ t('explorerPage.linkPeers') }}
-              </a>
+              </SC_SectionLink>
             </RouterLink>
           </SC_SectionHeader>
 
-          <SC_RowList v-if='nodeInfoLoading && !nodeInfoData'>
+          <SC_RowList v-if="nodeInfoLoading && !nodeInfoData">
             <SC_BlockRow>
-              <SC_BlockHeight><Skeleton :width='40' :height='16' /></SC_BlockHeight>
-              <Skeleton width='100%' :height='16' />
-              <SC_BlockNtx><Skeleton :width='40' :height='12' /></SC_BlockNtx>
-              <SC_BlockAge><Skeleton :width='60' :height='12' /></SC_BlockAge>
+              <SC_BlockHeight><Skeleton :width="40" :height="16" /></SC_BlockHeight>
+              <Skeleton width="100%" :height="16" />
+              <SC_BlockNtx><Skeleton :width="40" :height="12" /></SC_BlockNtx>
+              <SC_BlockAge><Skeleton :width="60" :height="12" /></SC_BlockAge>
             </SC_BlockRow>
           </SC_RowList>
-          <ExplorerError v-else-if='nodeInfoError' :message="t('explorerPage.errorNodeUnavailable')" />
+          <ExplorerError
+            v-else-if="nodeInfoError"
+            :message="t('explorerPage.errorNodeUnavailable')"
+          />
           <SC_RowList v-else>
-            <SC_BlockRow v-if='tipHash'>
+            <SC_BlockRow v-if="tipHash">
               <SC_BlockHeight>{{ t('explorerPage.tip') }}</SC_BlockHeight>
               <HashLink
-                :hash='tipHash'
-                :to='{ name: "explorer-block", params: { hashOrHeight: tipHash } }'
+                :hash="tipHash"
+                :to="{ name: 'explorer-block', params: { hashOrHeight: tipHash } }"
               />
               <SC_BlockNtx>{{ tipNtxLabel }}</SC_BlockNtx>
-              <SC_BlockAge :title='formatAbsTime(tipTime)'>
+              <SC_BlockAge :title="formatAbsTime(tipTime)">
                 {{ formatRelTime(tipTime, now) }}
               </SC_BlockAge>
             </SC_BlockRow>
-            <div style='padding: 16px 18px; font-size: 13px; color: var(--color-text-secondary);'>
+            <SC_SectionNote>
               {{ t('explorerPage.decentralizationNote', { server: serverLabel }) }}
-            </div>
+            </SC_SectionNote>
           </SC_RowList>
         </SC_SectionCard>
       </SC_ExplorerGrid>
@@ -155,15 +161,11 @@
   </SC_ExplorerWork>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import {
-  useNodeInfo,
-  useCoinInfo,
-  useLastBlocks,
-} from '@/composables/use-block-explorer-queries'
+import { useNodeInfo, useCoinInfo, useLastBlocks } from '@/composables/use-block-explorer-queries'
 import { useExplorerWsUpdates } from '@/composables/use-explorer-ws-updates'
 import ExplorerSearch from './components/explorer-search/explorer-search.vue'
 import NetworkStatsChart from './components/network-stats-chart/network-stats-chart.vue'
@@ -200,6 +202,9 @@ import {
   SC_BlockHeight,
   SC_BlockNtx,
   SC_BlockAge,
+  SC_PlainLink,
+  SC_SectionLink,
+  SC_SectionNote,
 } from './block-explorer-page.styled'
 
 defineOptions({ name: 'BlockExplorerPage' })
@@ -211,11 +216,7 @@ const EM_DASH = '—'
 
 const { isConnected: wsConnected } = useExplorerWsUpdates()
 
-const {
-  data: nodeInfo,
-  isLoading: nodeInfoLoading,
-  error: nodeInfoError,
-} = useNodeInfo()
+const { data: nodeInfo, isLoading: nodeInfoLoading, error: nodeInfoError } = useNodeInfo()
 const { data: coinInfo } = useCoinInfo()
 const {
   data: lastBlocksResp,

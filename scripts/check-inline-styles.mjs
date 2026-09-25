@@ -3,7 +3,7 @@
 //
 // Counts inline style usages in templates:
 //   - `:style="..."` in *.vue
-//   - plain `style="..."` in *.vue and *.html
+//   - plain `style="..."` / `style='...'` in *.vue and *.html
 //
 // Compares totals against scripts/inline-styles-baseline.json.
 // Fails (exit 1) if either count grew. New violations must be added
@@ -29,9 +29,10 @@ const IGNORE_DIRS = new Set(['node_modules', 'dist', '.git', 'android', 'ios'])
 // не считаются нарушением — это допустимый шаблон (audit §3.1: icon-styles.ts /
 // styled-обёртка).
 const VUE_BIND_STYLE = /:style\s*=\s*["'][^"']*\{/g
-// Plain HTML style="..." — must NOT be preceded by ':' (which would make it :style)
-// and must be a real attribute (preceded by start, space, tab, newline, or quote).
-const PLAIN_STYLE = /(^|[\s"'])style\s*=\s*"/g
+// Plain HTML style="..." or style='...' — must NOT be preceded by ':' (which would
+// make it :style) and must be a real attribute (preceded by start, whitespace or a
+// quote). Single quotes count too: the guard used to miss them (N35).
+const PLAIN_STYLE = /(^|[\s"'])style\s*=\s*["']/g
 
 /** @returns {string[]} */
 function walk(dir) {

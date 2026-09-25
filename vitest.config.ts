@@ -41,7 +41,7 @@ export default defineConfig({
       provider: 'v8',
       reportsDirectory: 'coverage',
       include: ['src/**/*.{ts,js,vue}'],
-      exclude: ['src/**/*.d.ts', 'src/**/*.{test,spec}.{ts,js}', 'src/main.js', 'src/polyfills.ts'],
+      exclude: ['src/**/*.d.ts', 'src/**/*.{test,spec}.{ts,js}', 'src/main.ts', 'src/polyfills.ts'],
     },
   },
 })

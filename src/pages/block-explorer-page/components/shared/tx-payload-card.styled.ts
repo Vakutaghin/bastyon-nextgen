@@ -69,6 +69,12 @@ export const SC_PayloadFieldValue = styled.div`
   word-break: break-all;
 `
 
+/** Второстепенный текст в значении поля (единица, тип операции). */
+export const SC_PayloadMuted = styled.span`
+  font-size: 12px;
+  color: var(--color-text-secondary);
+`
+
 export const SC_PayloadActions = styled.div`
   display: flex;
   gap: 8px;
