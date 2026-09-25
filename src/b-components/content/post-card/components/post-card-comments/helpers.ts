@@ -108,10 +108,13 @@ export function getCommentImages(comment: GetComment): string[] {
 }
 
 /**
- * Форматирует текст комментария в HTML с кликабельными ссылками.
+ * Текст комментария в HTML: переносы строк — `<br>`, ссылки кликабельны.
+ * В msg хранятся обычные `\n` (legacy рисует их через `nl2br(trimrn(m))`), а
+ * HTML склеивал их в одну строку — многострочный ответ приходил сплошным текстом.
  */
 export function formatCommentMessageHtml(comment: GetComment): string {
-  return formatBastyonLinks(getCommentMessageText(comment))
+  const text = getCommentMessageText(comment).trim().replace(/\r?\n/g, '<br>')
+  return formatBastyonLinks(text)
 }
 
 /**

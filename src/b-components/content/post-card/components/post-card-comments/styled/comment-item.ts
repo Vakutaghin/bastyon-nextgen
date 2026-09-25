@@ -115,6 +115,11 @@ export const SC_CommentAuthor = styled.div`
   font-weight: 500;
   font-size: 14px;
   color: var(--ui-text-highlighted);
+  /* Без имени в профиле показывается адрес — 34 символа без пробелов; на
+     телефоне он раздвигал строку за край экрана. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `
 
 export const SC_CommentText = styled.div`
@@ -141,6 +146,7 @@ export const SC_CommentText = styled.div`
 
 export const SC_CommentContent = styled.div`
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -150,8 +156,10 @@ export const SC_CommentMeta = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 
   a {
+    min-width: 0;
     border-bottom: 0;
     text-decoration: none;
     color: inherit;
@@ -166,6 +174,7 @@ export const SC_CommentDate = styled.div`
 /** Правый край шапки комментария: дата + кнопка меню */
 export const SC_CommentMetaRight = styled.div`
   display: flex;
+  flex: none;
   align-items: center;
   gap: 4px;
 `
