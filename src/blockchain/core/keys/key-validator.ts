@@ -8,6 +8,7 @@ import { Buffer } from '../../utils/buffer-polyfill'
 import * as ecc from 'tiny-secp256k1'
 import { ECPairFactory } from 'ecpair'
 import type { Mnemonic, PrivateKey, PrivateKeyFormat } from '../../types/keys'
+import { POCKETNET_NETWORK } from '../../constants/network'
 import { bip39, loadBip39Russian, getBip39Russian, isBip39RussianLoaded } from './bip39-loader'
 import { logger } from '@/services/logger'
 
@@ -144,6 +145,16 @@ export function validateMnemonic(mnemonic: Mnemonic): boolean {
   }
 }
 
+/** WIF сети Pocketnet (сжатый или несжатый) — тот, что принимал старый клиент. */
+function isPocketnetWif(raw: string): boolean {
+  try {
+    ECPair.fromWIF(raw, POCKETNET_NETWORK)
+    return true
+  } catch {
+    return false
+  }
+}
+
 /**
  * Определяет формат приватного ключа
  * @param privateKey - Приватный ключ в любом формате
@@ -176,16 +187,12 @@ export function detectPrivateKeyFormat(privateKey: PrivateKey): PrivateKeyFormat
 
   // Проверка на WIF формат.
   // ВАЖНО: WIF (Base58Check) регистрозависим, а `trimmed` приведён к нижнему
-  // регистру (нужно для мнемоники/hex). Сжатые WIF начинаются с 'K'/'L' —
-  // после toLowerCase() они становятся невалидными, поэтому для WIF используем
-  // строку без понижения регистра.
+  // регистру (нужно для мнемоники/hex), поэтому для WIF берём строку как есть.
+  // Сеть — Pocketnet (версия 0x21, как у старого клиента): без неё ecpair
+  // разбирал ключ как биткоиновый (0x80), настоящий Pocketnet-WIF не
+  // распознавался, и вход по WIF не работал вовсе (S9).
   const trimmedRaw = privateKey.trim()
-  try {
-    ECPair.fromWIF(trimmedRaw)
-    return 'wif'
-  } catch {
-    // Не WIF
-  }
+  if (isPocketnetWif(trimmedRaw)) return 'wif'
 
   // Проверка на hex формат (64 символа hex)
   const hexPattern = /^[0-9a-f]{64}$/i
@@ -222,12 +229,7 @@ export function validatePrivateKey(privateKey: PrivateKey): boolean {
         return validateMnemonic(privateKey)
 
       case 'wif':
-        try {
-          ECPair.fromWIF(privateKey)
-          return true
-        } catch {
-          return false
-        }
+        return isPocketnetWif(privateKey.trim())
 
       case 'hex': {
         const buffer = Buffer.from(privateKey, 'hex')

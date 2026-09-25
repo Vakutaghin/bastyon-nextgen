@@ -10,11 +10,7 @@ import {
   clearKeyCache,
   deriveMessengerKeys,
 } from './key-generator'
-import {
-  recoverKeyPairFromHex,
-  recoverKeyPairFromWIF,
-  recoverKeyPair,
-} from './key-recovery'
+import { recoverKeyPairFromHex, recoverKeyPairFromWIF, recoverKeyPair } from './key-recovery'
 import {
   validateMnemonic,
   detectPrivateKeyFormat,
@@ -39,8 +35,7 @@ const TEST_VECTORS_1 = {
   address: 'PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy',
 }
 
-const TEST_MNEMONIC_2 =
-  'zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong'
+const TEST_MNEMONIC_2 = 'zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong'
 const TEST_VECTORS_2 = {
   seedPrefix: 'b6a6d8921942dd9806607ebc2750416b289adea669198769f2e15ed926c3aa92',
   privateKeyHex: '70ccde436f6033aec01bc4f0301aa925b729a2d8a4e47186294d50b8a27e9708',
@@ -313,7 +308,9 @@ describe('recoverKeyPairFromHex', () => {
   })
 
   it('throws on odd-length hex that is 64 chars but non-hex', () => {
-    expect(() => recoverKeyPairFromHex('zz' + '0'.repeat(62))).toThrow('Invalid hex private key format')
+    expect(() => recoverKeyPairFromHex('zz' + '0'.repeat(62))).toThrow(
+      'Invalid hex private key format'
+    )
   })
 })
 
@@ -377,9 +374,9 @@ describe('recoverKeyPair (auto-detect format)', () => {
     expect(result.keyPair.publicKey.toString('hex')).toBe(TEST_VECTORS_1.publicKeyHex)
   })
 
-  it('returns source in result', () => {
+  it('does not echo the secret back in the result', () => {
     const result = recoverKeyPair(TEST_VECTORS_1.privateKeyHex)
-    expect(result.source).toBe(TEST_VECTORS_1.privateKeyHex)
+    expect('source' in result).toBe(false)
   })
 })
 
@@ -403,14 +400,15 @@ describe('validateMnemonic', () => {
   })
 
   it('tolerates extra whitespace', () => {
-    const padded = '  abandon  abandon  abandon  abandon  abandon  abandon  abandon  abandon  abandon  abandon  abandon  about  '
+    const padded =
+      '  abandon  abandon  abandon  abandon  abandon  abandon  abandon  abandon  abandon  abandon  abandon  about  '
     expect(validateMnemonic(padded)).toBe(true)
   })
 
   it('returns false for random words that are not in BIP39 wordlist', () => {
-    expect(
-      validateMnemonic('foo bar baz qux quux quuz corge grault garply waldo fred plugh')
-    ).toBe(false)
+    expect(validateMnemonic('foo bar baz qux quux quuz corge grault garply waldo fred plugh')).toBe(
+      false
+    )
   })
 
   it('returns false for empty string', () => {
@@ -433,7 +431,9 @@ describe('validateMnemonic', () => {
   it('returns false for valid words with wrong checksum', () => {
     // 12 valid BIP39 English words but with an incorrect checksum
     expect(
-      validateMnemonic('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon')
+      validateMnemonic(
+        'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon'
+      )
     ).toBe(false)
   })
 })
@@ -447,13 +447,9 @@ describe('detectPrivateKeyFormat', () => {
     expect(detectPrivateKeyFormat(TEST_VECTORS_1.privateKeyHex)).toBe('hex')
   })
 
-  it('returns null for Pocketnet WIF keys (network not passed to fromWIF internally)', () => {
-    // detectPrivateKeyFormat calls ECPair.fromWIF without the Pocketnet network,
-    // so Pocketnet-specific WIF keys are not recognized. This is a known
-    // limitation. recoverKeyPairFromWIF works correctly because it passes the
-    // network parameter.
-    expect(detectPrivateKeyFormat(TEST_VECTORS_1.wif)).toBeNull()
-    expect(detectPrivateKeyFormat(TEST_VECTORS_2.wif)).toBeNull()
+  it('recognizes Pocketnet WIF keys (S9: detection uses the Pocketnet network)', () => {
+    expect(detectPrivateKeyFormat(TEST_VECTORS_1.wif)).toBe('wif')
+    expect(detectPrivateKeyFormat(TEST_VECTORS_2.wif)).toBe('wif')
   })
 
   it('returns null for empty string', () => {
@@ -487,11 +483,8 @@ describe('validatePrivateKey', () => {
     expect(validatePrivateKey(TEST_VECTORS_1.privateKeyHex)).toBe(true)
   })
 
-  it('returns false for Pocketnet WIF keys (known limitation: network not passed)', () => {
-    // validatePrivateKey delegates to detectPrivateKeyFormat, which calls
-    // ECPair.fromWIF without the Pocketnet network. Pocketnet-specific WIF
-    // keys are not recognized.
-    expect(validatePrivateKey(TEST_VECTORS_1.wif)).toBe(false)
+  it('accepts Pocketnet WIF keys', () => {
+    expect(validatePrivateKey(TEST_VECTORS_1.wif)).toBe(true)
   })
 
   it('rejects empty string', () => {
@@ -554,6 +547,12 @@ describe('address derivation from keys', () => {
     const keyPair = recoverKeyPairFromWIF(TEST_VECTORS_1.wif)
     const addressInfo = generateP2PKHAddress(keyPair.publicKey)
     expect(addressInfo.address).toBe(TEST_VECTORS_1.address)
+  })
+
+  it('signs in with a Pocketnet WIF end to end: auto-detected, same address (S9)', () => {
+    const { keyPair, format } = recoverKeyPair(TEST_VECTORS_2.wif)
+    expect(format).toBe('wif')
+    expect(generateP2PKHAddress(keyPair.publicKey).address).toBe(TEST_VECTORS_2.address)
   })
 
   it('derives the same address from seed-derived key pair (vector 1)', () => {

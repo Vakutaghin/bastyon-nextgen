@@ -136,7 +136,7 @@ export async function restoreSessionImpl(store: AuthStore): Promise<boolean> {
     }
 
     if (!recoveryResult?.keyPair) {
-      console.error('[auth-store] Recovery result is invalid:', recoveryResult)
+      console.error('[auth-store] Recovery result is invalid, format:', recoveryResult?.format)
       store.setError('Failed to recover key pair: invalid result')
       store.setLoading(false)
       return false

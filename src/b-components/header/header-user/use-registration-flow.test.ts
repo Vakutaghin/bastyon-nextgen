@@ -141,11 +141,7 @@ describe('useRegistrationFlow', () => {
     const flow = mountFlow(auth)
     await settle()
     savePendingRegistration({ nickname: 'bob', address: 'PA', step: 2, timestamp: Date.now() })
-    flow.handleRegisterValidation({
-      status: 'in_progress_transaction',
-      mnemonic: 'w1 w2',
-      nickname: 'bob',
-    })
+    flow.handleRegisterValidation({ status: 'in_progress_transaction', nickname: 'bob' })
     expect(flow.registrationPending.value).toBe(true)
     await settle()
     expect(flow.registrationPending.value).toBe(false)
@@ -153,6 +149,22 @@ describe('useRegistrationFlow', () => {
       message: 'accountMsg.registrationRejected:{"message":"NicknameDouble"}',
     })
     expect(loadPendingRegistration()).not.toBeNull()
+  })
+
+  it('N6: пока регистрация идёт, сид в памяти не держится — по завершении поднимается из сейфа', async () => {
+    const auth = makeAuth('PA')
+    const flow = mountFlow(auth)
+    await settle()
+    savePendingRegistration({ nickname: 'bob', address: 'PA', step: 2, timestamp: Date.now() })
+    setNeedShowMnemonic('PA')
+    flow.handleRegisterValidation({ status: 'in_progress_transaction', nickname: 'bob' })
+    expect(flow.registrationPending.value).toBe(true)
+    expect(flow.mnemonic.value).toBe('')
+
+    mocks.getRegistrationStatus.mockResolvedValue('registered')
+    await vi.waitFor(() => expect(flow.mnemonicModalOpen.value).toBe(true), { timeout: 8000 })
+    expect(mocks.loadAccountMnemonic).toHaveBeenCalledWith('PA')
+    expect(flow.mnemonic.value).toBe('w1 w2')
   })
 
   it('S12: регистрация завершилась, пока приложение было закрыто — сид поднимается из хранилища', async () => {

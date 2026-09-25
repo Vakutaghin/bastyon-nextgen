@@ -104,8 +104,6 @@ import {
   loadPendingRegistration,
   clearPendingRegistration,
 } from './helpers/pending-registration-store'
-import { loadAccountMnemonic } from '@/b-components/header/account-switcher/helpers/load-account-mnemonic'
-import type { Address } from '@/blockchain/types/addresses'
 import { setNeedShowMnemonic } from '@/helpers/common/mnemonic-storage'
 import {
   isFormNicknameValid,
@@ -113,9 +111,12 @@ import {
   validateRegistrationNickname,
 } from './helpers/nickname-validation'
 
+/**
+ * Сид в событии не передаётся: шапка поднимает его из сейфа, когда регистрация
+ * завершится (флаг `setNeedShowMnemonic`), и не держит в памяти всё ожидание (N6).
+ */
 interface ValidationPayload {
   status: 'in_progress_transaction'
-  mnemonic: string | undefined
   nickname: string
 }
 
@@ -123,7 +124,6 @@ const props = withDefaults(defineProps<{ open?: boolean }>(), { open: false })
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  success: []
   validation: [payload: ValidationPayload]
   cancel: []
   openSignIn: []
@@ -266,20 +266,14 @@ async function handleRegister(): Promise<void> {
     // pending указывает на них — переиспользуем, а не минтим сироту (V9).
     // При смене ника — сироту снимаем и начинаем заново.
     const stale = loadPendingRegistration()
-    let registrationResult: { address: string; mnemonic?: string }
+    let registrationResult: { address: string }
     if (stale && stale.step >= 1 && stale.address === authStore.getUserAddress) {
       if (stale.nickname !== nickname.value) {
         await authStore.discardRegistration(stale.address, previousAddress)
         registrationResult = await freshRegistration()
       } else {
         debugLog('[REG] Step 2: reusing keys from the previous attempt:', stale.address)
-        registrationResult = {
-          address: stale.address,
-          // Секрет именно этого адреса (per-account, с проверкой владельца — S10).
-          mnemonic: await loadAccountMnemonic(stale.address as Address)
-            .then((r) => r.mnemonic || undefined)
-            .catch(() => undefined),
-        }
+        registrationResult = { address: stale.address }
       }
     } else {
       registrationResult = await freshRegistration()
@@ -313,7 +307,6 @@ async function handleRegister(): Promise<void> {
     // (handleRegisterValidation → sendRegistrationUserInfoTx).
     emit('validation', {
       status: 'in_progress_transaction',
-      mnemonic: registrationResult.mnemonic,
       nickname: nickname.value,
     })
   } catch (err) {
@@ -345,7 +338,7 @@ async function handleRegister(): Promise<void> {
   }
 }
 /** Новые ключи + персист аккаунта (шаг 2). */
-async function freshRegistration(): Promise<{ address: string; mnemonic?: string }> {
+async function freshRegistration(): Promise<{ address: string }> {
   debugLog('[REG] Step 2: generating keys...')
   const result = await authStore.register({ generateNew: true, saveAfterRegistration: true })
   if (!result?.address) throw new Error(t('auth.errorCreateAccount'))
@@ -353,7 +346,7 @@ async function freshRegistration(): Promise<{ address: string; mnemonic?: string
   // Сид надо показать после завершения регистрации — даже если приложение
   // перезагрузят посередине (S12): флаг переживает сессию, память — нет.
   setNeedShowMnemonic(result.address)
-  return { address: result.address, mnemonic: result.mnemonic }
+  return { address: result.address }
 }
 
 async function checkNameAvailability(name: string): Promise<void> {

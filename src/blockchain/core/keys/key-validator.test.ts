@@ -9,6 +9,7 @@ import {
   detectMnemonicWordlist,
   normalizeMnemonic,
 } from './key-validator'
+import { POCKETNET_NETWORK } from '../../constants/network'
 
 // Только logger глушим — bip39 используем настоящий, чтобы проверять реальные
 // контрольные суммы мнемоник.
@@ -24,7 +25,14 @@ const M12 = bip39.entropyToMnemonic('00000000000000000000000000000000') // 16 б
 const M24 = bip39.entropyToMnemonic(
   '0000000000000000000000000000000000000000000000000000000000000000'
 ) // 32 байта → 24 слова
-const WIF = ECPair.makeRandom().toWIF()
+// WIF сети Pocketnet (версия 0x21), как у старого клиента: сжатый начинается
+// с '5'/'6', несжатый — с '2'.
+const WIF = ECPair.makeRandom({ network: POCKETNET_NETWORK }).toWIF()
+const WIF_UNCOMPRESSED = ECPair.makeRandom({
+  network: POCKETNET_NETWORK,
+  compressed: false,
+}).toWIF()
+const BITCOIN_WIF = ECPair.makeRandom().toWIF()
 const HEX64 = 'a'.repeat(64)
 
 describe('validateMnemonic', () => {
@@ -57,14 +65,21 @@ describe('detectPrivateKeyFormat', () => {
     expect(detectPrivateKeyFormat(M12)).toBe('mnemonic')
   })
 
-  it('распознаёт WIF', () => {
+  it('распознаёт WIF сети Pocketnet — сжатый и несжатый', () => {
+    expect(WIF[0]).toMatch(/[56]/)
+    expect(WIF_UNCOMPRESSED[0]).toBe('2')
     expect(detectPrivateKeyFormat(WIF)).toBe('wif')
+    expect(detectPrivateKeyFormat(WIF_UNCOMPRESSED)).toBe('wif')
   })
 
-  it('распознаёт WIF с заглавными буквами (регрессия: не ломать lowercase-ом)', () => {
-    // Сжатые WIF начинаются с K/L — детектор не должен ронять их toLowerCase-ом.
-    expect(WIF[0]).toMatch(/[KL5]/)
-    expect(detectPrivateKeyFormat(WIF)).toBe('wif')
+  it('не ломает WIF понижением регистра (регрессия)', () => {
+    // Base58 регистрозависим: детектор не должен разбирать WIF в lowercase.
+    expect(WIF).not.toBe(WIF.toLowerCase())
+    expect(detectPrivateKeyFormat(`  ${WIF}  `)).toBe('wif')
+  })
+
+  it('не принимает WIF биткоин-сети — старый клиент его тоже не принимал', () => {
+    expect(detectPrivateKeyFormat(BITCOIN_WIF)).toBeNull()
   })
 
   it('распознаёт hex (64 символа)', () => {
@@ -87,6 +102,10 @@ describe('validatePrivateKey', () => {
     expect(validatePrivateKey(M12)).toBe(true)
     expect(validatePrivateKey(WIF)).toBe(true)
     expect(validatePrivateKey(HEX64)).toBe(true)
+  })
+
+  it('false для WIF биткоин-сети', () => {
+    expect(validatePrivateKey(BITCOIN_WIF)).toBe(false)
   })
 
   it('false для мусора и не-строки', () => {

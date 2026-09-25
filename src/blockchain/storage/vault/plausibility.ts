@@ -6,7 +6,11 @@
 // по ФОРМЕ (не криптографически). Легитимные секреты/списки всегда проходят —
 // проверка отсекает лишь мусор, никогда не ложно-режет настоящие данные.
 
-/** Похоже на мнемонику (12/15/18/21/24 слова-буквы) или приватник (hex64 / WIF). */
+/**
+ * Похоже на мнемонику (12/15/18/21/24 слова-буквы) или приватник (hex64 / WIF).
+ * WIF сети Pocketnet (версия 0x21) начинается с '2' (несжатый) или '5'/'6'
+ * (сжатый); 'K'/'L'/'c'/'9' — биткоиновые, оставлены для старых записей.
+ */
 export function looksLikeSecret(plain: string): boolean {
   const t = plain.trim()
   if (!t) return false
@@ -14,7 +18,7 @@ export function looksLikeSecret(plain: string): boolean {
   const looksMnemonic =
     [12, 15, 18, 21, 24].includes(words.length) && words.every((w) => /^[\p{L}]+$/u.test(w))
   const looksHex = /^[0-9a-fA-F]{64}$/.test(t)
-  const looksWif = /^[5KLc9][1-9A-HJ-NP-Za-km-z]{50,51}$/.test(t)
+  const looksWif = /^[256KLc9][1-9A-HJ-NP-Za-km-z]{50,51}$/.test(t)
   return looksMnemonic || looksHex || looksWif
 }
 

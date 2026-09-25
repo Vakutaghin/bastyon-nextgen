@@ -132,10 +132,12 @@ async function onSubmit(): Promise<void> {
       error.value = t('vault.wrongPassphrase')
       cooldownUntil.value = res.cooldownUntil
       nowTs.value = Date.now()
-      pw.value = ''
     }
     // Успех: vault-unlock закрывает модалку через мост (isOpen → false).
   } finally {
+    // Пароль не держим в состоянии после попытки — ни при ошибке, ни при
+    // успехе: раньше он жил в ref до следующего открытия модалки (N6).
+    pw.value = ''
     submitting.value = false
   }
 }

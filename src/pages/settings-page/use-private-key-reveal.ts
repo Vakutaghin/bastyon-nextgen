@@ -19,6 +19,7 @@ import { recoverKeyPair } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import { loadAccountSecret } from './load-account-secret'
+import { copySecret } from '@/helpers/common/clipboard'
 
 export interface PrivateKeyReveal {
   pkConfirmVisible: Ref<boolean>
@@ -32,30 +33,6 @@ export interface PrivateKeyReveal {
   pkHide: () => void
   pkCopyMnemonic: () => Promise<void>
   pkCopyKey: () => Promise<void>
-}
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch {
-    // Fallback для контекстов без Clipboard API (старые WebView, file://).
-    const textArea = document.createElement('textarea')
-    textArea.value = text
-    textArea.style.position = 'fixed'
-    textArea.style.opacity = '0'
-    document.body.appendChild(textArea)
-    textArea.select()
-    try {
-      document.execCommand('copy')
-      return true
-    } catch (err) {
-      console.error('Failed to copy:', err)
-      return false
-    } finally {
-      document.body.removeChild(textArea)
-    }
-  }
 }
 
 export function usePrivateKeyReveal(): PrivateKeyReveal {
@@ -142,14 +119,14 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
 
   async function pkCopyMnemonic(): Promise<void> {
     if (!pkMnemonic.value) return
-    if (await copyToClipboard(pkMnemonic.value)) {
+    if (await copySecret(pkMnemonic.value)) {
       appToast.success({ message: t('accountMsg.seedCopied') })
     }
   }
 
   async function pkCopyKey(): Promise<void> {
     if (!pkPrivateKeyHex.value) return
-    if (await copyToClipboard(pkPrivateKeyHex.value)) {
+    if (await copySecret(pkPrivateKeyHex.value)) {
       appToast.success({ message: t('accountMsg.privateKeyCopied') })
     }
   }

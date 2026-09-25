@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { POCKETNET_NETWORK, isPocketnetNetwork } from './network'
+import { bitcoin as vendoredNetwork } from '../lib/pocketnet/modules/networks.js'
 
 describe('POCKETNET_NETWORK', () => {
   it('has correct pubKeyHash for P addresses', () => {
@@ -18,9 +19,14 @@ describe('POCKETNET_NETWORK', () => {
     expect(POCKETNET_NETWORK.bech32).toBe('bc')
   })
 
-  it('has bip32 keys', () => {
-    expect(POCKETNET_NETWORK.bip32.public).toBe(0x0488b21e)
-    expect(POCKETNET_NETWORK.bip32.private).toBe(0x0488ade4)
+  it('has bip32 keys of the legacy client network', () => {
+    expect(POCKETNET_NETWORK.bip32.public).toBe(0x043587cf)
+    expect(POCKETNET_NETWORK.bip32.private).toBe(0x04358394)
+  })
+
+  it('matches the vendored legacy network as a whole (S8)', () => {
+    // The two copies of the network parameters had already drifted apart once.
+    expect(POCKETNET_NETWORK).toEqual(vendoredNetwork)
   })
 })
 
@@ -34,9 +40,11 @@ describe('isPocketnetNetwork', () => {
   })
 
   it('returns false for different network', () => {
-    expect(isPocketnetNetwork({
-      ...POCKETNET_NETWORK,
-      pubKeyHash: 0x00,
-    })).toBe(false)
+    expect(
+      isPocketnetNetwork({
+        ...POCKETNET_NETWORK,
+        pubKeyHash: 0x00,
+      })
+    ).toBe(false)
   })
 })

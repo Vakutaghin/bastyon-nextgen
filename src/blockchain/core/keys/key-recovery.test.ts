@@ -120,7 +120,6 @@ describe('recoverKeyPair (авто-определение формата)', () =
     const res = recoverKeyPair(M12)
     expect(res.format).toBe('mnemonic')
     expect(res.keyPair).toBe(FAKE_KP)
-    expect(res.source).toBe(M12)
   })
 
   it('распознаёт и восстанавливает hex', () => {
@@ -129,15 +128,30 @@ describe('recoverKeyPair (авто-определение формата)', () =
     expect(res.keyPair.privateKey.toString('hex')).toBe(HEX)
   })
 
-  it('восстанавливает WIF при явно указанном format', () => {
-    // Авто-детект WIF использует bitcoin-сеть (см. наблюдение в CODE_AUDIT §8),
-    // поэтому для Pocketnet-WIF задаём формат явно.
-    const res = recoverKeyPair(POCKETNET_WIF, { format: 'wif' })
+  it('распознаёт Pocketnet-WIF без подсказки формата (S9)', () => {
+    const res = recoverKeyPair(POCKETNET_WIF)
     expect(res.format).toBe('wif')
     expect(res.keyPair.ecPair.toWIF()).toBe(POCKETNET_WIF)
   })
 
+  it('WIF и hex того же ключа дают одну и ту же пару', () => {
+    const fromWif = recoverKeyPair(POCKETNET_WIF)
+    const hex = fromWif.keyPair.privateKey.toString('hex')
+    const fromHex = recoverKeyPair(hex)
+    expect(fromHex.keyPair.publicKey.toString('hex')).toBe(
+      fromWif.keyPair.publicKey.toString('hex')
+    )
+  })
+
+  it('не кладёт исходный секрет в результат (N9: результат попадает в логи)', () => {
+    const res = recoverKeyPair(HEX)
+    expect(Object.values(res)).not.toContain(HEX)
+    expect('source' in res).toBe(false)
+  })
+
   it('бросает, если формат не распознан', () => {
-    expect(() => recoverKeyPair('definitely-not-a-key')).toThrow('Unable to detect private key format')
+    expect(() => recoverKeyPair('definitely-not-a-key')).toThrow(
+      'Unable to detect private key format'
+    )
   })
 })

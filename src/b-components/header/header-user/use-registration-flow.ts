@@ -61,12 +61,7 @@ export interface RegistrationFlow {
   welcomeModalOpen: Ref<boolean>
   handleWelcomeClose: () => void
   openRegisterModal: () => void
-  handleRegisterSuccess: (mnemonic: string) => void
-  handleRegisterValidation: (data: {
-    status: string
-    mnemonic: string | undefined
-    nickname?: string
-  }) => void
+  handleRegisterValidation: (data: { status: string; nickname?: string }) => void
   handleRegisterCancel: () => void
   handleMnemonicModalClose: () => void
   handleValidationModalUpdate: (value: boolean) => void
@@ -103,24 +98,11 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     registerModalOpen.value = true
   }
 
-  function handleRegisterSuccess(m: string): void {
-    registerModalOpen.value = false
-    if (m) {
-      mnemonic.value = m
-      mnemonicModalOpen.value = true
-      pendingWelcome.value = true
-    }
-    // Данные пользователя загружаются автоматически в auth-store после успешной регистрации.
-  }
-
-  function handleRegisterValidation(data: {
-    status: string
-    mnemonic: string | undefined
-    nickname?: string
-  }): void {
+  function handleRegisterValidation(data: { status: string; nickname?: string }): void {
     registerModalOpen.value = false
 
-    if (data.mnemonic) mnemonic.value = data.mnemonic
+    // Сид в памяти не держим, пока идёт регистрация: по завершении его
+    // поднимет showMnemonicFor из сейфа (N6).
     registrationAddress = authStore.getUserAddress
 
     // pending_nickname уже записан register-modal вместе с pending_registration.
@@ -375,7 +357,6 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
     welcomeModalOpen,
     handleWelcomeClose,
     openRegisterModal,
-    handleRegisterSuccess,
     handleRegisterValidation,
     handleRegisterCancel,
     handleMnemonicModalClose,

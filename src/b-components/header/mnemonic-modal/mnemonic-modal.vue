@@ -62,6 +62,7 @@ import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
 import { SafetyOutlined, CopyOutlined } from '@ant-design/icons-vue'
 import { recoverKeyPair, detectPrivateKeyFormat } from '@/blockchain'
+import { copySecret } from '@/helpers/common/clipboard'
 import { appToast } from '@/b-components/app-toast'
 import { ICON_ANT_BLUE_24 } from '@/styles/icon-styles'
 import {
@@ -156,38 +157,15 @@ watch(
   { immediate: true }
 )
 
-async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch {
-    const textArea = document.createElement('textarea')
-    textArea.value = text
-    textArea.style.position = 'fixed'
-    textArea.style.opacity = '0'
-    document.body.appendChild(textArea)
-    textArea.select()
-    try {
-      document.execCommand('copy')
-      return true
-    } catch (err) {
-      console.error('Failed to copy:', err)
-      return false
-    } finally {
-      document.body.removeChild(textArea)
-    }
-  }
-}
-
 async function copyMnemonic(): Promise<void> {
   if (!formattedMnemonic.value) return
-  const ok = await copyToClipboard(formattedMnemonic.value)
+  const ok = await copySecret(formattedMnemonic.value)
   if (ok) appToast.success({ message: t('auth.seedCopied') })
 }
 
 async function copyPrivateKey(): Promise<void> {
   if (!displayPrivateKeyHex.value) return
-  const ok = await copyToClipboard(displayPrivateKeyHex.value)
+  const ok = await copySecret(displayPrivateKeyHex.value)
   if (ok) appToast.success({ message: t('auth.keyCopied') })
 }
 

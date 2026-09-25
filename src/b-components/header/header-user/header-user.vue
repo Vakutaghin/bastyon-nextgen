@@ -59,7 +59,6 @@
 
   <RegisterModal
     v-model:open="registerModalOpen"
-    @success="handleRegisterSuccess"
     @validation="handleRegisterValidation"
     @cancel="handleRegisterCancel"
     @open-sign-in="handleOpenSignIn"
@@ -149,7 +148,6 @@ const {
   welcomeModalOpen,
   handleWelcomeClose,
   openRegisterModal,
-  handleRegisterSuccess,
   handleRegisterValidation,
   handleRegisterCancel,
   handleMnemonicModalClose,

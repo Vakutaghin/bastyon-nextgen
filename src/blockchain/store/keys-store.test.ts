@@ -225,7 +225,7 @@ describe('recoverFromAccount', () => {
   it('восстанавливает ключи из мнемоники аккаунта', async () => {
     const store = useKeysStore()
     h.loadEncryptedData.mockReturnValue({ success: true, data: 'acc mnemonic' })
-    h.recoverKeyPair.mockReturnValue({ keyPair: KP, format: 'mnemonic', source: 'acc mnemonic' })
+    h.recoverKeyPair.mockReturnValue({ keyPair: KP, format: 'mnemonic' })
 
     const res = await store.recoverFromAccount('P1')
 

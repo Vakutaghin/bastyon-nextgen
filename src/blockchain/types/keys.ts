@@ -61,8 +61,6 @@ export interface KeyRecoveryResult {
   keyPair: KeyPair
   /** Формат входных данных */
   format: PrivateKeyFormat
-  /** Исходные данные (для валидации) */
-  source: PrivateKey
 }
 
 /**

@@ -184,7 +184,12 @@ async function onEnable(): Promise<void> {
   }
   if (!backupConfirmed.value) return
   const ok = await enable(pw1.value)
-  if (ok) enableOpen.value = false
+  if (ok) {
+    // Пароль после включения в состоянии не держим (N6).
+    pw1.value = ''
+    pw2.value = ''
+    enableOpen.value = false
+  }
 }
 
 // ─── disable ────────────────────────────────────────────────────────────────────
@@ -199,6 +204,8 @@ function openDisable(): void {
 async function onDisable(): Promise<void> {
   if (!pwCurrent.value) return
   const ok = await disable(pwCurrent.value)
+  // После попытки пароль не нужен: при ошибке его всё равно вводят заново (N6).
+  pwCurrent.value = ''
   if (ok) disableOpen.value = false
 }
 </script>

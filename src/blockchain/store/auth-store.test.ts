@@ -739,7 +739,7 @@ describe('auth-store', () => {
     it('S11: isAuthenticated ставится только после персиста ключей', async () => {
       const { recoverKeyPair } = await import('../core/keys')
       const kp = fakeKeyPair()
-      vi.mocked(recoverKeyPair).mockReturnValue({ keyPair: kp, format: 'hex', source: 'deadbeef' })
+      vi.mocked(recoverKeyPair).mockReturnValue({ keyPair: kp, format: 'hex' })
       const store = useAuthStore()
       let authenticatedAtPersist: boolean | null = null
       _addAccountForKey.mockImplementationOnce(() => {
@@ -908,7 +908,7 @@ describe('auth-store', () => {
     async function authenticatedAs(address: string) {
       const { recoverKeyPair } = await import('../core/keys')
       const kp = fakeKeyPair()
-      ;(recoverKeyPair as any).mockReturnValue({ keyPair: kp, format: 'hex', source: 'k1' })
+      ;(recoverKeyPair as any).mockReturnValue({ keyPair: kp, format: 'hex' })
       const store = useAuthStore()
       await store.signIn({ privateKey: 'k1' })
       // мок keys-store всегда выводит PTestAddress123; фиксируем адрес явно

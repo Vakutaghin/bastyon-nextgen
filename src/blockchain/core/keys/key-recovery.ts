@@ -203,10 +203,10 @@ export function recoverKeyPair(
       }
     }
 
+    // Исходный секрет в результат не кладём: результат попадает в логи (N9).
     return {
       keyPair,
       format: detectedFormat,
-      source: privateKey,
     }
   } catch (error) {
     throw new Error(
