@@ -16,7 +16,7 @@ export const SC_InfoPanel = styled.div`
 
 export const SC_InfoSection = styled.div`
   background: var(--color-bg-input);
-  border: 1px solid var(--color-gray-e8);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   padding: 16px;
   box-sizing: border-box;
@@ -25,7 +25,7 @@ export const SC_InfoSection = styled.div`
 export const SC_SectionHeader = styled.div`
   margin-bottom: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-gray-e8);
+  border-bottom: 1px solid var(--ui-border);
 `
 
 export const SC_SectionTitle = styled.h4`

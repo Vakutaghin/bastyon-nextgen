@@ -139,7 +139,7 @@ export const SC_NodeMetricLabel = styled.span`
 
 export const SC_PeerTableHeader = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) 1fr 70px 70px 90px 70px;
+  grid-template-columns: minmax(0, 1.4fr) 1fr 90px 90px 100px 110px;
   gap: 10px;
   padding: 10px 18px;
   border-bottom: 1px solid var(--ui-border);
@@ -159,7 +159,7 @@ export const SC_PeerTableHeader = styled.div`
 
 export const SC_PeerRow = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) 1fr 70px 70px 90px 70px;
+  grid-template-columns: minmax(0, 1.4fr) 1fr 90px 90px 100px 110px;
   align-items: center;
   gap: 10px;
   padding: 10px 18px;

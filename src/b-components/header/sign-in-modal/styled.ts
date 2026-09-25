@@ -58,9 +58,9 @@ export const SC_ErrorMessage = styled.div`
   padding: 12px;
   background-color: var(--color-red-bg);
   border: 1px solid var(--color-red-border);
-  border-radius: var(--ui-radius-sm);
+  border-radius: var(--ui-radius-lg);
   color: var(--color-red-dark);
-  font-size: 16px;
+  font-size: 14px;
 `
 
 export const SC_QrToggleRow = styled.div`
@@ -72,12 +72,13 @@ export const SC_QrToggleRow = styled.div`
 export const SC_LinkToRegister = styled.div`
   margin-top: 16px;
   text-align: center;
-  font-size: 16px;
+  font-size: 14px;
   color: var(--color-text-secondary);
 `
 
 export const SC_LinkButton = styled('a', { isDisabled: Boolean })`
-  color: var(--color-ant-blue);
+  color: var(--ui-primary-text);
+  font-weight: 500;
   cursor: ${(p) => (p.isDisabled ? 'not-allowed' : 'pointer')};
   text-decoration: none;
   margin-left: 4px;

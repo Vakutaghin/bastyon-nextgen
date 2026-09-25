@@ -8,7 +8,7 @@ export const SC_Wrap = styled.div`
 `
 
 export const SC_AppRow = styled.div`
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
   font-size: 14px;
 `
 
@@ -16,7 +16,7 @@ export const SC_RecieverList = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${SPACING.XS};
-  border: 1px solid var(--color-gray-e0);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   padding: ${SPACING.SM};
 `
@@ -36,7 +36,7 @@ export const SC_RecieverAddr = styled.span`
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 60%;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
 `
 
 export const SC_RecieverAmount = styled.span`
@@ -58,14 +58,14 @@ export const SC_TotalAmount = styled.span`
 
 export const SC_FeeRow = styled.div`
   font-size: 12px;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
 `
 
 export const SC_MessageRow = styled.div`
   font-size: 14px;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
   padding: ${SPACING.SM};
-  background: var(--color-gray-f1);
+  background: var(--ui-bg-elevated);
   border-radius: var(--ui-radius-md);
 `
 

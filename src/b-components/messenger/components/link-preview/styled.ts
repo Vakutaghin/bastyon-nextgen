@@ -3,8 +3,8 @@ import styled from 'vue3-styled-components'
 export const SC_LinkPreview = styled.a`
   display: flex;
   text-decoration: none;
-  border-left: 3px solid var(--color-brand-cyan);
-  background: var(--color-brand-cyan-soft);
+  border-left: 3px solid var(--ui-primary);
+  background: rgb(var(--ui-primary-rgb) / 6%);
   border-radius: 0 var(--ui-radius-lg) var(--ui-radius-lg) 0;
   padding: 8px 10px;
   margin-top: 4px;
@@ -18,7 +18,7 @@ export const SC_LinkPreview = styled.a`
   overflow: hidden;
 
   &:hover {
-    background: var(--color-brand-cyan-light);
+    background: rgb(var(--ui-primary-rgb) / 12%);
   }
 `
 

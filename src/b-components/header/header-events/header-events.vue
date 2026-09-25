@@ -10,7 +10,7 @@
       <Badge
         :count="pendingCount"
         :offset="[0, 5]"
-        :number-style="{ backgroundColor: 'var(--color-ant-blue)' }"
+        :number-style="{ backgroundColor: 'var(--ui-primary)' }"
       >
         <HourglassOutlined :style="ICON_SIZE_XL" />
       </Badge>

@@ -11,7 +11,7 @@
   >
     <template #title>
       <SC_TitleRow>
-        <SafetyOutlined :style="ICON_ANT_BLUE_24" />
+        <SafetyOutlined :style="ICON_PRIMARY_24" />
         <span>{{ t('auth.saveSeedTitle') }}</span>
       </SC_TitleRow>
     </template>
@@ -64,7 +64,7 @@ import { SafetyOutlined, CopyOutlined } from '@/components/icons'
 import { recoverKeyPair, detectPrivateKeyFormat } from '@/blockchain'
 import { copySecret } from '@/helpers/common/clipboard'
 import { appToast } from '@/b-components/app-toast'
-import { ICON_ANT_BLUE_24 } from '@/styles/icon-styles'
+import { ICON_PRIMARY_24 } from '@/styles/icon-styles'
 import {
   SC_TitleRow,
   SC_MnemonicModalContent,

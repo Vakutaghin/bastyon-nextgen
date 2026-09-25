@@ -121,7 +121,7 @@
 
     <!-- Иконка Play -->
     <SC_SeekNotification v-if="showPlayNotification && isInitialized" :show="showPlayNotification">
-      <PlayCircleOutlined :style="ICON_GRAY_EEE_24" />
+      <PlayCircleOutlined :style="ICON_WHITE_85_24" />
     </SC_SeekNotification>
 
     <!-- Иконка Pause -->
@@ -129,7 +129,7 @@
       v-if="showPauseNotification && isInitialized"
       :show="showPauseNotification"
     >
-      <PauseCircleOutlined :style="ICON_GRAY_EEE_24" />
+      <PauseCircleOutlined :style="ICON_WHITE_85_24" />
     </SC_SeekNotification>
 
     <!-- Справка по горячим клавишам -->
@@ -308,7 +308,7 @@ import {
   ICON_MUTED_18,
   ICON_WHITE_85_48,
   ICON_WHITE_64,
-  ICON_GRAY_EEE_24,
+  ICON_WHITE_85_24,
 } from '@/styles/icon-styles'
 import {
   PlayCircleOutlined,

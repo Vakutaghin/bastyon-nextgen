@@ -48,20 +48,20 @@ export const SC_DropZone = styled.div<{ uploading?: boolean; disabled?: boolean 
   flex-shrink: 0;
 
   &:hover {
-    border-color: var(--color-ant-blue);
+    border-color: var(--ui-primary);
     background-color: var(--color-bg-hover-blue);
   }
 
   &.drag-over {
-    border-color: var(--color-ant-blue);
-    background-color: var(--color-ant-blue-bg);
+    border-color: var(--ui-primary);
+    background-color: rgb(var(--ui-primary-rgb) / 10%);
     border-style: solid;
   }
 
   ${(p) =>
     p.uploading &&
     `
-    border-color: var(--color-ant-blue);
+    border-color: var(--ui-primary);
     background-color: var(--color-bg-hover-blue);
     cursor: wait;
   `}
@@ -109,7 +109,7 @@ export const SC_ProgressText = styled.div`
   margin-top: 8px;
   font-size: 16px;
   font-weight: 500;
-  color: var(--color-ant-blue);
+  color: var(--ui-primary);
 `
 
 export const SC_SecondaryButton = styled(Button)`

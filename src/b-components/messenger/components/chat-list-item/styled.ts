@@ -23,11 +23,11 @@ export const SC_ListItem = styled.div`
   }
 
   &.active {
-    background-color: var(--color-ant-blue-bg-light);
+    background-color: rgb(var(--ui-primary-rgb) / 8%);
   }
 
   &.active:hover {
-    background-color: var(--color-ant-blue-bg);
+    background-color: rgb(var(--ui-primary-rgb) / 10%);
   }
 
   &.active .dots-btn {
@@ -65,12 +65,12 @@ export const SC_Meta = styled.div`
 
 export const SC_Time = styled.span`
   font-size: 12px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   margin-bottom: 4px;
 `
 
 export const SC_Badge = styled.span`
-  background-color: var(--color-brand-cyan);
+  background-color: var(--ui-primary);
   color: var(--ui-text-inverted);
   font-size: 11px;
   font-weight: 600;
@@ -93,7 +93,7 @@ export const SC_DotsBtn = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   padding: 2px 4px;
   border-radius: var(--ui-radius-sm);
   transition:
@@ -182,7 +182,7 @@ export const SC_ConfirmButtons = styled.div`
 
 export const SC_CancelBtn = styled.button`
   padding: 8px 16px;
-  border: 1px solid var(--color-gray-ddd);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   background: var(--color-bg-primary);
   color: var(--color-text-primary);

@@ -63,9 +63,9 @@ export const SC_CopyIconBtn = styled.button`
     background ${TRANSITIONS.FAST};
 
   &:hover {
-    color: var(--color-ant-blue);
-    border-color: var(--color-ant-blue);
-    background: var(--color-ant-blue-bg);
+    color: var(--ui-primary);
+    border-color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 10%);
   }
 `
 
@@ -77,14 +77,14 @@ export const SC_ShowKeyButton = styled.button`
   font-size: 14px;
   font-weight: 500;
   color: var(--ui-text-inverted);
-  background: var(--color-ant-blue);
+  background: var(--ui-primary);
   border: none;
   border-radius: var(--ui-radius-lg);
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: var(--color-ant-blue-hover);
+    background: rgb(var(--ui-primary-rgb) / 75%);
   }
 
   &:disabled {
@@ -110,8 +110,8 @@ export const SC_HideKeyButton = styled.button`
     border-color ${TRANSITIONS.FAST};
 
   &:hover {
-    color: var(--color-ant-blue);
-    border-color: var(--color-ant-blue);
+    color: var(--ui-primary);
+    border-color: var(--ui-primary);
   }
 `
 
@@ -136,7 +136,7 @@ export const SC_ConfirmTitle = styled.div`
 export const SC_ConfirmText = styled.p`
   font-size: 14px;
   line-height: 1.5;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   margin: 0 0 16px;
 `
 
@@ -151,14 +151,14 @@ export const SC_ConfirmBtnPrimary = styled.button`
   font-size: 14px;
   font-weight: 500;
   color: var(--ui-text-inverted);
-  background: var(--color-ant-blue);
+  background: var(--ui-primary);
   border: none;
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: var(--color-ant-blue-hover);
+    background: rgb(var(--ui-primary-rgb) / 75%);
   }
 `
 
@@ -176,7 +176,7 @@ export const SC_ConfirmBtnDefault = styled.button`
     border-color ${TRANSITIONS.FAST};
 
   &:hover {
-    color: var(--color-ant-blue);
-    border-color: var(--color-ant-blue);
+    color: var(--ui-primary);
+    border-color: var(--ui-primary);
   }
 `

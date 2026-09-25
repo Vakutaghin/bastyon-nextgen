@@ -36,7 +36,7 @@ export const SC_ExplorerOpenFullButton = styled.a`
   font-size: 14px;
   font-weight: 500;
   color: var(--ui-text-inverted);
-  background: var(--color-ant-blue);
+  background: var(--ui-primary);
   border: none;
   border-radius: var(--ui-radius-lg);
   cursor: pointer;
@@ -45,7 +45,7 @@ export const SC_ExplorerOpenFullButton = styled.a`
   align-self: flex-start;
 
   &:hover {
-    background: var(--color-ant-blue-hover);
+    background: rgb(var(--ui-primary-rgb) / 75%);
     color: var(--ui-text-inverted);
   }
 `
@@ -68,28 +68,28 @@ export const SC_ExplorerNodeRow = styled('label', nodeRowProps)`
   background: var(--color-bg-primary);
   cursor: pointer;
   font-size: 14px;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   transition:
     background ${TRANSITIONS.QUICK},
     border-color ${TRANSITIONS.QUICK};
 
   &:hover {
     background: var(--color-overlay-2);
-    border-color: var(--color-ant-blue);
+    border-color: var(--ui-primary);
   }
 
   ${(p: { active?: boolean }) =>
     p.active &&
     css`
-      border-color: var(--color-ant-blue);
-      background: var(--color-ant-blue-bg);
+      border-color: var(--ui-primary);
+      background: rgb(var(--ui-primary-rgb) / 10%);
     `}
 `
 
 export const SC_ExplorerNodeRadio = styled.input`
   margin: 0;
   cursor: pointer;
-  accent-color: var(--color-ant-blue);
+  accent-color: var(--ui-primary);
 `
 
 export const SC_ExplorerNodeLabel = styled.span`

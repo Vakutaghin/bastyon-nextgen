@@ -8,7 +8,7 @@ const props = {
 export const SC_ProfileCover = styled('div', props)`
   width: 100%;
   height: 265px;
-  background-color: var(--color-ant-blue-bg);
+  background-color: rgb(var(--ui-primary-rgb) / 10%);
   position: relative;
   overflow: hidden;
 
@@ -17,8 +17,8 @@ export const SC_ProfileCover = styled('div', props)`
     css`
       background: linear-gradient(
         135deg,
-        var(--color-ant-blue-bg) 0%,
-        var(--color-ant-blue-light) 100%
+        rgb(var(--ui-primary-rgb) / 10%) 0%,
+        rgb(var(--ui-primary-rgb) / 50%) 100%
       );
     `}
 `

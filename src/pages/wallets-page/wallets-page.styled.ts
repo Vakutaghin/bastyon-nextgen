@@ -40,7 +40,7 @@ export const SC_WalletTabList = styled.nav`
 export const SC_WalletTabButton = styled.button`
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
   background: none;
   border: none;
   padding: 10px 16px;
@@ -49,7 +49,7 @@ export const SC_WalletTabButton = styled.button`
   margin-bottom: -1px;
 
   &:hover {
-    color: var(--color-gray-212);
+    color: var(--ui-text-highlighted);
   }
 
   &.active {

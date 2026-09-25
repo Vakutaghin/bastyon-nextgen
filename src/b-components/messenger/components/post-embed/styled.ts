@@ -13,7 +13,7 @@ export const SC_PostEmbed = styled.div`
   transition: border-color var(--transition-quick);
 
   &:hover {
-    border-color: var(--color-brand-cyan);
+    border-color: var(--ui-primary);
   }
 `
 
@@ -29,13 +29,14 @@ export const SC_Avatar = styled.div`
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--color-bg-tertiary);
+  background: var(--ui-bg-elevated);
   flex-shrink: 0;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-white);
+  /* Инициал как у UAvatar: белым на светлой подложке его не было видно. */
+  color: var(--ui-text-muted);
   font-weight: 500;
   font-size: 12px;
 `
@@ -155,7 +156,7 @@ export const SC_Spinner = styled.div`
   width: 18px;
   height: 18px;
   border: 2px solid var(--color-bg-tertiary);
-  border-top-color: var(--color-brand-cyan);
+  border-top-color: var(--ui-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite; /* @keyframes spin — глобально в style.css */
 `
@@ -172,7 +173,7 @@ export const SC_FailedHint = styled.a`
   gap: 8px;
   padding: 12px 14px;
   text-decoration: none;
-  color: var(--color-brand-cyan);
+  color: var(--ui-primary);
   font-size: 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--ui-radius-lg);

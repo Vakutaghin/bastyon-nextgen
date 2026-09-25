@@ -42,7 +42,7 @@ export const SC_Message = styled.p`
 
 export const SC_Info = styled.p`
   font-size: 0.9em;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   line-height: 1.5;
   margin-top: 1em;
 `

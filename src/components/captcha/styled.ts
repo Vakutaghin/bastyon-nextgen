@@ -93,7 +93,7 @@ export const SC_SubmitButton = styled.button<{ disabled: boolean }>`
 export const SC_RedoButton = styled.button`
   min-width: 180px;
   padding: 0.75em 1.5em;
-  border: 1px solid var(--color-gray-ccc);
+  border: 1px solid var(--ui-border-accented);
   border-radius: var(--ui-radius-sm);
   font-size: 1em;
   cursor: pointer;

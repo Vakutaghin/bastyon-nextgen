@@ -13,7 +13,7 @@ export const SC_NotificationsRow = styled.div`
   padding: 12px 0;
   border-bottom: 1px solid var(--color-overlay-6);
   font-size: 14px;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
 
   &:last-child {
     border-bottom: none;

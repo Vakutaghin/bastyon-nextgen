@@ -70,9 +70,9 @@ export const SC_CopyIconBtn = styled.button`
     background var(--transition-fast);
 
   &:hover {
-    color: var(--color-ant-blue);
-    border-color: var(--color-ant-blue);
-    background: var(--color-ant-blue-bg);
+    color: var(--ui-primary);
+    border-color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 10%);
   }
 `
 

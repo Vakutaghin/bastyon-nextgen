@@ -17,12 +17,16 @@ export const SC_ComposeCard = styled.div`
   flex-direction: column;
   gap: ${SPACING.MD};
   padding: ${SPACING.LG};
-  background: var(--color-bg-secondary);
+  /* Карточка outline, как остальные: заливка muted в тёмной теме совпадала
+     с цветом рамок полей внутри. */
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
   border-radius: ${BORDER_RADIUS.LG};
 `
 
 export const SC_ComposeTitle = styled.h1`
   margin: 0;
   font-size: ${FONT_SIZE.HEADING};
-  color: var(--color-text-primary);
+  font-weight: 600;
+  color: var(--ui-text-highlighted);
 `

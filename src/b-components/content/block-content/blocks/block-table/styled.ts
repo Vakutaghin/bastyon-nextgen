@@ -8,7 +8,7 @@ export const SC_BlockTableWrapper = styled.div`
 export const SC_BlockTable = styled.table`
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid var(--color-gray-ddd);
+  border: 1px solid var(--ui-border);
 `
 
 export const SC_BlockTableHeaderCell = styled.th`

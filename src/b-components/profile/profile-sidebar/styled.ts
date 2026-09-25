@@ -66,8 +66,8 @@ export const SC_UserAvatarPlaceholder = styled.div`
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: var(--color-gray-f0);
-  color: var(--color-gray-aaa);
+  background: var(--ui-bg-elevated);
+  color: var(--ui-text-dimmed);
   font-size: 48px;
   display: flex;
   align-items: center;
@@ -100,7 +100,7 @@ export const SC_StartChatButton = styled.button`
   padding: 10px 14px;
   border-radius: var(--ui-radius-lg);
   border: none;
-  background-color: var(--color-brand-cyan);
+  background-color: var(--ui-primary);
   color: var(--ui-text-inverted);
   font-weight: 500;
   font-size: 14px;
@@ -110,14 +110,14 @@ export const SC_StartChatButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 2px 6px var(--color-brand-cyan-light);
+  box-shadow: 0 2px 6px rgb(var(--ui-primary-rgb) / 12%);
 
   &:hover {
-    background-color: var(--color-brand-cyan-hover);
+    background-color: rgb(var(--ui-primary-rgb) / 75%);
   }
 
   &:disabled {
-    background-color: var(--color-gray-ccc);
+    background-color: var(--ui-border-accented);
     cursor: not-allowed;
     box-shadow: none;
   }
@@ -143,8 +143,8 @@ export const SC_EditProfileButton = styled.button`
   gap: 8px;
 
   &:hover {
-    border-color: var(--color-brand-cyan);
-    color: var(--color-brand-cyan);
+    border-color: var(--ui-primary);
+    color: var(--ui-primary);
   }
 
   .anticon {
@@ -162,8 +162,8 @@ export const SC_SubscribeButton = styled.button`
   flex: 1;
   padding: 10px 14px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--color-brand-cyan);
-  background-color: var(--color-brand-cyan);
+  border: 1px solid var(--ui-primary);
+  background-color: var(--ui-primary);
   color: var(--ui-text-inverted);
   font-weight: 500;
   font-size: 14px;
@@ -177,16 +177,16 @@ export const SC_SubscribeButton = styled.button`
   gap: 6px;
 
   &:hover {
-    background-color: var(--color-brand-cyan-hover);
+    background-color: rgb(var(--ui-primary-rgb) / 75%);
   }
 
   &.subscribed {
     background-color: transparent;
-    color: var(--color-brand-cyan);
+    color: var(--ui-primary);
   }
 
   &.subscribed:hover {
-    background-color: var(--color-brand-cyan-light);
+    background-color: rgb(var(--ui-primary-rgb) / 12%);
   }
 
   &:disabled {
@@ -216,14 +216,14 @@ export const SC_BellButton = styled.button`
     background-color var(--transition-fast);
 
   &:hover {
-    border-color: var(--color-brand-cyan);
-    color: var(--color-brand-cyan);
+    border-color: var(--ui-primary);
+    color: var(--ui-primary);
   }
 
   &.active {
-    border-color: var(--color-brand-cyan);
-    color: var(--color-brand-cyan);
-    background-color: var(--color-brand-cyan-light);
+    border-color: var(--ui-primary);
+    color: var(--ui-primary);
+    background-color: rgb(var(--ui-primary-rgb) / 12%);
   }
 
   &:disabled {
@@ -277,7 +277,7 @@ export const SC_BlockButton = styled.button`
 
 export const SC_UserAddress = styled.div`
   font-size: 12px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   word-break: break-all;
   display: flex;
   align-items: center;
@@ -306,7 +306,7 @@ export const SC_ExplorerLink = styled.a`
 
 export const SC_UserSite = styled.a`
   font-size: 14px;
-  color: var(--color-brand-cyan);
+  color: var(--ui-primary);
   text-decoration: none;
   word-break: break-all;
   display: flex;
@@ -367,7 +367,7 @@ export const SC_UserAbout = styled.div`
   word-break: break-word;
 
   a {
-    color: var(--color-brand-cyan);
+    color: var(--ui-primary);
     text-decoration: none;
 
     &:hover {
@@ -380,5 +380,5 @@ export const SC_UserAbout = styled.div`
 export const SC_LoadingState = styled.div`
   text-align: center;
   padding: 20px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
 `

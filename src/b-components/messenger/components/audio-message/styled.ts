@@ -95,7 +95,7 @@ export const SC_Spinner = styled.div`
   width: 16px;
   height: 16px;
   border: 2px solid var(--color-bg-tertiary);
-  border-top-color: var(--color-brand-cyan);
+  border-top-color: var(--ui-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `

@@ -13,7 +13,7 @@
       <Badge
         :count="unreadCount"
         :offset="[0, 5]"
-        :number-style="{ backgroundColor: 'var(--color-ant-blue)' }"
+        :number-style="{ backgroundColor: 'var(--ui-primary)' }"
       >
         <BellOutlined :style="ICON_SIZE_XL" />
       </Badge>

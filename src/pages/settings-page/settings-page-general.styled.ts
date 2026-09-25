@@ -25,7 +25,7 @@ export const SC_GeneralRow = styled.div`
 
 export const SC_GeneralLabel = styled.span`
   font-size: 14px;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
 `
 
 /** Переключатель как вкладки-pill у Nuxt UI (UTabs): подложка elevated с

@@ -58,7 +58,7 @@ export const SC_AvatarPlaceholder = styled.div`
   font-size: 28px;
   font-weight: 500;
   color: var(--ui-text-inverted);
-  background-color: var(--color-brand-cyan);
+  background-color: var(--ui-primary);
 `
 
 export const SC_AvatarActions = styled.div`
@@ -80,8 +80,8 @@ export const SC_SmallBtn = styled.button`
     color var(--transition-fast);
 
   &:hover {
-    border-color: var(--color-brand-cyan);
-    color: var(--color-brand-cyan);
+    border-color: var(--ui-primary);
+    color: var(--ui-primary);
   }
 
   &.danger:hover {

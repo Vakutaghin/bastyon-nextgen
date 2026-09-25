@@ -79,6 +79,8 @@ export const SC_LastCommentContent = styled.div`
   font-size: 14px;
   line-height: 1.4;
   color: var(--color-text-primary);
+  /* Длинные ссылки без пробелов иначе вылезали за край колонки. */
+  overflow-wrap: anywhere;
 `
 
 export const SC_LastCommentNames = styled.span`

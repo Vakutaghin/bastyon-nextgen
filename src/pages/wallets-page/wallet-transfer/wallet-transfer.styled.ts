@@ -103,7 +103,7 @@ export const SC_TransferAddress = styled.div`
   flex: 1;
   font-family: var(--font-family-mono);
   font-size: 13px;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   word-break: break-all;
   padding: 10px 14px;
   background: var(--color-bg-primary);
@@ -115,7 +115,7 @@ export const SC_TransferCopyBtn = styled.button`
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-overlay-12);
   border-radius: var(--ui-radius-lg);
@@ -202,7 +202,7 @@ export const SC_TransferSearchItem = styled.button`
   padding: 10px 14px;
   font-size: 14px;
   text-align: left;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   background: none;
   border: none;
   cursor: pointer;
@@ -219,12 +219,12 @@ export const SC_TransferSearchItem = styled.button`
 
 export const SC_TransferSearchingHint = styled.div`
   font-size: 12px;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
   margin-top: 4px;
 `
 
 export const SC_TransferLoginRequired = styled.div`
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
   font-size: 14px;
 `
 
@@ -235,7 +235,7 @@ export const SC_TransferLoginChip = styled.div`
   margin-top: 8px;
   padding: 8px 12px;
   font-size: 12px;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-overlay-8);
   border-radius: var(--ui-radius-lg);
@@ -257,7 +257,7 @@ export const SC_TransferLoginChipRemove = styled.button`
   padding: 0;
   font-size: 14px;
   line-height: 1;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
   background: none;
   border: none;
   border-radius: var(--ui-radius-sm);
@@ -267,7 +267,7 @@ export const SC_TransferLoginChipRemove = styled.button`
   justify-content: center;
 
   &:hover {
-    color: var(--color-gray-212);
+    color: var(--ui-text-highlighted);
     background: var(--color-overlay-6);
   }
 `

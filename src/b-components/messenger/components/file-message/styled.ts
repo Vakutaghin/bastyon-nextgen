@@ -17,7 +17,7 @@ export const SC_FileIcon = styled.div`
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--color-brand-cyan);
+  background: var(--ui-primary);
   color: var(--ui-text-inverted);
   display: flex;
   align-items: center;
@@ -65,7 +65,7 @@ export const SC_DownloadButton = styled.button`
   padding: 0;
   flex-shrink: 0;
   font-size: 16px;
-  color: var(--color-brand-cyan);
+  color: var(--ui-primary);
 
   &:hover:not(:disabled) {
     background: var(--color-bg-hover-blue);
@@ -81,14 +81,14 @@ export const SC_Spinner = styled.div`
   width: 18px;
   height: 18px;
   border: 2px solid var(--color-bg-tertiary);
-  border-top-color: var(--color-brand-cyan);
+  border-top-color: var(--ui-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite; /* @keyframes spin — глобально в style.css */
 `
 
 export const SC_Progress = styled.div`
   font-size: 12px;
-  color: var(--color-brand-cyan);
+  color: var(--ui-primary);
   font-weight: 500;
 `
 

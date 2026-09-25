@@ -227,7 +227,7 @@ export const SC_ComposerDisabled = styled.div`
   gap: 10px;
   padding: 12px 14px;
   background: var(--color-overlay-4);
-  border: 1px dashed var(--color-gray-ddd);
+  border: 1px dashed var(--ui-border);
   border-radius: var(--ui-radius-lg);
   font-size: 14px;
   color: var(--color-text-secondary);
@@ -258,7 +258,7 @@ export const SC_EditFormSpacer = styled.div`
 export const SC_EditCancelBtn = styled.button`
   padding: 6px 14px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--color-gray-ddd);
+  border: 1px solid var(--ui-border);
   background: var(--color-bg-primary);
   font-size: 14px;
   color: var(--color-text-primary);
@@ -266,7 +266,7 @@ export const SC_EditCancelBtn = styled.button`
 
   &:hover:not(:disabled) {
     background: var(--color-bg-tertiary);
-    border-color: var(--color-gray-ccc);
+    border-color: var(--ui-border-accented);
   }
   &:disabled {
     cursor: not-allowed;

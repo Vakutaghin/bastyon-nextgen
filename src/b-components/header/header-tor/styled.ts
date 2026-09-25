@@ -78,7 +78,7 @@ export const SC_TorProgressOuter = styled.div`
 export const SC_TorProgressInner = styled.div<{ pct?: number }>`
   height: 100%;
   width: ${(p) => Math.max(0, Math.min(100, p.pct ?? 0))}%;
-  background: var(--color-ant-blue);
+  background: var(--ui-primary);
   transition: width var(--transition-normal);
 `
 
@@ -107,5 +107,5 @@ export const SC_TorActions = styled.div`
 
 export const SC_TorHint = styled.div`
   font-size: 12px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
 `

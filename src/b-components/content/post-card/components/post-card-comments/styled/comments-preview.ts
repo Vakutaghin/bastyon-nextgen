@@ -83,7 +83,7 @@ export const SC_RefreshBtn = styled.button`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid var(--color-gray-ddd);
+  border: 1px solid var(--ui-border);
   background: var(--color-bg-primary);
   color: var(--color-text-secondary);
   cursor: pointer;

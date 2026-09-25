@@ -46,7 +46,7 @@ export const SC_MenuTitle = styled.div`
 export const SC_EmptyMessage = styled.div`
   padding: 12px;
   text-align: center;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
 `
 
 export const SC_EventsList = styled.div`
@@ -56,7 +56,7 @@ export const SC_EventsList = styled.div`
 `
 
 export const SC_EventItem = styled.div`
-  border: 1px solid var(--color-gray-e8);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   padding: 10px 12px;
   background: var(--color-bg-primary);
@@ -80,8 +80,8 @@ export const SC_KindChip = styled.div`
   gap: 6px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: var(--color-ant-blue-bg);
-  color: var(--color-ant-blue);
+  background: rgb(var(--ui-primary-rgb) / 10%);
+  color: var(--ui-primary);
   font-size: 12px;
   font-weight: 500;
 `
@@ -91,14 +91,14 @@ export const SC_PendingTag = styled.div`
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   white-space: nowrap;
 `
 
 /** Панель с содержимым события (визуально отделяет текст от метаданных). */
 export const SC_EventPanel = styled.div`
   background: var(--color-bg-input);
-  border: 1px solid var(--color-gray-e8);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   padding: 8px 10px;
 `
@@ -126,7 +126,7 @@ export const SC_PostTitle = styled.div`
 export const SC_Snippet = styled.div`
   font-size: 12px;
   line-height: 1.4;
-  color: var(--color-gray-555);
+  color: var(--ui-text-toned);
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -172,13 +172,13 @@ export const SC_PreviewNote = styled('div', { confirmed: Boolean })`
   padding: 10px 12px;
   margin-bottom: 12px;
   border-radius: var(--ui-radius-lg);
-  background: ${(p) => (p.confirmed ? COLORS.SUCCESS_BG_TINT : COLORS.ANT_BLUE_BG)};
+  background: ${(p) => (p.confirmed ? COLORS.SUCCESS_BG_TINT : COLORS.PRIMARY_LIGHT)};
   color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.4;
 
   .anticon {
-    color: ${(p) => (p.confirmed ? COLORS.SUCCESS : COLORS.ANT_BLUE)};
+    color: ${(p) => (p.confirmed ? COLORS.SUCCESS : COLORS.PRIMARY)};
     font-size: 16px;
     flex-shrink: 0;
     margin-top: 1px;
@@ -186,7 +186,7 @@ export const SC_PreviewNote = styled('div', { confirmed: Boolean })`
 `
 
 export const SC_PreviewBody = styled.div`
-  border: 1px solid var(--color-gray-e8);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `

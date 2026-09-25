@@ -38,7 +38,7 @@ export const SC_IpfsDot = styled.div`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--color-ant-blue);
+  background: var(--ui-primary);
   border: 1px solid var(--color-bg-primary);
 `
 
@@ -85,7 +85,7 @@ export const SC_IpfsProgressOuter = styled.div`
 export const SC_IpfsProgressInner = styled.div<{ pct?: number }>`
   height: 100%;
   width: ${(p) => Math.max(0, Math.min(100, p.pct ?? 0))}%;
-  background: var(--color-ant-blue);
+  background: var(--ui-primary);
   transition: width var(--transition-normal);
 `
 
@@ -97,5 +97,5 @@ export const SC_IpfsActions = styled.div`
 
 export const SC_IpfsHint = styled.div`
   font-size: 12px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
 `

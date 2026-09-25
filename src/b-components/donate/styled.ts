@@ -64,7 +64,7 @@ export const SC_AmountInput = styled.input`
 
 export const SC_BalanceHint = styled.div`
   font-size: 12px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
 `
 
 export const SC_FieldError = styled.div`

@@ -29,5 +29,5 @@ export const SC_MyVideosPlaceholder = styled.div`
   padding: 40px 0;
   text-align: center;
   font-size: 14px;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
 `

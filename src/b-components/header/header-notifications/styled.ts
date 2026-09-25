@@ -118,7 +118,7 @@ export const SC_NotificationItemTrigger = styled.span`
   padding: 2px 4px;
   border-radius: var(--ui-radius-sm);
   cursor: pointer;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
 
   &:hover {
     color: var(--color-text-primary);
@@ -181,7 +181,7 @@ export const SC_NotificationAvatar = styled.div`
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: var(--color-gray-eee);
+  background: var(--ui-border);
 
   img {
     width: 100%;
@@ -209,7 +209,7 @@ export const SC_NotificationAvatarLetter = styled.div`
 export const SC_NotificationActorText = styled.div`
   min-width: 0;
   font-size: 12px;
-  color: var(--color-gray-555);
+  color: var(--ui-text-toned);
   line-height: 1.35;
   word-break: break-word;
 `
@@ -221,12 +221,12 @@ export const SC_NotificationActorName = styled.span`
 `
 
 export const SC_NotificationAction = styled.span`
-  color: var(--color-gray-555);
+  color: var(--ui-text-toned);
 `
 
 export const SC_NotificationItemTime = styled.div`
   font-size: 12px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   white-space: nowrap;
   flex-shrink: 0;
   align-self: flex-start;
@@ -262,7 +262,7 @@ export const SC_RatingValue = styled.div<{ positive?: boolean }>`
   gap: 4px;
   font-size: 14px;
   font-weight: 500;
-  color: ${(p) => (p.positive ? COLORS.WARNING_HEX : COLORS.GRAY_CCC)};
+  color: ${(p) => (p.positive ? COLORS.WARNING_HEX : COLORS.BORDER)};
 `
 
 export const SC_CommentPreview = styled.div<{ expanded?: boolean }>`
@@ -301,18 +301,18 @@ export const SC_PostRef = styled.div`
   align-items: baseline;
   gap: 6px;
   font-size: 12px;
-  color: var(--color-gray-555);
+  color: var(--ui-text-toned);
   min-width: 0;
 `
 
 export const SC_PostRefLabel = styled.span`
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   flex-shrink: 0;
 `
 
 export const SC_PostRefText = styled.span`
   font-style: italic;
-  color: var(--color-gray-555);
+  color: var(--ui-text-toned);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -323,14 +323,14 @@ export const SC_PostRefText = styled.span`
 export const SC_EmptyMessage = styled.div`
   padding: 24px 16px;
   text-align: center;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   font-size: 14px;
 `
 
 export const SC_LoaderWrap = styled.div`
   padding: 24px 16px;
   text-align: center;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
 `
 
 export const SC_EnrichingHint = styled.div`

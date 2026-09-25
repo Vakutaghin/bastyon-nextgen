@@ -15,7 +15,7 @@
       <input ref="fileInput" type="file" accept="video/*" hidden @change="handleFileInputChange" />
 
       <template v-if="state === 'idle'">
-        <UploadOutlined :style="ICON_ANT_BLUE_64_MB" />
+        <UploadOutlined :style="ICON_PRIMARY_64_MB" />
         <SC_DropZoneText>
           <strong>{{ t('videoUploader.dropHere') }}</strong>
           <span>{{ t('videoUploader.orClickToSelect') }}</span>
@@ -36,7 +36,7 @@
       </template>
 
       <template v-else-if="state === 'analyzing'">
-        <LoadingOutlined :style="ICON_ANT_BLUE_64" spin />
+        <LoadingOutlined :style="ICON_PRIMARY_64" spin />
         <SC_DropZoneText>
           <strong>{{ t('videoUploader.analyzing') }}</strong>
         </SC_DropZoneText>
@@ -57,7 +57,7 @@
       </template>
 
       <template v-else-if="state === 'transcoding' || state === 'saving'">
-        <LoadingOutlined :style="ICON_ANT_BLUE_64" spin />
+        <LoadingOutlined :style="ICON_PRIMARY_64" spin />
         <SC_DropZoneText>
           <strong v-if="state === 'transcoding'">{{ t('videoUploader.transcoding') }}</strong>
           <strong v-else>{{ t('videoUploader.saving') }}</strong>
@@ -111,8 +111,8 @@ import { useI18n } from 'vue-i18n'
 import { Progress } from 'ant-design-vue'
 import Button from '@/components/button/button.vue'
 import {
-  ICON_ANT_BLUE_64,
-  ICON_ANT_BLUE_64_MB,
+  ICON_PRIMARY_64,
+  ICON_PRIMARY_64_MB,
   ICON_DANGER_64,
   ICON_SUCCESS_64,
 } from '@/styles/icon-styles'

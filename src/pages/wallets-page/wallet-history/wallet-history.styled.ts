@@ -25,7 +25,7 @@ export const SC_History = styled.div`
 
 export const SC_HistoryHint = styled.div`
   font-size: 12px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   margin-bottom: 8px;
 `
 
@@ -41,7 +41,7 @@ export const SC_HistoryRow = styled.a`
   transition: background-color var(--transition-quick);
 
   &:hover {
-    background-color: var(--color-brand-cyan-soft);
+    background-color: rgb(var(--ui-primary-rgb) / 6%);
   }
 `
 
@@ -107,7 +107,7 @@ export const SC_HistoryAmount = styled.div`
 export const SC_HistoryTime = styled.div`
   flex: 0 0 auto;
   font-size: 12px;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   min-width: 64px;
   text-align: right;
 `
@@ -115,7 +115,7 @@ export const SC_HistoryTime = styled.div`
 export const SC_HistoryEmpty = styled.div`
   padding: 24px 12px;
   text-align: center;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   font-size: 14px;
 `
 
@@ -145,8 +145,8 @@ export const SC_LoadMoreBtn = styled.button`
     color var(--transition-fast);
 
   &:hover {
-    border-color: var(--color-brand-cyan);
-    color: var(--color-brand-cyan);
+    border-color: var(--ui-primary);
+    color: var(--ui-primary);
   }
 
   &:disabled {

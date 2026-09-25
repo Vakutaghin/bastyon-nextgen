@@ -34,7 +34,7 @@ export const SC_AccountItem = styled.div<{ active?: boolean }>`
   ${(p) =>
     p.active &&
     `
-      background-color: var(--color-ant-blue-bg-light);
+      background-color: rgb(var(--ui-primary-rgb) / 8%);
       border: 1px solid var(--color-primary-light-30);
     `}
 
@@ -76,10 +76,10 @@ export const SC_AccountLoading = styled.div`
 
 export const SC_AccountBadge = styled.div`
   font-size: 12px;
-  color: var(--color-ant-blue);
+  color: var(--ui-primary);
   font-weight: 500;
   padding: 4px 8px;
-  background-color: var(--color-ant-blue-bg-light);
+  background-color: rgb(var(--ui-primary-rgb) / 8%);
   border-radius: var(--ui-radius-sm);
 `
 
@@ -129,7 +129,7 @@ export const SC_LogoutIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-ant-blue);
+  color: var(--ui-primary);
   font-size: 20px;
   transition:
     opacity var(--transition-fast),

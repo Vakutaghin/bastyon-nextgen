@@ -82,7 +82,7 @@ const languageMenuItems = computed<MenuProps['items']>(() =>
             ? h(CheckOutlined, {
                 style: {
                   marginLeft: 'auto',
-                  color: 'var(--color-ant-blue)',
+                  color: 'var(--ui-primary)',
                   fontSize: '16px',
                 },
               })

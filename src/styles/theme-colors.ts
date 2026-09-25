@@ -15,8 +15,8 @@
 // С редизайна под Nuxt UI (_docs-todo/REDESIGN_NUXT_UI.md) старые `--color-*`
 // перенаправлены на семантические `--ui-*`. В новом коде пиши `var(--ui-…)`
 // прямо в шаблоне styled-компонента: интерполяция `${COLORS.X}` стоит ошибок
-// vue-tsc, а имена здесь уже не всегда совпадают со смыслом (ANT_BLUE и
-// BRAND_CYAN — теперь тот же зелёный акцент).
+// vue-tsc. Синие ANT_BLUE* и BRAND_CYAN* и шкала GRAY_* удалены: их заменили
+// семантические токены с теми же значениями.
 
 export const COLORS = {
   // Основные цвета
@@ -31,17 +31,8 @@ export const COLORS = {
   PRIMARY_LIGHT_50: 'var(--color-primary-light-50, rgb(0 193 106 / 0.5))',
 
   // Бывший синий antd — теперь тот же акцент, что PRIMARY.
-  ANT_BLUE: 'var(--color-ant-blue, #00c16a)',
-  ANT_BLUE_HOVER: 'var(--color-ant-blue-hover, rgb(0 193 106 / 0.75))',
-  ANT_BLUE_LIGHT: 'var(--color-ant-blue-light, rgb(0 193 106 / 0.5))',
-  ANT_BLUE_BG: 'var(--color-ant-blue-bg, rgb(0 193 106 / 0.1))',
-  ANT_BLUE_BG_LIGHT: 'var(--color-ant-blue-bg-light, rgb(0 193 106 / 0.08))',
 
   // Бывший «фирменный циан» (PKOIN, мессенджер) — теперь тот же акцент, что PRIMARY.
-  BRAND_CYAN: 'var(--color-brand-cyan, #00c16a)',
-  BRAND_CYAN_HOVER: 'var(--color-brand-cyan-hover, rgb(0 193 106 / 0.75))',
-  BRAND_CYAN_LIGHT: 'var(--color-brand-cyan-light, rgb(0 193 106 / 0.12))',
-  BRAND_CYAN_SOFT: 'var(--color-brand-cyan-soft, rgb(0 193 106 / 0.06))',
 
   // Текст
   TEXT_PRIMARY: 'var(--color-text-primary, #314158)',
@@ -152,21 +143,6 @@ export const COLORS = {
   OVERLAY_88: 'var(--color-overlay-88, rgba(0, 0, 0, 0.88))',
 
   // Серые тона
-  GRAY_212: 'var(--color-gray-212, #0f172b)',
-  GRAY_120: 'var(--color-gray-120, #62748e)',
-  GRAY_333: 'var(--color-gray-333, #314158)',
-  GRAY_555: 'var(--color-gray-555, #45556c)',
-  GRAY_666: 'var(--color-gray-666, #62748e)',
-  GRAY_888: 'var(--color-gray-888, #90a1b9)',
-  GRAY_999: 'var(--color-gray-999, #90a1b9)',
-  GRAY_AAA: 'var(--color-gray-aaa, #90a1b9)',
-  GRAY_CCC: 'var(--color-gray-ccc, #cad5e2)',
-  GRAY_DDD: 'var(--color-gray-ddd, #e2e8f0)',
-  GRAY_EEE: 'var(--color-gray-eee, #e2e8f0)',
-  GRAY_E0: 'var(--color-gray-e0, #e2e8f0)',
-  GRAY_E8: 'var(--color-gray-e8, #e2e8f0)',
-  GRAY_F0: 'var(--color-gray-f0, #f1f5f9)',
-  GRAY_F1: 'var(--color-gray-f1, #f1f5f9)',
 
   // Тени
   SHADOW_SM: 'var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05))',

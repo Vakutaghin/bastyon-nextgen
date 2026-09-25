@@ -70,7 +70,7 @@ export const SC_LoadingProfile = styled.div`
   text-align: center;
   padding: 40px;
   font-size: 18px;
-  color: var(--color-gray-666);
+  color: var(--ui-text-muted);
 `
 
 export const SC_ErrorProfile = styled.div`
@@ -84,7 +84,7 @@ export const SC_PendingProfile = styled.div`
   text-align: center;
   padding: 40px 20px;
   font-size: 16px;
-  color: var(--color-gray-666);
+  color: var(--ui-text-muted);
   line-height: 1.6;
 
   .pending-icon {
@@ -96,7 +96,7 @@ export const SC_PendingProfile = styled.div`
   .pending-title {
     font-size: 20px;
     font-weight: 500;
-    color: var(--color-gray-333);
+    color: var(--ui-text);
     margin-bottom: 8px;
   }
 `

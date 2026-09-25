@@ -103,7 +103,7 @@ export const SC_Card = styled.button`
     border-color ${TRANSITIONS.QUICK};
   text-align: center;
   font: inherit;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
 
   &:hover {
     transform: translateY(-2px);
@@ -219,7 +219,7 @@ export const SC_LoadMoreBtn = styled.button`
   background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
   font-size: 14px;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   cursor: pointer;
   transition: background-color ${TRANSITIONS.QUICK};
 

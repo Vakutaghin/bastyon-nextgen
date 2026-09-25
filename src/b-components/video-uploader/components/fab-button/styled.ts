@@ -8,7 +8,7 @@ export const SC_FabButton = styled.button`
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background-color: var(--color-ant-blue);
+  background-color: var(--ui-primary);
   color: var(--ui-text-inverted);
   border: none;
   cursor: pointer;
@@ -21,7 +21,7 @@ export const SC_FabButton = styled.button`
   transition: all var(--transition-normal);
 
   &:hover {
-    background-color: var(--color-ant-blue-hover);
+    background-color: rgb(var(--ui-primary-rgb) / 75%);
     box-shadow: ${COLORS.SHADOW_LG};
     transform: scale(1.05);
   }

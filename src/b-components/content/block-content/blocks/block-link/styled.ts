@@ -1,7 +1,7 @@
 import styled from 'vue3-styled-components'
 
 export const SC_BlockLink = styled.a`
-  color: var(--color-brand-cyan);
+  color: var(--ui-primary);
   text-decoration: none;
   word-break: break-all;
 

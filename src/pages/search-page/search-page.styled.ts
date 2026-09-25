@@ -119,11 +119,12 @@ export const SC_Avatar = styled.div`
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: var(--color-gray-e8);
+  background: var(--ui-bg-elevated);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-white);
+  /* Инициал как у UAvatar: белым на светлой подложке его не было видно. */
+  color: var(--ui-text-muted);
   font-weight: 500;
   font-size: 14px;
 

@@ -176,15 +176,24 @@ export const SC_WalletTableRow = styled.div`
 `
 
 export const SC_WalletTableHeader = styled(SC_WalletTableRow)`
-  background: var(--color-bg-light);
+  /* Шапка как у UTable: без заливки, 14px/600 цвета заголовков. Подписи
+     колонок набраны обычным шрифтом, а не моноширинным, как адреса. */
+  background: var(--ui-bg);
   font-weight: 600;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
+
+  & > span {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: inherit;
+    color: inherit;
+  }
 `
 
 export const SC_WalletTableAddress = styled.span`
   font-family: var(--font-family-mono);
   font-size: 13px;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
   word-break: break-all;
 `
 
@@ -201,7 +210,7 @@ export const SC_WalletExplorerLink = styled.a`
   justify-content: center;
   width: 24px;
   height: 24px;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
   cursor: pointer;
   border-radius: var(--ui-radius-sm);
   flex-shrink: 0;
@@ -225,7 +234,7 @@ export const SC_WalletLoading = styled.div`
   padding: 40px 0;
   text-align: center;
   font-size: 14px;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
 `
 
 export const SC_WalletError = styled.div`

@@ -9,7 +9,7 @@
       <SC_CommentsActionsRow v-if="totalCommentsCount > 0">
         <SC_CommentsActionsLeft>
           <SC_CommentsLoading v-if="allCommentsLoading">
-            <LoadingOutlined :style="ICON_BRAND_CYAN_18" spin />
+            <LoadingOutlined :style="ICON_PRIMARY_18" spin />
           </SC_CommentsLoading>
 
           <template v-else>
@@ -89,7 +89,7 @@
             }}
           </SC_CommentRepliesToggle>
           <SC_CommentsLoading v-if="isRepliesLoading(comment.id)">
-            <LoadingOutlined :style="ICON_BRAND_CYAN_16" spin />
+            <LoadingOutlined :style="ICON_PRIMARY_16" spin />
           </SC_CommentsLoading>
         </template>
       </SC_CommentWithReplies>
@@ -198,7 +198,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Popover } from 'ant-design-vue'
-import { ICON_SIZE_SM, ICON_BRAND_CYAN_16, ICON_BRAND_CYAN_18 } from '@/styles/icon-styles'
+import { ICON_SIZE_SM, ICON_PRIMARY_16, ICON_PRIMARY_18 } from '@/styles/icon-styles'
 import { LoadingOutlined, SendOutlined, SyncOutlined, SmileOutlined } from '@/components/icons'
 import { useAuthStore } from '@/blockchain'
 import { useCommentsStore, useUserRelationsStore } from '@/stores'

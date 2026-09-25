@@ -59,7 +59,7 @@ export const SC_LimitRow = styled.div`
 
 export const SC_LimitLabel = styled.span`
   font-size: 14px;
-  color: var(--color-gray-212);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_LimitValue = styled.span`
@@ -71,7 +71,7 @@ export const SC_LimitValue = styled.span`
 export const SC_LimitValueMuted = styled.span`
   font-size: 14px;
   font-weight: 400;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
 `
 
 export const SC_LimitCtaNotice = styled.div`
@@ -100,7 +100,7 @@ export const SC_LimitCtaText = styled.p`
   margin: 0;
   font-size: 14px;
   line-height: 1.45;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
 `
 
 export const SC_LimitCtaActions = styled.div`
@@ -132,7 +132,7 @@ export const SC_LimitsLoading = styled.div`
   padding: 40px 0;
   text-align: center;
   font-size: 14px;
-  color: var(--color-gray-120);
+  color: var(--ui-text-muted);
 `
 
 export const SC_LimitsError = styled.div`

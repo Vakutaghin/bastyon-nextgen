@@ -6,7 +6,7 @@ export const SC_MessengerContainer = styled.div`
   display: flex;
   background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--color-gray-eee);
+  border: 1px solid var(--ui-border);
   overflow: hidden;
 
   /* Remove margin here, let parent control it */
@@ -21,7 +21,7 @@ const sidebarProps = {
 
 export const SC_SidebarColumn = styled('div', sidebarProps)`
   width: 320px;
-  border-right: 1px solid var(--color-gray-eee);
+  border-right: 1px solid var(--ui-border);
   display: flex;
   flex-direction: column;
   background: var(--color-bg-primary);
@@ -52,7 +52,7 @@ export const SC_ChatColumn = styled('div', chatProps)`
 /** Шапка сайдбара со списком чатов. */
 export const SC_SidebarHeader = styled.div`
   padding: 16px;
-  border-bottom: 1px solid var(--color-gray-eee);
+  border-bottom: 1px solid var(--ui-border);
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -70,7 +70,7 @@ export const SC_SyncErrorBanner = styled.div`
 /** Синяя плашка со статусом синка messenger. */
 export const SC_SyncStatusBanner = styled.div`
   padding: 8px;
-  background: var(--color-ant-blue-bg);
+  background: rgb(var(--ui-primary-rgb) / 10%);
   color: var(--color-primary-dark);
   font-size: 12px;
 `
@@ -78,7 +78,7 @@ export const SC_SyncStatusBanner = styled.div`
 /** Верхняя панель в активном чате (back-button + имя собеседника). */
 export const SC_ChatTopBar = styled.div`
   height: 56px;
-  border-bottom: 1px solid var(--color-gray-eee);
+  border-bottom: 1px solid var(--ui-border);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -94,7 +94,7 @@ export const SC_EmptyState = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
   font-size: 16px;
   flex-direction: column;
   gap: 16px;
@@ -137,7 +137,7 @@ export const SC_MessengerDialogsLoader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   font-size: 14px;
 `
 
@@ -145,7 +145,7 @@ export const SC_MessengerDialogsSpinner = styled.span`
   display: inline-block;
   width: 32px;
   height: 32px;
-  border: 3px solid var(--color-gray-e0);
+  border: 3px solid var(--ui-border);
   border-top-color: var(--color-text-secondary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */

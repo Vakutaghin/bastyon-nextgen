@@ -111,7 +111,7 @@ export const SC_EmojiGridPanel = styled.div`
   }
 
   &::-webkit-scrollbar-thumb {
-    background: var(--color-gray-ccc);
+    background: var(--ui-border-accented);
     border-radius: var(--ui-radius-xs);
   }
 `
@@ -207,7 +207,7 @@ export const SC_ConfirmActions = styled.div`
 export const SC_ConfirmBtn = styled.button`
   padding: 6px 14px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--color-gray-ddd);
+  border: 1px solid var(--ui-border);
   background: var(--color-bg-primary);
   font-size: 12px;
   color: var(--color-text-primary);
@@ -215,7 +215,7 @@ export const SC_ConfirmBtn = styled.button`
 
   &:hover {
     background: var(--color-bg-tertiary);
-    border-color: var(--color-gray-ccc);
+    border-color: var(--ui-border-accented);
   }
 
   &.confirm-btn--primary {

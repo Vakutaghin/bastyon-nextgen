@@ -22,11 +22,11 @@ export const SC_LoadingSpinner = styled.div`
 `
 
 export const SC_NoMorePosts = styled.div`
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
 `
 
 export const SC_EmptyFeed = styled.div`
-  color: var(--color-gray-999);
+  color: var(--ui-text-dimmed);
 `
 
 export const SC_ErrorMessage = styled.div`

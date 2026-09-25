@@ -158,18 +158,6 @@
   --color-primary-bg-soft: rgb(var(--ui-primary-rgb) / 0.08);
   --color-primary-bg-12: rgb(var(--ui-primary-rgb) / 0.12);
 
-  /* Синие акценты antd и «фирменный циан» — у Nuxt акцент один. */
-  --color-ant-blue: var(--ui-primary);
-  --color-ant-blue-hover: rgb(var(--ui-primary-rgb) / 0.75);
-  --color-ant-blue-light: rgb(var(--ui-primary-rgb) / 0.5);
-  --color-ant-blue-bg: rgb(var(--ui-primary-rgb) / 0.1);
-  --color-ant-blue-bg-light: rgb(var(--ui-primary-rgb) / 0.08);
-
-  --color-brand-cyan: var(--ui-primary);
-  --color-brand-cyan-hover: rgb(var(--ui-primary-rgb) / 0.75);
-  --color-brand-cyan-light: rgb(var(--ui-primary-rgb) / 0.12);
-  --color-brand-cyan-soft: rgb(var(--ui-primary-rgb) / 0.06);
-
   --color-text-primary: var(--ui-text);
   --color-text-secondary: var(--ui-text-muted);
   --color-text-muted: var(--ui-text-dimmed);
@@ -271,29 +259,13 @@
   --color-overlay-85: rgba(0, 0, 0, 0.85);
   --color-overlay-88: rgba(0, 0, 0, 0.88);
 
-  --color-gray-212: var(--ui-text-highlighted);
-  --color-gray-120: var(--ui-text-muted);
-  --color-gray-333: var(--ui-text);
-  --color-gray-555: var(--ui-text-toned);
-  --color-gray-666: var(--ui-text-muted);
-  --color-gray-888: var(--ui-text-dimmed);
-  --color-gray-999: var(--ui-text-dimmed);
-  --color-gray-aaa: var(--ui-text-dimmed);
-  --color-gray-ccc: var(--ui-border-accented);
-  --color-gray-ddd: var(--ui-border);
-  --color-gray-eee: var(--ui-border);
-  --color-gray-e0: var(--ui-border);
-  --color-gray-e8: var(--ui-border);
-  --color-gray-f0: var(--ui-bg-elevated);
-  --color-gray-f1: var(--ui-bg-elevated);
-
   /* Тени: карточкам у Nuxt тень не нужна (xs почти невидима), оверлеям — lg. */
   --shadow-sm: var(--ui-shadow-xs);
   --shadow-md: var(--ui-shadow-lg);
   --shadow-lg: var(--ui-shadow-xl);
 
   --color-link: var(--ui-primary-text);
-  /* Тёмная подложка в обеих темах (блок кода) и тёмный текст на жёлтой карточке. */
+  /* Тёмная подложка в обеих темах: блок кода, заглушка видео в чате. */
   --color-dark-bg: var(--ui-color-neutral-900);
   --color-slate: var(--ui-text-muted);
   --color-blue-gray: var(--ui-text-muted);

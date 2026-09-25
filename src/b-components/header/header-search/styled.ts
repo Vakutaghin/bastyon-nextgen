@@ -199,7 +199,7 @@ export const SC_RecentIcon = styled.div`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-gray-e8);
+  background: var(--ui-border);
   color: var(--color-text-secondary);
   font-size: 14px;
   flex-shrink: 0;

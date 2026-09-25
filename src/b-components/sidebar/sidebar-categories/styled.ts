@@ -160,7 +160,7 @@ export const SC_CategoryRemoveBtn = styled.div`
 export const SC_ModalHint = styled.div`
   margin-bottom: 10px;
   font-size: 14px;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
 `
 
 export const SC_DeleteConfirmRow = styled.div`

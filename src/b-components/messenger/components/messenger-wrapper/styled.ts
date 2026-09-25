@@ -107,7 +107,7 @@ export const SC_MessengerWrapperLoader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   font-size: 14px;
 `
 
@@ -115,7 +115,7 @@ export const SC_MessengerWrapperSpinner = styled.span`
   display: inline-block;
   width: 32px;
   height: 32px;
-  border: 3px solid var(--color-gray-e0);
+  border: 3px solid var(--ui-border);
   border-top-color: var(--color-text-secondary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */

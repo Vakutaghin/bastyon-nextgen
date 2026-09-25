@@ -9,7 +9,7 @@ export const SC_MentionList = styled.div`
   max-height: 180px;
   overflow-y: auto;
   background: var(--color-bg-primary);
-  border: 1px solid var(--color-gray-ddd);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--shadow-md);
   z-index: 10;
@@ -31,6 +31,6 @@ export const SC_MentionItem = styled.button`
   }
 
   &.mention-item--highlighted {
-    background: var(--color-ant-blue-bg-light);
+    background: rgb(var(--ui-primary-rgb) / 8%);
   }
 `

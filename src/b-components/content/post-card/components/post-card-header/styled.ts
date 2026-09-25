@@ -70,8 +70,8 @@ export const SC_ChatBtn = styled.button`
   line-height: 1;
 
   &:hover {
-    color: var(--color-brand-cyan);
-    background: var(--color-brand-cyan-light);
+    color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 12%);
   }
 `
 
@@ -89,12 +89,12 @@ export const SC_FollowBtn = styled.button`
   line-height: 1;
 
   &:hover {
-    color: var(--color-brand-cyan);
-    background: var(--color-brand-cyan-light);
+    color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 12%);
   }
 
   &.following {
-    color: var(--color-brand-cyan);
+    color: var(--ui-primary);
   }
 
   &:disabled {
@@ -121,8 +121,8 @@ export const SC_DonateBtn = styled.button`
   line-height: 1;
 
   &:hover {
-    color: var(--color-brand-cyan);
-    background: var(--color-brand-cyan-light);
+    color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 12%);
   }
 
   .anticon {
@@ -162,7 +162,7 @@ export const SC_RepostLine = styled.div`
   }
 
   .repost-author {
-    color: var(--color-brand-cyan);
+    color: var(--ui-primary);
     text-decoration: none;
 
     &:hover {

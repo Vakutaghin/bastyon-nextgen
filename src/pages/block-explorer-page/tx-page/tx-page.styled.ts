@@ -195,7 +195,7 @@ export const SC_TxRawToggle = styled.button`
 export const SC_TxRawPre = styled.pre`
   margin: 12px 0 0;
   padding: 14px;
-  background: var(--color-gray-f1);
+  background: var(--ui-bg-elevated);
   border-radius: var(--ui-radius-lg);
   font-family: var(--font-family-mono);
   font-size: 12px;

@@ -62,7 +62,7 @@ export const SC_MessageInput = styled.textarea`
   }
 
   &::-webkit-scrollbar-thumb {
-    background: var(--color-gray-ccc);
+    background: var(--ui-border-accented);
     border-radius: var(--ui-radius-xs);
   }
 `
@@ -105,7 +105,7 @@ export const SC_EmojiToggleButton = styled.button`
   border-radius: 50%;
   border: none;
   background-color: transparent;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -201,7 +201,7 @@ export const SC_RecordingTimer = styled.div`
 `
 
 export const SC_SwipeHint = styled.div`
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -252,7 +252,7 @@ export const SC_StartChatButton = styled.button`
   padding: 10px 16px;
   border-radius: var(--ui-radius-lg);
   border: none;
-  background-color: var(--color-brand-cyan);
+  background-color: var(--ui-primary);
   color: var(--ui-text-inverted);
   font-weight: 500;
   font-size: 14px;
@@ -261,7 +261,7 @@ export const SC_StartChatButton = styled.button`
   box-shadow: var(--shadow-sm);
 
   &:hover {
-    background-color: var(--color-brand-cyan-hover);
+    background-color: rgb(var(--ui-primary-rgb) / 75%);
   }
 `
 
@@ -278,7 +278,7 @@ export const SC_PartnerAvatar = styled.div`
   height: 44px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--color-gray-e0);
+  background: var(--ui-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -310,7 +310,7 @@ export const SC_PartnerName = styled.div`
 export const SC_PartnerInfoCard = styled.div`
   margin: 16px auto 12px;
   padding: 16px 16px 6px;
-  border: 1px solid var(--color-gray-eee);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   max-width: 380px;
   box-sizing: border-box;
@@ -329,7 +329,7 @@ export const SC_ChatRoomLoader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   font-size: 14px;
 `
 
@@ -337,7 +337,7 @@ export const SC_ChatRoomSpinner = styled.span`
   display: inline-block;
   width: 32px;
   height: 32px;
-  border: 3px solid var(--color-gray-e0);
+  border: 3px solid var(--ui-border);
   border-top-color: var(--color-text-secondary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
@@ -349,7 +349,7 @@ export const SC_ChatRoomLoaderText = styled.span`
 
 export const SC_ChatRoomEmptyHint = styled.div`
   padding: 12px 16px;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   font-size: 14px;
   line-height: 1.4;
   flex-shrink: 0;
@@ -357,7 +357,7 @@ export const SC_ChatRoomEmptyHint = styled.div`
 
 export const SC_TypingIndicator = styled.div`
   padding: 2px 16px 6px;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   font-size: 12px;
   font-style: italic;
   flex-shrink: 0;
@@ -368,13 +368,13 @@ export const SC_SearchRow = styled.div`
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--color-gray-eee);
+  border-bottom: 1px solid var(--ui-border);
   flex-shrink: 0;
 `
 
 export const SC_SearchIcon = styled.span`
   display: inline-flex;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   font-size: 16px;
 `
 
@@ -388,14 +388,14 @@ export const SC_SearchInput = styled.input`
   color: var(--color-text-primary);
 
   &::placeholder {
-    color: var(--color-gray-888);
+    color: var(--ui-text-dimmed);
   }
 `
 
 export const SC_SearchCount = styled.span`
   flex-shrink: 0;
   font-size: 12px;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
 `
 
 export const SC_BlockBtn = styled.button`
@@ -406,7 +406,7 @@ export const SC_BlockBtn = styled.button`
   padding: 4px;
   border: none;
   background: none;
-  color: var(--color-gray-888);
+  color: var(--ui-text-dimmed);
   font-size: 16px;
   cursor: pointer;
   transition: color var(--transition-fast);
@@ -432,14 +432,14 @@ export const SC_ReplyBanner = styled.div`
   gap: 8px;
   padding: 8px 12px;
   background-color: var(--color-bg-light);
-  border-top: 1px solid var(--color-gray-eee);
+  border-top: 1px solid var(--ui-border);
 `
 
 export const SC_ReplyBannerBar = styled.div`
   width: 3px;
   align-self: stretch;
   border-radius: var(--ui-radius-xs);
-  background: var(--color-brand-cyan);
+  background: var(--ui-primary);
   flex-shrink: 0;
 `
 
@@ -451,7 +451,7 @@ export const SC_ReplyBannerBody = styled.div`
 export const SC_ReplyBannerTitle = styled.div`
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-brand-cyan);
+  color: var(--ui-primary);
 `
 
 export const SC_ReplyBannerText = styled.div`

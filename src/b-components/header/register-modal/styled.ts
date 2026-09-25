@@ -44,7 +44,7 @@ export const SC_ErrorMessage = styled.div`
   padding: 12px;
   background-color: var(--color-red-bg);
   border: 1px solid var(--color-red-border);
-  border-radius: var(--ui-radius-sm);
+  border-radius: var(--ui-radius-lg);
   color: var(--color-red-dark);
   font-size: 14px;
 `

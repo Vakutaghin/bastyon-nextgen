@@ -22,7 +22,7 @@ export const SC_BoostedBadge = styled.div`
   margin-bottom: 10px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-brand-cyan);
+  color: var(--ui-primary);
 
   svg {
     width: 12px;
@@ -195,8 +195,8 @@ export const SC_ChatBtn = styled.button`
   line-height: 1;
 
   &:hover {
-    color: var(--color-brand-cyan);
-    background: var(--color-brand-cyan-light);
+    color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 12%);
   }
 `
 

@@ -14,13 +14,13 @@ export const SC_MessageItem = styled.div`
   overflow: hidden;
 
   &.mine {
-    background-color: var(--color-ant-blue-bg);
+    background-color: rgb(var(--ui-primary-rgb) / 10%);
     color: var(--color-text-primary);
     border-bottom-right-radius: 4px;
   }
 
   &.others {
-    background-color: var(--color-gray-f1);
+    background-color: var(--ui-bg-elevated);
     color: var(--color-text-primary);
     border-bottom-left-radius: 4px;
   }
@@ -215,7 +215,7 @@ export const SC_ReplyQuote = styled.div`
   display: block;
   margin-bottom: 4px;
   padding: 4px 8px;
-  border-left: 3px solid var(--color-brand-cyan);
+  border-left: 3px solid var(--ui-primary);
   border-radius: var(--ui-radius-sm);
   background: var(--color-overlay-6);
   max-width: 100%;
@@ -224,7 +224,7 @@ export const SC_ReplyQuote = styled.div`
 export const SC_ReplyQuoteName = styled.div`
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-brand-cyan);
+  color: var(--ui-primary);
 `
 
 export const SC_ReplyQuoteText = styled.div`
