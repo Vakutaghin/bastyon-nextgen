@@ -70,7 +70,7 @@ import {
   LoadingOutlined,
   WarningFilled,
   CheckCircleFilled,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { useTorStore, type TorBridgeKind } from '@/stores/tor-store'
 import {
   SC_TorWrapper,

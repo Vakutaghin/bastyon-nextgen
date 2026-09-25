@@ -96,7 +96,7 @@ import {
   UserDeleteOutlined,
   LoadingOutlined,
   GiftOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import Avatar from '@/components/avatar/avatar.vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain/store/auth-store'

@@ -36,7 +36,7 @@
 import { computed, ref, type Directive } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { MessageOutlined, MenuOutlined } from '@ant-design/icons-vue'
+import { MessageOutlined, MenuOutlined } from '@/components/icons'
 import HeaderLogo from '@/b-components/header/header-logo/header-logo.vue'
 import HeaderSearch from '@/b-components/header/header-search/header-search.vue'
 import HeaderUser from '@/b-components/header/header-user/header-user.vue'

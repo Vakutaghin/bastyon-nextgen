@@ -4,8 +4,8 @@ import {
   PlayCircleOutlined,
   InfoCircleOutlined,
   CloseOutlined,
-  DownloadOutlined
-} from '@ant-design/icons-vue'
+  DownloadOutlined,
+} from '@/components/icons'
 import {
   SC_VideosSection,
   SC_SectionTitle,
@@ -17,7 +17,7 @@ import {
   SC_VideoActions,
   SC_ActionButton,
   SC_EmptyState,
-  SC_LoadingState
+  SC_LoadingState,
 } from './styled'
 
 export function useVideoList() {
@@ -45,6 +45,6 @@ export function useVideoList() {
     SC_VideoActions,
     SC_ActionButton,
     SC_EmptyState,
-    SC_LoadingState
+    SC_LoadingState,
   }
 }

@@ -1,6 +1,6 @@
 import { computed, h } from 'vue'
 import { Input } from 'ant-design-vue'
-import { KeyOutlined } from '@ant-design/icons-vue'
+import { KeyOutlined } from '@/components/icons'
 import { SC_InputSearch } from './styled'
 import { definedProps } from '../forward-props'
 import type { InputSearchProps } from './types'

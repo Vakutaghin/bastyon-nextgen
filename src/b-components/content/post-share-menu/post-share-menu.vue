@@ -43,7 +43,7 @@
 import { computed } from 'vue'
 import { openExternal } from '@/helpers/common/open-external'
 import { useI18n } from 'vue-i18n'
-import { CodeOutlined, CopyOutlined, ShareAltOutlined, FlagOutlined } from '@ant-design/icons-vue'
+import { CodeOutlined, CopyOutlined, ShareAltOutlined, FlagOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { SHARE_TARGETS, type ShareTarget } from '@/helpers/common/share-targets'
 import { SC_ShareMenu, SC_ShareItem, SC_ShareIcon, SC_ShareDivider } from './styled'

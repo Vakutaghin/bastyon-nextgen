@@ -44,7 +44,7 @@ import {
   CaretDownOutlined,
   StopOutlined,
   LoadingOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import { useFiltersStore } from '@/stores/filters-store'

@@ -94,9 +94,11 @@ export const SC_VideoPlayButton = styled.button`
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
 
+  /* Контурная иконка Lucide: заливка превращала её в серый диск без треугольника. */
   svg {
-    color: #888 !important;
-    fill: #888 !important;
+    color: var(--color-white-85) !important;
+    fill: none !important;
+    stroke-width: 1.5;
   }
 
   &:hover {

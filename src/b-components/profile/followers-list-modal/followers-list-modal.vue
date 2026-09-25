@@ -57,7 +57,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { CheckOutlined, PlusOutlined, LoadingOutlined } from '@ant-design/icons-vue'
+import { CheckOutlined, PlusOutlined, LoadingOutlined } from '@/components/icons'
 import { Modal } from 'ant-design-vue'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore } from '@/stores'

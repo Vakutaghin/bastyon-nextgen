@@ -49,7 +49,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RotateRightOutlined, EditOutlined } from '@ant-design/icons-vue'
+import { RotateRightOutlined, EditOutlined } from '@/components/icons'
 
 import {
   SC_AddTile,

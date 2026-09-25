@@ -17,7 +17,7 @@
           v-if="activeChatId || (lastTargetAddress && inviteViewActive)"
           @click="onWidgetBack"
         >
-          <SC_WhiteIcon :src="icons.back" />
+          <ArrowLeftIcon />
         </SC_BackButton>
       </template>
 
@@ -59,8 +59,8 @@
 
     <MessengerButton :unread-count="totalUnreadCount" :is-open="isOpen" @click="toggleMessenger">
       <template #icon>
-        <SC_WhiteIcon v-if="!isOpen" :src="icons.chat" />
-        <SC_WhiteIcon v-else :src="icons.close" />
+        <MessageOutlined v-if="!isOpen" />
+        <CloseOutlined v-else />
       </template>
     </MessengerButton>
   </SC_MessengerWrapper>
@@ -70,10 +70,7 @@
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { CloseOutlined } from '@ant-design/icons-vue'
-import closeIcon from '../../img/close.svg'
-import backIcon from '../../img/back.svg'
-import chatIcon from '../../img/chat.svg'
+import { ArrowLeftIcon, CloseOutlined, MessageOutlined } from '@/components/icons'
 import MessengerButton from '../messenger-button/messenger-button.vue'
 import MessengerWindow from '../messenger-window/messenger-window.vue'
 import ChatList from '../chat-list/chat-list.vue'
@@ -93,7 +90,6 @@ import {
   SC_MessengerWrapperLoader,
   SC_MessengerWrapperLoaderText,
   SC_MessengerWrapperSpinner,
-  SC_WhiteIcon,
 } from './styled'
 
 const store = useMessengerStore()
@@ -114,12 +110,6 @@ const {
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { isMobileOrTablet } = useViewport()
-
-const icons = {
-  close: closeIcon,
-  back: backIcon,
-  chat: chatIcon,
-}
 
 // Выключенный в настройках мессенджер не показываем и не инициализируем.
 const prefs = useAppPreferencesStore()

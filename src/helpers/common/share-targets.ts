@@ -4,8 +4,8 @@
  */
 
 import type { Component } from 'vue'
+import { SendOutlined } from '@/components/icons'
 import {
-  SendOutlined,
   TwitterOutlined,
   FacebookOutlined,
   RedditOutlined,

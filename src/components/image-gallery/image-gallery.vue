@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DownloadOutlined } from '@ant-design/icons-vue'
+import { DownloadOutlined } from '@/components/icons'
 import VueEasyLightbox from 'vue-easy-lightbox'
 import { downloadMedia } from '@/helpers/common/download-media'
 import { SC_LightboxRoot, SC_DownloadBtn } from './image-gallery.styled'

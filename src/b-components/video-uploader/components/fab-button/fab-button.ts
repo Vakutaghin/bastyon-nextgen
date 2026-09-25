@@ -1,10 +1,9 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { VideoCameraAddOutlined } from '@ant-design/icons-vue'
+import { VideoCameraAddOutlined } from '@/components/icons'
 import { SC_FabButton } from './styled'
 import { isTauri, isTauriAsync } from '../../utils/environment'
 
-const isTauriBuild =
-  typeof import.meta !== 'undefined' && import.meta.env?.VITE_TAURI === 'true'
+const isTauriBuild = typeof import.meta !== 'undefined' && import.meta.env?.VITE_TAURI === 'true'
 
 export function useFabButton() {
   const isTauriEnv = ref(isTauri())
@@ -36,6 +35,6 @@ export function useFabButton() {
   return {
     VideoCameraAddOutlined,
     SC_FabButton,
-    isTauriEnv
+    isTauriEnv,
   }
 }

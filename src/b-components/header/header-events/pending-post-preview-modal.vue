@@ -28,7 +28,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Modal } from 'ant-design-vue'
-import { ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
+import { ClockCircleOutlined, CheckCircleOutlined } from '@/components/icons'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import { pendingPostToAdapted } from '@/composables/pending-post-adapter'
 import type { PendingPost } from '@/stores/pending-posts-store'

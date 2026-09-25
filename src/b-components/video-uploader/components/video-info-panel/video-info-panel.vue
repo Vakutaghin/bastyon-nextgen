@@ -102,7 +102,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons-vue'
+import { CheckCircleOutlined, CloseCircleOutlined } from '@/components/icons'
 import { ICON_DANGER, ICON_SUCCESS } from '@/styles/icon-styles'
 import {
   SC_InfoPanel,

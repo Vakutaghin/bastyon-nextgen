@@ -85,7 +85,7 @@ export const SC_StarWrapper = styled.div`
 
   .star-bg {
     font-size: 22px;
-    color: var(--color-warning-track) !important;
+    color: var(--ui-text-dimmed) !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -102,9 +102,11 @@ export const SC_StarWrapper = styled.div`
       display: block;
       margin: 0;
       padding: 0;
-      fill: var(--color-warning-track) !important;
-      color: var(--color-warning-track) !important;
-      stroke: var(--color-warning-track) !important;
+      /* Пустая звезда — приглушённый контур, как у InputRating в Nuxt UI:
+         залитая полупрозрачным жёлтым она читалась как «оценено». */
+      fill: none !important;
+      color: var(--ui-text-dimmed) !important;
+      stroke: currentcolor !important;
     }
   }
 `
@@ -135,7 +137,7 @@ export const SC_StarFilled = styled.div`
       display: block;
       fill: var(--color-warning) !important;
       color: var(--color-warning) !important;
-      stroke: none !important;
+      stroke: currentcolor !important;
     }
   }
 `

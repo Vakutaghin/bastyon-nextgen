@@ -195,7 +195,7 @@ import {
   RetweetOutlined,
   RiseOutlined,
   ClockCircleOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { Dropdown } from 'ant-design-vue'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
 import { useAuthStore } from '@/blockchain'

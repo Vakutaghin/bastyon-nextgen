@@ -69,7 +69,7 @@ import {
   LoadingOutlined,
   WarningFilled,
   CheckCircleFilled,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import { buildIpfsShareLink, buildIpfsSecretLink } from '@/helpers/ipfs/ipfs-viewer'
 import {

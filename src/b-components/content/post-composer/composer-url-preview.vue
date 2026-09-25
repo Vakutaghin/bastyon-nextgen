@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { PlayCircleOutlined } from '@ant-design/icons-vue'
+import { PlayCircleOutlined } from '@/components/icons'
 
 import TorBlockedNotice from '@/components/tor-blocked-notice'
 import { useTorMedia } from '@/composables/use-tor-media'

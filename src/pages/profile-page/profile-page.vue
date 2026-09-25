@@ -59,7 +59,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { LoadingOutlined, ClockCircleOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined, ClockCircleOutlined, PlusOutlined } from '@/components/icons'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'

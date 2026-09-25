@@ -1,14 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
-/**
- * Иконка-svg, перекрашенная в белый через filter (исходник чёрный).
- * Заменяет inline `style="filter: brightness(0) invert(1)"`. CODE_AUDIT §3.1.
- */
-export const SC_WhiteIcon = styled.img`
-  filter: brightness(0) invert(1);
-`
-
 export const SC_MessengerWrapper = styled.div`
   position: fixed;
   bottom: 14px;
@@ -23,23 +15,22 @@ export const SC_MessengerWrapper = styled.div`
 export const SC_BackButton = styled.button`
   background: none;
   border: none;
-  color: var(--color-white);
+  color: var(--ui-text-muted);
   cursor: pointer;
   padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--ui-radius-sm);
+  border-radius: var(--ui-radius-md);
 
   &:hover {
-    background-color: var(--color-white-20);
+    color: var(--ui-text-highlighted);
+    background-color: var(--ui-bg-elevated);
   }
 
-  svg,
-  img {
-    width: 24px;
-    height: 24px;
-    fill: currentColor;
+  svg {
+    width: 20px;
+    height: 20px;
     display: block;
   }
 `
@@ -89,11 +80,9 @@ export const SC_CloseOverlayButton = styled.button`
     background-color: var(--color-overlay-6);
   }
 
-  svg,
-  img {
+  svg {
     width: 20px;
     height: 20px;
-    fill: currentColor;
   }
 `
 

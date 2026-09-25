@@ -43,7 +43,7 @@
 import { computed, ref, nextTick, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Popover } from 'ant-design-vue'
-import { LoadingOutlined, SmileOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined, SmileOutlined } from '@/components/icons'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   SC_ReplyInputWrap,

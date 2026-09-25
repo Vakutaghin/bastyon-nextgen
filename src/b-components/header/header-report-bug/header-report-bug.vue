@@ -10,7 +10,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Tooltip } from 'ant-design-vue'
-import { BugOutlined } from '@ant-design/icons-vue'
+import { BugOutlined } from '@/components/icons'
 import { useAuthStore } from '@/blockchain'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { getByPRC } from '@/helpers/api/request'

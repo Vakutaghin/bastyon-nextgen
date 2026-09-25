@@ -85,7 +85,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { QrcodeOutlined } from '@ant-design/icons-vue'
+import { QrcodeOutlined } from '@/components/icons'
 import { useSignInModal } from './sign-in-modal'
 import type { SignInModalProps, SignInModalEmits } from './types'
 import { SC_ModalActions } from '@/components/modal'

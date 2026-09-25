@@ -18,7 +18,7 @@
 // уходят на <img>, на заглушку — нет.
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { LoadingOutlined, PictureOutlined, WarningOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined, PictureOutlined, WarningOutlined } from '@/components/icons'
 
 import { useTorMedia } from '@/composables/use-tor-media'
 import { getTorImageUrl, loadTorImage } from './tor-image-cache'

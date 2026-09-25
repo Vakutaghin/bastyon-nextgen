@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { Spin } from 'ant-design-vue'
-import { LoadingOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined } from '@/components/icons'
 import { SC_Spin } from './styled'
 import { definedProps } from '../forward-props'
 import type { SpinProps } from './types'

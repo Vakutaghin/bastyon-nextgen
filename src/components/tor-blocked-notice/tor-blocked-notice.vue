@@ -8,7 +8,7 @@
 <script setup lang="ts">
 // Заглушка на месте встраивания (YouTube, превью композера, мини-аппа), которое
 // под Tor не грузим: оно ушло бы напрямую, с реальным IP (V21, вариант B).
-import { SafetyOutlined } from '@ant-design/icons-vue'
+import { SafetyOutlined } from '@/components/icons'
 
 import { SC_TorBlockedIcon, SC_TorBlockedNotice } from './styled'
 

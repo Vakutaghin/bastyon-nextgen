@@ -107,7 +107,6 @@ export const SC_ReplySendBtn = styled.button`
   svg {
     width: 18px;
     height: 18px;
-    fill: currentColor;
   }
 `
 

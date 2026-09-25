@@ -47,10 +47,14 @@
                 {{ formatBalance(account.balance) }} PKOIN
               </SC_AccountBalance>
 
-              <SC_AccountLoading v-else-if="account.loading"> {{ t('accounts.loading') }} </SC_AccountLoading>
+              <SC_AccountLoading v-else-if="account.loading">
+                {{ t('accounts.loading') }}
+              </SC_AccountLoading>
             </SC_AccountInfo>
 
-            <SC_AccountBadge v-if="account.address === currentAddress"> {{ t('accounts.current') }} </SC_AccountBadge>
+            <SC_AccountBadge v-if="account.address === currentAddress">
+              {{ t('accounts.current') }}
+            </SC_AccountBadge>
           </SC_AccountItemContent>
 
           <SC_AccountActions>
@@ -60,7 +64,10 @@
             >
               <img :src="keyIcon" alt="Key" />
             </SC_KeyIcon>
-            <SC_LogoutIcon :title="t('accounts.logout')" @click.stop="handleDeleteAccount(account.address)">
+            <SC_LogoutIcon
+              :title="t('accounts.logout')"
+              @click.stop="handleDeleteAccount(account.address)"
+            >
               <LogoutOutlined />
             </SC_LogoutIcon>
           </SC_AccountActions>
@@ -104,7 +111,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { LogoutOutlined, LoadingOutlined } from '@ant-design/icons-vue'
+import { LogoutOutlined, LoadingOutlined } from '@/components/icons'
 import Modal from '@/components/modal/modal.vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import Button from '@/components/button/button.vue'

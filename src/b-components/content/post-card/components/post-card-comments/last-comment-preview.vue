@@ -113,7 +113,7 @@
 // поэтому живут здесь; скоринг/реплаи/edit берутся из контекста дерева.
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ClockCircleOutlined, StopOutlined } from '@ant-design/icons-vue'
+import { ClockCircleOutlined, StopOutlined } from '@/components/icons'
 
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import type { PostForComments } from './types'

@@ -8,7 +8,7 @@
 
 import { ref, computed, h, type Ref, type ComputedRef } from 'vue'
 import { Modal } from 'ant-design-vue'
-import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
+import { ExclamationCircleOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import { haptic } from '@/helpers/common/haptics'

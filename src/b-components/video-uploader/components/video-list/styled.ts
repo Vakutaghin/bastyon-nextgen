@@ -164,49 +164,16 @@ export const SC_ActionButton = styled.button`
     opacity: 1 !important;
   }
 
-  /* Для всех SVG элементов */
+  /* Иконки Lucide — контурные: цвет обводки, без заливки (раньше здесь
+     красились и fill, и stroke — под antd-иконки с заливкой). */
   svg,
   span.anticon svg {
     color: var(--color-text-primary) !important;
-    fill: var(--color-text-primary) !important;
-    stroke: var(--color-text-primary) !important;
+    fill: none !important;
+    stroke: currentcolor !important;
     width: 16px !important;
     height: 16px !important;
     opacity: 1 !important;
-  }
-
-  /* Для всех путей и элементов внутри SVG */
-  svg *,
-  span.anticon svg *,
-  svg path,
-  svg circle,
-  svg rect,
-  svg line,
-  svg polyline,
-  svg polygon,
-  svg g,
-  span.anticon svg path,
-  span.anticon svg circle,
-  span.anticon svg rect,
-  span.anticon svg line,
-  span.anticon svg polyline,
-  span.anticon svg polygon,
-  span.anticon svg g {
-    fill: var(--color-text-primary) !important;
-    stroke: var(--color-text-primary) !important;
-    color: var(--color-text-primary) !important;
-    opacity: 1 !important;
-  }
-
-  /* Переопределяем currentColor */
-  svg[fill='currentColor'],
-  span.anticon svg[fill='currentColor'] {
-    fill: var(--color-text-primary) !important;
-  }
-
-  svg path[fill='currentColor'],
-  span.anticon svg path[fill='currentColor'] {
-    fill: var(--color-text-primary) !important;
   }
 
   &:hover {
@@ -230,7 +197,7 @@ export const SC_ActionButton = styled.button`
     & svg path,
     & span.anticon svg path {
       color: var(--color-white) !important;
-      fill: var(--color-white) !important;
+      fill: none !important;
       stroke: var(--color-white) !important;
     }
 

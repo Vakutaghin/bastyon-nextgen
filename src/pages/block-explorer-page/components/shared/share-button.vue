@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ShareAltOutlined } from '@ant-design/icons-vue'
+import { ShareAltOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { SC_ShareBtn } from './share-button.styled'
 import { ICON_SIZE_13 } from '@/styles/icon-styles'

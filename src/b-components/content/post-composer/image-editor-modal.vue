@@ -49,7 +49,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RotateLeftOutlined, RotateRightOutlined, ExpandOutlined } from '@ant-design/icons-vue'
+import { RotateLeftOutlined, RotateRightOutlined, ExpandOutlined } from '@/components/icons'
 import { rotateBase64, applyCropFilter, FILTER_PRESETS, type CropPercent } from './image-transform'
 import {
   SC_Backdrop,

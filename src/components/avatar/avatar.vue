@@ -87,7 +87,7 @@
 <script setup lang="ts">
 import { useAvatar } from './avatar'
 import type { AvatarProps } from './types'
-import { CheckOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
+import { CheckOutlined, ClockCircleOutlined } from '@/components/icons'
 import { ICON_WHITE_9, ICON_WHITE_10 } from '@/styles/icon-styles'
 
 const p = withDefaults(defineProps<AvatarProps>(), {

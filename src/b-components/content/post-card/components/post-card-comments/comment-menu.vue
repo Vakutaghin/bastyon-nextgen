@@ -72,7 +72,7 @@ import {
   ShareAltOutlined,
   GiftOutlined,
   FlagOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { SC_MenuList, SC_MenuItem, SC_MenuTrigger } from './styled'
 import type { CommentMenuAction } from './types'
 

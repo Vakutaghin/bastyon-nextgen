@@ -62,8 +62,8 @@ export const SC_SendButton = styled.button`
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: var(--color-brand-cyan);
-  color: var(--color-white);
+  background-color: var(--ui-primary);
+  color: var(--ui-text-inverted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,19 +72,20 @@ export const SC_SendButton = styled.button`
   flex-shrink: 0;
 
   &:disabled {
-    background-color: var(--color-gray-ccc);
+    background-color: var(--ui-bg-elevated);
+    color: var(--ui-text-dimmed);
     cursor: not-allowed;
   }
 
   &:not(:disabled):hover {
-    background-color: var(--color-brand-cyan-hover);
+    background-color: rgb(var(--ui-primary-rgb) / 75%);
+    color: var(--ui-text-inverted);
   }
 
+  /* Иконки Lucide — контурные: заливка превратила бы их в сплошные пятна. */
   svg {
     width: 20px;
     height: 20px;
-    fill: currentColor;
-    margin-left: 2px;
   }
 `
 
@@ -105,14 +106,13 @@ export const SC_EmojiToggleButton = styled.button`
   flex-shrink: 0;
 
   &:hover {
-    color: var(--color-brand-cyan);
-    background-color: var(--color-bg-hover);
+    color: var(--ui-text-highlighted);
+    background-color: var(--ui-bg-elevated);
   }
 
   svg {
     width: 20px;
     height: 20px;
-    fill: currentColor;
   }
 `
 
@@ -143,7 +143,6 @@ export const SC_VoiceButton = styled.button`
   svg {
     width: 20px;
     height: 20px;
-    fill: currentColor;
   }
 `
 

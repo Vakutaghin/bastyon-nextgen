@@ -66,7 +66,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { LoadingOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined } from '@/components/icons'
 import Spin from '@/components/spin/spin.vue'
 import { useLastComments } from '@/composables/use-comments-queries'
 import { useUserProfiles } from '@/composables/use-user-profile'

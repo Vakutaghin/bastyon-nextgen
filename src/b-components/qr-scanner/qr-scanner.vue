@@ -36,7 +36,7 @@
 <script setup lang="ts">
 import { ref, onBeforeUnmount, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CameraOutlined, PictureOutlined } from '@ant-design/icons-vue'
+import { CameraOutlined, PictureOutlined } from '@/components/icons'
 import Button from '@/components/button/button.vue'
 import { readQRCode, decodeQRFromImageData } from '@/blockchain/utils/qr-code'
 import {

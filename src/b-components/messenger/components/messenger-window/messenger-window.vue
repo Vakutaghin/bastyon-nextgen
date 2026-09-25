@@ -4,7 +4,7 @@
       <slot name="actions" />
       <SC_Title>{{ title }}</SC_Title>
       <SC_CloseButton type="button" :aria-label="t('chat.close')" @click="emit('close')">
-        <img :src="closeIcon" alt="" width="12" height="12" />
+        <CloseOutlined />
       </SC_CloseButton>
     </SC_Header>
 
@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { SC_Window, SC_Header, SC_Title, SC_Content, SC_CloseButton } from './styled'
-import closeIcon from './img/close.svg'
+import { CloseOutlined } from '@/components/icons'
 
 const { t } = useI18n()
 

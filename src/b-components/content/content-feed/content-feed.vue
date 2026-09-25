@@ -160,7 +160,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   UpOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { usePostsStore } from '@/stores/posts-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useModalStore } from '@/stores'

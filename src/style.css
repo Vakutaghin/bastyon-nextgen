@@ -652,6 +652,29 @@ a:active {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   Иконки — Lucide в обёртке вида antd (src/components/icons). Размер задаёт
+   font-size (svg 1em), цвет — currentColor.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ui-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  font-style: normal;
+  line-height: 0;
+  vertical-align: -0.125em;
+}
+
+.ui-icon > svg {
+  display: block;
+}
+
+.ui-icon-spin > svg {
+  animation: spin 1s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Scrollbars
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -809,10 +832,11 @@ body .ant-notification .ant-notification-notice .ant-notification-notice-descrip
 }
 
 /* Star Rating */
+/* Пустая звезда — приглушённый контур; оценённая — жёлтая заливка. */
 .star-rating .star-bg,
 .star-rating .star-bg svg {
-  color: var(--color-warning-track) !important;
-  fill: var(--color-warning-track) !important;
+  color: var(--ui-text-dimmed) !important;
+  fill: none !important;
 }
 
 .star-rating .star-fill,

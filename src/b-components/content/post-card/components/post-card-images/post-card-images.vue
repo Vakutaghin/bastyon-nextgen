@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ZoomInOutlined } from '@ant-design/icons-vue'
+import { ZoomInOutlined } from '@/components/icons'
 import { useModalStore } from '@/stores/modal-store'
 import TorImage, { getTorImageUrl } from '@/components/tor-image'
 import { SC_PostImage, SC_ImageWrapper, SC_ImageOverlay, SC_ZoomIconCircle } from './styled'

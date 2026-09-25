@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { CopyOutlined } from '@ant-design/icons-vue'
+import { CopyOutlined } from '@/components/icons'
 import { usePrivateKeyReveal } from '../use-private-key-reveal'
 import SecuritySection from './security-section.vue'
 import {

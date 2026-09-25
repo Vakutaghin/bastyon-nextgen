@@ -28,7 +28,7 @@ import {
   AppstoreOutlined,
   MessageOutlined,
   WalletOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { SC_BottomNav, SC_NavItem, SC_NavIcon, SC_NavLabel, SC_NavBadge } from './bottom-nav.styled'

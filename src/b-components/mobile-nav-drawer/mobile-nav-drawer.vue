@@ -37,7 +37,7 @@ import {
   WalletOutlined,
   SettingOutlined,
   CloseOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import {
   SC_Backdrop,
   SC_Drawer,

@@ -105,7 +105,7 @@ import {
   PlusOutlined,
   CloseOutlined,
   ExclamationCircleOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { useFiltersStore } from '@/stores/filters-store'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from '@/composables/use-rpc-query'

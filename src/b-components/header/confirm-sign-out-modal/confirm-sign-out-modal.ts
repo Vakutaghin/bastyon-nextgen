@@ -2,17 +2,22 @@ import { ref, watch } from 'vue'
 
 import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
-import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
+import { ExclamationCircleOutlined } from '@/components/icons'
 import type { ConfirmSignOutModalProps, ConfirmSignOutModalEmits } from './types'
 
-
-export function useConfirmSignOutModal(p: ConfirmSignOutModalProps, emit: ConfirmSignOutModalEmits) {
+export function useConfirmSignOutModal(
+  p: ConfirmSignOutModalProps,
+  emit: ConfirmSignOutModalEmits
+) {
   const visible = ref(p.open)
   const loading = ref(false)
 
-  watch(() => p.open, (newValue) => {
-    visible.value = newValue
-  })
+  watch(
+    () => p.open,
+    (newValue) => {
+      visible.value = newValue
+    }
+  )
 
   watch(visible, (newValue) => {
     emit('update:open', newValue ?? false)
@@ -40,6 +45,6 @@ export function useConfirmSignOutModal(p: ConfirmSignOutModalProps, emit: Confir
     visible,
     loading,
     handleConfirm,
-    handleCancel
+    handleCancel,
   }
 }

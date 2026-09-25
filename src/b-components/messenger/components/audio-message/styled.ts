@@ -12,8 +12,10 @@ export const SC_PlayButton = styled.button`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-primary);
+  border: 0;
+  background: var(--ui-primary);
+  color: var(--ui-text-inverted);
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,8 +23,9 @@ export const SC_PlayButton = styled.button`
   padding: 0;
   flex-shrink: 0;
 
-  &.playing {
-    border-color: var(--color-brand-cyan);
+  &:hover:not(:disabled) {
+    background: rgb(var(--ui-primary-rgb) / 75%);
+    color: var(--ui-text-inverted);
   }
 
   &:disabled {

@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { PlusOutlined, LoadingOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, LoadingOutlined } from '@/components/icons'
 import { useUserRelationsStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
 import { useRecommendedUsers } from '@/composables/use-recommended-users'

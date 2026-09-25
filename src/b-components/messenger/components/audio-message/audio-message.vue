@@ -14,8 +14,8 @@
       :aria-label="isPlaying ? t('chat.pause') : t('chat.play')"
       @click="togglePlay"
     >
-      <img v-if="!isPlaying" :src="playIcon" alt="" width="20" height="20" />
-      <img v-else :src="pauseIcon" alt="" width="20" height="20" />
+      <PlayIcon v-if="!isPlaying" />
+      <PauseIcon v-else />
     </SC_PlayButton>
 
     <SC_WaveContainer ref="container" :compact="compact" @click="onSeekByClick">
@@ -41,8 +41,7 @@ import { useMessengerStore } from '../../store'
 import { useCanvasWaveform } from './use-canvas-waveform'
 import { useAudioPlayback } from './use-audio-playback'
 import { useAudioDecoding } from './use-audio-decoding'
-import playIcon from './img/play.svg'
-import pauseIcon from './img/pause.svg'
+import { PauseIcon, PlayIcon } from '@/components/icons'
 import {
   SC_AudioMessage,
   SC_PlayButton,

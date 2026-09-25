@@ -6,8 +6,9 @@
       :aria-pressed="isDark"
       @click="toggle"
     >
-      <BulbFilled v-if="isDark" :style="ICON_SIZE_XL" />
-      <BulbOutlined v-else :style="ICON_SIZE_XL" />
+      <!-- Как кнопка цветовой схемы Nuxt UI: иконка текущей темы. -->
+      <ThemeDarkIcon v-if="isDark" :style="ICON_SIZE_XL" />
+      <ThemeLightIcon v-else :style="ICON_SIZE_XL" />
     </SC_ThemeToggleWrapper>
   </Tooltip>
 </template>
@@ -16,7 +17,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Tooltip } from 'ant-design-vue'
-import { BulbOutlined, BulbFilled } from '@ant-design/icons-vue'
+import { ThemeDarkIcon, ThemeLightIcon } from '@/components/icons'
 import { useTheme } from '@/composables/use-theme'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import { SC_ThemeToggleWrapper } from './styled'

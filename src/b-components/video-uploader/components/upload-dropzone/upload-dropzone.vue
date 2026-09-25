@@ -121,7 +121,7 @@ import {
   LoadingOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import {
   SC_UploadSection,
   SC_SectionTitle,

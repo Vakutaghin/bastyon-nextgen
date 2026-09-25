@@ -7,7 +7,12 @@
     </RouterLink>
     <SC_HashLinkText v-else>{{ display }}</SC_HashLinkText>
 
-    <SC_HashLinkCopy v-if="copyable" type="button" :title="t('explorerShared.copy')" @click.stop="copy">
+    <SC_HashLinkCopy
+      v-if="copyable"
+      type="button"
+      :title="t('explorerShared.copy')"
+      @click.stop="copy"
+    >
       <CopyOutlined :style="ICON_SIZE_XS" />
     </SC_HashLinkCopy>
   </SC_HashLink>
@@ -18,7 +23,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
-import { CopyOutlined } from '@ant-design/icons-vue'
+import { CopyOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { prefetchExplorerTarget } from '@/composables/use-block-explorer-queries'
 import { shortenHash } from './format-explorer'

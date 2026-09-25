@@ -1,19 +1,22 @@
 import { ref, watch } from 'vue'
 import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
-import { WarningOutlined } from '@ant-design/icons-vue'
+import { WarningOutlined } from '@/components/icons'
 import type { ConfirmShowMnemonicModalProps, ConfirmShowMnemonicModalEmits } from './types'
 
 export function useConfirmShowMnemonicModal(
   p: ConfirmShowMnemonicModalProps,
-  emit: ConfirmShowMnemonicModalEmits,
+  emit: ConfirmShowMnemonicModalEmits
 ) {
   const visible = ref(p.open)
   const loading = ref(false)
 
-  watch(() => p.open, (newValue) => {
-    visible.value = newValue
-  })
+  watch(
+    () => p.open,
+    (newValue) => {
+      visible.value = newValue
+    }
+  )
 
   watch(visible, (newValue) => {
     emit('update:open', newValue ?? false)
@@ -41,6 +44,6 @@ export function useConfirmShowMnemonicModal(
     visible,
     loading,
     handleConfirm,
-    handleCancel
+    handleCancel,
   }
 }

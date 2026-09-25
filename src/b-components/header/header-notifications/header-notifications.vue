@@ -138,7 +138,7 @@ import {
   DollarOutlined,
   NotificationOutlined,
   EditOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { useAuthStore, useNotificationsStore } from '@/stores'
 import { useModalStore } from '@/stores/modal-store'
 import type { NotificationItem } from '@/stores/notifications-store'

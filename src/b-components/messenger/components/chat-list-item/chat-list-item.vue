@@ -67,7 +67,7 @@
 import { formatClock } from '@/helpers/common/date-formatter'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DeleteOutlined, EllipsisOutlined } from '@ant-design/icons-vue'
+import { DeleteOutlined, EllipsisOutlined } from '@/components/icons'
 import type { Dialog, Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { ICON_DANGER_MR_8 } from '@/styles/icon-styles'

@@ -25,9 +25,11 @@ export const SC_Window = styled('div', props)`
 `
 
 export const SC_Header = styled.div`
+  /* Шапка окна как у Nuxt UI: фон страницы, линия снизу, яркий заголовок. */
   height: 56px;
-  background-color: var(--color-brand-cyan);
-  color: var(--color-white);
+  background-color: var(--ui-bg);
+  color: var(--ui-text-highlighted);
+  border-bottom: 1px solid var(--ui-border);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -54,11 +56,19 @@ export const SC_CloseButton = styled.button`
   border: none;
   padding: 0;
   background: transparent;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   margin-left: 8px;
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-muted);
+  font-size: 16px;
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text-highlighted);
+  }
 `

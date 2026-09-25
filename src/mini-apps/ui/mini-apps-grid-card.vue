@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { StarOutlined, StarFilled, DeleteOutlined } from '@ant-design/icons-vue'
+import { StarOutlined, StarFilled, DeleteOutlined } from '@/components/icons'
 import {
   SC_Card,
   SC_IconWrap,

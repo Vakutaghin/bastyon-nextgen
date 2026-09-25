@@ -151,7 +151,7 @@
 import { onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { BlockOutlined, EditOutlined } from '@ant-design/icons-vue'
+import { BlockOutlined, EditOutlined } from '@/components/icons'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import { useAuthStore } from '@/blockchain'
 import { useWalletBalances } from './use-wallet-balances'

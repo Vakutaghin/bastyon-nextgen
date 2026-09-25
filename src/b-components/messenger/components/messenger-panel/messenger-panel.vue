@@ -15,7 +15,9 @@
       </SC_SyncStatusBanner>
       <SC_MessengerDialogsLoader v-if="!store.dialogsLoadedOnce || store.isLoading">
         <SC_MessengerDialogsSpinner />
-        <SC_MessengerDialogsLoaderText>{{ t('messenger.loadingDialogs') }}</SC_MessengerDialogsLoaderText>
+        <SC_MessengerDialogsLoaderText>{{
+          t('messenger.loadingDialogs')
+        }}</SC_MessengerDialogsLoaderText>
       </SC_MessengerDialogsLoader>
       <ChatList v-else :dialogs="store.dialogs" @select="store.openChat" />
     </SC_SidebarColumn>
@@ -27,7 +29,7 @@
             :aria-label="t('chat.back')"
             @click="store.closeActiveChat ? store.closeActiveChat() : (store.activeChatId = null)"
           >
-            <img :src="arrowBackIcon" alt="" width="24" height="24" />
+            <ArrowLeftIcon :style="ICON_SIZE_XXL" />
           </SC_MobileBackButton>
           <SC_PartnerName>{{ activeChatName }}</SC_PartnerName>
         </SC_ChatTopBar>
@@ -43,7 +45,7 @@
       <template v-else-if="lastTargetAddress && inviteViewActive">
         <SC_ChatTopBar>
           <SC_MobileBackButton :aria-label="t('chat.back')" @click="store.clearInviteTarget">
-            <img :src="arrowBackIcon" alt="" width="24" height="24" />
+            <ArrowLeftIcon :style="ICON_SIZE_XXL" />
           </SC_MobileBackButton>
           <SC_PartnerName>{{ invitePartnerName }}</SC_PartnerName>
         </SC_ChatTopBar>
@@ -57,7 +59,7 @@
         />
       </template>
       <SC_EmptyState v-else>
-        <img :src="chatEmptyIcon" alt="" width="24" height="24" />
+        <MessagesIcon />
         <div>{{ t('messenger.selectChatHint') }}</div>
       </SC_EmptyState>
     </SC_ChatColumn>
@@ -87,8 +89,8 @@ import {
   SC_SyncErrorBanner,
   SC_SyncStatusBanner,
 } from './styled'
-import arrowBackIcon from './img/arrow-back.svg'
-import chatEmptyIcon from './img/chat-empty.svg'
+import { ArrowLeftIcon, MessagesIcon } from '@/components/icons'
+import { ICON_SIZE_XXL } from '@/styles/icon-styles'
 
 const store = useMessengerStore()
 const { activeChatId, lastTargetAddress, inviteViewActive } = storeToRefs(store)

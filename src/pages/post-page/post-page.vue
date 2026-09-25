@@ -34,7 +34,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { LoadingOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined } from '@/components/icons'
 import { ICON_PRIMARY_40 } from '@/styles/icon-styles'
 import Spin from '@/components/spin/spin.vue'
 import PostCard from '@/b-components/content/post-card/post-card.vue'

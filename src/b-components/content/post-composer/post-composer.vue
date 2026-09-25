@@ -127,7 +127,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Popover } from 'ant-design-vue'
-import { SmileOutlined } from '@ant-design/icons-vue'
+import { SmileOutlined } from '@/components/icons'
 
 import Button from '@/components/button'
 // Переиспользуем компактный пикер из формы комментария (общий список COMMON_EMOJIS).

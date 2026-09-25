@@ -88,7 +88,7 @@
 import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Popover } from 'ant-design-vue'
-import { LoadingOutlined, CloseOutlined, SendOutlined, SmileOutlined } from '@ant-design/icons-vue'
+import { LoadingOutlined, CloseOutlined, SendOutlined, SmileOutlined } from '@/components/icons'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import {
   SC_ConfirmWrap,

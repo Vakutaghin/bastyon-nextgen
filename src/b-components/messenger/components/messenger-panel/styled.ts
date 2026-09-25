@@ -102,7 +102,8 @@ export const SC_EmptyState = styled.div`
   svg {
     width: 64px;
     height: 64px;
-    fill: var(--color-gray-eee);
+    color: var(--ui-text-dimmed);
+    stroke-width: 1.5;
   }
 `
 

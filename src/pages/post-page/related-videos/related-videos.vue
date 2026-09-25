@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { PlayCircleOutlined, SoundOutlined } from '@ant-design/icons-vue'
+import { PlayCircleOutlined, SoundOutlined } from '@/components/icons'
 import { useRelatedVideos } from '@/composables/use-related-videos'
 import type { AdaptedPost } from '@/composables/use-feed'
 import { safeDecode } from '@/helpers/content/safe-decode'

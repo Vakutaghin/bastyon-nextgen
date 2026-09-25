@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Popover as APopover, Button as AButton } from 'ant-design-vue'
-import { StarOutlined, StarFilled, UserOutlined } from '@ant-design/icons-vue'
+import { StarOutlined, StarFilled, UserOutlined } from '@/components/icons'
 import { useStarRating } from './use-star-rating'
 import {
   SC_AuthPopoverContent,

@@ -128,7 +128,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Popover, Modal } from 'ant-design-vue'
-import { MoreOutlined, DeleteOutlined, RollbackOutlined } from '@ant-design/icons-vue'
+import { MoreOutlined, DeleteOutlined, RollbackOutlined } from '@/components/icons'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { getAddressFromMatrixId } from '../../helpers'

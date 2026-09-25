@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue'
+import { LeftOutlined, RightOutlined } from '@/components/icons'
 import { ICON_SIZE_XS } from '@/styles/icon-styles'
 import ShareButton from '../components/shared/share-button.vue'
 import { SC_BlockNav, SC_BlockNavBtn } from './block-page.styled'

@@ -43,7 +43,7 @@ import {
   MessageOutlined,
   AppstoreOutlined,
   BlockOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useAuthStore } from '@/blockchain'
 import SidebarFavorites from './sidebar-favorites.vue'

@@ -58,6 +58,7 @@
     "@editorjs/quote": "^2.7.6",
     "@fontsource-variable/geist": "5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
+    "@lucide/vue": "^1.48.0",
     "@tanstack/vue-query": "^5.92.9",
     "ant-design-vue": "^4.2.6",
     "bech32": "^2.0.0",

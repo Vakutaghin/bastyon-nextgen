@@ -320,7 +320,7 @@ import {
   SoundOutlined,
   CloseOutlined,
   SettingOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { videoPlayerManager } from './video-player-manager'
 import type { Chapter } from '@/helpers/content/timecode-parser'
 import { useVideoHotkeys } from './composables/use-video-hotkeys'

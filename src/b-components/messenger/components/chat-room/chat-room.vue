@@ -133,7 +133,7 @@
           <SC_CancelButton @click="cancelRecording">{{ t('messenger.cancel') }}</SC_CancelButton>
 
           <SC_SendButton :aria-label="t('messenger.sendVoiceMessage')" @click="stopRecording">
-            <img :src="sendIcon" alt="" width="24" height="24" />
+            <SendOutlined />
           </SC_SendButton>
         </template>
 
@@ -167,7 +167,7 @@
           :aria-label="t('messenger.openEmojiPicker')"
           @click="toggleEmojiPicker"
         >
-          <img :src="emojiIcon" alt="" width="24" height="24" />
+          <SmileOutlined />
         </SC_EmojiToggleButton>
       </template>
 
@@ -188,7 +188,7 @@
           isRecording ? t('messenger.recordingInProgress') : t('messenger.recordVoiceMessage')
         "
       >
-        <img :src="micIcon" alt="" width="24" height="24" />
+        <MicIcon />
       </SC_VoiceButton>
 
       <!-- TEXT SEND BUTTON (виден когда есть текст и не идёт запись). -->
@@ -198,7 +198,7 @@
         :aria-label="t('messenger.sendMessage')"
         @click="handleSend"
       >
-        <img :src="sendIcon" alt="" width="24" height="24" />
+        <SendOutlined />
       </SC_SendButton>
     </SC_MessageInputArea>
 
@@ -216,7 +216,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { SearchOutlined, StopOutlined } from '@ant-design/icons-vue'
+import {
+  MicIcon,
+  SearchOutlined,
+  SendOutlined,
+  SmileOutlined,
+  StopOutlined,
+} from '@/components/icons'
 import { Popconfirm } from 'ant-design-vue'
 import { Z_INDEX } from '@/styles/design-tokens'
 import { debugLog } from '@/helpers/common/debug-log'
@@ -236,9 +242,6 @@ import { usePasteDrop } from './use-paste-drop'
 import { useVoiceRecording } from './use-voice-recording'
 import { usePartnerInfo } from './use-partner-info'
 import { useChatInput } from './use-chat-input'
-import sendIcon from './img/send.svg'
-import emojiIcon from './img/emoji.svg'
-import micIcon from './img/mic.svg'
 import {
   SC_ChatRoomContainer,
   SC_PartnerStats,

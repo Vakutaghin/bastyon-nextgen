@@ -163,7 +163,7 @@ import {
   SafetyCertificateFilled,
   TrophyFilled,
   UserOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'

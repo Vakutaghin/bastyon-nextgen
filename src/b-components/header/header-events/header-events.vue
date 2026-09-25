@@ -106,7 +106,7 @@ import {
   ClockCircleOutlined,
   FileTextOutlined,
   MessageOutlined,
-} from '@ant-design/icons-vue'
+} from '@/components/icons'
 import { useAuthStore } from '@/blockchain'
 import {
   usePendingRatingsStore,

@@ -47,7 +47,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { CloseOutlined } from '@ant-design/icons-vue'
+import { CloseOutlined } from '@/components/icons'
 import { Modal } from 'ant-design-vue'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { usePermissionsStore } from '@/mini-apps/store/permissions-store'

@@ -153,7 +153,7 @@
 // все хелперы берутся из контекста дерева комментариев (provide/inject).
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ClockCircleOutlined, StopOutlined, EditOutlined } from '@ant-design/icons-vue'
+import { ClockCircleOutlined, StopOutlined, EditOutlined } from '@/components/icons'
 
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
