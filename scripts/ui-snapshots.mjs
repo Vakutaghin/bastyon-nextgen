@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Скриншоты ключевых экранов в обеих темах, на десктопе и мобилке — чтобы
-// сравнивать «до» и «после» при редизайне (_docs-todo/REDESIGN_NUXT_UI.md).
+// сравнивать «до» и «после» при правках оформления (Nuxt UI, style.css).
 // Ходит к живым нодам, как e2e, поэтому лента и эксплорер каждый раз разные:
 // сравнивать оформление, а не содержимое.
 //
@@ -9,7 +9,14 @@
 //   node scripts/ui-snapshots.mjs --out /tmp/ui-after --only feed,settings-general --theme dark
 //
 // «До» для сравнения — любой прежний коммит: git worktree add /tmp/ui-base <sha>,
-// симлинк node_modules, pnpm dev там и этот же скрипт с --out /tmp/ui-before.
+// симлинк node_modules, VITE_PORT=1981 pnpm dev там и этот же скрипт с
+// --base http://localhost:1981 --out /tmp/ui-before.
+//
+// Все экраны в один поток — около 40 минут, поэтому я запускаю четыре процесса
+// (--theme dark|light × --viewport desktop|mobile), выходит минут 12. Пока
+// скрипт снимает, файлы, которые отдаёт этот dev-сервер, лучше не править: Vite
+// перезагрузит страницу посреди снимка. Поэтому снимаю с копии коммита, а правлю
+// основное дерево.
 //
 // Экраны с пометкой auth снимаются после входа свежей мнемоникой: аккаунт в сети
 // не зарегистрирован, но настройки, кошелёк и редактор поста открываются.
@@ -287,6 +294,34 @@ async function openSelect(page, id) {
   await page.waitForTimeout(500)
 }
 
+/**
+ * Модалка приветствия, которую показывают после регистрации. Её флаг живёт в
+ * компоненте шапки (header-user): находим его в дереве компонентов и
+ * открываем модалку с тестовым именем.
+ */
+async function openWelcomeModal(page) {
+  await page.evaluate(() => {
+    const root = document.querySelector('#app').__vue_app__._instance
+    const stack = [root]
+    const pushVNode = (vnode) => {
+      if (!vnode || typeof vnode !== 'object') return
+      if (vnode.component) stack.push(vnode.component)
+      if (Array.isArray(vnode.children)) vnode.children.forEach(pushVNode)
+    }
+    while (stack.length) {
+      const inst = stack.pop()
+      if (inst.setupState && 'welcomeModalOpen' in inst.setupState) {
+        inst.setupState.pendingNickname = 'Анна'
+        inst.setupState.welcomeModalOpen = true
+        return
+      }
+      pushVNode(inst.subTree)
+    }
+    throw new Error('header-user не найден')
+  })
+  await page.waitForTimeout(800)
+}
+
 const SCREENS = [
   { name: 'feed', path: '/' },
   { name: 'whats-new', path: '/', popups: true },
@@ -319,6 +354,15 @@ const SCREENS = [
     action: async (page) => {
       await expandFeedComments(page)
       await openSelect(page, 'comments-sort')
+    },
+  },
+  {
+    // Меню «Поделиться» с логотипами соцсетей.
+    name: 'share-menu',
+    path: '/',
+    action: async (page) => {
+      await page.getByRole('button', { name: 'Поделиться', exact: true }).first().click()
+      await page.waitForTimeout(600)
     },
   },
   { name: 'explorer', path: '/explorer' },
@@ -429,6 +473,17 @@ const SCREENS = [
       await page.waitForTimeout(1500)
     },
   },
+  {
+    // Пустое «Избранное» у нового аккаунта — пустое состояние ленты.
+    name: 'feed-empty',
+    path: '/',
+    auth: true,
+    action: async (page) => {
+      await withStores(page, (store) => store('filters').selectTab(6))
+      await page.waitForTimeout(3000)
+    },
+  },
+  { name: 'welcome-modal', path: '/', auth: true, action: openWelcomeModal },
   {
     name: 'donate-modal',
     path: '/',
