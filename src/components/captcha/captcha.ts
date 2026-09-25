@@ -2,66 +2,10 @@
  * Логика компонента капчи
  */
 
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import type { CaptchaData } from '@/blockchain/api/captcha-api'
 import { captchaAPI } from '@/blockchain/api/captcha-api'
 import { t } from '@/i18n'
-
-// Типы для HexCaptcha
-interface HexCaptchaInstance {
-  angles: number[]
-  show: (state: 'loading' | 'success' | 'error') => void
-}
-
-/** Конструктор опционального класса HexCaptcha (библиотека без типов) */
-interface HexCaptchaConstructor {
-  new (options: {
-    holder: HTMLElement
-    data: { frames: unknown; overlay: unknown; duration: number }
-  }): HexCaptchaInstance
-}
-
-// Динамический импорт HexCaptcha (если доступен)
-let HexCaptchaClass: HexCaptchaConstructor | null = null
-let hexCaptchaStylesLoaded = false
-
-async function loadHexCaptcha() {
-  if (HexCaptchaClass) return HexCaptchaClass
-
-  try {
-    // Используем полностью динамический импорт через переменную,
-    // чтобы Vite не мог проанализировать его статически
-    // Это позволяет сделать hex-captcha опциональной зависимостью
-    // Формируем имя модуля динамически, чтобы Vite не распознал его
-    const parts = ['hex', 'captcha']
-    const moduleName = parts.join('-')
-
-    // Используем Function constructor для создания динамического импорта
-    // Это гарантирует, что Vite не сможет проанализировать импорт статически
-    const dynamicImport = new Function('specifier', 'return import(specifier)')
-    const hexCaptchaModule = await dynamicImport(moduleName)
-    HexCaptchaClass = hexCaptchaModule.default || hexCaptchaModule
-
-    // Загружаем стили, если еще не загружены
-    if (!hexCaptchaStylesLoaded && typeof document !== 'undefined') {
-      try {
-        // Пробуем загрузить CSS из node_modules
-        const link = document.createElement('link')
-        link.rel = 'stylesheet'
-        link.href = '/node_modules/hex-captcha/css/captcha.css'
-        document.head.appendChild(link)
-        hexCaptchaStylesLoaded = true
-      } catch (cssError) {
-        console.warn('Failed to load hex-captcha CSS:', cssError)
-      }
-    }
-
-    return HexCaptchaClass
-  } catch (error) {
-    console.warn('HexCaptcha library not available:', error)
-    return null
-  }
-}
 
 export interface CaptchaProps {
   captcha: CaptchaData | null
@@ -75,15 +19,17 @@ export interface CaptchaEmits {
   (e: 'redo'): void
 }
 
+/** Пауза перед показом картинки и поля — даёт отыграть анимации появления. */
+const REVEAL_DELAY_MS = 300
+
 export function useCaptcha(
-  p: CaptchaProps, emit: CaptchaEmits,
-  captchaInputRef?: { value: HTMLInputElement | null },
+  p: CaptchaProps,
+  emit: CaptchaEmits,
+  captchaInputRef?: { value: HTMLInputElement | null }
 ) {
   const inputText = ref('')
   const imageShown = ref(false)
   const controlsShown = ref(false)
-  const captchaImageRef = ref<HTMLElement | null>(null)
-  const hexCaptchaInstance = ref<HexCaptchaInstance | null>(null)
 
   const reasonText = computed(() => {
     if (!p.reason) return ''
@@ -99,45 +45,11 @@ export function useCaptcha(
     return /^[a-zA-Z0-9]{4,}$/.test(inputText.value)
   })
 
-  // Инициализация hex капчи
-  const initHexCaptcha = async () => {
-    if (!p.captcha?.hex || !captchaImageRef.value) return
-
-    try {
-      const HexCaptcha = await loadHexCaptcha()
-
-      if (HexCaptcha && p.captcha.frames && p.captcha.overlay) {
-        // Создаем экземпляр HexCaptcha
-        const instance = new HexCaptcha({
-          holder: captchaImageRef.value,
-          data: {
-            frames: p.captcha.frames,
-            overlay: p.captcha.overlay,
-            duration: 250,
-          },
-        })
-
-        hexCaptchaInstance.value = instance as HexCaptchaInstance
-
-        setTimeout(() => {
-          imageShown.value = true
-          controlsShown.value = true
-        }, 300)
-      } else {
-        // Если библиотека недоступна, просто показываем изображение
-        setTimeout(() => {
-          imageShown.value = true
-          controlsShown.value = true
-        }, 300)
-      }
-    } catch (error) {
-      console.error('Failed to initialize HexCaptcha:', error)
-      // Fallback: показываем обычное изображение
-      setTimeout(() => {
-        imageShown.value = true
-        controlsShown.value = true
-      }, 300)
-    }
+  const reveal = () => {
+    setTimeout(() => {
+      imageShown.value = true
+      controlsShown.value = true
+    }, REVEAL_DELAY_MS)
   }
 
   // Обработка ввода
@@ -150,7 +62,8 @@ export function useCaptcha(
     // Прокрутка к полю ввода на мобильных устройствах
     if (window.innerWidth < 768) {
       setTimeout(() => {
-        const input = captchaInputRef?.value || document.querySelector('.captcha-input') as HTMLElement
+        const input =
+          captchaInputRef?.value || (document.querySelector('.captcha-input') as HTMLElement)
         if (input) {
           input.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
@@ -162,53 +75,32 @@ export function useCaptcha(
   const handleSubmit = async () => {
     if (!isValid.value || !p.captcha) return
 
-    try {
-      // Получаем углы для hex капчи, если есть
-      const angles = hexCaptchaInstance.value?.angles || null
+    // make() не бросает: код ошибки приходит в callback. Раньше ветки по
+    // исключениям были мёртвыми, и после «попытки кончились» новая капча не
+    // запрашивалась.
+    let failure: string | null = null
+    const result = await captchaAPI.make(
+      inputText.value,
+      (error) => {
+        failure = error
+      },
+      p.proxyOptions
+    )
 
-      // Отправляем решение
-      const result = await captchaAPI.make(
-        inputText.value,
-        angles,
-        undefined,
-        p.proxyOptions
-      )
-
-      if (result && result.done) {
-        // Капча успешно решена - сразу эмитим success
-        emit('success', result)
-      } else {
-        emit('error', t('accountMsg.captchaSolveFailed'))
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-
-      if (errorMessage === 'captchashots') {
-        emit('error', t('accountMsg.captchaTooManyAttempts'))
-        handleRedo()
-        return
-      }
-
-      if (errorMessage === 'captchanotequal_angles') {
-        emit('error', t('accountMsg.captchaAnglesMismatch'))
-        return
-      }
-
-      emit('error', errorMessage || t('accountMsg.captchaError'))
+    if (result?.done) {
+      emit('success', result)
+      return
     }
+    if (failure === 'captchashots') {
+      emit('error', t('accountMsg.captchaTooManyAttempts'))
+      handleRedo()
+      return
+    }
+    emit('error', t('accountMsg.captchaSolveFailed'))
   }
 
   // Обновление капчи
   const handleRedo = () => {
-    // Очищаем hex капчу, если была инициализирована
-    if (hexCaptchaInstance.value && captchaImageRef.value) {
-      const container = captchaImageRef.value.querySelector('.hexCaptcha')
-      if (container) {
-        container.remove()
-      }
-      hexCaptchaInstance.value = null
-    }
-
     inputText.value = ''
     imageShown.value = false
     controlsShown.value = false
@@ -216,62 +108,26 @@ export function useCaptcha(
     emit('redo')
   }
 
-  // Инициализация при монтировании
   onMounted(() => {
-    if (p.captcha) {
-      if (p.captcha.hex) {
-        initHexCaptcha()
-      } else {
-        setTimeout(() => {
-          imageShown.value = true
-          controlsShown.value = true
-        }, 300)
-      }
-    }
+    if (p.captcha) reveal()
   })
 
-  // Очистка при размонтировании
-  onUnmounted(() => {
-    if (hexCaptchaInstance.value && captchaImageRef.value) {
-      const container = captchaImageRef.value.querySelector('.hexCaptcha')
-      if (container) {
-        container.remove()
-      }
-    }
-  })
-
-  // Отслеживание изменений капчи
-  watch(() => p.captcha, (newCaptcha) => {
-    if (newCaptcha) {
-      // Очищаем предыдущую hex капчу
-      if (hexCaptchaInstance.value && captchaImageRef.value) {
-        const container = captchaImageRef.value.querySelector('.hexCaptcha')
-        if (container) {
-          container.remove()
-        }
-        hexCaptchaInstance.value = null
-      }
-
+  // Новая капча: сбрасываем ввод и показываем заново.
+  watch(
+    () => p.captcha,
+    (newCaptcha) => {
+      if (!newCaptcha) return
       inputText.value = ''
       imageShown.value = false
       controlsShown.value = false
-
-      if (newCaptcha.hex) {
-        initHexCaptcha()
-      } else {
-        setTimeout(() => {
-          imageShown.value = true
-          controlsShown.value = true
-        }, 300)
-      }
+      reveal()
     }
-  })
+  )
 
   return {
     inputText,
     imageShown,
     controlsShown,
-    captchaImageRef,
     reasonText,
     isValid,
     handleInput,

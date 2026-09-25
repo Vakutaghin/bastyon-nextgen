@@ -67,57 +67,19 @@ describe('get', () => {
   })
 })
 
-describe('getHex', () => {
-  it('запрашивает captchaHex с языком ru', async () => {
-    _fetchHttp.mockResolvedValue({ id: 'h1', done: false })
-
-    await api.getHex()
-
-    expect(_fetchHttp).toHaveBeenCalledWith({
-      path: 'captchaHex',
-      data: { captcha: null, language: 'ru' },
-      options: { auth: true },
-    })
-  })
-
-  it('авто-решает только при наличии result, !done и angles', async () => {
-    _fetchHttp.mockImplementation(async ({ path }: { path: string }) =>
-      path === 'captchaHex'
-        ? { id: 'h1', result: 'puzzle', done: false, angles: [10, 20] }
-        : { id: 'h1' }
-    )
-
-    const res = await api.getHex()
-
-    expect(res).toMatchObject({ id: 'h1', done: true })
-    expect(_fetchHttp.mock.calls[1][0]).toMatchObject({
-      path: 'makecaptcha',
-      data: { text: 'puzzle', angles: [10, 20] },
-    })
-  })
-
-  it('не решает, если нет angles', async () => {
-    _fetchHttp.mockResolvedValue({ id: 'h1', result: 'puzzle', done: false })
-
-    await api.getHex()
-
-    expect(_fetchHttp).toHaveBeenCalledTimes(1) // makecaptcha не вызывался
-  })
-})
-
 describe('make', () => {
   it('отправляет решение, помечает done, сохраняет id в localStorage', async () => {
     _fetchHttp.mockResolvedValue({ id: 'solved-1' })
     const cb = vi.fn()
 
-    const res = await api.make('answer', [1, 2], cb)
+    const res = await api.make('answer', cb)
 
     expect(res).toMatchObject({ id: 'solved-1', done: true })
     expect(cb).toHaveBeenCalledWith(null, { id: 'solved-1', done: true })
     expect(localStorage.getItem('captcha_key')).toBe('solved-1')
     expect(_fetchHttp).toHaveBeenCalledWith({
       path: 'makecaptcha',
-      data: { captcha: null, text: 'answer', angles: [1, 2] },
+      data: { captcha: null, text: 'answer' },
       options: { auth: true },
     })
   })
@@ -126,26 +88,17 @@ describe('make', () => {
     _fetchHttp.mockRejectedValueOnce(new Error('error: captchashots limit'))
     const cb = vi.fn()
 
-    const res = await api.make('answer', null, cb)
+    const res = await api.make('answer', cb)
 
     expect(res).toBeNull()
     expect(cb).toHaveBeenCalledWith('captchashots')
-  })
-
-  it('спец-ошибка captchanotequal_angles → callback соответствующий, null', async () => {
-    _fetchHttp.mockRejectedValueOnce(new Error('captchanotequal_angles'))
-    const cb = vi.fn()
-
-    await api.make('answer', [1], cb)
-
-    expect(cb).toHaveBeenCalledWith('captchanotequal_angles')
   })
 
   it('прочая ошибка → callback(message), null', async () => {
     _fetchHttp.mockRejectedValueOnce(new Error('network fail'))
     const cb = vi.fn()
 
-    const res = await api.make('answer', null, cb)
+    const res = await api.make('answer', cb)
 
     expect(res).toBeNull()
     expect(cb).toHaveBeenCalledWith('network fail')
@@ -176,8 +129,6 @@ describe('load / save (round-trip через localStorage)', () => {
     _fetchHttp.mockResolvedValue({ id: 'c2', done: true })
     await api.get(undefined, true)
 
-    expect(_fetchHttp).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { captcha: null } })
-    )
+    expect(_fetchHttp).toHaveBeenCalledWith(expect.objectContaining({ data: { captcha: null } }))
   })
 })

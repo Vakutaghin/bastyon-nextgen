@@ -11,7 +11,6 @@ beforeAll(() => setI18nLocale('ru'))
 
 const {
   _getProxy,
-  _getHex,
   _getCaptcha,
   _showModal,
   _fetchHttp,
@@ -20,7 +19,6 @@ const {
   mockAuth,
 } = vi.hoisted(() => ({
   _getProxy: vi.fn(),
-  _getHex: vi.fn(),
   _getCaptcha: vi.fn(),
   _showModal: vi.fn(),
   _fetchHttp: vi.fn(),
@@ -30,7 +28,7 @@ const {
 }))
 
 vi.mock('./proxy-with-wallet', () => ({ getProxyWithWalletCached: _getProxy }))
-vi.mock('./captcha-api', () => ({ captchaAPI: { getHex: _getHex, get: _getCaptcha } }))
+vi.mock('./captcha-api', () => ({ captchaAPI: { get: _getCaptcha } }))
 vi.mock('@/components/captcha', () => ({ showCaptchaModal: _showModal }))
 vi.mock('@/helpers/api/request', () => ({ fetchHttp: _fetchHttp }))
 vi.mock('@/helpers/api/error-codes', () => ({
@@ -46,7 +44,6 @@ const PARAMS = { reason: 'registration' }
 
 beforeEach(() => {
   _getProxy.mockReset().mockResolvedValue({ host: 'proxy', port: 8899 })
-  _getHex.mockReset().mockResolvedValue({ id: 'cap1', done: true })
   _getCaptcha.mockReset().mockResolvedValue({ id: 'cap1', done: true })
   _showModal.mockReset().mockResolvedValue({ id: 'cap1', done: true })
   _fetchHttp.mockReset().mockResolvedValue({ action: 'action-1' })
@@ -59,7 +56,9 @@ beforeEach(() => {
 describe('requestUnspents', () => {
   it('бросает, если прокси с кошельком не найден', async () => {
     _getProxy.mockResolvedValue(null)
-    await expect(requestUnspents('PAddr', PARAMS)).rejects.toThrow('прокси с регистрационным кошельком')
+    await expect(requestUnspents('PAddr', PARAMS)).rejects.toThrow(
+      'прокси с регистрационным кошельком'
+    )
   })
 
   it('бросает, если нет ключей', async () => {
@@ -67,7 +66,7 @@ describe('requestUnspents', () => {
     await expect(requestUnspents('PAddr', PARAMS)).rejects.toThrow('Ключи не найдены')
   })
 
-  it('happy path: getHex решает капчу, free/balance возвращает action + proxy', async () => {
+  it('happy path: капча уже решена, free/balance возвращает action + proxy', async () => {
     const res = await requestUnspents('PAddr', PARAMS)
 
     expect(res).toEqual({ action: 'action-1', proxy: { host: 'proxy', port: 8899 } })
@@ -76,23 +75,11 @@ describe('requestUnspents', () => {
       data: { address: 'PAddr', captcha: 'cap1', key: 'registration' },
       options: { auth: true, host: 'proxy', port: 8899 },
     })
-    // get не понадобился, т.к. getHex уже done
-    expect(_getCaptcha).not.toHaveBeenCalled()
-  })
-
-  it('если getHex не решил — пробует get', async () => {
-    _getHex.mockResolvedValue({ id: 'cap1', done: false })
-    _getCaptcha.mockResolvedValue({ id: 'cap2', done: true })
-
-    const res = await requestUnspents('PAddr', PARAMS)
-
-    expect(_getCaptcha).toHaveBeenCalled()
-    expect(res.action).toBe('action-1')
-    expect(_fetchHttp.mock.calls[0][0].data.captcha).toBe('cap2')
+    // Текстовая капча прокси — единственная: hex-вариант все прокси выключили.
+    expect(_getCaptcha).toHaveBeenCalledTimes(1)
   })
 
   it('если авто-решение не сработало — зовёт onCaptchaRequired', async () => {
-    _getHex.mockResolvedValue({ id: 'cap1', done: false })
     _getCaptcha.mockResolvedValue({ id: 'cap1', done: false })
     const onCaptcha = vi.fn().mockResolvedValue({ id: 'cap-manual', done: true })
 
@@ -105,7 +92,6 @@ describe('requestUnspents', () => {
   })
 
   it('без onCaptchaRequired показывает модалку капчи', async () => {
-    _getHex.mockResolvedValue({ id: 'cap1', done: false })
     _getCaptcha.mockResolvedValue({ id: 'cap1', done: false })
     _showModal.mockResolvedValue({ id: 'cap-modal', done: true })
 
@@ -117,7 +103,6 @@ describe('requestUnspents', () => {
   })
 
   it('после MAX_CAPTCHA_RETRIES нерешённой капчи бросает понятную ошибку', async () => {
-    _getHex.mockResolvedValue({ id: 'cap1', done: false })
     _getCaptcha.mockResolvedValue({ id: 'cap1', done: false })
     _showModal.mockRejectedValue(new Error('user closed')) // → captcha_cancelled → retry
 
@@ -128,7 +113,9 @@ describe('requestUnspents', () => {
 
   it('captcha-ошибка от free/balance вызывает ретрай, затем успех', async () => {
     _isCaptchaError.mockReturnValue(true)
-    _fetchHttp.mockRejectedValueOnce(new Error('captcha invalid')).mockResolvedValue({ action: 'ok-2' })
+    _fetchHttp
+      .mockRejectedValueOnce(new Error('captcha invalid'))
+      .mockResolvedValue({ action: 'ok-2' })
 
     const res = await requestUnspents('PAddr', PARAMS)
 
@@ -140,7 +127,9 @@ describe('requestUnspents', () => {
     _isRegBlocking.mockReturnValue(true)
     _fetchHttp.mockRejectedValue(new Error('reg blocked'))
 
-    await expect(requestUnspents('PAddr', PARAMS)).rejects.toThrow('Ошибка регистрации: reg blocked')
+    await expect(requestUnspents('PAddr', PARAMS)).rejects.toThrow(
+      'Ошибка регистрации: reg blocked'
+    )
   })
 
   it('прочая ошибка free/balance пробрасывается как есть', async () => {

@@ -5,11 +5,11 @@
     </SC_Reason>
 
     <SC_Subcaption>
-      <span>{{ captcha?.hex ? t('misc.solveHexCaptcha') : t('misc.enterTextFromImage') }}</span>
+      <span>{{ t('misc.enterTextFromImage') }}</span>
     </SC_Subcaption>
 
     <SC_CaptchaImageWrapper :shown="imageShown">
-      <SC_CaptchaImage ref="captchaImageRef">
+      <SC_CaptchaImage>
         <!-- SVG капчи приходит с ноды (недоверенный источник). Рендерим через
              data-URI <img>, а не v-html: SVG внутри <img> исполняется в
              sandbox-режиме (без скриптов/внешних запросов) — закрывает P1-4. -->
@@ -81,12 +81,11 @@ const captchaInputRef = ref<HTMLInputElement | null>(null)
 
 /**
  * SVG-капча как data-URI для рендера через <img> (P1-4). Кодируем в base64
- * с поддержкой юникода. Только для текстовой капчи (hex-капча грузит свою
- * библиотеку отдельно).
+ * с поддержкой юникода.
  */
 const captchaImgSrc = computed<string>(() => {
   const svg = p.captcha?.img
-  if (!svg || p.captcha?.hex) return ''
+  if (!svg) return ''
   try {
     const b64 = window.btoa(unescape(encodeURIComponent(svg)))
     return `data:image/svg+xml;base64,${b64}`
@@ -107,5 +106,3 @@ const {
   handleRedo,
 } = useCaptcha(p, emit, captchaInputRef)
 </script>
-
-<!-- Стили hex-captcha загружаются динамически через JS, если библиотека доступна -->

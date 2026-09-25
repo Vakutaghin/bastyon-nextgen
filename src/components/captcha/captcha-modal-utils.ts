@@ -61,7 +61,7 @@ export function showCaptchaModal(options: ShowCaptchaOptions): Promise<CaptchaDa
           // Обновление капчи - получаем новую через API
           try {
             const { captchaAPI } = await import('@/blockchain/api/captcha-api')
-            const newCaptcha = await captchaAPI.getHex(undefined, true, currentProxyOptions)
+            const newCaptcha = await captchaAPI.get(undefined, true, currentProxyOptions)
             if (newCaptcha) {
               currentCaptcha.value = newCaptcha
             }

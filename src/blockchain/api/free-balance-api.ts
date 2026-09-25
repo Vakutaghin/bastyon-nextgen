@@ -71,13 +71,8 @@ export async function requestUnspents(
   log.debug('Step 3: solving captcha...')
 
   try {
-    captcha = await captchaAPI.getHex(undefined, false, proxyOptions)
-    log.debug('getHex result:', captcha ? { id: captcha.id, done: captcha.done } : null)
-
-    if (!captcha || !captcha.done) {
-      captcha = await captchaAPI.get(undefined, false, proxyOptions)
-      log.debug('get result:', captcha ? { id: captcha.id, done: captcha.done } : null)
-    }
+    captcha = await captchaAPI.get(undefined, false, proxyOptions)
+    log.debug('get result:', captcha ? { id: captcha.id, done: captcha.done } : null)
 
     // Если капча не решена автоматически, показываем пользователю
     if (captcha && !captcha.done) {
