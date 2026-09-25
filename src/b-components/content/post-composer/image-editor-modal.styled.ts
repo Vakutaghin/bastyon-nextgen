@@ -106,7 +106,7 @@ export const SC_FilterRow = styled.div`
 
 export const SC_FilterChip = styled('button', activeProps)`
   padding: 5px 11px;
-  border-radius: 14px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${(p) => (p.active ? COLORS.PRIMARY : COLORS.BORDER_DEFAULT)};
   background: ${(p) => (p.active ? COLORS.PRIMARY : COLORS.BG_SECONDARY)};
   color: ${(p) => (p.active ? COLORS.WHITE : COLORS.TEXT_SECONDARY)};

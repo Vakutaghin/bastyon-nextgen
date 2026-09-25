@@ -78,7 +78,7 @@ export const SC_WelcomeNav = styled.div`
 
 export const SC_WelcomeBack = styled.button`
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   background: ${COLORS.BG_SECONDARY};
   color: ${COLORS.TEXT_PRIMARY};
@@ -93,7 +93,7 @@ export const SC_WelcomeBack = styled.button`
 
 export const SC_WelcomeNext = styled.button`
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: none;
   background: ${COLORS.PRIMARY};
   color: ${COLORS.WHITE};

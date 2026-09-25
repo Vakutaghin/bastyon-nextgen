@@ -45,7 +45,7 @@ export const SC_SettingsMain = styled.main`
   min-width: 0;
   background: ${COLORS.BG_PRIMARY};
   padding: 24px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     padding: 16px 12px;

@@ -43,7 +43,7 @@ export const SC_PkoinChartFilterBtn = styled.button`
   color: ${COLORS.GRAY_212};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   padding: 6px 10px;
   cursor: pointer;
   user-select: none;
@@ -84,7 +84,7 @@ export const SC_PkoinChartContainer = styled.div`
   min-height: 260px;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_8};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   user-select: none;
 
@@ -111,7 +111,7 @@ export const SC_PkoinChartSidebar = styled.aside`
   padding: 20px 16px;
   background: ${COLORS.BG_LIGHT};
   border: 1px solid ${COLORS.OVERLAY_8};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_PkoinChartPriceLabel = styled.div`
@@ -181,6 +181,6 @@ export const SC_PkoinChartError = styled.div`
   font-size: 14px;
   color: ${COLORS.DANGER_DEEP};
   background: ${COLORS.DANGER_BG_SOFT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   margin-top: 12px;
 `

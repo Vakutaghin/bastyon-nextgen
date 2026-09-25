@@ -13,7 +13,7 @@ export const SC_TorImageGate = styled.button`
   min-height: 96px;
   padding: 12px;
   border: 1px dashed var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: var(--color-bg-tertiary);
   color: var(--color-text-secondary);
   font: inherit;

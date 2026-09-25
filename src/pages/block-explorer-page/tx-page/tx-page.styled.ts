@@ -68,7 +68,7 @@ export const SC_TxTypeBadge = styled.span`
   font-weight: 600;
   background: ${COLORS.PRIMARY_LIGHT};
   color: ${COLORS.PRIMARY};
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_TxMetaGrid = styled.div`
@@ -76,7 +76,7 @@ export const SC_TxMetaGrid = styled.div`
   grid-template-columns: repeat(2, minmax(0, 1fr));
   background: ${COLORS.BG_SECONDARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;
 
@@ -121,7 +121,7 @@ export const SC_TxIOGrid = styled.div`
   align-items: start;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   padding: 18px;
   margin-bottom: 24px;
 
@@ -149,7 +149,7 @@ export const SC_TxIOItem = styled.div`
   padding: 10px 12px;
   background: ${COLORS.BG_SECONDARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   font-size: 13px;
 `
 
@@ -196,7 +196,7 @@ export const SC_TxRawPre = styled.pre`
   margin: 12px 0 0;
   padding: 14px;
   background: ${COLORS.GRAY_F1};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   font-family: var(--font-family-mono);
   font-size: 12px;
   color: ${COLORS.TEXT_DARK};

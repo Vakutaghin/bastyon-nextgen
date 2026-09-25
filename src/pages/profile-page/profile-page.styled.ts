@@ -19,7 +19,7 @@ export const SC_ProfileMainContent = styled.main`
   min-width: 0;
   background: ${COLORS.BG_PRIMARY};
   padding: 20px 0;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     padding: 12px 8px 16px;

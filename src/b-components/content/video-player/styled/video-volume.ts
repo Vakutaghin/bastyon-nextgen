@@ -19,7 +19,7 @@ export const SC_VideoVolumeButton = styled.button`
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 4px !important;
+  border-radius: var(--ui-radius-sm) !important;
   transition: background-color 0.2s ease !important;
   color: var(--color-text-primary) !important;
   flex-shrink: 0 !important;
@@ -101,7 +101,7 @@ export const SC_VideoVolumeSlider = styled.div`
   min-height: 6px !important;
   max-height: 6px !important;
   background-color: rgba(0, 0, 0, 0.3) !important;
-  border-radius: 3px !important;
+  border-radius: var(--ui-radius-xs) !important;
   cursor: pointer !important;
   position: relative !important;
   overflow: hidden !important;
@@ -134,7 +134,7 @@ export const SC_VideoVolumeFill = styled.div<{ isDragging?: boolean }>`
   width: 0%;
   background-color: #333 !important;
   background: linear-gradient(90deg, #333 0%, #555 100%) !important;
-  border-radius: 3px !important;
+  border-radius: var(--ui-radius-xs) !important;
   transition: ${(p) => (p.isDragging ? 'none' : 'width 0.1s linear')} !important;
   position: absolute !important;
   top: 0 !important;
@@ -161,7 +161,7 @@ export const SC_VolumeNotification = styled.div<{ show?: boolean }>`
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   padding: 12px 24px !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   color: #eee !important;
   font-size: 18px !important;
   font-weight: 500 !important;

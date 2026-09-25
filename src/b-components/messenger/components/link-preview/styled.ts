@@ -6,7 +6,7 @@ export const SC_LinkPreview = styled.a`
   text-decoration: none;
   border-left: 3px solid ${COLORS.BRAND_CYAN};
   background: ${COLORS.BRAND_CYAN_SOFT};
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--ui-radius-lg) var(--ui-radius-lg) 0;
   padding: 8px 10px;
   margin-top: 4px;
   width: 100%;
@@ -67,7 +67,7 @@ export const SC_Description = styled.div`
 export const SC_Thumb = styled.div`
   width: 64px;
   height: 64px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   flex-shrink: 0;
   overflow: hidden;
   background: ${COLORS.BG_SECONDARY};
@@ -83,6 +83,6 @@ export const SC_Thumb = styled.div`
     min-height: 64px;
     padding: 4px;
     font-size: 10px;
-    border-radius: 6px;
+    border-radius: var(--ui-radius-md);
   }
 `

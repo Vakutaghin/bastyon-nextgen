@@ -9,7 +9,7 @@ export const SC_Window = styled('div', props)`
   width: 360px;
   height: 500px;
   background-color: ${COLORS.BG_PRIMARY};
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_LG};
   display: flex;
   flex-direction: column;

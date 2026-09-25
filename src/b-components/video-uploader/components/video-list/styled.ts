@@ -8,7 +8,7 @@ export const SC_VideosSection = styled.div`
   overflow-y: auto !important;
   padding: 16px !important;
   background-color: ${COLORS.BG_TERTIARY} !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
 `
 
 export const SC_SectionTitle = styled.h3`
@@ -32,7 +32,7 @@ export const SC_VideoItem = styled.div`
   align-items: center !important;
   padding: 16px !important;
   background-color: ${COLORS.BG_PRIMARY} !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
   border: none !important;
@@ -102,7 +102,7 @@ export const SC_VideoActions = styled.div`
   backdrop-filter: blur(4px) !important;
   background: ${COLORS.OVERLAY_30} !important;
   padding: 4px !important;
-  border-radius: 6px !important;
+  border-radius: var(--ui-radius-md) !important;
   border: none !important;
   outline: none !important;
 
@@ -124,7 +124,7 @@ export const SC_VideoActions = styled.div`
 export const SC_ActionButton = styled.button`
   width: 32px !important;
   height: 32px !important;
-  border-radius: 6px !important;
+  border-radius: var(--ui-radius-md) !important;
   border: none !important;
   outline: none !important;
   background-color: ${COLORS.SURFACE_FROSTED} !important;

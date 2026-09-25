@@ -32,7 +32,7 @@ export const SC_BlacklistRow = styled.div`
   align-items: center;
   gap: 12px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER_DEFAULT};
 `
 
@@ -81,7 +81,7 @@ export const SC_BlacklistName = styled.span`
 export const SC_UnblockBtn = styled.button`
   flex-shrink: 0;
   padding: 6px 14px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   background: ${COLORS.BG_SECONDARY};
   color: ${COLORS.TEXT_PRIMARY};

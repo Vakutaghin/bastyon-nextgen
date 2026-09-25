@@ -32,7 +32,7 @@ export const SC_GeneralLabel = styled.span`
 export const SC_LangSwitcher = styled.div`
   display: inline-flex;
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 

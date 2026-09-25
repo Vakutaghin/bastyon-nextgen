@@ -7,7 +7,7 @@ export const SC_FileMessage = styled.div`
   gap: 10px;
   padding: 10px 12px;
   background: ${COLORS.OVERLAY_3};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   width: 100%;
   max-width: min(320px, 100%);
   min-width: 0;

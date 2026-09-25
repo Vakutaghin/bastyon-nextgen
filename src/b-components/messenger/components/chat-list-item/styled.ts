@@ -75,7 +75,7 @@ export const SC_Badge = styled.span`
   font-size: 11px;
   font-weight: bold;
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   min-width: 18px;
   text-align: center;
 `
@@ -95,7 +95,7 @@ export const SC_DotsBtn = styled.button`
   cursor: pointer;
   color: ${COLORS.GRAY_999};
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   transition:
     opacity 0.2s,
     color 0.2s;
@@ -111,7 +111,7 @@ export const SC_DotsBtn = styled.button`
 
 export const SC_Dropdown = styled.div`
   background: ${COLORS.BG_PRIMARY};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_MD};
   min-width: 180px;
   padding: 4px 0;
@@ -150,7 +150,7 @@ export const SC_ConfirmOverlay = styled.div`
 
 export const SC_ConfirmDialog = styled.div`
   background: ${COLORS.BG_PRIMARY};
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   padding: 24px;
   width: 95%;
   max-width: 480px;
@@ -183,7 +183,7 @@ export const SC_ConfirmButtons = styled.div`
 export const SC_CancelBtn = styled.button`
   padding: 8px 16px;
   border: 1px solid ${COLORS.GRAY_DDD};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.BG_PRIMARY};
   color: ${COLORS.TEXT_PRIMARY};
   font-size: 14px;
@@ -198,7 +198,7 @@ export const SC_CancelBtn = styled.button`
 export const SC_ConfirmDeleteBtn = styled.button`
   padding: 8px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.RED_ANT};
   color: ${COLORS.WHITE};
   font-size: 14px;

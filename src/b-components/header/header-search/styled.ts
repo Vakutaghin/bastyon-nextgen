@@ -162,7 +162,7 @@ export const SC_RecentClearButton = styled.button`
   background: none;
   border: none;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   cursor: pointer;
   font-size: 11px;
   color: ${COLORS.TEXT_HINT};
@@ -180,7 +180,7 @@ export const SC_RecentRemoveButton = styled.button`
   border: none;
   padding: 4px;
   margin-left: auto;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   cursor: pointer;
   color: ${COLORS.TEXT_HINT};
   font-size: 14px;

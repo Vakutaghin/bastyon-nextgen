@@ -6,7 +6,7 @@ export const SC_MessengerContainer = styled.div`
   flex: 1;
   display: flex;
   background: ${COLORS.BG_PRIMARY};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.GRAY_EEE};
   overflow: hidden;
 

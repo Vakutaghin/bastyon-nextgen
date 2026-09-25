@@ -54,7 +54,7 @@ export const SC_MessageInput = styled.textarea`
 
   &::-webkit-scrollbar-thumb {
     background: ${COLORS.GRAY_CCC};
-    border-radius: 2px;
+    border-radius: var(--ui-radius-xs);
   }
 `
 
@@ -234,7 +234,7 @@ export const SC_StartChatContainer = styled.div`
 
 export const SC_StartChatButton = styled.button`
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: none;
   background-color: ${COLORS.BRAND_CYAN};
   color: ${COLORS.WHITE};
@@ -295,7 +295,7 @@ export const SC_PartnerInfoCard = styled.div`
   margin: 16px auto 12px;
   padding: 16px 16px 6px;
   border: 1px solid ${COLORS.GRAY_EEE};
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   max-width: 380px;
   box-sizing: border-box;
   text-align: center;
@@ -422,7 +422,7 @@ export const SC_ReplyBanner = styled.div`
 export const SC_ReplyBannerBar = styled.div`
   width: 3px;
   align-self: stretch;
-  border-radius: 2px;
+  border-radius: var(--ui-radius-xs);
   background: ${COLORS.BRAND_CYAN};
   flex-shrink: 0;
 `
@@ -483,7 +483,7 @@ export const SC_KeyChangedAccept = styled.button`
   flex-shrink: 0;
   background: none;
   border: 1px solid ${COLORS.DANGER};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   padding: 4px 10px;
   font-size: 12px;
   color: ${COLORS.DANGER_DEEP};

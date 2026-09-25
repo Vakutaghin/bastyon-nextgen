@@ -64,7 +64,7 @@ export const SC_ControlBtn = styled('button', activeProps)`
   justify-content: center;
   color: ${COLORS.TEXT_SECONDARY};
   transition: all 0.2s;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
 
   &:hover {
     color: ${COLORS.TEXT_PRIMARY};

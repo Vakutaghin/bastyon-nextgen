@@ -10,7 +10,7 @@ export const SC_PrivateKeyWarning = styled.div`
   padding: 12px 16px;
   background-color: ${COLORS.WARNING_BG};
   border: 1px solid ${COLORS.WARNING_BORDER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   margin-bottom: 20px;
   font-size: 13px;
   line-height: 1.5;
@@ -21,7 +21,7 @@ export const SC_PrivateKeyBox = styled.div`
   position: relative;
   background-color: ${COLORS.BG_TERTIARY};
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 16px;
   padding-bottom: 48px;
   margin-bottom: 16px;
@@ -54,7 +54,7 @@ export const SC_CopyIconBtn = styled.button`
   height: 36px;
   padding: 0;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   background: ${COLORS.BG_PRIMARY};
   color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
@@ -80,7 +80,7 @@ export const SC_ShowKeyButton = styled.button`
   color: ${COLORS.WHITE};
   background: ${COLORS.ANT_BLUE};
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
@@ -104,7 +104,7 @@ export const SC_HideKeyButton = styled.button`
   color: ${COLORS.TEXT_SECONDARY};
   background: transparent;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
     color ${TRANSITIONS.FAST},
@@ -120,7 +120,7 @@ export const SC_ConfirmOverlay = styled.div`
   padding: 20px;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.WARNING_BORDER_LIGHT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   max-width: 480px;
 `
 
@@ -154,7 +154,7 @@ export const SC_ConfirmBtnPrimary = styled.button`
   color: ${COLORS.WHITE};
   background: ${COLORS.ANT_BLUE};
   border: none;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
@@ -170,7 +170,7 @@ export const SC_ConfirmBtnDefault = styled.button`
   color: ${COLORS.TEXT_SECONDARY};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
     color ${TRANSITIONS.FAST},

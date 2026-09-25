@@ -6,7 +6,7 @@ export const SC_PayloadCard = styled.div`
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
   border-left: 3px solid ${COLORS.PRIMARY};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   padding: 18px 22px;
   margin-bottom: 24px;
 `
@@ -25,7 +25,7 @@ export const SC_PayloadIcon = styled.span`
   width: 32px;
   height: 32px;
   background: ${COLORS.PRIMARY_LIGHT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   color: ${COLORS.PRIMARY};
   font-size: 18px;
   flex-shrink: 0;
@@ -92,7 +92,7 @@ export const SC_PayloadBtn = styled.a`
   color: ${COLORS.PRIMARY};
   background: ${COLORS.PRIMARY_LIGHT};
   border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   text-decoration: none;
   cursor: pointer;
   transition: background-color ${TRANSITIONS.QUICK};
@@ -111,7 +111,7 @@ export const SC_PayloadScore = styled.span`
   font-size: 13px;
   color: ${COLORS.PRIMARY};
   background: ${COLORS.PRIMARY_LIGHT};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   margin-right: 6px;
 `
 

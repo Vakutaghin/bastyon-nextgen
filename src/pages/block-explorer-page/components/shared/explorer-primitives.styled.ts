@@ -44,7 +44,7 @@ export const SC_LoadMoreBtn = styled.button`
   color: ${COLORS.PRIMARY};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
     background-color ${TRANSITIONS.QUICK},

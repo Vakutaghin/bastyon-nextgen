@@ -18,7 +18,7 @@ export const SC_InfoPanel = styled.div`
 export const SC_InfoSection = styled.div`
   background: ${COLORS.BG_INPUT} !important;
   border: 1px solid ${COLORS.GRAY_E8} !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   padding: 16px !important;
   box-sizing: border-box !important;
 `
@@ -70,7 +70,7 @@ export const SC_InfoValue = styled.span`
 export const SC_TranscoderBadge = styled.span`
   display: inline-block !important;
   padding: 4px 8px !important;
-  border-radius: 4px !important;
+  border-radius: var(--ui-radius-sm) !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   background-color: var(--color-bg-secondary) !important;

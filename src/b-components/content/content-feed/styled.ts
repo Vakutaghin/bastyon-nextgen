@@ -180,7 +180,7 @@ export const SC_ScrollToTop = styled.button`
   background: ${COLORS.SURFACE_FROSTED};
   backdrop-filter: blur(8px);
   border: 1px solid ${COLORS.OVERLAY_8};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
   box-shadow: ${COLORS.SHADOW_MD};
   transition:
@@ -219,7 +219,7 @@ export const SC_PhotoPreviewOverlay = styled.div`
 export const SC_PhotoPreviewImage = styled.img`
   max-width: 100%;
   max-height: 70vh;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_PhotoPreviewHint = styled.div`

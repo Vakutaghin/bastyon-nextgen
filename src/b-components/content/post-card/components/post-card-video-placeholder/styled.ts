@@ -6,7 +6,7 @@ export const SC_VideoPlaceholder = styled.div`
   width: 100%;
   aspect-ratio: 16 / 9;
   background: linear-gradient(135deg, ${COLORS.BORDER_LIGHTER} 0%, ${COLORS.BORDER_LIGHT} 100%);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   margin-bottom: 15px;
   display: flex;
   align-items: center;

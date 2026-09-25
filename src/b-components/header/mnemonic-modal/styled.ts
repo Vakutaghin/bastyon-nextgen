@@ -15,7 +15,7 @@ export const SC_WarningBox = styled.div`
   padding: 16px;
   background-color: ${COLORS.ORANGE_BG};
   border: 1px solid ${COLORS.WARNING_BORDER_LIGHT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   margin-bottom: 20px;
 `
 
@@ -43,7 +43,7 @@ export const SC_MnemonicBox = styled.div`
   position: relative;
   background-color: ${COLORS.BG_TERTIARY};
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 16px;
   padding-bottom: 48px;
   margin-bottom: 20px;
@@ -61,7 +61,7 @@ export const SC_CopyIconBtn = styled.button`
   height: 36px;
   padding: 0;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   background: ${COLORS.BG_PRIMARY};
   color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
@@ -90,7 +90,7 @@ export const SC_PrivateKeyBox = styled.div`
   position: relative;
   background-color: ${COLORS.BG_TERTIARY};
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 16px;
   padding-bottom: 48px;
   margin-bottom: 20px;

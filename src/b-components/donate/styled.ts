@@ -27,7 +27,7 @@ export const SC_PresetBtn = styled.button`
   flex: 1;
   min-width: 56px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER};
   background-color: transparent;
   color: ${COLORS.TEXT_PRIMARY};
@@ -54,7 +54,7 @@ export const SC_PresetBtn = styled.button`
 export const SC_AmountInput = styled.input`
   width: 100%;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER};
   background-color: ${COLORS.SURFACE_FROSTED};
   color: ${COLORS.TEXT_PRIMARY};

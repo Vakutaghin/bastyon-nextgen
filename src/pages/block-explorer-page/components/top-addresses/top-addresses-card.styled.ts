@@ -6,7 +6,7 @@ import { SC_Placeholder as SC_PlaceholderBase } from '../shared/explorer-primiti
 export const SC_TopCard = styled.section`
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;
 `
@@ -43,7 +43,7 @@ export const SC_TopHint = styled.div`
 export const SC_TopToggle = styled.button`
   background: transparent;
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;

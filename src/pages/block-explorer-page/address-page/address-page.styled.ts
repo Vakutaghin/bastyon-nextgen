@@ -86,7 +86,7 @@ export const SC_AddrSummaryCard = styled.div`
   padding: 16px 18px;
   background: ${COLORS.BG_SECONDARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_AddrSummaryLabel = styled.div`
@@ -113,7 +113,7 @@ export const SC_AddrSummaryValueProfile = styled(SC_AddrSummaryValue)`
 export const SC_AddrTxSection = styled.section`
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 
@@ -180,7 +180,7 @@ export const SC_AddrTxTypeBadge = styled.span`
   font-weight: 600;
   background: ${COLORS.PRIMARY_LIGHT};
   color: ${COLORS.PRIMARY};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   white-space: nowrap;
 `
 

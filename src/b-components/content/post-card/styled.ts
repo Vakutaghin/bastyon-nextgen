@@ -40,7 +40,7 @@ export const SC_PendingBadge = styled.div`
   gap: 5px;
   margin-bottom: 10px;
   padding: 3px 9px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -101,7 +101,7 @@ export const SC_PostAuthorName = styled.div`
 export const SC_PostAuthorRep = styled.div`
   color: ${COLORS.TEXT_SECONDARY};
   border: 1px solid ${COLORS.BORDER_DARK};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   padding: 0 6px;
   line-height: 1.4;
   font-weight: 500;
@@ -132,7 +132,7 @@ export const SC_PostActionBtn = styled.button`
   padding: 4px 8px;
   border: none;
   background: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
   font-size: 13px;
@@ -276,7 +276,7 @@ export const SC_ChatBtn = styled.button`
   background: transparent;
   color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   line-height: 1;
 
   &:hover {
@@ -300,7 +300,7 @@ export const SC_PostCardYoutube = styled.div`
   iframe {
     width: 100%;
     aspect-ratio: 16 / 9;
-    border-radius: 8px;
+    border-radius: var(--ui-radius-lg);
     border: 0;
   }
 `
@@ -315,7 +315,7 @@ export const SC_RepostInnerCard = styled.div`
   padding: 12px 14px;
   background: ${COLORS.OVERLAY_3};
   border: 1px solid ${COLORS.OVERLAY_8};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
 `
 
 /** Блок «автор оригинала» внутри карточки репоста: аватар, имя, дата — как в шапке поста */

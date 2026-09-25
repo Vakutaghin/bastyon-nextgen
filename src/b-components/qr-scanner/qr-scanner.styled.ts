@@ -21,7 +21,7 @@ export const SC_QrUploadLabel = styled.label`
   gap: 6px;
   padding: 8px 14px;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   font-size: 14px;
   color: ${COLORS.TEXT_PRIMARY};
@@ -46,7 +46,7 @@ export const SC_QrVideoWrap = styled.div`
   max-width: 320px;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   background: ${COLORS.BLACK};
 `
@@ -62,7 +62,7 @@ export const SC_QrFrame = styled.div`
   position: absolute;
   inset: 14%;
   border: 2px solid ${COLORS.PRIMARY};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: 0 0 0 9999px ${COLORS.OVERLAY_30};
   pointer-events: none;
 `
@@ -78,7 +78,7 @@ export const SC_QrError = styled.div`
   padding: 8px 12px;
   background: ${COLORS.RED_BG};
   border: 1px solid ${COLORS.RED_BORDER};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   color: ${COLORS.DANGER};
   font-size: 13px;
 `

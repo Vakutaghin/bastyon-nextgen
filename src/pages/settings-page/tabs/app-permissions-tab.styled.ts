@@ -34,7 +34,7 @@ export const SC_AppCard = styled.div`
   gap: 10px;
   padding: 14px 16px;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_AppHead = styled.div`
@@ -46,7 +46,7 @@ export const SC_AppHead = styled.div`
 export const SC_AppIcon = styled.div`
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   flex-shrink: 0;
   overflow: hidden;
   background: ${COLORS.BG_SECONDARY};
@@ -102,7 +102,7 @@ export const SC_PermMeta = styled.span`
 export const SC_DeniedBadge = styled.span`
   font-size: 11px;
   padding: 2px 7px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.RED_BG};
   color: ${COLORS.DANGER};
 `
@@ -110,7 +110,7 @@ export const SC_DeniedBadge = styled.span`
 export const SC_RevokeBtn = styled.button`
   flex-shrink: 0;
   padding: 5px 12px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   background: ${COLORS.BG_SECONDARY};
   color: ${COLORS.DANGER};
@@ -126,7 +126,7 @@ export const SC_RevokeBtn = styled.button`
 export const SC_RevokeAllBtn = styled.button`
   flex-shrink: 0;
   padding: 5px 12px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   background: none;
   color: ${COLORS.TEXT_SECONDARY};
@@ -143,7 +143,7 @@ export const SC_RevokeAllBtn = styled.button`
 export const SC_DeleteAppBtn = styled.button`
   flex-shrink: 0;
   padding: 5px 12px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   border: 1px solid ${COLORS.DANGER};
   background: none;
   color: ${COLORS.DANGER};

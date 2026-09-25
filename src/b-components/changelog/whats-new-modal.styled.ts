@@ -18,7 +18,7 @@ export const SC_DismissButton = styled.button`
   background: ${COLORS.PRIMARY};
   color: ${COLORS.WHITE};
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 8px 20px;
   font-size: 14px;
   font-weight: 500;
@@ -34,7 +34,7 @@ export const SC_LangSwitcher = styled.div`
   display: inline-flex;
   align-self: flex-start;
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 
@@ -110,7 +110,7 @@ export const SC_MarkdownBody = styled.div`
   code {
     background: ${COLORS.OVERLAY_5};
     padding: 1px 5px;
-    border-radius: 4px;
+    border-radius: var(--ui-radius-sm);
     font-size: 12.5px;
     font-family: var(--font-family-mono);
   }

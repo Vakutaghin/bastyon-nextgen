@@ -27,7 +27,7 @@ export const SC_SearchMainContent = styled.main`
   min-width: 0;
   background: ${COLORS.BG_PRIMARY};
   padding: 20px 20px 60px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     padding: 12px 8px 60px;
@@ -99,7 +99,7 @@ export const SC_ResultItem = styled.div`
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
   cursor: pointer;
@@ -175,7 +175,7 @@ export const SC_LoadMoreWrapper = styled.div`
 export const SC_LoadMore = styled.button`
   background: none;
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 8px 20px;
   color: ${COLORS.PRIMARY};
   font-size: 13px;

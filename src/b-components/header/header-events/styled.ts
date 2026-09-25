@@ -57,7 +57,7 @@ export const SC_EventsList = styled.div`
 
 export const SC_EventItem = styled.div`
   border: 1px solid ${COLORS.GRAY_E8};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   padding: 10px 12px;
   background: ${COLORS.BG_PRIMARY};
   display: flex;
@@ -99,7 +99,7 @@ export const SC_PendingTag = styled.div`
 export const SC_EventPanel = styled.div`
   background: ${COLORS.BG_INPUT};
   border: 1px solid ${COLORS.GRAY_E8};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 8px 10px;
 `
 
@@ -145,7 +145,7 @@ export const SC_RatingDisplay = styled.div`
   gap: 4px;
   background: ${COLORS.BG_PRIMARY};
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BG_HOVER};
   white-space: nowrap;
 `
@@ -171,7 +171,7 @@ export const SC_PreviewNote = styled('div', { confirmed: Boolean })`
   gap: 8px;
   padding: 10px 12px;
   margin-bottom: 12px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${(p) => (p.confirmed ? COLORS.SUCCESS_BG_TINT : COLORS.ANT_BLUE_BG)};
   color: ${COLORS.TEXT_SECONDARY};
   font-size: 13px;
@@ -187,6 +187,6 @@ export const SC_PreviewNote = styled('div', { confirmed: Boolean })`
 
 export const SC_PreviewBody = styled.div`
   border: 1px solid ${COLORS.GRAY_E8};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `

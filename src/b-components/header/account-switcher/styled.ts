@@ -28,7 +28,7 @@ export const SC_AccountItem = styled.div<{ active?: boolean }>`
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
   transition: background-color 0.2s;
   margin-bottom: 8px;
@@ -81,7 +81,7 @@ export const SC_AccountBadge = styled.div`
   font-weight: 500;
   padding: 4px 8px;
   background-color: ${COLORS.ANT_BLUE_BG_LIGHT};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
 `
 
 export const SC_AddAccountSection = styled.div`
@@ -152,7 +152,7 @@ export const SC_WarningBox = styled.div`
   padding: 12px;
   background-color: ${COLORS.WARNING_BG};
   border: 1px solid ${COLORS.WARNING_BORDER};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
 `
 
 export const SC_WarningTitleText = styled.p`

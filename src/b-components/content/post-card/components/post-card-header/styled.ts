@@ -32,7 +32,7 @@ export const SC_PostAuthorName = styled.div`
 export const SC_PostAuthorRep = styled.div`
   color: ${COLORS.TEXT_SECONDARY};
   border: 1px solid ${COLORS.BORDER_DARK};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   padding: 0 6px;
   line-height: 1.4;
   font-weight: 500;
@@ -66,7 +66,7 @@ export const SC_ChatBtn = styled.button`
   background: transparent;
   color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   line-height: 1;
 
   &:hover {
@@ -85,7 +85,7 @@ export const SC_FollowBtn = styled.button`
   background: transparent;
   color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   line-height: 1;
 
   &:hover {
@@ -117,7 +117,7 @@ export const SC_DonateBtn = styled.button`
   background: transparent;
   color: ${COLORS.TEXT_SECONDARY};
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   line-height: 1;
 
   &:hover {

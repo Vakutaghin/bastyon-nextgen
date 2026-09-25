@@ -19,7 +19,7 @@ export const SC_ExplorerSearchInput = styled.input`
   color: ${COLORS.TEXT_PRIMARY};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   outline: none;
   transition:
     border-color ${TRANSITIONS.QUICK},
@@ -62,7 +62,7 @@ export const SC_ExplorerSearchButton = styled.button`
   color: ${COLORS.WHITE};
   background: ${COLORS.PRIMARY};
   border: none;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition: background-color ${TRANSITIONS.QUICK};
 
@@ -91,7 +91,7 @@ export const SC_SuggestionsDropdown = styled.div`
   z-index: ${Z_INDEX.LOCAL_DROPDOWN_HIGH};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: 0 8px 24px ${COLORS.OVERLAY_8};
   overflow: hidden;
 `
@@ -155,7 +155,7 @@ export const SC_KindBadge = styled('span', badgeAttrs)`
   padding: 2px 8px;
   font-size: 10px;
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   white-space: nowrap;
   color: ${(p) => {
     if (p.kind === 'tx') return COLORS.SUCCESS
@@ -196,7 +196,7 @@ export const SC_RemoveItemBtn = styled.button`
   justify-content: center;
   width: 18px;
   height: 18px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   color: ${COLORS.TEXT_MUTED};
   cursor: pointer;
   transition:

@@ -16,7 +16,7 @@ export const SC_ModalOverlay = styled.div`
 
 export const SC_ModalBox = styled.div`
   background: ${COLORS.BG_PRIMARY} !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   box-shadow: ${COLORS.SHADOW_LG} !important;
   width: 95vw !important;
   max-width: 1200px !important;

@@ -49,7 +49,7 @@ export const SC_LimitRow = styled.div`
   justify-content: space-between;
   padding: 14px 18px;
   background: ${COLORS.BG_LIGHT};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.OVERLAY_6};
   min-width: 0;
 
@@ -83,7 +83,7 @@ export const SC_LimitCtaNotice = styled.div`
   gap: 12px;
   background: ${COLORS.WARNING_BG_SOFT};
   border: 1px solid ${COLORS.WARNING_BORDER_LIGHT};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     padding: 14px 16px;
@@ -116,7 +116,7 @@ export const SC_LimitCtaButton = styled.button`
   gap: 6px;
   padding: 9px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -139,7 +139,7 @@ export const SC_LimitsLoading = styled.div`
 export const SC_LimitsError = styled.div`
   padding: 24px;
   background: ${COLORS.DANGER_BG_SOFT};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   font-size: 14px;
   color: ${COLORS.DANGER_DEEP};
 `

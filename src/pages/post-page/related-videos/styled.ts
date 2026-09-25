@@ -26,7 +26,7 @@ export const SC_RelatedItem = styled.button`
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: none;
   cursor: pointer;
   text-align: left;
@@ -44,7 +44,7 @@ export const SC_RelatedThumb = styled.span`
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.BG_SECONDARY};
   color: ${COLORS.TEXT_SECONDARY};
   font-size: 18px;

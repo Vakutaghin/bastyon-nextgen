@@ -22,7 +22,7 @@ export const SC_Label = styled.label`
 export const SC_Input = styled.input`
   width: 100%;
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER};
   background-color: ${COLORS.SURFACE_FROSTED};
   color: ${COLORS.TEXT_PRIMARY};
@@ -40,7 +40,7 @@ export const SC_Textarea = styled.textarea`
   min-height: 88px;
   resize: vertical;
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER};
   background-color: ${COLORS.SURFACE_FROSTED};
   color: ${COLORS.TEXT_PRIMARY};
@@ -57,7 +57,7 @@ export const SC_Textarea = styled.textarea`
 export const SC_Select = styled.select`
   width: 100%;
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER};
   background-color: ${COLORS.SURFACE_FROSTED};
   color: ${COLORS.TEXT_PRIMARY};
@@ -105,7 +105,7 @@ export const SC_AvatarActions = styled.div`
 
 export const SC_SmallBtn = styled.button`
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   border: 1px solid ${COLORS.BORDER};
   background-color: transparent;
   color: ${COLORS.TEXT_PRIMARY};

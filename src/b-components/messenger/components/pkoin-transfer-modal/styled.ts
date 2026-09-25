@@ -14,7 +14,7 @@ export const SC_Backdrop = styled.div`
 
 export const SC_Modal = styled.div`
   background: ${COLORS.BG_PRIMARY};
-  border-radius: 14px;
+  border-radius: var(--ui-radius-lg);
   width: 100%;
   max-width: 420px;
   box-shadow: ${COLORS.SHADOW_LG};
@@ -57,7 +57,7 @@ export const SC_Label = styled.label`
 
 export const SC_Input = styled.input`
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 10px 12px;
   font-size: 14px;
   color: ${COLORS.DARK_BG};
@@ -71,7 +71,7 @@ export const SC_Input = styled.input`
 
 export const SC_Textarea = styled.textarea`
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 10px 12px;
   font-size: 14px;
   color: ${COLORS.DARK_BG};
@@ -92,7 +92,7 @@ export const SC_Recipient = styled.div`
   word-break: break-all;
   background: ${COLORS.BG_HOVER_BLUE};
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   font-family: var(--font-family-mono);
 `
 
@@ -112,7 +112,7 @@ export const SC_Footer = styled.div`
 export const SC_Button = styled('button', { primary: Boolean })`
   border: 0;
   padding: 9px 16px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

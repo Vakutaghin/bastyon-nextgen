@@ -86,7 +86,7 @@ export const SC_SubmitButton = styled.button<{ disabled: boolean }>`
   min-width: 180px;
   padding: 0.75em 1.5em;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   font-size: 1em;
   cursor: ${(p) => (p.disabled ? 'not-allowed' : 'pointer')};
   transition: all 0.3s;
@@ -103,7 +103,7 @@ export const SC_RedoButton = styled.button`
   min-width: 180px;
   padding: 0.75em 1.5em;
   border: 1px solid ${COLORS.GRAY_CCC};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   font-size: 1em;
   cursor: pointer;
   transition: all 0.3s;

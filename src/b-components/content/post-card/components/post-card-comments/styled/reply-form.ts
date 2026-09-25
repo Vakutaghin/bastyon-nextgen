@@ -7,7 +7,7 @@ export const SC_ReplyPanel = styled.div`
   padding: 10px 12px;
   background: ${COLORS.BG_TERTIARY};
   border: 1px solid ${COLORS.GRAY_EEE};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -123,7 +123,7 @@ export const SC_EmojiGridPanel = styled.div`
   }
   &::-webkit-scrollbar-thumb {
     background: ${COLORS.GRAY_CCC};
-    border-radius: 2px;
+    border-radius: var(--ui-radius-xs);
   }
 `
 
@@ -134,7 +134,7 @@ export const SC_EmojiCellBtn = styled.button`
   line-height: 1;
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -213,7 +213,7 @@ export const SC_ConfirmActions = styled.div`
 
 export const SC_ConfirmBtn = styled.button`
   padding: 6px 14px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.GRAY_DDD};
   background: ${COLORS.BG_PRIMARY};
   font-size: 13px;

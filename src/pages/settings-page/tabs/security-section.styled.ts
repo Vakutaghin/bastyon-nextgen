@@ -5,7 +5,7 @@ export const SC_SecurityCard = styled.div`
   margin-top: 20px;
   padding: 16px;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   display: flex;
   flex-direction: column;
   gap: 10px;

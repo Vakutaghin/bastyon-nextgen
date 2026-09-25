@@ -15,13 +15,13 @@ export const SC_CommentRow = styled.div`
 
   &.is-mine {
     background: rgba(0, 164, 255, 0.06);
-    border-radius: 10px;
+    border-radius: var(--ui-radius-lg);
     padding: 6px 8px;
   }
 
   &.is-highlighted {
     box-shadow: 0 0 0 2px rgba(0, 164, 255, 0.55);
-    border-radius: 10px;
+    border-radius: var(--ui-radius-lg);
   }
 
   a {
@@ -70,13 +70,13 @@ export const SC_CommentItem = styled.div`
 
   &.is-mine {
     background: rgba(0, 164, 255, 0.06);
-    border-radius: 10px;
+    border-radius: var(--ui-radius-lg);
     padding: 6px 8px;
   }
 
   &.is-highlighted {
     box-shadow: 0 0 0 2px rgba(0, 164, 255, 0.55);
-    border-radius: 10px;
+    border-radius: var(--ui-radius-lg);
   }
 
   a {
@@ -178,7 +178,7 @@ export const SC_CommentImages = styled.div`
 
   /* Сетка PostCardImages по умолчанию занимает всю ширину поста; в комменте сжимаем. */
   & > div {
-    border-radius: 10px;
+    border-radius: var(--ui-radius-lg);
     overflow: hidden;
   }
 `
@@ -198,7 +198,7 @@ export const SC_HiddenBanner = styled.div`
   gap: 10px;
   padding: 8px 12px;
   background: ${COLORS.OVERLAY_4};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   font-size: 13px;
   color: ${COLORS.TEXT_SECONDARY};
   line-height: 1.4;
@@ -229,7 +229,7 @@ export const SC_ComposerDisabled = styled.div`
   padding: 12px 14px;
   background: ${COLORS.OVERLAY_4};
   border: 1px dashed ${COLORS.GRAY_DDD};
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   font-size: 13px;
   color: ${COLORS.TEXT_SECONDARY};
   line-height: 1.4;
@@ -258,7 +258,7 @@ export const SC_EditFormSpacer = styled.div`
 
 export const SC_EditCancelBtn = styled.button`
   padding: 6px 14px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.GRAY_DDD};
   background: ${COLORS.BG_PRIMARY};
   font-size: 13px;
@@ -277,7 +277,7 @@ export const SC_EditCancelBtn = styled.button`
 
 export const SC_EditSaveBtn = styled.button`
   padding: 6px 16px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid #00a4ff;
   background: #00a4ff;
   color: ${COLORS.WHITE};
@@ -320,7 +320,7 @@ export const SC_TxStatusBadge = styled.span`
   gap: 4px;
   font-size: 11px;
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   margin-left: 6px;
   background: ${COLORS.OVERLAY_6};
   color: ${COLORS.TEXT_SECONDARY};

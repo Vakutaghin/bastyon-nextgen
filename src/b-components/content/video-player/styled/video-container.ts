@@ -24,7 +24,7 @@ export const SC_VideoContainer = styled.div`
   width: 100% !important;
   max-width: 100% !important;
   background-color: var(--color-bg-tertiary) !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   overflow: hidden !important;
   margin-bottom: 15px !important;
   aspect-ratio: 16 / 9 !important;
@@ -173,7 +173,7 @@ export const SC_VideoError = styled.div`
   background-color: rgba(0, 0, 0, 0.8);
   color: white !important;
   padding: 20px 30px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -207,7 +207,7 @@ export const SC_VideoRetryButton = styled.button`
   gap: 6px;
   padding: 8px 18px;
   border: 1px solid rgba(255, 255, 255, 0.35) !important;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: white !important;
   font-size: 14px;
@@ -227,7 +227,7 @@ export const SC_VideoFullscreenButton = styled.button`
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 4px !important;
+  border-radius: var(--ui-radius-sm) !important;
   transition: background-color 0.2s ease !important;
   color: var(--color-text-primary) !important;
   flex-shrink: 0 !important;

@@ -8,7 +8,7 @@ export const SC_EmojiPickerContainer = styled.div`
   width: 300px;
   height: 350px;
   background: ${COLORS.BG_PRIMARY};
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_LG};
   border: 1px solid ${COLORS.GRAY_EEE};
   z-index: 1000;
@@ -38,7 +38,7 @@ export const SC_EmojiGrid = styled.div`
 
   &::-webkit-scrollbar-thumb {
     background: ${COLORS.GRAY_CCC};
-    border-radius: 2px;
+    border-radius: var(--ui-radius-xs);
   }
 `
 
@@ -48,7 +48,7 @@ export const SC_EmojiButton = styled.button`
   font-size: 20px;
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   transition: background 0.2s;
   display: flex;
   align-items: center;

@@ -39,7 +39,7 @@ export const SC_Menu = styled.div`
   left: 0;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_MD};
   padding: 6px;
   min-width: 160px;
@@ -54,7 +54,7 @@ export const SC_MenuItem = styled.button`
   border: 0;
   text-align: left;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   font-size: 14px;
   display: flex;

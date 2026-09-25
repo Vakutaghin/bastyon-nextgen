@@ -52,7 +52,7 @@ export const SC_UnreadBadge = styled.span`
   font-size: 12px;
   font-weight: bold;
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   border: 2px solid ${COLORS.WHITE};
   min-width: 20px;
   text-align: center;

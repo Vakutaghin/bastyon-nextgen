@@ -26,7 +26,7 @@ export const SC_RecRow = styled.div`
   align-items: center;
   gap: 10px;
   padding: 6px 4px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {

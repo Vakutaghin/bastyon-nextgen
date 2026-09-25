@@ -6,7 +6,7 @@ export const SC_ErrorMessage = styled.div`
   padding: 0.75em;
   background: ${COLORS.RED_BG};
   border: 1px solid ${COLORS.RED_BORDER};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   color: ${COLORS.DANGER_HOVER};
   font-size: 0.9em;
 `

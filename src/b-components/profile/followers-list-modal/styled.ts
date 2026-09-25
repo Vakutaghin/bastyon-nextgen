@@ -16,7 +16,7 @@ export const SC_Row = styled.div`
   align-items: center;
   gap: 12px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
@@ -83,7 +83,7 @@ export const SC_FollowBtn = styled.button`
   align-items: center;
   gap: 5px;
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   border: 1px solid ${COLORS.PRIMARY};
   background: ${COLORS.PRIMARY};
   color: ${COLORS.WHITE};
@@ -118,7 +118,7 @@ export const SC_LoadMore = styled.button`
   margin: 8px auto 0;
   display: block;
   padding: 8px 18px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   border: 1px solid ${COLORS.BORDER_DEFAULT};
   background: ${COLORS.BG_SECONDARY};
   color: ${COLORS.TEXT_PRIMARY};

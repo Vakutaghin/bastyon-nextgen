@@ -14,7 +14,7 @@ export const SC_VideoFrame = styled('div', { aspect: String, isLocal: Boolean })
   max-width: min(320px, 100%);
   aspect-ratio: ${(p) => p.aspect || '16 / 9'};
   background: ${COLORS.BLACK};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   cursor: pointer;
   display: flex;
@@ -99,7 +99,7 @@ export const SC_DurationBadge = styled.div`
   color: ${COLORS.WHITE};
   font-size: 11px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   pointer-events: none;
 `
 

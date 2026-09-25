@@ -79,7 +79,7 @@ export const SC_IpfsProgressOuter = styled.div`
   width: 100%;
   height: 4px;
   background: ${COLORS.OVERLAY_6};
-  border-radius: 2px;
+  border-radius: var(--ui-radius-xs);
   overflow: hidden;
 `
 

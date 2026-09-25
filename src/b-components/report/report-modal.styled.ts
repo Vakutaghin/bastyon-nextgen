@@ -33,7 +33,7 @@ export const SC_ReasonItem = styled('button', reasonProps)`
   font-size: 15px;
   line-height: 1.3;
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${(p) => (p.active ? COLORS.PRIMARY : COLORS.BORDER)};
   background: ${(p) => (p.active ? COLORS.PRIMARY_LIGHT : COLORS.BG_PRIMARY)};
   color: ${(p) => (p.danger ? COLORS.DANGER : COLORS.TEXT_PRIMARY)};

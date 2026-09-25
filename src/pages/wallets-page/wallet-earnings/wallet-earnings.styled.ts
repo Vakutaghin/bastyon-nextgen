@@ -24,7 +24,7 @@ export const SC_EarningsCard = styled.div`
   gap: 6px;
   padding: 16px;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.BG_SECONDARY};
 `
 

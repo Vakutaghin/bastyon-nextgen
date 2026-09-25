@@ -37,7 +37,7 @@ export const SC_VideoQualityButton = styled.button`
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 4px !important;
+  border-radius: var(--ui-radius-sm) !important;
   transition: background-color 0.2s ease !important;
   color: var(--color-text-primary) !important;
   flex-shrink: 0 !important;
@@ -71,7 +71,7 @@ export const SC_VideoQualityDropdown = styled.div<{
   background: var(--color-bg-primary) !important;
   color: var(--color-text-primary) !important;
   border: 1px solid var(--color-border-lighter) !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   box-shadow: var(--shadow-md) !important;
   min-width: 140px !important;
   overflow: visible !important;
@@ -135,7 +135,7 @@ export const SC_VideoQualitySubmenu = styled.div<{ isOpen?: boolean }>`
   background: var(--color-bg-primary) !important;
   color: var(--color-text-primary) !important;
   border: 1px solid var(--color-border-lighter) !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   box-shadow: var(--shadow-md) !important;
   min-width: 90px !important;
   max-width: 110px !important;

@@ -10,7 +10,7 @@ export const SC_BlockImage = styled.figure`
   img {
     max-width: 100%;
     height: auto;
-    border-radius: 4px;
+    border-radius: var(--ui-radius-sm);
     display: block;
     margin: 0 auto;
   }

@@ -59,7 +59,7 @@ export const SC_ClearAllButton = styled.button`
   border: none;
   cursor: pointer;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
 
   &:hover {
     color: ${COLORS.ANT_BLUE};
@@ -78,7 +78,7 @@ export const SC_NotificationsList = styled.div`
 `
 
 export const SC_NotificationItem = styled.div<{ seen?: boolean }>`
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 10px 12px;
   background: ${(p) => (p.seen ? COLORS.BG_INPUT : COLORS.ANT_BLUE_BG_LIGHT)};
   border: 1px solid ${(p) => (p.seen ? COLORS.GRAY_EEE : COLORS.ANT_BLUE_BG)};
@@ -115,7 +115,7 @@ export const SC_NotificationItemTrigger = styled.span`
   align-items: center;
   justify-content: center;
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   cursor: pointer;
   color: ${COLORS.GRAY_999};
 
@@ -245,7 +245,7 @@ export const SC_NotificationPreview = styled.div<{ variant?: string }>`
           return COLORS.BORDER_DEFAULT
       }
     }};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   padding: 6px 10px;
   display: flex;
   flex-direction: column;

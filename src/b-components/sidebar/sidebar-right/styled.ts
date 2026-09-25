@@ -32,7 +32,7 @@ export const SC_RightSidebar = styled.aside`
 
   &::-webkit-scrollbar-thumb {
     background: var(--ui-border-accented);
-    border-radius: 3px;
+    border-radius: var(--ui-radius-xs);
   }
 
   &::-webkit-scrollbar-thumb:hover {

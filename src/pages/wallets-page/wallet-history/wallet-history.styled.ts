@@ -5,7 +5,7 @@ export const SC_TxBadge = styled.span`
   display: inline-block;
   margin-left: 6px;
   padding: 0 6px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   font-size: 10px;
   font-weight: 600;
   vertical-align: middle;
@@ -35,7 +35,7 @@ export const SC_HistoryRow = styled.a`
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER_LIGHT};
   text-decoration: none;
   color: inherit;
@@ -135,7 +135,7 @@ export const SC_LoadMoreFooter = styled.div`
 
 export const SC_LoadMoreBtn = styled.button`
   padding: 8px 18px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER};
   background-color: transparent;
   color: ${COLORS.TEXT_PRIMARY};

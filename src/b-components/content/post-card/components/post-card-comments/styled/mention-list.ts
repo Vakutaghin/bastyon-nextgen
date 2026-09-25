@@ -11,7 +11,7 @@ export const SC_MentionList = styled.div`
   overflow-y: auto;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.GRAY_DDD};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_MD};
   z-index: 10;
 `

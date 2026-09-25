@@ -9,7 +9,7 @@ export const SC_QrFrame = styled.button`
   padding: 6px;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: zoom-in;
   transition:
     border-color ${TRANSITIONS.QUICK},
@@ -40,7 +40,7 @@ export const SC_QrModalBackdrop = styled.div`
 
 export const SC_QrModalCard = styled.div`
   background: ${COLORS.BG_PRIMARY};
-  border-radius: 14px;
+  border-radius: var(--ui-radius-lg);
   padding: 24px;
   max-width: 90vw;
   box-shadow: 0 10px 40px ${COLORS.OVERLAY_25};
@@ -70,5 +70,5 @@ export const SC_QrPlaceholder = styled.div`
   width: 84px;
   height: 84px;
   background: ${COLORS.BG_DISABLED};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
 `

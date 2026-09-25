@@ -109,7 +109,7 @@ export const SC_CommentsSortSelect = styled.select`
   color: ${COLORS.TEXT_PRIMARY};
   padding: 4px 8px;
   border: 1px solid ${COLORS.BORDER_DARK};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   background: ${COLORS.BG_PRIMARY};
   cursor: pointer;
   min-width: 180px;

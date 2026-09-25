@@ -35,7 +35,7 @@ export const SC_InputWrapper = styled.div`
     color: ${COLORS.TEXT_PRIMARY};
     background: ${COLORS.BG_PRIMARY};
     border: 1px solid ${COLORS.BORDER};
-    border-radius: 6px;
+    border-radius: var(--ui-radius-md);
     outline: none;
     transition: all 0.2s;
 
@@ -73,7 +73,7 @@ export const SC_ErrorMessage = styled.div`
   padding: 12px;
   background-color: ${COLORS.RED_BG};
   border: 1px solid ${COLORS.RED_BORDER};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   color: ${COLORS.RED_DARK};
   font-size: 16px;
 `

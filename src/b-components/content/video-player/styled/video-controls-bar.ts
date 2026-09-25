@@ -46,7 +46,7 @@ export const SC_VideoPlayPauseButton = styled.button`
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 4px !important;
+  border-radius: var(--ui-radius-sm) !important;
   transition: background-color 0.2s ease !important;
   color: var(--color-text-primary) !important;
   flex-shrink: 0 !important;

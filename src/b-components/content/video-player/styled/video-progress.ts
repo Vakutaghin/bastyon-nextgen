@@ -9,7 +9,7 @@ export const SC_VideoProgressBar = styled.div`
   min-height: 6px !important;
   max-height: 6px !important;
   background-color: var(--color-overlay-20) !important;
-  border-radius: 3px !important;
+  border-radius: var(--ui-radius-xs) !important;
   cursor: pointer !important;
   position: relative !important;
   overflow: hidden !important;
@@ -50,7 +50,7 @@ export const SC_VideoProgressBar = styled.div`
     height: 8px !important;
     min-height: 8px !important;
     max-height: 8px !important;
-    border-radius: 4px !important;
+    border-radius: var(--ui-radius-sm) !important;
 
     &::before {
       content: '';
@@ -67,7 +67,7 @@ export const SC_VideoProgressBar = styled.div`
     height: 10px !important;
     min-height: 10px !important;
     max-height: 10px !important;
-    border-radius: 5px !important;
+    border-radius: var(--ui-radius-sm) !important;
   }
 `
 
@@ -76,7 +76,7 @@ export const SC_VideoProgressFill = styled.div`
   width: 0%;
   background-color: #ff0000 !important;
   background: linear-gradient(90deg, #ff0000 0%, #cc0000 100%) !important;
-  border-radius: 3px !important;
+  border-radius: var(--ui-radius-xs) !important;
   transition:
     background 0.15s ease,
     box-shadow 0.15s ease !important;
@@ -105,7 +105,7 @@ export const SC_VideoBufferFill = styled.div`
     rgba(120, 170, 255, 0.6) 0%,
     rgba(80, 130, 255, 0.4) 100%
   ) !important;
-  border-radius: 3px !important;
+  border-radius: var(--ui-radius-xs) !important;
   transition: width 0.2s ease !important;
   position: absolute !important;
   top: 0 !important;

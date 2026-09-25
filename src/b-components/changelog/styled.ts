@@ -87,7 +87,7 @@ export const SC_MarkdownBody = styled.div`
   code {
     background: ${COLORS.OVERLAY_5};
     padding: 1px 5px;
-    border-radius: 4px;
+    border-radius: var(--ui-radius-sm);
     font-size: 12.5px;
     font-family: var(--font-family-mono);
   }
@@ -106,7 +106,7 @@ export const SC_MarkdownBody = styled.div`
 export const SC_LangSwitcher = styled.div`
   display: inline-flex;
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 

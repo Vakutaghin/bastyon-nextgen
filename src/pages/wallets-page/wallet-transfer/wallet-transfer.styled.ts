@@ -6,7 +6,7 @@ export const SC_TransferWidget = styled.div`
   max-width: 560px;
   background: ${COLORS.BG_LIGHT};
   border: 1px solid ${COLORS.OVERLAY_8};
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 
@@ -58,7 +58,7 @@ export const SC_TransferInput = styled.input`
   color: ${COLORS.GRAY_212};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   box-sizing: border-box;
 
   &::placeholder {
@@ -79,7 +79,7 @@ export const SC_TransferTextarea = styled.textarea`
   color: ${COLORS.GRAY_212};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   box-sizing: border-box;
   resize: vertical;
 
@@ -100,7 +100,7 @@ export const SC_TransferSelect = styled.select`
   color: ${COLORS.GRAY_212};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
   box-sizing: border-box;
 `
@@ -124,7 +124,7 @@ export const SC_QrWrap = styled.div`
     padding: 10px;
     background: ${COLORS.WHITE};
     border: 1px solid ${COLORS.BORDER_DEFAULT};
-    border-radius: 10px;
+    border-radius: var(--ui-radius-lg);
   }
 `
 
@@ -137,7 +137,7 @@ export const SC_TransferAddress = styled.div`
   padding: 10px 14px;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_8};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_TransferCopyBtn = styled.button`
@@ -147,7 +147,7 @@ export const SC_TransferCopyBtn = styled.button`
   color: ${COLORS.GRAY_212};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
   white-space: nowrap;
 
@@ -165,7 +165,7 @@ export const SC_TransferSubmit = styled.button`
   color: ${COLORS.WHITE};
   background: ${COLORS.GRAY_212};
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
 
   &:hover:not(:disabled) {
@@ -184,7 +184,7 @@ export const SC_TransferError = styled.div`
   font-size: 13px;
   color: ${COLORS.DANGER_DEEP};
   background: ${COLORS.DANGER_BG_SOFT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_TransferFieldError = styled.div`
@@ -199,7 +199,7 @@ export const SC_TransferSuccess = styled.div`
   font-size: 13px;
   color: ${COLORS.SUCCESS_DEEP};
   background: ${COLORS.SUCCESS_BG_SOFT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_TransferSearchWrap = styled.div`
@@ -216,7 +216,7 @@ export const SC_TransferSearchDropdown = styled.div`
   overflow-y: auto;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_12};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: 0 4px 12px ${COLORS.OVERLAY_10};
   z-index: ${Z_INDEX.LOCAL_DROPDOWN};
 `
@@ -263,7 +263,7 @@ export const SC_TransferLoginChip = styled.div`
   color: ${COLORS.GRAY_120};
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.OVERLAY_8};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   max-width: fit-content;
 `
 
@@ -285,7 +285,7 @@ export const SC_TransferLoginChipRemove = styled.button`
   color: ${COLORS.GRAY_120};
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;

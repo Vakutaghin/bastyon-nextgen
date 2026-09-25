@@ -71,7 +71,7 @@ export const SC_TorProgressOuter = styled.div`
   width: 100%;
   height: 4px;
   background: ${COLORS.OVERLAY_6};
-  border-radius: 2px;
+  border-radius: var(--ui-radius-xs);
   overflow: hidden;
 `
 
@@ -97,7 +97,7 @@ export const SC_TorTextarea = styled.textarea`
   font-size: 11px;
   padding: 6px 8px;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   resize: vertical;
   background: ${COLORS.BG_INPUT};
   color: ${COLORS.TEXT_PRIMARY};

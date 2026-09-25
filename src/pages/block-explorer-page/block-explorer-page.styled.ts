@@ -51,7 +51,7 @@ export const SC_LiveBadge = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   color: ${COLORS.TEXT_MUTED};
   background: ${COLORS.BG_DISABLED};
   transition:
@@ -119,7 +119,7 @@ export const SC_StatCard = styled.div`
   padding: 16px 18px;
   background: ${COLORS.BG_SECONDARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
 `
 
 export const SC_StatCardLabel = styled.div`
@@ -146,7 +146,7 @@ export const SC_StatCardHint = styled.div`
 export const SC_SectionCard = styled.section`
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 

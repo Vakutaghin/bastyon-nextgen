@@ -42,7 +42,7 @@ export const SC_PeersTitle = styled.h1`
 export const SC_PeersSection = styled.section`
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;
 `
@@ -211,7 +211,7 @@ export const SC_DirectionBadge = styled('span', { dir: String })`
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   white-space: nowrap;
   color: ${(p) => (p.dir === 'in' ? COLORS.SUCCESS : COLORS.PRIMARY)};
   background: ${(p) => (p.dir === 'in' ? COLORS.SUCCESS_BG_TINT : COLORS.PRIMARY_LIGHT)};

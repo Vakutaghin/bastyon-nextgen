@@ -9,7 +9,7 @@ export const SC_ShareMenu = styled.div`
   padding: 6px;
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_MD};
 `
 
@@ -20,7 +20,7 @@ export const SC_ShareItem = styled.button`
   width: 100%;
   padding: 9px 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   background: none;
   color: ${COLORS.TEXT_PRIMARY};
   font-size: 14px;

@@ -29,7 +29,7 @@ export const SC_SectionTitle = styled.h3`
 
 export const SC_DropZone = styled.div<{ uploading?: boolean; disabled?: boolean }>`
   border: 2px dashed ${COLORS.BORDER_DEFAULT} !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   padding: 48px 24px !important;
   text-align: center !important;
   background-color: ${COLORS.BG_INPUT} !important;

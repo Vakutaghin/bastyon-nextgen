@@ -18,7 +18,7 @@ export const SC_RecieverList = styled.div`
   flex-direction: column;
   gap: ${SPACING.XS};
   border: 1px solid ${COLORS.GRAY_E0};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: ${SPACING.SM};
 `
 
@@ -67,7 +67,7 @@ export const SC_MessageRow = styled.div`
   color: ${COLORS.GRAY_120};
   padding: ${SPACING.SM};
   background: ${COLORS.GRAY_F1};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
 `
 
 export const SC_Error = styled.div`

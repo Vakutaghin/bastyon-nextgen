@@ -16,7 +16,7 @@ export const SC_SideloadBar = styled.div`
 export const SC_SideloadBtn = styled.button`
   padding: 5px 12px;
   border: 1px dashed ${COLORS.BORDER_DEFAULT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: none;
   color: ${COLORS.TEXT_SECONDARY};
   font-size: 13px;
@@ -89,7 +89,7 @@ export const SC_Card = styled.button`
   gap: 12px;
   padding: 20px 12px 16px;
   border: 1px solid ${COLORS.OVERLAY_8};
-  border-radius: 14px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.BG_PRIMARY};
   cursor: pointer;
   transition:
@@ -169,7 +169,7 @@ export const SC_DeleteBtn = styled.button`
 export const SC_IconWrap = styled.div`
   width: 56px;
   height: 56px;
-  border-radius: 14px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -212,7 +212,7 @@ export const SC_LoadMoreBtn = styled.button`
   padding: 8px 20px;
   border: 1px solid ${COLORS.OVERLAY_12};
   background: ${COLORS.BG_PRIMARY};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   font-size: 13px;
   color: ${COLORS.GRAY_212};
   cursor: pointer;
@@ -237,7 +237,7 @@ export const SC_Empty = styled.div`
 
 export const SC_Error = styled.div`
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.DANGER_BG_SOFT};
   color: ${COLORS.DANGER_DEEP};
   font-size: 13px;

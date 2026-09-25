@@ -5,7 +5,7 @@ import { TRANSITIONS } from '@/styles/design-tokens'
 export const SC_StatsCard = styled.section`
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   padding: 18px 20px 20px;
   margin-bottom: 24px;
 `
@@ -43,7 +43,7 @@ export const SC_StatsSubtitle = styled.div`
 export const SC_StatsToggle = styled.div`
   display: inline-flex;
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 
@@ -104,7 +104,7 @@ export const SC_LegendDot = styled.span`
   display: inline-block;
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: var(--ui-radius-xs);
 `
 
 export const SC_StatsPlaceholder = styled.div`

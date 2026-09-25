@@ -30,7 +30,7 @@ export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
   color: ${COLORS.GRAY_212};
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
   transition:
     background ${TRANSITIONS.QUICK},

@@ -63,7 +63,7 @@ export const SC_NavBadge = styled.span`
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: var(--ui-error);
   color: var(--ui-text-inverted);
   box-shadow: 0 0 0 2px var(--ui-bg);

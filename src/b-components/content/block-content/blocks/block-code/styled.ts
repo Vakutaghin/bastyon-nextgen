@@ -6,7 +6,7 @@ export const SC_BlockCode = styled.pre`
   margin: 1em 0;
   padding: 1em;
   background-color: ${COLORS.DARK_BG};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   overflow-x: auto;
   border: 1px solid ${COLORS.TEXT_SECONDARY};
 `

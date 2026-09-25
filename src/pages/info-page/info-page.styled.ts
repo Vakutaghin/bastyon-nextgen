@@ -24,7 +24,7 @@ export const SC_InfoLead = styled.p`
 export const SC_InfoNote = styled.div`
   margin: 0 0 24px;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.WARNING_BG_SOFT};
   border: 1px solid ${COLORS.WARNING};
   color: ${COLORS.TEXT_SECONDARY};
@@ -61,7 +61,7 @@ export const SC_InfoBack = styled.button`
   margin-top: 16px;
   padding: 8px 16px;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.BG_SECONDARY};
   color: ${COLORS.TEXT_PRIMARY};
   font-size: 14px;

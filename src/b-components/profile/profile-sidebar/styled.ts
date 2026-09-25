@@ -15,7 +15,7 @@ export const SC_Badge = styled.span`
   align-items: center;
   gap: 4px;
   padding: 2px 9px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   font-size: 12px;
   font-weight: 600;
   background: ${COLORS.PRIMARY_LIGHT};
@@ -38,7 +38,7 @@ export const SC_ProfileSidebar = styled.div`
   align-self: flex-start;
   flex-shrink: 0;
   top: var(--header-height-total);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   padding: 20px 0 20px 20px;
   z-index: 10;
 
@@ -98,7 +98,7 @@ export const SC_StartChatButton = styled.button`
   width: 100%;
   margin: 0 20px 16px 0;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: none;
   background-color: ${COLORS.BRAND_CYAN};
   color: ${COLORS.WHITE};
@@ -127,7 +127,7 @@ export const SC_EditProfileButton = styled.button`
   width: 100%;
   margin: 0 20px 16px 0;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER};
   background-color: transparent;
   color: ${COLORS.TEXT_PRIMARY};
@@ -161,7 +161,7 @@ export const SC_SubscribeRow = styled.div`
 export const SC_SubscribeButton = styled.button`
   flex: 1;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BRAND_CYAN};
   background-color: ${COLORS.BRAND_CYAN};
   color: ${COLORS.WHITE};
@@ -205,7 +205,7 @@ export const SC_BellButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER};
   background-color: transparent;
   color: ${COLORS.TEXT_SECONDARY};
@@ -244,7 +244,7 @@ export const SC_BlockButton = styled.button`
   width: calc(100% - 20px);
   margin: 0 20px 12px 0;
   padding: 9px 14px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   border: 1px solid ${COLORS.BORDER};
   background-color: transparent;
   color: ${COLORS.TEXT_SECONDARY};
@@ -336,7 +336,7 @@ export const SC_StatButton = styled.button`
   background: none;
   border: none;
   padding: 4px 2px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 

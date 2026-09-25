@@ -30,7 +30,7 @@ export const SC_BackButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
 
   &:hover {
     background-color: ${COLORS.WHITE_20};

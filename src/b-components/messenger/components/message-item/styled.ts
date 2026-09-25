@@ -5,7 +5,7 @@ export const SC_MessageItem = styled.div`
   max-width: 80%;
   min-width: 0;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   font-size: 14px;
   line-height: 1.4;
   position: relative;
@@ -94,7 +94,7 @@ export const SC_ReactionsRow = styled.div`
 export const SC_ReactionPill = styled.span`
   font-size: 12px;
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.OVERLAY_6};
   cursor: default;
   display: inline-flex;
@@ -113,7 +113,7 @@ export const SC_ReactionButton = styled.button`
   background: transparent;
   cursor: pointer;
   opacity: 0.6;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   display: inline-flex;
   align-items: center;
 
@@ -130,7 +130,7 @@ export const SC_ReactionPicker = styled.div`
   margin-bottom: 4px;
   padding: 6px 8px;
   background: ${COLORS.BG_PRIMARY};
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_MD};
   display: flex;
   gap: 4px;
@@ -145,7 +145,7 @@ export const SC_ActionsButton = styled.button`
   background: transparent;
   cursor: pointer;
   opacity: 0.6;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   display: inline-flex;
   align-items: center;
   color: inherit;
@@ -170,7 +170,7 @@ export const SC_ActionsItem = styled.button`
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   background: none;
   color: ${COLORS.TEXT_PRIMARY};
   font-size: 14px;
@@ -196,7 +196,7 @@ export const SC_ReactionPickerEmoji = styled.button`
   background: transparent;
   cursor: pointer;
   font-size: 18px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
 
   &:hover {
     background: ${COLORS.OVERLAY_6};
@@ -217,7 +217,7 @@ export const SC_ReplyQuote = styled.div`
   margin-bottom: 4px;
   padding: 4px 8px;
   border-left: 3px solid ${COLORS.BRAND_CYAN};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   background: ${COLORS.OVERLAY_6};
   max-width: 100%;
 `

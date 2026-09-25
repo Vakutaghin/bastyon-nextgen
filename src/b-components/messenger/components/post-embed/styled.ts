@@ -5,7 +5,7 @@ export const SC_PostEmbed = styled.div`
   display: flex;
   flex-direction: column;
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.BG_PRIMARY};
   width: 100%;
   max-width: min(320px, 100%);
@@ -176,7 +176,7 @@ export const SC_FailedHint = styled.a`
   color: ${COLORS.BRAND_CYAN};
   font-size: 13px;
   border: 1px solid ${COLORS.BORDER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.BG_PRIMARY};
   width: 100%;
   max-width: min(320px, 100%);

@@ -6,7 +6,7 @@ export const SC_Card = styled.div`
   flex-direction: column;
   gap: 8px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   background: linear-gradient(135deg, ${COLORS.WARNING_YELLOW} 0%, ${COLORS.WARNING_YELLOW} 100%);
   color: ${COLORS.DARK_BG};
   width: 100%;
@@ -81,7 +81,7 @@ export const SC_ExplorerLink = styled.a`
   font-weight: 600;
   background: ${COLORS.WHITE_60};
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
 
   &:hover {
     background: ${COLORS.WHITE_60};

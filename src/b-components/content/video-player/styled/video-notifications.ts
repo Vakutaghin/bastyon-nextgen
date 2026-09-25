@@ -11,7 +11,7 @@ export const SC_PlaybackRateNotification = styled.div<{ show?: boolean }>`
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   padding: 12px 24px !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   color: #eee !important;
   font-size: 18px !important;
   font-weight: 500 !important;
@@ -37,7 +37,7 @@ export const SC_SeekNotification = styled.div<{ show?: boolean }>`
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   padding: 12px 24px !important;
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-lg) !important;
   color: #eee !important;
   font-size: 18px !important;
   font-weight: 500 !important;
@@ -98,7 +98,7 @@ export const SC_HotkeysHelpOverlay = styled.div`
 export const SC_HotkeysHelpContent = styled.div`
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg);
   padding: 24px;
   max-width: 600px;
   width: 90%;
@@ -142,7 +142,7 @@ export const SC_HotkeysHelpItem = styled.div`
 export const SC_HotkeysKey = styled.span`
   background: rgba(0, 0, 0, 0.05);
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   font-family: var(--font-family-mono);
   font-size: 16px;
   font-weight: bold;

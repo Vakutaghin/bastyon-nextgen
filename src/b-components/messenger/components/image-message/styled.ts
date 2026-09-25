@@ -14,7 +14,7 @@ export const SC_ImageFrame = styled('div', { aspect: String, isLocal: Boolean })
   max-width: min(280px, 100%);
   aspect-ratio: ${(p) => p.aspect || '4 / 3'};
   background: ${COLORS.BG_SECONDARY};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   cursor: pointer;
   display: flex;

@@ -39,7 +39,7 @@ export const SC_ExplorerOpenFullButton = styled.a`
   color: ${COLORS.WHITE};
   background: ${COLORS.ANT_BLUE};
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   cursor: pointer;
   text-decoration: none;
   transition: background ${TRANSITIONS.FAST};
@@ -65,7 +65,7 @@ export const SC_ExplorerNodeRow = styled('label', nodeRowProps)`
   gap: 12px;
   padding: 10px 14px;
   border: 1px solid ${COLORS.BORDER_DEFAULT};
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.BG_PRIMARY};
   cursor: pointer;
   font-size: 14px;

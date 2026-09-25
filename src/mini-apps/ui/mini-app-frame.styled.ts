@@ -109,7 +109,7 @@ export const SC_ClosePetal = styled.button`
   padding: 0 14px 0 10px;
   background: ${COLORS.OVERLAY_15};
   color: ${COLORS.WHITE_75};
-  border-radius: 14px 0 0 14px;
+  border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg);
   cursor: pointer;
   user-select: none;
   backdrop-filter: blur(8px);

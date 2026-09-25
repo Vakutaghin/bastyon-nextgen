@@ -74,7 +74,7 @@ export const SC_EmbedCta = styled.a`
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   background: ${COLORS.PRIMARY};
   color: ${COLORS.WHITE};
   font-size: 14px;

@@ -3,7 +3,7 @@ import { COLORS } from '@/styles/theme-colors'
 
 export const SC_PostImage = styled.div<{ imageCount: number }>`
   margin-bottom: 15px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   max-width: 100%;
   width: 100%;
@@ -20,7 +20,7 @@ export const SC_PostImage = styled.div<{ imageCount: number }>`
 
     > div {
       width: 100%;
-      border-radius: 8px;
+      border-radius: var(--ui-radius-lg);
     }
 
     img {
@@ -30,7 +30,7 @@ export const SC_PostImage = styled.div<{ imageCount: number }>`
       object-fit: cover;
       display: block;
       max-height: 500px;
-      border-radius: 8px;
+      border-radius: var(--ui-radius-lg);
     }
   `}
 
@@ -49,11 +49,11 @@ export const SC_PostImage = styled.div<{ imageCount: number }>`
     }
 
     > div:first-child {
-      border-radius: 8px 0 0 8px;
+      border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg);
     }
 
     > div:last-child {
-      border-radius: 0 8px 8px 0;
+      border-radius: 0 var(--ui-radius-lg) var(--ui-radius-lg) 0;
     }
 
     img {
@@ -80,19 +80,19 @@ export const SC_PostImage = styled.div<{ imageCount: number }>`
     > div:first-child {
       grid-column: 1;
       grid-row: 1 / 3;
-      border-radius: 8px 0 0 8px;
+      border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg);
     }
 
     > div:nth-child(2) {
       grid-column: 2;
       grid-row: 1;
-      border-radius: 0 8px 0 0;
+      border-radius: 0 var(--ui-radius-lg) 0 0;
     }
 
     > div:nth-child(3) {
       grid-column: 2;
       grid-row: 2;
-      border-radius: 0 0 8px 0;
+      border-radius: 0 0 var(--ui-radius-lg) 0;
     }
 
     img {
@@ -119,19 +119,19 @@ export const SC_PostImage = styled.div<{ imageCount: number }>`
     }
 
     > div:nth-child(1) {
-      border-radius: 8px 0 0 0;
+      border-radius: var(--ui-radius-lg) 0 0 0;
     }
 
     > div:nth-child(2) {
-      border-radius: 0 8px 0 0;
+      border-radius: 0 var(--ui-radius-lg) 0 0;
     }
 
     > div:nth-child(3) {
-      border-radius: 0 0 0 8px;
+      border-radius: 0 0 0 var(--ui-radius-lg);
     }
 
     > div:nth-child(4) {
-      border-radius: 0 0 8px 0;
+      border-radius: 0 0 var(--ui-radius-lg) 0;
     }
 
     img {
@@ -162,11 +162,11 @@ export const SC_PostImage = styled.div<{ imageCount: number }>`
     }
 
     > div:nth-child(1) {
-      border-radius: 8px 0 0 0;
+      border-radius: var(--ui-radius-lg) 0 0 0;
     }
 
     > div:nth-child(2) {
-      border-radius: 0 8px 0 0;
+      border-radius: 0 var(--ui-radius-lg) 0 0;
     }
 
     > div:nth-child(3),
@@ -178,11 +178,11 @@ export const SC_PostImage = styled.div<{ imageCount: number }>`
     }
 
     > div:nth-child(3) {
-      border-radius: 0 0 0 8px;
+      border-radius: 0 0 0 var(--ui-radius-lg);
     }
 
     > div:nth-child(5) {
-      border-radius: 0 0 8px 0;
+      border-radius: 0 0 var(--ui-radius-lg) 0;
     }
 
     /* Если больше 5, скрываем остальные */

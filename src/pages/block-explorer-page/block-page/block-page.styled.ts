@@ -74,7 +74,7 @@ export const SC_BlockNavBtn = styled.button`
   font-size: 13px;
   background: ${COLORS.BG_SECONDARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   color: ${COLORS.TEXT_PRIMARY};
   cursor: pointer;
 
@@ -94,7 +94,7 @@ export const SC_BlockMetaGrid = styled.div`
   gap: 0;
   background: ${COLORS.BG_SECONDARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;
 
@@ -135,7 +135,7 @@ export const SC_BlockMetaValue = styled.div`
 export const SC_TxSection = styled.section`
   background: ${COLORS.BG_PRIMARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 10px;
+  border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 
@@ -214,7 +214,7 @@ export const SC_TxTypeBadge = styled.span`
   font-weight: 600;
   background: ${COLORS.PRIMARY_LIGHT};
   color: ${COLORS.PRIMARY};
-  border-radius: 4px;
+  border-radius: var(--ui-radius-sm);
   white-space: nowrap;
 `
 

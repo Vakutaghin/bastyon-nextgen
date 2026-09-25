@@ -12,7 +12,7 @@ export const SC_ShareBtn = styled.button`
   color: ${COLORS.TEXT_PRIMARY};
   background: ${COLORS.BG_SECONDARY};
   border: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-radius: 6px;
+  border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
     background-color ${TRANSITIONS.QUICK},
