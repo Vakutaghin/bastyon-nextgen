@@ -10,7 +10,10 @@
 //
 // «До» для сравнения — любой прежний коммит: git worktree add /tmp/ui-base <sha>,
 // симлинк node_modules, VITE_PORT=1981 pnpm dev там и этот же скрипт с
-// --base http://localhost:1981 --out /tmp/ui-before.
+// --base http://localhost:1981 --out /tmp/ui-before. Если у того коммита другой
+// pnpm-lock.yaml, два сервера сразу не запускай: они делят node_modules/.vite,
+// второй переоптимизирует зависимости, и первый перестаёт отдавать приложение.
+// Лечится так: остановить оба, rm -rf node_modules/.vite, запустить нужный.
 //
 // Все экраны в один поток — около 40 минут, поэтому я запускаю четыре процесса
 // (--theme dark|light × --viewport desktop|mobile), выходит минут 12. Пока
