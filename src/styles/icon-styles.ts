@@ -1,9 +1,9 @@
 /**
- * Готовые `:style`-объекты для AntDesign-иконок.
+ * Готовые `:style`-объекты для иконок из `@/components/icons`.
  *
- * Иконки `@ant-design/icons-vue` управляют размером и цветом через inline-style;
- * styled-обёртка ломает их собственную типографику. Поэтому конвенция:
- * вместо `:style="{ fontSize: '24px', color: 'rgb(0, 123, 255)' }"` — импорт
+ * Иконка — `<span class="anticon">` с svg размером 1em: размер задаёт font-size,
+ * цвет — color. Конвенция: вместо
+ * `:style="{ fontSize: '24px', color: 'rgb(0, 123, 255)' }"` — импорт
  * готового объекта из этого модуля.
  *
  * Если нужно динамическое значение — собирай объект в setup() и используй
@@ -47,15 +47,15 @@ export const ICON_PRIMARY_18 = { fontSize: '18px', color: COLORS.PRIMARY }
 
 // Warning (универсальный жёлтый — рейтинги, alerts)
 export const ICON_WARNING = { color: COLORS.WARNING }
-// Ant warning icon с фиксированным размером для шапок модалок (#faad14 — стандартный ant warning).
-export const ICON_WARNING_24 = { fontSize: '24px', color: '#faad14' }
+// Предупреждение 24px для шапок модалок подтверждения
+export const ICON_WARNING_24 = { fontSize: '24px', color: COLORS.WARNING }
 
 export const ICON_STAR_18 = { color: COLORS.WARNING, fontSize: '18px', marginRight: '4px' }
 
 // Danger (ant-red) с фиксированным размером для шапок модалок подтверждения
 export const ICON_DANGER_24 = { fontSize: '24px', color: COLORS.RED_ANT }
 
-// Warning-icon (#faad14) нестандартного размера
+// Предупреждение нестандартного размера
 export const ICON_WARNING_ICON_22 = { fontSize: '22px', color: COLORS.WARNING_ICON }
 // Трек пустой звезды рейтинга
 export const ICON_WARNING_TRACK = { color: COLORS.WARNING_TRACK }

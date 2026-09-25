@@ -288,9 +288,9 @@ import {
 // Inline style на dragover — выделение dashed-обводкой. Используется через
 // :style биндинг, не плодит регрессию (значение из объекта, не литерал).
 const DRAG_STYLE = {
-  outline: '2px dashed #00A4DB',
+  outline: '2px dashed var(--ui-primary)',
   outlineOffset: '-4px',
-  background: 'rgba(0, 164, 219, 0.06)',
+  background: 'rgb(var(--ui-primary-rgb) / 6%)',
 }
 
 // Поповер подтверждения блокировки рендерится в body; мессенджер-обёртка имеет

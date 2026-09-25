@@ -6,20 +6,20 @@ export const SC_CommentRow = styled.div`
   align-items: flex-start;
   width: 100%;
   box-sizing: border-box;
-  transition: box-shadow 0.4s ease-out;
+  transition: box-shadow var(--transition-normal);
 
   &.is-pending {
     opacity: 0.65;
   }
 
   &.is-mine {
-    background: rgba(0, 164, 255, 0.06);
+    background: rgb(var(--ui-primary-rgb) / 6%);
     border-radius: var(--ui-radius-lg);
     padding: 6px 8px;
   }
 
   &.is-highlighted {
-    box-shadow: 0 0 0 2px rgba(0, 164, 255, 0.55);
+    box-shadow: 0 0 0 2px rgb(var(--ui-primary-rgb) / 50%);
     border-radius: var(--ui-radius-lg);
   }
 
@@ -36,7 +36,7 @@ export const SC_CommentRow = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: var(--color-border-dark);
+    background: var(--ui-bg-elevated);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -50,7 +50,7 @@ export const SC_CommentRow = styled.div`
   }
 
   .comment-avatar-placeholder {
-    color: var(--color-text-primary);
+    color: var(--ui-text-muted);
     font-weight: 500;
     font-size: 14px;
   }
@@ -61,20 +61,20 @@ export const SC_CommentItem = styled.div`
   gap: 10px;
   align-items: flex-start;
   box-sizing: border-box;
-  transition: box-shadow 0.4s ease-out;
+  transition: box-shadow var(--transition-normal);
 
   &.is-pending {
     opacity: 0.65;
   }
 
   &.is-mine {
-    background: rgba(0, 164, 255, 0.06);
+    background: rgb(var(--ui-primary-rgb) / 6%);
     border-radius: var(--ui-radius-lg);
     padding: 6px 8px;
   }
 
   &.is-highlighted {
-    box-shadow: 0 0 0 2px rgba(0, 164, 255, 0.55);
+    box-shadow: 0 0 0 2px rgb(var(--ui-primary-rgb) / 50%);
     border-radius: var(--ui-radius-lg);
   }
 
@@ -91,7 +91,7 @@ export const SC_CommentItem = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: var(--color-border-dark);
+    background: var(--ui-bg-elevated);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -105,7 +105,7 @@ export const SC_CommentItem = styled.div`
   }
 
   .comment-avatar-placeholder {
-    color: var(--color-text-primary);
+    color: var(--ui-text-muted);
     font-weight: 500;
     font-size: 14px;
   }
@@ -265,21 +265,25 @@ export const SC_EditFormSpacer = styled.div`
 `
 
 export const SC_EditCancelBtn = styled.button`
-  padding: 6px 14px;
-  border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--ui-border);
-  background: var(--color-bg-primary);
+  padding: 6px 10px;
+  border-radius: var(--ui-radius-md);
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--ui-border-accented);
+  background: var(--ui-bg);
   font-size: 14px;
-  color: var(--color-text-primary);
+  font-weight: 500;
+  color: var(--ui-text);
   cursor: pointer;
+  min-height: 30px;
+  transition: background-color var(--transition-quick);
 
   &:hover:not(:disabled) {
-    background: var(--color-bg-tertiary);
-    border-color: var(--ui-border-accented);
+    background: var(--ui-bg-elevated);
   }
+
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.75;
   }
 `
 
@@ -302,6 +306,7 @@ export const SC_EditSaveBtn = styled.button`
     background: rgb(var(--ui-primary-rgb) / 75%);
     color: var(--ui-text-inverted);
   }
+
   &:disabled {
     cursor: not-allowed;
     opacity: 0.75;
@@ -334,8 +339,8 @@ export const SC_TxStatusBadge = styled.span`
   color: var(--color-text-secondary);
 
   &.tx-status--rejected {
-    background: rgba(255, 77, 79, 0.1);
-    color: #ff4d4f;
+    background: rgb(var(--ui-error-rgb) / 10%);
+    color: var(--ui-error);
   }
 
   svg {
@@ -372,9 +377,11 @@ export const SC_CommentActions = styled.div`
     filter: grayscale(1);
     cursor: default;
   }
+
   .comment-score.comment-score--voted {
     filter: none;
   }
+
   .comment-score.comment-score--clickable {
     cursor: pointer;
   }

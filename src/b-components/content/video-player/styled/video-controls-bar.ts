@@ -1,5 +1,6 @@
 // @ts-expect-error vue3-styled-components types
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_VideoControlsBar = styled.div`
   display: flex;
@@ -25,14 +26,14 @@ export const SC_VideoControlsBar = styled.div`
     color: inherit;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     gap: 6px;
     padding: 8px 10px;
     min-height: 56px;
     height: auto;
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
     gap: 4px;
     padding: 6px 8px;
   }
@@ -47,7 +48,7 @@ export const SC_VideoPlayPauseButton = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: var(--ui-radius-sm);
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-fast);
   color: var(--color-text-primary);
   flex-shrink: 0;
   width: 40px;
@@ -56,7 +57,7 @@ export const SC_VideoPlayPauseButton = styled.button`
   min-height: 40px;
   box-sizing: border-box;
 
-  @media (max-width: 768px) {
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     width: 44px;
     height: 44px;
     min-width: 44px;
@@ -81,7 +82,7 @@ export const SC_VideoPlayButton = styled.button`
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.3);
+  background: rgb(var(--color-black-rgb) / 30%);
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -89,9 +90,12 @@ export const SC_VideoPlayButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background var(--transition-normal),
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal);
   z-index: 10;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 16px rgb(var(--color-black-rgb) / 40%);
   backdrop-filter: blur(4px);
 
   /* Контурная иконка Lucide: заливка превращала её в серый диск без треугольника. */
@@ -102,14 +106,14 @@ export const SC_VideoPlayButton = styled.button`
   }
 
   &:hover {
-    background: rgba(0, 0, 0, 0.4);
+    background: rgb(var(--color-black-rgb) / 40%);
     transform: translate(-50%, -50%) scale(1.15);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 6px 20px rgb(var(--color-black-rgb) / 50%);
   }
 
   &:active {
     transform: translate(-50%, -50%) scale(1.05);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 12px rgb(var(--color-black-rgb) / 40%);
   }
 `
 
@@ -135,7 +139,7 @@ export const SC_VideoChapterMarker = styled.div`
   top: 0;
   bottom: 0;
   width: 2px;
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: var(--color-white-95);
   pointer-events: none;
   z-index: 3;
   transform: translateX(-1px);

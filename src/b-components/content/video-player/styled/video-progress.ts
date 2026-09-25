@@ -1,5 +1,6 @@
 // @ts-expect-error vue3-styled-components types
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_VideoProgressBar = styled.div`
   flex: 1 1 0;
@@ -14,9 +15,9 @@ export const SC_VideoProgressBar = styled.div`
   position: relative;
   overflow: hidden;
   transition:
-    height 0.15s ease,
-    background-color 0.15s ease;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    height var(--transition-quick),
+    background-color var(--transition-quick);
+  box-shadow: inset 0 1px 2px rgb(var(--color-black-rgb) / 20%);
   margin: 0;
   padding: 0;
   display: block;
@@ -46,7 +47,7 @@ export const SC_VideoProgressBar = styled.div`
 
   /* Mobile: толще progress + увеличенная hit-area через ::before для удобного тапа.
      6px полоса с +12px невидимой вверх/вниз = 30px total touch-target. */
-  @media (max-width: 768px) {
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     height: 8px;
     min-height: 8px;
     max-height: 8px;
@@ -55,15 +56,12 @@ export const SC_VideoProgressBar = styled.div`
     &::before {
       content: '';
       position: absolute;
-      top: -12px;
-      bottom: -12px;
-      left: 0;
-      right: 0;
+      inset: -12px 0;
       z-index: 3;
     }
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
     height: 10px;
     min-height: 10px;
     max-height: 10px;
@@ -79,13 +77,10 @@ export const SC_VideoProgressFill = styled.div`
   background: var(--ui-primary-on-dark);
   border-radius: var(--ui-radius-xs);
   transition:
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+    background var(--transition-quick),
+    box-shadow var(--transition-quick);
   position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: auto;
+  inset: 0 auto 0 0;
   display: block;
   pointer-events: none;
   box-sizing: border-box;
@@ -100,14 +95,10 @@ export const SC_VideoBufferFill = styled.div`
   height: 100%;
   width: 0%;
   background: var(--color-white-60);
-  opacity: 0.5;
   border-radius: var(--ui-radius-xs);
-  transition: width 0.2s ease;
+  transition: width var(--transition-fast);
   position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: auto;
+  inset: 0 auto 0 0;
   display: block;
   pointer-events: none;
   box-sizing: border-box;

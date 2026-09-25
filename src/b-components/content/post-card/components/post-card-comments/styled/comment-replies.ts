@@ -25,7 +25,6 @@ export const SC_ReplyItemWrapper = styled.div`
 `
 
 export const SC_CommentRepliesToggle = styled.button`
-  margin-top: 4px;
   padding: 0;
   border: none;
   background: none;

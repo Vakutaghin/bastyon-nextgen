@@ -6,7 +6,7 @@
 // глобальный style.css держит @media-значения синхронно вручную. Этот гард
 // ловит дрейф:
 //
-//   1) В *.styled.ts любой @media обязан использовать ${BREAKPOINTS.*},
+//   1) В *.styled.ts и в папках styled/ любой @media обязан использовать ${BREAKPOINTS.*},
 //      а не литеральные пиксели (например `@media (max-width: 768px)`).
 //   2) В *.css значения @media должны принадлежать каноническому набору
 //      (значения BREAKPOINTS), иначе это рассинхрон с токенами.
@@ -68,7 +68,8 @@ function scan() {
   const violations = []
 
   for (const file of files) {
-    const isStyled = /styled\.ts$/.test(file)
+    // *styled.ts и файлы в папках styled/ (video-player/styled/*.ts и т.п.)
+    const isStyled = /styled\.ts$/.test(file) || /[\\/]styled[\\/][^\\/]+\.ts$/.test(file)
     const isCss = /\.css$/.test(file)
     if (!isStyled && !isCss) continue
 

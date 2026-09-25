@@ -38,7 +38,7 @@ export const SC_VideoQualityButton = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: var(--ui-radius-sm);
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-fast);
   color: var(--color-text-primary);
   flex-shrink: 0;
   width: 40px;
@@ -68,19 +68,21 @@ export const SC_VideoQualityDropdown = styled.div<{
   bottom: 100%;
   left: 0;
   margin-bottom: 8px;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-lighter);
-  border-radius: var(--ui-radius-lg);
-  box-shadow: var(--shadow-md);
+  padding: 4px;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  border-radius: var(--ui-radius-md);
+  box-shadow:
+    0 0 0 1px var(--ui-border),
+    var(--ui-shadow-lg);
   min-width: 140px;
   overflow: visible;
   opacity: ${(p) => (p.isOpen ? 1 : 0)};
   visibility: ${(p) => (p.isOpen ? 'visible' : 'hidden')};
   pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')};
   transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease;
+    opacity var(--transition-fast),
+    visibility var(--transition-fast);
   z-index: 1000;
 `
 
@@ -101,29 +103,29 @@ export const SC_VideoQualitySubmenuItem = styled.button<{ isOpen?: boolean }>`
   background: transparent;
   border: none;
   cursor: pointer;
-  color: var(--color-text-primary);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
   font-size: 12px;
   font-weight: 400;
   font-family: var(--font-family);
-  transition: background-color 0.15s ease;
+  transition:
+    background-color var(--transition-quick),
+    color var(--transition-quick);
   text-align: left;
   box-sizing: border-box;
   position: relative;
 
   &:hover {
-    background: var(--color-overlay-8);
+    background: rgb(var(--ui-bg-elevated-rgb) / 50%);
+    color: var(--ui-text-highlighted);
   }
 
   &:active {
-    background: var(--color-overlay-12);
+    background: var(--ui-bg-elevated);
   }
 
   &:focus {
     outline: none;
-  }
-
-  &:not(:last-child) {
-    border-bottom: 1px solid var(--color-border-lighter);
   }
 `
 
@@ -132,11 +134,13 @@ export const SC_VideoQualitySubmenu = styled.div<{ isOpen?: boolean }>`
   left: 0;
   bottom: 100%;
   margin-bottom: 4px;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-lighter);
-  border-radius: var(--ui-radius-lg);
-  box-shadow: var(--shadow-md);
+  padding: 4px;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  border-radius: var(--ui-radius-md);
+  box-shadow:
+    0 0 0 1px var(--ui-border),
+    var(--ui-shadow-lg);
   min-width: 90px;
   max-width: 110px;
   overflow: hidden;
@@ -144,8 +148,8 @@ export const SC_VideoQualitySubmenu = styled.div<{ isOpen?: boolean }>`
   visibility: ${(p) => (p.isOpen ? 'visible' : 'hidden')};
   pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')};
   transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease;
+    opacity var(--transition-fast),
+    visibility var(--transition-fast);
   z-index: 1001;
   white-space: nowrap;
 `
@@ -159,31 +163,28 @@ export const SC_VideoQualitySubmenuItemInner = styled.button<{ isActive?: boolea
   background: transparent;
   border: none;
   cursor: pointer;
-  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--color-text-primary)')};
+  border-radius: var(--ui-radius-md);
+  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--ui-text)')};
   font-size: 12px;
-  font-weight: ${(p) => (p.isActive ? '600' : '400')};
+  font-weight: ${(p) => (p.isActive ? '500' : '400')};
   font-family: var(--font-family);
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--transition-quick),
+    color var(--transition-quick);
   text-align: left;
   box-sizing: border-box;
   white-space: nowrap;
 
   &:hover {
-    background: var(--color-overlay-8);
+    background: rgb(var(--ui-bg-elevated-rgb) / 50%);
   }
 
   &:active {
-    background: var(--color-overlay-12);
+    background: var(--ui-bg-elevated);
   }
 
   &:focus {
     outline: none;
-  }
-
-  &:not(:last-child) {
-    border-bottom: 1px solid var(--color-border-lighter);
   }
 `
 
@@ -196,29 +197,26 @@ export const SC_VideoQualityMenuItem = styled.button<{ isActive?: boolean }>`
   background: transparent;
   border: none;
   cursor: pointer;
-  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--color-text-primary)')};
+  border-radius: var(--ui-radius-md);
+  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--ui-text)')};
   font-size: 12px;
-  font-weight: ${(p) => (p.isActive ? '600' : '400')};
+  font-weight: ${(p) => (p.isActive ? '500' : '400')};
   font-family: var(--font-family);
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--transition-quick),
+    color var(--transition-quick);
   text-align: left;
   box-sizing: border-box;
 
   &:hover {
-    background: var(--color-overlay-8);
+    background: rgb(var(--ui-bg-elevated-rgb) / 50%);
   }
 
   &:active {
-    background: var(--color-overlay-12);
+    background: var(--ui-bg-elevated);
   }
 
   &:focus {
     outline: none;
-  }
-
-  &:not(:last-child) {
-    border-bottom: 1px solid var(--color-border-lighter);
   }
 `

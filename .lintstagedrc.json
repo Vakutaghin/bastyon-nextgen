@@ -1,5 +1,6 @@
 {
   "*.{ts,tsx,vue}": ["eslint --fix"],
   "*styled.ts": ["stylelint --fix"],
+  "**/styled/*.ts": ["stylelint --fix"],
   "*.{ts,tsx,vue,js,css,json}": ["prettier --write"]
 }

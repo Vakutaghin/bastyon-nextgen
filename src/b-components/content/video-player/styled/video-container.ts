@@ -1,5 +1,6 @@
 // @ts-expect-error vue3-styled-components types
 import styled, { keyframes } from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 const pulse = keyframes`
   50% {
@@ -45,21 +46,9 @@ export const SC_VideoContainer = styled.div`
     aspect-ratio: unset;
   }
 
+  /* Safari до 16.4 знает полноэкранный режим только с префиксом. */
+  /* stylelint-disable-next-line selector-no-vendor-prefix */
   &:-webkit-full-screen {
-    width: 100vw;
-    height: 100vh;
-    border-radius: 0;
-    aspect-ratio: unset;
-  }
-
-  &:-moz-full-screen {
-    width: 100vw;
-    height: 100vh;
-    border-radius: 0;
-    aspect-ratio: unset;
-  }
-
-  &:-ms-fullscreen {
     width: 100vw;
     height: 100vh;
     border-radius: 0;
@@ -127,7 +116,7 @@ export const SC_VideoThumbnail = styled.img`
   display: block;
   z-index: 2;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-normal);
   background-color: transparent;
 `
 
@@ -141,8 +130,8 @@ export const SC_VideoControls = styled.div<{ show?: boolean }>`
   opacity: ${(p) => (p.show !== undefined && p.show ? 1 : 0)};
   visibility: ${(p) => (p.show !== undefined && p.show ? 'visible' : 'hidden')};
   transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
+    opacity var(--transition-normal),
+    visibility var(--transition-normal);
   pointer-events: ${(p) => (p.show !== undefined && p.show ? 'auto' : 'none')};
   /* Убеждаемся, что контролы не влияют на layout - абсолютное позиционирование выводит из потока */
   height: auto;
@@ -170,7 +159,7 @@ export const SC_VideoError = styled.div`
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 10;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgb(var(--color-black-rgb) / 80%);
   color: white;
   padding: 20px 30px;
   border-radius: var(--ui-radius-lg);
@@ -206,16 +195,16 @@ export const SC_VideoRetryButton = styled.button`
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgb(var(--color-white-rgb) / 35%);
   border-radius: var(--ui-radius-md);
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgb(var(--color-white-rgb) / 10%);
   color: white;
   font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-fast);
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.22);
+    background-color: rgb(var(--color-white-rgb) / 22%);
   }
 `
 
@@ -228,7 +217,7 @@ export const SC_VideoFullscreenButton = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: var(--ui-radius-sm);
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-fast);
   color: var(--color-text-primary);
   flex-shrink: 0;
   width: 40px;
@@ -238,7 +227,7 @@ export const SC_VideoFullscreenButton = styled.button`
   box-sizing: border-box;
   margin-left: auto;
 
-  @media (max-width: 768px) {
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     width: 44px;
     height: 44px;
     min-width: 44px;

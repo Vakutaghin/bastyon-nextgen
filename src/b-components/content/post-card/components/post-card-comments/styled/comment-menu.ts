@@ -30,36 +30,40 @@ export const SC_MenuList = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 180px;
-  padding: 4px 0;
+  padding: 4px;
 `
 
 /** Пункт меню */
 export const SC_MenuItem = styled.button`
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
+  gap: 8px;
+  padding: 6px 8px;
   border: none;
+  border-radius: var(--ui-radius-md);
   background: transparent;
   font-size: 14px;
-  color: var(--color-text-primary);
+  color: var(--ui-text);
   cursor: pointer;
   text-align: left;
 
   &:hover:not(:disabled) {
-    background: var(--color-bg-tertiary);
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text-highlighted);
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.75;
     cursor: not-allowed;
   }
 
-  &.menu-item--danger {
-    color: var(--color-red-ant);
+  &.menu-item--danger,
+  &.menu-item--danger:hover:not(:disabled) {
+    color: var(--ui-error);
   }
+
   &.menu-item--danger:hover {
-    background: rgba(255, 77, 79, 0.08);
+    background: rgb(var(--ui-error-rgb) / 10%);
   }
 
   svg {

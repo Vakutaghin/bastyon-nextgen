@@ -1,5 +1,6 @@
 // @ts-expect-error vue3-styled-components types
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_PlaybackRateNotification = styled.div<{ show?: boolean }>`
   position: absolute;
@@ -7,12 +8,12 @@ export const SC_PlaybackRateNotification = styled.div<{ show?: boolean }>`
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 100;
-  background: rgba(180, 180, 180, 0.6);
+  background: rgb(var(--color-black-rgb) / 50%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   padding: 12px 24px;
   border-radius: var(--ui-radius-lg);
-  color: #eee;
+  color: var(--color-white);
   font-size: 18px;
   font-weight: 500;
   font-family: var(--font-family);
@@ -22,9 +23,9 @@ export const SC_PlaybackRateNotification = styled.div<{ show?: boolean }>`
   opacity: ${(p) => (p.show ? 1 : 0)};
   visibility: ${(p) => (p.show ? 'visible' : 'hidden')};
   transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity var(--transition-fast),
+    visibility var(--transition-fast);
+  box-shadow: 0 4px 12px rgb(var(--color-black-rgb) / 30%);
 `
 
 export const SC_SeekNotification = styled.div<{ show?: boolean }>`
@@ -33,12 +34,12 @@ export const SC_SeekNotification = styled.div<{ show?: boolean }>`
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 100;
-  background: rgba(180, 180, 180, 0.6);
+  background: rgb(var(--color-black-rgb) / 50%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   padding: 12px 24px;
   border-radius: var(--ui-radius-lg);
-  color: #eee;
+  color: var(--color-white);
   font-size: 18px;
   font-weight: 500;
   font-family: var(--font-family);
@@ -48,9 +49,9 @@ export const SC_SeekNotification = styled.div<{ show?: boolean }>`
   opacity: ${(p) => (p.show ? 1 : 0)};
   visibility: ${(p) => (p.show ? 'visible' : 'hidden')};
   transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity var(--transition-fast),
+    visibility var(--transition-fast);
+  box-shadow: 0 4px 12px rgb(var(--color-black-rgb) / 30%);
 `
 
 export const SC_IconNotification = styled.div<{ show?: boolean }>`
@@ -59,12 +60,12 @@ export const SC_IconNotification = styled.div<{ show?: boolean }>`
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 100;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(var(--color-black-rgb) / 50%);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   padding: 20px;
   border-radius: 50%;
-  color: #fff;
+  color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -73,9 +74,9 @@ export const SC_IconNotification = styled.div<{ show?: boolean }>`
   opacity: ${(p) => (p.show ? 1 : 0)};
   visibility: ${(p) => (p.show ? 'visible' : 'hidden')};
   transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity var(--transition-fast),
+    visibility var(--transition-fast);
+  box-shadow: 0 4px 12px rgb(var(--color-black-rgb) / 30%);
 `
 
 export const SC_HotkeysHelpOverlay = styled.div`
@@ -84,7 +85,7 @@ export const SC_HotkeysHelpOverlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: rgb(var(--color-black-rgb) / 85%);
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -96,8 +97,7 @@ export const SC_HotkeysHelpOverlay = styled.div`
 `
 
 export const SC_HotkeysHelpContent = styled.div`
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: var(--ui-bg);
   border-radius: var(--ui-radius-lg);
   padding: 24px;
   max-width: 600px;
@@ -105,15 +105,17 @@ export const SC_HotkeysHelpContent = styled.div`
   max-height: 90%;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 0 0 1px var(--ui-border),
+    var(--ui-shadow-lg);
 `
 
 export const SC_HotkeysHelpTitle = styled.h3`
-  margin: 0 0 20px 0;
+  margin: 0 0 20px;
   font-size: 20px;
   font-weight: 600;
   text-align: center;
-  color: #333;
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_HotkeysHelpList = styled.div`
@@ -121,7 +123,7 @@ export const SC_HotkeysHelpList = styled.div`
   grid-template-columns: 1fr;
   gap: 12px;
 
-  @media (min-width: 500px) {
+  @media (min-width: ${() => BREAKPOINTS.MOBILE}) {
     grid-template-columns: 1fr 1fr;
     gap: 12px 24px;
   }
@@ -132,7 +134,7 @@ export const SC_HotkeysHelpItem = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--ui-border);
 
   &:last-child {
     border-bottom: none;
@@ -140,20 +142,20 @@ export const SC_HotkeysHelpItem = styled.div`
 `
 
 export const SC_HotkeysKey = styled.span`
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--ui-bg);
   padding: 4px 8px;
   border-radius: var(--ui-radius-sm);
   font-family: var(--font-family-mono);
   font-size: 16px;
   font-weight: 500;
   white-space: nowrap;
-  color: #333;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--ui-text-highlighted);
+  box-shadow: inset 0 0 0 1px var(--ui-border-accented);
 `
 
 export const SC_HotkeysDescription = styled.span`
   font-size: 16px;
-  color: #555;
+  color: var(--ui-text);
   text-align: right;
   margin-left: 10px;
 `
@@ -164,12 +166,16 @@ export const SC_HotkeysCloseButton = styled.button`
   right: 16px;
   background: none;
   border: none;
-  color: #999;
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-dimmed);
   cursor: pointer;
   padding: 4px;
-  transition: color 0.2s;
+  transition:
+    color var(--transition-quick),
+    background-color var(--transition-quick);
 
   &:hover {
-    color: #333;
+    color: var(--ui-text);
+    background: var(--ui-bg-elevated);
   }
 `

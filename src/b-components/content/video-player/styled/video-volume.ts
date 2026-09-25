@@ -1,5 +1,6 @@
 // @ts-expect-error vue3-styled-components types
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_VideoVolumeControl = styled.div`
   display: flex;
@@ -20,7 +21,7 @@ export const SC_VideoVolumeButton = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: var(--ui-radius-sm);
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-fast);
   color: var(--color-text-primary);
   flex-shrink: 0;
   width: 32px;
@@ -30,7 +31,7 @@ export const SC_VideoVolumeButton = styled.button`
   box-sizing: border-box;
   position: relative;
 
-  @media (max-width: 768px) {
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     width: 44px;
     height: 44px;
     min-width: 44px;
@@ -78,7 +79,7 @@ export const SC_VideoVolumeMutedCross = styled.div`
     width: 2px;
     height: 14px;
     background-color: var(--color-text-muted);
-    border-radius: 1px;
+    border-radius: var(--ui-radius-xs);
   }
 
   &::after {
@@ -90,7 +91,7 @@ export const SC_VideoVolumeMutedCross = styled.div`
     width: 14px;
     height: 2px;
     background-color: var(--color-text-muted);
-    border-radius: 1px;
+    border-radius: var(--ui-radius-xs);
   }
 `
 
@@ -100,15 +101,15 @@ export const SC_VideoVolumeSlider = styled.div`
   height: 6px;
   min-height: 6px;
   max-height: 6px;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: var(--color-overlay-20);
   border-radius: var(--ui-radius-xs);
   cursor: pointer;
   position: relative;
   overflow: hidden;
   transition:
-    height 0.15s ease,
-    background-color 0.15s ease;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    height var(--transition-quick),
+    background-color var(--transition-quick);
+  box-shadow: inset 0 1px 2px rgb(var(--color-black-rgb) / 20%);
   margin: 0;
   padding: 0;
   display: block;
@@ -119,12 +120,12 @@ export const SC_VideoVolumeSlider = styled.div`
     height: 8px;
     min-height: 8px;
     max-height: 8px;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: var(--color-overlay-30);
   }
 
   /* На мобилке скрываем slider — только mute-кнопка остаётся.
      Регулировка громкости делается hardware-кнопками девайса. */
-  @media (max-width: 768px) {
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     display: none;
   }
 `
@@ -132,15 +133,11 @@ export const SC_VideoVolumeSlider = styled.div`
 export const SC_VideoVolumeFill = styled.div<{ isDragging?: boolean }>`
   height: 100%;
   width: 0%;
-  background-color: #333;
-  background: linear-gradient(90deg, #333 0%, #555 100%);
+  background: var(--ui-primary-on-dark);
   border-radius: var(--ui-radius-xs);
   transition: ${(p) => (p.isDragging ? 'none' : 'width 0.1s linear')};
   position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: auto;
+  inset: 0 auto 0 0;
   display: block;
   pointer-events: none;
   box-sizing: border-box;
@@ -157,12 +154,12 @@ export const SC_VolumeNotification = styled.div<{ show?: boolean }>`
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 100;
-  background: rgba(180, 180, 180, 0.6);
+  background: rgb(var(--color-black-rgb) / 50%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   padding: 12px 24px;
   border-radius: var(--ui-radius-lg);
-  color: #eee;
+  color: var(--color-white);
   font-size: 18px;
   font-weight: 500;
   font-family: var(--font-family);
@@ -172,7 +169,7 @@ export const SC_VolumeNotification = styled.div<{ show?: boolean }>`
   opacity: ${(p) => (p.show ? 1 : 0)};
   visibility: ${(p) => (p.show ? 'visible' : 'hidden')};
   transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity var(--transition-fast),
+    visibility var(--transition-fast);
+  box-shadow: 0 4px 12px rgb(var(--color-black-rgb) / 30%);
 `
