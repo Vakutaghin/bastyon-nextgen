@@ -19,6 +19,7 @@ import type { GetCommentsResponse, GetComment } from '@/types/rpc-responses/get-
 import { COMMENTS_PAGE_SIZE, COMMENTS_ALREADY_SHOWN, COMMENT_LOAD_TIMEOUT_MS } from '../consts'
 import type { CommentsSortOrder } from '../types'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
+import { t } from '@/i18n'
 
 export interface UseCommentsLoaderOptions {
   postId: Ref<string>
@@ -41,10 +42,7 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
     allCommentsError.value = null
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(
-          () => reject(new Error('Таймаут загрузки комментариев')),
-          COMMENT_LOAD_TIMEOUT_MS
-        )
+        setTimeout(() => reject(new Error(t('commentsMsg.loadTimeout'))), COMMENT_LOAD_TIMEOUT_MS)
       })
       const authStore = useAuthStore()
       const userAddress = authStore.getUserAddress ?? ''

@@ -53,7 +53,15 @@ export function showToastsForNewNotifications(pinia: Pinia, items: NotificationI
     appToast.info({
       // item.title — i18n-ключ заголовка (см. notifications-mappers).
       message: item.title ? t(item.title) : '',
-      description: item.description ?? (item.from ? `От: ${item.from}` : undefined),
+      // Текст оценки и «от кого» собираем здесь, на текущем языке: в IDB
+      // хранится число, иначе после смены языка тост оставался бы на прежнем.
+      description:
+        item.description ??
+        (item.upvoteVal != null
+          ? t('notif.scoreValue', { n: item.upvoteVal })
+          : item.from
+            ? t('notif.from', { name: item.from })
+            : undefined),
       key: item.id,
       duration: 4,
     })

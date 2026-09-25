@@ -27,11 +27,15 @@
       </SC_InfoRow>
       <SC_InfoRow>
         <SC_InfoLabel>{{ t('videoUploader.framesPerSecond') }}</SC_InfoLabel>
-        <SC_InfoValue>{{ video.fps ? Math.round(video.fps) : t('videoUploader.unknown') }} fps</SC_InfoValue>
+        <SC_InfoValue
+          >{{ video.fps ? Math.round(video.fps) : t('videoUploader.unknown') }} fps</SC_InfoValue
+        >
       </SC_InfoRow>
       <SC_InfoRow>
         <SC_InfoLabel>{{ t('videoUploader.audio') }}</SC_InfoLabel>
-        <SC_InfoValue>{{ video.hasAudio ? t('videoUploader.yes') : t('videoUploader.audioNo') }}</SC_InfoValue>
+        <SC_InfoValue>{{
+          video.hasAudio ? t('videoUploader.yes') : t('videoUploader.audioNo')
+        }}</SC_InfoValue>
       </SC_InfoRow>
       <SC_InfoRow>
         <SC_InfoLabel>{{ t('videoUploader.format') }}</SC_InfoLabel>
@@ -47,13 +51,16 @@
       </SC_InfoRow>
       <SC_InfoRow>
         <SC_InfoLabel>{{ t('videoUploader.createdAt') }}</SC_InfoLabel>
-        <SC_InfoValue>{{ video.createdAt ? new Date(video.createdAt).toLocaleString('ru-RU') : t('videoUploader.unknown') }}</SC_InfoValue>
+        <SC_InfoValue>{{
+          video.createdAt ? formatDateTimeMedium(video.createdAt) : t('videoUploader.unknown')
+        }}</SC_InfoValue>
       </SC_InfoRow>
     </SC_InfoContent>
   </Modal>
 </template>
 
 <script setup lang="ts">
+import { formatDateTimeMedium } from '@/helpers/common/date-formatter'
 import { useI18n } from 'vue-i18n'
 import { useVideoInfoModal } from './video-info-modal'
 import type { VideoInfoModalProps, VideoInfoModalEmits } from './types'
@@ -71,6 +78,6 @@ const {
   SC_InfoLabel,
   SC_InfoValue,
   formatFileSize,
-  formatDuration
+  formatDuration,
 } = useVideoInfoModal()
 </script>

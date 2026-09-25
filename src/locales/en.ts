@@ -497,6 +497,7 @@ export default {
     errorChartLoad: 'Chart loading error',
   },
   explorerShared: {
+    txTypeUnknown: 'Type {type}',
     author: 'Author',
     contentId: 'Content ID',
     commentId: 'Comment ID',
@@ -552,6 +553,8 @@ export default {
     qrCodeOfAddress: 'QR code of address {address}',
   },
   search: {
+    placeholder: 'Search...',
+    postFallback: 'Post',
     feedByTags: 'Feed by tags: {tags}',
     queryTitle: 'Search for: “{query}”',
     title: 'Search',
@@ -559,7 +562,7 @@ export default {
     loading: 'Loading…',
     nothingFound: 'Nothing found for “{query}”',
     noResults: 'Nothing found',
-    postsCount: '{count} posts',
+    postsCount: '{n} post | {n} posts',
     loadMore: 'Show more',
     tabUsers: 'Users',
     tabPosts: 'Posts',
@@ -576,6 +579,10 @@ export default {
     explorerOpenAddress: 'Open address',
   },
   messenger: {
+    chatFallbackTitle: 'Chat',
+    audioNoUrl: 'The voice message has no file link',
+    audioPlayFailed: 'Could not play the audio',
+    audioLoadFailed: 'Could not load the audio',
     muteUser: 'Hide messages',
     unmuteUser: 'Show messages',
     muteConfirmTitle: 'Hide this person\u2019s messages?',
@@ -1018,6 +1025,8 @@ export default {
     failed: 'Failed to submit the report',
   },
   postCard: {
+    unknownAuthor: 'Unknown author',
+    videoTitle: 'Video',
     ratingOwnPost: 'You cannot rate your own post.',
     ratingNotFound: 'The rated content was not found or has been deleted.',
     ratingTooFast: 'Too many ratings in a row. Wait a couple of seconds.',
@@ -1383,6 +1392,8 @@ export default {
     },
   },
   notif: {
+    from: 'From: {name}',
+    scoreValue: 'Rating: {n}',
     typeRating: 'Rating',
     typeLowRating: 'Low rating',
     typeComment: 'Comment',
@@ -1478,6 +1489,9 @@ export default {
     pkoinChartPeriod12m: '12 mo.',
   },
   commentsMsg: {
+    loadTimeout: 'Comments did not load in time',
+    charsLeft: '{n} character left | {n} characters left',
+    charsOver: '{n} character over the limit | {n} characters over the limit',
     cancel: 'Cancel',
     no: 'No',
     deleteConfirmTitle: 'Delete comment?',
@@ -1638,6 +1652,7 @@ export default {
     retry: 'Retry',
   },
   accountMsg: {
+    registrationBlocked: 'Registration failed: {reason}. Please contact support.',
     reasonRegistration: 'Account registration',
     reasonBalance: 'Balance top-up',
     captchaTitle: 'Captcha',
@@ -1695,6 +1710,8 @@ export default {
     empty: 'No release notes yet',
   },
   appMsg: {
+    insufficientFundsForFee: 'Not enough funds to pay the fee',
+    insufficientFundsForTransfer: 'Not enough funds for the transfer including the fee',
     broadcastStatusUnknown:
       'The node did not answer in time. The transaction may have gone through — check before sending it again.',
     framedNotice: 'Bastyon NextGen does not open inside another site.',
@@ -1713,12 +1730,6 @@ export default {
     },
     relativeAgo: {
       justNow: 'just now',
-      seconds: '{n}s ago',
-      minutes: '{n} min ago',
-      hours: '{n}h ago',
-      days: '{n}d ago',
-      months: '{n}mo ago',
-      years: '{n}y ago',
     },
     wallet: {
       needAuth: 'Sign in with a mnemonic or private key to derive additional wallets',

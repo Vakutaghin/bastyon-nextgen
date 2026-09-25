@@ -71,7 +71,8 @@ import {
   type HistoryEntry,
   type HistoryKind,
 } from '../../components/shared/use-search-history'
-import { shortenHash, formatRelativeTime } from '../../components/shared/format-explorer'
+import { shortenHash } from '../../components/shared/format-explorer'
+import { formatTimeAgo as formatRelativeTime } from '@/helpers/common/date-formatter'
 import {
   SC_ExplorerSearch,
   SC_ExplorerSearchInput,

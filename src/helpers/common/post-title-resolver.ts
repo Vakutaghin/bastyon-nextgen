@@ -5,6 +5,7 @@
  */
 
 import { safeDecode } from '@/helpers/content/safe-decode'
+import { t } from '@/i18n'
 
 interface PostLike {
   title?: string
@@ -47,7 +48,7 @@ export function resolvePostTitleFromPost(post: PostLike | undefined | null): Res
   }
 
   if (!postTitle && post?.type === 'video') {
-    postTitle = 'Видео'
+    postTitle = t('postCard.videoTitle')
   }
 
   return { title: postTitle, usedContent }

@@ -145,7 +145,7 @@ export async function requestUnspents(
     }
 
     if (isRegistrationBlockingError(errorMessage)) {
-      throw new Error(`Ошибка регистрации: ${errorMessage}. Обратитесь в поддержку.`, {
+      throw new Error(t('accountMsg.registrationBlocked', { reason: errorMessage }), {
         cause: error,
       })
     }

@@ -133,10 +133,8 @@ import { useNodeHealth, getProductionServersList } from '@/composables/use-node-
 import { useI18n } from 'vue-i18n'
 import { Skeleton } from '@/components'
 import ExplorerError from '../components/shared/explorer-error.vue'
-import {
-  formatExplorerNumber as formatNumber,
-  formatRelativeTime,
-} from '../components/shared/format-explorer'
+import { formatExplorerNumber as formatNumber } from '../components/shared/format-explorer'
+import { formatTimeAgo as formatRelativeTime } from '@/helpers/common/date-formatter'
 import type { PeerInfo } from '@/types/rpc-responses/get-peer-info'
 import { pingLabel as formatPingLabel, shortenVersion } from './peers-format'
 import {

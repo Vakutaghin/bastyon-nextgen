@@ -3,6 +3,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { resolvePostTitleFromPost } from './post-title-resolver'
+import { t } from '@/i18n'
 
 describe('resolvePostTitleFromPost', () => {
   it('prefers the explicit title', () => {
@@ -42,6 +43,6 @@ describe('resolvePostTitleFromPost', () => {
   })
 
   it('names a video with no title at all', () => {
-    expect(resolvePostTitleFromPost({ type: 'video' }).title).toBe('Видео')
+    expect(resolvePostTitleFromPost({ type: 'video' }).title).toBe(t('postCard.videoTitle'))
   })
 })

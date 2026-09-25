@@ -80,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatLongDate } from '@/helpers/common/date-formatter'
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Modal, Button, Input } from 'ant-design-vue'
@@ -125,7 +126,7 @@ const backupStatus = ref<{ state: BackupState; verifiedAt: number | null }>(
 const backupStatusLabel = computed(() => {
   const st = backupStatus.value
   if (st.state === 'never' || !st.verifiedAt) return t('vault.backupStatusNever')
-  const date = new Date(st.verifiedAt).toLocaleDateString()
+  const date = formatLongDate(st.verifiedAt)
   return st.state === 'ok'
     ? t('vault.backupStatusOk', { date })
     : t('vault.backupStatusStale', { date })

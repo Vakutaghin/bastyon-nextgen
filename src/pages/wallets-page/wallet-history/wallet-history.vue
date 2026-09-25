@@ -68,11 +68,11 @@ import { useUserProfiles } from '@/composables/use-user-profile'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { formatPkoinAmount } from '@/helpers/common/pkoin-formatter'
+import { shortenHash } from '@/pages/block-explorer-page/components/shared/format-explorer'
 import {
-  formatRelativeTime as formatRelTime,
-  formatAbsoluteTime as formatAbsTime,
-  shortenHash,
-} from '@/pages/block-explorer-page/components/shared/format-explorer'
+  formatTimeAgo as formatRelTime,
+  formatDateTimeExact as formatAbsTime,
+} from '@/helpers/common/date-formatter'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 import type { GetAddressTransactionsResponse } from '@/types/rpc-responses/get-address-transactions'
 import { classifyWalletTx, type WalletTxDirection, type WalletTxSemantic } from './classify-tx'

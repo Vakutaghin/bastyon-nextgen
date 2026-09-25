@@ -64,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatClock } from '@/helpers/common/date-formatter'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DeleteOutlined, EllipsisOutlined } from '@ant-design/icons-vue'
@@ -132,11 +133,7 @@ const dropdownStyle = computed(() => ({
 }))
 
 function formatTime(timestamp?: number): string {
-  if (!timestamp) return ''
-  return new Date(timestamp).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return timestamp ? formatClock(timestamp) : ''
 }
 
 function isMine(message: Message): boolean {

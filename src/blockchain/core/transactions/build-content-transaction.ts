@@ -11,6 +11,7 @@ import type { UTXO } from '@/composables/use-wallet-queries'
 import { POCKETNET_NETWORK } from '../../constants/network'
 import { AMOUNT_MULTIPLIER, toSatoshis, DUST_VALUE } from '../../constants/transactions'
 import { loadPocketnetBitcoin, getTransactionBuilder, hash256 } from './btc17-loader'
+import { t } from '@/i18n'
 
 /**
  * Интерфейс для параметров сборки транзакции
@@ -99,7 +100,7 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
   const changeAmountSatoshis = totalInputAmountSatoshis - feeSatoshis
 
   if (changeAmountSatoshis < 0) {
-    throw new Error('Insufficient funds to cover transaction fee')
+    throw new Error(t('appMsg.insufficientFundsForFee'))
   }
 
   // Если change меньше dust value, отправляем все на комиссию

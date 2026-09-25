@@ -1,15 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest'
-import { setI18nLocale } from '@/i18n'
-import {
-  formatExplorerPkoin,
-  formatExplorerNumber,
-  shortenHash,
-  formatRelativeTime,
-} from './format-explorer'
-
-// formatRelativeTime резолвит относительное время через i18n; фиксируем 'ru',
-// т.к. ассерты ниже сравнивают с русскими строками.
-beforeAll(() => setI18nLocale('ru'))
+import { describe, it, expect } from 'vitest'
+import { formatExplorerPkoin, formatExplorerNumber, shortenHash } from './format-explorer'
 
 describe('formatExplorerPkoin', () => {
   it('strips trailing zeros by default', () => {
@@ -58,19 +48,5 @@ describe('shortenHash', () => {
 
   it('respects custom head/tail', () => {
     expect(shortenHash('1234567890abcdef', 4, 4)).toBe('1234…cdef')
-  })
-})
-
-describe('formatRelativeTime', () => {
-  it('renders "только что" for fresh times', () => {
-    expect(formatRelativeTime(1000, 1003)).toBe('только что')
-  })
-
-  it('renders minutes', () => {
-    expect(formatRelativeTime(0, 120)).toBe('2 мин назад')
-  })
-
-  it('renders hours', () => {
-    expect(formatRelativeTime(0, 7200)).toBe('2 ч назад')
   })
 })

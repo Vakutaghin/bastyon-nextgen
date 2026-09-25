@@ -78,13 +78,14 @@ const open = ref(false)
 const activeIndex = ref(NO_ACTIVE_SUGGESTION)
 
 // Облако трендовых тегов (gettags не умеет префикс-поиск — фильтруем на клиенте).
+// Тот же ключ, что у облака тегов в сайдбаре: один запрос, один кэш.
 const { data: tagsResponse } = useRpcQuery(
-  ['tags', 'cloud', locale.value],
-  {
+  () => ['tags', 'cloud', locale.value, '100'],
+  () => ({
     method: rpcEndpoints.getTags,
     parameters: ['', '100', '', locale.value],
     options: { auth: false },
-  },
+  }),
   { staleTime: 5 * 60 * 1000, gcTime: 10 * 60 * 1000, refetchOnWindowFocus: false }
 )
 

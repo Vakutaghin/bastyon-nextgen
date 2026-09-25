@@ -157,11 +157,11 @@ export function mapMissedEventToNotification(n: Record<string, unknown>): Notifi
   const title = isTipEvent
     ? 'notif.titleTip'
     : (MES_TYPE_TITLE_KEYS[mesType] ?? 'notif.titleDefault')
+  // Текст оценки не сохраняем (он застыл бы на языке момента записи) —
+  // тост соберёт его из upvoteVal. Сумма чаевых от языка не зависит.
   const description = isTipEvent
     ? `+${formatPkoin(n.amount as string | number, 8, false)} PKOIN`
-    : n.upvoteVal != null
-      ? `Оценка: ${n.upvoteVal}`
-      : undefined
+    : undefined
   const link = (n.url ?? n.link) as string | undefined
 
   const safeType: NotificationItem['type'] = isTipEvent

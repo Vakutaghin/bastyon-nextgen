@@ -117,31 +117,6 @@ export function extractFirstExternalUrl(text: string): string | null {
 }
 
 /**
- * Форматирует время сообщения: «08:23» или «23.01.2023, 08:23» если год другой.
- */
-export function formatMessageTime(timestamp: number): string {
-  if (!timestamp) return ''
-  const d = new Date(timestamp)
-  const now = new Date()
-  const timePart = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-
-  if (
-    d.getFullYear() !== now.getFullYear() ||
-    d.getMonth() !== now.getMonth() ||
-    d.getDate() !== now.getDate()
-  ) {
-    const datePart = d.toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-    return `${datePart}, ${timePart}`
-  }
-
-  return timePart
-}
-
-/**
  * Находит ближайшего прокручиваемого предка элемента.
  */
 export function getScrollParent(el: HTMLElement | null): HTMLElement | null {

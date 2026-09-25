@@ -13,7 +13,11 @@
           <PlusOutlined />
         </SC_ControlBtn>
 
-        <SC_ControlBtn v-if="hasSelection" :title="t('sidebar.resetFilter')" @click.stop="clearSelection">
+        <SC_ControlBtn
+          v-if="hasSelection"
+          :title="t('sidebar.resetFilter')"
+          @click.stop="clearSelection"
+        >
           <StopOutlined />
         </SC_ControlBtn>
       </SC_CategoriesControls>
@@ -130,19 +134,20 @@ interface RawTag {
   name?: string
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const filtersStore = useFiltersStore()
 const isExpanded = ref(false)
 const isModalVisible = ref(false)
 const newCategoryName = ref('')
 
 const { data: tagsResponse } = useRpcQuery<GetTagsResponse>(
-  ['tags', 'cloud', 'ru'],
-  {
+  // Язык интерфейса вместо жёсткого 'ru' (S62); лимит — в ключе, см. sidebar-tags.
+  () => ['tags', 'cloud', locale.value, '50'],
+  () => ({
     method: rpcEndpoints.getTags,
-    parameters: ['', '50', '', 'ru'],
+    parameters: ['', '50', '', locale.value],
     options: { auth: false },
-  },
+  }),
   {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,

@@ -128,9 +128,11 @@ import { Skeleton } from '@/components'
 import {
   formatExplorerNumber as formatNumber,
   formatExplorerPkoin,
-  formatRelativeTime as formatRelTime,
-  formatAbsoluteTime as formatAbsTime,
 } from '../components/shared/format-explorer'
+import {
+  formatTimeAgo as formatRelTime,
+  formatDateTimeExact as formatAbsTime,
+} from '@/helpers/common/date-formatter'
 import type { CompactBlock } from '@/types/rpc-responses/get-compact-block'
 import type { CoinstakeInfo } from '../components/shared/extract-coinstake'
 import {

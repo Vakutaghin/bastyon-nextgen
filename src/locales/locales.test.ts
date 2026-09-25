@@ -33,14 +33,18 @@ describe('симметрия словарей ru/en', () => {
 
   it('нет пустых строк-значений', () => {
     const emptyRu = ruKeys.filter((k) => {
-      const v = k.split('.').reduce<unknown>((o, part) => (o as Record<string, unknown>)?.[part], ru)
+      const v = k
+        .split('.')
+        .reduce<unknown>((o, part) => (o as Record<string, unknown>)?.[part], ru)
       return typeof v === 'string' && v.trim() === ''
     })
     expect(emptyRu).toEqual([])
   })
 
   it('интерполяционные плейсхолдеры совпадают между ru и en', () => {
-    const placeholders = (s: string) => (s.match(/\{[^}]+\}/g) || []).sort()
+    // Набор, а не список: у множественных форм («1 символ | 2 символа | …»)
+    // число повторов {n} зависит от языка, важно лишь, что имена совпадают.
+    const placeholders = (s: string) => [...new Set(s.match(/\{[^}]+\}/g) || [])].sort()
     const get = (dict: unknown, path: string) =>
       path.split('.').reduce<unknown>((o, p) => (o as Record<string, unknown>)?.[p], dict)
 

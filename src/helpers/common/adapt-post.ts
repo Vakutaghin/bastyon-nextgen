@@ -15,6 +15,7 @@ import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { normalizeImages } from '@/composables/use-feed-helpers'
 import { safeDecode } from '@/helpers/content/safe-decode'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
+import { t } from '@/i18n'
 
 /** Канонический контракт поста — см. `@/types/adapted-post`. */
 export type { AdaptedPost }
@@ -106,7 +107,7 @@ export function adaptPostData(
     registerNameAddress([{ name: userprofile.name, address: userprofile.address }])
   }
 
-  const authorName = userprofile?.name || post.address || 'Неизвестный автор'
+  const authorName = userprofile?.name || post.address || t('postCard.unknownAuthor')
 
   const avatar = resolveImageUrl(userprofile?.i) ?? null
   const reputation = userprofile?.reputation || 0

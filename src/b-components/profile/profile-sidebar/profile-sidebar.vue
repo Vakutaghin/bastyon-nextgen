@@ -147,6 +147,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatLongDate } from '@/helpers/common/date-formatter'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -226,7 +227,7 @@ const displayName = computed<string>(() => {
 
 const formattedDate = computed<string>(() => {
   if (!props.profile?.regdate) return ''
-  return new Date(props.profile.regdate * 1000).toLocaleDateString()
+  return formatLongDate(props.profile.regdate * 1000)
 })
 
 const userSite = computed<string | null>(() => {

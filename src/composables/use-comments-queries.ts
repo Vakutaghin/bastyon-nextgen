@@ -6,15 +6,16 @@ import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from './use-rpc-query'
 import type { GetCommentsResponse } from '@/types/rpc-responses/get-comments'
 import type { GetLastCommentsResponse } from '@/types/rpc-responses/get-last-comments'
+import { i18n } from '@/i18n'
 
 /**
  * Загружает комментарии к посту
- * 
+ *
  * @param postId - ID поста (txid)
  * @param parentId - ID родительского комментария ('' для всех комментариев)
  * @param address - Адрес пользователя для фильтрации (опционально)
  * @param enabled - Включен ли запрос
- * 
+ *
  * @example
  * ```vue
  * const { data: comments, isLoading } = useComments(postId)
@@ -31,7 +32,7 @@ export function useComments(
     {
       method: rpcEndpoints.getComments,
       parameters: postId ? [postId, parentId, address] : [],
-      options: { auth: false }
+      options: { auth: false },
     },
     {
       enabled: enabled && !!postId,
@@ -44,19 +45,20 @@ export function useComments(
 /**
  * Загружает последние комментарии
  *
- * Параметры getlastcomments: [limit, '', lang] — лимит (строка), пустая строка, язык (например "ru").
+ * Параметры getlastcomments: [limit, '', lang] — лимит (строка), пустая строка, язык интерфейса.
  *
  * @param enabled - Включен ли запрос
  */
 export function useLastComments(enabled: boolean = true) {
-  const parameters: [string, string, string] = ['20', '', 'ru']
+  // Язык — интерфейса, а не всегда 'ru' (S62); смена языка перезапрашивает.
+  const parameters = (): [string, string, string] => ['20', '', String(i18n.global.locale.value)]
   return useRpcQuery<GetLastCommentsResponse>(
-    ['comments', 'last', ...parameters],
-    {
+    () => ['comments', 'last', ...parameters()],
+    () => ({
       method: rpcEndpoints.getLastComments,
-      parameters,
-      options: { auth: false }
-    },
+      parameters: parameters(),
+      options: { auth: false },
+    }),
     {
       enabled,
       staleTime: 1 * 60 * 1000,

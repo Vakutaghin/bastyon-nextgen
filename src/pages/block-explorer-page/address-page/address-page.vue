@@ -104,9 +104,11 @@ import { Skeleton } from '@/components'
 import {
   formatExplorerNumber as formatNumber,
   formatExplorerPkoin,
-  formatRelativeTime as formatRelTime,
-  formatAbsoluteTime as formatAbsTime,
 } from '../components/shared/format-explorer'
+import {
+  formatTimeAgo as formatRelTime,
+  formatDateTimeExact as formatAbsTime,
+} from '@/helpers/common/date-formatter'
 import { labelForTxType } from '../components/shared/tx-type-labels'
 import { recordVisit } from '../components/shared/use-search-history'
 import { useDocumentTitle } from '@/composables/use-document-title'

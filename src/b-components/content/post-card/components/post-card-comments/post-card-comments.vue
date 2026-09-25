@@ -203,7 +203,7 @@ import { LoadingOutlined, SendOutlined, SyncOutlined, SmileOutlined } from '@ant
 import { useAuthStore } from '@/blockchain'
 import { useCommentsStore, useUserRelationsStore } from '@/stores'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
-import { formatRelativeTime } from '@/helpers/common/date-formatter'
+import { formatTimeCompact } from '@/helpers/common/date-formatter'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { PostForComments } from './types'
 import LastCommentPreview from './last-comment-preview.vue'
@@ -490,7 +490,7 @@ function collapseComments(): void {
 // --- Display helpers (передаются детям через контекст дерева комментариев). ---
 function formatCommentDate(time: number): string {
   void nowTick.value
-  return formatRelativeTime(time)
+  return formatTimeCompact(time)
 }
 function formatCommentDateFull(time: number): string {
   return formatCommentDateAndTime(time)

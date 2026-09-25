@@ -174,11 +174,11 @@ import HashLink from './components/shared/hash-link.vue'
 import InfoTooltip from './components/shared/info-tooltip.vue'
 import ExplorerError from './components/shared/explorer-error.vue'
 import { Skeleton } from '@/components'
+import { formatExplorerNumber as formatNumber } from './components/shared/format-explorer'
 import {
-  formatExplorerNumber as formatNumber,
-  formatRelativeTime as formatRelTime,
-  formatAbsoluteTime as formatAbsTime,
-} from './components/shared/format-explorer'
+  formatTimeAgo as formatRelTime,
+  formatDateTimeExact as formatAbsTime,
+} from '@/helpers/common/date-formatter'
 import {
   SC_ExplorerWork,
   SC_ExplorerPage,

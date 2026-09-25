@@ -50,16 +50,45 @@ export function detectInitialLocale(): Locale {
   return DEFAULT_LOCALE
 }
 
+/**
+ * Русская плюрализация для форм «один | несколько | много» (1 символ,
+ * 2 символа, 5 символов; 11–14 — «много», 21 — «один»). Встроенное правило
+ * vue-i18n английское: без этого сообщения с числом склонялись неверно.
+ * Если форм четыре, первая — для нуля.
+ */
+export function ruPluralRule(choice: number, choicesLength: number): number {
+  const n = Math.abs(choice)
+  const mod10 = n % 10
+  const mod100 = n % 100
+  const form =
+    mod10 === 1 && mod100 !== 11
+      ? 0
+      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+        ? 1
+        : 2
+  if (choicesLength >= 4) return n === 0 ? 0 : form + 1
+  return Math.min(form, choicesLength - 1)
+}
+
 export const i18n = createI18n({
   legacy: false,
   locale: detectInitialLocale(),
   fallbackLocale: DEFAULT_LOCALE,
   messages: { ru, en },
+  pluralRules: { ru: ruPluralRule },
 })
 
 /** Глобальный t() для использования вне setup() — например, в router meta. */
 export function t(key: string, named?: Record<string, unknown>): string {
   return named ? i18n.global.t(key, named) : i18n.global.t(key)
+}
+
+/**
+ * t() с числом: выбирает форму по правилам языка и подставляет `{n}`.
+ * Формы в словаре — через `|` («1 символ | 2 символа | 5 символов»).
+ */
+export function tn(key: string, n: number, named?: Record<string, unknown>): string {
+  return i18n.global.t(key, { n, ...named }, n)
 }
 
 /**

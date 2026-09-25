@@ -1,6 +1,15 @@
 import { db } from '../database'
 import { setTimestamps } from '../utils'
 import type { TranscodedVideo } from '../types'
+import { t } from '@/i18n'
+
+/** Запись не удалилась: текст — для человека, id — в поле. */
+class VideoDeleteError extends Error {
+  constructor(public readonly videoId: string) {
+    super(t('videoMsg.deleteFromDbFailed'))
+    this.name = 'VideoDeleteError'
+  }
+}
 
 /**
  * API для работы с транскодированными видео
@@ -57,12 +66,12 @@ export const transcodedVideoAPI = {
       // Проверяем, что запись действительно удалена
       const deletedVideo = await db.transcodedVideos.get(id)
       if (deletedVideo) {
-        throw new Error(`Не удалось удалить видео с ID ${id}`)
+        throw new VideoDeleteError(id)
       }
     } catch (error) {
       console.error(`Ошибка при удалении видео с ID ${id}:`, error)
       // Наша собственная ошибка верификации уже несёт контекст — пробрасываем как есть.
-      if (error instanceof Error && error.message.startsWith('Не удалось удалить видео')) {
+      if (error instanceof VideoDeleteError) {
         throw error
       }
       // Сбой самого IndexedDB (get/delete отклонены) приходит безымянным DOMException

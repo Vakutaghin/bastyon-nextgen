@@ -304,23 +304,6 @@ export const applyBlockToContent = (
 }
 
 /**
- * Форматирует timestamp сообщения как «{дата ru-RU}, HH:MM».
- * Год добавляется только если сообщение не из текущего года.
- */
-export const formatMessageTime = (timestamp: number): string => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const isCurrentYear = date.getFullYear() === now.getFullYear()
-
-  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  const dateOptions: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' }
-  if (!isCurrentYear) dateOptions.year = 'numeric'
-  const dateStr = date.toLocaleDateString('ru-RU', dateOptions)
-
-  return `${dateStr}, ${timeStr}`
-}
-
-/**
  * Форматирует продолжительность в секундах как «MM:SS» (с ведущими нулями).
  * Используется для рекордера голосовых сообщений и плеера аудио.
  */

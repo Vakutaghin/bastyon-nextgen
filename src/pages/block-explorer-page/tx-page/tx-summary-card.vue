@@ -103,9 +103,11 @@ import ShareButton from '../components/shared/share-button.vue'
 import {
   formatExplorerNumber as formatNumber,
   formatExplorerPkoin,
-  formatRelativeTime as formatRelTime,
-  formatAbsoluteTime as formatAbsTime,
 } from '../components/shared/format-explorer'
+import {
+  formatTimeAgo as formatRelTime,
+  formatDateTimeExact as formatAbsTime,
+} from '@/helpers/common/date-formatter'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 import type { PocketPayload } from '../components/shared/parse-pocketnet-payload'
 import {

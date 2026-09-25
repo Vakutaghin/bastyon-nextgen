@@ -7,8 +7,8 @@
   >
     <InputSearch
       v-model:value="searchQuery"
-      :placeholder="searchData.placeholder"
-      :maxlength="searchData.maxLength"
+      :placeholder="t('search.placeholder')"
+      :maxlength="SEARCH_MAX_LENGTH"
       allow-clear
       autocomplete="off"
       autocorrect="off"
@@ -35,8 +35,13 @@ import {
 import { parseBastyonInput } from '@/services/bastyon-input-link'
 import InputSearch from '@/components/input-search/input-search.vue'
 import HeaderSearchDropdown from './header-search-dropdown.vue'
-import { searchData } from '@/b-components/header/dummy-data/search-data'
+import { useI18n } from 'vue-i18n'
 import { SC_HeaderSearchWrapper } from './styled'
+
+/** Предел длины запроса в строке поиска. */
+const SEARCH_MAX_LENGTH = 100
+
+const { t } = useI18n()
 
 const DEBOUNCE_MS = 450
 

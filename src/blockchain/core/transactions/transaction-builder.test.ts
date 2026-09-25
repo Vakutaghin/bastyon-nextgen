@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { buildTransaction, buildTransferTransaction } from './transaction-builder'
 import type { KeyPair } from '../../types/keys'
 import type { UTXO } from '@/composables/use-wallet-queries'
+import { t } from '@/i18n'
 
 // ---------------------------------------------------------------------------
 // btc17.js (кастомный bitcoinjs-lib) мокаем целиком: FakeTxBuilder фиксирует
@@ -26,13 +27,27 @@ const { FakeTxBuilder, _embed, _sha256 } = vi.hoisted(() => {
       this.network = network
       FakeTxBuilder.instances.push(this)
     }
-    addNTime(t: number) { this.calls.addNTime.push(t) }
-    setLockTime(t: number) { this.calls.setLockTime.push(t) }
-    setNTime(t: number) { this.calls.setNTime.push(t) }
-    addInput(...a: unknown[]) { this.calls.addInput.push(a) }
-    addOutput(...a: unknown[]) { this.calls.addOutput.push(a) }
-    sign(...a: unknown[]) { this.calls.sign.push(a) }
-    build() { return { toHex: () => 'deadbeefhex' } }
+    addNTime(t: number) {
+      this.calls.addNTime.push(t)
+    }
+    setLockTime(t: number) {
+      this.calls.setLockTime.push(t)
+    }
+    setNTime(t: number) {
+      this.calls.setNTime.push(t)
+    }
+    addInput(...a: unknown[]) {
+      this.calls.addInput.push(a)
+    }
+    addOutput(...a: unknown[]) {
+      this.calls.addOutput.push(a)
+    }
+    sign(...a: unknown[]) {
+      this.calls.sign.push(a)
+    }
+    build() {
+      return { toHex: () => 'deadbeefhex' }
+    }
   }
   return {
     FakeTxBuilder,
@@ -51,7 +66,10 @@ vi.mock('../../lib/pocketnet/btc17.js', () => {
   return { ...api, default: api }
 })
 
-const KEY_PAIR = { ecPair: { sign: vi.fn() }, publicKey: globalThis.Buffer.from([2]) } as unknown as KeyPair
+const KEY_PAIR = {
+  ecPair: { sign: vi.fn() },
+  publicKey: globalThis.Buffer.from([2]),
+} as unknown as KeyPair
 
 function utxo(over: Partial<UTXO> = {}): UTXO {
   return { txid: 'aa', vout: 0, amount: 1, scriptPubKey: '00', ...over }
@@ -76,19 +94,21 @@ describe('buildTransaction', () => {
   })
 
   it('бросает при отсутствии unspents', async () => {
-    await expect(buildTransaction({ ...base(), unspents: [] })).rejects.toThrow('No unspents provided')
+    await expect(buildTransaction({ ...base(), unspents: [] })).rejects.toThrow(
+      'No unspents provided'
+    )
   })
 
   it('бросает при невалидном keyPair', async () => {
-    await expect(
-      buildTransaction({ ...base(), keyPair: {} as KeyPair })
-    ).rejects.toThrow('Valid key pair is required')
+    await expect(buildTransaction({ ...base(), keyPair: {} as KeyPair })).rejects.toThrow(
+      'Valid key pair is required'
+    )
   })
 
   it('бросает при нехватке средств на комиссию', async () => {
     // вход 1 сатоши, комиссия 2 сатоши
     const params = { ...base(), unspents: [utxo({ amount: 0.00000001 })], fee: 0.00000002 }
-    await expect(buildTransaction(params)).rejects.toThrow('Insufficient funds')
+    await expect(buildTransaction(params)).rejects.toThrow(t('appMsg.insufficientFundsForFee'))
   })
 
   it('бросает при отсутствии scriptPubKey у входа', async () => {
@@ -168,15 +188,17 @@ describe('buildTransferTransaction', () => {
     await expect(buildTransferTransaction({ ...base(), unspents: [] })).rejects.toThrow(
       'No unspents provided'
     )
-    await expect(
-      buildTransferTransaction({ ...base(), keyPair: {} as KeyPair })
-    ).rejects.toThrow('Valid key pair is required')
+    await expect(buildTransferTransaction({ ...base(), keyPair: {} as KeyPair })).rejects.toThrow(
+      'Valid key pair is required'
+    )
   })
 
   it('бросает при нехватке средств с учётом комиссии', async () => {
     // вход 1, выход 1, плюс комиссия → отрицательная сдача
     const params = { ...base(), unspents: [utxo({ amount: 1, address: 'Psrc' })], fee: 0.001 }
-    await expect(buildTransferTransaction(params)).rejects.toThrow('Insufficient funds')
+    await expect(buildTransferTransaction(params)).rejects.toThrow(
+      t('appMsg.insufficientFundsForTransfer')
+    )
   })
 
   it('собирает перевод: выходы получателю + change, messageData', async () => {

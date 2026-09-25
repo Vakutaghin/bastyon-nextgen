@@ -11,6 +11,7 @@ import type { UTXO } from '@/composables/use-wallet-queries'
 import { POCKETNET_NETWORK } from '../../constants/network'
 import { AMOUNT_MULTIPLIER, toSatoshis, DUST_VALUE } from '../../constants/transactions'
 import { loadPocketnetBitcoin, getTransactionBuilder } from './btc17-loader'
+import { t } from '@/i18n'
 
 /** Параметры для сборки транзакции перевода PKOIN */
 export interface BuildTransferTransactionParams {
@@ -88,7 +89,7 @@ export async function buildTransferTransaction(
   const changeAmountSatoshis = totalInputSatoshis - outputsSatoshis - feeSatoshis
 
   if (changeAmountSatoshis < 0) {
-    throw new Error('Insufficient funds for the transfer, taking into account the commission')
+    throw new Error(t('appMsg.insufficientFundsForTransfer'))
   }
 
   // Сдача меньше dust не может стать выходом — она достаётся сети как часть

@@ -12,6 +12,7 @@
 import { computed, ref, watch, watchEffect, type ComputedRef, type Ref } from 'vue'
 import type { Store } from 'pinia'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { t } from '@/i18n'
 
 export interface PartnerInfo {
   partnerName: Ref<string>
@@ -83,7 +84,7 @@ export function usePartnerInfo(store: PartnerStoreLike & Store): PartnerInfo {
     const isInviteMode = !d
 
     if (d) {
-      partnerName.value = d.partner?.name || 'Чат'
+      partnerName.value = d.partner?.name || t('messenger.chatFallbackTitle')
       partnerAvatar.value = d.partner?.avatar || null
       avatarLoadFailed.value = false
       const id = d.partner?.id
@@ -122,7 +123,7 @@ export function usePartnerInfo(store: PartnerStoreLike & Store): PartnerInfo {
     // текущему lastTargetAddress — иначе при смене собеседника без выхода
     // через «Назад» остаются старые значения.
     if (isInviteMode) {
-      partnerName.value = profile.name || address || 'Новый чат'
+      partnerName.value = profile.name || address || t('messenger.newChat')
       const img = profile.i || profile.avatar || profile.image
       partnerAvatar.value = img ? getAvatarUrlFromProfile(img) || null : null
       avatarLoadFailed.value = false

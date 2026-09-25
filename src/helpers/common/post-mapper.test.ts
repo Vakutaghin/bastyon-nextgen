@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { adaptPostData } from './post-mapper'
+import { t } from '@/i18n'
 
 describe('adaptPostData', () => {
   const rawPost = {
@@ -71,9 +72,9 @@ describe('adaptPostData', () => {
     expect(result.ratingStars).toBe(0)
   })
 
-  it('falls back to "Неизвестный автор" if no name or address', () => {
+  it('falls back to the localized "unknown author" if no name or address', () => {
     const result = adaptPostData({}, 0)
-    expect(result.author.name).toBe('Неизвестный автор')
+    expect(result.author.name).toBe(t('postCard.unknownAuthor'))
   })
 
   it('detects verified via flags.real', () => {

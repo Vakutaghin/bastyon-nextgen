@@ -7,6 +7,7 @@ import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import type { CommentsSortOrder } from './types'
 import { SORT_WEIGHTS, COMMENT_MAX_LENGTH, COMMENT_LENGTH_WARN_THRESHOLD } from './consts'
 import { safeDecode } from '@/helpers/content/safe-decode'
+import { tn } from '@/i18n'
 
 /**
  * Возвращает текст-индикатор оставшихся символов или null, если показывать не нужно.
@@ -19,13 +20,10 @@ export function getCommentLengthHint(message: string): { text: string; isOver: b
   const remaining = COMMENT_MAX_LENGTH - (message?.length ?? 0)
   if (remaining >= COMMENT_LENGTH_WARN_THRESHOLD) return null
 
-  if (remaining > 0) {
-    const word = remaining === 1 ? 'символ' : remaining < 5 ? 'символа' : 'символов'
-    return { text: `Осталось ${remaining} ${word}`, isOver: false }
-  }
-  const over = -remaining
-  const word = over === 1 ? 'символ' : over < 5 ? 'символа' : 'символов'
-  return { text: `Превышено на ${over} ${word}`, isOver: true }
+  // Склонение — правилами i18n: ручное давало «21 символов» и «11 символ»,
+  // а в английском интерфейсе текст оставался русским (S62).
+  if (remaining > 0) return { text: tn('commentsMsg.charsLeft', remaining), isOver: false }
+  return { text: tn('commentsMsg.charsOver', -remaining), isOver: true }
 }
 
 export function isCommentLengthValid(message: string): boolean {

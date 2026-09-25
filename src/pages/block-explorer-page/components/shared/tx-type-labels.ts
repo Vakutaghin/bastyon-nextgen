@@ -9,40 +9,42 @@
  * Если код неизвестен — отдаём 'Тип ' + код.
  */
 
+import { t } from '@/i18n'
+
 export const POCKET_TX_TYPES: Record<number, string> = {
   // Базовые Bitcoin / PoS
   1: 'Coinbase',
   2: 'Coinstake',
-  3: 'PoS reward',         // verified: vin[0].address === vout[1].addresses[0]
+  3: 'PoS reward', // verified: vin[0].address === vout[1].addresses[0]
   4: 'Default',
 
   // Account
-  100: 'AccountSetting',   // verified: OP_RETURN "userInfo"
+  100: 'AccountSetting', // verified: OP_RETURN "userInfo"
   101: 'Account',
   102: 'AccountUser',
-  103: 'AccountSet',       // verified: OP_RETURN "accSet"
+  103: 'AccountSet', // verified: OP_RETURN "accSet"
   104: 'AccountBarteron',
 
   // Content
-  200: 'Post',             // verified: OP_RETURN "share"
-  201: 'Video',            // verified: OP_RETURN "video"
+  200: 'Post', // verified: OP_RETURN "share"
+  201: 'Video', // verified: OP_RETURN "video"
   202: 'Article',
   203: 'Stream',
-  204: 'Comment',          // verified: OP_RETURN "comment"
-  205: 'CommentEdit',      // verified: OP_RETURN "commentEdit"
+  204: 'Comment', // verified: OP_RETURN "comment"
+  205: 'CommentEdit', // verified: OP_RETURN "commentEdit"
   206: 'ContentDelete',
   207: 'CommentDelete',
   208: 'Audio',
   209: 'Collection',
 
   // Scoring
-  300: 'UpvoteShare',      // verified: OP_RETURN "upvoteShare"
-  301: 'cScore',           // verified: OP_RETURN "cScore"
+  300: 'UpvoteShare', // verified: OP_RETURN "upvoteShare"
+  301: 'cScore', // verified: OP_RETURN "cScore"
 
   // Subscriptions
   302: 'Subscribe',
   303: 'SubscribePrivate',
-  304: 'Unsubscribe',      // verified: OP_RETURN "unsubscribe"
+  304: 'Unsubscribe', // verified: OP_RETURN "unsubscribe"
 
   // Blocking
   305: 'Blocking',
@@ -64,5 +66,5 @@ export const POCKET_TX_TYPES: Record<number, string> = {
 }
 
 export function labelForTxType(type: number): string {
-  return POCKET_TX_TYPES[type] ?? `Тип ${type}`
+  return POCKET_TX_TYPES[type] ?? t('explorerShared.txTypeUnknown', { type })
 }

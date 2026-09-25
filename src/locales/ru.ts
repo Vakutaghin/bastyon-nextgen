@@ -503,6 +503,7 @@ export default {
     errorChartLoad: 'Ошибка загрузки графика',
   },
   explorerShared: {
+    txTypeUnknown: 'Тип {type}',
     author: 'Автор',
     contentId: 'ID контента',
     commentId: 'ID коммента',
@@ -558,6 +559,8 @@ export default {
     qrCodeOfAddress: 'QR-код адреса {address}',
   },
   search: {
+    placeholder: 'Поиск...',
+    postFallback: 'Пост',
     feedByTags: 'Лента по тегам: {tags}',
     queryTitle: 'Поиск по запросу: «{query}»',
     title: 'Поиск',
@@ -565,7 +568,7 @@ export default {
     loading: 'Загрузка…',
     nothingFound: 'По запросу «{query}» ничего не найдено',
     noResults: 'Ничего не найдено',
-    postsCount: '{count} постов',
+    postsCount: '{n} пост | {n} поста | {n} постов',
     loadMore: 'Показать ещё',
     tabUsers: 'Пользователи',
     tabPosts: 'Посты',
@@ -582,6 +585,10 @@ export default {
     explorerOpenAddress: 'Открыть адрес',
   },
   messenger: {
+    chatFallbackTitle: 'Чат',
+    audioNoUrl: 'У голосового сообщения нет ссылки на файл',
+    audioPlayFailed: 'Не удалось воспроизвести аудио',
+    audioLoadFailed: 'Не удалось загрузить аудио',
     muteUser: 'Скрыть сообщения',
     unmuteUser: 'Показать сообщения',
     muteConfirmTitle: 'Скрыть сообщения этого человека?',
@@ -1077,6 +1084,8 @@ export default {
     audioLoading: 'Загрузка аудио',
   },
   postCard: {
+    unknownAuthor: 'Неизвестный автор',
+    videoTitle: 'Видео',
     ratingOwnPost: 'Свой пост оценить нельзя.',
     ratingNotFound: 'Оцениваемый контент не найден или был удалён.',
     ratingTooFast: 'Слишком частые оценки. Подождите пару секунд.',
@@ -1385,6 +1394,8 @@ export default {
     },
   },
   notif: {
+    from: 'От: {name}',
+    scoreValue: 'Оценка: {n}',
     typeRating: 'Оценка',
     typeLowRating: 'Низкая оценка',
     typeComment: 'Комментарий',
@@ -1478,6 +1489,9 @@ export default {
     pkoinChartPeriod12m: '12 мес.',
   },
   commentsMsg: {
+    loadTimeout: 'Комментарии не загрузились вовремя',
+    charsLeft: 'Остался {n} символ | Осталось {n} символа | Осталось {n} символов',
+    charsOver: 'Превышено на {n} символ | Превышено на {n} символа | Превышено на {n} символов',
     cancel: 'Отмена',
     no: 'Нет',
     deleteConfirmTitle: 'Удалить комментарий?',
@@ -1641,6 +1655,7 @@ export default {
     retry: 'Повторить',
   },
   accountMsg: {
+    registrationBlocked: 'Ошибка регистрации: {reason}. Обратитесь в поддержку.',
     reasonRegistration: 'Регистрация аккаунта',
     reasonBalance: 'Пополнение баланса',
     captchaTitle: 'Капча',
@@ -1698,6 +1713,8 @@ export default {
     empty: 'Журнал изменений пока пуст',
   },
   appMsg: {
+    insufficientFundsForFee: 'Недостаточно средств, чтобы оплатить комиссию',
+    insufficientFundsForTransfer: 'Недостаточно средств для перевода с учётом комиссии',
     broadcastStatusUnknown:
       'Нода не ответила вовремя. Транзакция могла уйти — проверьте, прежде чем отправлять снова.',
     framedNotice: 'Bastyon NextGen не открывается внутри другого сайта.',
@@ -1716,12 +1733,6 @@ export default {
     },
     relativeAgo: {
       justNow: 'только что',
-      seconds: '{n} с назад',
-      minutes: '{n} мин назад',
-      hours: '{n} ч назад',
-      days: '{n} д назад',
-      months: '{n} мес назад',
-      years: '{n} год назад',
     },
     wallet: {
       needAuth: 'Войдите с мнемоникой или приватным ключом, чтобы выводить дополнительные кошельки',

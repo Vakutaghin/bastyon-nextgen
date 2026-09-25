@@ -13,6 +13,7 @@
 import { onBeforeUnmount, ref, type Ref } from 'vue'
 import { matrixFetch } from '@/helpers/api/request'
 import type { Message } from '../../types'
+import { t } from '@/i18n'
 
 // Глобальный реестр активного аудио в каждом чате — старт нового
 // автоматически останавливает предыдущее.
@@ -60,7 +61,7 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
       isLoadingWave.value = true
       const url = message.url
       if (!url) {
-        hasError.value = 'Нет URL аудио'
+        hasError.value = t('messenger.audioNoUrl')
         return
       }
       const response = await matrixFetch(url, { mode: 'cors' })
@@ -125,7 +126,7 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
           // ignore — упадём в общую ошибку ниже
         }
 
-        hasError.value = 'Ошибка воспроизведения аудио'
+        hasError.value = t('messenger.audioPlayFailed')
       })
 
       el.addEventListener('pause', () => {
@@ -141,7 +142,7 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
 
       audioEl.value = el
     } catch (e) {
-      hasError.value = e instanceof Error ? e.message : 'Ошибка загрузки аудио'
+      hasError.value = e instanceof Error ? e.message : t('messenger.audioLoadFailed')
       isLoadingWave.value = false
     }
   }

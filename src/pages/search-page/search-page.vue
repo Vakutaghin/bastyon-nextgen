@@ -64,7 +64,9 @@
               <SC_ItemBody>
                 <SC_ItemTitle>
                   #{{ tag.tag }}
-                  <SC_TagBadge>{{ t('search.postsCount', { count: tag.count }) }}</SC_TagBadge>
+                  <SC_TagBadge>{{
+                    t('search.postsCount', { n: tag.count }, tag.count)
+                  }}</SC_TagBadge>
                 </SC_ItemTitle>
               </SC_ItemBody>
             </SC_ResultItem>

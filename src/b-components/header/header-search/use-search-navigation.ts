@@ -16,6 +16,7 @@ import type { RemoteAppEntry } from '@/mini-apps/registry/remote-registry'
 import type { SearchUserResult } from '@/types/rpc-responses/search-users'
 import type { SearchPost } from '@/types/rpc-responses/search-posts'
 import type { SearchTag } from '@/types/rpc-responses/search-tags'
+import { t } from '@/i18n'
 
 export interface SearchNavigation {
   onSelectUser: (u: SearchUserResult) => void
@@ -103,7 +104,7 @@ export function useSearchNavigation(
     if (caption) return caption
     const message = safeDecode(p.m || '')
     if (message) return message.slice(0, 80)
-    return p.txid || 'Пост'
+    return p.txid || t('search.postFallback')
   }
 
   return {

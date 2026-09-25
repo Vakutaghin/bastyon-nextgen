@@ -146,11 +146,11 @@ import { isLowRatingValue } from '@/stores/notification-filtering'
 import { adaptPostData } from '@/composables/use-feed'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import {
-  formatNotificationTime,
   trimText,
   COMMENT_PREVIEW_LIMIT,
   POST_REF_PREVIEW_LIMIT,
 } from './helpers/notification-formatter'
+import { formatTimeCompact } from '@/helpers/common/date-formatter'
 import { ICON_BY_TYPE, notificationTypeLabelKey } from './helpers/notification-type-map'
 import { classifyNotificationLink } from './helpers/notification-link'
 import {
@@ -233,7 +233,7 @@ const isEnriching = computed(() => notificationsStore.enriching)
 const readBlock = computed(() => notificationsStore.readBlock)
 
 function formatTime(n: NotificationItem): string {
-  return formatNotificationTime(n.time)
+  return formatTimeCompact(n.time)
 }
 
 /** Прочитано = `nblock` уведомления ниже read-pointer последнего явного просмотра. */

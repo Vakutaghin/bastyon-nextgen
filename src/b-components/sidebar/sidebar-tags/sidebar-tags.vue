@@ -78,7 +78,7 @@ interface RawTag {
   count?: number
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const filtersStore = useFiltersStore()
 const isExpanded = ref(false)
 
@@ -87,12 +87,14 @@ const {
   isLoading,
   error,
 } = useRpcQuery<GetTagsResponse>(
-  ['tags', 'cloud', 'ru'],
-  {
+  // Тренды — на языке интерфейса (было жёстко 'ru', S62); count — в ключе:
+  // у категорий тот же запрос с другим лимитом, и кэш путал бы ответы.
+  () => ['tags', 'cloud', locale.value, '100'],
+  () => ({
     method: rpcEndpoints.getTags,
-    parameters: ['', '100', '', 'ru'],
+    parameters: ['', '100', '', locale.value],
     options: { auth: false },
-  },
+  }),
   {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
