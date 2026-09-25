@@ -7,6 +7,18 @@ export const SC_PostModalWrapper = styled.div`
   display: contents;
 `
 
+/** Пост в окне — без своей рамки: окно уже и есть карточка, рамка в рамке
+ * съедала место и выглядела лишней. */
 export const SC_PostModalContent = styled.div`
   padding: 0;
+
+  .bastyon-card.ant-card {
+    border: 0;
+    margin-bottom: 0;
+    box-shadow: none;
+  }
+
+  .bastyon-card > .ant-card-body {
+    padding: 0;
+  }
 `

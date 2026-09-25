@@ -59,7 +59,9 @@ export function useModal(p: ModalProps, emit: ModalEmits, slots: Slots) {
   const closable = computed(() => p.closable)
   const maskClosable = computed(() => p.maskClosable)
 
-  const width = computed(() => (p.fullWidth ? '95vw' : p.width))
+  // «Во всю ширину» — до ширины колонки ленты: на широком экране 95vw давали
+  // строки по 200 символов, читать такое трудно.
+  const width = computed(() => (p.fullWidth ? 'min(95vw, 880px)' : p.width))
 
   const bodyStyle = computed<CSSProperties>(() => ({
     maxHeight: '90vh',

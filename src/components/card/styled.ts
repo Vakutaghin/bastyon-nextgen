@@ -14,6 +14,18 @@ export const SC_Card = styled.div`
     box-shadow: none;
   }
 
+  /* hoverable у antd на наведении прячет рамку и поднимает тень, а курсор
+     делает «рукой», хотя карточка поста целиком не кликается. У Nuxt карточка
+     на наведение не реагирует. */
+  .ant-card-hoverable {
+    cursor: auto;
+  }
+
+  .ant-card-hoverable:hover {
+    border-color: var(--ui-border);
+    box-shadow: none;
+  }
+
   .ant-card-head {
     border-bottom: 1px solid var(--ui-border);
     background: transparent;

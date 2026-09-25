@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
+import { TRANSITIONS } from '@/styles/design-tokens'
 
 const activeProps = { active: Boolean }
 
@@ -8,7 +8,10 @@ export const SC_BottomNav = styled.nav`
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: ${Z_INDEX.STICKY};
+  /* Слой шапки (1000), а не STICKY (1020): модалки antd стоят на 1000 и
+     добавляются в конец body, поэтому их затемнение накрывает панель. С 1020
+     панель лежала поверх окна поста и закрывала его низ. */
+  z-index: 1000;
   display: flex;
   align-items: stretch;
   /* Высота включает safe-area: при box-sizing: border-box отступ съедал её из
