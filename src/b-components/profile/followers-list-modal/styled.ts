@@ -69,7 +69,7 @@ export const SC_RowName = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.15s ease;
+  transition: color var(--transition-quick);
 
   /* Строка целиком — кнопка перехода в профиль: на наведении имя как ссылка. */
   button:hover > * > &,

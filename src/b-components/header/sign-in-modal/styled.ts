@@ -37,7 +37,7 @@ export const SC_PasswordToggle = styled('span', { isDisabled: Boolean })`
   font-size: 16px;
   opacity: ${(p) => (p.isDisabled ? 0.35 : 0.6)};
   pointer-events: ${(p) => (p.isDisabled ? 'none' : 'auto')};
-  transition: opacity 0.2s;
+  transition: opacity var(--transition-fast);
   z-index: 1;
   background: var(--color-bg-primary);
   display: flex;

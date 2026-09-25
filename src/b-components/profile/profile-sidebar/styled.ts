@@ -105,7 +105,7 @@ export const SC_StartChatButton = styled.button`
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -135,8 +135,8 @@ export const SC_EditProfileButton = styled.button`
   font-size: 14px;
   cursor: pointer;
   transition:
-    border-color 0.2s,
-    color 0.2s;
+    border-color var(--transition-fast),
+    color var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -169,8 +169,8 @@ export const SC_SubscribeButton = styled.button`
   font-size: 14px;
   cursor: pointer;
   transition:
-    background-color 0.2s,
-    color 0.2s;
+    background-color var(--transition-fast),
+    color var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -211,9 +211,9 @@ export const SC_BellButton = styled.button`
   color: var(--color-text-secondary);
   cursor: pointer;
   transition:
-    color 0.2s,
-    border-color 0.2s,
-    background-color 0.2s;
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
 
   &:hover {
     border-color: var(--color-brand-cyan);

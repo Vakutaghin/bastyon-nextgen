@@ -8,7 +8,7 @@ export const SC_EmbedWrap = styled.div`
   aspect-ratio: 16 / 9;
   border-radius: ${BORDER_RADIUS.MD};
   overflow: hidden;
-  background: #000;
+  background: var(--color-black);
 
   & iframe {
     position: absolute;

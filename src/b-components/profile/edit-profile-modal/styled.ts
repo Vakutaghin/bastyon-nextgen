@@ -76,8 +76,8 @@ export const SC_SmallBtn = styled.button`
   font-size: 12px;
   cursor: pointer;
   transition:
-    border-color 0.2s,
-    color 0.2s;
+    border-color var(--transition-fast),
+    color var(--transition-fast);
 
   &:hover {
     border-color: var(--color-brand-cyan);

@@ -107,8 +107,8 @@ export const SC_AddTile = styled('label', tileProps)`
   cursor: pointer;
   background: ${(props) => (props.dragover ? COLORS.PRIMARY_LIGHT : 'transparent')};
   transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
+    border-color var(--transition-quick),
+    background var(--transition-quick);
 
   &:hover {
     border-color: var(--color-primary);

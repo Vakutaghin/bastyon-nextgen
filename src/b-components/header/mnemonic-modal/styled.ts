@@ -65,9 +65,9 @@ export const SC_CopyIconBtn = styled.button`
   color: var(--color-text-secondary);
   cursor: pointer;
   transition:
-    color 0.2s,
-    border-color 0.2s,
-    background 0.2s;
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
 
   &:hover {
     color: var(--color-ant-blue);

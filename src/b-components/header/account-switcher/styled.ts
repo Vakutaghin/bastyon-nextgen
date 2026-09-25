@@ -29,7 +29,7 @@ export const SC_AccountItem = styled.div<{ active?: boolean }>`
   padding: 12px;
   border-radius: var(--ui-radius-lg);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
   margin-bottom: 8px;
   ${(p) =>
     p.active &&
@@ -103,8 +103,8 @@ export const SC_KeyIcon = styled.div`
   color: var(--color-red-ant);
   font-size: 20px;
   transition:
-    opacity 0.2s,
-    transform 0.2s;
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 
   &:hover {
     opacity: 0.8;
@@ -132,8 +132,8 @@ export const SC_LogoutIcon = styled.div`
   color: var(--color-ant-blue);
   font-size: 20px;
   transition:
-    opacity 0.2s,
-    transform 0.2s;
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 
   &:hover {
     opacity: 0.8;

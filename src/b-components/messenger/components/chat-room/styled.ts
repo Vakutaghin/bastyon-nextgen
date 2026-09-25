@@ -35,8 +35,8 @@ export const SC_MessageInput = styled.textarea`
   background: var(--ui-bg);
   outline: none;
   transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
   resize: none;
   overflow-y: auto;
   min-height: 39px;
@@ -78,7 +78,7 @@ export const SC_SendButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
   flex-shrink: 0;
 
   &:disabled {
@@ -111,8 +111,8 @@ export const SC_EmojiToggleButton = styled.button`
   justify-content: center;
   cursor: pointer;
   transition:
-    color 0.2s,
-    background-color 0.2s;
+    color var(--transition-fast),
+    background-color var(--transition-fast);
   flex-shrink: 0;
 
   &:hover {
@@ -140,7 +140,7 @@ export const SC_VoiceButton = styled.button`
   justify-content: center;
   cursor: pointer;
   transition:
-    background-color 0.2s,
+    background-color var(--transition-fast),
     transform 0.05s;
   flex-shrink: 0;
   z-index: 10;
@@ -257,7 +257,7 @@ export const SC_StartChatButton = styled.button`
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
   box-shadow: var(--shadow-sm);
 
   &:hover {
@@ -409,7 +409,7 @@ export const SC_BlockBtn = styled.button`
   color: var(--color-gray-888);
   font-size: 16px;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color var(--transition-fast);
 
   &:hover {
     color: var(--color-danger);

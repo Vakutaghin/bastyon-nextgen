@@ -116,7 +116,7 @@ export const SC_LangButton = styled.button<{ active: boolean }>`
   color: ${(p) => (p.active ? COLORS.WHITE : COLORS.TEXT_SECONDARY)};
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color var(--transition-quick);
 
   & + & {
     border-left: 1px solid var(--color-border);

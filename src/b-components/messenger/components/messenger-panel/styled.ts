@@ -115,7 +115,7 @@ export const SC_MobileBackButton = styled.button`
   font-size: 24px;
   cursor: pointer;
   display: none;
-  transition: color 0.15s ease;
+  transition: color var(--transition-quick);
 
   &:hover {
     color: var(--ui-text-highlighted);

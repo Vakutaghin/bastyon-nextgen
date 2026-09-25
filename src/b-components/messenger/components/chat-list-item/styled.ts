@@ -11,7 +11,7 @@ export const SC_ListItem = styled.div`
   align-items: center;
   padding: 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
   border-bottom: 1px solid var(--color-bg-hover);
 
   &:hover {
@@ -97,8 +97,8 @@ export const SC_DotsBtn = styled.button`
   padding: 2px 4px;
   border-radius: var(--ui-radius-sm);
   transition:
-    opacity 0.2s,
-    color 0.2s;
+    opacity var(--transition-fast),
+    color var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -124,7 +124,7 @@ export const SC_DropdownItem = styled.div`
   font-size: 14px;
   color: var(--color-text-primary);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color var(--transition-quick);
   white-space: nowrap;
 
   &:hover {
@@ -188,7 +188,7 @@ export const SC_CancelBtn = styled.button`
   color: var(--color-text-primary);
   font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
 
   &:hover {
     background-color: var(--color-bg-tertiary);
@@ -203,7 +203,7 @@ export const SC_ConfirmDeleteBtn = styled.button`
   color: var(--color-white);
   font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
 
   &:hover {
     background-color: var(--color-red-dark);

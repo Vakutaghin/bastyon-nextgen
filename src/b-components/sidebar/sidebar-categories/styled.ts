@@ -39,7 +39,7 @@ export const SC_CategoriesToggle = styled.button`
   padding: 4px;
   display: flex;
   align-items: center;
-  transition: all 0.3s;
+  transition: all var(--transition-normal);
 
   &:hover {
     opacity: 0.7;
@@ -62,7 +62,7 @@ export const SC_ControlBtn = styled('button', activeProps)`
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
   border-radius: var(--ui-radius-sm);
 
   &:hover {
@@ -94,8 +94,8 @@ export const SC_CategoriesItem = styled('div', selectedProps)`
   border: none;
   cursor: pointer;
   transition:
-    background-color 0.15s,
-    color 0.15s;
+    background-color var(--transition-quick),
+    color var(--transition-quick);
   color: var(--ui-text-muted);
   font-size: 14px;
   font-weight: 500;

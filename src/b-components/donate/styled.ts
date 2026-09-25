@@ -37,9 +37,9 @@ export const SC_PresetBtn = styled.button`
   line-height: 20px;
   cursor: pointer;
   transition:
-    border-color 0.2s,
-    color 0.2s,
-    background-color 0.2s;
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    background-color var(--transition-fast);
 
   &:hover {
     background-color: var(--ui-bg-elevated);

@@ -72,8 +72,8 @@ export const SC_CloseOverlayButton = styled.button`
   justify-content: center;
   color: var(--color-text-secondary);
   transition:
-    color 0.2s,
-    background-color 0.2s;
+    color var(--transition-fast),
+    background-color var(--transition-fast);
 
   &:hover {
     color: var(--color-text-primary);

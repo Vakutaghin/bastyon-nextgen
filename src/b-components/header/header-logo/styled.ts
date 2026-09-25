@@ -24,7 +24,7 @@ export const SC_LogoLink = styled.button`
   background: none;
   border: none;
   padding: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--transition-normal);
   cursor: pointer;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
@@ -61,7 +61,7 @@ export const SC_LogoLang = styled.button`
   cursor: pointer;
   padding: 6px 10px;
   border-radius: var(--ui-radius-md);
-  transition: background-color 0.15s;
+  transition: background-color var(--transition-quick);
   background: transparent;
   border: 0;
   white-space: nowrap;

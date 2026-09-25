@@ -41,7 +41,7 @@ export const SC_UserInfoTrigger = styled(SC_UserInfo)`
   cursor: pointer;
   padding: 4px 8px 4px 4px;
   border-radius: var(--ui-radius-md);
-  transition: background-color 0.15s;
+  transition: background-color var(--transition-quick);
   position: relative;
   z-index: 3000;
 

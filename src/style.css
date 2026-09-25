@@ -355,8 +355,10 @@
   --radius-lg: 12px;
 
   /* ── Transitions ── */
+  --transition-quick: 0.15s ease; /* TRANSITIONS.QUICK: hover и фокус */
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
+  --transition-drawer: 0.24s cubic-bezier(0.32, 0.72, 0, 1); /* выезд мобильного меню */
 
   /* ── Breakpoints (для @container-queries и JS-кода через getComputedStyle) ── */
   --bp-small-mobile: 360px;

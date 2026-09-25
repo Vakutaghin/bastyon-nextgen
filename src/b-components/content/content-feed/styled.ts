@@ -195,9 +195,9 @@ export const SC_ScrollToTop = styled.button`
     0 0 0 1px var(--ui-border-accented),
     var(--ui-shadow-lg);
   transition:
-    background 0.2s,
-    transform 0.2s,
-    box-shadow 0.2s;
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 
   &:hover {
     background: var(--ui-bg-elevated);

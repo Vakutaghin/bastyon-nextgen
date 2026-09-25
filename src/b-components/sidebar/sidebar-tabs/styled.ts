@@ -35,8 +35,8 @@ export const SC_TabsItem = styled('button', tabProps)`
   border: none;
   cursor: pointer;
   transition:
-    background-color 0.15s,
-    color 0.15s;
+    background-color var(--transition-quick),
+    color var(--transition-quick);
   color: var(--ui-text-muted);
   font-size: 14px;
   font-weight: 500;
@@ -53,7 +53,7 @@ export const SC_TabsItem = styled('button', tabProps)`
     width: 20px;
     flex-shrink: 0;
     color: var(--ui-text-dimmed);
-    transition: color 0.15s;
+    transition: color var(--transition-quick);
   }
 
   &:hover {
@@ -132,8 +132,8 @@ export const SC_FavoritesItem = styled('button', favItemProps)`
   border: none;
   cursor: pointer;
   transition:
-    background-color 0.15s,
-    color 0.15s;
+    background-color var(--transition-quick),
+    color var(--transition-quick);
   color: var(--ui-text-muted);
   font-size: 14px;
   font-weight: 500;

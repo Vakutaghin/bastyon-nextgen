@@ -23,8 +23,8 @@ export const SC_AttachButton = styled.button`
   line-height: 1;
   color: var(--ui-text-dimmed);
   transition:
-    color 0.2s,
-    background-color 0.2s;
+    color var(--transition-fast),
+    background-color var(--transition-fast);
 
   &:hover {
     color: var(--ui-text-highlighted);

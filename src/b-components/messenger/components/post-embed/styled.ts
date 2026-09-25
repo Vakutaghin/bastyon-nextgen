@@ -10,7 +10,7 @@ export const SC_PostEmbed = styled.div`
   max-width: min(320px, 100%);
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: border-color var(--transition-quick);
 
   &:hover {
     border-color: var(--color-brand-cyan);

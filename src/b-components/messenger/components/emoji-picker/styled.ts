@@ -49,7 +49,7 @@ export const SC_EmojiButton = styled.button`
   cursor: pointer;
   padding: 4px;
   border-radius: var(--ui-radius-sm);
-  transition: background 0.2s;
+  transition: background var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -25,5 +25,5 @@ export const SC_IpfsProgressInner = styled.div<{ pct?: number }>`
   height: 100%;
   width: ${(p) => Math.max(0, Math.min(100, p.pct ?? 0))}%;
   background: var(--color-ant-blue);
-  transition: width 0.3s;
+  transition: width var(--transition-normal);
 `

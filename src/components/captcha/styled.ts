@@ -27,7 +27,7 @@ export const SC_Subcaption = styled.div`
 
 export const SC_CaptchaImageWrapper = styled.div<{ shown: boolean }>`
   opacity: ${(p) => (p.shown ? 1 : 0)};
-  transition: opacity 0.3s;
+  transition: opacity var(--transition-normal);
 `
 
 export const SC_CaptchaImage = styled.div`
@@ -46,7 +46,7 @@ export const SC_CaptchaSvgImage = styled.div`
 
 export const SC_Controls = styled.div<{ shown: boolean }>`
   opacity: ${(p) => (p.shown ? 1 : 0)};
-  transition: opacity 0.3s;
+  transition: opacity var(--transition-normal);
 `
 
 export const SC_InputWrapper = styled.div`
@@ -80,7 +80,7 @@ export const SC_SubmitButton = styled.button<{ disabled: boolean }>`
   border-radius: var(--ui-radius-sm);
   font-size: 1em;
   cursor: ${(p) => (p.disabled ? 'not-allowed' : 'pointer')};
-  transition: all 0.3s;
+  transition: all var(--transition-normal);
   background: var(--color-primary);
   color: var(--ui-text-inverted);
   opacity: ${(p) => (p.disabled ? 0.5 : 1)};
@@ -97,7 +97,7 @@ export const SC_RedoButton = styled.button`
   border-radius: var(--ui-radius-sm);
   font-size: 1em;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-normal);
   background: transparent;
   color: var(--color-text-primary);
 

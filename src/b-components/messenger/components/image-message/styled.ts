@@ -64,7 +64,7 @@ export const SC_ErrorBadge = styled.button`
   border: 0;
   cursor: pointer;
   padding: 8px;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--transition-quick);
 
   &:hover {
     background: var(--color-overlay-70);

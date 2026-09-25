@@ -18,9 +18,9 @@ export const SC_LeftSidebar = styled.aside`
   overflow-y: auto;
   z-index: 10;
   transition:
-    width 0.2s ease,
-    min-width 0.2s ease,
-    padding 0.2s ease;
+    width var(--transition-fast),
+    min-width var(--transition-fast),
+    padding var(--transition-fast);
 
   &.collapsed {
     width: 64px;

@@ -14,8 +14,8 @@ export const SC_MessengerButton = styled('button', { isOpen: Boolean })`
   justify-content: center;
   position: relative;
   transition:
-    transform 0.2s,
-    background-color 0.2s;
+    transform var(--transition-fast),
+    background-color var(--transition-fast);
   z-index: 1001;
   pointer-events: auto;
 

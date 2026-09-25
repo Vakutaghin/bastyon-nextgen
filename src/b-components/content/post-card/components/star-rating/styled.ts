@@ -26,7 +26,7 @@ export const SC_StarRating = styled.div`
   min-height: 22px;
 
   .star-count {
-    color: var(--color-text-primary) !important;
+    color: var(--color-text-primary);
     font-size: 14px;
     margin-left: 7px;
   }
@@ -35,7 +35,7 @@ export const SC_StarRating = styled.div`
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: var(--color-text-secondary) !important;
+    color: var(--color-text-secondary);
     font-size: 14px;
     margin-left: 11px;
 
@@ -56,7 +56,7 @@ export const SC_StarWrapper = styled.div`
   flex-shrink: 0;
   vertical-align: middle;
   cursor: pointer;
-  transition: transform 0.1s ease;
+  transition: transform var(--transition-quick);
 
   &:hover {
     transform: scale(1.1);
@@ -85,7 +85,7 @@ export const SC_StarWrapper = styled.div`
 
   .star-bg {
     font-size: 22px;
-    color: var(--ui-text-dimmed) !important;
+    color: var(--ui-text-dimmed);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -104,9 +104,9 @@ export const SC_StarWrapper = styled.div`
       padding: 0;
       /* Пустая звезда — приглушённый контур, как у InputRating в Nuxt UI:
          залитая полупрозрачным жёлтым она читалась как «оценено». */
-      fill: none !important;
-      color: var(--ui-text-dimmed) !important;
-      stroke: currentcolor !important;
+      fill: none;
+      color: var(--ui-text-dimmed);
+      stroke: currentcolor;
     }
   }
 `
@@ -125,7 +125,7 @@ export const SC_StarFilled = styled.div`
 
   .star-fill {
     font-size: 22px;
-    color: var(--color-warning) !important;
+    color: var(--color-warning);
     display: block;
     width: 22px;
     height: 22px;
@@ -135,9 +135,9 @@ export const SC_StarFilled = styled.div`
       width: 22px;
       height: 22px;
       display: block;
-      fill: var(--color-warning) !important;
-      color: var(--color-warning) !important;
-      stroke: currentcolor !important;
+      fill: var(--color-warning);
+      color: var(--color-warning);
+      stroke: currentcolor;
     }
   }
 `

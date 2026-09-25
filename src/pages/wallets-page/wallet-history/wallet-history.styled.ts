@@ -38,7 +38,7 @@ export const SC_HistoryRow = styled.a`
   border: 1px solid var(--color-border-light);
   text-decoration: none;
   color: inherit;
-  transition: background-color 0.15s;
+  transition: background-color var(--transition-quick);
 
   &:hover {
     background-color: var(--color-brand-cyan-soft);
@@ -141,8 +141,8 @@ export const SC_LoadMoreBtn = styled.button`
   font-size: 14px;
   cursor: pointer;
   transition:
-    border-color 0.2s,
-    color 0.2s;
+    border-color var(--transition-fast),
+    color var(--transition-fast);
 
   &:hover {
     border-color: var(--color-brand-cyan);

@@ -2,75 +2,75 @@ import styled from 'vue3-styled-components'
 import Button from '@/components/button/button.vue'
 
 export const SC_UploadSection = styled.div`
-  flex-shrink: 0 !important;
-  padding: 16px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  display: block !important;
-  position: relative !important;
-  min-width: 0 !important;
+  flex-shrink: 0;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  position: relative;
+  min-width: 0;
 
   &,
   & * {
-    box-sizing: border-box !important;
+    box-sizing: border-box;
   }
 `
 
 export const SC_SectionTitle = styled.h3`
-  margin: 0 0 16px !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  color: var(--ui-text-highlighted) !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  display: block !important;
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ui-text-highlighted);
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
 `
 
 export const SC_DropZone = styled.div<{ uploading?: boolean; disabled?: boolean }>`
-  border: 2px dashed var(--color-border-default) !important;
-  border-radius: var(--ui-radius-lg) !important;
-  padding: 48px 24px !important;
-  text-align: center !important;
-  background-color: var(--color-bg-input) !important;
-  transition: all 0.3s ease !important;
-  cursor: pointer !important;
-  min-height: 200px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-  position: relative !important;
-  overflow: visible !important;
-  margin: 0 !important;
-  flex-shrink: 0 !important;
+  border: 2px dashed var(--color-border-default);
+  border-radius: var(--ui-radius-lg);
+  padding: 48px 24px;
+  text-align: center;
+  background-color: var(--color-bg-input);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  overflow: visible;
+  margin: 0;
+  flex-shrink: 0;
 
   &:hover {
-    border-color: var(--color-ant-blue) !important;
-    background-color: var(--color-bg-hover-blue) !important;
+    border-color: var(--color-ant-blue);
+    background-color: var(--color-bg-hover-blue);
   }
 
   &.drag-over {
-    border-color: var(--color-ant-blue) !important;
-    background-color: var(--color-ant-blue-bg) !important;
-    border-style: solid !important;
+    border-color: var(--color-ant-blue);
+    background-color: var(--color-ant-blue-bg);
+    border-style: solid;
   }
 
   ${(p) =>
     p.uploading &&
     `
-    border-color: var(--color-ant-blue) !important;
-    background-color: var(--color-bg-hover-blue) !important;
-    cursor: wait !important;
+    border-color: var(--color-ant-blue);
+    background-color: var(--color-bg-hover-blue);
+    cursor: wait;
   `}
 
   ${(p) =>
     p.disabled &&
     `
-    cursor: default !important;
-    opacity: 0.7 !important;
+    cursor: default;
+    opacity: 0.7;
   `}
 
   .ant-progress {
@@ -84,32 +84,32 @@ export const SC_DropZone = styled.div<{ uploading?: boolean; disabled?: boolean 
 
   /* Убеждаемся, что все дочерние элементы наследуют стили */
   > * {
-    box-sizing: border-box !important;
+    box-sizing: border-box;
   }
 `
 
 export const SC_DropZoneText = styled.div`
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 8px !important;
-  margin-bottom: 16px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
 
   strong {
-    font-size: 16px !important;
-    color: var(--color-text-primary) !important;
+    font-size: 16px;
+    color: var(--color-text-primary);
   }
 
   span {
-    font-size: 16px !important;
-    color: var(--color-text-secondary) !important;
+    font-size: 16px;
+    color: var(--color-text-secondary);
   }
 `
 
 export const SC_ProgressText = styled.div`
-  margin-top: 8px !important;
-  font-size: 16px !important;
-  font-weight: 500 !important;
-  color: var(--color-ant-blue) !important;
+  margin-top: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-ant-blue);
 `
 
 export const SC_SecondaryButton = styled(Button)`

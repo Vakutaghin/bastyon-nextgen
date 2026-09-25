@@ -17,8 +17,8 @@ export const SC_Window = styled('div', props)`
   overflow: hidden;
   transform-origin: bottom right;
   transition:
-    opacity 0.2s,
-    transform 0.2s;
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
   opacity: ${(props) => (props.isOpen ? '1' : '0')};
   transform: ${(props) => (props.isOpen ? 'scale(1)' : 'scale(0.9)')};
   pointer-events: ${(props) => (props.isOpen ? 'auto' : 'none')};

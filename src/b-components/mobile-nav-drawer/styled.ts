@@ -10,7 +10,7 @@ export const SC_Backdrop = styled('div', overlayProps)`
   z-index: 1100;
   opacity: ${(p) => (p.isOpen ? 1 : 0)};
   pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')};
-  transition: opacity 0.22s ease;
+  transition: opacity var(--transition-fast);
   -webkit-tap-highlight-color: transparent;
 `
 
@@ -28,7 +28,7 @@ export const SC_Drawer = styled('aside', overlayProps)`
     0 0 0 1px var(--ui-border),
     var(--ui-shadow-lg);
   transform: translateX(${(p) => (p.isOpen ? '0' : '-100%')});
-  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform var(--transition-drawer);
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
   padding-left: var(--safe-left);
@@ -67,14 +67,6 @@ export const SC_DrawerClose = styled.button`
   &:active {
     background: var(--ui-bg-elevated);
   }
-
-  @media (hover: hover) {
-    &:hover {
-      color: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-text-highlighted)')};
-      background: ${(p) =>
-        p.active ? 'var(--ui-bg-elevated)' : 'rgb(var(--ui-bg-elevated-rgb) / 50%)'};
-    }
-  }
 `
 
 export const SC_DrawerSection = styled.div`
@@ -105,7 +97,7 @@ export const SC_DrawerItem = styled('button', itemProps)`
   text-align: left;
   border-radius: var(--ui-radius-md);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--transition-quick);
   -webkit-tap-highlight-color: transparent;
 
   & .anticon {
@@ -115,5 +107,13 @@ export const SC_DrawerItem = styled('button', itemProps)`
 
   &:active {
     background: var(--ui-bg-elevated);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      color: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-text-highlighted)')};
+      background: ${(p) =>
+        p.active ? 'var(--ui-bg-elevated)' : 'rgb(var(--ui-bg-elevated-rgb) / 50%)'};
+    }
   }
 `

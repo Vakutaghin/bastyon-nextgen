@@ -2,31 +2,31 @@ import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 
 export const SC_FabButton = styled.button`
-  position: fixed !important;
-  bottom: 24px !important;
-  left: 24px !important;
-  width: 56px !important;
-  height: 56px !important;
-  border-radius: 50% !important;
-  background-color: var(--color-ant-blue) !important;
-  color: var(--ui-text-inverted) !important;
-  border: none !important;
-  cursor: pointer !important;
-  box-shadow: var(--shadow-md) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  z-index: 99999 !important;
-  pointer-events: auto !important;
-  transition: all 0.3s ease !important;
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--color-ant-blue);
+  color: var(--ui-text-inverted);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  pointer-events: auto;
+  transition: all var(--transition-normal);
 
   &:hover {
-    background-color: var(--color-ant-blue-hover) !important;
-    box-shadow: ${COLORS.SHADOW_LG} !important;
-    transform: scale(1.05) !important;
+    background-color: var(--color-ant-blue-hover);
+    box-shadow: ${COLORS.SHADOW_LG};
+    transform: scale(1.05);
   }
 
   &:active {
-    transform: scale(0.95) !important;
+    transform: scale(0.95);
   }
 `

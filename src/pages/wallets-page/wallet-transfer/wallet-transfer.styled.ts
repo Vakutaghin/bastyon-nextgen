@@ -34,8 +34,8 @@ export const SC_TransferSwitchBtn = styled('button', { active: Boolean })`
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
-    color 0.15s ease,
-    background 0.15s ease;
+    color var(--transition-quick),
+    background var(--transition-quick);
 
   &:hover {
     color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text-highlighted)')};

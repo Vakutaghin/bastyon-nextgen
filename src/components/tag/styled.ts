@@ -16,7 +16,7 @@ export const SC_Tag = styled.div`
     font-size: 12px;
     font-weight: 500;
     line-height: 16px;
-    transition: background-color 0.15s;
+    transition: background-color var(--transition-quick);
   }
 
   .ant-tag:hover {

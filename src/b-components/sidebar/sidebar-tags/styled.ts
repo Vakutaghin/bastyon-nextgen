@@ -41,7 +41,7 @@ export const SC_TagsReset = styled.button`
   border: none;
   cursor: pointer;
   color: var(--color-text-secondary);
-  transition: color 0.2s;
+  transition: color var(--transition-fast);
 
   &:hover {
     color: var(--color-text-primary);
@@ -66,7 +66,7 @@ export const SC_TagsToggle = styled.button`
   border: none;
   cursor: pointer;
   color: var(--color-text-secondary);
-  transition: color 0.2s;
+  transition: color var(--transition-fast);
 
   &:hover {
     color: var(--color-text-primary);
@@ -108,7 +108,7 @@ export const SC_TagsItem = styled('button', selectedProps)`
   border: 0;
   border-radius: var(--ui-radius-md);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color var(--transition-quick);
   color: var(--ui-text);
   font-size: ${(props) => TAG_WEIGHT_FONT[props.weight as number] ?? '11px'};
   line-height: 1.2;

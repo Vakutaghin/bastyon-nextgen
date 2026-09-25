@@ -224,7 +224,7 @@ export const SC_ImageOverlay = styled.div`
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-normal);
   cursor: pointer;
 `
 

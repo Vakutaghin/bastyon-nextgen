@@ -17,208 +17,208 @@ export const SC_VideoQualityControl = styled.div`
      белыми на белом. Здесь специфичность выше (класс + два типа), поэтому
      span берёт цвет своей кнопки. */
   button span {
-    color: inherit !important;
+    color: inherit;
   }
 
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 0 !important;
-  flex-shrink: 0 !important;
-  position: relative !important;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  flex-shrink: 0;
+  position: relative;
 `
 
 export const SC_VideoQualityButton = styled.button`
-  background: transparent !important;
-  border: none !important;
-  cursor: pointer !important;
-  padding: 8px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: var(--ui-radius-sm) !important;
-  transition: background-color 0.2s ease !important;
-  color: var(--color-text-primary) !important;
-  flex-shrink: 0 !important;
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
-  min-height: 40px !important;
-  box-sizing: border-box !important;
-  position: relative !important;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius-sm);
+  transition: background-color 0.2s ease;
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+  position: relative;
 
   &:hover {
-    background: var(--color-overlay-8) !important;
+    background: var(--color-overlay-8);
   }
 
   &:active {
-    background: var(--color-overlay-12) !important;
+    background: var(--color-overlay-12);
   }
 
   &:focus {
-    outline: none !important;
+    outline: none;
   }
 `
 
 export const SC_VideoQualityDropdown = styled.div<{
   isOpen?: boolean
 }>`
-  position: absolute !important;
-  bottom: 100% !important;
-  left: 0 !important;
-  margin-bottom: 8px !important;
-  background: var(--color-bg-primary) !important;
-  color: var(--color-text-primary) !important;
-  border: 1px solid var(--color-border-lighter) !important;
-  border-radius: var(--ui-radius-lg) !important;
-  box-shadow: var(--shadow-md) !important;
-  min-width: 140px !important;
-  overflow: visible !important;
-  opacity: ${(p) => (p.isOpen ? 1 : 0)} !important;
-  visibility: ${(p) => (p.isOpen ? 'visible' : 'hidden')} !important;
-  pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')} !important;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-lighter);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--shadow-md);
+  min-width: 140px;
+  overflow: visible;
+  opacity: ${(p) => (p.isOpen ? 1 : 0)};
+  visibility: ${(p) => (p.isOpen ? 'visible' : 'hidden')};
+  pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')};
   transition:
     opacity 0.2s ease,
-    visibility 0.2s ease !important;
-  z-index: 1000 !important;
+    visibility 0.2s ease;
+  z-index: 1000;
 `
 
 export const SC_VideoQualityMenuSection = styled.div`
-  padding: 0 !important;
+  padding: 0;
 `
 
 export const SC_VideoQualityMenuSectionTitle = styled.div`
-  padding: 0 !important;
+  padding: 0;
 `
 
 export const SC_VideoQualitySubmenuItem = styled.button<{ isOpen?: boolean }>`
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-  padding: 6px 12px !important;
-  background: transparent !important;
-  border: none !important;
-  cursor: pointer !important;
-  color: var(--color-text-primary) !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
-  font-family: var(--font-family) !important;
-  transition: background-color 0.15s ease !important;
-  text-align: left !important;
-  box-sizing: border-box !important;
-  position: relative !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 400;
+  font-family: var(--font-family);
+  transition: background-color 0.15s ease;
+  text-align: left;
+  box-sizing: border-box;
+  position: relative;
 
   &:hover {
-    background: var(--color-overlay-8) !important;
+    background: var(--color-overlay-8);
   }
 
   &:active {
-    background: var(--color-overlay-12) !important;
+    background: var(--color-overlay-12);
   }
 
   &:focus {
-    outline: none !important;
+    outline: none;
   }
 
   &:not(:last-child) {
-    border-bottom: 1px solid var(--color-border-lighter) !important;
+    border-bottom: 1px solid var(--color-border-lighter);
   }
 `
 
 export const SC_VideoQualitySubmenu = styled.div<{ isOpen?: boolean }>`
-  position: absolute !important;
-  left: 0 !important;
-  bottom: 100% !important;
-  margin-bottom: 4px !important;
-  background: var(--color-bg-primary) !important;
-  color: var(--color-text-primary) !important;
-  border: 1px solid var(--color-border-lighter) !important;
-  border-radius: var(--ui-radius-lg) !important;
-  box-shadow: var(--shadow-md) !important;
-  min-width: 90px !important;
-  max-width: 110px !important;
-  overflow: hidden !important;
-  opacity: ${(p) => (p.isOpen ? 1 : 0)} !important;
-  visibility: ${(p) => (p.isOpen ? 'visible' : 'hidden')} !important;
-  pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')} !important;
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 4px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-lighter);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--shadow-md);
+  min-width: 90px;
+  max-width: 110px;
+  overflow: hidden;
+  opacity: ${(p) => (p.isOpen ? 1 : 0)};
+  visibility: ${(p) => (p.isOpen ? 'visible' : 'hidden')};
+  pointer-events: ${(p) => (p.isOpen ? 'auto' : 'none')};
   transition:
     opacity 0.2s ease,
-    visibility 0.2s ease !important;
-  z-index: 1001 !important;
-  white-space: nowrap !important;
+    visibility 0.2s ease;
+  z-index: 1001;
+  white-space: nowrap;
 `
 
 export const SC_VideoQualitySubmenuItemInner = styled.button<{ isActive?: boolean }>`
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  width: 100% !important;
-  padding: 4px 10px !important;
-  background: transparent !important;
-  border: none !important;
-  cursor: pointer !important;
-  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--color-text-primary)')} !important;
-  font-size: 12px !important;
-  font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
-  font-family: var(--font-family) !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  padding: 4px 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--color-text-primary)')};
+  font-size: 12px;
+  font-weight: ${(p) => (p.isActive ? '600' : '400')};
+  font-family: var(--font-family);
   transition:
     background-color 0.15s ease,
-    color 0.15s ease !important;
-  text-align: left !important;
-  box-sizing: border-box !important;
-  white-space: nowrap !important;
+    color 0.15s ease;
+  text-align: left;
+  box-sizing: border-box;
+  white-space: nowrap;
 
   &:hover {
-    background: var(--color-overlay-8) !important;
+    background: var(--color-overlay-8);
   }
 
   &:active {
-    background: var(--color-overlay-12) !important;
+    background: var(--color-overlay-12);
   }
 
   &:focus {
-    outline: none !important;
+    outline: none;
   }
 
   &:not(:last-child) {
-    border-bottom: 1px solid var(--color-border-lighter) !important;
+    border-bottom: 1px solid var(--color-border-lighter);
   }
 `
 
 export const SC_VideoQualityMenuItem = styled.button<{ isActive?: boolean }>`
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  width: 100% !important;
-  padding: 6px 12px !important;
-  background: transparent !important;
-  border: none !important;
-  cursor: pointer !important;
-  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--color-text-primary)')} !important;
-  font-size: 12px !important;
-  font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
-  font-family: var(--font-family) !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: ${(p) => (p.isActive ? 'var(--ui-primary)' : 'var(--color-text-primary)')};
+  font-size: 12px;
+  font-weight: ${(p) => (p.isActive ? '600' : '400')};
+  font-family: var(--font-family);
   transition:
     background-color 0.15s ease,
-    color 0.15s ease !important;
-  text-align: left !important;
-  box-sizing: border-box !important;
+    color 0.15s ease;
+  text-align: left;
+  box-sizing: border-box;
 
   &:hover {
-    background: var(--color-overlay-8) !important;
+    background: var(--color-overlay-8);
   }
 
   &:active {
-    background: var(--color-overlay-12) !important;
+    background: var(--color-overlay-12);
   }
 
   &:focus {
-    outline: none !important;
+    outline: none;
   }
 
   &:not(:last-child) {
-    border-bottom: 1px solid var(--color-border-lighter) !important;
+    border-bottom: 1px solid var(--color-border-lighter);
   }
 `

@@ -8,7 +8,7 @@ export const SC_NotificationsWrapper = styled.div`
   cursor: pointer;
   padding: 6px;
   border-radius: var(--ui-radius-md);
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
   color: var(--color-text-primary);
 
   &:hover {
@@ -85,7 +85,7 @@ export const SC_NotificationItem = styled.div<{ seen?: boolean }>`
   background: ${(p) => (p.seen ? 'transparent' : 'rgb(var(--ui-primary-rgb) / 6%)')};
   border: 0;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color var(--transition-quick);
   display: flex;
   align-items: stretch;
   gap: 8px;

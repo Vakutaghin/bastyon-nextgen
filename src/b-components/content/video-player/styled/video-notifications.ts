@@ -2,80 +2,80 @@
 import styled from 'vue3-styled-components'
 
 export const SC_PlaybackRateNotification = styled.div<{ show?: boolean }>`
-  position: absolute !important;
-  top: 25% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 100 !important;
-  background: rgba(180, 180, 180, 0.6) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  padding: 12px 24px !important;
-  border-radius: var(--ui-radius-lg) !important;
-  color: #eee !important;
-  font-size: 18px !important;
-  font-weight: 500 !important;
-  font-family: var(--font-family) !important;
-  white-space: nowrap !important;
-  user-select: none !important;
-  pointer-events: none !important;
-  opacity: ${(p) => (p.show ? 1 : 0)} !important;
-  visibility: ${(p) => (p.show ? 'visible' : 'hidden')} !important;
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  background: rgba(180, 180, 180, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 12px 24px;
+  border-radius: var(--ui-radius-lg);
+  color: #eee;
+  font-size: 18px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  opacity: ${(p) => (p.show ? 1 : 0)};
+  visibility: ${(p) => (p.show ? 'visible' : 'hidden')};
   transition:
     opacity 0.2s ease,
-    visibility 0.2s ease !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    visibility 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 `
 
 export const SC_SeekNotification = styled.div<{ show?: boolean }>`
-  position: absolute !important;
-  top: 25% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 100 !important;
-  background: rgba(180, 180, 180, 0.6) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  padding: 12px 24px !important;
-  border-radius: var(--ui-radius-lg) !important;
-  color: #eee !important;
-  font-size: 18px !important;
-  font-weight: 500 !important;
-  font-family: var(--font-family) !important;
-  white-space: nowrap !important;
-  user-select: none !important;
-  pointer-events: none !important;
-  opacity: ${(p) => (p.show ? 1 : 0)} !important;
-  visibility: ${(p) => (p.show ? 'visible' : 'hidden')} !important;
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  background: rgba(180, 180, 180, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 12px 24px;
+  border-radius: var(--ui-radius-lg);
+  color: #eee;
+  font-size: 18px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  opacity: ${(p) => (p.show ? 1 : 0)};
+  visibility: ${(p) => (p.show ? 'visible' : 'hidden')};
   transition:
     opacity 0.2s ease,
-    visibility 0.2s ease !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    visibility 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 `
 
 export const SC_IconNotification = styled.div<{ show?: boolean }>`
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 100 !important;
-  background: rgba(0, 0, 0, 0.5) !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
-  padding: 20px !important;
-  border-radius: 50% !important;
-  color: #fff !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  user-select: none !important;
-  pointer-events: none !important;
-  opacity: ${(p) => (p.show ? 1 : 0)} !important;
-  visibility: ${(p) => (p.show ? 'visible' : 'hidden')} !important;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 20px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  pointer-events: none;
+  opacity: ${(p) => (p.show ? 1 : 0)};
+  visibility: ${(p) => (p.show ? 'visible' : 'hidden')};
   transition:
     opacity 0.2s ease,
-    visibility 0.2s ease !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    visibility 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 `
 
 export const SC_HotkeysHelpOverlay = styled.div`

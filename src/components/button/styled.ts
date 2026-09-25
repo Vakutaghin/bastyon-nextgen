@@ -50,9 +50,9 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
   cursor: pointer;
   user-select: none;
   transition:
-    background-color 0.15s,
-    color 0.15s,
-    box-shadow 0.15s;
+    background-color var(--transition-quick),
+    color var(--transition-quick),
+    box-shadow var(--transition-quick);
 
   &.bastyon-button-primary {
     background: var(--ui-primary);

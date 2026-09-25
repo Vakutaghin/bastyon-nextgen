@@ -11,8 +11,8 @@ export const SC_TorWrapper = styled.div<{ variant?: Variant }>`
   padding: 6px;
   border-radius: var(--ui-radius-md);
   transition:
-    background-color 0.2s,
-    color 0.2s;
+    background-color var(--transition-fast),
+    color var(--transition-fast);
   color: ${(p) => {
     switch (p.variant) {
       case 'ready':
@@ -79,7 +79,7 @@ export const SC_TorProgressInner = styled.div<{ pct?: number }>`
   height: 100%;
   width: ${(p) => Math.max(0, Math.min(100, p.pct ?? 0))}%;
   background: var(--color-ant-blue);
-  transition: width 0.3s;
+  transition: width var(--transition-normal);
 `
 
 export const SC_TorBridgeBlock = styled.div`

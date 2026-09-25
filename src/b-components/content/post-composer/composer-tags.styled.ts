@@ -39,7 +39,7 @@ export const SC_TagRemove = styled.button`
   cursor: pointer;
   font-size: ${FONT_SIZE.MD};
   line-height: 1;
-  transition: color 0.15s ease;
+  transition: color var(--transition-quick);
 
   &:hover {
     color: var(--ui-text-highlighted);

@@ -136,8 +136,8 @@ export const SC_PostActionBtn = styled.button`
   font-size: 14px;
   font-weight: 500;
   transition:
-    background-color 0.15s,
-    color 0.15s;
+    background-color var(--transition-quick),
+    color var(--transition-quick);
 
   /* Ghost-кнопка Nuxt UI: подложка на hover, текст ярче. */
   &:hover {
@@ -178,102 +178,6 @@ export const SC_PostActions = styled.div`
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     gap: 8px;
     padding-top: 8px;
-  }
-`
-
-export const SC_StarRating = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 22px;
-
-  .star-count {
-    color: var(--color-text-primary) !important;
-    font-size: 14px;
-    margin-left: 7px;
-  }
-
-  .voters-count {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--color-text-secondary) !important;
-    font-size: 14px;
-    margin-left: 11px;
-
-    svg {
-      width: 15px;
-      height: 15px;
-    }
-  }
-`
-
-export const SC_StarWrapper = styled.div`
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  vertical-align: middle;
-
-  .star-bg {
-    font-size: 22px;
-    color: var(--ui-text-dimmed) !important;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    line-height: 1;
-    position: relative;
-    z-index: 0;
-    flex-shrink: 0;
-
-    svg {
-      width: 22px;
-      height: 22px;
-      display: block;
-      margin: 0;
-      padding: 0;
-      /* Пустая звезда — приглушённый контур, как у InputRating в Nuxt UI:
-         залитая полупрозрачным жёлтым она читалась как «оценено». */
-      fill: none !important;
-      color: var(--ui-text-dimmed) !important;
-      stroke: currentcolor !important;
-    }
-  }
-`
-
-export const SC_StarFilled = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 1;
-
-  .star-fill {
-    font-size: 22px;
-    color: var(--color-warning) !important;
-    display: block;
-    width: 22px;
-    height: 22px;
-    line-height: 1;
-
-    svg {
-      width: 22px;
-      height: 22px;
-      display: block;
-      fill: var(--color-warning) !important;
-      color: var(--color-warning) !important;
-      stroke: currentcolor !important;
-    }
   }
 `
 
