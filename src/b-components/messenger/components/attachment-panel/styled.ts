@@ -7,11 +7,12 @@ export const SC_AttachmentRoot = styled.div`
 `
 
 export const SC_AttachButton = styled.button`
+  /* Ghost-кнопка, как смайлик рядом: без рамки, подложка на наведении. */
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-primary);
+  border: none;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -20,10 +21,14 @@ export const SC_AttachButton = styled.button`
   flex-shrink: 0;
   font-size: 18px;
   line-height: 1;
-  color: var(--color-blue-gray);
+  color: var(--ui-text-dimmed);
+  transition:
+    color 0.2s,
+    background-color 0.2s;
 
   &:hover {
-    background: var(--color-bg-hover-blue);
+    color: var(--ui-text-highlighted);
+    background: var(--ui-bg-elevated);
   }
 
   &:disabled {
@@ -36,11 +41,11 @@ export const SC_Menu = styled.div`
   position: absolute;
   bottom: calc(100% + 6px);
   left: 0;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--ui-radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: 6px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-lg);
+  padding: 4px;
   min-width: 160px;
   z-index: 1000;
   display: flex;
@@ -52,21 +57,22 @@ export const SC_MenuItem = styled.button`
   background: none;
   border: 0;
   text-align: left;
-  padding: 8px 12px;
+  padding: 6px 8px;
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--color-text-primary);
+  gap: 8px;
+  color: var(--ui-text);
 
   &:hover:not(:disabled) {
-    background: var(--color-bg-hover-blue);
+    color: var(--ui-text-highlighted);
+    background: rgb(var(--ui-bg-elevated-rgb) / 50%);
   }
 
   &:disabled {
-    opacity: 0.4;
+    opacity: 0.75;
     cursor: not-allowed;
   }
 `

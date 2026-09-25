@@ -18,7 +18,7 @@ export const SC_FileIcon = styled.div`
   height: 44px;
   border-radius: 50%;
   background: var(--color-brand-cyan);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   display: flex;
   align-items: center;
   justify-content: center;

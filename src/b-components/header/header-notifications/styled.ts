@@ -62,8 +62,8 @@ export const SC_ClearAllButton = styled.button`
   border-radius: var(--ui-radius-sm);
 
   &:hover {
-    color: var(--color-ant-blue);
-    background: var(--color-ant-blue-bg-light);
+    color: var(--ui-text-highlighted);
+    background: var(--ui-bg-elevated);
   }
 `
 
@@ -134,15 +134,17 @@ export const SC_NotificationHead = styled.div`
   min-width: 0;
 `
 
+/** Бейджи типов — soft-бейджи Nuxt (фон цвет/10, текст цветом). Комментарий
+ * синий: зелёный акцент уже у подписки, и два типа сливались. */
 const TYPE_COLORS: Record<string, { bg: string; fg: string }> = {
   rating: { bg: COLORS.AMBER_SOFT, fg: COLORS.ORANGE_TEXT },
   like: { bg: COLORS.AMBER_SOFT, fg: COLORS.ORANGE_TEXT },
-  comment: { bg: COLORS.PRIMARY_BG_12, fg: COLORS.PRIMARY_ACTIVE },
+  comment: { bg: 'rgb(var(--ui-info-rgb) / 10%)', fg: 'var(--ui-info)' },
   subscribe: { bg: COLORS.GREEN_ANT_SOFT, fg: COLORS.GREEN_ANT_DEEP },
   repost: { bg: COLORS.PURPLE_SOFT, fg: COLORS.PURPLE_DEEP },
   tip: { bg: COLORS.AMBER_SOFT, fg: COLORS.ORANGE_TEXT },
   mention: { bg: COLORS.PINK_SOFT, fg: COLORS.PINK },
-  default: { bg: COLORS.OVERLAY_15, fg: COLORS.GRAY_555 },
+  default: { bg: 'var(--ui-bg-elevated)', fg: 'var(--ui-text)' },
 }
 
 const colorFor = (variant?: string) => TYPE_COLORS[variant ?? 'default'] ?? TYPE_COLORS.default
@@ -189,13 +191,14 @@ export const SC_NotificationAvatar = styled.div`
   }
 `
 
+/** Инициал без аватарки — как UAvatar у Nuxt: подложка elevated, буква muted. */
 export const SC_NotificationAvatarLetter = styled.div`
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-ant-blue), var(--color-purple));
-  color: var(--color-white);
-  font-weight: 600;
+  background: var(--ui-bg-elevated);
+  color: var(--ui-text-muted);
+  font-weight: 500;
   font-size: 12px;
   display: inline-flex;
   align-items: center;
@@ -239,7 +242,7 @@ export const SC_NotificationPreview = styled.div<{ variant?: string }>`
         case 'like':
           return COLORS.WARNING_YELLOW
         case 'comment':
-          return COLORS.ANT_BLUE
+          return 'var(--ui-info)'
         case 'repost':
           return COLORS.PURPLE
         default:
@@ -285,8 +288,8 @@ export const SC_ExpandToggle = styled.button`
   border: none;
   padding: 0;
   cursor: pointer;
-  font-size: 11px;
-  color: var(--color-ant-blue);
+  font-size: 12px;
+  color: var(--ui-primary-text);
 
   &:hover {
     text-decoration: underline;

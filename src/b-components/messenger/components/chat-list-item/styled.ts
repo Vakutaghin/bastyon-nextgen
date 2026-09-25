@@ -71,7 +71,7 @@ export const SC_Time = styled.span`
 
 export const SC_Badge = styled.span`
   background-color: var(--color-brand-cyan);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   font-size: 11px;
   font-weight: bold;
   padding: 2px 6px;

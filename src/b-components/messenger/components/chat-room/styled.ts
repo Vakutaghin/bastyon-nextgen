@@ -13,10 +13,11 @@ export const SC_PartnerStats = styled(SC_UserStats)`
   gap: 16px;
 `
 
+/** Панель ввода — фон окна и линия сверху, как у промпта в чат-шаблоне Nuxt. */
 export const SC_MessageInputArea = styled.div`
   padding: 12px;
-  background-color: var(--color-bg-light);
-  border-top: 1px solid var(--color-gray-eee);
+  background-color: var(--ui-bg);
+  border-top: 1px solid var(--ui-border);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -26,12 +27,16 @@ export const SC_MessageInputArea = styled.div`
 export const SC_MessageInput = styled.textarea`
   flex: 1;
   box-sizing: border-box;
-  border: 1px solid var(--color-gray-ddd);
+  border: 1px solid var(--ui-border-accented);
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 14px;
+  color: var(--ui-text-highlighted);
+  background: var(--ui-bg);
   outline: none;
-  transition: border-color 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   resize: none;
   overflow-y: auto;
   min-height: 39px;
@@ -39,8 +44,13 @@ export const SC_MessageInput = styled.textarea`
   line-height: 1.5;
   font-family: inherit;
 
+  &::placeholder {
+    color: var(--ui-text-dimmed);
+  }
+
   &:focus {
-    border-color: var(--color-brand-cyan);
+    border-color: var(--ui-primary);
+    box-shadow: 0 0 0 3px rgb(var(--ui-primary-rgb) / 25%);
   }
 
   &::-webkit-scrollbar {
@@ -117,12 +127,14 @@ export const SC_EmojiToggleButton = styled.button`
 `
 
 export const SC_VoiceButton = styled.button`
+  /* Голосовое — на месте кнопки отправки и выглядит так же (solid-акцент);
+     красной кнопка становится только во время записи. */
   width: 40px;
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: var(--color-red-ant);
-  color: var(--color-white);
+  background-color: var(--ui-primary);
+  color: var(--ui-text-inverted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -135,8 +147,14 @@ export const SC_VoiceButton = styled.button`
   user-select: none;
   -webkit-user-select: none;
 
-  &.recording {
-    background-color: var(--color-red-dark);
+  &:hover {
+    background-color: rgb(var(--ui-primary-rgb) / 75%);
+    color: var(--ui-text-inverted);
+  }
+
+  &.recording,
+  &.recording:hover {
+    background-color: var(--ui-error);
     transform: scale(1.1);
   }
 
@@ -235,7 +253,7 @@ export const SC_StartChatButton = styled.button`
   border-radius: var(--ui-radius-lg);
   border: none;
   background-color: var(--color-brand-cyan);
-  color: var(--color-white);
+  color: var(--ui-text-inverted);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -489,6 +507,6 @@ export const SC_KeyChangedAccept = styled.button`
 
   &:hover {
     background: var(--color-danger);
-    color: #fff;
+    color: var(--ui-text-inverted);
   }
 `
