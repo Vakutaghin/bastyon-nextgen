@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 // Общие примитивы эксплорера (audit §3.1).
@@ -19,7 +18,7 @@ export const SC_TxPageWork = styled.div`
   display: flex;
   flex: 1;
   width: 100%;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_TxPagePage = styled.main`
@@ -33,10 +32,10 @@ export const SC_TxPagePage = styled.main`
 export const SC_TxBreadcrumb = styled.div`
   margin-bottom: 12px;
   font-size: 13px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 
   a {
-    color: ${COLORS.LINK};
+    color: var(--color-link);
     text-decoration: none;
 
     &:hover {
@@ -56,7 +55,7 @@ export const SC_TxTitleRow = styled.div`
 export const SC_TxTitle = styled.h1`
   font-size: 22px;
   font-weight: 700;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   margin: 0;
 `
 
@@ -66,16 +65,16 @@ export const SC_TxTypeBadge = styled.span`
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 600;
-  background: ${COLORS.PRIMARY_LIGHT};
-  color: ${COLORS.PRIMARY};
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   border-radius: var(--ui-radius-lg);
 `
 
 export const SC_TxMetaGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  background: ${COLORS.BG_SECONDARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;
@@ -87,8 +86,8 @@ export const SC_TxMetaGrid = styled.div`
 
 export const SC_TxMetaCell = styled.div`
   padding: 14px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-right: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
+  border-right: 1px solid var(--color-border-lighter);
 
   &:nth-child(2n) {
     border-right: none;
@@ -103,13 +102,13 @@ export const SC_TxMetaLabel = styled.div`
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   margin-bottom: 6px;
 `
 
 export const SC_TxMetaValue = styled.div`
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
   word-break: break-all;
 `
@@ -119,8 +118,8 @@ export const SC_TxIOGrid = styled.div`
   grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr);
   gap: 16px;
   align-items: start;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   padding: 18px;
   margin-bottom: 24px;
@@ -145,8 +144,8 @@ export const SC_TxIOHeader = styled.h3`
 
 export const SC_TxIOItem = styled.div`
   padding: 10px 12px;
-  background: ${COLORS.BG_SECONDARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   font-size: 13px;
 `
@@ -158,12 +157,12 @@ export const SC_TxIOAddress = styled.div`
 export const SC_TxIOValue = styled.div`
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_TxIOAnnotation = styled.div`
   font-size: 11px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   margin-top: 4px;
 `
 
@@ -174,12 +173,12 @@ export const SC_TxArrow = styled.div`
   height: 100%;
   min-height: 60px;
   font-size: 18px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 `
 
 export const SC_TxRawToggle = styled.button`
   background: transparent;
-  color: ${COLORS.LINK};
+  color: var(--color-link);
   border: none;
   font-size: 13px;
   cursor: pointer;
@@ -193,11 +192,11 @@ export const SC_TxRawToggle = styled.button`
 export const SC_TxRawPre = styled.pre`
   margin: 12px 0 0;
   padding: 14px;
-  background: ${COLORS.GRAY_F1};
+  background: var(--color-gray-f1);
   border-radius: var(--ui-radius-lg);
   font-family: var(--font-family-mono);
   font-size: 12px;
-  color: ${COLORS.TEXT_DARK};
+  color: var(--color-text-dark);
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-all;

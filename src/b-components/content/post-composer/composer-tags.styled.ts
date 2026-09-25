@@ -13,9 +13,9 @@ export const SC_TagsRow = styled.div`
   align-items: center;
   gap: ${SPACING.XS};
   padding: ${SPACING.XS} ${SPACING.SM};
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.MD};
-  background: ${COLORS.BG_INPUT};
+  background: var(--color-bg-input);
 `
 
 export const SC_TagChip = styled.span`
@@ -24,8 +24,8 @@ export const SC_TagChip = styled.span`
   gap: ${SPACING.XS};
   padding: 2px ${SPACING.SM};
   font-size: ${FONT_SIZE.SM};
-  color: ${COLORS.PRIMARY};
-  background: ${COLORS.PRIMARY_LIGHT};
+  color: var(--color-primary);
+  background: var(--color-primary-light);
   border-radius: ${BORDER_RADIUS.SM};
   white-space: nowrap;
 `
@@ -35,7 +35,7 @@ export const SC_TagRemove = styled.button`
   padding: 0;
   border: none;
   background: none;
-  color: ${COLORS.PRIMARY};
+  color: var(--color-primary);
   cursor: pointer;
   font-size: ${FONT_SIZE.MD};
   line-height: 1;
@@ -48,11 +48,11 @@ export const SC_TagInput = styled.input`
   border: none;
   outline: none;
   background: none;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: ${FONT_SIZE.MD};
 
   &::placeholder {
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--color-text-muted);
   }
 
   &:disabled {
@@ -69,10 +69,10 @@ export const SC_Dropdown = styled.ul`
   margin: 0;
   padding: ${SPACING.XS};
   list-style: none;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.MD};
-  box-shadow: 0 6px 20px ${COLORS.OVERLAY_12};
+  box-shadow: 0 6px 20px var(--color-overlay-12);
   max-height: min(320px, 50vh);
   overflow-y: auto;
   /* Скролл выпадашки не уезжает в модалку: без этого колесо докручивало список
@@ -85,12 +85,12 @@ const itemProps = { active: Boolean }
 export const SC_Suggestion = styled('li', itemProps)`
   padding: ${SPACING.XS} ${SPACING.SM};
   font-size: ${FONT_SIZE.MD};
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   border-radius: ${BORDER_RADIUS.SM};
   cursor: pointer;
   background: ${(props) => (props.active ? COLORS.BG_HOVER : 'transparent')};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `

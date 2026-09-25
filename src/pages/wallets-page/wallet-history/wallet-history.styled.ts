@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_TxBadge = styled.span`
   display: inline-block;
@@ -9,12 +8,12 @@ export const SC_TxBadge = styled.span`
   font-size: 10px;
   font-weight: 600;
   vertical-align: middle;
-  background: ${COLORS.PRIMARY_LIGHT};
-  color: ${COLORS.PRIMARY};
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 
   &.stake {
-    background: ${COLORS.SUCCESS_BG_TINT};
-    color: ${COLORS.SUCCESS};
+    background: var(--color-success-bg-tint);
+    color: var(--color-success);
   }
 `
 
@@ -26,7 +25,7 @@ export const SC_History = styled.div`
 
 export const SC_HistoryHint = styled.div`
   font-size: 12px;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
   margin-bottom: 8px;
 `
 
@@ -36,13 +35,13 @@ export const SC_HistoryRow = styled.a`
   gap: 12px;
   padding: 10px 12px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER_LIGHT};
+  border: 1px solid var(--color-border-light);
   text-decoration: none;
   color: inherit;
   transition: background-color 0.15s;
 
   &:hover {
-    background-color: ${COLORS.BRAND_CYAN_SOFT};
+    background-color: var(--color-brand-cyan-soft);
   }
 `
 
@@ -57,13 +56,13 @@ export const SC_DirIcon = styled.div`
   font-size: 15px;
 
   &.in {
-    color: ${COLORS.SUCCESS};
-    background-color: ${COLORS.SUCCESS_BG_12};
+    color: var(--color-success);
+    background-color: var(--color-success-bg-12);
   }
 
   &.out {
-    color: ${COLORS.RED_ANT};
-    background-color: ${COLORS.DANGER_BG_SOFT};
+    color: var(--color-red-ant);
+    background-color: var(--color-danger-bg-soft);
   }
 `
 
@@ -78,12 +77,12 @@ export const SC_HistoryMid = styled.div`
 export const SC_HistoryDirLabel = styled.div`
   font-size: 14px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_HistoryCounterparty = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -97,18 +96,18 @@ export const SC_HistoryAmount = styled.div`
   white-space: nowrap;
 
   &.in {
-    color: ${COLORS.SUCCESS};
+    color: var(--color-success);
   }
 
   &.out {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
   }
 `
 
 export const SC_HistoryTime = styled.div`
   flex: 0 0 auto;
   font-size: 12px;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
   min-width: 64px;
   text-align: right;
 `
@@ -116,14 +115,14 @@ export const SC_HistoryTime = styled.div`
 export const SC_HistoryEmpty = styled.div`
   padding: 24px 12px;
   text-align: center;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
   font-size: 14px;
 `
 
 export const SC_HistoryError = styled.div`
   padding: 16px 12px;
   text-align: center;
-  color: ${COLORS.RED_ANT};
+  color: var(--color-red-ant);
   font-size: 14px;
 `
 
@@ -136,9 +135,9 @@ export const SC_LoadMoreFooter = styled.div`
 export const SC_LoadMoreBtn = styled.button`
   padding: 8px 18px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   background-color: transparent;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: 14px;
   cursor: pointer;
   transition:
@@ -146,8 +145,8 @@ export const SC_LoadMoreBtn = styled.button`
     color 0.2s;
 
   &:hover {
-    border-color: ${COLORS.BRAND_CYAN};
-    color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
+    color: var(--color-brand-cyan);
   }
 
   &:disabled {

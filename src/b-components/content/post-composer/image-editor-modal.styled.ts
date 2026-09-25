@@ -12,7 +12,7 @@ export const SC_Backdrop = styled.div`
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: ${COLORS.OVERLAY_65};
+  background: var(--color-overlay-65);
 `
 
 export const SC_Dialog = styled.div`
@@ -25,7 +25,7 @@ export const SC_Dialog = styled.div`
   overflow: auto;
   padding: 16px;
   border-radius: ${BORDER_RADIUS.LG};
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_Stage = styled.div`
@@ -33,7 +33,7 @@ export const SC_Stage = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${COLORS.BG_SECONDARY};
+  background: var(--color-bg-secondary);
   border-radius: ${BORDER_RADIUS.MD};
   overflow: hidden;
   user-select: none;
@@ -55,8 +55,8 @@ export const SC_StageImg = styled('img', { cssFilter: String })`
 
 export const SC_CropBox = styled.div`
   position: absolute;
-  border: 2px solid ${COLORS.WHITE};
-  box-shadow: 0 0 0 9999px ${COLORS.OVERLAY_55};
+  border: 2px solid var(--color-white);
+  box-shadow: 0 0 0 9999px var(--color-overlay-55);
   cursor: move;
   box-sizing: border-box;
 `
@@ -68,8 +68,8 @@ export const SC_CropHandle = styled.div`
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: ${COLORS.WHITE};
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  background: var(--color-white);
+  border: 1px solid var(--color-border-default);
   cursor: nwse-resize;
 `
 
@@ -94,7 +94,7 @@ export const SC_ToolBtn = styled('button', activeProps)`
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `
 

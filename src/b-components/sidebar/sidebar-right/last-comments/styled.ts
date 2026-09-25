@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_LastCommentsRoot = styled.div`
   display: flex;
@@ -70,7 +69,7 @@ export const SC_LastCommentLetter = styled.span`
 
 export const SC_LastCommentArrow = styled.i`
   font-size: 10px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   flex-shrink: 0;
 `
 
@@ -79,7 +78,7 @@ export const SC_LastCommentContent = styled.div`
   min-width: 0;
   font-size: 13px;
   line-height: 1.4;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_LastCommentNames = styled.span`
@@ -88,7 +87,7 @@ export const SC_LastCommentNames = styled.span`
 `
 
 export const SC_LastCommentMessage = styled.span`
-  color: ${COLORS.TEXT_DARK};
+  color: var(--color-text-dark);
 `
 
 export const SC_LastCommentsLoading = styled.div`
@@ -96,12 +95,12 @@ export const SC_LastCommentsLoading = styled.div`
   align-items: center;
   justify-content: center;
   padding: 16px 0;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   font-size: 13px;
 `
 
 export const SC_LastCommentsEmpty = styled.div`
   padding: 16px 0;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   font-size: 13px;
 `

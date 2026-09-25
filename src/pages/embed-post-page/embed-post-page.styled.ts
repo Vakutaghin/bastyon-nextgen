@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_Embed = styled.article`
@@ -9,8 +8,8 @@ export const SC_Embed = styled.article`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_PRIMARY};
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
 `
 
 export const SC_EmbedHeader = styled.a`
@@ -30,8 +29,8 @@ export const SC_EmbedAvatar = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: ${COLORS.BG_SECONDARY};
-  color: ${COLORS.TEXT_SECONDARY};
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
   font-weight: 600;
 
   img {
@@ -44,12 +43,12 @@ export const SC_EmbedAvatar = styled.span`
 export const SC_EmbedAuthor = styled.span`
   font-size: 15px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_EmbedTime = styled.span`
   font-size: 12px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 `
 
 export const SC_EmbedTitle = styled.h1`
@@ -65,7 +64,7 @@ export const SC_EmbedMedia = styled.div`
 export const SC_EmbedFooter = styled.div`
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-top: 1px solid var(--color-border-lighter);
   padding-top: 12px;
 `
 
@@ -75,15 +74,15 @@ export const SC_EmbedCta = styled.a`
   gap: 6px;
   padding: 7px 14px;
   border-radius: var(--ui-radius-lg);
-  background: ${COLORS.PRIMARY};
-  color: ${COLORS.WHITE};
+  background: var(--color-primary);
+  color: var(--color-white);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.PRIMARY_HOVER};
+    background: var(--color-primary-hover);
   }
 `
 
@@ -93,5 +92,5 @@ export const SC_EmbedState = styled.div`
   padding: 48px 16px;
   text-align: center;
   font-size: 15px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `

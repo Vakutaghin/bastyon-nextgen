@@ -14,7 +14,7 @@ export const SC_ImageThumb = styled.div`
   aspect-ratio: 1 / 1;
   border-radius: ${BORDER_RADIUS.MD};
   overflow: hidden;
-  background: ${COLORS.BG_TERTIARY};
+  background: var(--color-bg-tertiary);
 
   & img {
     width: 100%;
@@ -36,14 +36,14 @@ export const SC_ImageRemove = styled.button`
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: ${COLORS.OVERLAY_55};
-  color: ${COLORS.WHITE};
+  background: var(--color-overlay-55);
+  color: var(--color-white);
   font-size: ${FONT_SIZE.MD};
   line-height: 1;
   cursor: pointer;
 
   &:hover {
-    background: ${COLORS.OVERLAY_70};
+    background: var(--color-overlay-70);
   }
 `
 
@@ -59,14 +59,14 @@ export const SC_ImageRotate = styled.button`
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: ${COLORS.OVERLAY_55};
-  color: ${COLORS.WHITE};
+  background: var(--color-overlay-55);
+  color: var(--color-white);
   font-size: ${FONT_SIZE.SM};
   line-height: 1;
   cursor: pointer;
 
   &:hover {
-    background: ${COLORS.OVERLAY_70};
+    background: var(--color-overlay-70);
   }
 `
 
@@ -82,14 +82,14 @@ export const SC_ImageEdit = styled.button`
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: ${COLORS.OVERLAY_55};
-  color: ${COLORS.WHITE};
+  background: var(--color-overlay-55);
+  color: var(--color-white);
   font-size: ${FONT_SIZE.SM};
   line-height: 1;
   cursor: pointer;
 
   &:hover {
-    background: ${COLORS.OVERLAY_70};
+    background: var(--color-overlay-70);
   }
 `
 
@@ -102,7 +102,7 @@ export const SC_AddTile = styled('label', tileProps)`
   aspect-ratio: 1 / 1;
   border: 1px dashed ${(props) => (props.dragover ? COLORS.PRIMARY : COLORS.BORDER)};
   border-radius: ${BORDER_RADIUS.MD};
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-size: 28px;
   cursor: pointer;
   background: ${(props) => (props.dragover ? COLORS.PRIMARY_LIGHT : 'transparent')};
@@ -111,8 +111,8 @@ export const SC_AddTile = styled('label', tileProps)`
     background 0.15s ease;
 
   &:hover {
-    border-color: ${COLORS.PRIMARY};
-    color: ${COLORS.PRIMARY};
+    border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 
   & input {

@@ -1,5 +1,4 @@
 import styled, { css } from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 const tabProps = {
   active: Boolean,
@@ -182,7 +181,7 @@ export const SC_FavIcon = styled.img`
 export const SC_FavIconFallback = styled.div`
   font-size: 10px;
   font-weight: 600;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_FavLabel = styled.span`

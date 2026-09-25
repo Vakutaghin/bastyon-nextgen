@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 
 /**
@@ -11,7 +10,7 @@ export const SC_Frame = styled.div`
   position: fixed;
   inset: 0;
   z-index: ${Z_INDEX.MINIAPP_FRAME};
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   display: flex;
   flex-direction: column;
 `
@@ -20,7 +19,7 @@ export const SC_IframeWrap = styled.div`
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_Iframe = styled.iframe`
@@ -40,7 +39,7 @@ export const SC_Loader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   pointer-events: none;
   opacity: 1;
   transition: opacity ${TRANSITIONS.FAST};
@@ -72,7 +71,7 @@ export const SC_LoaderIcon = styled.img`
 
 export const SC_LoaderText = styled.div`
   font-size: 13px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_Error = styled.div`
@@ -83,7 +82,7 @@ export const SC_Error = styled.div`
   justify-content: center;
   padding: 40px 24px;
   text-align: center;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: 14px;
 `
 
@@ -107,8 +106,8 @@ export const SC_ClosePetal = styled.button`
   gap: 8px;
   height: 28px;
   padding: 0 14px 0 10px;
-  background: ${COLORS.OVERLAY_15};
-  color: ${COLORS.WHITE_75};
+  background: var(--color-overlay-15);
+  color: var(--color-white-75);
   border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg);
   cursor: pointer;
   user-select: none;
@@ -127,8 +126,8 @@ export const SC_ClosePetal = styled.button`
   &:hover,
   &:focus-visible {
     transform: translateX(0);
-    background: ${COLORS.OVERLAY_70};
-    color: ${COLORS.WHITE};
+    background: var(--color-overlay-70);
+    color: var(--color-white);
     opacity: 1;
     outline: none;
   }

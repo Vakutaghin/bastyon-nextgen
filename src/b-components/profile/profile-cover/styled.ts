@@ -1,5 +1,4 @@
 import styled, { css } from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 const props = {
   hasImage: Boolean,
@@ -9,14 +8,18 @@ const props = {
 export const SC_ProfileCover = styled('div', props)`
   width: 100%;
   height: 265px;
-  background-color: ${COLORS.ANT_BLUE_BG};
+  background-color: var(--color-ant-blue-bg);
   position: relative;
   overflow: hidden;
 
   ${(props) =>
     !props.hasImage &&
     css`
-      background: linear-gradient(135deg, ${COLORS.ANT_BLUE_BG} 0%, ${COLORS.ANT_BLUE_LIGHT} 100%);
+      background: linear-gradient(
+        135deg,
+        var(--color-ant-blue-bg) 0%,
+        var(--color-ant-blue-light) 100%
+      );
     `}
 `
 

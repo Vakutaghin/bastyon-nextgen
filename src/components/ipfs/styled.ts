@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_IpfsBody = styled.div`
   display: flex;
@@ -11,13 +10,13 @@ export const SC_IpfsBody = styled.div`
 export const SC_IpfsText = styled.div`
   font-size: 13px;
   line-height: 1.5;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_IpfsProgressOuter = styled.div`
   width: 100%;
   height: 6px;
-  background: ${COLORS.OVERLAY_6};
+  background: var(--color-overlay-6);
   border-radius: var(--ui-radius-xs);
   overflow: hidden;
 `
@@ -25,6 +24,6 @@ export const SC_IpfsProgressOuter = styled.div`
 export const SC_IpfsProgressInner = styled.div<{ pct?: number }>`
   height: 100%;
   width: ${(p) => Math.max(0, Math.min(100, p.pct ?? 0))}%;
-  background: ${COLORS.ANT_BLUE};
+  background: var(--color-ant-blue);
   transition: width 0.3s;
 `

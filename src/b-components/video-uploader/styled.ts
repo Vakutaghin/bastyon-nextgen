@@ -9,13 +9,13 @@ export const SC_ModalOverlay = styled.div`
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: ${COLORS.OVERLAY_45} !important;
+  background: var(--color-overlay-45) !important;
   padding: 24px !important;
   box-sizing: border-box !important;
 `
 
 export const SC_ModalBox = styled.div`
-  background: ${COLORS.BG_PRIMARY} !important;
+  background: var(--color-bg-primary) !important;
   border-radius: var(--ui-radius-lg) !important;
   box-shadow: ${COLORS.SHADOW_LG} !important;
   width: 95vw !important;
@@ -29,18 +29,18 @@ export const SC_ModalBox = styled.div`
 
 export const SC_ModalHeader = styled.div`
   padding: 16px 24px !important;
-  border-bottom: 1px solid ${COLORS.BG_HOVER} !important;
+  border-bottom: 1px solid var(--color-bg-hover) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   flex-shrink: 0 !important;
-  background: ${COLORS.BG_PRIMARY} !important;
+  background: var(--color-bg-primary) !important;
 `
 
 export const SC_ModalTitle = styled.span`
   font-size: 16px !important;
   font-weight: 600 !important;
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  color: var(--color-text-primary) !important;
 `
 
 export const SC_ModalClose = styled.button`
@@ -48,12 +48,12 @@ export const SC_ModalClose = styled.button`
   border: none !important;
   padding: 4px !important;
   cursor: pointer !important;
-  color: ${COLORS.TEXT_SECONDARY} !important;
+  color: var(--color-text-secondary) !important;
   font-size: 16px !important;
   line-height: 1 !important;
 
   &:hover {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
   }
 `
 

@@ -8,11 +8,11 @@ export const SC_FabButton = styled.button`
   width: 56px !important;
   height: 56px !important;
   border-radius: 50% !important;
-  background-color: ${COLORS.ANT_BLUE} !important;
-  color: ${COLORS.WHITE} !important;
+  background-color: var(--color-ant-blue) !important;
+  color: var(--color-white) !important;
   border: none !important;
   cursor: pointer !important;
-  box-shadow: ${COLORS.SHADOW_MD} !important;
+  box-shadow: var(--shadow-md) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -21,7 +21,7 @@ export const SC_FabButton = styled.button`
   transition: all 0.3s ease !important;
 
   &:hover {
-    background-color: ${COLORS.ANT_BLUE_HOVER} !important;
+    background-color: var(--color-ant-blue-hover) !important;
     box-shadow: ${COLORS.SHADOW_LG} !important;
     transform: scale(1.05) !important;
   }

@@ -1,5 +1,4 @@
 import styled, { css } from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 const selectedProps = {
   selected: Boolean,
@@ -41,11 +40,11 @@ export const SC_TagsReset = styled.button`
   background: transparent;
   border: none;
   cursor: pointer;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   transition: color 0.2s;
 
   &:hover {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
   }
 `
 
@@ -66,11 +65,11 @@ export const SC_TagsToggle = styled.button`
   background: transparent;
   border: none;
   cursor: pointer;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   transition: color 0.2s;
 
   &:hover {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
   }
 `
 
@@ -80,7 +79,7 @@ export const SC_TagsLoading = styled.div`
   justify-content: center;
   min-height: 80px;
   padding: 16px 0;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_TagsList = styled.div`

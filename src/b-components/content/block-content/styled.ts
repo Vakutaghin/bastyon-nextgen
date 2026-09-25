@@ -1,13 +1,12 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_BlockContent = styled.div`
   width: 100%;
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  color: var(--color-text-primary) !important;
 
   > * {
     margin-bottom: 1em;
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
   }
 
   > *:last-child {
@@ -15,19 +14,19 @@ export const SC_BlockContent = styled.div`
   }
 
   * {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
   }
 
   p {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
   }
 
   div {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
   }
 
   span {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
   }
 
   h1,
@@ -36,6 +35,6 @@ export const SC_BlockContent = styled.div`
   h4,
   h5,
   h6 {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
   }
 `

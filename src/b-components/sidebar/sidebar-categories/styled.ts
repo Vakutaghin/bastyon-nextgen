@@ -1,5 +1,4 @@
 import styled, { css } from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 const activeProps = {
   active: Boolean,
@@ -35,7 +34,7 @@ export const SC_CategoriesTitle = styled.h3`
 export const SC_CategoriesToggle = styled.button`
   background: none;
   border: none;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -62,19 +61,19 @@ export const SC_ControlBtn = styled('button', activeProps)`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   transition: all 0.2s;
   border-radius: var(--ui-radius-sm);
 
   &:hover {
-    color: ${COLORS.TEXT_PRIMARY};
-    background: ${COLORS.OVERLAY_5};
+    color: var(--color-text-primary);
+    background: var(--color-overlay-5);
   }
 
   ${(props) =>
     props.active &&
     css`
-      color: ${COLORS.PRIMARY};
+      color: var(--color-primary);
     `}
 `
 
@@ -161,7 +160,7 @@ export const SC_CategoryRemoveBtn = styled.div`
 export const SC_ModalHint = styled.div`
   margin-bottom: 10px;
   font-size: 13px;
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
 `
 
 export const SC_DeleteConfirmRow = styled.div`

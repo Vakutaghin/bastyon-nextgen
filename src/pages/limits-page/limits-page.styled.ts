@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_LimitsWork = styled.div`
   display: flex;
@@ -10,7 +9,7 @@ export const SC_LimitsWork = styled.div`
   min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_LimitsPage = styled.main`
@@ -23,7 +22,7 @@ export const SC_LimitsPage = styled.main`
 export const SC_LimitsTitle = styled.h1`
   font-size: 22px;
   font-weight: 600;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   margin: 24px 0;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -48,9 +47,9 @@ export const SC_LimitRow = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: ${COLORS.BG_LIGHT};
+  background: var(--color-bg-light);
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.OVERLAY_6};
+  border: 1px solid var(--color-overlay-6);
   min-width: 0;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -60,19 +59,19 @@ export const SC_LimitRow = styled.div`
 
 export const SC_LimitLabel = styled.span`
   font-size: 15px;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
 `
 
 export const SC_LimitValue = styled.span`
   font-size: 15px;
   font-weight: 500;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
 `
 
 export const SC_LimitValueMuted = styled.span`
   font-size: 14px;
   font-weight: 400;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
 `
 
 export const SC_LimitCtaNotice = styled.div`
@@ -81,8 +80,8 @@ export const SC_LimitCtaNotice = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: ${COLORS.WARNING_BG_SOFT};
-  border: 1px solid ${COLORS.WARNING_BORDER_LIGHT};
+  background: var(--color-warning-bg-soft);
+  border: 1px solid var(--color-warning-border-light);
   border-radius: var(--ui-radius-lg);
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -94,14 +93,14 @@ export const SC_LimitCtaHeading = styled.h2`
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
 `
 
 export const SC_LimitCtaText = styled.p`
   margin: 0;
   font-size: 14px;
   line-height: 1.45;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
 `
 
 export const SC_LimitCtaActions = styled.div`
@@ -120,12 +119,12 @@ export const SC_LimitCtaButton = styled.button`
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.WHITE};
-  background: ${COLORS.PRIMARY};
+  color: var(--color-white);
+  background: var(--color-primary);
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.PRIMARY_HOVER};
+    background: var(--color-primary-hover);
   }
 `
 
@@ -133,13 +132,13 @@ export const SC_LimitsLoading = styled.div`
   padding: 40px 0;
   text-align: center;
   font-size: 15px;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
 `
 
 export const SC_LimitsError = styled.div`
   padding: 24px;
-  background: ${COLORS.DANGER_BG_SOFT};
+  background: var(--color-danger-bg-soft);
   border-radius: var(--ui-radius-lg);
   font-size: 14px;
-  color: ${COLORS.DANGER_DEEP};
+  color: var(--color-danger-deep);
 `

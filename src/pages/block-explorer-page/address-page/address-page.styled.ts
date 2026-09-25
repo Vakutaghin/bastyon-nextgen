@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 import { RouterLink } from 'vue-router'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 // Общие примитивы эксплорера (audit §3.1).
@@ -21,7 +20,7 @@ export const SC_AddrPageWork = styled.div`
   display: flex;
   flex: 1;
   width: 100%;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_AddrPagePage = styled.main`
@@ -35,10 +34,10 @@ export const SC_AddrPagePage = styled.main`
 export const SC_AddrBreadcrumb = styled.div`
   margin-bottom: 12px;
   font-size: 13px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 
   a {
-    color: ${COLORS.LINK};
+    color: var(--color-link);
     text-decoration: none;
 
     &:hover {
@@ -59,7 +58,7 @@ export const SC_AddrTitleRow = styled.div`
 export const SC_AddrTitle = styled.h1`
   font-size: 22px;
   font-weight: 700;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   margin: 0;
   min-width: 0;
   flex: 1;
@@ -84,14 +83,14 @@ export const SC_AddrSummary = styled.div`
 
 export const SC_AddrSummaryCard = styled.div`
   padding: 16px 18px;
-  background: ${COLORS.BG_SECONDARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
 `
 
 export const SC_AddrSummaryLabel = styled.div`
   font-size: 11px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin-bottom: 6px;
@@ -100,7 +99,7 @@ export const SC_AddrSummaryLabel = styled.div`
 export const SC_AddrSummaryValue = styled.div`
   font-size: 18px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
   word-break: break-all;
 `
@@ -111,15 +110,15 @@ export const SC_AddrSummaryValueProfile = styled(SC_AddrSummaryValue)`
 `
 
 export const SC_AddrTxSection = styled.section`
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 
 export const SC_AddrTxSectionHeader = styled.div`
   padding: 14px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
   font-size: 16px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
@@ -130,7 +129,7 @@ export const SC_AddrTxRow = styled.div`
   grid-template-columns: 110px minmax(0, 1fr) 110px 110px;
   gap: 12px;
   padding: 12px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
   font-size: 13px;
   align-items: center;
 
@@ -166,7 +165,7 @@ export const SC_AddrTxRow = styled.div`
   }
 
   &:hover {
-    background: ${COLORS.OVERLAY_3};
+    background: var(--color-overlay-3);
   }
 `
 
@@ -176,22 +175,22 @@ export const SC_AddrTxTypeBadge = styled.span`
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 600;
-  background: ${COLORS.PRIMARY_LIGHT};
-  color: ${COLORS.PRIMARY};
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   border-radius: var(--ui-radius-sm);
   white-space: nowrap;
 `
 
 export const SC_AddrTxAge = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   text-align: right;
   white-space: nowrap;
 `
 
 export const SC_AddrTxBlock = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
   text-align: right;
 `

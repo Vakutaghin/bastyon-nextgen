@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_Welcome = styled.div`
@@ -13,7 +12,7 @@ export const SC_Welcome = styled.div`
 
 export const SC_WelcomeIcon = styled.div`
   font-size: 44px;
-  color: ${COLORS.PRIMARY};
+  color: var(--color-primary);
   line-height: 1;
 `
 
@@ -21,14 +20,14 @@ export const SC_WelcomeTitle = styled.h2`
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_WelcomeDesc = styled.p`
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   max-width: 360px;
 `
 
@@ -42,11 +41,11 @@ export const SC_WelcomeDot = styled.span`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: ${COLORS.BORDER_DEFAULT};
+  background: var(--color-border-default);
   transition: background ${TRANSITIONS.FAST};
 
   &.active {
-    background: ${COLORS.PRIMARY};
+    background: var(--color-primary);
   }
 `
 
@@ -61,13 +60,13 @@ export const SC_WelcomeActions = styled.div`
 export const SC_WelcomeSkip = styled.button`
   background: none;
   border: none;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   font-size: 13px;
   cursor: pointer;
   padding: 6px 4px;
 
   &:hover {
-    color: ${COLORS.TEXT_SECONDARY};
+    color: var(--color-text-secondary);
   }
 `
 
@@ -79,15 +78,15 @@ export const SC_WelcomeNav = styled.div`
 export const SC_WelcomeBack = styled.button`
   padding: 8px 16px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
-  background: ${COLORS.BG_SECONDARY};
-  color: ${COLORS.TEXT_PRIMARY};
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   font-size: 14px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `
 
@@ -95,14 +94,14 @@ export const SC_WelcomeNext = styled.button`
   padding: 8px 20px;
   border-radius: var(--ui-radius-lg);
   border: none;
-  background: ${COLORS.PRIMARY};
-  color: ${COLORS.WHITE};
+  background: var(--color-primary);
+  color: var(--color-white);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.PRIMARY_HOVER};
+    background: var(--color-primary-hover);
   }
 `

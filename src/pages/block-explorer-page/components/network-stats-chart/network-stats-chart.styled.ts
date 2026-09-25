@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_StatsCard = styled.section`
@@ -95,7 +94,7 @@ export const SC_Legend = styled.div`
   gap: 12px;
   margin-top: 12px;
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_LegendItem = styled.span`
@@ -114,6 +113,6 @@ export const SC_LegendDot = styled.span`
 export const SC_StatsPlaceholder = styled.div`
   padding: 32px;
   text-align: center;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   font-size: 13px;
 `

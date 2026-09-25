@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_Related = styled.section`
@@ -10,7 +9,7 @@ export const SC_RelatedTitle = styled.h2`
   margin: 0 0 12px;
   font-size: 16px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_RelatedList = styled.div`
@@ -33,7 +32,7 @@ export const SC_RelatedItem = styled.button`
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `
 
@@ -45,8 +44,8 @@ export const SC_RelatedThumb = styled.span`
   height: 40px;
   flex-shrink: 0;
   border-radius: var(--ui-radius-lg);
-  background: ${COLORS.BG_SECONDARY};
-  color: ${COLORS.TEXT_SECONDARY};
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
   font-size: 18px;
 `
 
@@ -59,7 +58,7 @@ export const SC_RelatedInfo = styled.span`
 export const SC_RelatedName = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -67,7 +66,7 @@ export const SC_RelatedName = styled.span`
 
 export const SC_RelatedMeta = styled.span`
   font-size: 12px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_RegisterForm = styled.div`
   padding: 20px 0;
@@ -13,11 +12,11 @@ export const SC_FormLabel = styled.label`
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_FormLabelOptional = styled.span`
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   font-weight: normal;
   margin-left: 4px;
 `
@@ -32,29 +31,29 @@ export const SC_InputWrapper = styled.div`
     padding: 4px 11px;
     font-size: 14px;
     line-height: 1.5715;
-    color: ${COLORS.TEXT_PRIMARY};
-    background: ${COLORS.BG_PRIMARY};
-    border: 1px solid ${COLORS.BORDER};
+    color: var(--color-text-primary);
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
     border-radius: var(--ui-radius-md);
     outline: none;
     transition: all 0.2s;
 
     &::placeholder {
-      color: ${COLORS.TEXT_SECONDARY};
+      color: var(--color-text-secondary);
     }
 
     &:hover:not(:disabled) {
-      border-color: ${COLORS.TEXT_MUTED};
+      border-color: var(--color-text-muted);
     }
 
     &:focus {
-      border-color: ${COLORS.PRIMARY};
-      box-shadow: 0 0 0 2px ${COLORS.PRIMARY_LIGHT_20};
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px var(--color-primary-light-20);
     }
 
     &:disabled {
-      background: ${COLORS.BG_SECONDARY};
-      color: ${COLORS.TEXT_SECONDARY};
+      background: var(--color-bg-secondary);
+      color: var(--color-text-secondary);
       cursor: not-allowed;
       opacity: 0.6;
     }
@@ -64,17 +63,17 @@ export const SC_InputWrapper = styled.div`
 export const SC_FormHint = styled.div`
   margin-top: 8px;
   font-size: 12px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   line-height: 1.5;
 `
 
 export const SC_ErrorMessage = styled.div`
   margin-top: 16px;
   padding: 12px;
-  background-color: ${COLORS.RED_BG};
-  border: 1px solid ${COLORS.RED_BORDER};
+  background-color: var(--color-red-bg);
+  border: 1px solid var(--color-red-border);
   border-radius: var(--ui-radius-sm);
-  color: ${COLORS.RED_DARK};
+  color: var(--color-red-dark);
   font-size: 16px;
 `
 
@@ -82,11 +81,11 @@ export const SC_LinkToSignIn = styled.div`
   margin-top: 16px;
   text-align: center;
   font-size: 16px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_LinkButton = styled('a', { isDisabled: Boolean })`
-  color: ${COLORS.ANT_BLUE};
+  color: var(--color-ant-blue);
   cursor: ${(p) => (p.isDisabled ? 'not-allowed' : 'pointer')};
   text-decoration: none;
   opacity: ${(p) => (p.isDisabled ? 0.5 : 1)};

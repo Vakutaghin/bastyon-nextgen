@@ -1,14 +1,13 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_MessengerButton = styled('button', { isOpen: Boolean })`
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background-color: ${COLORS.BRAND_CYAN};
-  color: ${COLORS.WHITE};
+  background-color: var(--color-brand-cyan);
+  color: var(--color-white);
   border: none;
-  box-shadow: ${COLORS.SHADOW_MD};
+  box-shadow: var(--shadow-md);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -22,7 +21,7 @@ export const SC_MessengerButton = styled('button', { isOpen: Boolean })`
 
   &:hover {
     transform: scale(1.05);
-    background-color: ${COLORS.BRAND_CYAN_HOVER};
+    background-color: var(--color-brand-cyan-hover);
   }
 
   &:active {
@@ -47,13 +46,13 @@ export const SC_UnreadBadge = styled.span`
   position: absolute;
   top: -4px;
   right: -4px;
-  background-color: ${COLORS.RED_BRIGHT};
-  color: ${COLORS.WHITE};
+  background-color: var(--color-red-bright);
+  color: var(--color-white);
   font-size: 12px;
   font-weight: bold;
   padding: 2px 6px;
   border-radius: var(--ui-radius-lg);
-  border: 2px solid ${COLORS.WHITE};
+  border: 2px solid var(--color-white);
   min-width: 20px;
   text-align: center;
 `

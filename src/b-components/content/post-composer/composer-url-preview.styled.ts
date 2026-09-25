@@ -1,7 +1,6 @@
 import styled from 'vue3-styled-components'
 
 import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_EmbedWrap = styled.div`
   position: relative;
@@ -26,8 +25,8 @@ export const SC_VideoBadge = styled.div`
   gap: ${SPACING.SM};
   padding: ${SPACING.SM} ${SPACING.MD};
   font-size: ${FONT_SIZE.MD};
-  color: ${COLORS.TEXT_SECONDARY};
-  background: ${COLORS.BG_SECONDARY};
-  border: 1px solid ${COLORS.BORDER};
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.MD};
 `

@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_SettingsWork = styled.div`
   display: flex;
@@ -10,7 +9,7 @@ export const SC_SettingsWork = styled.div`
   min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_SettingsPage = styled.div`
@@ -43,7 +42,7 @@ export const SC_SettingsContentWrapper = styled.div`
 export const SC_SettingsMain = styled.main`
   flex: 1;
   min-width: 0;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   padding: 24px;
   border-radius: var(--ui-radius-lg);
 
@@ -59,6 +58,6 @@ export const SC_SettingsMain = styled.main`
 export const SC_SettingsSectionTitle = styled.h2`
   font-size: 16px;
   font-weight: 600;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   margin: 0 0 16px;
 `

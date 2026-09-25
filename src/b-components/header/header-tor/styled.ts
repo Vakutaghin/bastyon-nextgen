@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 type Variant = 'off' | 'busy' | 'ready' | 'failed'
 
@@ -55,7 +54,7 @@ export const SC_TorRow = styled.div`
 export const SC_TorTitle = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_TorBridgeTitle = styled(SC_TorTitle)`
@@ -64,13 +63,13 @@ export const SC_TorBridgeTitle = styled(SC_TorTitle)`
 
 export const SC_TorStatusLine = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_TorProgressOuter = styled.div`
   width: 100%;
   height: 4px;
-  background: ${COLORS.OVERLAY_6};
+  background: var(--color-overlay-6);
   border-radius: var(--ui-radius-xs);
   overflow: hidden;
 `
@@ -78,7 +77,7 @@ export const SC_TorProgressOuter = styled.div`
 export const SC_TorProgressInner = styled.div<{ pct?: number }>`
   height: 100%;
   width: ${(p) => Math.max(0, Math.min(100, p.pct ?? 0))}%;
-  background: ${COLORS.ANT_BLUE};
+  background: var(--color-ant-blue);
   transition: width 0.3s;
 `
 
@@ -87,7 +86,7 @@ export const SC_TorBridgeBlock = styled.div`
   flex-direction: column;
   gap: 6px;
   padding-top: 6px;
-  border-top: 1px solid ${COLORS.BG_HOVER};
+  border-top: 1px solid var(--color-bg-hover);
 `
 
 export const SC_TorTextarea = styled.textarea`
@@ -96,14 +95,14 @@ export const SC_TorTextarea = styled.textarea`
   font-family: var(--font-family-mono);
   font-size: 11px;
   padding: 6px 8px;
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  border: 1px solid var(--color-border-default);
   border-radius: var(--ui-radius-sm);
   resize: vertical;
-  background: ${COLORS.BG_INPUT};
-  color: ${COLORS.TEXT_PRIMARY};
+  background: var(--color-bg-input);
+  color: var(--color-text-primary);
 
   &::placeholder {
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--color-text-muted);
   }
 `
 
@@ -115,5 +114,5 @@ export const SC_TorActions = styled.div`
 
 export const SC_TorHint = styled.div`
   font-size: 11px;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
 `

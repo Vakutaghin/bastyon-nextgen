@@ -7,7 +7,7 @@ export const SC_PeersWork = styled.div`
   display: flex;
   flex: 1;
   width: 100%;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_PeersPage = styled.main`
@@ -20,10 +20,10 @@ export const SC_PeersPage = styled.main`
 export const SC_PeersBreadcrumb = styled.div`
   margin-bottom: 12px;
   font-size: 13px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 
   a {
-    color: ${COLORS.LINK};
+    color: var(--color-link);
     text-decoration: none;
 
     &:hover {
@@ -35,13 +35,13 @@ export const SC_PeersBreadcrumb = styled.div`
 export const SC_PeersTitle = styled.h1`
   font-size: 24px;
   font-weight: 700;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   margin: 0 0 24px;
 `
 
 export const SC_PeersSection = styled.section`
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;
@@ -52,7 +52,7 @@ export const SC_PeersSectionHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
 `
 
 export const SC_PeersSectionTitle = styled.h2`
@@ -64,7 +64,7 @@ export const SC_PeersSectionTitle = styled.h2`
 
 export const SC_PeersSectionHint = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_NodeRow = styled.div`
@@ -73,7 +73,7 @@ export const SC_NodeRow = styled.div`
   align-items: center;
   gap: 12px;
   padding: 12px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
   font-size: 13px;
 
   &:last-child {
@@ -81,7 +81,7 @@ export const SC_NodeRow = styled.div`
   }
 
   &:hover {
-    background: ${COLORS.OVERLAY_3};
+    background: var(--color-overlay-3);
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -116,7 +116,7 @@ export const SC_NodeDot = styled('span', dotProps)`
 
 export const SC_NodeAddr = styled.div`
   font-family: var(--font-family-mono);
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
@@ -125,7 +125,7 @@ export const SC_NodeAddr = styled.div`
 
 export const SC_NodeMetric = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
   text-align: right;
 `
@@ -133,7 +133,7 @@ export const SC_NodeMetric = styled.div`
 export const SC_NodeMetricLabel = styled.span`
   display: block;
   font-size: 10px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 `
@@ -143,13 +143,13 @@ export const SC_PeerTableHeader = styled.div`
   grid-template-columns: minmax(0, 1.4fr) 1fr 70px 70px 90px 70px;
   gap: 10px;
   padding: 10px 18px;
-  background: ${COLORS.BG_SECONDARY};
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-lighter);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     grid-template-columns: minmax(0, 1.4fr) 1fr 80px;
@@ -166,7 +166,7 @@ export const SC_PeerRow = styled.div`
   align-items: center;
   gap: 10px;
   padding: 10px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 
@@ -175,7 +175,7 @@ export const SC_PeerRow = styled.div`
   }
 
   &:hover {
-    background: ${COLORS.OVERLAY_3};
+    background: var(--color-overlay-3);
   }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
@@ -192,12 +192,12 @@ export const SC_PeerAddr = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_PeerVersion = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -221,7 +221,7 @@ export const SC_Placeholder = styled(SC_PlaceholderBase)`
 `
 
 export const SC_PlaceholderError = styled(SC_Placeholder)`
-  color: ${COLORS.DANGER};
+  color: var(--color-danger);
 `
 
 /**

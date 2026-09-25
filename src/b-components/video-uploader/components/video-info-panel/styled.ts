@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_InfoPanel = styled.div`
   display: grid !important;
@@ -16,8 +15,8 @@ export const SC_InfoPanel = styled.div`
 `
 
 export const SC_InfoSection = styled.div`
-  background: ${COLORS.BG_INPUT} !important;
-  border: 1px solid ${COLORS.GRAY_E8} !important;
+  background: var(--color-bg-input) !important;
+  border: 1px solid var(--color-gray-e8) !important;
   border-radius: var(--ui-radius-lg) !important;
   padding: 16px !important;
   box-sizing: border-box !important;
@@ -26,14 +25,14 @@ export const SC_InfoSection = styled.div`
 export const SC_SectionHeader = styled.div`
   margin-bottom: 12px !important;
   padding-bottom: 12px !important;
-  border-bottom: 1px solid ${COLORS.GRAY_E8} !important;
+  border-bottom: 1px solid var(--color-gray-e8) !important;
 `
 
 export const SC_SectionTitle = styled.h4`
   margin: 0 !important;
   font-size: 16px !important;
   font-weight: 600 !important;
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  color: var(--color-text-primary) !important;
 `
 
 export const SC_InfoContent = styled.div`
@@ -51,14 +50,14 @@ export const SC_InfoRow = styled.div`
 `
 
 export const SC_InfoLabel = styled.span`
-  color: ${COLORS.TEXT_SECONDARY} !important;
+  color: var(--color-text-secondary) !important;
   font-weight: 500 !important;
   flex-shrink: 0 !important;
   margin-right: 12px !important;
 `
 
 export const SC_InfoValue = styled.span`
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  color: var(--color-text-primary) !important;
   text-align: right !important;
   display: flex !important;
   align-items: center !important;

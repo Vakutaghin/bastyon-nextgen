@@ -1,11 +1,10 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 import { SC_Placeholder as SC_PlaceholderBase } from '../shared/explorer-primitives.styled'
 
 export const SC_TopCard = styled.section`
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;
@@ -16,7 +15,7 @@ export const SC_TopHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
 `
 
 export const SC_TopTitleGroup = styled.div`
@@ -35,17 +34,17 @@ export const SC_TopTitle = styled.h2`
 
 export const SC_TopHint = styled.div`
   font-size: 11px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_TopToggle = styled.button`
   background: transparent;
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-md);
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition:
     color ${TRANSITIONS.QUICK},
@@ -53,9 +52,9 @@ export const SC_TopToggle = styled.button`
     background-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    color: ${COLORS.PRIMARY};
-    border-color: ${COLORS.PRIMARY_LIGHT_30};
-    background: ${COLORS.PRIMARY_LIGHT};
+    color: var(--color-primary);
+    border-color: var(--color-primary-light-30);
+    background: var(--color-primary-light);
   }
 `
 
@@ -65,7 +64,7 @@ export const SC_TopRow = styled.div`
   align-items: center;
   gap: 12px;
   padding: 10px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
   font-size: 13px;
 
   &:last-child {
@@ -73,7 +72,7 @@ export const SC_TopRow = styled.div`
   }
 
   &:hover {
-    background: ${COLORS.OVERLAY_3};
+    background: var(--color-overlay-3);
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -88,14 +87,14 @@ export const SC_TopRow = styled.div`
 export const SC_TopRank = styled.span`
   font-size: 12px;
   font-weight: 600;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   text-align: right;
   font-variant-numeric: tabular-nums;
 `
 
 export const SC_TopVolume = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -103,7 +102,7 @@ export const SC_TopVolume = styled.div`
 
 export const SC_TopCount = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   text-align: right;
   font-variant-numeric: tabular-nums;
 `

@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_ShareMenu = styled.div`
@@ -7,10 +6,10 @@ export const SC_ShareMenu = styled.div`
   flex-direction: column;
   min-width: 200px;
   padding: 6px;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-default);
   border-radius: var(--ui-radius-lg);
-  box-shadow: ${COLORS.SHADOW_MD};
+  box-shadow: var(--shadow-md);
 `
 
 export const SC_ShareItem = styled.button`
@@ -22,18 +21,18 @@ export const SC_ShareItem = styled.button`
   border: none;
   border-radius: var(--ui-radius-md);
   background: none;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: 14px;
   cursor: pointer;
   text-align: left;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 
   &.share-item--danger {
-    color: ${COLORS.DANGER};
+    color: var(--color-danger);
   }
 
   .anticon {
@@ -51,5 +50,5 @@ export const SC_ShareIcon = styled('span', { color: String })`
 export const SC_ShareDivider = styled.div`
   height: 1px;
   margin: 4px 6px;
-  background: ${COLORS.BORDER_LIGHTER};
+  background: var(--color-border-lighter);
 `

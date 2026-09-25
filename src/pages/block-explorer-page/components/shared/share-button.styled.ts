@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_ShareBtn = styled.button`
@@ -9,9 +8,9 @@ export const SC_ShareBtn = styled.button`
   padding: 6px 12px;
   font-size: 13px;
   font-weight: 500;
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_SECONDARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
@@ -20,8 +19,8 @@ export const SC_ShareBtn = styled.button`
     color ${TRANSITIONS.QUICK};
 
   &:hover {
-    color: ${COLORS.PRIMARY};
-    background: ${COLORS.PRIMARY_LIGHT};
-    border-color: ${COLORS.PRIMARY_LIGHT_30};
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+    border-color: var(--color-primary-light-30);
   }
 `

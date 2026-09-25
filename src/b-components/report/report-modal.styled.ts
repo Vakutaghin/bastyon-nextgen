@@ -12,7 +12,7 @@ export const SC_ReportIntro = styled.p`
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_ReasonList = styled.div`
@@ -42,8 +42,8 @@ export const SC_ReasonItem = styled('button', reasonProps)`
     background-color ${TRANSITIONS.FAST};
 
   &:hover:not(:disabled) {
-    border-color: ${COLORS.PRIMARY};
-    background: ${COLORS.PRIMARY_LIGHT};
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
   }
 
   &:disabled {
@@ -57,11 +57,11 @@ export const SC_ReasonRadio = styled.span`
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 2px solid ${COLORS.BORDER};
+  border: 2px solid var(--color-border);
   position: relative;
 
   &.checked {
-    border-color: ${COLORS.PRIMARY};
+    border-color: var(--color-primary);
   }
 
   &.checked::after {
@@ -69,11 +69,11 @@ export const SC_ReasonRadio = styled.span`
     position: absolute;
     inset: 2px;
     border-radius: 50%;
-    background: ${COLORS.PRIMARY};
+    background: var(--color-primary);
   }
 `
 
 export const SC_FieldError = styled.div`
   font-size: 13px;
-  color: ${COLORS.DANGER};
+  color: var(--color-danger);
 `

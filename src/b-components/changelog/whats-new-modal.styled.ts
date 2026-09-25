@@ -15,8 +15,8 @@ export const SC_Footer = styled.div`
 `
 
 export const SC_DismissButton = styled.button`
-  background: ${COLORS.PRIMARY};
-  color: ${COLORS.WHITE};
+  background: var(--color-primary);
+  color: var(--color-white);
   border: none;
   border-radius: var(--ui-radius-lg);
   padding: 8px 20px;
@@ -26,14 +26,14 @@ export const SC_DismissButton = styled.button`
   transition: background-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.PRIMARY_HOVER};
+    background: var(--color-primary-hover);
   }
 `
 
 export const SC_LangSwitcher = styled.div`
   display: inline-flex;
   align-self: flex-start;
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
@@ -49,7 +49,7 @@ export const SC_LangButton = styled.button<{ active: boolean }>`
   transition: background-color ${TRANSITIONS.QUICK};
 
   & + & {
-    border-left: 1px solid ${COLORS.BORDER};
+    border-left: 1px solid var(--color-border);
   }
 
   &:hover {
@@ -59,7 +59,7 @@ export const SC_LangButton = styled.button<{ active: boolean }>`
 `
 
 export const SC_MarkdownBody = styled.div`
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: 14px;
   line-height: 1.55;
   max-height: 60vh;
@@ -81,7 +81,7 @@ export const SC_MarkdownBody = styled.div`
     font-size: 13px;
     font-weight: 600;
     margin: 12px 0 6px;
-    color: ${COLORS.TEXT_DARK};
+    color: var(--color-text-dark);
   }
 
   p {
@@ -99,7 +99,7 @@ export const SC_MarkdownBody = styled.div`
   }
 
   a {
-    color: ${COLORS.PRIMARY};
+    color: var(--color-primary);
     text-decoration: none;
 
     &:hover {
@@ -108,7 +108,7 @@ export const SC_MarkdownBody = styled.div`
   }
 
   code {
-    background: ${COLORS.OVERLAY_5};
+    background: var(--color-overlay-5);
     padding: 1px 5px;
     border-radius: var(--ui-radius-sm);
     font-size: 12.5px;
@@ -121,7 +121,7 @@ export const SC_MarkdownBody = styled.div`
 
   hr {
     border: none;
-    border-top: 1px solid ${COLORS.BORDER_LIGHTER};
+    border-top: 1px solid var(--color-border-lighter);
     margin: 16px 0;
   }
 `

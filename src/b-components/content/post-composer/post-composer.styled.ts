@@ -21,10 +21,10 @@ export const SC_MentionDropdown = styled.ul`
   overflow-y: auto;
   /* Тот же случай, что и у подсказок тегов: скролл списка не должен листать модалку. */
   overscroll-behavior: contain;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-default);
   border-radius: ${BORDER_RADIUS.MD};
-  box-shadow: 0 6px 24px ${COLORS.OVERLAY_20};
+  box-shadow: 0 6px 24px var(--color-overlay-20);
 `
 
 export const SC_MentionRow = styled.li`
@@ -37,7 +37,7 @@ export const SC_MentionRow = styled.li`
 
   &.active,
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `
 
@@ -50,8 +50,8 @@ export const SC_MentionAvatar = styled.span`
   flex-shrink: 0;
   border-radius: 50%;
   overflow: hidden;
-  background: ${COLORS.BG_SECONDARY};
-  color: ${COLORS.TEXT_SECONDARY};
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 600;
 
@@ -65,7 +65,7 @@ export const SC_MentionAvatar = styled.span`
 export const SC_MentionName = styled.span`
   min-width: 0;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -92,14 +92,14 @@ export const SC_EmojiBtn = styled.button`
   border: none;
   border-radius: ${BORDER_RADIUS.SM};
   background: none;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-size: 18px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
-    color: ${COLORS.TEXT_PRIMARY};
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
   }
 `
 
@@ -110,19 +110,19 @@ export const SC_Textarea = styled.textarea`
   padding: ${SPACING.SM} ${SPACING.MD};
   font-size: ${FONT_SIZE.LG};
   line-height: 1.5;
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_INPUT};
-  border: 1px solid ${COLORS.BORDER};
+  color: var(--color-text-primary);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.MD};
   outline: none;
   transition: border-color 0.15s ease;
 
   &::placeholder {
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--color-text-muted);
   }
 
   &:focus {
-    border-color: ${COLORS.PRIMARY};
+    border-color: var(--color-primary);
   }
 `
 
@@ -132,7 +132,7 @@ export const SC_ArticleToggle = styled.label`
   gap: ${SPACING.SM};
   align-self: flex-start;
   font-size: ${FONT_SIZE.MD};
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   user-select: none;
 
@@ -140,7 +140,7 @@ export const SC_ArticleToggle = styled.label`
     width: 16px;
     height: 16px;
     cursor: pointer;
-    accent-color: ${COLORS.PRIMARY};
+    accent-color: var(--color-primary);
   }
 `
 
@@ -149,19 +149,19 @@ export const SC_TitleInput = styled.input`
   padding: ${SPACING.SM} ${SPACING.MD};
   font-size: ${FONT_SIZE.XL};
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_INPUT};
-  border: 1px solid ${COLORS.BORDER};
+  color: var(--color-text-primary);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.MD};
   outline: none;
 
   &::placeholder {
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--color-text-muted);
     font-weight: 400;
   }
 
   &:focus {
-    border-color: ${COLORS.PRIMARY};
+    border-color: var(--color-primary);
   }
 `
 

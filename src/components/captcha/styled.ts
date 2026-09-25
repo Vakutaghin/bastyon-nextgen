@@ -1,7 +1,5 @@
 import styled from 'vue3-styled-components'
 
-import { COLORS } from '@/styles/theme-colors'
-
 export const SC_CaptchaWrapper = styled.div`
   padding: 1em;
 `
@@ -14,7 +12,7 @@ export const SC_Reason = styled.div`
   span {
     font-size: 1.2em;
     font-weight: 700;
-    color: ${COLORS.WARNING_HEX};
+    color: var(--color-warning-hex);
   }
 `
 
@@ -60,7 +58,7 @@ export const SC_InputWrapper = styled.div`
 export const SC_CaptchaInput = styled.input`
   font-size: 1.4em;
   border: 0;
-  border-bottom: 1px solid ${COLORS.GRAY_CCC};
+  border-bottom: 1px solid var(--color-gray-ccc);
   transition: border-color 0.3s;
   border-radius: 0;
   width: 100%;
@@ -69,7 +67,7 @@ export const SC_CaptchaInput = styled.input`
 
   &:focus {
     outline: none;
-    border-bottom-color: ${COLORS.PRIMARY};
+    border-bottom-color: var(--color-primary);
   }
 `
 
@@ -90,8 +88,8 @@ export const SC_SubmitButton = styled.button<{ disabled: boolean }>`
   font-size: 1em;
   cursor: ${(p) => (p.disabled ? 'not-allowed' : 'pointer')};
   transition: all 0.3s;
-  background: ${COLORS.PRIMARY};
-  color: ${COLORS.WHITE};
+  background: var(--color-primary);
+  color: var(--color-white);
   opacity: ${(p) => (p.disabled ? 0.5 : 1)};
 
   &:hover:not(:disabled) {
@@ -102,15 +100,15 @@ export const SC_SubmitButton = styled.button<{ disabled: boolean }>`
 export const SC_RedoButton = styled.button`
   min-width: 180px;
   padding: 0.75em 1.5em;
-  border: 1px solid ${COLORS.GRAY_CCC};
+  border: 1px solid var(--color-gray-ccc);
   border-radius: var(--ui-radius-sm);
   font-size: 1em;
   cursor: pointer;
   transition: all 0.3s;
   background: transparent;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `

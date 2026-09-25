@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_PrivateKeySection = styled.div`
@@ -8,19 +7,19 @@ export const SC_PrivateKeySection = styled.div`
 
 export const SC_PrivateKeyWarning = styled.div`
   padding: 12px 16px;
-  background-color: ${COLORS.WARNING_BG};
-  border: 1px solid ${COLORS.WARNING_BORDER};
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
   border-radius: var(--ui-radius-lg);
   margin-bottom: 20px;
   font-size: 13px;
   line-height: 1.5;
-  color: ${COLORS.WARNING_TEXT};
+  color: var(--color-warning-text);
 `
 
 export const SC_PrivateKeyBox = styled.div`
   position: relative;
-  background-color: ${COLORS.BG_TERTIARY};
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-default);
   border-radius: var(--ui-radius-lg);
   padding: 16px;
   padding-bottom: 48px;
@@ -29,7 +28,7 @@ export const SC_PrivateKeyBox = styled.div`
 
 export const SC_PrivateKeyLabel = styled.div`
   font-size: 13px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   margin-bottom: 8px;
   font-weight: 600;
 `
@@ -38,7 +37,7 @@ export const SC_PrivateKeyValue = styled.div`
   font-family: var(--font-family-mono);
   font-size: 14px;
   line-height: 1.6;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   word-break: break-all;
   user-select: all;
 `
@@ -53,10 +52,10 @@ export const SC_CopyIconBtn = styled.button`
   width: 36px;
   height: 36px;
   padding: 0;
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  border: 1px solid var(--color-border-default);
   border-radius: var(--ui-radius-md);
-  background: ${COLORS.BG_PRIMARY};
-  color: ${COLORS.TEXT_SECONDARY};
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition:
     color ${TRANSITIONS.FAST},
@@ -64,9 +63,9 @@ export const SC_CopyIconBtn = styled.button`
     background ${TRANSITIONS.FAST};
 
   &:hover {
-    color: ${COLORS.ANT_BLUE};
-    border-color: ${COLORS.ANT_BLUE};
-    background: ${COLORS.ANT_BLUE_BG};
+    color: var(--color-ant-blue);
+    border-color: var(--color-ant-blue);
+    background: var(--color-ant-blue-bg);
   }
 `
 
@@ -77,19 +76,19 @@ export const SC_ShowKeyButton = styled.button`
   padding: 10px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.WHITE};
-  background: ${COLORS.ANT_BLUE};
+  color: var(--color-white);
+  background: var(--color-ant-blue);
   border: none;
   border-radius: var(--ui-radius-lg);
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.ANT_BLUE_HOVER};
+    background: var(--color-ant-blue-hover);
   }
 
   &:disabled {
-    background: ${COLORS.BORDER_DEFAULT};
+    background: var(--color-border-default);
     cursor: not-allowed;
   }
 `
@@ -101,9 +100,9 @@ export const SC_HideKeyButton = styled.button`
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   background: transparent;
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  border: 1px solid var(--color-border-default);
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
@@ -111,15 +110,15 @@ export const SC_HideKeyButton = styled.button`
     border-color ${TRANSITIONS.FAST};
 
   &:hover {
-    color: ${COLORS.ANT_BLUE};
-    border-color: ${COLORS.ANT_BLUE};
+    color: var(--color-ant-blue);
+    border-color: var(--color-ant-blue);
   }
 `
 
 export const SC_ConfirmOverlay = styled.div`
   padding: 20px;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.WARNING_BORDER_LIGHT};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-warning-border-light);
   border-radius: var(--ui-radius-lg);
   max-width: 480px;
 `
@@ -130,14 +129,14 @@ export const SC_ConfirmTitle = styled.div`
   gap: 10px;
   font-size: 16px;
   font-weight: 600;
-  color: ${COLORS.ORANGE_TEXT};
+  color: var(--color-orange-text);
   margin-bottom: 12px;
 `
 
 export const SC_ConfirmText = styled.p`
   font-size: 14px;
   line-height: 1.5;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   margin: 0 0 16px;
 `
 
@@ -151,15 +150,15 @@ export const SC_ConfirmBtnPrimary = styled.button`
   padding: 8px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.WHITE};
-  background: ${COLORS.ANT_BLUE};
+  color: var(--color-white);
+  background: var(--color-ant-blue);
   border: none;
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.ANT_BLUE_HOVER};
+    background: var(--color-ant-blue-hover);
   }
 `
 
@@ -167,9 +166,9 @@ export const SC_ConfirmBtnDefault = styled.button`
   padding: 8px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.TEXT_SECONDARY};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  color: var(--color-text-secondary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-default);
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
@@ -177,7 +176,7 @@ export const SC_ConfirmBtnDefault = styled.button`
     border-color ${TRANSITIONS.FAST};
 
   &:hover {
-    color: ${COLORS.ANT_BLUE};
-    border-color: ${COLORS.ANT_BLUE};
+    color: var(--color-ant-blue);
+    border-color: var(--color-ant-blue);
   }
 `

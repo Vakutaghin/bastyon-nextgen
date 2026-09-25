@@ -41,7 +41,7 @@ export const SC_ExplorerSearchHint = styled.span`
   top: 50%;
   transform: translateY(-50%);
   font-size: 11px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   letter-spacing: 0.5px;
   text-transform: uppercase;
   pointer-events: none;
@@ -78,7 +78,7 @@ export const SC_ExplorerSearchButton = styled.button`
 export const SC_ExplorerSearchError = styled.div`
   margin-top: 8px;
   font-size: 12px;
-  color: ${COLORS.DANGER};
+  color: var(--color-danger);
 `
 
 export const SC_SuggestionsDropdown = styled.div`
@@ -87,10 +87,10 @@ export const SC_SuggestionsDropdown = styled.div`
   left: 0;
   right: 0;
   z-index: ${Z_INDEX.LOCAL_DROPDOWN_HIGH};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
-  box-shadow: 0 8px 24px ${COLORS.OVERLAY_8};
+  box-shadow: 0 8px 24px var(--color-overlay-8);
   overflow: hidden;
 `
 
@@ -103,21 +103,21 @@ export const SC_SuggestionsHeader = styled.div`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: ${COLORS.TEXT_SECONDARY};
-  background: ${COLORS.BG_SECONDARY};
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-lighter);
 `
 
 export const SC_ClearAllBtn = styled.button`
   background: transparent;
   border: none;
   font-size: 11px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   cursor: pointer;
   padding: 2px 4px;
 
   &:hover {
-    color: ${COLORS.DANGER};
+    color: var(--color-danger);
   }
 `
 
@@ -131,7 +131,7 @@ export const SC_SuggestionItem = styled('button', itemAttrs)`
   padding: 10px 14px;
   background: ${(p) => (p.highlighted ? COLORS.BG_HOVER_BLUE : COLORS.BG_PRIMARY)};
   border: none;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
   cursor: pointer;
   text-align: left;
   transition: background-color ${TRANSITIONS.QUICK};
@@ -141,7 +141,7 @@ export const SC_SuggestionItem = styled('button', itemAttrs)`
   }
 
   &:hover {
-    background: ${COLORS.BG_HOVER_BLUE};
+    background: var(--color-bg-hover-blue);
   }
 `
 
@@ -170,7 +170,7 @@ export const SC_KindBadge = styled('span', badgeAttrs)`
 export const SC_SuggestionValue = styled.span`
   font-family: var(--font-family-mono);
   font-size: 13px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -178,7 +178,7 @@ export const SC_SuggestionValue = styled.span`
 
 export const SC_SuggestionAge = styled.span`
   font-size: 11px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   text-align: right;
   font-variant-numeric: tabular-nums;
 `
@@ -195,15 +195,15 @@ export const SC_RemoveItemBtn = styled.button`
   width: 18px;
   height: 18px;
   border-radius: var(--ui-radius-sm);
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   cursor: pointer;
   transition:
     color ${TRANSITIONS.QUICK},
     background-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    color: ${COLORS.DANGER};
-    background: ${COLORS.OVERLAY_5};
+    color: var(--color-danger);
+    background: var(--color-overlay-5);
   }
 `
 

@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_HomeWork = styled.div`
   display: flex;
@@ -12,7 +11,7 @@ export const SC_HomeWork = styled.div`
   gap: 20px;
   padding: 58px 0 25px;
   align-items: flex-start;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 
   &.is-mobile {
     gap: 0;
@@ -23,7 +22,7 @@ export const SC_HomeWork = styled.div`
 export const SC_HomeMainContent = styled.main`
   flex: 1;
   min-width: 0;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   padding: 20px 0;
   border-radius: var(--ui-radius-lg);
 

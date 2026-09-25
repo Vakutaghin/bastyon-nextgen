@@ -6,7 +6,6 @@
  */
 
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_ExplorerError = styled.div`
@@ -19,7 +18,7 @@ export const SC_ExplorerError = styled.div`
 `
 
 export const SC_ExplorerErrorMessage = styled.div`
-  color: ${COLORS.DANGER};
+  color: var(--color-danger);
 `
 
 export const SC_ExplorerErrorActions = styled.div`
@@ -33,9 +32,9 @@ export const SC_ExplorerErrorBtn = styled.button`
   padding: 8px 18px;
   font-size: 13px;
   font-weight: 500;
-  color: ${COLORS.PRIMARY};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
+  color: var(--color-primary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-primary-light-30);
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
@@ -43,16 +42,16 @@ export const SC_ExplorerErrorBtn = styled.button`
     border-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.PRIMARY_LIGHT};
-    border-color: ${COLORS.PRIMARY_LIGHT_50};
+    background: var(--color-primary-light);
+    border-color: var(--color-primary-light-50);
   }
 
   &.secondary {
-    color: ${COLORS.TEXT_SECONDARY};
-    border-color: ${COLORS.BORDER_LIGHTER};
+    color: var(--color-text-secondary);
+    border-color: var(--color-border-lighter);
   }
 
   &.secondary:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `

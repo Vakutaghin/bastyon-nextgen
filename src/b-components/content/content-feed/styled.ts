@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS, Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 import Button from '@/components/button/button.vue'
 
@@ -114,12 +113,12 @@ export const SC_FeedLoading = styled.div`
 
   .anticon {
     font-size: 120px !important;
-    color: ${COLORS.PRIMARY} !important;
+    color: var(--color-primary) !important;
   }
 
   .ant-spin-text {
     font-size: 24px !important;
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
     font-weight: 500;
     margin-top: 0;
     letter-spacing: 1px;
@@ -133,7 +132,7 @@ export const SC_FeedError = styled.div`
   justify-content: center;
   padding: 45px 22px;
   text-align: center;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   p {
     margin: 0;
@@ -152,7 +151,7 @@ export const SC_FeedLoadingMore = styled.div`
 export const SC_FeedEnd = styled.div`
   text-align: center;
   padding: 30px 20px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-size: 16px;
 
   p {
@@ -218,7 +217,7 @@ export const SC_ScrollToTop = styled.button`
 export const SC_PhotoPreviewOverlay = styled.div`
   position: fixed;
   inset: 0;
-  background: ${COLORS.OVERLAY_85};
+  background: var(--color-overlay-85);
   z-index: ${Z_INDEX.MODAL};
   display: flex;
   flex-direction: column;
@@ -235,7 +234,7 @@ export const SC_PhotoPreviewImage = styled.img`
 `
 
 export const SC_PhotoPreviewHint = styled.div`
-  color: ${COLORS.WHITE};
+  color: var(--color-white);
   font-size: 14px;
   opacity: 0.85;
 `

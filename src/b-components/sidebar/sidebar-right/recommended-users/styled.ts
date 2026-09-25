@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_RecRoot = styled.div`
@@ -30,7 +29,7 @@ export const SC_RecRow = styled.div`
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `
 
@@ -53,12 +52,12 @@ export const SC_RecAvatar = styled.div`
   border-radius: 50%;
   flex-shrink: 0;
   overflow: hidden;
-  background: ${COLORS.BG_SECONDARY};
+  background: var(--color-bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   img {
     width: 100%;
@@ -84,7 +83,7 @@ export const SC_RecName = styled.span`
 
 export const SC_RecMeta = styled.span`
   font-size: 11px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 `
 
 export const SC_RecFollow = styled.button`
@@ -116,6 +115,6 @@ export const SC_RecFollow = styled.button`
 
 export const SC_RecState = styled.div`
   font-size: 13px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   padding: 8px 0;
 `

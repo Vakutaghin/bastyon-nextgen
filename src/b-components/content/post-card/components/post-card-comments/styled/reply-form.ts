@@ -1,12 +1,11 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 /** Плашка ответа под комментарием: аватар + textarea + кнопки */
 export const SC_ReplyPanel = styled.div`
   margin-top: 10px;
   padding: 10px 12px;
-  background: ${COLORS.BG_TERTIARY};
-  border: 1px solid ${COLORS.GRAY_EEE};
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-gray-eee);
   border-radius: var(--ui-radius-lg);
   display: flex;
   align-items: center;
@@ -21,7 +20,7 @@ export const SC_ReplyPanel = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: ${COLORS.BORDER_DARK};
+    background: var(--color-border-dark);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -33,7 +32,7 @@ export const SC_ReplyPanel = styled.div`
     display: block;
   }
   .reply-avatar-placeholder {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
     font-weight: 600;
     font-size: 14px;
   }
@@ -70,8 +69,8 @@ export const SC_ReplyTextarea = styled.textarea`
   max-height: 120px;
   line-height: 1.45;
   font-family: inherit;
-  background: ${COLORS.BG_PRIMARY};
-  color: ${COLORS.TEXT_PRIMARY};
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
 
   &:focus {
     border-color: var(--ui-primary);
@@ -125,7 +124,7 @@ export const SC_EmojiGridPanel = styled.div`
     width: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background: ${COLORS.GRAY_CCC};
+    background: var(--color-gray-ccc);
     border-radius: var(--ui-radius-xs);
   }
 `
@@ -143,7 +142,7 @@ export const SC_EmojiCellBtn = styled.button`
   justify-content: center;
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `
 
@@ -154,15 +153,15 @@ export const SC_EmojiTriggerBtn = styled.button`
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   &:hover {
-    background: ${COLORS.OVERLAY_6};
-    color: ${COLORS.TEXT_PRIMARY};
+    background: var(--color-overlay-6);
+    color: var(--color-text-primary);
   }
   svg {
     width: 20px;
@@ -176,15 +175,15 @@ export const SC_ReplyCancelBtn = styled.button`
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   &:hover {
-    background: ${COLORS.OVERLAY_6};
-    color: ${COLORS.TEXT_PRIMARY};
+    background: var(--color-overlay-6);
+    color: var(--color-text-primary);
   }
   svg {
     width: 18px;
@@ -204,7 +203,7 @@ export const SC_ConfirmWrap = styled.div`
 export const SC_ConfirmMessage = styled.p`
   margin: 0;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   flex: 1;
 `
 
@@ -217,15 +216,15 @@ export const SC_ConfirmActions = styled.div`
 export const SC_ConfirmBtn = styled.button`
   padding: 6px 14px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.GRAY_DDD};
-  background: ${COLORS.BG_PRIMARY};
+  border: 1px solid var(--color-gray-ddd);
+  background: var(--color-bg-primary);
   font-size: 13px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   cursor: pointer;
 
   &:hover {
-    background: ${COLORS.BG_TERTIARY};
-    border-color: ${COLORS.GRAY_CCC};
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-gray-ccc);
   }
 
   &.confirm-btn--primary {
@@ -243,11 +242,11 @@ export const SC_ConfirmBtn = styled.button`
 /** Счётчик оставшихся символов под полем ввода. Показывается только когда осталось мало. */
 export const SC_LengthCounter = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   padding: 2px 14px 0;
   line-height: 1.3;
 
   &.length-counter--bad {
-    color: ${COLORS.RED_ANT};
+    color: var(--color-red-ant);
   }
 `

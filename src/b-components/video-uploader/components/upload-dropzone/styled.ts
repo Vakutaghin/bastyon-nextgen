@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import Button from '@/components/button/button.vue'
 
 export const SC_UploadSection = styled.div`
@@ -21,18 +20,18 @@ export const SC_SectionTitle = styled.h3`
   margin: 0 0 16px !important;
   font-size: 18px !important;
   font-weight: 600 !important;
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  color: var(--color-text-primary) !important;
   width: 100% !important;
   box-sizing: border-box !important;
   display: block !important;
 `
 
 export const SC_DropZone = styled.div<{ uploading?: boolean; disabled?: boolean }>`
-  border: 2px dashed ${COLORS.BORDER_DEFAULT} !important;
+  border: 2px dashed var(--color-border-default) !important;
   border-radius: var(--ui-radius-lg) !important;
   padding: 48px 24px !important;
   text-align: center !important;
-  background-color: ${COLORS.BG_INPUT} !important;
+  background-color: var(--color-bg-input) !important;
   transition: all 0.3s ease !important;
   cursor: pointer !important;
   min-height: 200px !important;
@@ -49,21 +48,21 @@ export const SC_DropZone = styled.div<{ uploading?: boolean; disabled?: boolean 
   flex-shrink: 0 !important;
 
   &:hover {
-    border-color: ${COLORS.ANT_BLUE} !important;
-    background-color: ${COLORS.BG_HOVER_BLUE} !important;
+    border-color: var(--color-ant-blue) !important;
+    background-color: var(--color-bg-hover-blue) !important;
   }
 
   &.drag-over {
-    border-color: ${COLORS.ANT_BLUE} !important;
-    background-color: ${COLORS.ANT_BLUE_BG} !important;
+    border-color: var(--color-ant-blue) !important;
+    background-color: var(--color-ant-blue-bg) !important;
     border-style: solid !important;
   }
 
   ${(p) =>
     p.uploading &&
     `
-    border-color: ${COLORS.ANT_BLUE} !important;
-    background-color: ${COLORS.BG_HOVER_BLUE} !important;
+    border-color: var(--color-ant-blue) !important;
+    background-color: var(--color-bg-hover-blue) !important;
     cursor: wait !important;
   `}
 
@@ -97,12 +96,12 @@ export const SC_DropZoneText = styled.div`
 
   strong {
     font-size: 16px !important;
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
   }
 
   span {
     font-size: 16px !important;
-    color: ${COLORS.TEXT_SECONDARY} !important;
+    color: var(--color-text-secondary) !important;
   }
 `
 
@@ -110,7 +109,7 @@ export const SC_ProgressText = styled.div`
   margin-top: 8px !important;
   font-size: 16px !important;
   font-weight: 500 !important;
-  color: ${COLORS.ANT_BLUE} !important;
+  color: var(--color-ant-blue) !important;
 `
 
 export const SC_SecondaryButton = styled(Button)`
@@ -119,10 +118,10 @@ export const SC_SecondaryButton = styled(Button)`
 
 export const SC_FileNameText = styled.div`
   margin-top: 8px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-size: 12px;
 `
 
 export const SC_ErrorText = styled.strong`
-  color: ${COLORS.RED_ANT};
+  color: var(--color-red-ant);
 `

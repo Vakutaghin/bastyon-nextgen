@@ -1,20 +1,23 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_VideoPlaceholder = styled.div`
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: linear-gradient(135deg, ${COLORS.BORDER_LIGHTER} 0%, ${COLORS.BORDER_LIGHT} 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-border-lighter) 0%,
+    var(--color-border-light) 100%
+  );
   border-radius: var(--ui-radius-lg);
   margin-bottom: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed ${COLORS.BORDER_LIGHT};
+  border: 2px dashed var(--color-border-light);
 
   .video-icon {
     font-size: 60px;
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--color-text-muted);
   }
 `

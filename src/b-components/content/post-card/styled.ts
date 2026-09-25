@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 import Card from '@/components/card/card.vue'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_PostCard = styled(Card)`
@@ -25,7 +24,7 @@ export const SC_BoostedBadge = styled.div`
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: ${COLORS.BRAND_CYAN};
+  color: var(--color-brand-cyan);
 
   svg {
     width: 12px;
@@ -44,8 +43,8 @@ export const SC_PendingBadge = styled.div`
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: ${COLORS.WARNING_HEX};
-  background: ${COLORS.WARNING_BG_SOFT};
+  color: var(--color-warning-hex);
+  background: var(--color-warning-bg-soft);
 
   svg {
     width: 12px;
@@ -162,7 +161,7 @@ export const SC_PostActions = styled.div`
   align-items: center;
   gap: 15px;
   padding-top: 12px;
-  border-top: 1px solid ${COLORS.BORDER_LIGHT};
+  border-top: 1px solid var(--color-border-light);
 
   .ant-btn {
     flex: 0 0 auto;
@@ -190,7 +189,7 @@ export const SC_StarRating = styled.div`
   min-height: 22px;
 
   .star-count {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
     font-size: 15px;
     margin-left: 7px;
   }
@@ -199,7 +198,7 @@ export const SC_StarRating = styled.div`
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: ${COLORS.TEXT_SECONDARY} !important;
+    color: var(--color-text-secondary) !important;
     font-size: 14px;
     margin-left: 11px;
 
@@ -222,7 +221,7 @@ export const SC_StarWrapper = styled.div`
 
   .star-bg {
     font-size: 22px;
-    color: ${COLORS.WARNING_TRACK} !important;
+    color: var(--color-warning-track) !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -239,9 +238,9 @@ export const SC_StarWrapper = styled.div`
       display: block;
       margin: 0;
       padding: 0;
-      fill: ${COLORS.WARNING_TRACK} !important;
-      color: ${COLORS.WARNING_TRACK} !important;
-      stroke: ${COLORS.WARNING_TRACK} !important;
+      fill: var(--color-warning-track) !important;
+      color: var(--color-warning-track) !important;
+      stroke: var(--color-warning-track) !important;
     }
   }
 `
@@ -260,7 +259,7 @@ export const SC_StarFilled = styled.div`
 
   .star-fill {
     font-size: 22px;
-    color: ${COLORS.WARNING} !important;
+    color: var(--color-warning) !important;
     display: block;
     width: 22px;
     height: 22px;
@@ -270,8 +269,8 @@ export const SC_StarFilled = styled.div`
       width: 22px;
       height: 22px;
       display: block;
-      fill: ${COLORS.WARNING} !important;
-      color: ${COLORS.WARNING} !important;
+      fill: var(--color-warning) !important;
+      color: var(--color-warning) !important;
       stroke: none !important;
     }
   }
@@ -285,14 +284,14 @@ export const SC_ChatBtn = styled.button`
   margin: 0;
   border: none;
   background: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: var(--ui-radius-sm);
   line-height: 1;
 
   &:hover {
-    color: ${COLORS.BRAND_CYAN};
-    background: ${COLORS.BRAND_CYAN_LIGHT};
+    color: var(--color-brand-cyan);
+    background: var(--color-brand-cyan-light);
   }
 `
 
@@ -375,10 +374,10 @@ export const SC_RepostDeleted = styled.div`
   gap: 8px;
   padding: 12px 0;
   font-size: 14px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   .repost-deleted-icon {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
     font-size: 18px;
     flex-shrink: 0;
   }

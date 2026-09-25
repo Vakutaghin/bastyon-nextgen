@@ -4,7 +4,7 @@ import { COLORS } from '@/styles/theme-colors'
 export const SC_Backdrop = styled.div`
   position: fixed;
   inset: 0;
-  background: ${COLORS.OVERLAY_50};
+  background: var(--color-overlay-50);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,7 +13,7 @@ export const SC_Backdrop = styled.div`
 `
 
 export const SC_Modal = styled.div`
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
   width: 100%;
   max-width: 420px;
@@ -25,13 +25,13 @@ export const SC_Modal = styled.div`
 
 export const SC_Header = styled.div`
   padding: 16px 20px;
-  border-bottom: 1px solid ${COLORS.BG_SECONDARY};
+  border-bottom: 1px solid var(--color-bg-secondary);
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 16px;
   font-weight: 700;
-  color: ${COLORS.DARK_BG};
+  color: var(--color-dark-bg);
 `
 
 export const SC_Body = styled.div`
@@ -50,60 +50,60 @@ export const SC_Field = styled.div`
 export const SC_Label = styled.label`
   font-size: 12px;
   font-weight: 600;
-  color: ${COLORS.BLUE_GRAY};
+  color: var(--color-blue-gray);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 `
 
 export const SC_Input = styled.input`
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   border-radius: var(--ui-radius-lg);
   padding: 10px 12px;
   font-size: 14px;
-  color: ${COLORS.DARK_BG};
-  background: ${COLORS.BG_PRIMARY};
+  color: var(--color-dark-bg);
+  background: var(--color-bg-primary);
   outline: none;
 
   &:focus {
-    border-color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
   }
 `
 
 export const SC_Textarea = styled.textarea`
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   border-radius: var(--ui-radius-lg);
   padding: 10px 12px;
   font-size: 14px;
-  color: ${COLORS.DARK_BG};
-  background: ${COLORS.BG_PRIMARY};
+  color: var(--color-dark-bg);
+  background: var(--color-bg-primary);
   outline: none;
   resize: vertical;
   min-height: 60px;
   font-family: inherit;
 
   &:focus {
-    border-color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
   }
 `
 
 export const SC_Recipient = styled.div`
   font-size: 13px;
-  color: ${COLORS.TEXT_DARK};
+  color: var(--color-text-dark);
   word-break: break-all;
-  background: ${COLORS.BG_HOVER_BLUE};
+  background: var(--color-bg-hover-blue);
   padding: 8px 10px;
   border-radius: var(--ui-radius-md);
   font-family: var(--font-family-mono);
 `
 
 export const SC_Error = styled.div`
-  color: ${COLORS.RED_DARK};
+  color: var(--color-red-dark);
   font-size: 12px;
 `
 
 export const SC_Footer = styled.div`
   padding: 12px 20px;
-  border-top: 1px solid ${COLORS.BG_SECONDARY};
+  border-top: 1px solid var(--color-bg-secondary);
   display: flex;
   justify-content: flex-end;
   gap: 8px;

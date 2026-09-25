@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_PostPage = styled.div`
   width: 100%;
@@ -17,6 +16,6 @@ export const SC_PostPageInner = styled.div`
 export const SC_PostStatus = styled.div`
   padding: 48px 16px;
   text-align: center;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-size: 15px;
 `

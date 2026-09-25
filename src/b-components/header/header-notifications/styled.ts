@@ -9,7 +9,7 @@ export const SC_NotificationsWrapper = styled.div`
   padding: 6px;
   border-radius: var(--ui-radius-md);
   transition: background-color 0.2s;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 
   &:hover {
     background-color: var(--ui-bg-elevated);
@@ -36,14 +36,14 @@ export const SC_NotificationsHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 8px 6px 12px;
-  border-bottom: 1px solid ${COLORS.BG_HOVER};
+  border-bottom: 1px solid var(--color-bg-hover);
   margin-bottom: 8px;
 `
 
 export const SC_NotificationsTitle = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_NotificationsHeaderActions = styled.div`
@@ -54,7 +54,7 @@ export const SC_NotificationsHeaderActions = styled.div`
 
 export const SC_ClearAllButton = styled.button`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   background: none;
   border: none;
   cursor: pointer;
@@ -62,8 +62,8 @@ export const SC_ClearAllButton = styled.button`
   border-radius: var(--ui-radius-sm);
 
   &:hover {
-    color: ${COLORS.ANT_BLUE};
-    background: ${COLORS.ANT_BLUE_BG_LIGHT};
+    color: var(--color-ant-blue);
+    background: var(--color-ant-blue-bg-light);
   }
 `
 
@@ -117,11 +117,11 @@ export const SC_NotificationItemTrigger = styled.span`
   padding: 2px 4px;
   border-radius: var(--ui-radius-sm);
   cursor: pointer;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
 
   &:hover {
-    color: ${COLORS.TEXT_PRIMARY};
-    background: ${COLORS.OVERLAY_6};
+    color: var(--color-text-primary);
+    background: var(--color-overlay-6);
   }
 `
 
@@ -178,7 +178,7 @@ export const SC_NotificationAvatar = styled.div`
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: ${COLORS.GRAY_EEE};
+  background: var(--color-gray-eee);
 
   img {
     width: 100%;
@@ -192,8 +192,8 @@ export const SC_NotificationAvatarLetter = styled.div`
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, ${COLORS.ANT_BLUE}, ${COLORS.PURPLE});
-  color: ${COLORS.WHITE};
+  background: linear-gradient(135deg, var(--color-ant-blue), var(--color-purple));
+  color: var(--color-white);
   font-weight: 600;
   font-size: 12px;
   display: inline-flex;
@@ -205,24 +205,24 @@ export const SC_NotificationAvatarLetter = styled.div`
 export const SC_NotificationActorText = styled.div`
   min-width: 0;
   font-size: 12px;
-  color: ${COLORS.GRAY_555};
+  color: var(--color-gray-555);
   line-height: 1.35;
   word-break: break-word;
 `
 
 export const SC_NotificationActorName = styled.span`
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   margin-right: 4px;
 `
 
 export const SC_NotificationAction = styled.span`
-  color: ${COLORS.GRAY_555};
+  color: var(--color-gray-555);
 `
 
 export const SC_NotificationItemTime = styled.div`
   font-size: 11px;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
   white-space: nowrap;
   flex-shrink: 0;
   align-self: flex-start;
@@ -230,7 +230,7 @@ export const SC_NotificationItemTime = styled.div`
 `
 
 export const SC_NotificationPreview = styled.div<{ variant?: string }>`
-  background: ${COLORS.OVERLAY_3};
+  background: var(--color-overlay-3);
   border-left: 3px solid
     ${(p) => {
       switch (p.variant) {
@@ -263,7 +263,7 @@ export const SC_RatingValue = styled.div<{ positive?: boolean }>`
 
 export const SC_CommentPreview = styled.div<{ expanded?: boolean }>`
   font-size: 12px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   line-height: 1.45;
   word-break: break-word;
   white-space: pre-wrap;
@@ -285,7 +285,7 @@ export const SC_ExpandToggle = styled.button`
   padding: 0;
   cursor: pointer;
   font-size: 11px;
-  color: ${COLORS.ANT_BLUE};
+  color: var(--color-ant-blue);
 
   &:hover {
     text-decoration: underline;
@@ -297,18 +297,18 @@ export const SC_PostRef = styled.div`
   align-items: baseline;
   gap: 6px;
   font-size: 11px;
-  color: ${COLORS.GRAY_555};
+  color: var(--color-gray-555);
   min-width: 0;
 `
 
 export const SC_PostRefLabel = styled.span`
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
   flex-shrink: 0;
 `
 
 export const SC_PostRefText = styled.span`
   font-style: italic;
-  color: ${COLORS.GRAY_555};
+  color: var(--color-gray-555);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -319,20 +319,20 @@ export const SC_PostRefText = styled.span`
 export const SC_EmptyMessage = styled.div`
   padding: 24px 16px;
   text-align: center;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
   font-size: 13px;
 `
 
 export const SC_LoaderWrap = styled.div`
   padding: 24px 16px;
   text-align: center;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
 `
 
 export const SC_EnrichingHint = styled.div`
   height: 2px;
   width: 100%;
-  background: linear-gradient(90deg, transparent, ${COLORS.PRIMARY_LIGHT_50}, transparent);
+  background: linear-gradient(90deg, transparent, var(--color-primary-light-50), transparent);
   background-size: 200% 100%;
   animation: nx-pulse 1.2s linear infinite;
   margin-bottom: 4px;

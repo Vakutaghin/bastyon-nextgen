@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_DonateBody = styled.div`
   display: flex;
@@ -9,10 +8,10 @@ export const SC_DonateBody = styled.div`
 
 export const SC_Recipient = styled.div`
   font-size: 14px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   strong {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
     word-break: break-all;
   }
 `
@@ -28,9 +27,9 @@ export const SC_PresetBtn = styled.button`
   min-width: 56px;
   padding: 8px 10px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   background-color: transparent;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -40,14 +39,14 @@ export const SC_PresetBtn = styled.button`
     background-color 0.2s;
 
   &:hover {
-    border-color: ${COLORS.BRAND_CYAN};
-    color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
+    color: var(--color-brand-cyan);
   }
 
   &.active {
-    border-color: ${COLORS.BRAND_CYAN};
-    color: ${COLORS.BRAND_CYAN};
-    background-color: ${COLORS.BRAND_CYAN_LIGHT};
+    border-color: var(--color-brand-cyan);
+    color: var(--color-brand-cyan);
+    background-color: var(--color-brand-cyan-light);
   }
 `
 
@@ -55,25 +54,25 @@ export const SC_AmountInput = styled.input`
   width: 100%;
   padding: 10px 12px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER};
-  background-color: ${COLORS.SURFACE_FROSTED};
-  color: ${COLORS.TEXT_PRIMARY};
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-frosted);
+  color: var(--color-text-primary);
   font-size: 16px;
   font-weight: 600;
   transition: border-color 0.2s;
 
   &:focus {
     outline: none;
-    border-color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
   }
 `
 
 export const SC_BalanceHint = styled.div`
   font-size: 12px;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
 `
 
 export const SC_FieldError = styled.div`
   font-size: 13px;
-  color: ${COLORS.RED_ANT};
+  color: var(--color-red-ant);
 `

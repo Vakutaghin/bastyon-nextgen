@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_AudioMessage = styled.div`
   display: flex;
@@ -13,8 +12,8 @@ export const SC_PlayButton = styled.button`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid ${COLORS.BORDER};
-  background: ${COLORS.BG_PRIMARY};
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,7 +22,7 @@ export const SC_PlayButton = styled.button`
   flex-shrink: 0;
 
   &.playing {
-    border-color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
   }
 
   &:disabled {
@@ -75,25 +74,25 @@ export const SC_SpinnerRow = styled.div`
 
 export const SC_UploadProgress = styled.span`
   font-size: 11px;
-  color: ${COLORS.BLUE_GRAY};
+  color: var(--color-blue-gray);
 `
 
 export const SC_TimeLabel = styled.div`
   font-size: 12px;
-  color: ${COLORS.BLUE_GRAY};
+  color: var(--color-blue-gray);
   user-select: none;
   flex-shrink: 0;
 `
 
 export const SC_Error = styled.div`
   font-size: 12px;
-  color: ${COLORS.RED_DARK};
+  color: var(--color-red-dark);
 `
 export const SC_Spinner = styled.div`
   width: 16px;
   height: 16px;
-  border: 2px solid ${COLORS.BG_TERTIARY};
-  border-top-color: ${COLORS.BRAND_CYAN};
+  border: 2px solid var(--color-bg-tertiary);
+  border-top-color: var(--color-brand-cyan);
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `

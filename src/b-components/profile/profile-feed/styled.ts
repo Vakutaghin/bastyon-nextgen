@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_ProfileFeed = styled.div`
   width: 100%;
@@ -19,19 +18,19 @@ export const SC_LoadMoreTrigger = styled.div`
 `
 
 export const SC_LoadingSpinner = styled.div`
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_NoMorePosts = styled.div`
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
 `
 
 export const SC_EmptyFeed = styled.div`
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
 `
 
 export const SC_ErrorMessage = styled.div`
-  color: ${COLORS.RED_ANT};
+  color: var(--color-red-ant);
   padding: 20px;
   text-align: center;
 `

@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 import { Alert } from 'ant-design-vue'
-import { COLORS } from '@/styles/theme-colors'
 import Input from '@/components/input/input.vue'
 
 export const SC_SignInForm = styled.div`
@@ -15,7 +14,7 @@ export const SC_FormLabel = styled.label`
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_InputWrapper = styled.div`
@@ -40,7 +39,7 @@ export const SC_PasswordToggle = styled('span', { isDisabled: Boolean })`
   pointer-events: ${(p) => (p.isDisabled ? 'none' : 'auto')};
   transition: opacity 0.2s;
   z-index: 1;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   display: flex;
   align-items: center;
   height: 100%;
@@ -57,10 +56,10 @@ export const SC_InfoAlert = styled(Alert)`
 export const SC_ErrorMessage = styled.div`
   margin-top: 16px;
   padding: 12px;
-  background-color: ${COLORS.RED_BG};
-  border: 1px solid ${COLORS.RED_BORDER};
+  background-color: var(--color-red-bg);
+  border: 1px solid var(--color-red-border);
   border-radius: var(--ui-radius-sm);
-  color: ${COLORS.RED_DARK};
+  color: var(--color-red-dark);
   font-size: 16px;
 `
 
@@ -74,11 +73,11 @@ export const SC_LinkToRegister = styled.div`
   margin-top: 16px;
   text-align: center;
   font-size: 16px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_LinkButton = styled('a', { isDisabled: Boolean })`
-  color: ${COLORS.ANT_BLUE};
+  color: var(--color-ant-blue);
   cursor: ${(p) => (p.isDisabled ? 'not-allowed' : 'pointer')};
   text-decoration: none;
   margin-left: 4px;

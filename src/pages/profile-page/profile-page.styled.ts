@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_ProfileWork = styled.div`
@@ -11,13 +10,13 @@ export const SC_ProfileWork = styled.div`
   gap: var(--content-gap);
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_ProfileMainContent = styled.main`
   flex: 1;
   min-width: 0;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   padding: 20px 0;
   border-radius: var(--ui-radius-lg);
 
@@ -71,33 +70,33 @@ export const SC_LoadingProfile = styled.div`
   text-align: center;
   padding: 40px;
   font-size: 18px;
-  color: ${COLORS.GRAY_666};
+  color: var(--color-gray-666);
 `
 
 export const SC_ErrorProfile = styled.div`
   text-align: center;
   padding: 40px;
   font-size: 18px;
-  color: ${COLORS.RED_ANT};
+  color: var(--color-red-ant);
 `
 
 export const SC_PendingProfile = styled.div`
   text-align: center;
   padding: 40px 20px;
   font-size: 16px;
-  color: ${COLORS.GRAY_666};
+  color: var(--color-gray-666);
   line-height: 1.6;
 
   .pending-icon {
     font-size: 48px;
-    color: ${COLORS.WARNING_ICON};
+    color: var(--color-warning-icon);
     margin-bottom: 16px;
   }
 
   .pending-title {
     font-size: 20px;
     font-weight: 500;
-    color: ${COLORS.GRAY_333};
+    color: var(--color-gray-333);
     margin-bottom: 8px;
   }
 `

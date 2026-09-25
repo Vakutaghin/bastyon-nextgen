@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_CommentsPreview = styled.div`
   display: flex;
@@ -7,7 +6,7 @@ export const SC_CommentsPreview = styled.div`
   gap: 8px;
   flex: 1;
   margin-top: 12px;
-  border-top: 1px solid ${COLORS.BORDER_LIGHT};
+  border-top: 1px solid var(--color-border-light);
   padding-top: 12px;
 `
 
@@ -31,19 +30,19 @@ export const SC_ShowCommentsBtn = styled.button`
 `
 
 export const SC_ShowCommentsBtnSecondary = styled(SC_ShowCommentsBtn)`
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   margin-left: 12px;
 
   &:hover:not(:disabled) {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
   }
 `
 
 export const SC_ShowCommentsBtnCollapse = styled(SC_ShowCommentsBtn)`
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   &:hover:not(:disabled) {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
   }
 `
 
@@ -83,15 +82,15 @@ export const SC_RefreshBtn = styled.button`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid ${COLORS.GRAY_DDD};
-  background: ${COLORS.BG_PRIMARY};
-  color: ${COLORS.TEXT_SECONDARY};
+  border: 1px solid var(--color-gray-ddd);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
   cursor: pointer;
   margin-left: auto;
 
   &:hover:not(:disabled) {
-    background: ${COLORS.BG_TERTIARY};
-    color: ${COLORS.TEXT_PRIMARY};
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
   }
   &:disabled {
     cursor: not-allowed;
@@ -106,11 +105,11 @@ export const SC_RefreshBtn = styled.button`
 
 export const SC_CommentsSortSelect = styled.select`
   font-size: 13px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   padding: 4px 8px;
-  border: 1px solid ${COLORS.BORDER_DARK};
+  border: 1px solid var(--color-border-dark);
   border-radius: var(--ui-radius-md);
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   cursor: pointer;
   min-width: 180px;
 

@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_UserInfo = styled.div`
@@ -33,7 +32,7 @@ export const SC_UserBalance = styled.div`
 
 export const SC_UserLoading = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-style: italic;
 `
 

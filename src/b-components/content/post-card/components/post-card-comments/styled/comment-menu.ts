@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 /** Кнопка-триггер контекстного меню комментария (три точки) */
 export const SC_MenuTrigger = styled.button`
@@ -10,14 +9,14 @@ export const SC_MenuTrigger = styled.button`
   height: 28px;
   border: none;
   background: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   border-radius: 50%;
   cursor: pointer;
   padding: 0;
 
   &:hover {
-    background: ${COLORS.OVERLAY_6};
-    color: ${COLORS.TEXT_PRIMARY};
+    background: var(--color-overlay-6);
+    color: var(--color-text-primary);
   }
 
   svg {
@@ -43,12 +42,12 @@ export const SC_MenuItem = styled.button`
   border: none;
   background: transparent;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   cursor: pointer;
   text-align: left;
 
   &:hover:not(:disabled) {
-    background: ${COLORS.BG_TERTIARY};
+    background: var(--color-bg-tertiary);
   }
 
   &:disabled {
@@ -57,7 +56,7 @@ export const SC_MenuItem = styled.button`
   }
 
   &.menu-item--danger {
-    color: ${COLORS.RED_ANT};
+    color: var(--color-red-ant);
   }
   &.menu-item--danger:hover {
     background: rgba(255, 77, 79, 0.08);

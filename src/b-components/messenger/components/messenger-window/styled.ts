@@ -8,7 +8,7 @@ const props = {
 export const SC_Window = styled('div', props)`
   width: 360px;
   height: 500px;
-  background-color: ${COLORS.BG_PRIMARY};
+  background-color: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_LG};
   display: flex;
@@ -26,8 +26,8 @@ export const SC_Window = styled('div', props)`
 
 export const SC_Header = styled.div`
   height: 56px;
-  background-color: ${COLORS.BRAND_CYAN};
-  color: ${COLORS.WHITE};
+  background-color: var(--color-brand-cyan);
+  color: var(--color-white);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -46,7 +46,7 @@ export const SC_Content = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: ${COLORS.BG_PRIMARY};
+  background-color: var(--color-bg-primary);
 `
 
 export const SC_CloseButton = styled.button`

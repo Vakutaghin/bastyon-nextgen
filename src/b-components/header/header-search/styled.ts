@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_HeaderSearchWrapper = styled.div`
@@ -135,26 +134,26 @@ export const SC_ItemSecondary = styled.div`
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_TagCount = styled.span`
   font-size: 11px;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   margin-left: 6px;
 `
 
 export const SC_EmptyHint = styled.div`
   padding: 12px;
   text-align: center;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   font-size: 12px;
 `
 
 export const SC_LoadingHint = styled.div`
   padding: 12px;
   text-align: center;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   font-size: 12px;
 `
 
@@ -165,13 +164,13 @@ export const SC_RecentClearButton = styled.button`
   border-radius: var(--ui-radius-sm);
   cursor: pointer;
   font-size: 11px;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   text-transform: none;
   letter-spacing: 0;
 
   &:hover {
-    background: ${COLORS.BG_HOVER_BLUE};
-    color: ${COLORS.TEXT_PRIMARY};
+    background: var(--color-bg-hover-blue);
+    color: var(--color-text-primary);
   }
 `
 
@@ -182,14 +181,14 @@ export const SC_RecentRemoveButton = styled.button`
   margin-left: auto;
   border-radius: var(--ui-radius-sm);
   cursor: pointer;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   font-size: 14px;
   line-height: 1;
   flex-shrink: 0;
 
   &:hover {
-    background: ${COLORS.BG_HOVER_BLUE};
-    color: ${COLORS.TEXT_PRIMARY};
+    background: var(--color-bg-hover-blue);
+    color: var(--color-text-primary);
   }
 `
 
@@ -200,8 +199,8 @@ export const SC_RecentIcon = styled.div`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: ${COLORS.GRAY_E8};
-  color: ${COLORS.TEXT_SECONDARY};
+  background: var(--color-gray-e8);
+  color: var(--color-text-secondary);
   font-size: 14px;
   flex-shrink: 0;
 `

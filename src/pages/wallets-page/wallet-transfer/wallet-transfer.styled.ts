@@ -1,19 +1,18 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_TransferWidget = styled.div`
   max-width: 560px;
-  background: ${COLORS.BG_LIGHT};
-  border: 1px solid ${COLORS.OVERLAY_8};
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-overlay-8);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
 
 export const SC_TransferSwitch = styled.div`
   display: flex;
-  background: ${COLORS.BG_PRIMARY};
-  border-bottom: 1px solid ${COLORS.OVERLAY_8};
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-overlay-8);
 `
 
 export const SC_TransferSwitchBtn = styled.button<{ active?: boolean }>`
@@ -21,8 +20,8 @@ export const SC_TransferSwitchBtn = styled.button<{ active?: boolean }>`
   padding: 14px 20px;
   font-size: 15px;
   font-weight: 600;
-  color: ${(p) => (p.active ? '${COLORS.GRAY_212}' : '${COLORS.GRAY_120}')};
-  background: ${(p) => (p.active ? '${COLORS.BG_LIGHT}' : 'transparent')};
+  color: ${(p) => (p.active ? 'var(--color-gray-212)' : 'var(--color-gray-120)')};
+  background: ${(p) => (p.active ? 'var(--color-bg-light)' : 'transparent')};
   border: none;
   cursor: pointer;
   transition:
@@ -30,8 +29,8 @@ export const SC_TransferSwitchBtn = styled.button<{ active?: boolean }>`
     background ${TRANSITIONS.QUICK};
 
   &:hover {
-    color: ${COLORS.GRAY_212};
-    background: ${COLORS.BG_LIGHT};
+    color: var(--color-gray-212);
+    background: var(--color-bg-light);
   }
 `
 
@@ -47,7 +46,7 @@ export const SC_TransferLabel = styled.label`
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
   margin-bottom: 6px;
 `
 
@@ -55,19 +54,19 @@ export const SC_TransferInput = styled.input`
   width: 100%;
   padding: 10px 14px;
   font-size: 14px;
-  color: ${COLORS.GRAY_212};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.OVERLAY_12};
+  color: var(--color-gray-212);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-overlay-12);
   border-radius: var(--ui-radius-lg);
   box-sizing: border-box;
 
   &::placeholder {
-    color: ${COLORS.GRAY_999};
+    color: var(--color-gray-999);
   }
 
   &:focus {
     outline: none;
-    border-color: ${COLORS.OVERLAY_25};
+    border-color: var(--color-overlay-25);
   }
 `
 
@@ -76,20 +75,20 @@ export const SC_TransferTextarea = styled.textarea`
   min-height: 72px;
   padding: 10px 14px;
   font-size: 14px;
-  color: ${COLORS.GRAY_212};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.OVERLAY_12};
+  color: var(--color-gray-212);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-overlay-12);
   border-radius: var(--ui-radius-lg);
   box-sizing: border-box;
   resize: vertical;
 
   &::placeholder {
-    color: ${COLORS.GRAY_999};
+    color: var(--color-gray-999);
   }
 
   &:focus {
     outline: none;
-    border-color: ${COLORS.OVERLAY_25};
+    border-color: var(--color-overlay-25);
   }
 `
 
@@ -97,9 +96,9 @@ export const SC_TransferSelect = styled.select`
   width: 100%;
   padding: 10px 14px;
   font-size: 14px;
-  color: ${COLORS.GRAY_212};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.OVERLAY_12};
+  color: var(--color-gray-212);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-overlay-12);
   border-radius: var(--ui-radius-lg);
   cursor: pointer;
   box-sizing: border-box;
@@ -122,8 +121,8 @@ export const SC_QrWrap = styled.div`
     width: 200px;
     height: 200px;
     padding: 10px;
-    background: ${COLORS.WHITE};
-    border: 1px solid ${COLORS.BORDER_DEFAULT};
+    background: var(--color-white);
+    border: 1px solid var(--color-border-default);
     border-radius: var(--ui-radius-lg);
   }
 `
@@ -132,11 +131,11 @@ export const SC_TransferAddress = styled.div`
   flex: 1;
   font-family: var(--font-family-mono);
   font-size: 13px;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   word-break: break-all;
   padding: 10px 14px;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.OVERLAY_8};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-overlay-8);
   border-radius: var(--ui-radius-lg);
 `
 
@@ -144,15 +143,15 @@ export const SC_TransferCopyBtn = styled.button`
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.GRAY_212};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.OVERLAY_12};
+  color: var(--color-gray-212);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-overlay-12);
   border-radius: var(--ui-radius-lg);
   cursor: pointer;
   white-space: nowrap;
 
   &:hover {
-    background: ${COLORS.BG_TERTIARY};
+    background: var(--color-bg-tertiary);
   }
 `
 
@@ -162,14 +161,14 @@ export const SC_TransferSubmit = styled.button`
   padding: 12px 20px;
   font-size: 15px;
   font-weight: 600;
-  color: ${COLORS.WHITE};
-  background: ${COLORS.GRAY_212};
+  color: var(--color-white);
+  background: var(--color-gray-212);
   border: none;
   border-radius: var(--ui-radius-lg);
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: ${COLORS.GRAY_333};
+    background: var(--color-gray-333);
   }
 
   &:disabled {
@@ -182,23 +181,23 @@ export const SC_TransferError = styled.div`
   margin-top: 12px;
   padding: 12px;
   font-size: 13px;
-  color: ${COLORS.DANGER_DEEP};
-  background: ${COLORS.DANGER_BG_SOFT};
+  color: var(--color-danger-deep);
+  background: var(--color-danger-bg-soft);
   border-radius: var(--ui-radius-lg);
 `
 
 export const SC_TransferFieldError = styled.div`
   margin-top: 6px;
   font-size: 12px;
-  color: ${COLORS.DANGER_DEEP};
+  color: var(--color-danger-deep);
 `
 
 export const SC_TransferSuccess = styled.div`
   margin-top: 12px;
   padding: 12px;
   font-size: 13px;
-  color: ${COLORS.SUCCESS_DEEP};
-  background: ${COLORS.SUCCESS_BG_SOFT};
+  color: var(--color-success-deep);
+  background: var(--color-success-bg-soft);
   border-radius: var(--ui-radius-lg);
 `
 
@@ -214,10 +213,10 @@ export const SC_TransferSearchDropdown = styled.div`
   margin-top: 4px;
   max-height: 220px;
   overflow-y: auto;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.OVERLAY_12};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-overlay-12);
   border-radius: var(--ui-radius-lg);
-  box-shadow: 0 4px 12px ${COLORS.OVERLAY_10};
+  box-shadow: 0 4px 12px var(--color-overlay-10);
   z-index: ${Z_INDEX.LOCAL_DROPDOWN};
 `
 
@@ -227,29 +226,29 @@ export const SC_TransferSearchItem = styled.button`
   padding: 10px 14px;
   font-size: 14px;
   text-align: left;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   background: none;
   border: none;
   cursor: pointer;
-  border-bottom: 1px solid ${COLORS.OVERLAY_6};
+  border-bottom: 1px solid var(--color-overlay-6);
 
   &:last-child {
     border-bottom: none;
   }
 
   &:hover {
-    background: ${COLORS.BG_LIGHT};
+    background: var(--color-bg-light);
   }
 `
 
 export const SC_TransferSearchingHint = styled.div`
   font-size: 12px;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
   margin-top: 4px;
 `
 
 export const SC_TransferLoginRequired = styled.div`
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
   font-size: 14px;
 `
 
@@ -260,9 +259,9 @@ export const SC_TransferLoginChip = styled.div`
   margin-top: 8px;
   padding: 8px 12px;
   font-size: 13px;
-  color: ${COLORS.GRAY_120};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.OVERLAY_8};
+  color: var(--color-gray-120);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-overlay-8);
   border-radius: var(--ui-radius-lg);
   max-width: fit-content;
 `
@@ -282,7 +281,7 @@ export const SC_TransferLoginChipRemove = styled.button`
   padding: 0;
   font-size: 14px;
   line-height: 1;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
   background: none;
   border: none;
   border-radius: var(--ui-radius-sm);
@@ -292,7 +291,7 @@ export const SC_TransferLoginChipRemove = styled.button`
   justify-content: center;
 
   &:hover {
-    color: ${COLORS.GRAY_212};
-    background: ${COLORS.OVERLAY_6};
+    color: var(--color-gray-212);
+    background: var(--color-overlay-6);
   }
 `

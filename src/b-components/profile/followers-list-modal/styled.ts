@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_List = styled.div`
@@ -20,7 +19,7 @@ export const SC_Row = styled.div`
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `
 
@@ -43,12 +42,12 @@ export const SC_Avatar = styled.div`
   border-radius: 50%;
   flex-shrink: 0;
   overflow: hidden;
-  background: ${COLORS.BG_SECONDARY};
+  background: var(--color-bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   img {
     width: 100%;
@@ -66,7 +65,7 @@ export const SC_RowInfo = styled.div`
 export const SC_RowName = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -74,7 +73,7 @@ export const SC_RowName = styled.span`
 
 export const SC_RowMeta = styled.span`
   font-size: 12px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 `
 
 export const SC_FollowBtn = styled.button`
@@ -84,15 +83,15 @@ export const SC_FollowBtn = styled.button`
   gap: 5px;
   padding: 6px 12px;
   border-radius: var(--ui-radius-md);
-  border: 1px solid ${COLORS.PRIMARY};
-  background: ${COLORS.PRIMARY};
-  color: ${COLORS.WHITE};
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-white);
   font-size: 13px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover:not(:disabled) {
-    background: ${COLORS.PRIMARY_HOVER};
+    background: var(--color-primary-hover);
   }
 
   &:disabled {
@@ -101,9 +100,9 @@ export const SC_FollowBtn = styled.button`
   }
 
   &.subscribed {
-    background: ${COLORS.BG_SECONDARY};
-    color: ${COLORS.TEXT_PRIMARY};
-    border-color: ${COLORS.BORDER_DEFAULT};
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-default);
   }
 `
 
@@ -111,7 +110,7 @@ export const SC_State = styled.div`
   padding: 28px 0;
   text-align: center;
   font-size: 14px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_LoadMore = styled.button`
@@ -119,14 +118,14 @@ export const SC_LoadMore = styled.button`
   display: block;
   padding: 8px 18px;
   border-radius: var(--ui-radius-md);
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
-  background: ${COLORS.BG_SECONDARY};
-  color: ${COLORS.TEXT_PRIMARY};
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   font-size: 13px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `

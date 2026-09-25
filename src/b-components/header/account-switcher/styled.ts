@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_AccountSwitcher = styled.div`
   padding: 20px 0;
@@ -8,7 +7,7 @@ export const SC_AccountSwitcher = styled.div`
 export const SC_EmptyState = styled.div`
   text-align: center;
   padding: 40px 20px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 `
 
 /** Прелоадер списка аккаунтов — пока идёт расшифровка/дозагрузка профилей. */
@@ -35,12 +34,12 @@ export const SC_AccountItem = styled.div<{ active?: boolean }>`
   ${(p) =>
     p.active &&
     `
-      background-color: ${COLORS.ANT_BLUE_BG_LIGHT};
-      border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
+      background-color: var(--color-ant-blue-bg-light);
+      border: 1px solid var(--color-primary-light-30);
     `}
 
   &:hover {
-    background-color: ${COLORS.OVERLAY_4};
+    background-color: var(--color-overlay-4);
   }
 `
 
@@ -61,33 +60,33 @@ export const SC_AccountInfo = styled.div`
 export const SC_AccountName = styled.div`
   font-size: 16px;
   font-weight: 500;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_AccountBalance = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_AccountLoading = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-style: italic;
 `
 
 export const SC_AccountBadge = styled.div`
   font-size: 12px;
-  color: ${COLORS.ANT_BLUE};
+  color: var(--color-ant-blue);
   font-weight: 500;
   padding: 4px 8px;
-  background-color: ${COLORS.ANT_BLUE_BG_LIGHT};
+  background-color: var(--color-ant-blue-bg-light);
   border-radius: var(--ui-radius-sm);
 `
 
 export const SC_AddAccountSection = styled.div`
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid ${COLORS.OVERLAY_10};
+  border-top: 1px solid var(--color-overlay-10);
 `
 
 export const SC_AccountActions = styled.div`
@@ -101,7 +100,7 @@ export const SC_KeyIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${COLORS.RED_ANT};
+  color: var(--color-red-ant);
   font-size: 20px;
   transition:
     opacity 0.2s,
@@ -130,7 +129,7 @@ export const SC_LogoutIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${COLORS.ANT_BLUE};
+  color: var(--color-ant-blue);
   font-size: 20px;
   transition:
     opacity 0.2s,
@@ -150,18 +149,18 @@ export const SC_LogoutIcon = styled.div`
 export const SC_WarningBox = styled.div`
   margin-bottom: 16px;
   padding: 12px;
-  background-color: ${COLORS.WARNING_BG};
-  border: 1px solid ${COLORS.WARNING_BORDER};
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
   border-radius: var(--ui-radius-sm);
 `
 
 export const SC_WarningTitleText = styled.p`
   margin: 0;
-  color: ${COLORS.WARNING_TEXT};
+  color: var(--color-warning-text);
   font-weight: 500;
 `
 
 export const SC_WarningBodyText = styled.p`
   margin: 8px 0 0;
-  color: ${COLORS.WARNING_TEXT};
+  color: var(--color-warning-text);
 `

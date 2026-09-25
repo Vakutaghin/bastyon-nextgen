@@ -1,7 +1,5 @@
 import styled from 'vue3-styled-components'
 
-import { COLORS } from '@/styles/theme-colors'
-
 export const SC_CommentWithReplies = styled.div`
   display: flex;
   flex-direction: column;
@@ -32,7 +30,7 @@ export const SC_CommentRepliesToggle = styled.button`
   border: none;
   background: none;
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   text-align: left;
   margin-left: 50px;
@@ -40,7 +38,7 @@ export const SC_CommentRepliesToggle = styled.button`
   margin-bottom: 20px;
 
   &:hover {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
     text-decoration: underline;
   }
 `

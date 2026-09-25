@@ -1,13 +1,12 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_ErrorMessage = styled.div`
   margin-top: 1em;
   padding: 0.75em;
-  background: ${COLORS.RED_BG};
-  border: 1px solid ${COLORS.RED_BORDER};
+  background: var(--color-red-bg);
+  border: 1px solid var(--color-red-border);
   border-radius: var(--ui-radius-sm);
-  color: ${COLORS.DANGER_HOVER};
+  color: var(--color-danger-hover);
   font-size: 0.9em;
 `
 

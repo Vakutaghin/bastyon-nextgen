@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_BadgeRow = styled.div`
@@ -18,12 +17,12 @@ export const SC_Badge = styled.span`
   border-radius: var(--ui-radius-lg);
   font-size: 12px;
   font-weight: 600;
-  background: ${COLORS.PRIMARY_LIGHT};
-  color: ${COLORS.PRIMARY};
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 
   &.established {
-    background: ${COLORS.SUCCESS_BG_TINT};
-    color: ${COLORS.SUCCESS};
+    background: var(--color-success-bg-tint);
+    color: var(--color-success);
   }
 `
 
@@ -31,7 +30,7 @@ export const SC_ProfileSidebar = styled.div`
   width: 280px;
   min-width: 280px;
   height: fit-content;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -53,8 +52,8 @@ export const SC_UserAvatar = styled.div`
   border-radius: 50%;
   overflow: hidden;
   margin: 0 auto 20px;
-  border: 4px solid ${COLORS.WHITE};
-  box-shadow: ${COLORS.SHADOW_SM};
+  border: 4px solid var(--color-white);
+  box-shadow: var(--shadow-sm);
 
   img {
     width: 100%;
@@ -67,15 +66,15 @@ export const SC_UserAvatarPlaceholder = styled.div`
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: ${COLORS.GRAY_F0};
-  color: ${COLORS.GRAY_AAA};
+  background: var(--color-gray-f0);
+  color: var(--color-gray-aaa);
   font-size: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
-  border: 4px solid ${COLORS.WHITE};
-  box-shadow: ${COLORS.SHADOW_SM};
+  border: 4px solid var(--color-white);
+  box-shadow: var(--shadow-sm);
 `
 
 export const SC_UserName = styled.h2`
@@ -100,8 +99,8 @@ export const SC_StartChatButton = styled.button`
   padding: 10px 14px;
   border-radius: var(--ui-radius-lg);
   border: none;
-  background-color: ${COLORS.BRAND_CYAN};
-  color: ${COLORS.WHITE};
+  background-color: var(--color-brand-cyan);
+  color: var(--color-white);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -110,14 +109,14 @@ export const SC_StartChatButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 2px 6px ${COLORS.BRAND_CYAN_LIGHT};
+  box-shadow: 0 2px 6px var(--color-brand-cyan-light);
 
   &:hover {
-    background-color: ${COLORS.BRAND_CYAN_HOVER};
+    background-color: var(--color-brand-cyan-hover);
   }
 
   &:disabled {
-    background-color: ${COLORS.GRAY_CCC};
+    background-color: var(--color-gray-ccc);
     cursor: not-allowed;
     box-shadow: none;
   }
@@ -128,9 +127,9 @@ export const SC_EditProfileButton = styled.button`
   margin: 0 20px 16px 0;
   padding: 10px 14px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   background-color: transparent;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -143,8 +142,8 @@ export const SC_EditProfileButton = styled.button`
   gap: 8px;
 
   &:hover {
-    border-color: ${COLORS.BRAND_CYAN};
-    color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
+    color: var(--color-brand-cyan);
   }
 
   .anticon {
@@ -162,9 +161,9 @@ export const SC_SubscribeButton = styled.button`
   flex: 1;
   padding: 10px 14px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BRAND_CYAN};
-  background-color: ${COLORS.BRAND_CYAN};
-  color: ${COLORS.WHITE};
+  border: 1px solid var(--color-brand-cyan);
+  background-color: var(--color-brand-cyan);
+  color: var(--color-white);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -177,16 +176,16 @@ export const SC_SubscribeButton = styled.button`
   gap: 6px;
 
   &:hover {
-    background-color: ${COLORS.BRAND_CYAN_HOVER};
+    background-color: var(--color-brand-cyan-hover);
   }
 
   &.subscribed {
     background-color: transparent;
-    color: ${COLORS.BRAND_CYAN};
+    color: var(--color-brand-cyan);
   }
 
   &.subscribed:hover {
-    background-color: ${COLORS.BRAND_CYAN_LIGHT};
+    background-color: var(--color-brand-cyan-light);
   }
 
   &:disabled {
@@ -206,9 +205,9 @@ export const SC_BellButton = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   background-color: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition:
     color 0.2s,
@@ -216,14 +215,14 @@ export const SC_BellButton = styled.button`
     background-color 0.2s;
 
   &:hover {
-    border-color: ${COLORS.BRAND_CYAN};
-    color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
+    color: var(--color-brand-cyan);
   }
 
   &.active {
-    border-color: ${COLORS.BRAND_CYAN};
-    color: ${COLORS.BRAND_CYAN};
-    background-color: ${COLORS.BRAND_CYAN_LIGHT};
+    border-color: var(--color-brand-cyan);
+    color: var(--color-brand-cyan);
+    background-color: var(--color-brand-cyan-light);
   }
 
   &:disabled {
@@ -245,9 +244,9 @@ export const SC_BlockButton = styled.button`
   margin: 0 20px 12px 0;
   padding: 9px 14px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   background-color: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-size: 14px;
   cursor: pointer;
   transition:
@@ -256,13 +255,13 @@ export const SC_BlockButton = styled.button`
     background-color ${TRANSITIONS.FAST};
 
   &:hover:not(:disabled) {
-    border-color: ${COLORS.DANGER};
-    color: ${COLORS.DANGER};
+    border-color: var(--color-danger);
+    color: var(--color-danger);
   }
 
   &.blocked {
-    border-color: ${COLORS.DANGER};
-    color: ${COLORS.DANGER};
+    border-color: var(--color-danger);
+    color: var(--color-danger);
   }
 
   &:disabled {
@@ -277,7 +276,7 @@ export const SC_BlockButton = styled.button`
 
 export const SC_UserAddress = styled.div`
   font-size: 12px;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
   word-break: break-all;
   display: flex;
   align-items: center;
@@ -295,7 +294,7 @@ export const SC_ExplorerLink = styled.a`
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: ${COLORS.PRIMARY};
+  color: var(--color-primary);
   text-decoration: none;
   cursor: pointer;
 
@@ -306,7 +305,7 @@ export const SC_ExplorerLink = styled.a`
 
 export const SC_UserSite = styled.a`
   font-size: 13px;
-  color: ${COLORS.BRAND_CYAN};
+  color: var(--color-brand-cyan);
   text-decoration: none;
   word-break: break-all;
   display: flex;
@@ -341,33 +340,33 @@ export const SC_StatButton = styled.button`
   transition: background ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `
 
 export const SC_StatLabel = styled.span`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   line-height: 1.2;
 `
 
 export const SC_StatValue = styled.span`
   margin-top: 2px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   line-height: 1.2;
 `
 
 export const SC_UserAbout = styled.div`
   margin-top: 20px;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
 
   a {
-    color: ${COLORS.BRAND_CYAN};
+    color: var(--color-brand-cyan);
     text-decoration: none;
 
     &:hover {
@@ -380,5 +379,5 @@ export const SC_UserAbout = styled.div`
 export const SC_LoadingState = styled.div`
   text-align: center;
   padding: 20px;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
 `

@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_MyVideosWork = styled.div`
   display: flex;
@@ -9,7 +8,7 @@ export const SC_MyVideosWork = styled.div`
   min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_MyVideosPage = styled.main`
@@ -22,7 +21,7 @@ export const SC_MyVideosPage = styled.main`
 export const SC_MyVideosTitle = styled.h1`
   font-size: 22px;
   font-weight: 600;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   margin: 24px 0;
 `
 
@@ -30,5 +29,5 @@ export const SC_MyVideosPlaceholder = styled.div`
   padding: 40px 0;
   text-align: center;
   font-size: 15px;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
 `

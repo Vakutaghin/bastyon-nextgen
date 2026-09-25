@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 // Стили лайтбокса (.vel-*) живут глобально в src/style.css — vue-easy-lightbox
@@ -23,8 +22,8 @@ export const SC_DownloadBtn = styled.button`
   height: 44px;
   border: none;
   border-radius: 50%;
-  background: ${COLORS.OVERLAY_40};
-  color: ${COLORS.WHITE_85};
+  background: var(--color-overlay-40);
+  color: var(--color-white-85);
   font-size: 20px;
   cursor: pointer;
   opacity: 0.85;
@@ -34,8 +33,8 @@ export const SC_DownloadBtn = styled.button`
 
   &:hover:not(:disabled) {
     opacity: 1;
-    background: ${COLORS.OVERLAY_65};
-    color: ${COLORS.WHITE};
+    background: var(--color-overlay-65);
+    color: var(--color-white);
   }
 
   &:disabled {

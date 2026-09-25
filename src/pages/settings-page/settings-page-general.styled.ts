@@ -1,5 +1,4 @@
 import styled, { css } from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 const langRowProps = { active: Boolean }
@@ -17,7 +16,7 @@ export const SC_GeneralRow = styled.div`
   justify-content: space-between;
   gap: 16px;
   padding: 14px 0;
-  border-bottom: 1px solid ${COLORS.OVERLAY_6};
+  border-bottom: 1px solid var(--color-overlay-6);
 
   &:last-child {
     border-bottom: none;
@@ -26,7 +25,7 @@ export const SC_GeneralRow = styled.div`
 
 export const SC_GeneralLabel = styled.span`
   font-size: 14px;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
 `
 
 /** Переключатель как вкладки-pill у Nuxt UI (UTabs): подложка elevated с

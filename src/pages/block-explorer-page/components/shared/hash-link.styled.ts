@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_HashLink = styled.span`
@@ -11,19 +10,19 @@ export const SC_HashLink = styled.span`
 `
 
 export const SC_HashLinkAnchor = styled.a`
-  color: ${COLORS.LINK};
+  color: var(--color-link);
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
 
   &:hover {
-    color: ${COLORS.PRIMARY_HOVER};
+    color: var(--color-primary-hover);
     text-decoration: underline;
   }
 `
 
 export const SC_HashLinkText = styled.span`
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   white-space: nowrap;
 `
 
@@ -31,13 +30,13 @@ export const SC_HashLinkCopy = styled.button`
   background: transparent;
   border: none;
   padding: 0 2px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   transition: color ${TRANSITIONS.QUICK};
 
   &:hover {
-    color: ${COLORS.PRIMARY};
+    color: var(--color-primary);
   }
 `

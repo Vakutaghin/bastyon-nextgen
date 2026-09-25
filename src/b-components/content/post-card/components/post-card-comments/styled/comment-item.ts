@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_CommentRow = styled.div`
   display: flex;
@@ -37,7 +36,7 @@ export const SC_CommentRow = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: ${COLORS.BORDER_DARK};
+    background: var(--color-border-dark);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -51,7 +50,7 @@ export const SC_CommentRow = styled.div`
   }
 
   .comment-avatar-placeholder {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
     font-weight: 600;
     font-size: 13px;
   }
@@ -92,7 +91,7 @@ export const SC_CommentItem = styled.div`
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: ${COLORS.BORDER_DARK};
+    background: var(--color-border-dark);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -106,7 +105,7 @@ export const SC_CommentItem = styled.div`
   }
 
   .comment-avatar-placeholder {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
     font-weight: 600;
     font-size: 13px;
   }
@@ -115,19 +114,19 @@ export const SC_CommentItem = styled.div`
 export const SC_CommentAuthor = styled.div`
   font-weight: 600;
   font-size: 13px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_CommentText = styled.div`
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  color: var(--color-text-primary) !important;
   line-height: 1.5;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
 
   :deep(.bastyon-link) {
-    color: ${COLORS.PRIMARY} !important;
+    color: var(--color-primary) !important;
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
@@ -136,7 +135,7 @@ export const SC_CommentText = styled.div`
   }
 
   a {
-    border-bottom: 1px solid ${COLORS.PRIMARY};
+    border-bottom: 1px solid var(--color-primary);
   }
 `
 
@@ -161,7 +160,7 @@ export const SC_CommentMeta = styled.div`
 
 export const SC_CommentDate = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 /** Правый край шапки комментария: дата + кнопка меню */
@@ -187,7 +186,7 @@ export const SC_CommentImages = styled.div`
 export const SC_CommentDeleted = styled.div`
   font-size: 14px;
   font-style: italic;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   line-height: 1.5;
 `
 
@@ -197,10 +196,10 @@ export const SC_HiddenBanner = styled.div`
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: ${COLORS.OVERLAY_4};
+  background: var(--color-overlay-4);
   border-radius: var(--ui-radius-lg);
   font-size: 13px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   line-height: 1.4;
 
   & > span {
@@ -227,11 +226,11 @@ export const SC_ComposerDisabled = styled.div`
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: ${COLORS.OVERLAY_4};
-  border: 1px dashed ${COLORS.GRAY_DDD};
+  background: var(--color-overlay-4);
+  border: 1px dashed var(--color-gray-ddd);
   border-radius: var(--ui-radius-lg);
   font-size: 13px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   line-height: 1.4;
   margin-top: 8px;
 `
@@ -259,15 +258,15 @@ export const SC_EditFormSpacer = styled.div`
 export const SC_EditCancelBtn = styled.button`
   padding: 6px 14px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.GRAY_DDD};
-  background: ${COLORS.BG_PRIMARY};
+  border: 1px solid var(--color-gray-ddd);
+  background: var(--color-bg-primary);
   font-size: 13px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: ${COLORS.BG_TERTIARY};
-    border-color: ${COLORS.GRAY_CCC};
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-gray-ccc);
   }
   &:disabled {
     cursor: not-allowed;
@@ -305,7 +304,7 @@ export const SC_EditedMark = styled.span`
   display: inline-flex;
   align-items: center;
   font-size: 11px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   gap: 3px;
   margin-left: 4px;
 `
@@ -322,8 +321,8 @@ export const SC_TxStatusBadge = styled.span`
   padding: 1px 6px;
   border-radius: var(--ui-radius-lg);
   margin-left: 6px;
-  background: ${COLORS.OVERLAY_6};
-  color: ${COLORS.TEXT_SECONDARY};
+  background: var(--color-overlay-6);
+  color: var(--color-text-secondary);
 
   &.tx-status--rejected {
     background: rgba(255, 77, 79, 0.1);
@@ -355,7 +354,7 @@ export const SC_CommentActions = styled.div`
   button,
   span {
     font-size: 14px;
-    color: ${COLORS.TEXT_SECONDARY};
+    color: var(--color-text-secondary);
     cursor: pointer;
     user-select: none;
   }

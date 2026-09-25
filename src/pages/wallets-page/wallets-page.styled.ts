@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_WalletWork = styled.div`
@@ -10,7 +9,7 @@ export const SC_WalletWork = styled.div`
   min-height: calc(100vh - var(--header-height));
   padding: 0 0 25px;
   align-items: flex-start;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_WalletPage = styled.main`
@@ -23,7 +22,7 @@ export const SC_WalletPage = styled.main`
 export const SC_WalletTitle = styled.h1`
   font-size: 22px;
   font-weight: 600;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   margin: 24px 0;
 `
 
@@ -34,14 +33,14 @@ export const SC_WalletTabs = styled.div`
 export const SC_WalletTabList = styled.nav`
   display: flex;
   gap: 0;
-  border-bottom: 1px solid ${COLORS.OVERLAY_12};
+  border-bottom: 1px solid var(--color-overlay-12);
   margin-bottom: 20px;
 `
 
 export const SC_WalletTabButton = styled.button`
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
   background: none;
   border: none;
   padding: 10px 16px;
@@ -50,12 +49,12 @@ export const SC_WalletTabButton = styled.button`
   margin-bottom: -1px;
 
   &:hover {
-    color: ${COLORS.GRAY_212};
+    color: var(--color-gray-212);
   }
 
   &.active {
-    color: ${COLORS.PRIMARY};
-    border-bottom-color: ${COLORS.PRIMARY};
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
   }
 `
 
@@ -75,10 +74,10 @@ export const SC_BuyHelp = styled.div`
   margin-top: 16px;
   text-align: center;
   font-size: 14px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   a {
-    color: ${COLORS.PRIMARY};
+    color: var(--color-primary);
     text-decoration: none;
     transition: color ${TRANSITIONS.FAST};
   }

@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_VideosSection = styled.div`
   flex: 1 !important;
@@ -7,7 +6,7 @@ export const SC_VideosSection = styled.div`
   max-height: 400px !important;
   overflow-y: auto !important;
   padding: 16px !important;
-  background-color: ${COLORS.BG_TERTIARY} !important;
+  background-color: var(--color-bg-tertiary) !important;
   border-radius: var(--ui-radius-lg) !important;
 `
 
@@ -15,7 +14,7 @@ export const SC_SectionTitle = styled.h3`
   margin: 0 0 16px !important;
   font-size: 18px !important;
   font-weight: 600 !important;
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  color: var(--color-text-primary) !important;
 `
 
 export const SC_VideosGrid = styled.div`
@@ -31,7 +30,7 @@ export const SC_VideoItem = styled.div`
   flex-direction: column !important;
   align-items: center !important;
   padding: 16px !important;
-  background-color: ${COLORS.BG_PRIMARY} !important;
+  background-color: var(--color-bg-primary) !important;
   border-radius: var(--ui-radius-lg) !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
@@ -39,7 +38,7 @@ export const SC_VideoItem = styled.div`
 
   &:hover {
     z-index: 100 !important;
-    box-shadow: ${COLORS.SHADOW_MD} !important;
+    box-shadow: var(--shadow-md) !important;
     transform: translateY(-2px) !important;
 
     /* Показываем действия при hover */
@@ -73,7 +72,7 @@ export const SC_VideoIcon = styled.div`
 export const SC_VideoName = styled.div`
   font-size: 12px !important;
   font-weight: 500 !important;
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  color: var(--color-text-primary) !important;
   text-align: center !important;
   word-break: break-word !important;
   max-width: 100% !important;
@@ -85,7 +84,7 @@ export const SC_VideoName = styled.div`
 
 export const SC_VideoResolution = styled.div`
   font-size: 10px !important;
-  color: ${COLORS.TEXT_SECONDARY} !important;
+  color: var(--color-text-secondary) !important;
   text-align: center !important;
 `
 
@@ -100,7 +99,7 @@ export const SC_VideoActions = styled.div`
   z-index: 50 !important;
   pointer-events: none !important;
   backdrop-filter: blur(4px) !important;
-  background: ${COLORS.OVERLAY_30} !important;
+  background: var(--color-overlay-30) !important;
   padding: 4px !important;
   border-radius: var(--ui-radius-md) !important;
   border: none !important;
@@ -127,8 +126,8 @@ export const SC_ActionButton = styled.button`
   border-radius: var(--ui-radius-md) !important;
   border: none !important;
   outline: none !important;
-  background-color: ${COLORS.SURFACE_FROSTED} !important;
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  background-color: var(--color-surface-frosted) !important;
+  color: var(--color-text-primary) !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
@@ -139,7 +138,7 @@ export const SC_ActionButton = styled.button`
   line-height: 1 !important;
   opacity: 1 !important;
   pointer-events: auto !important;
-  box-shadow: ${COLORS.SHADOW_MD} !important;
+  box-shadow: var(--shadow-md) !important;
 
   /* Убираем обводку при фокусе и активном состоянии */
   &:focus,
@@ -147,18 +146,18 @@ export const SC_ActionButton = styled.button`
   &:focus-visible {
     border: none !important;
     outline: none !important;
-    box-shadow: ${COLORS.SHADOW_MD} !important;
+    box-shadow: var(--shadow-md) !important;
   }
 
   /* Принудительно задаем цвет для всех элементов внутри */
   &,
   & * {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
   }
 
   /* Для span.anticon */
   span.anticon {
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -168,9 +167,9 @@ export const SC_ActionButton = styled.button`
   /* Для всех SVG элементов */
   svg,
   span.anticon svg {
-    color: ${COLORS.TEXT_PRIMARY} !important;
-    fill: ${COLORS.TEXT_PRIMARY} !important;
-    stroke: ${COLORS.TEXT_PRIMARY} !important;
+    color: var(--color-text-primary) !important;
+    fill: var(--color-text-primary) !important;
+    stroke: var(--color-text-primary) !important;
     width: 16px !important;
     height: 16px !important;
     opacity: 1 !important;
@@ -193,27 +192,27 @@ export const SC_ActionButton = styled.button`
   span.anticon svg polyline,
   span.anticon svg polygon,
   span.anticon svg g {
-    fill: ${COLORS.TEXT_PRIMARY} !important;
-    stroke: ${COLORS.TEXT_PRIMARY} !important;
-    color: ${COLORS.TEXT_PRIMARY} !important;
+    fill: var(--color-text-primary) !important;
+    stroke: var(--color-text-primary) !important;
+    color: var(--color-text-primary) !important;
     opacity: 1 !important;
   }
 
   /* Переопределяем currentColor */
   svg[fill='currentColor'],
   span.anticon svg[fill='currentColor'] {
-    fill: ${COLORS.TEXT_PRIMARY} !important;
+    fill: var(--color-text-primary) !important;
   }
 
   svg path[fill='currentColor'],
   span.anticon svg path[fill='currentColor'] {
-    fill: ${COLORS.TEXT_PRIMARY} !important;
+    fill: var(--color-text-primary) !important;
   }
 
   &:hover {
-    background-color: ${COLORS.BG_PRIMARY} !important;
+    background-color: var(--color-bg-primary) !important;
     transform: scale(1.05) translateY(-1px) !important;
-    box-shadow: ${COLORS.SHADOW_MD} !important;
+    box-shadow: var(--shadow-md) !important;
   }
 
   &:active {
@@ -221,8 +220,8 @@ export const SC_ActionButton = styled.button`
   }
 
   &[danger] {
-    background-color: ${COLORS.RED_ANT} !important;
-    color: ${COLORS.WHITE} !important;
+    background-color: var(--color-red-ant) !important;
+    color: var(--color-white) !important;
 
     &,
     & *,
@@ -230,13 +229,13 @@ export const SC_ActionButton = styled.button`
     & span.anticon svg,
     & svg path,
     & span.anticon svg path {
-      color: ${COLORS.WHITE} !important;
-      fill: ${COLORS.WHITE} !important;
-      stroke: ${COLORS.WHITE} !important;
+      color: var(--color-white) !important;
+      fill: var(--color-white) !important;
+      stroke: var(--color-white) !important;
     }
 
     &:hover {
-      background-color: ${COLORS.RED_ANT} !important;
+      background-color: var(--color-red-ant) !important;
       transform: scale(1.05) translateY(-1px) !important;
     }
   }

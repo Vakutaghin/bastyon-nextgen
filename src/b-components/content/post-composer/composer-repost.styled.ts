@@ -1,16 +1,15 @@
 import styled from 'vue3-styled-components'
 
 import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_RepostPreview = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${SPACING.SM};
   padding: ${SPACING.SM} ${SPACING.MD};
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.MD};
-  background: ${COLORS.BG_SECONDARY};
+  background: var(--color-bg-secondary);
 `
 
 export const SC_RepostHead = styled.div`
@@ -22,13 +21,13 @@ export const SC_RepostHead = styled.div`
 export const SC_RepostAuthor = styled.span`
   font-size: ${FONT_SIZE.MD};
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_RepostBody = styled.div`
   font-size: ${FONT_SIZE.MD};
   line-height: 1.45;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;

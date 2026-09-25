@@ -8,12 +8,11 @@
 
 import styled from 'vue3-styled-components'
 import { RouterLink } from 'vue-router'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 // Inline-ссылка (router-link) фирменным цветом без подчёркивания.
 export const SC_InlineLink = styled(RouterLink)`
-  color: ${COLORS.PRIMARY};
+  color: var(--color-primary);
   text-decoration: none;
 `
 
@@ -21,12 +20,12 @@ export const SC_InlineLink = styled(RouterLink)`
 export const SC_Placeholder = styled.div`
   padding: 32px;
   text-align: center;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 `
 
 // Тот же плейсхолдер, но для ошибки.
 export const SC_PlaceholderError = styled(SC_Placeholder)`
-  color: ${COLORS.DANGER};
+  color: var(--color-danger);
 `
 
 // Футер пагинации со ссылкой «показать ещё».
@@ -34,16 +33,16 @@ export const SC_LoadMoreFooter = styled.div`
   display: flex;
   justify-content: center;
   padding: 14px 18px;
-  border-top: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-top: 1px solid var(--color-border-lighter);
 `
 
 export const SC_LoadMoreBtn = styled.button`
   padding: 8px 18px;
   font-size: 13px;
   font-weight: 500;
-  color: ${COLORS.PRIMARY};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
+  color: var(--color-primary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-primary-light-30);
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   transition:
@@ -51,14 +50,14 @@ export const SC_LoadMoreBtn = styled.button`
     border-color ${TRANSITIONS.QUICK};
 
   &:hover:not(:disabled) {
-    background: ${COLORS.PRIMARY_LIGHT};
-    border-color: ${COLORS.PRIMARY_LIGHT_50};
+    background: var(--color-primary-light);
+    border-color: var(--color-primary-light-50);
   }
 
   &:disabled {
-    color: ${COLORS.TEXT_MUTED};
-    background: ${COLORS.BG_DISABLED};
-    border-color: ${COLORS.BORDER_LIGHTER};
+    color: var(--color-text-muted);
+    background: var(--color-bg-disabled);
+    border-color: var(--color-border-lighter);
     cursor: not-allowed;
   }
 `

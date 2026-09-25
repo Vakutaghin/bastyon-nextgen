@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_InfoTooltipIcon = styled.span`
@@ -11,9 +10,9 @@ export const SC_InfoTooltipIcon = styled.span`
   margin-left: 4px;
   font-size: 9px;
   font-weight: 700;
-  color: ${COLORS.TEXT_MUTED};
-  background: ${COLORS.OVERLAY_5};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  color: var(--color-text-muted);
+  background: var(--color-overlay-5);
+  border: 1px solid var(--color-border-lighter);
   border-radius: 50%;
   cursor: help;
   user-select: none;
@@ -23,8 +22,8 @@ export const SC_InfoTooltipIcon = styled.span`
     background-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    color: ${COLORS.PRIMARY};
-    background: ${COLORS.PRIMARY_LIGHT};
-    border-color: ${COLORS.PRIMARY_LIGHT_30};
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+    border-color: var(--color-primary-light-30);
   }
 `

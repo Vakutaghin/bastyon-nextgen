@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_PostHeader = styled.div`
   display: flex;
@@ -65,14 +64,14 @@ export const SC_ChatBtn = styled.button`
   margin: 0;
   border: none;
   background: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: var(--ui-radius-sm);
   line-height: 1;
 
   &:hover {
-    color: ${COLORS.BRAND_CYAN};
-    background: ${COLORS.BRAND_CYAN_LIGHT};
+    color: var(--color-brand-cyan);
+    background: var(--color-brand-cyan-light);
   }
 `
 
@@ -84,18 +83,18 @@ export const SC_FollowBtn = styled.button`
   margin: 0;
   border: none;
   background: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: var(--ui-radius-sm);
   line-height: 1;
 
   &:hover {
-    color: ${COLORS.BRAND_CYAN};
-    background: ${COLORS.BRAND_CYAN_LIGHT};
+    color: var(--color-brand-cyan);
+    background: var(--color-brand-cyan-light);
   }
 
   &.following {
-    color: ${COLORS.BRAND_CYAN};
+    color: var(--color-brand-cyan);
   }
 
   &:disabled {
@@ -116,14 +115,14 @@ export const SC_DonateBtn = styled.button`
   margin: 0;
   border: none;
   background: transparent;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: var(--ui-radius-sm);
   line-height: 1;
 
   &:hover {
-    color: ${COLORS.BRAND_CYAN};
-    background: ${COLORS.BRAND_CYAN_LIGHT};
+    color: var(--color-brand-cyan);
+    background: var(--color-brand-cyan-light);
   }
 
   .anticon {
@@ -147,11 +146,11 @@ export const SC_RepostLine = styled.div`
   gap: 4px;
   margin-top: 4px;
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   .repost-icon {
     font-size: 12px;
-    color: ${COLORS.TEXT_SECONDARY};
+    color: var(--color-text-secondary);
   }
 
   .repost-text {
@@ -159,11 +158,11 @@ export const SC_RepostLine = styled.div`
   }
 
   .repost-from {
-    color: ${COLORS.TEXT_SECONDARY};
+    color: var(--color-text-secondary);
   }
 
   .repost-author {
-    color: ${COLORS.BRAND_CYAN};
+    color: var(--color-brand-cyan);
     text-decoration: none;
 
     &:hover {
@@ -172,6 +171,6 @@ export const SC_RepostLine = styled.div`
   }
 
   .repost-record {
-    color: ${COLORS.TEXT_SECONDARY};
+    color: var(--color-text-secondary);
   }
 `

@@ -9,7 +9,7 @@ export const SC_ChangelogList = styled.div`
 
 export const SC_ChangelogEntry = styled.section`
   padding: 16px 0;
-  border-top: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-top: 1px solid var(--color-border-lighter);
 
   &:first-child {
     border-top: none;
@@ -23,8 +23,8 @@ export const SC_VersionLabel = styled.div`
   font-weight: 700;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: ${COLORS.PRIMARY};
-  background: ${COLORS.PRIMARY_LIGHT};
+  color: var(--color-primary);
+  background: var(--color-primary-light);
   border-radius: 999px;
   padding: 3px 10px;
   margin-bottom: 12px;
@@ -36,7 +36,7 @@ export const SC_VersionLabel = styled.div`
  * inline-html, который мы кладём через v-html.
  */
 export const SC_MarkdownBody = styled.div`
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: 14px;
   line-height: 1.55;
 
@@ -44,21 +44,21 @@ export const SC_MarkdownBody = styled.div`
     font-size: 20px;
     font-weight: 700;
     margin: 0 0 12px;
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
   }
 
   h2 {
     font-size: 16px;
     font-weight: 600;
     margin: 18px 0 8px;
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
   }
 
   h3 {
     font-size: 14px;
     font-weight: 600;
     margin: 14px 0 6px;
-    color: ${COLORS.TEXT_DARK};
+    color: var(--color-text-dark);
   }
 
   p {
@@ -76,7 +76,7 @@ export const SC_MarkdownBody = styled.div`
   }
 
   a {
-    color: ${COLORS.PRIMARY};
+    color: var(--color-primary);
     text-decoration: none;
 
     &:hover {
@@ -85,7 +85,7 @@ export const SC_MarkdownBody = styled.div`
   }
 
   code {
-    background: ${COLORS.OVERLAY_5};
+    background: var(--color-overlay-5);
     padding: 1px 5px;
     border-radius: var(--ui-radius-sm);
     font-size: 12.5px;
@@ -98,14 +98,14 @@ export const SC_MarkdownBody = styled.div`
 
   hr {
     border: none;
-    border-top: 1px solid ${COLORS.BORDER_LIGHTER};
+    border-top: 1px solid var(--color-border-lighter);
     margin: 16px 0;
   }
 `
 
 export const SC_LangSwitcher = styled.div`
   display: inline-flex;
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
@@ -121,7 +121,7 @@ export const SC_LangButton = styled.button<{ active: boolean }>`
   transition: background-color 0.15s;
 
   & + & {
-    border-left: 1px solid ${COLORS.BORDER};
+    border-left: 1px solid var(--color-border);
   }
 
   &:hover {
@@ -142,6 +142,6 @@ export const SC_EntryHeader = styled.div`
 export const SC_Empty = styled.div`
   padding: 24px;
   text-align: center;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   font-size: 13px;
 `

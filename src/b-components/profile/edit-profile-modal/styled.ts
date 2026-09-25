@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Form = styled.div`
   display: flex;
@@ -16,22 +15,22 @@ export const SC_Field = styled.div`
 export const SC_Label = styled.label`
   font-size: 13px;
   font-weight: 500;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_Input = styled.input`
   width: 100%;
   padding: 9px 12px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER};
-  background-color: ${COLORS.SURFACE_FROSTED};
-  color: ${COLORS.TEXT_PRIMARY};
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-frosted);
+  color: var(--color-text-primary);
   font-size: 14px;
   transition: border-color 0.2s;
 
   &:focus {
     outline: none;
-    border-color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
   }
 `
 
@@ -41,16 +40,16 @@ export const SC_Textarea = styled.textarea`
   resize: vertical;
   padding: 9px 12px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER};
-  background-color: ${COLORS.SURFACE_FROSTED};
-  color: ${COLORS.TEXT_PRIMARY};
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-frosted);
+  color: var(--color-text-primary);
   font-size: 14px;
   font-family: inherit;
   transition: border-color 0.2s;
 
   &:focus {
     outline: none;
-    border-color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
   }
 `
 
@@ -58,15 +57,15 @@ export const SC_Select = styled.select`
   width: 100%;
   padding: 9px 12px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER};
-  background-color: ${COLORS.SURFACE_FROSTED};
-  color: ${COLORS.TEXT_PRIMARY};
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-frosted);
+  color: var(--color-text-primary);
   font-size: 14px;
   cursor: pointer;
 
   &:focus {
     outline: none;
-    border-color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
   }
 `
 
@@ -81,7 +80,7 @@ export const SC_AvatarPreview = styled.img`
   height: 72px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
 `
 
 export const SC_AvatarPlaceholder = styled.div`
@@ -93,8 +92,8 @@ export const SC_AvatarPlaceholder = styled.div`
   justify-content: center;
   font-size: 28px;
   font-weight: 600;
-  color: ${COLORS.WHITE};
-  background-color: ${COLORS.BRAND_CYAN};
+  color: var(--color-white);
+  background-color: var(--color-brand-cyan);
 `
 
 export const SC_AvatarActions = styled.div`
@@ -106,9 +105,9 @@ export const SC_AvatarActions = styled.div`
 export const SC_SmallBtn = styled.button`
   padding: 6px 12px;
   border-radius: var(--ui-radius-md);
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   background-color: transparent;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: 13px;
   cursor: pointer;
   transition:
@@ -116,13 +115,13 @@ export const SC_SmallBtn = styled.button`
     color 0.2s;
 
   &:hover {
-    border-color: ${COLORS.BRAND_CYAN};
-    color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
+    color: var(--color-brand-cyan);
   }
 
   &.danger:hover {
-    border-color: ${COLORS.RED_ANT};
-    color: ${COLORS.RED_ANT};
+    border-color: var(--color-red-ant);
+    color: var(--color-red-ant);
   }
 
   &:disabled {

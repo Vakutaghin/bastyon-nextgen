@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 import { SC_SectionTitle as SC_SharedSectionTitle } from '@/styles/shared'
 
 export const SC_Search = styled.div`
@@ -25,8 +24,8 @@ export const SC_SideloadBtn = styled.button`
   transition: color ${TRANSITIONS.FAST};
 
   &:hover {
-    color: ${COLORS.PRIMARY};
-    border-color: ${COLORS.PRIMARY};
+    color: var(--color-primary);
+    border-color: var(--color-primary);
   }
 `
 
@@ -94,9 +93,9 @@ export const SC_Card = styled.button`
   justify-content: flex-start;
   gap: 12px;
   padding: 20px 12px 16px;
-  border: 1px solid ${COLORS.OVERLAY_8};
+  border: 1px solid var(--color-overlay-8);
   border-radius: var(--ui-radius-lg);
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   cursor: pointer;
   transition:
     transform ${TRANSITIONS.QUICK},
@@ -104,12 +103,12 @@ export const SC_Card = styled.button`
     border-color ${TRANSITIONS.QUICK};
   text-align: center;
   font: inherit;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 14px ${COLORS.OVERLAY_6};
-    border-color: ${COLORS.OVERLAY_12};
+    box-shadow: 0 4px 14px var(--color-overlay-6);
+    border-color: var(--color-overlay-12);
   }
 
   &:active {
@@ -130,19 +129,19 @@ export const SC_FavoriteBtn = styled.button`
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   font-size: 14px;
   transition:
     color ${TRANSITIONS.QUICK},
     background-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.OVERLAY_5};
-    color: ${COLORS.WARNING_YELLOW};
+    background: var(--color-overlay-5);
+    color: var(--color-warning-yellow);
   }
 
   &.active {
-    color: ${COLORS.WARNING_YELLOW};
+    color: var(--color-warning-yellow);
   }
 `
 
@@ -160,15 +159,15 @@ export const SC_DeleteBtn = styled.button`
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   font-size: 14px;
   transition:
     color ${TRANSITIONS.QUICK},
     background-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.OVERLAY_5};
-    color: ${COLORS.DANGER};
+    background: var(--color-overlay-5);
+    color: var(--color-danger);
   }
 `
 
@@ -180,7 +179,7 @@ export const SC_IconWrap = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${COLORS.OVERLAY_4};
+  background: var(--color-overlay-4);
   flex: 0 0 auto;
 `
 
@@ -193,7 +192,7 @@ export const SC_Icon = styled.img`
 export const SC_IconFallback = styled.div`
   font-size: 22px;
   font-weight: 600;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_Name = styled.div`
@@ -216,16 +215,16 @@ export const SC_LoadMore = styled.div`
 
 export const SC_LoadMoreBtn = styled.button`
   padding: 8px 20px;
-  border: 1px solid ${COLORS.OVERLAY_12};
-  background: ${COLORS.BG_PRIMARY};
+  border: 1px solid var(--color-overlay-12);
+  background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
   font-size: 13px;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   cursor: pointer;
   transition: background-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.OVERLAY_4};
+    background: var(--color-overlay-4);
   }
 
   &:disabled {
@@ -237,15 +236,15 @@ export const SC_LoadMoreBtn = styled.button`
 export const SC_Empty = styled.div`
   padding: 40px 16px;
   text-align: center;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-size: 14px;
 `
 
 export const SC_Error = styled.div`
   padding: 16px;
   border-radius: var(--ui-radius-lg);
-  background: ${COLORS.DANGER_BG_SOFT};
-  color: ${COLORS.DANGER_DEEP};
+  background: var(--color-danger-bg-soft);
+  color: var(--color-danger-deep);
   font-size: 13px;
   margin: 12px 0;
 `

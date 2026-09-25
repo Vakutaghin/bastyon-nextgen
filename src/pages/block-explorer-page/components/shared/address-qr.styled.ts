@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_QrFrame = styled.button`
@@ -7,8 +6,8 @@ export const SC_QrFrame = styled.button`
   align-items: center;
   justify-content: center;
   padding: 6px;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   cursor: zoom-in;
   transition:
@@ -16,8 +15,8 @@ export const SC_QrFrame = styled.button`
     box-shadow ${TRANSITIONS.QUICK};
 
   &:hover {
-    border-color: ${COLORS.PRIMARY_LIGHT_50};
-    box-shadow: 0 4px 10px ${COLORS.OVERLAY_8};
+    border-color: var(--color-primary-light-50);
+    box-shadow: 0 4px 10px var(--color-overlay-8);
   }
 
   img {
@@ -30,7 +29,7 @@ export const SC_QrFrame = styled.button`
 export const SC_QrModalBackdrop = styled.div`
   position: fixed;
   inset: 0;
-  background: ${COLORS.OVERLAY_55};
+  background: var(--color-overlay-55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -39,11 +38,11 @@ export const SC_QrModalBackdrop = styled.div`
 `
 
 export const SC_QrModalCard = styled.div`
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
   padding: 24px;
   max-width: 90vw;
-  box-shadow: 0 10px 40px ${COLORS.OVERLAY_25};
+  box-shadow: 0 10px 40px var(--color-overlay-25);
   text-align: center;
   cursor: default;
 `
@@ -59,7 +58,7 @@ export const SC_QrModalAddr = styled.div`
   margin-top: 14px;
   font-family: var(--font-family-mono);
   font-size: 13px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   word-break: break-all;
   max-width: 320px;
   margin-left: auto;
@@ -69,6 +68,6 @@ export const SC_QrModalAddr = styled.div`
 export const SC_QrPlaceholder = styled.div`
   width: 84px;
   height: 84px;
-  background: ${COLORS.BG_DISABLED};
+  background: var(--color-bg-disabled);
   border-radius: var(--ui-radius-sm);
 `

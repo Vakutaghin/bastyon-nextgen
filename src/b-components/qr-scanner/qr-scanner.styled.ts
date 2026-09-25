@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_QrScanner = styled.div`
@@ -20,19 +19,19 @@ export const SC_QrUploadLabel = styled.label`
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  border: 1px solid var(--color-border-default);
   border-radius: var(--ui-radius-md);
   cursor: pointer;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_SECONDARY};
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
   transition:
     background ${TRANSITIONS.FAST},
     border-color ${TRANSITIONS.FAST};
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
-    border-color: ${COLORS.PRIMARY};
+    background: var(--color-bg-hover);
+    border-color: var(--color-primary);
   }
 `
 
@@ -48,7 +47,7 @@ export const SC_QrVideoWrap = styled.div`
   margin: 0 auto;
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
-  background: ${COLORS.BLACK};
+  background: var(--color-black);
 `
 
 export const SC_QrVideo = styled.video`
@@ -61,24 +60,24 @@ export const SC_QrVideo = styled.video`
 export const SC_QrFrame = styled.div`
   position: absolute;
   inset: 14%;
-  border: 2px solid ${COLORS.PRIMARY};
+  border: 2px solid var(--color-primary);
   border-radius: var(--ui-radius-lg);
-  box-shadow: 0 0 0 9999px ${COLORS.OVERLAY_30};
+  box-shadow: 0 0 0 9999px var(--color-overlay-30);
   pointer-events: none;
 `
 
 export const SC_QrHint = styled.p`
   margin: 0;
   font-size: 13px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   text-align: center;
 `
 
 export const SC_QrError = styled.div`
   padding: 8px 12px;
-  background: ${COLORS.RED_BG};
-  border: 1px solid ${COLORS.RED_BORDER};
+  background: var(--color-red-bg);
+  border: 1px solid var(--color-red-border);
   border-radius: var(--ui-radius-md);
-  color: ${COLORS.DANGER};
+  color: var(--color-danger);
   font-size: 13px;
 `

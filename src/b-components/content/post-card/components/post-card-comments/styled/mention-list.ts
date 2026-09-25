@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_MentionList = styled.div`
   position: absolute;
@@ -9,10 +8,10 @@ export const SC_MentionList = styled.div`
   margin-top: 4px;
   max-height: 180px;
   overflow-y: auto;
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.GRAY_DDD};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-gray-ddd);
   border-radius: var(--ui-radius-lg);
-  box-shadow: ${COLORS.SHADOW_MD};
+  box-shadow: var(--shadow-md);
   z-index: 10;
 `
 
@@ -24,14 +23,14 @@ export const SC_MentionItem = styled.button`
   background: none;
   text-align: left;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   cursor: pointer;
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 
   &.mention-item--highlighted {
-    background: ${COLORS.ANT_BLUE_BG_LIGHT};
+    background: var(--color-ant-blue-bg-light);
   }
 `

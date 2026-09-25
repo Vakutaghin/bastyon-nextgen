@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_MessageItem = styled.div`
   max-width: 80%;
@@ -15,21 +14,21 @@ export const SC_MessageItem = styled.div`
   overflow: hidden;
 
   &.mine {
-    background-color: ${COLORS.ANT_BLUE_BG};
-    color: ${COLORS.TEXT_PRIMARY};
+    background-color: var(--color-ant-blue-bg);
+    color: var(--color-text-primary);
     border-bottom-right-radius: 4px;
   }
 
   &.others {
-    background-color: ${COLORS.GRAY_F1};
-    color: ${COLORS.TEXT_PRIMARY};
+    background-color: var(--color-gray-f1);
+    color: var(--color-text-primary);
     border-bottom-left-radius: 4px;
   }
 `
 
 export const SC_AudioUrlMissing = styled.div`
   font-size: 0.8em;
-  color: ${COLORS.RED_ANT};
+  color: var(--color-red-ant);
 `
 
 export const SC_ReactionEmojiIcon = styled.span`
@@ -95,14 +94,14 @@ export const SC_ReactionPill = styled.span`
   font-size: 12px;
   padding: 2px 6px;
   border-radius: var(--ui-radius-lg);
-  background: ${COLORS.OVERLAY_6};
+  background: var(--color-overlay-6);
   cursor: default;
   display: inline-flex;
   align-items: center;
   gap: 2px;
 
   &.mine {
-    background: ${COLORS.PRIMARY_LIGHT_15};
+    background: var(--color-primary-light-15);
   }
 `
 
@@ -119,7 +118,7 @@ export const SC_ReactionButton = styled.button`
 
   &:hover {
     opacity: 1;
-    background: ${COLORS.OVERLAY_6};
+    background: var(--color-overlay-6);
   }
 `
 
@@ -129,9 +128,9 @@ export const SC_ReactionPicker = styled.div`
   right: 0;
   margin-bottom: 4px;
   padding: 6px 8px;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
-  box-shadow: ${COLORS.SHADOW_MD};
+  box-shadow: var(--shadow-md);
   display: flex;
   gap: 4px;
   z-index: 10;
@@ -152,7 +151,7 @@ export const SC_ActionsButton = styled.button`
 
   &:hover {
     opacity: 1;
-    background: ${COLORS.OVERLAY_6};
+    background: var(--color-overlay-6);
   }
 `
 
@@ -172,17 +171,17 @@ export const SC_ActionsItem = styled.button`
   border: none;
   border-radius: var(--ui-radius-md);
   background: none;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-size: 14px;
   cursor: pointer;
   text-align: left;
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 
   &.danger {
-    color: ${COLORS.DANGER};
+    color: var(--color-danger);
   }
 
   .anticon {
@@ -199,7 +198,7 @@ export const SC_ReactionPickerEmoji = styled.button`
   border-radius: var(--ui-radius-md);
 
   &:hover {
-    background: ${COLORS.OVERLAY_6};
+    background: var(--color-overlay-6);
   }
 `
 
@@ -207,7 +206,7 @@ export const SC_SeenTick = styled.span`
   margin-left: 4px;
   font-size: 10px;
   line-height: 1;
-  color: ${COLORS.PRIMARY};
+  color: var(--color-primary);
   letter-spacing: -2px;
 `
 
@@ -216,21 +215,21 @@ export const SC_ReplyQuote = styled.div`
   display: block;
   margin-bottom: 4px;
   padding: 4px 8px;
-  border-left: 3px solid ${COLORS.BRAND_CYAN};
+  border-left: 3px solid var(--color-brand-cyan);
   border-radius: var(--ui-radius-sm);
-  background: ${COLORS.OVERLAY_6};
+  background: var(--color-overlay-6);
   max-width: 100%;
 `
 
 export const SC_ReplyQuoteName = styled.div`
   font-size: 12px;
   font-weight: 600;
-  color: ${COLORS.BRAND_CYAN};
+  color: var(--color-brand-cyan);
 `
 
 export const SC_ReplyQuoteText = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

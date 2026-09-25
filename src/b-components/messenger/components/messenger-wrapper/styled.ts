@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 /**
@@ -24,7 +23,7 @@ export const SC_MessengerWrapper = styled.div`
 export const SC_BackButton = styled.button`
   background: none;
   border: none;
-  color: ${COLORS.WHITE};
+  color: var(--color-white);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -33,7 +32,7 @@ export const SC_BackButton = styled.button`
   border-radius: var(--ui-radius-sm);
 
   &:hover {
-    background-color: ${COLORS.WHITE_20};
+    background-color: var(--color-white-20);
   }
 
   svg,
@@ -56,7 +55,7 @@ export const SC_FullScreenOverlay = styled.div`
   width: 100%;
   height: 100vh;
   z-index: 2500;
-  background-color: ${COLORS.BG_PRIMARY};
+  background-color: var(--color-bg-primary);
   display: flex;
   flex-direction: column;
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
@@ -74,20 +73,20 @@ export const SC_CloseOverlayButton = styled.button`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: ${COLORS.BG_TERTIARY};
+  background-color: var(--color-bg-tertiary);
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   transition:
     color 0.2s,
     background-color 0.2s;
 
   &:hover {
-    color: ${COLORS.TEXT_PRIMARY};
-    background-color: ${COLORS.OVERLAY_6};
+    color: var(--color-text-primary);
+    background-color: var(--color-overlay-6);
   }
 
   svg,
@@ -119,7 +118,7 @@ export const SC_MessengerWrapperLoader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
   font-size: 14px;
 `
 
@@ -127,8 +126,8 @@ export const SC_MessengerWrapperSpinner = styled.span`
   display: inline-block;
   width: 32px;
   height: 32px;
-  border: 3px solid ${COLORS.GRAY_E0};
-  border-top-color: ${COLORS.TEXT_SECONDARY};
+  border: 3px solid var(--color-gray-e0);
+  border-top-color: var(--color-text-secondary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `

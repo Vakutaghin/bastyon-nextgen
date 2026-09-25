@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_PostImage = styled.div<{ imageCount: number }>`
   margin-bottom: 15px;
@@ -230,19 +229,19 @@ export const SC_ImageOverlay = styled.div`
 `
 
 export const SC_ZoomIconCircle = styled.div`
-  background: ${COLORS.TEXT_MUTED};
+  background: var(--color-text-muted);
   border-radius: 50%;
   width: 48px;
   height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: ${COLORS.SHADOW_SM};
+  box-shadow: var(--shadow-sm);
   pointer-events: none;
 
   .zoom-icon {
     font-size: 24px;
-    color: ${COLORS.WHITE};
+    color: var(--color-white);
     display: flex;
     align-items: center;
     justify-content: center;

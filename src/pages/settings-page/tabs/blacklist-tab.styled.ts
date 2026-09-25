@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_Blacklist = styled.section`
@@ -12,13 +11,13 @@ export const SC_BlacklistTitle = styled.h2`
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_BlacklistLead = styled.p`
   margin: 0;
   font-size: 14px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_BlacklistList = styled.div`
@@ -33,7 +32,7 @@ export const SC_BlacklistRow = styled.div`
   gap: 12px;
   padding: 8px 10px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  border: 1px solid var(--color-border-default);
 `
 
 export const SC_BlacklistMain = styled.button`
@@ -55,12 +54,12 @@ export const SC_BlacklistAvatar = styled.div`
   border-radius: 50%;
   flex-shrink: 0;
   overflow: hidden;
-  background: ${COLORS.BG_SECONDARY};
+  background: var(--color-bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 
   img {
     width: 100%;
@@ -72,7 +71,7 @@ export const SC_BlacklistAvatar = styled.div`
 export const SC_BlacklistName = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -82,15 +81,15 @@ export const SC_UnblockBtn = styled.button`
   flex-shrink: 0;
   padding: 6px 14px;
   border-radius: var(--ui-radius-md);
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
-  background: ${COLORS.BG_SECONDARY};
-  color: ${COLORS.TEXT_PRIMARY};
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   font-size: 13px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
   &:hover:not(:disabled) {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 
   &:disabled {
@@ -103,5 +102,5 @@ export const SC_BlacklistState = styled.div`
   padding: 24px 0;
   text-align: center;
   font-size: 14px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `

@@ -9,8 +9,8 @@ export const SC_WalletLabel = styled.span`
   margin-right: 8px;
   padding: 1px 7px;
   border-radius: var(--ui-radius-lg);
-  background: ${COLORS.PRIMARY_LIGHT};
-  color: ${COLORS.PRIMARY};
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 600;
   vertical-align: middle;
@@ -24,12 +24,12 @@ export const SC_WalletRenameBtn = styled.button`
   padding: 2px;
   border: none;
   background: none;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: color ${TRANSITIONS.FAST};
 
   &:hover {
-    color: ${COLORS.PRIMARY};
+    color: var(--color-primary);
   }
 `
 
@@ -41,7 +41,7 @@ export const SC_RenameOverlay = styled.div`
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: ${COLORS.OVERLAY_55};
+  background: var(--color-overlay-55);
 `
 
 export const SC_RenameDialog = styled.div`
@@ -52,28 +52,28 @@ export const SC_RenameDialog = styled.div`
   max-width: 360px;
   padding: 18px;
   border-radius: ${BORDER_RADIUS.LG};
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_RenameTitle = styled.h3`
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_RenameInput = styled.input`
   width: 100%;
   padding: 9px 12px;
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  border: 1px solid var(--color-border-default);
   border-radius: ${BORDER_RADIUS.MD};
-  background: ${COLORS.BG_INPUT};
-  color: ${COLORS.TEXT_PRIMARY};
+  background: var(--color-bg-input);
+  color: var(--color-text-primary);
   font-size: 14px;
 
   &:focus {
     outline: none;
-    border-color: ${COLORS.PRIMARY};
+    border-color: var(--color-primary);
   }
 `
 
@@ -102,22 +102,22 @@ export const SC_WalletBalanceCards = styled.div`
 
 export const SC_WalletBalanceCard = styled.div`
   padding: 16px 20px;
-  background: ${COLORS.BG_LIGHT};
+  background: var(--color-bg-light);
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.OVERLAY_6};
+  border: 1px solid var(--color-overlay-6);
   width: 33%;
 `
 
 export const SC_WalletBalanceLabel = styled.div`
   font-size: 13px;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
   margin-bottom: 4px;
 `
 
 export const SC_WalletBalanceValue = styled.div`
   font-size: 20px;
   font-weight: 600;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
 `
 
 export const SC_WalletTableSection = styled.section`
@@ -147,12 +147,12 @@ export const SC_WalletReadOnlyNote = styled.p`
 export const SC_WalletTableTitle = styled.h2`
   font-size: 16px;
   font-weight: 600;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   margin: 10px;
 `
 
 export const SC_WalletTable = styled.div`
-  border: 1px solid ${COLORS.OVERLAY_8};
+  border: 1px solid var(--color-overlay-8);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
@@ -164,8 +164,8 @@ export const SC_WalletTableRow = styled.div`
   align-items: center;
   padding: 12px 16px;
   font-size: 14px;
-  border-bottom: 1px solid ${COLORS.OVERLAY_6};
-  background: ${COLORS.BG_PRIMARY};
+  border-bottom: 1px solid var(--color-overlay-6);
+  background: var(--color-bg-primary);
 
   &:last-child {
     border-bottom: none;
@@ -173,15 +173,15 @@ export const SC_WalletTableRow = styled.div`
 `
 
 export const SC_WalletTableHeader = styled(SC_WalletTableRow)`
-  background: ${COLORS.BG_LIGHT};
+  background: var(--color-bg-light);
   font-weight: 600;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
 `
 
 export const SC_WalletTableAddress = styled.span`
   font-family: var(--font-family-mono);
   font-size: 13px;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   word-break: break-all;
 `
 
@@ -198,7 +198,7 @@ export const SC_WalletExplorerLink = styled.a`
   justify-content: center;
   width: 24px;
   height: 24px;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
   cursor: pointer;
   border-radius: var(--ui-radius-sm);
   flex-shrink: 0;
@@ -208,27 +208,27 @@ export const SC_WalletExplorerLink = styled.a`
   text-decoration: none;
 
   &:hover {
-    color: ${COLORS.PRIMARY};
-    background: ${COLORS.PRIMARY_BG_SOFT};
+    color: var(--color-primary);
+    background: var(--color-primary-bg-soft);
   }
 `
 
 export const SC_WalletTableBalance = styled.span`
   font-weight: 500;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
 `
 
 export const SC_WalletLoading = styled.div`
   padding: 40px 0;
   text-align: center;
   font-size: 15px;
-  color: ${COLORS.GRAY_120};
+  color: var(--color-gray-120);
 `
 
 export const SC_WalletError = styled.div`
   padding: 24px;
-  background: ${COLORS.DANGER_BG_SOFT};
+  background: var(--color-danger-bg-soft);
   border-radius: var(--ui-radius-lg);
   font-size: 14px;
-  color: ${COLORS.DANGER_DEEP};
+  color: var(--color-danger-deep);
 `

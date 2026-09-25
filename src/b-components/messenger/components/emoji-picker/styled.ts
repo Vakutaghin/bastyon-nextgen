@@ -7,10 +7,10 @@ export const SC_EmojiPickerContainer = styled.div`
   right: 16px;
   width: 300px;
   height: 350px;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_LG};
-  border: 1px solid ${COLORS.GRAY_EEE};
+  border: 1px solid var(--color-gray-eee);
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -19,9 +19,9 @@ export const SC_EmojiPickerContainer = styled.div`
 
 export const SC_EmojiHeader = styled.div`
   padding: 10px;
-  border-bottom: 1px solid ${COLORS.GRAY_EEE};
+  border-bottom: 1px solid var(--color-gray-eee);
   font-weight: 600;
-  background: ${COLORS.BG_LIGHT};
+  background: var(--color-bg-light);
 `
 
 export const SC_EmojiGrid = styled.div`
@@ -37,7 +37,7 @@ export const SC_EmojiGrid = styled.div`
   }
 
   &::-webkit-scrollbar-thumb {
-    background: ${COLORS.GRAY_CCC};
+    background: var(--color-gray-ccc);
     border-radius: var(--ui-radius-xs);
   }
 `
@@ -55,6 +55,6 @@ export const SC_EmojiButton = styled.button`
   justify-content: center;
 
   &:hover {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `

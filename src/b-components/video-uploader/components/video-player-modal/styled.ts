@@ -1,9 +1,8 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_PlayerSection = styled.div`
   width: 100% !important;
-  background-color: ${COLORS.BLACK} !important;
+  background-color: var(--color-black) !important;
   border-radius: var(--ui-radius-lg) !important;
   overflow: hidden !important;
   display: flex !important;

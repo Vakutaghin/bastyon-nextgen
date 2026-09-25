@@ -1,11 +1,10 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_BlockHeader = styled.h1<{ level?: number }>`
   margin: 1.5em 0 0.5em;
   font-weight: 600;
   line-height: 1.3;
-  color: ${COLORS.TEXT_PRIMARY} !important;
+  color: var(--color-text-primary) !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -28,7 +27,7 @@ export const SC_BlockHeader = styled.h1<{ level?: number }>`
   }}
 
   .bastyon-link {
-    color: ${COLORS.PRIMARY} !important;
+    color: var(--color-primary) !important;
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
@@ -37,7 +36,7 @@ export const SC_BlockHeader = styled.h1<{ level?: number }>`
   }
 
   .bastyon-link:hover {
-    color: ${COLORS.PRIMARY_ACTIVE} !important;
+    color: var(--color-primary-active) !important;
     text-decoration: underline;
   }
 `

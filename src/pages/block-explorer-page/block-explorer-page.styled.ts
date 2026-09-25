@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_ExplorerWork = styled.div`
@@ -9,7 +8,7 @@ export const SC_ExplorerWork = styled.div`
   width: 100%;
   min-height: calc(100vh - var(--header-height));
   align-items: flex-start;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_ExplorerPage = styled.main`
@@ -52,15 +51,15 @@ export const SC_LiveBadge = styled.span`
   line-height: 16px;
   text-transform: uppercase;
   border-radius: var(--ui-radius-md);
-  color: ${COLORS.TEXT_MUTED};
-  background: ${COLORS.BG_DISABLED};
+  color: var(--color-text-muted);
+  background: var(--color-bg-disabled);
   transition:
     background-color ${TRANSITIONS.FAST},
     color ${TRANSITIONS.FAST};
 
   &.active {
-    color: ${COLORS.SUCCESS};
-    background: ${COLORS.SUCCESS_BG_TINT};
+    color: var(--color-success);
+    background: var(--color-success-bg-tint);
   }
 `
 
@@ -69,17 +68,17 @@ export const SC_LiveDot = styled.span`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: ${COLORS.TEXT_MUTED};
+  background: var(--color-text-muted);
 
   &.active {
-    background: ${COLORS.SUCCESS};
+    background: var(--color-success);
     animation: live-pulse 1.6s ease-in-out infinite;
   }
 
   @keyframes live-pulse {
     0%,
     100% {
-      box-shadow: 0 0 0 0 ${COLORS.SUCCESS_BG_PULSE};
+      box-shadow: 0 0 0 0 var(--color-success-bg-pulse);
     }
 
     50% {
@@ -90,7 +89,7 @@ export const SC_LiveDot = styled.span`
 
 export const SC_ExplorerSubtitle = styled.p`
   font-size: 14px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   margin: 0;
 `
 
@@ -145,8 +144,8 @@ export const SC_StatCardHint = styled.div`
 `
 
 export const SC_SectionCard = styled.section`
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
@@ -206,7 +205,7 @@ export const SC_BlockRow = styled.div`
   }
 
   &:hover {
-    background: ${COLORS.OVERLAY_3};
+    background: var(--color-overlay-3);
   }
 `
 
@@ -218,13 +217,13 @@ export const SC_BlockHeight = styled.div`
 
 export const SC_BlockNtx = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   text-align: right;
 `
 
 export const SC_BlockAge = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   text-align: right;
   white-space: nowrap;
 `

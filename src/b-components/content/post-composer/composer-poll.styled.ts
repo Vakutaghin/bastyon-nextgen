@@ -1,7 +1,6 @@
 import styled from 'vue3-styled-components'
 
 import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Poll = styled.div`
   display: flex;
@@ -15,7 +14,7 @@ export const SC_PollToggle = styled.label`
   gap: ${SPACING.SM};
   align-self: flex-start;
   font-size: ${FONT_SIZE.MD};
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   cursor: pointer;
   user-select: none;
 
@@ -23,7 +22,7 @@ export const SC_PollToggle = styled.label`
     width: 16px;
     height: 16px;
     cursor: pointer;
-    accent-color: ${COLORS.PRIMARY};
+    accent-color: var(--color-primary);
   }
 `
 
@@ -32,27 +31,27 @@ export const SC_PollBody = styled.div`
   flex-direction: column;
   gap: ${SPACING.XS};
   padding: ${SPACING.SM} ${SPACING.MD};
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.MD};
-  background: ${COLORS.BG_INPUT};
+  background: var(--color-bg-input);
 `
 
 export const SC_PollInput = styled.input`
   width: 100%;
   padding: ${SPACING.XS} ${SPACING.SM};
   font-size: ${FONT_SIZE.MD};
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER};
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.SM};
   outline: none;
 
   &:focus {
-    border-color: ${COLORS.PRIMARY};
+    border-color: var(--color-primary);
   }
 
   &::placeholder {
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--color-text-muted);
   }
 `
 
@@ -67,13 +66,13 @@ export const SC_PollOptionRemove = styled.button`
   padding: 0 ${SPACING.XS};
   border: none;
   background: none;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
   cursor: pointer;
   font-size: ${FONT_SIZE.LG};
   line-height: 1;
 
   &:hover {
-    color: ${COLORS.DANGER};
+    color: var(--color-danger);
   }
 `
 
@@ -82,12 +81,12 @@ export const SC_PollAddBtn = styled.button`
   padding: ${SPACING.XS} ${SPACING.SM};
   border: none;
   background: none;
-  color: ${COLORS.PRIMARY};
+  color: var(--color-primary);
   cursor: pointer;
   font-size: ${FONT_SIZE.SM};
 
   &:disabled {
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--color-text-muted);
     cursor: not-allowed;
   }
 `

@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { SC_UserStats } from '@/b-components/profile/profile-sidebar/styled'
 
 export const SC_ChatRoomContainer = styled.div`
@@ -16,8 +15,8 @@ export const SC_PartnerStats = styled(SC_UserStats)`
 
 export const SC_MessageInputArea = styled.div`
   padding: 12px;
-  background-color: ${COLORS.BG_LIGHT};
-  border-top: 1px solid ${COLORS.GRAY_EEE};
+  background-color: var(--color-bg-light);
+  border-top: 1px solid var(--color-gray-eee);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -27,7 +26,7 @@ export const SC_MessageInputArea = styled.div`
 export const SC_MessageInput = styled.textarea`
   flex: 1;
   box-sizing: border-box;
-  border: 1px solid ${COLORS.GRAY_DDD};
+  border: 1px solid var(--color-gray-ddd);
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 14px;
@@ -41,7 +40,7 @@ export const SC_MessageInput = styled.textarea`
   font-family: inherit;
 
   &:focus {
-    border-color: ${COLORS.BRAND_CYAN};
+    border-color: var(--color-brand-cyan);
   }
 
   &::-webkit-scrollbar {
@@ -53,7 +52,7 @@ export const SC_MessageInput = styled.textarea`
   }
 
   &::-webkit-scrollbar-thumb {
-    background: ${COLORS.GRAY_CCC};
+    background: var(--color-gray-ccc);
     border-radius: var(--ui-radius-xs);
   }
 `
@@ -63,8 +62,8 @@ export const SC_SendButton = styled.button`
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: ${COLORS.BRAND_CYAN};
-  color: ${COLORS.WHITE};
+  background-color: var(--color-brand-cyan);
+  color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -73,12 +72,12 @@ export const SC_SendButton = styled.button`
   flex-shrink: 0;
 
   &:disabled {
-    background-color: ${COLORS.GRAY_CCC};
+    background-color: var(--color-gray-ccc);
     cursor: not-allowed;
   }
 
   &:not(:disabled):hover {
-    background-color: ${COLORS.BRAND_CYAN_HOVER};
+    background-color: var(--color-brand-cyan-hover);
   }
 
   svg {
@@ -95,7 +94,7 @@ export const SC_EmojiToggleButton = styled.button`
   border-radius: 50%;
   border: none;
   background-color: transparent;
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -106,8 +105,8 @@ export const SC_EmojiToggleButton = styled.button`
   flex-shrink: 0;
 
   &:hover {
-    color: ${COLORS.BRAND_CYAN};
-    background-color: ${COLORS.BG_HOVER};
+    color: var(--color-brand-cyan);
+    background-color: var(--color-bg-hover);
   }
 
   svg {
@@ -122,8 +121,8 @@ export const SC_VoiceButton = styled.button`
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: ${COLORS.RED_ANT};
-  color: ${COLORS.WHITE};
+  background-color: var(--color-red-ant);
+  color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,7 +136,7 @@ export const SC_VoiceButton = styled.button`
   -webkit-user-select: none;
 
   &.recording {
-    background-color: ${COLORS.RED_DARK};
+    background-color: var(--color-red-dark);
     transform: scale(1.1);
   }
 
@@ -150,7 +149,7 @@ export const SC_VoiceButton = styled.button`
 
 export const SC_RecordingTimer = styled.div`
   font-family: var(--font-family-mono);
-  color: ${COLORS.RED_DARK};
+  color: var(--color-red-dark);
   font-size: 16px;
   font-weight: bold;
   margin-right: auto;
@@ -165,7 +164,7 @@ export const SC_RecordingTimer = styled.div`
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: ${COLORS.RED_DARK};
+    background-color: var(--color-red-dark);
     animation: pulse 1s infinite;
   }
 
@@ -185,7 +184,7 @@ export const SC_RecordingTimer = styled.div`
 `
 
 export const SC_SwipeHint = styled.div`
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -211,7 +210,7 @@ export const SC_SwipeHint = styled.div`
 `
 
 export const SC_CancelButton = styled.button`
-  color: ${COLORS.RED_ANT};
+  color: var(--color-red-ant);
   background: none;
   border: none;
   font-weight: 600;
@@ -236,16 +235,16 @@ export const SC_StartChatButton = styled.button`
   padding: 10px 16px;
   border-radius: var(--ui-radius-lg);
   border: none;
-  background-color: ${COLORS.BRAND_CYAN};
-  color: ${COLORS.WHITE};
+  background-color: var(--color-brand-cyan);
+  color: var(--color-white);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
-  box-shadow: ${COLORS.SHADOW_SM};
+  box-shadow: var(--shadow-sm);
 
   &:hover {
-    background-color: ${COLORS.BRAND_CYAN_HOVER};
+    background-color: var(--color-brand-cyan-hover);
   }
 `
 
@@ -262,7 +261,7 @@ export const SC_PartnerAvatar = styled.div`
   height: 44px;
   border-radius: 50%;
   overflow: hidden;
-  background: ${COLORS.GRAY_E0};
+  background: var(--color-gray-e0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -277,7 +276,7 @@ export const SC_PartnerAvatar = styled.div`
   .avatar-fallback {
     font-size: 18px;
     font-weight: 600;
-    color: ${COLORS.SLATE};
+    color: var(--color-slate);
     user-select: none;
   }
 `
@@ -285,7 +284,7 @@ export const SC_PartnerAvatar = styled.div`
 export const SC_PartnerName = styled.div`
   font-weight: 600;
   font-size: 15px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -294,7 +293,7 @@ export const SC_PartnerName = styled.div`
 export const SC_PartnerInfoCard = styled.div`
   margin: 16px auto 12px;
   padding: 16px 16px 6px;
-  border: 1px solid ${COLORS.GRAY_EEE};
+  border: 1px solid var(--color-gray-eee);
   border-radius: var(--ui-radius-lg);
   max-width: 380px;
   box-sizing: border-box;
@@ -302,8 +301,8 @@ export const SC_PartnerInfoCard = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: ${COLORS.BG_PRIMARY};
-  box-shadow: ${COLORS.SHADOW_SM};
+  background: var(--color-bg-primary);
+  box-shadow: var(--shadow-sm);
 `
 
 export const SC_ChatRoomLoader = styled.div`
@@ -313,7 +312,7 @@ export const SC_ChatRoomLoader = styled.div`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
   font-size: 14px;
 `
 
@@ -321,8 +320,8 @@ export const SC_ChatRoomSpinner = styled.span`
   display: inline-block;
   width: 32px;
   height: 32px;
-  border: 3px solid ${COLORS.GRAY_E0};
-  border-top-color: ${COLORS.TEXT_SECONDARY};
+  border: 3px solid var(--color-gray-e0);
+  border-top-color: var(--color-text-secondary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `
@@ -333,7 +332,7 @@ export const SC_ChatRoomLoaderText = styled.span`
 
 export const SC_ChatRoomEmptyHint = styled.div`
   padding: 12px 16px;
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
   font-size: 14px;
   line-height: 1.4;
   flex-shrink: 0;
@@ -341,7 +340,7 @@ export const SC_ChatRoomEmptyHint = styled.div`
 
 export const SC_TypingIndicator = styled.div`
   padding: 2px 16px 6px;
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
   font-size: 12px;
   font-style: italic;
   flex-shrink: 0;
@@ -352,13 +351,13 @@ export const SC_SearchRow = styled.div`
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-bottom: 1px solid ${COLORS.GRAY_EEE};
+  border-bottom: 1px solid var(--color-gray-eee);
   flex-shrink: 0;
 `
 
 export const SC_SearchIcon = styled.span`
   display: inline-flex;
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
   font-size: 15px;
 `
 
@@ -369,17 +368,17 @@ export const SC_SearchInput = styled.input`
   outline: none;
   background: none;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 
   &::placeholder {
-    color: ${COLORS.GRAY_888};
+    color: var(--color-gray-888);
   }
 `
 
 export const SC_SearchCount = styled.span`
   flex-shrink: 0;
   font-size: 12px;
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
 `
 
 export const SC_BlockBtn = styled.button`
@@ -390,17 +389,17 @@ export const SC_BlockBtn = styled.button`
   padding: 4px;
   border: none;
   background: none;
-  color: ${COLORS.GRAY_888};
+  color: var(--color-gray-888);
   font-size: 15px;
   cursor: pointer;
   transition: color 0.2s;
 
   &:hover {
-    color: ${COLORS.DANGER};
+    color: var(--color-danger);
   }
 
   &.blocked {
-    color: ${COLORS.DANGER};
+    color: var(--color-danger);
   }
 
   &:disabled {
@@ -415,15 +414,15 @@ export const SC_ReplyBanner = styled.div`
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background-color: ${COLORS.BG_LIGHT};
-  border-top: 1px solid ${COLORS.GRAY_EEE};
+  background-color: var(--color-bg-light);
+  border-top: 1px solid var(--color-gray-eee);
 `
 
 export const SC_ReplyBannerBar = styled.div`
   width: 3px;
   align-self: stretch;
   border-radius: var(--ui-radius-xs);
-  background: ${COLORS.BRAND_CYAN};
+  background: var(--color-brand-cyan);
   flex-shrink: 0;
 `
 
@@ -435,12 +434,12 @@ export const SC_ReplyBannerBody = styled.div`
 export const SC_ReplyBannerTitle = styled.div`
   font-size: 12px;
   font-weight: 600;
-  color: ${COLORS.BRAND_CYAN};
+  color: var(--color-brand-cyan);
 `
 
 export const SC_ReplyBannerText = styled.div`
   font-size: 13px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -452,12 +451,12 @@ export const SC_ReplyBannerClose = styled.button`
   cursor: pointer;
   font-size: 20px;
   line-height: 1;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   padding: 0 4px;
   flex-shrink: 0;
 
   &:hover {
-    color: ${COLORS.TEXT_PRIMARY};
+    color: var(--color-text-primary);
   }
 `
 
@@ -467,8 +466,8 @@ export const SC_KeyChangedBanner = styled.div`
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: ${COLORS.DANGER_BG_SOFT};
-  border-bottom: 1px solid ${COLORS.DANGER};
+  background: var(--color-danger-bg-soft);
+  border-bottom: 1px solid var(--color-danger);
   flex-shrink: 0;
 `
 
@@ -476,21 +475,21 @@ export const SC_KeyChangedText = styled.span`
   flex: 1;
   font-size: 12px;
   line-height: 1.35;
-  color: ${COLORS.DANGER_DEEP};
+  color: var(--color-danger-deep);
 `
 
 export const SC_KeyChangedAccept = styled.button`
   flex-shrink: 0;
   background: none;
-  border: 1px solid ${COLORS.DANGER};
+  border: 1px solid var(--color-danger);
   border-radius: var(--ui-radius-md);
   padding: 4px 10px;
   font-size: 12px;
-  color: ${COLORS.DANGER_DEEP};
+  color: var(--color-danger-deep);
   cursor: pointer;
 
   &:hover {
-    background: ${COLORS.DANGER};
+    background: var(--color-danger);
     color: #fff;
   }
 `

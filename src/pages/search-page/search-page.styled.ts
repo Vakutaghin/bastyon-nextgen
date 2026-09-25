@@ -13,7 +13,7 @@ export const SC_SearchWork = styled.div`
   gap: var(--content-gap);
   padding: calc(var(--header-height) - 2px) 0 25px;
   align-items: flex-start;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 
   &.is-mobile {
     gap: 0;
@@ -25,7 +25,7 @@ export const SC_SearchWork = styled.div`
 export const SC_SearchMainContent = styled.main`
   flex: 1;
   min-width: 0;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   padding: 20px 20px 60px;
   border-radius: var(--ui-radius-lg);
 
@@ -52,20 +52,20 @@ export const SC_Header = styled.div`
 export const SC_QueryTitle = styled.h1`
   font-size: 20px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   margin: 0;
   word-break: break-word;
 `
 
 export const SC_QueryHint = styled.span`
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   font-size: 13px;
 `
 
 export const SC_Tabs = styled.div`
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHT};
+  border-bottom: 1px solid var(--color-border-light);
   margin-bottom: 16px;
 `
 
@@ -84,7 +84,7 @@ export const SC_Tab = styled.button<{ active: boolean }>`
     border-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    color: ${COLORS.PRIMARY};
+    color: var(--color-primary);
   }
 `
 
@@ -100,16 +100,16 @@ export const SC_ResultItem = styled.div`
   gap: 12px;
   padding: 12px;
   border-radius: var(--ui-radius-lg);
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-lighter);
   cursor: pointer;
   transition:
     background-color ${TRANSITIONS.QUICK},
     border-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.BG_HOVER_BLUE};
-    border-color: ${COLORS.PRIMARY_LIGHT_30};
+    background: var(--color-bg-hover-blue);
+    border-color: var(--color-primary-light-30);
   }
 `
 
@@ -119,11 +119,11 @@ export const SC_Avatar = styled.div`
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: ${COLORS.GRAY_E8};
+  background: var(--color-gray-e8);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: ${COLORS.WHITE};
+  color: var(--color-white);
   font-weight: 600;
   font-size: 14px;
 
@@ -145,7 +145,7 @@ export const SC_ItemBody = styled.div`
 
 export const SC_ItemTitle = styled.div`
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -153,7 +153,7 @@ export const SC_ItemTitle = styled.div`
 
 export const SC_ItemSubtitle = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -162,7 +162,7 @@ export const SC_ItemSubtitle = styled.div`
 export const SC_TagBadge = styled.span`
   display: inline-block;
   font-size: 12px;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   margin-left: 8px;
 `
 
@@ -174,10 +174,10 @@ export const SC_LoadMoreWrapper = styled.div`
 
 export const SC_LoadMore = styled.button`
   background: none;
-  border: 1px solid ${COLORS.BORDER};
+  border: 1px solid var(--color-border);
   border-radius: var(--ui-radius-lg);
   padding: 8px 20px;
-  color: ${COLORS.PRIMARY};
+  color: var(--color-primary);
   font-size: 13px;
   cursor: pointer;
   transition:
@@ -185,8 +185,8 @@ export const SC_LoadMore = styled.button`
     border-color ${TRANSITIONS.QUICK};
 
   &:hover:not(:disabled) {
-    background: ${COLORS.PRIMARY_LIGHT};
-    border-color: ${COLORS.PRIMARY};
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
   }
 
   &:disabled {
@@ -198,13 +198,13 @@ export const SC_LoadMore = styled.button`
 export const SC_Empty = styled.div`
   text-align: center;
   padding: 48px 16px;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   font-size: 14px;
 `
 
 export const SC_LoadingState = styled.div`
   text-align: center;
   padding: 48px 16px;
-  color: ${COLORS.TEXT_HINT};
+  color: var(--color-text-hint);
   font-size: 14px;
 `

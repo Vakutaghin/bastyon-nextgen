@@ -1,5 +1,4 @@
 import styled, { css } from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { TRANSITIONS } from '@/styles/design-tokens'
 import { SC_SettingsSectionTitle } from './settings-page-main.styled'
 
@@ -25,7 +24,7 @@ export const SC_ExplorerSettingsLead = styled.p`
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_ExplorerOpenFullButton = styled.a`
@@ -36,8 +35,8 @@ export const SC_ExplorerOpenFullButton = styled.a`
   padding: 12px 22px;
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.WHITE};
-  background: ${COLORS.ANT_BLUE};
+  color: var(--color-white);
+  background: var(--color-ant-blue);
   border: none;
   border-radius: var(--ui-radius-lg);
   cursor: pointer;
@@ -46,8 +45,8 @@ export const SC_ExplorerOpenFullButton = styled.a`
   align-self: flex-start;
 
   &:hover {
-    background: ${COLORS.ANT_BLUE_HOVER};
-    color: ${COLORS.WHITE};
+    background: var(--color-ant-blue-hover);
+    color: var(--color-white);
   }
 `
 
@@ -64,33 +63,33 @@ export const SC_ExplorerNodeRow = styled('label', nodeRowProps)`
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border: 1px solid ${COLORS.BORDER_DEFAULT};
+  border: 1px solid var(--color-border-default);
   border-radius: var(--ui-radius-lg);
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   cursor: pointer;
   font-size: 14px;
-  color: ${COLORS.GRAY_212};
+  color: var(--color-gray-212);
   transition:
     background ${TRANSITIONS.QUICK},
     border-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.OVERLAY_2};
-    border-color: ${COLORS.ANT_BLUE};
+    background: var(--color-overlay-2);
+    border-color: var(--color-ant-blue);
   }
 
   ${(p: { active?: boolean }) =>
     p.active &&
     css`
-      border-color: ${COLORS.ANT_BLUE};
-      background: ${COLORS.ANT_BLUE_BG};
+      border-color: var(--color-ant-blue);
+      background: var(--color-ant-blue-bg);
     `}
 `
 
 export const SC_ExplorerNodeRadio = styled.input`
   margin: 0;
   cursor: pointer;
-  accent-color: ${COLORS.ANT_BLUE};
+  accent-color: var(--color-ant-blue);
 `
 
 export const SC_ExplorerNodeLabel = styled.span`
@@ -101,5 +100,5 @@ export const SC_ExplorerNodeLabel = styled.span`
 
 export const SC_ExplorerNodeHint = styled.span`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `

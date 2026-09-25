@@ -9,7 +9,7 @@ export const SC_EventsWrapper = styled.div`
   padding: 6px;
   border-radius: var(--ui-radius-md);
   transition: background-color 0.2s;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 
   &:hover {
     background-color: var(--ui-bg-elevated);
@@ -35,7 +35,7 @@ export const SC_MenuHeader = styled.div`
   align-items: center;
   gap: 8px;
   padding: 6px 8px 10px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_MenuTitle = styled.div`
@@ -46,7 +46,7 @@ export const SC_MenuTitle = styled.div`
 export const SC_EmptyMessage = styled.div`
   padding: 12px;
   text-align: center;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
 `
 
 export const SC_EventsList = styled.div`
@@ -56,10 +56,10 @@ export const SC_EventsList = styled.div`
 `
 
 export const SC_EventItem = styled.div`
-  border: 1px solid ${COLORS.GRAY_E8};
+  border: 1px solid var(--color-gray-e8);
   border-radius: var(--ui-radius-lg);
   padding: 10px 12px;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -80,8 +80,8 @@ export const SC_KindChip = styled.div`
   gap: 6px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: ${COLORS.ANT_BLUE_BG};
-  color: ${COLORS.ANT_BLUE};
+  background: var(--color-ant-blue-bg);
+  color: var(--color-ant-blue);
   font-size: 12px;
   font-weight: 600;
 `
@@ -91,14 +91,14 @@ export const SC_PendingTag = styled.div`
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
   white-space: nowrap;
 `
 
 /** Панель с содержимым события (визуально отделяет текст от метаданных). */
 export const SC_EventPanel = styled.div`
-  background: ${COLORS.BG_INPUT};
-  border: 1px solid ${COLORS.GRAY_E8};
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-gray-e8);
   border-radius: var(--ui-radius-lg);
   padding: 8px 10px;
 `
@@ -114,7 +114,7 @@ export const SC_EventContent = styled.div`
 export const SC_PostTitle = styled.div`
   font-size: 15px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -126,7 +126,7 @@ export const SC_PostTitle = styled.div`
 export const SC_Snippet = styled.div`
   font-size: 13px;
   line-height: 1.4;
-  color: ${COLORS.GRAY_555};
+  color: var(--color-gray-555);
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -143,17 +143,17 @@ export const SC_RatingDisplay = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
   padding: 2px 8px;
   border-radius: var(--ui-radius-lg);
-  border: 1px solid ${COLORS.BG_HOVER};
+  border: 1px solid var(--color-bg-hover);
   white-space: nowrap;
 `
 
 export const SC_RatingValue = styled.span`
   font-size: 15px;
   font-weight: 700;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 /** Строка действий карточки (кнопка «Перейти к посту»). */
@@ -173,7 +173,7 @@ export const SC_PreviewNote = styled('div', { confirmed: Boolean })`
   margin-bottom: 12px;
   border-radius: var(--ui-radius-lg);
   background: ${(p) => (p.confirmed ? COLORS.SUCCESS_BG_TINT : COLORS.ANT_BLUE_BG)};
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.4;
 
@@ -186,7 +186,7 @@ export const SC_PreviewNote = styled('div', { confirmed: Boolean })`
 `
 
 export const SC_PreviewBody = styled.div`
-  border: 1px solid ${COLORS.GRAY_E8};
+  border: 1px solid var(--color-gray-e8);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `

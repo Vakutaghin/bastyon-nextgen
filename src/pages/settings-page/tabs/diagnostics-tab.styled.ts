@@ -11,7 +11,7 @@ export const SC_DiagTitle = styled.h2`
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_DiagGroup = styled.div`
@@ -26,7 +26,7 @@ export const SC_DiagGroupTitle = styled.h3`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 `
 
 export const SC_DiagRow = styled.div`
@@ -35,7 +35,7 @@ export const SC_DiagRow = styled.div`
   justify-content: space-between;
   gap: 16px;
   padding: 7px 0;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
 
   &:last-child {
     border-bottom: 0;
@@ -44,14 +44,14 @@ export const SC_DiagRow = styled.div`
 
 export const SC_DiagLabel = styled.span`
   font-size: 14px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   flex-shrink: 0;
 `
 
 export const SC_DiagValue = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-family: var(--font-family-mono);
   text-align: right;
   word-break: break-all;

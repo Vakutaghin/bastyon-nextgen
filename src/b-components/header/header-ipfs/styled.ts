@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 
 type Variant = 'off' | 'busy' | 'ready' | 'failed'
 
@@ -39,8 +38,8 @@ export const SC_IpfsDot = styled.div`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: ${COLORS.ANT_BLUE};
-  border: 1px solid ${COLORS.BG_PRIMARY};
+  background: var(--color-ant-blue);
+  border: 1px solid var(--color-bg-primary);
 `
 
 export const SC_IpfsMenu = styled.div`
@@ -67,18 +66,18 @@ export const SC_IpfsRow = styled.div`
 export const SC_IpfsTitle = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
 `
 
 export const SC_IpfsStatusLine = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_IpfsProgressOuter = styled.div`
   width: 100%;
   height: 4px;
-  background: ${COLORS.OVERLAY_6};
+  background: var(--color-overlay-6);
   border-radius: var(--ui-radius-xs);
   overflow: hidden;
 `
@@ -86,7 +85,7 @@ export const SC_IpfsProgressOuter = styled.div`
 export const SC_IpfsProgressInner = styled.div<{ pct?: number }>`
   height: 100%;
   width: ${(p) => Math.max(0, Math.min(100, p.pct ?? 0))}%;
-  background: ${COLORS.ANT_BLUE};
+  background: var(--color-ant-blue);
   transition: width 0.3s;
 `
 
@@ -98,5 +97,5 @@ export const SC_IpfsActions = styled.div`
 
 export const SC_IpfsHint = styled.div`
   font-size: 11px;
-  color: ${COLORS.GRAY_999};
+  color: var(--color-gray-999);
 `

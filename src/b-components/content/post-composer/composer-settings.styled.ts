@@ -1,7 +1,6 @@
 import styled from 'vue3-styled-components'
 
 import { BORDER_RADIUS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
 
 export const SC_Settings = styled.div`
   display: flex;
@@ -19,44 +18,44 @@ export const SC_SettingItem = styled.div`
 
 export const SC_Label = styled.label`
   font-size: ${FONT_SIZE.SM};
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_Select = styled.select`
   padding: ${SPACING.XS} ${SPACING.SM};
   font-size: ${FONT_SIZE.MD};
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_INPUT};
-  border: 1px solid ${COLORS.BORDER};
+  color: var(--color-text-primary);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.MD};
   outline: none;
   cursor: pointer;
 
   &:focus {
-    border-color: ${COLORS.PRIMARY};
+    border-color: var(--color-primary);
   }
 
   &:disabled {
     cursor: not-allowed;
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--color-text-muted);
   }
 `
 
 export const SC_DateInput = styled.input`
   padding: ${SPACING.XS} ${SPACING.SM};
   font-size: ${FONT_SIZE.MD};
-  color: ${COLORS.TEXT_PRIMARY};
-  background: ${COLORS.BG_INPUT};
-  border: 1px solid ${COLORS.BORDER};
+  color: var(--color-text-primary);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
   border-radius: ${BORDER_RADIUS.MD};
   outline: none;
 
   &:focus {
-    border-color: ${COLORS.PRIMARY};
+    border-color: var(--color-primary);
   }
 `
 
 export const SC_TrialHint = styled.span`
   font-size: ${FONT_SIZE.XS};
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 `

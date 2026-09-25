@@ -1,5 +1,4 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
 // Общие примитивы эксплорера (audit §3.1).
@@ -12,7 +11,7 @@ export {
 
 export const SC_BlockConfirmationsTip = styled.span`
   font-size: 12px;
-  color: ${COLORS.WARNING_ICON};
+  color: var(--color-warning-icon);
 `
 
 export const SC_BlockSiblingRow = styled.div`
@@ -20,14 +19,14 @@ export const SC_BlockSiblingRow = styled.div`
 `
 
 export const SC_BlockSiblingsEmpty = styled.div`
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 `
 
 export const SC_BlockPageWork = styled.div`
   display: flex;
   flex: 1;
   width: 100%;
-  background: ${COLORS.BG_PRIMARY};
+  background: var(--color-bg-primary);
 `
 
 export const SC_BlockPagePage = styled.main`
@@ -41,10 +40,10 @@ export const SC_BlockPagePage = styled.main`
 export const SC_BlockBreadcrumb = styled.div`
   margin-bottom: 12px;
   font-size: 13px;
-  color: ${COLORS.TEXT_MUTED};
+  color: var(--color-text-muted);
 
   a {
-    color: ${COLORS.LINK};
+    color: var(--color-link);
     text-decoration: none;
 
     &:hover {
@@ -56,7 +55,7 @@ export const SC_BlockBreadcrumb = styled.div`
 export const SC_BlockTitle = styled.h1`
   font-size: 24px;
   font-weight: 700;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   margin: 0 0 16px;
 `
 
@@ -72,19 +71,19 @@ export const SC_BlockNavBtn = styled.button`
   gap: 6px;
   padding: 6px 12px;
   font-size: 13px;
-  background: ${COLORS.BG_SECONDARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-md);
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   cursor: pointer;
 
   &:disabled {
-    color: ${COLORS.TEXT_MUTED};
+    color: var(--color-text-muted);
     cursor: not-allowed;
   }
 
   &:hover:not(:disabled) {
-    background: ${COLORS.BG_HOVER};
+    background: var(--color-bg-hover);
   }
 `
 
@@ -92,8 +91,8 @@ export const SC_BlockMetaGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
-  background: ${COLORS.BG_SECONDARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 24px;
@@ -105,8 +104,8 @@ export const SC_BlockMetaGrid = styled.div`
 
 export const SC_BlockMetaCell = styled.div`
   padding: 14px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
-  border-right: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
+  border-right: 1px solid var(--color-border-lighter);
 
   &:nth-child(2n) {
     border-right: none;
@@ -121,20 +120,20 @@ export const SC_BlockMetaLabel = styled.div`
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   margin-bottom: 6px;
 `
 
 export const SC_BlockMetaValue = styled.div`
   font-size: 14px;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
   word-break: break-all;
 `
 
 export const SC_TxSection = styled.section`
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.BORDER_LIGHTER};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
 `
@@ -144,7 +143,7 @@ export const SC_TxSectionHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
 `
 
 export const SC_TxSectionTitle = styled.h2`
@@ -159,7 +158,7 @@ export const SC_TxSectionPager = styled.div`
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
 `
 
 export const SC_TxRow = styled.div`
@@ -167,7 +166,7 @@ export const SC_TxRow = styled.div`
   grid-template-columns: 90px minmax(0, 1fr) 110px;
   gap: 12px;
   padding: 12px 18px;
-  border-bottom: 1px solid ${COLORS.BORDER_LIGHTER};
+  border-bottom: 1px solid var(--color-border-lighter);
   font-size: 13px;
   align-items: center;
 
@@ -200,7 +199,7 @@ export const SC_TxRow = styled.div`
   }
 
   &:hover {
-    background: ${COLORS.OVERLAY_3};
+    background: var(--color-overlay-3);
   }
 `
 
@@ -210,15 +209,15 @@ export const SC_TxTypeBadge = styled.span`
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 600;
-  background: ${COLORS.PRIMARY_LIGHT};
-  color: ${COLORS.PRIMARY};
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   border-radius: var(--ui-radius-sm);
   white-space: nowrap;
 `
 
 export const SC_TxValue = styled.div`
   font-size: 12px;
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   text-align: right;
   font-variant-numeric: tabular-nums;
 `

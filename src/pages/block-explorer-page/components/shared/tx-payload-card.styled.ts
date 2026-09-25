@@ -1,11 +1,10 @@
 import styled from 'vue3-styled-components'
-import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_PayloadCard = styled.div`
-  background: ${COLORS.BG_PRIMARY};
-  border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
-  border-left: 3px solid ${COLORS.PRIMARY};
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-primary-light-30);
+  border-left: 3px solid var(--color-primary);
   border-radius: var(--ui-radius-lg);
   padding: 18px 22px;
   margin-bottom: 24px;
@@ -24,9 +23,9 @@ export const SC_PayloadIcon = styled.span`
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: ${COLORS.PRIMARY_LIGHT};
+  background: var(--color-primary-light);
   border-radius: var(--ui-radius-lg);
-  color: ${COLORS.PRIMARY};
+  color: var(--color-primary);
   font-size: 18px;
   flex-shrink: 0;
 `
@@ -34,7 +33,7 @@ export const SC_PayloadIcon = styled.span`
 export const SC_PayloadTitle = styled.h3`
   font-size: 15px;
   font-weight: 600;
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   margin: 0;
 `
 
@@ -52,7 +51,7 @@ export const SC_PayloadFields = styled.div`
 `
 
 export const SC_PayloadFieldLabel = styled.div`
-  color: ${COLORS.TEXT_SECONDARY};
+  color: var(--color-text-secondary);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -64,7 +63,7 @@ export const SC_PayloadFieldLabel = styled.div`
 `
 
 export const SC_PayloadFieldValue = styled.div`
-  color: ${COLORS.TEXT_PRIMARY};
+  color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
   word-break: break-all;
 `
@@ -89,17 +88,17 @@ export const SC_PayloadBtn = styled.a`
   padding: 7px 12px;
   font-size: 13px;
   font-weight: 500;
-  color: ${COLORS.PRIMARY};
-  background: ${COLORS.PRIMARY_LIGHT};
-  border: 1px solid ${COLORS.PRIMARY_LIGHT_30};
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary-light-30);
   border-radius: var(--ui-radius-md);
   text-decoration: none;
   cursor: pointer;
   transition: background-color ${TRANSITIONS.QUICK};
 
   &:hover {
-    background: ${COLORS.PRIMARY_LIGHT_15};
-    border-color: ${COLORS.PRIMARY_LIGHT_50};
+    background: var(--color-primary-light-15);
+    border-color: var(--color-primary-light-50);
   }
 `
 
@@ -109,13 +108,13 @@ export const SC_PayloadScore = styled.span`
   padding: 2px 8px;
   font-weight: 700;
   font-size: 13px;
-  color: ${COLORS.PRIMARY};
-  background: ${COLORS.PRIMARY_LIGHT};
+  color: var(--color-primary);
+  background: var(--color-primary-light);
   border-radius: var(--ui-radius-md);
   margin-right: 6px;
 `
 
 export const SC_PayloadScoreNeg = styled(SC_PayloadScore)`
-  color: ${COLORS.DANGER};
-  background: ${COLORS.RED_BG};
+  color: var(--color-danger);
+  background: var(--color-red-bg);
 `
