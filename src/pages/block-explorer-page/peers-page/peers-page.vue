@@ -20,7 +20,7 @@
 
         <template v-if="healthLoading && !nodeHealth.length">
           <SC_NodeRow v-for="i in totalNodes" :key="`node-sk-${i}`">
-            <SC_NodeDot color="#ccc" />
+            <SC_NodeDot color="var(--ui-border-accented)" />
             <SC_NodeAddr><Skeleton width="160" :height="14" /></SC_NodeAddr>
             <SC_NodeMetric><Skeleton :width="60" :height="12" /></SC_NodeMetric>
             <SC_NodeMetric class="secondary"><Skeleton :width="60" :height="12" /></SC_NodeMetric>
@@ -31,7 +31,7 @@
         <template v-else>
           <SC_NodeRow v-for="node in nodeHealth" :key="`${node.host}:${node.port}`">
             <SC_NodeDot
-              :color="node.ok ? '#28a745' : '#dc3545'"
+              :color="node.ok ? 'var(--ui-success)' : 'var(--ui-error)'"
               :title="
                 node.ok
                   ? t('explorerPage.peersNodeOk')

@@ -95,7 +95,7 @@ export const SC_ExplorerNodeRadio = styled.input`
 
 export const SC_ExplorerNodeLabel = styled.span`
   flex: 1;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-family-mono);
   font-size: 13px;
 `
 

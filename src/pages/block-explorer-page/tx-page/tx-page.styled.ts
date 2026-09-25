@@ -197,11 +197,10 @@ export const SC_TxRawPre = styled.pre`
   padding: 14px;
   background: ${COLORS.GRAY_F1};
   border-radius: 8px;
-  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-family-mono);
   font-size: 12px;
   color: ${COLORS.TEXT_DARK};
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-all;
 `
-

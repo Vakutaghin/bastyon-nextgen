@@ -10,108 +10,114 @@
 //
 // `var(--color-X, FALLBACK)` — fallback гарантирует, что цвет отображается
 // корректно даже если CSS-переменная по какой-то причине не загрузилась
-// (например, в Storybook без глобального CSS).
+// (например, в Storybook без глобального CSS). Фолбэки — значения светлой темы.
+//
+// С редизайна под Nuxt UI (_docs-todo/REDESIGN_NUXT_UI.md) старые `--color-*`
+// перенаправлены на семантические `--ui-*`. В новом коде пиши `var(--ui-…)`
+// прямо в шаблоне styled-компонента: интерполяция `${COLORS.X}` стоит ошибок
+// vue-tsc, а имена здесь уже не всегда совпадают со смыслом (ANT_BLUE и
+// BRAND_CYAN — теперь тот же зелёный акцент).
 
 export const COLORS = {
   // Основные цвета
-  PRIMARY: 'var(--color-primary, rgb(0, 123, 255))',
-  PRIMARY_HOVER: 'var(--color-primary-hover, rgb(0, 105, 217))',
-  PRIMARY_ACTIVE: 'var(--color-primary-active, rgb(0, 86, 179))',
-  PRIMARY_DARK: 'var(--color-primary-dark, rgb(0, 70, 150))',
-  PRIMARY_LIGHT: 'var(--color-primary-light, rgba(0, 123, 255, 0.1))',
-  PRIMARY_LIGHT_15: 'var(--color-primary-light-15, rgba(0, 123, 255, 0.15))',
-  PRIMARY_LIGHT_20: 'var(--color-primary-light-20, rgba(0, 123, 255, 0.2))',
-  PRIMARY_LIGHT_30: 'var(--color-primary-light-30, rgba(0, 123, 255, 0.3))',
-  PRIMARY_LIGHT_50: 'var(--color-primary-light-50, rgba(0, 123, 255, 0.5))',
+  PRIMARY: 'var(--color-primary, #00c16a)',
+  PRIMARY_HOVER: 'var(--color-primary-hover, rgb(0 193 106 / 0.75))',
+  PRIMARY_ACTIVE: 'var(--color-primary-active, #00a155)',
+  PRIMARY_DARK: 'var(--color-primary-dark, #007f45)',
+  PRIMARY_LIGHT: 'var(--color-primary-light, rgb(0 193 106 / 0.1))',
+  PRIMARY_LIGHT_15: 'var(--color-primary-light-15, rgb(0 193 106 / 0.15))',
+  PRIMARY_LIGHT_20: 'var(--color-primary-light-20, rgb(0 193 106 / 0.25))',
+  PRIMARY_LIGHT_30: 'var(--color-primary-light-30, rgb(0 193 106 / 0.25))',
+  PRIMARY_LIGHT_50: 'var(--color-primary-light-50, rgb(0 193 106 / 0.5))',
 
-  // Ant Design синий (используется в некоторых компонентах)
-  ANT_BLUE: 'var(--color-ant-blue, #1890ff)',
-  ANT_BLUE_HOVER: 'var(--color-ant-blue-hover, #40a9ff)',
-  ANT_BLUE_LIGHT: 'var(--color-ant-blue-light, #91d5ff)',
-  ANT_BLUE_BG: 'var(--color-ant-blue-bg, #e6f7ff)',
-  ANT_BLUE_BG_LIGHT: 'var(--color-ant-blue-bg-light, #e6f4ff)',
+  // Бывший синий antd — теперь тот же акцент, что PRIMARY.
+  ANT_BLUE: 'var(--color-ant-blue, #00c16a)',
+  ANT_BLUE_HOVER: 'var(--color-ant-blue-hover, rgb(0 193 106 / 0.75))',
+  ANT_BLUE_LIGHT: 'var(--color-ant-blue-light, rgb(0 193 106 / 0.5))',
+  ANT_BLUE_BG: 'var(--color-ant-blue-bg, rgb(0 193 106 / 0.1))',
+  ANT_BLUE_BG_LIGHT: 'var(--color-ant-blue-bg-light, rgb(0 193 106 / 0.08))',
 
-  // Бренд-акцент (PKOIN / мессенджер) — фирменный циан. Общий для обеих тем.
-  BRAND_CYAN: 'var(--color-brand-cyan, #00a4db)',
-  BRAND_CYAN_HOVER: 'var(--color-brand-cyan-hover, #0091c2)',
-  BRAND_CYAN_LIGHT: 'var(--color-brand-cyan-light, rgba(0, 164, 219, 0.12))',
-  BRAND_CYAN_SOFT: 'var(--color-brand-cyan-soft, rgba(0, 164, 219, 0.06))',
+  // Бывший «фирменный циан» (PKOIN, мессенджер) — теперь тот же акцент, что PRIMARY.
+  BRAND_CYAN: 'var(--color-brand-cyan, #00c16a)',
+  BRAND_CYAN_HOVER: 'var(--color-brand-cyan-hover, rgb(0 193 106 / 0.75))',
+  BRAND_CYAN_LIGHT: 'var(--color-brand-cyan-light, rgb(0 193 106 / 0.12))',
+  BRAND_CYAN_SOFT: 'var(--color-brand-cyan-soft, rgb(0 193 106 / 0.06))',
 
   // Текст
-  TEXT_PRIMARY: 'var(--color-text-primary, rgb(33, 37, 41))',
-  TEXT_SECONDARY: 'var(--color-text-secondary, rgb(108, 117, 125))',
-  TEXT_MUTED: 'var(--color-text-muted, rgb(173, 181, 189))',
-  TEXT_DARK: 'var(--color-text-dark, rgb(73, 80, 87))',
-  TEXT_HINT: 'var(--color-text-hint, rgb(134, 142, 150))',
+  TEXT_PRIMARY: 'var(--color-text-primary, #314158)',
+  TEXT_SECONDARY: 'var(--color-text-secondary, #62748e)',
+  TEXT_MUTED: 'var(--color-text-muted, #90a1b9)',
+  TEXT_DARK: 'var(--color-text-dark, #45556c)',
+  TEXT_HINT: 'var(--color-text-hint, #90a1b9)',
 
   // Фоны
-  BG_PRIMARY: 'var(--color-bg-primary, rgb(255, 255, 255))',
-  BG_SECONDARY: 'var(--color-bg-secondary, rgb(248, 249, 250))',
-  BG_TERTIARY: 'var(--color-bg-tertiary, #f5f5f5)',
-  BG_DISABLED: 'var(--color-bg-disabled, rgb(233, 236, 239))',
-  BG_LIGHT: 'var(--color-bg-light, #f9f9f9)',
-  BG_HOVER: 'var(--color-bg-hover, #f0f0f0)',
-  BG_HOVER_BLUE: 'var(--color-bg-hover-blue, #f0f7ff)',
-  BG_INPUT: 'var(--color-bg-input, #fafafa)',
+  BG_PRIMARY: 'var(--color-bg-primary, #fff)',
+  BG_SECONDARY: 'var(--color-bg-secondary, #f8fafc)',
+  BG_TERTIARY: 'var(--color-bg-tertiary, #f1f5f9)',
+  BG_DISABLED: 'var(--color-bg-disabled, #f1f5f9)',
+  BG_LIGHT: 'var(--color-bg-light, #f8fafc)',
+  BG_HOVER: 'var(--color-bg-hover, #f1f5f9)',
+  BG_HOVER_BLUE: 'var(--color-bg-hover-blue, #f1f5f9)',
+  BG_INPUT: 'var(--color-bg-input, #fff)',
   // Полупрозрачная «матовая» поверхность (sticky-бары, backdrop-blur). Флипается.
-  SURFACE_FROSTED: 'var(--color-surface-frosted, rgba(248, 249, 250, 0.8))',
+  SURFACE_FROSTED: 'var(--color-surface-frosted, rgb(255 255 255 / 0.75))',
 
   // Границы
-  BORDER: 'var(--color-border, rgb(206, 212, 218))',
-  BORDER_LIGHT: 'var(--color-border-light, rgba(206, 212, 218, 0.5))',
-  BORDER_LIGHTER: 'var(--color-border-lighter, rgba(206, 212, 218, 0.3))',
-  BORDER_DEFAULT: 'var(--color-border-default, #d9d9d9)',
-  BORDER_DARK: 'var(--color-border-dark, rgb(222, 226, 230))',
+  BORDER: 'var(--color-border, #cad5e2)',
+  BORDER_LIGHT: 'var(--color-border-light, #e2e8f0)',
+  BORDER_LIGHTER: 'var(--color-border-lighter, #e2e8f0)',
+  BORDER_DEFAULT: 'var(--color-border-default, #cad5e2)',
+  BORDER_DARK: 'var(--color-border-dark, #cad5e2)',
 
   // Состояния
-  SUCCESS: 'var(--color-success, rgb(40, 167, 69))',
-  SUCCESS_DEEP: 'var(--color-success-deep, rgb(34, 120, 60))',
-  SUCCESS_BG_SOFT: 'var(--color-success-bg-soft, rgba(40, 167, 69, 0.08))',
-  SUCCESS_BG_TINT: 'var(--color-success-bg-tint, rgba(40, 167, 69, 0.1))',
-  SUCCESS_BG_12: 'var(--color-success-bg-12, rgba(40, 167, 69, 0.12))',
-  SUCCESS_BG_PULSE: 'var(--color-success-bg-pulse, rgba(40, 167, 69, 0.4))',
-  DANGER: 'var(--color-danger, rgb(220, 53, 69))',
-  DANGER_HOVER: 'var(--color-danger-hover, rgb(200, 35, 51))',
-  DANGER_ACTIVE: 'var(--color-danger-active, rgb(180, 20, 35))',
-  DANGER_DEEP: 'var(--color-danger-deep, rgb(180, 50, 50))',
-  DANGER_BG_SOFT: 'var(--color-danger-bg-soft, rgba(220, 53, 69, 0.08))',
-  WARNING: 'var(--color-warning, rgb(255, 193, 7))',
-  WARNING_HEX: 'var(--color-warning-hex, #fa8c16)',
-  WARNING_YELLOW: 'var(--color-warning-yellow, rgb(245, 180, 0))',
-  WARNING_BG_SOFT: 'var(--color-warning-bg-soft, rgba(250, 140, 22, 0.12))',
-  WARNING_TRACK: 'var(--color-warning-track, rgba(255, 193, 7, 0.3))', // пустые звёзды рейтинга
-  INFO: 'var(--color-info, rgb(23, 162, 184))',
-  PRIMARY_BG_SOFT: 'var(--color-primary-bg-soft, rgba(0, 123, 255, 0.08))',
-  PRIMARY_BG_12: 'var(--color-primary-bg-12, rgba(0, 123, 255, 0.12))',
+  SUCCESS: 'var(--color-success, #00c16a)',
+  SUCCESS_DEEP: 'var(--color-success-deep, #007f45)',
+  SUCCESS_BG_SOFT: 'var(--color-success-bg-soft, rgb(0 193 106 / 0.08))',
+  SUCCESS_BG_TINT: 'var(--color-success-bg-tint, rgb(0 193 106 / 0.1))',
+  SUCCESS_BG_12: 'var(--color-success-bg-12, rgb(0 193 106 / 0.12))',
+  SUCCESS_BG_PULSE: 'var(--color-success-bg-pulse, rgb(0 193 106 / 0.4))',
+  DANGER: 'var(--color-danger, #fb2c36)',
+  DANGER_HOVER: 'var(--color-danger-hover, #e7000b)',
+  DANGER_ACTIVE: 'var(--color-danger-active, #c10007)',
+  DANGER_DEEP: 'var(--color-danger-deep, #e7000b)',
+  DANGER_BG_SOFT: 'var(--color-danger-bg-soft, rgb(251 44 54 / 0.08))',
+  WARNING: 'var(--color-warning, #f0b100)',
+  WARNING_HEX: 'var(--color-warning-hex, #f0b100)',
+  WARNING_YELLOW: 'var(--color-warning-yellow, #f0b100)',
+  WARNING_BG_SOFT: 'var(--color-warning-bg-soft, rgb(240 177 0 / 0.12))',
+  WARNING_TRACK: 'var(--color-warning-track, rgb(240 177 0 / 0.3))', // пустые звёзды рейтинга
+  INFO: 'var(--color-info, #2b7fff)',
+  PRIMARY_BG_SOFT: 'var(--color-primary-bg-soft, rgb(0 193 106 / 0.08))',
+  PRIMARY_BG_12: 'var(--color-primary-bg-12, rgb(0 193 106 / 0.12))',
 
   // Акцентные оттенки (бейджи статусов/категорий в хедере). *_SOFT — полупрозрачные
   // фоны пилюль (общие для тем: акцент с альфой читается и на светлом, и на тёмном).
-  PURPLE: 'var(--color-purple, #722ed1)',
-  PURPLE_DEEP: 'var(--color-purple-deep, #531dab)',
-  PURPLE_SOFT: 'var(--color-purple-soft, rgba(114, 46, 209, 0.12))',
-  PINK: 'var(--color-pink, #c41d7f)',
-  PINK_SOFT: 'var(--color-pink-soft, rgba(235, 47, 150, 0.12))',
-  GREEN_ANT: 'var(--color-green-ant, #52c41a)',
-  GREEN_ANT_DEEP: 'var(--color-green-ant-deep, #389e0d)',
-  GREEN_ANT_SOFT: 'var(--color-green-ant-soft, rgba(82, 196, 26, 0.14))',
-  AMBER_SOFT: 'var(--color-amber-soft, rgba(245, 166, 35, 0.14))',
+  PURPLE: 'var(--color-purple, #8e51ff)',
+  PURPLE_DEEP: 'var(--color-purple-deep, #7008e7)',
+  PURPLE_SOFT: 'var(--color-purple-soft, rgb(142 81 255 / 0.12))',
+  PINK: 'var(--color-pink, #f6339a)',
+  PINK_SOFT: 'var(--color-pink-soft, rgb(246 51 154 / 0.12))',
+  GREEN_ANT: 'var(--color-green-ant, #00c16a)',
+  GREEN_ANT_DEEP: 'var(--color-green-ant-deep, #007f45)',
+  GREEN_ANT_SOFT: 'var(--color-green-ant-soft, rgb(0 193 106 / 0.14))',
+  AMBER_SOFT: 'var(--color-amber-soft, rgb(254 154 0 / 0.14))',
 
   // Красные оттенки (ошибки, удаление)
-  RED_ANT: 'var(--color-red-ant, #ff4d4f)',
-  RED_DARK: 'var(--color-red-dark, #cf1322)',
-  RED_BRIGHT: 'var(--color-red-bright, #ff3b30)',
-  RED_BG: 'var(--color-red-bg, #fff2f0)',
-  RED_BORDER: 'var(--color-red-border, #ffccc7)',
+  RED_ANT: 'var(--color-red-ant, #fb2c36)',
+  RED_DARK: 'var(--color-red-dark, #e7000b)',
+  RED_BRIGHT: 'var(--color-red-bright, #fb2c36)',
+  RED_BG: 'var(--color-red-bg, rgb(251 44 54 / 0.1))',
+  RED_BORDER: 'var(--color-red-border, rgb(251 44 54 / 0.25))',
 
   // Жёлтые/оранжевые оттенки (предупреждения)
-  WARNING_BG: 'var(--color-warning-bg, #fff3cd)',
-  WARNING_BORDER: 'var(--color-warning-border, #ffc107)',
-  WARNING_TEXT: 'var(--color-warning-text, #856404)',
-  WARNING_BORDER_LIGHT: 'var(--color-warning-border-light, #ffe58f)',
-  WARNING_ICON: 'var(--color-warning-icon, #faad14)',
-  ORANGE_BG: 'var(--color-orange-bg, #fff7e6)',
-  ORANGE_BORDER: 'var(--color-orange-border, #ffd591)',
-  ORANGE_TEXT: 'var(--color-orange-text, #d46b08)',
+  WARNING_BG: 'var(--color-warning-bg, rgb(240 177 0 / 0.1))',
+  WARNING_BORDER: 'var(--color-warning-border, #f0b100)',
+  WARNING_TEXT: 'var(--color-warning-text, #a65f00)',
+  WARNING_BORDER_LIGHT: 'var(--color-warning-border-light, rgb(240 177 0 / 0.25))',
+  WARNING_ICON: 'var(--color-warning-icon, #f0b100)',
+  ORANGE_BG: 'var(--color-orange-bg, rgb(240 177 0 / 0.1))',
+  ORANGE_BORDER: 'var(--color-orange-border, rgb(240 177 0 / 0.25))',
+  ORANGE_TEXT: 'var(--color-orange-text, #a65f00)',
 
   // Белый с прозрачностью
   WHITE: 'var(--color-white, #ffffff)',
@@ -146,30 +152,31 @@ export const COLORS = {
   OVERLAY_88: 'var(--color-overlay-88, rgba(0, 0, 0, 0.88))',
 
   // Серые тона
-  GRAY_212: 'var(--color-gray-212, rgb(33, 33, 33))',
-  GRAY_120: 'var(--color-gray-120, rgb(120, 120, 120))',
-  GRAY_333: 'var(--color-gray-333, #333)',
-  GRAY_555: 'var(--color-gray-555, #555)',
-  GRAY_666: 'var(--color-gray-666, #666)',
-  GRAY_888: 'var(--color-gray-888, #888)',
-  GRAY_999: 'var(--color-gray-999, #999)',
-  GRAY_AAA: 'var(--color-gray-aaa, #aeb8c2)',
-  GRAY_CCC: 'var(--color-gray-ccc, #ccc)',
-  GRAY_DDD: 'var(--color-gray-ddd, #ddd)',
-  GRAY_EEE: 'var(--color-gray-eee, #eee)',
-  GRAY_E0: 'var(--color-gray-e0, #e0e0e0)',
-  GRAY_E8: 'var(--color-gray-e8, #e8e8e8)',
-  GRAY_F0: 'var(--color-gray-f0, #f0f2f5)',
-  GRAY_F1: 'var(--color-gray-f1, #f1f2f4)',
+  GRAY_212: 'var(--color-gray-212, #0f172b)',
+  GRAY_120: 'var(--color-gray-120, #62748e)',
+  GRAY_333: 'var(--color-gray-333, #314158)',
+  GRAY_555: 'var(--color-gray-555, #45556c)',
+  GRAY_666: 'var(--color-gray-666, #62748e)',
+  GRAY_888: 'var(--color-gray-888, #90a1b9)',
+  GRAY_999: 'var(--color-gray-999, #90a1b9)',
+  GRAY_AAA: 'var(--color-gray-aaa, #90a1b9)',
+  GRAY_CCC: 'var(--color-gray-ccc, #cad5e2)',
+  GRAY_DDD: 'var(--color-gray-ddd, #e2e8f0)',
+  GRAY_EEE: 'var(--color-gray-eee, #e2e8f0)',
+  GRAY_E0: 'var(--color-gray-e0, #e2e8f0)',
+  GRAY_E8: 'var(--color-gray-e8, #e2e8f0)',
+  GRAY_F0: 'var(--color-gray-f0, #f1f5f9)',
+  GRAY_F1: 'var(--color-gray-f1, #f1f5f9)',
 
   // Тени
-  SHADOW_SM: 'var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1))',
-  SHADOW_MD: 'var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15))',
-  SHADOW_LG: 'var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.15))',
+  SHADOW_SM: 'var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05))',
+  SHADOW_MD: 'var(--shadow-md, 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1))',
+  SHADOW_LG:
+    'var(--shadow-lg, 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1))',
 
   // Специфические цвета
-  LINK: 'var(--color-link, #007bff)',
-  DARK_BG: 'var(--color-dark-bg, #1b1f24)',
-  SLATE: 'var(--color-slate, #5c6370)',
-  BLUE_GRAY: 'var(--color-blue-gray, #607d8b)',
+  LINK: 'var(--color-link, #007f45)',
+  DARK_BG: 'var(--color-dark-bg, #0f172b)',
+  SLATE: 'var(--color-slate, #62748e)',
+  BLUE_GRAY: 'var(--color-blue-gray, #62748e)',
 } as const

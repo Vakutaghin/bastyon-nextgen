@@ -61,6 +61,18 @@ function applyMode(mode: ThemeMode): void {
   if (typeof document === 'undefined') return
   const resolved: 'light' | 'dark' = mode === 'auto' ? (prefersDark() ? 'dark' : 'light') : mode
   document.documentElement.setAttribute('data-theme', resolved)
+  syncBrowserThemeColor()
+}
+
+/**
+ * Цвет панели браузера и заголовка PWA — фон страницы текущей темы (`--ui-bg`).
+ * Раньше там стоял синий акцент, одинаковый для обеих тем.
+ */
+function syncBrowserThemeColor(): void {
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+  if (!meta) return
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--ui-bg').trim()
+  if (bg) meta.content = bg
 }
 
 const mode: Ref<ThemeMode> = ref<ThemeMode>('auto')

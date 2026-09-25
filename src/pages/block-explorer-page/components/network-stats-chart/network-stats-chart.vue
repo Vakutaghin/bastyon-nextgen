@@ -81,17 +81,19 @@ interface CategorySpec {
   color: string
 }
 
+// Серии — разными цветами палитры: акцент (зелёный) совпадает с «успехом»,
+// поэтому контент — синий, иначе он сливался бы с оценками.
 const CATEGORIES: CategorySpec[] = [
-  { key: 'content', labelKey: 'explorerPage.statsLegendContent', color: 'var(--color-ant-blue)' },
-  { key: 'ratings', labelKey: 'explorerPage.statsLegendRatings', color: 'var(--color-success)' },
+  { key: 'content', labelKey: 'explorerPage.statsLegendContent', color: 'var(--ui-info)' },
+  { key: 'ratings', labelKey: 'explorerPage.statsLegendRatings', color: 'var(--ui-primary)' },
   {
     key: 'subscriptions',
     labelKey: 'explorerPage.statsLegendSubscriptions',
-    color: 'var(--color-warning-icon)',
+    color: 'var(--ui-warning)',
   },
-  { key: 'accounts', labelKey: 'explorerPage.statsLegendAccounts', color: '#722ed1' },
-  { key: 'moderation', labelKey: 'explorerPage.statsLegendModeration', color: '#eb2f96' },
-  { key: 'other', labelKey: 'explorerPage.statsLegendOther', color: '#8c8c8c' },
+  { key: 'accounts', labelKey: 'explorerPage.statsLegendAccounts', color: 'var(--ui-violet)' },
+  { key: 'moderation', labelKey: 'explorerPage.statsLegendModeration', color: 'var(--ui-pink)' },
+  { key: 'other', labelKey: 'explorerPage.statsLegendOther', color: 'var(--ui-text-dimmed)' },
 ]
 
 const granularity = ref<'hours' | 'days'>('hours')
@@ -161,14 +163,16 @@ function renderChart() {
     .y1((d) => y(d[1]))
     .curve(d3.curveMonotoneX)
 
-  const colorOf = (key: string) => CATEGORIES.find((c) => c.key === key)?.color ?? '#999'
+  const colorOf = (key: string) =>
+    CATEGORIES.find((c) => c.key === key)?.color ?? 'var(--ui-text-dimmed)'
 
   g.selectAll('path.layer')
     .data(series)
     .join('path')
     .attr('class', 'layer')
     .attr('d', area)
-    .attr('fill', (d) => colorOf(d.key as string))
+    // var() в SVG-атрибуте понимают не все движки — цвет через style.
+    .style('fill', (d) => colorOf(d.key as string))
     .attr('fill-opacity', 0.85)
     .attr('stroke', 'none')
 

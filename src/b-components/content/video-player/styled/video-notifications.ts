@@ -15,8 +15,7 @@ export const SC_PlaybackRateNotification = styled.div<{ show?: boolean }>`
   color: #eee !important;
   font-size: 18px !important;
   font-weight: 500 !important;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-family) !important;
   white-space: nowrap !important;
   user-select: none !important;
   pointer-events: none !important;
@@ -42,8 +41,7 @@ export const SC_SeekNotification = styled.div<{ show?: boolean }>`
   color: #eee !important;
   font-size: 18px !important;
   font-weight: 500 !important;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-family) !important;
   white-space: nowrap !important;
   user-select: none !important;
   pointer-events: none !important;
@@ -145,7 +143,7 @@ export const SC_HotkeysKey = styled.span`
   background: rgba(0, 0, 0, 0.05);
   padding: 4px 8px;
   border-radius: 4px;
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   font-size: 16px;
   font-weight: bold;
   white-space: nowrap;

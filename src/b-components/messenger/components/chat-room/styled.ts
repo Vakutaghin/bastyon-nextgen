@@ -149,7 +149,7 @@ export const SC_VoiceButton = styled.button`
 `
 
 export const SC_RecordingTimer = styled.div`
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   color: ${COLORS.RED_DARK};
   font-size: 16px;
   font-weight: bold;

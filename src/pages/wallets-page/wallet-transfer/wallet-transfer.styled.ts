@@ -130,7 +130,7 @@ export const SC_QrWrap = styled.div`
 
 export const SC_TransferAddress = styled.div`
   flex: 1;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-family-mono);
   font-size: 13px;
   color: ${COLORS.GRAY_212};
   word-break: break-all;

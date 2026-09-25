@@ -91,7 +91,7 @@ export const SC_TorBridgeBlock = styled.div`
 export const SC_TorTextarea = styled.textarea`
   width: 100%;
   min-height: 80px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-family-mono);
   font-size: 11px;
   padding: 6px 8px;
   border: 1px solid ${COLORS.BORDER_DEFAULT};

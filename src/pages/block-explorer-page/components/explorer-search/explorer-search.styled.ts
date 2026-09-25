@@ -170,7 +170,7 @@ export const SC_KindBadge = styled('span', badgeAttrs)`
 `
 
 export const SC_SuggestionValue = styled.span`
-  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-family-mono);
   font-size: 13px;
   color: ${COLORS.TEXT_PRIMARY};
   white-space: nowrap;

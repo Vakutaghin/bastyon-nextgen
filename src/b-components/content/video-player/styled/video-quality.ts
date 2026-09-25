@@ -104,8 +104,7 @@ export const SC_VideoQualitySubmenuItem = styled.button<{ isOpen?: boolean }>`
   color: var(--color-text-primary) !important;
   font-size: 12px !important;
   font-weight: 400 !important;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-family) !important;
   transition: background-color 0.15s ease !important;
   text-align: left !important;
   box-sizing: border-box !important;
@@ -163,8 +162,7 @@ export const SC_VideoQualitySubmenuItemInner = styled.button<{ isActive?: boolea
   color: ${(p) => (p.isActive ? '#ff0000' : 'var(--color-text-primary)')} !important;
   font-size: 11px !important;
   font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-family) !important;
   transition:
     background-color 0.15s ease,
     color 0.15s ease !important;
@@ -201,8 +199,7 @@ export const SC_VideoQualityMenuItem = styled.button<{ isActive?: boolean }>`
   color: ${(p) => (p.isActive ? '#ff0000' : 'var(--color-text-primary)')} !important;
   font-size: 12px !important;
   font-weight: ${(p) => (p.isActive ? '600' : '400')} !important;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-family) !important;
   transition:
     background-color 0.15s ease,
     color 0.15s ease !important;

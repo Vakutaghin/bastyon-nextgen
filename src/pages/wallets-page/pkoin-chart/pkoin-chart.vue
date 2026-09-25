@@ -205,7 +205,9 @@ function renderChart(data: [number, number][]): void {
   g.append('path')
     .datum(points)
     .attr('fill', 'none')
-    .attr('stroke', '#00A3F7')
+    // Цвета — токенами темы через .style(): var() в SVG-атрибутах поддерживают
+    // не все движки. Раньше подсказка была белой и в тёмной теме.
+    .style('stroke', 'var(--ui-primary)')
     .attr('stroke-width', 2)
     .attr('stroke-linecap', 'round')
     .attr('stroke-linejoin', 'round')
@@ -220,7 +222,7 @@ function renderChart(data: [number, number][]): void {
   g.append('g')
     .attr('transform', `translate(0,${innerHeight})`)
     .call(xAxis)
-    .attr('color', 'rgb(120, 120, 120)')
+    .style('color', 'var(--ui-text-muted)')
     .style('font-size', '11px')
 
   const yAxis = d3
@@ -229,7 +231,7 @@ function renderChart(data: [number, number][]): void {
     .tickSizeOuter(0)
     .tickFormat((d) => `$${Number(d).toFixed(2)}`)
 
-  g.append('g').call(yAxis).attr('color', 'rgb(120, 120, 120)').style('font-size', '11px')
+  g.append('g').call(yAxis).style('color', 'var(--ui-text-muted)').style('font-size', '11px')
 
   const crosshair = g
     .append('g')
@@ -239,7 +241,7 @@ function renderChart(data: [number, number][]): void {
   crosshair
     .append('line')
     .attr('class', 'crosshair-v')
-    .attr('stroke', 'rgba(120, 120, 120, 0.6)')
+    .style('stroke', 'var(--ui-border-accented)')
     .attr('stroke-width', 1)
     .attr('stroke-dasharray', '4,4')
     .attr('x1', 0)
@@ -249,7 +251,7 @@ function renderChart(data: [number, number][]): void {
   crosshair
     .append('line')
     .attr('class', 'crosshair-h')
-    .attr('stroke', 'rgba(120, 120, 120, 0.6)')
+    .style('stroke', 'var(--ui-border-accented)')
     .attr('stroke-width', 1)
     .attr('stroke-dasharray', '4,4')
     .attr('x1', 0)
@@ -268,15 +270,15 @@ function renderChart(data: [number, number][]): void {
     .attr('height', tooltipHeight)
     .attr('rx', 4)
     .attr('ry', 4)
-    .attr('fill', 'rgba(255, 255, 255, 0.95)')
-    .attr('stroke', 'rgba(0, 0, 0, 0.1)')
+    .style('fill', 'var(--ui-bg)')
+    .style('stroke', 'var(--ui-border)')
     .attr('stroke-width', 1)
   crosshairTooltip
     .append('text')
     .attr('class', 'crosshair-tooltip-date')
     .attr('x', tooltipPadding)
     .attr('y', 14)
-    .attr('fill', 'rgb(120, 120, 120)')
+    .style('fill', 'var(--ui-text-muted)')
     .style('font-size', '10px')
     .style('font-family', 'inherit')
   crosshairTooltip
@@ -284,7 +286,7 @@ function renderChart(data: [number, number][]): void {
     .attr('class', 'crosshair-tooltip-price')
     .attr('x', tooltipPadding)
     .attr('y', 26)
-    .attr('fill', 'rgb(33, 33, 33)')
+    .style('fill', 'var(--ui-text-highlighted)')
     .style('font-size', '12px')
     .style('font-weight', '600')
     .style('font-family', 'inherit')

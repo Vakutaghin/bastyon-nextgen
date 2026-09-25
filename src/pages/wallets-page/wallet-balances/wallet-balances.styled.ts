@@ -179,7 +179,7 @@ export const SC_WalletTableHeader = styled(SC_WalletTableRow)`
 `
 
 export const SC_WalletTableAddress = styled.span`
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-family-mono);
   font-size: 13px;
   color: ${COLORS.GRAY_212};
   word-break: break-all;

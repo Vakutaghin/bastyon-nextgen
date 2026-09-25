@@ -165,8 +165,7 @@ export const SC_VolumeNotification = styled.div<{ show?: boolean }>`
   color: #eee !important;
   font-size: 18px !important;
   font-weight: 500 !important;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-family) !important;
   white-space: nowrap !important;
   user-select: none !important;
   pointer-events: none !important;

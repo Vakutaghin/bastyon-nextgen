@@ -78,7 +78,7 @@ export const SC_CopyIconBtn = styled.button`
 `
 
 export const SC_MnemonicText = styled.div`
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-family-mono);
   font-size: 16px;
   line-height: 1.8;
   color: ${COLORS.TEXT_PRIMARY};
@@ -105,7 +105,7 @@ export const SC_PrivateKeyLabel = styled.div`
 `
 
 export const SC_PrivateKeyText = styled.div`
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-family-mono);
   font-size: 14px;
   line-height: 1.6;
   color: ${COLORS.TEXT_PRIMARY};

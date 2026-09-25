@@ -12,7 +12,7 @@ export const SC_BlockCode = styled.pre`
 `
 
 export const SC_BlockCodeCode = styled.code`
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-family-mono);
   font-size: 0.9em;
   line-height: 1.5;
   color: ${COLORS.WHITE};

@@ -112,7 +112,7 @@ export const SC_MarkdownBody = styled.div`
     padding: 1px 5px;
     border-radius: 4px;
     font-size: 12.5px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: var(--font-family-mono);
   }
 
   strong {

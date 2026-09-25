@@ -70,7 +70,7 @@ export const SC_Footer = styled.div`
 `
 
 export const SC_Txid = styled.span`
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-family-mono);
   font-size: 11px;
   opacity: 0.75;
 `

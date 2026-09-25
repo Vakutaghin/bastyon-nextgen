@@ -6,7 +6,7 @@ export const SC_HashLink = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-family-mono);
   font-size: 13px;
 `
 

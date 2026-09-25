@@ -57,7 +57,7 @@ export const SC_QrModalImage = styled.img`
 
 export const SC_QrModalAddr = styled.div`
   margin-top: 14px;
-  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-family-mono);
   font-size: 13px;
   color: ${COLORS.TEXT_PRIMARY};
   word-break: break-all;

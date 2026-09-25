@@ -19,6 +19,11 @@ import { createApp, watch } from 'vue'
 import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import 'ant-design-vue/dist/reset.css'
+// Шрифты интерфейса лежат в бандле, а не на Google Fonts: CSP, Tor и офлайн в
+// десктопе. Браузер качает только нужные подмножества (unicode-range).
+import '@fontsource-variable/geist'
+import '@fontsource-variable/geist/wght-italic.css'
+import '@fontsource-variable/geist-mono'
 
 import App from '@/src.vue'
 import router from '@/router'

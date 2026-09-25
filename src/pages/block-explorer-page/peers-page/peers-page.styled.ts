@@ -97,16 +97,27 @@ export const SC_NodeRow = styled.div`
 
 const dotProps = { color: String }
 export const SC_NodeDot = styled('span', dotProps)`
+  position: relative;
   display: inline-block;
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: ${(p) => p.color};
-  box-shadow: 0 0 0 3px ${(p) => p.color}33;
+
+  /* Ореол тем же цветом. Цвет приходит токеном var(--ui-*), поэтому
+     прозрачность — через opacity, а не приписанной к цвету hex-альфой. */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: ${(p) => p.color};
+    opacity: 0.2;
+  }
 `
 
 export const SC_NodeAddr = styled.div`
-  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-family-mono);
   color: ${COLORS.TEXT_PRIMARY};
   font-size: 13px;
   white-space: nowrap;
@@ -179,7 +190,7 @@ export const SC_PeerRow = styled.div`
 `
 
 export const SC_PeerAddr = styled.div`
-  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-family-mono);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

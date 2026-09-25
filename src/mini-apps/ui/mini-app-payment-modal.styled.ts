@@ -31,7 +31,7 @@ export const SC_RecieverRow = styled.div`
 `
 
 export const SC_RecieverAddr = styled.span`
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-family-mono);
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;

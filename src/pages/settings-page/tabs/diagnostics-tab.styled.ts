@@ -52,7 +52,7 @@ export const SC_DiagValue = styled.span`
   font-size: 14px;
   font-weight: 500;
   color: ${COLORS.TEXT_PRIMARY};
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-family-mono);
   text-align: right;
   word-break: break-all;
 `

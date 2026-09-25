@@ -119,8 +119,7 @@ export const SC_VideoTimeDisplay = styled.span`
   flex-shrink: 0 !important;
   min-width: 100px !important;
   text-align: center !important;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-family) !important;
   white-space: nowrap !important;
   display: flex !important;
   align-items: center !important;
@@ -151,8 +150,7 @@ export const SC_VideoChapterTitle = styled.span`
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-family) !important;
   padding: 0 4px !important;
   opacity: 0.85 !important;
 `

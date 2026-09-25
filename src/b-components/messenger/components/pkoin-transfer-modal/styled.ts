@@ -93,7 +93,7 @@ export const SC_Recipient = styled.div`
   background: ${COLORS.BG_HOVER_BLUE};
   padding: 8px 10px;
   border-radius: 6px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-family-mono);
 `
 
 export const SC_Error = styled.div`
