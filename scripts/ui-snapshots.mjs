@@ -221,6 +221,72 @@ function mockNotifications(store) {
 
 /** mobile: false — экран только для десктопа; desktop: false — только для мобилки;
  *  popups: true — не закрывать всплывающее само («Что нового»). */
+/** Открыть первый пост ленты в модалке («Показать полностью» / «Читать статью»). */
+async function openPostModal(page) {
+  const more = page.getByRole('button', { name: /Показать полностью|Читать статью/ }).first()
+  for (let i = 0; i < 8 && !(await more.isVisible().catch(() => false)); i++) {
+    await page.mouse.wheel(0, 900)
+    await page.waitForTimeout(700)
+  }
+  await more.click()
+  await page.waitForTimeout(3000)
+}
+
+/** В ленте загрузить комментарии первого поста, у которого они есть («Показать все»). */
+async function expandFeedComments(page) {
+  const expand = page.getByRole('button', { name: 'Показать все', exact: true }).first()
+  for (let i = 0; i < 12 && !(await expand.isVisible().catch(() => false)); i++) {
+    await page.mouse.wheel(0, 900)
+    await page.waitForTimeout(700)
+  }
+  await expand.click()
+  await page.waitForTimeout(2500)
+  await page.locator('#comments-sort').scrollIntoViewIfNeeded()
+}
+
+/**
+ * Отложенный (ещё не в блокчейне) многострочный комментарий к развёрнутому
+ * посту: им проверяется, что переносы строк видны. id поста — из пропсов
+ * компонента комментариев.
+ */
+async function addMultilineComment(page) {
+  await page.evaluate(() => {
+    let inst = document.querySelector('#comments-sort')?.__vueParentComponent
+    while (inst && !inst.props?.post) inst = inst.parent
+    const post = inst?.props?.post
+    const postId = post?.txid || post?.hash || String(post?.id || '')
+    const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia
+    pinia._s.get('comments').addPending({
+      id: 'local-demo-multiline',
+      postId,
+      message: 'Первая строка ответа.\nВторая строка — с новой строки.\n\nАбзац после пустой строки.',
+      parentId: '',
+      answerId: '',
+      address: 'PDemoAddressForSnapshots000000000',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    })
+  })
+  await page.waitForTimeout(500)
+  await page.getByText('Первая строка ответа.').scrollIntoViewIfNeeded()
+}
+
+/** Свой профиль (адрес — из стора авторизации). */
+async function openOwnProfile(page) {
+  const address = await page.evaluate(() => {
+    const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia
+    return pinia._s.get('auth').getUserAddress
+  })
+  await page.goto(BASE + '/' + address, { waitUntil: 'domcontentloaded' })
+  await page.waitForTimeout(SETTLE_MS)
+}
+
+/** Открыть выпадающий список Select, внутри которого поле с этим id. */
+async function openSelect(page, id) {
+  await page.locator(`.ant-select:has(#${id})`).first().click()
+  await page.waitForTimeout(500)
+}
+
 const SCREENS = [
   { name: 'feed', path: '/' },
   { name: 'whats-new', path: '/', popups: true },
@@ -237,14 +303,22 @@ const SCREENS = [
     // Окно поста открывает «Показать полностью» у длинного поста.
     name: 'post-modal',
     path: '/',
+    action: openPostModal,
+  },
+  {
+    name: 'comments-multiline',
+    path: '/',
     action: async (page) => {
-      const more = page.getByRole('button', { name: /Показать полностью|Читать статью/ }).first()
-      for (let i = 0; i < 8 && !(await more.isVisible().catch(() => false)); i++) {
-        await page.mouse.wheel(0, 900)
-        await page.waitForTimeout(700)
-      }
-      await more.click()
-      await page.waitForTimeout(3000)
+      await expandFeedComments(page)
+      await addMultilineComment(page)
+    },
+  },
+  {
+    name: 'comments-sort-select',
+    path: '/',
+    action: async (page) => {
+      await expandFeedComments(page)
+      await openSelect(page, 'comments-sort')
     },
   },
   { name: 'explorer', path: '/explorer' },
@@ -300,6 +374,31 @@ const SCREENS = [
   { name: 'wallet-earnings', path: '/wallets', auth: true, tab: 'Заработок' },
   { name: 'wallet-buy', path: '/wallets', auth: true, tab: 'Покупка/продажа' },
   { name: 'compose', path: '/compose', auth: true },
+  {
+    name: 'compose-language-select',
+    path: '/compose',
+    auth: true,
+    action: (page) => openSelect(page, 'composer-language'),
+  },
+  {
+    name: 'profile-edit-language-select',
+    path: '/',
+    auth: true,
+    mobile: false,
+    action: async (page) => {
+      await openOwnProfile(page)
+      await page.getByRole('button', { name: 'Редактировать профиль' }).click()
+      await page.waitForTimeout(800)
+      await openSelect(page, 'edit-profile-language')
+    },
+  },
+  {
+    name: 'wallet-fee-select',
+    path: '/wallets',
+    auth: true,
+    tab: 'Переводы',
+    action: (page) => openSelect(page, 'wallet-transfer-feemode'),
+  },
   { name: 'limits', path: '/limits', auth: true, mobile: false },
   { name: 'my-videos', path: '/my-videos', auth: true },
   {
