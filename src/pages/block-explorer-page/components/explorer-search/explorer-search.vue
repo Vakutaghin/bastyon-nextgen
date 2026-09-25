@@ -100,7 +100,15 @@ const query = ref('')
 const resolving = ref(false)
 const errorMessage = ref('')
 const focused = ref(false)
-const wrapperRef = ref<HTMLElement | null>(null)
+// ref на SC_SearchWrapper (styled-компонент): Vue кладёт сюда инстанс обёртки,
+// а не DOM-узел — сам элемент в `$el`.
+const wrapperRef = ref<HTMLElement | { $el?: HTMLElement } | null>(null)
+
+function wrapperEl(): HTMLElement | null {
+  const r = wrapperRef.value
+  if (!r) return null
+  return r instanceof HTMLElement ? r : (r.$el ?? null)
+}
 
 const { filterByPrefix } = useSearchHistory()
 
@@ -248,9 +256,11 @@ function go(name: 'explorer-block' | 'explorer-tx' | 'explorer-address', id: str
 
 // Закрытие дропдауна по клику вне.
 function onDocumentClick(e: Event) {
-  if (!wrapperRef.value) return
-  const target = e.target as Node
-  if (!wrapperRef.value.contains(target)) {
+  // Раньше здесь звался .contains у инстанса компонента: каждый клик на
+  // странице эксплорера бросал TypeError, а дропдаун по клику вне не закрывался.
+  const el = wrapperEl()
+  if (!el) return
+  if (!el.contains(e.target as Node)) {
     focused.value = false
   }
 }
