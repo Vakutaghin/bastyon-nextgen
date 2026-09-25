@@ -19,7 +19,7 @@ export const SC_MyVideosPage = styled.main`
 `
 
 export const SC_MyVideosTitle = styled.h1`
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 24px 0;
@@ -28,6 +28,6 @@ export const SC_MyVideosTitle = styled.h1`
 export const SC_MyVideosPlaceholder = styled.div`
   padding: 40px 0;
   text-align: center;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--color-gray-120);
 `

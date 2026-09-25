@@ -33,7 +33,7 @@ export const SC_TopTitle = styled.h2`
 `
 
 export const SC_TopHint = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
 `
 
@@ -65,7 +65,7 @@ export const SC_TopRow = styled.div`
   gap: 12px;
   padding: 10px 18px;
   border-bottom: 1px solid var(--color-border-lighter);
-  font-size: 13px;
+  font-size: 14px;
 
   &:last-child {
     border-bottom: none;
@@ -86,7 +86,7 @@ export const SC_TopRow = styled.div`
 
 export const SC_TopRank = styled.span`
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-muted);
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -109,5 +109,5 @@ export const SC_TopCount = styled.div`
 
 // Общий плейсхолдер (audit §3.1) + мелкий шрифт карточки топ-адресов.
 export const SC_Placeholder = styled(SC_PlaceholderBase)`
-  font-size: 13px;
+  font-size: 14px;
 `

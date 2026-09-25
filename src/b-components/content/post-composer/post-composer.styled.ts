@@ -53,8 +53,8 @@ export const SC_MentionAvatar = styled.span`
   overflow: hidden;
   background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
 
   img {
     width: 100%;

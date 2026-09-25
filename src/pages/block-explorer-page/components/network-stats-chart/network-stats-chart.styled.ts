@@ -114,5 +114,5 @@ export const SC_StatsPlaceholder = styled.div`
   padding: 32px;
   text-align: center;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 14px;
 `

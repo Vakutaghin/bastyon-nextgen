@@ -68,6 +68,6 @@ export const SC_BalanceHint = styled.div`
 `
 
 export const SC_FieldError = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-red-ant);
 `

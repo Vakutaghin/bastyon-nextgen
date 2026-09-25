@@ -56,7 +56,7 @@ export const SC_RecAvatar = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-secondary);
 
   img {
@@ -82,7 +82,7 @@ export const SC_RecName = styled.span`
 `
 
 export const SC_RecMeta = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-muted);
 `
 
@@ -114,7 +114,7 @@ export const SC_RecFollow = styled.button`
 `
 
 export const SC_RecState = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   padding: 8px 0;
 `

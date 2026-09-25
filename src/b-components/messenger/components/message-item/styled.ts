@@ -36,12 +36,12 @@ export const SC_ReactionEmojiIcon = styled.span`
 `
 
 export const SC_ReactionCount = styled.span`
-  font-size: 10px;
+  font-size: 12px;
   opacity: 0.8;
 `
 
 export const SC_MessageTime = styled.span`
-  font-size: 10px;
+  font-size: 12px;
   opacity: 0.7;
   display: block;
   text-align: right;
@@ -74,7 +74,7 @@ export const SC_AvatarSlot = styled.div`
 `
 
 export const SC_MessageMeta = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   opacity: 0.7;
   display: flex;
   justify-content: space-between;
@@ -185,7 +185,7 @@ export const SC_ActionsItem = styled.button`
   }
 
   .anticon {
-    font-size: 15px;
+    font-size: 16px;
   }
 `
 
@@ -223,7 +223,7 @@ export const SC_ReplyQuote = styled.div`
 
 export const SC_ReplyQuoteName = styled.div`
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-brand-cyan);
 `
 
@@ -251,7 +251,7 @@ export const SC_RetryButton = styled.button`
   background: transparent;
   padding: 0;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-danger);
   cursor: pointer;
   text-decoration: underline;

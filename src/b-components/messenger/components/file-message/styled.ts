@@ -35,7 +35,7 @@ export const SC_FileBody = styled.div`
 
 export const SC_FileName = styled.div`
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ui-text-highlighted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -87,12 +87,12 @@ export const SC_Spinner = styled.div`
 `
 
 export const SC_Progress = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-brand-cyan);
-  font-weight: 600;
+  font-weight: 500;
 `
 
 export const SC_ErrorText = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-red-dark);
 `

@@ -20,13 +20,13 @@ export const SC_LimitsPage = styled.main`
 `
 
 export const SC_LimitsTitle = styled.h1`
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 24px 0;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    font-size: 19px;
+    font-size: 20px;
     margin: 16px 0;
   }
 `
@@ -58,12 +58,12 @@ export const SC_LimitRow = styled.div`
 `
 
 export const SC_LimitLabel = styled.span`
-  font-size: 15px;
+  font-size: 14px;
   color: var(--color-gray-212);
 `
 
 export const SC_LimitValue = styled.span`
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--ui-text-highlighted);
 `
@@ -131,7 +131,7 @@ export const SC_LimitCtaButton = styled.button`
 export const SC_LimitsLoading = styled.div`
   padding: 40px 0;
   text-align: center;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--color-gray-120);
 `
 

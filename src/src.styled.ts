@@ -16,7 +16,7 @@ export const SC_FramedNotice = styled.div`
 
 export const SC_FramedLink = styled.a`
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
 
   &:hover {

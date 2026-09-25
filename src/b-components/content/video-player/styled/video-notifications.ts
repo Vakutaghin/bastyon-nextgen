@@ -145,7 +145,7 @@ export const SC_HotkeysKey = styled.span`
   border-radius: var(--ui-radius-sm);
   font-family: var(--font-family-mono);
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 500;
   white-space: nowrap;
   color: #333;
   border: 1px solid rgba(0, 0, 0, 0.1);

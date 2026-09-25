@@ -59,7 +59,7 @@ export const SC_QueryTitle = styled.h1`
 
 export const SC_QueryHint = styled.span`
   color: var(--color-text-hint);
-  font-size: 13px;
+  font-size: 14px;
 `
 
 export const SC_Tabs = styled.div`
@@ -124,7 +124,7 @@ export const SC_Avatar = styled.div`
   align-items: center;
   justify-content: center;
   color: var(--color-white);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
 
   img {
@@ -178,7 +178,7 @@ export const SC_LoadMore = styled.button`
   border-radius: var(--ui-radius-lg);
   padding: 8px 20px;
   color: var(--color-primary);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition:
     background-color ${TRANSITIONS.QUICK},

@@ -68,7 +68,7 @@ export const SC_QrFrame = styled.div`
 
 export const SC_QrHint = styled.p`
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   text-align: center;
 `
@@ -79,5 +79,5 @@ export const SC_QrError = styled.div`
   border: 1px solid var(--color-red-border);
   border-radius: var(--ui-radius-md);
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: 14px;
 `

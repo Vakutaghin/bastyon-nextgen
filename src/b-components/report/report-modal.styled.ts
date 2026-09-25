@@ -30,7 +30,7 @@ export const SC_ReasonItem = styled('button', reasonProps)`
   width: 100%;
   padding: 12px 14px;
   text-align: left;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.3;
   cursor: pointer;
   border-radius: var(--ui-radius-lg);
@@ -74,6 +74,6 @@ export const SC_ReasonRadio = styled.span`
 `
 
 export const SC_FieldError = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-danger);
 `

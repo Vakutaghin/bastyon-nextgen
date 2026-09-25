@@ -53,7 +53,7 @@ export const SC_ChatColumn = styled('div', chatProps)`
 export const SC_SidebarHeader = styled.div`
   padding: 16px;
   border-bottom: 1px solid var(--color-gray-eee);
-  font-weight: bold;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: space-between;

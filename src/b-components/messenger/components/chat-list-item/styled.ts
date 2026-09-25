@@ -41,14 +41,14 @@ export const SC_Info = styled.div`
 `
 
 export const SC_Name = styled.div`
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   color: var(--ui-text-highlighted);
   margin-bottom: 4px;
 `
 
 export const SC_LastMessage = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -64,7 +64,7 @@ export const SC_Meta = styled.div`
 `
 
 export const SC_Time = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-gray-999);
   margin-bottom: 4px;
 `
@@ -73,7 +73,7 @@ export const SC_Badge = styled.span`
   background-color: var(--color-brand-cyan);
   color: var(--ui-text-inverted);
   font-size: 11px;
-  font-weight: bold;
+  font-weight: 600;
   padding: 2px 6px;
   border-radius: var(--ui-radius-lg);
   min-width: 18px;

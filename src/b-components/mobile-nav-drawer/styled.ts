@@ -92,7 +92,7 @@ export const SC_DrawerItem = styled('button', itemProps)`
   border: none;
   background: ${(p) => (p.active ? 'var(--ui-bg-elevated)' : 'transparent')};
   color: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-text)')};
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   text-align: left;
   border-radius: var(--ui-radius-md);

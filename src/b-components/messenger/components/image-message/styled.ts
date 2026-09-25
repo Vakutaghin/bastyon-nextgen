@@ -46,7 +46,7 @@ export const SC_ProgressBadge = styled.div`
   justify-content: center;
   background: var(--color-overlay-25);
   color: var(--color-white);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 `
 

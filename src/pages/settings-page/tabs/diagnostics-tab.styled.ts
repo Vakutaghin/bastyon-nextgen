@@ -8,7 +8,7 @@ export const SC_Diag = styled.section`
 
 export const SC_DiagTitle = styled.h2`
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
 `
@@ -21,11 +21,9 @@ export const SC_DiagGroup = styled.div`
 
 export const SC_DiagGroupTitle = styled.h3`
   margin: 0 0 6px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
+  color: var(--ui-text-highlighted);
 `
 
 export const SC_DiagRow = styled.div`
@@ -72,7 +70,7 @@ export const SC_DiagUpdateButton = styled.button`
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-sm);
   padding: 3px 12px;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition: background-color var(--transition-fast);
 

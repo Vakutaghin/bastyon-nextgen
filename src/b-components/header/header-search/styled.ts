@@ -133,12 +133,12 @@ export const SC_ItemSecondary = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
 `
 
 export const SC_TagCount = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-hint);
   margin-left: 6px;
 `
@@ -163,7 +163,7 @@ export const SC_RecentClearButton = styled.button`
   padding: 2px 6px;
   border-radius: var(--ui-radius-sm);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-hint);
   text-transform: none;
   letter-spacing: 0;

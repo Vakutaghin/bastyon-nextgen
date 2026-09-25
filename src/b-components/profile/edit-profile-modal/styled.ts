@@ -14,7 +14,7 @@ export const SC_Field = styled.div`
 `
 
 export const SC_Label = styled.label`
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--color-text-secondary);
 `
@@ -56,7 +56,7 @@ export const SC_AvatarPlaceholder = styled.div`
   align-items: center;
   justify-content: center;
   font-size: 28px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ui-text-inverted);
   background-color: var(--color-brand-cyan);
 `
@@ -73,7 +73,7 @@ export const SC_SmallBtn = styled.button`
   border: 1px solid var(--color-border);
   background-color: transparent;
   color: var(--color-text-primary);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition:
     border-color 0.2s,

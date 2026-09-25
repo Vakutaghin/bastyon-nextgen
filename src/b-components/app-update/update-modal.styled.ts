@@ -8,13 +8,13 @@ export const SC_Wrap = styled.div`
 
 export const SC_Headline = styled.div`
   color: var(--ui-text-highlighted);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 `
 
 export const SC_Meta = styled.div`
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
 `
 
 export const SC_Footer = styled.div`

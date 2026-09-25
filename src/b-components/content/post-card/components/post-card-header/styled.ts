@@ -23,7 +23,7 @@ export const SC_PostAuthorInfo = styled.div`
 `
 
 export const SC_PostAuthorName = styled.div`
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   color: var(--ui-text-highlighted);
 `

@@ -123,7 +123,7 @@ export const SC_CategoriesItem = styled('div', selectedProps)`
 `
 
 export const SC_CategoriesIcon = styled('span', selectedProps)`
-  font-size: 15px;
+  font-size: 16px;
   width: 18px;
   text-align: center;
   flex-shrink: 0;
@@ -159,7 +159,7 @@ export const SC_CategoryRemoveBtn = styled.div`
 
 export const SC_ModalHint = styled.div`
   margin-bottom: 10px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-gray-888);
 `
 

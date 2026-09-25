@@ -17,5 +17,5 @@ export const SC_PostStatus = styled.div`
   padding: 48px 16px;
   text-align: center;
   color: var(--color-text-secondary);
-  font-size: 15px;
+  font-size: 14px;
 `

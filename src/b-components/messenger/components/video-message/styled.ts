@@ -96,7 +96,7 @@ export const SC_DurationBadge = styled.div`
   bottom: 8px;
   background: var(--color-overlay-65);
   color: var(--color-white);
-  font-size: 11px;
+  font-size: 12px;
   padding: 2px 6px;
   border-radius: var(--ui-radius-sm);
   pointer-events: none;
@@ -110,7 +110,7 @@ export const SC_ProgressBadge = styled.div`
   justify-content: center;
   background: var(--color-overlay-45);
   color: var(--color-white);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   pointer-events: none;
 `

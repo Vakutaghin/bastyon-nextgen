@@ -76,7 +76,7 @@ export const SC_SpinnerRow = styled.div`
 `
 
 export const SC_UploadProgress = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-blue-gray);
 `
 

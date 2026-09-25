@@ -191,12 +191,12 @@ export const SC_Icon = styled.img`
 
 export const SC_IconFallback = styled.div`
   font-size: 22px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-secondary);
 `
 
 export const SC_Name = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.3;
   overflow: hidden;
@@ -218,7 +218,7 @@ export const SC_LoadMoreBtn = styled.button`
   border: 1px solid var(--color-overlay-12);
   background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-gray-212);
   cursor: pointer;
   transition: background-color ${TRANSITIONS.QUICK};
@@ -245,6 +245,6 @@ export const SC_Error = styled.div`
   border-radius: var(--ui-radius-lg);
   background: var(--color-danger-bg-soft);
   color: var(--color-danger-deep);
-  font-size: 13px;
+  font-size: 14px;
   margin: 12px 0;
 `

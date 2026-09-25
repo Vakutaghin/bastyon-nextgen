@@ -76,7 +76,7 @@ export const SC_LastCommentArrow = styled.i`
 export const SC_LastCommentContent = styled.div`
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.4;
   color: var(--color-text-primary);
 `
@@ -96,11 +96,11 @@ export const SC_LastCommentsLoading = styled.div`
   justify-content: center;
   padding: 16px 0;
   color: var(--color-text-hint);
-  font-size: 13px;
+  font-size: 14px;
 `
 
 export const SC_LastCommentsEmpty = styled.div`
   padding: 16px 0;
   color: var(--color-text-hint);
-  font-size: 13px;
+  font-size: 14px;
 `

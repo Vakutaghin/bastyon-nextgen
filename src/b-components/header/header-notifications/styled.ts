@@ -155,8 +155,8 @@ export const SC_NotificationTypePill = styled.div<{ variant?: string }>`
   gap: 6px;
   padding: 3px 8px 3px 6px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0.2px;
   flex-shrink: 0;
   background: ${(p) => colorFor(p.variant).bg};
@@ -215,7 +215,7 @@ export const SC_NotificationActorText = styled.div`
 `
 
 export const SC_NotificationActorName = styled.span`
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ui-text-highlighted);
   margin-right: 4px;
 `
@@ -225,7 +225,7 @@ export const SC_NotificationAction = styled.span`
 `
 
 export const SC_NotificationItemTime = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-gray-999);
   white-space: nowrap;
   flex-shrink: 0;
@@ -260,7 +260,7 @@ export const SC_RatingValue = styled.div<{ positive?: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: ${(p) => (p.positive ? COLORS.WARNING_HEX : COLORS.GRAY_CCC)};
 `
@@ -300,7 +300,7 @@ export const SC_PostRef = styled.div`
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-gray-555);
   min-width: 0;
 `
@@ -324,7 +324,7 @@ export const SC_EmptyMessage = styled.div`
   padding: 24px 16px;
   text-align: center;
   color: var(--color-gray-999);
-  font-size: 13px;
+  font-size: 14px;
 `
 
 export const SC_LoaderWrap = styled.div`

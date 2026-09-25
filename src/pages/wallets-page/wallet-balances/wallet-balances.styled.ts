@@ -12,7 +12,7 @@ export const SC_WalletLabel = styled.span`
   background: var(--color-primary-light);
   color: var(--color-primary);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   vertical-align: middle;
 `
 
@@ -141,7 +141,7 @@ export const SC_WalletTableTitleRow = styled.div`
 
 /** Пояснение под заголовком доп. кошельков: почему они только для просмотра. */
 export const SC_WalletReadOnlyNote = styled.p`
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.4;
   color: var(--color-text-secondary);
   margin: 0 10px 12px;
@@ -224,7 +224,7 @@ export const SC_WalletTableBalance = styled.span`
 export const SC_WalletLoading = styled.div`
   padding: 40px 0;
   text-align: center;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--color-gray-120);
 `
 

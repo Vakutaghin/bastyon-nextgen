@@ -61,7 +61,7 @@ export const SC_WelcomeSkip = styled.button`
   background: none;
   border: none;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   padding: 6px 4px;
 

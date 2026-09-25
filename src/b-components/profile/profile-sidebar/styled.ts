@@ -16,7 +16,7 @@ export const SC_Badge = styled.span`
   padding: 2px 9px;
   border-radius: var(--ui-radius-lg);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   background: var(--color-primary-light);
   color: var(--color-primary);
 
@@ -102,7 +102,7 @@ export const SC_StartChatButton = styled.button`
   border: none;
   background-color: var(--color-brand-cyan);
   color: var(--ui-text-inverted);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -131,7 +131,7 @@ export const SC_EditProfileButton = styled.button`
   border: 1px solid var(--color-border);
   background-color: transparent;
   color: var(--color-text-primary);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   cursor: pointer;
   transition:
@@ -165,7 +165,7 @@ export const SC_SubscribeButton = styled.button`
   border: 1px solid var(--color-brand-cyan);
   background-color: var(--color-brand-cyan);
   color: var(--ui-text-inverted);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   cursor: pointer;
   transition:
@@ -305,7 +305,7 @@ export const SC_ExplorerLink = styled.a`
 `
 
 export const SC_UserSite = styled.a`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-brand-cyan);
   text-decoration: none;
   word-break: break-all;

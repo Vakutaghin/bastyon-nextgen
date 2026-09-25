@@ -39,7 +39,7 @@ export const SC_BlockPagePage = styled.main`
 
 export const SC_BlockBreadcrumb = styled.div`
   margin-bottom: 12px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-muted);
 
   a {
@@ -54,7 +54,7 @@ export const SC_BlockBreadcrumb = styled.div`
 
 export const SC_BlockTitle = styled.h1`
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 0 0 16px;
 `
@@ -105,8 +105,11 @@ export const SC_BlockMetaGrid = styled.div`
   }
 `
 
+/** margin-bottom -1px: линия под последним рядом уходит под рамку карточки
+ * (overflow: hidden), иначе внизу выходила двойная линия. */
 export const SC_BlockMetaCell = styled.div`
   padding: 14px 18px;
+  margin-bottom: -1px;
   border-bottom: 1px solid var(--color-border-lighter);
   border-right: 1px solid var(--color-border-lighter);
 
@@ -120,7 +123,7 @@ export const SC_BlockMetaCell = styled.div`
 `
 
 export const SC_BlockMetaLabel = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--color-text-secondary);
@@ -160,7 +163,7 @@ export const SC_TxSectionPager = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
 `
 
@@ -170,7 +173,7 @@ export const SC_TxRow = styled.div`
   gap: 12px;
   padding: 12px 18px;
   border-bottom: 1px solid var(--color-border-lighter);
-  font-size: 13px;
+  font-size: 14px;
   align-items: center;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -210,8 +213,8 @@ export const SC_TxTypeBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   background: var(--color-primary-light);
   color: var(--color-primary);
   border-radius: var(--ui-radius-sm);

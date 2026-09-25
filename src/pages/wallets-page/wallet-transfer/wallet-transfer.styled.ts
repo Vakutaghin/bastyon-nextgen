@@ -156,7 +156,7 @@ export const SC_TransferSubmit = styled.button`
 export const SC_TransferError = styled.div`
   margin-top: 12px;
   padding: 12px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-danger-deep);
   background: var(--color-danger-bg-soft);
   border-radius: var(--ui-radius-lg);
@@ -171,7 +171,7 @@ export const SC_TransferFieldError = styled.div`
 export const SC_TransferSuccess = styled.div`
   margin-top: 12px;
   padding: 12px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-success-deep);
   background: var(--color-success-bg-soft);
   border-radius: var(--ui-radius-lg);
@@ -234,7 +234,7 @@ export const SC_TransferLoginChip = styled.div`
   gap: 8px;
   margin-top: 8px;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-gray-120);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-overlay-8);

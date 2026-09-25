@@ -18,7 +18,7 @@ export const SC_IpfsHead = styled.div`
 `
 
 export const SC_IpfsTitle = styled.div`
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
 `
@@ -31,7 +31,7 @@ export const SC_IpfsStatus = styled.div`
 
 export const SC_IpfsDesc = styled.p`
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--color-text-secondary);
 `

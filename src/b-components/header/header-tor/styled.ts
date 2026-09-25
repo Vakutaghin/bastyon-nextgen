@@ -106,6 +106,6 @@ export const SC_TorActions = styled.div`
 `
 
 export const SC_TorHint = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-gray-999);
 `

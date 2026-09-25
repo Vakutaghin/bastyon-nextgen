@@ -6,7 +6,7 @@ export const SC_TxBadge = styled.span`
   padding: 0 6px;
   border-radius: var(--ui-radius-lg);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   vertical-align: middle;
   background: var(--color-primary-light);
   color: var(--color-primary);
@@ -53,7 +53,7 @@ export const SC_DirIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 16px;
 
   &.in {
     color: var(--color-success);
@@ -76,7 +76,7 @@ export const SC_HistoryMid = styled.div`
 
 export const SC_HistoryDirLabel = styled.div`
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-primary);
 `
 

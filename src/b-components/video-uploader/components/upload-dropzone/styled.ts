@@ -18,7 +18,7 @@ export const SC_UploadSection = styled.div`
 
 export const SC_SectionTitle = styled.h3`
   margin: 0 0 16px !important;
-  font-size: 18px !important;
+  font-size: 16px !important;
   font-weight: 600 !important;
   color: var(--ui-text-highlighted) !important;
   width: 100% !important;

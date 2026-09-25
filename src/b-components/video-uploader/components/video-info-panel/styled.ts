@@ -71,7 +71,7 @@ export const SC_TranscoderBadge = styled.span`
   padding: 4px 8px !important;
   border-radius: var(--ui-radius-sm) !important;
   font-size: 12px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   background-color: var(--color-bg-secondary) !important;
   color: var(--color-text-primary) !important;
   border: 1px solid var(--color-border) !important;

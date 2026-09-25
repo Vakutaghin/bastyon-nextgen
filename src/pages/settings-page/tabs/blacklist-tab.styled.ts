@@ -9,7 +9,7 @@ export const SC_Blacklist = styled.section`
 
 export const SC_BlacklistTitle = styled.h2`
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
 `
@@ -58,7 +58,7 @@ export const SC_BlacklistAvatar = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-secondary);
 
   img {
@@ -84,7 +84,7 @@ export const SC_UnblockBtn = styled.button`
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 

@@ -72,18 +72,18 @@ export const SC_MarkdownBody = styled.div`
 
   h1 {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 600;
     margin: 0 0 12px;
   }
 
   h2 {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     margin: 16px 0 8px;
   }
 
   h3 {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     margin: 12px 0 6px;
     color: var(--color-text-dark);
@@ -116,7 +116,7 @@ export const SC_MarkdownBody = styled.div`
     background: var(--color-overlay-5);
     padding: 1px 5px;
     border-radius: var(--ui-radius-sm);
-    font-size: 12.5px;
+    font-size: 12px;
     font-family: var(--font-family-mono);
   }
 

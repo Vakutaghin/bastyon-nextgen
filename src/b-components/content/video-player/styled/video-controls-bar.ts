@@ -115,7 +115,7 @@ export const SC_VideoPlayButton = styled.button`
 
 export const SC_VideoTimeDisplay = styled.span`
   color: var(--color-text-primary) !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   font-weight: 500 !important;
   user-select: none !important;
   flex-shrink: 0 !important;

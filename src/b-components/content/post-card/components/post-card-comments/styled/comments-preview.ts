@@ -16,7 +16,7 @@ export const SC_ShowCommentsBtn = styled.button`
   padding: 0;
   border: none;
   background: none;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ui-primary-text);
   cursor: pointer;
   text-align: left;
@@ -122,7 +122,7 @@ export const SC_CommentRepliesLink = styled.button`
   background: transparent;
   font: inherit;
   text-align: inherit;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--ui-primary-text);
   cursor: pointer;
   user-select: none;

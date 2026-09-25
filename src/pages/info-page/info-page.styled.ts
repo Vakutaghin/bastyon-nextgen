@@ -9,8 +9,8 @@ export const SC_InfoPage = styled.div`
 
 export const SC_InfoTitle = styled.h1`
   margin: 0 0 8px;
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--ui-text-highlighted);
 `
 
@@ -27,7 +27,7 @@ export const SC_InfoNote = styled.div`
   background: var(--color-warning-bg-soft);
   border: 1px solid var(--color-warning);
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
 `
 
@@ -37,14 +37,14 @@ export const SC_InfoSection = styled.section`
 
 export const SC_InfoHeading = styled.h2`
   margin: 0 0 8px;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
 `
 
 export const SC_InfoParagraph = styled.p`
   margin: 0 0 10px;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.65;
   color: var(--color-text-primary);
 `

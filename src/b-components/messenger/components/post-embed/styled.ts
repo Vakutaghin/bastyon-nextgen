@@ -36,7 +36,7 @@ export const SC_Avatar = styled.div`
   align-items: center;
   justify-content: center;
   color: var(--color-white);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 12px;
 `
 
@@ -54,8 +54,8 @@ export const SC_HeaderInfo = styled.div`
 `
 
 export const SC_AuthorName = styled.div`
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--ui-text-highlighted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -66,7 +66,7 @@ export const SC_BadgeRow = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-blue-gray);
 `
 
@@ -87,7 +87,7 @@ export const SC_Title = styled.div`
 `
 
 export const SC_Snippet = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-dark);
   line-height: 1.35;
   display: -webkit-box;
@@ -148,7 +148,7 @@ export const SC_Loading = styled.div`
   gap: 10px;
   padding: 14px 16px;
   color: var(--color-blue-gray);
-  font-size: 13px;
+  font-size: 14px;
 `
 
 export const SC_Spinner = styled.div`
@@ -162,7 +162,7 @@ export const SC_Spinner = styled.div`
 
 export const SC_ShortTxid = styled.span`
   opacity: 0.6;
-  font-size: 11px;
+  font-size: 12px;
   margin-left: auto;
 `
 
@@ -173,7 +173,7 @@ export const SC_FailedHint = styled.a`
   padding: 12px 14px;
   text-decoration: none;
   color: var(--color-brand-cyan);
-  font-size: 13px;
+  font-size: 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--ui-radius-lg);
   background: var(--color-bg-primary);

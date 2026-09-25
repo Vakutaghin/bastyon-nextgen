@@ -31,7 +31,7 @@ export const SC_Header = styled.div`
   align-items: center;
   gap: 10px;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-dark-bg);
 `
 
@@ -49,11 +49,9 @@ export const SC_Field = styled.div`
 `
 
 export const SC_Label = styled.label`
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-blue-gray);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ui-text);
 `
 
 export const SC_Input = styled.input`
@@ -94,7 +92,7 @@ export const SC_Button = styled('button', { primary: Boolean })`
   padding: 9px 16px;
   border-radius: var(--ui-radius-lg);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   background: ${(p) => (p.primary ? COLORS.BRAND_CYAN : COLORS.BG_SECONDARY)};
   color: ${(p) => (p.primary ? COLORS.WHITE : COLORS.TEXT_PRIMARY)};

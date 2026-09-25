@@ -46,7 +46,7 @@ export const SC_Avatar = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-secondary);
 
   img {
@@ -86,7 +86,7 @@ export const SC_FollowBtn = styled.button`
   border: 1px solid var(--color-primary);
   background: var(--color-primary);
   color: var(--ui-text-inverted);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
@@ -121,7 +121,7 @@ export const SC_LoadMore = styled.button`
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 

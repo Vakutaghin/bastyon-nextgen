@@ -31,7 +31,7 @@ export const SC_TxPagePage = styled.main`
 
 export const SC_TxBreadcrumb = styled.div`
   margin-bottom: 12px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-muted);
 
   a {
@@ -53,8 +53,8 @@ export const SC_TxTitleRow = styled.div`
 `
 
 export const SC_TxTitle = styled.h1`
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 0;
 `
@@ -64,7 +64,7 @@ export const SC_TxTypeBadge = styled.span`
   align-items: center;
   padding: 4px 10px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   background: var(--color-primary-light);
   color: var(--color-primary);
   border-radius: var(--ui-radius-lg);
@@ -84,8 +84,11 @@ export const SC_TxMetaGrid = styled.div`
   }
 `
 
+/** margin-bottom -1px: линия под последним рядом уходит под рамку карточки
+ * (overflow: hidden), иначе внизу выходила двойная линия. */
 export const SC_TxMetaCell = styled.div`
   padding: 14px 18px;
+  margin-bottom: -1px;
   border-bottom: 1px solid var(--color-border-lighter);
   border-right: 1px solid var(--color-border-lighter);
 
@@ -99,7 +102,7 @@ export const SC_TxMetaCell = styled.div`
 `
 
 export const SC_TxMetaLabel = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--color-text-secondary);
@@ -161,7 +164,7 @@ export const SC_TxIOValue = styled.div`
 `
 
 export const SC_TxIOAnnotation = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-muted);
   margin-top: 4px;
 `
@@ -180,7 +183,7 @@ export const SC_TxRawToggle = styled.button`
   background: transparent;
   color: var(--color-link);
   border: none;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   padding: 0;
 

@@ -12,7 +12,10 @@ export const SC_ReadMoreButton = styled(Button)`
 
 export const SC_PostContent = styled.div`
   margin-bottom: 15px;
-  /* Как текст у Nuxt UI: 1.2 было тесно для длинных постов. */
+  /* Текст поста — 16px, как prose у Nuxt и как было до редизайна: раньше
+     размер наследовался от темы antd (fontSize 16), с интерфейсными 14px
+     тема его уменьшила. Интерлиньяж 1.5: 1.2 было тесно для длинных постов. */
+  font-size: 16px;
   line-height: 1.5;
   color: var(--color-text-primary) !important;
   word-wrap: break-word;
@@ -69,6 +72,7 @@ export const SC_PostContent = styled.div`
 
 export const SC_PostPreview = styled.div`
   position: relative;
+  font-size: 16px;
   line-height: 1.5;
   overflow: hidden;
   word-wrap: break-word;

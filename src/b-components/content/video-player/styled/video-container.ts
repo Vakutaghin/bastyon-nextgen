@@ -190,7 +190,7 @@ export const SC_VideoError = styled.div`
 /** Текст предупреждения «видео пойдёт мимо Tor» внутри SC_VideoError. */
 export const SC_VideoTorBody = styled.p`
   max-width: 360px;
-  font-size: 13px !important;
+  font-size: 14px !important;
   opacity: 0.85;
 `
 

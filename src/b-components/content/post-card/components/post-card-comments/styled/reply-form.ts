@@ -36,7 +36,7 @@ export const SC_ReplyPanel = styled.div`
 
   .reply-avatar-placeholder {
     color: var(--color-text-primary);
-    font-weight: 600;
+    font-weight: 500;
     font-size: 14px;
   }
 `
@@ -209,7 +209,7 @@ export const SC_ConfirmBtn = styled.button`
   border-radius: var(--ui-radius-lg);
   border: 1px solid var(--color-gray-ddd);
   background: var(--color-bg-primary);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-primary);
   cursor: pointer;
 

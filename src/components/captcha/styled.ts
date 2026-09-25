@@ -12,7 +12,7 @@ export const SC_Reason = styled.div`
 
   span {
     font-size: 1.2em;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--color-warning-hex);
   }
 `
@@ -20,7 +20,7 @@ export const SC_Reason = styled.div`
 export const SC_Subcaption = styled.div`
   margin: 0 auto;
   margin-top: 0.5em;
-  font-weight: 700;
+  font-weight: 600;
   padding-left: 1em;
   padding-right: 1em;
 `

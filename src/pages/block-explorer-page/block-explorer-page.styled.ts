@@ -34,8 +34,8 @@ export const SC_ExplorerTitleRow = styled.div`
 `
 
 export const SC_ExplorerTitle = styled.h1`
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 0;
   letter-spacing: -0.5px;
@@ -210,7 +210,7 @@ export const SC_BlockRow = styled.div`
 `
 
 export const SC_BlockHeight = styled.div`
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ui-text-highlighted);
   font-variant-numeric: tabular-nums;
 `
@@ -249,6 +249,6 @@ export const SC_SectionLink = styled.a`
 /** Пояснение под списком блоков. */
 export const SC_SectionNote = styled.div`
   padding: 16px 18px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
 `

@@ -96,6 +96,6 @@ export const SC_IpfsActions = styled.div`
 `
 
 export const SC_IpfsHint = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-gray-999);
 `

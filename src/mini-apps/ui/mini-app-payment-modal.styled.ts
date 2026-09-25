@@ -9,7 +9,7 @@ export const SC_Wrap = styled.div`
 
 export const SC_AppRow = styled.div`
   color: var(--color-gray-120);
-  font-size: 13px;
+  font-size: 14px;
 `
 
 export const SC_RecieverList = styled.div`
@@ -48,7 +48,7 @@ export const SC_TotalRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 `
 
@@ -62,7 +62,7 @@ export const SC_FeeRow = styled.div`
 `
 
 export const SC_MessageRow = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-gray-120);
   padding: ${SPACING.SM};
   background: var(--color-gray-f1);
@@ -71,5 +71,5 @@ export const SC_MessageRow = styled.div`
 
 export const SC_Error = styled.div`
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: 14px;
 `

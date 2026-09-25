@@ -30,7 +30,7 @@ export const SC_ExplorerErrorActions = styled.div`
 
 export const SC_ExplorerErrorBtn = styled.button`
   padding: 8px 18px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--color-primary);
   background: var(--color-bg-primary);

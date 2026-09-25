@@ -17,7 +17,7 @@ export const SC_TorImageGate = styled.button`
   background: var(--color-bg-tertiary);
   color: var(--color-text-secondary);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   box-sizing: border-box;
 

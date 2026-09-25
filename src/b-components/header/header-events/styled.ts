@@ -39,7 +39,7 @@ export const SC_MenuHeader = styled.div`
 `
 
 export const SC_MenuTitle = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 `
 
@@ -83,14 +83,14 @@ export const SC_KindChip = styled.div`
   background: var(--color-ant-blue-bg);
   color: var(--color-ant-blue);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 `
 
 export const SC_PendingTag = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-gray-999);
   white-space: nowrap;
 `
@@ -112,7 +112,7 @@ export const SC_EventContent = styled.div`
 
 /** Заголовок поста — одна строка с многоточием. */
 export const SC_PostTitle = styled.div`
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
   white-space: nowrap;
@@ -124,7 +124,7 @@ export const SC_PostTitle = styled.div`
 
 /** Текст поста/коммента — аккуратные ДВЕ строки с многоточием. */
 export const SC_Snippet = styled.div`
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.4;
   color: var(--color-gray-555);
   word-break: break-word;
@@ -151,8 +151,8 @@ export const SC_RatingDisplay = styled.div`
 `
 
 export const SC_RatingValue = styled.span`
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--ui-text-highlighted);
 `
 
@@ -174,7 +174,7 @@ export const SC_PreviewNote = styled('div', { confirmed: Boolean })`
   border-radius: var(--ui-radius-lg);
   background: ${(p) => (p.confirmed ? COLORS.SUCCESS_BG_TINT : COLORS.ANT_BLUE_BG)};
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.4;
 
   .anticon {

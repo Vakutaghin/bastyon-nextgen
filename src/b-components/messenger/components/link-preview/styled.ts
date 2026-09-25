@@ -31,18 +31,16 @@ export const SC_Body = styled.div`
 `
 
 export const SC_SiteName = styled.div`
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-brand-cyan);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `
 
 export const SC_Title = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
   line-height: 1.3;

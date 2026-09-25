@@ -33,7 +33,7 @@ export const SC_AddrPagePage = styled.main`
 
 export const SC_AddrBreadcrumb = styled.div`
   margin-bottom: 12px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-muted);
 
   a {
@@ -95,7 +95,7 @@ export const SC_AddrSummaryCard = styled.div`
 `
 
 export const SC_AddrSummaryLabel = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.6px;
@@ -136,7 +136,7 @@ export const SC_AddrTxRow = styled.div`
   gap: 12px;
   padding: 12px 18px;
   border-bottom: 1px solid var(--color-border-lighter);
-  font-size: 13px;
+  font-size: 14px;
   align-items: center;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -179,8 +179,8 @@ export const SC_AddrTxTypeBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   background: var(--color-primary-light);
   color: var(--color-primary);
   border-radius: var(--ui-radius-sm);

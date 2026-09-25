@@ -20,10 +20,8 @@ export const SC_BoostedBadge = styled.div`
   align-items: center;
   gap: 4px;
   margin-bottom: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--color-brand-cyan);
 
   svg {
@@ -40,8 +38,8 @@ export const SC_PendingBadge = styled.div`
   margin-bottom: 10px;
   padding: 3px 9px;
   border-radius: var(--ui-radius-lg);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--color-warning-hex);
   background: var(--color-warning-bg-soft);
@@ -72,7 +70,7 @@ export const SC_PostTitle = styled.h3`
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     margin: 0 0 10px;
-    font-size: 15px;
+    font-size: 16px;
   }
 `
 
@@ -92,7 +90,7 @@ export const SC_PostAuthorInfo = styled.div`
 `
 
 export const SC_PostAuthorName = styled.div`
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   color: var(--ui-text-highlighted);
 `
@@ -191,7 +189,7 @@ export const SC_StarRating = styled.div`
 
   .star-count {
     color: var(--color-text-primary) !important;
-    font-size: 15px;
+    font-size: 14px;
     margin-left: 7px;
   }
 
@@ -349,7 +347,7 @@ export const SC_RepostOriginalAuthorInfo = styled.div`
 `
 
 export const SC_RepostOriginalAuthorName = styled.div`
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   color: var(--ui-text-highlighted);
 

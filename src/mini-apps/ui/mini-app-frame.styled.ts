@@ -70,7 +70,7 @@ export const SC_LoaderIcon = styled.img`
 `
 
 export const SC_LoaderText = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
 `
 
@@ -139,7 +139,7 @@ export const SC_ClosePetalIcon = styled.span`
   justify-content: center;
   width: 20px;
   height: 20px;
-  font-size: 11px;
+  font-size: 12px;
   flex: 0 0 auto;
 `
 

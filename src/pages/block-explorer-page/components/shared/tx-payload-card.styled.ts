@@ -31,7 +31,7 @@ export const SC_PayloadIcon = styled.span`
 `
 
 export const SC_PayloadTitle = styled.h3`
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 0;
@@ -41,7 +41,7 @@ export const SC_PayloadFields = styled.div`
   display: grid;
   grid-template-columns: 110px 1fr;
   gap: 8px 16px;
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 14px;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -86,7 +86,7 @@ export const SC_PayloadBtn = styled.a`
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--color-primary);
   background: var(--color-primary-light);
@@ -106,8 +106,8 @@ export const SC_PayloadScore = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: 14px;
   color: var(--color-primary);
   background: var(--color-primary-light);
   border-radius: var(--ui-radius-md);

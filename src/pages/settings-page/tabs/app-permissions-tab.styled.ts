@@ -9,7 +9,7 @@ export const SC_Perms = styled.section`
 
 export const SC_PermsTitle = styled.h2`
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
 `
@@ -52,7 +52,7 @@ export const SC_AppIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-secondary);
 
   img {
@@ -65,7 +65,7 @@ export const SC_AppIcon = styled.div`
 export const SC_AppName = styled.span`
   flex: 1;
   min-width: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
   white-space: nowrap;
@@ -99,7 +99,7 @@ export const SC_PermMeta = styled.span`
 `
 
 export const SC_DeniedBadge = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   padding: 2px 7px;
   border-radius: var(--ui-radius-lg);
   background: var(--color-red-bg);
@@ -113,7 +113,7 @@ export const SC_RevokeBtn = styled.button`
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-secondary);
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
@@ -129,7 +129,7 @@ export const SC_RevokeAllBtn = styled.button`
   border: 1px solid var(--color-border-default);
   background: none;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
@@ -146,7 +146,7 @@ export const SC_DeleteAppBtn = styled.button`
   border: 1px solid var(--color-danger);
   background: none;
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 

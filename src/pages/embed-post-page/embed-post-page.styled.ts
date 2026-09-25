@@ -31,7 +31,7 @@ export const SC_EmbedAvatar = styled.span`
   justify-content: center;
   background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
-  font-weight: 600;
+  font-weight: 500;
 
   img {
     width: 100%;
@@ -41,8 +41,8 @@ export const SC_EmbedAvatar = styled.span`
 `
 
 export const SC_EmbedAuthor = styled.span`
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--ui-text-highlighted);
 `
 
@@ -53,8 +53,8 @@ export const SC_EmbedTime = styled.span`
 
 export const SC_EmbedTitle = styled.h1`
   margin: 0;
-  font-size: 19px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
 `
 
 export const SC_EmbedMedia = styled.div`
@@ -91,6 +91,6 @@ export const SC_EmbedState = styled.div`
   margin: 0 auto;
   padding: 48px 16px;
   text-align: center;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--color-text-secondary);
 `

@@ -19,10 +19,8 @@ export const SC_ChangelogEntry = styled.section`
 
 export const SC_VersionLabel = styled.div`
   display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--color-primary);
   background: var(--color-primary-light);
   border-radius: 999px;
@@ -42,7 +40,7 @@ export const SC_MarkdownBody = styled.div`
 
   h1 {
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 600;
     margin: 0 0 12px;
     color: var(--color-text-primary);
   }
@@ -88,7 +86,7 @@ export const SC_MarkdownBody = styled.div`
     background: var(--color-overlay-5);
     padding: 1px 5px;
     border-radius: var(--ui-radius-sm);
-    font-size: 12.5px;
+    font-size: 12px;
     font-family: var(--font-family-mono);
   }
 
@@ -113,7 +111,7 @@ export const SC_LangSwitcher = styled.div`
 export const SC_LangButton = styled.button<{ active: boolean }>`
   padding: 4px 10px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   background: ${(p) => (p.active ? COLORS.PRIMARY : 'transparent')};
   color: ${(p) => (p.active ? COLORS.WHITE : COLORS.TEXT_SECONDARY)};
   border: none;
@@ -143,5 +141,5 @@ export const SC_Empty = styled.div`
   padding: 24px;
   text-align: center;
   color: var(--color-text-hint);
-  font-size: 13px;
+  font-size: 14px;
 `

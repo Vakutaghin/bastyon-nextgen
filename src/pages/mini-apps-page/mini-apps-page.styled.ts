@@ -10,14 +10,14 @@ export const SC_Page = styled.main`
 `
 
 export const SC_Title = styled.h1`
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 24px 0 8px;
 `
 
 export const SC_Subtitle = styled.p`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   margin: 0 0 16px;
 `

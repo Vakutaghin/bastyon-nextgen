@@ -136,7 +136,7 @@ export const SC_FeedError = styled.div`
 
   p {
     margin: 0;
-    font-size: 15px;
+    font-size: 14px;
   }
 `
 

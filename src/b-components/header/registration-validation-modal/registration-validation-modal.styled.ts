@@ -28,7 +28,7 @@ export const SC_Icon = styled.div`
 
 export const SC_Title = styled.h2`
   font-size: 1.5em;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 1em;
   color: var(--ui-text-highlighted);
 `

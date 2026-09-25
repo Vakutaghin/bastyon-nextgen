@@ -168,7 +168,7 @@ export const SC_RecordingTimer = styled.div`
   font-family: var(--font-family-mono);
   color: var(--color-red-dark);
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 500;
   margin-right: auto;
   padding-left: 8px;
   display: flex;
@@ -230,7 +230,7 @@ export const SC_CancelButton = styled.button`
   color: var(--color-red-ant);
   background: none;
   border: none;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   padding: 8px;
 
@@ -254,7 +254,7 @@ export const SC_StartChatButton = styled.button`
   border: none;
   background-color: var(--color-brand-cyan);
   color: var(--ui-text-inverted);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -292,7 +292,7 @@ export const SC_PartnerAvatar = styled.div`
 
   .avatar-fallback {
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--color-slate);
     user-select: none;
   }
@@ -300,7 +300,7 @@ export const SC_PartnerAvatar = styled.div`
 
 export const SC_PartnerName = styled.div`
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--ui-text-highlighted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -375,7 +375,7 @@ export const SC_SearchRow = styled.div`
 export const SC_SearchIcon = styled.span`
   display: inline-flex;
   color: var(--color-gray-888);
-  font-size: 15px;
+  font-size: 16px;
 `
 
 export const SC_SearchInput = styled.input`
@@ -407,7 +407,7 @@ export const SC_BlockBtn = styled.button`
   border: none;
   background: none;
   color: var(--color-gray-888);
-  font-size: 15px;
+  font-size: 16px;
   cursor: pointer;
   transition: color 0.2s;
 
@@ -450,12 +450,12 @@ export const SC_ReplyBannerBody = styled.div`
 
 export const SC_ReplyBannerTitle = styled.div`
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-brand-cyan);
 `
 
 export const SC_ReplyBannerText = styled.div`
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;

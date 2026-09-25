@@ -26,13 +26,13 @@ export const SC_WarningTitle = styled.div`
 `
 
 export const SC_WarningText = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-orange-text);
   line-height: 1.5;
 `
 
 export const SC_EquivalenceNote = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   line-height: 1.5;
   margin-bottom: 16px;
@@ -100,7 +100,7 @@ export const SC_PrivateKeyLabel = styled.div`
   color: var(--color-text-muted);
   margin-bottom: 8px;
   text-align: center;
-  font-weight: 900;
+  font-weight: 500;
 `
 
 export const SC_PrivateKeyText = styled.div`

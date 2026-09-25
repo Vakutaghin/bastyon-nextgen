@@ -180,7 +180,7 @@ export const SC_FavIcon = styled.img`
 
 export const SC_FavIconFallback = styled.div`
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-secondary);
 `
 

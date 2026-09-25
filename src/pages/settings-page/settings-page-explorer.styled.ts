@@ -22,7 +22,7 @@ export const SC_ExplorerSettingsBlock = styled.div`
 
 export const SC_ExplorerSettingsLead = styled.p`
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--color-text-secondary);
 `

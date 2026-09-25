@@ -18,7 +18,7 @@ export const SC_PeersPage = styled.main`
 
 export const SC_PeersBreadcrumb = styled.div`
   margin-bottom: 12px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-muted);
 
   a {
@@ -33,7 +33,7 @@ export const SC_PeersBreadcrumb = styled.div`
 
 export const SC_PeersTitle = styled.h1`
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 0 0 24px;
 `
@@ -73,7 +73,7 @@ export const SC_NodeRow = styled.div`
   gap: 12px;
   padding: 12px 18px;
   border-bottom: 1px solid var(--color-border-lighter);
-  font-size: 13px;
+  font-size: 14px;
 
   &:last-child {
     border-bottom: none;
@@ -131,7 +131,7 @@ export const SC_NodeMetric = styled.div`
 
 export const SC_NodeMetricLabel = styled.span`
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -143,11 +143,10 @@ export const SC_PeerTableHeader = styled.div`
   gap: 10px;
   padding: 10px 18px;
   border-bottom: 1px solid var(--ui-border);
-  font-size: 11px;
+  /* Шапка таблицы как у UTable: 14px/600, цвет заголовков, без капса. */
+  font-size: 14px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--color-text-secondary);
+  color: var(--ui-text-highlighted);
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     grid-template-columns: minmax(0, 1.4fr) 1fr 80px;
@@ -165,7 +164,7 @@ export const SC_PeerRow = styled.div`
   gap: 10px;
   padding: 10px 18px;
   border-bottom: 1px solid var(--color-border-lighter);
-  font-size: 13px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
 
   &:last-child {
@@ -216,7 +215,7 @@ export const SC_DirectionBadge = styled('span', { dir: String })`
 
 // Общий плейсхолдер (audit §3.1) + мелкий шрифт страницы пиров.
 export const SC_Placeholder = styled(SC_PlaceholderBase)`
-  font-size: 13px;
+  font-size: 14px;
 `
 
 export const SC_PlaceholderError = styled(SC_Placeholder)`

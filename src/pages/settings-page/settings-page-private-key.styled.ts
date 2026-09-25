@@ -11,7 +11,7 @@ export const SC_PrivateKeyWarning = styled.div`
   border: 1px solid var(--color-warning-border);
   border-radius: var(--ui-radius-lg);
   margin-bottom: 20px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--color-warning-text);
 `
@@ -27,10 +27,10 @@ export const SC_PrivateKeyBox = styled.div`
 `
 
 export const SC_PrivateKeyLabel = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   margin-bottom: 8px;
-  font-weight: 600;
+  font-weight: 500;
 `
 
 export const SC_PrivateKeyValue = styled.div`
@@ -98,7 +98,7 @@ export const SC_HideKeyButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--color-text-secondary);
   background: transparent;

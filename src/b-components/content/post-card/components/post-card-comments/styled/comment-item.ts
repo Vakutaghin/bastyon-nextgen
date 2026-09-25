@@ -51,8 +51,8 @@ export const SC_CommentRow = styled.div`
 
   .comment-avatar-placeholder {
     color: var(--color-text-primary);
-    font-weight: 600;
-    font-size: 13px;
+    font-weight: 500;
+    font-size: 14px;
   }
 `
 
@@ -106,14 +106,14 @@ export const SC_CommentItem = styled.div`
 
   .comment-avatar-placeholder {
     color: var(--color-text-primary);
-    font-weight: 600;
-    font-size: 13px;
+    font-weight: 500;
+    font-size: 14px;
   }
 `
 
 export const SC_CommentAuthor = styled.div`
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 500;
+  font-size: 14px;
   color: var(--ui-text-highlighted);
 `
 
@@ -198,7 +198,7 @@ export const SC_HiddenBanner = styled.div`
   padding: 8px 12px;
   background: var(--color-overlay-4);
   border-radius: var(--ui-radius-lg);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   line-height: 1.4;
 
@@ -211,7 +211,7 @@ export const SC_RevealBtn = styled.button`
   border: none;
   background: transparent;
   color: var(--ui-primary-text);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   padding: 0;
 
@@ -229,7 +229,7 @@ export const SC_ComposerDisabled = styled.div`
   background: var(--color-overlay-4);
   border: 1px dashed var(--color-gray-ddd);
   border-radius: var(--ui-radius-lg);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   line-height: 1.4;
   margin-top: 8px;
@@ -260,7 +260,7 @@ export const SC_EditCancelBtn = styled.button`
   border-radius: var(--ui-radius-lg);
   border: 1px solid var(--color-gray-ddd);
   background: var(--color-bg-primary);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-primary);
   cursor: pointer;
 
@@ -303,7 +303,7 @@ export const SC_EditSaveBtn = styled.button`
 export const SC_EditedMark = styled.span`
   display: inline-flex;
   align-items: center;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   gap: 3px;
   margin-left: 4px;
@@ -317,7 +317,7 @@ export const SC_TxStatusBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 12px;
   padding: 1px 6px;
   border-radius: var(--ui-radius-lg);
   margin-left: 6px;

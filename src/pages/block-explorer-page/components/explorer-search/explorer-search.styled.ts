@@ -40,10 +40,8 @@ export const SC_ExplorerSearchHint = styled.span`
   right: 96px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 11px;
-  color: var(--color-text-muted);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--ui-text-dimmed);
   pointer-events: none;
 `
 
@@ -99,18 +97,17 @@ export const SC_SuggestionsHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 8px 14px;
-  font-size: 11px;
+  /* Подпись группы, как в выпадашке Nuxt: 12px/600, без капса. */
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--color-text-secondary);
+  color: var(--ui-text-highlighted);
   border-bottom: 1px solid var(--ui-border);
 `
 
 export const SC_ClearAllBtn = styled.button`
   background: transparent;
   border: none;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-muted);
   cursor: pointer;
   padding: 2px 4px;
@@ -151,7 +148,7 @@ export const SC_KindBadge = styled('span', badgeAttrs)`
   justify-content: center;
   padding: 2px 8px;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   border-radius: var(--ui-radius-sm);
   white-space: nowrap;
   color: ${(p) => {
@@ -176,7 +173,7 @@ export const SC_SuggestionValue = styled.span`
 `
 
 export const SC_SuggestionAge = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-muted);
   text-align: right;
   font-variant-numeric: tabular-nums;

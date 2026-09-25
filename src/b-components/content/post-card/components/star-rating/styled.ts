@@ -14,7 +14,7 @@ export const SC_AuthPopoverContent = styled.div`
 
   p {
     margin: 0;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.4;
   }
 `
@@ -27,7 +27,7 @@ export const SC_StarRating = styled.div`
 
   .star-count {
     color: var(--color-text-primary) !important;
-    font-size: 15px;
+    font-size: 14px;
     margin-left: 7px;
   }
 

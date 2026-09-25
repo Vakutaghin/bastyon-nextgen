@@ -13,7 +13,7 @@ export const SC_VaultPrompt = styled.p`
 `
 
 export const SC_VaultError = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-danger);
 `
 
@@ -23,7 +23,7 @@ export const SC_VaultForgot = styled.button`
   background: none;
   border: none;
   padding: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-link);
   cursor: pointer;
 

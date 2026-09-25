@@ -20,7 +20,7 @@ export const SC_RepostHead = styled.div`
 
 export const SC_RepostAuthor = styled.span`
   font-size: ${FONT_SIZE.MD};
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-primary);
 `
 
