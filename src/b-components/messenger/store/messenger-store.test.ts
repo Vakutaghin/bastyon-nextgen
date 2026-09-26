@@ -235,6 +235,17 @@ describe('messenger-store: список диалогов до первого о�
   })
 })
 
+describe('messenger-store: свой matrix-id', () => {
+  it('компоненты видят свой id и после сброса при входе в аккаунт', async () => {
+    const store = useMessengerStore()
+    // resetMessenger при каждом входе: logout → chatStore.reset() → initMatrix.
+    store.logout()
+    await store.initMatrix()
+    expect(h.chat.currentUser.id).toBe('@50416c696365:matrix.pocketnet.app')
+    expect(store.currentUser.id).toBe('@50416c696365:matrix.pocketnet.app')
+  })
+})
+
 describe('messenger-store: повтор входа в Matrix в фоне', () => {
   let store: ReturnType<typeof useMessengerStore>
 

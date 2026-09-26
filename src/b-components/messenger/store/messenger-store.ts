@@ -549,7 +549,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     // ВАЖНО: та же проблема, что и с pcryptoService — `activeDialog` initial value
     // (нет активного чата) = null. Голый null ломает storeToRefs.
     activeDialog: computed(() => uiStore.activeDialog),
-    currentUser: chatStore.currentUser,
+    // Живая ссылка: chatStore.reset() при каждом входе в аккаунт подменяет
+    // объект, и снятая при создании стора копия навсегда оставалась с id 'me' —
+    // свои сообщения рисовались чужими, без «Вы:» и без удаления.
+    currentUser: computed(() => chatStore.currentUser),
     lastTargetAddress: computed(() => uiStore.lastTargetAddress),
     inviteViewActive: computed(() => uiStore.inviteViewActive),
     isSyncStarted: computed(() => uiStore.isSyncStarted),
