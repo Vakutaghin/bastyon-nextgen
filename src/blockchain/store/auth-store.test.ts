@@ -146,6 +146,11 @@ vi.mock('@/b-components/messenger/store', () => ({
   useMessengerStore: vi.fn().mockReturnValue(_messenger),
 }))
 
+const { _ipfs } = vi.hoisted(() => ({
+  _ipfs: { forgetAccount: vi.fn().mockResolvedValue(undefined) },
+}))
+vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => _ipfs }))
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -606,6 +611,22 @@ describe('auth-store', () => {
 
       expect(store.isAuthenticated).toBe(false)
       expect(_messenger.purgeAccountData).not.toHaveBeenCalled()
+    })
+
+    it('«Мои файлы» удалённого аккаунта этот компьютер больше не раздаёт — в любом случае', async () => {
+      for (const [current, others, removed] of [
+        ['PCur', ['POther'], 'POther'],
+        ['PCur', ['POther'], 'PCur'],
+        ['PCur', [], 'PCur'],
+      ] as const) {
+        _ipfs.forgetAccount.mockClear()
+        const store = await signedInAs(current, [...others])
+
+        await store.removeAccount(removed)
+        await vi.dynamicImportSettled()
+
+        expect(_ipfs.forgetAccount).toHaveBeenCalledWith(removed)
+      }
     })
   })
 

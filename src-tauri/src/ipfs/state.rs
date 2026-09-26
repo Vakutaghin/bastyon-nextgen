@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -90,19 +90,19 @@ pub struct IpfsPaths {
     /// `app_data_dir/ipfs/api-secret` — bearer-секрет RPC Kubo (0600). Без него
     /// RPC на loopback без auth читал/менял бы любой локальный процесс.
     pub api_secret: PathBuf,
+    /// `app_data_dir/ipfs/shares` — «Мои файлы»: реестр публикаций по аккаунтам.
+    pub shares_dir: PathBuf,
 }
 
 impl IpfsPaths {
     pub fn new(bin_dir: PathBuf, repo: PathBuf) -> Self {
         let bin_name = if cfg!(windows) { "ipfs.exe" } else { "ipfs" };
-        let api_secret = repo
-            .parent()
-            .map(|p| p.join("api-secret"))
-            .unwrap_or_else(|| repo.join("api-secret"));
+        let data_dir = repo.parent().map(Path::to_path_buf).unwrap_or_else(|| repo.clone());
         Self {
             binary: bin_dir.join("kubo").join(bin_name),
             install_marker: bin_dir.join("install.json"),
-            api_secret,
+            api_secret: data_dir.join("api-secret"),
+            shares_dir: data_dir.join("shares"),
             bin_dir,
             repo,
         }
@@ -119,8 +119,9 @@ mod tests {
         let expected_bin = if cfg!(windows) { "ipfs.exe" } else { "ipfs" };
         assert!(p.binary.ends_with(format!("kubo/{expected_bin}")));
         assert!(p.install_marker.ends_with("install.json"));
-        // Секрет — РЯДОМ с repo (не внутри: repo может сноситься/мигрировать).
+        // Секрет и реестр — РЯДОМ с repo (не внутри: repo может сноситься/мигрировать).
         assert_eq!(p.api_secret, PathBuf::from("/data/ipfs/api-secret"));
+        assert_eq!(p.shares_dir, PathBuf::from("/data/ipfs/shares"));
     }
 
     #[test]

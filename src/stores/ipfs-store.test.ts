@@ -137,3 +137,70 @@ describe('ipfs-store: сохранение файла', () => {
     expect(store.message).toMatch(/^verify-mismatch/)
   })
 })
+
+describe('ipfs-store: «Мои файлы»', () => {
+  const ALICE = 'PQ8AiCHJaTZAThr2TnpkQYDEYTqULsMhCT'
+  const share = (cid: string, key?: string) => ({
+    cid,
+    name: `${cid}.pdf`,
+    size: 1,
+    addedAt: 1,
+    key,
+  })
+
+  function running(store: ReturnType<typeof useIpfsStore>) {
+    store.setConsent('accepted')
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === 'ipfs_ensure') return snapshot({ status: 'running', gateway_port: 8080 })
+      if (cmd === 'ipfs_shares') return [share('bafyold')]
+      if (cmd === 'ipfs_add') return share('bafynew')
+      if (cmd === 'ipfs_add_encrypted') return share('bafysecret', 'a2V5')
+      if (cmd === 'ipfs_share_status') return { bafyold: 'pinning' }
+      return undefined
+    })
+  }
+
+  it('публикация уходит от имени аккаунта и встаёт наверх его списка', async () => {
+    const store = useIpfsStore()
+    running(store)
+    await store.loadShares(ALICE)
+
+    await expect(store.addFile(ALICE)).resolves.toMatchObject({ cid: 'bafynew' })
+    await store.addFileEncrypted(ALICE)
+
+    expect(invoke).toHaveBeenCalledWith('ipfs_add', { account: ALICE })
+    expect(invoke).toHaveBeenCalledWith('ipfs_add_encrypted', { account: ALICE })
+    expect(store.shares.map((s) => s.cid)).toEqual(['bafysecret', 'bafynew', 'bafyold'])
+  })
+
+  it('чужой список публикация не трогает', async () => {
+    const store = useIpfsStore()
+    running(store)
+    await store.loadShares(ALICE)
+    await store.addFile('PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82')
+    expect(store.shares.map((s) => s.cid)).toEqual(['bafyold'])
+  })
+
+  it('«Перестать раздавать» убирает файл и его статус на сервисе', async () => {
+    const store = useIpfsStore()
+    running(store)
+    await store.loadShares(ALICE)
+    await store.refreshShareStatus(ALICE)
+    expect(store.remoteStatus).toEqual({ bafyold: 'pinning' })
+
+    await store.unshare(ALICE, 'bafyold')
+
+    expect(invoke).toHaveBeenCalledWith('ipfs_unshare', { account: ALICE, cid: 'bafyold' })
+    expect(store.shares).toEqual([])
+    expect(store.remoteStatus).toEqual({})
+  })
+
+  it('удалённый аккаунт: его файлы больше не раздаются, список очищен', async () => {
+    const store = useIpfsStore()
+    running(store)
+    await store.loadShares(ALICE)
+    await store.forgetAccount(ALICE)
+    expect(invoke).toHaveBeenCalledWith('ipfs_forget_account', { account: ALICE })
+    expect(store.shares).toEqual([])
+  })
+})

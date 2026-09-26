@@ -631,6 +631,11 @@ export const useAuthStore = defineStore('auth', {
         purgeAccountScopedIdb(address).catch((e: unknown) =>
           console.warn('[auth-store] purgeAccountScopedIdb failed:', e)
         )
+        // «Мои файлы» аккаунта: этот компьютер перестаёт их раздавать, реестр с
+        // ключами приватных файлов удаляется (в вебе — no-op).
+        import('@/stores/ipfs-store')
+          .then(({ useIpfsStore }) => useIpfsStore().forgetAccount(address))
+          .catch((e: unknown) => console.warn('[auth-store] ipfs forgetAccount failed:', e))
 
         if (!keys.accountsList?.accounts?.length) {
           this.accountsList = null

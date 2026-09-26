@@ -10,6 +10,7 @@ import type { Router } from 'vue-router'
 import type { useAuthStore } from '@/blockchain'
 import type { useModalStore } from '@/stores/modal-store'
 import { t } from '@/i18n'
+import { isTauriEnv } from '@/helpers/api/request-tor'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 type ModalStore = ReturnType<typeof useModalStore>
@@ -70,6 +71,8 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
     { key: '/wallets', label: t('accountMsg.menuWallets') },
     { key: '/limits', label: t('accountMsg.menuLimits') },
     { key: '/my-videos', label: t('accountMsg.menuMyVideos') },
+    // Раздавать файлы через IPFS умеет только десктоп (своя нода Kubo).
+    ...(isTauriEnv() ? [{ key: '/my-files', label: t('accountMsg.menuMyFiles') }] : []),
     { key: 'settings', label: t('accountMsg.menuSettings') },
     { type: 'divider' },
     { key: 'switchAccount', label: t('accountMsg.menuSwitchAccount') },

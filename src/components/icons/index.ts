@@ -41,6 +41,7 @@ import {
   Ellipsis,
   EllipsisVertical,
   Expand,
+  File,
   FileText,
   Flag,
   Gift,
@@ -54,6 +55,7 @@ import {
   LayoutGrid,
   Lightbulb,
   LoaderCircle,
+  Lock,
   LogOut,
   Maximize,
   Megaphone,
@@ -172,6 +174,7 @@ export const EditOutlined = lucideIcon('EditOutlined', Pencil)
 export const EllipsisOutlined = lucideIcon('EllipsisOutlined', Ellipsis)
 export const ExclamationCircleOutlined = lucideIcon('ExclamationCircleOutlined', CircleAlert)
 export const ExpandOutlined = lucideIcon('ExpandOutlined', Expand)
+export const FileOutlined = lucideIcon('FileOutlined', File)
 export const FileTextOutlined = lucideIcon('FileTextOutlined', FileText)
 export const FlagOutlined = lucideIcon('FlagOutlined', Flag)
 export const FullscreenExitOutlined = lucideIcon('FullscreenExitOutlined', Minimize)
@@ -185,6 +188,7 @@ export const InfoCircleOutlined = lucideIcon('InfoCircleOutlined', Info)
 export const KeyOutlined = lucideIcon('KeyOutlined', Key)
 export const LeftOutlined = lucideIcon('LeftOutlined', ChevronLeft)
 export const LoadingOutlined = lucideIcon('LoadingOutlined', LoaderCircle, 'none', true)
+export const LockOutlined = lucideIcon('LockOutlined', Lock)
 export const LogoutOutlined = lucideIcon('LogoutOutlined', LogOut)
 export const MenuFoldOutlined = lucideIcon('MenuFoldOutlined', PanelLeftClose)
 export const MenuOutlined = lucideIcon('MenuOutlined', Menu)

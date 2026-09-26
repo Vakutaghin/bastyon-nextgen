@@ -127,6 +127,7 @@ export function resolveDeepLink(rawUrl: string): string | null {
     'miniapps',
     'explorer',
     'my-videos',
+    'my-files',
     'compose',
     'info',
   ])

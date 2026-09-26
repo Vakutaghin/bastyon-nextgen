@@ -912,6 +912,10 @@ pub fn run() {
       ipfs::ipfs_pin_service_status,
       ipfs::ipfs_pin_service_clear,
       ipfs::ipfs_pin_remote,
+      ipfs::shares::ipfs_shares,
+      ipfs::shares::ipfs_unshare,
+      ipfs::shares::ipfs_forget_account,
+      ipfs::shares::ipfs_share_status,
       tray::tray_set_labels,
     ])
     .setup(|app| {

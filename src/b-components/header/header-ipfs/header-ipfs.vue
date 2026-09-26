@@ -42,16 +42,9 @@
             {{ t('header.ipfsUpdateBtn') }}
           </Button>
 
-          <Button size="small" :loading="sharing" :disabled="busy" @click="onShareFile">
-            {{ t('header.ipfsShareBtn') }}
-          </Button>
-
-          <Button size="small" :loading="sharing" :disabled="busy" @click="onShareFileEncrypted">
-            {{ t('header.ipfsShareEncryptedBtn') }}
-          </Button>
-
-          <Button v-if="status === 'running'" size="small" @click="ipfs.openPinConfig()">
-            {{ t('header.ipfsPinConfigBtn') }}
+          <!-- Публикация, список опубликованного и удалённый pin — на странице «Мои файлы». -->
+          <Button size="small" @click="openMyFiles">
+            {{ t('header.ipfsMyFilesBtn') }}
           </Button>
         </SC_IpfsActions>
 
@@ -63,6 +56,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Dropdown, Button, Modal } from 'ant-design-vue'
@@ -74,7 +68,6 @@ import {
   CheckCircleFilled,
 } from '@/components/icons'
 import { useIpfsStore } from '@/stores/ipfs-store'
-import { buildIpfsShareLink, buildIpfsSecretLink } from '@/helpers/ipfs/ipfs-viewer'
 import {
   SC_IpfsWrapper,
   SC_IpfsDot,
@@ -93,8 +86,8 @@ const { t } = useI18n()
 const ipfs = useIpfsStore()
 const { available, status, message, install, installed, updateAvailable, busy } = storeToRefs(ipfs)
 
+const router = useRouter()
 const visible = ref(false)
-const sharing = ref(false)
 
 onMounted(() => {
   ipfs.hydrate().catch(() => {})
@@ -166,62 +159,8 @@ function onEnable(): void {
   void ipfs.enable()
 }
 
-async function onShareFile(): Promise<void> {
-  if (torBlocked()) return
-  sharing.value = true
-  try {
-    // Файл выбирается в нативном диалоге на стороне Rust (путь в IPC не ходит).
-    const cid = await ipfs.addFile()
-    if (!cid) {
-      if (ipfs.message) {
-        Modal.error({ title: t('header.ipfsShareFailedTitle'), content: ipfs.message })
-      }
-      return
-    }
-    const link = buildIpfsShareLink(cid)
-    let copied = false
-    try {
-      await navigator.clipboard.writeText(link)
-      copied = true
-    } catch {
-      // клипборд недоступен — ссылку покажем в модалке для ручного копирования
-    }
-    Modal.success({
-      title: t('header.ipfsShareDoneTitle'),
-      content: t(copied ? 'header.ipfsShareDoneCopied' : 'header.ipfsShareDone', { link }),
-    })
-  } finally {
-    sharing.value = false
-  }
-}
-
-async function onShareFileEncrypted(): Promise<void> {
-  if (torBlocked()) return
-  sharing.value = true
-  try {
-    const res = await ipfs.addFileEncrypted()
-    if (!res) {
-      if (ipfs.message) {
-        Modal.error({ title: t('header.ipfsShareFailedTitle'), content: ipfs.message })
-      }
-      return
-    }
-    const link = buildIpfsSecretLink(res.cid, res.key, res.name || 'file')
-    let copied = false
-    try {
-      await navigator.clipboard.writeText(link)
-      copied = true
-    } catch {
-      // клипборд недоступен — ссылку покажем в модалке
-    }
-    Modal.success({
-      title: t('header.ipfsShareEncryptedDoneTitle'),
-      content: t(copied ? 'header.ipfsShareEncryptedCopied' : 'header.ipfsShareEncryptedDone', {
-        link,
-      }),
-    })
-  } finally {
-    sharing.value = false
-  }
+function openMyFiles(): void {
+  visible.value = false
+  void router.push('/my-files')
 }
 </script>

@@ -10,6 +10,7 @@
 import { h, type VNode } from 'vue'
 import { Modal, message } from 'ant-design-vue'
 import { t } from '@/i18n'
+import { appToast } from '@/b-components/app-toast'
 import { Z_INDEX } from '@/styles/design-tokens'
 import { openExternal } from '@/helpers/common/open-external'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
@@ -177,7 +178,7 @@ function download(target: IpfsTarget, req: DownloadRequest): Promise<void> {
           await runDownload(target, req, sink, controller.signal, (content) =>
             modal.update({ content })
           )
-          if (sink.kind !== 'share') void message.success(t('header.ipfsSaveDoneTitle'))
+          if (sink.kind !== 'share') appToast.success({ message: t('header.ipfsSaveDoneTitle') })
         } catch (e) {
           await sink.abort()
           if (!isAbortError(e)) showError(e, sink.kind, Boolean(req.secret))

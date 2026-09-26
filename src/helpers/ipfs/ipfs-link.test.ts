@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseIpfsLink, parseIpfsSecret } from './ipfs-link'
-import { buildIpfsViewerUrl, buildIpfsShareLink, buildIpfsSecretLink } from './ipfs-viewer'
+import { buildIpfsViewerUrl, buildShareLink, buildIpfsSecretLink } from './ipfs-viewer'
 
 describe('parseIpfsLink', () => {
   it('scheme-форма ipfs:// с путём', () => {
@@ -138,15 +138,22 @@ describe('buildIpfsViewerUrl', () => {
   })
 })
 
-describe('buildIpfsShareLink', () => {
-  it('собирает ipfs://<cid> и round-trip через parseIpfsLink', () => {
-    const link = buildIpfsShareLink('bafyCID')
-    expect(link).toBe('ipfs://bafyCID')
-    expect(parseIpfsLink(link)).toEqual({ namespace: 'ipfs', root: 'bafyCID', path: '' })
+describe('buildShareLink', () => {
+  it('публичный файл: имя в пути ссылки переживает разбор — с пробелами, # и кириллицей', () => {
+    const link = buildShareLink({ cid: ' bafyDIR\n', name: 'Отчёт за май #1.pdf' })
+    expect(link).toBe(
+      'ipfs://bafyDIR/%D0%9E%D1%82%D1%87%D1%91%D1%82%20%D0%B7%D0%B0%20%D0%BC%D0%B0%D0%B9%20%231.pdf'
+    )
+    const target = parseIpfsLink(link)
+    expect(target?.root).toBe('bafyDIR')
+    expect(decodeURIComponent(target?.path ?? '')).toBe('Отчёт за май #1.pdf')
+    expect(parseIpfsSecret(link)).toBeNull()
   })
 
-  it('тримит пробелы CID', () => {
-    expect(buildIpfsShareLink('  bafyCID\n')).toBe('ipfs://bafyCID')
+  it('приватный файл: без имени в пути, ключ и имя во фрагменте', () => {
+    const link = buildShareLink({ cid: 'bafyENC', name: 'a b.txt', key: 'aB+/cd==' })
+    expect(parseIpfsLink(link)).toEqual({ namespace: 'ipfs', root: 'bafyENC', path: '' })
+    expect(parseIpfsSecret(link)).toEqual({ key: 'aB+/cd==', name: 'a b.txt' })
   })
 })
 

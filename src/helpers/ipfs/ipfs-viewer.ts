@@ -17,9 +17,14 @@ export function buildIpfsViewerUrl(target: IpfsTarget, gateway: string = IPFS_GA
   return `${base}/${target.namespace}/${target.root}${suffix}`
 }
 
-/** Шаринг-ссылка на опубликованный (ipfs add) CID: `ipfs://<cid>`. */
-export function buildIpfsShareLink(cid: string): string {
-  return `ipfs://${cid.trim()}`
+/**
+ * Ссылка на публикацию из «Моих файлов». Публичный файл лежит в каталоге-
+ * обёртке — `ipfs://<каталог>/<имя>`: имя и тип видны до скачивания. У
+ * приватного ключ и имя во фрагменте (см. buildIpfsSecretLink).
+ */
+export function buildShareLink(share: { cid: string; name: string; key?: string }): string {
+  if (share.key) return buildIpfsSecretLink(share.cid, share.key, share.name)
+  return `ipfs://${share.cid.trim()}/${encodeURIComponent(share.name)}`
 }
 
 /**

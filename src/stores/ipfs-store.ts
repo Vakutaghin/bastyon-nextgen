@@ -28,6 +28,20 @@ export type IpfsInstallProgress = {
 /** Откуда тянуть контент: локальная нода или публичный шлюз (URL собирает Rust). */
 export type IpfsGatewaySource = 'local' | 'public'
 
+/** Публикация из «Моих файлов» (реестр аккаунта ведёт Rust, src-tauri/src/ipfs/shares.rs). */
+export type IpfsShare = {
+  /** Корень ссылки: каталог-обёртка у публичного файла, шифртекст у приватного. */
+  cid: string
+  name: string
+  size: number
+  addedAt: number
+  /** Ключ приватного файла; у публичного нет. */
+  key?: string
+}
+
+/** Копия на удалённом pinning-сервисе. */
+export type RemotePinStatus = 'queued' | 'pinning' | 'pinned' | 'failed'
+
 export type IpfsModalPhase = 'consent' | 'progress' | 'desktop-only' | 'tor-blocked' | 'pin-config'
 
 /** Выбор пользователя в consent-модалке: установить / явный отказ / закрыл. */
@@ -104,6 +118,11 @@ export const useIpfsStore = defineStore('ipfs', {
     installed: false,
     updateAvailable: false,
     pinServiceConfigured: false,
+    /** «Мои файлы» аккаунта `sharesAccount`. */
+    shares: [] as IpfsShare[],
+    sharesAccount: '',
+    /** CID → где копия на удалённом сервисе (только если он настроен). */
+    remoteStatus: {} as Record<string, RemotePinStatus>,
     install: null as IpfsInstallProgress | null,
     consent: loadConsent() as IpfsConsent,
     modalOpen: false,
@@ -265,9 +284,25 @@ export const useIpfsStore = defineStore('ipfs', {
     /**
      * Публикация файла. Файл выбирается в НАТИВНОМ диалоге на стороне Rust —
      * путь из webview не передаётся (иначе XSS публиковал бы любой файл).
-     * Возвращает CID, null — отмена диалога или ошибка (см. message).
+     * Публикация попадает в «Мои файлы» аккаунта. null — отмена диалога или
+     * ошибка (см. message).
      */
-    async addFile(): Promise<string | null> {
+    async addFile(account: string): Promise<IpfsShare | null> {
+      return this._publish('ipfs_add', account)
+    },
+
+    /**
+     * Приватная публикация: файл из нативного диалога (Rust), шифруем и кладём
+     * шифртекст в IPFS. Ключ едет во фрагменте ссылки и хранится в «Моих файлах».
+     */
+    async addFileEncrypted(account: string): Promise<IpfsShare | null> {
+      return this._publish('ipfs_add_encrypted', account)
+    },
+
+    async _publish(
+      command: 'ipfs_add' | 'ipfs_add_encrypted',
+      account: string
+    ): Promise<IpfsShare | null> {
       if (!this.available) {
         this.showDesktopOnly()
         return null
@@ -277,37 +312,59 @@ export const useIpfsStore = defineStore('ipfs', {
       const port = await this.ensureRunning()
       if (!port) return null
       try {
-        const cid = await tauriInvoke<string | null>('ipfs_add')
-        if (cid && this.pinServiceConfigured) void this.pinRemote(cid)
-        return cid || null
+        const share = await tauriInvoke<IpfsShare | null>(command, { account })
+        if (!share) return null
+        if (this.sharesAccount === account) {
+          this.shares = [share, ...this.shares.filter((s) => s.cid !== share.cid)]
+        }
+        if (this.pinServiceConfigured) void this.pinRemote(share.cid)
+        return share
       } catch (e) {
         this.message = String(e)
         return null
       }
     },
 
-    /**
-     * Приватная публикация: файл из нативного диалога (Rust), шифруем и кладём
-     * шифртекст в IPFS. Возвращает { cid, key, name } или null (отмена/ошибка).
-     * Ключ едет во фрагменте ссылки.
-     */
-    async addFileEncrypted(): Promise<{ cid: string; key: string; name: string } | null> {
-      if (!this.available) {
-        this.showDesktopOnly()
-        return null
-      }
-      this.setConsent('accepted')
-      const port = await this.ensureRunning()
-      if (!port) return null
+    /** «Мои файлы» аккаунта — из реестра в Rust. */
+    async loadShares(account: string): Promise<void> {
+      if (!this.available || !account) return
+      this.shares = await tauriInvoke<IpfsShare[]>('ipfs_shares', { account })
+      this.sharesAccount = account
+    },
+
+    /** Перестать раздавать: pin снимается у себя и на сервисе (если файл не раздаёт другой аккаунт). */
+    async unshare(account: string, cid: string): Promise<void> {
+      await tauriInvoke('ipfs_unshare', { account, cid })
+      if (this.sharesAccount === account) this.shares = this.shares.filter((s) => s.cid !== cid)
+      const rest = { ...this.remoteStatus }
+      delete rest[cid]
+      this.remoteStatus = rest
+    },
+
+    /** Где копии на удалённом сервисе. Без сервиса — пусто. */
+    async refreshShareStatus(account: string): Promise<void> {
+      if (!this.available || !account) return
       try {
-        const res = await tauriInvoke<{ cid: string; key: string; name: string } | null>(
-          'ipfs_add_encrypted'
+        this.remoteStatus = await tauriInvoke<Record<string, RemotePinStatus>>(
+          'ipfs_share_status',
+          { account }
         )
-        if (res?.cid && this.pinServiceConfigured) void this.pinRemote(res.cid)
-        return res
-      } catch (e) {
-        this.message = String(e)
-        return null
+      } catch {
+        // сервис недоступен — статусы просто не обновились
+      }
+    },
+
+    /** Аккаунт удалён с устройства: его файлы больше не раздаются. */
+    async forgetAccount(account: string): Promise<void> {
+      if (!this.available || !account) return
+      try {
+        await tauriInvoke('ipfs_forget_account', { account })
+      } catch {
+        // модуль не установлен — раздавать и нечего
+      }
+      if (this.sharesAccount === account) {
+        this.shares = []
+        this.sharesAccount = ''
       }
     },
 

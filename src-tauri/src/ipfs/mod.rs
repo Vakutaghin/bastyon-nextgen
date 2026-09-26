@@ -2,6 +2,7 @@ pub mod config;
 pub mod crypto;
 pub mod installer;
 pub mod process;
+pub mod shares;
 pub mod state;
 pub mod verify;
 
@@ -22,6 +23,8 @@ pub struct IpfsManager {
     /// два демона на один repo, а update во время распаковки не сносит bin_dir
     /// из-под ensure (и stop во время wait_ready не «теряет» child).
     pub start_lock: tokio::sync::Mutex<()>,
+    /// Сериализует чтение-изменение-запись реестров «Моих файлов».
+    pub shares_lock: tokio::sync::Mutex<()>,
     /// Отмена установки (ipfs_cancel_install). Не под start_lock: его держит
     /// сама установка, которую надо прервать.
     pub install_cancel: watch::Sender<bool>,
@@ -34,6 +37,7 @@ impl IpfsManager {
             paths,
             child: StdMutex::new(None),
             start_lock: tokio::sync::Mutex::new(()),
+            shares_lock: tokio::sync::Mutex::new(()),
             install_cancel: watch::channel(false).0,
         }
     }
@@ -231,9 +235,11 @@ pub async fn ipfs_uninstall(
     // процессом: на Windows repo.lock не удалится и следующий ensure упрётся в него.
     stop_daemon(&mgr).await;
     // Освобождаем диск: и бинарь, и repo (кэш блоков может быть крупным), и секрет.
+    // Раздавать без repo нечего — реестры «Моих файлов» уходят вместе с ним.
     let _ = std::fs::remove_dir_all(&mgr.paths.bin_dir);
     let _ = std::fs::remove_dir_all(&mgr.paths.repo);
     let _ = std::fs::remove_file(&mgr.paths.api_secret);
+    let _ = std::fs::remove_dir_all(&mgr.paths.shares_dir);
     {
         let mut st = mgr.state.write().await;
         *st = IpfsState::default();
@@ -304,23 +310,55 @@ pub async fn ipfs_open_viewer(
     Ok(())
 }
 
+/// Имя и размер выбранного файла. Имя попадает в ссылку, поэтому только UTF-8:
+/// иначе Kubo записал бы в каталог одно имя, а в ссылку ушло бы другое.
+fn picked_file_info(path: &Path) -> Result<(String, u64), String> {
+    let meta = std::fs::metadata(path).map_err(err_string)?;
+    if !meta.is_file() {
+        return Err("not a regular file".into());
+    }
+    let name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("the file name is not valid UTF-8")?
+        .to_string();
+    Ok((name, meta.len()))
+}
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
 /// Публикация файла в IPFS (write-сторона / файлообменник). Файл выбирает
 /// пользователь в НАТИВНОМ диалоге здесь, в Rust: путь из webview не принимаем —
 /// иначе XSS в главном окне публиковал бы (= читал) любой файл. Нода должна
 /// быть поднята (гейтится на фронте через ensureRunning). `add` пинит локально
 /// и сразу анонсирует CID (см. provide_once_background). None = отмена.
 ///
+/// Файл кладётся в каталог-обёртку (`-w`): ссылка `ipfs://<каталог>/<имя>`
+/// несёт имя и тип, получатель видит их до скачивания. Публикация попадает в
+/// «Мои файлы» аккаунта.
+///
 /// ВАЖНО: контент ПУБЛИЧНЫЙ — любой с этим CID скачает его. Для приватных файлов
 /// есть ipfs_add_encrypted.
 #[tauri::command]
-pub async fn ipfs_add(app: AppHandle, mgr: State<'_, IpfsManager>) -> Result<Option<String>, String> {
+pub async fn ipfs_add(
+    app: AppHandle,
+    mgr: State<'_, IpfsManager>,
+    account: String,
+) -> Result<Option<shares::ShareEntry>, String> {
+    shares::check_account(&account)?;
     let Some(path) = pick_file(&app).await else {
         return Ok(None);
     };
+    let (name, size) = picked_file_info(&path)?;
     let path_s = path.to_string_lossy().to_string();
     let cid = run_ipfs(
         &mgr.paths,
-        &["add", "-Q", "--cid-version=1", "--pin=true", "--", &path_s],
+        &["add", "-Q", "-w", "--cid-version=1", "--pin=true", "--", &path_s],
     )
     .await?;
     let cid = cid.trim().to_string();
@@ -328,43 +366,34 @@ pub async fn ipfs_add(app: AppHandle, mgr: State<'_, IpfsManager>) -> Result<Opt
         return Err("ipfs add returned empty CID".into());
     }
     provide_once_background(mgr.paths.clone(), cid.clone());
-    Ok(Some(cid))
-}
-
-#[derive(serde::Serialize)]
-pub struct EncryptedAddResult {
-    pub cid: String,
-    pub key: String,
-    /// Имя выбранного файла — поедет во фрагменте ссылки (`#…&name=`).
-    pub name: String,
+    let entry = shares::ShareEntry { cid, name, size, added_at: now_ms(), key: None };
+    let _guard = mgr.shares_lock.lock().await;
+    shares::record(&mgr.paths.shares_dir, &account, entry.clone())?;
+    Ok(Some(entry))
 }
 
 /// Приватная публикация: шифруем файл случайным ключом (AES-256-GCM) и кладём
 /// ШИФРТЕКСТ в IPFS. Ключ возвращаем — он поедет во фрагменте ссылки, не на
-/// gateway. Публичным остаётся лишь непонятный блоб. Файл — из нативного
-/// диалога (см. ipfs_add). None = отмена.
+/// gateway. Публичным остаётся лишь непонятный блоб: без каталога-обёртки, иначе
+/// имя файла стало бы публичным. Файл — из нативного диалога (см. ipfs_add).
+/// None = отмена.
 #[tauri::command]
 pub async fn ipfs_add_encrypted(
     app: AppHandle,
     mgr: State<'_, IpfsManager>,
-) -> Result<Option<EncryptedAddResult>, String> {
+    account: String,
+) -> Result<Option<shares::ShareEntry>, String> {
+    shares::check_account(&account)?;
     let Some(path) = pick_file(&app).await else {
         return Ok(None);
     };
-    let meta = std::fs::metadata(&path).map_err(err_string)?;
-    if !meta.is_file() {
-        return Err("not a regular file".into());
-    }
-    if meta.len() > config::MAX_ENCRYPTED_BYTES {
+    let (name, size) = picked_file_info(&path)?;
+    if size > config::MAX_ENCRYPTED_BYTES {
         return Err(format!(
             "file is too large for private sharing (limit {} MB)",
             config::MAX_ENCRYPTED_BYTES / (1024 * 1024)
         ));
     }
-    let name = path
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| "file".into());
     let plaintext = std::fs::read(&path).map_err(err_string)?;
     let (key, blob) = crypto::encrypt(&plaintext).map_err(err_string)?;
     drop(plaintext);
@@ -387,7 +416,10 @@ pub async fn ipfs_add_encrypted(
         return Err("ipfs add returned empty CID".into());
     }
     provide_once_background(mgr.paths.clone(), cid.clone());
-    Ok(Some(EncryptedAddResult { cid, key, name }))
+    let entry = shares::ShareEntry { cid, name, size, added_at: now_ms(), key: Some(key) };
+    let _guard = mgr.shares_lock.lock().await;
+    shares::record(&mgr.paths.shares_dir, &account, entry.clone())?;
+    Ok(Some(entry))
 }
 
 /// Открытие приватного файла: тянем ШИФРТЕКСТ, расшифровываем ключом из ссылки
@@ -894,7 +926,25 @@ fn provide_once_background(paths: IpfsPaths, cid: String) {
 /// Короткоживущий вызов `ipfs <args>` с нашим IPFS_PATH. Если есть секрет RPC —
 /// предъявляем его (`--api-auth`): при запущенном демоне CLI ходит через RPC.
 /// Ошибка → stderr текстом.
+///
+/// Без демона каждая команда держит `repo.lock`, пока работает, и две
+/// одновременные (скажем, опрос статуса и «Перестать раздавать») мешают друг
+/// другу. Такой отказ временный — команда повторяется.
 async fn run_ipfs(paths: &IpfsPaths, args: &[&str]) -> Result<String, String> {
+    const LOCK_RETRIES: u32 = 10;
+    let mut attempt = 0;
+    loop {
+        match run_ipfs_once(paths, args).await {
+            Err(e) if e.contains("someone else has the lock") && attempt < LOCK_RETRIES => {
+                attempt += 1;
+                tokio::time::sleep(Duration::from_millis(300)).await;
+            }
+            result => return result,
+        }
+    }
+}
+
+async fn run_ipfs_once(paths: &IpfsPaths, args: &[&str]) -> Result<String, String> {
     let mut cmd = tokio::process::Command::new(&paths.binary);
     if let Some(secret) = read_secret(paths) {
         cmd.arg(format!("--api-auth=bearer:{secret}"));

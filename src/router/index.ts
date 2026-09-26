@@ -12,6 +12,7 @@ const SettingsPage = () => import('@/pages/settings-page/settings-page.vue')
 const LimitsPage = () => import('@/pages/limits-page/limits-page.vue')
 const WalletsPage = () => import('@/pages/wallets-page/wallets-page.vue')
 const MyVideosPage = () => import('@/pages/my-videos-page/my-videos-page.vue')
+const MyFilesPage = () => import('@/pages/my-files-page/my-files-page.vue')
 const BlockExplorerPage = () => import('@/pages/block-explorer-page/block-explorer-page.vue')
 const ExplorerBlockPage = () => import('@/pages/block-explorer-page/block-page/block-page.vue')
 const ExplorerTxPage = () => import('@/pages/block-explorer-page/tx-page/tx-page.vue')
@@ -27,7 +28,7 @@ const InfoPage = () => import('@/pages/info-page/info-page.vue')
 const EmbedPostPage = () => import('@/pages/embed-post-page/embed-post-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
-const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos'])
+const AUTH_REQUIRED_NAMES = new Set(['limits', 'wallets', 'settings', 'my-videos', 'my-files'])
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -62,6 +63,12 @@ const router = createRouter({
       name: 'my-videos',
       component: MyVideosPage,
       meta: { titleKey: 'routes.my-videos' },
+    },
+    {
+      path: '/my-files',
+      name: 'my-files',
+      component: MyFilesPage,
+      meta: { titleKey: 'routes.my-files' },
     },
     // Block explorer routes must come BEFORE the catch-all /:userName below —
     // otherwise the profile route greedily matches `/explorer`, `/explorer/...`.

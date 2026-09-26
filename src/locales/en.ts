@@ -76,6 +76,7 @@ export default {
     limits: 'Limits',
     wallets: 'Wallets',
     'my-videos': 'My videos',
+    'my-files': 'My files',
     explorer: 'Block explorer',
     'explorer-block': 'Block',
     'explorer-tx': 'Transaction',
@@ -233,15 +234,14 @@ export default {
     ipfsUpdateBtn: 'Update',
     ipfsUpdateHint: 'A newer IPFS version is available.',
     ipfsMenuHint: 'IPFS links open in a separate viewer window.',
+    ipfsMyFilesBtn: 'My files',
     ipfsUninstallConfirmTitle: 'Remove the IPFS module?',
     ipfsUninstallConfirmContent:
-      'The Kubo binary and the local block cache will be deleted. IPFS links will fall back to a public gateway.',
-    ipfsShareBtn: 'Share a file…',
+      'The Kubo binary and the local block cache will be deleted, and your files will no longer be shared. IPFS links will fall back to a public gateway.',
     ipfsShareDoneTitle: 'File published to IPFS',
     ipfsShareDoneCopied: 'Link copied. Anyone with this link can open the file: {link}',
     ipfsShareDone: 'Anyone with this link can open the file: {link}',
     ipfsShareFailedTitle: 'Could not publish the file',
-    ipfsShareEncryptedBtn: 'Share a file privately…',
     ipfsShareEncryptedDoneTitle: 'Private file published',
     ipfsShareEncryptedCopied:
       'Secret link copied. Only someone with this exact link can decrypt the file: {link}',
@@ -287,7 +287,6 @@ export default {
       'The file is larger than 1 GB, too large for this browser to save. Open the link in Chrome or Edge, or in the Bastyon desktop app.',
     ipfsWebDecryptFailed:
       'Could not decrypt the file: the key in the link is wrong or the file is damaged.',
-    ipfsPinConfigBtn: 'Remote pin (durability)…',
     ipfsPinConfigTitle: 'Remote pinning',
     ipfsPinConfigContent:
       'Keep shared files available even when this node is offline by pinning them to a pinning service (ipfs-cluster on your own server, or Pinata / web3.storage). Enter its endpoint and access token.',
@@ -1377,6 +1376,48 @@ export default {
     next: 'Next',
     refresh: 'Refresh',
   },
+  myFiles: {
+    title: 'My files',
+    share: 'Share a file…',
+    sharePrivately: 'Share privately…',
+    desktopOnly:
+      'Sharing files works in the Bastyon desktop app: it runs its own IPFS node to serve them. IPFS links open here too.',
+    node: {
+      running: 'The IPFS node is running: files are served while Bastyon is open.',
+      starting: 'The IPFS node is starting…',
+      stopped: 'The IPFS node is stopped: nobody can get your files from this computer right now.',
+      missing: 'The IPFS module is not installed yet: it installs when you share your first file.',
+    },
+    startNode: 'Start',
+    lead: 'This computer serves the files, like a torrent: while it is off, a file can only come from people who downloaded it and keep sharing it. To keep files available around the clock, connect a pinning service.',
+    leadRemote:
+      'This computer serves the files, and a pinning service keeps copies, so they stay available while the computer is off.',
+    remoteSetup: 'Connect a service…',
+    remoteSettings: 'Service settings…',
+    loading: 'Loading the list…',
+    empty:
+      'You have not shared anything yet. Pick a file to get a link anyone can download it with.',
+    public: 'by link',
+    private: 'private',
+    remote: {
+      queued: 'queued for the service',
+      pinning: 'copying to the service',
+      pinned: 'kept by the service',
+      failed: 'the service could not keep it',
+    },
+    sendToService: 'Keep on the service',
+    copyLink: 'Copy link',
+    linkCopied: 'Link copied',
+    copyFailed: 'Could not copy the link',
+    unshare: 'Stop sharing',
+    unshareTitle: 'Stop sharing “{name}”?',
+    unshareContent:
+      'This computer will stop serving the file. People who already downloaded it can keep sharing it.',
+    unshareContentRemote:
+      'This computer will stop serving the file, and the copy on the service will be deleted. People who already downloaded it can keep sharing it.',
+    unshareFailed: 'Could not stop sharing the file',
+    loadFailed: 'Could not load My files',
+  },
   hotkeys: {
     playPause: 'Play / Pause',
     toggleMute: 'Mute / Unmute',
@@ -1706,6 +1747,7 @@ export default {
     menuWallets: 'Wallets',
     menuLimits: 'Limits',
     menuMyVideos: 'My videos',
+    menuMyFiles: 'My files',
     menuSettings: 'Settings',
     menuSwitchAccount: 'Switch account',
     menuSignOut: 'Sign out',

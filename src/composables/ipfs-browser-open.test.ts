@@ -32,8 +32,9 @@ vi.mock('ant-design-vue', () => ({
     },
     error: h.error,
   },
-  message: { loading: () => h.hide, success: h.success },
+  message: { loading: () => h.hide },
 }))
+vi.mock('@/b-components/app-toast', () => ({ appToast: { success: h.success } }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 vi.mock('@/helpers/common/open-external', () => ({ openExternal: h.openExternal }))
 vi.mock('@/b-components/messenger/components/file-message/helpers', () => ({
