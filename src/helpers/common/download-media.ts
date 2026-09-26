@@ -19,7 +19,7 @@ export function deriveFilename(url: string, fallback = 'download'): string {
   }
 }
 
-function triggerAnchorDownload(href: string, filename: string): void {
+export function triggerAnchorDownload(href: string, filename: string): void {
   const a = document.createElement('a')
   a.href = href
   a.download = filename

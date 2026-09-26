@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classify, downloadFilename, type ViewerOs } from './ipfs-content'
+import { classify, classifyForBrowser, downloadFilename, type ViewerOs } from './ipfs-content'
 import type { IpfsTarget } from './ipfs-link'
 
 const target = (path: string, root = 'bafyCID'): IpfsTarget => ({
@@ -103,5 +103,49 @@ describe('downloadFilename', () => {
   it('обрезает длинный root в fallback', () => {
     const longRoot = 'Q'.repeat(60)
     expect(downloadFilename(target('', longRoot), null)).toBe(`${'Q'.repeat(24)}.bin`)
+  })
+})
+
+describe('classifyForBrowser — показ во вкладке только того, что браузер точно покажет', () => {
+  const desktop = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0'
+  const android = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/140.0 Mobile'
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1'
+
+  it('картинки, mp4/webm, обычный звук, текст, html и json — во вкладке', () => {
+    for (const type of [
+      'image/png',
+      'image/jpeg',
+      'image/svg+xml',
+      'video/mp4',
+      'video/webm',
+      'audio/mpeg',
+      'text/plain; charset=utf-8',
+      'text/html',
+      'application/json',
+    ]) {
+      expect(classifyForBrowser(type, desktop), type).toBe('render')
+    }
+  })
+
+  it('то, что браузер молча скачал бы мимо проверки, — скачиваем сами', () => {
+    // CSV скачивает Chrome, Markdown — Firefox, HEIC и MOV показывает не всякий браузер.
+    for (const type of [
+      'text/csv',
+      'text/markdown',
+      'image/heic',
+      'video/quicktime',
+      'application/ogg',
+      'application/zip',
+      'application/octet-stream',
+      '',
+    ]) {
+      expect(classifyForBrowser(type, desktop), type).toBe('download')
+    }
+  })
+
+  it('PDF показывает любой браузер, кроме Chrome на Android', () => {
+    expect(classifyForBrowser('application/pdf', desktop)).toBe('render')
+    expect(classifyForBrowser('application/pdf', iphone)).toBe('render')
+    expect(classifyForBrowser('application/pdf', android)).toBe('download')
   })
 })

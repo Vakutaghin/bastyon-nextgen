@@ -5,7 +5,8 @@
 //
 // Слушатель вешается ВЕЗДЕ (веб/десктоп). Решение о доступности и о том, каким
 // шлюзом резолвить (локальная нода Tier 1 vs публичный шлюз Tier 0), принимает
-// ipfs-store; в вебе показываем «только в приложении».
+// ipfs-store. В вебе и на телефоне ноды нет — там ссылку открывает
+// ipfs-browser-open: показ через шлюз во вкладке, скачивание с проверкой по CID.
 //
 // Tor: IPFS НЕ торифицирован ни в одном звене — окно-просмотрщик грузит URL без
 // прокси, а Kubo дозванивается DHT/Bitswap-пиров напрямую и светит реальный IP
@@ -25,6 +26,7 @@ import { classify, detectViewerOs, downloadFilename } from '@/helpers/ipfs/ipfs-
 import { probeContent } from '@/helpers/ipfs/ipfs-download'
 import { useIpfsStore, type IpfsGatewaySource } from '@/stores/ipfs-store'
 import { t } from '@/i18n'
+import { openIpfsInBrowser } from './ipfs-browser-open'
 
 /** FNV-1a 32-bit → 8 hex: дешёвый стабильный хэш строки для меток окон. */
 function fnv1a(s: string): string {
@@ -121,9 +123,10 @@ async function openEncrypted(
 export async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Promise<void> {
   const store = useIpfsStore()
 
-  // Веб/мобилка: нативного окна и локальной ноды нет — фича только для десктопа.
+  // Веб/мобилка: нативного окна и локальной ноды нет. Вызов синхронный — вкладку
+  // для показа браузер откроет, только пока идёт обработка клика.
   if (!store.available) {
-    store.showDesktopOnly()
+    openIpfsInBrowser(target, secret)
     return
   }
 

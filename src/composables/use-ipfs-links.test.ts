@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
   probe: vi.fn(),
+  openInBrowser: vi.fn(),
   modal: { success: vi.fn(), error: vi.fn() },
   store: {
     available: true,
@@ -24,6 +25,7 @@ vi.mock('@/helpers/ipfs/ipfs-download', () => ({ probeContent: h.probe }))
 vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => h.store }))
 vi.mock('ant-design-vue', () => ({ Modal: h.modal }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+vi.mock('./ipfs-browser-open', () => ({ openIpfsInBrowser: h.openInBrowser }))
 
 import { openIpfsViewer, saveErrorText } from './use-ipfs-links'
 import type { IpfsTarget } from '@/helpers/ipfs/ipfs-link'
@@ -35,6 +37,7 @@ const png = { contentType: 'image/png', contentDisposition: null }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  h.store.available = true
   h.store.message = null
   h.store.saveFile.mockResolvedValue('saved')
 })
@@ -110,6 +113,17 @@ describe('openIpfsViewer: окно просмотра', () => {
     const [, url, title] = h.store.openViewer.mock.calls[0] as [string, string, string]
     expect(url).toBe(`${LOCAL}/ipfs/bafybeigdyrzt5sfp7/pic.png`)
     expect(title).not.toContain('dweb.link')
+  })
+})
+
+describe('openIpfsViewer: браузер и телефон', () => {
+  it('без Tauri ссылка уходит в браузерный сценарий — синхронно, пока идёт клик', () => {
+    h.store.available = false
+    const secret = { key: 'a2V5', name: 'a.txt' }
+    void openIpfsViewer(target, secret)
+    expect(h.openInBrowser).toHaveBeenCalledWith(target, secret)
+    expect(h.store.showDesktopOnly).not.toHaveBeenCalled()
+    expect(h.store.resolveGateway).not.toHaveBeenCalled()
   })
 })
 

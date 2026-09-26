@@ -204,9 +204,9 @@ export default {
     torMediaHint:
       'Through Tor: nodes, chat, API. Images — through Tor on click; video, YouTube and mini-apps — disabled or directly with your IP after confirmation. Turning Tor off reloads the app.',
     ipfsOk: 'OK',
-    ipfsDesktopOnlyTitle: 'IPFS is available only in the desktop app',
+    ipfsDesktopOnlyTitle: 'Sharing files is available in the desktop app',
     ipfsDesktopOnlyContent:
-      'Open Bastyon in the desktop app — the browser version cannot open IPFS content in a viewer window.',
+      'Only the Bastyon desktop app can share files over IPFS: it needs its own IPFS node. IPFS links open here too.',
     ipfsConsentTitle: 'Open IPFS content',
     ipfsConsentContent:
       'To open this link privately, install the local IPFS module (~80 MB). It fetches content peer-to-peer without a public gateway. You can also open it via a public gateway instead.',
@@ -257,6 +257,36 @@ export default {
       'The file is larger than 4 GB, too large for the public gateway. Start the local IPFS node.',
     ipfsVerifyIncomplete:
       'The public gateway sent an incomplete file. Try again later or start the local IPFS node.',
+    ipfsWebChecking: 'Opening the file from IPFS…',
+    ipfsWebOpenTitle: 'Open in a new tab?',
+    ipfsWebOpenContent: 'It opens through the public dweb.link gateway.',
+    ipfsWebOpenBtn: 'Open',
+    ipfsWebDownloadTitle: 'Download the file?',
+    ipfsWebPrivateTitle: 'Download the private file?',
+    ipfsWebVerifyHint:
+      'The file comes through a public gateway, and every part of it is checked against the link, so the gateway cannot swap its contents.',
+    ipfsWebPrivateHint:
+      'The file is decrypted on this device. The key from the link is not sent anywhere.',
+    ipfsWebDownloadBtn: 'Download',
+    ipfsWebDownloadingTitle: 'Downloading the file…',
+    ipfsWebProgress: 'Downloaded {done} of {total}',
+    ipfsWebDecrypting: 'Decrypting…',
+    ipfsWebGatewayBusy: 'The public gateway is overloaded right now. Try again in a minute.',
+    ipfsWebGatewayMissing:
+      'The file was not found on the network. Most likely the person who shared it is offline. Try again later.',
+    ipfsWebNetwork: 'Could not reach the public gateway. Check your connection and try again.',
+    ipfsWebIncomplete: 'The public gateway sent an incomplete file. Try again later.',
+    ipfsWebNotFound: 'There is no such file at this link.',
+    ipfsWebDirectory: 'This link points to a folder, not a file.',
+    ipfsWebMalformed: 'The link or the file behind it is damaged.',
+    ipfsWebUnsupported:
+      'This file cannot be verified in the browser. Open the link in the Bastyon desktop app.',
+    ipfsWebTooLarge:
+      'The file is too large to download through the public gateway. Open the link in the Bastyon desktop app with the local IPFS node.',
+    ipfsWebTooLargeForBrowser:
+      'The file is larger than 1 GB, too large for this browser to save. Open the link in Chrome or Edge, or in the Bastyon desktop app.',
+    ipfsWebDecryptFailed:
+      'Could not decrypt the file: the key in the link is wrong or the file is damaged.',
     ipfsPinConfigBtn: 'Remote pin (durability)…',
     ipfsPinConfigTitle: 'Remote pinning',
     ipfsPinConfigContent:
