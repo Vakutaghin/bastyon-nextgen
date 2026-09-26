@@ -15,6 +15,18 @@ export const PCRYPTO_WAIT_TIMEOUT = 5000
 /** Сокращённый таймаут ожидания шифрования для диалогов (мс) */
 export const PCRYPTO_DIALOG_TIMEOUT = 1500
 
+/** Сколько список диалогов ждёт кэш расшифровок из IndexedDB (мс) */
+export const DECRYPTED_CACHE_WAIT_TIMEOUT = 1500
+
+/** Сколько открытый чат ждёт первого синка Matrix, чтобы узнать свою комнату (мс) */
+export const ROOM_WAIT_TIMEOUT = 30_000
+
+/** Первая пауза перед повтором неудавшегося входа в Matrix; дальше удваивается (мс) */
+export const LOGIN_RETRY_MIN_DELAY = 5_000
+
+/** Самая длинная пауза между повторами входа в Matrix (мс) */
+export const LOGIN_RETRY_MAX_DELAY = 5 * 60_000
+
 /** Время кэширования высоты текущего блока (мс) */
 export const BLOCK_HEIGHT_CACHE_TTL = 55_000
 

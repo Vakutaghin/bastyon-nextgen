@@ -7,6 +7,7 @@ import { computed, watch } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
+import type { Dialog } from '../types'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { logger } from '@/services/logger'
 import { t } from '@/i18n'
@@ -16,13 +17,19 @@ import { matrixService } from '../services/matrix-service'
 import { getAddressFromMatrixId, resolveMatrixHost } from '../helpers'
 import { findExistingRoomByAddress, getPartnerMatrixId } from '../room-helpers'
 
-import { PROFILE_UPDATE_DEBOUNCE } from './consts'
+import {
+  DECRYPTED_CACHE_WAIT_TIMEOUT,
+  LOGIN_RETRY_MAX_DELAY,
+  LOGIN_RETRY_MIN_DELAY,
+  PROFILE_UPDATE_DEBOUNCE,
+} from './consts'
 
 const log = logger.scope('[MessengerStore]')
 import { useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerProfileCache } from './messenger-profile-cache'
 import { useMessengerChatStore } from './messenger-chat-store'
 import type { MessengerStoreContext } from './messenger-store/types'
+import { loadDialogsSnapshot, saveDialogsSnapshot } from './messenger-store/dialogs-snapshot'
 import { useDialogMapping } from './messenger-store/use-dialog-mapping'
 import { registerMatrixListeners } from './messenger-store/use-matrix-listeners'
 
@@ -42,6 +49,44 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   // --- Загрузка диалогов ---
 
+  /** Первый синк прошёл: getRooms() знает все комнаты. */
+  const isSyncReady = (): boolean =>
+    uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING'
+
+  /**
+   * На экране список с прошлого запуска (dialogs-snapshot): Matrix ещё входит
+   * или синхронизируется. Сменится свежим после первого синка.
+   */
+  let showingSnapshot = false
+
+  /**
+   * Список с прошлого запуска — пока нет клиента: вход, первый синк и
+   * расшифровка последних сообщений занимают секунды, а мессенджер часто
+   * открывают сразу после запуска. Заодно свой matrix-id: по нему строка
+   * списка ставит «Вы:» перед своим сообщением.
+   */
+  const showDialogsSnapshot = (address: string) => {
+    if (uiStore.dialogs.length > 0) return
+    const cached = loadDialogsSnapshot(address)
+    if (cached.length === 0) return
+    uiStore.setDialogs(cached)
+    showingSnapshot = true
+    if (chatStore.currentUser.id === 'me') {
+      const hex = matrixService.addressToHex(address).toLowerCase()
+      chatStore.currentUser.id = `@${hex}:${resolveMatrixHost()}`
+    }
+  }
+
+  /** Запомнить список до следующего запуска — только полный, после синка. */
+  const persistDialogs = (
+    address: string | null = authStore.address,
+    dialogs: Dialog[] = uiStore.dialogs
+  ) => {
+    if (!address || address !== authStore.address) return
+    if (showingSnapshot || !isSyncReady()) return
+    saveDialogsSnapshot(address, dialogs)
+  }
+
   /**
    * Дебаунсированный вызов silent-перезагрузки диалогов.
    * Используется на инкрементальных событиях (Room.timeline) — во время initial sync
@@ -58,6 +103,12 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   const loadDialogs = async (silent = false) => {
+    // До первого синка getRooms() отдаёт пустоту или часть комнат: такой список
+    // не затирает список с прошлого запуска и не сохраняется вместо него.
+    const complete = isSyncReady()
+    if (showingSnapshot && !complete) return
+    // Адрес — на момент начала: аккаунт могли сменить, пока шла загрузка.
+    const address = authStore.address
     if (!silent) uiStore.isLoading = true
     try {
       const rooms = matrixService.getRooms()
@@ -67,6 +118,17 @@ export const useMessengerStore = defineStore('messenger', () => {
         .filter((a: string | null): a is string => Boolean(a))
       if (partnerAddresses.length > 0)
         await profileCache.fetchProfiles([...new Set(partnerAddresses)] as string[])
+
+      // Последние сообщения берём из кэша расшифровок, а не расшифровываем
+      // заново: без этого первый список после запуска расшифровывал по
+      // сообщению на каждую комнату. Таймаут — на случай зависшего IndexedDB.
+      if (rooms.length > 0) {
+        chatStore.ensurePcryptoInitialized()
+        await Promise.race([
+          chatStore.hydrateDecryptedCache(),
+          new Promise((resolve) => setTimeout(resolve, DECRYPTED_CACHE_WAIT_TIMEOUT)),
+        ])
+      }
 
       let dialogsList = await Promise.all(rooms.map(mapRoomToDialog))
 
@@ -94,9 +156,13 @@ export const useMessengerStore = defineStore('messenger', () => {
 
       // Сохраняем активный диалог если его ещё нет в списке
       const activeId = uiStore.activeChatId
+      let keptActiveId: string | null = null
       if (activeId && !dialogsList.some((d) => d.id === activeId)) {
         const existing = uiStore.dialogs.find((d) => d.id === activeId)
-        if (existing) dialogsList = [existing, ...dialogsList]
+        if (existing) {
+          dialogsList = [existing, ...dialogsList]
+          keptActiveId = activeId
+        }
       }
 
       uiStore.setDialogs(
@@ -106,6 +172,15 @@ export const useMessengerStore = defineStore('messenger', () => {
           return tsB - tsA
         })
       )
+      if (complete) {
+        showingSnapshot = false
+        // Открытый чат, которого нет среди комнат, остаётся только на экране: в
+        // список следующего запуска попадают комнаты, известные серверу.
+        persistDialogs(
+          address,
+          uiStore.dialogs.filter((d) => d.id !== keptActiveId)
+        )
+      }
     } catch (e) {
       log.error('Ошибка загрузки диалогов:', e)
     } finally {
@@ -142,10 +217,42 @@ export const useMessengerStore = defineStore('messenger', () => {
    */
   let listenersRegistered = false
 
+  /**
+   * Вход при запуске мог не пройти: сеть ещё не поднялась, Tor не успел,
+   * сервер моргнул. Раньше следующая попытка была только при открытии
+   * мессенджера, и пользователь ждал вход, синк и загрузку диалогов. Теперь
+   * повторяем в фоне с растущей паузой и сразу, как вернулась сеть.
+   */
+  let loginRetryTimer: ReturnType<typeof setTimeout> | null = null
+  let loginRetryDelay = LOGIN_RETRY_MIN_DELAY
+
+  const retryLoginNow = () => {
+    cancelLoginRetry()
+    void initMatrix()
+  }
+
+  const cancelLoginRetry = () => {
+    if (loginRetryTimer) clearTimeout(loginRetryTimer)
+    loginRetryTimer = null
+    loginRetryDelay = LOGIN_RETRY_MIN_DELAY
+    window.removeEventListener('online', retryLoginNow)
+  }
+
+  const scheduleLoginRetry = () => {
+    if (loginRetryTimer) return
+    window.addEventListener('online', retryLoginNow)
+    loginRetryTimer = setTimeout(() => {
+      loginRetryTimer = null
+      void initMatrix()
+    }, loginRetryDelay)
+    loginRetryDelay = Math.min(loginRetryDelay * 2, LOGIN_RETRY_MAX_DELAY)
+  }
+
   const initMatrix = async () => {
     if (!authStore.isUserAuthenticated || !authStore.address || !authStore.keyPair) return
     if (uiStore.isInitInProgress) return
     uiStore.isInitInProgress = true
+    if (!matrixService.getClient()) showDialogsSnapshot(authStore.address)
 
     // Был ли клиент уже инициализирован к моменту входа в эту функцию.
     // Если нет — после login синк ещё бежит в фоне, и грузить диалоги сразу нет смысла:
@@ -166,6 +273,7 @@ export const useMessengerStore = defineStore('messenger', () => {
 
           const success = await matrixService.login(authStore.address, authStore.keyPair)
           if (!success) throw new Error('Matrix login failed')
+          cancelLoginRetry()
           uiStore.syncError = null
           await syncCurrentUser()
         } catch (e) {
@@ -175,6 +283,7 @@ export const useMessengerStore = defineStore('messenger', () => {
           uiStore.syncState = 'ERROR'
           uiStore.syncError = t('appMsg.messenger.loginFailed')
           uiStore.dialogsLoadedOnce = true
+          if (!matrixService.getClient()) scheduleLoginRetry()
         } finally {
           uiStore.isLoading = false
         }
@@ -369,12 +478,16 @@ export const useMessengerStore = defineStore('messenger', () => {
     const { dialog: removedDialog, index: removedIndex } = uiStore.removeDialog(chatId)
     delete chatStore.messages[chatId]
 
-    matrixService.leaveAndForgetRoom(chatId).catch((e) => {
-      log.error('Ошибка удаления, восстанавливаем:', e)
-      if (removedDialog) uiStore.restoreDialog(removedDialog, removedIndex)
-      if (removedMessages) chatStore.messages[chatId] = removedMessages
-      if (wasActive) uiStore.setActiveChatId(chatId)
-    })
+    matrixService
+      .leaveAndForgetRoom(chatId)
+      // Иначе удалённый чат мелькнёт в списке при следующем запуске.
+      .then(() => persistDialogs())
+      .catch((e) => {
+        log.error('Ошибка удаления, восстанавливаем:', e)
+        if (removedDialog) uiStore.restoreDialog(removedDialog, removedIndex)
+        if (removedMessages) chatStore.messages[chatId] = removedMessages
+        if (wasActive) uiStore.setActiveChatId(chatId)
+      })
   }
 
   /**
@@ -392,6 +505,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     matrixService.stop({ revoke: true })
     // stop() чистит очередь подписок — при следующем входе регистрируем заново.
     listenersRegistered = false
+    cancelLoginRetry()
+    showingSnapshot = false
     uiStore.reset()
     chatStore.reset()
     profileCache.reset()
@@ -441,6 +556,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     isLoading: computed(() => uiStore.isLoading),
     isMessagesLoading: computed(() => uiStore.isMessagesLoading),
     dialogsLoadedOnce: computed(() => uiStore.dialogsLoadedOnce),
+    /** Загрузка вместо списка — только пока показать нечего, даже списка с прошлого запуска. */
+    isDialogsLoading: computed(
+      () => uiStore.dialogs.length === 0 && (!uiStore.dialogsLoadedOnce || uiStore.isLoading)
+    ),
     syncState: computed(() => uiStore.syncState),
     syncError: computed(() => uiStore.syncError),
     userProfiles: computed(() => profileCache.userProfiles),

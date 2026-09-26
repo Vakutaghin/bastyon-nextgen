@@ -4,6 +4,7 @@ import {
   hasStoredSession,
   saveWasLogged,
   clearAllUserData,
+  clearAccountScopedLocalData,
   getWalletAddressesList,
   saveWalletAddressesList,
   getAdditionalWalletAddressesList,
@@ -110,8 +111,9 @@ describe('clearAllUserData', () => {
     expect(localStorage.getItem(VAULT_ENVELOPE_BACKUP_KEY)).toBeNull()
   })
 
-  it('P3-3/VP-8: сносит пины ключей собеседников и отметки бэкапа, чужие ключи не трогает', () => {
+  it('P3-3/VP-8: сносит пины ключей собеседников, список диалогов и отметки бэкапа, чужие ключи не трогает', () => {
     localStorage.setItem('BST_MSG_KEYPINS_P1', '{"PPeer":"k"}')
+    localStorage.setItem('BST_MSG_DIALOGS_P1', '{"v":1,"dialogs":[]}')
     localStorage.setItem('BST_BACKUP_VERIFIED_P1', '123')
     localStorage.setItem('BST_BACKUP_NUDGED_AT', '123')
     localStorage.setItem('bastyon_locale', 'ru')
@@ -119,9 +121,24 @@ describe('clearAllUserData', () => {
     clearAllUserData()
 
     expect(localStorage.getItem('BST_MSG_KEYPINS_P1')).toBeNull()
+    expect(localStorage.getItem('BST_MSG_DIALOGS_P1')).toBeNull()
     expect(localStorage.getItem('BST_BACKUP_VERIFIED_P1')).toBeNull()
     expect(localStorage.getItem('BST_BACKUP_NUDGED_AT')).toBeNull()
     expect(localStorage.getItem('bastyon_locale')).toBe('ru')
+  })
+})
+
+describe('clearAccountScopedLocalData', () => {
+  it('Р5: стирает черновики и список диалогов удаляемого аккаунта, чужие не трогает', () => {
+    localStorage.setItem('bastyon_post_draft:P1', 'draft')
+    localStorage.setItem('BST_MSG_DIALOGS_P1', '{"v":1,"dialogs":[]}')
+    localStorage.setItem('BST_MSG_DIALOGS_P2', '{"v":1,"dialogs":[]}')
+
+    clearAccountScopedLocalData('P1')
+
+    expect(localStorage.getItem('bastyon_post_draft:P1')).toBeNull()
+    expect(localStorage.getItem('BST_MSG_DIALOGS_P1')).toBeNull()
+    expect(localStorage.getItem('BST_MSG_DIALOGS_P2')).not.toBeNull()
   })
 })
 

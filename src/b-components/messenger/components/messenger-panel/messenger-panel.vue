@@ -13,7 +13,7 @@
       >
         Status: {{ store.syncState }}
       </SC_SyncStatusBanner>
-      <SC_MessengerDialogsLoader v-if="!store.dialogsLoadedOnce || store.isLoading">
+      <SC_MessengerDialogsLoader v-if="store.isDialogsLoading">
         <SC_MessengerDialogsSpinner />
         <SC_MessengerDialogsLoaderText>{{
           t('messenger.loadingDialogs')

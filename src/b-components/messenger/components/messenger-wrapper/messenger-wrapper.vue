@@ -22,11 +22,7 @@
       </template>
 
       <SC_MessengerWrapperLoader
-        v-if="
-          (!dialogsLoadedOnce || isLoading) &&
-          !activeChatId &&
-          !(lastTargetAddress && inviteViewActive)
-        "
+        v-if="isDialogsLoading && !activeChatId && !(lastTargetAddress && inviteViewActive)"
       >
         <SC_MessengerWrapperSpinner />
         <SC_MessengerWrapperLoaderText>
@@ -96,8 +92,7 @@ const store = useMessengerStore()
 const {
   isFullScreen,
   isOpen,
-  dialogsLoadedOnce,
-  isLoading,
+  isDialogsLoading,
   isMessagesLoading,
   dialogs,
   activeChatId,

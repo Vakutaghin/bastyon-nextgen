@@ -6,7 +6,7 @@ import { ref } from 'vue'
 import { matrixService } from '../../services/matrix-service'
 import { getRoomTimelineEvents } from '../../helpers'
 import type { Message } from '../../types'
-import { MESSAGES_PER_PAGE } from '../consts'
+import { MESSAGES_PER_PAGE, ROOM_WAIT_TIMEOUT } from '../consts'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
 import type { MessageMapping } from './use-message-mapping'
@@ -21,6 +21,11 @@ export function useMessageLoading(
   const { mapEventToMessage, enrichMessagesWithReactions } = mapping
 
   const isLoadingMore = ref(false)
+  /**
+   * Флаг загрузки общий на все чаты: гасит его только последний вызов. Иначе
+   * чат, который ещё ждал комнату, снимал загрузку у чата, открытого после него.
+   */
+  let loadSeq = 0
 
   const paginateRoomHistory = async (room: MxRoom) => {
     const client = matrixService.getClient()
@@ -34,20 +39,39 @@ export function useMessageLoading(
     }
   }
 
+  /**
+   * Комната чата. Список диалогов после запуска показывается с прошлого раза
+   * ещё до входа в Matrix, и чат можно открыть раньше, чем клиент узнает о
+   * комнатах: ждём первого синка, пока пользователь не ушёл из этого чата.
+   */
+  const waitForRoom = async (chatId: string): Promise<MxRoom | null> => {
+    const deadline = Date.now() + ROOM_WAIT_TIMEOUT
+    for (;;) {
+      const room = matrixService.getRoom(chatId)
+      if (room) return room
+      const synced =
+        !!matrixService.getClient() &&
+        (uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING')
+      if (synced || uiStore.activeChatId !== chatId || Date.now() > deadline) return null
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
+  }
+
   const loadMessages = async (chatId: string) => {
+    const seq = ++loadSeq
     uiStore.activeChatId = chatId
     uiStore.isMessagesLoading = true
     try {
+      const room = await waitForRoom(chatId)
       ensurePcryptoInitialized()
       if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
 
-      const room = matrixService.getRoom(chatId)
       if (room) {
         // Если по комнате висит приглашение — вступаем при открытии. Иначе
         // последующая отправка падает с M_FORBIDDEN («not in room»), а состояние
         // комнаты (участники/история) подгружается не полностью.
         await matrixService.joinIfInvited(chatId)
-        await room.loadMembersIfNeeded()
+        await room.loadMembersIfNeeded?.()
         await paginateRoomHistory(room)
         // Local-echo события matrix-js-sdk (id вида `~…`) попадают в
         // IndexedDB-стор и возвращаются при следующем запуске: сообщение висит
@@ -79,7 +103,7 @@ export function useMessageLoading(
     } catch (e) {
       console.error('[ChatStore] Ошибка загрузки сообщений:', e)
     } finally {
-      uiStore.isMessagesLoading = false
+      if (seq === loadSeq) uiStore.isMessagesLoading = false
     }
   }
 

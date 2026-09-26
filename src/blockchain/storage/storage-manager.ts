@@ -18,6 +18,7 @@ import {
   VAULT_MIGRATION_KEY,
   VAULT_ATTEMPTS_KEY,
   MESSENGER_KEY_PINS_PREFIX,
+  MESSENGER_DIALOGS_PREFIX,
   BACKUP_VERIFIED_PREFIX,
   BACKUP_NUDGED_AT_KEY,
   PEERTUBE_TOKEN_PREFIX,
@@ -99,13 +100,14 @@ export function clearAllUserData(): void {
       }
       for (const k of accountKeys) localStorage.removeItem(k)
 
-      // Пины ключей собеседников мессенджера (TOFU) и отметки «бэкап проверен» —
-      // список контактов/адресов не должен переживать выход и светиться другому
-      // аккаунту на устройстве.
+      // Пины ключей собеседников мессенджера (TOFU), список диалогов с прошлого
+      // запуска и отметки «бэкап проверен» — список контактов/адресов не должен
+      // переживать выход и светиться другому аккаунту на устройстве.
       // Плюс токены PeerTube, resume-состояние загрузок и черновики комментариев
       // (V14) — тоже per-user и тоже не должны переживать выход.
       const purgePrefixes = [
         MESSENGER_KEY_PINS_PREFIX,
+        MESSENGER_DIALOGS_PREFIX,
         BACKUP_VERIFIED_PREFIX,
         PEERTUBE_TOKEN_PREFIX,
         PEERTUBE_RESUME_PREFIX,
@@ -152,14 +154,16 @@ function removeLocalKeysWithPrefix(prefix: string): void {
 
 /**
  * Локальные данные одного аккаунта при его удалении (Р5): per-account
- * черновики поста/комментариев в localStorage. IDB-часть (избранное, история
- * поиска, фильтры уведомлений) — в auth-store.removeAccount через API таблиц.
+ * черновики поста/комментариев и список диалогов мессенджера в localStorage.
+ * IDB-часть (избранное, история поиска, фильтры уведомлений) — в
+ * auth-store.removeAccount через API таблиц.
  */
 export function clearAccountScopedLocalData(address: Address): void {
   try {
     if (typeof localStorage === 'undefined') return
     localStorage.removeItem(`${POST_DRAFT_KEY}:${address}`)
     removeLocalKeysWithPrefix(`${COMMENT_DRAFT_PREFIX}${address}:`)
+    localStorage.removeItem(`${MESSENGER_DIALOGS_PREFIX}${address}`)
   } catch {
     /* ignore */
   }
