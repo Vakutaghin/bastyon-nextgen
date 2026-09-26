@@ -1,0 +1,45 @@
+# Все свои команды приложения — только для его собственного интерфейса:
+# capabilities/default.json выдаёт этот набор окну main. Команда без
+# разрешения отклоняется ACL, поэтому список сверяет тест acl_tests в src/lib.rs.
+
+[[set]]
+identifier = "app-commands"
+description = "Every command of the app itself, for the app's own UI only."
+permissions = [
+  "allow-save-temp-file",
+  "allow-delete-temp-file",
+  "allow-get-video-metadata",
+  "allow-transcode-video",
+  "allow-cancel-transcode",
+  "allow-check-ffmpeg-available",
+  "allow-tor-status",
+  "allow-tor-start",
+  "allow-tor-stop",
+  "allow-tor-fetch",
+  "allow-tor-set-bridges",
+  "allow-tor-ws-connect",
+  "allow-tor-ws-send",
+  "allow-tor-ws-close",
+  "allow-ipfs-status",
+  "allow-ipfs-ensure",
+  "allow-ipfs-cancel-install",
+  "allow-ipfs-stop",
+  "allow-ipfs-uninstall",
+  "allow-ipfs-update",
+  "allow-ipfs-pick-files",
+  "allow-ipfs-publish",
+  "allow-ipfs-seed",
+  "allow-ipfs-save-encrypted",
+  "allow-ipfs-save",
+  "allow-ipfs-cancel-save",
+  "allow-ipfs-open-viewer",
+  "allow-ipfs-pin-service-set",
+  "allow-ipfs-pin-service-status",
+  "allow-ipfs-pin-service-clear",
+  "allow-ipfs-pin-remote",
+  "allow-ipfs-shares",
+  "allow-ipfs-unshare",
+  "allow-ipfs-forget-account",
+  "allow-ipfs-share-status",
+  "allow-tray-set-labels",
+]

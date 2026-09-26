@@ -22,14 +22,18 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 devtools = ["tauri/devtools"]
 
 [build-dependencies]
-tauri-build = { version = "2.5.3", features = [] }
+tauri-build = { version = "2.6.3", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 # tray-icon — значок в трее на Windows и Linux (src/tray.rs).
-tauri = { version = "2.10", features = ["protocol-asset", "tray-icon"] }
+# 2.11.6 и новее: исправления GHSA-7gmj-67g7-phm9 и GHSA-w28w-mhc8-qvjv.
+# Внутренние крейты (tauri-runtime-wry, wry, tao, tauri-utils…) закреплены в
+# Cargo.lock на линейке 2.11: 2.11 объявляет их через ^, и простой
+# `cargo update` подтянул бы крейты 2.12. На 2.12 переходить целиком.
+tauri = { version = "2.11.6", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-log = "2"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-dialog = "2"
@@ -69,3 +73,7 @@ tauri-plugin-autostart = "2"
 # (иначе tray-icon паникует). Та же версия, что уже тянет tray-icon.
 [target.'cfg(target_os = "linux")'.dependencies]
 libloading = "0.7"
+
+# Mock-рантайм Tauri для теста ACL (acl_tests в src/lib.rs).
+[dev-dependencies]
+tauri = { version = "2.11.6", features = ["test"] }

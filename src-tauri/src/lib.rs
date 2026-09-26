@@ -1092,3 +1092,105 @@ mod temp_path_tests {
         assert_eq!(sanitize_temp_file_name(".."), "file");
     }
 }
+
+/// Свои команды закрыты ACL (AppManifest в build.rs): разрешения на них есть
+/// только у главного окна и только для страниц самого приложения. Окна
+/// просмотрщика IPFS (`ipfs-*`) показывают чужие сайты — им нельзя ничего.
+#[cfg(test)]
+mod acl_tests {
+    use std::collections::BTreeSet;
+    use tauri::ipc::{CallbackFn, InvokeBody};
+    use tauri::test::{get_ipc_response, mock_builder, MockRuntime, INVOKE_KEY};
+    use tauri::webview::InvokeRequest;
+    use tauri::{Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+
+    /// Адрес страниц самого приложения.
+    const APP_PAGE: &str = if cfg!(any(windows, target_os = "android")) {
+        "http://tauri.localhost/"
+    } else {
+        "tauri://localhost/"
+    };
+    /// Сайт из IPFS, открытый в просмотрщике.
+    const FOREIGN_SITE: &str =
+        "http://127.0.0.1:8080/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/";
+
+    fn call(window: &WebviewWindow<MockRuntime>, page: &str) -> Result<(), serde_json::Value> {
+        get_ipc_response(
+            window,
+            InvokeRequest {
+                // Сама команда всегда отвечает Ok: ошибка — это отказ ACL.
+                cmd: "check_ffmpeg_available".into(),
+                callback: CallbackFn(0),
+                error: CallbackFn(1),
+                url: page.parse().unwrap(),
+                body: InvokeBody::default(),
+                headers: Default::default(),
+                invoke_key: INVOKE_KEY.to_string(),
+            },
+        )
+        .map(|_| ())
+    }
+
+    #[test]
+    fn only_the_main_window_may_call_app_commands() {
+        let app = mock_builder()
+            .invoke_handler(tauri::generate_handler![super::check_ffmpeg_available])
+            // test = true: без второй копии Info.plist (она уже вшита run()).
+            .build(tauri::generate_context!(test = true))
+            .unwrap();
+        let main = app.get_webview_window("main").unwrap_or_else(|| {
+            WebviewWindowBuilder::new(&app, "main", WebviewUrl::default()).build().unwrap()
+        });
+        let viewer = WebviewWindowBuilder::new(
+            &app,
+            "ipfs-viewer-1",
+            WebviewUrl::External(FOREIGN_SITE.parse().unwrap()),
+        )
+        .build()
+        .unwrap();
+
+        assert_eq!(call(&main, APP_PAGE), Ok(()));
+        // Главное окно, которое увели на чужой сайт.
+        assert!(call(&main, FOREIGN_SITE).is_err());
+        assert!(call(&viewer, FOREIGN_SITE).is_err());
+        // Даже если чужой сайт примут за само приложение (как в
+        // GHSA-7gmj-67g7-phm9), у окна просмотрщика нет разрешений.
+        assert!(call(&viewer, APP_PAGE).is_err());
+    }
+
+    fn between<'a>(text: &'a str, start: &str, end: &str) -> &'a str {
+        let from = text.find(start).expect(start) + start.len();
+        let to = from + text[from..].find(end).expect(end);
+        &text[from..to]
+    }
+
+    fn quoted(text: &str) -> BTreeSet<String> {
+        text.split('"').skip(1).step_by(2).map(str::to_string).collect()
+    }
+
+    /// Команда, которую забыли внести в манифест или выдать окну, в приложении
+    /// просто перестала бы работать: ACL её отклонит.
+    #[test]
+    fn every_registered_command_is_declared_and_granted() {
+        let registered: BTreeSet<String> =
+            between(include_str!("lib.rs"), ".invoke_handler(tauri::generate_handler![", "]")
+                .split(',')
+                .filter_map(|path| path.trim().rsplit("::").next())
+                .filter(|name| !name.is_empty())
+                .map(str::to_string)
+                .collect();
+        let declared = quoted(between(include_str!("../build.rs"), "&[&str] = &[", "];"));
+        let granted = quoted(between(
+            include_str!("../permissions/app-commands.toml"),
+            "permissions = [",
+            "]",
+        ));
+
+        // Список прочитан целиком: первая и последняя команды на месте.
+        assert!(registered.contains("save_temp_file") && registered.contains("tray_set_labels"));
+        assert_eq!(declared, registered, "build.rs: COMMANDS");
+        let expected: BTreeSet<String> =
+            registered.iter().map(|c| format!("allow-{}", c.replace('_', "-"))).collect();
+        assert_eq!(granted, expected, "permissions/app-commands.toml");
+    }
+}
