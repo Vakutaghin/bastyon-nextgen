@@ -899,6 +899,7 @@ pub fn run() {
       tor::tor_ws_close,
       ipfs::ipfs_status,
       ipfs::ipfs_ensure,
+      ipfs::ipfs_cancel_install,
       ipfs::ipfs_stop,
       ipfs::ipfs_uninstall,
       ipfs::ipfs_update,

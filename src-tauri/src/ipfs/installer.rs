@@ -6,7 +6,7 @@
 //! пин защищает от угнанного зеркала (fail-closed при несовпадении).
 use crate::ipfs::state::IpfsPaths;
 use flate2::read::GzDecoder;
-use futures_util::StreamExt;
+use futures_util::{Stream, StreamExt};
 use sha2::{Digest, Sha512};
 use std::fs;
 use std::io::Write;
@@ -14,6 +14,7 @@ use std::path::Path;
 use tar::Archive;
 use tauri::{AppHandle, Emitter};
 use thiserror::Error;
+use tokio::sync::watch;
 
 /// Запиненная версия Kubo. Строка ВКЛЮЧАЕТ ведущий `v`. Bump = обновить и
 /// EXPECTED_SHA512 (значения из https://dist.ipfs.tech/kubo/<ver>/<file>.sha512).
@@ -70,6 +71,23 @@ pub enum InstallError {
     ExtractedFileMissing(String),
     #[error("zip error: {0}")]
     Zip(#[from] zip::result::ZipError),
+    /// Пользователь отменил установку (ipfs_cancel_install).
+    #[error("installation cancelled")]
+    Cancelled,
+}
+
+/// Отмена установки: `true` в канале = остановиться. Канал общий на менеджер,
+/// каждый ensure сбрасывает его в `false` перед стартом.
+pub type CancelRx = watch::Receiver<bool>;
+
+/// Проверка между фазами установки (распаковка, init и т.д. не прерываются
+/// посередине — они короткие; прерывается только скачивание, см. copy_stream).
+pub fn check_cancelled(cancel: &CancelRx) -> Result<(), InstallError> {
+    if *cancel.borrow() {
+        Err(InstallError::Cancelled)
+    } else {
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -134,8 +152,13 @@ pub fn update_available(paths: &IpfsPaths) -> bool {
 /// Верхний уровень: гарантировать наличие бинаря kubo. No-op, если уже
 /// установлен. «Установлен» = бинарь И маркер: маркер пишется последним, так что
 /// усечённый бинарь после краша посреди распаковки (маркера нет) переставится,
-/// а не считался бы готовым («Exec format error» при spawn).
-pub async fn ensure_installed(app: &AppHandle, paths: &IpfsPaths) -> Result<(), InstallError> {
+/// а не считался бы готовым («Exec format error» при spawn). Отмена прерывает
+/// скачивание и удаляет недокачанный архив.
+pub async fn ensure_installed(
+    app: &AppHandle,
+    paths: &IpfsPaths,
+    cancel: &CancelRx,
+) -> Result<(), InstallError> {
     if paths.binary.is_file() && paths.install_marker.is_file() {
         return Ok(());
     }
@@ -155,7 +178,14 @@ pub async fn ensure_installed(app: &AppHandle, paths: &IpfsPaths) -> Result<(), 
 
     let url = archive_url(&platform.archive_name);
     let archive_path = paths.bin_dir.join(&platform.archive_name);
-    download_with_progress(app, &url, &archive_path).await?;
+    if let Err(e) = download_with_progress(app, &url, &archive_path, cancel).await {
+        let _ = fs::remove_file(&archive_path);
+        return Err(e);
+    }
+    if let Err(e) = check_cancelled(cancel) {
+        let _ = fs::remove_file(&archive_path);
+        return Err(e);
+    }
 
     emit_progress(app, "verifying", 0.95, "Verifying SHA-512");
     verify_sha512(&archive_path, &platform.archive_name, expected)?;
@@ -203,23 +233,28 @@ pub async fn ensure_installed(app: &AppHandle, paths: &IpfsPaths) -> Result<(), 
     Ok(())
 }
 
-async fn download_with_progress(app: &AppHandle, url: &str, dest: &Path) -> Result<(), InstallError> {
+async fn download_with_progress(
+    app: &AppHandle,
+    url: &str,
+    dest: &Path,
+    cancel: &CancelRx,
+) -> Result<(), InstallError> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(600))
         .build()?;
-    let resp = client.get(url).send().await?.error_for_status()?;
+    // Отмена и во время соединения, а не только между кусками.
+    let mut cancel_wait = cancel.clone();
+    // `Ok(_)`: закрытый канал (отправителя нет) — не отмена, ветка просто гаснет.
+    let resp = tokio::select! {
+        biased;
+        Ok(_) = cancel_wait.wait_for(|c| *c) => return Err(InstallError::Cancelled),
+        r = client.get(url).send() => r?.error_for_status()?,
+    };
     let total = resp.content_length().unwrap_or(0);
 
     let mut file = fs::File::create(dest)?;
-    let mut downloaded: u64 = 0;
     let mut last_emit: f32 = -1.0;
-    let mut stream = resp.bytes_stream();
-
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk?;
-        file.write_all(&chunk)?;
-        downloaded += chunk.len() as u64;
-
+    copy_stream(resp.bytes_stream(), &mut file, cancel, |downloaded| {
         if total > 0 {
             let pct = (downloaded as f32 / total as f32) * 0.93;
             if pct - last_emit >= 0.01 {
@@ -232,8 +267,40 @@ async fn download_with_progress(app: &AppHandle, url: &str, dest: &Path) -> Resu
                 );
             }
         }
-    }
+    })
+    .await?;
     Ok(())
+}
+
+/// Копирует поток в writer, пока не кончится или не придёт отмена. Отмена
+/// срабатывает сразу, даже если сервер замолчал и следующего куска нет.
+async fn copy_stream<S, B, E, W>(
+    mut stream: S,
+    out: &mut W,
+    cancel: &CancelRx,
+    mut on_progress: impl FnMut(u64),
+) -> Result<u64, InstallError>
+where
+    S: Stream<Item = Result<B, E>> + Unpin,
+    B: AsRef<[u8]>,
+    E: Into<InstallError>,
+    W: Write,
+{
+    let mut cancel = cancel.clone();
+    let mut copied: u64 = 0;
+    loop {
+        let next = tokio::select! {
+            biased;
+            Ok(_) = cancel.wait_for(|c| *c) => return Err(InstallError::Cancelled),
+            next = stream.next() => next,
+        };
+        let Some(chunk) = next else { break };
+        let chunk = chunk.map_err(Into::into)?;
+        out.write_all(chunk.as_ref())?;
+        copied += chunk.as_ref().len() as u64;
+        on_progress(copied);
+    }
+    Ok(copied)
 }
 
 fn verify_sha512(archive_path: &Path, name: &str, expected: &str) -> Result<(), InstallError> {
@@ -364,6 +431,61 @@ mod tests {
         fs::write(&paths.install_marker, r#"{"version":"v0.43.0","archive":"x"}"#).unwrap();
         assert_eq!(installed_version(&paths).as_deref(), Some("v0.43.0"));
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn copy_stream_copies_everything_without_cancel() {
+        let (_tx, rx) = watch::channel(false);
+        let chunks = vec![Ok::<_, std::io::Error>(vec![1u8, 2]), Ok(vec![3])];
+        let mut out = Vec::new();
+        let mut seen = Vec::new();
+        let n = copy_stream(futures_util::stream::iter(chunks), &mut out, &rx, |c| seen.push(c))
+            .await
+            .unwrap();
+        assert_eq!(n, 3);
+        assert_eq!(out, vec![1, 2, 3]);
+        assert_eq!(seen, vec![2, 3]);
+    }
+
+    #[tokio::test]
+    async fn cancel_interrupts_a_stalled_download() {
+        let (tx, rx) = watch::channel(false);
+        // Сервер отдал кусок и замолчал: без select отмена ждала бы следующего.
+        let stalled = futures_util::stream::iter(vec![Ok::<_, std::io::Error>(vec![7u8])])
+            .chain(futures_util::stream::pending());
+        let mut out = Vec::new();
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            let _ = tx.send(true);
+        });
+        let res = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            copy_stream(stalled, &mut out, &rx, |_| {}),
+        )
+        .await
+        .expect("отмена не прервала зависшее скачивание");
+        assert!(matches!(res, Err(InstallError::Cancelled)));
+        assert_eq!(out, vec![7]);
+    }
+
+    #[tokio::test]
+    async fn closed_cancel_channel_is_not_a_cancel() {
+        let (tx, rx) = watch::channel(false);
+        drop(tx);
+        let chunks = vec![Ok::<_, std::io::Error>(vec![1u8]), Ok(vec![2])];
+        let mut out = Vec::new();
+        let n = copy_stream(futures_util::stream::iter(chunks), &mut out, &rx, |_| {})
+            .await
+            .unwrap();
+        assert_eq!(n, 2);
+    }
+
+    #[test]
+    fn check_cancelled_follows_the_flag() {
+        let (tx, rx) = watch::channel(false);
+        assert!(check_cancelled(&rx).is_ok());
+        tx.send(true).unwrap();
+        assert!(matches!(check_cancelled(&rx), Err(InstallError::Cancelled)));
     }
 
     #[test]

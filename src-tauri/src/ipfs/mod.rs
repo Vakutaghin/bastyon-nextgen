@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
 use tauri::{AppHandle, Manager, State};
-use tokio::sync::RwLock;
+use tokio::sync::{watch, RwLock};
 
 pub struct IpfsManager {
     pub state: SharedIpfsState,
@@ -21,6 +21,9 @@ pub struct IpfsManager {
     /// два демона на один repo, а update во время распаковки не сносит bin_dir
     /// из-под ensure (и stop во время wait_ready не «теряет» child).
     pub start_lock: tokio::sync::Mutex<()>,
+    /// Отмена установки (ipfs_cancel_install). Не под start_lock: его держит
+    /// сама установка, которую надо прервать.
+    pub install_cancel: watch::Sender<bool>,
 }
 
 impl IpfsManager {
@@ -30,6 +33,7 @@ impl IpfsManager {
             paths,
             child: StdMutex::new(None),
             start_lock: tokio::sync::Mutex::new(()),
+            install_cancel: watch::channel(false).0,
         }
     }
 
@@ -105,7 +109,10 @@ pub async fn ipfs_ensure(
         return Ok(mgr.state.read().await.snapshot());
     }
 
-    // 2. Установка бинаря.
+    // 2–4. Установка, init, конфигурация. Новая попытка — прежняя отмена к ней
+    //      не относится.
+    mgr.install_cancel.send_replace(false);
+    let cancel = mgr.install_cancel.subscribe();
     {
         let mut st = mgr.state.write().await;
         st.status = IpfsStatus::Installing;
@@ -113,37 +120,30 @@ pub async fn ipfs_ensure(
         st.lock_error = false;
     }
     mgr.emit_state(&app).await;
-    installer::ensure_installed(&app, &mgr.paths)
-        .await
-        .map_err(err_string)?;
-    {
-        let mut st = mgr.state.write().await;
-        st.installed = true;
-        st.update_available = installer::update_available(&mgr.paths);
-    }
-
-    // 3. Инициализация репозитория (один раз).
-    if !mgr.paths.repo.join("config").exists() {
-        std::fs::create_dir_all(&mgr.paths.repo).map_err(err_string)?;
-        run_ipfs(
-            &mgr.paths,
-            &["init", &format!("--profile={}", config::INIT_PROFILE)],
-        )
-        .await?;
-    }
-
-    // 4. Конфигурация ноды (порты /tcp/0, autoclient, Provide=pinned, CORS) +
-    //    bearer-авторизация RPC: без неё любой локальный процесс читал бы конфиг
-    //    (в т.ч. токен pin-сервиса) и менял бы адреса API.
-    for args in config::config_commands() {
-        let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
-        run_ipfs(&mgr.paths, &refs).await?;
-    }
-    let secret = load_or_create_secret(&mgr.paths)?;
-    {
-        let args = config::api_auth_command(&secret);
-        let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
-        run_ipfs(&mgr.paths, &refs).await?;
+    match prepare_node(&app, &mgr, &cancel).await {
+        Ok(()) => {}
+        // Отмена — не ошибка: нода просто выключена, ensure отдаёт снапшот `off`.
+        Err(PrepareError::Cancelled) => {
+            {
+                let mut st = mgr.state.write().await;
+                st.status = IpfsStatus::Off;
+                st.message = None;
+                st.installed = mgr.paths.binary.is_file();
+            }
+            mgr.emit_state(&app).await;
+            return Ok(mgr.state.read().await.snapshot());
+        }
+        // Раньше статус так и оставался `installing`: после перезагрузки окна
+        // шапка бесконечно показывала установку.
+        Err(PrepareError::Failed(message)) => {
+            {
+                let mut st = mgr.state.write().await;
+                st.status = IpfsStatus::Failed;
+                st.message = Some(message.clone());
+            }
+            mgr.emit_state(&app).await;
+            return Err(message);
+        }
     }
 
     {
@@ -194,6 +194,14 @@ pub async fn ipfs_ensure(
     }
     mgr.emit_state(&app).await;
     Ok(mgr.state.read().await.snapshot())
+}
+
+/// Отменить идущую установку. Скачивание прерывается сразу (недокачанный архив
+/// удаляется), распаковка/init — на ближайшей границе фаз; начавшийся запуск
+/// демона не прерывается. Без идущей установки флаг сбросит следующий ensure.
+#[tauri::command]
+pub fn ipfs_cancel_install(mgr: State<'_, IpfsManager>) {
+    mgr.install_cancel.send_replace(true);
 }
 
 #[tauri::command]
@@ -531,6 +539,65 @@ pub async fn ipfs_pin_remote(cid: String, mgr: State<'_, IpfsManager>) -> Result
 // ---------------------------------------------------------------------------
 // Внутреннее
 // ---------------------------------------------------------------------------
+
+/// Чем закончилась подготовка ноды, если не успехом.
+enum PrepareError {
+    Cancelled,
+    Failed(String),
+}
+
+impl From<installer::InstallError> for PrepareError {
+    fn from(e: installer::InstallError) -> Self {
+        match e {
+            installer::InstallError::Cancelled => PrepareError::Cancelled,
+            e => PrepareError::Failed(e.to_string()),
+        }
+    }
+}
+
+/// Бинарь, repo и конфиг ноды — всё, что нужно до запуска демона. Отмена
+/// проверяется между фазами (скачивание прерывается и посередине).
+async fn prepare_node(
+    app: &AppHandle,
+    mgr: &IpfsManager,
+    cancel: &installer::CancelRx,
+) -> Result<(), PrepareError> {
+    installer::ensure_installed(app, &mgr.paths, cancel).await?;
+    {
+        let mut st = mgr.state.write().await;
+        st.installed = true;
+        st.update_available = installer::update_available(&mgr.paths);
+    }
+    installer::check_cancelled(cancel)?;
+
+    // Инициализация репозитория (один раз).
+    if !mgr.paths.repo.join("config").exists() {
+        std::fs::create_dir_all(&mgr.paths.repo).map_err(|e| PrepareError::Failed(e.to_string()))?;
+        run_ipfs(
+            &mgr.paths,
+            &["init", &format!("--profile={}", config::INIT_PROFILE)],
+        )
+        .await
+        .map_err(PrepareError::Failed)?;
+    }
+    installer::check_cancelled(cancel)?;
+
+    // Конфигурация ноды (порты /tcp/0, autoclient, Provide=pinned, CORS) +
+    // bearer-авторизация RPC: без неё любой локальный процесс читал бы конфиг
+    // (в т.ч. токен pin-сервиса) и менял бы адреса API.
+    for args in config::config_commands() {
+        let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+        run_ipfs(&mgr.paths, &refs).await.map_err(PrepareError::Failed)?;
+    }
+    let secret = load_or_create_secret(&mgr.paths).map_err(PrepareError::Failed)?;
+    {
+        let args = config::api_auth_command(&secret);
+        let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+        run_ipfs(&mgr.paths, &refs).await.map_err(PrepareError::Failed)?;
+    }
+    installer::check_cancelled(cancel)?;
+    Ok(())
+}
 
 /// Немедленный анонс свежедобавленного CID в DHT (`ipfs provide once`), не
 /// дожидаясь периодического reprovide по Provide.DHT.Interval: пользователь

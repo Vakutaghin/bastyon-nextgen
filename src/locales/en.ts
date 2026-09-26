@@ -217,6 +217,7 @@ export default {
     ipfsInstallingProgress: 'Downloading: {pct}% — {message}',
     ipfsStarting: 'Starting IPFS daemon…',
     ipfsCancel: 'Use public gateway instead',
+    ipfsAbortInstall: 'Cancel installation',
     ipfsTorBlockedTitle: 'Tor is on',
     ipfsTorBlockedContent:
       'IPFS does not work over Tor: neither the viewer window nor the local Kubo node is routed through Tor, so they would reveal your real IP together with the requested address. Turn Tor off to open the link, share a file, or start the node.',

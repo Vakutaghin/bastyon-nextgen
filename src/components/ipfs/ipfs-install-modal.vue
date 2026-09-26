@@ -86,6 +86,10 @@
           <Button block @click="ipfs.cancelInstall()">
             {{ t('header.ipfsCancel') }}
           </Button>
+          <!-- Отменить саму установку (скачивание прерывается). -->
+          <Button v-if="ipfs.status === 'installing'" block @click="ipfs.abortInstall()">
+            {{ t('header.ipfsAbortInstall') }}
+          </Button>
         </SC_ModalActions>
       </template>
     </SC_IpfsBody>
@@ -98,12 +102,7 @@ import { useI18n } from 'vue-i18n'
 import { Modal, Button, Input } from 'ant-design-vue'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import { SC_ModalActions } from '@/components/modal'
-import {
-  SC_IpfsBody,
-  SC_IpfsText,
-  SC_IpfsProgressOuter,
-  SC_IpfsProgressInner,
-} from './styled'
+import { SC_IpfsBody, SC_IpfsText, SC_IpfsProgressOuter, SC_IpfsProgressInner } from './styled'
 
 const { t } = useI18n()
 const ipfs = useIpfsStore()

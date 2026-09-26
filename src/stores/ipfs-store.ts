@@ -184,6 +184,9 @@ export const useIpfsStore = defineStore('ipfs', {
       this.message = snap.message ?? null
       this.installed = snap.installed
       this.updateAvailable = snap.update_available
+      // Прогресс скачивания — только пока идёт установка: после отмены или
+      // ошибки полоска не должна застывать на последнем проценте.
+      if (snap.status !== 'installing') this.install = null
     },
 
     setConsent(v: IpfsConsent): void {
@@ -422,6 +425,21 @@ export const useIpfsStore = defineStore('ipfs', {
       if (r) r()
     },
 
+    /**
+     * Отменить саму установку: скачивание прерывается, недокачанное удаляется.
+     * Ссылка, ради которой ставили, откроется через публичный шлюз, а согласие
+     * сбрасывается — на следующем клике спросим снова, а не начнём качать молча.
+     */
+    async abortInstall(): Promise<void> {
+      this.setConsent('unknown')
+      this.cancelInstall()
+      try {
+        await tauriInvoke('ipfs_cancel_install')
+      } catch {
+        // бэкенд не ответил — установка завершится сама, ждать её уже некому
+      }
+    },
+
     /** Одна consent-сессия: конкурентные клики ждут один и тот же диалог. */
     askConsent(): Promise<ConsentChoice> {
       if (this._consentPromise) return this._consentPromise
@@ -444,6 +462,8 @@ export const useIpfsStore = defineStore('ipfs', {
           )
           this.applySnapshot(snap)
           if (snap.status === 'running') return snap.gateway_port
+          // Установку отменили (abortInstall) — это не сбой, паузы не нужно.
+          if (snap.status === 'off') return null
           // Не running без исключения (напр. демон не поднялся) — фиксируем как
           // фейл, иначе _recentlyFailed() не даёт cooldown и ensure долбится.
           this.status = 'failed'

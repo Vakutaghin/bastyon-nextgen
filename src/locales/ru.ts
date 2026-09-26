@@ -221,6 +221,7 @@ export default {
     ipfsInstallingProgress: 'Загрузка: {pct}% — {message}',
     ipfsStarting: 'Запуск демона IPFS…',
     ipfsCancel: 'Через публичный шлюз',
+    ipfsAbortInstall: 'Отменить установку',
     ipfsTorBlockedTitle: 'Включён Tor',
     ipfsTorBlockedContent:
       'IPFS не работает через Tor: ни окно-просмотрщик, ни локальная нода Kubo не идут через Tor и раскрыли бы ваш реальный IP вместе с запрашиваемым адресом. Отключите Tor, чтобы открыть ссылку, поделиться файлом или запустить ноду.',

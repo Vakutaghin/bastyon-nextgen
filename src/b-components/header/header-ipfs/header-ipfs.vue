@@ -34,6 +34,9 @@
           <Button v-else size="small" type="primary" :loading="busy" @click="onEnable">
             {{ installed ? t('header.ipfsStartBtn') : t('header.ipfsInstallBtn') }}
           </Button>
+          <Button v-if="status === 'installing'" size="small" @click="ipfs.abortInstall()">
+            {{ t('header.ipfsAbortInstall') }}
+          </Button>
 
           <Button v-if="updateAvailable" size="small" :loading="busy" @click="ipfs.update()">
             {{ t('header.ipfsUpdateBtn') }}
