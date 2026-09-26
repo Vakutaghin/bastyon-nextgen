@@ -18,6 +18,8 @@ import {
   Ban,
   Bell,
   Blocks,
+  BookA,
+  BookOpen,
   Bookmark,
   Bug,
   Camera,
@@ -54,6 +56,7 @@ import {
   Key,
   LayoutGrid,
   Lightbulb,
+  Link,
   LoaderCircle,
   Lock,
   LogOut,
@@ -64,7 +67,9 @@ import {
   MessagesSquare,
   Mic,
   Minimize,
+  Monitor,
   Moon,
+  OctagonAlert,
   PanelLeftClose,
   PanelLeftOpen,
   Pause,
@@ -85,6 +90,7 @@ import {
   Smile,
   Star,
   Sun,
+  TableOfContents,
   Trash2,
   TrendingUp,
   TriangleAlert,
@@ -242,6 +248,14 @@ export const MessagesIcon = lucideIcon('MessagesIcon', MessagesSquare)
 export const MicIcon = lucideIcon('MicIcon', Mic)
 export const PlayIcon = lucideIcon('PlayIcon', Play, 'solid')
 export const PauseIcon = lucideIcon('PauseIcon', Pause, 'solid')
+
+/** Справка: раздел и его книги, вкладки навигатора, ссылка на статью, плашки. */
+export const HelpBookIcon = lucideIcon('HelpBookIcon', BookOpen)
+export const HelpContentsIcon = lucideIcon('HelpContentsIcon', TableOfContents)
+export const HelpIndexIcon = lucideIcon('HelpIndexIcon', BookA)
+export const LinkIcon = lucideIcon('LinkIcon', Link)
+export const MonitorIcon = lucideIcon('MonitorIcon', Monitor)
+export const CautionIcon = lucideIcon('CautionIcon', OctagonAlert)
 
 /** Переключатель темы — солнце и луна, как кнопка цветовой схемы у Nuxt UI. */
 export const ThemeLightIcon = lucideIcon('ThemeLightIcon', Sun)

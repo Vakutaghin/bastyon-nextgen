@@ -75,6 +75,21 @@ function parseAppUrl(raw: string): URL | null {
   }
 }
 
+/** Разделы приложения, ссылки на которые (`bastyon://wallets`) открываются как есть. */
+export const DEEP_LINK_SECTIONS: ReadonlySet<string> = new Set([
+  'search',
+  'settings',
+  'wallets',
+  'limits',
+  'miniapps',
+  'explorer',
+  'my-videos',
+  'my-files',
+  'compose',
+  'info',
+  'help',
+])
+
 /** Маршрут поста с опциональным якорем на комментарий. */
 function postRoute(txid: string, commentId?: string): string {
   return commentId ? `/post/${txid}?commentid=${commentId}` : `/post/${txid}`
@@ -119,19 +134,7 @@ export function resolveDeepLink(rawUrl: string): string | null {
   }
 
   // Известные разделы приложения отдаём как есть.
-  const KNOWN_SECTIONS = new Set([
-    'search',
-    'settings',
-    'wallets',
-    'limits',
-    'miniapps',
-    'explorer',
-    'my-videos',
-    'my-files',
-    'compose',
-    'info',
-  ])
-  if (KNOWN_SECTIONS.has(head)) {
+  if (DEEP_LINK_SECTIONS.has(head)) {
     return url.pathname + url.search
   }
 

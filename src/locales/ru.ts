@@ -93,6 +93,7 @@ export default {
     post: 'Пост',
     compose: 'Новый пост',
     info: 'Инфо',
+    help: 'Справка',
   },
   infoPage: {
     legalReviewNote:
@@ -102,6 +103,79 @@ export default {
   },
   footer: {
     brand: 'Bastyon — децентрализованная социальная сеть.',
+    help: 'Справка',
+    about: 'О Bastyon',
+    faq: 'Частые вопросы',
+  },
+  help: {
+    title: 'Справка',
+    loading: 'Загружаю справку…',
+    loadFailed: 'Не удалось загрузить справку.',
+    retry: 'Повторить',
+    notFound: 'Такой статьи в справке нет.',
+    toHome: 'На главную справки',
+    contextLink: 'Справка по этому разделу',
+    tabs: {
+      contents: 'Содержание',
+      index: 'Указатель',
+      search: 'Поиск',
+      favorites: 'Избранное',
+    },
+    toolbar: {
+      back: 'Назад',
+      forward: 'Вперёд',
+      home: 'Главная справки',
+      hideNav: 'Скрыть панель',
+      showNav: 'Показать панель',
+      copyLink: 'Скопировать ссылку',
+      linkCopied: 'Ссылка на статью скопирована',
+      copyFailed: 'Не удалось скопировать ссылку',
+      addFavorite: 'Добавить в избранное',
+      removeFavorite: 'Убрать из избранного',
+      clearHighlight: 'Убрать подсветку',
+      toNavigator: 'Содержание',
+    },
+    index: {
+      placeholder: 'Слово или термин',
+      empty: 'В указателе такого нет — попробуйте поиск.',
+      topics: 'статей: {n}',
+    },
+    search: {
+      placeholder: 'Что найти?',
+      hint: 'Ищет по тексту всех статей с учётом окончаний.',
+      empty: 'Ничего не нашлось.',
+    },
+    favorites: {
+      empty: 'Отметьте статью звёздочкой — она появится здесь.',
+      addCurrent: 'Добавить текущую статью',
+      remove: 'Убрать из избранного',
+    },
+    article: {
+      prev: 'Предыдущая',
+      next: 'Следующая',
+      platforms: 'Где работает: {list}',
+      fallback: 'Эта статья ещё не переведена — показан русский текст.',
+    },
+    platform: {
+      desktop: 'приложение для компьютера',
+      web: 'браузер',
+      mobile: 'приложение для телефона',
+    },
+    alert: {
+      note: 'Примечание',
+      tip: 'Совет',
+      important: 'Важно',
+      warning: 'Внимание',
+      caution: 'Осторожно',
+    },
+    term: {
+      more: 'Подробнее в словаре',
+    },
+    panel: {
+      open: 'Открыть в справке',
+      back: 'Назад',
+      close: 'Закрыть',
+    },
   },
   embed: {
     viewOnBastyon: 'Открыть в Bastyon',
@@ -1116,6 +1190,7 @@ export default {
     video: 'Видео',
     wallet: 'Кошелёк',
     settings: 'Настройки',
+    help: 'Справка',
   },
   chat: {
     postLoading: 'Загружаем пост…',
@@ -1466,6 +1541,7 @@ export default {
       favorites: 'Избранное',
       discussed: 'Обсуждаемое',
       explorer: 'Эксплорер',
+      help: 'Справка',
       miniApps: 'Мини-приложения',
     },
     categories: {
@@ -1777,6 +1853,7 @@ export default {
     menuLimits: 'Лимиты',
     menuMyVideos: 'Мои видео',
     menuMyFiles: 'Мои файлы',
+    menuHelp: 'Справка',
     menuSettings: 'Настройки',
     menuSwitchAccount: 'Сменить аккаунт',
     menuSignOut: 'Выйти',

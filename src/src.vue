@@ -9,7 +9,9 @@ import DonateModal from '@/b-components/donate/donate-modal.vue'
 import ReportModal from '@/b-components/report/report-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
 import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
+import HelpPanel from '@/b-components/help/help-panel.vue'
 import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
+import { useHelpHotkey } from '@/composables/use-help-hotkey'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
 import { useTrayLabels } from '@/composables/use-tray-labels'
@@ -54,6 +56,9 @@ const publicAppUrl =
 
 // Инициализируем глобальную обработку клавиатуры для управления видеоплеером
 useGlobalKeyboard()
+
+// F1 — справка по текущему экрану (в embed-вьюхе справки нет).
+useHelpHotkey(() => !isEmbed.value)
 
 // Перехват кликов по IPFS-ссылкам → открытие в отдельном окне (только в Tauri).
 // На embed-роутах выключаем: там нет singleton-модалки IPFS.
@@ -103,6 +108,8 @@ watch(themeConfig, setStaticApiTheme, { immediate: true })
       <VaultUnlockModal />
       <!-- IPFS-модуль: consent/прогресс/desktop-only — singleton, открывается ipfs-store -->
       <IpfsInstallModal />
+      <!-- Контекстная справка (кнопки «?» и F1) — singleton, открывается useHelpStore().openTopic -->
+      <HelpPanel />
     </template>
   </ConfigProvider>
 </template>

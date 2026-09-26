@@ -18,6 +18,7 @@
         <StarOutlined v-else-if="tab.icon === 'StarOutlined'" />
         <MessageOutlined v-else-if="tab.icon === 'MessageOutlined'" />
         <BlockOutlined v-else-if="tab.icon === 'BlockOutlined'" />
+        <HelpBookIcon v-else-if="tab.icon === 'HelpBookIcon'" />
         <AppstoreOutlined v-else />
         <SC_TabsLabel v-if="!collapsed">{{ t(tab.labelKey) }}</SC_TabsLabel>
       </SC_TabsItem>
@@ -43,6 +44,7 @@ import {
   MessageOutlined,
   AppstoreOutlined,
   BlockOutlined,
+  HelpBookIcon,
 } from '@/components/icons'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useAuthStore } from '@/blockchain'
@@ -78,10 +80,10 @@ watch(
   () => route.path,
   (path) => {
     // Главная — сбрасываем активный таб на «Ленту» (id=1) если ранее был
-    // miniapp-таб (id=8) или эксплорер (id=9). feedMode через query
-    // сохраняется отдельно.
+    // miniapp-таб (id=8), эксплорер (id=9) или справка (id=10). feedMode
+    // через query сохраняется отдельно.
     if (path === '/') {
-      if (filtersStore.activeTab === 8 || filtersStore.activeTab === 9) {
+      if ([8, 9, 10].includes(Number(filtersStore.activeTab))) {
         filtersStore.selectTab(1)
       }
       return
@@ -96,6 +98,10 @@ watch(
     // /explorer и любые вложенные маршруты блок-эксплорера.
     if (path === '/explorer' || path.startsWith('/explorer/')) {
       filtersStore.selectTab(9)
+    }
+    // Справка и её статьи.
+    if (path === '/help' || path.startsWith('/help/')) {
+      filtersStore.selectTab(10)
     }
   },
   { immediate: true }
@@ -139,13 +145,21 @@ function selectTab(tabId: string | number): void {
     return
   }
 
-  // Если уходим с /miniapps, /app/* или /explorer на feed-фильтр —
+  // Справка — отдельный раздел, как эксплорер.
+  if (tabId === 10) {
+    if (route.path !== '/help' && !route.path.startsWith('/help/')) void router.push('/help')
+    return
+  }
+
+  // Если уходим с /miniapps, /app/*, /explorer или /help на feed-фильтр —
   // возвращаемся на главную.
   if (
     route.path === '/miniapps' ||
     route.path.startsWith('/app/') ||
     route.path === '/explorer' ||
-    route.path.startsWith('/explorer/')
+    route.path.startsWith('/explorer/') ||
+    route.path === '/help' ||
+    route.path.startsWith('/help/')
   ) {
     void router.push('/')
   }

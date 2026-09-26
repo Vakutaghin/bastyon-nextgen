@@ -37,6 +37,7 @@ import {
   WalletOutlined,
   SettingOutlined,
   CloseOutlined,
+  HelpBookIcon,
 } from '@/components/icons'
 import {
   SC_Backdrop,
@@ -61,6 +62,7 @@ const items = computed(() => [
   { path: '/my-videos', label: t('sidebar.video'), icon: PlayCircleOutlined },
   { path: '/wallets', label: t('sidebar.wallet'), icon: WalletOutlined },
   { path: '/settings', label: t('sidebar.settings'), icon: SettingOutlined },
+  { path: '/help', label: t('sidebar.help'), icon: HelpBookIcon },
 ])
 
 const currentPath = computed(() => route.path)

@@ -62,7 +62,8 @@
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'buy' }">
             <PkoinChart />
             <SC_BuyHelp>
-              <RouterLink to="/info/howtobuy">{{ t('wallet.howToBuyLink') }}</RouterLink>
+              <!-- Статья справки открывается сбоку: вкладка «Купить» остаётся на экране. -->
+              <HelpLink topic="how-to-buy-pkoin" :label="t('wallet.howToBuyLink')" />
             </SC_BuyHelp>
           </SC_WalletTabPanel>
         </SC_WalletTabPanels>
@@ -76,7 +77,7 @@
 // каждой вкладки живёт в саб-компоненте.
 import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/blockchain'
 import WalletBalances from './wallet-balances/wallet-balances.vue'
 // Ссылка на вкладку балансов — чтобы обновить цифры сразу после перевода (S47).
@@ -84,6 +85,7 @@ import WalletTransfer from './wallet-transfer/wallet-transfer.vue'
 import WalletHistory from './wallet-history/wallet-history.vue'
 import WalletEarnings from './wallet-earnings/wallet-earnings.vue'
 import PkoinChart from './pkoin-chart/pkoin-chart.vue'
+import HelpLink from '@/b-components/help/help-link.vue'
 import {
   SC_WalletWork,
   SC_WalletPage,

@@ -74,6 +74,11 @@ describe('resolveDeepLink — разделы и мусор', () => {
     expect(resolveDeepLink('bastyon://wallets')).toBe('/wallets')
   })
 
+  it('справка и её статья', () => {
+    expect(resolveDeepLink('bastyon://help')).toBe('/help')
+    expect(resolveDeepLink('bastyon://help/faq')).toBe('/help/faq')
+  })
+
   it('голая схема открывает главную', () => {
     expect(resolveDeepLink('bastyon://')).toBe('/')
   })

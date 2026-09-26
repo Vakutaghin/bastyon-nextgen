@@ -2,7 +2,7 @@
   <SC_Footer>
     <SC_FooterInner>
       <SC_FooterLinks>
-        <RouterLink v-for="link in links" :key="link.slug" :to="`/info/${link.slug}`">
+        <RouterLink v-for="link in links" :key="link.to" :to="link.to">
           {{ link.title }}
         </RouterLink>
       </SC_FooterLinks>
@@ -20,5 +20,14 @@ import { SC_Footer, SC_FooterInner, SC_FooterLinks, SC_FooterBrand } from './sit
 
 const { t, locale } = useI18n()
 
-const links = computed(() => getInfoPageLinks(locale.value))
+// Сначала справка, потом поддержка и юридические страницы.
+const links = computed(() => [
+  { to: '/help', title: t('footer.help') },
+  { to: '/help/about', title: t('footer.about') },
+  { to: '/help/faq', title: t('footer.faq') },
+  ...getInfoPageLinks(locale.value).map((link) => ({
+    to: `/info/${link.slug}`,
+    title: link.title,
+  })),
+])
 </script>

@@ -34,6 +34,7 @@
     "stylelint:fix": "stylelint \"src/**/*styled.ts\" \"src/**/styled/*.ts\" --fix",
     "check:inline-styles": "node scripts/check-inline-styles.mjs",
     "check:breakpoints": "node scripts/check-breakpoints.mjs",
+    "help:stale": "node scripts/help-stale.mjs",
     "prepare": "husky"
   },
   "dependencies": {
@@ -78,7 +79,9 @@
     "ecpair": "^3.0.1",
     "hls.js": "^1.6.15",
     "jsqr": "^1.4.0",
+    "markdown-it": "^15.0.2",
     "matrix-js-sdk": "^40.1.0",
+    "minisearch": "^7.2.0",
     "miscreant": "^0.3.2",
     "multiformats": "^14.0.5",
     "pbkdf2": "^3.1.5",

@@ -89,6 +89,7 @@ export default {
     post: 'Post',
     compose: 'New post',
     info: 'Info',
+    help: 'Help',
   },
   infoPage: {
     legalReviewNote:
@@ -98,6 +99,79 @@ export default {
   },
   footer: {
     brand: 'Bastyon — a decentralized social network.',
+    help: 'Help',
+    about: 'About Bastyon',
+    faq: 'FAQ',
+  },
+  help: {
+    title: 'Help',
+    loading: 'Loading help…',
+    loadFailed: 'Could not load the help.',
+    retry: 'Retry',
+    notFound: 'There is no such article in the help.',
+    toHome: 'Help home',
+    contextLink: 'Help on this section',
+    tabs: {
+      contents: 'Contents',
+      index: 'Index',
+      search: 'Search',
+      favorites: 'Favorites',
+    },
+    toolbar: {
+      back: 'Back',
+      forward: 'Forward',
+      home: 'Help home',
+      hideNav: 'Hide panel',
+      showNav: 'Show panel',
+      copyLink: 'Copy link',
+      linkCopied: 'Link to the article copied',
+      copyFailed: 'Could not copy the link',
+      addFavorite: 'Add to favorites',
+      removeFavorite: 'Remove from favorites',
+      clearHighlight: 'Clear highlighting',
+      toNavigator: 'Contents',
+    },
+    index: {
+      placeholder: 'Word or term',
+      empty: 'Not in the index — try search.',
+      topics: '{n} articles',
+    },
+    search: {
+      placeholder: 'What are you looking for?',
+      hint: 'Searches the text of every article, word forms included.',
+      empty: 'Nothing found.',
+    },
+    favorites: {
+      empty: 'Star an article and it will appear here.',
+      addCurrent: 'Add the current article',
+      remove: 'Remove from favorites',
+    },
+    article: {
+      prev: 'Previous',
+      next: 'Next',
+      platforms: 'Works in: {list}',
+      fallback: 'This article is not translated yet, so it is shown in Russian.',
+    },
+    platform: {
+      desktop: 'desktop app',
+      web: 'browser',
+      mobile: 'mobile app',
+    },
+    alert: {
+      note: 'Note',
+      tip: 'Tip',
+      important: 'Important',
+      warning: 'Warning',
+      caution: 'Caution',
+    },
+    term: {
+      more: 'More in the glossary',
+    },
+    panel: {
+      open: 'Open in help',
+      back: 'Back',
+      close: 'Close',
+    },
   },
   embed: {
     viewOnBastyon: 'View on Bastyon',
@@ -1171,6 +1245,7 @@ export default {
     video: 'Video',
     wallet: 'Wallet',
     settings: 'Settings',
+    help: 'Help',
   },
   chat: {
     postLoading: 'Loading post…',
@@ -1462,6 +1537,7 @@ export default {
       favorites: 'Favorites',
       discussed: 'Discussed',
       explorer: 'Explorer',
+      help: 'Help',
       miniApps: 'Mini-apps',
     },
     categories: {
@@ -1772,6 +1848,7 @@ export default {
     menuLimits: 'Limits',
     menuMyVideos: 'My videos',
     menuMyFiles: 'My files',
+    menuHelp: 'Help',
     menuSettings: 'Settings',
     menuSwitchAccount: 'Switch account',
     menuSignOut: 'Sign out',

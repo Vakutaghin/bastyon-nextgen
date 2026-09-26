@@ -25,6 +25,7 @@ const MiniAppPage = () => import('@/pages/mini-app-page/mini-app-page.vue')
 const PostPage = () => import('@/pages/post-page/post-page.vue')
 const ComposePage = () => import('@/pages/compose-page/compose-page.vue')
 const InfoPage = () => import('@/pages/info-page/info-page.vue')
+const HelpPage = () => import('@/pages/help-page/help-page.vue')
 const EmbedPostPage = () => import('@/pages/embed-post-page/embed-post-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
@@ -56,7 +57,7 @@ const router = createRouter({
       path: '/wallets',
       name: 'wallets',
       component: WalletsPage,
-      meta: { titleKey: 'routes.wallets' },
+      meta: { titleKey: 'routes.wallets', helpTopic: 'how-to-buy-pkoin' },
     },
     {
       path: '/my-videos',
@@ -143,7 +144,20 @@ const router = createRouter({
       component: ComposePage,
       meta: { titleKey: 'routes.compose' },
     },
-    // Инфо/легал-страницы (about/faq/help/terms/privacy/csae/support). ДО catch-all /:userName.
+    // Справка: статьи из help/<язык>/*.md, `/help` — главная. Вход не нужен:
+    // справка нужнее всего до регистрации. ДО catch-all /:userName.
+    {
+      path: '/help/:topic?',
+      name: 'help',
+      component: HelpPage,
+      meta: { titleKey: 'routes.help' },
+    },
+    // О Bastyon, частые вопросы, начало работы и PKOIN переехали в справку.
+    { path: '/info/about', redirect: '/help/about' },
+    { path: '/info/faq', redirect: '/help/faq' },
+    { path: '/info/help', redirect: '/help/getting-started' },
+    { path: '/info/howtobuy', redirect: '/help/how-to-buy-pkoin' },
+    // Легал-страницы и поддержка (terms/privacy/csae/support). ДО catch-all /:userName.
     {
       path: '/info/:slug',
       name: 'info',

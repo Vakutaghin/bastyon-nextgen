@@ -1,5 +1,6 @@
 /**
- * Контент инфо/легал-страниц (about / FAQ / help / terms / privacy / CSAE / support).
+ * Контент легал-страниц и поддержки (terms / privacy / CSAE / support).
+ * О Bastyon, частые вопросы, начало работы и PKOIN — в справке (help/, /help).
  *
  * Контент держим ЗДЕСЬ, а не в `src/locales/*` — длинные тексты раздули бы локали и
  * подпадали бы под parity-гейт. Заголовки страниц тоже здесь (футер берёт их отсюда).
@@ -27,111 +28,14 @@ export interface InfoPageContent {
 }
 
 /** Все инфо-страницы (для роутинга /info/:slug). */
-export const INFO_PAGE_SLUGS = [
-  'about',
-  'faq',
-  'help',
-  'support',
-  'terms',
-  'privacy',
-  'csae',
-  'howtobuy',
-] as const
+export const INFO_PAGE_SLUGS = ['support', 'terms', 'privacy', 'csae'] as const
 
 export type InfoPageSlug = (typeof INFO_PAGE_SLUGS)[number]
 
-/** Подмножество в футере (howtobuy линкуется из кошелька, а не из футера). */
-export const FOOTER_PAGE_SLUGS: readonly InfoPageSlug[] = [
-  'about',
-  'faq',
-  'help',
-  'support',
-  'terms',
-  'privacy',
-  'csae',
-]
+/** Порядок в футере — после ссылок на справку. */
+export const FOOTER_PAGE_SLUGS: readonly InfoPageSlug[] = ['support', 'terms', 'privacy', 'csae']
 
 const EN: Record<InfoPageSlug, InfoPageContent> = {
-  about: {
-    title: 'About Bastyon',
-    lead: 'A decentralized social network owned by its users.',
-    sections: [
-      {
-        paragraphs: [
-          'Bastyon is a peer-to-peer social network built on the PKOIN blockchain. There is no central company that owns your account or your content — you hold your own keys, and your posts and interactions live on a public, censorship-resistant network.',
-        ],
-      },
-      {
-        heading: 'How it works',
-        paragraphs: [
-          'Your identity is a cryptographic key pair derived from a recovery phrase that only you control. Posts, comments, votes and subscriptions are recorded on the blockchain. Videos are hosted on the PeerTube network and private messages go through an end-to-end encrypted channel.',
-          'Because there is no central authority, no single party can silently delete your account, read your private messages, or sell your data.',
-        ],
-      },
-    ],
-  },
-  faq: {
-    title: 'Frequently asked questions',
-    sections: [
-      {
-        heading: 'What is PKOIN?',
-        paragraphs: [
-          'PKOIN is the native coin of the network. It is used for on-chain actions such as boosting posts and tipping authors, and a small balance helps cover transaction fees.',
-        ],
-      },
-      {
-        heading: 'How do I sign in?',
-        paragraphs: [
-          'Your account is a 12-word recovery phrase (a mnemonic). There is no email or password and no central server — the phrase is your account. Anyone who has it controls the account, so store it offline and never share it.',
-        ],
-      },
-      {
-        heading: 'What happens if I lose my recovery phrase?',
-        paragraphs: [
-          'It cannot be recovered. Self-custody means there is no support line that can reset access for you. Back the phrase up securely before you start posting.',
-        ],
-      },
-      {
-        heading: 'Is it free?',
-        paragraphs: [
-          'Browsing and posting are free. Some actions consume tiny network fees and require a minimal balance, which protects the network from spam.',
-        ],
-      },
-      {
-        heading: 'Who moderates content?',
-        paragraphs: [
-          'Moderation is decentralized. You can block and report accounts, and node operators apply their own policies. Illegal content — in particular child sexual abuse material — is strictly prohibited everywhere on the network.',
-        ],
-      },
-    ],
-  },
-  help: {
-    title: 'Help & getting started',
-    sections: [
-      {
-        heading: '1. Create your account',
-        paragraphs: [
-          'Generate a new account and write down your 12-word recovery phrase. Keep it offline (on paper or in a password manager) — it is the only way to restore access.',
-        ],
-      },
-      {
-        heading: '2. Make your first post',
-        paragraphs: [
-          'Open the composer to share text, images, video links and tags. You can also comment on and boost other people’s posts.',
-        ],
-      },
-      {
-        heading: '3. Use your wallet',
-        paragraphs: [
-          'Open the wallet to see your address and QR code for receiving PKOIN, send coins, and tip the authors you like.',
-        ],
-      },
-      {
-        heading: 'Need more help?',
-        paragraphs: ['See the Support page for ways to report problems and reach the community.'],
-      },
-    ],
-  },
   support: {
     title: 'Support',
     sections: [
@@ -258,122 +162,9 @@ const EN: Record<InfoPageSlug, InfoPageContent> = {
       },
     ],
   },
-  howtobuy: {
-    title: 'How to get PKOIN',
-    lead: 'PKOIN is the coin that powers actions on the network.',
-    sections: [
-      {
-        heading: 'Why you need it',
-        paragraphs: [
-          'A small PKOIN balance covers network fees and unlocks actions like boosting posts and tipping authors. Browsing and posting basic content do not require a purchase.',
-        ],
-      },
-      {
-        heading: 'Earn it for free',
-        paragraphs: [
-          'You can receive PKOIN without buying: post good content and get upvotes, or ask someone to tip you. Share your address (Wallet → Receive) so others can send you coins.',
-        ],
-      },
-      {
-        heading: 'Buy on an exchange',
-        paragraphs: [
-          'PKOIN is listed on several cryptocurrency exchanges. Create an account on an exchange that lists PKOIN, buy the coins there, then withdraw them to your wallet address shown under Wallet → Receive.',
-          'Always double-check the address before sending — blockchain transfers are irreversible.',
-        ],
-      },
-      {
-        heading: 'Receiving into your wallet',
-        paragraphs: [
-          'Open the Wallet, copy your address or show the QR code, and use it as the withdrawal/destination address. Funds appear after the network confirms the transaction.',
-        ],
-      },
-    ],
-  },
 }
 
 const RU: Record<InfoPageSlug, InfoPageContent> = {
-  about: {
-    title: 'О Bastyon',
-    lead: 'Децентрализованная соцсеть, которой владеют её пользователи.',
-    sections: [
-      {
-        paragraphs: [
-          'Bastyon — это пиринговая социальная сеть на блокчейне PKOIN. Нет центральной компании, которой принадлежит ваш аккаунт или контент: ключи у вас, а ваши посты и действия живут в открытой, устойчивой к цензуре сети.',
-        ],
-      },
-      {
-        heading: 'Как это работает',
-        paragraphs: [
-          'Ваша личность — это криптографическая пара ключей, выводимая из мнемонической фразы, которой управляете только вы. Посты, комментарии, голоса и подписки записываются в блокчейн. Видео хранится в сети PeerTube, а личные сообщения идут по сквозьшифрованному каналу.',
-          'Поскольку нет центральной власти, никто не может незаметно удалить ваш аккаунт, прочитать личные сообщения или продать ваши данные.',
-        ],
-      },
-    ],
-  },
-  faq: {
-    title: 'Частые вопросы',
-    sections: [
-      {
-        heading: 'Что такое PKOIN?',
-        paragraphs: [
-          'PKOIN — нативная монета сети. Используется для ончейн-действий: бустов постов и чаевых авторам, а небольшой баланс покрывает комиссии за транзакции.',
-        ],
-      },
-      {
-        heading: 'Как войти?',
-        paragraphs: [
-          'Ваш аккаунт — это мнемоническая фраза из 12 слов. Нет ни почты, ни пароля, ни центрального сервера: фраза и есть аккаунт. Любой, у кого она есть, управляет аккаунтом — храните её офлайн и никому не передавайте.',
-        ],
-      },
-      {
-        heading: 'Что если я потеряю фразу?',
-        paragraphs: [
-          'Её нельзя восстановить. Самостоятельное хранение ключей означает, что нет поддержки, способной вернуть доступ. Сделайте надёжную резервную копию до того, как начнёте публиковать.',
-        ],
-      },
-      {
-        heading: 'Это бесплатно?',
-        paragraphs: [
-          'Просмотр и публикация бесплатны. Часть действий тратит крошечные сетевые комиссии и требует минимального баланса — это защищает сеть от спама.',
-        ],
-      },
-      {
-        heading: 'Кто модерирует контент?',
-        paragraphs: [
-          'Модерация децентрализована. Вы можете блокировать и жаловаться на аккаунты, а операторы нод применяют свои правила. Незаконный контент — в особенности материалы о сексуальном насилии над детьми — строго запрещён во всей сети.',
-        ],
-      },
-    ],
-  },
-  help: {
-    title: 'Помощь и начало работы',
-    sections: [
-      {
-        heading: '1. Создайте аккаунт',
-        paragraphs: [
-          'Сгенерируйте новый аккаунт и запишите мнемоническую фразу из 12 слов. Храните её офлайн (на бумаге или в менеджере паролей) — это единственный способ восстановить доступ.',
-        ],
-      },
-      {
-        heading: '2. Сделайте первый пост',
-        paragraphs: [
-          'Откройте композер, чтобы поделиться текстом, картинками, ссылками на видео и тегами. Также можно комментировать и бустить чужие посты.',
-        ],
-      },
-      {
-        heading: '3. Пользуйтесь кошельком',
-        paragraphs: [
-          'Откройте кошелёк, чтобы увидеть свой адрес и QR-код для получения PKOIN, отправлять монеты и поддерживать авторов чаевыми.',
-        ],
-      },
-      {
-        heading: 'Нужна ещё помощь?',
-        paragraphs: [
-          'Загляните на страницу поддержки — там способы сообщить о проблеме и связаться с сообществом.',
-        ],
-      },
-    ],
-  },
   support: {
     title: 'Поддержка',
     sections: [
@@ -496,37 +287,6 @@ const RU: Record<InfoPageSlug, InfoPageContent> = {
         heading: 'Сотрудничество с органами',
         paragraphs: [
           'Подтверждённые материалы CSAM передаются в соответствующие органы — например, в NCMEC (где применимо) — и мы сотрудничаем с законными запросами организаций по защите детей и правоохранительных органов.',
-        ],
-      },
-    ],
-  },
-  howtobuy: {
-    title: 'Как получить PKOIN',
-    lead: 'PKOIN — монета, на которой работают действия в сети.',
-    sections: [
-      {
-        heading: 'Зачем она нужна',
-        paragraphs: [
-          'Небольшой баланс PKOIN покрывает сетевые комиссии и открывает действия — бусты постов и чаевые авторам. Просмотр и публикация базового контента покупки не требуют.',
-        ],
-      },
-      {
-        heading: 'Получить бесплатно',
-        paragraphs: [
-          'PKOIN можно получить и без покупки: публикуйте хороший контент и собирайте плюсы, или попросите кого-нибудь отправить вам чаевые. Поделитесь своим адресом (Кошелёк → Получить), чтобы вам могли перевести монеты.',
-        ],
-      },
-      {
-        heading: 'Купить на бирже',
-        paragraphs: [
-          'PKOIN торгуется на нескольких криптобиржах. Заведите аккаунт на бирже, где есть PKOIN, купите монеты и выведите их на адрес своего кошелька (Кошелёк → Получить).',
-          'Всегда перепроверяйте адрес перед отправкой — переводы в блокчейне необратимы.',
-        ],
-      },
-      {
-        heading: 'Получение в кошелёк',
-        paragraphs: [
-          'Откройте Кошелёк, скопируйте адрес или покажите QR-код и используйте его как адрес вывода/назначения. Средства появятся после подтверждения транзакции сетью.',
         ],
       },
     ],
