@@ -7,7 +7,7 @@ const h = vi.hoisted(() => ({
     available: true,
     torActive: false,
     message: null as string | null,
-    pickFile: vi.fn(),
+    pickFiles: vi.fn(),
     publish: vi.fn(),
     showTorBlocked: vi.fn(),
   },
@@ -24,7 +24,7 @@ vi.mock('ant-design-vue', () => ({
 }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
-import { PRIVATE_MAX_BYTES, useIpfsSend } from './use-ipfs-send'
+import { useIpfsSend } from './use-ipfs-send'
 
 const MB = 1024 * 1024
 const share = { cid: 'bafyenc', name: 'Фото.zip', size: 10 * MB, addedAt: 1, key: 'a2V5' }
@@ -36,9 +36,9 @@ beforeEach(() => {
 })
 
 describe('useIpfsSend', () => {
-  it('до 512 МБ — приватно, в чат уходит ссылка с ключом, именем и размером', async () => {
+  it('в чат уходит приватная ссылка с ключом, именем и размером', async () => {
     const send = vi.fn()
-    h.store.pickFile.mockResolvedValue({ token: 't', name: 'Фото.zip', size: 10 * MB })
+    h.store.pickFiles.mockResolvedValue([{ token: 't', name: 'Фото.zip', size: 10 * MB }])
     h.store.publish.mockResolvedValue(share)
 
     await useIpfsSend(send).sendViaIpfs()
@@ -54,29 +54,36 @@ describe('useIpfsSend', () => {
     expect(h.hide).toHaveBeenCalled()
   })
 
-  it('больше 512 МБ — спрашиваем; согласие — по ссылке, отказ — ничего', async () => {
+  it('любой размер — приватно: шифр кусками, без вопроса про ссылку', async () => {
     const send = vi.fn()
-    h.store.pickFile.mockResolvedValue({ token: 't', name: 'big.iso', size: PRIVATE_MAX_BYTES + 1 })
-    h.store.publish.mockResolvedValue({ cid: 'bafydir', name: 'big.iso', size: 1, addedAt: 1 })
-
-    h.confirm.mockImplementationOnce((opts: { onOk: () => void }) => opts.onOk())
+    h.store.pickFiles.mockResolvedValue([{ token: 't', name: 'big.iso', size: 3 * 1024 * MB }])
+    h.store.publish.mockResolvedValue({ ...share, name: 'big.iso' })
     await useIpfsSend(send).sendViaIpfs()
-    expect(h.store.publish.mock.calls[0]?.[2]).toBe('public')
-    expect(send).toHaveBeenCalledWith('ipfs://bafydir/big.iso#size=1')
+    expect(h.confirm).not.toHaveBeenCalled()
+    expect(h.store.publish.mock.calls[0]?.[2]).toBe('private')
+  })
 
-    h.store.publish.mockClear()
-    h.confirm.mockImplementationOnce((opts: { onCancel: () => void }) => opts.onCancel())
+  it('несколько файлов — по сообщению на каждый', async () => {
+    const send = vi.fn()
+    h.store.pickFiles.mockResolvedValue([
+      { token: 'a', name: 'a.zip', size: 1 },
+      { token: 'b', name: 'b.zip', size: 2 },
+    ])
+    h.store.publish
+      .mockResolvedValueOnce({ ...share, cid: 'bafya', name: 'a.zip', size: 1 })
+      .mockResolvedValueOnce({ ...share, cid: 'bafyb', name: 'b.zip', size: 2 })
     await useIpfsSend(send).sendViaIpfs()
-    expect(h.store.publish).not.toHaveBeenCalled()
+    expect(send).toHaveBeenCalledTimes(2)
+    expect(send.mock.calls[1]?.[0]).toContain('ipfs://bafyb#key=')
   })
 
   it('отмена выбора — тишина; ошибка публикации — окно, в чат ничего', async () => {
     const send = vi.fn()
-    h.store.pickFile.mockResolvedValueOnce(null)
+    h.store.pickFiles.mockResolvedValueOnce([])
     await useIpfsSend(send).sendViaIpfs()
     expect(h.error).not.toHaveBeenCalled()
 
-    h.store.pickFile.mockResolvedValueOnce({ token: 't', name: 'a', size: 1 })
+    h.store.pickFiles.mockResolvedValueOnce([{ token: 't', name: 'a', size: 1 }])
     h.store.publish.mockImplementationOnce(async () => {
       h.store.message = 'no space left on device'
       return null
@@ -93,6 +100,6 @@ describe('useIpfsSend', () => {
     h.store.torActive = true
     await useIpfsSend(vi.fn()).sendViaIpfs()
     expect(h.store.showTorBlocked).toHaveBeenCalled()
-    expect(h.store.pickFile).not.toHaveBeenCalled()
+    expect(h.store.pickFiles).not.toHaveBeenCalled()
   })
 })

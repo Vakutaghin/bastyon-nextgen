@@ -75,7 +75,7 @@ const openLabel = computed(() => {
 })
 
 function open(): void {
-  void openIpfsViewer(props.link.target, props.link.secret)
+  void openIpfsViewer(props.link.target, props.link.secret, props.link.size)
 }
 
 const canSeed = computed(() => ipfs.available && !props.mine && !!auth.address)

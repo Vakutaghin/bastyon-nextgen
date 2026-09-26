@@ -22,6 +22,7 @@ const h = vi.hoisted(() => ({
   fetchVerifiedEntity: vi.fn(),
   openSaveSink: vi.fn(),
   decryptSecretFile: vi.fn(),
+  decryptSecretStream: vi.fn(),
 }))
 
 vi.mock('ant-design-vue', () => ({
@@ -45,7 +46,12 @@ vi.mock('@/helpers/ipfs/ipfs-gateway-car', () => ({
   fetchVerifiedEntity: h.fetchVerifiedEntity,
 }))
 vi.mock('@/helpers/ipfs/ipfs-save-sinks', () => ({ openSaveSink: h.openSaveSink }))
-vi.mock('@/helpers/ipfs/ipfs-secret', () => ({ decryptSecretFile: h.decryptSecretFile }))
+vi.mock('@/helpers/ipfs/ipfs-secret', () => ({
+  decryptSecretFile: h.decryptSecretFile,
+  decryptSecretStream: h.decryptSecretStream,
+  // Формат v2 узнаётся по заголовку «BSTN».
+  isStreamFormat: (head: Uint8Array) => new TextDecoder().decode(head.subarray(0, 4)) === 'BSTN',
+}))
 
 import { openIpfsInBrowser, webErrorText } from './ipfs-browser-open'
 import { GatewayError, SecretError, TransportError, VerifyError } from '@/helpers/ipfs/ipfs-errors'
@@ -241,7 +247,29 @@ describe('тип неизвестен — смотрим первые байты
 })
 
 describe('приватная ссылка', () => {
-  it('шифртекст собирается целиком, расшифровывается здесь и сохраняется под именем из ссылки', async () => {
+  it('формат v2 расшифровывается потоком прямо в место сохранения', async () => {
+    const sink = makeSink()
+    h.openSaveSink.mockResolvedValue(sink)
+    h.fetchVerifiedEntity.mockResolvedValue(fileEntity('BSTN-header', 'chunk1', 'chunk2'))
+    h.decryptSecretStream.mockImplementation(async function* (
+      key: string,
+      input: AsyncIterable<Uint8Array>
+    ) {
+      expect(key).toBe('a2V5')
+      for await (const piece of input)
+        yield new TextEncoder().encode(new TextDecoder().decode(piece).toUpperCase())
+    })
+
+    openIpfsInBrowser(at(''), { key: 'a2V5', name: 'x.bin' }, 3 * 1024 ** 3)
+    const confirm = await nextConfirm()
+    await confirm.onOk()
+
+    expect(h.decryptSecretFile).not.toHaveBeenCalled()
+    expect(new TextDecoder().decode(Uint8Array.from(sink.written))).toBe('BSTN-HEADERCHUNK1CHUNK2')
+    expect(sink.close).toHaveBeenCalled()
+  })
+
+  it('старый формат v1: шифртекст собирается целиком, расшифровывается и сохраняется под именем из ссылки', async () => {
     const sink = makeSink()
     h.openSaveSink.mockResolvedValue(sink)
     h.fetchVerifiedEntity.mockResolvedValue(fileEntity('cipher', 'text'))

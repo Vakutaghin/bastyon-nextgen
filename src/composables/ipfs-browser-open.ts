@@ -27,10 +27,9 @@ import {
 } from '@/helpers/ipfs/ipfs-errors'
 import { openSaveSink, type SaveSink, type SinkKind } from '@/helpers/ipfs/ipfs-save-sinks'
 import type { EntityInfo } from '@/helpers/ipfs/ipfs-gateway-car'
-import type { Entity } from '@/helpers/ipfs/ipfs-verify'
 
-/** Как MAX_ENCRYPTED_BYTES в Rust (плюс nonce и тег шифра). */
-const SECRET_MAX_BYTES = 512 * 1024 * 1024 + 28
+/** Старые приватные файлы (v1) расшифровываются целиком в памяти — как MAX_ENCRYPTED_BYTES в Rust. */
+const SECRET_V1_MAX_BYTES = 512 * 1024 * 1024 + 28
 /** Если шлюз прислал блоки не по порядку, столько можем держать в памяти. */
 const REORDER_MAX_BYTES = 256 * 1024 * 1024
 /** Расшифрованный файл уходит на запись такими кусками. */
@@ -79,7 +78,11 @@ function track(key: string, work: Promise<void>): void {
  * Клик по IPFS-ссылке в браузере или на телефоне. Синхронная часть решает
  * всё, что можно решить без сети.
  */
-export function openIpfsInBrowser(target: IpfsTarget, secret: IpfsSecret | null): void {
+export function openIpfsInBrowser(
+  target: IpfsTarget,
+  secret: IpfsSecret | null,
+  size: number | null = null
+): void {
   const viewUrl = buildIpfsViewerUrl(target, IPFS_GATEWAY)
   // IPNS-имя через шлюз проверить нечем (DNSLink не подписан) — показываем
   // как есть, как и на десктопе.
@@ -90,15 +93,16 @@ export function openIpfsInBrowser(target: IpfsTarget, secret: IpfsSecret | null)
   const key = `${target.root}/${target.path}`
   if (inFlight.has(key)) return
 
+  const sized = size ?? undefined
   if (secret?.key) {
-    track(key, download(target, { name: fileName(secret.name, target), secret }))
+    track(key, download(target, { name: fileName(secret.name, target), size: sized, secret }))
     return
   }
   const name = lastSegment(target)
   const known = typeFromName(name)
   if (known) {
     if (classifyForBrowser(known, navigator.userAgent) === 'render') void openExternal(viewUrl)
-    else track(key, download(target, { name: fileName(name, target, known) }))
+    else track(key, download(target, { name: fileName(name, target, known), size: sized }))
     return
   }
   track(key, inspectThenOpen(target, name, viewUrl))
@@ -210,47 +214,76 @@ async function runDownload(
   const { fetchVerifiedEntity } = await import('@/helpers/ipfs/ipfs-gateway-car')
   const entity = await fetchVerifiedEntity(target, {
     signal,
-    maxBytes: req.secret ? SECRET_MAX_BYTES : sink.maxBytes,
+    // Шифр v2 добавляет 16 байт на мегабайт — запас в 1/64 000 с лихвой.
+    maxBytes: req.secret ? sink.maxBytes + Math.ceil(sink.maxBytes / 65_536) + 1024 : sink.maxBytes,
     maxReorderBytes: REORDER_MAX_BYTES,
   })
   if (entity.kind === 'directory') throw new VerifyError('directory')
   const progress = progressReporter(show)
+  const counted = (async function* () {
+    let received = 0
+    for await (const chunk of entity.chunks) {
+      received += chunk.length
+      progress(received, entity.size)
+      yield chunk
+    }
+  })()
   if (req.secret) {
-    await saveSecret(entity, req.secret, sink, progress, show)
+    await saveSecret(entity.size, counted, req.secret, sink, show)
     return
   }
-  let received = 0
-  for await (const chunk of entity.chunks) {
-    await sink.write(chunk)
-    received += chunk.length
-    progress(received, entity.size)
-  }
+  for await (const chunk of counted) await sink.write(chunk)
   await sink.close()
 }
 
-/** Шифр GCM не расшифровать по кускам — шифртекст собирается целиком (≤ 512 МБ). */
+/** Первый кусок отдельно (по нему узнаётся формат), остальные — как шли. */
+async function peek(
+  chunks: AsyncGenerator<Uint8Array>
+): Promise<{ head: Uint8Array; all: AsyncGenerator<Uint8Array> }> {
+  const first = await chunks.next()
+  const head = first.done ? new Uint8Array() : first.value
+  const all = (async function* () {
+    if (head.length) yield head
+    yield* chunks
+  })()
+  return { head, all }
+}
+
+/**
+ * Приватный файл. Формат v2 расшифровывается потоком прямо в место
+ * сохранения; старый v1 (одним куском GCM) — только целиком, до 512 МБ.
+ */
 async function saveSecret(
-  entity: Extract<Entity, { kind: 'file' }>,
+  size: number,
+  chunks: AsyncGenerator<Uint8Array>,
   secret: IpfsSecret,
   sink: SaveSink,
-  progress: (done: number, total: number) => void,
   show: (content: string) => void
 ): Promise<void> {
-  const blob = new Uint8Array(entity.size)
+  const secretModule = await import('@/helpers/ipfs/ipfs-secret')
+  const { head, all } = await peek(chunks)
+  if (secretModule.isStreamFormat(head)) {
+    for await (const plain of secretModule.decryptSecretStream(secret.key, all, sink.maxBytes)) {
+      await sink.write(plain)
+    }
+    await sink.close()
+    return
+  }
+  if (size > SECRET_V1_MAX_BYTES) throw new VerifyError('too-large')
+  const blob = new Uint8Array(size)
   let offset = 0
-  for await (const chunk of entity.chunks) {
+  for await (const chunk of all) {
     if (offset + chunk.length > blob.length) {
       throw new VerifyError('malformed', 'the file is larger than its root says')
     }
     blob.set(chunk, offset)
     offset += chunk.length
-    progress(offset, entity.size)
   }
-  if (offset !== blob.length)
+  if (offset !== blob.length) {
     throw new VerifyError('malformed', 'the file is shorter than its root says')
+  }
   show(t('header.ipfsWebDecrypting'))
-  const { decryptSecretFile } = await import('@/helpers/ipfs/ipfs-secret')
-  const plain = await decryptSecretFile(secret.key, blob)
+  const plain = await secretModule.decryptSecretFile(secret.key, blob)
   if (plain.length > sink.maxBytes) throw new VerifyError('too-large')
   for (let i = 0; i < plain.length; i += WRITE_SLICE_BYTES) {
     await sink.write(plain.subarray(i, i + WRITE_SLICE_BYTES))

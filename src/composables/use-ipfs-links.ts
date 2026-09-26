@@ -18,13 +18,16 @@ import { Modal } from 'ant-design-vue'
 import {
   parseIpfsLink,
   parseIpfsSecret,
+  parseIpfsSize,
   type IpfsSecret,
   type IpfsTarget,
 } from '@/helpers/ipfs/ipfs-link'
 import { buildIpfsViewerUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
 import { classify, detectViewerOs, downloadFilename } from '@/helpers/ipfs/ipfs-content'
 import { probeContent } from '@/helpers/ipfs/ipfs-download'
-import { useIpfsStore, type IpfsGatewaySource } from '@/stores/ipfs-store'
+import { useIpfsStore, type IpfsGatewaySource, type IpfsSaveProgress } from '@/stores/ipfs-store'
+import { Z_INDEX } from '@/styles/design-tokens'
+import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { t } from '@/i18n'
 import { openIpfsInBrowser } from './ipfs-browser-open'
 
@@ -66,12 +69,6 @@ function torBlocked(store: IpfsStore): boolean {
 }
 
 /**
- * Приватная ссылка: сохранить расшифрованный файл на диск (рендер неприменим).
- * Save-диалог и санитизация имени из НЕДОВЕРЕННОЙ ссылки — на стороне Rust
- * (`name=/Users/u/.ssh/authorized_keys` иначе открыл бы диалог прямо в ~/.ssh);
- * источник передаём как 'local' | 'public', URL Rust собирает сам.
- */
-/**
  * Текст ошибки сохранения: коды проверки по CID из Rust (verify.rs) — по-русски,
  * остальное (сеть, диск) — как есть.
  */
@@ -85,6 +82,41 @@ export function saveErrorText(message: string | null): string {
 }
 
 /**
+ * Окно прогресса сохранения: появляется, когда место выбрано (первый отчёт
+ * Rust), и даёт отменить. Закрывается по завершении — дальше итоговое окно.
+ */
+function saveProgressWindow(): {
+  onProgress: (progress: IpfsSaveProgress) => void
+  close: () => void
+} {
+  let modal: ReturnType<typeof Modal.info> | null = null
+  const text = (p: IpfsSaveProgress): string => {
+    // Шлюз может искать файл в сети минуту — это не зависание.
+    if (p.received === 0) return t('header.ipfsSaveWaiting')
+    const done = formatFileSize(p.total ? Math.min(p.received, p.total) : p.received)
+    return p.total
+      ? t('header.ipfsWebProgress', { done, total: formatFileSize(p.total) })
+      : t('header.ipfsSaveProgress', { done })
+  }
+  return {
+    onProgress: (p) => {
+      if (modal) {
+        modal.update({ content: text(p) })
+        return
+      }
+      modal = Modal.info({
+        zIndex: Z_INDEX.MODAL,
+        title: t('header.ipfsWebDownloadingTitle'),
+        content: text(p),
+        okText: t('header.ipfsSaveCancel'),
+        onOk: () => p.cancel(),
+      })
+    },
+    close: () => modal?.destroy(),
+  }
+}
+
+/**
  * Обычный (не приватный) файл — на диск. Через публичный шлюз Rust собирает
  * его из CAR с проверкой каждого блока по CID; с локальной ноды — потоком.
  */
@@ -92,9 +124,15 @@ async function saveFile(
   store: IpfsStore,
   source: IpfsGatewaySource,
   target: IpfsTarget,
-  suggestedName: string
+  suggestedName: string,
+  size: number | null
 ): Promise<void> {
-  const result = await store.saveFile(source, target, suggestedName)
+  const progress = saveProgressWindow()
+  const result = await store.saveFile(source, target, suggestedName, {
+    sizeHint: size,
+    onProgress: progress.onProgress,
+  })
+  progress.close()
   if (result === 'saved') {
     Modal.success({ title: t('header.ipfsSaveDoneTitle') })
   } else if (result === 'failed') {
@@ -105,14 +143,26 @@ async function saveFile(
   }
 }
 
+/**
+ * Приватная ссылка: сохранить расшифрованный файл на диск (рендер неприменим).
+ * Save-диалог и санитизация имени из НЕДОВЕРЕННОЙ ссылки — на стороне Rust
+ * (`name=/Users/u/.ssh/authorized_keys` иначе открыл бы диалог прямо в ~/.ssh);
+ * источник передаём как 'local' | 'public', URL Rust собирает сам.
+ */
 async function openEncrypted(
   store: IpfsStore,
   target: IpfsTarget,
   secret: IpfsSecret,
-  gateway: string
+  gateway: string,
+  size: number | null
 ): Promise<void> {
   const source: IpfsGatewaySource = gateway === IPFS_GATEWAY ? 'public' : 'local'
-  const result = await store.saveEncrypted(source, target.root, secret.key, secret.name)
+  const progress = saveProgressWindow()
+  const result = await store.saveEncrypted(source, target.root, secret.key, secret.name, {
+    sizeHint: size,
+    onProgress: progress.onProgress,
+  })
+  progress.close()
   if (result === 'saved') {
     Modal.success({ title: t('header.ipfsSaveDoneTitle') })
   } else if (result === 'failed') {
@@ -120,13 +170,18 @@ async function openEncrypted(
   }
 }
 
-export async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Promise<void> {
+/** Открыть IPFS-ссылку; `size` — размер из самой ссылки, если он там есть. */
+export async function openIpfsViewer(
+  target: IpfsTarget,
+  secret: IpfsSecret | null,
+  size: number | null = null
+): Promise<void> {
   const store = useIpfsStore()
 
   // Веб/мобилка: нативного окна и локальной ноды нет. Вызов синхронный — вкладку
   // для показа браузер откроет, только пока идёт обработка клика.
   if (!store.available) {
-    openIpfsInBrowser(target, secret)
+    openIpfsInBrowser(target, secret, size)
     return
   }
 
@@ -145,7 +200,7 @@ export async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | nu
     // Приватная (зашифрованная) ссылка: тянем шифртекст, расшифровываем в Rust,
     // сохраняем на диск. Рендер в окне тут неприменим (сырые байты — шифр).
     if (secret?.key) {
-      await openEncrypted(store, target, secret, gateway)
+      await openEncrypted(store, target, secret, gateway, size)
       return
     }
 
@@ -170,7 +225,13 @@ export async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | nu
       : 'render'
     if (mode === 'download') {
       if (torBlocked(store)) return
-      await saveFile(store, source, target, downloadFilename(target, probed?.contentDisposition))
+      await saveFile(
+        store,
+        source,
+        target,
+        downloadFilename(target, probed?.contentDisposition),
+        size
+      )
       return
     }
 
@@ -193,7 +254,7 @@ export async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | nu
 
 function findIpfsTargetFromClick(
   e: MouseEvent
-): { target: IpfsTarget; secret: IpfsSecret | null } | null {
+): { target: IpfsTarget; secret: IpfsSecret | null; size: number | null } | null {
   const start = e.target as HTMLElement | null
   const anchor = start?.closest?.('a')
   if (!anchor) return null
@@ -204,7 +265,7 @@ function findIpfsTargetFromClick(
   if (!target) return null
   // Секрет (#key=..) берём из сырого href — резолвнутый может потерять фрагмент.
   const secret = parseIpfsSecret(raw) || parseIpfsSecret(resolved)
-  return { target, secret }
+  return { target, secret, size: parseIpfsSize(raw) ?? parseIpfsSize(resolved) }
 }
 
 // Активность перехвата (по умолчанию — всегда). На embed-роутах модалки нет,
@@ -221,7 +282,7 @@ function handleClick(e: MouseEvent): void {
   if (!found) return
   e.preventDefault()
   e.stopPropagation()
-  void openIpfsViewer(found.target, found.secret)
+  void openIpfsViewer(found.target, found.secret, found.size)
 }
 
 /**

@@ -247,6 +247,9 @@ export default {
       'Secret link copied. Only someone with this exact link can decrypt the file: {link}',
     ipfsShareEncryptedDone: 'Only someone with this exact link can decrypt the file: {link}',
     ipfsSaveDoneTitle: 'File saved',
+    ipfsSaveWaiting: 'Looking for the file on the network…',
+    ipfsSaveProgress: 'Downloaded {done}',
+    ipfsSaveCancel: 'Cancel',
     ipfsSaveFailedTitle: 'Could not open the file (wrong key or unavailable)',
     ipfsDownloadFailedTitle: 'Could not download the file',
     ipfsVerifyMismatch:
@@ -684,10 +687,6 @@ export default {
     sendPkoin: 'Send PKOIN',
     ipfsFile: 'File via IPFS',
     ipfsPublishing: 'Publishing the file to IPFS…',
-    ipfsTooBigPrivateTitle: 'The file is larger than 512 MB',
-    ipfsTooBigPrivateContent:
-      'Files this large cannot be sent privately yet. Send it by link? Then anyone the link reaches can download the file.',
-    ipfsSendPublic: 'Send by link',
     ipfsSendFailed: 'Could not send the file via IPFS',
     fileTooLarge: 'The file “{name}” is larger than {limit}, too large for the chat.',
     fileTooLargeIpfs: 'Send large files via IPFS: 📎 → “File via IPFS”.',
@@ -1403,6 +1402,7 @@ export default {
     title: 'My files',
     share: 'Share a file…',
     sharePrivately: 'Share privately…',
+    publishedMany: 'Files published: {count}. Their links are in the list.',
     desktopOnly:
       'Sharing files works in the Bastyon desktop app: it runs its own IPFS node to serve them. IPFS links open here too.',
     node: {

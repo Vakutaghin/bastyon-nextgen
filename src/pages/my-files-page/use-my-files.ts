@@ -88,7 +88,7 @@ export function useMyFiles(): MyFiles {
 
   async function share(kind: ShareKind): Promise<void> {
     const shared = await publish(kind)
-    if (shared) await refreshRemote()
+    if (shared.length) await refreshRemote()
   }
 
   async function copyLink(file: IpfsShare): Promise<void> {

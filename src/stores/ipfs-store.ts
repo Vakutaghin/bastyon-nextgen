@@ -47,6 +47,22 @@ export type RemotePinStatus = 'queued' | 'pinning' | 'pinned' | 'failed'
 /** Файл, выбранный в нативном диалоге: путь остаётся в Rust, у фронта — токен. */
 export type IpfsPickedFile = { token: string; name: string; size: number }
 
+/** Сколько скачано при сохранении на диск; total — размер из ссылки, если он там был. */
+export type IpfsSaveProgress = { received: number; total: number | null; cancel: () => void }
+
+type SaveOptions = {
+  /** Размер из ссылки — итог для прогресса. */
+  sizeHint?: number | null
+  /** Первый вызов — сразу после выбора места: можно показывать прогресс с отменой. */
+  onProgress?: (progress: IpfsSaveProgress) => void
+}
+
+/** Слушатели прогресса сохранений по id; событие `ipfs:save-progress` от Rust. */
+const saveListeners = new Map<string, (received: number, total: number | null) => void>()
+
+/** Rust отвечает этим на отменённое сохранение (ipfs_cancel_save). */
+const SAVE_CANCELLED = 'cancelled'
+
 export type IpfsModalPhase = 'consent' | 'progress' | 'desktop-only' | 'tor-blocked' | 'pin-config'
 
 /** Выбор пользователя в consent-модалке: установить / явный отказ / закрыл. */
@@ -135,6 +151,7 @@ export const useIpfsStore = defineStore('ipfs', {
     _subscribed: false,
     _stateUnlisten: null as (() => void) | null,
     _installUnlisten: null as (() => void) | null,
+    _saveUnlisten: null as (() => void) | null,
     _ensurePromise: null as Promise<number | null> | null,
     // Одна consent-сессия на все конкурентные клики (иначе второй затрёт resolver
     // первого и его промис зависнет навсегда).
@@ -190,6 +207,11 @@ export const useIpfsStore = defineStore('ipfs', {
             this.install = progress.phase === 'ready' ? null : progress
           }
         )
+        this._saveUnlisten = await tauriListen<{
+          id: string
+          received: number
+          total: number | null
+        }>('ipfs:save-progress', (p) => saveListeners.get(p.id)?.(p.received, p.total))
       } catch (e) {
         // Подписка не удалась (возможно, частично: первый listen прошёл, второй
         // нет) — снимаем то, что успело повеситься, иначе следующий hydrate
@@ -198,6 +220,8 @@ export const useIpfsStore = defineStore('ipfs', {
         this._stateUnlisten = null
         this._installUnlisten?.()
         this._installUnlisten = null
+        this._saveUnlisten?.()
+        this._saveUnlisten = null
         this._subscribed = false
         throw e
       }
@@ -287,20 +311,20 @@ export const useIpfsStore = defineStore('ipfs', {
      * ПУБЛИЧНЫЙ и жив, пока эта нода онлайн (или CID запинен где-то ещё).
      */
     /**
-     * Выбор файла для публикации в НАТИВНОМ диалоге на стороне Rust: путь в
-     * webview не попадает (иначе XSS публиковал бы любой файл), публикуется по
-     * токену. null — диалог закрыли.
+     * Выбор файлов для публикации в НАТИВНОМ диалоге на стороне Rust: пути в
+     * webview не попадают (иначе XSS публиковал бы любой файл), публикуется по
+     * токенам. Пусто — диалог закрыли.
      */
-    async pickFile(): Promise<IpfsPickedFile | null> {
+    async pickFiles(): Promise<IpfsPickedFile[]> {
       if (!this.available) {
         this.showDesktopOnly()
-        return null
+        return []
       }
       try {
-        return await tauriInvoke<IpfsPickedFile | null>('ipfs_pick_file')
+        return await tauriInvoke<IpfsPickedFile[]>('ipfs_pick_files')
       } catch (e) {
         this.message = String(e)
-        return null
+        return []
       }
     },
 
@@ -417,20 +441,19 @@ export const useIpfsStore = defineStore('ipfs', {
       source: IpfsGatewaySource,
       cid: string,
       key: string,
-      suggestedName: string
+      suggestedName: string,
+      options: SaveOptions = {}
     ): Promise<'saved' | 'cancelled' | 'failed'> {
-      try {
-        const saved = await tauriInvoke<boolean>('ipfs_save_encrypted', {
+      return this._save(options, (id, sizeHint) =>
+        tauriInvoke<boolean>('ipfs_save_encrypted', {
           source,
           cid,
           key,
           suggestedName,
+          id,
+          sizeHint,
         })
-        return saved ? 'saved' : 'cancelled'
-      } catch (e) {
-        this.message = String(e)
-        return 'failed'
-      }
+      )
     },
 
     /**
@@ -442,20 +465,42 @@ export const useIpfsStore = defineStore('ipfs', {
     async saveFile(
       source: IpfsGatewaySource,
       target: IpfsTarget,
-      suggestedName: string
+      suggestedName: string,
+      options: SaveOptions = {}
     ): Promise<'saved' | 'cancelled' | 'failed'> {
-      try {
-        const saved = await tauriInvoke<boolean>('ipfs_save', {
+      return this._save(options, (id, sizeHint) =>
+        tauriInvoke<boolean>('ipfs_save', {
           source,
           namespace: target.namespace,
           root: target.root,
           path: target.path,
           suggestedName,
+          id,
+          sizeHint,
         })
-        return saved ? 'saved' : 'cancelled'
+      )
+    },
+
+    /** Общее у сохранений: id для прогресса и отмены, разбор результата. */
+    async _save(
+      options: SaveOptions,
+      run: (id: string, sizeHint: number | null) => Promise<boolean>
+    ): Promise<'saved' | 'cancelled' | 'failed'> {
+      const id = crypto.randomUUID()
+      const cancel = (): void => void tauriInvoke('ipfs_cancel_save', { id }).catch(() => {})
+      const { onProgress } = options
+      if (onProgress) {
+        saveListeners.set(id, (received, total) => onProgress({ received, total, cancel }))
+      }
+      try {
+        await this.subscribe().catch(() => {})
+        return (await run(id, options.sizeHint ?? null)) ? 'saved' : 'cancelled'
       } catch (e) {
+        if (String(e) === SAVE_CANCELLED) return 'cancelled'
         this.message = String(e)
         return 'failed'
+      } finally {
+        saveListeners.delete(id)
       }
     },
 

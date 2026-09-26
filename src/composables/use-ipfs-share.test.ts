@@ -7,19 +7,21 @@ const h = vi.hoisted(() => ({
   store: {
     torActive: false,
     message: null as string | null,
-    pickFile: vi.fn(),
+    pickFiles: vi.fn(),
     publish: vi.fn(),
     showTorBlocked: vi.fn(),
   },
   auth: { address: 'PQ8AiCHJaTZAThr2TnpkQYDEYTqULsMhCT' as string | null },
   copyText: vi.fn(async () => true),
   modal: { success: vi.fn(), error: vi.fn() },
+  toast: { success: vi.fn() },
 }))
 
 vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => h.store }))
 vi.mock('@/blockchain', () => ({ useAuthStore: () => h.auth }))
 vi.mock('@/helpers/common/clipboard', () => ({ copyText: h.copyText }))
 vi.mock('ant-design-vue', () => ({ Modal: h.modal }))
+vi.mock('@/b-components/app-toast', () => ({ appToast: h.toast }))
 vi.mock('@/i18n', () => ({
   t: (key: string, named?: Record<string, unknown>) => (named ? `${key} ${named.link}` : key),
 }))
@@ -32,7 +34,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   h.store.torActive = false
   h.store.message = null
-  h.store.pickFile.mockResolvedValue(picked)
+  h.store.pickFiles.mockResolvedValue([picked])
 })
 
 describe('useIpfsShare', () => {
@@ -40,7 +42,7 @@ describe('useIpfsShare', () => {
     h.store.publish.mockResolvedValue({ cid: 'bafydir', name: 'a b.pdf', size: 1, addedAt: 1 })
     const { share, sharing } = useIpfsShare()
 
-    const shared = await share('public')
+    const [shared] = await share('public')
 
     expect(h.store.publish).toHaveBeenCalledWith(
       'PQ8AiCHJaTZAThr2TnpkQYDEYTqULsMhCT',
@@ -89,16 +91,28 @@ describe('useIpfsShare', () => {
     })
 
     h.modal.error.mockClear()
-    h.store.pickFile.mockResolvedValueOnce(null)
+    h.store.pickFiles.mockResolvedValueOnce([])
     await useIpfsShare().share('public')
     expect(h.store.publish).toHaveBeenCalledTimes(1)
     expect(h.modal.error).not.toHaveBeenCalled()
+  })
+
+  it('несколько файлов — каждый публикуется, итог одним тостом', async () => {
+    h.store.pickFiles.mockResolvedValueOnce([picked, { ...picked, token: 't1' }])
+    h.store.publish.mockResolvedValue({ cid: 'bafydir', name: 'a b.pdf', size: 1, addedAt: 1 })
+    const shared = await useIpfsShare().share('public')
+    expect(shared).toHaveLength(2)
+    expect(h.store.publish).toHaveBeenCalledTimes(2)
+    expect(h.toast.success).toHaveBeenCalledWith({
+      message: expect.stringContaining('myFiles.publishedMany'),
+    })
+    expect(h.modal.success).not.toHaveBeenCalled()
   })
 
   it('под Tor публикации нет: раздача светила бы IP', async () => {
     h.store.torActive = true
     await useIpfsShare().share('public')
     expect(h.store.showTorBlocked).toHaveBeenCalled()
-    expect(h.store.pickFile).not.toHaveBeenCalled()
+    expect(h.store.pickFiles).not.toHaveBeenCalled()
   })
 })

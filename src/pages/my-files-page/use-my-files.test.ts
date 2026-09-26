@@ -15,7 +15,7 @@ const h = vi.hoisted(() => ({
   copyText: vi.fn(async () => true),
   toast: { success: vi.fn(), error: vi.fn() },
   confirm: vi.fn(),
-  publish: vi.fn(async () => null),
+  publish: vi.fn(async () => []),
 }))
 
 vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => h.store }))

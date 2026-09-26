@@ -30,8 +30,10 @@ pub struct IpfsManager {
     /// сама установка, которую надо прервать.
     pub install_cancel: watch::Sender<bool>,
     /// Файлы, выбранные в нативном диалоге: токен → путь. Webview получает
-    /// только токен, путь из него не принимается (см. ipfs_pick_file).
+    /// только токен, путь из него не принимается (см. ipfs_pick_files).
     pub picked: StdMutex<HashMap<String, PathBuf>>,
+    /// Идущие сохранения: id из фронта → сигнал отмены (ipfs_cancel_save).
+    pub saves: StdMutex<HashMap<String, watch::Sender<bool>>>,
 }
 
 impl IpfsManager {
@@ -44,6 +46,7 @@ impl IpfsManager {
             shares_lock: tokio::sync::Mutex::new(()),
             install_cancel: watch::channel(false).0,
             picked: StdMutex::new(HashMap::new()),
+            saves: StdMutex::new(HashMap::new()),
         }
     }
 
@@ -337,9 +340,9 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// Сколько выбранных, но не опубликованных файлов помним: токены от брошенных
-/// выборов не копятся.
-const MAX_PICKED: usize = 16;
+/// Сколько выбранных, но не опубликованных файлов помним (и сколько берём из
+/// одного выбора): токены от брошенных выборов не копятся.
+const MAX_PICKED: usize = 32;
 
 /// Файл, выбранный для публикации: webview видит имя и размер, но не путь.
 #[derive(Debug, serde::Serialize)]
@@ -350,29 +353,31 @@ pub struct PickedFile {
     pub size: u64,
 }
 
-/// Выбор файла для публикации — в НАТИВНОМ диалоге здесь, в Rust: путь из
+/// Выбор файлов для публикации — в НАТИВНОМ диалоге здесь, в Rust: путь из
 /// webview не принимаем, иначе XSS в главном окне публиковал бы (= читал) любой
-/// файл. Вместо пути фронт получает токен и публикует по нему (ipfs_publish) —
-/// успевает показать имя и размер и выбрать, публично или приватно. None = отмена.
+/// файл. Вместо пути фронт получает токен на каждый файл и публикует по нему
+/// (ipfs_publish) — успевает показать имя и размер. Пусто = отмена.
 #[tauri::command]
-pub async fn ipfs_pick_file(
+pub async fn ipfs_pick_files(
     app: AppHandle,
     mgr: State<'_, IpfsManager>,
-) -> Result<Option<PickedFile>, String> {
-    let Some(path) = pick_file(&app).await else {
-        return Ok(None);
-    };
-    let (name, size) = picked_file_info(&path)?;
-    let token = crypto::random_hex(16);
+) -> Result<Vec<PickedFile>, String> {
+    let paths = pick_files(&app).await;
+    let mut files = Vec::with_capacity(paths.len());
     let mut picked = mgr.picked.lock().map_err(err_string)?;
-    if picked.len() >= MAX_PICKED {
+    if picked.len() + paths.len() > MAX_PICKED {
         picked.clear();
     }
-    picked.insert(token.clone(), path);
-    Ok(Some(PickedFile { token, name, size }))
+    for path in paths.into_iter().take(MAX_PICKED) {
+        let (name, size) = picked_file_info(&path)?;
+        let token = crypto::random_hex(16);
+        picked.insert(token.clone(), path);
+        files.push(PickedFile { token, name, size });
+    }
+    Ok(files)
 }
 
-/// Публикация выбранного файла (ipfs_pick_file) в «Мои файлы» аккаунта. Нода
+/// Публикация выбранного файла (ipfs_pick_files) в «Мои файлы» аккаунта. Нода
 /// должна быть поднята (гейтится на фронте через ensureRunning). `add` пинит
 /// локально и сразу анонсирует CID (см. provide_once_background).
 ///
@@ -398,7 +403,7 @@ pub async fn ipfs_publish(
     // Файл могли изменить после выбора — имя и размер берём заново.
     let (name, size) = picked_file_info(&path)?;
     let (cid, key) = if private {
-        add_encrypted(&mgr.paths, &path, size).await?
+        add_encrypted(&mgr.paths, &path).await?
     } else {
         let path_s = path.to_string_lossy().to_string();
         let args = ["add", "-Q", "-w", "--cid-version=1", "--pin=true", "--", &path_s];
@@ -422,27 +427,19 @@ pub async fn ipfs_publish(
     Ok(entry)
 }
 
-/// Шифртекст файла в IPFS: (CID, ключ base64). Файл целиком в памяти (2× при
-/// шифровании), поэтому потолок MAX_ENCRYPTED_BYTES.
-async fn add_encrypted(
-    paths: &IpfsPaths,
-    path: &Path,
-    size: u64,
-) -> Result<(String, Option<String>), String> {
-    if size > config::MAX_ENCRYPTED_BYTES {
-        return Err(format!(
-            "file is too large for private sharing (limit {} MB)",
-            config::MAX_ENCRYPTED_BYTES / (1024 * 1024)
-        ));
-    }
-    let plaintext = std::fs::read(path).map_err(err_string)?;
-    let (key, blob) = crypto::encrypt(&plaintext).map_err(err_string)?;
-    drop(plaintext);
-
+/// Шифртекст файла в IPFS: (CID, ключ base64). Формат v2 — кусками
+/// (crypto::encrypt_stream): файл не читается в память целиком, потолка нет.
+async fn add_encrypted(paths: &IpfsPaths, path: &Path) -> Result<(String, Option<String>), String> {
     // Временный файл под шифртекст (ipfs add берёт путь).
     let tmp = TempFile::new("enc");
-    write_private(&tmp.0, &blob).map_err(err_string)?;
-    drop(blob);
+    let (src, dst) = (path.to_path_buf(), tmp.0.clone());
+    let key = tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let input = std::io::BufReader::new(std::fs::File::open(&src).map_err(err_string)?);
+        let output = std::io::BufWriter::new(create_private(&dst).map_err(err_string)?);
+        crypto::encrypt_stream(input, output).map_err(err_string)
+    })
+    .await
+    .map_err(err_string)??;
     let tmp_s = tmp.0.to_string_lossy().to_string();
     let cid = run_ipfs(
         paths,
@@ -495,7 +492,14 @@ pub async fn ipfs_seed(
 /// (dest из webview не принимаем — это был бы примитив записи по любому пути).
 /// `source` — не URL, а "local" | "public": URL собирается здесь по белому списку
 /// (никакого SSRF на произвольный хост). Ok(false) = отмена диалога.
+///
+/// Шифртекст сначала ложится во временный файл: с публичного шлюза — собранный
+/// из CAR с проверкой по CID, как в ipfs_save. Формат узнаётся по заголовку: v2
+/// расшифровывается потоком, старый v1 — в памяти (до MAX_ENCRYPTED_BYTES).
+/// `id` — для прогресса и отмены (ipfs_cancel_save), `size_hint` — размер из
+/// ссылки, итог для прогресса.
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn ipfs_save_encrypted(
     app: AppHandle,
     mgr: State<'_, IpfsManager>,
@@ -503,48 +507,83 @@ pub async fn ipfs_save_encrypted(
     cid: String,
     key: String,
     suggested_name: String,
+    id: String,
+    size_hint: Option<u64>,
 ) -> Result<bool, String> {
     if !is_plausible_cid(&cid) {
         return Err("invalid CID".into());
     }
-    let base = match source.as_str() {
-        "public" => config::PUBLIC_GATEWAY.to_string(),
+    let target = SaveTarget::parse("ipfs", &cid, "")?;
+    let local = local_base(&mgr, &source).await?;
+
+    let Some(dest) = save_file(&app, &safe_basename(&suggested_name, &cid)).await else {
+        return Ok(false);
+    };
+    let job = begin_save(&mgr, &app, &id, size_hint)?;
+    let _job = SaveGuard(&mgr, &id);
+
+    let cipher = TempFile::new("enc");
+    match (&local, target.root_cid.clone()) {
+        (Some(local), _) => save_stream(&target.url(local)?, &cipher.0, Some(&job)).await?,
+        (None, Some(root)) => save_verified(&target, root, &cipher.0, Some(&job)).await?,
+        (None, None) => return Err("invalid CID".into()),
+    }
+    let part = part_path(&dest);
+    let part_out = part.clone();
+    let decrypted = tokio::task::spawn_blocking(move || decrypt_file(&key, &cipher.0, &part_out))
+        .await
+        .map_err(err_string)?;
+    match decrypted {
+        Ok(()) => {
+            std::fs::rename(&part, &dest).map_err(err_string)?;
+            Ok(true)
+        }
+        Err(e) => {
+            let _ = std::fs::remove_file(&part);
+            Err(e)
+        }
+    }
+}
+
+/// Расшифровка файла в файл: v2 — потоком, v1 — целиком в памяти.
+fn decrypt_file(key: &str, src: &Path, dst: &Path) -> Result<(), String> {
+    use std::io::{Read, Seek, Write};
+    let mut input = std::fs::File::open(src).map_err(err_string)?;
+    let mut magic = [0u8; 5];
+    let is_v2 = input.read_exact(&mut magic).is_ok()
+        && magic[..4] == crypto::STREAM_MAGIC[..]
+        && magic[4] == crypto::STREAM_VERSION;
+    input.rewind().map_err(err_string)?;
+    let mut output = std::io::BufWriter::new(create_private(dst).map_err(err_string)?);
+    if is_v2 {
+        crypto::decrypt_stream(key, std::io::BufReader::new(input), &mut output, u64::MAX)
+            .map_err(err_string)?;
+    } else {
+        let len = input.metadata().map_err(err_string)?.len();
+        if len > config::MAX_ENCRYPTED_BYTES + 28 {
+            return Err("file is too large".into());
+        }
+        let mut blob = Vec::with_capacity(len as usize);
+        input.read_to_end(&mut blob).map_err(err_string)?;
+        let plain = crypto::decrypt(key, &blob).map_err(err_string)?;
+        output.write_all(&plain).map_err(err_string)?;
+    }
+    output.flush().map_err(err_string)
+}
+
+/// Базовый URL локального шлюза для source = "local"; None — публичный шлюз.
+async fn local_base(mgr: &IpfsManager, source: &str) -> Result<Option<String>, String> {
+    match source {
+        "public" => Ok(None),
         "local" => {
             let gw = mgr.state.read().await.gateway_port;
             if gw == 0 {
                 return Err("local IPFS node is not running".into());
             }
-            format!("http://127.0.0.1:{gw}")
+            Ok(Some(format!("http://127.0.0.1:{gw}")))
         }
-        _ => return Err("unknown gateway source".into()),
-    };
-    let url = format!("{base}/ipfs/{cid}");
-
-    let Some(dest) = save_file(&app, &safe_basename(&suggested_name, &cid)).await else {
-        return Ok(false);
-    };
-
-    // Таймаут: на «холодном» CID нода может не отдать блоки — не висим вечно.
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(60))
-        .build()
-        .map_err(err_string)?;
-    let resp = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(err_string)?
-        .error_for_status()
-        .map_err(err_string)?;
-    // Потолок объёма: и по заголовку, и по факту — иначе гигабайты за 60 с → OOM.
-    if resp.content_length().unwrap_or(0) > config::MAX_ENCRYPTED_BYTES {
-        return Err("file is too large".into());
+        _ => Err("unknown gateway source".into()),
     }
-    let bytes = read_body_capped(resp, config::MAX_ENCRYPTED_BYTES).await?;
-    let plain = crypto::decrypt(&key, &bytes).map_err(err_string)?;
-    drop(bytes);
-    std::fs::write(&dest, plain).map_err(err_string)?;
-    Ok(true)
 }
 
 /// Сохранить файл по IPFS-ссылке на диск. Куда — пользователь выбирает в
@@ -559,6 +598,7 @@ pub async fn ipfs_save_encrypted(
 /// успеха: оборванная или отвергнутая загрузка не оставляет «готовый» файл.
 /// Ok(false) = отмена диалога.
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn ipfs_save(
     app: AppHandle,
     mgr: State<'_, IpfsManager>,
@@ -567,28 +607,22 @@ pub async fn ipfs_save(
     root: String,
     path: String,
     suggested_name: String,
+    id: String,
+    size_hint: Option<u64>,
 ) -> Result<bool, String> {
     let target = SaveTarget::parse(&namespace, &root, &path)?;
-    let base = match source.as_str() {
-        "public" => None,
-        "local" => {
-            let gw = mgr.state.read().await.gateway_port;
-            if gw == 0 {
-                return Err("local IPFS node is not running".into());
-            }
-            Some(format!("http://127.0.0.1:{gw}"))
-        }
-        _ => return Err("unknown gateway source".into()),
-    };
+    let base = local_base(&mgr, &source).await?;
 
     let Some(dest) = save_file(&app, &safe_basename(&suggested_name, &target.root)).await else {
         return Ok(false);
     };
+    let job = begin_save(&mgr, &app, &id, size_hint)?;
+    let _job = SaveGuard(&mgr, &id);
     let part = part_path(&dest);
     let saved = match (&base, target.root_cid.clone()) {
-        (None, Some(cid)) => save_verified(&target, cid, &part).await,
-        (None, None) => save_stream(&target.url(config::PUBLIC_GATEWAY)?, &part).await,
-        (Some(local), _) => save_stream(&target.url(local)?, &part).await,
+        (None, Some(cid)) => save_verified(&target, cid, &part, Some(&job)).await,
+        (None, None) => save_stream(&target.url(config::PUBLIC_GATEWAY)?, &part, Some(&job)).await,
+        (Some(local), _) => save_stream(&target.url(local)?, &part, Some(&job)).await,
     };
     match saved {
         Ok(()) => {
@@ -896,16 +930,98 @@ fn download_client() -> Result<reqwest::Client, String> {
         .map_err(err_string)
 }
 
+/// Ошибка отменённого сохранения — фронт её не показывает.
+pub const SAVE_CANCELLED: &str = "cancelled";
+
+/// Идущее сохранение: прогресс для UI (событие `ipfs:save-progress`) и отмена
+/// (ipfs_cancel_save), которую ждёт скачивание.
+struct SaveJob {
+    report: Box<dyn Fn(u64) + Send + Sync>,
+    cancel: watch::Receiver<bool>,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct SaveProgress {
+    id: String,
+    received: u64,
+    total: Option<u64>,
+}
+
+/// Сохранение под id из фронта: по нему придут прогресс и отмена.
+fn begin_save(
+    mgr: &IpfsManager,
+    app: &AppHandle,
+    id: &str,
+    total: Option<u64>,
+) -> Result<SaveJob, String> {
+    if id.is_empty() || id.len() > 64 || !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
+        return Err("invalid save id".into());
+    }
+    let (tx, cancel) = watch::channel(false);
+    mgr.saves.lock().map_err(err_string)?.insert(id.to_string(), tx);
+    let (app, id) = (app.clone(), id.to_string());
+    let report = move |received| {
+        use tauri::Emitter;
+        let progress = SaveProgress { id: id.clone(), received, total };
+        let _ = app.emit("ipfs:save-progress", progress);
+    };
+    // Место выбрано, скачивание пошло — UI показывает прогресс сразу, ещё до
+    // первых байт (шлюз может искать файл в сети минуту).
+    report(0);
+    Ok(SaveJob { report: Box::new(report), cancel })
+}
+
+/// Снимает сохранение с учёта, когда команда закончилась (как угодно).
+struct SaveGuard<'a>(&'a IpfsManager, &'a str);
+
+impl Drop for SaveGuard<'_> {
+    fn drop(&mut self) {
+        if let Ok(mut saves) = self.0.saves.lock() {
+            saves.remove(self.1);
+        }
+    }
+}
+
+/// Отменить сохранение: скачивание обрывается, недокачанное удаляется.
+#[tauri::command]
+pub fn ipfs_cancel_save(id: String, mgr: State<'_, IpfsManager>) {
+    if let Ok(saves) = mgr.saves.lock() {
+        if let Some(cancel) = saves.get(&id) {
+            cancel.send_replace(true);
+        }
+    }
+}
+
 /// Тело ответа потоком в файл (с потолком, если задан). Только 2xx: страница
 /// ошибки шлюза не должна сохраниться под именем файла.
 async fn fetch_to_file(
     request: reqwest::RequestBuilder,
     dest: &Path,
     cap: Option<u64>,
+    job: Option<&SaveJob>,
 ) -> Result<reqwest::header::HeaderMap, String> {
     use futures_util::StreamExt;
     use std::io::Write;
-    let resp = request.send().await.map_err(err_string)?;
+    let mut cancel = job.map(|j| j.cancel.clone());
+    let cancelled = |cancel: &mut Option<watch::Receiver<bool>>| {
+        let rx = cancel.clone();
+        async move {
+            match rx {
+                Some(mut rx) => {
+                    let _ = rx.wait_for(|c| *c).await;
+                    // Отправителя нет (сохранение снято с учёта) — не отмена.
+                    if !*rx.borrow() {
+                        std::future::pending::<()>().await;
+                    }
+                }
+                None => std::future::pending::<()>().await,
+            }
+        }
+    };
+    let resp = tokio::select! {
+        resp = request.send() => resp.map_err(err_string)?,
+        _ = cancelled(&mut cancel) => return Err(SAVE_CANCELLED.into()),
+    };
     if !resp.status().is_success() {
         return Err(format!("gateway responded {}", resp.status()));
     }
@@ -917,8 +1033,25 @@ async fn fetch_to_file(
     let headers = resp.headers().clone();
     let mut file = std::io::BufWriter::new(std::fs::File::create(dest).map_err(err_string)?);
     let mut written: u64 = 0;
+    // Прогресс — по таймеру, а не по кускам: если шлюз притих, UI всё равно
+    // видит, сколько уже пришло.
+    let mut tick = tokio::time::interval(Duration::from_millis(250));
+    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    let mut reported = 0;
     let mut stream = resp.bytes_stream();
-    while let Some(chunk) = stream.next().await {
+    loop {
+        let chunk = tokio::select! {
+            chunk = stream.next() => chunk,
+            _ = tick.tick(), if job.is_some() => {
+                if let Some(job) = job.filter(|_| written != reported) {
+                    (job.report)(written);
+                    reported = written;
+                }
+                continue;
+            }
+            _ = cancelled(&mut cancel) => return Err(SAVE_CANCELLED.into()),
+        };
+        let Some(chunk) = chunk else { break };
         let chunk = chunk.map_err(err_string)?;
         written += chunk.len() as u64;
         if cap.is_some_and(|c| written > c) {
@@ -927,20 +1060,28 @@ async fn fetch_to_file(
         file.write_all(&chunk).map_err(err_string)?;
     }
     file.flush().map_err(err_string)?;
+    if let Some(job) = job {
+        (job.report)(written);
+    }
     Ok(headers)
 }
 
 /// Как есть, потоком: локальная нода (проверяет сама) или IPNS через шлюз.
-async fn save_stream(url: &url::Url, part: &Path) -> Result<(), String> {
+async fn save_stream(url: &url::Url, part: &Path, job: Option<&SaveJob>) -> Result<(), String> {
     let client = download_client()?;
-    fetch_to_file(client.get(url.clone()), part, None).await?;
+    fetch_to_file(client.get(url.clone()), part, None, job).await?;
     Ok(())
 }
 
 /// С публичного шлюза: CAR на диск, затем сборка файла с проверкой каждого
 /// блока по CID (verify.rs). Файл в `part` появляется только из проверенных
 /// блоков.
-async fn save_verified(target: &SaveTarget, root: verify::Cid, part: &Path) -> Result<(), String> {
+async fn save_verified(
+    target: &SaveTarget,
+    root: verify::Cid,
+    part: &Path,
+    job: Option<&SaveJob>,
+) -> Result<(), String> {
     let mut url = target.url(config::PUBLIC_GATEWAY)?;
     url.query_pairs_mut()
         .append_pair("format", "car")
@@ -950,7 +1091,8 @@ async fn save_verified(target: &SaveTarget, root: verify::Cid, part: &Path) -> R
         reqwest::header::ACCEPT,
         "application/vnd.ipld.car; version=1; order=dfs; dups=n",
     );
-    let headers = fetch_to_file(request, &car.0, Some(config::MAX_VERIFIED_DOWNLOAD_BYTES)).await?;
+    let headers =
+        fetch_to_file(request, &car.0, Some(config::MAX_VERIFIED_DOWNLOAD_BYTES), job).await?;
     // Шлюз, не умеющий CAR, отдал бы сам файл — проверить его было бы нечем.
     let is_car = headers
         .get(reqwest::header::CONTENT_TYPE)
@@ -1056,6 +1198,11 @@ fn read_secret(paths: &IpfsPaths) -> Option<String> {
 /// Файл, читаемый только владельцем (секрет, временный шифртекст).
 fn write_private(path: &Path, data: &[u8]) -> std::io::Result<()> {
     use std::io::Write;
+    create_private(path)?.write_all(data)
+}
+
+/// Файл, который читает только владелец (0600 на unix): шифртекст, ключи.
+fn create_private(path: &Path) -> std::io::Result<std::fs::File> {
     let mut opts = std::fs::OpenOptions::new();
     opts.write(true).create(true).truncate(true);
     #[cfg(unix)]
@@ -1063,19 +1210,19 @@ fn write_private(path: &Path, data: &[u8]) -> std::io::Result<()> {
         use std::os::unix::fs::OpenOptionsExt;
         opts.mode(0o600);
     }
-    let mut f = opts.open(path)?;
-    f.write_all(data)
+    opts.open(path)
 }
 
-/// Нативный диалог выбора файла (main thread — внутри плагина). None = отмена.
-async fn pick_file(app: &AppHandle) -> Option<PathBuf> {
+/// Нативный диалог выбора файлов (main thread — внутри плагина). Пусто = отмена.
+async fn pick_files(app: &AppHandle) -> Vec<PathBuf> {
     use tauri_plugin_dialog::DialogExt;
     let dialog = app.dialog().file();
-    let picked = tauri::async_runtime::spawn_blocking(move || dialog.blocking_pick_file())
+    let picked = tauri::async_runtime::spawn_blocking(move || dialog.blocking_pick_files())
         .await
         .ok()
-        .flatten()?;
-    picked.into_path().ok()
+        .flatten()
+        .unwrap_or_default();
+    picked.into_iter().filter_map(|p| p.into_path().ok()).collect()
 }
 
 /// Нативный диалог сохранения с предложенным именем. None = отмена.
@@ -1126,18 +1273,6 @@ fn viewer_url_allowed(u: &tauri::Url, gw_port: u16) -> bool {
         ("https", Some(host)) => host == "dweb.link" || host.ends_with(".dweb.link"),
         _ => false,
     }
-}
-
-/// Читаем тело кусками с потолком — `bytes()` целиком доверился бы серверу.
-async fn read_body_capped(mut resp: reqwest::Response, cap: u64) -> Result<Vec<u8>, String> {
-    let mut buf: Vec<u8> = Vec::new();
-    while let Some(chunk) = resp.chunk().await.map_err(err_string)? {
-        if (buf.len() as u64 + chunk.len() as u64) > cap {
-            return Err("file is too large".into());
-        }
-        buf.extend_from_slice(&chunk);
-    }
-    Ok(buf)
 }
 
 fn read_api_port(paths: &IpfsPaths) -> Option<u16> {
@@ -1436,7 +1571,7 @@ mod tests {
         let original: Vec<u8> = (0..300_000u32).map(|i| (i * 7 % 251) as u8).collect();
         let file = root.join("secret.bin");
         std::fs::write(&file, &original).unwrap();
-        let (cid, key) = add_encrypted(&paths, &file, original.len() as u64).await.unwrap();
+        let (cid, key) = add_encrypted(&paths, &file).await.unwrap();
 
         // В IPFS лежит только шифртекст; ключ из ссылки возвращает оригинал.
         let out = tokio::process::Command::new(&paths.binary)
@@ -1446,8 +1581,71 @@ mod tests {
             .await
             .unwrap();
         assert_ne!(out.stdout, original);
-        assert_eq!(crypto::decrypt(&key.unwrap(), &out.stdout).unwrap(), original);
+        let mut plain = Vec::new();
+        crypto::decrypt_stream(&key.unwrap(), &out.stdout[..], &mut plain, u64::MAX).unwrap();
+        assert_eq!(plain, original);
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn decrypt_file_reads_both_formats() {
+        let dir = std::env::temp_dir().join(format!("bastyon-decrypt-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let plain: Vec<u8> = (0..5000u32).map(|i| (i % 251) as u8).collect();
+
+        let mut sealed = Vec::new();
+        let key_v2 = crypto::encrypt_stream(&plain[..], &mut sealed).unwrap();
+        std::fs::write(dir.join("v2.enc"), &sealed).unwrap();
+        decrypt_file(&key_v2, &dir.join("v2.enc"), &dir.join("v2.out")).unwrap();
+        assert_eq!(std::fs::read(dir.join("v2.out")).unwrap(), plain);
+
+        let (key_v1, blob) = crypto::encrypt(&plain).unwrap();
+        std::fs::write(dir.join("v1.enc"), &blob).unwrap();
+        decrypt_file(&key_v1, &dir.join("v1.enc"), &dir.join("v1.out")).unwrap();
+        assert_eq!(std::fs::read(dir.join("v1.out")).unwrap(), plain);
+
+        // Чужой ключ — ошибка, а не мусор на диске под именем файла.
+        assert!(decrypt_file(&key_v1, &dir.join("v2.enc"), &dir.join("bad.out")).is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Сервер, который отдаёт заголовки и первый мегабайт, а потом молчит.
+    async fn stalling_server() -> String {
+        use tokio::io::AsyncWriteExt;
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}/file", listener.local_addr().unwrap());
+        tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = [0u8; 1024];
+            let _ = tokio::io::AsyncReadExt::read(&mut socket, &mut request).await;
+            let head = "HTTP/1.1 200 OK\r\nContent-Length: 10485760\r\n\r\n";
+            socket.write_all(head.as_bytes()).await.unwrap();
+            socket.write_all(&vec![7u8; 1 << 20]).await.unwrap();
+            tokio::time::sleep(Duration::from_secs(30)).await;
+        });
+        url
+    }
+
+    #[tokio::test]
+    async fn saving_reports_progress_and_stops_on_cancel() {
+        let url = stalling_server().await;
+        let (tx, cancel) = watch::channel(false);
+        let seen = Arc::new(StdMutex::new(Vec::new()));
+        let log = seen.clone();
+        let job = SaveJob {
+            report: Box::new(move |n| log.lock().unwrap().push(n)),
+            cancel,
+        };
+        let part = TempFile::new("part");
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(400)).await;
+            tx.send_replace(true);
+        });
+        let request = reqwest::Client::new().get(&url);
+        let result = fetch_to_file(request, &part.0, None, Some(&job)).await;
+        assert_eq!(result.unwrap_err(), SAVE_CANCELLED);
+        // Прогресс шёл, пока сервер отдавал байты.
+        assert!(seen.lock().unwrap().iter().any(|&n| n > 0 && n <= 1 << 20));
     }
 
     #[test]
@@ -1476,7 +1674,7 @@ mod tests {
         )
         .unwrap();
         let part = TempFile::new("jpg");
-        save_verified(&t, t.root_cid.clone().unwrap(), &part.0).await.unwrap();
+        save_verified(&t, t.root_cid.clone().unwrap(), &part.0, None).await.unwrap();
         let bytes = std::fs::read(&part.0).unwrap();
         assert_eq!(bytes.len(), 663_082);
         assert_eq!(&bytes[..3], &[0xff, 0xd8, 0xff]); // JPEG
@@ -1495,7 +1693,7 @@ mod tests {
         )
         .unwrap();
         let part = TempFile::new("html");
-        save_verified(&t, t.root_cid.clone().unwrap(), &part.0).await.unwrap();
+        save_verified(&t, t.root_cid.clone().unwrap(), &part.0, None).await.unwrap();
         let html = std::fs::read_to_string(&part.0).unwrap();
         assert!(html.contains("Wikipedia"), "{}", &html[..html.len().min(200)]);
     }

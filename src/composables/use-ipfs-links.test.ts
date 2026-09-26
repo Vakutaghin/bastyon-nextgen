@@ -7,7 +7,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({
   probe: vi.fn(),
   openInBrowser: vi.fn(),
-  modal: { success: vi.fn(), error: vi.fn() },
+  modal: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  progressModal: { update: vi.fn(), destroy: vi.fn() },
   store: {
     available: true,
     torActive: false,
@@ -37,6 +38,7 @@ const png = { contentType: 'image/png', contentDisposition: null }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  h.modal.info.mockReturnValue(h.progressModal)
   h.store.available = true
   h.store.message = null
   h.store.saveFile.mockResolvedValue('saved')
@@ -49,7 +51,12 @@ describe('openIpfsViewer: откуда сохраняется файл', () => {
 
     await openIpfsViewer(target, null)
 
-    expect(h.store.saveFile).toHaveBeenCalledWith('local', target, 'a.zip')
+    expect(h.store.saveFile).toHaveBeenCalledWith(
+      'local',
+      target,
+      'a.zip',
+      expect.objectContaining({ sizeHint: null })
+    )
     expect(h.modal.success).toHaveBeenCalled()
   })
 
@@ -60,7 +67,12 @@ describe('openIpfsViewer: откуда сохраняется файл', () => {
     await openIpfsViewer(target, null)
 
     expect(h.probe).toHaveBeenLastCalledWith('https://dweb.link/ipfs/bafybeigdyrzt5sfp7/docs/a.zip')
-    expect(h.store.saveFile).toHaveBeenCalledWith('public', target, 'a.zip')
+    expect(h.store.saveFile).toHaveBeenCalledWith(
+      'public',
+      target,
+      'a.zip',
+      expect.objectContaining({ sizeHint: null })
+    )
   })
 
   it('файл не совпал с CID — пользователь видит, что шлюз подменил данные', async () => {
@@ -121,7 +133,7 @@ describe('openIpfsViewer: браузер и телефон', () => {
     h.store.available = false
     const secret = { key: 'a2V5', name: 'a.txt' }
     void openIpfsViewer(target, secret)
-    expect(h.openInBrowser).toHaveBeenCalledWith(target, secret)
+    expect(h.openInBrowser).toHaveBeenCalledWith(target, secret, null)
     expect(h.store.showDesktopOnly).not.toHaveBeenCalled()
     expect(h.store.resolveGateway).not.toHaveBeenCalled()
   })
@@ -140,5 +152,36 @@ describe('saveErrorText', () => {
       'gateway responded 504 Gateway Timeout'
     )
     expect(saveErrorText(null)).toBe('')
+  })
+})
+
+describe('openIpfsViewer: прогресс сохранения на десктопе', () => {
+  it('окно появляется после выбора места, обновляется и закрывается; «Отменить» отменяет', async () => {
+    h.store.resolveGateway.mockResolvedValue(LOCAL)
+    h.probe.mockResolvedValue(zip)
+    const cancel = vi.fn()
+    h.store.saveFile.mockImplementation(
+      async (
+        _s: string,
+        _t: IpfsTarget,
+        _n: string,
+        opts: { onProgress: (p: unknown) => void }
+      ) => {
+        opts.onProgress({ received: 0, total: 2048, cancel })
+        opts.onProgress({ received: 1024, total: 2048, cancel })
+        return 'saved'
+      }
+    )
+
+    await openIpfsViewer(target, null, 2048)
+
+    expect(h.modal.info).toHaveBeenCalledTimes(1)
+    const [opts] = h.modal.info.mock.calls[0] as [{ content: string; onOk: () => void }]
+    expect(opts.content).toBe('header.ipfsSaveWaiting')
+    expect(h.progressModal.update).toHaveBeenCalledWith({ content: 'header.ipfsWebProgress' })
+    expect(h.progressModal.destroy).toHaveBeenCalled()
+    expect(h.store.saveFile.mock.calls[0]?.[3]).toMatchObject({ sizeHint: 2048 })
+    opts.onOk()
+    expect(cancel).toHaveBeenCalled()
   })
 })

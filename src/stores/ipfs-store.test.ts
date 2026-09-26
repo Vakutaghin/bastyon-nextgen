@@ -116,7 +116,9 @@ describe('ipfs-store: сохранение файла', () => {
     const store = useIpfsStore()
     invoke.mockResolvedValue(true)
 
-    await expect(store.saveFile('public', target, 'my file.pdf')).resolves.toBe('saved')
+    await expect(store.saveFile('public', target, 'my file.pdf', { sizeHint: 42 })).resolves.toBe(
+      'saved'
+    )
 
     expect(invoke).toHaveBeenCalledWith('ipfs_save', {
       source: 'public',
@@ -124,7 +126,49 @@ describe('ipfs-store: сохранение файла', () => {
       root: 'bafyroot',
       path: 'docs/my%20file.pdf',
       suggestedName: 'my file.pdf',
+      id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      sizeHint: 42,
     })
+  })
+
+  it('прогресс сохранения приходит по его id, отмена уходит в Rust и не считается ошибкой', async () => {
+    const store = useIpfsStore()
+    const listeners: Record<string, (e: { payload: unknown }) => void> = {}
+    const { listen } = await import('@tauri-apps/api/event')
+    vi.mocked(listen).mockImplementation(async (event: string, handler) => {
+      listeners[event] = handler as (e: { payload: unknown }) => void
+      return () => {}
+    })
+    const seen: Array<{ received: number; total: number | null }> = []
+    let finish: (v: unknown) => void = () => {}
+    invoke.mockImplementation((cmd: string, args?: { id?: string }) => {
+      if (cmd === 'ipfs_save_encrypted') {
+        // Rust сообщает прогресс по id этого сохранения, потом его отменяют.
+        setTimeout(() => {
+          listeners['ipfs:save-progress']?.({ payload: { id: 'other', received: 1, total: 9 } })
+          listeners['ipfs:save-progress']?.({ payload: { id: args?.id, received: 5, total: 9 } })
+        })
+        return new Promise((_, reject) => (finish = reject))
+      }
+      if (cmd === 'ipfs_cancel_save') {
+        finish('cancelled')
+        return Promise.resolve()
+      }
+      return Promise.resolve(undefined)
+    })
+
+    const result = store.saveEncrypted('public', 'bafyenc', 'a2V5', 'x.zip', {
+      sizeHint: 9,
+      onProgress: (p) => {
+        seen.push({ received: p.received, total: p.total })
+        p.cancel()
+      },
+    })
+
+    await expect(result).resolves.toBe('cancelled')
+    expect(seen).toEqual([{ received: 5, total: 9 }])
+    expect(store.message).toBeNull()
+    expect(invoke).toHaveBeenCalledWith('ipfs_cancel_save', { id: expect.any(String) })
   })
 
   it('отмена диалога и ошибка различаются, код ошибки остаётся в message', async () => {
@@ -153,7 +197,7 @@ describe('ipfs-store: «Мои файлы»', () => {
     invoke.mockImplementation(async (cmd: string, args?: { private?: boolean; cid?: string }) => {
       if (cmd === 'ipfs_ensure') return snapshot({ status: 'running', gateway_port: 8080 })
       if (cmd === 'ipfs_shares') return [share('bafyold')]
-      if (cmd === 'ipfs_pick_file') return { token: 'tok', name: 'a.pdf', size: 3 }
+      if (cmd === 'ipfs_pick_files') return [{ token: 'tok', name: 'a.pdf', size: 3 }]
       if (cmd === 'ipfs_publish')
         return args?.private ? share('bafysecret', 'a2V5') : share('bafynew')
       if (cmd === 'ipfs_seed') return { ...share(args?.cid ?? ''), received: true }
@@ -167,7 +211,7 @@ describe('ipfs-store: «Мои файлы»', () => {
     running(store)
     await store.loadShares(ALICE)
 
-    const picked = await store.pickFile()
+    const [picked] = await store.pickFiles()
     expect(picked).toEqual({ token: 'tok', name: 'a.pdf', size: 3 })
     await expect(store.publish(ALICE, picked!, 'public')).resolves.toMatchObject({ cid: 'bafynew' })
     await store.publish(ALICE, picked!, 'private')

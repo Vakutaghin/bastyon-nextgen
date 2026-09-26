@@ -48,7 +48,7 @@ describe('IpfsFileMessage', () => {
     const [download] = card.findAll('button')
     expect(download?.text()).toBe('messenger.ipfsDownload')
     await download?.trigger('click')
-    expect(h.openViewer).toHaveBeenCalledWith(privateLink.target, privateLink.secret)
+    expect(h.openViewer).toHaveBeenCalledWith(privateLink.target, privateLink.secret, 2048)
   })
 
   it('картинка открывается, а не скачивается', () => {

@@ -252,6 +252,9 @@ export default {
     ipfsShareEncryptedDone:
       'Расшифровать файл сможет только тот, у кого есть именно эта ссылка: {link}',
     ipfsSaveDoneTitle: 'Файл сохранён',
+    ipfsSaveWaiting: 'Ищу файл в сети…',
+    ipfsSaveProgress: 'Скачано {done}',
+    ipfsSaveCancel: 'Отменить',
     ipfsSaveFailedTitle: 'Не удалось открыть файл (неверный ключ или недоступен)',
     ipfsDownloadFailedTitle: 'Не удалось скачать файл',
     ipfsVerifyMismatch:
@@ -691,10 +694,6 @@ export default {
     sendPkoin: 'Отправить PKOIN',
     ipfsFile: 'Файл через IPFS',
     ipfsPublishing: 'Публикую файл в IPFS…',
-    ipfsTooBigPrivateTitle: 'Файл больше 512 МБ',
-    ipfsTooBigPrivateContent:
-      'Приватно такой пока не отправить. Отправить его по ссылке? Тогда файл сможет скачать любой, к кому попадёт ссылка.',
-    ipfsSendPublic: 'Отправить по ссылке',
     ipfsSendFailed: 'Не удалось отправить файл через IPFS',
     fileTooLarge: 'Файл «{name}» больше {limit}: в чат такой не отправить.',
     fileTooLargeIpfs: 'Большие файлы отправляйте через IPFS: 📎 → «Файл через IPFS».',
@@ -1407,6 +1406,7 @@ export default {
     title: 'Мои файлы',
     share: 'Поделиться файлом…',
     sharePrivately: 'Поделиться приватно…',
+    publishedMany: 'Опубликовано файлов: {count}. Ссылки на них — в списке.',
     desktopOnly:
       'Делиться файлами можно в приложении Bastyon для компьютера: раздаёт их своя нода IPFS. Открывать IPFS-ссылки можно и здесь.',
     node: {
