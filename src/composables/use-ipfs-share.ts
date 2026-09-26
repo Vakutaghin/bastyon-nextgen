@@ -1,5 +1,6 @@
 // Опубликовать файл в IPFS от имени текущего аккаунта: нативный диалог выбора
-// файла (Rust), запись в «Мои файлы», ссылка в буфер обмена и окно с ней.
+// файла (Rust), публикация по токену, запись в «Мои файлы», ссылка в буфер
+// обмена и окно с ней.
 import { ref, type Ref } from 'vue'
 import { Modal } from 'ant-design-vue'
 import { t } from '@/i18n'
@@ -42,8 +43,8 @@ export function useIpfsShare(): {
     sharing.value = true
     ipfs.message = null
     try {
-      const shared =
-        kind === 'private' ? await ipfs.addFileEncrypted(account) : await ipfs.addFile(account)
+      const picked = await ipfs.pickFile()
+      const shared = picked ? await ipfs.publish(account, picked, kind) : null
       if (!shared) {
         if (ipfs.message) {
           Modal.error({ title: t('header.ipfsShareFailedTitle'), content: ipfs.message })

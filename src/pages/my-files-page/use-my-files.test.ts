@@ -114,7 +114,7 @@ describe('useMyFiles', () => {
   it('«Скопировать ссылку» — ссылка с именем файла, тост', async () => {
     mountPage()
     await files.copyLink(file)
-    expect(h.copyText).toHaveBeenCalledWith('ipfs://bafydir/a%20b.pdf')
+    expect(h.copyText).toHaveBeenCalledWith('ipfs://bafydir/a%20b.pdf#size=10')
     expect(h.toast.success).toHaveBeenCalledWith({ message: 'myFiles.linkCopied' })
   })
 

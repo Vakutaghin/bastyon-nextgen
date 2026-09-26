@@ -8,6 +8,7 @@ pub mod verify;
 
 use crate::ipfs::process::IpfsChild;
 use crate::ipfs::state::{IpfsPaths, IpfsState, IpfsStateSnapshot, IpfsStatus, SharedIpfsState};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
@@ -28,6 +29,9 @@ pub struct IpfsManager {
     /// Отмена установки (ipfs_cancel_install). Не под start_lock: его держит
     /// сама установка, которую надо прервать.
     pub install_cancel: watch::Sender<bool>,
+    /// Файлы, выбранные в нативном диалоге: токен → путь. Webview получает
+    /// только токен, путь из него не принимается (см. ipfs_pick_file).
+    pub picked: StdMutex<HashMap<String, PathBuf>>,
 }
 
 impl IpfsManager {
@@ -39,6 +43,7 @@ impl IpfsManager {
             start_lock: tokio::sync::Mutex::new(()),
             shares_lock: tokio::sync::Mutex::new(()),
             install_cancel: watch::channel(false).0,
+            picked: StdMutex::new(HashMap::new()),
         }
     }
 
@@ -332,69 +337,105 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// Публикация файла в IPFS (write-сторона / файлообменник). Файл выбирает
-/// пользователь в НАТИВНОМ диалоге здесь, в Rust: путь из webview не принимаем —
-/// иначе XSS в главном окне публиковал бы (= читал) любой файл. Нода должна
-/// быть поднята (гейтится на фронте через ensureRunning). `add` пинит локально
-/// и сразу анонсирует CID (см. provide_once_background). None = отмена.
-///
-/// Файл кладётся в каталог-обёртку (`-w`): ссылка `ipfs://<каталог>/<имя>`
-/// несёт имя и тип, получатель видит их до скачивания. Публикация попадает в
-/// «Мои файлы» аккаунта.
-///
-/// ВАЖНО: контент ПУБЛИЧНЫЙ — любой с этим CID скачает его. Для приватных файлов
-/// есть ipfs_add_encrypted.
+/// Сколько выбранных, но не опубликованных файлов помним: токены от брошенных
+/// выборов не копятся.
+const MAX_PICKED: usize = 16;
+
+/// Файл, выбранный для публикации: webview видит имя и размер, но не путь.
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PickedFile {
+    pub token: String,
+    pub name: String,
+    pub size: u64,
+}
+
+/// Выбор файла для публикации — в НАТИВНОМ диалоге здесь, в Rust: путь из
+/// webview не принимаем, иначе XSS в главном окне публиковал бы (= читал) любой
+/// файл. Вместо пути фронт получает токен и публикует по нему (ipfs_publish) —
+/// успевает показать имя и размер и выбрать, публично или приватно. None = отмена.
 #[tauri::command]
-pub async fn ipfs_add(
+pub async fn ipfs_pick_file(
     app: AppHandle,
     mgr: State<'_, IpfsManager>,
-    account: String,
-) -> Result<Option<shares::ShareEntry>, String> {
-    shares::check_account(&account)?;
+) -> Result<Option<PickedFile>, String> {
     let Some(path) = pick_file(&app).await else {
         return Ok(None);
     };
     let (name, size) = picked_file_info(&path)?;
-    let path_s = path.to_string_lossy().to_string();
-    let cid = run_ipfs(
-        &mgr.paths,
-        &["add", "-Q", "-w", "--cid-version=1", "--pin=true", "--", &path_s],
-    )
-    .await?;
+    let token = crypto::random_hex(16);
+    let mut picked = mgr.picked.lock().map_err(err_string)?;
+    if picked.len() >= MAX_PICKED {
+        picked.clear();
+    }
+    picked.insert(token.clone(), path);
+    Ok(Some(PickedFile { token, name, size }))
+}
+
+/// Публикация выбранного файла (ipfs_pick_file) в «Мои файлы» аккаунта. Нода
+/// должна быть поднята (гейтится на фронте через ensureRunning). `add` пинит
+/// локально и сразу анонсирует CID (см. provide_once_background).
+///
+/// Публичный файл кладётся в каталог-обёртку (`-w`): ссылка `ipfs://<каталог>/<имя>`
+/// несёт имя и тип, получатель видит их до скачивания. Контент ПУБЛИЧНЫЙ — любой
+/// с этим CID скачает его. Приватный шифруется случайным ключом (AES-256-GCM),
+/// в IPFS уходит только шифртекст — без обёртки, иначе имя стало бы публичным;
+/// ключ едет во фрагменте ссылки.
+#[tauri::command]
+pub async fn ipfs_publish(
+    mgr: State<'_, IpfsManager>,
+    account: String,
+    token: String,
+    private: bool,
+) -> Result<shares::ShareEntry, String> {
+    shares::check_account(&account)?;
+    let path = mgr
+        .picked
+        .lock()
+        .map_err(err_string)?
+        .remove(&token)
+        .ok_or("the picked file is no longer available")?;
+    // Файл могли изменить после выбора — имя и размер берём заново.
+    let (name, size) = picked_file_info(&path)?;
+    let (cid, key) = if private {
+        add_encrypted(&mgr.paths, &path, size).await?
+    } else {
+        let path_s = path.to_string_lossy().to_string();
+        let args = ["add", "-Q", "-w", "--cid-version=1", "--pin=true", "--", &path_s];
+        (run_ipfs(&mgr.paths, &args).await?, None)
+    };
     let cid = cid.trim().to_string();
     if cid.is_empty() {
         return Err("ipfs add returned empty CID".into());
     }
     provide_once_background(mgr.paths.clone(), cid.clone());
-    let entry = shares::ShareEntry { cid, name, size, added_at: now_ms(), key: None };
+    let entry = shares::ShareEntry {
+        cid,
+        name,
+        size,
+        added_at: now_ms(),
+        key,
+        received: false,
+    };
     let _guard = mgr.shares_lock.lock().await;
     shares::record(&mgr.paths.shares_dir, &account, entry.clone())?;
-    Ok(Some(entry))
+    Ok(entry)
 }
 
-/// Приватная публикация: шифруем файл случайным ключом (AES-256-GCM) и кладём
-/// ШИФРТЕКСТ в IPFS. Ключ возвращаем — он поедет во фрагменте ссылки, не на
-/// gateway. Публичным остаётся лишь непонятный блоб: без каталога-обёртки, иначе
-/// имя файла стало бы публичным. Файл — из нативного диалога (см. ipfs_add).
-/// None = отмена.
-#[tauri::command]
-pub async fn ipfs_add_encrypted(
-    app: AppHandle,
-    mgr: State<'_, IpfsManager>,
-    account: String,
-) -> Result<Option<shares::ShareEntry>, String> {
-    shares::check_account(&account)?;
-    let Some(path) = pick_file(&app).await else {
-        return Ok(None);
-    };
-    let (name, size) = picked_file_info(&path)?;
+/// Шифртекст файла в IPFS: (CID, ключ base64). Файл целиком в памяти (2× при
+/// шифровании), поэтому потолок MAX_ENCRYPTED_BYTES.
+async fn add_encrypted(
+    paths: &IpfsPaths,
+    path: &Path,
+    size: u64,
+) -> Result<(String, Option<String>), String> {
     if size > config::MAX_ENCRYPTED_BYTES {
         return Err(format!(
             "file is too large for private sharing (limit {} MB)",
             config::MAX_ENCRYPTED_BYTES / (1024 * 1024)
         ));
     }
-    let plaintext = std::fs::read(&path).map_err(err_string)?;
+    let plaintext = std::fs::read(path).map_err(err_string)?;
     let (key, blob) = crypto::encrypt(&plaintext).map_err(err_string)?;
     drop(plaintext);
 
@@ -402,24 +443,51 @@ pub async fn ipfs_add_encrypted(
     let tmp = TempFile::new("enc");
     write_private(&tmp.0, &blob).map_err(err_string)?;
     drop(blob);
-
     let tmp_s = tmp.0.to_string_lossy().to_string();
-    let add = run_ipfs(
-        &mgr.paths,
+    let cid = run_ipfs(
+        paths,
         &["add", "-Q", "--cid-version=1", "--pin=true", "--", &tmp_s],
     )
-    .await;
-    drop(tmp);
+    .await?;
+    Ok((cid, Some(key)))
+}
 
-    let cid = add?.trim().to_string();
-    if cid.is_empty() {
-        return Err("ipfs add returned empty CID".into());
+/// «Раздавать дальше»: получатель закрепляет у себя чужой файл из чата и тоже
+/// становится его источником — файл живёт, пока в сети хоть кто-то из получивших.
+/// Kubo тянет блоки из сети (или берёт из кэша после скачивания), поэтому нода
+/// должна быть поднята. Файл попадает в «Мои файлы» с пометкой «получен».
+#[tauri::command]
+pub async fn ipfs_seed(
+    mgr: State<'_, IpfsManager>,
+    account: String,
+    cid: String,
+    name: String,
+    size: u64,
+    key: Option<String>,
+) -> Result<shares::ShareEntry, String> {
+    shares::check_account(&account)?;
+    if !is_plausible_cid(&cid) {
+        return Err("invalid CID".into());
     }
+    // Имя и ключ пришли из чужого сообщения: в реестр — только разумное.
+    let name: String = name.chars().filter(|c| !c.is_control()).take(255).collect();
+    let base64 = |c: char| c.is_ascii_alphanumeric() || matches!(c, '+' | '/' | '=');
+    if key.as_ref().is_some_and(|k| k.len() > 64 || !k.chars().all(base64)) {
+        return Err("invalid key".into());
+    }
+    run_ipfs(&mgr.paths, &["pin", "add", "--progress=false", "--", &cid]).await?;
     provide_once_background(mgr.paths.clone(), cid.clone());
-    let entry = shares::ShareEntry { cid, name, size, added_at: now_ms(), key: Some(key) };
+    let entry = shares::ShareEntry {
+        cid,
+        name,
+        size,
+        added_at: now_ms(),
+        key,
+        received: true,
+    };
     let _guard = mgr.shares_lock.lock().await;
     shares::record(&mgr.paths.shares_dir, &account, entry.clone())?;
-    Ok(Some(entry))
+    Ok(entry)
 }
 
 /// Открытие приватного файла: тянем ШИФРТЕКСТ, расшифровываем ключом из ссылки
@@ -1346,6 +1414,40 @@ mod tests {
         assert!(SaveTarget::parse("ipns", "..evil", "").is_err());
         assert!(SaveTarget::parse("ipns", "a..b", "").is_err());
         assert!(SaveTarget::parse("ipns", "host/x", "").is_err());
+    }
+
+    /// С настоящим Kubo во временном repo без демона:
+    /// `cargo test --lib ipfs::tests::with_kubo -- --ignored`.
+    #[tokio::test]
+    #[ignore]
+    async fn with_kubo_a_private_file_round_trips_through_ipfs() {
+        let kubo = ["/opt/homebrew/bin/ipfs", "/usr/local/bin/ipfs"]
+            .into_iter()
+            .map(PathBuf::from)
+            .find(|p| p.exists())
+            .expect("Kubo is not installed");
+        let root = std::env::temp_dir().join(format!("bastyon-publish-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let mut paths = IpfsPaths::new(root.join("cache"), root.join("data").join("repo"));
+        paths.binary = kubo;
+        std::fs::create_dir_all(&paths.repo).unwrap();
+        run_ipfs(&paths, &["init", "--profile=test"]).await.unwrap();
+
+        let original: Vec<u8> = (0..300_000u32).map(|i| (i * 7 % 251) as u8).collect();
+        let file = root.join("secret.bin");
+        std::fs::write(&file, &original).unwrap();
+        let (cid, key) = add_encrypted(&paths, &file, original.len() as u64).await.unwrap();
+
+        // В IPFS лежит только шифртекст; ключ из ссылки возвращает оригинал.
+        let out = tokio::process::Command::new(&paths.binary)
+            .args(["cat", cid.trim()])
+            .env("IPFS_PATH", &paths.repo)
+            .output()
+            .await
+            .unwrap();
+        assert_ne!(out.stdout, original);
+        assert_eq!(crypto::decrypt(&key.unwrap(), &out.stdout).unwrap(), original);
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

@@ -65,6 +65,7 @@
 
 <script setup lang="ts">
 import { formatClock } from '@/helpers/common/date-formatter'
+import { parseIpfsFileLink } from '@/helpers/ipfs/ipfs-link'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DeleteOutlined, EllipsisOutlined } from '@/components/icons'
@@ -120,8 +121,12 @@ const lastMessagePreview = computed<string>(() => {
       return t('chat.videoMessage')
     case 'file':
       return t('chat.fileMessage')
-    default:
+    default: {
+      // «Файл через IPFS» — ссылка с ключом: в списке имя файла, а не ссылка.
+      const ipfsFile = parseIpfsFileLink(m.text)
+      if (ipfsFile) return `📎 ${ipfsFile.name || t('messenger.ipfsCardNoName')}`
       return m.text
+    }
   }
 })
 

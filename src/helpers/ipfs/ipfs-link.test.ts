@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parseIpfsLink, parseIpfsSecret } from './ipfs-link'
 import { buildIpfsViewerUrl, buildShareLink, buildIpfsSecretLink } from './ipfs-viewer'
+import { parseIpfsFileLink, parseIpfsSize } from './ipfs-link'
 
 describe('parseIpfsLink', () => {
   it('scheme-форма ipfs:// с путём', () => {
@@ -170,5 +171,45 @@ describe('IPFS secret links (private sharing)', () => {
     expect(parseIpfsSecret('ipfs://bafyCID')).toBeNull()
     expect(parseIpfsSecret('ipfs://bafyCID#name=x')).toBeNull()
     expect(parseIpfsSecret('https://example.com/page')).toBeNull()
+  })
+})
+
+describe('размер во фрагменте ссылки', () => {
+  it('публичной и приватной; битый — нет размера', () => {
+    expect(parseIpfsSize(buildShareLink({ cid: 'bafyDIR', name: 'a.zip', size: 1234 }))).toBe(1234)
+    const secret = buildShareLink({ cid: 'bafyENC', name: 'a.zip', size: 7, key: 'aB+/cd==' })
+    expect(parseIpfsSize(secret)).toBe(7)
+    expect(parseIpfsSecret(secret)).toEqual({ key: 'aB+/cd==', name: 'a.zip' })
+    expect(parseIpfsSize('ipfs://bafyX#size=-1')).toBeNull()
+    expect(parseIpfsSize('ipfs://bafyX#size=1e9')).toBeNull()
+    expect(parseIpfsSize('ipfs://bafyX')).toBeNull()
+  })
+})
+
+describe('parseIpfsFileLink — сообщение-карточка', () => {
+  it('публичный файл: имя из пути, размер из фрагмента', () => {
+    const link = buildShareLink({ cid: 'bafyDIR', name: 'Отчёт за май.pdf', size: 42 })
+    expect(parseIpfsFileLink(`  ${link}\n`)).toEqual({
+      target: { namespace: 'ipfs', root: 'bafyDIR', path: encodeURIComponent('Отчёт за май.pdf') },
+      secret: null,
+      name: 'Отчёт за май.pdf',
+      size: 42,
+    })
+  })
+
+  it('приватный: имя из фрагмента', () => {
+    const link = buildShareLink({ cid: 'bafyENC', name: 'x.txt', key: 'a2V5' })
+    expect(parseIpfsFileLink(link)).toMatchObject({
+      secret: { key: 'a2V5', name: 'x.txt' },
+      name: 'x.txt',
+      size: null,
+    })
+  })
+
+  it('ссылка посреди текста, IPNS и https-шлюз — не карточка', () => {
+    expect(parseIpfsFileLink('смотри ipfs://bafyDIR/a.pdf')).toBeNull()
+    expect(parseIpfsFileLink('ipns://docs.ipfs.tech')).toBeNull()
+    expect(parseIpfsFileLink('https://dweb.link/ipfs/bafyDIR')).toBeNull()
+    expect(parseIpfsFileLink('')).toBeNull()
   })
 })

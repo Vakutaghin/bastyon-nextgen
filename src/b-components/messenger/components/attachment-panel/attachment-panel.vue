@@ -9,6 +9,9 @@
       <SC_MenuItem type="button" @click="pickFile">
         <span aria-hidden="true">📄</span> {{ t('messenger.file') }}
       </SC_MenuItem>
+      <SC_MenuItem v-if="canSendIpfs" type="button" @click="pickIpfs">
+        <span aria-hidden="true">🌐</span> {{ t('messenger.ipfsFile') }}
+      </SC_MenuItem>
       <SC_MenuItem v-if="canSendPkoin" type="button" @click="pickPkoin">
         <span aria-hidden="true">💎</span> {{ t('messenger.sendPkoin') }}
       </SC_MenuItem>
@@ -34,11 +37,14 @@ import { SC_AttachmentRoot, SC_AttachButton, SC_Menu, SC_MenuItem, SC_HiddenInpu
 const props = defineProps<{
   title?: string
   canSendPkoin?: boolean
+  /** Файл через IPFS — без лимита чата (только десктоп). */
+  canSendIpfs?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'pickFiles', files: File[]): void
   (e: 'pickPkoin'): void
+  (e: 'pickIpfs'): void
 }>()
 
 const { t } = useI18n()
@@ -91,6 +97,11 @@ const pickFile = () => {
 const pickPkoin = () => {
   closeMenu()
   emit('pickPkoin')
+}
+
+const pickIpfs = () => {
+  closeMenu()
+  emit('pickIpfs')
 }
 
 const collectAndEmit = (input: HTMLInputElement) => {

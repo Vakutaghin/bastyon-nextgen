@@ -22,8 +22,9 @@ import {
 
 // Лимиты согласованы с bastyon-chat (input/index.js:141, 163): фото — 100 МБ, файлы — 25 МБ.
 // Тот же лимит применяется к видео (которые сейчас уходят как m.file).
-const IMAGE_SIZE_LIMIT_BYTES = 100 * 1024 * 1024
-const FILE_SIZE_LIMIT_BYTES = 25 * 1024 * 1024
+/** Больше в чат не отправить: чат-сервер не примет. Больше файла — через IPFS. */
+export const IMAGE_SIZE_LIMIT_BYTES = 100 * 1024 * 1024
+export const FILE_SIZE_LIMIT_BYTES = 25 * 1024 * 1024
 
 export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
   const { messages, currentUser, uiStore } = ctx

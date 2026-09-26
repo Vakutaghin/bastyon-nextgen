@@ -150,26 +150,38 @@ describe('ipfs-store: «Мои файлы»', () => {
 
   function running(store: ReturnType<typeof useIpfsStore>) {
     store.setConsent('accepted')
-    invoke.mockImplementation(async (cmd: string) => {
+    invoke.mockImplementation(async (cmd: string, args?: { private?: boolean; cid?: string }) => {
       if (cmd === 'ipfs_ensure') return snapshot({ status: 'running', gateway_port: 8080 })
       if (cmd === 'ipfs_shares') return [share('bafyold')]
-      if (cmd === 'ipfs_add') return share('bafynew')
-      if (cmd === 'ipfs_add_encrypted') return share('bafysecret', 'a2V5')
+      if (cmd === 'ipfs_pick_file') return { token: 'tok', name: 'a.pdf', size: 3 }
+      if (cmd === 'ipfs_publish')
+        return args?.private ? share('bafysecret', 'a2V5') : share('bafynew')
+      if (cmd === 'ipfs_seed') return { ...share(args?.cid ?? ''), received: true }
       if (cmd === 'ipfs_share_status') return { bafyold: 'pinning' }
       return undefined
     })
   }
 
-  it('публикация уходит от имени аккаунта и встаёт наверх его списка', async () => {
+  it('выбор файла — токен, публикация по нему от имени аккаунта, наверх списка', async () => {
     const store = useIpfsStore()
     running(store)
     await store.loadShares(ALICE)
 
-    await expect(store.addFile(ALICE)).resolves.toMatchObject({ cid: 'bafynew' })
-    await store.addFileEncrypted(ALICE)
+    const picked = await store.pickFile()
+    expect(picked).toEqual({ token: 'tok', name: 'a.pdf', size: 3 })
+    await expect(store.publish(ALICE, picked!, 'public')).resolves.toMatchObject({ cid: 'bafynew' })
+    await store.publish(ALICE, picked!, 'private')
 
-    expect(invoke).toHaveBeenCalledWith('ipfs_add', { account: ALICE })
-    expect(invoke).toHaveBeenCalledWith('ipfs_add_encrypted', { account: ALICE })
+    expect(invoke).toHaveBeenCalledWith('ipfs_publish', {
+      account: ALICE,
+      token: 'tok',
+      private: false,
+    })
+    expect(invoke).toHaveBeenCalledWith('ipfs_publish', {
+      account: ALICE,
+      token: 'tok',
+      private: true,
+    })
     expect(store.shares.map((s) => s.cid)).toEqual(['bafysecret', 'bafynew', 'bafyold'])
   })
 
@@ -177,8 +189,32 @@ describe('ipfs-store: «Мои файлы»', () => {
     const store = useIpfsStore()
     running(store)
     await store.loadShares(ALICE)
-    await store.addFile('PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82')
+    const picked = { token: 'tok', name: 'a.pdf', size: 3 }
+    await store.publish('PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82', picked, 'public')
     expect(store.shares.map((s) => s.cid)).toEqual(['bafyold'])
+  })
+
+  it('«Раздавать дальше»: чужой файл закрепляется и попадает в список как полученный', async () => {
+    const store = useIpfsStore()
+    running(store)
+    await store.loadShares(ALICE)
+
+    const seeded = await store.seed(ALICE, {
+      cid: 'bafyfriend',
+      name: 'x.zip',
+      size: 9,
+      key: 'a2V5',
+    })
+
+    expect(invoke).toHaveBeenCalledWith('ipfs_seed', {
+      account: ALICE,
+      cid: 'bafyfriend',
+      name: 'x.zip',
+      size: 9,
+      key: 'a2V5',
+    })
+    expect(seeded?.received).toBe(true)
+    expect(store.shares[0]?.cid).toBe('bafyfriend')
   })
 
   it('«Перестать раздавать» убирает файл и его статус на сервисе', async () => {

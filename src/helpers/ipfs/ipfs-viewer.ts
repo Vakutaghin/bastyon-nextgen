@@ -20,20 +20,33 @@ export function buildIpfsViewerUrl(target: IpfsTarget, gateway: string = IPFS_GA
 /**
  * Ссылка на публикацию из «Моих файлов». Публичный файл лежит в каталоге-
  * обёртке — `ipfs://<каталог>/<имя>`: имя и тип видны до скачивания. У
- * приватного ключ и имя во фрагменте (см. buildIpfsSecretLink).
+ * приватного ключ и имя во фрагменте (см. buildIpfsSecretLink). Размер — тоже
+ * во фрагменте: карточка в чате показывает его до скачивания.
  */
-export function buildShareLink(share: { cid: string; name: string; key?: string }): string {
-  if (share.key) return buildIpfsSecretLink(share.cid, share.key, share.name)
-  return `ipfs://${share.cid.trim()}/${encodeURIComponent(share.name)}`
+export function buildShareLink(share: {
+  cid: string
+  name: string
+  size?: number
+  key?: string
+}): string {
+  if (share.key) return buildIpfsSecretLink(share.cid, share.key, share.name, share.size)
+  const size = share.size === undefined ? '' : `#size=${share.size}`
+  return `ipfs://${share.cid.trim()}/${encodeURIComponent(share.name)}${size}`
 }
 
 /**
- * Приватная шаринг-ссылка: ключ и имя файла во ФРАГМENTE (`#…`) — фрагмент не
+ * Приватная шаринг-ссылка: ключ и имя файла во ФРАГМЕНТЕ (`#…`) — фрагмент не
  * уходит в HTTP-запросах на gateway, только клиент видит ключ. encodeURIComponent,
  * т.к. base64 содержит `+/=`.
  */
-export function buildIpfsSecretLink(cid: string, keyB64: string, filename: string): string {
+export function buildIpfsSecretLink(
+  cid: string,
+  keyB64: string,
+  filename: string,
+  size?: number
+): string {
   const k = encodeURIComponent(keyB64)
   const n = encodeURIComponent(filename)
-  return `ipfs://${cid.trim()}#key=${k}&name=${n}`
+  const sz = size === undefined ? '' : `&size=${size}`
+  return `ipfs://${cid.trim()}#key=${k}&name=${n}${sz}`
 }

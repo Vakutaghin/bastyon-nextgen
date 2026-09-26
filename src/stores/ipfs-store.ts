@@ -37,10 +37,15 @@ export type IpfsShare = {
   addedAt: number
   /** Ключ приватного файла; у публичного нет. */
   key?: string
+  /** Чужой файл, который аккаунт раздаёт дальше. */
+  received?: boolean
 }
 
 /** Копия на удалённом pinning-сервисе. */
 export type RemotePinStatus = 'queued' | 'pinning' | 'pinned' | 'failed'
+
+/** Файл, выбранный в нативном диалоге: путь остаётся в Rust, у фронта — токен. */
+export type IpfsPickedFile = { token: string; name: string; size: number }
 
 export type IpfsModalPhase = 'consent' | 'progress' | 'desktop-only' | 'tor-blocked' | 'pin-config'
 
@@ -282,47 +287,82 @@ export const useIpfsStore = defineStore('ipfs', {
      * ПУБЛИЧНЫЙ и жив, пока эта нода онлайн (или CID запинен где-то ещё).
      */
     /**
-     * Публикация файла. Файл выбирается в НАТИВНОМ диалоге на стороне Rust —
-     * путь из webview не передаётся (иначе XSS публиковал бы любой файл).
-     * Публикация попадает в «Мои файлы» аккаунта. null — отмена диалога или
-     * ошибка (см. message).
+     * Выбор файла для публикации в НАТИВНОМ диалоге на стороне Rust: путь в
+     * webview не попадает (иначе XSS публиковал бы любой файл), публикуется по
+     * токену. null — диалог закрыли.
      */
-    async addFile(account: string): Promise<IpfsShare | null> {
-      return this._publish('ipfs_add', account)
-    },
-
-    /**
-     * Приватная публикация: файл из нативного диалога (Rust), шифруем и кладём
-     * шифртекст в IPFS. Ключ едет во фрагменте ссылки и хранится в «Моих файлах».
-     */
-    async addFileEncrypted(account: string): Promise<IpfsShare | null> {
-      return this._publish('ipfs_add_encrypted', account)
-    },
-
-    async _publish(
-      command: 'ipfs_add' | 'ipfs_add_encrypted',
-      account: string
-    ): Promise<IpfsShare | null> {
+    async pickFile(): Promise<IpfsPickedFile | null> {
       if (!this.available) {
         this.showDesktopOnly()
         return null
       }
+      try {
+        return await tauriInvoke<IpfsPickedFile | null>('ipfs_pick_file')
+      } catch (e) {
+        this.message = String(e)
+        return null
+      }
+    },
+
+    /**
+     * Публикация выбранного файла в «Мои файлы» аккаунта: публично (ссылка с
+     * именем) или приватно (шифртекст, ключ во фрагменте ссылки). null —
+     * ошибка (см. message) или нода не поднялась.
+     */
+    async publish(
+      account: string,
+      picked: IpfsPickedFile,
+      access: 'public' | 'private'
+    ): Promise<IpfsShare | null> {
       // Явная публикация = согласие на локальную ноду.
       this.setConsent('accepted')
       const port = await this.ensureRunning()
       if (!port) return null
       try {
-        const share = await tauriInvoke<IpfsShare | null>(command, { account })
-        if (!share) return null
-        if (this.sharesAccount === account) {
-          this.shares = [share, ...this.shares.filter((s) => s.cid !== share.cid)]
-        }
+        const share = await tauriInvoke<IpfsShare>('ipfs_publish', {
+          account,
+          token: picked.token,
+          private: access === 'private',
+        })
+        this._remember(account, share)
         if (this.pinServiceConfigured) void this.pinRemote(share.cid)
         return share
       } catch (e) {
         this.message = String(e)
         return null
       }
+    },
+
+    /**
+     * «Раздавать дальше»: закрепить у себя чужой файл из чата — этот компьютер
+     * тоже становится его источником. null — ошибка (см. message).
+     */
+    async seed(
+      account: string,
+      file: { cid: string; name: string; size: number; key?: string }
+    ): Promise<IpfsShare | null> {
+      this.setConsent('accepted')
+      const port = await this.ensureRunning()
+      if (!port) return null
+      try {
+        const share = await tauriInvoke<IpfsShare>('ipfs_seed', {
+          account,
+          cid: file.cid,
+          name: file.name,
+          size: file.size,
+          key: file.key ?? null,
+        })
+        this._remember(account, share)
+        return share
+      } catch (e) {
+        this.message = String(e)
+        return null
+      }
+    },
+
+    _remember(account: string, share: IpfsShare): void {
+      if (this.sharesAccount !== account) return
+      this.shares = [share, ...this.shares.filter((s) => s.cid !== share.cid)]
     },
 
     /** «Мои файлы» аккаунта — из реестра в Rust. */

@@ -113,7 +113,9 @@ const remoteConfigured = files.remoteConfigured
 const list = files.files
 
 function describe(file: IpfsShare): string {
-  const access = t(file.key ? 'myFiles.private' : 'myFiles.public')
+  const access = t(
+    file.received ? 'myFiles.received' : file.key ? 'myFiles.private' : 'myFiles.public'
+  )
   return `${formatFileSize(file.size)} · ${formatLongDate(file.addedAt)} · ${access}`
 }
 </script>

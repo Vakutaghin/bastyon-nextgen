@@ -80,32 +80,38 @@ export interface IpfsSecret {
 }
 
 /**
- * Извлекает ключ/имя из фрагмента приватной ссылки (`…#key=<b64>&name=<file>`).
+ * Параметры из фрагмента ссылки (`…#key=<b64>&name=<file>&size=<байт>`).
  * Фрагмент не уходит на gateway. Парсим вручную (не URLSearchParams): base64
  * содержит `+`, который URLSearchParams превратил бы в пробел.
  */
-export function parseIpfsSecret(href: string): IpfsSecret | null {
-  if (!href || typeof href !== 'string') return null
+function readFragment(href: string): Map<string, string> {
+  const params = new Map<string, string>()
+  if (!href || typeof href !== 'string') return params
   const hashIdx = href.indexOf('#')
-  if (hashIdx < 0) return null
-  const frag = href.slice(hashIdx + 1)
-  if (!frag) return null
-
-  let key = ''
-  let name = ''
-  for (const pair of frag.split('&')) {
+  if (hashIdx < 0) return params
+  for (const pair of href.slice(hashIdx + 1).split('&')) {
     const eq = pair.indexOf('=')
     if (eq < 0) continue
-    const k = pair.slice(0, eq)
-    const v = pair.slice(eq + 1)
     try {
-      if (k === 'key') key = decodeURIComponent(v)
-      else if (k === 'name') name = decodeURIComponent(v)
+      params.set(pair.slice(0, eq), decodeURIComponent(pair.slice(eq + 1)))
     } catch {
       /* битый компонент — игнорируем */
     }
   }
-  return key ? { key, name } : null
+  return params
+}
+
+/** Ключ и имя из фрагмента приватной ссылки; null — ссылка не приватная. */
+export function parseIpfsSecret(href: string): IpfsSecret | null {
+  const params = readFragment(href)
+  const key = params.get('key') ?? ''
+  return key ? { key, name: params.get('name') ?? '' } : null
+}
+
+/** Размер файла из фрагмента ссылки (его кладут «Мои файлы»); null — нет или битый. */
+export function parseIpfsSize(href: string): number | null {
+  const raw = readFragment(href).get('size') ?? ''
+  return /^\d{1,15}$/.test(raw) ? Number(raw) : null
 }
 
 /**
@@ -149,4 +155,30 @@ export function parseIpfsLink(href: string): IpfsTarget | null {
   }
 
   return null
+}
+
+/** Сообщение, которое целиком — ссылка на файл в IPFS: чат рисует её карточкой. */
+export interface IpfsFileLink {
+  target: IpfsTarget
+  secret: IpfsSecret | null
+  /** Имя для показа: из фрагмента приватной ссылки или из пути; '' — голый CID. */
+  name: string
+  size: number | null
+}
+
+export function parseIpfsFileLink(text: string): IpfsFileLink | null {
+  const raw = (text || '').trim()
+  // Только scheme-форма одним словом: ссылка посреди текста остаётся ссылкой.
+  if (!/^ipfs:\/\/\S+$/i.test(raw)) return null
+  const target = parseIpfsLink(raw)
+  if (!target || target.namespace !== 'ipfs') return null
+  const secret = parseIpfsSecret(raw)
+  const segment = target.path.split('/').filter(Boolean).pop() ?? ''
+  let fromPath = segment
+  try {
+    fromPath = decodeURIComponent(segment)
+  } catch {
+    /* оставляем как есть */
+  }
+  return { target, secret, name: secret?.name || fromPath, size: parseIpfsSize(raw) }
 }

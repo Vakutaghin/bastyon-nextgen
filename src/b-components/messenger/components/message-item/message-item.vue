@@ -42,6 +42,11 @@
         <TransactionMessage :message="message" />
       </div>
 
+      <!-- Сообщение целиком — ссылка на файл в IPFS («Файл через IPFS»): карточка. -->
+      <div v-else-if="ipfsFile" class="message-file">
+        <IpfsFileMessage :link="ipfsFile" :mine="isMine" />
+      </div>
+
       <div v-else class="message-text">
         <template v-for="(seg, idx) in messageSegments" :key="idx">
           <span v-if="seg.kind === 'html'" v-html="seg.html" />
@@ -141,6 +146,8 @@ import ImageMessage from '../image-message/image-message.vue'
 import VideoMessage from '../video-message/video-message.vue'
 import FileMessage from '../file-message/file-message.vue'
 import TransactionMessage from '../transaction-message/transaction-message.vue'
+import IpfsFileMessage from '../ipfs-file-message/ipfs-file-message.vue'
+import { parseIpfsFileLink } from '@/helpers/ipfs/ipfs-link'
 import PostEmbed from '../post-embed/post-embed.vue'
 import LinkPreview from '../link-preview/link-preview.vue'
 import { formatMessageSegments, extractFirstExternalUrl } from './helpers'
@@ -248,6 +255,11 @@ watch(senderAddress, ensureSenderProfile, { immediate: true })
 
 /** Сегменты текста: чередование `html` (с inline `<a>`) и `bastyon` (PostEmbed). */
 const messageSegments = computed(() => formatMessageSegments(props.message.text || ''))
+
+/** Текст — одна ссылка на файл в IPFS: рисуем карточкой, а не ссылкой. */
+const ipfsFile = computed(() =>
+  (props.message.type ?? 'text') === 'text' ? parseIpfsFileLink(props.message.text || '') : null
+)
 
 /** Первый внешний http(s)-URL для OG-превью (не bastyon-ссылка). */
 // OG-превью запрашивается у homeserver'а с userId — для E2E-переписки не

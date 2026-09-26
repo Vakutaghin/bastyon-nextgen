@@ -30,6 +30,9 @@ pub struct ShareEntry {
     /// Ключ приватного файла (base64). У публичного нет.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub key: Option<String>,
+    /// Чужой файл, который аккаунт раздаёт дальше («Раздавать дальше» в чате).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub received: bool,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -308,6 +311,7 @@ mod tests {
             size: 12,
             added_at: 1,
             key: key.map(Into::into),
+            received: false,
         }
     }
 
