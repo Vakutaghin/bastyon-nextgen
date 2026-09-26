@@ -13,6 +13,12 @@ impl IpfsChild {
     }
 }
 
+/// Аргументы `ipfs daemon`. `--enable-gc` обязателен: без него Kubo не
+/// применяет `Datastore.StorageMax` (config.rs) и кэш просмотренного растёт без
+/// предела. Периодический GC уносит только незапиненное — свои опубликованные
+/// файлы (`add --pin`) остаются.
+pub const DAEMON_ARGS: [&str; 3] = ["daemon", "--migrate=true", "--enable-gc"];
+
 /// Запускает `ipfs daemon` с IPFS_PATH на наш repo. Логи стримятся в фоне;
 /// сообщение о занятой блокировке кладётся в state для понятной диагностики.
 /// Готовность демона определяет вызывающий — опросом API (см. mod::wait_ready),
@@ -23,7 +29,7 @@ pub fn spawn_daemon(
     shared: SharedIpfsState,
 ) -> std::io::Result<IpfsChild> {
     let mut cmd = Command::new(&paths.binary);
-    cmd.arg("daemon").arg("--migrate=true");
+    cmd.args(DAEMON_ARGS);
     cmd.env("IPFS_PATH", &paths.repo);
     // Не отчитываться наружу о том, что читает пользователь.
     cmd.env("IPFS_TELEMETRY", "off");
@@ -134,6 +140,13 @@ unsafe fn libc_kill(pid: i32, sig: i32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn daemon_collects_garbage() {
+        // Без --enable-gc лимит Datastore.StorageMax не действует.
+        assert!(DAEMON_ARGS.contains(&"--enable-gc"));
+        assert_eq!(DAEMON_ARGS[0], "daemon");
+    }
 
     #[test]
     fn detects_lock_errors() {
