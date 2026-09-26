@@ -2,11 +2,18 @@
   <SC_VideoContainer
     ref="videoContainer"
     tabindex="0"
-    :class="{ 'hide-cursor': shouldHideCursor, 'is-fullscreen': isFullscreen }"
+    :class="{
+      'hide-cursor': shouldHideCursor,
+      'is-fullscreen': isFullscreen,
+      'pointer-mode': pointerMode,
+    }"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @mousemove="handleMouseMove"
     @click="handleVideoClick"
+    @pointerdown.capture="pointerMode = true"
+    @keydown.tab="pointerMode = false"
+    @focusout="handleFocusOut"
   >
     <SC_VideoWrapper :style="getVideoWrapperStyle()">
       <!-- Skeleton loader while thumbnail is loading -->
@@ -119,18 +126,18 @@
       {{ seekValue }}
     </SC_SeekNotification>
 
-    <!-- Иконка Play -->
-    <SC_SeekNotification v-if="showPlayNotification && isInitialized" :show="showPlayNotification">
+    <!-- Иконка Play — по центру ролика -->
+    <SC_IconNotification v-if="showPlayNotification && isInitialized" :show="showPlayNotification">
       <PlayCircleOutlined :style="ICON_WHITE_85_24" />
-    </SC_SeekNotification>
+    </SC_IconNotification>
 
     <!-- Иконка Pause -->
-    <SC_SeekNotification
+    <SC_IconNotification
       v-if="showPauseNotification && isInitialized"
       :show="showPauseNotification"
     >
       <PauseCircleOutlined :style="ICON_WHITE_85_24" />
-    </SC_SeekNotification>
+    </SC_IconNotification>
 
     <!-- Справка по горячим клавишам -->
     <SC_HotkeysHelpOverlay v-if="showHotkeysHelp" @click.stop="toggleHotkeysHelp">
@@ -341,7 +348,7 @@ import { useVideoThumbnail } from './composables/use-video-thumbnail'
 import { useVideoSubtitles } from './composables/use-video-subtitles'
 import { useVideoElementEvents } from './composables/use-video-element-events'
 import { useTorMedia } from '@/composables/use-tor-media'
-import { resolveVideoElement } from './composables/utils'
+import { resolveDomElement, resolveVideoElement } from './composables/utils'
 import AudioVisualizer from '@/b-components/content/video-player/components/audio-visualizer/audio-visualizer.vue'
 import {
   SC_VideoContainer,
@@ -460,6 +467,7 @@ const {
   volumeSliderRef,
   volumeWidth,
   setVolume,
+  displayVolumeNotification,
   handleVolumeMouseDown,
   handleVolumeClick,
   formatVolumeDisplay,
@@ -476,7 +484,6 @@ const {
   setPlaybackRate: internalSetPlaybackRate,
   increasePlaybackRate,
   decreasePlaybackRate,
-  resetPlaybackRate,
   formatPlaybackRate,
 } = useVideoPlaybackRate(videoElement, isPlaying, startProgressAnimation)
 
@@ -681,14 +688,17 @@ function togglePlay(showNotification = false): void {
     if (!isInitialized.value) {
       initPlayer(true)
     } else {
+      // Иконку — сразу по нажатию: play() ждёт, пока ролик реально тронется.
+      if (showNotification) triggerPlayPauseNotification(true)
       video
         .play()
         .then(() => {
           isPlaying.value = true
           videoPlayerManager.pauseAllExcept(playerId.value)
-          if (showNotification) triggerPlayPauseNotification(true)
         })
         .catch((err) => {
+          // AbortError — паузу нажали раньше, чем ролик успел пойти: это не сбой.
+          if (err instanceof DOMException && err.name === 'AbortError') return
           console.error('Error playing video:', err)
         })
     }
@@ -724,23 +734,39 @@ const shouldHideCursor = computed<boolean>(() => isFullscreen.value && !showCont
 // Click handler: single → play/pause, double → fullscreen.
 const handleVideoClick = createClickHandler(togglePlay, toggleFullscreen, DOUBLE_CLICK_DELAY)
 
-// Горячие клавиши (composable сам регистрирует/снимает listener).
-const { showHotkeysHelp, toggleHotkeysHelp } = useVideoHotkeys({
+// Горячие клавиши: слушает их и выбирает плеер videoPlayerManager, здесь —
+// что они делают с этим плеером.
+const { showHotkeysHelp, toggleHotkeysHelp, handleHotkey } = useVideoHotkeys({
   videoElement,
-  playerId,
-  isHovering,
+  isInitialized,
+  isLoading,
   isFullscreen,
+  isUnavailable: () => !!error.value || torNoticeVisible.value,
   volume,
-  showVolumeNotification,
   togglePlay,
   toggleFullscreen,
   toggleMute,
   setVolume,
+  displayVolumeNotification,
   increasePlaybackRate,
   decreasePlaybackRate,
   triggerSeekNotification,
 })
 const hotkeysList = HOTKEYS_LIST
+
+// Плеером пользуются мышью или пальцем. Тогда фокус без обводки: после клика
+// по ролику любая клавиша включала :focus-visible, и пробел рисовал рамку
+// вокруг плеера. И кнопки плеера, оказавшиеся в фокусе от клика, не забирают
+// пробел себе. С Tab обводка и обычные кнопки возвращаются.
+const pointerMode = ref(false)
+
+function handleFocusOut(event: FocusEvent): void {
+  // Окно ушло в фон — фокус вернётся сюда же.
+  if (!document.hasFocus()) return
+  const next = event.relatedTarget
+  if (next instanceof Node && resolveDomElement(videoContainer)?.contains(next)) return
+  pointerMode.value = false
+}
 
 let unregisterPlayer: (() => void) | null = null
 
@@ -753,12 +779,12 @@ onMounted(() => {
       if (video && !video.paused) video.pause()
     },
     isPlaying: () => isPlaying.value,
-    togglePlay: () => togglePlay(),
-    toggleMute: () => toggleMute(),
-    increasePlaybackRate: () => increasePlaybackRate(),
-    decreasePlaybackRate: () => decreasePlaybackRate(),
-    resetPlaybackRate: () => resetPlaybackRate(),
-    toggleHotkeysHelp: () => toggleHotkeysHelp(),
+    element: () => resolveDomElement(videoContainer),
+    isStarted: () => isInitialized.value,
+    isHovered: () => isHovering.value,
+    isFullscreen: () => isFullscreen.value,
+    isPointerMode: () => pointerMode.value,
+    handleHotkey,
   })
 
   loadThumbnail()

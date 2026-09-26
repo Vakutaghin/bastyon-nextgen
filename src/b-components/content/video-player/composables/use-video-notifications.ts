@@ -16,29 +16,25 @@ export function useVideoNotifications() {
 
   let seekNotificationTimer: ReturnType<typeof setTimeout> | null = null
   let playPauseNotificationTimer: ReturnType<typeof setTimeout> | null = null
+  /** Сдвиг текущей серии перемоток, секунды. */
+  let seekTotal = 0
 
   /**
-   * Показать уведомление о перемотке (+10s / -10s).
-   * Сбрасывает предыдущую анимацию для корректного рестарта.
+   * Показать уведомление о перемотке на `seconds` (+10s / -10s). Серия в одну
+   * сторону, пока подсказка на экране (стрелку держат или жмут подряд),
+   * копится: +10s, +20s, +30s — и подсказка не мигает на каждом шаге.
    */
-  const triggerSeekNotification = (value: string) => {
-    if (seekNotificationTimer) {
-      clearTimeout(seekNotificationTimer)
+  const triggerSeekNotification = (seconds: number) => {
+    const sameRun = showSeekNotification.value && Math.sign(seekTotal) === Math.sign(seconds)
+    seekTotal = sameRun ? seekTotal + seconds : seconds
+    seekValue.value = `${seekTotal > 0 ? '+' : '-'}${Math.abs(seekTotal)}s`
+    showSeekNotification.value = true
+
+    if (seekNotificationTimer) clearTimeout(seekNotificationTimer)
+    seekNotificationTimer = setTimeout(() => {
+      showSeekNotification.value = false
       seekNotificationTimer = null
-    }
-
-    showSeekNotification.value = false
-
-    // setTimeout(0) — для рестарта CSS-анимации через reflow
-    setTimeout(() => {
-      seekValue.value = value
-      showSeekNotification.value = true
-
-      seekNotificationTimer = setTimeout(() => {
-        showSeekNotification.value = false
-        seekNotificationTimer = null
-      }, NOTIFICATION_DURATION)
-    }, 0)
+    }, NOTIFICATION_DURATION)
   }
 
   /**

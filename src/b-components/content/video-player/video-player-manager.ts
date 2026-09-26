@@ -1,20 +1,30 @@
 /**
  * Глобальный менеджер видеоплееров
- * Обеспечивает, что только один видеоплеер воспроизводится одновременно
+ * Обеспечивает, что только один видеоплеер воспроизводится одновременно,
+ * и раздаёт горячие клавиши: слушатель один на все плееры, клавиша достаётся
+ * ровно одному (правила — в video-hotkeys.ts).
  */
 
 import type { VideoPlayerInstance } from './types'
+import {
+  HeldHotkeys,
+  hotkeyAction,
+  hotkeyCode,
+  isHotkeyBlockedBy,
+  isOnScreen,
+} from './video-hotkeys'
 
-class VideoPlayerManager {
+export class VideoPlayerManager {
   private instances: Map<string, VideoPlayerInstance> = new Map()
   private currentPlayingId: string | null = null
   private lastActivePlayerId: string | null = null // Последний активный плеер (даже если на паузе)
   private hasUserInteracted: boolean = false // Был ли запущен хотя бы один плеер
+  private readonly held = new HeldHotkeys()
 
   /**
    * Регистрирует новый инстанс видеоплеера
    * @param id Уникальный идентификатор инстанса
-   * @param instance Объект с методами pause и isPlaying
+   * @param instance Плеер: пауза, состояние и обработка горячих клавиш
    * @returns Функция для отмены регистрации
    */
   register(id: string, instance: VideoPlayerInstance): () => void {
@@ -23,11 +33,13 @@ class VideoPlayerManager {
     // Если это первый плеер, делаем его последним активным
     if (this.instances.size === 1) {
       this.lastActivePlayerId = id
+      this.listenKeys(true)
     }
 
     // Возвращаем функцию для отмены регистрации
     return () => {
       this.instances.delete(id)
+      if (this.instances.size === 0) this.listenKeys(false)
       if (this.currentPlayingId === id) {
         this.currentPlayingId = null
       }
@@ -142,171 +154,79 @@ class VideoPlayerManager {
     return this.instances.size > 0
   }
 
-  /**
-   * Переключает воспроизведение текущего активного или последнего активного видеоплеера
-   * @returns true, если переключение выполнено, false если нет плееров
-   */
-  toggleCurrentPlaying(): boolean {
-    // Сначала пытаемся переключить текущий играющий плеер
-    const current = this.getCurrentPlaying()
-    if (current && current.togglePlay) {
-      try {
-        current.togglePlay()
-        // Обновляем lastActivePlayerId, чтобы этот плеер оставался последним активным
-        this.lastActivePlayerId = current.id
-        return true
-      } catch (error) {
-        console.warn(`Failed to toggle video player ${current.id}:`, error)
-      }
-    }
+  // === Горячие клавиши ===
 
-    // Если нет играющего плеера, пытаемся переключить последний активный
-    const lastActive = this.getLastActivePlayer()
-    if (lastActive && lastActive.togglePlay) {
-      try {
-        lastActive.togglePlay()
-        // Обновляем lastActivePlayerId при переключении
-        this.lastActivePlayerId = lastActive.id
-        return true
-      } catch (error) {
-        console.warn(`Failed to toggle video player ${lastActive.id}:`, error)
-      }
+  /** Слушаем, пока на странице есть хоть один плеер. */
+  private listenKeys(on: boolean): void {
+    if (typeof window === 'undefined') return
+    if (on) {
+      window.addEventListener('keydown', this.onKeydown)
+      window.addEventListener('keyup', this.onKeyup)
+      window.addEventListener('blur', this.onBlur)
+    } else {
+      window.removeEventListener('keydown', this.onKeydown)
+      window.removeEventListener('keyup', this.onKeyup)
+      window.removeEventListener('blur', this.onBlur)
+      this.held.clear()
     }
-
-    return false
   }
 
   /**
-   * Переключает mute/unmute текущего активного или последнего активного видеоплеера
-   * @returns true, если переключение выполнено, false если нет плееров
+   * На window — после всех обработчиков страницы: кто обработал клавишу сам
+   * (поле ввода, модалка), тот её и забрал.
    */
-  toggleMute(): boolean {
-    // Сначала пытаемся переключить mute текущего играющего плеера
-    const current = this.getCurrentPlaying()
-    if (current && current.toggleMute) {
-      try {
-        current.toggleMute()
-        return true
-      } catch (error) {
-        console.warn(`Failed to toggle mute video player ${current.id}:`, error)
-      }
+  private readonly onKeydown = (event: KeyboardEvent): void => {
+    if (event.defaultPrevented || event.isComposing) return
+    const action = hotkeyAction(event)
+    if (!action) return
+    const code = hotkeyCode(event)
+    const now = performance.now()
+
+    // Клавишу держат: пробел не щёлкает паузой 30 раз в секунду, а перемотка
+    // не сыплет запросами сегментов. Страница при этом тоже не прокручивается.
+    if (event.repeat) {
+      const decision = this.held.repeat(code, action, now)
+      if (decision === 'pass') return
+      event.preventDefault()
+      if (decision === 'run') this.hotkeyTarget(event)?.handleHotkey(action)
+      return
     }
 
-    // Если нет играющего плеера, пытаемся переключить mute последнего активного
-    const lastActive = this.getLastActivePlayer()
-    if (lastActive && lastActive.toggleMute) {
-      try {
-        lastActive.toggleMute()
-        return true
-      } catch (error) {
-        console.warn(`Failed to toggle mute video player ${lastActive.id}:`, error)
-      }
-    }
+    const player = this.hotkeyTarget(event)
+    if (!player?.handleHotkey(action)) return
+    event.preventDefault()
+    this.held.press(code, now)
+  }
 
-    return false
+  /** Отпустили нашу клавишу. Firefox нажимает кнопку в фокусе на keyup пробела — не даём. */
+  private readonly onKeyup = (event: KeyboardEvent): void => {
+    if (this.held.release(hotkeyCode(event))) event.preventDefault()
+  }
+
+  private readonly onBlur = (): void => {
+    this.held.clear()
   }
 
   /**
-   * Увеличивает скорость воспроизведения текущего активного или последнего активного видеоплеера
-   * @returns true, если изменение выполнено, false если нет плееров
+   * Плеер, которому достаётся клавиша, или null — тогда она работает как обычно.
+   * Во весь экран → с фокусом внутри → играющий → последний запущенный, если
+   * виден → под мышью. Без полного экрана и фокуса — только после первого
+   * запуска видео: до этого пробел листает страницу.
    */
-  increasePlaybackRate(): boolean {
-    // Сначала пытаемся изменить скорость текущего играющего плеера
-    const current = this.getCurrentPlaying()
-    if (current && current.increasePlaybackRate) {
-      try {
-        current.increasePlaybackRate()
-        return true
-      } catch (error) {
-        console.warn(`Failed to increase playback rate video player ${current.id}:`, error)
-      }
-    }
-
-    // Если нет играющего плеера, пытаемся изменить скорость последнего активного
+  private hotkeyTarget(event: KeyboardEvent): VideoPlayerInstance | null {
+    const origin = event.target instanceof Element ? event.target : null
+    const players = [...this.instances.values()]
     const lastActive = this.getLastActivePlayer()
-    if (lastActive && lastActive.increasePlaybackRate) {
-      try {
-        lastActive.increasePlaybackRate()
-        return true
-      } catch (error) {
-        console.warn(`Failed to increase playback rate video player ${lastActive.id}:`, error)
-      }
-    }
-
-    return false
-  }
-
-  /**
-   * Уменьшает скорость воспроизведения текущего активного или последнего активного видеоплеера
-   * @returns true, если изменение выполнено, false если нет плееров
-   */
-  decreasePlaybackRate(): boolean {
-    // Сначала пытаемся изменить скорость текущего играющего плеера
-    const current = this.getCurrentPlaying()
-    if (current && current.decreasePlaybackRate) {
-      try {
-        current.decreasePlaybackRate()
-        return true
-      } catch (error) {
-        console.warn(`Failed to decrease playback rate video player ${current.id}:`, error)
-      }
-    }
-
-    // Если нет играющего плеера, пытаемся изменить скорость последнего активного
-    const lastActive = this.getLastActivePlayer()
-    if (lastActive && lastActive.decreasePlaybackRate) {
-      try {
-        lastActive.decreasePlaybackRate()
-        return true
-      } catch (error) {
-        console.warn(`Failed to decrease playback rate video player ${lastActive.id}:`, error)
-      }
-    }
-
-    return false
-  }
-
-  /**
-   * Сбрасывает скорость воспроизведения до стандартной (1.0x) текущего активного или последнего активного видеоплеера
-   * @returns true, если сброс выполнен, false если нет плееров
-   */
-  resetPlaybackRate(): boolean {
-    // Сначала пытаемся сбросить скорость текущего играющего плеера
-    const current = this.getCurrentPlaying()
-    if (current && current.resetPlaybackRate) {
-      try {
-        current.resetPlaybackRate()
-        return true
-      } catch (error) {
-        console.warn(`Failed to reset playback rate video player ${current.id}:`, error)
-      }
-    }
-
-    // Если нет играющего плеера, пытаемся сбросить скорость последнего активного
-    const lastActive = this.getLastActivePlayer()
-    if (lastActive && lastActive.resetPlaybackRate) {
-      try {
-        lastActive.resetPlaybackRate()
-        return true
-      } catch (error) {
-        console.warn(`Failed to reset playback rate video player ${lastActive.id}:`, error)
-      }
-    }
-
-    return false
-  }
-
-  /**
-   * Переключает отображение справки по горячим клавишам
-   * @returns true, если переключение выполнено
-   */
-  toggleHotkeysHelp(): boolean {
-    const player = this.getLastActivePlayer()
-    if (player && player.toggleHotkeysHelp) {
-      player.toggleHotkeysHelp()
-      return true
-    }
-    return false
+    const player =
+      players.find((p) => p.isFullscreen()) ??
+      (origin ? players.find((p) => p.element()?.contains(origin)) : undefined) ??
+      (this.hasUserInteracted
+        ? (players.find((p) => p.isPlaying()) ??
+          (lastActive?.isStarted() && isOnScreen(lastActive.element()) ? lastActive : undefined) ??
+          players.find((p) => p.isHovered()))
+        : undefined)
+    if (!player) return null
+    return isHotkeyBlockedBy(origin, player.element(), player.isPointerMode()) ? null : player
   }
 }
 

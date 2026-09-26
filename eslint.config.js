@@ -62,6 +62,7 @@ const BROWSER_GLOBALS = {
   Event: 'readonly',
   DragEvent: 'readonly',
   DataTransfer: 'readonly',
+  FocusEvent: 'readonly',
   KeyboardEvent: 'readonly',
   MouseEvent: 'readonly',
   Notification: 'readonly',

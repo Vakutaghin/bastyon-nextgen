@@ -46,7 +46,12 @@ export function useVideoFullscreen(
   const handleFullscreenChange = () => {
     // Если мы в Tauri и используется CSS fallback (без native API),
     // то событие fullscreenchange не придёт — но если пришло, значит реально вышли.
-    isFullscreen.value = !!getVendorFullscreenElement()
+    // Событие получают все плееры страницы, а во весь экран развёрнут один:
+    // без проверки «мой ли ролик» флаг вставал у всех, и горячие клавиши
+    // доставались первому плееру ленты, а не развёрнутому.
+    const element = getVendorFullscreenElement()
+    const video = resolveVideoElement(videoElement)
+    isFullscreen.value = !!element && !!video && element.contains(video)
   }
 
   /** Переключение полноэкранного режима. */

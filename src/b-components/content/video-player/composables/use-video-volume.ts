@@ -1,6 +1,7 @@
 import { ref, computed, onBeforeUnmount, type Ref } from 'vue'
 import { resolveVideoElement, type ElementRefValue } from './utils'
 import { VIDEO_PLAYER_VOLUME_KEY } from '@/blockchain/constants/storage'
+import { VOLUME_NOTIFICATION_DURATION } from '../consts'
 
 export function useVideoVolume(videoElement: Ref<ElementRefValue>) {
   // Ключ для сохранения громкости в localStorage
@@ -61,7 +62,7 @@ export function useVideoVolume(videoElement: Ref<ElementRefValue>) {
     volumeNotificationTimeout = setTimeout(() => {
       showVolumeNotification.value = false
       volumeNotificationTimeout = null
-    }, 1000)
+    }, VOLUME_NOTIFICATION_DURATION)
   }
 
   /**
@@ -242,9 +243,10 @@ export function useVideoVolume(videoElement: Ref<ElementRefValue>) {
     loadSavedVolume,
     setVolume,
     saveVolume,
+    displayVolumeNotification,
     handleVolumeMouseDown,
     handleVolumeClick,
     formatVolumeDisplay,
-    toggleMute
+    toggleMute,
   }
 }

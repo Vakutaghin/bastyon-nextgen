@@ -10,7 +10,6 @@ import ReportModal from '@/b-components/report/report-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
 import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import HelpPanel from '@/b-components/help/help-panel.vue'
-import { useGlobalKeyboard } from '@/composables/use-global-keyboard'
 import { useHelpHotkey } from '@/composables/use-help-hotkey'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
@@ -53,9 +52,6 @@ const publicAppUrl =
   publicShareOrigin() + (typeof window !== 'undefined' ? window.location.pathname : '')
 
 // ContentFeed сам делает запрос через useInfiniteFeed, поэтому здесь не нужно делать запрос
-
-// Инициализируем глобальную обработку клавиатуры для управления видеоплеером
-useGlobalKeyboard()
 
 // F1 — справка по текущему экрану (в embed-вьюхе справки нет).
 useHelpHotkey(() => !isEmbed.value)

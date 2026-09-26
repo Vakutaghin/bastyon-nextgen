@@ -71,6 +71,13 @@ export const SC_VideoContainer = styled.div`
   &.hide-cursor {
     cursor: none;
   }
+
+  /* Фокус от клика или тапа не обводим: после него любая клавиша включает
+     :focus-visible, и пробел рисовал рамку вокруг ролика. С Tab обводка
+     остаётся — по ней видно, что клавиши теперь у плеера. */
+  &.pointer-mode:focus-visible {
+    outline: none;
+  }
 `
 
 export const SC_VideoWrapper = styled.div`
