@@ -135,11 +135,15 @@ vi.mock('../../query-client', () => ({
   },
 }))
 
-vi.mock('@/b-components/messenger/store', () => ({
-  useMessengerStore: vi.fn().mockReturnValue({
+const { _messenger } = vi.hoisted(() => ({
+  _messenger: {
     logout: vi.fn(),
     initMatrix: vi.fn().mockResolvedValue(undefined),
-  }),
+    purgeAccountData: vi.fn().mockResolvedValue(undefined),
+  },
+}))
+vi.mock('@/b-components/messenger/store', () => ({
+  useMessengerStore: vi.fn().mockReturnValue(_messenger),
 }))
 
 // ---------------------------------------------------------------------------
@@ -540,6 +544,68 @@ describe('auth-store', () => {
       expect(keysStore.address).toBeNull()
 
       expect(_clearProfile).toHaveBeenCalled()
+    })
+  })
+
+  // ── removeAccount ──────────────────────────────────────────────────────
+
+  describe('removeAccount: локальные данные мессенджера (V15/Р6)', () => {
+    async function signedInAs(address: string, others: string[]) {
+      const { useKeysStore } = await import('./keys-store')
+      const keys = useKeysStore()
+      const list = (addresses: string[]) => ({
+        accounts: addresses.map((a) => ({ address: a, encryptedMnemonic: '', lastUsed: 0 })),
+        currentAccount: addresses[0] ?? null,
+      })
+      keys.address = address
+      keys.keyPair = fakeKeyPair()
+      keys.accountsList = list([address, ...others])
+      _removeAccount.mockImplementation((removed: string) => {
+        const left = (keys.accountsList?.accounts ?? []).map((a) => a.address)
+        keys.accountsList = list(left.filter((a) => a !== removed))
+        return true
+      })
+      _recoverFromAccount.mockImplementation(async (next: string) => {
+        keys.address = next
+        keys.keyPair = fakeKeyPair()
+        return true
+      })
+      const store = useAuthStore()
+      store._syncFromKeysStore()
+      store.isAuthenticated = true
+      return store
+    }
+
+    it('текущий при других: клиент удалённого остановлен до смены, его данные стёрты', async () => {
+      const store = await signedInAs('PCur', ['POther'])
+
+      await store.removeAccount('PCur')
+
+      expect(store.address).toBe('POther')
+      expect(_messenger.purgeAccountData).toHaveBeenCalledWith('PCur')
+      // Остановка — раньше входа в следующий аккаунт: клиент держит свою БД синка.
+      expect(_messenger.logout.mock.invocationCallOrder[0]).toBeLessThan(
+        _recoverFromAccount.mock.invocationCallOrder[0]!
+      )
+    })
+
+    it('не текущий: мессенджер текущего не трогаем, данные удалённого стираем', async () => {
+      const store = await signedInAs('PCur', ['POther'])
+
+      await store.removeAccount('POther')
+
+      expect(store.address).toBe('PCur')
+      expect(_messenger.logout).not.toHaveBeenCalled()
+      expect(_messenger.purgeAccountData).toHaveBeenCalledWith('POther')
+    })
+
+    it('последний: всё стирает выход из аккаунта', async () => {
+      const store = await signedInAs('PCur', [])
+
+      await store.removeAccount('PCur')
+
+      expect(store.isAuthenticated).toBe(false)
+      expect(_messenger.purgeAccountData).not.toHaveBeenCalled()
     })
   })
 

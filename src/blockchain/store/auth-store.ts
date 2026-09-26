@@ -610,11 +610,21 @@ export const useAuthStore = defineStore('auth', {
         if (!success) return false
 
         // Локальные данные мессенджера удалённого аккаунта (sync-state, кэш DM) —
-        // на диске не оставляем (V15/Р6). Для текущего аккаунта то же сделает signOut.
-        if (this.address !== address) {
-          import('@/b-components/messenger/store')
-            .then(({ useMessengerStore }) => useMessengerStore().purgeAccountData(address))
-            .catch((e: unknown) => console.warn('[auth-store] purgeAccountData failed:', e))
+        // на диске не оставляем (V15/Р6). Последний аккаунт стирает signOut. Если
+        // удаляют текущий, а другие остаются, signOut не будет: сначала
+        // останавливаем его клиент — он держит свою БД синка открытой.
+        const removingCurrent = this.address === address
+        if (!removingCurrent || keys.accountsList?.accounts?.length) {
+          try {
+            const { useMessengerStore } = await import('@/b-components/messenger/store')
+            const messenger = useMessengerStore()
+            if (removingCurrent) messenger.logout()
+            messenger
+              .purgeAccountData(address)
+              .catch((e: unknown) => console.warn('[auth-store] purgeAccountData failed:', e))
+          } catch (e) {
+            console.warn('[auth-store] purgeAccountData failed:', e)
+          }
         }
         // Per-account данные (Р5): черновики, избранное, история поиска, фильтры.
         clearAccountScopedLocalData(address)
