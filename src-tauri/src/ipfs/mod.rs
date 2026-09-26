@@ -3,6 +3,7 @@ pub mod crypto;
 pub mod installer;
 pub mod process;
 pub mod state;
+pub mod verify;
 
 use crate::ipfs::process::IpfsChild;
 use crate::ipfs::state::{IpfsPaths, IpfsState, IpfsStateSnapshot, IpfsStatus, SharedIpfsState};
@@ -450,6 +451,61 @@ pub async fn ipfs_save_encrypted(
     Ok(true)
 }
 
+/// Сохранить файл по IPFS-ссылке на диск. Куда — пользователь выбирает в
+/// НАТИВНОМ диалоге (dest из webview не принимаем), URL собирается здесь из
+/// `source` ("local" | "public") и частей ссылки — как у ipfs_save_encrypted.
+///
+/// С локальной ноды файл идёт потоком: Kubo проверяет блоки сам. С публичного
+/// шлюза по `/ipfs/` приходит CAR, и файл собирается с проверкой каждого блока
+/// по CID (verify.rs) — подменить содержимое шлюз не может. IPNS-имя через
+/// публичный шлюз проверить нечем (DNSLink не подписан), такой файл
+/// сохраняется как есть. Пишем в `<имя>.part` и переименовываем только после
+/// успеха: оборванная или отвергнутая загрузка не оставляет «готовый» файл.
+/// Ok(false) = отмена диалога.
+#[tauri::command]
+pub async fn ipfs_save(
+    app: AppHandle,
+    mgr: State<'_, IpfsManager>,
+    source: String,
+    namespace: String,
+    root: String,
+    path: String,
+    suggested_name: String,
+) -> Result<bool, String> {
+    let target = SaveTarget::parse(&namespace, &root, &path)?;
+    let base = match source.as_str() {
+        "public" => None,
+        "local" => {
+            let gw = mgr.state.read().await.gateway_port;
+            if gw == 0 {
+                return Err("local IPFS node is not running".into());
+            }
+            Some(format!("http://127.0.0.1:{gw}"))
+        }
+        _ => return Err("unknown gateway source".into()),
+    };
+
+    let Some(dest) = save_file(&app, &safe_basename(&suggested_name, &target.root)).await else {
+        return Ok(false);
+    };
+    let part = part_path(&dest);
+    let saved = match (&base, target.root_cid.clone()) {
+        (None, Some(cid)) => save_verified(&target, cid, &part).await,
+        (None, None) => save_stream(&target.url(config::PUBLIC_GATEWAY)?, &part).await,
+        (Some(local), _) => save_stream(&target.url(local)?, &part).await,
+    };
+    match saved {
+        Ok(()) => {
+            std::fs::rename(&part, &dest).map_err(err_string)?;
+            Ok(true)
+        }
+        Err(e) => {
+            let _ = std::fs::remove_file(&part);
+            Err(e)
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Удалённый pin (Ф5c) — durability через IPFS Pinning Service API.
 // Сервис (endpoint+token) хранит сам Kubo в своём конфиге. Работает со сторонним
@@ -597,6 +653,228 @@ async fn prepare_node(
     }
     installer::check_cancelled(cancel)?;
     Ok(())
+}
+
+/// Что сохранить: части IPFS-ссылки, проверенные и разобранные. Путь — как в
+/// URL (сегменты в %-кодировке): для поиска в DAG нужны настоящие имена, для
+/// URL они кодируются заново.
+struct SaveTarget {
+    namespace: &'static str,
+    root: String,
+    segments: Vec<String>,
+    /// Для `/ipfs/` — корень, по которому проверяется CAR с публичного шлюза.
+    root_cid: Option<verify::Cid>,
+}
+
+impl SaveTarget {
+    fn parse(namespace: &str, root: &str, path: &str) -> Result<SaveTarget, String> {
+        let (namespace, root_cid) = match namespace {
+            "ipfs" => {
+                if !is_plausible_cid(root) {
+                    return Err("invalid CID".into());
+                }
+                // Нераспознанный multibase локальной ноде не помеха, а публичный
+                // шлюз без разобранного корня проверить нечем — см. ipfs_save.
+                ("ipfs", verify::Cid::parse(root).ok())
+            }
+            "ipns" => {
+                if !is_plausible_ipns_name(root) {
+                    return Err("invalid IPNS name".into());
+                }
+                ("ipns", None)
+            }
+            _ => return Err("unknown namespace".into()),
+        };
+        let mut segments = Vec::new();
+        for raw in path.split('/').filter(|s| !s.is_empty()) {
+            let seg = percent_decode(raw).ok_or("invalid path")?;
+            if seg == "." || seg == ".." || seg.chars().any(|c| c == '/' || c == '\\' || c.is_control()) {
+                return Err("invalid path".into());
+            }
+            segments.push(seg);
+        }
+        Ok(SaveTarget {
+            namespace,
+            root: root.to_string(),
+            segments,
+            root_cid,
+        })
+    }
+
+    /// `<base>/<ns>/<root>/<сегменты>` — каждый сегмент кодирует url::Url.
+    fn url(&self, base: &str) -> Result<url::Url, String> {
+        let mut url = url::Url::parse(base).map_err(err_string)?;
+        url.path_segments_mut()
+            .map_err(|_| "bad gateway base".to_string())?
+            .push(self.namespace)
+            .push(&self.root)
+            .extend(&self.segments);
+        Ok(url)
+    }
+}
+
+/// `%XX` → байт; результат обязан быть UTF-8 (имена в UnixFS — строки).
+fn percent_decode(seg: &str) -> Option<String> {
+    let b = seg.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' {
+            let hex = b.get(i + 1..i + 3)?;
+            if !hex.iter().all(u8::is_ascii_hexdigit) {
+                return None;
+            }
+            out.push(u8::from_str_radix(std::str::from_utf8(hex).ok()?, 16).ok()?);
+            i += 3;
+        } else {
+            out.push(b[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).ok()
+}
+
+/// IPNS-имя: ключ (base36/base58) или DNSLink-домен. Без `..` и разделителей.
+fn is_plausible_ipns_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 253
+        && !name.starts_with('.')
+        && !name.contains("..")
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
+}
+
+/// `photo.jpg` → `photo.jpg.part` рядом: rename в пределах каталога атомарен.
+fn part_path(dest: &Path) -> PathBuf {
+    let mut name = dest
+        .file_name()
+        .map(|n| n.to_os_string())
+        .unwrap_or_else(|| "download".into());
+    name.push(".part");
+    dest.with_file_name(name)
+}
+
+/// Временный файл, который удаляется при выходе из области видимости.
+struct TempFile(PathBuf);
+
+impl TempFile {
+    fn new(ext: &str) -> TempFile {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        TempFile(std::env::temp_dir().join(format!(
+            "bastyon-ipfs-{}-{stamp}.{ext}",
+            std::process::id()
+        )))
+    }
+}
+
+impl Drop for TempFile {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
+/// HTTP-клиент для скачивания файлов: без общего таймаута (файл может быть
+/// большим), но с таймаутом тишины. Редиректы — только на https (dweb.link
+/// отправляет CAR-запросы на trustless-gateway.link): http-редирект увёл бы
+/// запрос на локальные сервисы.
+fn download_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(15))
+        .read_timeout(Duration::from_secs(60))
+        .redirect(reqwest::redirect::Policy::custom(|attempt| {
+            if attempt.previous().len() < 5 && attempt.url().scheme() == "https" {
+                attempt.follow()
+            } else {
+                attempt.stop()
+            }
+        }))
+        .build()
+        .map_err(err_string)
+}
+
+/// Тело ответа потоком в файл (с потолком, если задан). Только 2xx: страница
+/// ошибки шлюза не должна сохраниться под именем файла.
+async fn fetch_to_file(
+    request: reqwest::RequestBuilder,
+    dest: &Path,
+    cap: Option<u64>,
+) -> Result<reqwest::header::HeaderMap, String> {
+    use futures_util::StreamExt;
+    use std::io::Write;
+    let resp = request.send().await.map_err(err_string)?;
+    if !resp.status().is_success() {
+        return Err(format!("gateway responded {}", resp.status()));
+    }
+    if let (Some(cap), Some(len)) = (cap, resp.content_length()) {
+        if len > cap {
+            return Err("verify-too-large".into());
+        }
+    }
+    let headers = resp.headers().clone();
+    let mut file = std::io::BufWriter::new(std::fs::File::create(dest).map_err(err_string)?);
+    let mut written: u64 = 0;
+    let mut stream = resp.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(err_string)?;
+        written += chunk.len() as u64;
+        if cap.is_some_and(|c| written > c) {
+            return Err("verify-too-large".into());
+        }
+        file.write_all(&chunk).map_err(err_string)?;
+    }
+    file.flush().map_err(err_string)?;
+    Ok(headers)
+}
+
+/// Как есть, потоком: локальная нода (проверяет сама) или IPNS через шлюз.
+async fn save_stream(url: &url::Url, part: &Path) -> Result<(), String> {
+    let client = download_client()?;
+    fetch_to_file(client.get(url.clone()), part, None).await?;
+    Ok(())
+}
+
+/// С публичного шлюза: CAR на диск, затем сборка файла с проверкой каждого
+/// блока по CID (verify.rs). Файл в `part` появляется только из проверенных
+/// блоков.
+async fn save_verified(target: &SaveTarget, root: verify::Cid, part: &Path) -> Result<(), String> {
+    let mut url = target.url(config::PUBLIC_GATEWAY)?;
+    url.query_pairs_mut()
+        .append_pair("format", "car")
+        .append_pair("dag-scope", "entity");
+    let car = TempFile::new("car");
+    let request = download_client()?.get(url).header(
+        reqwest::header::ACCEPT,
+        "application/vnd.ipld.car; version=1; order=dfs; dups=n",
+    );
+    let headers = fetch_to_file(request, &car.0, Some(config::MAX_VERIFIED_DOWNLOAD_BYTES)).await?;
+    // Шлюз, не умеющий CAR, отдал бы сам файл — проверить его было бы нечем.
+    let is_car = headers
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.starts_with("application/vnd.ipld.car"));
+    if !is_car {
+        return Err("verify-unsupported: the gateway did not return a CAR".into());
+    }
+    let segments = target.segments.clone();
+    let part = part.to_path_buf();
+    tokio::task::spawn_blocking(move || -> Result<(), String> {
+        use std::io::Write;
+        let car_file = std::fs::File::open(&car.0).map_err(err_string)?;
+        let mut out = std::io::BufWriter::new(std::fs::File::create(&part).map_err(err_string)?);
+        verify::extract_file(
+            car_file,
+            &root,
+            &segments,
+            &mut out,
+            config::MAX_VERIFIED_DOWNLOAD_BYTES,
+        )
+        .map_err(err_string)?;
+        out.flush().map_err(err_string)
+    })
+    .await
+    .map_err(err_string)?
 }
 
 /// Немедленный анонс свежедобавленного CID в DHT (`ipfs provide once`), не
@@ -972,6 +1250,93 @@ mod tests {
         assert!(!ok("https://evil.example/", 8080));
         assert!(!ok("https://notdweb.link/", 8080));
         assert!(!ok("javascript:alert(1)", 8080));
+    }
+
+    #[test]
+    fn save_target_decodes_the_path_and_rebuilds_the_url() {
+        let t = SaveTarget::parse(
+            "ipfs",
+            "bafybeifson4pvbi2mutnpylre426pghwfo6wszesnksilpofbap6imhl6e",
+            "docs/my%20file%E2%84%96.txt",
+        )
+        .unwrap();
+        assert_eq!(t.segments, vec!["docs".to_string(), "my file№.txt".to_string()]);
+        assert!(t.root_cid.is_some());
+        assert_eq!(
+            t.url("https://dweb.link").unwrap().as_str(),
+            "https://dweb.link/ipfs/bafybeifson4pvbi2mutnpylre426pghwfo6wszesnksilpofbap6imhl6e/docs/my%20file%E2%84%96.txt"
+        );
+        let local = t.url("http://127.0.0.1:8080").unwrap();
+        assert_eq!(local.host_str(), Some("127.0.0.1"));
+        assert_eq!(local.port(), Some(8080));
+    }
+
+    #[test]
+    fn save_target_rejects_path_tricks() {
+        let cid = "bafybeifson4pvbi2mutnpylre426pghwfo6wszesnksilpofbap6imhl6e";
+        for bad in ["..", "a/%2e%2e/b", "a%2Fb", "a%5Cb", "%zz", "%0a", "%ff"] {
+            assert!(SaveTarget::parse("ipfs", cid, bad).is_err(), "{bad}");
+        }
+        assert!(SaveTarget::parse("ipfs", "../../api/v0/id", "").is_err());
+        assert!(SaveTarget::parse("files", cid, "").is_err());
+        // Лишние слэши — не ошибка, а пустые сегменты.
+        assert_eq!(SaveTarget::parse("ipfs", cid, "/a//b/").unwrap().segments, vec!["a", "b"]);
+    }
+
+    #[test]
+    fn save_target_accepts_ipns_names_without_verification() {
+        let t = SaveTarget::parse("ipns", "en.wikipedia-on-ipfs.org", "wiki/Main_Page").unwrap();
+        assert!(t.root_cid.is_none());
+        assert_eq!(
+            t.url("https://dweb.link").unwrap().as_str(),
+            "https://dweb.link/ipns/en.wikipedia-on-ipfs.org/wiki/Main_Page"
+        );
+        assert!(SaveTarget::parse("ipns", "..evil", "").is_err());
+        assert!(SaveTarget::parse("ipns", "a..b", "").is_err());
+        assert!(SaveTarget::parse("ipns", "host/x", "").is_err());
+    }
+
+    #[test]
+    fn part_file_sits_next_to_the_destination() {
+        let dest = PathBuf::from("/Users/u/Downloads/photo.jpg");
+        assert_eq!(part_path(&dest), PathBuf::from("/Users/u/Downloads/photo.jpg.part"));
+    }
+
+    /// Живая проверка против настоящего шлюза (нужна сеть):
+    /// `cargo test --lib ipfs::tests::live_verified_download -- --ignored`.
+    #[tokio::test]
+    #[ignore]
+    async fn live_verified_download_from_the_public_gateway() {
+        // docs.ipfs.tech: images/welcome-to-IPFS.jpg — путь через два каталога.
+        let t = SaveTarget::parse(
+            "ipfs",
+            "bafybeier6ud42ptljtfaxrdlknktw54b7ohfpg5h33mosxpxjndxs7xzvm",
+            "images/welcome-to-IPFS.jpg",
+        )
+        .unwrap();
+        let part = TempFile::new("jpg");
+        save_verified(&t, t.root_cid.clone().unwrap(), &part.0).await.unwrap();
+        let bytes = std::fs::read(&part.0).unwrap();
+        assert_eq!(bytes.len(), 663_082);
+        assert_eq!(&bytes[..3], &[0xff, 0xd8, 0xff]); // JPEG
+    }
+
+    /// То же через шардированные каталоги: `wiki/` зеркала Википедии — HAMT на
+    /// миллионы записей, `Main_Page` — тоже HAMT (с index.html). Сеть нужна;
+    /// корень — DNSLink en.wikipedia-on-ipfs.org.
+    #[tokio::test]
+    #[ignore]
+    async fn live_verified_download_through_a_sharded_directory() {
+        let t = SaveTarget::parse(
+            "ipfs",
+            "bafybeiaysi4s6lnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze",
+            "wiki/Main_Page/index.html",
+        )
+        .unwrap();
+        let part = TempFile::new("html");
+        save_verified(&t, t.root_cid.clone().unwrap(), &part.0).await.unwrap();
+        let html = std::fs::read_to_string(&part.0).unwrap();
+        assert!(html.contains("Wikipedia"), "{}", &html[..html.len().min(200)]);
     }
 
     #[test]

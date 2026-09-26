@@ -22,7 +22,7 @@ import {
 } from '@/helpers/ipfs/ipfs-link'
 import { buildIpfsViewerUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
 import { classify, detectViewerOs, downloadFilename } from '@/helpers/ipfs/ipfs-content'
-import { probeContent, saveIpfsResource } from '@/helpers/ipfs/ipfs-download'
+import { probeContent } from '@/helpers/ipfs/ipfs-download'
 import { useIpfsStore, type IpfsGatewaySource } from '@/stores/ipfs-store'
 import { t } from '@/i18n'
 
@@ -69,6 +69,40 @@ function torBlocked(store: IpfsStore): boolean {
  * (`name=/Users/u/.ssh/authorized_keys` иначе открыл бы диалог прямо в ~/.ssh);
  * источник передаём как 'local' | 'public', URL Rust собирает сам.
  */
+/**
+ * Текст ошибки сохранения: коды проверки по CID из Rust (verify.rs) — по-русски,
+ * остальное (сеть, диск) — как есть.
+ */
+export function saveErrorText(message: string | null): string {
+  const m = message ?? ''
+  if (m.startsWith('verify-mismatch')) return t('header.ipfsVerifyMismatch')
+  if (m.startsWith('verify-unsupported')) return t('header.ipfsVerifyUnsupported')
+  if (m.startsWith('verify-too-large')) return t('header.ipfsVerifyTooLarge')
+  if (m.startsWith('verify-missing')) return t('header.ipfsVerifyIncomplete')
+  return m
+}
+
+/**
+ * Обычный (не приватный) файл — на диск. Через публичный шлюз Rust собирает
+ * его из CAR с проверкой каждого блока по CID; с локальной ноды — потоком.
+ */
+async function saveFile(
+  store: IpfsStore,
+  source: IpfsGatewaySource,
+  target: IpfsTarget,
+  suggestedName: string
+): Promise<void> {
+  const result = await store.saveFile(source, target, suggestedName)
+  if (result === 'saved') {
+    Modal.success({ title: t('header.ipfsSaveDoneTitle') })
+  } else if (result === 'failed') {
+    Modal.error({
+      title: t('header.ipfsDownloadFailedTitle'),
+      content: saveErrorText(store.message),
+    })
+  }
+}
+
 async function openEncrypted(
   store: IpfsStore,
   target: IpfsTarget,
@@ -84,7 +118,7 @@ async function openEncrypted(
   }
 }
 
-async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Promise<void> {
+export async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Promise<void> {
   const store = useIpfsStore()
 
   // Веб/мобилка: нативного окна и локальной ноды нет — фича только для десктопа.
@@ -112,6 +146,7 @@ async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Pr
       return
     }
 
+    let source: IpfsGatewaySource = gateway === IPFS_GATEWAY ? 'public' : 'local'
     let url = buildIpfsViewerUrl(target, gateway)
 
     // Универсальный контент: пробуем тип и решаем render-vs-download, как браузер.
@@ -119,8 +154,9 @@ async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Pr
 
     // Per-CID fallback: локальная нода не отдала CID за таймаут (холодный swarm /
     // файрвол) → публичный шлюз (Tier 1 → Tier 0).
-    if (!probed && gateway !== IPFS_GATEWAY) {
+    if (!probed && source === 'local') {
       if (torBlocked(store)) return
+      source = 'public'
       url = buildIpfsViewerUrl(target, IPFS_GATEWAY)
       probed = await probeContent(url)
     }
@@ -131,11 +167,7 @@ async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Pr
       : 'render'
     if (mode === 'download') {
       if (torBlocked(store)) return
-      try {
-        await saveIpfsResource(url, downloadFilename(target, probed?.contentDisposition))
-      } catch (err) {
-        Modal.error({ title: t('header.ipfsSaveFailedTitle'), content: String(err) })
-      }
+      await saveFile(store, source, target, downloadFilename(target, probed?.contentDisposition))
       return
     }
 
@@ -145,7 +177,10 @@ async function openIpfsViewer(target: IpfsTarget, secret: IpfsSecret | null): Pr
     // Окно создаёт Rust: incognito (эфемерный storage — все IPFS-сайты на одном
     // origin), on_navigation по белому списку (наш gateway-порт / dweb.link),
     // повторный клик по открытому CID — фокус. URL проверяется там же.
-    await store.openViewer(label, url, `IPFS · ${target.root.slice(0, 12)}…`)
+    // Показ через публичный шлюз по CID не проверяется (в отличие от
+    // сохранения) — заголовок окна честно называет шлюз.
+    const via = source === 'public' ? ` · ${new URL(IPFS_GATEWAY).host}` : ''
+    await store.openViewer(label, url, `IPFS · ${target.root.slice(0, 12)}…${via}`)
   } catch (err) {
     console.error('[ipfs-viewer] ошибка открытия просмотрщика:', err)
   } finally {

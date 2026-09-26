@@ -248,6 +248,15 @@ export default {
     ipfsShareEncryptedDone: 'Only someone with this exact link can decrypt the file: {link}',
     ipfsSaveDoneTitle: 'File saved',
     ipfsSaveFailedTitle: 'Could not open the file (wrong key or unavailable)',
+    ipfsDownloadFailedTitle: 'Could not download the file',
+    ipfsVerifyMismatch:
+      'The file does not match its CID: the public gateway sent different data. The file was not saved.',
+    ipfsVerifyUnsupported:
+      'This file cannot be verified through the public gateway. Start the local IPFS node (the IPFS icon in the header) and open the link again.',
+    ipfsVerifyTooLarge:
+      'The file is larger than 4 GB, too large for the public gateway. Start the local IPFS node.',
+    ipfsVerifyIncomplete:
+      'The public gateway sent an incomplete file. Try again later or start the local IPFS node.',
     ipfsPinConfigBtn: 'Remote pin (durability)…',
     ipfsPinConfigTitle: 'Remote pinning',
     ipfsPinConfigContent:

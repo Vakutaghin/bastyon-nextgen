@@ -253,6 +253,15 @@ export default {
       'Расшифровать файл сможет только тот, у кого есть именно эта ссылка: {link}',
     ipfsSaveDoneTitle: 'Файл сохранён',
     ipfsSaveFailedTitle: 'Не удалось открыть файл (неверный ключ или недоступен)',
+    ipfsDownloadFailedTitle: 'Не удалось скачать файл',
+    ipfsVerifyMismatch:
+      'Файл не совпал со своим CID: публичный шлюз прислал чужие данные. Файл не сохранён.',
+    ipfsVerifyUnsupported:
+      'Этот файл нельзя проверить через публичный шлюз. Запустите локальную ноду IPFS (значок IPFS в шапке) и откройте ссылку снова.',
+    ipfsVerifyTooLarge:
+      'Файл больше 4 ГБ — через публичный шлюз такой не скачать. Запустите локальную ноду IPFS.',
+    ipfsVerifyIncomplete:
+      'Публичный шлюз прислал файл не целиком. Попробуйте позже или запустите локальную ноду IPFS.',
     ipfsPinConfigBtn: 'Удалённый pin (durability)…',
     ipfsPinConfigTitle: 'Удалённый pin',
     ipfsPinConfigContent:

@@ -108,3 +108,32 @@ describe('ipfs-store: отмена установки', () => {
     expect(store.install).toBeNull()
   })
 })
+
+describe('ipfs-store: сохранение файла', () => {
+  const target = { namespace: 'ipfs' as const, root: 'bafyroot', path: 'docs/my%20file.pdf' }
+
+  it('части ссылки уходят в Rust как есть — URL и диалог собирает он', async () => {
+    const store = useIpfsStore()
+    invoke.mockResolvedValue(true)
+
+    await expect(store.saveFile('public', target, 'my file.pdf')).resolves.toBe('saved')
+
+    expect(invoke).toHaveBeenCalledWith('ipfs_save', {
+      source: 'public',
+      namespace: 'ipfs',
+      root: 'bafyroot',
+      path: 'docs/my%20file.pdf',
+      suggestedName: 'my file.pdf',
+    })
+  })
+
+  it('отмена диалога и ошибка различаются, код ошибки остаётся в message', async () => {
+    const store = useIpfsStore()
+    invoke.mockResolvedValueOnce(false)
+    await expect(store.saveFile('local', target, 'a')).resolves.toBe('cancelled')
+
+    invoke.mockRejectedValueOnce('verify-mismatch: block 01 does not match its CID')
+    await expect(store.saveFile('public', target, 'a')).resolves.toBe('failed')
+    expect(store.message).toMatch(/^verify-mismatch/)
+  })
+})

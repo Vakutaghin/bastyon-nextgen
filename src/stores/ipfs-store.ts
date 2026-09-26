@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import type { IpfsTarget } from '@/helpers/ipfs/ipfs-link'
 import { IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
 import { pickGatewaySource, type IpfsConsent } from '@/helpers/ipfs/ipfs-tier'
 import { useTorStore } from '@/stores/tor-store'
@@ -326,6 +327,32 @@ export const useIpfsStore = defineStore('ipfs', {
           source,
           cid,
           key,
+          suggestedName,
+        })
+        return saved ? 'saved' : 'cancelled'
+      } catch (e) {
+        this.message = String(e)
+        return 'failed'
+      }
+    },
+
+    /**
+     * Сохранить файл по ссылке. Диалог и сборка URL — в Rust (путь из webview
+     * не принимается); с публичного шлюза файл проверяется по CID, с локальной
+     * ноды — идёт потоком (её блоки проверяет сама нода). В message — код
+     * ошибки Rust (`verify-mismatch`, `verify-unsupported`, …).
+     */
+    async saveFile(
+      source: IpfsGatewaySource,
+      target: IpfsTarget,
+      suggestedName: string
+    ): Promise<'saved' | 'cancelled' | 'failed'> {
+      try {
+        const saved = await tauriInvoke<boolean>('ipfs_save', {
+          source,
+          namespace: target.namespace,
+          root: target.root,
+          path: target.path,
           suggestedName,
         })
         return saved ? 'saved' : 'cancelled'

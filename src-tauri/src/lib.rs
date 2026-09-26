@@ -906,6 +906,7 @@ pub fn run() {
       ipfs::ipfs_add,
       ipfs::ipfs_add_encrypted,
       ipfs::ipfs_save_encrypted,
+      ipfs::ipfs_save,
       ipfs::ipfs_open_viewer,
       ipfs::ipfs_pin_service_set,
       ipfs::ipfs_pin_service_status,
