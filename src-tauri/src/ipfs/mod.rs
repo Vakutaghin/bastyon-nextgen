@@ -370,21 +370,17 @@ pub async fn ipfs_add_encrypted(
     drop(plaintext);
 
     // Временный файл под шифртекст (ipfs add берёт путь).
-    let stamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let tmp = std::env::temp_dir().join(format!("bastyon-ipfs-{}-{}.enc", std::process::id(), stamp));
-    write_private(&tmp, &blob).map_err(err_string)?;
+    let tmp = TempFile::new("enc");
+    write_private(&tmp.0, &blob).map_err(err_string)?;
     drop(blob);
 
-    let tmp_s = tmp.to_string_lossy().to_string();
+    let tmp_s = tmp.0.to_string_lossy().to_string();
     let add = run_ipfs(
         &mgr.paths,
         &["add", "-Q", "--cid-version=1", "--pin=true", "--", &tmp_s],
     )
     .await;
-    let _ = std::fs::remove_file(&tmp);
+    drop(tmp);
 
     let cid = add?.trim().to_string();
     if cid.is_empty() {
@@ -757,13 +753,19 @@ fn part_path(dest: &Path) -> PathBuf {
 struct TempFile(PathBuf);
 
 impl TempFile {
+    /// Имя уникально в процессе за счёт счётчика: одного времени мало — на
+    /// macOS у часов шаг в микросекунду, и два одновременных скачивания
+    /// получали один и тот же файл.
     fn new(ext: &str) -> TempFile {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static SEQ: AtomicU64 = AtomicU64::new(0);
+        let seq = SEQ.fetch_add(1, Ordering::Relaxed);
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or(0);
         TempFile(std::env::temp_dir().join(format!(
-            "bastyon-ipfs-{}-{stamp}.{ext}",
+            "bastyon-ipfs-{}-{stamp}-{seq}.{ext}",
             std::process::id()
         )))
     }
@@ -1294,6 +1296,13 @@ mod tests {
         assert!(SaveTarget::parse("ipns", "..evil", "").is_err());
         assert!(SaveTarget::parse("ipns", "a..b", "").is_err());
         assert!(SaveTarget::parse("ipns", "host/x", "").is_err());
+    }
+
+    #[test]
+    fn temp_files_never_share_a_name() {
+        let files: Vec<TempFile> = (0..1000).map(|_| TempFile::new("car")).collect();
+        let names: std::collections::HashSet<&PathBuf> = files.iter().map(|f| &f.0).collect();
+        assert_eq!(names.len(), files.len());
     }
 
     #[test]
