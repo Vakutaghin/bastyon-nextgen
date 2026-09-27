@@ -14,6 +14,7 @@ import { registerNameAddress } from '@/services/user-resolver'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { normalizeImages } from '@/composables/use-feed-helpers'
 import { safeDecode } from '@/helpers/content/safe-decode'
+import { decodePostBody } from '@/helpers/content/article-codec'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import { t } from '@/i18n'
 
@@ -113,7 +114,8 @@ export function adaptPostData(
   const reputation = userprofile?.reputation || 0
   const verified = isUserVerified(userprofile)
   const title = safeDecode(post.c || '')
-  const content = safeDecode(post.m || '')
+  // Статья раскодируется по полям: целиком раскодированный JSON ломался на кавычках.
+  const content = decodePostBody(post.m || '')
   const timestamp = post.time
     ? new Date(Number(post.time) * 1000).toISOString()
     : new Date().toISOString()
@@ -224,7 +226,7 @@ export function mergeRepostContent(
 ): void {
   if (!originalRaw) return
   adapted.title = safeDecode(originalRaw.c || '')
-  adapted.content = safeDecode(originalRaw.m || '')
+  adapted.content = decodePostBody(originalRaw.m || '')
   adapted.images =
     normalizeImages(originalRaw.i).length > 0
       ? normalizeImages(originalRaw.i)

@@ -18,6 +18,7 @@ import type { ArticleContent, SharePostData } from '@/blockchain/core/actions/po
 import { resolvePostOperationType } from '@/blockchain/core/actions/post-action'
 import { appToast } from '@/b-components/app-toast'
 import { fetchAccountSettings, paidSubscriptionPrice } from '@/helpers/api/account-settings'
+import { encodeArticleContent } from '@/helpers/content/article-codec'
 import { haptic } from '@/helpers/common/haptics'
 import { uploadImages } from '@/services/image-upload-service'
 import { useModalStore, usePendingPostsStore, PENDING_POST_TTL_MS } from '@/stores'
@@ -115,6 +116,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
 
   /** Режим статьи (Editor.js). Включается тоглом в create или при редактировании статьи. */
   const articleMode = ref(editingArticle)
+  // Текст статьи источника уже раскодирован адаптером поста (decodePostBody).
   const articleContent = ref<ArticleContent | null>(
     editingArticle && options.source ? parseArticleContent(options.source) : null
   )
@@ -191,10 +193,11 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
    */
   const post = computed<SharePostData>(() => {
     if (articleMode.value) {
-      // Статья: тело — Editor.js {blocks}, заголовок — caption; settings.v='a', version=2.
+      // Статья: тело — Editor.js {blocks} с закодированным текстом (как у старого
+      // клиента), заголовок — caption; settings.v='a', version=2.
       return {
         caption: caption.value.trim(),
-        articleContent: articleContent.value ?? { blocks: [] },
+        articleContent: encodeArticleContent(articleContent.value ?? { blocks: [] }),
         tags: tags.value,
         language: language.value,
         settings: { ...baseSettings.value, v: 'a', version: 2 },
