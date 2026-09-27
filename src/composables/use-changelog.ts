@@ -16,7 +16,7 @@ import {
   type ChangelogEntry,
 } from '@/helpers/changelog/changelog-loader'
 import { renderMarkdown } from '@/helpers/changelog/markdown'
-import { useUIStore } from '@/stores/ui-store'
+import { useUIStore, type AppLanguage } from '@/stores/ui-store'
 import { settingsAPI } from '@/db/apis/settings-api'
 
 const SETTING_KEY_LAST_SEEN = 'bastyonChangelogLastSeenVersion'
@@ -26,7 +26,7 @@ export interface RenderedChangelogEntry extends ChangelogEntry {
   html: string
 }
 
-function renderEntries(language: 'ru' | 'en'): RenderedChangelogEntry[] {
+function renderEntries(language: AppLanguage): RenderedChangelogEntry[] {
   return getAllChangelogEntries().map((e) => ({
     ...e,
     html: renderMarkdown(getChangelogText(e, language)),

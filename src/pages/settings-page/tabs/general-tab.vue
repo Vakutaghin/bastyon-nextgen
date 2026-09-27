@@ -9,6 +9,7 @@
           :key="lang"
           :active="appLanguage === lang"
           type="button"
+          :title="LOCALE_NAMES[lang]"
           @click="onSetLanguage(lang)"
         >
           {{ lang.toUpperCase() }}
@@ -94,6 +95,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Switch } from 'ant-design-vue'
 import { useUIStore, type AppLanguage } from '@/stores/ui-store'
+import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@/i18n'
 import { useAppPreferencesStore, type AppPreferencesState } from '@/stores/app-preferences-store'
 import {
   SC_ScaleButton,
@@ -117,7 +119,7 @@ import {
 
 const uiStore = useUIStore()
 const { language: appLanguage } = storeToRefs(uiStore)
-const supportedLanguages: AppLanguage[] = ['ru', 'en']
+const supportedLanguages: readonly AppLanguage[] = SUPPORTED_LOCALES
 
 const { t } = useI18n()
 // Реактивно следует за активной локалью i18n.

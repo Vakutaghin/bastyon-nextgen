@@ -41,6 +41,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Select, { type SelectOption } from '@/components/select'
+import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@/i18n'
 import {
   SC_DateInput,
   SC_Label,
@@ -92,10 +93,11 @@ const visibilityOptions = computed<SelectOption[]>(() =>
   VISIBILITY_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))
 )
 
-const LANGUAGE_OPTIONS: SelectOption[] = [
-  { value: 'ru', label: 'Русский' },
-  { value: 'en', label: 'English' },
-]
+/** Язык поста — те же коды, что у языка интерфейса: по ним нода собирает ленты. */
+const LANGUAGE_OPTIONS: SelectOption[] = SUPPORTED_LOCALES.map((value) => ({
+  value,
+  label: LOCALE_NAMES[value],
+}))
 
 const onVisibilityChange = (value: unknown): void => {
   emit('update:visibility', String(value))

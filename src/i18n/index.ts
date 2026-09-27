@@ -15,8 +15,31 @@ import { createI18n } from 'vue-i18n'
 import ru from '@/locales/ru'
 import en from '@/locales/en'
 
-export const SUPPORTED_LOCALES = ['ru', 'en'] as const
+/**
+ * Языки оригинального Bastyon (pocketnet.gui, js/localization.js) — с теми же
+ * кодами: код языка интерфейса уходит ноде как язык лент, тегов и постов, и
+ * корейский там — `kr`, а не стандартный `ko`.
+ */
+export const SUPPORTED_LOCALES = ['ru', 'en', 'de', 'fr', 'es', 'it', 'sr', 'kr', 'zh'] as const
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
+
+/** Названия языков на них самих — для переключателей. */
+export const LOCALE_NAMES: Record<Locale, string> = {
+  ru: 'Русский',
+  en: 'English',
+  de: 'Deutsch',
+  fr: 'Français',
+  es: 'Español',
+  it: 'Italiano',
+  sr: 'Српски',
+  kr: '한국어',
+  zh: '中文',
+}
+
+/** Код для `<html lang>` и Intl (даты, числа): у Bastyon корейский — `kr`, в BCP 47 — `ko`. */
+export function bcp47(locale: string): string {
+  return locale === 'kr' ? 'ko' : locale
+}
 
 export const DEFAULT_LOCALE: Locale = 'ru'
 const STORAGE_KEY = 'bastyon_locale'
@@ -45,7 +68,8 @@ export function detectInitialLocale(): Locale {
   if (stored) return stored
   if (typeof navigator !== 'undefined') {
     const code = navigator.language?.split('-')[0]?.toLowerCase()
-    if (isLocale(code)) return code
+    const app = code === 'ko' ? 'kr' : code
+    if (isLocale(app)) return app
   }
   return DEFAULT_LOCALE
 }
@@ -70,13 +94,40 @@ export function ruPluralRule(choice: number, choicesLength: number): number {
   return Math.min(form, choicesLength - 1)
 }
 
+/** В корейском и китайском у существительных нет множественного числа. */
+const noPlural = (): number => 0
+
 export const i18n = createI18n({
   legacy: false,
   locale: detectInitialLocale(),
-  fallbackLocale: DEFAULT_LOCALE,
+  // Ключа нет в словаре — английский: его понимают чаще, чем русский.
+  fallbackLocale: 'en',
   messages: { ru, en },
-  pluralRules: { ru: ruPluralRule },
+  pluralRules: { ru: ruPluralRule, sr: ruPluralRule, kr: noPlural, zh: noPlural },
 })
+
+/** Словарь того же устройства, что en.ts: полноту ключей проверяют тесты локалей. */
+type Messages = Record<string, unknown>
+
+/** Остальные словари — отдельными чанками: грузим только выбранный язык. */
+const LOADERS: Record<Exclude<Locale, 'ru' | 'en'>, () => Promise<{ default: Messages }>> = {
+  de: () => import('@/locales/de'),
+  fr: () => import('@/locales/fr'),
+  es: () => import('@/locales/es'),
+  it: () => import('@/locales/it'),
+  sr: () => import('@/locales/sr'),
+  kr: () => import('@/locales/kr'),
+  zh: () => import('@/locales/zh'),
+}
+
+/** Подгружает словарь языка, если его ещё нет. Звать до setI18nLocale. */
+export async function loadLocaleMessages(locale: Locale): Promise<void> {
+  if (locale === 'ru' || locale === 'en') return
+  if (Object.keys(i18n.global.getLocaleMessage(locale)).length) return
+  const { default: messages } = await LOADERS[locale]()
+  // vue-i18n типизирует словари по схеме { ru, en }; остальные — той же формы.
+  i18n.global.setLocaleMessage(locale as 'en', messages as unknown as typeof en)
+}
 
 /** Глобальный t() для использования вне setup() — например, в router meta. */
 export function t(key: string, named?: Record<string, unknown>): string {
@@ -96,9 +147,10 @@ export function tn(key: string, n: number, named?: Record<string, unknown>): str
  * Composable [useLocale] оборачивает это в реактивный API для компонентов.
  */
 export function setI18nLocale(next: Locale): void {
-  i18n.global.locale.value = next
+  // Тип locale выведен из стартовых словарей ru/en, остальные подгружаются позже.
+  ;(i18n.global.locale as { value: string }).value = next
   if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('lang', next)
+    document.documentElement.setAttribute('lang', bcp47(next))
   }
   try {
     localStorage.setItem(STORAGE_KEY, next)
@@ -107,9 +159,19 @@ export function setI18nLocale(next: Locale): void {
   }
 }
 
-/** Применить язык к DOM на старте, до монтирования. Вызвать в main.js. */
-export function initI18n(): void {
+/**
+ * Применить язык на старте, до монтирования: подгрузить словарь выбранного
+ * языка и выставить `<html lang>`. Вызвать в main.ts с await.
+ */
+export async function initI18n(): Promise<void> {
+  const locale = i18n.global.locale.value as Locale
+  try {
+    await loadLocaleMessages(locale)
+  } catch (err) {
+    // Чанк не загрузился (офлайн, битый кэш) — тексты будут английскими.
+    console.warn('[i18n] failed to load locale messages:', err)
+  }
   if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('lang', i18n.global.locale.value)
+    document.documentElement.setAttribute('lang', bcp47(locale))
   }
 }

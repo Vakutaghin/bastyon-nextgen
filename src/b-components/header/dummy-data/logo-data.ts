@@ -15,6 +15,7 @@ export const logoData = {
     { code: 'kr', name: '한국어', flag: '🇰🇷' },
     { code: 'es', name: 'Español', flag: '🇪🇸' },
     { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-    { code: 'zh', name: '官話', flag: '🇨🇳' },
+    { code: 'sr', name: 'Српски', flag: '🇷🇸' },
+    { code: 'zh', name: '中文', flag: '🇨🇳' },
   ],
 }

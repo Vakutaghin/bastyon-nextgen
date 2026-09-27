@@ -50,6 +50,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { bcp47 } from '@/i18n'
 import { Modal } from 'ant-design-vue'
 import { usePermissionsStore } from '@/mini-apps/store/permissions-store'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
@@ -104,7 +105,7 @@ function permLabel(id: PermissionId): string {
 
 function fmtDate(ts: number): string {
   if (!ts) return ''
-  return new Date(ts).toLocaleDateString(locale.value)
+  return new Date(ts).toLocaleDateString(bcp47(locale.value))
 }
 
 function revoke(appId: string, permission: PermissionId): void {

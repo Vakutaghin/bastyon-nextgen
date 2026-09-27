@@ -13,7 +13,7 @@ initTheme()
 // Инициализация локали — до монтирования, чтобы <html lang> и тексты
 // сразу соответствовали выбранному языку.
 import { i18n, initI18n } from '@/i18n'
-initI18n()
+await initI18n()
 
 import { createApp, watch } from 'vue'
 import { createPinia } from 'pinia'

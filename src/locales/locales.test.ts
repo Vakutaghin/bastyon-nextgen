@@ -2,6 +2,16 @@ import { describe, it, expect } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import ru from './ru'
 import en from './en'
+import de from './de'
+import fr from './fr'
+import es from './es'
+import it_ from './it'
+import sr from './sr'
+import kr from './kr'
+import zh from './zh'
+
+/** Переводы на языки оригинального Bastyon — зеркала en.ts. */
+const TRANSLATIONS = { de, fr, es, it: it_, sr, kr, zh } as const
 
 // Собирает все «листовые» пути ключей словаря (домен.под.ключ).
 function collectKeyPaths(obj: Record<string, unknown>, prefix = ''): string[] {
@@ -41,6 +51,25 @@ describe('симметрия словарей ru/en', () => {
     expect(emptyRu).toEqual([])
   })
 
+  for (const [name, dict] of Object.entries(TRANSLATIONS)) {
+    it(`${name}: те же ключи, что в en, без пустых строк`, () => {
+      const keys = collectKeyPaths(dict)
+      const enSet = new Set(enKeys)
+      const set = new Set(keys)
+      expect(
+        keys.filter((k) => !enSet.has(k)),
+        `лишние ключи в ${name}`
+      ).toEqual([])
+      expect(
+        enKeys.filter((k) => !set.has(k)),
+        `нет перевода в ${name}`
+      ).toEqual([])
+      const get = (path: string) =>
+        path.split('.').reduce<unknown>((o, p) => (o as Record<string, unknown>)?.[p], dict)
+      expect(keys.filter((k) => String(get(k)).trim() === '')).toEqual([])
+    })
+  }
+
   it('интерполяционные плейсхолдеры совпадают между ru и en', () => {
     // Набор, а не список: у множественных форм («1 символ | 2 символа | …»)
     // число повторов {n} зависит от языка, важно лишь, что имена совпадают.
@@ -56,6 +85,14 @@ describe('симметрия словарей ru/en', () => {
           placeholders(ruVal)
         )
       }
+      for (const [name, dict] of Object.entries(TRANSLATIONS)) {
+        const val = get(dict, key)
+        if (typeof val === 'string' && typeof enVal === 'string') {
+          expect(placeholders(val), `плейсхолдеры расходятся в ${name}: ${key}`).toEqual(
+            placeholders(enVal)
+          )
+        }
+      }
     }
   })
 })
@@ -68,10 +105,7 @@ describe('все сообщения компилируются vue-i18n', () => 
   const get = (dict: unknown, path: string) =>
     path.split('.').reduce<unknown>((o, p) => (o as Record<string, unknown>)?.[p], dict)
 
-  for (const [name, dict] of [
-    ['ru', ru],
-    ['en', en],
-  ] as const) {
+  for (const [name, dict] of [['ru', ru], ['en', en], ...Object.entries(TRANSLATIONS)] as const) {
     it(`${name}: нет строк с невалидным синтаксисом сообщений`, () => {
       const i18n = createI18n({ legacy: false, locale: name, messages: { [name]: dict } })
       const t = i18n.global.t as (key: string) => string

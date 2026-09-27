@@ -70,6 +70,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { bcp47 } from '@/i18n'
 import { useTorStore } from '@/stores/tor-store'
 import { useNodeInfo } from '@/composables/use-block-explorer-queries'
 import { getExplorerPreferredNode } from '@/composables/use-explorer-preferred-node'
@@ -143,11 +144,13 @@ const nodeHost = computed<string>(() => nodeInfo.value?.node || DASH)
 const nodeVersion = computed<string>(() => nodeData.value?.version || DASH)
 const blockHeight = computed<string>(() => {
   const h = nodeData.value?.lastblock?.height
-  return typeof h === 'number' ? h.toLocaleString(locale.value) : DASH
+  return typeof h === 'number' ? h.toLocaleString(bcp47(locale.value)) : DASH
 })
 const blockTime = computed<string>(() => {
   const ts = nodeData.value?.lastblock?.time
-  return typeof ts === 'number' && ts > 0 ? new Date(ts * 1000).toLocaleString(locale.value) : DASH
+  return typeof ts === 'number' && ts > 0
+    ? new Date(ts * 1000).toLocaleString(bcp47(locale.value))
+    : DASH
 })
 
 onMounted(() => {

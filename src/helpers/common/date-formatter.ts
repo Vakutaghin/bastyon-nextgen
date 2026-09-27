@@ -6,7 +6,7 @@
 // Здесь всё идёт через Intl с языком интерфейса; склонения делает
 // Intl.RelativeTimeFormat, а не наши ключи.
 
-import { i18n, t } from '@/i18n'
+import { bcp47, i18n, t } from '@/i18n'
 
 const SECONDS_PER_MINUTE = 60
 const SECONDS_PER_HOUR = 3_600
@@ -31,7 +31,7 @@ const TIME_AGO_UNITS: Array<[Intl.RelativeTimeFormatUnit, number]> = [
  * computed подписывает их на смену языка.
  */
 export function dateLocale(): string {
-  return String(i18n.global.locale.value)
+  return bcp47(String(i18n.global.locale.value))
 }
 
 function nowSeconds(): number {

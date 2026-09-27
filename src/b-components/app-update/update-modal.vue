@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { bcp47 } from '@/i18n'
 import { Modal } from 'ant-design-vue'
 import { useAppUpdate } from '@/composables/use-app-update'
 import {
@@ -53,7 +54,7 @@ const publishedLabel = computed<string>(() => {
   const iso = available.value?.publishedAt
   if (!iso) return ''
   const date = new Date(iso)
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(locale.value)
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(bcp47(locale.value))
 })
 
 function onLater(): void {

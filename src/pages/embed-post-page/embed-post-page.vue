@@ -57,6 +57,7 @@ import { useRoute } from 'vue-router'
 import { ImageGallery } from '@/components/image-gallery'
 import { useModalStore } from '@/stores/modal-store'
 import { useI18n } from 'vue-i18n'
+import { bcp47 } from '@/i18n'
 import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
 import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
@@ -142,6 +143,6 @@ const formattedTime = computed<string>(() => {
   const ts = Number(post.value?.time)
   if (!ts) return ''
   const ms = ts < 1e12 ? ts * 1000 : ts
-  return new Date(ms).toLocaleDateString(locale.value)
+  return new Date(ms).toLocaleDateString(bcp47(locale.value))
 })
 </script>

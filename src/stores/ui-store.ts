@@ -1,7 +1,14 @@
 import { defineStore } from 'pinia'
 import { SCROLL_POSITION_PREFIX } from '@/blockchain/constants/storage'
 import { settingsAPI } from '@/db/apis/settings-api'
-import { detectInitialLocale, readStoredLocale, setI18nLocale, type Locale } from '@/i18n'
+import {
+  SUPPORTED_LOCALES,
+  detectInitialLocale,
+  loadLocaleMessages,
+  readStoredLocale,
+  setI18nLocale,
+  type Locale,
+} from '@/i18n'
 
 export type AppLanguage = Locale
 
@@ -134,9 +141,12 @@ export const useUIStore = defineStore('ui', {
       try {
         if (readStoredLocale()) return
         const stored = await settingsAPI.get(SETTING_KEY_LANGUAGE)
-        if ((stored === 'ru' || stored === 'en') && stored !== this.language) {
-          this.language = stored
-          setI18nLocale(stored)
+        const known = (SUPPORTED_LOCALES as readonly unknown[]).includes(stored)
+        if (known && stored !== this.language) {
+          const language = stored as AppLanguage
+          await loadLocaleMessages(language)
+          this.language = language
+          setI18nLocale(language)
         }
       } catch (err) {
         console.error('Failed to load language setting:', err)
@@ -149,6 +159,14 @@ export const useUIStore = defineStore('ui', {
      * Меняет язык и персистит в IndexedDB. Синхронизирует vue-i18n и <html lang>.
      */
     async setLanguage(language: AppLanguage): Promise<void> {
+      try {
+        await loadLocaleMessages(language)
+      } catch (err) {
+        // Словарь не загрузился (офлайн) — язык не переключаем, иначе вместо
+        // текстов был бы английский запасной.
+        console.error('Failed to load language:', err)
+        return
+      }
       this.language = language
       setI18nLocale(language)
       try {
