@@ -2,6 +2,7 @@
 // в семантические признаки + показывает соответствующий toast.
 
 import { appToast } from '@/b-components/app-toast'
+import { NodeRejectError } from '@/blockchain/core/transactions/node-reject'
 import { t } from '@/i18n'
 import type { StarRatingEmits } from '../types'
 
@@ -18,6 +19,8 @@ export interface ClassifiedError {
   isMempoolConflict: boolean
   /** Все доступные сервера упали — сетевая проблема, не бизнес-логика. */
   isNetworkFailed: boolean
+  /** Нода отказала по другой известной причине (лимит оценок и т. п.): message — её текст. */
+  isNodeReject: boolean
   message: string
 }
 
@@ -77,6 +80,7 @@ export function classifyVoteError(error: unknown): ClassifiedError {
     isSelfScore,
     isMempoolConflict,
     isNetworkFailed,
+    isNodeReject: error instanceof NodeRejectError,
     message: e.message || 'Failed to submit vote',
   }
 }
@@ -106,6 +110,12 @@ export function handleVoteError(classified: ClassifiedError, emit: StarRatingEmi
   if (classified.isNetworkFailed) {
     appToast.error({ message: t('postCard.ratingNetworkFailed') })
     emit('error', new Error(classified.message))
+    return
+  }
+  // Лимит оценок (3), отрицательная оценка при низкой репутации (60) и т. п.:
+  // раньше уходило только в консоль, и оценка молча не ставилась.
+  if (classified.isNodeReject) {
+    appToast.error({ message: classified.message })
     return
   }
   emit('error', new Error(classified.message))

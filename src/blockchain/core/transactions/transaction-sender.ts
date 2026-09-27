@@ -17,6 +17,7 @@ import { debugLog } from '@/helpers/common/debug-log'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCallWithAuth, getByPRC } from '@/helpers/api/request'
 import { t } from '@/i18n'
+import { NodeRejectError, toNodeRejectError } from './node-reject'
 
 /** Потолок ожидания ответа ноды на бродкаст (мс). */
 export const BROADCAST_TIMEOUT_MS = 90_000
@@ -194,6 +195,13 @@ export async function sendTransactionWithMessage(
       throw new BroadcastStatusUnknownError(localTxid, error)
     }
 
+    // Отказ консенсуса или mempool — с причиной на языке интерфейса и кодом ноды.
+    const reject = toNodeRejectError(error)
+    if (reject) {
+      console.error('[sendTransaction] Node rejected the transaction:', reject.code, error)
+      throw reject
+    }
+
     console.error('[sendTransaction] Error details:', error)
     if (error instanceof Error) {
       throw new Error(`Failed to send transaction: ${error.message}`, { cause: error })
@@ -212,9 +220,10 @@ export async function sendTransactionWithMessage(
  * таймаут первой ноды отправлял тот же hex второй, её «уже в mempool»
  * считалось ошибкой, человек жал ещё раз — и получал дубль поста.
  *
- * От sendTransactionWithMessage отличается только ошибкой: отказ ноды
- * отдаётся как есть (объект с `code`), потому что вызывающие различают по нему
- * DoubleScore, Blocking и т. п.
+ * От sendTransactionWithMessage отличается только ошибкой: неизвестная
+ * ошибка ноды отдаётся как есть (объект с `code`), а отказ с известной
+ * причиной — `NodeRejectError` (текст для человека + тот же `code`, по нему
+ * вызывающие различают DoubleScore, Blocking и т. п.).
  */
 export async function broadcastTransaction(
   params: SendTransactionParams,
@@ -223,7 +232,8 @@ export async function broadcastTransaction(
   try {
     return await sendTransactionWithMessage(params, deps)
   } catch (error) {
-    if (error instanceof BroadcastStatusUnknownError) throw error
+    if (error instanceof BroadcastStatusUnknownError || error instanceof NodeRejectError)
+      throw error
     const cause = error instanceof Error ? error.cause : undefined
     throw cause ?? error
   }

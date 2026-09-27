@@ -6,6 +6,8 @@ import {
   isAlreadyKnownError,
   sendTransactionWithMessage,
 } from './transaction-sender'
+import { NodeRejectError } from './node-reject'
+import { t } from '@/i18n'
 
 const { _rpcCallWithAuth, _getByPRC } = vi.hoisted(() => ({
   _rpcCallWithAuth: vi.fn(),
@@ -197,8 +199,26 @@ describe('broadcastTransaction — социальные транзакции с 
     expect(await broadcastTransaction(validParams(), deps())).toBe(await localTxid())
   })
 
-  it('отказ ноды отдаётся как есть — вызывающие различают по code (DoubleScore и т. п.)', async () => {
+  it('отказ ноды — NodeRejectError: текст для человека, code ноды сохранён (DoubleScore и т. п.)', async () => {
     const nodeError = { code: 4, message: 'DoubleScore' }
+    _rpcCallWithAuth.mockRejectedValueOnce(nodeError)
+    const err = await broadcastTransaction(validParams(), deps()).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(NodeRejectError)
+    expect(err).toMatchObject({ code: 4, message: t('nodeReject.doubleScore'), cause: nodeError })
+  })
+
+  it('лимит постов (code 2) объясняется, а не «не удалось отправить»', async () => {
+    _rpcCallWithAuth.mockRejectedValueOnce({
+      code: 2,
+      message: 'Failed SocialConsensusHelper::Validate',
+    })
+    await expect(broadcastTransaction(validParams(), deps())).rejects.toThrow(
+      t('nodeReject.postLimit')
+    )
+  })
+
+  it('ошибка ноды без известной причины отдаётся как есть', async () => {
+    const nodeError = { code: -8, message: 'Invalid parameter' }
     _rpcCallWithAuth.mockRejectedValueOnce(nodeError)
     await expect(broadcastTransaction(validParams(), deps())).rejects.toBe(nodeError)
   })

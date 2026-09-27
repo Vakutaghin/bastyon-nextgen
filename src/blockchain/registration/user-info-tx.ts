@@ -38,8 +38,14 @@ export interface RegistrationTxOptions {
 
 const LOG_PREFIX = '[registration-tx]'
 
+/** Имя занято (18) или слишком длинное (19): коды консенсуса ноды. */
+const FATAL_REJECT_CODES = new Set([18, 19])
+
 /** Эвристика «фатальной» ошибки ноды: после неё ретраить бессмысленно. */
 export function isFatalRegistrationError(err: unknown): boolean {
+  // Отказ ноды приходит как NodeRejectError: текст уже для человека, код — в поле.
+  const code = err && typeof err === 'object' ? (err as { code?: unknown }).code : undefined
+  if (typeof code === 'number' && FATAL_REJECT_CODES.has(code)) return true
   const msg = err instanceof Error ? err.message : String(err)
   return (
     msg.includes('NicknameLong') ||

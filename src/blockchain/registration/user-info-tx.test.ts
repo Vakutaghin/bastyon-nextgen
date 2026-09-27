@@ -121,4 +121,11 @@ describe('sendRegistrationUserInfoTx', () => {
     expect(isFatalRegistrationError(new Error('{"code":18}'))).toBe(true)
     expect(isFatalRegistrationError(new Error('ECONNRESET'))).toBe(false)
   })
+
+  it('isFatalRegistrationError узнаёт отказ ноды по коду, а не по тексту', () => {
+    const taken = Object.assign(new Error('Это имя уже занято.'), { code: 18 })
+    const limit = Object.assign(new Error('Лимит публикаций'), { code: 2 })
+    expect(isFatalRegistrationError(taken)).toBe(true)
+    expect(isFatalRegistrationError(limit)).toBe(false)
+  })
 })
