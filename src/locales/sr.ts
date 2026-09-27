@@ -1835,6 +1835,22 @@ export default {
     videoAttached: 'PeerTube видео је приложен',
     audioAttached: 'PeerTube аудио је приложен',
     videoTitlePlaceholder: 'Наслов видеа',
+    videoUpload: 'Отпреми видео или аудио',
+    videoUploading: 'Отпремање: {percent}%',
+    videoKeepOpen: 'не затварајте прозор до краја',
+    videoCancel: 'Откажи',
+    videoRemove: 'Уклони',
+    videoRetry: 'Покушај поново',
+    videoErrFormat: 'Ова датотека није ни видео ни аудио.',
+    videoErrTooLarge: 'Датотека је већа од {max}.',
+    videoErrServerSize:
+      'Видео-сервер није прихватио датотеку: превелика је или је квота потрошена.',
+    videoErrQuota: 'Дневна квота за отпремање није довољна: данас је остало {left}.',
+    videoErrNoServer: 'Тренутно ниједан видео-сервер није доступан. Покушајте касније.',
+    videoErrAuth: 'Видео-сервер вас није пустио. Покушајте касније.',
+    videoErrNetwork:
+      'Веза је прекинута. Покушајте поново: отпремање ће се наставити тамо где је стало.',
+    videoErrGeneric: 'Видео није могао да се отпреми.',
   },
   videoMsg: {
     selectVideoFile: 'Изаберите видео датотеку',

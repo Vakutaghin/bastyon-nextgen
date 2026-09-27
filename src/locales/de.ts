@@ -1861,6 +1861,22 @@ export default {
     videoAttached: 'PeerTube-Video angehängt',
     audioAttached: 'PeerTube-Audio angehängt',
     videoTitlePlaceholder: 'Titel des Videos',
+    videoUpload: 'Video oder Audio hochladen',
+    videoUploading: 'Wird hochgeladen: {percent} %',
+    videoKeepOpen: 'lass dieses Fenster bis zum Ende offen',
+    videoCancel: 'Abbrechen',
+    videoRemove: 'Entfernen',
+    videoRetry: 'Erneut versuchen',
+    videoErrFormat: 'Diese Datei ist weder Video noch Audio.',
+    videoErrTooLarge: 'Die Datei ist größer als {max}.',
+    videoErrServerSize:
+      'Der Videoserver hat die Datei abgelehnt: Sie ist zu groß oder dein Kontingent ist aufgebraucht.',
+    videoErrQuota: 'Dein tägliches Upload-Kontingent reicht nicht: heute bleiben noch {left}.',
+    videoErrNoServer: 'Gerade ist kein Videoserver verfügbar. Versuche es später erneut.',
+    videoErrAuth: 'Der Videoserver hat dich nicht angemeldet. Versuche es später erneut.',
+    videoErrNetwork:
+      'Die Verbindung wurde unterbrochen. Versuche es erneut: Der Upload geht dort weiter, wo er aufgehört hat.',
+    videoErrGeneric: 'Das Video konnte nicht hochgeladen werden.',
   },
   videoMsg: {
     selectVideoFile: 'Bitte wähle eine Videodatei',

@@ -1856,6 +1856,22 @@ export default {
     videoAttached: 'Vídeo de PeerTube adjunto',
     audioAttached: 'Audio de PeerTube adjunto',
     videoTitlePlaceholder: 'Título del vídeo',
+    videoUpload: 'Subir vídeo o audio',
+    videoUploading: 'Subiendo: {percent} %',
+    videoKeepOpen: 'no cierres esta ventana hasta que termine',
+    videoCancel: 'Cancelar',
+    videoRemove: 'Quitar',
+    videoRetry: 'Reintentar',
+    videoErrFormat: 'Este archivo no es de vídeo ni de audio.',
+    videoErrTooLarge: 'El archivo supera {max}.',
+    videoErrServerSize:
+      'El servidor de vídeo no aceptó el archivo: es demasiado grande o tu cuota está agotada.',
+    videoErrQuota: 'Tu cuota diaria de subida no alcanza: hoy quedan {left}.',
+    videoErrNoServer:
+      'Ahora mismo no hay ningún servidor de vídeo disponible. Inténtalo más tarde.',
+    videoErrAuth: 'El servidor de vídeo no te dejó entrar. Inténtalo más tarde.',
+    videoErrNetwork: 'Se cortó la conexión. Reintenta: la subida continuará donde se quedó.',
+    videoErrGeneric: 'No se pudo subir el vídeo.',
   },
   videoMsg: {
     selectVideoFile: 'Selecciona un archivo de vídeo',

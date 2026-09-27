@@ -1862,6 +1862,22 @@ export default {
     videoAttached: 'Vidéo PeerTube jointe',
     audioAttached: 'Audio PeerTube joint',
     videoTitlePlaceholder: 'Titre de la vidéo',
+    videoUpload: 'Téléverser une vidéo ou un audio',
+    videoUploading: 'Téléversement : {percent} %',
+    videoKeepOpen: 'gardez cette fenêtre ouverte jusqu’à la fin',
+    videoCancel: 'Annuler',
+    videoRemove: 'Retirer',
+    videoRetry: 'Réessayer',
+    videoErrFormat: 'Ce fichier n’est ni une vidéo ni un audio.',
+    videoErrTooLarge: 'Le fichier dépasse {max}.',
+    videoErrServerSize:
+      'Le serveur vidéo a refusé le fichier : il est trop volumineux ou votre quota est épuisé.',
+    videoErrQuota: 'Votre quota quotidien d’envoi ne suffit pas : il reste {left} aujourd’hui.',
+    videoErrNoServer: 'Aucun serveur vidéo n’est disponible pour le moment. Réessayez plus tard.',
+    videoErrAuth: 'Le serveur vidéo n’a pas accepté la connexion. Réessayez plus tard.',
+    videoErrNetwork:
+      'La connexion a été interrompue. Réessayez : l’envoi reprendra là où il s’est arrêté.',
+    videoErrGeneric: 'Impossible de téléverser la vidéo.',
   },
   videoMsg: {
     selectVideoFile: 'Veuillez choisir un fichier vidéo',

@@ -207,6 +207,28 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     uploadedVideoUrl.value = ''
   }
 
+  /** Своё видео грузится прямо сейчас: публиковать нечего, указателя ещё нет. */
+  const videoUploading = ref(false)
+  const setVideoUploading = (active: boolean): void => {
+    videoUploading.value = active
+  }
+  /** Видео загружено из композера (а не пришло с правкой): у него своя панель. */
+  const hasUploadedVideo = computed(() => !isEdit && !!uploadedVideoUrl.value)
+  /** Загрузка закончилась: указатель — в `u`, имя файла — заготовка заголовка. */
+  const onVideoUploaded = (video: { pointer: string; title: string }): void => {
+    setUploadedVideoUrl(video.pointer)
+    if (!caption.value.trim()) caption.value = video.title
+  }
+  /** Ключи для входа на видеосервер; null — не вошёл. */
+  const videoAuth = () => {
+    const keyPair = authStore.getKeyPair
+    const address = authStore.getUserAddress
+    return keyPair && address ? { keyPair, address } : null
+  }
+  const requireLogin = (): void => {
+    modalStore.openAuthModal('login')
+  }
+
   /**
    * Текущий пост в форме SharePostData.
    * На этапе валидации/превью images содержат base64; перед отправкой они
@@ -240,7 +262,9 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   })
 
   const validationError = computed(() => validatePost(post.value))
-  const canPublish = computed(() => !submitting.value && validationError.value === null)
+  const canPublish = computed(
+    () => !submitting.value && !videoUploading.value && validationError.value === null
+  )
   /** Лейбл кнопки публикации по режиму. */
   const publishLabel = computed(() => {
     if (isEdit) return t('postComposer.save')
@@ -288,6 +312,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       modalStore.openAuthModal('login')
       return
     }
+
+    if (videoUploading.value) return
 
     // Закоммитить недобитый ввод тега (пользователь не нажал Enter).
     commitTagInput()
@@ -366,6 +392,12 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     uploadedVideoUrl,
     setUploadedVideoUrl,
     clearUploadedVideoUrl,
+    videoUploading,
+    setVideoUploading,
+    hasUploadedVideo,
+    onVideoUploaded,
+    videoAuth,
+    requireLogin,
     pollActive,
     pollTitle,
     pollOptions,

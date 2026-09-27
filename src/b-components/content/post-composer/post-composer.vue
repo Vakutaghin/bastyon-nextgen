@@ -67,7 +67,10 @@
     </SC_EmojiRow>
 
     <!-- Превью видео по ссылке (youtube/vimeo/peertube), найденной в тексте -->
-    <ComposerUrlPreview v-if="!articleMode && parsedVideo.kind" :parsed="parsedVideo" />
+    <ComposerUrlPreview
+      v-if="!articleMode && parsedVideo.kind && !hasUploadedVideo"
+      :parsed="parsedVideo"
+    />
     <LinkPreviewCard
       v-else-if="!articleMode && linkPreviewUrl"
       :url="linkPreviewUrl"
@@ -76,8 +79,26 @@
       @remove="dismissLinkPreview"
     />
 
+    <!-- Своё видео или аудио: файл → PeerTube → peertube://… в `u` поста. -->
+    <ComposerVideo
+      v-if="
+        !isRepost &&
+        !isEdit &&
+        !articleMode &&
+        (videoUploading || hasUploadedVideo || !images.length)
+      "
+      :pointer="uploadedVideoUrl"
+      :get-auth="videoAuth"
+      :get-title="() => caption"
+      @uploaded="onVideoUploaded"
+      @removed="clearUploadedVideoUrl"
+      @uploading="setVideoUploading"
+      @auth-required="requireLogin"
+    />
+
+    <!-- Картинки и своё видео в одном посте не живут: в ленте картинки заслонили бы плеер. -->
     <ComposerImages
-      v-if="!isRepost && !articleMode"
+      v-if="!isRepost && !articleMode && !videoUploading && !hasUploadedVideo"
       :images="images"
       :full="imagesFull"
       @add="addImageFiles"
@@ -148,6 +169,7 @@ import ComposerRepost from './composer-repost.vue'
 import ComposerSettings from './composer-settings.vue'
 import ComposerTags from './composer-tags.vue'
 import ComposerUrlPreview from './composer-url-preview.vue'
+import ComposerVideo from './composer-video.vue'
 import LinkPreviewCard from '@/b-components/content/link-preview-card/link-preview-card.vue'
 import type { ComposerMode, ComposerSource } from './composer-source'
 import { useComposerMentions } from './use-composer-mentions'
@@ -200,6 +222,14 @@ const {
   needsCaption,
   linkPreviewUrl,
   dismissLinkPreview,
+  uploadedVideoUrl,
+  clearUploadedVideoUrl,
+  videoUploading,
+  setVideoUploading,
+  hasUploadedVideo,
+  onVideoUploaded,
+  videoAuth,
+  requireLogin,
   pollActive,
   pollTitle,
   pollOptions,
