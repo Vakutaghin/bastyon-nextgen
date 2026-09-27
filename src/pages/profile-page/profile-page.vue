@@ -61,6 +61,7 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { LoadingOutlined, ClockCircleOutlined, PlusOutlined } from '@/components/icons'
 import { useDocumentTitle } from '@/composables/use-document-title'
+import { fetchAccountSettings } from '@/helpers/api/account-settings'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain/store/auth-store'
@@ -200,29 +201,9 @@ async function fetchUserProfile(identifier: string): Promise<void> {
     // Догружаем accSet (обложка, кастомные настройки аккаунта). Это опционально —
     // 502/таймаут не должен ронять профиль.
     try {
-      const settingsResponse = (await getByPRC({
-        method: rpcEndpoints.getAccountSetting,
-        parameters: [address],
-        options: { auth: false },
-      })) as { data?: unknown } | unknown
-
-      let accSet: unknown =
-        settingsResponse && typeof settingsResponse === 'object' && 'data' in settingsResponse
-          ? (settingsResponse as { data?: unknown }).data
-          : settingsResponse
-
-      if (accSet) {
-        if (typeof accSet === 'string') {
-          try {
-            accSet = JSON.parse(accSet)
-          } catch (e) {
-            console.warn('Failed to parse accSet JSON:', e)
-          }
-        }
-
-        if (profile.value && typeof accSet === 'object') {
-          profile.value = { ...profile.value, accSet }
-        }
+      const accSet = await fetchAccountSettings(address)
+      if (profile.value && Object.keys(accSet).length) {
+        profile.value = { ...profile.value, accSet }
       }
     } catch (e) {
       console.warn('Failed to load account settings:', e)

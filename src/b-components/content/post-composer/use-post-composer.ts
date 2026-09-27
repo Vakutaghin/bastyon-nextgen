@@ -17,6 +17,7 @@ import { useAuthStore } from '@/blockchain'
 import type { ArticleContent, SharePostData } from '@/blockchain/core/actions/post-action'
 import { resolvePostOperationType } from '@/blockchain/core/actions/post-action'
 import { appToast } from '@/b-components/app-toast'
+import { fetchAccountSettings, paidSubscriptionPrice } from '@/helpers/api/account-settings'
 import { haptic } from '@/helpers/common/haptics'
 import { uploadImages } from '@/services/image-upload-service'
 import { useModalStore, usePendingPostsStore, PENDING_POST_TTL_MS } from '@/stores'
@@ -131,6 +132,23 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const isTrial = computed(() => authStore.getUserState?.trial === true)
   /** Эффективная видимость с учётом триал-гейтинга. */
   const effectiveVisibility = computed(() => (isTrial.value ? '0' : visibility.value))
+
+  /**
+   * Видимость «платным подписчикам» (f='3') — только у автора с назначенной
+   * ценой подписки (accSet.paidsubscription), как в старом клиенте: без цены
+   * оформить подписку нельзя, и такой пост не увидел бы никто.
+   */
+  const paidVisibilityAvailable = ref(false)
+  const ownAddress = authStore.getUserAddress
+  if (ownAddress) {
+    fetchAccountSettings(ownAddress)
+      .then((settings) => {
+        paidVisibilityAvailable.value = paidSubscriptionPrice(settings) > 0
+      })
+      .catch(() => {
+        // Нода не ответила — пункт не показываем; правку поста с f='3' это не ломает.
+      })
+  }
 
   /** Базовые настройки: видимость + (опц.) отложенное время. */
   const baseSettings = computed(() => {
@@ -313,6 +331,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     visibility,
     language,
     isTrial,
+    paidVisibilityAvailable,
     articleMode,
     articleContent,
     parsedVideo,

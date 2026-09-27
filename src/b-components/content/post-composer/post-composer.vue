@@ -106,6 +106,7 @@
       :visibility="visibility"
       :language="language"
       :is-trial="isTrial"
+      :paid-available="paidVisibilityAvailable"
       :scheduled-time="scheduledTime"
       @update:visibility="visibility = $event"
       @update:language="language = $event"
@@ -184,6 +185,7 @@ const {
   visibility,
   language,
   isTrial,
+  paidVisibilityAvailable,
   articleMode,
   articleContent,
   parsedVideo,

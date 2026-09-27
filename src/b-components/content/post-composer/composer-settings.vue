@@ -54,6 +54,8 @@ const props = defineProps<{
   visibility: string
   language: string
   isTrial: boolean
+  /** У автора назначена цена платной подписки — можно публиковать для платных подписчиков. */
+  paidAvailable: boolean
   scheduledTime: number
 }>()
 const emit = defineEmits<{
@@ -89,8 +91,12 @@ const VISIBILITY_OPTIONS = [
   { value: '3', labelKey: 'postComposer.visibilityPaid' },
 ] as const
 
+// «Платным подписчикам» — только при назначенной цене подписки; у правки поста,
+// уже опубликованного так, пункт остаётся, чтобы видимость не сбрасывалась молча.
 const visibilityOptions = computed<SelectOption[]>(() =>
-  VISIBILITY_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))
+  VISIBILITY_OPTIONS.filter(
+    (opt) => opt.value !== '3' || props.paidAvailable || props.visibility === '3'
+  ).map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))
 )
 
 /** Язык поста — те же коды, что у языка интерфейса: по ним нода собирает ленты. */
