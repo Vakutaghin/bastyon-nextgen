@@ -62,7 +62,20 @@ const FIXTURE_KEY = 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8='
 const fixture = new Uint8Array(
   readFileSync(resolve(process.cwd(), 'src-tauri/src/ipfs/testdata/secret-v2.bin'))
 )
-const pattern = (n: number) => Uint8Array.from({ length: n }, (_, i) => (i * 37 + 11) % 256)
+function pattern(n: number): Uint8Array {
+  const out = new Uint8Array(n)
+  for (let i = 0; i < n; i++) out[i] = (i * 37 + 11) % 256
+  return out
+}
+
+/**
+ * Побайтное сравнение мегабайтных буферов. toEqual сравнивает поэлементно и на
+ * трёх мегабайтах шёл секунды: в CI тест упирался в таймаут.
+ */
+function expectSameBytes(actual: Uint8Array, expected: Uint8Array, label: string): void {
+  expect(actual.length, label).toBe(expected.length)
+  expect(Buffer.compare(actual, expected), label).toBe(0)
+}
 
 /** Шифртекст кусками произвольной длины — как их отдаёт IPFS. */
 async function* pieces(bytes: Uint8Array, size: number): AsyncGenerator<Uint8Array> {
@@ -119,8 +132,9 @@ describe('decryptSecretStream (v2)', () => {
 
   it('настоящий размер куска (1 МиБ): несколько кусков, кратный и пустой файл', async () => {
     for (const n of [0, 1024 * 1024, 2 * 1024 * 1024 + 123]) {
-      const { key, sealed } = sealV2(pattern(n), 1024 * 1024)
-      expect(await openStream(key, sealed, 256 * 1024), `${n} байт`).toEqual(pattern(n))
+      const plain = pattern(n)
+      const { key, sealed } = sealV2(plain, 1024 * 1024)
+      expectSameBytes(await openStream(key, sealed, 256 * 1024), plain, `${n} байт`)
     }
   })
 
