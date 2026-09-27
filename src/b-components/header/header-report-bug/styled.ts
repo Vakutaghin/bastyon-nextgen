@@ -8,7 +8,7 @@ export const SC_ReportBugWrapper = styled.div`
   padding: 6px;
   border-radius: var(--ui-radius-md);
   transition: background-color var(--transition-fast);
-  color: var(--color-text-primary);
+  color: var(--color-success);
 
   &:hover {
     background-color: var(--ui-bg-elevated);
