@@ -347,6 +347,7 @@ export default {
   },
   common: {
     cancel: '取消',
+    deletedAccount: '账户已删除',
   },
   settings: {
     title: '设置',

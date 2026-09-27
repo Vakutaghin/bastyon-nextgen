@@ -365,6 +365,7 @@ export default {
   },
   common: {
     cancel: 'Cancel',
+    deletedAccount: 'Account deleted',
   },
   settings: {
     title: 'Settings',

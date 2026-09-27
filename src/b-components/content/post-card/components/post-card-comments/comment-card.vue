@@ -10,15 +10,15 @@
   >
     <router-link :to="getCommentProfileLink(comment)">
       <CommentAvatar
-        :url="getCommentAvatarUrl(comment.userprofile)"
-        :name="comment.userprofile?.name || '?'"
+        :url="getCommentAvatarUrl(comment.userprofile) ?? userAvatar(comment.address)"
+        :name="authorName"
       />
     </router-link>
 
     <SC_CommentContent>
       <SC_CommentMeta>
         <router-link :to="getCommentProfileLink(comment)">
-          <SC_CommentAuthor>{{ comment.userprofile?.name || comment.address }}</SC_CommentAuthor>
+          <SC_CommentAuthor>{{ authorName }}</SC_CommentAuthor>
         </router-link>
         <SC_CommentMetaRight>
           <SC_CommentDate :title="formatCommentDateFull(comment.time)">{{
@@ -161,6 +161,7 @@ import CommentAvatar from './comment-avatar.vue'
 import CommentMenu from './comment-menu.vue'
 import CommentEditForm from './comment-edit-form.vue'
 import { getCommentAvatarUrl, getCommentProfileLink } from './helpers'
+import { userAvatar, userName } from '@/services/user-names'
 import {
   SC_CommentItem,
   SC_CommentRow,
@@ -188,6 +189,12 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+
+// У удалённого аккаунта нода присылает заглушку без имени, а у комментариев
+// из других источников профиля может не быть вовсе: имя догружается.
+const authorName = computed<string>(() =>
+  userName(props.comment.address, props.comment.userprofile)
+)
 
 const ctx = useCommentTree()
 const { onCommentMenuAction, highlightedCommentId } = ctx

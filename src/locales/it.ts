@@ -369,6 +369,7 @@ export default {
   },
   common: {
     cancel: 'Annulla',
+    deletedAccount: 'Account eliminato',
   },
   settings: {
     title: 'Impostazioni',

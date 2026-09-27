@@ -372,6 +372,7 @@ export default {
   },
   common: {
     cancel: 'Abbrechen',
+    deletedAccount: 'Konto gelöscht',
   },
   settings: {
     title: 'Einstellungen',

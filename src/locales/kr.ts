@@ -365,6 +365,7 @@ export default {
   },
   common: {
     cancel: '취소',
+    deletedAccount: '삭제된 계정',
   },
   settings: {
     title: '설정',

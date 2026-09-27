@@ -26,6 +26,7 @@ export type { RawUserProfile, RawFeedPost } from '@/helpers/common/adapt-post'
 export { adaptPostData, mergeRepostContent } from '@/helpers/common/adapt-post'
 
 import { adaptPostData } from '@/helpers/common/adapt-post'
+import { rememberUsers } from '@/services/user-names'
 import type { RawFeedPost, RawUserProfile } from '@/helpers/common/adapt-post'
 
 /**
@@ -104,5 +105,6 @@ export function extractPostsFromResponse(
     return []
   }
 
+  rememberUsers(Object.values(usersMap))
   return rawPosts.map((post, index) => adaptPostData(post, index, usersMap))
 }

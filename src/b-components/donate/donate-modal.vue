@@ -74,6 +74,7 @@ import {
 } from '@/blockchain/core/transactions/unspents-manager'
 import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
 // Звук успешного доната (портирован из legacy sounds/donate.mp3). Vite отдаёт URL.
+import { userName } from '@/services/user-names'
 import donateSound from './sounds/donate.mp3'
 import {
   SC_DonateBody,
@@ -112,7 +113,7 @@ const amount = ref('')
 const sending = ref(false)
 const balance = ref<number | null>(null)
 
-const recipientLabel = computed<string>(() => donateStore.name || donateStore.address)
+const recipientLabel = computed<string>(() => userName(donateStore.address, donateStore.name))
 const formattedBalance = computed<string>(() =>
   balance.value === null ? '' : balance.value.toFixed(4)
 )

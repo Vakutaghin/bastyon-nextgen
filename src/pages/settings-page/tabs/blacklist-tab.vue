@@ -37,6 +37,7 @@ import { useUserRelationsStore } from '@/stores'
 import { useUserProfiles } from '@/composables/use-user-profile'
 import { appToast } from '@/b-components/app-toast'
 import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
+import { userName } from '@/services/user-names'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import {
   SC_Blacklist,
@@ -72,7 +73,7 @@ const rows = computed(() => {
   }
   return blockedAddresses.value.map((address) => {
     const p = byAddr.get(address)
-    return { address, name: p?.name || address, avatar: avatarFromProfile(p) }
+    return { address, name: userName(address, p), avatar: avatarFromProfile(p) }
   })
 })
 

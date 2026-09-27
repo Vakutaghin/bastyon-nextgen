@@ -47,6 +47,11 @@ export interface GetCommentUserProfile {
   address: string
   id: number
   name: string
+  /**
+   * Аккаунт удалён: вместо профиля нода присылает `{ hash, address, id,
+   * deleted: true }` без имени и аватара.
+   */
+  deleted?: boolean | string
   /** URL аватара */
   i: string
   b?: string

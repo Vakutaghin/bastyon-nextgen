@@ -9,6 +9,8 @@
 
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { matrixService } from '../../services/matrix-service'
+import { useMessengerProfileCache } from '../../store/messenger-profile-cache'
+import { chatUserName } from '../../helpers'
 
 export interface TypingMember {
   userId: string
@@ -44,6 +46,7 @@ const TYPING_EVENT = 'RoomMember.typing'
 
 export function useTypingIndicator(activeRoomId: Ref<string | null>) {
   const typingIds = ref<Set<string>>(new Set())
+  const profileCache = useMessengerProfileCache()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RoomMember из matrix-js-sdk потребляется duck-typing'ом, как и в сторах
   function onTyping(_event: unknown, member: any): void {
@@ -63,7 +66,8 @@ export function useTypingIndicator(activeRoomId: Ref<string | null>) {
     const client = matrixService.getClient()
     const rid = activeRoomId.value
     const member = rid ? client?.getRoom?.(rid)?.getMember?.(first) : null
-    return member?.name || member?.rawDisplayName || null
+    // Имя участника в Matrix у наших пользователей — hex адреса: берём логин.
+    return chatUserName(first, profileCache.userProfiles, member?.name || member?.rawDisplayName)
   })
 
   const isTyping = computed<boolean>(() => typingIds.value.size > 0)

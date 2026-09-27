@@ -16,6 +16,7 @@ import { rpcCall } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useUserProfiles } from './use-user-profile'
 import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
+import { userName } from '@/services/user-names'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 
 export type RelationListType = 'followers' | 'following'
@@ -124,7 +125,7 @@ export function useFollowersList(
       const reputation = Number(p?.reputation ?? 0)
       return {
         address: entry.address,
-        name: p?.name || entry.address,
+        name: userName(entry.address, p),
         avatar: avatarFromProfile(p),
         reputation: Number.isFinite(reputation) ? reputation : 0,
         isPrivate: entry.isPrivate,

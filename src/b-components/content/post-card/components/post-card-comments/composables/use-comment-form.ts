@@ -22,6 +22,7 @@ import { isCommentLengthValid, getCommentLengthHint } from '../helpers'
 import { COMMENTS_PAGE_SIZE, COMMENTS_ALREADY_SHOWN } from '../consts'
 import { readCommentDraft, writeCommentDraft, clearCommentDraft } from './comment-draft-storage'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
+import { userNameIfKnown } from '@/services/user-names'
 import type { MentionUser } from '../types'
 import type { DisableReason } from '../visibility'
 
@@ -389,7 +390,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     openReplyEmpty(comment.id, comment.id)
   }
   const onReplyToAuthorFirstLevel = (comment: GetComment): void => {
-    openReplyToAuthor(comment.id, comment.id, comment.userprofile?.name || comment.address || '')
+    openReplyToAuthor(comment.id, comment.id, userNameIfKnown(comment.address, comment.userprofile))
   }
   // Ответ на ответ (второй уровень): как в legacy, `parentid` — корневой
   // комментарий ветки, `answerid` — сам ответ. Раньше сюда уходил
@@ -402,7 +403,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     openReplyToAuthor(
       reply.id,
       reply.parentid || reply.id,
-      reply.userprofile?.name || reply.address || ''
+      userNameIfKnown(reply.address, reply.userprofile)
     )
   }
 

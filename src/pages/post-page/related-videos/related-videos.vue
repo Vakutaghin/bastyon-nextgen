@@ -14,7 +14,7 @@
         </SC_RelatedThumb>
         <SC_RelatedInfo>
           <SC_RelatedName>{{ titleOf(video) }}</SC_RelatedName>
-          <SC_RelatedMeta>{{ video.author?.name || video.author?.address }}</SC_RelatedMeta>
+          <SC_RelatedMeta>{{ userName(video.author?.address, video.author?.name) }}</SC_RelatedMeta>
         </SC_RelatedInfo>
       </SC_RelatedItem>
     </SC_RelatedList>
@@ -28,6 +28,7 @@ import { PlayCircleOutlined, SoundOutlined } from '@/components/icons'
 import { useRelatedVideos } from '@/composables/use-related-videos'
 import type { AdaptedPost } from '@/composables/use-feed'
 import { safeDecode } from '@/helpers/content/safe-decode'
+import { userName } from '@/services/user-names'
 import {
   SC_Related,
   SC_RelatedTitle,

@@ -4,9 +4,9 @@
       <SC_AuthorLinkWrap>
         <router-link :to="'/' + (displayAuthor.name || displayAuthor.address)" class="author-link">
           <Avatar
-            :src="displayAuthor.avatar"
-            :alt="displayAuthor.name || displayAuthor.letter"
-            :fallback-text="displayAuthor.name"
+            :src="authorAvatar"
+            :alt="authorLabel || displayAuthor.letter"
+            :fallback-text="authorLabel"
             :size="50"
             :verified="displayAuthor.verified"
           />
@@ -19,7 +19,7 @@
             :to="'/' + (displayAuthor.name || displayAuthor.address)"
             class="author-link"
           >
-            <SC_PostAuthorName>{{ displayAuthor.name }}</SC_PostAuthorName>
+            <SC_PostAuthorName>{{ authorLabel }}</SC_PostAuthorName>
           </router-link>
 
           <SC_ChatBtn
@@ -69,7 +69,7 @@
               :to="'/' + (post.repostAuthor.name || post.repostAuthor.address)"
               class="repost-author"
             >
-              {{ post.repostAuthor.name || post.repostAuthor.address }}
+              {{ userName(post.repostAuthor.address, post.repostAuthor.name) }}
             </router-link>
           </template>
           <span v-else class="repost-record"> {{ t('postCard.repostRecord') }}</span>
@@ -104,6 +104,7 @@ import { useUserRelationsStore, useDonateStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
 import { favoritesAPI } from '@/db/apis/favorites-api'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
+import { userAvatar, userName } from '@/services/user-names'
 import { ICON_PRIMARY_18, ICON_SIZE_MD, ICON_OVERLAY_45_18 } from '@/styles/icon-styles'
 import {
   SC_PostHeader,
@@ -204,6 +205,15 @@ const displayAuthor = computed<PostAuthor>(() => {
   }
   return defaultAuthor
 })
+
+// Посты из getprofilefeed приходят без профиля автора, и адаптер ставит на
+// место имени адрес: имя и аватар догружаются (user-names).
+const authorLabel = computed<string>(() =>
+  userName(displayAuthor.value.address, displayAuthor.value.name)
+)
+const authorAvatar = computed<string | null>(() =>
+  userAvatar(displayAuthor.value.address, displayAuthor.value.avatar)
+)
 
 const formattedReputation = computed<string>(() => {
   const rep = displayAuthor.value.reputation || 0

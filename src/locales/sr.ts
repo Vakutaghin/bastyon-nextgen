@@ -365,6 +365,7 @@ export default {
   },
   common: {
     cancel: 'Откажи',
+    deletedAccount: 'Налог је обрисан',
   },
   settings: {
     title: 'Подешавања',

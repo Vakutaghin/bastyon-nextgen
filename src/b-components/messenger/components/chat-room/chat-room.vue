@@ -239,6 +239,7 @@ import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import PkoinTransferModal from '../pkoin-transfer-modal/pkoin-transfer-modal.vue'
 import { useMessengerStore } from '../../store'
+import { chatUserName } from '../../helpers'
 import { useMessengerProfileCache } from '../../store/messenger-profile-cache'
 import { usePasteDrop } from './use-paste-drop'
 import { useVoiceRecording } from './use-voice-recording'
@@ -337,7 +338,12 @@ const displayedMessages = computed<Message[]>(() => {
 })
 // --- Ответ на сообщение (reply) ---
 const replyingTo = ref<Message | null>(null)
-const replyPreviewName = computed<string>(() => replyingTo.value?.senderName || '')
+const replyPreviewName = computed<string>(() => {
+  const m = replyingTo.value
+  if (!m) return ''
+  if (m.senderId === 'me' || m.senderId === store.currentUser.id) return m.senderName || ''
+  return chatUserName(m.senderId, store.userProfiles, m.senderName)
+})
 const replyPreviewText = computed<string>(() => {
   const m = replyingTo.value
   if (!m) return ''

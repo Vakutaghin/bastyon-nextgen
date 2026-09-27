@@ -373,6 +373,7 @@ export default {
   },
   common: {
     cancel: 'Cancelar',
+    deletedAccount: 'Cuenta eliminada',
   },
   settings: {
     title: 'Ajustes',

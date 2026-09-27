@@ -8,6 +8,7 @@ import { sortComments } from '../helpers'
 import { isHiddenByReputation as visIsHiddenByReputation } from '../visibility'
 import { MENTION_LIST_LIMIT } from '../consts'
 import type { CommentsSortOrder, MentionUser, PostForComments } from '../types'
+import { userNameIfKnown } from '@/services/user-names'
 
 /**
  * Sorted-комменты с учётом pending и эвристики «низкая репутация = вниз».
@@ -54,12 +55,12 @@ export function buildMentionUsers(
   const byAddress = new Map<string, string>()
   const add = (c: GetComment) => {
     if (!c?.address) return
-    const name = (c.userprofile?.name || c.address || '').trim() || c.address
+    const name = userNameIfKnown(c.address, c.userprofile) || c.address
     if (!byAddress.has(c.address)) byAddress.set(c.address, name)
   }
   const lc = post.lastComment
   if (lc?.address) {
-    const name = (lc.authorName || lc.address || '').trim() || lc.address
+    const name = userNameIfKnown(lc.address, lc.authorName) || lc.address
     if (!byAddress.has(lc.address)) byAddress.set(lc.address, name)
   }
   if (allComments) {

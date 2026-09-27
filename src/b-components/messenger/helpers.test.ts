@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { t } from '@/i18n'
 import {
   getEventId,
   getEventContent,
@@ -11,6 +12,7 @@ import {
   getMatrixId,
   tetatetid,
   getAddressFromMatrixId,
+  chatUserName,
   getRoomTimelineEvents,
   hexStringToUint8Array,
   detectAudioMime,
@@ -145,6 +147,37 @@ describe('getAddressFromMatrixId', () => {
 
   it('невалидный matrixId → null', () => {
     expect(getAddressFromMatrixId('not-a-matrix-id')).toBeNull()
+  })
+})
+
+describe('chatUserName: вместо Matrix-id — логин или короткий адрес', () => {
+  const ADDRESS = 'PJFaWLSPKfRDe4m8gsXg4zfigcVA5yZU2B'
+  const MATRIX_ID =
+    '@504a4661574c53504b66524465346d3867735867347a66696763564135795a553242:matrix.org'
+
+  it('логин из кэша профилей', () => {
+    _hexToAddress.mockReturnValue(ADDRESS)
+    expect(chatUserName(MATRIX_ID, { [ADDRESS]: { name: 'SergiyKir' } })).toBe('SergiyKir')
+  })
+
+  it('имя участника Matrix — hex адреса: его не показываем', () => {
+    _hexToAddress.mockReturnValue(ADDRESS)
+    const hexName = MATRIX_ID.slice(1).split(':')[0]
+    expect(chatUserName(MATRIX_ID, {}, hexName)).toBe('PJFaWLSP…')
+    expect(chatUserName(MATRIX_ID, {}, MATRIX_ID)).toBe('PJFaWLSP…')
+    expect(chatUserName(MATRIX_ID, {})).toBe('PJFaWLSP…')
+  })
+
+  it('настоящее имя, запомненное при разборе сообщения, остаётся', () => {
+    _hexToAddress.mockReturnValue(ADDRESS)
+    expect(chatUserName(MATRIX_ID, {}, 'SergiyKir')).toBe('SergiyKir')
+  })
+
+  it('удалённый аккаунт', () => {
+    _hexToAddress.mockReturnValue(ADDRESS)
+    expect(chatUserName(MATRIX_ID, { [ADDRESS]: { deleted: true } })).toBe(
+      t('common.deletedAccount')
+    )
   })
 })
 

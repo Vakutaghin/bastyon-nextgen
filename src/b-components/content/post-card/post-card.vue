@@ -29,16 +29,16 @@
             class="author-link"
           >
             <Avatar
-              :src="post.repostAuthor.avatar"
-              :alt="post.repostAuthor.name || post.repostAuthor.address"
-              :fallback-text="post.repostAuthor.name || post.repostAuthor.address"
+              :src="userAvatar(post.repostAuthor.address, post.repostAuthor.avatar)"
+              :alt="repostAuthorName"
+              :fallback-text="repostAuthorName"
               :size="50"
             />
           </router-link>
           <SC_RepostOriginalAuthorInfo>
             <SC_RepostOriginalAuthorName>
               <router-link :to="'/' + (post.repostAuthor.name || post.repostAuthor.address)">
-                {{ post.repostAuthor.name || post.repostAuthor.address }}
+                {{ repostAuthorName }}
               </router-link>
             </SC_RepostOriginalAuthorName>
             <SC_RepostOriginalAuthorTime v-if="originalAuthorFormattedTime">
@@ -236,6 +236,7 @@ import {
   SC_BoostedBadge,
   SC_PendingBadge,
 } from './styled'
+import { userAvatar, userName } from '@/services/user-names'
 import { usePostMedia } from './use-post-media'
 import { usePostDelete } from './use-post-delete'
 import { calculateAverageRating, decodeUrlEncoded, getPostShareId } from './helpers'
@@ -298,6 +299,10 @@ onMounted(() => {
 })
 
 const isRepost = computed<boolean>(() => !!props.post.repost)
+// Профиль автора оригинала есть не всегда: без него имя догружается (user-names).
+const repostAuthorName = computed<string>(() =>
+  userName(props.post.repostAuthor?.address, props.post.repostAuthor?.name)
+)
 
 /** Свой ли это пост (для показа кнопки редактирования). */
 const isOwnPost = computed<boolean>(

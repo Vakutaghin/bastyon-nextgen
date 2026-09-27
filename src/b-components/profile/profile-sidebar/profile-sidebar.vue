@@ -175,6 +175,7 @@ import EditProfileModal from '@/b-components/profile/edit-profile-modal/edit-pro
 import FollowersListModal from '@/b-components/profile/followers-list-modal/followers-list-modal.vue'
 import type { RelationListType } from '@/composables/use-followers-list'
 import { ICON_PRIMARY_24, ICON_SIZE_11 } from '@/styles/icon-styles'
+import { userName } from '@/services/user-names'
 import {
   SC_ProfileSidebar,
   SC_UserAvatar,
@@ -221,8 +222,9 @@ const userAvatar = computed<string | null>(() => {
   return raw ? (resolveImageUrl(raw) ?? null) : null
 })
 
+// У удалённого аккаунта вместо профиля заглушка без имени: «Аккаунт удалён».
 const displayName = computed<string>(() => {
-  return props.profile?.name || props.profile?.address || 'User'
+  return userName(props.profile?.address, props.profile) || 'User'
 })
 
 const formattedDate = computed<string>(() => {

@@ -136,7 +136,7 @@ import { Popover, Modal } from 'ant-design-vue'
 import { MoreOutlined, DeleteOutlined, RollbackOutlined } from '@/components/icons'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
-import { getAddressFromMatrixId } from '../../helpers'
+import { chatUserName, getAddressFromMatrixId } from '../../helpers'
 import { formatDateTimeFromString as formatTime } from '@/helpers/common/date-formatter'
 import { QUICK_REACTION_EMOJIS } from '../../store/consts'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
@@ -230,9 +230,7 @@ const senderProfile = computed(() => {
 
 const displayName = computed<string>(() => {
   if (isMine.value) return store.currentUser.name || t('messenger.you')
-  const profile = senderProfile.value
-  if (profile?.name) return profile.name
-  return props.message.senderName || props.message.senderId
+  return chatUserName(props.message.senderId, store.userProfiles, props.message.senderName)
 })
 
 /** URL аватарки отправителя (или undefined, если ещё нет в кэше). */
@@ -312,7 +310,11 @@ const repliedPreview = computed<{ name: string; text: string } | null>(() => {
   const ref = list?.find((m) => m.id === rid)
   if (!ref) return { name: '', text: t('messenger.reply') }
   const isRefMine = ref.senderId === 'me' || ref.senderId === store.currentUser.id
-  const name = isRefMine ? store.currentUser.name || t('messenger.you') : ref.senderName || ''
+  // Имя в цитате — по кэшу профилей, а не то, что запомнилось при разборе
+  // сообщения: тогда профиль мог быть ещё не загружен, и там лежал Matrix-id.
+  const name = isRefMine
+    ? store.currentUser.name || t('messenger.you')
+    : chatUserName(ref.senderId, store.userProfiles, ref.senderName)
   const text = ref.type && ref.type !== 'text' ? `[${ref.type}]` : (ref.text || '').slice(0, 80)
   return { name, text }
 })

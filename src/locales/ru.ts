@@ -371,6 +371,7 @@ export default {
   },
   common: {
     cancel: 'Отмена',
+    deletedAccount: 'Аккаунт удалён',
   },
   settings: {
     title: 'Настройки',

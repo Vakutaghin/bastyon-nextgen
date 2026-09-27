@@ -11,6 +11,7 @@
 
 import type { AdaptedPost } from '@/types/adapted-post'
 import { registerNameAddress } from '@/services/user-resolver'
+import { rememberUsers } from '@/services/user-names'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { normalizeImages } from '@/composables/use-feed-helpers'
 import { safeDecode } from '@/helpers/content/safe-decode'
@@ -107,6 +108,9 @@ export function adaptPostData(
   if (userprofile?.name && userprofile?.address) {
     registerNameAddress([{ name: userprofile.name, address: userprofile.address }])
   }
+  // Имя автора пригодится там, где нода пришлёт только его адрес: последний
+  // комментарий под другим постом, «Ещё видео автора».
+  if (userprofile) rememberUsers([userprofile])
 
   const authorName = userprofile?.name || post.address || t('postCard.unknownAuthor')
 

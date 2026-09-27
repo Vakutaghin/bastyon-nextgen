@@ -2,13 +2,13 @@
   <SC_CommentWithReplies>
     <SC_CommentItem>
       <router-link :to="lastCommentProfileLink">
-        <CommentAvatar :url="lastCommentAvatarUrl" :name="post.lastComment?.authorName" />
+        <CommentAvatar :url="lastCommentAvatarUrl" :name="lastCommentAuthor" />
       </router-link>
 
       <SC_CommentContent>
         <SC_CommentMeta>
           <router-link :to="lastCommentProfileLink">
-            <SC_CommentAuthor>{{ post.lastComment?.authorName }}</SC_CommentAuthor>
+            <SC_CommentAuthor>{{ lastCommentAuthor }}</SC_CommentAuthor>
           </router-link>
 
           <SC_CommentDate :title="lastCommentDateFull">{{ lastCommentDateOnly }}</SC_CommentDate>
@@ -73,12 +73,12 @@
       <SC_ReplyItemWrapper v-for="reply in getReplies(lastCommentId)" :key="reply.id">
         <SC_CommentItem :class="{ 'is-pending': isCommentPending(reply) }">
           <CommentAvatar
-            :url="getCommentAvatarUrl(reply.userprofile)"
-            :name="reply.userprofile?.name || '?'"
+            :url="getCommentAvatarUrl(reply.userprofile) ?? userAvatar(reply.address)"
+            :name="userName(reply.address, reply.userprofile)"
           />
           <SC_CommentContent>
             <SC_CommentMeta>
-              <SC_CommentAuthor>{{ reply.userprofile?.name || reply.address }}</SC_CommentAuthor>
+              <SC_CommentAuthor>{{ userName(reply.address, reply.userprofile) }}</SC_CommentAuthor>
               <SC_CommentMetaRight>
                 <SC_CommentDate :title="formatCommentDateFull(reply.time)">{{
                   formatCommentDate(reply.time)
@@ -116,6 +116,7 @@ import { useI18n } from 'vue-i18n'
 import { ClockCircleOutlined, StopOutlined } from '@/components/icons'
 
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { userAvatar, userName, userNameIfKnown } from '@/services/user-names'
 import type { PostForComments } from './types'
 import CommentAvatar from './comment-avatar.vue'
 import BoundReplyPanel from './bound-reply-panel.vue'
@@ -174,9 +175,14 @@ const lastCommentProfileLink = computed<string>(() => {
   if (name) return '/' + name
   return '/'
 })
+// Нода присылает у последнего комментария только адрес автора: имя и аватар
+// берутся из уже известных профилей или догружаются (user-names).
+const lastCommentAuthor = computed<string>(() =>
+  userName(props.post.lastComment?.address, props.post.lastComment?.authorName)
+)
 const lastCommentAvatarUrl = computed<string | null>(() => {
   const img = props.post.lastComment?.avatar || null
-  if (!img) return null
+  if (!img) return userAvatar(props.post.lastComment?.address)
   return resolveImageUrl(img) || null
 })
 const lastCommentDateOnly = computed<string>(() =>
@@ -209,6 +215,6 @@ function onLastCommentReply(): void {
 function onLastCommentReplyToAuthor(): void {
   const lc = props.post.lastComment
   if (!lc?.id) return
-  form.openReplyToAuthor(lc.id, lc.id, lc.authorName || lc.address || '')
+  form.openReplyToAuthor(lc.id, lc.id, userNameIfKnown(lc.address, lc.authorName))
 }
 </script>

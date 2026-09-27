@@ -3,6 +3,8 @@
 import CryptoJS from 'crypto-js'
 
 import { matrixService } from './services/matrix-service'
+import { t } from '@/i18n'
+import { shortAddress } from '@/services/user-names'
 
 /**
  * Универсальное представление Matrix-события: либо обёртка SDK (`MatrixEvent` с
@@ -204,6 +206,29 @@ export const getAddressFromMatrixId = (matrixId: string): string | null => {
     return userId
   }
   return null
+}
+
+/**
+ * Подпись собеседника: логин из кэша профилей, «Аккаунт удалён» или короткий
+ * Bastyon-адрес. Matrix-id наших пользователей — hex адреса (`@5041…:server`),
+ * и Matrix подставляет его же в имя участника: человек видел длинную
+ * hex-строку, похожую на публичный ключ. Её не показываем никогда.
+ */
+export function chatUserName(
+  matrixId: string,
+  profiles: Record<string, { name?: string; deleted?: unknown } | undefined>,
+  knownName?: string | null
+): string {
+  const address = getAddressFromMatrixId(matrixId)
+  const profile = address ? profiles[address] : undefined
+  if (profile?.name) return profile.name
+  if (profile?.deleted) return t('common.deletedAccount')
+  const name = knownName?.trim()
+  if (name && name !== matrixId && name !== address && !/^@?[0-9a-f]{16,}/i.test(name)) {
+    return name
+  }
+  if (address) return shortAddress(address)
+  return matrixId
 }
 
 // --- Работа с таймлайном ---
