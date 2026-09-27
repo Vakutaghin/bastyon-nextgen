@@ -68,8 +68,9 @@ export function describeVideoUploadError(error: unknown): string {
   ) {
     return t('postComposer.videoErrAuth')
   }
+  // Обрыв связи или временный отказ инстанса: повтор продолжит с места обрыва.
   if (
-    error instanceof PeertubeUploadError ||
+    /^peertube_chunk_retryable_/.test(message) ||
     /timeout|network|failed to fetch|load failed/i.test(message)
   ) {
     return t('postComposer.videoErrNetwork')

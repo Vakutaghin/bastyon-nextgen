@@ -306,6 +306,48 @@ describe('uploadVideoResumable — retry / ошибки', () => {
     expect(result.uuid).toBe('VID')
   })
 
+  it('чанк завис дольше таймаута → повтор, а не «отмена» всей загрузки', async () => {
+    vi.useFakeTimers()
+    try {
+      let putCount = 0
+      const fetchInstance = (async (_p: string, init?: RequestInit) => {
+        if (init?.method === 'POST') return res(201, {}, { Location: 'h/x?upload_id=UP' })
+        if (init?.method === 'DELETE') throw new Error('upload was deleted as if cancelled')
+        if (init?.method === 'PUT') {
+          putCount += 1
+          if (putCount === 1) {
+            // Первый PUT висит, пока его не оборвёт таймаут чанка.
+            return new Promise<Response>((_, reject) => {
+              init.signal?.addEventListener('abort', () =>
+                reject(new DOMException('The operation was aborted.', 'AbortError'))
+              )
+            })
+          }
+          return res(200, doneBody('VID'))
+        }
+        return res(404)
+      }) as InstanceFetch
+
+      const run = uploadVideoResumable({
+        host: 'h',
+        address: 'ADDR',
+        accessToken: 'AT',
+        file: makeFile(256),
+        metadata: META,
+        videoKey: 'VK',
+        chunkSize: 256,
+        fetchInstance,
+        sleep: noSleep,
+      })
+      await vi.advanceTimersByTimeAsync(61_000)
+      const result = await run
+      expect(putCount).toBe(2)
+      expect(result.uuid).toBe('VID')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('жёсткая 422 → PeertubeUploadError без повторов, resume-state сохранён', async () => {
     let putCount = 0
     const fetchInstance = (async (_p: string, init?: RequestInit) => {

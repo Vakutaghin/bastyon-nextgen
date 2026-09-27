@@ -149,7 +149,14 @@ describe('describeVideoUploadError', () => {
       'postComposer.videoErrNetwork',
     ],
     [new Error('Request timeout'), 'postComposer.videoErrNetwork'],
+    [new PeertubeUploadError('peertube_chunk_timeout'), 'postComposer.videoErrNetwork'],
+    [new TypeError('Failed to fetch'), 'postComposer.videoErrNetwork'],
     [new Error('something else'), 'postComposer.videoErrGeneric'],
+    [new PeertubeUploadError('peertube_no_location'), 'postComposer.videoErrGeneric'],
+    [
+      new PeertubeUploadError('peertube_chunk_500', { status: 500 }),
+      'postComposer.videoErrGeneric',
+    ],
   ])('%s', (error, key) => {
     expect(describeVideoUploadError(error)).toBe(t(key))
   })

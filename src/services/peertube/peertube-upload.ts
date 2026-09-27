@@ -43,6 +43,8 @@ const RETRY_BASE_MS = 1000
 const RETRY_CAP_MS = 15000
 /** Таймаут на один PUT-чанк (в оригинале таймаутов нет вовсе). */
 const CHUNK_TIMEOUT_MS = 60000
+/** Чанк не уложился в CHUNK_TIMEOUT_MS — временный сбой, повторяем. */
+const CHUNK_TIMEOUT_ERROR = 'peertube_chunk_timeout'
 /** Сколько раз готовы переинициализировать upload при 404. */
 const MAX_REINITS = 2
 
@@ -230,7 +232,13 @@ async function putChunkOnce(p: PutChunkParams): Promise<ChunkOutcome> {
   const ctrl = new AbortController()
   const onAbort = (): void => ctrl.abort()
   p.signal?.addEventListener('abort', onAbort)
-  const timer = setTimeout(() => ctrl.abort(), CHUNK_TIMEOUT_MS)
+  // Свой таймаут обрывает fetch тем же AbortError, что и «Отмена»: помечаем его,
+  // иначе медленный чанк отменял всю загрузку вместо повтора.
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    ctrl.abort()
+  }, CHUNK_TIMEOUT_MS)
 
   let res: Response
   try {
@@ -247,6 +255,9 @@ async function putChunkOnce(p: PutChunkParams): Promise<ChunkOutcome> {
         signal: ctrl.signal,
       }
     )
+  } catch (e) {
+    if (timedOut && !p.signal?.aborted) throw new PeertubeUploadError(CHUNK_TIMEOUT_ERROR)
+    throw e
   } finally {
     clearTimeout(timer)
     p.signal?.removeEventListener('abort', onAbort)
@@ -305,7 +316,8 @@ async function putChunkWithRetry(
       const retryable =
         !(e instanceof PeertubeUploadError) || // сетевой сбой fetch (не наша ошибка кода)
         e.status === 429 ||
-        e.status === 503
+        e.status === 503 ||
+        e.message === CHUNK_TIMEOUT_ERROR
       if (!retryable || attempt >= MAX_CHUNK_ATTEMPTS - 1) throw e
       await sleep(backoffMs(attempt))
     }
