@@ -6,6 +6,8 @@ export type { ParsedVideo, ParsedVideoKind } from '@/helpers/common/video-embed-
 export {
   extractVimeoId,
   extractYoutubeId,
+  firstLinkUrl,
   firstVideoUrl,
+  isImageUrl,
   parseVideoUrl,
 } from '@/helpers/common/video-embed-url'

@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest'
 
-import { extractVimeoId, extractYoutubeId, firstVideoUrl, parseVideoUrl } from './parse-video-url'
+import {
+  extractVimeoId,
+  extractYoutubeId,
+  firstLinkUrl,
+  firstVideoUrl,
+  isImageUrl,
+  parseVideoUrl,
+} from './parse-video-url'
 
 describe('extractYoutubeId', () => {
   it('watch?v=', () => {
@@ -76,5 +83,36 @@ describe('firstVideoUrl', () => {
   it('нет видео → пустая строка', () => {
     expect(firstVideoUrl('просто текст без ссылок')).toBe('')
     expect(firstVideoUrl('')).toBe('')
+  })
+})
+
+describe('firstLinkUrl (ссылка поста, как linksFromText старого клиента)', () => {
+  it('первая обычная ссылка, без хвостовой пунктуации', () => {
+    expect(firstLinkUrl('Читайте https://cairnsnews.org/2026/09/27/one-nation. Важно')).toBe(
+      'https://cairnsnews.org/2026/09/27/one-nation'
+    )
+  })
+
+  it('пропускает видео и картинки, берёт следующую ссылку', () => {
+    expect(
+      firstLinkUrl(
+        'https://youtu.be/dQw4w9WgXcQ и https://i.site.org/a.JPG?x=1 и https://x.com/a/status/1'
+      )
+    ).toBe('https://x.com/a/status/1')
+  })
+
+  it('недописанный адрес и не-http ссылки не берёт', () => {
+    expect(firstLinkUrl('https://exa')).toBe('')
+    expect(firstLinkUrl('peertube://host/uuid и bastyon://post?s=1')).toBe('')
+    expect(firstLinkUrl('')).toBe('')
+  })
+})
+
+describe('isImageUrl', () => {
+  it('по расширению пути, регистр и query не мешают', () => {
+    expect(isImageUrl('https://h/a/b.png')).toBe(true)
+    expect(isImageUrl('https://h/a/b.WebP?size=2')).toBe(true)
+    expect(isImageUrl('https://pngtree.com/free-vectors')).toBe(false)
+    expect(isImageUrl('not a url')).toBe(false)
   })
 })

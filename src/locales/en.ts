@@ -1784,6 +1784,9 @@ export default {
     unknownCode: 'The network rejected the action (code {code}).',
     rejected: 'The network rejected the transaction: {reason}',
   },
+  linkPreview: {
+    remove: 'Remove link preview',
+  },
   postComposer: {
     title: 'New post',
     placeholder: "What's on your mind?",

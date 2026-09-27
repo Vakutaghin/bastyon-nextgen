@@ -68,6 +68,13 @@
 
     <!-- Превью видео по ссылке (youtube/vimeo/peertube), найденной в тексте -->
     <ComposerUrlPreview v-if="!articleMode && parsedVideo.kind" :parsed="parsedVideo" />
+    <LinkPreviewCard
+      v-else-if="!articleMode && linkPreviewUrl"
+      :url="linkPreviewUrl"
+      removable
+      fallback
+      @remove="dismissLinkPreview"
+    />
 
     <ComposerImages
       v-if="!isRepost && !articleMode"
@@ -141,6 +148,7 @@ import ComposerRepost from './composer-repost.vue'
 import ComposerSettings from './composer-settings.vue'
 import ComposerTags from './composer-tags.vue'
 import ComposerUrlPreview from './composer-url-preview.vue'
+import LinkPreviewCard from '@/b-components/content/link-preview-card/link-preview-card.vue'
 import type { ComposerMode, ComposerSource } from './composer-source'
 import { useComposerMentions } from './use-composer-mentions'
 import {
@@ -190,6 +198,8 @@ const {
   articleContent,
   parsedVideo,
   needsCaption,
+  linkPreviewUrl,
+  dismissLinkPreview,
   pollActive,
   pollTitle,
   pollOptions,

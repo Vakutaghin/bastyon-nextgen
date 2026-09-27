@@ -1805,6 +1805,9 @@ export default {
     unknownCode: 'La rete ha rifiutato l’azione (codice {code}).',
     rejected: 'La rete ha rifiutato la transazione: {reason}',
   },
+  linkPreview: {
+    remove: 'Rimuovi l’anteprima del link',
+  },
   postComposer: {
     title: 'Nuovo post',
     placeholder: 'A cosa stai pensando?',

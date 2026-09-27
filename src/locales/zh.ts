@@ -1725,6 +1725,9 @@ export default {
     unknownCode: '网络拒绝了该操作（代码 {code}）。',
     rejected: '网络拒绝了该交易：{reason}',
   },
+  linkPreview: {
+    remove: '移除链接预览',
+  },
   postComposer: {
     title: '新帖子',
     placeholder: '你在想什么？',

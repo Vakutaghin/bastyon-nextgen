@@ -1815,6 +1815,9 @@ export default {
     unknownCode: 'Le réseau a refusé l’action (code {code}).',
     rejected: 'Le réseau a refusé la transaction : {reason}',
   },
+  linkPreview: {
+    remove: 'Retirer l’aperçu du lien',
+  },
   postComposer: {
     title: 'Nouvelle publication',
     placeholder: 'Quoi de neuf ?',

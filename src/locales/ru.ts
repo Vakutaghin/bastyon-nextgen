@@ -1787,6 +1787,9 @@ export default {
     unknownCode: 'Сеть отклонила действие (код {code}).',
     rejected: 'Сеть отклонила транзакцию: {reason}',
   },
+  linkPreview: {
+    remove: 'Убрать превью ссылки',
+  },
   postComposer: {
     title: 'Новый пост',
     placeholder: 'Что у вас нового?',

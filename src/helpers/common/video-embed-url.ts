@@ -10,7 +10,9 @@
  *   - YouTube / Vimeo — iframe-эмбед,
  *   - PeerTube (`peertube://host/id[/audio]`) — отдаётся как есть.
  *
- * OG-превью обычных веб-ссылок здесь НЕ делается — нужен метаданные-эндпойнт ноды.
+ * Обычную веб-ссылку (не видео и не картинку) находит `firstLinkUrl`: её
+ * композер кладёт в `u` поста, а карточку превью берёт у ноды
+ * (`link-preview-service`).
  */
 
 import { parsePeerTubeUrl } from '@/helpers/api/peertube-parser'
@@ -78,6 +80,34 @@ export function firstVideoUrl(text: string): string {
   for (const token of tokens) {
     const clean = trimUrlPunctuation(token)
     if (parseVideoUrl(clean).kind) return clean
+  }
+  return ''
+}
+
+/** Ссылка на картинку по расширению пути: такие старый клиент в `u` не кладёт. */
+const IMAGE_PATH_RE = /\.(?:jpe?g|png|gif|webp|avif|jfif|bmp|svg)$/i
+
+export function isImageUrl(url: string): boolean {
+  try {
+    return IMAGE_PATH_RE.test(new URL(url).pathname)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Первая обычная веб-ссылка в тексте: http(s), не видео и не картинка. Как
+ * `linksFromText` старого клиента, композер кладёт её в `u` поста, и под
+ * постом появляется карточка с заголовком и картинкой страницы.
+ */
+export function firstLinkUrl(text: string): string {
+  if (!text) return ''
+  const tokens = text.match(URL_TOKEN_RE) || []
+  for (const token of tokens) {
+    const clean = trimUrlPunctuation(token)
+    if (!/^https?:\/\/[^/]+\.[^/]+/i.test(clean)) continue
+    if (parseVideoUrl(clean).kind || isImageUrl(clean)) continue
+    return clean
   }
   return ''
 }

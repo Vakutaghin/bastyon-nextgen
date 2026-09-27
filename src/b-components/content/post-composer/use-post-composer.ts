@@ -32,7 +32,7 @@ import {
   postToComposerData,
   sourceId,
 } from './composer-source'
-import { firstVideoUrl, parseVideoUrl } from './parse-video-url'
+import { firstLinkUrl, firstVideoUrl, parseVideoUrl } from './parse-video-url'
 import { sendPost } from './post-sender'
 import { usePostImages } from './use-post-images'
 import { usePostTags } from './use-post-tags'
@@ -173,6 +173,27 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   /** Эффективный url видео: загруженный указатель приоритетнее авто-ссылки из текста. */
   const effectiveVideoUrl = computed(() => uploadedVideoUrl.value || videoUrl.value)
   const parsedVideo = computed(() => parseVideoUrl(effectiveVideoUrl.value))
+
+  /** Ссылка, которую автор убрал крестиком на карточке: её в `u` не кладём. */
+  const dismissedLinkUrl = ref('')
+  /** Обычная веб-ссылка из текста (как `linksFromText` старого клиента), если видео нет. */
+  const textLinkUrl = computed(() => {
+    if (articleMode.value) return ''
+    const link = firstLinkUrl(message.value)
+    return link && link !== dismissedLinkUrl.value ? link : ''
+  })
+  /** `u` поста: видео (загруженное или из текста), иначе обычная ссылка. */
+  const postUrl = computed(() => effectiveVideoUrl.value || textLinkUrl.value)
+  /** Ссылка под карточку превью: `u`, если это не видео (у видео свой плеер). */
+  const linkPreviewUrl = computed(() =>
+    postUrl.value && !parseVideoUrl(postUrl.value).kind ? postUrl.value : ''
+  )
+  /** Крестик на карточке: ссылка остаётся в тексте, но в пост не прикрепляется. */
+  const dismissLinkPreview = (): void => {
+    dismissedLinkUrl.value = linkPreviewUrl.value
+    // При правке `u` оригинала лежит в uploadedVideoUrl (V36) — убираем и оттуда.
+    if (uploadedVideoUrl.value === linkPreviewUrl.value) uploadedVideoUrl.value = ''
+  }
   /** peertube-видео/аудио требуют заголовок (caption) — показываем поле title. */
   const needsCaption = computed(
     () => parsedVideo.value.kind === 'peertube' || parsedVideo.value.kind === 'audio'
@@ -207,7 +228,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     return {
       message: message.value.trim(),
       caption: caption.value.trim(),
-      url: effectiveVideoUrl.value || undefined,
+      url: postUrl.value || undefined,
       tags: tags.value,
       images: base64List.value,
       poll: cleanedPoll.value,
@@ -257,6 +278,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     resetPoll()
     scheduledTime.value = 0
     uploadedVideoUrl.value = ''
+    dismissedLinkUrl.value = ''
     clearImages()
     if (mode === 'create') writeDraft(authStore.getUserAddress, '')
   }
@@ -339,6 +361,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     articleContent,
     parsedVideo,
     needsCaption,
+    linkPreviewUrl,
+    dismissLinkPreview,
     uploadedVideoUrl,
     setUploadedVideoUrl,
     clearUploadedVideoUrl,

@@ -1,8 +1,11 @@
 // Медиа-производные карточки поста: главы из тайм-кодов, YouTube-эмбеды (кроме
-// постов с внутриплатформенным видео) и перемотка плеера по тайм-коду. Владеет
-// ref'ом плеера. Вынесено из post-card.vue (аудит крупных файлов 2026-08).
+// постов с внутриплатформенным видео), ссылка под карточку превью и перемотка
+// плеера по тайм-коду. Владеет ref'ом плеера. Вынесено из post-card.vue (аудит
+// крупных файлов 2026-08).
 import { computed, ref } from 'vue'
+import { isImageUrl, parseVideoUrl } from '@/helpers/common/video-embed-url'
 import { getYoutubeEmbedUrls } from '@/helpers/common/youtube-url'
+import { safeDecode } from '@/helpers/content/safe-decode'
 import { parseTimecodes, type Chapter } from '@/helpers/content/timecode-parser'
 import type { Post } from './post-card.types'
 
@@ -31,6 +34,21 @@ export function usePostMedia(getPost: () => Post) {
     return Array.from(seen)
   })
 
+  /**
+   * Обычная веб-ссылка поста (`u`) — под карточку превью. У видео свой плеер,
+   * у YouTube встраивание, картинку и так видно. Старые посты хранят `u`
+   * целиком закодированным (`https%3A%2F%2F…`).
+   */
+  const linkPreviewUrl = computed<string>(() => {
+    const post = getPost()
+    if (post.type === 'video' || post.type === 'audio' || post.type === 'article') return ''
+    const raw = (post.videoUrl || '').trim()
+    const url = /^https?%3A/i.test(raw) ? safeDecode(raw) : raw
+    if (!/^https?:\/\//i.test(url)) return ''
+    if (parseVideoUrl(url).kind || isImageUrl(url)) return ''
+    return url
+  })
+
   /** Клик по тайм-коду в описании → плеер перематывает и запускает. */
   function handleSeekTimecode(seconds: number): void {
     const player = videoPlayerRef.value
@@ -39,5 +57,5 @@ export function usePostMedia(getPost: () => Post) {
     }
   }
 
-  return { videoPlayerRef, chapters, youtubeEmbedUrls, handleSeekTimecode }
+  return { videoPlayerRef, chapters, youtubeEmbedUrls, linkPreviewUrl, handleSeekTimecode }
 }

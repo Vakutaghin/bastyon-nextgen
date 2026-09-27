@@ -1772,6 +1772,9 @@ export default {
     unknownCode: '네트워크가 작업을 거부했습니다(코드 {code}).',
     rejected: '네트워크가 거래를 거부했습니다: {reason}',
   },
+  linkPreview: {
+    remove: '링크 미리보기 삭제',
+  },
   postComposer: {
     title: '새 게시물',
     placeholder: '무슨 생각을 하고 계신가요?',

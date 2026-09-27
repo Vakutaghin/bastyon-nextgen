@@ -1788,6 +1788,9 @@ export default {
     unknownCode: 'Мрежа је одбила радњу (код {code}).',
     rejected: 'Мрежа је одбила трансакцију: {reason}',
   },
+  linkPreview: {
+    remove: 'Уклони преглед везе',
+  },
   postComposer: {
     title: 'Нова објава',
     placeholder: 'Шта вам је на уму?',

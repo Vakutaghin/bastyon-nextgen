@@ -1814,6 +1814,9 @@ export default {
     unknownCode: 'Das Netzwerk hat die Aktion abgelehnt (Code {code}).',
     rejected: 'Das Netzwerk hat die Transaktion abgelehnt: {reason}',
   },
+  linkPreview: {
+    remove: 'Linkvorschau entfernen',
+  },
   postComposer: {
     title: 'Neuer Beitrag',
     placeholder: 'Was gibt es Neues?',

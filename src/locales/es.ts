@@ -1809,6 +1809,9 @@ export default {
     unknownCode: 'La red rechazó la acción (código {code}).',
     rejected: 'La red rechazó la transacción: {reason}',
   },
+  linkPreview: {
+    remove: 'Quitar la vista previa del enlace',
+  },
   postComposer: {
     title: 'Nueva publicación',
     placeholder: '¿Qué estás pensando?',

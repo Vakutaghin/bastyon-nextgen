@@ -76,6 +76,9 @@
           @seek-timecode="handleSeekTimecode"
         />
 
+        <!-- Ссылка поста (`u`): карточка с заголовком и картинкой страницы от ноды. -->
+        <LinkPreviewCard v-if="linkPreviewUrl" :url="linkPreviewUrl" lazy />
+
         <!-- Под Tor iframe YouTube ушёл бы напрямую, с реальным IP (V21). -->
         <TorBlockedNotice
           v-if="(youtubeEmbedUrls || []).length && mediaBlocked"
@@ -215,6 +218,7 @@ import PostCardImages from '@/b-components/content/post-card/components/post-car
 import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
 import PostCardCategoriesTags from '@/b-components/content/post-card/components/post-card-categories-tags/post-card-categories-tags.vue'
 import PostCardVideoPlaceholder from '@/b-components/content/post-card/components/post-card-video-placeholder/post-card-video-placeholder.vue'
+import LinkPreviewCard from '@/b-components/content/link-preview-card/link-preview-card.vue'
 import TorBlockedNotice from '@/components/tor-blocked-notice'
 import { useTorMedia } from '@/composables/use-tor-media'
 import {
@@ -281,9 +285,8 @@ const { mediaBlocked } = useTorMedia()
 // Настройки содержимого: встроенные плееры и автоплей — выбор пользователя.
 const prefs = useAppPreferencesStore()
 
-const { videoPlayerRef, chapters, youtubeEmbedUrls, handleSeekTimecode } = usePostMedia(
-  () => props.post
-)
+const { videoPlayerRef, chapters, youtubeEmbedUrls, linkPreviewUrl, handleSeekTimecode } =
+  usePostMedia(() => props.post)
 
 onMounted(() => {
   // Pending-пост НЕ регистрируем: он лёг бы под ключом txid и после подтверждения
