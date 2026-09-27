@@ -24,7 +24,6 @@ const MiniAppsPage = () => import('@/pages/mini-apps-page/mini-apps-page.vue')
 const MiniAppPage = () => import('@/pages/mini-app-page/mini-app-page.vue')
 const PostPage = () => import('@/pages/post-page/post-page.vue')
 const ComposePage = () => import('@/pages/compose-page/compose-page.vue')
-const InfoPage = () => import('@/pages/info-page/info-page.vue')
 const HelpPage = () => import('@/pages/help-page/help-page.vue')
 const EmbedPostPage = () => import('@/pages/embed-post-page/embed-post-page.vue')
 
@@ -157,13 +156,6 @@ const router = createRouter({
     { path: '/info/faq', redirect: '/help/faq' },
     { path: '/info/help', redirect: '/help/getting-started' },
     { path: '/info/howtobuy', redirect: '/help/how-to-buy-pkoin' },
-    // Легал-страницы и поддержка (terms/privacy/csae/support). ДО catch-all /:userName.
-    {
-      path: '/info/:slug',
-      name: 'info',
-      component: InfoPage,
-      meta: { titleKey: 'routes.info' },
-    },
     // Встраиваемая (iframe) вьюха поста — без chrome (meta.embed). ДО catch-all /:userName.
     {
       path: '/embed/post/:txid',

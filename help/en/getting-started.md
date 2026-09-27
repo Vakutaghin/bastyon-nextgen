@@ -17,7 +17,3 @@ Open the post editor to share text, images, video links and tags. You can also c
 ## 3. Use your wallet
 
 The **“Wallet”** section has your address and QR code for receiving [PKOIN](glossary.md#pkoin), transfers and tips for authors. Where to get coins is explained in [How to get PKOIN](how-to-buy-pkoin.md).
-
-## Need more help?
-
-The [support](bastyon://info/support) page explains how to report a problem and reach the community.
