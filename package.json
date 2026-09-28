@@ -132,6 +132,7 @@
     "cross-env": "^7.0.3",
     "eslint": "^10.2.0",
     "eslint-plugin-vue": "^10.8.0",
+    "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.9.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
