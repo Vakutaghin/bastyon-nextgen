@@ -24,6 +24,29 @@ function textBody(message: string): CommentMessageBody {
 }
 
 /**
+ * Тело правки: новый текст, а картинки, ссылка и `info` — из исходного `msg`.
+ * Новый клиент картинки к комментариям не прикладывает, но у комментариев из
+ * старого приложения они бывают, и правка только текстом стёрла бы их.
+ */
+export function editedBody(originalMsg: string | undefined, message: string): CommentMessageBody {
+  let original: Partial<Record<keyof CommentMessageBody, unknown>> = {}
+  try {
+    const parsed: unknown = JSON.parse(originalMsg ?? '')
+    if (parsed && typeof parsed === 'object') original = parsed as typeof original
+  } catch {
+    // Старый формат: msg — просто текст, сохранять нечего.
+  }
+  return {
+    message: message.trim(),
+    url: typeof original.url === 'string' ? original.url : '',
+    images: Array.isArray(original.images)
+      ? original.images.filter((i): i is string => typeof i === 'string')
+      : [],
+    info: typeof original.info === 'string' ? original.info : '',
+  }
+}
+
+/**
  * Отправка нового комментария или редактирование существующего.
  *
  * Для нового (editId не передан):
@@ -35,6 +58,8 @@ function textBody(message: string): CommentMessageBody {
  *   - operationType = 'commentEdit'
  *   - serializedData тот же
  *   - payload = { postid, parentid, answerid, msg, id: editId }
+ *   - `originalMsg` — msg редактируемого комментария: из него переносятся
+ *     картинки, ссылка и info (см. editedBody)
  *
  * @returns txid отправленной транзакции
  */
@@ -43,10 +68,12 @@ export async function sendComment(
   parentId: string,
   answerId: string,
   messageText: string,
-  editId?: string
+  editId?: string,
+  originalMsg?: string
 ): Promise<string> {
   if (!postId || !messageText.trim()) throw new Error(t('commentsMsg.errPostAndTextRequired'))
-  return sendCommentBody(postId, parentId, answerId, textBody(messageText), editId)
+  const body = editId ? editedBody(originalMsg, messageText) : textBody(messageText)
+  return sendCommentBody(postId, parentId, answerId, body, editId)
 }
 
 /**

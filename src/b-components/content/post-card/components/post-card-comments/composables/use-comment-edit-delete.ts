@@ -277,7 +277,8 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
         comment.parentid || '',
         comment.answerid || '',
         text,
-        id // editId — переключает sendComment в режим commentEdit
+        id, // editId — переключает sendComment в режим commentEdit
+        comment.msg // картинки, ссылка и info исходного комментария
       )
       haptic('small')
       // Optimistic: подменяем текст до прихода обновлённой версии (через стор)
