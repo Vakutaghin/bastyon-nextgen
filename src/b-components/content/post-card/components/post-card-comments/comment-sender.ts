@@ -16,18 +16,11 @@ import type {
 
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { broadcastTransaction } from '@/blockchain/core/transactions/transaction-sender'
+import { voteCommentBody } from '@/helpers/content/poll'
 
-/**
- * Формирует тело сообщения комментария (msg) в виде JSON-строки.
- */
-function buildCommentMsgBody(message: string): string {
-  const body: CommentMessageBody = {
-    message: message.trim(),
-    url: '',
-    images: [],
-    info: '',
-  }
-  return JSON.stringify(body)
+/** Тело обычного комментария: только текст. */
+function textBody(message: string): CommentMessageBody {
+  return { message: message.trim(), url: '', images: [], info: '' }
 }
 
 /**
@@ -52,14 +45,33 @@ export async function sendComment(
   messageText: string,
   editId?: string
 ): Promise<string> {
+  if (!postId || !messageText.trim()) throw new Error(t('commentsMsg.errPostAndTextRequired'))
+  return sendCommentBody(postId, parentId, answerId, textBody(messageText), editId)
+}
+
+/**
+ * Голос в опросе поста — корневой комментарий с номером варианта в `info`
+ * (формат — helpers/content/poll.ts).
+ */
+export function sendPollVote(postId: string, index: number, option: string): Promise<string> {
+  return sendCommentBody(postId, '', '', voteCommentBody(index, option))
+}
+
+/** Комментарий с готовым телом: транзакция `comment` или `commentEdit`. */
+async function sendCommentBody(
+  postId: string,
+  parentId: string,
+  answerId: string,
+  body: CommentMessageBody,
+  editId?: string
+): Promise<string> {
   const authStore = useAuthStore()
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
   if (!keyPair || !address) throw new Error(t('commentsMsg.errAuthRequiredSend'))
-  if (!postId || !messageText.trim()) throw new Error(t('commentsMsg.errPostAndTextRequired'))
 
-  const msg = buildCommentMsgBody(messageText)
+  const msg = JSON.stringify(body)
   const messagePayload: CommentMessagePayload = {
     postid: postId,
     answerid: answerId || '',

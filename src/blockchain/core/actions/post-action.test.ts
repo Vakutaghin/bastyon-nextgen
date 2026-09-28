@@ -162,6 +162,17 @@ describe('exportPost', () => {
     expect(result.s).toMatchObject({ f: '1', t: 1_900_000_000 })
   })
 
+  it('опрос в настройках: поле p нода не хранит, s — хранит целиком', () => {
+    const result = exportPost({
+      message: 'm',
+      language: 'ru',
+      poll: { title: 'Q', list: ['a', 'b'] },
+      settings: { f: '0', poll: { title: 'Q', list: ['a', 'b'] } },
+    })
+    expect(result.s).toMatchObject({ poll: { title: 'Q', list: ['a', 'b'] } })
+    expect(result.p).toEqual({ title: 'Q', list: ['a', 'b'] })
+  })
+
   it('extended=true: полные ключи + type:share + poll', () => {
     const post: SharePostData = {
       caption: 'C',

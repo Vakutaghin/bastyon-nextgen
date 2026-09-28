@@ -1777,6 +1777,15 @@ export default {
   linkPreview: {
     remove: '링크 미리보기 삭제',
   },
+  poll: {
+    label: '투표',
+    votes: '{n}표',
+    noVotes: '아직 투표가 없습니다',
+    pending: '투표를 보냈습니다. 네트워크 확인을 기다리는 중입니다',
+    signIn: '투표하려면 로그인하세요',
+    failed: '투표하지 못했습니다',
+    loadFailed: '투표 결과를 불러오지 못했습니다',
+  },
   voiceInput: {
     start: '음성 입력',
     stop: '받아쓰기 끝내기 (Esc)',

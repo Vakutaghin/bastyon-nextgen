@@ -15,6 +15,7 @@ import { rememberUsers } from '@/services/user-names'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { normalizeImages } from '@/composables/use-feed-helpers'
 import { safeDecode } from '@/helpers/content/safe-decode'
+import { parseVote } from '@/helpers/content/poll'
 import { decodePostBody } from '@/helpers/content/article-codec'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import { t } from '@/i18n'
@@ -79,7 +80,6 @@ export interface RawFeedPost {
   s?: { v?: string; f?: string }
   type?: string
   preview?: string
-  p?: string
   repost?: string
   deleted?: unknown
   lastComment?: RawLastComment | null
@@ -131,7 +131,7 @@ export function adaptPostData(
     normalizeImages(post.i).length > 0 ? normalizeImages(post.i) : normalizeImages(post.images)
   const videoUrl = post.u || post.s?.v || undefined
   const myVal = post.myVal
-  const preview = safeDecode(post.preview || post.p || '')
+  const preview = safeDecode(post.preview || '')
 
   // hash/txid — строковые идентификаторы; числовой post.id используется как запасной вариант.
   const idAsString = post.id != null ? String(post.id) : undefined
@@ -143,8 +143,9 @@ export function adaptPostData(
     ratingStars = Math.max(0, Math.min(5, Math.round(averageRating * 10) / 10))
   }
 
+  // Голос в опросе — тоже комментарий, но не реплика обсуждения: под постом его не показываем.
   let lastComment
-  if (post.lastComment && post.lastComment.msg) {
+  if (post.lastComment && post.lastComment.msg && parseVote(post.lastComment.msg) === null) {
     let msg: string
     try {
       const parsed = JSON.parse(post.lastComment.msg)
@@ -239,7 +240,7 @@ export function mergeRepostContent(
   adapted.tags = Array.isArray(originalRaw.t) ? originalRaw.t : []
   adapted.type = originalRaw.type || adapted.type
   adapted.category = originalRaw.type || adapted.category
-  adapted.preview = safeDecode(originalRaw.preview || originalRaw.p || '')
+  adapted.preview = safeDecode(originalRaw.preview || '')
   const origScoreCnt = originalRaw.scoreCnt ?? 0
   if (origScoreCnt > 0 && originalRaw.scoreSum != null) {
     adapted.ratingStars = Math.max(

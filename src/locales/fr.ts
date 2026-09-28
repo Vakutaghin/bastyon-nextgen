@@ -1821,6 +1821,15 @@ export default {
   linkPreview: {
     remove: 'Retirer l’aperçu du lien',
   },
+  poll: {
+    label: 'Sondage',
+    votes: '{n} vote | {n} votes',
+    noVotes: 'Aucun vote pour l’instant',
+    pending: 'Vote envoyé, en attente de confirmation par le réseau',
+    signIn: 'Connectez-vous pour voter',
+    failed: 'Impossible de voter',
+    loadFailed: 'Impossible de charger les votes',
+  },
   voiceInput: {
     start: 'Saisie vocale',
     stop: 'Arrêter la dictée (Échap)',

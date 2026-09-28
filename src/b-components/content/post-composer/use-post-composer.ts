@@ -19,6 +19,7 @@ import { resolvePostOperationType } from '@/blockchain/core/actions/post-action'
 import { appToast } from '@/b-components/app-toast'
 import { fetchAccountSettings, paidSubscriptionPrice } from '@/helpers/api/account-settings'
 import { encodeArticleContent } from '@/helpers/content/article-codec'
+import { parsePoll } from '@/helpers/content/poll'
 import { haptic } from '@/helpers/common/haptics'
 import { uploadImages } from '@/services/image-upload-service'
 import { useModalStore, usePendingPostsStore, PENDING_POST_TTL_MS } from '@/stores'
@@ -152,6 +153,16 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       })
   }
 
+  // Опрос уходит в настройки (`s.poll`): поле `p`, которое заполнял старый
+  // клиент, нода не хранит. При правке — опрос опубликованного поста как есть:
+  // голоса привязаны к номерам вариантов, менять их после публикации нельзя.
+  const published = isEdit ? parsePoll(options.source?.settings?.poll) : null
+  const publishedPoll = published ? { title: published.title, list: published.options } : null
+  const withPoll = (settings: SharePostData['settings']): SharePostData['settings'] => {
+    const poll = publishedPoll ?? (cleanedPoll.value?.list.length ? cleanedPoll.value : null)
+    return poll ? { ...settings, poll } : settings
+  }
+
   /** Базовые настройки: видимость + (опц.) отложенное время. */
   const baseSettings = computed(() => {
     const s: SharePostData['settings'] = { f: effectiveVisibility.value }
@@ -255,7 +266,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       images: base64List.value,
       poll: cleanedPoll.value,
       language: language.value,
-      settings: baseSettings.value,
+      settings: withPoll(baseSettings.value),
       txidEdit: editId.value || undefined,
       txidRepost: repostId.value || undefined,
     }

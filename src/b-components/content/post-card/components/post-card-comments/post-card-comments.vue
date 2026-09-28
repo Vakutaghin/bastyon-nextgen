@@ -205,6 +205,8 @@ import { useAuthStore } from '@/blockchain'
 import { useCommentsStore, useUserRelationsStore } from '@/stores'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { formatTimeCompact } from '@/helpers/common/date-formatter'
+import { isVoteComment } from '@/helpers/content/poll'
+import { usePollVotesStore } from '@/stores/poll-votes-store'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { PostForComments } from './types'
 import LastCommentPreview from './last-comment-preview.vue'
@@ -412,8 +414,18 @@ const nextCommentsPageSize = computed<number>(() => {
 
 const hasMoreCommentsToShow = computed<boolean>(() => remainingCommentsCount.value > 0)
 
-const totalCommentsCount = computed<number>(() => props.post.comments ?? 0)
-const actualCommentsCount = computed<number>(() => loader.allComments.value?.length ?? 0)
+// Голоса в опросе нода считает комментариями, а в обсуждении их нет.
+const pollVotes = usePollVotesStore()
+const voteCommentsCount = computed<number>(() => {
+  const loaded = loader.allComments.value
+  return loaded ? loaded.filter(isVoteComment).length : pollVotes.voteCommentsFor(postId.value)
+})
+const totalCommentsCount = computed<number>(() =>
+  Math.max(0, (props.post.comments ?? 0) - voteCommentsCount.value)
+)
+const actualCommentsCount = computed<number>(
+  () => (loader.allComments.value?.length ?? 0) - voteCommentsCount.value
+)
 const hasUserComments = computed<boolean>(() => {
   const lc = props.post.lastComment
   return !!lc && !!lc.message && (props.post.comments || 0) > 0

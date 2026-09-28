@@ -1810,6 +1810,15 @@ export default {
   linkPreview: {
     remove: 'Rimuovi l’anteprima del link',
   },
+  poll: {
+    label: 'Sondaggio',
+    votes: '{n} voto | {n} voti',
+    noVotes: 'Ancora nessun voto',
+    pending: 'Voto inviato, in attesa di conferma dalla rete',
+    signIn: 'Accedi per votare',
+    failed: 'Impossibile votare',
+    loadFailed: 'Impossibile caricare i voti',
+  },
   voiceInput: {
     start: 'Input vocale',
     stop: 'Termina la dettatura (Esc)',

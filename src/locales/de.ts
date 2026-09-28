@@ -1819,6 +1819,15 @@ export default {
   linkPreview: {
     remove: 'Linkvorschau entfernen',
   },
+  poll: {
+    label: 'Umfrage',
+    votes: '{n} Stimme | {n} Stimmen',
+    noVotes: 'Noch keine Stimmen',
+    pending: 'Stimme gesendet, wartet auf die Bestätigung des Netzwerks',
+    signIn: 'Melden Sie sich an, um abzustimmen',
+    failed: 'Abstimmen fehlgeschlagen',
+    loadFailed: 'Stimmen konnten nicht geladen werden',
+  },
   voiceInput: {
     start: 'Spracheingabe',
     stop: 'Diktat beenden (Esc)',

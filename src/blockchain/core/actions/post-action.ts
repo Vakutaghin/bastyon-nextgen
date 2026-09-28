@@ -33,6 +33,11 @@ export interface SharePostSettings {
   c?: string
   /** Unix-таймстамп отложенной публикации (> 1 — запланировано). */
   t?: number
+  /**
+   * Опрос. Нода не хранит поле `p` поста, а настройки хранит целиком — опрос
+   * живёт здесь (формат и голоса — helpers/content/poll.ts).
+   */
+  poll?: SharePostPoll
 }
 
 /** Опрос (поле `p` в payload). */
@@ -158,6 +163,7 @@ function buildSettings(settings?: SharePostSettings): Record<string, unknown> {
   }
   if (settings?.version !== undefined) result.version = settings.version
   if (settings?.t !== undefined) result.t = settings.t
+  if (settings?.poll) result.poll = settings.poll
   return result
 }
 

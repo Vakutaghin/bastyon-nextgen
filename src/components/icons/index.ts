@@ -104,6 +104,7 @@ import {
   UserPlus,
   Users,
   Volume2,
+  Vote,
   Wallet,
   X,
   ZoomIn,
@@ -240,6 +241,7 @@ export const UserAddOutlined = lucideIcon('UserAddOutlined', UserPlus)
 export const UserDeleteOutlined = lucideIcon('UserDeleteOutlined', UserMinus)
 export const UserOutlined = lucideIcon('UserOutlined', User)
 export const VideoCameraAddOutlined = lucideIcon('VideoCameraAddOutlined', Clapperboard)
+export const PollIcon = lucideIcon('PollIcon', Vote)
 export const WalletOutlined = lucideIcon('WalletOutlined', Wallet)
 export const WarningFilled = lucideIcon('WarningFilled', TriangleAlert, 'soft')
 export const WarningOutlined = lucideIcon('WarningOutlined', TriangleAlert)

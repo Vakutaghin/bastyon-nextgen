@@ -29,6 +29,18 @@ describe('adaptPostData', () => {
     u: 'peertube://host/videoid',
   }
 
+  it('голос в опросе не показывается как последний комментарий', () => {
+    const vote = { message: '🗳 Да', url: '', images: [], info: '{"poll":0}' }
+    const text = { message: 'Согласен', url: '', images: [], info: '' }
+    const withLast = (msg: object) =>
+      adaptPostData(
+        { ...rawPost, lastComment: { id: 'c1', address: 'P1', msg: JSON.stringify(msg), time: 1 } },
+        0
+      )
+    expect(withLast(vote).lastComment).toBeUndefined()
+    expect(withLast(text).lastComment?.message).toBe('Согласен')
+  })
+
   it('adapts post data correctly', () => {
     const result = adaptPostData(rawPost, 0)
     expect(result.id).toBe('tx123')

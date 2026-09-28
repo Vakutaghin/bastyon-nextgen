@@ -1789,6 +1789,15 @@ export default {
   linkPreview: {
     remove: 'Remove link preview',
   },
+  poll: {
+    label: 'Poll',
+    votes: '{n} vote | {n} votes',
+    noVotes: 'No votes yet',
+    pending: 'Vote sent, waiting for the network to confirm it',
+    signIn: 'Sign in to vote',
+    failed: 'Could not vote',
+    loadFailed: 'Could not load the votes',
+  },
   voiceInput: {
     start: 'Voice input',
     stop: 'Stop dictation (Esc)',

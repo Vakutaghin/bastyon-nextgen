@@ -4,6 +4,7 @@
  */
 
 import type { GetComment } from '@/types/rpc-responses/get-comments'
+import { isVoteComment } from '@/helpers/content/poll'
 import { sortComments } from '../helpers'
 import { isHiddenByReputation as visIsHiddenByReputation } from '../visibility'
 import { MENTION_LIST_LIMIT } from '../consts'
@@ -13,6 +14,7 @@ import { userNameIfKnown } from '@/services/user-names'
 /**
  * Sorted-комменты с учётом pending и эвристики «низкая репутация = вниз».
  * Pending корневые приклеиваются в общий список — UI рисует через единый sortedComments.
+ * Голоса в опросе — тоже комментарии, но в обсуждении их нет: их считает опрос.
  */
 export function buildSortedComments(
   realComments: GetComment[] | null,
@@ -22,7 +24,7 @@ export function buildSortedComments(
   postAuthorAddress: string | undefined
 ): GetComment[] {
   const real = realComments ?? []
-  const all = [...real, ...pendingRoots]
+  const all = [...real, ...pendingRoots].filter((c) => !isVoteComment(c))
   if (!all.length) return []
 
   // Карта репутаций авторов из ответа getcomments — для дешёвой проверки в isBlocked.

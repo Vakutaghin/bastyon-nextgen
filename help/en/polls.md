@@ -1,17 +1,25 @@
 ---
-keywords: [poll, voting, answer options]
+keywords: [poll, voting, answer options, vote]
 draft: true
 ---
 
 # Polls
 
-How to add a poll with answer options to a post.
+How to add a poll to a post, vote and see the results.
 
 ## Creating a poll
 
-## Where the results are
+## Voting
+
+## Results
+
+<details>
+<summary>How it works</summary>
+
+</details>
 
 ## See also
 
 - [The post editor](post-composer.md)
-- [The Bastyon NextGen app](bastyon-nextgen.md)
+- [Comments](comments.md)
+- [Account status and limits](limits.md)

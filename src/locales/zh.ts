@@ -1730,6 +1730,15 @@ export default {
   linkPreview: {
     remove: '移除链接预览',
   },
+  poll: {
+    label: '投票',
+    votes: '{n} 票',
+    noVotes: '还没有人投票',
+    pending: '投票已发送，等待网络确认',
+    signIn: '登录后即可投票',
+    failed: '投票失败',
+    loadFailed: '无法加载投票结果',
+  },
   voiceInput: {
     start: '语音输入',
     stop: '结束听写（Esc）',

@@ -120,8 +120,9 @@
       @backspace="onTagBackspace"
     />
 
+    <!-- Опрос опубликованного поста не меняется: голоса привязаны к вариантам. -->
     <ComposerPoll
-      v-if="!isRepost && !articleMode"
+      v-if="!isRepost && !isEdit && !articleMode"
       :active="pollActive"
       :title="pollTitle"
       :options="pollOptions"

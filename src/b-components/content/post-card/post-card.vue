@@ -79,6 +79,13 @@
         <!-- Ссылка поста (`u`): карточка с заголовком и картинкой страницы от ноды. -->
         <LinkPreviewCard v-if="linkPreviewUrl" :url="linkPreviewUrl" lazy />
 
+        <PostCardPoll
+          v-if="poll && postId"
+          :post-id="postId"
+          :poll="poll"
+          :post-pending="post.pending"
+        />
+
         <!-- Под Tor iframe YouTube ушёл бы напрямую, с реальным IP (V21). -->
         <TorBlockedNotice
           v-if="(youtubeEmbedUrls || []).length && mediaBlocked"
@@ -219,6 +226,8 @@ import PostCardContent from '@/b-components/content/post-card/components/post-ca
 import PostCardCategoriesTags from '@/b-components/content/post-card/components/post-card-categories-tags/post-card-categories-tags.vue'
 import PostCardVideoPlaceholder from '@/b-components/content/post-card/components/post-card-video-placeholder/post-card-video-placeholder.vue'
 import LinkPreviewCard from '@/b-components/content/link-preview-card/link-preview-card.vue'
+import PostCardPoll from '@/b-components/content/post-card/components/post-card-poll/post-card-poll.vue'
+import { parsePoll } from '@/helpers/content/poll'
 import TorBlockedNotice from '@/components/tor-blocked-notice'
 import { useTorMedia } from '@/composables/use-tor-media'
 import {
@@ -321,6 +330,8 @@ function openEdit(): void {
 // ── Удаление своего поста (contentDelete) ───────────────────────────
 // txid || hash || id — общий с оценкой (K5), удалением и жалобой.
 const postId = computed<string>(() => getPostShareId(props.post))
+/** Опрос поста — в настройках `s.poll` (helpers/content/poll.ts). */
+const poll = computed(() => parsePoll(props.post.settings?.poll))
 // Удалять можно только при наличии реального txid/hash поста — числовой
 // surrogate-id не годится для contentDelete (хеш не совпадёт с оригиналом).
 const canDelete = computed<boolean>(() => !!(props.post.txid || props.post.hash))

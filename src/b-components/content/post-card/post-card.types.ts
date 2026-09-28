@@ -40,6 +40,8 @@ export interface Post {
   videoUrl?: string
   /** Текст превью для статей. */
   preview?: string
+  /** Настройки поста (`s`): видимость, маркер статьи, опрос `poll`. */
+  settings?: { [key: string]: unknown }
   lastComment?: {
     id: string
     address: string

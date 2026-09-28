@@ -1815,6 +1815,15 @@ export default {
   linkPreview: {
     remove: 'Quitar la vista previa del enlace',
   },
+  poll: {
+    label: 'Encuesta',
+    votes: '{n} voto | {n} votos',
+    noVotes: 'Aún no hay votos',
+    pending: 'Voto enviado, esperando la confirmación de la red',
+    signIn: 'Inicia sesión para votar',
+    failed: 'No se pudo votar',
+    loadFailed: 'No se pudieron cargar los votos',
+  },
   voiceInput: {
     start: 'Entrada de voz',
     stop: 'Terminar el dictado (Esc)',
