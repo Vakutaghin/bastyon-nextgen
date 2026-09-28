@@ -1768,7 +1768,7 @@ export default {
     scoreLimit: 'Has alcanzado tu límite de valoraciones de las últimas 24 horas.',
     doubleScore: 'Ya has valorado esto.',
     selfScore: 'No puedes valorar tu propia publicación.',
-    profileEditLimit: 'Solo puedes editar el perfil una vez por hora. Inténtalo más tarde.',
+    profileEditLimit: 'Puedes editar el perfil hasta 10 veces al día. Inténtalo más tarde.',
     notSubscribed: 'No estás suscrito a este usuario.',
     alreadySubscribed: 'Ya estás suscrito a este usuario.',
     selfSubscribe: 'No puedes suscribirte a ti mismo.',
@@ -1788,12 +1788,12 @@ export default {
     selfBlock: 'No puedes bloquearte a ti mismo.',
     editOncePerBlock:
       'Solo puedes editar una vez por bloque de la blockchain. Espera un minuto e inténtalo de nuevo.',
-    editLimit: 'Has alcanzado tu límite de ediciones de publicaciones de las últimas 24 horas.',
+    editLimit:
+      'Una publicación se puede editar hasta 5 veces (un artículo, hasta 10) y solo durante los 30 días siguientes a su publicación.',
     editForeign: 'No puedes editar la publicación de otra persona.',
     tooManyActions: 'Demasiadas acciones seguidas. Espera un poco e inténtalo de nuevo.',
     commentLimit: 'Has alcanzado tu límite de comentarios de las últimas 24 horas.',
-    commentEditLimit:
-      'Un comentario solo se puede editar durante el primer día y como máximo 4 veces.',
+    commentEditLimit: 'Un comentario se puede editar hasta 4 veces y solo durante 30 días.',
     commentScoreLimit:
       'Has alcanzado tu límite de valoraciones de comentarios de las últimas 24 horas.',
     blockedByAuthor: 'Este usuario te ha bloqueado.',

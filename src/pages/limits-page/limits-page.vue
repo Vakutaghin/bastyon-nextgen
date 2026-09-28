@@ -71,7 +71,11 @@ import {
   SC_LimitsError,
 } from './limits-page.styled'
 
-/** Все типы лимитов как в оригинальном приложении (ustate metrics). */
+/**
+ * Все типы лимитов как в оригинальном приложении (ustate metrics). Жалобы —
+ * по `mod_flag`: «Пожаловаться» шлёт отметку модерации (modFlag), у неё свой
+ * суточный лимит, а `complain` — лимит старых жалоб, которых приложение не шлёт.
+ */
 const LIMIT_ITEMS: { key: string; labelKey: string }[] = [
   { key: 'post', labelKey: 'limits.itemPost' },
   { key: 'video', labelKey: 'limits.itemVideo' },
@@ -79,7 +83,7 @@ const LIMIT_ITEMS: { key: string; labelKey: string }[] = [
   { key: 'score', labelKey: 'limits.itemScore' },
   { key: 'comment', labelKey: 'limits.itemComment' },
   { key: 'comment_score', labelKey: 'limits.itemCommentScore' },
-  { key: 'complain', labelKey: 'limits.itemComplain' },
+  { key: 'mod_flag', labelKey: 'limits.itemComplain' },
   { key: 'article', labelKey: 'limits.itemArticle' },
 ]
 

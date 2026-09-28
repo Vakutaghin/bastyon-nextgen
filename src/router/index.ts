@@ -50,7 +50,7 @@ const router = createRouter({
       path: '/limits',
       name: 'limits',
       component: LimitsPage,
-      meta: { titleKey: 'routes.limits' },
+      meta: { titleKey: 'routes.limits', helpTopic: 'limits' },
     },
     {
       path: '/wallets',

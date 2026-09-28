@@ -1,20 +1,42 @@
 ---
-keywords: [Bastyon, decentralization, censorship, blockchain]
+keywords: [Bastyon, Pocketnet, decentralization, censorship, blockchain, open source]
 ---
 
 # About Bastyon
 
-A decentralized social network owned by its users.
+A decentralized social network owned by its users: no company behind it, no email or phone number to sign up, and open rules.
 
-Bastyon is a peer-to-peer social network built on the PKOIN [blockchain](glossary.md#blockchain). No company owns your account or your posts: you hold your own keys, and your posts and actions live on an open, censorship-resistant network.
+Bastyon is a social network built on the Pocketnet [blockchain](glossary.md#blockchain) with its own coin, [PKOIN](glossary.md#pkoin). People publish posts, articles, videos and audio here, comment and rate, chat, send coins and share files.
+
+## How Bastyon differs from ordinary social networks
+
+- **The network has no owner.** It runs on [nodes](glossary.md#node) — computers of participants all over the world. There is no company that can shut the network down, sell your data or change the rules on its own.
+- **Nobody can take your account away.** Your account is a set of keys derived from your [recovery phrase](glossary.md#recovery-phrase), and only you have them. Signing up needs neither an email address nor a phone number.
+- **The rules are open.** Limits, reputation and moderation are written into the node code, which anyone can read. Reports and moderators' decisions also go through the blockchain and are visible to everyone. How it works is explained in [Moderation and rules](moderation.md).
+- **Authors get coins directly.** Readers send them tips, and part of the reward for every new block goes by lottery to authors of well-rated posts and comments.
 
 ## How it works
 
-Your account is a cryptographic key pair derived from a [recovery phrase](glossary.md#recovery-phrase) that only you control. Posts, comments, votes and subscriptions are recorded on the blockchain. Videos are hosted on the PeerTube network, and private messages go through an end-to-end encrypted channel.
+Posts, comments, ratings, subscriptions and transfers are recorded on the blockchain. Videos and audio are stored on PeerTube servers run by members of the network. Chats go through Matrix servers and are encrypted on the devices: private chats end to end, group chats with a simpler scheme. Files are shared by the users themselves over IPFS. More in [How the network works](how-bastyon-works.md).
 
-Because there is no central authority, no one can silently delete your account, read your private messages or sell your data.
+## Where Bastyon comes from
+
+Bastyon grew out of the Pocketnet project, which is still the name of the blockchain and of the node software. The network is developed by independent developers, and the nodes are run by the participants themselves. The code is open:
+
+- the node — [pocketnet.core](https://github.com/pocketnetteam/pocketnet.core);
+- the previous Bastyon app — [pocketnet.gui](https://github.com/pocketnetteam/pocketnet.gui);
+- this app — [bastyon-nextgen](https://github.com/Vakutaghin/bastyon-nextgen), see [The Bastyon NextGen app](bastyon-nextgen.md).
+
+## What this means for you
+
+- Nobody can restore a lost phrase. Save it before you start using the network — see [Recovery phrase and private key](recovery-phrase.md).
+- What you publish stays on the blockchain: editing and deleting add new records, and earlier versions remain in the history. What others can see is covered in [Privacy: what others can see](privacy.md).
+- The network confirms every action in about a minute, so a post or a rating does not appear instantly — see [Confirming actions](transactions.md).
+- New accounts can do less until their reputation or balance grows — see [Account status and limits](limits.md).
 
 ## See also
 
+- [How the network works](how-bastyon-works.md)
+- [Privacy: what others can see](privacy.md)
 - [Getting started](getting-started.md)
 - [Frequently asked questions](faq.md)

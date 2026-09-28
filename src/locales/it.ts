@@ -1765,7 +1765,7 @@ export default {
     scoreLimit: 'Hai raggiunto il limite di valutazioni delle ultime 24 ore.',
     doubleScore: 'Hai già valutato questo contenuto.',
     selfScore: 'Non puoi valutare il tuo post.',
-    profileEditLimit: 'Puoi modificare il profilo solo una volta all’ora. Riprova più tardi.',
+    profileEditLimit: 'Puoi modificare il profilo fino a 10 volte al giorno. Riprova più tardi.',
     notSubscribed: 'Non sei iscritto a questo utente.',
     alreadySubscribed: 'Sei già iscritto a questo utente.',
     selfSubscribe: 'Non puoi iscriverti a te stesso.',
@@ -1785,11 +1785,12 @@ export default {
     selfBlock: 'Non puoi bloccare te stesso.',
     editOncePerBlock:
       'Puoi modificare solo una volta per blocco della blockchain. Attendi un minuto e riprova.',
-    editLimit: 'Hai raggiunto il limite di modifiche ai post delle ultime 24 ore.',
+    editLimit:
+      'Un post si può modificare fino a 5 volte (un articolo fino a 10) e solo entro 30 giorni dalla pubblicazione.',
     editForeign: 'Non puoi modificare il post di un’altra persona.',
     tooManyActions: 'Troppe azioni di seguito. Attendi un po’ e riprova.',
     commentLimit: 'Hai raggiunto il limite di commenti delle ultime 24 ore.',
-    commentEditLimit: 'Un commento si può modificare solo nel primo giorno e al massimo 4 volte.',
+    commentEditLimit: 'Un commento si può modificare fino a 4 volte e solo entro 30 giorni.',
     commentScoreLimit: 'Hai raggiunto il limite di valutazioni dei commenti delle ultime 24 ore.',
     blockedByAuthor: 'Questo utente ti ha bloccato.',
     tooLarge: 'Il contenuto supera la dimensione consentita.',
