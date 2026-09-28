@@ -210,28 +210,37 @@ async fn verify_sha256(
     sha_url: &str,
 ) -> Result<(), InstallError> {
     let manifest = reqwest::get(sha_url).await?.error_for_status()?.text().await?;
-    let expected = manifest
-        .lines()
-        .find_map(|line| {
-            let mut it = line.split_whitespace();
-            let hash = it.next()?;
-            let name = it.next()?;
-            let bare = name.trim_start_matches('*');
-            if bare.ends_with(archive_name) || bare == archive_name {
-                Some(hash.to_lowercase())
-            } else {
-                None
-            }
-        })
+    let expected = expected_sha256(&manifest, archive_name)
         .ok_or_else(|| InstallError::HashMissing(archive_name.to_string()))?;
+    check_sha256(archive_path, &expected)
+}
 
+/// Хэш архива из манифеста `sha256sums-signed-build.txt` (строки
+/// `<hash>  <файл>`, у файла бывает `*` двоичного режима и путь). Имя
+/// сравнивается целиком: раньше `ends_with` принимал и файл, имя которого
+/// только заканчивается нужным.
+fn expected_sha256(manifest: &str, archive_name: &str) -> Option<String> {
+    manifest.lines().find_map(|line| {
+        let mut it = line.split_whitespace();
+        let hash = it.next()?;
+        let name = it.next()?.trim_start_matches('*');
+        let file_name = name.rsplit('/').next().unwrap_or(name);
+        (file_name == archive_name).then(|| hash.to_lowercase())
+    })
+}
+
+/// SHA-256 файла совпадает с ожидаемым (в нижнем регистре hex).
+fn check_sha256(archive_path: &Path, expected: &str) -> Result<(), InstallError> {
     let mut hasher = Sha256::new();
     let mut f = fs::File::open(archive_path)?;
     std::io::copy(&mut f, &mut hasher)?;
     let actual = hex::encode(hasher.finalize());
 
     if actual != expected {
-        return Err(InstallError::HashMismatch { expected, actual });
+        return Err(InstallError::HashMismatch {
+            expected: expected.to_string(),
+            actual,
+        });
     }
     Ok(())
 }
@@ -275,4 +284,147 @@ fn emit_progress(app: &AppHandle, phase: &str, fraction: f32, message: &str) {
             "message": message,
         }),
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tor::state::TorPaths;
+    use std::path::PathBuf;
+
+    /// Свой каталог в temp на каждый тест; стирается при выходе из области.
+    struct TempDir(PathBuf);
+
+    impl TempDir {
+        fn new(tag: &str) -> Self {
+            let nanos = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let dir = std::env::temp_dir().join(format!(
+                "bastyon-tor-test-{}-{}-{}",
+                tag,
+                std::process::id(),
+                nanos
+            ));
+            fs::create_dir_all(&dir).unwrap();
+            Self(dir)
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    const NAME: &str = "tor-expert-bundle-linux-x86_64-14.0.7.tar.gz";
+
+    #[test]
+    fn platform_archive_name_is_pinned_to_the_version() {
+        let platform = detect_platform().expect("CI and dev hosts are supported");
+        assert!(platform.archive_name.starts_with("tor-expert-bundle-"));
+        assert!(platform
+            .archive_name
+            .ends_with(&format!("-{}.tar.gz", TOR_VERSION)));
+        assert!(!platform.is_zip);
+    }
+
+    #[test]
+    fn manifest_hash_is_found_by_exact_file_name() {
+        let manifest = format!(
+            "\n\
+             1111111111111111111111111111111111111111111111111111111111111111  tor-browser.dmg\n\
+             ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789 *{NAME}\n"
+        );
+        assert_eq!(
+            expected_sha256(&manifest, NAME).as_deref(),
+            Some("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
+        );
+        let with_path = format!("2222  ./torbrowser/14.0.7/{NAME}");
+        assert_eq!(expected_sha256(&with_path, NAME).as_deref(), Some("2222"));
+    }
+
+    #[test]
+    fn manifest_does_not_match_a_longer_name_or_a_missing_entry() {
+        let manifest = format!("3333  evil-{NAME}\nbroken-line\n");
+        assert_eq!(expected_sha256(&manifest, NAME), None);
+        assert_eq!(expected_sha256("", NAME), None);
+    }
+
+    #[test]
+    fn archive_hash_must_match() {
+        let dir = TempDir::new("sha");
+        let file = dir.0.join(NAME);
+        fs::write(&file, b"tor bundle bytes").unwrap();
+        let good = hex::encode(Sha256::digest(b"tor bundle bytes"));
+
+        assert!(check_sha256(&file, &good).is_ok());
+        match check_sha256(&file, &"0".repeat(64)) {
+            Err(InstallError::HashMismatch { expected, actual }) => {
+                assert_eq!(expected, "0".repeat(64));
+                assert_eq!(actual, good);
+            }
+            other => panic!("expected HashMismatch, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn extracted_bundle_matches_tor_paths() {
+        let dir = TempDir::new("tar");
+        let archive = dir.0.join(NAME);
+        {
+            let gz = flate2::write::GzEncoder::new(
+                fs::File::create(&archive).unwrap(),
+                flate2::Compression::fast(),
+            );
+            let mut tar = tar::Builder::new(gz);
+            let bin_name = if cfg!(windows) { "tor.exe" } else { "tor" };
+            for (path, body) in [
+                (format!("tor/{bin_name}"), &b"binary"[..]),
+                ("tor/pluggable_transports/lyrebird".to_string(), &b"pt"[..]),
+                ("data/geoip".to_string(), &b"geo"[..]),
+                ("data/geoip6".to_string(), &b"geo6"[..]),
+            ] {
+                let mut header = tar::Header::new_gnu();
+                header.set_size(body.len() as u64);
+                header.set_mode(0o644);
+                header.set_cksum();
+                tar.append_data(&mut header, path, body).unwrap();
+            }
+            tar.into_inner().unwrap().finish().unwrap();
+        }
+
+        let root = dir.0.join("tor-root");
+        fs::create_dir_all(&root).unwrap();
+        extract_tar_gz(&archive, &root).unwrap();
+
+        let paths = TorPaths::from_root(root);
+        assert_eq!(fs::read(&paths.binary).unwrap(), b"binary");
+        assert!(paths.geoip.is_file());
+        assert!(paths.geoip6.is_file());
+        assert!(paths.pt_dir.join("lyrebird").is_file());
+    }
+
+    #[test]
+    fn zip_entries_cannot_escape_the_destination() {
+        let dir = TempDir::new("zip");
+        let archive = dir.0.join("bundle.zip");
+        {
+            let mut zip = zip::ZipWriter::new(fs::File::create(&archive).unwrap());
+            let options: zip::write::SimpleFileOptions = Default::default();
+            zip.start_file("tor/tor.exe", options).unwrap();
+            zip.write_all(b"exe").unwrap();
+            zip.start_file("../escaped.txt", options).unwrap();
+            zip.write_all(b"nope").unwrap();
+            zip.finish().unwrap();
+        }
+
+        let dest = dir.0.join("out");
+        fs::create_dir_all(&dest).unwrap();
+        extract_zip(&archive, &dest).unwrap();
+
+        assert_eq!(fs::read(dest.join("tor").join("tor.exe")).unwrap(), b"exe");
+        assert!(!dir.0.join("escaped.txt").exists());
+    }
 }
