@@ -881,6 +881,19 @@ body :is(.ant-dropdown, .ant-select-dropdown)[class*='-placement-top'] {
   transform-origin: bottom;
 }
 
+/* Пока выпадашка готовится к появлению (-enter-prepare, кадр-два), antd сжимает
+   её в точку, а выравнивание меряет её getBoundingClientRect. С точкой в середине
+   края (см. выше) замер врал на полширины, а у открытых вверх — и на всю высоту:
+   список всю анимацию стоял в стороне и потом прыгал на место. Без transform
+   замер точный, а видно выпадашку в этой фазе и так нет. */
+body
+  :is(.ant-dropdown, .ant-select-dropdown):is(
+    .ant-slide-up-enter-prepare,
+    .ant-slide-down-enter-prepare
+  ) {
+  transform: none;
+}
+
 body .ant-modal-root .ant-modal:is(.ant-zoom-enter, .ant-zoom-appear, .ant-zoom-leave) {
   animation-duration: 200ms;
   animation-timing-function: var(--ui-ease-out);
