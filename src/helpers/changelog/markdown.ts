@@ -11,12 +11,16 @@
 
 import { escapeHtml } from '@/helpers/common/html-escape'
 
+/** Ссылки — только на веб и почту: `javascript:` и прочие схемы остаются текстом. */
+const SAFE_LINK = /^(https?:\/\/|mailto:)/i
+
 function renderInline(text: string): string {
   let s = escapeHtml(text)
-  // links [text](url) — url мы НЕ эскейпили заранее, делаем отдельно
+  // links [text](url). Адрес уже экранирован вместе со всей строкой: второй
+  // escapeHtml превращал `&` в `&amp;amp;` и ломал ссылки с параметрами.
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label: string, url: string) => {
-    const safeUrl = escapeHtml(url)
-    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${label}</a>`
+    if (!SAFE_LINK.test(url)) return label
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
   })
   // inline code
   s = s.replace(/`([^`]+)`/g, '<code>$1</code>')
