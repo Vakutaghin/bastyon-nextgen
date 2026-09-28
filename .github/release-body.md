@@ -3,7 +3,7 @@
 | Система | Файл |
 | --- | --- |
 | macOS на Apple Silicon (M1 и новее) | `macOS-Bastyon-NextGen-__VERSION__-Apple-Silicon.dmg` |
-| macOS на Intel | `macOS-Bastyon-NextGen-__VERSION__-Intel.dmg` |
+| macOS 10.15 и новее на Intel | `macOS-Bastyon-NextGen-__VERSION__-Intel.dmg` |
 | Windows 10 и 11 | `Windows-Bastyon-NextGen-__VERSION__-x64.msi` |
 | Linux, любой дистрибутив | `Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage` |
 | Linux на базе Debian или Ubuntu | `Linux-Bastyon-NextGen-__VERSION__-x86_64.deb` |
@@ -47,7 +47,7 @@ sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 | System | File |
 | --- | --- |
 | macOS on Apple Silicon (M1 and newer) | `macOS-Bastyon-NextGen-__VERSION__-Apple-Silicon.dmg` |
-| macOS on Intel | `macOS-Bastyon-NextGen-__VERSION__-Intel.dmg` |
+| macOS 10.15 or newer on Intel | `macOS-Bastyon-NextGen-__VERSION__-Intel.dmg` |
 | Windows 10 and 11 | `Windows-Bastyon-NextGen-__VERSION__-x64.msi` |
 | Linux, any distribution | `Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage` |
 | Linux based on Debian or Ubuntu | `Linux-Bastyon-NextGen-__VERSION__-x86_64.deb` |
