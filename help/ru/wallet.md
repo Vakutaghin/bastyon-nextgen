@@ -1,6 +1,6 @@
 ---
 keywords: [кошелёк, баланс, PKOIN, курс]
-code: [src/pages/wallets-page, src/b-components/header/header-wallet]
+code: [src/pages/wallets-page, src/b-components/header/header-user/header-user.vue]
 draft: true
 ---
 

@@ -136,8 +136,14 @@ describe('справка в help/', () => {
   })
 
   it('пути из code: существуют', () => {
+    // Пустая папка — остаток удалённого кода: в git её нет, и в CI путь пропадёт.
+    const real = (path: string): boolean => {
+      const full = resolve(ROOT, path)
+      if (!existsSync(full)) return false
+      return !statSync(full).isDirectory() || readdirSync(full).length > 0
+    }
     const missing = [...libraries.ru.topics.values()].flatMap((t) =>
-      t.code.filter((path) => !existsSync(resolve(ROOT, path))).map((path) => `${t.id}: ${path}`)
+      t.code.filter((path) => !real(path)).map((path) => `${t.id}: ${path}`)
     )
     expect(missing).toEqual([])
   })
