@@ -50,7 +50,8 @@
     "shortDescription": "Bastyon Desktop Application",
     "longDescription": "Bastyon - Decentralized Social Network Desktop Application",
     "macOS": {
-      "signingIdentity": "-"
+      "signingIdentity": "-",
+      "entitlements": "./entitlements.plist"
     },
     "linux": {
       "deb": {

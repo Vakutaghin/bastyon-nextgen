@@ -8,9 +8,18 @@
   исторической схемы `pocketnet://` в LaunchServices. Плагин deep-link знает
   схемы из `tauri.conf.json`, но на macOS решает именно Info.plist бандла —
   держим их здесь явно, чтобы регистрация не зависела от версии CLI.
+
+  NSMicrophoneUsageDescription и NSCameraUsageDescription — текст системного
+  запроса доступа. Без них macOS не даёт приложению микрофон (голосовой ввод,
+  голосовые сообщения) и камеру (QR-код при входе). К ним нужны и права
+  hardened runtime в entitlements.plist.
 -->
 <plist version="1.0">
   <dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Bastyon uses the microphone for voice input and voice messages. Speech is recognized on this computer.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Bastyon uses the camera to scan a QR code when you sign in.</string>
     <key>CFBundleURLTypes</key>
     <array>
       <dict>
