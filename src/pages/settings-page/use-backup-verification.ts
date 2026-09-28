@@ -53,7 +53,13 @@ export function useBackupVerification() {
     try {
       const addr = address()
       if (!addr) throw new Error(t('accountMsg.noActiveAccount'))
-      const secret = await loadAccountSecret(addr)
+      let secret
+      try {
+        secret = await loadAccountSecret(addr)
+      } catch {
+        // Сообщение 'unknown-format' — внутреннее, пользователю нужен текст.
+        throw new Error(t('accountMsg.unknownDataFormat'))
+      }
       if (!secret) throw new Error(t('accountMsg.noSavedSeedOrKey'))
       if (secret.format === 'mnemonic') {
         kind.value = 'words'

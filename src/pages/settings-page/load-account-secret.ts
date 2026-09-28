@@ -1,10 +1,13 @@
 // Единый загрузчик сохранённого секрета текущего аккаунта (мнемоника / hex / WIF)
 // для Settings: раскрытие ключа (use-private-key-reveal) и проверка бэкапа
 // (use-backup-verification). Порядок: per-account `BST_ACCOUNT_<addr>`, затем
-// legacy-ключ `BST_MNEMONIC`.
+// legacy-ключ `BST_MNEMONIC`, но только если из него выводится этот же адрес:
+// общий ключ хранит последний сохранённый сид, и без проверки «Приватный ключ»
+// показывал бы сид другого аккаунта (как в свитчере до S10).
 
 import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
 import { detectPrivateKeyFormat } from '@/blockchain'
+import { addressOfSecret } from '@/b-components/header/account-switcher/helpers/load-account-mnemonic'
 
 export type AccountSecretFormat = 'mnemonic' | 'hex' | 'wif'
 
@@ -28,7 +31,8 @@ export async function loadAccountSecret(address: string): Promise<AccountSecret 
   let raw = perAccount.success && perAccount.data ? perAccount.data : null
   if (!raw) {
     const legacy = loadEncryptedMnemonic()
-    raw = legacy.success && legacy.data ? legacy.data : null
+    const shared = legacy.success && legacy.data ? legacy.data : null
+    if (shared && addressOfSecret(shared) === address) raw = shared
   }
   if (!raw || !raw.trim()) return null
 
