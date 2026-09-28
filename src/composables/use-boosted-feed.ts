@@ -18,6 +18,7 @@ import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useUIStore } from '@/stores/ui-store'
 import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
+import { preloadLastCommentAuthors } from './helpers/feed-enrichment'
 
 /** Окно буста в минутах (legacy `60 * 24`). */
 const BOOST_WINDOW_MINUTES = 60 * 24
@@ -81,7 +82,9 @@ export function useBoostedFeed(limit = 3, enabled: () => boolean = () => true) {
         parameters: [txids],
       })) as ContentResponse
 
-      return Array.isArray(contentResp?.data) ? contentResp.data : []
+      const contents = Array.isArray(contentResp?.data) ? contentResp.data : []
+      await preloadLastCommentAuthors(contents)
+      return contents
     },
     enabled: computed(() => enabled()),
     staleTime: 3 * 60 * 1000,

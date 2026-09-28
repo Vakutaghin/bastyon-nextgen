@@ -4,7 +4,8 @@
  * `useQuery` подменён управляемым стабом — интересует не сеть, а реакция
  * композибла на ответ/ошибку: V35 (ошибка догрузки не вешает спиннер и не
  * стирает ленту), S16 (страница прошлого фильтра не доклеивается в новую
- * ленту), S17 («Обновить» идёт с головы, а не повторяет текущую страницу).
+ * ленту), S17 («Обновить» идёт с головы, а не повторяет текущую страницу),
+ * имена авторов последних комментариев догружаются до показа страницы.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -40,9 +41,11 @@ vi.mock('./use-feed', () => ({
 }))
 
 const mergeRepostOriginals = vi.fn<() => Promise<void>>(() => Promise.resolve())
+const preloadAuthors = vi.fn<(contents: unknown) => Promise<void>>(() => Promise.resolve())
 vi.mock('./helpers/feed-enrichment', () => ({
   fetchAndMergeRepostOriginals: () => mergeRepostOriginals(),
   enrichWithUserScores: vi.fn(),
+  preloadLastCommentAuthors: (contents: unknown) => preloadAuthors(contents),
 }))
 
 vi.mock('./helpers/feed-queries', () => ({
@@ -70,6 +73,7 @@ vi.mock('@/stores/filters-store', () => ({ useFiltersStore: () => filtersStore }
 vi.mock('@/stores/ui-store', () => ({ useUIStore: () => ({ language: 'ru' }) }))
 
 import { useInfiniteFeed } from './use-infinite-feed'
+import { buildFeedQueryByTab } from './helpers/feed-queries'
 
 type FeedApi = ReturnType<typeof useInfiniteFeed>
 
@@ -115,6 +119,8 @@ beforeEach(() => {
   queryState.refetch.mockResolvedValue({ isError: false })
   mergeRepostOriginals.mockReset()
   mergeRepostOriginals.mockImplementation(() => Promise.resolve())
+  preloadAuthors.mockReset()
+  preloadAuthors.mockImplementation(() => Promise.resolve())
   filtersStore.activeTab = 1
 })
 
@@ -194,5 +200,31 @@ describe('useInfiniteFeed', () => {
     // Голова перезапрошена: лента заменена, а не дополнена.
     expect(feed.allPosts.value.map((p) => p.id)).toEqual(['e', 'f'])
     expect(feed.hasMore.value).toBe(true)
+  })
+
+  it('the page request resolves only after last-comment authors have names', async () => {
+    mountFeed()
+    const contents = [{ txid: 'a', lastComment: { address: 'PCommenter' } }]
+    vi.mocked(buildFeedQueryByTab).mockResolvedValueOnce({ data: { contents } } as never)
+    const gate: { release?: () => void } = {}
+    preloadAuthors.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          gate.release = resolve
+        })
+    )
+
+    let resolved = false
+    const request = queryState.lastOptions!.queryFn!().then((response) => {
+      resolved = true
+      return response
+    })
+    await vi.waitFor(() => expect(preloadAuthors).toHaveBeenCalledWith(contents))
+    await Promise.resolve()
+    // Пока имена не пришли, лента крутит загрузку, а не рисует адреса.
+    expect(resolved).toBe(false)
+
+    gate.release?.()
+    await expect(request).resolves.toEqual({ data: { contents } })
   })
 })

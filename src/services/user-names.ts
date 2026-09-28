@@ -12,6 +12,12 @@
  * старом клиенте: лёгкий профиль весит около 1 КБ, полный — сотни КБ. Пока
  * профиль грузится, вместо имени — короткий адрес; удалённый аккаунт
  * подписывается «Аккаунт удалён», как в старом клиенте.
+ *
+ * Сбой запроса повторяется сам: подпись не перерисовывается, пока не
+ * изменится её профиль, и раньше адрес, не получивший имени с первого раза,
+ * так и оставался под постом до перезагрузки. Ленты и «Последние комментарии»
+ * догружают имена до показа (`preloadUserNames`), как старый клиент
+ * (`shares.users`), — тогда адрес не мелькает вовсе.
  */
 
 import { reactive } from 'vue'
@@ -40,11 +46,19 @@ interface KnownUser {
 const BATCH_SIZE = 50
 /** Подписи одного экрана рендерятся разом — собираем их в один запрос. */
 const BATCH_DELAY_MS = 30
+/** Паузы перед повторами неудавшегося запроса; дальше ждём следующего показа. */
+const RETRY_DELAYS_MS = [2_000, 5_000, 15_000, 30_000, 60_000]
+/** Дольше экран имён не ждёт: не успевшие подставятся, когда придут. */
+const PRELOAD_TIMEOUT_MS = 3_000
 
 /** Реактивно: подписи перерисовываются, когда профиль догрузился. */
 const users = reactive(new Map<string, KnownUser>())
 const queued = new Set<string>()
-const inFlight = new Set<string>()
+/** Адрес → запрос, в котором он уже едет: `preloadUserNames` ждёт и его. */
+const inFlight = new Map<string, Promise<void>>()
+/** Адрес → сколько запросов подряд с ним сорвалось. */
+const failures = new Map<string, number>()
+const retryTimers = new Set<ReturnType<typeof setTimeout>>()
 let timer: ReturnType<typeof setTimeout> | null = null
 
 export function shortAddress(address: string): string {
@@ -69,41 +83,77 @@ export function rememberUsers(profiles: Iterable<ProfileLike | null | undefined>
   }
 }
 
-function toProfiles(response: unknown): ProfileLike[] {
+/** Профили из ответа; `null` — ответ не того вида, это сбой, а не «профилей нет». */
+function toProfiles(response: unknown): ProfileLike[] | null {
   if (Array.isArray(response)) return response as ProfileLike[]
   const data = (response as { data?: unknown } | null)?.data
-  return Array.isArray(data) ? (data as ProfileLike[]) : []
+  return Array.isArray(data) ? (data as ProfileLike[]) : null
 }
 
-async function flush(): Promise<void> {
-  const batch = [...queued].slice(0, BATCH_SIZE)
-  for (const address of batch) {
-    queued.delete(address)
-    inFlight.add(address)
-  }
-  if (queued.size) schedule()
+async function load(batch: string[]): Promise<void> {
   try {
-    const response = await getByPRC({
-      method: rpcEndpoints.getUserProfile,
-      parameters: [batch, '1'],
-      options: { auth: false },
-    })
-    rememberUsers(toProfiles(response))
-    // Профиля нет вовсе (адрес без аккаунта): больше не спрашиваем.
-    for (const address of batch) if (!users.has(address)) users.set(address, {})
+    const profiles = toProfiles(
+      await getByPRC({
+        method: rpcEndpoints.getUserProfile,
+        parameters: [batch, '1'],
+        options: { auth: false },
+      })
+    )
+    if (!profiles) throw new Error('unexpected getuserprofile response')
+    rememberUsers(profiles)
+    for (const address of batch) {
+      failures.delete(address)
+      // Профиля нет вовсе (адрес без аккаунта): больше не спрашиваем.
+      if (!users.has(address)) users.set(address, {})
+    }
   } catch (error) {
-    // Сеть: ничего не запоминаем, следующий показ спросит снова.
+    // Ничего не запоминаем: имя этих адресов спросим ещё раз.
     console.warn('[user-names] getuserprofile failed:', error)
-  } finally {
-    for (const address of batch) inFlight.delete(address)
+    retryLater(batch)
   }
+}
+
+/** Запрос одной пачки; никогда не отклоняется — сбой уходит в повтор. */
+function fetchBatch(batch: string[]): Promise<void> {
+  const done: Promise<void> = load(batch).finally(() => {
+    for (const address of batch) if (inFlight.get(address) === done) inFlight.delete(address)
+  })
+  for (const address of batch) inFlight.set(address, done)
+  return done
+}
+
+function retryLater(batch: string[]): void {
+  let attempt = 0
+  for (const address of batch) {
+    const count = (failures.get(address) ?? 0) + 1
+    failures.set(address, count)
+    attempt = Math.max(attempt, count)
+  }
+  const delay = RETRY_DELAYS_MS[attempt - 1]
+  if (delay === undefined) {
+    // Попытки кончились (нода лежит давно): следующий показ подписи начнёт заново.
+    for (const address of batch) failures.delete(address)
+    return
+  }
+  const retry = setTimeout(() => {
+    retryTimers.delete(retry)
+    for (const address of batch) request(address)
+  }, delay)
+  retryTimers.add(retry)
+}
+
+function flush(): void {
+  const batch = [...queued].slice(0, BATCH_SIZE)
+  for (const address of batch) queued.delete(address)
+  if (queued.size) schedule()
+  if (batch.length) void fetchBatch(batch)
 }
 
 function schedule(): void {
   if (timer) return
   timer = setTimeout(() => {
     timer = null
-    void flush()
+    flush()
   }, BATCH_DELAY_MS)
 }
 
@@ -111,6 +161,38 @@ function request(address: string): void {
   if (users.has(address) || queued.has(address) || inFlight.has(address)) return
   queued.add(address)
   schedule()
+}
+
+/**
+ * Догрузить имена до показа экрана (страница ленты, «Последние комментарии»),
+ * чтобы подпись сразу вышла с ником. Ждёт не дольше `timeoutMs`: медленная
+ * нода не должна держать ленту, а не успевшие имена подставятся, когда придут.
+ */
+export async function preloadUserNames(
+  addresses: Iterable<string | null | undefined>,
+  timeoutMs = PRELOAD_TIMEOUT_MS
+): Promise<void> {
+  const waits = new Set<Promise<void>>()
+  const missing: string[] = []
+  for (const address of new Set(addresses)) {
+    if (!address || users.has(address)) continue
+    const pending = inFlight.get(address)
+    if (pending) waits.add(pending)
+    else missing.push(address)
+  }
+  for (const address of missing) queued.delete(address)
+  for (let i = 0; i < missing.length; i += BATCH_SIZE) {
+    waits.add(fetchBatch(missing.slice(i, i + BATCH_SIZE)))
+  }
+  if (!waits.size) return
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  await Promise.race([
+    Promise.all(waits),
+    new Promise<void>((resolve) => {
+      timeout = setTimeout(resolve, timeoutMs)
+    }),
+  ])
+  clearTimeout(timeout)
 }
 
 /** Имя, пришедшее с данными: адрес на месте имени за имя не считается. */
@@ -178,6 +260,9 @@ export function __resetUserNamesForTests(): void {
   users.clear()
   queued.clear()
   inFlight.clear()
+  failures.clear()
+  for (const retry of retryTimers) clearTimeout(retry)
+  retryTimers.clear()
   if (timer) clearTimeout(timer)
   timer = null
 }

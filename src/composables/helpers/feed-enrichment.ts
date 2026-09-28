@@ -1,13 +1,34 @@
 // Дополнение постов смежными данными после основной загрузки:
 //  1. Контент оригинальных записей для репостов (getrawtransactionwithmessagebyid).
 //  2. Оценки текущего пользователя (getpagescores) — для подсветки «уже голосовал».
+//  3. Имена авторов последних комментариев — до показа страницы.
 
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
+import { preloadUserNames } from '@/services/user-names'
 import { mergeRepostContent, type AdaptedPost } from '../use-feed'
 import type { GetPageScore } from '@/types/rpc-responses/get-page-scores'
 
 const freshCacheHash = (): string => Date.now().toString(36) + Math.random().toString(36).slice(2)
+
+/** Сырой пост ленты: интересует только последний комментарий. */
+interface RawWithLastComment {
+  lastComment?: { address?: string } | null
+}
+
+/**
+ * Имена авторов последних комментариев под постами страницы. У такого
+ * комментария нода присылает только адрес, и пока имя догружалось, под постом
+ * стоял адрес. Старый клиент перед показом ленты догружал этих авторов
+ * (`shares.users`) — здесь так же, в запросе страницы, пока крутится загрузка.
+ */
+export function preloadLastCommentAuthors(
+  contents: readonly unknown[] | null | undefined
+): Promise<void> {
+  return preloadUserNames(
+    (contents ?? []).map((post) => (post as RawWithLastComment | null)?.lastComment?.address)
+  )
+}
 
 /** Сырой пост из API с минимальным набором полей, нужных для enrichment. */
 interface RawContentLike {
@@ -84,9 +105,7 @@ export function enrichWithUserScores(
   })
     .then((rawResponse) => {
       // RPC может вернуть массив напрямую / {data} / {result}.
-      const scoresResponse = rawResponse as
-        | GetPageScore[]
-        | RpcArrayEnvelope<GetPageScore>
+      const scoresResponse = rawResponse as GetPageScore[] | RpcArrayEnvelope<GetPageScore>
       const scores: GetPageScore[] = Array.isArray(scoresResponse)
         ? scoresResponse
         : scoresResponse?.data || scoresResponse?.result || []

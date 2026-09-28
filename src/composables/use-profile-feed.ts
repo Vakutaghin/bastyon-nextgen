@@ -7,6 +7,7 @@ import type { GetHierarchicalStripPost } from '@/types/rpc-responses/get-hierarc
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { extractPostsFromResponse, mergeRepostContent } from '@/composables/use-feed'
 import type { AdaptedPost } from '@/composables/use-feed'
+import { preloadLastCommentAuthors } from '@/composables/helpers/feed-enrichment'
 import { useAuthStore } from '@/blockchain'
 import { usePendingPostsStore } from '@/stores'
 import { pendingPostToAdapted } from '@/composables/pending-post-adapter'
@@ -88,7 +89,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       const currentTxid = currentTxidForQuery.value
       const count = currentTxid === '' ? initialLimit : pageSize
 
-      return rpcCallWithAuth<GetProfileFeedData>({
+      const response = await rpcCallWithAuth<GetProfileFeedData>({
         method: rpcEndpoints.getProfileFeed,
         parameters: [
           0, // height
@@ -111,6 +112,8 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
           ex: true,
         },
       })
+      await preloadLastCommentAuthors(response?.contents)
+      return response
     },
     staleTime: 0, // Не кешируем, чтобы всегда получать свежие данные
     gcTime: 0,

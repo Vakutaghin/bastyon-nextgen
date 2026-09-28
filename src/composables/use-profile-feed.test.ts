@@ -2,7 +2,8 @@
 // ленты по короткой странице, профиль автора из ответа, оригиналы репостов,
 // «Обновить» с головы (S17) и страница прошлого поколения, опоздавшая из-за
 // догрузки репостов, не доклеивается (S16). В своём профиле — свои
-// неподтверждённые посты сверху без дублей и сверка pending-слоя.
+// неподтверждённые посты сверху без дублей и сверка pending-слоя. Страница
+// отдаётся, когда у авторов последних комментариев уже есть имена.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive, ref, shallowRef } from 'vue'
@@ -21,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   reconcile: vi.fn(),
   cleanupExpired: vi.fn(),
   onConfirmed: null as null | (() => void),
+  preloadAuthors: vi.fn<(contents: unknown) => Promise<void>>(),
 }))
 
 vi.mock('@tanstack/vue-query', () => ({
@@ -41,6 +43,9 @@ vi.mock('@/composables/use-feed', () => ({
       .filter((c) => c.txid)
       .map((c) => ({ id: c.txid, txid: c.txid, repost: c.repost })),
   mergeRepostContent: mocks.mergeRepostContent,
+}))
+vi.mock('@/composables/helpers/feed-enrichment', () => ({
+  preloadLastCommentAuthors: (contents: unknown) => mocks.preloadAuthors(contents),
 }))
 vi.mock('@/blockchain', () => ({ useAuthStore: () => mocks.auth }))
 vi.mock('@/stores', () => ({
@@ -109,6 +114,7 @@ describe('useProfileFeed', () => {
     mocks.reconcile.mockReset()
     mocks.cleanupExpired.mockReset()
     mocks.onConfirmed = null
+    mocks.preloadAuthors.mockReset().mockResolvedValue(undefined)
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
   afterEach(() => {
@@ -127,6 +133,30 @@ describe('useProfileFeed', () => {
     expect(req.parameters[3]).toBe('en')
     expect(req.parameters[10]).toBe('PAuthor')
     expect(req.options).toEqual({ ex: true })
+  })
+
+  it('страница отдаётся, когда у авторов последних комментариев уже есть имена', async () => {
+    setup()
+    const contents = [{ txid: 'p1', lastComment: { address: 'PCommenter' } }]
+    mocks.rpcCallWithAuth.mockResolvedValue({ contents })
+    const gate: { release?: () => void } = {}
+    mocks.preloadAuthors.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          gate.release = resolve
+        })
+    )
+    let resolved = false
+    const request = mocks.options!.queryFn().then((response) => {
+      resolved = true
+      return response
+    })
+    await vi.waitFor(() => expect(mocks.preloadAuthors).toHaveBeenCalledWith(contents))
+    await Promise.resolve()
+    expect(resolved).toBe(false)
+
+    gate.release?.()
+    await expect(request).resolves.toEqual({ contents })
   })
 
   it('полная страница — есть продолжение; «ещё» просит страницу после последнего поста', async () => {

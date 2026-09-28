@@ -7,6 +7,7 @@ vi.mock('@/helpers/api/request', () => ({ getByPRC: (...args: unknown[]) => getB
 import { t } from '@/i18n'
 import {
   __resetUserNamesForTests,
+  preloadUserNames,
   rememberUsers,
   shortAddress,
   userAvatar,
@@ -140,5 +141,107 @@ describe('userNameIfKnown', () => {
     expect(userNameIfKnown(ALICE, ALICE)).toBe('')
     await settle()
     expect(userNameIfKnown(ALICE, ALICE)).toBe('SergiyKir')
+  })
+})
+
+describe('сбои и повторы', () => {
+  let warn: ReturnType<typeof vi.spyOn>
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    warn.mockRestore()
+  })
+
+  it('имя, не пришедшее с первого раза, догружается само: подпись не залипает на адресе', async () => {
+    getByPRC.mockRejectedValueOnce(new Error('node down'))
+    getByPRC.mockResolvedValueOnce([{ address: ALICE, name: 'SergiyKir' }])
+    // Подпись в шаблоне — computed: сам по себе он userName больше не вызовет.
+    const label = computed(() => userName(ALICE, ALICE))
+    expect(label.value).toBe(shortAddress(ALICE))
+    await settle()
+    expect(label.value).toBe(shortAddress(ALICE))
+
+    await vi.advanceTimersByTimeAsync(2_000)
+    await settle()
+    expect(getByPRC).toHaveBeenCalledTimes(2)
+    expect(label.value).toBe('SergiyKir')
+  })
+
+  it('ответ не того вида — сбой, а не «профиля нет»: имя всё равно придёт', async () => {
+    getByPRC.mockResolvedValueOnce({ error: 'busy' })
+    getByPRC.mockResolvedValueOnce({ data: [{ address: ALICE, name: 'SergiyKir' }] })
+    const label = computed(() => userName(ALICE))
+    expect(label.value).toBe(shortAddress(ALICE))
+    await settle()
+    await vi.advanceTimersByTimeAsync(2_000)
+    await settle()
+    expect(label.value).toBe('SergiyKir')
+  })
+
+  it('после пяти повторов перестаёт спрашивать, а следующий показ начинает заново', async () => {
+    getByPRC.mockRejectedValue(new Error('offline'))
+    userName(ALICE)
+    await settle()
+    // Паузы 2, 5, 15, 30 и 60 с, плюс сборка пачки перед каждым запросом.
+    await vi.advanceTimersByTimeAsync(113_000)
+    expect(getByPRC).toHaveBeenCalledTimes(6)
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(getByPRC).toHaveBeenCalledTimes(6)
+
+    getByPRC.mockReset()
+    getByPRC.mockResolvedValueOnce([{ address: ALICE, name: 'SergiyKir' }])
+    userName(ALICE)
+    await settle()
+    expect(userName(ALICE)).toBe('SergiyKir')
+  })
+})
+
+describe('preloadUserNames', () => {
+  it('недостающие имена — одним запросом сразу, промис выполняется, когда они пришли', async () => {
+    rememberUsers([{ address: BOB, name: 'Leo5591' }])
+    const gate: { release?: (value: unknown) => void } = {}
+    getByPRC.mockReturnValueOnce(
+      new Promise((resolve) => {
+        gate.release = resolve
+      })
+    )
+    let done = false
+    const preload = preloadUserNames([ALICE, BOB, ALICE, null, undefined, '']).then(() => {
+      done = true
+    })
+    await Promise.resolve()
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+    expect(getByPRC.mock.calls[0]![0].parameters).toEqual([[ALICE], '1'])
+    expect(done).toBe(false)
+
+    gate.release?.([{ address: ALICE, name: 'SergiyKir' }])
+    await preload
+    expect(userName(ALICE)).toBe('SergiyKir')
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+  })
+
+  it('ждёт и уже летящий запрос, не повторяя его, но не дольше таймаута', async () => {
+    getByPRC.mockReturnValueOnce(new Promise(() => {}))
+    userName(ALICE)
+    await settle()
+    let done = false
+    void preloadUserNames([ALICE], 3_000).then(() => {
+      done = true
+    })
+    await vi.advanceTimersByTimeAsync(2_900)
+    expect(done).toBe(false)
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(done).toBe(true)
+  })
+
+  it('известные имена и удалённые аккаунты не спрашивает', async () => {
+    rememberUsers([
+      { address: ALICE, name: 'SergiyKir' },
+      { address: GONE, deleted: true },
+    ])
+    await preloadUserNames([ALICE, GONE])
+    expect(getByPRC).not.toHaveBeenCalled()
   })
 })

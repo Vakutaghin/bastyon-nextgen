@@ -13,7 +13,11 @@ import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useUIStore } from '@/stores/ui-store'
 import { buildFeedQueryByTab } from './helpers/feed-queries'
-import { fetchAndMergeRepostOriginals, enrichWithUserScores } from './helpers/feed-enrichment'
+import {
+  fetchAndMergeRepostOriginals,
+  enrichWithUserScores,
+  preloadLastCommentAuthors,
+} from './helpers/feed-enrichment'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 
 /**
@@ -149,7 +153,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     queryKey: queryKey,
     queryFn: async () => {
       const currentTxid = currentTxidForQuery.value
-      return buildFeedQueryByTab(filtersStore.activeTab, {
+      const response = await buildFeedQueryByTab(filtersStore.activeTab, {
         currentTxid,
         count: currentTxid === '' ? initialLimit : pageSize,
         lang: lang.value,
@@ -159,6 +163,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
         topFirst: filtersStore.topFirst,
         depth: filtersStore.topFeedDepth,
       })
+      await preloadLastCommentAuthors(response?.data?.contents)
+      return response
     },
     enabled: computed(() => enabled && (hasMore.value || currentTxidForQuery.value === '')),
     staleTime: 0,
