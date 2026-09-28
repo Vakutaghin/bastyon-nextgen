@@ -67,16 +67,25 @@ export function useWalletBalances() {
     return bal != null ? Number(bal) : null
   })
 
-  const sumWalletsBalance = computed<number>(() => {
+  // Кошелёк, баланс которого не загрузился, делает сумму неизвестной («—»),
+  // а не заниженной: иначе недоступная нода выглядела бы как пропавшие деньги.
+  const sumWalletsBalance = computed<number | null>(() => {
     const cur = currentAddress.value
-    return accountsWithBalances.value
-      .filter((a) => a.address !== cur)
-      .reduce((s, a) => s + (a.balance ?? 0), 0)
+    let sum = 0
+    for (const a of accountsWithBalances.value) {
+      if (a.address === cur) continue
+      if (a.balance == null) return null
+      sum += a.balance
+    }
+    return sum
   })
 
-  const totalBalance = computed<number>(() => {
-    const account = accountBalance.value ?? 0
-    return account + sumWalletsBalance.value
+  const totalBalance = computed<number | null>(() => {
+    const wallets = sumWalletsBalance.value
+    if (wallets == null) return null
+    const account = accountBalance.value
+    if (account == null && accountsWithBalances.value.length > 0) return null
+    return (account ?? 0) + wallets
   })
 
   const hasAddresses = computed<boolean>(() => !!currentAddress.value)
@@ -112,8 +121,8 @@ export function useWalletBalances() {
     return formatPkoin(bal, 2, false) + ' PKOIN'
   }
 
-  /** Баланс адреса по txunspent, в сатоши. */
-  async function fetchBalanceTxUnspent(address: string): Promise<number> {
+  /** Баланс адреса по txunspent, в сатоши; null — нода не ответила. */
+  async function fetchBalanceTxUnspent(address: string): Promise<number | null> {
     try {
       const res = await getByPRC({
         method: rpcEndpoints.txUnspent,
@@ -122,7 +131,7 @@ export function useWalletBalances() {
       })
       return parseTxUnspentResponse(res)
     } catch {
-      return 0
+      return null
     }
   }
 
@@ -176,6 +185,8 @@ export function useWalletBalances() {
       }
 
       accountsWithBalances.value = result
+      // Ни один адрес не ответил — это недоступная сеть, а не нулевые балансы.
+      if (result.every((r) => r.balance == null)) error.value = t('wallet.errorLoadBalances')
     } catch (e) {
       error.value = e instanceof Error ? e.message : t('wallet.errorLoadBalances')
       accountsWithBalances.value = addresses.map((addr) => ({
