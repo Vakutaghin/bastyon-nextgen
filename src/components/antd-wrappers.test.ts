@@ -71,6 +71,13 @@ describe('InputSearch (обёртка)', () => {
     await w.find('.ant-input-search-button').trigger('click')
     expect(onSearch).toHaveBeenCalledTimes(2)
   })
+
+  it('на кнопке поиска — лупа, а не ключ', () => {
+    const w = keep(mount(InputSearch, { props: { value: '' } }))
+    const icon = w.find('.ant-input-search-button svg')
+    expect(icon.classes()).toContain('lucide-search')
+    expect(icon.classes()).not.toContain('lucide-key')
+  })
 })
 
 describe('Modal (обёртка)', () => {

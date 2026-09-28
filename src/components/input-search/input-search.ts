@@ -1,6 +1,6 @@
 import { computed, h } from 'vue'
 import { Input } from 'ant-design-vue'
-import { KeyOutlined } from '@/components/icons'
+import { SearchOutlined } from '@/components/icons'
 import { SC_InputSearch } from './styled'
 import { definedProps } from '../forward-props'
 import type { InputSearchProps } from './types'
@@ -10,13 +10,12 @@ export function useInputSearch(p: InputSearchProps) {
     return {}
   })
 
-  // Создаем enterButton с иконкой ключа, если не передан явно
+  // Кнопка поиска по умолчанию — с лупой (раньше по ошибке стоял ключ).
   const enterButtonValue = computed(() => {
     if (p.enterButton !== undefined) {
       return p.enterButton
     }
-    // Возвращаем компонент иконки ключа
-    return h(KeyOutlined)
+    return h(SearchOutlined)
   })
 
   // Объявленные пропсы (onSearch/value/placeholder/allowClear/maxLength/…) в
@@ -25,7 +24,6 @@ export function useInputSearch(p: InputSearchProps) {
 
   return {
     Input,
-    KeyOutlined,
     SC_InputSearch,
     searchClass,
     enterButtonValue,
