@@ -6,9 +6,12 @@
  *   - `searchusers` — для пользователей; параметры [value, type, fixedBlock, start, count]
  *   - `search`      — для остального; те же позиционные параметры, type ∈ {posts, tags, videos, all}
  *
- * Очистка строки запроса: оригинал убирает любые символы, кроме букв (рус/лат),
- * цифр, `#`, пробела и подчёркивания. Повторяем это здесь, чтобы запросы
- * имели одинаковый кэш-ключ с прежним поведением.
+ * Очистка строки запроса: как в оригинале, убираем всё, кроме букв, цифр, `#`,
+ * пробела и подчёркивания. Оригинал знал только буквы `а-я` и `a-z`, и при
+ * девяти языках интерфейса это ломало поиск: китайский и корейский запрос
+ * становился пустым и не отправлялся, у немецкого, французского, испанского и
+ * сербского выпадали буквы (`Müller` → `Mller`), а в русском терялась «ё».
+ * Теперь буквой считается буква любого письма (вместе с диакритикой).
  */
 
 import { rpcCall, getByPRC } from '@/helpers/api/request'
@@ -17,7 +20,7 @@ import type { SearchUsersData } from '@/types/rpc-responses/search-users'
 import type { SearchPostsData, SearchPost } from '@/types/rpc-responses/search-posts'
 import type { SearchTagsData, SearchTag } from '@/types/rpc-responses/search-tags'
 
-const SEARCH_VALUE_FORBIDDEN = /[^а-яА-Яa-zA-Z0-9# _]+/g
+const SEARCH_VALUE_FORBIDDEN = /[^\p{L}\p{M}\p{N}# _]+/gu
 
 /**
  * TTL для кеша текущей высоты блока. Берём 30 секунд — pocketnet блок ~60 сек,
@@ -84,7 +87,7 @@ export function __resetBlockHeightCache(): void {
 
 /** Нормализация поискового запроса (см. satolist.js:16234 в оригинале). */
 export function sanitizeSearchQuery(value: string): string {
-  return value.replace(SEARCH_VALUE_FORBIDDEN, '').trim()
+  return value.normalize('NFC').replace(SEARCH_VALUE_FORBIDDEN, '').trim()
 }
 
 export interface SearchPaging {
