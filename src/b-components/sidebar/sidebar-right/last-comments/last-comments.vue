@@ -12,50 +12,38 @@
       {{ t('sidebar.noComments') }}
     </SC_LastCommentsEmpty>
     <SC_LastCommentsList v-else>
-      <SC_LastCommentItem
-        v-for="item in displayComments"
-        :key="item.id"
-        @click="openPost(item.postid)"
-      >
+      <SC_LastCommentItem v-for="item in displayComments" :key="item.id" @click="openPost(item)">
         <SC_LastCommentIcons>
           <SC_LastCommentAvatar>
             <img
-              v-if="getAvatarUrl(item.authorProfile)"
-              :src="getAvatarUrl(item.authorProfile)!"
-              :alt="getDisplayName(item.authorProfile, item.address)"
+              v-if="item.authorAvatar"
+              :src="item.authorAvatar"
+              :alt="item.authorName"
               loading="lazy"
               decoding="async"
             />
             <SC_LastCommentLetter v-else>
-              {{ getDisplayName(item.authorProfile, item.address).charAt(0).toUpperCase() }}
+              {{ item.authorName.charAt(0).toUpperCase() }}
             </SC_LastCommentLetter>
           </SC_LastCommentAvatar>
           <SC_LastCommentArrow class="fas fa-long-arrow-alt-right" />
           <SC_LastCommentAvatar>
             <img
-              v-if="item.commentTo && getAvatarUrl(item.toProfile)"
-              :src="getAvatarUrl(item.toProfile)!"
-              :alt="item.commentTo ? getDisplayName(item.toProfile, item.commentTo) : ''"
+              v-if="item.toAvatar"
+              :src="item.toAvatar"
+              :alt="item.toName"
               loading="lazy"
               decoding="async"
             />
             <SC_LastCommentLetter v-else>
-              {{
-                item.commentTo
-                  ? getDisplayName(item.toProfile, item.commentTo).charAt(0).toUpperCase()
-                  : '?'
-              }}
+              {{ item.toName ? item.toName.charAt(0).toUpperCase() : '?' }}
             </SC_LastCommentLetter>
           </SC_LastCommentAvatar>
         </SC_LastCommentIcons>
         <SC_LastCommentContent>
-          <SC_LastCommentNames>
-            {{ getDisplayName(item.authorProfile, item.address) }}
-          </SC_LastCommentNames>
+          <SC_LastCommentNames>{{ item.authorName }}</SC_LastCommentNames>
           <span> → </span>
-          <SC_LastCommentNames>
-            {{ item.commentTo ? getDisplayName(item.toProfile, item.commentTo) : '—' }}
-          </SC_LastCommentNames>
+          <SC_LastCommentNames>{{ item.toName || '—' }}</SC_LastCommentNames>
           : <SC_LastCommentMessage>{{ item.message }}</SC_LastCommentMessage>
         </SC_LastCommentContent>
       </SC_LastCommentItem>
@@ -64,18 +52,20 @@
 </template>
 
 <script setup lang="ts">
+// «Последние комментарии» справа: свежие комментарии сети, раз в минуту
+// обновляются (use-comments-queries), имена — из общего кэша подписей
+// (user-names), чтобы обновление списка не сбрасывало ники на адреса.
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { LoadingOutlined } from '@/components/icons'
 import Spin from '@/components/spin/spin.vue'
-import { useLastComments } from '@/composables/use-comments-queries'
-import { useUserProfiles } from '@/composables/use-user-profile'
+import { lastCommentRecipient, useLastComments } from '@/composables/use-comments-queries'
+import { userAvatar, userName } from '@/services/user-names'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import type { GetLastComment, CommentMessage } from '@/types/rpc-responses/get-last-comments'
-import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { ICON_PRIMARY_24 } from '@/styles/icon-styles'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import {
   SC_LastCommentsRoot,
   SC_LastCommentsCaption,
@@ -104,35 +94,13 @@ function parseMessage(msg: string): string {
   }
 }
 
-function getCommentTo(c: GetLastComment): string {
-  if (c.addressCommentAnswer && c.addressCommentAnswer !== c.address) {
-    return c.addressCommentAnswer
-  }
-  if (c.addressCommentParent && c.addressCommentParent !== c.address) {
-    return c.addressCommentParent
-  }
-  if (c.addressContent && c.addressContent !== c.address) {
-    return c.addressContent
-  }
-  return ''
-}
-
 function trimText(text: string, maxLen: number): string {
   const plain = text.replace(/\s+/g, ' ').trim()
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen) + '…'
 }
 
-function getAvatarUrl(profile: UserProfile | undefined): string | null {
-  // Единый резолвер (голый хеш → полный URL + нормализация домена) вместо
-  // дублирующего хардкода хоста картинок.
-  return resolveImageUrl(profile?.i) ?? null
-}
-
-function getDisplayName(profile: UserProfile | undefined, address: string): string {
-  return profile?.name?.trim() || address.slice(0, 8) + '…'
-}
-
 const { t } = useI18n()
+const router = useRouter()
 const modalStore = useModalStore()
 const postsStore = usePostsStore()
 
@@ -143,65 +111,54 @@ const comments = computed<GetLastComment[]>(() => {
   return Array.isArray(d) ? d : []
 })
 
-const uniqueAddresses = computed<string[]>(() => {
-  const set = new Set<string>()
-  for (const c of comments.value) {
-    set.add(c.address)
-    const to = getCommentTo(c)
-    if (to) set.add(to)
-  }
-  return Array.from(set)
-})
-
-const { data: profilesResponse } = useUserProfiles(uniqueAddresses, true)
-
-const profilesByAddress = computed<Record<string, UserProfile>>(() => {
-  const arr = profilesResponse.value
-  if (!Array.isArray(arr)) return {}
-  const map: Record<string, UserProfile> = {}
-  for (const p of arr) {
-    if (p?.address) map[p.address] = p
-  }
-  return map
-})
-
 interface DisplayComment {
   id: string
   postid: string
   parentid: string
-  answerid: string
-  address: string
-  commentTo: string
+  authorName: string
+  authorAvatar: string | null
+  /** Пусто, если комментарий к своему посту. */
+  toName: string
+  toAvatar: string | null
   message: string
-  authorProfile: UserProfile | undefined
-  toProfile: UserProfile | undefined
 }
 
 const displayComments = computed<DisplayComment[]>(() => {
-  return comments.value
-    .map((c) => {
-      const message = parseMessage(c.msg)
-      if (!message) return null
-      const commentTo = getCommentTo(c)
-      return {
-        id: c.id,
-        postid: c.postid,
-        parentid: c.parentid,
-        answerid: c.answerid,
-        address: c.address,
-        commentTo,
-        message: trimText(message, MESSAGE_TRIM_LENGTH),
-        authorProfile: profilesByAddress.value[c.address],
-        toProfile: commentTo ? profilesByAddress.value[commentTo] : undefined,
-      }
+  const authors = new Set<string>()
+  const list: DisplayComment[] = []
+  for (const c of comments.value) {
+    const message = parseMessage(c.msg)
+    // Один комментарий на автора, как в старом клиенте: иначе серия «👍»
+    // одного человека занимала весь блок.
+    if (!message || authors.has(c.address)) continue
+    authors.add(c.address)
+    const to = lastCommentRecipient(c)
+    list.push({
+      id: c.id,
+      postid: c.postid,
+      parentid: c.parentid ?? '',
+      authorName: userName(c.address),
+      authorAvatar: userAvatar(c.address),
+      toName: to ? userName(to) : '',
+      toAvatar: to ? userAvatar(to) : null,
+      message: trimText(message, MESSAGE_TRIM_LENGTH),
     })
-    .filter((x): x is DisplayComment => x !== null)
+  }
+  return list
 })
 
-function openPost(postid: string): void {
-  const post = postsStore.getPostByShareId(postid)
+function openPost(item: DisplayComment): void {
+  const post = postsStore.getPostByShareId(item.postid)
   if (post) {
     modalStore.openPostModal(post as Parameters<typeof modalStore.openPostModal>[0])
+    return
   }
+  // Поста нет среди загруженных (почти всегда у свежих комментариев) —
+  // страница поста с переходом к этому комментарию, как в старом клиенте.
+  void router.push({
+    name: 'post',
+    params: { txid: item.postid },
+    query: item.parentid ? { commentid: item.id, parentid: item.parentid } : { commentid: item.id },
+  })
 }
 </script>
