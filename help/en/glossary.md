@@ -18,6 +18,10 @@ A batch of [transactions](#transaction) that the network adds to the [blockchain
 
 A shared record of every action on the network: transfers, posts, ratings, subscriptions. It is kept by the network nodes, and what has been recorded cannot be changed after the fact.
 
+## Boost
+
+Promoting a post for [PKOIN](#pkoin): a participant spends coins, and the post rises in the feed with a "Promoted" label. The more coins, the higher the post.
+
 ## Hash
 
 A cryptographic fingerprint of data: a short string that changes with any change to that data. Hashes are used to find blocks and transactions and to check that data has not been swapped.

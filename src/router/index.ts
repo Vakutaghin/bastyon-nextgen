@@ -38,7 +38,7 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomePage,
-      meta: { titleKey: 'routes.home' },
+      meta: { titleKey: 'routes.home', helpTopic: 'feed' },
     },
     {
       path: '/settings',
@@ -111,7 +111,7 @@ const router = createRouter({
       path: '/search',
       name: 'search',
       component: SearchPage,
-      meta: { titleKey: 'routes.search' },
+      meta: { titleKey: 'routes.search', helpTopic: 'search' },
     },
     // Мини-приложения — список и iframe. Также объявляем ДО catch-all /:userName.
     {
@@ -134,7 +134,7 @@ const router = createRouter({
       name: 'post',
       component: PostPage,
       props: true,
-      meta: { titleKey: 'routes.post' },
+      meta: { titleKey: 'routes.post', helpTopic: 'post-card' },
     },
     // Композер поста (deep-link / мобильный full-screen). ДО catch-all /:userName.
     {
