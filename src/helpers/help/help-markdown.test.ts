@@ -37,16 +37,30 @@ describe('splitFrontmatter', () => {
       keywords: ['IPFS', 'большие, файлы', 'ключ'],
       platforms: ['desktop'],
       code: ['src/pages/my-files-page', 'src-tauri/src/ipfs'],
+      draft: false,
     })
     expect(body).toBe('\n# Статья\n')
     expect(problems).toEqual([])
   })
 
   it('без шапки — пусто; незнакомые ключи и платформы — ошибки', () => {
-    expect(splitFrontmatter('# Статья').meta).toEqual({ keywords: [], platforms: [], code: [] })
+    expect(splitFrontmatter('# Статья').meta).toEqual({
+      keywords: [],
+      platforms: [],
+      code: [],
+      draft: false,
+    })
     const { meta, problems } = splitFrontmatter('---\ntitle: x\nplatforms: [desktop, tv]\n---\n# T')
     expect(meta.platforms).toEqual(['desktop'])
     expect(problems).toHaveLength(2)
+  })
+
+  it('черновик: draft true или false, иное — ошибка', () => {
+    expect(splitFrontmatter('---\ndraft: true\n---\n# T').meta.draft).toBe(true)
+    expect(splitFrontmatter('---\ndraft: false\n---\n# T').meta.draft).toBe(false)
+    const { meta, problems } = splitFrontmatter('---\ndraft: yes\n---\n# T')
+    expect(meta.draft).toBe(false)
+    expect(problems).toEqual([expect.stringContaining('draft: true или false')])
   })
 })
 

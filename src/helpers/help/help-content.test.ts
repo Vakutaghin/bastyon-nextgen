@@ -12,10 +12,15 @@ import type { HelpBlock, HelpInline, HelpLibrary, HelpLocale, HelpTocNode } from
 
 const ROOT = process.cwd()
 const LOCALES: HelpLocale[] = ['ru', 'en']
+/** С черновиками — проверяется всё, что написано; без них — то, что попадёт в сборку. */
 const libraries = {} as Record<HelpLocale, HelpLibrary>
+const releases = {} as Record<HelpLocale, HelpLibrary>
 
 beforeAll(async () => {
-  for (const locale of LOCALES) libraries[locale] = await loadHelpLibrary(locale)
+  for (const locale of LOCALES) {
+    libraries[locale] = await loadHelpLibrary(locale, true)
+    releases[locale] = await loadHelpLibrary(locale, false)
+  }
 })
 
 function inlinesOf(blocks: HelpBlock[]): HelpInline[][] {
@@ -88,6 +93,12 @@ describe('справка в help/', () => {
     expect(problems).toEqual([])
   })
 
+  it.each(LOCALES)('%s: без черновиков справка тоже цела', (locale) => {
+    const problems = releases[locale].problems.map((p) => `${p.file}: ${p.message}`)
+    expect(problems).toEqual([])
+    expect(releases[locale].order.length).toBeGreaterThan(0)
+  })
+
   it('русская и английская справки одного состава и одной структуры', () => {
     const ids = (l: HelpLocale) =>
       [...libraries[l].topics.values()].filter((t) => !t.fallback).map((t) => t.id)
@@ -131,7 +142,7 @@ describe('справка в help/', () => {
     expect(missing).toEqual([])
   })
 
-  it('контекстная справка в коде ведёт на существующие статьи', () => {
+  it('контекстная справка в коде ведёт на готовые статьи', () => {
     const refs = new Set<string>()
     for (const file of sourceFiles(resolve(ROOT, 'src'))) {
       const code = readFileSync(file, 'utf8')
@@ -139,7 +150,8 @@ describe('справка в help/', () => {
         refs.add(m[1] ?? '')
       }
     }
-    const missing = [...refs].filter((id) => !libraries.ru.topics.has(id))
+    // Черновика в сборке нет: F1 и «?» открыли бы пустое место.
+    const missing = [...refs].filter((id) => !releases.ru.topics.has(id))
     expect(missing).toEqual([])
   })
 })

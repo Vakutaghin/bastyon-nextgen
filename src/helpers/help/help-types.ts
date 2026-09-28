@@ -65,12 +65,16 @@ export interface HelpTopic {
   code: string[]
   /** Статьи нет на языке интерфейса — показан русский текст. */
   fallback: boolean
+  /** Черновик (`draft: true`): виден только при разработке. */
+  draft: boolean
 }
 
 export interface HelpTocNode {
   id: string
   label: string
   children: HelpTocNode[]
+  /** Статья — черновик: в оглавлении она приглушена. */
+  draft?: true
 }
 
 export interface HelpGlossaryEntry {

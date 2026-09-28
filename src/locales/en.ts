@@ -141,6 +141,7 @@ export default {
       next: 'Next',
       platforms: 'Works in: {list}',
       fallback: 'This article is not translated yet, so it is shown in Russian.',
+      draft: 'Draft: this article is still being written and stays out of app releases.',
     },
     platform: {
       desktop: 'desktop app',

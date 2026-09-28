@@ -26,6 +26,8 @@ export interface HelpParseContext {
   resolveImage: (path: string) => string | null
   /** `bastyon://…` → путь в приложении; null — такого раздела нет. */
   resolveApp: (href: string) => string | null
+  /** Статьи, которых в этой сборке нет (черновики): ссылка на них — просто текст. */
+  hidden?: ReadonlySet<string>
 }
 
 export interface HelpParsedLink {
@@ -92,6 +94,13 @@ function alignOf(tok: Token): HelpAlign {
   return m ? (m[1] as HelpAlign) : null
 }
 
+const TOPIC_HREF = /^(?:\.\/)?([A-Za-z0-9-]+)\.md(?:#(.*))?$/
+
+/** Статья, на которую ведёт `статья.md#раздел`; null — ссылка не на статью. */
+export function linkedTopic(rawHref: string): string | null {
+  return TOPIC_HREF.exec(safeDecode(rawHref))?.[1] ?? null
+}
+
 /** Разбор ссылки: куда она ведёт внутри справки или приложения. */
 export function linkTarget(rawHref: string, topic: string, ctx: HelpParseContext): HelpLinkTarget {
   const href = safeDecode(rawHref)
@@ -101,11 +110,12 @@ export function linkTarget(rawHref: string, topic: string, ctx: HelpParseContext
     return path ? { kind: 'app', href, path } : { kind: 'broken', href }
   }
   if (href.startsWith('#')) return { kind: 'topic', topic, anchor: href.slice(1) || null }
-  const m = /^(?:\.\/)?([A-Za-z0-9-]+)\.md(?:#(.*))?$/.exec(href)
+  const m = TOPIC_HREF.exec(href)
   if (!m) return { kind: 'broken', href }
   const name = m[1] ?? ''
   const anchor = m[2] || null
   if (name === 'README') return { kind: 'home' }
+  if (ctx.hidden?.has(name)) return { kind: 'broken', href }
   if (name === 'glossary' && anchor) return { kind: 'term', anchor }
   return { kind: 'topic', topic: name, anchor }
 }

@@ -134,6 +134,7 @@ export default {
       next: '下一篇',
       platforms: '适用于：{list}',
       fallback: '这篇文章尚未翻译，因此以俄语显示。',
+      draft: '草稿：这篇文章仍在编写中，不会包含在应用的发布版本里。',
     },
     platform: {
       desktop: '桌面应用',

@@ -1,10 +1,13 @@
 // Справка на одном языке целиком: статьи, оглавление, словарь, указатель и
 // порядок чтения. Русские статьи — основные: у английской берём текст и
 // ключевые слова, а платформы и код — из русской. Нет английской статьи —
-// показываем русскую. Ошибки в файлах собираются в `problems`: их проверяет
-// тест содержимого, в приложении они не видны.
+// показываем русскую. Черновики (`draft: true`) видны только при разработке:
+// русский черновик в сборке скрыт на всех языках, а английский заменяется
+// русской статьёй, как непереведённый. Ошибки в файлах собираются в
+// `problems`: их проверяет тест содержимого, в приложении они не видны.
 import { splitFrontmatter } from './help-frontmatter'
 import {
+  linkedTopic,
   parseArticle,
   plainText,
   type HelpParseContext,
@@ -29,6 +32,8 @@ export interface HelpSources {
   images: Record<string, string>
   /** `bastyon://…` → путь в приложении; null — такого раздела нет. */
   resolveApp: (href: string) => string | null
+  /** Показывать черновики: при разработке — да, в сборке — нет. */
+  drafts?: boolean
 }
 
 export const PRIMARY_LOCALE: HelpLocale = 'ru'
@@ -64,6 +69,22 @@ function walk(
     visit(node, parents)
     walk(node.children, visit, [...parents, node.id])
   }
+}
+
+/**
+ * Оглавление без скрытых черновиков. Готовые статьи из черновой книги
+ * поднимаются на её место: статью можно выпустить раньше, чем книгу.
+ */
+function visibleToc(
+  nodes: HelpTocNode[],
+  hidden: ReadonlySet<string>,
+  topics: Map<string, HelpTopic>
+): HelpTocNode[] {
+  return nodes.flatMap((node) => {
+    const children = visibleToc(node.children, hidden, topics)
+    if (hidden.has(node.id)) return children
+    return [{ ...node, children, ...(topics.get(node.id)?.draft ? { draft: true as const } : {}) }]
+  })
 }
 
 /** Разделы словаря — заголовки второго уровня и всё, что под ними. */
@@ -106,16 +127,24 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
     }
   }
 
+  const drafts = sources.drafts ?? false
+  const primaries = new Map(
+    ids.map((id) => [id, splitFrontmatter(files[`${PRIMARY_LOCALE}/${id}.md`] ?? '')])
+  )
+  const hidden = new Set(drafts ? [] : ids.filter((id) => primaries.get(id)?.meta.draft))
+  const visible = ids.filter((id) => !hidden.has(id))
+
   const topics = new Map<string, HelpTopic>()
   const links = new Map<string, HelpParsedLink[]>()
-  for (const id of ids) {
-    const primary = files[`${PRIMARY_LOCALE}/${id}.md`] ?? ''
-    const own = files[`${locale}/${id}.md`]
-    const fallback = own === undefined
+  for (const [id, primary] of primaries) {
+    if (hidden.has(id)) continue
+    const ownRaw = files[`${locale}/${id}.md`]
+    const own = ownRaw === undefined ? null : splitFrontmatter(ownRaw)
+    // Перевод ещё черновик, а русская статья готова — показываем русскую.
+    const fallback = !own || (own.meta.draft && !drafts)
     const lang = fallback ? PRIMARY_LOCALE : locale
     const file = `${lang}/${id}.md`
-    const meta = splitFrontmatter(primary).meta
-    const front = fallback ? splitFrontmatter(primary) : splitFrontmatter(own)
+    const front = !fallback && own ? own : primary
     report(file, front.problems)
     if (lang !== PRIMARY_LOCALE && (front.meta.platforms.length || front.meta.code.length)) {
       report(file, ['platforms и code пишутся только в русской статье'])
@@ -124,6 +153,7 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
       topic: id,
       resolveImage: (path) => sources.images[resolveRelative(`${lang}`, path)] ?? null,
       resolveApp: sources.resolveApp,
+      hidden,
     }
     const parsed = parseArticle(front.body, ctx)
     report(file, parsed.problems)
@@ -135,9 +165,10 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
       headings: parsed.headings,
       text: parsed.text,
       keywords: front.meta.keywords,
-      platforms: meta.platforms,
-      code: meta.code,
+      platforms: primary.meta.platforms,
+      code: primary.meta.code,
       fallback,
+      draft: front.meta.draft,
     })
   }
 
@@ -147,14 +178,16 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
     topic: HOME_FILE,
     resolveImage: (path) => sources.images[resolveRelative(readmeLang, path)] ?? null,
     resolveApp: sources.resolveApp,
+    hidden,
   })
   report(readmeFile, readme.problems)
   links.set(HOME_FILE, readme.links)
+  const toc = visibleToc(readme.toc, hidden, topics)
 
   // Оглавление: каждая статья ровно один раз, и только существующие.
   const order: string[] = []
   const trail = new Map<string, string[]>()
-  walk(readme.toc, (node, parents) => {
+  walk(toc, (node, parents) => {
     if (!topics.has(node.id))
       report(readmeFile, [`в оглавлении статья, которой нет: ${node.id}.md`])
     else if (trail.has(node.id)) report(readmeFile, [`статья в оглавлении дважды: ${node.id}.md`])
@@ -163,7 +196,7 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
       trail.set(node.id, parents)
     }
   })
-  for (const id of ids) {
+  for (const id of visible) {
     if (!trail.has(id)) report(`${PRIMARY_LOCALE}/${id}.md`, ['статьи нет в оглавлении README.md'])
   }
 
@@ -175,6 +208,8 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
     const file =
       from === HOME_FILE ? readmeFile : `${topic?.fallback ? PRIMARY_LOCALE : locale}/${from}.md`
     for (const { to, text } of list) {
+      // Ссылка на скрытый черновик — не ошибка: в сборке она просто текст.
+      if (to.kind === 'broken' && hidden.has(linkedTopic(to.href) ?? '')) continue
       if (to.kind === 'broken') report(file, [`ссылка никуда не ведёт: [${text}](${to.href})`])
       else if (to.kind === 'term' && !glossary.has(to.anchor)) {
         report(file, [`в словаре нет термина #${to.anchor} («${text}»)`])
@@ -210,7 +245,7 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
     locale,
     title: readme.title,
     intro: readme.intro,
-    toc: readme.toc,
+    toc,
     topics,
     order,
     trail,

@@ -226,6 +226,11 @@ export const SC_Row = styled.div`
     background: var(--ui-bg-muted);
   }
 
+  &.draft a {
+    color: var(--ui-text-dimmed);
+    font-style: italic;
+  }
+
   &.active {
     background: rgb(var(--ui-primary-rgb) / 10%);
   }

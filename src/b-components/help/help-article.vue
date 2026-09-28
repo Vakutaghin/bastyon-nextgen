@@ -18,6 +18,7 @@
       <MonitorIcon />
       {{ platforms }}
     </SC_Platforms>
+    <SC_Fallback v-if="topic.draft">{{ t('help.article.draft') }}</SC_Fallback>
     <SC_Fallback v-if="topic.fallback">{{ t('help.article.fallback') }}</SC_Fallback>
 
     <SC_Body>

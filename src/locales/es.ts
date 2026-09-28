@@ -143,6 +143,8 @@ export default {
       next: 'Siguiente',
       platforms: 'Funciona en: {list}',
       fallback: 'Este artículo aún no está traducido, por eso se muestra en ruso.',
+      draft:
+        'Borrador: este artículo aún se está escribiendo y no se incluye en las versiones de la aplicación.',
     },
     platform: {
       desktop: 'aplicación de escritorio',

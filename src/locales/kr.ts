@@ -141,6 +141,7 @@ export default {
       next: '다음',
       platforms: '지원: {list}',
       fallback: '이 문서는 아직 번역되지 않아 러시아어로 표시됩니다.',
+      draft: '초안: 이 문서는 아직 작성 중이며 앱 배포판에는 포함되지 않습니다.',
     },
     platform: {
       desktop: '데스크톱 앱',

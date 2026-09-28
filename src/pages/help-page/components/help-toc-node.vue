@@ -1,6 +1,6 @@
 <template>
   <li>
-    <SC_Row ref="row" :class="{ active }">
+    <SC_Row ref="row" :class="{ active, draft: node.draft }">
       <SC_Toggle
         v-if="node.children.length"
         type="button"
@@ -31,6 +31,7 @@
 <script setup lang="ts">
 // Пункт «Содержания»: книга (с подразделами) или страница. Нажатие на книгу
 // открывает её статью и раскрывает её — как в CHM; стрелка только раскрывает.
+// Черновики (видны только при разработке) приглушены.
 import { computed, nextTick, ref, watch } from 'vue'
 import { FileTextOutlined, HelpBookIcon, RightOutlined } from '@/components/icons'
 import { topicPath } from '@/b-components/help/help-view'

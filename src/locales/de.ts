@@ -142,6 +142,7 @@ export default {
       next: 'Weiter',
       platforms: 'Funktioniert in: {list}',
       fallback: 'Dieser Artikel ist noch nicht übersetzt und wird daher auf Russisch angezeigt.',
+      draft: 'Entwurf: Dieser Artikel wird noch geschrieben und kommt nicht in App-Versionen.',
     },
     platform: {
       desktop: 'Desktop-App',

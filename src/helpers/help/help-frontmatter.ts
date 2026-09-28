@@ -1,17 +1,20 @@
-// Шапка статьи между `---`: ключевые слова для «Указателя», платформы и код,
-// который описывает статья. Это не весь YAML, а его маленькая часть — ровно
-// то, что нужно справке: `ключ: значение`, `ключ: [a, b]` и список строками
-// `  - a`. Всё остальное — ошибка, её покажет тест содержимого.
+// Шапка статьи между `---`: ключевые слова для «Указателя», платформы, код,
+// который описывает статья, и пометка черновика. Это не весь YAML, а его
+// маленькая часть — ровно то, что нужно справке: `ключ: значение`,
+// `ключ: [a, b]` и список строками `  - a`. Всё остальное — ошибка, её покажет
+// тест содержимого.
 import type { HelpPlatform } from './help-types'
 
 export interface HelpFrontmatter {
   keywords: string[]
   platforms: HelpPlatform[]
   code: string[]
+  /** `draft: true` — статья пишется: в сборку не попадает. */
+  draft: boolean
 }
 
 const PLATFORMS: readonly HelpPlatform[] = ['desktop', 'web', 'mobile']
-const KEYS = ['keywords', 'platforms', 'code'] as const
+const KEYS = ['keywords', 'platforms', 'code', 'draft'] as const
 type Key = (typeof KEYS)[number]
 
 const FENCE = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/
@@ -68,7 +71,7 @@ export function splitFrontmatter(raw: string): {
   body: string
   problems: string[]
 } {
-  const meta: HelpFrontmatter = { keywords: [], platforms: [], code: [] }
+  const meta: HelpFrontmatter = { keywords: [], platforms: [], code: [], draft: false }
   const problems: string[] = []
   const text = raw.replace(/^\uFEFF/, '')
   const match = FENCE.exec(text)
@@ -114,6 +117,14 @@ export function splitFrontmatter(raw: string): {
 
   meta.keywords = values.get('keywords') ?? []
   meta.code = values.get('code') ?? []
+  const draft = values.get('draft')
+  if (draft) {
+    if (draft.length === 1 && (draft[0] === 'true' || draft[0] === 'false')) {
+      meta.draft = draft[0] === 'true'
+    } else {
+      problems.push(`draft: true или false, а не «${draft.join(', ')}»`)
+    }
+  }
   for (const platform of values.get('platforms') ?? []) {
     if ((PLATFORMS as readonly string[]).includes(platform)) {
       meta.platforms.push(platform as HelpPlatform)

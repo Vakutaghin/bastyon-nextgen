@@ -143,6 +143,8 @@ export default {
       next: 'Suivant',
       platforms: 'Fonctionne dans : {list}',
       fallback: 'Cet article n’est pas encore traduit, il est donc affiché en russe.',
+      draft:
+        'Brouillon : cet article est en cours de rédaction et n’est pas inclus dans les versions de l’application.',
     },
     platform: {
       desktop: 'application de bureau',

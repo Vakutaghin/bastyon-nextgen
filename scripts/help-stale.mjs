@@ -2,6 +2,7 @@
 // Какие статьи справки могли устареть: код из их `code:` (шапка русской
 // статьи, help/ru/*.md) менялся в git позже, чем сама статья. Это список
 // «что перечитать и обновить», а не проверка: скрипт всегда выходит с 0.
+// Черновики (`draft: true`) не сверяются — скрипт только перечисляет их.
 //
 //   pnpm help:stale
 //
@@ -36,6 +37,12 @@ function codePaths(source) {
   return items.map((s) => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean)
 }
 
+/** `draft: true` в шапке — статья ещё пишется. */
+function isDraft(source) {
+  const head = /^---\r?\n([\s\S]*?)\r?\n---/.exec(source)?.[1] ?? ''
+  return /^draft:\s*true\s*(#.*)?$/m.test(head)
+}
+
 function lastCommit(paths) {
   const out = git('log', '-1', '--format=%ct', '--', ...paths)
   return out ? Number(out) : 0
@@ -48,8 +55,14 @@ const topics = readdirSync(PRIMARY)
 
 const stale = []
 const unbound = []
+const drafts = []
 for (const id of topics) {
-  const code = codePaths(readFileSync(join(PRIMARY, `${id}.md`), 'utf8'))
+  const source = readFileSync(join(PRIMARY, `${id}.md`), 'utf8')
+  if (isDraft(source)) {
+    drafts.push(id)
+    continue
+  }
+  const code = codePaths(source)
   if (!code.length) {
     unbound.push(id)
     continue
@@ -69,7 +82,7 @@ for (const id of topics) {
 }
 
 if (!stale.length) {
-  console.log(`[help:stale] статей с кодом: ${topics.length - unbound.length}, все новее своего кода`)
+  console.log(`[help:stale] статей с кодом: ${topics.length - unbound.length - drafts.length}, все новее своего кода`)
 } else {
   console.log(`[help:stale] могли устареть (${stale.length}):`)
   for (const { id, commits, dirty, missing } of stale) {
@@ -81,3 +94,4 @@ if (!stale.length) {
   }
 }
 if (unbound.length) console.log(`\n[help:stale] без code: (не с чем сверять): ${unbound.join(', ')}`)
+if (drafts.length) console.log(`\n[help:stale] черновики (${drafts.length}): ${drafts.join(', ')}`)

@@ -90,6 +90,48 @@ describe('buildHelpLibrary', () => {
     expect(lib.order).toEqual(['basics', 'keys', 'glossary'])
   })
 
+  describe('черновики', () => {
+    // «Основы» — черновая книга с готовой статьёй внутри, у «Ключей» не
+    // дописан перевод, на «Основы» ссылается словарь.
+    const DRAFTS: Record<string, string> = {
+      ...FILES,
+      'ru/basics.md': '---\ndraft: true\n---\n\n# Основы\n\nПлан книги.\n',
+      'ru/glossary.md': '# Словарь\n\n## CID\n\nАдрес файла, см. [основы](basics.md).\n',
+      'en/basics.md': '---\ndraft: true\n---\n\n# Basics\n\nPlan.\n',
+      'en/keys.md': '---\ndraft: true\n---\n\n# Keys\n\nPlan.\n',
+    }
+
+    it('в сборке: черновика нет, готовая статья поднимается на место книги', () => {
+      const lib = buildHelpLibrary('ru', sources(DRAFTS))
+      expect(lib.problems).toEqual([])
+      expect(lib.topics.has('basics')).toBe(false)
+      expect(lib.toc).toEqual([
+        { id: 'keys', label: 'Ключи', children: [] },
+        { id: 'glossary', label: 'Словарь', children: [] },
+      ])
+      expect(lib.order).toEqual(['keys', 'glossary'])
+      expect(lib.trail.get('keys')).toEqual([])
+      expect(lib.index.map((e) => e.keyword)).not.toContain('Основы')
+      expect(helpSearch(lib).search('план')).toEqual([])
+      // Ссылка на скрытый черновик остаётся текстом.
+      const link = lib.glossary.get('cid')?.blocks[0]
+      expect(link).toMatchObject({ c: [{}, { t: 'link', to: { kind: 'broken' } }, {}] })
+    })
+
+    it('в сборке: недописанный перевод заменяется русской статьёй', () => {
+      const lib = buildHelpLibrary('en', sources(DRAFTS))
+      expect(lib.topics.get('keys')).toMatchObject({ title: 'Ключи', fallback: true, draft: false })
+    })
+
+    it('при разработке черновики видны и помечены', () => {
+      const lib = buildHelpLibrary('en', { ...sources(DRAFTS), drafts: true })
+      expect(lib.problems).toEqual([])
+      expect(lib.topics.get('keys')).toMatchObject({ title: 'Keys', fallback: false, draft: true })
+      expect(lib.toc[0]).toMatchObject({ id: 'basics', draft: true })
+      expect(lib.order).toEqual(['basics', 'keys', 'glossary'])
+    })
+  })
+
   it('путь картинки считается от папки языка', () => {
     expect(resolveRelative('ru', '../images/p2p.svg')).toBe('images/p2p.svg')
     expect(resolveRelative('ru', './a/../b.svg')).toBe('ru/b.svg')
