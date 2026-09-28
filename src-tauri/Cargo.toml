@@ -6,7 +6,7 @@ authors = ["you"]
 license = ""
 repository = ""
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.88"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,6 +20,9 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 # Раньше фича стояла безусловно: инспектор + ОС-глобальные хоткеи F12/Ctrl+Shift+I
 # уезжали в прод (аудит P3-5/V19).
 devtools = ["tauri/devtools"]
+# Голосовой ввод: `BASTYON_ASR_FILE=фраза.wav` подменяет микрофон записью —
+# для проверки всей цепочки без живой речи. В релиз не входит.
+asr-file-source = []
 
 [build-dependencies]
 tauri-build = { version = "2.6.3", features = [] }
@@ -68,6 +71,21 @@ tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tauri-plugin-window-state = "2"
 # Автозапуск при входе в систему (десктоп).
 tauri-plugin-autostart = "2"
+# Голосовой ввод (src/asr): запись с микрофона. На Linux нужен libasound2-dev.
+cpal = "0.18"
+
+# Голосовой ввод: распознавание whisper.cpp прямо на устройстве. ggml
+# собирается переносимо (GGML_NATIVE=OFF в .cargo/config.toml), на macOS
+# считает Metal. Логи whisper.cpp идут в log.
+[target.'cfg(target_os = "macos")'.dependencies]
+whisper-rs = { version = "0.16", features = ["metal", "log_backend"] }
+# Диктовка не усыпляется App Nap (src/asr/keep_awake.rs). Версии — те же,
+# что уже тянет Tauri.
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSProcessInfo", "NSString"] }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+whisper-rs = { version = "0.16", features = ["log_backend"] }
 
 # Linux: до создания значка в трее проверяем, что appindicator вообще есть
 # (иначе tray-icon паникует). Та же версия, что уже тянет tray-icon.

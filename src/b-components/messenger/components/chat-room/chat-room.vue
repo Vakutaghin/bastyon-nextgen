@@ -171,6 +171,9 @@
         >
           <SmileOutlined />
         </SC_EmojiToggleButton>
+
+        <!-- Голосовой ввод текстом (не голосовое сообщение — оно у микрофона справа). -->
+        <VoiceInputButton :get-element="getInputEl" :language="String(locale)" />
       </template>
 
       <!-- VOICE BUTTON (видна при записи или когда input пуст). -->
@@ -236,6 +239,7 @@ import { useReadReceipts } from './use-read-receipts'
 import { useBlockUser } from './use-block-user'
 import MessageList from '../message-list/message-list.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
+import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import PkoinTransferModal from '../pkoin-transfer-modal/pkoin-transfer-modal.vue'
 import { useMessengerStore } from '../../store'
@@ -321,7 +325,7 @@ const emit = defineEmits<{
 
 const store = useMessengerStore()
 const uiStore = useMessengerUiStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // Активная комната + typing-индикатор собеседника.
 const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
@@ -420,6 +424,11 @@ const {
     emit('send', text)
   },
 })
+
+/** Поле ввода сообщения — для голосового ввода. */
+function getInputEl(): HTMLTextAreaElement | null {
+  return inputRef.value?.$el ?? null
+}
 
 // Шлём typing-нотификацию, пока пользователь печатает в активной комнате.
 watch(inputValue, (value) => {

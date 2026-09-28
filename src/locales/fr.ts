@@ -1819,6 +1819,71 @@ export default {
   linkPreview: {
     remove: 'Retirer l’aperçu du lien',
   },
+  voiceInput: {
+    start: 'Saisie vocale',
+    stop: 'Arrêter la dictée (Échap)',
+    starting: 'Activation du micro…',
+    preparing: 'Préparation de la reconnaissance — vous pouvez parler',
+    finishing: 'Transcription de la fin… Cliquez pour interrompre',
+    downloading: 'Téléchargement du modèle vocal — {percent} %',
+    ready: 'La saisie vocale est prête : cliquez sur le bouton à barres à côté du champ de saisie',
+    modal: {
+      title: 'Saisie vocale',
+      lead: 'Parlez, le texte apparaît dans le champ. La parole est reconnue directement sur cet ordinateur, l’enregistrement n’est envoyé nulle part.',
+      download: 'Pour cela, il faut télécharger une fois le modèle de reconnaissance vocale.',
+      commands:
+        'La ponctuation peut être dictée : « point », « virgule », « point d’interrogation », « à la ligne ». Échap arrête la dictée.',
+      viaTor: 'Le modèle sera téléchargé via Tor — cela peut prendre quelques minutes.',
+      recommended: 'recommandé',
+      downloadButton: 'Télécharger · {size}',
+      cancel: 'Annuler',
+      downloading: 'Téléchargement du modèle « {name} »',
+      progress: '{received} sur {total} téléchargés',
+      hide: 'Masquer',
+      cancelDownload: 'Annuler le téléchargement',
+      retry: 'Réessayer',
+      close: 'Fermer',
+      ok: 'Compris',
+    },
+    models: {
+      base: 'Rapide',
+      baseHint: 'Modèle léger : répond plus vite, mais se trompe plus souvent.',
+      small: 'Précis',
+      smallHint: 'Comprend bien la parole et place la ponctuation tout seul.',
+      turbo: 'Maximal',
+      turboHint: 'La meilleure qualité de reconnaissance.',
+      turboHintCpu: 'La meilleure qualité, mais nettement plus lent sur cet ordinateur.',
+    },
+    errors: {
+      micDenied:
+        'Pas d’accès au micro. Autorisez-le pour l’application dans les réglages du système : Confidentialité → Micro.',
+      noMicrophone: 'Aucun micro trouvé.',
+      micBusy: 'Le micro est utilisé par une autre application.',
+      unsupportedCpu:
+        'La saisie vocale nécessite un processeur compatible AVX2, fabriqué depuis 2013. Elle n’est pas disponible sur cet ordinateur.',
+      torNotReady: 'Tor est encore en cours de connexion. Réessayez dans une minute.',
+      downloadFailed: 'Impossible de télécharger le modèle. Vérifiez la connexion et réessayez.',
+      hashMismatch:
+        'Le fichier téléchargé ne correspondait pas à celui attendu et n’a pas été enregistré. Réessayez.',
+      busy: 'Le modèle est déjà en cours de téléchargement.',
+      generic: 'La saisie vocale n’a pas fonctionné. Réessayez.',
+    },
+    settings: {
+      title: 'Saisie vocale',
+      description:
+        'Dictée dans les discussions et lors de la création d’une publication — le bouton à barres à côté du champ de saisie. La parole est reconnue directement sur cet ordinateur, l’enregistrement n’est envoyé nulle part.',
+      model: 'Modèle de reconnaissance vocale',
+      installed: 'téléchargé',
+      download: 'Télécharger',
+      remove: 'Supprimer',
+      removeTitle: 'Supprimer le modèle « {name} » ?',
+      removeContent:
+        'Le fichier du modèle sera supprimé du disque. Vous pourrez le télécharger à nouveau.',
+      commandsTitle: 'Commandes vocales de ponctuation',
+      statusReady: 'Modèle : {name}',
+      statusNone: 'Aucun modèle téléchargé',
+    },
+  },
   postComposer: {
     title: 'Nouvelle publication',
     placeholder: 'Quoi de neuf ?',

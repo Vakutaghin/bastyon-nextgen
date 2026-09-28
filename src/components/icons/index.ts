@@ -15,6 +15,7 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  AudioLines,
   Ban,
   Bell,
   Blocks,
@@ -246,6 +247,8 @@ export const ZoomInOutlined = lucideIcon('ZoomInOutlined', ZoomIn)
 export const ArrowLeftIcon = lucideIcon('ArrowLeftIcon', ArrowLeft)
 export const MessagesIcon = lucideIcon('MessagesIcon', MessagesSquare)
 export const MicIcon = lucideIcon('MicIcon', Mic)
+/** Голосовой ввод (диктовка текстом) — не путать с микрофоном голосового сообщения. */
+export const DictationIcon = lucideIcon('DictationIcon', AudioLines)
 export const PlayIcon = lucideIcon('PlayIcon', Play, 'solid')
 export const PauseIcon = lucideIcon('PauseIcon', Pause, 'solid')
 

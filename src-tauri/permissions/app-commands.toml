@@ -42,4 +42,11 @@ permissions = [
   "allow-ipfs-forget-account",
   "allow-ipfs-share-status",
   "allow-tray-set-labels",
+  "allow-asr-status",
+  "allow-asr-install",
+  "allow-asr-cancel-install",
+  "allow-asr-remove",
+  "allow-asr-start",
+  "allow-asr-stop",
+  "allow-asr-cancel",
 ]

@@ -1818,6 +1818,73 @@ export default {
   linkPreview: {
     remove: 'Linkvorschau entfernen',
   },
+  voiceInput: {
+    start: 'Spracheingabe',
+    stop: 'Diktat beenden (Esc)',
+    starting: 'Mikrofon wird eingeschaltet…',
+    preparing: 'Erkennung wird vorbereitet — Sie können sprechen',
+    finishing: 'Das Gesagte wird fertig erkannt… Klicken zum Abbrechen',
+    downloading: 'Sprachmodell wird geladen — {percent} %',
+    ready:
+      'Die Spracheingabe ist bereit: Klicken Sie auf die Schaltfläche mit den Balken neben dem Eingabefeld',
+    modal: {
+      title: 'Spracheingabe',
+      lead: 'Sprechen Sie — der Text erscheint im Eingabefeld. Die Sprache wird direkt auf diesem Computer erkannt, die Aufnahme verlässt ihn nicht.',
+      download: 'Dafür muss das Spracherkennungsmodell einmal heruntergeladen werden.',
+      commands:
+        'Satzzeichen lassen sich diktieren: „Punkt“, „Komma“, „Fragezeichen“, „neue Zeile“. Esc beendet das Diktat.',
+      viaTor: 'Das Modell wird über Tor geladen — das kann einige Minuten dauern.',
+      recommended: 'empfohlen',
+      downloadButton: 'Herunterladen · {size}',
+      cancel: 'Abbrechen',
+      downloading: 'Modell „{name}“ wird heruntergeladen',
+      progress: '{received} von {total} heruntergeladen',
+      hide: 'Ausblenden',
+      cancelDownload: 'Download abbrechen',
+      retry: 'Erneut versuchen',
+      close: 'Schließen',
+      ok: 'Verstanden',
+    },
+    models: {
+      base: 'Schnell',
+      baseHint: 'Leichtes Modell: antwortet schneller, irrt sich aber öfter.',
+      small: 'Genau',
+      smallHint: 'Versteht Sprache gut und setzt Satzzeichen selbst.',
+      turbo: 'Maximal',
+      turboHint: 'Die beste Erkennungsqualität.',
+      turboHintCpu: 'Die beste Qualität, auf diesem Computer aber deutlich langsamer.',
+    },
+    errors: {
+      micDenied:
+        'Kein Zugriff auf das Mikrofon. Erlauben Sie ihn der App in den Systemeinstellungen: Datenschutz → Mikrofon.',
+      noMicrophone: 'Kein Mikrofon gefunden.',
+      micBusy: 'Das Mikrofon wird von einer anderen App verwendet.',
+      unsupportedCpu:
+        'Die Spracheingabe braucht einen Prozessor mit AVX2, wie er seit 2013 gebaut wird. Auf diesem Computer ist sie nicht verfügbar.',
+      torNotReady: 'Tor verbindet sich noch. Versuchen Sie es in einer Minute erneut.',
+      downloadFailed:
+        'Das Modell konnte nicht heruntergeladen werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.',
+      hashMismatch:
+        'Die heruntergeladene Datei stimmte nicht mit der erwarteten überein und wurde nicht gespeichert. Versuchen Sie es erneut.',
+      busy: 'Das Modell wird bereits heruntergeladen.',
+      generic: 'Die Spracheingabe hat nicht funktioniert. Versuchen Sie es erneut.',
+    },
+    settings: {
+      title: 'Spracheingabe',
+      description:
+        'Diktieren im Chat und beim Erstellen eines Beitrags — die Schaltfläche mit den Balken neben dem Eingabefeld. Die Sprache wird direkt auf diesem Computer erkannt, die Aufnahme verlässt ihn nicht.',
+      model: 'Spracherkennungsmodell',
+      installed: 'heruntergeladen',
+      download: 'Herunterladen',
+      remove: 'Entfernen',
+      removeTitle: 'Modell „{name}“ entfernen?',
+      removeContent:
+        'Die Modelldatei wird von der Festplatte gelöscht. Sie können sie erneut herunterladen.',
+      commandsTitle: 'Sprachbefehle für Satzzeichen',
+      statusReady: 'Modell: {name}',
+      statusNone: 'Kein Modell heruntergeladen',
+    },
+  },
   postComposer: {
     title: 'Neuer Beitrag',
     placeholder: 'Was gibt es Neues?',

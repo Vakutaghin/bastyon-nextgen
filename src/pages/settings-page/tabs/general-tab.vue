@@ -87,6 +87,9 @@
 
   <!-- Управление десктоп-модулем IPFS (Kubo): сам блок скрыт, если не установлен. -->
   <IpfsSection />
+
+  <!-- Голосовой ввод (десктоп): модели распознавания и команды пунктуации. -->
+  <VoiceInputSection />
 </template>
 
 <script setup lang="ts">
@@ -108,6 +111,7 @@ import {
 } from './system-tab.styled'
 import { useTheme, type ThemeMode } from '@/composables/use-theme'
 import IpfsSection from './ipfs-section.vue'
+import VoiceInputSection from './voice-input-section.vue'
 import {
   SC_SettingsSectionTitle,
   SC_GeneralBlock,

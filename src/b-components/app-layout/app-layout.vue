@@ -20,6 +20,8 @@
     <WhatsNewModal />
 
     <UpdateModal />
+
+    <VoiceModelModal />
   </SC_Application>
 </template>
 
@@ -32,6 +34,7 @@ import PostModal from '@/b-components/content/post-modal/post-modal.vue'
 import PostComposerModal from '@/b-components/content/post-composer/post-composer-modal.vue'
 import WhatsNewModal from '@/b-components/changelog/whats-new-modal.vue'
 import UpdateModal from '@/b-components/app-update/update-modal.vue'
+import VoiceModelModal from '@/b-components/voice-input/voice-model-modal.vue'
 import { StarExplosion } from '@/b-components/effects/star-explosion'
 import SiteFooter from '@/b-components/site-footer/site-footer.vue'
 import BottomNav from '@/b-components/bottom-nav/bottom-nav.vue'

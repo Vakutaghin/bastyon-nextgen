@@ -41,6 +41,13 @@ const COMMANDS: &[&str] = &[
   "ipfs_forget_account",
   "ipfs_share_status",
   "tray_set_labels",
+  "asr_status",
+  "asr_install",
+  "asr_cancel_install",
+  "asr_remove",
+  "asr_start",
+  "asr_stop",
+  "asr_cancel",
 ];
 
 fn main() {

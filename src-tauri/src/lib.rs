@@ -1,3 +1,4 @@
+mod asr;
 mod ipfs;
 mod tor;
 mod tray;
@@ -919,6 +920,13 @@ pub fn run() {
       ipfs::shares::ipfs_forget_account,
       ipfs::shares::ipfs_share_status,
       tray::tray_set_labels,
+      asr::asr_status,
+      asr::asr_install,
+      asr::asr_cancel_install,
+      asr::asr_remove,
+      asr::asr_start,
+      asr::asr_stop,
+      asr::asr_cancel,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]
@@ -1000,6 +1008,9 @@ pub fn run() {
       // IPFS manager — initialise app state holder (Kubo module lifecycle).
       ipfs::init(app.handle()).map_err(|e| e.to_string())?;
 
+      // Голосовой ввод: модели в данных приложения, распознавание на устройстве.
+      asr::init(app.handle()).map_err(|e| e.to_string())?;
+
       // Значок в трее (Windows, Linux). Не вышло — работаем без него.
       if let Err(e) = tray::init(app.handle()) {
         log::warn!("tray: {e}");
@@ -1031,6 +1042,10 @@ pub fn run() {
         // (adopted) daemon too, which `child.kill()` alone would never see.
         if let Some(mgr) = app_handle.try_state::<ipfs::IpfsManager>() {
           ipfs::shutdown_on_exit(&mgr);
+        }
+        // Микрофон не должен оставаться открытым после выхода.
+        if let Some(mgr) = app_handle.try_state::<asr::AsrManager>() {
+          asr::shutdown_on_exit(&mgr);
         }
       }
     });
