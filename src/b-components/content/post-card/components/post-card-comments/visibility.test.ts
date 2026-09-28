@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest'
 
-import { isHiddenByReputation, isBlockedByMe } from './visibility'
+import {
+  isHiddenByReputation,
+  isBlockedByMe,
+  getCommentPostingDisableReason,
+  getCommentScoringDisableReason,
+  shouldShowScamWarningOnDislike,
+  SELF_REP_BLOCK_THRESHOLD,
+} from './visibility'
+import type { UserState } from '@/types/rpc-responses/user-state'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 
 /** Минимальный валидный GetComment с переопределяемыми полями. */
@@ -100,5 +108,70 @@ describe('isBlockedByMe', () => {
   it('false, если автор не в блок-сете', () => {
     const c = makeComment({ address: 'PGOOD' })
     expect(isBlockedByMe(c, new Set(['PBAD']))).toBe(false)
+  })
+})
+
+const state = (fields: Record<string, number>) => fields as unknown as UserState
+
+describe('getCommentPostingDisableReason', () => {
+  it('гостю — «войдите», без состояния аккаунта — можно', () => {
+    expect(getCommentPostingDisableReason(false, null)?.kind).toBe('unauthenticated')
+    expect(getCommentPostingDisableReason(true, null)).toBeNull()
+  })
+
+  it('исчерпан дневной лимит комментариев', () => {
+    expect(getCommentPostingDisableReason(true, state({ comment_unspent: 0 }))?.kind).toBe(
+      'limit-exhausted'
+    )
+    expect(getCommentPostingDisableReason(true, state({ comment_unspent: 3 }))).toBeNull()
+  })
+
+  it('репутация ниже порога блокирует, ровно на пороге — нет', () => {
+    const below = state({ reputation: SELF_REP_BLOCK_THRESHOLD - 1 })
+    const at = state({ reputation: SELF_REP_BLOCK_THRESHOLD })
+    expect(getCommentPostingDisableReason(true, below)?.kind).toBe('reputation-blocked')
+    expect(getCommentPostingDisableReason(true, at)).toBeNull()
+  })
+})
+
+describe('getCommentScoringDisableReason', () => {
+  it('гость, лимит оценок и репутация — каждая причина со своим видом', () => {
+    expect(getCommentScoringDisableReason(false, null)?.kind).toBe('unauthenticated')
+    expect(getCommentScoringDisableReason(true, state({ comment_score_unspent: 0 }))?.kind).toBe(
+      'limit-exhausted'
+    )
+    expect(
+      getCommentScoringDisableReason(true, state({ reputation: SELF_REP_BLOCK_THRESHOLD - 1 }))
+        ?.kind
+    ).toBe('reputation-blocked')
+  })
+
+  it('лимит комментариев на оценки не влияет', () => {
+    expect(
+      getCommentScoringDisableReason(true, state({ comment_unspent: 0, comment_score_unspent: 5 }))
+    ).toBeNull()
+  })
+})
+
+describe('shouldShowScamWarningOnDislike', () => {
+  it('предупреждает только при отрицательной репутации и израсходованных >80% комментариев', () => {
+    expect(
+      shouldShowScamWarningOnDislike(
+        state({ reputation: -1, comment_spent: 9, comment_unspent: 1 })
+      )
+    ).toBe(true)
+  })
+
+  it.each([
+    ['репутация не отрицательная', { reputation: 0, comment_spent: 9, comment_unspent: 1 }],
+    ['активность ровно 80%', { reputation: -1, comment_spent: 8, comment_unspent: 2 }],
+    ['лимит неизвестен', { reputation: -1 }],
+    ['лимит нулевой', { reputation: -1, comment_spent: 0, comment_unspent: 0 }],
+  ])('не предупреждает: %s', (_name, fields) => {
+    expect(shouldShowScamWarningOnDislike(state(fields))).toBe(false)
+  })
+
+  it('без состояния аккаунта — не предупреждает', () => {
+    expect(shouldShowScamWarningOnDislike(null)).toBe(false)
   })
 })
