@@ -1892,7 +1892,7 @@ export default {
     pollRemoveOption: 'Remove option',
     schedule: 'Schedule post',
     scheduleHint: 'The post will be published at the chosen time',
-    scheduleClear: 'Publish now',
+    schedulePlaceholder: 'Right away',
     videoPreview: 'Video preview',
     videoAttached: 'PeerTube video attached',
     audioAttached: 'PeerTube audio attached',

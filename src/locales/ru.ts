@@ -1894,7 +1894,7 @@ export default {
     pollRemoveOption: 'Удалить вариант',
     schedule: 'Отложить публикацию',
     scheduleHint: 'Пост будет опубликован в указанное время',
-    scheduleClear: 'Опубликовать сразу',
+    schedulePlaceholder: 'Сразу',
     videoPreview: 'Превью видео',
     videoAttached: 'Видео PeerTube прикреплено',
     audioAttached: 'Аудио PeerTube прикреплено',

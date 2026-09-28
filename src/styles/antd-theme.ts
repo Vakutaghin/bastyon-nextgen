@@ -184,6 +184,12 @@ export function buildAntdTheme(isDark: boolean): ThemeConfig {
         fontSizeLG: 14,
         fontWeightStrong: 400,
       },
+      // Календарь (components/date-time-picker) — как поля рядом: радиус 6,
+      // большой (36px) — с текстом 14px.
+      DatePicker: {
+        borderRadiusLG: 6,
+        fontSizeLG: 14,
+      },
       // 36×20 с бегунком 16, выключенный — bg-accented.
       Switch: {
         fontSize: 14,

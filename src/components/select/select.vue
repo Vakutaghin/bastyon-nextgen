@@ -3,7 +3,7 @@
     <Select
       v-bind="{ ...$attrs, ...forwarded }"
       :popup-class-name="SELECT_POPUP_CLASS"
-      :get-popup-container="selectPopupContainer"
+      :get-popup-container="popupContainer"
       :menu-item-selected-icon="checkIcon"
     >
       <template #suffixIcon><CaretDownOutlined /></template>
@@ -14,7 +14,8 @@
 <script setup lang="ts">
 import { h } from 'vue'
 import { CaretDownOutlined, CheckOutlined } from '@/components/icons'
-import { SELECT_POPUP_CLASS, selectPopupContainer, useSelect } from './select'
+import { popupContainer } from '../popup-container'
+import { SELECT_POPUP_CLASS, useSelect } from './select'
 import type { SelectProps } from './types'
 
 defineOptions({ inheritAttrs: false })

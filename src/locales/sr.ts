@@ -1896,7 +1896,7 @@ export default {
     pollRemoveOption: 'Уклони опцију',
     schedule: 'Закажи објаву',
     scheduleHint: 'Објава ће бити објављена у изабрано време',
-    scheduleClear: 'Објави одмах',
+    schedulePlaceholder: 'Одмах',
     videoPreview: 'Преглед видеа',
     videoAttached: 'PeerTube видео је приложен',
     audioAttached: 'PeerTube аудио је приложен',

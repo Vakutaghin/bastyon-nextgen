@@ -774,9 +774,9 @@ body .ant-notification .ant-notification-notice .ant-notification-notice-descrip
 }
 
 /* Появление оверлеев antd — как у Nuxt UI: из 95% размера вместе с
-   прозрачностью, кривая ease-out; выпадашки, списки Select, поповеры и тултипы —
-   за 100 мс, модалки — за 200 мс. У antd выпадашки растягивались по вертикали,
-   а модалки вырастали из 20% размера от точки клика за 300 мс.
+   прозрачностью, кривая ease-out; выпадашки, списки Select, календарь, поповеры
+   и тултипы — за 100 мс, модалки — за 200 мс. У antd выпадашки растягивались
+   по вертикали, а модалки вырастали из 20% размера от точки клика за 300 мс.
    Селекторы на класс сильнее, чем у antd: у выпадашки там четыре класса
    (с классом размещения). */
 @keyframes ui-scale-in {
@@ -827,7 +827,7 @@ body .ant-notification .ant-notification-notice .ant-notification-notice-descrip
 }
 
 body
-  :is(.ant-dropdown, .ant-select-dropdown):is(
+  :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown):is(
     .ant-slide-up-enter,
     .ant-slide-up-appear,
     .ant-slide-up-leave,
@@ -843,7 +843,7 @@ body
 }
 
 body
-  :is(.ant-dropdown, .ant-select-dropdown):is(
+  :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown):is(
     .ant-slide-up-enter.ant-slide-up-enter-active,
     .ant-slide-up-appear.ant-slide-up-appear-active,
     .ant-slide-down-enter.ant-slide-down-enter-active,
@@ -863,7 +863,7 @@ body
 }
 
 body
-  :is(.ant-dropdown, .ant-select-dropdown):is(
+  :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown):is(
     .ant-slide-up-leave.ant-slide-up-leave-active,
     .ant-slide-down-leave.ant-slide-down-leave-active
   )[class*='-placement-'],
@@ -873,11 +873,11 @@ body .ant-tooltip.ant-zoom-big-fast-leave.ant-zoom-big-fast-leave-active {
 }
 
 /* Выпадашка растёт от края, у которого кнопка. */
-body :is(.ant-dropdown, .ant-select-dropdown)[class*='-placement-bottom'] {
+body :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown)[class*='-placement-bottom'] {
   transform-origin: top;
 }
 
-body :is(.ant-dropdown, .ant-select-dropdown)[class*='-placement-top'] {
+body :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown)[class*='-placement-top'] {
   transform-origin: bottom;
 }
 
@@ -887,7 +887,7 @@ body :is(.ant-dropdown, .ant-select-dropdown)[class*='-placement-top'] {
    список всю анимацию стоял в стороне и потом прыгал на место. Без transform
    замер точный, а видно выпадашку в этой фазе и так нет. */
 body
-  :is(.ant-dropdown, .ant-select-dropdown):is(
+  :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown):is(
     .ant-slide-up-enter-prepare,
     .ant-slide-down-enter-prepare
   ) {
@@ -931,6 +931,17 @@ body .ui-select-dropdown .ant-select-item-option-active:not(.ant-select-item-opt
 
 body .ui-select-dropdown .ant-select-item-option-state {
   font-size: 16px;
+}
+
+/* Панель календаря (components/date-time-picker): в модалке она тоже рисуется
+   в .ant-modal-wrap с его text-align: center. Недоступные дни — просто бледнее,
+   как у UCalendar, а не серыми плашками рядами. */
+body .ui-picker-dropdown {
+  text-align: start;
+}
+
+body .ui-picker-dropdown .ant-picker-cell-disabled::before {
+  background: transparent;
 }
 
 /* Captcha-модалка — компактная ширина и паддинг. Раньше жило в

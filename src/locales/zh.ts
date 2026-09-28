@@ -1829,7 +1829,7 @@ export default {
     pollRemoveOption: '移除选项',
     schedule: '定时发布',
     scheduleHint: '帖子将在所选时间发布',
-    scheduleClear: '立即发布',
+    schedulePlaceholder: '立即',
     videoPreview: '视频预览',
     videoAttached: '已附加 PeerTube 视频',
     audioAttached: '已附加 PeerTube 音频',

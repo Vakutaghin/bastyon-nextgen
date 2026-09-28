@@ -1879,7 +1879,7 @@ export default {
     pollRemoveOption: '선택지 삭제',
     schedule: '게시 예약',
     scheduleHint: '선택한 시간에 게시물이 게시됩니다',
-    scheduleClear: '지금 게시',
+    schedulePlaceholder: '바로',
     videoPreview: '동영상 미리 보기',
     videoAttached: 'PeerTube 동영상이 첨부되었습니다',
     audioAttached: 'PeerTube 오디오가 첨부되었습니다',

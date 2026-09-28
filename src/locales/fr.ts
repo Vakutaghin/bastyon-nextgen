@@ -1925,7 +1925,7 @@ export default {
     pollRemoveOption: 'Retirer l’option',
     schedule: 'Programmer la publication',
     scheduleHint: 'La publication sera publiée à l’heure choisie',
-    scheduleClear: 'Publier maintenant',
+    schedulePlaceholder: 'Tout de suite',
     videoPreview: 'Aperçu de la vidéo',
     videoAttached: 'Vidéo PeerTube jointe',
     audioAttached: 'Audio PeerTube joint',

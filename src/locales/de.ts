@@ -1925,7 +1925,7 @@ export default {
     pollRemoveOption: 'Antwort entfernen',
     schedule: 'Beitrag planen',
     scheduleHint: 'Der Beitrag wird zum gewählten Zeitpunkt veröffentlicht',
-    scheduleClear: 'Jetzt veröffentlichen',
+    schedulePlaceholder: 'Sofort',
     videoPreview: 'Videovorschau',
     videoAttached: 'PeerTube-Video angehängt',
     audioAttached: 'PeerTube-Audio angehängt',

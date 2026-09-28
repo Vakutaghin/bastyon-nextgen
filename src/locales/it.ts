@@ -1913,7 +1913,7 @@ export default {
     pollRemoveOption: 'Rimuovi l’opzione',
     schedule: 'Programma il post',
     scheduleHint: 'Il post verrà pubblicato all’ora scelta',
-    scheduleClear: 'Pubblica ora',
+    schedulePlaceholder: 'Subito',
     videoPreview: 'Anteprima del video',
     videoAttached: 'Video PeerTube allegato',
     audioAttached: 'Audio PeerTube allegato',

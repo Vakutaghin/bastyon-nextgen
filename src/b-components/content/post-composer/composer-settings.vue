@@ -24,12 +24,12 @@
 
     <SC_SettingItem>
       <SC_Label for="composer-schedule">{{ t('postComposer.schedule') }}</SC_Label>
-      <SC_DateInput
+      <DateTimePicker
         id="composer-schedule"
-        type="datetime-local"
-        :min="nowLocal"
-        :value="scheduledLocal"
-        @change="onScheduleChange"
+        :value="scheduledTime > 1 ? scheduledTime : 0"
+        :future="true"
+        :placeholder="t('postComposer.schedulePlaceholder')"
+        @change="emit('update:scheduledTime', $event)"
       />
       <SC_TrialHint v-if="scheduledTime > 1">{{ t('postComposer.scheduleHint') }}</SC_TrialHint>
     </SC_SettingItem>
@@ -37,18 +37,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Select, { type SelectOption } from '@/components/select'
+import { SC_Placeholder as SC_PickerLoading } from '@/components/date-time-picker/styled'
 import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@/i18n'
-import {
-  SC_DateInput,
-  SC_Label,
-  SC_SettingItem,
-  SC_Settings,
-  SC_TrialHint,
-} from './composer-settings.styled'
+import { SC_Label, SC_SettingItem, SC_Settings, SC_TrialHint } from './composer-settings.styled'
+
+// Календарь antd с dayjs тяжёлый — отдельным чанком, когда открывают окно поста.
+const DateTimePicker = defineAsyncComponent({
+  loader: () => import('@/components/date-time-picker'),
+  loadingComponent: SC_PickerLoading,
+  delay: 0,
+})
 
 const props = defineProps<{
   visibility: string
@@ -65,23 +67,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-
-/** unix-секунды → строка для datetime-local (локальное время). */
-function unixToLocalInput(unix: number): string {
-  if (!unix || unix <= 1) return ''
-  const d = new Date(unix * 1000)
-  const pad = (n: number): string => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-const scheduledLocal = computed(() => unixToLocalInput(props.scheduledTime))
-const nowLocal = computed(() => unixToLocalInput(Math.floor(Date.now() / 1000)))
-
-const onScheduleChange = (e: Event): void => {
-  const value = (e.target as HTMLInputElement).value
-  const unix = value ? Math.floor(new Date(value).getTime() / 1000) : 0
-  emit('update:scheduledTime', Number.isFinite(unix) ? unix : 0)
-}
 
 /** Видимость поста (settings.f): legacy kit.js. */
 const VISIBILITY_OPTIONS = [

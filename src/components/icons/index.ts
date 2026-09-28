@@ -23,6 +23,7 @@ import {
   BookOpen,
   Bookmark,
   Bug,
+  Calendar,
   Camera,
   Check,
   ChevronDown,
@@ -163,6 +164,7 @@ export const BookOutlined = lucideIcon('BookOutlined', Bookmark)
 export const BugOutlined = lucideIcon('BugOutlined', Bug)
 export const BulbFilled = lucideIcon('BulbFilled', Lightbulb, 'soft')
 export const BulbOutlined = lucideIcon('BulbOutlined', Lightbulb)
+export const CalendarOutlined = lucideIcon('CalendarOutlined', Calendar)
 export const CameraOutlined = lucideIcon('CameraOutlined', Camera)
 export const CaretDownOutlined = lucideIcon('CaretDownOutlined', ChevronDown)
 export const CaretUpOutlined = lucideIcon('CaretUpOutlined', ChevronUp)
