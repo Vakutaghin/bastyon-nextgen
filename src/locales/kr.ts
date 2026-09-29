@@ -567,7 +567,7 @@ export default {
     messageLabel: '메시지(선택 사항)',
     messagePlaceholder: '이 거래의 용도는 무엇인가요?',
     messagePublicHint:
-      '메시지는 블록체인에 기록됩니다. 받는 사람과 이 거래를 여는 누구나 볼 수 있습니다.',
+      '메시지는 블록체인에 기록됩니다. 받는 사람과 이 거래를 여는 누구나 볼 수 있습니다. 최대 80바이트까지 들어갑니다. 라틴 문자는 80자, 한글은 26자입니다.',
     feeLabel: '수수료',
     feeReceiverPays: '받는 사람 부담',
     feeSenderPays: '보내는 사람 부담',

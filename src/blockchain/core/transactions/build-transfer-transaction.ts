@@ -12,6 +12,7 @@ import { POCKETNET_NETWORK } from '../../constants/network'
 import { AMOUNT_MULTIPLIER, toSatoshis, DUST_VALUE } from '../../constants/transactions'
 import { loadPocketnetBitcoin, getTransactionBuilder } from './btc17-loader'
 import { t } from '@/i18n'
+import { MAX_OP_RETURN_BYTES, utf8Length } from '@/helpers/common/op-return'
 
 /** Параметры для сборки транзакции перевода PKOIN */
 export interface BuildTransferTransactionParams {
@@ -114,6 +115,11 @@ export async function buildTransferTransaction(
   // только так чаевые несут метку `a:donate` в самой транзакции: раньше
   // сообщение уходило лишь в messageData для прокси и в блокчейн не попадало.
   if (message) {
+    // Длиннее лимита нода транзакцию не примет — лучше не собирать её вовсе.
+    // Поля ввода укорачивают текст сами (fitOpReturnText).
+    if (utf8Length(message) > MAX_OP_RETURN_BYTES) {
+      throw new Error(`Transfer message exceeds ${MAX_OP_RETURN_BYTES} bytes`)
+    }
     const embed = pocketnetBitcoinLib.payments.embed({ data: [Buffer.from(message, 'utf8')] })
     if (!embed.output) {
       throw new Error('Failed to create OP_RETURN output')

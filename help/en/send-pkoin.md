@@ -11,7 +11,7 @@ How to send PKOIN by name or address, who pays the fee and why a transfer cannot
 1. Open the [wallet](bastyon://wallets), the **“Transfers”** tab, **“Send”** mode.
 2. **“Recipient (name or address)”**: start typing an account name and pick the person from the list — their login appears under the field. Or paste a whole address.
 3. **“Amount (PKOIN)”**.
-4. **“Message (optional)”** — up to 80 characters, for example what the transfer is for. It is written to the blockchain: the recipient and anyone who opens this transaction will see it. Do not put anything private there.
+4. **“Message (optional)”** — for example, what the transfer is for. It holds 80 Latin letters or 40 Cyrillic ones: the network accepts up to 80 bytes, and a Cyrillic letter takes two. It is written to the blockchain: the recipient and anyone who opens this transaction will see it. Do not put anything private there.
 5. **“Fee”** — who pays it, see below.
 6. Click **“Calculate fee and send”**.
 

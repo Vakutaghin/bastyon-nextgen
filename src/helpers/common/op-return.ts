@@ -7,6 +7,32 @@
 export const DONATE_MARKER = 'a:donate'
 
 /**
+ * Сколько байт данных нода пропускает в OP_RETURN: `MAX_OP_RETURN_RELAY` —
+ * 83 байта скрипта, из них 3 на OP_RETURN и длину. Длиннее — транзакция
+ * нестандартная, нода её не примет (`scriptpubkey`). Буква кириллицы в UTF-8 —
+ * два байта, поэтому в сообщение помещается 80 латинских букв, но 40 русских.
+ */
+export const MAX_OP_RETURN_BYTES = 80
+
+export function utf8Length(text: string): number {
+  return new TextEncoder().encode(text).length
+}
+
+/** Текст, укороченный до `maxBytes` байт UTF-8 без разрыва символа. */
+export function fitOpReturnText(text: string, maxBytes = MAX_OP_RETURN_BYTES): string {
+  if (utf8Length(text) <= maxBytes) return text
+  let bytes = 0
+  let out = ''
+  for (const ch of text) {
+    const size = utf8Length(ch)
+    if (bytes + size > maxBytes) break
+    bytes += size
+    out += ch
+  }
+  return out
+}
+
+/**
  * Первый push из OP_RETURN (`6a <длина> <данные>`) как текст — как
  * `getOpreturn` старого клиента. Не OP_RETURN или не UTF-8 — undefined.
  */

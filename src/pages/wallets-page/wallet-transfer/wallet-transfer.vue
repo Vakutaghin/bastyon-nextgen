@@ -77,7 +77,6 @@
             id="wallet-transfer-message"
             v-model="message"
             :placeholder="t('wallet.messagePlaceholder')"
-            maxlength="80"
           />
           <SC_TransferFieldHint>{{ t('wallet.messagePublicHint') }}</SC_TransferFieldHint>
         </SC_TransferField>
@@ -150,6 +149,7 @@ import { useAuthStore } from '@/blockchain'
 import Select, { type SelectOption } from '@/components/select'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
+import { fitOpReturnText } from '@/helpers/common/op-return'
 import { InsufficientFundsError, sendTransfer } from './send-transfer'
 import { useReceiveAddress } from './use-receive-address'
 import { useReceiverSearch } from './use-receiver-search'
@@ -189,6 +189,12 @@ const authStore = useAuthStore()
 const mode = ref<'receive' | 'send'>('send')
 const amount = ref<string>('')
 const message = ref('')
+// Предел — в байтах, а не в буквах: русская буква занимает два. `maxlength="80"`
+// пропускал 80 русских букв, и такой перевод нода отвергала целиком.
+watch(message, (text) => {
+  const fitted = fitOpReturnText(text)
+  if (fitted !== text) message.value = fitted
+})
 const feemode = ref<'include' | 'exclude'>('include')
 const feeOptions = computed<SelectOption[]>(() => [
   { value: 'include', label: t('wallet.feeReceiverPays') },

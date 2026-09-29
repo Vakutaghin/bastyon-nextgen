@@ -29,9 +29,7 @@
       <SC_FeeRow>
         {{ t('miniapps.paymentFee', { amount: formatAmount(DEFAULT_TX_FEE), mode: feemodeLabel }) }}
       </SC_FeeRow>
-      <SC_MessageRow v-if="payment.message">{{
-        t('miniapps.paymentMessage', { message: payment.message })
-      }}</SC_MessageRow>
+      <SC_MessageRow v-if="message">{{ t('miniapps.paymentMessage', { message }) }}</SC_MessageRow>
       <SC_Error v-if="error">{{ error }}</SC_Error>
     </SC_Wrap>
   </a-modal>
@@ -51,6 +49,7 @@ import { buildTransferTransaction } from '@/blockchain/core/transactions/transac
 import { splitFeeAcrossReceivers } from '@/blockchain/core/transactions/split-fee'
 import { sendTransactionWithMessage } from '@/blockchain/core/transactions/transaction-sender'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
+import { fitOpReturnText } from '@/helpers/common/op-return'
 import {
   isPaymentModalOpen,
   currentPaymentPayload,
@@ -84,6 +83,12 @@ const isOpen = computed(() => isPaymentModalOpen.value)
 // Имя приходит из контроллера вместе с payload — prop никто не передавал (N22).
 const appName = computed(() => currentPaymentAppName.value)
 const payment = computed(() => currentPaymentPayload.value)
+/**
+ * Сообщение платежа пишется в OP_RETURN, а нода пропускает там 80 байт.
+ * Приложение вправе прислать до 256 символов — показываем и отправляем то,
+ * что поместится: иначе платёж отвергла бы нода.
+ */
+const message = computed(() => fitOpReturnText(payment.value?.message ?? ''))
 const total = computed(() => (payment.value?.recievers ?? []).reduce((s, r) => s + r.amount, 0))
 const feemodeLabel = computed(() =>
   payment.value?.feemode === 'exclude'
@@ -129,7 +134,7 @@ async function onConfirm() {
       keyPair,
       outputs: splitFeeAcrossReceivers(payment.value.recievers, feemode, DEFAULT_TX_FEE),
       fee: DEFAULT_TX_FEE,
-      message: payment.value.message ?? '',
+      message: message.value,
       feemode,
     })
 

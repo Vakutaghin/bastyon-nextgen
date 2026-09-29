@@ -575,7 +575,7 @@ export default {
     messageLabel: 'Messaggio (facoltativo)',
     messagePlaceholder: 'A cosa serve questa transazione?',
     messagePublicHint:
-      'Il messaggio viene scritto nella blockchain: lo vedranno il destinatario e chiunque apra questa transazione.',
+      'Il messaggio viene scritto nella blockchain: lo vedranno il destinatario e chiunque apra questa transazione. Può contenere fino a 80 byte: 80 lettere latine o 40 cirilliche.',
     feeLabel: 'Commissione',
     feeReceiverPays: 'Paga il destinatario',
     feeSenderPays: 'Paga il mittente',

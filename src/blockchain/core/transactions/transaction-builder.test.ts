@@ -236,6 +236,14 @@ describe('buildTransferTransaction', () => {
     expect(outputs).toHaveLength(3)
   })
 
+  it('сообщение длиннее 80 байт не собирается: нода не примет такую транзакцию', async () => {
+    const ru = 'щ'.repeat(40) // 80 байт — ровно на пределе
+    await expect(buildTransferTransaction({ ...base(), message: ru })).resolves.toBeTruthy()
+    await expect(buildTransferTransaction({ ...base(), message: ru + 'щ' })).rejects.toThrow(
+      'exceeds 80 bytes'
+    )
+  })
+
   it('без сообщения OP_RETURN нет', async () => {
     await buildTransferTransaction(base())
     expect(_embed).not.toHaveBeenCalled()

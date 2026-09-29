@@ -580,7 +580,7 @@ export default {
     messageLabel: 'Message (facultatif)',
     messagePlaceholder: 'À quoi sert cette transaction ?',
     messagePublicHint:
-      'Le message est inscrit dans la blockchain : le destinataire et toute personne qui ouvre cette transaction le verront.',
+      'Le message est inscrit dans la blockchain : le destinataire et toute personne qui ouvre cette transaction le verront. Il tient en 80 octets au plus : 80 lettres latines ou 40 cyrilliques.',
     feeLabel: 'Frais',
     feeReceiverPays: 'Payés par le destinataire',
     feeSenderPays: 'Payés par l’expéditeur',

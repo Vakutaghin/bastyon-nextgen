@@ -569,7 +569,7 @@ export default {
     messageLabel: 'Message (optional)',
     messagePlaceholder: 'What is this transaction for?',
     messagePublicHint:
-      'The message is written to the blockchain: the recipient and anyone who opens this transaction will see it.',
+      'The message is written to the blockchain: the recipient and anyone who opens this transaction will see it. It holds up to 80 bytes: 80 Latin letters or 40 Cyrillic ones.',
     feeLabel: 'Fee',
     feeReceiverPays: 'Recipient pays',
     feeSenderPays: 'Sender pays',

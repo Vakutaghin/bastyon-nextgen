@@ -544,7 +544,8 @@ export default {
     amountLabel: '金额（PKOIN）',
     messageLabel: '留言（可选）',
     messagePlaceholder: '这笔交易的用途是什么？',
-    messagePublicHint: '消息会写入区块链：收款人以及任何查看此交易的人都能看到。',
+    messagePublicHint:
+      '消息会写入区块链：收款人以及任何查看此交易的人都能看到。最多 80 字节：80 个拉丁字母或 26 个汉字。',
     feeLabel: '手续费',
     feeReceiverPays: '收款人支付',
     feeSenderPays: '付款人支付',
