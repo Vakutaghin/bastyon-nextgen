@@ -59,11 +59,12 @@ function saveLastDevice(address: string | null, target: MeshTarget): void {
 export function meshErrorCode(e: unknown): string {
   if (e && typeof e === 'object' && 'code' in e) {
     const code = (e as { code: unknown }).code
-    if (typeof code === 'string') {
-      // Команда без ответа — чаще всего это не MeshCore-радио (прошивка другая).
-      if (code === 'timeout') return 'no_answer'
-      return code
-    }
+    const message = e instanceof Error ? e.message : ''
+    // Отказ с названной причиной (channels_full, channel_not_found) — по причине.
+    if (code === 'rejected' && /^[a-z_]+$/.test(message) && message !== 'rejected') return message
+    // Команда без ответа — чаще всего это не MeshCore-радио (прошивка другая).
+    if (code === 'timeout') return 'no_answer'
+    if (typeof code === 'string') return code
   }
   return radioErrorFrom(e).code
 }

@@ -66,6 +66,7 @@
   - [Голосовые сообщения](voice-messages.md)
   - [Перевод PKOIN в чате](pkoin-in-chat.md)
   - [Шифрование переписки](chat-encryption.md)
+  - [Переписка через радио (mesh)](mesh.md)
 - [Файлы и IPFS](ipfs.md)
   - [Мои файлы](my-files.md)
   - [Как открыть IPFS-ссылку](open-ipfs-links.md)

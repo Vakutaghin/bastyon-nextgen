@@ -201,10 +201,18 @@ export class FakeCompanion {
     return this.connected
   }
 
-  /** Подписка на кадры для приложения — для стенда поверх TCP. */
+  /**
+   * Подписка на кадры для приложения — для стенда поверх потока (TCP, serial).
+   * Пока подписка есть, приложение считается подключённым: радио шлёт ему
+   * уведомления о сообщениях и ACK.
+   */
   onFrameToApp(cb: (frame: Uint8Array) => void): Unsubscribe {
     this.toApp.add(cb)
-    return () => this.toApp.delete(cb)
+    this.connected = true
+    return () => {
+      this.toApp.delete(cb)
+      if (this.toApp.size === 0) this.connected = false
+    }
   }
 
   /** Принять кадр команды — для стенда поверх TCP. */

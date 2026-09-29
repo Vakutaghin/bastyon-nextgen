@@ -10,7 +10,12 @@
     />
 
     <SC_Info>
-      <SC_Name>{{ dialog.partner.name }}</SC_Name>
+      <SC_Name>
+        {{ dialog.partner.name }}
+        <SC_NetworkMark v-if="networkTitle" :title="networkTitle" :aria-label="networkTitle">
+          <RadioTowerIcon />
+        </SC_NetworkMark>
+      </SC_Name>
 
       <SC_LastMessage v-if="dialog.lastMessage">
         <span v-if="isMine(dialog.lastMessage)">{{ t('chat.youPrefix') }}</span>
@@ -68,7 +73,7 @@ import { formatClock } from '@/helpers/common/date-formatter'
 import { parseIpfsFileLink } from '@/helpers/ipfs/ipfs-link'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DeleteOutlined, EllipsisOutlined } from '@/components/icons'
+import { DeleteOutlined, EllipsisOutlined, RadioTowerIcon } from '@/components/icons'
 import type { Dialog, Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { ICON_DANGER_MR_8 } from '@/styles/icon-styles'
@@ -93,6 +98,7 @@ import {
   SC_ConfirmButtons,
   SC_CancelBtn,
   SC_ConfirmDeleteBtn,
+  SC_NetworkMark,
 } from './styled'
 
 const props = defineProps<{ dialog: Dialog }>()
@@ -102,6 +108,16 @@ const store = useMessengerStore()
 const menuOpen = ref(false)
 const showConfirm = ref(false)
 const menuPos = ref({ top: 0, right: 0 })
+
+/** Диалог через радио: значок сети и подсказка, открытый ли это канал. */
+const networkTitle = computed<string>(() => {
+  const d = props.dialog
+  if (d.transport !== 'meshcore') return ''
+  if (d.meshKind === 'channel' && d.channelKind !== 'private') {
+    return `${t('mesh.chat.via')} · ${t('mesh.chat.openChannel')}`
+  }
+  return t('mesh.chat.via')
+})
 
 /** Этот диалог сейчас открыт в чат-комнате — подсвечиваем его в списке слева. */
 const isActive = computed<boolean>(() => store.activeChatId === props.dialog.id)

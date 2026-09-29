@@ -66,6 +66,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Voice messages](voice-messages.md)
   - [Sending PKOIN in a chat](pkoin-in-chat.md)
   - [Message encryption](chat-encryption.md)
+  - [Chatting over radio (mesh)](mesh.md)
 - [Files and IPFS](ipfs.md)
   - [My files](my-files.md)
   - [Opening an IPFS link](open-ipfs-links.md)

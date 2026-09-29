@@ -30,6 +30,12 @@
         </SC_MessengerWrapperLoaderText>
       </SC_MessengerWrapperLoader>
 
+      <MeshChatRoom
+        v-else-if="activeChatId && isMeshDialogId(activeChatId)"
+        :key="activeChatId"
+        :dialog-id="activeChatId"
+      />
+
       <ChatRoom
         v-else-if="activeChatId"
         :key="activeChatId"
@@ -72,6 +78,8 @@ import MessengerButton from '../messenger-button/messenger-button.vue'
 import MessengerWindow from '../messenger-window/messenger-window.vue'
 import ChatList from '../chat-list/chat-list.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
+import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
+import { isMeshDialogId } from '@/mesh/ids'
 import MessengerPanel from '../messenger-panel/messenger-panel.vue'
 import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'

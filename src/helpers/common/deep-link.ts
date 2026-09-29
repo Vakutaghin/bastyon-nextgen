@@ -87,6 +87,7 @@ export const DEEP_LINK_SECTIONS: ReadonlySet<string> = new Set([
   'explorer',
   'my-videos',
   'my-files',
+  'mesh',
   'compose',
   'help',
 ])

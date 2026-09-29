@@ -73,6 +73,8 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
     { key: '/my-videos', label: t('accountMsg.menuMyVideos') },
     // Раздавать файлы через IPFS умеет только десктоп (своя нода Kubo).
     ...(isTauriEnv() ? [{ key: '/my-files', label: t('accountMsg.menuMyFiles') }] : []),
+    // Радио для mesh-сетей подключается только в десктопе (src-tauri/src/radio).
+    ...(isTauriEnv() ? [{ key: '/mesh', label: t('accountMsg.menuMesh') }] : []),
     { key: '/help', label: t('accountMsg.menuHelp') },
     { key: 'settings', label: t('accountMsg.menuSettings') },
     { type: 'divider' },

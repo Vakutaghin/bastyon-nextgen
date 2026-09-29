@@ -47,6 +47,15 @@ export const SC_Name = styled.div`
   margin-bottom: 4px;
 `
 
+/** Значок mesh-сети у имени: переписка идёт через радио, а не через интернет. */
+export const SC_NetworkMark = styled.span`
+  display: inline-flex;
+  margin-left: 4px;
+  font-size: 12px;
+  vertical-align: -1px;
+  color: var(--ui-primary);
+`
+
 export const SC_LastMessage = styled.div`
   font-size: 14px;
   color: var(--color-text-secondary);

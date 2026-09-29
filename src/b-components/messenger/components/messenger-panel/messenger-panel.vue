@@ -33,7 +33,13 @@
           </SC_MobileBackButton>
           <SC_PartnerName>{{ activeChatName }}</SC_PartnerName>
         </SC_ChatTopBar>
+        <MeshChatRoom
+          v-if="isMeshDialogId(activeChatId)"
+          :key="activeChatId"
+          :dialog-id="activeChatId"
+        />
         <ChatRoom
+          v-else
           :key="activeChatId"
           :messages="store.activeMessages"
           :invite-mode="false"
@@ -74,6 +80,8 @@ import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
 import ChatList from '../chat-list/chat-list.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
+import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
+import { isMeshDialogId } from '@/mesh/ids'
 import {
   SC_MessengerContainer,
   SC_SidebarColumn,

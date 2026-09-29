@@ -19,6 +19,7 @@ import {
   Ban,
   Bell,
   Blocks,
+  Bluetooth,
   BookA,
   BookOpen,
   Bookmark,
@@ -79,6 +80,7 @@ import {
   Play,
   Plus,
   QrCode,
+  RadioTower,
   RefreshCw,
   Repeat2,
   RotateCcw,
@@ -99,6 +101,7 @@ import {
   Trophy,
   Undo2,
   Upload,
+  Usb,
   User,
   UserMinus,
   UserPlus,
@@ -106,6 +109,7 @@ import {
   Volume2,
   Vote,
   Wallet,
+  Wifi,
   X,
   ZoomIn,
 } from '@lucide/vue'
@@ -263,6 +267,11 @@ export const HelpIndexIcon = lucideIcon('HelpIndexIcon', BookA)
 export const LinkIcon = lucideIcon('LinkIcon', Link)
 export const MonitorIcon = lucideIcon('MonitorIcon', Monitor)
 export const CautionIcon = lucideIcon('CautionIcon', OctagonAlert)
+// Mesh-сети: радио и способы его подключения.
+export const RadioTowerIcon = lucideIcon('RadioTowerIcon', RadioTower)
+export const UsbIcon = lucideIcon('UsbIcon', Usb)
+export const BluetoothIcon = lucideIcon('BluetoothIcon', Bluetooth)
+export const WifiIcon = lucideIcon('WifiIcon', Wifi)
 
 /** Переключатель темы — солнце и луна, как кнопка цветовой схемы у Nuxt UI. */
 export const ThemeLightIcon = lucideIcon('ThemeLightIcon', Sun)

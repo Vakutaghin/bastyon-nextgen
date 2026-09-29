@@ -13,6 +13,10 @@ import { logger } from '@/services/logger'
 import { t } from '@/i18n'
 
 import { matrixService } from '../services/matrix-service'
+import { isMeshDialogId } from '@/mesh/ids'
+import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
+import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
+import { mergeDialogs } from '@/mesh/store/messenger-mapping'
 
 import { getAddressFromMatrixId, resolveMatrixHost } from '../helpers'
 import { findExistingRoomByAddress, getPartnerMatrixId } from '../room-helpers'
@@ -38,6 +42,9 @@ export const useMessengerStore = defineStore('messenger', () => {
   const uiStore = useMessengerUiStore()
   const profileCache = useMessengerProfileCache()
   const chatStore = useMessengerChatStore()
+  // Mesh-диалоги (переписка через радио, src/mesh) идут в общем списке с
+  // комнатами Matrix; их id начинаются с `mesh:`.
+  const meshChat = useMeshChatStore()
 
   // Writable refs из uiStore — нужны для внешних присваиваний
   // (store.isOpen = false, store.isFullScreen = true, store.activeChatId = null).
@@ -250,6 +257,8 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   const initMatrix = async () => {
     if (!authStore.isUserAuthenticated || !authStore.address || !authStore.keyPair) return
+    // Переписка через радио не зависит от Matrix: без интернета она нужнее всего.
+    void meshChat.ensureLoaded()
     if (uiStore.isInitInProgress) return
     uiStore.isInitInProgress = true
     if (!matrixService.getClient()) showDialogsSnapshot(authStore.address)
@@ -309,6 +318,11 @@ export const useMessengerStore = defineStore('messenger', () => {
   // --- Открытие/переключение ---
 
   const openChat = async (chatId: string) => {
+    if (isMeshDialogId(chatId)) {
+      uiStore.switchToChat(chatId)
+      await meshChat.openDialog(chatId)
+      return
+    }
     uiStore.switchToChat(chatId)
     uiStore.markDialogRead(chatId)
 
@@ -471,6 +485,11 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   const deleteDialog = (chatId: string) => {
+    if (isMeshDialogId(chatId)) {
+      if (uiStore.activeChatId === chatId) uiStore.setActiveChatId(null)
+      void meshChat.deleteDialog(chatId)
+      return
+    }
     const removedMessages = chatStore.messages[chatId] ? [...chatStore.messages[chatId]] : null
     const wasActive = uiStore.activeChatId === chatId
 
@@ -510,6 +529,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     uiStore.reset()
     chatStore.reset()
     profileCache.reset()
+    // Радио отключается, переписка аккаунта уходит из памяти; при выходе —
+    // и с диска, как расшифровки Matrix.
+    void useMeshConnectionStore().reset()
+    meshChat.reset({ purge: opts.purge })
     if (opts.purge && userId) {
       matrixService.purgeLocalData({ userId }).catch((e: unknown) => {
         console.warn('[MessengerStore] purgeLocalData failed:', e)
@@ -518,8 +541,9 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   /** Стереть локальные данные мессенджера удалённого (не текущего) аккаунта. */
-  const purgeAccountData = (address: string): Promise<void> =>
-    matrixService.purgeLocalData({ address })
+  const purgeAccountData = async (address: string): Promise<void> => {
+    await Promise.all([matrixService.purgeLocalData({ address }), meshChat.purgeAccount(address)])
+  }
 
   // Обновление диалогов при обновлении профилей
   // Вместо deep watch на весь объект — следим за количеством ключей (новые профили)
@@ -534,21 +558,37 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   // Computed для обратной совместимости
   const activeMessages = computed(() => {
-    if (!uiStore.activeChatId) return []
-    return chatStore.messages[uiStore.activeChatId] || []
+    const id = uiStore.activeChatId
+    if (!id) return []
+    if (isMeshDialogId(id)) return meshChat.messengerMessages(id)
+    return chatStore.messages[id] || []
   })
+
+  /** Весь список: комнаты Matrix и mesh-диалоги, свежие сверху. */
+  const allDialogs = computed(() => mergeDialogs(uiStore.dialogs, meshChat.messengerDialogs))
+
+  const sendMessage = (chatId: string, text: string) =>
+    isMeshDialogId(chatId) ? meshChat.send(chatId, text) : chatStore.sendMessage(chatId, text)
+
+  const retryMessage = (chatId: string, messageId: string) =>
+    isMeshDialogId(chatId)
+      ? meshChat.retry(chatId, messageId)
+      : chatStore.retryMessage(chatId, messageId)
 
   return {
     // UI (делегируем в uiStore)
     isOpen: uiRefs.isOpen,
     isFullScreen: uiRefs.isFullScreen,
     activeChatId: uiRefs.activeChatId,
-    dialogs: computed(() => uiStore.dialogs),
+    dialogs: allDialogs,
     messages: chatStore.messages,
     activeMessages,
     // ВАЖНО: та же проблема, что и с pcryptoService — `activeDialog` initial value
     // (нет активного чата) = null. Голый null ломает storeToRefs.
-    activeDialog: computed(() => uiStore.activeDialog),
+    activeDialog: computed(
+      () =>
+        uiStore.activeDialog ?? allDialogs.value.find((d) => d.id === uiStore.activeChatId) ?? null
+    ),
     // Живая ссылка: chatStore.reset() при каждом входе в аккаунт подменяет
     // объект, и снятая при создании стора копия навсегда оставалась с id 'me' —
     // свои сообщения рисовались чужими, без «Вы:» и без удаления.
@@ -561,7 +601,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     dialogsLoadedOnce: computed(() => uiStore.dialogsLoadedOnce),
     /** Загрузка вместо списка — только пока показать нечего, даже списка с прошлого запуска. */
     isDialogsLoading: computed(
-      () => uiStore.dialogs.length === 0 && (!uiStore.dialogsLoadedOnce || uiStore.isLoading)
+      () =>
+        uiStore.dialogs.length === 0 &&
+        meshChat.dialogs.length === 0 &&
+        (!uiStore.dialogsLoadedOnce || uiStore.isLoading)
     ),
     syncState: computed(() => uiStore.syncState),
     syncError: computed(() => uiStore.syncError),
@@ -576,7 +619,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     // авто-разворачивается Pinia в голое число, и storeToRefs(messengerStore) не
     // может сделать из него ref → в хедере totalUnreadCount === undefined и computed
     // unreadBadge падает при появлении иконки мессенджера после входа.
-    totalUnreadCount: computed(() => uiStore.totalUnreadCount),
+    totalUnreadCount: computed(() => uiStore.totalUnreadCount + meshChat.totalUnread),
 
     // Методы
     loadDialogs,
@@ -589,8 +632,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     closeWidget: uiStore.closeWidget,
     /** Виден ли чат на экране (для read-markers/звука/уведомлений). */
     isChatOnScreen: uiStore.isChatOnScreen,
-    sendMessage: chatStore.sendMessage,
-    retryMessage: chatStore.retryMessage,
+    sendMessage,
+    retryMessage,
     replyToMessage: chatStore.replyToMessage,
     deleteMessage: chatStore.deleteMessage,
     sendReaction: chatStore.sendReaction,

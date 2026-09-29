@@ -65,7 +65,9 @@
 
       <SC_MessageTime>
         {{ formatTime(message.timestamp) }}
-        <SC_SeenTick v-if="isSeen" :title="t('messenger.seen')">✓✓</SC_SeenTick>
+        <SC_SeenTick v-if="deliveryMark" :title="deliveryMark.title">
+          {{ deliveryMark.mark }}
+        </SC_SeenTick>
         <SC_ReactionButton
           v-if="canReact"
           ref="reactionTriggerRef"
@@ -211,6 +213,30 @@ const isSeen = computed<boolean>(
   () => isMine.value && props.seenUpToTs > 0 && props.message.timestamp <= props.seenUpToTs
 )
 
+/** Сообщение через mesh-радио (src/mesh), а не через Matrix. */
+const isMesh = computed<boolean>(() => props.message.transport === 'meshcore')
+
+/**
+ * Отметка у времени своего сообщения. Matrix — «✓✓», когда собеседник
+ * прочитал. Mesh — путь по эфиру: отправляется, ушло в эфир, радио
+ * собеседника подтвердило (прочтений в эфире нет).
+ */
+const deliveryMark = computed<{ mark: string; title: string } | null>(() => {
+  if (isMesh.value && isMine.value) {
+    switch (props.message.status) {
+      case 'sending':
+        return { mark: '…', title: t('mesh.chat.sending') }
+      case 'sent':
+        return { mark: '✓', title: t('mesh.chat.sent') }
+      case 'delivered':
+        return { mark: '✓✓', title: t('mesh.chat.delivered') }
+      default:
+        return null
+    }
+  }
+  return isSeen.value ? { mark: '✓✓', title: t('messenger.seen') } : null
+})
+
 const isCompact = computed<boolean>(() => !store.isFullScreen)
 
 /** Адрес pocketnet, выделенный из matrix id отправителя. */
@@ -230,6 +256,8 @@ const senderProfile = computed(() => {
 
 const displayName = computed<string>(() => {
   if (isMine.value) return store.currentUser.name || t('messenger.you')
+  // В mesh-канале отправитель — имя, которое написало его радио; его может не быть.
+  if (isMesh.value) return props.message.senderName || t('mesh.chat.unknownSender')
   return chatUserName(props.message.senderId, store.userProfiles, props.message.senderName)
 })
 
@@ -262,8 +290,9 @@ const ipfsFile = computed(() =>
 /** Первый внешний http(s)-URL для OG-превью (не bastyon-ссылка). */
 // OG-превью запрашивается у homeserver'а с userId — для E2E-переписки не
 // делаем этого по умолчанию, как Element (S33/Р4).
+// Mesh-переписка — эфир без интернета: её ссылки на сервер не отправляем.
 const previewUrl = computed<string | null>(() =>
-  props.message.encrypted ? null : extractFirstExternalUrl(props.message.text || '')
+  props.message.encrypted || isMesh.value ? null : extractFirstExternalUrl(props.message.text || '')
 )
 
 const canReact = computed<boolean>(() => {
