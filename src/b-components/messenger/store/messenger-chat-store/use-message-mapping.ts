@@ -22,6 +22,12 @@ import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../consts'
 import type { ChatContext, MxEvent, MxReactionEvent, MxRoom } from './types'
 import type { MessageDecryption } from './use-message-decryption'
 import { mapMediaContent, mediaTypeOf, type MediaContent } from './media-content'
+import {
+  parseFortaTransfer,
+  pkoinTransferNote,
+  pkoinTransferText,
+  type PkoinTransferInfo,
+} from '../../lib/pkoin-transfer'
 
 export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryption) {
   const { currentUser, profileCache } = ctx
@@ -63,15 +69,19 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
       text = media.text
     }
 
-    // PKOIN-донат — обычное m.text с extra-полем `pocketnet_transaction`:
-    // сторонние клиенты видят body, мы — карточку. Только текстовые msgtype.
+    // Перевод PKOIN — открытое поле `pocketnet_transaction` рядом с телом:
+    // зашифрованным (sendPkoinMessage) или, у ранних версий, открытым m.text.
+    // Сторонние клиенты видят тело, мы — карточку. Только текстовые msgtype.
     if (
       content.pocketnet_transaction &&
       typeof content.pocketnet_transaction === 'object' &&
-      (content.msgtype === 'm.text' || content.msgtype === 'm.notice' || !content.msgtype)
+      (content.msgtype === 'm.text' ||
+        content.msgtype === 'm.notice' ||
+        content.msgtype === 'm.encrypted' ||
+        !content.msgtype)
     ) {
       type = 'transaction'
-      info = { ...(info || {}), transaction: content.pocketnet_transaction }
+      info = { ...(info || {}), transaction: { ...content.pocketnet_transaction } }
       text = typeof content.body === 'string' ? content.body : ''
     }
 
@@ -128,7 +138,14 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
           if (parsed && typeof parsed === 'object') {
             finalContent = parsed
             const parsedMedia = mediaTypeOf(parsed.msgtype)
-            if (parsedMedia) {
+            // Перевод из forta.chat — зашифрованный JSON `{"_transfer":true,…}`:
+            // без этой ветки собеседник видел сырой JSON.
+            const fortaTransfer = parseFortaTransfer(parsed)
+            if (fortaTransfer) {
+              type = 'transaction'
+              info = { ...(info || {}), transaction: fortaTransfer }
+              text = pkoinTransferText(fortaTransfer.amount, fortaTransfer.message)
+            } else if (parsedMedia) {
               const media = mapMediaContent(parsed as MediaContent, parsedMedia, resolveMxc)
               type = media.type
               url = media.url
@@ -156,6 +173,14 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
       // Без расшифровки у зашифрованного события нет читаемого текста —
       // короткий hex-шифротекст (<100 символов) в превью тоже не текст.
       text = ENCRYPTED_MESSAGE_PLACEHOLDER
+    }
+
+    if (type === 'transaction') {
+      const tx = info?.transaction as PkoinTransferInfo | undefined
+      // Заметка к переводу есть только в зашифрованном теле. Не расшифровалось —
+      // в превью хотя бы сумма, а не «зашифровано».
+      if (tx && text === ENCRYPTED_MESSAGE_PLACEHOLDER) text = pkoinTransferText(tx.amount)
+      else if (tx && !tx.message) tx.message = pkoinTransferNote(String(text || ''))
     }
 
     let textToRender = typeof text === 'string' ? text : String(text || '')

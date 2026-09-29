@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { matrix, tx } = vi.hoisted(() => ({
+const { matrix, tx, encryptKey } = vi.hoisted(() => ({
   matrix: {
-    getRoom: vi.fn(() => ({ roomId: '!dm:host' })),
-    sendPkoinTransaction: vi.fn(async () => ({ event_id: '$e' })),
+    getRoom: vi.fn(() => ({ roomId: '!dm:host', loadMembersIfNeeded: async () => {} })),
+    joinIfInvited: vi.fn(async () => {}),
+    sendEncryptedDirectMessage: vi.fn(async () => ({ event_id: '$e' })),
   },
+  encryptKey: vi.fn(async () => ({ keys: 'CIPHER', block: 10 })),
   tx: {
     getUnspents: vi.fn(async () => [{ txid: 'u', vout: 0, amount: 5 }]),
     filterAvailableUnspents: vi.fn((u: unknown[]) => u),
@@ -49,9 +51,9 @@ function sending() {
   const crypto = {
     ensurePcryptoInitialized: vi.fn(),
     waitForPcrypto: vi.fn(),
-    pcryptoService: { value: {} },
-    getOrderedMemberIds: vi.fn(() => []),
-    collectPcryptoUsers: vi.fn(async () => []),
+    pcryptoService: { value: { encryptKey } },
+    getOrderedMemberIds: vi.fn(() => ['@me:host', '@peer:host']),
+    collectPcryptoUsers: vi.fn(async () => [{ id: '@me:host' }, { id: '@peer:host' }]),
     pickRoomBlock: vi.fn(async () => 10),
   }
   return useMessageSending(ctx as never, crypto as never)
@@ -63,17 +65,18 @@ beforeEach(() => {
 })
 
 describe('sendPkoin — две фазы (V2)', () => {
-  it('успех: одна транзакция, одно сообщение, возвращает txid', async () => {
-    const txid = await sending().sendPkoin('!dm:host', 1.5, 'hi')
+  it('успех: одна транзакция, одно зашифрованное сообщение, возвращает txid', async () => {
+    const txid = await sending().sendPkoin('!dm:host', 1.5, 'За кофе')
     expect(txid).toBe('TXID1')
     expect(tx.sendTransactionWithMessage).toHaveBeenCalledTimes(1)
-    expect(matrix.sendPkoinTransaction).toHaveBeenCalledWith('!dm:host', {
-      txid: 'TXID1',
-      amount: 1.5,
-      fromAddress: 'PME',
-      toAddress: 'PPARTNER',
-      message: 'hi',
-    })
+    // Заметка — только в зашифрованном теле; открыто лежит то, что видно в блокчейне.
+    expect(encryptKey).toHaveBeenCalledWith('💎 1.5 PKOIN · За кофе', expect.any(Array), 10, 2)
+    expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledWith(
+      '!dm:host',
+      { body: 'CIPHER', block: 10, version: 2 },
+      { pocketnet_transaction: { txid: 'TXID1', amount: 1.5, from: 'PME', to: 'PPARTNER' } }
+    )
+    expect(JSON.stringify(matrix.sendEncryptedDirectMessage.mock.calls)).not.toContain('кофе')
     // Текст чата в транзакцию не попадает: OP_RETURN публичен.
     expect(tx.buildTransferTransaction).toHaveBeenCalledWith(
       expect.objectContaining({ message: '' })
@@ -81,7 +84,7 @@ describe('sendPkoin — две фазы (V2)', () => {
   })
 
   it('сообщение не доставлено → PkoinMessageDeliveryError с txid и payload; повтор шлёт только сообщение', async () => {
-    matrix.sendPkoinTransaction.mockRejectedValueOnce(new Error('matrix down'))
+    matrix.sendEncryptedDirectMessage.mockRejectedValueOnce(new Error('matrix down'))
     const api = sending()
     const err = await api.sendPkoin('!dm:host', 2, undefined).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(PkoinMessageDeliveryError)
@@ -91,7 +94,7 @@ describe('sendPkoin — две фазы (V2)', () => {
     expect(tx.sendTransactionWithMessage).toHaveBeenCalledTimes(1)
 
     await api.sendPkoinMessage('!dm:host', e.payload)
-    expect(matrix.sendPkoinTransaction).toHaveBeenCalledTimes(2)
+    expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledTimes(2)
     expect(tx.sendTransactionWithMessage).toHaveBeenCalledTimes(1) // второй транзакции нет
   })
 
@@ -101,6 +104,6 @@ describe('sendPkoin — две фазы (V2)', () => {
       'appMsg.messenger.insufficientFunds'
     )
     expect(tx.sendTransactionWithMessage).not.toHaveBeenCalled()
-    expect(matrix.sendPkoinTransaction).not.toHaveBeenCalled()
+    expect(matrix.sendEncryptedDirectMessage).not.toHaveBeenCalled()
   })
 })

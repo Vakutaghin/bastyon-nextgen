@@ -317,39 +317,3 @@ export async function sendFile(
   if (data.secrets?.v) content.version = data.secrets.v
   return client.sendEvent(roomId, 'm.room.message', content)
 }
-
-// ─── PKOIN-донат ─────────────────────────────────────────────────────────────
-
-export interface SendPkoinPayload {
-  txid: string
-  amount: number
-  fromAddress: string
-  toAddress: string
-  message?: string
-}
-
-/**
- * msgtype: 'm.text' с extra-полем `pocketnet_transaction` — наш клиент рендерит
- * карточку, сторонние видят body (читаемое описание).
- */
-export async function sendPkoinTransaction(
-  client: MatrixClient,
-  roomId: string,
-  payload: SendPkoinPayload
-) {
-  const human = payload.message
-    ? `💎 ${payload.amount} PKOIN · ${payload.message}`
-    : `💎 ${payload.amount} PKOIN`
-
-  return client.sendEvent(roomId, 'm.room.message', {
-    msgtype: 'm.text',
-    body: human,
-    pocketnet_transaction: {
-      txid: payload.txid,
-      amount: payload.amount,
-      from: payload.fromAddress,
-      to: payload.toAddress,
-      message: payload.message ?? '',
-    },
-  })
-}

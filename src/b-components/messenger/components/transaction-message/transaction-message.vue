@@ -25,6 +25,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
+import { formatPkoinAmount, type PkoinTransferInfo } from '../../lib/pkoin-transfer'
 import {
   SC_Card,
   SC_Row,
@@ -38,14 +39,6 @@ import {
   SC_ExplorerLink,
 } from './styled'
 
-interface PkoinTx {
-  txid: string
-  amount: number
-  from: string
-  to: string
-  message?: string
-}
-
 const props = defineProps<{
   message: Message
 }>()
@@ -53,19 +46,15 @@ const props = defineProps<{
 const { t } = useI18n()
 const store = useMessengerStore()
 
-const tx = computed<PkoinTx>(() => (props.message.info?.transaction as PkoinTx) || ({} as PkoinTx))
+const tx = computed<PkoinTransferInfo>(
+  () => (props.message.info?.transaction as PkoinTransferInfo) || ({} as PkoinTransferInfo)
+)
 
 const isOutgoing = computed<boolean>(() => {
   return props.message.senderId === 'me' || props.message.senderId === store.currentUser.id
 })
 
-const amountLabel = computed<string>(() => {
-  const v = Number(tx.value.amount)
-  if (!Number.isFinite(v)) return '— PKOIN'
-  // Убираем хвостовые нули у дробных
-  const formatted = v % 1 === 0 ? v.toString() : v.toFixed(8).replace(/0+$/, '').replace(/\.$/, '')
-  return `${formatted} PKOIN`
-})
+const amountLabel = computed<string>(() => `${formatPkoinAmount(Number(tx.value.amount))} PKOIN`)
 
 const shortTxid = computed<string>(() => {
   const txid = tx.value.txid || ''

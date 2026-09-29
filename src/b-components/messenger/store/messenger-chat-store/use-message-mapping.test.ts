@@ -196,6 +196,40 @@ describe('mapEventToMessage — медиа и транзакции (K3)', () => 
     expect(msg?.info?.transaction).toEqual(tx)
   })
 
+  it('зашифрованный перевод: карточка по открытому полю, заметка — из расшифрованного тела', async () => {
+    const body = btoa(JSON.stringify({ encrypted: 'x', keys: 'k', cipher: 'c' }))
+    const open = { txid: 'T', amount: 1.5, from: 'A', to: 'B' }
+    const content = { msgtype: 'm.encrypted', body, block: 10, pocketnet_transaction: open }
+    const { mapEventToMessage } = mapping(async () => '💎 1.5 PKOIN · За кофе')
+    const msg = await mapEventToMessage(mxEvent('m.room.message', content))
+    expect(msg).toMatchObject({ type: 'transaction', text: '💎 1.5 PKOIN · За кофе' })
+    expect(msg?.info?.transaction).toEqual({ ...open, message: 'За кофе' })
+    expect(open).not.toHaveProperty('message')
+
+    // Без расшифровки (превью) — сумма, а не «зашифровано».
+    const preview = await mapping(async () => null).mapEventToMessage(
+      mxEvent('m.room.message', { ...content }),
+      true
+    )
+    expect(preview).toMatchObject({ type: 'transaction', text: '💎 1.5 PKOIN' })
+  })
+
+  it('перевод из forta.chat (JSON _transfer внутри шифра) → карточка, а не сырой JSON', async () => {
+    const forta = { _transfer: true, txId: 'T2', amount: 3, from: 'A', to: 'B', message: 'спасибо' }
+    const { mapEventToMessage } = mapping(async () => JSON.stringify(forta))
+    const msg = await mapEventToMessage(
+      mxEvent('m.room.encrypted', { msgtype: 'm.text', body: 'deadbeef' })
+    )
+    expect(msg).toMatchObject({ type: 'transaction', text: '💎 3 PKOIN · спасибо' })
+    expect(msg?.info?.transaction).toEqual({
+      txid: 'T2',
+      amount: 3,
+      from: 'A',
+      to: 'B',
+      message: 'спасибо',
+    })
+  })
+
   it('медиа внутри расшифрованного m.room.encrypted тоже маппится по msgtype', async () => {
     const inner = { msgtype: 'm.image', body: 'secret.png', url: 'mxc://hs/s', info: { secrets } }
     const { mapEventToMessage } = mapping(async () => JSON.stringify(inner))

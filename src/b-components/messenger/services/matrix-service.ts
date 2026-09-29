@@ -13,12 +13,10 @@ import {
   sendImage as sendImageImpl,
   sendVideo as sendVideoImpl,
   sendFile as sendFileImpl,
-  sendPkoinTransaction as sendPkoinTransactionImpl,
   type SendAudioData,
   type SendImageData,
   type SendVideoData,
   type SendFileData,
-  type SendPkoinPayload,
 } from './matrix-service/media-sender'
 import {
   sendMessage as sendMessageImpl,
@@ -428,16 +426,6 @@ export class MatrixService {
   ) {
     if (!this.client) throw new Error('Client not initialized')
     return sendFileImpl(this.client as MatrixClient, roomId, data, onProgress)
-  }
-
-  /**
-   * Отправляет PKOIN-донат как Matrix-сообщение.
-   * msgtype: 'm.text' с extra-полем `pocketnet_transaction` — наш клиент
-   * рендерит карточку, сторонние видят body (читаемое описание).
-   */
-  public async sendPkoinTransaction(roomId: string, payload: SendPkoinPayload) {
-    if (!this.client) throw new Error('Client not initialized')
-    return sendPkoinTransactionImpl(this.client as MatrixClient, roomId, payload)
   }
 
   /** Преобразует mxc:// в публичный HTTPS-URL. См. `matrix-service/mxc-resolver`. */

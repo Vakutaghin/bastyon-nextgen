@@ -12,14 +12,7 @@ vi.mock('./mxc-resolver', () => ({
     mxc.startsWith('mxc://') ? `https://media.example/${mxc.slice(6)}` : '',
 }))
 
-import {
-  sendAudio,
-  sendFile,
-  sendImage,
-  sendPkoinTransaction,
-  sendVideo,
-  uploadContent,
-} from './media-sender'
+import { sendAudio, sendFile, sendImage, sendVideo, uploadContent } from './media-sender'
 import type { MatrixClient } from './types'
 
 function fakeClient(upload: unknown = 'mxc://srv/media1') {
@@ -165,37 +158,5 @@ describe('media-sender', () => {
   ])('%s без файла и без mxcUrl — ошибка, событие не уходит', async (_name, send) => {
     await expect(send(asClient(client), '!room', {})).rejects.toThrow('missing mxcUrl')
     expect(client.sendEvent).not.toHaveBeenCalled()
-  })
-
-  it('донат PKOIN: карточка для нашего клиента и читаемый текст для остальных', async () => {
-    await sendPkoinTransaction(asClient(client), '!room', {
-      txid: 'tx1',
-      amount: 5,
-      fromAddress: 'PFrom',
-      toAddress: 'PTo',
-      message: 'спасибо',
-    })
-    expect(sentContent(client)).toEqual({
-      msgtype: 'm.text',
-      body: '💎 5 PKOIN · спасибо',
-      pocketnet_transaction: {
-        txid: 'tx1',
-        amount: 5,
-        from: 'PFrom',
-        to: 'PTo',
-        message: 'спасибо',
-      },
-    })
-
-    await sendPkoinTransaction(asClient(client), '!room', {
-      txid: 'tx2',
-      amount: 1,
-      fromAddress: 'PFrom',
-      toAddress: 'PTo',
-    })
-    expect(sentContent(client)).toMatchObject({
-      body: '💎 1 PKOIN',
-      pocketnet_transaction: { message: '' },
-    })
   })
 })

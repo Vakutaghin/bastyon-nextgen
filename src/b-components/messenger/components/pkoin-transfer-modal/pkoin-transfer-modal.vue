@@ -78,7 +78,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMessengerStore } from '../../store'
 import { PkoinMessageDeliveryError } from '../../store/messenger-chat-store/use-message-sending'
-import type { SendPkoinPayload } from '../../services/matrix-service/media-sender'
+import type { SendPkoinPayload } from '../../lib/pkoin-transfer'
 import {
   SC_Backdrop,
   SC_Modal,

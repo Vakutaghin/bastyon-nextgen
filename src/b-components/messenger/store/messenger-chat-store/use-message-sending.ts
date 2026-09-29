@@ -17,7 +17,11 @@ import type { Message } from '../../types'
 import { makeTempId, pushOptimistic, removeOptimistic } from './media-sending-helpers'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
-import type { SendPkoinPayload } from '../../services/matrix-service/media-sender'
+import {
+  pkoinTransferContent,
+  pkoinTransferText,
+  type SendPkoinPayload,
+} from '../../lib/pkoin-transfer'
 
 /**
  * Транзакция ушла в сеть, а сообщение о ней в Matrix — нет. Носит txid и
@@ -315,11 +319,25 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
   }
 
   /**
+   * Сообщение о переводе — зашифрованное, как любой текст. Раньше оно уходило
+   * сырым `m.text`: заметку к переводу сервер Matrix хранил открытым текстом.
+   * Отдельно — и для повтора после PkoinMessageDeliveryError: второй
+   * транзакции не будет.
+   */
+  const sendPkoinMessage = async (chatId: string, payload: SendPkoinPayload): Promise<void> => {
+    await sendTextContent(
+      chatId,
+      pkoinTransferText(payload.amount, payload.message),
+      pkoinTransferContent(payload)
+    )
+  }
+
+  /**
    * Отправка PKOIN-доната в личный чат:
    *  1) собираем UTXO отправителя, выбираем подходящие;
    *  2) строим/подписываем транзакцию (buildTransferTransaction);
    *  3) шлём через sendrawtransactionwithmessage;
-   *  4) пишем в Matrix-комнату событие m.text с extra-полем `pocketnet_transaction`.
+   *  4) пишем в комнату зашифрованное сообщение о переводе (sendPkoinMessage).
    * Работает только в личных чатах. Возвращает txid либо null.
    */
   const sendPkoin = async (
@@ -373,9 +391,9 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         keyPair,
         outputs: [{ address: toAddress, amount }],
         fee: DEFAULT_TX_FEE,
-        // Текст перевода в чате приходит собеседнику зашифрованным событием
-        // Matrix ниже. В транзакцию его не кладём: сообщение перевода пишется
-        // в OP_RETURN и стало бы публичным в блокчейне.
+        // Заметка к переводу уходит собеседнику только в зашифрованном
+        // сообщении чата ниже. В транзакцию её не кладём: сообщение перевода
+        // пишется в OP_RETURN и стало бы публичным в блокчейне.
         message: '',
         feemode: 'exclude',
       })
@@ -396,7 +414,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         message: messageText,
       }
       try {
-        await matrixService.sendPkoinTransaction(chatId, payload)
+        await sendPkoinMessage(chatId, payload)
       } catch (e) {
         console.error('[ChatStore] sendPkoin: tx sent, chat message failed:', e)
         throw new PkoinMessageDeliveryError(txid, payload, e)
@@ -407,11 +425,6 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
       console.error('[ChatStore] sendPkoin failed:', e)
       throw e
     }
-  }
-
-  /** Повтор только сообщения о переводе (после PkoinMessageDeliveryError). */
-  const sendPkoinMessage = async (chatId: string, payload: SendPkoinPayload): Promise<void> => {
-    await matrixService.sendPkoinTransaction(chatId, payload)
   }
 
   return {
