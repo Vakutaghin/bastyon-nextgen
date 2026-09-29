@@ -26,6 +26,9 @@
 | Узел Reticulum: rns-net 0.5.10 + lxmf-rs (git); identity из ключа аккаунта (HKDF); хабы по TCP, LAN, RNode по USB (в Tor — только RNode); LXMF напрямую, пакетом и через узел доставки со статусами, «auto» с запасным путём через узел, штампы; забор с узла доставки (`/get`); известные адреса между запусками; перезапуск, если интерфейс не поднялся | `src-tauri/crates/bastyon-rns`, `src-tauri/src/rns`, `src/mesh/reticulum`, `src/mesh/store/reticulum-store.ts`, `src/pages/mesh-page/rns-*.vue` | `c275b1d` |
 | Браузер NomadNet: разбор micron в данные (без HTML), ссылки на страницы и чаты, формы | `src/mesh/reticulum/micron.ts`, `rns-nomad.vue`, `micron-page.vue` | `dc3d61c` |
 | Reticulum на Android: тот же узел в `.so` через JNI (+3,6 МБ, arm64), плагин `MeshRns`, RNode по USB через socketpair, multicast для LAN, общее с радио уведомление; `.so` собирает Gradle, в релизе — CI | `src-tauri/crates/bastyon-rns-jni`, `scripts/build-rns-android.sh`, `MeshRnsPlugin.java`, `src/mesh/reticulum/capacitor-rns.ts` | `4735258` |
+| Вложения LXMF как у Sideband и MeshChat: картинка (`FIELD_IMAGE`), файлы, голос Opus на приём; картинки перед отправкой уменьшаются, до 900 КБ | `bastyon-rns` (`attachments_of`, `fields_of`), `src/mesh/media.ts`, `mesh-chat-room.vue` | `64ba76d` |
+| Бумажные сообщения: `lxm://` и QR для адресата, открытие ссылки или QR на вкладке | `bastyon-rns` (`paper`, `ingest`), `paper-message-dialog.vue`, `rns-peers.vue` | `749f46c` |
+| Первый шаг связки с аккаунтом: «Мой адрес Reticulum» в обычном чате, кнопка «Написать через Reticulum» у сообщения с `lxmf@…` | `use-mesh-share.ts`, `message-item.vue` | `af5cf8b` |
 
 Проверено: Rust-тесты (обмен через псевдотерминал и TCP), юнит-тесты протоколов и сторов
 против поддельных радио, e2e обеих сетей в Chromium и WebKit, собранное приложение по TCP
@@ -84,8 +87,10 @@
   - Python-узел доставки проверяет штамп и у одиночного пакета; ответ на запрос пути приходит
     announce-ом без app_data, то есть без имени.
 
-Дальше: вложения (картинки, файлы) и бумажные сообщения LXMF, связка с аккаунтом Bastyon и
-«один диалог — несколько маршрутов» (этап 8).
+Дальше: «один диалог — несколько маршрутов» (этап 8 целиком: адрес Reticulum в подписанной
+записи, общий диалог с Matrix и выбор маршрута по доступности), обзор сети (таблица путей, граф),
+голосовые сообщения на отправку, файлы NomadNet (`/file/…`: в rns-net 0.5.10 такие ответы
+теряются, исправлено в 0.7.2), Reticulum на Windows.
 
 ## Коротко
 
