@@ -765,6 +765,9 @@ export default {
     sendMessage: 'Enviar mensaje',
     sendVoiceMessage: 'Enviar mensaje de voz',
     recordVoiceMessage: 'Grabar mensaje de voz',
+    micUnsupported:
+      'Aquí no se pueden grabar mensajes de voz: el navegador integrado no da acceso al micrófono.',
+    micFailed: 'No se pudo activar el micrófono.',
     recordingInProgress: 'Grabando voz',
     swipeHint: '< Izquierda: cancelar, Arriba: bloquear',
     openEmojiPicker: 'Abrir el selector de emojis',

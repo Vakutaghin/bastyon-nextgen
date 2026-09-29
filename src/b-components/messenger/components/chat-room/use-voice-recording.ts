@@ -8,7 +8,27 @@
  * См. CODE_AUDIT.md §1. Раньше всё это жило в chat-room.vue inline.
  */
 import { onBeforeUnmount, ref, type Ref } from 'vue'
+import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
 import { formatDuration } from '../../helpers'
+
+/**
+ * Почему микрофон не включился — словами. Раньше ошибка уходила только в
+ * консоль: кнопка записи молча ничего не делала, например там, где встроенный
+ * браузер вовсе не даёт странице микрофон.
+ */
+export function micErrorMessage(err: unknown, hasMediaDevices: boolean): string {
+  if (!hasMediaDevices) return t('messenger.micUnsupported')
+  const name = err instanceof Error || err instanceof DOMException ? err.name : ''
+  if (name === 'NotAllowedError' || name === 'SecurityError') {
+    return t('voiceInput.errors.micDenied')
+  }
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+    return t('voiceInput.errors.noMicrophone')
+  }
+  if (name === 'NotReadableError' || name === 'AbortError') return t('voiceInput.errors.micBusy')
+  return t('messenger.micFailed')
+}
 
 const PREFERRED_TYPES = [
   'audio/webm;codecs=opus',
@@ -136,6 +156,7 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
       mr.start()
     } catch (err) {
       console.error('[ChatRoom] Failed to start recording:', err)
+      appToast.error({ message: micErrorMessage(err, !!navigator.mediaDevices?.getUserMedia) })
     }
   }
 

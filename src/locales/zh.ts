@@ -728,6 +728,8 @@ export default {
     sendMessage: '发送消息',
     sendVoiceMessage: '发送语音消息',
     recordVoiceMessage: '录制语音消息',
+    micUnsupported: '无法在此录制语音消息：内置浏览器不提供麦克风访问权限。',
+    micFailed: '无法打开麦克风。',
     recordingInProgress: '正在录音',
     swipeHint: '< 左滑取消，上滑锁定',
     openEmojiPicker: '打开表情选择器',

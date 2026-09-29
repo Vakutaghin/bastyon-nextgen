@@ -753,6 +753,9 @@ export default {
     sendMessage: 'Send message',
     sendVoiceMessage: 'Send voice message',
     recordVoiceMessage: 'Record voice message',
+    micUnsupported:
+      'Voice messages cannot be recorded here: the built-in browser gives no access to the microphone.',
+    micFailed: 'Could not turn on the microphone.',
     recordingInProgress: 'Recording voice',
     swipeHint: '< Left - cancel, Up - lock',
     openEmojiPicker: 'Open emoji picker',

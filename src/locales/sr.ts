@@ -753,6 +753,9 @@ export default {
     sendMessage: 'Пошаљи поруку',
     sendVoiceMessage: 'Пошаљи гласовну поруку',
     recordVoiceMessage: 'Сними гласовну поруку',
+    micUnsupported:
+      'Гласовне поруке овде не могу да се сниме: уграђени прегледач не даје приступ микрофону.',
+    micFailed: 'Микрофон није могао да се укључи.',
     recordingInProgress: 'Снимање гласа',
     swipeHint: '< Лево – откажи, Горе – закључај',
     openEmojiPicker: 'Отвори избор емоџија',

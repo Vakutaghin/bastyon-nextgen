@@ -751,6 +751,9 @@ export default {
     sendMessage: '메시지 보내기',
     sendVoiceMessage: '음성 메시지 보내기',
     recordVoiceMessage: '음성 메시지 녹음',
+    micUnsupported:
+      '여기서는 음성 메시지를 녹음할 수 없습니다. 내장 브라우저가 마이크 접근을 허용하지 않습니다.',
+    micFailed: '마이크를 켤 수 없습니다.',
     recordingInProgress: '음성 녹음 중',
     swipeHint: '< 왼쪽 - 취소, 위쪽 - 고정',
     openEmojiPicker: '이모지 선택기 열기',

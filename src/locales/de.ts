@@ -763,6 +763,9 @@ export default {
     sendMessage: 'Nachricht senden',
     sendVoiceMessage: 'Sprachnachricht senden',
     recordVoiceMessage: 'Sprachnachricht aufnehmen',
+    micUnsupported:
+      'Sprachnachrichten können hier nicht aufgenommen werden: Der integrierte Browser gibt keinen Zugriff auf das Mikrofon.',
+    micFailed: 'Das Mikrofon konnte nicht eingeschaltet werden.',
     recordingInProgress: 'Sprachaufnahme läuft',
     swipeHint: '< Links – abbrechen, Oben – fixieren',
     openEmojiPicker: 'Emoji-Auswahl öffnen',
