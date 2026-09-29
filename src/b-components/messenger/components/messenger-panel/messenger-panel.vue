@@ -11,7 +11,7 @@
       <SC_SyncStatusBanner
         v-else-if="store.syncState !== 'PREPARED' && store.syncState !== 'SYNCING'"
       >
-        Status: {{ store.syncState }}
+        {{ syncStatusText(store.syncState) }}
       </SC_SyncStatusBanner>
       <SC_MessengerDialogsLoader v-if="store.isDialogsLoading">
         <SC_MessengerDialogsSpinner />
@@ -95,6 +95,17 @@ const store = useMessengerStore()
 const { activeChatId, lastTargetAddress, inviteViewActive } = storeToRefs(store)
 const authStore = useAuthStore()
 const { t } = useI18n()
+
+/**
+ * Состояние синхронизации Matrix словами. Раньше баннер показывал сырое
+ * «Status: RECONNECTING» по-английски на любом языке интерфейса.
+ */
+function syncStatusText(state: string): string {
+  if (state === 'CATCHUP') return t('messenger.syncCatchup')
+  if (state === 'RECONNECTING') return t('messenger.syncReconnecting')
+  if (state === 'ERROR') return t('messenger.syncOffline')
+  return t('messenger.syncConnecting')
+}
 
 const activeChatName = computed<string>(() => {
   if (activeChatId.value) {
