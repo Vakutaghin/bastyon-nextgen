@@ -52,6 +52,7 @@ import { Modal } from 'ant-design-vue'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { usePermissionsStore } from '@/mini-apps/store/permissions-store'
 import { miniAppsBridge } from '@/mini-apps/core/bridge'
+import { appBaseUrl } from '@/mini-apps/core/origin-guard'
 import { onIframeLifecycleEvent } from './use-mini-app-bridge'
 import TorBlockedNotice from '@/components/tor-blocked-notice'
 import { useTorMedia } from '@/composables/use-tor-media'
@@ -117,10 +118,9 @@ const loaderText = computed(() => {
 
 const iframeSrc = computed(() => {
   if (!app.value) return 'about:blank'
-  const scope = app.value.scope.replace(/\/+$/, '')
   const start = app.value.manifest.startUrl ?? ''
   const path = props.innerPath ?? ''
-  const withScheme = /^https?:\/\//i.test(scope) ? scope : `https://${scope}`
+  const withScheme = appBaseUrl(app.value.scope)
   const tail = path || start
   return tail ? `${withScheme}/${tail.replace(/^\/+/, '')}` : withScheme
 })

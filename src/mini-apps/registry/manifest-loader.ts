@@ -16,6 +16,7 @@ import { appFetch } from '@/helpers/api/fetch-strategies'
 import { isSafeExternalUrl } from '@/helpers/common/safe-external-url'
 import { logger } from '@/services/logger'
 import { parseManifest, type ParsedManifest } from '../types/manifest'
+import { appBaseUrl } from '../core/origin-guard'
 
 const log = logger.scope('[mini-apps:manifest]')
 
@@ -91,8 +92,9 @@ export class ManifestLoader {
   }
 
   private async fetchAndParse(url: string): Promise<ParsedManifest> {
-    // sideload на localhost проходит (allowLoopback); приватные LAN-адреса — нет.
-    if (!isSafeExternalUrl(url, { allowLoopback: true })) {
+    // sideload на localhost проходит (allowLoopback), в том числе по http —
+    // другой хост appBaseUrl по http не отдаёт; приватные LAN-адреса — нет.
+    if (!isSafeExternalUrl(url, { allowLoopback: true, allowHttp: url.startsWith('http:') })) {
       throw new Error('manifest_forbidden_host')
     }
     const ctrl = new AbortController()
@@ -129,11 +131,7 @@ export class ManifestLoader {
 
 /** Строит URL манифеста из scope. */
 export function buildManifestUrl(scope: string): string {
-  const trimmed = scope
-    .trim()
-    .replace(/^https?:\/\//i, '')
-    .replace(/\/$/, '')
-  return `https://${trimmed}/b_manifest.json`
+  return `${appBaseUrl(scope)}/b_manifest.json`
 }
 
 /** Дефолтный singleton — для production. Тесты используют свой инстанс. */

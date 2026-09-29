@@ -7,6 +7,7 @@
  * (curated) приложения добавляются отдельным reg-механизмом — см. §3 в плане.
  */
 
+import { appBaseUrl } from '../core/origin-guard'
 import type { PermissionId } from '../types/permissions'
 
 export interface BuiltInApp {
@@ -93,6 +94,6 @@ export const BUILT_IN_APPS: readonly BuiltInApp[] = [
 /** Возвращает иконку через scope-соглашение: `https://<scope>/b_icon.png`. */
 export function getBuiltInIconUrl(scope: string): string {
   // scope может уже содержать путь (`bastyon.com/blockexplorer`) — это валидно для legacy.
-  const trimmed = scope.replace(/^https?:\/\//, '').replace(/\/$/, '')
-  return `https://${trimmed}/b_icon.png`
+  // Схема — как у окна приложения: у dev-сервера на localhost иконка тоже по http.
+  return `${appBaseUrl(scope)}/b_icon.png`
 }

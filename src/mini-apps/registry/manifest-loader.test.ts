@@ -44,6 +44,10 @@ describe('buildManifestUrl', () => {
   it('strips trailing slash', () => {
     expect(buildManifestUrl('demo.app.com/')).toBe('https://demo.app.com/b_manifest.json')
   })
+  it('http — только для localhost: dev-сервер без сертификата', () => {
+    expect(buildManifestUrl('http://localhost:3000')).toBe('http://localhost:3000/b_manifest.json')
+    expect(buildManifestUrl('http://demo.app.com')).toBe('https://demo.app.com/b_manifest.json')
+  })
 })
 
 describe('ManifestLoader', () => {
@@ -122,6 +126,13 @@ describe('ManifestLoader', () => {
     }
     expect(fetchImpl).not.toHaveBeenCalled()
     await expect(loader.load('localhost:3000')).resolves.toBeTruthy()
+    // http пропускается только для localhost; LAN-хост по http — нет.
+    await expect(loader.load('http://localhost:5173')).resolves.toBeTruthy()
+    expect(fetchImpl).toHaveBeenLastCalledWith(
+      'http://localhost:5173/b_manifest.json',
+      expect.anything()
+    )
+    await expect(loader.load('http://192.168.1.10')).rejects.toThrow(/manifest_forbidden_host/)
   })
 
   it('throws on HTTP error', async () => {

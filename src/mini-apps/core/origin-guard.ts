@@ -8,24 +8,50 @@
 
 import type { InstalledApp } from '../types/app'
 
+/** Этот компьютер: только отсюда приложение может открываться по http. */
+function isLoopbackHost(host: string): boolean {
+  const h = host.toLowerCase()
+  return (
+    h === 'localhost' || h.endsWith('.localhost') || h === '[::1]' || /^127(\.\d{1,3}){3}$/.test(h)
+  )
+}
+
 /**
- * Приводит scope (с протоколом или без) к каноническому `https://host[:port]`.
+ * Адрес приложения со схемой: `https://`, а `http://` — только для localhost,
+ * где dev-сервер обычно без сертификата. Окно приложения, проверка origin и
+ * загрузка манифеста берут адрес отсюда. Раньше окно и origin принимали http
+ * любого хоста, а манифест всегда шёл по https: локальный `http://localhost`
+ * не загружался, а чужой хост мог открыться по http.
+ */
+export function appBaseUrl(scope: string): string {
+  const trimmed = scope.trim().replace(/\/+$/, '')
+  if (/^http:\/\//i.test(trimmed)) {
+    try {
+      if (isLoopbackHost(new URL(trimmed).hostname)) return trimmed
+    } catch {
+      // невалидный URL — ниже соберём https и пусть падает там
+    }
+  }
+  return `https://${trimmed.replace(/^https?:\/\//i, '')}`
+}
+
+/**
+ * Приводит scope (с протоколом или без) к каноническому origin.
  *
  * Принимает:
  * - `demo.app.com`
  * - `https://demo.app.com`
  * - `https://demo.app.com/index.html`
  * - `https://demo.app.com:8443/path?q=1`
+ * - `http://localhost:3000` — dev-сервер на этом компьютере
  *
- * Возвращает строго `https://demo.app.com[:port]` (без path/search/hash).
- * Бросает `Error` если scope невалиден.
+ * Возвращает `https://demo.app.com[:port]` (без path/search/hash); http
+ * остаётся только у localhost (см. appBaseUrl). Бросает `Error` если scope невалиден.
  */
 export function normalizeOrigin(scope: string): string {
   const trimmed = scope.trim()
   if (!trimmed) throw new Error('empty scope')
-
-  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
-  return new URL(withScheme).origin
+  return new URL(appBaseUrl(trimmed)).origin
 }
 
 /** Безопасная версия — возвращает `null` вместо исключения. */

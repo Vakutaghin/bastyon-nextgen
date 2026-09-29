@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  appBaseUrl,
   normalizeOrigin,
   safeNormalizeOrigin,
   matchesOrigin,
@@ -38,6 +39,14 @@ describe('normalizeOrigin', () => {
 
   it('accepts http (for dev / localhost)', () => {
     expect(normalizeOrigin('http://localhost:3000')).toBe('http://localhost:3000')
+    expect(normalizeOrigin('http://127.0.0.1:5173')).toBe('http://127.0.0.1:5173')
+  })
+
+  it('http другого хоста превращается в https: окно по http открылось бы кому угодно', () => {
+    expect(normalizeOrigin('http://demo.app.com')).toBe('https://demo.app.com')
+    expect(appBaseUrl('http://demo.app.com/app/')).toBe('https://demo.app.com/app')
+    expect(appBaseUrl('http://localhost:3000/')).toBe('http://localhost:3000')
+    expect(appBaseUrl('localhost:3000')).toBe('https://localhost:3000')
   })
 
   it('throws on empty input', () => {
