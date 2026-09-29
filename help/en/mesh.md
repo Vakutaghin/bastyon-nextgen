@@ -166,7 +166,7 @@ NomadNet nodes publish pages: boards, guides, services. They appear in the **Nom
 
 A link to a node's file downloads it: while the file comes in, you see how much has arrived below the list, then the system asks where to save it. Over radio, a file of a few hundred kilobytes takes a long time — keep the app open. If the node does not give out the file, its page with the answer opens instead.
 
-A page comes over an encrypted connection straight from the node. Images and tables are not shown yet, and files are not downloaded.
+A page comes over an encrypted connection straight from the node. Images and tables are not shown yet.
 
 ## Writing
 
