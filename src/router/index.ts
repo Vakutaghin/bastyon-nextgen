@@ -44,7 +44,7 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: SettingsPage,
-      meta: { titleKey: 'routes.settings' },
+      meta: { titleKey: 'routes.settings', helpTopic: 'settings' },
     },
     {
       path: '/limits',
@@ -149,7 +149,7 @@ const router = createRouter({
       path: '/help/:topic?',
       name: 'help',
       component: HelpPage,
-      meta: { titleKey: 'routes.help' },
+      meta: { titleKey: 'routes.help', helpTopic: 'using-help' },
     },
     // О Bastyon, частые вопросы, начало работы и PKOIN переехали в справку.
     { path: '/info/about', redirect: '/help/about' },
