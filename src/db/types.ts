@@ -142,7 +142,8 @@ export interface MeshDialogRecord {
   network: 'meshcore' | 'meshtastic'
   /** Свой узел (hex): у каждого радио своя переписка. MeshCore — 6 байт ключа, Meshtastic — номер. */
   selfKey: string
-  kind: 'direct' | 'channel'
+  /** room — комната MeshCore (room server): пишут в неё разные люди. */
+  kind: 'direct' | 'channel' | 'room'
   /** MeshCore — полный ключ собеседника (если он в контактах радио); Meshtastic — номер узла. */
   peerKey: string | null
   /**

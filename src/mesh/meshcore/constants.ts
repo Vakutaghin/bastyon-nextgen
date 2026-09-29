@@ -23,6 +23,8 @@ export const CMD = {
   REMOVE_CONTACT: 15,
   GET_BATT_AND_STORAGE: 20,
   DEVICE_QUERY: 22,
+  /** Вход в комнату (room server) или на репитер: ключ и пароль. */
+  SEND_LOGIN: 26,
   GET_CONTACT_BY_KEY: 30,
   GET_CHANNEL: 31,
   SET_CHANNEL: 32,
@@ -55,6 +57,8 @@ export const PUSH = {
   PATH_UPDATED: 0x81,
   SEND_CONFIRMED: 0x82,
   MSG_WAITING: 0x83,
+  LOGIN_SUCCESS: 0x85,
+  LOGIN_FAIL: 0x86,
   LOG_RX_DATA: 0x88,
   NEW_ADVERT: 0x8a,
   CONTACT_DELETED: 0x8f,

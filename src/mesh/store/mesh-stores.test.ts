@@ -28,7 +28,7 @@ import { db, resetDbAvailabilityForTests } from '@/db/database'
 import { useMessengerUiStore } from '@/b-components/messenger/store/messenger-ui-store'
 import { PUBLIC_CHANNEL_SECRET } from '../meshcore/constants'
 import { MeshCoreSession } from '../meshcore/session'
-import { FakeAir, FakeCompanion } from '../meshcore/testing/fake-companion'
+import { FakeAir, FakeCompanion, FakeRoomServer } from '../meshcore/testing/fake-companion'
 import { useMeshChatStore } from './mesh-chat-store'
 import {
   MESH_SESSION_OPTIONS,
@@ -241,5 +241,42 @@ describe('mesh chats', () => {
     await vi.waitFor(async () => expect(await db.meshMessages.count()).toBe(0))
     expect(await db.meshDialogs.count()).toBe(0)
     expect(chat.dialogs).toEqual([])
+  })
+})
+
+describe('mesh rooms', () => {
+  it('logs in to a room and keeps its posts in one room chat with their authors', async () => {
+    Object.assign(MESH_SESSION_OPTIONS, { loginMinWaitMs: 150 })
+    const room = new FakeRoomServer(air, { name: 'Кофейня', password: 'hello' })
+    room.meet(alice)
+    room.meet(bob)
+    const conn = await connected()
+    const chat = useMeshChatStore()
+    const contact = conn.contacts.find((c) => c.publicKey === room.publicKey)!
+    await expect(conn.loginRoom(room.publicKey, 'wrong')).rejects.toMatchObject({
+      message: 'login_timeout',
+    })
+    expect(await conn.loginRoom(room.publicKey, 'hello')).toEqual({ isAdmin: false })
+    expect(conn.rooms[room.publicKey]).toEqual({ isAdmin: false })
+    const id = await chat.ensureRoomDialog(conn.self!.publicKey, contact)
+    expect(id).toBe(`mesh:mc:${alice.publicKey.slice(0, 12)}:r:${room.publicKey.slice(0, 12)}`)
+
+    // Боб пишет в комнату — у Алисы пост с именем Боба в чате комнаты.
+    await bobSession.login(room.publicKey, 'hello')
+    await bobSession.sendDirect(room.publicKey, 'всем привет', 1_750_000_900, () => {})
+    await vi.waitFor(() =>
+      expect(chat.dialogs.find((d) => d.id === id)?.lastText).toBe('Bob: всем привет')
+    )
+    await chat.openDialog(id)
+    expect(chat.messengerMessages(id)[0]).toMatchObject({ text: 'всем привет', senderName: 'Bob' })
+    expect(chat.textLimit(id)).toBe(156)
+
+    // Алиса отвечает: комната подтверждает приём, Боб получает пост от Алисы.
+    const bobInbox: string[] = []
+    bobSession.on('message', (m) => bobInbox.push(`${m.senderName}: ${m.text}`))
+    expect(await chat.send(id, 'и тебе')).toEqual({ ok: true })
+    await vi.waitFor(() => expect(chat.messengerMessages(id)[1]!.status).toBe('delivered'))
+    await vi.waitFor(() => expect(bobInbox).toEqual(['Alice: и тебе']))
+    Object.assign(MESH_SESSION_OPTIONS, { loginMinWaitMs: undefined })
   })
 })

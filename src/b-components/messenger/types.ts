@@ -81,8 +81,8 @@ export interface Dialog {
   createdAt?: number
   /** Не задано — Matrix. */
   transport?: ChatTransport
-  /** Mesh: личный диалог с узлом или канал. */
-  meshKind?: 'direct' | 'channel'
+  /** Mesh: личный диалог с узлом, канал или комната (room server MeshCore). */
+  meshKind?: 'direct' | 'channel' | 'room'
   /** Mesh-канал: открытый (Public, #тег, ключ по умолчанию) или приватный. */
   channelKind?: 'public' | 'hashtag' | 'private'
 }

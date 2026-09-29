@@ -1666,6 +1666,13 @@ export default {
       discoveredHint:
         'Diese Knoten haben sich angekündigt, sind aber nicht in den Kontakten des Funkgeräts: Es fügt sie manuell hinzu oder hat keinen Platz. Ohne Kontakt kann das Funkgerät ihre Direktnachrichten nicht entschlüsseln.',
       add: 'Hinzufügen',
+      login: 'Anmelden',
+      openRoom: 'Öffnen',
+      loginTitle: 'Anmeldung im Raum „{name}“',
+      loginHint:
+        'Das Passwort gibt der Betreiber des Raums aus. Wenn du schon einmal angemeldet warst, kannst du es leer lassen.',
+      password: 'Passwort',
+      loggedIn: 'Du bist im Raum. Seine Nachrichten kommen im Messenger an.',
     },
     channels: {
       title: 'Kanäle',
@@ -1813,6 +1820,9 @@ export default {
       pkiEncryption: 'mit Knotenschlüsseln im Funkgerät verschlüsselt, nicht in der App',
       relayed: 'Vom Netz gehört und weitergegeben',
       regionUnset: 'Beim Funkgerät ist keine Region gewählt',
+      room: 'Raum: Ein Raum-Server speichert und verteilt die Nachrichten; Verschlüsselung wie bei MeshCore-Direktnachrichten',
+      roomShort: 'Raum',
+      roomDelivered: 'Der Raum hat die Nachricht angenommen',
     },
     errors: {
       generic: 'Das hat nicht geklappt ({code}).',
@@ -1867,6 +1877,9 @@ export default {
       bad_channel_link: 'Das ist kein Meshtastic-Kanal-Link.',
       send_failed: 'Die Nachricht wurde nicht gesendet.',
       rebooted: 'Das Funkgerät wurde neu gestartet.',
+      login_timeout:
+        'Der Raum hat nicht geantwortet: Das Passwort passte nicht oder er hört das Funkgerät nicht.',
+      login_failed: 'Der Raum hat die Anmeldung abgelehnt.',
     },
   },
   hotkeys: {

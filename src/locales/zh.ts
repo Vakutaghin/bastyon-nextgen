@@ -1596,6 +1596,12 @@ export default {
       discoveredHint:
         '这些节点已广播自己，但没有进入电台联系人：电台设置为手动添加，或已无空位。没有联系人，电台无法解密他们的私信。',
       add: '添加',
+      login: '登录',
+      openRoom: '打开',
+      loginTitle: '登录房间“{name}”',
+      loginHint: '密码由房间主人提供。如果你以前登录过，可以留空。',
+      password: '密码',
+      loggedIn: '你已进入房间。房间里的消息会出现在消息中。',
     },
     channels: {
       title: '频道',
@@ -1734,6 +1740,9 @@ export default {
       pkiEncryption: '在电台上用节点密钥加密，而不是在应用中',
       relayed: '网络已收到并转发',
       regionUnset: '电台尚未选择地区',
+      room: '房间：由房间服务器保存并转发消息，加密方式与 MeshCore 私信相同',
+      roomShort: '房间',
+      roomDelivered: '房间已收到消息',
     },
     errors: {
       generic: '操作失败（{code}）。',
@@ -1781,6 +1790,8 @@ export default {
       bad_channel_link: '这不是 Meshtastic 频道链接。',
       send_failed: '消息未发送。',
       rebooted: '电台已重启。',
+      login_timeout: '房间没有回应：密码不对，或者它听不到电台。',
+      login_failed: '房间拒绝登录。',
     },
   },
   hotkeys: {

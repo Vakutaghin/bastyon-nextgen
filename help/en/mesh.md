@@ -84,6 +84,14 @@ MeshCore nodes learn about each other from announcements: a radio tells its neig
 
 If the radio adds nodes manually or its contact list is full, new nodes appear under "Discovered" — click **Add**. Without a contact, the radio cannot decrypt that node's direct messages.
 
+### MeshCore rooms
+
+A room (room server) is a node that stores messages and hands them to everyone who has logged in — a small forum on the radio. In the contacts it is marked "room".
+
+Click **Log in** and enter the password the room owner gave you; if you have logged in before, you can leave it empty. After that the room opens in the messenger and sends the messages you do not have yet, and new ones keep arriving while the radio is connected. Each message shows its author's name.
+
+A room does not reject a wrong password — it stays silent, and an error appears after a few seconds. Messages to a room are encrypted like MeshCore direct messages; `✓✓` means the room accepted the message.
+
 ### MeshCore channels
 
 - **Public** — the shared channel of the network: its key is known to everyone.

@@ -16,6 +16,7 @@ import {
   decodeDeviceInfo,
   decodeIncoming,
   decodeKeyPush,
+  decodeLoginResult,
   decodeSelfInfo,
   decodeSendConfirmed,
   decodeSent,
@@ -27,6 +28,7 @@ import {
   type McContact,
   type McDeviceInfo,
   type McIncoming,
+  type McLoginResult,
   type McSelfInfo,
   type McSent,
 } from './codec'
@@ -78,6 +80,8 @@ export interface MeshCoreEvents {
   discovered: (contact: McContact) => void
   contactDeleted: (publicKey: string) => void
   contactsFull: () => void
+  /** Ответ комнаты на вход (успех или отказ). */
+  login: (result: McLoginResult) => void
   /** Соединение пропало не по `close()`. */
   closed: (reason: CloseReason) => void
 }
@@ -112,6 +116,7 @@ export class MeshCoreClient {
     discovered: new Set(),
     contactDeleted: new Set(),
     contactsFull: new Set(),
+    login: new Set(),
     closed: new Set(),
   }
   private readonly unsubs: Unsubscribe[] = []
@@ -281,6 +286,10 @@ export class MeshCoreClient {
         case PUSH.CONTACTS_FULL:
           this.emit('contactsFull')
           break
+        case PUSH.LOGIN_SUCCESS:
+        case PUSH.LOGIN_FAIL:
+          this.emit('login', decodeLoginResult(frame))
+          break
         default:
           // Лог эфира, телеметрия, ответы репитеров — пока не нужны.
           break
@@ -387,6 +396,18 @@ export class MeshCoreClient {
   async sendText(publicKey: string, text: string, timestamp: number, attempt = 0): Promise<McSent> {
     const [frame] = await this.request(
       encode.sendText(publicKey, text, timestamp, attempt),
+      this.expectOne(RESP.SENT)
+    )
+    return decodeSent(frame!)
+  }
+
+  /**
+   * Отправить вход в комнату. Ответ комнаты придёт позже событием `login`;
+   * здесь — только «радио отправило» и сколько ждать.
+   */
+  async sendLogin(publicKey: string, password: string): Promise<McSent> {
+    const [frame] = await this.request(
+      encode.sendLogin(publicKey, password),
       this.expectOne(RESP.SENT)
     )
     return decodeSent(frame!)

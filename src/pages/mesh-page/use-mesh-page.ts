@@ -182,6 +182,12 @@ export function useMeshOpenChat() {
     await openDialog(await meshChat.ensureChannelDialog(self.publicKey, channel))
   }
 
+  async function openRoom(room: McContact): Promise<void> {
+    const self = useMeshConnectionStore().self
+    if (!self) return
+    await openDialog(await meshChat.ensureRoomDialog(self.publicKey, room))
+  }
+
   // Meshtastic
   async function writeToNode(node: { num: number; name: string }): Promise<void> {
     const self = useMeshtasticConnectionStore().self
@@ -195,7 +201,7 @@ export function useMeshOpenChat() {
     await openDialog(await meshChat.ensureMeshtasticChannelDialog(self.nodeNum, channel))
   }
 
-  return { writeTo, openChannel, writeToNode, openMtChannel }
+  return { writeTo, openChannel, openRoom, writeToNode, openMtChannel }
 }
 
 /** Действие с радио: ошибка — тостом, а не в консоль. */

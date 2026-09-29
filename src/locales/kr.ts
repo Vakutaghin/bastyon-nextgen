@@ -1635,6 +1635,12 @@ export default {
       discoveredHint:
         '이 노드들은 자신을 알렸지만 무전기 연락처에 추가되지 않았습니다. 무전기가 수동으로 추가하도록 설정되었거나 공간이 없습니다. 연락처가 없으면 무전기는 이들의 개인 메시지를 해독할 수 없습니다.',
       add: '추가',
+      login: '입장',
+      openRoom: '열기',
+      loginTitle: '"{name}" 방에 입장',
+      loginHint: '비밀번호는 방 운영자가 알려 줍니다. 전에 입장한 적이 있다면 비워 두어도 됩니다.',
+      password: '비밀번호',
+      loggedIn: '방에 입장했습니다. 방의 메시지가 메신저로 옵니다.',
     },
     channels: {
       title: '채널',
@@ -1780,6 +1786,9 @@ export default {
       pkiEncryption: '앱이 아닌 무전기에서 노드 키로 암호화',
       relayed: '네트워크가 받아서 전달함',
       regionUnset: '무전기에 지역이 선택되지 않음',
+      room: '방: 방 서버가 메시지를 저장하고 전달합니다. 암호화는 MeshCore 개인 메시지와 같습니다',
+      roomShort: '방',
+      roomDelivered: '방이 메시지를 받았습니다',
     },
     errors: {
       generic: '실패했습니다 ({code}).',
@@ -1833,6 +1842,8 @@ export default {
       bad_channel_link: 'Meshtastic 채널 링크가 아닙니다.',
       send_failed: '메시지를 보내지 못했습니다.',
       rebooted: '무전기가 다시 시작했습니다.',
+      login_timeout: '방이 응답하지 않습니다. 비밀번호가 틀렸거나 방이 무전을 듣지 못합니다.',
+      login_failed: '방이 입장을 거부했습니다.',
     },
   },
   hotkeys: {

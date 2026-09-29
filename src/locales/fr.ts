@@ -1669,6 +1669,13 @@ export default {
       discoveredHint:
         "Ces nœuds se sont annoncés mais ne figurent pas dans les contacts de la radio : elle les ajoute manuellement ou n'a plus de place. Sans contact, la radio ne peut pas déchiffrer leurs messages privés.",
       add: 'Ajouter',
+      login: 'Se connecter',
+      openRoom: 'Ouvrir',
+      loginTitle: 'Connexion au salon « {name} »',
+      loginHint:
+        'Le propriétaire du salon donne le mot de passe. Si vous vous êtes déjà connecté, vous pouvez le laisser vide.',
+      password: 'Mot de passe',
+      loggedIn: 'Vous êtes dans le salon. Ses messages arriveront dans la messagerie.',
     },
     channels: {
       title: 'Canaux',
@@ -1816,6 +1823,9 @@ export default {
       pkiEncryption: "chiffré avec les clés des nœuds dans la radio, pas dans l'application",
       relayed: 'Entendu et relayé par le réseau',
       regionUnset: "La radio n'a pas de région choisie",
+      room: 'salon : un serveur de salon garde et relaie les messages ; chiffrement comme les messages directs MeshCore',
+      roomShort: 'salon',
+      roomDelivered: 'Le salon a accepté le message',
     },
     errors: {
       generic: "Ça n'a pas marché ({code}).",
@@ -1870,6 +1880,8 @@ export default {
       bad_channel_link: "Ce n'est pas un lien de canal Meshtastic.",
       send_failed: "Le message n'a pas été envoyé.",
       rebooted: 'La radio a redémarré.',
+      login_timeout: "Le salon n'a pas répondu : mauvais mot de passe ou il n'entend pas la radio.",
+      login_failed: 'Le salon a refusé la connexion.',
     },
   },
   hotkeys: {

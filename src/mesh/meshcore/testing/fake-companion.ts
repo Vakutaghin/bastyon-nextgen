@@ -142,7 +142,7 @@ export class FakeCompanion {
   private queueCmds: Promise<void> = Promise.resolve()
 
   constructor(
-    private readonly air: FakeAir | null,
+    protected readonly air: FakeAir | null,
     options: FakeCompanionOptions
   ) {
     this.publicKey = (options.publicKey ?? randomKey()).toLowerCase()
@@ -294,6 +294,22 @@ export class FakeCompanion {
           )
         )
         void this.transmitDirect(recipient, ts, attempt, text, flood)
+        return
+      }
+      case CMD.SEND_LOGIN: {
+        if (len < 1 + PUB_KEY_SIZE) return this.err(ERR_CODE.UNSUPPORTED_CMD)
+        const key = toHex(r.bytesN(PUB_KEY_SIZE))
+        const password = new TextDecoder().decode(r.rest())
+        const room = this.contacts.find((c) => c.publicKey === key)
+        if (!room) return this.err(ERR_CODE.NOT_FOUND)
+        const flood = room.outPathLen === OUT_PATH_UNKNOWN
+        this.write(
+          concat(new Uint8Array([RESP.SENT, flood ? 1 : 0]), fromHex(key.slice(0, 8)), u32le(4000))
+        )
+        const server = this.air?.byPrefix(key.slice(0, 12), this)
+        if (server instanceof FakeRoomServer) {
+          setTimeout(() => server.handleLogin(this, password), 0)
+        }
         return
       }
       case CMD.SEND_CHANNEL_TXT_MSG: {
@@ -454,7 +470,7 @@ export class FakeCompanion {
   // ─── Эфир ─────────────────────────────────────────────────────────────────
 
   /** MyMesh::addToOfflineQueue: при переполнении вытесняется старейшее из канала. */
-  private enqueue(frame: Uint8Array): void {
+  protected enqueue(frame: Uint8Array): void {
     if (this.offlineQueue.length >= OFFLINE_QUEUE_SIZE) {
       const i = this.offlineQueue.findIndex(
         (f) => f[0] === RESP.CHANNEL_MSG_RECV || f[0] === RESP.CHANNEL_MSG_RECV_V3
@@ -518,6 +534,39 @@ export class FakeCompanion {
       )
     )
     return true
+  }
+
+  /** Ответ комнаты на вход (PUSH_CODE_LOGIN_SUCCESS / LOGIN_FAIL). */
+  receiveLoginResult(room: FakeCompanion, ok: boolean, isAdmin = false): void {
+    if (!this.connected) return
+    this.write(
+      ok
+        ? concat(
+            new Uint8Array([PUSH.LOGIN_SUCCESS, isAdmin ? 1 : 0]),
+            fromHex(room.publicKey.slice(0, 12)),
+            u32le(room.time),
+            new Uint8Array([isAdmin ? 3 : 1, 1])
+          )
+        : concat(new Uint8Array([PUSH.LOGIN_FAIL, 0]), fromHex(room.publicKey.slice(0, 12)))
+    )
+  }
+
+  /** Пост комнаты: подписанное сообщение с 4 байтами ключа автора (onSignedMessageRecv). */
+  receiveSigned(room: FakeCompanion, ts: number, authorKey: string, text: string): void {
+    const head =
+      this.appVersion >= 3
+        ? new Uint8Array([RESP.CONTACT_MSG_RECV_V3, 32, 0, 0])
+        : new Uint8Array([RESP.CONTACT_MSG_RECV])
+    this.enqueue(
+      concat(
+        head,
+        fromHex(room.publicKey.slice(0, 12)),
+        new Uint8Array([0xff, TXT_TYPE.SIGNED_PLAIN]),
+        u32le(ts),
+        fromHex(authorKey.slice(0, 8)),
+        utf8(text)
+      )
+    )
   }
 
   private receiveAck(ack: string): void {
@@ -608,4 +657,93 @@ function decodeFakeContact(frame: Uint8Array): FakeContact {
   const lon = r.remaining >= 4 ? r.i32() : 0
   const lastMod = r.remaining >= 4 ? r.u32() : 0
   return { publicKey, type, flags, outPathLen, name, lastAdvert, lat, lon, lastMod }
+}
+
+export interface FakeRoomOptions extends FakeCompanionOptions {
+  /** Пароль гостя; пустой — пускать всех. */
+  password?: string
+  /** Пароль администратора. */
+  adminPassword?: string
+}
+
+/**
+ * Комната MeshCore (room server, examples/simple_room_server): пускает по
+ * паролю, хранит посты и рассылает их вошедшим подписанными сообщениями —
+ * сразу и тем, кто войдёт позже (посты новее их последней синхронизации).
+ */
+export class FakeRoomServer extends FakeCompanion {
+  readonly password: string
+  readonly adminPassword: string
+  /** Кто вошёл: ключ → время последнего поста, который он уже получил. */
+  readonly members = new Map<string, number>()
+  readonly posts: Array<{ author: string; ts: number; text: string }> = []
+
+  constructor(air: FakeAir, options: FakeRoomOptions) {
+    super(air, options)
+    this.password = options.password ?? ''
+    this.adminPassword = options.adminPassword ?? 'admin'
+  }
+
+  /** Узел знает комнату, а комната — его (как после объявлений). */
+  meet(member: FakeCompanion): void {
+    if (!member.contacts.some((c) => c.publicKey === this.publicKey)) {
+      member.contacts.push({
+        publicKey: this.publicKey,
+        type: ADV_TYPE.ROOM,
+        flags: 0,
+        outPathLen: OUT_PATH_UNKNOWN,
+        name: this.name,
+        lastAdvert: this.time,
+        lat: 0,
+        lon: 0,
+        lastMod: member.time,
+      })
+    }
+    if (!this.contacts.some((c) => c.publicKey === member.publicKey)) {
+      this.contacts.push({
+        publicKey: member.publicKey,
+        type: ADV_TYPE.CHAT,
+        flags: 0,
+        outPathLen: OUT_PATH_UNKNOWN,
+        name: member.name,
+        lastAdvert: member.time,
+        lat: 0,
+        lon: 0,
+        lastMod: this.time,
+      })
+    }
+  }
+
+  handleLogin(from: FakeCompanion, password: string): void {
+    const known = this.members.has(from.publicKey)
+    const isAdmin = password === this.adminPassword
+    // Пустой пароль пускает тех, кто уже входил (ACL), и в открытую комнату.
+    const ok =
+      isAdmin || (password === '' ? known || this.password === '' : password === this.password)
+    // Как прошивка: на неверный пароль комната молчит, клиент ждёт до таймаута.
+    if (!ok) return
+    from.receiveLoginResult(this, true, isAdmin)
+    const since = this.members.get(from.publicKey) ?? 0
+    this.members.set(from.publicKey, since)
+    for (const p of this.posts) {
+      if (p.ts > since && p.author !== from.publicKey)
+        from.receiveSigned(this, p.ts, p.author, p.text)
+    }
+    this.members.set(from.publicKey, this.posts[this.posts.length - 1]?.ts ?? since)
+  }
+
+  /** Пост от вошедшего: сохранить и разослать остальным вошедшим. */
+  override receiveDirect(from: FakeCompanion, ts: number, text: string, flood: boolean): boolean {
+    if (!this.members.has(from.publicKey)) return super.receiveDirect(from, ts, text, flood)
+    this.posts.push({ author: from.publicKey, ts, text })
+    for (const key of this.members.keys()) {
+      if (key === from.publicKey) continue
+      const member = this.air?.byPrefix(key.slice(0, 12), this)
+      if (member) {
+        member.receiveSigned(this, ts, from.publicKey, text)
+        this.members.set(key, ts)
+      }
+    }
+    return true
+  }
 }

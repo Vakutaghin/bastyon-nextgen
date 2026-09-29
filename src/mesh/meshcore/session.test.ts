@@ -7,7 +7,7 @@ import { hashtagSecret } from './channels'
 import { OUT_PATH_UNKNOWN, PUBLIC_CHANNEL_SECRET } from './constants'
 import type { FrameLink } from './framing'
 import { MeshCoreSession, type DeliveryUpdate, type SessionMessage } from './session'
-import { FakeAir, FakeCompanion } from './testing/fake-companion'
+import { FakeAir, FakeCompanion, FakeRoomServer } from './testing/fake-companion'
 
 const FAST = {
   minAckWaitMs: 40,
@@ -278,5 +278,59 @@ describe('MeshCoreSession', () => {
     expect(found.name).toBe('Dave')
     await a.addContact(found)
     expect(a.findContact(dave.publicKey.slice(0, 12))?.name).toBe('Dave')
+  })
+})
+
+describe('MeshCore rooms (room server)', () => {
+  function world() {
+    const { air, alice, bob } = pair()
+    const room = new FakeRoomServer(air, { name: 'Кофейня', password: 'hello' })
+    room.meet(alice)
+    room.meet(bob)
+    return { air, alice, bob, room }
+  }
+
+  const ROOM = { ...FAST, loginMinWaitMs: 150 }
+
+  it('logs in with the password; a wrong one gets no answer and times out', async () => {
+    const { alice, room } = world()
+    const s = await MeshCoreSession.open(alice.connect(), ROOM)
+    await expect(s.login(room.publicKey, 'wrong')).rejects.toMatchObject({
+      message: 'login_timeout',
+    })
+    expect(await s.login(room.publicKey, 'hello')).toEqual({ ok: true, isAdmin: false })
+    expect(await s.login(room.publicKey, 'admin')).toEqual({ ok: true, isAdmin: true })
+    // Уже входил — комната пускает без пароля.
+    expect(await s.login(room.publicKey, '')).toEqual({ ok: true, isAdmin: false })
+  })
+
+  it('refuses to log in to a room that is not in the contacts', async () => {
+    const { alice } = world()
+    const s = await MeshCoreSession.open(alice.connect(), ROOM)
+    await expect(s.login('ab'.repeat(32), 'hello')).rejects.toBeInstanceOf(MeshCoreError)
+  })
+
+  it('brings posts as room messages with their authors, including those written before the login', async () => {
+    const { alice, bob, room } = world()
+    const a = await MeshCoreSession.open(alice.connect(), ROOM)
+    const b = await MeshCoreSession.open(bob.connect(), ROOM)
+    await b.login(room.publicKey, 'hello')
+    // Боб пишет в комнату, пока Алисы там нет.
+    await new Promise<void>((resolve) => {
+      void b.sendDirect(room.publicKey, 'кто в кофейне?', 1_750_000_100, (u) => {
+        if (u.status === 'delivered') resolve()
+      })
+    })
+    const inbox = collect(a)
+    await a.login(room.publicKey, 'hello')
+    await vi.waitFor(() => expect(inbox).toHaveLength(1))
+    expect(inbox[0]).toMatchObject({
+      kind: 'direct',
+      room: true,
+      peerName: 'Кофейня',
+      authorPrefix: bob.publicKey.slice(0, 8),
+      senderName: 'Bob',
+      text: 'кто в кофейне?',
+    })
   })
 })

@@ -217,8 +217,8 @@ const isSeen = computed<boolean>(
 
 /** Сообщение через mesh-радио (src/mesh), а не через Matrix. */
 const isMesh = computed<boolean>(() => isMeshTransport(props.message.transport))
-const isMeshChannel = computed<boolean>(
-  () => isMesh.value && parseMeshDialogId(props.message.chatId)?.kind === 'channel'
+const meshKind = computed(() =>
+  isMesh.value ? (parseMeshDialogId(props.message.chatId)?.kind ?? null) : null
 )
 /** Meshtastic передаёт ответы и реакции по радио — если у сообщения есть id пакета. */
 const isMeshReplyable = computed<boolean>(
@@ -241,7 +241,12 @@ const deliveryMark = computed<{ mark: string; title: string } | null>(() => {
         // В канале Meshtastic подтверждения от адресата нет: «✓✓» — ретранслировали.
         return {
           mark: '✓✓',
-          title: isMeshChannel.value ? t('mesh.chat.relayed') : t('mesh.chat.delivered'),
+          title:
+            meshKind.value === 'channel'
+              ? t('mesh.chat.relayed')
+              : meshKind.value === 'room'
+                ? t('mesh.chat.roomDelivered')
+                : t('mesh.chat.delivered'),
         }
       default:
         return null

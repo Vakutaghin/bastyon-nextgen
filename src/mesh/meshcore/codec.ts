@@ -11,6 +11,7 @@ import {
   MAX_PATH_SIZE,
   NAME_FIELD_SIZE,
   PUB_KEY_SIZE,
+  PUSH,
   RESP,
   TXT_TYPE,
 } from './constants'
@@ -167,6 +168,9 @@ export const encode = {
       keyBytes(publicKey, 6),
       utf8(text)
     ),
+  /** Вход в комнату: полный ключ и пароль (без завершающего нуля — его допишет радио). */
+  sendLogin: (publicKey: string, password: string): Uint8Array =>
+    concat(new Uint8Array([CMD.SEND_LOGIN]), keyBytes(publicKey), utf8(password)),
   sendChannelText: (channelIndex: number, text: string, timestamp: number): Uint8Array =>
     concat(
       new Uint8Array([CMD.SEND_CHANNEL_TXT_MSG, TXT_TYPE.PLAIN, channelIndex]),
@@ -316,6 +320,24 @@ export function decodeSent(frame: Uint8Array): McSent {
   const ack = toHex(r.bytesN(4))
   const timeoutMs = r.u32()
   return { flood, ack, timeoutMs }
+}
+
+/** Итог входа в комнату (MyMesh::onContactResponse). */
+export interface McLoginResult {
+  ok: boolean
+  /** Первые 6 байт ключа комнаты (hex). */
+  prefix: string
+  /** Права: бит 0 — администратор. */
+  permissions: number
+}
+
+/** PUSH_CODE_LOGIN_SUCCESS / LOGIN_FAIL: код, права, 6 байт ключа комнаты, дальше — по версии. */
+export function decodeLoginResult(frame: Uint8Array): McLoginResult {
+  const r = new ByteReader(frame)
+  const code = r.u8()
+  const permissions = r.u8()
+  const prefix = toHex(r.bytesN(6))
+  return { ok: code === PUSH.LOGIN_SUCCESS, prefix, permissions }
 }
 
 /** PUSH_CODE_SEND_CONFIRMED (MyMesh::processAck): ACK и время пути, мс. */

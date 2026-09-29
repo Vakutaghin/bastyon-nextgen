@@ -114,6 +114,7 @@ const networkTitle = computed<string>(() => {
   const d = props.dialog
   if (!isMeshTransport(d.transport)) return ''
   const network = t(`mesh.networks.${d.transport}`)
+  if (d.meshKind === 'room') return `${network} · ${t('mesh.chat.roomShort')}`
   if (d.meshKind === 'channel' && d.channelKind !== 'private') {
     return `${network} · ${t('mesh.chat.openChannel')}`
   }

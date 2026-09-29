@@ -1667,6 +1667,13 @@ export default {
       discoveredHint:
         'Estos nodos se anunciaron, pero no entraron en los contactos de la radio: los añade a mano o no le queda espacio. Sin contacto, la radio no puede descifrar sus mensajes directos.',
       add: 'Añadir',
+      login: 'Entrar',
+      openRoom: 'Abrir',
+      loginTitle: 'Entrar en la sala «{name}»',
+      loginHint:
+        'La contraseña la da el dueño de la sala. Si ya entraste antes, puedes dejarla vacía.',
+      password: 'Contraseña',
+      loggedIn: 'Estás en la sala. Sus mensajes llegarán al mensajero.',
     },
     channels: {
       title: 'Canales',
@@ -1813,6 +1820,9 @@ export default {
       pkiEncryption: 'cifrado con claves de nodo en la radio, no en la aplicación',
       relayed: 'La red lo oyó y lo retransmitió',
       regionUnset: 'La radio no tiene región elegida',
+      room: 'sala: un servidor de sala guarda y reparte los mensajes; cifrado como en los mensajes directos de MeshCore',
+      roomShort: 'sala',
+      roomDelivered: 'La sala aceptó el mensaje',
     },
     errors: {
       generic: 'No ha funcionado ({code}).',
@@ -1867,6 +1877,8 @@ export default {
       bad_channel_link: 'No es un enlace de canal de Meshtastic.',
       send_failed: 'El mensaje no se envió.',
       rebooted: 'La radio se reinició.',
+      login_timeout: 'La sala no respondió: la contraseña no era correcta o no oye la radio.',
+      login_failed: 'La sala no te dejó entrar.',
     },
   },
   hotkeys: {

@@ -1659,6 +1659,13 @@ export default {
       discoveredHint:
         'Questi nodi si sono annunciati ma non sono entrati nei contatti della radio: li aggiunge a mano oppure non ha spazio. Senza contatto la radio non può decifrare i loro messaggi diretti.',
       add: 'Aggiungi',
+      login: 'Entra',
+      openRoom: 'Apri',
+      loginTitle: 'Entra nella stanza «{name}»',
+      loginHint:
+        'La password la dà il proprietario della stanza. Se sei già entrato, puoi lasciarla vuota.',
+      password: 'Password',
+      loggedIn: 'Sei nella stanza. I suoi messaggi arriveranno nel messenger.',
     },
     channels: {
       title: 'Canali',
@@ -1804,6 +1811,9 @@ export default {
       pkiEncryption: "cifrato con le chiavi dei nodi nella radio, non nell'app",
       relayed: 'Sentito e inoltrato dalla rete',
       regionUnset: 'La radio non ha una regione scelta',
+      room: 'stanza: un server della stanza conserva e inoltra i messaggi; cifratura come nei messaggi diretti MeshCore',
+      roomShort: 'stanza',
+      roomDelivered: 'La stanza ha accettato il messaggio',
     },
     errors: {
       generic: 'Non è riuscito ({code}).',
@@ -1857,6 +1867,8 @@ export default {
       bad_channel_link: 'Non è un link di canale Meshtastic.',
       send_failed: 'Il messaggio non è stato inviato.',
       rebooted: 'La radio si è riavviata.',
+      login_timeout: 'La stanza non ha risposto: password errata o non sente la radio.',
+      login_failed: "La stanza ha rifiutato l'accesso.",
     },
   },
   hotkeys: {

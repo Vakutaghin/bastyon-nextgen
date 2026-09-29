@@ -24,6 +24,7 @@ import type { Dialog, Message } from '@/b-components/messenger/types'
 import {
   channelDialogId,
   directDialogId,
+  roomDialogId,
   meshSenderId,
   nodeKey,
   nodeNumOf,
@@ -52,8 +53,8 @@ type ChannelKind = 'public' | 'hashtag' | 'private'
 interface Incoming {
   network: MeshNetwork
   selfKey: string
-  kind: 'direct' | 'channel'
-  /** ЛС: собеседник (MeshCore — префикс ключа, Meshtastic — номер узла hex). */
+  kind: 'direct' | 'channel' | 'room'
+  /** ЛС и комната: собеседник (MeshCore — префикс ключа, Meshtastic — номер узла hex). */
   peerKey?: string
   /** ЛС: полный ключ собеседника, если известен (MeshCore). */
   peerFullKey?: string | null
@@ -167,6 +168,17 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     }
   }
 
+  function roomFields(network: MeshNetwork, selfKey: string, room: string, name: string) {
+    return {
+      id: roomDialogId(network, selfKey, room),
+      network,
+      selfKey: selfKey.slice(0, 12).toLowerCase(),
+      kind: 'room' as const,
+      peerKey: null as string | null,
+      name,
+    }
+  }
+
   function channelFields(
     network: MeshNetwork,
     selfKey: string,
@@ -196,6 +208,16 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
         contact.name || shortKey(contact.publicKey)
       ),
       peerKey: contact.publicKey,
+    })
+    return d.id
+  }
+
+  /** Комната MeshCore (room server) — после входа на странице Mesh. */
+  async function ensureRoomDialog(selfKey: string, room: McContact): Promise<string> {
+    await ensureLoaded()
+    const d = await createDialog({
+      ...roomFields('meshcore', selfKey, room.publicKey, room.name || shortKey(room.publicKey)),
+      peerKey: room.publicKey,
     })
     return d.id
   }
@@ -240,7 +262,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
       if (!parsed) continue
       let name = d.name
       let peerKey = d.peerKey
-      if (parsed.kind === 'direct') {
+      if (parsed.kind === 'direct' || parsed.kind === 'room') {
         const c = contacts.find((x) => x.publicKey.startsWith(parsed.key))
         if (c) {
           name = c.name || name
@@ -293,6 +315,26 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
 
   /** Сообщение от радио MeshCore. */
   async function receive(m: SessionMessage, selfKey: string): Promise<void> {
+    if (m.kind === 'direct' && m.room) {
+      // Пост комнаты: диалог — комната, отправитель — автор (4 байта ключа).
+      const author = m.authorPrefix
+      await ingest({
+        network: 'meshcore',
+        selfKey,
+        kind: 'room',
+        peerKey: m.peerPrefix,
+        peerFullKey: m.peerKey,
+        senderKey: author,
+        senderName: author ? m.senderName : m.peerName,
+        dialogName: m.peerName || shortKey(m.peerPrefix),
+        senderTs: m.senderTimestamp,
+        text: m.text,
+        uniq: `${author ?? m.peerPrefix}|${m.senderTimestamp}|${m.text}`,
+        hops: m.hops,
+        snr: m.snr,
+      })
+      return
+    }
     const senderKey = m.kind === 'direct' ? m.peerPrefix : null
     await ingest({
       network: 'meshcore',
@@ -348,7 +390,12 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
             ...directFields(m.network, m.selfKey, m.peerKey!, m.dialogName),
             peerKey: m.peerFullKey ?? (m.network === 'meshtastic' ? m.peerKey! : null),
           })
-        : await createDialog(channelFields(m.network, m.selfKey, m.channel!))
+        : m.kind === 'room'
+          ? await createDialog({
+              ...roomFields(m.network, m.selfKey, m.peerKey!, m.dialogName),
+              peerKey: m.peerFullKey ?? null,
+            })
+          : await createDialog(channelFields(m.network, m.selfKey, m.channel!))
     if (m.peerPublicKey && dialog.peerPublicKey !== m.peerPublicKey) {
       dialog.peerPublicKey = m.peerPublicKey
       await saveDialog(dialog)
@@ -381,7 +428,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     // Реакция не новое сообщение: без непрочитанного и звука.
     if (m.reactionTo !== undefined) return
     dialog.lastTs = record.ts
-    dialog.lastText = m.kind === 'channel' && m.senderName ? `${m.senderName}: ${m.text}` : m.text
+    dialog.lastText = m.kind !== 'direct' && m.senderName ? `${m.senderName}: ${m.text}` : m.text
     dialog.lastMine = false
     const ui = useMessengerUiStore()
     if (!ui.isChatOnScreen(dialog.id)) {
@@ -437,6 +484,8 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
   function textLimit(dialogId: string): number {
     const parsed = parseMeshDialogId(dialogId)
     if (parsed?.network === 'meshtastic') return MT_MAX_TEXT_BYTES
+    // Комната пересылает пост с 4 байтами ключа автора — они съедают место.
+    if (parsed?.kind === 'room') return MAX_TEXT_LEN - 4
     if (parsed?.kind !== 'channel') return MAX_TEXT_LEN
     const conn = useMeshConnectionStore()
     // Радио MeshCore допишет «имя: » перед текстом.
@@ -713,6 +762,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     ensureLoaded,
     ensureDirectDialog,
     ensureChannelDialog,
+    ensureRoomDialog,
     ensureMeshtasticDirectDialog,
     ensureMeshtasticChannelDialog,
     syncNames,

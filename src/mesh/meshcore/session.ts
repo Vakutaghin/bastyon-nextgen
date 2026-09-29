@@ -12,10 +12,18 @@
  */
 
 import { hopCount, isEmptyChannel, splitChannelText } from './codec'
-import type { McBattery, McContact, McDeviceInfo, McIncoming, McSelfInfo, McSent } from './codec'
+import type {
+  McBattery,
+  McContact,
+  McDeviceInfo,
+  McIncoming,
+  McLoginResult,
+  McSelfInfo,
+  McSent,
+} from './codec'
 import { MeshCoreClient, MeshCoreError, keyPrefix, type MeshCoreClientOptions } from './client'
 import type { FrameLink } from './framing'
-import { OUT_PATH_UNKNOWN, TXT_TYPE } from './constants'
+import { ADV_TYPE, OUT_PATH_UNKNOWN, TXT_TYPE } from './constants'
 import { channelId, channelKind, type ChannelKind } from './channels'
 import type { CloseReason, Unsubscribe } from '../radio/types'
 
@@ -44,6 +52,12 @@ export type SessionMessage =
       /** Первые 6 байт ключа собеседника (hex) — так радио адресует ЛС. */
       peerPrefix: string
       peerKey: string | null
+      /** Собеседник — комната (room server): сообщения в ней пишут разные люди. */
+      room: boolean
+      /** Имя собеседника (комнаты) в контактах радио. */
+      peerName: string | null
+      /** Пост в комнате: первые 4 байта ключа автора (hex). */
+      authorPrefix: string | null
     })
   | (BaseMessage & { kind: 'channel'; channel: SessionChannel })
 
@@ -79,6 +93,8 @@ export interface SessionOptions extends MeshCoreClientOptions {
   maxAckWaitMs?: number
   /** Пауза перед повтором, если очередь отправки радио полна, мс. */
   busyRetryMs?: number
+  /** Сколько минимум ждать ответа комнаты на вход, мс. */
+  loginMinWaitMs?: number
 }
 
 interface Delivery {
@@ -101,6 +117,7 @@ const DEFAULTS = {
   minAckWaitMs: 4_000,
   maxAckWaitMs: 90_000,
   busyRetryMs: 3_000,
+  loginMinWaitMs: 10_000,
 }
 
 export class MeshCoreSession {
@@ -276,6 +293,38 @@ export class MeshCoreSession {
     this.self = { ...this.self, name: name.trim() }
   }
 
+  /**
+   * Войти в комнату (room server) с паролем. Ответ комнаты идёт по эфиру —
+   * ждём его чуть дольше, чем радио оценило путь. После входа радио само
+   * держит связь, а комната присылает посты, которых здесь ещё не было.
+   */
+  async login(publicKey: string, password: string): Promise<{ ok: boolean; isAdmin: boolean }> {
+    const prefix = publicKey.slice(0, 12).toLowerCase()
+    let stop: () => void = () => {}
+    const answer = new Promise<McLoginResult>((resolve) => {
+      stop = this.client.on('login', (r) => {
+        if (r.prefix === prefix) resolve(r)
+      })
+    })
+    try {
+      const sent = await this.client.sendLogin(publicKey, password)
+      const waitMs = Math.min(Math.max(sent.timeoutMs * 2, this.opts.loginMinWaitMs), 60_000)
+      let timer: ReturnType<typeof setTimeout> | null = null
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new MeshCoreError('timeout', null, 'login_timeout')),
+          waitMs
+        )
+      })
+      const r = await Promise.race([answer, timeout]).finally(() => {
+        if (timer) clearTimeout(timer)
+      })
+      return { ok: r.ok, isAdmin: (r.permissions & 1) === 1 }
+    } finally {
+      stop()
+    }
+  }
+
   async battery(): Promise<McBattery> {
     return this.client.getBattery()
   }
@@ -360,6 +409,9 @@ export class MeshCoreSession {
         kind: 'direct',
         peerPrefix: m.senderPrefix,
         peerKey: contact?.publicKey ?? null,
+        room: contact?.type === ADV_TYPE.ROOM || m.txtType === TXT_TYPE.SIGNED_PLAIN,
+        peerName: contact?.name ?? null,
+        authorPrefix: m.txtType === TXT_TYPE.SIGNED_PLAIN ? m.authorPrefix : null,
         senderName: author ?? contact?.name ?? null,
         text: m.text,
         senderTimestamp: m.senderTimestamp,

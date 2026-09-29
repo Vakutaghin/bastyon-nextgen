@@ -41,20 +41,30 @@ export function channelDialogId(network: MeshNetwork, selfKey: string, channelId
   return `${MESH_DIALOG_PREFIX}${NETWORK_CODE[network]}:${short(selfKey)}:g:${channelId}`
 }
 
+/** Комната MeshCore (room server): как ЛС с ней, но пишут в неё разные люди. */
+export function roomDialogId(network: MeshNetwork, selfKey: string, roomKey: string): string {
+  return `${MESH_DIALOG_PREFIX}${NETWORK_CODE[network]}:${short(selfKey)}:r:${short(roomKey)}`
+}
+
+export type MeshDialogKind = 'direct' | 'channel' | 'room'
+
 export interface ParsedMeshDialogId {
   network: MeshNetwork
   selfKey: string
-  kind: 'direct' | 'channel'
-  /** Префикс ключа собеседника или id канала. */
+  kind: MeshDialogKind
+  /** Префикс ключа собеседника или комнаты, id канала. */
   key: string
 }
+
+const KIND_OF: Record<string, MeshDialogKind> = { u: 'direct', g: 'channel', r: 'room' }
 
 export function parseMeshDialogId(id: string): ParsedMeshDialogId | null {
   if (!isMeshDialogId(id)) return null
   const [, code, selfKey, kind, key] = id.split(':')
   const network = code ? CODE_NETWORK[code] : undefined
-  if (!network || !selfKey || !key || (kind !== 'u' && kind !== 'g')) return null
-  return { network, selfKey, kind: kind === 'u' ? 'direct' : 'channel', key }
+  const dialogKind = kind ? KIND_OF[kind] : undefined
+  if (!network || !selfKey || !key || !dialogKind) return null
+  return { network, selfKey, kind: dialogKind, key }
 }
 
 /** Отправитель в канале известен только по имени, которое написало его радио. */

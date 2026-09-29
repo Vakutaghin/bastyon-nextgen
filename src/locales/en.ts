@@ -1649,6 +1649,13 @@ export default {
       discoveredHint:
         'These nodes announced themselves but did not make it into the radio contacts: the radio adds them manually, or it has no room. Without a contact, the radio cannot decrypt their direct messages.',
       add: 'Add',
+      login: 'Log in',
+      openRoom: 'Open',
+      loginTitle: 'Log in to room "{name}"',
+      loginHint:
+        'The room owner gives out the password. If you have logged in before, you can leave it empty.',
+      password: 'Password',
+      loggedIn: 'You are in the room. Its messages will arrive in the messenger.',
     },
     channels: {
       title: 'Channels',
@@ -1794,6 +1801,9 @@ export default {
       pkiEncryption: 'encrypted with node keys on the radio, not in the app',
       relayed: 'Heard and passed on by the mesh',
       regionUnset: 'The radio has no region set',
+      room: 'room: a room server stores and relays the messages; encryption as in MeshCore direct messages',
+      roomShort: 'room',
+      roomDelivered: 'The room accepted the message',
     },
     errors: {
       generic: 'That did not work ({code}).',
@@ -1847,6 +1857,8 @@ export default {
       bad_channel_link: 'This is not a Meshtastic channel link.',
       send_failed: 'The message was not sent.',
       rebooted: 'The radio restarted.',
+      login_timeout: 'The room did not answer: the password was wrong or it cannot hear the radio.',
+      login_failed: 'The room refused the login.',
     },
   },
   hotkeys: {

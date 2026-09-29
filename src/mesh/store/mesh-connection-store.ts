@@ -43,6 +43,8 @@ export const useMeshConnectionStore = defineStore('mesh-connection', () => {
   const discovered = ref<McContact[]>([])
   const battery = ref<McBattery | null>(null)
   const contactsFull = ref(false)
+  /** Комнаты, в которые вошли за этот сеанс радио (ключ → администратор ли). */
+  const rooms = ref<Record<string, { isAdmin: boolean }>>({})
   /** Текущий сеанс; сам объект не реактивный. */
   const session = shallowRef<MeshCoreSession | null>(null)
   const lastDevice = ref<MeshTarget | null>(null)
@@ -138,6 +140,7 @@ export const useMeshConnectionStore = defineStore('mesh-connection', () => {
       status.value = 'connected'
       reconnectAttempt = 0
       contactsFull.value = false
+      if (!opts.reconnecting) rooms.value = {}
       const address = useAuthStore().address ?? null
       saveLastDevice(address, 'meshcore', to)
       lastDevice.value = to
@@ -228,6 +231,18 @@ export const useMeshConnectionStore = defineStore('mesh-connection', () => {
     discovered.value = discovered.value.filter((d) => d.publicKey !== contact.publicKey)
   }
 
+  /**
+   * Войти в комнату (room server). Неверный пароль комната не отвергает, а
+   * молчит — тогда ошибка `login_timeout`.
+   */
+  async function loginRoom(publicKey: string, password: string): Promise<{ isAdmin: boolean }> {
+    const s = requireSession()
+    const r = await s.login(publicKey, password)
+    if (!r.ok) throw radioErrorFrom('login_failed')
+    rooms.value = { ...rooms.value, [publicKey]: { isAdmin: r.isAdmin } }
+    return { isAdmin: r.isAdmin }
+  }
+
   async function removeContact(publicKey: string): Promise<void> {
     await requireSession().removeContact(publicKey)
   }
@@ -258,6 +273,7 @@ export const useMeshConnectionStore = defineStore('mesh-connection', () => {
     channels.value = []
     discovered.value = []
     contactsFull.value = false
+    rooms.value = {}
     lastDevice.value = null
   }
 
@@ -275,6 +291,7 @@ export const useMeshConnectionStore = defineStore('mesh-connection', () => {
     discovered,
     battery,
     contactsFull,
+    rooms,
     session,
     lastDevice,
     refreshLastDevice,
@@ -284,6 +301,7 @@ export const useMeshConnectionStore = defineStore('mesh-connection', () => {
     sendAdvert,
     rename,
     addDiscovered,
+    loginRoom,
     removeContact,
     addHashtagChannel,
     addPrivateChannel,

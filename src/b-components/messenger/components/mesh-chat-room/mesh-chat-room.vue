@@ -143,6 +143,7 @@ const isOpenChannel = computed(
  */
 const securityText = computed<string>(() => {
   const d = dialog.value
+  if (d?.kind === 'room') return t('mesh.chat.room')
   if (!d || d.kind === 'direct') {
     return network.value === 'meshtastic'
       ? t('mesh.chat.pkiEncryption')

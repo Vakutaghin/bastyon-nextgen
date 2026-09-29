@@ -17,7 +17,15 @@
           <SC_MeshItemMeta>{{ describe(c) }}</SC_MeshItemMeta>
         </SC_MeshItemMain>
         <SC_MeshItemActions>
-          <Button v-if="canWrite(c)" size="small" type="primary" @click="writeTo(c)">
+          <template v-if="c.type === ADV_TYPE.ROOM">
+            <Button v-if="rooms[c.publicKey]" size="small" type="primary" @click="openRoom(c)">
+              {{ t('mesh.contacts.openRoom') }}
+            </Button>
+            <Button v-else size="small" type="primary" @click="startLogin(c)">
+              {{ t('mesh.contacts.login') }}
+            </Button>
+          </template>
+          <Button v-else-if="canWrite(c)" size="small" type="primary" @click="writeTo(c)">
             {{ t('mesh.contacts.write') }}
           </Button>
           <Button size="small" danger @click="confirmRemove(c)">{{
@@ -26,6 +34,27 @@
         </SC_MeshItemActions>
       </SC_MeshItem>
     </SC_MeshList>
+
+    <template v-if="loginTarget">
+      <SC_MeshSubtitle>
+        {{
+          t('mesh.contacts.loginTitle', {
+            name: loginTarget.name || loginTarget.publicKey.slice(0, 8),
+          })
+        }}
+      </SC_MeshSubtitle>
+      <SC_MeshNote>{{ t('mesh.contacts.loginHint') }}</SC_MeshNote>
+      <SC_MeshForm @submit.prevent="login">
+        <SC_MeshField>
+          {{ t('mesh.contacts.password') }}
+          <SC_MeshInput v-model="password" type="password" maxlength="15" autocomplete="off" />
+        </SC_MeshField>
+        <Button type="primary" html-type="submit" :loading="loggingIn">
+          {{ t('mesh.contacts.login') }}
+        </Button>
+        <Button @click="loginTarget = null">{{ t('messenger.cancel') }}</Button>
+      </SC_MeshForm>
+    </template>
 
     <template v-if="discovered.length > 0">
       <SC_MeshSubtitle>{{ t('mesh.contacts.discovered') }}</SC_MeshSubtitle>
@@ -44,6 +73,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { Button, Modal } from 'ant-design-vue'
@@ -58,6 +88,9 @@ import {
   SC_MeshCardHead,
   SC_MeshCardTitle,
   SC_MeshCount,
+  SC_MeshField,
+  SC_MeshForm,
+  SC_MeshInput,
   SC_MeshItem,
   SC_MeshItemActions,
   SC_MeshItemMain,
@@ -71,9 +104,37 @@ import {
 
 const { t } = useI18n()
 const connection = useMeshConnectionStore()
-const { contacts, discovered, contactsFull } = storeToRefs(connection)
+const { contacts, discovered, contactsFull, rooms } = storeToRefs(connection)
 const act = useMeshAction()
-const { writeTo } = useMeshOpenChat()
+const { writeTo, openRoom } = useMeshOpenChat()
+
+// Вход в комнату: пароль даёт её хозяин.
+const loginTarget = ref<McContact | null>(null)
+const password = ref('')
+const loggingIn = ref(false)
+
+function startLogin(c: McContact): void {
+  loginTarget.value = c
+  password.value = ''
+}
+
+async function login(): Promise<void> {
+  const room = loginTarget.value
+  if (!room || loggingIn.value) return
+  loggingIn.value = true
+  try {
+    const ok = await act(
+      () => connection.loginRoom(room.publicKey, password.value),
+      t('mesh.contacts.loggedIn')
+    )
+    if (ok) {
+      loginTarget.value = null
+      await openRoom(room)
+    }
+  } finally {
+    loggingIn.value = false
+  }
+}
 
 const KIND_KEYS: Record<number, string> = {
   [ADV_TYPE.CHAT]: 'chat',
