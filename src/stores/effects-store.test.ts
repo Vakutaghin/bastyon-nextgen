@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useEffectsStore } from './effects-store'
 
@@ -8,6 +8,10 @@ describe('effects-store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     store = useEffectsStore()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   describe('triggerExplosion', () => {
@@ -24,6 +28,15 @@ describe('effects-store', () => {
     })
 
     it('generates unique ids', () => {
+      store.triggerExplosion(0, 0)
+      store.triggerExplosion(0, 0)
+      expect(store.explosionEvents[0].id).not.toBe(store.explosionEvents[1].id)
+    })
+
+    it('keeps ids unique within one millisecond', () => {
+      // Так совпали id на CI: 1790665827059 + 0.2185 и + 0.21851 — одно и то же число.
+      vi.spyOn(Date, 'now').mockReturnValue(1790665827059)
+      vi.spyOn(Math, 'random').mockReturnValueOnce(0.2185).mockReturnValueOnce(0.21851)
       store.triggerExplosion(0, 0)
       store.triggerExplosion(0, 0)
       expect(store.explosionEvents[0].id).not.toBe(store.explosionEvents[1].id)

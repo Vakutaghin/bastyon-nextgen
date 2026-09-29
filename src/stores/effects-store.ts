@@ -21,10 +21,14 @@ export const useEffectsStore = defineStore('effects', () => {
   }
 
   const explosionEvents = ref<ExplosionEvent[]>([])
+  // Счётчик, а не Date.now() + Math.random(): у числа порядка 10¹² на дробную
+  // часть остаётся ~12 бит, и два события за одну миллисекунду получали один id
+  // примерно в одном случае из 4096.
+  let lastId = 0
 
   const pushEvent = (x: number, y: number, color?: number, variant?: ExplosionVariant) => {
     explosionEvents.value.push({
-      id: Date.now() + Math.random(),
+      id: ++lastId,
       x,
       y,
       color,
