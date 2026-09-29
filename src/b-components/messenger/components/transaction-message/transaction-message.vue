@@ -12,7 +12,7 @@
 
     <SC_Footer>
       <SC_Txid :title="tx.txid">{{ shortTxid }}</SC_Txid>
-      <SC_ExplorerLink :href="explorerUrl" target="_blank" rel="noopener noreferrer">
+      <SC_ExplorerLink :href="explorerUrl" @click.prevent="openInExplorer">
         {{ t('chat.viewInExplorer') }}
       </SC_ExplorerLink>
     </SC_Footer>
@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import {
@@ -75,4 +76,18 @@ const shortTxid = computed<string>(() => {
 const explorerUrl = computed<string>(() => {
   return `/explorer/tx/${encodeURIComponent(tx.value.txid)}`
 })
+
+const router = useRouter()
+
+/**
+ * Эксплорер — страница самого приложения. Раньше ссылка открывалась с
+ * `target="_blank"`: в приложении для компьютера и на телефоне новое окно не
+ * открывается, и нажатие ничего не делало. Полноэкранный чат перекрыл бы
+ * страницу — закрываем его.
+ */
+function openInExplorer(): void {
+  if (!tx.value.txid) return
+  store.isFullScreen = false
+  void router.push({ name: 'explorer-tx', params: { txid: tx.value.txid } })
+}
 </script>
