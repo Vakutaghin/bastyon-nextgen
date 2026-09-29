@@ -52,6 +52,7 @@ import {
 } from './messenger-mapping'
 import { useMeshConnectionStore } from './mesh-connection-store'
 import { useMeshtasticConnectionStore } from './meshtastic-connection-store'
+import { useMeshRoutesStore } from './mesh-routes-store'
 import { useReticulumStore } from './reticulum-store'
 
 /** Сколько ключей недавних сообщений помнить в памяти — на случай, если база недоступна. */
@@ -961,7 +962,9 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
         mime: a.mime,
         data: toBase64(a.data),
       }))
-      const { id } = await rnsSend(to, record.text, 'auto', '', attachments)
+      // Собеседнику по mesh-маршруту — своя запись связки к первому сообщению.
+      const custom = await useMeshRoutesStore().customFor(to)
+      const { id } = await rnsSend(to, record.text, 'auto', '', attachments, custom)
       update(record, { lxmfId: id })
       lxmfRecords.set(id, record)
     } catch (e) {

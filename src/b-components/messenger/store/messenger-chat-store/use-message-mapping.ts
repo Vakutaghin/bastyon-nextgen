@@ -15,6 +15,7 @@ import {
   getAddressFromMatrixId,
 } from '../../helpers'
 import { matrixService } from '../../services/matrix-service'
+import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
 import { isTrustedMediaUrl, resolveMxcHttpUrl } from '../../services/matrix-service/mxc-resolver'
 import { isGroupEncryptedContent } from '../../services/group-encryption'
 import type { Message, MessageReaction } from '../../types'
@@ -193,6 +194,13 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
     }
 
     const senderId = getEventSender(event)
+    // Собеседник поделился адресом Reticulum: проверенная запись связки даёт
+    // mesh-маршрут к нему (use-mesh-routes).
+    const binding = (finalContent as Record<string, unknown> | null)?.bastyonMesh
+    if (binding && senderId !== currentUser.value.id && senderId !== 'me') {
+      const contact = getAddressFromMatrixId(senderId)
+      if (contact) useMeshRoutesStore().learn(binding, 'matrix', { contact })
+    }
     let senderName = senderId
     if (senderId === currentUser.value.id || senderId === 'me') {
       senderName = currentUser.value.name || t('appMsg.messenger.you')

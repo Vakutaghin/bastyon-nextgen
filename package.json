@@ -63,6 +63,8 @@
     "@ipld/dag-pb": "^4.2.0",
     "@lucide/vue": "^1.48.0",
     "@meshtastic/protobufs": "2.8.0",
+    "@noble/curves": "1.9.7",
+    "@noble/hashes": "1.8.0",
     "@tanstack/vue-query": "^5.92.9",
     "ant-design-vue": "^4.2.6",
     "bech32": "^2.0.0",

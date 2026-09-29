@@ -94,6 +94,15 @@ pub enum Method {
     Propagated,
 }
 
+/// Данные приложения в сообщении LXMF: тип (FIELD_CUSTOM_TYPE) и данные
+/// (FIELD_CUSTOM_DATA, текст — у Bastyon это JSON). Другие клиенты их не видят.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Custom {
+    pub kind: String,
+    pub data: String,
+}
+
 /// Вложение LXMF: картинка (FIELD_IMAGE), файл (FIELD_FILE_ATTACHMENTS) или
 /// голос Opus (FIELD_AUDIO). Байты — в base64: так они идут через IPC.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -127,6 +136,9 @@ pub enum RnsEvent {
         signed: bool,
         method: String,
         attachments: Vec<Attachment>,
+        /// Данные приложения (поля FIELD_CUSTOM_TYPE/DATA): у Bastyon — запись
+        /// связки с аккаунтом.
+        custom: Option<Custom>,
     },
     State {
         id: String,

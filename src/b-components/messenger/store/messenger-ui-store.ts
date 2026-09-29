@@ -59,11 +59,23 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
    * Виден ли чат на экране прямо сейчас: виджет открыт и вкладка не в фоне.
    * От этого зависят read-markers, звук и уведомления (V30).
    */
+  /**
+   * Чаты, которые показываются внутри другого: mesh-диалог собеседника с
+   * mesh-маршрутом — в его диалоге Bastyon (id mesh-диалога → id комнаты).
+   */
+  const chatAliases = new Map<string, string>()
+  const setChatAlias = (chatId: string, shownIn: string): void => {
+    chatAliases.set(chatId, shownIn)
+  }
+
   const isChatOnScreen = (chatId: string | null): boolean => {
     // Полноэкранный режим специально гасит `isOpen` (два окна мессенджера
     // одновременно не показываем), но чат при этом виден.
     if (!isOpen.value && !isFullScreen.value) return false
-    if (!chatId || activeChatId.value !== chatId) return false
+    if (!chatId) return false
+    if (activeChatId.value !== chatId && chatAliases.get(chatId) !== activeChatId.value) {
+      return false
+    }
     if (typeof document !== 'undefined' && document.hidden) return false
     return true
   }
@@ -149,6 +161,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     setActiveChatId,
     closeWidget,
     isChatOnScreen,
+    setChatAlias,
     switchToChat,
     showInvite,
     clearInviteTarget,

@@ -1790,6 +1790,24 @@ export default {
       text: 'Мой адрес в Reticulum — если пропадёт интернет, пишите туда: {address}',
       write: 'Написать через Reticulum',
       startNode: 'Сначала запустите узел Reticulum.',
+      failed: 'Не удалось отправить адрес Reticulum.',
+    },
+    route: {
+      offline: 'Нет связи с сервером — сообщения уйдут через Reticulum.',
+      forced: 'Сообщения уходят через Reticulum.',
+      available:
+        'С собеседником есть маршрут Reticulum: без интернета переписка продолжится здесь.',
+      offlineNoNode:
+        'Нет связи с сервером. Запустите узел Reticulum — сообщения уйдут через mesh-сеть.',
+      offlineNoPath: 'Нет связи ни с сервером, ни с узлом Reticulum.',
+      startNode: 'Запустить Reticulum',
+      useServer: 'Через сервер',
+      useMesh: 'Через Reticulum',
+      bindingMine: '📡 Маршрут Reticulum: собеседник сможет писать вам и без интернета.',
+      bindingTheirs:
+        '📡 Маршрут Reticulum сохранён: без интернета переписка продолжится в этом чате.',
+      shareBack: 'Поделиться своим адресом',
+      via: 'Через Reticulum',
     },
     rns: {
       status: {

@@ -944,6 +944,7 @@ pub fn run() {
       rns::rns_status,
       rns::rns_announce,
       rns::rns_paths,
+      rns::rns_learn,
       rns::rns_send,
       rns::rns_request_path,
       rns::rns_set_propagation_node,

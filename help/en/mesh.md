@@ -133,7 +133,18 @@ If the other person is offline, a message can wait for them on a **propagation n
 
 ### If the internet goes down
 
-In an ordinary Bastyon chat, **My Reticulum address** in the 📎 menu sends the other person your address. Under a message with an address (`lxmf@…`) they get a **Message via Reticulum** button: the conversation opens in a Reticulum chat and goes without the internet, over the local network, a hub or radio. Both of you need the node running.
+In an ordinary Bastyon chat, **My Reticulum address** in the 📎 menu sends the other person your address together with your account's signature. Their app checks the signature and remembers a **Reticulum route** to you. A **Share my address** button appears under the message, so the route can go both ways.
+
+From then on it is one chat:
+
+- While the chat server is reachable, messages go as usual.
+- With no internet or the server down, messages go over Reticulum by themselves: over the local network, a hub or radio. The bottom of the chat says so, and such messages carry a 📡 mark.
+- Replies over Reticulum arrive in the same chat; there is no separate one.
+- The **Via Reticulum** button at the bottom sends over the mesh network even while the internet works.
+
+Both of you need the Reticulum node running. Messages sent over Reticulum stay on this device only and never reach the server. If the other person has not received your address yet, your first message over Reticulum brings it along.
+
+An `lxmf@…` address from Sideband or NomadNet still opens with **Message via Reticulum**, in a separate chat.
 
 ### Pictures, files and voice messages
 

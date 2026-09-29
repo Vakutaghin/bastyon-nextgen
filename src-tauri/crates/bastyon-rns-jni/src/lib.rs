@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
 use bastyon_rns::node::{self, Handle, Runtime};
-use bastyon_rns::types::{parse_hash, Attachment, Download, Method, RnsEvent, StartOptions};
+use bastyon_rns::types::{parse_hash, Attachment, Custom, Download, Method, RnsEvent, StartOptions};
 use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
 use jni::sys::jstring;
 use jni::{JNIEnv, JavaVM};
@@ -148,6 +148,7 @@ pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_send<'l>(
     content: JString<'l>,
     method: JString<'l>,
     attachments: JString<'l>,
+    custom: JString<'l>,
 ) -> jstring {
     let result = (|| {
         let dest = parse_hash::<16>(&text(&mut env, &to)?)?;
@@ -161,7 +162,31 @@ pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_send<'l>(
         } else {
             serde_json::from_str(&raw).map_err(|e| format!("rns_error: {e}"))?
         };
-        with_node(|n| n.send(dest, &title, &content, &attachments, method))
+        // Данные приложения (запись связки): JSON {kind, data} или пусто.
+        let raw = text(&mut env, &custom)?;
+        let custom: Option<Custom> = if raw.is_empty() || raw == "null" {
+            None
+        } else {
+            Some(serde_json::from_str(&raw).map_err(|e| format!("rns_error: {e}"))?)
+        };
+        with_node(|n| n.send(dest, &title, &content, &attachments, method, custom.as_ref()))
+    })();
+    respond(&mut env, result)
+}
+
+/// Запомнить ключ адресата из проверенной записи связки.
+#[no_mangle]
+pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_learn<'l>(
+    mut env: JNIEnv<'l>,
+    _class: JClass<'l>,
+    dest: JString<'l>,
+    key: JString<'l>,
+) -> jstring {
+    let result = (|| {
+        let dest = parse_hash::<16>(&text(&mut env, &dest)?)?;
+        let key = parse_hash::<64>(&text(&mut env, &key)?)?;
+        with_node(|n| n.learn(dest, key))?;
+        Ok(String::new())
     })();
     respond(&mut env, result)
 }

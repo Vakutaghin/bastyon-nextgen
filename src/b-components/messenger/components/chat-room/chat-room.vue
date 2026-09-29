@@ -124,6 +124,12 @@
       {{ typingName ? t('messenger.typingNamed', { name: typingName }) : t('messenger.typing') }}
     </SC_TypingIndicator>
 
+    <MeshRouteBar
+      v-if="meshRoute && !inviteMode"
+      :route="meshRoute"
+      @toggle="activeRoomId && store.toggleMeshRoute(activeRoomId)"
+    />
+
     <SC_MessageInputArea ref="inputAreaRef" :style="isDragging ? DRAG_STYLE : undefined">
       <!-- RECORDING STATE -->
       <template v-if="isRecording || isLocked">
@@ -253,6 +259,7 @@ import { usePartnerInfo } from './use-partner-info'
 import { useChatInput } from './use-chat-input'
 import { useIpfsSend } from './use-ipfs-send'
 import { useMeshShare } from './use-mesh-share'
+import MeshRouteBar from './mesh-route-bar.vue'
 import { tooLargeForChat } from './too-large-for-chat'
 import {
   SC_ChatRoomContainer,
@@ -478,9 +485,11 @@ const inputAreaRef = ref<HTMLElement | null>(null)
 
 // Файл через IPFS — ссылкой в чат, как обычное сообщение.
 const { available: canSendIpfs, sendViaIpfs } = useIpfsSend((text) => emit('send', text))
-const { available: canShareMesh, shareAddress: shareMeshAddress } = useMeshShare((text) =>
-  emit('send', text)
+const { available: canShareMesh, shareAddress: shareMeshAddress } = useMeshShare(() =>
+  activeRoomId.value ? store.shareMeshBinding(activeRoomId.value) : Promise.resolve('failed')
 )
+/** mesh-маршрут собеседника (он поделился адресом Reticulum). */
+const meshRoute = computed(() => store.activeMeshRoute)
 
 async function handlePickFiles(files: File[]): Promise<void> {
   if (!store.activeChatId) return

@@ -129,11 +129,23 @@ pub fn rns_send(
     title: String,
     method: Method,
     attachments: Option<Vec<Attachment>>,
+    custom: Option<types::Custom>,
 ) -> Result<serde_json::Value, String> {
     let dest = types::parse_hash::<16>(&to)?;
     let attachments = attachments.unwrap_or_default();
-    let id = with_node(&state, |n| n.send(dest, &title, &content, &attachments, method))?;
+    let id = with_node(&state, |n| {
+        n.send(dest, &title, &content, &attachments, method, custom.as_ref())
+    })?;
     Ok(serde_json::json!({ "id": id }))
+}
+
+/// Запомнить ключ адресата из проверенной записи связки: писать ему можно до
+/// его announce.
+#[tauri::command]
+pub fn rns_learn(state: State<'_, RnsManager>, dest: String, key: String) -> Result<(), String> {
+    let dest = types::parse_hash::<16>(&dest)?;
+    let key = types::parse_hash::<64>(&key)?;
+    with_node(&state, |n| n.learn(dest, key))
 }
 
 /// Бумажное сообщение адресату: ссылка `lxm://` (для QR или текста).

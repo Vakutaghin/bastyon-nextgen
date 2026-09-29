@@ -42,12 +42,19 @@ vi.mock('../reticulum/rns-api', () => ({
   rnsSetPropagationNode: h.rns.setPropagationNode,
   rnsSync: vi.fn(async () => {}),
   rnsPaper: h.rns.paper,
+  rnsLearn: vi.fn(async () => {}),
 }))
 
 import { db, resetDbAvailabilityForTests } from '@/db/database'
 import { deriveRnsIdentity } from '../reticulum/identity'
 import { LXMF_MAX_ATTACHMENT_BYTES, useMeshChatStore } from './mesh-chat-store'
 import { allowedInterfaces, useReticulumStore } from './reticulum-store'
+import { BINDING_KIND, useMeshRoutesStore } from './mesh-routes-store'
+import { signBinding } from '../binding'
+import * as ecc from 'tiny-secp256k1'
+import { ECPairFactory } from 'ecpair'
+import { Buffer } from 'buffer'
+import { generatePocketnetAddress } from '@/blockchain/core/addresses/address-generator'
 
 const SELF = 'aa'.repeat(16)
 const BOB = 'b0'.repeat(16)
@@ -160,6 +167,39 @@ describe('reticulum node', () => {
     expect(rns.transfer).toEqual({ received: 3, total: 8 })
     await rns.reset()
     expect(rns.transfer).toBeNull()
+  })
+
+  it('learns a mesh route from the binding attached to an LXMF message', async () => {
+    const rns = useReticulumStore()
+    await rns.start()
+    const privateKey = Uint8Array.from({ length: 32 }, (_, i) => i + 40)
+    const publicKey = new Uint8Array(ECPairFactory(ecc).fromPrivateKey(privateKey).publicKey)
+    const address = generatePocketnetAddress(Buffer.from(publicKey)).address
+    const binding = signBinding({
+      address,
+      privateKey,
+      publicKey,
+      identity: await deriveRnsIdentity(privateKey),
+    })
+    const message = (from: string) => ({
+      kind: 'message',
+      id: `m-${from}`,
+      from,
+      title: '',
+      content: 'привет',
+      timestamp: 1_790_000_000,
+      signed: true,
+      method: 'direct',
+      attachments: [],
+      custom: { kind: BINDING_KIND, data: JSON.stringify(binding) },
+    })
+    // Чужая запись в сообщении с другого адреса — не маршрут.
+    h.rns.onEvent!(message('cc'.repeat(16)))
+    expect(useMeshRoutesStore().routeFor(address)).toBeNull()
+    h.rns.onEvent!(message(binding.dest))
+    expect(useMeshRoutesStore().routeFor(address)).toMatchObject({ via: 'lxmf' })
+    // Оба сообщения легли в чаты — до следующего теста.
+    await vi.waitFor(() => expect(useMeshChatStore().dialogs).toHaveLength(2))
   })
 
   it('keeps the settings per account', async () => {
@@ -305,9 +345,14 @@ describe('reticulum chats', () => {
     }
     expect(await chat.sendAttachments(id, [photo], 'подпись')).toEqual({ ok: true })
     await vi.waitFor(() =>
-      expect(h.rns.send).toHaveBeenCalledWith(BOB, 'подпись', 'auto', '', [
-        { kind: 'image', name: 'photo.jpg', mime: 'image/jpeg', data: 'AQID' },
-      ])
+      expect(h.rns.send).toHaveBeenCalledWith(
+        BOB,
+        'подпись',
+        'auto',
+        '',
+        [{ kind: 'image', name: 'photo.jpg', mime: 'image/jpeg', data: 'AQID' }],
+        undefined
+      )
     )
     expect(chat.dialogs.find((d) => d.id === id)!.lastText).toBe('подпись')
     const huge = { ...photo, data: new Uint8Array(LXMF_MAX_ATTACHMENT_BYTES + 1) }
@@ -343,7 +388,7 @@ describe('reticulum chats', () => {
     expect(chat.textLimit(id)).toBe(8000)
     expect(await chat.send(id, 'как дела?')).toEqual({ ok: true })
     await vi.waitFor(() =>
-      expect(h.rns.send).toHaveBeenCalledWith(BOB, 'как дела?', 'auto', '', [])
+      expect(h.rns.send).toHaveBeenCalledWith(BOB, 'как дела?', 'auto', '', [], undefined)
     )
     h.rns.onEvent!({ kind: 'state', id: 'msg-1', state: 'sent' })
     await vi.waitFor(() => expect(chat.messengerMessages(id)[0]!.status).toBe('sent'))

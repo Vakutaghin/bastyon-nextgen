@@ -56,6 +56,13 @@
         <SC_MeshRouteButton v-if="lxmfAddress" type="button" @click.stop="writeViaReticulum">
           📡 {{ t('mesh.share.write') }}
         </SC_MeshRouteButton>
+        <!-- Запись связки с Reticulum: маршрут в этот же чат. -->
+        <SC_MeshBindingNote v-if="meshBinding">
+          {{ isMine ? t('mesh.route.bindingMine') : t('mesh.route.bindingTheirs') }}
+        </SC_MeshBindingNote>
+        <SC_MeshRouteButton v-if="canShareBack" type="button" @click.stop="shareBack">
+          📡 {{ t('mesh.route.shareBack') }}
+        </SC_MeshRouteButton>
       </div>
 
       <!-- Не ушло в сеть: текст остаётся на экране с кнопкой повтора (S35). -->
@@ -67,6 +74,7 @@
       </SC_SendFailed>
 
       <SC_MessageTime>
+        <span v-if="viaReticulum" :title="t('mesh.route.via')">📡</span>
         {{ formatTime(message.timestamp) }}
         <SC_SeenTick v-if="deliveryMark" :title="deliveryMark.title">
           {{ deliveryMark.mark }}
@@ -142,6 +150,7 @@ import { Popover, Modal } from 'ant-design-vue'
 import { MoreOutlined, DeleteOutlined, RollbackOutlined } from '@/components/icons'
 import { parseMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
+import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { appToast } from '@/b-components/app-toast'
 import { isMeshTransport, type Message } from '../../types'
@@ -186,6 +195,7 @@ import {
   SC_ReplyQuoteName,
   SC_ReplyQuoteText,
   SC_MeshRouteButton,
+  SC_MeshBindingNote,
 } from './styled'
 
 const APopover = Popover
@@ -323,10 +333,44 @@ const ipfsFile = computed(() =>
  * написать по нему через Reticulum — когда узел есть в этой сборке.
  */
 const reticulum = useReticulumStore()
+
+/**
+ * Запись связки с Reticulum в сообщении (зашифрованный JSON, use-mesh-share):
+ * по ней приложение запоминает mesh-маршрут к собеседнику.
+ */
+const meshBinding = computed<boolean>(() => {
+  const raw = props.message.rawContent as Record<string, unknown> | undefined
+  return !!raw && typeof raw.bastyonMesh === 'object' && raw.bastyonMesh !== null
+})
+
+/** Сообщение ушло или пришло через Reticulum, а показано в чате Bastyon. */
+const viaReticulum = computed<boolean>(
+  () => props.message.transport === 'lxmf' && props.message.chatId !== store.activeChatId
+)
+
+/** Собеседник поделился адресом, а мы своим — ещё нет. */
+const canShareBack = computed<boolean>(() => {
+  if (!meshBinding.value || isMine.value || !reticulum.available) return false
+  const contact = getAddressFromMatrixId(props.message.senderId)
+  return !!contact && !useMeshRoutesStore().hasShared(contact)
+})
+
+async function shareBack(): Promise<void> {
+  if (reticulum.status !== 'running' || !reticulum.address) {
+    appToast.info({ message: t('mesh.share.startNode') })
+    void router.push({ path: '/mesh', query: { net: 'reticulum' } })
+    return
+  }
+  const result = await store.shareMeshBinding(props.message.chatId)
+  if (result === 'failed') appToast.error({ message: t('mesh.share.failed') })
+}
+
 const lxmfAddress = computed<string | null>(() => {
   if (isMine.value || !reticulum.available || (props.message.type ?? 'text') !== 'text') {
     return null
   }
+  // Со связкой маршрут уже в этом чате — отдельный чат LXMF не нужен.
+  if (meshBinding.value) return null
   const match = /\blxmf@([0-9a-f]{32})\b/i.exec(props.message.text || '')
   return match ? match[1]!.toLowerCase() : null
 })

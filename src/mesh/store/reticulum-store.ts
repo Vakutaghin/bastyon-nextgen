@@ -31,6 +31,7 @@ import {
   type RnsInterfaceStatus,
 } from '../reticulum/rns-api'
 import { useMeshChatStore } from './mesh-chat-store'
+import { BINDING_KIND, useMeshRoutesStore } from './mesh-routes-store'
 import { meshErrorCode } from './radio-common'
 
 export type RnsStatusName = 'idle' | 'starting' | 'running' | 'stopping'
@@ -174,6 +175,14 @@ export const useReticulumStore = defineStore('reticulum', () => {
         break
       }
       case 'message':
+        // Запись связки в сообщении: отправитель — собеседник Bastyon.
+        if (ev.custom?.kind === BINDING_KIND) {
+          try {
+            useMeshRoutesStore().learn(JSON.parse(ev.custom.data), 'lxmf', { dest: ev.from })
+          } catch {
+            /* не JSON — не связка */
+          }
+        }
         if (address.value) void chat.receiveLxmf(ev, address.value, peerName(ev.from))
         break
       case 'state':
@@ -218,6 +227,8 @@ export const useReticulumStore = defineStore('reticulum', () => {
       address.value = started.address
       identityHash.value = started.identityHash
       status.value = 'running'
+      // Ключи собеседников по mesh-маршрутам — узлу сразу.
+      useMeshRoutesStore().teachNode()
       statusTimer ??= setInterval(() => void refreshStatus(), STATUS_EVERY_MS)
       await refreshStatus()
       return null

@@ -43,6 +43,11 @@ export const MESSENGER_DIALOGS_PREFIX = 'BST_MSG_DIALOGS_'
 export const MESH_LAST_DEVICE_PREFIX = 'BST_MESH_DEVICE_'
 /** Настройки Reticulum аккаунта (хабы, LAN, RNode, узел доставки): `BST_RNS_<ownAddress>`. */
 export const RNS_CONFIG_PREFIX = 'BST_RNS_'
+/**
+ * Mesh-маршруты к собеседникам (проверенные записи связки «адрес Bastyon →
+ * адрес LXMF»): `BST_MESH_ROUTES_<ownAddress>`.
+ */
+export const MESH_ROUTES_PREFIX = 'BST_MESH_ROUTES_'
 
 /** Отметка «бэкап 12 слов проверен»: `BST_BACKUP_VERIFIED_<address>` = timestamp (мс). */
 export const BACKUP_VERIFIED_PREFIX = 'BST_BACKUP_VERIFIED_'

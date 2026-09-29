@@ -241,8 +241,20 @@ public class MeshRnsPlugin extends Plugin {
         String content = call.getString("content", "");
         String method = call.getString("method", "auto");
         JSONArray attachments = call.getArray("attachments", new JSArray());
+        JSObject custom = call.getObject("custom");
         onNode(call, () -> call.resolve(new JSObject().put("id",
-                RnsNative.send(to, title, content, method, attachments.toString()))));
+                RnsNative.send(to, title, content, method, attachments.toString(),
+                        custom == null ? "" : custom.toString()))));
+    }
+
+    @PluginMethod
+    public void learn(PluginCall call) {
+        String dest = call.getString("dest", "");
+        String key = call.getString("key", "");
+        onNode(call, () -> {
+            RnsNative.learn(dest, key);
+            call.resolve();
+        });
     }
 
     @PluginMethod

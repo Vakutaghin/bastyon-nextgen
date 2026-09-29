@@ -64,6 +64,7 @@ permissions = [
   "allow-rns-status",
   "allow-rns-announce",
   "allow-rns-paths",
+  "allow-rns-learn",
   "allow-rns-send",
   "allow-rns-request-path",
   "allow-rns-set-propagation-node",

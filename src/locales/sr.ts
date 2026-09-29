@@ -1787,6 +1787,23 @@ export default {
       text: 'Моја Reticulum адреса — ако нестане интернета, пиши ми овде: {address}',
       write: 'Пиши преко Reticulum-а',
       startNode: 'Прво покрените Reticulum чвор.',
+      failed: 'Није успело слање Reticulum адресе.',
+    },
+    route: {
+      offline: 'Нема везе са сервером — поруке иду преко Reticulum-а.',
+      forced: 'Поруке иду преко Reticulum-а.',
+      available: 'Са саговорником постоји Reticulum рута: без интернета преписка се наставља овде.',
+      offlineNoNode:
+        'Нема везе са сервером. Покрените Reticulum чвор — поруке ће ићи преко mesh мреже.',
+      offlineNoPath: 'Нема везе ни са сервером ни са Reticulum чвором.',
+      startNode: 'Покрени Reticulum',
+      useServer: 'Преко сервера',
+      useMesh: 'Преко Reticulum-а',
+      bindingMine: '📡 Reticulum рута: саговорник ће моћи да вам пише и без интернета.',
+      bindingTheirs:
+        '📡 Reticulum рута је сачувана: без интернета преписка се наставља у овом чату.',
+      shareBack: 'Подели своју адресу',
+      via: 'Преко Reticulum-а',
     },
     rns: {
       status: {

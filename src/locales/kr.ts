@@ -1771,6 +1771,22 @@ export default {
       text: '내 Reticulum 주소입니다. 인터넷이 끊기면 여기로 보내 주세요: {address}',
       write: 'Reticulum으로 쓰기',
       startNode: '먼저 Reticulum 노드를 실행하세요.',
+      failed: 'Reticulum 주소를 보내지 못했습니다.',
+    },
+    route: {
+      offline: '서버에 연결되지 않았습니다. 메시지는 Reticulum으로 보내집니다.',
+      forced: '메시지를 Reticulum으로 보냅니다.',
+      available: '이 상대와 Reticulum 경로가 있습니다. 인터넷이 없어도 대화는 여기서 이어집니다.',
+      offlineNoNode:
+        '서버에 연결되지 않았습니다. Reticulum 노드를 시작하면 메시지가 메시 네트워크로 보내집니다.',
+      offlineNoPath: '서버에도 Reticulum 노드에도 연결되지 않았습니다.',
+      startNode: 'Reticulum 시작',
+      useServer: '서버로',
+      useMesh: 'Reticulum으로',
+      bindingMine: '📡 Reticulum 경로: 상대가 인터넷 없이도 메시지를 보낼 수 있습니다.',
+      bindingTheirs: '📡 Reticulum 경로를 저장했습니다. 인터넷이 없어도 이 대화에서 이어집니다.',
+      shareBack: '내 주소 공유',
+      via: 'Reticulum으로',
     },
     rns: {
       status: {

@@ -23,8 +23,8 @@ use base64::Engine as _;
 use lxmf_core::constants::{
     DeliveryMethod, MessageState, Representation, AM_OPUS_LOSSLESS, AM_OPUS_OGG,
     DESTINATION_LENGTH, ENCRYPTED_PACKET_MDU, ENCRYPTION_DESCRIPTION_EC, FIELD_AUDIO,
-    FIELD_FILE_ATTACHMENTS, FIELD_IMAGE, MESSAGE_GET_PATH, PAPER_MDU, STAMP_SIZE,
-    WORKBLOCK_EXPAND_ROUNDS, WORKBLOCK_EXPAND_ROUNDS_PN,
+    FIELD_CUSTOM_DATA, FIELD_CUSTOM_TYPE, FIELD_FILE_ATTACHMENTS, FIELD_IMAGE, MESSAGE_GET_PATH,
+    PAPER_MDU, STAMP_SIZE, WORKBLOCK_EXPAND_ROUNDS, WORKBLOCK_EXPAND_ROUNDS_PN,
 };
 use lxmf_core::message;
 use lxmf_rs::router::{
@@ -42,8 +42,8 @@ use rns_net::{
 };
 
 use crate::types::{
-    Attachment, Download, IfaceConfig, IfaceStatus, Method, Page, PathInfo, RnsEvent, StartOptions,
-    Started, Status,
+    Attachment, Custom, Download, IfaceConfig, IfaceStatus, Method, Page, PathInfo, RnsEvent,
+    StartOptions, Started, Status,
 };
 
 /// Шаг рабочего потока.
@@ -331,6 +331,32 @@ fn fields_of(attachments: &[Attachment]) -> Result<Vec<(Value, Value)>, String> 
     Ok(fields)
 }
 
+/// Предел данных приложения в сообщении: запись связки — сотни байт.
+const MAX_CUSTOM_BYTES: usize = 4096;
+
+/// Данные приложения из полей LXMF, если они текстовые и не больше предела.
+fn custom_of(fields: &[(Value, Value)]) -> Option<Custom> {
+    let field = |id: u8| {
+        fields
+            .iter()
+            .find(|(k, _)| k.as_uint() == Some(id as u64))
+            .map(|(_, v)| v)
+    };
+    let kind = field(FIELD_CUSTOM_TYPE).and_then(text_of)?;
+    let data = field(FIELD_CUSTOM_DATA)?;
+    let bytes = data
+        .as_bin()
+        .map(<[u8]>::to_vec)
+        .or_else(|| data.as_str().map(|s| s.as_bytes().to_vec()))?;
+    if kind.len() > 64 || bytes.len() > MAX_CUSTOM_BYTES {
+        return None;
+    }
+    Some(Custom {
+        kind,
+        data: String::from_utf8(bytes).ok()?,
+    })
+}
+
 fn message_event(d: &LxmDelivery) -> RnsEvent {
     let mut content = String::from_utf8_lossy(&d.content).into_owned();
     let (attachments, marks) = attachments_of(&d.fields);
@@ -349,6 +375,7 @@ fn message_event(d: &LxmDelivery) -> RnsEvent {
         signed: d.signature_valid == Some(true),
         method: method_name(d.method).to_string(),
         attachments,
+        custom: custom_of(&d.fields),
     }
 }
 
@@ -1796,12 +1823,26 @@ impl Runtime {
         Ok(())
     }
 
+    /// Запомнить публичный ключ адресата LXMF (из проверенной записи связки):
+    /// писать ему можно, не дожидаясь его announce. Ключ должен давать этот адрес.
+    pub fn learn(&self, dest: [u8; 16], public_key: [u8; 64]) -> Result<(), String> {
+        let identity = Identity::from_public_key(&public_key);
+        if delivery_hash_of(identity.hash()) != dest {
+            return Err(err("rns_bad_key"));
+        }
+        let mut router = self.ctx.router();
+        router.identity_cache.insert(dest, public_key);
+        router.identity_hash_cache.insert(dest, *identity.hash());
+        Ok(())
+    }
+
     /// Обзор сети: известные узлу пути.
     pub fn paths(&self) -> Vec<PathInfo> {
         self.ctx.paths(&self.node)
     }
 
     /// Поставить сообщение в очередь; id — хэш сообщения LXMF (hex).
+    /// `custom` — данные приложения (у Bastyon — запись связки с аккаунтом).
     pub fn send(
         &self,
         dest: [u8; 16],
@@ -1809,6 +1850,7 @@ impl Runtime {
         content: &str,
         attachments: &[Attachment],
         method: Method,
+        custom: Option<&Custom>,
     ) -> Result<String, String> {
         if dest == self.ctx.delivery_hash {
             return Err(err("rns_error: own address"));
@@ -1825,7 +1867,20 @@ impl Runtime {
             timestamp: now_timestamp(),
             title: title.to_string(),
             content: content.to_string(),
-            fields: fields_of(attachments)?,
+            fields: {
+                let mut fields = fields_of(attachments)?;
+                if let Some(c) = custom {
+                    if c.kind.len() > 64 || c.data.len() > MAX_CUSTOM_BYTES {
+                        return Err(err("rns_too_large"));
+                    }
+                    fields.push((Value::UInt(FIELD_CUSTOM_TYPE as u64), Value::Str(c.kind.clone())));
+                    fields.push((
+                        Value::UInt(FIELD_CUSTOM_DATA as u64),
+                        Value::Bin(c.data.as_bytes().to_vec()),
+                    ));
+                }
+                fields
+            },
             method: lx_method,
         };
         // id не зависит от штампа — его можно вернуть сразу, а штамп считать потом.
@@ -2228,6 +2283,28 @@ mod tests {
     }
 
     #[test]
+    fn custom_fields_are_text_within_a_limit() {
+        let fields = |kind: Value, data: Value| {
+            vec![
+                (Value::UInt(FIELD_CUSTOM_TYPE as u64), kind),
+                (Value::UInt(FIELD_CUSTOM_DATA as u64), data),
+            ]
+        };
+        assert_eq!(
+            custom_of(&fields(Value::Str("bastyon.binding/1".into()), Value::Bin(b"{}".to_vec()))),
+            Some(Custom {
+                kind: "bastyon.binding/1".into(),
+                data: "{}".into()
+            })
+        );
+        // Не текст, слишком длинно или нет типа — не наше.
+        assert!(custom_of(&fields(Value::Str("t".into()), Value::Bin(vec![0xff, 0xfe]))).is_none());
+        let big = Value::Bin(vec![b'a'; MAX_CUSTOM_BYTES + 1]);
+        assert!(custom_of(&fields(Value::Str("t".into()), big)).is_none());
+        assert!(custom_of(&fields(Value::Nil, Value::Bin(b"{}".to_vec()))).is_none());
+    }
+
+    #[test]
     fn page_responses() {
         let page = parse_page(&msgpack::pack(&Value::Bin(b">Hello".to_vec()))).unwrap();
         assert_eq!(page.content, ">Hello");
@@ -2541,6 +2618,17 @@ mod interop {
         let our = runtime.started().address;
         assert_eq!(our, "41bb60343d8fc4a961a89b7c666dce77");
 
+        // Ключ из записи связки: писать можно, не услышав announce. Чужой
+        // ключ к адресу не подходит.
+        let to = parse_hash::<16>(&peer_dest).unwrap();
+        let key: [u8; 64] = hex::decode(ready["key"].as_str().unwrap()).unwrap().try_into().unwrap();
+        assert_eq!(runtime.paper(to, "x").err().as_deref(), Some("rns_unknown_destination"));
+        assert_eq!(runtime.learn(to, [7; 64]).err().as_deref(), Some("rns_bad_key"));
+        runtime.learn(to, key).unwrap();
+        let uri = runtime.paper(to, "до announce").unwrap();
+        peer.cmd(json!({ "ingest": uri }));
+        peer.expect("paper before announce", |v| v["message"]["content"] == json!("до announce"));
+
         // Знакомство: announce в обе стороны, все три аспекта Python.
         peer.cmd(json!({"announce": true}));
         let (d, n, p) = (peer_dest.clone(), nomad.clone(), pn.clone());
@@ -2569,14 +2657,13 @@ mod interop {
             assert!(p.expires > p.updated);
         }
 
-        let to = parse_hash::<16>(&peer_dest).unwrap();
         // Rust → Python: напрямую (Link) и одним пакетом (с доказательством).
-        let id = runtime.send(to, "", "hello direct", &[], Method::Direct).unwrap();
+        let id = runtime.send(to, "", "hello direct", &[], Method::Direct, None).unwrap();
         peer.expect("direct message", |v| {
             v["message"]["content"] == json!("hello direct") && v["message"]["signature"] == json!(true)
         });
         expect_ev(&rx, "direct delivered", |ev| is_state(ev, &id, "delivered"));
-        let id = runtime.send(to, "", "hello opp", &[], Method::Opportunistic).unwrap();
+        let id = runtime.send(to, "", "hello opp", &[], Method::Opportunistic, None).unwrap();
         peer.expect("opportunistic message", |v| v["message"]["content"] == json!("hello opp"));
         expect_ev(&rx, "opportunistic delivered", |ev| is_state(ev, &id, "delivered"));
 
@@ -2610,6 +2697,7 @@ mod interop {
                     },
                 ],
                 Method::Direct,
+                None,
             )
             .unwrap();
         let got = peer.expect("attachments", |v| v["message"]["content"] == json!("фото и план"));
@@ -2640,6 +2728,24 @@ mod interop {
             _ => unreachable!(),
         }
 
+        // Данные приложения (FIELD_CUSTOM_TYPE/DATA) в обе стороны: так едет
+        // запись связки с аккаунтом Bastyon.
+        let custom = Custom {
+            kind: "bastyon.binding/1".into(),
+            data: r#"{"v":1,"dest":"связка"}"#.into(),
+        };
+        let id = runtime
+            .send(to, "", "со связкой", &[], Method::Opportunistic, Some(&custom))
+            .unwrap();
+        let got = peer.expect("custom fields", |v| v["message"]["content"] == json!("со связкой"));
+        assert_eq!(got["message"]["fields"]["251"], json!(custom.kind));
+        assert_eq!(got["message"]["fields"]["252"], json!(b64(custom.data.as_bytes())));
+        expect_ev(&rx, "custom delivered", |ev| is_state(ev, &id, "delivered"));
+        peer.cmd(json!({"send": our, "text": "связка из Python", "method": "opportunistic",
+            "custom": [custom.kind, custom.data]}));
+        let ev = expect_ev(&rx, "custom from python", |ev| is_message(ev, "связка из Python", "opportunistic"));
+        assert!(matches!(ev, RnsEvent::Message { custom: Some(ref c), .. } if *c == custom));
+
         // Голос: FIELD_AUDIO в режиме AM_OPUS_OGG (0x10) в обе стороны.
         let voice = b64(b"OggS\0\x02voice");
         let id = runtime
@@ -2654,6 +2760,7 @@ mod interop {
                     data: voice.clone(),
                 }],
                 Method::Direct,
+                None,
             )
             .unwrap();
         let got = peer.expect("voice", |v| v["message"]["fields"].get("7").is_some());
@@ -2680,6 +2787,7 @@ mod interop {
                     data: blob.clone(),
                 }],
                 Method::Direct,
+                None,
             )
             .unwrap();
         let got = peer.expect("big attachment", |v| v["message"]["content"] == json!("большой файл"));
@@ -2710,7 +2818,7 @@ mod interop {
         runtime
             .set_propagation_node(Some(parse_hash::<16>(&pn).unwrap()))
             .unwrap();
-        let id = runtime.send(to, "", "via pn", &[], Method::Propagated).unwrap();
+        let id = runtime.send(to, "", "via pn", &[], Method::Propagated, None).unwrap();
         expect_ev(&rx, "propagated sent", |ev| is_state(ev, &id, "sent"));
         peer.expect("propagated message", |v| v["message"]["content"] == json!("via pn"));
 
@@ -2756,7 +2864,7 @@ mod interop {
         let (runtime, rx) = start(&base.join("rust"), port, Some(pn.clone()));
         expect_ev(&rx, "remembered peer", |ev| matches!(ev, RnsEvent::Announce { dest, heard: Some(h), .. }
             if *dest == peer_dest && *h > 0.0));
-        let id = runtime.send(to, "", "after restart", &[], Method::Direct).unwrap();
+        let id = runtime.send(to, "", "after restart", &[], Method::Direct, None).unwrap();
         peer.expect("message after restart", |v| v["message"]["content"] == json!("after restart"));
         expect_ev(&rx, "delivered after restart", |ev| is_state(ev, &id, "delivered"));
         runtime.stop();

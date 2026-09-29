@@ -1796,6 +1796,23 @@ export default {
       text: 'Il mio indirizzo Reticulum: se cade internet, scrivimi lì: {address}',
       write: 'Scrivi tramite Reticulum',
       startNode: 'Avvia prima il nodo Reticulum.',
+      failed: "Impossibile inviare l'indirizzo Reticulum.",
+    },
+    route: {
+      offline: 'Nessuna connessione al server: i messaggi passeranno per Reticulum.',
+      forced: 'I messaggi passano per Reticulum.',
+      available:
+        'Con questa persona c’è un percorso Reticulum: senza internet la chat continua qui.',
+      offlineNoNode:
+        'Nessuna connessione al server. Avvia il nodo Reticulum e i messaggi passeranno per la rete mesh.',
+      offlineNoPath: 'Nessuna connessione né al server né al nodo Reticulum.',
+      startNode: 'Avvia Reticulum',
+      useServer: 'Tramite il server',
+      useMesh: 'Tramite Reticulum',
+      bindingMine: '📡 Percorso Reticulum: potrà scriverti anche senza internet.',
+      bindingTheirs: '📡 Percorso Reticulum salvato: senza internet la chat continua qui.',
+      shareBack: 'Condividi il mio indirizzo',
+      via: 'Tramite Reticulum',
     },
     rns: {
       status: {

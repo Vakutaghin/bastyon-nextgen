@@ -1809,6 +1809,23 @@ export default {
       text: 'Mon adresse Reticulum : si internet tombe, écris-moi là : {address}',
       write: 'Écrire via Reticulum',
       startNode: "Démarrez d'abord le nœud Reticulum.",
+      failed: "Impossible d'envoyer l'adresse Reticulum.",
+    },
+    route: {
+      offline: 'Pas de connexion au serveur : les messages passeront par Reticulum.',
+      forced: 'Les messages passent par Reticulum.',
+      available:
+        'Il existe une route Reticulum vers cette personne : sans internet, la discussion continue ici.',
+      offlineNoNode:
+        'Pas de connexion au serveur. Démarrez le nœud Reticulum : les messages passeront par le réseau maillé.',
+      offlineNoPath: 'Aucune connexion ni au serveur ni au nœud Reticulum.',
+      startNode: 'Démarrer Reticulum',
+      useServer: 'Par le serveur',
+      useMesh: 'Par Reticulum',
+      bindingMine: '📡 Route Reticulum : cette personne pourra vous écrire même sans internet.',
+      bindingTheirs: '📡 Route Reticulum enregistrée : sans internet, la discussion continue ici.',
+      shareBack: 'Partager mon adresse',
+      via: 'Par Reticulum',
     },
     rns: {
       status: {

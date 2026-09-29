@@ -1725,6 +1725,21 @@ export default {
       text: '我的 Reticulum 地址——如果网络断了，请写到这里：{address}',
       write: '通过 Reticulum 发消息',
       startNode: '请先启动 Reticulum 节点。',
+      failed: '无法发送 Reticulum 地址。',
+    },
+    route: {
+      offline: '无法连接服务器——消息将通过 Reticulum 发送。',
+      forced: '消息通过 Reticulum 发送。',
+      available: '与对方有 Reticulum 路由：没有网络时，对话会在这里继续。',
+      offlineNoNode: '无法连接服务器。启动 Reticulum 节点后，消息将通过网状网络发送。',
+      offlineNoPath: '既连不上服务器，也连不上 Reticulum 节点。',
+      startNode: '启动 Reticulum',
+      useServer: '通过服务器',
+      useMesh: '通过 Reticulum',
+      bindingMine: '📡 Reticulum 路由：对方没有网络时也能给你发消息。',
+      bindingTheirs: '📡 已保存 Reticulum 路由：没有网络时，对话会在此聊天中继续。',
+      shareBack: '分享我的地址',
+      via: '通过 Reticulum',
     },
     rns: {
       status: {

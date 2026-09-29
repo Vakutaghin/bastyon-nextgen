@@ -16,6 +16,11 @@ import {
 import { MeshtasticSession, type MtIncoming } from '../src/mesh/meshtastic/session'
 import { FakeMeshAir, FakeMeshtasticDevice } from '../src/mesh/meshtastic/testing/fake-device'
 import { voiceAttachment } from '../src/mesh/voice'
+import { signBinding, verifyBinding } from '../src/mesh/binding'
+import { deriveRnsIdentity } from '../src/mesh/reticulum/identity'
+import { generatePocketnetAddress } from '../src/blockchain/core/addresses/address-generator'
+import * as ecc from 'tiny-secp256k1'
+import { ECPairFactory } from 'ecpair'
 import { readFileSync } from 'node:fs'
 
 /**
@@ -178,6 +183,7 @@ class RnsBridge implements Bridge {
     to: string
     content: string
     attachments?: Array<{ kind: string; name: string; data: string }>
+    custom?: { kind: string; data: string } | null
   }> = []
   /** Страницы узла NomadNet: путь → micron; запросы — с данными форм. */
   readonly pages: Record<string, (data: Record<string, string>) => string> = {}
@@ -186,6 +192,8 @@ class RnsBridge implements Bridge {
   readonly ingested: string[] = []
   /** Таблица путей узла (обзор сети). */
   paths: Array<Record<string, unknown>> = []
+  /** Ключи собеседников из записей связки: адрес LXMF → ключ. */
+  readonly learned: Record<string, string> = {}
   /** Запрошенные файлы NomadNet; путь из `refused` узел отдаёт страницей-отказом. */
   readonly downloads: Array<{ node: string; path: string }> = []
   readonly refused = new Set<string>()
@@ -228,9 +236,13 @@ class RnsBridge implements Bridge {
           to: args.to as string,
           content: args.content as string,
           attachments: args.attachments as Array<{ kind: string; name: string; data: string }>,
+          custom: args.custom as { kind: string; data: string } | null,
         })
         return { value: { id } }
       }
+      case 'rns_learn':
+        this.learned[args.dest as string] = args.key as string
+        return { value: null }
       case 'rns_page': {
         const request = {
           node: args.node as string,
@@ -827,6 +839,109 @@ test.describe('reticulum', () => {
     await expect(rows.first()).toContainText('Боб')
     await expect(rows.first()).toContainText('собеседник · напрямую · LAN')
     await expect(card.getByText('узел NomadNet · 3 хопа · через Доска района · LAN')).toBeVisible()
+  })
+
+  test('a Bastyon contact over Reticulum in the same chat when the server is down', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    // Боб — собеседник Bastyon; его запись связки подписана его ключами.
+    const bobKey = Uint8Array.from({ length: 32 }, (_, i) => i + 40)
+    const bobPub = new Uint8Array(ECPairFactory(ecc).fromPrivateKey(bobKey).publicKey)
+    const bobAddress = generatePocketnetAddress(Buffer.from(bobPub)).address
+    const binding = signBinding({
+      address: bobAddress,
+      privateKey: bobKey,
+      publicKey: bobPub,
+      identity: await deriveRnsIdentity(bobKey),
+    })
+    const ROOM = '!bob:matrix.pocketnet.app'
+    const BOB_MX = `@${Buffer.from(bobAddress).toString('hex')}:matrix.pocketnet.app`
+
+    await useMockNode(page, DATA)
+    await page.goto('/')
+    await page.waitForSelector('#app > *', { timeout: 30_000 })
+    await page
+      .getByRole('button', { name: 'Понятно' })
+      .click({ timeout: 5_000 })
+      .catch(() => {})
+    await signIn(page)
+    const rns = new RnsBridge(page)
+    await installTauriMock(page, rns)
+    await goTo(page, '/mesh?net=reticulum')
+    await page.getByRole('button', { name: 'Запустить' }).click()
+    await expect(page.getByText(RnsBridge.ADDRESS)).toBeVisible()
+
+    // Диалог с Бобом — как из списка с прошлого запуска (сервер чатов в тесте
+    // недоступен), маршрут — как из его сообщения «Мой адрес Reticulum».
+    await page.evaluate(
+      ({ binding, room, partner }) => {
+        type Stores = { _s: Map<string, Record<string, (...a: unknown[]) => unknown>> }
+        const app = (
+          document.querySelector('#app') as unknown as {
+            __vue_app__: { config: { globalProperties: { $pinia: Stores } } }
+          }
+        ).__vue_app__
+        const stores = app.config.globalProperties.$pinia._s
+        stores.get('messenger-ui')!.setDialogs!([
+          { id: room, partner: { id: partner, name: 'Боб' }, unreadCount: 0, createdAt: 1 },
+        ])
+        stores.get('mesh-routes')!.learn!(binding, 'matrix', { contact: binding.bastyon })
+      },
+      { binding, room: ROOM, partner: BOB_MX }
+    )
+    // Узел узнал ключ Боба — писать можно до его announce.
+    await expect.poll(() => rns.learned[binding.dest]).toBe(binding.key)
+
+    await page.evaluate(async (room) => {
+      type Messenger = {
+        openMessenger: () => Promise<void>
+        openChat: (id: string) => Promise<void>
+      }
+      const app = (
+        document.querySelector('#app') as unknown as {
+          __vue_app__: { config: { globalProperties: { $pinia: { _s: Map<string, Messenger> } } } }
+        }
+      ).__vue_app__
+      const messenger = app.config.globalProperties.$pinia._s.get('messenger')!
+      await messenger.openMessenger()
+      // Без ожидания: история Matrix без сервера не загрузится, а чат виден сразу.
+      void messenger.openChat(room)
+    }, ROOM)
+
+    // Сервера нет — чат сразу, и сообщение уходит через Reticulum.
+    await expect(
+      page.getByText('Нет связи с сервером — сообщения уйдут через Reticulum.')
+    ).toBeVisible()
+    const input = page.getByPlaceholder('Введите сообщение...')
+    await input.fill('Интернета нет, пишу через mesh')
+    await input.press('Enter')
+    await expect
+      .poll(() => rns.sent.map((m) => [m.to, m.content]))
+      .toEqual([[binding.dest, 'Интернета нет, пишу через mesh']])
+    // К первому сообщению — своя запись связки: Боб узнает маршрут и так.
+    const custom = rns.sent[0]!.custom!
+    expect(custom.kind).toBe('bastyon.binding/1')
+    // Запись подлинная: подписана ключами аккаунта (узел в тесте подменён).
+    expect(verifyBinding(JSON.parse(custom.data))).toMatchObject({ net: 'lxmf' })
+    await expect(page.getByText('Интернета нет, пишу через mesh')).toBeVisible()
+    await expect(page.getByTitle('Через Reticulum').first()).toBeVisible()
+
+    // Ответ Боба по Reticulum — в том же чате.
+    rns.emit({
+      kind: 'message',
+      id: 'from-bob-mesh',
+      from: binding.dest,
+      title: '',
+      content: 'Получил, отвечаю тоже через mesh',
+      timestamp: Math.floor(Date.now() / 1000),
+      signed: true,
+      method: 'direct',
+    })
+    await expect(page.getByText('Получил, отвечаю тоже через mesh')).toBeVisible()
+    await expect(
+      page.getByText('Нет связи с сервером — сообщения уйдут через Reticulum.')
+    ).toBeVisible()
   })
 
   test('open a paper message by its link', async ({ page }) => {

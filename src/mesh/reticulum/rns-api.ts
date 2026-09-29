@@ -25,6 +25,12 @@ export type RnsInterface =
 
 export type RnsMethod = 'auto' | 'opportunistic' | 'direct' | 'propagated'
 
+/** Данные приложения в сообщении LXMF (у Bastyon — запись связки с аккаунтом). */
+export interface RnsCustom {
+  kind: string
+  data: string
+}
+
 /** Вложение LXMF (как у Sideband и MeshChat): байты — в base64. */
 export interface RnsAttachment {
   kind: 'image' | 'file' | 'audio'
@@ -103,6 +109,7 @@ export type RnsEvent =
       signed: boolean
       method: string
       attachments?: RnsAttachment[]
+      custom?: RnsCustom | null
     }
   | {
       kind: 'state'
@@ -190,11 +197,16 @@ export const rnsSend = async (
   content: string,
   method: RnsMethod = 'auto',
   title = '',
-  attachments: RnsAttachment[] = []
+  attachments: RnsAttachment[] = [],
+  custom?: RnsCustom
 ): Promise<{ id: string }> =>
   onAndroid()
-    ? (await android()).send(to, content, method, title, attachments)
-    : invoke('rns_send', { to, content, title, method, attachments })
+    ? (await android()).send(to, content, method, title, attachments, custom)
+    : invoke('rns_send', { to, content, title, method, attachments, custom: custom ?? null })
+
+/** Запомнить ключ адресата из проверенной записи связки: писать можно до его announce. */
+export const rnsLearn = async (dest: string, key: string): Promise<void> =>
+  onAndroid() ? (await android()).learn(dest, key) : invoke('rns_learn', { dest, key })
 
 /** Бумажное сообщение адресату: ссылка `lxm://` для QR-кода или текста. */
 export const rnsPaper = async (to: string, content: string): Promise<{ uri: string }> =>

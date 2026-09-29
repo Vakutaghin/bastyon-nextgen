@@ -37,8 +37,15 @@ final class RnsNative {
     /** Обзор сети: JSON-массив путей узла. */
     static native String paths();
 
-    /** Возвращает id сообщения; вложения — JSON-массив или пустая строка. */
-    static native String send(String to, String title, String content, String method, String attachmentsJson);
+    /**
+     * Возвращает id сообщения; вложения — JSON-массив или пустая строка, данные
+     * приложения (запись связки) — JSON {kind, data} или пустая строка.
+     */
+    static native String send(String to, String title, String content, String method,
+                              String attachmentsJson, String customJson);
+
+    /** Запомнить ключ адресата (hex, 64 байта) из проверенной записи связки. */
+    static native String learn(String dest, String key);
 
     /** Бумажное сообщение адресату: ссылка lxm://. */
     static native String paper(String to, String content);

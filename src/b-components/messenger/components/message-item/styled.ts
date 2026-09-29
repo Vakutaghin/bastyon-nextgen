@@ -280,3 +280,10 @@ export const SC_MeshRouteButton = styled.button`
     background: var(--ui-bg-elevated);
   }
 `
+
+/** Запись связки с Reticulum в сообщении: что она даёт. */
+export const SC_MeshBindingNote = styled.div`
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ui-text-muted);
+`

@@ -152,3 +152,55 @@ export function mergeDialogs(matrix: Dialog[], mesh: Dialog[]): Dialog[] {
   if (mesh.length === 0) return matrix
   return [...matrix, ...mesh].sort((a, b) => dialogActivity(b) - dialogActivity(a))
 }
+
+/**
+ * Общий список, где у диалога Bastyon есть mesh-маршрут (`meshIdOf`): его
+ * mesh-диалог в список не идёт, а свежее сообщение и непрочитанные — в диалог
+ * Bastyon. Человек один — и диалог с ним один.
+ */
+export function mergeRoutedDialogs(
+  matrix: Dialog[],
+  mesh: Dialog[],
+  meshIdOf: (d: Dialog) => string | null
+): Dialog[] {
+  if (mesh.length === 0) return matrix
+  const byId = new Map(mesh.map((d) => [d.id, d]))
+  const joined = new Set<string>()
+  const routed = matrix.map((d) => {
+    const id = meshIdOf(d)
+    const m = id ? byId.get(id) : undefined
+    if (!m) return d
+    joined.add(m.id)
+    const last = m.lastMessage
+    const newer = !!last && last.timestamp > (d.lastMessage?.timestamp ?? 0)
+    return {
+      ...d,
+      unreadCount: d.unreadCount + m.unreadCount,
+      lastMessage: newer
+        ? { ...last, chatId: d.id, senderId: last.senderId === 'me' ? 'me' : d.partner.id }
+        : d.lastMessage,
+    }
+  })
+  return mergeDialogs(
+    routed,
+    mesh.filter((d) => !joined.has(d.id))
+  )
+}
+
+/**
+ * Лента диалога Bastyon вместе с сообщениями его mesh-маршрута — по времени.
+ * Входящие LXMF подписываются собеседником диалога: это он и есть.
+ */
+export function mergeRoutedMessages(
+  matrix: Message[],
+  mesh: Message[],
+  partner: { id: string; name?: string }
+): Message[] {
+  if (mesh.length === 0) return matrix
+  const own = mesh.map((m) =>
+    m.senderId === 'me'
+      ? m
+      : { ...m, senderId: partner.id, senderName: partner.name ?? m.senderName }
+  )
+  return [...matrix, ...own].sort((a, b) => a.timestamp - b.timestamp)
+}

@@ -1805,6 +1805,23 @@ export default {
       text: 'Meine Reticulum-Adresse — falls das Internet ausfällt, schreib mir dorthin: {address}',
       write: 'Über Reticulum schreiben',
       startNode: 'Starten Sie zuerst den Reticulum-Knoten.',
+      failed: 'Die Reticulum-Adresse konnte nicht gesendet werden.',
+    },
+    route: {
+      offline: 'Keine Verbindung zum Server — Nachrichten gehen über Reticulum.',
+      forced: 'Nachrichten gehen über Reticulum.',
+      available:
+        'Zu dieser Person gibt es eine Reticulum-Route: ohne Internet geht der Chat hier weiter.',
+      offlineNoNode:
+        'Keine Verbindung zum Server. Starten Sie den Reticulum-Knoten, dann gehen Nachrichten über das Mesh-Netz.',
+      offlineNoPath: 'Weder zum Server noch zum Reticulum-Knoten besteht eine Verbindung.',
+      startNode: 'Reticulum starten',
+      useServer: 'Über den Server',
+      useMesh: 'Über Reticulum',
+      bindingMine: '📡 Reticulum-Route: Die Person kann Ihnen auch ohne Internet schreiben.',
+      bindingTheirs: '📡 Reticulum-Route gespeichert: ohne Internet geht der Chat hier weiter.',
+      shareBack: 'Eigene Adresse teilen',
+      via: 'Über Reticulum',
     },
     rns: {
       status: {

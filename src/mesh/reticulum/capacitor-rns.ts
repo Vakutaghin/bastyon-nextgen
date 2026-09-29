@@ -14,6 +14,7 @@ import { t } from '@/i18n'
 import { radioErrorFrom } from '../radio/types'
 import type {
   RnsAttachment,
+  RnsCustom,
   RnsDownload,
   RnsEvent,
   RnsMethod,
@@ -36,7 +37,9 @@ interface MeshRnsPlugin {
     title: string
     method: RnsMethod
     attachments: RnsAttachment[]
+    custom?: RnsCustom
   }): Promise<{ id: string }>
+  learn(o: { dest: string; key: string }): Promise<void>
   paper(o: { to: string; content: string }): Promise<{ uri: string }>
   ingest(o: { uri: string }): Promise<void>
   requestPath(o: { to: string }): Promise<void>
@@ -106,8 +109,12 @@ export const send = (
   content: string,
   method: RnsMethod,
   title: string,
-  attachments: RnsAttachment[] = []
-) => call(() => MeshRns.send({ to, content, title, method, attachments }))
+  attachments: RnsAttachment[] = [],
+  custom?: RnsCustom
+) => call(() => MeshRns.send({ to, content, title, method, attachments, custom }))
+
+export const learn = (dest: string, key: string): Promise<void> =>
+  call(() => MeshRns.learn({ dest, key }))
 
 export const paper = (to: string, content: string) => call(() => MeshRns.paper({ to, content }))
 

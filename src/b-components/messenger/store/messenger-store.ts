@@ -18,7 +18,7 @@ import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
 import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
-import { mergeDialogs } from '@/mesh/store/messenger-mapping'
+import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
 
 import { getAddressFromMatrixId, resolveMatrixHost } from '../helpers'
 import { findExistingRoomByAddress, getPartnerMatrixId } from '../room-helpers'
@@ -38,6 +38,8 @@ import type { MessengerStoreContext } from './messenger-store/types'
 import { loadDialogsSnapshot, saveDialogsSnapshot } from './messenger-store/dialogs-snapshot'
 import { useDialogMapping } from './messenger-store/use-dialog-mapping'
 import { registerMatrixListeners } from './messenger-store/use-matrix-listeners'
+import { useMeshRoutes } from './messenger-store/use-mesh-routes'
+import { appToast } from '@/b-components/app-toast'
 
 export const useMessengerStore = defineStore('messenger', () => {
   const authStore = useAuthStore()
@@ -47,6 +49,7 @@ export const useMessengerStore = defineStore('messenger', () => {
   // Mesh-диалоги (переписка через радио, src/mesh) идут в общем списке с
   // комнатами Matrix; их id начинаются с `mesh:`.
   const meshChat = useMeshChatStore()
+  const meshRoutes = useMeshRoutes({ uiStore, meshChat })
 
   // Writable refs из uiStore — нужны для внешних присваиваний
   // (store.isOpen = false, store.isFullScreen = true, store.activeChatId = null).
@@ -328,6 +331,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
     uiStore.switchToChat(chatId)
     uiStore.markDialogRead(chatId)
+    // mesh-маршрут собеседника: его LXMF — в этой же ленте.
+    void meshRoutes.openRouted(chatId)
 
     await chatStore.loadMessages(chatId)
 
@@ -538,6 +543,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     void useMeshtasticConnectionStore().reset()
     void useReticulumStore().reset()
     meshChat.reset({ purge: opts.purge })
+    useMeshRoutesStore().reset()
     if (opts.purge && userId) {
       matrixService.purgeLocalData({ userId }).catch((e: unknown) => {
         console.warn('[MessengerStore] purgeLocalData failed:', e)
@@ -566,19 +572,76 @@ export const useMessengerStore = defineStore('messenger', () => {
     const id = uiStore.activeChatId
     if (!id) return []
     if (isMeshDialogId(id)) return meshChat.messengerMessages(id)
-    return chatStore.messages[id] || []
+    // С mesh-маршрутом — вместе с перепиской через Reticulum.
+    return meshRoutes.messagesOf(id, chatStore.messages[id] || [])
   })
 
-  /** Весь список: комнаты Matrix и mesh-диалоги, свежие сверху. */
-  const allDialogs = computed(() => mergeDialogs(uiStore.dialogs, meshChat.messengerDialogs))
+  /**
+   * Весь список: комнаты Matrix и mesh-диалоги, свежие сверху. mesh-диалог
+   * собеседника с маршрутом не отдельно — он в его диалоге Bastyon.
+   */
+  const allDialogs = computed(() =>
+    meshRoutes.dialogsOf(uiStore.dialogs, meshChat.messengerDialogs)
+  )
 
-  const sendMessage = (chatId: string, text: string) =>
-    isMeshDialogId(chatId) ? meshChat.send(chatId, text) : chatStore.sendMessage(chatId, text)
+  /** Отказ mesh-отправки — тостом: в чате Bastyon ошибки рисуются иначе. */
+  function meshSendFailed(result: Awaited<ReturnType<typeof meshChat.send>>): void {
+    if (!result.ok) appToast.error({ message: t(`mesh.chat.errors.${result.error}`) })
+  }
 
-  const retryMessage = (chatId: string, messageId: string) =>
-    isMeshDialogId(chatId)
-      ? meshChat.retry(chatId, messageId)
-      : chatStore.retryMessage(chatId, messageId)
+  const sendMessage = async (chatId: string, text: string): Promise<void> => {
+    if (isMeshDialogId(chatId)) {
+      await meshChat.send(chatId, text)
+      return
+    }
+    // Сервер чатов недоступен (или выбран Reticulum), а маршрут есть.
+    const viaMesh = await meshRoutes.sendRoute(chatId)
+    if (viaMesh) {
+      meshSendFailed(await meshChat.send(viaMesh, text))
+      return
+    }
+    await chatStore.sendMessage(chatId, text)
+  }
+
+  const retryMessage = async (chatId: string, messageId: string): Promise<void> => {
+    if (isMeshDialogId(chatId)) {
+      await meshChat.retry(chatId, messageId)
+      return
+    }
+    // Не ушедшее в Matrix — через Reticulum, если сейчас туда.
+    const failed = chatStore.messages[chatId]?.find((m) => m.id === messageId)
+    const viaMesh = failed?.text ? await meshRoutes.sendRoute(chatId) : null
+    if (failed?.text && viaMesh) {
+      const result = await meshChat.send(viaMesh, failed.text)
+      meshSendFailed(result)
+      if (result.ok) {
+        chatStore.messages[chatId] = chatStore.messages[chatId]!.filter((m) => m.id !== messageId)
+      }
+      return
+    }
+    await chatStore.retryMessage(chatId, messageId)
+  }
+
+  /** Своя запись связки с Reticulum — собеседнику в чат Bastyon. */
+  async function shareMeshBinding(chatId: string): Promise<'sent' | 'no_node' | 'failed'> {
+    const rns = useReticulumStore()
+    if (rns.status !== 'running' || !rns.address) return 'no_node'
+    const routes = useMeshRoutesStore()
+    const binding = await routes.ownBinding()
+    if (!binding) return 'failed'
+    const body = t('mesh.share.text', { address: `lxmf@${binding.dest}` })
+    try {
+      // Запись — в зашифрованном теле (JSON), сервер её не видит.
+      await chatStore.sendTextContent(chatId, JSON.stringify({ body, bastyonMesh: binding }))
+    } catch (e) {
+      log.warn('mesh binding not sent', e)
+      return 'failed'
+    }
+    const partner = allDialogs.value.find((d) => d.id === chatId)?.partner.id
+    const contact = partner ? getAddressFromMatrixId(partner) : null
+    if (contact) routes.markShared(contact)
+    return 'sent'
+  }
 
   return {
     // UI (делегируем в uiStore)
@@ -602,7 +665,14 @@ export const useMessengerStore = defineStore('messenger', () => {
     inviteViewActive: computed(() => uiStore.inviteViewActive),
     isSyncStarted: computed(() => uiStore.isSyncStarted),
     isLoading: computed(() => uiStore.isLoading),
-    isMessagesLoading: computed(() => uiStore.isMessagesLoading),
+    // Без связи с сервером история Matrix не придёт — у чата с mesh-маршрутом
+    // сразу лента LXMF, без ожидания.
+    isMessagesLoading: computed(
+      () => uiStore.isMessagesLoading && !meshRoutes.offlineRouted(uiStore.activeChatId)
+    ),
+    activeMeshRoute: meshRoutes.active,
+    toggleMeshRoute: meshRoutes.toggleForced,
+    shareMeshBinding,
     dialogsLoadedOnce: computed(() => uiStore.dialogsLoadedOnce),
     /** Загрузка вместо списка — только пока показать нечего, даже списка с прошлого запуска. */
     isDialogsLoading: computed(

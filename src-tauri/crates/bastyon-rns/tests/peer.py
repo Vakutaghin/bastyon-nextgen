@@ -10,8 +10,8 @@ python peer.py <configdir> <port> [name] [--pn] [--node]
   /file/secret.txt — отказ страницей;
 - печатает JSON-строки: {"ready": адрес, ...}, {"announce": ...}, {"message": ...}, {"state": ...};
 - команды на stdin (JSON): {"send": "<dest hex>", "text": "...", "method": "opportunistic|direct|propagated",
-  "image": [формат, base64], "files": [[имя, base64], ...], "audio": [режим, base64]} (вложения —
-  по желанию),
+  "image": [формат, base64], "files": [[имя, base64], ...], "audio": [режим, base64],
+  "custom": [тип, текст]} (вложения и данные приложения — по желанию),
   {"announce": true}, {"path": "<dest hex>"}, {"store_for": "<dest hex>", "text": "..."} (положить
   сообщение в своё хранилище узла доставки), {"paper_for": "<dest hex>", "text": "..."} (бумажное
   сообщение → {"paper": "lxm://…"}), {"ingest": "lxm://…"}, {"pn_count": true}, {"quit": true}.
@@ -145,7 +145,8 @@ def announce_all():
     if node_dest:
         node_dest.announce(app_data="PyNode".encode("utf-8"))
 
-ready = {"ready": RNS.hexrep(dest.hash, delimit=False), "identity": RNS.hexrep(identity.hash, delimit=False)}
+ready = {"ready": RNS.hexrep(dest.hash, delimit=False), "identity": RNS.hexrep(identity.hash, delimit=False),
+         "key": identity.get_public_key().hex()}
 if pn:
     ready["pn"] = RNS.hexrep(router.propagation_destination.hash, delimit=False)
 if node_dest:
@@ -233,6 +234,10 @@ for line in sys.stdin:
         if "audio" in cmd:
             mode, data = cmd["audio"]
             fields[LXMF.FIELD_AUDIO] = [mode, base64.b64decode(data)]
+        if "custom" in cmd:
+            kind, data = cmd["custom"]
+            fields[LXMF.FIELD_CUSTOM_TYPE] = kind
+            fields[LXMF.FIELD_CUSTOM_DATA] = data.encode("utf-8")
         msg = LXMF.LXMessage(to, dest, cmd.get("text", ""), cmd.get("title", ""), desired_method=method,
                              fields=fields or None)
         router.handle_outbound(msg)

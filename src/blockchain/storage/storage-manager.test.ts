@@ -127,14 +127,16 @@ describe('clearAllUserData', () => {
     expect(localStorage.getItem('bastyon_locale')).toBe('ru')
   })
 
-  it('сносит последнее радио и настройки Reticulum аккаунтов (mesh-сети)', () => {
+  it('сносит последнее радио, настройки Reticulum и mesh-маршруты аккаунтов (mesh-сети)', () => {
     localStorage.setItem('BST_MESH_DEVICE_P1', '{"meshtastic":{"transport":"tcp"}}')
     localStorage.setItem('BST_RNS_P1', '{"interfaces":[]}')
+    localStorage.setItem('BST_MESH_ROUTES_P1', '{}')
 
     clearAllUserData()
 
     expect(localStorage.getItem('BST_MESH_DEVICE_P1')).toBeNull()
     expect(localStorage.getItem('BST_RNS_P1')).toBeNull()
+    expect(localStorage.getItem('BST_MESH_ROUTES_P1')).toBeNull()
   })
 })
 
@@ -151,16 +153,20 @@ describe('clearAccountScopedLocalData', () => {
     expect(localStorage.getItem('BST_MSG_DIALOGS_P2')).not.toBeNull()
   })
 
-  it('стирает радио и настройки Reticulum удаляемого аккаунта, чужие не трогает', () => {
+  it('стирает радио, настройки Reticulum и mesh-маршруты удаляемого аккаунта, чужие не трогает', () => {
     localStorage.setItem('BST_MESH_DEVICE_P1', '{}')
     localStorage.setItem('BST_RNS_P1', '{}')
     localStorage.setItem('BST_RNS_P2', '{}')
+    localStorage.setItem('BST_MESH_ROUTES_P1', '{}')
+    localStorage.setItem('BST_MESH_ROUTES_P2', '{}')
 
     clearAccountScopedLocalData('P1')
 
     expect(localStorage.getItem('BST_MESH_DEVICE_P1')).toBeNull()
     expect(localStorage.getItem('BST_RNS_P1')).toBeNull()
     expect(localStorage.getItem('BST_RNS_P2')).not.toBeNull()
+    expect(localStorage.getItem('BST_MESH_ROUTES_P1')).toBeNull()
+    expect(localStorage.getItem('BST_MESH_ROUTES_P2')).not.toBeNull()
   })
 })
 
