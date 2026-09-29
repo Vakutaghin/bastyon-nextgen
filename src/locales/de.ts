@@ -369,10 +369,9 @@ export default {
       'Die Datei konnte nicht entschlüsselt werden: Der Schlüssel im Link ist falsch oder die Datei ist beschädigt.',
     ipfsPinConfigTitle: 'Remote-Pinning',
     ipfsPinConfigContent:
-      'Halte geteilte Dateien verfügbar, auch wenn dieser Node offline ist, indem du sie bei einem Pinning-Dienst anheftest (ipfs-cluster auf deinem eigenen Server oder Pinata / web3.storage). Gib dessen Endpunkt und Zugriffstoken ein.',
-    ipfsPinConfigured:
-      'Ein Pinning-Dienst ist eingerichtet — geteilte Dateien werden remote angeheftet.',
-    ipfsPinEndpointPlaceholder: 'Endpunkt des Dienstes (https://…/api/v1)',
+      'Damit deine Dateien auch bei ausgeschaltetem Computer verfügbar bleiben, kann ein Remote-Pinning-Dienst mit IPFS Pinning Service API Kopien aufbewahren — etwa Pinata, Filebase oder ipfs-cluster auf deinem eigenen Server. Gib die API-Adresse des Dienstes und das Zugriffstoken ein.',
+    ipfsPinConfigured: 'Dienst verbunden: Neue Dateien werden automatisch dorthin kopiert.',
+    ipfsPinEndpointPlaceholder: 'API-Adresse des Dienstes (https://…)',
     ipfsPinKeyPlaceholder: 'Zugriffstoken',
     ipfsPinSaveBtn: 'Speichern',
     ipfsPinClearBtn: 'Dienst entfernen',

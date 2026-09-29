@@ -363,9 +363,9 @@ export default {
       '파일을 복호화하지 못했습니다. 링크의 키가 잘못되었거나 파일이 손상되었습니다.',
     ipfsPinConfigTitle: '원격 고정',
     ipfsPinConfigContent:
-      '고정 서비스(자체 서버의 ipfs-cluster 또는 Pinata / web3.storage)에 파일을 고정하면 이 노드가 오프라인일 때도 공유한 파일을 계속 사용할 수 있습니다. 서비스의 엔드포인트와 액세스 토큰을 입력하세요.',
-    ipfsPinConfigured: '고정 서비스가 설정되었습니다. 공유한 파일은 원격으로 고정됩니다.',
-    ipfsPinEndpointPlaceholder: '서비스 엔드포인트(https://…/api/v1)',
+      '컴퓨터가 꺼져 있을 때도 파일을 계속 사용할 수 있도록 IPFS Pinning Service API를 지원하는 원격 고정 서비스(예: Pinata, Filebase 또는 자체 서버의 ipfs-cluster)에 사본을 보관할 수 있습니다. 서비스의 API 주소와 액세스 토큰을 입력하세요.',
+    ipfsPinConfigured: '서비스가 연결되었습니다. 새 파일은 자동으로 복사됩니다.',
+    ipfsPinEndpointPlaceholder: '서비스 API 주소(https://…)',
     ipfsPinKeyPlaceholder: '액세스 토큰',
     ipfsPinSaveBtn: '저장',
     ipfsPinClearBtn: '서비스 제거',

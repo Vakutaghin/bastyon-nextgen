@@ -363,9 +363,9 @@ export default {
       'Could not decrypt the file: the key in the link is wrong or the file is damaged.',
     ipfsPinConfigTitle: 'Remote pinning',
     ipfsPinConfigContent:
-      'Keep shared files available even when this node is offline by pinning them to a pinning service (ipfs-cluster on your own server, or Pinata / web3.storage). Enter its endpoint and access token.',
-    ipfsPinConfigured: 'A pinning service is configured — shared files are pinned remotely.',
-    ipfsPinEndpointPlaceholder: 'Service endpoint (https://…/api/v1)',
+      "To keep your files available while this computer is off, a remote pinning service that supports the IPFS Pinning Service API can keep copies — for example Pinata, Filebase or ipfs-cluster on your own server. Enter the service's API address and access token.",
+    ipfsPinConfigured: 'Service connected: new files are copied to it automatically.',
+    ipfsPinEndpointPlaceholder: 'Service API address (https://…)',
     ipfsPinKeyPlaceholder: 'Access token',
     ipfsPinSaveBtn: 'Save',
     ipfsPinClearBtn: 'Remove service',

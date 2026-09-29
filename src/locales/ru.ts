@@ -369,9 +369,9 @@ export default {
       'Не удалось расшифровать файл: ключ в ссылке неверный или файл повреждён.',
     ipfsPinConfigTitle: 'Удалённый pin',
     ipfsPinConfigContent:
-      'Чтобы расшаренные файлы оставались доступны, даже когда эта нода офлайн, пинуй их на pinning-сервис (ipfs-cluster на твоём сервере или Pinata / web3.storage). Введи endpoint и токен доступа.',
-    ipfsPinConfigured: 'Pinning-сервис настроен — расшаренные файлы пинятся удалённо.',
-    ipfsPinEndpointPlaceholder: 'Endpoint сервиса (https://…/api/v1)',
+      'Чтобы файлы были доступны, даже когда компьютер выключен, их копии может хранить сервис удалённого pin с поддержкой IPFS Pinning Service API — например Pinata, Filebase или ipfs-cluster на вашем сервере. Введите адрес API сервиса и токен доступа.',
+    ipfsPinConfigured: 'Сервис подключён: новые файлы копируются на него сами.',
+    ipfsPinEndpointPlaceholder: 'Адрес API сервиса (https://…)',
     ipfsPinKeyPlaceholder: 'Токен доступа',
     ipfsPinSaveBtn: 'Сохранить',
     ipfsPinClearBtn: 'Удалить сервис',

@@ -345,9 +345,9 @@ export default {
     ipfsWebDecryptFailed: '无法解密文件：链接中的密钥错误或文件已损坏。',
     ipfsPinConfigTitle: '远程固定',
     ipfsPinConfigContent:
-      '将分享的文件固定到固定服务（你自己服务器上的 ipfs-cluster，或 Pinata / web3.storage），即使此节点离线，文件也仍然可用。请输入服务的端点和访问令牌。',
-    ipfsPinConfigured: '已配置固定服务——分享的文件会被远程固定。',
-    ipfsPinEndpointPlaceholder: '服务端点（https://…/api/v1）',
+      '为了在电脑关机时文件仍然可用，可以让支持 IPFS Pinning Service API 的远程固定服务保存副本，例如 Pinata、Filebase 或你自己服务器上的 ipfs-cluster。请输入服务的 API 地址和访问令牌。',
+    ipfsPinConfigured: '服务已连接：新文件会自动复制到该服务。',
+    ipfsPinEndpointPlaceholder: '服务 API 地址（https://…）',
     ipfsPinKeyPlaceholder: '访问令牌',
     ipfsPinSaveBtn: '保存',
     ipfsPinClearBtn: '移除服务',

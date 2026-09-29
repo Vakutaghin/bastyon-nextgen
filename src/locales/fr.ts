@@ -370,10 +370,9 @@ export default {
       'Impossible de déchiffrer le fichier : la clé du lien est incorrecte ou le fichier est endommagé.',
     ipfsPinConfigTitle: 'Épinglage distant',
     ipfsPinConfigContent:
-      'Gardez les fichiers partagés disponibles même quand ce nœud est hors ligne en les épinglant sur un service d’épinglage (ipfs-cluster sur votre propre serveur, ou Pinata / web3.storage). Saisissez son point d’accès et son jeton d’accès.',
-    ipfsPinConfigured:
-      'Un service d’épinglage est configuré : les fichiers partagés sont épinglés à distance.',
-    ipfsPinEndpointPlaceholder: 'Point d’accès du service (https://…/api/v1)',
+      'Pour que vos fichiers restent disponibles même ordinateur éteint, un service d’épinglage distant compatible avec l’IPFS Pinning Service API peut en garder des copies — par exemple Pinata, Filebase ou ipfs-cluster sur votre propre serveur. Saisissez l’adresse de l’API du service et le jeton d’accès.',
+    ipfsPinConfigured: 'Service connecté : les nouveaux fichiers y sont copiés automatiquement.',
+    ipfsPinEndpointPlaceholder: 'Adresse de l’API du service (https://…)',
     ipfsPinKeyPlaceholder: 'Jeton d’accès',
     ipfsPinSaveBtn: 'Enregistrer',
     ipfsPinClearBtn: 'Supprimer le service',

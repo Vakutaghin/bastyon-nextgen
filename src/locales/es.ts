@@ -371,10 +371,9 @@ export default {
       'No se pudo descifrar el archivo: la clave del enlace es incorrecta o el archivo está dañado.',
     ipfsPinConfigTitle: 'Anclaje remoto',
     ipfsPinConfigContent:
-      'Mantén disponibles los archivos compartidos aunque este nodo esté desconectado anclándolos en un servicio de anclaje (ipfs-cluster en tu propio servidor, o Pinata / web3.storage). Introduce su punto de acceso y su token de acceso.',
-    ipfsPinConfigured:
-      'Hay un servicio de anclaje configurado: los archivos compartidos se anclan de forma remota.',
-    ipfsPinEndpointPlaceholder: 'Punto de acceso del servicio (https://…/api/v1)',
+      'Para que tus archivos sigan disponibles aunque el ordenador esté apagado, un servicio de anclaje remoto compatible con la IPFS Pinning Service API puede guardar copias, por ejemplo Pinata, Filebase o ipfs-cluster en tu propio servidor. Introduce la dirección de la API del servicio y el token de acceso.',
+    ipfsPinConfigured: 'Servicio conectado: los archivos nuevos se copian en él automáticamente.',
+    ipfsPinEndpointPlaceholder: 'Dirección de la API del servicio (https://…)',
     ipfsPinKeyPlaceholder: 'Token de acceso',
     ipfsPinSaveBtn: 'Guardar',
     ipfsPinClearBtn: 'Quitar el servicio',
