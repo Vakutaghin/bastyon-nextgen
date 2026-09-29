@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   fetchPeertubeHostAllowlist,
   parseAllServers,
+  parseRoyHosts,
   resetPeertubeHostAllowlistCache,
 } from './peertube-host'
 
@@ -40,5 +41,22 @@ describe('fetchPeertubeHostAllowlist', () => {
     await expect(fetchPeertubeHostAllowlist((async () => ({ data: {} })) as never)).rejects.toThrow(
       'peertube_allowlist_empty'
     )
+  })
+})
+
+describe('parseRoyHosts', () => {
+  it('объект роёв (ответ peertube/roys) → хосты по порядку', () => {
+    expect(
+      parseRoyHosts({ '0': 'peertube101.pocketnet.app', '1': 'peertube1000.pocketnet.app' })
+    ).toEqual(['peertube101.pocketnet.app', 'peertube1000.pocketnet.app'])
+  })
+
+  it('массив тоже годится; повторы, пустые и не-строки отбрасываются', () => {
+    expect(parseRoyHosts([' a.app ', 'a.app', '', 7, null, 'b.app'])).toEqual(['a.app', 'b.app'])
+  })
+
+  it('мусор → пустой список', () => {
+    expect(parseRoyHosts(null)).toEqual([])
+    expect(parseRoyHosts('host')).toEqual([])
   })
 })

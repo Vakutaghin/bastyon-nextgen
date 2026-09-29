@@ -8,6 +8,15 @@
  *   3) загрузка:     POST {host}/api/v1/images/upload — multipart FormData `imagefile`=Blob,
  *                    Authorization: Bearer → { url }
  *
+ * Общий аккаунт есть не на каждом инстансе загрузки. 29.09.2026 нода в двух
+ * случаях из трёх выбирала peertube1000, где `test_bastyon` отвечает
+ * `invalid_grant` (400), и пост с картинкой не публиковался
+ * («peertube_image_token_400»). Поэтому хост, отказавший в токене,
+ * пропускается и пробуются остальные хосты загрузки (`peertube/roys`), а
+ * сработавший запоминается вместе с токеном, пока тот жив (инстанс даёт
+ * сутки): следующим картинкам не нужны ни выбор хоста, ни новый токен.
+ * Старый клиент тоже выбирает хост картинок один раз за сессию.
+ *
  * ВАЖНО: раньше здесь был неверный контракт (POST на голый `/api/v1/` с JSON `{base64,Action}`
  * без токена) — он давал 404, т.к. такого роута нет. Правильный эндпоинт — `/api/v1/images/upload`
  * с multipart + Bearer.
@@ -16,7 +25,7 @@
  * imgur-провайдер оставлен заготовкой (нужен подтверждённый прокси-эндпоинт).
  */
 
-import { resolvePeertubeHost } from '@/services/peertube/peertube-host'
+import { resolvePeertubeHost, resolvePeertubeHosts } from '@/services/peertube/peertube-host'
 import { peertubeInstanceFetch, serializeForm } from '@/services/peertube/peertube-instance'
 
 /** Провайдер загрузки: принимает data-URL, возвращает публичный URL. */
@@ -27,6 +36,11 @@ export interface ImageUploadProvider {
 
 /** Платформенный аккаунт анонимной загрузки картинок (js/app.js:235 peertubeCreds). */
 const IMAGE_UPLOAD_CREDS = { username: 'test_bastyon', password: 'test_bastyon' }
+
+/** Срок токена, если инстанс его не назвал. */
+const DEFAULT_TOKEN_TTL_S = 600
+/** Токен, который вот-вот истечёт, не берём: он может кончиться посреди загрузки. */
+const TOKEN_MARGIN_MS = 60_000
 
 /** Достраивает протокол, если узел вернул URL без схемы. */
 export function withHttpsScheme(url: string): string {
@@ -62,7 +76,7 @@ async function fetchOauthClient(
 }
 
 /** Токен для загрузки картинок: password-грант платформенного аккаунта. */
-async function fetchImageUploadToken(host: string): Promise<string> {
+async function fetchImageUploadToken(host: string): Promise<{ token: string; ttlSeconds: number }> {
   const { client_id, client_secret } = await fetchOauthClient(host)
   const res = await peertubeInstanceFetch(host, 'api/v1/users/token', {
     method: 'POST',
@@ -76,32 +90,92 @@ async function fetchImageUploadToken(host: string): Promise<string> {
     }),
   })
   if (!res.ok) throw new Error(`peertube_image_token_${res.status}`)
-  const j = (await res.json()) as { access_token?: string } | null
+  const j = (await res.json()) as { access_token?: string; expires_in?: unknown } | null
   if (!j?.access_token) throw new Error('peertube_image_token_invalid')
-  return j.access_token
+  const ttlSeconds = typeof j.expires_in === 'number' ? j.expires_in : DEFAULT_TOKEN_TTL_S
+  return { token: j.access_token, ttlSeconds }
 }
 
-/** Провайдер peertube: резолв узла → токен → multipart-загрузка. */
+/** Хост, принявший общий аккаунт, и его токен. */
+interface UploadSession {
+  host: string
+  token: string
+  expiresAt: number
+}
+
+let session: UploadSession | null = null
+
+/** Хосты загрузки по порядку: сработавший раньше, выбранный нодой, остальные рои. */
+async function candidateHosts(preferred: string | undefined): Promise<string[]> {
+  const hosts: string[] = []
+  const add = (host: string | null | undefined): void => {
+    const h = host?.trim()
+    if (h && !hosts.includes(h)) hosts.push(h)
+  }
+  add(preferred)
+  const [best, roys] = await Promise.allSettled([
+    resolvePeertubeHost('upload'),
+    resolvePeertubeHosts('upload'),
+  ])
+  if (best.status === 'fulfilled') add(best.value)
+  else console.warn('[image-upload] peertube/best failed', best.reason)
+  if (roys.status === 'fulfilled') roys.value.forEach(add)
+  else console.warn('[image-upload] peertube/roys failed', roys.reason)
+  if (!hosts.length) throw new Error('peertube_no_host')
+  return hosts
+}
+
+/** Первый хост, выдавший токен общего аккаунта. Отказавшие пропускаются. */
+async function openSession(): Promise<UploadSession> {
+  const preferred = session?.host
+  session = null
+  let lastError: unknown = null
+  for (const host of await candidateHosts(preferred)) {
+    try {
+      const { token, ttlSeconds } = await fetchImageUploadToken(host)
+      session = { host, token, expiresAt: Date.now() + ttlSeconds * 1000 - TOKEN_MARGIN_MS }
+      return session
+    } catch (e) {
+      lastError = e
+      console.warn(`[image-upload] ${host} refused the upload account`, e)
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('peertube_image_token_failed')
+}
+
+function postImage(current: UploadSession, blob: Blob): Promise<Response> {
+  const form = new FormData()
+  form.append('imagefile', blob, 'image')
+  return peertubeInstanceFetch(current.host, 'api/v1/images/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${current.token}` },
+    body: form,
+  })
+}
+
+/** Провайдер peertube: хост и токен (из прошлой загрузки или новые) → multipart-загрузка. */
 export const peertubeImageProvider: ImageUploadProvider = {
   name: 'peertube',
   async upload(base64: string): Promise<string> {
-    const host = await resolvePeertubeHost('upload')
-    const token = await fetchImageUploadToken(host)
+    const blob = dataUrlToBlob(base64)
+    const current = session && session.expiresAt > Date.now() ? session : await openSession()
 
-    const form = new FormData()
-    form.append('imagefile', dataUrlToBlob(base64), 'image')
-
-    const res = await peertubeInstanceFetch(host, 'api/v1/images/upload', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    })
+    let res = await postImage(current, blob)
+    if (res.status === 401) {
+      // Токен отозван раньше срока: новый — и ещё одна попытка.
+      res = await postImage(await openSession(), blob)
+    }
     if (!res.ok) throw new Error(`peertube_upload_${res.status}`)
 
     const data = (await res.json()) as { url?: string } | null
     if (!data?.url) throw new Error('peertube_upload_no_url')
     return withHttpsScheme(data.url)
   },
+}
+
+/** Забыть хост и токен (тесты). */
+export function resetImageUploadSessionForTests(): void {
+  session = null
 }
 
 /** Дефолтная цепочка провайдеров. */

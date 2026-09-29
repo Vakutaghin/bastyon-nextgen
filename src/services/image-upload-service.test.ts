@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { instanceFetch, resolveHost } = vi.hoisted(() => ({
+const { instanceFetch, resolveHost, resolveHosts } = vi.hoisted(() => ({
   instanceFetch: vi.fn(),
   resolveHost: vi.fn(),
+  resolveHosts: vi.fn(),
 }))
 
 vi.mock('@/services/peertube/peertube-host', () => ({
   resolvePeertubeHost: resolveHost,
+  resolvePeertubeHosts: resolveHosts,
 }))
 
 vi.mock('@/services/peertube/peertube-instance', () => ({
@@ -22,6 +24,7 @@ import {
   withHttpsScheme,
   dataUrlToBlob,
   peertubeImageProvider,
+  resetImageUploadSessionForTests,
   uploadImage,
   uploadImages,
   type ImageUploadProvider,
@@ -35,6 +38,8 @@ const jsonRes = (body: unknown, status = 200): Response =>
 beforeEach(() => {
   vi.clearAllMocks()
   resolveHost.mockResolvedValue('host.app')
+  resolveHosts.mockResolvedValue(['host.app'])
+  resetImageUploadSessionForTests()
 })
 
 describe('withHttpsScheme', () => {
@@ -131,5 +136,111 @@ describe('peertubeImageProvider (реальный контракт)', () => {
       return jsonRes({}, 404)
     })
     await expect(peertubeImageProvider.upload(DATA_URL)).rejects.toThrow('peertube_upload_no_url')
+  })
+})
+
+/**
+ * Инстансы загрузки: host → ответ users/token (код ошибки или токен со сроком)
+ * и ответы images/upload по очереди (код ошибки или url).
+ */
+function instances(
+  spec: Record<string, { token: number | string; ttl?: number; upload?: Array<number | string> }>
+): void {
+  const uploads = new Map<string, number>()
+  instanceFetch.mockImplementation(async (host: string, path: string) => {
+    const s = spec[host]
+    if (!s) return jsonRes({}, 404)
+    if (path === 'api/v1/oauth-clients/local')
+      return jsonRes({ client_id: 'c', client_secret: 's' })
+    if (path === 'api/v1/users/token') {
+      if (typeof s.token === 'number') return jsonRes({ code: 'invalid_grant' }, s.token)
+      return jsonRes({ access_token: s.token, expires_in: s.ttl ?? 86399 })
+    }
+    if (path === 'api/v1/images/upload') {
+      const n = uploads.get(host) ?? 0
+      uploads.set(host, n + 1)
+      const answers = s.upload ?? [`${host}/img.jpg`]
+      const answer = answers[Math.min(n, answers.length - 1)]!
+      return typeof answer === 'number' ? jsonRes({}, answer) : jsonRes({ url: answer })
+    }
+    return jsonRes({}, 404)
+  })
+}
+
+/** На какие хосты уходили запросы к этому эндпоинту. */
+const hostsOf = (path: string): string[] =>
+  instanceFetch.mock.calls.filter((c) => c[1] === path).map((c) => c[0] as string)
+
+describe('peertubeImageProvider: хост без общего аккаунта', () => {
+  it('нода выбрала хост, где test_bastyon нет (400) → берётся следующий хост загрузки', async () => {
+    resolveHost.mockResolvedValue('pt1000')
+    resolveHosts.mockResolvedValue(['pt101', 'pt1000'])
+    instances({ pt1000: { token: 400 }, pt101: { token: 'T101' } })
+
+    await expect(peertubeImageProvider.upload(DATA_URL)).resolves.toBe('https://pt101/img.jpg')
+    expect(hostsOf('api/v1/users/token')).toEqual(['pt1000', 'pt101'])
+    const upload = instanceFetch.mock.calls.find((c) => c[1] === 'api/v1/images/upload')!
+    expect(upload[0]).toBe('pt101')
+    expect(((upload[2] as RequestInit).headers as Record<string, string>).Authorization).toBe(
+      'Bearer T101'
+    )
+  })
+
+  it('следующей картинке не нужны ни выбор хоста, ни новый токен', async () => {
+    resolveHost.mockResolvedValue('pt1000')
+    resolveHosts.mockResolvedValue(['pt101', 'pt1000'])
+    instances({ pt1000: { token: 400 }, pt101: { token: 'T101' } })
+    await peertubeImageProvider.upload(DATA_URL)
+    vi.clearAllMocks()
+
+    await expect(peertubeImageProvider.upload(DATA_URL)).resolves.toBe('https://pt101/img.jpg')
+    expect(resolveHost).not.toHaveBeenCalled()
+    expect(resolveHosts).not.toHaveBeenCalled()
+    expect(hostsOf('api/v1/users/token')).toEqual([])
+    expect(hostsOf('api/v1/images/upload')).toEqual(['pt101'])
+  })
+
+  it('истёкший токен запрашивается заново, и сработавший хост пробуется первым', async () => {
+    resolveHost.mockResolvedValue('pt1000')
+    resolveHosts.mockResolvedValue(['pt1000', 'pt101'])
+    instances({ pt1000: { token: 400 }, pt101: { token: 'T', ttl: 0 } })
+    await peertubeImageProvider.upload(DATA_URL)
+    vi.clearAllMocks()
+
+    await peertubeImageProvider.upload(DATA_URL)
+    expect(hostsOf('api/v1/users/token')).toEqual(['pt101'])
+  })
+
+  it('401 на загрузке → новый токен того же хоста и ещё одна попытка', async () => {
+    instances({ 'host.app': { token: 'T', upload: [401, 'host.app/ok.jpg'] } })
+
+    await expect(peertubeImageProvider.upload(DATA_URL)).resolves.toBe('https://host.app/ok.jpg')
+    expect(hostsOf('api/v1/users/token')).toEqual(['host.app', 'host.app'])
+    expect(hostsOf('api/v1/images/upload')).toHaveLength(2)
+  })
+
+  it('ни один хост не выдал токен → ошибка последнего', async () => {
+    resolveHost.mockResolvedValue('a')
+    resolveHosts.mockResolvedValue(['a', 'b'])
+    instances({ a: { token: 400 }, b: { token: 400 } })
+
+    await expect(peertubeImageProvider.upload(DATA_URL)).rejects.toThrow('peertube_image_token_400')
+    expect(hostsOf('api/v1/users/token')).toEqual(['a', 'b'])
+  })
+
+  it('нода не назвала ни одного хоста → peertube_no_host', async () => {
+    resolveHost.mockRejectedValue(new Error('peertube_no_host'))
+    resolveHosts.mockRejectedValue(new Error('network'))
+
+    await expect(peertubeImageProvider.upload(DATA_URL)).rejects.toThrow('peertube_no_host')
+    expect(instanceFetch).not.toHaveBeenCalled()
+  })
+
+  it('peertube/best не ответил → хватает хостов из peertube/roys', async () => {
+    resolveHost.mockRejectedValue(new Error('timeout'))
+    resolveHosts.mockResolvedValue(['pt101'])
+    instances({ pt101: { token: 'T' } })
+
+    await expect(peertubeImageProvider.upload(DATA_URL)).resolves.toBe('https://pt101/img.jpg')
   })
 })

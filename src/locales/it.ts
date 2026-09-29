@@ -2234,6 +2234,7 @@ export default {
     errNoUnspents: 'Nessun fondo disponibile per la transazione',
     errSelectUnspents: 'Impossibile preparare i fondi per la transazione',
     errSendFailed: 'Impossibile pubblicare il post',
+    errImageUpload: 'Impossibile caricare l’immagine. Riprova a pubblicare.',
     publishSuccess: 'Post pubblicato',
     txPending: 'Non ancora pubblicato sulla blockchain',
     txPendingShort: 'In attesa',

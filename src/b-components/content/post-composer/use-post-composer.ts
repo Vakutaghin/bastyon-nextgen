@@ -337,8 +337,12 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
 
     submitting.value = true
     try {
-      // Загружаем картинки (base64 → URL) до сборки транзакции.
-      const imageUrls = await uploadImages(base64List.value)
+      // Загружаем картинки (base64 → URL) до сборки транзакции. Код ошибки
+      // («peertube_image_token_400») человеку ничего не говорит — он в консоли.
+      const imageUrls = await uploadImages(base64List.value).catch((e: unknown) => {
+        console.warn('[post-composer] image upload failed', e)
+        throw new Error(t('postMsg.errImageUpload'))
+      })
       const finalPost: SharePostData = { ...post.value, images: imageUrls }
       const txid = await sendPost(finalPost)
 

@@ -2219,6 +2219,7 @@ export default {
     errNoUnspents: 'No funds available for the transaction',
     errSelectUnspents: 'Failed to prepare funds for the transaction',
     errSendFailed: 'Failed to publish the post',
+    errImageUpload: 'Could not upload the image. Try publishing again.',
     publishSuccess: 'Post published',
     txPending: 'Not yet published to the blockchain',
     txPendingShort: 'Pending',

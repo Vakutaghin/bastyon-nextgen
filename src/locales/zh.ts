@@ -2133,6 +2133,7 @@ export default {
     errNoUnspents: '没有可用于交易的资金',
     errSelectUnspents: '无法为交易准备资金',
     errSendFailed: '帖子发布失败',
+    errImageUpload: '图片上传失败，请重新发布。',
     publishSuccess: '帖子已发布',
     txPending: '尚未发布到区块链',
     txPendingShort: '待确认',

@@ -2202,6 +2202,7 @@ export default {
     errNoUnspents: '거래에 사용할 수 있는 자금이 없습니다',
     errSelectUnspents: '거래 자금을 준비하지 못했습니다',
     errSendFailed: '게시물을 올리지 못했습니다',
+    errImageUpload: '이미지를 올리지 못했습니다. 다시 게시해 보세요.',
     publishSuccess: '게시물을 올렸습니다',
     txPending: '아직 블록체인에 게시되지 않았습니다',
     txPendingShort: '대기 중',

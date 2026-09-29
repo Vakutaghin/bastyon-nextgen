@@ -316,6 +316,18 @@ describe('usePostComposer', () => {
       expect(mocks.addPending).not.toHaveBeenCalled()
     })
 
+    it('картинка не загрузилась: понятный тост вместо кода, пост не отправлен, форма цела', async () => {
+      mocks.uploadImages.mockRejectedValue(new Error('peertube_image_token_400'))
+      const c = compose()
+      fillValidPost(c)
+      mocks.images.value = ['data:image/jpeg;base64,AAA']
+      await c.publish()
+      expect(mocks.toastError).toHaveBeenCalledWith({ message: 'postMsg.errImageUpload' })
+      expect(mocks.sendPost).not.toHaveBeenCalled()
+      expect(c.message.value).toBe(TEXT)
+      expect(c.submitting.value).toBe(false)
+    })
+
     it('отложенное время 0 или 1 означает «сразу»', () => {
       const c = compose()
       c.setScheduledTime(1)

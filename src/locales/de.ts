@@ -2242,6 +2242,8 @@ export default {
     errNoUnspents: 'Kein Guthaben für die Transaktion verfügbar',
     errSelectUnspents: 'Das Guthaben für die Transaktion konnte nicht vorbereitet werden',
     errSendFailed: 'Der Beitrag konnte nicht veröffentlicht werden',
+    errImageUpload:
+      'Das Bild konnte nicht hochgeladen werden. Versuche es erneut zu veröffentlichen.',
     publishSuccess: 'Beitrag veröffentlicht',
     txPending: 'Noch nicht in der Blockchain veröffentlicht',
     txPendingShort: 'Ausstehend',

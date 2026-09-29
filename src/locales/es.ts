@@ -2243,6 +2243,7 @@ export default {
     errNoUnspents: 'No hay fondos disponibles para la transacción',
     errSelectUnspents: 'No se pudieron preparar los fondos para la transacción',
     errSendFailed: 'No se pudo publicar',
+    errImageUpload: 'No se pudo subir la imagen. Inténtalo de nuevo.',
     publishSuccess: 'Publicación publicada',
     txPending: 'Aún no está publicada en la blockchain',
     txPendingShort: 'Pendiente',

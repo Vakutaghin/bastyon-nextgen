@@ -27,6 +27,33 @@ export async function resolvePeertubeHost(type: PeertubeHostType = 'upload'): Pr
   return host
 }
 
+/**
+ * `peertube/roys` отдаёт по хосту на рой: `{ "0": host, "1": host }` (или
+ * массив). Хосты по порядку, без повторов и пустых.
+ */
+export function parseRoyHosts(data: unknown): string[] {
+  const values: unknown[] = Array.isArray(data)
+    ? data
+    : data && typeof data === 'object'
+      ? Object.values(data as Record<string, unknown>)
+      : []
+  const hosts: string[] = []
+  for (const value of values) {
+    const host = typeof value === 'string' ? value.trim() : ''
+    if (host && !hosts.includes(host)) hosts.push(host)
+  }
+  return hosts
+}
+
+/**
+ * Все хосты под задачу (`peertube/roys`). `peertube/best` выбирает из них
+ * один; остальные нужны, когда выбранный не подходит: общий аккаунт для
+ * картинок есть не на каждом инстансе загрузки (image-upload-service).
+ */
+export async function resolvePeertubeHosts(type: PeertubeHostType = 'upload'): Promise<string[]> {
+  return parseRoyHosts(await fetchHttp({ path: 'peertube/roys', data: { type } }))
+}
+
 // ─── allowlist хостов от ноды ────────────────────────────────────────────────
 
 /** Как долго держать список инстансов в памяти (мс). */
