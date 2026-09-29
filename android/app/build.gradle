@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 // Постоянный ключ подписи релизного APK. Android ставит новую версию поверх
 // старой, только если обе подписаны одним ключом, а отладочный ключ на каждом
 // CI-раннере свой. Файл ключа workflow релиза берёт из секретов репозитория,
-// создаёт его владелец репозитория — scripts/android-signing-key.sh.
+// куда его один раз кладёт scripts/android-signing-key.sh.
 def releaseKeystore = System.getenv('ANDROID_KEYSTORE_FILE')
 
 android {

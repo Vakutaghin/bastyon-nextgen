@@ -240,13 +240,14 @@ jobs:
       # одним ключом. До 0.7.1 включительно здесь собирался debug-APK, а
       # отладочный ключ на каждом раннере свой, поэтому любое обновление
       # требовало удалить приложение вместе с ключами аккаунтов. Теперь APK
-      # релизный и подписан постоянным ключом из секретов; создаёт их владелец
-      # репозитория один раз — scripts/android-signing-key.sh.
+      # релизный и подписан постоянным ключом из секретов, созданных один раз
+      # скриптом scripts/android-signing-key.sh.
       #
       # Без ключа джоба падает, а не собирает debug по-старому: такой APK снова
       # не встал бы поверх, и он debuggable — данные кошелька читаются через adb.
-      # ANDROID_KEY_ALIAS и ANDROID_KEY_PASSWORD нужны только для ключа, сделанного
-      # не этим скриптом.
+      # По той же причине падает и APK с чужим сертификатом: отпечаток ключа
+      # записан в android/app/release-cert.sha256. ANDROID_KEY_ALIAS и
+      # ANDROID_KEY_PASSWORD нужны только для ключа, сделанного не этим скриптом.
       - name: Build the signed Android APK
         shell: bash
         env:
@@ -257,7 +258,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$ANDROID_KEYSTORE_B64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
-            echo "::error::Нет ключа подписи Android: секретов ANDROID_KEYSTORE_B64 и ANDROID_KEYSTORE_PASSWORD. Владелец репозитория создаёт их один раз: scripts/android-signing-key.sh"
+            echo "::error::Нет ключа подписи Android: секретов ANDROID_KEYSTORE_B64 и ANDROID_KEYSTORE_PASSWORD. Их создают один раз: scripts/android-signing-key.sh"
             exit 1
           fi
           export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/release.keystore"
@@ -266,9 +267,15 @@ jobs:
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
-          # Сертификат в логе — чтобы сверить, что релиз подписан тем же ключом.
           BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
-          "$BUILD_TOOLS/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk
+          CERTS="$("$BUILD_TOOLS/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk)"
+          echo "$CERTS"
+          CERT="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$CERTS")"
+          EXPECTED="$(tr -d '[:space:]' < app/release-cert.sha256)"
+          if [ "$CERT" != "$EXPECTED" ]; then
+            echo "::error::APK подписан не тем ключом: SHA-256 $CERT, а в android/app/release-cert.sha256 записан $EXPECTED"
+            exit 1
+          fi
 
       - name: Rename APK and upload
         shell: bash
