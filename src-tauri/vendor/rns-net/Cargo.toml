@@ -1,0 +1,72 @@
+# rns-net 0.5.10 с crates.io с правками Bastyon — что и зачем, в VENDORED.md.
+# lxmf-rs закреплён ровно на этой версии, поэтому версия та же, а подмена —
+# через [patch.crates-io] в src-tauri/Cargo.toml.
+
+[package]
+edition = "2021"
+name = "rns-net"
+version = "0.5.10"
+authors = ["rns-rs contributors"]
+description = "Network interfaces and node driver for the Reticulum Network Stack"
+license-file = "LICENSE"
+repository = "https://github.com/lelloman/rns-rs"
+publish = false
+
+[features]
+default = [
+    "iface-tcp",
+    "iface-udp",
+    "iface-local",
+    "iface-auto",
+    "iface-serial",
+    "iface-kiss",
+    "iface-pipe",
+    "iface-rnode",
+    "iface-backbone",
+    "iface-i2p",
+]
+hooks = []
+iface-auto = []
+iface-backbone = []
+iface-i2p = []
+iface-kiss = []
+iface-local = []
+iface-pipe = []
+iface-rnode = []
+iface-serial = []
+iface-tcp = []
+iface-udp = []
+rns-hooks = ["rns-hooks-native"]
+rns-hooks-builtin = ["hooks", "dep:rns-hooks-crate", "dep:serde", "dep:bincode"]
+rns-hooks-native = ["hooks", "dep:rns-hooks-crate", "rns-hooks-crate/native", "dep:serde", "dep:bincode"]
+rns-hooks-wasm = ["hooks", "dep:rns-hooks-crate", "rns-hooks-crate/wasm", "dep:serde", "dep:bincode"]
+
+[lib]
+name = "rns_net"
+path = "src/lib.rs"
+
+[dependencies]
+bincode = { version = "1", optional = true }
+bzip2 = "0.5"
+libc = "0.2"
+log = "0.4"
+polling = "3"
+rayon = "1"
+rns-core = "=0.1.13"
+rns-crypto = "=0.1.8"
+rns-hooks-crate = { version = "0.1.8", optional = true, default-features = false, package = "rns-hooks" }
+serde = { version = "1", features = ["derive"], optional = true }
+socket2 = { version = "0.5", features = ["all"] }
+
+[dev-dependencies]
+env_logger = "0.11"
+serde_json = "1"
+tempfile = "3"
+
+# Чужой код: предупреждения апстрима (в том числе на платформах, где часть
+# интерфейсов выключена) сборку не засоряют.
+[lints.rust]
+unused = "allow"
+
+[lints.clippy]
+all = "allow"

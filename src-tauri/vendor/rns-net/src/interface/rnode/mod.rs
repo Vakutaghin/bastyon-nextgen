@@ -1,0 +1,1480 @@
+//! RNode LoRa radio interface.
+//!
+//! Manages serial connection to RNode device, detects firmware,
+//! configures radio parameters per subinterface. Supports single-radio
+//! (RNodeInterface) and multi-radio (RNodeMultiInterface) devices.
+//!
+//! Matches Python `RNodeInterface.py` and `RNodeMultiInterface.py`.
+
+mod transport;
+
+use std::io::{self, Read, Write};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+use transport::Transport;
+
+use rns_core::transport::types::{AirtimeProfile, InterfaceId};
+
+use crate::event::{Event, EventSender};
+use crate::interface::{lock_or_recover, Writer};
+use crate::rnode_kiss;
+use crate::serial::{Parity, SerialConfig};
+
+/// Validation limits matching Python RNodeInterface.
+pub const FREQ_MIN: u32 = 137_000_000;
+pub const FREQ_MAX: u32 = 3_000_000_000;
+pub const BW_MIN: u32 = 7_800;
+pub const BW_MAX: u32 = 1_625_000;
+pub const SF_MIN: u8 = 5;
+pub const SF_MAX: u8 = 12;
+pub const CR_MIN: u8 = 5;
+pub const CR_MAX: u8 = 8;
+pub const TXPOWER_MIN: i8 = 0;
+pub const TXPOWER_MAX: i8 = 37;
+pub const HW_MTU: u32 = 508;
+pub const LORA_PREAMBLE_SYMBOLS: u16 = 8;
+pub const LORA_EXPLICIT_HEADER: bool = true;
+pub const LORA_CRC: bool = true;
+
+/// Configuration for one RNode subinterface (radio).
+#[derive(Debug, Clone)]
+pub struct RNodeSubConfig {
+    pub name: String,
+    pub frequency: u32,
+    pub bandwidth: u32,
+    pub txpower: i8,
+    pub spreading_factor: u8,
+    pub coding_rate: u8,
+    pub flow_control: bool,
+    pub st_alock: Option<f32>,
+    pub lt_alock: Option<f32>,
+}
+
+/// Configuration for the RNode device.
+#[derive(Debug, Clone)]
+pub struct RNodeConfig {
+    pub name: String,
+    pub port: String,
+    pub speed: u32,
+    pub subinterfaces: Vec<RNodeSubConfig>,
+    pub id_interval: Option<u32>,
+    pub id_callsign: Option<Vec<u8>>,
+    pub base_interface_id: InterfaceId,
+    /// Pre-opened file descriptor (e.g. from a USB bridge socketpair on Android).
+    /// When set, `start()` uses this fd directly instead of opening `port`.
+    pub pre_opened_fd: Option<i32>,
+    pub runtime: Arc<Mutex<RNodeRuntime>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct RNodeRuntime {
+    pub sub: RNodeSubConfig,
+    pub writer: Option<Arc<Mutex<Transport>>>,
+}
+
+impl RNodeRuntime {
+    pub fn from_config(config: &RNodeConfig) -> Self {
+        Self {
+            sub: config
+                .subinterfaces
+                .first()
+                .cloned()
+                .unwrap_or_else(|| RNodeSubConfig {
+                    name: config.name.clone(),
+                    frequency: 868_000_000,
+                    bandwidth: 125_000,
+                    txpower: 7,
+                    spreading_factor: 8,
+                    coding_rate: 5,
+                    flow_control: false,
+                    st_alock: None,
+                    lt_alock: None,
+                }),
+            writer: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RNodeRuntimeConfigHandle {
+    pub interface_name: String,
+    pub runtime: Arc<Mutex<RNodeRuntime>>,
+    pub startup: RNodeRuntime,
+}
+
+impl Default for RNodeConfig {
+    fn default() -> Self {
+        let mut config = RNodeConfig {
+            name: String::new(),
+            port: String::new(),
+            speed: 115200,
+            subinterfaces: Vec::new(),
+            id_interval: None,
+            id_callsign: None,
+            base_interface_id: InterfaceId(0),
+            pre_opened_fd: None,
+            runtime: Arc::new(Mutex::new(RNodeRuntime {
+                sub: RNodeSubConfig {
+                    name: String::new(),
+                    frequency: 868_000_000,
+                    bandwidth: 125_000,
+                    txpower: 7,
+                    spreading_factor: 8,
+                    coding_rate: 5,
+                    flow_control: false,
+                    st_alock: None,
+                    lt_alock: None,
+                },
+                writer: None,
+            })),
+        };
+        let startup = RNodeRuntime::from_config(&config);
+        config.runtime = Arc::new(Mutex::new(startup));
+        config
+    }
+}
+
+/// Validate subinterface configuration. Returns error message if invalid.
+pub fn validate_sub_config(sub: &RNodeSubConfig) -> Option<String> {
+    if sub.frequency < FREQ_MIN || sub.frequency > FREQ_MAX {
+        return Some(format!(
+            "Invalid frequency {} for {}",
+            sub.frequency, sub.name
+        ));
+    }
+    if sub.bandwidth < BW_MIN || sub.bandwidth > BW_MAX {
+        return Some(format!(
+            "Invalid bandwidth {} for {}",
+            sub.bandwidth, sub.name
+        ));
+    }
+    if sub.spreading_factor < SF_MIN || sub.spreading_factor > SF_MAX {
+        return Some(format!(
+            "Invalid SF {} for {}",
+            sub.spreading_factor, sub.name
+        ));
+    }
+    if sub.coding_rate < CR_MIN || sub.coding_rate > CR_MAX {
+        return Some(format!("Invalid CR {} for {}", sub.coding_rate, sub.name));
+    }
+    if sub.txpower < TXPOWER_MIN || sub.txpower > TXPOWER_MAX {
+        return Some(format!("Invalid TX power {} for {}", sub.txpower, sub.name));
+    }
+    if let Some(st) = sub.st_alock {
+        if st < 0.0 || st > 100.0 {
+            return Some(format!("Invalid ST airtime limit {} for {}", st, sub.name));
+        }
+    }
+    if let Some(lt) = sub.lt_alock {
+        if lt < 0.0 || lt > 100.0 {
+            return Some(format!("Invalid LT airtime limit {} for {}", lt, sub.name));
+        }
+    }
+    None
+}
+
+/// Estimate the LoRa physical bit rate for announce bandwidth gating.
+///
+/// Formula: SF * (bandwidth / 2^SF) * (4 / coding_rate).
+pub fn estimate_lora_bitrate_bps(sub: &RNodeSubConfig) -> u64 {
+    let symbols_per_second = sub.bandwidth as f64 / (1u64 << sub.spreading_factor) as f64;
+    let bits_per_symbol = sub.spreading_factor as f64 * (4.0 / sub.coding_rate as f64);
+    (symbols_per_second * bits_per_symbol).round().max(1.0) as u64
+}
+
+pub fn lora_airtime_profile(sub: &RNodeSubConfig) -> AirtimeProfile {
+    AirtimeProfile::Lora {
+        bandwidth: sub.bandwidth,
+        spreading_factor: sub.spreading_factor,
+        coding_rate: sub.coding_rate,
+        preamble_symbols: LORA_PREAMBLE_SYMBOLS,
+        explicit_header: LORA_EXPLICIT_HEADER,
+        crc: LORA_CRC,
+    }
+}
+
+/// Writer for a specific RNode subinterface.
+/// Wraps a shared serial writer with subinterface-specific data framing.
+struct RNodeSubWriter {
+    writer: Arc<Mutex<Transport>>,
+    index: u8,
+    flow_control: bool,
+    flow_state: Arc<Mutex<SubFlowState>>,
+}
+
+struct SubFlowState {
+    ready: bool,
+    queue: std::collections::VecDeque<Vec<u8>>,
+}
+
+fn make_sub_writer(
+    writer: Arc<Mutex<Transport>>,
+    index: u8,
+    flow_control: bool,
+    flow_state: Arc<Mutex<SubFlowState>>,
+) -> Box<dyn Writer> {
+    Box::new(RNodeSubWriter {
+        writer,
+        index,
+        flow_control,
+        flow_state,
+    })
+}
+
+impl Writer for RNodeSubWriter {
+    fn send_frame(&mut self, data: &[u8]) -> io::Result<()> {
+        let frame = rnode_kiss::rnode_data_frame(self.index, data);
+        if self.flow_control {
+            let mut state = lock_or_recover(&self.flow_state, "rnode flow state");
+            if state.ready {
+                state.ready = false;
+                drop(state);
+                lock_or_recover(&self.writer, "rnode shared writer").write_all(&frame)
+            } else {
+                state.queue.push_back(data.to_vec());
+                Ok(())
+            }
+        } else {
+            lock_or_recover(&self.writer, "rnode shared writer").write_all(&frame)
+        }
+    }
+}
+
+/// Start the RNode interface.
+///
+/// Opens serial port, spawns reader thread which performs detect+configure,
+/// then enters data relay mode.
+///
+/// Returns one `(InterfaceId, Box<dyn Writer>)` per subinterface.
+pub fn start(
+    config: RNodeConfig,
+    tx: EventSender,
+) -> io::Result<Vec<(InterfaceId, Box<dyn Writer>)>> {
+    // Validate all subinterface configs upfront
+    for sub in &config.subinterfaces {
+        if let Some(err) = validate_sub_config(sub) {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, err));
+        }
+    }
+
+    if config.subinterfaces.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "No subinterfaces configured",
+        ));
+    }
+
+    let (reader_file, shared_writer) = if let Some(fd) = config.pre_opened_fd {
+        // Pre-opened fd from USB bridge — dup for independent reader/writer handles
+        let (r, w) = Transport::open_from_fd(fd)?;
+        (r, Arc::new(Mutex::new(w)))
+    } else {
+        let serial_config = SerialConfig {
+            path: config.port.clone(),
+            baud: config.speed,
+            data_bits: 8,
+            parity: Parity::None,
+            stop_bits: 1,
+        };
+        let (r, w) = Transport::open(&serial_config)?;
+        (r, Arc::new(Mutex::new(w)))
+    };
+
+    // Build per-subinterface writers and IDs
+    let num_subs = config.subinterfaces.len();
+    let mut writers: Vec<(InterfaceId, Box<dyn Writer>)> = Vec::with_capacity(num_subs);
+    let mut flow_states: Vec<Arc<Mutex<SubFlowState>>> = Vec::with_capacity(num_subs);
+
+    for (i, sub) in config.subinterfaces.iter().enumerate() {
+        let sub_id = InterfaceId(config.base_interface_id.0 + i as u64);
+        let flow_state = Arc::new(Mutex::new(SubFlowState {
+            ready: true,
+            queue: std::collections::VecDeque::new(),
+        }));
+        flow_states.push(flow_state.clone());
+        let sub_writer =
+            make_sub_writer(shared_writer.clone(), i as u8, sub.flow_control, flow_state);
+        writers.push((sub_id, sub_writer));
+    }
+
+    // Spawn reader thread
+    let reader_shared_writer = shared_writer.clone();
+    {
+        let mut runtime = lock_or_recover(&config.runtime, "rnode runtime");
+        runtime.writer = Some(shared_writer.clone());
+        runtime.sub = config
+            .subinterfaces
+            .first()
+            .cloned()
+            .unwrap_or(runtime.sub.clone());
+    }
+    let reader_config = config.clone();
+    let reader_flow_states = flow_states;
+    thread::Builder::new()
+        .name(format!("rnode-reader-{}", config.base_interface_id.0))
+        .spawn(move || {
+            reader_loop(
+                reader_file,
+                reader_shared_writer,
+                reader_config,
+                tx,
+                reader_flow_states,
+            );
+        })?;
+
+    // Spawn keepalive thread — sends periodic DETECT to prevent firmware
+    // bridge idle timeout (ESP32 RNode reverts to standalone after 30s idle).
+    let keepalive_writer = shared_writer.clone();
+    let keepalive_name = config.name.clone();
+    thread::Builder::new()
+        .name(format!("rnode-keepalive-{}", config.base_interface_id.0))
+        .spawn(move || {
+            let detect = rnode_kiss::detect_request();
+            loop {
+                thread::sleep(Duration::from_secs(15));
+                if let Err(e) =
+                    lock_or_recover(&keepalive_writer, "rnode shared writer").write_all(&detect)
+                {
+                    log::debug!("[{}] keepalive write failed: {}", keepalive_name, e);
+                }
+            }
+        })?;
+
+    Ok(writers)
+}
+
+/// Reader loop: detect device, configure radios, then relay data frames.
+fn reader_loop(
+    mut reader: Transport,
+    writer: Arc<Mutex<Transport>>,
+    config: RNodeConfig,
+    tx: EventSender,
+    flow_states: Vec<Arc<Mutex<SubFlowState>>>,
+) {
+    const RECONNECT_INITIAL_DELAY: Duration = Duration::from_millis(200);
+    const RECONNECT_MAX_DELAY: Duration = Duration::from_secs(2);
+    // Initial delay for hardware init (matches Python: sleep(2.0))
+    thread::sleep(Duration::from_secs(2));
+    let mut connected_once = false;
+    let mut last_rssi: Option<i16> = None;
+    let mut last_snr: Option<f32> = None;
+    if let Err(e) = detect_and_configure(&mut reader, &writer, &config) {
+        log::error!("[{}] initial RNode setup failed: {}", config.name, e);
+        return;
+    }
+    signal_interface_up(&tx, &config, &writer, &flow_states, connected_once);
+    connected_once = true;
+    loop {
+        let mut decoder = rnode_kiss::RNodeDecoder::new();
+        let mut buf = [0u8; 4096];
+        let disconnected = loop {
+            match reader.read(&mut buf) {
+                Ok(0) => {
+                    log::warn!("[{}] serial port closed", config.name);
+                    signal_interface_down(&tx, &config);
+                    break true;
+                }
+                Ok(n) => {
+                    for event in decoder.feed(&buf[..n]) {
+                        match event {
+                            rnode_kiss::RNodeEvent::DataFrame { index, data } => {
+                                let sub_id = InterfaceId(config.base_interface_id.0 + index as u64);
+                                if tx
+                                    .send(Event::Frame {
+                                        interface_id: sub_id,
+                                        data,
+                                        rssi: last_rssi,
+                                        snr: last_snr,
+                                    })
+                                    .is_err()
+                                {
+                                    return;
+                                }
+                                last_rssi = None;
+                                last_snr = None;
+                            }
+                            rnode_kiss::RNodeEvent::Ready => {
+                                // Flow control: unlock all subinterfaces that have flow_control
+                                for (i, fs) in flow_states.iter().enumerate() {
+                                    if config.subinterfaces[i].flow_control {
+                                        process_flow_queue(fs, &writer, i as u8);
+                                    }
+                                }
+                            }
+                            rnode_kiss::RNodeEvent::StatRssi(rssi) => {
+                                last_rssi = Some(rssi as i16 - 157);
+                            }
+                            rnode_kiss::RNodeEvent::StatSnr(snr) => {
+                                last_snr = Some(snr as f32 * 0.25);
+                            }
+                            rnode_kiss::RNodeEvent::Error(code) => {
+                                log::error!("[{}] RNode error: 0x{:02X}", config.name, code);
+                            }
+                            _ => {
+                                // Status updates logged but not acted on
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    log::error!("[{}] serial read error: {}", config.name, e);
+                    signal_interface_down(&tx, &config);
+                    break true;
+                }
+            }
+        };
+
+        clear_pending_rx_metadata(&mut last_rssi, &mut last_snr);
+
+        if !disconnected || config.pre_opened_fd.is_some() {
+            return;
+        }
+
+        let mut backoff = RECONNECT_INITIAL_DELAY;
+        loop {
+            match reopen_connection(&config, &writer) {
+                Ok(new_reader) => {
+                    reset_flow_states(&flow_states);
+                    reader = new_reader;
+                    if let Err(e) = detect_and_configure(&mut reader, &writer, &config) {
+                        log::warn!("[{}] reconnect configure failed: {}", config.name, e);
+                        thread::sleep(backoff);
+                        backoff = std::cmp::min(backoff.saturating_mul(2), RECONNECT_MAX_DELAY);
+                        continue;
+                    }
+                    signal_interface_up(&tx, &config, &writer, &flow_states, connected_once);
+                    break;
+                }
+                Err(e) => {
+                    log::warn!("[{}] reconnect open failed: {}", config.name, e);
+                    thread::sleep(backoff);
+                    backoff = std::cmp::min(backoff.saturating_mul(2), RECONNECT_MAX_DELAY);
+                }
+            }
+        }
+    }
+}
+
+fn detect_and_configure(
+    reader: &mut Transport,
+    writer: &Arc<Mutex<Transport>>,
+    config: &RNodeConfig,
+) -> io::Result<()> {
+    let detect_cmd = rnode_kiss::detect_request();
+    let mut cmd = detect_cmd;
+    cmd.extend_from_slice(&rnode_kiss::rnode_command(
+        rnode_kiss::CMD_FW_VERSION,
+        &[0x00],
+    ));
+    cmd.extend_from_slice(&rnode_kiss::rnode_command(
+        rnode_kiss::CMD_FW_DETAIL,
+        &[0x00],
+    ));
+    cmd.extend_from_slice(&rnode_kiss::rnode_command(
+        rnode_kiss::CMD_PLATFORM,
+        &[0x00],
+    ));
+    cmd.extend_from_slice(&rnode_kiss::rnode_command(rnode_kiss::CMD_MCU, &[0x00]));
+
+    lock_or_recover(writer, "rnode shared writer").write_all(&cmd)?;
+
+    let mut decoder = rnode_kiss::RNodeDecoder::new();
+    let mut buf = [0u8; 4096];
+    let mut detected = false;
+    let detect_start = std::time::Instant::now();
+    let detect_timeout = Duration::from_secs(5);
+
+    while !detected && detect_start.elapsed() < detect_timeout {
+        match reader.read(&mut buf) {
+            Ok(0) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "serial port closed during detect",
+                ));
+            }
+            Ok(n) => {
+                for event in decoder.feed(&buf[..n]) {
+                    match event {
+                        rnode_kiss::RNodeEvent::Detected(true) => {
+                            detected = true;
+                            log::info!("[{}] RNode device detected", config.name);
+                        }
+                        rnode_kiss::RNodeEvent::FirmwareVersion { major, minor } => {
+                            log::info!("[{}] firmware version {}.{}", config.name, major, minor);
+                        }
+                        rnode_kiss::RNodeEvent::FirmwareDetail(ref detail) => {
+                            log::info!("[{}] firmware detail: {}", config.name, detail);
+                        }
+                        rnode_kiss::RNodeEvent::Platform(p) => {
+                            log::info!("[{}] platform: 0x{:02X}", config.name, p);
+                        }
+                        rnode_kiss::RNodeEvent::Mcu(m) => {
+                            log::info!("[{}] MCU: 0x{:02X}", config.name, m);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(io::Error::new(
+                    e.kind(),
+                    format!("serial read error during detect: {}", e),
+                ));
+            }
+        }
+    }
+
+    if !detected {
+        return Err(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "RNode detection timed out",
+        ));
+    }
+
+    for (i, sub) in config.subinterfaces.iter().enumerate() {
+        configure_subinterface(writer, i as u8, sub, config.subinterfaces.len() > 1)?;
+    }
+
+    thread::sleep(Duration::from_millis(300));
+    log::info!(
+        "[{}] RNode configured with {} subinterface(s)",
+        config.name,
+        config.subinterfaces.len()
+    );
+    Ok(())
+}
+
+fn signal_interface_down(tx: &EventSender, config: &RNodeConfig) {
+    for i in 0..config.subinterfaces.len() {
+        let sub_id = InterfaceId(config.base_interface_id.0 + i as u64);
+        let _ = tx.send(Event::InterfaceDown(sub_id));
+    }
+}
+
+fn signal_interface_up(
+    tx: &EventSender,
+    config: &RNodeConfig,
+    writer: &Arc<Mutex<Transport>>,
+    flow_states: &[Arc<Mutex<SubFlowState>>],
+    reconnected: bool,
+) {
+    for (i, flow_state) in flow_states.iter().enumerate() {
+        let sub_id = InterfaceId(config.base_interface_id.0 + i as u64);
+        let new_writer = reconnected.then(|| {
+            make_sub_writer(
+                writer.clone(),
+                i as u8,
+                config.subinterfaces[i].flow_control,
+                flow_state.clone(),
+            )
+        });
+        let _ = tx.send(Event::InterfaceUp(sub_id, new_writer, None));
+    }
+}
+
+fn reset_flow_states(flow_states: &[Arc<Mutex<SubFlowState>>]) {
+    for flow_state in flow_states {
+        let mut state = lock_or_recover(flow_state, "rnode flow state");
+        state.ready = true;
+        state.queue.clear();
+    }
+}
+
+fn clear_pending_rx_metadata(last_rssi: &mut Option<i16>, last_snr: &mut Option<f32>) {
+    *last_rssi = None;
+    *last_snr = None;
+}
+
+fn reopen_connection(
+    config: &RNodeConfig,
+    writer: &Arc<Mutex<Transport>>,
+) -> io::Result<Transport> {
+    let serial_config = SerialConfig {
+        path: config.port.clone(),
+        baud: config.speed,
+        data_bits: 8,
+        parity: Parity::None,
+        stop_bits: 1,
+    };
+
+    let (reader, new_writer) = Transport::open(&serial_config)?;
+    *lock_or_recover(writer, "rnode shared writer") = new_writer;
+    Ok(reader)
+}
+
+/// Configure a single subinterface on the RNode device.
+pub(crate) fn configure_subinterface(
+    writer: &Arc<Mutex<Transport>>,
+    index: u8,
+    sub: &RNodeSubConfig,
+    multi: bool,
+) -> io::Result<()> {
+    let mut w = lock_or_recover(writer, "rnode shared writer");
+
+    // For multi-radio, send select command before each parameter
+    let freq_bytes = [
+        (sub.frequency >> 24) as u8,
+        (sub.frequency >> 16) as u8,
+        (sub.frequency >> 8) as u8,
+        (sub.frequency & 0xFF) as u8,
+    ];
+    let bw_bytes = [
+        (sub.bandwidth >> 24) as u8,
+        (sub.bandwidth >> 16) as u8,
+        (sub.bandwidth >> 8) as u8,
+        (sub.bandwidth & 0xFF) as u8,
+    ];
+    let txp = if sub.txpower < 0 {
+        (sub.txpower as i16 + 256) as u8
+    } else {
+        sub.txpower as u8
+    };
+
+    if multi {
+        w.write_all(&rnode_kiss::rnode_select_command(
+            index,
+            rnode_kiss::CMD_FREQUENCY,
+            &freq_bytes,
+        ))?;
+        w.write_all(&rnode_kiss::rnode_select_command(
+            index,
+            rnode_kiss::CMD_BANDWIDTH,
+            &bw_bytes,
+        ))?;
+        w.write_all(&rnode_kiss::rnode_select_command(
+            index,
+            rnode_kiss::CMD_TXPOWER,
+            &[txp],
+        ))?;
+        w.write_all(&rnode_kiss::rnode_select_command(
+            index,
+            rnode_kiss::CMD_SF,
+            &[sub.spreading_factor],
+        ))?;
+        w.write_all(&rnode_kiss::rnode_select_command(
+            index,
+            rnode_kiss::CMD_CR,
+            &[sub.coding_rate],
+        ))?;
+    } else {
+        w.write_all(&rnode_kiss::rnode_command(
+            rnode_kiss::CMD_FREQUENCY,
+            &freq_bytes,
+        ))?;
+        w.write_all(&rnode_kiss::rnode_command(
+            rnode_kiss::CMD_BANDWIDTH,
+            &bw_bytes,
+        ))?;
+        w.write_all(&rnode_kiss::rnode_command(rnode_kiss::CMD_TXPOWER, &[txp]))?;
+        w.write_all(&rnode_kiss::rnode_command(
+            rnode_kiss::CMD_SF,
+            &[sub.spreading_factor],
+        ))?;
+        w.write_all(&rnode_kiss::rnode_command(
+            rnode_kiss::CMD_CR,
+            &[sub.coding_rate],
+        ))?;
+    }
+
+    // Airtime locks
+    if let Some(st) = sub.st_alock {
+        let st_val = (st * 100.0) as u16;
+        let st_bytes = [(st_val >> 8) as u8, (st_val & 0xFF) as u8];
+        if multi {
+            w.write_all(&rnode_kiss::rnode_select_command(
+                index,
+                rnode_kiss::CMD_ST_ALOCK,
+                &st_bytes,
+            ))?;
+        } else {
+            w.write_all(&rnode_kiss::rnode_command(
+                rnode_kiss::CMD_ST_ALOCK,
+                &st_bytes,
+            ))?;
+        }
+    }
+    if let Some(lt) = sub.lt_alock {
+        let lt_val = (lt * 100.0) as u16;
+        let lt_bytes = [(lt_val >> 8) as u8, (lt_val & 0xFF) as u8];
+        if multi {
+            w.write_all(&rnode_kiss::rnode_select_command(
+                index,
+                rnode_kiss::CMD_LT_ALOCK,
+                &lt_bytes,
+            ))?;
+        } else {
+            w.write_all(&rnode_kiss::rnode_command(
+                rnode_kiss::CMD_LT_ALOCK,
+                &lt_bytes,
+            ))?;
+        }
+    }
+
+    // Turn on radio
+    if multi {
+        w.write_all(&rnode_kiss::rnode_select_command(
+            index,
+            rnode_kiss::CMD_RADIO_STATE,
+            &[rnode_kiss::RADIO_STATE_ON],
+        ))?;
+    } else {
+        w.write_all(&rnode_kiss::rnode_command(
+            rnode_kiss::CMD_RADIO_STATE,
+            &[rnode_kiss::RADIO_STATE_ON],
+        ))?;
+    }
+
+    Ok(())
+}
+
+/// Process flow control queue for a subinterface.
+fn process_flow_queue(
+    flow_state: &Arc<Mutex<SubFlowState>>,
+    writer: &Arc<Mutex<Transport>>,
+    index: u8,
+) {
+    let mut state = lock_or_recover(flow_state, "rnode flow state");
+    if let Some(data) = state.queue.pop_front() {
+        state.ready = false;
+        drop(state);
+        let frame = rnode_kiss::rnode_data_frame(index, &data);
+        let _ = lock_or_recover(writer, "rnode shared writer").write_all(&frame);
+    } else {
+        state.ready = true;
+    }
+}
+
+// --- Factory implementation ---
+
+use super::{InterfaceConfigData, InterfaceFactory, StartContext, StartResult, SubInterface};
+use rns_core::transport::types::InterfaceInfo;
+use std::collections::HashMap;
+
+/// Factory for `RNodeInterface`.
+pub struct RNodeFactory;
+
+impl InterfaceFactory for RNodeFactory {
+    fn type_name(&self) -> &str {
+        "RNodeInterface"
+    }
+
+    fn default_ifac_size(&self) -> usize {
+        8
+    }
+
+    fn parse_config(
+        &self,
+        name: &str,
+        id: InterfaceId,
+        params: &HashMap<String, String>,
+    ) -> Result<Box<dyn InterfaceConfigData>, String> {
+        let pre_opened_fd = params.get("fd").and_then(|v| v.parse::<i32>().ok());
+
+        let port = params
+            .get("port")
+            .cloned()
+            .or_else(|| pre_opened_fd.map(|_| "usb-bridge".to_string()))
+            .ok_or_else(|| "RNodeInterface requires 'port' or 'fd'".to_string())?;
+
+        let speed = params
+            .get("speed")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(115200u32);
+
+        let frequency = params
+            .get("frequency")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(868_000_000u32);
+
+        let bandwidth = params
+            .get("bandwidth")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(125_000u32);
+
+        let txpower = params
+            .get("txpower")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(7i8);
+
+        let spreading_factor = params
+            .get("spreadingfactor")
+            .or_else(|| params.get("spreading_factor"))
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(8u8);
+
+        let coding_rate = params
+            .get("codingrate")
+            .or_else(|| params.get("coding_rate"))
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(5u8);
+
+        let flow_control = params
+            .get("flow_control")
+            .and_then(|v| crate::config::parse_bool_pub(v))
+            .unwrap_or(false);
+
+        let st_alock = params.get("st_alock").and_then(|v| v.parse().ok());
+
+        let lt_alock = params.get("lt_alock").and_then(|v| v.parse().ok());
+
+        let id_interval = params.get("id_interval").and_then(|v| v.parse().ok());
+
+        let id_callsign = params.get("id_callsign").map(|v| v.as_bytes().to_vec());
+
+        let sub = RNodeSubConfig {
+            name: name.to_string(),
+            frequency,
+            bandwidth,
+            txpower,
+            spreading_factor,
+            coding_rate,
+            flow_control,
+            st_alock,
+            lt_alock,
+        };
+
+        Ok(Box::new(RNodeConfig {
+            name: name.to_string(),
+            port,
+            speed,
+            subinterfaces: vec![sub],
+            id_interval,
+            id_callsign,
+            base_interface_id: id,
+            pre_opened_fd,
+            runtime: Arc::new(Mutex::new(RNodeRuntime {
+                sub: RNodeSubConfig {
+                    name: name.to_string(),
+                    frequency,
+                    bandwidth,
+                    txpower,
+                    spreading_factor,
+                    coding_rate,
+                    flow_control,
+                    st_alock,
+                    lt_alock,
+                },
+                writer: None,
+            })),
+        }))
+    }
+
+    fn start(
+        &self,
+        config: Box<dyn InterfaceConfigData>,
+        ctx: StartContext,
+    ) -> std::io::Result<StartResult> {
+        let rnode_config = *config.into_any().downcast::<RNodeConfig>().map_err(|_| {
+            std::io::Error::new(std::io::ErrorKind::InvalidData, "wrong config type")
+        })?;
+
+        let name = rnode_config.name.clone();
+        let sub_bitrates: Vec<u64> = rnode_config
+            .subinterfaces
+            .iter()
+            .map(estimate_lora_bitrate_bps)
+            .collect();
+        let airtime_profiles: Vec<AirtimeProfile> = rnode_config
+            .subinterfaces
+            .iter()
+            .map(lora_airtime_profile)
+            .collect();
+
+        let pairs = start(rnode_config, ctx.tx)?;
+
+        let mut subs = Vec::with_capacity(pairs.len());
+        for (index, (sub_id, writer)) in pairs.into_iter().enumerate() {
+            let sub_name = if index == 0 {
+                name.clone()
+            } else {
+                format!("{}/{}", name, index)
+            };
+
+            let info = InterfaceInfo {
+                id: sub_id,
+                name: sub_name,
+                mode: ctx.mode,
+                out_capable: true,
+                in_capable: true,
+                bitrate: sub_bitrates.get(index).copied(),
+                airtime_profile: airtime_profiles.get(index).copied(),
+                announce_rate_target: None,
+                announce_rate_grace: 0,
+                announce_rate_penalty: 0.0,
+                announce_cap: rns_core::constants::ANNOUNCE_CAP,
+                is_local_client: false,
+                wants_tunnel: false,
+                tunnel_id: None,
+                mtu: rns_core::constants::MTU as u32,
+                ingress_control: rns_core::transport::types::IngressControlConfig::disabled(),
+                ia_freq: 0.0,
+                ip_freq: 0.0,
+                op_freq: 0.0,
+                op_samples: 0,
+                started: crate::time::now(),
+            };
+
+            subs.push(SubInterface {
+                id: sub_id,
+                info,
+                writer,
+                interface_type_name: "RNodeInterface".to_string(),
+            });
+        }
+
+        Ok(StartResult::Multi(subs))
+    }
+}
+
+pub(crate) fn rnode_runtime_handle_from_config(config: &RNodeConfig) -> RNodeRuntimeConfigHandle {
+    RNodeRuntimeConfigHandle {
+        interface_name: config.name.clone(),
+        runtime: Arc::clone(&config.runtime),
+        startup: RNodeRuntime::from_config(config),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::event;
+    use crate::kiss;
+    use crate::serial::open_pty_pair;
+    use std::os::unix::io::{AsRawFd, FromRawFd};
+    use std::path::PathBuf;
+    use std::sync::mpsc::RecvTimeoutError;
+    use tempfile::tempdir;
+    /// Helper: poll an fd for reading with timeout (ms).
+    fn poll_read(fd: i32, timeout_ms: i32) -> bool {
+        let mut pfd = libc::pollfd {
+            fd,
+            events: libc::POLLIN,
+            revents: 0,
+        };
+        let ret = unsafe { libc::poll(&mut pfd, 1, timeout_ms) };
+        ret > 0
+    }
+
+    /// Read all available bytes from an fd.
+    fn read_available(file: &mut Transport) -> Vec<u8> {
+        let mut all = Vec::new();
+        let mut buf = [0u8; 4096];
+        while poll_read(file.as_raw_fd(), 100) {
+            match file.read(&mut buf) {
+                Ok(n) if n > 0 => all.extend_from_slice(&buf[..n]),
+                _ => break,
+            }
+        }
+        all
+    }
+
+    fn slave_tty_path(fd: i32) -> PathBuf {
+        let mut buf = [0u8; 256];
+        let rc = unsafe { libc::ttyname_r(fd, buf.as_mut_ptr().cast(), buf.len()) };
+        assert_eq!(rc, 0, "ttyname_r failed for fd {}", fd);
+        let nul = buf.iter().position(|b| *b == 0).unwrap_or(buf.len());
+        PathBuf::from(std::str::from_utf8(&buf[..nul]).unwrap())
+    }
+
+    unsafe fn transport_from_raw_fd(fd: i32) -> Transport {
+        Transport::Serial(std::fs::File::from_raw_fd(fd))
+    }
+
+    fn wait_for_interface_event<F>(
+        rx: &std::sync::mpsc::Receiver<Event>,
+        timeout: Duration,
+        predicate: F,
+    ) -> Event
+    where
+        F: Fn(&Event) -> bool,
+    {
+        let deadline = std::time::Instant::now() + timeout;
+        loop {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            match rx.recv_timeout(remaining) {
+                Ok(event) if predicate(&event) => return event,
+                Ok(_) => continue,
+                Err(RecvTimeoutError::Timeout) => panic!("timed out waiting for interface event"),
+                Err(RecvTimeoutError::Disconnected) => panic!("event channel disconnected"),
+            }
+        }
+    }
+
+    /// Mock RNode: respond to detect with DETECT_RESP, FW version, platform
+    fn mock_respond_detect(master: &mut Transport) {
+        // Respond: DETECT_RESP
+        master
+            .write_all(&rnode_kiss::rnode_command(
+                rnode_kiss::CMD_DETECT,
+                &[rnode_kiss::DETECT_RESP],
+            ))
+            .unwrap();
+        // FW version 1.74
+        master
+            .write_all(&rnode_kiss::rnode_command(
+                rnode_kiss::CMD_FW_VERSION,
+                &[0x01, 0x4A],
+            ))
+            .unwrap();
+        // Platform ESP32
+        master
+            .write_all(&rnode_kiss::rnode_command(
+                rnode_kiss::CMD_PLATFORM,
+                &[0x80],
+            ))
+            .unwrap();
+        // MCU
+        master
+            .write_all(&rnode_kiss::rnode_command(rnode_kiss::CMD_MCU, &[0x01]))
+            .unwrap();
+        master.flush().unwrap();
+    }
+
+    #[test]
+    fn rnode_detect_over_pty() {
+        // Test that the RNode decoder can parse detect responses from a PTY
+        let (master_fd, slave_fd) = open_pty_pair().unwrap();
+        let mut master = unsafe { transport_from_raw_fd(master_fd) };
+        let mut slave = unsafe { transport_from_raw_fd(slave_fd) };
+
+        // Write detect response to master
+        mock_respond_detect(&mut master);
+
+        let mut decoder = rnode_kiss::RNodeDecoder::new();
+        let mut events = Vec::new();
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+
+        while std::time::Instant::now() < deadline {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            let timeout_ms = remaining.as_millis().min(i32::MAX as u128) as i32;
+            if !poll_read(slave.as_raw_fd(), timeout_ms) {
+                break;
+            }
+
+            let chunk = read_available(&mut slave);
+            if chunk.is_empty() {
+                continue;
+            }
+
+            events.extend(decoder.feed(&chunk));
+
+            let saw_detect = events
+                .iter()
+                .any(|e| matches!(e, rnode_kiss::RNodeEvent::Detected(true)));
+            let saw_firmware = events
+                .iter()
+                .any(|e| matches!(e, rnode_kiss::RNodeEvent::FirmwareVersion { .. }));
+            if saw_detect && saw_firmware {
+                break;
+            }
+        }
+
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, rnode_kiss::RNodeEvent::Detected(true))),
+            "should detect device"
+        );
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, rnode_kiss::RNodeEvent::FirmwareVersion { .. })),
+            "should get firmware version"
+        );
+    }
+
+    #[test]
+    fn rnode_configure_commands() {
+        let (master_fd, slave_fd) = open_pty_pair().unwrap();
+        let mut master = unsafe { transport_from_raw_fd(master_fd) };
+        let writer_file = unsafe { transport_from_raw_fd(libc::dup(slave_fd)) };
+        let writer = Arc::new(Mutex::new(writer_file));
+
+        let sub = RNodeSubConfig {
+            name: "test".into(),
+            frequency: 868_000_000,
+            bandwidth: 125_000,
+            txpower: 7,
+            spreading_factor: 8,
+            coding_rate: 5,
+            flow_control: false,
+            st_alock: None,
+            lt_alock: None,
+        };
+
+        configure_subinterface(&writer, 0, &sub, false).unwrap();
+
+        // Read what was sent
+        let data = read_available(&mut master);
+
+        // Should contain frequency command
+        assert!(
+            data.windows(2)
+                .any(|w| w[0] == kiss::FEND && w[1] == rnode_kiss::CMD_FREQUENCY),
+            "should contain FREQUENCY command"
+        );
+        // Should contain bandwidth command
+        assert!(
+            data.windows(2)
+                .any(|w| w[0] == kiss::FEND && w[1] == rnode_kiss::CMD_BANDWIDTH),
+            "should contain BANDWIDTH command"
+        );
+        // Should contain RADIO_STATE ON
+        assert!(
+            data.windows(3).any(|w| w[0] == kiss::FEND
+                && w[1] == rnode_kiss::CMD_RADIO_STATE
+                && w[2] == rnode_kiss::RADIO_STATE_ON),
+            "should contain RADIO_STATE ON command"
+        );
+
+        unsafe { libc::close(slave_fd) };
+    }
+
+    #[test]
+    fn rnode_data_roundtrip() {
+        let (master_fd, slave_fd) = open_pty_pair().unwrap();
+        let mut master = unsafe { transport_from_raw_fd(master_fd) };
+        let slave = unsafe { transport_from_raw_fd(slave_fd) };
+
+        // Write a data frame (subinterface 0) to master
+        let payload = vec![0x01, 0x02, 0x03, 0x04, 0x05];
+        let frame = rnode_kiss::rnode_data_frame(0, &payload);
+        master.write_all(&frame).unwrap();
+        master.flush().unwrap();
+
+        // Read from slave with RNode decoder
+        assert!(poll_read(slave.as_raw_fd(), 2000));
+        let mut decoder = rnode_kiss::RNodeDecoder::new();
+        let mut buf = [0u8; 4096];
+        let mut slave_file = slave;
+        let n = slave_file.read(&mut buf).unwrap();
+        let events = decoder.feed(&buf[..n]);
+
+        assert_eq!(events.len(), 1);
+        match &events[0] {
+            rnode_kiss::RNodeEvent::DataFrame { index, data } => {
+                assert_eq!(*index, 0);
+                assert_eq!(data, &payload);
+            }
+            other => panic!("expected DataFrame, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn rnode_flow_control() {
+        let (master_fd, slave_fd) = open_pty_pair().unwrap();
+        let writer_file = unsafe { transport_from_raw_fd(slave_fd) };
+        let shared_writer = Arc::new(Mutex::new(writer_file));
+
+        let flow_state = Arc::new(Mutex::new(SubFlowState {
+            ready: true,
+            queue: std::collections::VecDeque::new(),
+        }));
+
+        let mut sub_writer = RNodeSubWriter {
+            writer: shared_writer.clone(),
+            index: 0,
+            flow_control: true,
+            flow_state: flow_state.clone(),
+        };
+
+        // First send: should go through (ready=true) and set ready=false
+        sub_writer.send_frame(b"hello").unwrap();
+        assert!(!flow_state.lock().unwrap().ready);
+
+        // Second send: should be queued
+        sub_writer.send_frame(b"world").unwrap();
+        assert_eq!(flow_state.lock().unwrap().queue.len(), 1);
+
+        // Process flow queue (simulates CMD_READY)
+        process_flow_queue(&flow_state, &shared_writer, 0);
+        assert_eq!(flow_state.lock().unwrap().queue.len(), 0);
+        assert!(!flow_state.lock().unwrap().ready); // sent queued, still locked
+
+        // Process again with empty queue: sets ready=true
+        process_flow_queue(&flow_state, &shared_writer, 0);
+        assert!(flow_state.lock().unwrap().ready);
+
+        unsafe { libc::close(master_fd) };
+    }
+
+    #[test]
+    fn rnode_reset_clears_pending_rx_metadata() {
+        let mut last_rssi = Some(-101);
+        let mut last_snr = Some(7.25);
+
+        clear_pending_rx_metadata(&mut last_rssi, &mut last_snr);
+
+        assert_eq!(last_rssi, None);
+        assert_eq!(last_snr, None);
+    }
+
+    #[test]
+    fn rnode_sub_writer_format() {
+        let (master_fd, slave_fd) = open_pty_pair().unwrap();
+        let mut master = unsafe { transport_from_raw_fd(master_fd) };
+        let writer_file = unsafe { transport_from_raw_fd(slave_fd) };
+        let shared_writer = Arc::new(Mutex::new(writer_file));
+
+        let flow_state = Arc::new(Mutex::new(SubFlowState {
+            ready: true,
+            queue: std::collections::VecDeque::new(),
+        }));
+
+        let mut sub_writer = RNodeSubWriter {
+            writer: shared_writer,
+            index: 1, // subinterface 1
+            flow_control: false,
+            flow_state,
+        };
+
+        let payload = vec![0xAA, 0xBB, 0xCC];
+        sub_writer.send_frame(&payload).unwrap();
+
+        // Read from master
+        assert!(poll_read(master.as_raw_fd(), 2000));
+        let mut buf = [0u8; 256];
+        let n = master.read(&mut buf).unwrap();
+
+        // Should start with FEND, CMD_INT1_DATA (0x10)
+        assert_eq!(buf[0], kiss::FEND);
+        assert_eq!(buf[1], 0x10); // CMD_INT1_DATA
+        assert_eq!(buf[n - 1], kiss::FEND);
+    }
+
+    #[test]
+    fn rnode_multi_sub_routing() {
+        // Test that data frames on different CMD_INTn route to different indices
+        let mut decoder = rnode_kiss::RNodeDecoder::new();
+
+        let payload0 = vec![0x01, 0x02];
+        let frame0 = rnode_kiss::rnode_data_frame(0, &payload0);
+        let events0 = decoder.feed(&frame0);
+        assert_eq!(events0.len(), 1);
+        assert_eq!(
+            events0[0],
+            rnode_kiss::RNodeEvent::DataFrame {
+                index: 0,
+                data: payload0
+            }
+        );
+
+        let payload1 = vec![0x03, 0x04];
+        let frame1 = rnode_kiss::rnode_data_frame(1, &payload1);
+        let events1 = decoder.feed(&frame1);
+        assert_eq!(events1.len(), 1);
+        assert_eq!(
+            events1[0],
+            rnode_kiss::RNodeEvent::DataFrame {
+                index: 1,
+                data: payload1
+            }
+        );
+    }
+
+    #[test]
+    fn rnode_error_handling() {
+        // NOTE: CMD_ERROR (0x90) == CMD_INT5_DATA (0x90) — they share the same
+        // byte value. In multi-radio mode, 0x90 is treated as INT5_DATA.
+        // Error events only appear on single-radio devices where there's no
+        // INT5_DATA. The decoder treats 0x90 as INT5_DATA (data wins).
+        // For real error detection, we rely on the data frame being invalid
+        // or the device sending a different error indicator.
+        // Test that cmd 0x90 is correctly handled as a data frame.
+        let mut decoder = rnode_kiss::RNodeDecoder::new();
+        let frame = rnode_kiss::rnode_command(rnode_kiss::CMD_ERROR, &[0x02]);
+        let events = decoder.feed(&frame);
+        assert_eq!(events.len(), 1);
+        // 0x90 = CMD_INT5_DATA, so it's a DataFrame with index 5
+        assert_eq!(
+            events[0],
+            rnode_kiss::RNodeEvent::DataFrame {
+                index: 5,
+                data: vec![0x02]
+            }
+        );
+    }
+
+    #[test]
+    fn rnode_config_validation() {
+        let good = RNodeSubConfig {
+            name: "test".into(),
+            frequency: 868_000_000,
+            bandwidth: 125_000,
+            txpower: 7,
+            spreading_factor: 8,
+            coding_rate: 5,
+            flow_control: false,
+            st_alock: None,
+            lt_alock: None,
+        };
+        assert!(validate_sub_config(&good).is_none());
+
+        // Bad frequency
+        let mut bad = good.clone();
+        bad.frequency = 100;
+        assert!(validate_sub_config(&bad).is_some());
+
+        // Bad SF
+        bad = good.clone();
+        bad.spreading_factor = 13;
+        assert!(validate_sub_config(&bad).is_some());
+
+        // Bad CR
+        bad = good.clone();
+        bad.coding_rate = 9;
+        assert!(validate_sub_config(&bad).is_some());
+
+        // Bad BW
+        bad = good.clone();
+        bad.bandwidth = 5;
+        assert!(validate_sub_config(&bad).is_some());
+
+        // Bad TX power
+        bad = good.clone();
+        bad.txpower = 50;
+        assert!(validate_sub_config(&bad).is_some());
+    }
+
+    #[test]
+    fn rnode_lora_bitrate_estimate_uses_radio_params() {
+        let mut sub = RNodeSubConfig {
+            name: "test".into(),
+            frequency: 868_000_000,
+            bandwidth: 125_000,
+            txpower: 7,
+            spreading_factor: 8,
+            coding_rate: 5,
+            flow_control: false,
+            st_alock: None,
+            lt_alock: None,
+        };
+
+        assert_eq!(estimate_lora_bitrate_bps(&sub), 3125);
+
+        sub.spreading_factor = 12;
+        assert_eq!(estimate_lora_bitrate_bps(&sub), 293);
+
+        sub.bandwidth = 250_000;
+        assert_eq!(estimate_lora_bitrate_bps(&sub), 586);
+    }
+
+    #[test]
+    fn rnode_lora_airtime_profile_uses_radio_params() {
+        let sub = RNodeSubConfig {
+            name: "test".into(),
+            frequency: 868_000_000,
+            bandwidth: 125_000,
+            txpower: 7,
+            spreading_factor: 8,
+            coding_rate: 5,
+            flow_control: false,
+            st_alock: None,
+            lt_alock: None,
+        };
+
+        let profile = lora_airtime_profile(&sub);
+        assert!((profile.transmit_time_secs(100) - 0.307712).abs() < 0.000001);
+        assert_eq!(
+            profile,
+            AirtimeProfile::Lora {
+                bandwidth: 125_000,
+                spreading_factor: 8,
+                coding_rate: 5,
+                preamble_symbols: LORA_PREAMBLE_SYMBOLS,
+                explicit_header: LORA_EXPLICIT_HEADER,
+                crc: LORA_CRC,
+            }
+        );
+    }
+
+    #[test]
+    fn rnode_reconnects_after_serial_disconnect() {
+        let tempdir = tempdir().unwrap();
+        let port_path = tempdir.path().join("rnode-port");
+
+        let (master1_fd, slave1_fd) = open_pty_pair().unwrap();
+        let slave1_path = slave_tty_path(slave1_fd);
+        std::os::unix::fs::symlink(&slave1_path, &port_path).unwrap();
+
+        let mut master1 = unsafe { transport_from_raw_fd(master1_fd) };
+        let slave1 = unsafe { transport_from_raw_fd(slave1_fd) };
+
+        let (tx, rx) = event::channel();
+        let sub = RNodeSubConfig {
+            name: "test-rnode".into(),
+            frequency: 868_000_000,
+            bandwidth: 125_000,
+            txpower: 7,
+            spreading_factor: 8,
+            coding_rate: 5,
+            flow_control: false,
+            st_alock: None,
+            lt_alock: None,
+        };
+        let mut config = RNodeConfig {
+            name: "test-rnode".into(),
+            port: port_path.display().to_string(),
+            speed: 115200,
+            subinterfaces: vec![sub],
+            id_interval: None,
+            id_callsign: None,
+            base_interface_id: InterfaceId(41),
+            pre_opened_fd: None,
+            runtime: Arc::new(Mutex::new(RNodeRuntime {
+                sub: RNodeSubConfig {
+                    name: String::new(),
+                    frequency: 868_000_000,
+                    bandwidth: 125_000,
+                    txpower: 7,
+                    spreading_factor: 8,
+                    coding_rate: 5,
+                    flow_control: false,
+                    st_alock: None,
+                    lt_alock: None,
+                },
+                writer: None,
+            })),
+        };
+        config.runtime = Arc::new(Mutex::new(RNodeRuntime::from_config(&config)));
+
+        let _writers = start(config, tx).unwrap();
+
+        thread::sleep(Duration::from_secs(3));
+        mock_respond_detect(&mut master1);
+        let up = wait_for_interface_event(&rx, Duration::from_secs(4), |event| {
+            matches!(event, Event::InterfaceUp(InterfaceId(41), _, _))
+        });
+        assert!(matches!(
+            up,
+            Event::InterfaceUp(InterfaceId(41), None, None)
+        ));
+
+        drop(master1);
+        drop(slave1);
+
+        let down = wait_for_interface_event(&rx, Duration::from_secs(4), |event| {
+            matches!(event, Event::InterfaceDown(InterfaceId(41)))
+        });
+        assert!(matches!(down, Event::InterfaceDown(InterfaceId(41))));
+
+        let (master2_fd, slave2_fd) = open_pty_pair().unwrap();
+        let slave2_path = slave_tty_path(slave2_fd);
+        std::fs::remove_file(&port_path).unwrap();
+        std::os::unix::fs::symlink(&slave2_path, &port_path).unwrap();
+
+        let mut master2 = unsafe { transport_from_raw_fd(master2_fd) };
+        let _slave2 = unsafe { transport_from_raw_fd(slave2_fd) };
+
+        thread::sleep(Duration::from_secs(3));
+        mock_respond_detect(&mut master2);
+        let up = wait_for_interface_event(&rx, Duration::from_secs(4), |event| {
+            matches!(event, Event::InterfaceUp(InterfaceId(41), _, _))
+        });
+        assert!(matches!(
+            up,
+            Event::InterfaceUp(InterfaceId(41), Some(_), None)
+        ));
+    }
+}

@@ -19,7 +19,7 @@ use std::sync::Mutex;
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager, State};
 
-use types::{Attachment, Method, Page, RnsEvent, StartOptions, Started, Status};
+use types::{Attachment, Download, Method, Page, RnsEvent, StartOptions, Started, Status};
 
 /// Один узел на приложение; `None` — остановлен.
 #[derive(Default)]
@@ -188,6 +188,41 @@ pub async fn rns_page(
     tauri::async_runtime::spawn_blocking(move || handle.page(dest, &path, &data))
         .await
         .map_err(|e| format!("rns_error: {e}"))?
+}
+
+/// Файл узла NomadNet (`/file/…`): скачать и сохранить через системный диалог.
+/// Имя пришло от узла — недоверенное: в диалог идёт только basename. Узел
+/// может ответить страницей (отказ) — она возвращается для показа.
+#[tauri::command]
+pub async fn rns_download(
+    app: AppHandle,
+    state: State<'_, RnsManager>,
+    node: String,
+    path: String,
+) -> Result<serde_json::Value, String> {
+    let dest = types::parse_hash::<16>(&node)?;
+    let handle = {
+        let guard = state.node.lock().map_err(|_| "rns_error: lock".to_string())?;
+        guard.as_ref().ok_or("rns_not_running")?.handle()
+    };
+    let got = tauri::async_runtime::spawn_blocking(move || handle.download(dest, &path))
+        .await
+        .map_err(|e| format!("rns_error: {e}"))??;
+    match got {
+        Download::Page(page) => Ok(serde_json::json!({
+            "kind": "page",
+            "content": page.content,
+            "binary": page.binary,
+        })),
+        Download::File { name, data } => {
+            let suggested = crate::ipfs::safe_basename(&name, "nomadnet");
+            let Some(target) = crate::ipfs::save_file(&app, &suggested).await else {
+                return Ok(serde_json::json!({ "kind": "cancelled" }));
+            };
+            std::fs::write(&target, &data).map_err(|e| format!("rns_error: {e}"))?;
+            Ok(serde_json::json!({ "kind": "saved", "name": suggested, "size": data.len() }))
+        }
+    }
 }
 
 /// При выходе из приложения остановить узел (закрыть интерфейсы, сохранить пути).

@@ -1,0 +1,1967 @@
+//! ConfigObj parser for RNS config files.
+//!
+//! Python RNS uses ConfigObj format — NOT TOML, NOT standard INI.
+//! Key differences: nested `[[sections]]`, booleans `Yes`/`No`/`True`/`False`,
+//! comments with `#`, unquoted string values.
+
+use std::collections::HashMap;
+use std::fmt;
+use std::io;
+use std::path::Path;
+
+/// Parsed RNS configuration.
+#[derive(Debug, Clone)]
+pub struct RnsConfig {
+    pub reticulum: ReticulumSection,
+    pub logging: LoggingSection,
+    pub interfaces: Vec<ParsedInterface>,
+    pub hooks: Vec<ParsedHook>,
+}
+
+/// A parsed hook from `[[subsection]]` within `[hooks]`.
+#[derive(Debug, Clone)]
+pub struct ParsedHook {
+    pub name: String,
+    pub path: String,
+    pub hook_type: String,
+    pub builtin_id: Option<String>,
+    pub attach_point: String,
+    pub priority: i32,
+    pub enabled: bool,
+}
+
+/// The `[reticulum]` section.
+#[derive(Debug, Clone)]
+pub struct ReticulumSection {
+    pub enable_transport: bool,
+    pub share_instance: bool,
+    pub instance_name: String,
+    pub shared_instance_port: u16,
+    pub instance_control_port: u16,
+    pub panic_on_interface_error: bool,
+    pub use_implicit_proof: bool,
+    pub network_identity: Option<String>,
+    pub respond_to_probes: bool,
+    pub enable_remote_management: bool,
+    pub remote_management_allowed: Vec<String>,
+    pub publish_blackhole: bool,
+    pub probe_port: Option<u16>,
+    pub probe_addr: Option<String>,
+    /// Protocol for endpoint discovery: "rnsp" (default) or "stun".
+    pub probe_protocol: Option<String>,
+    /// Network interface to bind outbound sockets to (e.g. "usb0").
+    pub device: Option<String>,
+    /// Enable interface discovery (advertise discoverable interfaces and
+    /// listen for discovery announces from the network).
+    pub discover_interfaces: bool,
+    /// Minimum stamp value for accepting discovered interfaces.
+    pub required_discovery_value: Option<u8>,
+    /// Accept an announce with strictly fewer hops even when the random_blob
+    /// is a duplicate of the existing path entry.
+    pub prefer_shorter_path: bool,
+    /// Maximum number of alternative paths stored per destination.
+    /// Default 1 (single path, backward-compatible).
+    pub max_paths_per_destination: usize,
+    /// Maximum number of packet hashes retained for duplicate suppression.
+    pub packet_hashlist_max_entries: usize,
+    /// Maximum number of discovery path-request tags remembered.
+    pub max_discovery_pr_tags: usize,
+    /// Maximum number of destinations retained in the live path table.
+    pub max_path_destinations: usize,
+    /// Maximum number of destinations retained across tunnel-known paths.
+    pub max_tunnel_destinations_total: usize,
+    /// TTL for recalled known destinations without an active path, in seconds.
+    pub known_destinations_ttl: u64,
+    /// Maximum number of recalled known destinations retained.
+    pub known_destinations_max_entries: usize,
+    /// TTL for received ratchets, in seconds.
+    pub ratchet_expiry: u64,
+    /// TTL for announce retransmission state, in seconds.
+    pub announce_table_ttl: u64,
+    /// Maximum retained bytes for announce retransmission state.
+    pub announce_table_max_bytes: usize,
+    /// Whether the announce signature verification cache is enabled.
+    pub announce_sig_cache_enabled: bool,
+    /// Maximum entries in the announce signature verification cache.
+    pub announce_sig_cache_max_entries: usize,
+    /// TTL for announce signature cache entries, in seconds.
+    pub announce_sig_cache_ttl: u64,
+    /// Maximum entries in the async announce verification queue.
+    pub announce_queue_max_entries: usize,
+    /// Maximum interface-scoped announce queues retained.
+    pub announce_queue_max_interfaces: usize,
+    /// Default announce-rate target for transport-node interfaces, in seconds.
+    pub default_ar_target: Option<f64>,
+    /// Default announce-rate penalty for transport-node interfaces, in seconds.
+    pub default_ar_penalty: f64,
+    /// Default announce-rate grace count for transport-node interfaces.
+    pub default_ar_grace: u32,
+    /// Default maximum held announces for ingress control.
+    pub default_ic_max_held_announces: usize,
+    /// Default announce burst hold time for ingress control.
+    pub default_ic_burst_hold: f64,
+    /// Default new-interface announce burst threshold.
+    pub default_ic_burst_freq_new: f64,
+    /// Default mature-interface announce burst threshold.
+    pub default_ic_burst_freq: f64,
+    /// Default new-interface path request burst threshold.
+    pub default_ic_pr_burst_freq_new: f64,
+    /// Default mature-interface path request burst threshold.
+    pub default_ic_pr_burst_freq: f64,
+    /// Default new-interface age window for ingress control.
+    pub default_ic_new_time: f64,
+    /// Default burst penalty before releasing held announces.
+    pub default_ic_burst_penalty: f64,
+    /// Default interval between released held announces.
+    pub default_ic_held_release_interval: f64,
+    /// Default egress path request limiting state.
+    pub default_egress_control: bool,
+    /// Default egress path request frequency threshold.
+    pub default_ec_pr_freq: f64,
+    /// Maximum retained bytes in the async announce verification queue.
+    pub announce_queue_max_bytes: usize,
+    /// TTL for queued async announce verification entries, in seconds.
+    pub announce_queue_ttl: u64,
+    /// Overflow policy for the async announce verification queue.
+    pub announce_queue_overflow_policy: String,
+    /// Maximum queued events awaiting driver processing.
+    pub driver_event_queue_capacity: usize,
+    /// Maximum queued outbound frames per interface writer worker.
+    pub interface_writer_queue_capacity: usize,
+    /// Maximum active outbound Backbone peer-pool connections. Zero disables pooling.
+    pub backbone_peer_pool_max_connected: usize,
+    /// Failures within the failure window before a pooled Backbone peer enters cooldown.
+    pub backbone_peer_pool_failure_threshold: usize,
+    /// Failure accounting window for pooled Backbone peers, in seconds.
+    pub backbone_peer_pool_failure_window: u64,
+    /// Cooldown duration for failed pooled Backbone peers, in seconds.
+    pub backbone_peer_pool_cooldown: u64,
+    #[cfg(feature = "hooks")]
+    pub provider_bridge: bool,
+    #[cfg(feature = "hooks")]
+    pub provider_socket_path: Option<String>,
+    #[cfg(feature = "hooks")]
+    pub provider_queue_max_events: usize,
+    #[cfg(feature = "hooks")]
+    pub provider_queue_max_bytes: usize,
+    #[cfg(feature = "hooks")]
+    pub provider_overflow_policy: String,
+}
+
+impl Default for ReticulumSection {
+    fn default() -> Self {
+        ReticulumSection {
+            enable_transport: false,
+            share_instance: true,
+            instance_name: "default".into(),
+            shared_instance_port: 37428,
+            instance_control_port: 37429,
+            panic_on_interface_error: false,
+            use_implicit_proof: true,
+            network_identity: None,
+            respond_to_probes: false,
+            enable_remote_management: false,
+            remote_management_allowed: Vec::new(),
+            publish_blackhole: false,
+            probe_port: None,
+            probe_addr: None,
+            probe_protocol: None,
+            device: None,
+            discover_interfaces: false,
+            required_discovery_value: None,
+            prefer_shorter_path: false,
+            max_paths_per_destination: 1,
+            packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+            max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+            max_path_destinations: rns_core::transport::types::DEFAULT_MAX_PATH_DESTINATIONS,
+            max_tunnel_destinations_total: usize::MAX,
+            known_destinations_ttl: 48 * 60 * 60,
+            known_destinations_max_entries: 8192,
+            ratchet_expiry: rns_core::constants::RATCHET_EXPIRY,
+            announce_table_ttl: rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+            announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+            announce_sig_cache_enabled: true,
+            announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+            announce_sig_cache_ttl: rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+            announce_queue_max_entries: 256,
+            announce_queue_max_interfaces: 1024,
+            default_ar_target: Some(3600.0),
+            default_ar_penalty: 0.0,
+            default_ar_grace: 5,
+            default_ic_max_held_announces: rns_core::constants::IC_MAX_HELD_ANNOUNCES,
+            default_ic_burst_hold: rns_core::constants::IC_BURST_HOLD,
+            default_ic_burst_freq_new: rns_core::constants::IC_BURST_FREQ_NEW,
+            default_ic_burst_freq: rns_core::constants::IC_BURST_FREQ,
+            default_ic_pr_burst_freq_new: rns_core::constants::IC_PR_BURST_FREQ_NEW,
+            default_ic_pr_burst_freq: rns_core::constants::IC_PR_BURST_FREQ,
+            default_ic_new_time: rns_core::constants::IC_NEW_TIME,
+            default_ic_burst_penalty: rns_core::constants::IC_BURST_PENALTY,
+            default_ic_held_release_interval: rns_core::constants::IC_HELD_RELEASE_INTERVAL,
+            default_egress_control: false,
+            default_ec_pr_freq: rns_core::constants::EC_PR_FREQ,
+            announce_queue_max_bytes: 256 * 1024,
+            announce_queue_ttl: 30,
+            announce_queue_overflow_policy: "drop_worst".into(),
+            driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+            interface_writer_queue_capacity: crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+            backbone_peer_pool_max_connected: 0,
+            backbone_peer_pool_failure_threshold: 3,
+            backbone_peer_pool_failure_window: 600,
+            backbone_peer_pool_cooldown: 900,
+            #[cfg(feature = "hooks")]
+            provider_bridge: false,
+            #[cfg(feature = "hooks")]
+            provider_socket_path: None,
+            #[cfg(feature = "hooks")]
+            provider_queue_max_events: 16384,
+            #[cfg(feature = "hooks")]
+            provider_queue_max_bytes: 8 * 1024 * 1024,
+            #[cfg(feature = "hooks")]
+            provider_overflow_policy: "drop_newest".into(),
+        }
+    }
+}
+
+/// The `[logging]` section.
+#[derive(Debug, Clone)]
+pub struct LoggingSection {
+    pub loglevel: u8,
+    pub logtimestamps: bool,
+}
+
+impl Default for LoggingSection {
+    fn default() -> Self {
+        LoggingSection {
+            loglevel: 4,
+            logtimestamps: true,
+        }
+    }
+}
+
+/// A parsed interface from `[[subsection]]` within `[interfaces]`.
+#[derive(Debug, Clone)]
+pub struct ParsedInterface {
+    pub name: String,
+    pub interface_type: String,
+    pub enabled: bool,
+    pub mode: String,
+    pub params: HashMap<String, String>,
+}
+
+/// Configuration parse error.
+#[derive(Debug, Clone)]
+pub enum ConfigError {
+    Io(String),
+    Parse(String),
+    InvalidValue { key: String, value: String },
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConfigError::Io(msg) => write!(f, "Config I/O error: {}", msg),
+            ConfigError::Parse(msg) => write!(f, "Config parse error: {}", msg),
+            ConfigError::InvalidValue { key, value } => {
+                write!(f, "Invalid value for '{}': '{}'", key, value)
+            }
+        }
+    }
+}
+
+impl From<io::Error> for ConfigError {
+    fn from(e: io::Error) -> Self {
+        ConfigError::Io(e.to_string())
+    }
+}
+
+/// Parse a config string into an `RnsConfig`.
+pub fn parse(input: &str) -> Result<RnsConfig, ConfigError> {
+    let mut current_section: Option<String> = None;
+    let mut current_subsection: Option<String> = None;
+
+    let mut reticulum_kvs: HashMap<String, String> = HashMap::new();
+    let mut logging_kvs: HashMap<String, String> = HashMap::new();
+    let mut interfaces: Vec<ParsedInterface> = Vec::new();
+    let mut current_iface_kvs: Option<HashMap<String, String>> = None;
+    let mut current_iface_name: Option<String> = None;
+    let mut hooks: Vec<ParsedHook> = Vec::new();
+    let mut current_hook_kvs: Option<HashMap<String, String>> = None;
+    let mut current_hook_name: Option<String> = None;
+
+    for line in input.lines() {
+        // Strip comments (# to end of line, unless inside quotes)
+        let line = strip_comment(line);
+        let trimmed = line.trim();
+
+        // Skip empty lines
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        // Check for subsection [[name]]
+        if trimmed.starts_with("[[") && trimmed.ends_with("]]") {
+            let name = trimmed[2..trimmed.len() - 2].trim().to_string();
+            // Finalize previous interface subsection if any
+            if let (Some(iface_name), Some(kvs)) =
+                (current_iface_name.take(), current_iface_kvs.take())
+            {
+                interfaces.push(build_parsed_interface(iface_name, kvs));
+            }
+            // Finalize previous hook subsection if any
+            if let (Some(hook_name), Some(kvs)) =
+                (current_hook_name.take(), current_hook_kvs.take())
+            {
+                hooks.push(build_parsed_hook(hook_name, kvs));
+            }
+            current_subsection = Some(name.clone());
+            // Determine which section we're in to know subsection type
+            if current_section.as_deref() == Some("hooks") {
+                current_hook_name = Some(name);
+                current_hook_kvs = Some(HashMap::new());
+            } else {
+                current_iface_name = Some(name);
+                current_iface_kvs = Some(HashMap::new());
+            }
+            continue;
+        }
+
+        // Check for section [name]
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            // Finalize previous interface subsection if any
+            if let (Some(iface_name), Some(kvs)) =
+                (current_iface_name.take(), current_iface_kvs.take())
+            {
+                interfaces.push(build_parsed_interface(iface_name, kvs));
+            }
+            // Finalize previous hook subsection if any
+            if let (Some(hook_name), Some(kvs)) =
+                (current_hook_name.take(), current_hook_kvs.take())
+            {
+                hooks.push(build_parsed_hook(hook_name, kvs));
+            }
+            current_subsection = None;
+
+            let name = trimmed[1..trimmed.len() - 1].trim().to_lowercase();
+            current_section = Some(name);
+            continue;
+        }
+
+        // Parse key = value
+        if let Some(eq_pos) = trimmed.find('=') {
+            let key = trimmed[..eq_pos].trim().to_string();
+            let value = trimmed[eq_pos + 1..].trim().to_string();
+
+            if current_subsection.is_some() {
+                // Inside a [[subsection]] — exactly one of these should be Some
+                debug_assert!(
+                    !(current_hook_kvs.is_some() && current_iface_kvs.is_some()),
+                    "hook and interface subsections should never be active simultaneously"
+                );
+                if let Some(ref mut kvs) = current_hook_kvs {
+                    kvs.insert(key, value);
+                } else if let Some(ref mut kvs) = current_iface_kvs {
+                    kvs.insert(key, value);
+                }
+            } else if let Some(ref section) = current_section {
+                match section.as_str() {
+                    "reticulum" => {
+                        reticulum_kvs.insert(key, value);
+                    }
+                    "logging" => {
+                        logging_kvs.insert(key, value);
+                    }
+                    _ => {} // ignore unknown sections
+                }
+            }
+        }
+    }
+
+    // Finalize last subsections
+    if let (Some(iface_name), Some(kvs)) = (current_iface_name.take(), current_iface_kvs.take()) {
+        interfaces.push(build_parsed_interface(iface_name, kvs));
+    }
+    if let (Some(hook_name), Some(kvs)) = (current_hook_name.take(), current_hook_kvs.take()) {
+        hooks.push(build_parsed_hook(hook_name, kvs));
+    }
+
+    // Build typed sections
+    let reticulum = build_reticulum_section(&reticulum_kvs)?;
+    let logging = build_logging_section(&logging_kvs)?;
+
+    Ok(RnsConfig {
+        reticulum,
+        logging,
+        interfaces,
+        hooks,
+    })
+}
+
+/// Parse a config file from disk.
+pub fn parse_file(path: &Path) -> Result<RnsConfig, ConfigError> {
+    let content = std::fs::read_to_string(path)?;
+    parse(&content)
+}
+
+/// Strip `#` comments from a line (simple: not inside quotes).
+fn strip_comment(line: &str) -> &str {
+    // Find # that is not inside quotes
+    let mut in_quote = false;
+    let mut quote_char = '"';
+    for (i, ch) in line.char_indices() {
+        if !in_quote && (ch == '"' || ch == '\'') {
+            in_quote = true;
+            quote_char = ch;
+        } else if in_quote && ch == quote_char {
+            in_quote = false;
+        } else if !in_quote && ch == '#' {
+            return &line[..i];
+        }
+    }
+    line
+}
+
+/// Parse a string as a boolean (ConfigObj style). Public API for use by node.rs.
+pub fn parse_bool_pub(value: &str) -> Option<bool> {
+    parse_bool(value)
+}
+
+/// Parse a string as a boolean (ConfigObj style).
+fn parse_bool(value: &str) -> Option<bool> {
+    match value.to_lowercase().as_str() {
+        "yes" | "true" | "1" | "on" => Some(true),
+        "no" | "false" | "0" | "off" => Some(false),
+        _ => None,
+    }
+}
+
+fn parse_nonnegative_f64_option(
+    kvs: &HashMap<String, String>,
+    key: &str,
+) -> Result<Option<f64>, ConfigError> {
+    let Some(v) = kvs.get(key) else {
+        return Ok(None);
+    };
+    let parsed = v.parse::<f64>().map_err(|_| ConfigError::InvalidValue {
+        key: key.into(),
+        value: v.clone(),
+    })?;
+    if !parsed.is_finite() || parsed < 0.0 {
+        return Err(ConfigError::InvalidValue {
+            key: key.into(),
+            value: v.clone(),
+        });
+    }
+    Ok(Some(parsed))
+}
+
+fn parse_usize_option(
+    kvs: &HashMap<String, String>,
+    key: &str,
+) -> Result<Option<usize>, ConfigError> {
+    let Some(v) = kvs.get(key) else {
+        return Ok(None);
+    };
+    let parsed = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+        key: key.into(),
+        value: v.clone(),
+    })?;
+    Ok(Some(parsed))
+}
+
+fn build_parsed_interface(name: String, mut kvs: HashMap<String, String>) -> ParsedInterface {
+    let interface_type = kvs.remove("type").unwrap_or_default();
+    let enabled = kvs
+        .remove("enabled")
+        .and_then(|v| parse_bool(&v))
+        .unwrap_or(true);
+    // Python checks `interface_mode` first, then falls back to `mode`
+    let mode = kvs
+        .remove("interface_mode")
+        .or_else(|| kvs.remove("mode"))
+        .unwrap_or_else(|| "full".into());
+
+    ParsedInterface {
+        name,
+        interface_type,
+        enabled,
+        mode,
+        params: kvs,
+    }
+}
+
+fn build_parsed_hook(name: String, mut kvs: HashMap<String, String>) -> ParsedHook {
+    let path = kvs.remove("path").unwrap_or_default();
+    let hook_type = kvs
+        .remove("type")
+        .or_else(|| kvs.remove("backend"))
+        .unwrap_or_else(|| default_hook_type().into());
+    let builtin_id = kvs
+        .remove("builtin")
+        .or_else(|| kvs.remove("builtin_id"))
+        .or_else(|| kvs.remove("id"));
+    let attach_point = kvs.remove("attach_point").unwrap_or_default();
+    let priority = kvs
+        .remove("priority")
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(0);
+    let enabled = kvs
+        .remove("enabled")
+        .and_then(|v| parse_bool(&v))
+        .unwrap_or(true);
+
+    ParsedHook {
+        name,
+        path,
+        hook_type,
+        builtin_id,
+        attach_point,
+        priority,
+        enabled,
+    }
+}
+
+fn default_hook_type() -> &'static str {
+    #[cfg(feature = "rns-hooks-native")]
+    {
+        return "native";
+    }
+    #[cfg(all(not(feature = "rns-hooks-native"), feature = "rns-hooks-wasm"))]
+    {
+        return "wasm";
+    }
+    #[cfg(all(not(feature = "rns-hooks-native"), not(feature = "rns-hooks-wasm")))]
+    {
+        "wasm"
+    }
+}
+
+/// Map a hook point name string to its index. Returns None for unknown names.
+pub fn parse_hook_point(s: &str) -> Option<usize> {
+    match s {
+        "PreIngress" => Some(0),
+        "PreDispatch" => Some(1),
+        "AnnounceReceived" => Some(2),
+        "PathUpdated" => Some(3),
+        "AnnounceRetransmit" => Some(4),
+        "LinkRequestReceived" => Some(5),
+        "LinkEstablished" => Some(6),
+        "LinkClosed" => Some(7),
+        "InterfaceUp" => Some(8),
+        "InterfaceDown" => Some(9),
+        "InterfaceConfigChanged" => Some(10),
+        "BackbonePeerConnected" => Some(11),
+        "BackbonePeerDisconnected" => Some(12),
+        "BackbonePeerIdleTimeout" => Some(13),
+        "BackbonePeerWriteStall" => Some(14),
+        "BackbonePeerPenalty" => Some(15),
+        "SendOnInterface" => Some(16),
+        "BroadcastOnAllInterfaces" => Some(17),
+        "DeliverLocal" => Some(18),
+        "TunnelSynthesize" => Some(19),
+        "Tick" => Some(20),
+        _ => None,
+    }
+}
+
+#[cfg(feature = "hooks")]
+pub fn parse_hook_backend(s: &str) -> Result<rns_hooks::HookBackend, String> {
+    s.parse()
+}
+
+fn build_reticulum_section(kvs: &HashMap<String, String>) -> Result<ReticulumSection, ConfigError> {
+    let mut section = ReticulumSection::default();
+
+    if let Some(v) = kvs.get("enable_transport") {
+        section.enable_transport = parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+            key: "enable_transport".into(),
+            value: v.clone(),
+        })?;
+    }
+    if let Some(v) = kvs.get("share_instance") {
+        section.share_instance = parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+            key: "share_instance".into(),
+            value: v.clone(),
+        })?;
+    }
+    if let Some(v) = kvs.get("instance_name") {
+        section.instance_name = v.clone();
+    }
+    if let Some(v) = kvs.get("shared_instance_port") {
+        section.shared_instance_port = v.parse::<u16>().map_err(|_| ConfigError::InvalidValue {
+            key: "shared_instance_port".into(),
+            value: v.clone(),
+        })?;
+    }
+    if let Some(v) = kvs.get("instance_control_port") {
+        section.instance_control_port =
+            v.parse::<u16>().map_err(|_| ConfigError::InvalidValue {
+                key: "instance_control_port".into(),
+                value: v.clone(),
+            })?;
+    }
+    if let Some(v) = kvs.get("panic_on_interface_error") {
+        section.panic_on_interface_error =
+            parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+                key: "panic_on_interface_error".into(),
+                value: v.clone(),
+            })?;
+    }
+    if let Some(v) = kvs.get("use_implicit_proof") {
+        section.use_implicit_proof = parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+            key: "use_implicit_proof".into(),
+            value: v.clone(),
+        })?;
+    }
+    if let Some(v) = kvs.get("network_identity") {
+        section.network_identity = Some(v.clone());
+    }
+    if let Some(v) = kvs.get("respond_to_probes") {
+        section.respond_to_probes = parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+            key: "respond_to_probes".into(),
+            value: v.clone(),
+        })?;
+    }
+    if let Some(v) = kvs.get("enable_remote_management") {
+        section.enable_remote_management =
+            parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+                key: "enable_remote_management".into(),
+                value: v.clone(),
+            })?;
+    }
+    if let Some(v) = kvs.get("remote_management_allowed") {
+        // Value is a comma-separated list of hex identity hashes
+        for item in v.split(',') {
+            let trimmed = item.trim();
+            if !trimmed.is_empty() {
+                section.remote_management_allowed.push(trimmed.to_string());
+            }
+        }
+    }
+    if let Some(v) = kvs.get("publish_blackhole") {
+        section.publish_blackhole = parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+            key: "publish_blackhole".into(),
+            value: v.clone(),
+        })?;
+    }
+    if let Some(v) = kvs.get("probe_port") {
+        section.probe_port = Some(v.parse::<u16>().map_err(|_| ConfigError::InvalidValue {
+            key: "probe_port".into(),
+            value: v.clone(),
+        })?);
+    }
+    if let Some(v) = kvs.get("probe_addr") {
+        section.probe_addr = Some(v.clone());
+    }
+    if let Some(v) = kvs.get("probe_protocol") {
+        section.probe_protocol = Some(v.clone());
+    }
+    if let Some(v) = kvs.get("device") {
+        section.device = Some(v.clone());
+    }
+    if let Some(v) = kvs.get("discover_interfaces") {
+        section.discover_interfaces = parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+            key: "discover_interfaces".into(),
+            value: v.clone(),
+        })?;
+    }
+    if let Some(v) = kvs.get("required_discovery_value") {
+        section.required_discovery_value =
+            Some(v.parse::<u8>().map_err(|_| ConfigError::InvalidValue {
+                key: "required_discovery_value".into(),
+                value: v.clone(),
+            })?);
+    }
+    if let Some(v) = kvs.get("prefer_shorter_path") {
+        section.prefer_shorter_path = parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+            key: "prefer_shorter_path".into(),
+            value: v.clone(),
+        })?;
+    }
+    if let Some(v) = kvs.get("max_paths_per_destination") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "max_paths_per_destination".into(),
+            value: v.clone(),
+        })?;
+        section.max_paths_per_destination = n.max(1);
+    }
+    if let Some(v) = kvs.get("packet_hashlist_max_entries") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "packet_hashlist_max_entries".into(),
+            value: v.clone(),
+        })?;
+        section.packet_hashlist_max_entries = n.max(1);
+    }
+    if let Some(v) = kvs.get("max_discovery_pr_tags") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "max_discovery_pr_tags".into(),
+            value: v.clone(),
+        })?;
+        section.max_discovery_pr_tags = n.max(1);
+    }
+    if let Some(v) = kvs.get("max_path_destinations") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "max_path_destinations".into(),
+            value: v.clone(),
+        })?;
+        section.max_path_destinations = n.max(1);
+    }
+    if let Some(v) = kvs.get("max_tunnel_destinations_total") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "max_tunnel_destinations_total".into(),
+            value: v.clone(),
+        })?;
+        section.max_tunnel_destinations_total = n.max(1);
+    }
+    if let Some(v) = kvs.get("known_destinations_ttl") {
+        section.known_destinations_ttl =
+            v.parse::<u64>().map_err(|_| ConfigError::InvalidValue {
+                key: "known_destinations_ttl".into(),
+                value: v.clone(),
+            })?;
+    }
+    if let Some(v) = kvs.get("known_destinations_max_entries") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "known_destinations_max_entries".into(),
+            value: v.clone(),
+        })?;
+        if n == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "known_destinations_max_entries".into(),
+                value: v.clone(),
+            });
+        }
+        section.known_destinations_max_entries = n;
+    }
+    if let Some(v) = kvs.get("ratchet_expiry") {
+        let expiry = v.parse::<u64>().map_err(|_| ConfigError::InvalidValue {
+            key: "ratchet_expiry".into(),
+            value: v.clone(),
+        })?;
+        if expiry == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "ratchet_expiry".into(),
+                value: v.clone(),
+            });
+        }
+        section.ratchet_expiry = expiry;
+    }
+    if let Some(v) = kvs.get("destination_timeout_secs") {
+        section.known_destinations_ttl =
+            v.parse::<u64>().map_err(|_| ConfigError::InvalidValue {
+                key: "destination_timeout_secs".into(),
+                value: v.clone(),
+            })?;
+    }
+    if let Some(v) = kvs.get("announce_table_ttl") {
+        let ttl = v.parse::<u64>().map_err(|_| ConfigError::InvalidValue {
+            key: "announce_table_ttl".into(),
+            value: v.clone(),
+        })?;
+        if ttl == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "announce_table_ttl".into(),
+                value: v.clone(),
+            });
+        }
+        section.announce_table_ttl = ttl;
+    }
+    if let Some(v) = kvs.get("announce_table_max_bytes") {
+        let max_bytes = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "announce_table_max_bytes".into(),
+            value: v.clone(),
+        })?;
+        if max_bytes == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "announce_table_max_bytes".into(),
+                value: v.clone(),
+            });
+        }
+        section.announce_table_max_bytes = max_bytes;
+    }
+    if let Some(v) = kvs.get("announce_signature_cache_enabled") {
+        section.announce_sig_cache_enabled = match v.as_str() {
+            "true" | "yes" | "True" | "Yes" => true,
+            "false" | "no" | "False" | "No" => false,
+            _ => {
+                return Err(ConfigError::InvalidValue {
+                    key: "announce_signature_cache_enabled".into(),
+                    value: v.clone(),
+                })
+            }
+        };
+    }
+    if let Some(v) = kvs.get("announce_signature_cache_max_entries") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "announce_signature_cache_max_entries".into(),
+            value: v.clone(),
+        })?;
+        section.announce_sig_cache_max_entries = n;
+    }
+    if let Some(v) = kvs.get("announce_signature_cache_ttl") {
+        let ttl = v.parse::<u64>().map_err(|_| ConfigError::InvalidValue {
+            key: "announce_signature_cache_ttl".into(),
+            value: v.clone(),
+        })?;
+        section.announce_sig_cache_ttl = ttl;
+    }
+    if let Some(v) = kvs.get("announce_queue_max_entries") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "announce_queue_max_entries".into(),
+            value: v.clone(),
+        })?;
+        if n == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "announce_queue_max_entries".into(),
+                value: v.clone(),
+            });
+        }
+        section.announce_queue_max_entries = n;
+    }
+    if let Some(v) = kvs.get("announce_queue_max_interfaces") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "announce_queue_max_interfaces".into(),
+            value: v.clone(),
+        })?;
+        if n == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "announce_queue_max_interfaces".into(),
+                value: v.clone(),
+            });
+        }
+        section.announce_queue_max_interfaces = n;
+    }
+    if let Some(v) = kvs.get("default_ar_target") {
+        let target = v.parse::<f64>().map_err(|_| ConfigError::InvalidValue {
+            key: "default_ar_target".into(),
+            value: v.clone(),
+        })?;
+        if !target.is_finite() || target < 0.0 {
+            return Err(ConfigError::InvalidValue {
+                key: "default_ar_target".into(),
+                value: v.clone(),
+            });
+        }
+        section.default_ar_target = if target == 0.0 { None } else { Some(target) };
+    }
+    if let Some(v) = kvs.get("default_ar_penalty") {
+        let penalty = v.parse::<f64>().map_err(|_| ConfigError::InvalidValue {
+            key: "default_ar_penalty".into(),
+            value: v.clone(),
+        })?;
+        if !penalty.is_finite() || penalty < 0.0 {
+            return Err(ConfigError::InvalidValue {
+                key: "default_ar_penalty".into(),
+                value: v.clone(),
+            });
+        }
+        section.default_ar_penalty = penalty;
+    }
+    if let Some(v) = kvs.get("default_ar_grace") {
+        let grace = v.parse::<u32>().map_err(|_| ConfigError::InvalidValue {
+            key: "default_ar_grace".into(),
+            value: v.clone(),
+        })?;
+        section.default_ar_grace = grace;
+    }
+    if let Some(v) = parse_usize_option(kvs, "ic_max_held_announces")? {
+        section.default_ic_max_held_announces = v;
+    }
+    if let Some(v) = parse_nonnegative_f64_option(kvs, "ic_burst_hold")? {
+        section.default_ic_burst_hold = v;
+    }
+    if let Some(v) = parse_nonnegative_f64_option(kvs, "ic_burst_freq_new")? {
+        section.default_ic_burst_freq_new = v;
+    }
+    if let Some(v) = parse_nonnegative_f64_option(kvs, "ic_burst_freq")? {
+        section.default_ic_burst_freq = v;
+    }
+    if let Some(v) = parse_nonnegative_f64_option(kvs, "ic_pr_burst_freq_new")? {
+        section.default_ic_pr_burst_freq_new = v;
+    }
+    if let Some(v) = parse_nonnegative_f64_option(kvs, "ic_pr_burst_freq")? {
+        section.default_ic_pr_burst_freq = v;
+    }
+    if let Some(v) = parse_nonnegative_f64_option(kvs, "ic_new_time")? {
+        section.default_ic_new_time = v;
+    }
+    if let Some(v) = parse_nonnegative_f64_option(kvs, "ic_burst_penalty")? {
+        section.default_ic_burst_penalty = v;
+    }
+    if let Some(v) = parse_nonnegative_f64_option(kvs, "ic_held_release_interval")? {
+        section.default_ic_held_release_interval = v;
+    }
+    if let Some(v) = kvs.get("egress_control") {
+        section.default_egress_control =
+            parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+                key: "egress_control".into(),
+                value: v.clone(),
+            })?;
+    }
+    if let Some(v) = parse_nonnegative_f64_option(kvs, "ec_pr_freq")? {
+        section.default_ec_pr_freq = v;
+    }
+    if let Some(v) = kvs.get("announce_queue_max_bytes") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "announce_queue_max_bytes".into(),
+            value: v.clone(),
+        })?;
+        if n == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "announce_queue_max_bytes".into(),
+                value: v.clone(),
+            });
+        }
+        section.announce_queue_max_bytes = n;
+    }
+    if let Some(v) = kvs.get("announce_queue_ttl") {
+        let ttl = v.parse::<u64>().map_err(|_| ConfigError::InvalidValue {
+            key: "announce_queue_ttl".into(),
+            value: v.clone(),
+        })?;
+        if ttl == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "announce_queue_ttl".into(),
+                value: v.clone(),
+            });
+        }
+        section.announce_queue_ttl = ttl;
+    }
+    if let Some(v) = kvs.get("announce_queue_overflow_policy") {
+        let normalized = v.to_lowercase();
+        if normalized != "drop_newest" && normalized != "drop_oldest" && normalized != "drop_worst"
+        {
+            return Err(ConfigError::InvalidValue {
+                key: "announce_queue_overflow_policy".into(),
+                value: v.clone(),
+            });
+        }
+        section.announce_queue_overflow_policy = normalized;
+    }
+    if let Some(v) = kvs.get("driver_event_queue_capacity") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "driver_event_queue_capacity".into(),
+            value: v.clone(),
+        })?;
+        if n == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "driver_event_queue_capacity".into(),
+                value: v.clone(),
+            });
+        }
+        section.driver_event_queue_capacity = n;
+    }
+    if let Some(v) = kvs.get("interface_writer_queue_capacity") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "interface_writer_queue_capacity".into(),
+            value: v.clone(),
+        })?;
+        if n == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "interface_writer_queue_capacity".into(),
+                value: v.clone(),
+            });
+        }
+        section.interface_writer_queue_capacity = n;
+    }
+    if let Some(v) = kvs.get("backbone_peer_pool_max_connected") {
+        section.backbone_peer_pool_max_connected =
+            v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+                key: "backbone_peer_pool_max_connected".into(),
+                value: v.clone(),
+            })?;
+    }
+    if let Some(v) = kvs.get("backbone_peer_pool_failure_threshold") {
+        let n = v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+            key: "backbone_peer_pool_failure_threshold".into(),
+            value: v.clone(),
+        })?;
+        if n == 0 {
+            return Err(ConfigError::InvalidValue {
+                key: "backbone_peer_pool_failure_threshold".into(),
+                value: v.clone(),
+            });
+        }
+        section.backbone_peer_pool_failure_threshold = n;
+    }
+    if let Some(v) = kvs.get("backbone_peer_pool_failure_window") {
+        section.backbone_peer_pool_failure_window =
+            v.parse::<u64>().map_err(|_| ConfigError::InvalidValue {
+                key: "backbone_peer_pool_failure_window".into(),
+                value: v.clone(),
+            })?;
+    }
+    if let Some(v) = kvs.get("backbone_peer_pool_cooldown") {
+        section.backbone_peer_pool_cooldown =
+            v.parse::<u64>().map_err(|_| ConfigError::InvalidValue {
+                key: "backbone_peer_pool_cooldown".into(),
+                value: v.clone(),
+            })?;
+    }
+    #[cfg(feature = "hooks")]
+    if let Some(v) = kvs.get("provider_bridge") {
+        section.provider_bridge = parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+            key: "provider_bridge".into(),
+            value: v.clone(),
+        })?;
+    }
+    #[cfg(feature = "hooks")]
+    if let Some(v) = kvs.get("provider_socket_path") {
+        section.provider_socket_path = Some(v.clone());
+    }
+    #[cfg(feature = "hooks")]
+    if let Some(v) = kvs.get("provider_queue_max_events") {
+        section.provider_queue_max_events =
+            v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+                key: "provider_queue_max_events".into(),
+                value: v.clone(),
+            })?;
+    }
+    #[cfg(feature = "hooks")]
+    if let Some(v) = kvs.get("provider_queue_max_bytes") {
+        section.provider_queue_max_bytes =
+            v.parse::<usize>().map_err(|_| ConfigError::InvalidValue {
+                key: "provider_queue_max_bytes".into(),
+                value: v.clone(),
+            })?;
+    }
+    #[cfg(feature = "hooks")]
+    if let Some(v) = kvs.get("provider_overflow_policy") {
+        let normalized = v.to_lowercase();
+        if normalized != "drop_newest" && normalized != "drop_oldest" {
+            return Err(ConfigError::InvalidValue {
+                key: "provider_overflow_policy".into(),
+                value: v.clone(),
+            });
+        }
+        section.provider_overflow_policy = normalized;
+    }
+
+    Ok(section)
+}
+
+fn build_logging_section(kvs: &HashMap<String, String>) -> Result<LoggingSection, ConfigError> {
+    let mut section = LoggingSection::default();
+
+    if let Some(v) = kvs.get("loglevel") {
+        section.loglevel = v.parse::<u8>().map_err(|_| ConfigError::InvalidValue {
+            key: "loglevel".into(),
+            value: v.clone(),
+        })?;
+    }
+    if let Some(v) = kvs.get("logtimestamps") {
+        section.logtimestamps = parse_bool(v).ok_or_else(|| ConfigError::InvalidValue {
+            key: "logtimestamps".into(),
+            value: v.clone(),
+        })?;
+    }
+
+    Ok(section)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_empty() {
+        let config = parse("").unwrap();
+        assert!(!config.reticulum.enable_transport);
+        assert!(config.reticulum.share_instance);
+        assert_eq!(config.reticulum.instance_name, "default");
+        assert_eq!(config.logging.loglevel, 4);
+        assert!(config.logging.logtimestamps);
+        assert!(config.interfaces.is_empty());
+        assert_eq!(
+            config.reticulum.packet_hashlist_max_entries,
+            rns_core::constants::HASHLIST_MAXSIZE
+        );
+        assert_eq!(
+            config.reticulum.announce_table_ttl,
+            rns_core::constants::ANNOUNCE_TABLE_TTL as u64
+        );
+        assert_eq!(
+            config.reticulum.announce_table_max_bytes,
+            rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES
+        );
+        assert_eq!(
+            config.reticulum.ratchet_expiry,
+            rns_core::constants::RATCHET_EXPIRY
+        );
+    }
+
+    #[cfg(feature = "hooks")]
+    #[test]
+    fn parse_provider_bridge_config() {
+        let config = parse(
+            r#"
+[reticulum]
+provider_bridge = yes
+provider_socket_path = /tmp/rns-provider.sock
+provider_queue_max_events = 42
+provider_queue_max_bytes = 8192
+provider_overflow_policy = drop_oldest
+"#,
+        )
+        .unwrap();
+
+        assert!(config.reticulum.provider_bridge);
+        assert_eq!(
+            config.reticulum.provider_socket_path.as_deref(),
+            Some("/tmp/rns-provider.sock")
+        );
+        assert_eq!(config.reticulum.provider_queue_max_events, 42);
+        assert_eq!(config.reticulum.provider_queue_max_bytes, 8192);
+        assert_eq!(config.reticulum.provider_overflow_policy, "drop_oldest");
+    }
+
+    #[test]
+    fn parse_default_config() {
+        // The default config from Python's __default_rns_config__
+        let input = r#"
+[reticulum]
+enable_transport = False
+share_instance = Yes
+instance_name = default
+
+[logging]
+loglevel = 4
+
+[interfaces]
+
+  [[Default Interface]]
+    type = AutoInterface
+    enabled = Yes
+"#;
+        let config = parse(input).unwrap();
+        assert!(!config.reticulum.enable_transport);
+        assert!(config.reticulum.share_instance);
+        assert_eq!(config.reticulum.instance_name, "default");
+        assert_eq!(config.logging.loglevel, 4);
+        assert_eq!(config.interfaces.len(), 1);
+        assert_eq!(config.interfaces[0].name, "Default Interface");
+        assert_eq!(config.interfaces[0].interface_type, "AutoInterface");
+        assert!(config.interfaces[0].enabled);
+    }
+
+    #[test]
+    fn parse_reticulum_section() {
+        let input = r#"
+[reticulum]
+enable_transport = True
+share_instance = No
+instance_name = mynode
+shared_instance_port = 12345
+instance_control_port = 12346
+panic_on_interface_error = Yes
+use_implicit_proof = False
+respond_to_probes = True
+network_identity = /home/user/.reticulum/identity
+known_destinations_ttl = 1234
+known_destinations_max_entries = 4321
+ratchet_expiry = 9876
+announce_table_ttl = 45
+announce_table_max_bytes = 65536
+packet_hashlist_max_entries = 321
+max_discovery_pr_tags = 222
+max_path_destinations = 111
+max_tunnel_destinations_total = 99
+announce_signature_cache_enabled = false
+announce_signature_cache_max_entries = 500
+announce_signature_cache_ttl = 300
+announce_queue_max_entries = 123
+announce_queue_max_interfaces = 321
+announce_queue_max_bytes = 4567
+announce_queue_ttl = 89
+announce_queue_overflow_policy = drop_oldest
+driver_event_queue_capacity = 6543
+interface_writer_queue_capacity = 210
+backbone_peer_pool_max_connected = 6
+backbone_peer_pool_failure_threshold = 4
+backbone_peer_pool_failure_window = 120
+backbone_peer_pool_cooldown = 300
+"#;
+        let config = parse(input).unwrap();
+        assert!(config.reticulum.enable_transport);
+        assert!(!config.reticulum.share_instance);
+        assert_eq!(config.reticulum.instance_name, "mynode");
+        assert_eq!(config.reticulum.shared_instance_port, 12345);
+        assert_eq!(config.reticulum.instance_control_port, 12346);
+        assert!(config.reticulum.panic_on_interface_error);
+        assert!(!config.reticulum.use_implicit_proof);
+        assert!(config.reticulum.respond_to_probes);
+        assert_eq!(
+            config.reticulum.network_identity.as_deref(),
+            Some("/home/user/.reticulum/identity")
+        );
+        assert_eq!(config.reticulum.known_destinations_ttl, 1234);
+        assert_eq!(config.reticulum.known_destinations_max_entries, 4321);
+        assert_eq!(config.reticulum.ratchet_expiry, 9876);
+        assert_eq!(config.reticulum.announce_table_ttl, 45);
+        assert_eq!(config.reticulum.announce_table_max_bytes, 65536);
+        assert_eq!(config.reticulum.packet_hashlist_max_entries, 321);
+        assert_eq!(config.reticulum.max_discovery_pr_tags, 222);
+        assert_eq!(config.reticulum.max_path_destinations, 111);
+        assert_eq!(config.reticulum.max_tunnel_destinations_total, 99);
+        assert!(!config.reticulum.announce_sig_cache_enabled);
+        assert_eq!(config.reticulum.announce_sig_cache_max_entries, 500);
+        assert_eq!(config.reticulum.announce_sig_cache_ttl, 300);
+        assert_eq!(config.reticulum.announce_queue_max_entries, 123);
+        assert_eq!(config.reticulum.announce_queue_max_interfaces, 321);
+        assert_eq!(config.reticulum.announce_queue_max_bytes, 4567);
+        assert_eq!(config.reticulum.announce_queue_ttl, 89);
+        assert_eq!(
+            config.reticulum.announce_queue_overflow_policy,
+            "drop_oldest"
+        );
+        assert_eq!(config.reticulum.driver_event_queue_capacity, 6543);
+        assert_eq!(config.reticulum.interface_writer_queue_capacity, 210);
+        assert_eq!(config.reticulum.backbone_peer_pool_max_connected, 6);
+        assert_eq!(config.reticulum.backbone_peer_pool_failure_threshold, 4);
+        assert_eq!(config.reticulum.backbone_peer_pool_failure_window, 120);
+        assert_eq!(config.reticulum.backbone_peer_pool_cooldown, 300);
+    }
+
+    #[test]
+    fn parse_reticulum_announce_rate_defaults() {
+        let input = r#"
+[reticulum]
+default_ar_target = 7200
+default_ar_penalty = 15
+default_ar_grace = 7
+"#;
+        let config = parse(input).unwrap();
+
+        assert_eq!(config.reticulum.default_ar_target, Some(7200.0));
+        assert_eq!(config.reticulum.default_ar_penalty, 15.0);
+        assert_eq!(config.reticulum.default_ar_grace, 7);
+    }
+
+    #[test]
+    fn parse_reticulum_announce_rate_target_zero_disables_default() {
+        let input = r#"
+[reticulum]
+default_ar_target = 0
+default_ar_penalty = 0
+default_ar_grace = 0
+"#;
+        let config = parse(input).unwrap();
+
+        assert_eq!(config.reticulum.default_ar_target, None);
+        assert_eq!(config.reticulum.default_ar_penalty, 0.0);
+        assert_eq!(config.reticulum.default_ar_grace, 0);
+    }
+
+    #[test]
+    fn parse_reticulum_announce_rate_defaults_reject_negative_values() {
+        for (key, value) in [
+            ("default_ar_target", "-1"),
+            ("default_ar_target", "NaN"),
+            ("default_ar_target", "inf"),
+            ("default_ar_penalty", "-1"),
+            ("default_ar_penalty", "NaN"),
+            ("default_ar_penalty", "inf"),
+            ("default_ar_grace", "-1"),
+        ] {
+            let input = format!("[reticulum]\n{key} = {value}\n");
+            let err = parse(&input).unwrap_err();
+            assert!(
+                err.to_string().contains(key),
+                "error {err:?} should mention {key}"
+            );
+        }
+    }
+
+    #[test]
+    fn parse_reticulum_ingress_and_egress_control_defaults() {
+        let input = r#"[reticulum]
+ic_max_held_announces = 17
+ic_burst_hold = 1.5
+ic_burst_freq_new = 2.5
+ic_burst_freq = 3.5
+ic_pr_burst_freq_new = 4.5
+ic_pr_burst_freq = 5.5
+ic_new_time = 6.5
+ic_burst_penalty = 7.5
+ic_held_release_interval = 8.5
+egress_control = Yes
+ec_pr_freq = 9.5
+"#;
+
+        let config = parse(input).unwrap();
+
+        assert_eq!(config.reticulum.default_ic_max_held_announces, 17);
+        assert_eq!(config.reticulum.default_ic_burst_hold, 1.5);
+        assert_eq!(config.reticulum.default_ic_burst_freq_new, 2.5);
+        assert_eq!(config.reticulum.default_ic_burst_freq, 3.5);
+        assert_eq!(config.reticulum.default_ic_pr_burst_freq_new, 4.5);
+        assert_eq!(config.reticulum.default_ic_pr_burst_freq, 5.5);
+        assert_eq!(config.reticulum.default_ic_new_time, 6.5);
+        assert_eq!(config.reticulum.default_ic_burst_penalty, 7.5);
+        assert_eq!(config.reticulum.default_ic_held_release_interval, 8.5);
+        assert!(config.reticulum.default_egress_control);
+        assert_eq!(config.reticulum.default_ec_pr_freq, 9.5);
+    }
+
+    #[test]
+    fn parse_reticulum_ingress_and_egress_defaults_reject_invalid_values() {
+        for (key, value) in [
+            ("ic_max_held_announces", "-1"),
+            ("ic_burst_hold", "-1"),
+            ("ic_burst_hold", "NaN"),
+            ("ic_burst_freq_new", "-1"),
+            ("ic_burst_freq", "inf"),
+            ("ic_pr_burst_freq_new", "-1"),
+            ("ic_pr_burst_freq", "NaN"),
+            ("ic_new_time", "-1"),
+            ("ic_burst_penalty", "-1"),
+            ("ic_held_release_interval", "-1"),
+            ("ec_pr_freq", "-1"),
+            ("ec_pr_freq", "inf"),
+        ] {
+            let input = format!("[reticulum]\n{key} = {value}\n");
+            let err = parse(&input).unwrap_err();
+            assert!(
+                format!("{err}").contains(key),
+                "error {err} should mention {key}"
+            );
+        }
+    }
+
+    #[test]
+    fn parse_backbone_peer_pool_defaults_disabled() {
+        let config = parse("[reticulum]\n").unwrap();
+        assert_eq!(config.reticulum.backbone_peer_pool_max_connected, 0);
+        assert_eq!(config.reticulum.backbone_peer_pool_failure_threshold, 3);
+        assert_eq!(config.reticulum.backbone_peer_pool_failure_window, 600);
+        assert_eq!(config.reticulum.backbone_peer_pool_cooldown, 900);
+    }
+
+    #[test]
+    fn parse_announce_table_limits_reject_zero() {
+        let err = parse(
+            r#"
+[reticulum]
+announce_table_ttl = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "announce_table_ttl"
+        ));
+
+        let err = parse(
+            r#"
+[reticulum]
+known_destinations_max_entries = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "known_destinations_max_entries"
+        ));
+
+        let err = parse(
+            r#"
+[reticulum]
+ratchet_expiry = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "ratchet_expiry"
+        ));
+
+        let err = parse(
+            r#"
+[reticulum]
+announce_table_max_bytes = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "announce_table_max_bytes"
+        ));
+
+        let err = parse(
+            r#"
+[reticulum]
+announce_queue_max_entries = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "announce_queue_max_entries"
+        ));
+
+        let err = parse(
+            r#"
+[reticulum]
+announce_queue_max_interfaces = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "announce_queue_max_interfaces"
+        ));
+
+        let err = parse(
+            r#"
+[reticulum]
+announce_queue_max_bytes = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "announce_queue_max_bytes"
+        ));
+
+        let err = parse(
+            r#"
+[reticulum]
+driver_event_queue_capacity = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "driver_event_queue_capacity"
+        ));
+
+        let err = parse(
+            r#"
+[reticulum]
+interface_writer_queue_capacity = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "interface_writer_queue_capacity"
+        ));
+
+        let err = parse(
+            r#"
+[reticulum]
+announce_queue_ttl = 0
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "announce_queue_ttl"
+        ));
+    }
+
+    #[test]
+    fn parse_announce_queue_overflow_policy_rejects_invalid() {
+        let err = parse(
+            r#"
+[reticulum]
+announce_queue_overflow_policy = keep_everything
+"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "announce_queue_overflow_policy"
+        ));
+    }
+
+    #[test]
+    fn parse_destination_timeout_secs_alias() {
+        let config = parse(
+            r#"
+[reticulum]
+destination_timeout_secs = 777
+"#,
+        )
+        .unwrap();
+
+        assert_eq!(config.reticulum.known_destinations_ttl, 777);
+    }
+
+    #[test]
+    fn parse_logging_section() {
+        let input = "[logging]\nloglevel = 6\nlogtimestamps = no\n";
+        let config = parse(input).unwrap();
+        assert_eq!(config.logging.loglevel, 6);
+        assert!(!config.logging.logtimestamps);
+    }
+
+    #[test]
+    fn parse_logging_rejects_invalid_logtimestamps() {
+        let err = parse("[logging]\nlogtimestamps = maybe\n").unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::InvalidValue { key, .. } if key == "logtimestamps"
+        ));
+    }
+
+    #[test]
+    fn parse_interface_tcp_client() {
+        let input = r#"
+[interfaces]
+  [[TCP Client]]
+    type = TCPClientInterface
+    enabled = Yes
+    target_host = 87.106.8.245
+    target_port = 4242
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces.len(), 1);
+        let iface = &config.interfaces[0];
+        assert_eq!(iface.name, "TCP Client");
+        assert_eq!(iface.interface_type, "TCPClientInterface");
+        assert!(iface.enabled);
+        assert_eq!(iface.params.get("target_host").unwrap(), "87.106.8.245");
+        assert_eq!(iface.params.get("target_port").unwrap(), "4242");
+    }
+
+    #[test]
+    fn parse_interface_tcp_server() {
+        let input = r#"
+[interfaces]
+  [[TCP Server]]
+    type = TCPServerInterface
+    enabled = Yes
+    listen_ip = 0.0.0.0
+    listen_port = 4242
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces.len(), 1);
+        let iface = &config.interfaces[0];
+        assert_eq!(iface.name, "TCP Server");
+        assert_eq!(iface.interface_type, "TCPServerInterface");
+        assert_eq!(iface.params.get("listen_ip").unwrap(), "0.0.0.0");
+        assert_eq!(iface.params.get("listen_port").unwrap(), "4242");
+    }
+
+    #[test]
+    fn parse_interface_udp() {
+        let input = r#"
+[interfaces]
+  [[UDP Interface]]
+    type = UDPInterface
+    enabled = Yes
+    listen_ip = 0.0.0.0
+    listen_port = 4242
+    forward_ip = 255.255.255.255
+    forward_port = 4242
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces.len(), 1);
+        let iface = &config.interfaces[0];
+        assert_eq!(iface.name, "UDP Interface");
+        assert_eq!(iface.interface_type, "UDPInterface");
+        assert_eq!(iface.params.get("listen_ip").unwrap(), "0.0.0.0");
+        assert_eq!(iface.params.get("forward_ip").unwrap(), "255.255.255.255");
+    }
+
+    #[test]
+    fn parse_multiple_interfaces() {
+        let input = r#"
+[interfaces]
+  [[TCP Client]]
+    type = TCPClientInterface
+    target_host = 10.0.0.1
+    target_port = 4242
+
+  [[UDP Broadcast]]
+    type = UDPInterface
+    listen_ip = 0.0.0.0
+    listen_port = 5555
+    forward_ip = 255.255.255.255
+    forward_port = 5555
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces.len(), 2);
+        assert_eq!(config.interfaces[0].name, "TCP Client");
+        assert_eq!(config.interfaces[0].interface_type, "TCPClientInterface");
+        assert_eq!(config.interfaces[1].name, "UDP Broadcast");
+        assert_eq!(config.interfaces[1].interface_type, "UDPInterface");
+    }
+
+    #[test]
+    fn parse_booleans() {
+        // Test all boolean variants
+        for (input, expected) in &[
+            ("Yes", true),
+            ("No", false),
+            ("True", true),
+            ("False", false),
+            ("true", true),
+            ("false", false),
+            ("1", true),
+            ("0", false),
+            ("on", true),
+            ("off", false),
+        ] {
+            let result = parse_bool(input);
+            assert_eq!(result, Some(*expected), "parse_bool({}) failed", input);
+        }
+    }
+
+    #[test]
+    fn parse_comments() {
+        let input = r#"
+# This is a comment
+[reticulum]
+enable_transport = True  # inline comment
+# share_instance = No
+instance_name = test
+"#;
+        let config = parse(input).unwrap();
+        assert!(config.reticulum.enable_transport);
+        assert!(config.reticulum.share_instance); // commented out line should be ignored
+        assert_eq!(config.reticulum.instance_name, "test");
+    }
+
+    #[test]
+    fn parse_interface_mode_field() {
+        let input = r#"
+[interfaces]
+  [[TCP Client]]
+    type = TCPClientInterface
+    interface_mode = access_point
+    target_host = 10.0.0.1
+    target_port = 4242
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces[0].mode, "access_point");
+    }
+
+    #[test]
+    fn parse_mode_fallback() {
+        // Python also accepts "mode" as fallback for "interface_mode"
+        let input = r#"
+[interfaces]
+  [[TCP Client]]
+    type = TCPClientInterface
+    mode = gateway
+    target_host = 10.0.0.1
+    target_port = 4242
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces[0].mode, "gateway");
+    }
+
+    #[test]
+    fn parse_interface_mode_takes_precedence() {
+        // If both interface_mode and mode are set, interface_mode wins
+        let input = r#"
+[interfaces]
+  [[TCP Client]]
+    type = TCPClientInterface
+    interface_mode = roaming
+    mode = boundary
+    target_host = 10.0.0.1
+    target_port = 4242
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces[0].mode, "roaming");
+    }
+
+    #[test]
+    fn parse_disabled_interface() {
+        let input = r#"
+[interfaces]
+  [[Disabled TCP]]
+    type = TCPClientInterface
+    enabled = No
+    target_host = 10.0.0.1
+    target_port = 4242
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces.len(), 1);
+        assert!(!config.interfaces[0].enabled);
+    }
+
+    #[test]
+    fn parse_serial_interface() {
+        let input = r#"
+[interfaces]
+  [[Serial Port]]
+    type = SerialInterface
+    enabled = Yes
+    port = /dev/ttyUSB0
+    speed = 115200
+    databits = 8
+    parity = N
+    stopbits = 1
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces.len(), 1);
+        let iface = &config.interfaces[0];
+        assert_eq!(iface.name, "Serial Port");
+        assert_eq!(iface.interface_type, "SerialInterface");
+        assert!(iface.enabled);
+        assert_eq!(iface.params.get("port").unwrap(), "/dev/ttyUSB0");
+        assert_eq!(iface.params.get("speed").unwrap(), "115200");
+        assert_eq!(iface.params.get("databits").unwrap(), "8");
+        assert_eq!(iface.params.get("parity").unwrap(), "N");
+        assert_eq!(iface.params.get("stopbits").unwrap(), "1");
+    }
+
+    #[test]
+    fn parse_kiss_interface() {
+        let input = r#"
+[interfaces]
+  [[KISS TNC]]
+    type = KISSInterface
+    enabled = Yes
+    port = /dev/ttyUSB1
+    speed = 9600
+    preamble = 350
+    txtail = 20
+    persistence = 64
+    slottime = 20
+    flow_control = True
+    id_interval = 600
+    id_callsign = MYCALL
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.interfaces.len(), 1);
+        let iface = &config.interfaces[0];
+        assert_eq!(iface.name, "KISS TNC");
+        assert_eq!(iface.interface_type, "KISSInterface");
+        assert_eq!(iface.params.get("port").unwrap(), "/dev/ttyUSB1");
+        assert_eq!(iface.params.get("speed").unwrap(), "9600");
+        assert_eq!(iface.params.get("preamble").unwrap(), "350");
+        assert_eq!(iface.params.get("txtail").unwrap(), "20");
+        assert_eq!(iface.params.get("persistence").unwrap(), "64");
+        assert_eq!(iface.params.get("slottime").unwrap(), "20");
+        assert_eq!(iface.params.get("flow_control").unwrap(), "True");
+        assert_eq!(iface.params.get("id_interval").unwrap(), "600");
+        assert_eq!(iface.params.get("id_callsign").unwrap(), "MYCALL");
+    }
+
+    #[test]
+    fn parse_ifac_networkname() {
+        let input = r#"
+[interfaces]
+  [[TCP Client]]
+    type = TCPClientInterface
+    target_host = 10.0.0.1
+    target_port = 4242
+    networkname = testnet
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(
+            config.interfaces[0].params.get("networkname").unwrap(),
+            "testnet"
+        );
+    }
+
+    #[test]
+    fn parse_ifac_passphrase() {
+        let input = r#"
+[interfaces]
+  [[TCP Client]]
+    type = TCPClientInterface
+    target_host = 10.0.0.1
+    target_port = 4242
+    passphrase = secret123
+    ifac_size = 64
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(
+            config.interfaces[0].params.get("passphrase").unwrap(),
+            "secret123"
+        );
+        assert_eq!(config.interfaces[0].params.get("ifac_size").unwrap(), "64");
+    }
+
+    #[test]
+    fn parse_remote_management_config() {
+        let input = r#"
+[reticulum]
+enable_transport = True
+enable_remote_management = Yes
+remote_management_allowed = aabbccdd00112233aabbccdd00112233, 11223344556677881122334455667788
+publish_blackhole = Yes
+"#;
+        let config = parse(input).unwrap();
+        assert!(config.reticulum.enable_remote_management);
+        assert!(config.reticulum.publish_blackhole);
+        assert_eq!(config.reticulum.remote_management_allowed.len(), 2);
+        assert_eq!(
+            config.reticulum.remote_management_allowed[0],
+            "aabbccdd00112233aabbccdd00112233"
+        );
+        assert_eq!(
+            config.reticulum.remote_management_allowed[1],
+            "11223344556677881122334455667788"
+        );
+    }
+
+    #[test]
+    fn parse_remote_management_defaults() {
+        let input = "[reticulum]\n";
+        let config = parse(input).unwrap();
+        assert!(!config.reticulum.enable_remote_management);
+        assert!(!config.reticulum.publish_blackhole);
+        assert!(config.reticulum.remote_management_allowed.is_empty());
+    }
+
+    #[test]
+    fn parse_hooks_section() {
+        let input = r#"
+[hooks]
+  [[drop_tick]]
+    path = /tmp/drop_tick.wasm
+    attach_point = Tick
+    priority = 10
+    enabled = Yes
+
+  [[log_announce]]
+    path = /tmp/log_announce.wasm
+    type = native
+    attach_point = AnnounceReceived
+    priority = 5
+    enabled = No
+
+  [[builtin_tick]]
+    builtin = example.tick
+    type = builtin
+    attach_point = Tick
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.hooks.len(), 3);
+        assert_eq!(config.hooks[0].name, "drop_tick");
+        assert_eq!(config.hooks[0].path, "/tmp/drop_tick.wasm");
+        assert_eq!(config.hooks[0].hook_type, default_hook_type());
+        assert_eq!(config.hooks[0].attach_point, "Tick");
+        assert_eq!(config.hooks[0].priority, 10);
+        assert!(config.hooks[0].enabled);
+        assert_eq!(config.hooks[1].name, "log_announce");
+        assert_eq!(config.hooks[1].hook_type, "native");
+        assert_eq!(config.hooks[1].attach_point, "AnnounceReceived");
+        assert!(!config.hooks[1].enabled);
+        assert_eq!(config.hooks[2].hook_type, "builtin");
+        assert_eq!(config.hooks[2].builtin_id.as_deref(), Some("example.tick"));
+    }
+
+    #[test]
+    fn parse_empty_hooks() {
+        let input = "[hooks]\n";
+        let config = parse(input).unwrap();
+        assert!(config.hooks.is_empty());
+    }
+
+    #[test]
+    fn parse_hook_point_names() {
+        assert_eq!(parse_hook_point("PreIngress"), Some(0));
+        assert_eq!(parse_hook_point("PreDispatch"), Some(1));
+        assert_eq!(parse_hook_point("AnnounceReceived"), Some(2));
+        assert_eq!(parse_hook_point("PathUpdated"), Some(3));
+        assert_eq!(parse_hook_point("AnnounceRetransmit"), Some(4));
+        assert_eq!(parse_hook_point("LinkRequestReceived"), Some(5));
+        assert_eq!(parse_hook_point("LinkEstablished"), Some(6));
+        assert_eq!(parse_hook_point("LinkClosed"), Some(7));
+        assert_eq!(parse_hook_point("InterfaceUp"), Some(8));
+        assert_eq!(parse_hook_point("InterfaceDown"), Some(9));
+        assert_eq!(parse_hook_point("InterfaceConfigChanged"), Some(10));
+        assert_eq!(parse_hook_point("BackbonePeerConnected"), Some(11));
+        assert_eq!(parse_hook_point("BackbonePeerDisconnected"), Some(12));
+        assert_eq!(parse_hook_point("BackbonePeerIdleTimeout"), Some(13));
+        assert_eq!(parse_hook_point("BackbonePeerWriteStall"), Some(14));
+        assert_eq!(parse_hook_point("BackbonePeerPenalty"), Some(15));
+        assert_eq!(parse_hook_point("SendOnInterface"), Some(16));
+        assert_eq!(parse_hook_point("BroadcastOnAllInterfaces"), Some(17));
+        assert_eq!(parse_hook_point("DeliverLocal"), Some(18));
+        assert_eq!(parse_hook_point("TunnelSynthesize"), Some(19));
+        assert_eq!(parse_hook_point("Tick"), Some(20));
+        assert_eq!(parse_hook_point("Unknown"), None);
+    }
+
+    #[test]
+    fn backbone_extra_params_preserved() {
+        let config = r#"
+[reticulum]
+enable_transport = True
+
+[interfaces]
+  [[Public Entrypoint]]
+    type = BackboneInterface
+    enabled = yes
+    listen_ip = 0.0.0.0
+    listen_port = 4242
+    interface_mode = gateway
+    discoverable = Yes
+    discovery_name = PizzaSpaghettiMandolino
+    announce_interval = 600
+    discovery_stamp_value = 24
+    reachable_on = 87.106.8.245
+"#;
+        let parsed = parse(config).unwrap();
+        assert_eq!(parsed.interfaces.len(), 1);
+        let iface = &parsed.interfaces[0];
+        assert_eq!(iface.name, "Public Entrypoint");
+        assert_eq!(iface.interface_type, "BackboneInterface");
+        // After removing type, enabled, interface_mode, remaining params should include discovery keys
+        assert_eq!(
+            iface.params.get("discoverable").map(|s| s.as_str()),
+            Some("Yes")
+        );
+        assert_eq!(
+            iface.params.get("discovery_name").map(|s| s.as_str()),
+            Some("PizzaSpaghettiMandolino")
+        );
+        assert_eq!(
+            iface.params.get("announce_interval").map(|s| s.as_str()),
+            Some("600")
+        );
+        assert_eq!(
+            iface
+                .params
+                .get("discovery_stamp_value")
+                .map(|s| s.as_str()),
+            Some("24")
+        );
+        assert_eq!(
+            iface.params.get("reachable_on").map(|s| s.as_str()),
+            Some("87.106.8.245")
+        );
+        assert_eq!(
+            iface.params.get("listen_ip").map(|s| s.as_str()),
+            Some("0.0.0.0")
+        );
+        assert_eq!(
+            iface.params.get("listen_port").map(|s| s.as_str()),
+            Some("4242")
+        );
+    }
+
+    #[test]
+    fn parse_probe_protocol() {
+        let input = r#"
+[reticulum]
+probe_addr = 1.2.3.4:19302
+probe_protocol = stun
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(
+            config.reticulum.probe_addr.as_deref(),
+            Some("1.2.3.4:19302")
+        );
+        assert_eq!(config.reticulum.probe_protocol.as_deref(), Some("stun"));
+    }
+
+    #[test]
+    fn parse_probe_protocol_defaults_to_none() {
+        let input = r#"
+[reticulum]
+probe_addr = 1.2.3.4:4343
+"#;
+        let config = parse(input).unwrap();
+        assert_eq!(config.reticulum.probe_addr.as_deref(), Some("1.2.3.4:4343"));
+        assert!(config.reticulum.probe_protocol.is_none());
+    }
+}

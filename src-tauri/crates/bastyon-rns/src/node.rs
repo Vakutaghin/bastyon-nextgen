@@ -42,7 +42,8 @@ use rns_net::{
 };
 
 use crate::types::{
-    Attachment, IfaceConfig, IfaceStatus, Method, Page, RnsEvent, StartOptions, Started, Status,
+    Attachment, Download, IfaceConfig, IfaceStatus, Method, Page, RnsEvent, StartOptions, Started,
+    Status,
 };
 
 /// Шаг рабочего потока.
@@ -59,6 +60,10 @@ const REPLAY_AFTER: Duration = Duration::from_secs(1);
 const PATH_TIMEOUT: Duration = Duration::from_secs(20);
 const LINK_TIMEOUT: Duration = Duration::from_secs(30);
 const PAGE_TIMEOUT: Duration = Duration::from_secs(60);
+/// Файл по радио идёт долго: ждём, пока приходят части, но не дольше этого.
+const TRANSFER_MAX: Duration = Duration::from_secs(3600);
+/// Как часто сообщать интерфейсу ход скачивания.
+const PROGRESS_EVERY: Duration = Duration::from_millis(300);
 const PAGE_LINK_IDLE: Duration = Duration::from_secs(300);
 const SYNC_LIST_TIMEOUT: Duration = Duration::from_secs(60);
 const SYNC_GET_TIMEOUT: Duration = Duration::from_secs(180);
@@ -427,8 +432,15 @@ struct LinkBook {
     /// установиться раньше, чем его id вернётся из create_link.
     established: HashSet<[u8; 16]>,
     closed: HashSet<[u8; 16]>,
-    responses: HashMap<[u8; 16], VecDeque<Vec<u8>>>,
+    /// Ответы на свои запросы: msgpack и метаданные ресурса (имя файла).
+    responses: HashMap<[u8; 16], VecDeque<Response>>,
+    /// Когда по Link последний раз пришла часть ответа-ресурса: пока файл
+    /// идёт, ответа ждём дальше.
+    progress: HashMap<[u8; 16], Instant>,
 }
+
+/// Ответ на запрос: msgpack ответа и метаданные ресурса, если ответ пришёл им.
+type Response = (Vec<u8>, Option<Vec<u8>>);
 
 struct Hub {
     sink: Sink,
@@ -457,6 +469,7 @@ impl Hub {
         book.watched.remove(link);
         book.closed.remove(link);
         book.responses.remove(link);
+        book.progress.remove(link);
     }
 
     fn wait<T>(
@@ -498,15 +511,43 @@ impl Hub {
 
     /// Ok — ответ (msgpack), Err — Link закрылся, None — не дождались.
     fn wait_response(&self, link: [u8; 16], timeout: Duration) -> Option<Result<Vec<u8>, ()>> {
-        self.wait(timeout, |b| {
-            if let Some(r) = b.responses.get_mut(&link).and_then(|q| q.pop_front()) {
-                Some(Ok(r))
-            } else if b.closed.contains(&link) {
-                Some(Err(()))
-            } else {
-                None
+        self.wait_transfer(link, timeout, timeout)
+            .map(|r| r.map(|(data, _)| data))
+    }
+
+    /// Ответ, который может идти ресурсом долго (файл по радио): ждать, пока
+    /// части приходят не реже `idle`, но не дольше `max`.
+    fn wait_transfer(
+        &self,
+        link: [u8; 16],
+        idle: Duration,
+        max: Duration,
+    ) -> Option<Result<Response, ()>> {
+        let started = Instant::now();
+        let mut active = started;
+        let mut book = self.book();
+        loop {
+            if let Some(r) = book.responses.get_mut(&link).and_then(|q| q.pop_front()) {
+                return Some(Ok(r));
             }
-        })
+            if book.closed.contains(&link) {
+                return Some(Err(()));
+            }
+            if let Some(t) = book.progress.get(&link) {
+                active = active.max(*t);
+            }
+            let now = Instant::now();
+            let deadline = (active + idle).min(started + max);
+            if now >= deadline || !self.running.load(Ordering::SeqCst) {
+                return None;
+            }
+            let step = (deadline - now).min(Duration::from_millis(500));
+            book = self
+                .cv
+                .wait_timeout(book, step)
+                .unwrap_or_else(|p| p.into_inner())
+                .0;
+        }
     }
 }
 
@@ -567,6 +608,8 @@ struct Bridge {
     inbound: HashMap<[u8; 16], [u8; 16]>,
     /// Предел размера входящего сообщения, байт.
     delivery_limit: u64,
+    /// Когда интерфейсу последний раз сообщали ход скачивания.
+    last_progress: Option<Instant>,
 }
 
 impl Bridge {
@@ -674,8 +717,30 @@ impl Callbacks for Bridge {
     }
 
     fn on_resource_progress(&mut self, link_id: LinkId, received: usize, total: usize) {
-        if !self.is_watched(&link_id) {
+        let mine = {
+            let mut book = self.hub.book();
+            let mine = book.watched.contains(&link_id.0);
+            if mine {
+                book.progress.insert(link_id.0, Instant::now());
+            }
+            mine
+        };
+        if !mine {
             self.forward(Ev::ResourceProgress(link_id, received, total));
+            return;
+        }
+        self.hub.cv.notify_all();
+        // Ход скачивания — интерфейсу, не чаще раза в PROGRESS_EVERY.
+        let due = self
+            .last_progress
+            .is_none_or(|t| t.elapsed() >= PROGRESS_EVERY)
+            || received >= total;
+        if due {
+            self.last_progress = Some(Instant::now());
+            self.hub.emit(RnsEvent::Progress {
+                received: received as u64,
+                total: total as u64,
+            });
         }
     }
 
@@ -718,7 +783,10 @@ impl Callbacks for Bridge {
             let mine = book.watched.contains(&link_id.0);
             if mine {
                 if let Some(d) = data.take() {
-                    book.responses.entry(link_id.0).or_default().push_back(d);
+                    book.responses
+                        .entry(link_id.0)
+                        .or_default()
+                        .push_back((d, metadata.clone()));
                 }
             }
             mine
@@ -790,6 +858,29 @@ struct Ctx {
 
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|p| p.into_inner())
+}
+
+/// jobs роутера и привязка ресурсов к Link. lxmf-rs отдаёт сообщение
+/// ресурсом по уже открытому Link (прямому или к узлу доставки), не запомнив
+/// этот Link у сообщения, — и доказательство ресурса не находит, чьё оно:
+/// сообщение навсегда остаётся в Sending. Привязать сразу, под той же
+/// блокировкой, пока доказательство не пришло.
+fn jobs(router: &mut LxmRouter) {
+    router.jobs();
+    let (direct, pn_link) = (router.direct_links.clone(), router.propagation_link);
+    for msg in &mut router.outbound {
+        if msg.state != MessageState::Sending
+            || msg.link_id.is_some()
+            || msg.representation != Representation::Resource
+        {
+            continue;
+        }
+        msg.link_id = match msg.method {
+            DeliveryMethod::Direct => direct.get(&msg.destination_hash).copied(),
+            DeliveryMethod::Propagated => pn_link,
+            _ => None,
+        };
+    }
 }
 
 impl Ctx {
@@ -1055,7 +1146,7 @@ impl Ctx {
                     }
                     let mut router = self.router();
                     match router.handle_outbound(msg) {
-                        Ok(()) => router.jobs(),
+                        Ok(()) => jobs(&mut router),
                         Err(_) => {
                             drop(router);
                             self.fail(job.id, err("rns_no_propagation_node"));
@@ -1251,7 +1342,7 @@ impl Ctx {
         while self.hub.running.load(Ordering::SeqCst) {
             if last_jobs.elapsed() >= JOBS_EVERY {
                 let mut router = self.router();
-                router.jobs();
+                jobs(&mut router);
                 self.poll_outbound(&mut router);
                 drop(router);
                 last_jobs = Instant::now();
@@ -1439,6 +1530,44 @@ fn parse_page(bytes: &[u8]) -> Result<Page, String> {
     }
 }
 
+/// Ответ на `/file/…`. NomadNet 0.5+ шлёт файл ресурсом с метаданными
+/// `{"name": байты}`, прежние узлы — msgpack `[имя, байты]`; отказ приходит
+/// страницей.
+fn parse_download(bytes: &[u8], metadata: Option<&[u8]>, path: &str) -> Result<Download, String> {
+    let value = msgpack::unpack_exact(bytes).map_err(|_| err("rns_bad_response"))?;
+    let from_path = || file_name(path);
+    if let Some(meta) = metadata {
+        let name = match msgpack::unpack_exact(meta) {
+            Ok(Value::Map(entries)) => entries
+                .iter()
+                .find(|(k, _)| text_of(k).as_deref() == Some("name"))
+                .and_then(|(_, v)| text_of(v)),
+            _ => None,
+        };
+        let Value::Bin(data) = value else {
+            return Err(err("rns_bad_response"));
+        };
+        return Ok(Download::File {
+            name: name.map(|n| file_name(&n)).unwrap_or_else(from_path),
+            data,
+        });
+    }
+    match value {
+        Value::Array(items) if items.len() == 2 => match (text_of(&items[0]), &items[1]) {
+            (Some(name), Value::Bin(data)) => Ok(Download::File {
+                name: file_name(&name),
+                data: data.clone(),
+            }),
+            _ => Err(err("rns_bad_response")),
+        },
+        Value::Bin(b) if std::str::from_utf8(&b).is_err() => Ok(Download::File {
+            name: from_path(),
+            data: b,
+        }),
+        other => parse_page(&msgpack::pack(&other)).map(Download::Page),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Внешний интерфейс модуля
 
@@ -1511,6 +1640,7 @@ impl Runtime {
             own_delivery: delivery_hash,
             inbound: HashMap::new(),
             delivery_limit,
+            last_progress: None,
         };
         {
             let router = router.clone();
@@ -1778,13 +1908,15 @@ impl Runtime {
 }
 
 impl Handle {
-    /// Страница NomadNet (micron). Link к узлу переиспользуется несколько минут.
-    pub fn page(
+    /// Запрос `path` у узла NomadNet по Link: ответ (msgpack) и метаданные
+    /// ресурса. Link к узлу переиспользуется несколько минут; пока ответ идёт
+    /// ресурсом, ждём, сколько бы он ни шёл.
+    fn fetch(
         &self,
         node_hash: [u8; 16],
         path: &str,
         data: &HashMap<String, String>,
-    ) -> Result<Page, String> {
+    ) -> Result<Response, String> {
         if !path.starts_with('/') || path.len() > 255 {
             return Err(err("rns_bad_path"));
         }
@@ -1795,6 +1927,7 @@ impl Handle {
         {
             let mut book = ctx.hub.book();
             book.responses.remove(&link);
+            book.progress.remove(&link);
         }
         let payload = if data.is_empty() {
             Value::Nil
@@ -1810,12 +1943,12 @@ impl Handle {
             ctx.drop_page_link(node_hash);
             return Err(e);
         }
-        match ctx.hub.wait_response(link, PAGE_TIMEOUT) {
-            Some(Ok(bytes)) => {
+        match ctx.hub.wait_transfer(link, PAGE_TIMEOUT, TRANSFER_MAX) {
+            Some(Ok(response)) => {
                 if let Some(entry) = lock(&ctx.page_links).get_mut(&node_hash) {
                     entry.1 = Instant::now();
                 }
-                parse_page(&bytes)
+                Ok(response)
             }
             outcome => {
                 ctx.drop_page_link(node_hash);
@@ -1826,6 +1959,24 @@ impl Handle {
                 }))
             }
         }
+    }
+
+    /// Страница NomadNet (micron).
+    pub fn page(
+        &self,
+        node_hash: [u8; 16],
+        path: &str,
+        data: &HashMap<String, String>,
+    ) -> Result<Page, String> {
+        let (bytes, _) = self.fetch(node_hash, path, data)?;
+        parse_page(&bytes)
+    }
+
+    /// Файл узла NomadNet (`/file/…`). Узел может ответить и страницей —
+    /// например, «доступ запрещён».
+    pub fn download(&self, node_hash: [u8; 16], path: &str) -> Result<Download, String> {
+        let (bytes, metadata) = self.fetch(node_hash, path, &HashMap::new())?;
+        parse_download(&bytes, metadata.as_deref(), path)
     }
 }
 
@@ -2000,6 +2151,48 @@ mod tests {
         assert!(!page.binary);
         assert!(parse_page(&msgpack::pack(&Value::Nil)).is_err());
     }
+
+    #[test]
+    fn file_responses_in_both_nomadnet_formats() {
+        let bin = |b: &[u8]| msgpack::pack(&Value::Bin(b.to_vec()));
+        // NomadNet 0.5+: ресурс с метаданными {"name": байты}.
+        let meta = msgpack::pack(&Value::Map(vec![(
+            Value::Str("name".into()),
+            Value::Bin(b"../../report.pdf".to_vec()),
+        )]));
+        assert_eq!(
+            parse_download(&bin(b"%PDF"), Some(&meta), "/file/report.pdf").unwrap(),
+            Download::File {
+                name: "report.pdf".into(),
+                data: b"%PDF".to_vec()
+            }
+        );
+        // Метаданные без имени — имя из пути.
+        let empty = msgpack::pack(&Value::Map(vec![]));
+        assert!(matches!(
+            parse_download(&bin(b"x"), Some(&empty), "/file/dir/a.txt").unwrap(),
+            Download::File { ref name, .. } if name == "a.txt"
+        ));
+        // Прежние узлы: [имя, байты].
+        let legacy = msgpack::pack(&Value::Array(vec![
+            Value::Str("map.png".into()),
+            Value::Bin(vec![0x89, b'P']),
+        ]));
+        assert!(matches!(
+            parse_download(&legacy, None, "/file/map.png").unwrap(),
+            Download::File { ref name, ref data } if name == "map.png" && data == &[0x89, b'P']
+        ));
+        // Отказ узла — страница micron.
+        assert_eq!(
+            parse_download(&bin(b">Request Not Allowed"), None, "/file/secret.txt").unwrap(),
+            Download::Page(Page {
+                content: ">Request Not Allowed".into(),
+                binary: false
+            })
+        );
+        assert!(parse_download(&msgpack::pack(&Value::Nil), None, "/file/x").is_err());
+        assert!(parse_download(b"\xc1", None, "/file/x").is_err());
+    }
 }
 
 /// Сверка с Python RNS 1.5 + LXMF 1.1 (собеседник — tests/peer.py). Запуск:
@@ -2026,6 +2219,8 @@ mod interop {
     impl Peer {
         fn start(python: &str, script: &str, dir: &Path, port: u16) -> Peer {
             let mut child = Command::new(python)
+                // Журнал RNS пишет в stdout без сброса — иначе он теряется.
+                .env("PYTHONUNBUFFERED", "1")
                 .arg(script)
                 .arg(dir)
                 .arg(port.to_string())
@@ -2041,9 +2236,13 @@ mod interop {
             let (tx, rx) = mpsc::channel();
             thread::spawn(move || {
                 for line in BufReader::new(stdout).lines().map_while(Result::ok) {
-                    if let Ok(v) = serde_json::from_str::<Json>(&line) {
-                        eprintln!("py> {v}");
-                        let _ = tx.send(v);
+                    match serde_json::from_str::<Json>(&line) {
+                        Ok(v) => {
+                            eprintln!("py> {v}");
+                            let _ = tx.send(v);
+                        }
+                        // Журнал RNS (RNS_PEER_LOGLEVEL=5 — подробный).
+                        Err(_) => eprintln!("py! {line}"),
                     }
                 }
             });
@@ -2091,8 +2290,11 @@ mod interop {
         panic!("rust node: no {what}");
     }
 
+    /// Ожидаемое событие: подпись для сообщения об ошибке и проверка.
+    type Want<'a> = (&'a str, Box<dyn Fn(&RnsEvent) -> bool>);
+
     /// Дождаться всех событий из списка, в любом порядке.
-    fn expect_all(rx: &mpsc::Receiver<RnsEvent>, wants: Vec<(&str, Box<dyn Fn(&RnsEvent) -> bool>)>) {
+    fn expect_all(rx: &mpsc::Receiver<RnsEvent>, wants: Vec<Want>) {
         let mut left = wants;
         let deadline = Instant::now() + WAIT;
         while !left.is_empty() {
@@ -2103,6 +2305,31 @@ mod interop {
         }
         let missing: Vec<&str> = left.iter().map(|(what, _)| *what).collect();
         assert!(missing.is_empty(), "rust node: no {missing:?}");
+    }
+
+    /// Журнал rns-net в stderr, если задан RNS_LOG (error … trace).
+    struct StderrLog(log::LevelFilter);
+
+    impl log::Log for StderrLog {
+        fn enabled(&self, m: &log::Metadata) -> bool {
+            m.level() <= self.0
+        }
+        fn log(&self, r: &log::Record) {
+            if self.enabled(r.metadata()) {
+                eprintln!("rs! {} {}: {}", r.level(), r.target(), r.args());
+            }
+        }
+        fn flush(&self) {}
+    }
+
+    fn init_log() {
+        let Some(level) = std::env::var("RNS_LOG").ok().and_then(|l| l.parse().ok()) else {
+            return;
+        };
+        let logger: &'static StderrLog = Box::leak(Box::new(StderrLog(level)));
+        if log::set_logger(logger).is_ok() {
+            log::set_max_level(level);
+        }
     }
 
     fn start(dir: &Path, port: u16, pn: Option<String>) -> (Runtime, mpsc::Receiver<RnsEvent>) {
@@ -2127,6 +2354,17 @@ mod interop {
         (runtime, rx)
     }
 
+    /// Псевдослучайные байты, как noise() в peer.py: не сжимаются.
+    fn noise(n: usize) -> Vec<u8> {
+        let mut x: u32 = 1;
+        (0..n)
+            .map(|_| {
+                x = (x.wrapping_mul(1_103_515_245).wrapping_add(12_345)) & 0x7FFF_FFFF;
+                (x >> 16) as u8
+            })
+            .collect()
+    }
+
     fn is_state(ev: &RnsEvent, id: &str, want: &str) -> bool {
         matches!(ev, RnsEvent::State { id: i, state, .. } if i == id && state == want)
     }
@@ -2136,24 +2374,81 @@ mod interop {
             if content == text && method == how && *signed)
     }
 
-    #[test]
-    #[ignore]
-    fn python_peer() {
+    /// Python-собеседник на свободном порту и каталог прогона; None — не
+    /// заданы переменные окружения.
+    fn python(name: &str) -> Option<(Peer, PathBuf, u16)> {
         let (Ok(python), Ok(script), Ok(base)) = (
             std::env::var("RNS_PYTHON"),
             std::env::var("RNS_PEER_PY"),
             std::env::var("RNS_TEST_DIR"),
         ) else {
             eprintln!("RNS_PYTHON / RNS_PEER_PY / RNS_TEST_DIR not set — skipped");
-            return;
+            return None;
         };
-        let base = PathBuf::from(base).join(format!("interop-{}", std::process::id()));
+        init_log();
+        let base = PathBuf::from(base).join(format!("{name}-{}", std::process::id()));
         let port = std::net::TcpListener::bind("127.0.0.1:0")
             .unwrap()
             .local_addr()
             .unwrap()
             .port();
-        let mut peer = Peer::start(&python, &script, &base.join("peer"), port);
+        let peer = Peer::start(&python, &script, &base.join("peer"), port);
+        Some((peer, base, port))
+    }
+
+    #[test]
+    #[ignore]
+    fn python_nomadnet_files() {
+        let Some((mut peer, base, port)) = python("files") else { return };
+        let ready = peer.expect("ready", |v| v.get("ready").is_some());
+        let nomad = ready["node"].as_str().unwrap().to_string();
+        let (runtime, rx) = start(&base.join("rust"), port, None);
+        peer.cmd(json!({"announce": true}));
+        let n = nomad.clone();
+        expect_ev(&rx, "nomadnet announce", move |ev| matches!(ev, RnsEvent::Announce { aspect, dest, .. }
+            if aspect == ASPECT_NOMADNET && *dest == n));
+        let handle = runtime.handle();
+        let node_hash = parse_hash::<16>(&nomad).unwrap();
+        // Файлы NomadNet: ресурс с метаданными (маленький и в несколько
+        // частей, с ходом скачивания), прежний формат и отказ страницей.
+        assert_eq!(
+            handle.download(node_hash, "/file/hello.txt").unwrap(),
+            Download::File {
+                name: "hello.txt".into(),
+                data: "Привет из NomadNet\n".as_bytes().to_vec()
+            }
+        );
+        let big = noise(200_000);
+        assert_eq!(
+            handle.download(node_hash, "/file/big.bin").unwrap(),
+            Download::File {
+                name: "big.bin".into(),
+                data: big
+            }
+        );
+        expect_ev(&rx, "download progress", |ev| {
+            matches!(ev, RnsEvent::Progress { received, total } if received == total && *total > 1)
+        });
+        let legacy: Vec<u8> = (0..8).flat_map(|_| 0..=255u8).collect();
+        assert_eq!(
+            handle.download(node_hash, "/file/legacy.bin").unwrap(),
+            Download::File {
+                name: "legacy.bin".into(),
+                data: legacy
+            }
+        );
+        assert!(matches!(
+            handle.download(node_hash, "/file/secret.txt").unwrap(),
+            Download::Page(Page { ref content, .. }) if content == ">Request Not Allowed"
+        ));
+        runtime.stop();
+        peer.cmd(json!({"quit": true}));
+    }
+
+    #[test]
+    #[ignore]
+    fn python_peer() {
+        let Some((mut peer, base, port)) = python("interop") else { return };
         let ready = peer.expect("ready", |v| v.get("ready").is_some());
         let peer_dest = ready["ready"].as_str().unwrap().to_string();
         let pn = ready["pn"].as_str().unwrap().to_string();
@@ -2252,6 +2547,32 @@ mod interop {
             ),
             _ => unreachable!(),
         }
+
+        // Большое вложение идёт ресурсом по Link: «доставлено» в обе стороны
+        // значит, что доказательства ресурса понимают обе реализации.
+        let blob = b64(&noise(60_000));
+        let id = runtime
+            .send(
+                to,
+                "",
+                "большой файл",
+                &[Attachment {
+                    kind: "file".into(),
+                    name: "noise.bin".into(),
+                    mime: "application/octet-stream".into(),
+                    data: blob.clone(),
+                }],
+                Method::Direct,
+            )
+            .unwrap();
+        let got = peer.expect("big attachment", |v| v["message"]["content"] == json!("большой файл"));
+        assert_eq!(got["message"]["fields"]["5"], json!([["noise.bin", blob]]));
+        expect_ev(&rx, "big attachment delivered", |ev| is_state(ev, &id, "delivered"));
+        peer.cmd(json!({"send": our, "text": "большой из Python", "method": "direct", "tag": "big",
+            "files": [["noise.bin", blob]]}));
+        let ev = expect_ev(&rx, "big attachment from python", |ev| is_message(ev, "большой из Python", "direct"));
+        assert!(matches!(ev, RnsEvent::Message { ref attachments, .. } if attachments[0].data == blob));
+        peer.expect("python big delivered", |v| v["state"] == json!({"tag": "big", "state": "delivered"}));
 
         // Бумажные сообщения (lxm://) в обе стороны.
         let uri = runtime.paper(to, "бумага из Rust").unwrap();

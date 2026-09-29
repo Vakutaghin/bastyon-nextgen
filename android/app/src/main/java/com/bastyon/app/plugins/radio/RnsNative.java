@@ -52,4 +52,11 @@ final class RnsNative {
 
     /** Страница NomadNet: {content, binary}; блокирует до ответа узла. */
     static native String page(String node, String path, String dataJson);
+
+    /**
+     * Файл NomadNet: {kind: "file", name, path, size} — байты во временном
+     * файле в dir — или {kind: "page", content, binary}, если узел ответил
+     * страницей. Блокирует, пока файл идёт.
+     */
+    static native String download(String node, String path, String dir);
 }

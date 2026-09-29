@@ -1862,8 +1862,11 @@ export default {
         reload: 'Reload',
         close: 'Close',
         loading: 'Loading the page…',
-        binary: 'This is a file, not a page: it cannot be shown here.',
+        binary: 'This is a file, not a page: it cannot be shown here, but you can download it.',
         pageEmpty: 'The page is empty.',
+        download: 'Download',
+        downloading: 'Downloading {name}…',
+        saved: 'File saved: {name}',
       },
       paper: {
         title: 'Paper message',

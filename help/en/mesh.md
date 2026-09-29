@@ -147,6 +147,8 @@ The 🧾 button in a Reticulum chat turns the text in the field into a **paper m
 
 NomadNet nodes publish pages: boards, guides, services. They appear in the **NomadNet** list when they announce themselves on the network; **Open** shows the node's front page. Links lead to other pages of this and other nodes, and a link to an LXMF address opens a chat. Fields on a page are a form: the link next to them sends it. A node that has not announced itself can be opened by its address.
 
+A link to a node's file downloads it: while the file comes in, you see how much has arrived below the list, then the system asks where to save it. Over radio, a file of a few hundred kilobytes takes a long time — keep the app open. If the node does not give out the file, its page with the answer opens instead.
+
 A page comes over an encrypted connection straight from the node. Images and tables are not shown yet, and files are not downloaded.
 
 ## Writing

@@ -4,7 +4,10 @@ python peer.py <configdir> <port> [name] [--pn] [--node]
 - поднимает RNS с TCPServerInterface на 127.0.0.1:<port> (наш узел подключается клиентом);
 - LXMF-роутер с delivery-адресом, announce с именем;
 - --pn: ещё и узел доставки (propagation node, стоимость штампа 13 — минимум);
-- --node: нода NomadNet «PyNode» со страницами /page/index.mu и /page/echo.mu;
+- --node: нода NomadNet «PyNode» со страницами /page/index.mu и /page/echo.mu и файлами как у
+  NomadNet 1.4: /file/hello.txt и /file/big.bin (200 КБ, ресурс в несколько частей) — открытый
+  файл с метаданными {"name": байты}; /file/legacy.bin — прежний формат [имя, байты];
+  /file/secret.txt — отказ страницей;
 - печатает JSON-строки: {"ready": адрес, ...}, {"announce": ...}, {"message": ...}, {"state": ...};
 - команды на stdin (JSON): {"send": "<dest hex>", "text": "...", "method": "opportunistic|direct|propagated",
   "image": [формат, base64], "files": [[имя, base64], ...]} (вложения — по желанию),
@@ -34,7 +37,7 @@ with open(os.path.join(configdir, "config"), "w") as f:
   share_instance = No
   panic_on_interface_error = No
 [logging]
-  loglevel = 2
+  loglevel = {os.environ.get("RNS_PEER_LOGLEVEL", "2")}
 [interfaces]
   [[TCP Server]]
     type = TCPServerInterface
@@ -69,6 +72,37 @@ if "--node" in flags:
 
     node_dest.register_request_handler("/page/index.mu", response_generator=index, allow=RNS.Destination.ALLOW_ALL)
     node_dest.register_request_handler("/page/echo.mu", response_generator=echo, allow=RNS.Destination.ALLOW_ALL)
+
+    # Файлы — как Node.serve_file у NomadNet 1.4.
+    files_dir = os.path.join(configdir, "files")
+    os.makedirs(files_dir, exist_ok=True)
+    with open(os.path.join(files_dir, "hello.txt"), "wb") as f:
+        f.write("Привет из NomadNet\n".encode("utf-8"))
+    # Псевдослучайные байты (не сжимаются): тот же генератор — в тесте Rust.
+    def noise(n, x=1):
+        out = bytearray()
+        for _ in range(n):
+            x = (x * 1103515245 + 12345) & 0x7FFFFFFF
+            out.append((x >> 16) & 0xFF)
+        return bytes(out)
+
+    with open(os.path.join(files_dir, "big.bin"), "wb") as f:
+        f.write(noise(200_000))
+
+    def serve_file(path, data, request_id, link_id, remote_identity, requested_at):
+        name = os.path.basename(path)
+        return [open(os.path.join(files_dir, name), "rb"), {"name": name.encode("utf-8")}]
+
+    def legacy_file(path, data, request_id, link_id, remote_identity, requested_at):
+        return ["legacy.bin", bytes(range(256)) * 8]
+
+    def denied_file(path, data, request_id, link_id, remote_identity, requested_at):
+        return ">Request Not Allowed".encode("utf-8")
+
+    for fname in ("hello.txt", "big.bin"):
+        node_dest.register_request_handler("/file/" + fname, response_generator=serve_file, allow=RNS.Destination.ALLOW_ALL)
+    node_dest.register_request_handler("/file/legacy.bin", response_generator=legacy_file, allow=RNS.Destination.ALLOW_ALL)
+    node_dest.register_request_handler("/file/secret.txt", response_generator=denied_file, allow=RNS.Destination.ALLOW_ALL)
 
 def jsonable(v):
     """Поля LXMF в JSON: байты — base64, списки и словари — рекурсивно."""

@@ -1,0 +1,1148 @@
+//! Event types for the driver loop — generic over the writer type.
+
+use std::fmt;
+use std::net::IpAddr;
+use std::sync::mpsc;
+use std::time::Duration;
+
+use rns_core::announce::ValidatedAnnounce;
+use rns_core::transport::announce_verify_queue::AnnounceVerifyKey;
+use rns_core::transport::types::{InterfaceId, InterfaceInfo};
+
+use crate::common::link_manager::RequestResponse;
+
+/// Policy for handling incoming direct-connect proposals.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HolePunchPolicy {
+    /// Reject all proposals.
+    Reject,
+    /// Accept all proposals automatically.
+    AcceptAll,
+    /// Ask the application callback.
+    AskApp,
+}
+
+impl Default for HolePunchPolicy {
+    fn default() -> Self {
+        HolePunchPolicy::AcceptAll
+    }
+}
+
+/// Scalar runtime-config value.
+#[derive(Debug, Clone, PartialEq)]
+pub enum RuntimeConfigValue {
+    Int(i64),
+    Float(f64),
+    Bool(bool),
+    String(String),
+    Null,
+}
+
+/// Source of a runtime-config value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RuntimeConfigSource {
+    Startup,
+    RuntimeOverride,
+}
+
+/// How a runtime-config change applies.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RuntimeConfigApplyMode {
+    Immediate,
+    NewConnectionsOnly,
+    NextReconnect,
+    RestartRequired,
+}
+
+/// A runtime-config entry exposed by the daemon.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RuntimeConfigEntry {
+    pub key: String,
+    pub value: RuntimeConfigValue,
+    pub default: RuntimeConfigValue,
+    pub source: RuntimeConfigSource,
+    pub apply_mode: RuntimeConfigApplyMode,
+    pub description: Option<String>,
+}
+
+/// Runtime-config mutation error.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuntimeConfigError {
+    pub code: RuntimeConfigErrorCode,
+    pub message: String,
+}
+
+/// Category of runtime-config mutation error.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RuntimeConfigErrorCode {
+    UnknownKey,
+    InvalidType,
+    InvalidValue,
+    Unsupported,
+    NotFound,
+    ApplyFailed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LifecycleState {
+    Active,
+    Draining,
+    Stopping,
+    Stopped,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct DrainStatus {
+    pub state: LifecycleState,
+    pub drain_age_seconds: Option<f64>,
+    pub deadline_remaining_seconds: Option<f64>,
+    pub drain_complete: bool,
+    pub interface_writer_queued_frames: usize,
+    pub provider_backlog_events: usize,
+    pub provider_consumer_queued_events: usize,
+    pub detail: Option<String>,
+}
+
+/// Events sent to the driver thread.
+///
+/// `W` is the writer type (e.g. `Box<dyn Writer>` for sync,
+/// or a channel sender for async).
+pub enum Event<W: Send> {
+    /// A decoded frame arrived from an interface.
+    Frame {
+        interface_id: InterfaceId,
+        data: Vec<u8>,
+        rssi: Option<i16>,
+        snr: Option<f32>,
+    },
+    /// (Internal) An announce was verified off-thread and is ready for driver-side processing.
+    AnnounceVerified {
+        key: AnnounceVerifyKey,
+        validated: ValidatedAnnounce,
+        sig_cache_key: [u8; 32],
+    },
+    /// (Internal) An announce failed off-thread verification.
+    AnnounceVerifyFailed {
+        key: AnnounceVerifyKey,
+        sig_cache_key: [u8; 32],
+    },
+    /// An interface came online after (re)connecting.
+    /// Carries a new writer if the connection was re-established.
+    /// Carries InterfaceInfo if this is a new dynamic interface (e.g. TCP server client).
+    InterfaceUp(InterfaceId, Option<W>, Option<InterfaceInfo>),
+    /// An interface went offline (socket closed, error).
+    InterfaceDown(InterfaceId),
+    /// Periodic maintenance tick (1s interval).
+    Tick,
+    /// Enter drain mode and stop admitting new work.
+    BeginDrain { timeout: Duration },
+    /// Shut down the driver loop.
+    Shutdown,
+    /// Send an outbound packet.
+    SendOutbound {
+        raw: Vec<u8>,
+        dest_type: u8,
+        attached_interface: Option<InterfaceId>,
+    },
+    /// Register a local destination.
+    RegisterDestination { dest_hash: [u8; 16], dest_type: u8 },
+    /// Remember the latest explicit SINGLE announce for shared-client replay.
+    StoreSharedAnnounce {
+        dest_hash: [u8; 16],
+        name_hash: [u8; 10],
+        identity_prv_key: [u8; 64],
+        app_data: Option<Vec<u8>>,
+    },
+    /// Deregister a local destination.
+    DeregisterDestination { dest_hash: [u8; 16] },
+    /// Deregister a link destination (stop accepting incoming links).
+    DeregisterLinkDestination { dest_hash: [u8; 16] },
+    /// Query driver state. Response is sent via the provided channel.
+    Query(QueryRequest, mpsc::Sender<QueryResponse>),
+    /// Register a link destination (accepts incoming LINKREQUEST).
+    RegisterLinkDestination {
+        dest_hash: [u8; 16],
+        sig_prv_bytes: [u8; 32],
+        sig_pub_bytes: [u8; 32],
+        resource_strategy: u8,
+    },
+    /// Register a request handler for a path on established links.
+    RegisterRequestHandler {
+        path: String,
+        allowed_list: Option<Vec<[u8; 16]>>,
+        handler: Box<
+            dyn Fn([u8; 16], &str, &[u8], Option<&([u8; 16], [u8; 64])>) -> Option<Vec<u8>> + Send,
+        >,
+    },
+    /// Register a request handler that may return resource responses with metadata.
+    RegisterRequestHandlerResponse {
+        path: String,
+        allowed_list: Option<Vec<[u8; 16]>>,
+        handler: Box<
+            dyn Fn([u8; 16], &str, &[u8], Option<&([u8; 16], [u8; 64])>) -> Option<RequestResponse>
+                + Send,
+        >,
+    },
+    /// Create an outbound link. Response sends (link_id) back.
+    CreateLink {
+        dest_hash: [u8; 16],
+        dest_sig_pub_bytes: [u8; 32],
+        response_tx: mpsc::Sender<[u8; 16]>,
+    },
+    /// Send a request on an established link.
+    SendRequest {
+        link_id: [u8; 16],
+        path: String,
+        data: Vec<u8>,
+    },
+    /// Identify on a link (send identity to remote peer).
+    IdentifyOnLink {
+        link_id: [u8; 16],
+        identity_prv_key: [u8; 64],
+    },
+    /// Tear down a link.
+    TeardownLink { link_id: [u8; 16] },
+    /// Send a resource on a link.
+    SendResource {
+        link_id: [u8; 16],
+        data: Vec<u8>,
+        metadata: Option<Vec<u8>>,
+        auto_compress: bool,
+    },
+    /// Set the resource acceptance strategy for a link.
+    SetResourceStrategy { link_id: [u8; 16], strategy: u8 },
+    /// Accept or reject a pending resource (for AcceptApp strategy).
+    AcceptResource {
+        link_id: [u8; 16],
+        resource_hash: Vec<u8>,
+        accept: bool,
+    },
+    /// Send a channel message on a link.
+    SendChannelMessage {
+        link_id: [u8; 16],
+        msgtype: u16,
+        payload: Vec<u8>,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// Send generic data on a link with a given context.
+    SendOnLink {
+        link_id: [u8; 16],
+        data: Vec<u8>,
+        context: u8,
+    },
+    /// Request a path to a destination from the network.
+    RequestPath { dest_hash: [u8; 16] },
+    /// Register a proof strategy for a destination.
+    RegisterProofStrategy {
+        dest_hash: [u8; 16],
+        strategy: rns_core::types::ProofStrategy,
+        /// Full identity private key (64 bytes) for signing proofs.
+        signing_key: Option<[u8; 64]>,
+    },
+    /// Propose a direct connection to a peer via hole punching.
+    ProposeDirectConnect { link_id: [u8; 16] },
+    /// Set the direct-connect policy.
+    SetDirectConnectPolicy { policy: HolePunchPolicy },
+    /// (Internal) Probe result arrived from a worker thread.
+    HolePunchProbeResult {
+        link_id: [u8; 16],
+        session_id: [u8; 16],
+        observed_addr: std::net::SocketAddr,
+        socket: std::net::UdpSocket,
+        /// The probe server that responded successfully.
+        probe_server: std::net::SocketAddr,
+    },
+    /// (Internal) Probe failed.
+    HolePunchProbeFailed {
+        link_id: [u8; 16],
+        session_id: [u8; 16],
+    },
+    /// An interface's configuration changed (placeholder for future use).
+    InterfaceConfigChanged(InterfaceId),
+    /// A backbone server accepted a new inbound peer connection.
+    BackbonePeerConnected {
+        server_interface_id: InterfaceId,
+        peer_interface_id: InterfaceId,
+        peer_ip: IpAddr,
+        peer_port: u16,
+    },
+    /// A backbone peer connection closed for any reason.
+    BackbonePeerDisconnected {
+        server_interface_id: InterfaceId,
+        peer_interface_id: InterfaceId,
+        peer_ip: IpAddr,
+        peer_port: u16,
+        connected_for: Duration,
+        had_received_data: bool,
+    },
+    /// A backbone peer was disconnected for idling without sending data.
+    BackbonePeerIdleTimeout {
+        server_interface_id: InterfaceId,
+        peer_interface_id: InterfaceId,
+        peer_ip: IpAddr,
+        peer_port: u16,
+        connected_for: Duration,
+    },
+    /// A backbone peer was disconnected because its writer stalled.
+    BackbonePeerWriteStall {
+        server_interface_id: InterfaceId,
+        peer_interface_id: InterfaceId,
+        peer_ip: IpAddr,
+        peer_port: u16,
+        connected_for: Duration,
+    },
+    /// A backbone peer IP was penalized due to abusive behavior.
+    BackbonePeerPenalty {
+        server_interface_id: InterfaceId,
+        peer_ip: IpAddr,
+        penalty_level: u8,
+        blacklist_for: Duration,
+    },
+    /// Load an in-memory WASM hook at runtime.
+    LoadHook {
+        name: String,
+        wasm_bytes: Vec<u8>,
+        attach_point: String,
+        priority: i32,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// Load a hook from a server-local filesystem path at runtime.
+    LoadHookFile {
+        name: String,
+        path: String,
+        hook_type: String,
+        attach_point: String,
+        priority: i32,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// Load a registered built-in hook by ID at runtime.
+    LoadBuiltinHook {
+        name: String,
+        builtin_id: String,
+        attach_point: String,
+        priority: i32,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// Unload a hook at runtime.
+    UnloadHook {
+        name: String,
+        attach_point: String,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// Reload an in-memory WASM hook at runtime (detach + recompile + reattach with same priority).
+    ReloadHook {
+        name: String,
+        attach_point: String,
+        wasm_bytes: Vec<u8>,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// Reload a hook from a server-local filesystem path at runtime.
+    ReloadHookFile {
+        name: String,
+        attach_point: String,
+        path: String,
+        hook_type: String,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// Reload a registered built-in hook by ID at runtime.
+    ReloadBuiltinHook {
+        name: String,
+        attach_point: String,
+        builtin_id: String,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// Enable or disable a loaded hook at runtime.
+    SetHookEnabled {
+        name: String,
+        attach_point: String,
+        enabled: bool,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// Update the priority of a loaded hook at runtime.
+    SetHookPriority {
+        name: String,
+        attach_point: String,
+        priority: i32,
+        response_tx: mpsc::Sender<Result<(), String>>,
+    },
+    /// List all loaded hooks.
+    ListHooks {
+        response_tx: mpsc::Sender<Vec<HookInfo>>,
+    },
+}
+
+/// Information about a loaded hook program.
+#[derive(Debug, Clone)]
+pub struct HookInfo {
+    pub name: String,
+    pub hook_type: String,
+    pub attach_point: String,
+    pub priority: i32,
+    pub enabled: bool,
+    pub consecutive_traps: u32,
+}
+
+/// Live behavioral state for a backbone peer IP.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BackbonePeerStateEntry {
+    pub interface_name: String,
+    pub peer_ip: IpAddr,
+    pub connected_count: usize,
+    pub blacklisted_remaining_secs: Option<f64>,
+    pub blacklist_reason: Option<String>,
+    pub reject_count: u64,
+}
+
+/// Hook-visible snapshot of a backbone peer lifecycle event.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BackbonePeerHookEvent {
+    pub server_interface_id: InterfaceId,
+    pub peer_interface_id: Option<InterfaceId>,
+    pub peer_ip: IpAddr,
+    pub peer_port: u16,
+    pub connected_for: Duration,
+    pub had_received_data: bool,
+    pub penalty_level: u8,
+    pub blacklist_for: Duration,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BackboneInterfaceEntry {
+    pub interface_id: InterfaceId,
+    pub interface_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct KnownDestinationEntry {
+    pub dest_hash: [u8; 16],
+    pub identity_hash: [u8; 16],
+    pub public_key: [u8; 64],
+    pub app_data: Option<Vec<u8>>,
+    pub hops: u8,
+    pub received_at: f64,
+    pub receiving_interface: InterfaceId,
+    pub was_used: bool,
+    pub last_used_at: Option<f64>,
+    pub retained: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProviderBridgeConsumerStats {
+    pub id: u64,
+    pub connected: bool,
+    pub queue_len: usize,
+    pub queued_bytes: usize,
+    pub dropped_pending: u64,
+    pub dropped_total: u64,
+    pub queue_max_events: usize,
+    pub queue_max_bytes: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProviderBridgeStats {
+    pub connected: bool,
+    pub consumer_count: usize,
+    pub queue_max_events: usize,
+    pub queue_max_bytes: usize,
+    pub backlog_len: usize,
+    pub backlog_bytes: usize,
+    pub backlog_dropped_pending: u64,
+    pub backlog_dropped_total: u64,
+    pub total_disconnect_count: u64,
+    pub consumers: Vec<ProviderBridgeConsumerStats>,
+}
+
+/// Queries that can be sent to the driver.
+#[derive(Debug)]
+pub enum QueryRequest {
+    /// Get interface statistics and transport info.
+    InterfaceStats,
+    /// Get path table entries, optionally filtered by max hops.
+    PathTable { max_hops: Option<u8> },
+    /// Get rate table entries.
+    RateTable,
+    /// Look up the next hop for a destination.
+    NextHop { dest_hash: [u8; 16] },
+    /// Look up the next hop interface name for a destination.
+    NextHopIfName { dest_hash: [u8; 16] },
+    /// Get link table entry count.
+    LinkCount,
+    /// Drop a specific path.
+    DropPath { dest_hash: [u8; 16] },
+    /// Drop all paths that route via a given transport hash.
+    DropAllVia { transport_hash: [u8; 16] },
+    /// Drop all announce queues.
+    DropAnnounceQueues,
+    /// Get the transport identity hash.
+    TransportIdentity,
+    /// Get all blackholed identities.
+    GetBlackholed,
+    /// Add an identity to the blackhole list.
+    BlackholeIdentity {
+        identity_hash: [u8; 16],
+        duration_hours: Option<f64>,
+        reason: Option<String>,
+    },
+    /// Remove an identity from the blackhole list.
+    UnblackholeIdentity { identity_hash: [u8; 16] },
+    /// Check if a path exists to a destination.
+    HasPath { dest_hash: [u8; 16] },
+    /// Get hop count to a destination.
+    HopsTo { dest_hash: [u8; 16] },
+    /// Recall identity info for a destination.
+    RecallIdentity { dest_hash: [u8; 16] },
+    /// List known-destination lifecycle state.
+    KnownDestinations,
+    /// Get locally registered destinations.
+    LocalDestinations,
+    /// Get active links.
+    Links,
+    /// Get active resource transfers.
+    Resources,
+    /// Inject a path entry into the path table.
+    InjectPath {
+        dest_hash: [u8; 16],
+        next_hop: [u8; 16],
+        hops: u8,
+        expires: f64,
+        interface_name: String,
+        packet_hash: [u8; 32],
+    },
+    /// Inject an identity into the known destinations cache.
+    InjectIdentity {
+        dest_hash: [u8; 16],
+        identity_hash: [u8; 16],
+        public_key: [u8; 64],
+        app_data: Option<Vec<u8>>,
+        hops: u8,
+        received_at: f64,
+    },
+    /// Restore a known destination with full lifecycle state.
+    RestoreKnownDestination(KnownDestinationEntry),
+    /// Mark a known destination as explicitly retained.
+    RetainKnownDestination { dest_hash: [u8; 16] },
+    /// Mark all known destinations announced by an identity as retained.
+    RetainIdentity { identity_hash: [u8; 16] },
+    /// Clear the retained flag on a known destination.
+    UnretainKnownDestination { dest_hash: [u8; 16] },
+    /// Mark a known destination as used.
+    MarkKnownDestinationUsed { dest_hash: [u8; 16] },
+    /// Get discovered interfaces.
+    DiscoveredInterfaces {
+        only_available: bool,
+        only_transport: bool,
+    },
+    /// Send a probe packet to a destination and return (packet_hash, hops).
+    SendProbe {
+        dest_hash: [u8; 16],
+        payload_size: usize,
+    },
+    /// Check if a proof was received for a probe packet.
+    CheckProof { packet_hash: [u8; 32] },
+    /// List runtime-config entries currently supported by the daemon.
+    ListRuntimeConfig,
+    /// Get a single runtime-config entry by key.
+    GetRuntimeConfig { key: String },
+    /// Set a runtime-config value by key.
+    SetRuntimeConfig {
+        key: String,
+        value: RuntimeConfigValue,
+    },
+    /// Reset a runtime-config value to its startup/default value.
+    ResetRuntimeConfig { key: String },
+    /// List live backbone peer state, optionally filtered to one interface.
+    BackbonePeerState { interface_name: Option<String> },
+    /// List registered backbone server interfaces.
+    BackboneInterfaces,
+    /// Report live provider-bridge queue/drop state.
+    ProviderBridgeStats,
+    /// Report current lifecycle/drain status.
+    DrainStatus,
+    /// Clear live backbone peer state for one interface/IP pair.
+    ClearBackbonePeerState {
+        interface_name: String,
+        peer_ip: IpAddr,
+    },
+    /// Blacklist a backbone peer IP for a duration.
+    BlacklistBackbonePeer {
+        interface_name: String,
+        peer_ip: IpAddr,
+        duration: Duration,
+        reason: String,
+        penalty_level: u8,
+    },
+}
+
+/// Responses to queries.
+#[derive(Debug)]
+pub enum QueryResponse {
+    InterfaceStats(InterfaceStatsResponse),
+    PathTable(Vec<PathTableEntry>),
+    RateTable(Vec<RateTableEntry>),
+    NextHop(Option<NextHopResponse>),
+    NextHopIfName(Option<String>),
+    LinkCount(usize),
+    DropPath(bool),
+    DropAllVia(usize),
+    DropAnnounceQueues,
+    TransportIdentity(Option<[u8; 16]>),
+    Blackholed(Vec<BlackholeInfo>),
+    BlackholeResult(bool),
+    UnblackholeResult(bool),
+    HasPath(bool),
+    HopsTo(Option<u8>),
+    RecallIdentity(Option<crate::common::destination::AnnouncedIdentity>),
+    KnownDestinations(Vec<KnownDestinationEntry>),
+    LocalDestinations(Vec<LocalDestinationEntry>),
+    Links(Vec<LinkInfoEntry>),
+    Resources(Vec<ResourceInfoEntry>),
+    InjectPath(bool),
+    InjectIdentity(bool),
+    RestoreKnownDestination(bool),
+    RetainKnownDestination(bool),
+    RetainIdentity(bool),
+    UnretainKnownDestination(bool),
+    MarkKnownDestinationUsed(bool),
+    /// List of discovered interfaces.
+    DiscoveredInterfaces(Vec<crate::common::discovery::DiscoveredInterface>),
+    /// Probe sent: (packet_hash, hops) or None if identity unknown.
+    SendProbe(Option<([u8; 32], u8)>),
+    /// Proof check: RTT if received, None if still pending.
+    CheckProof(Option<f64>),
+    /// Runtime-config entries currently supported by the daemon.
+    RuntimeConfigList(Vec<RuntimeConfigEntry>),
+    /// A specific runtime-config entry, or None if the key is unknown.
+    RuntimeConfigEntry(Option<RuntimeConfigEntry>),
+    /// Result of setting a runtime-config value.
+    RuntimeConfigSet(Result<RuntimeConfigEntry, RuntimeConfigError>),
+    /// Result of resetting a runtime-config value.
+    RuntimeConfigReset(Result<RuntimeConfigEntry, RuntimeConfigError>),
+    /// Live backbone peer state entries.
+    BackbonePeerState(Vec<BackbonePeerStateEntry>),
+    /// Registered backbone server interfaces.
+    BackboneInterfaces(Vec<BackboneInterfaceEntry>),
+    /// Live provider-bridge queue/drop state if enabled.
+    ProviderBridgeStats(Option<ProviderBridgeStats>),
+    /// Current lifecycle/drain status.
+    DrainStatus(DrainStatus),
+    /// Result of clearing one backbone peer state entry.
+    ClearBackbonePeerState(bool),
+    /// Result of blacklisting a backbone peer.
+    BlacklistBackbonePeer(bool),
+}
+
+/// Interface statistics response.
+#[derive(Debug, Clone)]
+pub struct InterfaceStatsResponse {
+    pub interfaces: Vec<SingleInterfaceStat>,
+    pub transport_id: Option<[u8; 16]>,
+    pub transport_enabled: bool,
+    pub transport_uptime: f64,
+    /// Total received bytes across all interfaces.
+    pub total_rxb: u64,
+    /// Total transmitted bytes across all interfaces.
+    pub total_txb: u64,
+    /// Probe responder destination hash (if enabled).
+    pub probe_responder: Option<[u8; 16]>,
+    /// Outbound Backbone peer-pool state, if enabled.
+    pub backbone_peer_pool: Option<BackbonePeerPoolStatus>,
+}
+
+/// Runtime status for the outbound Backbone peer pool.
+#[derive(Debug, Clone)]
+pub struct BackbonePeerPoolStatus {
+    pub max_connected: usize,
+    pub active_count: usize,
+    pub standby_count: usize,
+    pub cooldown_count: usize,
+    pub members: Vec<BackbonePeerPoolMemberStatus>,
+}
+
+/// Runtime status for one outbound Backbone peer-pool member.
+#[derive(Debug, Clone)]
+pub struct BackbonePeerPoolMemberStatus {
+    pub name: String,
+    pub remote: String,
+    pub source: String,
+    pub priority: u8,
+    pub state: String,
+    pub interface_id: Option<u64>,
+    pub failure_count: usize,
+    pub last_error: Option<String>,
+    pub cooldown_remaining_seconds: Option<f64>,
+}
+
+/// Statistics for a single interface.
+#[derive(Debug, Clone)]
+pub struct SingleInterfaceStat {
+    pub id: u64,
+    pub name: String,
+    pub status: bool,
+    pub mode: u8,
+    pub rxb: u64,
+    pub txb: u64,
+    pub rx_packets: u64,
+    pub tx_packets: u64,
+    pub bitrate: Option<u64>,
+    pub ifac_size: Option<usize>,
+    pub started: f64,
+    /// Incoming announce frequency (per second).
+    pub ia_freq: f64,
+    /// Outgoing announce frequency (per second).
+    pub oa_freq: f64,
+    /// Incoming path request frequency (per second).
+    pub ip_freq: f64,
+    /// Outgoing path request frequency (per second).
+    pub op_freq: f64,
+    /// Outgoing path request samples currently retained.
+    pub op_samples: usize,
+    /// Whether announce ingress-control burst limiting is currently active.
+    pub burst_active: bool,
+    /// Timestamp when announce ingress-control burst limiting activated.
+    pub burst_activated: f64,
+    /// Whether path-request ingress-control burst limiting is currently active.
+    pub pr_burst_active: bool,
+    /// Timestamp when path-request burst limiting activated.
+    pub pr_burst_activated: f64,
+    /// Connected client count for aggregate server interfaces, if reported.
+    pub clients: Option<u64>,
+    /// Target interval for outgoing announce rate control, in seconds.
+    pub announce_rate_target: Option<f64>,
+    /// Announce-rate control grace count.
+    pub announce_rate_grace: u32,
+    /// Announce-rate control penalty, in seconds.
+    pub announce_rate_penalty: f64,
+    /// Human-readable interface type string (e.g. "TCPClientInterface").
+    pub interface_type: String,
+}
+
+/// A locally registered destination.
+#[derive(Debug, Clone)]
+pub struct LocalDestinationEntry {
+    pub hash: [u8; 16],
+    pub dest_type: u8,
+}
+
+/// Information about an active link.
+#[derive(Debug, Clone)]
+pub struct LinkInfoEntry {
+    pub link_id: [u8; 16],
+    pub state: String,
+    pub is_initiator: bool,
+    pub dest_hash: [u8; 16],
+    pub remote_identity: Option<[u8; 16]>,
+    pub rtt: Option<f64>,
+    pub channel_window: Option<u16>,
+    pub channel_outstanding: Option<usize>,
+    pub pending_channel_packets: usize,
+    pub channel_send_ok: u64,
+    pub channel_send_not_ready: u64,
+    pub channel_send_too_big: u64,
+    pub channel_send_other_error: u64,
+    pub channel_messages_received: u64,
+    pub channel_proofs_sent: u64,
+    pub channel_proofs_received: u64,
+}
+
+/// Information about an active resource transfer.
+#[derive(Debug, Clone)]
+pub struct ResourceInfoEntry {
+    pub link_id: [u8; 16],
+    pub direction: String,
+    pub total_parts: usize,
+    pub transferred_parts: usize,
+    pub complete: bool,
+}
+
+/// A single path table entry for query responses.
+#[derive(Debug, Clone)]
+pub struct PathTableEntry {
+    pub hash: [u8; 16],
+    pub timestamp: f64,
+    pub via: [u8; 16],
+    pub hops: u8,
+    pub expires: f64,
+    pub interface: InterfaceId,
+    pub interface_name: String,
+}
+
+/// A single rate table entry for query responses.
+#[derive(Debug, Clone)]
+pub struct RateTableEntry {
+    pub hash: [u8; 16],
+    pub last: f64,
+    pub rate_violations: u32,
+    pub blocked_until: f64,
+    pub timestamps: Vec<f64>,
+}
+
+/// A blackholed identity for query responses.
+#[derive(Debug, Clone)]
+pub struct BlackholeInfo {
+    pub identity_hash: [u8; 16],
+    pub created: f64,
+    pub expires: f64,
+    pub reason: Option<String>,
+}
+
+/// Next hop lookup result.
+#[derive(Debug, Clone)]
+pub struct NextHopResponse {
+    pub next_hop: [u8; 16],
+    pub hops: u8,
+    pub interface: InterfaceId,
+}
+
+impl<W: Send> fmt::Debug for Event<W> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Event::Frame {
+                interface_id,
+                data,
+                rssi,
+                snr,
+            } => f
+                .debug_struct("Frame")
+                .field("interface_id", interface_id)
+                .field("data_len", &data.len())
+                .field("rssi", rssi)
+                .field("snr", snr)
+                .finish(),
+            Event::AnnounceVerified { key, .. } => f
+                .debug_struct("AnnounceVerified")
+                .field("destination_hash", &key.destination_hash)
+                .field("received_from", &key.received_from)
+                .finish(),
+            Event::AnnounceVerifyFailed { key, .. } => f
+                .debug_struct("AnnounceVerifyFailed")
+                .field("destination_hash", &key.destination_hash)
+                .field("received_from", &key.received_from)
+                .finish(),
+            Event::InterfaceUp(id, writer, info) => f
+                .debug_tuple("InterfaceUp")
+                .field(id)
+                .field(&writer.is_some())
+                .field(&info.is_some())
+                .finish(),
+            Event::InterfaceDown(id) => f.debug_tuple("InterfaceDown").field(id).finish(),
+            Event::Tick => write!(f, "Tick"),
+            Event::BeginDrain { timeout } => f
+                .debug_struct("BeginDrain")
+                .field("timeout", timeout)
+                .finish(),
+            Event::Shutdown => write!(f, "Shutdown"),
+            Event::SendOutbound { raw, dest_type, .. } => f
+                .debug_struct("SendOutbound")
+                .field("raw_len", &raw.len())
+                .field("dest_type", dest_type)
+                .finish(),
+            Event::RegisterDestination {
+                dest_hash,
+                dest_type,
+            } => f
+                .debug_struct("RegisterDestination")
+                .field("dest_hash", dest_hash)
+                .field("dest_type", dest_type)
+                .finish(),
+            Event::StoreSharedAnnounce {
+                dest_hash,
+                name_hash,
+                app_data,
+                ..
+            } => f
+                .debug_struct("StoreSharedAnnounce")
+                .field("dest_hash", dest_hash)
+                .field("name_hash", name_hash)
+                .field("app_data_len", &app_data.as_ref().map(|d| d.len()))
+                .finish(),
+            Event::DeregisterDestination { dest_hash } => f
+                .debug_struct("DeregisterDestination")
+                .field("dest_hash", dest_hash)
+                .finish(),
+            Event::DeregisterLinkDestination { dest_hash } => f
+                .debug_struct("DeregisterLinkDestination")
+                .field("dest_hash", dest_hash)
+                .finish(),
+            Event::Query(req, _) => f.debug_tuple("Query").field(req).finish(),
+            Event::RegisterLinkDestination { dest_hash, .. } => f
+                .debug_struct("RegisterLinkDestination")
+                .field("dest_hash", dest_hash)
+                .finish(),
+            Event::RegisterRequestHandler { path, .. } => f
+                .debug_struct("RegisterRequestHandler")
+                .field("path", path)
+                .finish(),
+            Event::RegisterRequestHandlerResponse { path, .. } => f
+                .debug_struct("RegisterRequestHandlerResponse")
+                .field("path", path)
+                .finish(),
+            Event::CreateLink { dest_hash, .. } => f
+                .debug_struct("CreateLink")
+                .field("dest_hash", dest_hash)
+                .finish(),
+            Event::SendRequest { link_id, path, .. } => f
+                .debug_struct("SendRequest")
+                .field("link_id", link_id)
+                .field("path", path)
+                .finish(),
+            Event::IdentifyOnLink { link_id, .. } => f
+                .debug_struct("IdentifyOnLink")
+                .field("link_id", link_id)
+                .finish(),
+            Event::TeardownLink { link_id } => f
+                .debug_struct("TeardownLink")
+                .field("link_id", link_id)
+                .finish(),
+            Event::SendResource { link_id, data, .. } => f
+                .debug_struct("SendResource")
+                .field("link_id", link_id)
+                .field("data_len", &data.len())
+                .finish(),
+            Event::SetResourceStrategy { link_id, strategy } => f
+                .debug_struct("SetResourceStrategy")
+                .field("link_id", link_id)
+                .field("strategy", strategy)
+                .finish(),
+            Event::AcceptResource {
+                link_id, accept, ..
+            } => f
+                .debug_struct("AcceptResource")
+                .field("link_id", link_id)
+                .field("accept", accept)
+                .finish(),
+            Event::SendChannelMessage {
+                link_id,
+                msgtype,
+                payload,
+                ..
+            } => f
+                .debug_struct("SendChannelMessage")
+                .field("link_id", link_id)
+                .field("msgtype", msgtype)
+                .field("payload_len", &payload.len())
+                .finish(),
+            Event::SendOnLink {
+                link_id,
+                data,
+                context,
+            } => f
+                .debug_struct("SendOnLink")
+                .field("link_id", link_id)
+                .field("data_len", &data.len())
+                .field("context", context)
+                .finish(),
+            Event::RequestPath { dest_hash } => f
+                .debug_struct("RequestPath")
+                .field("dest_hash", dest_hash)
+                .finish(),
+            Event::RegisterProofStrategy {
+                dest_hash,
+                strategy,
+                ..
+            } => f
+                .debug_struct("RegisterProofStrategy")
+                .field("dest_hash", dest_hash)
+                .field("strategy", strategy)
+                .finish(),
+            Event::ProposeDirectConnect { link_id } => f
+                .debug_struct("ProposeDirectConnect")
+                .field("link_id", link_id)
+                .finish(),
+            Event::SetDirectConnectPolicy { .. } => {
+                write!(f, "SetDirectConnectPolicy")
+            }
+            Event::HolePunchProbeResult {
+                link_id,
+                session_id,
+                observed_addr,
+                probe_server,
+                ..
+            } => f
+                .debug_struct("HolePunchProbeResult")
+                .field("link_id", link_id)
+                .field("session_id", session_id)
+                .field("observed_addr", observed_addr)
+                .field("probe_server", probe_server)
+                .finish(),
+            Event::HolePunchProbeFailed {
+                link_id,
+                session_id,
+            } => f
+                .debug_struct("HolePunchProbeFailed")
+                .field("link_id", link_id)
+                .field("session_id", session_id)
+                .finish(),
+            Event::InterfaceConfigChanged(id) => {
+                f.debug_tuple("InterfaceConfigChanged").field(id).finish()
+            }
+            Event::BackbonePeerConnected {
+                server_interface_id,
+                peer_interface_id,
+                peer_ip,
+                peer_port,
+            } => f
+                .debug_struct("BackbonePeerConnected")
+                .field("server_interface_id", server_interface_id)
+                .field("peer_interface_id", peer_interface_id)
+                .field("peer_ip", peer_ip)
+                .field("peer_port", peer_port)
+                .finish(),
+            Event::BackbonePeerDisconnected {
+                server_interface_id,
+                peer_interface_id,
+                peer_ip,
+                peer_port,
+                connected_for,
+                had_received_data,
+            } => f
+                .debug_struct("BackbonePeerDisconnected")
+                .field("server_interface_id", server_interface_id)
+                .field("peer_interface_id", peer_interface_id)
+                .field("peer_ip", peer_ip)
+                .field("peer_port", peer_port)
+                .field("connected_for", connected_for)
+                .field("had_received_data", had_received_data)
+                .finish(),
+            Event::BackbonePeerIdleTimeout {
+                server_interface_id,
+                peer_interface_id,
+                peer_ip,
+                peer_port,
+                connected_for,
+            } => f
+                .debug_struct("BackbonePeerIdleTimeout")
+                .field("server_interface_id", server_interface_id)
+                .field("peer_interface_id", peer_interface_id)
+                .field("peer_ip", peer_ip)
+                .field("peer_port", peer_port)
+                .field("connected_for", connected_for)
+                .finish(),
+            Event::BackbonePeerWriteStall {
+                server_interface_id,
+                peer_interface_id,
+                peer_ip,
+                peer_port,
+                connected_for,
+            } => f
+                .debug_struct("BackbonePeerWriteStall")
+                .field("server_interface_id", server_interface_id)
+                .field("peer_interface_id", peer_interface_id)
+                .field("peer_ip", peer_ip)
+                .field("peer_port", peer_port)
+                .field("connected_for", connected_for)
+                .finish(),
+            Event::BackbonePeerPenalty {
+                server_interface_id,
+                peer_ip,
+                penalty_level,
+                blacklist_for,
+            } => f
+                .debug_struct("BackbonePeerPenalty")
+                .field("server_interface_id", server_interface_id)
+                .field("peer_ip", peer_ip)
+                .field("penalty_level", penalty_level)
+                .field("blacklist_for", blacklist_for)
+                .finish(),
+            Event::LoadHook {
+                name,
+                attach_point,
+                priority,
+                ..
+            } => f
+                .debug_struct("LoadHook")
+                .field("name", name)
+                .field("attach_point", attach_point)
+                .field("priority", priority)
+                .finish(),
+            Event::LoadHookFile {
+                name,
+                path,
+                hook_type,
+                attach_point,
+                priority,
+                ..
+            } => f
+                .debug_struct("LoadHookFile")
+                .field("name", name)
+                .field("path", path)
+                .field("hook_type", hook_type)
+                .field("attach_point", attach_point)
+                .field("priority", priority)
+                .finish(),
+            Event::LoadBuiltinHook {
+                name,
+                builtin_id,
+                attach_point,
+                priority,
+                ..
+            } => f
+                .debug_struct("LoadBuiltinHook")
+                .field("name", name)
+                .field("builtin_id", builtin_id)
+                .field("attach_point", attach_point)
+                .field("priority", priority)
+                .finish(),
+            Event::UnloadHook {
+                name, attach_point, ..
+            } => f
+                .debug_struct("UnloadHook")
+                .field("name", name)
+                .field("attach_point", attach_point)
+                .finish(),
+            Event::ReloadHook {
+                name, attach_point, ..
+            } => f
+                .debug_struct("ReloadHook")
+                .field("name", name)
+                .field("attach_point", attach_point)
+                .finish(),
+            Event::ReloadHookFile {
+                name,
+                attach_point,
+                path,
+                hook_type,
+                ..
+            } => f
+                .debug_struct("ReloadHookFile")
+                .field("name", name)
+                .field("attach_point", attach_point)
+                .field("path", path)
+                .field("hook_type", hook_type)
+                .finish(),
+            Event::ReloadBuiltinHook {
+                name,
+                attach_point,
+                builtin_id,
+                ..
+            } => f
+                .debug_struct("ReloadBuiltinHook")
+                .field("name", name)
+                .field("attach_point", attach_point)
+                .field("builtin_id", builtin_id)
+                .finish(),
+            Event::SetHookEnabled {
+                name,
+                attach_point,
+                enabled,
+                ..
+            } => f
+                .debug_struct("SetHookEnabled")
+                .field("name", name)
+                .field("attach_point", attach_point)
+                .field("enabled", enabled)
+                .finish(),
+            Event::SetHookPriority {
+                name,
+                attach_point,
+                priority,
+                ..
+            } => f
+                .debug_struct("SetHookPriority")
+                .field("name", name)
+                .field("attach_point", attach_point)
+                .field("priority", priority)
+                .finish(),
+            Event::ListHooks { .. } => write!(f, "ListHooks"),
+        }
+    }
+}

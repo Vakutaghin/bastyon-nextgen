@@ -16,6 +16,7 @@ const h = vi.hoisted(() => {
     page: vi.fn(async (_o: unknown): Promise<{ content: string; binary: boolean }> => {
       throw Object.assign(new Error('rns_timeout: no answer'), { code: 'rns_timeout' })
     }),
+    download: vi.fn(async (_o: unknown) => ({ kind: 'saved', name: 'map.png', size: 3 })),
     addListener: vi.fn(async (_e: string, cb: (ev: unknown) => void) => {
       listeners.push(cb)
       return {
@@ -34,7 +35,7 @@ vi.mock('@capacitor/core', () => ({
 }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
-import { page, send, start, stop } from './capacitor-rns'
+import { download, page, send, start, stop } from './capacitor-rns'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -91,5 +92,14 @@ describe('capacitor-rns', () => {
     await expect(page('dd'.repeat(16), '/page/index.mu', {})).rejects.toMatchObject({
       code: 'rns_timeout',
     })
+  })
+
+  it('downloads a NomadNet file through the plugin', async () => {
+    expect(await download('dd'.repeat(16), '/file/map.png')).toEqual({
+      kind: 'saved',
+      name: 'map.png',
+      size: 3,
+    })
+    expect(h.plugin.download).toHaveBeenCalledWith({ node: 'dd'.repeat(16), path: '/file/map.png' })
   })
 })

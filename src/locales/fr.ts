@@ -1885,8 +1885,12 @@ export default {
         reload: 'Recharger',
         close: 'Fermer',
         loading: 'Chargement de la page…',
-        binary: "C'est un fichier, pas une page : impossible de l'afficher ici.",
+        binary:
+          "C'est un fichier, pas une page : impossible de l'afficher ici, mais vous pouvez le télécharger.",
         pageEmpty: 'La page est vide.',
+        download: 'Télécharger',
+        downloading: 'Téléchargement de {name}…',
+        saved: 'Fichier enregistré : {name}',
       },
       paper: {
         title: 'Message papier',

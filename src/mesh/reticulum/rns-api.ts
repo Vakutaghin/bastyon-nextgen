@@ -102,6 +102,15 @@ export type RnsEvent =
       state: 'idle' | 'requesting' | 'receiving' | 'done' | 'failed'
       received: number
     }
+  /** Ход ответа узла NomadNet, который идёт ресурсом: частей из скольких. */
+  | { kind: 'progress'; received: number; total: number }
+
+/** Чем кончилось скачивание файла NomadNet. */
+export type RnsDownload =
+  | { kind: 'saved'; name: string; size: number }
+  | { kind: 'cancelled' }
+  /** Узел ответил страницей (например, отказом). */
+  | { kind: 'page'; content: string; binary: boolean }
 
 function onAndroid(): boolean {
   const cap = (window as Window & { Capacitor?: { getPlatform?: () => string } }).Capacitor
@@ -195,3 +204,10 @@ export const rnsPage = async (
   data: Record<string, string> = {}
 ): Promise<{ content: string; binary: boolean }> =>
   onAndroid() ? (await android()).page(node, path, data) : invoke('rns_page', { node, path, data })
+
+/**
+ * Файл NomadNet (`/file/…`): узел отдаёт его по Link, затем системное окно
+ * «Сохранить как». Ход — событиями `progress`.
+ */
+export const rnsDownload = async (node: string, path: string): Promise<RnsDownload> =>
+  onAndroid() ? (await android()).download(node, path) : invoke('rns_download', { node, path })

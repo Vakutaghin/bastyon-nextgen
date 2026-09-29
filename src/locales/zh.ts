@@ -1797,8 +1797,11 @@ export default {
         reload: '刷新',
         close: '关闭',
         loading: '正在加载页面…',
-        binary: '这是文件，不是页面，无法在此显示。',
+        binary: '这是文件，不是页面，无法在此显示，但可以下载。',
         pageEmpty: '页面为空。',
+        download: '下载',
+        downloading: '正在下载 {name}…',
+        saved: '文件已保存：{name}',
       },
       paper: {
         title: '纸质消息',

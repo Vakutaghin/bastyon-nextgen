@@ -153,6 +153,15 @@ describe('reticulum node', () => {
     }
   })
 
+  it('follows the progress of a NomadNet transfer', async () => {
+    const rns = useReticulumStore()
+    await rns.start()
+    h.rns.onEvent!({ kind: 'progress', received: 3, total: 8 })
+    expect(rns.transfer).toEqual({ received: 3, total: 8 })
+    await rns.reset()
+    expect(rns.transfer).toBeNull()
+  })
+
   it('keeps the settings per account', async () => {
     const rns = useReticulumStore()
     rns.ensureConfig()

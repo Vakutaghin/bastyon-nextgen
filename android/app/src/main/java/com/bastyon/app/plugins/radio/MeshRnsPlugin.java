@@ -1,17 +1,23 @@
 package com.bastyon.app.plugins.radio;
 
+import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.usb.UsbManager;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.webkit.MimeTypeMap;
+
+import androidx.activity.result.ActivityResult;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
@@ -21,6 +27,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -45,6 +55,9 @@ public class MeshRnsPlugin extends Plugin {
     private final ExecutorService pages = Executors.newCachedThreadPool();
     private final List<RnodeUsbBridge> bridges = new ArrayList<>();
     private WifiManager.MulticastLock multicast;
+    /** Скачанный файл NomadNet, пока пользователь выбирает, куда его сохранить. */
+    private File pendingFile;
+    private String pendingName;
 
     private final RnsNative.Events events = json -> {
         try {
@@ -287,5 +300,87 @@ public class MeshRnsPlugin extends Plugin {
                 call.reject("rns_error: " + e.getMessage(), "rns_error");
             }
         });
+    }
+
+    /**
+     * Файл NomadNet: скачать, затем системное окно «Сохранить как» (без
+     * разрешений на память). Узел может ответить страницей — она уходит в JS.
+     */
+    @PluginMethod
+    public void download(PluginCall call) {
+        String node = call.getString("node", "");
+        String path = call.getString("path", "");
+        File dir = new File(getContext().getCacheDir(), "reticulum");
+        pages.execute(() -> {
+            if (!RnsNative.LOADED) {
+                call.reject("unsupported", "unsupported");
+                return;
+            }
+            try {
+                JSObject got = new JSObject(RnsNative.download(node, path, dir.getAbsolutePath()));
+                if (!"file".equals(got.getString("kind"))) {
+                    call.resolve(got);
+                    return;
+                }
+                String name = got.getString("name", "file");
+                String ext = MimeTypeMap.getFileExtensionFromUrl(Uri.encode(name));
+                String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                        .addCategory(Intent.CATEGORY_OPENABLE)
+                        .setType(mime != null ? mime : "application/octet-stream")
+                        .putExtra(Intent.EXTRA_TITLE, name);
+                getActivity().runOnUiThread(() -> {
+                    discardPending();
+                    pendingFile = new File(got.getString("path"));
+                    pendingName = name;
+                    startActivityForResult(call, intent, "downloadPicked");
+                });
+            } catch (RuntimeException e) {
+                reject(call, e);
+            } catch (JSONException e) {
+                call.reject("rns_error: " + e.getMessage(), "rns_error");
+            }
+        });
+    }
+
+    @ActivityCallback
+    private void downloadPicked(PluginCall call, ActivityResult result) {
+        File file = pendingFile;
+        String name = pendingName;
+        pendingFile = null;
+        pendingName = null;
+        if (call == null || file == null) {
+            if (file != null) file.delete();
+            return;
+        }
+        Uri target = result.getData() != null ? result.getData().getData() : null;
+        if (result.getResultCode() != Activity.RESULT_OK || target == null) {
+            file.delete();
+            call.resolve(new JSObject().put("kind", "cancelled"));
+            return;
+        }
+        pages.execute(() -> {
+            try (InputStream in = new FileInputStream(file);
+                 OutputStream out = getContext().getContentResolver().openOutputStream(target)) {
+                if (out == null) throw new IOException("no output stream");
+                byte[] buf = new byte[64 * 1024];
+                long size = 0;
+                for (int n; (n = in.read(buf)) > 0; ) {
+                    out.write(buf, 0, n);
+                    size += n;
+                }
+                call.resolve(new JSObject().put("kind", "saved").put("name", name).put("size", size));
+            } catch (IOException e) {
+                call.reject("rns_error: " + e.getMessage(), "rns_error");
+            } finally {
+                file.delete();
+            }
+        });
+    }
+
+    private void discardPending() {
+        if (pendingFile != null) pendingFile.delete();
+        pendingFile = null;
+        pendingName = null;
     }
 }

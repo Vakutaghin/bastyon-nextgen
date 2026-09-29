@@ -1880,8 +1880,11 @@ export default {
         reload: 'Recargar',
         close: 'Cerrar',
         loading: 'Cargando la página…',
-        binary: 'Es un archivo, no una página: no se puede mostrar aquí.',
+        binary: 'Es un archivo, no una página: no se puede mostrar aquí, pero se puede descargar.',
         pageEmpty: 'La página está vacía.',
+        download: 'Descargar',
+        downloading: 'Descargando {name}…',
+        saved: 'Archivo guardado: {name}',
       },
       paper: {
         title: 'Mensaje en papel',

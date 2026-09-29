@@ -14,6 +14,7 @@ import { t } from '@/i18n'
 import { radioErrorFrom } from '../radio/types'
 import type {
   RnsAttachment,
+  RnsDownload,
   RnsEvent,
   RnsMethod,
   RnsStartOptions,
@@ -45,6 +46,7 @@ interface MeshRnsPlugin {
     path: string
     data: Record<string, string>
   }): Promise<{ content: string; binary: boolean }>
+  download(o: { node: string; path: string }): Promise<RnsDownload>
   addListener(event: 'rns', cb: (ev: RnsEvent) => void): Promise<PluginListenerHandle>
 }
 
@@ -118,3 +120,5 @@ export const sync = (): Promise<void> => call(() => MeshRns.sync())
 
 export const page = (node: string, path: string, data: Record<string, string>) =>
   call(() => MeshRns.page({ node, path, data }))
+
+export const download = (node: string, path: string) => call(() => MeshRns.download({ node, path }))

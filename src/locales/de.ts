@@ -1880,8 +1880,12 @@ export default {
         reload: 'Neu laden',
         close: 'Schließen',
         loading: 'Seite wird geladen…',
-        binary: 'Das ist eine Datei, keine Seite: Sie lässt sich hier nicht anzeigen.',
+        binary:
+          'Das ist eine Datei, keine Seite: Sie lässt sich hier nicht anzeigen, aber herunterladen.',
         pageEmpty: 'Die Seite ist leer.',
+        download: 'Herunterladen',
+        downloading: 'Lade {name} herunter…',
+        saved: 'Datei gespeichert: {name}',
       },
       paper: {
         title: 'Papiernachricht',

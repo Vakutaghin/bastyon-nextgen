@@ -1226,7 +1226,7 @@ async fn pick_files(app: &AppHandle) -> Vec<PathBuf> {
 }
 
 /// Нативный диалог сохранения с предложенным именем. None = отмена.
-async fn save_file(app: &AppHandle, suggested: &str) -> Option<PathBuf> {
+pub(crate) async fn save_file(app: &AppHandle, suggested: &str) -> Option<PathBuf> {
     use tauri_plugin_dialog::DialogExt;
     let dialog = app.dialog().file().set_file_name(suggested);
     let picked = tauri::async_runtime::spawn_blocking(move || dialog.blocking_save_file())
@@ -1238,7 +1238,7 @@ async fn save_file(app: &AppHandle, suggested: &str) -> Option<PathBuf> {
 
 /// Имя для диалога из НЕДОВЕРЕННОЙ строки (фрагмент ссылки): только basename,
 /// без разделителей/управляющих, ограниченной длины; пустое → `<cid16>.bin`.
-fn safe_basename(name: &str, cid: &str) -> String {
+pub(crate) fn safe_basename(name: &str, cid: &str) -> String {
     let base = name.rsplit(['/', '\\']).next().unwrap_or("");
     let cleaned: String = base
         .chars()

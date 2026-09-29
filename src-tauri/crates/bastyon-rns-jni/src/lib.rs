@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
 use bastyon_rns::node::{self, Handle, Runtime};
-use bastyon_rns::types::{parse_hash, Attachment, Method, RnsEvent, StartOptions};
+use bastyon_rns::types::{parse_hash, Attachment, Download, Method, RnsEvent, StartOptions};
 use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
 use jni::sys::jstring;
 use jni::{JNIEnv, JavaVM};
@@ -253,6 +253,45 @@ pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_page<'l>(
         // Не держать узел заблокированным, пока ждём страницу.
         let handle: Handle = with_node(|n| Ok(n.handle()))?;
         json(&handle.page(dest, &path, &data)?)
+    })();
+    respond(&mut env, result)
+}
+
+/// Файл узла NomadNet. Ответ — `{kind: "file", name, path, size}`: байты во
+/// временном файле в `dir`, Java отдаёт его в выбранное пользователем место и
+/// удаляет; или `{kind: "page", content, binary}`, если узел ответил страницей.
+#[no_mangle]
+pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_download<'l>(
+    mut env: JNIEnv<'l>,
+    _class: JClass<'l>,
+    node_hash: JString<'l>,
+    path: JString<'l>,
+    dir: JString<'l>,
+) -> jstring {
+    let result = (|| {
+        let dest = parse_hash::<16>(&text(&mut env, &node_hash)?)?;
+        let path = text(&mut env, &path)?;
+        let dir = PathBuf::from(text(&mut env, &dir)?);
+        let handle: Handle = with_node(|n| Ok(n.handle()))?;
+        match handle.download(dest, &path)? {
+            Download::Page(page) => json(&serde_json::json!({
+                "kind": "page",
+                "content": page.content,
+                "binary": page.binary,
+            })),
+            Download::File { name, data } => {
+                std::fs::create_dir_all(&dir).map_err(|e| format!("rns_error: {e}"))?;
+                // Скачивания идут по одному — временный файл один.
+                let temp = dir.join("nomadnet-download");
+                std::fs::write(&temp, &data).map_err(|e| format!("rns_error: {e}"))?;
+                json(&serde_json::json!({
+                    "kind": "file",
+                    "name": name,
+                    "path": temp.to_string_lossy(),
+                    "size": data.len(),
+                }))
+            }
+        }
     })();
     respond(&mut env, result)
 }

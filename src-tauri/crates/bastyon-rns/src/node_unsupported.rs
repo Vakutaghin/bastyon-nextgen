@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::types::{Attachment, Method, Page, RnsEvent, StartOptions, Started, Status};
+use crate::types::{Attachment, Download, Method, Page, RnsEvent, StartOptions, Started, Status};
 
 const UNSUPPORTED: &str = "unsupported";
 
@@ -79,6 +79,10 @@ impl Runtime {
 
 impl Handle {
     pub fn page(&self, _: [u8; 16], _: &str, _: &HashMap<String, String>) -> Result<Page, String> {
+        Err(UNSUPPORTED.into())
+    }
+
+    pub fn download(&self, _: [u8; 16], _: &str) -> Result<Download, String> {
         Err(UNSUPPORTED.into())
     }
 }

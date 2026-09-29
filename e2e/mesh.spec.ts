@@ -182,6 +182,9 @@ class RnsBridge implements Bridge {
   readonly pageRequests: Array<{ node: string; path: string; data: Record<string, string> }> = []
   /** Открытые бумажные сообщения (ссылки lxm://). */
   readonly ingested: string[] = []
+  /** Запрошенные файлы NomadNet; путь из `refused` узел отдаёт страницей-отказом. */
+  readonly downloads: Array<{ node: string; path: string }> = []
+  readonly refused = new Set<string>()
 
   constructor(private readonly page: Page) {}
 
@@ -235,6 +238,15 @@ class RnsBridge implements Bridge {
         return page
           ? { value: { content: page(request.data), binary: false } }
           : { error: 'rns_timeout' }
+      }
+      case 'rns_download': {
+        const path = args.path as string
+        this.downloads.push({ node: args.node as string, path })
+        if (this.refused.has(path)) {
+          return { value: { kind: 'page', content: '>Нет доступа', binary: false } }
+        }
+        this.emit({ kind: 'progress', received: 1, total: 4 })
+        return { value: { kind: 'saved', name: path.split('/').pop(), size: 1024 } }
       }
       case 'rns_paper':
         return {
@@ -674,7 +686,7 @@ test.describe('reticulum', () => {
     await signIn(page)
     const rns = new RnsBridge(page)
     rns.pages['/page/index.mu'] = () =>
-      '>Доска объявлений\n`!Привет`! из `Ff00NomadNet`f\n-\n`[Правила`:/page/rules.mu]\nИмя: `<name`Гость>\n`[Отправить`:/page/hello.mu`name|lang=ru]'
+      '>Доска объявлений\n`!Привет`! из `Ff00NomadNet`f\n-\n`[Правила`:/page/rules.mu]\nИмя: `<name`Гость>\n`[Отправить`:/page/hello.mu`name|lang=ru]\n`[Карта района`:/file/map.png]\n`[Архив`:/file/secret.zip]'
     rns.pages['/page/rules.mu'] = () => '>>Правила\nБудьте вежливы.'
     rns.pages['/page/hello.mu'] = (data) => `Здравствуйте, ${data.field_name} (${data.var_lang})!`
     await installTauriMock(page, rns)
@@ -697,6 +709,16 @@ test.describe('reticulum', () => {
     await expect(page.getByText('Привет', { exact: true })).toHaveCSS('font-weight', '700')
     await expect(page.getByText('NomadNet', { exact: true })).toHaveCSS('color', 'rgb(255, 0, 0)')
     expect(rns.pageRequests[0]).toEqual({ node: NODE, path: '/page/index.mu', data: {} })
+
+    // Ссылка на файл: узел отдаёт его, дальше — окно «Сохранить как».
+    await page.getByRole('button', { name: 'Карта района' }).click()
+    await expect(page.getByText('Файл сохранён: map.png')).toBeVisible()
+    expect(rns.downloads).toEqual([{ node: NODE, path: '/file/map.png' }])
+    // Вместо файла узел ответил страницей — она и показана.
+    rns.refused.add('/file/secret.zip')
+    await page.getByRole('button', { name: 'Архив' }).click()
+    await expect(page.getByText('Нет доступа')).toBeVisible()
+    await page.getByRole('button', { name: 'Назад' }).click()
 
     await page.getByRole('button', { name: 'Правила' }).click()
     await expect(page.getByText('Будьте вежливы.')).toBeVisible()

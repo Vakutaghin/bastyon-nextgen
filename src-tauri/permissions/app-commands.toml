@@ -68,6 +68,7 @@ permissions = [
   "allow-rns-set-propagation-node",
   "allow-rns-sync",
   "allow-rns-page",
+  "allow-rns-download",
   "allow-rns-paper",
   "allow-rns-ingest",
 ]

@@ -116,6 +116,8 @@ export const useReticulumStore = defineStore('reticulum', () => {
   const interfaces = ref<RnsInterfaceStatus[]>([])
   const peers = ref<RnsPeer[]>([])
   const syncState = ref<{ state: string; received: number } | null>(null)
+  /** Ход ответа узла NomadNet (страница или файл), пока он идёт ресурсом. */
+  const transfer = ref<{ received: number; total: number } | null>(null)
   /** Для какого аккаунта загружены настройки. */
   let account: string | null = null
   let statusTimer: ReturnType<typeof setInterval> | null = null
@@ -184,6 +186,9 @@ export const useReticulumStore = defineStore('reticulum', () => {
         break
       case 'sync':
         syncState.value = { state: ev.state, received: ev.received }
+        break
+      case 'progress':
+        transfer.value = { received: ev.received, total: ev.total }
         break
     }
   }
@@ -309,6 +314,7 @@ export const useReticulumStore = defineStore('reticulum', () => {
     identityHash.value = null
     peers.value = []
     syncState.value = null
+    transfer.value = null
     error.value = null
     account = null
     config.value = { ...DEFAULT_CONFIG }
@@ -327,6 +333,7 @@ export const useReticulumStore = defineStore('reticulum', () => {
     nomadNodes,
     propagationNodes,
     syncState,
+    transfer,
     ensureConfig,
     peerName,
     start,

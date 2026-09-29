@@ -1846,8 +1846,11 @@ export default {
         reload: '새로고침',
         close: '닫기',
         loading: '페이지를 불러오는 중…',
-        binary: '페이지가 아니라 파일이라 여기서 보여 줄 수 없습니다.',
+        binary: '페이지가 아니라 파일이라 여기서 보여 줄 수 없지만 내려받을 수 있습니다.',
         pageEmpty: '빈 페이지입니다.',
+        download: '내려받기',
+        downloading: '{name} 내려받는 중…',
+        saved: '파일을 저장했습니다: {name}',
       },
       paper: {
         title: '종이 메시지',

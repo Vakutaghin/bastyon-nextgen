@@ -141,13 +141,26 @@ pub enum RnsEvent {
         state: String,
         received: u32,
     },
+    /// Ход ответа, который идёт ресурсом (страница или файл NomadNet): частей
+    /// из скольких. Запросы к узлам идут по одному, так что он — о текущем.
+    Progress {
+        received: u64,
+        total: u64,
+    },
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Page {
     pub content: String,
     pub binary: bool,
+}
+
+/// Что узел NomadNet ответил на запрос файла.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Download {
+    File { name: String, data: Vec<u8> },
+    Page(Page),
 }
 
 /// hex → байты фиксированной длины (адрес — 16 байт).

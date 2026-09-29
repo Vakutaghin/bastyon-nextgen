@@ -1870,8 +1870,11 @@ export default {
         reload: 'Ricarica',
         close: 'Chiudi',
         loading: 'Caricamento della pagina…',
-        binary: 'È un file, non una pagina: qui non si può mostrare.',
+        binary: 'È un file, non una pagina: qui non si può mostrare, ma si può scaricare.',
         pageEmpty: 'La pagina è vuota.',
+        download: 'Scarica',
+        downloading: 'Scarico {name}…',
+        saved: 'File salvato: {name}',
       },
       paper: {
         title: 'Messaggio su carta',

@@ -1,0 +1,4509 @@
+//! RnsNode: high-level lifecycle management.
+//!
+//! Wires together the driver, interfaces, and timer thread.
+
+use std::collections::HashSet;
+use std::io;
+use std::path::Path;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
+use std::thread::{self, JoinHandle};
+use std::time::Duration;
+
+use rns_core::transport::announce_verify_queue::OverflowPolicy as AnnounceQueueOverflowPolicy;
+use rns_core::transport::types::TransportConfig;
+use rns_crypto::identity::Identity;
+use rns_crypto::{OsRng, Rng};
+
+use crate::config;
+use crate::driver::{AnnounceRateDefaults, Callbacks, Driver};
+#[cfg(feature = "iface-backbone")]
+use crate::driver::{BackbonePeerPoolCandidateConfig, BackbonePeerPoolSettings};
+use crate::event::{self, Event, EventSender};
+use crate::ifac;
+#[cfg(feature = "iface-auto")]
+use crate::interface::auto::{auto_runtime_handle_from_config, AutoConfig};
+#[cfg(feature = "iface-backbone")]
+use crate::interface::backbone::{
+    client_config_from_mode, client_priority_from_mode, client_runtime_handle_from_mode,
+    peer_state_handle_from_mode, runtime_handle_from_mode, BackboneMode,
+};
+#[cfg(feature = "iface-i2p")]
+use crate::interface::i2p::{i2p_runtime_handle_from_config, I2pConfig};
+#[cfg(feature = "iface-local")]
+use crate::interface::local::LocalServerConfig;
+#[cfg(feature = "iface-pipe")]
+use crate::interface::pipe::{pipe_runtime_handle_from_config, PipeConfig};
+#[cfg(feature = "iface-rnode")]
+use crate::interface::rnode::{rnode_runtime_handle_from_config, RNodeConfig};
+#[cfg(feature = "iface-tcp")]
+use crate::interface::tcp::{tcp_client_runtime_handle_from_config, TcpClientConfig};
+#[cfg(feature = "iface-tcp")]
+use crate::interface::tcp_server::{
+    runtime_handle_from_config as tcp_runtime_handle_from_config, TcpServerConfig,
+};
+#[cfg(feature = "iface-udp")]
+use crate::interface::udp::{udp_runtime_handle_from_config, UdpConfig};
+use crate::interface::{InterfaceEntry, InterfaceStats};
+use crate::storage;
+use crate::time;
+
+#[cfg(test)]
+const DEFAULT_KNOWN_DESTINATIONS_TTL: Duration = Duration::from_secs(48 * 60 * 60);
+const DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES: usize = 8192;
+
+/// Parse an interface mode string to the corresponding constant.
+/// Matches Python's `_synthesize_interface()` in `RNS/Reticulum.py`.
+fn parse_interface_mode(mode: &str) -> u8 {
+    match mode.to_lowercase().as_str() {
+        "full" => rns_core::constants::MODE_FULL,
+        "access_point" | "accesspoint" | "ap" => rns_core::constants::MODE_ACCESS_POINT,
+        "pointtopoint" | "ptp" => rns_core::constants::MODE_POINT_TO_POINT,
+        "roaming" => rns_core::constants::MODE_ROAMING,
+        "boundary" => rns_core::constants::MODE_BOUNDARY,
+        "gateway" | "gw" => rns_core::constants::MODE_GATEWAY,
+        _ => rns_core::constants::MODE_FULL,
+    }
+}
+
+fn default_ingress_control_for_type(
+    iface_type: &str,
+) -> rns_core::transport::types::IngressControlConfig {
+    match iface_type {
+        "AutoInterface" | "BackboneInterface" | "TCPClientInterface" | "TCPServerInterface"
+        | "UDPInterface" | "I2PInterface" => {
+            rns_core::transport::types::IngressControlConfig::enabled()
+        }
+        _ => rns_core::transport::types::IngressControlConfig::disabled(),
+    }
+}
+
+fn parse_ingress_control_config(
+    iface_type: &str,
+    params: &std::collections::HashMap<String, String>,
+) -> Result<rns_core::transport::types::IngressControlConfig, String> {
+    let mut config = default_ingress_control_for_type(iface_type);
+
+    if let Some(v) = params.get("ingress_control") {
+        config.enabled = config::parse_bool_pub(v)
+            .ok_or_else(|| format!("ingress_control must be a boolean, got '{}'", v))?;
+    }
+    if let Some(v) = params.get("ic_max_held_announces") {
+        config.max_held_announces = v
+            .parse::<usize>()
+            .map_err(|_| format!("ic_max_held_announces must be an integer, got '{}'", v))?;
+    }
+    if let Some(v) = params.get("ic_burst_hold") {
+        config.burst_hold = parse_nonnegative_f64("ic_burst_hold", v)?;
+    }
+    if let Some(v) = params.get("ic_burst_freq_new") {
+        config.burst_freq_new = parse_nonnegative_f64("ic_burst_freq_new", v)?;
+    }
+    if let Some(v) = params.get("ic_burst_freq") {
+        config.burst_freq = parse_nonnegative_f64("ic_burst_freq", v)?;
+    }
+    if let Some(v) = params.get("ic_pr_burst_freq_new") {
+        config.pr_burst_freq_new = parse_nonnegative_f64("ic_pr_burst_freq_new", v)?;
+    }
+    if let Some(v) = params.get("ic_pr_burst_freq") {
+        config.pr_burst_freq = parse_nonnegative_f64("ic_pr_burst_freq", v)?;
+    }
+    if let Some(v) = params.get("egress_control") {
+        config.egress_enabled = config::parse_bool_pub(v)
+            .ok_or_else(|| format!("egress_control must be a boolean, got '{}'", v))?;
+    }
+    if let Some(v) = params.get("ec_pr_freq") {
+        config.egress_pr_freq = parse_nonnegative_f64("ec_pr_freq", v)?;
+    }
+    if let Some(v) = params.get("ic_new_time") {
+        config.new_time = parse_nonnegative_f64("ic_new_time", v)?;
+    }
+    if let Some(v) = params.get("ic_burst_penalty") {
+        config.burst_penalty = parse_nonnegative_f64("ic_burst_penalty", v)?;
+    }
+    if let Some(v) = params.get("ic_held_release_interval") {
+        config.held_release_interval = parse_nonnegative_f64("ic_held_release_interval", v)?;
+    }
+
+    Ok(config)
+}
+
+fn parse_nonnegative_f64(key: &str, value: &str) -> Result<f64, String> {
+    let parsed = value
+        .parse::<f64>()
+        .map_err(|_| format!("{} must be numeric, got '{}'", key, value))?;
+    if parsed < 0.0 {
+        return Err(format!("{} must be >= 0, got '{}'", key, value));
+    }
+    Ok(parsed)
+}
+
+/// Extract IFAC configuration from interface params, if present.
+/// Returns None if neither networkname/network_name nor passphrase/pass_phrase is set.
+fn extract_ifac_config(
+    params: &std::collections::HashMap<String, String>,
+    default_size: usize,
+) -> Option<IfacConfig> {
+    let netname = params
+        .get("networkname")
+        .or_else(|| params.get("network_name"))
+        .cloned();
+    let netkey = params
+        .get("passphrase")
+        .or_else(|| params.get("pass_phrase"))
+        .cloned();
+
+    if netname.is_none() && netkey.is_none() {
+        return None;
+    }
+
+    // ifac_size is specified in bits in config, divide by 8 for bytes
+    let size = params
+        .get("ifac_size")
+        .and_then(|v| v.parse::<usize>().ok())
+        .map(|bits| (bits / 8).max(1))
+        .unwrap_or(default_size);
+
+    Some(IfacConfig {
+        netname,
+        netkey,
+        size,
+    })
+}
+
+/// Extract discovery configuration from interface params, if `discoverable` is set.
+fn extract_discovery_config(
+    iface_name: &str,
+    iface_type: &str,
+    params: &std::collections::HashMap<String, String>,
+) -> Option<crate::discovery::DiscoveryConfig> {
+    let discoverable = params
+        .get("discoverable")
+        .and_then(|v| config::parse_bool_pub(v))
+        .unwrap_or(false);
+    if !discoverable {
+        return None;
+    }
+
+    if iface_type == "TCPClientInterface" {
+        log::error!(
+            "Invalid interface discovery configuration for {}, aborting discovery announce",
+            iface_name
+        );
+        return None;
+    }
+
+    let discovery_name = params
+        .get("discovery_name")
+        .cloned()
+        .unwrap_or_else(|| iface_name.to_string());
+
+    // Config value is in seconds. Min 300s (5min), default 21600s (6h).
+    let announce_interval = params
+        .get("announce_interval")
+        .and_then(|v| v.parse::<u64>().ok())
+        .map(|secs| secs.max(300))
+        .unwrap_or(21600);
+
+    let stamp_value = params
+        .get("discovery_stamp_value")
+        .and_then(|v| v.parse::<u8>().ok())
+        .unwrap_or(crate::discovery::DEFAULT_STAMP_VALUE);
+
+    let reachable_on = params.get("reachable_on").cloned();
+
+    let listen_port = params
+        .get("listen_port")
+        .or_else(|| params.get("port"))
+        .and_then(|v| v.parse().ok());
+
+    let latitude = params
+        .get("latitude")
+        .or_else(|| params.get("lat"))
+        .and_then(|v| v.parse().ok());
+    let longitude = params
+        .get("longitude")
+        .or_else(|| params.get("lon"))
+        .and_then(|v| v.parse().ok());
+    let height = params.get("height").and_then(|v| v.parse().ok());
+
+    Some(crate::discovery::DiscoveryConfig {
+        discovery_name,
+        announce_interval,
+        stamp_value,
+        reachable_on,
+        interface_type: iface_type.to_string(),
+        listen_port,
+        latitude,
+        longitude,
+        height,
+    })
+}
+
+fn default_discovery_runtime_config(
+    interface_name: &str,
+    interface_type: &str,
+    listen_port: Option<u16>,
+) -> crate::discovery::DiscoveryConfig {
+    crate::discovery::DiscoveryConfig {
+        discovery_name: interface_name.to_string(),
+        announce_interval: 21600,
+        stamp_value: crate::discovery::DEFAULT_STAMP_VALUE,
+        reachable_on: None,
+        interface_type: interface_type.to_string(),
+        listen_port,
+        latitude: None,
+        longitude: None,
+        height: None,
+    }
+}
+
+fn discovery_runtime_ifac_fields(ifac: Option<&IfacConfig>) -> (Option<String>, Option<String>) {
+    (
+        ifac.and_then(|cfg| cfg.netname.clone()),
+        ifac.and_then(|cfg| cfg.netkey.clone()),
+    )
+}
+
+#[cfg(feature = "iface-backbone")]
+fn backbone_discovery_runtime_from_interface(
+    interface_name: &str,
+    mode: &BackboneMode,
+    discovery: Option<&crate::discovery::DiscoveryConfig>,
+    transport_enabled: bool,
+    ifac: Option<&IfacConfig>,
+) -> Option<crate::driver::BackboneDiscoveryRuntimeHandle> {
+    let config = match mode {
+        BackboneMode::Server(config) => config,
+        BackboneMode::Client(_, _) => return None,
+    };
+
+    let startup_config = discovery.cloned().unwrap_or_else(|| {
+        default_discovery_runtime_config(
+            interface_name,
+            "BackboneInterface",
+            Some(config.listen_port),
+        )
+    });
+    let (ifac_netname, ifac_netkey) = discovery_runtime_ifac_fields(ifac);
+
+    Some(crate::driver::BackboneDiscoveryRuntimeHandle::from_parts(
+        config.name.clone(),
+        startup_config,
+        transport_enabled,
+        ifac_netname,
+        ifac_netkey,
+        discovery.is_some(),
+    ))
+}
+
+#[cfg(feature = "iface-tcp")]
+fn tcp_server_discovery_runtime_from_interface(
+    interface_name: &str,
+    config: &crate::interface::tcp_server::TcpServerConfig,
+    discovery: Option<&crate::discovery::DiscoveryConfig>,
+    transport_enabled: bool,
+    ifac: Option<&IfacConfig>,
+) -> crate::driver::TcpServerDiscoveryRuntimeHandle {
+    let startup_config = discovery.cloned().unwrap_or_else(|| {
+        default_discovery_runtime_config(
+            interface_name,
+            "TCPServerInterface",
+            Some(config.listen_port),
+        )
+    });
+    let (ifac_netname, ifac_netkey) = discovery_runtime_ifac_fields(ifac);
+
+    crate::driver::TcpServerDiscoveryRuntimeHandle::from_parts(
+        config.name.clone(),
+        startup_config,
+        transport_enabled,
+        ifac_netname,
+        ifac_netkey,
+        discovery.is_some(),
+    )
+}
+
+fn ifac_runtime_from_config(
+    ifac: Option<&IfacConfig>,
+    default_size: usize,
+) -> crate::driver::IfacRuntimeConfig {
+    crate::driver::IfacRuntimeConfig::from_parts(
+        ifac.and_then(|cfg| cfg.netname.clone()),
+        ifac.and_then(|cfg| cfg.netkey.clone()),
+        ifac.map(|cfg| cfg.size).unwrap_or(default_size),
+    )
+}
+
+fn discoverable_interface_from_config(
+    interface_name: &str,
+    discovery: &crate::discovery::DiscoveryConfig,
+    transport_enabled: bool,
+    ifac: Option<&IfacConfig>,
+) -> crate::discovery::DiscoverableInterface {
+    crate::discovery::DiscoverableInterface {
+        interface_name: interface_name.to_string(),
+        config: discovery.clone(),
+        transport_enabled,
+        ifac_netname: ifac.and_then(|cfg| cfg.netname.clone()),
+        ifac_netkey: ifac.and_then(|cfg| cfg.netkey.clone()),
+    }
+}
+
+fn derive_ifac_state(
+    ifac: Option<&IfacConfig>,
+    interface_name: &str,
+) -> io::Result<Option<crate::ifac::IfacState>> {
+    let Some(ifac) = ifac else {
+        return Ok(None);
+    };
+    if ifac.netname.is_none() && ifac.netkey.is_none() {
+        return Ok(None);
+    }
+
+    ifac::derive_ifac(ifac.netname.as_deref(), ifac.netkey.as_deref(), ifac.size)
+        .map(Some)
+        .map_err(|err| {
+            io::Error::other(format!(
+                "failed to derive IFAC for {}: {}",
+                interface_name, err
+            ))
+        })
+}
+
+fn register_started_interface(
+    driver: &mut Driver,
+    tx: &EventSender,
+    queue_capacity: usize,
+    id: rns_core::transport::types::InterfaceId,
+    mut info: rns_core::transport::types::InterfaceInfo,
+    writer: Box<dyn crate::interface::Writer>,
+    interface_type_name: String,
+    ifac_state: Option<crate::ifac::IfacState>,
+    ifac_runtime: &crate::driver::IfacRuntimeConfig,
+) {
+    driver.apply_announce_rate_defaults(&mut info);
+    driver.apply_ingress_control_defaults(&mut info);
+    let (writer, async_writer_metrics) =
+        crate::interface::wrap_async_writer(writer, id, &info.name, tx.clone(), queue_capacity);
+    driver.register_interface_runtime_defaults(&info);
+    driver.register_interface_ifac_runtime(&info.name, ifac_runtime.clone());
+    driver.engine.register_interface(info.clone());
+    driver.interfaces.insert(
+        id,
+        InterfaceEntry {
+            id,
+            info,
+            writer,
+            async_writer_metrics: Some(async_writer_metrics),
+            enabled: true,
+            online: false,
+            dynamic: false,
+            ifac: ifac_state,
+            stats: InterfaceStats {
+                started: time::now(),
+                ..Default::default()
+            },
+            interface_type: interface_type_name,
+            send_retry_at: None,
+            send_retry_backoff: Duration::ZERO,
+        },
+    );
+}
+
+/// Top-level node configuration.
+pub struct NodeConfig {
+    pub transport_enabled: bool,
+    pub identity: Option<Identity>,
+    /// Interface configurations (parsed via registry factories).
+    pub interfaces: Vec<InterfaceConfig>,
+    /// Enable shared instance server for local clients (rns-ctl, etc.)
+    pub share_instance: bool,
+    /// Instance name for Unix socket namespace (default: "default").
+    pub instance_name: String,
+    /// Shared instance port for local client connections (default 37428).
+    pub shared_instance_port: u16,
+    /// RPC control port (default 37429). Only used when share_instance is true.
+    pub rpc_port: u16,
+    /// Cache directory for announce cache. If None, announce caching is disabled.
+    pub cache_dir: Option<std::path::PathBuf>,
+    /// Store for received ratchets. If None, received ratchets are not persisted or used.
+    pub ratchet_store: Option<Arc<dyn storage::RatchetStore>>,
+    /// TTL for received ratchets.
+    pub ratchet_expiry: Duration,
+    /// Remote management configuration.
+    pub management: crate::management::ManagementConfig,
+    /// Port to run the STUN probe server on (for facilitator nodes).
+    pub probe_port: Option<u16>,
+    /// Addresses of STUN/RNSP probe servers (tried sequentially with failover).
+    pub probe_addrs: Vec<std::net::SocketAddr>,
+    /// Protocol for endpoint discovery: "rnsp" (default) or "stun".
+    pub probe_protocol: rns_core::holepunch::ProbeProtocol,
+    /// Network interface to bind outbound sockets to (e.g. "usb0").
+    pub device: Option<String>,
+    /// Hook configurations loaded from the config file.
+    pub hooks: Vec<config::ParsedHook>,
+    /// Enable interface discovery.
+    pub discover_interfaces: bool,
+    /// Minimum stamp value for accepting discovered interfaces (default: 14).
+    pub discovery_required_value: Option<u8>,
+    /// Respond to probe packets with automatic proof (like Python's respond_to_probes).
+    pub respond_to_probes: bool,
+    /// Accept an announce with strictly fewer hops even when the random_blob
+    /// is a duplicate of the existing path entry.  Default `false` preserves
+    /// Python-compatible anti-replay behaviour.
+    pub prefer_shorter_path: bool,
+    /// Maximum number of alternative paths stored per destination.
+    /// Default 1 (single path, backward-compatible).
+    pub max_paths_per_destination: usize,
+    /// Maximum number of packet hashes retained for duplicate suppression.
+    pub packet_hashlist_max_entries: usize,
+    /// Maximum number of discovery path-request tags remembered.
+    pub max_discovery_pr_tags: usize,
+    /// Maximum number of destination hashes retained in the live path table.
+    pub max_path_destinations: usize,
+    /// Maximum number of retained tunnel-known destinations.
+    pub max_tunnel_destinations_total: usize,
+    /// TTL for recalled known destinations without an active path.
+    pub known_destinations_ttl: Duration,
+    /// Maximum number of recalled known destinations retained.
+    pub known_destinations_max_entries: usize,
+    /// TTL for announce retransmission state.
+    pub announce_table_ttl: Duration,
+    /// Maximum retained bytes for announce retransmission state.
+    pub announce_table_max_bytes: usize,
+    /// Maximum queued events awaiting driver processing.
+    pub driver_event_queue_capacity: usize,
+    /// Maximum queued outbound frames per interface writer worker.
+    pub interface_writer_queue_capacity: usize,
+    /// Default announce-rate controls applied to interfaces when transport is enabled.
+    pub announce_rate_defaults: AnnounceRateDefaults,
+    /// Default ingress/egress controls applied to interfaces when transport is enabled.
+    pub ingress_control_defaults: rns_core::transport::types::IngressControlConfig,
+    /// Outbound Backbone peer-pool settings. Disabled when `None`.
+    #[cfg(feature = "iface-backbone")]
+    pub backbone_peer_pool: Option<BackbonePeerPoolSettings>,
+    /// Whether the announce signature verification cache is enabled.
+    pub announce_sig_cache_enabled: bool,
+    /// Maximum entries in the announce signature verification cache.
+    pub announce_sig_cache_max_entries: usize,
+    /// TTL for announce signature cache entries.
+    pub announce_sig_cache_ttl: Duration,
+    /// Custom interface registry. If `None`, uses `InterfaceRegistry::with_builtins()`.
+    pub registry: Option<crate::interface::registry::InterfaceRegistry>,
+    /// If true, a single interface failing to start will abort the entire node.
+    /// If false (default), the error is logged and remaining interfaces continue.
+    pub panic_on_interface_error: bool,
+    /// External provider bridge for hook-emitted events.
+    #[cfg(feature = "hooks")]
+    pub provider_bridge: Option<crate::provider_bridge::ProviderBridgeConfig>,
+}
+
+impl Default for NodeConfig {
+    fn default() -> Self {
+        Self {
+            transport_enabled: false,
+            identity: None,
+            interfaces: Vec::new(),
+            share_instance: false,
+            instance_name: "default".into(),
+            shared_instance_port: 37428,
+            rpc_port: 0,
+            cache_dir: None,
+            ratchet_store: None,
+            ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+            management: Default::default(),
+            probe_port: None,
+            probe_addrs: vec![],
+            probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+            device: None,
+            hooks: Vec::new(),
+            discover_interfaces: false,
+            discovery_required_value: None,
+            respond_to_probes: false,
+            prefer_shorter_path: false,
+            max_paths_per_destination: 1,
+            packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+            max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+            max_path_destinations: rns_core::transport::types::DEFAULT_MAX_PATH_DESTINATIONS,
+            max_tunnel_destinations_total: usize::MAX,
+            known_destinations_ttl: Duration::from_secs(48 * 60 * 60),
+            known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+            announce_table_ttl: Duration::from_secs(rns_core::constants::ANNOUNCE_TABLE_TTL as u64),
+            announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+            driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+            interface_writer_queue_capacity: crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+            announce_rate_defaults: AnnounceRateDefaults::default(),
+            ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(),
+            #[cfg(feature = "iface-backbone")]
+            backbone_peer_pool: None,
+            announce_sig_cache_enabled: true,
+            announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+            announce_sig_cache_ttl: Duration::from_secs(
+                rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+            ),
+            registry: None,
+            panic_on_interface_error: false,
+            #[cfg(feature = "hooks")]
+            provider_bridge: None,
+        }
+    }
+}
+
+/// IFAC configuration for an interface.
+pub struct IfacConfig {
+    pub netname: Option<String>,
+    pub netkey: Option<String>,
+    pub size: usize,
+}
+
+/// Interface configuration, parsed via an [`InterfaceFactory`] from the registry.
+pub struct InterfaceConfig {
+    pub name: String,
+    pub type_name: String,
+    pub config_data: Box<dyn crate::interface::InterfaceConfigData>,
+    pub mode: u8,
+    pub ingress_control: rns_core::transport::types::IngressControlConfig,
+    pub ifac: Option<IfacConfig>,
+    pub discovery: Option<crate::discovery::DiscoveryConfig>,
+}
+
+use crate::event::{QueryRequest, QueryResponse};
+
+/// Error returned when the driver thread has shut down.
+#[derive(Debug)]
+pub struct SendError;
+
+impl std::fmt::Display for SendError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "driver shut down")
+    }
+}
+
+impl std::error::Error for SendError {}
+
+/// A running RNS node.
+pub struct RnsNode {
+    tx: EventSender,
+    driver_handle: Option<JoinHandle<()>>,
+    verify_handle: Option<JoinHandle<()>>,
+    verify_shutdown: Arc<AtomicBool>,
+    rpc_server: Option<crate::rpc::RpcServer>,
+    tick_interval_ms: Arc<AtomicU64>,
+    #[allow(dead_code)]
+    probe_server: Option<crate::holepunch::probe::ProbeServerHandle>,
+    known_destinations_path: Option<std::path::PathBuf>,
+    ratchet_store: Option<Arc<dyn storage::RatchetStore>>,
+    ratchet_expiry: Duration,
+}
+
+impl RnsNode {
+    /// Start the node from a config file path.
+    /// If `config_path` is None, uses `~/.reticulum/`.
+    pub fn from_config(
+        config_path: Option<&Path>,
+        callbacks: Box<dyn Callbacks>,
+    ) -> io::Result<Self> {
+        let config_dir = storage::resolve_config_dir(config_path);
+        let paths = storage::ensure_storage_dirs(&config_dir)?;
+        let known_destinations_path = paths.storage.join("known_destinations");
+        let ratchet_store: Arc<dyn storage::RatchetStore> =
+            Arc::new(storage::FsRatchetStore::new(paths.ratchets.clone()));
+
+        // Parse config file
+        let config_file = config_dir.join("config");
+        let rns_config = if config_file.exists() {
+            config::parse_file(&config_file)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("{}", e)))?
+        } else {
+            // No config file, use defaults
+            config::parse("")
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("{}", e)))?
+        };
+
+        // Load or create identity
+        let identity = if let Some(ref id_path_str) = rns_config.reticulum.network_identity {
+            let id_path = std::path::PathBuf::from(id_path_str);
+            if id_path.exists() {
+                storage::load_identity(&id_path)?
+            } else {
+                let id = Identity::new(&mut OsRng);
+                storage::save_identity(&id, &id_path)?;
+                id
+            }
+        } else {
+            storage::load_or_create_identity(&paths.identities)?
+        };
+
+        // Build interface configs from parsed config using registry
+        let registry = crate::interface::registry::InterfaceRegistry::with_builtins();
+        let mut interface_configs = Vec::new();
+        let mut next_id_val = 1u64;
+
+        for iface in &rns_config.interfaces {
+            if !iface.enabled {
+                continue;
+            }
+
+            let iface_id = rns_core::transport::types::InterfaceId(next_id_val);
+            next_id_val += 1;
+
+            let factory = match registry.get(&iface.interface_type) {
+                Some(f) => f,
+                None => {
+                    log::warn!(
+                        "Unsupported interface type '{}' for '{}'",
+                        iface.interface_type,
+                        iface.name,
+                    );
+                    continue;
+                }
+            };
+
+            let mut iface_mode = parse_interface_mode(&iface.mode);
+
+            // Auto-configure mode when discovery is enabled (Python Reticulum.py).
+            let has_discovery = match iface.interface_type.as_str() {
+                "AutoInterface" => true,
+                "RNodeInterface" => iface
+                    .params
+                    .get("discoverable")
+                    .and_then(|v| config::parse_bool_pub(v))
+                    .unwrap_or(false),
+                _ => false,
+            };
+            if has_discovery
+                && iface_mode != rns_core::constants::MODE_ACCESS_POINT
+                && iface_mode != rns_core::constants::MODE_GATEWAY
+            {
+                let new_mode = if iface.interface_type == "RNodeInterface" {
+                    rns_core::constants::MODE_ACCESS_POINT
+                } else {
+                    rns_core::constants::MODE_GATEWAY
+                };
+                log::info!(
+                    "Interface '{}' has discovery enabled, auto-configuring mode to {}",
+                    iface.name,
+                    if new_mode == rns_core::constants::MODE_ACCESS_POINT {
+                        "ACCESS_POINT"
+                    } else {
+                        "GATEWAY"
+                    }
+                );
+                iface_mode = new_mode;
+            }
+
+            let default_ifac_size = factory.default_ifac_size();
+            let ifac_config = extract_ifac_config(&iface.params, default_ifac_size);
+            let discovery_config =
+                extract_discovery_config(&iface.name, &iface.interface_type, &iface.params);
+            let ingress_control =
+                match parse_ingress_control_config(&iface.interface_type, &iface.params) {
+                    Ok(config) => config,
+                    Err(e) => {
+                        log::warn!(
+                            "Failed to parse ingress control config for '{}': {}",
+                            iface.name,
+                            e
+                        );
+                        continue;
+                    }
+                };
+
+            // Inject storage_dir for I2P (and any future factories that need it)
+            let mut params = iface.params.clone();
+            if !params.contains_key("storage_dir") {
+                params.insert(
+                    "storage_dir".to_string(),
+                    paths.storage.to_string_lossy().to_string(),
+                );
+            }
+            // Inject device for TCP client
+            if let Some(ref device) = rns_config.reticulum.device {
+                if !params.contains_key("device") {
+                    params.insert("device".to_string(), device.clone());
+                }
+            }
+
+            let config_data = match factory.parse_config(&iface.name, iface_id, &params) {
+                Ok(data) => data,
+                Err(e) => {
+                    log::warn!("Failed to parse config for '{}': {}", iface.name, e);
+                    continue;
+                }
+            };
+
+            interface_configs.push(InterfaceConfig {
+                name: iface.name.clone(),
+                type_name: iface.interface_type.clone(),
+                config_data,
+                mode: iface_mode,
+                ingress_control,
+                ifac: ifac_config,
+                discovery: discovery_config,
+            });
+        }
+
+        // Parse management config
+        let mut mgmt_allowed = Vec::new();
+        for hex_hash in &rns_config.reticulum.remote_management_allowed {
+            if hex_hash.len() == 32 {
+                if let Ok(bytes) = (0..hex_hash.len())
+                    .step_by(2)
+                    .map(|i| u8::from_str_radix(&hex_hash[i..i + 2], 16))
+                    .collect::<Result<Vec<u8>, _>>()
+                {
+                    if bytes.len() == 16 {
+                        let mut h = [0u8; 16];
+                        h.copy_from_slice(&bytes);
+                        mgmt_allowed.push(h);
+                    }
+                } else {
+                    log::warn!("Invalid hex in remote_management_allowed: {}", hex_hash);
+                }
+            } else {
+                log::warn!(
+                    "Invalid entry in remote_management_allowed (expected 32 hex chars, got {}): {}",
+                    hex_hash.len(), hex_hash,
+                );
+            }
+        }
+
+        // Parse probe_addr (comma-separated list of SocketAddr)
+        let probe_addrs: Vec<std::net::SocketAddr> = rns_config
+            .reticulum
+            .probe_addr
+            .as_ref()
+            .map(|s| {
+                s.split(',')
+                    .filter_map(|entry| {
+                        let trimmed = entry.trim();
+                        if trimmed.is_empty() {
+                            return None;
+                        }
+                        trimmed
+                            .parse::<std::net::SocketAddr>()
+                            .map_err(|e| {
+                                log::warn!("Invalid probe_addr entry '{}': {}", trimmed, e);
+                                e
+                            })
+                            .ok()
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        // Parse probe_protocol (default: rnsp)
+        let probe_protocol = match rns_config
+            .reticulum
+            .probe_protocol
+            .as_deref()
+            .map(|s| s.to_lowercase())
+        {
+            Some(ref s) if s == "stun" => rns_core::holepunch::ProbeProtocol::Stun,
+            _ => rns_core::holepunch::ProbeProtocol::Rnsp,
+        };
+
+        let known_destinations = match storage::load_known_destinations(&known_destinations_path) {
+            Ok(destinations) => destinations,
+            Err(err) if err.kind() == io::ErrorKind::NotFound => Default::default(),
+            Err(err) => {
+                log::warn!("failed to load known destinations: {}", err);
+                Default::default()
+            }
+        };
+        let known_destination_hashes: HashSet<[u8; 16]> =
+            known_destinations.keys().copied().collect();
+        match ratchet_store.cleanup(
+            &known_destination_hashes,
+            time::now(),
+            rns_config.reticulum.ratchet_expiry as f64,
+        ) {
+            Ok(stats) if stats.processed > 0 => log::debug!(
+                "Processed {} ratchets, not in use {}, removed {}",
+                stats.processed,
+                stats.not_known,
+                stats.removed
+            ),
+            Ok(_) => {}
+            Err(err) => log::warn!("failed to clean ratchets: {}", err),
+        }
+
+        let node_config = NodeConfig {
+            transport_enabled: rns_config.reticulum.enable_transport,
+            identity: Some(identity),
+            share_instance: rns_config.reticulum.share_instance,
+            instance_name: rns_config.reticulum.instance_name.clone(),
+            shared_instance_port: rns_config.reticulum.shared_instance_port,
+            rpc_port: rns_config.reticulum.instance_control_port,
+            cache_dir: Some(paths.cache),
+            ratchet_store: Some(Arc::clone(&ratchet_store)),
+            ratchet_expiry: Duration::from_secs(rns_config.reticulum.ratchet_expiry),
+            management: crate::management::ManagementConfig {
+                enable_remote_management: rns_config.reticulum.enable_remote_management,
+                remote_management_allowed: mgmt_allowed,
+                publish_blackhole: rns_config.reticulum.publish_blackhole,
+            },
+            probe_port: rns_config.reticulum.probe_port,
+            probe_addrs,
+            probe_protocol,
+            device: rns_config.reticulum.device.clone(),
+            hooks: rns_config.hooks.clone(),
+            discover_interfaces: rns_config.reticulum.discover_interfaces,
+            discovery_required_value: rns_config.reticulum.required_discovery_value,
+            respond_to_probes: rns_config.reticulum.respond_to_probes,
+            prefer_shorter_path: rns_config.reticulum.prefer_shorter_path,
+            max_paths_per_destination: rns_config.reticulum.max_paths_per_destination,
+            packet_hashlist_max_entries: rns_config.reticulum.packet_hashlist_max_entries,
+            max_discovery_pr_tags: rns_config.reticulum.max_discovery_pr_tags,
+            max_path_destinations: rns_config.reticulum.max_path_destinations,
+            max_tunnel_destinations_total: rns_config.reticulum.max_tunnel_destinations_total,
+            known_destinations_ttl: Duration::from_secs(
+                rns_config.reticulum.known_destinations_ttl,
+            ),
+            known_destinations_max_entries: rns_config.reticulum.known_destinations_max_entries,
+            announce_table_ttl: Duration::from_secs(rns_config.reticulum.announce_table_ttl),
+            announce_table_max_bytes: rns_config.reticulum.announce_table_max_bytes,
+            driver_event_queue_capacity: rns_config.reticulum.driver_event_queue_capacity,
+            interface_writer_queue_capacity: rns_config.reticulum.interface_writer_queue_capacity,
+            announce_rate_defaults: AnnounceRateDefaults {
+                target: rns_config.reticulum.default_ar_target,
+                penalty: rns_config.reticulum.default_ar_penalty,
+                grace: rns_config.reticulum.default_ar_grace,
+            },
+            ingress_control_defaults: rns_core::transport::types::IngressControlConfig {
+                enabled: true,
+                egress_enabled: rns_config.reticulum.default_egress_control,
+                max_held_announces: rns_config.reticulum.default_ic_max_held_announces,
+                burst_freq_new: rns_config.reticulum.default_ic_burst_freq_new,
+                burst_freq: rns_config.reticulum.default_ic_burst_freq,
+                pr_burst_freq_new: rns_config.reticulum.default_ic_pr_burst_freq_new,
+                pr_burst_freq: rns_config.reticulum.default_ic_pr_burst_freq,
+                egress_pr_freq: rns_config.reticulum.default_ec_pr_freq,
+                new_time: rns_config.reticulum.default_ic_new_time,
+                burst_hold: rns_config.reticulum.default_ic_burst_hold,
+                burst_penalty: rns_config.reticulum.default_ic_burst_penalty,
+                held_release_interval: rns_config.reticulum.default_ic_held_release_interval,
+            },
+            #[cfg(feature = "iface-backbone")]
+            backbone_peer_pool: if rns_config.reticulum.backbone_peer_pool_max_connected > 0 {
+                Some(BackbonePeerPoolSettings {
+                    max_connected: rns_config.reticulum.backbone_peer_pool_max_connected,
+                    failure_threshold: rns_config.reticulum.backbone_peer_pool_failure_threshold,
+                    failure_window: Duration::from_secs(
+                        rns_config.reticulum.backbone_peer_pool_failure_window,
+                    ),
+                    cooldown: Duration::from_secs(rns_config.reticulum.backbone_peer_pool_cooldown),
+                })
+            } else {
+                None
+            },
+            announce_sig_cache_enabled: rns_config.reticulum.announce_sig_cache_enabled,
+            announce_sig_cache_max_entries: rns_config.reticulum.announce_sig_cache_max_entries,
+            announce_sig_cache_ttl: Duration::from_secs(
+                rns_config.reticulum.announce_sig_cache_ttl,
+            ),
+            interfaces: interface_configs,
+            registry: None,
+            panic_on_interface_error: rns_config.reticulum.panic_on_interface_error,
+            #[cfg(feature = "hooks")]
+            provider_bridge: if rns_config.reticulum.provider_bridge {
+                Some(crate::provider_bridge::ProviderBridgeConfig {
+                    enabled: true,
+                    socket_path: rns_config
+                        .reticulum
+                        .provider_socket_path
+                        .as_ref()
+                        .map(std::path::PathBuf::from)
+                        .unwrap_or_else(|| config_dir.join("provider.sock")),
+                    queue_max_events: rns_config.reticulum.provider_queue_max_events,
+                    queue_max_bytes: rns_config.reticulum.provider_queue_max_bytes,
+                    overflow_policy: match rns_config.reticulum.provider_overflow_policy.as_str() {
+                        "drop_oldest" => crate::provider_bridge::OverflowPolicy::DropOldest,
+                        _ => crate::provider_bridge::OverflowPolicy::DropNewest,
+                    },
+                    node_instance: rns_config.reticulum.instance_name.clone(),
+                })
+            } else {
+                None
+            },
+        };
+
+        let mut node = Self::start_with_announce_queue_max_entries(
+            node_config,
+            callbacks,
+            rns_config.reticulum.announce_queue_max_entries,
+            rns_config.reticulum.announce_queue_max_interfaces,
+            rns_config.reticulum.announce_queue_max_bytes,
+            rns_config.reticulum.announce_queue_ttl as f64,
+            match rns_config.reticulum.announce_queue_overflow_policy.as_str() {
+                "drop_newest" => AnnounceQueueOverflowPolicy::DropNewest,
+                "drop_oldest" => AnnounceQueueOverflowPolicy::DropOldest,
+                _ => AnnounceQueueOverflowPolicy::DropWorst,
+            },
+        )?;
+
+        node.known_destinations_path = Some(known_destinations_path.clone());
+        for (dest_hash, known) in known_destinations {
+            let _ = node.query(QueryRequest::RestoreKnownDestination(
+                crate::event::KnownDestinationEntry {
+                    dest_hash,
+                    identity_hash: known.identity_hash,
+                    public_key: known.public_key,
+                    app_data: known.app_data,
+                    hops: known.hops,
+                    received_at: known.received_at,
+                    receiving_interface: rns_core::transport::types::InterfaceId(
+                        known.receiving_interface,
+                    ),
+                    was_used: known.was_used,
+                    last_used_at: known.last_used_at,
+                    retained: known.retained,
+                },
+            ));
+        }
+
+        Ok(node)
+    }
+
+    /// Start the node. Connects all interfaces, starts driver and timer threads.
+    pub fn start(config: NodeConfig, callbacks: Box<dyn Callbacks>) -> io::Result<Self> {
+        Self::start_with_announce_queue_max_entries(
+            config,
+            callbacks,
+            256,
+            1024,
+            256 * 1024,
+            30.0,
+            AnnounceQueueOverflowPolicy::DropWorst,
+        )
+    }
+
+    fn start_with_announce_queue_max_entries(
+        config: NodeConfig,
+        callbacks: Box<dyn Callbacks>,
+        announce_queue_max_entries: usize,
+        announce_queue_max_interfaces: usize,
+        announce_queue_max_bytes: usize,
+        announce_queue_ttl_secs: f64,
+        announce_queue_overflow_policy: AnnounceQueueOverflowPolicy,
+    ) -> io::Result<Self> {
+        let identity = config.identity.unwrap_or_else(|| Identity::new(&mut OsRng));
+
+        let transport_config = TransportConfig {
+            transport_enabled: config.transport_enabled,
+            identity_hash: Some(*identity.hash()),
+            prefer_shorter_path: config.prefer_shorter_path,
+            max_paths_per_destination: config.max_paths_per_destination,
+            packet_hashlist_max_entries: config.packet_hashlist_max_entries,
+            max_discovery_pr_tags: config.max_discovery_pr_tags,
+            max_path_destinations: config.max_path_destinations,
+            max_tunnel_destinations_total: config.max_tunnel_destinations_total,
+            destination_timeout_secs: config.known_destinations_ttl.as_secs_f64(),
+            announce_table_ttl_secs: config.announce_table_ttl.as_secs_f64(),
+            announce_table_max_bytes: config.announce_table_max_bytes,
+            announce_sig_cache_enabled: config.announce_sig_cache_enabled,
+            announce_sig_cache_max_entries: config.announce_sig_cache_max_entries,
+            announce_sig_cache_ttl_secs: config.announce_sig_cache_ttl.as_secs_f64(),
+            announce_queue_max_entries,
+            announce_queue_max_interfaces,
+        };
+
+        let (tx, rx) = event::channel_with_capacity(config.driver_event_queue_capacity);
+        let tick_interval_ms = Arc::new(AtomicU64::new(1000));
+        let mut driver = Driver::new(transport_config, rx, tx.clone(), callbacks);
+        driver.set_announce_verify_queue_config(
+            announce_queue_max_entries,
+            announce_queue_max_bytes,
+            announce_queue_ttl_secs,
+            announce_queue_overflow_policy,
+        );
+        driver.async_announce_verification = true;
+        driver.set_tick_interval_handle(Arc::clone(&tick_interval_ms));
+        driver.set_packet_hashlist_max_entries(config.packet_hashlist_max_entries);
+        driver.known_destinations_ttl = config.known_destinations_ttl.as_secs_f64();
+        driver.known_destinations_max_entries = config.known_destinations_max_entries;
+        driver.ratchet_store = config.ratchet_store.clone();
+        driver.interface_writer_queue_capacity = config.interface_writer_queue_capacity;
+        driver.set_announce_rate_defaults(config.announce_rate_defaults);
+        driver.set_ingress_control_defaults(config.ingress_control_defaults);
+        driver.runtime_config_defaults.known_destinations_ttl =
+            config.known_destinations_ttl.as_secs_f64();
+        #[cfg(feature = "hooks")]
+        if let Some(provider_config) = config.provider_bridge.clone() {
+            driver.runtime_config_defaults.provider_queue_max_events =
+                provider_config.queue_max_events;
+            driver.runtime_config_defaults.provider_queue_max_bytes =
+                provider_config.queue_max_bytes;
+            if provider_config.enabled {
+                match crate::provider_bridge::ProviderBridge::start(provider_config) {
+                    Ok(bridge) => driver.provider_bridge = Some(bridge),
+                    Err(err) => log::warn!("failed to start provider bridge: {}", err),
+                }
+            }
+        }
+
+        // Set up announce cache if cache directory is configured
+        if let Some(ref cache_dir) = config.cache_dir {
+            let announces_dir = cache_dir.join("announces");
+            let _ = std::fs::create_dir_all(&announces_dir);
+            driver.announce_cache = Some(crate::announce_cache::AnnounceCache::new(announces_dir));
+        }
+
+        // Configure probe addresses and device for hole punching
+        if !config.probe_addrs.is_empty() || config.device.is_some() {
+            driver.set_probe_config(
+                config.probe_addrs.clone(),
+                config.probe_protocol,
+                config.device.clone(),
+            );
+        }
+
+        // Start probe server if configured
+        let probe_server = if let Some(port) = config.probe_port {
+            let listen_addr: std::net::SocketAddr = ([0, 0, 0, 0], port).into();
+            match crate::holepunch::probe::start_probe_server(listen_addr) {
+                Ok(handle) => {
+                    log::info!("Probe server started on 0.0.0.0:{}", port);
+                    Some(handle)
+                }
+                Err(e) => {
+                    log::error!("Failed to start probe server on port {}: {}", port, e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        // Store management config on driver for ACL enforcement
+        driver.management_config = config.management.clone();
+
+        // Store transport identity for tunnel synthesis
+        if let Some(prv_key) = identity.get_private_key() {
+            driver.transport_identity = Some(Identity::from_private_key(&prv_key));
+        }
+
+        // Load hooks from config
+        #[cfg(feature = "hooks")]
+        {
+            for hook_cfg in &config.hooks {
+                if !hook_cfg.enabled {
+                    continue;
+                }
+                let point_idx = match config::parse_hook_point(&hook_cfg.attach_point) {
+                    Some(idx) => idx,
+                    None => {
+                        log::warn!(
+                            "Unknown hook point '{}' for hook '{}'",
+                            hook_cfg.attach_point,
+                            hook_cfg.name,
+                        );
+                        continue;
+                    }
+                };
+                let mgr = match driver.hook_manager.as_ref() {
+                    Some(m) => m,
+                    None => {
+                        log::warn!(
+                            "Hook manager not available, skipping hook '{}'",
+                            hook_cfg.name
+                        );
+                        continue;
+                    }
+                };
+                let hook_backend = match config::parse_hook_backend(&hook_cfg.hook_type) {
+                    Ok(backend) => backend,
+                    Err(e) => {
+                        log::warn!(
+                            "Invalid hook type '{}' for hook '{}': {}",
+                            hook_cfg.hook_type,
+                            hook_cfg.name,
+                            e,
+                        );
+                        continue;
+                    }
+                };
+                let load_result = if hook_backend == rns_hooks::HookBackend::Builtin {
+                    let builtin_id = hook_cfg
+                        .builtin_id
+                        .as_deref()
+                        .filter(|id| !id.is_empty())
+                        .or_else(|| (!hook_cfg.path.is_empty()).then_some(hook_cfg.path.as_str()));
+                    match builtin_id {
+                        Some(id) => mgr.load_builtin(hook_cfg.name.clone(), id, hook_cfg.priority),
+                        None => Err(rns_hooks::HookError::CompileError(
+                            "built-in hook requires builtin/id or path".to_string(),
+                        )),
+                    }
+                } else {
+                    mgr.load_file_backend(
+                        hook_cfg.name.clone(),
+                        std::path::Path::new(&hook_cfg.path),
+                        hook_cfg.priority,
+                        hook_backend,
+                    )
+                };
+                match load_result {
+                    Ok(program) => {
+                        driver.hook_slots[point_idx].attach(program);
+                        log::info!(
+                            "Loaded hook '{}' at point {} (priority {})",
+                            hook_cfg.name,
+                            hook_cfg.attach_point,
+                            hook_cfg.priority,
+                        );
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Failed to load hook '{}' from '{}': {}",
+                            hook_cfg.name,
+                            hook_cfg.path,
+                            e,
+                        );
+                    }
+                }
+            }
+        }
+
+        // Configure discovery
+        driver.discover_interfaces = config.discover_interfaces;
+        if let Some(val) = config.discovery_required_value {
+            driver.discovery_required_value = val;
+        }
+
+        // Shared counter for dynamic interface IDs
+        let next_dynamic_id = Arc::new(AtomicU64::new(10000));
+        #[cfg(feature = "iface-backbone")]
+        {
+            driver.next_dynamic_interface_id = Arc::clone(&next_dynamic_id);
+        }
+
+        // Collect discoverable interface configs for the announcer
+        let mut discoverable_interfaces = Vec::new();
+        #[cfg(feature = "iface-backbone")]
+        let mut backbone_peer_pool_candidates = Vec::new();
+
+        // --- Registry-based startup for interfaces ---
+        let registry = config
+            .registry
+            .unwrap_or_else(crate::interface::registry::InterfaceRegistry::with_builtins);
+        for iface_config in config.interfaces {
+            #[cfg(feature = "iface-backbone")]
+            if iface_config.type_name == "BackboneInterface" {
+                if let Some(mode) = iface_config
+                    .config_data
+                    .as_any()
+                    .downcast_ref::<BackboneMode>()
+                {
+                    if let Some(handle) = runtime_handle_from_mode(mode) {
+                        driver.register_backbone_runtime(handle);
+                    }
+                    if let Some(handle) = peer_state_handle_from_mode(mode) {
+                        driver.register_backbone_peer_state(handle);
+                    }
+                    if let Some(handle) = client_runtime_handle_from_mode(mode) {
+                        driver.register_backbone_client_runtime(handle);
+                    }
+                    if let Some(handle) = backbone_discovery_runtime_from_interface(
+                        &iface_config.name,
+                        mode,
+                        iface_config.discovery.as_ref(),
+                        config.transport_enabled,
+                        iface_config.ifac.as_ref(),
+                    ) {
+                        driver.register_backbone_discovery_runtime(handle);
+                    }
+                }
+            }
+            #[cfg(feature = "iface-tcp")]
+            if iface_config.type_name == "TCPClientInterface" {
+                if let Some(tcp_config) = iface_config
+                    .config_data
+                    .as_any()
+                    .downcast_ref::<TcpClientConfig>()
+                {
+                    driver.register_tcp_client_runtime(tcp_client_runtime_handle_from_config(
+                        tcp_config,
+                    ));
+                }
+            }
+            #[cfg(feature = "iface-tcp")]
+            if iface_config.type_name == "TCPServerInterface" {
+                if let Some(tcp_config) = iface_config
+                    .config_data
+                    .as_any()
+                    .downcast_ref::<TcpServerConfig>()
+                {
+                    driver.register_tcp_server_runtime(tcp_runtime_handle_from_config(tcp_config));
+                    driver.register_tcp_server_discovery_runtime(
+                        tcp_server_discovery_runtime_from_interface(
+                            &iface_config.name,
+                            tcp_config,
+                            iface_config.discovery.as_ref(),
+                            config.transport_enabled,
+                            iface_config.ifac.as_ref(),
+                        ),
+                    );
+                }
+            }
+            #[cfg(feature = "iface-udp")]
+            if iface_config.type_name == "UDPInterface" {
+                if let Some(udp_config) = iface_config
+                    .config_data
+                    .as_any()
+                    .downcast_ref::<UdpConfig>()
+                {
+                    driver.register_udp_runtime(udp_runtime_handle_from_config(udp_config));
+                }
+            }
+            #[cfg(feature = "iface-auto")]
+            if iface_config.type_name == "AutoInterface" {
+                if let Some(auto_config) = iface_config
+                    .config_data
+                    .as_any()
+                    .downcast_ref::<AutoConfig>()
+                {
+                    driver.register_auto_runtime(auto_runtime_handle_from_config(auto_config));
+                }
+            }
+            #[cfg(feature = "iface-i2p")]
+            if iface_config.type_name == "I2PInterface" {
+                if let Some(i2p_config) = iface_config
+                    .config_data
+                    .as_any()
+                    .downcast_ref::<I2pConfig>()
+                {
+                    driver.register_i2p_runtime(i2p_runtime_handle_from_config(i2p_config));
+                }
+            }
+            #[cfg(feature = "iface-pipe")]
+            if iface_config.type_name == "PipeInterface" {
+                if let Some(pipe_config) = iface_config
+                    .config_data
+                    .as_any()
+                    .downcast_ref::<PipeConfig>()
+                {
+                    driver.register_pipe_runtime(pipe_runtime_handle_from_config(pipe_config));
+                }
+            }
+            #[cfg(feature = "iface-rnode")]
+            if iface_config.type_name == "RNodeInterface" {
+                if let Some(rnode_config) = iface_config
+                    .config_data
+                    .as_any()
+                    .downcast_ref::<RNodeConfig>()
+                {
+                    driver.register_rnode_runtime(rnode_runtime_handle_from_config(rnode_config));
+                }
+            }
+
+            let factory = match registry.get(&iface_config.type_name) {
+                Some(f) => f,
+                None => {
+                    log::warn!(
+                        "No factory registered for interface type '{}'",
+                        iface_config.type_name
+                    );
+                    continue;
+                }
+            };
+
+            let mut ifac_state = derive_ifac_state(iface_config.ifac.as_ref(), &iface_config.name)?;
+            let ifac_runtime =
+                ifac_runtime_from_config(iface_config.ifac.as_ref(), factory.default_ifac_size());
+
+            #[cfg(feature = "iface-backbone")]
+            if config.backbone_peer_pool.is_some() && iface_config.type_name == "BackboneInterface"
+            {
+                if let Some(mode) = iface_config
+                    .config_data
+                    .as_any()
+                    .downcast_ref::<BackboneMode>()
+                {
+                    if let Some(client) = client_config_from_mode(mode) {
+                        let priority = client_priority_from_mode(mode).unwrap_or(
+                            crate::driver::BACKBONE_PEER_POOL_CONFIGURED_DEFAULT_PRIORITY,
+                        );
+                        backbone_peer_pool_candidates.push(BackbonePeerPoolCandidateConfig {
+                            client,
+                            mode: iface_config.mode,
+                            ingress_control: iface_config.ingress_control,
+                            ifac_runtime: ifac_runtime.clone(),
+                            ifac_enabled: ifac_state.is_some(),
+                            interface_type_name: iface_config.type_name.clone(),
+                            source: crate::driver::BackbonePeerPoolCandidateSource::Configured,
+                            priority,
+                            discovery: None,
+                        });
+                        if let Some(ref disc) = iface_config.discovery {
+                            discoverable_interfaces.push(discoverable_interface_from_config(
+                                &iface_config.name,
+                                disc,
+                                config.transport_enabled,
+                                iface_config.ifac.as_ref(),
+                            ));
+                        }
+                        continue;
+                    }
+                }
+            }
+
+            let ctx = crate::interface::StartContext {
+                tx: tx.clone(),
+                next_dynamic_id: next_dynamic_id.clone(),
+                mode: iface_config.mode,
+                ingress_control: iface_config.ingress_control,
+            };
+
+            let result = match factory.start(iface_config.config_data, ctx) {
+                Ok(r) => r,
+                Err(e) => {
+                    if config.panic_on_interface_error {
+                        return Err(e);
+                    }
+                    log::error!(
+                        "Interface '{}' ({}) failed to start: {}",
+                        iface_config.name,
+                        iface_config.type_name,
+                        e
+                    );
+                    continue;
+                }
+            };
+
+            if let Some(ref disc) = iface_config.discovery {
+                discoverable_interfaces.push(discoverable_interface_from_config(
+                    &iface_config.name,
+                    disc,
+                    config.transport_enabled,
+                    iface_config.ifac.as_ref(),
+                ));
+            }
+
+            match result {
+                crate::interface::StartResult::Simple {
+                    id,
+                    info,
+                    writer,
+                    interface_type_name,
+                } => {
+                    register_started_interface(
+                        &mut driver,
+                        &tx,
+                        config.interface_writer_queue_capacity,
+                        id,
+                        info,
+                        writer,
+                        interface_type_name,
+                        ifac_state,
+                        &ifac_runtime,
+                    );
+                }
+                crate::interface::StartResult::Listener { control } => {
+                    // Listener-type interface (TcpServer, Auto, I2P, etc.)
+                    // registers dynamic interfaces via InterfaceUp events.
+                    if let Some(control) = control {
+                        driver.register_listener_control(control);
+                    }
+                }
+                crate::interface::StartResult::Multi(subs) => {
+                    let ifac_cfg = &iface_config.ifac;
+                    let mut first = true;
+                    for sub in subs {
+                        let sub_ifac = if first {
+                            first = false;
+                            ifac_state.take()
+                        } else {
+                            derive_ifac_state(ifac_cfg.as_ref(), &sub.info.name)?
+                        };
+                        register_started_interface(
+                            &mut driver,
+                            &tx,
+                            config.interface_writer_queue_capacity,
+                            sub.id,
+                            sub.info,
+                            sub.writer,
+                            sub.interface_type_name,
+                            sub_ifac,
+                            &ifac_runtime,
+                        );
+                    }
+                }
+            }
+        }
+
+        // Set up interface announcer if we have discoverable interfaces
+        if !discoverable_interfaces.is_empty() {
+            let transport_id = *identity.hash();
+            let announcer =
+                crate::discovery::InterfaceAnnouncer::new(transport_id, discoverable_interfaces);
+            log::info!("Interface discovery announcer initialized");
+            driver.interface_announcer = Some(announcer);
+        }
+
+        // Set up discovered interfaces storage path
+        if let Some(ref cache_dir) = config.cache_dir {
+            let disc_path = std::path::PathBuf::from(cache_dir)
+                .parent()
+                .unwrap_or(std::path::Path::new("."))
+                .join("storage")
+                .join("discovery")
+                .join("interfaces");
+            let _ = std::fs::create_dir_all(&disc_path);
+            driver.discovered_interfaces =
+                crate::discovery::DiscoveredInterfaceStorage::new(disc_path);
+        }
+
+        #[cfg(feature = "iface-backbone")]
+        if let Some(settings) = config.backbone_peer_pool.clone() {
+            driver.configure_backbone_peer_pool(settings, backbone_peer_pool_candidates);
+            driver.seed_backbone_peer_pool_from_discovery_cache();
+        }
+
+        // Set up management destinations if enabled
+        if config.management.enable_remote_management {
+            if let Some(prv_key) = identity.get_private_key() {
+                let identity_hash = *identity.hash();
+                let mgmt_dest = crate::management::management_dest_hash(&identity_hash);
+
+                // Extract Ed25519 signing keys from the identity
+                let sig_prv = rns_crypto::ed25519::Ed25519PrivateKey::from_bytes(
+                    &prv_key[32..64].try_into().unwrap(),
+                );
+                let sig_pub_bytes: [u8; 32] = identity.get_public_key().unwrap()[32..64]
+                    .try_into()
+                    .unwrap();
+
+                // Register as SINGLE destination in transport engine
+                driver
+                    .engine
+                    .register_destination(mgmt_dest, rns_core::constants::DESTINATION_SINGLE);
+                driver
+                    .local_destinations
+                    .insert(mgmt_dest, rns_core::constants::DESTINATION_SINGLE);
+
+                // Register as link destination in link manager
+                driver.link_manager.register_link_destination(
+                    mgmt_dest,
+                    sig_prv,
+                    sig_pub_bytes,
+                    crate::link_manager::ResourceStrategy::AcceptNone,
+                );
+
+                // Register management path hashes
+                driver
+                    .link_manager
+                    .register_management_path(crate::management::status_path_hash());
+                driver
+                    .link_manager
+                    .register_management_path(crate::management::path_path_hash());
+
+                log::info!("Remote management enabled on {:02x?}", &mgmt_dest[..4],);
+
+                // Set up allowed list
+                if !config.management.remote_management_allowed.is_empty() {
+                    log::info!(
+                        "Remote management allowed for {} identities",
+                        config.management.remote_management_allowed.len(),
+                    );
+                }
+            }
+        }
+
+        if config.management.publish_blackhole {
+            if let Some(prv_key) = identity.get_private_key() {
+                let identity_hash = *identity.hash();
+                let bh_dest = crate::management::blackhole_dest_hash(&identity_hash);
+
+                let sig_prv = rns_crypto::ed25519::Ed25519PrivateKey::from_bytes(
+                    &prv_key[32..64].try_into().unwrap(),
+                );
+                let sig_pub_bytes: [u8; 32] = identity.get_public_key().unwrap()[32..64]
+                    .try_into()
+                    .unwrap();
+
+                driver
+                    .engine
+                    .register_destination(bh_dest, rns_core::constants::DESTINATION_SINGLE);
+                driver.link_manager.register_link_destination(
+                    bh_dest,
+                    sig_prv,
+                    sig_pub_bytes,
+                    crate::link_manager::ResourceStrategy::AcceptNone,
+                );
+                driver
+                    .link_manager
+                    .register_management_path(crate::management::list_path_hash());
+
+                log::info!(
+                    "Blackhole list publishing enabled on {:02x?}",
+                    &bh_dest[..4],
+                );
+            }
+        }
+
+        // Set up probe responder if enabled
+        if config.respond_to_probes && config.transport_enabled {
+            let identity_hash = *identity.hash();
+            let probe_dest = crate::management::probe_dest_hash(&identity_hash);
+
+            // Register as SINGLE destination in transport engine
+            driver
+                .engine
+                .register_destination(probe_dest, rns_core::constants::DESTINATION_SINGLE);
+            driver
+                .local_destinations
+                .insert(probe_dest, rns_core::constants::DESTINATION_SINGLE);
+
+            // Register PROVE_ALL proof strategy with transport identity
+            let probe_identity = rns_crypto::identity::Identity::from_private_key(
+                &identity.get_private_key().unwrap(),
+            );
+            driver.proof_strategies.insert(
+                probe_dest,
+                (
+                    rns_core::types::ProofStrategy::ProveAll,
+                    Some(probe_identity),
+                ),
+            );
+
+            driver.probe_responder_hash = Some(probe_dest);
+
+            log::info!("Probe responder enabled on {:02x?}", &probe_dest[..4],);
+        }
+
+        // Spawn timer thread with configurable tick interval
+        let timer_tx = tx.clone();
+        let timer_interval = Arc::clone(&tick_interval_ms);
+        thread::Builder::new()
+            .name("rns-timer".into())
+            .spawn(move || {
+                loop {
+                    let ms = timer_interval.load(Ordering::Relaxed);
+                    thread::sleep(Duration::from_millis(ms));
+                    if timer_tx.send(Event::Tick).is_err() {
+                        break; // receiver dropped
+                    }
+                }
+            })?;
+
+        // Start LocalServer for shared instance clients if share_instance is enabled
+        #[cfg(feature = "iface-local")]
+        if config.share_instance {
+            let local_server_config = LocalServerConfig {
+                instance_name: config.instance_name.clone(),
+                port: config.shared_instance_port,
+                interface_id: rns_core::transport::types::InterfaceId(0), // Not used for server
+            };
+            match crate::interface::local::start_server(
+                local_server_config,
+                tx.clone(),
+                next_dynamic_id.clone(),
+            ) {
+                Ok(control) => {
+                    driver.register_listener_control(control);
+                    log::info!(
+                        "Local shared instance server started (instance={}, port={})",
+                        config.instance_name,
+                        config.shared_instance_port
+                    );
+                }
+                Err(e) => {
+                    log::error!("Failed to start local shared instance server: {}", e);
+                }
+            }
+        }
+
+        // Start RPC server if share_instance is enabled
+        let rpc_server = if config.share_instance {
+            let auth_key =
+                crate::rpc::derive_auth_key(&identity.get_private_key().unwrap_or([0u8; 64]));
+            let rpc_addr = crate::rpc::RpcAddr::Tcp("127.0.0.1".into(), config.rpc_port);
+            match crate::rpc::RpcServer::start(&rpc_addr, auth_key, tx.clone()) {
+                Ok(server) => {
+                    log::info!("RPC server started on 127.0.0.1:{}", config.rpc_port);
+                    Some(server)
+                }
+                Err(e) => {
+                    log::error!("Failed to start RPC server: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        let announce_verify_queue = Arc::clone(&driver.announce_verify_queue);
+        let verify_shutdown = Arc::new(AtomicBool::new(false));
+        let verify_shutdown_thread = Arc::clone(&verify_shutdown);
+        let verify_tx = tx.clone();
+        let verify_handle = thread::Builder::new()
+            .name("rns-verify".into())
+            .spawn(move || {
+                #[cfg(target_family = "unix")]
+                {
+                    unsafe {
+                        libc::nice(5);
+                    }
+                }
+
+                while !verify_shutdown_thread.load(Ordering::Relaxed) {
+                    let batch = {
+                        let mut queue = announce_verify_queue
+                            .lock()
+                            .unwrap_or_else(|poisoned| poisoned.into_inner());
+                        queue.take_pending(time::now())
+                    };
+
+                    if batch.is_empty() {
+                        thread::sleep(Duration::from_millis(50));
+                        continue;
+                    }
+
+                    for (key, pending) in batch {
+                        if verify_shutdown_thread.load(Ordering::Relaxed) {
+                            break;
+                        }
+                        let has_ratchet =
+                            pending.packet.flags.context_flag == rns_core::constants::FLAG_SET;
+                        let announce = match rns_core::announce::AnnounceData::unpack(
+                            &pending.packet.data,
+                            has_ratchet,
+                        ) {
+                            Ok(announce) => announce,
+                            Err(_) => {
+                                let signature = [0u8; 64];
+                                let sig_cache_key = {
+                                    let mut material = [0u8; 80];
+                                    material[..16]
+                                        .copy_from_slice(&pending.packet.destination_hash);
+                                    material[16..].copy_from_slice(&signature);
+                                    rns_core::hash::full_hash(&material)
+                                };
+                                if verify_tx
+                                    .send(Event::AnnounceVerifyFailed { key, sig_cache_key })
+                                    .is_err()
+                                {
+                                    return;
+                                }
+                                continue;
+                            }
+                        };
+                        let mut material = [0u8; 80];
+                        material[..16].copy_from_slice(&pending.packet.destination_hash);
+                        material[16..].copy_from_slice(&announce.signature);
+                        let sig_cache_key = rns_core::hash::full_hash(&material);
+                        match announce.validate(&pending.packet.destination_hash) {
+                            Ok(validated) => {
+                                if verify_tx
+                                    .send(Event::AnnounceVerified {
+                                        key,
+                                        validated,
+                                        sig_cache_key,
+                                    })
+                                    .is_err()
+                                {
+                                    return;
+                                }
+                            }
+                            Err(_) => {
+                                if verify_tx
+                                    .send(Event::AnnounceVerifyFailed { key, sig_cache_key })
+                                    .is_err()
+                                {
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            })?;
+
+        // Spawn the driver after startup has registered local destinations and static interfaces.
+        // Interface readers can enqueue frames before this point; the bounded event queue preserves
+        // ordering and backpressures instead of dropping startup traffic.
+        let driver_handle = thread::Builder::new()
+            .name("rns-driver".into())
+            .spawn(move || {
+                driver.run();
+            })?;
+
+        Ok(RnsNode {
+            tx,
+            driver_handle: Some(driver_handle),
+            verify_handle: Some(verify_handle),
+            verify_shutdown,
+            rpc_server,
+            tick_interval_ms,
+            probe_server,
+            known_destinations_path: None,
+            ratchet_store: config.ratchet_store,
+            ratchet_expiry: config.ratchet_expiry,
+        })
+    }
+
+    /// Query the driver for state information.
+    pub fn query(&self, request: QueryRequest) -> Result<QueryResponse, SendError> {
+        let (resp_tx, resp_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::Query(request, resp_tx))
+            .map_err(|_| SendError)?;
+        resp_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Enter drain mode and stop admitting new work.
+    pub fn begin_drain(&self, timeout: Duration) -> Result<(), SendError> {
+        self.tx
+            .send(Event::BeginDrain { timeout })
+            .map_err(|_| SendError)
+    }
+
+    /// Query current drain/lifecycle status.
+    pub fn drain_status(&self) -> Result<crate::event::DrainStatus, SendError> {
+        match self.query(QueryRequest::DrainStatus)? {
+            QueryResponse::DrainStatus(status) => Ok(status),
+            _ => Err(SendError),
+        }
+    }
+
+    fn reject_new_work_if_draining(&self) -> Result<(), SendError> {
+        let status = self.drain_status()?;
+        if matches!(status.state, crate::event::LifecycleState::Active) {
+            Ok(())
+        } else {
+            Err(SendError)
+        }
+    }
+
+    /// Send a raw outbound packet.
+    pub fn send_raw(
+        &self,
+        raw: Vec<u8>,
+        dest_type: u8,
+        attached_interface: Option<rns_core::transport::types::InterfaceId>,
+    ) -> Result<(), SendError> {
+        self.tx
+            .send(Event::SendOutbound {
+                raw,
+                dest_type,
+                attached_interface,
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Register a local destination with the transport engine.
+    pub fn register_destination(
+        &self,
+        dest_hash: [u8; 16],
+        dest_type: u8,
+    ) -> Result<(), SendError> {
+        self.tx
+            .send(Event::RegisterDestination {
+                dest_hash,
+                dest_type,
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Deregister a local destination.
+    pub fn deregister_destination(&self, dest_hash: [u8; 16]) -> Result<(), SendError> {
+        self.tx
+            .send(Event::DeregisterDestination { dest_hash })
+            .map_err(|_| SendError)
+    }
+
+    /// Deregister a link destination (stop accepting incoming links).
+    pub fn deregister_link_destination(&self, dest_hash: [u8; 16]) -> Result<(), SendError> {
+        self.tx
+            .send(Event::DeregisterLinkDestination { dest_hash })
+            .map_err(|_| SendError)
+    }
+
+    /// Register a link destination that can accept incoming links.
+    ///
+    /// `dest_hash`: the destination hash
+    /// `sig_prv_bytes`: Ed25519 private signing key (32 bytes)
+    /// `sig_pub_bytes`: Ed25519 public signing key (32 bytes)
+    pub fn register_link_destination(
+        &self,
+        dest_hash: [u8; 16],
+        sig_prv_bytes: [u8; 32],
+        sig_pub_bytes: [u8; 32],
+        resource_strategy: u8,
+    ) -> Result<(), SendError> {
+        self.tx
+            .send(Event::RegisterLinkDestination {
+                dest_hash,
+                sig_prv_bytes,
+                sig_pub_bytes,
+                resource_strategy,
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Register a request handler for a given path on established links.
+    pub fn register_request_handler<F>(
+        &self,
+        path: &str,
+        allowed_list: Option<Vec<[u8; 16]>>,
+        handler: F,
+    ) -> Result<(), SendError>
+    where
+        F: Fn([u8; 16], &str, &[u8], Option<&([u8; 16], [u8; 64])>) -> Option<Vec<u8>>
+            + Send
+            + 'static,
+    {
+        self.tx
+            .send(Event::RegisterRequestHandler {
+                path: path.to_string(),
+                allowed_list,
+                handler: Box::new(handler),
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Register a request handler that can return resource responses with metadata.
+    pub fn register_request_handler_response<F>(
+        &self,
+        path: &str,
+        allowed_list: Option<Vec<[u8; 16]>>,
+        handler: F,
+    ) -> Result<(), SendError>
+    where
+        F: Fn(
+                [u8; 16],
+                &str,
+                &[u8],
+                Option<&([u8; 16], [u8; 64])>,
+            ) -> Option<crate::link_manager::RequestResponse>
+            + Send
+            + 'static,
+    {
+        self.tx
+            .send(Event::RegisterRequestHandlerResponse {
+                path: path.to_string(),
+                allowed_list,
+                handler: Box::new(handler),
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Create an outbound link to a destination.
+    ///
+    /// Returns the link_id on success.
+    pub fn create_link(
+        &self,
+        dest_hash: [u8; 16],
+        dest_sig_pub_bytes: [u8; 32],
+    ) -> Result<[u8; 16], SendError> {
+        self.reject_new_work_if_draining()?;
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::CreateLink {
+                dest_hash,
+                dest_sig_pub_bytes,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        let link_id = response_rx.recv().map_err(|_| SendError)?;
+        if link_id == [0u8; 16] {
+            Err(SendError)
+        } else {
+            Ok(link_id)
+        }
+    }
+
+    /// Send a request on an established link.
+    pub fn send_request(
+        &self,
+        link_id: [u8; 16],
+        path: &str,
+        data: &[u8],
+    ) -> Result<(), SendError> {
+        self.reject_new_work_if_draining()?;
+        self.tx
+            .send(Event::SendRequest {
+                link_id,
+                path: path.to_string(),
+                data: data.to_vec(),
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Identify on a link (reveal identity to remote peer).
+    pub fn identify_on_link(
+        &self,
+        link_id: [u8; 16],
+        identity_prv_key: [u8; 64],
+    ) -> Result<(), SendError> {
+        self.reject_new_work_if_draining()?;
+        self.tx
+            .send(Event::IdentifyOnLink {
+                link_id,
+                identity_prv_key,
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Tear down a link.
+    pub fn teardown_link(&self, link_id: [u8; 16]) -> Result<(), SendError> {
+        self.tx
+            .send(Event::TeardownLink { link_id })
+            .map_err(|_| SendError)
+    }
+
+    /// Send a resource on an established link.
+    pub fn send_resource(
+        &self,
+        link_id: [u8; 16],
+        data: Vec<u8>,
+        metadata: Option<Vec<u8>>,
+    ) -> Result<(), SendError> {
+        self.send_resource_with_auto_compress(link_id, data, metadata, true)
+    }
+
+    /// Send a resource on an established link, controlling automatic compression.
+    pub fn send_resource_with_auto_compress(
+        &self,
+        link_id: [u8; 16],
+        data: Vec<u8>,
+        metadata: Option<Vec<u8>>,
+        auto_compress: bool,
+    ) -> Result<(), SendError> {
+        self.reject_new_work_if_draining()?;
+        self.tx
+            .send(Event::SendResource {
+                link_id,
+                data,
+                metadata,
+                auto_compress,
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Set the resource acceptance strategy for a link.
+    ///
+    /// 0 = AcceptNone, 1 = AcceptAll, 2 = AcceptApp
+    pub fn set_resource_strategy(&self, link_id: [u8; 16], strategy: u8) -> Result<(), SendError> {
+        self.tx
+            .send(Event::SetResourceStrategy { link_id, strategy })
+            .map_err(|_| SendError)
+    }
+
+    /// Accept or reject a pending resource (for AcceptApp strategy).
+    pub fn accept_resource(
+        &self,
+        link_id: [u8; 16],
+        resource_hash: Vec<u8>,
+        accept: bool,
+    ) -> Result<(), SendError> {
+        if accept {
+            self.reject_new_work_if_draining()?;
+        }
+        self.tx
+            .send(Event::AcceptResource {
+                link_id,
+                resource_hash,
+                accept,
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Send a channel message on a link.
+    pub fn send_channel_message(
+        &self,
+        link_id: [u8; 16],
+        msgtype: u16,
+        payload: Vec<u8>,
+    ) -> Result<(), SendError> {
+        self.reject_new_work_if_draining()?;
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::SendChannelMessage {
+                link_id,
+                msgtype,
+                payload,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx
+            .recv()
+            .map_err(|_| SendError)?
+            .map_err(|_| SendError)
+    }
+
+    /// Propose a direct P2P connection to a peer via NAT hole punching.
+    ///
+    /// The link must be active and connected through a backbone node.
+    /// If successful, a direct UDP connection will be established, bypassing the backbone.
+    pub fn propose_direct_connect(&self, link_id: [u8; 16]) -> Result<(), SendError> {
+        self.reject_new_work_if_draining()?;
+        self.tx
+            .send(Event::ProposeDirectConnect { link_id })
+            .map_err(|_| SendError)
+    }
+
+    /// Set the policy for handling incoming direct-connect proposals.
+    pub fn set_direct_connect_policy(
+        &self,
+        policy: crate::holepunch::orchestrator::HolePunchPolicy,
+    ) -> Result<(), SendError> {
+        self.tx
+            .send(Event::SetDirectConnectPolicy { policy })
+            .map_err(|_| SendError)
+    }
+
+    /// Send data on a link with a given context.
+    pub fn send_on_link(
+        &self,
+        link_id: [u8; 16],
+        data: Vec<u8>,
+        context: u8,
+    ) -> Result<(), SendError> {
+        self.reject_new_work_if_draining()?;
+        self.tx
+            .send(Event::SendOnLink {
+                link_id,
+                data,
+                context,
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Build and broadcast an announce for a destination.
+    ///
+    /// The identity is used to sign the announce. Must be the identity that
+    /// owns the destination (i.e. `identity.hash()` matches `dest.identity_hash`).
+    pub fn announce(
+        &self,
+        dest: &crate::destination::Destination,
+        identity: &Identity,
+        app_data: Option<&[u8]>,
+    ) -> Result<(), SendError> {
+        self.reject_new_work_if_draining()?;
+        let name_hash = rns_core::destination::name_hash(
+            &dest.app_name,
+            &dest.aspects.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+        );
+
+        let mut random_hash = [0u8; 10];
+        OsRng.fill_bytes(&mut random_hash[..5]);
+        // Bytes [5:10] must be the emission timestamp (seconds since epoch,
+        // big-endian, truncated to 5 bytes) so that path table dedup can
+        // compare announce freshness.  Matches Python: int(time.time()).to_bytes(5, "big")
+        let now_secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        random_hash[5..10].copy_from_slice(&now_secs.to_be_bytes()[3..8]);
+
+        let (announce_data, _has_ratchet) = rns_core::announce::AnnounceData::pack(
+            identity,
+            &dest.hash.0,
+            &name_hash,
+            &random_hash,
+            None, // no ratchet
+            app_data,
+        )
+        .map_err(|_| SendError)?;
+
+        let context_flag = rns_core::constants::FLAG_UNSET;
+
+        let flags = rns_core::packet::PacketFlags {
+            header_type: rns_core::constants::HEADER_1,
+            context_flag,
+            transport_type: rns_core::constants::TRANSPORT_BROADCAST,
+            destination_type: rns_core::constants::DESTINATION_SINGLE,
+            packet_type: rns_core::constants::PACKET_TYPE_ANNOUNCE,
+        };
+
+        let packet = rns_core::packet::RawPacket::pack(
+            flags,
+            0,
+            &dest.hash.0,
+            None,
+            rns_core::constants::CONTEXT_NONE,
+            &announce_data,
+        )
+        .map_err(|_| SendError)?;
+
+        if dest.dest_type == rns_core::types::DestinationType::Single {
+            if let Some(identity_prv_key) = identity.get_private_key() {
+                self.tx
+                    .send(Event::StoreSharedAnnounce {
+                        dest_hash: dest.hash.0,
+                        name_hash,
+                        identity_prv_key,
+                        app_data: app_data.map(|d| d.to_vec()),
+                    })
+                    .map_err(|_| SendError)?;
+            }
+        }
+
+        self.send_raw(packet.raw, dest.dest_type.to_wire_constant(), None)
+    }
+
+    /// Send an encrypted (SINGLE) or plaintext (PLAIN) packet to a destination.
+    ///
+    /// For SINGLE destinations, `dest.public_key` must be set (OUT direction).
+    /// Returns the packet hash for proof tracking.
+    pub fn send_packet(
+        &self,
+        dest: &crate::destination::Destination,
+        data: &[u8],
+    ) -> Result<rns_core::types::PacketHash, SendError> {
+        self.reject_new_work_if_draining()?;
+        use rns_core::types::DestinationType;
+
+        let payload = match dest.dest_type {
+            DestinationType::Single => self.encrypt_single_payload(dest, data)?,
+            DestinationType::Plain => data.to_vec(),
+            DestinationType::Group => dest.encrypt(data).map_err(|_| SendError)?,
+        };
+
+        let flags = rns_core::packet::PacketFlags {
+            header_type: rns_core::constants::HEADER_1,
+            context_flag: rns_core::constants::FLAG_UNSET,
+            transport_type: rns_core::constants::TRANSPORT_BROADCAST,
+            destination_type: dest.dest_type.to_wire_constant(),
+            packet_type: rns_core::constants::PACKET_TYPE_DATA,
+        };
+
+        let packet = rns_core::packet::RawPacket::pack(
+            flags,
+            0,
+            &dest.hash.0,
+            None,
+            rns_core::constants::CONTEXT_NONE,
+            &payload,
+        )
+        .map_err(|_| SendError)?;
+
+        let packet_hash = rns_core::types::PacketHash(packet.packet_hash);
+
+        self.tx
+            .send(Event::SendOutbound {
+                raw: packet.raw,
+                dest_type: dest.dest_type.to_wire_constant(),
+                attached_interface: None,
+            })
+            .map_err(|_| SendError)?;
+
+        Ok(packet_hash)
+    }
+
+    fn encrypt_single_payload(
+        &self,
+        dest: &crate::destination::Destination,
+        data: &[u8],
+    ) -> Result<Vec<u8>, SendError> {
+        let pub_key = dest.public_key.ok_or(SendError)?;
+        let remote_id = rns_crypto::identity::Identity::from_public_key(&pub_key);
+        let ratchet = self.ratchet_store.as_ref().and_then(|store| {
+            match store.current(&dest.hash.0, time::now(), self.ratchet_expiry.as_secs_f64()) {
+                Ok(entry) => entry.map(|entry| entry.ratchet),
+                Err(err) => {
+                    log::warn!(
+                        "failed to load ratchet for {:02x}{:02x}{:02x}{:02x}..: {}",
+                        dest.hash.0[0],
+                        dest.hash.0[1],
+                        dest.hash.0[2],
+                        dest.hash.0[3],
+                        err
+                    );
+                    None
+                }
+            }
+        });
+        remote_id
+            .encrypt_with_ratchet(data, ratchet.as_ref(), &mut OsRng)
+            .map_err(|_| SendError)
+    }
+
+    /// Register a destination with the transport engine and set its proof strategy.
+    ///
+    /// `signing_key` is the full 64-byte identity private key (X25519 32 bytes +
+    /// Ed25519 32 bytes), needed for ProveAll/ProveApp to sign proof packets.
+    pub fn register_destination_with_proof(
+        &self,
+        dest: &crate::destination::Destination,
+        signing_key: Option<[u8; 64]>,
+    ) -> Result<(), SendError> {
+        // Register with transport engine
+        self.register_destination(dest.hash.0, dest.dest_type.to_wire_constant())?;
+
+        // Register proof strategy if not ProveNone
+        if dest.proof_strategy != rns_core::types::ProofStrategy::ProveNone {
+            self.tx
+                .send(Event::RegisterProofStrategy {
+                    dest_hash: dest.hash.0,
+                    strategy: dest.proof_strategy,
+                    signing_key,
+                })
+                .map_err(|_| SendError)?;
+        }
+
+        Ok(())
+    }
+
+    /// Request a path to a destination from the network.
+    pub fn request_path(&self, dest_hash: &rns_core::types::DestHash) -> Result<(), SendError> {
+        self.reject_new_work_if_draining()?;
+        self.tx
+            .send(Event::RequestPath {
+                dest_hash: dest_hash.0,
+            })
+            .map_err(|_| SendError)
+    }
+
+    /// Check if a path exists to a destination (synchronous query).
+    pub fn has_path(&self, dest_hash: &rns_core::types::DestHash) -> Result<bool, SendError> {
+        match self.query(QueryRequest::HasPath {
+            dest_hash: dest_hash.0,
+        })? {
+            QueryResponse::HasPath(v) => Ok(v),
+            _ => Ok(false),
+        }
+    }
+
+    /// Get hop count to a destination (synchronous query).
+    pub fn hops_to(&self, dest_hash: &rns_core::types::DestHash) -> Result<Option<u8>, SendError> {
+        match self.query(QueryRequest::HopsTo {
+            dest_hash: dest_hash.0,
+        })? {
+            QueryResponse::HopsTo(v) => Ok(v),
+            _ => Ok(None),
+        }
+    }
+
+    /// Recall the identity information for a previously announced destination.
+    pub fn recall_identity(
+        &self,
+        dest_hash: &rns_core::types::DestHash,
+    ) -> Result<Option<crate::destination::AnnouncedIdentity>, SendError> {
+        match self.query(QueryRequest::RecallIdentity {
+            dest_hash: dest_hash.0,
+        })? {
+            QueryResponse::RecallIdentity(v) => Ok(v),
+            _ => Ok(None),
+        }
+    }
+
+    /// List known destinations and their lifecycle state.
+    pub fn known_destinations(
+        &self,
+    ) -> Result<Vec<crate::event::KnownDestinationEntry>, SendError> {
+        match self.query(QueryRequest::KnownDestinations)? {
+            QueryResponse::KnownDestinations(entries) => Ok(entries),
+            _ => Ok(Vec::new()),
+        }
+    }
+
+    /// Mark a known destination as retained.
+    pub fn retain_known_destination(
+        &self,
+        dest_hash: &rns_core::types::DestHash,
+    ) -> Result<bool, SendError> {
+        match self.query(QueryRequest::RetainKnownDestination {
+            dest_hash: dest_hash.0,
+        })? {
+            QueryResponse::RetainKnownDestination(ok) => Ok(ok),
+            _ => Ok(false),
+        }
+    }
+
+    /// Mark all known destinations announced by an identity as retained.
+    pub fn retain_identity(
+        &self,
+        identity_hash: &rns_core::types::IdentityHash,
+    ) -> Result<bool, SendError> {
+        match self.query(QueryRequest::RetainIdentity {
+            identity_hash: identity_hash.0,
+        })? {
+            QueryResponse::RetainIdentity(ok) => Ok(ok),
+            _ => Ok(false),
+        }
+    }
+
+    /// Clear the retained flag on a known destination.
+    pub fn unretain_known_destination(
+        &self,
+        dest_hash: &rns_core::types::DestHash,
+    ) -> Result<bool, SendError> {
+        match self.query(QueryRequest::UnretainKnownDestination {
+            dest_hash: dest_hash.0,
+        })? {
+            QueryResponse::UnretainKnownDestination(ok) => Ok(ok),
+            _ => Ok(false),
+        }
+    }
+
+    /// Mark a known destination as used.
+    pub fn mark_known_destination_used(
+        &self,
+        dest_hash: &rns_core::types::DestHash,
+    ) -> Result<bool, SendError> {
+        match self.query(QueryRequest::MarkKnownDestinationUsed {
+            dest_hash: dest_hash.0,
+        })? {
+            QueryResponse::MarkKnownDestinationUsed(ok) => Ok(ok),
+            _ => Ok(false),
+        }
+    }
+
+    fn persist_known_destinations(&self) {
+        let Some(path) = self.known_destinations_path.as_ref() else {
+            return;
+        };
+
+        let Ok(entries) = self.known_destinations() else {
+            return;
+        };
+
+        let destinations: std::collections::HashMap<[u8; 16], storage::KnownDestination> = entries
+            .into_iter()
+            .map(|entry| {
+                (
+                    entry.dest_hash,
+                    storage::KnownDestination {
+                        identity_hash: entry.identity_hash,
+                        public_key: entry.public_key,
+                        app_data: entry.app_data,
+                        hops: entry.hops,
+                        received_at: entry.received_at,
+                        receiving_interface: entry.receiving_interface.0,
+                        was_used: entry.was_used,
+                        last_used_at: entry.last_used_at,
+                        retained: entry.retained,
+                    },
+                )
+            })
+            .collect();
+
+        if let Err(err) = storage::save_known_destinations(&destinations, path) {
+            log::warn!("failed to persist known destinations: {}", err);
+        }
+    }
+
+    /// Load an in-memory WASM hook at runtime.
+    pub fn load_hook(
+        &self,
+        name: String,
+        wasm_bytes: Vec<u8>,
+        attach_point: String,
+        priority: i32,
+    ) -> Result<Result<(), String>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::LoadHook {
+                name,
+                wasm_bytes,
+                attach_point,
+                priority,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Load a hook from a server-local filesystem path at runtime.
+    pub fn load_hook_file(
+        &self,
+        name: String,
+        path: String,
+        hook_type: String,
+        attach_point: String,
+        priority: i32,
+    ) -> Result<Result<(), String>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::LoadHookFile {
+                name,
+                path,
+                hook_type,
+                attach_point,
+                priority,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Load a registered built-in hook at runtime.
+    pub fn load_builtin_hook(
+        &self,
+        name: String,
+        builtin_id: String,
+        attach_point: String,
+        priority: i32,
+    ) -> Result<Result<(), String>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::LoadBuiltinHook {
+                name,
+                builtin_id,
+                attach_point,
+                priority,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Unload a hook at runtime.
+    pub fn unload_hook(
+        &self,
+        name: String,
+        attach_point: String,
+    ) -> Result<Result<(), String>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::UnloadHook {
+                name,
+                attach_point,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Reload an in-memory WASM hook at runtime (detach + recompile + reattach with same priority).
+    pub fn reload_hook(
+        &self,
+        name: String,
+        attach_point: String,
+        wasm_bytes: Vec<u8>,
+    ) -> Result<Result<(), String>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::ReloadHook {
+                name,
+                attach_point,
+                wasm_bytes,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Reload a hook from a server-local filesystem path at runtime.
+    pub fn reload_hook_file(
+        &self,
+        name: String,
+        attach_point: String,
+        path: String,
+        hook_type: String,
+    ) -> Result<Result<(), String>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::ReloadHookFile {
+                name,
+                attach_point,
+                path,
+                hook_type,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Reload a registered built-in hook at runtime.
+    pub fn reload_builtin_hook(
+        &self,
+        name: String,
+        attach_point: String,
+        builtin_id: String,
+    ) -> Result<Result<(), String>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::ReloadBuiltinHook {
+                name,
+                attach_point,
+                builtin_id,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Enable or disable a loaded hook at runtime.
+    pub fn set_hook_enabled(
+        &self,
+        name: String,
+        attach_point: String,
+        enabled: bool,
+    ) -> Result<Result<(), String>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::SetHookEnabled {
+                name,
+                attach_point,
+                enabled,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Update the priority of a loaded hook at runtime.
+    pub fn set_hook_priority(
+        &self,
+        name: String,
+        attach_point: String,
+        priority: i32,
+    ) -> Result<Result<(), String>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::SetHookPriority {
+                name,
+                attach_point,
+                priority,
+                response_tx,
+            })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// List all loaded hooks.
+    pub fn list_hooks(&self) -> Result<Vec<crate::event::HookInfo>, SendError> {
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        self.tx
+            .send(Event::ListHooks { response_tx })
+            .map_err(|_| SendError)?;
+        response_rx.recv().map_err(|_| SendError)
+    }
+
+    /// Construct an RnsNode from its constituent parts.
+    /// Used by `shared_client` to build a client-mode node.
+    pub(crate) fn from_parts(
+        tx: EventSender,
+        driver_handle: thread::JoinHandle<()>,
+        rpc_server: Option<crate::rpc::RpcServer>,
+        tick_interval_ms: Arc<AtomicU64>,
+    ) -> Self {
+        RnsNode {
+            tx,
+            driver_handle: Some(driver_handle),
+            verify_handle: None,
+            verify_shutdown: Arc::new(AtomicBool::new(false)),
+            rpc_server,
+            tick_interval_ms,
+            probe_server: None,
+            known_destinations_path: None,
+            ratchet_store: None,
+            ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+        }
+    }
+
+    /// Get the event sender for direct event injection.
+    pub fn event_sender(&self) -> &EventSender {
+        &self.tx
+    }
+
+    /// Set the tick interval in milliseconds.
+    /// Default is 1000 (1 second). Changes take effect on the next tick cycle.
+    /// Values are clamped to the range 100..=10000.
+    /// Returns the actual stored value (which may differ from `ms` if clamped).
+    pub fn set_tick_interval(&self, ms: u64) -> u64 {
+        let clamped = ms.clamp(100, 10_000);
+        if clamped != ms {
+            log::warn!(
+                "tick interval {}ms out of range, clamped to {}ms",
+                ms,
+                clamped
+            );
+        }
+        self.tick_interval_ms.store(clamped, Ordering::Relaxed);
+        clamped
+    }
+
+    /// Get the current tick interval in milliseconds.
+    pub fn tick_interval(&self) -> u64 {
+        self.tick_interval_ms.load(Ordering::Relaxed)
+    }
+
+    /// Shut down the node. Blocks until the driver thread exits.
+    pub fn shutdown(mut self) {
+        // Stop RPC server first
+        if let Some(mut rpc) = self.rpc_server.take() {
+            rpc.stop();
+        }
+        self.persist_known_destinations();
+        self.verify_shutdown.store(true, Ordering::Relaxed);
+        let _ = self.tx.send(Event::Shutdown);
+        if let Some(handle) = self.driver_handle.take() {
+            let _ = handle.join();
+        }
+        if let Some(handle) = self.verify_handle.take() {
+            let _ = handle.join();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::driver::IfacRuntimeConfig;
+    use crate::storage::RatchetStore;
+    use std::fs;
+    use tempfile::tempdir;
+
+    struct NoopCallbacks;
+
+    impl Callbacks for NoopCallbacks {
+        fn on_announce(&mut self, _: crate::destination::AnnouncedIdentity) {}
+        fn on_path_updated(&mut self, _: rns_core::types::DestHash, _: u8) {}
+        fn on_local_delivery(
+            &mut self,
+            _: rns_core::types::DestHash,
+            _: Vec<u8>,
+            _: rns_core::types::PacketHash,
+        ) {
+        }
+    }
+
+    struct TestWriter;
+
+    impl crate::interface::Writer for TestWriter {
+        fn send_frame(&mut self, _data: &[u8]) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    fn test_transport_config(transport_enabled: bool) -> TransportConfig {
+        TransportConfig {
+            transport_enabled,
+            identity_hash: None,
+            prefer_shorter_path: false,
+            max_paths_per_destination: 1,
+            packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+            max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+            max_path_destinations: usize::MAX,
+            max_tunnel_destinations_total: usize::MAX,
+            destination_timeout_secs: rns_core::constants::DESTINATION_TIMEOUT,
+            announce_table_ttl_secs: rns_core::constants::ANNOUNCE_TABLE_TTL,
+            announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+            announce_sig_cache_enabled: true,
+            announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+            announce_sig_cache_ttl_secs: rns_core::constants::ANNOUNCE_SIG_CACHE_TTL,
+            announce_queue_max_entries: 256,
+            announce_queue_max_interfaces: 1024,
+        }
+    }
+
+    fn test_interface_info(id: u64) -> rns_core::transport::types::InterfaceInfo {
+        rns_core::transport::types::InterfaceInfo {
+            id: rns_core::transport::types::InterfaceId(id),
+            name: format!("test-{id}"),
+            mode: rns_core::constants::MODE_FULL,
+            out_capable: true,
+            in_capable: true,
+            bitrate: None,
+            airtime_profile: None,
+            announce_rate_target: None,
+            announce_rate_grace: 0,
+            announce_rate_penalty: 0.0,
+            announce_cap: rns_core::constants::ANNOUNCE_CAP,
+            is_local_client: false,
+            wants_tunnel: false,
+            tunnel_id: None,
+            mtu: rns_core::constants::MTU as u32,
+            ingress_control: rns_core::transport::types::IngressControlConfig::disabled(),
+            ia_freq: 0.0,
+            ip_freq: 0.0,
+            op_freq: 0.0,
+            op_samples: 0,
+            started: 0.0,
+        }
+    }
+
+    #[test]
+    fn static_interface_registration_applies_transport_announce_rate_defaults() {
+        let (tx, rx) = crate::event::channel();
+        let mut driver = Driver::new(
+            test_transport_config(true),
+            rx,
+            tx.clone(),
+            Box::new(NoopCallbacks),
+        );
+        driver.set_announce_rate_defaults(AnnounceRateDefaults {
+            target: Some(7200.0),
+            penalty: 15.0,
+            grace: 7,
+        });
+
+        let id = rns_core::transport::types::InterfaceId(7);
+        register_started_interface(
+            &mut driver,
+            &tx,
+            crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+            id,
+            test_interface_info(id.0),
+            Box::new(TestWriter),
+            "TestInterface".to_string(),
+            None,
+            &IfacRuntimeConfig {
+                netname: None,
+                netkey: None,
+                size: 16,
+            },
+        );
+
+        let info = &driver.interfaces[&id].info;
+        assert_eq!(info.announce_rate_target, Some(7200.0));
+        assert_eq!(info.announce_rate_penalty, 15.0);
+        assert_eq!(info.announce_rate_grace, 7);
+    }
+
+    #[test]
+    fn static_interface_registration_applies_transport_ingress_control_defaults() {
+        let (tx, rx) = crate::event::channel();
+        let mut driver = Driver::new(
+            test_transport_config(true),
+            rx,
+            tx.clone(),
+            Box::new(NoopCallbacks),
+        );
+        let mut defaults = rns_core::transport::types::IngressControlConfig::enabled();
+        defaults.burst_hold = 1.5;
+        defaults.pr_burst_freq = 5.5;
+        defaults.egress_enabled = true;
+        defaults.egress_pr_freq = 9.5;
+        driver.set_ingress_control_defaults(defaults);
+
+        let id = rns_core::transport::types::InterfaceId(8);
+        register_started_interface(
+            &mut driver,
+            &tx,
+            crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+            id,
+            test_interface_info(id.0),
+            Box::new(TestWriter),
+            "TestInterface".to_string(),
+            None,
+            &IfacRuntimeConfig {
+                netname: None,
+                netkey: None,
+                size: 16,
+            },
+        );
+
+        let ic = driver.interfaces[&id].info.ingress_control;
+        assert_eq!(ic.burst_hold, 1.5);
+        assert_eq!(ic.pr_burst_freq, 5.5);
+        assert!(ic.egress_enabled);
+        assert_eq!(ic.egress_pr_freq, 9.5);
+    }
+
+    struct TestNodeRatchetStore {
+        entry: storage::RatchetEntry,
+        current_calls: std::sync::Mutex<Vec<[u8; 16]>>,
+    }
+
+    impl storage::RatchetStore for TestNodeRatchetStore {
+        fn remember(&self, _dest_hash: [u8; 16], _entry: storage::RatchetEntry) -> io::Result<()> {
+            Ok(())
+        }
+
+        fn current(
+            &self,
+            dest_hash: &[u8; 16],
+            _now: f64,
+            _expiry_secs: f64,
+        ) -> io::Result<Option<storage::RatchetEntry>> {
+            self.current_calls.lock().unwrap().push(*dest_hash);
+            Ok(Some(self.entry))
+        }
+
+        fn cleanup(
+            &self,
+            _known_destinations: &HashSet<[u8; 16]>,
+            _now: f64,
+            _expiry_secs: f64,
+        ) -> io::Result<storage::RatchetCleanupStats> {
+            Ok(Default::default())
+        }
+    }
+
+    #[test]
+    fn send_packet_checks_ratchet_store_for_single_destinations() {
+        let store = Arc::new(TestNodeRatchetStore {
+            entry: storage::RatchetEntry {
+                ratchet: [0x55; 32],
+                received_at: time::now(),
+            },
+            current_calls: std::sync::Mutex::new(Vec::new()),
+        });
+        let ratchet_store: Arc<dyn storage::RatchetStore> = store.clone();
+        let node = RnsNode::start(
+            NodeConfig {
+                ratchet_store: Some(ratchet_store),
+                ..Default::default()
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        let mut rng = OsRng;
+        let remote_identity = Identity::new(&mut rng);
+        let public_key = remote_identity.get_public_key().unwrap();
+        let announced = crate::destination::AnnouncedIdentity {
+            dest_hash: rns_core::types::DestHash([0x22; 16]),
+            identity_hash: rns_core::types::IdentityHash(*remote_identity.hash()),
+            public_key,
+            app_data: None,
+            hops: 1,
+            received_at: time::now(),
+            receiving_interface: rns_core::transport::types::InterfaceId(0),
+            rssi: Some(-100),
+            snr: Some(10.5),
+        };
+        let dest = crate::destination::Destination::single_out("test", &["ratchet"], &announced);
+
+        node.send_packet(&dest, b"hello").unwrap();
+        assert_eq!(
+            store.current_calls.lock().unwrap().as_slice(),
+            &[dest.hash.0]
+        );
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn single_payload_uses_stored_ratchet_key_material() {
+        let ratchet_prv = rns_crypto::x25519::X25519PrivateKey::from_bytes(&[0x42; 32]);
+        let ratchet_pub = ratchet_prv.public_key().public_bytes();
+        let store = Arc::new(TestNodeRatchetStore {
+            entry: storage::RatchetEntry {
+                ratchet: ratchet_pub,
+                received_at: time::now(),
+            },
+            current_calls: std::sync::Mutex::new(Vec::new()),
+        });
+        let ratchet_store: Arc<dyn storage::RatchetStore> = store.clone();
+        let (tx, _rx) = crate::event::channel();
+        let node = RnsNode {
+            tx,
+            driver_handle: None,
+            verify_handle: None,
+            verify_shutdown: Arc::new(AtomicBool::new(false)),
+            rpc_server: None,
+            tick_interval_ms: Arc::new(AtomicU64::new(1000)),
+            probe_server: None,
+            known_destinations_path: None,
+            ratchet_store: Some(ratchet_store),
+            ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+        };
+
+        let mut rng = OsRng;
+        let remote_identity = Identity::new(&mut rng);
+        let public_key = remote_identity.get_public_key().unwrap();
+        let announced = crate::destination::AnnouncedIdentity {
+            dest_hash: rns_core::types::DestHash([0x33; 16]),
+            identity_hash: rns_core::types::IdentityHash(*remote_identity.hash()),
+            public_key,
+            app_data: None,
+            hops: 1,
+            received_at: time::now(),
+            receiving_interface: rns_core::transport::types::InterfaceId(0),
+            rssi: Some(-100),
+            snr: Some(10.5),
+        };
+        let dest = crate::destination::Destination::single_out("test", &["ratchet"], &announced);
+        let payload = node
+            .encrypt_single_payload(&dest, b"ratchet message")
+            .unwrap();
+
+        assert_eq!(
+            store.current_calls.lock().unwrap().as_slice(),
+            &[dest.hash.0]
+        );
+        assert!(remote_identity.decrypt(&payload).is_err());
+
+        let peer_pub_bytes: [u8; 32] = payload[..32].try_into().unwrap();
+        let peer_pub = rns_crypto::x25519::X25519PublicKey::from_bytes(&peer_pub_bytes);
+        let shared_key = ratchet_prv.exchange(&peer_pub);
+        let derived_key = rns_crypto::hkdf::hkdf(
+            rns_crypto::identity::DERIVED_KEY_LENGTH,
+            &shared_key,
+            Some(remote_identity.hash()),
+            None,
+        )
+        .unwrap();
+        let token = rns_crypto::token::Token::new(&derived_key).unwrap();
+        let plaintext = token.decrypt(&payload[32..]).unwrap();
+        assert_eq!(plaintext, b"ratchet message");
+    }
+
+    #[test]
+    fn tcp_client_interface_is_not_discoverable_without_kiss_framing() {
+        let mut params = std::collections::HashMap::new();
+        params.insert("discoverable".to_string(), "yes".to_string());
+        params.insert(
+            "discovery_name".to_string(),
+            "invalid-tcp-client".to_string(),
+        );
+        params.insert("reachable_on".to_string(), "example.com".to_string());
+        params.insert("target_port".to_string(), "4242".to_string());
+
+        let discovery =
+            super::extract_discovery_config("tcp-client", "TCPClientInterface", &params);
+
+        assert!(
+            discovery.is_none(),
+            "TCPClientInterface discovery must be rejected unless KISS framing is supported"
+        );
+    }
+
+    #[test]
+    fn ingress_control_config_defaults_by_interface_type() {
+        let params = std::collections::HashMap::new();
+
+        let tcp = super::parse_ingress_control_config("TCPServerInterface", &params).unwrap();
+        assert!(tcp.enabled);
+        assert_eq!(
+            tcp.max_held_announces,
+            rns_core::constants::IC_MAX_HELD_ANNOUNCES
+        );
+        assert_eq!(tcp.burst_hold, rns_core::constants::IC_BURST_HOLD);
+
+        let pipe = super::parse_ingress_control_config("PipeInterface", &params).unwrap();
+        assert!(!pipe.enabled);
+        assert_eq!(
+            pipe.held_release_interval,
+            rns_core::constants::IC_HELD_RELEASE_INTERVAL
+        );
+    }
+
+    #[test]
+    fn ingress_control_config_parses_python_ic_keys() {
+        let mut params = std::collections::HashMap::new();
+        params.insert("ingress_control".to_string(), "No".to_string());
+        params.insert("ic_max_held_announces".to_string(), "17".to_string());
+        params.insert("ic_burst_hold".to_string(), "1.5".to_string());
+        params.insert("ic_burst_freq_new".to_string(), "2.5".to_string());
+        params.insert("ic_burst_freq".to_string(), "3.5".to_string());
+        params.insert("ic_pr_burst_freq_new".to_string(), "3.25".to_string());
+        params.insert("ic_pr_burst_freq".to_string(), "8.25".to_string());
+        params.insert("egress_control".to_string(), "Yes".to_string());
+        params.insert("ec_pr_freq".to_string(), "5.25".to_string());
+        params.insert("ic_new_time".to_string(), "4.5".to_string());
+        params.insert("ic_burst_penalty".to_string(), "5.5".to_string());
+        params.insert("ic_held_release_interval".to_string(), "6.5".to_string());
+
+        let config = super::parse_ingress_control_config("TCPServerInterface", &params).unwrap();
+
+        assert!(!config.enabled);
+        assert_eq!(config.max_held_announces, 17);
+        assert_eq!(config.burst_hold, 1.5);
+        assert_eq!(config.burst_freq_new, 2.5);
+        assert_eq!(config.burst_freq, 3.5);
+        assert_eq!(config.pr_burst_freq_new, 3.25);
+        assert_eq!(config.pr_burst_freq, 8.25);
+        assert!(config.egress_enabled);
+        assert_eq!(config.egress_pr_freq, 5.25);
+        assert_eq!(config.new_time, 4.5);
+        assert_eq!(config.burst_penalty, 5.5);
+        assert_eq!(config.held_release_interval, 6.5);
+    }
+
+    #[test]
+    fn ingress_control_config_rejects_invalid_values() {
+        let mut params = std::collections::HashMap::new();
+        params.insert("ic_burst_hold".to_string(), "-1".to_string());
+
+        let err = super::parse_ingress_control_config("TCPServerInterface", &params).unwrap_err();
+
+        assert!(err.contains("ic_burst_hold"));
+    }
+
+    #[test]
+    fn start_and_shutdown() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+        node.shutdown();
+    }
+
+    #[test]
+    fn known_destinations_persist_across_restart() {
+        let dir = tempdir().unwrap();
+        let dest_hash = [0x91; 16];
+        let identity = Identity::new(&mut OsRng);
+        let last_used_at = 77.0;
+        let receiving_interface = rns_core::transport::types::InterfaceId(42);
+
+        let node = RnsNode::from_config(Some(dir.path()), Box::new(NoopCallbacks)).unwrap();
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        node.event_sender()
+            .send(crate::event::Event::Query(
+                QueryRequest::RestoreKnownDestination(crate::event::KnownDestinationEntry {
+                    dest_hash,
+                    identity_hash: *identity.hash(),
+                    public_key: identity.get_public_key().unwrap(),
+                    app_data: Some(b"persisted".to_vec()),
+                    hops: 2,
+                    received_at: 55.0,
+                    receiving_interface,
+                    was_used: true,
+                    last_used_at: Some(last_used_at),
+                    retained: true,
+                }),
+                response_tx,
+            ))
+            .unwrap();
+        assert!(matches!(
+            response_rx.recv().unwrap(),
+            QueryResponse::RestoreKnownDestination(true)
+        ));
+        node.shutdown();
+
+        let restarted = RnsNode::from_config(Some(dir.path()), Box::new(NoopCallbacks)).unwrap();
+        let entries = restarted.known_destinations().unwrap();
+        let entry = entries
+            .iter()
+            .find(|entry| entry.dest_hash == dest_hash)
+            .expect("reloaded destination should appear in lifecycle listing");
+        assert!(entry.retained);
+        assert!(entry.was_used);
+        assert_eq!(entry.hops, 2);
+        assert_eq!(entry.receiving_interface, receiving_interface);
+        assert_eq!(entry.last_used_at, Some(last_used_at));
+
+        let recalled = restarted
+            .recall_identity(&rns_core::types::DestHash(dest_hash))
+            .unwrap()
+            .expect("known destination should reload from storage");
+        assert_eq!(recalled.identity_hash.0, *identity.hash());
+        assert_eq!(recalled.app_data, Some(b"persisted".to_vec()));
+        restarted.shutdown();
+    }
+
+    #[test]
+    fn from_config_cleans_persistent_ratchets_after_loading_known_destinations() {
+        fn hex(bytes: &[u8]) -> String {
+            bytes.iter().map(|byte| format!("{:02x}", byte)).collect()
+        }
+
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("config"),
+            "[reticulum]\nenable_transport = False\nshare_instance = False\nratchet_expiry = 300\n",
+        )
+        .unwrap();
+        let paths = storage::ensure_storage_dirs(dir.path()).unwrap();
+        let known_live = [0x01; 16];
+        let known_expired = [0x02; 16];
+        let unknown = [0x03; 16];
+        let known_corrupt = [0x04; 16];
+        let now = time::now();
+
+        let identity = Identity::new(&mut OsRng);
+        let known = std::collections::HashMap::from([
+            (
+                known_live,
+                storage::KnownDestination {
+                    identity_hash: *identity.hash(),
+                    public_key: identity.get_public_key().unwrap(),
+                    app_data: None,
+                    hops: 1,
+                    received_at: now,
+                    receiving_interface: 0,
+                    was_used: false,
+                    last_used_at: None,
+                    retained: false,
+                },
+            ),
+            (
+                known_expired,
+                storage::KnownDestination {
+                    identity_hash: *identity.hash(),
+                    public_key: identity.get_public_key().unwrap(),
+                    app_data: None,
+                    hops: 1,
+                    received_at: now,
+                    receiving_interface: 0,
+                    was_used: false,
+                    last_used_at: None,
+                    retained: false,
+                },
+            ),
+            (
+                known_corrupt,
+                storage::KnownDestination {
+                    identity_hash: *identity.hash(),
+                    public_key: identity.get_public_key().unwrap(),
+                    app_data: None,
+                    hops: 1,
+                    received_at: now,
+                    receiving_interface: 0,
+                    was_used: false,
+                    last_used_at: None,
+                    retained: false,
+                },
+            ),
+        ]);
+        storage::save_known_destinations(&known, &paths.storage.join("known_destinations"))
+            .unwrap();
+
+        let store = storage::FsRatchetStore::new(paths.ratchets.clone());
+        store
+            .remember(
+                known_live,
+                storage::RatchetEntry {
+                    ratchet: [0x11; 32],
+                    received_at: now,
+                },
+            )
+            .unwrap();
+        store
+            .remember(
+                known_expired,
+                storage::RatchetEntry {
+                    ratchet: [0x22; 32],
+                    received_at: now - 1000.0,
+                },
+            )
+            .unwrap();
+        store
+            .remember(
+                unknown,
+                storage::RatchetEntry {
+                    ratchet: [0x33; 32],
+                    received_at: now,
+                },
+            )
+            .unwrap();
+        fs::write(paths.ratchets.join(hex(&known_corrupt)), b"not msgpack").unwrap();
+        fs::write(paths.ratchets.join("0102.out"), b"temp").unwrap();
+
+        let node = RnsNode::from_config(Some(dir.path()), Box::new(NoopCallbacks)).unwrap();
+
+        assert!(paths.ratchets.join(hex(&known_live)).exists());
+        assert!(!paths.ratchets.join(hex(&known_expired)).exists());
+        assert!(!paths.ratchets.join(hex(&unknown)).exists());
+        assert!(!paths.ratchets.join(hex(&known_corrupt)).exists());
+        assert!(!paths.ratchets.join("0102.out").exists());
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn start_with_identity() {
+        let identity = Identity::new(&mut OsRng);
+        let hash = *identity.hash();
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: true,
+                identity: Some(identity),
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+        // The identity hash should have been used
+        let _ = hash;
+        node.shutdown();
+    }
+
+    #[test]
+    fn start_generates_identity() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+        // Should not panic - identity was auto-generated
+        node.shutdown();
+    }
+
+    #[test]
+    fn from_config_creates_identity() {
+        let dir = std::env::temp_dir().join(format!("rns-test-fc-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        // Write a minimal config file
+        fs::write(
+            dir.join("config"),
+            "[reticulum]\nenable_transport = False\n",
+        )
+        .unwrap();
+
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks)).unwrap();
+
+        // Identity file should have been created
+        assert!(dir.join("storage/identities/identity").exists());
+
+        node.shutdown();
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn from_config_loads_identity() {
+        let dir = std::env::temp_dir().join(format!("rns-test-fl-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("storage/identities")).unwrap();
+
+        // Pre-create an identity
+        let identity = Identity::new(&mut OsRng);
+        let hash = *identity.hash();
+        storage::save_identity(&identity, &dir.join("storage/identities/identity")).unwrap();
+
+        fs::write(
+            dir.join("config"),
+            "[reticulum]\nenable_transport = False\n",
+        )
+        .unwrap();
+
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks)).unwrap();
+
+        // Verify the same identity was loaded (hash matches)
+        let loaded = storage::load_identity(&dir.join("storage/identities/identity")).unwrap();
+        assert_eq!(*loaded.hash(), hash);
+
+        node.shutdown();
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn from_config_tcp_server() {
+        let dir = std::env::temp_dir().join(format!("rns-test-fts-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        // Find a free port
+        let port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+
+        let config = format!(
+            r#"
+[reticulum]
+enable_transport = False
+
+[interfaces]
+  [[Test TCP Server]]
+    type = TCPServerInterface
+    listen_ip = 127.0.0.1
+    listen_port = {}
+"#,
+            port
+        );
+
+        fs::write(dir.join("config"), config).unwrap();
+
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks)).unwrap();
+
+        // Give server time to start
+        thread::sleep(Duration::from_millis(100));
+
+        // Should be able to connect
+        let _client = std::net::TcpStream::connect(format!("127.0.0.1:{}", port)).unwrap();
+
+        node.shutdown();
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn from_config_starts_rpc_when_share_instance_enabled() {
+        let dir = std::env::temp_dir().join(format!("rns-test-rpc-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let rpc_port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+
+        let config = format!(
+            r#"
+[reticulum]
+enable_transport = False
+share_instance = Yes
+instance_control_port = {}
+
+[interfaces]
+"#,
+            rpc_port
+        );
+
+        fs::write(dir.join("config"), config).unwrap();
+
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks)).unwrap();
+
+        thread::sleep(Duration::from_millis(100));
+
+        let _client = std::net::TcpStream::connect(format!("127.0.0.1:{}", rpc_port)).unwrap();
+
+        node.shutdown();
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn from_config_starts_rpc_when_transport_enabled() {
+        let dir =
+            std::env::temp_dir().join(format!("rns-test-rpc-transport-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let rpc_port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+
+        let config = format!(
+            r#"
+[reticulum]
+enable_transport = True
+share_instance = Yes
+instance_control_port = {}
+
+[interfaces]
+"#,
+            rpc_port
+        );
+
+        fs::write(dir.join("config"), config).unwrap();
+
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks)).unwrap();
+
+        thread::sleep(Duration::from_millis(100));
+
+        let _client = std::net::TcpStream::connect(format!("127.0.0.1:{}", rpc_port)).unwrap();
+
+        node.shutdown();
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn from_config_starts_rpc_when_tcp_client_is_unreachable() {
+        let dir =
+            std::env::temp_dir().join(format!("rns-test-rpc-unreachable-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let rpc_port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+        let unreachable_port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+
+        let config = format!(
+            r#"
+[reticulum]
+enable_transport = True
+share_instance = Yes
+instance_control_port = {}
+
+[interfaces]
+  [[Unreachable Upstream]]
+    type = TCPClientInterface
+    target_host = 127.0.0.1
+    target_port = {}
+"#,
+            rpc_port, unreachable_port
+        );
+
+        fs::write(dir.join("config"), config).unwrap();
+
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks)).unwrap();
+
+        thread::sleep(Duration::from_millis(100));
+
+        let _client = std::net::TcpStream::connect(format!("127.0.0.1:{}", rpc_port)).unwrap();
+
+        node.shutdown();
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_parse_interface_mode() {
+        use rns_core::constants::*;
+
+        assert_eq!(parse_interface_mode("full"), MODE_FULL);
+        assert_eq!(parse_interface_mode("Full"), MODE_FULL);
+        assert_eq!(parse_interface_mode("access_point"), MODE_ACCESS_POINT);
+        assert_eq!(parse_interface_mode("accesspoint"), MODE_ACCESS_POINT);
+        assert_eq!(parse_interface_mode("ap"), MODE_ACCESS_POINT);
+        assert_eq!(parse_interface_mode("AP"), MODE_ACCESS_POINT);
+        assert_eq!(parse_interface_mode("pointtopoint"), MODE_POINT_TO_POINT);
+        assert_eq!(parse_interface_mode("ptp"), MODE_POINT_TO_POINT);
+        assert_eq!(parse_interface_mode("roaming"), MODE_ROAMING);
+        assert_eq!(parse_interface_mode("boundary"), MODE_BOUNDARY);
+        assert_eq!(parse_interface_mode("gateway"), MODE_GATEWAY);
+        assert_eq!(parse_interface_mode("gw"), MODE_GATEWAY);
+        // Unknown defaults to FULL
+        assert_eq!(parse_interface_mode("invalid"), MODE_FULL);
+    }
+
+    #[test]
+    fn to_node_config_serial() {
+        // Verify from_config parses SerialInterface correctly.
+        // The serial port won't exist, so start() will fail, but the config
+        // parsing path is exercised. We verify via the error (not a config error).
+        let dir = std::env::temp_dir().join(format!("rns-test-serial-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let config = r#"
+[reticulum]
+enable_transport = False
+
+[interfaces]
+  [[Test Serial Port]]
+    type = SerialInterface
+    port = /dev/nonexistent_rns_test_serial
+    speed = 115200
+    databits = 8
+    parity = E
+    stopbits = 1
+    interface_mode = ptp
+    networkname = testnet
+"#;
+        fs::write(dir.join("config"), config).unwrap();
+
+        // Interface error is non-fatal: the node starts but logs the error.
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks))
+            .expect("Config should parse; interface failure is non-fatal");
+        node.shutdown();
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn to_node_config_kiss() {
+        // Verify from_config parses KISSInterface correctly.
+        let dir = std::env::temp_dir().join(format!("rns-test-kiss-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let config = r#"
+[reticulum]
+enable_transport = False
+
+[interfaces]
+  [[Test KISS TNC]]
+    type = KISSInterface
+    port = /dev/nonexistent_rns_test_kiss
+    speed = 9600
+    preamble = 500
+    txtail = 30
+    persistence = 128
+    slottime = 40
+    flow_control = True
+    id_interval = 600
+    id_callsign = TEST0
+    interface_mode = full
+    passphrase = secretkey
+"#;
+        fs::write(dir.join("config"), config).unwrap();
+
+        // Interface error is non-fatal: the node starts but logs the error.
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks))
+            .expect("Config should parse; interface failure is non-fatal");
+        node.shutdown();
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_extract_ifac_config() {
+        use std::collections::HashMap;
+
+        // No IFAC params → None
+        let params: HashMap<String, String> = HashMap::new();
+        assert!(extract_ifac_config(&params, 16).is_none());
+
+        // networkname only
+        let mut params = HashMap::new();
+        params.insert("networkname".into(), "testnet".into());
+        let ifac = extract_ifac_config(&params, 16).unwrap();
+        assert_eq!(ifac.netname.as_deref(), Some("testnet"));
+        assert!(ifac.netkey.is_none());
+        assert_eq!(ifac.size, 16);
+
+        // passphrase only with custom size (in bits)
+        let mut params = HashMap::new();
+        params.insert("passphrase".into(), "secret".into());
+        params.insert("ifac_size".into(), "64".into()); // 64 bits = 8 bytes
+        let ifac = extract_ifac_config(&params, 16).unwrap();
+        assert!(ifac.netname.is_none());
+        assert_eq!(ifac.netkey.as_deref(), Some("secret"));
+        assert_eq!(ifac.size, 8);
+
+        // Both with alternate key names
+        let mut params = HashMap::new();
+        params.insert("network_name".into(), "mynet".into());
+        params.insert("pass_phrase".into(), "mykey".into());
+        let ifac = extract_ifac_config(&params, 8).unwrap();
+        assert_eq!(ifac.netname.as_deref(), Some("mynet"));
+        assert_eq!(ifac.netkey.as_deref(), Some("mykey"));
+        assert_eq!(ifac.size, 8);
+    }
+
+    #[test]
+    fn to_node_config_rnode() {
+        // Verify from_config parses RNodeInterface correctly.
+        // The serial port won't exist, so start() will fail at open time.
+        let dir = std::env::temp_dir().join(format!("rns-test-rnode-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let config = r#"
+[reticulum]
+enable_transport = False
+
+[interfaces]
+  [[Test RNode]]
+    type = RNodeInterface
+    port = /dev/nonexistent_rns_test_rnode
+    frequency = 867200000
+    bandwidth = 125000
+    txpower = 7
+    spreadingfactor = 8
+    codingrate = 5
+    flow_control = True
+    st_alock = 5.0
+    lt_alock = 2.5
+    interface_mode = full
+    networkname = testnet
+"#;
+        fs::write(dir.join("config"), config).unwrap();
+
+        // Interface error is non-fatal: the node starts but logs the error.
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks))
+            .expect("Config should parse; interface failure is non-fatal");
+        node.shutdown();
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn to_node_config_pipe() {
+        // Verify from_config parses PipeInterface correctly.
+        // Use `cat` as a real command so it actually starts.
+        let dir = std::env::temp_dir().join(format!("rns-test-pipe-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let config = r#"
+[reticulum]
+enable_transport = False
+
+[interfaces]
+  [[Test Pipe]]
+    type = PipeInterface
+    command = cat
+    respawn_delay = 5000
+    interface_mode = full
+"#;
+        fs::write(dir.join("config"), config).unwrap();
+
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks)).unwrap();
+        // If we got here, config parsing and start() succeeded
+        node.shutdown();
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn to_node_config_backbone() {
+        // Verify from_config parses BackboneInterface correctly.
+        let dir = std::env::temp_dir().join(format!("rns-test-backbone-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+
+        let config = format!(
+            r#"
+[reticulum]
+enable_transport = False
+
+[interfaces]
+  [[Test Backbone]]
+    type = BackboneInterface
+    listen_ip = 127.0.0.1
+    listen_port = {}
+    interface_mode = full
+"#,
+            port
+        );
+
+        fs::write(dir.join("config"), config).unwrap();
+
+        let node = RnsNode::from_config(Some(&dir), Box::new(NoopCallbacks)).unwrap();
+
+        // Give server time to start
+        thread::sleep(Duration::from_millis(100));
+
+        // Should be able to connect
+        {
+            let _client = std::net::TcpStream::connect(format!("127.0.0.1:{}", port)).unwrap();
+            // client drops here, closing the connection cleanly
+        }
+
+        // Small delay to let epoll process the disconnect
+        thread::sleep(Duration::from_millis(50));
+
+        node.shutdown();
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rnode_config_defaults() {
+        use crate::interface::rnode::{RNodeConfig, RNodeSubConfig};
+
+        let config = RNodeConfig::default();
+        assert_eq!(config.speed, 115200);
+        assert!(config.subinterfaces.is_empty());
+        assert!(config.id_interval.is_none());
+        assert!(config.id_callsign.is_none());
+
+        let sub = RNodeSubConfig {
+            name: "test".into(),
+            frequency: 868_000_000,
+            bandwidth: 125_000,
+            txpower: 7,
+            spreading_factor: 8,
+            coding_rate: 5,
+            flow_control: false,
+            st_alock: None,
+            lt_alock: None,
+        };
+        assert_eq!(sub.frequency, 868_000_000);
+        assert_eq!(sub.bandwidth, 125_000);
+        assert!(!sub.flow_control);
+    }
+
+    // =========================================================================
+    // Phase 9c: Announce + Discovery node-level tests
+    // =========================================================================
+
+    #[test]
+    fn announce_builds_valid_packet() {
+        let identity = Identity::new(&mut OsRng);
+        let identity_hash = rns_core::types::IdentityHash(*identity.hash());
+
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        let dest = crate::destination::Destination::single_in("test", &["echo"], identity_hash);
+
+        // Register destination first
+        node.register_destination(dest.hash.0, dest.dest_type.to_wire_constant())
+            .unwrap();
+
+        // Announce should succeed (though no interfaces to send on)
+        let result = node.announce(&dest, &identity, Some(b"hello"));
+        assert!(result.is_ok());
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn has_path_and_hops_to() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        let dh = rns_core::types::DestHash([0xAA; 16]);
+
+        // No path should exist
+        assert_eq!(node.has_path(&dh).unwrap(), false);
+        assert_eq!(node.hops_to(&dh).unwrap(), None);
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn recall_identity_none_when_unknown() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        let dh = rns_core::types::DestHash([0xBB; 16]);
+        assert!(node.recall_identity(&dh).unwrap().is_none());
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn request_path_does_not_crash() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        let dh = rns_core::types::DestHash([0xCC; 16]);
+        assert!(node.request_path(&dh).is_ok());
+
+        // Small wait for the event to be processed
+        thread::sleep(Duration::from_millis(50));
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn create_link_returns_error_while_draining() {
+        let node = RnsNode::start(NodeConfig::default(), Box::new(NoopCallbacks)).unwrap();
+
+        node.begin_drain(Duration::from_secs(1)).unwrap();
+        assert!(node.create_link([0xAB; 16], [0xCD; 32]).is_err());
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn request_path_returns_error_while_draining() {
+        let node = RnsNode::start(NodeConfig::default(), Box::new(NoopCallbacks)).unwrap();
+
+        node.begin_drain(Duration::from_secs(1)).unwrap();
+        assert!(node
+            .request_path(&rns_core::types::DestHash([0xAB; 16]))
+            .is_err());
+
+        node.shutdown();
+    }
+
+    // =========================================================================
+    // Phase 9d: send_packet + register_destination_with_proof tests
+    // =========================================================================
+
+    #[test]
+    fn send_packet_returns_error_while_draining() {
+        let node = RnsNode::start(NodeConfig::default(), Box::new(NoopCallbacks)).unwrap();
+        let dest = crate::destination::Destination::plain("drain-test", &["send"]);
+
+        node.begin_drain(Duration::from_secs(1)).unwrap();
+        assert!(node.send_packet(&dest, b"hello").is_err());
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn send_packet_plain() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        let dest = crate::destination::Destination::plain("test", &["echo"]);
+        let result = node.send_packet(&dest, b"hello world");
+        assert!(result.is_ok());
+
+        let packet_hash = result.unwrap();
+        // Packet hash should be non-zero
+        assert_ne!(packet_hash.0, [0u8; 32]);
+
+        // Small wait for the event to be processed
+        thread::sleep(Duration::from_millis(50));
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn send_packet_single_requires_public_key() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        // single_in has no public_key — sending should fail
+        let dest = crate::destination::Destination::single_in(
+            "test",
+            &["echo"],
+            rns_core::types::IdentityHash([0x42; 16]),
+        );
+        let result = node.send_packet(&dest, b"hello");
+        assert!(result.is_err(), "single_in has no public_key, should fail");
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn send_packet_single_encrypts() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        // Create a proper OUT SINGLE destination with a real identity's public key
+        let remote_identity = Identity::new(&mut OsRng);
+        let recalled = crate::destination::AnnouncedIdentity {
+            dest_hash: rns_core::types::DestHash([0xAA; 16]),
+            identity_hash: rns_core::types::IdentityHash(*remote_identity.hash()),
+            public_key: remote_identity.get_public_key().unwrap(),
+            app_data: None,
+            hops: 1,
+            received_at: 0.0,
+            receiving_interface: rns_core::transport::types::InterfaceId(0),
+            rssi: Some(-100),
+            snr: Some(10.5),
+        };
+        let dest = crate::destination::Destination::single_out("test", &["echo"], &recalled);
+
+        let result = node.send_packet(&dest, b"secret message");
+        assert!(result.is_ok());
+
+        let packet_hash = result.unwrap();
+        assert_ne!(packet_hash.0, [0u8; 32]);
+
+        thread::sleep(Duration::from_millis(50));
+        node.shutdown();
+    }
+
+    #[test]
+    fn register_destination_with_proof_prove_all() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        let identity = Identity::new(&mut OsRng);
+        let ih = rns_core::types::IdentityHash(*identity.hash());
+        let dest = crate::destination::Destination::single_in("echo", &["request"], ih)
+            .set_proof_strategy(rns_core::types::ProofStrategy::ProveAll);
+        let prv_key = identity.get_private_key().unwrap();
+
+        let result = node.register_destination_with_proof(&dest, Some(prv_key));
+        assert!(result.is_ok());
+
+        // Small wait for the events to be processed
+        thread::sleep(Duration::from_millis(50));
+
+        node.shutdown();
+    }
+
+    #[test]
+    fn register_destination_with_proof_prove_none() {
+        let node = RnsNode::start(
+            NodeConfig {
+                panic_on_interface_error: false,
+                transport_enabled: false,
+                identity: None,
+                interfaces: vec![],
+                share_instance: false,
+                instance_name: "default".into(),
+                shared_instance_port: 37428,
+                rpc_port: 0,
+                cache_dir: None,
+                ratchet_store: None,
+                ratchet_expiry: Duration::from_secs(rns_core::constants::RATCHET_EXPIRY),
+                management: Default::default(),
+                probe_port: None,
+                probe_addrs: vec![],
+                probe_protocol: rns_core::holepunch::ProbeProtocol::Rnsp,
+                device: None,
+                hooks: Vec::new(),
+                discover_interfaces: false,
+                discovery_required_value: None,
+                respond_to_probes: false,
+                prefer_shorter_path: false,
+                max_paths_per_destination: 1,
+                packet_hashlist_max_entries: rns_core::constants::HASHLIST_MAXSIZE,
+                max_discovery_pr_tags: rns_core::constants::MAX_PR_TAGS,
+                max_path_destinations: usize::MAX,
+                max_tunnel_destinations_total: usize::MAX,
+                known_destinations_ttl: DEFAULT_KNOWN_DESTINATIONS_TTL,
+                known_destinations_max_entries: DEFAULT_KNOWN_DESTINATIONS_MAX_ENTRIES,
+                announce_table_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_TABLE_TTL as u64,
+                ),
+                announce_table_max_bytes: rns_core::constants::ANNOUNCE_TABLE_MAX_BYTES,
+                driver_event_queue_capacity: crate::event::DEFAULT_EVENT_QUEUE_CAPACITY,
+                interface_writer_queue_capacity:
+                    crate::interface::DEFAULT_ASYNC_WRITER_QUEUE_CAPACITY,
+                announce_rate_defaults: AnnounceRateDefaults::default(),
+                ingress_control_defaults: rns_core::transport::types::IngressControlConfig::enabled(
+                ),
+                #[cfg(feature = "iface-backbone")]
+                backbone_peer_pool: None,
+                announce_sig_cache_enabled: true,
+                announce_sig_cache_max_entries: rns_core::constants::ANNOUNCE_SIG_CACHE_MAXSIZE,
+                announce_sig_cache_ttl: Duration::from_secs(
+                    rns_core::constants::ANNOUNCE_SIG_CACHE_TTL as u64,
+                ),
+                registry: None,
+                #[cfg(feature = "hooks")]
+                provider_bridge: None,
+            },
+            Box::new(NoopCallbacks),
+        )
+        .unwrap();
+
+        // ProveNone should not send RegisterProofStrategy event
+        let dest = crate::destination::Destination::plain("test", &["data"])
+            .set_proof_strategy(rns_core::types::ProofStrategy::ProveNone);
+
+        let result = node.register_destination_with_proof(&dest, None);
+        assert!(result.is_ok());
+
+        thread::sleep(Duration::from_millis(50));
+        node.shutdown();
+    }
+}
