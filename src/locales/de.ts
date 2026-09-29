@@ -536,8 +536,8 @@ export default {
     earningsError: 'Die Einnahmen konnten nicht geladen werden',
     earningsEmpty: 'Noch keine Daten zu Einnahmen',
     earningsLottery: 'Aus der Blockchain-Lotterie',
-    earningsDonation: 'Erhaltene Spenden',
-    earningsTransfer: 'Abgeschlossene Überweisungen',
+    earningsDonation: 'Mit Kommentaren erhalten',
+    earningsTransfer: 'Als Überweisungen und Trinkgeld erhalten',
     history: {
       hint: 'Gesendete und empfangene PKOIN deiner Haupt-Wallet.',
       loading: 'Transaktionen werden geladen…',

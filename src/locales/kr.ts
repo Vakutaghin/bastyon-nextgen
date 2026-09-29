@@ -524,8 +524,8 @@ export default {
     earningsError: '수익을 불러오지 못했습니다',
     earningsEmpty: '아직 수익 데이터가 없습니다',
     earningsLottery: '블록체인 복권에서',
-    earningsDonation: '받은 후원',
-    earningsTransfer: '완료된 송금',
+    earningsDonation: '댓글과 함께 받음',
+    earningsTransfer: '송금과 후원으로 받음',
     history: {
       hint: '기본 지갑에서 보내고 받은 PKOIN입니다.',
       loading: '거래를 불러오는 중…',

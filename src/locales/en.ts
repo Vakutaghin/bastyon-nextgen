@@ -526,8 +526,8 @@ export default {
     earningsError: 'Failed to load earnings',
     earningsEmpty: 'No earnings data yet',
     earningsLottery: 'From blockchain lottery',
-    earningsDonation: 'Donations received',
-    earningsTransfer: 'Transfers completed',
+    earningsDonation: 'Received with comments',
+    earningsTransfer: 'Received as transfers and tips',
     history: {
       hint: 'Sent and received PKOIN for your main wallet.',
       loading: 'Loading transactions…',

@@ -46,6 +46,11 @@ function formatAmount(value: number): string {
   return value.toFixed(8).replace(/\.?0+$/, '')
 }
 
+// Нода (getaccountearning) считает только входящее с чужих адресов:
+// lottery — выходы coinstake (награды лотереи), donation — монеты,
+// приложенные к комментариям (транзакции комментариев), transfer — обычные
+// переводы, в том числе чаевые. Подписи раньше говорили «донаты» и
+// «совершено переводов», и чаевые искали не там.
 const cards = computed(() => {
   const e = earnings.value
   if (!e) return []

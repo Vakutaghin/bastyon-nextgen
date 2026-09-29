@@ -533,8 +533,8 @@ export default {
     earningsError: 'Impossibile caricare i guadagni',
     earningsEmpty: 'Nessun dato sui guadagni per ora',
     earningsLottery: 'Dalla lotteria della blockchain',
-    earningsDonation: 'Donazioni ricevute',
-    earningsTransfer: 'Trasferimenti completati',
+    earningsDonation: 'Ricevuto con i commenti',
+    earningsTransfer: 'Ricevuto con trasferimenti e mance',
     history: {
       hint: 'PKOIN inviati e ricevuti sul tuo portafoglio principale.',
       loading: 'Caricamento delle transazioni…',

@@ -537,8 +537,8 @@ export default {
     earningsError: 'Impossible de charger les gains',
     earningsEmpty: 'Aucune donnée de gains pour le moment',
     earningsLottery: 'De la loterie de la blockchain',
-    earningsDonation: 'Dons reçus',
-    earningsTransfer: 'Transferts effectués',
+    earningsDonation: 'Reçu avec des commentaires',
+    earningsTransfer: 'Reçu en virements et pourboires',
     history: {
       hint: 'PKOIN envoyés et reçus sur votre portefeuille principal.',
       loading: 'Chargement des transactions…',

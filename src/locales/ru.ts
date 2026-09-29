@@ -533,8 +533,8 @@ export default {
     earningsError: 'Не удалось загрузить заработок',
     earningsEmpty: 'Данных о заработке пока нет',
     earningsLottery: 'Из blockchain-лотереи',
-    earningsDonation: 'Получено донатов',
-    earningsTransfer: 'Совершено переводов',
+    earningsDonation: 'Получено с комментариями',
+    earningsTransfer: 'Получено переводами и чаевыми',
     history: {
       hint: 'Отправленные и полученные PKOIN по основному кошельку.',
       loading: 'Загрузка транзакций…',

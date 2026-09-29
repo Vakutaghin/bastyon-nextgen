@@ -502,8 +502,8 @@ export default {
     earningsError: '无法加载收益',
     earningsEmpty: '暂无收益数据',
     earningsLottery: '来自区块链抽奖',
-    earningsDonation: '收到的捐赠',
-    earningsTransfer: '已完成的转账',
+    earningsDonation: '随评论收到',
+    earningsTransfer: '通过转账和打赏收到',
     history: {
       hint: '主钱包发送和接收的 PKOIN。',
       loading: '正在加载交易…',

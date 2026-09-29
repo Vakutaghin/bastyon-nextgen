@@ -526,8 +526,8 @@ export default {
     earningsError: 'Зарада није могла да се учита',
     earningsEmpty: 'Још нема података о заради',
     earningsLottery: 'Из блокчејн лутрије',
-    earningsDonation: 'Примљене донације',
-    earningsTransfer: 'Извршени трансфери',
+    earningsDonation: 'Примљено уз коментаре',
+    earningsTransfer: 'Примљено преносима и напојницама',
     history: {
       hint: 'Послати и примљени PKOIN на вашем главном новчанику.',
       loading: 'Учитавање трансакција…',
