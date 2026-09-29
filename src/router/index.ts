@@ -167,7 +167,7 @@ const router = createRouter({
       path: '/:userName',
       name: 'profile',
       component: ProfilePage,
-      meta: { titleKey: 'routes.profile' },
+      meta: { titleKey: 'routes.profile', helpTopic: 'profile' },
     },
   ],
 })
