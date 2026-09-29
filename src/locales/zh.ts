@@ -1267,7 +1267,7 @@ export default {
     audioYes: '有',
     audioNo: '无',
     yes: '是',
-    audioOpus: 'Opus，{bitrate} kbps',
+    audioCodec: '{codec}，{bitrate} kbps',
     mimeType: 'MIME 类型：',
     format: '格式：',
     framesPerSecond: '每秒帧数：',

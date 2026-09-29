@@ -1306,7 +1306,7 @@ export default {
     audioYes: 'Да',
     audioNo: 'Не',
     yes: 'Да',
-    audioOpus: 'Opus, {bitrate} kbps',
+    audioCodec: '{codec}, {bitrate} kbps',
     mimeType: 'MIME тип:',
     format: 'Формат:',
     framesPerSecond: 'Сличица у секунди:',

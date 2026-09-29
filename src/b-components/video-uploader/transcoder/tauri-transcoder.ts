@@ -6,7 +6,7 @@ import type {
   TranscodeResult,
   VideoMetadata,
 } from './types'
-import { TranscodeError } from './types'
+import { DEFAULT_TRANSCODE_CODEC, TranscodeError, transcodeOutput } from './types'
 import {
   selectTargetResolution,
   calculateTargetDimensions,
@@ -167,7 +167,7 @@ export class TauriTranscoder implements Transcoder {
         sourceBitrate > 0 ? sourceBitrate : Infinity
       )
       const fps = Math.min(options.fps || TARGET_FPS, MAX_FPS)
-      const codec: TranscodeCodec = options.codec ?? 'h264'
+      const codec: TranscodeCodec = options.codec ?? DEFAULT_TRANSCODE_CODEC
 
       const audioBitrate = metadata.hasAudio ? options.audioBitrate || MAX_AUDIO_BITRATE : 0
 
@@ -214,7 +214,7 @@ export class TauriTranscoder implements Transcoder {
       }
       const blob = await response.blob()
 
-      const mimeType = codec === 'vp9' ? 'video/webm' : 'video/mp4'
+      const { mimeType } = transcodeOutput(codec)
       return {
         blob,
         width: result.width,

@@ -3,13 +3,13 @@ import { transcoder } from '../transcoder'
 import { storageManager } from '../utils'
 import type { TranscodedVideo } from '@/db'
 import type { TranscodeProgress, VideoMetadata } from '../transcoder/types'
+import { DEFAULT_TRANSCODE_CODEC, transcodeOutput } from '../transcoder/types'
 import {
   selectTargetResolution,
   calculateTargetDimensions,
   getResolutionString,
 } from '../transcoder/resolution-selector'
 import { getBitrateForResolution, TARGET_FPS, MAX_FPS } from '../utils/constants'
-import { getBestMimeType } from '../utils/environment'
 import { calculateVideoBitrate } from '../components/video-info-panel/video-info-panel'
 import { formatFileSize } from '../utils/video-formatter'
 import { t } from '@/i18n'
@@ -84,7 +84,10 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
       targetVideoBitrate.value = Math.min(calculatedTargetBitrate, sourceBitrate)
 
       targetFps.value = Math.min(TARGET_FPS, MAX_FPS)
-      targetMimeType.value = getBestMimeType() || t('videoMsg.unknown')
+      // Формат — тот, что реально пишет транскодер (FFmpeg в Tauri), а не
+      // лучший для MediaRecorder: окно обещало WebM с Opus, а выходил MP4.
+      const output = transcodeOutput(DEFAULT_TRANSCODE_CODEC)
+      targetMimeType.value = `${output.mimeType} · ${output.videoCodec}`
 
       const transcoderInfo = transcoder.getTranscoderInfo()
       transcoderName.value = transcoderInfo.method === 'tauri' ? 'FFmpeg' : t('videoMsg.unknown')

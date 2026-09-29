@@ -1319,7 +1319,7 @@ export default {
     audioYes: 'Ja',
     audioNo: 'Nein',
     yes: 'Ja',
-    audioOpus: 'Opus, {bitrate} kbit/s',
+    audioCodec: '{codec}, {bitrate} kbit/s',
     mimeType: 'MIME-Typ:',
     format: 'Format:',
     framesPerSecond: 'Bilder pro Sekunde:',

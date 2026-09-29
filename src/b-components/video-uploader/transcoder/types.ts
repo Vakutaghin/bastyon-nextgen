@@ -7,6 +7,20 @@ import type { TargetResolution } from '../utils/constants'
  */
 export type TranscodeCodec = 'h264' | 'vp9'
 
+/** Кодек, которым транскодер пишет файл, если его не выбрали явно. */
+export const DEFAULT_TRANSCODE_CODEC: TranscodeCodec = 'h264'
+
+/** Что получится на выходе при этом кодеке: контейнер и звук (как в Rust-команде FFmpeg). */
+export function transcodeOutput(codec: TranscodeCodec): {
+  mimeType: string
+  videoCodec: string
+  audioCodec: string
+} {
+  return codec === 'vp9'
+    ? { mimeType: 'video/webm', videoCodec: 'VP9', audioCodec: 'Opus' }
+    : { mimeType: 'video/mp4', videoCodec: 'H.264', audioCodec: 'AAC' }
+}
+
 /**
  * Параметры транскодирования
  */

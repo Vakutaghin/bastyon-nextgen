@@ -1295,7 +1295,7 @@ export default {
     audioYes: '예',
     audioNo: '아니요',
     yes: '예',
-    audioOpus: 'Opus, {bitrate}kbps',
+    audioCodec: '{codec}, {bitrate}kbps',
     mimeType: 'MIME 유형:',
     format: '형식:',
     framesPerSecond: '초당 프레임 수:',

@@ -74,7 +74,7 @@
             <CloseCircleOutlined v-else :style="ICON_DANGER" />
             {{
               sourceMetadata.hasAudio
-                ? t('videoUploader.audioOpus', { bitrate: MAX_AUDIO_BITRATE })
+                ? t('videoUploader.audioCodec', { codec: audioCodec, bitrate: MAX_AUDIO_BITRATE })
                 : t('videoUploader.audioNo')
             }}
           </SC_InfoValue>
@@ -116,11 +116,18 @@ import {
   SC_TranscoderBadge,
 } from './styled'
 import { formatFileSize, formatDuration, calculateVideoBitrate } from './video-info-panel'
-import type { VideoMetadata } from '../../transcoder/types'
+import {
+  DEFAULT_TRANSCODE_CODEC,
+  transcodeOutput,
+  type VideoMetadata,
+} from '../../transcoder/types'
 import { MAX_AUDIO_BITRATE } from '../../utils/constants'
 import { computed } from 'vue'
 
 const { t } = useI18n()
+
+/** Звук в выходном файле — кодек того же транскодера (AAC в MP4). */
+const audioCodec = transcodeOutput(DEFAULT_TRANSCODE_CODEC).audioCodec
 
 const p = defineProps<{
   sourceMetadata: VideoMetadata | null

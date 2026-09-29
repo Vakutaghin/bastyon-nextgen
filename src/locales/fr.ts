@@ -1320,7 +1320,7 @@ export default {
     audioYes: 'Oui',
     audioNo: 'Non',
     yes: 'Oui',
-    audioOpus: 'Opus, {bitrate} kbit/s',
+    audioCodec: '{codec}, {bitrate} kbit/s',
     mimeType: 'Type MIME :',
     format: 'Format :',
     framesPerSecond: 'Images par seconde :',
