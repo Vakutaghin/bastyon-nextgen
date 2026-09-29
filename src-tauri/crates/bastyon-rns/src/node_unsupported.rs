@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::types::{Method, Page, RnsEvent, StartOptions, Started, Status};
+use crate::types::{Attachment, Method, Page, RnsEvent, StartOptions, Started, Status};
 
 const UNSUPPORTED: &str = "unsupported";
 
@@ -37,7 +37,22 @@ impl Runtime {
         match *self {}
     }
 
-    pub fn send(&self, _: [u8; 16], _: &str, _: &str, _: Method) -> Result<String, String> {
+    pub fn send(
+        &self,
+        _: [u8; 16],
+        _: &str,
+        _: &str,
+        _: &[Attachment],
+        _: Method,
+    ) -> Result<String, String> {
+        match *self {}
+    }
+
+    pub fn paper(&self, _: [u8; 16], _: &str) -> Result<String, String> {
+        match *self {}
+    }
+
+    pub fn ingest(&self, _: &str) -> Result<(), String> {
         match *self {}
     }
 

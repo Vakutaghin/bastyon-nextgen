@@ -1877,8 +1877,23 @@ export default {
         binary: 'Das ist eine Datei, keine Seite: Sie lässt sich hier nicht anzeigen.',
         pageEmpty: 'Die Seite ist leer.',
       },
+      paper: {
+        title: 'Papiernachricht',
+        hint: 'Ein lxm://-Link oder sein QR-Code aus Sideband, NomadNet oder Bastyon: Die Nachricht öffnet sich in Ihren Chats, wenn sie für Sie ist.',
+        open: 'Öffnen',
+        scan: 'QR scannen',
+        done: 'Nachricht geöffnet — sie ist in Ihren Chats.',
+      },
     },
     chat: {
+      paper: 'Papiernachricht (QR-Code)',
+      paperTitle: 'Papiernachricht',
+      paperHint:
+        'Die Nachricht ist für die andere Person verschlüsselt. Geben Sie QR-Code oder Link beliebig weiter — ausdrucken, fotografieren, als Text senden: Nur sie kann sie lesen.',
+      paperCopy: 'Link kopieren',
+      paperCopied: 'Link kopiert',
+      paperDone: 'Fertig',
+      paperEmpty: 'Schreiben Sie zuerst den Text — er geht als Papiernachricht.',
       attach: 'Bild oder Datei anhängen',
       connect: 'Verbinden',
       errors: {
@@ -1989,6 +2004,8 @@ export default {
       bad_interface: 'Ungültige Schnittstelleneinstellungen.',
       unsupported_link: 'Diese Art von Link lässt sich hier nicht öffnen.',
       rns_too_large: 'Die Anhänge sind für eine Nachricht zu groß (bis 900 KB).',
+      rns_bad_paper: 'Das ist keine LXMF-Papiernachricht.',
+      rns_paper_not_ours: 'Diese Papiernachricht ist nicht an Sie gerichtet.',
     },
   },
   hotkeys: {

@@ -1859,8 +1859,23 @@ export default {
         binary: 'This is a file, not a page: it cannot be shown here.',
         pageEmpty: 'The page is empty.',
       },
+      paper: {
+        title: 'Paper message',
+        hint: 'An lxm:// link or its QR code from Sideband, NomadNet or Bastyon: the message opens in your chats if it is for you.',
+        open: 'Open',
+        scan: 'Scan QR',
+        done: 'Message opened — it is in your chats.',
+      },
     },
     chat: {
+      paper: 'Paper message (QR code)',
+      paperTitle: 'Paper message',
+      paperHint:
+        'The message is encrypted for the other person. Pass on the QR code or the link any way you like — print it, photograph it, send it as text: only they can read it.',
+      paperCopy: 'Copy link',
+      paperCopied: 'Link copied',
+      paperDone: 'Done',
+      paperEmpty: 'Type the text first — it goes as a paper message.',
       attach: 'Attach a picture or a file',
       connect: 'Connect',
       errors: {
@@ -1969,6 +1984,8 @@ export default {
       bad_interface: 'Invalid interface settings.',
       unsupported_link: 'This kind of link cannot be opened here.',
       rns_too_large: 'The attachments are too large for one message (up to 900 KB).',
+      rns_bad_paper: 'This is not an LXMF paper message.',
+      rns_paper_not_ours: 'This paper message is not addressed to you.',
     },
   },
   hotkeys: {

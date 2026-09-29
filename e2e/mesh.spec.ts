@@ -180,6 +180,8 @@ class RnsBridge implements Bridge {
   /** Страницы узла NomadNet: путь → micron; запросы — с данными форм. */
   readonly pages: Record<string, (data: Record<string, string>) => string> = {}
   readonly pageRequests: Array<{ node: string; path: string; data: Record<string, string> }> = []
+  /** Открытые бумажные сообщения (ссылки lxm://). */
+  readonly ingested: string[] = []
 
   constructor(private readonly page: Page) {}
 
@@ -234,6 +236,13 @@ class RnsBridge implements Bridge {
           ? { value: { content: page(request.data), binary: false } }
           : { error: 'rns_timeout' }
       }
+      case 'rns_paper':
+        return {
+          value: { uri: `lxm://${Buffer.from(args.content as string).toString('base64url')}` },
+        }
+      case 'rns_ingest':
+        this.ingested.push(args.uri as string)
+        return { value: null }
       case 'rns_stop':
       case 'rns_announce':
       case 'rns_set_propagation_node':
@@ -601,6 +610,38 @@ test.describe('reticulum', () => {
       )
       .toEqual([['Держи план', [['file', 'plan.txt', 'cGxhbg==']]]])
     await expect(page.getByText('plan.txt')).toBeVisible()
+
+    // Бумажное сообщение: текст из поля — в QR-код и ссылку lxm://.
+    await page.getByPlaceholder('Сообщение по радио').fill('На бумаге')
+    await page.getByRole('button', { name: 'Бумажное сообщение (QR-код)' }).click()
+    const paper = page.getByRole('dialog', { name: 'Бумажное сообщение' })
+    await expect(paper.locator('img')).toHaveAttribute('src', /^data:image\/png/)
+    await expect(paper).toContainText(`lxm://${Buffer.from('На бумаге').toString('base64url')}`)
+    await paper.getByRole('button', { name: 'Готово' }).click()
+    await expect(paper).toBeHidden()
+  })
+
+  test('open a paper message by its link', async ({ page }) => {
+    test.setTimeout(120_000)
+    await useMockNode(page, DATA)
+    await page.goto('/')
+    await page.waitForSelector('#app > *', { timeout: 30_000 })
+    await page
+      .getByRole('button', { name: 'Понятно' })
+      .click({ timeout: 5_000 })
+      .catch(() => {})
+    await signIn(page)
+    const rns = new RnsBridge(page)
+    await installTauriMock(page, rns)
+    await goTo(page, '/mesh?net=reticulum')
+    await page.getByRole('button', { name: 'Запустить' }).click()
+    await expect(page.getByText(RnsBridge.ADDRESS)).toBeVisible()
+
+    const link = page.getByPlaceholder('lxm://…')
+    await link.fill('lxm://QbtgND2PxKlhqJt8Zm3Od8Ym')
+    await link.locator('xpath=ancestor::form').getByRole('button', { name: 'Открыть' }).click()
+    await expect.poll(() => rns.ingested).toEqual(['lxm://QbtgND2PxKlhqJt8Zm3Od8Ym'])
+    await expect(page.getByText('Сообщение открыто — оно в чатах.')).toBeVisible()
   })
 
   test('browse a NomadNet node: pages, links, a form, back', async ({ page }) => {

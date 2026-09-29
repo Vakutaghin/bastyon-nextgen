@@ -63,3 +63,69 @@ export const SC_ByteCounter = styled('span', { over: Boolean, blocked: Boolean }
   color: ${(p) =>
     p.blocked ? 'var(--ui-error)' : p.over ? 'var(--ui-warning)' : 'var(--ui-text-dimmed)'};
 `
+
+/** Бумажное сообщение LXMF: QR-код и ссылка поверх чата. */
+export const SC_PaperOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(var(--color-black-rgb) / 55%);
+`
+
+export const SC_PaperCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 380px;
+  max-height: 100%;
+  overflow: auto;
+  padding: 16px;
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg);
+  color: var(--ui-text);
+`
+
+export const SC_PaperTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ui-text-highlighted);
+`
+
+export const SC_PaperHint = styled.p`
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ui-text-muted);
+`
+
+export const SC_PaperQr = styled.img`
+  align-self: center;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+`
+
+export const SC_PaperLink = styled.code`
+  display: block;
+  max-height: 72px;
+  overflow: auto;
+  padding: 6px 8px;
+  border-radius: var(--ui-radius-sm);
+  font-size: 11px;
+  word-break: break-all;
+  color: var(--ui-text-muted);
+  background: var(--ui-bg-muted);
+`
+
+export const SC_PaperActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+`

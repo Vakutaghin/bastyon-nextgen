@@ -228,6 +228,22 @@ public class MeshRnsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void paper(PluginCall call) {
+        String to = call.getString("to", "");
+        String content = call.getString("content", "");
+        onNode(call, () -> call.resolve(new JSObject().put("uri", RnsNative.paper(to, content))));
+    }
+
+    @PluginMethod
+    public void ingest(PluginCall call) {
+        String uri = call.getString("uri", "");
+        onNode(call, () -> {
+            RnsNative.ingest(uri);
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
     public void requestPath(PluginCall call) {
         String to = call.getString("to", "");
         onNode(call, () -> {

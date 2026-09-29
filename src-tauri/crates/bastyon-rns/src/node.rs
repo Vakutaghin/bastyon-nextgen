@@ -23,8 +23,8 @@ use base64::Engine as _;
 use lxmf_core::constants::{
     DeliveryMethod, MessageState, Representation, AM_OPUS_LOSSLESS, AM_OPUS_OGG,
     DESTINATION_LENGTH, ENCRYPTED_PACKET_MDU, ENCRYPTION_DESCRIPTION_EC, FIELD_AUDIO,
-    FIELD_FILE_ATTACHMENTS, FIELD_IMAGE, MESSAGE_GET_PATH, STAMP_SIZE, WORKBLOCK_EXPAND_ROUNDS,
-    WORKBLOCK_EXPAND_ROUNDS_PN,
+    FIELD_FILE_ATTACHMENTS, FIELD_IMAGE, MESSAGE_GET_PATH, PAPER_MDU, STAMP_SIZE,
+    WORKBLOCK_EXPAND_ROUNDS, WORKBLOCK_EXPAND_ROUNDS_PN,
 };
 use lxmf_core::message;
 use lxmf_rs::router::{
@@ -738,6 +738,14 @@ impl Callbacks for Bridge {
 // ---------------------------------------------------------------------------
 // Исходящие
 
+/// Что стало с сообщением, зашифрованным нам целиком.
+#[derive(Debug, PartialEq, Eq)]
+enum Sealed {
+    Delivered,
+    Duplicate,
+    NotOurs,
+}
+
 /// Своё исходящее сообщение: что показано интерфейсу и как переслать, если
 /// прямая доставка не удалась.
 struct Tracked {
@@ -1275,26 +1283,27 @@ impl Ctx {
 
     // --- узел доставки ------------------------------------------------------
 
-    /// Сообщение, скачанное с узла доставки: расшифровать и отдать роутеру.
-    fn accept_propagated(&self, lxmf_data: &[u8]) -> bool {
+    /// Сообщение, зашифрованное нашему адресу целиком (скачанное с узла
+    /// доставки или бумажное): расшифровать и отдать роутеру.
+    fn open_sealed(&self, lxmf_data: &[u8], method: DeliveryMethod) -> Sealed {
         if lxmf_data.len() <= DESTINATION_LENGTH || lxmf_data[..DESTINATION_LENGTH] != self.delivery_hash {
-            return false;
+            return Sealed::NotOurs;
         }
         let transient_id = sha256(lxmf_data);
         let mut router = self.router();
         if router.locally_delivered_transient_ids.contains_key(&transient_id) {
-            return false;
+            return Sealed::Duplicate;
         }
         let Ok(plain) = self.identity.decrypt(&lxmf_data[DESTINATION_LENGTH..]) else {
-            return false;
+            return Sealed::NotOurs;
         };
         let mut bytes = self.delivery_hash.to_vec();
         bytes.extend_from_slice(&plain);
-        router.lxmf_delivery(&bytes, true, ENCRYPTION_DESCRIPTION_EC, DeliveryMethod::Propagated);
+        router.lxmf_delivery(&bytes, true, ENCRYPTION_DESCRIPTION_EC, method);
         router
             .locally_delivered_transient_ids
             .insert(transient_id, now_timestamp());
-        true
+        Sealed::Delivered
     }
 
     fn get_request(
@@ -1363,7 +1372,7 @@ impl Ctx {
                 };
                 for m in &messages {
                     if let Some(data) = m.as_bin() {
-                        if self.accept_propagated(data) {
+                        if self.open_sealed(data, DeliveryMethod::Propagated) == Sealed::Delivered {
                             received += 1;
                         }
                         purge.push(sha256(data));
@@ -1638,6 +1647,47 @@ impl Runtime {
         let id = hex::encode(job.id);
         self.ctx.queue(job, fallback);
         Ok(id)
+    }
+
+    /// Бумажное сообщение (`lxm://`): зашифровано адресату целиком, его можно
+    /// передать как угодно — QR-кодом, текстом, — а адресат откроет ссылку.
+    pub fn paper(&self, dest: [u8; 16], content: &str) -> Result<String, String> {
+        let key = self
+            .ctx
+            .recall_key(dest)
+            .ok_or_else(|| err("rns_unknown_destination"))?;
+        let job = SendJob {
+            id: [0; 32],
+            dest,
+            timestamp: now_timestamp(),
+            title: String::new(),
+            content: content.to_string(),
+            fields: Vec::new(),
+            method: DeliveryMethod::Paper,
+        };
+        let packed = self.ctx.sign_pack(&job, None)?;
+        let recipient = Identity::from_public_key(&key);
+        let paper = message::paper_pack(&packed.packed, |data| {
+            recipient
+                .encrypt(data, &mut OsRng)
+                .map_err(|_| message::Error::EncryptError)
+        })
+        .map_err(|e| format!("rns_error: {e:?}"))?;
+        if paper.len() > PAPER_MDU {
+            return Err(err("rns_too_large"));
+        }
+        Ok(message::as_uri(&paper))
+    }
+
+    /// Открыть бумажное сообщение (`lxm://…`): оно придёт событием `message`.
+    pub fn ingest(&self, uri: &str) -> Result<(), String> {
+        // Python LXMF пишет ссылку без «=» и терпит лишние «/».
+        let body = uri.trim().trim_start_matches("lxm://").replace('/', "");
+        let data = message::from_uri(&format!("lxm://{body}")).map_err(|_| err("rns_bad_paper"))?;
+        match self.ctx.open_sealed(&data, DeliveryMethod::Paper) {
+            Sealed::NotOurs => Err(err("rns_paper_not_ours")),
+            Sealed::Delivered | Sealed::Duplicate => Ok(()),
+        }
     }
 
     pub fn request_path(&self, dest: [u8; 16]) -> Result<(), String> {
@@ -2202,6 +2252,21 @@ mod interop {
             ),
             _ => unreachable!(),
         }
+
+        // Бумажные сообщения (lxm://) в обе стороны.
+        let uri = runtime.paper(to, "бумага из Rust").unwrap();
+        assert!(uri.starts_with("lxm://") && !uri.contains('='), "{uri}");
+        peer.cmd(json!({ "ingest": uri }));
+        peer.expect("paper in python", |v| v["message"]["content"] == json!("бумага из Rust"));
+        peer.cmd(json!({"paper_for": our, "text": "бумага из Python"}));
+        let paper = peer.expect("python paper", |v| v.get("paper").is_some());
+        runtime.ingest(paper["paper"].as_str().unwrap()).unwrap();
+        expect_ev(&rx, "paper from python", |ev| is_message(ev, "бумага из Python", "paper"));
+        // Чужое бумажное сообщение не открывается.
+        assert_eq!(
+            runtime.ingest("lxm://AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA").err().as_deref(),
+            Some("rns_paper_not_ours")
+        );
 
         // Через узел доставки: штамп узла, загрузка, узел отдаёт своему адресату.
         runtime

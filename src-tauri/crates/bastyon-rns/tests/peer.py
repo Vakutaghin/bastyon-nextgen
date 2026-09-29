@@ -9,7 +9,8 @@ python peer.py <configdir> <port> [name] [--pn] [--node]
 - команды на stdin (JSON): {"send": "<dest hex>", "text": "...", "method": "opportunistic|direct|propagated",
   "image": [формат, base64], "files": [[имя, base64], ...]} (вложения — по желанию),
   {"announce": true}, {"path": "<dest hex>"}, {"store_for": "<dest hex>", "text": "..."} (положить
-  сообщение в своё хранилище узла доставки), {"pn_count": true}, {"quit": true}.
+  сообщение в своё хранилище узла доставки), {"paper_for": "<dest hex>", "text": "..."} (бумажное
+  сообщение → {"paper": "lxm://…"}), {"ingest": "lxm://…"}, {"pn_count": true}, {"quit": true}.
 """
 import base64
 import json
@@ -156,6 +157,17 @@ for line in sys.stdin:
         h = bytes.fromhex(cmd["path"])
         RNS.Transport.request_path(h)
         out({"path": cmd["path"], "has": RNS.Transport.has_path(h)})
+    if "paper_for" in cmd:
+        h = bytes.fromhex(cmd["paper_for"])
+        ident = recall(h)
+        if ident is None:
+            out({"error": "unknown destination", "dest": cmd["paper_for"]})
+            continue
+        to = RNS.Destination(ident, RNS.Destination.OUT, RNS.Destination.SINGLE, "lxmf", "delivery")
+        m = LXMF.LXMessage(to, dest, cmd.get("text", ""), "", desired_method=LXMF.LXMessage.PAPER)
+        out({"paper": m.as_uri()})
+    if "ingest" in cmd:
+        out({"ingested": bool(router.ingest_lxm_uri(cmd["ingest"]))})
     if "store_for" in cmd:
         h = bytes.fromhex(cmd["store_for"])
         ident = recall(h)

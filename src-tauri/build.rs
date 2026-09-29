@@ -67,6 +67,8 @@ const COMMANDS: &[&str] = &[
   "rns_set_propagation_node",
   "rns_sync",
   "rns_page",
+  "rns_paper",
+  "rns_ingest",
 ];
 
 fn main() {

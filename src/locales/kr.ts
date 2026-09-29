@@ -1843,8 +1843,23 @@ export default {
         binary: '페이지가 아니라 파일이라 여기서 보여 줄 수 없습니다.',
         pageEmpty: '빈 페이지입니다.',
       },
+      paper: {
+        title: '종이 메시지',
+        hint: 'Sideband, NomadNet 또는 Bastyon의 lxm:// 링크나 QR 코드: 나에게 온 메시지라면 채팅에서 열립니다.',
+        open: '열기',
+        scan: 'QR 스캔',
+        done: '메시지를 열었습니다. 채팅에서 확인하세요.',
+      },
     },
     chat: {
+      paper: '종이 메시지(QR 코드)',
+      paperTitle: '종이 메시지',
+      paperHint:
+        '메시지는 상대를 위해 암호화되어 있습니다. QR 코드나 링크를 인쇄, 사진, 문자 등 어떤 방법으로든 전달하세요. 상대만 읽을 수 있습니다.',
+      paperCopy: '링크 복사',
+      paperCopied: '링크를 복사했습니다',
+      paperDone: '완료',
+      paperEmpty: '먼저 내용을 입력하세요. 종이 메시지로 보내집니다.',
       attach: '사진 또는 파일 첨부',
       connect: '연결',
       errors: {
@@ -1953,6 +1968,8 @@ export default {
       bad_interface: '인터페이스 설정이 잘못되었습니다.',
       unsupported_link: '이런 링크는 여기서 열 수 없습니다.',
       rns_too_large: '첨부 파일이 한 메시지에 담기에는 너무 큽니다(최대 900KB).',
+      rns_bad_paper: 'LXMF 종이 메시지가 아닙니다.',
+      rns_paper_not_ours: '나에게 온 종이 메시지가 아닙니다.',
     },
   },
   hotkeys: {

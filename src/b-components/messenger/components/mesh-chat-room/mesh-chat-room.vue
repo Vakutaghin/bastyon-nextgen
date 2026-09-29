@@ -43,6 +43,16 @@
         :title="t('mesh.chat.attach')"
         @pick-files="sendFiles"
       />
+      <SC_EmojiToggleButton
+        v-if="network === 'lxmf'"
+        type="button"
+        :aria-label="t('mesh.chat.paper')"
+        :title="t('mesh.chat.paper')"
+        :disabled="!canSend || sending"
+        @click="sendPaper"
+      >
+        🧾
+      </SC_EmojiToggleButton>
 
       <SC_MessageInput
         :ref="setInputRef"
@@ -75,6 +85,8 @@
         <SendOutlined />
       </SC_SendButton>
     </SC_MessageInputArea>
+
+    <PaperMessageDialog v-if="paperUri" :uri="paperUri" @close="paperUri = null" />
   </SC_ChatRoomContainer>
 </template>
 
@@ -99,6 +111,7 @@ import { meshAttachments } from '@/mesh/media'
 import { splitForMesh } from '@/mesh/text'
 import MessageList from '../message-list/message-list.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
+import PaperMessageDialog from './paper-message-dialog.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import { useChatInput } from '../chat-room/use-chat-input'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
@@ -129,7 +142,7 @@ import {
 
 const props = defineProps<{ dialogId: string }>()
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const router = useRouter()
 const meshChat = useMeshChatStore()
 const meshcore = useMeshConnectionStore()
@@ -269,6 +282,36 @@ async function sendFiles(files: File[]): Promise<void> {
       adjustHeight()
     } else {
       appToast.error({ message: t(`mesh.chat.errors.${result.error}`) })
+    }
+  } finally {
+    sending.value = false
+  }
+}
+
+/** Бумажное сообщение (LXMF): текст из поля — в QR-код и ссылку `lxm://`. */
+const paperUri = ref<string | null>(null)
+
+async function sendPaper(): Promise<void> {
+  if (!canSend.value || sending.value) return
+  if (!inputValue.value.trim()) {
+    appToast.error({ message: t('mesh.chat.paperEmpty') })
+    return
+  }
+  sending.value = true
+  try {
+    const result = await meshChat.sendPaper(props.dialogId, inputValue.value)
+    if (result.ok) {
+      paperUri.value = result.uri
+      inputValue.value = ''
+      adjustHeight()
+    } else {
+      // Ошибки чата и отказы узла («rns_too_large») — из своих разделов.
+      const key = [`mesh.chat.errors.${result.error}`, `mesh.errors.${result.error}`].find((k) =>
+        te(k)
+      )
+      appToast.error({
+        message: key ? t(key) : t('mesh.errors.generic', { code: result.error }),
+      })
     }
   } finally {
     sending.value = false

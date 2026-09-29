@@ -37,6 +37,12 @@ final class RnsNative {
     /** Возвращает id сообщения; вложения — JSON-массив или пустая строка. */
     static native String send(String to, String title, String content, String method, String attachmentsJson);
 
+    /** Бумажное сообщение адресату: ссылка lxm://. */
+    static native String paper(String to, String content);
+
+    /** Открыть бумажное сообщение: придёт событием message. */
+    static native String ingest(String uri);
+
     static native String requestPath(String to);
 
     /** Пустая строка — без узла доставки. */

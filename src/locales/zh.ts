@@ -1794,8 +1794,23 @@ export default {
         binary: '这是文件，不是页面，无法在此显示。',
         pageEmpty: '页面为空。',
       },
+      paper: {
+        title: '纸质消息',
+        hint: '来自 Sideband、NomadNet 或 Bastyon 的 lxm:// 链接或其二维码：如果是发给你的，消息会在聊天中打开。',
+        open: '打开',
+        scan: '扫描二维码',
+        done: '消息已打开——在聊天中查看。',
+      },
     },
     chat: {
+      paper: '纸质消息（二维码）',
+      paperTitle: '纸质消息',
+      paperHint:
+        '消息已为对方加密。二维码或链接可以任意方式传递——打印、拍照、以文字发送：只有对方能读取。',
+      paperCopy: '复制链接',
+      paperCopied: '链接已复制',
+      paperDone: '完成',
+      paperEmpty: '请先输入文字——它将作为纸质消息发送。',
       attach: '附加图片或文件',
       connect: '连接',
       errors: {
@@ -1897,6 +1912,8 @@ export default {
       bad_interface: '接口设置无效。',
       unsupported_link: '此类链接无法在这里打开。',
       rns_too_large: '附件太大，无法放进一条消息（最多 900 KB）。',
+      rns_bad_paper: '这不是 LXMF 纸质消息。',
+      rns_paper_not_ours: '这条纸质消息不是发给你的。',
     },
   },
   hotkeys: {

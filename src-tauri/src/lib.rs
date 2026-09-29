@@ -948,6 +948,8 @@ pub fn run() {
       rns::rns_set_propagation_node,
       rns::rns_sync,
       rns::rns_page,
+      rns::rns_paper,
+      rns::rns_ingest,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]

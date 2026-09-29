@@ -202,6 +202,36 @@ pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_sync<'l>(
     respond(&mut env, result)
 }
 
+/// Бумажное сообщение адресату: ссылка `lxm://`.
+#[no_mangle]
+pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_paper<'l>(
+    mut env: JNIEnv<'l>,
+    _class: JClass<'l>,
+    to: JString<'l>,
+    content: JString<'l>,
+) -> jstring {
+    let result = (|| {
+        let dest = parse_hash::<16>(&text(&mut env, &to)?)?;
+        let content = text(&mut env, &content)?;
+        with_node(|n| n.paper(dest, &content))
+    })();
+    respond(&mut env, result)
+}
+
+/// Открыть бумажное сообщение: придёт событием `message`.
+#[no_mangle]
+pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_ingest<'l>(
+    mut env: JNIEnv<'l>,
+    _class: JClass<'l>,
+    uri: JString<'l>,
+) -> jstring {
+    let result = (|| {
+        let uri = text(&mut env, &uri)?;
+        with_node(|n| n.ingest(&uri)).map(|()| String::new())
+    })();
+    respond(&mut env, result)
+}
+
 /// Страница NomadNet; блокирует до ответа узла (десятки секунд по радио).
 #[no_mangle]
 pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_page<'l>(

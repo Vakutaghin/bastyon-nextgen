@@ -42,7 +42,7 @@ import { MAX_TEXT_LEN } from '../meshcore/constants'
 import type { SessionChannel, SessionMessage } from '../meshcore/session'
 import { MAX_TEXT_BYTES as MT_MAX_TEXT_BYTES } from '../meshtastic/constants'
 import type { MtIncoming, MtSessionChannel } from '../meshtastic/session'
-import { rnsSend, type RnsEvent } from '../reticulum/rns-api'
+import { rnsPaper, rnsSend, type RnsEvent } from '../reticulum/rns-api'
 import { showRadioNotification } from '../radio/platform'
 import { splitForMesh } from '../text'
 import {
@@ -730,6 +730,53 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
   }
 
   /**
+   * Бумажное сообщение LXMF: узел шифрует текст собеседнику и отдаёт ссылку
+   * `lxm://` — её передают как угодно (QR, текст). В чате оно остаётся своим
+   * сообщением. Возвращает ссылку.
+   */
+  async function sendPaper(
+    dialogId: string,
+    text: string
+  ): Promise<{ ok: true; uri: string } | { ok: false; error: MeshSendError | string }> {
+    await ensureLoaded()
+    const dialog = find(dialogId)
+    const body = text.trim()
+    if (!dialog || !account.value || !dialog.peerKey) return { ok: false, error: 'no_dialog' }
+    if (dialog.network !== 'lxmf') return { ok: false, error: 'not_supported' }
+    if (!canSend(dialogId)) return { ok: false, error: 'not_connected' }
+    if (!body) return { ok: false, error: 'empty' }
+    let uri: string
+    try {
+      uri = (await rnsPaper(dialog.peerKey, body)).uri
+    } catch (e) {
+      return { ok: false, error: errorCode(e) }
+    }
+    if (!messages[dialogId]) await openDialog(dialogId)
+    const now = Date.now()
+    const id = newId(dialogId)
+    const record: MeshMessageRecord = {
+      id,
+      dialogId,
+      account: account.value,
+      dedupKey: id,
+      ts: now,
+      senderTs: Math.floor(now / 1000),
+      mine: true,
+      senderId: 'me',
+      senderName: null,
+      text: body,
+      status: 'sent',
+    }
+    await meshAPI.addMessage(record)
+    messages[dialogId]!.push(record)
+    dialog.lastTs = now
+    dialog.lastText = body
+    dialog.lastMine = true
+    await saveDialog(dialog)
+    return { ok: true, uri }
+  }
+
+  /**
    * Реакция эмодзи на сообщение (Meshtastic: текст-эмодзи со ссылкой на пакет,
    * как в официальных приложениях). Своя реакция видна сразу.
    */
@@ -969,6 +1016,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     receiveMeshtastic,
     receiveLxmf,
     sendAttachments,
+    sendPaper,
     updateLxmfState,
     ensureLxmfDialog,
     syncLxmfPeer,

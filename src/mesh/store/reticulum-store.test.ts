@@ -23,6 +23,7 @@ const h = vi.hoisted(() => {
     status: vi.fn(async () => ({ running: true, interfaces: [], paths: 0, propagationNode: null })),
     send: vi.fn(async (..._args: unknown[]) => ({ id: 'msg-1' })),
     setPropagationNode: vi.fn(async (_h: string | null) => {}),
+    paper: vi.fn(async (_to: string, _text: string) => ({ uri: 'lxm://cGFwZXI' })),
   }
   return { auth, tor, rns }
 })
@@ -40,6 +41,7 @@ vi.mock('../reticulum/rns-api', () => ({
   rnsAnnounce: vi.fn(async () => {}),
   rnsSetPropagationNode: h.rns.setPropagationNode,
   rnsSync: vi.fn(async () => {}),
+  rnsPaper: h.rns.paper,
 }))
 
 import { db, resetDbAvailabilityForTests } from '@/db/database'
@@ -308,6 +310,19 @@ describe('reticulum chats', () => {
     await vi.waitFor(() => expect(chat.messengerMessages(id)[0]!.status).toBe('failed'))
     expect(await chat.retry(id, shown[0]!.id)).toBe(true)
     await vi.waitFor(() => expect(h.rns.send).toHaveBeenCalledTimes(2))
+  })
+
+  it('makes a paper message and keeps it in the chat', async () => {
+    const rns = useReticulumStore()
+    await rns.start()
+    const chat = useMeshChatStore()
+    const id = await chat.ensureLxmfDialog(SELF, BOB, 'Боб')
+    expect(await chat.sendPaper(id, '  на бумаге  ')).toEqual({ ok: true, uri: 'lxm://cGFwZXI' })
+    expect(h.rns.paper).toHaveBeenCalledWith(BOB, 'на бумаге')
+    expect(chat.messengerMessages(id).map((m) => [m.text, m.status])).toEqual([
+      ['на бумаге', 'sent'],
+    ])
+    expect(await chat.sendPaper(id, ' ')).toEqual({ ok: false, error: 'empty' })
   })
 
   it('sends through the node and follows the delivery state', async () => {

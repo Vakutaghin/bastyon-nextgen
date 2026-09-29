@@ -35,6 +35,8 @@ interface MeshRnsPlugin {
     method: RnsMethod
     attachments: RnsAttachment[]
   }): Promise<{ id: string }>
+  paper(o: { to: string; content: string }): Promise<{ uri: string }>
+  ingest(o: { uri: string }): Promise<void>
   requestPath(o: { to: string }): Promise<void>
   setPropagationNode(o: { hash: string | null }): Promise<void>
   sync(): Promise<void>
@@ -102,6 +104,10 @@ export const send = (
   title: string,
   attachments: RnsAttachment[] = []
 ) => call(() => MeshRns.send({ to, content, title, method, attachments }))
+
+export const paper = (to: string, content: string) => call(() => MeshRns.paper({ to, content }))
+
+export const ingest = (uri: string): Promise<void> => call(() => MeshRns.ingest({ uri }))
 
 export const requestPath = (to: string): Promise<void> => call(() => MeshRns.requestPath({ to }))
 

@@ -1867,8 +1867,23 @@ export default {
         binary: 'È un file, non una pagina: qui non si può mostrare.',
         pageEmpty: 'La pagina è vuota.',
       },
+      paper: {
+        title: 'Messaggio su carta',
+        hint: 'Un link lxm:// o il suo codice QR da Sideband, NomadNet o Bastyon: il messaggio si apre nelle tue chat se è per te.',
+        open: 'Apri',
+        scan: 'Scansiona QR',
+        done: 'Messaggio aperto: è nelle tue chat.',
+      },
     },
     chat: {
+      paper: 'Messaggio su carta (codice QR)',
+      paperTitle: 'Messaggio su carta',
+      paperHint:
+        "Il messaggio è cifrato per l'altra persona. Passa il codice QR o il link come preferisci — stampato, fotografato, inviato come testo: solo lei potrà leggerlo.",
+      paperCopy: 'Copia link',
+      paperCopied: 'Link copiato',
+      paperDone: 'Fatto',
+      paperEmpty: 'Scrivi prima il testo: partirà come messaggio su carta.',
       attach: 'Allega un’immagine o un file',
       connect: 'Collega',
       errors: {
@@ -1978,6 +1993,8 @@ export default {
       bad_interface: "Impostazioni dell'interfaccia non valide.",
       unsupported_link: 'Questo tipo di link non si può aprire qui.',
       rns_too_large: 'Gli allegati sono troppo grandi per un messaggio (fino a 900 KB).',
+      rns_bad_paper: 'Questo non è un messaggio su carta LXMF.',
+      rns_paper_not_ours: 'Questo messaggio su carta non è indirizzato a te.',
     },
   },
   hotkeys: {

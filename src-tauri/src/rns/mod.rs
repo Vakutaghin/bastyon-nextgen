@@ -130,6 +130,24 @@ pub fn rns_send(
     Ok(serde_json::json!({ "id": id }))
 }
 
+/// Бумажное сообщение адресату: ссылка `lxm://` (для QR или текста).
+#[tauri::command]
+pub fn rns_paper(
+    state: State<'_, RnsManager>,
+    to: String,
+    content: String,
+) -> Result<serde_json::Value, String> {
+    let dest = types::parse_hash::<16>(&to)?;
+    let uri = with_node(&state, |n| n.paper(dest, &content))?;
+    Ok(serde_json::json!({ "uri": uri }))
+}
+
+/// Открыть бумажное сообщение: придёт событием `message`.
+#[tauri::command]
+pub fn rns_ingest(state: State<'_, RnsManager>, uri: String) -> Result<(), String> {
+    with_node(&state, |n| n.ingest(&uri))
+}
+
 #[tauri::command]
 pub fn rns_request_path(state: State<'_, RnsManager>, to: String) -> Result<(), String> {
     let dest = types::parse_hash::<16>(&to)?;

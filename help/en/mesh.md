@@ -135,6 +135,10 @@ If the other person is offline, a message can wait for them on a **propagation n
 
 In a Reticulum chat, **Attach** sends a picture or a file; the text in the field goes as its caption. A picture is scaled down before sending, up to 900 KB in total at a time. Attachments work with Sideband and MeshChat; voice messages from them arrive as files. Over radio (RNode) a large attachment takes a long time, so keep them small.
 
+### Paper messages
+
+The 🧾 button in a Reticulum chat turns the text in the field into a **paper message**: a QR code and an `lxm://` link encrypted for the other person. Pass them on any way you like — print, photograph, send as text: only they can read it. To open a paper message from someone else (from Bastyon, Sideband or NomadNet), go to the **Reticulum** tab, **Paper message**, and paste the link or scan the QR code.
+
 ### NomadNet pages
 
 NomadNet nodes publish pages: boards, guides, services. They appear in the **NomadNet** list when they announce themselves on the network; **Open** shows the node's front page. Links lead to other pages of this and other nodes, and a link to an LXMF address opens a chat. Fields on a page are a form: the link next to them sends it. A node that has not announced itself can be opened by its address.

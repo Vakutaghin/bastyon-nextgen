@@ -169,6 +169,14 @@ export const rnsSend = async (
     ? (await android()).send(to, content, method, title, attachments)
     : invoke('rns_send', { to, content, title, method, attachments })
 
+/** Бумажное сообщение адресату: ссылка `lxm://` для QR-кода или текста. */
+export const rnsPaper = async (to: string, content: string): Promise<{ uri: string }> =>
+  onAndroid() ? (await android()).paper(to, content) : invoke('rns_paper', { to, content })
+
+/** Открыть бумажное сообщение (`lxm://…`): оно придёт событием `message`. */
+export const rnsIngest = async (uri: string): Promise<void> =>
+  onAndroid() ? (await android()).ingest(uri) : invoke('rns_ingest', { uri })
+
 export const rnsRequestPath = async (to: string): Promise<void> =>
   onAndroid() ? (await android()).requestPath(to) : invoke('rns_request_path', { to })
 
