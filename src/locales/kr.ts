@@ -1215,6 +1215,7 @@ export default {
     downloadImage: '이미지 다운로드',
     copyLink: '링크 복사',
     copyEmbed: '임베드 코드 복사',
+    watchOnYoutube: 'YouTube에서 보기',
     embedCopied: '임베드 코드가 복사되었습니다',
     shareVia: '공유 방법…',
     linkCopied: '링크가 복사되었습니다',

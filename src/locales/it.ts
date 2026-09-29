@@ -1233,6 +1233,7 @@ export default {
     downloadImage: 'Scarica l’immagine',
     copyLink: 'Copia link',
     copyEmbed: 'Copia il codice di incorporamento',
+    watchOnYoutube: 'Guarda su YouTube',
     embedCopied: 'Codice di incorporamento copiato',
     shareVia: 'Condividi tramite…',
     linkCopied: 'Link copiato',

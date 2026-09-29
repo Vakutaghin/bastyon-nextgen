@@ -38,6 +38,10 @@ Olm/Megolm, cordova-камера/контакты, P2P-видео) — **нам�
    заголовок Referer, а iframe со страницы `tauri://localhost` его не отправляет.
    Проверить Windows (`http://tauri.localhost`) и Android. Origin приложения менять
    нельзя: к нему привязаны localStorage и IndexedDB пользователей.
+   🟡 2026-09-29: на страницах не-http(s) (`tauri://`, macOS и Linux) вместо плеера
+   превью ролика с кнопкой «Смотреть на YouTube» — открывает браузер
+   (`canEmbedYoutube`, `video-embed-url.ts`). Windows и Android по-прежнему встраивают
+   iframe — там всё ещё нужна проверка на живой сборке.
 
 ### 🟡 P2 — крупные недостающие фичи (по доменам)
 

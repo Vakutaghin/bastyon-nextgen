@@ -1223,6 +1223,7 @@ export default {
     downloadImage: 'Download image',
     copyLink: 'Copy link',
     copyEmbed: 'Copy embed code',
+    watchOnYoutube: 'Watch on YouTube',
     embedCopied: 'Embed code copied',
     shareVia: 'Share via…',
     linkCopied: 'Link copied',

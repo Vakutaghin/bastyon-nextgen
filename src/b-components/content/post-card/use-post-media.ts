@@ -1,13 +1,23 @@
-// Медиа-производные карточки поста: главы из тайм-кодов, YouTube-эмбеды (кроме
+// Медиа-производные карточки поста: главы из тайм-кодов, эмбеды YouTube и Vimeo (кроме
 // постов с внутриплатформенным видео), ссылка под карточку превью и перемотка
 // плеера по тайм-коду. Владеет ref'ом плеера. Вынесено из post-card.vue (аудит
 // крупных файлов 2026-08).
 import { computed, ref } from 'vue'
-import { isImageUrl, parseVideoUrl } from '@/helpers/common/video-embed-url'
-import { getYoutubeEmbedUrls } from '@/helpers/common/youtube-url'
+import {
+  getVideoEmbeds,
+  isImageUrl,
+  parseVideoUrl,
+  type VideoEmbed,
+} from '@/helpers/common/video-embed-url'
 import { safeDecode } from '@/helpers/content/safe-decode'
 import { parseTimecodes, type Chapter } from '@/helpers/content/timecode-parser'
 import type { Post } from './post-card.types'
+
+/** Ссылка поста (`u`): старые посты хранят её целиком закодированной (`https%3A%2F%2F…`). */
+function decodedUrl(value: string | undefined): string {
+  const raw = (value || '').trim()
+  return /^https?%3A/i.test(raw) ? safeDecode(raw) : raw
+}
 
 export function usePostMedia(getPost: () => Post) {
   const videoPlayerRef = ref<{ seekTo?: (s: number) => void } | null>(null)
@@ -20,18 +30,14 @@ export function usePostMedia(getPost: () => Post) {
     return parseTimecodes(post.content)
   })
 
-  const youtubeEmbedUrls = computed<string[]>(() => {
+  const videoEmbeds = computed<VideoEmbed[]>(() => {
     const post = getPost()
     if (!post) return []
-    // Не показываем YouTube-эмбеды, если пост содержит внутриплатформенное видео —
+    // Не показываем эмбеды, если пост содержит внутриплатформенное видео —
     // это привело бы к двум плеерам.
     const hasInPlatformVideo = (post.type === 'video' || post.type === 'audio') && !!post.videoUrl
     if (hasInPlatformVideo) return []
-    const fromContent = getYoutubeEmbedUrls(post.content)
-    const fromPreview = getYoutubeEmbedUrls(post.preview)
-    const seen = new Set(fromContent)
-    for (const url of fromPreview) seen.add(url)
-    return Array.from(seen)
+    return getVideoEmbeds(decodedUrl(post.videoUrl), post.content, post.preview)
   })
 
   /**
@@ -42,8 +48,7 @@ export function usePostMedia(getPost: () => Post) {
   const linkPreviewUrl = computed<string>(() => {
     const post = getPost()
     if (post.type === 'video' || post.type === 'audio' || post.type === 'article') return ''
-    const raw = (post.videoUrl || '').trim()
-    const url = /^https?%3A/i.test(raw) ? safeDecode(raw) : raw
+    const url = decodedUrl(post.videoUrl)
     if (!/^https?:\/\//i.test(url)) return ''
     if (parseVideoUrl(url).kind || isImageUrl(url)) return ''
     return url
@@ -57,5 +62,5 @@ export function usePostMedia(getPost: () => Post) {
     }
   }
 
-  return { videoPlayerRef, chapters, youtubeEmbedUrls, linkPreviewUrl, handleSeekTimecode }
+  return { videoPlayerRef, chapters, videoEmbeds, linkPreviewUrl, handleSeekTimecode }
 }

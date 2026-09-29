@@ -256,6 +256,44 @@ export const SC_PostCardYoutube = styled.div`
   }
 `
 
+/**
+ * Превью ролика YouTube там, где плеер не встраивается (страница `tauri://`,
+ * «Ошибка 153»): картинка ролика и кнопка, ссылка открывается в браузере.
+ */
+export const SC_VideoEmbedLink = styled.a`
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--ui-radius-lg);
+  background: var(--color-black);
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`
+
+export const SC_VideoEmbedLinkLabel = styled.span`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--ui-radius-lg);
+  background: var(--color-overlay-65);
+  color: var(--color-white);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+`
+
 export const SC_AuthorLinkWrap = styled.div`
   display: block;
 `

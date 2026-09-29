@@ -98,28 +98,44 @@
 
         <!-- Под Tor iframe YouTube ушёл бы напрямую, с реальным IP (V21). -->
         <TorBlockedNotice
-          v-if="(youtubeEmbedUrls || []).length && mediaBlocked"
+          v-if="videoEmbeds.length && mediaBlocked"
           :message="t('torMedia.embedBlocked')"
         />
-        <SC_PostCardYoutube v-else-if="(youtubeEmbedUrls || []).length && prefs.embeddedVideo">
-          <iframe
-            v-for="embedUrl in youtubeEmbedUrls"
-            :key="embedUrl"
-            :src="embedUrl"
-            title="YouTube video player"
-            frameborder="0"
-            allow="
-              accelerometer;
-              autoplay;
-              clipboard-write;
-              encrypted-media;
-              gyroscope;
-              picture-in-picture;
-              web-share;
-            "
-            referrerpolicy="strict-origin-when-cross-origin"
-            allowfullscreen
-          />
+        <SC_PostCardYoutube v-else-if="videoEmbeds.length && prefs.embeddedVideo">
+          <template v-for="embed in videoEmbeds" :key="embed.embedUrl">
+            <SC_VideoEmbedLink
+              v-if="embed.kind === 'youtube' && !youtubeEmbeddable"
+              :href="embed.watchUrl"
+              @click.prevent="openExternal(embed.watchUrl)"
+            >
+              <img
+                :src="`https://i.ytimg.com/vi/${embed.id}/hqdefault.jpg`"
+                alt=""
+                loading="lazy"
+              />
+              <SC_VideoEmbedLinkLabel>
+                <PlayCircleOutlined />
+                {{ t('postCard.watchOnYoutube') }}
+              </SC_VideoEmbedLinkLabel>
+            </SC_VideoEmbedLink>
+            <iframe
+              v-else
+              :src="embed.embedUrl"
+              :title="embed.kind === 'vimeo' ? 'Vimeo video player' : 'YouTube video player'"
+              frameborder="0"
+              allow="
+                accelerometer;
+                autoplay;
+                clipboard-write;
+                encrypted-media;
+                gyroscope;
+                picture-in-picture;
+                web-share;
+              "
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen
+            />
+          </template>
         </SC_PostCardYoutube>
 
         <PostCardCategoriesTags :post="post" />
@@ -217,6 +233,7 @@ import {
   RiseOutlined,
   ClockCircleOutlined,
   LockOutlined,
+  PlayCircleOutlined,
 } from '@/components/icons'
 import { Dropdown } from 'ant-design-vue'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
@@ -248,6 +265,8 @@ import {
   SC_PostActions,
   SC_PostActionBtn,
   SC_PostCardYoutube,
+  SC_VideoEmbedLink,
+  SC_VideoEmbedLinkLabel,
   SC_RepostInnerCard,
   SC_RepostOriginalAuthor,
   SC_RepostOriginalAuthorInfo,
@@ -263,6 +282,8 @@ import { userAvatar, userName } from '@/services/user-names'
 import { useUserRelationsStore } from '@/stores/user-relations-store'
 import { postVisibilityOf, visibilityRestriction } from '@/helpers/content/post-visibility'
 import { usePostMedia } from './use-post-media'
+import { canEmbedYoutube } from '@/helpers/common/video-embed-url'
+import { openExternal } from '@/helpers/common/open-external'
 import { usePostDelete } from './use-post-delete'
 import { calculateAverageRating, decodeUrlEncoded, getPostShareId } from './helpers'
 import { DEFAULT_MAX_BLOCKS, DEFAULT_MAX_TEXT_LENGTH } from './consts'
@@ -311,8 +332,13 @@ const { mediaBlocked } = useTorMedia()
 // Настройки содержимого: встроенные плееры и автоплей — выбор пользователя.
 const prefs = useAppPreferencesStore()
 
-const { videoPlayerRef, chapters, youtubeEmbedUrls, linkPreviewUrl, handleSeekTimecode } =
-  usePostMedia(() => props.post)
+// Плеер YouTube не работает на странице tauri:// («Ошибка 153») — там превью со ссылкой.
+const youtubeEmbeddable = canEmbedYoutube(
+  typeof window !== 'undefined' ? window.location.protocol : undefined
+)
+const { videoPlayerRef, chapters, videoEmbeds, linkPreviewUrl, handleSeekTimecode } = usePostMedia(
+  () => props.post
+)
 
 onMounted(() => {
   // Pending-пост НЕ регистрируем: он лёг бы под ключом txid и после подтверждения

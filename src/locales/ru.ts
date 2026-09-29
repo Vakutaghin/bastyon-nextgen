@@ -1284,6 +1284,7 @@ export default {
     downloadImage: 'Скачать изображение',
     copyLink: 'Скопировать ссылку',
     copyEmbed: 'Скопировать код вставки',
+    watchOnYoutube: 'Смотреть на YouTube',
     embedCopied: 'Код вставки скопирован',
     shareVia: 'Поделиться через…',
     linkCopied: 'Ссылка скопирована',

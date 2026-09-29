@@ -1187,6 +1187,7 @@ export default {
     downloadImage: '下载图片',
     copyLink: '复制链接',
     copyEmbed: '复制嵌入代码',
+    watchOnYoutube: '在 YouTube 上观看',
     embedCopied: '嵌入代码已复制',
     shareVia: '分享到…',
     linkCopied: '链接已复制',

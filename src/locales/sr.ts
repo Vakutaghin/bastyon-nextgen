@@ -1225,6 +1225,7 @@ export default {
     downloadImage: 'Преузми слику',
     copyLink: 'Копирај везу',
     copyEmbed: 'Копирај код за уграђивање',
+    watchOnYoutube: 'Гледај на YouTube-у',
     embedCopied: 'Код за уграђивање је копиран',
     shareVia: 'Подели преко…',
     linkCopied: 'Веза је копирана',

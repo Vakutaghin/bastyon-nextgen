@@ -29,3 +29,31 @@ describe('usePostMedia.linkPreviewUrl', () => {
     expect(linkOf({ type: 'share' })).toBe('')
   })
 })
+
+describe('usePostMedia.videoEmbeds', () => {
+  const embedsOf = (fields: Partial<Post>) =>
+    usePostMedia(() => post(fields)).videoEmbeds.value.map((e) => e.embedUrl)
+
+  it('YouTube из ссылки поста и Vimeo из текста', () => {
+    expect(
+      embedsOf({
+        type: 'share',
+        videoUrl: 'https%3A%2F%2Fyoutu.be%2FdQw4w9WgXcQ',
+        content: 'и ещё https://vimeo.com/76979871',
+      })
+    ).toEqual([
+      'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      'https://player.vimeo.com/video/76979871',
+    ])
+  })
+
+  it('у поста со своим видео эмбедов нет — один плеер', () => {
+    expect(
+      embedsOf({
+        type: 'video',
+        videoUrl: 'peertube://h/uuid',
+        content: 'https://youtu.be/dQw4w9WgXcQ',
+      })
+    ).toEqual([])
+  })
+})

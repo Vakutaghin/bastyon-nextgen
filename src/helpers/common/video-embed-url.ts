@@ -131,3 +131,65 @@ export function getYoutubeEmbedUrls(content: string | undefined): string[] {
   }
   return Array.from(ids).map(youtubeEmbedUrl)
 }
+
+/** Ролик, который встраивается iframe'ом прямо в пост. */
+export interface VideoEmbed {
+  kind: 'youtube' | 'vimeo'
+  id: string
+  /** Адрес для iframe. */
+  embedUrl: string
+  /** Страница ролика на самой площадке. */
+  watchUrl: string
+}
+
+/**
+ * YouTube и Vimeo для встраивания — из ссылки поста (`u`) и его текста, без
+ * повторов. Раньше лента встраивала только YouTube и только из текста: пост
+ * прежнего клиента, где ссылка лежит лишь в `u`, и любой Vimeo оставались
+ * без плеера, хотя композер Vimeo показывал.
+ */
+export function getVideoEmbeds(...sources: Array<string | undefined>): VideoEmbed[] {
+  const out = new Map<string, VideoEmbed>()
+  for (const source of sources) {
+    if (!source || typeof source !== 'string') continue
+    for (const token of source.match(URL_TOKEN_RE) || []) {
+      const url = trimUrlPunctuation(token)
+      const yt = extractYoutubeId(url)
+      if (yt) {
+        const embedUrl = youtubeEmbedUrl(yt)
+        if (!out.has(embedUrl)) {
+          out.set(embedUrl, {
+            kind: 'youtube',
+            id: yt,
+            embedUrl,
+            watchUrl: `https://www.youtube.com/watch?v=${yt}`,
+          })
+        }
+        continue
+      }
+      const vm = extractVimeoId(url)
+      if (vm) {
+        const embedUrl = `https://player.vimeo.com/video/${vm}`
+        if (!out.has(embedUrl)) {
+          out.set(embedUrl, {
+            kind: 'vimeo',
+            id: vm,
+            embedUrl,
+            watchUrl: `https://vimeo.com/${vm}`,
+          })
+        }
+      }
+    }
+  }
+  return Array.from(out.values())
+}
+
+/**
+ * Можно ли встроить плеер YouTube на этой странице. YouTube требует от
+ * встроенного плеера заголовок Referer, а страница `tauri://localhost`
+ * (приложение для macOS и Linux) его не отправляет — плеер показывает
+ * «Ошибка 153». Там вместо плеера — превью со ссылкой на YouTube.
+ */
+export function canEmbedYoutube(protocol: string | undefined): boolean {
+  return protocol === 'https:' || protocol === 'http:'
+}
