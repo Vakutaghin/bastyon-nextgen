@@ -925,7 +925,7 @@ function handleSelectRate(rate: number): void {
 // Телефон во весь экран — горизонтально, если ролик горизонтальный, как у YouTube.
 watch(isFullscreen, (fullscreen) => {
   if (!touchUi.value) return
-  const orientation = screen.orientation as ScreenOrientation & {
+  const orientation = window.screen.orientation as typeof window.screen.orientation & {
     lock?: (orientation: string) => Promise<void>
   }
   if (!orientation) return
