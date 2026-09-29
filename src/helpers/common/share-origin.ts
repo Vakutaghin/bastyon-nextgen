@@ -61,6 +61,23 @@ export function publicPostUrl(postId: string): string {
   return postPath(publicShareOrigin(), postId)
 }
 
+export type ExplorerEntity = 'block' | 'tx' | 'address'
+
+/**
+ * Ссылка на блок, транзакцию или адрес в эксплорере. На bastyon.com эксплорер —
+ * отдельное приложение прежнего клиента со своими адресами
+ * (`/blockexplorer/transaction/<txid>`); веб-сборка этого приложения знает
+ * `/explorer/tx/<txid>`.
+ */
+export function publicExplorerUrl(kind: ExplorerEntity, id: string): string {
+  const origin = publicShareOrigin()
+  const value = encodeURIComponent(id)
+  if (origin === PUBLIC_WEB_ORIGIN) {
+    return `${origin}/blockexplorer/${kind === 'tx' ? 'transaction' : kind}/${value}`
+  }
+  return `${origin}/explorer/${kind}/${value}`
+}
+
 /**
  * Ссылка на комментарий под постом: `commentid`, у ответа ещё `parentid` —
  * этот формат понимают и прежний клиент, и `/post/:txid` этого приложения.

@@ -19,10 +19,11 @@ const p = defineProps<{
   /** Что показать на кнопке. По умолчанию «Поделиться». */
   label?: string
   /**
-   * Конкретный URL для шеринга. Если не задан — берём window.location.href
-   * (это работает для permalinks эксплорера, у которых URL = permalink).
+   * Публичная ссылка (publicExplorerUrl). Адрес страницы для этого не годится:
+   * в приложении для компьютера и на телефоне он `tauri://localhost/…` или
+   * `https://localhost/…`, и у получателя такая ссылка не открывалась.
    */
-  url?: string
+  url: string
 }>()
 
 const { t } = useI18n()
@@ -31,7 +32,7 @@ const labelText = computed(() => p.label ?? t('explorerShared.share'))
 const hoverTitle = computed(() => p.title)
 
 async function share() {
-  const targetUrl = p.url ?? (typeof window !== 'undefined' ? window.location.href : '')
+  const targetUrl = p.url
   if (!targetUrl) return
 
   // 1. Web Share API (mobile / поддерживаемые браузеры).
@@ -55,10 +56,8 @@ async function share() {
     await window.navigator.clipboard.writeText(targetUrl)
     appToast.success({ message: t('explorerShared.linkCopied'), description: targetUrl })
   } catch {
-    appToast.error({
-      message: t('explorerShared.shareFailed'),
-      description: t('explorerShared.copyUrlFromAddressBar'),
-    })
+    // Адресной строки в приложении для компьютера нет — показываем саму ссылку.
+    appToast.error({ message: t('explorerShared.shareFailed'), description: targetUrl })
   }
 }
 </script>

@@ -11,7 +11,11 @@
           <HashLink :hash="address" full :copyable="true" :to="undefined" />
         </SC_AddrTitle>
         <SC_AddrTitleActions>
-          <ShareButton v-if="address" :title="t('explorerPage.addressShareTitle', { address })" />
+          <ShareButton
+            v-if="address"
+            :title="t('explorerPage.addressShareTitle', { address })"
+            :url="publicExplorerUrl('address', address)"
+          />
           <AddressQr v-if="address" :address="address" />
         </SC_AddrTitleActions>
       </SC_AddrTitleRow>
@@ -99,6 +103,7 @@ import type { GetAddressTransactionsResponse } from '@/types/rpc-responses/get-a
 import HashLink from '../components/shared/hash-link.vue'
 import AddressQr from '../components/shared/address-qr.vue'
 import ShareButton from '../components/shared/share-button.vue'
+import { publicExplorerUrl } from '@/helpers/common/share-origin'
 import ExplorerError from '../components/shared/explorer-error.vue'
 import { Skeleton } from '@/components'
 import {

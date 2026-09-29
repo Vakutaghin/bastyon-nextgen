@@ -6,6 +6,7 @@ import {
   commentUrl,
   HELP_SOURCE_URL,
   publicEmbedCode,
+  publicExplorerUrl,
   publicHelpUrl,
   publicShareOrigin,
   publicPostUrl,
@@ -98,5 +99,23 @@ describe('publicHelpUrl', () => {
     setOrigin('https://next.example')
     expect(publicHelpUrl('ru', 'limits')).toBe('https://next.example/help/limits')
     expect(publicHelpUrl('ru', null)).toBe('https://next.example/help')
+  })
+})
+
+describe('publicExplorerUrl', () => {
+  it('из приложения для компьютера ведёт в эксплорер на bastyon.com', () => {
+    setOrigin('tauri://localhost')
+    expect(publicExplorerUrl('tx', 'ab12')).toBe(
+      `${PUBLIC_WEB_ORIGIN}/blockexplorer/transaction/ab12`
+    )
+    expect(publicExplorerUrl('block', 'ff00')).toBe(`${PUBLIC_WEB_ORIGIN}/blockexplorer/block/ff00`)
+    expect(publicExplorerUrl('address', 'PAddr')).toBe(
+      `${PUBLIC_WEB_ORIGIN}/blockexplorer/address/PAddr`
+    )
+  })
+
+  it('веб-сборка этого приложения открывает свой /explorer', () => {
+    setOrigin('https://next.example')
+    expect(publicExplorerUrl('tx', 'ab12')).toBe('https://next.example/explorer/tx/ab12')
   })
 })

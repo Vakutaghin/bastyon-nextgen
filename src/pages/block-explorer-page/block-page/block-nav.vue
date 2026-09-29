@@ -6,7 +6,7 @@
     <SC_BlockNavBtn type="button" :disabled="!nextHash" @click="emit('go', nextHash)">
       {{ t('explorerPage.blockNavNext') }} <RightOutlined :style="ICON_SIZE_XS" />
     </SC_BlockNavBtn>
-    <ShareButton v-if="hasBlock" :title="shareTitle" />
+    <ShareButton v-if="hasBlock" :title="shareTitle" :url="shareUrl" />
   </SC_BlockNav>
 </template>
 
@@ -24,6 +24,7 @@ defineProps<{
   nextHash: string
   hasBlock: boolean
   shareTitle: string
+  shareUrl: string
 }>()
 
 const emit = defineEmits<{ go: [hash: string] }>()

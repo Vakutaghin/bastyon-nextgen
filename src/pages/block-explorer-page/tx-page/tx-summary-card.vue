@@ -3,7 +3,10 @@
     <SC_TxTitleRow>
       <SC_TxTitle>{{ t('explorerPage.txTitle') }}</SC_TxTitle>
       <SC_TxTypeBadge>{{ typeLabel }}</SC_TxTypeBadge>
-      <ShareButton :title="t('explorerPage.txShareTitle', { txid: tx.txid })" />
+      <ShareButton
+        :title="t('explorerPage.txShareTitle', { txid: tx.txid })"
+        :url="publicExplorerUrl('tx', tx.txid)"
+      />
     </SC_TxTitleRow>
 
     <SC_TxMetaGrid>
@@ -100,6 +103,7 @@ import { useI18n } from 'vue-i18n'
 import HashLink from '../components/shared/hash-link.vue'
 import InfoTooltip from '../components/shared/info-tooltip.vue'
 import ShareButton from '../components/shared/share-button.vue'
+import { publicExplorerUrl } from '@/helpers/common/share-origin'
 import {
   formatExplorerNumber as formatNumber,
   formatExplorerPkoin,
