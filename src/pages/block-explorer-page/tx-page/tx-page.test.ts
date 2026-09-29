@@ -83,6 +83,32 @@ describe('tx-page (decomposed)', () => {
     expect(text).toContain('PvoutAddr') // адрес выхода (io-table)
   })
 
+  it('shows the message of a transfer from its OP_RETURN', () => {
+    const hex = Buffer.from('За кофе', 'utf8').toString('hex')
+    mockState.data = txData({
+      tx: ref({
+        txid: 'txTRANSFER',
+        type: 1,
+        blockHash: 'blockHASH',
+        height: 457,
+        nTime: 1700000000,
+        vin: [{ address: 'PvinAddr', value: 2, txid: 'prevtx', vout: 0 }],
+        vout: [
+          {
+            value: 0,
+            n: 0,
+            scriptPubKey: {
+              addresses: [''],
+              hex: `6a${(hex.length / 2).toString(16).padStart(2, '0')}${hex}`,
+            },
+          },
+          { value: 1, n: 1, scriptPubKey: { addresses: ['PvoutAddr'], hex: '76a9' } },
+        ],
+      }),
+    })
+    expect(mountPage().text()).toContain('«За кофе»')
+  })
+
   it('renders the error component when tx is missing', () => {
     mockState.data = txData({ tx: ref(undefined), errorMessage: ref('TXERR_SENTINEL') })
     const text = mountPage().text()

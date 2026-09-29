@@ -33,6 +33,10 @@
         </SC_TxIOAddress>
         <SC_TxIOValue>{{ formatExplorerPkoin(vout.value) }} PKOIN</SC_TxIOValue>
         <SC_TxIOAnnotation>#{{ vout.n }}</SC_TxIOAnnotation>
+        <!-- Сообщение перевода (или метка вроде a:donate) — текст из OP_RETURN. -->
+        <SC_TxIOAnnotation v-if="transferMessage(vout)">
+          «{{ transferMessage(vout) }}»
+        </SC_TxIOAnnotation>
       </SC_TxIOItem>
     </SC_TxIOColumn>
   </SC_TxIOGrid>
@@ -43,6 +47,7 @@ import { useI18n } from 'vue-i18n'
 import AddressLink from '../components/shared/address-link.vue'
 import { formatExplorerPkoin, shortenHash } from '../components/shared/format-explorer'
 import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions'
+import { opReturnText } from '@/helpers/common/op-return'
 import {
   SC_TxIOGrid,
   SC_TxIOColumn,
@@ -61,14 +66,23 @@ import {
 
 defineOptions({ name: 'TxIoTable' })
 
-defineProps<{
-  tx: Transaction
-}>()
-
 const { t } = useI18n()
 
 // Технический placeholder (em-dash) — не локализуется.
 const EM_DASH = '—'
+
+/** Обычный перевод (TX_DEFAULT): у соцтранзакций в OP_RETURN служебные данные, не текст. */
+const TRANSFER_TX_TYPE = 1
+
+const props = defineProps<{
+  tx: Transaction
+}>()
+
+/** Текст OP_RETURN перевода: сообщение отправителя. */
+function transferMessage(vout: TxVout): string {
+  if (props.tx.type !== TRANSFER_TX_TYPE || firstAddress(vout)) return ''
+  return opReturnText(vout.scriptPubKey?.hex ?? '') ?? ''
+}
 
 function firstAddress(vout: TxVout): string {
   const a = vout.scriptPubKey?.addresses?.[0]
