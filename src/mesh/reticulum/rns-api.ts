@@ -25,6 +25,14 @@ export type RnsInterface =
 
 export type RnsMethod = 'auto' | 'opportunistic' | 'direct' | 'propagated'
 
+/** Вложение LXMF (как у Sideband и MeshChat): байты — в base64. */
+export interface RnsAttachment {
+  kind: 'image' | 'file' | 'audio'
+  name: string
+  mime: string
+  data: string
+}
+
 export interface RnsStartOptions {
   /** 64 байта: X25519 + Ed25519 (identity.ts). */
   identity: Uint8Array
@@ -80,6 +88,7 @@ export type RnsEvent =
       timestamp: number
       signed: boolean
       method: string
+      attachments?: RnsAttachment[]
     }
   | {
       kind: 'state'
@@ -153,11 +162,12 @@ export const rnsSend = async (
   to: string,
   content: string,
   method: RnsMethod = 'auto',
-  title = ''
+  title = '',
+  attachments: RnsAttachment[] = []
 ): Promise<{ id: string }> =>
   onAndroid()
-    ? (await android()).send(to, content, method, title)
-    : invoke('rns_send', { to, content, title, method })
+    ? (await android()).send(to, content, method, title, attachments)
+    : invoke('rns_send', { to, content, title, method, attachments })
 
 export const rnsRequestPath = async (to: string): Promise<void> =>
   onAndroid() ? (await android()).requestPath(to) : invoke('rns_request_path', { to })

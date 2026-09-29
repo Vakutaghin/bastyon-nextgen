@@ -7,6 +7,7 @@ import android.hardware.usb.UsbManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -221,7 +222,9 @@ public class MeshRnsPlugin extends Plugin {
         String title = call.getString("title", "");
         String content = call.getString("content", "");
         String method = call.getString("method", "auto");
-        onNode(call, () -> call.resolve(new JSObject().put("id", RnsNative.send(to, title, content, method))));
+        JSONArray attachments = call.getArray("attachments", new JSArray());
+        onNode(call, () -> call.resolve(new JSObject().put("id",
+                RnsNative.send(to, title, content, method, attachments.toString()))));
     }
 
     @PluginMethod

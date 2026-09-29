@@ -19,7 +19,7 @@ use std::sync::Mutex;
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager, State};
 
-use types::{Method, Page, RnsEvent, StartOptions, Started, Status};
+use types::{Attachment, Method, Page, RnsEvent, StartOptions, Started, Status};
 
 /// Один узел на приложение; `None` — остановлен.
 #[derive(Default)]
@@ -122,9 +122,11 @@ pub fn rns_send(
     content: String,
     title: String,
     method: Method,
+    attachments: Option<Vec<Attachment>>,
 ) -> Result<serde_json::Value, String> {
     let dest = types::parse_hash::<16>(&to)?;
-    let id = with_node(&state, |n| n.send(dest, &title, &content, method))?;
+    let attachments = attachments.unwrap_or_default();
+    let id = with_node(&state, |n| n.send(dest, &title, &content, &attachments, method))?;
     Ok(serde_json::json!({ "id": id }))
 }
 

@@ -1879,12 +1879,15 @@ export default {
       },
     },
     chat: {
+      attach: 'Bild oder Datei anhängen',
       connect: 'Verbinden',
       errors: {
         not_connected: 'Verbinde das Funkgerät, um eine Nachricht zu senden.',
         too_long: 'Die Nachricht ist zu lang für den Funk. Bitte kürze sie.',
         empty: 'Leere Nachricht',
         no_dialog: 'Chat nicht gefunden',
+        too_large: 'Die Anhänge sind zu groß: höchstens 900 KB auf einmal.',
+        not_supported: 'Anhänge lassen sich nur über Reticulum senden.',
       },
       deviceEncryption: 'verschlüsselt im Funkgerät, nicht in der App',
       openChannel: 'öffentlicher Kanal – alle können lesen',
@@ -1985,6 +1988,7 @@ export default {
       rns_sync_refused: 'Der Zustellknoten hat die Nachrichten nicht herausgegeben.',
       bad_interface: 'Ungültige Schnittstelleneinstellungen.',
       unsupported_link: 'Diese Art von Link lässt sich hier nicht öffnen.',
+      rns_too_large: 'Die Anhänge sind für eine Nachricht zu groß (bis 900 KB).',
     },
   },
   hotkeys: {

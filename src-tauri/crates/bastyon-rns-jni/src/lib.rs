@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
 use bastyon_rns::node::{self, Handle, Runtime};
-use bastyon_rns::types::{parse_hash, Method, RnsEvent, StartOptions};
+use bastyon_rns::types::{parse_hash, Attachment, Method, RnsEvent, StartOptions};
 use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
 use jni::sys::jstring;
 use jni::{JNIEnv, JavaVM};
@@ -147,6 +147,7 @@ pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_send<'l>(
     title: JString<'l>,
     content: JString<'l>,
     method: JString<'l>,
+    attachments: JString<'l>,
 ) -> jstring {
     let result = (|| {
         let dest = parse_hash::<16>(&text(&mut env, &to)?)?;
@@ -154,7 +155,13 @@ pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_send<'l>(
         let content = text(&mut env, &content)?;
         let method: Method = serde_json::from_value(serde_json::Value::String(text(&mut env, &method)?))
             .map_err(|e| format!("rns_error: {e}"))?;
-        with_node(|n| n.send(dest, &title, &content, method))
+        let raw = text(&mut env, &attachments)?;
+        let attachments: Vec<Attachment> = if raw.is_empty() {
+            Vec::new()
+        } else {
+            serde_json::from_str(&raw).map_err(|e| format!("rns_error: {e}"))?
+        };
+        with_node(|n| n.send(dest, &title, &content, &attachments, method))
     })();
     respond(&mut env, result)
 }

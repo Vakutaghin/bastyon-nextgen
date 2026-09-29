@@ -16,7 +16,12 @@ import { computed, reactive, ref, toRaw } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
 import { meshAPI } from '@/db/apis/mesh-api'
-import type { MeshDialogRecord, MeshMessageRecord, MeshMessageStatus } from '@/db/types'
+import type {
+  MeshAttachment,
+  MeshDialogRecord,
+  MeshMessageRecord,
+  MeshMessageStatus,
+} from '@/db/types'
 import { notifyMessage } from '@/composables/use-browser-notifications'
 import { useMessengerUiStore } from '@/b-components/messenger/store/messenger-ui-store'
 import glassSound from '@/b-components/messenger/sounds/glass.mp3'
@@ -31,6 +36,7 @@ import {
   parseMeshDialogId,
   type MeshNetwork,
 } from '../ids'
+import { fromBase64, toBase64 } from '../bytes'
 import type { McContact } from '../meshcore/codec'
 import { MAX_TEXT_LEN } from '../meshcore/constants'
 import type { SessionChannel, SessionMessage } from '../meshcore/session'
@@ -39,7 +45,11 @@ import type { MtIncoming, MtSessionChannel } from '../meshtastic/session'
 import { rnsSend, type RnsEvent } from '../reticulum/rns-api'
 import { showRadioNotification } from '../radio/platform'
 import { splitForMesh } from '../text'
-import { meshDialogToMessenger, meshMessagesToMessenger } from './messenger-mapping'
+import {
+  forgetMeshMedia,
+  meshDialogToMessenger,
+  meshMessagesToMessenger,
+} from './messenger-mapping'
 import { useMeshConnectionStore } from './mesh-connection-store'
 import { useMeshtasticConnectionStore } from './meshtastic-connection-store'
 import { useReticulumStore } from './reticulum-store'
@@ -52,8 +62,23 @@ const RECENT_KEYS = 1000
  * через Link частями (Resource), так что предел — разумный, а не эфирный.
  */
 const LXMF_MAX_TEXT_BYTES = 8_000
+/** Вложения в одном сообщении LXMF (узел примет до 900 КБ; Python — до 1000 КБ). */
+export const LXMF_MAX_ATTACHMENT_BYTES = 900_000
 
-export type MeshSendError = 'not_connected' | 'too_long' | 'empty' | 'no_dialog'
+export type MeshSendError =
+  | 'not_connected'
+  | 'too_long'
+  | 'empty'
+  | 'no_dialog'
+  | 'too_large'
+  | 'not_supported'
+
+/** Вложения в строке списка диалогов и в уведомлении: значки и имена файлов. */
+export function attachmentsLabel(list: MeshAttachment[] | undefined): string {
+  return (list ?? [])
+    .map((a) => (a.kind === 'image' ? '🖼' : a.kind === 'audio' ? '🎤' : `📎 ${a.name}`))
+    .join(' ')
+}
 
 type ChannelKind = 'public' | 'hashtag' | 'private'
 
@@ -83,6 +108,7 @@ interface Incoming {
   replyToPacket?: number
   reactionTo?: number
   pki?: boolean
+  attachments?: MeshAttachment[]
 }
 
 function newId(dialogId: string): string {
@@ -423,7 +449,13 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     fromName: string | null
   ): Promise<void> {
     const text = m.title && m.content ? `${m.title}\n${m.content}` : m.content || m.title
-    if (!text) return
+    const attachments: MeshAttachment[] = (m.attachments ?? []).map((a) => ({
+      kind: a.kind,
+      name: a.name,
+      mime: a.mime,
+      data: fromBase64(a.data),
+    }))
+    if (!text && attachments.length === 0) return
     await ingest({
       network: 'lxmf',
       selfKey: self,
@@ -439,6 +471,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
       uniq: m.id,
       hops: null,
       snr: null,
+      attachments: attachments.length > 0 ? attachments : undefined,
     })
   }
 
@@ -501,6 +534,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
       replyToPacket: m.replyToPacket,
       reactionTo: m.reactionTo,
       pki: m.pki,
+      attachments: m.attachments,
     }
     // Повтор ЛС (радио шлёт копию, пока нет ACK) база не примет второй раз.
     if (!(await meshAPI.addMessage(record))) return
@@ -508,7 +542,8 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     // Реакция не новое сообщение: без непрочитанного и звука.
     if (m.reactionTo !== undefined) return
     dialog.lastTs = record.ts
-    dialog.lastText = m.kind !== 'direct' && m.senderName ? `${m.senderName}: ${m.text}` : m.text
+    const shown = m.text || attachmentsLabel(m.attachments)
+    dialog.lastText = m.kind !== 'direct' && m.senderName ? `${m.senderName}: ${shown}` : shown
     dialog.lastMine = false
     const ui = useMessengerUiStore()
     if (!ui.isChatOnScreen(dialog.id)) {
@@ -520,7 +555,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
       }
       // На Android — системное уведомление (Web Notification в WebView нет).
       const title = record.senderName || dialog.name
-      if (!showRadioNotification(title, m.text)) notifyMessage(title, m.text)
+      if (!showRadioNotification(title, shown)) notifyMessage(title, shown)
     }
     await saveDialog(dialog)
   }
@@ -647,6 +682,54 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
   }
 
   /**
+   * Отправить вложения (картинки уже уменьшены) с подписью — только LXMF: у
+   * радио-сетей на это нет места в пакете.
+   */
+  async function sendAttachments(
+    dialogId: string,
+    attachments: MeshAttachment[],
+    caption = ''
+  ): Promise<{ ok: true } | { ok: false; error: MeshSendError }> {
+    await ensureLoaded()
+    const dialog = find(dialogId)
+    if (!dialog || !account.value) return { ok: false, error: 'no_dialog' }
+    if (dialog.network !== 'lxmf') return { ok: false, error: 'not_supported' }
+    if (!canSend(dialogId)) return { ok: false, error: 'not_connected' }
+    if (attachments.length === 0) return { ok: false, error: 'empty' }
+    const size = attachments.reduce((n, a) => n + a.data.length, 0)
+    if (size > LXMF_MAX_ATTACHMENT_BYTES) return { ok: false, error: 'too_large' }
+    if (new TextEncoder().encode(caption).length > LXMF_MAX_TEXT_BYTES) {
+      return { ok: false, error: 'too_long' }
+    }
+    if (!messages[dialogId]) await openDialog(dialogId)
+    const now = Date.now()
+    const id = newId(dialogId)
+    const record: MeshMessageRecord = {
+      id,
+      dialogId,
+      account: account.value,
+      dedupKey: id,
+      ts: now,
+      senderTs: Math.floor(now / 1000),
+      mine: true,
+      senderId: 'me',
+      senderName: null,
+      text: caption,
+      status: 'sending',
+      attachments,
+    }
+    await meshAPI.addMessage(record)
+    messages[dialogId]!.push(record)
+    const live = messages[dialogId]![messages[dialogId]!.length - 1]!
+    dialog.lastTs = now
+    dialog.lastText = caption || attachmentsLabel(attachments)
+    dialog.lastMine = true
+    enqueue(dialog, live)
+    await saveDialog(dialog)
+    return { ok: true }
+  }
+
+  /**
    * Реакция эмодзи на сообщение (Meshtastic: текст-эмодзи со ссылкой на пакет,
    * как в официальных приложениях). Своя реакция видна сразу.
    */
@@ -681,7 +764,9 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
   /** Повторить своё недоставленное сообщение. */
   async function retry(dialogId: string, messageId: string): Promise<boolean> {
     const dialog = find(dialogId)
-    const record = messages[dialogId]?.find((m) => m.id === messageId)
+    // Вложение показано своим сообщением «<запись>#<номер>» — повторяется запись.
+    const recordId = messageId.replace(/#\d+$/, '')
+    const record = messages[dialogId]?.find((m) => m.id === recordId)
     if (!dialog || !record || !record.mine || record.status !== 'failed') return false
     if (!canSend(dialogId)) return false
     update(record, { status: 'sending', error: undefined, relayed: undefined })
@@ -823,7 +908,13 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
       return
     }
     try {
-      const { id } = await rnsSend(to, record.text, 'auto')
+      const attachments = (record.attachments ?? []).map((a) => ({
+        kind: a.kind,
+        name: a.name,
+        mime: a.mime,
+        data: toBase64(a.data),
+      }))
+      const { id } = await rnsSend(to, record.text, 'auto', '', attachments)
       update(record, { lxmfId: id })
       lxmfRecords.set(id, record)
     } catch (e) {
@@ -846,6 +937,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
   function reset(opts: { purge?: boolean } = {}): void {
     const previous = account.value
     account.value = null
+    forgetMeshMedia()
     dialogs.value = []
     for (const key of Object.keys(messages)) delete messages[key]
     recentKeys.clear()
@@ -876,6 +968,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     receive,
     receiveMeshtastic,
     receiveLxmf,
+    sendAttachments,
     updateLxmfState,
     ensureLxmfDialog,
     syncLxmfPeer,

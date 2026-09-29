@@ -171,7 +171,12 @@ class RnsBridge implements Bridge {
   private channel: number | null = null
   private index = 0
   private nextId = 1
-  readonly sent: Array<{ id: string; to: string; content: string }> = []
+  readonly sent: Array<{
+    id: string
+    to: string
+    content: string
+    attachments?: Array<{ kind: string; name: string; data: string }>
+  }> = []
   /** Страницы узла NomadNet: путь → micron; запросы — с данными форм. */
   readonly pages: Record<string, (data: Record<string, string>) => string> = {}
   readonly pageRequests: Array<{ node: string; path: string; data: Record<string, string> }> = []
@@ -209,7 +214,12 @@ class RnsBridge implements Bridge {
         }
       case 'rns_send': {
         const id = `lxm-${this.nextId++}`
-        this.sent.push({ id, to: args.to as string, content: args.content as string })
+        this.sent.push({
+          id,
+          to: args.to as string,
+          content: args.content as string,
+          attachments: args.attachments as Array<{ kind: string; name: string; data: string }>,
+        })
         return { value: { id } }
       }
       case 'rns_page': {
@@ -529,6 +539,68 @@ test.describe('reticulum', () => {
       method: 'direct',
     })
     await expect(page.getByText('Слышу тебя через Reticulum')).toBeVisible()
+  })
+
+  test('pictures and files over LXMF', async ({ page }) => {
+    test.setTimeout(120_000)
+    await useMockNode(page, DATA)
+    await page.goto('/')
+    await page.waitForSelector('#app > *', { timeout: 30_000 })
+    await page
+      .getByRole('button', { name: 'Понятно' })
+      .click({ timeout: 5_000 })
+      .catch(() => {})
+    await signIn(page)
+    const rns = new RnsBridge(page)
+    await installTauriMock(page, rns)
+    await goTo(page, '/mesh?net=reticulum')
+    await page.getByRole('button', { name: 'Запустить' }).click()
+    await expect(page.getByText(RnsBridge.ADDRESS)).toBeVisible()
+
+    const BOB = 'c3'.repeat(16)
+    rns.emit({
+      kind: 'announce',
+      aspect: 'lxmf.delivery',
+      dest: BOB,
+      identity: 'd4'.repeat(16),
+      name: 'Боб',
+      hops: 1,
+    })
+    const bobRow = page.getByRole('listitem').filter({ hasText: 'Боб' })
+    await bobRow.getByRole('button', { name: 'Написать' }).click()
+
+    // Картинка и файл от Боба (как шлёт Sideband): картинка видна в чате.
+    const PIXEL =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+    rns.emit({
+      kind: 'message',
+      id: 'from-bob-img',
+      from: BOB,
+      title: '',
+      content: 'Вид из окна',
+      timestamp: 1_790_000_000,
+      signed: true,
+      method: 'direct',
+      attachments: [
+        { kind: 'image', name: 'image.png', mime: 'image/png', data: PIXEL },
+        { kind: 'file', name: 'route.gpx', mime: 'application/octet-stream', data: 'PGdweC8+' },
+      ],
+    })
+    await expect(page.getByText('Вид из окна')).toBeVisible()
+    await expect(page.locator('img[alt="image.png"]')).toHaveAttribute('src', /^blob:/)
+    await expect(page.getByText('route.gpx')).toBeVisible()
+
+    // Свой файл: через «Прикрепить», текст из поля — подписью.
+    await page.getByPlaceholder('Сообщение по радио').fill('Держи план')
+    await page
+      .locator('input[type="file"]:not([accept])')
+      .setInputFiles({ name: 'plan.txt', mimeType: 'text/plain', buffer: Buffer.from('plan') })
+    await expect
+      .poll(() =>
+        rns.sent.map((m) => [m.content, m.attachments?.map((a) => [a.kind, a.name, a.data])])
+      )
+      .toEqual([['Держи план', [['file', 'plan.txt', 'cGxhbg==']]]])
+    await expect(page.getByText('plan.txt')).toBeVisible()
   })
 
   test('browse a NomadNet node: pages, links, a form, back', async ({ page }) => {

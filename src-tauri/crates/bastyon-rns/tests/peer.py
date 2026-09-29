@@ -6,10 +6,12 @@ python peer.py <configdir> <port> [name] [--pn] [--node]
 - --pn: ещё и узел доставки (propagation node, стоимость штампа 13 — минимум);
 - --node: нода NomadNet «PyNode» со страницами /page/index.mu и /page/echo.mu;
 - печатает JSON-строки: {"ready": адрес, ...}, {"announce": ...}, {"message": ...}, {"state": ...};
-- команды на stdin (JSON): {"send": "<dest hex>", "text": "...", "method": "opportunistic|direct|propagated"},
+- команды на stdin (JSON): {"send": "<dest hex>", "text": "...", "method": "opportunistic|direct|propagated",
+  "image": [формат, base64], "files": [[имя, base64], ...]} (вложения — по желанию),
   {"announce": true}, {"path": "<dest hex>"}, {"store_for": "<dest hex>", "text": "..."} (положить
   сообщение в своё хранилище узла доставки), {"pn_count": true}, {"quit": true}.
 """
+import base64
 import json
 import os
 import sys
@@ -67,6 +69,16 @@ if "--node" in flags:
     node_dest.register_request_handler("/page/index.mu", response_generator=index, allow=RNS.Destination.ALLOW_ALL)
     node_dest.register_request_handler("/page/echo.mu", response_generator=echo, allow=RNS.Destination.ALLOW_ALL)
 
+def jsonable(v):
+    """Поля LXMF в JSON: байты — base64, списки и словари — рекурсивно."""
+    if isinstance(v, (bytes, bytearray)):
+        return base64.b64encode(bytes(v)).decode()
+    if isinstance(v, (list, tuple)):
+        return [jsonable(x) for x in v]
+    if isinstance(v, dict):
+        return {str(k): jsonable(x) for k, x in v.items()}
+    return v
+
 def on_message(m):
     out({"message": {
         "from": RNS.hexrep(m.source_hash, delimit=False),
@@ -74,7 +86,7 @@ def on_message(m):
         "content": m.content_as_string(),
         "signature": m.signature_validated,
         "method": m.method,
-        "fields": {str(k): (v if isinstance(v, (str, int, float)) else repr(v)) for k, v in (m.fields or {}).items()},
+        "fields": jsonable(m.fields or {}),
     }})
 
 router.register_delivery_callback(on_message)
@@ -165,6 +177,13 @@ for line in sys.stdin:
         to = RNS.Destination(ident, RNS.Destination.OUT, RNS.Destination.SINGLE, "lxmf", "delivery")
         method = {"opportunistic": LXMF.LXMessage.OPPORTUNISTIC, "direct": LXMF.LXMessage.DIRECT,
                   "propagated": LXMF.LXMessage.PROPAGATED}[cmd.get("method", "opportunistic")]
-        msg = LXMF.LXMessage(to, dest, cmd.get("text", ""), cmd.get("title", ""), desired_method=method)
+        fields = {}
+        if "image" in cmd:
+            fmt, data = cmd["image"]
+            fields[LXMF.FIELD_IMAGE] = [fmt, base64.b64decode(data)]
+        if "files" in cmd:
+            fields[LXMF.FIELD_FILE_ATTACHMENTS] = [[n, base64.b64decode(d)] for n, d in cmd["files"]]
+        msg = LXMF.LXMessage(to, dest, cmd.get("text", ""), cmd.get("title", ""), desired_method=method,
+                             fields=fields or None)
         router.handle_outbound(msg)
         threading.Thread(target=watch, args=(msg, cmd.get("tag", "")), daemon=True).start()

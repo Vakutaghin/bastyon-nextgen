@@ -34,8 +34,8 @@ final class RnsNative {
 
     static native String announce();
 
-    /** Возвращает id сообщения. */
-    static native String send(String to, String title, String content, String method);
+    /** Возвращает id сообщения; вложения — JSON-массив или пустая строка. */
+    static native String send(String to, String title, String content, String method, String attachmentsJson);
 
     static native String requestPath(String to);
 

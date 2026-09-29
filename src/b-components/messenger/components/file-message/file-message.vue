@@ -87,6 +87,11 @@ const triggerBrowserDownload = (objectUrl: string, name: string) => {
 
 const onDownload = async () => {
   if (!canDownload.value) return
+  // Байты уже здесь (вложение mesh-чата, отправляемый файл) — скачать как есть.
+  if (typeof props.message.url === 'string' && props.message.url.startsWith('blob:')) {
+    triggerBrowserDownload(props.message.url, fileName.value)
+    return
+  }
   isDownloading.value = true
   downloadError.value = false
   try {

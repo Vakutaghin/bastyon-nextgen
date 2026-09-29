@@ -162,6 +162,14 @@ export interface MeshDialogRecord {
   createdAt: number
 }
 
+/** Вложение LXMF: картинка, файл или голос; байты — в самой записи. */
+export interface MeshAttachment {
+  kind: 'image' | 'file' | 'audio'
+  name: string
+  mime: string
+  data: Uint8Array
+}
+
 export interface MeshMessageRecord {
   id: string
   dialogId: string
@@ -198,4 +206,6 @@ export interface MeshMessageRecord {
   relayed?: boolean
   /** LXMF: id сообщения (хэш), по нему приходят статусы доставки. */
   lxmfId?: string
+  /** LXMF: вложения (картинка, файлы, голос). */
+  attachments?: MeshAttachment[]
 }

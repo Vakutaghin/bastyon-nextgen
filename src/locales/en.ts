@@ -1861,12 +1861,15 @@ export default {
       },
     },
     chat: {
+      attach: 'Attach a picture or a file',
       connect: 'Connect',
       errors: {
         not_connected: 'Connect the radio to send a message.',
         too_long: 'The message is too long for the air. Please shorten it.',
         empty: 'Empty message',
         no_dialog: 'Chat not found',
+        too_large: 'The attachments are too large: up to 900 KB at a time.',
+        not_supported: 'Attachments can only be sent over Reticulum.',
       },
       deviceEncryption: 'encrypted on the radio, not in the app',
       openChannel: 'public channel — everyone can read',
@@ -1965,6 +1968,7 @@ export default {
       rns_sync_refused: 'The propagation node refused to hand over the messages.',
       bad_interface: 'Invalid interface settings.',
       unsupported_link: 'This kind of link cannot be opened here.',
+      rns_too_large: 'The attachments are too large for one message (up to 900 KB).',
     },
   },
   hotkeys: {

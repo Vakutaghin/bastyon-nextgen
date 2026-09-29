@@ -12,7 +12,14 @@
 import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core'
 import { t } from '@/i18n'
 import { radioErrorFrom } from '../radio/types'
-import type { RnsEvent, RnsMethod, RnsStartOptions, RnsStarted, RnsStatus } from './rns-api'
+import type {
+  RnsAttachment,
+  RnsEvent,
+  RnsMethod,
+  RnsStartOptions,
+  RnsStarted,
+  RnsStatus,
+} from './rns-api'
 
 interface MeshRnsPlugin {
   available(): Promise<{ available: boolean }>
@@ -26,6 +33,7 @@ interface MeshRnsPlugin {
     content: string
     title: string
     method: RnsMethod
+    attachments: RnsAttachment[]
   }): Promise<{ id: string }>
   requestPath(o: { to: string }): Promise<void>
   setPropagationNode(o: { hash: string | null }): Promise<void>
@@ -87,8 +95,13 @@ export async function stop(): Promise<void> {
 export const status = (): Promise<RnsStatus> => call(() => MeshRns.status())
 export const announce = (): Promise<void> => call(() => MeshRns.announce())
 
-export const send = (to: string, content: string, method: RnsMethod, title: string) =>
-  call(() => MeshRns.send({ to, content, title, method }))
+export const send = (
+  to: string,
+  content: string,
+  method: RnsMethod,
+  title: string,
+  attachments: RnsAttachment[] = []
+) => call(() => MeshRns.send({ to, content, title, method, attachments }))
 
 export const requestPath = (to: string): Promise<void> => call(() => MeshRns.requestPath({ to }))
 

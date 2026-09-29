@@ -94,6 +94,18 @@ pub enum Method {
     Propagated,
 }
 
+/// Вложение LXMF: картинка (FIELD_IMAGE), файл (FIELD_FILE_ATTACHMENTS) или
+/// голос Opus (FIELD_AUDIO). Байты — в base64: так они идут через IPC.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Attachment {
+    /// `image`, `file` или `audio`.
+    pub kind: String,
+    pub name: String,
+    pub mime: String,
+    pub data: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum RnsEvent {
@@ -114,6 +126,7 @@ pub enum RnsEvent {
         timestamp: f64,
         signed: bool,
         method: String,
+        attachments: Vec<Attachment>,
     },
     State {
         id: String,

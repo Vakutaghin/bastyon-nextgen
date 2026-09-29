@@ -1845,12 +1845,15 @@ export default {
       },
     },
     chat: {
+      attach: '사진 또는 파일 첨부',
       connect: '연결',
       errors: {
         not_connected: '메시지를 보내려면 무전기를 연결하세요.',
         too_long: '메시지가 무전으로 보내기에 너무 깁니다. 줄여 주세요.',
         empty: '빈 메시지',
         no_dialog: '대화를 찾을 수 없습니다',
+        too_large: '첨부 파일이 너무 큽니다. 한 번에 900KB까지 보낼 수 있습니다.',
+        not_supported: '첨부 파일은 Reticulum으로만 보낼 수 있습니다.',
       },
       deviceEncryption: '앱이 아닌 무전기에서 암호화',
       openChannel: '공개 채널 — 누구나 읽을 수 있음',
@@ -1949,6 +1952,7 @@ export default {
       rns_sync_refused: '전달 노드가 메시지 전달을 거부했습니다.',
       bad_interface: '인터페이스 설정이 잘못되었습니다.',
       unsupported_link: '이런 링크는 여기서 열 수 없습니다.',
+      rns_too_large: '첨부 파일이 한 메시지에 담기에는 너무 큽니다(최대 900KB).',
     },
   },
   hotkeys: {

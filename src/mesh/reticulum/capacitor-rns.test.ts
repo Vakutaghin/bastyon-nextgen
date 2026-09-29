@@ -86,6 +86,7 @@ describe('capacitor-rns', () => {
       content: 'привет',
       title: '',
       method: 'auto',
+      attachments: [],
     })
     await expect(page('dd'.repeat(16), '/page/index.mu', {})).rejects.toMatchObject({
       code: 'rns_timeout',

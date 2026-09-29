@@ -9,11 +9,49 @@ import type {
   Message,
   MessageReaction,
 } from '@/b-components/messenger/types'
-import type { MeshDialogRecord, MeshMessageRecord } from '@/db/types'
+import type { MeshAttachment, MeshDialogRecord, MeshMessageRecord } from '@/db/types'
 import { parseMeshDialogId } from '../ids'
 
 function transportOf(dialogId: string): ChatTransport | undefined {
   return parseMeshDialogId(dialogId)?.network
+}
+
+/** Ссылки `blob:` на байты вложений: одна на вложение, пока жив аккаунт. */
+const mediaUrls = new Map<string, string>()
+
+function mediaUrl(key: string, a: MeshAttachment): string {
+  let url = mediaUrls.get(key)
+  if (!url) {
+    url = URL.createObjectURL(new Blob([a.data as BlobPart], { type: a.mime }))
+    mediaUrls.set(key, url)
+  }
+  return url
+}
+
+/** Выход из аккаунта: ссылки на вложения больше не нужны. */
+export function forgetMeshMedia(): void {
+  for (const url of mediaUrls.values()) URL.revokeObjectURL(url)
+  mediaUrls.clear()
+}
+
+/**
+ * Вложения — отдельными сообщениями перед текстом: мессенджер рисует
+ * картинку и файл своими компонентами. Голос (Opus в Ogg) — файлом: не
+ * всякий WebView его проиграет.
+ */
+function attachmentMessages(m: MeshMessageRecord, base: Message): Message[] {
+  return (m.attachments ?? []).map((a, i) => {
+    const key = `${m.id}#${i}`
+    return {
+      ...base,
+      id: key,
+      text: a.name,
+      type: a.kind === 'image' ? 'image' : 'file',
+      url: mediaUrl(key, a),
+      info: { name: a.name, mimetype: a.mime, size: a.data.length },
+      meshReplyable: undefined,
+    }
+  })
 }
 
 export function meshMessageToMessenger(m: MeshMessageRecord): Message {
@@ -57,6 +95,10 @@ export function meshMessagesToMessenger(list: MeshMessageRecord[]): Message[] {
     const msg = meshMessageToMessenger(m)
     const replyTo = m.replyToPacket !== undefined ? byPacket.get(m.replyToPacket) : undefined
     if (replyTo) msg.replyTo = { id: replyTo }
+    if (m.attachments?.length) {
+      out.push(...attachmentMessages(m, msg))
+      if (!m.text) continue
+    }
     out.push(msg)
   }
   if (reactions.size === 0) return out

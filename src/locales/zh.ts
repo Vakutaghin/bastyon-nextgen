@@ -1796,12 +1796,15 @@ export default {
       },
     },
     chat: {
+      attach: '附加图片或文件',
       connect: '连接',
       errors: {
         not_connected: '请先连接电台再发送消息。',
         too_long: '消息太长，无法通过电台发送。请缩短。',
         empty: '空消息',
         no_dialog: '未找到聊天',
+        too_large: '附件太大：每次最多 900 KB。',
+        not_supported: '附件只能通过 Reticulum 发送。',
       },
       deviceEncryption: '在电台上加密，而不是在应用中',
       openChannel: '公开频道 — 所有人可读',
@@ -1893,6 +1896,7 @@ export default {
       rns_sync_refused: '投递节点拒绝交出消息。',
       bad_interface: '接口设置无效。',
       unsupported_link: '此类链接无法在这里打开。',
+      rns_too_large: '附件太大，无法放进一条消息（最多 900 KB）。',
     },
   },
   hotkeys: {

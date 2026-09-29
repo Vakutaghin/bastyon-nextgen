@@ -19,10 +19,12 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
 use lxmf_core::announce;
+use base64::Engine as _;
 use lxmf_core::constants::{
-    DeliveryMethod, MessageState, Representation, DESTINATION_LENGTH, ENCRYPTED_PACKET_MDU,
-    ENCRYPTION_DESCRIPTION_EC, FIELD_AUDIO, FIELD_FILE_ATTACHMENTS, FIELD_IMAGE,
-    MESSAGE_GET_PATH, STAMP_SIZE, WORKBLOCK_EXPAND_ROUNDS, WORKBLOCK_EXPAND_ROUNDS_PN,
+    DeliveryMethod, MessageState, Representation, AM_OPUS_LOSSLESS, AM_OPUS_OGG,
+    DESTINATION_LENGTH, ENCRYPTED_PACKET_MDU, ENCRYPTION_DESCRIPTION_EC, FIELD_AUDIO,
+    FIELD_FILE_ATTACHMENTS, FIELD_IMAGE, MESSAGE_GET_PATH, STAMP_SIZE, WORKBLOCK_EXPAND_ROUNDS,
+    WORKBLOCK_EXPAND_ROUNDS_PN,
 };
 use lxmf_core::message;
 use lxmf_rs::router::{
@@ -40,7 +42,7 @@ use rns_net::{
 };
 
 use crate::types::{
-    IfaceConfig, IfaceStatus, Method, Page, RnsEvent, StartOptions, Started, Status,
+    Attachment, IfaceConfig, IfaceStatus, Method, Page, RnsEvent, StartOptions, Started, Status,
 };
 
 /// Шаг рабочего потока.
@@ -170,28 +172,152 @@ fn state_name(s: MessageState) -> &'static str {
     }
 }
 
-/// Вложения (картинка, голос, файлы) текстом не показать — отмечаем значком.
-fn attachment_marks(fields: &[(Value, Value)]) -> String {
+/// Сколько байт вложений в одном сообщении: получатели на Python LXMF по
+/// умолчанию принимают сообщение до 1000 КБ целиком.
+const MAX_ATTACHMENT_BYTES: usize = 900_000;
+
+fn b64(bytes: &[u8]) -> String {
+    base64::engine::general_purpose::STANDARD.encode(bytes)
+}
+
+fn text_of(v: &Value) -> Option<String> {
+    v.as_str()
+        .map(str::to_string)
+        .or_else(|| v.as_bin().map(|b| String::from_utf8_lossy(b).into_owned()))
+}
+
+/// Имя файла без пути и управляющих символов.
+fn file_name(raw: &str) -> String {
+    let base = raw.rsplit(['/', '\\']).next().unwrap_or("");
+    let clean: String = base.chars().filter(|c| !c.is_control()).take(200).collect();
+    let clean = clean.trim();
+    if clean.is_empty() || clean == "." || clean == ".." {
+        "file".into()
+    } else {
+        clean.to_string()
+    }
+}
+
+/// Формат картинки LXMF («jpg», «webp») → MIME; незнакомый — как файл.
+fn image_mime(format: &str) -> Option<&'static str> {
+    match format.trim().trim_start_matches("image/").to_ascii_lowercase().as_str() {
+        "jpg" | "jpeg" => Some("image/jpeg"),
+        "png" => Some("image/png"),
+        "webp" => Some("image/webp"),
+        "gif" => Some("image/gif"),
+        "avif" => Some("image/avif"),
+        _ => None,
+    }
+}
+
+/// Вложения из полей LXMF (как их шлют Sideband и MeshChat). Голос codec2 в
+/// браузере не проиграть — он отмечается значком в тексте (вторая часть).
+fn attachments_of(fields: &[(Value, Value)]) -> (Vec<Attachment>, String) {
+    let mut out = Vec::new();
     let mut marks = String::new();
     for (key, value) in fields {
+        let Some(items) = value.as_array() else {
+            continue;
+        };
         match key.as_uint().map(|k| k as u8) {
-            Some(FIELD_IMAGE) => marks.push('🖼'),
-            Some(FIELD_AUDIO) => marks.push('🎤'),
+            Some(FIELD_IMAGE) => {
+                let format = items.first().and_then(text_of).unwrap_or_default();
+                let Some(bytes) = items.get(1).and_then(Value::as_bin) else {
+                    continue;
+                };
+                out.push(match image_mime(&format) {
+                    Some(mime) => Attachment {
+                        kind: "image".into(),
+                        name: format!("image.{}", mime.trim_start_matches("image/")),
+                        mime: mime.into(),
+                        data: b64(bytes),
+                    },
+                    None => Attachment {
+                        kind: "file".into(),
+                        name: file_name(&format!("image.{format}")),
+                        mime: "application/octet-stream".into(),
+                        data: b64(bytes),
+                    },
+                });
+            }
             Some(FIELD_FILE_ATTACHMENTS) => {
-                let count = value.as_array().map_or(1, |a| a.len().max(1));
-                for _ in 0..count {
-                    marks.push('📎');
+                for file in items {
+                    let Some(pair) = file.as_array() else {
+                        continue;
+                    };
+                    if let (Some(name), Some(bytes)) =
+                        (pair.first().and_then(text_of), pair.get(1).and_then(Value::as_bin))
+                    {
+                        out.push(Attachment {
+                            kind: "file".into(),
+                            name: file_name(&name),
+                            mime: "application/octet-stream".into(),
+                            data: b64(bytes),
+                        });
+                    }
+                }
+            }
+            Some(FIELD_AUDIO) => {
+                let mode = items.first().and_then(Value::as_uint).unwrap_or(0);
+                match items.get(1).and_then(Value::as_bin) {
+                    Some(bytes)
+                        if (AM_OPUS_OGG as u64..=AM_OPUS_LOSSLESS as u64).contains(&mode) =>
+                    {
+                        out.push(Attachment {
+                            kind: "audio".into(),
+                            name: "voice.ogg".into(),
+                            mime: "audio/ogg".into(),
+                            data: b64(bytes),
+                        })
+                    }
+                    _ => marks.push('🎤'),
                 }
             }
             _ => {}
         }
     }
-    marks
+    (out, marks)
+}
+
+/// Поля LXMF для отправки: первая картинка — FIELD_IMAGE, остальное —
+/// файлами, как у Sideband и MeshChat.
+fn fields_of(attachments: &[Attachment]) -> Result<Vec<(Value, Value)>, String> {
+    let mut image = None;
+    let mut files = Vec::new();
+    let mut total = 0usize;
+    for a in attachments {
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(a.data.as_bytes())
+            .map_err(|_| err("rns_error: attachment data"))?;
+        total += bytes.len();
+        match (a.kind.as_str(), image_mime(&a.mime)) {
+            ("image", Some(mime)) if image.is_none() => {
+                let format = mime.trim_start_matches("image/").replace("jpeg", "jpg");
+                image = Some(Value::Array(vec![Value::Str(format), Value::Bin(bytes)]));
+            }
+            ("image" | "file", _) => files.push(Value::Array(vec![
+                Value::Str(file_name(&a.name)),
+                Value::Bin(bytes),
+            ])),
+            _ => return Err(err("rns_error: attachment kind")),
+        }
+    }
+    if total > MAX_ATTACHMENT_BYTES {
+        return Err(err("rns_too_large"));
+    }
+    let mut fields = Vec::new();
+    if let Some(img) = image {
+        fields.push((Value::UInt(FIELD_IMAGE as u64), img));
+    }
+    if !files.is_empty() {
+        fields.push((Value::UInt(FIELD_FILE_ATTACHMENTS as u64), Value::Array(files)));
+    }
+    Ok(fields)
 }
 
 fn message_event(d: &LxmDelivery) -> RnsEvent {
     let mut content = String::from_utf8_lossy(&d.content).into_owned();
-    let marks = attachment_marks(&d.fields);
+    let (attachments, marks) = attachments_of(&d.fields);
     if !marks.is_empty() {
         if !content.is_empty() {
             content.push('\n');
@@ -206,6 +332,7 @@ fn message_event(d: &LxmDelivery) -> RnsEvent {
         timestamp: d.timestamp,
         signed: d.signature_valid == Some(true),
         method: method_name(d.method).to_string(),
+        attachments,
     }
 }
 
@@ -628,6 +755,8 @@ struct SendJob {
     timestamp: f64,
     title: String,
     content: String,
+    /// Поля LXMF (вложения).
+    fields: Vec<(Value, Value)>,
     method: DeliveryMethod,
 }
 
@@ -773,7 +902,7 @@ impl Ctx {
             job.timestamp,
             job.title.as_bytes(),
             job.content.as_bytes(),
-            vec![],
+            job.fields.clone(),
             stamp,
             |data| {
                 self.identity
@@ -1483,6 +1612,7 @@ impl Runtime {
         dest: [u8; 16],
         title: &str,
         content: &str,
+        attachments: &[Attachment],
         method: Method,
     ) -> Result<String, String> {
         if dest == self.ctx.delivery_hash {
@@ -1500,6 +1630,7 @@ impl Runtime {
             timestamp: now_timestamp(),
             title: title.to_string(),
             content: content.to_string(),
+            fields: fields_of(attachments)?,
             method: lx_method,
         };
         // id не зависит от штампа — его можно вернуть сразу, а штамп считать потом.
@@ -1760,17 +1891,56 @@ mod tests {
         assert!(peer_event(other, id, None, 1, 1.0).is_none());
     }
 
+    fn attachment(kind: &str, name: &str, mime: &str, bytes: &[u8]) -> Attachment {
+        Attachment {
+            kind: kind.into(),
+            name: name.into(),
+            mime: mime.into(),
+            data: b64(bytes),
+        }
+    }
+
     #[test]
-    fn attachments_are_marked() {
-        let fields = vec![
-            (Value::UInt(FIELD_IMAGE as u64), Value::Array(vec![])),
-            (
-                Value::UInt(FIELD_FILE_ATTACHMENTS as u64),
-                Value::Array(vec![Value::Nil, Value::Nil]),
-            ),
+    fn attachments_go_both_ways_as_sideband_fields() {
+        let sent = vec![
+            attachment("image", "photo.jpeg", "image/jpeg", b"\xff\xd8jpeg"),
+            attachment("file", "../notes/plan.txt", "text/plain", b"plan"),
+            attachment("image", "second.png", "image/png", b"png"),
         ];
-        assert_eq!(attachment_marks(&fields), "🖼📎📎");
-        assert_eq!(attachment_marks(&[]), "");
+        let fields = fields_of(&sent).unwrap();
+        // Картинка — одна, в FIELD_IMAGE с форматом «jpg»; остальное — файлами.
+        let image = &fields.iter().find(|(k, _)| k.as_uint() == Some(FIELD_IMAGE as u64)).unwrap().1;
+        assert_eq!(image.as_array().unwrap()[0].as_str(), Some("jpg"));
+        let (got, marks) = attachments_of(&fields);
+        assert!(marks.is_empty());
+        assert_eq!(
+            got,
+            vec![
+                attachment("image", "image.jpeg", "image/jpeg", b"\xff\xd8jpeg"),
+                attachment("file", "plan.txt", "application/octet-stream", b"plan"),
+                attachment("file", "second.png", "application/octet-stream", b"png"),
+            ]
+        );
+        let big = vec![attachment("file", "big.bin", "", &vec![0u8; MAX_ATTACHMENT_BYTES + 1])];
+        assert_eq!(fields_of(&big).err().as_deref(), Some("rns_too_large"));
+    }
+
+    #[test]
+    fn voice_opus_is_playable_codec2_is_marked() {
+        let opus = vec![(
+            Value::UInt(FIELD_AUDIO as u64),
+            Value::Array(vec![Value::UInt(AM_OPUS_OGG as u64), Value::Bin(b"OggS".to_vec())]),
+        )];
+        let (got, marks) = attachments_of(&opus);
+        assert_eq!(got, vec![attachment("audio", "voice.ogg", "audio/ogg", b"OggS")]);
+        assert!(marks.is_empty());
+        let codec2 = vec![(
+            Value::UInt(FIELD_AUDIO as u64),
+            Value::Array(vec![Value::UInt(0x03), Value::Bin(vec![1, 2])]),
+        )];
+        let (got, marks) = attachments_of(&codec2);
+        assert!(got.is_empty());
+        assert_eq!(marks, "🎤");
     }
 
     #[test]
@@ -1964,12 +2134,12 @@ mod interop {
 
         let to = parse_hash::<16>(&peer_dest).unwrap();
         // Rust → Python: напрямую (Link) и одним пакетом (с доказательством).
-        let id = runtime.send(to, "", "hello direct", Method::Direct).unwrap();
+        let id = runtime.send(to, "", "hello direct", &[], Method::Direct).unwrap();
         peer.expect("direct message", |v| {
             v["message"]["content"] == json!("hello direct") && v["message"]["signature"] == json!(true)
         });
         expect_ev(&rx, "direct delivered", |ev| is_state(ev, &id, "delivered"));
-        let id = runtime.send(to, "", "hello opp", Method::Opportunistic).unwrap();
+        let id = runtime.send(to, "", "hello opp", &[], Method::Opportunistic).unwrap();
         peer.expect("opportunistic message", |v| v["message"]["content"] == json!("hello opp"));
         expect_ev(&rx, "opportunistic delivered", |ev| is_state(ev, &id, "delivered"));
 
@@ -1981,11 +2151,63 @@ mod interop {
         expect_ev(&rx, "opportunistic from python", |ev| is_message(ev, "hi opp", "opportunistic"));
         peer.expect("python opportunistic delivered", |v| v["state"] == json!({"tag": "o", "state": "delivered"}));
 
+        // Вложения в обе стороны: картинка — FIELD_IMAGE, файл — FIELD_FILE_ATTACHMENTS.
+        let photo = b64(&[0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+        let id = runtime
+            .send(
+                to,
+                "",
+                "фото и план",
+                &[
+                    Attachment {
+                        kind: "image".into(),
+                        name: "photo.jpg".into(),
+                        mime: "image/jpeg".into(),
+                        data: photo.clone(),
+                    },
+                    Attachment {
+                        kind: "file".into(),
+                        name: "plan.txt".into(),
+                        mime: "text/plain".into(),
+                        data: b64(b"plan"),
+                    },
+                ],
+                Method::Direct,
+            )
+            .unwrap();
+        let got = peer.expect("attachments", |v| v["message"]["content"] == json!("фото и план"));
+        assert_eq!(got["message"]["fields"]["6"], json!(["jpg", photo]));
+        assert_eq!(got["message"]["fields"]["5"], json!([["plan.txt", b64(b"plan")]]));
+        expect_ev(&rx, "attachments delivered", |ev| is_state(ev, &id, "delivered"));
+        peer.cmd(json!({"send": our, "text": "картинка из Python", "method": "direct",
+            "image": ["webp", b64(b"RIFFwebp")], "files": [["notes.md", b64(b"# hi")]]}));
+        let ev = expect_ev(&rx, "attachments from python", |ev| is_message(ev, "картинка из Python", "direct"));
+        match ev {
+            RnsEvent::Message { attachments, .. } => assert_eq!(
+                attachments,
+                vec![
+                    Attachment {
+                        kind: "image".into(),
+                        name: "image.webp".into(),
+                        mime: "image/webp".into(),
+                        data: b64(b"RIFFwebp"),
+                    },
+                    Attachment {
+                        kind: "file".into(),
+                        name: "notes.md".into(),
+                        mime: "application/octet-stream".into(),
+                        data: b64(b"# hi"),
+                    },
+                ]
+            ),
+            _ => unreachable!(),
+        }
+
         // Через узел доставки: штамп узла, загрузка, узел отдаёт своему адресату.
         runtime
             .set_propagation_node(Some(parse_hash::<16>(&pn).unwrap()))
             .unwrap();
-        let id = runtime.send(to, "", "via pn", Method::Propagated).unwrap();
+        let id = runtime.send(to, "", "via pn", &[], Method::Propagated).unwrap();
         expect_ev(&rx, "propagated sent", |ev| is_state(ev, &id, "sent"));
         peer.expect("propagated message", |v| v["message"]["content"] == json!("via pn"));
 
@@ -2031,7 +2253,7 @@ mod interop {
         let (runtime, rx) = start(&base.join("rust"), port, Some(pn.clone()));
         expect_ev(&rx, "remembered peer", |ev| matches!(ev, RnsEvent::Announce { dest, heard: Some(h), .. }
             if *dest == peer_dest && *h > 0.0));
-        let id = runtime.send(to, "", "after restart", Method::Direct).unwrap();
+        let id = runtime.send(to, "", "after restart", &[], Method::Direct).unwrap();
         peer.expect("message after restart", |v| v["message"]["content"] == json!("after restart"));
         expect_ev(&rx, "delivered after restart", |ev| is_state(ev, &id, "delivered"));
         runtime.stop();

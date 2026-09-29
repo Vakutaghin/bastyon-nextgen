@@ -6,6 +6,7 @@ rust-version = "1.88"
 publish = false
 
 [dependencies]
+base64 = "0.22"
 hex = "0.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }

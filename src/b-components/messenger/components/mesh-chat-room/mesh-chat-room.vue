@@ -37,6 +37,13 @@
     <SC_MessageInputArea>
       <EmojiPicker v-if="showEmojiPicker" @select="onEmojiSelect" />
 
+      <!-- Вложения — только LXMF: у радио-сетей на них нет места в пакете. -->
+      <AttachmentPanel
+        v-if="network === 'lxmf'"
+        :title="t('mesh.chat.attach')"
+        @pick-files="sendFiles"
+      />
+
       <SC_MessageInput
         :ref="setInputRef"
         v-model="inputValue"
@@ -73,9 +80,9 @@
 
 <script setup lang="ts">
 /**
- * Чат через mesh-радио (Meshtastic, MeshCore). Отдельно от ChatRoom: у эфира
- * нет вложений, «печатает» и прочтений, зато есть предел в байтах и радио,
- * которое может быть не подключено.
+ * Чат через mesh-сети (Meshtastic, MeshCore, Reticulum). Отдельно от
+ * ChatRoom: «печатает» и прочтений нет, зато есть предел в байтах и радио
+ * (узел), которое может быть не подключено. Вложения — только в LXMF.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -88,8 +95,10 @@ import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
 import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { utf8Length } from '@/mesh/bytes'
+import { meshAttachments } from '@/mesh/media'
 import { splitForMesh } from '@/mesh/text'
 import MessageList from '../message-list/message-list.vue'
+import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import { useChatInput } from '../chat-room/use-chat-input'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
@@ -236,6 +245,27 @@ async function submit(): Promise<void> {
       inputValue.value = ''
       replyingTo.value = null
       showEmojiPicker.value = false
+      adjustHeight()
+    } else {
+      appToast.error({ message: t(`mesh.chat.errors.${result.error}`) })
+    }
+  } finally {
+    sending.value = false
+  }
+}
+
+/** Картинки и файлы (LXMF); текст из поля уходит подписью к ним. */
+async function sendFiles(files: File[]): Promise<void> {
+  if (!canSend.value || sending.value || tooLong.value) return
+  sending.value = true
+  try {
+    const result = await meshChat.sendAttachments(
+      props.dialogId,
+      await meshAttachments(files),
+      inputValue.value.trim()
+    )
+    if (result.ok) {
+      inputValue.value = ''
       adjustHeight()
     } else {
       appToast.error({ message: t(`mesh.chat.errors.${result.error}`) })

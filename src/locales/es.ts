@@ -1879,12 +1879,15 @@ export default {
       },
     },
     chat: {
+      attach: 'Adjuntar una imagen o un archivo',
       connect: 'Conectar',
       errors: {
         not_connected: 'Conecta la radio para enviar un mensaje.',
         too_long: 'El mensaje es demasiado largo para el aire. Acórtalo.',
         empty: 'Mensaje vacío',
         no_dialog: 'No se encontró el chat',
+        too_large: 'Los adjuntos son demasiado grandes: hasta 900 KB de una vez.',
+        not_supported: 'Los adjuntos solo se pueden enviar por Reticulum.',
       },
       deviceEncryption: 'cifrado en la radio, no en la aplicación',
       openChannel: 'canal público — todos pueden leer',
@@ -1984,6 +1987,7 @@ export default {
       rns_sync_refused: 'El nodo de entrega se negó a entregar los mensajes.',
       bad_interface: 'Ajustes de interfaz no válidos.',
       unsupported_link: 'Este tipo de enlace no se puede abrir aquí.',
+      rns_too_large: 'Los adjuntos son demasiado grandes para un mensaje (hasta 900 KB).',
     },
   },
   hotkeys: {

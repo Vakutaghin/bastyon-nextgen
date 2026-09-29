@@ -21,7 +21,7 @@ const h = vi.hoisted(() => {
     }),
     stop: vi.fn(async () => {}),
     status: vi.fn(async () => ({ running: true, interfaces: [], paths: 0, propagationNode: null })),
-    send: vi.fn(async (_to: string, _text: string) => ({ id: 'msg-1' })),
+    send: vi.fn(async (..._args: unknown[]) => ({ id: 'msg-1' })),
     setPropagationNode: vi.fn(async (_h: string | null) => {}),
   }
   return { auth, tor, rns }
@@ -44,7 +44,7 @@ vi.mock('../reticulum/rns-api', () => ({
 
 import { db, resetDbAvailabilityForTests } from '@/db/database'
 import { deriveRnsIdentity } from '../reticulum/identity'
-import { useMeshChatStore } from './mesh-chat-store'
+import { LXMF_MAX_ATTACHMENT_BYTES, useMeshChatStore } from './mesh-chat-store'
 import { allowedInterfaces, useReticulumStore } from './reticulum-store'
 
 const SELF = 'aa'.repeat(16)
@@ -244,6 +244,72 @@ describe('reticulum chats', () => {
     await vi.waitFor(async () => expect(await db.meshMessages.count()).toBe(1))
   })
 
+  it('keeps LXMF attachments and shows them as pictures and files', async () => {
+    const rns = useReticulumStore()
+    await rns.start()
+    h.rns.onEvent!({
+      kind: 'message',
+      id: 'm-att',
+      from: BOB,
+      title: '',
+      content: 'смотри',
+      timestamp: 1_790_000_000,
+      signed: true,
+      method: 'direct',
+      attachments: [
+        { kind: 'image', name: 'image.webp', mime: 'image/webp', data: 'UklGRg==' },
+        { kind: 'file', name: 'plan.txt', mime: 'application/octet-stream', data: 'cGxhbg==' },
+      ],
+    })
+    const chat = useMeshChatStore()
+    await vi.waitFor(() => expect(chat.dialogs).toHaveLength(1))
+    const id = chat.dialogs[0]!.id
+    expect(chat.dialogs[0]!.lastText).toBe('смотри')
+    await chat.openDialog(id)
+    const shown = chat.messengerMessages(id)
+    expect(shown.map((m) => [m.type, m.text])).toEqual([
+      ['image', 'image.webp'],
+      ['file', 'plan.txt'],
+      ['text', 'смотри'],
+    ])
+    expect(shown[0]!.url).toMatch(/^blob:/)
+    expect(shown[1]!.info).toMatchObject({ name: 'plan.txt', size: 4 })
+    // Байты лежат в базе — после перезапуска картинка на месте.
+    const saved = await db.meshMessages.toArray()
+    expect(Array.from(saved[0]!.attachments![1]!.data)).toEqual(
+      [...'plan'].map((c) => c.charCodeAt(0))
+    )
+  })
+
+  it('sends attachments through the node, within the size limit', async () => {
+    const rns = useReticulumStore()
+    await rns.start()
+    const chat = useMeshChatStore()
+    const id = await chat.ensureLxmfDialog(SELF, BOB, 'Боб')
+    const photo = {
+      kind: 'image' as const,
+      name: 'photo.jpg',
+      mime: 'image/jpeg',
+      data: new Uint8Array([1, 2, 3]),
+    }
+    expect(await chat.sendAttachments(id, [photo], 'подпись')).toEqual({ ok: true })
+    await vi.waitFor(() =>
+      expect(h.rns.send).toHaveBeenCalledWith(BOB, 'подпись', 'auto', '', [
+        { kind: 'image', name: 'photo.jpg', mime: 'image/jpeg', data: 'AQID' },
+      ])
+    )
+    expect(chat.dialogs.find((d) => d.id === id)!.lastText).toBe('подпись')
+    const huge = { ...photo, data: new Uint8Array(LXMF_MAX_ATTACHMENT_BYTES + 1) }
+    expect(await chat.sendAttachments(id, [huge])).toEqual({ ok: false, error: 'too_large' })
+
+    // Не ушло — «Повторить» у картинки повторяет всё сообщение.
+    const shown = chat.messengerMessages(id)
+    h.rns.onEvent!({ kind: 'state', id: 'msg-1', state: 'failed' })
+    await vi.waitFor(() => expect(chat.messengerMessages(id)[0]!.status).toBe('failed'))
+    expect(await chat.retry(id, shown[0]!.id)).toBe(true)
+    await vi.waitFor(() => expect(h.rns.send).toHaveBeenCalledTimes(2))
+  })
+
   it('sends through the node and follows the delivery state', async () => {
     const rns = useReticulumStore()
     await rns.start()
@@ -252,7 +318,9 @@ describe('reticulum chats', () => {
     expect(chat.canSend(id)).toBe(true)
     expect(chat.textLimit(id)).toBe(8000)
     expect(await chat.send(id, 'как дела?')).toEqual({ ok: true })
-    await vi.waitFor(() => expect(h.rns.send).toHaveBeenCalledWith(BOB, 'как дела?', 'auto'))
+    await vi.waitFor(() =>
+      expect(h.rns.send).toHaveBeenCalledWith(BOB, 'как дела?', 'auto', '', [])
+    )
     h.rns.onEvent!({ kind: 'state', id: 'msg-1', state: 'sent' })
     await vi.waitFor(() => expect(chat.messengerMessages(id)[0]!.status).toBe('sent'))
     h.rns.onEvent!({ kind: 'state', id: 'msg-1', state: 'delivered' })

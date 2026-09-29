@@ -1884,12 +1884,15 @@ export default {
       },
     },
     chat: {
+      attach: 'Joindre une image ou un fichier',
       connect: 'Connecter',
       errors: {
         not_connected: 'Connectez la radio pour envoyer un message.',
         too_long: "Le message est trop long pour l'antenne. Raccourcissez-le.",
         empty: 'Message vide',
         no_dialog: 'Discussion introuvable',
+        too_large: 'Les pièces jointes sont trop volumineuses : 900 Ko maximum à la fois.',
+        not_supported: 'Les pièces jointes ne s’envoient que par Reticulum.',
       },
       deviceEncryption: "chiffré dans la radio, pas dans l'application",
       openChannel: 'canal public — tout le monde peut lire',
@@ -1989,6 +1992,7 @@ export default {
       rns_sync_refused: 'Le nœud de relais a refusé de remettre les messages.',
       bad_interface: "Réglages d'interface invalides.",
       unsupported_link: "Ce type de lien ne peut pas s'ouvrir ici.",
+      rns_too_large: 'Les pièces jointes sont trop volumineuses pour un message (900 Ko maximum).',
     },
   },
   hotkeys: {
