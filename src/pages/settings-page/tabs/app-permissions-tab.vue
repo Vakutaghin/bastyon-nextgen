@@ -31,8 +31,11 @@
         <SC_PermRow v-for="grant in app.grants" :key="grant.permission">
           <SC_PermInfo>
             <SC_PermName>{{ permLabel(grant.permission) }}</SC_PermName>
+            <!-- У отказа дата решения без «выдано» — рядом и так метка «отказано». -->
             <SC_PermMeta>{{
-              t('settings.appPermissions.grantedAt', { date: fmtDate(grant.grantedAt) })
+              grant.state === 'denied'
+                ? fmtDate(grant.grantedAt)
+                : t('settings.appPermissions.grantedAt', { date: fmtDate(grant.grantedAt) })
             }}</SC_PermMeta>
           </SC_PermInfo>
           <SC_DeniedBadge v-if="grant.state === 'denied'">
