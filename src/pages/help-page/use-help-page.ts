@@ -21,7 +21,7 @@ import { HELP_VIEW, topicPath } from '@/b-components/help/help-view'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { useHelpLibrary } from '@/composables/use-help-library'
 import { copyText } from '@/helpers/common/clipboard'
-import { publicShareOrigin } from '@/helpers/common/share-origin'
+import { publicHelpUrl } from '@/helpers/common/share-origin'
 import { GLOSSARY_TOPIC } from '@/helpers/help/help-library'
 import { queryStems } from '@/helpers/help/help-stem'
 import type { HelpLibrary, HelpLinkTarget, HelpTopic } from '@/helpers/help/help-types'
@@ -146,8 +146,7 @@ export function useHelpPage(): HelpPage {
   }
 
   async function copyLink(): Promise<void> {
-    const path = topicId.value ? topicPath(topicId.value) : '/help'
-    const copied = await copyText(`${publicShareOrigin()}${path}`)
+    const copied = await copyText(publicHelpUrl(library.value?.locale ?? 'en', topicId.value))
     if (copied) appToast.success({ message: t('help.toolbar.linkCopied') })
     else appToast.error({ message: t('help.toolbar.copyFailed') })
   }

@@ -10,6 +10,7 @@
  * остаток — обычный маршрут приложения), поэтому старые ссылки из постов,
  * чатов и рассылок продолжают работать:
  *   bastyon://post?s=<txid>[&c=<commentTxid>]   — пост (и комментарий)
+ *   https://bastyon.com/post?s=<txid>&commentid=<c>[&parentid=<p>] — «Поделиться» комментарием
  *   bastyon://index?v=<txid>                    — видео-пост
  *   bastyon://application?id=<appId>[&p=<hex>]  — мини-приложение
  *   bastyon://<ник или адрес>                   — профиль
@@ -89,9 +90,11 @@ export const DEEP_LINK_SECTIONS: ReadonlySet<string> = new Set([
   'help',
 ])
 
-/** Маршрут поста с опциональным якорем на комментарий. */
-function postRoute(txid: string, commentId?: string): string {
-  return commentId ? `/post/${txid}?commentid=${commentId}` : `/post/${txid}`
+/** Маршрут поста с опциональным якорем на комментарий (у ответа — и на ветку). */
+function postRoute(txid: string, commentId?: string, parentId?: string): string {
+  if (!commentId) return `/post/${txid}`
+  const thread = parentId ? `&parentid=${parentId}` : ''
+  return `/post/${txid}?commentid=${commentId}${thread}`
 }
 
 /**
@@ -104,7 +107,7 @@ export function resolveDeepLink(rawUrl: string): string | null {
 
   // Пост/видео — общий парсер с in-app ссылками (`bastyon-link`).
   const post = parseBasytonLink(rawUrl)
-  if (post) return postRoute(post.txid, post.commentId)
+  if (post) return postRoute(post.txid, post.commentId, post.parentId)
 
   const segments = url.pathname.split('/').filter(Boolean)
   const head = (segments[0] ?? '').toLowerCase()

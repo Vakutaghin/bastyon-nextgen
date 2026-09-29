@@ -155,6 +155,7 @@
             <template #overlay>
               <PostShareMenu
                 :url="postUrl"
+                :embed-code="embedCode"
                 :text="shareText"
                 :can-report="canReport"
                 @report="onReportPost"
@@ -224,7 +225,7 @@ import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { useReportStore } from '@/stores/report-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
-import { publicPostUrl } from '@/helpers/common/share-origin'
+import { publicEmbedCode, publicPostUrl } from '@/helpers/common/share-origin'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { ImageGallery } from '@/components/image-gallery'
@@ -401,6 +402,7 @@ const shareMenuOpen = ref(false)
 // Ссылка уходит наружу, поэтому origin — публичный: в Tauri свой origin
 // выглядит как `tauri://localhost`, в Capacitor — `https://localhost` (S20).
 const postUrl = computed<string>(() => publicPostUrl(postId.value))
+const embedCode = computed<string>(() => (postId.value ? publicEmbedCode(postId.value) : ''))
 const shareText = computed<string>(
   () => decodeUrlEncoded(props.post.title || '') || props.post.author?.name || 'Bastyon'
 )

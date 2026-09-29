@@ -8,7 +8,7 @@
 import type { Ref } from 'vue'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
-import { publicShareOrigin } from '@/helpers/common/share-origin'
+import { commentUrl, publicShareOrigin } from '@/helpers/common/share-origin'
 import { useDonateStore, useReportStore } from '@/stores'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { CommentMenuAction } from '../types'
@@ -19,17 +19,17 @@ export interface UseCommentMenuActionsOptions {
   editDelete: ReturnType<typeof useCommentEditDelete>
 }
 
-/** Deep-link на /post/:txid?commentid=&parentid= (parentid — только для ответов). */
+/**
+ * Ссылка на комментарий (parentid — только у ответов). Формат зависит от
+ * origin: на bastyon.com — `post?s=`, в веб-сборке этого приложения —
+ * `/post/:txid` (см. share-origin).
+ */
 export function buildCommentPermalink(
   origin: string,
   postId: string,
   comment: Pick<GetComment, 'id' | 'parentid'>
 ): string {
-  const params = new URLSearchParams({ commentid: comment.id })
-  if (comment.parentid && comment.parentid !== comment.id) {
-    params.set('parentid', comment.parentid)
-  }
-  return `${origin}/post/${postId}?${params.toString()}`
+  return commentUrl(origin, postId, comment)
 }
 
 export function useCommentMenuActions(opts: UseCommentMenuActionsOptions) {

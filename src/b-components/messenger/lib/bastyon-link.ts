@@ -8,6 +8,7 @@
  *   - https://pocketnet.app/post?s={txid}
  *   - https://forta.chat/post?s={txid}
  *   - All above with &c={commentId} or #comment-{commentId}
+ *   - Share links of the old client: &commentid={commentId}[&parentid={parentId}]
  *
  * Ported from forta.chat/src/shared/lib/bastyon-link.ts (same protocol).
  */
@@ -15,6 +16,7 @@
 export interface BastyonLinkTarget {
   txid: string // 64-char lowercase hex
   commentId?: string // optional comment txid
+  parentId?: string // thread root of a reply (old client's share links)
   isVideo: boolean
 }
 
@@ -82,11 +84,15 @@ export const parseBasytonLink = (url: string): BastyonLinkTarget | null => {
     const txid = (parsed.searchParams.get('s') || parsed.searchParams.get('v'))?.toLowerCase()
     if (!txid || !HEX64_RE.test(txid)) return null
 
-    // Extract optional comment ID from &c= param
-    let commentId = parsed.searchParams.get('c')?.toLowerCase()
-    if (commentId && !HEX64_RE.test(commentId)) {
-      commentId = undefined
+    const hexParam = (key: string): string | undefined => {
+      const value = parsed.searchParams.get(key)?.toLowerCase()
+      return value && HEX64_RE.test(value) ? value : undefined
     }
+
+    // Optional comment ID: &c= (forta.chat) or &commentid= (the old client's
+    // "Share" on a comment, which adds &parentid= for replies)
+    let commentId = hexParam('c') ?? hexParam('commentid')
+    const parentId = commentId ? hexParam('parentid') : undefined
 
     // Fallback: check fragment #comment-{hex64}
     if (!commentId && parsed.hash) {
@@ -97,7 +103,9 @@ export const parseBasytonLink = (url: string): BastyonLinkTarget | null => {
     const isVideo =
       path === 'index' || parsed.searchParams.has('v') || parsed.searchParams.get('video') === '1'
 
-    return { txid, commentId, isVideo }
+    return parentId && parentId !== commentId
+      ? { txid, commentId, parentId, isVideo }
+      : { txid, commentId, isVideo }
   } catch {
     return null
   }

@@ -15,6 +15,13 @@ describe('resolveDeepLink — посты', () => {
     )
   })
 
+  it('«Поделиться» комментарием из прежнего клиента: commentid и ветка parentid', () => {
+    const parent = 'c'.repeat(64)
+    expect(
+      resolveDeepLink(`https://bastyon.com/post?s=${TXID}&commentid=${COMMENT}&parentid=${parent}`)
+    ).toBe(`/post/${TXID}?commentid=${COMMENT}&parentid=${parent}`)
+  })
+
   it('видео-ссылка index?v=', () => {
     expect(resolveDeepLink(`bastyon://index?v=${TXID}`)).toBe(`/post/${TXID}`)
   })

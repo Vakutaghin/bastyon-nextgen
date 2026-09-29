@@ -5,7 +5,7 @@
       {{ t('postCard.copyLink') }}
     </SC_ShareItem>
 
-    <SC_ShareItem v-if="embedUrl" type="button" @click="copyEmbed">
+    <SC_ShareItem v-if="embedCode" type="button" @click="copyEmbed">
       <SC_ShareIcon><CodeOutlined /></SC_ShareIcon>
       {{ t('postCard.copyEmbed') }}
     </SC_ShareItem>
@@ -48,24 +48,19 @@ import { appToast } from '@/b-components/app-toast'
 import { SHARE_TARGETS, type ShareTarget } from '@/helpers/common/share-targets'
 import { SC_ShareMenu, SC_ShareItem, SC_ShareIcon, SC_ShareDivider } from './styled'
 
-const props = defineProps<{ url: string; text: string; canReport?: boolean }>()
+const props = defineProps<{
+  url: string
+  text: string
+  canReport?: boolean
+  /** Код вставки на сайт (share-origin publicEmbedCode); нет — пункта нет. */
+  embedCode?: string
+}>()
 const emit = defineEmits<{ (e: 'done'): void; (e: 'report'): void }>()
 
 const { t } = useI18n()
 
 const canNativeShare = computed<boolean>(
   () => typeof navigator !== 'undefined' && typeof navigator.share === 'function'
-)
-
-// Embed-URL выводим из ссылки на пост (origin/post/<id> → origin/embed/post/<id>).
-const embedUrl = computed<string>(() =>
-  props.url.includes('/post/') ? props.url.replace('/post/', '/embed/post/') : ''
-)
-
-const embedCode = computed<string>(
-  () =>
-    `<iframe src="${embedUrl.value}" width="100%" height="640" frameborder="0" ` +
-    'allow="fullscreen; picture-in-picture" loading="lazy"></iframe>'
 )
 
 async function copyLink(): Promise<void> {
@@ -81,7 +76,7 @@ async function copyLink(): Promise<void> {
 
 async function copyEmbed(): Promise<void> {
   try {
-    await navigator.clipboard.writeText(embedCode.value)
+    await navigator.clipboard.writeText(props.embedCode ?? '')
     appToast.success({ message: t('postCard.embedCopied') })
   } catch {
     appToast.error({ message: t('postCard.shareFailed') })

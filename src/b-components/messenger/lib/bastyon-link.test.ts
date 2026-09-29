@@ -62,6 +62,26 @@ describe('parseBasytonLink', () => {
     expect(r?.commentId).toBe(COMMENT_ID)
   })
 
+  it("reads the old client's comment share link (commentid + parentid)", () => {
+    const parent = 'c'.repeat(64)
+    const r = parseBasytonLink(
+      `https://bastyon.com/post?s=${TXID}&commentid=${COMMENT_ID}&parentid=${parent}`
+    )
+    expect(r).toEqual({ txid: TXID, commentId: COMMENT_ID, parentId: parent, isVideo: false })
+  })
+
+  it('drops parentid without a comment and parentid equal to the comment', () => {
+    expect(parseBasytonLink(`https://bastyon.com/post?s=${TXID}&parentid=${COMMENT_ID}`)).toEqual({
+      txid: TXID,
+      commentId: undefined,
+      isVideo: false,
+    })
+    const r = parseBasytonLink(
+      `https://bastyon.com/post?s=${TXID}&commentid=${COMMENT_ID}&parentid=${COMMENT_ID}`
+    )
+    expect(r?.parentId).toBeUndefined()
+  })
+
   it('ignores invalid commentId (not hex64)', () => {
     const r = parseBasytonLink(`bastyon://post?s=${TXID}&c=invalid`)
     expect(r?.txid).toBe(TXID)
