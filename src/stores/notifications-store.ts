@@ -12,7 +12,11 @@ import type {
   NotificationCommentSnapshot,
   NotificationUserSnapshot,
 } from './notifications-types'
-import { mapMissedEventToNotification } from './notifications-mappers'
+import {
+  canonicalStoredMesType,
+  mapMissedEventToNotification,
+  notificationTypeFor,
+} from './notifications-mappers'
 import { enrichNotifications } from './notifications-enricher'
 import {
   loadLastBlockFromSettings,
@@ -22,7 +26,7 @@ import {
   loadHiddenIdsFromSettings,
   saveHiddenIdsToSettings,
 } from './notifications-settings'
-import { NOTIFICATIONS_KEEP_LIMIT } from './notifications-constants'
+import { MES_TYPE_TITLE_KEYS, NOTIFICATIONS_KEEP_LIMIT } from './notifications-constants'
 import { isNotificationAllowed } from './notification-filtering'
 import { useNotificationSettingsStore } from './notification-settings-store'
 import { fetchCurrentBlockHeight, isTimeoutError, fetchMissedInfo } from './notifications-fetch'
@@ -162,7 +166,10 @@ export const useNotificationsStore = defineStore('notifications', {
       // курсор фетча уедет на head, а этот останется здесь.
       this.readBlock = savedReadBlock ?? this.lastBlock
 
-      // Преобразуем запись IDB в NotificationItem для state
+      // Преобразуем запись IDB в NotificationItem для state. Записи, сохранённые
+      // до исправления разбора событий ноды, хранят её имена (`post` — это
+      // комментарий к посту, `cScore`, `contentBoost`): переводим их так же,
+      // как свежие события, вместе с типом и заголовком.
       const toItem = (s: {
         id: string
         nblock: number
@@ -173,22 +180,28 @@ export const useNotificationsStore = defineStore('notifications', {
         link?: string
         from?: string
         shareId?: string
+        commentId?: string
         mesType?: string
         upvoteVal?: number
-      }): NotificationItem => ({
-        id: s.id,
-        nblock: s.nblock,
-        type: s.type as NotificationItem['type'],
-        title: s.title,
-        description: s.description,
-        time: s.time,
-        link: s.link,
-        seen: false,
-        from: s.from,
-        shareId: s.shareId,
-        mesType: s.mesType,
-        upvoteVal: s.upvoteVal,
-      })
+      }): NotificationItem => {
+        const mesType = canonicalStoredMesType(s.mesType)
+        const renamed = mesType !== s.mesType
+        return {
+          id: s.id,
+          nblock: s.nblock,
+          type: renamed ? notificationTypeFor(mesType) : (s.type as NotificationItem['type']),
+          title: renamed ? ((mesType && MES_TYPE_TITLE_KEYS[mesType]) ?? s.title) : s.title,
+          description: s.description,
+          time: s.time,
+          link: s.link,
+          seen: false,
+          from: s.from,
+          shareId: s.shareId,
+          commentId: s.commentId,
+          mesType,
+          upvoteVal: s.upvoteVal,
+        }
+      }
       // Полный пересбор из IDB терял снапшоты (их там нет) и вместе с
       // `enrichedIds` оставлял карточки без имени актора и текста коммента до
       // перезагрузки (V39). Поэтому уже имеющиеся в памяти записи сохраняем.
@@ -216,7 +229,7 @@ export const useNotificationsStore = defineStore('notifications', {
           }
           const rawEvents = arr.slice(1) as (GetMissedInfoEventItem | Record<string, unknown>)[]
           const mapped = rawEvents
-            .map((n) => mapMissedEventToNotification(n))
+            .map((n) => mapMissedEventToNotification(n, address))
             .filter((n): n is NotificationItem => n != null)
           const existingIds = new Set(this.items.map((i) => i.id))
           const newItems = mapped.filter((n) => !existingIds.has(n.id))
@@ -235,6 +248,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 link,
                 from,
                 shareId,
+                commentId,
                 mesType,
                 upvoteVal,
               }) => ({
@@ -247,6 +261,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 link,
                 from,
                 shareId,
+                commentId,
                 mesType,
                 upvoteVal,
               })
@@ -424,9 +439,10 @@ export const useNotificationsStore = defineStore('notifications', {
      * Используется компонентом для отрисовки богатой карточки.
      */
     getEnrichment(item: NotificationItem) {
-      const postId = item.shareId ?? item.commentSnapshot?.postid
+      // У оценки комментария комментарий — commentId, а пост известен только из него.
+      const comment = item.commentSnapshot ?? this.commentCache[item.commentId ?? item.id]
+      const postId = item.shareId ?? comment?.postid
       const post = item.postSnapshot ?? (postId ? this.postCache[postId] : undefined)
-      const comment = item.commentSnapshot ?? this.commentCache[item.id]
       const fromAddr = item.from ?? item.fromSnapshot?.address
       const fromCached = fromAddr ? this.profileCache[fromAddr] : undefined
       const from = item.fromSnapshot ?? fromCached

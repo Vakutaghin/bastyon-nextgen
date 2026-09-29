@@ -28,7 +28,7 @@ Where to get coins — see [How to get PKOIN](how-to-buy-pkoin.md).
 
 ## What the author sees
 
-The author gets a **“Donation received”** notification with the amount. In their wallet the tip is an incoming transfer from you. A tip is not tied to a post: the author sees who sent how much, but not what for. If you want them to know, write to them — in a comment, for example.
+The author gets a **“PKOIN received”** notification with the amount — if it is at least 0.05 PKOIN: the app does not show tiny transfers, so as not to let spam through. In the author’s wallet the tip is an incoming transfer from you. A tip is not tied to a post: the author sees who sent how much, but not what for. If you want them to know, write to them — in a comment, for example.
 
 Like any transfer, a tip is recorded on the blockchain, and anyone can see who sent how much to whom.
 

@@ -20,7 +20,7 @@ Posts of the people you follow are collected in the **“Subscriptions”** sect
 
 ## Notifications about new posts
 
-Next to the subscribe button in a profile there is a bell, **“Enable notifications”**. With it you get a notification about every new post by this person — see [Notifications](notifications.md). If you are not subscribed yet, the bell subscribes you as well.
+Next to the subscribe button in a profile there is a bell, **“Enable notifications”**. With it you get notifications about this person’s new posts — see [Notifications](notifications.md). If you are not subscribed yet, the bell subscribes you as well.
 
 **“Disable notifications”** is the same bell once more: the subscription stays, the notifications stop. If you click **“Subscribed”**, both the subscription and the notifications go.
 

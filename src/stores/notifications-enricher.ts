@@ -27,6 +27,38 @@ export interface EnrichmentCaches {
   enrichedIds: Set<string>
 }
 
+/** id комментария, текст которого нужен уведомлению (у оценки комментария — commentId). */
+function commentIdOf(n: NotificationItem): string | undefined {
+  if (n.type === 'comment') return n.id
+  return n.commentId
+}
+
+/** Посты по txid — в кеш (тем же RPC, что и комментарии: это тоже транзакции). */
+async function fetchPosts(caches: EnrichmentCaches, ids: string[]): Promise<void> {
+  const arr = await rpcCallWithAuth<unknown[]>({
+    method: rpcEndpoints.getRawTransactionWithMessageById,
+    parameters: [ids],
+    cachehash: generateCacheHash(),
+    options: {},
+    state: 1,
+  })
+  const list = Array.isArray(arr) ? arr : []
+  for (const raw of list) {
+    if (!raw || typeof raw !== 'object') continue
+    const o = raw as Record<string, unknown>
+    const txid = pickStr(o, 'txid', 'hash', 'id')
+    if (!txid) continue
+    caches.postCache[txid] = {
+      ...(o as Record<string, unknown>),
+      txid,
+      caption: pickStr(o, 'c', 'caption', 'title'),
+      message: pickStr(o, 'm', 'message', 'text'),
+      type: pickStr(o, 'type'),
+      images: pickArr<string>(o, 'i', 'images'),
+    }
+  }
+}
+
 /**
  * Собирает три батча (посты/комменты/профили) для уведомлений, которые ещё
  * не обогащены и не имеют snapshot. Делает Promise.all и пишет в caches.
@@ -58,9 +90,11 @@ export async function enrichNotifications(
     if (postId && !caches.postCache[postId] && !(n.postSnapshot && n.postSnapshot.message)) {
       postTxids.add(postId)
     }
-    // Комментарий — id уведомления для type=comment является txid комментария
-    if (n.type === 'comment' && !n.commentSnapshot?.message && !caches.commentCache[n.id]) {
-      commentTxids.add(n.id)
+    // Комментарий: у комментария и ответа это id самого уведомления, у оценки
+    // комментария — commentId.
+    const commentId = commentIdOf(n)
+    if (commentId && !n.commentSnapshot?.message && !caches.commentCache[commentId]) {
+      commentTxids.add(commentId)
     }
     // Профиль отправителя
     const addr = n.from ?? n.fromSnapshot?.address
@@ -71,38 +105,14 @@ export async function enrichNotifications(
 
   const tasks: Array<Promise<unknown>> = []
   if (postTxids.size > 0) {
-    const ids = [...postTxids]
     tasks.push(
-      rpcCallWithAuth<unknown[]>({
-        method: rpcEndpoints.getRawTransactionWithMessageById,
-        parameters: [ids],
-        cachehash: generateCacheHash(),
-        options: {},
-        state: 1,
+      fetchPosts(caches, [...postTxids]).catch((e) => {
+        postsFailed = true
+        console.warn('[notifications] enrich posts failed', e)
       })
-        .then((arr) => {
-          const list = Array.isArray(arr) ? arr : []
-          for (const raw of list) {
-            if (!raw || typeof raw !== 'object') continue
-            const o = raw as Record<string, unknown>
-            const txid = pickStr(o, 'txid', 'hash', 'id')
-            if (!txid) continue
-            caches.postCache[txid] = {
-              ...(o as Record<string, unknown>),
-              txid,
-              caption: pickStr(o, 'c', 'caption', 'title'),
-              message: pickStr(o, 'm', 'message', 'text'),
-              type: pickStr(o, 'type'),
-              images: pickArr<string>(o, 'i', 'images'),
-            }
-          }
-        })
-        .catch((e) => {
-          postsFailed = true
-          console.warn('[notifications] enrich posts failed', e)
-        })
     )
   }
+
   if (commentTxids.size > 0) {
     // Комментарии — это тоже tx, поэтому грузим тем же RPC
     const ids = [...commentTxids]
@@ -164,12 +174,37 @@ export async function enrichNotifications(
     }
   }
 
+  // Оценка комментария знает только комментарий: его пост догружаем вторым
+  // проходом, когда комментарий уже в кеше, — иначе уведомление не откроется.
+  const followPosts = new Set<string>()
+  for (const n of fresh) {
+    if (!n.commentId || n.shareId) continue
+    const postId = caches.commentCache[n.commentId]?.postid
+    if (postId && !caches.postCache[postId]) followPosts.add(postId)
+  }
+  if (followPosts.size > 0) {
+    setEnriching(true)
+    try {
+      await fetchPosts(caches, [...followPosts])
+    } catch (e) {
+      postsFailed = true
+      console.warn('[notifications] enrich posts failed', e)
+    } finally {
+      setEnriching(false)
+    }
+    for (const id of followPosts) postTxids.add(id)
+  }
+
   // P2-9: помечаем enriched ПОСЛЕ сетевых вызовов и только уведомления, чьи
   // требуемые батчи не упали. Зависящие от упавшего батча остаются на ретрай.
   for (const n of fresh) {
-    const postId = n.shareId ?? n.commentSnapshot?.postid
+    const commentId = commentIdOf(n)
+    const postId =
+      n.shareId ??
+      n.commentSnapshot?.postid ??
+      (commentId ? caches.commentCache[commentId]?.postid : undefined)
     const dependsPost = !!postId && postTxids.has(postId)
-    const dependsComment = n.type === 'comment' && commentTxids.has(n.id)
+    const dependsComment = !!commentId && commentTxids.has(commentId)
     const addr = n.from ?? n.fromSnapshot?.address
     const dependsProfile = !!addr && profileAddrs.has(addr)
     if (

@@ -52,6 +52,8 @@ export interface NotificationItem {
   from?: string
   /** Optional: related content id */
   shareId?: string
+  /** Оценка комментария: id вашего комментария (пост находится через него). */
+  commentId?: string
   /** Raw mesType from API (для filter mapping: comment, answer, upvoteShare, subscribe, ...) */
   mesType?: string
   /** Для upvoteShare: значение оценки (положительное — апвоут, отрицательное — даунвоут) */

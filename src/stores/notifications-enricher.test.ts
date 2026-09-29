@@ -141,6 +141,22 @@ describe('enrichNotifications', () => {
     expect(c.postCache.post9?.message).toBe('Родительский пост')
   })
 
+  it('оценка комментария: сначала комментарий, потом его пост', async () => {
+    node({
+      c7: { txid: 'c7', postid: 'post7', msg: JSON.stringify({ message: 'мой комментарий' }) },
+      post7: { txid: 'post7', m: 'Пост с комментарием' },
+    })
+    const c = caches()
+    await enrichNotifications(
+      c,
+      [note({ id: 's7', type: 'rating', mesType: 'upvoteComment', commentId: 'c7' })],
+      vi.fn()
+    )
+    expect(c.commentCache.c7).toMatchObject({ postid: 'post7', message: 'мой комментарий' })
+    expect(c.postCache.post7?.message).toBe('Пост с комментарием')
+    expect(c.enrichedIds.has('s7')).toBe(true)
+  })
+
   it('повторный вызов с теми же уведомлениями — без запросов', async () => {
     node({ post1: { txid: 'post1', m: 'x' } })
     const c = caches()

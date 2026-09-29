@@ -57,11 +57,15 @@ export function showToastsForNewNotifications(pinia: Pinia, items: NotificationI
       // хранится число, иначе после смены языка тост оставался бы на прежнем.
       description:
         item.description ??
-        (item.upvoteVal != null
-          ? t('notif.scoreValue', { n: item.upvoteVal })
-          : item.from
-            ? t('notif.from', { name: item.from })
-            : undefined),
+        (item.mesType === 'upvoteComment'
+          ? (item.upvoteVal ?? 0) < 0
+            ? '👎'
+            : '👍'
+          : item.upvoteVal != null
+            ? t('notif.scoreValue', { n: item.upvoteVal })
+            : item.from
+              ? t('notif.from', { name: item.from })
+              : undefined),
       key: item.id,
       duration: 4,
     })

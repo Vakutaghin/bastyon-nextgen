@@ -117,68 +117,186 @@ const ALLOWED_TYPES: NotificationItem['type'][] = [
 
 const TYPE_MAP: Record<string, NotificationItem['type']> = {
   upvoteShare: 'rating',
+  upvoteComment: 'rating',
   subscribe: 'subscribe',
+  subscribePrivate: 'subscribe',
   unsubscribe: 'subscribe',
   answer: 'comment',
-  post: 'other',
   comment: 'comment',
   repost: 'repost',
+  transaction: 'tip',
+}
+
+/**
+ * mesType приложения по событию ноды. Нода (pocketnet.core 0.22, GetMissedInfo
+ * в WebSocketRpc.cpp) называет события по-своему, и раньше маппер их не
+ * узнавал: комментарий к посту показывался «новым постом», а оценка
+ * комментария, репост и буст — безымянным «Уведомлением». События ноды:
+ *  - `msg: comment` + `mesType: post` — комментарий к вашему посту → `comment`;
+ *  - `msg: comment` + `mesType: answer` — ответ на ваш комментарий;
+ *  - `mesType: cScore` — оценка вашего комментария, ±1 → `upvoteComment`;
+ *  - `msg: reshare` — репост вашего поста → `repost`;
+ *  - `mesType: contentBoost` — буст вашего поста → `boost`;
+ *  - `mesType: postfromprivate` — новый пост автора, у которого включён колокольчик;
+ *  - `upvoteShare`, `subscribe`, `subscribePrivate`, `unsubscribe` — как есть.
+ */
+export function canonicalMesType(msg: unknown, mesType: unknown): string | undefined {
+  if (msg === 'reshare') return 'repost'
+  if (msg === 'comment' && mesType === 'post') return 'comment'
+  if (mesType === 'cScore') return 'upvoteComment'
+  if (mesType === 'contentBoost') return 'boost'
+  return typeof mesType === 'string' && mesType ? mesType : undefined
+}
+
+/**
+ * mesType записи из IDB. До исправления там лежали имена ноды, и `post`
+ * означал комментарий к посту: новый пост теперь — `postfromprivate`.
+ */
+export function canonicalStoredMesType(mesType: string | undefined): string | undefined {
+  if (mesType === 'post') return 'comment'
+  return canonicalMesType(undefined, mesType)
+}
+
+/** Тип уведомления (иконка, фильтр, переход по клику) по mesType приложения. */
+export function notificationTypeFor(mesType: string | undefined): NotificationItem['type'] {
+  if (!mesType) return 'other'
+  const mapped = TYPE_MAP[mesType]
+  if (mapped) return mapped
+  return ALLOWED_TYPES.includes(mesType as NotificationItem['type'])
+    ? (mesType as NotificationItem['type'])
+    : 'other'
+}
+
+/** Входящие переводы меньше этого не показываем — как старый клиент (спам «пылью»). */
+export const MIN_TRANSFER_NOTIFY_PKOIN = 0.05
+
+/** coinbase (2) и coinstake (3): входящие монеты в них — награда сети, а не перевод. */
+const REWARD_TX_TYPES = new Set([2, 3])
+
+export interface IncomingCoins {
+  /** Сумма выходов на наш адрес, PKOIN. */
+  amount: number
+  /** Адрес первого входа: отправитель перевода (у награды — ставщик блока). */
+  from?: string
+  /** Награда из лотереи блока, а не перевод. */
+  reward: boolean
+}
+
+/**
+ * Входящие монеты из сырой транзакции getmissedinfo (числовой `type`, `vin`,
+ * `vout`). Нода кладёт туда все транзакции с выходом на наш адрес, в том
+ * числе сдачу от наших же постов, оценок и переводов, — поэтому транзакцию,
+ * у которой первый вход наш, пропускаем. Раньше сырые транзакции
+ * отбрасывались целиком, и о переводах и наградах уведомлений не было.
+ */
+export function incomingCoins(
+  n: Record<string, unknown>,
+  myAddress: string | null | undefined
+): IncomingCoins | null {
+  if (!myAddress || !Array.isArray(n.vout)) return null
+  let amount = 0
+  for (const out of n.vout as Array<{ value?: unknown; scriptPubKey?: { addresses?: unknown } }>) {
+    const addresses = out?.scriptPubKey?.addresses
+    if (Array.isArray(addresses) && addresses.includes(myAddress)) {
+      amount += Number(out.value) || 0
+    }
+  }
+  if (!(amount > 0)) return null
+  const vin = Array.isArray(n.vin) ? (n.vin as Array<{ address?: unknown }>) : []
+  const first = vin.find((input) => typeof input?.address === 'string')?.address as
+    | string
+    | undefined
+  if (first === myAddress) return null
+  const reward = REWARD_TX_TYPES.has(Number(n.type))
+  if (!reward && amount < MIN_TRANSFER_NOTIFY_PKOIN) return null
+  return { amount, from: first, reward }
+}
+
+/** Сумма для описания: `+1.5 PKOIN` (от языка не зависит, поэтому хранится готовой). */
+function amountLabel(satoshis: string | number): string {
+  return `+${formatPkoin(satoshis, 8, false)} PKOIN`
 }
 
 /**
  * Маппит сырое событие из getmissedinfo в NotificationItem.
- * Принимает либо строго типизированный GetMissedInfoEventItem, либо Record (legacy/неизвестные mesType).
+ * `myAddress` нужен для сырых транзакций: без него не отличить входящий
+ * перевод от сдачи собственной транзакции.
  */
-export function mapMissedEventToNotification(n: Record<string, unknown>): NotificationItem | null {
+export function mapMissedEventToNotification(
+  n: Record<string, unknown>,
+  myAddress?: string | null
+): NotificationItem | null {
   const id = (n.txid ?? n.id ?? n.nblock ?? Math.random().toString(36)) as string
-  const nblock = Number(n.nblock ?? 0) || 0
-  const mesType = (n.mesType ?? n.type) as string
-  const time = Number(n.time ?? n.nTime ?? n.nblock ?? 0) || Math.floor(Date.now() / 1000)
-
-  // Полученные PKOIN / донат: событие транзакции (`msg: 'transaction'` + `amount`,
-  // без mesType). Legacy показывал это как доход/донат; маппим в тип `tip`
-  // с суммой в описании. (Маркер `a:donate` в самом событии не приходит — сумма
-  // и факт получения уже информативны.)
-  const isTipEvent = (n.msg === 'transaction' || mesType === 'transaction') && n.amount != null
-
-  // Сырые блокчейн-транзакции (собственная регистрация аккаунта `type:100`,
-  // пополнение `type:1` и т.п.) приходят с ЧИСЛОВЫМ `type` и без mesType/msg —
-  // это не уведомления «кто-то что-то сделал». Оригинал их отфильтровывает
-  // (показывает только события с известным mesType/msg); без фильтра они
-  // рендерятся как «Кто-то · Уведомление» без актора и деталей.
   const hasEventMarker =
     (typeof n.mesType === 'string' && n.mesType.length > 0) ||
     (typeof n.msg === 'string' && n.msg.length > 0)
+
+  // Сырая транзакция: входящий перевод, награда — или ничего (сдача, своя
+  // регистрация, пополнение из крана меньше порога).
+  if (!hasEventMarker && typeof n.type === 'number') {
+    const coins = incomingCoins(n, myAddress)
+    if (!coins) return null
+    return {
+      id: String(id),
+      nblock: Number(n.height ?? n.nblock ?? 0) || 0,
+      type: coins.reward ? 'other' : 'tip',
+      title: coins.reward ? 'notif.titleWin' : 'notif.titleTip',
+      description: amountLabel(Math.round(coins.amount * 1e8)),
+      time: Number(n.nTime ?? n.time ?? 0) || Math.floor(Date.now() / 1000),
+      seen: false,
+      from: coins.reward ? undefined : coins.from,
+      mesType: coins.reward ? 'win' : 'transaction',
+    }
+  }
+
+  const nblock = Number(n.nblock ?? 0) || 0
+  const rawMesType = n.mesType ?? n.type
+  const time = Number(n.time ?? n.nTime ?? n.nblock ?? 0) || Math.floor(Date.now() / 1000)
+
+  // Событие перевода в виде `msg: 'transaction'` + `amount` (так их шлёт
+  // WebSocket прокси) — тоже входящие монеты.
+  const isTipEvent = (n.msg === 'transaction' || rawMesType === 'transaction') && n.amount != null
+
+  // Остальное без msg/mesType — не событие «кто-то что-то сделал»: без
+  // фильтра оно рендерилось бы как «Кто-то · Уведомление» без деталей.
   if (!isTipEvent && !hasEventMarker) {
     return null
   }
 
+  const mesType = isTipEvent ? 'transaction' : canonicalMesType(n.msg, rawMesType)
   // i18n-ключ заголовка; резолвится через t() в месте рендера (toast/дропдаун).
   const title = isTipEvent
     ? 'notif.titleTip'
-    : (MES_TYPE_TITLE_KEYS[mesType] ?? 'notif.titleDefault')
+    : ((mesType && MES_TYPE_TITLE_KEYS[mesType]) ?? 'notif.titleDefault')
   // Текст оценки не сохраняем (он застыл бы на языке момента записи) —
-  // тост соберёт его из upvoteVal. Сумма чаевых от языка не зависит.
-  const description = isTipEvent
-    ? `+${formatPkoin(n.amount as string | number, 8, false)} PKOIN`
-    : undefined
+  // тост соберёт его из upvoteVal. Сумма от языка не зависит.
+  const description = isTipEvent ? amountLabel(n.amount as string | number) : undefined
   const link = (n.url ?? n.link) as string | undefined
 
-  const safeType: NotificationItem['type'] = isTipEvent
-    ? 'tip'
-    : (TYPE_MAP[mesType] ??
-      (ALLOWED_TYPES.includes(mesType as NotificationItem['type'])
-        ? (mesType as NotificationItem['type'])
-        : 'other'))
+  const safeType: NotificationItem['type'] = isTipEvent ? 'tip' : notificationTypeFor(mesType)
   const upvoteVal = n.upvoteVal != null ? Number(n.upvoteVal) : undefined
   const fromAddress = (n.addrFrom ?? (n.account as Record<string, unknown>)?.address) as
     | string
     | undefined
-  const shareId = (n.posttxid ?? n.rootTxHash ?? n.postHash) as string | undefined
+  // Репост и новый пост автора — сами посты: их id и открываем.
+  const shareId = (n.posttxid ??
+    n.rootTxHash ??
+    n.postHash ??
+    (mesType === 'repost' || mesType === 'postfromprivate' ? n.txid : undefined)) as
+    | string
+    | undefined
+  // Оценка комментария знает только комментарий; пост найдётся через него.
+  const commentId = mesType === 'upvoteComment' ? pickStr(n, 'commentid') : undefined
 
   const postSnapshot = extractPostSnapshot(n.share, shareId)
   const commentSnapshot = extractCommentSnapshot(n.comment, String(id), shareId)
-  const fromSnapshot = extractUserSnapshot(n.user, fromAddress)
+  // Буст и новый пост нода присылает с именем и аватаром автора.
+  const userRaw =
+    n.user ??
+    (typeof n.nameFrom === 'string' && fromAddress
+      ? { address: fromAddress, name: n.nameFrom, i: n.avatarFrom }
+      : undefined)
+  const fromSnapshot = extractUserSnapshot(userRaw, fromAddress)
 
   return {
     id: String(id),
@@ -191,6 +309,7 @@ export function mapMissedEventToNotification(n: Record<string, unknown>): Notifi
     seen: false,
     from: fromAddress ?? fromSnapshot?.address,
     shareId,
+    commentId,
     mesType,
     upvoteVal,
     postSnapshot,

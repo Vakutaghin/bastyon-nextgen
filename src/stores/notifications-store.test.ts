@@ -42,10 +42,12 @@ vi.mock('./notifications-enricher', () => ({ enrichNotifications: vi.fn() }))
 import { useNotificationsStore } from './notifications-store'
 import { useNotificationSettingsStore } from './notification-settings-store'
 
+// Комментарий к посту в том виде, в каком его присылает нода (GetMissedPostComments).
 const event = (id: string) => ({
-  mesType: 'comment',
+  msg: 'comment',
+  mesType: 'post',
   txid: id,
-  addr: 'PX',
+  addrFrom: 'PX',
   time: 1,
   nblock: 101,
   posttxid: 'p',
@@ -196,6 +198,40 @@ describe('notifications-store: курсор, снимки, бейдж (V38, V39,
     expect(store.unreadCount).toBe(0)
     // Список при этом никуда не делся.
     expect(store.list).toHaveLength(2)
+  })
+
+  it('записи из IDB с именами ноды приводятся к типам приложения', async () => {
+    // До исправления комментарий к посту лежал с mesType ноды `post` и
+    // показывался «новым постом».
+    mocks.getAllByAddress.mockResolvedValue([
+      {
+        id: 'old',
+        nblock: 99,
+        type: 'other',
+        title: 'notif.titlePost',
+        time: 1,
+        shareId: 'p',
+        mesType: 'post',
+      },
+      {
+        id: 'cs',
+        nblock: 99,
+        type: 'other',
+        title: 'notif.titleDefault',
+        time: 1,
+        mesType: 'cScore',
+      },
+    ])
+    const store = useNotificationsStore()
+    await store.init()
+    const old = store.items.find((n) => n.id === 'old')!
+    expect(old).toMatchObject({ mesType: 'comment', type: 'comment', title: 'notif.titleComment' })
+    const cs = store.items.find((n) => n.id === 'cs')!
+    expect(cs).toMatchObject({
+      mesType: 'upvoteComment',
+      type: 'rating',
+      title: 'notif.titleCommentScore',
+    })
   })
 
   it('выключенный тумблер убирает тип из списка, а не только из тостов (S56)', async () => {

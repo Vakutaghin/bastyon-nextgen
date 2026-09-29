@@ -36,9 +36,12 @@ export interface NotificationFilterFlags {
 
 /**
  * Разрешено ли уведомление настройками.
- * `mesType` из getmissedinfo: comment, answer, upvoteShare, upvoteComment,
- * subscribe, subscribePrivate, unsubscribe, post, userInfo, repost; плюс наш
- * тип `tip` для входящих переводов.
+ * `mesType` — уже приведённый к именам приложения (notifications-mappers
+ * canonicalMesType): comment, answer, upvoteShare, upvoteComment, subscribe,
+ * subscribePrivate, unsubscribe, postfromprivate, repost, boost, transaction
+ * (тип `tip`) и win. Раньше здесь ждали имена, которых нода не присылает, и
+ * тумблеры «Новый комментарий», «Рейтинг комментария», «Транзакция получена»
+ * и «Coinstake выигрыш» ни на что не влияли.
  */
 export function isNotificationAllowed(
   filters: NotificationFilterFlags,
@@ -55,7 +58,8 @@ export function isNotificationAllowed(
     case 'upvoteShare':
       return isLowRatingValue(item.upvoteVal) ? filters.downvotes : filters.upvotes
     case 'upvoteComment':
-      return filters.commentScore
+      // Дизлайк комментария — ещё и «негативная оценка», как в старом клиенте.
+      return filters.commentScore && ((item.upvoteVal ?? 0) >= 0 || filters.downvotes)
     case 'subscribe':
     case 'subscribePrivate':
       return filters.followers

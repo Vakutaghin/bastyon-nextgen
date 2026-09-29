@@ -105,6 +105,7 @@ export interface StoredNotification {
   link?: string
   from?: string
   shareId?: string
+  commentId?: string
   mesType?: string
   upvoteVal?: number
 }

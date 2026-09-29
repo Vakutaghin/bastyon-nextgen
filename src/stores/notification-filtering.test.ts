@@ -58,6 +58,11 @@ describe('isNotificationAllowed (S56)', () => {
     const commentScore = { type: 'rating' as const, mesType: 'upvoteComment', upvoteVal: 4 }
     expect(isNotificationAllowed({ ...ALL_ON, commentScore: false }, commentScore)).toBe(false)
 
+    // Дизлайк комментария — ещё и негативная оценка (как в старом клиенте).
+    const commentDislike = { type: 'rating' as const, mesType: 'upvoteComment', upvoteVal: -1 }
+    expect(isNotificationAllowed(ALL_ON, commentDislike)).toBe(true)
+    expect(isNotificationAllowed({ ...ALL_ON, downvotes: false }, commentDislike)).toBe(false)
+
     const win = { type: 'other' as const, mesType: 'win', upvoteVal: undefined }
     expect(isNotificationAllowed({ ...ALL_ON, win: false }, win)).toBe(false)
   })

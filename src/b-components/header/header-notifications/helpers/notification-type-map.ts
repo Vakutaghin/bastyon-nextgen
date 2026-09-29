@@ -26,6 +26,8 @@ export function notificationTypeLabelKey(item: NotificationItem): string {
   switch (item.mesType) {
     case 'upvoteShare':
       return isLowRatingValue(item.upvoteVal) ? 'notif.typeLowRating' : 'notif.typeRating'
+    case 'upvoteComment':
+      return 'notif.typeCommentScore'
     case 'comment':
       return 'notif.typeComment'
     case 'answer':
@@ -38,8 +40,12 @@ export function notificationTypeLabelKey(item: NotificationItem): string {
       return 'notif.typeUnsubscribe'
     case 'repost':
       return 'notif.typeRepost'
-    case 'post':
+    case 'postfromprivate':
       return 'notif.typePost'
+    case 'boost':
+      return 'notif.typeBoost'
+    case 'win':
+      return 'notif.typeWin'
     case 'userInfo':
       return 'notif.typeUserInfo'
     default:

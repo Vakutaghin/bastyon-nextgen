@@ -80,6 +80,11 @@
                   {{ getRatingDisplay(item).label }}
                 </SC_RatingValue>
 
+                <!-- Сумма входящего перевода или награды: «+1.5 PKOIN». -->
+                <SC_RatingValue v-if="item.description" :positive="true">
+                  {{ item.description }}
+                </SC_RatingValue>
+
                 <SC_CommentPreview v-if="getCommentText(item)" :expanded="isExpanded(item.id)">{{
                   getCommentDisplay(item)
                 }}</SC_CommentPreview>
@@ -257,6 +262,8 @@ function enrichmentFor(item: NotificationItem) {
 }
 
 function getDisplayName(item: NotificationItem): string {
+  // Награду из лотереи присылает сеть, а не человек.
+  if (item.mesType === 'win') return 'Bastyon'
   const e = enrichmentFor(item)
   const name = e.from?.name?.trim()
   if (name) return name
@@ -290,10 +297,20 @@ function getActionLine(item: NotificationItem): string {
       return t('header.actionSubscribedPrivate')
     case 'unsubscribe':
       return t('header.actionUnsubscribed')
+    case 'upvoteComment':
+      return (item.upvoteVal ?? 0) < 0
+        ? t('header.actionDislikedComment')
+        : t('header.actionLikedComment')
     case 'repost':
       return t('header.actionReposted')
-    case 'post':
+    case 'postfromprivate':
       return t('header.actionPosted')
+    case 'boost':
+      return t('header.actionBoosted')
+    case 'transaction':
+      return t('header.actionSentCoins')
+    case 'win':
+      return t('header.actionWin')
     case 'userInfo':
       return t('header.actionUpdatedProfile')
     default:
@@ -339,6 +356,7 @@ function getPostCaption(item: NotificationItem): string {
 }
 
 function hasPreview(item: NotificationItem): boolean {
+  if (item.description) return true
   if (item.type === 'rating' && item.upvoteVal != null) return true
   if (getCommentText(item)) return true
   if (getPostCaption(item)) return true
@@ -346,6 +364,11 @@ function hasPreview(item: NotificationItem): boolean {
 }
 
 function getRatingDisplay(item: NotificationItem): { label: string; positive: boolean } {
+  // Оценка комментария — лайк или дизлайк, а не звёзды.
+  if (item.mesType === 'upvoteComment') {
+    const liked = (item.upvoteVal ?? 0) > 0
+    return { label: liked ? '👍' : '👎', positive: liked }
+  }
   // upvoteVal — звёзды 1..5. Низкая оценка (<= 2) показывается словами, как в
   // legacy; раньше «низкой» считалась только отрицательная, которой не бывает.
   const v = item.upvoteVal ?? 0
@@ -419,6 +442,12 @@ function openNotificationLink(link: string): void {
 
 function onItemClick(item: NotificationItem): void {
   visible.value = false
+
+  // Монеты — перевод или награда — видны в истории кошелька.
+  if (item.type === 'tip' || item.mesType === 'win') {
+    void router.push({ name: 'wallets' })
+    return
+  }
 
   // Подписки/профильные события → переход на профиль отправителя.
   if (item.type === 'subscribe' || item.mesType === 'userInfo') {

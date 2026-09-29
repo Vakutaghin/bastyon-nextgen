@@ -26,12 +26,16 @@ export const NOTIFICATIONS_KEEP_LIMIT = 300
  */
 export const MES_TYPE_TITLE_KEYS: Record<string, string> = {
   upvoteShare: 'notif.titleUpvoteShare',
+  upvoteComment: 'notif.titleCommentScore',
   subscribe: 'notif.titleSubscribe',
   unsubscribe: 'notif.titleUnsubscribe',
   subscribePrivate: 'notif.titleSubscribePrivate',
   answer: 'notif.titleAnswer',
-  post: 'notif.titlePost',
+  postfromprivate: 'notif.titlePost',
   userInfo: 'notif.titleUserInfo',
   comment: 'notif.titleComment',
   repost: 'notif.titleRepost',
+  boost: 'notif.titleBoost',
+  transaction: 'notif.titleTip',
+  win: 'notif.titleWin',
 }
