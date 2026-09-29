@@ -20,7 +20,35 @@ A shared record of every action on the network: transfers, posts, ratings, subsc
 
 ## Boost
 
-Promoting a post for [PKOIN](#pkoin): a participant spends coins, and the post rises in the feed with a "Promoted" label. The more coins, the higher the post.
+Promoting a post for [PKOIN](#pkoin): a participant spends coins, and the post rises in the feed with a "Promoted" label. The more coins, the higher the post. The author does not get the coins: they go as a [fee](#fee) to whoever produced the block.
+
+## Bridge
+
+A hidden entry point to the [Tor](#tor) network, for people whose Tor is blocked. obfs4 bridges disguise the traffic as random noise, Snowflake as a video call.
+
+## CID
+
+The fingerprint of a file’s contents in [IPFS](#ipfs). The file is found on the network by it, and it is used to check that exactly that file arrived.
+
+## Confirmation
+
+Inclusion of a [transaction](#transaction) in a [block](#block). Every following block adds one more confirmation, and the more there are, the more reliable the record. An action is visible to everyone from the first confirmation — usually within a minute.
+
+## Emission
+
+How many [PKOIN](#pkoin) have been issued in total. It grows with every [block](#block).
+
+## End-to-end encryption
+
+Encryption where only the participants can read a message: it is encrypted on the sender’s device and decrypted on the recipient’s, and the server sees only ciphertext. Bastyon’s private chats work this way — see [Message encryption](chat-encryption.md).
+
+## Fee
+
+The network’s charge for every action — a post, a rating, a transfer. It is usually 0.00000001 [PKOIN](#pkoin). The fee goes to whoever produced the [block](#block) with your [transaction](#transaction).
+
+## Gateway
+
+A website that fetches files from the [IPFS](#ipfs) network for people without their own IPFS program — for example dweb.link. Everything the app downloads through a gateway is checked against the [CID](#cid).
 
 ## Hash
 
@@ -30,9 +58,25 @@ A cryptographic fingerprint of data: a short string that changes with any change
 
 A file-sharing network where files are shared by the participants themselves, like a torrent. A file is found not by a server address but by its fingerprint — the CID.
 
+## Kubo
+
+The main program of the [IPFS](#ipfs) network. In the desktop app it runs as [the IPFS module](ipfs-module.md).
+
+## Limit
+
+How many actions of each kind an account can take per day: posts, ratings, comments, reports. It depends on the account status — see [Account status and limits](limits.md).
+
+## Lottery
+
+Handing out part of the [block](#block) reward. Since September 2025, 10% of the reward is shared by the moderators who voted in a jury in the previous block. Earlier, part of the reward went to the authors of well-rated posts and comments.
+
 ## Matrix
 
 An open messaging protocol. Chats run on the Bastyon network's Matrix servers, and messages are encrypted on the participants' devices.
+
+## Mini app
+
+A third-party app that opens inside Bastyon and knows about you only what you allowed it. See [Mini apps](mini-apps.md).
 
 ## Node
 
@@ -46,6 +90,10 @@ A password you can use to additionally protect the keys saved on your device. Th
 
 Open-source video hosting software. PeerTube servers run by members of the network store Bastyon's videos, audio and images.
 
+## Pin
+
+Pinning a file in [IPFS](#ipfs): a computer or a service keeps the file and serves it to others until the pin is removed. A remote pin is a pin on a third-party service, see [Storing on a service](ipfs-remote-pin.md).
+
 ## PKOIN
 
 The Bastyon network's own coin. It pays for fees and tips to authors, and it is also spent on post boosts.
@@ -56,11 +104,19 @@ A secret number that signs every action of the account. It is derived from the [
 
 ## Recovery phrase
 
-12 words from which your account keys are derived. Whoever knows the phrase owns the account. If the phrase is lost, it cannot be recovered.
+12 words from which your account keys are derived. It is also called a seed phrase or mnemonic. Whoever knows the phrase owns the account. If the phrase is lost, it cannot be recovered.
 
 ## Reputation
 
 A number the network calculates from the ratings of your posts and comments by experienced members. It affects your limits and some features, such as low ratings.
+
+## Staking
+
+How new [blocks](#block) are produced on the network: nodes holding [PKOIN](#pkoin) in staking get the right to produce a block and its reward — the more coins, the more often. The transaction that pays the staker the reward is called coinstake, and it is always the first one in a block. The more coins are staked, the harder it is to attack the network.
+
+## Tor
+
+A network that hides your IP address: requests go through a chain of other people’s nodes. It is built into the desktop app — see [Tor](tor.md).
 
 ## Transaction
 
@@ -69,3 +125,7 @@ A record of an action signed with your account's key: a post, a comment, a ratin
 ## Trial account
 
 The status of a new account, with smaller daily limits. An account becomes full at a [reputation](#reputation) of 100 or a balance of 50 [PKOIN](#pkoin).
+
+## TXID
+
+A [transaction](#transaction) number — its [hash](#hash), 64 characters long. It is used to find the transaction in the [block explorer](explorer.md).
