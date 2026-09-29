@@ -2387,6 +2387,10 @@ export default {
     tagsCount: '{count}/{max} tag',
     removeTag: 'Rimuovi il tag {tag}',
     publish: 'Pubblica',
+    reset: 'Svuota',
+    resetConfirmTitle: 'Svuotare la bozza?',
+    resetConfirmText:
+      'Testo, tag, immagini, sondaggio e impostazioni di questo post verranno eliminati.',
     addImages: 'Aggiungi immagini',
     removeImage: 'Rimuovi l’immagine',
     rotateImage: 'Ruota l’immagine',

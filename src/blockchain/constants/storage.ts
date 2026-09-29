@@ -60,6 +60,13 @@ export const BACKUP_NUDGED_AT_KEY = 'BST_BACKUP_NUDGED_AT'
 export const PEERTUBE_TOKEN_PREFIX = 'token_'
 export const PEERTUBE_RESUME_PREFIX = 'resumable_'
 export const POST_DRAFT_KEY = 'bastyon_post_draft'
+/**
+ * Остальной черновик поста — в IndexedDB (settings), `<ключ>:<address>`: поля
+ * (теги, опрос, видимость…) и картинки отдельно. Стираются при выходе по
+ * префиксу `POST_DRAFT_KEY`, при удалении аккаунта — его ключи.
+ */
+export const POST_DRAFT_FIELDS_KEY = `${POST_DRAFT_KEY}_fields`
+export const POST_DRAFT_IMAGES_KEY = `${POST_DRAFT_KEY}_images`
 export const COMMENT_DRAFT_PREFIX = 'bastyon_comment_draft:'
 
 /**

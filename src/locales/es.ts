@@ -2396,6 +2396,10 @@ export default {
     tagsCount: '{count}/{max} etiquetas',
     removeTag: 'Quitar la etiqueta {tag}',
     publish: 'Publicar',
+    reset: 'Borrar',
+    resetConfirmTitle: '¿Borrar el borrador?',
+    resetConfirmText:
+      'Se eliminarán el texto, las etiquetas, las imágenes, la encuesta y los ajustes de esta publicación.',
     addImages: 'Añadir imágenes',
     removeImage: 'Quitar imagen',
     rotateImage: 'Girar imagen',

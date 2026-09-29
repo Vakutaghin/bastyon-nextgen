@@ -30,7 +30,11 @@ Tags help people find the post: categories and feed filters work by them — see
 
 ## Draft
 
-The app saves the text of an unfinished post by itself — on this device and separately for each account. Closed the window — the text will be there the next time you open it. Images and tags are not kept in the draft. After publishing, the draft is cleared.
+The app saves an unfinished post by itself, all of it: the text, tags, images, poll, title, visibility, language, publishing time, the article and an already uploaded video. Closed the window — everything will be there the next time you open it. A scheduled time that has already passed goes back to “Right away”.
+
+The draft is kept on this device, separately for each account, and is removed when you sign out. After publishing it is cleared by itself.
+
+To start over, use the **“Clear”** button next to **“Publish”**. The app asks **“Clear the draft?”**: the text, tags, images, poll and settings of the post are removed. An uploaded video stays on the video server but leaves the post.
 
 ## Publishing
 

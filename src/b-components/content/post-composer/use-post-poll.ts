@@ -44,6 +44,18 @@ export function usePostPoll() {
     pollTitle.value = ''
     pollOptions.value = emptyOptions()
   }
+  /** Опрос из черновика: вариантов не меньше двух и не больше лимита. */
+  const restorePoll = (saved: { active: boolean; title: string; options: string[] }): void => {
+    if (!saved.active) {
+      resetPoll()
+      return
+    }
+    const options = saved.options.slice(0, MAX_POLL_OPTIONS)
+    while (options.length < MIN_POLL_OPTIONS) options.push('')
+    pollActive.value = true
+    pollTitle.value = saved.title
+    pollOptions.value = options
+  }
 
   return {
     pollActive,
@@ -56,5 +68,6 @@ export function usePostPoll() {
     addPollOption,
     removePollOption,
     resetPoll,
+    restorePoll,
   }
 }

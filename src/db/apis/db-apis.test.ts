@@ -124,6 +124,30 @@ describe('локальная база', () => {
     expect(await db.postRatingsPending.count()).toBe(1)
   })
 
+  describe('настройки', () => {
+    it('remove удаляет запись, removeByPrefix — все ключи с префиксом и только их', async () => {
+      await settingsAPI.set('bastyon_post_draft_fields:PA', { tags: ['a'] })
+      await settingsAPI.set('bastyon_post_draft_images:PA', ['data:image/png;base64,AA'])
+      await settingsAPI.set('bastyon_post_draft_fields', { tags: ['guest'] })
+      await settingsAPI.set('theme', 'dark')
+
+      await settingsAPI.remove('theme')
+      expect(await settingsAPI.get('theme')).toBeUndefined()
+      expect(await db.settings.get('theme')).toBeUndefined()
+
+      await settingsAPI.removeByPrefix('bastyon_post_draft')
+      expect(await db.settings.count()).toBe(0)
+    })
+
+    it('removeByPrefix не трогает ключи с другим началом', async () => {
+      await settingsAPI.set('bastyon_post_draft_images:PA', ['x'])
+      await settingsAPI.set('bastyonNameAddressMap', { map: {} })
+      await settingsAPI.removeByPrefix('bastyon_post_draft')
+      expect(await settingsAPI.get('bastyonNameAddressMap')).toEqual({ map: {} })
+      expect(await settingsAPI.get('bastyon_post_draft_images:PA')).toBeUndefined()
+    })
+  })
+
   describe('позиции видео', () => {
     it('запоминаются, забываются и не копятся сверх 300 — уходят самые давние', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })

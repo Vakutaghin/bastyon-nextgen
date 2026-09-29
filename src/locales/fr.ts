@@ -2405,6 +2405,10 @@ export default {
     tagsCount: '{count}/{max} tags',
     removeTag: 'Retirer le tag {tag}',
     publish: 'Publier',
+    reset: 'Effacer',
+    resetConfirmTitle: 'Effacer le brouillon ?',
+    resetConfirmText:
+      'Le texte, les tags, les images, le sondage et les réglages de cette publication seront supprimés.',
     addImages: 'Ajouter des images',
     removeImage: 'Retirer l’image',
     rotateImage: 'Faire pivoter l’image',

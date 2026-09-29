@@ -25,4 +25,16 @@ export const settingsAPI = {
   async get(key: string): Promise<unknown> {
     return withDb<unknown>(undefined, async () => (await db.settings.get(key))?.value)
   },
+
+  /** Удалить настройку целиком (не оставляя записи с `undefined`). */
+  async remove(key: string): Promise<void> {
+    await withDb(undefined, () => db.settings.delete(key))
+  },
+
+  /** Удалить все настройки, чей ключ начинается с `prefix`. */
+  async removeByPrefix(prefix: string): Promise<void> {
+    await withDb(undefined, async () => {
+      await db.settings.where('key').startsWith(prefix).delete()
+    })
+  },
 }

@@ -6,10 +6,12 @@
  * - Язык берётся из текущей локали i18n.
  * - Валидация — через validatePost (чистая функция).
  * - publish(): авторизация → загрузка картинок (base64→URL) → sendPost → тост → сброс → инвалидация ленты.
- * - Черновик текста автосохраняется в localStorage (только режим create).
+ * - Черновик (только режим create): текст — в localStorage, остальное —
+ *   теги, картинки, опрос, видимость, язык, время, статья, своё видео — в
+ *   IndexedDB (post-draft). «Очистить» (reset) стирает всё.
  */
 
-import { computed, ref } from 'vue'
+import { computed, getCurrentScope, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQueryClient } from '@tanstack/vue-query'
 
@@ -38,8 +40,21 @@ import { sendPost } from './post-sender'
 import { usePostImages } from './use-post-images'
 import { usePostTags } from './use-post-tags'
 import { usePostPoll } from './use-post-poll'
-import { readDraft, writeDraft } from './post-draft'
+import {
+  type PostDraftFields,
+  readDraft,
+  readStoredDraft,
+  writeDraft,
+  writeDraftFields,
+  writeDraftImages,
+} from './post-draft'
 import { validatePost } from './validate-post'
+
+/** Пауза перед записью черновика в IndexedDB: не писать на каждую букву подписи. */
+const DRAFT_SAVE_DELAY_MS = 400
+
+const sameList = (a: readonly string[], b: readonly string[]): boolean =>
+  a.length === b.length && a.every((item, i) => item === b[i])
 
 export interface UsePostComposerOptions {
   /** Колбэк после успешной публикации (txid). Напр. закрыть модалку / перейти в ленту. */
@@ -110,6 +125,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     addPollOption,
     removePollOption,
     resetPoll,
+    restorePoll,
   } = usePostPoll()
 
   /** Отложенная публикация: unix-секунды (0 — сразу). */
@@ -302,6 +318,144 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     scheduledTime.value = unixSeconds > 1 ? unixSeconds : 0
   }
 
+  // --- Черновик в IndexedDB (только create) ---
+  const draftAddress = authStore.getUserAddress
+  const defaultLanguage = locale.value
+
+  /** Всё, кроме текста и картинок, — как оно ляжет в черновик. */
+  const draftFields = computed<PostDraftFields>(() => ({
+    caption: caption.value,
+    tags: [...tags.value],
+    visibility: visibility.value,
+    language: language.value,
+    poll: { active: pollActive.value, title: pollTitle.value, options: [...pollOptions.value] },
+    scheduledTime: scheduledTime.value,
+    articleMode: articleMode.value,
+    articleContent: articleContent.value,
+    videoUrl: uploadedVideoUrl.value,
+    dismissedLinkUrl: dismissedLinkUrl.value,
+  }))
+
+  /** Поля как у нового поста — хранить нечего. */
+  const isEmptyFields = (f: PostDraftFields): boolean =>
+    !f.caption.trim() &&
+    f.tags.length === 0 &&
+    f.visibility === '0' &&
+    (!f.language || f.language === defaultLanguage) &&
+    !f.poll.active &&
+    f.scheduledTime === 0 &&
+    !f.articleMode &&
+    !f.articleContent?.blocks?.length &&
+    !f.videoUrl &&
+    !f.dismissedLinkUrl
+
+  /** В черновике что-то есть — есть что очищать. */
+  const hasDraft = computed(
+    () => !!message.value.trim() || images.value.length > 0 || !isEmptyFields(draftFields.value)
+  )
+  const canReset = computed(() => mode === 'create' && hasDraft.value && !submitting.value)
+
+  // Что лежит в IndexedDB сейчас: пишем только разницу.
+  let storedFieldsJson = 'null'
+  let storedImages: string[] = []
+  // Пока черновик читается, пустая форма не должна затереть сохранённое.
+  let restoring = mode === 'create'
+  let fieldsTimer: ReturnType<typeof setTimeout> | null = null
+  let imagesTimer: ReturnType<typeof setTimeout> | null = null
+
+  const saveFields = (): void => {
+    fieldsTimer = null
+    if (restoring) return
+    const fields = isEmptyFields(draftFields.value) ? null : draftFields.value
+    const json = JSON.stringify(fields)
+    if (json === storedFieldsJson) return
+    storedFieldsJson = json
+    writeDraftFields(draftAddress, fields).catch((e: unknown) =>
+      console.warn('[post-composer] draft save failed', e)
+    )
+  }
+  const saveImages = (): void => {
+    imagesTimer = null
+    if (restoring) return
+    const list = [...base64List.value]
+    if (sameList(list, storedImages)) return
+    storedImages = list
+    writeDraftImages(draftAddress, list).catch((e: unknown) =>
+      console.warn('[post-composer] draft images save failed', e)
+    )
+  }
+
+  const applyDraftFields = (f: PostDraftFields): void => {
+    caption.value = f.caption
+    tags.value = [...f.tags]
+    visibility.value = f.visibility
+    language.value = f.language || locale.value
+    restorePoll(f.poll)
+    // Время, которое уже прошло, не возвращаем: такой пост нода не примет.
+    scheduledTime.value = f.scheduledTime > Date.now() / 1000 ? f.scheduledTime : 0
+    articleMode.value = f.articleMode
+    articleContent.value = f.articleContent
+    uploadedVideoUrl.value = f.videoUrl
+    dismissedLinkUrl.value = f.dismissedLinkUrl
+  }
+
+  if (mode === 'create') {
+    watch(
+      draftFields,
+      () => {
+        if (fieldsTimer) clearTimeout(fieldsTimer)
+        fieldsTimer = setTimeout(saveFields, DRAFT_SAVE_DELAY_MS)
+      },
+      { deep: true }
+    )
+    watch(base64List, () => {
+      if (imagesTimer) clearTimeout(imagesTimer)
+      imagesTimer = setTimeout(saveImages, DRAFT_SAVE_DELAY_MS)
+    })
+    // Окно закрыли сразу после правки — дописываем, не дожидаясь паузы. Сверяем
+    // всегда: наблюдатель мог ещё не успеть поставить таймер, а записывается
+    // только то, что отличается от сохранённого.
+    if (getCurrentScope()) {
+      onScopeDispose(() => {
+        for (const timer of [fieldsTimer, imagesTimer]) if (timer) clearTimeout(timer)
+        saveFields()
+        saveImages()
+      })
+    }
+    readStoredDraft(draftAddress)
+      .then(({ fields, images: savedImages }) => {
+        // Пока черновик читался, человек мог уже что-то поменять — его правки важнее.
+        if (fields) {
+          storedFieldsJson = JSON.stringify(fields)
+          if (isEmptyFields(draftFields.value)) applyDraftFields(fields)
+        }
+        if (savedImages.length) {
+          storedImages = savedImages
+          if (!images.value.length) setFromUrls(savedImages)
+        }
+      })
+      .catch((e: unknown) => console.warn('[post-composer] draft restore failed', e))
+      .finally(() => {
+        restoring = false
+        saveFields()
+        saveImages()
+      })
+  }
+
+  /** Стереть черновик в хранилищах (форма очищается отдельно). */
+  const clearStoredDraft = (): void => {
+    if (mode !== 'create') return
+    writeDraft(authStore.getUserAddress, '')
+    for (const timer of [fieldsTimer, imagesTimer]) if (timer) clearTimeout(timer)
+    fieldsTimer = null
+    imagesTimer = null
+    storedFieldsJson = 'null'
+    storedImages = []
+    Promise.all([writeDraftFields(draftAddress, null), writeDraftImages(draftAddress, [])]).catch(
+      (e: unknown) => console.warn('[post-composer] draft clear failed', e)
+    )
+  }
+
   const reset = (): void => {
     message.value = ''
     caption.value = ''
@@ -315,7 +469,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     uploadedVideoUrl.value = ''
     dismissedLinkUrl.value = ''
     clearImages()
-    if (mode === 'create') writeDraft(authStore.getUserAddress, '')
+    clearStoredDraft()
   }
 
   const publish = async (): Promise<void> => {
@@ -419,6 +573,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     scheduledTime,
     validationError,
     canPublish,
+    canReset,
     tagsFull,
     onMessageInput,
     onCaptionInput,

@@ -151,6 +151,13 @@ export const SC_Footer = styled.div`
   gap: ${SPACING.MD};
 `
 
+export const SC_FooterActions = styled.div`
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: ${() => SPACING.SM};
+`
+
 const hintProps = { danger: Boolean }
 
 export const SC_Hint = styled('span', hintProps)`

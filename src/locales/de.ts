@@ -2405,6 +2405,10 @@ export default {
     tagsCount: '{count}/{max} Tags',
     removeTag: 'Tag {tag} entfernen',
     publish: 'Veröffentlichen',
+    reset: 'Leeren',
+    resetConfirmTitle: 'Entwurf leeren?',
+    resetConfirmText:
+      'Text, Tags, Bilder, Umfrage und Einstellungen dieses Beitrags werden gelöscht.',
     addImages: 'Bilder hinzufügen',
     removeImage: 'Bild entfernen',
     rotateImage: 'Bild drehen',

@@ -6,8 +6,8 @@
 // сброс → обновление ленты. Валидация, теги, опрос и разбор ссылок —
 // настоящие модули; сеть, сторы и загрузка картинок подменены.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, reactive } from 'vue'
 
 const mocks = vi.hoisted(() => ({
   auth: null as unknown as {
@@ -29,6 +29,25 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
   haptic: vi.fn(),
+}))
+
+// IndexedDB черновика — в памяти; счётчик записей по ключам.
+const idb = vi.hoisted(() => ({
+  store: new Map<string, unknown>(),
+  writes: new Map<string, number>(),
+}))
+vi.mock('@/db/apis/settings-api', () => ({
+  settingsAPI: {
+    get: async (key: string) => idb.store.get(key),
+    set: async (key: string, value: unknown) => {
+      idb.store.set(key, value)
+      idb.writes.set(key, (idb.writes.get(key) ?? 0) + 1)
+      return key
+    },
+    remove: async (key: string) => {
+      idb.store.delete(key)
+    },
+  },
 }))
 
 vi.mock('vue-i18n', async () => {
@@ -102,6 +121,8 @@ function fillValidPost(c: ReturnType<typeof usePostComposer>, text = TEXT) {
 describe('usePostComposer', () => {
   beforeEach(() => {
     localStorage.clear()
+    idb.store.clear()
+    idb.writes.clear()
     mocks.auth = reactive({
       isUserAuthenticated: true,
       getUserAddress: ME,
@@ -434,5 +455,144 @@ describe('usePostComposer', () => {
     expect(sent.settings).toMatchObject({ f: '0', v: 'a', version: 2 })
     expect(sent.articleContent.blocks).toHaveLength(1)
     expect(sent.message).toBeUndefined()
+  })
+
+  describe('черновик целиком: теги, картинки, опрос и настройки', () => {
+    const FIELDS_KEY = `bastyon_post_draft_fields:${ME}`
+    const IMAGES_KEY = `bastyon_post_draft_images:${ME}`
+    const PNG = 'data:image/jpeg;base64,AAA'
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+      vi.setSystemTime(new Date('2026-09-29T12:00:00Z'))
+    })
+    afterEach(() => vi.useRealTimers())
+
+    /** Черновик прочитан, отложенная запись случилась. */
+    const settle = () => vi.advanceTimersByTimeAsync(500)
+
+    it('всё, кроме текста, сохраняется и возвращается при следующем открытии', async () => {
+      const c = compose()
+      await settle()
+      c.addTag('море')
+      mocks.images.value = [PNG]
+      c.visibility.value = '1'
+      c.language.value = 'en'
+      c.togglePoll(true)
+      c.setPollTitle('Куда?')
+      c.setPollOption(0, 'Юг')
+      c.setPollOption(1, 'Север')
+      c.setScheduledTime(1_900_000_000)
+      c.setUploadedVideoUrl('peertube://pt101.pocketnet.app/uuid')
+      c.onCaptionInput('Моё видео')
+      await settle()
+
+      expect(idb.store.get(FIELDS_KEY)).toMatchObject({
+        caption: 'Моё видео',
+        tags: ['море'],
+        visibility: '1',
+        language: 'en',
+        poll: { active: true, title: 'Куда?', options: ['Юг', 'Север'] },
+        scheduledTime: 1_900_000_000,
+        videoUrl: 'peertube://pt101.pocketnet.app/uuid',
+      })
+      expect(idb.store.get(IMAGES_KEY)).toEqual([PNG])
+
+      const again = compose()
+      await settle()
+      expect(again.tags.value).toEqual(['море'])
+      expect(again.caption.value).toBe('Моё видео')
+      expect(again.visibility.value).toBe('1')
+      expect(again.language.value).toBe('en')
+      expect(again.pollActive.value).toBe(true)
+      expect(again.pollTitle.value).toBe('Куда?')
+      expect(again.pollOptions.value).toEqual(['Юг', 'Север'])
+      expect(again.scheduledTime.value).toBe(1_900_000_000)
+      expect(again.uploadedVideoUrl.value).toBe('peertube://pt101.pocketnet.app/uuid')
+      expect(mocks.setFromUrls).toHaveBeenCalledWith([PNG])
+    })
+
+    it('время, которое уже прошло, не возвращается', async () => {
+      idb.store.set(FIELDS_KEY, { tags: ['море'], scheduledTime: 1_700_000_000 })
+      const c = compose()
+      await settle()
+      expect(c.tags.value).toEqual(['море'])
+      expect(c.scheduledTime.value).toBe(0)
+    })
+
+    it('правки, сделанные до чтения черновика, важнее сохранённого', async () => {
+      idb.store.set(FIELDS_KEY, { tags: ['старый'] })
+      const c = compose()
+      c.addTag('новый')
+      await settle()
+      expect(c.tags.value).toEqual(['новый'])
+      expect(idb.store.get(FIELDS_KEY)).toMatchObject({ tags: ['новый'] })
+    })
+
+    it('картинки не переписываются, когда меняется только подпись или тег', async () => {
+      const c = compose()
+      await settle()
+      mocks.images.value = [PNG]
+      await settle()
+      expect(idb.writes.get(IMAGES_KEY)).toBe(1)
+
+      c.onCaptionInput('подпись')
+      c.addTag('море')
+      await settle()
+      expect(idb.writes.get(IMAGES_KEY)).toBe(1)
+      expect(idb.store.get(FIELDS_KEY)).toMatchObject({ caption: 'подпись', tags: ['море'] })
+    })
+
+    it('закрыли окно сразу после правки — черновик записан, не дожидаясь паузы', async () => {
+      const scope = effectScope()
+      const c = scope.run(() => compose())!
+      await settle()
+      c.addTag('море')
+      scope.stop()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(idb.store.get(FIELDS_KEY)).toMatchObject({ tags: ['море'] })
+    })
+
+    it('«Очистить» стирает текст, поля и картинки; пустой форме очищать нечего', async () => {
+      const c = compose()
+      await settle()
+      expect(c.canReset.value).toBe(false)
+      c.onMessageInput(TEXT)
+      expect(c.canReset.value).toBe(true)
+      c.addTag('море')
+      mocks.images.value = [PNG]
+      await settle()
+      expect(idb.store.size).toBe(2)
+
+      c.reset()
+      await settle()
+      expect(idb.store.size).toBe(0)
+      expect(localStorage.getItem(postDraftKey(ME))).toBeNull()
+      expect(c.canReset.value).toBe(false)
+
+      const again = compose()
+      await settle()
+      expect(again.message.value).toBe('')
+      expect(again.tags.value).toEqual([])
+    })
+
+    it('правка и репост черновик не читают и не пишут', async () => {
+      idb.store.set(FIELDS_KEY, { tags: ['черновик'] })
+      const edit = compose({
+        mode: 'edit',
+        source: { txid: 'tx-old', message: TEXT, tags: ['море'], settings: { f: '0' } },
+      })
+      await settle()
+      expect(edit.tags.value).toEqual(['море'])
+      expect(edit.canReset.value).toBe(false)
+      edit.addTag('лето')
+      await settle()
+      expect(idb.store.get(FIELDS_KEY)).toEqual({ tags: ['черновик'] })
+
+      const repost = compose({ mode: 'repost', source: { txid: 'tx-orig' } })
+      await settle()
+      expect(repost.tags.value).toEqual([])
+      expect(idb.writes.size).toBe(0)
+    })
   })
 })

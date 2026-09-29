@@ -34,6 +34,8 @@ import {
   clearAccountScopedLocalData,
 } from '../storage'
 import { deriveAndSaveWalletAddresses } from '../wallet-addresses'
+import { POST_DRAFT_FIELDS_KEY, POST_DRAFT_IMAGES_KEY, POST_DRAFT_KEY } from '../constants/storage'
+import { accountScopedKey } from '../storage/account-scoped-key'
 import { wsService } from '../ws'
 
 import { useKeysStore } from './keys-store'
@@ -63,6 +65,17 @@ async function purgeAccountScopedIdb(address: Address): Promise<void> {
   await favoritesAPI.purge(address)
   await settingsAPI.set(`${SEARCH_HISTORY_STORAGE_KEY}:${address}`, undefined)
   await settingsAPI.set(`${NOTIFICATION_FILTERS_KEY}:${address}`, undefined)
+  await settingsAPI.remove(accountScopedKey(POST_DRAFT_FIELDS_KEY, address))
+  await settingsAPI.remove(accountScopedKey(POST_DRAFT_IMAGES_KEY, address))
+}
+
+/**
+ * Черновики постов в IDB (картинки, теги, опрос…) при выходе — как их текст
+ * в localStorage (V14): следующему человеку на устройстве они не принадлежат.
+ */
+async function purgePostDraftsIdb(): Promise<void> {
+  const { settingsAPI } = await import('@/db/apis/settings-api')
+  await settingsAPI.removeByPrefix(POST_DRAFT_KEY)
 }
 
 // Общий промис активного restoreSession(). На старте restore зовётся и из
@@ -442,6 +455,9 @@ export const useAuthStore = defineStore('auth', {
         // P0-1: снести device-ключ сейфа из IndexedDB + залочить память (async).
         // clearAllUserData уже стёр LS-артефакты; здесь добиваем IDB.
         await destroyVault()
+        await purgePostDraftsIdb().catch((e: unknown) =>
+          console.warn('[auth-store] purgePostDraftsIdb failed:', e)
+        )
 
         await this.resetForAccount(null)
         this.setLoading(false)
@@ -640,6 +656,10 @@ export const useAuthStore = defineStore('auth', {
         if (!keys.accountsList?.accounts?.length) {
           this.accountsList = null
           clearAllUserData()
+          // Черновик гостя в IDB тоже уходит, как и его текст в localStorage.
+          purgePostDraftsIdb().catch((e: unknown) =>
+            console.warn('[auth-store] purgePostDraftsIdb failed:', e)
+          )
         }
 
         if (this.address === address) {

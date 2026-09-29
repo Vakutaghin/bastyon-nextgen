@@ -148,9 +148,15 @@
       <SC_Hint :danger="showError">
         {{ hintText }}
       </SC_Hint>
-      <Button type="primary" :loading="submitting" :disabled="!canPublish" @click="publish">
-        {{ publishLabel }}
-      </Button>
+      <SC_FooterActions>
+        <!-- Черновик хранится целиком; «Очистить» стирает его вместе с формой. -->
+        <Button v-if="canReset" type="text" @click="confirmReset">
+          {{ t('postComposer.reset') }}
+        </Button>
+        <Button type="primary" :loading="submitting" :disabled="!canPublish" @click="publish">
+          {{ publishLabel }}
+        </Button>
+      </SC_FooterActions>
     </SC_Footer>
   </SC_Composer>
 </template>
@@ -158,7 +164,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Popover } from 'ant-design-vue'
+import { Modal, Popover } from 'ant-design-vue'
 import { SmileOutlined } from '@/components/icons'
 
 import Button from '@/components/button'
@@ -183,6 +189,7 @@ import {
   SC_EmojiBtn,
   SC_EmojiRow,
   SC_Footer,
+  SC_FooterActions,
   SC_Hint,
   SC_MentionAnchor,
   SC_MentionAvatar,
@@ -240,6 +247,7 @@ const {
   scheduledTime,
   validationError,
   canPublish,
+  canReset,
   tagsFull,
   onMessageInput,
   onCaptionInput,
@@ -257,6 +265,7 @@ const {
   removeImage,
   rotateImage,
   replaceImage,
+  reset,
   publish,
 } = usePostComposer({
   onPublished: (txid) => emit('published', txid),
@@ -267,6 +276,17 @@ const {
 // Пока идёт публикация, модалку закрывать нельзя: закрытая посреди отправки
 // она оставляла черновик, и повторная публикация давала дубль поста (S29).
 watch(submitting, (busy) => emit('busyChange', busy))
+
+function confirmReset(): void {
+  Modal.confirm({
+    title: t('postComposer.resetConfirmTitle'),
+    content: t('postComposer.resetConfirmText'),
+    okText: t('postComposer.reset'),
+    okType: 'danger',
+    cancelText: t('common.cancel'),
+    onOk: reset,
+  })
+}
 
 const onToggleArticle = (e: Event): void => {
   articleMode.value = (e.target as HTMLInputElement).checked

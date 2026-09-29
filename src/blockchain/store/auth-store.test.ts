@@ -151,6 +151,18 @@ const { _ipfs } = vi.hoisted(() => ({
 }))
 vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => _ipfs }))
 
+// Настройки в IndexedDB: черновики постов (поля и картинки) стираются при
+// выходе и удалении аккаунта.
+const { _settings } = vi.hoisted(() => ({
+  _settings: {
+    get: vi.fn().mockResolvedValue(undefined),
+    set: vi.fn().mockResolvedValue('key'),
+    remove: vi.fn().mockResolvedValue(undefined),
+    removeByPrefix: vi.fn().mockResolvedValue(undefined),
+  },
+}))
+vi.mock('@/db/apis/settings-api', () => ({ settingsAPI: _settings }))
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -532,6 +544,12 @@ describe('auth-store', () => {
       expect(wsService.switchAccount).toHaveBeenCalledWith(null)
     })
 
+    it('черновики постов в IndexedDB уходят вместе с их текстом из localStorage (V14)', async () => {
+      const store = useAuthStore()
+      await store.signOut()
+      expect(_settings.removeByPrefix).toHaveBeenCalledWith('bastyon_post_draft')
+    })
+
     it('should call clearAllUserData()', async () => {
       const { clearAllUserData } = await import('../storage')
       const store = useAuthStore()
@@ -602,6 +620,26 @@ describe('auth-store', () => {
       expect(store.address).toBe('PCur')
       expect(_messenger.logout).not.toHaveBeenCalled()
       expect(_messenger.purgeAccountData).toHaveBeenCalledWith('POther')
+    })
+
+    it('черновик поста удалённого аккаунта стирается, остальные черновики — нет', async () => {
+      const store = await signedInAs('PCur', ['POther'])
+
+      await store.removeAccount('POther')
+
+      await vi.waitFor(() => {
+        expect(_settings.remove).toHaveBeenCalledWith('bastyon_post_draft_fields:POther')
+        expect(_settings.remove).toHaveBeenCalledWith('bastyon_post_draft_images:POther')
+      })
+      expect(_settings.removeByPrefix).not.toHaveBeenCalled()
+    })
+
+    it('последний аккаунт: стираются все черновики, и гостя тоже', async () => {
+      const store = await signedInAs('PCur', [])
+      await store.removeAccount('PCur')
+      await vi.waitFor(() =>
+        expect(_settings.removeByPrefix).toHaveBeenCalledWith('bastyon_post_draft')
+      )
     })
 
     it('последний: всё стирает выход из аккаунта', async () => {
