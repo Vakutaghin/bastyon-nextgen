@@ -31,6 +31,7 @@ import {
 } from '@/components/icons'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useMessengerStore } from '@/b-components/messenger/store'
+import { requireAuth } from '@/composables/use-auth-gate'
 import { SC_BottomNav, SC_NavItem, SC_NavIcon, SC_NavLabel, SC_NavBadge } from './bottom-nav.styled'
 
 interface NavItem {
@@ -49,8 +50,31 @@ const messengerStore = useMessengerStore()
 const { isFullScreen, totalUnreadCount } = storeToRefs(messengerStore)
 const prefs = useAppPreferencesStore()
 
+/**
+ * Любой пункт закрывает полноэкранные чаты: раньше «Главная» при открытых чатах
+ * ничего не меняла, потому что маршрут прежний. Повторное нажатие на текущий
+ * раздел возвращает страницу наверх, как принято в мобильных приложениях.
+ * Кошелёк гостю не открывается — роутер вместо этого просит войти.
+ */
 function go(path: string): void {
-  if (route.path !== path) void router.push(path)
+  const wasInChats = messengerStore.isFullScreen
+  messengerStore.isFullScreen = false
+  if (route.path !== path) {
+    void router.push(path)
+    return
+  }
+  if (!wasInChats) window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+/** Без аккаунта мессенджер не запускается и вечно «подключается» — сначала вход. */
+function toggleChats(): void {
+  if (messengerStore.isFullScreen) {
+    messengerStore.isFullScreen = false
+    return
+  }
+  requireAuth(() => {
+    messengerStore.isFullScreen = true
+  })
 }
 
 // Выключенный в настройках мессенджер убирает и пункт нижней панели —
@@ -85,9 +109,7 @@ const items = computed<NavItem[]>(() => [
           icon: MessageOutlined,
           active: isFullScreen.value,
           badge: totalUnreadCount.value,
-          onClick: (): void => {
-            messengerStore.isFullScreen = !messengerStore.isFullScreen
-          },
+          onClick: toggleChats,
         },
       ]
     : []),

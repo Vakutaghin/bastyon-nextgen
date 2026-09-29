@@ -8,7 +8,7 @@ How to find a person, a post or a tag — and also a block, a transaction or an 
 
 ## The search box
 
-The search box is in the header; on a phone it is **“Search”** in the bottom bar. Start typing: from the second letter on, suggestions appear under the box by section — people, posts, tags and mini apps. Click a suggestion to open it, or **“All →”** next to a section to see all results.
+The search box is in the header; on a phone it is at the top of the page that **“Search”** in the bottom bar opens. Start typing: from the second letter on, suggestions appear under the box by section — people, posts, tags and mini apps. Click a suggestion to open it, or **“All →”** next to a section to see all results.
 
 A few tricks:
 

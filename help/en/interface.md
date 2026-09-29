@@ -18,7 +18,7 @@ From left to right:
 - **The bug** — **“Report a bug”**, see [Reporting a bug](report-bug.md).
 - **The speech bubble** opens the messenger; the number on it is unread messages.
 - **The sun or moon** switches between the light and dark theme.
-- **Your avatar** opens the account menu. Until you sign in, the **“Sign in”** and **“Sign up”** buttons are there instead.
+- **Your avatar** opens the account menu. Until you sign in, the **“Sign in”** and **“Sign up”** buttons are there instead; on a phone only **“Sign in”** — signing up is in the menu there.
 
 ## Above the feed
 
@@ -57,11 +57,15 @@ If the registration was interrupted, the menu gets a **“Finish registration”
 
 ## The messenger
 
-The speech bubble in the header or the round button in the bottom right corner opens the chat window over the feed. The feed stays in place, so you can read and chat at the same time. The arrow in the window's title goes back to the chat list, the cross closes the window. On a narrow screen chats open full screen. More in [Messenger](messenger.md).
+The speech bubble in the header or the round button in the bottom right corner opens the chat window over the feed. The feed stays in place, so you can read and chat at the same time. The arrow in the window's title goes back to the chat list, the cross closes the window. On a narrow screen there is no speech bubble in the header: **“Chats”** in the bottom bar opens chats full screen. More in [Messenger](messenger.md).
 
 ## On a phone and in a narrow window
 
-When the screen is narrow — on a phone or in a shrunk window on a computer — there are no side panels, and a bar appears at the bottom: **“Home”**, **“Search”**, **“Apps”**, **“Chats”** and **“Wallet”**. The other sections are in the menu behind the three-line button on the left of the header: **“Feed”**, **“Video”**, **“Wallet”**, **“Settings”** and **“Help”**. More in [The phone app](mobile-app.md).
+When the screen is narrow — on a phone or in a shrunk window on a computer — there are no side panels, and a bar appears at the bottom: **“Home”**, **“Search”**, **“Apps”**, **“Chats”** and **“Wallet”**. Tapping the section you are in takes the page back to the top.
+
+The menu behind the three-line button on the left of the header is the same left panel as on a computer: the feed sections, **“Explorer”**, **“Help”**, **“Mini-apps”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“My videos”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
+
+Without an account, **“Chats”**, **“Wallet”** and **“Subscriptions”** open the sign-in window, and after you sign in, the section itself. More in [The phone app](mobile-app.md).
 
 ## See also
 

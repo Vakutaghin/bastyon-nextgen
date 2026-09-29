@@ -4,10 +4,10 @@
       <SC_TabsItem
         v-for="tab in tabsData"
         :key="tab.id"
-        :active="tab.active"
+        :active="tab.active && onTabsRoute"
         :disabled="tab.disabled"
         type="button"
-        @click="!tab.disabled && selectTab(tab.id)"
+        @click="onTabClick(tab)"
       >
         <HomeOutlined v-if="tab.icon === 'HomeOutlined'" />
         <TeamOutlined v-else-if="tab.icon === 'TeamOutlined'" />
@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -48,6 +48,7 @@ import {
 } from '@/components/icons'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useAuthStore } from '@/blockchain'
+import { requireAuth } from '@/composables/use-auth-gate'
 import SidebarFavorites from './sidebar-favorites.vue'
 import { SC_Tabs, SC_TabsItem, SC_TabsLabel } from './styled'
 
@@ -61,20 +62,42 @@ const router = useRouter()
 const route = useRoute()
 
 const tabsData = computed(() => filtersStore.tabs)
-const pendingTab = ref<number | null>(null)
+
+// Вкладка подсвечена, только пока открыт её раздел. Мобильное меню видно на
+// любой странице, и на кошельке в нём горела «Лента»; на десктопе — на поиске.
+const onTabsRoute = computed(() => {
+  const path = route.path
+  return (
+    path === '/' ||
+    path === '/miniapps' ||
+    path.startsWith('/app/') ||
+    path === '/explorer' ||
+    path.startsWith('/explorer/') ||
+    path === '/help' ||
+    path.startsWith('/help/')
+  )
+})
 
 watch(
   () => authStore.isUserAuthenticated,
-  (isAuthorized) => {
-    filtersStore.updateTabsAvailability(isAuthorized)
-
-    if (isAuthorized && pendingTab.value === 2) {
-      selectTab(2)
-      pendingTab.value = null
-    }
-  },
+  (isAuthorized) => filtersStore.updateTabsAvailability(isAuthorized),
   { immediate: true }
 )
+
+/**
+ * Недоступна гостю только вкладка «Подписки». Нажатие на неё раньше ничего не
+ * делало; теперь открывается окно входа, а после входа — сама вкладка.
+ */
+function onTabClick(tab: { id: string | number; disabled: boolean }): void {
+  if (!tab.disabled) {
+    selectTab(tab.id)
+    return
+  }
+  requireAuth(() => {
+    filtersStore.updateTabsAvailability(true)
+    selectTab(tab.id)
+  })
+}
 
 watch(
   () => route.path,
@@ -151,19 +174,6 @@ function selectTab(tabId: string | number): void {
     return
   }
 
-  // Если уходим с /miniapps, /app/*, /explorer или /help на feed-фильтр —
-  // возвращаемся на главную.
-  if (
-    route.path === '/miniapps' ||
-    route.path.startsWith('/app/') ||
-    route.path === '/explorer' ||
-    route.path.startsWith('/explorer/') ||
-    route.path === '/help' ||
-    route.path.startsWith('/help/')
-  ) {
-    void router.push('/')
-  }
-
   const TAB_URL_MAPPING: Record<number, string> = {
     2: 'subscriptions',
     3: 'video',
@@ -172,6 +182,16 @@ function selectTab(tabId: string | number): void {
     6: 'favorites',
     7: 'discussed',
   }
-  updateUrlParam(TAB_URL_MAPPING[tabId as number] ?? null)
+  const mode = TAB_URL_MAPPING[tabId as number] ?? null
+
+  // Режим ленты с любой другой страницы — сразу на ленту в этом режиме, одним
+  // переходом. Раньше на главную возвращали только с мини-приложений,
+  // эксплорера и справки, а с поиска «Видео» оставляло на
+  // /search?feedMode=video. Из мобильного меню режим выбирают с любой страницы.
+  if (route.path !== '/') {
+    void router.push(mode ? { path: '/', query: { feedMode: mode } } : '/')
+    return
+  }
+  updateUrlParam(mode)
 }
 </script>

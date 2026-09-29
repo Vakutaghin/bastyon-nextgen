@@ -2,7 +2,8 @@
   <SC_Feed ref="feedRootRef">
     <SC_FeedHeader>
       <SC_FeedHeaderLeft>
-        <SC_SidebarToggleWrap>
+        <!-- Боковых панелей на телефоне и планшете нет — нет и кнопок для них. -->
+        <SC_SidebarToggleWrap v-if="!isMobileOrTablet">
           <Button
             type="text"
             size="small"
@@ -38,7 +39,7 @@
           {{ t('postCard.createPost') }}
         </Button>
 
-        <SC_SidebarToggleWrap>
+        <SC_SidebarToggleWrap v-if="!isMobileOrTablet">
           <Button
             type="text"
             size="small"
@@ -165,6 +166,7 @@ import { useBoostedFeed } from '@/composables/use-boosted-feed'
 import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import type { AdaptedPost } from '@/composables/use-feed'
 import { isMobile } from '@mobile/utils/platform'
+import { useViewport } from '@/composables/use-viewport'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import Button from '@/components/button/button.vue'
 import Spin from '@/components/spin/spin.vue'
@@ -206,6 +208,7 @@ const postsStore = usePostsStore()
 const filtersStore = useFiltersStore()
 const modalStore = useModalStore()
 const router = useRouter()
+const { isMobileOrTablet } = useViewport()
 
 const {
   allPosts,

@@ -11,7 +11,11 @@
   <template v-else-if="!isAuthenticated">
     <Button type="default" @click="openSignInModal"> {{ t('header.signIn') }} </Button>
 
-    <Button type="default" @click="openRegisterModal"> {{ t('header.register') }} </Button>
+    <!-- На телефоне в шапке только «Войти»: регистрация есть в окне входа и в
+         меню, а две кнопки выдавливали из тесной шапки остальное. -->
+    <Button v-if="!isPhone" type="default" @click="openRegisterModal">
+      {{ t('header.register') }}
+    </Button>
   </template>
   <template v-else>
     <Dropdown
@@ -109,6 +113,7 @@ import ConfirmSignOutModal from '@/b-components/header/confirm-sign-out-modal/co
 import RegistrationValidationModal from '@/b-components/header/registration-validation-modal/registration-validation-modal.vue'
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
+import { useViewport } from '@/composables/use-viewport'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import { useRegistrationFlow } from './use-registration-flow'
@@ -131,6 +136,7 @@ const modalStore = useModalStore()
 const router = useRouter()
 
 const isAuthenticated = computed<boolean>(() => authStore.isUserAuthenticated)
+const { isMobile: isPhone } = useViewport()
 const isAuthRestoring = computed<boolean>(() => authStore.isAuthRestoring)
 const userAddress = computed(() => authStore.getUserAddress)
 const userProfile = computed(() => authStore.getUserProfile)

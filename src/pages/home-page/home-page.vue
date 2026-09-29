@@ -18,13 +18,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SidebarLeft from '@/b-components/sidebar/sidebar-left/sidebar-left.vue'
 import SidebarRight from '@/b-components/sidebar/sidebar-right/sidebar-right.vue'
 import ContentFeed from '@/b-components/content/content-feed/content-feed.vue'
 import { settingsAPI } from '@/db/apis/settings-api'
-import { isMobile } from '@mobile/utils/platform'
+import { useViewport } from '@/composables/use-viewport'
 import { SC_HomeWork, SC_HomeMainContent } from './home-page.styled'
 
 const { t } = useI18n()
@@ -34,7 +34,9 @@ const SETTING_KEY_LEFT_SIDEBAR_COLLAPSED = 'bastyonLeftSidebarCollapsed'
 
 const rightSidebarVisible = ref(true)
 const leftSidebarCollapsed = ref(false)
-const mobile = computed(() => isMobile())
+// По ширине экрана, как шапка и нижняя панель: раньше по платформе, и на
+// планшете с Android шире 768 px боковые панели пропадали, а меню не появлялось.
+const { isMobileOrTablet: mobile } = useViewport()
 
 async function loadSidebarSettings(): Promise<void> {
   try {

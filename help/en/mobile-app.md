@@ -14,7 +14,7 @@ A new version installs over the old one, and the accounts are kept. Only 0.7.1 a
 
 ## Navigation
 
-The bottom of the screen has a bar: **“Home”**, **“Search”**, **“Apps”**, **“Chats”** and **“Wallet”**. The other sections are in the menu behind the three-line button in the header. More in [Finding your way around](interface.md).
+The bottom of the screen has a bar: **“Home”**, **“Search”**, **“Apps”**, **“Chats”** and **“Wallet”**. The menu behind the three-line button in the header repeats the left panel of the computer version: the feed sections, the explorer, help, categories and tags, and when you are signed in, also your profile, wallets, limits, videos and settings. Without an account, **“Chats”** and **“Wallet”** open the sign-in window. More in [Finding your way around](interface.md).
 
 ## What the phone can do
 

@@ -42,6 +42,10 @@ export const SC_SearchPage = styled.div`
   width: 100%;
 `
 
+export const SC_MobileSearch = styled.div`
+  margin-bottom: 16px;
+`
+
 export const SC_Header = styled.div`
   display: flex;
   align-items: baseline;

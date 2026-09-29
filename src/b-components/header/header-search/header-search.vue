@@ -1,5 +1,6 @@
 <template>
   <SC_HeaderSearchWrapper
+    ref="wrapperRef"
     @focusin="onFocusIn"
     @focusout="onFocusOut"
     @keydown.esc="close"
@@ -40,6 +41,13 @@ import { SC_HeaderSearchWrapper } from './styled'
 
 /** Предел длины запроса в строке поиска. */
 const SEARCH_MAX_LENGTH = 100
+
+/**
+ * `autofocus` — у поля на странице поиска телефона: открыли «Поиск» без
+ * запроса — сразу клавиатура, как в мобильных приложениях.
+ */
+const props = defineProps<{ autofocus?: boolean }>()
+const wrapperRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
 
 const { t } = useI18n()
 
@@ -87,6 +95,11 @@ const isOpen = computed(() => {
 onMounted(() => {
   void searchStore.ensureLoaded()
   void ensureUserResolverLoaded()
+  if (props.autofocus) {
+    const wrapper = wrapperRef.value
+    const el = wrapper instanceof HTMLElement ? wrapper : wrapper?.$el
+    el?.querySelector('input')?.focus()
+  }
 })
 
 function onFocusIn(): void {

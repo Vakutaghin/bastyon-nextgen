@@ -53,8 +53,11 @@
       </SC_CategoriesItem>
     </SC_CategoriesList>
 
+    <!-- Слой модалок, а не antd-шный 1000: в мобильном меню (1101) окно иначе
+         открывалось бы под ним. -->
     <AModal
       v-model:open="isModalVisible"
+      :z-index="Z_INDEX.MODAL"
       :title="t('sidebar.addCategory')"
       :ok-text="t('sidebar.add')"
       :cancel-text="t('sidebar.cancel')"
@@ -78,6 +81,7 @@
 
     <AModal
       v-model:open="isDeleteModalVisible"
+      :z-index="Z_INDEX.MODAL"
       :title="t('sidebar.deleteCategoryTitle')"
       :ok-text="t('sidebar.delete')"
       ok-type="danger"
@@ -111,6 +115,7 @@ import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import type { GetTagsResponse } from '@/types/rpc-responses/get-tags'
 import { ICON_SIZE_10, ICON_WARNING_ICON_22 } from '@/styles/icon-styles'
+import { Z_INDEX } from '@/styles/design-tokens'
 import {
   SC_Categories,
   SC_CategoriesHeader,

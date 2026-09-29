@@ -1,6 +1,6 @@
 <template>
   <!-- Full Screen Overlay Mode (перекрывает весь экран, включая хедер) -->
-  <SC_FullScreenOverlay v-if="isFullScreen">
+  <SC_FullScreenOverlay v-if="isFullScreen" :class="{ 'above-bottom-nav': aboveBottomNav }">
     <SC_CloseOverlayButton :aria-label="t('messenger.close')" @click="closeFullScreen">
       <CloseOutlined />
     </SC_CloseOverlayButton>
@@ -120,9 +120,19 @@ const prefs = useAppPreferencesStore()
 const isVisible = computed<boolean>(() => authStore.isUserAuthenticated && prefs.messengerEnabled)
 
 // На мобилке/планшете НЕ показываем плавающий floating-widget — мессенджер
-// открывается только в full-screen режиме по клику на иконку в header.
+// открывается только в full-screen режиме, «Чатами» в нижней панели.
 // Desktop сохраняет старое поведение: floating-widget + кнопка-кружок.
 const showFloatingWidget = computed<boolean>(() => isVisible.value && !isMobileOrTablet.value)
+
+// На телефоне нижняя панель остаётся видна под списком чатов: из чатов можно
+// уйти в любой раздел, как из обычной вкладки. Открытый чат занимает весь
+// экран — внизу у него поле ввода.
+const aboveBottomNav = computed<boolean>(
+  () =>
+    isMobileOrTablet.value &&
+    !activeChatId.value &&
+    !(lastTargetAddress.value && inviteViewActive.value)
+)
 
 // На мобилке isFullScreen автоматически синхронизируется с тем, что
 // пользователь открывает мессенджер (любое isOpen ≡ full-screen).

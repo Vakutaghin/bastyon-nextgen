@@ -10,7 +10,7 @@ Signing up needs neither an email nor a phone number. The app creates the accoun
 
 ## Nickname
 
-Click **“Sign up”** in the header and choose a **“Nickname”** — the name people will see you by:
+Click **“Sign up”** in the header (on a phone, in the menu behind the three-line button) and choose a **“Nickname”** — the name people will see you by:
 
 - up to 20 characters: Latin letters, digits and the underscore `_`;
 - Cyrillic letters are converted to Latin ones automatically: "Иван" becomes `Ivan`;

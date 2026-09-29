@@ -34,6 +34,8 @@ export const SC_Drawer = styled('aside', overlayProps)`
   padding-left: var(--safe-left);
   -webkit-tap-highlight-color: transparent;
   overflow-y: auto;
+  /* Пункты левой панели компьютера здесь под палец. */
+  --sidebar-item-min-height: 44px;
 `
 
 export const SC_DrawerHeader = styled.div`
@@ -69,51 +71,28 @@ export const SC_DrawerClose = styled.button`
   }
 `
 
-export const SC_DrawerSection = styled.div`
-  padding: 8px;
+/** Вход и регистрация для гостя — две кнопки во всю ширину. */
+export const SC_DrawerAuth = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 16px 8px;
 `
 
+/**
+ * Блоки левой панели компьютера (вкладки, категории, теги) — с её же отступом
+ * по краям: компоненты рассчитаны на него.
+ */
+export const SC_DrawerPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 8px 16px;
+`
+
+/** Заголовок раздела — вровень с иконками пунктов (у них отступ 10px). */
 export const SC_DrawerSectionTitle = styled.div`
-  padding: 8px 12px 4px;
+  padding: 8px 10px 4px;
   font-size: 12px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
-`
-
-const itemProps = { active: Boolean }
-
-export const SC_DrawerItem = styled('button', itemProps)`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
-  border: none;
-  background: ${(p) => (p.active ? 'var(--ui-bg-elevated)' : 'transparent')};
-  color: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-text)')};
-  font-size: 14px;
-  font-weight: 500;
-  text-align: left;
-  border-radius: var(--ui-radius-md);
-  cursor: pointer;
-  transition: background var(--transition-quick);
-  -webkit-tap-highlight-color: transparent;
-
-  & .anticon {
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-
-  &:active {
-    background: var(--ui-bg-elevated);
-  }
-
-  @media (hover: hover) {
-    &:hover {
-      color: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-text-highlighted)')};
-      background: ${(p) =>
-        p.active ? 'var(--ui-bg-elevated)' : 'rgb(var(--ui-bg-elevated-rgb) / 50%)'};
-    }
-  }
 `

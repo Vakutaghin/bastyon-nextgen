@@ -83,11 +83,12 @@ function closeDrawer(): void {
   drawerOpen.value = false
 }
 
-/** Иконка чата в хедере всегда видна авторизованному пользователю —
- *  на десктопе это альтернатива floating-кнопке, на мобилке единственный способ. */
+/** Иконка чата в хедере — на компьютере, рядом с плавающей кнопкой. На телефоне
+ *  и планшете чаты открывает пункт нижней панели, а в тесной шапке второй такой
+ *  же вход только отнимал место. */
 const prefs = useAppPreferencesStore()
 const showMessengerIcon = computed<boolean>(
-  () => authStore.isUserAuthenticated && prefs.messengerEnabled
+  () => authStore.isUserAuthenticated && prefs.messengerEnabled && !mobile.value
 )
 
 const unreadBadge = computed<string>(() => {

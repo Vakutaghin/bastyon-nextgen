@@ -30,6 +30,8 @@ export const SC_TabsItem = styled('button', tabProps)`
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
+  /* В мобильном меню строки выше — под палец (--sidebar-item-min-height). */
+  min-height: var(--sidebar-item-min-height, auto);
   border-radius: var(--ui-radius-md);
   background: none;
   border: none;
@@ -127,6 +129,7 @@ export const SC_FavoritesItem = styled('button', favItemProps)`
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
+  min-height: var(--sidebar-item-min-height, auto);
   border-radius: var(--ui-radius-md);
   background: none;
   border: none;

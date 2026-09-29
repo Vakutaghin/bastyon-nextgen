@@ -12,7 +12,7 @@ Download Bastyon NextGen for your computer or phone from the releases page — w
 
 ## 2. Create an account or sign in
 
-- A new account — the **“Sign up”** button in the header: pick a nickname, no email or phone number needed. Within a few minutes the network confirms the registration — see [Signing up](create-account.md).
+- A new account — the **“Sign up”** button in the header, or in the menu on a phone: pick a nickname, no email or phone number needed. Within a few minutes the network confirms the registration — see [Signing up](create-account.md).
 - An account from the previous Bastyon app — the **“Sign in”** button and your 12-word phrase or private key — see [Signing in](sign-in.md).
 
 ## 3. Save your recovery phrase

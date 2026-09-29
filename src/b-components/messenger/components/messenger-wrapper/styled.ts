@@ -50,6 +50,14 @@ export const SC_FullScreenOverlay = styled.div`
   display: flex;
   flex-direction: column;
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+
+  /* Список чатов на телефоне кончается над нижней панелью, и она остаётся
+     видна; нижний safe-area уже входит в её высоту. */
+  &.above-bottom-nav {
+    bottom: var(--bottom-nav-height-total);
+    height: auto;
+    padding-bottom: 0;
+  }
 `
 
 /**

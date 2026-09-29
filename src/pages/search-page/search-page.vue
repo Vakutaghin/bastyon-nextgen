@@ -4,6 +4,10 @@
 
     <SC_SearchMainContent>
       <SC_SearchPage>
+        <!-- На телефоне и планшете строки поиска в шапке нет — поле здесь. -->
+        <SC_MobileSearch v-if="mobile">
+          <HeaderSearch :autofocus="!queryRaw" />
+        </SC_MobileSearch>
         <SC_Header>
           <SC_QueryTitle v-if="isTagFilterMode">
             {{ t('search.feedByTags', { tags: tagList.map((t) => '#' + t).join(' ') }) }}
@@ -106,7 +110,8 @@ import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import SidebarLeft from '@/b-components/sidebar/sidebar-left/sidebar-left.vue'
 import { settingsAPI } from '@/db/apis/settings-api'
-import { isMobile } from '@mobile/utils/platform'
+import { useViewport } from '@/composables/use-viewport'
+import HeaderSearch from '@/b-components/header/header-search/header-search.vue'
 import type { SearchUserResult } from '@/types/rpc-responses/search-users'
 import type { SearchPost } from '@/types/rpc-responses/search-posts'
 import type { SearchTag } from '@/types/rpc-responses/search-tags'
@@ -114,6 +119,7 @@ import {
   SC_SearchWork,
   SC_SearchMainContent,
   SC_SearchPage,
+  SC_MobileSearch,
   SC_Header,
   SC_QueryTitle,
   SC_QueryHint,
@@ -141,7 +147,9 @@ const route = useRoute()
 const router = useRouter()
 const searchStore = useSearchStore()
 
-const mobile = computed(() => isMobile())
+// По ширине экрана, как шапка и нижняя панель: раньше по платформе, и на
+// планшете с Android шире 768 px левая панель пропадала, а меню не появлялось.
+const { isMobileOrTablet: mobile } = useViewport()
 const leftSidebarCollapsed = ref(false)
 
 // Подхватываем то же состояние, что использует home-page, чтобы сайдбар
