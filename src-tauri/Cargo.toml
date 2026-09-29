@@ -102,6 +102,6 @@ libloading = "0.7"
 [dev-dependencies]
 tauri = { version = "2.11.6", features = ["test"] }
 
-# Тест радио-слоя на псевдотерминале (openpty).
-[target.'cfg(unix)'.dev-dependencies]
+# Радио-слой: снять HUPCL с порта (src/radio/serial.rs); в тестах — openpty.
+[target.'cfg(unix)'.dependencies]
 libc = "0.2"

@@ -113,10 +113,16 @@ impl SerialLink {
         sink: EventSink,
         on_gone: Box<dyn FnOnce() + Send>,
     ) -> Result<Self, String> {
-        let mut port = serialport::new(path, baud)
-            .timeout(READ_TIMEOUT)
-            .open()
-            .map_err(open_error)?;
+        let builder = serialport::new(path, baud).timeout(READ_TIMEOUT);
+        #[cfg(unix)]
+        let mut port: Box<dyn serialport::SerialPort> = {
+            use std::os::fd::AsRawFd;
+            let native = builder.open_native().map_err(open_error)?;
+            keep_lines_on_close(native.as_raw_fd());
+            Box::new(native)
+        };
+        #[cfg(not(unix))]
+        let mut port = builder.open().map_err(open_error)?;
         // DTR: платы с TinyUSB (nRF52, RP2040) отдают данные только при
         // выставленном DTR. RTS — вместе с ним, как pyserial и node-serialport:
         // оба выставлены = схема автосброса ESP32 не дёргает EN.
@@ -148,6 +154,22 @@ impl SerialLink {
     /// закрывается вместе с последним дескриптором.
     pub fn close(&self) {
         self.stop.store(true, Ordering::SeqCst);
+    }
+}
+
+/// Снять HUPCL: иначе при закрытии порта ОС сбрасывает DTR, и платы с
+/// автосбросом (ESP32) перезагружаются — теряя накопленные в памяти
+/// сообщения. Так же делает официальный клиент Meshtastic на Python.
+#[cfg(unix)]
+fn keep_lines_on_close(fd: std::os::fd::RawFd) {
+    // SAFETY: fd — открытый дескриптор порта, живёт весь вызов; termios
+    // читается и пишется целиком.
+    unsafe {
+        let mut t: libc::termios = std::mem::zeroed();
+        if libc::tcgetattr(fd, &mut t) == 0 {
+            t.c_cflag &= !libc::HUPCL;
+            let _ = libc::tcsetattr(fd, libc::TCSANOW, &t);
+        }
     }
 }
 
@@ -248,10 +270,16 @@ mod tests {
             .to_string_lossy()
             .into_owned();
         // Режим raw, чтобы терминал не превращал байты (эхо, \n → \r\n).
-        unsafe {
+        // HUPCL включён, как у настоящего порта: открытие должно его снять.
+        let termios = |fd: libc::c_int| unsafe {
             let mut t: libc::termios = std::mem::zeroed();
-            libc::tcgetattr(slave, &mut t);
+            libc::tcgetattr(fd, &mut t);
+            t
+        };
+        unsafe {
+            let mut t = termios(slave);
             libc::cfmakeraw(&mut t);
+            t.c_cflag |= libc::HUPCL;
             libc::tcsetattr(slave, libc::TCSANOW, &t);
         }
         let mut device = unsafe { std::fs::File::from_raw_fd(master) };
@@ -263,6 +291,7 @@ mod tests {
         let baud = if cfg!(target_os = "macos") { 0 } else { DEFAULT_BAUD };
         let link = SerialLink::open_unchecked(&slave_path, baud, sink, Box::new(|| {}))
             .expect("open pty");
+        assert_eq!(termios(slave).c_cflag & libc::HUPCL, 0, "HUPCL снят");
 
         device.write_all(&[0x3e, 0x01, 0x00, 0x0a]).unwrap();
         let mut got = Vec::new();
