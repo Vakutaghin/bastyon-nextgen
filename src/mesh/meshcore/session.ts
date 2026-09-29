@@ -23,7 +23,7 @@ import type {
 } from './codec'
 import { MeshCoreClient, MeshCoreError, keyPrefix, type MeshCoreClientOptions } from './client'
 import type { FrameLink } from './framing'
-import { ADV_TYPE, OUT_PATH_UNKNOWN, TXT_TYPE } from './constants'
+import { ADV_TYPE, ERR_CODE, OUT_PATH_UNKNOWN, TXT_TYPE } from './constants'
 import { channelId, channelKind, type ChannelKind } from './channels'
 import type { CloseReason, Unsubscribe } from '../radio/types'
 
@@ -276,6 +276,19 @@ export class MeshCoreSession {
       lastMod: Math.floor(Date.now() / 1000),
     })
     await this.refreshContact(contact.publicKey)
+  }
+
+  /**
+   * Подписать данные ключом радио (им же подписаны его объявления). null —
+   * прошивка этого не умеет (старше CMD_SIGN_*).
+   */
+  async sign(data: Uint8Array): Promise<Uint8Array | null> {
+    try {
+      return await this.client.sign(data)
+    } catch (e) {
+      if (e instanceof MeshCoreError && e.errCode === ERR_CODE.UNSUPPORTED_CMD) return null
+      throw e
+    }
   }
 
   async removeContact(publicKey: string): Promise<void> {

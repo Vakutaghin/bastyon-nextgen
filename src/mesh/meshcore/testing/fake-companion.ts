@@ -28,6 +28,10 @@ import {
   TXT_TYPE,
 } from '../constants'
 import type { FrameLink } from '../framing'
+import { ed25519 } from '@noble/curves/ed25519'
+
+/** Сколько данных прошивка подписывает за раз (MAX_SIGN_DATA_LEN). */
+const MAX_SIGN_DATA = 8192
 
 export interface FakeContact {
   publicKey: string
@@ -83,10 +87,10 @@ function i32(v: number): Uint8Array {
   return out
 }
 
-function randomKey(): string {
+function randomSeed(): Uint8Array {
   const b = new Uint8Array(PUB_KEY_SIZE)
   crypto.getRandomValues(b)
-  return toHex(b)
+  return b
 }
 
 export class FakeAir {
@@ -110,7 +114,12 @@ export class FakeAir {
 
 export interface FakeCompanionOptions {
   name: string
+  /** Ключ радио как есть — подписывать им радио тогда не умеет. */
   publicKey?: string
+  /** Сид Ed25519: ключ радио выводится из него, как у прошивки. */
+  seed?: Uint8Array
+  /** Прошивка без CMD_SIGN_* (старше 1.7). */
+  noSign?: boolean
   maxContacts?: number
   maxChannels?: number
   /** Добавлять объявившиеся узлы в контакты сами (как по умолчанию в прошивке). */
@@ -140,12 +149,19 @@ export class FakeCompanion {
   private readonly expected = new Map<string, number>()
   private connected = false
   private queueCmds: Promise<void> = Promise.resolve()
+  /** Сид ключа радио; нет — подписывать нечем. */
+  private readonly seed: Uint8Array | null
+  private readonly noSign: boolean
+  /** Данные, собранные между SIGN_START и SIGN_FINISH; null — подпись не начата. */
+  private signBuffer: Uint8Array | null = null
 
   constructor(
     protected readonly air: FakeAir | null,
     options: FakeCompanionOptions
   ) {
-    this.publicKey = (options.publicKey ?? randomKey()).toLowerCase()
+    this.seed = options.publicKey ? null : (options.seed ?? randomSeed())
+    this.publicKey = (options.publicKey ?? toHex(ed25519.getPublicKey(this.seed!))).toLowerCase()
+    this.noSign = options.noSign ?? false
     this.name = options.name
     this.maxContacts = options.maxContacts ?? 100
     this.maxChannels = options.maxChannels ?? 8
@@ -385,6 +401,31 @@ export class FakeCompanion {
         else if (this.contacts.length >= this.maxContacts) return this.err(ERR_CODE.TABLE_FULL)
         else this.contacts.push(c)
         this.ok()
+        return
+      }
+      case CMD.SIGN_START: {
+        if (this.noSign || !this.seed) return this.err(ERR_CODE.UNSUPPORTED_CMD)
+        this.signBuffer = new Uint8Array(0)
+        this.write(concat(new Uint8Array([RESP.SIGN_START, 0]), u32le(MAX_SIGN_DATA)))
+        return
+      }
+      case CMD.SIGN_DATA: {
+        if (this.noSign || !this.seed) return this.err(ERR_CODE.UNSUPPORTED_CMD)
+        if (!this.signBuffer) return this.err(ERR_CODE.BAD_STATE)
+        const chunk = frame.subarray(1)
+        if (this.signBuffer.length + chunk.length > MAX_SIGN_DATA) {
+          return this.err(ERR_CODE.TABLE_FULL)
+        }
+        this.signBuffer = concat(this.signBuffer, chunk)
+        this.ok()
+        return
+      }
+      case CMD.SIGN_FINISH: {
+        if (this.noSign || !this.seed) return this.err(ERR_CODE.UNSUPPORTED_CMD)
+        if (!this.signBuffer) return this.err(ERR_CODE.BAD_STATE)
+        const signature = ed25519.sign(this.signBuffer, this.seed)
+        this.signBuffer = null
+        this.write(concat(new Uint8Array([RESP.SIGNATURE]), signature))
         return
       }
       case CMD.REMOVE_CONTACT: {

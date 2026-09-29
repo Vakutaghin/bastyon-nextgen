@@ -38,17 +38,28 @@ const h = vi.hoisted(() => {
   }
   const profiles = { userProfiles: {}, fetchProfiles: vi.fn(async () => {}), reset: vi.fn() }
   const mesh = null as unknown as MeshFake
-  const connection = { reset: vi.fn(async () => {}) }
-  const meshtastic = { reset: vi.fn(async () => {}) }
+  const connection = {
+    reset: vi.fn(async () => {}),
+    status: 'idle',
+    self: null as null | { publicKey: string },
+    session: null as null | { contacts: Map<string, unknown> },
+  }
+  const meshtastic = {
+    reset: vi.fn(async () => {}),
+    status: 'idle',
+    self: null as null | { nodeNum: number },
+  }
   const reticulum = {
     reset: vi.fn(async () => {}),
     autostart: vi.fn(async () => {}),
     address: null as string | null,
     status: 'idle',
   }
+  type Route = { contact: string; binding: { net: string; dest: string; key?: string } }
   const routes = {
-    route: null as null | { contact: string; binding: { dest: string } },
-    routeFor: vi.fn((c: string | null) => (c && routes.route?.contact === c ? routes.route : null)),
+    list: [] as Route[],
+    routesFor: vi.fn((c: string | null) => routes.list.filter((r) => r.contact === c)),
+    teachRadios: vi.fn(),
     reset: vi.fn(),
   }
   return { matrix, auth, chat, profiles, mesh, connection, meshtastic, reticulum, routes }
@@ -111,8 +122,23 @@ function makeMesh() {
     deleteDialog: vi.fn(async () => {}),
     reset: vi.fn(),
     purgeAccount: vi.fn(async () => {}),
-    ensureLxmfDialog: vi.fn(
-      async (self: string, dest: string) => `mesh:lx:${self}:u:${dest}` as string
+    ensureLxmfDialog: vi.fn(async (self: string, dest: string) => {
+      const id = `mesh:lx:${self}:u:${dest}`
+      if (!h.mesh.dialogs.some((d) => d.id === id)) h.mesh.dialogs.push({ id })
+      return id
+    }),
+    ensureDirectDialog: vi.fn(async (self: string, contact: { publicKey: string }) => {
+      const id = `mesh:mc:${self.slice(0, 12)}:u:${contact.publicKey.slice(0, 12)}`
+      if (!h.mesh.dialogs.some((d) => d.id === id)) h.mesh.dialogs.push({ id })
+      return id
+    }),
+    ensureMeshtasticDirectDialog: vi.fn(
+      async (self: number, node: { num: number; name: string; publicKey?: string }) => {
+        const key = (n: number) => (n >>> 0).toString(16).padStart(8, '0')
+        const id = `mesh:mt:${key(self)}:u:${key(node.num)}`
+        if (!h.mesh.dialogs.some((d) => d.id === id)) h.mesh.dialogs.push({ id })
+        return id
+      }
     ),
     canSend: vi.fn(() => true),
     markRead: vi.fn(),
@@ -143,9 +169,14 @@ beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
   h.mesh = makeMesh()
-  h.routes.route = null
+  h.routes.list = []
   h.reticulum.address = null
   h.reticulum.status = 'idle'
+  h.connection.status = 'idle'
+  h.connection.self = null
+  h.connection.session = null
+  h.meshtastic.status = 'idle'
+  h.meshtastic.self = null
 })
 
 describe('mesh chats in the messenger', () => {
@@ -221,7 +252,7 @@ describe('one dialog, several routes', () => {
   const ROUTED = `mesh:lx:${SELF}:u:${BOB_LXMF}`
 
   function setup() {
-    h.routes.route = { contact: BOB, binding: { dest: BOB_LXMF } }
+    h.routes.list = [{ contact: BOB, binding: { net: 'lxmf', dest: BOB_LXMF } }]
     h.reticulum.address = SELF
     h.reticulum.status = 'running'
     const matrixMsg = (id: string, ts: number, mine = false): Message => ({
@@ -252,6 +283,7 @@ describe('one dialog, several routes', () => {
       dialog(ROUTED, 6000, 2, 'meshcore'),
       dialog(MESH_ID, 3000, 1, 'meshcore'),
     ]
+    h.mesh.dialogs = [{ id: ROUTED }, { id: MESH_ID }]
     const ui = useMessengerUiStore()
     const bob = dialog(ROOM, 5000, 1)
     bob.partner = { id: BOB_MX, name: 'Боб' }
@@ -300,11 +332,55 @@ describe('one dialog, several routes', () => {
 
   it('sends through Matrix to people without a route', async () => {
     const { store, ui } = setup()
-    h.routes.route = null
+    h.routes.list = []
     ui.syncState = 'ERROR'
     await store.sendMessage(ROOM, 'привет')
     expect(h.chat.sendMessage).toHaveBeenCalledWith(ROOM, 'привет')
     expect(h.mesh.send).not.toHaveBeenCalled()
     expect(store.dialogs.map((d) => d.id)).toEqual([ROUTED, ROOM, MESH_ID])
+  })
+
+  it('goes over a Meshtastic radio with the node key from the binding', async () => {
+    const { store, ui } = setup()
+    h.routes.list = [
+      { contact: BOB, binding: { net: 'meshtastic', dest: '0a0b0c0d', key: 'ab'.repeat(32) } },
+    ]
+    h.reticulum.status = 'idle'
+    h.reticulum.address = null
+    h.meshtastic.status = 'connected'
+    h.meshtastic.self = { nodeNum: 0x11223344 }
+    ui.syncState = 'ERROR'
+    await store.sendMessage(ROOM, 'по Meshtastic')
+    expect(h.mesh.ensureMeshtasticDirectDialog).toHaveBeenCalledWith(0x11223344, {
+      num: 0x0a0b0c0d,
+      name: 'Боб',
+      publicKey: 'ab'.repeat(32),
+    })
+    expect(h.mesh.send).toHaveBeenCalledWith('mesh:mt:11223344:u:0a0b0c0d', 'по Meshtastic')
+  })
+
+  it('goes over a MeshCore radio when Reticulum is not running', async () => {
+    const { store, ui } = setup()
+    const RADIO = 'c4'.repeat(32)
+    const OWN_RADIO = 'd5'.repeat(32)
+    h.routes.list = [
+      { contact: BOB, binding: { net: 'lxmf', dest: BOB_LXMF } },
+      { contact: BOB, binding: { net: 'meshcore', dest: RADIO, key: RADIO } },
+    ]
+    h.reticulum.status = 'idle'
+    h.reticulum.address = null
+    h.connection.status = 'connected'
+    h.connection.self = { publicKey: OWN_RADIO }
+    h.connection.session = { contacts: new Map([[RADIO, { publicKey: RADIO, name: 'Боб' }]]) }
+    const MC = `mesh:mc:${OWN_RADIO.slice(0, 12)}:u:${RADIO.slice(0, 12)}`
+    ui.syncState = 'ERROR'
+    await store.sendMessage(ROOM, 'по радио MeshCore')
+    expect(h.mesh.ensureDirectDialog).toHaveBeenCalledWith(OWN_RADIO, {
+      publicKey: RADIO,
+      name: 'Боб',
+    })
+    expect(h.mesh.send).toHaveBeenCalledWith(MC, 'по радио MeshCore')
+    ui.activeChatId = ROOM
+    expect(store.activeMeshRoute).toMatchObject({ net: 'meshcore', nets: ['lxmf', 'meshcore'] })
   })
 })

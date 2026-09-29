@@ -28,6 +28,9 @@ const short = (key: string): string => key.slice(0, 12).toLowerCase()
 const keyIn = (network: MeshNetwork, key: string): string =>
   network === 'lxmf' ? key.slice(0, 32).toLowerCase() : short(key)
 
+/** Ключ собеседника, как он стоит в id его личного диалога. */
+export const dialogKeyOf = keyIn
+
 /** Номер узла Meshtastic как ключ в id: 8 hex-цифр. */
 export function nodeKey(num: number): string {
   return (num >>> 0).toString(16).padStart(8, '0')

@@ -28,6 +28,10 @@ export const CMD = {
   GET_CONTACT_BY_KEY: 30,
   GET_CHANNEL: 31,
   SET_CHANNEL: 32,
+  /** Подпись данных ключом радио: начало, данные частями, конец (прошивка 1.7+). */
+  SIGN_START: 33,
+  SIGN_DATA: 34,
+  SIGN_FINISH: 35,
 } as const
 
 export const RESP = {
@@ -48,6 +52,10 @@ export const RESP = {
   CONTACT_MSG_RECV_V3: 16,
   CHANNEL_MSG_RECV_V3: 17,
   CHANNEL_INFO: 18,
+  /** Ответ на SIGN_START: u32 — сколько данных радио готово подписать. */
+  SIGN_START: 19,
+  /** Ответ на SIGN_FINISH: подпись Ed25519, 64 байта. */
+  SIGNATURE: 20,
   CHANNEL_DATA_RECV: 27,
 } as const
 

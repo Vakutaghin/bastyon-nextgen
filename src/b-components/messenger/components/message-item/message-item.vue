@@ -74,7 +74,7 @@
       </SC_SendFailed>
 
       <SC_MessageTime>
-        <span v-if="viaReticulum" :title="t('mesh.route.via')">📡</span>
+        <span v-if="viaMesh" :title="viaMesh">📡</span>
         {{ formatTime(message.timestamp) }}
         <SC_SeenTick v-if="deliveryMark" :title="deliveryMark.title">
           {{ deliveryMark.mark }}
@@ -343,10 +343,12 @@ const meshBinding = computed<boolean>(() => {
   return !!raw && typeof raw.bastyonMesh === 'object' && raw.bastyonMesh !== null
 })
 
-/** Сообщение ушло или пришло через Reticulum, а показано в чате Bastyon. */
-const viaReticulum = computed<boolean>(
-  () => props.message.transport === 'lxmf' && props.message.chatId !== store.activeChatId
-)
+/** Сообщение ушло или пришло через mesh-сеть, а показано в чате Bastyon: «Через …». */
+const viaMesh = computed<string | null>(() => {
+  const transport = props.message.transport
+  if (!isMeshTransport(transport) || props.message.chatId === store.activeChatId) return null
+  return t('mesh.route.via', { net: t(`mesh.networks.${transport}`) })
+})
 
 /** Собеседник поделился адресом, а мы своим — ещё нет. */
 const canShareBack = computed<boolean>(() => {

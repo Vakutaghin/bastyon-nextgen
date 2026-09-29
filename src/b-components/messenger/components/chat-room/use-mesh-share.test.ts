@@ -1,5 +1,5 @@
-// Свой адрес Reticulum в обычный чат: без узла — на вкладку Reticulum, с
-// узлом — подписанная запись связки через стор; отказ — тостом.
+// Свои адреса в mesh-сетях в обычный чат: ни одной сети — на страницу mesh,
+// иначе — подписанные записи связки через стор; отказ — тостом.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -24,10 +24,9 @@ beforeEach(() => {
 })
 
 describe('useMeshShare', () => {
-  it('asks to start the node when it is not running', async () => {
-    const share = vi.fn(async () => 'sent' as const)
+  it('asks to start a network when none is up', async () => {
+    const share = vi.fn(async () => 'no_node' as const)
     await useMeshShare(share).shareAddress()
-    expect(share).not.toHaveBeenCalled()
     expect(h.info).toHaveBeenCalledWith({ message: 'mesh.share.startNode' })
     expect(h.push).toHaveBeenCalledWith({ path: '/mesh', query: { net: 'reticulum' } })
   })

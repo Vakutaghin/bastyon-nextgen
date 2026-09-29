@@ -100,6 +100,9 @@ export interface MeshCoreClientOptions {
 /** Сколько кадров вычитывать за один проход очереди — защита от зацикливания. */
 const MAX_SYNC_PER_PASS = 512
 
+/** Кусок данных на подпись: кадр радио — не больше MAX_FRAME_SIZE (176). */
+const SIGN_CHUNK = 160
+
 const noop = (): void => {}
 
 export class MeshCoreClient {
@@ -435,6 +438,25 @@ export class MeshCoreClient {
 
   async addContact(contact: McContact): Promise<void> {
     await this.request(encode.addUpdateContact(contact), this.expectOne(RESP.OK))
+  }
+
+  /**
+   * Подписать данные ключом радио (CMD_SIGN_*): подпись Ed25519, 64 байта.
+   * Данные идут кусками по SIGN_CHUNK — кадр радио не больше MAX_FRAME_SIZE.
+   */
+  async sign(data: Uint8Array): Promise<Uint8Array> {
+    const [start] = await this.request(encode.signStart(), this.expectOne(RESP.SIGN_START))
+    const max =
+      start && start.length >= 6
+        ? new DataView(start.buffer, start.byteOffset).getUint32(2, true)
+        : 0
+    if (data.length > max) throw new MeshCoreError('rejected', ERR_CODE.TABLE_FULL)
+    for (let i = 0; i < data.length; i += SIGN_CHUNK) {
+      await this.request(encode.signData(data.subarray(i, i + SIGN_CHUNK)), this.expectOne(RESP.OK))
+    }
+    const [done] = await this.request(encode.signFinish(), this.expectOne(RESP.SIGNATURE))
+    if (!done || done.length < 65) throw new MeshCoreError('bad_frame', null, 'short signature')
+    return done.slice(1, 65)
   }
 
   async removeContact(publicKey: string): Promise<void> {

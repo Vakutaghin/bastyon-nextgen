@@ -267,9 +267,13 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
   }
 
   /** Личный диалог с узлом Meshtastic. */
+  /**
+   * ЛС Meshtastic. `publicKey` — ключ узла для ЛС (из записи связки): с ним
+   * отправка сама отдаст ключ радио (add_contact), не дожидаясь NodeInfo.
+   */
   async function ensureMeshtasticDirectDialog(
     selfNum: number,
-    node: { num: number; name: string }
+    node: { num: number; name: string; publicKey?: string }
   ): Promise<string> {
     await ensureLoaded()
     const peer = nodeKey(node.num)
@@ -277,6 +281,10 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
       ...directFields('meshtastic', nodeKey(selfNum), peer, node.name),
       peerKey: peer,
     })
+    if (node.publicKey && d.peerPublicKey !== node.publicKey) {
+      d.peerPublicKey = node.publicKey
+      await saveDialog(d)
+    }
     return d.id
   }
 

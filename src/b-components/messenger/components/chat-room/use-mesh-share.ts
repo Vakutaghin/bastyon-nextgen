@@ -1,8 +1,9 @@
-// Свой адрес Reticulum в обычный чат: подписанная запись связки (аккаунт ↔
-// адрес LXMF, src/mesh/binding.ts) в зашифрованном теле сообщения. Приложение
-// собеседника её проверяет и запоминает mesh-маршрут: если пропадёт интернет,
-// переписка продолжится через Reticulum в этом же чате (use-mesh-routes).
-// Текст сообщения — с адресом `lxmf@…`: его поймут и Sideband с NomadNet.
+// Свои адреса в mesh-сетях в обычный чат: подписанные записи связки (аккаунт
+// ↔ адрес в Reticulum, MeshCore, Meshtastic; src/mesh/binding.ts) в
+// зашифрованном теле сообщения. Приложение собеседника их проверяет и
+// запоминает mesh-маршруты: если пропадёт интернет, переписка продолжится
+// через mesh-сеть в этом же чате (use-mesh-routes). Текст сообщения — с
+// адресом `lxmf@…`: его поймут и Sideband с NomadNet.
 import { useRouter } from 'vue-router'
 import { t } from '@/i18n'
 import { appToast } from '@/b-components/app-toast'
@@ -16,7 +17,7 @@ export function useMeshShare(share: () => Promise<'sent' | 'no_node' | 'failed'>
   const router = useRouter()
 
   async function shareAddress(): Promise<void> {
-    const result = rns.status === 'running' && rns.address ? await share() : 'no_node'
+    const result = await share()
     if (result === 'no_node') {
       appToast.info({ message: t('mesh.share.startNode') })
       void router.push({ path: '/mesh', query: { net: 'reticulum' } })

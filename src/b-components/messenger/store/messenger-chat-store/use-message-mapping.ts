@@ -199,7 +199,8 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
     const binding = (finalContent as Record<string, unknown> | null)?.bastyonMesh
     if (binding && senderId !== currentUser.value.id && senderId !== 'me') {
       const contact = getAddressFromMatrixId(senderId)
-      if (contact) useMeshRoutesStore().learn(binding, 'matrix', { contact })
+      const name = contact ? profileCache.userProfiles[contact]?.name : undefined
+      if (contact) useMeshRoutesStore().learn(binding, 'matrix', { contact, name })
     }
     let senderName = senderId
     if (senderId === currentUser.value.id || senderId === 'me') {

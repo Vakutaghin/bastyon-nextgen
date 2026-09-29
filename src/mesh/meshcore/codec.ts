@@ -203,6 +203,9 @@ export const encode = {
   removeContact: (publicKey: string): Uint8Array =>
     concat(new Uint8Array([CMD.REMOVE_CONTACT]), keyBytes(publicKey)),
   getBattery: (): Uint8Array => new Uint8Array([CMD.GET_BATT_AND_STORAGE]),
+  signStart: (): Uint8Array => new Uint8Array([CMD.SIGN_START]),
+  signData: (chunk: Uint8Array): Uint8Array => concat(new Uint8Array([CMD.SIGN_DATA]), chunk),
+  signFinish: (): Uint8Array => new Uint8Array([CMD.SIGN_FINISH]),
 }
 
 function i32Coord(value: number | null): Uint8Array {

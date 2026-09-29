@@ -16,7 +16,7 @@ import {
 import { MeshtasticSession, type MtIncoming } from '../src/mesh/meshtastic/session'
 import { FakeMeshAir, FakeMeshtasticDevice } from '../src/mesh/meshtastic/testing/fake-device'
 import { voiceAttachment } from '../src/mesh/voice'
-import { signBinding, verifyBinding } from '../src/mesh/binding'
+import { signBinding, signMeshCoreBinding, verifyBinding } from '../src/mesh/binding'
 import { deriveRnsIdentity } from '../src/mesh/reticulum/identity'
 import { generatePocketnetAddress } from '../src/blockchain/core/addresses/address-generator'
 import * as ecc from 'tiny-secp256k1'
@@ -413,6 +413,105 @@ test('mesh: connect a radio, chat with a node and write to a channel', async ({ 
     .toEqual(['Всем привет'])
   expect(bobInbox.find((m) => m.kind === 'channel')).toMatchObject({ senderName: 'Alice' })
 
+  await bobSession.close()
+})
+
+test('a Bastyon contact over a MeshCore radio when the server is down', async ({ page }) => {
+  test.setTimeout(120_000)
+  const air = new FakeAir()
+  const alice = new FakeCompanion(air, { name: 'Alice' })
+  const bob = new FakeCompanion(air, { name: 'Bob' })
+  // Радио Боба знает Алису (иначе не расшифрует её ЛС), а радио Алисы Боба —
+  // нет: контакт даст маршрут.
+  FakeCompanion.introduce(alice, bob)
+  alice.contacts = alice.contacts.filter((c) => c.publicKey !== bob.publicKey)
+  const bobSession = await MeshCoreSession.open(bob.connect(), { pollIntervalMs: 0 })
+  const bobInbox: SessionMessage[] = []
+  bobSession.on('message', (m) => bobInbox.push(m))
+
+  // Боб — собеседник Bastyon; адрес его радио подписан его аккаунтом и самим радио.
+  const bobKey = Uint8Array.from({ length: 32 }, (_, i) => i + 40)
+  const bobPub = new Uint8Array(ECPairFactory(ecc).fromPrivateKey(bobKey).publicKey)
+  const bobAddress = generatePocketnetAddress(Buffer.from(bobPub)).address
+  const binding = await signMeshCoreBinding(
+    { address: bobAddress, privateKey: bobKey, publicKey: bobPub },
+    bob.publicKey,
+    (text) => bobSession.sign(text)
+  )
+  expect(binding.rsig).toBeDefined()
+  const ROOM = '!bob:matrix.pocketnet.app'
+  const BOB_MX = `@${Buffer.from(bobAddress).toString('hex')}:matrix.pocketnet.app`
+
+  await useMockNode(page, DATA)
+  await page.goto('/')
+  await page.waitForSelector('#app > *', { timeout: 30_000 })
+  await page
+    .getByRole('button', { name: 'Понятно' })
+    .click({ timeout: 5_000 })
+    .catch(() => {})
+  await signIn(page)
+  await installTauriMock(page, new RadioBridge(page, () => meshcorePort(alice)))
+  await goTo(page, '/mesh?net=meshcore')
+  await page
+    .getByRole('listitem')
+    .filter({ hasText: 'CP2102 USB to UART' })
+    .getByRole('button', { name: 'Подключить' })
+    .click()
+  await expect(page.getByRole('heading', { name: 'Alice' })).toBeVisible()
+
+  // Диалог с Бобом — как из списка с прошлого запуска (сервер чатов в тесте
+  // недоступен), маршрут — как из его сообщения «Мои адреса в mesh-сетях».
+  await page.evaluate(
+    ({ binding, room, partner }) => {
+      type Stores = { _s: Map<string, Record<string, (...a: unknown[]) => unknown>> }
+      const app = (
+        document.querySelector('#app') as unknown as {
+          __vue_app__: { config: { globalProperties: { $pinia: Stores } } }
+        }
+      ).__vue_app__
+      const stores = app.config.globalProperties.$pinia._s
+      stores.get('messenger-ui')!.setDialogs!([
+        { id: room, partner: { id: partner, name: 'Боб' }, unreadCount: 0, createdAt: 1 },
+      ])
+      stores.get('mesh-routes')!.learn!(binding, 'matrix', {
+        contact: binding.bastyon,
+        name: 'Боб',
+      })
+    },
+    { binding, room: ROOM, partner: BOB_MX }
+  )
+  // Радио Алисы получило контакт Боба.
+  await expect.poll(() => alice.contacts.map((c) => c.publicKey)).toContain(bob.publicKey)
+
+  await page.evaluate(async (room) => {
+    type Messenger = { openMessenger: () => Promise<void>; openChat: (id: string) => Promise<void> }
+    const app = (
+      document.querySelector('#app') as unknown as {
+        __vue_app__: { config: { globalProperties: { $pinia: { _s: Map<string, Messenger> } } } }
+      }
+    ).__vue_app__
+    const messenger = app.config.globalProperties.$pinia._s.get('messenger')!
+    await messenger.openMessenger()
+    void messenger.openChat(room)
+  }, ROOM)
+
+  await expect(
+    page.getByText('Нет связи с сервером — сообщения уйдут через MeshCore.')
+  ).toBeVisible()
+  const input = page.getByPlaceholder('Введите сообщение...')
+  await input.fill('Сервера нет, пишу по радио')
+  await input.press('Enter')
+  await expect.poll(() => bobInbox.map((m) => m.text)).toEqual(['Сервера нет, пишу по радио'])
+  await expect(page.getByTitle('Через MeshCore').first()).toBeVisible()
+
+  // Ответ Боба по радио — в том же чате.
+  await bobSession.sendDirect(
+    alice.publicKey,
+    'Слышу, отвечаю по радио',
+    Math.floor(Date.now() / 1000),
+    () => {}
+  )
+  await expect(page.getByText('Слышу, отвечаю по радио')).toBeVisible()
   await bobSession.close()
 })
 

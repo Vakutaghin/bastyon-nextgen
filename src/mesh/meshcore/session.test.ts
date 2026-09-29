@@ -4,7 +4,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { MeshCoreClient, MeshCoreError } from './client'
 import { hashtagSecret } from './channels'
-import { OUT_PATH_UNKNOWN, PUBLIC_CHANNEL_SECRET } from './constants'
+import { CMD, OUT_PATH_UNKNOWN, PUBLIC_CHANNEL_SECRET } from './constants'
+import { ed25519 } from '@noble/curves/ed25519'
+import { fromHex } from '../bytes'
 import type { FrameLink } from './framing'
 import { MeshCoreSession, type DeliveryUpdate, type SessionMessage } from './session'
 import { FakeAir, FakeCompanion, FakeRoomServer } from './testing/fake-companion'
@@ -332,5 +334,23 @@ describe('MeshCore rooms (room server)', () => {
       senderName: 'Bob',
       text: 'кто в кофейне?',
     })
+  })
+})
+
+describe('MeshCore radio signature', () => {
+  it('signs data with the radio key in chunks, as the firmware does', async () => {
+    const radio = new FakeCompanion(null, { name: 'Alice' })
+    const s = await open(radio)
+    // Больше одного кадра: подпись идёт кусками.
+    const data = new TextEncoder().encode('bastyon-mesh-binding/1\n' + 'x'.repeat(500))
+    const sig = (await s.sign(data))!
+    expect(sig).toHaveLength(64)
+    expect(ed25519.verify(sig, data, fromHex(s.self.publicKey))).toBe(true)
+    expect(radio.received.filter((f) => f[0] === CMD.SIGN_DATA).length).toBeGreaterThan(1)
+  })
+
+  it('says null when the firmware cannot sign', async () => {
+    const s = await open(new FakeCompanion(null, { name: 'Old', noSign: true }))
+    expect(await s.sign(new Uint8Array([1, 2, 3]))).toBeNull()
   })
 })

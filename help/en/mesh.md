@@ -133,16 +133,16 @@ If the other person is offline, a message can wait for them on a **propagation n
 
 ### If the internet goes down
 
-In an ordinary Bastyon chat, **My Reticulum address** in the 📎 menu sends the other person your address together with your account's signature. Their app checks the signature and remembers a **Reticulum route** to you. A **Share my address** button appears under the message, so the route can go both ways.
+In an ordinary Bastyon chat, **My mesh addresses** in the 📎 menu sends the other person your addresses together with your account's signature: on Reticulum if the node is running, and on MeshCore and Meshtastic if a radio is connected. A MeshCore radio also signs its address itself when its firmware can. Their app checks the signatures and remembers **mesh routes** to you, and their radio adds you as a contact right away. A **Share my addresses** button appears under the message, so the routes can go both ways.
 
 From then on it is one chat:
 
 - While the chat server is reachable, messages go as usual.
-- With no internet or the server down, messages go over Reticulum by themselves: over the local network, a hub or radio. The bottom of the chat says so, and such messages carry a 📡 mark.
-- Replies over Reticulum arrive in the same chat; there is no separate one.
-- The **Via Reticulum** button at the bottom sends over the mesh network even while the internet works.
+- With no internet or the server down, messages go over a mesh network by themselves: over Reticulum first (end-to-end encrypted), otherwise over a connected MeshCore or Meshtastic radio. The bottom of the chat says which network, and such messages carry a 📡 mark.
+- Replies over mesh networks arrive in the same chat; there are no separate ones.
+- The **Via the mesh** button at the bottom sends over the mesh even while the internet works.
 
-Both of you need the Reticulum node running. Messages sent over Reticulum stay on this device only and never reach the server. If the other person has not received your address yet, your first message over Reticulum brings it along.
+You both need a network in common: a Reticulum node, or radios of the same network within reach. Over a radio a long message goes in parts. Messages sent over the mesh stay on this device only and never reach the server. If the other person has not received your Reticulum address yet, your first message over Reticulum brings it along.
 
 An `lxmf@…` address from Sideband or NomadNet still opens with **Message via Reticulum**, in a separate chat.
 

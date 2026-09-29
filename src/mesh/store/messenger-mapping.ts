@@ -154,32 +154,32 @@ export function mergeDialogs(matrix: Dialog[], mesh: Dialog[]): Dialog[] {
 }
 
 /**
- * Общий список, где у диалога Bastyon есть mesh-маршрут (`meshIdOf`): его
- * mesh-диалог в список не идёт, а свежее сообщение и непрочитанные — в диалог
- * Bastyon. Человек один — и диалог с ним один.
+ * Общий список, где у диалога Bastyon есть mesh-маршруты (`meshIdsOf` — его
+ * mesh-диалоги): они в список не идут, а свежее сообщение и непрочитанные —
+ * в диалог Bastyon. Человек один — и диалог с ним один.
  */
 export function mergeRoutedDialogs(
   matrix: Dialog[],
   mesh: Dialog[],
-  meshIdOf: (d: Dialog) => string | null
+  meshIdsOf: (d: Dialog) => string[]
 ): Dialog[] {
   if (mesh.length === 0) return matrix
   const byId = new Map(mesh.map((d) => [d.id, d]))
   const joined = new Set<string>()
   const routed = matrix.map((d) => {
-    const id = meshIdOf(d)
-    const m = id ? byId.get(id) : undefined
-    if (!m) return d
-    joined.add(m.id)
-    const last = m.lastMessage
-    const newer = !!last && last.timestamp > (d.lastMessage?.timestamp ?? 0)
-    return {
-      ...d,
-      unreadCount: d.unreadCount + m.unreadCount,
-      lastMessage: newer
-        ? { ...last, chatId: d.id, senderId: last.senderId === 'me' ? 'me' : d.partner.id }
-        : d.lastMessage,
+    const own = meshIdsOf(d).flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []))
+    if (own.length === 0) return d
+    let last = d.lastMessage
+    let unread = d.unreadCount
+    for (const m of own) {
+      joined.add(m.id)
+      unread += m.unreadCount
+      if (m.lastMessage && m.lastMessage.timestamp > (last?.timestamp ?? 0)) {
+        const senderId = m.lastMessage.senderId === 'me' ? 'me' : d.partner.id
+        last = { ...m.lastMessage, chatId: d.id, senderId }
+      }
     }
+    return { ...d, unreadCount: unread, lastMessage: last }
   })
   return mergeDialogs(
     routed,
@@ -188,7 +188,7 @@ export function mergeRoutedDialogs(
 }
 
 /**
- * Лента диалога Bastyon вместе с сообщениями его mesh-маршрута — по времени.
+ * Лента диалога Bastyon вместе с сообщениями его mesh-маршрутов — по времени.
  * Входящие LXMF подписываются собеседником диалога: это он и есть.
  */
 export function mergeRoutedMessages(

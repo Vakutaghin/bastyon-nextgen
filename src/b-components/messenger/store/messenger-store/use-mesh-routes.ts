@@ -1,21 +1,26 @@
 /**
  * «Один диалог — несколько маршрутов» (этап 8 плана mesh-сетей). У человека,
- * который поделился адресом Reticulum (проверенная запись связки,
- * src/mesh/binding.ts), диалог Bastyon продолжается через Reticulum, когда
+ * который поделился адресами в mesh-сетях (проверенные записи связки,
+ * src/mesh/binding.ts), диалог Bastyon продолжается через mesh-сеть, когда
  * сервер чатов недоступен, — или всегда, если так выбрать в чате.
  *
- * - Сообщения LXMF с ним показываются в том же чате, по времени; отдельный
- *   LXMF-диалог в списке прячется, свежее и непрочитанное — в диалоге Bastyon.
- * - Отправка: сервер на связи — как обычно; нет — через Reticulum.
- * - История LXMF хранится локально, как у всех mesh-диалогов: на другом
- *   устройстве её нет, в Matrix она не попадает.
+ * - Маршрутов у человека до трёх: Reticulum, MeshCore, Meshtastic. Сообщение
+ *   уходит первым доступным — Reticulum (сквозное шифрование), потом радио.
+ * - Переписка через все его mesh-маршруты показывается в том же чате, по
+ *   времени; отдельные mesh-диалоги с ним в списке прячутся, свежее и
+ *   непрочитанное — в диалоге Bastyon.
+ * - История через mesh хранится локально, как у всех mesh-диалогов: на
+ *   другом устройстве её нет, в Matrix она не попадает.
  */
 
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { directDialogId } from '@/mesh/ids'
+import type { MeshNet } from '@/mesh/binding'
+import { dialogKeyOf, directDialogId, nodeKey, parseMeshDialogId } from '@/mesh/ids'
 import type { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
+import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
 import { useMeshRoutesStore, type MeshRoute } from '@/mesh/store/mesh-routes-store'
+import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
 import { mergeRoutedDialogs, mergeRoutedMessages } from '@/mesh/store/messenger-mapping'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { getAddressFromMatrixId } from '../../helpers'
@@ -26,14 +31,17 @@ import type { useMessengerUiStore } from '../messenger-ui-store'
 const SYNC_OK = new Set(['PREPARED', 'SYNCING', 'CATCHUP'])
 
 export interface ActiveMeshRoute {
-  /** mesh-диалог маршрута; null — свой узел Reticulum не запущен. */
+  /** Сети, в которых у собеседника есть маршрут, по порядку предпочтения. */
+  nets: MeshNet[]
+  /** Сеть, через которую уйдёт сообщение, если уходит через mesh. */
+  net: MeshNet | null
+  /** mesh-диалог, через который уйдёт сообщение; null — ни одна сеть сейчас не готова. */
   meshId: string | null
-  route: MeshRoute
   /** Сервер чатов на связи. */
   online: boolean
-  /** Отправлять через Reticulum, даже когда сервер на связи. */
+  /** Отправлять через mesh, даже когда сервер на связи. */
   forced: boolean
-  /** Сообщение сейчас уйдёт через Reticulum. */
+  /** Сообщение сейчас уйдёт через mesh. */
   viaMesh: boolean
 }
 
@@ -44,6 +52,8 @@ export function useMeshRoutes(ctx: {
   const { uiStore, meshChat } = ctx
   const routes = useMeshRoutesStore()
   const rns = useReticulumStore()
+  const meshcore = useMeshConnectionStore()
+  const meshtastic = useMeshtasticConnectionStore()
 
   // navigator.onLine — сразу, синк Matrix узнаёт о разрыве позже.
   const browserOnline = ref(typeof navigator === 'undefined' || navigator.onLine !== false)
@@ -54,8 +64,21 @@ export function useMeshRoutes(ctx: {
 
   const matrixOnline = computed(() => browserOnline.value && SYNC_OK.has(uiStore.syncState))
 
-  /** Чаты, где пользователь выбрал «через Reticulum». */
+  /** Чаты, где пользователь выбрал «через mesh». */
   const forced = ref<Record<string, boolean>>({})
+
+  // Радио подключилось — контакты и ключи собеседников по маршрутам на него.
+  watch(
+    () => [meshcore.status, meshtastic.status],
+    ([mc, mt], previous) => {
+      if (
+        (mc === 'connected' && previous?.[0] !== 'connected') ||
+        (mt === 'connected' && previous?.[1] !== 'connected')
+      ) {
+        routes.teachRadios()
+      }
+    }
+  )
 
   function dialogOf(chatId: string): Dialog | null {
     return (
@@ -64,53 +87,94 @@ export function useMeshRoutes(ctx: {
     )
   }
 
-  /** Собеседник личного диалога Bastyon и его mesh-маршрут. */
-  function routeOf(chatId: string | null): { dialog: Dialog; route: MeshRoute } | null {
+  /** Собеседник личного диалога Bastyon и его mesh-маршруты. */
+  function routeOf(chatId: string | null): { dialog: Dialog; routes: MeshRoute[] } | null {
     if (!chatId || chatId.startsWith('mesh:')) return null
     const dialog = dialogOf(chatId)
     const partnerId = dialog?.partner.id
     if (!dialog || !partnerId?.startsWith('@')) return null
-    const route = routes.routeFor(getAddressFromMatrixId(partnerId))
-    return route ? { dialog, route } : null
+    const list = routes.routesFor(getAddressFromMatrixId(partnerId))
+    return list.length > 0 ? { dialog, routes: list } : null
   }
 
-  function meshIdOf(route: MeshRoute): string | null {
-    return rns.address ? directDialogId('lxmf', rns.address, route.binding.dest) : null
+  /** mesh-диалог маршрута на сейчас подключённой сети; null — сети нет. */
+  function liveMeshId(route: MeshRoute): string | null {
+    const { net, dest } = route.binding
+    if (net === 'lxmf') return rns.address ? directDialogId('lxmf', rns.address, dest) : null
+    if (net === 'meshcore') {
+      const self = meshcore.self?.publicKey
+      return self ? directDialogId('meshcore', self, dest) : null
+    }
+    const self = meshtastic.self?.nodeNum
+    return self !== undefined ? directDialogId('meshtastic', nodeKey(self), dest) : null
   }
 
-  /** mesh-диалог маршрута чата Bastyon (есть ли он уже или нет). */
-  function meshIdFor(chatId: string): string | null {
-    const r = routeOf(chatId)
-    return r ? meshIdOf(r.route) : null
-  }
-
-  /** Завести mesh-диалог маршрута (он скрыт в списке) и открыть его историю. */
-  async function openRouted(chatId: string): Promise<string | null> {
-    const r = routeOf(chatId)
-    if (!r || !rns.address) return null
-    const meshId = await meshChat.ensureLxmfDialog(
-      rns.address,
-      r.route.binding.dest,
-      r.dialog.partner.name || null
+  /**
+   * Все mesh-диалоги с человеком по его маршрутам — с любым своим узлом
+   * (радио сегодня одно, вчера другое), в том числе отключённым сейчас.
+   */
+  function historyIds(list: MeshRoute[]): string[] {
+    const wanted = new Set(
+      list.map((r) => `${r.binding.net}|${dialogKeyOf(r.binding.net, r.binding.dest)}`)
     )
-    uiStore.setChatAlias(meshId, chatId)
-    await meshChat.openDialog(meshId)
-    if (uiStore.isChatOnScreen(chatId)) meshChat.markRead(meshId)
-    return meshId
+    return meshChat.dialogs
+      .map((d) => d.id)
+      .filter((id) => {
+        const p = parseMeshDialogId(id)
+        return !!p && p.kind === 'direct' && wanted.has(`${p.network}|${p.key}`)
+      })
+  }
+
+  /** Завести mesh-диалоги маршрутов на подключённых сетях (они скрыты в списке). */
+  async function ensureDialogs(chatId: string): Promise<void> {
+    const r = routeOf(chatId)
+    if (!r) return
+    const name = r.dialog.partner.name || null
+    for (const route of r.routes) {
+      const { net, dest, key } = route.binding
+      if (net === 'lxmf' && rns.address) {
+        await meshChat.ensureLxmfDialog(rns.address, dest, name)
+      } else if (net === 'meshcore' && meshcore.self && meshcore.session) {
+        const contact = meshcore.session.contacts.get(dest)
+        if (contact) await meshChat.ensureDirectDialog(meshcore.self.publicKey, contact)
+      } else if (net === 'meshtastic' && meshtastic.self) {
+        await meshChat.ensureMeshtasticDirectDialog(meshtastic.self.nodeNum, {
+          num: parseInt(dest, 16) >>> 0,
+          name: name ?? dest,
+          publicKey: key,
+        })
+      }
+    }
+  }
+
+  /** Открыть историю маршрутов в чате Bastyon (переписка с ним — в этой ленте). */
+  async function openRouted(chatId: string): Promise<void> {
+    const r = routeOf(chatId)
+    if (!r) return
+    await ensureDialogs(chatId)
+    for (const id of historyIds(r.routes)) {
+      uiStore.setChatAlias(id, chatId)
+      await meshChat.openDialog(id)
+      if (uiStore.isChatOnScreen(chatId)) meshChat.markRead(id)
+    }
   }
 
   function state(chatId: string | null): ActiveMeshRoute | null {
     const r = routeOf(chatId)
     if (!r || !chatId) return null
-    const meshId = meshIdOf(r.route)
     const isForced = !!forced.value[chatId]
-    const canSend = !!meshId && meshChat.canSend(meshId)
+    const ready = r.routes.find((route) => {
+      const id = liveMeshId(route)
+      return !!id && meshChat.canSend(id)
+    })
+    const meshId = ready ? liveMeshId(ready) : null
     return {
+      nets: r.routes.map((route) => route.binding.net),
+      net: ready?.binding.net ?? null,
       meshId,
-      route: r.route,
       online: matrixOnline.value,
       forced: isForced,
-      viaMesh: canSend && (isForced || !matrixOnline.value),
+      viaMesh: !!meshId && (isForced || !matrixOnline.value),
     }
   }
 
@@ -118,7 +182,7 @@ export function useMeshRoutes(ctx: {
 
   /** mesh-диалог, через который сейчас уйдёт сообщение в чат; null — через Matrix. */
   async function sendRoute(chatId: string): Promise<string | null> {
-    await openRouted(chatId)
+    await ensureDialogs(chatId)
     const s = state(chatId)
     return s?.viaMesh ? s.meshId : null
   }
@@ -129,16 +193,19 @@ export function useMeshRoutes(ctx: {
 
   function messagesOf(chatId: string, matrix: Message[]): Message[] {
     const r = routeOf(chatId)
-    const meshId = r && meshIdOf(r.route)
-    if (!r || !meshId) return matrix
-    return mergeRoutedMessages(matrix, meshChat.messengerMessages(meshId), {
+    if (!r) return matrix
+    const mesh = historyIds(r.routes).flatMap((id) => meshChat.messengerMessages(id))
+    return mergeRoutedMessages(matrix, mesh, {
       id: r.dialog.partner.id,
       name: r.dialog.partner.name,
     })
   }
 
   function dialogsOf(matrix: Dialog[], mesh: Dialog[]): Dialog[] {
-    return mergeRoutedDialogs(matrix, mesh, (d) => meshIdFor(d.id))
+    return mergeRoutedDialogs(matrix, mesh, (d) => {
+      const r = routeOf(d.id)
+      return r ? historyIds(r.routes) : []
+    })
   }
 
   /**

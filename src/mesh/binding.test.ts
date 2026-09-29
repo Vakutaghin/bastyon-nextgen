@@ -9,11 +9,15 @@ import { Buffer } from 'buffer'
 
 import { generatePocketnetAddress } from '@/blockchain/core/addresses/address-generator'
 import { toHex } from './bytes'
+import { ed25519 } from '@noble/curves/ed25519'
+import { bytesToHex } from '@noble/hashes/utils'
 import {
   lxmfAddressOf,
   rnsIdentityHash,
   rnsPublicKey,
   signBinding,
+  signMeshCoreBinding,
+  signMeshtasticBinding,
   verifyBinding,
   type MeshBinding,
 } from './binding'
@@ -75,5 +79,44 @@ describe('mesh binding', () => {
     for (const junk of [null, 'x', {}, { ...good, v: 2 }, { ...good, sig: 'zz' }]) {
       expect(verifyBinding(junk)).toBeNull()
     }
+  })
+
+  it('binds a MeshCore radio, signed by the radio when it can', async () => {
+    const alice = await account(1)
+    const seed = Uint8Array.from({ length: 32 }, (_, i) => 200 - i)
+    const radioKey = bytesToHex(ed25519.getPublicKey(seed))
+    const signed = await signMeshCoreBinding(
+      alice,
+      radioKey,
+      async (text) => ed25519.sign(text, seed),
+      1_790_000_000
+    )
+    expect(signed).toMatchObject({ net: 'meshcore', dest: radioKey, key: radioKey })
+    expect(signed.rsig).toMatch(/^[0-9a-f]{128}$/)
+    expect(verifyBinding(signed)).toEqual(signed)
+    // Прошивка без CMD_SIGN_* — только подпись аккаунта.
+    const plain = await signMeshCoreBinding(alice, radioKey, null, 1_790_000_000)
+    expect(plain.rsig).toBeUndefined()
+    expect(verifyBinding(plain)).toEqual(plain)
+    // Подпись чужого радио или сбой подписи радио.
+    const other = Uint8Array.from({ length: 32 }, (_, i) => i + 9)
+    const forged = await signMeshCoreBinding(alice, radioKey, async (t) => ed25519.sign(t, other))
+    expect(verifyBinding(forged)).toBeNull()
+    const failing = await signMeshCoreBinding(alice, radioKey, async () => {
+      throw new Error('radio gone')
+    })
+    expect(verifyBinding(failing)).toMatchObject({ net: 'meshcore' })
+  })
+
+  it('binds a Meshtastic node with the account signature only', async () => {
+    const alice = await account(1)
+    const key = 'ab'.repeat(32)
+    const b = signMeshtasticBinding(alice, 0xa1b2c3d4, key, 1_790_000_000)
+    expect(b).toMatchObject({ net: 'meshtastic', dest: 'a1b2c3d4', key })
+    expect(verifyBinding(b)).toEqual(b)
+    // Та же запись, выданная за другую сеть или с «подписью узла», — не связка.
+    expect(verifyBinding({ ...b, net: 'meshcore' })).toBeNull()
+    expect(verifyBinding({ ...b, rsig: 'cd'.repeat(64) })).toBeNull()
+    expect(verifyBinding({ ...b, dest: 'a1b2c3d5' })).toBeNull()
   })
 })

@@ -622,17 +622,27 @@ export const useMessengerStore = defineStore('messenger', () => {
     await chatStore.retryMessage(chatId, messageId)
   }
 
-  /** Своя запись связки с Reticulum — собеседнику в чат Bastyon. */
+  /**
+   * Свои записи связки — собеседнику в чат Bastyon: Reticulum, если узел
+   * запущен, и радио MeshCore и Meshtastic, если подключены.
+   */
   async function shareMeshBinding(chatId: string): Promise<'sent' | 'no_node' | 'failed'> {
-    const rns = useReticulumStore()
-    if (rns.status !== 'running' || !rns.address) return 'no_node'
     const routes = useMeshRoutesStore()
-    const binding = await routes.ownBinding()
-    if (!binding) return 'failed'
-    const body = t('mesh.share.text', { address: `lxmf@${binding.dest}` })
+    const bindings = await routes.ownBindings()
+    if (bindings.length === 0) return 'no_node'
+    const address = bindings
+      .map((b) =>
+        b.net === 'lxmf'
+          ? `Reticulum lxmf@${b.dest}`
+          : b.net === 'meshcore'
+            ? `MeshCore ${b.dest.slice(0, 12)}`
+            : `Meshtastic !${b.dest}`
+      )
+      .join(', ')
+    const body = t('mesh.share.text', { address })
     try {
-      // Запись — в зашифрованном теле (JSON), сервер её не видит.
-      await chatStore.sendTextContent(chatId, JSON.stringify({ body, bastyonMesh: binding }))
+      // Записи — в зашифрованном теле (JSON), сервер их не видит.
+      await chatStore.sendTextContent(chatId, JSON.stringify({ body, bastyonMesh: bindings }))
     } catch (e) {
       log.warn('mesh binding not sent', e)
       return 'failed'
