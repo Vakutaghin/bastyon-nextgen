@@ -58,6 +58,15 @@ const COMMANDS: &[&str] = &[
   "radio_ble_subscribe",
   "radio_ble_write",
   "radio_ble_read",
+  "rns_start",
+  "rns_stop",
+  "rns_status",
+  "rns_announce",
+  "rns_send",
+  "rns_request_path",
+  "rns_set_propagation_node",
+  "rns_sync",
+  "rns_page",
 ];
 
 fn main() {

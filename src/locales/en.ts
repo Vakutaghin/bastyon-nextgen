@@ -1568,6 +1568,10 @@ export default {
         "The most widespread LoRa mesh network. Nodes pass each other's messages on; direct messages are encrypted with node keys.",
       meshcoreLead:
         'A network that relays through repeaters: messages follow a discovered path instead of going to everyone. Needs the companion firmware.',
+      reticulum: 'Reticulum',
+      lxmf: 'Reticulum',
+      reticulumLead:
+        'A network over any links — LoRa radio (RNode), your local network and hubs on the internet. The keys stay in the app, chats are end-to-end encrypted, and your address comes from your mnemonic.',
     },
     status: {
       idle: 'Not connected',
@@ -1775,6 +1779,71 @@ export default {
         linkNothing: 'These channels are already on the radio.',
       },
     },
+    rns: {
+      status: {
+        idle: 'Node stopped',
+        starting: 'Starting…',
+        running: 'Node running',
+        stopping: 'Stopping…',
+      },
+      node: {
+        title: 'My node',
+        start: 'Start',
+        stop: 'Stop',
+        lead: 'The Reticulum node runs right in the app. While it runs, people can write to you at your address.',
+        torNote:
+          'Tor mode is on: internet hubs and the local network are off so your address is not exposed. Only radio (RNode) works.',
+        address: 'Address',
+        addressCopied:
+          'Address copied. Give it to the other person — they will write to you at it.',
+        interfaces: 'Interfaces',
+        noInterfaces: 'none — add a hub, the local network or an RNode',
+        interfacesValue: '{online} of {total} online',
+        name: 'Name for others',
+        announce: 'Announce',
+        announceHint:
+          'An announcement tells the network your address and name, so people can find you in their contact lists.',
+        autostart: 'Start the node when signing in',
+      },
+      ifaces: {
+        title: 'Interfaces',
+        empty: 'No interfaces: the node is not linked to anyone.',
+        lan: 'Local network',
+        lanHint: 'Finds Reticulum nodes on your Wi-Fi network (AutoInterface).',
+        hub: 'Community hub',
+        hubHint:
+          'The address of a Reticulum hub on the internet (TCP) — ask the community for one. Through a hub, nodes all over the world can hear you.',
+        hubKind: 'TCP hub',
+        lanKind: 'local network',
+        rnode: 'RNode over USB',
+        rnodeHint:
+          'A LoRa board with RNode firmware. The frequency and settings must match the network around you.',
+        serialPort: 'Port',
+        choosePort: 'Choose a port',
+        frequency: 'MHz',
+        bandwidth: 'kHz',
+        txPower: 'dBm',
+      },
+      peers: {
+        title: 'Contacts',
+        empty:
+          'Nobody has announced yet. Nodes appear here when they announce themselves on the network.',
+        byAddress: 'Write to an address',
+        byAddressHint: "Paste the other person's LXMF address — 32 characters.",
+        addressPlaceholder: 'LXMF address',
+      },
+      propagation: {
+        title: 'Propagation node',
+        sync: 'Get messages',
+        lead: 'Keeps messages while the recipient is offline (up to 30 days). Choose a node: messages to offline people go through it, and you can collect messages sent to you from it.',
+        empty: 'No propagation nodes have announced yet.',
+        chosen: 'chosen',
+        use: 'Use',
+        syncing: 'Collecting messages…',
+        failed: 'The propagation node did not answer.',
+        done: '{n} message received | {n} messages received',
+      },
+    },
     chat: {
       connect: 'Connect',
       errors: {
@@ -1804,6 +1873,10 @@ export default {
       room: 'room: a room server stores and relays the messages; encryption as in MeshCore direct messages',
       roomShort: 'room',
       roomDelivered: 'The room accepted the message',
+      lxmfEncryption: 'Reticulum end-to-end encryption: the keys stay in the app',
+      lxmfShort: 'Reticulum',
+      lxmfSent: 'Sent to the network',
+      lxmfDelivered: "The recipient's device confirmed receipt",
     },
     errors: {
       generic: 'That did not work ({code}).',
@@ -1859,6 +1932,9 @@ export default {
       rebooted: 'The radio restarted.',
       login_timeout: 'The room did not answer: the password was wrong or it cannot hear the radio.',
       login_failed: 'The room refused the login.',
+      no_account_key: 'No account key: sign in again.',
+      rns_not_running: 'The Reticulum node is not running.',
+      rns_error: 'Reticulum error.',
     },
   },
   hotkeys: {

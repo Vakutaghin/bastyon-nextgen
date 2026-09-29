@@ -59,4 +59,13 @@ permissions = [
   "allow-radio-ble-subscribe",
   "allow-radio-ble-write",
   "allow-radio-ble-read",
+  "allow-rns-start",
+  "allow-rns-stop",
+  "allow-rns-status",
+  "allow-rns-announce",
+  "allow-rns-send",
+  "allow-rns-request-path",
+  "allow-rns-set-propagation-node",
+  "allow-rns-sync",
+  "allow-rns-page",
 ]

@@ -1,6 +1,7 @@
 mod asr;
 mod ipfs;
 mod radio;
+mod rns;
 mod tor;
 mod tray;
 
@@ -938,6 +939,15 @@ pub fn run() {
       radio::radio_ble_subscribe,
       radio::radio_ble_write,
       radio::radio_ble_read,
+      rns::rns_start,
+      rns::rns_stop,
+      rns::rns_status,
+      rns::rns_announce,
+      rns::rns_send,
+      rns::rns_request_path,
+      rns::rns_set_propagation_node,
+      rns::rns_sync,
+      rns::rns_page,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]
@@ -1025,6 +1035,9 @@ pub fn run() {
       // Радио для mesh-сетей: соединения с LoRa-устройствами.
       radio::init(app.handle())?;
 
+      // Свой узел Reticulum (LXMF, NomadNet): поднимается по команде rns_start.
+      rns::init(app.handle())?;
+
       // Значок в трее (Windows, Linux). Не вышло — работаем без него.
       if let Err(e) = tray::init(app.handle()) {
         log::warn!("tray: {e}");
@@ -1064,6 +1077,10 @@ pub fn run() {
         // Порты и Bluetooth-соединения с радио отпускаем.
         if let Some(mgr) = app_handle.try_state::<radio::RadioManager>() {
           radio::shutdown_on_exit(&mgr);
+        }
+        // Узел Reticulum: закрыть интерфейсы и сохранить известные адреса.
+        if let Some(mgr) = app_handle.try_state::<rns::RnsManager>() {
+          rns::shutdown_on_exit(&mgr);
         }
       }
     });

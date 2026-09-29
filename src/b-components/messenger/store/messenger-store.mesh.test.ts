@@ -38,7 +38,8 @@ const h = vi.hoisted(() => {
   const mesh = null as unknown as MeshFake
   const connection = { reset: vi.fn(async () => {}) }
   const meshtastic = { reset: vi.fn(async () => {}) }
-  return { matrix, auth, chat, profiles, mesh, connection, meshtastic }
+  const reticulum = { reset: vi.fn(async () => {}), autostart: vi.fn(async () => {}) }
+  return { matrix, auth, chat, profiles, mesh, connection, meshtastic, reticulum }
 })
 
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
@@ -62,6 +63,7 @@ vi.mock('@/mesh/store/mesh-connection-store', () => ({
 vi.mock('@/mesh/store/meshtastic-connection-store', () => ({
   useMeshtasticConnectionStore: () => h.meshtastic,
 }))
+vi.mock('@/mesh/store/reticulum-store', () => ({ useReticulumStore: () => h.reticulum }))
 
 import { useMessengerStore } from './messenger-store'
 import { useMessengerUiStore } from './messenger-ui-store'
@@ -174,11 +176,12 @@ describe('mesh chats in the messenger', () => {
     expect(h.mesh.ensureLoaded).toHaveBeenCalled()
   })
 
-  it('disconnects both radios and wipes mesh chats on sign-out', async () => {
+  it('disconnects the radios, stops Reticulum and wipes mesh chats on sign-out', async () => {
     const store = useMessengerStore()
     store.logout({ purge: true })
     expect(h.connection.reset).toHaveBeenCalled()
     expect(h.meshtastic.reset).toHaveBeenCalled()
+    expect(h.reticulum.reset).toHaveBeenCalled()
     expect(h.mesh.reset).toHaveBeenCalledWith({ purge: true })
     await store.purgeAccountData('PBob')
     expect(h.mesh.purgeAccount).toHaveBeenCalledWith('PBob')

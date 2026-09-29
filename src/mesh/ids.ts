@@ -5,23 +5,28 @@
  * собеседник: у каждого радио своя переписка (у двух радио — два разных узла).
  *
  * - MeshCore: узел — первые 6 байт ключа (так радио адресует сообщения);
- * - Meshtastic: узел — его номер (`!a1b2c3d4` без `!`).
+ * - Meshtastic: узел — его номер (`!a1b2c3d4` без `!`);
+ * - LXMF (Reticulum): адрес целиком, 16 байт — по нему же и отправка.
  *
  * Канал — хэш его ключа (номер слота на радио может смениться).
  */
 
-export type MeshNetwork = 'meshcore' | 'meshtastic'
+export type MeshNetwork = 'meshcore' | 'meshtastic' | 'lxmf'
 
 export const MESH_DIALOG_PREFIX = 'mesh:'
 
-const NETWORK_CODE: Record<MeshNetwork, string> = { meshcore: 'mc', meshtastic: 'mt' }
-const CODE_NETWORK: Record<string, MeshNetwork> = { mc: 'meshcore', mt: 'meshtastic' }
+const NETWORK_CODE: Record<MeshNetwork, string> = { meshcore: 'mc', meshtastic: 'mt', lxmf: 'lx' }
+const CODE_NETWORK: Record<string, MeshNetwork> = { mc: 'meshcore', mt: 'meshtastic', lx: 'lxmf' }
 
 export function isMeshDialogId(id: string | null | undefined): id is string {
   return typeof id === 'string' && id.startsWith(MESH_DIALOG_PREFIX)
 }
 
 const short = (key: string): string => key.slice(0, 12).toLowerCase()
+
+/** Ключ в id: у LXMF — адрес целиком, у радио-сетей — первые 6 байт. */
+const keyIn = (network: MeshNetwork, key: string): string =>
+  network === 'lxmf' ? key.slice(0, 32).toLowerCase() : short(key)
 
 /** Номер узла Meshtastic как ключ в id: 8 hex-цифр. */
 export function nodeKey(num: number): string {
@@ -34,7 +39,7 @@ export function nodeNumOf(key: string): number | null {
 }
 
 export function directDialogId(network: MeshNetwork, selfKey: string, peerKey: string): string {
-  return `${MESH_DIALOG_PREFIX}${NETWORK_CODE[network]}:${short(selfKey)}:u:${short(peerKey)}`
+  return `${MESH_DIALOG_PREFIX}${NETWORK_CODE[network]}:${keyIn(network, selfKey)}:u:${keyIn(network, peerKey)}`
 }
 
 export function channelDialogId(network: MeshNetwork, selfKey: string, channelId: string): string {
@@ -73,6 +78,6 @@ export function meshSenderId(
   sender: { key?: string | null; name?: string | null }
 ): string {
   const code = NETWORK_CODE[network]
-  if (sender.key) return `${MESH_DIALOG_PREFIX}${code}:u:${short(sender.key)}`
+  if (sender.key) return `${MESH_DIALOG_PREFIX}${code}:u:${keyIn(network, sender.key)}`
   return `${MESH_DIALOG_PREFIX}${code}:n:${sender.name ?? '?'}`
 }

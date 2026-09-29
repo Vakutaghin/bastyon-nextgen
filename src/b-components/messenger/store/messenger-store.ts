@@ -17,6 +17,7 @@ import { isMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
 import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
+import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { mergeDialogs } from '@/mesh/store/messenger-mapping'
 
 import { getAddressFromMatrixId, resolveMatrixHost } from '../helpers'
@@ -260,6 +261,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (!authStore.isUserAuthenticated || !authStore.address || !authStore.keyPair) return
     // Переписка через радио не зависит от Matrix: без интернета она нужнее всего.
     void meshChat.ensureLoaded()
+    void useReticulumStore().autostart()
     if (uiStore.isInitInProgress) return
     uiStore.isInitInProgress = true
     if (!matrixService.getClient()) showDialogsSnapshot(authStore.address)
@@ -534,6 +536,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     // и с диска, как расшифровки Matrix.
     void useMeshConnectionStore().reset()
     void useMeshtasticConnectionStore().reset()
+    void useReticulumStore().reset()
     meshChat.reset({ purge: opts.purge })
     if (opts.purge && userId) {
       matrixService.purgeLocalData({ userId }).catch((e: unknown) => {

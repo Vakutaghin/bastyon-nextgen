@@ -1556,6 +1556,10 @@ export default {
         '가장 널리 쓰이는 LoRa 메시 네트워크입니다. 노드가 서로의 메시지를 전달하며, 개인 메시지는 노드 키로 암호화됩니다.',
       meshcoreLead:
         '리피터를 거쳐 전달하는 네트워크입니다. 메시지가 모두에게 퍼지지 않고 찾은 경로를 따라갑니다. companion 펌웨어가 필요합니다.',
+      reticulum: 'Reticulum',
+      lxmf: 'Reticulum',
+      reticulumLead:
+        'LoRa 무전기(RNode), 로컬 네트워크, 인터넷 허브 등 어떤 연결 위에서도 동작하는 네트워크입니다. 키는 앱에 있고 대화는 종단 간 암호화되며, 주소는 니모닉에서 만들어집니다.',
     },
     status: {
       idle: '연결되지 않음',
@@ -1760,6 +1764,70 @@ export default {
         linkNothing: '이 채널은 이미 무전기에 있습니다.',
       },
     },
+    rns: {
+      status: {
+        idle: '노드 중지됨',
+        starting: '시작하는 중…',
+        running: '노드 실행 중',
+        stopping: '중지하는 중…',
+      },
+      node: {
+        title: '내 노드',
+        start: '시작',
+        stop: '중지',
+        lead: 'Reticulum 노드는 앱 안에서 바로 실행됩니다. 실행되는 동안 다른 사람이 내 주소로 메시지를 보낼 수 있습니다.',
+        torNote:
+          'Tor 모드가 켜져 있어 주소가 드러나지 않도록 인터넷 허브와 로컬 네트워크를 껐습니다. 무전(RNode)만 동작합니다.',
+        address: '주소',
+        addressCopied:
+          '주소를 복사했습니다. 상대에게 알려 주세요. 이 주소로 메시지를 보내면 됩니다.',
+        interfaces: '인터페이스',
+        noInterfaces: '없음: 허브, 로컬 네트워크 또는 RNode를 추가하세요',
+        interfacesValue: '{total}개 중 {online}개 연결됨',
+        name: '다른 사람에게 보일 이름',
+        announce: '알리기',
+        announceHint:
+          '알림은 네트워크에 내 주소와 이름을 알려 줍니다. 그 뒤로 다른 사람의 연락처 목록에서 나를 찾을 수 있습니다.',
+        autostart: '계정에 로그인하면 노드 시작',
+      },
+      ifaces: {
+        title: '인터페이스',
+        empty: '인터페이스가 없어 노드가 아무와도 연결되지 않았습니다.',
+        lan: '로컬 네트워크',
+        lanHint: 'Wi-Fi 네트워크에서 Reticulum 노드를 찾습니다(AutoInterface).',
+        hub: '커뮤니티 허브',
+        hubHint:
+          '인터넷의 Reticulum 허브 주소(TCP)입니다. 커뮤니티에 물어보세요. 허브를 통하면 전 세계의 노드가 나를 들을 수 있습니다.',
+        hubKind: 'TCP 허브',
+        lanKind: '로컬 네트워크',
+        rnode: 'USB RNode',
+        rnodeHint:
+          'RNode 펌웨어가 설치된 LoRa 보드입니다. 주파수와 설정이 주변 네트워크와 같아야 합니다.',
+        serialPort: '포트',
+        choosePort: '포트 선택',
+        frequency: 'MHz',
+        bandwidth: 'kHz',
+        txPower: 'dBm',
+      },
+      peers: {
+        title: '대화 상대',
+        empty: '아직 알린 사람이 없습니다. 노드가 네트워크에 자신을 알리면 여기에 나타납니다.',
+        byAddress: '주소로 보내기',
+        byAddressHint: '상대의 LXMF 주소(32자)를 붙여 넣으세요.',
+        addressPlaceholder: 'LXMF 주소',
+      },
+      propagation: {
+        title: '전달 노드',
+        sync: '메시지 받기',
+        lead: '상대가 오프라인인 동안 메시지를 보관합니다(최대 30일). 노드를 고르면 오프라인 상대에게 보내는 메시지가 그 노드를 거치고, 나에게 온 메시지를 그 노드에서 받을 수 있습니다.',
+        empty: '아직 알린 전달 노드가 없습니다.',
+        chosen: '선택됨',
+        use: '사용',
+        syncing: '메시지를 받는 중…',
+        failed: '전달 노드가 응답하지 않았습니다.',
+        done: '메시지 {n}개를 받았습니다',
+      },
+    },
     chat: {
       connect: '연결',
       errors: {
@@ -1789,6 +1857,10 @@ export default {
       room: '방: 방 서버가 메시지를 저장하고 전달합니다. 암호화는 MeshCore 개인 메시지와 같습니다',
       roomShort: '방',
       roomDelivered: '방이 메시지를 받았습니다',
+      lxmfEncryption: 'Reticulum 종단 간 암호화: 키는 앱에 있음',
+      lxmfShort: 'Reticulum',
+      lxmfSent: '네트워크로 보냄',
+      lxmfDelivered: '상대방 기기가 수신을 확인했습니다',
     },
     errors: {
       generic: '실패했습니다 ({code}).',
@@ -1844,6 +1916,9 @@ export default {
       rebooted: '무전기가 다시 시작했습니다.',
       login_timeout: '방이 응답하지 않습니다. 비밀번호가 틀렸거나 방이 무전을 듣지 못합니다.',
       login_failed: '방이 입장을 거부했습니다.',
+      no_account_key: '계정 키가 없습니다. 다시 로그인하세요.',
+      rns_not_running: 'Reticulum 노드가 실행 중이 아닙니다.',
+      rns_error: 'Reticulum 오류입니다.',
     },
   },
   hotkeys: {

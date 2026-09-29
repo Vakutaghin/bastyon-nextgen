@@ -157,8 +157,71 @@ declare global {
   }
 }
 
+/** Кто отвечает на команды Tauri: поддельное радио или узел Reticulum. */
+interface Bridge {
+  invoke(cmd: string, args: Record<string, unknown>): Promise<{ value?: unknown; error?: string }>
+}
+
+/**
+ * Узел Reticulum вместо `rns_*` (src-tauri/src/rns): стек заменён, логика
+ * страницы, сторов и мессенджера — настоящая. События — из теста.
+ */
+class RnsBridge implements Bridge {
+  static readonly ADDRESS = 'a1'.repeat(16)
+  private channel: number | null = null
+  private index = 0
+  private nextId = 1
+  readonly sent: Array<{ id: string; to: string; content: string }> = []
+
+  constructor(private readonly page: Page) {}
+
+  emit(event: Record<string, unknown>): void {
+    if (this.channel === null) return
+    const [c, i] = [this.channel, this.index++]
+    void this.page
+      .evaluate(([ch, ix, m]) => window.__meshDeliver?.(ch as number, ix as number, m), [
+        c,
+        i,
+        event,
+      ] as const)
+      .catch(() => {})
+  }
+
+  async invoke(
+    cmd: string,
+    args: Record<string, unknown>
+  ): Promise<{ value?: unknown; error?: string }> {
+    switch (cmd) {
+      case 'rns_start':
+        this.channel = (args.onEvent as { __channel: number }).__channel
+        return { value: { address: RnsBridge.ADDRESS, identityHash: 'b2'.repeat(16) } }
+      case 'rns_status':
+        return {
+          value: {
+            running: true,
+            interfaces: [{ name: 'LAN', kind: 'auto', online: true, rxBytes: 0, txBytes: 0 }],
+            paths: 1,
+            propagationNode: null,
+          },
+        }
+      case 'rns_send': {
+        const id = `lxm-${this.nextId++}`
+        this.sent.push({ id, to: args.to as string, content: args.content as string })
+        return { value: { id } }
+      }
+      case 'rns_stop':
+      case 'rns_announce':
+      case 'rns_set_propagation_node':
+      case 'rns_sync':
+        return { value: null }
+      default:
+        return { error: `not_mocked: ${cmd}` }
+    }
+  }
+}
+
 /** Подменить Tauri: команды — в тест, Channel — через transformCallback. */
-async function installTauriMock(page: Page, bridge: RadioBridge): Promise<void> {
+async function installTauriMock(page: Page, bridge: Bridge): Promise<void> {
   await page.exposeFunction('__meshBridge', (cmd: string, args: string) =>
     bridge.invoke(cmd, JSON.parse(args) as Record<string, unknown>)
   )
@@ -381,4 +444,75 @@ test('meshtastic: set up a new radio, chat with a node, get a reply and a reacti
   await expect(page.getByTitle('Сообщение услышали и передали дальше')).toBeVisible()
 
   await bobSession.close()
+})
+
+test.describe('reticulum', () => {
+  // Свой узел есть в десктопе на macOS и Linux; профиль «Desktop Chrome» —
+  // это Windows, где узла нет.
+  test.use({
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+  })
+
+  test('start the node, meet a contact over LXMF, write and get an answer', async ({ page }) => {
+    test.setTimeout(120_000)
+    await useMockNode(page, DATA)
+    await page.goto('/')
+    await page.waitForSelector('#app > *', { timeout: 30_000 })
+    await page
+      .getByRole('button', { name: 'Понятно' })
+      .click({ timeout: 5_000 })
+      .catch(() => {})
+    await signIn(page)
+    const rns = new RnsBridge(page)
+    await installTauriMock(page, rns)
+    await goTo(page, '/mesh?net=reticulum')
+
+    // Свой узел: адрес для собеседников.
+    await expect(page.getByRole('tab', { name: 'Reticulum' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    await page.getByRole('button', { name: 'Запустить' }).click()
+    await expect(page.getByText(RnsBridge.ADDRESS)).toBeVisible()
+    await expect(page.getByText('на связи 1 из 1')).toBeVisible()
+
+    // Боб объявился в сети — он в собеседниках.
+    const BOB = 'c3'.repeat(16)
+    rns.emit({
+      kind: 'announce',
+      aspect: 'lxmf.delivery',
+      dest: BOB,
+      identity: 'd4'.repeat(16),
+      name: 'Боб',
+      hops: 1,
+    })
+    const bobRow = page.getByRole('listitem').filter({ hasText: 'Боб' })
+    await expect(bobRow).toContainText('1 хоп')
+
+    // Чат: сквозное шифрование, отправка и подтверждение.
+    await bobRow.getByRole('button', { name: 'Написать' }).click()
+    await expect(page.getByText('сквозное шифрование Reticulum: ключи в приложении')).toBeVisible()
+    const input = page.getByPlaceholder('Сообщение по радио')
+    await input.fill('Привет по Reticulum')
+    await input.press('Enter')
+    await expect
+      .poll(() => rns.sent.map((m) => [m.to, m.content]))
+      .toEqual([[BOB, 'Привет по Reticulum']])
+    rns.emit({ kind: 'state', id: rns.sent[0]!.id, state: 'delivered' })
+    await expect(page.getByTitle('Устройство собеседника подтвердило получение')).toBeVisible()
+
+    // Ответ Боба приходит в тот же чат.
+    rns.emit({
+      kind: 'message',
+      id: 'from-bob-1',
+      from: BOB,
+      title: '',
+      content: 'Слышу тебя через Reticulum',
+      timestamp: 1_790_000_000,
+      signed: true,
+      method: 'direct',
+    })
+    await expect(page.getByText('Слышу тебя через Reticulum')).toBeVisible()
+  })
 })

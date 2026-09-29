@@ -1585,6 +1585,10 @@ export default {
         'Das verbreitetste LoRa-Mesh-Netz. Knoten leiten Nachrichten füreinander weiter; Direktnachrichten werden mit Knotenschlüsseln verschlüsselt.',
       meshcoreLead:
         'Ein Netz mit Weiterleitung über Repeater: Nachrichten folgen einem gefundenen Pfad, statt an alle zu gehen. Braucht die Companion-Firmware.',
+      reticulum: 'Reticulum',
+      lxmf: 'Reticulum',
+      reticulumLead:
+        'Ein Netz über beliebige Verbindungen – LoRa-Funk (RNode), das lokale Netz und Hubs im Internet. Die Schlüssel bleiben in der App, Chats sind Ende-zu-Ende verschlüsselt, und deine Adresse stammt aus deiner Mnemonik.',
     },
     status: {
       idle: 'Nicht verbunden',
@@ -1794,6 +1798,70 @@ export default {
         linkNothing: 'Diese Kanäle sind schon auf dem Funkgerät.',
       },
     },
+    rns: {
+      status: {
+        idle: 'Knoten gestoppt',
+        starting: 'Start…',
+        running: 'Knoten läuft',
+        stopping: 'Stopp…',
+      },
+      node: {
+        title: 'Mein Knoten',
+        start: 'Starten',
+        stop: 'Stoppen',
+        lead: 'Der Reticulum-Knoten läuft direkt in der App. Solange er läuft, kann man dir an deine Adresse schreiben.',
+        torNote:
+          'Der Tor-Modus ist an: Internet-Hubs und das lokale Netz sind aus, damit deine Adresse verborgen bleibt. Nur Funk (RNode) funktioniert.',
+        address: 'Adresse',
+        addressCopied: 'Adresse kopiert. Gib sie deinem Gegenüber – darüber schreibt man dir.',
+        interfaces: 'Schnittstellen',
+        noInterfaces: 'keine – füge einen Hub, das lokale Netz oder ein RNode hinzu',
+        interfacesValue: '{online} von {total} verbunden',
+        name: 'Name für andere',
+        announce: 'Ankündigen',
+        announceHint:
+          'Eine Ankündigung teilt dem Netz deine Adresse und deinen Namen mit – danach findet man dich in den Kontaktlisten.',
+        autostart: 'Knoten bei der Anmeldung starten',
+      },
+      ifaces: {
+        title: 'Schnittstellen',
+        empty: 'Keine Schnittstellen: Der Knoten ist mit niemandem verbunden.',
+        lan: 'Lokales Netz',
+        lanHint: 'Findet Reticulum-Knoten in deinem WLAN (AutoInterface).',
+        hub: 'Community-Hub',
+        hubHint:
+          'Adresse eines Reticulum-Hubs im Internet (TCP) – frag in der Community danach. Über einen Hub hören dich Knoten weltweit.',
+        hubKind: 'TCP-Hub',
+        lanKind: 'lokales Netz',
+        rnode: 'RNode über USB',
+        rnodeHint:
+          'Eine LoRa-Platine mit RNode-Firmware. Frequenz und Parameter müssen zum Netz um dich herum passen.',
+        serialPort: 'Port',
+        choosePort: 'Port wählen',
+        frequency: 'MHz',
+        bandwidth: 'kHz',
+        txPower: 'dBm',
+      },
+      peers: {
+        title: 'Kontakte',
+        empty:
+          'Noch hat sich niemand angekündigt. Knoten erscheinen hier, wenn sie sich im Netz ankündigen.',
+        byAddress: 'An Adresse schreiben',
+        byAddressHint: 'Füge die LXMF-Adresse deines Gegenübers ein – 32 Zeichen.',
+        addressPlaceholder: 'LXMF-Adresse',
+      },
+      propagation: {
+        title: 'Zustellknoten',
+        sync: 'Nachrichten abholen',
+        lead: 'Bewahrt Nachrichten auf, solange der Empfänger offline ist (bis zu 30 Tage). Wähle einen Knoten: Nachrichten an Offline-Empfänger laufen über ihn, und du kannst dort Nachrichten an dich abholen.',
+        empty: 'Noch hat sich kein Zustellknoten angekündigt.',
+        chosen: 'gewählt',
+        use: 'Verwenden',
+        syncing: 'Hole Nachrichten…',
+        failed: 'Der Zustellknoten hat nicht geantwortet.',
+        done: '{n} Nachricht erhalten | {n} Nachrichten erhalten',
+      },
+    },
     chat: {
       connect: 'Verbinden',
       errors: {
@@ -1823,6 +1891,10 @@ export default {
       room: 'Raum: Ein Raum-Server speichert und verteilt die Nachrichten; Verschlüsselung wie bei MeshCore-Direktnachrichten',
       roomShort: 'Raum',
       roomDelivered: 'Der Raum hat die Nachricht angenommen',
+      lxmfEncryption: 'Reticulum-Ende-zu-Ende-Verschlüsselung: Schlüssel in der App',
+      lxmfShort: 'Reticulum',
+      lxmfSent: 'Ins Netz gesendet',
+      lxmfDelivered: 'Das Gerät des Empfängers hat den Empfang bestätigt',
     },
     errors: {
       generic: 'Das hat nicht geklappt ({code}).',
@@ -1880,6 +1952,9 @@ export default {
       login_timeout:
         'Der Raum hat nicht geantwortet: Das Passwort passte nicht oder er hört das Funkgerät nicht.',
       login_failed: 'Der Raum hat die Anmeldung abgelehnt.',
+      no_account_key: 'Kein Kontoschlüssel: melde dich erneut an.',
+      rns_not_running: 'Der Reticulum-Knoten läuft nicht.',
+      rns_error: 'Reticulum-Fehler.',
     },
   },
   hotkeys: {

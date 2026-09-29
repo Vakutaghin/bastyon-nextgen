@@ -139,7 +139,7 @@ export interface MeshDialogRecord {
    */
   id: string
   account: string
-  network: 'meshcore' | 'meshtastic'
+  network: 'meshcore' | 'meshtastic' | 'lxmf'
   /** Свой узел (hex): у каждого радио своя переписка. MeshCore — 6 байт ключа, Meshtastic — номер. */
   selfKey: string
   /** room — комната MeshCore (room server): пишут в неё разные люди. */
@@ -196,4 +196,6 @@ export interface MeshMessageRecord {
   pki?: boolean
   /** Кто-то ретранслировал, но получатель ещё не подтвердил. */
   relayed?: boolean
+  /** LXMF: id сообщения (хэш), по нему приходят статусы доставки. */
+  lxmfId?: string
 }

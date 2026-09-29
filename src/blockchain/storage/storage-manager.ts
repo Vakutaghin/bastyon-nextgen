@@ -20,6 +20,7 @@ import {
   MESSENGER_KEY_PINS_PREFIX,
   MESSENGER_DIALOGS_PREFIX,
   MESH_LAST_DEVICE_PREFIX,
+  RNS_CONFIG_PREFIX,
   BACKUP_VERIFIED_PREFIX,
   BACKUP_NUDGED_AT_KEY,
   PEERTUBE_TOKEN_PREFIX,
@@ -110,6 +111,7 @@ export function clearAllUserData(): void {
         MESSENGER_KEY_PINS_PREFIX,
         MESSENGER_DIALOGS_PREFIX,
         MESH_LAST_DEVICE_PREFIX,
+        RNS_CONFIG_PREFIX,
         BACKUP_VERIFIED_PREFIX,
         PEERTUBE_TOKEN_PREFIX,
         PEERTUBE_RESUME_PREFIX,
@@ -167,6 +169,7 @@ export function clearAccountScopedLocalData(address: Address): void {
     removeLocalKeysWithPrefix(`${COMMENT_DRAFT_PREFIX}${address}:`)
     localStorage.removeItem(`${MESSENGER_DIALOGS_PREFIX}${address}`)
     localStorage.removeItem(`${MESH_LAST_DEVICE_PREFIX}${address}`)
+    localStorage.removeItem(`${RNS_CONFIG_PREFIX}${address}`)
   } catch {
     /* ignore */
   }

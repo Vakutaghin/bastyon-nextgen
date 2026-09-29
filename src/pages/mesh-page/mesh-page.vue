@@ -39,6 +39,16 @@
           </template>
         </template>
 
+        <template v-else-if="network === 'reticulum'">
+          <SC_MeshNote>{{ t('mesh.networks.reticulumLead') }}</SC_MeshNote>
+          <RnsNodeCard />
+          <template v-if="rns.status === 'running'">
+            <RnsPeers />
+            <RnsPropagation />
+          </template>
+          <RnsInterfaces />
+        </template>
+
         <template v-else>
           <SC_MeshNote>{{ t('mesh.networks.meshcoreLead') }}</SC_MeshNote>
           <MeshDeviceCard v-if="mc.status === 'connected'" />
@@ -63,10 +73,14 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import type { MeshNetwork } from '@/mesh/ids'
 import { radioAvailability } from '@/mesh/radio/open-link'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
 import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
+import { useReticulumStore } from '@/mesh/store/reticulum-store'
+import RnsInterfaces from './rns-interfaces.vue'
+import RnsNodeCard from './rns-node-card.vue'
+import RnsPeers from './rns-peers.vue'
+import RnsPropagation from './rns-propagation.vue'
 import MeshChannels from './mesh-channels.vue'
 import MeshConnectPanel from './mesh-connect-panel.vue'
 import MeshContacts from './mesh-contacts.vue'
@@ -92,27 +106,48 @@ const route = useRoute()
 const router = useRouter()
 const mt = useMeshtasticConnectionStore()
 const mc = useMeshConnectionStore()
+const rns = useReticulumStore()
+
+/** Вкладки: радио-сети и Reticulum (он — только там, где есть свой узел). */
+type Tab = 'meshtastic' | 'meshcore' | 'reticulum'
 const availability = radioAvailability()
 
 /** Вкладка — из адреса (`?net=meshcore`); без неё — та сеть, где радио уже на связи. */
-const network = computed<MeshNetwork>(() => {
+const network = computed<Tab>(() => {
   const q = route.query.net
   if (q === 'meshcore' || q === 'meshtastic') return q
+  if (q === 'reticulum' && rns.available) return q
   return mc.status !== 'idle' && mt.status === 'idle' ? 'meshcore' : 'meshtastic'
 })
 
-function select(next: MeshNetwork): void {
+function select(next: Tab): void {
   if (next !== network.value) void router.replace({ query: { ...route.query, net: next } })
 }
 
 const networks = computed(() => [
   { id: 'meshtastic' as const, label: t('mesh.networks.meshtastic'), status: mt.status },
   { id: 'meshcore' as const, label: t('mesh.networks.meshcore'), status: mc.status },
+  ...(rns.available
+    ? [
+        {
+          id: 'reticulum' as const,
+          label: t('mesh.networks.reticulum'),
+          status:
+            rns.status === 'running' ? 'connected' : rns.status === 'idle' ? 'idle' : 'connecting',
+        },
+      ]
+    : []),
 ])
 
-const status = computed(() => (network.value === 'meshtastic' ? mt.status : mc.status))
+const status = computed(() => {
+  if (network.value === 'reticulum') {
+    return rns.status === 'running' ? 'connected' : rns.status === 'idle' ? 'idle' : 'connecting'
+  }
+  return network.value === 'meshtastic' ? mt.status : mc.status
+})
 
 const statusText = computed<string>(() => {
+  if (network.value === 'reticulum') return t(`mesh.rns.status.${rns.status}`)
   const store = network.value === 'meshtastic' ? mt : mc
   if (network.value === 'meshtastic' && mt.rebooting && mt.status !== 'connected') {
     return t('mesh.mt.device.rebooting')
@@ -124,5 +159,6 @@ const statusText = computed<string>(() => {
 onMounted(() => {
   mt.refreshLastDevice()
   mc.refreshLastDevice()
+  rns.ensureConfig()
 })
 </script>

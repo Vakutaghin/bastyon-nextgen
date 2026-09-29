@@ -86,6 +86,7 @@ import { parseMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
 import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
+import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { utf8Length } from '@/mesh/bytes'
 import { splitForMesh } from '@/mesh/text'
 import MessageList from '../message-list/message-list.vue'
@@ -124,6 +125,7 @@ const router = useRouter()
 const meshChat = useMeshChatStore()
 const meshcore = useMeshConnectionStore()
 const meshtastic = useMeshtasticConnectionStore()
+const reticulum = useReticulumStore()
 const ui = useMessengerUiStore()
 
 const network = computed(() => parseMeshDialogId(props.dialogId)?.network ?? 'meshcore')
@@ -143,6 +145,7 @@ const isOpenChannel = computed(
  */
 const securityText = computed<string>(() => {
   const d = dialog.value
+  if (network.value === 'lxmf') return t('mesh.chat.lxmfEncryption')
   if (d?.kind === 'room') return t('mesh.chat.room')
   if (!d || d.kind === 'direct') {
     return network.value === 'meshtastic'
@@ -155,6 +158,11 @@ const securityText = computed<string>(() => {
 const canSend = computed(() => meshChat.canSend(props.dialogId))
 
 const radioStateText = computed<string>(() => {
+  if (network.value === 'lxmf') {
+    return reticulum.status === 'running'
+      ? t('mesh.chat.otherRadio')
+      : t('mesh.errors.rns_not_running')
+  }
   const status = connection.value.status
   if (status === 'connecting' || status === 'reconnecting') return t(`mesh.status.${status}`)
   if (status !== 'connected') return t('mesh.chat.noRadio')
@@ -245,7 +253,8 @@ function onKeydown(e: KeyboardEvent): void {
 }
 
 function goToMesh(): void {
-  void router.push({ path: '/mesh', query: { net: network.value } })
+  const net = network.value === 'lxmf' ? 'reticulum' : network.value
+  void router.push({ path: '/mesh', query: { net } })
 }
 
 async function open(): Promise<void> {

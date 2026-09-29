@@ -1,5 +1,5 @@
 ---
-keywords: [mesh, Meshtastic, MeshCore, LoRa, radio, without internet, offline chat, companion, region, preset, LongFast, node, node key, channel, channel link, hashtag channel, private channel]
+keywords: [mesh, Meshtastic, MeshCore, Reticulum, LXMF, RNode, propagation node, LoRa, radio, without internet, offline chat, companion, region, preset, LongFast, node, node key, channel, channel link, hashtag channel, private channel]
 ---
 
 # Chatting over radio (mesh)
@@ -98,6 +98,37 @@ A room does not reject a wrong password — it stays silent, and an error appear
 - **Hashtag channel** — a topic channel like `#city`. Its key is derived from the name, so it is open too.
 - **Private channel** — the key is random; give it to members in person (the **Key** button copies it) or paste a key you were given.
 
+## Reticulum
+
+Reticulum is a network that runs over any links: LoRa radios with RNode firmware, your local network and community hubs on the internet. Its chats (LXMF) are **end-to-end encrypted with keys in the app**, not on a radio — the only one of the three networks where a chat gets real Bastyon protection. It is available in the app for macOS and Linux.
+
+### Your node and address
+
+On the **Reticulum** tab click **Start**. The node runs right in the app; while it runs, people can write to you. Your address (32 characters) comes from your account mnemonic: restore the account on another computer and the address is the same. Copy it with the button next to it and give it to the other person.
+
+**Announce** tells the network your address and name, so people find you in their contact lists. Change the name under **Name for others**.
+
+To bring the node up by itself when you sign in, tick **Start the node when signing in**. The node remembers contacts from earlier runs.
+
+### Interfaces
+
+The node reaches others through interfaces, and several can be on at once:
+
+- **Local network** — finds Reticulum nodes on your Wi-Fi network.
+- **Community hub** — a hub address on the internet (TCP); through it, nodes all over the world can hear you. Ask the Reticulum community for one.
+- **RNode over USB** — a LoRa board with RNode firmware: radio links without the internet. The frequency and settings must match the network around you.
+
+If the hub was unreachable or the RNode was not plugged in when the node started, the node restarts by itself in a minute, then less often, and picks them up once they appear.
+
+> [!NOTE]
+> In Tor mode hubs and the local network are switched off so your address is not exposed: only RNode works.
+
+### Contacts and propagation node
+
+**Contacts** lists everyone who announced themselves on the network; **Message** opens a chat. You can also write to an address someone gave you.
+
+If the other person is offline, a message can wait for them on a **propagation node** (up to 30 days). Choose a node from the list: messages to offline people go through it, and **Get messages** collects the messages sent to you.
+
 ## Writing
 
 Click **Message** next to a node or contact, or **Open** next to a channel: the chat opens in the messenger. New messages over the radio arrive in the messenger by themselves, with a sound and a notification, like ordinary ones.
@@ -135,7 +166,7 @@ That is why these chats have no Bastyon lock: the chat says how the messages are
 - History is kept only in the app: the radio hands a message over and forgets it. While the app is not connected, the radio keeps only the latest incoming messages (up to 32 for Meshtastic, usually 16 for MeshCore) and loses them when switched off.
 - Chats are tied to the account and to the radio: another account or another radio has its own.
 - Signing out deletes this history from the computer.
-- Reticulum is not supported yet — it is planned.
+- Reticulum works in the app for macOS and Linux; Windows and Android are planned.
 
 ## See also
 

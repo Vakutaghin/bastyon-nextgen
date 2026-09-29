@@ -1,0 +1,2019 @@
+//! Узел Reticulum: rns-net с интерфейсами из настроек и роутер LXMF поверх.
+//!
+//! Потоки: драйвер rns-net (колбэки), рабочий (jobs роутера, судьба исходящих,
+//! опрос интерфейсов, announce), отправка (штампы считаются секундами) и
+//! короткие потоки синхронизации с узлом доставки. Колбэки драйвера не делают
+//! синхронных запросов к узлу — драйвер ждал бы сам себя; всё, что требует
+//! узла, уходит в потоки.
+//!
+//! Link, которые модуль открывает сам (страницы NomadNet, синхронизация),
+//! роутеру не показываются: ответы на запросы сопоставляются по Link, поэтому
+//! на одном Link — один запрос за раз.
+
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt::Write as _;
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{mpsc, Arc, Condvar, Mutex, MutexGuard, Weak};
+use std::thread::{self, JoinHandle};
+use std::time::{Duration, Instant};
+
+use lxmf_core::announce;
+use lxmf_core::constants::{
+    DeliveryMethod, MessageState, Representation, DESTINATION_LENGTH, ENCRYPTED_PACKET_MDU,
+    ENCRYPTION_DESCRIPTION_EC, FIELD_AUDIO, FIELD_FILE_ATTACHMENTS, FIELD_IMAGE,
+    MESSAGE_GET_PATH, STAMP_SIZE, WORKBLOCK_EXPAND_ROUNDS, WORKBLOCK_EXPAND_ROUNDS_PN,
+};
+use lxmf_core::message;
+use lxmf_rs::router::{
+    now_timestamp, LxmDelivery, LxmRouter, LxmfCallbacks, OutboundMessage, RouterConfig,
+};
+use lxmf_rs::stamper::generate_stamp;
+use rns_core::msgpack::{self, Value};
+use rns_crypto::identity::Identity;
+use rns_crypto::sha256::sha256;
+use rns_crypto::OsRng;
+use rns_net::{
+    AnnouncedIdentity, Callbacks, DestHash, Destination, Event, IdentityHash, LinkId,
+    PacketHash, ProofStrategy, QueryRequest, QueryResponse, RnsNode, SendError,
+    TeardownReason,
+};
+
+use super::types::{
+    IfaceConfig, IfaceStatus, Method, Page, RnsEvent, StartOptions, Started, Status,
+};
+
+/// Шаг рабочего потока.
+const TICK: Duration = Duration::from_millis(250);
+/// Как часто гонять jobs роутера (у lxmd — 4 с; чаще — меньше ждать отправки).
+const JOBS_EVERY: Duration = Duration::from_secs(1);
+const IFACES_EVERY: Duration = Duration::from_secs(3);
+/// Повторный announce адреса; и при появлении связи, но не чаще MIN_REANNOUNCE.
+const ANNOUNCE_EVERY: Duration = Duration::from_secs(6 * 3600);
+const MIN_REANNOUNCE: Duration = Duration::from_secs(30);
+/// Известные узлу адреса показать интерфейсу чуть позже старта: к этому
+/// времени он уже знает свой адрес.
+const REPLAY_AFTER: Duration = Duration::from_secs(1);
+const PATH_TIMEOUT: Duration = Duration::from_secs(20);
+const LINK_TIMEOUT: Duration = Duration::from_secs(30);
+const PAGE_TIMEOUT: Duration = Duration::from_secs(60);
+const PAGE_LINK_IDLE: Duration = Duration::from_secs(300);
+const SYNC_LIST_TIMEOUT: Duration = Duration::from_secs(60);
+const SYNC_GET_TIMEOUT: Duration = Duration::from_secs(180);
+/// Сколько id сообщений класть в один запрос /get: запрос уходит одним
+/// пакетом Link, а не ресурсом.
+const IDS_PER_REQUEST: usize = 5;
+/// Дороже этого штамп считать не берёмся (минуты работы процессора).
+const MAX_STAMP_COST: u8 = 20;
+
+const LXMF: &str = "lxmf";
+const NOMADNET: &str = "nomadnetwork";
+const ASPECT_DELIVERY: &str = "lxmf.delivery";
+const ASPECT_PROPAGATION: &str = "lxmf.propagation";
+const ASPECT_NOMADNET: &str = "nomadnetwork.node";
+
+type Sink = Box<dyn Fn(RnsEvent) + Send + Sync>;
+
+fn err(code: &str) -> String {
+    code.to_string()
+}
+
+fn not_running(_: SendError) -> String {
+    err("rns_not_running")
+}
+
+/// Хэш identity (адрес «узла» в терминах RNS) по 64 байтам приватного ключа.
+pub fn identity_hash(prv: &[u8]) -> Result<String, String> {
+    let key: [u8; 64] = prv
+        .try_into()
+        .map_err(|_| err("rns_error: identity must be 64 bytes"))?;
+    Ok(hex::encode(Identity::from_private_key(&key).hash()))
+}
+
+fn dest_hash(app: &str, aspects: &[&str], identity: &[u8; 16]) -> [u8; 16] {
+    rns_core::destination::destination_hash(app, aspects, Some(identity))
+}
+
+fn delivery_hash_of(identity: &[u8; 16]) -> [u8; 16] {
+    dest_hash(LXMF, &["delivery"], identity)
+}
+
+/// Какой из знакомых нам аспектов объявил этот адрес.
+fn aspect_of(dest: &[u8; 16], identity: &[u8; 16]) -> Option<&'static str> {
+    if *dest == delivery_hash_of(identity) {
+        Some(ASPECT_DELIVERY)
+    } else if *dest == dest_hash(LXMF, &["propagation"], identity) {
+        Some(ASPECT_PROPAGATION)
+    } else if *dest == dest_hash(NOMADNET, &["node"], identity) {
+        Some(ASPECT_NOMADNET)
+    } else {
+        None
+    }
+}
+
+/// Событие announce для интерфейса и, для узла доставки, стоимость его штампа.
+fn peer_event(
+    dest: [u8; 16],
+    identity: [u8; 16],
+    app_data: Option<&[u8]>,
+    hops: u8,
+    heard: f64,
+) -> Option<(RnsEvent, Option<u8>)> {
+    let aspect = aspect_of(&dest, &identity)?;
+    let mut pn_cost = None;
+    let name = match aspect {
+        ASPECT_DELIVERY => app_data.and_then(announce::display_name_from_app_data),
+        ASPECT_PROPAGATION => {
+            let data = app_data?;
+            let info = announce::parse_pn_announce_data(data)?;
+            // Узел, который сейчас не принимает сообщения, не предлагать.
+            if !info.propagation_enabled {
+                return None;
+            }
+            pn_cost = Some(info.propagation_stamp_cost);
+            announce::pn_name_from_app_data(data)
+        }
+        _ => app_data
+            .and_then(|d| std::str::from_utf8(d).ok())
+            .map(|s| s.to_string()),
+    }
+    .map(|n| n.replace('\0', "").trim().to_string())
+    .filter(|n| !n.is_empty());
+    Some((
+        RnsEvent::Announce {
+            aspect: aspect.to_string(),
+            dest: hex::encode(dest),
+            identity: hex::encode(identity),
+            name,
+            hops: Some(hops),
+            heard: Some(heard),
+        },
+        pn_cost,
+    ))
+}
+
+fn method_name(m: DeliveryMethod) -> &'static str {
+    match m {
+        DeliveryMethod::Opportunistic => "opportunistic",
+        DeliveryMethod::Direct => "direct",
+        DeliveryMethod::Propagated => "propagated",
+        DeliveryMethod::Paper => "paper",
+    }
+}
+
+fn state_name(s: MessageState) -> &'static str {
+    match s {
+        MessageState::Generating | MessageState::Outbound | MessageState::Sending => "sending",
+        MessageState::Sent => "sent",
+        MessageState::Delivered => "delivered",
+        MessageState::Rejected | MessageState::Cancelled | MessageState::Failed => "failed",
+    }
+}
+
+/// Вложения (картинка, голос, файлы) текстом не показать — отмечаем значком.
+fn attachment_marks(fields: &[(Value, Value)]) -> String {
+    let mut marks = String::new();
+    for (key, value) in fields {
+        match key.as_uint().map(|k| k as u8) {
+            Some(FIELD_IMAGE) => marks.push('🖼'),
+            Some(FIELD_AUDIO) => marks.push('🎤'),
+            Some(FIELD_FILE_ATTACHMENTS) => {
+                let count = value.as_array().map_or(1, |a| a.len().max(1));
+                for _ in 0..count {
+                    marks.push('📎');
+                }
+            }
+            _ => {}
+        }
+    }
+    marks
+}
+
+fn message_event(d: &LxmDelivery) -> RnsEvent {
+    let mut content = String::from_utf8_lossy(&d.content).into_owned();
+    let marks = attachment_marks(&d.fields);
+    if !marks.is_empty() {
+        if !content.is_empty() {
+            content.push('\n');
+        }
+        content.push_str(&marks);
+    }
+    RnsEvent::Message {
+        id: hex::encode(d.message_hash),
+        from: hex::encode(d.source_hash),
+        title: String::from_utf8_lossy(&d.title).into_owned(),
+        content,
+        timestamp: d.timestamp,
+        signed: d.signature_valid == Some(true),
+        method: method_name(d.method).to_string(),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Конфиг rns-net
+
+fn valid_host(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 253
+        && s
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | ':' | '_' | '%'))
+}
+
+fn valid_port_path(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 200
+        && s
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '/' | ':' | '\\'))
+}
+
+/// Текст конфига в формате Python RNS. Значения проверяются: конфиг умеет
+/// PipeInterface, который запускает команды, — подмешать секцию нельзя.
+pub(crate) fn config_text(ifaces: &[IfaceConfig]) -> Result<String, String> {
+    let mut out = String::from(
+        "[reticulum]\n  enable_transport = No\n  share_instance = No\n  panic_on_interface_error = No\n\n[logging]\n  loglevel = 2\n\n[interfaces]\n",
+    );
+    let mut seen = HashSet::new();
+    for iface in ifaces {
+        let name = iface.name();
+        if !seen.insert(name.clone()) {
+            continue;
+        }
+        match iface {
+            IfaceConfig::Tcp { host, port } => {
+                if !valid_host(host) || *port == 0 {
+                    return Err(format!("bad_interface: {name}"));
+                }
+                let _ = write!(
+                    out,
+                    "  [[{name}]]\n    type = TCPClientInterface\n    enabled = yes\n    target_host = {host}\n    target_port = {port}\n"
+                );
+            }
+            IfaceConfig::Auto => {
+                let _ = write!(
+                    out,
+                    "  [[{name}]]\n    type = AutoInterface\n    enabled = yes\n"
+                );
+            }
+            IfaceConfig::Rnode {
+                port,
+                frequency,
+                bandwidth,
+                spreading_factor,
+                coding_rate,
+                tx_power,
+            } => {
+                let ok = valid_port_path(port)
+                    && (100_000_000..=3_000_000_000).contains(frequency)
+                    && (7_800..=1_625_000).contains(bandwidth)
+                    && (5..=12).contains(spreading_factor)
+                    && (5..=8).contains(coding_rate)
+                    && (-9..=37).contains(tx_power);
+                if !ok {
+                    return Err(format!("bad_interface: {name}"));
+                }
+                let _ = write!(
+                    out,
+                    "  [[{name}]]\n    type = RNodeInterface\n    enabled = yes\n    port = {port}\n    frequency = {frequency}\n    bandwidth = {bandwidth}\n    txpower = {tx_power}\n    spreadingfactor = {spreading_factor}\n    codingrate = {coding_rate}\n"
+                );
+            }
+        }
+    }
+    Ok(out)
+}
+
+// ---------------------------------------------------------------------------
+// Общее состояние колбэков и потоков
+
+/// Link, которые модуль открыл сам, и что с ними происходит.
+#[derive(Default)]
+struct LinkBook {
+    watched: HashSet<[u8; 16]>,
+    /// Установленные исходящие Link — все, не только свои: Link может
+    /// установиться раньше, чем его id вернётся из create_link.
+    established: HashSet<[u8; 16]>,
+    closed: HashSet<[u8; 16]>,
+    responses: HashMap<[u8; 16], VecDeque<Vec<u8>>>,
+}
+
+struct Hub {
+    sink: Sink,
+    running: AtomicBool,
+    book: Mutex<LinkBook>,
+    cv: Condvar,
+    /// Стоимость штампа узлов доставки — из их announce.
+    pn_costs: Mutex<HashMap<[u8; 16], u8>>,
+}
+
+impl Hub {
+    fn emit(&self, ev: RnsEvent) {
+        (self.sink)(ev);
+    }
+
+    fn book(&self) -> MutexGuard<'_, LinkBook> {
+        self.book.lock().unwrap_or_else(|p| p.into_inner())
+    }
+
+    fn watch(&self, link: [u8; 16]) {
+        self.book().watched.insert(link);
+    }
+
+    fn unwatch(&self, link: &[u8; 16]) {
+        let mut book = self.book();
+        book.watched.remove(link);
+        book.closed.remove(link);
+        book.responses.remove(link);
+    }
+
+    fn wait<T>(
+        &self,
+        timeout: Duration,
+        mut check: impl FnMut(&mut LinkBook) -> Option<T>,
+    ) -> Option<T> {
+        let deadline = Instant::now() + timeout;
+        let mut book = self.book();
+        loop {
+            if let Some(v) = check(&mut book) {
+                return Some(v);
+            }
+            let now = Instant::now();
+            if now >= deadline || !self.running.load(Ordering::SeqCst) {
+                return None;
+            }
+            let step = (deadline - now).min(Duration::from_millis(500));
+            book = self
+                .cv
+                .wait_timeout(book, step)
+                .unwrap_or_else(|p| p.into_inner())
+                .0;
+        }
+    }
+
+    /// Some(true) — установлен, Some(false) — закрылся, None — не дождались.
+    fn wait_established(&self, link: [u8; 16], timeout: Duration) -> Option<bool> {
+        self.wait(timeout, |b| {
+            if b.established.contains(&link) {
+                Some(true)
+            } else if b.closed.contains(&link) {
+                Some(false)
+            } else {
+                None
+            }
+        })
+    }
+
+    /// Ok — ответ (msgpack), Err — Link закрылся, None — не дождались.
+    fn wait_response(&self, link: [u8; 16], timeout: Duration) -> Option<Result<Vec<u8>, ()>> {
+        self.wait(timeout, |b| {
+            if let Some(r) = b.responses.get_mut(&link).and_then(|q| q.pop_front()) {
+                Some(Ok(r))
+            } else if b.closed.contains(&link) {
+                Some(Err(()))
+            } else {
+                None
+            }
+        })
+    }
+}
+
+/// Событие драйвера для роутера LXMF. `LxmfCallbacks` работает в своём потоке:
+/// в потоке драйвера он ждал бы блокировку роутера, пока `jobs()` под той же
+/// блокировкой ждёт ответа драйвера, — взаимная блокировка.
+enum Ev {
+    Announce(AnnouncedIdentity),
+    Path(DestHash, u8),
+    Local(DestHash, Vec<u8>, PacketHash),
+    LinkUp(LinkId, DestHash, f64, bool),
+    LinkDown(LinkId, Option<TeardownReason>),
+    Identified(LinkId, IdentityHash, [u8; 64]),
+    Resource(LinkId, Vec<u8>, Option<Vec<u8>>),
+    ResourceDone(LinkId),
+    ResourceFailed(LinkId, String),
+    ResourceProgress(LinkId, usize, usize),
+    ResourceAccepted(LinkId, Vec<u8>, u64),
+    Data(LinkId, u8, Vec<u8>),
+    Response(LinkId, [u8; 16], Vec<u8>, Option<Vec<u8>>),
+    Proof(DestHash, PacketHash, f64),
+}
+
+/// Поток колбэков роутера: заканчивается, когда драйвер останавливается и
+/// отпускает `Bridge` с отправителем.
+fn callbacks_loop(router: Arc<Mutex<LxmRouter>>, rx: mpsc::Receiver<Ev>) {
+    let mut lx = LxmfCallbacks::new(router.clone());
+    while let Ok(ev) = rx.recv() {
+        match ev {
+            Ev::Announce(a) => lx.on_announce(a),
+            Ev::Path(d, h) => lx.on_path_updated(d, h),
+            Ev::Local(d, raw, p) => lx.on_local_delivery(d, raw, p),
+            Ev::LinkUp(l, d, rtt, init) => lx.on_link_established(l, d, rtt, init),
+            Ev::LinkDown(l, r) => lx.on_link_closed(l, r),
+            Ev::Identified(l, h, k) => lx.on_remote_identified(l, h, k),
+            Ev::Resource(l, data, meta) => lx.on_resource_received(l, data, meta),
+            Ev::ResourceDone(l) => lx.on_resource_completed(l),
+            Ev::ResourceFailed(l, e) => lx.on_resource_failed(l, e),
+            Ev::ResourceProgress(l, r, t) => lx.on_resource_progress(l, r, t),
+            Ev::ResourceAccepted(l, hash, size) => {
+                lock(&router).track_inbound_delivery_resource(l.0, hash, size)
+            }
+            Ev::Data(l, c, data) => lx.on_link_data(l, c, data),
+            Ev::Response(l, id, data, meta) => lx.on_response_with_metadata(l, id, data, meta),
+            Ev::Proof(d, p, rtt) => lx.on_proof(d, p, rtt),
+        }
+    }
+}
+
+/// Колбэки драйвера. Сами ничего не ждут: события роутера — в его поток,
+/// события своих Link — в `LinkBook`, announce знакомых аспектов — интерфейсу.
+struct Bridge {
+    tx: mpsc::Sender<Ev>,
+    hub: Arc<Hub>,
+    own_delivery: [u8; 16],
+    /// Входящие Link → адрес, к которому они открыты: решать о приёме
+    /// ресурса нужно сразу, в потоке драйвера.
+    inbound: HashMap<[u8; 16], [u8; 16]>,
+    /// Предел размера входящего сообщения, байт.
+    delivery_limit: u64,
+}
+
+impl Bridge {
+    fn is_watched(&self, link: &LinkId) -> bool {
+        self.hub.book().watched.contains(&link.0)
+    }
+
+    fn forward(&self, ev: Ev) {
+        let _ = self.tx.send(ev);
+    }
+}
+
+impl Callbacks for Bridge {
+    fn on_announce(&mut self, a: AnnouncedIdentity) {
+        if a.dest_hash.0 != self.own_delivery {
+            if let Some((ev, pn_cost)) = peer_event(
+                a.dest_hash.0,
+                a.identity_hash.0,
+                a.app_data.as_deref(),
+                a.hops,
+                a.received_at,
+            ) {
+                if let Some(cost) = pn_cost {
+                    lock(&self.hub.pn_costs).insert(a.dest_hash.0, cost);
+                }
+                self.hub.emit(ev);
+            }
+        }
+        self.forward(Ev::Announce(a));
+    }
+
+    fn on_path_updated(&mut self, dest_hash: DestHash, hops: u8) {
+        self.forward(Ev::Path(dest_hash, hops));
+    }
+
+    fn on_local_delivery(&mut self, dest_hash: DestHash, raw: Vec<u8>, packet_hash: PacketHash) {
+        self.forward(Ev::Local(dest_hash, raw, packet_hash));
+    }
+
+    fn on_link_established(
+        &mut self,
+        link_id: LinkId,
+        dest_hash: DestHash,
+        rtt: f64,
+        is_initiator: bool,
+    ) {
+        let mine = {
+            let mut book = self.hub.book();
+            if is_initiator {
+                book.established.insert(link_id.0);
+            }
+            book.watched.contains(&link_id.0)
+        };
+        self.hub.cv.notify_all();
+        if !is_initiator {
+            self.inbound.insert(link_id.0, dest_hash.0);
+        }
+        if !mine {
+            self.forward(Ev::LinkUp(link_id, dest_hash, rtt, is_initiator));
+        }
+    }
+
+    fn on_link_closed(&mut self, link_id: LinkId, reason: Option<TeardownReason>) {
+        self.inbound.remove(&link_id.0);
+        let mine = {
+            let mut book = self.hub.book();
+            book.established.remove(&link_id.0);
+            let mine = book.watched.contains(&link_id.0);
+            if mine {
+                book.closed.insert(link_id.0);
+            }
+            mine
+        };
+        self.hub.cv.notify_all();
+        if !mine {
+            self.forward(Ev::LinkDown(link_id, reason));
+        }
+    }
+
+    fn on_remote_identified(
+        &mut self,
+        link_id: LinkId,
+        identity_hash: IdentityHash,
+        public_key: [u8; 64],
+    ) {
+        self.forward(Ev::Identified(link_id, identity_hash, public_key));
+    }
+
+    fn on_resource_received(&mut self, link_id: LinkId, data: Vec<u8>, metadata: Option<Vec<u8>>) {
+        if !self.is_watched(&link_id) {
+            self.forward(Ev::Resource(link_id, data, metadata));
+        }
+    }
+
+    fn on_resource_completed(&mut self, link_id: LinkId) {
+        if !self.is_watched(&link_id) {
+            self.forward(Ev::ResourceDone(link_id));
+        }
+    }
+
+    fn on_resource_failed(&mut self, link_id: LinkId, error: String) {
+        if !self.is_watched(&link_id) {
+            self.forward(Ev::ResourceFailed(link_id, error));
+        }
+    }
+
+    fn on_resource_progress(&mut self, link_id: LinkId, received: usize, total: usize) {
+        if !self.is_watched(&link_id) {
+            self.forward(Ev::ResourceProgress(link_id, received, total));
+        }
+    }
+
+    /// Ресурсом приходят только большие сообщения нам. Узлом доставки мы не
+    /// работаем — чужие ресурсы не принимаем. Ответы на свои запросы
+    /// принимаются драйвером сами, сюда не попадают.
+    fn on_resource_accept_query(
+        &mut self,
+        link_id: LinkId,
+        resource_hash: Vec<u8>,
+        transfer_size: u64,
+        _has_metadata: bool,
+    ) -> bool {
+        let accept = self.inbound.get(&link_id.0) == Some(&self.own_delivery)
+            && transfer_size <= self.delivery_limit;
+        if accept {
+            self.forward(Ev::ResourceAccepted(link_id, resource_hash, transfer_size));
+        }
+        accept
+    }
+
+    fn on_link_data(&mut self, link_id: LinkId, context: u8, data: Vec<u8>) {
+        self.forward(Ev::Data(link_id, context, data));
+    }
+
+    fn on_response(&mut self, link_id: LinkId, request_id: [u8; 16], data: Vec<u8>) {
+        self.on_response_with_metadata(link_id, request_id, data, None);
+    }
+
+    fn on_response_with_metadata(
+        &mut self,
+        link_id: LinkId,
+        request_id: [u8; 16],
+        data: Vec<u8>,
+        metadata: Option<Vec<u8>>,
+    ) {
+        let mut data = Some(data);
+        let mine = {
+            let mut book = self.hub.book();
+            let mine = book.watched.contains(&link_id.0);
+            if mine {
+                if let Some(d) = data.take() {
+                    book.responses.entry(link_id.0).or_default().push_back(d);
+                }
+            }
+            mine
+        };
+        if mine {
+            self.hub.cv.notify_all();
+        } else if let Some(d) = data {
+            self.forward(Ev::Response(link_id, request_id, d, metadata));
+        }
+    }
+
+    fn on_proof(&mut self, dest_hash: DestHash, packet_hash: PacketHash, rtt: f64) {
+        self.forward(Ev::Proof(dest_hash, packet_hash, rtt));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Исходящие
+
+/// Своё исходящее сообщение: что показано интерфейсу и как переслать, если
+/// прямая доставка не удалась.
+struct Tracked {
+    method: DeliveryMethod,
+    /// Способ «auto»: не дошло напрямую — через узел доставки.
+    fallback: bool,
+    state: &'static str,
+    job: SendJob,
+}
+
+#[derive(Clone)]
+struct SendJob {
+    id: [u8; 32],
+    dest: [u8; 16],
+    timestamp: f64,
+    title: String,
+    content: String,
+    method: DeliveryMethod,
+}
+
+/// Link к узлу NomadNet и когда им пользовались.
+type PageLink = ([u8; 16], Instant);
+
+struct Ctx {
+    hub: Arc<Hub>,
+    router: Arc<Mutex<LxmRouter>>,
+    node: Weak<RnsNode>,
+    identity: Identity,
+    delivery_hash: [u8; 16],
+    ifaces: Vec<IfaceConfig>,
+    send_tx: Mutex<mpsc::Sender<SendJob>>,
+    tracked: Mutex<HashMap<[u8; 32], Tracked>>,
+    sync_busy: AtomicBool,
+    /// Узел NomadNet → (Link, когда им пользовались).
+    page_links: Mutex<HashMap<[u8; 16], PageLink>>,
+    page_lock: Mutex<()>,
+    /// Флаг отмены штампа, который считается сейчас.
+    stamp_cancel: Mutex<Option<Arc<AtomicBool>>>,
+}
+
+fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(|p| p.into_inner())
+}
+
+impl Ctx {
+    fn node(&self) -> Result<Arc<RnsNode>, String> {
+        if !self.hub.running.load(Ordering::SeqCst) {
+            return Err(err("rns_not_running"));
+        }
+        self.node.upgrade().ok_or_else(|| err("rns_not_running"))
+    }
+
+    fn router(&self) -> MutexGuard<'_, LxmRouter> {
+        lock(&self.router)
+    }
+
+    fn announce(&self) {
+        self.router().announce_delivery(&self.identity);
+    }
+
+    /// Публичный ключ адресата: из кэша роутера или из известных узлу адресов
+    /// (после перезапуска кэш роутера пуст). Найденный кладётся в кэш роутера —
+    /// без него прямая доставка не откроет Link.
+    fn recall_key(&self, dest: [u8; 16]) -> Option<[u8; 64]> {
+        if let Some(key) = self.router().identity_cache.get(&dest).copied() {
+            return Some(key);
+        }
+        let known = self.node().ok()?.recall_identity(&DestHash(dest)).ok()??;
+        let mut router = self.router();
+        router.identity_cache.insert(dest, known.public_key);
+        router
+            .identity_hash_cache
+            .insert(dest, known.identity_hash.0);
+        Some(known.public_key)
+    }
+
+    fn await_path(&self, dest: [u8; 16], deadline: Instant) -> Result<(), String> {
+        let node = self.node()?;
+        if node.has_path(&DestHash(dest)).map_err(not_running)? {
+            return Ok(());
+        }
+        node.request_path(&DestHash(dest)).map_err(not_running)?;
+        drop(node);
+        while Instant::now() < deadline {
+            thread::sleep(TICK);
+            if self.node()?.has_path(&DestHash(dest)).map_err(not_running)? {
+                return Ok(());
+            }
+        }
+        Err(err("rns_no_path"))
+    }
+
+    /// Открыть свой Link к адресату и дождаться установки.
+    fn open_link(&self, dest: [u8; 16], timeout: Duration) -> Result<[u8; 16], String> {
+        let deadline = Instant::now() + timeout;
+        self.await_path(dest, deadline)?;
+        let node = self.node()?;
+        let known = node
+            .recall_identity(&DestHash(dest))
+            .map_err(not_running)?
+            .ok_or_else(|| err("rns_unknown_destination"))?;
+        let mut sig_pub = [0u8; 32];
+        sig_pub.copy_from_slice(&known.public_key[32..]);
+        let link = node
+            .create_link(dest, sig_pub)
+            .map_err(|_| err("rns_link_failed"))?;
+        self.hub.watch(link);
+        drop(node);
+        let left = deadline
+            .saturating_duration_since(Instant::now())
+            .max(Duration::from_secs(5));
+        match self.hub.wait_established(link, left) {
+            Some(true) => Ok(link),
+            outcome => {
+                if let Ok(node) = self.node() {
+                    let _ = node.teardown_link(link);
+                }
+                self.hub.unwatch(&link);
+                Err(err(if outcome.is_none() {
+                    "rns_timeout"
+                } else {
+                    "rns_link_failed"
+                }))
+            }
+        }
+    }
+
+    fn close_link(&self, link: [u8; 16]) {
+        if let Some(node) = self.node.upgrade() {
+            let _ = node.teardown_link(link);
+        }
+        self.hub.unwatch(&link);
+    }
+
+    fn request(&self, link: [u8; 16], path: &str, data: &Value) -> Result<(), String> {
+        self.node()?
+            .send_request(link, path, &msgpack::pack(data))
+            .map_err(not_running)
+    }
+
+    // --- отправка ---------------------------------------------------------
+
+    fn queue(&self, job: SendJob, fallback: bool) {
+        lock(&self.tracked).insert(
+            job.id,
+            Tracked {
+                method: job.method,
+                fallback,
+                state: "sending",
+                job: job.clone(),
+            },
+        );
+        let _ = lock(&self.send_tx).send(job);
+    }
+
+    fn sign_pack(&self, job: &SendJob, stamp: Option<&[u8]>) -> Result<message::PackResult, String> {
+        message::pack(
+            &job.dest,
+            &self.delivery_hash,
+            job.timestamp,
+            job.title.as_bytes(),
+            job.content.as_bytes(),
+            vec![],
+            stamp,
+            |data| {
+                self.identity
+                    .sign(data)
+                    .map_err(|_| message::Error::SignError)
+            },
+        )
+        .map_err(|e| format!("rns_error: {e:?}"))
+    }
+
+    fn stamp(&self, material: &[u8], cost: u8, rounds: u32) -> Result<[u8; STAMP_SIZE], String> {
+        if cost > MAX_STAMP_COST {
+            return Err(err("rns_stamp_too_expensive"));
+        }
+        let cancel = Arc::new(AtomicBool::new(false));
+        *lock(&self.stamp_cancel) = Some(cancel.clone());
+        let stamp = generate_stamp(material, cost, rounds, cancel);
+        *lock(&self.stamp_cancel) = None;
+        stamp
+            .map(|(s, _)| s)
+            .ok_or_else(|| err("rns_not_running"))
+    }
+
+    /// Стоимость штампа узла доставки: из announce; если его не слышали —
+    /// запросить путь (ответ несёт announce) и подождать.
+    fn pn_cost(&self, pn: [u8; 16]) -> Result<u8, String> {
+        let deadline = Instant::now() + PATH_TIMEOUT;
+        loop {
+            if let Some(cost) = lock(&self.hub.pn_costs).get(&pn).copied() {
+                return Ok(cost);
+            }
+            let known = self.node()?.recall_identity(&DestHash(pn)).map_err(not_running)?;
+            if let Some(cost) = known
+                .and_then(|k| k.app_data)
+                .and_then(|d| announce::pn_stamp_cost_from_app_data(&d))
+            {
+                lock(&self.hub.pn_costs).insert(pn, cost);
+                return Ok(cost);
+            }
+            if Instant::now() >= deadline {
+                return Err(err("rns_no_path"));
+            }
+            let _ = self.node()?.request_path(&DestHash(pn));
+            thread::sleep(Duration::from_secs(1));
+        }
+    }
+
+    /// Собрать сообщение для роутера: штамп адресата, для узла доставки —
+    /// шифрование адресату и штамп узла.
+    fn prepare(&self, job: &SendJob) -> Result<OutboundMessage, String> {
+        let cost = self.router().get_stamp_cost(&job.dest).filter(|c| *c > 0);
+        let stamp = match cost {
+            Some(cost) => Some(self.stamp(&job.id, cost, WORKBLOCK_EXPAND_ROUNDS)?),
+            None => None,
+        };
+        let packed = self.sign_pack(job, stamp.as_ref().map(|s| &s[..]))?;
+        let mut method = job.method;
+        if method == DeliveryMethod::Opportunistic
+            && packed.packed.len() - DESTINATION_LENGTH > ENCRYPTED_PACKET_MDU
+        {
+            // В один пакет не влезает — как Python LXMF, через Link.
+            method = DeliveryMethod::Direct;
+        }
+        let (propagation_packed, propagation_stamp, transient_id) =
+            if method == DeliveryMethod::Propagated {
+                let pn = self
+                    .router()
+                    .outbound_propagation_node
+                    .ok_or_else(|| err("rns_no_propagation_node"))?;
+                let key = self
+                    .recall_key(job.dest)
+                    .ok_or_else(|| err("rns_unknown_destination"))?;
+                let recipient = Identity::from_public_key(&key);
+                let encrypted = recipient
+                    .encrypt(&packed.packed[DESTINATION_LENGTH..], &mut OsRng)
+                    .map_err(|_| err("rns_error: encrypt"))?;
+                let mut lxmf_data = job.dest.to_vec();
+                lxmf_data.extend_from_slice(&encrypted);
+                let transient_id = sha256(&lxmf_data);
+                let pn_stamp = self.stamp(
+                    &transient_id,
+                    self.pn_cost(pn)?,
+                    WORKBLOCK_EXPAND_ROUNDS_PN,
+                )?;
+                let (prop, tid) =
+                    message::propagation_pack(&packed.packed, now_timestamp(), Some(&pn_stamp), |_| {
+                        Ok(encrypted.clone())
+                    })
+                    .map_err(|e| format!("rns_error: {e:?}"))?;
+                (Some(prop), Some(pn_stamp.to_vec()), Some(tid))
+            } else {
+                (None, None, None)
+            };
+        if method == DeliveryMethod::Direct {
+            // Роутер открывает Link только к адресатам из своего кэша ключей.
+            self.recall_key(job.dest);
+        }
+        Ok(OutboundMessage {
+            destination_hash: job.dest,
+            source_hash: self.delivery_hash,
+            packed: packed.packed,
+            message_hash: packed.message_hash,
+            method,
+            state: MessageState::Outbound,
+            representation: Representation::Unknown,
+            attempts: 0,
+            last_attempt: 0.0,
+            stamp: stamp.map(|s| s.to_vec()),
+            stamp_cost: cost,
+            propagation_packed,
+            propagation_stamp,
+            transient_id,
+            delivery_callback: None,
+            failed_callback: None,
+            progress_callback: None,
+            link_id: None,
+            packet_hash: None,
+        })
+    }
+
+    fn fail(&self, id: [u8; 32], reason: String) {
+        lock(&self.tracked).remove(&id);
+        self.hub.emit(RnsEvent::State {
+            id: hex::encode(id),
+            state: "failed".into(),
+            reason: Some(reason),
+        });
+    }
+
+    fn sender_loop(&self, rx: mpsc::Receiver<SendJob>) {
+        while self.hub.running.load(Ordering::SeqCst) {
+            let job = match rx.recv_timeout(TICK) {
+                Ok(job) => job,
+                Err(mpsc::RecvTimeoutError::Timeout) => continue,
+                Err(mpsc::RecvTimeoutError::Disconnected) => return,
+            };
+            match self.prepare(&job) {
+                Ok(msg) => {
+                    let method = msg.method;
+                    if let Some(t) = lock(&self.tracked).get_mut(&job.id) {
+                        t.method = method;
+                    }
+                    let mut router = self.router();
+                    match router.handle_outbound(msg) {
+                        Ok(()) => router.jobs(),
+                        Err(_) => {
+                            drop(router);
+                            self.fail(job.id, err("rns_no_propagation_node"));
+                        }
+                    }
+                }
+                Err(reason) => {
+                    if self.hub.running.load(Ordering::SeqCst) {
+                        self.fail(job.id, reason);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Судьба своих сообщений в очереди роутера → события интерфейсу;
+    /// законченные из очереди убираются (роутер их не удаляет сам).
+    fn poll_outbound(&self, router: &mut LxmRouter) {
+        let mut tracked = lock(&self.tracked);
+        let pn = router.outbound_propagation_node;
+        let mut retry = Vec::new();
+        let mut finished = HashSet::new();
+        for msg in &router.outbound {
+            let Some(t) = tracked.get_mut(&msg.message_hash) else {
+                continue;
+            };
+            if t.method != msg.method {
+                // Прежняя попытка сообщения, которое уже пересылается иначе.
+                finished.insert((msg.message_hash, msg.method as u8));
+                continue;
+            }
+            // Пакет узлу доставки роутер шлёт по Link без квитанции и оставляет
+            // в Sending: отправлен — значит на узле (как прямые пакеты по Link).
+            let packet_on_pn = msg.method == DeliveryMethod::Propagated
+                && msg.state == MessageState::Sending
+                && msg.representation == Representation::Packet;
+            let state = if packet_on_pn { "sent" } else { state_name(msg.state) };
+            let done = match state {
+                "delivered" | "failed" => true,
+                "sent" => msg.method == DeliveryMethod::Propagated,
+                _ => false,
+            };
+            if state == "failed" && t.fallback && pn.is_some() {
+                t.fallback = false;
+                t.method = DeliveryMethod::Propagated;
+                let mut job = t.job.clone();
+                job.method = DeliveryMethod::Propagated;
+                retry.push(job);
+                finished.insert((msg.message_hash, msg.method as u8));
+                continue;
+            }
+            if state != t.state {
+                t.state = state;
+                self.hub.emit(RnsEvent::State {
+                    id: hex::encode(msg.message_hash),
+                    state: state.into(),
+                    reason: None,
+                });
+            }
+            if done {
+                finished.insert((msg.message_hash, msg.method as u8));
+            }
+        }
+        router
+            .outbound
+            .retain(|m| !finished.contains(&(m.message_hash, m.method as u8)));
+        tracked.retain(|id, t| {
+            // Сообщение ушло из очереди окончательно — больше не следим.
+            !(matches!(t.state, "delivered" | "failed")
+                || (t.state == "sent" && t.method == DeliveryMethod::Propagated))
+                || retry.iter().any(|j| j.id == *id)
+        });
+        drop(tracked);
+        let tx = lock(&self.send_tx);
+        for job in retry {
+            let _ = tx.send(job);
+        }
+    }
+
+    // --- интерфейсы и адреса ---------------------------------------------
+
+    fn interface_status(&self, node: &RnsNode) -> Vec<IfaceStatus> {
+        let stats = match node.query(QueryRequest::InterfaceStats) {
+            Ok(QueryResponse::InterfaceStats(s)) => s.interfaces,
+            _ => Vec::new(),
+        };
+        self.ifaces
+            .iter()
+            .map(|cfg| {
+                let name = cfg.name();
+                // AutoInterface заводит по подынтерфейсу на соседа: «имя:адрес».
+                let prefix = format!("{name}:");
+                let mine: Vec<_> = stats
+                    .iter()
+                    .filter(|s| s.name == name || s.name.starts_with(&prefix))
+                    .collect();
+                IfaceStatus {
+                    kind: cfg.kind().to_string(),
+                    // Нет в списке — не поднялся при старте (хаб недоступен,
+                    // RNode не подключён); rns-net его больше не пробует.
+                    started: !mine.is_empty(),
+                    online: mine.iter().any(|s| s.status),
+                    rx_bytes: mine.iter().map(|s| s.rxb).sum(),
+                    tx_bytes: mine.iter().map(|s| s.txb).sum(),
+                    name,
+                }
+            })
+            .collect()
+    }
+
+    /// Разослать изменения интерфейсов; true — какой-то только что поднялся.
+    fn poll_interfaces(&self, node: &RnsNode, online: &mut HashMap<String, bool>) -> bool {
+        let mut came_up = false;
+        for s in self.interface_status(node) {
+            let was = online.insert(s.name.clone(), s.online);
+            if was != Some(s.online) {
+                came_up |= s.online;
+                if was.is_some() || s.online {
+                    self.hub.emit(RnsEvent::Interface {
+                        name: s.name,
+                        online: s.online,
+                    });
+                }
+            }
+        }
+        came_up
+    }
+
+    /// Адреса, которые узел помнит с прошлых запусков: в кэш ключей роутера
+    /// (подписи входящих, прямая доставка) и интерфейсу — как announce.
+    fn known_destinations(&self, emit: bool) {
+        let Ok(node) = self.node() else { return };
+        let Ok(known) = node.known_destinations() else {
+            return;
+        };
+        drop(node);
+        let mut events = Vec::new();
+        {
+            let mut router = self.router();
+            for k in &known {
+                router.identity_cache.insert(k.dest_hash, k.public_key);
+                router.identity_hash_cache.insert(k.dest_hash, k.identity_hash);
+            }
+        }
+        for k in known {
+            if k.dest_hash == self.delivery_hash {
+                continue;
+            }
+            if let Some((ev, pn_cost)) = peer_event(
+                k.dest_hash,
+                k.identity_hash,
+                k.app_data.as_deref(),
+                k.hops,
+                k.received_at,
+            ) {
+                if let Some(cost) = pn_cost {
+                    lock(&self.hub.pn_costs).insert(k.dest_hash, cost);
+                }
+                events.push(ev);
+            }
+        }
+        if emit {
+            for ev in events {
+                self.hub.emit(ev);
+            }
+        }
+    }
+
+    fn expire_page_links(&self) {
+        let stale: Vec<[u8; 16]> = {
+            let mut links = lock(&self.page_links);
+            let stale = links
+                .values()
+                .filter(|(_, used)| used.elapsed() >= PAGE_LINK_IDLE)
+                .map(|(link, _)| *link)
+                .collect::<Vec<_>>();
+            links.retain(|_, (_, used)| used.elapsed() < PAGE_LINK_IDLE);
+            stale
+        };
+        for link in stale {
+            self.close_link(link);
+        }
+    }
+
+    fn worker_loop(&self) {
+        let started = Instant::now();
+        let mut last_jobs = started;
+        let mut last_ifaces: Option<Instant> = None;
+        let mut last_announce: Option<Instant> = None;
+        let mut replayed = false;
+        let mut online = HashMap::new();
+        while self.hub.running.load(Ordering::SeqCst) {
+            if last_jobs.elapsed() >= JOBS_EVERY {
+                let mut router = self.router();
+                router.jobs();
+                self.poll_outbound(&mut router);
+                drop(router);
+                last_jobs = Instant::now();
+            }
+            if !replayed && started.elapsed() >= REPLAY_AFTER {
+                self.known_destinations(true);
+                replayed = true;
+            }
+            if last_ifaces.is_none_or(|t| t.elapsed() >= IFACES_EVERY) {
+                if let Ok(node) = self.node() {
+                    let came_up = self.poll_interfaces(&node, &mut online);
+                    drop(node);
+                    // Связь появилась — объявить адрес, чтобы нас нашли.
+                    if came_up && last_announce.is_none_or(|t| t.elapsed() >= MIN_REANNOUNCE) {
+                        self.announce();
+                        last_announce = Some(Instant::now());
+                    }
+                }
+                self.expire_page_links();
+                last_ifaces = Some(Instant::now());
+            }
+            if last_announce.is_some_and(|t| t.elapsed() >= ANNOUNCE_EVERY) {
+                self.announce();
+                last_announce = Some(Instant::now());
+            }
+            thread::sleep(TICK);
+        }
+    }
+
+    // --- узел доставки ------------------------------------------------------
+
+    /// Сообщение, скачанное с узла доставки: расшифровать и отдать роутеру.
+    fn accept_propagated(&self, lxmf_data: &[u8]) -> bool {
+        if lxmf_data.len() <= DESTINATION_LENGTH || lxmf_data[..DESTINATION_LENGTH] != self.delivery_hash {
+            return false;
+        }
+        let transient_id = sha256(lxmf_data);
+        let mut router = self.router();
+        if router.locally_delivered_transient_ids.contains_key(&transient_id) {
+            return false;
+        }
+        let Ok(plain) = self.identity.decrypt(&lxmf_data[DESTINATION_LENGTH..]) else {
+            return false;
+        };
+        let mut bytes = self.delivery_hash.to_vec();
+        bytes.extend_from_slice(&plain);
+        router.lxmf_delivery(&bytes, true, ENCRYPTION_DESCRIPTION_EC, DeliveryMethod::Propagated);
+        router
+            .locally_delivered_transient_ids
+            .insert(transient_id, now_timestamp());
+        true
+    }
+
+    fn get_request(
+        &self,
+        link: [u8; 16],
+        wants: Option<&[[u8; 32]]>,
+        haves: Option<&[[u8; 32]]>,
+        timeout: Duration,
+    ) -> Result<Value, String> {
+        let list = |ids: Option<&[[u8; 32]]>| match ids {
+            Some(ids) => Value::Array(ids.iter().map(|id| Value::Bin(id.to_vec())).collect()),
+            None => Value::Nil,
+        };
+        let limit_kb = self.router().config.delivery_limit;
+        let mut request = vec![list(wants), list(haves)];
+        if wants.is_some() {
+            request.push(Value::Float(limit_kb));
+        }
+        self.request(link, MESSAGE_GET_PATH, &Value::Array(request))?;
+        match self.hub.wait_response(link, timeout) {
+            Some(Ok(bytes)) => msgpack::unpack_exact(&bytes).map_err(|_| err("rns_bad_response")),
+            Some(Err(())) => Err(err("rns_link_closed")),
+            None => Err(err("rns_timeout")),
+        }
+    }
+
+    fn run_sync(&self, pn: [u8; 16]) -> Result<u32, String> {
+        self.hub.emit(RnsEvent::Sync {
+            state: "requesting".into(),
+            received: 0,
+        });
+        let link = self.open_link(pn, LINK_TIMEOUT)?;
+        let result = (|| {
+            let prv = self
+                .identity
+                .get_private_key()
+                .ok_or_else(|| err("rns_error: identity"))?;
+            self.node()?.identify_on_link(link, prv).map_err(not_running)?;
+            let ids: Vec<[u8; 32]> = match self.get_request(link, None, None, SYNC_LIST_TIMEOUT)? {
+                Value::Array(items) => items
+                    .iter()
+                    .filter_map(|v| v.as_bin().and_then(|b| b.try_into().ok()))
+                    .collect(),
+                Value::UInt(code) => return Err(format!("rns_sync_refused: {code}")),
+                Value::Nil => Vec::new(),
+                _ => return Err(err("rns_bad_response")),
+            };
+            let (haves, wants): (Vec<[u8; 32]>, Vec<[u8; 32]>) = {
+                let router = self.router();
+                ids.into_iter()
+                    .partition(|id| router.locally_delivered_transient_ids.contains_key(id))
+            };
+            let mut received = 0u32;
+            let mut purge = haves;
+            if !wants.is_empty() {
+                self.hub.emit(RnsEvent::Sync {
+                    state: "receiving".into(),
+                    received: 0,
+                });
+            }
+            for chunk in wants.chunks(IDS_PER_REQUEST) {
+                let messages = match self.get_request(link, Some(chunk), Some(&[]), SYNC_GET_TIMEOUT)? {
+                    Value::Array(items) => items,
+                    Value::UInt(code) => return Err(format!("rns_sync_refused: {code}")),
+                    _ => Vec::new(),
+                };
+                for m in &messages {
+                    if let Some(data) = m.as_bin() {
+                        if self.accept_propagated(data) {
+                            received += 1;
+                        }
+                        purge.push(sha256(data));
+                    }
+                }
+                self.hub.emit(RnsEvent::Sync {
+                    state: "receiving".into(),
+                    received,
+                });
+            }
+            // Полученное — удалить на узле, как это делает Python LXMF.
+            for chunk in purge.chunks(IDS_PER_REQUEST) {
+                let _ = self.get_request(link, None, Some(chunk), Duration::from_secs(15));
+            }
+            Ok(received)
+        })();
+        self.close_link(link);
+        result
+    }
+
+    // --- страницы NomadNet -------------------------------------------------
+
+    fn page_link(&self, node_hash: [u8; 16]) -> Result<[u8; 16], String> {
+        let cached = lock(&self.page_links).get(&node_hash).map(|(l, _)| *l);
+        if let Some(link) = cached {
+            let alive = {
+                let book = self.hub.book();
+                book.established.contains(&link) && !book.closed.contains(&link)
+            };
+            if alive {
+                return Ok(link);
+            }
+            lock(&self.page_links).remove(&node_hash);
+            self.hub.unwatch(&link);
+        }
+        let link = self.open_link(node_hash, LINK_TIMEOUT)?;
+        lock(&self.page_links).insert(node_hash, (link, Instant::now()));
+        Ok(link)
+    }
+
+    fn drop_page_link(&self, node_hash: [u8; 16]) {
+        if let Some((link, _)) = lock(&self.page_links).remove(&node_hash) {
+            self.close_link(link);
+        }
+    }
+}
+
+fn parse_page(bytes: &[u8]) -> Result<Page, String> {
+    match msgpack::unpack_exact(bytes) {
+        Ok(Value::Bin(b)) => Ok(Page {
+            content: String::from_utf8_lossy(&b).into_owned(),
+            binary: std::str::from_utf8(&b).is_err(),
+        }),
+        Ok(Value::Str(s)) => Ok(Page {
+            content: s,
+            binary: false,
+        }),
+        Ok(Value::Nil) => Err(err("rns_page_not_found")),
+        Ok(_) => Ok(Page {
+            content: String::new(),
+            binary: true,
+        }),
+        Err(_) => Err(err("rns_bad_response")),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Внешний интерфейс модуля
+
+/// Запущенный узел. Останавливать через `stop` — иначе потоки живут дальше.
+pub struct Runtime {
+    ctx: Arc<Ctx>,
+    node: Arc<RnsNode>,
+    worker: Option<JoinHandle<()>>,
+    sender: Option<JoinHandle<()>>,
+    started: Started,
+}
+
+/// Для долгих запросов (страницы) вне блокировки менеджера.
+pub struct Handle {
+    ctx: Arc<Ctx>,
+}
+
+impl Runtime {
+    pub fn start(
+        options: StartOptions,
+        dir: PathBuf,
+        sink: impl Fn(RnsEvent) + Send + Sync + 'static,
+    ) -> Result<Runtime, String> {
+        let prv: [u8; 64] = options
+            .identity
+            .as_slice()
+            .try_into()
+            .map_err(|_| err("rns_error: identity must be 64 bytes"))?;
+        let config = config_text(&options.interfaces)?;
+        std::fs::create_dir_all(&dir).map_err(|e| format!("rns_error: {e}"))?;
+        std::fs::write(dir.join("config"), config).map_err(|e| format!("rns_error: {e}"))?;
+        let propagation_node = match options.propagation_node.as_deref() {
+            Some(h) if !h.is_empty() => Some(super::types::parse_hash::<16>(h)?),
+            _ => None,
+        };
+
+        let identity = Identity::from_private_key(&prv);
+        let identity_hash = *identity.hash();
+        let delivery_hash = delivery_hash_of(&identity_hash);
+        let hub = Arc::new(Hub {
+            sink: Box::new(sink),
+            running: AtomicBool::new(true),
+            book: Mutex::new(LinkBook::default()),
+            cv: Condvar::new(),
+            pn_costs: Mutex::new(HashMap::new()),
+        });
+
+        let mut router = LxmRouter::new(
+            Identity::from_private_key(&prv),
+            RouterConfig {
+                storagepath: dir.join("lxmf"),
+                ..RouterConfig::default()
+            },
+        );
+        {
+            let hub = hub.clone();
+            router.set_delivery_callback(Box::new(move |d| {
+                if d.destination_hash == delivery_hash {
+                    hub.emit(message_event(d));
+                }
+            }));
+        }
+        router.outbound_propagation_node = propagation_node;
+        let delivery_limit = (router.config.delivery_limit * 1000.0) as u64;
+        let router = Arc::new(Mutex::new(router));
+        let (ev_tx, ev_rx) = mpsc::channel();
+        let bridge = Bridge {
+            tx: ev_tx,
+            hub: hub.clone(),
+            own_delivery: delivery_hash,
+            inbound: HashMap::new(),
+            delivery_limit,
+        };
+        {
+            let router = router.clone();
+            thread::Builder::new()
+                .name("rns-lxmf".into())
+                .spawn(move || callbacks_loop(router, ev_rx))
+                .map_err(|e| format!("rns_error: {e}"))?;
+        }
+        let node = Arc::new(
+            RnsNode::from_config(Some(&dir), Box::new(bridge))
+                .map_err(|e| format!("rns_error: {e}"))?,
+        );
+
+        {
+            let mut r = lock(&router);
+            r.set_node(node.clone());
+            let name = options.display_name.trim();
+            r.register_delivery_identity(
+                &identity,
+                None,
+                (!name.is_empty()).then(|| name.to_string()),
+            );
+        }
+        // Доказательства доставки для пакетов на наш адрес: без них отправитель
+        // «оппортунистического» сообщения так и не узнает, что оно дошло.
+        let mut delivery = Destination::single_in(LXMF, &["delivery"], IdentityHash(identity_hash));
+        delivery.proof_strategy = ProofStrategy::ProveAll;
+        let _ = node.register_destination_with_proof(&delivery, identity.get_private_key());
+
+        let (send_tx, send_rx) = mpsc::channel();
+        let ctx = Arc::new(Ctx {
+            hub,
+            router,
+            node: Arc::downgrade(&node),
+            identity,
+            delivery_hash,
+            ifaces: options.interfaces,
+            send_tx: Mutex::new(send_tx),
+            tracked: Mutex::new(HashMap::new()),
+            sync_busy: AtomicBool::new(false),
+            page_links: Mutex::new(HashMap::new()),
+            page_lock: Mutex::new(()),
+            stamp_cancel: Mutex::new(None),
+        });
+        // Ключи известных адресов — сразу, до первых сообщений.
+        ctx.known_destinations(false);
+        if let Some(pn) = propagation_node {
+            let _ = node.request_path(&DestHash(pn));
+        }
+
+        let worker = {
+            let ctx = ctx.clone();
+            let node = node.clone();
+            thread::Builder::new()
+                .name("rns-worker".into())
+                .spawn(move || {
+                    // Держит узел, пока работает: stop дожидается потока.
+                    let _node = node;
+                    ctx.worker_loop();
+                })
+                .map_err(|e| format!("rns_error: {e}"))?
+        };
+        let sender = {
+            let ctx = ctx.clone();
+            thread::Builder::new()
+                .name("rns-sender".into())
+                .spawn(move || ctx.sender_loop(send_rx))
+                .map_err(|e| format!("rns_error: {e}"))?
+        };
+
+        Ok(Runtime {
+            started: Started {
+                address: hex::encode(delivery_hash),
+                identity_hash: hex::encode(identity_hash),
+            },
+            ctx,
+            node,
+            worker: Some(worker),
+            sender: Some(sender),
+        })
+    }
+
+    pub fn started(&self) -> Started {
+        self.started.clone()
+    }
+
+    pub fn status(&self) -> Status {
+        let paths = match self.node.query(QueryRequest::PathTable { max_hops: None }) {
+            Ok(QueryResponse::PathTable(p)) => p.len(),
+            _ => 0,
+        };
+        Status {
+            running: true,
+            interfaces: self.ctx.interface_status(&self.node),
+            paths,
+            propagation_node: self.ctx.router().outbound_propagation_node.map(hex::encode),
+        }
+    }
+
+    pub fn announce(&self) -> Result<(), String> {
+        self.ctx.announce();
+        Ok(())
+    }
+
+    /// Поставить сообщение в очередь; id — хэш сообщения LXMF (hex).
+    pub fn send(
+        &self,
+        dest: [u8; 16],
+        title: &str,
+        content: &str,
+        method: Method,
+    ) -> Result<String, String> {
+        if dest == self.ctx.delivery_hash {
+            return Err(err("rns_error: own address"));
+        }
+        let (lx_method, fallback) = match method {
+            Method::Auto => (DeliveryMethod::Direct, true),
+            Method::Direct => (DeliveryMethod::Direct, false),
+            Method::Opportunistic => (DeliveryMethod::Opportunistic, false),
+            Method::Propagated => (DeliveryMethod::Propagated, false),
+        };
+        let mut job = SendJob {
+            id: [0; 32],
+            dest,
+            timestamp: now_timestamp(),
+            title: title.to_string(),
+            content: content.to_string(),
+            method: lx_method,
+        };
+        // id не зависит от штампа — его можно вернуть сразу, а штамп считать потом.
+        job.id = self.ctx.sign_pack(&job, None)?.message_hash;
+        let id = hex::encode(job.id);
+        self.ctx.queue(job, fallback);
+        Ok(id)
+    }
+
+    pub fn request_path(&self, dest: [u8; 16]) -> Result<(), String> {
+        self.node
+            .request_path(&DestHash(dest))
+            .map_err(not_running)
+    }
+
+    pub fn set_propagation_node(&self, node_hash: Option<[u8; 16]>) -> Result<(), String> {
+        self.ctx.router().outbound_propagation_node = node_hash;
+        if let Some(pn) = node_hash {
+            let _ = self.node.request_path(&DestHash(pn));
+        }
+        Ok(())
+    }
+
+    /// Забрать сообщения с узла доставки (в фоне; ход — событиями `sync`).
+    pub fn sync(&self) -> Result<(), String> {
+        let pn = self
+            .ctx
+            .router()
+            .outbound_propagation_node
+            .ok_or_else(|| err("rns_no_propagation_node"))?;
+        if self.ctx.sync_busy.swap(true, Ordering::SeqCst) {
+            return Ok(());
+        }
+        let ctx = self.ctx.clone();
+        thread::spawn(move || {
+            let result = ctx.run_sync(pn);
+            ctx.sync_busy.store(false, Ordering::SeqCst);
+            let (state, received) = match result {
+                Ok(n) => ("done", n),
+                Err(e) => {
+                    log::warn!("rns: sync failed: {e}");
+                    ("failed", 0)
+                }
+            };
+            ctx.hub.emit(RnsEvent::Sync {
+                state: state.into(),
+                received,
+            });
+        });
+        Ok(())
+    }
+
+    pub fn handle(&self) -> Handle {
+        Handle {
+            ctx: self.ctx.clone(),
+        }
+    }
+
+    pub fn stop(mut self) {
+        let ctx = &self.ctx;
+        ctx.hub.running.store(false, Ordering::SeqCst);
+        ctx.hub.cv.notify_all();
+        if let Some(cancel) = lock(&ctx.stamp_cancel).take() {
+            cancel.store(true, Ordering::SeqCst);
+        }
+        if let Some(worker) = self.worker.take() {
+            let _ = worker.join();
+        }
+        if let Some(sender) = self.sender.take() {
+            let _ = sender.join();
+        }
+        let links: Vec<[u8; 16]> = lock(&ctx.page_links).drain().map(|(_, (l, _))| l).collect();
+        for link in links {
+            let _ = self.node.teardown_link(link);
+        }
+        ctx.router().exit_handler();
+        // Узел сохраняет известные адреса только при shutdown, а тот требует
+        // единственной ссылки: короткие потоки роутера могут ещё держать узел.
+        let mut node = self.node;
+        for _ in 0..40 {
+            match Arc::try_unwrap(node) {
+                Ok(n) => {
+                    n.shutdown();
+                    return;
+                }
+                Err(back) => {
+                    node = back;
+                    thread::sleep(Duration::from_millis(50));
+                }
+            }
+        }
+        log::warn!("rns: node still shared on stop, shutting the driver down");
+        let _ = node.event_sender().send(Event::Shutdown);
+    }
+}
+
+impl Handle {
+    /// Страница NomadNet (micron). Link к узлу переиспользуется несколько минут.
+    pub fn page(
+        &self,
+        node_hash: [u8; 16],
+        path: &str,
+        data: &HashMap<String, String>,
+    ) -> Result<Page, String> {
+        if !path.starts_with('/') || path.len() > 255 {
+            return Err(err("rns_bad_path"));
+        }
+        let ctx = &self.ctx;
+        // Ответ сопоставляется с запросом по Link — по одному запросу за раз.
+        let _serial = lock(&ctx.page_lock);
+        let link = ctx.page_link(node_hash)?;
+        {
+            let mut book = ctx.hub.book();
+            book.responses.remove(&link);
+        }
+        let payload = if data.is_empty() {
+            Value::Nil
+        } else {
+            let mut entries: Vec<(Value, Value)> = data
+                .iter()
+                .map(|(k, v)| (Value::Str(k.clone()), Value::Str(v.clone())))
+                .collect();
+            entries.sort_by(|a, b| a.0.as_str().cmp(&b.0.as_str()));
+            Value::Map(entries)
+        };
+        if let Err(e) = ctx.request(link, path, &payload) {
+            ctx.drop_page_link(node_hash);
+            return Err(e);
+        }
+        match ctx.hub.wait_response(link, PAGE_TIMEOUT) {
+            Some(Ok(bytes)) => {
+                if let Some(entry) = lock(&ctx.page_links).get_mut(&node_hash) {
+                    entry.1 = Instant::now();
+                }
+                parse_page(&bytes)
+            }
+            outcome => {
+                ctx.drop_page_link(node_hash);
+                Err(err(if outcome.is_none() {
+                    "rns_timeout"
+                } else {
+                    "rns_link_closed"
+                }))
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Ключ из src/mesh/reticulum/identity.test.ts (байты 1..32 аккаунта).
+    const VECTOR: &str = "9a2c2d869aee8ed2fd877980617a5a028d09a55c762e93f49b030cfbe242d67c8d3f41ca3cb59fb2ec7601471e34345193f6b0a04b76d8f936c1024e7f4a2de0";
+
+    #[test]
+    fn identity_matches_python_rns() {
+        let prv = hex::decode(VECTOR).unwrap();
+        assert_eq!(identity_hash(&prv).unwrap(), "0151a8e9c78317b27ff0a40306b9ef31");
+        let key: [u8; 64] = prv.try_into().unwrap();
+        let id = Identity::from_private_key(&key);
+        assert_eq!(
+            hex::encode(delivery_hash_of(id.hash())),
+            "41bb60343d8fc4a961a89b7c666dce77"
+        );
+    }
+
+    #[test]
+    fn config_lists_interfaces_in_python_format() {
+        let text = config_text(&[
+            IfaceConfig::Tcp {
+                host: "rns.example.org".into(),
+                port: 4242,
+            },
+            IfaceConfig::Auto,
+            IfaceConfig::Rnode {
+                port: "/dev/cu.usbserial-0001".into(),
+                frequency: 869_525_000,
+                bandwidth: 125_000,
+                spreading_factor: 8,
+                coding_rate: 5,
+                tx_power: 14,
+            },
+            IfaceConfig::Auto,
+        ])
+        .unwrap();
+        assert!(text.contains("share_instance = No"));
+        assert!(text.contains("[[rns.example.org:4242]]\n    type = TCPClientInterface"));
+        assert!(text.contains("target_port = 4242"));
+        assert_eq!(text.matches("type = AutoInterface").count(), 1);
+        assert!(text.contains("port = /dev/cu.usbserial-0001"));
+        assert!(text.contains("spreadingfactor = 8"));
+        let parsed = rns_net::config::parse(&text).unwrap();
+        assert_eq!(parsed.interfaces.len(), 3);
+        assert!(!parsed.reticulum.share_instance);
+    }
+
+    #[test]
+    fn config_refuses_injected_sections() {
+        for host in ["evil\n  [[x]]\n    type = PipeInterface", "a b", "h#x", "[x]", ""] {
+            let r = config_text(&[IfaceConfig::Tcp {
+                host: host.into(),
+                port: 4242,
+            }]);
+            assert!(r.is_err(), "{host:?} passed");
+        }
+        let r = config_text(&[IfaceConfig::Rnode {
+            port: "/dev/tty\ncommand = rm".into(),
+            frequency: 869_525_000,
+            bandwidth: 125_000,
+            spreading_factor: 8,
+            coding_rate: 5,
+            tx_power: 14,
+        }]);
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn announces_are_classified_by_aspect() {
+        let prv = hex::decode(VECTOR).unwrap();
+        let key: [u8; 64] = prv.try_into().unwrap();
+        let id = *Identity::from_private_key(&key).hash();
+        let delivery = delivery_hash_of(&id);
+        let app_data = msgpack::pack(&Value::Array(vec![
+            Value::Bin(b"Alice".to_vec()),
+            Value::Nil,
+        ]));
+        let (ev, cost) = peer_event(delivery, id, Some(&app_data), 2, 1.0).unwrap();
+        assert!(cost.is_none());
+        match ev {
+            RnsEvent::Announce { aspect, name, hops, .. } => {
+                assert_eq!(aspect, ASPECT_DELIVERY);
+                assert_eq!(name.as_deref(), Some("Alice"));
+                assert_eq!(hops, Some(2));
+            }
+            _ => panic!("not an announce"),
+        }
+        let node = dest_hash(NOMADNET, &["node"], &id);
+        let (ev, _) = peer_event(node, id, Some(b"Library"), 1, 1.0).unwrap();
+        assert!(matches!(ev, RnsEvent::Announce { ref aspect, ref name, .. }
+            if aspect == ASPECT_NOMADNET && name.as_deref() == Some("Library")));
+        // Чужой аспект — не наш интерес.
+        let other = dest_hash("example", &["app"], &id);
+        assert!(peer_event(other, id, None, 1, 1.0).is_none());
+    }
+
+    #[test]
+    fn attachments_are_marked() {
+        let fields = vec![
+            (Value::UInt(FIELD_IMAGE as u64), Value::Array(vec![])),
+            (
+                Value::UInt(FIELD_FILE_ATTACHMENTS as u64),
+                Value::Array(vec![Value::Nil, Value::Nil]),
+            ),
+        ];
+        assert_eq!(attachment_marks(&fields), "🖼📎📎");
+        assert_eq!(attachment_marks(&[]), "");
+    }
+
+    #[test]
+    fn page_responses() {
+        let page = parse_page(&msgpack::pack(&Value::Bin(b">Hello".to_vec()))).unwrap();
+        assert_eq!(page.content, ">Hello");
+        assert!(!page.binary);
+        assert!(parse_page(&msgpack::pack(&Value::Nil)).is_err());
+    }
+}
+
+/// Сверка с Python RNS 1.5 + LXMF 1.1 (scratchpad: peer.py). Запуск:
+/// `RNS_PYTHON=…/python RNS_PEER_PY=…/peer.py RNS_TEST_DIR=… cargo test --lib
+/// rns::node::interop -- --ignored --nocapture`.
+#[cfg(test)]
+mod interop {
+    use super::*;
+    use crate::rns::types::parse_hash;
+    use serde_json::{json, Value as Json};
+    use std::io::{BufRead, BufReader, Write};
+    use std::path::Path;
+    use std::process::{Child, ChildStdin, Command, Stdio};
+
+    const VECTOR: &str = "9a2c2d869aee8ed2fd877980617a5a028d09a55c762e93f49b030cfbe242d67c8d3f41ca3cb59fb2ec7601471e34345193f6b0a04b76d8f936c1024e7f4a2de0";
+    const WAIT: Duration = Duration::from_secs(40);
+
+    struct Peer {
+        child: Child,
+        stdin: ChildStdin,
+        rx: mpsc::Receiver<Json>,
+    }
+
+    impl Peer {
+        fn start(python: &str, script: &str, dir: &Path, port: u16) -> Peer {
+            let mut child = Command::new(python)
+                .arg(script)
+                .arg(dir)
+                .arg(port.to_string())
+                .arg("PyPeer")
+                .arg("--pn")
+                .arg("--node")
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("python peer");
+            let stdout = child.stdout.take().unwrap();
+            let stdin = child.stdin.take().unwrap();
+            let (tx, rx) = mpsc::channel();
+            thread::spawn(move || {
+                for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+                    if let Ok(v) = serde_json::from_str::<Json>(&line) {
+                        eprintln!("py> {v}");
+                        let _ = tx.send(v);
+                    }
+                }
+            });
+            Peer { child, stdin, rx }
+        }
+
+        fn cmd(&mut self, v: Json) {
+            writeln!(self.stdin, "{v}").unwrap();
+            self.stdin.flush().unwrap();
+        }
+
+        fn expect(&self, what: &str, pred: impl Fn(&Json) -> bool) -> Json {
+            let deadline = Instant::now() + WAIT;
+            while let Some(left) = deadline.checked_duration_since(Instant::now()) {
+                match self.rx.recv_timeout(left) {
+                    Ok(v) if pred(&v) => return v,
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
+            }
+            panic!("python peer: no {what}");
+        }
+    }
+
+    impl Drop for Peer {
+        fn drop(&mut self) {
+            let _ = self.child.kill();
+            let _ = self.child.wait();
+        }
+    }
+
+    fn expect_ev(rx: &mpsc::Receiver<RnsEvent>, what: &str, pred: impl Fn(&RnsEvent) -> bool) -> RnsEvent {
+        let deadline = Instant::now() + WAIT;
+        while let Some(left) = deadline.checked_duration_since(Instant::now()) {
+            match rx.recv_timeout(left) {
+                Ok(ev) => {
+                    eprintln!("rs> {ev:?}");
+                    if pred(&ev) {
+                        return ev;
+                    }
+                }
+                Err(_) => break,
+            }
+        }
+        panic!("rust node: no {what}");
+    }
+
+    /// Дождаться всех событий из списка, в любом порядке.
+    fn expect_all(rx: &mpsc::Receiver<RnsEvent>, wants: Vec<(&str, Box<dyn Fn(&RnsEvent) -> bool>)>) {
+        let mut left = wants;
+        let deadline = Instant::now() + WAIT;
+        while !left.is_empty() {
+            let Some(wait) = deadline.checked_duration_since(Instant::now()) else { break };
+            let Ok(ev) = rx.recv_timeout(wait) else { break };
+            eprintln!("rs> {ev:?}");
+            left.retain(|(_, pred)| !pred(&ev));
+        }
+        let missing: Vec<&str> = left.iter().map(|(what, _)| *what).collect();
+        assert!(missing.is_empty(), "rust node: no {missing:?}");
+    }
+
+    fn start(dir: &Path, port: u16, pn: Option<String>) -> (Runtime, mpsc::Receiver<RnsEvent>) {
+        let (tx, rx) = mpsc::channel();
+        let tx = Mutex::new(tx);
+        let runtime = Runtime::start(
+            StartOptions {
+                identity: hex::decode(VECTOR).unwrap(),
+                display_name: "Rusty".into(),
+                interfaces: vec![IfaceConfig::Tcp {
+                    host: "127.0.0.1".into(),
+                    port,
+                }],
+                propagation_node: pn,
+            },
+            dir.to_path_buf(),
+            move |ev| {
+                let _ = lock(&tx).send(ev);
+            },
+        )
+        .expect("rust node");
+        (runtime, rx)
+    }
+
+    fn is_state(ev: &RnsEvent, id: &str, want: &str) -> bool {
+        matches!(ev, RnsEvent::State { id: i, state, .. } if i == id && state == want)
+    }
+
+    fn is_message(ev: &RnsEvent, text: &str, how: &str) -> bool {
+        matches!(ev, RnsEvent::Message { content, method, signed, .. }
+            if content == text && method == how && *signed)
+    }
+
+    #[test]
+    #[ignore]
+    fn python_peer() {
+        let (Ok(python), Ok(script), Ok(base)) = (
+            std::env::var("RNS_PYTHON"),
+            std::env::var("RNS_PEER_PY"),
+            std::env::var("RNS_TEST_DIR"),
+        ) else {
+            eprintln!("RNS_PYTHON / RNS_PEER_PY / RNS_TEST_DIR not set — skipped");
+            return;
+        };
+        let base = PathBuf::from(base).join(format!("interop-{}", std::process::id()));
+        let port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+        let mut peer = Peer::start(&python, &script, &base.join("peer"), port);
+        let ready = peer.expect("ready", |v| v.get("ready").is_some());
+        let peer_dest = ready["ready"].as_str().unwrap().to_string();
+        let pn = ready["pn"].as_str().unwrap().to_string();
+        let nomad = ready["node"].as_str().unwrap().to_string();
+
+        let (runtime, rx) = start(&base.join("rust"), port, None);
+        let our = runtime.started().address;
+        assert_eq!(our, "41bb60343d8fc4a961a89b7c666dce77");
+
+        // Знакомство: announce в обе стороны, все три аспекта Python.
+        peer.cmd(json!({"announce": true}));
+        let (d, n, p) = (peer_dest.clone(), nomad.clone(), pn.clone());
+        expect_all(
+            &rx,
+            vec![
+                ("peer announce", Box::new(move |ev| matches!(ev, RnsEvent::Announce { aspect, dest, name, .. }
+                    if aspect == ASPECT_DELIVERY && *dest == d && name.as_deref() == Some("PyPeer")))),
+                ("nomadnet announce", Box::new(move |ev| matches!(ev, RnsEvent::Announce { aspect, dest, name, .. }
+                    if aspect == ASPECT_NOMADNET && *dest == n && name.as_deref() == Some("PyNode")))),
+                ("propagation announce", Box::new(move |ev| matches!(ev, RnsEvent::Announce { aspect, dest, .. }
+                    if aspect == ASPECT_PROPAGATION && *dest == p))),
+            ],
+        );
+        runtime.announce().unwrap();
+        peer.expect("our announce", |v| {
+            v["announce"]["dest"] == json!(our) && v["announce"]["name"] == json!("Rusty")
+        });
+
+        let to = parse_hash::<16>(&peer_dest).unwrap();
+        // Rust → Python: напрямую (Link) и одним пакетом (с доказательством).
+        let id = runtime.send(to, "", "hello direct", Method::Direct).unwrap();
+        peer.expect("direct message", |v| {
+            v["message"]["content"] == json!("hello direct") && v["message"]["signature"] == json!(true)
+        });
+        expect_ev(&rx, "direct delivered", |ev| is_state(ev, &id, "delivered"));
+        let id = runtime.send(to, "", "hello opp", Method::Opportunistic).unwrap();
+        peer.expect("opportunistic message", |v| v["message"]["content"] == json!("hello opp"));
+        expect_ev(&rx, "opportunistic delivered", |ev| is_state(ev, &id, "delivered"));
+
+        // Python → Rust: оба способа; Python должен увидеть «доставлено».
+        peer.cmd(json!({"send": our, "text": "hi direct", "method": "direct", "tag": "d"}));
+        expect_ev(&rx, "direct from python", |ev| is_message(ev, "hi direct", "direct"));
+        peer.expect("python direct delivered", |v| v["state"] == json!({"tag": "d", "state": "delivered"}));
+        peer.cmd(json!({"send": our, "text": "hi opp", "method": "opportunistic", "tag": "o"}));
+        expect_ev(&rx, "opportunistic from python", |ev| is_message(ev, "hi opp", "opportunistic"));
+        peer.expect("python opportunistic delivered", |v| v["state"] == json!({"tag": "o", "state": "delivered"}));
+
+        // Через узел доставки: штамп узла, загрузка, узел отдаёт своему адресату.
+        runtime
+            .set_propagation_node(Some(parse_hash::<16>(&pn).unwrap()))
+            .unwrap();
+        let id = runtime.send(to, "", "via pn", Method::Propagated).unwrap();
+        expect_ev(&rx, "propagated sent", |ev| is_state(ev, &id, "sent"));
+        peer.expect("propagated message", |v| v["message"]["content"] == json!("via pn"));
+
+        // Синхронизация: сообщение, ждущее нас на узле, скачивается и удаляется там.
+        peer.cmd(json!({"store_for": our, "text": "stored for you"}));
+        peer.expect("stored", |v| v.get("stored").is_some());
+        runtime.sync().unwrap();
+        expect_all(
+            &rx,
+            vec![
+                ("synced message", Box::new(|ev| is_message(ev, "stored for you", "propagated"))),
+                ("sync done", Box::new(|ev| matches!(ev, RnsEvent::Sync { state, received }
+                    if state == "done" && *received == 1))),
+            ],
+        );
+        peer.cmd(json!({"pn_count": true}));
+        peer.expect("purged", |v| v["pn_count"] == json!(0));
+
+        // Страницы NomadNet: вторая идёт по тому же Link, с данными формы.
+        let handle = runtime.handle();
+        let node_hash = parse_hash::<16>(&nomad).unwrap();
+        let page = handle.page(node_hash, "/page/index.mu", &HashMap::new()).unwrap();
+        assert!(page.content.starts_with(">Hello from Python"), "{}", page.content);
+        let mut form = HashMap::new();
+        form.insert("field_name".to_string(), "Боб".to_string());
+        let page = handle.page(node_hash, "/page/echo.mu", &form).unwrap();
+        assert!(page.content.contains("Боб"), "{}", page.content);
+        // Неизвестный путь Python не обслуживает: Link закрывается или ответа нет.
+        let missing = handle.page(node_hash, "/page/missing.mu", &HashMap::new());
+        assert!(
+            matches!(missing.as_ref().err().map(String::as_str), Some("rns_link_closed" | "rns_timeout")),
+            "{missing:?}"
+        );
+        // После ошибки Link открывается заново.
+        let page = handle.page(node_hash, "/page/index.mu", &HashMap::new()).unwrap();
+        assert!(page.content.starts_with(">Hello from Python"));
+
+        // Остановка сохраняет известные адреса: новый запуск сразу их знает.
+        let stopped = Instant::now();
+        runtime.stop();
+        assert!(stopped.elapsed() < Duration::from_secs(10), "stop took {:?}", stopped.elapsed());
+        drop(rx);
+        let (runtime, rx) = start(&base.join("rust"), port, Some(pn.clone()));
+        expect_ev(&rx, "remembered peer", |ev| matches!(ev, RnsEvent::Announce { dest, heard: Some(h), .. }
+            if *dest == peer_dest && *h > 0.0));
+        let id = runtime.send(to, "", "after restart", Method::Direct).unwrap();
+        peer.expect("message after restart", |v| v["message"]["content"] == json!("after restart"));
+        expect_ev(&rx, "delivered after restart", |ev| is_state(ev, &id, "delivered"));
+        runtime.stop();
+        peer.cmd(json!({"quit": true}));
+    }
+}

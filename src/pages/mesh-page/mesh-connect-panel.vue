@@ -122,8 +122,7 @@ import { computed, onMounted, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from 'ant-design-vue'
 import { BluetoothIcon, UsbIcon, WifiIcon } from '@/components/icons'
-import type { MeshNetwork } from '@/mesh/ids'
-import { portTitle, useMeshConnect, type TransportTab } from './use-mesh-page'
+import { portTitle, useMeshConnect, type RadioNetwork, type TransportTab } from './use-mesh-page'
 import {
   SC_MeshCard,
   SC_MeshCardHead,
@@ -148,7 +147,7 @@ import {
   SC_MeshWarn,
 } from './mesh-page.styled'
 
-const props = defineProps<{ network: MeshNetwork }>()
+const props = defineProps<{ network: RadioNetwork }>()
 
 const { t } = useI18n()
 const {

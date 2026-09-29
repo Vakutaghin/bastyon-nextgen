@@ -1579,6 +1579,10 @@ export default {
         'La rete mesh LoRa più diffusa. I nodi inoltrano i messaggi gli uni degli altri; i messaggi diretti sono cifrati con le chiavi dei nodi.',
       meshcoreLead:
         'Una rete che inoltra tramite ripetitori: i messaggi seguono un percorso trovato invece di andare a tutti. Serve il firmware companion.',
+      reticulum: 'Reticulum',
+      lxmf: 'Reticulum',
+      reticulumLead:
+        "Una rete su qualsiasi collegamento: radio LoRa (RNode), la tua rete locale e hub su internet. Le chiavi restano nell'app, le chat sono cifrate end-to-end e il tuo indirizzo deriva dal tuo mnemonico.",
     },
     status: {
       idle: 'Non collegato',
@@ -1785,6 +1789,69 @@ export default {
         linkNothing: 'Questi canali sono già sulla radio.',
       },
     },
+    rns: {
+      status: {
+        idle: 'Nodo fermo',
+        starting: 'Avvio…',
+        running: 'Nodo attivo',
+        stopping: 'Arresto…',
+      },
+      node: {
+        title: 'Il mio nodo',
+        start: 'Avvia',
+        stop: 'Ferma',
+        lead: "Il nodo Reticulum gira direttamente nell'app. Finché è attivo, possono scriverti al tuo indirizzo.",
+        torNote:
+          'La modalità Tor è attiva: hub internet e rete locale sono spenti per non rivelare il tuo indirizzo. Funziona solo la radio (RNode).',
+        address: 'Indirizzo',
+        addressCopied: "Indirizzo copiato. Dallo all'altra persona: ti scriverà lì.",
+        interfaces: 'Interfacce',
+        noInterfaces: 'nessuna: aggiungi un hub, la rete locale o un RNode',
+        interfacesValue: '{online} su {total} collegate',
+        name: 'Nome per gli altri',
+        announce: 'Annunciati',
+        announceHint:
+          'Un annuncio comunica alla rete il tuo indirizzo e il tuo nome: così ti trovano negli elenchi dei contatti.',
+        autostart: "Avvia il nodo all'accesso",
+      },
+      ifaces: {
+        title: 'Interfacce',
+        empty: 'Nessuna interfaccia: il nodo non è collegato a nessuno.',
+        lan: 'Rete locale',
+        lanHint: 'Trova i nodi Reticulum nella tua rete Wi-Fi (AutoInterface).',
+        hub: 'Hub della comunità',
+        hubHint:
+          'Indirizzo di un hub Reticulum su internet (TCP): chiedilo alla comunità. Tramite un hub ti sentono nodi di tutto il mondo.',
+        hubKind: 'hub TCP',
+        lanKind: 'rete locale',
+        rnode: 'RNode via USB',
+        rnodeHint:
+          'Una scheda LoRa con firmware RNode. Frequenza e parametri devono corrispondere alla rete intorno a te.',
+        serialPort: 'Porta',
+        choosePort: 'Scegli una porta',
+        frequency: 'MHz',
+        bandwidth: 'kHz',
+        txPower: 'dBm',
+      },
+      peers: {
+        title: 'Contatti',
+        empty: 'Ancora nessuno si è annunciato. I nodi compaiono qui quando si annunciano in rete.',
+        byAddress: 'Scrivi a un indirizzo',
+        byAddressHint: "Incolla l'indirizzo LXMF dell'altra persona: 32 caratteri.",
+        addressPlaceholder: 'indirizzo LXMF',
+      },
+      propagation: {
+        title: 'Nodo di consegna',
+        sync: 'Scarica messaggi',
+        lead: 'Conserva i messaggi finché il destinatario è offline (fino a 30 giorni). Scegli un nodo: i messaggi per chi è offline passano da lì, e da lì puoi scaricare i tuoi.',
+        empty: 'Nessun nodo di consegna si è ancora annunciato.',
+        chosen: 'scelto',
+        use: 'Usa',
+        syncing: 'Scarico i messaggi…',
+        failed: 'Il nodo di consegna non ha risposto.',
+        done: '{n} messaggio ricevuto | {n} messaggi ricevuti',
+      },
+    },
     chat: {
       connect: 'Collega',
       errors: {
@@ -1814,6 +1881,10 @@ export default {
       room: 'stanza: un server della stanza conserva e inoltra i messaggi; cifratura come nei messaggi diretti MeshCore',
       roomShort: 'stanza',
       roomDelivered: 'La stanza ha accettato il messaggio',
+      lxmfEncryption: "cifratura end-to-end di Reticulum: chiavi nell'app",
+      lxmfShort: 'Reticulum',
+      lxmfSent: 'Inviato alla rete',
+      lxmfDelivered: 'Il dispositivo del destinatario ha confermato la ricezione',
     },
     errors: {
       generic: 'Non è riuscito ({code}).',
@@ -1869,6 +1940,9 @@ export default {
       rebooted: 'La radio si è riavviata.',
       login_timeout: 'La stanza non ha risposto: password errata o non sente la radio.',
       login_failed: "La stanza ha rifiutato l'accesso.",
+      no_account_key: "Manca la chiave dell'account: accedi di nuovo.",
+      rns_not_running: 'Il nodo Reticulum non è avviato.',
+      rns_error: 'Errore di Reticulum.',
     },
   },
   hotkeys: {

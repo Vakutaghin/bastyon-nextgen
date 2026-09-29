@@ -28,14 +28,17 @@ import { meshErrorCode } from '@/mesh/store/radio-common'
 
 export type TransportTab = 'serial' | 'ble' | 'tcp'
 
+/** Сети, радио которых подключается на этой странице. */
+export type RadioNetwork = Exclude<MeshNetwork, 'lxmf'>
+
 /** Параметры сети для экрана подключения. */
-const NETWORK_RADIO: Record<MeshNetwork, { tcpPort: number; bleService: string }> = {
+const NETWORK_RADIO: Record<RadioNetwork, { tcpPort: number; bleService: string }> = {
   meshtastic: { tcpPort: MT_TCP_PORT, bleService: MT_BLE_SERVICE },
   meshcore: { tcpPort: MC_TCP_PORT, bleService: NUS_SERVICE },
 }
 
 /** Стор соединения сети: у обеих одинаковые поля подключения. */
-export function useRadioStore(network: MeshNetwork) {
+export function useRadioStore(network: RadioNetwork) {
   return network === 'meshtastic' ? useMeshtasticConnectionStore() : useMeshConnectionStore()
 }
 
@@ -49,7 +52,7 @@ export function useMeshErrorText() {
   }
 }
 
-export function useMeshConnect(network: MeshNetwork) {
+export function useMeshConnect(network: RadioNetwork) {
   const connection = useRadioStore(network)
   const { status, lastDevice } = storeToRefs(connection)
   const errorText = useMeshErrorText()

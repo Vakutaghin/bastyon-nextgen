@@ -236,7 +236,10 @@ const deliveryMark = computed<{ mark: string; title: string } | null>(() => {
       case 'sending':
         return { mark: '…', title: t('mesh.chat.sending') }
       case 'sent':
-        return { mark: '✓', title: t('mesh.chat.sent') }
+        return {
+          mark: '✓',
+          title: props.message.transport === 'lxmf' ? t('mesh.chat.lxmfSent') : t('mesh.chat.sent'),
+        }
       case 'delivered':
         // В канале Meshtastic подтверждения от адресата нет: «✓✓» — ретранслировали.
         return {
@@ -246,7 +249,9 @@ const deliveryMark = computed<{ mark: string; title: string } | null>(() => {
               ? t('mesh.chat.relayed')
               : meshKind.value === 'room'
                 ? t('mesh.chat.roomDelivered')
-                : t('mesh.chat.delivered'),
+                : props.message.transport === 'lxmf'
+                  ? t('mesh.chat.lxmfDelivered')
+                  : t('mesh.chat.delivered'),
         }
       default:
         return null

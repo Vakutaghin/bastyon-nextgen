@@ -1588,6 +1588,10 @@ export default {
         'Le réseau mesh LoRa le plus répandu. Les nœuds relaient les messages des autres ; les messages directs sont chiffrés avec les clés des nœuds.',
       meshcoreLead:
         'Un réseau relayé par des répéteurs : les messages suivent un chemin trouvé au lieu d’aller à tout le monde. Nécessite le firmware companion.',
+      reticulum: 'Reticulum',
+      lxmf: 'Reticulum',
+      reticulumLead:
+        "Un réseau sur n'importe quel lien : radio LoRa (RNode), votre réseau local et des hubs sur internet. Les clés restent dans l'application, les discussions sont chiffrées de bout en bout et votre adresse découle de votre phrase mnémonique.",
     },
     status: {
       idle: 'Non connecté',
@@ -1797,6 +1801,71 @@ export default {
         linkNothing: 'Ces canaux sont déjà sur la radio.',
       },
     },
+    rns: {
+      status: {
+        idle: 'Nœud arrêté',
+        starting: 'Démarrage…',
+        running: 'Nœud actif',
+        stopping: 'Arrêt…',
+      },
+      node: {
+        title: 'Mon nœud',
+        start: 'Démarrer',
+        stop: 'Arrêter',
+        lead: "Le nœud Reticulum tourne dans l'application. Tant qu'il est actif, on peut vous écrire à votre adresse.",
+        torNote:
+          'Le mode Tor est activé : les hubs internet et le réseau local sont coupés pour ne pas révéler votre adresse. Seule la radio (RNode) fonctionne.',
+        address: 'Adresse',
+        addressCopied:
+          "Adresse copiée. Donnez-la à votre interlocuteur : c'est là qu'il vous écrira.",
+        interfaces: 'Interfaces',
+        noInterfaces: 'aucune : ajoutez un hub, le réseau local ou un RNode',
+        interfacesValue: '{online} sur {total} en ligne',
+        name: 'Nom pour les autres',
+        announce: "S'annoncer",
+        announceHint:
+          "L'annonce donne au réseau votre adresse et votre nom : on vous trouve ensuite dans les listes de contacts.",
+        autostart: 'Démarrer le nœud à la connexion',
+      },
+      ifaces: {
+        title: 'Interfaces',
+        empty: "Aucune interface : le nœud n'est relié à personne.",
+        lan: 'Réseau local',
+        lanHint: 'Trouve les nœuds Reticulum de votre réseau Wi-Fi (AutoInterface).',
+        hub: 'Hub communautaire',
+        hubHint:
+          "Adresse d'un hub Reticulum sur internet (TCP) — demandez-la à la communauté. Via un hub, des nœuds du monde entier vous entendent.",
+        hubKind: 'hub TCP',
+        lanKind: 'réseau local',
+        rnode: 'RNode en USB',
+        rnodeHint:
+          'Une carte LoRa avec le firmware RNode. La fréquence et les paramètres doivent correspondre au réseau autour de vous.',
+        serialPort: 'Port',
+        choosePort: 'Choisir un port',
+        frequency: 'MHz',
+        bandwidth: 'kHz',
+        txPower: 'dBm',
+      },
+      peers: {
+        title: 'Contacts',
+        empty:
+          "Personne ne s'est encore annoncé. Les nœuds apparaissent ici quand ils s'annoncent sur le réseau.",
+        byAddress: 'Écrire à une adresse',
+        byAddressHint: "Collez l'adresse LXMF de votre interlocuteur — 32 caractères.",
+        addressPlaceholder: 'adresse LXMF',
+      },
+      propagation: {
+        title: 'Nœud de relais',
+        sync: 'Récupérer les messages',
+        lead: "Garde les messages tant que le destinataire est hors ligne (jusqu'à 30 jours). Choisissez un nœud : les messages aux personnes hors ligne passent par lui, et vous pouvez y récupérer les vôtres.",
+        empty: "Aucun nœud de relais ne s'est encore annoncé.",
+        chosen: 'choisi',
+        use: 'Utiliser',
+        syncing: 'Récupération des messages…',
+        failed: "Le nœud de relais n'a pas répondu.",
+        done: '{n} message reçu | {n} messages reçus',
+      },
+    },
     chat: {
       connect: 'Connecter',
       errors: {
@@ -1826,6 +1895,10 @@ export default {
       room: 'salon : un serveur de salon garde et relaie les messages ; chiffrement comme les messages directs MeshCore',
       roomShort: 'salon',
       roomDelivered: 'Le salon a accepté le message',
+      lxmfEncryption: "chiffrement de bout en bout Reticulum : clés dans l'application",
+      lxmfShort: 'Reticulum',
+      lxmfSent: 'Envoyé sur le réseau',
+      lxmfDelivered: "L'appareil du destinataire a confirmé la réception",
     },
     errors: {
       generic: "Ça n'a pas marché ({code}).",
@@ -1882,6 +1955,9 @@ export default {
       rebooted: 'La radio a redémarré.',
       login_timeout: "Le salon n'a pas répondu : mauvais mot de passe ou il n'entend pas la radio.",
       login_failed: 'Le salon a refusé la connexion.',
+      no_account_key: 'Pas de clé de compte : reconnectez-vous.',
+      rns_not_running: "Le nœud Reticulum n'est pas démarré.",
+      rns_error: 'Erreur Reticulum.',
     },
   },
   hotkeys: {

@@ -1586,6 +1586,10 @@ export default {
         'La red mesh LoRa más extendida. Los nodos retransmiten los mensajes de los demás; los mensajes directos se cifran con las claves de los nodos.',
       meshcoreLead:
         'Una red que retransmite por repetidores: los mensajes siguen una ruta encontrada en vez de ir a todos. Necesita el firmware companion.',
+      reticulum: 'Reticulum',
+      lxmf: 'Reticulum',
+      reticulumLead:
+        'Una red sobre cualquier enlace: radio LoRa (RNode), tu red local y hubs en internet. Las claves se quedan en la aplicación, los chats van cifrados de extremo a extremo y tu dirección sale de tu mnemónico.',
     },
     status: {
       idle: 'Sin conectar',
@@ -1794,6 +1798,70 @@ export default {
         linkNothing: 'Estos canales ya están en la radio.',
       },
     },
+    rns: {
+      status: {
+        idle: 'Nodo detenido',
+        starting: 'Iniciando…',
+        running: 'Nodo en marcha',
+        stopping: 'Deteniendo…',
+      },
+      node: {
+        title: 'Mi nodo',
+        start: 'Iniciar',
+        stop: 'Detener',
+        lead: 'El nodo Reticulum funciona dentro de la aplicación. Mientras está en marcha, pueden escribirte a tu dirección.',
+        torNote:
+          'El modo Tor está activado: los hubs de internet y la red local están apagados para no revelar tu dirección. Solo funciona la radio (RNode).',
+        address: 'Dirección',
+        addressCopied: 'Dirección copiada. Pásala a la otra persona: te escribirán a ella.',
+        interfaces: 'Interfaces',
+        noInterfaces: 'ninguna: añade un hub, la red local o un RNode',
+        interfacesValue: '{online} de {total} conectadas',
+        name: 'Nombre para los demás',
+        announce: 'Anunciarme',
+        announceHint:
+          'El anuncio comunica a la red tu dirección y tu nombre, para que te encuentren en sus listas de contactos.',
+        autostart: 'Iniciar el nodo al entrar en la cuenta',
+      },
+      ifaces: {
+        title: 'Interfaces',
+        empty: 'No hay interfaces: el nodo no está conectado con nadie.',
+        lan: 'Red local',
+        lanHint: 'Encuentra nodos Reticulum en tu red Wi-Fi (AutoInterface).',
+        hub: 'Hub de la comunidad',
+        hubHint:
+          'Dirección de un hub Reticulum en internet (TCP): pídela a la comunidad. A través de un hub te oirán nodos de todo el mundo.',
+        hubKind: 'hub TCP',
+        lanKind: 'red local',
+        rnode: 'RNode por USB',
+        rnodeHint:
+          'Una placa LoRa con firmware RNode. La frecuencia y los parámetros deben coincidir con la red de tu zona.',
+        serialPort: 'Puerto',
+        choosePort: 'Elige un puerto',
+        frequency: 'MHz',
+        bandwidth: 'kHz',
+        txPower: 'dBm',
+      },
+      peers: {
+        title: 'Contactos',
+        empty:
+          'Aún no se ha anunciado nadie. Los nodos aparecen aquí cuando se anuncian en la red.',
+        byAddress: 'Escribir a una dirección',
+        byAddressHint: 'Pega la dirección LXMF de la otra persona: 32 caracteres.',
+        addressPlaceholder: 'dirección LXMF',
+      },
+      propagation: {
+        title: 'Nodo de entrega',
+        sync: 'Recoger mensajes',
+        lead: 'Guarda los mensajes mientras el destinatario está desconectado (hasta 30 días). Elige un nodo: los mensajes para quien está desconectado pasan por él, y desde él puedes recoger los tuyos.',
+        empty: 'Aún no se ha anunciado ningún nodo de entrega.',
+        chosen: 'elegido',
+        use: 'Usar',
+        syncing: 'Recogiendo mensajes…',
+        failed: 'El nodo de entrega no respondió.',
+        done: '{n} mensaje recibido | {n} mensajes recibidos',
+      },
+    },
     chat: {
       connect: 'Conectar',
       errors: {
@@ -1823,6 +1891,10 @@ export default {
       room: 'sala: un servidor de sala guarda y reparte los mensajes; cifrado como en los mensajes directos de MeshCore',
       roomShort: 'sala',
       roomDelivered: 'La sala aceptó el mensaje',
+      lxmfEncryption: 'cifrado de extremo a extremo de Reticulum: claves en la aplicación',
+      lxmfShort: 'Reticulum',
+      lxmfSent: 'Enviado a la red',
+      lxmfDelivered: 'El dispositivo del destinatario confirmó la recepción',
     },
     errors: {
       generic: 'No ha funcionado ({code}).',
@@ -1879,6 +1951,9 @@ export default {
       rebooted: 'La radio se reinició.',
       login_timeout: 'La sala no respondió: la contraseña no era correcta o no oye la radio.',
       login_failed: 'La sala no te dejó entrar.',
+      no_account_key: 'No hay clave de la cuenta: vuelve a entrar.',
+      rns_not_running: 'El nodo Reticulum no está en marcha.',
+      rns_error: 'Error de Reticulum.',
     },
   },
   hotkeys: {

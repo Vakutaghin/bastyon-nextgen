@@ -36,14 +36,22 @@ import { MAX_TEXT_LEN } from '../meshcore/constants'
 import type { SessionChannel, SessionMessage } from '../meshcore/session'
 import { MAX_TEXT_BYTES as MT_MAX_TEXT_BYTES } from '../meshtastic/constants'
 import type { MtIncoming, MtSessionChannel } from '../meshtastic/session'
+import { rnsSend, type RnsEvent } from '../reticulum/rns-api'
 import { showRadioNotification } from '../radio/platform'
 import { splitForMesh } from '../text'
 import { meshDialogToMessenger, meshMessagesToMessenger } from './messenger-mapping'
 import { useMeshConnectionStore } from './mesh-connection-store'
 import { useMeshtasticConnectionStore } from './meshtastic-connection-store'
+import { useReticulumStore } from './reticulum-store'
 
 /** Сколько ключей недавних сообщений помнить в памяти — на случай, если база недоступна. */
 const RECENT_KEYS = 1000
+
+/**
+ * Текст одного сообщения LXMF. Короткое уходит одним пакетом, длинное —
+ * через Link частями (Resource), так что предел — разумный, а не эфирный.
+ */
+const LXMF_MAX_TEXT_BYTES = 8_000
 
 export type MeshSendError = 'not_connected' | 'too_long' | 'empty' | 'no_dialog'
 
@@ -157,11 +165,15 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     return find(record.id) ?? record
   }
 
+  function selfKeyOf(network: MeshNetwork, selfKey: string): string {
+    return (network === 'lxmf' ? selfKey.slice(0, 32) : selfKey.slice(0, 12)).toLowerCase()
+  }
+
   function directFields(network: MeshNetwork, selfKey: string, peer: string, name: string) {
     return {
       id: directDialogId(network, selfKey, peer),
       network,
-      selfKey: selfKey.slice(0, 12).toLowerCase(),
+      selfKey: selfKeyOf(network, selfKey),
       kind: 'direct' as const,
       peerKey: null as string | null,
       name,
@@ -311,6 +323,29 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     }
   }
 
+  /** Личный диалог LXMF по адресу собеседника. */
+  async function ensureLxmfDialog(
+    self: string,
+    dest: string,
+    name: string | null
+  ): Promise<string> {
+    await ensureLoaded()
+    const peer = dest.toLowerCase()
+    const d = await createDialog({
+      ...directFields('lxmf', self, peer, name || shortKey(peer)),
+      peerKey: peer,
+    })
+    return d.id
+  }
+
+  /** Собеседник объявил своё имя — обновить диалог, если он есть. */
+  async function syncLxmfPeer(self: string, dest: string, name: string): Promise<void> {
+    const d = find(directDialogId('lxmf', self, dest))
+    if (!d || d.name === name) return
+    d.name = name
+    await saveDialog(d)
+  }
+
   // ─── Приём ────────────────────────────────────────────────────────────────
 
   /** Сообщение от радио MeshCore. */
@@ -379,6 +414,51 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
       pki: m.kind === 'direct' ? m.pki : undefined,
       peerPublicKey: m.kind === 'direct' ? m.fromKey : undefined,
     })
+  }
+
+  /** Сообщение LXMF (Reticulum). */
+  async function receiveLxmf(
+    m: Extract<RnsEvent, { kind: 'message' }>,
+    self: string,
+    fromName: string | null
+  ): Promise<void> {
+    const text = m.title && m.content ? `${m.title}\n${m.content}` : m.content || m.title
+    if (!text) return
+    await ingest({
+      network: 'lxmf',
+      selfKey: self,
+      kind: 'direct',
+      peerKey: m.from,
+      peerFullKey: m.from,
+      senderKey: m.from,
+      senderName: fromName,
+      dialogName: fromName || shortKey(m.from),
+      senderTs: Math.floor(m.timestamp),
+      text,
+      // id сообщения LXMF — хэш содержимого: повтор через другой путь тот же.
+      uniq: m.id,
+      hops: null,
+      snr: null,
+    })
+  }
+
+  /** Судьба своего сообщения LXMF — по его id. */
+  const lxmfRecords = new Map<string, MeshMessageRecord>()
+
+  function updateLxmfState(
+    id: string,
+    state: 'sending' | 'sent' | 'delivered' | 'failed',
+    reason?: string
+  ): void {
+    const record = lxmfRecords.get(id)
+    if (!record) return
+    // Поздний «ушло» не отменяет «доставлено».
+    if (record.status === 'delivered' && state !== 'failed') return
+    update(record, {
+      status: state,
+      error: state === 'failed' ? reason || 'send_failed' : undefined,
+    })
+    if (state === 'delivered' || state === 'failed') lxmfRecords.delete(id)
   }
 
   async function ingest(m: Incoming): Promise<void> {
@@ -483,6 +563,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
   /** Предел текста одного сообщения в байтах UTF-8. */
   function textLimit(dialogId: string): number {
     const parsed = parseMeshDialogId(dialogId)
+    if (parsed?.network === 'lxmf') return LXMF_MAX_TEXT_BYTES
     if (parsed?.network === 'meshtastic') return MT_MAX_TEXT_BYTES
     // Комната пересылает пост с 4 байтами ключа автора — они съедают место.
     if (parsed?.kind === 'room') return MAX_TEXT_LEN - 4
@@ -500,6 +581,10 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     if (d.network === 'meshtastic') {
       const conn = useMeshtasticConnectionStore()
       return conn.status === 'connected' && conn.selfKey === d.selfKey && !conn.regionUnset
+    }
+    if (d.network === 'lxmf') {
+      const rns = useReticulumStore()
+      return rns.status === 'running' && rns.address?.toLowerCase() === d.selfKey
     }
     const conn = useMeshConnectionStore()
     return conn.status === 'connected' && conn.selfKey === d.selfKey
@@ -616,6 +701,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
       update(record, { status: 'failed', error: 'not_connected' })
       return Promise.resolve()
     }
+    if (dialog.network === 'lxmf') return transmitLxmf(dialog, record)
     return dialog.network === 'meshtastic'
       ? transmitMeshtastic(dialog, record)
       : transmitMeshcore(dialog, record)
@@ -726,6 +812,25 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     }, record)
   }
 
+  /**
+   * LXMF: узел сам выбирает способ (один пакет, Link или узел доставки) и
+   * сообщает судьбу событием `state` — здесь только «узел взял».
+   */
+  async function transmitLxmf(dialog: MeshDialogRecord, record: MeshMessageRecord): Promise<void> {
+    const to = dialog.peerKey
+    if (!to) {
+      update(record, { status: 'failed', error: 'no_dialog' })
+      return
+    }
+    try {
+      const { id } = await rnsSend(to, record.text, 'auto')
+      update(record, { lxmfId: id })
+      lxmfRecords.set(id, record)
+    } catch (e) {
+      update(record, { status: 'failed', error: errorCode(e) })
+    }
+  }
+
   // ─── Удаление и сброс ─────────────────────────────────────────────────────
 
   async function deleteDialog(id: string): Promise<void> {
@@ -745,6 +850,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     for (const key of Object.keys(messages)) delete messages[key]
     recentKeys.clear()
     sendChains.clear()
+    lxmfRecords.clear()
     if (opts.purge && previous) void meshAPI.purgeAccount(previous)
   }
 
@@ -769,6 +875,10 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     syncMeshtasticPeers,
     receive,
     receiveMeshtastic,
+    receiveLxmf,
+    updateLxmfState,
+    ensureLxmfDialog,
+    syncLxmfPeer,
     openDialog,
     markRead,
     messengerMessages,

@@ -105,3 +105,12 @@ tauri = { version = "2.11.6", features = ["test"] }
 # Радио-слой: снять HUPCL с порта (src/radio/serial.rs); в тестах — openpty.
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+# Reticulum (src/rns): стек и LXMF. Только unix — rns-net не собирается под
+# Windows. lxmf-rs ещё не выпущен на crates.io в версии для rns-net 0.5 — из
+# git, на закреплённом коммите; rns-* — ровно те версии, под которые он собран.
+rns-net = "=0.5.10"
+rns-core = "=0.1.13"
+rns-crypto = "=0.1.8"
+lxmf-rs = { git = "https://github.com/lelloman/lxmf-rs", rev = "e84fe344719c4b47aea2f300747b8c943fa1bbd0" }
+lxmf-core = { git = "https://github.com/lelloman/lxmf-rs", rev = "e84fe344719c4b47aea2f300747b8c943fa1bbd0" }

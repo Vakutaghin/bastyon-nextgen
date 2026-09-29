@@ -38,11 +38,13 @@ export interface MessageInfo {
  * Сеть диалога: Matrix (по умолчанию, поле не задано) или mesh-сеть через
  * радио (src/mesh). У mesh-диалогов id начинается с `mesh:`.
  */
-export type ChatTransport = 'matrix' | 'meshcore' | 'meshtastic'
+export type ChatTransport = 'matrix' | 'meshcore' | 'meshtastic' | 'lxmf'
 
-/** Диалог или сообщение идёт через радио (MeshCore, Meshtastic). */
-export function isMeshTransport(t: ChatTransport | undefined): t is 'meshcore' | 'meshtastic' {
-  return t === 'meshcore' || t === 'meshtastic'
+/** Диалог или сообщение идёт через mesh-сеть (MeshCore, Meshtastic, Reticulum/LXMF). */
+export function isMeshTransport(
+  t: ChatTransport | undefined
+): t is 'meshcore' | 'meshtastic' | 'lxmf' {
+  return t === 'meshcore' || t === 'meshtastic' || t === 'lxmf'
 }
 
 export interface Message {
