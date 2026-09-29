@@ -118,14 +118,14 @@ const router = createRouter({
       path: '/miniapps',
       name: 'miniapps',
       component: MiniAppsPage,
-      meta: { titleKey: 'routes.miniapps' },
+      meta: { titleKey: 'routes.miniapps', helpTopic: 'mini-apps' },
     },
     {
       path: '/app/:appId/:innerPath(.*)?',
       name: 'mini-app',
       component: MiniAppPage,
       props: true,
-      meta: { titleKey: 'routes.mini-app' },
+      meta: { titleKey: 'routes.mini-app', helpTopic: 'mini-apps' },
     },
     // Отдельный пост (deep-link, в т.ч. на комментарий: /post/:txid?commentid=&parentid=).
     // ДО catch-all /:userName.
