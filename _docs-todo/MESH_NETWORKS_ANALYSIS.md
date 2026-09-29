@@ -29,6 +29,7 @@
 | Вложения LXMF как у Sideband и MeshChat: картинка (`FIELD_IMAGE`), файлы, голос Opus на приём; картинки перед отправкой уменьшаются, до 900 КБ | `bastyon-rns` (`attachments_of`, `fields_of`), `src/mesh/media.ts`, `mesh-chat-room.vue` | `64ba76d` |
 | Бумажные сообщения: `lxm://` и QR для адресата, открытие ссылки или QR на вкладке | `bastyon-rns` (`paper`, `ingest`), `paper-message-dialog.vue`, `rns-peers.vue` | `749f46c` |
 | Первый шаг связки с аккаунтом: «Мой адрес Reticulum» в обычном чате, кнопка «Написать через Reticulum» у сообщения с `lxmf@…` | `use-mesh-share.ts`, `message-item.vue` | `af5cf8b` |
+| Обзор сети Reticulum: таблица путей узла (прыжки, следующий узел, интерфейс) — граф по кольцам прыжков и список | `bastyon-rns` (`paths`), `src/mesh/reticulum/network-graph.ts`, `rns-network.vue` | `73ee627` |
 | Голосовые LXMF: запись MediaRecorder (WebM Opus) перепаковывается в Ogg Opus без перекодирования, поле AUDIO в режиме `AM_OPUS_OGG`, как у Sideband; входящие Opus — плеером в чате | `src/mesh/voice.ts`, `use-mesh-voice.ts`, `bastyon-rns` (`fields_of`) | `6e05f1a` |
 | Файлы NomadNet (`/file/…`): скачивание с ходом и системным окном «Сохранить как», отказ узла — страницей. rns-net 0.5.10 вендорен с исправлениями из 0.7: ответ-файл, доказательство ресурса PROOF-пакетом, keepalive как у Python | `src-tauri/vendor/rns-net` (`VENDORED.md`), `bastyon-rns` (`download`), `rns-nomad.vue` | `632c478` |
 
@@ -102,8 +103,7 @@
     привязывает Link сам сразу после `jobs()`.
 
 Дальше: «один диалог — несколько маршрутов» (этап 8 целиком: адрес Reticulum в подписанной
-записи, общий диалог с Matrix и выбор маршрута по доступности), обзор сети (таблица путей, граф),
-Reticulum на Windows.
+записи, общий диалог с Matrix и выбор маршрута по доступности), Reticulum на Windows.
 
 ## Коротко
 
