@@ -62,7 +62,7 @@ const router = createRouter({
       path: '/my-videos',
       name: 'my-videos',
       component: MyVideosPage,
-      meta: { titleKey: 'routes.my-videos' },
+      meta: { titleKey: 'routes.my-videos', helpTopic: 'video-upload' },
     },
     {
       path: '/my-files',
