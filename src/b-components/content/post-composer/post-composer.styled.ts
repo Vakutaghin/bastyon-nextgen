@@ -72,6 +72,13 @@ export const SC_MentionName = styled.span`
   text-overflow: ellipsis;
 `
 
+/** «Ищу…», пока сеть ищет, а своих совпадений нет. */
+export const SC_MentionStatus = styled.li`
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+`
+
 export const SC_Composer = styled.div`
   display: flex;
   flex-direction: column;

@@ -2347,6 +2347,7 @@ export default {
     title: '새 게시물',
     placeholder: '무슨 생각을 하고 계신가요?',
     emoji: '이모지',
+    mentionSearching: '찾는 중…',
     tagsPlaceholder: '태그 추가…',
     tagsCount: '태그 {count}/{max}',
     removeTag: '태그 {tag} 삭제',

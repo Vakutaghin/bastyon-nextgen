@@ -52,6 +52,9 @@
           </SC_MentionAvatar>
           <SC_MentionName>{{ user.name || user.address }}</SC_MentionName>
         </SC_MentionRow>
+        <SC_MentionStatus v-if="!mentionResults.length && mentionSearching">
+          {{ t('postComposer.mentionSearching') }}
+        </SC_MentionStatus>
       </SC_MentionDropdown>
     </SC_MentionAnchor>
 
@@ -196,6 +199,7 @@ import {
   SC_MentionDropdown,
   SC_MentionName,
   SC_MentionRow,
+  SC_MentionStatus,
   SC_Textarea,
   SC_TitleInput,
 } from './post-composer.styled'
@@ -334,6 +338,7 @@ function insertEmoji(emoji: string): void {
 const {
   show: mentionShow,
   results: mentionResults,
+  searching: mentionSearching,
   highlight: mentionHighlight,
   update: updateMentions,
   close: closeMentions,

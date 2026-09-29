@@ -2401,6 +2401,7 @@ export default {
     title: 'Nouvelle publication',
     placeholder: 'Quoi de neuf ?',
     emoji: 'Emoji',
+    mentionSearching: 'Recherche…',
     tagsPlaceholder: 'Ajouter des tags…',
     tagsCount: '{count}/{max} tags',
     removeTag: 'Retirer le tag {tag}',

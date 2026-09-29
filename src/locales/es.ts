@@ -2392,6 +2392,7 @@ export default {
     title: 'Nueva publicación',
     placeholder: '¿Qué estás pensando?',
     emoji: 'Emoji',
+    mentionSearching: 'Buscando…',
     tagsPlaceholder: 'Añadir etiquetas…',
     tagsCount: '{count}/{max} etiquetas',
     removeTag: 'Quitar la etiqueta {tag}',

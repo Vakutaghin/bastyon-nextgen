@@ -255,6 +255,20 @@ export function userAvatar(
   return users.get(address)?.avatar ?? null
 }
 
+/**
+ * Все, чьи имена уже известны (лента, комментарии, профили): мгновенные
+ * подсказки @-упоминаний. Реактивно — computed пересчитается, когда придут
+ * новые имена.
+ */
+export function knownUsers(): Array<{ address: string; name: string; avatar: string | null }> {
+  const out: Array<{ address: string; name: string; avatar: string | null }> = []
+  for (const [address, user] of users) {
+    if (user.name && !user.deleted)
+      out.push({ address, name: user.name, avatar: user.avatar ?? null })
+  }
+  return out
+}
+
 /** Только для тестов. */
 export function __resetUserNamesForTests(): void {
   users.clear()

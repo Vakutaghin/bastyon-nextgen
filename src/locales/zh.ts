@@ -2274,6 +2274,7 @@ export default {
     title: '新帖子',
     placeholder: '你在想什么？',
     emoji: '表情',
+    mentionSearching: '正在搜索…',
     tagsPlaceholder: '添加标签…',
     tagsCount: '{count}/{max} 个标签',
     removeTag: '移除标签 {tag}',

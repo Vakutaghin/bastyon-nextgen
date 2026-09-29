@@ -2401,6 +2401,7 @@ export default {
     title: 'Neuer Beitrag',
     placeholder: 'Was gibt es Neues?',
     emoji: 'Emoji',
+    mentionSearching: 'Suche…',
     tagsPlaceholder: 'Tags hinzufügen…',
     tagsCount: '{count}/{max} Tags',
     removeTag: 'Tag {tag} entfernen',

@@ -14,7 +14,9 @@ A post's length is limited: together with its service fields it has to fit into 
 
 ## Mentions
 
-Type `@` and the first letters of a name — matching people appear under the field. Pick someone, and `@name` goes into the text. In the published post a mention becomes a link to the profile.
+Type `@` — people appear under the field right away: first the people you follow, then those you have already seen in the feed and comments. The first letters of a name narrow the list. From two letters on the app also searches the whole network; while it searches, the list says **“Searching…”**. Only people whose name contains what you typed are suggested.
+
+Pick with the arrow keys and Enter or with the mouse, and `@name` goes into the text. In the published post a mention becomes a link to the profile.
 
 ## Links
 

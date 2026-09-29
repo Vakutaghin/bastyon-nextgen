@@ -2366,6 +2366,7 @@ export default {
     title: 'New post',
     placeholder: "What's on your mind?",
     emoji: 'Emoji',
+    mentionSearching: 'Searching…',
     tagsPlaceholder: 'Add tags…',
     tagsCount: '{count}/{max} tags',
     removeTag: 'Remove tag {tag}',

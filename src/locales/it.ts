@@ -2383,6 +2383,7 @@ export default {
     title: 'Nuovo post',
     placeholder: 'A cosa stai pensando?',
     emoji: 'Emoji',
+    mentionSearching: 'Ricerca…',
     tagsPlaceholder: 'Aggiungi tag…',
     tagsCount: '{count}/{max} tag',
     removeTag: 'Rimuovi il tag {tag}',

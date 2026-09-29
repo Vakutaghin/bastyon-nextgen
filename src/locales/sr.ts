@@ -2364,6 +2364,7 @@ export default {
     title: 'Нова објава',
     placeholder: 'Шта вам је на уму?',
     emoji: 'Емоџи',
+    mentionSearching: 'Тражим…',
     tagsPlaceholder: 'Додај ознаке…',
     tagsCount: '{count}/{max} ознака',
     removeTag: 'Уклони ознаку {tag}',

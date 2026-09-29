@@ -2365,6 +2365,7 @@ export default {
     title: 'Новый пост',
     placeholder: 'Что у вас нового?',
     emoji: 'Эмодзи',
+    mentionSearching: 'Ищу…',
     tagsPlaceholder: 'Добавьте теги…',
     tagsCount: '{count}/{max} тегов',
     removeTag: 'Удалить тег {tag}',
