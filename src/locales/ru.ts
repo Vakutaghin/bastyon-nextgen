@@ -1887,6 +1887,10 @@ export default {
       paperCopied: 'Ссылка скопирована',
       paperDone: 'Готово',
       paperEmpty: 'Напишите текст — он уйдёт бумажным сообщением.',
+      voice: 'Записать голосовое',
+      voiceSend: 'Отправить голосовое',
+      voiceCancel: 'Отменить запись',
+      voiceUnsupported: 'Здесь не записать голосовое: нужна запись Opus (WebM или Ogg).',
       attach: 'Прикрепить картинку или файл',
       connect: 'Подключить',
       errors: {

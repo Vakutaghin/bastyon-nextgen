@@ -1904,6 +1904,11 @@ export default {
       paperCopied: 'Link kopiert',
       paperDone: 'Fertig',
       paperEmpty: 'Schreiben Sie zuerst den Text — er geht als Papiernachricht.',
+      voice: 'Sprachnachricht aufnehmen',
+      voiceSend: 'Sprachnachricht senden',
+      voiceCancel: 'Aufnahme abbrechen',
+      voiceUnsupported:
+        'Hier lässt sich keine Sprachnachricht aufnehmen: Opus-Aufnahme (WebM oder Ogg) wird benötigt.',
       attach: 'Bild oder Datei anhängen',
       connect: 'Verbinden',
       errors: {

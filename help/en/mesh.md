@@ -135,9 +135,11 @@ If the other person is offline, a message can wait for them on a **propagation n
 
 In an ordinary Bastyon chat, **My Reticulum address** in the 📎 menu sends the other person your address. Under a message with an address (`lxmf@…`) they get a **Message via Reticulum** button: the conversation opens in a Reticulum chat and goes without the internet, over the local network, a hub or radio. Both of you need the node running.
 
-### Pictures and files
+### Pictures, files and voice messages
 
-In a Reticulum chat, **Attach** sends a picture or a file; the text in the field goes as its caption. A picture is scaled down before sending, up to 900 KB in total at a time. Attachments work with Sideband and MeshChat; voice messages from them arrive as files. Over radio (RNode) a large attachment takes a long time, so keep them small.
+In a Reticulum chat, **Attach** sends a picture or a file; the text in the field goes as its caption. A picture is scaled down before sending, up to 900 KB in total at a time. Attachments work with Sideband and MeshChat. Over radio (RNode) a large attachment takes a long time, so keep them small.
+
+The 🎤 button records a voice message: press it again (■) to send, ✕ to cancel. A recording can be up to two minutes long. It goes in the Sideband format (Opus): Sideband and MeshChat play it, and their voice messages play right in the Bastyon chat. A minute of voice is about 120 KB, three times that on macOS, so keep it short for radio. Sideband voice messages in Codec2 mode arrive only as a 🎤 mark and cannot be played in Bastyon.
 
 ### Paper messages
 

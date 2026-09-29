@@ -1885,6 +1885,11 @@ export default {
       paperCopied: 'Link copied',
       paperDone: 'Done',
       paperEmpty: 'Type the text first — it goes as a paper message.',
+      voice: 'Record a voice message',
+      voiceSend: 'Send the voice message',
+      voiceCancel: 'Cancel recording',
+      voiceUnsupported:
+        'A voice message cannot be recorded here: Opus recording (WebM or Ogg) is needed.',
       attach: 'Attach a picture or a file',
       connect: 'Connect',
       errors: {

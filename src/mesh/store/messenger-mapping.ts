@@ -10,7 +10,12 @@ import type {
   MessageReaction,
 } from '@/b-components/messenger/types'
 import type { MeshAttachment, MeshDialogRecord, MeshMessageRecord } from '@/db/types'
+import {
+  registerLocalMedia,
+  releaseLocalMedia,
+} from '@/b-components/messenger/services/local-media'
 import { parseMeshDialogId } from '../ids'
+import { canPlayOggOpus } from '../voice'
 
 function transportOf(dialogId: string): ChatTransport | undefined {
   return parseMeshDialogId(dialogId)?.network
@@ -22,7 +27,7 @@ const mediaUrls = new Map<string, string>()
 function mediaUrl(key: string, a: MeshAttachment): string {
   let url = mediaUrls.get(key)
   if (!url) {
-    url = URL.createObjectURL(new Blob([a.data as BlobPart], { type: a.mime }))
+    url = registerLocalMedia(new Blob([a.data as BlobPart], { type: a.mime }))
     mediaUrls.set(key, url)
   }
   return url
@@ -30,23 +35,26 @@ function mediaUrl(key: string, a: MeshAttachment): string {
 
 /** Выход из аккаунта: ссылки на вложения больше не нужны. */
 export function forgetMeshMedia(): void {
-  for (const url of mediaUrls.values()) URL.revokeObjectURL(url)
+  for (const url of mediaUrls.values()) releaseLocalMedia(url)
   mediaUrls.clear()
 }
 
 /**
  * Вложения — отдельными сообщениями перед текстом: мессенджер рисует
- * картинку и файл своими компонентами. Голос (Opus в Ogg) — файлом: не
- * всякий WebView его проиграет.
+ * картинку, голос и файл своими компонентами. Голос (Opus в Ogg) — плеером,
+ * если WebView его проиграет (WKWebView — с macOS 15, Chromium — всегда),
+ * иначе файлом.
  */
 function attachmentMessages(m: MeshMessageRecord, base: Message): Message[] {
   return (m.attachments ?? []).map((a, i) => {
     const key = `${m.id}#${i}`
+    const type =
+      a.kind === 'image' ? 'image' : a.kind === 'audio' && canPlayOggOpus() ? 'audio' : 'file'
     return {
       ...base,
       id: key,
       text: a.name,
-      type: a.kind === 'image' ? 'image' : 'file',
+      type,
       url: mediaUrl(key, a),
       info: { name: a.name, mimetype: a.mime, size: a.data.length },
       meshReplyable: undefined,

@@ -284,10 +284,12 @@ fn attachments_of(fields: &[(Value, Value)]) -> (Vec<Attachment>, String) {
     (out, marks)
 }
 
-/// Поля LXMF для отправки: первая картинка — FIELD_IMAGE, остальное —
-/// файлами, как у Sideband и MeshChat.
+/// Поля LXMF для отправки: первая картинка — FIELD_IMAGE, голос Ogg Opus —
+/// FIELD_AUDIO в режиме AM_OPUS_OGG (другие режимы Opus Sideband не играет),
+/// остальное — файлами, как у Sideband и MeshChat.
 fn fields_of(attachments: &[Attachment]) -> Result<Vec<(Value, Value)>, String> {
     let mut image = None;
+    let mut audio = None;
     let mut files = Vec::new();
     let mut total = 0usize;
     for a in attachments {
@@ -300,7 +302,13 @@ fn fields_of(attachments: &[Attachment]) -> Result<Vec<(Value, Value)>, String> 
                 let format = mime.trim_start_matches("image/").replace("jpeg", "jpg");
                 image = Some(Value::Array(vec![Value::Str(format), Value::Bin(bytes)]));
             }
-            ("image" | "file", _) => files.push(Value::Array(vec![
+            ("audio", _) if audio.is_none() && a.mime == "audio/ogg" => {
+                audio = Some(Value::Array(vec![
+                    Value::UInt(AM_OPUS_OGG as u64),
+                    Value::Bin(bytes),
+                ]));
+            }
+            ("image" | "file" | "audio", _) => files.push(Value::Array(vec![
                 Value::Str(file_name(&a.name)),
                 Value::Bin(bytes),
             ])),
@@ -313,6 +321,9 @@ fn fields_of(attachments: &[Attachment]) -> Result<Vec<(Value, Value)>, String> 
     let mut fields = Vec::new();
     if let Some(img) = image {
         fields.push((Value::UInt(FIELD_IMAGE as u64), img));
+    }
+    if let Some(voice) = audio {
+        fields.push((Value::UInt(FIELD_AUDIO as u64), voice));
     }
     if !files.is_empty() {
         fields.push((Value::UInt(FIELD_FILE_ATTACHMENTS as u64), Value::Array(files)));
@@ -2127,6 +2138,33 @@ mod tests {
     }
 
     #[test]
+    fn voice_goes_out_as_opus_ogg_audio_field() {
+        let sent = vec![attachment("audio", "voice.ogg", "audio/ogg", b"OggS voice")];
+        let fields = fields_of(&sent).unwrap();
+        assert_eq!(
+            fields,
+            vec![(
+                Value::UInt(FIELD_AUDIO as u64),
+                Value::Array(vec![
+                    Value::UInt(AM_OPUS_OGG as u64),
+                    Value::Bin(b"OggS voice".to_vec())
+                ]),
+            )]
+        );
+        let (got, marks) = attachments_of(&fields);
+        assert_eq!(got, vec![attachment("audio", "voice.ogg", "audio/ogg", b"OggS voice")]);
+        assert!(marks.is_empty());
+        // Не Ogg или второй голос — обычным файлом.
+        let fields = fields_of(&[
+            attachment("audio", "a.ogg", "audio/ogg", b"1"),
+            attachment("audio", "b.m4a", "audio/mp4", b"2"),
+        ])
+        .unwrap();
+        assert_eq!(fields.len(), 2);
+        assert_eq!(fields[1].0, Value::UInt(FIELD_FILE_ATTACHMENTS as u64));
+    }
+
+    #[test]
     fn voice_opus_is_playable_codec2_is_marked() {
         let opus = vec![(
             Value::UInt(FIELD_AUDIO as u64),
@@ -2547,6 +2585,31 @@ mod interop {
             ),
             _ => unreachable!(),
         }
+
+        // Голос: FIELD_AUDIO в режиме AM_OPUS_OGG (0x10) в обе стороны.
+        let voice = b64(b"OggS\0\x02voice");
+        let id = runtime
+            .send(
+                to,
+                "",
+                "",
+                &[Attachment {
+                    kind: "audio".into(),
+                    name: "voice.ogg".into(),
+                    mime: "audio/ogg".into(),
+                    data: voice.clone(),
+                }],
+                Method::Direct,
+            )
+            .unwrap();
+        let got = peer.expect("voice", |v| v["message"]["fields"].get("7").is_some());
+        assert_eq!(got["message"]["fields"]["7"], json!([AM_OPUS_OGG, voice]));
+        expect_ev(&rx, "voice delivered", |ev| is_state(ev, &id, "delivered"));
+        peer.cmd(json!({"send": our, "text": "голос из Python", "method": "direct",
+            "audio": [AM_OPUS_OGG, voice]}));
+        let ev = expect_ev(&rx, "voice from python", |ev| is_message(ev, "голос из Python", "direct"));
+        assert!(matches!(ev, RnsEvent::Message { ref attachments, .. }
+            if attachments.len() == 1 && attachments[0].kind == "audio" && attachments[0].data == voice));
 
         // Большое вложение идёт ресурсом по Link: «доставлено» в обе стороны
         // значит, что доказательства ресурса понимают обе реализации.

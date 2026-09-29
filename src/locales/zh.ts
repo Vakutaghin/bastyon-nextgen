@@ -1820,6 +1820,10 @@ export default {
       paperCopied: '链接已复制',
       paperDone: '完成',
       paperEmpty: '请先输入文字——它将作为纸质消息发送。',
+      voice: '录制语音消息',
+      voiceSend: '发送语音消息',
+      voiceCancel: '取消录音',
+      voiceUnsupported: '此处无法录制语音消息：需要 Opus 录音（WebM 或 Ogg）。',
       attach: '附加图片或文件',
       connect: '连接',
       errors: {

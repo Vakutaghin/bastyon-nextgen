@@ -12,6 +12,7 @@
  */
 import { onBeforeUnmount, ref, type Ref } from 'vue'
 import { matrixFetch } from '@/helpers/api/request'
+import { localMediaBlob } from '../../services/local-media'
 import type { Message } from '../../types'
 import { t } from '@/i18n'
 
@@ -64,14 +65,17 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
         hasError.value = t('messenger.audioNoUrl')
         return
       }
-      const response = await matrixFetch(url, { mode: 'cors' })
-
-      if (!response.ok) {
-        hasError.value = `HTTP ${response.status}`
-        return
+      // Голосовое mesh-сети уже в памяти (`blob:`): fetch такой ссылки CSP
+      // не пускает (connect-src), да и незачем.
+      let blob = localMediaBlob(url) ?? null
+      if (!blob) {
+        const response = await matrixFetch(url, { mode: 'cors' })
+        if (!response.ok) {
+          hasError.value = `HTTP ${response.status}`
+          return
+        }
+        blob = await response.blob()
       }
-
-      let blob = await response.blob()
 
       // Bastyon-шифрованные аудио (secrets) — расшифровываем через store.
       if (message.info?.secrets) {

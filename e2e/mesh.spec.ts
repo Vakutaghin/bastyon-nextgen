@@ -15,6 +15,8 @@ import {
 } from '../src/mesh/meshtastic/framing'
 import { MeshtasticSession, type MtIncoming } from '../src/mesh/meshtastic/session'
 import { FakeMeshAir, FakeMeshtasticDevice } from '../src/mesh/meshtastic/testing/fake-device'
+import { voiceAttachment } from '../src/mesh/voice'
+import { readFileSync } from 'node:fs'
 
 /**
  * Переписка через mesh-радио в интерфейсе: страница «Mesh-сети», подключение
@@ -649,6 +651,99 @@ test.describe('reticulum', () => {
     await expect(paper).toContainText(`lxm://${Buffer.from('На бумаге').toString('base64url')}`)
     await paper.getByRole('button', { name: 'Готово' }).click()
     await expect(paper).toBeHidden()
+  })
+
+  test('voice messages over LXMF', async ({ page }) => {
+    test.setTimeout(120_000)
+    // Микрофон — тон из WebAudio: MediaRecorder пишет его, как голос.
+    await page.addInitScript(() => {
+      // Через прототип: в WebKit navigator.mediaDevices на старте документа ещё нет.
+      MediaDevices.prototype.getUserMedia = async () => {
+        const ctx = new AudioContext()
+        await Promise.race([ctx.resume(), new Promise((r) => setTimeout(r, 500))])
+        const osc = ctx.createOscillator()
+        const dest = ctx.createMediaStreamDestination()
+        osc.connect(dest)
+        osc.start()
+        return dest.stream
+      }
+    })
+    await useMockNode(page, DATA)
+    await page.goto('/')
+    await page.waitForSelector('#app > *', { timeout: 30_000 })
+    await page
+      .getByRole('button', { name: 'Понятно' })
+      .click({ timeout: 5_000 })
+      .catch(() => {})
+    await signIn(page)
+    const rns = new RnsBridge(page)
+    await installTauriMock(page, rns)
+    await goTo(page, '/mesh?net=reticulum')
+    await page.getByRole('button', { name: 'Запустить' }).click()
+    await expect(page.getByText(RnsBridge.ADDRESS)).toBeVisible()
+
+    const BOB = 'c3'.repeat(16)
+    rns.emit({
+      kind: 'announce',
+      aspect: 'lxmf.delivery',
+      dest: BOB,
+      identity: 'd4'.repeat(16),
+      name: 'Боб',
+      hops: 1,
+    })
+    await page
+      .getByRole('listitem')
+      .filter({ hasText: 'Боб' })
+      .getByRole('button', { name: 'Написать' })
+      .click()
+
+    // Голосовое от Боба (Ogg Opus, как у Sideband) — плеером, не файлом.
+    const ogg = voiceAttachment(
+      new Uint8Array(readFileSync('src/mesh/testdata/voice-chrome.webm'))
+    )!
+    rns.emit({
+      kind: 'message',
+      id: 'from-bob-voice',
+      from: BOB,
+      title: '',
+      content: '',
+      timestamp: 1_790_000_000,
+      signed: true,
+      method: 'direct',
+      attachments: [
+        {
+          kind: 'audio',
+          name: 'voice.ogg',
+          mime: 'audio/ogg',
+          data: Buffer.from(ogg.data).toString('base64'),
+        },
+      ],
+    })
+    await expect(page.getByRole('button', { name: 'Воспроизвести' })).toBeEnabled()
+
+    // Своё: запись, «■» — отправить; уходит Ogg Opus в поле голоса.
+    const record = page.getByRole('button', { name: 'Записать голосовое' })
+    const canRecord = await page.evaluate(() =>
+      ['audio/ogg;codecs=opus', 'audio/webm;codecs=opus'].some((t) =>
+        MediaRecorder.isTypeSupported(t)
+      )
+    )
+    if (!canRecord) {
+      await expect(record).toHaveCount(0)
+      return
+    }
+    await record.click()
+    await expect(page.getByText(/● 0:0\d \/ 2:00/)).toBeVisible()
+    await page.waitForTimeout(1_500)
+    await page.getByRole('button', { name: 'Отправить голосовое' }).click()
+    await expect.poll(() => rns.sent.length).toBe(1)
+    const [voice] = rns.sent[0]!.attachments!
+    expect([voice!.kind, voice!.name]).toEqual(['audio', 'voice.ogg'])
+    // «OggS» и «OpusHead» в начале потока.
+    const bytes = Buffer.from(voice!.data, 'base64')
+    expect(bytes.subarray(0, 4).toString()).toBe('OggS')
+    expect(bytes.subarray(28, 36).toString()).toBe('OpusHead')
+    await expect(page.getByRole('button', { name: 'Воспроизвести' })).toHaveCount(2)
   })
 
   test('open a paper message by its link', async ({ page }) => {

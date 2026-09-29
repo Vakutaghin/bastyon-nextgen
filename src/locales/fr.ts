@@ -1909,6 +1909,11 @@ export default {
       paperCopied: 'Lien copié',
       paperDone: 'Terminé',
       paperEmpty: "Écrivez d'abord le texte : il partira en message papier.",
+      voice: 'Enregistrer un message vocal',
+      voiceSend: 'Envoyer le message vocal',
+      voiceCancel: "Annuler l'enregistrement",
+      voiceUnsupported:
+        "Impossible d'enregistrer un message vocal ici : il faut l'enregistrement Opus (WebM ou Ogg).",
       attach: 'Joindre une image ou un fichier',
       connect: 'Connecter',
       errors: {

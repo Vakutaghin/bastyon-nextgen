@@ -53,6 +53,29 @@
       >
         🧾
       </SC_EmojiToggleButton>
+      <SC_EmojiToggleButton
+        v-if="network === 'lxmf' && voiceAvailable"
+        type="button"
+        :aria-label="voiceTitle"
+        :title="voiceTitle"
+        :disabled="!canSend || sending"
+        @click="recording ? stopVoice() : startVoice()"
+      >
+        {{ recording ? '■' : '🎤' }}
+      </SC_EmojiToggleButton>
+      <template v-if="recording">
+        <SC_ByteCounter :over="false" :blocked="false" aria-live="polite">
+          {{ voiceTime }}
+        </SC_ByteCounter>
+        <SC_EmojiToggleButton
+          type="button"
+          :aria-label="t('mesh.chat.voiceCancel')"
+          :title="t('mesh.chat.voiceCancel')"
+          @click="cancelVoice"
+        >
+          ✕
+        </SC_EmojiToggleButton>
+      </template>
 
       <SC_MessageInput
         :ref="setInputRef"
@@ -94,7 +117,8 @@
 /**
  * Чат через mesh-сети (Meshtastic, MeshCore, Reticulum). Отдельно от
  * ChatRoom: «печатает» и прочтений нет, зато есть предел в байтах и радио
- * (узел), которое может быть не подключено. Вложения — только в LXMF.
+ * (узел), которое может быть не подключено. Вложения, бумажные сообщения и
+ * голосовые — только в LXMF.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -114,6 +138,9 @@ import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import PaperMessageDialog from './paper-message-dialog.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import { useChatInput } from '../chat-room/use-chat-input'
+import { micErrorMessage } from '../chat-room/use-voice-recording'
+import { MAX_SECONDS, useMeshVoice, type MeshVoiceError } from './use-mesh-voice'
+import type { MeshAttachment } from '@/db/types'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
 import type { Message } from '../../types'
 import {
@@ -288,6 +315,54 @@ async function sendFiles(files: File[]): Promise<void> {
   }
 }
 
+/** Голосовое (LXMF, Ogg Opus как у Sideband); текст из поля уходит подписью. */
+async function sendVoice(recorded: MeshAttachment): Promise<void> {
+  if (!canSend.value) return
+  sending.value = true
+  try {
+    const result = await meshChat.sendAttachments(
+      props.dialogId,
+      [recorded],
+      tooLong.value ? '' : inputValue.value.trim()
+    )
+    if (result.ok) {
+      if (!tooLong.value) inputValue.value = ''
+      adjustHeight()
+    } else {
+      appToast.error({ message: t(`mesh.chat.errors.${result.error}`) })
+    }
+  } finally {
+    sending.value = false
+  }
+}
+
+function voiceError(e: MeshVoiceError): void {
+  appToast.error({
+    message:
+      typeof e === 'object'
+        ? micErrorMessage(e.mic, !!navigator.mediaDevices?.getUserMedia)
+        : t('mesh.chat.voiceUnsupported'),
+  })
+}
+
+const {
+  recording,
+  seconds: voiceSeconds,
+  available: voiceAvailable,
+  start: startVoice,
+  stop: stopVoice,
+  cancel: cancelVoice,
+} = useMeshVoice({ onRecorded: (v) => void sendVoice(v), onError: voiceError })
+
+const voiceTitle = computed<string>(() =>
+  recording.value ? t('mesh.chat.voiceSend') : t('mesh.chat.voice')
+)
+
+const voiceTime = computed<string>(() => {
+  const clock = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  return `● ${clock(voiceSeconds.value)} / ${clock(MAX_SECONDS)}`
+})
+
 /** Бумажное сообщение (LXMF): текст из поля — в QR-код и ссылку `lxm://`. */
 const paperUri = ref<string | null>(null)
 
@@ -344,6 +419,8 @@ watch(
   () => props.dialogId,
   () => {
     replyingTo.value = null
+    // Недописанное голосовое не уходит в чат, который открыли следом.
+    cancelVoice()
     void open()
   }
 )

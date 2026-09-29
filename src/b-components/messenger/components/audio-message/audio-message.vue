@@ -36,7 +36,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Message } from '../../types'
+import { isMeshTransport, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { useCanvasWaveform } from './use-canvas-waveform'
 import { useAudioPlayback } from './use-audio-playback'
@@ -105,7 +105,11 @@ const waveform = useCanvasWaveform({
 })
 const container = waveform.container
 
-const isBlocked = computed<boolean>(() => props.message.status !== 'sent')
+// Голосовое Matrix, пока грузится на сервер. Голосовое mesh-сети — уже у нас
+// (blob), его можно слушать в любом статусе доставки.
+const isBlocked = computed<boolean>(
+  () => !isMeshTransport(props.message.transport) && props.message.status !== 'sent'
+)
 
 const timeLabel = computed<string>(() => {
   const secs = isPlaying.value || !showDurationMode.value ? currentTime.value : duration.value

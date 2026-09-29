@@ -1893,6 +1893,11 @@ export default {
       paperCopied: 'Link copiato',
       paperDone: 'Fatto',
       paperEmpty: 'Scrivi prima il testo: partirà come messaggio su carta.',
+      voice: 'Registra un messaggio vocale',
+      voiceSend: 'Invia il messaggio vocale',
+      voiceCancel: 'Annulla la registrazione',
+      voiceUnsupported:
+        'Qui non si può registrare un messaggio vocale: serve la registrazione Opus (WebM o Ogg).',
       attach: 'Allega un’immagine o un file',
       connect: 'Collega',
       errors: {

@@ -10,7 +10,8 @@ python peer.py <configdir> <port> [name] [--pn] [--node]
   /file/secret.txt — отказ страницей;
 - печатает JSON-строки: {"ready": адрес, ...}, {"announce": ...}, {"message": ...}, {"state": ...};
 - команды на stdin (JSON): {"send": "<dest hex>", "text": "...", "method": "opportunistic|direct|propagated",
-  "image": [формат, base64], "files": [[имя, base64], ...]} (вложения — по желанию),
+  "image": [формат, base64], "files": [[имя, base64], ...], "audio": [режим, base64]} (вложения —
+  по желанию),
   {"announce": true}, {"path": "<dest hex>"}, {"store_for": "<dest hex>", "text": "..."} (положить
   сообщение в своё хранилище узла доставки), {"paper_for": "<dest hex>", "text": "..."} (бумажное
   сообщение → {"paper": "lxm://…"}), {"ingest": "lxm://…"}, {"pn_count": true}, {"quit": true}.
@@ -229,6 +230,9 @@ for line in sys.stdin:
             fields[LXMF.FIELD_IMAGE] = [fmt, base64.b64decode(data)]
         if "files" in cmd:
             fields[LXMF.FIELD_FILE_ATTACHMENTS] = [[n, base64.b64decode(d)] for n, d in cmd["files"]]
+        if "audio" in cmd:
+            mode, data = cmd["audio"]
+            fields[LXMF.FIELD_AUDIO] = [mode, base64.b64decode(data)]
         msg = LXMF.LXMessage(to, dest, cmd.get("text", ""), cmd.get("title", ""), desired_method=method,
                              fields=fields or None)
         router.handle_outbound(msg)

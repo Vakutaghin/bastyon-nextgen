@@ -1869,6 +1869,11 @@ export default {
       paperCopied: '링크를 복사했습니다',
       paperDone: '완료',
       paperEmpty: '먼저 내용을 입력하세요. 종이 메시지로 보내집니다.',
+      voice: '음성 메시지 녹음',
+      voiceSend: '음성 메시지 보내기',
+      voiceCancel: '녹음 취소',
+      voiceUnsupported:
+        '여기서는 음성 메시지를 녹음할 수 없습니다. Opus 녹음(WebM 또는 Ogg)이 필요합니다.',
       attach: '사진 또는 파일 첨부',
       connect: '연결',
       errors: {
