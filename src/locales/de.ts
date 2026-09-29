@@ -1569,7 +1569,14 @@ export default {
   mesh: {
     title: 'Mesh-Netze',
     lead: 'Chatten über LoRa-Funk – ohne Internet und Mobilfunk. Verbinde ein Meshtastic- oder MeshCore-Funkgerät über USB, Bluetooth oder WLAN: Die Chats darüber erscheinen im Messenger neben den gewohnten.',
-    desktopOnly: 'Ein Funkgerät lässt sich in der Desktop-App verbinden (macOS, Windows, Linux).',
+    desktopOnly:
+      'Ein Funkgerät lässt sich in der Desktop-App (macOS, Windows, Linux) und unter Android verbinden.',
+    android: {
+      serviceTitle: 'Funkgerät verbunden',
+      serviceText: 'Nachrichten über Funk kommen auch an, wenn die App im Hintergrund ist',
+      serviceChannel: 'Verbundenes Funkgerät',
+      messagesChannel: 'Nachrichten über Funk',
+    },
     networks: {
       label: 'Netz',
       meshtastic: 'Meshtastic',

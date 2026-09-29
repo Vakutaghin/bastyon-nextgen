@@ -19,7 +19,7 @@ These are different networks: Meshtastic and MeshCore radios cannot hear each ot
 
 ## What you need
 
-- The desktop app: a radio can be connected only there.
+- The desktop or Android app: a radio can be connected only there (not in a browser or on an iPhone).
 - A LoRa radio with the firmware of the network you want. Common boards (Heltec, LilyGO, RAK and others) work; the firmware is installed with each project's web flasher.
   - **Meshtastic** — firmware 2.5 or newer (2.7 is best).
   - **MeshCore** — the companion firmware (USB, Bluetooth or Wi-Fi).
@@ -38,6 +38,8 @@ Account menu → **Mesh networks**. Pick the network tab — **Meshtastic** or *
 
 > [!WARNING]
 > Over Wi-Fi the app and the radio talk without encryption or a password. On a network that is not yours, connect the radio over USB or Bluetooth.
+
+On Android a radio connects the same ways: over Bluetooth, over USB through an OTG adapter (the system asks for permission to use the device) and over Wi-Fi. While a radio is connected, a "Radio connected" notification stays in the shade — this keeps Android from putting the app to sleep, so messages arrive even when it is in the background, and the phone notifies you of new ones. Disconnect the radio and the notification goes away.
 
 The app remembers the last radio of each network, so next time one **Connect** button is enough. If the connection drops (the cable is pulled, the radio restarts or goes out of Bluetooth range), the app reconnects by itself.
 

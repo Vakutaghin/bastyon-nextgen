@@ -65,6 +65,7 @@ import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { isTauriEnv } from '@/helpers/api/request-tor'
+import { isRadioSupported } from '@/mesh/radio/platform'
 import SidebarTabs from '@/b-components/sidebar/sidebar-tabs/sidebar-tabs.vue'
 import SidebarCategories from '@/b-components/sidebar/sidebar-categories/sidebar-categories.vue'
 import SidebarTags from '@/b-components/sidebar/sidebar-tags/sidebar-tags.vue'
@@ -114,13 +115,13 @@ const accountItems = computed(() => [
   { path: '/wallets', label: t('accountMsg.menuWallets'), icon: WalletOutlined },
   { path: '/limits', label: t('accountMsg.menuLimits'), icon: HourglassOutlined },
   { path: '/my-videos', label: t('accountMsg.menuMyVideos'), icon: PlayCircleOutlined },
-  // Раздавать файлы через IPFS умеет только десктоп (своя нода Kubo), радио для
-  // mesh-сетей подключается тоже только там.
+  // Раздавать файлы через IPFS умеет только десктоп (своя нода Kubo); радио для
+  // mesh-сетей подключается на десктопе и в Android.
   ...(isTauriEnv()
-    ? [
-        { path: '/my-files', label: t('accountMsg.menuMyFiles'), icon: FileOutlined },
-        { path: '/mesh', label: t('accountMsg.menuMesh'), icon: RadioTowerIcon },
-      ]
+    ? [{ path: '/my-files', label: t('accountMsg.menuMyFiles'), icon: FileOutlined }]
+    : []),
+  ...(isRadioSupported()
+    ? [{ path: '/mesh', label: t('accountMsg.menuMesh'), icon: RadioTowerIcon }]
     : []),
   { path: '/settings', label: t('accountMsg.menuSettings'), icon: SettingOutlined },
 ])

@@ -159,3 +159,19 @@ export class ByteReader {
     this.at += n
   }
 }
+
+/** Байты → base64 (так их передаёт мост Capacitor). */
+export function toBase64(bytes: Uint8Array): string {
+  let s = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    s += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  }
+  return btoa(s)
+}
+
+export function fromBase64(text: string): Uint8Array {
+  const bin = atob(text)
+  const out = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+  return out
+}

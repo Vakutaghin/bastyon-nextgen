@@ -11,6 +11,7 @@ import type { useAuthStore } from '@/blockchain'
 import type { useModalStore } from '@/stores/modal-store'
 import { t } from '@/i18n'
 import { isTauriEnv } from '@/helpers/api/request-tor'
+import { isRadioSupported } from '@/mesh/radio/platform'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 type ModalStore = ReturnType<typeof useModalStore>
@@ -74,7 +75,7 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
     // Раздавать файлы через IPFS умеет только десктоп (своя нода Kubo).
     ...(isTauriEnv() ? [{ key: '/my-files', label: t('accountMsg.menuMyFiles') }] : []),
     // Радио для mesh-сетей подключается только в десктопе (src-tauri/src/radio).
-    ...(isTauriEnv() ? [{ key: '/mesh', label: t('accountMsg.menuMesh') }] : []),
+    ...(isRadioSupported() ? [{ key: '/mesh', label: t('accountMsg.menuMesh') }] : []),
     { key: '/help', label: t('accountMsg.menuHelp') },
     { key: 'settings', label: t('accountMsg.menuSettings') },
     { type: 'divider' },

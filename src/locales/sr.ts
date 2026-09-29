@@ -1556,7 +1556,14 @@ export default {
   mesh: {
     title: 'Mesh мреже',
     lead: 'Преписка преко LoRa радија — без интернета и мобилне мреже. Повежите Meshtastic или MeshCore радио преко USB-а, Bluetooth-а или Wi-Fi-ја: преписке преко њега појављују се у месинџеру поред обичних.',
-    desktopOnly: 'Радио се повезује у апликацији за рачунар (macOS, Windows, Linux).',
+    desktopOnly:
+      'Радио се повезује у апликацији за рачунар (macOS, Windows, Linux) и на Android-у.',
+    android: {
+      serviceTitle: 'Радио је повезан',
+      serviceText: 'Поруке преко радија стижу и док је апликација у позадини',
+      serviceChannel: 'Повезан радио',
+      messagesChannel: 'Поруке преко радија',
+    },
     networks: {
       label: 'Мрежа',
       meshtastic: 'Meshtastic',

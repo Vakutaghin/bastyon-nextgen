@@ -15,12 +15,14 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.bastyon.app.plugins.BackgroundMediaPlugin;
+import com.bastyon.app.plugins.radio.MeshRadioPlugin;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(BackgroundMediaPlugin.class);
+        registerPlugin(MeshRadioPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Edge-to-edge: WebView рисует под status/navigation barами.

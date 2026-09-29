@@ -1572,7 +1572,14 @@ export default {
     title: 'Réseaux mesh',
     lead: 'Discuter par radio LoRa, sans internet ni réseau mobile. Connectez une radio Meshtastic ou MeshCore en USB, Bluetooth ou Wi-Fi : ses discussions apparaissent dans la messagerie à côté des autres.',
     desktopOnly:
-      "Une radio se connecte dans l'application pour ordinateur (macOS, Windows, Linux).",
+      "Une radio se connecte dans l'application pour ordinateur (macOS, Windows, Linux) et sur Android.",
+    android: {
+      serviceTitle: 'Radio connectée',
+      serviceText:
+        "Les messages radio continuent d'arriver quand l'application est en arrière-plan",
+      serviceChannel: 'Radio connectée',
+      messagesChannel: 'Messages radio',
+    },
     networks: {
       label: 'Réseau',
       meshtastic: 'Meshtastic',

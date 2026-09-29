@@ -64,6 +64,13 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
+        <!-- Mesh-радио: держит приложение живым, пока подключено LoRa-радио. -->
+        <service
+            android:name=".plugins.radio.MeshRadioService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
         <receiver
             android:name="androidx.media.session.MediaButtonReceiver"
             android:exported="true">
@@ -89,5 +96,21 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+        Mesh-радио (src/mesh): LoRa-радио по Bluetooth LE, USB (OTG) и Wi-Fi.
+        Поиск Bluetooth не нужен для геолокации (neverForLocation); до Android 12
+        он без геолокации не работает. Служба connectedDevice требует одно из
+        «сетевых» разрешений — CHANGE_NETWORK_STATE выдаётся без запроса.
+    -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 </manifest>

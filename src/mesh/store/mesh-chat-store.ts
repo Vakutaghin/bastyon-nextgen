@@ -35,6 +35,7 @@ import { MAX_TEXT_LEN } from '../meshcore/constants'
 import type { SessionChannel, SessionMessage } from '../meshcore/session'
 import { MAX_TEXT_BYTES as MT_MAX_TEXT_BYTES } from '../meshtastic/constants'
 import type { MtIncoming, MtSessionChannel } from '../meshtastic/session'
+import { showRadioNotification } from '../radio/platform'
 import { splitForMesh } from '../text'
 import { meshDialogToMessenger, meshMessagesToMessenger } from './messenger-mapping'
 import { useMeshConnectionStore } from './mesh-connection-store'
@@ -390,7 +391,9 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
       } catch {
         /* нет звука — не беда */
       }
-      notifyMessage(record.senderName || dialog.name, m.text)
+      // На Android — системное уведомление (Web Notification в WebView нет).
+      const title = record.senderName || dialog.name
+      if (!showRadioNotification(title, m.text)) notifyMessage(title, m.text)
     }
     await saveDialog(dialog)
   }

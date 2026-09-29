@@ -1564,7 +1564,13 @@ export default {
   mesh: {
     title: 'Reti mesh',
     lead: 'Chatta via radio LoRa, senza internet né rete mobile. Collega una radio Meshtastic o MeshCore tramite USB, Bluetooth o Wi-Fi: le sue chat compaiono nel messenger accanto a quelle solite.',
-    desktopOnly: "La radio si collega nell'app per computer (macOS, Windows, Linux).",
+    desktopOnly: "La radio si collega nell'app per computer (macOS, Windows, Linux) e su Android.",
+    android: {
+      serviceTitle: 'Radio collegata',
+      serviceText: "I messaggi via radio arrivano anche con l'app in background",
+      serviceChannel: 'Radio collegata',
+      messagesChannel: 'Messaggi via radio',
+    },
     networks: {
       label: 'Rete',
       meshtastic: 'Meshtastic',

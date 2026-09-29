@@ -19,7 +19,7 @@ import {
 } from '@/mesh/meshtastic/constants'
 import type { MtSessionChannel } from '@/mesh/meshtastic/session'
 import { radioAvailability, targetLabel, type MeshTarget } from '@/mesh/radio/open-link'
-import { listSerialPorts, scanBle } from '@/mesh/radio/tauri-radio'
+import { listSerialPorts, scanBle } from '@/mesh/radio/platform'
 import { radioErrorFrom, type BleDeviceInfo, type SerialPortInfo } from '@/mesh/radio/types'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'

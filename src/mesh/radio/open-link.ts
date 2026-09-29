@@ -9,7 +9,7 @@ import { DEFAULT_BAUD } from '../meshcore/constants'
 import { frameLinkFromGatt, frameLinkFromStream, type FrameLink } from '../meshcore/framing'
 import { DEFAULT_BAUD as MT_BAUD } from '../meshtastic/constants'
 import { packetLinkFromGatt, packetLinkFromStream, type PacketLink } from '../meshtastic/framing'
-import { connectBle, isTauriRadioAvailable, openSerial, openTcp } from './tauri-radio'
+import { connectBle, openSerial, openTcp, radioPlatform } from './platform'
 import { RadioError, type ByteLink, type GattLink } from './types'
 
 export type MeshTarget =
@@ -23,10 +23,10 @@ export interface RadioAvailability {
   ble: boolean
 }
 
-/** Какие способы подключения есть в этой сборке. Пока — только десктоп. */
+/** Какие способы подключения есть в этой сборке: десктоп и Android. */
 export function radioAvailability(): RadioAvailability {
-  const tauri = isTauriRadioAvailable()
-  return { serial: tauri, tcp: tauri, ble: tauri }
+  const supported = radioPlatform() !== null
+  return { serial: supported, tcp: supported, ble: supported }
 }
 
 export function targetLabel(target: MeshTarget): string {
@@ -45,7 +45,7 @@ async function openRaw(
   target: MeshTarget,
   baud: number
 ): Promise<{ stream: ByteLink } | { gatt: GattLink }> {
-  if (!isTauriRadioAvailable()) throw new RadioError('unsupported')
+  if (!radioPlatform()) throw new RadioError('unsupported')
   switch (target.transport) {
     case 'serial':
       return { stream: await openSerial(target.path, baud) }

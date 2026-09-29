@@ -1506,7 +1506,13 @@ export default {
   mesh: {
     title: 'Mesh 网络',
     lead: '通过 LoRa 电台聊天，无需互联网或移动网络。通过 USB、蓝牙或 Wi-Fi 连接 Meshtastic 或 MeshCore 电台，它的聊天会显示在消息中，与普通聊天并列。',
-    desktopOnly: '电台需在桌面版应用（macOS、Windows、Linux）中连接。',
+    desktopOnly: '电台可在桌面版应用（macOS、Windows、Linux）和 Android 上连接。',
+    android: {
+      serviceTitle: '电台已连接',
+      serviceText: '应用在后台时也会继续收到电台消息',
+      serviceChannel: '已连接的电台',
+      messagesChannel: '电台消息',
+    },
     networks: {
       label: '网络',
       meshtastic: 'Meshtastic',

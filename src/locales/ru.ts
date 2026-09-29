@@ -1556,7 +1556,14 @@ export default {
   mesh: {
     title: 'Mesh-сети',
     lead: 'Переписка через LoRa-радио — без интернета и сотовой связи. Подключите радио Meshtastic или MeshCore по USB, Bluetooth или Wi-Fi: чаты через него появятся в мессенджере рядом с обычными.',
-    desktopOnly: 'Радио подключается в приложении для компьютера (macOS, Windows, Linux).',
+    desktopOnly:
+      'Радио подключается в приложении для компьютера (macOS, Windows, Linux) и для Android.',
+    android: {
+      serviceTitle: 'Радио на связи',
+      serviceText: 'Сообщения по радио приходят и тогда, когда приложение в фоне',
+      serviceChannel: 'Подключённое радио',
+      messagesChannel: 'Сообщения по радио',
+    },
     networks: {
       label: 'Сеть',
       meshtastic: 'Meshtastic',

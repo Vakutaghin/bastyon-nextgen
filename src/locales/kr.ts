@@ -1541,7 +1541,13 @@ export default {
   mesh: {
     title: '메시 네트워크',
     lead: '인터넷이나 휴대전화망 없이 LoRa 무전기로 대화하세요. Meshtastic 또는 MeshCore 무전기를 USB, 블루투스 또는 Wi-Fi로 연결하면 그 대화가 메신저에 일반 대화와 함께 표시됩니다.',
-    desktopOnly: '무전기는 데스크톱 앱(macOS, Windows, Linux)에서 연결할 수 있습니다.',
+    desktopOnly: '무전기는 데스크톱 앱(macOS, Windows, Linux)과 Android에서 연결할 수 있습니다.',
+    android: {
+      serviceTitle: '무전기 연결됨',
+      serviceText: '앱이 백그라운드에 있어도 무전 메시지를 계속 받습니다',
+      serviceChannel: '연결된 무전기',
+      messagesChannel: '무전 메시지',
+    },
     networks: {
       label: '네트워크',
       meshtastic: 'Meshtastic',
