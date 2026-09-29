@@ -68,7 +68,7 @@ const router = createRouter({
       path: '/my-files',
       name: 'my-files',
       component: MyFilesPage,
-      meta: { titleKey: 'routes.my-files' },
+      meta: { titleKey: 'routes.my-files', helpTopic: 'my-files' },
     },
     // Block explorer routes must come BEFORE the catch-all /:userName below —
     // otherwise the profile route greedily matches `/explorer`, `/explorer/...`.
