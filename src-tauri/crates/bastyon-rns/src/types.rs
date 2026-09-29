@@ -19,6 +19,10 @@ pub enum IfaceConfig {
         spreading_factor: u8,
         coding_rate: u8,
         tx_power: i8,
+        /// Android: порт открыт приложением (USB через usb-serial), узлу
+        /// отдан конец socketpair, байты между ними перекачивает Java.
+        #[serde(default)]
+        fd: Option<i32>,
     },
 }
 

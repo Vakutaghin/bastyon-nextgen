@@ -1576,6 +1576,8 @@ export default {
       serviceText: 'Nachrichten über Funk kommen auch an, wenn die App im Hintergrund ist',
       serviceChannel: 'Verbundenes Funkgerät',
       messagesChannel: 'Nachrichten über Funk',
+      rnsServiceTitle: 'Reticulum-Knoten läuft',
+      rnsServiceText: 'Reticulum-Nachrichten kommen auch an, wenn die App im Hintergrund ist',
     },
     networks: {
       label: 'Netz',

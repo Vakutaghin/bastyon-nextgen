@@ -1570,6 +1570,8 @@ export default {
       serviceText: "I messaggi via radio arrivano anche con l'app in background",
       serviceChannel: 'Radio collegata',
       messagesChannel: 'Messaggi via radio',
+      rnsServiceTitle: 'Nodo Reticulum attivo',
+      rnsServiceText: "I messaggi Reticulum arrivano anche quando l'app è in background",
     },
     networks: {
       label: 'Rete',

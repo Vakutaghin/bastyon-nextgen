@@ -236,6 +236,20 @@ jobs:
       - name: Sync Capacitor Android project
         run: pnpm exec cap sync android
 
+      # Узел Reticulum (src-tauri/crates/bastyon-rns-jni): Gradle собирает его
+      # scripts/build-rns-android.sh под NDK раннера. Без Rust APK собрался бы
+      # без узла.
+      - name: Install Rust for the Reticulum node
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: android
+
       # Android ставит новую версию поверх старой, только если обе подписаны
       # одним ключом. До 0.7.1 включительно здесь собирался debug-APK, а
       # отладочный ключ на каждом раннере свой, поэтому любое обновление

@@ -1563,6 +1563,8 @@ export default {
       serviceText: 'Сообщения по радио приходят и тогда, когда приложение в фоне',
       serviceChannel: 'Подключённое радио',
       messagesChannel: 'Сообщения по радио',
+      rnsServiceTitle: 'Узел Reticulum работает',
+      rnsServiceText: 'Сообщения Reticulum приходят и тогда, когда приложение в фоне',
     },
     networks: {
       label: 'Сеть',

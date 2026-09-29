@@ -1,8 +1,9 @@
 /**
- * Узел Reticulum в десктопе: команды `rns_*` (src-tauri/src/rns). Сам стек
- * (rns-net + lxmf-rs) живёт в Rust; сюда приходят события — announce,
- * сообщения LXMF, их судьба, состояние интерфейсов — через Tauri Channel,
- * только этому окну.
+ * Узел Reticulum: на десктопе — команды `rns_*` (src-tauri/src/rns), на
+ * Android — плагин MeshRns (capacitor-rns.ts). Сам стек (rns-net + lxmf-rs,
+ * src-tauri/crates/bastyon-rns) один и тот же, в Rust; сюда приходят события —
+ * announce, сообщения LXMF, их судьба, состояние интерфейсов (на десктопе —
+ * через Tauri Channel, только этому окну).
  */
 
 import type { Channel } from '@tauri-apps/api/core'
@@ -93,10 +94,22 @@ export type RnsEvent =
       received: number
     }
 
-/** Свой узел есть в десктопе, кроме Windows: rns-net там не собирается. */
+function onAndroid(): boolean {
+  const cap = (window as Window & { Capacitor?: { getPlatform?: () => string } }).Capacitor
+  return cap?.getPlatform?.() === 'android'
+}
+
+/** Свой узел есть в десктопе (кроме Windows: rns-net там не собирается) и на Android. */
 export function isRnsAvailable(): boolean {
-  if (typeof window === 'undefined' || !('__TAURI_INTERNALS__' in window)) return false
-  return !/windows/i.test(navigator.userAgent || '')
+  if (typeof window === 'undefined') return false
+  if ('__TAURI_INTERNALS__' in window) return !/windows/i.test(navigator.userAgent || '')
+  return onAndroid()
+}
+
+async function android() {
+  const mod = await import('./capacitor-rns')
+  if (!mod.isCapacitorRnsAvailable()) throw radioErrorFrom(new Error('unsupported'))
+  return mod
 }
 
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -112,6 +125,7 @@ export async function rnsStart(
   options: RnsStartOptions,
   onEvent: (ev: RnsEvent) => void
 ): Promise<RnsStarted> {
+  if (onAndroid()) return (await android()).start(options, onEvent)
   const { Channel: TauriChannel } = await import('@tauri-apps/api/core')
   const channel: Channel<RnsEvent> = new TauriChannel<RnsEvent>()
   channel.onmessage = onEvent
@@ -126,20 +140,40 @@ export async function rnsStart(
   })
 }
 
-export const rnsStop = (): Promise<void> => invoke('rns_stop')
-export const rnsStatus = (): Promise<RnsStatus> => invoke('rns_status')
-export const rnsAnnounce = (): Promise<void> => invoke('rns_announce')
+export const rnsStop = async (): Promise<void> =>
+  onAndroid() ? (await android()).stop() : invoke('rns_stop')
 
-export const rnsSend = (to: string, content: string, method: RnsMethod = 'auto', title = '') =>
-  invoke<{ id: string }>('rns_send', { to, content, title, method })
+export const rnsStatus = async (): Promise<RnsStatus> =>
+  onAndroid() ? (await android()).status() : invoke('rns_status')
 
-export const rnsRequestPath = (to: string): Promise<void> => invoke('rns_request_path', { to })
+export const rnsAnnounce = async (): Promise<void> =>
+  onAndroid() ? (await android()).announce() : invoke('rns_announce')
 
-export const rnsSetPropagationNode = (hash: string | null): Promise<void> =>
-  invoke('rns_set_propagation_node', { hash })
+export const rnsSend = async (
+  to: string,
+  content: string,
+  method: RnsMethod = 'auto',
+  title = ''
+): Promise<{ id: string }> =>
+  onAndroid()
+    ? (await android()).send(to, content, method, title)
+    : invoke('rns_send', { to, content, title, method })
 
-export const rnsSync = (): Promise<void> => invoke('rns_sync')
+export const rnsRequestPath = async (to: string): Promise<void> =>
+  onAndroid() ? (await android()).requestPath(to) : invoke('rns_request_path', { to })
+
+export const rnsSetPropagationNode = async (hash: string | null): Promise<void> =>
+  onAndroid()
+    ? (await android()).setPropagationNode(hash)
+    : invoke('rns_set_propagation_node', { hash })
+
+export const rnsSync = async (): Promise<void> =>
+  onAndroid() ? (await android()).sync() : invoke('rns_sync')
 
 /** Страница NomadNet: запрос `path` у узла по Link; ответ — micron или файл. */
-export const rnsPage = (node: string, path: string, data: Record<string, string> = {}) =>
-  invoke<{ content: string; binary: boolean }>('rns_page', { node, path, data })
+export const rnsPage = async (
+  node: string,
+  path: string,
+  data: Record<string, string> = {}
+): Promise<{ content: string; binary: boolean }> =>
+  onAndroid() ? (await android()).page(node, path, data) : invoke('rns_page', { node, path, data })

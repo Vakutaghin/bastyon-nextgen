@@ -9,15 +9,10 @@
 //!
 //! Ошибки — строкой «код: подробности», код переводит интерфейс.
 //!
-//! rns-net собирается только под unix (serial, сокеты, /dev/urandom); на
-//! Windows команды есть, но отвечают `unsupported`.
+//! Сам узел — в крейте bastyon-rns (общий с Android). rns-net собирается
+//! только под unix; на Windows команды есть, но отвечают `unsupported`.
 
-#[cfg(unix)]
-mod node;
-#[cfg(not(unix))]
-#[path = "node_unsupported.rs"]
-mod node;
-pub mod types;
+use bastyon_rns::{node, types};
 
 use std::path::PathBuf;
 use std::sync::Mutex;

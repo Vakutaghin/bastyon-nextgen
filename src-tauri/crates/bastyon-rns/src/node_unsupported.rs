@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use super::types::{Method, Page, RnsEvent, StartOptions, Started, Status};
+use crate::types::{Method, Page, RnsEvent, StartOptions, Started, Status};
 
 const UNSUPPORTED: &str = "unsupported";
 

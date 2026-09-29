@@ -1577,6 +1577,8 @@ export default {
         'Los mensajes por radio siguen llegando aunque la aplicación esté en segundo plano',
       serviceChannel: 'Radio conectada',
       messagesChannel: 'Mensajes por radio',
+      rnsServiceTitle: 'Nodo Reticulum en marcha',
+      rnsServiceText: 'Los mensajes de Reticulum llegan aunque la aplicación esté en segundo plano',
     },
     networks: {
       label: 'Red',

@@ -199,6 +199,16 @@ describe('reticulum chats', () => {
     })
     expect(rns.contacts.map((p) => p.name)).toEqual(['Боб', 'Старый'])
     expect(rns.contacts[1]!.seen).toBe(1_700_000_000_000)
+    // Announce без имени (ответ на запрос пути) не стирает известное имя.
+    emit({
+      kind: 'announce',
+      aspect: 'lxmf.delivery',
+      dest: BOB,
+      identity: 'cc'.repeat(16),
+      name: null,
+      hops: 1,
+    })
+    expect(rns.contacts.find((p) => p.dest === BOB)).toMatchObject({ name: 'Боб', hops: 1 })
 
     emit({
       kind: 'message',

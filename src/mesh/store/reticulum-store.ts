@@ -154,11 +154,13 @@ export const useReticulumStore = defineStore('reticulum', () => {
     const chat = useMeshChatStore()
     switch (ev.kind) {
       case 'announce': {
-        const rest = peers.value.filter((p) => !(p.dest === ev.dest && p.aspect === ev.aspect))
+        const known = peers.value.find((p) => p.dest === ev.dest && p.aspect === ev.aspect)
+        const rest = peers.value.filter((p) => p !== known)
         const peer: RnsPeer = {
           dest: ev.dest,
           identity: ev.identity,
-          name: ev.name,
+          // Ответ на запрос пути приходит announce-ом без имени — прежнее не терять.
+          name: ev.name ?? known?.name ?? null,
           hops: ev.hops,
           seen: ev.heard ? Math.round(ev.heard * 1000) : Date.now(),
           aspect: ev.aspect,

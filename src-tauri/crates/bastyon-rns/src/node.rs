@@ -39,7 +39,7 @@ use rns_net::{
     TeardownReason,
 };
 
-use super::types::{
+use crate::types::{
     IfaceConfig, IfaceStatus, Method, Page, RnsEvent, StartOptions, Started, Status,
 };
 
@@ -263,8 +263,10 @@ pub(crate) fn config_text(ifaces: &[IfaceConfig]) -> Result<String, String> {
                 spreading_factor,
                 coding_rate,
                 tx_power,
+                fd,
             } => {
                 let ok = valid_port_path(port)
+                    && fd.is_none_or(|fd| fd >= 0)
                     && (100_000_000..=3_000_000_000).contains(frequency)
                     && (7_800..=1_625_000).contains(bandwidth)
                     && (5..=12).contains(spreading_factor)
@@ -273,9 +275,13 @@ pub(crate) fn config_text(ifaces: &[IfaceConfig]) -> Result<String, String> {
                 if !ok {
                     return Err(format!("bad_interface: {name}"));
                 }
+                let source = match fd {
+                    Some(fd) => format!("fd = {fd}"),
+                    None => format!("port = {port}"),
+                };
                 let _ = write!(
                     out,
-                    "  [[{name}]]\n    type = RNodeInterface\n    enabled = yes\n    port = {port}\n    frequency = {frequency}\n    bandwidth = {bandwidth}\n    txpower = {tx_power}\n    spreadingfactor = {spreading_factor}\n    codingrate = {coding_rate}\n"
+                    "  [[{name}]]\n    type = RNodeInterface\n    enabled = yes\n    {source}\n    frequency = {frequency}\n    bandwidth = {bandwidth}\n    txpower = {tx_power}\n    spreadingfactor = {spreading_factor}\n    codingrate = {coding_rate}\n"
                 );
             }
         }
@@ -1012,8 +1018,9 @@ impl Ctx {
                 IfaceStatus {
                     kind: cfg.kind().to_string(),
                     // Нет в списке — не поднялся при старте (хаб недоступен,
-                    // RNode не подключён); rns-net его больше не пробует.
-                    started: !mine.is_empty(),
+                    // RNode не подключён); rns-net его больше не пробует. У
+                    // AutoInterface своей записи нет вовсе — только соседи.
+                    started: !mine.is_empty() || matches!(cfg, IfaceConfig::Auto),
                     online: mine.iter().any(|s| s.status),
                     rx_bytes: mine.iter().map(|s| s.rxb).sum(),
                     tx_bytes: mine.iter().map(|s| s.txb).sum(),
@@ -1326,7 +1333,7 @@ impl Runtime {
         std::fs::create_dir_all(&dir).map_err(|e| format!("rns_error: {e}"))?;
         std::fs::write(dir.join("config"), config).map_err(|e| format!("rns_error: {e}"))?;
         let propagation_node = match options.propagation_node.as_deref() {
-            Some(h) if !h.is_empty() => Some(super::types::parse_hash::<16>(h)?),
+            Some(h) if !h.is_empty() => Some(crate::types::parse_hash::<16>(h)?),
             _ => None,
         };
 
@@ -1675,6 +1682,7 @@ mod tests {
                 spreading_factor: 8,
                 coding_rate: 5,
                 tx_power: 14,
+                fd: None,
             },
             IfaceConfig::Auto,
         ])
@@ -1706,8 +1714,21 @@ mod tests {
             spreading_factor: 8,
             coding_rate: 5,
             tx_power: 14,
+            fd: None,
         }]);
         assert!(r.is_err());
+        // Android: вместо пути — дескриптор моста.
+        let text = config_text(&[IfaceConfig::Rnode {
+            port: "usb-1234".into(),
+            frequency: 869_525_000,
+            bandwidth: 125_000,
+            spreading_factor: 8,
+            coding_rate: 5,
+            tx_power: 14,
+            fd: Some(42),
+        }])
+        .unwrap();
+        assert!(text.contains("\n    fd = 42\n") && !text.contains("\n    port = "), "{text}");
     }
 
     #[test]
@@ -1761,13 +1782,13 @@ mod tests {
     }
 }
 
-/// Сверка с Python RNS 1.5 + LXMF 1.1 (scratchpad: peer.py). Запуск:
-/// `RNS_PYTHON=…/python RNS_PEER_PY=…/peer.py RNS_TEST_DIR=… cargo test --lib
-/// rns::node::interop -- --ignored --nocapture`.
+/// Сверка с Python RNS 1.5 + LXMF 1.1 (собеседник — tests/peer.py). Запуск:
+/// `RNS_PYTHON=…/python RNS_PEER_PY=tests/peer.py RNS_TEST_DIR=… cargo test
+/// -p bastyon-rns interop -- --ignored --nocapture`.
 #[cfg(test)]
 mod interop {
     use super::*;
-    use crate::rns::types::parse_hash;
+    use crate::types::parse_hash;
     use serde_json::{json, Value as Json};
     use std::io::{BufRead, BufReader, Write};
     use std::path::Path;

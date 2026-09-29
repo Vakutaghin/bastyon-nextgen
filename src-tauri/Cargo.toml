@@ -1,3 +1,7 @@
+# Крейты узла Reticulum: общий (десктоп и Android) и JNI-обёртка для Android.
+[workspace]
+members = ["crates/bastyon-rns", "crates/bastyon-rns-jni"]
+
 [package]
 name = "app"
 version = "0.7.1"
@@ -28,6 +32,8 @@ asr-file-source = []
 tauri-build = { version = "2.6.3", features = [] }
 
 [dependencies]
+# Узел Reticulum (src/rns) — общий крейт с Android (crates/bastyon-rns).
+bastyon-rns = { path = "crates/bastyon-rns" }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
@@ -106,11 +112,10 @@ tauri = { version = "2.11.6", features = ["test"] }
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
-# Reticulum (src/rns): стек и LXMF. Только unix — rns-net не собирается под
-# Windows. lxmf-rs ещё не выпущен на crates.io в версии для rns-net 0.5 — из
-# git, на закреплённом коммите; rns-* — ровно те версии, под которые он собран.
-rns-net = "=0.5.10"
-rns-core = "=0.1.13"
-rns-crypto = "=0.1.8"
-lxmf-rs = { git = "https://github.com/lelloman/lxmf-rs", rev = "e84fe344719c4b47aea2f300747b8c943fa1bbd0" }
-lxmf-core = { git = "https://github.com/lelloman/lxmf-rs", rev = "e84fe344719c4b47aea2f300747b8c943fa1bbd0" }
+# Криптография Reticulum (штампы LXMF, подписи) и в debug-сборке — с
+# оптимизацией: без неё штамп узла доставки считается минутами.
+[profile.dev.package.rns-crypto]
+opt-level = 2
+
+[profile.dev.package.rns-core]
+opt-level = 2

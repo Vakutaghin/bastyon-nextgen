@@ -1563,6 +1563,8 @@ export default {
       serviceText: 'Поруке преко радија стижу и док је апликација у позадини',
       serviceChannel: 'Повезан радио',
       messagesChannel: 'Поруке преко радија',
+      rnsServiceTitle: 'Reticulum чвор ради',
+      rnsServiceText: 'Reticulum поруке стижу и када је апликација у позадини',
     },
     networks: {
       label: 'Мрежа',

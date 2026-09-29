@@ -108,6 +108,17 @@ checksum = "84521a3cf562bc62942e294181d9eef17eb38ceb8c68677bc49f144e4c3d4f8d"
 
 [[package]]
 name = "android_logger"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05b07e8e73d720a1f2e4b6014766e6039fd2e96a4fa44e2a78d0e1fa2ff49826"
+dependencies = [
+ "android_log-sys",
+ "env_filter",
+ "log",
+]
+
+[[package]]
+name = "android_logger"
 version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbb4e440d04be07da1f1bf44fb4495ebd58669372fe0cffa6e48595ac5bd88a3"
@@ -138,6 +149,7 @@ version = "0.7.1"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
+ "bastyon-rns",
  "btleplug",
  "cpal",
  "dashmap",
@@ -148,15 +160,10 @@ dependencies = [
  "libc",
  "libloading 0.7.4",
  "log",
- "lxmf-core",
- "lxmf-rs",
  "objc2",
  "objc2-foundation",
  "once_cell",
  "reqwest 0.12.28",
- "rns-core",
- "rns-crypto",
- "rns-net",
  "rustls-native-certs",
  "rustls-pki-types",
  "serde",
@@ -424,6 +431,33 @@ name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
+name = "bastyon-rns"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "log",
+ "lxmf-core",
+ "lxmf-rs",
+ "rns-core",
+ "rns-crypto",
+ "rns-net",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "bastyon-rns-jni"
+version = "0.1.0"
+dependencies = [
+ "android_logger 0.14.1",
+ "bastyon-rns",
+ "jni 0.21.1",
+ "log",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "bindgen"
@@ -5784,7 +5818,7 @@ version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7545bd67f070a4500432c826e2e0682146a1d6712aee22a2786490156b574d93"
 dependencies = [
- "android_logger",
+ "android_logger 0.15.1",
  "byte-unit",
  "fern",
  "log",

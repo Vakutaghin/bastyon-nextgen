@@ -1547,6 +1547,8 @@ export default {
       serviceText: '앱이 백그라운드에 있어도 무전 메시지를 계속 받습니다',
       serviceChannel: '연결된 무전기',
       messagesChannel: '무전 메시지',
+      rnsServiceTitle: 'Reticulum 노드 실행 중',
+      rnsServiceText: '앱이 백그라운드에 있어도 Reticulum 메시지를 받습니다',
     },
     networks: {
       label: '네트워크',

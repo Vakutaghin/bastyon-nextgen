@@ -1579,6 +1579,9 @@ export default {
         "Les messages radio continuent d'arriver quand l'application est en arrière-plan",
       serviceChannel: 'Radio connectée',
       messagesChannel: 'Messages radio',
+      rnsServiceTitle: 'Nœud Reticulum actif',
+      rnsServiceText:
+        "Les messages Reticulum arrivent même quand l'application est en arrière-plan",
     },
     networks: {
       label: 'Réseau',

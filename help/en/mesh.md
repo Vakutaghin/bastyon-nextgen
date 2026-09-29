@@ -100,7 +100,7 @@ A room does not reject a wrong password — it stays silent, and an error appear
 
 ## Reticulum
 
-Reticulum is a network that runs over any links: LoRa radios with RNode firmware, your local network and community hubs on the internet. Its chats (LXMF) are **end-to-end encrypted with keys in the app**, not on a radio — the only one of the three networks where a chat gets real Bastyon protection. It is available in the app for macOS and Linux.
+Reticulum is a network that runs over any links: LoRa radios with RNode firmware, your local network and community hubs on the internet. Its chats (LXMF) are **end-to-end encrypted with keys in the app**, not on a radio — the only one of the three networks where a chat gets real Bastyon protection. It is available in the app for macOS, Linux and Android.
 
 ### Your node and address
 
@@ -119,6 +119,8 @@ The node reaches others through interfaces, and several can be on at once:
 - **RNode over USB** — a LoRa board with RNode firmware: radio links without the internet. The frequency and settings must match the network around you.
 
 If the hub was unreachable or the RNode was not plugged in when the node started, the node restarts by itself in a minute, then less often, and picks them up once they appear.
+
+On Android the RNode connects over USB through an OTG adapter. The first time the node starts, the system asks for access to the device: allow it and click **Start** again. While the node runs, a "Reticulum node running" notification stays in the shade: this keeps Android from putting the app to sleep, so messages arrive in the background.
 
 > [!NOTE]
 > In Tor mode hubs and the local network are switched off so your address is not exposed: only RNode works.
@@ -172,7 +174,7 @@ That is why these chats have no Bastyon lock: the chat says how the messages are
 - History is kept only in the app: the radio hands a message over and forgets it. While the app is not connected, the radio keeps only the latest incoming messages (up to 32 for Meshtastic, usually 16 for MeshCore) and loses them when switched off.
 - Chats are tied to the account and to the radio: another account or another radio has its own.
 - Signing out deletes this history from the computer.
-- Reticulum works in the app for macOS and Linux; Windows and Android are planned.
+- Reticulum works in the app for macOS, Linux and Android (64-bit ARM, which is nearly every phone); Windows is planned.
 
 ## See also
 

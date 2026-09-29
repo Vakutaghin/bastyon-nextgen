@@ -1,5 +1,5 @@
-// Где есть свой узел Reticulum: только десктоп (Tauri), и не Windows —
-// rns-net там не собирается.
+// Где есть свой узел Reticulum: десктоп (Tauri), кроме Windows — rns-net там
+// не собирается, — и приложение для Android.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { isRnsAvailable } from './rns-api'
@@ -24,6 +24,21 @@ describe('isRnsAvailable', () => {
   it('is off on Windows', () => {
     vi.stubGlobal('navigator', { userAgent: WINDOWS })
     ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {}
+    expect(isRnsAvailable()).toBe(false)
+  })
+})
+
+describe('isRnsAvailable on Android', () => {
+  afterEach(() => {
+    delete (window as unknown as Record<string, unknown>).Capacitor
+  })
+
+  it('is on in the Android app, off in a plain browser', () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Linux; Android 14)' })
+    expect(isRnsAvailable()).toBe(false)
+    ;(window as unknown as Record<string, unknown>).Capacitor = { getPlatform: () => 'android' }
+    expect(isRnsAvailable()).toBe(true)
+    ;(window as unknown as Record<string, unknown>).Capacitor = { getPlatform: () => 'ios' }
     expect(isRnsAvailable()).toBe(false)
   })
 })

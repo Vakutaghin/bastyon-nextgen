@@ -1559,6 +1559,8 @@ export default {
       serviceText: 'Messages over the radio keep arriving while the app is in the background',
       serviceChannel: 'Connected radio',
       messagesChannel: 'Messages over radio',
+      rnsServiceTitle: 'Reticulum node running',
+      rnsServiceText: 'Reticulum messages arrive even when the app is in the background',
     },
     networks: {
       label: 'Network',

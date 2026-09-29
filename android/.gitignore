@@ -99,3 +99,7 @@ app/src/main/assets/public
 app/src/main/assets/capacitor.config.json
 app/src/main/assets/capacitor.plugins.json
 app/src/main/res/xml/config.xml
+
+# Узел Reticulum собирается из src-tauri/crates/bastyon-rns-jni
+# (scripts/build-rns-android.sh), в репозиторий не кладётся.
+app/src/main/jniLibs/

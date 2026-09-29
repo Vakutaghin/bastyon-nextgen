@@ -44,6 +44,16 @@ android {
     }
 }
 
+// Узел Reticulum (src-tauri/crates/bastyon-rns-jni): .so собирает cargo под
+// NDK перед сборкой APK. Без cargo или NDK скрипт только предупреждает — APK
+// соберётся без узла.
+def rnsScript = rootProject.file('../scripts/build-rns-android.sh')
+tasks.register('buildRnsNative', Exec) {
+    onlyIf { rnsScript.exists() && System.getenv('BASTYON_SKIP_RNS') == null }
+    commandLine 'bash', rnsScript.absolutePath
+}
+preBuild.dependsOn 'buildRnsNative'
+
 repositories {
     flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'

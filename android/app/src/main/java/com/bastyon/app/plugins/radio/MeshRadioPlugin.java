@@ -86,10 +86,6 @@ public class MeshRadioPlugin extends Plugin {
     private final Map<String, PluginCall> usbPending = new ConcurrentHashMap<>();
     private final AtomicInteger messageNotificationId = new AtomicInteger(9000);
 
-    private String noticeTitle = "Bastyon";
-    private String noticeText = "";
-    private String noticeChannel = "Mesh";
-
     private final RadioLink.Sink sink = new RadioLink.Sink() {
         @Override
         public void data(int link, byte[] bytes) {
@@ -167,7 +163,7 @@ public class MeshRadioPlugin extends Plugin {
         }
         for (RadioLink link : links.values()) link.close();
         links.clear();
-        MeshRadioService.stop(getContext());
+        MeshKeepAlive.release(getContext(), MeshKeepAlive.RADIO);
         executor.shutdownNow();
         super.handleOnDestroy();
     }
@@ -195,11 +191,11 @@ public class MeshRadioPlugin extends Plugin {
         return nextId.getAndIncrement();
     }
 
-    /** Служба жива, пока есть соединения; текст — последнего радио. */
+    /** Служба жива, пока есть соединения (или работает узел Reticulum). */
     private void updateService() {
         Context ctx = getContext();
         if (links.isEmpty()) {
-            MeshRadioService.stop(ctx);
+            MeshKeepAlive.release(ctx, MeshKeepAlive.RADIO);
             return;
         }
         StringBuilder names = new StringBuilder();
@@ -207,12 +203,7 @@ public class MeshRadioPlugin extends Plugin {
             if (names.length() > 0) names.append(", ");
             names.append(link.label);
         }
-        String text = noticeText.isEmpty() ? names.toString() : noticeText + " · " + names;
-        try {
-            MeshRadioService.start(ctx, noticeTitle, text, noticeChannel);
-        } catch (RuntimeException ignored) {
-            // Android 12+ не даёт поднять службу из фона — соединение работает и без неё.
-        }
+        MeshKeepAlive.hold(ctx, MeshKeepAlive.RADIO, names.toString());
     }
 
     // ─── Тексты уведомлений ─────────────────────────────────────────────────
@@ -220,10 +211,8 @@ public class MeshRadioPlugin extends Plugin {
     /** Тексты постоянного уведомления на языке интерфейса. */
     @PluginMethod
     public void setNotice(PluginCall call) {
-        noticeTitle = call.getString("title", noticeTitle);
-        noticeText = call.getString("text", noticeText);
-        noticeChannel = call.getString("channel", noticeChannel);
-        if (!links.isEmpty()) updateService();
+        MeshKeepAlive.setTexts(getContext(), MeshKeepAlive.RADIO, call.getString("title", "Bastyon"),
+                call.getString("text", ""), call.getString("channel", "Mesh"));
         call.resolve();
     }
 

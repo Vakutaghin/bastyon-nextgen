@@ -1512,6 +1512,8 @@ export default {
       serviceText: '应用在后台时也会继续收到电台消息',
       serviceChannel: '已连接的电台',
       messagesChannel: '电台消息',
+      rnsServiceTitle: 'Reticulum 节点运行中',
+      rnsServiceText: '应用在后台时也能收到 Reticulum 消息',
     },
     networks: {
       label: '网络',
