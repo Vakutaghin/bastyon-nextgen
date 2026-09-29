@@ -1210,6 +1210,17 @@ export default {
     feedEmpty: 'Il feed è vuoto',
     newPosts: 'Mostra i nuovi post ({n})',
     boosted: 'Promosso',
+    visibility: {
+      subscribers: 'Per gli iscritti',
+      registered: 'Per gli utenti registrati',
+      paid: 'Per gli iscritti a pagamento',
+    },
+    restricted: {
+      subscribers:
+        'L’autore ha aperto questo post solo ai suoi iscritti. Iscriviti all’autore per leggerlo.',
+      registered: 'Questo post è visibile solo agli utenti registrati. Accedi per leggerlo.',
+      paid: 'Questo post è per gli iscritti a pagamento dell’autore. Questa app non verifica ancora gli abbonamenti a pagamento, quindi un post del genere si può leggere solo nella precedente app Bastyon.',
+    },
     shareAction: 'Condividi',
     downloadImage: 'Scarica l’immagine',
     copyLink: 'Copia link',
@@ -1219,7 +1230,6 @@ export default {
     linkCopied: 'Link copiato',
     shareFailed: 'Impossibile condividere',
     scrollToTop: 'Torna su',
-    tapToClose: 'Tocca un punto qualsiasi per chiudere',
   },
   sidebar: {
     topFirst: 'Prima i migliori',

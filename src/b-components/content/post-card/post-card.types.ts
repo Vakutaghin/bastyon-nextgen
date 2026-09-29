@@ -65,4 +65,6 @@ export interface Post {
   repostOriginalTimestamp?: number
   /** Оригинал удалён. */
   repostDeleted?: boolean
+  /** Видимость оригинала (`s.f`), см. helpers/content/post-visibility. */
+  repostVisibility?: string
 }

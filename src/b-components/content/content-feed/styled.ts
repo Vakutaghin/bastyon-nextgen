@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS, Z_INDEX, TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 import Button from '@/components/button/button.vue'
 
 export const SC_NewPostsPill = styled.button`
@@ -212,29 +212,4 @@ export const SC_ScrollToTop = styled.button`
   .anticon {
     font-size: 14px;
   }
-`
-
-export const SC_PhotoPreviewOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: var(--color-overlay-85);
-  z-index: ${Z_INDEX.MODAL};
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  gap: 16px;
-`
-
-export const SC_PhotoPreviewImage = styled.img`
-  max-width: 100%;
-  max-height: 70vh;
-  border-radius: var(--ui-radius-lg);
-`
-
-export const SC_PhotoPreviewHint = styled.div`
-  color: var(--color-white);
-  font-size: 14px;
-  opacity: 0.85;
 `

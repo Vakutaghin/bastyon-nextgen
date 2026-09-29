@@ -1166,6 +1166,16 @@ export default {
     feedEmpty: '信息流为空',
     newPosts: '显示新帖子（{n}）',
     boosted: '推广',
+    visibility: {
+      subscribers: '仅限粉丝',
+      registered: '仅限已注册用户',
+      paid: '仅限付费订阅者',
+    },
+    restricted: {
+      subscribers: '作者仅向粉丝公开了这篇帖子。关注作者即可阅读。',
+      registered: '只有已注册用户才能看到这篇帖子。登录即可阅读。',
+      paid: '这篇帖子仅供作者的付费订阅者阅读。本应用暂时无法验证付费订阅，因此只能在旧版 Bastyon 应用中阅读此类帖子。',
+    },
     shareAction: '分享',
     downloadImage: '下载图片',
     copyLink: '复制链接',
@@ -1175,7 +1185,6 @@ export default {
     linkCopied: '链接已复制',
     shareFailed: '分享失败',
     scrollToTop: '回到顶部',
-    tapToClose: '点击任意位置关闭',
   },
   sidebar: {
     topFirst: '最佳优先',

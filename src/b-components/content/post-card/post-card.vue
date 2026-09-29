@@ -14,6 +14,10 @@
       <ClockCircleOutlined />
       {{ t('postMsg.txPending') }}
     </SC_PendingBadge>
+    <SC_VisibilityBadge v-if="visibilityLabel && !restriction">
+      <LockOutlined />
+      {{ visibilityLabel }}
+    </SC_VisibilityBadge>
     <PostCardHeader :post="post" :author-override="authorOverride" />
 
     <component :is="isRepost ? SC_RepostInnerCard : 'div'">
@@ -21,6 +25,12 @@
         <DeleteOutlined class="repost-deleted-icon" />
         <span>{{ t('postCard.repostDeleted') }}</span>
       </SC_RepostDeleted>
+
+      <!-- Пост не для этого читателя: текст в сети открыт, прячет его приложение. -->
+      <SC_RestrictedNotice v-else-if="restriction" role="note">
+        <LockOutlined />
+        <span>{{ t(`postCard.restricted.${restriction}`) }}</span>
+      </SC_RestrictedNotice>
 
       <template v-else>
         <SC_RepostOriginalAuthor v-if="isRepost && post.repostAuthor">
@@ -205,6 +215,7 @@ import {
   RetweetOutlined,
   RiseOutlined,
   ClockCircleOutlined,
+  LockOutlined,
 } from '@/components/icons'
 import { Dropdown } from 'ant-design-vue'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
@@ -244,8 +255,12 @@ import {
   SC_RepostDeleted,
   SC_BoostedBadge,
   SC_PendingBadge,
+  SC_VisibilityBadge,
+  SC_RestrictedNotice,
 } from './styled'
 import { userAvatar, userName } from '@/services/user-names'
+import { useUserRelationsStore } from '@/stores/user-relations-store'
+import { postVisibilityOf, visibilityRestriction } from '@/helpers/content/post-visibility'
 import { usePostMedia } from './use-post-media'
 import { usePostDelete } from './use-post-delete'
 import { calculateAverageRating, decodeUrlEncoded, getPostShareId } from './helpers'
@@ -317,6 +332,28 @@ const repostAuthorName = computed<string>(() =>
 const isOwnPost = computed<boolean>(
   () => !!props.post.author?.address && props.post.author.address === authStore.getUserAddress
 )
+// Видимость поста и оригинала репоста: сеть её не проверяет, прячем здесь,
+// как старый клиент. Подписки смотрящего грузит user-relations (init в шапке).
+const relations = useUserRelationsStore()
+const restriction = computed(() => {
+  const viewer = {
+    address: authStore.getUserAddress,
+    isSubscribedTo: (address: string) => relations.isSubscribed(address),
+  }
+  const own = visibilityRestriction(props.post.author?.address, props.post.settings?.f, viewer)
+  if (own || !isRepost.value) return own
+  return visibilityRestriction(
+    props.post.repostAuthor?.address,
+    props.post.repostVisibility,
+    viewer
+  )
+})
+/** Подпись «Для подписчиков» и т. п. — тем, кому пост открыт. */
+const visibilityLabel = computed<string | null>(() => {
+  const visibility = postVisibilityOf(props.post.settings?.f)
+  return visibility === 'all' ? null : t(`postCard.visibility.${visibility}`)
+})
+
 /** Можно ли репостить (не показываем для удалённого оригинала). */
 const canRepost = computed<boolean>(() => !props.post.repostDeleted)
 

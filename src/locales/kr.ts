@@ -1193,6 +1193,16 @@ export default {
     feedEmpty: '피드가 비어 있습니다',
     newPosts: '새 게시물 보기({n})',
     boosted: '홍보',
+    visibility: {
+      subscribers: '구독자 전용',
+      registered: '가입 사용자 전용',
+      paid: '유료 구독자 전용',
+    },
+    restricted: {
+      subscribers: '작성자가 이 게시물을 구독자에게만 공개했습니다. 읽으려면 작성자를 구독하세요.',
+      registered: '이 게시물은 가입 사용자만 볼 수 있습니다. 읽으려면 로그인하세요.',
+      paid: '이 게시물은 작성자의 유료 구독자 전용입니다. 이 앱은 아직 유료 구독을 확인할 수 없어, 이런 게시물은 이전 Bastyon 앱에서만 읽을 수 있습니다.',
+    },
     shareAction: '공유',
     downloadImage: '이미지 다운로드',
     copyLink: '링크 복사',
@@ -1202,7 +1212,6 @@ export default {
     linkCopied: '링크가 복사되었습니다',
     shareFailed: '공유하지 못했습니다',
     scrollToTop: '맨 위로',
-    tapToClose: '아무 곳이나 탭하여 닫기',
   },
   sidebar: {
     topFirst: '인기순',

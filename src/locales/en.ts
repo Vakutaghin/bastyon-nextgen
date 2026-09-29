@@ -1200,6 +1200,17 @@ export default {
     feedEmpty: 'Feed is empty',
     newPosts: 'Show new posts ({n})',
     boosted: 'Promoted',
+    visibility: {
+      subscribers: 'For subscribers',
+      registered: 'For registered users',
+      paid: 'For paid subscribers',
+    },
+    restricted: {
+      subscribers:
+        'The author opened this post to subscribers only. Subscribe to the author to read it.',
+      registered: 'Only registered users can see this post. Sign in to read it.',
+      paid: 'This post is for the author’s paid subscribers. This app does not check paid subscriptions yet, so such a post can only be read in the previous Bastyon app.',
+    },
     shareAction: 'Share',
     downloadImage: 'Download image',
     copyLink: 'Copy link',
@@ -1209,7 +1220,6 @@ export default {
     linkCopied: 'Link copied',
     shareFailed: 'Failed to share',
     scrollToTop: 'To top',
-    tapToClose: 'Tap anywhere to close',
   },
   sidebar: {
     topFirst: 'Best first',

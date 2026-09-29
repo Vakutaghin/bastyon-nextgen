@@ -270,6 +270,7 @@ export function mergeRepostContent(
   if (originalRaw.deleted) {
     adapted.repostDeleted = true
   }
+  if (originalRaw.s?.f) adapted.repostVisibility = originalRaw.s.f
 }
 
 /**

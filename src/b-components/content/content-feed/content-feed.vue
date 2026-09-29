@@ -31,7 +31,7 @@
       </SC_FeedHeaderLeft>
 
       <SC_FeedHeaderActions>
-        <Button type="primary" :loading="isPickingPhoto" @click="handleCreatePost">
+        <Button type="primary" @click="handleCreatePost">
           <template #icon>
             <PlusOutlined />
           </template>
@@ -134,17 +134,13 @@
       <UpOutlined />
       {{ t('postCard.scrollToTop') }}
     </SC_ScrollToTop>
-
-    <SC_PhotoPreviewOverlay v-if="pickedPhotoDataUrl" @click="closePhotoPreview">
-      <SC_PhotoPreviewImage :src="pickedPhotoDataUrl" />
-      <SC_PhotoPreviewHint>{{ t('postCard.tapToClose') }}</SC_PhotoPreviewHint>
-    </SC_PhotoPreviewOverlay>
   </SC_Feed>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import {
   ICON_PRIMARY_24,
   ICON_PRIMARY_120,
@@ -169,7 +165,6 @@ import { useBoostedFeed } from '@/composables/use-boosted-feed'
 import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import type { AdaptedPost } from '@/composables/use-feed'
 import { isMobile } from '@mobile/utils/platform'
-import { getPhoto } from '@mobile/adapters/capacitor-camera'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import Button from '@/components/button/button.vue'
 import Spin from '@/components/spin/spin.vue'
@@ -188,9 +183,6 @@ import {
   SC_FeedEnd,
   SC_FeedRefreshWrap,
   SC_ScrollToTop,
-  SC_PhotoPreviewOverlay,
-  SC_PhotoPreviewImage,
-  SC_PhotoPreviewHint,
   SC_FeedErrorColumn,
   SC_RetryButton,
   SC_NewPostsPill,
@@ -213,6 +205,7 @@ const { t } = useI18n()
 const postsStore = usePostsStore()
 const filtersStore = useFiltersStore()
 const modalStore = useModalStore()
+const router = useRouter()
 
 const {
   allPosts,
@@ -379,27 +372,15 @@ function scrollToTop(): void {
   }
 }
 
-const pickedPhotoDataUrl = ref<string | null>(null)
-const isPickingPhoto = ref(false)
-
-async function handleCreatePost(): Promise<void> {
-  if (!isMobile()) {
-    // На вебе открываем модалку композера (как в шапке app-header).
-    modalStore.openPostComposerModal()
+function handleCreatePost(): void {
+  // На телефоне — страница композера во весь экран: модалка там тесная. Раньше
+  // здесь открывалась камера и показывала снимок, а до редактора дело не
+  // доходило — написать пост из ленты на телефоне было нельзя.
+  if (isMobile()) {
+    void router.push({ name: 'compose' })
     return
   }
-
-  isPickingPhoto.value = true
-  try {
-    const dataUrl = await getPhoto({ quality: 85 })
-    if (dataUrl) pickedPhotoDataUrl.value = dataUrl
-  } finally {
-    isPickingPhoto.value = false
-  }
-}
-
-function closePhotoPreview(): void {
-  pickedPhotoDataUrl.value = null
+  modalStore.openPostComposerModal()
 }
 
 onMounted(() => {

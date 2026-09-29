@@ -50,6 +50,42 @@ export const SC_PendingBadge = styled.div`
   }
 `
 
+/** Пометка «Для подписчиков» и т. п. — у поста с ограниченной видимостью. */
+export const SC_VisibilityBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-text-muted);
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`
+
+/** Заглушка вместо поста, который автор открыл не этому читателю. */
+export const SC_RestrictedNotice = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--ui-radius-md);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ui-text-muted);
+  background: var(--ui-bg-elevated);
+
+  svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 3px;
+  }
+`
+
 export const SC_PostHeader = styled.div`
   display: flex;
   justify-content: space-between;
