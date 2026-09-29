@@ -66,6 +66,7 @@
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { ArrowLeftIcon, CloseOutlined, MessageOutlined } from '@/components/icons'
 import MessengerButton from '../messenger-button/messenger-button.vue'
 import MessengerWindow from '../messenger-window/messenger-window.vue'
@@ -182,6 +183,17 @@ function handleSendMessage(text: string): void {
     store.sendMessage(activeChatId.value, text)
   }
 }
+
+// Полноэкранный мессенджер закрывает всю страницу. Переход из него — ссылка
+// `bastyon://` в сообщении, «В эксплорере» у перевода — раньше менял страницу
+// под ним, и её не было видно, пока чат не закроешь.
+const route = useRoute()
+watch(
+  () => route.path,
+  () => {
+    if (store.isFullScreen) closeFullScreen()
+  }
+)
 
 watch(
   () => store.isFullScreen,

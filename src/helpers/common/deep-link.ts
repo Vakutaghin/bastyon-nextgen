@@ -13,6 +13,7 @@
  *   https://bastyon.com/post?s=<txid>&commentid=<c>[&parentid=<p>] — «Поделиться» комментарием
  *   bastyon://index?v=<txid>                    — видео-пост
  *   bastyon://application?id=<appId>[&p=<hex>]  — мини-приложение
+ *   bastyon://i?stx=<txid>[&node=…]             — перевод, которым legacy отчитывается в чате
  *   bastyon://<ник или адрес>                   — профиль
  */
 
@@ -120,6 +121,12 @@ export function resolveDeepLink(rawUrl: string): string | null {
     const innerPath = decodeHexPath(params.get('p') ?? '').replace(/^\/+/, '')
     const base = `/app/${encodeURIComponent(appId)}`
     return innerPath ? `${base}/${innerPath}` : base
+  }
+
+  // Перевод PKOIN: legacy после перевода из чата шлёт туда `i?stx=<txid>`.
+  if (head === 'i') {
+    const txid = params.get('stx') ?? ''
+    return HEX64_RE.test(txid) ? `/explorer/tx/${txid.toLowerCase()}` : '/'
   }
 
   // Профиль: `profile?address=…` либо просто `bastyon://<ник>`.

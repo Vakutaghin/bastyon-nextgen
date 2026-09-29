@@ -75,6 +75,20 @@ describe('resolveDeepLink — мини-приложения', () => {
   })
 })
 
+describe('resolveDeepLink — перевод из чата прежнего клиента', () => {
+  it('i?stx=<txid> открывает транзакцию в эксплорере', () => {
+    const upper = TXID.toUpperCase()
+    expect(resolveDeepLink(`bastyon://i?stx=${upper}&node=1.pocketnet.app:8899`)).toBe(
+      `/explorer/tx/${TXID}`
+    )
+    expect(resolveDeepLink(`pocketnet://i?stx=${TXID}`)).toBe(`/explorer/tx/${TXID}`)
+  })
+
+  it('битый txid ведёт на главную', () => {
+    expect(resolveDeepLink('bastyon://i?stx=zz')).toBe('/')
+  })
+})
+
 describe('resolveDeepLink — разделы и мусор', () => {
   it('известный раздел отдаётся как есть', () => {
     expect(resolveDeepLink('bastyon://search?q=test')).toBe('/search?q=test')
