@@ -30,6 +30,8 @@
 | Бумажные сообщения: `lxm://` и QR для адресата, открытие ссылки или QR на вкладке | `bastyon-rns` (`paper`, `ingest`), `paper-message-dialog.vue`, `rns-peers.vue` | `749f46c` |
 | Первый шаг связки с аккаунтом: «Мой адрес Reticulum» в обычном чате, кнопка «Написать через Reticulum» у сообщения с `lxmf@…` | `use-mesh-share.ts`, `message-item.vue` | `af5cf8b` |
 | «Один диалог — несколько маршрутов» (этап 8 для Reticulum): подписанная запись связки аккаунт ↔ адрес LXMF (secp256k1 + Ed25519, проверка без сети), обмен в зашифрованном теле сообщения Bastyon и в полях LXMF `0xFB/0xFC`; маршруты на аккаунт; LXMF-переписка в том же чате, без сервера — отправка через Reticulum, ключ собеседника узлу до его announce (`rns_learn`) | `src/mesh/binding.ts`, `src/mesh/store/mesh-routes-store.ts`, `messenger-store/use-mesh-routes.ts`, `mesh-route-bar.vue`, `bastyon-rns` (`learn`, `custom`) | `c4a4483` |
+| Маршруты этапа 8 через радио: запись связки для MeshCore (подпись радио `CMD_SIGN_*`, если прошивка умеет) и Meshtastic (только аккаунт); «Мои адреса в mesh-сетях»; маршрут учит радио (контакт MeshCore, ключ Meshtastic через `add_contact`); без сервера — первая готовая сеть: Reticulum → MeshCore → Meshtastic | `binding.ts`, `mesh-routes-store.ts`, `use-mesh-routes.ts`, `meshcore/client.ts` (`sign`) | `7040802` |
+| Reticulum на Windows: rns-net собирается (последовательный порт — только unix, TCP и AutoInterface — через socket2 и `GetAdaptersAddresses`, bzip2 на Rust); RNode на Windows скрыт | `src-tauri/vendor/rns-net`, `rns-interfaces.vue` | `a5b2278` |
 | Ключ Ed25519 из сети без паники: rns-crypto 0.1.8 вендорен, некорректный ключ из announce больше не роняет узел | `src-tauri/vendor/rns-crypto` (`VENDORED.md`) | `a948ec4` |
 | Обзор сети Reticulum: таблица путей узла (прыжки, следующий узел, интерфейс) — граф по кольцам прыжков и список | `bastyon-rns` (`paths`), `src/mesh/reticulum/network-graph.ts`, `rns-network.vue` | `73ee627` |
 | Голосовые LXMF: запись MediaRecorder (WebM Opus) перепаковывается в Ogg Opus без перекодирования, поле AUDIO в режиме `AM_OPUS_OGG`, как у Sideband; входящие Opus — плеером в чате | `src/mesh/voice.ts`, `use-mesh-voice.ts`, `bastyon-rns` (`fields_of`) | `6e05f1a` |
@@ -107,8 +109,12 @@
     сообщения, и доказательство не находит его: сообщение вечно «отправляется». `bastyon-rns`
     привязывает Link сам сразу после `jobs()`.
 
-Дальше: Reticulum на Windows; маршруты этапа 8 через радио — MeshCore (подпись записи узлом,
-`CMD_SIGN_*`) и Meshtastic (подписать ключом узла со стороны клиента нельзя).
+План из разделов 6 и 9 выполнен. Дальше — только то, что в таблице 6.5 помечено «позже»:
+- свой узел NomadNet;
+- карта и позиции;
+- офлайн-карты;
+- голос codec2;
+- RNode по USB на Windows (через радио-слой приложения).
 
 ## Коротко
 
@@ -634,7 +640,17 @@ QR-кодом или из announce.
 маршрутов»: если интернета нет, сообщение уходит по радио. Это самая ценная и самая сложная
 часть (порядок сообщений, дедупликация, прочтения), поэтому она идёт последней.
 
-**Как сделано для Reticulum (29.09):**
+**Как сделано (29.09).** Сначала для Reticulum, затем для радио.
+
+- **MeshCore** — адрес = ключ радио, запись подписывает само радио (`CMD_SIGN_*`), без поддержки
+  в прошивке — только аккаунт.
+- **Meshtastic** — номер узла и ключ для ЛС, подпись только аккаунта. Проверка вызовом
+  (nonce по радио, ответ через Matrix) не нужна. Перехват невозможен и без неё: запись нельзя
+  подделать от чужого аккаунта. А указать чужой узел значит лишь направить своих собеседников к
+  чужому радио.
+- Отправка без сервера — по первой готовой сети: Reticulum, MeshCore, Meshtastic.
+
+Детали для Reticulum:
 
 - **Запись** — `src/mesh/binding.ts`: адрес Bastyon, сжатый ключ аккаунта, адрес LXMF, ключ
   identity Reticulum, время.
