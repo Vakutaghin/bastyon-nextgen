@@ -19,6 +19,7 @@ import {
   VAULT_ATTEMPTS_KEY,
   MESSENGER_KEY_PINS_PREFIX,
   MESSENGER_DIALOGS_PREFIX,
+  MESH_LAST_DEVICE_PREFIX,
   BACKUP_VERIFIED_PREFIX,
   BACKUP_NUDGED_AT_KEY,
   PEERTUBE_TOKEN_PREFIX,
@@ -108,6 +109,7 @@ export function clearAllUserData(): void {
       const purgePrefixes = [
         MESSENGER_KEY_PINS_PREFIX,
         MESSENGER_DIALOGS_PREFIX,
+        MESH_LAST_DEVICE_PREFIX,
         BACKUP_VERIFIED_PREFIX,
         PEERTUBE_TOKEN_PREFIX,
         PEERTUBE_RESUME_PREFIX,
@@ -164,6 +166,7 @@ export function clearAccountScopedLocalData(address: Address): void {
     localStorage.removeItem(`${POST_DRAFT_KEY}:${address}`)
     removeLocalKeysWithPrefix(`${COMMENT_DRAFT_PREFIX}${address}:`)
     localStorage.removeItem(`${MESSENGER_DIALOGS_PREFIX}${address}`)
+    localStorage.removeItem(`${MESH_LAST_DEVICE_PREFIX}${address}`)
   } catch {
     /* ignore */
   }

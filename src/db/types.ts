@@ -123,3 +123,58 @@ export interface VideoProgress {
   duration: number
   updatedAt: number
 }
+
+/** Статус своего mesh-сообщения; `received` — чужое. */
+export type MeshMessageStatus = 'sending' | 'sent' | 'delivered' | 'failed' | 'received'
+
+/**
+ * Диалог в mesh-сети (MeshCore): личный с узлом или канал. История живёт
+ * только здесь — радио её не хранит (очередь в его памяти очищается, как только
+ * приложение забрало сообщение). Привязан к аккаунту Bastyon.
+ */
+export interface MeshDialogRecord {
+  /** `mesh:mc:<свой ключ, 6 байт>:u:<ключ собеседника, 6 байт>` или `…:g:<id канала>`. */
+  id: string
+  account: string
+  network: 'meshcore'
+  /** Первые 6 байт ключа своего узла (hex): у каждого радио своя переписка. */
+  selfKey: string
+  kind: 'direct' | 'channel'
+  /** Полный ключ собеседника, если он есть в контактах радио. */
+  peerKey: string | null
+  channelKind?: 'public' | 'hashtag' | 'private'
+  name: string
+  /** Время последнего сообщения, мс; 0 — сообщений нет. */
+  lastTs: number
+  lastText: string
+  lastMine: boolean
+  unread: number
+  /** Создан, мс. */
+  createdAt: number
+}
+
+export interface MeshMessageRecord {
+  id: string
+  dialogId: string
+  account: string
+  /**
+   * Одно сообщение — одна запись: радио повторяет ЛС, пока не дойдёт ACK, и
+   * каждая копия приходит получателю заново. Для чужих — отправитель, его время
+   * и текст; для своих — id записи.
+   */
+  dedupKey: string
+  /** Когда отправлено или получено здесь, мс: по нему порядок в чате. */
+  ts: number
+  /** Время по часам отправителя, секунды. */
+  senderTs: number
+  mine: boolean
+  senderId: string
+  senderName: string | null
+  text: string
+  status: MeshMessageStatus
+  attempt?: number
+  flood?: boolean
+  error?: string
+  hops?: number | null
+  snr?: number | null
+}

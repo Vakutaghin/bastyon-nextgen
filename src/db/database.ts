@@ -3,6 +3,8 @@ import type {
   AppSettings,
   DecryptedMessage,
   FavoritePost,
+  MeshDialogRecord,
+  MeshMessageRecord,
   PendingPostRating,
   StoredNotification,
   TranscodedVideo,
@@ -21,6 +23,8 @@ export class AppDatabase extends Dexie {
   notifications!: Table<StoredNotification, [string, string]>
   decryptedMessages!: Table<DecryptedMessage, [string, string]>
   videoProgress!: Table<VideoProgress, string>
+  meshDialogs!: Table<MeshDialogRecord, string>
+  meshMessages!: Table<MeshMessageRecord, string>
 
   constructor() {
     super('BastyonDB')
@@ -77,6 +81,21 @@ export class AppDatabase extends Dexie {
       notifications: '[address+id], address, nblock',
       decryptedMessages: '[userId+eventId], userId, createdAt',
       videoProgress: 'id, updatedAt',
+    })
+
+    // v5: переписка в mesh-сетях (src/mesh). Радио историю не хранит, поэтому
+    // она здесь. `&dedupKey` — повтор ЛС (радио шлёт копию, пока нет ACK) не
+    // станет второй записью.
+    this.version(5).stores({
+      transcodedVideos: 'id, originalFileName, resolution, createdAt',
+      postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
+      settings: 'key, createdAt',
+      favorites: '[address+id], address, addedAt',
+      notifications: '[address+id], address, nblock',
+      decryptedMessages: '[userId+eventId], userId, createdAt',
+      videoProgress: 'id, updatedAt',
+      meshDialogs: 'id, account',
+      meshMessages: 'id, &dedupKey, [dialogId+ts], account',
     })
   }
 }

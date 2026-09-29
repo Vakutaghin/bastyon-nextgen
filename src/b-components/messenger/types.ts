@@ -34,6 +34,12 @@ export interface MessageInfo {
   [key: string]: unknown
 }
 
+/**
+ * Сеть диалога: Matrix (по умолчанию, поле не задано) или mesh-сеть через
+ * радио (src/mesh). У mesh-диалогов id начинается с `mesh:`.
+ */
+export type ChatTransport = 'matrix' | 'meshcore'
+
 export interface Message {
   id: string
   chatId: string
@@ -46,7 +52,8 @@ export interface Message {
   rawContent?: Record<string, unknown> | null
   timestamp: number
   read: boolean
-  status: 'sending' | 'sent' | 'read' | 'failed'
+  /** `delivered` — mesh: радио получателя подтвердило (ACK), прочтения там нет. */
+  status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed'
   /** Реакции на сообщение (эмодзи), заполняется из Matrix m.reaction */
   reactions?: MessageReaction[]
   /** Ответ на сообщение: event_id оригинала (Matrix m.in_reply_to). Превью
@@ -54,6 +61,8 @@ export interface Message {
   replyTo?: { id: string }
   /** Пришло зашифрованным (E2E): OG-превью ссылок для таких не запрашиваем (S33). */
   encrypted?: boolean
+  /** Не задано — Matrix. */
+  transport?: ChatTransport
 }
 
 export interface Dialog {
@@ -63,4 +72,10 @@ export interface Dialog {
   lastMessage?: Message
   /** Время создания комнаты (Unix, сек) — для сортировки диалогов без сообщений в общем ряду */
   createdAt?: number
+  /** Не задано — Matrix. */
+  transport?: ChatTransport
+  /** Mesh: личный диалог с узлом или канал. */
+  meshKind?: 'direct' | 'channel'
+  /** Mesh-канал: открытый (Public, #тег) или приватный. */
+  channelKind?: 'public' | 'hashtag' | 'private'
 }
