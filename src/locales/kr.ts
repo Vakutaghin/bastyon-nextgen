@@ -1827,6 +1827,8 @@ export default {
         rnode: 'USB RNode',
         rnodeHint:
           'RNode 펌웨어가 설치된 LoRa 보드입니다. 주파수와 설정이 주변 네트워크와 같아야 합니다.',
+        rnodeWindows:
+          'Windows에서는 아직 USB RNode를 쓸 수 없습니다. 커뮤니티 허브나 로컬 네트워크로 연결하세요.',
         serialPort: '포트',
         choosePort: '포트 선택',
         frequency: 'MHz',

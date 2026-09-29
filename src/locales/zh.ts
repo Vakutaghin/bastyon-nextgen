@@ -1777,6 +1777,7 @@ export default {
         lanKind: '局域网',
         rnode: 'USB 连接的 RNode',
         rnodeHint: '刷有 RNode 固件的 LoRa 板。频率和参数必须与你周围的网络一致。',
+        rnodeWindows: '在 Windows 上暂不支持通过 USB 连接 RNode：请通过社区中继或局域网连接。',
         serialPort: '端口',
         choosePort: '选择端口',
         frequency: 'MHz',

@@ -24,6 +24,8 @@ pub mod pickle;
 #[cfg(feature = "iface-local")]
 pub mod remote_management;
 pub mod rpc;
+// Bastyon: последовательный порт — через termios, только unix.
+#[cfg(unix)]
 pub mod serial;
 pub mod storage;
 pub use common::compressor;
@@ -57,7 +59,7 @@ pub use interface::auto::{AutoConfig, AutoFactory};
 pub use interface::backbone::{BackboneClientConfig, BackboneConfig, BackboneInterfaceFactory};
 #[cfg(feature = "iface-i2p")]
 pub use interface::i2p::{I2pConfig, I2pFactory};
-#[cfg(feature = "iface-kiss")]
+#[cfg(all(feature = "iface-kiss", unix))]
 pub use interface::kiss_iface::{KissFactory, KissIfaceConfig};
 #[cfg(feature = "iface-local")]
 pub use interface::local::{
@@ -66,9 +68,9 @@ pub use interface::local::{
 #[cfg(feature = "iface-pipe")]
 pub use interface::pipe::{PipeConfig, PipeFactory};
 pub use interface::registry::InterfaceRegistry;
-#[cfg(feature = "iface-rnode")]
+#[cfg(all(feature = "iface-rnode", unix))]
 pub use interface::rnode::{RNodeConfig, RNodeFactory, RNodeSubConfig};
-#[cfg(feature = "iface-serial")]
+#[cfg(all(feature = "iface-serial", unix))]
 pub use interface::serial_iface::{SerialFactory, SerialIfaceConfig};
 #[cfg(feature = "iface-tcp")]
 pub use interface::tcp::{TcpClientConfig, TcpClientFactory};
@@ -88,6 +90,7 @@ pub use provider_bridge::{
     ProviderEnvelope, ProviderMessage,
 };
 pub use rpc::{RpcAddr, RpcClient, RpcServer};
+#[cfg(unix)]
 pub use serial::Parity;
 #[cfg(feature = "iface-local")]
 pub use shared_client::SharedClientConfig;

@@ -26,6 +26,20 @@
    `[request_id, ответ]`. В 0.5.10 такой ответ молча выбрасывался. Теперь его опознаёт
    request_id из объявления ресурса, и ответ отдаётся как msgpack Bin, как в 0.7.
 
+4. **Windows.** В апстриме rns-net собирался только под unix. Теперь:
+   - последовательный порт (`serial.rs`, RNode, KISS, Serial) — только unix: к признакам
+     `iface-*` добавлено `unix`;
+   - опции TCP (`interface/tcp.rs`) на Windows ставятся через socket2 — NODELAY и keepalive 5 с /
+     2 с; счётчик проб и TCP_USER_TIMEOUT Windows не даёт настроить;
+   - AutoInterface (`interface/auto.rs`): список адаптеров — через `GetAdaptersAddresses`, а не
+     `getifaddrs`, берутся поднятые, не петля и не туннель, с адресом fe80::/10; интерфейс
+     multicast — через socket2 на всех платформах;
+   - bzip2 — на чистом Rust (`libbz2-rs-sys`), чтобы сборке не нужен был C-тулчейн (Windows,
+     Android).
+
+   Проверено: `cargo check`/`clippy -p bastyon-rns --target x86_64-pc-windows-msvc` проходят.
+   На самой Windows не запускалось — это проверит релизная сборка в CI и `MANUAL_CHECKS.md`.
+
 Сборка:
 
 - `Cargo.toml` переписан: без примеров, бенчмарков и интеграционных тестов;

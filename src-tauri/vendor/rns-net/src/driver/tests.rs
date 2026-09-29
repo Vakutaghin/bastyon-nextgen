@@ -1240,7 +1240,7 @@ fn register_test_pipe(driver: &mut Driver, name: &str) {
     });
 }
 
-#[cfg(feature = "iface-rnode")]
+#[cfg(all(feature = "iface-rnode", unix))]
 fn register_test_rnode(driver: &mut Driver, name: &str) {
     let startup = RNodeRuntime {
         sub: RNodeSubConfig {
@@ -4967,7 +4967,7 @@ fn runtime_config_sets_pipe_values() {
     assert_eq!(entry.value, RuntimeConfigValue::Float(5.0));
 }
 
-#[cfg(feature = "iface-rnode")]
+#[cfg(all(feature = "iface-rnode", unix))]
 #[test]
 fn runtime_config_lists_rnode_keys() {
     let mut driver = new_test_driver();
@@ -4986,7 +4986,7 @@ fn runtime_config_lists_rnode_keys() {
     assert!(keys.contains(&"rnode.radio.lt_alock_pct".to_string()));
 }
 
-#[cfg(feature = "iface-rnode")]
+#[cfg(all(feature = "iface-rnode", unix))]
 #[test]
 fn runtime_config_sets_rnode_values() {
     let mut driver = new_test_driver();

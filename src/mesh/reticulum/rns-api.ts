@@ -138,11 +138,19 @@ function onAndroid(): boolean {
   return cap?.getPlatform?.() === 'android'
 }
 
-/** Свой узел есть в десктопе (кроме Windows: rns-net там не собирается) и на Android. */
+/** Свой узел есть в десктопе (Tauri: macOS, Linux, Windows) и на Android. */
 export function isRnsAvailable(): boolean {
   if (typeof window === 'undefined') return false
-  if ('__TAURI_INTERNALS__' in window) return !/windows/i.test(navigator.userAgent || '')
+  if ('__TAURI_INTERNALS__' in window) return true
   return onAndroid()
+}
+
+/**
+ * RNode по USB: везде, где есть узел, кроме Windows — там у rns-net нет
+ * последовательного порта (termios), только хабы по TCP и локальная сеть.
+ */
+export function isRnodeSupported(): boolean {
+  return isRnsAvailable() && !/windows/i.test(navigator.userAgent || '')
 }
 
 async function android() {

@@ -49,7 +49,7 @@ use crate::interface::i2p::I2pRuntimeConfigHandle;
 use crate::interface::pipe::PipeRuntime;
 #[cfg(feature = "iface-pipe")]
 use crate::interface::pipe::PipeRuntimeConfigHandle;
-#[cfg(feature = "iface-rnode")]
+#[cfg(all(feature = "iface-rnode", unix))]
 use crate::interface::rnode::{
     validate_sub_config, RNodeRuntime, RNodeRuntimeConfigHandle, RNodeSubConfig,
 };
@@ -687,7 +687,7 @@ pub struct Driver {
     #[cfg(feature = "iface-pipe")]
     pub(crate) pipe_runtime: HashMap<String, PipeRuntimeConfigHandle>,
     /// Runtime-config handles for RNode interfaces, keyed by config name.
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     pub(crate) rnode_runtime: HashMap<String, RNodeRuntimeConfigHandle>,
     /// Startup/default interface metadata for generic cross-cutting runtime config.
     pub(crate) interface_runtime_defaults:
@@ -860,7 +860,7 @@ impl Driver {
             i2p_runtime: HashMap::new(),
             #[cfg(feature = "iface-pipe")]
             pipe_runtime: HashMap::new(),
-            #[cfg(feature = "iface-rnode")]
+            #[cfg(all(feature = "iface-rnode", unix))]
             rnode_runtime: HashMap::new(),
             interface_runtime_defaults: HashMap::new(),
             interface_ifac_runtime: HashMap::new(),

@@ -18,7 +18,7 @@ pub(crate) enum RuntimeConfigFamily {
     I2p,
     #[cfg(feature = "iface-pipe")]
     Pipe,
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     Rnode,
     Interface,
 }
@@ -193,7 +193,7 @@ impl Driver {
         if key.starts_with("pipe.") {
             return Some(RuntimeConfigFamily::Pipe);
         }
-        #[cfg(feature = "iface-rnode")]
+        #[cfg(all(feature = "iface-rnode", unix))]
         if key.starts_with("rnode.") {
             return Some(RuntimeConfigFamily::Rnode);
         }
@@ -225,7 +225,7 @@ impl Driver {
             RuntimeConfigFamily::I2p => self.i2p_runtime_entry(key),
             #[cfg(feature = "iface-pipe")]
             RuntimeConfigFamily::Pipe => self.pipe_runtime_entry(key),
-            #[cfg(feature = "iface-rnode")]
+            #[cfg(all(feature = "iface-rnode", unix))]
             RuntimeConfigFamily::Rnode => self.rnode_runtime_entry(key),
             RuntimeConfigFamily::Interface => self.generic_interface_runtime_entry(key),
         }
@@ -252,7 +252,7 @@ impl Driver {
             RuntimeConfigFamily::I2p => self.list_i2p_runtime_config(),
             #[cfg(feature = "iface-pipe")]
             RuntimeConfigFamily::Pipe => self.list_pipe_runtime_config(),
-            #[cfg(feature = "iface-rnode")]
+            #[cfg(all(feature = "iface-rnode", unix))]
             RuntimeConfigFamily::Rnode => self.list_rnode_runtime_config(),
             RuntimeConfigFamily::Interface => self.list_generic_interface_runtime_config(),
         }
@@ -283,7 +283,7 @@ impl Driver {
             RuntimeConfigFamily::I2p => self.set_i2p_runtime_config(key, value),
             #[cfg(feature = "iface-pipe")]
             RuntimeConfigFamily::Pipe => self.set_pipe_runtime_config(key, value),
-            #[cfg(feature = "iface-rnode")]
+            #[cfg(all(feature = "iface-rnode", unix))]
             RuntimeConfigFamily::Rnode => self.set_rnode_runtime_config(key, value),
             RuntimeConfigFamily::Interface => self.set_generic_interface_runtime_config(key, value),
         }
@@ -311,7 +311,7 @@ impl Driver {
             RuntimeConfigFamily::I2p => self.reset_i2p_runtime_config(key),
             #[cfg(feature = "iface-pipe")]
             RuntimeConfigFamily::Pipe => self.reset_pipe_runtime_config(key),
-            #[cfg(feature = "iface-rnode")]
+            #[cfg(all(feature = "iface-rnode", unix))]
             RuntimeConfigFamily::Rnode => self.reset_rnode_runtime_config(key),
             RuntimeConfigFamily::Interface => self.reset_generic_interface_runtime_config(key),
         }
@@ -1091,7 +1091,7 @@ impl Driver {
             .insert(handle.interface_name.clone(), handle);
     }
 
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     pub(crate) fn register_rnode_runtime(&mut self, handle: RNodeRuntimeConfigHandle) {
         self.rnode_runtime
             .insert(handle.interface_name.clone(), handle);
@@ -1281,7 +1281,7 @@ impl Driver {
         entries.extend(self.runtime_config_family_entries(RuntimeConfigFamily::I2p));
         #[cfg(feature = "iface-pipe")]
         entries.extend(self.runtime_config_family_entries(RuntimeConfigFamily::Pipe));
-        #[cfg(feature = "iface-rnode")]
+        #[cfg(all(feature = "iface-rnode", unix))]
         entries.extend(self.runtime_config_family_entries(RuntimeConfigFamily::Rnode));
         entries.extend(self.runtime_config_family_entries(RuntimeConfigFamily::Interface));
 
@@ -2464,7 +2464,7 @@ impl Driver {
         Ok(())
     }
 
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     pub(crate) fn list_rnode_runtime_config(&self) -> Vec<RuntimeConfigEntry> {
         let mut entries = Vec::new();
         let mut names: Vec<&String> = self.rnode_runtime.keys().collect();
@@ -2488,7 +2488,7 @@ impl Driver {
         entries
     }
 
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     pub(crate) fn rnode_runtime_entry(&self, key: &str) -> Option<RuntimeConfigEntry> {
         let rest = key.strip_prefix("rnode.")?;
         let (name, setting) = rest.split_once('.')?;
@@ -2568,7 +2568,7 @@ impl Driver {
         }
     }
 
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     pub(crate) fn split_rnode_runtime_key<'a>(
         &self,
         key: &'a str,
@@ -2583,7 +2583,7 @@ impl Driver {
         })
     }
 
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     pub(crate) fn apply_rnode_runtime(
         runtime: &mut RNodeRuntime,
     ) -> Result<(), RuntimeConfigError> {
@@ -2603,7 +2603,7 @@ impl Driver {
         Ok(())
     }
 
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     pub(crate) fn set_rnode_runtime_config(
         &mut self,
         key: &str,
@@ -2654,7 +2654,7 @@ impl Driver {
         Ok(())
     }
 
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     pub(crate) fn reset_rnode_runtime_config(
         &mut self,
         key: &str,
@@ -2693,7 +2693,7 @@ impl Driver {
         Ok(())
     }
 
-    #[cfg(feature = "iface-rnode")]
+    #[cfg(all(feature = "iface-rnode", unix))]
     fn refresh_rnode_interface_bitrate(&mut self, name: &str, sub: &RNodeSubConfig) {
         let bitrate = Some(crate::interface::rnode::estimate_lora_bitrate_bps(sub));
         let airtime_profile = Some(crate::interface::rnode::lora_airtime_profile(sub));

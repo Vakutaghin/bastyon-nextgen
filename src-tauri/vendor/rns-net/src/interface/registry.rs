@@ -41,9 +41,9 @@ impl InterfaceRegistry {
         }
         #[cfg(feature = "iface-udp")]
         reg.register(Box::new(super::udp::UdpFactory));
-        #[cfg(feature = "iface-serial")]
+        #[cfg(all(feature = "iface-serial", unix))]
         reg.register(Box::new(super::serial_iface::SerialFactory));
-        #[cfg(feature = "iface-kiss")]
+        #[cfg(all(feature = "iface-kiss", unix))]
         reg.register(Box::new(super::kiss_iface::KissFactory));
         #[cfg(feature = "iface-pipe")]
         reg.register(Box::new(super::pipe::PipeFactory));
@@ -58,7 +58,7 @@ impl InterfaceRegistry {
         reg.register(Box::new(super::auto::AutoFactory));
         #[cfg(feature = "iface-i2p")]
         reg.register(Box::new(super::i2p::I2pFactory));
-        #[cfg(feature = "iface-rnode")]
+        #[cfg(all(feature = "iface-rnode", unix))]
         reg.register(Box::new(super::rnode::RNodeFactory));
         reg
     }

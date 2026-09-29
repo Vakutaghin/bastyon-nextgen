@@ -6,16 +6,16 @@ pub mod auto;
 pub mod backbone;
 #[cfg(feature = "iface-i2p")]
 pub mod i2p;
-#[cfg(feature = "iface-kiss")]
+#[cfg(all(feature = "iface-kiss", unix))]
 pub mod kiss_iface;
 #[cfg(feature = "iface-local")]
 pub mod local;
 #[cfg(feature = "iface-pipe")]
 pub mod pipe;
 pub mod registry;
-#[cfg(feature = "iface-rnode")]
+#[cfg(all(feature = "iface-rnode", unix))]
 pub mod rnode;
-#[cfg(feature = "iface-serial")]
+#[cfg(all(feature = "iface-serial", unix))]
 pub mod serial_iface;
 #[cfg(feature = "iface-tcp")]
 pub mod tcp;

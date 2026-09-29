@@ -11,10 +11,9 @@ hex = "0.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 
-# rns-net собирается только под unix. lxmf-rs ещё не выпущен на crates.io в
-# версии для rns-net 0.5 — из git, на закреплённом коммите; rns-* — ровно те
-# версии, под которые он собран.
-[target.'cfg(unix)'.dependencies]
+# lxmf-rs ещё не выпущен на crates.io в версии для rns-net 0.5 — из git, на
+# закреплённом коммите; rns-* — ровно те версии, под которые он собран
+# (rns-net и rns-crypto подменены вендоренными, src-tauri/vendor).
 rns-net = "=0.5.10"
 rns-core = "=0.1.13"
 rns-crypto = "=0.1.8"

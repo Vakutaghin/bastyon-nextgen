@@ -1,8 +1,8 @@
-// Где есть свой узел Reticulum: десктоп (Tauri), кроме Windows — rns-net там
-// не собирается, — и приложение для Android.
+// Где есть свой узел Reticulum: десктоп (Tauri) и приложение для Android;
+// RNode по USB — везде, кроме Windows (там нет последовательного порта у rns-net).
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { isRnsAvailable } from './rns-api'
+import { isRnodeSupported, isRnsAvailable } from './rns-api'
 
 const MAC =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)'
@@ -21,10 +21,13 @@ describe('isRnsAvailable', () => {
     expect(isRnsAvailable()).toBe(true)
   })
 
-  it('is off on Windows', () => {
+  it('runs on Windows too, but without RNode', () => {
     vi.stubGlobal('navigator', { userAgent: WINDOWS })
     ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {}
-    expect(isRnsAvailable()).toBe(false)
+    expect(isRnsAvailable()).toBe(true)
+    expect(isRnodeSupported()).toBe(false)
+    vi.stubGlobal('navigator', { userAgent: MAC })
+    expect(isRnodeSupported()).toBe(true)
   })
 })
 

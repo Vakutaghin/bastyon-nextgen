@@ -390,6 +390,7 @@ fn valid_host(s: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | ':' | '_' | '%'))
 }
 
+#[cfg(not(windows))]
 fn valid_port_path(s: &str) -> bool {
     !s.is_empty()
         && s.len() <= 200
@@ -426,6 +427,10 @@ pub(crate) fn config_text(ifaces: &[IfaceConfig]) -> Result<String, String> {
                     "  [[{name}]]\n    type = AutoInterface\n    enabled = yes\n"
                 );
             }
+            // На Windows у rns-net нет последовательного порта (termios).
+            #[cfg(windows)]
+            IfaceConfig::Rnode { .. } => return Err(format!("unsupported: {name}")),
+            #[cfg(not(windows))]
             IfaceConfig::Rnode {
                 port,
                 frequency,

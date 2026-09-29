@@ -47,7 +47,8 @@ path = "src/lib.rs"
 
 [dependencies]
 bincode = { version = "1", optional = true }
-bzip2 = "0.5"
+# Чистый Rust вместо libbzip2 на C: сборка под Windows и Android без C-тулчейна.
+bzip2 = { version = "0.5", default-features = false, features = ["libbz2-rs-sys"] }
 libc = "0.2"
 log = "0.4"
 polling = "3"
@@ -57,6 +58,16 @@ rns-crypto = "=0.1.8"
 rns-hooks-crate = { version = "0.1.8", optional = true, default-features = false, package = "rns-hooks" }
 serde = { version = "1", features = ["derive"], optional = true }
 socket2 = { version = "0.5", features = ["all"] }
+
+# Bastyon: список сетевых адаптеров для AutoInterface на Windows (там нет
+# getifaddrs); версия уже есть в дереве зависимостей.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_NetworkManagement_Ndis",
+    "Win32_Networking_WinSock",
+] }
 
 [dev-dependencies]
 env_logger = "0.11"

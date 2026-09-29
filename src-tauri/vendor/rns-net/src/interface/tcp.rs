@@ -4,6 +4,7 @@
 
 use std::io::{self, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
+#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -94,7 +95,19 @@ impl Writer for TcpWriter {
     }
 }
 
+/// Bastyon: на Windows — те же NODELAY и keepalive через socket2 (libc там
+/// другой). Счётчик проб и TCP_USER_TIMEOUT Windows не даёт настроить.
+#[cfg(windows)]
+fn set_socket_options(stream: &TcpStream) -> io::Result<()> {
+    stream.set_nodelay(true)?;
+    let keepalive = socket2::TcpKeepalive::new()
+        .with_time(Duration::from_secs(5))
+        .with_interval(Duration::from_secs(2));
+    socket2::SockRef::from(stream).set_tcp_keepalive(&keepalive)
+}
+
 /// Set TCP keepalive and timeout socket options (Linux).
+#[cfg(unix)]
 fn set_socket_options(stream: &TcpStream) -> io::Result<()> {
     let fd = stream.as_raw_fd();
     unsafe {

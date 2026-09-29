@@ -100,7 +100,7 @@ A room does not reject a wrong password — it stays silent, and an error appear
 
 ## Reticulum
 
-Reticulum is a network that runs over any links: LoRa radios with RNode firmware, your local network and community hubs on the internet. Its chats (LXMF) are **end-to-end encrypted with keys in the app**, not on a radio — the only one of the three networks where a chat gets real Bastyon protection. It is available in the app for macOS, Linux and Android.
+Reticulum is a network that runs over any links: LoRa radios with RNode firmware, your local network and community hubs on the internet. Its chats (LXMF) are **end-to-end encrypted with keys in the app**, not on a radio — the only one of the three networks where a chat gets real Bastyon protection. It is available in the app for macOS, Linux, Windows and Android.
 
 ### Your node and address
 
@@ -205,7 +205,7 @@ That is why these chats have no Bastyon lock: the chat says how the messages are
 - History is kept only in the app: the radio hands a message over and forgets it. While the app is not connected, the radio keeps only the latest incoming messages (up to 32 for Meshtastic, usually 16 for MeshCore) and loses them when switched off.
 - Chats are tied to the account and to the radio: another account or another radio has its own.
 - Signing out deletes this history from the computer.
-- Reticulum works in the app for macOS, Linux and Android (64-bit ARM, which is nearly every phone); Windows is planned.
+- Reticulum works in the app for macOS, Linux, Windows and Android (64-bit ARM, which is nearly every phone). On Windows only hubs and the local network work: RNode over USB does not connect there yet.
 
 ## See also
 

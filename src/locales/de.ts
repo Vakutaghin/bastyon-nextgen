@@ -1861,6 +1861,8 @@ export default {
         rnode: 'RNode über USB',
         rnodeHint:
           'Eine LoRa-Platine mit RNode-Firmware. Frequenz und Parameter müssen zum Netz um dich herum passen.',
+        rnodeWindows:
+          'RNode über USB funktioniert unter Windows noch nicht: Verbinden Sie sich über einen Community-Hub oder das lokale Netz.',
         serialPort: 'Port',
         choosePort: 'Port wählen',
         frequency: 'MHz',

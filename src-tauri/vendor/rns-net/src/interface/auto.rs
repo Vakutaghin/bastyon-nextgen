@@ -246,9 +246,108 @@ fn should_adopt_interface_name(
     true
 }
 
+/// Bastyon: то же на Windows — адаптеры из `GetAdaptersAddresses` (getifaddrs
+/// там нет): поднятые, не петля и не туннель, с адресом fe80::/10; индекс —
+/// IPv6-индекс интерфейса, имя — понятное имя адаптера.
+#[cfg(windows)]
+pub fn enumerate_interfaces(allowed: &[String], ignored: &[String]) -> Vec<LocalInterface> {
+    use windows_sys::Win32::Foundation::ERROR_BUFFER_OVERFLOW;
+    use windows_sys::Win32::NetworkManagement::IpHelper::{
+        GetAdaptersAddresses, GAA_FLAG_SKIP_ANYCAST, GAA_FLAG_SKIP_DNS_SERVER,
+        GAA_FLAG_SKIP_MULTICAST, IF_TYPE_SOFTWARE_LOOPBACK, IF_TYPE_TUNNEL,
+        IP_ADAPTER_ADDRESSES_LH,
+    };
+    use windows_sys::Win32::NetworkManagement::Ndis::IfOperStatusUp;
+    use windows_sys::Win32::Networking::WinSock::{AF_INET6, SOCKADDR_IN6};
+
+    let mut result = Vec::new();
+    let platform_ignored = platform_ignored_interfaces();
+    let flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
+    // Буфер из u64 — выравнивание под IP_ADAPTER_ADDRESSES_LH.
+    let mut size: u32 = 16 * 1024;
+    let mut buf: Vec<u64>;
+    let mut attempts = 0;
+    loop {
+        buf = vec![0u64; (size as usize).div_ceil(8)];
+        let ret = unsafe {
+            GetAdaptersAddresses(
+                AF_INET6 as u32,
+                flags,
+                std::ptr::null(),
+                buf.as_mut_ptr() as *mut IP_ADAPTER_ADDRESSES_LH,
+                &mut size,
+            )
+        };
+        attempts += 1;
+        if ret == ERROR_BUFFER_OVERFLOW && attempts < 4 {
+            continue;
+        }
+        if ret != 0 {
+            return result;
+        }
+        break;
+    }
+
+    let mut adapter = buf.as_ptr() as *const IP_ADAPTER_ADDRESSES_LH;
+    while !adapter.is_null() {
+        let a = unsafe { &*adapter };
+        adapter = a.Next;
+        if a.OperStatus != IfOperStatusUp
+            || a.IfType == IF_TYPE_SOFTWARE_LOOPBACK
+            || a.IfType == IF_TYPE_TUNNEL
+            || a.Ipv6IfIndex == 0
+        {
+            continue;
+        }
+        let name = unsafe { wide_to_string(a.FriendlyName) };
+        if name.is_empty() || !should_adopt_interface_name(&name, allowed, ignored, platform_ignored)
+        {
+            continue;
+        }
+        let mut unicast = a.FirstUnicastAddress;
+        while !unicast.is_null() {
+            let u = unsafe { &*unicast };
+            unicast = u.Next;
+            let sa = u.Address.lpSockaddr;
+            if sa.is_null() || unsafe { (*sa).sa_family } != AF_INET6 {
+                continue;
+            }
+            let sa6 = sa as *const SOCKADDR_IN6;
+            let ipv6 = Ipv6Addr::from(unsafe { (*sa6).sin6_addr.u.Byte });
+            let octets = ipv6.octets();
+            if octets[0] != 0xfe || (octets[1] & 0xc0) != 0x80 {
+                continue;
+            }
+            if !result.iter().any(|li: &LocalInterface| li.name == name) {
+                result.push(LocalInterface {
+                    name: name.clone(),
+                    link_local_addr: format!("{}", ipv6),
+                    index: a.Ipv6IfIndex,
+                });
+            }
+            break;
+        }
+    }
+    result
+}
+
+/// Строка UTF-16 с нулём в конце → String.
+#[cfg(windows)]
+unsafe fn wide_to_string(ptr: *const u16) -> String {
+    if ptr.is_null() {
+        return String::new();
+    }
+    let mut len = 0usize;
+    while *ptr.add(len) != 0 {
+        len += 1;
+    }
+    String::from_utf16_lossy(std::slice::from_raw_parts(ptr, len))
+}
+
 /// Enumerate network interfaces that have IPv6 link-local addresses (fe80::/10).
 ///
 /// Uses `libc::getifaddrs()`. Filters by allowed/ignored interface lists.
+#[cfg(unix)]
 pub fn enumerate_interfaces(allowed: &[String], ignored: &[String]) -> Vec<LocalInterface> {
     let mut result = Vec::new();
     let platform_ignored = platform_ignored_interfaces();
@@ -706,17 +805,8 @@ fn discovery_sender_loop(
     while running.load(Ordering::Relaxed) {
         // Create a fresh socket for each send (matches Python)
         if let Ok(socket) = UdpSocket::bind("[::]:0") {
-            // Set multicast interface
-            let if_bytes = if_index.to_ne_bytes();
-            unsafe {
-                libc::setsockopt(
-                    socket_fd(&socket),
-                    libc::IPPROTO_IPV6,
-                    libc::IPV6_MULTICAST_IF,
-                    if_bytes.as_ptr() as *const libc::c_void,
-                    4,
-                );
-            }
+            // Set multicast interface (Bastyon: через socket2 — и на Windows).
+            let _ = socket2::SockRef::from(&socket).set_multicast_if_v6(if_index);
 
             let target = SocketAddrV6::new(*mcast_ip, discovery_port, 0, 0);
             if let Err(e) = socket.send_to(&token, target) {

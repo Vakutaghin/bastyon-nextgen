@@ -1866,6 +1866,8 @@ export default {
         rnode: 'RNode en USB',
         rnodeHint:
           'Une carte LoRa avec le firmware RNode. La fréquence et les paramètres doivent correspondre au réseau autour de vous.',
+        rnodeWindows:
+          'Sous Windows, RNode en USB ne fonctionne pas encore : connectez-vous via un hub communautaire ou le réseau local.',
         serialPort: 'Port',
         choosePort: 'Choisir un port',
         frequency: 'MHz',

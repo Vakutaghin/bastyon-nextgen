@@ -36,8 +36,9 @@
     </SC_MeshForm>
 
     <SC_MeshSubtitle>{{ t('mesh.rns.ifaces.rnode') }}</SC_MeshSubtitle>
-    <SC_MeshNote>{{ t('mesh.rns.ifaces.rnodeHint') }}</SC_MeshNote>
-    <SC_MeshForm @submit.prevent="addRnode">
+    <SC_MeshNote v-if="!rnodeSupported">{{ t('mesh.rns.ifaces.rnodeWindows') }}</SC_MeshNote>
+    <SC_MeshNote v-else>{{ t('mesh.rns.ifaces.rnodeHint') }}</SC_MeshNote>
+    <SC_MeshForm v-if="rnodeSupported" @submit.prevent="addRnode">
       <SC_MeshField>
         {{ t('mesh.rns.ifaces.serialPort') }}
         <SC_MeshSelect v-model="rnodePort" @focus="loadPorts">
@@ -77,6 +78,7 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { Button } from 'ant-design-vue'
 import { listSerialPorts } from '@/mesh/radio/platform'
+import { isRnodeSupported } from '@/mesh/reticulum/rns-api'
 import type { SerialPortInfo } from '@/mesh/radio/types'
 import type { RnsInterface } from '@/mesh/reticulum/rns-api'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
@@ -148,6 +150,9 @@ async function addHub(): Promise<void> {
   await save([...list.value, { kind: 'tcp', host: host.value.trim(), port: Number(port.value) }])
   host.value = ''
 }
+
+/** На Windows RNode по USB нет — только хабы и локальная сеть. */
+const rnodeSupported = isRnodeSupported()
 
 // RNode: значения по умолчанию — частая настройка сообществ в 868 МГц.
 const ports = ref<SerialPortInfo[]>([])

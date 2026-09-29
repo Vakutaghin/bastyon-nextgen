@@ -1843,6 +1843,8 @@ export default {
         rnode: 'RNode преко USB-а',
         rnodeHint:
           'LoRa плоча са RNode фирмвером. Фреквенција и параметри морају да одговарају мрежи око вас.',
+        rnodeWindows:
+          'На Windows-у RNode преко USB-а још не ради: повежите се преко хаба заједнице или локалне мреже.',
         serialPort: 'Порт',
         choosePort: 'Изаберите порт',
         frequency: 'MHz',

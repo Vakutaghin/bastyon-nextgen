@@ -1847,6 +1847,8 @@ export default {
         rnode: 'RNode по USB',
         rnodeHint:
           'LoRa-плата с прошивкой RNode. Частота и параметры должны совпадать с сетью вокруг вас.',
+        rnodeWindows:
+          'На Windows RNode по USB пока не работает: подключайтесь через хаб сообщества или локальную сеть.',
         serialPort: 'Порт',
         choosePort: 'Выберите порт',
         frequency: 'МГц',

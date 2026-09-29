@@ -1843,6 +1843,8 @@ export default {
         rnode: 'RNode over USB',
         rnodeHint:
           'A LoRa board with RNode firmware. The frequency and settings must match the network around you.',
+        rnodeWindows:
+          'RNode over USB does not work on Windows yet: connect through a community hub or the local network.',
         serialPort: 'Port',
         choosePort: 'Choose a port',
         frequency: 'MHz',

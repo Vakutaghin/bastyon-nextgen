@@ -3,13 +3,8 @@
 //! страницы NomadNet, штампы при отправке. Общий для десктопа (Tauri,
 //! src-tauri/src/rns) и Android (JNI, crates/bastyon-rns-jni).
 //!
-//! rns-net собирается только под unix (serial, сокеты, /dev/urandom); на
-//! остальных платформах `node` — заглушка с тем же интерфейсом.
+//! На Windows нет интерфейсов на последовательном порту (RNode) и локальных
+//! сокетов общего экземпляра — только хабы по TCP и локальная сеть.
 
+pub mod node;
 pub mod types;
-
-#[cfg(unix)]
-pub mod node;
-#[cfg(not(unix))]
-#[path = "node_unsupported.rs"]
-pub mod node;

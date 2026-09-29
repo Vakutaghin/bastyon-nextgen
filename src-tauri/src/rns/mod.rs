@@ -9,8 +9,8 @@
 //!
 //! Ошибки — строкой «код: подробности», код переводит интерфейс.
 //!
-//! Сам узел — в крейте bastyon-rns (общий с Android). rns-net собирается
-//! только под unix; на Windows команды есть, но отвечают `unsupported`.
+//! Сам узел — в крейте bastyon-rns (общий с Android). На Windows нет RNode
+//! по USB (у rns-net там нет последовательного порта) — только хабы и LAN.
 
 use bastyon_rns::{node, types};
 
