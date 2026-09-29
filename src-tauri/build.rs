@@ -48,6 +48,16 @@ const COMMANDS: &[&str] = &[
   "asr_start",
   "asr_stop",
   "asr_cancel",
+  "radio_serial_ports",
+  "radio_serial_open",
+  "radio_tcp_open",
+  "radio_write",
+  "radio_close",
+  "radio_ble_scan",
+  "radio_ble_connect",
+  "radio_ble_subscribe",
+  "radio_ble_write",
+  "radio_ble_read",
 ];
 
 fn main() {

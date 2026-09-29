@@ -13,6 +13,10 @@
   запроса доступа. Без них macOS не даёт приложению микрофон (голосовой ввод,
   голосовые сообщения) и камеру (QR-код при входе). К ним нужны и права
   hardened runtime в entitlements.plist.
+
+  NSBluetoothAlwaysUsageDescription — Bluetooth до LoRa-радио (mesh-сети).
+  Без него macOS закрывает приложение при первом обращении к Bluetooth. Права
+  hardened runtime для Bluetooth нет: оно есть только у песочницы App Store.
 -->
 <plist version="1.0">
   <dict>
@@ -20,6 +24,8 @@
     <string>Bastyon uses the microphone for voice input and voice messages. Speech is recognized on this computer.</string>
     <key>NSCameraUsageDescription</key>
     <string>Bastyon uses the camera to scan a QR code when you sign in.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Bastyon connects over Bluetooth to your LoRa radio to chat in mesh networks.</string>
     <key>CFBundleURLTypes</key>
     <array>
       <dict>

@@ -73,6 +73,12 @@ tauri-plugin-window-state = "2"
 tauri-plugin-autostart = "2"
 # Голосовой ввод (src/asr): запись с микрофона. На Linux нужен libasound2-dev.
 cpal = "0.18"
+# Mesh-сети (src/radio): байты до LoRa-радио по USB-serial и Bluetooth LE.
+# serialport без libudev: на Linux порты перечисляются через sysfs, и сборке
+# не нужен libudev-dev. btleplug на Linux идёт через BlueZ (libdbus уже нужен).
+serialport = { version = "4.10", default-features = false }
+btleplug = "0.13"
+uuid = "1"
 
 # Голосовой ввод: распознавание whisper.cpp прямо на устройстве. ggml
 # собирается переносимо (GGML_NATIVE=OFF в .cargo/config.toml), на macOS
@@ -95,3 +101,7 @@ libloading = "0.7"
 # Mock-рантайм Tauri для теста ACL (acl_tests в src/lib.rs).
 [dev-dependencies]
 tauri = { version = "2.11.6", features = ["test"] }
+
+# Тест радио-слоя на псевдотерминале (openpty).
+[target.'cfg(unix)'.dev-dependencies]
+libc = "0.2"

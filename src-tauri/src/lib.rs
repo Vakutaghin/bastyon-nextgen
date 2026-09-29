@@ -1,5 +1,6 @@
 mod asr;
 mod ipfs;
+mod radio;
 mod tor;
 mod tray;
 
@@ -927,6 +928,16 @@ pub fn run() {
       asr::asr_start,
       asr::asr_stop,
       asr::asr_cancel,
+      radio::radio_serial_ports,
+      radio::radio_serial_open,
+      radio::radio_tcp_open,
+      radio::radio_write,
+      radio::radio_close,
+      radio::radio_ble_scan,
+      radio::radio_ble_connect,
+      radio::radio_ble_subscribe,
+      radio::radio_ble_write,
+      radio::radio_ble_read,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]
@@ -1011,6 +1022,9 @@ pub fn run() {
       // Голосовой ввод: модели в данных приложения, распознавание на устройстве.
       asr::init(app.handle()).map_err(|e| e.to_string())?;
 
+      // Радио для mesh-сетей: соединения с LoRa-устройствами.
+      radio::init(app.handle())?;
+
       // Значок в трее (Windows, Linux). Не вышло — работаем без него.
       if let Err(e) = tray::init(app.handle()) {
         log::warn!("tray: {e}");
@@ -1046,6 +1060,10 @@ pub fn run() {
         // Микрофон не должен оставаться открытым после выхода.
         if let Some(mgr) = app_handle.try_state::<asr::AsrManager>() {
           asr::shutdown_on_exit(&mgr);
+        }
+        // Порты и Bluetooth-соединения с радио отпускаем.
+        if let Some(mgr) = app_handle.try_state::<radio::RadioManager>() {
+          radio::shutdown_on_exit(&mgr);
         }
       }
     });
