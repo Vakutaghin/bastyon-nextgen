@@ -48,6 +48,31 @@ describe('classifyContentLink — bastyon://', () => {
 })
 
 // V40: в десктопной сборке target="_blank" не работает, ссылку открывает opener.
+describe('classifyContentLink — ссылки на bastyon.com', () => {
+  it('пост и профиль открываются в приложении, а не в браузере', () => {
+    expect(classifyContentLink(`https://bastyon.com/post?s=${TXID}`, desktop)).toEqual({
+      kind: 'router',
+      path: `/post/${TXID}`,
+    })
+    expect(classifyContentLink('https://bastyon.com/alice', desktop)).toEqual({
+      kind: 'router',
+      path: '/alice',
+    })
+    const other = { isTauri: false, origin: 'https://next.example' }
+    expect(classifyContentLink(`https://pocketnet.app/post?s=${TXID}`, other)).toEqual({
+      kind: 'router',
+      path: `/post/${TXID}`,
+    })
+  })
+
+  it('главная сайта и его отдельные приложения открываются снаружи', () => {
+    expect(classifyContentLink('https://bastyon.com/', desktop).kind).toBe('external')
+    expect(
+      classifyContentLink('https://bastyon.com/blockexplorer/transaction/ab12', desktop).kind
+    ).toBe('external')
+  })
+})
+
 describe('classifyContentLink — внешние ссылки', () => {
   it('в вебе не перехватываются', () => {
     expect(classifyContentLink('https://example.com/a', web)).toEqual({ kind: 'none' })

@@ -8,7 +8,7 @@
  *    перезагрузка SPA;
  *  - `bastyon://post?s=…` — рендерилась как «внутренняя», но клик никто не
  *    обрабатывал: в вебе ничего, в Tauri webview уходил на неизвестную схему
- *    (N15);
+ *    (N15). Так же — ссылки на посты и профили на bastyon.com;
  *  - внешняя `https://…` с `target="_blank"` — в десктопной сборке no-op
  *    (V40), её нужно открыть системным браузером.
  *
@@ -61,6 +61,15 @@ export function classifyContentLink(href: string, ctx: ContentLinkContext): Cont
 
   // Ссылка на само приложение — обычная внутренняя навигация (её делает <a>).
   if (parsed.origin === ctx.origin) return { kind: 'none' }
+
+  // Пост, профиль или раздел на bastyon.com открываем здесь же, как `bastyon://`:
+  // раньше в приложении для компьютера такая ссылка уводила в браузер, в
+  // прежний веб-клиент. Главная сайта и его отдельные приложения
+  // (`/blockexplorer/…`) по-прежнему открываются снаружи.
+  if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+    const path = resolveDeepLink(parsed.href)
+    if (path && path !== '/') return { kind: 'router', path }
+  }
 
   if (
     parsed.protocol === 'http:' ||
