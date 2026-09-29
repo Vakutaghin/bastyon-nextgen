@@ -13,6 +13,7 @@ import { Tooltip } from 'ant-design-vue'
 import { BugOutlined } from '@/components/icons'
 import { useAuthStore } from '@/blockchain'
 import { useMessengerStore } from '@/b-components/messenger/store'
+import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import type { GetUserAddressResponse } from '@/types/rpc-responses/get-user-address'
@@ -29,7 +30,9 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const messengerStore = useMessengerStore()
 
-const isVisible = computed<boolean>(() => authStore.isUserAuthenticated)
+// Отчёт уходит в чат: с выключенным мессенджером кнопка молча ничего не делала.
+const prefs = useAppPreferencesStore()
+const isVisible = computed<boolean>(() => authStore.isUserAuthenticated && prefs.messengerEnabled)
 
 // Кешируем ТОЛЬКО успешный резолв. Пустой ответ (имя свежего аккаунта ещё не
 // распространилось по всем нодам) или ошибку не кешируем — иначе один промах
