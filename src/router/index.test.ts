@@ -1,11 +1,13 @@
 // Роутер: служебные пути (/explorer, /search, /help, /post…) не проглатываются
 // профилем /:userName, старые /info/* ведут в справку, страницы аккаунта
-// пускают только после restoreSession с вошедшим пользователем, а заголовок
-// вкладки следует за маршрутом и за сменой языка.
+// пускают только после restoreSession с вошедшим пользователем (гостя просят
+// войти, не уводя со страницы), а заголовок вкладки следует за маршрутом и за
+// сменой языка.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
+import { useModalStore } from '@/stores/modal-store'
 
 const mocks = vi.hoisted(() => ({
   auth: {
@@ -107,12 +109,13 @@ describe('router: страницы аккаунта', () => {
   })
 
   it.each(['/wallets', '/settings', '/limits', '/my-videos', '/my-files'])(
-    'гостя с %s возвращает на главную',
+    'гость, открывший %s, остаётся на месте и видит окно входа',
     async (path) => {
       await router.push('/help')
       await router.push(path)
       expect(mocks.auth.restoreSession).toHaveBeenCalledTimes(1)
-      expect(router.currentRoute.value.name).toBe('home')
+      expect(router.currentRoute.value.name).toBe('help')
+      expect(useModalStore().authModal).toMatchObject({ isOpen: true, mode: 'login' })
     }
   )
 

@@ -149,23 +149,24 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
   }
 
   // Синхронизация состояния модалок авторизации с глобальным store.
-  watch(
-    () => modalStore.authModal.isOpen,
-    (isOpen) => {
-      if (isOpen) {
-        if (modalStore.authModal.mode === 'login') {
-          signInModalOpen.value = true
-          registerModalOpenRef.value = false
-        } else {
-          registerModalOpenRef.value = true
-          signInModalOpen.value = false
-        }
-      } else {
-        signInModalOpen.value = false
+  function syncAuthModal(isOpen: boolean): void {
+    if (isOpen) {
+      if (modalStore.authModal.mode === 'login') {
+        signInModalOpen.value = true
         registerModalOpenRef.value = false
+      } else {
+        registerModalOpenRef.value = true
+        signInModalOpen.value = false
       }
+    } else {
+      signInModalOpen.value = false
+      registerModalOpenRef.value = false
     }
-  )
+  }
+  watch(() => modalStore.authModal.isOpen, syncAuthModal)
+  // Окно могли попросить ещё до появления шапки: гостя, открывшего по ссылке
+  // раздел для аккаунта, роутер просит войти при запуске.
+  if (modalStore.authModal.isOpen) syncAuthModal(true)
 
   // Если пользователь закрыл модалку вручную — закрываем и в store.
   watch(signInModalOpen, (isOpen) => {

@@ -2,6 +2,7 @@ import { watch } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import { getActivePinia } from 'pinia'
 import { useAuthStore } from '@/blockchain'
+import { requireAuth } from '@/composables/use-auth-gate'
 import { setDocumentTitle } from '@/composables/use-document-title'
 import { i18n, t } from '@/i18n'
 
@@ -186,15 +187,19 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
   if (!AUTH_REQUIRED_NAMES.has(to.name as string)) return
   const pinia = getActivePinia()
   if (!pinia) return
   const authStore = useAuthStore(pinia)
   await authStore.restoreSession()
-  if (!authStore.isUserAuthenticated) {
-    return { path: '/', replace: true }
-  }
+  if (authStore.isUserAuthenticated) return
+  // Гостю — окно входа, а раздел откроется после входа. Раньше гостя молча
+  // уводило на ленту, и казалось, что пункт меню не работает. Переход изнутри
+  // приложения отменяем: гость остаётся там, где был. По ссылке и при запуске
+  // под окном входа показываем ленту.
+  requireAuth(() => void router.push(to.fullPath))
+  return from.matched.length > 0 ? false : { path: '/', replace: true }
 })
 
 router.afterEach((to) => {
