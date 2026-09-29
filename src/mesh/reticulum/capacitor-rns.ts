@@ -17,6 +17,7 @@ import type {
   RnsDownload,
   RnsEvent,
   RnsMethod,
+  RnsPath,
   RnsStartOptions,
   RnsStarted,
   RnsStatus,
@@ -47,6 +48,7 @@ interface MeshRnsPlugin {
     data: Record<string, string>
   }): Promise<{ content: string; binary: boolean }>
   download(o: { node: string; path: string }): Promise<RnsDownload>
+  paths(): Promise<{ paths: RnsPath[] }>
   addListener(event: 'rns', cb: (ev: RnsEvent) => void): Promise<PluginListenerHandle>
 }
 
@@ -122,3 +124,5 @@ export const page = (node: string, path: string, data: Record<string, string>) =
   call(() => MeshRns.page({ node, path, data }))
 
 export const download = (node: string, path: string) => call(() => MeshRns.download({ node, path }))
+
+export const paths = async (): Promise<RnsPath[]> => (await call(() => MeshRns.paths())).paths

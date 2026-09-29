@@ -1859,6 +1859,26 @@ export default {
         failed: 'Il nodo di consegna non ha risposto.',
         done: '{n} messaggio ricevuto | {n} messaggi ricevuti',
       },
+      network: {
+        title: 'Rete',
+        lead: "Dove il tuo nodo conosce la strada. Nel grafo un indirizzo sta sull'anello del suo numero di salti; quelli lontani dietro il nodo di trasporto che li inoltra. Un percorso compare quando un indirizzo si annuncia o gli scrivi.",
+        refresh: 'Aggiorna i percorsi',
+        graph: 'Grafo della rete Reticulum',
+        empty: 'Ancora nessun percorso: il nodo non ha sentito nessuno.',
+        hidden:
+          'Il grafo mostra gli indirizzi più vicini; altri {n} solo nell’elenco. | Il grafo mostra gli indirizzi più vicini; altri {n} solo nell’elenco.',
+        more: 'E ancora {n} percorso | E ancora {n} percorsi',
+        via: 'tramite {name}',
+        kind: {
+          self: 'tu',
+          interface: 'interfaccia',
+          transport: 'nodo di trasporto',
+          delivery: 'contatto',
+          nomadnetwork: 'nodo NomadNet',
+          propagation: 'nodo di consegna',
+          unknown: 'altro indirizzo',
+        },
+      },
       nomad: {
         title: 'NomadNet',
         lead: 'Nodi che pubblicano pagine: bacheche, guide, servizi. Compaiono qui quando si annunciano nella rete.',

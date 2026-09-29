@@ -115,6 +115,12 @@ pub fn rns_announce(state: State<'_, RnsManager>) -> Result<(), String> {
     with_node(&state, |n| n.announce())
 }
 
+/// Обзор сети: таблица путей узла.
+#[tauri::command]
+pub fn rns_paths(state: State<'_, RnsManager>) -> Result<Vec<types::PathInfo>, String> {
+    with_node(&state, |n| Ok(n.paths()))
+}
+
 #[tauri::command]
 pub fn rns_send(
     state: State<'_, RnsManager>,

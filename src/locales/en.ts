@@ -1851,6 +1851,26 @@ export default {
         failed: 'The propagation node did not answer.',
         done: '{n} message received | {n} messages received',
       },
+      network: {
+        title: 'Network',
+        lead: 'Where your node knows the way. On the graph an address sits on the ring for its number of hops; far ones sit behind the transport node that carries them. A path appears when an address announces itself or you reach out to it.',
+        refresh: 'Refresh paths',
+        graph: 'Reticulum network graph',
+        empty: 'No paths yet: the node has not heard anyone.',
+        hidden:
+          'The graph shows the nearest addresses; {n} more are only in the list. | The graph shows the nearest addresses; {n} more are only in the list.',
+        more: 'And {n} more path | And {n} more paths',
+        via: 'via {name}',
+        kind: {
+          self: 'you',
+          interface: 'interface',
+          transport: 'transport node',
+          delivery: 'contact',
+          nomadnetwork: 'NomadNet node',
+          propagation: 'propagation node',
+          unknown: 'other address',
+        },
+      },
       nomad: {
         title: 'NomadNet',
         lead: 'Nodes that publish pages: boards, guides, services. They appear here when they announce themselves on the network.',

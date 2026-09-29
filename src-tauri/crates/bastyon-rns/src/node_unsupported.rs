@@ -4,7 +4,9 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::types::{Attachment, Download, Method, Page, RnsEvent, StartOptions, Started, Status};
+use crate::types::{
+    Attachment, Download, Method, Page, PathInfo, RnsEvent, StartOptions, Started, Status,
+};
 
 const UNSUPPORTED: &str = "unsupported";
 
@@ -34,6 +36,10 @@ impl Runtime {
     }
 
     pub fn announce(&self) -> Result<(), String> {
+        match *self {}
+    }
+
+    pub fn paths(&self) -> Vec<PathInfo> {
         match *self {}
     }
 

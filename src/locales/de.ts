@@ -1869,6 +1869,26 @@ export default {
         failed: 'Der Zustellknoten hat nicht geantwortet.',
         done: '{n} Nachricht erhalten | {n} Nachrichten erhalten',
       },
+      network: {
+        title: 'Netz',
+        lead: 'Wohin Ihr Knoten den Weg kennt. Im Graphen steht eine Adresse auf dem Ring ihrer Sprungzahl; entfernte stehen hinter dem Transportknoten, der sie weiterleitet. Ein Pfad erscheint, wenn sich eine Adresse ankündigt oder Sie sie ansprechen.',
+        refresh: 'Pfade aktualisieren',
+        graph: 'Reticulum-Netzgraph',
+        empty: 'Noch keine Pfade: Der Knoten hat noch niemanden gehört.',
+        hidden:
+          'Der Graph zeigt die nächsten Adressen; {n} weitere nur in der Liste. | Der Graph zeigt die nächsten Adressen; {n} weitere nur in der Liste.',
+        more: 'Und {n} weiterer Pfad | Und {n} weitere Pfade',
+        via: 'über {name}',
+        kind: {
+          self: 'Sie',
+          interface: 'Schnittstelle',
+          transport: 'Transportknoten',
+          delivery: 'Kontakt',
+          nomadnetwork: 'NomadNet-Knoten',
+          propagation: 'Zustellknoten',
+          unknown: 'andere Adresse',
+        },
+      },
       nomad: {
         title: 'NomadNet',
         lead: 'Knoten, die Seiten veröffentlichen: Schwarze Bretter, Nachschlagewerke, Dienste. Sie erscheinen hier, sobald sie sich im Netz ankündigen.',

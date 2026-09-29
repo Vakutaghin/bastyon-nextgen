@@ -1874,6 +1874,26 @@ export default {
         failed: "Le nœud de relais n'a pas répondu.",
         done: '{n} message reçu | {n} messages reçus',
       },
+      network: {
+        title: 'Réseau',
+        lead: "Là où votre nœud connaît le chemin. Sur le graphe, une adresse est sur l'anneau de son nombre de sauts ; les lointaines sont derrière le nœud de transport qui les relaie. Un chemin apparaît quand une adresse s'annonce ou que vous la contactez.",
+        refresh: 'Actualiser les chemins',
+        graph: 'Graphe du réseau Reticulum',
+        empty: "Pas encore de chemins : le nœud n'a entendu personne.",
+        hidden:
+          'Le graphe montre les adresses les plus proches ; {n} de plus seulement dans la liste. | Le graphe montre les adresses les plus proches ; {n} de plus seulement dans la liste.',
+        more: 'Et {n} chemin de plus | Et {n} chemins de plus',
+        via: 'via {name}',
+        kind: {
+          self: 'vous',
+          interface: 'interface',
+          transport: 'nœud de transport',
+          delivery: 'contact',
+          nomadnetwork: 'nœud NomadNet',
+          propagation: 'nœud de distribution',
+          unknown: 'autre adresse',
+        },
+      },
       nomad: {
         title: 'NomadNet',
         lead: "Des nœuds qui publient des pages : tableaux d'annonces, guides, services. Ils apparaissent ici quand ils s'annoncent sur le réseau.",

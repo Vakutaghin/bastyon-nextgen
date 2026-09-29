@@ -230,6 +230,11 @@ public class MeshRnsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void paths(PluginCall call) {
+        onNode(call, () -> call.resolve(new JSObject().put("paths", new JSArray(RnsNative.paths()))));
+    }
+
+    @PluginMethod
     public void send(PluginCall call) {
         String to = call.getString("to", "");
         String title = call.getString("title", "");

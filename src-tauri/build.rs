@@ -62,6 +62,7 @@ const COMMANDS: &[&str] = &[
   "rns_stop",
   "rns_status",
   "rns_announce",
+  "rns_paths",
   "rns_send",
   "rns_request_path",
   "rns_set_propagation_node",

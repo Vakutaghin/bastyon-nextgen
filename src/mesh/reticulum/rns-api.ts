@@ -67,6 +67,20 @@ export interface RnsStatus {
 
 export type RnsAspect = 'lxmf.delivery' | 'lxmf.propagation' | 'nomadnetwork.node'
 
+/** Путь из таблицы путей узла (обзор сети). */
+export interface RnsPath {
+  dest: string
+  hops: number
+  /** Следующий транспортный узел (hex identity), если путь не прямой. */
+  via: string | null
+  /** Наш интерфейс (имя из настроек), откуда пришёл путь. */
+  interface: string
+  kind: RnsInterface['kind'] | ''
+  /** Секунды Unix. */
+  updated: number
+  expires: number
+}
+
 export type RnsEvent =
   | {
       kind: 'announce'
@@ -166,6 +180,10 @@ export const rnsStatus = async (): Promise<RnsStatus> =>
 
 export const rnsAnnounce = async (): Promise<void> =>
   onAndroid() ? (await android()).announce() : invoke('rns_announce')
+
+/** Обзор сети: куда узел знает дорогу, через кого и по какому интерфейсу. */
+export const rnsPaths = async (): Promise<RnsPath[]> =>
+  onAndroid() ? (await android()).paths() : invoke('rns_paths')
 
 export const rnsSend = async (
   to: string,

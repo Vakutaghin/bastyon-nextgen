@@ -156,6 +156,24 @@ pub struct Page {
     pub binary: bool,
 }
 
+/// Путь к адресу из таблицы путей узла — для обзора сети.
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PathInfo {
+    /// Адрес назначения, hex.
+    pub dest: String,
+    pub hops: u8,
+    /// Следующий транспортный узел (hex его identity), если путь не прямой.
+    pub via: Option<String>,
+    /// Наш интерфейс (имя из настроек), откуда пришёл путь; пусто — неизвестный.
+    pub interface: String,
+    /// `tcp`, `auto`, `rnode`; пусто — не наш интерфейс (общий, служебный).
+    pub kind: String,
+    /// Когда путь обновлён и когда истечёт, секунды Unix.
+    pub updated: f64,
+    pub expires: f64,
+}
+
 /// Что узел NomadNet ответил на запрос файла.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Download {

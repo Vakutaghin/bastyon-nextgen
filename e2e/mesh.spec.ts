@@ -184,6 +184,8 @@ class RnsBridge implements Bridge {
   readonly pageRequests: Array<{ node: string; path: string; data: Record<string, string> }> = []
   /** Открытые бумажные сообщения (ссылки lxm://). */
   readonly ingested: string[] = []
+  /** Таблица путей узла (обзор сети). */
+  paths: Array<Record<string, unknown>> = []
   /** Запрошенные файлы NomadNet; путь из `refused` узел отдаёт страницей-отказом. */
   readonly downloads: Array<{ node: string; path: string }> = []
   readonly refused = new Set<string>()
@@ -241,6 +243,8 @@ class RnsBridge implements Bridge {
           ? { value: { content: page(request.data), binary: false } }
           : { error: 'rns_timeout' }
       }
+      case 'rns_paths':
+        return { value: this.paths }
       case 'rns_download': {
         const path = args.path as string
         this.downloads.push({ node: args.node as string, path })
@@ -746,6 +750,85 @@ test.describe('reticulum', () => {
     await expect(page.getByRole('button', { name: 'Воспроизвести' })).toHaveCount(2)
   })
 
+  test('network overview: paths on a graph and in a list', async ({ page }) => {
+    test.setTimeout(120_000)
+    await useMockNode(page, DATA)
+    await page.goto('/')
+    await page.waitForSelector('#app > *', { timeout: 30_000 })
+    await page
+      .getByRole('button', { name: 'Понятно' })
+      .click({ timeout: 5_000 })
+      .catch(() => {})
+    await signIn(page)
+    const rns = new RnsBridge(page)
+    const now = Date.now() / 1000
+    const HUB_ID = 'f0'.repeat(16)
+    rns.paths = [
+      {
+        dest: 'c3'.repeat(16),
+        hops: 1,
+        via: null,
+        interface: 'LAN',
+        kind: 'auto',
+        updated: now - 60,
+        expires: now + 3600,
+      },
+      {
+        dest: 'e5'.repeat(16),
+        hops: 3,
+        via: HUB_ID,
+        interface: 'LAN',
+        kind: 'auto',
+        updated: now - 120,
+        expires: now + 3600,
+      },
+      {
+        dest: '99'.repeat(16),
+        hops: 2,
+        via: HUB_ID,
+        interface: 'LAN',
+        kind: 'auto',
+        updated: now - 30,
+        expires: now + 3600,
+      },
+    ]
+    await installTauriMock(page, rns)
+    await goTo(page, '/mesh?net=reticulum')
+    await page.getByRole('button', { name: 'Запустить' }).click()
+    await expect(page.getByText(RnsBridge.ADDRESS)).toBeVisible()
+    rns.emit({
+      kind: 'announce',
+      aspect: 'lxmf.delivery',
+      dest: 'c3'.repeat(16),
+      identity: 'd4'.repeat(16),
+      name: 'Боб',
+      hops: 1,
+    })
+    rns.emit({
+      kind: 'announce',
+      aspect: 'nomadnetwork.node',
+      dest: 'e5'.repeat(16),
+      identity: HUB_ID,
+      name: 'Доска района',
+      hops: 3,
+    })
+
+    const card = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: /^Сеть/ }) })
+    await card.getByRole('button', { name: 'Обновить пути' }).click()
+    const graph = card.getByRole('img', { name: 'Граф сети Reticulum' })
+    // Свой узел, интерфейс, транспортный узел и три адреса.
+    await expect(graph.locator('g.node')).toHaveCount(6)
+    await expect(graph.locator('g.node.transport text')).toHaveText('Доска района')
+    await expect(graph.locator('g.node.delivery text')).toHaveText('Боб')
+    // В списке — ближние первыми, с тем, через кого идёт путь.
+    const rows = card.getByRole('listitem').filter({ hasText: /·/ })
+    await expect(rows.first()).toContainText('Боб')
+    await expect(rows.first()).toContainText('собеседник · напрямую · LAN')
+    await expect(card.getByText('узел NomadNet · 3 хопа · через Доска района · LAN')).toBeVisible()
+  })
+
   test('open a paper message by its link', async ({ page }) => {
     test.setTimeout(120_000)
     await useMockNode(page, DATA)
@@ -832,7 +915,7 @@ test.describe('reticulum', () => {
 
     // Узел не ответил — ошибка вместо страницы.
     delete rns.pages['/page/hello.mu']
-    await page.getByRole('button', { name: 'Обновить' }).click()
+    await page.getByRole('button', { name: 'Обновить', exact: true }).click()
     await expect(page.getByText('Узел не ответил вовремя.')).toBeVisible()
   })
 })

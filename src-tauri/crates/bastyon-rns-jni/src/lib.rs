@@ -295,3 +295,13 @@ pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_download<'l>
     })();
     respond(&mut env, result)
 }
+
+/// Обзор сети: JSON-массив путей (`PathInfo`).
+#[no_mangle]
+pub extern "system" fn Java_com_bastyon_app_plugins_radio_RnsNative_paths<'l>(
+    mut env: JNIEnv<'l>,
+    _class: JClass<'l>,
+) -> jstring {
+    let result = with_node(|n| json(&n.paths()));
+    respond(&mut env, result)
+}

@@ -42,8 +42,8 @@ use rns_net::{
 };
 
 use crate::types::{
-    Attachment, Download, IfaceConfig, IfaceStatus, Method, Page, RnsEvent, StartOptions, Started,
-    Status,
+    Attachment, Download, IfaceConfig, IfaceStatus, Method, Page, PathInfo, RnsEvent, StartOptions,
+    Started, Status,
 };
 
 /// Шаг рабочего потока.
@@ -1269,6 +1269,46 @@ impl Ctx {
             .collect()
     }
 
+    /// Настроенный интерфейс по имени из статистики rns-net (у AutoInterface
+    /// подынтерфейсы соседей — «имя:адрес»).
+    fn configured(&self, stat_name: &str) -> Option<&IfaceConfig> {
+        self.ifaces.iter().find(|cfg| {
+            let name = cfg.name();
+            stat_name == name
+                || stat_name
+                    .strip_prefix(&name)
+                    .is_some_and(|rest| rest.starts_with(':'))
+        })
+    }
+
+    /// Таблица путей узла: куда он знает дорогу, через кого и по какому
+    /// интерфейсу. Ближние — первыми.
+    fn paths(&self, node: &RnsNode) -> Vec<PathInfo> {
+        let entries = match node.query(QueryRequest::PathTable { max_hops: None }) {
+            Ok(QueryResponse::PathTable(p)) => p,
+            _ => Vec::new(),
+        };
+        let mut out: Vec<PathInfo> = entries
+            .into_iter()
+            .filter(|e| e.hash != self.delivery_hash)
+            .map(|e| {
+                let cfg = self.configured(&e.interface_name);
+                PathInfo {
+                    dest: hex::encode(e.hash),
+                    hops: e.hops,
+                    via: (e.hops > 1 && e.via != e.hash && e.via != [0; 16])
+                        .then(|| hex::encode(e.via)),
+                    interface: cfg.map(IfaceConfig::name).unwrap_or(e.interface_name),
+                    kind: cfg.map(|c| c.kind().to_string()).unwrap_or_default(),
+                    updated: e.timestamp,
+                    expires: e.expires,
+                }
+            })
+            .collect();
+        out.sort_by(|a, b| a.hops.cmp(&b.hops).then_with(|| a.dest.cmp(&b.dest)));
+        out
+    }
+
     /// Разослать изменения интерфейсов; true — какой-то только что поднялся.
     fn poll_interfaces(&self, node: &RnsNode, online: &mut HashMap<String, bool>) -> bool {
         let mut came_up = false;
@@ -1754,6 +1794,11 @@ impl Runtime {
     pub fn announce(&self) -> Result<(), String> {
         self.ctx.announce();
         Ok(())
+    }
+
+    /// Обзор сети: известные узлу пути.
+    pub fn paths(&self) -> Vec<PathInfo> {
+        self.ctx.paths(&self.node)
     }
 
     /// Поставить сообщение в очередь; id — хэш сообщения LXMF (hex).
@@ -2514,6 +2559,15 @@ mod interop {
         peer.expect("our announce", |v| {
             v["announce"]["dest"] == json!(our) && v["announce"]["name"] == json!("Rusty")
         });
+
+        // Обзор сети: пути ко всем трём адресам Python — напрямую, по нашему TCP.
+        let paths = runtime.paths();
+        for dest in [&peer_dest, &nomad, &pn] {
+            let p = paths.iter().find(|p| &p.dest == dest).expect("path");
+            assert_eq!((p.hops, p.via.as_deref()), (1, None), "{p:?}");
+            assert_eq!((p.interface.as_str(), p.kind.as_str()), (format!("127.0.0.1:{port}").as_str(), "tcp"));
+            assert!(p.expires > p.updated);
+        }
 
         let to = parse_hash::<16>(&peer_dest).unwrap();
         // Rust → Python: напрямую (Link) и одним пакетом (с доказательством).

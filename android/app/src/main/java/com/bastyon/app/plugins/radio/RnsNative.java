@@ -34,6 +34,9 @@ final class RnsNative {
 
     static native String announce();
 
+    /** Обзор сети: JSON-массив путей узла. */
+    static native String paths();
+
     /** Возвращает id сообщения; вложения — JSON-массив или пустая строка. */
     static native String send(String to, String title, String content, String method, String attachmentsJson);
 

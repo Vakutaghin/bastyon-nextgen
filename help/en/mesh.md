@@ -145,6 +145,10 @@ The 🎤 button records a voice message: press it again (■) to send, ✕ to ca
 
 The 🧾 button in a Reticulum chat turns the text in the field into a **paper message**: a QR code and an `lxm://` link encrypted for the other person. Pass them on any way you like — print, photograph, send as text: only they can read it. To open a paper message from someone else (from Bastyon, Sideband or NomadNet), go to the **Reticulum** tab, **Paper message**, and paste the link or scan the QR code.
 
+### Network overview
+
+The **Network** card on the Reticulum tab shows where your node knows the way. You are in the centre of the graph, with your interfaces (hub, local network, RNode) around you. Each address sits on the ring for its number of hops. A far address appears behind the transport node that carries it, usually a hub or a community node. The colour of a dot tells what it is: a contact, a NomadNet node, a propagation node, or an address that has not introduced itself yet. Below is a list of all paths, nearest first, with the interface and when each was last updated. Paths appear when addresses announce themselves or you reach out to them, and they expire over time.
+
 ### NomadNet pages
 
 NomadNet nodes publish pages: boards, guides, services. They appear in the **NomadNet** list when they announce themselves on the network; **Open** shows the node's front page. Links lead to other pages of this and other nodes, and a link to an LXMF address opens a chat. Fields on a page are a form: the link next to them sends it. A node that has not announced itself can be opened by its address.

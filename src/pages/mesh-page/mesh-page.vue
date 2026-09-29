@@ -46,6 +46,7 @@
             <RnsPeers />
             <RnsPropagation />
             <RnsNomad />
+            <RnsNetwork />
           </template>
           <RnsInterfaces />
         </template>
@@ -79,6 +80,7 @@ import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
 import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import RnsInterfaces from './rns-interfaces.vue'
+import RnsNetwork from './rns-network.vue'
 import RnsNomad from './rns-nomad.vue'
 import RnsNodeCard from './rns-node-card.vue'
 import RnsPeers from './rns-peers.vue'
