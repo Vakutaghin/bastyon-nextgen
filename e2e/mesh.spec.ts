@@ -172,6 +172,9 @@ class RnsBridge implements Bridge {
   private index = 0
   private nextId = 1
   readonly sent: Array<{ id: string; to: string; content: string }> = []
+  /** Страницы узла NomadNet: путь → micron; запросы — с данными форм. */
+  readonly pages: Record<string, (data: Record<string, string>) => string> = {}
+  readonly pageRequests: Array<{ node: string; path: string; data: Record<string, string> }> = []
 
   constructor(private readonly page: Page) {}
 
@@ -208,6 +211,18 @@ class RnsBridge implements Bridge {
         const id = `lxm-${this.nextId++}`
         this.sent.push({ id, to: args.to as string, content: args.content as string })
         return { value: { id } }
+      }
+      case 'rns_page': {
+        const request = {
+          node: args.node as string,
+          path: args.path as string,
+          data: args.data as Record<string, string>,
+        }
+        this.pageRequests.push(request)
+        const page = this.pages[request.path]
+        return page
+          ? { value: { content: page(request.data), binary: false } }
+          : { error: 'rns_timeout' }
       }
       case 'rns_stop':
       case 'rns_announce':
@@ -514,5 +529,62 @@ test.describe('reticulum', () => {
       method: 'direct',
     })
     await expect(page.getByText('Слышу тебя через Reticulum')).toBeVisible()
+  })
+
+  test('browse a NomadNet node: pages, links, a form, back', async ({ page }) => {
+    test.setTimeout(120_000)
+    await useMockNode(page, DATA)
+    await page.goto('/')
+    await page.waitForSelector('#app > *', { timeout: 30_000 })
+    await page
+      .getByRole('button', { name: 'Понятно' })
+      .click({ timeout: 5_000 })
+      .catch(() => {})
+    await signIn(page)
+    const rns = new RnsBridge(page)
+    rns.pages['/page/index.mu'] = () =>
+      '>Доска объявлений\n`!Привет`! из `Ff00NomadNet`f\n-\n`[Правила`:/page/rules.mu]\nИмя: `<name`Гость>\n`[Отправить`:/page/hello.mu`name|lang=ru]'
+    rns.pages['/page/rules.mu'] = () => '>>Правила\nБудьте вежливы.'
+    rns.pages['/page/hello.mu'] = (data) => `Здравствуйте, ${data.field_name} (${data.var_lang})!`
+    await installTauriMock(page, rns)
+    await goTo(page, '/mesh?net=reticulum')
+    await page.getByRole('button', { name: 'Запустить' }).click()
+    await expect(page.getByText(RnsBridge.ADDRESS)).toBeVisible()
+
+    const NODE = 'e5'.repeat(16)
+    rns.emit({
+      kind: 'announce',
+      aspect: 'nomadnetwork.node',
+      dest: NODE,
+      identity: 'f6'.repeat(16),
+      name: 'Доска района',
+      hops: 2,
+    })
+    const nodeRow = page.getByRole('listitem').filter({ hasText: 'Доска района' })
+    await nodeRow.getByRole('button', { name: 'Открыть' }).click()
+    await expect(page.getByText('Доска объявлений')).toBeVisible()
+    await expect(page.getByText('Привет', { exact: true })).toHaveCSS('font-weight', '700')
+    await expect(page.getByText('NomadNet', { exact: true })).toHaveCSS('color', 'rgb(255, 0, 0)')
+    expect(rns.pageRequests[0]).toEqual({ node: NODE, path: '/page/index.mu', data: {} })
+
+    await page.getByRole('button', { name: 'Правила' }).click()
+    await expect(page.getByText('Будьте вежливы.')).toBeVisible()
+    await page.getByRole('button', { name: 'Назад' }).click()
+
+    const name = page.getByRole('textbox', { name: 'name' })
+    await expect(name).toHaveValue('Гость')
+    await name.fill('Алиса')
+    await page.getByRole('button', { name: 'Отправить' }).click()
+    await expect(page.getByText('Здравствуйте, Алиса (ru)!')).toBeVisible()
+    expect(rns.pageRequests[rns.pageRequests.length - 1]).toEqual({
+      node: NODE,
+      path: '/page/hello.mu',
+      data: { field_name: 'Алиса', var_lang: 'ru' },
+    })
+
+    // Узел не ответил — ошибка вместо страницы.
+    delete rns.pages['/page/hello.mu']
+    await page.getByRole('button', { name: 'Обновить' }).click()
+    await expect(page.getByText('Узел не ответил вовремя.')).toBeVisible()
   })
 })

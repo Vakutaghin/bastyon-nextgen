@@ -1,5 +1,5 @@
 ---
-keywords: [mesh, Meshtastic, MeshCore, Reticulum, LXMF, RNode, propagation node, LoRa, radio, without internet, offline chat, companion, region, preset, LongFast, node, node key, channel, channel link, hashtag channel, private channel]
+keywords: [mesh, Meshtastic, MeshCore, Reticulum, LXMF, NomadNet, micron, RNode, propagation node, LoRa, radio, without internet, offline chat, companion, region, preset, LongFast, node, node key, channel, channel link, hashtag channel, private channel]
 ---
 
 # Chatting over radio (mesh)
@@ -128,6 +128,12 @@ If the hub was unreachable or the RNode was not plugged in when the node started
 **Contacts** lists everyone who announced themselves on the network; **Message** opens a chat. You can also write to an address someone gave you.
 
 If the other person is offline, a message can wait for them on a **propagation node** (up to 30 days). Choose a node from the list: messages to offline people go through it, and **Get messages** collects the messages sent to you.
+
+### NomadNet pages
+
+NomadNet nodes publish pages: boards, guides, services. They appear in the **NomadNet** list when they announce themselves on the network; **Open** shows the node's front page. Links lead to other pages of this and other nodes, and a link to an LXMF address opens a chat. Fields on a page are a form: the link next to them sends it. A node that has not announced itself can be opened by its address.
+
+A page comes over an encrypted connection straight from the node. Images and tables are not shown yet, and files are not downloaded.
 
 ## Writing
 

@@ -25,6 +25,7 @@ import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
 import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
 import { meshErrorCode } from '@/mesh/store/radio-common'
+import { useReticulumStore, type RnsPeer } from '@/mesh/store/reticulum-store'
 
 export type TransportTab = 'serial' | 'ble' | 'tcp'
 
@@ -204,7 +205,28 @@ export function useMeshOpenChat() {
     await openDialog(await meshChat.ensureMeshtasticChannelDialog(self.nodeNum, channel))
   }
 
-  return { writeTo, openChannel, openRoom, writeToNode, openMtChannel }
+  // Reticulum
+  async function writeToLxmf(dest: string, name: string | null): Promise<void> {
+    const self = useReticulumStore().address
+    if (!self) return
+    await openDialog(await meshChat.ensureLxmfDialog(self, dest, name))
+  }
+
+  return { writeTo, openChannel, openRoom, writeToNode, openMtChannel, writeToLxmf }
+}
+
+/** Подпись узла Reticulum в списке: начало адреса и сколько до него хопов. */
+export function useRnsPeerMeta() {
+  const { t } = useI18n()
+  return (p: RnsPeer): string => {
+    const parts = [p.dest.slice(0, 12)]
+    if (p.hops !== null) {
+      parts.push(
+        p.hops === 0 ? t('mesh.contacts.direct') : t('mesh.contacts.hops', { n: p.hops }, p.hops)
+      )
+    }
+    return parts.join(' · ')
+  }
 }
 
 /** Действие с радио: ошибка — тостом, а не в консоль. */
