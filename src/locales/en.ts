@@ -2027,7 +2027,7 @@ export default {
     registrationRejected:
       'Registration rejected by the network: {message}. Pick another name and try again.',
     registrationTimeout:
-      'Registration was not confirmed within 30 minutes. Check your connection and try registering again.',
+      'Registration was not confirmed within 30 minutes. Check your connection and choose “Finish registration” in the account menu: it retries with the same keys. Do not start a new registration — new keys from this IP address may not get coins.',
     keyReadFailed: 'Failed to read the key',
     unknownDataFormat: 'Unknown data format',
     keyLoadFailed: 'Failed to load the key',

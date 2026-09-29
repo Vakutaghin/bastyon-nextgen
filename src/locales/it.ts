@@ -2048,7 +2048,7 @@ export default {
     registrationRejected:
       'La rete ha rifiutato la registrazione: {message}. Scegli un altro nome e riprova.',
     registrationTimeout:
-      'La registrazione non è stata confermata entro 30 minuti. Controlla la connessione e riprova a registrarti.',
+      'La registrazione non è stata confermata entro 30 minuti. Controlla la connessione e scegli «Completa la registrazione» nel menu dell’account: il nuovo tentativo usa le stesse chiavi. Non iniziare una nuova registrazione: nuove chiavi da questo indirizzo IP potrebbero non ricevere monete.',
     keyReadFailed: 'Impossibile leggere la chiave',
     unknownDataFormat: 'Formato dei dati sconosciuto',
     keyLoadFailed: 'Impossibile caricare la chiave',

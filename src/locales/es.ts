@@ -2054,7 +2054,7 @@ export default {
     registrationRejected:
       'La red rechazó el registro: {message}. Elige otro nombre y vuelve a intentarlo.',
     registrationTimeout:
-      'El registro no se confirmó en 30 minutos. Revisa tu conexión y vuelve a intentar registrarte.',
+      'El registro no se confirmó en 30 minutos. Revisa tu conexión y elige «Terminar el registro» en el menú de la cuenta: se reintentará con las mismas claves. No empieces un registro nuevo: las claves nuevas desde esta dirección IP pueden quedarse sin monedas.',
     keyReadFailed: 'No se pudo leer la clave',
     unknownDataFormat: 'Formato de datos desconocido',
     keyLoadFailed: 'No se pudo cargar la clave',

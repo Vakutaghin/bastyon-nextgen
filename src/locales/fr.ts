@@ -2059,7 +2059,7 @@ export default {
     registrationRejected:
       'Inscription refusée par le réseau : {message}. Choisissez un autre nom et réessayez.',
     registrationTimeout:
-      'L’inscription n’a pas été confirmée en 30 minutes. Vérifiez votre connexion et réessayez de vous inscrire.',
+      'L’inscription n’a pas été confirmée en 30 minutes. Vérifiez votre connexion et choisissez « Terminer l’inscription » dans le menu du compte : la nouvelle tentative utilise les mêmes clés. Ne recommencez pas l’inscription : de nouvelles clés depuis cette adresse IP risquent de ne pas recevoir de pièces.',
     keyReadFailed: 'Impossible de lire la clé',
     unknownDataFormat: 'Format de données inconnu',
     keyLoadFailed: 'Impossible de charger la clé',

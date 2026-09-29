@@ -2060,7 +2060,7 @@ export default {
     registrationRejected:
       'Die Registrierung wurde vom Netzwerk abgelehnt: {message}. Wähle einen anderen Namen und versuche es erneut.',
     registrationTimeout:
-      'Die Registrierung wurde nicht innerhalb von 30 Minuten bestätigt. Prüfe deine Verbindung und versuche es erneut.',
+      'Die Registrierung wurde nicht innerhalb von 30 Minuten bestätigt. Prüfe deine Verbindung und wähle im Kontomenü „Registrierung abschließen“: Der neue Versuch nutzt dieselben Schlüssel. Beginne keine neue Registrierung — neue Schlüssel von dieser IP-Adresse bekommen womöglich keine Coins.',
     keyReadFailed: 'Der Schlüssel konnte nicht gelesen werden',
     unknownDataFormat: 'Unbekanntes Datenformat',
     keyLoadFailed: 'Der Schlüssel konnte nicht geladen werden',

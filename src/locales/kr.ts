@@ -2013,7 +2013,7 @@ export default {
     registrationRejected:
       '네트워크가 가입을 거부했습니다: {message}. 다른 이름을 선택하고 다시 시도하세요.',
     registrationTimeout:
-      '30분 안에 가입이 확인되지 않았습니다. 연결을 확인하고 다시 가입해 보세요.',
+      "30분 안에 가입이 확인되지 않았습니다. 연결을 확인한 뒤 계정 메뉴에서 '가입 완료하기'를 선택하세요. 같은 키로 다시 시도합니다. 새로 가입하지 마세요. 이 IP 주소의 새 키는 코인을 받지 못할 수 있습니다.",
     keyReadFailed: '키를 읽지 못했습니다',
     unknownDataFormat: '알 수 없는 데이터 형식',
     keyLoadFailed: '키를 불러오지 못했습니다',

@@ -1955,7 +1955,8 @@ export default {
     rejectNameTaken: '该名称已被占用',
     rejectNameLong: '名称超过 20 个字符',
     registrationRejected: '网络拒绝了注册：{message}。请换一个名称后重试。',
-    registrationTimeout: '注册未在 30 分钟内得到确认。请检查网络连接后重新注册。',
+    registrationTimeout:
+      '注册未在 30 分钟内得到确认。请检查网络连接，然后在账户菜单中选择“完成注册”：将使用同一组密钥重试。不要重新注册——来自此 IP 地址的新密钥可能领不到代币。',
     keyReadFailed: '无法读取密钥',
     unknownDataFormat: '未知的数据格式',
     keyLoadFailed: '无法加载密钥',
