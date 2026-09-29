@@ -27,7 +27,7 @@ If the app is still open on some device, look at the phrase in the settings righ
 
 ## What happens to my coins and posts if I reinstall the app?
 
-Nothing: everything is stored on the network, not on the device. After installing, sign in with the same phrase. On Android a new version can only be installed after removing the old one — the keys are removed with it, so first make sure your phrase is written down. See [Updates](updates.md).
+Nothing: everything is stored on the network, not on the device. After installing, sign in with the same phrase. On Android, version 0.7.1 and earlier have to be removed before updating — the keys are removed with the app, so first make sure your phrase is written down. See [Updates](updates.md).
 
 ## Can I delete my account?
 

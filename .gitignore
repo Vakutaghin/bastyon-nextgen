@@ -39,3 +39,6 @@ android/build/
 android/.idea/
 android/local.properties
 android/.DS_Store
+# Ключ подписи Android хранится вне репозитория (scripts/android-signing-key.sh)
+*.keystore
+*.jks

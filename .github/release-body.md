@@ -34,11 +34,11 @@ chmod +x Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage
 sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 ```
 
-**Android.** Понадобится разрешить установку из этого источника. APK подписан отладочным ключом, поэтому поверх предыдущей версии он не встанет: сначала удалите старую, потом поставьте новую.
+**Android.** Понадобится разрешить установку из этого источника. Новая версия ставится поверх старой. Исключение — если на телефоне версия 0.7.1 или более ранняя: она подписана временным ключом, и поверх неё телефон новую не поставит. Тогда проверьте, что фраза восстановления записана, удалите старую версию (ключи аккаунтов удалятся вместе с ней) и поставьте новую.
 
 ### Об обновлениях
 
-Начиная с версии 0.3.0 приложение само раз в сутки проверяет релизы здесь и предлагает перейти за новой версией. На десктопе новая версия ставится поверх старой, на Android — с удалением предыдущей.
+Начиная с версии 0.3.0 приложение само раз в сутки проверяет релизы здесь и предлагает перейти за новой версией. Новая версия ставится поверх старой и на десктопе, и на Android — кроме перехода с Android-версии 0.7.1 и более ранних, см. выше.
 
 ---
 
@@ -78,8 +78,8 @@ The .deb package installs like this:
 sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 ```
 
-**Android.** You will need to allow installation from this source. The APK is signed with a debug key, so it will not install over a previous version: remove the old one first, then install the new one.
+**Android.** You will need to allow installation from this source. A new version installs over the old one. The exception is a phone with 0.7.1 or an earlier version: it was signed with a temporary key, and the phone will not install the new one over it. Then make sure your recovery phrase is written down, remove the old version (the account keys are removed with it) and install the new one.
 
 ### About updates
 
-Starting with 0.3.0 the app checks the releases here once a day and offers to come and get a newer version. On desktop a new version installs over the old one; on Android the previous one has to be removed first.
+Starting with 0.3.0 the app checks the releases here once a day and offers to come and get a newer version. A new version installs over the old one both on desktop and on Android — except when moving from Android version 0.7.1 or earlier, see above.

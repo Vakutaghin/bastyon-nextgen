@@ -10,7 +10,7 @@ Bastyon NextGen on Android: installing, the bottom bar, the camera, background p
 
 The app for Android 7 and newer is an .apk file on the releases page, see [Installing the app](install.md). It is not on Google Play yet, so the phone asks you to allow installs from this source.
 
-A new version cannot be installed over the old one: the old one has to be removed first, and the account keys go with it. Before updating, make sure your recovery phrase is written down — see [Updates](updates.md).
+A new version installs over the old one, and the accounts are kept. Only 0.7.1 and earlier versions cannot be updated this way: the old one has to be removed first, and the account keys go with it. Before such an update, make sure your recovery phrase is written down — see [Updates](updates.md).
 
 ## Navigation
 

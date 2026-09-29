@@ -6,7 +6,7 @@
 #
 # Платформы:
 #   - desktop (Tauri): macOS arm64, macOS x64, Linux (Ubuntu 22.04), Windows
-#   - mobile (Capacitor): Android debug APK (без релизного keystore — позже)
+#   - mobile (Capacitor): Android APK, подписанный постоянным ключом из секретов
 #
 # Имена файлов задаются здесь, а не tauri-action: у неё они вида
 # `Bastyon.NextGen_0.3.0_aarch64.dmg` — по такому имени человек не понимает, что
@@ -236,16 +236,39 @@ jobs:
       - name: Sync Capacitor Android project
         run: pnpm exec cap sync android
 
-      # TODO: для production-релизов подключить релизный keystore (через secrets
-      # ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS /
-      # ANDROID_KEY_PASSWORD) и заменить assembleDebug на assembleRelease.
-      # Сейчас shipим debug-APK — он установится, но подпись runner-специфична,
-      # поэтому in-place upgrade между релизами не сработает.
-      - name: Build Android debug APK (unsigned for now)
+      # Android ставит новую версию поверх старой, только если обе подписаны
+      # одним ключом. До 0.7.1 включительно здесь собирался debug-APK, а
+      # отладочный ключ на каждом раннере свой, поэтому любое обновление
+      # требовало удалить приложение вместе с ключами аккаунтов. Теперь APK
+      # релизный и подписан постоянным ключом из секретов; создаёт их владелец
+      # репозитория один раз — scripts/android-signing-key.sh.
+      #
+      # Без ключа джоба падает, а не собирает debug по-старому: такой APK снова
+      # не встал бы поверх, и он debuggable — данные кошелька читаются через adb.
+      # ANDROID_KEY_ALIAS и ANDROID_KEY_PASSWORD нужны только для ключа, сделанного
+      # не этим скриптом.
+      - name: Build the signed Android APK
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
+          if [ -z "$ANDROID_KEYSTORE_B64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "::error::Нет ключа подписи Android: секретов ANDROID_KEYSTORE_B64 и ANDROID_KEYSTORE_PASSWORD. Владелец репозитория создаёт их один раз: scripts/android-signing-key.sh"
+            exit 1
+          fi
+          export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/release.keystore"
+          trap 'rm -f "$ANDROID_KEYSTORE_FILE"' EXIT
+          printf '%s' "$ANDROID_KEYSTORE_B64" | base64 --decode > "$ANDROID_KEYSTORE_FILE"
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
+          # Сертификат в логе — чтобы сверить, что релиз подписан тем же ключом.
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          "$BUILD_TOOLS/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk
 
       - name: Rename APK and upload
         shell: bash
@@ -255,5 +278,5 @@ jobs:
           set -euo pipefail
           VERSION="${TAG#v}"
           OUT="Android-Bastyon-NextGen-${VERSION}.apk"
-          mv android/app/build/outputs/apk/debug/app-debug.apk "$OUT"
+          mv android/app/build/outputs/apk/release/app-release.apk "$OUT"
           gh release upload "$TAG" "$OUT" --clobber

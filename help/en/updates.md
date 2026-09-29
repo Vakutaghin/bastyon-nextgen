@@ -21,7 +21,7 @@ To check by hand: **“Settings”** → **“Diagnostics”** → the **“Upda
 ## How to update
 
 - **Computer.** Download the installer for your system and install the new version over the old one — accounts and settings are kept. Which file to pick is in [Installing the app](install.md).
-- **Android.** A new version cannot be installed over the old one: the old one has to be removed first, and the account keys are removed from the phone with it. So before removing it, make sure your recovery phrase is written down and checked — see [Recovery phrase and private key](recovery-phrase.md). After installing, sign in with the phrase again.
+- **Android.** Download the .apk file and install the new version over the old one — accounts and settings are kept. The exception is moving from 0.7.1 or an earlier version: those were signed with a temporary key, and the phone refuses to install a new version over them, saying the package conflicts with an existing one. Then the old version has to be removed, and the account keys are removed from the phone with it. So before removing it, make sure your recovery phrase is written down and checked — see [Recovery phrase and private key](recovery-phrase.md). After installing, sign in with the phrase again.
 
 ## What’s new
 

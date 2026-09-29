@@ -62,7 +62,7 @@ The system tray icon needs the `libayatana-appindicator3-1` library: the .deb pa
 2. Allow installing from this source — the phone offers the right setting itself.
 
 > [!WARNING]
-> A new Android version cannot be installed over the old one: the old one has to be removed first. Removing it also deletes the account keys from the phone. Before updating, make sure your recovery phrase is written down — see [Updates](updates.md).
+> If the phone has version 0.7.1 or earlier, a new one cannot be installed over it: the old one has to be removed first. Removing it also deletes the account keys from the phone. Before that, make sure your recovery phrase is written down — see [Updates](updates.md).
 
 ## Without installing
 

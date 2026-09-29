@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+// Постоянный ключ подписи релизного APK. Android ставит новую версию поверх
+// старой, только если обе подписаны одним ключом, а отладочный ключ на каждом
+// CI-раннере свой. Файл ключа workflow релиза берёт из секретов репозитория,
+// создаёт его владелец репозитория — scripts/android-signing-key.sh.
+def releaseKeystore = System.getenv('ANDROID_KEYSTORE_FILE')
+
 android {
     namespace = "com.bastyon.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +22,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (releaseKeystore) {
+            release {
+                storeFile file(releaseKeystore)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: 'bastyon'
+                // В PKCS12 у ключа тот же пароль, что у хранилища.
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: System.getenv('ANDROID_KEYSTORE_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
+            if (releaseKeystore) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
