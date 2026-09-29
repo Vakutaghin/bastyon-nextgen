@@ -34,6 +34,12 @@ export interface RegistrationTxOptions {
   nickname: string
   /** Ждать появления UTXO (первичная отправка из модалки); без — только одна проба. */
   waitForFunds?: boolean
+  /**
+   * Язык профиля (`l`) — язык интерфейса при регистрации, как в старом клиенте.
+   * По нему нода подбирает аккаунт в рекомендации читателям этого языка;
+   * раньше здесь у всех стоял `ru`.
+   */
+  language?: string
 }
 
 const LOG_PREFIX = '[registration-tx]'
@@ -62,7 +68,7 @@ const errorMessage = (err: unknown): string => (err instanceof Error ? err.messa
 export async function sendRegistrationUserInfoTx(
   opts: RegistrationTxOptions
 ): Promise<RegistrationTxOutcome> {
-  const { address, keyPair, nickname, waitForFunds = false } = opts
+  const { address, keyPair, nickname, waitForFunds = false, language = 'en' } = opts
   if (!address || !keyPair) return { outcome: 'transient', message: 'no keys/address' }
 
   // Входы этой попытки: при отказе ноды лок снимаем, чтобы повтор их видел.
@@ -92,7 +98,7 @@ export async function sendRegistrationUserInfoTx(
       name: nickname,
       about: '',
       site: '',
-      language: 'ru',
+      language,
       image: '',
       addresses: [],
       ref: '',

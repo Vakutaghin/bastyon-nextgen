@@ -34,6 +34,7 @@ vi.mock('@/b-components/app-toast', () => ({
 }))
 vi.mock('@/i18n', () => ({
   t: (k: string, p?: Record<string, unknown>) => `${k}${p ? ':' + JSON.stringify(p) : ''}`,
+  i18n: { global: { locale: { value: 'de' } } },
 }))
 vi.mock('@/helpers/common/debug-log', () => ({ debugLog: vi.fn() }))
 
@@ -117,7 +118,13 @@ describe('useRegistrationFlow', () => {
     expect(flow.pendingNickname.value).toBe('bob')
     expect(mocks.getRegistrationStatus).toHaveBeenCalled()
     expect(mocks.sendTx).toHaveBeenCalledWith(
-      expect.objectContaining({ address: 'PA', nickname: 'bob', waitForFunds: false })
+      // Язык профиля — язык интерфейса (раньше у всех уходил `ru`).
+      expect.objectContaining({
+        address: 'PA',
+        nickname: 'bob',
+        waitForFunds: false,
+        language: 'de',
+      })
     )
   })
 

@@ -57,7 +57,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { LoadingOutlined, ClockCircleOutlined, PlusOutlined } from '@/components/icons'
 import { useDocumentTitle } from '@/composables/use-document-title'
@@ -85,12 +85,14 @@ import {
   SC_ProfileCreatePost,
 } from './profile-page.styled'
 import { loadPendingRegistration } from '@/blockchain/storage/pending-registration'
+import { isMobile } from '@mobile/utils/platform'
 
 interface ProfileWithAccSet extends UserProfile {
   accSet?: unknown
 }
 
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n()
 const authStore = useAuthStore()
 const modalStore = useModalStore()
@@ -106,8 +108,13 @@ const isOwnProfile = computed<boolean>(() => {
   return !!my && userAddress.value === my
 })
 
-// Открыть модалку композера поста (та же, что в шапке ленты).
+// Редактор поста — как у кнопки над лентой: на телефоне отдельная страница
+// /compose во весь экран, на компьютере окно поверх страницы.
 function openComposer(): void {
+  if (isMobile()) {
+    void router.push({ name: 'compose' })
+    return
+  }
   modalStore.openPostComposerModal()
 }
 

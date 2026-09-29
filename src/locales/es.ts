@@ -442,7 +442,7 @@ export default {
     },
     blacklist: {
       title: 'Usuarios bloqueados',
-      lead: 'Usuarios que has bloqueado. No pueden ver tu contenido ni interactuar con él.',
+      lead: 'Personas que has bloqueado. No ves sus publicaciones, comentarios ni mensajes, y ninguno de los dos puede valorar ni comentar las publicaciones del otro.',
       loading: 'Cargando…',
       empty: 'No has bloqueado a nadie.',
     },
@@ -1077,6 +1077,8 @@ export default {
     startChat: 'Iniciar chat',
     info: 'Información',
     openInExplorer: 'Abrir en el explorador de bloques',
+    copyAddress: 'Copiar dirección',
+    addressCopied: 'Dirección copiada',
     publications: 'Publicaciones:',
     registered: 'Registro:',
     feedError: 'Se produjo un error al cargar el feed',
@@ -1173,7 +1175,8 @@ export default {
     ratingNotFound: 'No se encontró el contenido valorado o se ha eliminado.',
     ratingTooFast: 'Demasiadas valoraciones seguidas. Espera un par de segundos.',
     ratingAlreadyVoted: 'Ya has valorado esta publicación.',
-    ratingBlockedByAuthor: 'El autor te ha bloqueado, así que no puedes valorar esta publicación.',
+    ratingBlockedByAuthor:
+      'No puedes valorar esta publicación: has bloqueado al autor o él te ha bloqueado.',
     ratingNetworkFailed:
       'No se pudo registrar tu valoración por un fallo temporal. Vuelve a intentarlo más tarde.',
     ratingNewAccount: 'Se puede votar 24 horas después del registro.',
@@ -1806,7 +1809,7 @@ export default {
     commentEditLimit: 'Un comentario se puede editar hasta 4 veces y solo durante 30 días.',
     commentScoreLimit:
       'Has alcanzado tu límite de valoraciones de comentarios de las últimas 24 horas.',
-    blockedByAuthor: 'Este usuario te ha bloqueado.',
+    blockedByAuthor: 'No es posible: has bloqueado a esta persona o ella te ha bloqueado.',
     tooLarge: 'El contenido supera el tamaño permitido.',
     parentDeleted: 'El comentario al que respondes se ha eliminado.',
     commentEditTooSoon:

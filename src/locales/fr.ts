@@ -441,7 +441,7 @@ export default {
     },
     blacklist: {
       title: 'Utilisateurs bloqués',
-      lead: 'Les utilisateurs que vous avez bloqués. Ils ne peuvent ni voir votre contenu ni interagir avec lui.',
+      lead: 'Les personnes que vous avez bloquées. Vous ne voyez pas leurs publications, commentaires et messages, et ni vous ni elles ne pouvez noter ou commenter les publications de l’autre.',
       loading: 'Chargement…',
       empty: 'Vous n’avez bloqué personne.',
     },
@@ -1077,6 +1077,8 @@ export default {
     startChat: 'Démarrer une discussion',
     info: 'Informations',
     openInExplorer: 'Ouvrir dans l’explorateur de blocs',
+    copyAddress: 'Copier l’adresse',
+    addressCopied: 'Adresse copiée',
     publications: 'Publications :',
     registered: 'Inscrit :',
     feedError: 'Une erreur s’est produite lors du chargement du fil',
@@ -1173,8 +1175,7 @@ export default {
     ratingNotFound: 'Le contenu noté est introuvable ou a été supprimé.',
     ratingTooFast: 'Trop de notes d’affilée. Attendez quelques secondes.',
     ratingAlreadyVoted: 'Vous avez déjà noté cette publication.',
-    ratingBlockedByAuthor:
-      'L’auteur vous a bloqué, vous ne pouvez donc pas noter cette publication.',
+    ratingBlockedByAuthor: 'Impossible de noter : vous avez bloqué l’auteur, ou il vous a bloqué.',
     ratingNetworkFailed:
       'Impossible d’enregistrer votre note à cause d’une panne temporaire. Réessayez plus tard.',
     ratingNewAccount: 'Le vote est possible 24 heures après l’inscription.',
@@ -1811,7 +1812,7 @@ export default {
       'Un commentaire peut être modifié jusqu’à 4 fois et seulement pendant 30 jours.',
     commentScoreLimit:
       'Vous avez atteint votre limite de notes de commentaires sur les dernières 24 heures.',
-    blockedByAuthor: 'Cet utilisateur vous a bloqué.',
+    blockedByAuthor: 'Impossible : vous avez bloqué cette personne, ou elle vous a bloqué.',
     tooLarge: 'Le contenu dépasse la taille autorisée.',
     parentDeleted: 'Le commentaire auquel vous répondez a été supprimé.',
     commentEditTooSoon:

@@ -82,13 +82,17 @@
         {{ isBlocked ? t('comments.unblock') : t('comments.block') }}
       </SC_BlockButton>
 
-      <SC_UserAbout v-if="formattedUserAbout">
-        <h3>{{ t('profile.info') }}</h3>
+      <!-- Адрес, сайт и дата регистрации есть у каждого профиля: раньше весь
+           блок прятался вместе с пустым «О себе». -->
+      <SC_UserAbout>
+        <template v-if="formattedUserAbout">
+          <h3>{{ t('profile.info') }}</h3>
 
-        <p v-html="formattedUserAbout" />
-        <hr />
+          <p v-html="formattedUserAbout" />
+          <hr />
+        </template>
 
-        <SC_UserAddress v-if="userAddress" title="Copy address" @click="copyAddress">
+        <SC_UserAddress v-if="userAddress" :title="t('profile.copyAddress')" @click="copyAddress">
           {{ userAddress }}
         </SC_UserAddress>
 
@@ -165,6 +169,8 @@ import {
   UserOutlined,
 } from '@/components/icons'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { copyText } from '@/helpers/common/clipboard'
+import { appToast } from '@/b-components/app-toast'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { getProfileBadges } from '@/helpers/profile/profile-badges'
@@ -271,10 +277,9 @@ const {
   onBellClick,
 } = useProfileRelationsActions(userAddress)
 
-function copyAddress(): void {
-  if (userAddress.value) {
-    navigator.clipboard.writeText(userAddress.value)
-  }
+async function copyAddress(): Promise<void> {
+  if (!userAddress.value) return
+  if (await copyText(userAddress.value)) appToast.success({ message: t('profile.addressCopied') })
 }
 
 const profileBadges = computed(() => getProfileBadges(props.profile))

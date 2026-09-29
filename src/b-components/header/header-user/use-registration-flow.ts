@@ -18,7 +18,7 @@ import { onMounted, ref, watch, type Ref } from 'vue'
 import type { useAuthStore } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
 import { debugLog } from '@/helpers/common/debug-log'
-import { t } from '@/i18n'
+import { i18n, t } from '@/i18n'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 import { setDontShowMnemonic, shouldShowMnemonic } from '@/helpers/common/mnemonic-storage'
@@ -275,6 +275,7 @@ export function useRegistrationFlow(opts: RegistrationFlowOptions): Registration
       keyPair: authStore.getKeyPair,
       nickname,
       waitForFunds: opts.waitForFunds,
+      language: String(i18n.global.locale.value),
     })
     if (!address || authStore.getUserAddress !== address) return
     if (result.outcome === 'sent') {

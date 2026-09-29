@@ -437,7 +437,7 @@ export default {
     },
     blacklist: {
       title: 'Utenti bloccati',
-      lead: 'Gli utenti che hai bloccato. Non possono vedere i tuoi contenuti né interagire con essi.',
+      lead: 'Persone che hai bloccato. Non vedi i loro post, commenti e messaggi, e nessuno dei due può valutare o commentare i post dell’altro.',
       loading: 'Caricamento…',
       empty: 'Non hai bloccato nessuno.',
     },
@@ -1071,6 +1071,8 @@ export default {
     startChat: 'Avvia la chat',
     info: 'Informazioni',
     openInExplorer: 'Apri nell’esplora blocchi',
+    copyAddress: 'Copia indirizzo',
+    addressCopied: 'Indirizzo copiato',
     publications: 'Pubblicazioni:',
     registered: 'Registrato:',
     feedError: 'Si è verificato un errore durante il caricamento del feed',
@@ -1167,7 +1169,8 @@ export default {
     ratingNotFound: 'Il contenuto valutato non è stato trovato o è stato eliminato.',
     ratingTooFast: 'Troppe valutazioni di seguito. Attendi un paio di secondi.',
     ratingAlreadyVoted: 'Hai già valutato questo post.',
-    ratingBlockedByAuthor: 'L’autore ti ha bloccato, quindi non puoi valutare questo post.',
+    ratingBlockedByAuthor:
+      'Non puoi valutare questo post: hai bloccato l’autore o lui ha bloccato te.',
     ratingNetworkFailed:
       'Impossibile registrare la tua valutazione per un errore temporaneo. Riprova più tardi.',
     ratingNewAccount: 'Si può votare 24 ore dopo la registrazione.',
@@ -1802,7 +1805,7 @@ export default {
     commentLimit: 'Hai raggiunto il limite di commenti delle ultime 24 ore.',
     commentEditLimit: 'Un commento si può modificare fino a 4 volte e solo entro 30 giorni.',
     commentScoreLimit: 'Hai raggiunto il limite di valutazioni dei commenti delle ultime 24 ore.',
-    blockedByAuthor: 'Questo utente ti ha bloccato.',
+    blockedByAuthor: 'Non è possibile: hai bloccato questa persona o lei ha bloccato te.',
     tooLarge: 'Il contenuto supera la dimensione consentita.',
     parentDeleted: 'Il commento a cui stai rispondendo è stato eliminato.',
     commentEditTooSoon: 'Il commento non si può ancora modificare. Attendi un minuto e riprova.',

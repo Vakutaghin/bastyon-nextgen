@@ -43,7 +43,7 @@ An opinion you disagree with is not a violation. For things you simply dislike t
 ## Your tools
 
 - [Report](reports.md) a post or a comment with prohibited content.
-- [Block](blocking.md) someone you find unpleasant: you stop seeing their comments, and they can no longer rate or comment on your posts.
+- [Block](blocking.md) someone you find unpleasant: you stop seeing their posts and comments, and they can no longer rate or comment on yours.
 - Give a low rating to a post that does not match its tags or is simply bad — see [Rating posts](ratings.md).
 
 ## Free speech and rules

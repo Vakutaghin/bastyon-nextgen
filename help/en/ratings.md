@@ -26,7 +26,7 @@ If a rating cannot be given, the app tells you why:
 | Your reputation is −12 or lower | **“Your reputation is too low to vote.”** |
 | 1–3 stars with a reputation below 100 | **“Ratings of 1-3 stars require reputation of 100 or more.”** |
 | You have already rated this post | **“You have already rated this post.”** |
-| The author has blocked you | **“The author blocked you, so you cannot rate this post.”** |
+| You have blocked the author or they have blocked you | **“You cannot rate this post: you have blocked the author or they have blocked you.”** |
 | Ratings go one right after another | **“Too many ratings in a row. Wait a couple of seconds.”** |
 | The daily limit is used up | **“You have reached your rating limit for the last 24 hours.”** |
 

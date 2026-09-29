@@ -29,7 +29,7 @@ A node checks every action against the network rules and may reject it. The app 
 - the daily limit of posts, ratings or comments is used up;
 - too many actions in a row;
 - you have already rated this post;
-- the author has blocked you;
+- you have blocked the author or they have blocked you;
 - the text is too long.
 
 What each reason means and what to do about it is covered in [The network rejected an action](action-rejected.md).

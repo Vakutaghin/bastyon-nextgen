@@ -429,7 +429,7 @@ export default {
     },
     blacklist: {
       title: '차단한 사용자',
-      lead: '회원님이 차단한 사용자입니다. 이들은 회원님의 콘텐츠를 보거나 상호작용할 수 없습니다.',
+      lead: '회원님이 차단한 사용자입니다. 이들의 게시물, 댓글, 메시지가 보이지 않으며, 서로의 게시물을 평가하거나 댓글을 달 수 없습니다.',
       loading: '불러오는 중…',
       empty: '차단한 사용자가 없습니다.',
     },
@@ -1057,6 +1057,8 @@ export default {
     startChat: '채팅 시작',
     info: '정보',
     openInExplorer: '블록 탐색기에서 열기',
+    copyAddress: '주소 복사',
+    addressCopied: '주소가 복사되었습니다',
     publications: '게시물:',
     registered: '가입일:',
     feedError: '피드를 불러오는 중 오류가 발생했습니다',
@@ -1152,7 +1154,8 @@ export default {
     ratingNotFound: '평가한 콘텐츠를 찾을 수 없거나 삭제되었습니다.',
     ratingTooFast: '연속으로 너무 많이 평가했습니다. 몇 초 기다리세요.',
     ratingAlreadyVoted: '이미 이 게시물을 평가했습니다.',
-    ratingBlockedByAuthor: '작성자가 회원님을 차단해 이 게시물을 평가할 수 없습니다.',
+    ratingBlockedByAuthor:
+      '이 게시물을 평가할 수 없습니다. 회원님이 작성자를 차단했거나 작성자가 회원님을 차단했습니다.',
     ratingNetworkFailed: '일시적인 오류로 평가를 기록하지 못했습니다. 나중에 다시 시도하세요.',
     ratingNewAccount: '가입 후 24시간이 지나야 평가할 수 있습니다.',
     ratingLowReputation: '평판이 너무 낮아 평가할 수 없습니다.',
@@ -1768,7 +1771,8 @@ export default {
     commentLimit: '최근 24시간 동안의 댓글 한도에 도달했습니다.',
     commentEditLimit: '댓글은 작성 후 30일 이내에 최대 4번까지 수정할 수 있습니다.',
     commentScoreLimit: '최근 24시간 동안의 댓글 평가 한도에 도달했습니다.',
-    blockedByAuthor: '이 사용자가 나를 차단했습니다.',
+    blockedByAuthor:
+      '할 수 없습니다. 회원님이 이 사용자를 차단했거나 이 사용자가 회원님을 차단했습니다.',
     tooLarge: '콘텐츠가 허용 크기를 초과합니다.',
     parentDeleted: '답글을 달려는 댓글이 삭제되었습니다.',
     commentEditTooSoon: '아직 댓글을 수정할 수 없습니다. 1분 후 다시 시도하세요.',

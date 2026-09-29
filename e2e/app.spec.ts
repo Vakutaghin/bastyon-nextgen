@@ -4,9 +4,9 @@ import { useMockNode, type MockNodeData } from './support/mock-node'
 /**
  * Смоук главных экранов для гостя на подменной ноде (support/mock-node.ts):
  * лента с постами и авторами, опрос с итогами из голосов-комментариев,
- * пост «для подписчиков» под заглушкой, страница поста, справка без входа и
- * страницы аккаунта, которые гостя возвращают на главную. Сеть не нужна,
- * публикаций нет.
+ * пост «для подписчиков» под заглушкой, страница поста, профиль без описания,
+ * справка без входа и страницы аккаунта, которые гостя возвращают на главную.
+ * Сеть не нужна, публикаций нет.
  */
 
 const ALICE = { address: 'PAmockAlice1111111111111111111111', name: 'tester_alice' }
@@ -103,6 +103,15 @@ test.describe('Главные экраны для гостя', () => {
   test('страница поста открывается по ссылке', async ({ page }) => {
     await open(page, `/post/${'a'.repeat(64)}`)
     await expect(page.getByText(POST_TEXT)).toBeVisible({ timeout: 20_000 })
+  })
+
+  test('профиль без «О себе» показывает адрес, эксплорер и дату регистрации', async ({ page }) => {
+    await open(page, `/${ALICE.address}`)
+    await expect(page.getByTitle('Скопировать адрес')).toHaveText(ALICE.address, {
+      timeout: 20_000,
+    })
+    await expect(page.getByText('Открыть в блок-эксплорере')).toBeVisible()
+    await expect(page.getByText('Регистрация:')).toBeVisible()
   })
 
   test('справка открывается без входа, статья — по ссылке из содержания', async ({ page }) => {

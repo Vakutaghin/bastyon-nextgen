@@ -10,9 +10,10 @@ const mocks = vi.hoisted(() => ({
   sendTransactionWithMessage: vi.fn(),
   waitForUnspents: vi.fn(),
   unlockUTXOs: vi.fn(),
+  serializeUserInfo: vi.fn((_info: { language: string }) => 'serialized'),
 }))
 vi.mock('@/blockchain/core/actions/user-info-action', () => ({
-  serializeUserInfo: () => 'serialized',
+  serializeUserInfo: mocks.serializeUserInfo,
   exportUserInfo: () => ({ name: 'x' }),
 }))
 vi.mock('@/blockchain/core/transactions/unspents-manager', () => ({
@@ -109,6 +110,13 @@ describe('sendRegistrationUserInfoTx', () => {
       waitForFunds: true,
     })
     expect(r.outcome).toBe('sent')
+  })
+
+  it('язык профиля — язык интерфейса, а не всегда ru', async () => {
+    await sendRegistrationUserInfoTx({ address: 'PA', keyPair, nickname: 'bob', language: 'kr' })
+    expect(mocks.serializeUserInfo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ language: 'kr' })
+    )
   })
 
   it('без ключей — transient', async () => {

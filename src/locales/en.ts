@@ -431,7 +431,7 @@ export default {
     },
     blacklist: {
       title: 'Blocked users',
-      lead: 'Users you have blocked. They cannot see or interact with your content.',
+      lead: 'People you have blocked. You do not see their posts, comments or messages, and neither you nor they can rate or comment on each other’s posts.',
       loading: 'Loading…',
       empty: 'You have not blocked anyone.',
     },
@@ -1062,6 +1062,8 @@ export default {
     startChat: 'Start chat',
     info: 'Information',
     openInExplorer: 'Open in block explorer',
+    copyAddress: 'Copy address',
+    addressCopied: 'Address copied',
     publications: 'Publications:',
     registered: 'Registered:',
     feedError: 'An error occurred while loading the feed',
@@ -1158,7 +1160,8 @@ export default {
     ratingNotFound: 'The rated content was not found or has been deleted.',
     ratingTooFast: 'Too many ratings in a row. Wait a couple of seconds.',
     ratingAlreadyVoted: 'You have already rated this post.',
-    ratingBlockedByAuthor: 'The author blocked you, so you cannot rate this post.',
+    ratingBlockedByAuthor:
+      'You cannot rate this post: you have blocked the author or they have blocked you.',
     ratingNetworkFailed:
       'Could not record your rating because of a temporary failure. Try again later.',
     ratingNewAccount: 'Voting is allowed 24 hours after registration.',
@@ -1782,7 +1785,7 @@ export default {
     commentLimit: 'You have reached your comment limit for the last 24 hours.',
     commentEditLimit: 'A comment can be edited up to 4 times and only within 30 days.',
     commentScoreLimit: 'You have reached your comment rating limit for the last 24 hours.',
-    blockedByAuthor: 'This user has blocked you.',
+    blockedByAuthor: 'Not possible: you have blocked this person or they have blocked you.',
     tooLarge: 'The content exceeds the size limit.',
     parentDeleted: 'The comment you are replying to has been deleted.',
     commentEditTooSoon: 'The comment cannot be edited yet. Wait a minute and try again.',

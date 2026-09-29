@@ -440,7 +440,7 @@ export default {
     },
     blacklist: {
       title: 'Blockierte Benutzer',
-      lead: 'Benutzer, die du blockiert hast. Sie können deine Inhalte weder sehen noch mit ihnen interagieren.',
+      lead: 'Personen, die du blockiert hast. Du siehst ihre Beiträge, Kommentare und Nachrichten nicht, und weder du noch sie können die Beiträge der anderen Seite bewerten oder kommentieren.',
       loading: 'Wird geladen…',
       empty: 'Du hast niemanden blockiert.',
     },
@@ -1076,6 +1076,8 @@ export default {
     startChat: 'Chat starten',
     info: 'Informationen',
     openInExplorer: 'Im Block-Explorer öffnen',
+    copyAddress: 'Adresse kopieren',
+    addressCopied: 'Adresse kopiert',
     publications: 'Beiträge:',
     registered: 'Registriert:',
     feedError: 'Beim Laden des Feeds ist ein Fehler aufgetreten',
@@ -1172,8 +1174,7 @@ export default {
     ratingNotFound: 'Der bewertete Inhalt wurde nicht gefunden oder gelöscht.',
     ratingTooFast: 'Zu viele Bewertungen hintereinander. Warte ein paar Sekunden.',
     ratingAlreadyVoted: 'Du hast diesen Beitrag bereits bewertet.',
-    ratingBlockedByAuthor:
-      'Der Autor hat dich blockiert, daher kannst du diesen Beitrag nicht bewerten.',
+    ratingBlockedByAuthor: 'Bewerten nicht möglich: Du hast den Autor blockiert oder er dich.',
     ratingNetworkFailed:
       'Deine Bewertung konnte wegen eines vorübergehenden Fehlers nicht gespeichert werden. Versuche es später erneut.',
     ratingNewAccount: 'Abstimmen ist 24 Stunden nach der Registrierung möglich.',
@@ -1809,7 +1810,7 @@ export default {
       'Ein Kommentar kann bis zu 4-mal und nur innerhalb von 30 Tagen bearbeitet werden.',
     commentScoreLimit:
       'Du hast dein Limit für Kommentarbewertungen in den letzten 24 Stunden erreicht.',
-    blockedByAuthor: 'Dieser Benutzer hat dich blockiert.',
+    blockedByAuthor: 'Nicht möglich: Du hast diese Person blockiert oder sie dich.',
     tooLarge: 'Der Inhalt überschreitet die zulässige Größe.',
     parentDeleted: 'Der Kommentar, auf den du antwortest, wurde gelöscht.',
     commentEditTooSoon:

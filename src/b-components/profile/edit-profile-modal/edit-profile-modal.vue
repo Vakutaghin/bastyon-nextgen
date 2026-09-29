@@ -109,6 +109,7 @@ import { safeDecode } from '@/helpers/content/safe-decode'
 import { NICKNAME_MAX_LENGTH, validateProfileNickname } from '@/helpers/profile/nickname-validation'
 import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
 import Select from '@/components/select'
+import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@/i18n'
 import {
   SC_Form,
   SC_Field,
@@ -126,21 +127,13 @@ import {
 /** Максимум имени — как в legacy (NICKNAME, 20 символов). */
 const NAME_MAX = NICKNAME_MAX_LENGTH
 
-/** Языки контента (value — ISO-код для поля `l` профиля). */
-const LANGUAGES = [
-  { value: 'en', label: 'English' },
-  { value: 'ru', label: 'Русский' },
-  { value: 'es', label: 'Español' },
-  { value: 'pt', label: 'Português' },
-  { value: 'fr', label: 'Français' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'it', label: 'Italiano' },
-  { value: 'uk', label: 'Українська' },
-  { value: 'tr', label: 'Türkçe' },
-  { value: 'zh', label: '中文' },
-  { value: 'ja', label: '日本語' },
-  { value: 'ar', label: 'العربية' },
-]
+/**
+ * Языки контента (поле `l` профиля) — те же, что у постов: по `l` нода
+ * подбирает аккаунт в «Кого читать» читателям этого языка, а ленты сети
+ * бывают только на языках интерфейса. Раньше здесь были португальский,
+ * японский и другие языки без своих лент, но не было сербского и корейского.
+ */
+const LANGUAGES = SUPPORTED_LOCALES.map((value) => ({ value, label: LOCALE_NAMES[value] }))
 
 const props = defineProps<{ open: boolean; profile?: UserProfile | null }>()
 const emit = defineEmits<{
@@ -148,12 +141,12 @@ const emit = defineEmits<{
   (e: 'updated', patch: Partial<UserProfile>): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const name = ref('')
 const about = ref('')
 const site = ref('')
-const language = ref('en')
+const language = ref('')
 /** Текущее изображение: URL существующего аватара или data-URI только что выбранного. */
 const avatarPreview = ref('')
 /** Пользователь сменил/удалил аватар (нужна загрузка/сброс при сохранении). */
@@ -172,7 +165,7 @@ function resetFromProfile(): void {
   // Старые записи бывают URL-кодированы — в поле показываем текст, как в профиле.
   about.value = safeDecode(p?.a || '')
   site.value = p?.s || ''
-  language.value = p?.l || 'en'
+  language.value = p?.l || String(locale.value)
   avatarPreview.value = p?.i || ''
   avatarChanged.value = false
 }
