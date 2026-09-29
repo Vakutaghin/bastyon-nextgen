@@ -1701,7 +1701,7 @@ export default {
     upvoteShare:
       'Valoración de una publicación en una escala de 1 a 5. Influye en la valoración del autor y en la visibilidad de la publicación en el feed.',
     boost:
-      'Un impulsor paga PKOIN al autor para subir una publicación en el feed. El importe del impulso y la dirección de la publicación quedan registrados en la transacción.',
+      'Un impulsor gasta PKOIN para subir una publicación en el feed. Las monedas no son para el autor: van como comisión a quien produjo el bloque. El importe del impulso y la publicación quedan registrados en la transacción.',
   },
   labels: {
     walletTransferInvalidAddressFormat: 'Formato de dirección de billetera no válido',

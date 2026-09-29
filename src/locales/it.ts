@@ -1697,7 +1697,7 @@ export default {
     upvoteShare:
       'Valutazione del post su una scala da 1 a 5. Influisce sulla valutazione dell’autore e sulla visibilità del post nel feed.',
     boost:
-      'Un booster paga PKOIN all’autore per far salire un post nel feed. L’importo del boost e l’indirizzo del post sono registrati nella transazione.',
+      'Un booster spende PKOIN per far salire un post nel feed. Le monete non vanno all’autore: vanno come commissione a chi ha prodotto il blocco. L’importo del boost e il post sono registrati nella transazione.',
   },
   labels: {
     walletTransferInvalidAddressFormat: 'Formato dell’indirizzo del portafoglio non valido',

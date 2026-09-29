@@ -1622,7 +1622,8 @@ export default {
     pocketPayload: '交易的社交内容（帖子/评论/评分/关注/助推）。存储在 OP_RETURN 和专用字段中。',
     cScore: '评论评分：+1 或 −1。影响作者声誉和排序。',
     upvoteShare: '1–5 分制的帖子评分。影响作者的评分以及帖子在信息流中的曝光。',
-    boost: '助推者向作者支付 PKOIN，让帖子在信息流中靠前。助推金额和帖子地址记录在交易中。',
+    boost:
+      '助推者花费 PKOIN，让帖子在信息流中靠前。代币不归作者：它们作为手续费交给出块者。助推金额和帖子记录在交易中。',
   },
   labels: {
     walletTransferInvalidAddressFormat: '钱包地址格式无效',

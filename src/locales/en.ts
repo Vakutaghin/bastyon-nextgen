@@ -1683,7 +1683,7 @@ export default {
     upvoteShare:
       "Post rating on a 1–5 scale. Affects the author's rating and the post's visibility in the feed.",
     boost:
-      'A booster pays the author PKOIN to push a post up in the feed. The boost amount and the post address are fixed in the transaction.',
+      'A booster spends PKOIN to push a post up in the feed. The author does not get the coins: they go as a fee to whoever produced the block. The boost amount and the post are recorded in the transaction.',
   },
   labels: {
     walletTransferInvalidAddressFormat: 'Invalid wallet address format',

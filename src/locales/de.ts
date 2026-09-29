@@ -1701,7 +1701,7 @@ export default {
     upvoteShare:
       'Beitragsbewertung auf einer Skala von 1–5. Beeinflusst die Bewertung des Autors und die Sichtbarkeit des Beitrags im Feed.',
     boost:
-      'Ein Booster zahlt dem Autor PKOIN, um einen Beitrag im Feed nach oben zu bringen. Boost-Betrag und Beitragsadresse werden in der Transaktion festgehalten.',
+      'Ein Booster gibt PKOIN aus, um einen Beitrag im Feed nach oben zu bringen. Die Coins bekommt nicht der Autor: Sie gehen als Gebühr an den, der den Block erzeugt hat. Boost-Betrag und Beitrag stehen in der Transaktion.',
   },
   labels: {
     walletTransferInvalidAddressFormat: 'Ungültiges Format der Wallet-Adresse',

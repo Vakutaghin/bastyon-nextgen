@@ -1702,7 +1702,7 @@ export default {
     upvoteShare:
       'Note de publication sur une échelle de 1 à 5. Influe sur la note de l’auteur et la visibilité de la publication dans le fil.',
     boost:
-      'Un booster paie des PKOIN à l’auteur pour faire remonter une publication dans le fil. Le montant du boost et l’adresse de la publication sont inscrits dans la transaction.',
+      'Un booster dépense des PKOIN pour faire remonter une publication dans le fil. L’auteur ne reçoit pas les pièces : elles partent en frais à celui qui a produit le bloc. Le montant du boost et la publication sont inscrits dans la transaction.',
   },
   labels: {
     walletTransferInvalidAddressFormat: 'Format d’adresse de portefeuille invalide',
