@@ -35,7 +35,7 @@ Next the **“Account validation on the blockchain”** window opens: once the c
 You can close the window: the check goes on, and you can come back to it by clicking your avatar in the header. Until the registration is confirmed you cannot publish or rate yet.
 
 - If the network rejected the registration, for example because someone took the name in the meantime, the app shows the reason. Pick another name: the account menu gets a **“Finish registration”** item. The retry uses the same keys and coins and does not ask for them again.
-- If there is no confirmation within 30 minutes, the app tells you so. Check your connection and try again — see [Sign-up does not finish](registration-problems.md).
+- If there is no confirmation within 30 minutes, the app tells you so. Check your connection and choose **“Finish registration”** in the account menu — it retries with the same keys. Do not start a new registration — see [Sign-up does not finish](registration-problems.md).
 
 ## Recovery phrase
 
