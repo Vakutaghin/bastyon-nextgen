@@ -11,18 +11,28 @@ describe('hotkeyAction', () => {
     expect(hotkeyAction(key('Space'))).toBe('playPause')
     expect(hotkeyAction(key('KeyK'))).toBe('playPause')
     expect(hotkeyAction(key('ArrowRight'))).toBe('seekForward')
-    expect(hotkeyAction(key('KeyJ'))).toBe('seekBackward')
+    expect(hotkeyAction(key('KeyJ'))).toBe('seekBackwardLong')
+    expect(hotkeyAction(key('KeyL'))).toBe('seekForwardLong')
     expect(hotkeyAction(key('ArrowDown'))).toBe('volumeDown')
     expect(hotkeyAction(key('KeyM'))).toBe('mute')
     expect(hotkeyAction(key('KeyF'))).toBe('fullscreen')
+    expect(hotkeyAction(key('KeyI'))).toBe('pip')
     expect(hotkeyAction(key('KeyQ'))).toBeNull()
+  })
+
+  it('раскладка YouTube: цифры, Home и End, запятая и точка', () => {
+    expect(hotkeyAction(key('Digit5'))).toBe('seekTo5')
+    expect(hotkeyAction(key('Numpad0'))).toBe('seekTo0')
+    expect(hotkeyAction(key('Home'))).toBe('seekStart')
+    expect(hotkeyAction(key('End'))).toBe('seekEnd')
+    expect(hotkeyAction(key('Period'))).toBe('frameForward')
+    expect(hotkeyAction(key('Comma'))).toBe('frameBackward')
   })
 
   it('скорость и справка — только с Shift, как в подсказке плеера', () => {
     expect(hotkeyAction(key('Period', { shiftKey: true }))).toBe('speedUp')
     expect(hotkeyAction(key('Comma', { shiftKey: true }))).toBe('speedDown')
     expect(hotkeyAction(key('Slash', { shiftKey: true }))).toBe('help')
-    expect(hotkeyAction(key('Period'))).toBeNull()
     // Shift+пробел листает страницу вверх.
     expect(hotkeyAction(key('Space', { shiftKey: true }))).toBeNull()
   })

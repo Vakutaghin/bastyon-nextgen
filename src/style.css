@@ -268,6 +268,11 @@
   /* Для своих прозрачностей поверх видео: rgb(var(--color-black-rgb) / 50%). */
   --color-white-rgb: 255 255 255;
   --color-black-rgb: 0 0 0;
+  /* Видеоплеер — как у YouTube и тоже без темы: красный прогресс (с 2024 года
+     с переходом в розовый) и тёмная подложка меню, подсказок и значков. */
+  --player-red: #ff0033;
+  --player-red-end: #ff2791;
+  --player-panel-rgb: 28 28 28;
 
   --color-black: #000000;
   /* Блики и затемнения: в светлой теме — чёрные, в тёмной — белые (см. ниже). */
@@ -355,6 +360,8 @@
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
   --transition-drawer: 0.24s cubic-bezier(0.32, 0.72, 0, 1); /* выезд мобильного меню */
+  --transition-player: 0.25s cubic-bezier(0, 0, 0.2, 1); /* панель плеера, как у YouTube */
+  --transition-player-quick: 0.1s cubic-bezier(0.4, 0, 1, 1); /* ползунки плеера */
 
   /* ── Breakpoints (для @container-queries и JS-кода через getComputedStyle) ── */
   --bp-small-mobile: 360px;

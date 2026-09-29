@@ -1,6 +1,5 @@
 // @ts-expect-error vue3-styled-components types
 import styled, { keyframes } from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
 
 const pulse = keyframes`
   50% {
@@ -24,7 +23,8 @@ export const SC_VideoContainer = styled.div`
   position: relative;
   width: 100%;
   max-width: 100%;
-  background-color: var(--color-bg-tertiary);
+  /* Под роликом чёрное, как у YouTube: полосы по краям вертикального видео. */
+  background-color: var(--color-black);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
   margin-bottom: 15px;
@@ -67,7 +67,7 @@ export const SC_VideoContainer = styled.div`
     background: black;
   }
 
-  /* Скрытие курсора в полноэкранном режиме, когда тулбар скрыт */
+  /* Панель спряталась, ролик идёт — курсор тоже, как у YouTube. */
   &.hide-cursor {
     cursor: none;
   }
@@ -77,6 +77,18 @@ export const SC_VideoContainer = styled.div`
      остаётся — по ней видно, что клавиши теперь у плеера. */
   &.pointer-mode:focus-visible {
     outline: none;
+  }
+
+  /* Телефон: двойное касание — перемотка, а не масштаб страницы; прокрутка
+     ленты по ролику остаётся. Удержание — 2×, а не меню «Сохранить видео». */
+  &.touch-ui {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+
+  /* Во весь экран листать нечего: жесты целиком наши (свайп вниз — выход). */
+  &.touch-ui.is-fullscreen {
+    touch-action: none;
   }
 `
 
@@ -125,39 +137,6 @@ export const SC_VideoThumbnail = styled.img`
   pointer-events: none;
   transition: opacity var(--transition-normal);
   background-color: transparent;
-`
-
-// Объявляем SC_VideoControls после SC_VideoContainer, но используем другой подход для hover
-export const SC_VideoControls = styled.div<{ show?: boolean }>`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  opacity: ${(p) => (p.show !== undefined && p.show ? 1 : 0)};
-  visibility: ${(p) => (p.show !== undefined && p.show ? 'visible' : 'hidden')};
-  transition:
-    opacity var(--transition-normal),
-    visibility var(--transition-normal);
-  pointer-events: ${(p) => (p.show !== undefined && p.show ? 'auto' : 'none')};
-  /* Убеждаемся, что контролы не влияют на layout - абсолютное позиционирование выводит из потока */
-  height: auto;
-  width: 100%;
-  box-sizing: border-box;
-  /* Важно: не должно быть margin/padding, которые могут влиять на размеры */
-  margin: 0;
-  padding: 0;
-`
-
-export const SC_VideoLoading = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 `
 
 export const SC_VideoError = styled.div`
@@ -212,44 +191,5 @@ export const SC_VideoRetryButton = styled.button`
 
   &:hover {
     background-color: rgb(var(--color-white-rgb) / 22%);
-  }
-`
-
-export const SC_VideoFullscreenButton = styled.button`
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--ui-radius-sm);
-  transition: background-color var(--transition-fast);
-  color: var(--color-text-primary);
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
-  box-sizing: border-box;
-  margin-left: auto;
-
-  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  &:hover {
-    background: var(--color-overlay-8);
-  }
-
-  &:active {
-    background: var(--color-overlay-12);
-  }
-
-  &:focus {
-    outline: none;
   }
 `

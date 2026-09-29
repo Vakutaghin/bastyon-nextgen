@@ -1,110 +1,198 @@
-// @ts-expect-error vue3-styled-components types
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
 
-export const SC_VideoProgressBar = styled.div`
-  flex: 1 1 0;
-  min-width: 0;
-  width: 100%;
-  height: 6px;
-  min-height: 6px;
-  max-height: 6px;
-  background-color: var(--color-overlay-20);
-  border-radius: var(--ui-radius-xs);
+// Полоса прокрутки — как у YouTube. Компьютер: над рядом кнопок, 3 px, при
+// наведении 5 px, красный ползунок и подсказка времени над курсором.
+// Телефон (.touch-ui): по нижнему краю ролика; пока панель спрятана, а ролик
+// идёт, — тонкая линия без ползунка (.mini).
+
+export const SC_Progress = styled.div`
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 47px;
+  z-index: 11;
+  height: 5px;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition:
-    height var(--transition-quick),
-    background-color var(--transition-quick);
-  box-shadow: inset 0 1px 2px rgb(var(--color-black-rgb) / 20%);
-  margin: 0;
-  padding: 0;
-  display: block;
-  align-self: center;
-  box-sizing: border-box;
   touch-action: none;
-
-  > * {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-  }
-
-  &:hover {
-    height: 8px;
-    min-height: 8px;
-    max-height: 8px;
-    background-color: var(--color-overlay-30);
-
-    /* Акцент — только полоске прогресса, не первому ребёнку (полоске загрузки). */
-    > *:not(:first-child) {
-      background: var(--ui-primary-on-dark);
-      box-shadow: none;
-    }
-  }
-
-  /* Mobile: толще progress + увеличенная hit-area через ::before для удобного тапа.
-     6px полоса с +12px невидимой вверх/вниз = 30px total touch-target. */
-  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
-    height: 8px;
-    min-height: 8px;
-    max-height: 8px;
-    border-radius: var(--ui-radius-sm);
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: -12px 0;
-      z-index: 3;
-    }
-  }
-
-  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
-    height: 10px;
-    min-height: 10px;
-    max-height: 10px;
-    border-radius: var(--ui-radius-sm);
-  }
-`
-
-export const SC_VideoProgressFill = styled.div`
-  height: 100%;
-  width: 0%;
-  /* Акцент вместо красного YouTube. Плеер тёмный в обеих темах, поэтому
-     яркий оттенок акцента, а не --ui-primary. */
-  background: var(--ui-primary-on-dark);
-  border-radius: var(--ui-radius-xs);
+  opacity: 0;
+  visibility: hidden;
   transition:
-    background var(--transition-quick),
-    box-shadow var(--transition-quick);
-  position: absolute;
-  inset: 0 auto 0 0;
-  display: block;
-  pointer-events: none;
-  box-sizing: border-box;
-  z-index: 2;
-  min-width: 0;
-  opacity: 1;
-  visibility: visible;
-  will-change: width;
+    opacity var(--transition-player),
+    visibility var(--transition-player);
+
+  /* Зона наведения шире самой полосы: в тонкую полоску трудно попасть. */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -8px 0 -6px;
+  }
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .is-fullscreen & {
+    left: 20px;
+    right: 20px;
+    bottom: 53px;
+  }
+
+  .touch-ui & {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+  }
+
+  .touch-ui &::before {
+    top: -16px;
+    bottom: -4px;
+  }
+
+  .touch-ui.is-fullscreen & {
+    left: calc(24px + var(--safe-left));
+    right: calc(24px + var(--safe-right));
+    bottom: calc(28px + var(--safe-bottom));
+  }
+
+  /* Панель спрятана, ролик идёт: линия у края, нажать на неё нельзя. */
+  .touch-ui &.mini {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: none;
+  }
 `
 
-export const SC_VideoBufferFill = styled.div`
-  height: 100%;
-  width: 0%;
-  background: var(--color-white-60);
-  border-radius: var(--ui-radius-xs);
-  transition: width var(--transition-fast);
+export const SC_ProgressTrack = styled.div`
   position: absolute;
-  inset: 0 auto 0 0;
-  display: block;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  background: rgb(var(--color-white-rgb) / 20%);
+  transform: scaleY(0.6);
+  transform-origin: bottom;
+  transition: transform var(--transition-player-quick);
+
+  .hover > &,
+  .dragging > & {
+    transform: none;
+  }
+
+  .touch-ui & {
+    transform: none;
+  }
+`
+
+const FILL = `
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
   pointer-events: none;
-  box-sizing: border-box;
-  z-index: 1;
-  opacity: 1;
-  visibility: visible;
-  min-width: 0;
-  will-change: width;
+`
+
+export const SC_ProgressLoaded = styled.div`
+  ${() => FILL}
+
+  width: var(--progress-loaded);
+  background: rgb(var(--color-white-rgb) / 40%);
+`
+
+/** До курсора — светлее: видно, куда перемотает клик. */
+export const SC_ProgressHoverFill = styled.div`
+  ${() => FILL}
+
+  width: var(--progress-hover);
+  background: rgb(var(--color-white-rgb) / 50%);
+`
+
+export const SC_ProgressPlayed = styled.div`
+  ${() => FILL}
+
+  width: var(--progress-played);
+  background: linear-gradient(to right, var(--player-red) 80%, var(--player-red-end) 100%);
+`
+
+/** Граница глав — разрыв в полосе, как у YouTube. */
+export const SC_ChapterGap = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: rgb(var(--color-black-rgb) / 60%);
+  pointer-events: none;
+`
+
+export const SC_Scrubber = styled.div`
+  position: absolute;
+  left: var(--progress-played);
+  bottom: -4px;
+  width: 13px;
+  height: 13px;
+  margin-left: -6.5px;
+  border-radius: 50%;
+  background: var(--player-red);
+  pointer-events: none;
+  transform: scale(0);
+  transition: transform var(--transition-player-quick);
+
+  .hover > &,
+  .dragging > & {
+    transform: none;
+  }
+
+  .touch-ui & {
+    bottom: -4.5px;
+    width: 12px;
+    height: 12px;
+    margin-left: -6px;
+    transform: none;
+  }
+
+  .touch-ui .dragging > & {
+    transform: scale(1.4);
+  }
+
+  .touch-ui .mini > & {
+    transform: scale(0);
+  }
+`
+
+/** Время (и глава) над курсором или пальцем. */
+export const SC_ProgressTooltip = styled.div`
+  position: absolute;
+  left: var(--progress-tip);
+  bottom: calc(100% + 14px);
+  padding: 5px 9px;
+  border-radius: var(--ui-radius-sm);
+  background: rgb(var(--player-panel-rgb) / 90%);
+  color: var(--color-white);
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 15px;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transform: translateX(-50%);
+
+  span {
+    display: block;
+    max-width: 240px;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 400;
+  }
+
+  .touch-ui & {
+    bottom: calc(100% + 28px);
+    padding: 6px 12px;
+    font-size: 16px;
+    line-height: 20px;
+  }
 `

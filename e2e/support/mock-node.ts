@@ -21,6 +21,10 @@ export interface MockPost {
   txid: string
   address: string
   message: string
+  /** Тип поста у ноды: `share` (по умолчанию), `video`, `article`… */
+  type?: string
+  /** Ссылка поста (`u`), у видео — `peertube://хост/id`. */
+  url?: string
   tags?: string[]
   caption?: string
   settings?: Record<string, unknown>
@@ -85,9 +89,10 @@ function postJson(post: MockPost, data: MockNodeData, index: number) {
     address: post.address,
     time: NOW - 600 * (index + 1),
     l: 'ru',
-    type: 'share',
+    type: post.type ?? 'share',
     c: post.caption ?? '',
     m: post.message,
+    u: post.url ?? '',
     t: post.tags ?? ['bastyon'],
     i: [],
     s: { a: '', v: '', videos: [], image: '', f: '0', c: '', t: '0', ...post.settings },

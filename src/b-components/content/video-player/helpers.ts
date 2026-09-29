@@ -3,11 +3,12 @@
 import type { AspectRatio } from './types'
 
 /**
- * Стиль обёртки видео (фон для contain-режима).
+ * Стиль обёртки видео (фон для contain-режима): полосы по краям вертикального
+ * ролика чёрные, как у YouTube, а не светло-серые.
  */
 export function getVideoWrapperStyle(aspectInfo: AspectRatio | null): Record<string, string> {
   if (aspectInfo?.useContain) {
-    return { backgroundColor: '#f5f5f5' }
+    return { backgroundColor: 'var(--color-black)' }
   }
   return {}
 }

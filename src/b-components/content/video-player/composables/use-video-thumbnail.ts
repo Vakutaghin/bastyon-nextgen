@@ -84,7 +84,8 @@ export function useVideoThumbnail(
   function getVideoWrapperStyle(): Record<string, string> {
     const aspectInfo = videoAspectRatio.value || thumbnailAspectRatio.value
     if (aspectInfo && aspectInfo.useContain) {
-      return { backgroundColor: 'var(--color-bg-tertiary)' }
+      // Полосы по краям вертикального ролика — чёрные, как у YouTube.
+      return { backgroundColor: 'var(--color-black)' }
     }
     return {}
   }

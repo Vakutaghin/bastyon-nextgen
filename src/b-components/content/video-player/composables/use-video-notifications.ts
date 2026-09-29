@@ -1,75 +1,69 @@
-// Composable: управление уведомлениями видеоплеера (play/pause, seek, volume, playback rate)
+// Composable: знаки поверх ролика — как у YouTube. «Пульс» в центре на пуск,
+// паузу и громкость и волна перемотки у края, которая копит секунды серии.
 
-import { ref } from 'vue'
+import { onBeforeUnmount, reactive } from 'vue'
 
 import { NOTIFICATION_DURATION } from '../consts'
+import { SEEK_CONTINUE_MS } from '../touch-gestures'
 
-/**
- * Управление анимированными уведомлениями (кратковременные pop-up
- * иконки в центре плеера при переключении play/pause, seek, и т.д.)
- */
+export type BezelIcon = 'play' | 'pause' | 'volumeUp' | 'volumeDown' | 'volumeOff'
+
 export function useVideoNotifications() {
-  const showPlayNotification = ref(false)
-  const showPauseNotification = ref(false)
-  const showSeekNotification = ref(false)
-  const seekValue = ref('')
+  /** «Пульс» в центре; `key` перезапускает анимацию на каждое нажатие. */
+  const bezel = reactive({ icon: null as BezelIcon | null, key: 0 })
+  /** Волна перемотки: сторона и сколько секунд набрано подряд в эту сторону. */
+  const seek = reactive({ side: null as 'left' | 'right' | null, seconds: 0, key: 0 })
 
-  let seekNotificationTimer: ReturnType<typeof setTimeout> | null = null
-  let playPauseNotificationTimer: ReturnType<typeof setTimeout> | null = null
-  /** Сдвиг текущей серии перемоток, секунды. */
+  let bezelTimer: ReturnType<typeof setTimeout> | null = null
+  let seekTimer: ReturnType<typeof setTimeout> | null = null
+  /** Сдвиг текущей серии перемоток, секунды со знаком. */
   let seekTotal = 0
 
-  /**
-   * Показать уведомление о перемотке на `seconds` (+10s / -10s). Серия в одну
-   * сторону, пока подсказка на экране (стрелку держат или жмут подряд),
-   * копится: +10s, +20s, +30s — и подсказка не мигает на каждом шаге.
-   */
-  const triggerSeekNotification = (seconds: number) => {
-    const sameRun = showSeekNotification.value && Math.sign(seekTotal) === Math.sign(seconds)
-    seekTotal = sameRun ? seekTotal + seconds : seconds
-    seekValue.value = `${seekTotal > 0 ? '+' : '-'}${Math.abs(seekTotal)}s`
-    showSeekNotification.value = true
-
-    if (seekNotificationTimer) clearTimeout(seekNotificationTimer)
-    seekNotificationTimer = setTimeout(() => {
-      showSeekNotification.value = false
-      seekNotificationTimer = null
+  const flashBezel = (icon: BezelIcon) => {
+    bezel.icon = icon
+    bezel.key++
+    if (bezelTimer) clearTimeout(bezelTimer)
+    bezelTimer = setTimeout(() => {
+      bezel.icon = null
+      bezelTimer = null
     }, NOTIFICATION_DURATION)
   }
 
-  /**
-   * Показать уведомление play/pause (иконка в центре).
-   */
+  /** Пуск или пауза — по нажатию, ещё до того, как ролик тронется. */
   const triggerPlayPauseNotification = (isPlay: boolean) => {
-    if (playPauseNotificationTimer) {
-      clearTimeout(playPauseNotificationTimer)
-      playPauseNotificationTimer = null
-    }
-
-    showPlayNotification.value = false
-    showPauseNotification.value = false
-
-    setTimeout(() => {
-      if (isPlay) {
-        showPlayNotification.value = true
-      } else {
-        showPauseNotification.value = true
-      }
-
-      playPauseNotificationTimer = setTimeout(() => {
-        showPlayNotification.value = false
-        showPauseNotification.value = false
-        playPauseNotificationTimer = null
-      }, NOTIFICATION_DURATION)
-    }, 0)
+    flashBezel(isPlay ? 'play' : 'pause')
   }
 
+  /**
+   * Перемотка на `seconds` (+5 / -10…). Серия в одну сторону, пока волна на
+   * экране (стрелку держат или жмут подряд), копится: 5, 10, 15 секунд — и
+   * волна не мигает на каждом шаге.
+   */
+  const triggerSeekNotification = (seconds: number) => {
+    const sameRun = seek.side !== null && Math.sign(seekTotal) === Math.sign(seconds)
+    seekTotal = sameRun ? seekTotal + seconds : seconds
+    seek.side = seekTotal > 0 ? 'right' : 'left'
+    seek.seconds = Math.abs(seekTotal)
+    seek.key++
+    if (seekTimer) clearTimeout(seekTimer)
+    seekTimer = setTimeout(() => {
+      seek.side = null
+      seek.seconds = 0
+      seekTotal = 0
+      seekTimer = null
+    }, SEEK_CONTINUE_MS)
+  }
+
+  onBeforeUnmount(() => {
+    if (bezelTimer) clearTimeout(bezelTimer)
+    if (seekTimer) clearTimeout(seekTimer)
+  })
+
   return {
-    showPlayNotification,
-    showPauseNotification,
-    showSeekNotification,
-    seekValue,
-    triggerSeekNotification,
+    bezel,
+    seek,
+    flashBezel,
     triggerPlayPauseNotification,
+    triggerSeekNotification,
   }
 }

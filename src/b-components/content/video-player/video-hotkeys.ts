@@ -9,32 +9,58 @@
 
 import { SEEK_REPEAT_INTERVAL, VISIBILITY_THRESHOLD, VOLUME_REPEAT_INTERVAL } from './consts'
 
+type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+
 export type HotkeyAction =
   | 'playPause'
   | 'seekForward'
   | 'seekBackward'
+  | 'seekForwardLong'
+  | 'seekBackwardLong'
+  | 'seekStart'
+  | 'seekEnd'
+  /** Цифра N — к N×10 % ролика, как у YouTube. */
+  | `seekTo${Digit}`
+  | 'frameForward'
+  | 'frameBackward'
   | 'volumeUp'
   | 'volumeDown'
   | 'mute'
   | 'fullscreen'
+  | 'pip'
   | 'speedUp'
   | 'speedDown'
   | 'help'
   | 'escape'
 
-/** По физической клавише (`code`), а не по символу — работает в любой раскладке. */
+/**
+ * По физической клавише (`code`), а не по символу — работает в любой
+ * раскладке. Раскладка клавиш — как у YouTube: стрелки на 5 секунд, J и L
+ * на 10, цифры — к доле ролика, запятая и точка — на кадр.
+ */
 const KEYS: Record<string, HotkeyAction> = {
   Space: 'playPause',
   KeyK: 'playPause',
   ArrowRight: 'seekForward',
-  KeyL: 'seekForward',
   ArrowLeft: 'seekBackward',
-  KeyJ: 'seekBackward',
+  KeyL: 'seekForwardLong',
+  KeyJ: 'seekBackwardLong',
+  Home: 'seekStart',
+  End: 'seekEnd',
+  Period: 'frameForward',
+  Comma: 'frameBackward',
   ArrowUp: 'volumeUp',
   ArrowDown: 'volumeDown',
   KeyM: 'mute',
   KeyF: 'fullscreen',
+  KeyI: 'pip',
   Escape: 'escape',
+  ...Object.fromEntries(
+    Array.from({ length: 10 }, (_, n) => [
+      [`Digit${n}`, `seekTo${n}` as HotkeyAction],
+      [`Numpad${n}`, `seekTo${n}` as HotkeyAction],
+    ]).flat()
+  ),
 }
 
 /** С Shift: `>` и `<` — скорость, `?` — справка по клавишам. */
@@ -58,20 +84,23 @@ export function hotkeyAction(event: KeyboardEvent): HotkeyAction | null {
 /**
  * Автоповтор зажатой клавиши. `null` — только первое нажатие: пробел, M и F
  * не должны щёлкать 30 раз в секунду. Число — не чаще раза в столько мс:
- * перемотка и громкость едут плавно.
+ * перемотка, покадровый шаг и громкость едут плавно.
  */
-const REPEAT_INTERVAL: Record<HotkeyAction, number | null> = {
-  playPause: null,
-  seekForward: SEEK_REPEAT_INTERVAL,
-  seekBackward: SEEK_REPEAT_INTERVAL,
-  volumeUp: VOLUME_REPEAT_INTERVAL,
-  volumeDown: VOLUME_REPEAT_INTERVAL,
-  mute: null,
-  fullscreen: null,
-  speedUp: null,
-  speedDown: null,
-  help: null,
-  escape: null,
+function repeatInterval(action: HotkeyAction): number | null {
+  switch (action) {
+    case 'seekForward':
+    case 'seekBackward':
+    case 'seekForwardLong':
+    case 'seekBackwardLong':
+    case 'frameForward':
+    case 'frameBackward':
+      return SEEK_REPEAT_INTERVAL
+    case 'volumeUp':
+    case 'volumeDown':
+      return VOLUME_REPEAT_INTERVAL
+    default:
+      return null
+  }
 }
 
 /**
@@ -93,7 +122,7 @@ export class HeldHotkeys {
   repeat(code: string, action: HotkeyAction, now: number): RepeatDecision {
     const last = this.lastRun.get(code)
     if (last === undefined) return 'pass'
-    const interval = REPEAT_INTERVAL[action]
+    const interval = repeatInterval(action)
     if (interval === null || now - last < interval) return 'swallow'
     this.lastRun.set(code, now)
     return 'run'

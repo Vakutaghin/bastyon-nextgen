@@ -24,6 +24,8 @@ interface VideoElementEventsOptions {
   updateDuration: () => void
   updateBuffered: () => void
   handleVideoMetadata: () => void
+  /** Сверить счётчик и полосу с роликом (перемотка на паузе). */
+  syncTime?: () => void
 }
 
 export function useVideoElementEvents(opts: VideoElementEventsOptions) {
@@ -39,6 +41,7 @@ export function useVideoElementEvents(opts: VideoElementEventsOptions) {
     updateDuration,
     updateBuffered,
     handleVideoMetadata,
+    syncTime,
   } = opts
 
   let intersectionObserver: IntersectionObserver | null = null
@@ -118,6 +121,14 @@ export function useVideoElementEvents(opts: VideoElementEventsOptions) {
         'progress',
         () => {
           updateBuffered()
+        },
+      ],
+      // Перемотка на паузе: цикл анимации стоит, счётчик и полосу сверяем сами.
+      ['seeked', () => syncTime?.()],
+      [
+        'timeupdate',
+        () => {
+          if (video.paused) syncTime?.()
         },
       ],
     ]

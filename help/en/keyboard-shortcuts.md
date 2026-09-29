@@ -37,7 +37,9 @@ The keys act on the video in full screen, or if there is none, on the one playin
 | Key | What it does |
 | --- | --- |
 | Space or K | play and pause |
-| ← and → or J and L | back and forward 10 seconds |
+| ← and → | back and forward 5 seconds |
+| J and L | back and forward 10 seconds |
+| 0–9 | to a part of the clip: 0 is the start, 5 the middle |
 | ↑ and ↓ | volume |
 | M | sound on/off |
 | F | full screen |

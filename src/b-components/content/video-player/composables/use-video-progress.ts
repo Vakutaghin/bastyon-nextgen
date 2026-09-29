@@ -97,6 +97,20 @@ export function useVideoProgress(videoElement: Ref<ElementRefValue>, isPlaying: 
   }
 
   /**
+   * Время и полоса — по самому ролику. Цикл анимации идёт только во время
+   * воспроизведения: после перемотки на паузе (клавишами, касанием) счётчик
+   * и полоса стояли на старом месте, хотя кадр уже был новый.
+   */
+  const syncTime = () => {
+    const video = resolveVideoElement(videoElement)
+    if (!video) return
+    currentTime.value = video.currentTime
+    if (video.duration && isFinite(video.duration) && video.duration > 0) {
+      progress.value = Math.min(100, Math.max(0, (video.currentTime / video.duration) * 100))
+    }
+  }
+
+  /**
    * Обновляет длительность видео
    */
   const updateDuration = () => {
@@ -255,6 +269,7 @@ export function useVideoProgress(videoElement: Ref<ElementRefValue>, isPlaying: 
     bufferedWidth,
     updateBuffered,
     updateDuration,
+    syncTime,
     stopProgressAnimation,
     startProgressAnimation,
     handleProgressClick,

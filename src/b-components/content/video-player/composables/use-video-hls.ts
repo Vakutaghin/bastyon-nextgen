@@ -51,9 +51,11 @@ export function useVideoHls(
   const isQualityMenuOpen = ref(false)
   const availableQualityLevels = ref<Array<{ index: number; height: number; label: string }>>([])
   const currentQualityLevel = ref<number | null>(null)
-  const qualityControlRef = ref<HTMLElement | null>(null)
-  const qualityDropdownRef = ref<HTMLElement | null>(null)
-  let qualityMenuClickOutsideHandler: ((e: MouseEvent) => void) | null = null
+  /**
+   * Качество подбирает сам плеер — пункт «Авто», как у YouTube. Раньше в меню
+   * были только конкретные качества: выбрав одно, вернуть автоподбор было нельзя.
+   */
+  const isAutoQuality = ref(true)
 
   // Состояние для текущего экрана меню (main, quality, speed)
   type MenuScreen = 'main' | 'quality' | 'speed'
@@ -101,14 +103,13 @@ export function useVideoHls(
     }
   }
 
-  /**
-   * Переключает качество видео
-   */
+  /** Переключает качество видео; `-1` — «Авто». */
   const setQualityLevel = (levelIndex: number) => {
     if (!hls.value) return
 
     hls.value.currentLevel = levelIndex
-    currentQualityLevel.value = levelIndex
+    isAutoQuality.value = levelIndex === -1
+    if (levelIndex !== -1) currentQualityLevel.value = levelIndex
     currentMenuScreen.value = 'main'
     isQualityMenuOpen.value = false
   }
@@ -135,88 +136,32 @@ export function useVideoHls(
   }
 
   /**
-   * Переключает открытие/закрытие меню качества
+   * Открывает и закрывает меню настроек. Клик мимо меню и Esc закрывают его
+   * сами (player-settings, горячие клавиши).
    */
   const toggleQualityMenu = () => {
-    if (isQualityMenuOpen.value) {
-      // Если меню открыто - закрываем
-      isQualityMenuOpen.value = false
-      currentMenuScreen.value = 'main'
+    isQualityMenuOpen.value = !isQualityMenuOpen.value
+    currentMenuScreen.value = 'main'
+  }
 
-      if (qualityMenuClickOutsideHandler) {
-        window.removeEventListener('click', qualityMenuClickOutsideHandler, true)
-        qualityMenuClickOutsideHandler = null
-      }
-    } else {
-      // Если меню закрыто - открываем
-      isQualityMenuOpen.value = true
-      currentMenuScreen.value = 'main'
-
-      // Добавляем обработчик клика вне меню для закрытия
-      // Используем setTimeout, чтобы текущий клик не закрыл меню сразу
-      setTimeout(() => {
-        qualityMenuClickOutsideHandler = (e: MouseEvent) => {
-          // Если меню уже закрыто, удаляем обработчик и выходим
-          if (!isQualityMenuOpen.value) {
-            if (qualityMenuClickOutsideHandler) {
-              window.removeEventListener('click', qualityMenuClickOutsideHandler, true)
-              qualityMenuClickOutsideHandler = null
-            }
-            return
-          }
-
-          const target = e.target as HTMLElement
-          if (!target) return
-
-          // Проверяем, кликнули ли мы внутрь дропдауна или кнопки
-          const getElement = (refValue: ElementRefValue): Element | null => {
-            if (!refValue) return null
-            if (refValue instanceof Element) return refValue
-            return refValue.$el instanceof Element ? refValue.$el : null
-          }
-
-          const controlEl = getElement(qualityControlRef.value)
-          const dropdownEl = getElement(qualityDropdownRef.value)
-
-          // Если клик внутри контрола или дропдауна - ничего не делаем (меню не закрываем)
-          // Клик по кнопке "шестеренки" обрабатывается отдельно в toggleQualityMenu
-          if (
-            (controlEl && controlEl.contains(target)) ||
-            (dropdownEl && dropdownEl.contains(target))
-          ) {
-            return
-          }
-
-          // Иначе закрываем меню
-          isQualityMenuOpen.value = false
-          currentMenuScreen.value = 'main'
-
-          e.preventDefault()
-          e.stopPropagation()
-
-          if (qualityMenuClickOutsideHandler) {
-            window.removeEventListener('click', qualityMenuClickOutsideHandler, true)
-            qualityMenuClickOutsideHandler = null
-          }
-        }
-
-        window.addEventListener('click', qualityMenuClickOutsideHandler, true)
-      }, 50)
-    }
+  const closeQualityMenu = () => {
+    isQualityMenuOpen.value = false
+    currentMenuScreen.value = 'main'
   }
 
   /**
    * Получает текущую метку качества
    */
   const getCurrentQualityLabel = computed(() => {
-    if (currentQualityLevel.value === null || !hls.value || !hls.value.levels) {
-      return t('videoMsg.qualityAuto')
-    }
-
-    const level = hls.value.levels[currentQualityLevel.value]
-    if (!level) return t('videoMsg.qualityAuto')
-
-    return formatQualityLabel(level.height || 0)
+    const auto = t('videoMsg.qualityAuto')
+    const level =
+      currentQualityLevel.value !== null && hls.value?.levels
+        ? hls.value.levels[currentQualityLevel.value]
+        : undefined
+    const label = level ? formatQualityLabel(level.height || 0) : null
+    // «Авто (720p)» — что плеер выбрал сам, как у YouTube.
+    if (isAutoQuality.value) return label ? `${auto} (${label})` : auto
+    return label ?? auto
   })
 
   /**
@@ -385,11 +330,6 @@ export function useVideoHls(
       hls.value.destroy()
       hls.value = null
     }
-    // Удаляем обработчик меню качества
-    if (qualityMenuClickOutsideHandler) {
-      window.removeEventListener('click', qualityMenuClickOutsideHandler, true)
-      qualityMenuClickOutsideHandler = null
-    }
   })
 
   return {
@@ -400,8 +340,7 @@ export function useVideoHls(
     isQualityMenuOpen,
     availableQualityLevels,
     currentQualityLevel,
-    qualityControlRef,
-    qualityDropdownRef,
+    isAutoQuality,
     currentMenuScreen,
     initPlayer,
     retry,
@@ -411,6 +350,7 @@ export function useVideoHls(
     openSpeedMenu,
     goBackToMainMenu,
     toggleQualityMenu,
+    closeQualityMenu,
     getCurrentQualityLabel,
   }
 }

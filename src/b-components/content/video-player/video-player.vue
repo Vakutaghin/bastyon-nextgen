@@ -1,4 +1,7 @@
 <template>
+  <!-- Плеер — как у YouTube: на компьютере панель внизу, клик — пауза, двойной —
+       весь экран; на телефоне касание показывает панель, двойное касание сбоку
+       перематывает, удержание — 2× (use-touch-controls). -->
   <SC_VideoContainer
     ref="videoContainer"
     tabindex="0"
@@ -6,12 +9,19 @@
       'hide-cursor': shouldHideCursor,
       'is-fullscreen': isFullscreen,
       'pointer-mode': pointerMode,
+      'touch-ui': touchUi,
+      'menu-open': isQualityMenuOpen,
     }"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @mousemove="handleMouseMove"
-    @click="handleVideoClick"
-    @pointerdown.capture="pointerMode = true"
+    @click="handleContainerClick"
+    @pointerdown.capture="handlePointerDownCapture"
+    @pointerdown="touch.onPointerDown"
+    @pointermove="touch.onPointerMove"
+    @pointerup="touch.onPointerUp"
+    @pointercancel="touch.onPointerCancel"
+    @contextmenu="handleContextMenu"
     @keydown.tab="pointerMode = false"
     @focusout="handleFocusOut"
   >
@@ -64,18 +74,12 @@
       </SC_VideoElement>
     </SC_VideoWrapper>
 
-    <!-- Индикатор загрузки (при инициализации) -->
-    <SC_VideoLoading v-if="isLoading && !error">
-      <LoadingOutlined :style="ICON_WHITE_85_48" spin />
-    </SC_VideoLoading>
-
-    <!-- Индикатор загрузки чанков (во время воспроизведения) -->
-    <SC_VideoLoading v-if="isBuffering && isInitialized && !error && isPlaying">
-      <LoadingOutlined :style="ICON_WHITE_85_48" spin />
-    </SC_VideoLoading>
+    <!-- Загрузка: белое кольцо, как у YouTube (и при первом запуске, и когда
+         ролик ждёт данные). -->
+    <SC_Spinner v-if="showSpinner" />
 
     <!-- Сообщение об ошибке + кнопка повтора -->
-    <SC_VideoError v-if="error">
+    <SC_VideoError v-if="error" data-player-control @click.stop>
       <p>{{ error }}</p>
       <SC_VideoRetryButton type="button" @click.stop="retry">
         <ReloadOutlined />
@@ -84,7 +88,7 @@
     </SC_VideoError>
 
     <!-- Под Tor видео идёт напрямую с PeerTube (мимо Tor) — играем только после подтверждения (V21). -->
-    <SC_VideoError v-if="torNoticeVisible && !error" @click.stop>
+    <SC_VideoError v-if="torNoticeVisible && !error" data-player-control @click.stop>
       <p>{{ t('torMedia.videoBypassTitle') }}</p>
       <SC_VideoTorBody>{{ t('torMedia.videoBypassBody') }}</SC_VideoTorBody>
       <SC_VideoTorActions>
@@ -97,53 +101,220 @@
       </SC_VideoTorActions>
     </SC_VideoError>
 
-    <!-- Кнопка Play для неинициализированного проигрывателя -->
-    <SC_VideoPlayButton
+    <!-- До первого запуска — большая кнопка пуска в центре. -->
+    <SC_BigPlayButton
       v-if="!isInitialized && !isLoading && !error && !torNoticeVisible"
-      @click.stop="togglePlay"
+      type="button"
+      data-player-control
+      :aria-label="t('videoPlayer.play')"
+      @click.stop="togglePlay()"
     >
-      <PlayCircleOutlined :style="ICON_WHITE_64" />
-    </SC_VideoPlayButton>
+      <PlayIcon />
+    </SC_BigPlayButton>
 
-    <!-- Уведомление о скорости воспроизведения -->
-    <SC_PlaybackRateNotification
-      v-if="showPlaybackRateNotification && isInitialized"
-      :show="showPlaybackRateNotification"
-    >
-      {{ formatPlaybackRate(playbackRate) }}
-    </SC_PlaybackRateNotification>
+    <template v-if="isInitialized && !isLoading && !error">
+      <!-- «Пульс» пуска, паузы и громкости в центре. -->
+      <SC_Bezel v-if="bezel.icon" :key="bezel.key">
+        <component :is="BEZEL_ICONS[bezel.icon]" />
+      </SC_Bezel>
 
-    <!-- Уведомление о громкости -->
-    <SC_VolumeNotification
-      v-if="showVolumeNotification && isInitialized"
-      :show="showVolumeNotification"
-    >
-      {{ formatVolumeDisplay() }}
-    </SC_VolumeNotification>
+      <!-- Плашка сверху: громкость, скорость, 2× при удержании. -->
+      <SC_TopPill v-if="pillText">
+        <span>{{ pillText }}</span>
+        <template v-if="touchHolding"> <SeekArrowIcon /><SeekArrowIcon /> </template>
+      </SC_TopPill>
 
-    <!-- Уведомление о перемотке -->
-    <SC_SeekNotification v-if="showSeekNotification && isInitialized" :show="showSeekNotification">
-      {{ seekValue }}
-    </SC_SeekNotification>
+      <!-- Волна перемотки у края: касания на телефоне, стрелки и J/L на компьютере. -->
+      <SC_SeekRipple v-if="seekIndicator" :class="seekIndicator.side">
+        <SC_SeekArrows> <SeekArrowIcon /><SeekArrowIcon /><SeekArrowIcon /> </SC_SeekArrows>
+        <span>{{ t('videoPlayer.seekSeconds', seekIndicator.seconds) }}</span>
+      </SC_SeekRipple>
 
-    <!-- Иконка Play — по центру ролика -->
-    <SC_IconNotification v-if="showPlayNotification && isInitialized" :show="showPlayNotification">
-      <PlayCircleOutlined :style="ICON_WHITE_85_24" />
-    </SC_IconNotification>
+      <!-- Телефон: затемнение, пуск в центре, настройки наверху, время и экран внизу. -->
+      <template v-if="touchUi">
+        <SC_TouchScrim :class="{ visible: touchChromeVisible }" />
+        <SC_TouchLayer :class="{ visible: touchChromeVisible }">
+          <SC_TouchCenterButton
+            type="button"
+            data-player-control
+            :aria-label="playTip"
+            @click.stop="handleTouchPlay"
+          >
+            <ReplayIcon v-if="isEnded" />
+            <PlayIcon v-else-if="!isPlaying" />
+            <PauseIcon v-else />
+          </SC_TouchCenterButton>
+          <SC_TouchTopBar>
+            <SC_TouchButton
+              type="button"
+              data-player-control
+              data-settings-toggle
+              :aria-label="t('videoPlayer.settings')"
+              :aria-expanded="isQualityMenuOpen"
+              @click.stop="toggleQualityMenu"
+            >
+              <SettingsIcon />
+            </SC_TouchButton>
+          </SC_TouchTopBar>
+          <SC_TouchBottomBar>
+            <SC_TimeDisplay
+              >{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</SC_TimeDisplay
+            >
+            <SC_TouchButton
+              v-if="!isAudio"
+              type="button"
+              data-player-control
+              :aria-label="fullscreenTip"
+              @click.stop="handleTouchFullscreen"
+            >
+              <FullscreenExitIcon v-if="isFullscreen" />
+              <FullscreenIcon v-else />
+            </SC_TouchButton>
+          </SC_TouchBottomBar>
+        </SC_TouchLayer>
+      </template>
 
-    <!-- Иконка Pause -->
-    <SC_IconNotification
-      v-if="showPauseNotification && isInitialized"
-      :show="showPauseNotification"
-    >
-      <PauseCircleOutlined :style="ICON_WHITE_85_24" />
-    </SC_IconNotification>
+      <!-- Компьютер: затемнение снизу и ряд кнопок. -->
+      <template v-else>
+        <SC_GradientBottom :class="{ visible: desktopChromeVisible }" />
+        <SC_ControlsRow :class="{ visible: desktopChromeVisible }" data-player-control @click.stop>
+          <SC_ControlsGroup>
+            <SC_PlayerButton
+              type="button"
+              class="tip-start"
+              :data-tip="playTip"
+              :aria-label="playTip"
+              @click.stop="togglePlay(true)"
+            >
+              <ReplayIcon v-if="isEnded" />
+              <PlayIcon v-else-if="!isPlaying" />
+              <PauseIcon v-else />
+            </SC_PlayerButton>
+
+            <SC_VolumeArea class="volume-area" :class="{ dragging: isDraggingVolume }">
+              <SC_PlayerButton
+                type="button"
+                :data-tip="muteTip"
+                :aria-label="muteTip"
+                @click.stop="toggleMute"
+              >
+                <VolumeOffIcon v-if="volume === 0" />
+                <VolumeDownIcon v-else-if="volume < 0.5" />
+                <VolumeUpIcon v-else />
+              </SC_PlayerButton>
+              <SC_VolumePanel>
+                <SC_VolumeHit
+                  :style="{ '--volume': volumeWidth }"
+                  role="slider"
+                  :aria-label="t('videoPlayer.volume')"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  :aria-valuenow="Math.round(volume * 100)"
+                  @mousedown.stop="handleVolumeMouseDown"
+                  @click.stop="handleVolumeClick"
+                >
+                  <SC_VolumeTrack>
+                    <SC_VolumeFill />
+                    <SC_VolumeKnob />
+                  </SC_VolumeTrack>
+                </SC_VolumeHit>
+              </SC_VolumePanel>
+            </SC_VolumeArea>
+
+            <SC_TimeDisplay
+              >{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</SC_TimeDisplay
+            >
+
+            <SC_ChapterTitle v-if="activeChapter" :title="activeChapter.label">
+              <span>{{ activeChapter.label }}</span>
+            </SC_ChapterTitle>
+          </SC_ControlsGroup>
+
+          <SC_ControlsGroup>
+            <SC_PlayerButton
+              type="button"
+              data-settings-toggle
+              :class="{ open: isQualityMenuOpen }"
+              :data-tip="t('videoPlayer.settings')"
+              :aria-label="t('videoPlayer.settings')"
+              :aria-expanded="isQualityMenuOpen"
+              @click.stop="toggleQualityMenu"
+            >
+              <SettingsIcon />
+            </SC_PlayerButton>
+
+            <SC_PlayerButton
+              v-if="!isAudio && isPipSupported"
+              type="button"
+              :data-tip="`${t('videoPlayer.pip')} (i)`"
+              :aria-label="t('videoPlayer.pip')"
+              :aria-pressed="isPip"
+              @click.stop="togglePip"
+            >
+              <PipIcon />
+            </SC_PlayerButton>
+
+            <SC_PlayerButton
+              v-if="!isAudio"
+              type="button"
+              class="tip-end"
+              :data-tip="fullscreenTip"
+              :aria-label="fullscreenTip"
+              @click.stop="toggleFullscreen"
+            >
+              <FullscreenExitIcon v-if="isFullscreen" />
+              <FullscreenIcon v-else />
+            </SC_PlayerButton>
+          </SC_ControlsGroup>
+        </SC_ControlsRow>
+      </template>
+
+      <PlayerProgress
+        :visible="touchUi ? touchChromeVisible : desktopChromeVisible"
+        :mini="touchUi && !touchChromeVisible && !isFullscreen"
+        :touch="touchUi"
+        :progress="progress"
+        :buffered="bufferedWidth"
+        :duration="duration"
+        :current-time="currentTime"
+        :chapter-markers="chapterMarkers"
+        :chapters="chapters"
+        :format-time="formatTime"
+        @seek-start="handleSeekStart"
+      />
+
+      <PlayerSettings
+        :open="isQualityMenuOpen"
+        :touch="touchUi"
+        :fullscreen="isFullscreen"
+        :screen="currentMenuScreen"
+        :quality-levels="availableQualityLevels"
+        :current-quality="currentQualityLevel"
+        :auto-quality="isAutoQuality"
+        :quality-label="getCurrentQualityLabel"
+        :rates="availablePlaybackRates"
+        :current-rate="playbackRate"
+        :player-root="containerElement"
+        @screen="handleMenuScreen"
+        @quality="setQualityLevel"
+        @rate="handleSelectRate"
+        @close="closeQualityMenu"
+      />
+    </template>
 
     <!-- Справка по горячим клавишам -->
-    <SC_HotkeysHelpOverlay v-if="showHotkeysHelp" @click.stop="toggleHotkeysHelp">
+    <SC_HotkeysHelpOverlay
+      v-if="showHotkeysHelp"
+      data-player-control
+      @click.stop="toggleHotkeysHelp"
+    >
       <SC_HotkeysHelpContent @click.stop>
-        <SC_HotkeysCloseButton @click.stop="toggleHotkeysHelp">
-          <CloseOutlined :style="ICON_SIZE_XL" />
+        <SC_HotkeysCloseButton
+          type="button"
+          :aria-label="t('videoPlayer.close')"
+          @click.stop="toggleHotkeysHelp"
+        >
+          <CloseIcon />
         </SC_HotkeysCloseButton>
 
         <SC_HotkeysHelpTitle>{{ t('videoPlayer.hotkeysTitle') }}</SC_HotkeysHelpTitle>
@@ -156,182 +327,19 @@
         </SC_HotkeysHelpList>
       </SC_HotkeysHelpContent>
     </SC_HotkeysHelpOverlay>
-
-    <!-- Контролы проигрывателя (только после инициализации) -->
-    <SC_VideoControls
-      v-if="isInitialized && !isLoading && !error"
-      :show="showControls || showControlsInitially"
-      @click.stop
-    >
-      <SC_VideoControlsBar>
-        <!-- Кнопка Play/Pause -->
-        <SC_VideoPlayPauseButton @click.stop="togglePlay">
-          <ReloadOutlined v-if="isEnded" :style="ICON_SIZE_XL" />
-          <PlayCircleOutlined v-else-if="!isPlaying" :style="ICON_SIZE_XL" />
-          <PauseCircleOutlined v-else :style="ICON_SIZE_XL" />
-        </SC_VideoPlayPauseButton>
-
-        <!-- Контрол громкости -->
-        <SC_VideoVolumeControl>
-          <SC_VideoVolumeButton @click.stop="toggleMute">
-            <SC_VideoVolumeMutedIcon v-if="volume === 0">
-              <SoundOutlined :style="ICON_MUTED_18" />
-              <SC_VideoVolumeMutedCross />
-            </SC_VideoVolumeMutedIcon>
-            <SoundOutlined v-else :style="ICON_SIZE_LG" />
-          </SC_VideoVolumeButton>
-          <SC_VideoVolumeSlider
-            ref="volumeSliderRef"
-            @mousedown.stop="handleVolumeMouseDown"
-            @click.stop="handleVolumeClick"
-          >
-            <SC_VideoVolumeFill :isDragging="isDraggingVolume" :style="{ width: volumeWidth }" />
-          </SC_VideoVolumeSlider>
-        </SC_VideoVolumeControl>
-
-        <!-- Контрол качества видео и скорости -->
-        <SC_VideoQualityControl ref="qualityControlRef">
-          <SC_VideoQualityButton @click.stop="toggleQualityMenu">
-            <SettingOutlined :style="ICON_SIZE_LG" />
-          </SC_VideoQualityButton>
-          <SC_VideoQualityDropdown ref="qualityDropdownRef" :isOpen="isQualityMenuOpen" @click.stop>
-            <!-- Главное меню -->
-            <template v-if="currentMenuScreen === 'main'">
-              <!-- Пункт меню: Качество видео -->
-              <SC_VideoQualityMenuSection v-if="!isAudio && availableQualityLevels.length > 0">
-                <SC_VideoQualitySubmenuItem @click.stop="openQualityMenu">
-                  <span>{{ t('videoPlayer.quality') }}</span>
-                  <SC_SubmenuArrow>▶</SC_SubmenuArrow>
-                </SC_VideoQualitySubmenuItem>
-              </SC_VideoQualityMenuSection>
-
-              <!-- Пункт меню: Скорость воспроизведения -->
-              <SC_VideoQualityMenuSection>
-                <SC_VideoQualitySubmenuItem @click.stop="openSpeedMenu">
-                  <span>{{ t('videoPlayer.speed') }}</span>
-                  <SC_SubmenuArrow>▶</SC_SubmenuArrow>
-                </SC_VideoQualitySubmenuItem>
-              </SC_VideoQualityMenuSection>
-            </template>
-
-            <!-- Меню качества -->
-            <template v-if="currentMenuScreen === 'quality'">
-              <SC_VideoQualityMenuSection>
-                <SC_VideoQualitySubmenuItem @click.stop="goBackToMainMenu">
-                  <span>← {{ t('videoPlayer.back') }}</span>
-                </SC_VideoQualitySubmenuItem>
-              </SC_VideoQualityMenuSection>
-              <SC_VideoQualityMenuSection>
-                <SC_VideoQualitySubmenuItemInner
-                  v-for="level in availableQualityLevels"
-                  :key="level.index"
-                  :isActive="currentQualityLevel === level.index"
-                  @click.stop="setQualityLevel(level.index)"
-                >
-                  {{ level.label }}
-                </SC_VideoQualitySubmenuItemInner>
-              </SC_VideoQualityMenuSection>
-            </template>
-
-            <!-- Меню скорости -->
-            <template v-if="currentMenuScreen === 'speed'">
-              <SC_VideoQualityMenuSection>
-                <SC_VideoQualitySubmenuItem @click.stop="goBackToMainMenu">
-                  <span>← {{ t('videoPlayer.back') }}</span>
-                </SC_VideoQualitySubmenuItem>
-              </SC_VideoQualityMenuSection>
-              <SC_VideoQualityMenuSection>
-                <SC_VideoQualitySubmenuItemInner
-                  v-for="rate in availablePlaybackRates"
-                  :key="rate"
-                  :isActive="playbackRate === rate"
-                  @click.stop="setPlaybackRate(rate)"
-                >
-                  {{ formatPlaybackRate(rate) }}
-                </SC_VideoQualitySubmenuItemInner>
-              </SC_VideoQualityMenuSection>
-            </template>
-          </SC_VideoQualityDropdown>
-        </SC_VideoQualityControl>
-
-        <!-- Прогресс-бар (Pointer Events: mouse + touch + pen) -->
-        <SC_VideoProgressBar @pointerdown.stop="handleProgressPointerDown">
-          <SC_VideoBufferFill :style="{ width: bufferedWidth }" />
-          <SC_VideoProgressFill :style="{ width: progressWidth }" />
-          <SC_VideoChapterMarker
-            v-for="(pos, i) in chapterMarkers"
-            :key="`chapter-${i}`"
-            :style="{ left: pos + '%' }"
-            :title="chapters[i]?.label"
-          />
-        </SC_VideoProgressBar>
-
-        <!-- Время -->
-        <SC_VideoTimeDisplay>
-          {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
-        </SC_VideoTimeDisplay>
-
-        <!-- Название текущей главы -->
-        <SC_VideoChapterTitle v-if="activeChapter" :title="activeChapter.label">
-          {{ activeChapter.label }}
-        </SC_VideoChapterTitle>
-
-        <!-- Picture-in-Picture (переиспользуем стиль кнопки fullscreen) -->
-        <SC_VideoFullscreenButton
-          v-if="!isAudio && isPipSupported"
-          :class="{ active: isPip }"
-          @click.stop="togglePip"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="22"
-            height="22"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <rect x="3" y="5" width="18" height="14" rx="2" />
-            <rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor" stroke="none" />
-          </svg>
-        </SC_VideoFullscreenButton>
-
-        <!-- Кнопка полноэкранного режима -->
-        <SC_VideoFullscreenButton v-if="!isAudio" @click.stop="toggleFullscreen">
-          <FullscreenExitOutlined v-if="isFullscreen" :style="ICON_SIZE_XL" />
-          <FullscreenOutlined v-else :style="ICON_SIZE_XL" />
-        </SC_VideoFullscreenButton>
-      </SC_VideoControlsBar>
-    </SC_VideoControls>
   </SC_VideoContainer>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRef, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  ICON_SIZE_LG,
-  ICON_SIZE_XL,
-  ICON_MUTED_18,
-  ICON_WHITE_85_48,
-  ICON_WHITE_64,
-  ICON_WHITE_85_24,
-} from '@/styles/icon-styles'
-import {
-  PlayCircleOutlined,
-  PauseCircleOutlined,
-  LoadingOutlined,
-  FullscreenOutlined,
-  FullscreenExitOutlined,
-  ReloadOutlined,
-  SoundOutlined,
-  CloseOutlined,
-  SettingOutlined,
-} from '@/components/icons'
+import { ReloadOutlined } from '@/components/icons'
 import { videoPlayerManager } from './video-player-manager'
 import type { Chapter } from '@/helpers/content/timecode-parser'
 import { useVideoHotkeys } from './composables/use-video-hotkeys'
 import { useVideoControls } from './composables/use-video-controls'
+import { useTouchControls } from './composables/use-touch-controls'
+import { useTouchUi } from './composables/use-touch-ui'
 import { HOTKEYS_LIST, DOUBLE_CLICK_DELAY } from './consts'
 import { createClickHandler } from './helpers'
 import { useVideoProgress } from './composables/use-video-progress'
@@ -343,13 +351,29 @@ import { useVideoPip } from './composables/use-video-pip'
 import { useVideoHls } from './composables/use-video-hls'
 import { useVideoResume } from './composables/use-video-resume'
 import { useBackgroundPlayback } from './composables/use-background-playback'
-import { useVideoNotifications } from './composables/use-video-notifications'
+import { useVideoNotifications, type BezelIcon } from './composables/use-video-notifications'
 import { useVideoThumbnail } from './composables/use-video-thumbnail'
 import { useVideoSubtitles } from './composables/use-video-subtitles'
 import { useVideoElementEvents } from './composables/use-video-element-events'
 import { useTorMedia } from '@/composables/use-tor-media'
 import { resolveDomElement, resolveVideoElement } from './composables/utils'
 import AudioVisualizer from '@/b-components/content/video-player/components/audio-visualizer/audio-visualizer.vue'
+import PlayerProgress from './components/player-progress.vue'
+import PlayerSettings from './components/player-settings.vue'
+import {
+  CloseIcon,
+  FullscreenExitIcon,
+  FullscreenIcon,
+  PauseIcon,
+  PipIcon,
+  PlayIcon,
+  ReplayIcon,
+  SeekArrowIcon,
+  SettingsIcon,
+  VolumeDownIcon,
+  VolumeOffIcon,
+  VolumeUpIcon,
+} from './components/player-icons'
 import {
   SC_VideoContainer,
   SC_VideoWrapper,
@@ -357,39 +381,34 @@ import {
   SC_VideoThumbnailBackdrop,
   SC_VideoThumbnail,
   SC_VideoSkeleton,
-  SC_VideoControls,
-  SC_VideoControlsBar,
-  SC_VideoPlayPauseButton,
-  SC_VideoPlayButton,
-  SC_VideoTimeDisplay,
-  SC_VideoProgressBar,
-  SC_VideoProgressFill,
-  SC_VideoBufferFill,
-  SC_VideoChapterMarker,
-  SC_VideoChapterTitle,
-  SC_VideoLoading,
   SC_VideoError,
   SC_VideoTorBody,
   SC_VideoTorActions,
   SC_VideoRetryButton,
-  SC_VideoVolumeControl,
-  SC_VideoVolumeButton,
-  SC_VideoVolumeSlider,
-  SC_VideoVolumeFill,
-  SC_VideoVolumeMutedIcon,
-  SC_VideoVolumeMutedCross,
-  SC_VideoQualityControl,
-  SC_VideoQualityButton,
-  SC_VideoQualityDropdown,
-  SC_VideoQualityMenuItem,
-  SC_VideoQualityMenuSection,
-  SC_VideoQualityMenuSectionTitle,
-  SC_VideoQualitySubmenuItem,
-  SC_VideoQualitySubmenu,
-  SC_VideoQualitySubmenuItemInner,
-  SC_VideoFullscreenButton,
-  SC_PlaybackRateNotification,
-  SC_VolumeNotification,
+  SC_Spinner,
+  SC_BigPlayButton,
+  SC_Bezel,
+  SC_TopPill,
+  SC_SeekRipple,
+  SC_SeekArrows,
+  SC_TouchScrim,
+  SC_TouchLayer,
+  SC_TouchCenterButton,
+  SC_TouchTopBar,
+  SC_TouchBottomBar,
+  SC_TouchButton,
+  SC_GradientBottom,
+  SC_ControlsRow,
+  SC_ControlsGroup,
+  SC_PlayerButton,
+  SC_TimeDisplay,
+  SC_ChapterTitle,
+  SC_VolumeArea,
+  SC_VolumePanel,
+  SC_VolumeHit,
+  SC_VolumeTrack,
+  SC_VolumeFill,
+  SC_VolumeKnob,
   SC_HotkeysHelpOverlay,
   SC_HotkeysHelpContent,
   SC_HotkeysHelpTitle,
@@ -398,9 +417,6 @@ import {
   SC_HotkeysKey,
   SC_HotkeysDescription,
   SC_HotkeysCloseButton,
-  SC_IconNotification,
-  SC_SeekNotification,
-  SC_SubmenuArrow,
 } from './styled'
 
 const props = withDefaults(
@@ -423,12 +439,19 @@ const isPlaying = ref(false)
 const isEnded = ref(false)
 const playerId = ref(`video-player-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`)
 
-// Уведомления (play/pause/seek — кратковременные pop-up иконки в центре плеера).
+const BEZEL_ICONS: Record<BezelIcon, Component> = {
+  play: PlayIcon,
+  pause: PauseIcon,
+  volumeUp: VolumeUpIcon,
+  volumeDown: VolumeDownIcon,
+  volumeOff: VolumeOffIcon,
+}
+
+// «Пульс» в центре и волна перемотки у края.
 const {
-  showPlayNotification,
-  showPauseNotification,
-  showSeekNotification,
-  seekValue,
+  bezel,
+  seek: keyboardSeek,
+  flashBezel,
   triggerSeekNotification,
   triggerPlayPauseNotification,
 } = useVideoNotifications()
@@ -450,21 +473,17 @@ const {
   bufferedWidth,
   updateBuffered,
   updateDuration,
+  syncTime,
   stopProgressAnimation,
   startProgressAnimation,
-  handleProgressClick,
   handleProgressPointerDown,
   formatTime,
 } = useVideoProgress(videoElement, isPlaying)
 
-const progressWidth = computed(() => `${progress.value}%`)
-
 const {
   volume,
-  previousVolume,
   isDraggingVolume,
   showVolumeNotification,
-  volumeSliderRef,
   volumeWidth,
   setVolume,
   displayVolumeNotification,
@@ -501,8 +520,7 @@ const {
   isQualityMenuOpen,
   availableQualityLevels,
   currentQualityLevel,
-  qualityControlRef,
-  qualityDropdownRef,
+  isAutoQuality,
   currentMenuScreen,
   initPlayer: hlsInitPlayer,
   retry,
@@ -511,6 +529,7 @@ const {
   openSpeedMenu,
   goBackToMainMenu,
   toggleQualityMenu,
+  closeQualityMenu,
   getCurrentQualityLabel,
 } = useVideoHls(
   props,
@@ -528,6 +547,7 @@ function getVideoElement(): HTMLVideoElement | null {
   return resolveVideoElement(videoElement)
 }
 const domVideoElement = computed(() => resolveVideoElement(videoElement))
+const containerElement = (): HTMLElement | null => resolveDomElement(videoContainer)
 
 // Превью + соотношение сторон. refreshMetadata определяется ниже
 // (useBackgroundPlayback); handleVideoMetadata дёргает его только по событию
@@ -580,6 +600,7 @@ const videoElementEvents = useVideoElementEvents({
   updateDuration,
   updateBuffered,
   handleVideoMetadata,
+  syncTime,
 })
 setupVideoEventListeners = videoElementEvents.setupVideoEventListeners
 setupIntersectionObserver = videoElementEvents.setupIntersectionObserver
@@ -593,6 +614,7 @@ const { chapterMarkers, activeChapter } = useVideoChapters(
   duration,
   currentTime
 )
+const chapters = computed(() => props.chapters)
 
 // Перемотка к моменту (вызывается извне через template ref).
 // Если плеер ещё не инициализирован — запускаем загрузку и применяем seek
@@ -632,6 +654,14 @@ function seekTo(seconds: number): void {
       })
       .catch((err) => console.warn('Seek + play failed:', err))
   }
+}
+
+/** Перемотка на `delta` секунд от текущего места; `false` — перематывать нечего. */
+function seekBy(delta: number): boolean {
+  const video = getVideoElement()
+  if (!video || !isFinite(video.duration) || video.duration <= 0) return false
+  applySeek(video.currentTime + delta)
+  return true
 }
 
 // Применяем отложенный seek сразу после инициализации плеера.
@@ -729,10 +759,189 @@ function stopVideo(): void {
   isEnded.value = false
 }
 
-const shouldHideCursor = computed<boolean>(() => isFullscreen.value && !showControls.value)
+// === Телефон: касания, как в приложении YouTube ===
 
-// Click handler: single → play/pause, double → fullscreen.
-const handleVideoClick = createClickHandler(togglePlay, toggleFullscreen, DOUBLE_CLICK_DELAY)
+const touchUi = useTouchUi()
+
+/** Удержание пальца — 2×, отпустили — прежняя скорость. Меню скорости не трогаем. */
+let rateBeforeHold: number | null = null
+function setHoldSpeed(held: boolean): void {
+  const video = getVideoElement()
+  if (!video) return
+  if (held) {
+    rateBeforeHold = video.playbackRate
+    video.playbackRate = 2
+  } else if (rateBeforeHold !== null) {
+    video.playbackRate = rateBeforeHold
+    rateBeforeHold = null
+  }
+}
+
+const touch = useTouchControls({
+  isPlaying,
+  isFullscreen,
+  isActive: () => touchUi.value && isInitialized.value && !isLoading.value && !error.value,
+  seekBy,
+  exitFullscreen: () => {
+    if (isFullscreen.value) void toggleFullscreen()
+  },
+  setHoldSpeed,
+})
+
+/** Удержание пальца: плашка «2x ▸▸». */
+const touchHolding = touch.holding
+
+const touchChromeVisible = computed<boolean>(
+  () => touch.controlsVisible.value || isQualityMenuOpen.value
+)
+
+function handleTouchPlay(): void {
+  togglePlay()
+  touch.poke()
+}
+
+function handleTouchFullscreen(): void {
+  void toggleFullscreen()
+  touch.poke()
+}
+
+// === Компьютер: панель как у YouTube ===
+
+// Панель видна, пока мышь двигается над роликом, пока он на паузе, пока открыто
+// меню или тянут громкость; спряталась, пока ролик идёт, — прячется и курсор.
+const desktopChromeVisible = computed<boolean>(
+  () =>
+    showControls.value ||
+    showControlsInitially.value ||
+    !isPlaying.value ||
+    isQualityMenuOpen.value ||
+    isDraggingVolume.value
+)
+
+const shouldHideCursor = computed<boolean>(
+  () => !touchUi.value && isInitialized.value && isHovering.value && !desktopChromeVisible.value
+)
+
+const playTip = computed<string>(() => {
+  if (isEnded.value) return t('videoPlayer.replay')
+  return `${isPlaying.value ? t('videoPlayer.pause') : t('videoPlayer.play')} (k)`
+})
+const muteTip = computed<string>(
+  () => `${volume.value === 0 ? t('videoPlayer.unmute') : t('videoPlayer.mute')} (m)`
+)
+const fullscreenTip = computed<string>(
+  () => `${isFullscreen.value ? t('videoPlayer.exitFullscreen') : t('videoPlayer.fullscreen')} (f)`
+)
+
+const showSpinner = computed<boolean>(
+  () =>
+    !error.value &&
+    (isLoading.value || (isBuffering.value && isInitialized.value && isPlaying.value))
+)
+
+/** Плашка сверху: 2× при удержании, громкость, скорость. */
+const pillText = computed<string>(() => {
+  if (touchHolding.value) return '2x'
+  if (showVolumeNotification.value) return formatVolumeDisplay()
+  if (showPlaybackRateNotification.value) return formatPlaybackRate(playbackRate.value)
+  return ''
+})
+
+// Громкость клавишами — «пульс» со значком звука, как у YouTube.
+watch(showVolumeNotification, (shown) => {
+  if (!shown) return
+  flashBezel(volume.value === 0 ? 'volumeOff' : volume.value < 0.5 ? 'volumeDown' : 'volumeUp')
+})
+
+/** Волна перемотки: касания на телефоне, стрелки и J/L на компьютере. */
+const seekIndicator = computed(() => {
+  if (touch.ripple.side) return { side: touch.ripple.side, seconds: touch.ripple.seconds }
+  if (keyboardSeek.side) return { side: keyboardSeek.side, seconds: keyboardSeek.seconds }
+  return null
+})
+
+// === Мышь и касания по самому ролику ===
+
+// Плеером пользуются мышью или пальцем. Тогда фокус без обводки: после клика
+// по ролику любая клавиша включала :focus-visible, и пробел рисовал рамку
+// вокруг плеера. И кнопки плеера, оказавшиеся в фокусе от клика, не забирают
+// пробел себе. С Tab обводка и обычные кнопки возвращаются.
+const pointerMode = ref(false)
+let lastPointerType = ''
+
+function handlePointerDownCapture(event: PointerEvent): void {
+  pointerMode.value = true
+  lastPointerType = event.pointerType
+}
+
+// Мышь: клик — пуск и пауза с «пульсом», двойной — весь экран.
+const handleMouseClick = createClickHandler(
+  () => togglePlay(true),
+  toggleFullscreen,
+  DOUBLE_CLICK_DELAY
+)
+
+function handleContainerClick(): void {
+  // До первого запуска и клик, и касание запускают ролик — как по превью у YouTube.
+  if (!isInitialized.value) {
+    if (!isLoading.value && !error.value && !torNoticeVisible.value) togglePlay()
+    return
+  }
+  // Касания разбирает use-touch-controls; щелчок за ними — эхо того же касания.
+  if (touchUi.value && lastPointerType === 'touch') return
+  // Меню открыто — щелчок по ролику только закрывает его, как у YouTube.
+  if (isQualityMenuOpen.value) {
+    closeQualityMenu()
+    return
+  }
+  handleMouseClick()
+}
+
+/** Удержание пальца — ускорение, а не меню «Сохранить видео». */
+function handleContextMenu(event: MouseEvent): void {
+  if (touchUi.value) event.preventDefault()
+}
+
+function handleSeekStart(event: PointerEvent): void {
+  handleProgressPointerDown(event)
+  if (touchUi.value) {
+    touch.showControls()
+    window.addEventListener('pointerup', () => touch.poke(), { once: true })
+  }
+}
+
+function handleMenuScreen(screen: 'main' | 'quality' | 'speed'): void {
+  if (screen === 'quality') openQualityMenu()
+  else if (screen === 'speed') openSpeedMenu()
+  else goBackToMainMenu()
+}
+
+/** Скорость выбрана — меню закрывается, как у YouTube. */
+function handleSelectRate(rate: number): void {
+  setPlaybackRate(rate)
+  closeQualityMenu()
+}
+
+// Телефон во весь экран — горизонтально, если ролик горизонтальный, как у YouTube.
+watch(isFullscreen, (fullscreen) => {
+  if (!touchUi.value) return
+  const orientation = screen.orientation as ScreenOrientation & {
+    lock?: (orientation: string) => Promise<void>
+  }
+  if (!orientation) return
+  if (fullscreen) {
+    const video = getVideoElement()
+    if (video && video.videoWidth > video.videoHeight) {
+      orientation.lock?.('landscape').catch(() => {})
+    }
+  } else {
+    try {
+      orientation.unlock?.()
+    } catch {
+      // Ориентацию не блокировали — снимать нечего.
+    }
+  }
+})
 
 // Горячие клавиши: слушает их и выбирает плеер videoPlayerManager, здесь —
 // что они делают с этим плеером.
@@ -751,14 +960,11 @@ const { showHotkeysHelp, toggleHotkeysHelp, handleHotkey } = useVideoHotkeys({
   increasePlaybackRate,
   decreasePlaybackRate,
   triggerSeekNotification,
+  togglePip: !props.isAudio && isPipSupported ? togglePip : undefined,
+  isMenuOpen: () => isQualityMenuOpen.value,
+  closeMenu: closeQualityMenu,
 })
 const hotkeysList = HOTKEYS_LIST
-
-// Плеером пользуются мышью или пальцем. Тогда фокус без обводки: после клика
-// по ролику любая клавиша включала :focus-visible, и пробел рисовал рамку
-// вокруг плеера. И кнопки плеера, оказавшиеся в фокусе от клика, не забирают
-// пробел себе. С Tab обводка и обычные кнопки возвращаются.
-const pointerMode = ref(false)
 
 function handleFocusOut(event: FocusEvent): void {
   // Окно ушло в фон — фокус вернётся сюда же.
@@ -805,6 +1011,7 @@ watch(
     error.value = null
     thumbnailUrl.value = null
     isThumbnailLoaded.value = false
+    touch.reset()
 
     // Сбрасываем HLS и инициализируем заново.
     if (hls.value) {
