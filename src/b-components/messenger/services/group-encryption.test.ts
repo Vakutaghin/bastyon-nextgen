@@ -30,6 +30,7 @@ import {
   type ProfileCacheLike,
 } from './group-encryption'
 import type { PcryptoService } from './pcrypto'
+import { acceptPeerKeys, clearAllKeyPins } from './key-pinning'
 
 const md5 = (s: string) => createHash('md5').update(s).digest('hex')
 
@@ -155,6 +156,7 @@ describe('collectPcryptoUsers', () => {
   let cache: ProfileCacheLike & { fetchProfiles: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
+    clearAllKeyPins()
     mocks.myMatrixId = mx(ME)
     cache = {
       userProfiles: {},
@@ -173,6 +175,15 @@ describe('collectPcryptoUsers', () => {
     })
     expect(cache.fetchProfiles).toHaveBeenCalledWith([ALICE, ME])
     expect(users).toEqual([{ id: mx(ALICE), keys: ['ka1', 'ka2'], dbId: 11 }])
+  })
+
+  it('сменившиеся ключи собеседника не используются, пока их не приняли (TOFU)', async () => {
+    acceptPeerKeys(ME, ALICE, 'old1,old2')
+    const opts = { profileCache: cache, localMessengerKeys: null }
+    expect((await collectPcryptoUsers([mx(ALICE)], opts))[0]!.keys).toEqual(['old1', 'old2'])
+
+    acceptPeerKeys(ME, ALICE, 'ka1, ka2')
+    expect((await collectPcryptoUsers([mx(ALICE)], opts))[0]!.keys).toEqual(['ka1', 'ka2'])
   })
 
   it('свои ключи — из профиля, а без него из локальных ключей мессенджера', async () => {

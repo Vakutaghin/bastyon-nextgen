@@ -22,6 +22,7 @@ import CryptoJS from 'crypto-js'
 import type { PcryptoService, User as PcryptoUser } from './pcrypto'
 import type { DecryptableEvent } from './pcrypto'
 import { getAddressFromMatrixId, getMatrixId, parseProfileKeys } from '../helpers'
+import { getPinnedKeys } from './key-pinning'
 import { matrixService } from './matrix-service'
 
 /**
@@ -191,12 +192,23 @@ export async function collectPcryptoUsers(
     }
 
     if (address && opts.profileCache.userProfiles[address]?.k) {
+      const published = opts.profileCache.userProfiles[address].k as string
       users.push({
         id: memberId,
-        keys: parseProfileKeys(opts.profileCache.userProfiles[address].k as string),
+        keys: parseProfileKeys(peerKeys(myAddress, address, published)),
         dbId: opts.profileCache.userProfiles[address].id,
       })
     }
   }
   return users
+}
+
+/**
+ * Ключи собеседника — закреплённые при первом контакте (TOFU, key-pinning),
+ * пока пользователь не принял новые. Раньше при смене ключей чат только
+ * предупреждал, а шифровал уже новыми: если их подменила нода, посредник читал
+ * всё, что писалось под предупреждением.
+ */
+function peerKeys(owner: string | null, peer: string, published: string): string {
+  return (owner && getPinnedKeys(owner, peer)) || published
 }

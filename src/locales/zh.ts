@@ -694,7 +694,7 @@ export default {
     close: '关闭',
     startChat: '开始聊天',
     keyChangedBanner:
-      '对方的加密密钥已更改。如果对方没有切换账户，可能有中间人在读取消息——请通过其他渠道与对方核实。',
+      '对方的加密密钥已更改，而这些密钥通常不会改变：可能是节点替换了密钥以读取消息。在你接受新密钥之前，聊天会继续使用原来的密钥。请通过其他渠道与对方核实。',
     keyChangedAccept: '接受新密钥',
     loadingMessages: '正在加载消息...',
     loadingDialogs: '正在加载对话...',

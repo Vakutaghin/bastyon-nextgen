@@ -729,7 +729,7 @@ export default {
     close: 'Schließen',
     startChat: 'Chat starten',
     keyChangedBanner:
-      'Die Verschlüsselungsschlüssel deines Kontakts haben sich geändert. Wenn er nicht das Konto gewechselt hat, könnte ein Dritter mitlesen — prüfe das über einen anderen Kanal.',
+      'Die Verschlüsselungsschlüssel deines Kontakts haben sich geändert, obwohl sie sich normalerweise nie ändern: Vielleicht hat ein Node sie ausgetauscht, um mitzulesen. Bis du die neuen Schlüssel akzeptierst, verwendet der Chat die bisherigen. Prüfe das mit deinem Kontakt über einen anderen Kanal.',
     keyChangedAccept: 'Neue Schlüssel akzeptieren',
     loadingMessages: 'Nachrichten werden geladen...',
     loadingDialogs: 'Dialoge werden geladen...',

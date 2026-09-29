@@ -731,7 +731,7 @@ export default {
     close: 'Cerrar',
     startChat: 'Iniciar chat',
     keyChangedBanner:
-      'Las claves de cifrado de tu contacto han cambiado. Si no cambió de cuenta, un intermediario podría estar leyendo los mensajes: compruébalo con él por otro canal.',
+      'Las claves de cifrado de tu contacto han cambiado, aunque normalmente nunca cambian: quizá un nodo las sustituyó para leer los mensajes. Hasta que aceptes las nuevas claves, el chat sigue usando las anteriores. Compruébalo con tu contacto por otro canal.',
     keyChangedAccept: 'Aceptar las nuevas claves',
     loadingMessages: 'Cargando mensajes...',
     loadingDialogs: 'Cargando conversaciones...',

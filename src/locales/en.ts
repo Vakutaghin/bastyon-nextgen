@@ -719,7 +719,7 @@ export default {
     close: 'Close',
     startChat: 'Start chat',
     keyChangedBanner:
-      "Your contact's encryption keys have changed. Unless they switched accounts, an intermediary may be reading messages — verify with them over another channel.",
+      "Your contact's encryption keys have changed, though they normally never do: a node may have swapped them to read your messages. Until you accept the new keys, the chat keeps using the old ones. Check with your contact over another channel.",
     keyChangedAccept: 'Accept new keys',
     loadingMessages: 'Loading messages...',
     loadingDialogs: 'Loading dialogs...',

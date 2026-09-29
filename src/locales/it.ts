@@ -727,7 +727,7 @@ export default {
     close: 'Chiudi',
     startChat: 'Avvia la chat',
     keyChangedBanner:
-      'Le chiavi di cifratura del tuo contatto sono cambiate. Se non ha cambiato account, un intermediario potrebbe leggere i messaggi: verifica con lui tramite un altro canale.',
+      'Le chiavi di cifratura del tuo contatto sono cambiate, anche se di norma non cambiano mai: forse un nodo le ha sostituite per leggere i messaggi. Finché non accetti le nuove chiavi, la chat usa quelle precedenti. Verifica con il tuo contatto tramite un altro canale.',
     keyChangedAccept: 'Accetta le nuove chiavi',
     loadingMessages: 'Caricamento dei messaggi...',
     loadingDialogs: 'Caricamento delle conversazioni...',

@@ -731,7 +731,7 @@ export default {
     close: 'Fermer',
     startChat: 'Démarrer une discussion',
     keyChangedBanner:
-      'Les clés de chiffrement de votre contact ont changé. S’il n’a pas changé de compte, un intermédiaire lit peut-être les messages : vérifiez avec lui par un autre canal.',
+      'Les clés de chiffrement de votre contact ont changé, alors qu’elles ne changent normalement jamais : un nœud les a peut-être remplacées pour lire vos messages. Tant que vous n’acceptez pas les nouvelles clés, le chat utilise les anciennes. Vérifiez avec votre contact par un autre canal.',
     keyChangedAccept: 'Accepter les nouvelles clés',
     loadingMessages: 'Chargement des messages...',
     loadingDialogs: 'Chargement des discussions...',
