@@ -13,6 +13,7 @@ What a post in the feed consists of and what you can do with it: read it in full
 - **Images, video or audio.** Video and audio play right in the feed — see [Watching videos](video-player.md).
 - **A link card** — the title and image of the site the post links to.
 - **A poll**, if the author added one — see [Polls](polls.md).
+- **A note instead of the post**, if the author opened it only to some readers — for example, subscribers or registered users — see [Visibility, language and publishing time](post-settings.md).
 - **The category and tags.** Click a tag to filter the feed by it — see [Categories, tags and sorting](feed-filters.md).
 - **The rating and action buttons** at the bottom.
 
