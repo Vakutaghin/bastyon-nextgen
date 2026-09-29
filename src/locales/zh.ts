@@ -1893,8 +1893,6 @@ export default {
     storageLimitReached: '超出存储限额。请删除旧视频。',
     autoCleanupNotice: '已释放空间：删除旧视频草稿 {count} 个',
     transcodeNotSupported: '视频转码仅在桌面应用中可用',
-    installFfmpegHint:
-      '请安装 FFmpeg：macOS — brew install ffmpeg；Linux — apt install ffmpeg / dnf install ffmpeg。',
     fileNotSelected: '未选择文件',
     metadataNotFound: '未找到文件元数据',
     deleteFromDbFailed: '无法从数据库中删除视频',

@@ -15,6 +15,7 @@ import { formatFileSize } from '../utils/video-formatter'
 import { t } from '@/i18n'
 import { message } from 'ant-design-vue'
 import type { UploadState } from '../types'
+import { getFfmpegMissingInstruction } from './use-video-transcoder-init'
 
 export interface UseUploadStateOptions {
   onSaved?: () => void | Promise<void>
@@ -227,7 +228,8 @@ export function useUploadState(options: UseUploadStateOptions = {}) {
               lower.includes('command not found'))) ||
           lower.includes('failed to execute ffmpeg')
         ) {
-          displayMessage += ' ' + t('videoMsg.installFfmpegHint')
+          // Инструкция под свою систему: общая подсказка забывала Windows.
+          displayMessage += ' ' + getFfmpegMissingInstruction()
         }
       }
       uploadError.value = displayMessage

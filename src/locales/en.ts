@@ -1960,8 +1960,6 @@ export default {
     storageLimitReached: 'Storage limit exceeded. Delete old videos.',
     autoCleanupNotice: 'Freed up space: old video drafts removed — {count}',
     transcodeNotSupported: 'Video transcoding is available only in the desktop app',
-    installFfmpegHint:
-      'Install FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'No file selected',
     metadataNotFound: 'File metadata not found',
     deleteFromDbFailed: 'Failed to delete video from database',

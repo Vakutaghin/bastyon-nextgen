@@ -1982,8 +1982,6 @@ export default {
     storageLimitReached: 'Limite di spazio superato. Elimina i video vecchi.',
     autoCleanupNotice: 'Spazio liberato: rimosse bozze video vecchie — {count}',
     transcodeNotSupported: 'La conversione video è disponibile solo nell’app desktop',
-    installFfmpegHint:
-      'Installa FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'Nessun file selezionato',
     metadataNotFound: 'Metadati del file non trovati',
     deleteFromDbFailed: 'Impossibile eliminare il video dal database',

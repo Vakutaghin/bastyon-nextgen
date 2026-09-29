@@ -1992,8 +1992,6 @@ export default {
     storageLimitReached: 'Limite de stockage dépassée. Supprimez d’anciennes vidéos.',
     autoCleanupNotice: 'Espace libéré : anciens brouillons vidéo supprimés — {count}',
     transcodeNotSupported: 'Le transcodage vidéo n’est disponible que dans l’application de bureau',
-    installFfmpegHint:
-      'Installez FFmpeg : macOS — brew install ffmpeg ; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'Aucun fichier choisi',
     metadataNotFound: 'Métadonnées du fichier introuvables',
     deleteFromDbFailed: 'Impossible de supprimer la vidéo de la base de données',

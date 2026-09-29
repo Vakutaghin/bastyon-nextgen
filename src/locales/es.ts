@@ -1987,8 +1987,6 @@ export default {
     autoCleanupNotice: 'Espacio liberado: se eliminaron borradores de vídeo antiguos — {count}',
     transcodeNotSupported:
       'La conversión de vídeo solo está disponible en la aplicación de escritorio',
-    installFfmpegHint:
-      'Instala FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'No se ha seleccionado ningún archivo',
     metadataNotFound: 'No se encontraron los metadatos del archivo',
     deleteFromDbFailed: 'No se pudo eliminar el vídeo de la base de datos',

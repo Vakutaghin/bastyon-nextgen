@@ -1946,8 +1946,6 @@ export default {
     storageLimitReached: '저장 공간 한도를 초과했습니다. 오래된 동영상을 삭제하세요.',
     autoCleanupNotice: '공간을 확보했습니다: 오래된 동영상 초안 삭제 — {count}',
     transcodeNotSupported: '동영상 변환은 데스크톱 앱에서만 사용할 수 있습니다',
-    installFfmpegHint:
-      'FFmpeg를 설치하세요: macOS — brew install ffmpeg, Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: '선택한 파일이 없습니다',
     metadataNotFound: '파일 메타데이터를 찾을 수 없습니다',
     deleteFromDbFailed: '데이터베이스에서 동영상을 삭제하지 못했습니다',

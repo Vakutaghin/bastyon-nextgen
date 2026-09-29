@@ -3,7 +3,8 @@ import { transcoder } from '../transcoder'
 import { t } from '@/i18n'
 import type { TranscoderKind } from '../transcoder/types'
 
-function getFfmpegMissingInstruction(): string {
+/** Как поставить FFmpeg — под систему пользователя. */
+export function getFfmpegMissingInstruction(): string {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
   if (/mac|darwin/i.test(ua)) {
     return t('videoMsg.ffmpegMissingMac')

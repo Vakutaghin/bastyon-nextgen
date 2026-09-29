@@ -1993,8 +1993,6 @@ export default {
     storageLimitReached: 'Speicherlimit überschritten. Lösche alte Videos.',
     autoCleanupNotice: 'Speicher freigegeben: alte Videoentwürfe entfernt — {count}',
     transcodeNotSupported: 'Die Videoumwandlung ist nur in der Desktop-App verfügbar',
-    installFfmpegHint:
-      'Installiere FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'Keine Datei ausgewählt',
     metadataNotFound: 'Metadaten der Datei nicht gefunden',
     deleteFromDbFailed: 'Das Video konnte nicht aus der Datenbank gelöscht werden',

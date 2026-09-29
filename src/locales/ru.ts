@@ -1961,8 +1961,6 @@ export default {
     storageLimitReached: 'Превышен лимит хранилища. Удалите старые видео.',
     autoCleanupNotice: 'Освобождено место: удалено старых черновиков видео — {count}',
     transcodeNotSupported: 'Перекодирование видео есть только в приложении для компьютера',
-    installFfmpegHint:
-      'Установите FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'Файл не выбран',
     metadataNotFound: 'Метаданные файла не найдены',
     deleteFromDbFailed: 'Не удалось удалить видео из базы данных',

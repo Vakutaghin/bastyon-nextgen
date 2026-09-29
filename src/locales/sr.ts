@@ -1965,8 +1965,6 @@ export default {
     storageLimitReached: 'Прекорачено је ограничење складишта. Обришите старе видео снимке.',
     autoCleanupNotice: 'Ослобођен је простор: уклоњени стари нацрти видеа — {count}',
     transcodeNotSupported: 'Конверзија видеа је доступна само у десктоп апликацији',
-    installFfmpegHint:
-      'Инсталирајте FFmpeg: macOS — brew install ffmpeg; Linux — apt install ffmpeg / dnf install ffmpeg.',
     fileNotSelected: 'Датотека није изабрана',
     metadataNotFound: 'Метаподаци датотеке нису пронађени',
     deleteFromDbFailed: 'Видео није могао да се обрише из базе података',
