@@ -551,6 +551,7 @@ export default {
       semantic: {
         boost: 'Boost',
         stake: 'Stake',
+        donate: 'Pourboire',
       },
       loadMore: 'Charger plus',
     },

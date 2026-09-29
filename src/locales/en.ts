@@ -540,6 +540,7 @@ export default {
       semantic: {
         boost: 'Boost',
         stake: 'Stake',
+        donate: 'Tip',
       },
       loadMore: 'Load more',
     },

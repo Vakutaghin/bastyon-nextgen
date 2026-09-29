@@ -10,6 +10,7 @@ import type {
 } from './notifications-types'
 import { MES_TYPE_TITLE_KEYS } from './notifications-constants'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
+import { DONATE_MARKER, opReturnText } from '@/helpers/common/op-return'
 
 /** Первая непустая строка по списку ключей. */
 export function pickStr(
@@ -183,34 +184,6 @@ export interface IncomingCoins {
   reward: boolean
   /** Текст из OP_RETURN перевода: сообщение отправителя или служебная метка (`a:donate`). */
   message?: string
-}
-
-/** Метка чаевых в OP_RETURN перевода (старый клиент и donate-action). */
-export const DONATE_MARKER = 'a:donate'
-
-/**
- * Первый push из OP_RETURN (`6a <длина> <данные>`) как текст — как
- * `getOpreturn` старого клиента. Туда пишутся сообщение перевода и метки.
- */
-export function opReturnText(scriptHex: string): string | undefined {
-  if (!/^6a[0-9a-f]*$/i.test(scriptHex) || scriptHex.length < 4) return undefined
-  const bytes = scriptHex.match(/../g)!.map((h) => Number.parseInt(h, 16))
-  let i = 1
-  const op = bytes[i++]!
-  let length: number
-  if (op >= 1 && op <= 0x4b) length = op
-  else if (op === 0x4c) length = bytes[i++] ?? 0
-  else if (op === 0x4d) {
-    length = (bytes[i] ?? 0) | ((bytes[i + 1] ?? 0) << 8)
-    i += 2
-  } else return undefined
-  const data = bytes.slice(i, i + length)
-  if (data.length !== length) return undefined
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(data))
-  } catch {
-    return undefined
-  }
 }
 
 /**

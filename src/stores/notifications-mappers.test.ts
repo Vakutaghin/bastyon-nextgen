@@ -3,8 +3,8 @@ import {
   canonicalStoredMesType,
   mapMissedEventToNotification,
   MIN_TRANSFER_NOTIFY_PKOIN,
-  opReturnText,
 } from './notifications-mappers'
+import { opReturnText } from '@/helpers/common/op-return'
 
 // Покрывает live-маппер, который использует notifications-store
 // (не путать с дублёром в notifications-store-helpers.ts).

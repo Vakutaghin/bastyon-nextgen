@@ -538,6 +538,7 @@ export default {
       semantic: {
         boost: '부스트',
         stake: '스테이크',
+        donate: '후원',
       },
       loadMore: '더 불러오기',
     },

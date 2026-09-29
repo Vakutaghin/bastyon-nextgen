@@ -516,6 +516,7 @@ export default {
       semantic: {
         boost: '助推',
         stake: '质押',
+        donate: '打赏',
       },
       loadMore: '加载更多',
     },

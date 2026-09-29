@@ -79,4 +79,12 @@ describe('classifyWalletTx semantic', () => {
     const r = classifyWalletTx(tx([{ address: ME }], [{ value: 1, address: OTHER }], 4), mine)
     expect(r.semantic).toBeNull()
   })
+
+  it('чаевые — метка a:donate в OP_RETURN', () => {
+    const t = tx([{ address: OTHER }], [{ value: 5, address: ME }], 1)
+    const donate = Buffer.from('a:donate', 'utf8').toString('hex')
+    t.vout.unshift({ n: 0, value: 0, scriptPubKey: { addresses: [], hex: `6a08${donate}` } })
+    const r = classifyWalletTx(t, mine)
+    expect(r).toMatchObject({ direction: 'in', amount: 5, semantic: 'donate' })
+  })
 })

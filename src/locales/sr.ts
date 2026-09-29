@@ -540,6 +540,7 @@ export default {
       semantic: {
         boost: 'Буст',
         stake: 'Стејк',
+        donate: 'Напојница',
       },
       loadMore: 'Учитај још',
     },

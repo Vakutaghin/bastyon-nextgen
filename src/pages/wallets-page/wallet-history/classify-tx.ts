@@ -8,11 +8,15 @@
 // amount = сумма «релевантных» выходов (для in — на меня, для out — на других).
 
 import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions'
+import { DONATE_MARKER, txOpReturnText } from '@/helpers/common/op-return'
 
 export type WalletTxDirection = 'in' | 'out' | 'change'
 
-/** Семантика по on-chain типу tx (надёжно есть в ответе getaddresstransactions). */
-export type WalletTxSemantic = 'boost' | 'stake' | null
+/**
+ * Семантика: по on-chain типу tx (boost, stake) или по метке `a:donate` в
+ * OP_RETURN перевода (чаевые).
+ */
+export type WalletTxSemantic = 'boost' | 'stake' | 'donate' | null
 
 export interface ClassifiedWalletTx {
   direction: WalletTxDirection
@@ -20,8 +24,7 @@ export interface ClassifiedWalletTx {
   amount: number
   /** Адреса контрагентов (для in — отправители, для out — получатели). */
   counterparties: string[]
-  /** boost (type 307) / stake-coinstake (type 3) / null. Донат не детектится —
-   *  его маркер `a:donate` в message, которого нет в этом ответе. */
+  /** boost (type 307) / stake-coinstake (type 3) / чаевые (`a:donate` в OP_RETURN) / null. */
   semantic: WalletTxSemantic
 }
 
@@ -62,5 +65,6 @@ export function classifyWalletTx(tx: Transaction, mine: ReadonlySet<string>): Cl
     direction === 'in' ? vin.map((i) => i.address || '') : valueouts.map(voutAddress)
   const counterparties = Array.from(new Set(counterpartyAddrs.filter((a) => a && !mine.has(a))))
 
-  return { direction, amount, counterparties, semantic: semanticOf(tx.type) }
+  const semantic = semanticOf(tx.type) ?? (txOpReturnText(vout) === DONATE_MARKER ? 'donate' : null)
+  return { direction, amount, counterparties, semantic }
 }

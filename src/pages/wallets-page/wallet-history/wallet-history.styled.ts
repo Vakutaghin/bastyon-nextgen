@@ -15,6 +15,11 @@ export const SC_TxBadge = styled.span`
     background: var(--color-success-bg-tint);
     color: var(--color-success);
   }
+
+  &.donate {
+    background: var(--color-warning-bg);
+    color: var(--color-warning-text);
+  }
 `
 
 export const SC_History = styled.div`

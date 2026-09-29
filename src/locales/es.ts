@@ -552,6 +552,7 @@ export default {
       semantic: {
         boost: 'Impulso',
         stake: 'Stake',
+        donate: 'Propina',
       },
       loadMore: 'Cargar más',
     },

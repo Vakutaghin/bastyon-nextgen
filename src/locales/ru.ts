@@ -547,6 +547,7 @@ export default {
       semantic: {
         boost: 'Буст',
         stake: 'Стейк',
+        donate: 'Чаевые',
       },
       loadMore: 'Загрузить ещё',
     },
