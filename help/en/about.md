@@ -13,7 +13,7 @@ Bastyon is a social network built on the Pocketnet [blockchain](glossary.md#bloc
 - **The network has no owner.** It runs on [nodes](glossary.md#node) — computers of participants all over the world. There is no company that can shut the network down, sell your data or change the rules on its own.
 - **Nobody can take your account away.** Your account is a set of keys derived from your [recovery phrase](glossary.md#recovery-phrase), and only you have them. Signing up needs neither an email address nor a phone number.
 - **The rules are open.** Limits, reputation and moderation are written into the node code, which anyone can read. Reports and moderators' decisions also go through the blockchain and are visible to everyone. How it works is explained in [Moderation and rules](moderation.md).
-- **Authors get coins directly.** Readers send them tips, and part of the reward for every new block goes by lottery to authors of well-rated posts and comments.
+- **Authors get coins directly.** Readers send them tips in PKOIN — with no middleman taking a cut. How it works — see [Earnings](earnings.md).
 
 ## How it works
 

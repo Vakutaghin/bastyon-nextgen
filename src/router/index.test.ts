@@ -83,7 +83,7 @@ describe('router: сопоставление путей', () => {
 
   it('встраиваемый пост помечен как embed, кошелёк знает свою статью справки', () => {
     expect(router.resolve('/embed/post/x').meta.embed).toBe(true)
-    expect(router.resolve('/wallets').meta.helpTopic).toBe('how-to-buy-pkoin')
+    expect(router.resolve('/wallets').meta.helpTopic).toBe('wallet')
   })
 
   it.each([

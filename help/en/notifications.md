@@ -27,7 +27,7 @@ The three-dot button on a notification is **“Hide notification”**, and **“
 - reposts of your posts and boosts — when someone promotes your post for PKOIN;
 - new posts by people whose bell you turned on in their profile — see [Subscriptions](subscriptions.md);
 - incoming transfers from 0.05 PKOIN — **“PKOIN received”** with the amount and the sender’s message, if they wrote one, and tips — **“Tip received”**. The app does not show smaller transfers, so as not to let spam through;
-- rewards from the network lottery — **“Lottery reward”**, see [Earnings](earnings.md).
+- rewards from the network lottery — **“Lottery reward”**: nowadays moderators get them for their jury votes, see [Earnings](earnings.md).
 
 Unsubscriptions are not shown in the list.
 

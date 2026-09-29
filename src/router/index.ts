@@ -56,7 +56,7 @@ const router = createRouter({
       path: '/wallets',
       name: 'wallets',
       component: WalletsPage,
-      meta: { titleKey: 'routes.wallets', helpTopic: 'how-to-buy-pkoin' },
+      meta: { titleKey: 'routes.wallets', helpTopic: 'wallet' },
     },
     {
       path: '/my-videos',

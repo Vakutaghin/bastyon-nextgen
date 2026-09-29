@@ -36,7 +36,7 @@ A new account can rate 15 posts a day, a full one 200 — see [Account status an
 
 - **Place in the feed.** The node lifts well-rated posts higher, and in **“Best first”** mode the feed consists entirely of the posts with the highest ratings over the week — see [Feed](feed.md).
 - **The author’s reputation.** 4 and 5 stars raise it, 1 and 2 lower it slightly, 3 stars do not change it. Only ratings from experienced members count — details in [Reputation](reputation.md).
-- **A reward for the author.** In every block the network draws a reward among authors whose posts got 4 or 5 stars from experienced members. The more such ratings, the higher the chance — see [Earnings](earnings.md).
+- **Formerly, a reward for the author too.** Until September 2025 the network drew part of every block’s reward among authors of posts with 4 and 5 stars. Now the block lottery rewards only moderators for their jury votes — see [Earnings](earnings.md).
 
 Rate honestly: high for what you liked, low for what does not match its tags or is simply bad. That keeps ratings useful for everyone.
 
