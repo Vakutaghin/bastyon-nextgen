@@ -58,7 +58,7 @@ export async function buildTransferTransaction(
   params: BuildTransferTransactionParams
 ): Promise<BuiltTransferTransaction> {
   // Убеждаемся, что библиотека загружена (бросает при ошибке загрузки).
-  await loadPocketnetBitcoin()
+  const pocketnetBitcoinLib = await loadPocketnetBitcoin()
 
   const TransactionBuilder = getTransactionBuilder()
   const {
@@ -109,7 +109,19 @@ export async function buildTransferTransaction(
     txb.addInput(unspent.txid, unspent.vout, null, Buffer.from(unspent.scriptPubKey, 'hex'))
   })
 
-  // Выходы: сначала получатели, потом сдача
+  // Сообщение перевода — в OP_RETURN первым выходом, как у старого клиента
+  // (actions.js: `opreturn: message`). Только так его видит получатель и
+  // только так чаевые несут метку `a:donate` в самой транзакции: раньше
+  // сообщение уходило лишь в messageData для прокси и в блокчейн не попадало.
+  if (message) {
+    const embed = pocketnetBitcoinLib.payments.embed({ data: [Buffer.from(message, 'utf8')] })
+    if (!embed.output) {
+      throw new Error('Failed to create OP_RETURN output')
+    }
+    txb.addOutput(embed.output, 0)
+  }
+
+  // Выходы: потом получатели, потом сдача
   outputs.forEach((out) => {
     txb.addOutput(out.address, toSatoshis(out.amount))
   })

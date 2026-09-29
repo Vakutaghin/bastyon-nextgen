@@ -46,6 +46,8 @@ export function notificationTypeLabelKey(item: NotificationItem): string {
       return 'notif.typeBoost'
     case 'win':
       return 'notif.typeWin'
+    case 'donation':
+      return 'notif.typeDonation'
     case 'userInfo':
       return 'notif.typeUserInfo'
     default:

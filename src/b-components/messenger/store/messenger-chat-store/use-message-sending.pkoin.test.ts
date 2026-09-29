@@ -74,6 +74,10 @@ describe('sendPkoin — две фазы (V2)', () => {
       toAddress: 'PPARTNER',
       message: 'hi',
     })
+    // Текст чата в транзакцию не попадает: OP_RETURN публичен.
+    expect(tx.buildTransferTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ message: '' })
+    )
   })
 
   it('сообщение не доставлено → PkoinMessageDeliveryError с txid и payload; повтор шлёт только сообщение', async () => {

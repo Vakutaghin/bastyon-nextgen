@@ -3,6 +3,7 @@ import {
   canonicalStoredMesType,
   mapMissedEventToNotification,
   MIN_TRANSFER_NOTIFY_PKOIN,
+  opReturnText,
 } from './notifications-mappers'
 
 // Покрывает live-маппер, который использует notifications-store
@@ -262,6 +263,63 @@ describe('mapMissedEventToNotification — входящие монеты из с
       description: '+0.5 PKOIN',
     })
     expect(r!.from).toBeUndefined()
+  })
+})
+
+describe('чаевые и сообщение перевода — из OP_RETURN', () => {
+  const opReturn = (text: string) => {
+    const hex = Buffer.from(text, 'utf8').toString('hex')
+    return {
+      n: 0,
+      value: 0,
+      scriptPubKey: {
+        addresses: [''],
+        hex: `6a${(hex.length / 2).toString(16).padStart(2, '0')}${hex}`,
+      },
+    }
+  }
+  const pay = (address: string, value: number, n = 1) => ({
+    n,
+    value,
+    scriptPubKey: { addresses: [address], hex: '76a914' },
+  })
+
+  it('opReturnText читает первый push как текст', () => {
+    expect(opReturnText(opReturn('a:donate').scriptPubKey.hex)).toBe('a:donate')
+    expect(opReturnText('76a914abcdef')).toBeUndefined()
+  })
+
+  it('метка a:donate — это чаевые', () => {
+    const r = mapMissedEventToNotification(
+      {
+        txid: 'd1',
+        type: 1,
+        height: 130,
+        vin: [{ address: 'PX' }],
+        vout: [opReturn('a:donate'), pay('ME', 5)],
+      },
+      'ME'
+    )
+    expect(r).toMatchObject({
+      type: 'tip',
+      mesType: 'donation',
+      title: 'notif.titleDonation',
+      description: '+5 PKOIN',
+    })
+  })
+
+  it('сообщение обычного перевода видно в уведомлении', () => {
+    const r = mapMissedEventToNotification(
+      {
+        txid: 'm1',
+        type: 1,
+        height: 130,
+        vin: [{ address: 'PX' }],
+        vout: [opReturn('За кофе'), pay('ME', 1)],
+      },
+      'ME'
+    )
+    expect(r).toMatchObject({ mesType: 'transaction', description: '+1 PKOIN · За кофе' })
   })
 })
 

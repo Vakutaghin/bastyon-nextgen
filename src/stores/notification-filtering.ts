@@ -38,8 +38,8 @@ export interface NotificationFilterFlags {
  * Разрешено ли уведомление настройками.
  * `mesType` — уже приведённый к именам приложения (notifications-mappers
  * canonicalMesType): comment, answer, upvoteShare, upvoteComment, subscribe,
- * subscribePrivate, unsubscribe, postfromprivate, repost, boost, transaction
- * (тип `tip`) и win. Раньше здесь ждали имена, которых нода не присылает, и
+ * subscribePrivate, unsubscribe, postfromprivate, repost, boost, transaction и
+ * donation (тип `tip`) и win. Раньше здесь ждали имена, которых нода не присылает, и
  * тумблеры «Новый комментарий», «Рейтинг комментария», «Транзакция получена»
  * и «Coinstake выигрыш» ни на что не влияли.
  */

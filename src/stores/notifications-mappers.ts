@@ -125,6 +125,7 @@ const TYPE_MAP: Record<string, NotificationItem['type']> = {
   comment: 'comment',
   repost: 'repost',
   transaction: 'tip',
+  donation: 'tip',
 }
 
 /**
@@ -180,6 +181,36 @@ export interface IncomingCoins {
   from?: string
   /** Награда из лотереи блока, а не перевод. */
   reward: boolean
+  /** Текст из OP_RETURN перевода: сообщение отправителя или служебная метка (`a:donate`). */
+  message?: string
+}
+
+/** Метка чаевых в OP_RETURN перевода (старый клиент и donate-action). */
+export const DONATE_MARKER = 'a:donate'
+
+/**
+ * Первый push из OP_RETURN (`6a <длина> <данные>`) как текст — как
+ * `getOpreturn` старого клиента. Туда пишутся сообщение перевода и метки.
+ */
+export function opReturnText(scriptHex: string): string | undefined {
+  if (!/^6a[0-9a-f]*$/i.test(scriptHex) || scriptHex.length < 4) return undefined
+  const bytes = scriptHex.match(/../g)!.map((h) => Number.parseInt(h, 16))
+  let i = 1
+  const op = bytes[i++]!
+  let length: number
+  if (op >= 1 && op <= 0x4b) length = op
+  else if (op === 0x4c) length = bytes[i++] ?? 0
+  else if (op === 0x4d) {
+    length = (bytes[i] ?? 0) | ((bytes[i + 1] ?? 0) << 8)
+    i += 2
+  } else return undefined
+  const data = bytes.slice(i, i + length)
+  if (data.length !== length) return undefined
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(data))
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -195,11 +226,17 @@ export function incomingCoins(
 ): IncomingCoins | null {
   if (!myAddress || !Array.isArray(n.vout)) return null
   let amount = 0
-  for (const out of n.vout as Array<{ value?: unknown; scriptPubKey?: { addresses?: unknown } }>) {
+  let message: string | undefined
+  for (const out of n.vout as Array<{
+    value?: unknown
+    scriptPubKey?: { addresses?: unknown; hex?: unknown }
+  }>) {
     const addresses = out?.scriptPubKey?.addresses
     if (Array.isArray(addresses) && addresses.includes(myAddress)) {
       amount += Number(out.value) || 0
     }
+    const hex = out?.scriptPubKey?.hex
+    if (message === undefined && typeof hex === 'string') message = opReturnText(hex)
   }
   if (!(amount > 0)) return null
   const vin = Array.isArray(n.vin) ? (n.vin as Array<{ address?: unknown }>) : []
@@ -209,7 +246,7 @@ export function incomingCoins(
   if (first === myAddress) return null
   const reward = REWARD_TX_TYPES.has(Number(n.type))
   if (!reward && amount < MIN_TRANSFER_NOTIFY_PKOIN) return null
-  return { amount, from: first, reward }
+  return { amount, from: first, reward, message }
 }
 
 /** Сумма для описания: `+1.5 PKOIN` (от языка не зависит, поэтому хранится готовой). */
@@ -236,16 +273,24 @@ export function mapMissedEventToNotification(
   if (!hasEventMarker && typeof n.type === 'number') {
     const coins = incomingCoins(n, myAddress)
     if (!coins) return null
+    const donation = !coins.reward && coins.message === DONATE_MARKER
+    const mesType = coins.reward ? 'win' : donation ? 'donation' : 'transaction'
+    const amount = amountLabel(Math.round(coins.amount * 1e8))
+    // Сообщение отправителя показываем, служебные метки (`a:…`) — нет.
+    const note =
+      mesType === 'transaction' && coins.message && !coins.message.startsWith('a:')
+        ? ` · ${coins.message}`
+        : ''
     return {
       id: String(id),
       nblock: Number(n.height ?? n.nblock ?? 0) || 0,
       type: coins.reward ? 'other' : 'tip',
-      title: coins.reward ? 'notif.titleWin' : 'notif.titleTip',
-      description: amountLabel(Math.round(coins.amount * 1e8)),
+      title: MES_TYPE_TITLE_KEYS[mesType] ?? 'notif.titleTip',
+      description: amount + note,
       time: Number(n.nTime ?? n.time ?? 0) || Math.floor(Date.now() / 1000),
       seen: false,
       from: coins.reward ? undefined : coins.from,
-      mesType: coins.reward ? 'win' : 'transaction',
+      mesType,
     }
   }
 

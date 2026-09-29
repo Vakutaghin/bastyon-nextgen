@@ -222,6 +222,25 @@ describe('buildTransferTransaction', () => {
     })
   })
 
+  it('сообщение перевода уходит в OP_RETURN первым выходом (как у старого клиента)', async () => {
+    await buildTransferTransaction({ ...base(), message: 'a:donate' })
+    // Буфер — из полифила, поэтому сравниваем содержимое, а не класс.
+    const data = (_embed.mock.calls[0] as unknown as [{ data: Uint8Array[] }])[0].data
+    expect(data).toHaveLength(1)
+    expect(new TextDecoder().decode(data[0])).toBe('a:donate')
+    const outputs = lastTxb().calls.addOutput
+    // OP_RETURN с нулевой суммой, затем получатель и сдача
+    const embedOutput = (_embed.mock.results[0]!.value as { output: unknown }).output
+    expect(outputs[0]).toEqual([embedOutput, 0])
+    expect(outputs[1]).toEqual(['Pdest', 100000000])
+    expect(outputs).toHaveLength(3)
+  })
+
+  it('без сообщения OP_RETURN нет', async () => {
+    await buildTransferTransaction(base())
+    expect(_embed).not.toHaveBeenCalled()
+  })
+
   it('использует переданные sourceAddresses, если они есть', async () => {
     const res = await buildTransferTransaction({
       ...base(),

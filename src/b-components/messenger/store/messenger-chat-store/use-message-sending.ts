@@ -373,7 +373,10 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         keyPair,
         outputs: [{ address: toAddress, amount }],
         fee: DEFAULT_TX_FEE,
-        message: (messageText || '').trim(),
+        // Текст перевода в чате приходит собеседнику зашифрованным событием
+        // Matrix ниже. В транзакцию его не кладём: сообщение перевода пишется
+        // в OP_RETURN и стало бы публичным в блокчейне.
+        message: '',
         feemode: 'exclude',
       })
 

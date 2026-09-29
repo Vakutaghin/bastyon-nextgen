@@ -79,6 +79,7 @@
             :placeholder="t('wallet.messagePlaceholder')"
             maxlength="80"
           />
+          <SC_TransferFieldHint>{{ t('wallet.messagePublicHint') }}</SC_TransferFieldHint>
         </SC_TransferField>
         <SC_TransferField>
           <SC_TransferLabel for="wallet-transfer-feemode">{{
@@ -168,6 +169,7 @@ import {
   SC_TransferSubmit,
   SC_TransferError,
   SC_TransferFieldError,
+  SC_TransferFieldHint,
   SC_TransferSuccess,
   SC_TransferSearchingHint,
   SC_TransferLoginRequired,

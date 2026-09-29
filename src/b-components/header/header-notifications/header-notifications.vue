@@ -309,6 +309,8 @@ function getActionLine(item: NotificationItem): string {
       return t('header.actionBoosted')
     case 'transaction':
       return t('header.actionSentCoins')
+    case 'donation':
+      return t('header.actionSentTip')
     case 'win':
       return t('header.actionWin')
     case 'userInfo':

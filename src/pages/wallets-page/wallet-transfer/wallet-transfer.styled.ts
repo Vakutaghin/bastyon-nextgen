@@ -218,6 +218,13 @@ export const SC_TransferSearchingHint = styled.div`
   margin-top: 4px;
 `
 
+/** Пояснение под полем: сообщение перевода публично (пишется в OP_RETURN). */
+export const SC_TransferFieldHint = styled.div`
+  font-size: 12px;
+  color: var(--ui-text-muted);
+  margin-top: 4px;
+`
+
 export const SC_TransferLoginRequired = styled.div`
   color: var(--ui-text-muted);
   font-size: 14px;
