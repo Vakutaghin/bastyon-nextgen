@@ -141,7 +141,7 @@ const router = createRouter({
       path: '/compose',
       name: 'compose',
       component: ComposePage,
-      meta: { titleKey: 'routes.compose' },
+      meta: { titleKey: 'routes.compose', helpTopic: 'post-composer' },
     },
     // Справка: статьи из help/<язык>/*.md, `/help` — главная. Вход не нужен:
     // справка нужнее всего до регистрации. ДО catch-all /:userName.
