@@ -4663,8 +4663,6 @@ dependencies = [
 [[package]]
 name = "rns-crypto"
 version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e505ccfe10b76928ee794246aef765ee56230c6596861e2780aaac8962450ef"
 dependencies = [
  "aes",
  "cbc",

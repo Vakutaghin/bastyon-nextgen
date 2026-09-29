@@ -1,9 +1,9 @@
 # Крейты узла Reticulum: общий (десктоп и Android) и JNI-обёртка для Android.
-# vendor/rns-net — rns-net 0.5.10 с правками (vendor/rns-net/VENDORED.md): не
-# член workspace, подменяет версию с crates.io через [patch.crates-io] ниже.
+# vendor/rns-net, vendor/rns-crypto — с правками (VENDORED.md в каждом): не
+# члены workspace, подменяют версии с crates.io через [patch.crates-io] ниже.
 [workspace]
 members = ["crates/bastyon-rns", "crates/bastyon-rns-jni"]
-exclude = ["vendor/rns-net"]
+exclude = ["vendor/rns-net", "vendor/rns-crypto"]
 
 [package]
 name = "app"
@@ -123,7 +123,9 @@ opt-level = 2
 [profile.dev.package.rns-core]
 opt-level = 2
 
-# rns-net с правками Bastyon (файлы NomadNet, Windows) — та же версия 0.5.10,
-# на которой закреплён lxmf-rs.
+# rns-net и rns-crypto с правками Bastyon (ресурсы и keepalive как у Python,
+# файлы NomadNet, ключ из сети без паники) — те же версии, на которых
+# закреплён lxmf-rs.
 [patch.crates-io]
 rns-net = { path = "vendor/rns-net" }
+rns-crypto = { path = "vendor/rns-crypto" }

@@ -1,0 +1,77 @@
+use sha2::Digest;
+
+#[derive(Clone)]
+pub struct Sha256 {
+    inner: sha2::Sha256,
+}
+
+impl Sha256 {
+    pub fn new() -> Self {
+        Sha256 {
+            inner: sha2::Sha256::new(),
+        }
+    }
+
+    pub fn update(&mut self, data: &[u8]) {
+        self.inner.update(data);
+    }
+
+    pub fn digest(&self) -> [u8; 32] {
+        self.inner.clone().finalize().into()
+    }
+}
+
+impl Default for Sha256 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub fn sha256(data: &[u8]) -> [u8; 32] {
+    sha2::Sha256::digest(data).into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sha256_empty() {
+        let expected = [
+            0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14, 0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f,
+            0xb9, 0x24, 0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b,
+            0x78, 0x52, 0xb8, 0x55,
+        ];
+        assert_eq!(sha256(b""), expected);
+    }
+
+    #[test]
+    fn test_sha256_abc() {
+        let expected = [
+            0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae,
+            0x22, 0x23, 0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61,
+            0xf2, 0x00, 0x15, 0xad,
+        ];
+        assert_eq!(sha256(b"abc"), expected);
+    }
+
+    #[test]
+    fn test_sha256_long() {
+        let data = [b'a'; 1000];
+        let result = sha256(&data);
+        let expected = [
+            0x41, 0xed, 0xec, 0xe4, 0x2d, 0x63, 0xe8, 0xd9, 0xbf, 0x51, 0x5a, 0x9b, 0xa6, 0x93,
+            0x2e, 0x1c, 0x20, 0xcb, 0xc9, 0xf5, 0xa5, 0xd1, 0x34, 0x64, 0x5a, 0xdb, 0x5d, 0xb1,
+            0xb9, 0x73, 0x7e, 0xa3,
+        ];
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_sha256_incremental() {
+        let mut hasher = Sha256::new();
+        hasher.update(b"ab");
+        hasher.update(b"c");
+        assert_eq!(hasher.digest(), sha256(b"abc"));
+    }
+}

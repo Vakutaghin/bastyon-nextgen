@@ -1,0 +1,38 @@
+# rns-crypto 0.1.8 с crates.io с правкой Bastyon — что и зачем, в VENDORED.md.
+# Версия та же (lxmf-rs закреплён на ней), подмена — через [patch.crates-io]
+# в src-tauri/Cargo.toml.
+
+[package]
+edition = "2021"
+name = "rns-crypto"
+version = "0.1.8"
+authors = ["rns-rs contributors"]
+description = "Cryptographic primitives for the Reticulum Network Stack"
+license-file = "LICENSE"
+repository = "https://github.com/lelloman/rns-rs"
+publish = false
+
+[features]
+default = ["std"]
+std = []
+
+[lib]
+name = "rns_crypto"
+path = "src/lib.rs"
+
+[dependencies]
+aes = { version = "0.8", default-features = false }
+cbc = { version = "0.1", features = ["alloc"], default-features = false }
+ed25519-dalek = { version = "2", default-features = false }
+hmac = { version = "0.12", default-features = false }
+sha2 = { version = "0.10", default-features = false }
+x25519-dalek = { version = "2", features = ["static_secrets"], default-features = false }
+
+[dev-dependencies]
+serde_json = "1"
+
+[lints.rust]
+unused = "allow"
+
+[lints.clippy]
+all = "allow"
