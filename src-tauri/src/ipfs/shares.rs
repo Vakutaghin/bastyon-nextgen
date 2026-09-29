@@ -142,7 +142,9 @@ pub fn take_all(dir: &Path, account: &str) -> Result<Vec<ShareEntry>, String> {
 }
 
 /// Статусы удалённого pin из `ipfs pin remote ls --enc=json`: по объекту на
-/// строку, `{"Status":"pinned","Cid":"…","Name":"…"}`.
+/// строку, `{"Status":"pinned","Cid":"…","Name":"…"}`. У CID может быть
+/// несколько запросов — например, повтор после неудачи; тогда берём лучший,
+/// иначе старый `failed` мог перекрыть новую сохранённую копию.
 pub fn parse_remote_ls(out: &str) -> HashMap<String, String> {
     #[derive(Deserialize)]
     struct Line {
@@ -151,10 +153,27 @@ pub fn parse_remote_ls(out: &str) -> HashMap<String, String> {
         #[serde(rename = "Cid")]
         cid: String,
     }
-    out.lines()
+    fn rank(status: &str) -> u8 {
+        match status {
+            "pinned" => 3,
+            "pinning" => 2,
+            "queued" => 1,
+            _ => 0,
+        }
+    }
+    let mut statuses: HashMap<String, String> = HashMap::new();
+    for line in out
+        .lines()
         .filter_map(|line| serde_json::from_str::<Line>(line.trim()).ok())
-        .map(|line| (line.cid, line.status))
-        .collect()
+    {
+        let better = statuses
+            .get(&line.cid)
+            .is_none_or(|current| rank(&line.status) > rank(current));
+        if better {
+            statuses.insert(line.cid, line.status);
+        }
+    }
+    statuses
 }
 
 /// Перестать раздавать: снять pin у себя и на сервисе, если CID не раздаёт
@@ -408,6 +427,22 @@ mod tests {
         assert_eq!(statuses.get("bafyone").map(String::as_str), Some("pinned"));
         assert_eq!(statuses.get("bafytwo").map(String::as_str), Some("pinning"));
         assert_eq!(statuses.len(), 2);
+    }
+
+    #[test]
+    fn a_retried_pin_shows_its_best_status() {
+        for out in [
+            "{\"Status\":\"failed\",\"Cid\":\"bafyone\"}\n{\"Status\":\"pinned\",\"Cid\":\"bafyone\"}\n",
+            "{\"Status\":\"pinned\",\"Cid\":\"bafyone\"}\n{\"Status\":\"failed\",\"Cid\":\"bafyone\"}\n",
+        ] {
+            let statuses = parse_remote_ls(out);
+            assert_eq!(statuses.get("bafyone").map(String::as_str), Some("pinned"));
+        }
+        let queued = "{\"Status\":\"failed\",\"Cid\":\"bafyone\"}\n{\"Status\":\"queued\",\"Cid\":\"bafyone\"}\n";
+        assert_eq!(
+            parse_remote_ls(queued).get("bafyone").map(String::as_str),
+            Some("queued")
+        );
     }
 
     /// С настоящим Kubo (в PATH или Homebrew), во временном repo без демона:

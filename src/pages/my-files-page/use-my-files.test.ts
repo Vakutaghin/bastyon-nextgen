@@ -128,6 +128,25 @@ describe('useMyFiles', () => {
     expect(h.store.unshare).toHaveBeenCalledWith(ALICE, 'bafydir')
   })
 
+  it('на сервис можно отправить новый файл и тот, что сервис не сохранил', async () => {
+    const store = h.store as ReturnType<typeof makeStore>
+    mountPage()
+    await flush()
+    expect(files.canSendToService(file)).toBe(false)
+
+    store.pinServiceConfigured = true
+    expect(files.canSendToService(file)).toBe(true)
+    for (const [status, can] of [
+      ['queued', false],
+      ['pinning', false],
+      ['pinned', false],
+      ['failed', true],
+    ] as const) {
+      store.remoteStatus = { bafydir: status }
+      expect(files.canSendToService(file)).toBe(can)
+    }
+  })
+
   it('пока сервис копирует файлы, статусы опрашиваются; дальше — нет', async () => {
     vi.useFakeTimers()
     const store = h.store as ReturnType<typeof makeStore>

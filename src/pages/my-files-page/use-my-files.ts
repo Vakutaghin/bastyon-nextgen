@@ -24,6 +24,8 @@ export interface MyFiles {
   remoteConfigured: ComputedRef<boolean>
   sharing: Ref<boolean>
   remoteStatus: (file: IpfsShare) => RemotePinStatus | null
+  /** Файла на сервисе нет или сервис его не сохранил — можно отправить (снова). */
+  canSendToService: (file: IpfsShare) => boolean
   share: (kind: ShareKind) => Promise<void>
   copyLink: (file: IpfsShare) => Promise<void>
   confirmUnshare: (file: IpfsShare) => void
@@ -129,6 +131,10 @@ export function useMyFiles(): MyFiles {
     remoteConfigured,
     sharing,
     remoteStatus: (file) => ipfs.remoteStatus[file.cid] ?? null,
+    // Раньше кнопка пропадала и после «сервис не сохранил файл» — повторить
+    // было нечем, хотя чаще всего сервис просто не застал компьютер в сети.
+    canSendToService: (file) =>
+      ipfs.pinServiceConfigured && [undefined, 'failed'].includes(ipfs.remoteStatus[file.cid]),
     share,
     copyLink,
     confirmUnshare,

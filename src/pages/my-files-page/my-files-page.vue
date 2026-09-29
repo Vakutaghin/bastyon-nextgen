@@ -55,7 +55,7 @@
             </SC_FilesMain>
             <SC_FilesRowActions>
               <Button
-                v-if="remoteConfigured && !files.remoteStatus(file)"
+                v-if="files.canSendToService(file)"
                 size="small"
                 @click="files.sendToService(file)"
               >
