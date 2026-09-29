@@ -2,7 +2,8 @@
 #
 # Триггер:
 #   - автоматически на push тега вида `v*` (например, v0.1.0)
-#   - вручную через Actions → Release → Run workflow с указанием существующего тега
+#   - вручную через Actions → Release → Run workflow с указанием существующего тега;
+#     с android_only пересобирается только APK, десктопные файлы релиза остаются
 #
 # Платформы:
 #   - desktop (Tauri): macOS arm64, macOS x64, Linux (Ubuntu 22.04), Windows
@@ -28,6 +29,11 @@ on:
         description: 'Существующий тег для сборки (например, v0.1.0)'
         required: true
         type: string
+      android_only:
+        description: 'Только Android: десктопные файлы релиза не пересобирать'
+        required: false
+        type: boolean
+        default: false
 
 # При обоих триггерах нужен один способ узнать целевой тег.
 # При push -> github.ref_name (e.g. v0.1.0). При dispatch -> inputs.tag.
@@ -62,6 +68,7 @@ jobs:
 
   desktop:
     needs: create-release
+    if: ${{ !inputs.android_only }}
     permissions:
       contents: write
     strategy:
@@ -284,10 +291,13 @@ jobs:
           BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
           CERTS="$("$BUILD_TOOLS/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk)"
           echo "$CERTS"
-          CERT="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$CERTS")"
+          # Строки apksigner бывают «Signer #1 certificate …» и «V2 Signer:
+          # certificate …» (так печатает build-tools 36): берём отпечатки из всех,
+          # и все они должны совпасть с записанным — лишний подписант тоже провал.
+          CERT="$(sed -n -E 's/^.*certificate SHA-256 digest: ([0-9a-f]{64})$/\1/p' <<<"$CERTS" | sort -u)"
           EXPECTED="$(tr -d '[:space:]' < app/release-cert.sha256)"
           if [ "$CERT" != "$EXPECTED" ]; then
-            echo "::error::APK подписан не тем ключом: SHA-256 $CERT, а в android/app/release-cert.sha256 записан $EXPECTED"
+            echo "::error::APK подписан не тем ключом: SHA-256 ${CERT:-не найден}, а в android/app/release-cert.sha256 записан $EXPECTED"
             exit 1
           fi
 
