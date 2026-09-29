@@ -28,6 +28,9 @@ importers:
 
   .:
     dependencies:
+      '@bufbuild/protobuf':
+        specifier: ^2.15.0
+        version: 2.15.0
       '@capacitor/android':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.0.1)
@@ -97,6 +100,9 @@ importers:
       '@lucide/vue':
         specifier: ^1.48.0
         version: 1.48.0(vue@3.5.26(typescript@5.9.3))
+      '@meshtastic/protobufs':
+        specifier: 2.8.0
+        version: 2.8.0
       '@tanstack/vue-query':
         specifier: ^5.92.9
         version: 5.92.9(vue@3.5.26(typescript@5.9.3))
@@ -1034,6 +1040,9 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
+  '@bufbuild/protobuf@2.15.0':
+    resolution: {integrity: sha512-DAheWUkVr/SJTWCc+lg9dhY0eN4SaWlf4+bG1KzHeXbnqt0AfB/NX0Z+VunGlM1ki1B4zVvye27MpKh/svySUA==}
+
   '@cacheable/memory@2.0.8':
     resolution: {integrity: sha512-FvEb29x5wVwu/Kf93IWwsOOEuhHh6dYCJF3vcKLzXc0KXIW181AOzv6ceT4ZpBHDvAfG60eqb+ekmrnLHIy+jw==}
 
@@ -1539,6 +1548,9 @@ packages:
   '@matrix-org/matrix-sdk-crypto-wasm@17.1.0':
     resolution: {integrity: sha512-yKPqBvKlHSqkt/UJh+Z+zLKQP8bd19OxokXYXh3VkKbW0+C44nPHsidSwd3SH+RxT+Ck2PDRwVcVXEnUft+/2g==}
     engines: {node: '>= 18'}
+
+  '@meshtastic/protobufs@2.8.0':
+    resolution: {integrity: sha512-NzN5J/Uckas3J4j16ttFpSzZV9yuU14/sq01h3l38PnLEU2WST4azSFQ6Mf9WSi31udftLbrpR4O0i+gJNOn4g==}
 
   '@noble/hashes@1.8.0':
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
@@ -6336,6 +6348,8 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
+  '@bufbuild/protobuf@2.15.0': {}
+
   '@cacheable/memory@2.0.8':
     dependencies:
       '@cacheable/utils': 2.4.1
@@ -6808,6 +6822,10 @@ snapshots:
       vue: 3.5.26(typescript@5.9.3)
 
   '@matrix-org/matrix-sdk-crypto-wasm@17.1.0': {}
+
+  '@meshtastic/protobufs@2.8.0':
+    dependencies:
+      '@bufbuild/protobuf': 2.15.0
 
   '@noble/hashes@1.8.0': {}
 
