@@ -99,10 +99,16 @@ describe('meshtastic connection', () => {
       alice.lora.region = 0
       const conn = await connected()
       expect(conn.regionUnset).toBe(true)
+      // Переходы статуса: переподключение проходит быстрее опроса waitFor.
+      const seen: string[] = []
+      conn.$subscribe(() => {
+        if (seen[seen.length - 1] !== conn.status) seen.push(conn.status)
+      })
       expect(await conn.setRadio({ region: 9 })).toBe(true)
       expect(conn.rebooting).toBe(true)
-      await vi.waitFor(() => expect(conn.status).toBe('reconnecting'))
+      await vi.waitFor(() => expect(seen).toContain('reconnecting'))
       await vi.waitFor(() => expect(conn.status).toBe('connected'))
+      await vi.waitFor(() => expect(conn.regionUnset).toBe(false))
       expect(conn.regionUnset).toBe(false)
       expect(conn.rebooting).toBe(false)
       expect(alice.reboots).toBe(1)
