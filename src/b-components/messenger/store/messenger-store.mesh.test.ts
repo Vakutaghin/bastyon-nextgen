@@ -37,7 +37,8 @@ const h = vi.hoisted(() => {
   const profiles = { userProfiles: {}, fetchProfiles: vi.fn(async () => {}), reset: vi.fn() }
   const mesh = null as unknown as MeshFake
   const connection = { reset: vi.fn(async () => {}) }
-  return { matrix, auth, chat, profiles, mesh, connection }
+  const meshtastic = { reset: vi.fn(async () => {}) }
+  return { matrix, auth, chat, profiles, mesh, connection, meshtastic }
 })
 
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
@@ -57,6 +58,9 @@ vi.mock('./messenger-store/use-dialog-mapping', () => ({
 vi.mock('@/mesh/store/mesh-chat-store', () => ({ useMeshChatStore: () => h.mesh }))
 vi.mock('@/mesh/store/mesh-connection-store', () => ({
   useMeshConnectionStore: () => h.connection,
+}))
+vi.mock('@/mesh/store/meshtastic-connection-store', () => ({
+  useMeshtasticConnectionStore: () => h.meshtastic,
 }))
 
 import { useMessengerStore } from './messenger-store'
@@ -170,10 +174,11 @@ describe('mesh chats in the messenger', () => {
     expect(h.mesh.ensureLoaded).toHaveBeenCalled()
   })
 
-  it('disconnects the radio and wipes mesh chats on sign-out', async () => {
+  it('disconnects both radios and wipes mesh chats on sign-out', async () => {
     const store = useMessengerStore()
     store.logout({ purge: true })
     expect(h.connection.reset).toHaveBeenCalled()
+    expect(h.meshtastic.reset).toHaveBeenCalled()
     expect(h.mesh.reset).toHaveBeenCalledWith({ purge: true })
     await store.purgeAccountData('PBob')
     expect(h.mesh.purgeAccount).toHaveBeenCalledWith('PBob')

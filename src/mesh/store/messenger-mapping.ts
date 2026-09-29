@@ -3,8 +3,18 @@
  * `Message`, что у Matrix, с пометкой сети.
  */
 
-import type { Dialog, Message } from '@/b-components/messenger/types'
+import type {
+  ChatTransport,
+  Dialog,
+  Message,
+  MessageReaction,
+} from '@/b-components/messenger/types'
 import type { MeshDialogRecord, MeshMessageRecord } from '@/db/types'
+import { parseMeshDialogId } from '../ids'
+
+function transportOf(dialogId: string): ChatTransport | undefined {
+  return parseMeshDialogId(dialogId)?.network
+}
 
 export function meshMessageToMessenger(m: MeshMessageRecord): Message {
   return {
@@ -17,8 +27,43 @@ export function meshMessageToMessenger(m: MeshMessageRecord): Message {
     timestamp: m.ts,
     read: true,
     status: m.status === 'received' ? 'sent' : m.status,
-    transport: m.dialogId.startsWith('mesh:') ? 'meshcore' : undefined,
+    transport: transportOf(m.dialogId),
+    meshReplyable: m.packetId !== undefined ? true : undefined,
   }
+}
+
+/**
+ * Сообщения диалога для ленты. Реакции Meshtastic (эмодзи со ссылкой на
+ * пакет) собираются на своих сообщениях, ответы ссылаются на оригинал. Реакция
+ * на сообщение, которого здесь нет, показывается обычным сообщением.
+ */
+export function meshMessagesToMessenger(list: MeshMessageRecord[]): Message[] {
+  const byPacket = new Map<number, string>()
+  for (const m of list) if (m.packetId !== undefined) byPacket.set(m.packetId, m.id)
+
+  const reactions = new Map<string, Map<string, MessageReaction>>()
+  const out: Message[] = []
+  for (const m of list) {
+    const target = m.reactionTo !== undefined ? byPacket.get(m.reactionTo) : undefined
+    if (target) {
+      const forTarget = reactions.get(target) ?? new Map<string, MessageReaction>()
+      const r = forTarget.get(m.text) ?? { key: m.text, count: 0 }
+      r.count++
+      if (m.mine) r.my = true
+      forTarget.set(m.text, r)
+      reactions.set(target, forTarget)
+      continue
+    }
+    const msg = meshMessageToMessenger(m)
+    const replyTo = m.replyToPacket !== undefined ? byPacket.get(m.replyToPacket) : undefined
+    if (replyTo) msg.replyTo = { id: replyTo }
+    out.push(msg)
+  }
+  if (reactions.size === 0) return out
+  return out.map((msg) => {
+    const r = reactions.get(msg.id)
+    return r ? { ...msg, reactions: [...r.values()] } : msg
+  })
 }
 
 export function meshDialogToMessenger(d: MeshDialogRecord): Dialog {

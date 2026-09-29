@@ -16,6 +16,7 @@ import { matrixService } from '../services/matrix-service'
 import { isMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
+import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
 import { mergeDialogs } from '@/mesh/store/messenger-mapping'
 
 import { getAddressFromMatrixId, resolveMatrixHost } from '../helpers'
@@ -532,6 +533,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     // Радио отключается, переписка аккаунта уходит из памяти; при выходе —
     // и с диска, как расшифровки Matrix.
     void useMeshConnectionStore().reset()
+    void useMeshtasticConnectionStore().reset()
     meshChat.reset({ purge: opts.purge })
     if (opts.purge && userId) {
       matrixService.purgeLocalData({ userId }).catch((e: unknown) => {

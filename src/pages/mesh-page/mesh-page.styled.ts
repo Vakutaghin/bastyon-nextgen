@@ -301,3 +301,50 @@ export const SC_MeshLinkButton = styled.button`
     text-decoration: underline;
   }
 `
+
+/** Переключатель сетей (Meshtastic, MeshCore) над содержимым страницы. */
+export const SC_MeshNetworks = styled.div`
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-elevated);
+  align-self: flex-start;
+  max-width: 100%;
+  overflow-x: auto;
+`
+
+export const SC_MeshNetwork = styled('button', { active: Boolean })`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  border: none;
+  border-radius: var(--ui-radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  color: ${(p) => (p.active ? 'var(--ui-text-highlighted)' : 'var(--ui-text-muted)')};
+  background: ${(p) => (p.active ? 'var(--ui-bg)' : 'transparent')};
+  box-shadow: ${(p) => (p.active ? '0 1px 2px rgb(var(--color-black-rgb) / 10%)' : 'none')};
+  transition: background-color var(--transition-fast);
+`
+
+export const SC_MeshSelect = styled.select`
+  ${nuxtField}
+`
+
+/** Короткая метка у узла или канала («нет ключа», «избранный»). */
+export const SC_MeshBadge = styled.span`
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: var(--ui-radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+  vertical-align: middle;
+  color: var(--ui-text-muted);
+  background: var(--ui-bg-elevated);
+`

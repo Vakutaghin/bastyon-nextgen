@@ -109,7 +109,7 @@
           {{ t('mesh.connect.connect') }}
         </Button>
       </SC_MeshForm>
-      <SC_MeshNote>{{ t('mesh.connect.hostHint') }}</SC_MeshNote>
+      <SC_MeshNote>{{ t('mesh.connect.hostHint', { port: defaultPort }) }}</SC_MeshNote>
       <SC_MeshWarn>{{ t('mesh.connect.lanWarning') }}</SC_MeshWarn>
     </template>
 
@@ -122,6 +122,7 @@ import { computed, onMounted, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from 'ant-design-vue'
 import { BluetoothIcon, UsbIcon, WifiIcon } from '@/components/icons'
+import type { MeshNetwork } from '@/mesh/ids'
 import { portTitle, useMeshConnect, type TransportTab } from './use-mesh-page'
 import {
   SC_MeshCard,
@@ -147,6 +148,8 @@ import {
   SC_MeshWarn,
 } from './mesh-page.styled'
 
+const props = defineProps<{ network: MeshNetwork }>()
+
 const { t } = useI18n()
 const {
   status,
@@ -169,9 +172,10 @@ const {
   connectSerial,
   connectBle,
   connectTcp,
+  defaultPort,
   targetLabel,
   connectionError,
-} = useMeshConnect()
+} = useMeshConnect(props.network)
 
 const tabs = computed<Array<{ id: TransportTab; label: string; icon: Component }>>(() => [
   { id: 'serial', label: t('mesh.connect.usb'), icon: UsbIcon },

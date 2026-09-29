@@ -1563,8 +1563,17 @@ export default {
   },
   mesh: {
     title: 'Reti mesh',
-    lead: 'Chatta via radio LoRa, senza internet né rete mobile. Collega una radio con MeshCore (firmware companion) tramite USB, Bluetooth o Wi-Fi: le sue chat compaiono nel messenger accanto alle solite.',
+    lead: 'Chatta via radio LoRa, senza internet né rete mobile. Collega una radio Meshtastic o MeshCore tramite USB, Bluetooth o Wi-Fi: le sue chat compaiono nel messenger accanto a quelle solite.',
     desktopOnly: "La radio si collega nell'app per computer (macOS, Windows, Linux).",
+    networks: {
+      label: 'Rete',
+      meshtastic: 'Meshtastic',
+      meshcore: 'MeshCore',
+      meshtasticLead:
+        'La rete mesh LoRa più diffusa. I nodi inoltrano i messaggi gli uni degli altri; i messaggi diretti sono cifrati con le chiavi dei nodi.',
+      meshcoreLead:
+        'Una rete che inoltra tramite ripetitori: i messaggi seguono un percorso trovato invece di andare a tutti. Serve il firmware companion.',
+    },
     status: {
       idle: 'Non collegato',
       connecting: 'Collegamento…',
@@ -1593,7 +1602,7 @@ export default {
       host: 'Indirizzo della radio',
       port: 'Porta',
       hostHint:
-        'Indirizzo IP della radio nella rete locale o il suo nome .local. MeshCore usa la porta 5000 per impostazione predefinita.',
+        'Indirizzo IP della radio nella rete locale o il suo nome .local. Porta predefinita: {port}.',
       lanWarning:
         'Via Wi-Fi app e radio comunicano senza cifratura né password: su una rete non tua meglio USB o Bluetooth.',
       lastDevice: 'Ultima radio: {name}',
@@ -1674,6 +1683,95 @@ export default {
       add: 'Aggiungi',
       privateCreated: 'Canale creato. Copia la chiave e consegnala ai membri.',
     },
+    mt: {
+      device: {
+        id: 'Numero del nodo',
+        noKey: 'nessuna: la radio non ha ancora una regione o ha un firmware precedente alla 2.5',
+        radioSettings: 'Radio',
+        region: 'Regione',
+        preset: 'Preset',
+        apply: 'Applica',
+        applied: 'Impostazioni inviate. La radio si riavvierà e si ricollegherà.',
+        presetHint:
+          'La regione fissa le frequenze consentite nel tuo paese. Il preset fissa velocità e portata: tutti quelli con cui vuoi parlare devono usare lo stesso, di solito LongFast.',
+        longName: 'Nome',
+        shortName: 'Breve',
+        nameHint:
+          'Gli altri nodi vedono il nome; quello breve ha fino a 4 caratteri e appare sugli schermi delle radio. Dopo il cambio di nome la radio si riavvia.',
+        powered: 'alimentazione esterna',
+        rebooting: 'La radio si sta riavviando…',
+        notice: 'La radio segnala: {text}',
+        dismiss: 'Nascondi',
+      },
+      region: {
+        lead: 'Nessuna regione scelta: la radio non trasmette né riceve. Scegli il paese in cui ti trovi: definisce frequenze e potenza consentite.',
+        choose: 'Scegli una regione',
+        unset: 'nessuna regione',
+        names: {
+          RU: 'Russia (868 MHz)',
+          EU_868: 'Europa (868 MHz)',
+          EU_433: 'Europa (433 MHz)',
+          US: 'USA (915 MHz)',
+          UA_433: 'Ucraina (433 MHz)',
+          UA_868: 'Ucraina (868 MHz)',
+          KZ_433: 'Kazakistan (433 MHz)',
+          KZ_863: 'Kazakistan (863 MHz)',
+          CN: 'Cina (470 MHz)',
+          JP: 'Giappone (920 MHz)',
+          ANZ: 'Australia e Nuova Zelanda (915 MHz)',
+          KR: 'Corea (920 MHz)',
+          TW: 'Taiwan (920 MHz)',
+          IN: 'India (865 MHz)',
+          NZ_865: 'Nuova Zelanda (865 MHz)',
+          TH: 'Thailandia (920 MHz)',
+          MY_433: 'Malesia (433 MHz)',
+          MY_919: 'Malesia (919 MHz)',
+          SG_923: 'Singapore (923 MHz)',
+          BR_902: 'Brasile (902 MHz)',
+          LORA_24: '2,4 GHz, tutto il mondo',
+        },
+      },
+      nodes: {
+        title: 'Nodi',
+        empty:
+          'Ancora nessun nodo. La radio conosce i vicini quando si annunciano (ogni poche ore) o scrivono in un canale.',
+        search: 'Cerca per nome o numero',
+        favorite: 'preferito',
+        noKey: 'nessuna chiave',
+        noKeyHint:
+          "I messaggi diretti sono cifrati con la chiave del nodo. Finché non è nota, la radio non invierà un messaggio del genere; l'app chiede la chiave da sola.",
+        requestKey: 'Chiedi la chiave',
+        keyRequested:
+          'Richiesta inviata. Un nodo risponde a queste richieste al massimo una volta ogni 12 ore, quindi la chiave può arrivare più tardi, con il suo prossimo annuncio.',
+        mqtt: 'via internet (MQTT)',
+        battery: 'batteria {level}%',
+        remove: 'Dimentica',
+        removeConfirm: 'Dimenticare il nodo «{name}»?',
+        removeHint:
+          "La radio lo toglie dal suo database. Quando il nodo si annuncerà di nuovo, tornerà nell'elenco. La chat nell'app resta.",
+        more: 'Mostra tutti ({n})',
+      },
+      channels: {
+        primary: 'principale',
+        kind: {
+          public: 'aperto: tutti conoscono la chiave',
+          private: 'privato: chiave condivisa',
+          unencrypted: 'non cifrato: chiunque può leggere',
+        },
+        share: 'Link',
+        linkCopied:
+          'Link del canale copiato. Permette di leggere e scrivere nel canale: condividilo solo con i membri.',
+        privateHint:
+          'Viene creata una chiave casuale. Invita i membri con il link del canale; anche le app ufficiali di Meshtastic lo capiscono.',
+        namePlaceholder: 'fino a 11 byte',
+        create: 'Crea',
+        created: 'Canale creato. Copia il link e mandalo ai membri.',
+        addLink: 'Aggiungi da link',
+        linkHint: "Un link meshtastic.org/e/#… dall'app Meshtastic o da un membro del canale.",
+        linkAdded: '{n} canale aggiunto | {n} canali aggiunti',
+        linkNothing: 'Questi canali sono già sulla radio.',
+      },
+    },
     chat: {
       connect: 'Collega',
       errors: {
@@ -1682,14 +1780,13 @@ export default {
         empty: 'Messaggio vuoto',
         no_dialog: 'Chat non trovata',
       },
-      via: 'MeshCore',
       deviceEncryption: "cifrato nella radio, non nell'app",
       openChannel: 'canale pubblico — tutti possono leggere',
       privateChannel: 'canale con chiave condivisa',
       noRadio: 'Radio non collegata',
       otherRadio: 'È collegata un’altra radio',
       emptyHint:
-        'Ancora nessun messaggio. Il testo viaggia via radio: fino a 160 byte alla volta (lettere latine 1 byte, cirilliche 2). Un messaggio lungo parte in più pezzi.',
+        'Ancora nessun messaggio. Il testo viaggia via radio: fino a {limit} byte alla volta (lettere latine 1 byte, cirilliche 2). Un messaggio lungo parte in più pezzi.',
       placeholder: 'Messaggio via radio',
       bytes: '{used} / {limit} byte',
       parts: '{n} parte | {n} parti',
@@ -1698,6 +1795,9 @@ export default {
       sent: 'Trasmesso',
       delivered: 'La radio del destinatario ha confermato la ricezione',
       unknownSender: 'Sconosciuto',
+      pkiEncryption: "cifrato con le chiavi dei nodi nella radio, non nell'app",
+      relayed: 'Sentito e inoltrato dalla rete',
+      regionUnset: 'La radio non ha una regione scelta',
     },
     errors: {
       generic: 'Non è riuscito ({code}).',
@@ -1720,12 +1820,12 @@ export default {
         'Collegamento Bluetooth non riuscito. Forse la radio è già collegata a un telefono.',
       ble_io_failed: 'Trasferimento Bluetooth non riuscito.',
       characteristic_not_found:
-        'Questa non è una radio MeshCore: al dispositivo manca il servizio giusto.',
+        "Al dispositivo manca il servizio necessario: usa il firmware di un'altra rete.",
       scan_failed: 'Ricerca Bluetooth non riuscita.',
       write_failed: 'Impossibile inviare dati alla radio.',
       link_not_found: 'Il collegamento con la radio è chiuso.',
       no_answer:
-        'La radio non ha risposto. Verifica che usi il firmware MeshCore companion (USB, Bluetooth o Wi-Fi).',
+        'La radio non ha risposto. Verifica che il suo firmware corrisponda alla rete scelta (MeshCore richiede il firmware companion).',
       device_lost: 'Collegamento con la radio perso.',
       unsupported: 'Qui non si può collegare una radio.',
       too_many_links: 'Troppi collegamenti. Scollega un’altra radio.',
@@ -1738,6 +1838,19 @@ export default {
       closed: 'Il collegamento con la radio è chiuso.',
       not_in_contacts: 'Il nodo non è nei contatti della radio.',
       radio_error: 'Errore radio.',
+      no_key:
+        'La chiave del destinatario non è ancora nota, e senza di essa la radio non invierà un messaggio diretto. Chiedi la chiave nella pagina Reti mesh o aspetta che il nodo si annunci.',
+      no_ack: 'Nessuna conferma: il destinatario è fuori portata o spento.',
+      no_route: 'Nessun percorso verso il destinatario.',
+      air_limit: "L'etere è occupato o è scattato il limite di invio. Riprova tra poco.",
+      radio_off: 'Il trasmettitore della radio è spento o non è scelta una regione.',
+      queue_full: 'La coda di invio della radio è piena. Aspetta un momento.',
+      primary_channel: 'Il canale principale non si può eliminare.',
+      no_owner: 'La radio non ha comunicato il suo nome.',
+      no_config: 'La radio non ha comunicato le sue impostazioni.',
+      bad_channel_link: 'Non è un link di canale Meshtastic.',
+      send_failed: 'Il messaggio non è stato inviato.',
+      rebooted: 'La radio si è riavviata.',
     },
   },
   hotkeys: {

@@ -81,7 +81,16 @@ describe('mesh connection', () => {
     expect(conn.chatContacts.map((c) => c.name)).toEqual(['Bob'])
     expect(conn.channels.map((c) => c.name)).toEqual(['Public'])
     await vi.waitFor(() => expect(conn.battery?.millivolts).toBe(4012))
-    expect(JSON.parse(localStorage.getItem(`BST_MESH_DEVICE_${auth.address}`)!)).toEqual(TARGET)
+    expect(JSON.parse(localStorage.getItem(`BST_MESH_DEVICE_${auth.address}`)!)).toEqual({
+      meshcore: TARGET,
+    })
+  })
+
+  it('still reads the last radio saved before Meshtastic appeared', () => {
+    localStorage.setItem(`BST_MESH_DEVICE_${auth.address}`, JSON.stringify(TARGET))
+    const conn = useMeshConnectionStore()
+    conn.refreshLastDevice()
+    expect(conn.lastDevice).toEqual(TARGET)
   })
 
   it('reports why it could not connect', async () => {

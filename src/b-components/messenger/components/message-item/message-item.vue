@@ -136,7 +136,9 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Popover, Modal } from 'ant-design-vue'
 import { MoreOutlined, DeleteOutlined, RollbackOutlined } from '@/components/icons'
-import type { Message } from '../../types'
+import { parseMeshDialogId } from '@/mesh/ids'
+import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
+import { isMeshTransport, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { chatUserName, getAddressFromMatrixId } from '../../helpers'
 import { formatDateTimeFromString as formatTime } from '@/helpers/common/date-formatter'
@@ -214,7 +216,14 @@ const isSeen = computed<boolean>(
 )
 
 /** Сообщение через mesh-радио (src/mesh), а не через Matrix. */
-const isMesh = computed<boolean>(() => props.message.transport === 'meshcore')
+const isMesh = computed<boolean>(() => isMeshTransport(props.message.transport))
+const isMeshChannel = computed<boolean>(
+  () => isMesh.value && parseMeshDialogId(props.message.chatId)?.kind === 'channel'
+)
+/** Meshtastic передаёт ответы и реакции по радио — если у сообщения есть id пакета. */
+const isMeshReplyable = computed<boolean>(
+  () => props.message.transport === 'meshtastic' && !!props.message.meshReplyable
+)
 
 /**
  * Отметка у времени своего сообщения. Matrix — «✓✓», когда собеседник
@@ -229,7 +238,11 @@ const deliveryMark = computed<{ mark: string; title: string } | null>(() => {
       case 'sent':
         return { mark: '✓', title: t('mesh.chat.sent') }
       case 'delivered':
-        return { mark: '✓✓', title: t('mesh.chat.delivered') }
+        // В канале Meshtastic подтверждения от адресата нет: «✓✓» — ретранслировали.
+        return {
+          mark: '✓✓',
+          title: isMeshChannel.value ? t('mesh.chat.relayed') : t('mesh.chat.delivered'),
+        }
       default:
         return null
     }
@@ -296,6 +309,7 @@ const previewUrl = computed<string | null>(() =>
 )
 
 const canReact = computed<boolean>(() => {
+  if (isMeshReplyable.value) return !isMine.value
   if (typeof props.message.id !== 'string' || !props.message.id.startsWith('$')) return false
   if (isMine.value) return false
   return true
@@ -313,7 +327,10 @@ const {
 } = useReactionPicker({
   canReact,
   onReact: (key) => {
-    if (props.message.chatId) store.sendReaction(props.message.chatId, props.message.id, key)
+    const chatId = props.message.chatId
+    if (!chatId) return
+    if (isMesh.value) void useMeshChatStore().react(chatId, props.message.id, key)
+    else store.sendReaction(chatId, props.message.id, key)
   },
 })
 
@@ -323,8 +340,8 @@ const actionsOpen = ref(false)
 const isRealMessage = computed<boolean>(
   () => typeof props.message.id === 'string' && props.message.id.startsWith('$')
 )
-/** Ответить можно на любое реальное сообщение. */
-const canReply = computed<boolean>(() => isRealMessage.value)
+/** Ответить можно на любое реальное сообщение (и на сообщение Meshtastic с id пакета). */
+const canReply = computed<boolean>(() => isRealMessage.value || isMeshReplyable.value)
 /** Удалить можно только своё реальное сообщение. */
 const canDelete = computed<boolean>(() => isRealMessage.value && isMine.value)
 const canShowActions = computed<boolean>(() => canReply.value || canDelete.value)
@@ -335,6 +352,15 @@ const repliedPreview = computed<{ name: string; text: string } | null>(() => {
   const rid = props.message.replyTo?.id
   if (!rid) return null
   const chatId = props.message.chatId
+  if (isMesh.value && chatId) {
+    // Mesh-переписка лежит в своём сторе, не среди сообщений Matrix.
+    const rec = useMeshChatStore().messages[chatId]?.find((m) => m.id === rid)
+    if (!rec) return { name: '', text: t('messenger.reply') }
+    const name = rec.mine
+      ? store.currentUser.name || t('messenger.you')
+      : rec.senderName || t('mesh.chat.unknownSender')
+    return { name, text: rec.text.slice(0, 80) }
+  }
   const list = chatId ? store.messages[chatId] : null
   const ref = list?.find((m) => m.id === rid)
   if (!ref) return { name: '', text: t('messenger.reply') }

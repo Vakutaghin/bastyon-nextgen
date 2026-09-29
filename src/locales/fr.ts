@@ -1570,9 +1570,18 @@ export default {
   },
   mesh: {
     title: 'Réseaux mesh',
-    lead: 'Discuter par radio LoRa, sans internet ni réseau mobile. Connectez une radio sous MeshCore (firmware companion) en USB, Bluetooth ou Wi-Fi : ses discussions apparaissent dans la messagerie à côté des autres.',
+    lead: 'Discuter par radio LoRa, sans internet ni réseau mobile. Connectez une radio Meshtastic ou MeshCore en USB, Bluetooth ou Wi-Fi : ses discussions apparaissent dans la messagerie à côté des autres.',
     desktopOnly:
       "Une radio se connecte dans l'application pour ordinateur (macOS, Windows, Linux).",
+    networks: {
+      label: 'Réseau',
+      meshtastic: 'Meshtastic',
+      meshcore: 'MeshCore',
+      meshtasticLead:
+        'Le réseau mesh LoRa le plus répandu. Les nœuds relaient les messages des autres ; les messages directs sont chiffrés avec les clés des nœuds.',
+      meshcoreLead:
+        'Un réseau relayé par des répéteurs : les messages suivent un chemin trouvé au lieu d’aller à tout le monde. Nécessite le firmware companion.',
+    },
     status: {
       idle: 'Non connecté',
       connecting: 'Connexion…',
@@ -1601,7 +1610,7 @@ export default {
       host: 'Adresse de la radio',
       port: 'Port',
       hostHint:
-        'Adresse IP de la radio sur le réseau local, ou son nom en .local. MeshCore utilise le port 5000 par défaut.',
+        'Adresse IP de la radio sur le réseau local, ou son nom en .local. Port par défaut : {port}.',
       lanWarning:
         "En Wi-Fi, l'application et la radio échangent sans chiffrement ni mot de passe : sur un réseau qui n'est pas le vôtre, préférez l'USB ou le Bluetooth.",
       lastDevice: 'Dernière radio : {name}',
@@ -1684,6 +1693,96 @@ export default {
       add: 'Ajouter',
       privateCreated: 'Canal créé. Copiez sa clé et remettez-la aux membres.',
     },
+    mt: {
+      device: {
+        id: 'Numéro du nœud',
+        noKey: "aucune : la radio n'a pas encore de région ou son firmware est antérieur à 2.5",
+        radioSettings: 'Radio',
+        region: 'Région',
+        preset: 'Préréglage',
+        apply: 'Appliquer',
+        applied: 'Réglages envoyés. La radio va redémarrer et se reconnecter.',
+        presetHint:
+          'La région fixe les fréquences autorisées dans votre pays. Le préréglage fixe la vitesse et la portée : toutes les personnes avec qui vous voulez parler doivent utiliser le même, en général LongFast.',
+        longName: 'Nom',
+        shortName: 'Court',
+        nameHint:
+          "Les autres nœuds voient le nom ; le nom court fait jusqu'à 4 caractères et s'affiche sur les écrans des radios. La radio redémarre après un changement de nom.",
+        powered: 'sur secteur',
+        rebooting: 'La radio redémarre…',
+        notice: 'La radio signale : {text}',
+        dismiss: 'Masquer',
+      },
+      region: {
+        lead: "Aucune région choisie : la radio n'émet ni ne reçoit. Choisissez le pays où vous êtes : il définit les fréquences et la puissance autorisées.",
+        choose: 'Choisir une région',
+        unset: 'pas de région',
+        names: {
+          RU: 'Russie (868 MHz)',
+          EU_868: 'Europe (868 MHz)',
+          EU_433: 'Europe (433 MHz)',
+          US: 'États-Unis (915 MHz)',
+          UA_433: 'Ukraine (433 MHz)',
+          UA_868: 'Ukraine (868 MHz)',
+          KZ_433: 'Kazakhstan (433 MHz)',
+          KZ_863: 'Kazakhstan (863 MHz)',
+          CN: 'Chine (470 MHz)',
+          JP: 'Japon (920 MHz)',
+          ANZ: 'Australie et Nouvelle-Zélande (915 MHz)',
+          KR: 'Corée (920 MHz)',
+          TW: 'Taïwan (920 MHz)',
+          IN: 'Inde (865 MHz)',
+          NZ_865: 'Nouvelle-Zélande (865 MHz)',
+          TH: 'Thaïlande (920 MHz)',
+          MY_433: 'Malaisie (433 MHz)',
+          MY_919: 'Malaisie (919 MHz)',
+          SG_923: 'Singapour (923 MHz)',
+          BR_902: 'Brésil (902 MHz)',
+          LORA_24: '2,4 GHz, monde entier',
+        },
+      },
+      nodes: {
+        title: 'Nœuds',
+        empty:
+          "Pas encore de nœuds. La radio découvre ses voisins quand ils s'annoncent (toutes les quelques heures) ou écrivent dans un canal.",
+        search: 'Rechercher par nom ou numéro',
+        favorite: 'favori',
+        noKey: 'pas de clé',
+        noKeyHint:
+          "Les messages directs sont chiffrés avec la clé du nœud. Tant qu'elle est inconnue, la radio n'enverra pas un tel message ; l'application demande la clé d'elle-même.",
+        requestKey: 'Demander la clé',
+        keyRequested:
+          'Demande envoyée. Un nœud répond à ces demandes au plus une fois toutes les 12 heures : la clé peut donc arriver plus tard, avec sa prochaine annonce.',
+        mqtt: 'via internet (MQTT)',
+        battery: 'batterie {level} %',
+        remove: 'Oublier',
+        removeConfirm: 'Oublier le nœud « {name} » ?',
+        removeHint:
+          "La radio le retire de sa base. Quand le nœud s'annoncera de nouveau, il reviendra dans la liste. La discussion dans l'application est conservée.",
+        more: 'Tout afficher ({n})',
+      },
+      channels: {
+        primary: 'principal',
+        kind: {
+          public: 'ouvert : tout le monde connaît la clé',
+          private: 'privé : clé partagée',
+          unencrypted: 'non chiffré : tout le monde peut lire',
+        },
+        share: 'Lien',
+        linkCopied:
+          "Lien du canal copié. Il permet de lire et d'écrire dans le canal : ne le partagez qu'avec les membres.",
+        privateHint:
+          'Une clé aléatoire est créée. Invitez les membres avec le lien du canal ; les applications officielles Meshtastic le comprennent aussi.',
+        namePlaceholder: "jusqu'à 11 octets",
+        create: 'Créer',
+        created: 'Canal créé. Copiez le lien et envoyez-le aux membres.',
+        addLink: 'Ajouter par lien',
+        linkHint:
+          "Un lien meshtastic.org/e/#… venant de l'application Meshtastic ou d'un membre du canal.",
+        linkAdded: '{n} canal ajouté | {n} canaux ajoutés',
+        linkNothing: 'Ces canaux sont déjà sur la radio.',
+      },
+    },
     chat: {
       connect: 'Connecter',
       errors: {
@@ -1692,14 +1791,13 @@ export default {
         empty: 'Message vide',
         no_dialog: 'Discussion introuvable',
       },
-      via: 'MeshCore',
       deviceEncryption: "chiffré dans la radio, pas dans l'application",
       openChannel: 'canal public — tout le monde peut lire',
       privateChannel: 'canal à clé partagée',
       noRadio: 'Radio non connectée',
       otherRadio: 'Une autre radio est connectée',
       emptyHint:
-        "Pas encore de messages. Le texte passe par la radio : jusqu'à 160 octets à la fois (lettres latines 1 octet, cyrilliques 2). Un long message part en plusieurs parties.",
+        "Pas encore de messages. Le texte passe par la radio : jusqu'à {limit} octets à la fois (lettres latines 1 octet, cyrilliques 2). Un long message part en plusieurs morceaux.",
       placeholder: 'Message par radio',
       bytes: '{used} / {limit} octets',
       parts: '{n} partie | {n} parties',
@@ -1708,6 +1806,9 @@ export default {
       sent: 'Émis',
       delivered: 'La radio du destinataire a confirmé la réception',
       unknownSender: 'Inconnu',
+      pkiEncryption: "chiffré avec les clés des nœuds dans la radio, pas dans l'application",
+      relayed: 'Entendu et relayé par le réseau',
+      regionUnset: "La radio n'a pas de région choisie",
     },
     errors: {
       generic: "Ça n'a pas marché ({code}).",
@@ -1730,12 +1831,12 @@ export default {
         'Connexion Bluetooth impossible. La radio est peut-être déjà connectée à un téléphone.',
       ble_io_failed: 'Échec de transfert Bluetooth.',
       characteristic_not_found:
-        "Ce n'est pas une radio MeshCore : l'appareil n'a pas le bon service.",
+        "L'appareil n'a pas le service requis : il utilise le firmware d'un autre réseau.",
       scan_failed: 'La recherche Bluetooth a échoué.',
       write_failed: "Impossible d'envoyer les données à la radio.",
       link_not_found: 'La connexion à la radio est fermée.',
       no_answer:
-        "La radio n'a pas répondu. Vérifiez qu'elle utilise le firmware MeshCore companion (USB, Bluetooth ou Wi-Fi).",
+        "La radio n'a pas répondu. Vérifiez que son firmware correspond au réseau choisi (MeshCore nécessite le firmware companion).",
       device_lost: 'Connexion à la radio perdue.',
       unsupported: 'Impossible de connecter une radio ici.',
       too_many_links: 'Trop de connexions. Déconnectez une autre radio.',
@@ -1748,6 +1849,20 @@ export default {
       closed: 'La connexion à la radio est fermée.',
       not_in_contacts: "Le nœud n'est pas dans les contacts de la radio.",
       radio_error: 'Erreur radio.',
+      no_key:
+        "La clé du destinataire n'est pas encore connue, et sans elle la radio n'enverra pas de message direct. Demandez la clé sur la page Réseaux mesh ou attendez que le nœud s'annonce.",
+      no_ack: "Pas d'accusé de réception : le destinataire est hors de portée ou éteint.",
+      no_route: 'Aucun chemin vers le destinataire.',
+      air_limit:
+        "Les ondes sont occupées ou la limite d'envoi est atteinte. Réessayez dans un instant.",
+      radio_off: "L'émetteur de la radio est coupé ou aucune région n'est choisie.",
+      queue_full: "La file d'envoi de la radio est pleine. Patientez un instant.",
+      primary_channel: 'Le canal principal ne peut pas être supprimé.',
+      no_owner: "La radio n'a pas indiqué son nom.",
+      no_config: "La radio n'a pas indiqué ses réglages.",
+      bad_channel_link: "Ce n'est pas un lien de canal Meshtastic.",
+      send_failed: "Le message n'a pas été envoyé.",
+      rebooted: 'La radio a redémarré.',
     },
   },
   hotkeys: {

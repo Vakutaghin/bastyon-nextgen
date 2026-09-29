@@ -3,7 +3,7 @@
     <SC_MeshInfoBar>
       <SC_MeshInfoIcon><RadioTowerIcon /></SC_MeshInfoIcon>
       <SC_MeshInfoText>
-        {{ t('mesh.chat.via') }} ·
+        {{ networkName }} ·
         <SC_MeshOpenWarning v-if="isOpenChannel">{{ securityText }}</SC_MeshOpenWarning>
         <template v-else>{{ securityText }}</template>
       </SC_MeshInfoText>
@@ -16,10 +16,23 @@
     </SC_MeshInfoBar>
 
     <SC_ChatRoomEmptyHint v-if="messages.length === 0">
-      {{ t('mesh.chat.emptyHint') }}
+      {{ t('mesh.chat.emptyHint', { limit }) }}
     </SC_ChatRoomEmptyHint>
 
-    <MessageList :messages="messages" />
+    <MessageList :messages="messages" @reply="onReplyTo" />
+
+    <SC_ReplyBanner v-if="replyingTo">
+      <SC_ReplyBannerBar />
+      <SC_ReplyBannerBody>
+        <SC_ReplyBannerTitle>
+          {{ t('messenger.replyingTo') }} {{ replyPreviewName }}
+        </SC_ReplyBannerTitle>
+        <SC_ReplyBannerText>{{ replyPreviewText }}</SC_ReplyBannerText>
+      </SC_ReplyBannerBody>
+      <SC_ReplyBannerClose type="button" :aria-label="t('messenger.cancel')" @click="cancelReply">
+        ×
+      </SC_ReplyBannerClose>
+    </SC_ReplyBanner>
 
     <SC_MessageInputArea>
       <EmojiPicker v-if="showEmojiPicker" @select="onEmojiSelect" />
@@ -60,29 +73,38 @@
 
 <script setup lang="ts">
 /**
- * Чат через mesh-радио (MeshCore). Отдельно от ChatRoom: у эфира нет
- * вложений, реакций, «печатает» и прочтений, зато есть предел в байтах и
- * радио, которое может быть не подключено.
+ * Чат через mesh-радио (Meshtastic, MeshCore). Отдельно от ChatRoom: у эфира
+ * нет вложений, «печатает» и прочтений, зато есть предел в байтах и радио,
+ * которое может быть не подключено.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { RadioTowerIcon, SendOutlined, SmileOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
+import { parseMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
+import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
 import { utf8Length } from '@/mesh/bytes'
 import { splitForMesh } from '@/mesh/text'
 import MessageList from '../message-list/message-list.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import { useChatInput } from '../chat-room/use-chat-input'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
+import type { Message } from '../../types'
 import {
   SC_ChatRoomContainer,
   SC_ChatRoomEmptyHint,
   SC_EmojiToggleButton,
   SC_MessageInput,
   SC_MessageInputArea,
+  SC_ReplyBanner,
+  SC_ReplyBannerBar,
+  SC_ReplyBannerBody,
+  SC_ReplyBannerClose,
+  SC_ReplyBannerText,
+  SC_ReplyBannerTitle,
   SC_SendButton,
 } from '../chat-room/styled'
 import {
@@ -100,8 +122,13 @@ const props = defineProps<{ dialogId: string }>()
 const { t } = useI18n()
 const router = useRouter()
 const meshChat = useMeshChatStore()
-const connection = useMeshConnectionStore()
+const meshcore = useMeshConnectionStore()
+const meshtastic = useMeshtasticConnectionStore()
 const ui = useMessengerUiStore()
+
+const network = computed(() => parseMeshDialogId(props.dialogId)?.network ?? 'meshcore')
+const networkName = computed(() => t(`mesh.networks.${network.value}`))
+const connection = computed(() => (network.value === 'meshtastic' ? meshtastic : meshcore))
 
 const dialog = computed(() => meshChat.dialogs.find((d) => d.id === props.dialogId) ?? null)
 const messages = computed(() => meshChat.messengerMessages(props.dialogId))
@@ -110,20 +137,28 @@ const isOpenChannel = computed(
   () => dialog.value?.kind === 'channel' && dialog.value.channelKind !== 'private'
 )
 
-/** Честно о защите: в MeshCore шифрование кончается на радио. */
+/**
+ * Честно о защите: и в Meshtastic, и в MeshCore шифрование кончается на радио.
+ * ЛС Meshtastic шифруются ключами узлов (X25519), MeshCore — слабее.
+ */
 const securityText = computed<string>(() => {
   const d = dialog.value
-  if (!d || d.kind === 'direct') return t('mesh.chat.deviceEncryption')
+  if (!d || d.kind === 'direct') {
+    return network.value === 'meshtastic'
+      ? t('mesh.chat.pkiEncryption')
+      : t('mesh.chat.deviceEncryption')
+  }
   return d.channelKind === 'private' ? t('mesh.chat.privateChannel') : t('mesh.chat.openChannel')
 })
 
 const canSend = computed(() => meshChat.canSend(props.dialogId))
 
 const radioStateText = computed<string>(() => {
-  if (connection.status === 'connecting' || connection.status === 'reconnecting') {
-    return t(`mesh.status.${connection.status}`)
-  }
-  return connection.status === 'connected' ? t('mesh.chat.otherRadio') : t('mesh.chat.noRadio')
+  const status = connection.value.status
+  if (status === 'connecting' || status === 'reconnecting') return t(`mesh.status.${status}`)
+  if (status !== 'connected') return t('mesh.chat.noRadio')
+  if (network.value === 'meshtastic' && meshtastic.regionUnset) return t('mesh.chat.regionUnset')
+  return t('mesh.chat.otherRadio')
 })
 
 const limit = computed(() => meshChat.textLimit(props.dialogId))
@@ -157,6 +192,24 @@ const counterText = computed<string>(() => {
 
 const sending = ref(false)
 
+// --- Ответ на сообщение (Meshtastic передаёт его по радио) ---
+const replyingTo = ref<Message | null>(null)
+const replyPreviewName = computed<string>(() => {
+  const m = replyingTo.value
+  if (!m) return ''
+  return m.senderId === 'me' ? t('messenger.you') : m.senderName || t('mesh.chat.unknownSender')
+})
+const replyPreviewText = computed<string>(() => (replyingTo.value?.text || '').slice(0, 80))
+
+function onReplyTo(message: Message): void {
+  replyingTo.value = message
+  focusInput()
+}
+
+function cancelReply(): void {
+  replyingTo.value = null
+}
+
 const canSubmit = computed(
   () => canSend.value && !!inputValue.value.trim() && !tooLong.value && !sending.value
 )
@@ -167,9 +220,12 @@ async function submit(): Promise<void> {
   if (!canSubmit.value) return
   sending.value = true
   try {
-    const result = await meshChat.send(props.dialogId, inputValue.value)
+    const result = await meshChat.send(props.dialogId, inputValue.value, {
+      replyTo: replyingTo.value?.id,
+    })
     if (result.ok) {
       inputValue.value = ''
+      replyingTo.value = null
       showEmojiPicker.value = false
       adjustHeight()
     } else {
@@ -188,7 +244,7 @@ function onKeydown(e: KeyboardEvent): void {
 }
 
 function goToMesh(): void {
-  void router.push('/mesh')
+  void router.push({ path: '/mesh', query: { net: network.value } })
 }
 
 async function open(): Promise<void> {
@@ -203,6 +259,9 @@ onMounted(() => {
 
 watch(
   () => props.dialogId,
-  () => void open()
+  () => {
+    replyingTo.value = null
+    void open()
+  }
 )
 </script>

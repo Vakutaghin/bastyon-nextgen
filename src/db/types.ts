@@ -128,20 +128,28 @@ export interface VideoProgress {
 export type MeshMessageStatus = 'sending' | 'sent' | 'delivered' | 'failed' | 'received'
 
 /**
- * Диалог в mesh-сети (MeshCore): личный с узлом или канал. История живёт
- * только здесь — радио её не хранит (очередь в его памяти очищается, как только
- * приложение забрало сообщение). Привязан к аккаунту Bastyon.
+ * Диалог в mesh-сети (MeshCore, Meshtastic): личный с узлом или канал. История
+ * живёт только здесь — радио её не хранит (очередь в его памяти очищается, как
+ * только приложение забрало сообщение). Привязан к аккаунту Bastyon.
  */
 export interface MeshDialogRecord {
-  /** `mesh:mc:<свой ключ, 6 байт>:u:<ключ собеседника, 6 байт>` или `…:g:<id канала>`. */
+  /**
+   * `mesh:mc:<свой ключ, 6 байт>:u:<ключ собеседника, 6 байт>`,
+   * `mesh:mt:<свой номер>:u:<номер собеседника>` или `…:g:<id канала>`.
+   */
   id: string
   account: string
-  network: 'meshcore'
-  /** Первые 6 байт ключа своего узла (hex): у каждого радио своя переписка. */
+  network: 'meshcore' | 'meshtastic'
+  /** Свой узел (hex): у каждого радио своя переписка. MeshCore — 6 байт ключа, Meshtastic — номер. */
   selfKey: string
   kind: 'direct' | 'channel'
-  /** Полный ключ собеседника, если он есть в контактах радио. */
+  /** MeshCore — полный ключ собеседника (если он в контактах радио); Meshtastic — номер узла. */
   peerKey: string | null
+  /**
+   * Meshtastic: открытый ключ собеседника, каким его видело приложение. База
+   * радио меньше и вытесняет старые узлы — перед ЛС ключ отдаётся радио.
+   */
+  peerPublicKey?: string
   channelKind?: 'public' | 'hashtag' | 'private'
   name: string
   /** Время последнего сообщения, мс; 0 — сообщений нет. */
@@ -177,4 +185,14 @@ export interface MeshMessageRecord {
   error?: string
   hops?: number | null
   snr?: number | null
+  /** Meshtastic: id пакета — на него ссылаются ответы и реакции. */
+  packetId?: number
+  /** Meshtastic: ответ на пакет с этим id. */
+  replyToPacket?: number
+  /** Meshtastic: реакция (text — эмодзи) на пакет с этим id; отдельным сообщением не показывается. */
+  reactionTo?: number
+  /** Meshtastic: ЛС пришло зашифрованным ключами узлов (PKI). */
+  pki?: boolean
+  /** Кто-то ретранслировал, но получатель ещё не подтвердил. */
+  relayed?: boolean
 }

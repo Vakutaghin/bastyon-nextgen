@@ -1,5 +1,5 @@
 /**
- * Подключённое mesh-радио (MeshCore): соединение, сведения об узле, контакты
+ * Подключённое радио MeshCore: соединение, сведения об узле, контакты
  * и каналы. Живёт отдельно от страниц — радио остаётся на связи, пока
  * пользователь ходит по приложению; входящие уходят в mesh-chat-store.
  *
@@ -12,7 +12,6 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
-import { MESH_LAST_DEVICE_PREFIX } from '@/blockchain/constants/storage'
 import type { McBattery, McContact, McDeviceInfo, McSelfInfo } from '../meshcore/codec'
 import { ADV_TYPE } from '../meshcore/constants'
 import { hashtagSecret, normalizeHashtag, randomChannelSecret } from '../meshcore/channels'
@@ -20,54 +19,18 @@ import { MeshCoreSession, type SessionChannel, type SessionOptions } from '../me
 import { openFrameLink, targetLabel, type MeshTarget } from '../radio/open-link'
 import { radioErrorFrom } from '../radio/types'
 import { useMeshChatStore } from './mesh-chat-store'
+import {
+  loadLastDevice,
+  meshErrorCode,
+  RECONNECT_DELAYS,
+  saveLastDevice,
+  type MeshConnectionStatus,
+} from './radio-common'
 
-export type MeshConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting'
-
-/** Паузы между попытками переподключения после обрыва, мс. */
-export const RECONNECT_DELAYS = [2_000, 5_000, 15_000, 30_000]
+export { meshErrorCode, RECONNECT_DELAYS, type MeshConnectionStatus }
 
 /** Настройки сеанса с радио (повторы, ожидание ACK); тесты их укорачивают. */
 export const MESH_SESSION_OPTIONS: SessionOptions = { appName: 'Bastyon' }
-
-function lastDeviceKey(address: string): string {
-  return `${MESH_LAST_DEVICE_PREFIX}${address}`
-}
-
-function loadLastDevice(address: string | null): MeshTarget | null {
-  if (!address) return null
-  try {
-    const raw = localStorage.getItem(lastDeviceKey(address))
-    if (!raw) return null
-    const t = JSON.parse(raw) as MeshTarget
-    if (t && (t.transport === 'serial' || t.transport === 'tcp' || t.transport === 'ble')) return t
-  } catch {
-    /* повреждённая запись — как будто её нет */
-  }
-  return null
-}
-
-function saveLastDevice(address: string | null, target: MeshTarget): void {
-  if (!address) return
-  try {
-    localStorage.setItem(lastDeviceKey(address), JSON.stringify(target))
-  } catch {
-    /* нет localStorage — просто не запомним */
-  }
-}
-
-/** Код ошибки для интерфейса (`mesh.errors.<код>`). */
-export function meshErrorCode(e: unknown): string {
-  if (e && typeof e === 'object' && 'code' in e) {
-    const code = (e as { code: unknown }).code
-    const message = e instanceof Error ? e.message : ''
-    // Отказ с названной причиной (channels_full, channel_not_found) — по причине.
-    if (code === 'rejected' && /^[a-z_]+$/.test(message) && message !== 'rejected') return message
-    // Команда без ответа — чаще всего это не MeshCore-радио (прошивка другая).
-    if (code === 'timeout') return 'no_answer'
-    if (typeof code === 'string') return code
-  }
-  return radioErrorFrom(e).code
-}
 
 export const useMeshConnectionStore = defineStore('mesh-connection', () => {
   const status = ref<MeshConnectionStatus>('idle')
@@ -97,7 +60,7 @@ export const useMeshConnectionStore = defineStore('mesh-connection', () => {
   )
 
   function refreshLastDevice(): void {
-    lastDevice.value = loadLastDevice(useAuthStore().address ?? null)
+    lastDevice.value = loadLastDevice(useAuthStore().address ?? null, 'meshcore')
   }
 
   function syncFromSession(s: MeshCoreSession): void {
@@ -176,7 +139,7 @@ export const useMeshConnectionStore = defineStore('mesh-connection', () => {
       reconnectAttempt = 0
       contactsFull.value = false
       const address = useAuthStore().address ?? null
-      saveLastDevice(address, to)
+      saveLastDevice(address, 'meshcore', to)
       lastDevice.value = to
       void useMeshChatStore().syncNames(s.self.publicKey, contacts.value, channels.value)
       void refreshBattery()

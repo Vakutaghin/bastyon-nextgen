@@ -1,13 +1,16 @@
 /**
- * Открыть соединение с радио MeshCore по выбору пользователя: порт USB-serial,
- * адрес в локальной сети или устройство Bluetooth. Отдельный модуль, чтобы
- * тесты стора подменяли радио поддельным.
+ * Открыть соединение с радио по выбору пользователя: порт USB-serial, адрес в
+ * локальной сети или устройство Bluetooth — под протокол нужной сети
+ * (кадры MeshCore или пакеты Meshtastic). Отдельный модуль, чтобы тесты
+ * сторов подменяли радио поддельным.
  */
 
 import { DEFAULT_BAUD } from '../meshcore/constants'
 import { frameLinkFromGatt, frameLinkFromStream, type FrameLink } from '../meshcore/framing'
+import { DEFAULT_BAUD as MT_BAUD } from '../meshtastic/constants'
+import { packetLinkFromGatt, packetLinkFromStream, type PacketLink } from '../meshtastic/framing'
 import { connectBle, isTauriRadioAvailable, openSerial, openTcp } from './tauri-radio'
-import { RadioError } from './types'
+import { RadioError, type ByteLink, type GattLink } from './types'
 
 export type MeshTarget =
   | { transport: 'serial'; path: string; label?: string | null }
@@ -37,21 +40,42 @@ export function targetLabel(target: MeshTarget): string {
   }
 }
 
-export async function openFrameLink(target: MeshTarget): Promise<FrameLink> {
+/** Транспорт до радио: поток байтов (USB, TCP) или GATT (Bluetooth). */
+async function openRaw(
+  target: MeshTarget,
+  baud: number
+): Promise<{ stream: ByteLink } | { gatt: GattLink }> {
   if (!isTauriRadioAvailable()) throw new RadioError('unsupported')
   switch (target.transport) {
     case 'serial':
-      return frameLinkFromStream(await openSerial(target.path, DEFAULT_BAUD))
+      return { stream: await openSerial(target.path, baud) }
     case 'tcp':
-      return frameLinkFromStream(await openTcp(target.host, target.port))
-    case 'ble': {
-      const gatt = await connectBle(target.id, target.name ?? undefined)
-      try {
-        return await frameLinkFromGatt(gatt)
-      } catch (e) {
-        await gatt.close()
-        throw e
-      }
-    }
+      return { stream: await openTcp(target.host, target.port) }
+    case 'ble':
+      return { gatt: await connectBle(target.id, target.name ?? undefined) }
+  }
+}
+
+/** Радио MeshCore: кадры companion-протокола. */
+export async function openFrameLink(target: MeshTarget): Promise<FrameLink> {
+  const raw = await openRaw(target, DEFAULT_BAUD)
+  if ('stream' in raw) return frameLinkFromStream(raw.stream)
+  try {
+    return await frameLinkFromGatt(raw.gatt)
+  } catch (e) {
+    await raw.gatt.close()
+    throw e
+  }
+}
+
+/** Радио Meshtastic: пакеты ToRadio/FromRadio. */
+export async function openPacketLink(target: MeshTarget): Promise<PacketLink> {
+  const raw = await openRaw(target, MT_BAUD)
+  if ('stream' in raw) return packetLinkFromStream(raw.stream)
+  try {
+    return await packetLinkFromGatt(raw.gatt)
+  } catch (e) {
+    await raw.gatt.close()
+    throw e
   }
 }

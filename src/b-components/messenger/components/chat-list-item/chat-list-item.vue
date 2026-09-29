@@ -74,7 +74,7 @@ import { parseIpfsFileLink } from '@/helpers/ipfs/ipfs-link'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DeleteOutlined, EllipsisOutlined, RadioTowerIcon } from '@/components/icons'
-import type { Dialog, Message } from '../../types'
+import { isMeshTransport, type Dialog, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { ICON_DANGER_MR_8 } from '@/styles/icon-styles'
 import {
@@ -112,11 +112,12 @@ const menuPos = ref({ top: 0, right: 0 })
 /** Диалог через радио: значок сети и подсказка, открытый ли это канал. */
 const networkTitle = computed<string>(() => {
   const d = props.dialog
-  if (d.transport !== 'meshcore') return ''
+  if (!isMeshTransport(d.transport)) return ''
+  const network = t(`mesh.networks.${d.transport}`)
   if (d.meshKind === 'channel' && d.channelKind !== 'private') {
-    return `${t('mesh.chat.via')} · ${t('mesh.chat.openChannel')}`
+    return `${network} · ${t('mesh.chat.openChannel')}`
   }
-  return t('mesh.chat.via')
+  return network
 })
 
 /** Этот диалог сейчас открыт в чат-комнате — подсвечиваем его в списке слева. */

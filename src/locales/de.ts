@@ -1568,8 +1568,17 @@ export default {
   },
   mesh: {
     title: 'Mesh-Netze',
-    lead: 'Chatten über LoRa-Funk – ohne Internet und Mobilfunk. Verbinde ein Funkgerät mit MeshCore-Firmware (Companion) über USB, Bluetooth oder WLAN: Seine Chats erscheinen im Messenger neben den üblichen.',
+    lead: 'Chatten über LoRa-Funk – ohne Internet und Mobilfunk. Verbinde ein Meshtastic- oder MeshCore-Funkgerät über USB, Bluetooth oder WLAN: Die Chats darüber erscheinen im Messenger neben den gewohnten.',
     desktopOnly: 'Ein Funkgerät lässt sich in der Desktop-App verbinden (macOS, Windows, Linux).',
+    networks: {
+      label: 'Netz',
+      meshtastic: 'Meshtastic',
+      meshcore: 'MeshCore',
+      meshtasticLead:
+        'Das verbreitetste LoRa-Mesh-Netz. Knoten leiten Nachrichten füreinander weiter; Direktnachrichten werden mit Knotenschlüsseln verschlüsselt.',
+      meshcoreLead:
+        'Ein Netz mit Weiterleitung über Repeater: Nachrichten folgen einem gefundenen Pfad, statt an alle zu gehen. Braucht die Companion-Firmware.',
+    },
     status: {
       idle: 'Nicht verbunden',
       connecting: 'Verbinde…',
@@ -1598,7 +1607,7 @@ export default {
       host: 'Adresse des Funkgeräts',
       port: 'Port',
       hostHint:
-        'IP-Adresse des Funkgeräts im lokalen Netz oder sein .local-Name. MeshCore nutzt standardmäßig Port 5000.',
+        'IP-Adresse des Funkgeräts im lokalen Netz oder sein .local-Name. Standardport: {port}.',
       lanWarning:
         'Über WLAN tauschen App und Funkgerät Daten ohne Verschlüsselung und Passwort aus: In fremden Netzen besser USB oder Bluetooth.',
       lastDevice: 'Letztes Funkgerät: {name}',
@@ -1681,6 +1690,96 @@ export default {
       add: 'Hinzufügen',
       privateCreated: 'Kanal erstellt. Kopiere den Schlüssel und gib ihn den Mitgliedern.',
     },
+    mt: {
+      device: {
+        id: 'Knotennummer',
+        noKey: 'keiner – das Funkgerät hat noch keine Region oder eine Firmware älter als 2.5',
+        radioSettings: 'Funk',
+        region: 'Region',
+        preset: 'Voreinstellung',
+        apply: 'Übernehmen',
+        applied: 'Einstellungen gesendet. Das Funkgerät startet neu und verbindet sich wieder.',
+        presetHint:
+          'Die Region legt die in deinem Land erlaubten Frequenzen fest. Die Voreinstellung bestimmt Tempo und Reichweite: Alle, mit denen du sprechen willst, brauchen dieselbe – meist LongFast.',
+        longName: 'Name',
+        shortName: 'Kurz',
+        nameHint:
+          'Andere Knoten sehen den Namen; der Kurzname hat bis zu 4 Zeichen und erscheint auf Funkgerät-Displays. Nach einer Namensänderung startet das Funkgerät neu.',
+        powered: 'Netzbetrieb',
+        rebooting: 'Das Funkgerät startet neu…',
+        notice: 'Das Funkgerät meldet: {text}',
+        dismiss: 'Ausblenden',
+      },
+      region: {
+        lead: 'Keine Region gewählt – das Funkgerät sendet und empfängt nichts. Wähle das Land, in dem du bist: Es bestimmt die erlaubten Frequenzen und die Sendeleistung.',
+        choose: 'Region wählen',
+        unset: 'keine Region',
+        names: {
+          RU: 'Russland (868 MHz)',
+          EU_868: 'Europa (868 MHz)',
+          EU_433: 'Europa (433 MHz)',
+          US: 'USA (915 MHz)',
+          UA_433: 'Ukraine (433 MHz)',
+          UA_868: 'Ukraine (868 MHz)',
+          KZ_433: 'Kasachstan (433 MHz)',
+          KZ_863: 'Kasachstan (863 MHz)',
+          CN: 'China (470 MHz)',
+          JP: 'Japan (920 MHz)',
+          ANZ: 'Australien und Neuseeland (915 MHz)',
+          KR: 'Korea (920 MHz)',
+          TW: 'Taiwan (920 MHz)',
+          IN: 'Indien (865 MHz)',
+          NZ_865: 'Neuseeland (865 MHz)',
+          TH: 'Thailand (920 MHz)',
+          MY_433: 'Malaysia (433 MHz)',
+          MY_919: 'Malaysia (919 MHz)',
+          SG_923: 'Singapur (923 MHz)',
+          BR_902: 'Brasilien (902 MHz)',
+          LORA_24: '2,4 GHz – weltweit',
+        },
+      },
+      nodes: {
+        title: 'Knoten',
+        empty:
+          'Noch keine Knoten. Das Funkgerät lernt Nachbarn kennen, wenn sie sich ankündigen (alle paar Stunden) oder in einen Kanal schreiben.',
+        search: 'Nach Name oder Nummer suchen',
+        favorite: 'Favorit',
+        noKey: 'kein Schlüssel',
+        noKeyHint:
+          'Direktnachrichten werden mit dem Schlüssel des Knotens verschlüsselt. Solange er unbekannt ist, sendet das Funkgerät keine solche Nachricht – die App fragt den Schlüssel selbst an.',
+        requestKey: 'Schlüssel anfragen',
+        keyRequested:
+          'Anfrage gesendet. Ein Knoten beantwortet solche Anfragen höchstens alle 12 Stunden, der Schlüssel kommt also eventuell erst mit seiner nächsten Ankündigung.',
+        mqtt: 'über das Internet (MQTT)',
+        battery: 'Akku {level} %',
+        remove: 'Vergessen',
+        removeConfirm: 'Knoten „{name}“ vergessen?',
+        removeHint:
+          'Das Funkgerät entfernt ihn aus seiner Datenbank. Kündigt sich der Knoten wieder an, erscheint er erneut. Der Chat in der App bleibt.',
+        more: 'Alle anzeigen ({n})',
+      },
+      channels: {
+        primary: 'Hauptkanal',
+        kind: {
+          public: 'offen – den Schlüssel kennen alle',
+          private: 'privat – gemeinsamer Schlüssel',
+          unencrypted: 'unverschlüsselt – alle können mitlesen',
+        },
+        share: 'Link',
+        linkCopied:
+          'Kanal-Link kopiert. Damit kann man im Kanal lesen und schreiben – gib ihn nur an Mitglieder weiter.',
+        privateHint:
+          'Ein zufälliger Schlüssel wird erzeugt. Lade Mitglieder mit dem Kanal-Link ein – auch die offiziellen Meshtastic-Apps verstehen ihn.',
+        namePlaceholder: 'bis 11 Byte',
+        create: 'Erstellen',
+        created: 'Kanal erstellt. Kopiere den Link und schicke ihn den Mitgliedern.',
+        addLink: 'Per Link hinzufügen',
+        linkHint:
+          'Ein Link meshtastic.org/e/#… aus der Meshtastic-App oder von einem Kanalmitglied.',
+        linkAdded: '{n} Kanal hinzugefügt | {n} Kanäle hinzugefügt',
+        linkNothing: 'Diese Kanäle sind schon auf dem Funkgerät.',
+      },
+    },
     chat: {
       connect: 'Verbinden',
       errors: {
@@ -1689,14 +1788,13 @@ export default {
         empty: 'Leere Nachricht',
         no_dialog: 'Chat nicht gefunden',
       },
-      via: 'MeshCore',
       deviceEncryption: 'verschlüsselt im Funkgerät, nicht in der App',
       openChannel: 'öffentlicher Kanal – alle können lesen',
       privateChannel: 'Kanal mit gemeinsamem Schlüssel',
       noRadio: 'Funkgerät nicht verbunden',
       otherRadio: 'Ein anderes Funkgerät ist verbunden',
       emptyHint:
-        'Noch keine Nachrichten. Text geht über Funk: bis zu 160 Byte auf einmal (lateinische Buchstaben 1 Byte, kyrillische 2). Lange Nachrichten gehen in Teilen raus.',
+        'Noch keine Nachrichten. Text geht über Funk: bis zu {limit} Byte auf einmal (lateinische Buchstaben 1 Byte, kyrillische 2). Lange Nachrichten gehen in Teilen.',
       placeholder: 'Nachricht über Funk',
       bytes: '{used} / {limit} Byte',
       parts: '{n} Teil | {n} Teile',
@@ -1705,6 +1803,9 @@ export default {
       sent: 'Gesendet',
       delivered: 'Das Funkgerät des Empfängers hat den Empfang bestätigt',
       unknownSender: 'Unbekannt',
+      pkiEncryption: 'mit Knotenschlüsseln im Funkgerät verschlüsselt, nicht in der App',
+      relayed: 'Vom Netz gehört und weitergegeben',
+      regionUnset: 'Beim Funkgerät ist keine Region gewählt',
     },
     errors: {
       generic: 'Das hat nicht geklappt ({code}).',
@@ -1727,12 +1828,12 @@ export default {
         'Keine Bluetooth-Verbindung möglich. Vielleicht ist das Funkgerät schon mit einem Telefon verbunden.',
       ble_io_failed: 'Bluetooth-Übertragung fehlgeschlagen.',
       characteristic_not_found:
-        'Das ist kein MeshCore-Funkgerät: Dem Gerät fehlt der passende Dienst.',
+        'Dem Gerät fehlt der passende Dienst: Es läuft mit der Firmware eines anderen Netzes.',
       scan_failed: 'Die Bluetooth-Suche ist fehlgeschlagen.',
       write_failed: 'Daten konnten nicht an das Funkgerät gesendet werden.',
       link_not_found: 'Die Verbindung zum Funkgerät ist geschlossen.',
       no_answer:
-        'Das Funkgerät hat nicht geantwortet. Prüfe, ob darauf die MeshCore-Companion-Firmware läuft (USB, Bluetooth oder WLAN).',
+        'Das Funkgerät hat nicht geantwortet. Prüfe, ob seine Firmware zum gewählten Netz passt (MeshCore braucht die Companion-Firmware).',
       device_lost: 'Die Verbindung zum Funkgerät ist abgerissen.',
       unsupported: 'Hier lässt sich kein Funkgerät verbinden.',
       too_many_links: 'Zu viele Verbindungen. Trenne ein anderes Funkgerät.',
@@ -1745,6 +1846,20 @@ export default {
       closed: 'Die Verbindung zum Funkgerät ist geschlossen.',
       not_in_contacts: 'Der Knoten ist nicht in den Kontakten des Funkgeräts.',
       radio_error: 'Funkfehler.',
+      no_key:
+        'Der Schlüssel des Empfängers ist noch unbekannt, und ohne ihn sendet das Funkgerät keine Direktnachricht. Frag den Schlüssel auf der Seite „Mesh-Netze“ an oder warte, bis sich der Knoten ankündigt.',
+      no_ack: 'Keine Bestätigung: Der Empfänger ist außer Reichweite oder ausgeschaltet.',
+      no_route: 'Kein Weg zum Empfänger gefunden.',
+      air_limit:
+        'Der Funkkanal ist belegt oder das Sendelimit ist erreicht – versuch es gleich noch einmal.',
+      radio_off: 'Der Sender des Funkgeräts ist aus oder keine Region gewählt.',
+      queue_full: 'Die Sendewarteschlange des Funkgeräts ist voll – warte kurz.',
+      primary_channel: 'Der Hauptkanal lässt sich nicht entfernen.',
+      no_owner: 'Das Funkgerät hat seinen Namen nicht gemeldet.',
+      no_config: 'Das Funkgerät hat seine Einstellungen nicht gemeldet.',
+      bad_channel_link: 'Das ist kein Meshtastic-Kanal-Link.',
+      send_failed: 'Die Nachricht wurde nicht gesendet.',
+      rebooted: 'Das Funkgerät wurde neu gestartet.',
     },
   },
   hotkeys: {

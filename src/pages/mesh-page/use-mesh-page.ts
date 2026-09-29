@@ -1,7 +1,7 @@
 /**
- * Страница «Mesh-сети»: подключение радио MeshCore и то, что с ним делают —
- * контакты, каналы, начало переписки. Состояние радио живёт в
- * mesh-connection-store; здесь — выбор устройства и действия страницы.
+ * Страница «Mesh-сети»: подключение радио (Meshtastic или MeshCore) и то, что
+ * с ним делают — узлы, контакты, каналы, начало переписки. Состояние радио
+ * живёт в сторах соединения; здесь — выбор устройства и действия страницы.
  */
 
 import { computed, ref } from 'vue'
@@ -9,16 +9,35 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { appToast } from '@/b-components/app-toast'
 import { useMessengerStore } from '@/b-components/messenger/store'
-import { NUS_SERVICE, DEFAULT_TCP_PORT } from '@/mesh/meshcore/constants'
+import type { MeshNetwork } from '@/mesh/ids'
+import { NUS_SERVICE, DEFAULT_TCP_PORT as MC_TCP_PORT } from '@/mesh/meshcore/constants'
 import type { McContact } from '@/mesh/meshcore/codec'
 import type { SessionChannel } from '@/mesh/meshcore/session'
+import {
+  BLE_SERVICE as MT_BLE_SERVICE,
+  DEFAULT_TCP_PORT as MT_TCP_PORT,
+} from '@/mesh/meshtastic/constants'
+import type { MtSessionChannel } from '@/mesh/meshtastic/session'
 import { radioAvailability, targetLabel, type MeshTarget } from '@/mesh/radio/open-link'
 import { listSerialPorts, scanBle } from '@/mesh/radio/tauri-radio'
 import { radioErrorFrom, type BleDeviceInfo, type SerialPortInfo } from '@/mesh/radio/types'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
-import { meshErrorCode, useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
+import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
+import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
+import { meshErrorCode } from '@/mesh/store/radio-common'
 
 export type TransportTab = 'serial' | 'ble' | 'tcp'
+
+/** Параметры сети для экрана подключения. */
+const NETWORK_RADIO: Record<MeshNetwork, { tcpPort: number; bleService: string }> = {
+  meshtastic: { tcpPort: MT_TCP_PORT, bleService: MT_BLE_SERVICE },
+  meshcore: { tcpPort: MC_TCP_PORT, bleService: NUS_SERVICE },
+}
+
+/** Стор соединения сети: у обеих одинаковые поля подключения. */
+export function useRadioStore(network: MeshNetwork) {
+  return network === 'meshtastic' ? useMeshtasticConnectionStore() : useMeshConnectionStore()
+}
 
 /** Текст ошибки радио: известный код — своим текстом, прочие — общим. */
 export function useMeshErrorText() {
@@ -30,11 +49,12 @@ export function useMeshErrorText() {
   }
 }
 
-export function useMeshConnect() {
-  const connection = useMeshConnectionStore()
+export function useMeshConnect(network: MeshNetwork) {
+  const connection = useRadioStore(network)
   const { status, lastDevice } = storeToRefs(connection)
   const errorText = useMeshErrorText()
   const availability = radioAvailability()
+  const radio = NETWORK_RADIO[network]
 
   const transport = ref<TransportTab>(lastDevice.value?.transport ?? 'serial')
   const busy = ref(false)
@@ -66,7 +86,7 @@ export function useMeshConnect() {
     if (scanning.value) return
     scanning.value = true
     try {
-      devices.value = await scanBle(all ? [] : [NUS_SERVICE], 5000)
+      devices.value = await scanBle(all ? [] : [radio.bleService], 5000)
     } catch (e) {
       devices.value = []
       appToast.error({ message: errorText(radioErrorFrom(e).code) })
@@ -79,7 +99,7 @@ export function useMeshConnect() {
   // Wi-Fi
   const host = ref(lastDevice.value?.transport === 'tcp' ? lastDevice.value.host : '')
   const port = ref(
-    String(lastDevice.value?.transport === 'tcp' ? lastDevice.value.port : DEFAULT_TCP_PORT)
+    String(lastDevice.value?.transport === 'tcp' ? lastDevice.value.port : radio.tcpPort)
   )
   const tcpValid = computed(() => {
     const p = Number(port.value)
@@ -123,6 +143,7 @@ export function useMeshConnect() {
     host,
     port,
     tcpValid,
+    defaultPort: radio.tcpPort,
     connectTo,
     connectSerial,
     connectBle,
@@ -138,9 +159,8 @@ export function portTitle(p: SerialPortInfo): string {
   return name || p.path
 }
 
-/** Открыть переписку в мессенджере — из контакта или канала на этой странице. */
+/** Открыть переписку в мессенджере — из узла, контакта или канала на этой странице. */
 export function useMeshOpenChat() {
-  const connection = useMeshConnectionStore()
   const meshChat = useMeshChatStore()
   const messenger = useMessengerStore()
 
@@ -149,19 +169,33 @@ export function useMeshOpenChat() {
     await messenger.openChat(id)
   }
 
+  // MeshCore
   async function writeTo(contact: McContact): Promise<void> {
-    const self = connection.self
+    const self = useMeshConnectionStore().self
     if (!self) return
     await openDialog(await meshChat.ensureDirectDialog(self.publicKey, contact))
   }
 
   async function openChannel(channel: SessionChannel): Promise<void> {
-    const self = connection.self
+    const self = useMeshConnectionStore().self
     if (!self) return
     await openDialog(await meshChat.ensureChannelDialog(self.publicKey, channel))
   }
 
-  return { writeTo, openChannel }
+  // Meshtastic
+  async function writeToNode(node: { num: number; name: string }): Promise<void> {
+    const self = useMeshtasticConnectionStore().self
+    if (!self) return
+    await openDialog(await meshChat.ensureMeshtasticDirectDialog(self.nodeNum, node))
+  }
+
+  async function openMtChannel(channel: MtSessionChannel): Promise<void> {
+    const self = useMeshtasticConnectionStore().self
+    if (!self) return
+    await openDialog(await meshChat.ensureMeshtasticChannelDialog(self.nodeNum, channel))
+  }
+
+  return { writeTo, openChannel, writeToNode, openMtChannel }
 }
 
 /** Действие с радио: ошибка — тостом, а не в консоль. */
@@ -175,6 +209,19 @@ export function useMeshAction() {
     } catch (e) {
       appToast.error({ message: errorText(meshErrorCode(e)) })
       return false
+    }
+  }
+}
+
+/** Скопировать текст (ключ, ссылку) с тостом об успехе или ошибке. */
+export function useCopy() {
+  const { t } = useI18n()
+  return async (text: string, done: string): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(text)
+      appToast.success({ message: done })
+    } catch {
+      appToast.error({ message: t('mesh.errors.generic', { code: 'clipboard' }) })
     }
   }
 }

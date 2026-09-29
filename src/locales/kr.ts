@@ -1540,8 +1540,17 @@ export default {
   },
   mesh: {
     title: '메시 네트워크',
-    lead: '인터넷이나 휴대전화망 없이 LoRa 무전기로 대화하세요. MeshCore(companion 펌웨어)가 설치된 무전기를 USB, 블루투스 또는 Wi-Fi로 연결하면 그 대화가 메신저에 일반 대화와 함께 표시됩니다.',
+    lead: '인터넷이나 휴대전화망 없이 LoRa 무전기로 대화하세요. Meshtastic 또는 MeshCore 무전기를 USB, 블루투스 또는 Wi-Fi로 연결하면 그 대화가 메신저에 일반 대화와 함께 표시됩니다.',
     desktopOnly: '무전기는 데스크톱 앱(macOS, Windows, Linux)에서 연결할 수 있습니다.',
+    networks: {
+      label: '네트워크',
+      meshtastic: 'Meshtastic',
+      meshcore: 'MeshCore',
+      meshtasticLead:
+        '가장 널리 쓰이는 LoRa 메시 네트워크입니다. 노드가 서로의 메시지를 전달하며, 개인 메시지는 노드 키로 암호화됩니다.',
+      meshcoreLead:
+        '리피터를 거쳐 전달하는 네트워크입니다. 메시지가 모두에게 퍼지지 않고 찾은 경로를 따라갑니다. companion 펌웨어가 필요합니다.',
+    },
     status: {
       idle: '연결되지 않음',
       connecting: '연결 중…',
@@ -1569,8 +1578,7 @@ export default {
         '시스템이 PIN을 요청하면: 화면이 없는 무전기는 보통 123456이고, 화면이 있는 무전기는 화면에 표시됩니다.',
       host: '무전기 주소',
       port: '포트',
-      hostHint:
-        '로컬 네트워크의 무전기 IP 주소 또는 .local 이름입니다. MeshCore 기본 포트는 5000입니다.',
+      hostHint: '로컬 네트워크의 무전기 IP 주소 또는 .local 이름입니다. 기본 포트: {port}.',
       lanWarning:
         'Wi-Fi에서는 앱과 무전기가 암호화나 비밀번호 없이 통신합니다. 다른 사람의 네트워크에서는 USB나 블루투스를 쓰세요.',
       lastDevice: '최근 무전기: {name}',
@@ -1651,6 +1659,95 @@ export default {
       add: '추가',
       privateCreated: '채널을 만들었습니다. 키를 복사해 구성원에게 전달하세요.',
     },
+    mt: {
+      device: {
+        id: '노드 번호',
+        noKey: '없음: 무전기에 아직 지역이 없거나 펌웨어가 2.5보다 오래되었습니다',
+        radioSettings: '무전기',
+        region: '지역',
+        preset: '프리셋',
+        apply: '적용',
+        applied: '설정을 보냈습니다. 무전기가 다시 시작한 뒤 다시 연결됩니다.',
+        presetHint:
+          '지역은 해당 국가에서 허용된 주파수를 정합니다. 프리셋은 속도와 거리를 정하며, 대화하려는 모든 사람이 같은 프리셋을 써야 합니다. 보통 LongFast입니다.',
+        longName: '이름',
+        shortName: '약칭',
+        nameHint:
+          '다른 노드에 이름이 보입니다. 약칭은 최대 4자로 무전기 화면에 표시됩니다. 이름을 바꾸면 무전기가 다시 시작합니다.',
+        powered: '외부 전원',
+        rebooting: '무전기를 다시 시작하는 중…',
+        notice: '무전기 알림: {text}',
+        dismiss: '숨기기',
+      },
+      region: {
+        lead: '지역이 선택되지 않아 무전기가 송수신하지 않습니다. 현재 있는 국가를 선택하세요. 허용 주파수와 출력이 여기에 따라 정해집니다.',
+        choose: '지역 선택',
+        unset: '지역 없음',
+        names: {
+          RU: '러시아 (868 MHz)',
+          EU_868: '유럽 (868 MHz)',
+          EU_433: '유럽 (433 MHz)',
+          US: '미국 (915 MHz)',
+          UA_433: '우크라이나 (433 MHz)',
+          UA_868: '우크라이나 (868 MHz)',
+          KZ_433: '카자흐스탄 (433 MHz)',
+          KZ_863: '카자흐스탄 (863 MHz)',
+          CN: '중국 (470 MHz)',
+          JP: '일본 (920 MHz)',
+          ANZ: '호주 및 뉴질랜드 (915 MHz)',
+          KR: '한국 (920 MHz)',
+          TW: '대만 (920 MHz)',
+          IN: '인도 (865 MHz)',
+          NZ_865: '뉴질랜드 (865 MHz)',
+          TH: '태국 (920 MHz)',
+          MY_433: '말레이시아 (433 MHz)',
+          MY_919: '말레이시아 (919 MHz)',
+          SG_923: '싱가포르 (923 MHz)',
+          BR_902: '브라질 (902 MHz)',
+          LORA_24: '2.4 GHz, 전 세계',
+        },
+      },
+      nodes: {
+        title: '노드',
+        empty:
+          '아직 노드가 없습니다. 이웃 노드가 자신을 알리거나(몇 시간마다) 채널에 글을 쓰면 무전기가 알게 됩니다.',
+        search: '이름 또는 번호로 검색',
+        favorite: '즐겨찾기',
+        noKey: '키 없음',
+        noKeyHint:
+          '개인 메시지는 노드 키로 암호화됩니다. 키를 알기 전까지 무전기는 그런 메시지를 보내지 않으며, 앱이 알아서 키를 요청합니다.',
+        requestKey: '키 요청',
+        keyRequested:
+          '요청을 보냈습니다. 노드는 이런 요청에 12시간에 한 번까지만 응답하므로, 키는 다음 알림과 함께 나중에 올 수 있습니다.',
+        mqtt: '인터넷 경유(MQTT)',
+        battery: '배터리 {level}%',
+        remove: '삭제',
+        removeConfirm: '노드 "{name}"을(를) 삭제할까요?',
+        removeHint:
+          '무전기의 데이터베이스에서 삭제됩니다. 노드가 다시 알리면 목록에 다시 나타납니다. 앱의 대화는 남습니다.',
+        more: '모두 보기 ({n})',
+      },
+      channels: {
+        primary: '기본',
+        kind: {
+          public: '공개: 모두가 키를 앎',
+          private: '비공개: 공유 키',
+          unencrypted: '암호화 없음: 누구나 읽을 수 있음',
+        },
+        share: '링크',
+        linkCopied:
+          '채널 링크를 복사했습니다. 이 링크로 채널을 읽고 쓸 수 있으니 멤버에게만 공유하세요.',
+        privateHint:
+          '무작위 키가 만들어집니다. 채널 링크로 멤버를 초대하세요. 공식 Meshtastic 앱도 이 링크를 인식합니다.',
+        namePlaceholder: '최대 11바이트',
+        create: '만들기',
+        created: '채널을 만들었습니다. 링크를 복사해 멤버에게 보내세요.',
+        addLink: '링크로 추가',
+        linkHint: 'Meshtastic 앱이나 채널 멤버에게서 받은 meshtastic.org/e/#… 링크입니다.',
+        linkAdded: '채널 {n}개를 추가했습니다',
+        linkNothing: '이 채널은 이미 무전기에 있습니다.',
+      },
+    },
     chat: {
       connect: '연결',
       errors: {
@@ -1659,14 +1756,13 @@ export default {
         empty: '빈 메시지',
         no_dialog: '대화를 찾을 수 없습니다',
       },
-      via: 'MeshCore',
       deviceEncryption: '앱이 아닌 무전기에서 암호화',
       openChannel: '공개 채널 — 누구나 읽을 수 있음',
       privateChannel: '공유 키 채널',
       noRadio: '무전기가 연결되지 않음',
       otherRadio: '다른 무전기가 연결됨',
       emptyHint:
-        '아직 메시지가 없습니다. 텍스트는 무전으로 전송됩니다. 한 번에 최대 160바이트(라틴 문자 1바이트, 한글 3바이트)이며 긴 메시지는 나누어 보냅니다.',
+        '아직 메시지가 없습니다. 텍스트는 무전으로 전송됩니다. 한 번에 최대 {limit}바이트(라틴 문자 1바이트, 한글 3바이트)이며 긴 메시지는 나누어 보냅니다.',
       placeholder: '무전 메시지',
       bytes: '{used} / {limit} 바이트',
       parts: '{n}개 부분',
@@ -1675,6 +1771,9 @@ export default {
       sent: '송신됨',
       delivered: '상대방 무전기가 수신을 확인했습니다',
       unknownSender: '알 수 없음',
+      pkiEncryption: '앱이 아닌 무전기에서 노드 키로 암호화',
+      relayed: '네트워크가 받아서 전달함',
+      regionUnset: '무전기에 지역이 선택되지 않음',
     },
     errors: {
       generic: '실패했습니다 ({code}).',
@@ -1696,12 +1795,13 @@ export default {
       ble_connect_failed:
         '블루투스로 연결하지 못했습니다. 무전기가 이미 휴대전화에 연결되어 있을 수 있습니다.',
       ble_io_failed: '블루투스 전송에 실패했습니다.',
-      characteristic_not_found: 'MeshCore 무전기가 아닙니다. 기기에 필요한 서비스가 없습니다.',
+      characteristic_not_found:
+        '기기에 필요한 서비스가 없습니다. 다른 네트워크의 펌웨어가 설치되어 있습니다.',
       scan_failed: '블루투스 검색에 실패했습니다.',
       write_failed: '무전기로 데이터를 보내지 못했습니다.',
       link_not_found: '무전기와의 연결이 닫혔습니다.',
       no_answer:
-        '무전기가 응답하지 않습니다. MeshCore companion 펌웨어(USB, 블루투스 또는 Wi-Fi)가 설치되어 있는지 확인하세요.',
+        '무전기가 응답하지 않습니다. 펌웨어가 선택한 네트워크와 맞는지 확인하세요(MeshCore에는 companion 펌웨어가 필요합니다).',
       device_lost: '무전기와의 연결이 끊겼습니다.',
       unsupported: '여기서는 무전기를 연결할 수 없습니다.',
       too_many_links: '연결이 너무 많습니다. 다른 무전기의 연결을 해제하세요.',
@@ -1714,6 +1814,19 @@ export default {
       closed: '무전기와의 연결이 닫혔습니다.',
       not_in_contacts: '노드가 무전기 연락처에 없습니다.',
       radio_error: '무전기 오류입니다.',
+      no_key:
+        '상대방의 키를 아직 모르며, 키가 없으면 무전기가 개인 메시지를 보내지 않습니다. "메시 네트워크" 페이지에서 키를 요청하거나 노드가 자신을 알릴 때까지 기다리세요.',
+      no_ack: '확인 없음: 상대방이 범위 밖에 있거나 꺼져 있습니다.',
+      no_route: '상대방까지의 경로를 찾지 못했습니다.',
+      air_limit: '전파가 혼잡하거나 전송 빈도 제한에 걸렸습니다. 잠시 후 다시 시도하세요.',
+      radio_off: '무전기 송신기가 꺼져 있거나 지역이 선택되지 않았습니다.',
+      queue_full: '무전기 전송 대기열이 가득 찼습니다. 잠시 기다리세요.',
+      primary_channel: '기본 채널은 삭제할 수 없습니다.',
+      no_owner: '무전기가 이름을 알려 주지 않았습니다.',
+      no_config: '무전기가 설정을 알려 주지 않았습니다.',
+      bad_channel_link: 'Meshtastic 채널 링크가 아닙니다.',
+      send_failed: '메시지를 보내지 못했습니다.',
+      rebooted: '무전기가 다시 시작했습니다.',
     },
   },
   hotkeys: {

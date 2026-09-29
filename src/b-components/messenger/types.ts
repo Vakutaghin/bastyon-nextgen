@@ -38,7 +38,12 @@ export interface MessageInfo {
  * Сеть диалога: Matrix (по умолчанию, поле не задано) или mesh-сеть через
  * радио (src/mesh). У mesh-диалогов id начинается с `mesh:`.
  */
-export type ChatTransport = 'matrix' | 'meshcore'
+export type ChatTransport = 'matrix' | 'meshcore' | 'meshtastic'
+
+/** Диалог или сообщение идёт через радио (MeshCore, Meshtastic). */
+export function isMeshTransport(t: ChatTransport | undefined): t is 'meshcore' | 'meshtastic' {
+  return t === 'meshcore' || t === 'meshtastic'
+}
 
 export interface Message {
   id: string
@@ -63,6 +68,8 @@ export interface Message {
   encrypted?: boolean
   /** Не задано — Matrix. */
   transport?: ChatTransport
+  /** Meshtastic: у сообщения есть id пакета — на него можно ответить и отреагировать по радио. */
+  meshReplyable?: boolean
 }
 
 export interface Dialog {
@@ -76,6 +83,6 @@ export interface Dialog {
   transport?: ChatTransport
   /** Mesh: личный диалог с узлом или канал. */
   meshKind?: 'direct' | 'channel'
-  /** Mesh-канал: открытый (Public, #тег) или приватный. */
+  /** Mesh-канал: открытый (Public, #тег, ключ по умолчанию) или приватный. */
   channelKind?: 'public' | 'hashtag' | 'private'
 }
