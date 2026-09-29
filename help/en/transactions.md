@@ -14,7 +14,7 @@ Until the transaction is in a block, other people do not see it yet: the post do
 
 ## The hourglass in the header
 
-The hourglass icon in the header opens the **“Awaiting confirmation”** list: posts, comments and ratings that are not on the blockchain yet. Each is marked **“Not on-chain yet”**. When there is nothing to wait for, the list says **“No active events”**.
+On a computer, the hourglass icon in the header opens the **“Awaiting confirmation”** list: posts, comments and ratings that are not on the blockchain yet. Each is marked **“Not on-chain yet”**. When there is nothing to wait for, the list says **“No active events”**.
 
 - **A post** is visible to you at once in your profile feed, marked **“Not yet published to the blockchain”**. It cannot be rated or commented on yet. The **“Open post”** button in the list shows how it will look.
 - **A comment** appears under the post marked **“Pending”**.
