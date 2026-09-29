@@ -1785,6 +1785,12 @@ export default {
         linkNothing: 'Эти каналы уже есть на радио.',
       },
     },
+    share: {
+      menu: 'Мой адрес Reticulum',
+      text: 'Мой адрес в Reticulum — если пропадёт интернет, пишите туда: {address}',
+      write: 'Написать через Reticulum',
+      startNode: 'Сначала запустите узел Reticulum.',
+    },
     rns: {
       status: {
         idle: 'Узел остановлен',

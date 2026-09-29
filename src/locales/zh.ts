@@ -1720,6 +1720,12 @@ export default {
         linkNothing: '这些频道已在电台上。',
       },
     },
+    share: {
+      menu: '我的 Reticulum 地址',
+      text: '我的 Reticulum 地址——如果网络断了，请写到这里：{address}',
+      write: '通过 Reticulum 发消息',
+      startNode: '请先启动 Reticulum 节点。',
+    },
     rns: {
       status: {
         idle: '节点已停止',

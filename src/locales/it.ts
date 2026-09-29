@@ -1791,6 +1791,12 @@ export default {
         linkNothing: 'Questi canali sono già sulla radio.',
       },
     },
+    share: {
+      menu: 'Il mio indirizzo Reticulum',
+      text: 'Il mio indirizzo Reticulum: se cade internet, scrivimi lì: {address}',
+      write: 'Scrivi tramite Reticulum',
+      startNode: 'Avvia prima il nodo Reticulum.',
+    },
     rns: {
       status: {
         idle: 'Nodo fermo',

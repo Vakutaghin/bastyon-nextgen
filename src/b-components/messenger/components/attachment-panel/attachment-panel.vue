@@ -12,6 +12,9 @@
       <SC_MenuItem v-if="canSendIpfs" type="button" @click="pickIpfs">
         <span aria-hidden="true">🌐</span> {{ t('messenger.ipfsFile') }}
       </SC_MenuItem>
+      <SC_MenuItem v-if="canShareMesh" type="button" @click="pickMesh">
+        <span aria-hidden="true">📡</span> {{ t('mesh.share.menu') }}
+      </SC_MenuItem>
       <SC_MenuItem v-if="canSendPkoin" type="button" @click="pickPkoin">
         <span aria-hidden="true">💎</span> {{ t('messenger.sendPkoin') }}
       </SC_MenuItem>
@@ -39,12 +42,15 @@ const props = defineProps<{
   canSendPkoin?: boolean
   /** Файл через IPFS — без лимита чата (только десктоп). */
   canSendIpfs?: boolean
+  /** Свой адрес Reticulum — написать через mesh без интернета. */
+  canShareMesh?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'pickFiles', files: File[]): void
   (e: 'pickPkoin'): void
   (e: 'pickIpfs'): void
+  (e: 'pickMesh'): void
 }>()
 
 const { t } = useI18n()
@@ -102,6 +108,11 @@ const pickPkoin = () => {
 const pickIpfs = () => {
   closeMenu()
   emit('pickIpfs')
+}
+
+const pickMesh = () => {
+  closeMenu()
+  emit('pickMesh')
 }
 
 const collectAndEmit = (input: HTMLInputElement) => {

@@ -53,6 +53,9 @@
           <PostEmbed v-else :target="seg.target" />
         </template>
         <LinkPreview v-if="previewUrl" :url="previewUrl" />
+        <SC_MeshRouteButton v-if="lxmfAddress" type="button" @click.stop="writeViaReticulum">
+          📡 {{ t('mesh.share.write') }}
+        </SC_MeshRouteButton>
       </div>
 
       <!-- Не ушло в сеть: текст остаётся на экране с кнопкой повтора (S35). -->
@@ -134,10 +137,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { Popover, Modal } from 'ant-design-vue'
 import { MoreOutlined, DeleteOutlined, RollbackOutlined } from '@/components/icons'
 import { parseMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
+import { useReticulumStore } from '@/mesh/store/reticulum-store'
+import { appToast } from '@/b-components/app-toast'
 import { isMeshTransport, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { chatUserName, getAddressFromMatrixId } from '../../helpers'
@@ -179,6 +185,7 @@ import {
   SC_ReplyQuote,
   SC_ReplyQuoteName,
   SC_ReplyQuoteText,
+  SC_MeshRouteButton,
 } from './styled'
 
 const APopover = Popover
@@ -199,6 +206,7 @@ const props = withDefaults(
 const emit = defineEmits<{ reply: [message: Message] }>()
 
 const store = useMessengerStore()
+const router = useRouter()
 const { t } = useI18n()
 
 const isMine = computed<boolean>(
@@ -309,6 +317,32 @@ const messageSegments = computed(() => formatMessageSegments(props.message.text 
 const ipfsFile = computed(() =>
   (props.message.type ?? 'text') === 'text' ? parseIpfsFileLink(props.message.text || '') : null
 )
+
+/**
+ * Адрес LXMF (`lxmf@<32 hex>`, как в ссылках NomadNet) в чужом сообщении:
+ * написать по нему через Reticulum — когда узел есть в этой сборке.
+ */
+const reticulum = useReticulumStore()
+const lxmfAddress = computed<string | null>(() => {
+  if (isMine.value || !reticulum.available || (props.message.type ?? 'text') !== 'text') {
+    return null
+  }
+  const match = /\blxmf@([0-9a-f]{32})\b/i.exec(props.message.text || '')
+  return match ? match[1]!.toLowerCase() : null
+})
+
+async function writeViaReticulum(): Promise<void> {
+  const address = lxmfAddress.value
+  if (!address) return
+  if (reticulum.status !== 'running' || !reticulum.address) {
+    appToast.info({ message: t('mesh.share.startNode') })
+    void router.push({ path: '/mesh', query: { net: 'reticulum' } })
+    return
+  }
+  const name = isMesh.value ? reticulum.peerName(address) : displayName.value
+  const id = await useMeshChatStore().ensureLxmfDialog(reticulum.address, address, name)
+  await store.openChat(id)
+}
 
 /** Первый внешний http(s)-URL для OG-превью (не bastyon-ссылка). */
 // OG-превью запрашивается у homeserver'а с userId — для E2E-переписки не

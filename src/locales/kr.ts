@@ -1766,6 +1766,12 @@ export default {
         linkNothing: '이 채널은 이미 무전기에 있습니다.',
       },
     },
+    share: {
+      menu: '내 Reticulum 주소',
+      text: '내 Reticulum 주소입니다. 인터넷이 끊기면 여기로 보내 주세요: {address}',
+      write: 'Reticulum으로 쓰기',
+      startNode: '먼저 Reticulum 노드를 실행하세요.',
+    },
     rns: {
       status: {
         idle: '노드 중지됨',

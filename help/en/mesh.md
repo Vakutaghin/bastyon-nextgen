@@ -131,6 +131,10 @@ On Android the RNode connects over USB through an OTG adapter. The first time th
 
 If the other person is offline, a message can wait for them on a **propagation node** (up to 30 days). Choose a node from the list: messages to offline people go through it, and **Get messages** collects the messages sent to you.
 
+### If the internet goes down
+
+In an ordinary Bastyon chat, **My Reticulum address** in the 📎 menu sends the other person your address. Under a message with an address (`lxmf@…`) they get a **Message via Reticulum** button: the conversation opens in a Reticulum chat and goes without the internet, over the local network, a hub or radio. Both of you need the node running.
+
 ### Pictures and files
 
 In a Reticulum chat, **Attach** sends a picture or a file; the text in the field goes as its caption. A picture is scaled down before sending, up to 900 KB in total at a time. Attachments work with Sideband and MeshChat; voice messages from them arrive as files. Over radio (RNode) a large attachment takes a long time, so keep them small.

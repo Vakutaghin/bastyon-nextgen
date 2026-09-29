@@ -1781,6 +1781,12 @@ export default {
         linkNothing: 'These channels are already on the radio.',
       },
     },
+    share: {
+      menu: 'My Reticulum address',
+      text: 'My Reticulum address — if the internet goes down, write to me there: {address}',
+      write: 'Message via Reticulum',
+      startNode: 'Start the Reticulum node first.',
+    },
     rns: {
       status: {
         idle: 'Node stopped',

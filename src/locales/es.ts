@@ -1800,6 +1800,12 @@ export default {
         linkNothing: 'Estos canales ya están en la radio.',
       },
     },
+    share: {
+      menu: 'Mi dirección de Reticulum',
+      text: 'Mi dirección de Reticulum: si se cae internet, escríbeme ahí: {address}',
+      write: 'Escribir por Reticulum',
+      startNode: 'Primero pon en marcha el nodo Reticulum.',
+    },
     rns: {
       status: {
         idle: 'Nodo detenido',

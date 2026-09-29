@@ -1800,6 +1800,12 @@ export default {
         linkNothing: 'Diese Kanäle sind schon auf dem Funkgerät.',
       },
     },
+    share: {
+      menu: 'Meine Reticulum-Adresse',
+      text: 'Meine Reticulum-Adresse — falls das Internet ausfällt, schreib mir dorthin: {address}',
+      write: 'Über Reticulum schreiben',
+      startNode: 'Starten Sie zuerst den Reticulum-Knoten.',
+    },
     rns: {
       status: {
         idle: 'Knoten gestoppt',

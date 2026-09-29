@@ -260,3 +260,23 @@ export const SC_RetryButton = styled.button`
     opacity: 0.8;
   }
 `
+
+/** «Написать через Reticulum» у сообщения с адресом `lxmf@…`. */
+export const SC_MeshRouteButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-full);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-primary);
+  background: var(--ui-bg);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+  }
+`

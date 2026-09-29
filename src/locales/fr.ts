@@ -1804,6 +1804,12 @@ export default {
         linkNothing: 'Ces canaux sont déjà sur la radio.',
       },
     },
+    share: {
+      menu: 'Mon adresse Reticulum',
+      text: 'Mon adresse Reticulum : si internet tombe, écris-moi là : {address}',
+      write: 'Écrire via Reticulum',
+      startNode: "Démarrez d'abord le nœud Reticulum.",
+    },
     rns: {
       status: {
         idle: 'Nœud arrêté',

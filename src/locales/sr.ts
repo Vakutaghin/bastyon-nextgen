@@ -1782,6 +1782,12 @@ export default {
         linkNothing: 'Ови канали већ постоје на радију.',
       },
     },
+    share: {
+      menu: 'Моја Reticulum адреса',
+      text: 'Моја Reticulum адреса — ако нестане интернета, пиши ми овде: {address}',
+      write: 'Пиши преко Reticulum-а',
+      startNode: 'Прво покрените Reticulum чвор.',
+    },
     rns: {
       status: {
         idle: 'Чвор је заустављен',

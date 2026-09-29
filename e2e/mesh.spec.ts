@@ -548,6 +548,24 @@ test.describe('reticulum', () => {
       method: 'direct',
     })
     await expect(page.getByText('Слышу тебя через Reticulum')).toBeVisible()
+
+    // Адрес lxmf@… в сообщении — кнопка «Написать через Reticulum» открывает чат.
+    const CAROL = 'e7'.repeat(16)
+    rns.emit({
+      kind: 'message',
+      id: 'from-bob-2',
+      from: BOB,
+      title: '',
+      content: `Это Кэрол, пиши ей: lxmf@${CAROL}`,
+      timestamp: 1_790_000_100,
+      signed: true,
+      method: 'direct',
+    })
+    await page.getByRole('button', { name: 'Написать через Reticulum' }).click()
+    await expect(page.getByText('Слышу тебя через Reticulum')).toBeHidden()
+    await page.getByPlaceholder('Сообщение по радио').fill('Привет, Кэрол')
+    await page.getByPlaceholder('Сообщение по радио').press('Enter')
+    await expect.poll(() => rns.sent.map((m) => m.to)).toContain(CAROL)
   })
 
   test('pictures and files over LXMF', async ({ page }) => {

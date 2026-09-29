@@ -151,9 +151,11 @@
         <AttachmentPanel
           :can-send-pkoin="canSendPkoin"
           :can-send-ipfs="canSendIpfs"
+          :can-share-mesh="canShareMesh"
           @pick-files="handlePickFiles"
           @pick-pkoin="openPkoinModal"
           @pick-ipfs="sendViaIpfs"
+          @pick-mesh="shareMeshAddress"
         />
 
         <SC_MessageInput
@@ -250,6 +252,7 @@ import { useVoiceRecording } from './use-voice-recording'
 import { usePartnerInfo } from './use-partner-info'
 import { useChatInput } from './use-chat-input'
 import { useIpfsSend } from './use-ipfs-send'
+import { useMeshShare } from './use-mesh-share'
 import { tooLargeForChat } from './too-large-for-chat'
 import {
   SC_ChatRoomContainer,
@@ -475,6 +478,9 @@ const inputAreaRef = ref<HTMLElement | null>(null)
 
 // Файл через IPFS — ссылкой в чат, как обычное сообщение.
 const { available: canSendIpfs, sendViaIpfs } = useIpfsSend((text) => emit('send', text))
+const { available: canShareMesh, shareAddress: shareMeshAddress } = useMeshShare((text) =>
+  emit('send', text)
+)
 
 async function handlePickFiles(files: File[]): Promise<void> {
   if (!store.activeChatId) return
