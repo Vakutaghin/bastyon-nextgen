@@ -236,6 +236,9 @@ jobs:
           java-version: '21'
 
       - name: Install frontend dependencies and build web bundle
+        env:
+          # Сборка для Capacitor: сервис-воркер PWA там только вредит (vite.config.js).
+          VITE_CAPACITOR: 'true'
         run: |
           pnpm install --frozen-lockfile
           pnpm build

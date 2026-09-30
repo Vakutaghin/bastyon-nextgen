@@ -121,11 +121,20 @@ export default defineConfig(({ mode }) => ({
     wasm(), // Плагин для поддержки WebAssembly (нужен для tiny-secp256k1)
     // PWA: service worker для offline / установки. Отключаем в Tauri (там
     // фронт грузится через asset-протокол, SW не нужен).
+    //
+    // В Capacitor (VITE_CAPACITOR) он вреден: файлы и так лежат в APK, а
+    // воркер после обновления отдавал код прошлой версии, и первый запуск
+    // бывал белым экраном. Там собирается самоуничтожающийся sw.js без
+    // регистрации: воркер старой версии подхватит его при проверке обновления,
+    // удалит себя вместе с кэшем и перезагрузит страницу уже с новым кодом.
     ...(process.env.VITE_TAURI === 'true'
       ? []
       : [
           VitePWA({
             registerType: 'autoUpdate',
+            ...(process.env.VITE_CAPACITOR === 'true'
+              ? { selfDestroying: true, injectRegister: false }
+              : {}),
             // Manifest уже в public/manifest.webmanifest — берём его как есть.
             manifest: false,
             // Игнорируем precache мини-приложений и WASM-чанков (большие).
