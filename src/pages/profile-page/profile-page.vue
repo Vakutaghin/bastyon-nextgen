@@ -167,13 +167,15 @@ async function fetchUserProfile(identifier: string): Promise<void> {
 
     userAddress.value = address
 
-    // Свой профиль: берём данные из auth-store, getuserprofile не дёргаем
-    // (нам они доступны без сетевого запроса).
+    // Свой профиль: сразу показываем данные из auth-store, а свежие догружаем
+    // следом. Снимок сделан при входе: опубликованные потом посты, новые
+    // подписчики и репутация в нём не видны, и счётчик постов отставал.
     const myAddress = authStore.getUserAddress
     const myProfile = authStore.getUserProfile
     if (myAddress && address === myAddress) {
       if (myProfile) {
         profile.value = { ...myProfile } as UserProfile
+        void refreshOwnProfile(address)
       } else {
         // Регистрация в процессе — собираем заглушку из pending-nickname.
         const pendingNickname = readPendingNickname()
@@ -220,6 +222,24 @@ async function fetchUserProfile(identifier: string): Promise<void> {
     error.value = e instanceof Error ? e.message : t('profile.loadFailed')
   } finally {
     loading.value = false
+  }
+}
+
+/** Свежий профиль с ноды — поверх снимка из auth-store (своя страница). */
+async function refreshOwnProfile(address: string): Promise<void> {
+  try {
+    const response = (await getByPRCWithAuth({
+      method: rpcEndpoints.getUserProfile,
+      parameters: [[address]],
+      options: { auth: false },
+    })) as { data?: UserProfile[] } | UserProfile[]
+    const fresh = Array.isArray(response) ? response[0] : response?.data?.[0]
+    // Пока шёл запрос, могли открыть другой профиль.
+    if (fresh && userAddress.value === address && profile.value) {
+      profile.value = { ...profile.value, ...fresh }
+    }
+  } catch (e) {
+    console.warn('[profile] own profile refresh failed', e)
   }
 }
 

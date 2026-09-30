@@ -182,6 +182,7 @@ import FollowersListModal from '@/b-components/profile/followers-list-modal/foll
 import type { RelationListType } from '@/composables/use-followers-list'
 import { ICON_PRIMARY_24, ICON_SIZE_11 } from '@/styles/icon-styles'
 import { userName } from '@/services/user-names'
+import { publicationsCount as countPublications } from './publications-count'
 import {
   SC_ProfileSidebar,
   SC_UserAvatar,
@@ -290,17 +291,11 @@ const formattedReputation = computed<string>(() => {
   return num.toFixed(1)
 })
 
-// `getuserprofile` возвращает `postcnt`; `content[200]` — посты по типу,
-// в свежих ответах используется `publications_count`.
-const publicationsCount = computed<number>(() => {
-  const p = props.profile as ProfileWithAccSet | null | undefined
-  if (!p) return 0
-  const fromApi = p.publications_count ?? p.postcnt
-  if (typeof fromApi === 'number' && !Number.isNaN(fromApi)) return fromApi
-  const fromContent = p.content?.[200]
-  if (typeof fromContent === 'number' && !Number.isNaN(fromContent)) return fromContent
-  return 0
-})
+// Число публикаций — как в ленте профиля: сумма `content` по типам, а не
+// `postcnt`, который у ноды расходится с лентой (publications-count.ts).
+const publicationsCount = computed<number>(() =>
+  countPublications(props.profile as ProfileWithAccSet | null | undefined)
+)
 
 // ── Списки подписчиков / подписок ───────────────────────────────────
 const listOpen = ref(false)
