@@ -4,7 +4,7 @@
     :placement="mobile ? 'bottom' : 'right'"
     :width="PANEL_WIDTH"
     :height="PANEL_HEIGHT"
-    :z-index="Z_INDEX.MODAL"
+    :root-style="PANEL_ROOT_STYLE"
     :closable="false"
     :body-style="PANEL_BODY_STYLE"
     :header-style="PANEL_HEADER_STYLE"
@@ -45,11 +45,11 @@ import { Drawer as ADrawer } from 'ant-design-vue'
 import { CloseOutlined, HelpBookIcon, LeftOutlined } from '@/components/icons'
 import { useViewport } from '@/composables/use-viewport'
 import { useHelpStore } from '@/stores/help-store'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { topicPath } from './help-view'
 import {
   PANEL_BODY_STYLE,
   PANEL_HEADER_STYLE,
+  PANEL_ROOT_STYLE,
   SC_PanelButton,
   SC_PanelHead,
   SC_PanelSpacer,

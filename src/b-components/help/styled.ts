@@ -315,7 +315,7 @@ export const SC_TermMore = styled.a`
 `
 
 /** Всплывающее определение термина — над боковой панелью справки. */
-export const TERM_OVERLAY_STYLE = { zIndex: Z_INDEX.MODAL + 10 }
+export const TERM_OVERLAY_STYLE = { zIndex: Z_INDEX.HELP_PANEL + 10 }
 
 export const SC_Sequence = styled.nav`
   display: grid;
@@ -431,3 +431,9 @@ export const SC_State = styled.div`
 /** Стили самой панели antd: отступы тела и шапки. */
 export const PANEL_BODY_STYLE = { padding: '20px 24px 32px' }
 export const PANEL_HEADER_STYLE = { padding: '10px 16px' }
+/**
+ * Слой панели — на корне `.ant-drawer`: проп `z-index` antdv 4 кладёт на
+ * внутреннюю обёртку, а корень остаётся на 1000 из CSS, и панель уходила под
+ * любое окно (F1 или «?» в окне чаевых, продвижения).
+ */
+export const PANEL_ROOT_STYLE = { zIndex: Z_INDEX.HELP_PANEL }

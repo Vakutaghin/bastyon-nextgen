@@ -58,6 +58,9 @@ export const Z_INDEX = {
   STICKY: 1020,
   MODAL_BACKDROP: 1040,
   MODAL: 2000,
+  // Окна поверх модалок (чаевые, жалоба, продвижение) стоят на 2700; справка
+  // открывается и из них, поэтому её панель выше.
+  HELP_PANEL: 2800,
   TOAST: 3000,
   TOOLTIP: 4000,
   REACTION_PICKER: 10000,
