@@ -146,6 +146,11 @@ export default defineConfig(({ mode }) => ({
               // /_matrix/* и /api/* — не SPA, оставляем сети. `/app/:appId` —
               // обычный маршрут приложения, из denylist убран (N29).
               navigateFallbackDenylist: [/^\/_matrix\//, /^\/api\//],
+              // Кусков HLS здесь нет: PeerTube отдаёт их по Range из одного
+              // большого файла, ответ — 206, а 206 в Cache API не кладётся.
+              // Прежнее правило для них не сохранило ни одного куска
+              // (проверено на прод-сборке 30.09.2026) и только гнало каждый
+              // запрос через воркер.
               runtimeCaching: [
                 {
                   urlPattern: ({ request }) => request.destination === 'image',
@@ -153,30 +158,6 @@ export default defineConfig(({ mode }) => ({
                   options: {
                     cacheName: 'bastyon-images',
                     expiration: { maxEntries: 200, maxAgeSeconds: 7 * 24 * 60 * 60 },
-                  },
-                },
-                {
-                  // HLS-сегменты PeerTube — повторное открытие видео переиспользует кэш, а не трафик.
-                  // Скоупим строго на путь PeerTube (/streaming-playlists/hls/) + расширения сегментов,
-                  // чтобы не трогать прочие mp4/ts приложения.
-                  urlPattern: ({ url }) =>
-                    /\/streaming-playlists\/hls\//.test(url.pathname) &&
-                    /\.(m4s|ts|mp4)$/i.test(url.pathname),
-                  handler: 'CacheFirst',
-                  options: {
-                    cacheName: 'bastyon-hls-segments',
-                    // LRU: не больше 300 сегментов и 7 дней; чистимся при нехватке квоты.
-                    expiration: {
-                      maxEntries: 300,
-                      maxAgeSeconds: 7 * 24 * 60 * 60,
-                      purgeOnQuotaError: true,
-                    },
-                    // Кэшируем ТОЛЬКО полноценные 200 (CORS-нода). opaque (status 0) НЕ кэшируем —
-                    // их нельзя нарезать под Range-запросы hls.js, что сломало бы воспроизведение;
-                    // на нодах без CORS просто работаем как раньше (без кэша).
-                    cacheableResponse: { statuses: [200] },
-                    // PeerTube HLS — fragmented mp4 с byte-range: отдаём 206 из целого кэш-ответа.
-                    rangeRequests: true,
                   },
                 },
               ],
