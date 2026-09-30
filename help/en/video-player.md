@@ -80,7 +80,12 @@ If [Tor](tor.md) is on, the player asks before starting: **“Video will bypass 
 
 ## If a video does not play
 
-The player says what happened, with a **“Retry”** button under the message:
+The player works around some failures by itself, without a message:
+
+- **the clip’s server is shut down.** The network retires old video servers and keeps their clips in an archive. The player takes the clip from there; the link in the post stays the same;
+- **the clip does not load in parts** or stops in the middle. Within a few seconds the player switches to the whole file of the same clip and continues from the same second.
+
+If that does not help either, the player says what happened, with a **“Retry”** button under the message:
 
 - **“Video not found on this node”** — the clip was removed from the server or is unavailable;
 - **“Video is taking too long to load”** or **“Network error while loading video”** — a poor connection or a busy server: try again later;

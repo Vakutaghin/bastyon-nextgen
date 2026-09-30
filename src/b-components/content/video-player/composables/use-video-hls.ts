@@ -33,6 +33,13 @@ export function useVideoHls(
   // молча выходит (S26 — повторный клик по спиннеру плодил вторые Hls).
   let initGeneration = 0
 
+  // Слежка за плейлистом, который играет сам <video> (Safari без MediaSource).
+  let stopNativeHls: (() => void) | null = null
+  const releaseNativeHls = (): void => {
+    stopNativeHls?.()
+    stopNativeHls = null
+  }
+
   // Watchdog начальной загрузки: гасит вечный спиннер, если плеер так и не
   // инициализировался (зависший манифест/сегмент, не отдающий даже ошибку).
   let watchdogTimer: ReturnType<typeof setTimeout> | null = null
@@ -178,6 +185,9 @@ export function useVideoHls(
     // разрешаем ровно один mp4-fallback в этой сессии воспроизведения.
     clearWatchdog()
     let hasFallenBack = false
+    // Переход на прямой mp4 — появляется, когда источники ролика известны.
+    // `false` — переходить не на что: mp4 нет или он уже был.
+    let fallbackToProgressive: (() => boolean) | null = null
 
     // S26: инициализация асинхронная (getVideoSourcesFromUrl), и второй клик
     // по спиннеру запускал её повторно — появлялся второй `new Hls()`, а
@@ -188,6 +198,7 @@ export function useVideoHls(
       hls.value.destroy()
       hls.value = null
     }
+    releaseNativeHls()
 
     try {
       isLoading.value = true
@@ -214,18 +225,25 @@ export function useVideoHls(
       }
 
       // Watchdog: если за VIDEO_LOAD_WATCHDOG_MS плеер не инициализировался (зависшая
-      // загрузка, не отдающая даже ошибку) — показываем ошибку + кнопку «Повторить».
-      // Бюджет покрывает весь путь: retry hls.js и последующий mp4-fallback.
-      watchdogTimer = setTimeout(() => {
-        watchdogTimer = null
-        if (isInitialized.value) return
-        if (hls.value) {
-          hls.value.destroy()
-          hls.value = null
-        }
-        error.value = t('videoMsg.loadTimeout')
-        isLoading.value = false
-      }, VIDEO_LOAD_WATCHDOG_MS)
+      // загрузка, не отдающая даже ошибку) — пробуем прямой mp4, а если и он уже был
+      // или его нет — показываем ошибку + кнопку «Повторить».
+      const armWatchdog = (): void => {
+        watchdogTimer = setTimeout(() => {
+          watchdogTimer = null
+          if (isInitialized.value || generation !== initGeneration) return
+          if (fallbackToProgressive?.()) {
+            armWatchdog()
+            return
+          }
+          if (hls.value) {
+            hls.value.destroy()
+            hls.value = null
+          }
+          error.value = t('videoMsg.loadTimeout')
+          isLoading.value = false
+        }, VIDEO_LOAD_WATCHDOG_MS)
+      }
+      armWatchdog()
 
       // Проверяем, является ли URL blob URL или обычным URL для локального видео
       const isBlobUrl = p.videoUrl.startsWith('blob:') || p.videoUrl.startsWith('data:')
@@ -243,28 +261,40 @@ export function useVideoHls(
       if (generation !== initGeneration) return
 
       // Деградация на прямой mp4 на той же ноде, когда HLS фатально не воспроизводится.
-      // Срабатывает максимум один раз; если файла нет — показываем ошибку.
-      const fallbackToProgressive = (): void => {
-        if (hasFallenBack || !progressiveUrl) {
-          error.value = t('videoMsg.playbackError')
-          isLoading.value = false
-          return
-        }
+      // Срабатывает максимум один раз.
+      fallbackToProgressive = (): boolean => {
+        const v = resolveVideoElement(videoElement)
+        if (hasFallenBack || !progressiveUrl || !v) return false
         hasFallenBack = true
+        // HLS мог оборваться посреди ролика: продолжаем с того же места и
+        // играем, только если ролик играл. Снять до destroy() — тот обнуляет <video>.
+        const resumeAt = v.currentTime
+        const wasPlaying = !v.paused
         if (hls.value) {
           hls.value.destroy()
           hls.value = null
         }
-        const v = resolveVideoElement(videoElement)
-        if (!v) {
-          error.value = t('videoMsg.playbackError')
-          isLoading.value = false
-          return
-        }
+        releaseNativeHls()
         console.warn('HLS unrecoverable — falling back to progressive mp4')
         isLoading.value = true
         error.value = null
-        initProgressiveVideo(v, progressiveUrl, ctx)
+        const resumeCtx = isInitialized.value
+          ? { ...ctx, autoplay: false, forcePlay: wasPlaying }
+          : ctx
+        initProgressiveVideo(v, progressiveUrl, resumeCtx, resumeAt)
+        return true
+      }
+      // HLS не воспроизводится: на mp4, а если его нет — ошибка.
+      const onHlsFailure = (): void => {
+        if (fallbackToProgressive?.()) return
+        clearWatchdog()
+        if (hls.value) {
+          hls.value.destroy()
+          hls.value = null
+        }
+        releaseNativeHls()
+        error.value = t('videoMsg.playbackError')
+        isLoading.value = false
       }
 
       // Нет HLS, но есть прямой файл — играем его сразу (старые web-видео / нода без HLS).
@@ -292,11 +322,11 @@ export function useVideoHls(
               currentQualityLevel.value = instance.currentLevel
             })
           },
-          fallbackToProgressive
+          onHlsFailure
         )
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         // Нативная поддержка HLS (Safari) — при ошибке тоже деградируем на mp4.
-        initNativeHlsVideo(video, hlsPlaylistUrl, ctx, fallbackToProgressive)
+        stopNativeHls = initNativeHlsVideo(video, hlsPlaylistUrl, ctx, onHlsFailure)
       } else if (progressiveUrl) {
         // Ни hls.js, ни нативного HLS — но есть прямой mp4.
         initProgressiveVideo(video, progressiveUrl, ctx)
@@ -319,6 +349,7 @@ export function useVideoHls(
       hls.value.destroy()
       hls.value = null
     }
+    releaseNativeHls()
     isInitialized.value = false
     error.value = null
     initPlayer(true)
@@ -330,6 +361,7 @@ export function useVideoHls(
       hls.value.destroy()
       hls.value = null
     }
+    releaseNativeHls()
   })
 
   return {

@@ -15,7 +15,7 @@ import Hls from 'hls.js'
 import { t } from '@/i18n'
 import { videoPlayerManager } from '../video-player-manager'
 import { tryAutoplay } from '../composables/utils'
-import { attachHlsErrorRecovery } from './hls-error-recovery'
+import { attachHlsErrorRecovery, HLS_LOAD_POLICY } from './hls-error-recovery'
 
 export interface VideoInitContext {
   volume: Ref<number>
@@ -89,11 +89,15 @@ export function initBlobVideo(
 /**
  * Прямой mp4 на том же `<video>` — деградация, когда HLS фатально не воспроизвёлся.
  * Источник (`videoUrl`) — прогрессивный файл с той же ноды; см. getProgressiveVideoUrl.
+ *
+ * `resumeAt` — с какой секунды продолжить: HLS мог оборваться посреди ролика,
+ * и начинать заново с нуля нельзя.
  */
 export function initProgressiveVideo(
   video: HTMLVideoElement,
   videoUrl: string,
-  ctx: VideoInitContext
+  ctx: VideoInitContext,
+  resumeAt = 0
 ): void {
   video.src = videoUrl
   video.load()
@@ -101,6 +105,7 @@ export function initProgressiveVideo(
   video.addEventListener(
     'loadedmetadata',
     () => {
+      if (resumeAt > 0 && resumeAt < video.duration) video.currentTime = resumeAt
       finalizeVideoInit(video, ctx)
     },
     { once: true }
@@ -137,6 +142,7 @@ export function initHlsJsVideo(
     maxMaxBufferLength: 300,
     // Жёсткий потолок в байтах: на 4K стриме без него буфер съедает >1GB RAM и убивает мобильный браузер
     maxBufferSize: 60 * 1000 * 1000,
+    ...HLS_LOAD_POLICY,
   })
 
   hls.loadSource(playlistUrl)
@@ -152,27 +158,50 @@ export function initHlsJsVideo(
   return hls
 }
 
+/** Столько плейлист, который играет сам `<video>`, может стоять на месте, пока должен играть. */
+export const NATIVE_HLS_STALL_MS = 15_000
+
 /**
- * Нативный HLS (Safari) — назначаем playlistUrl как src. `onError` (если передан)
- * вызывается при ошибке загрузки — caller может деградировать на прямой mp4.
+ * Нативный HLS (Safari без MediaSource — старые iPhone) — назначаем playlistUrl
+ * как src. `onError` (если передан) вызывается при ошибке загрузки — caller может
+ * деградировать на прямой mp4.
+ *
+ * Safari на битых кусках не шлёт `error`: плейлист разобран, а ролик молча стоит
+ * (`stalled`). Поэтому сдаёмся и тогда, когда ролик должен играть, а время не
+ * двигается {@link NATIVE_HLS_STALL_MS}.
+ *
+ * Возвращает функцию, которая снимает слежку: её зовут при переходе на mp4,
+ * повторной инициализации и размонтировании.
  */
 export function initNativeHlsVideo(
   video: HTMLVideoElement,
   playlistUrl: string,
   ctx: VideoInitContext,
   onError?: () => void
-): void {
+): () => void {
+  const session = new AbortController()
   video.src = playlistUrl
 
   if (onError) {
-    video.addEventListener(
-      'error',
-      () => {
-        onError()
-      },
-      { once: true }
-    )
+    let lastTime = -1
+    let stuckSince = Date.now()
+    const fail = (): void => {
+      if (session.signal.aborted) return
+      session.abort()
+      onError()
+    }
+    const poll = setInterval(() => {
+      if (video.paused || video.ended || video.currentTime !== lastTime) {
+        lastTime = video.currentTime
+        stuckSince = Date.now()
+        return
+      }
+      if (Date.now() - stuckSince >= NATIVE_HLS_STALL_MS) fail()
+    }, 1000)
+    session.signal.addEventListener('abort', () => clearInterval(poll))
+    video.addEventListener('error', fail, { signal: session.signal })
   }
 
   finalizeVideoInit(video, ctx)
+  return () => session.abort()
 }
