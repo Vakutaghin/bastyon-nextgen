@@ -44,18 +44,38 @@ interface ProgressiveCandidate {
   url: string
 }
 
+/**
+ * Файл HLS-копии — рядом с её плейлистом. Архив и зеркала хранят ролик как
+ * копию (redundancy): плейлист лежит у них, а `fileUrl` по-прежнему указывает
+ * на исходную ноду, которой может уже не быть. Файлы копии называются так же.
+ */
+function besidePlaylist(fileUrl: string, playlistUrl: string | undefined): string {
+  if (!playlistUrl) return fileUrl
+  try {
+    const file = new URL(fileUrl)
+    const playlist = new URL(playlistUrl)
+    if (file.host === playlist.host) return fileUrl
+    const name = file.pathname.slice(file.pathname.lastIndexOf('/') + 1)
+    return name ? new URL(name, playlist).href : fileUrl
+  } catch {
+    return fileUrl
+  }
+}
+
 /** Собирает все прямые файлы (mp4) из top-level `files` и из `streamingPlaylists[].files`. */
 function collectProgressiveFiles(videoInfo: PeerTubeVideoInfo): ProgressiveCandidate[] {
   const out: ProgressiveCandidate[] = []
-  const push = (files?: PeerTubeVideoInfo['files']): void => {
+  const push = (files: PeerTubeVideoInfo['files'], playlistUrl?: string): void => {
     if (!Array.isArray(files)) return
     for (const f of files) {
-      if (f?.fileUrl) out.push({ height: f.resolution?.id ?? 0, url: f.fileUrl })
+      if (f?.fileUrl) {
+        out.push({ height: f.resolution?.id ?? 0, url: besidePlaylist(f.fileUrl, playlistUrl) })
+      }
     }
   }
   push(videoInfo.files)
   if (Array.isArray(videoInfo.streamingPlaylists)) {
-    for (const pl of videoInfo.streamingPlaylists) push(pl?.files)
+    for (const pl of videoInfo.streamingPlaylists) push(pl?.files, pl?.playlistUrl)
   }
   return out
 }
@@ -118,7 +138,7 @@ export async function getVideoThumbnailFromUrl(peertubeUrl: string): Promise<str
   if (!parsed) throw new Error(`Invalid PeerTube URL: ${peertubeUrl}`)
 
   const videoInfo = await getPeerTubeVideoInfo(parsed.host, parsed.videoId)
-  return getVideoThumbnailUrl(videoInfo, parsed.host)
+  return getVideoThumbnailUrl(videoInfo, videoInfo.servedBy ?? parsed.host)
 }
 
 /**

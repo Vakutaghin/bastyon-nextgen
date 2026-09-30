@@ -4,48 +4,8 @@
  * на `peertube.archive.pocketnet.app`. SDK миниапп ремапит URL'ы через этот
  * список (`sdk.manageBastyonImageSrc`).
  *
- * Синхронизирован с legacy `project_config.archivedPeertubeServers`.
- * При появлении новых архивных серверов — добавлять сюда.
+ * Тот же список, что legacy `project_config.archivedPeertubeServers` (его
+ * отдаёт прокси, `/peertubeserversList`); ведётся в одном месте — в
+ * `peertube-archive.ts`, там же им пользуется плеер.
  */
-export const ARCHIVED_PEERTUBE_SERVERS: readonly string[] = [
-  'pocketnetpeertube1.nohost.me',
-  'pocketnetpeertube2.nohost.me',
-  'pocketnetpeertube5.nohost.me',
-  'pocketnetpeertube7.nohost.me',
-  'pocketnetpeertube4.nohost.me',
-  'pocketnetpeertube6.nohost.me',
-  'pocketnetpeertube8.nohost.me',
-  'pocketnetpeertube9.nohost.me',
-  'pocketnetpeertube10.nohost.me',
-  'pocketnetpeertube11.nohost.me',
-  'bastyonmma.pocketnet.app',
-  'bastyonmma.nohost.me',
-  '01rus.nohost.me',
-  '02rus.pocketnet.app',
-  'pocketnetpeertube12.nohost.me',
-  'pocketnetpeertube13.nohost.me',
-  'peertube14.pocketnet.app',
-  'peertube15.pocketnet.app',
-  'peertube18.pocketnet.app',
-  'peertube17mirror.pocketnet.app',
-  'peertube18mirror.pocketnet.app',
-  'peertube19mirror.pocketnet.app',
-  'peertube20.pocketnet.app',
-  'peertube21.pocketnet.app',
-  'peertube22.pocketnet.app',
-  'peertube23.pocketnet.app',
-  'peertube24.pocketnet.app',
-  'peertube25.pocketnet.app',
-  'peertube25mirror.pocketnet.app',
-  'peertube26.pocketnet.app',
-  'peertube26mirror.pocketnet.app',
-  'peertube27.pocketnet.app',
-  'peertube29.pocketnet.app',
-  'peertube30.pocketnet.app',
-  'peertube5new.pocketnet.app',
-  'peertube4new.pocketnet.app',
-  'peertube31.pocketnet.app',
-  'peertube32.pocketnet.app',
-  'peertube34.pocketnet.app',
-  'peertube35.pocketnet.app',
-] as const
+export { ARCHIVED_PEERTUBE_HOSTS as ARCHIVED_PEERTUBE_SERVERS } from '@/helpers/api/peertube-archive'

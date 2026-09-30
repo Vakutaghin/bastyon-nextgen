@@ -1,6 +1,10 @@
 // Сетевой слой PeerTube API: получение информации о видео с retry+timeout.
 
+import servers from '@/servers.json'
 import { appFetch } from '@/helpers/api/request'
+import { orderedProxies } from './node-selector'
+import { peertubeArchiveFor } from './peertube-archive'
+import type { ServerEndpoint } from './rpc-retry'
 
 /** Информация о видео с PeerTube сервера (минимально необходимая для плеера). */
 export interface PeerTubeVideoInfo {
@@ -27,6 +31,12 @@ export interface PeerTubeVideoInfo {
     fileUrl?: string
     size?: number
   }>
+  /**
+   * Нода, которая на самом деле отдала описание: архив или зеркало, если нода
+   * из ссылки выведена из работы. От неё считаются относительные пути (превью,
+   * субтитры).
+   */
+  servedBy?: string
 }
 
 const PEERTUBE_FETCH_TIMEOUT_MS = 10_000
@@ -87,18 +97,31 @@ async function fetchWithTimeout(
   }
 }
 
+/** Ответ ноды — действительно описание ролика, а не ошибка в JSON. */
+function isVideoInfo(value: unknown): value is PeerTubeVideoInfo & { from?: unknown } {
+  if (!value || typeof value !== 'object') return false
+  const info = value as Partial<PeerTubeVideoInfo>
+  return (
+    typeof info.uuid === 'string' &&
+    (Array.isArray(info.streamingPlaylists) || Array.isArray(info.files))
+  )
+}
+
+/** Есть ли что играть: у ролика в обработке ещё нет ни HLS, ни файлов. */
+function hasSources(info: PeerTubeVideoInfo): boolean {
+  return !!(info.streamingPlaylists?.length || info.files?.length)
+}
+
+const HOST_RE = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i
+
 /**
- * Получает информацию о видео через PeerTube API. До 3 попыток с экспоненциальным
- * backoff (500ms / 1s / 2s) и таймаутом 10s на каждую. 404 не ретраится.
+ * Описание ролика с одной ноды. До 3 попыток с экспоненциальным backoff
+ * (500ms / 1s) и таймаутом 10s на каждую. 404 не ретраится. Нода, не
+ * ответившая за 10 секунд, второго шанса не получает: дальше — архив или прокси.
  *
  * В dev в браузере — через Vite proxy для обхода CORS.
  */
-export async function getPeerTubeVideoInfo(
-  host: string,
-  videoId: string
-): Promise<PeerTubeVideoInfo> {
-  if (!host || !videoId) throw new Error('Host and videoId are required')
-
+async function fetchVideoInfoFrom(host: string, videoId: string): Promise<PeerTubeVideoInfo> {
   const isDevBrowser =
     typeof import.meta !== 'undefined' &&
     import.meta.env?.DEV === true &&
@@ -147,7 +170,7 @@ export async function getPeerTubeVideoInfo(
 
       lastError = err
       const isLastAttempt = attempt === PEERTUBE_MAX_RETRIES - 1
-      if (isLastAttempt) break
+      if (isLastAttempt || err.name === 'AbortError') break
 
       const delay = PEERTUBE_RETRY_BASE_DELAY_MS * Math.pow(2, attempt)
       await new Promise((resolve) => setTimeout(resolve, delay))
@@ -160,6 +183,104 @@ export async function getPeerTubeVideoInfo(
     code,
     lastError ?? undefined
   )
+}
+
+/**
+ * Описание ролика через прокси Bastyon (`/peertube/video`), как у старого
+ * клиента. Прокси держит свежий список нод и архивов и сам обходит зеркала;
+ * в `from` пишет, какая нода ответила. Один запрос к текущей прокси-ноде: её
+ * отказ значит «ролик не найден», остальные ноды не перебираем.
+ */
+async function fetchVideoInfoViaProxy(host: string, videoId: string): Promise<PeerTubeVideoInfo> {
+  const [proxy] = await orderedProxies(servers.servers.production.proxy as ServerEndpoint[])
+  if (!proxy) throw new Error('No proxy to ask for the video')
+  const link = encodeURIComponent(`peertube://${host}/${videoId}`)
+  const response = await fetchWithTimeout(
+    `https://${proxy.host}:${proxy.port}/peertube/video?url=${link}`,
+    { method: 'GET', headers: { Accept: 'application/json' } },
+    PEERTUBE_FETCH_TIMEOUT_MS
+  )
+  if (!response.ok) throw new Error(`Proxy answered ${response.status}`)
+  const body = (await response.json()) as { data?: { data?: unknown } } | null
+  const info = body?.data?.data
+  if (!isVideoInfo(info)) throw new Error('Proxy does not know the video')
+  const { from, ...rest } = info
+  const servedBy = typeof from === 'string' && HOST_RE.test(from) ? from.toLowerCase() : host
+  return { ...rest, servedBy }
+}
+
+/** Ищет описание ролика: в архиве выведенной ноды, на ноде из ссылки, через прокси. */
+async function resolveVideoInfo(host: string, videoId: string): Promise<PeerTubeVideoInfo> {
+  const archive = peertubeArchiveFor(host)
+  // Нода выведена из работы — ролик сразу берём из архива, саму ноду пробуем после.
+  const hosts = archive ? [archive, host] : [host]
+  let failure: PeerTubeFetchError | null = null
+  for (const candidate of hosts) {
+    try {
+      return { ...(await fetchVideoInfoFrom(candidate, videoId)), servedBy: candidate }
+    } catch (error) {
+      // Интерфейс говорит о ноде из ссылки — её ошибку и отдаём наружу.
+      if (candidate === host || !failure) {
+        failure =
+          error instanceof PeerTubeFetchError
+            ? error
+            : new PeerTubeFetchError(String(error), 'unknown', error)
+      }
+    }
+  }
+  // Нода ответила «такого ролика нет» — он удалён, прокси спрашивать незачем.
+  // Иначе нода могла уйти в архив позже нашего списка — спросим прокси.
+  if (failure?.code !== 'not-found') {
+    try {
+      return await fetchVideoInfoViaProxy(host, videoId)
+    } catch {
+      // Прокси тоже не нашёл — остаётся ошибка ноды из ссылки.
+    }
+  }
+  throw failure ?? new PeerTubeFetchError('peertube fetch failed: unknown error', 'unknown')
+}
+
+/**
+ * Описание ролика живёт минуту: превью, плеер и субтитры одного ролика
+ * получают его одним запросом, а архив и прокси не опрашиваются трижды.
+ * Ошибка и ролик в обработке (без HLS и файлов) не запоминаются.
+ */
+const INFO_TTL_MS = 60_000
+const infoCache = new Map<string, { expires: number; promise: Promise<PeerTubeVideoInfo> }>()
+
+/** Забыть запомненные описания (для тестов). */
+export function clearPeerTubeInfoCache(): void {
+  infoCache.clear()
+}
+
+/**
+ * Получает информацию о видео через PeerTube API: с ноды из ссылки, для
+ * выведенной из работы ноды — сначала из её архива, а если напрямую не вышло,
+ * через прокси Bastyon. `servedBy` в ответе — нода, которая его отдала.
+ */
+export async function getPeerTubeVideoInfo(
+  host: string,
+  videoId: string
+): Promise<PeerTubeVideoInfo> {
+  if (!host || !videoId) throw new Error('Host and videoId are required')
+
+  const key = `${host.toLowerCase()}/${videoId}`
+  const now = Date.now()
+  const cached = infoCache.get(key)
+  if (cached && cached.expires > now) return cached.promise
+  for (const [k, entry] of infoCache) {
+    if (entry.expires <= now) infoCache.delete(k)
+  }
+
+  const promise = resolveVideoInfo(host, videoId)
+  infoCache.set(key, { expires: now + INFO_TTL_MS, promise })
+  const forget = (): void => {
+    if (infoCache.get(key)?.promise === promise) infoCache.delete(key)
+  }
+  promise.then((info) => {
+    if (!hasSources(info)) forget()
+  }, forget)
+  return promise
 }
 
 /** Дорожка субтитров PeerTube (нормализованная). */
@@ -190,7 +311,12 @@ export async function getPeerTubeCaptions(
   videoId: string
 ): Promise<PeerTubeCaption[]> {
   if (!host || !videoId) return []
-  const base = peertubeBase(host)
+  // Субтитры лежат там же, где ролик: у выведенной ноды — в архиве.
+  const servedBy = await getPeerTubeVideoInfo(host, videoId).then(
+    (info) => info.servedBy ?? host,
+    () => host
+  )
+  const base = peertubeBase(servedBy)
   try {
     const response = await fetchWithTimeout(
       `${base}/api/v1/videos/${encodeURIComponent(videoId)}/captions`,

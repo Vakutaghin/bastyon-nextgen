@@ -144,6 +144,32 @@ describe('getProgressiveVideoUrl', () => {
     expect(getProgressiveVideoUrl(info)).toBe('https://h/hls-720.mp4')
   })
 
+  it('копия ролика в архиве: файл берётся рядом с плейлистом, а не с исходной ноды', () => {
+    // Так отвечает peertube.archive.pocketnet.app: плейлист — у архива, fileUrl —
+    // на выведенной ноде, которой уже нет.
+    const dir = 'https://peertube.archive.pocketnet.app/static/redundancy/hls/u'
+    const info: PeerTubeVideoInfo = {
+      id: 1,
+      uuid: 'u',
+      name: 'n',
+      files: [],
+      streamingPlaylists: [
+        {
+          id: 1,
+          playlistUrl: `${dir}/x-master.m3u8`,
+          files: [
+            {
+              resolution: { id: 360, label: '360p' },
+              fileUrl:
+                'https://peertube33.pocketnet.app/static/streaming-playlists/hls/u/y-360-fragmented.mp4',
+            },
+          ],
+        },
+      ],
+    }
+    expect(getProgressiveVideoUrl(info)).toBe(`${dir}/y-360-fragmented.mp4`)
+  })
+
   it('returns the first file when resolutions are unknown (height 0)', () => {
     const info: PeerTubeVideoInfo = {
       id: 1,
