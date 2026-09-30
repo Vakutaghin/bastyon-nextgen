@@ -17,7 +17,7 @@ On a Mac, press Cmd instead of Ctrl.
 
 ## Scale
 
-In the desktop app, Ctrl and + or − enlarge and shrink the whole window — the same as **“Interface scale”** in the settings, see [Language and appearance](appearance.md). In a browser these keys change the browser’s own zoom.
+In the desktop app, Ctrl and + or − enlarge and shrink the whole window by one step of **“Interface scale”** in the settings, and Ctrl+0 returns to 100% — see [Language and appearance](appearance.md). The chosen scale is saved. A two-finger pinch on the touchpad does not change the scale: it went off on accidental touches. In a browser these keys change the browser’s own zoom.
 
 ## Text
 

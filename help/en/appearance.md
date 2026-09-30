@@ -25,7 +25,7 @@ To switch quickly, use the sun or moon button in the header.
 
 ## Scale
 
-In the desktop app: **“Settings”** → **“System”** → **“Interface scale”** — from 80 to 150%. Ctrl and + or − change the same scale (Cmd on a Mac). In a browser, the browser itself handles the scale.
+In the desktop app: **“Settings”** → **“System”** → **“Interface scale”** — from 80 to 150%. Ctrl and + or − change the same scale by the same steps, and Ctrl+0 returns to 100% (Cmd on a Mac). A pinch on the touchpad does not change the scale. In a browser, the browser itself handles the scale.
 
 ## Animations
 

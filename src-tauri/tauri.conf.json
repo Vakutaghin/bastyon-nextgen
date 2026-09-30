@@ -21,7 +21,7 @@
         "fullscreen": false,
         "maximized": false,
         "center": false,
-        "zoomHotkeysEnabled": true,
+        "zoomHotkeysEnabled": false,
         "dragDropEnabled": false
       }
     ],
