@@ -775,6 +775,9 @@ export default {
     recordingInProgress: 'Grabando voz',
     swipeHint: '< Izquierda: cancelar, Arriba: bloquear',
     openEmojiPicker: 'Abrir el selector de emojis',
+    resizeWindow:
+      'Arrastra para cambiar el tamaño de la ventana. Doble clic para el tamaño original',
+    sendHint: 'Enter para enviar, Mayús+Enter para una nueva línea',
     attach: 'Adjuntar',
     photo: 'Foto',
     file: 'Archivo',

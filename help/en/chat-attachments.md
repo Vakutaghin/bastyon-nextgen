@@ -15,7 +15,7 @@ Press **“Attach”** — the paper clip to the left of the input field:
 - **“File via IPFS”** — for big files, in the desktop app, see below;
 - **“Send PKOIN”** — a transfer right in the conversation, see [Sending PKOIN in a chat](pkoin-in-chat.md).
 
-You can also drag files into the chat window or paste them from the clipboard.
+You can also drag files anywhere onto an open chat or paste them from the clipboard into the message field.
 
 While a file uploads, it shows how many percent have been sent. The recipient sees pictures and videos right in the conversation, and a file gets a **“Download”** button.
 

@@ -112,6 +112,40 @@ export function formatDateTimeFromString(dateInput: string | number): string {
   return formatDateTimeFull(Math.floor(date.getTime() / 1000))
 }
 
+/** Номер календарного дня по местному времени: разница — сколько полуночей прошло. */
+function localDayNumber(date: Date): number {
+  return Math.round(new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() / 864e5)
+}
+
+/**
+ * Время сообщения в чате — коротко: сегодня «14:30», вчера «вчера, 14:30», в
+ * этом году «12 мар., 14:30», раньше «12.03.2023, 14:30». Полная дата — в
+ * подсказке (formatDateTimeFromString). «Вчера» даёт Intl на языке интерфейса.
+ *
+ * @param ms - метка времени в миллисекундах
+ * @param now - «сейчас» в миллисекундах (для тестов)
+ */
+export function formatMessageTime(ms: number, now: number = Date.now()): string {
+  const date = validDate(ms)
+  if (!date) return ''
+  const locale = dateLocale()
+  const clock = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+  const today = new Date(now)
+  const daysAgo = localDayNumber(today) - localDayNumber(date)
+  if (daysAgo <= 0) return clock
+  if (daysAgo === 1) {
+    const yesterday = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-1, 'day')
+    return `${yesterday}, ${clock}`
+  }
+  const day = date.toLocaleDateString(
+    locale,
+    date.getFullYear() === today.getFullYear()
+      ? { day: 'numeric', month: 'short' }
+      : { day: '2-digit', month: '2-digit', year: 'numeric' }
+  )
+  return `${day}, ${clock}`
+}
+
 /**
  * Точная метка для эксплорера: дата и время до секунд в числовом виде.
  *

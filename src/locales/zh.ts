@@ -739,6 +739,8 @@ export default {
     recordingInProgress: '正在录音',
     swipeHint: '< 左滑取消，上滑锁定',
     openEmojiPicker: '打开表情选择器',
+    resizeWindow: '拖动以调整窗口大小。双击恢复原始大小',
+    sendHint: 'Enter 发送，Shift+Enter 换行',
     attach: '附件',
     photo: '照片',
     file: '文件',

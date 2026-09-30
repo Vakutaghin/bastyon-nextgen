@@ -8,7 +8,7 @@ Private messaging in Bastyon: where it is, how it works, and how to turn it off 
 
 ## Where it is
 
-- **On a computer**, the chat icon in the header opens the messenger full screen, and the round button in the bottom right corner opens it as a small window over the page.
+- **On a computer**, the chat icon in the header opens the messenger full screen, and the round button in the bottom right corner opens it as a small window over the page. Drag the window's left or top edge or its top-left corner to resize it — up to 60% of the screen width and 80% of its height; the size is remembered. Double-click the corner to get the original size back.
 - **On a phone**, it is **“Chats”** in the bottom bar. While the chat list is open, the bar stays visible, so you can go to any section straight from the chats.
 
 The number on the icon is how many unread messages you have. The messenger is there only once you are signed in.

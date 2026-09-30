@@ -19,7 +19,7 @@ export const SC_AttachButton = styled.button`
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
   color: var(--ui-text-dimmed);
   transition:

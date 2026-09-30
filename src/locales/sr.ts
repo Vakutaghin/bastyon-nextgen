@@ -764,6 +764,8 @@ export default {
     recordingInProgress: 'Снимање гласа',
     swipeHint: '< Лево – откажи, Горе – закључај',
     openEmojiPicker: 'Отвори избор емоџија',
+    resizeWindow: 'Превуците да промените величину прозора. Двоструки клик — првобитна величина',
+    sendHint: 'Enter — пошаљи, Shift+Enter — нови ред',
     attach: 'Приложи',
     photo: 'Фотографија',
     file: 'Датотека',

@@ -8,6 +8,7 @@ import {
   formatDateTimeExact,
   formatClock,
   formatLongDate,
+  formatMessageTime,
 } from './date-formatter'
 
 const NOW = 1_700_000_000 // секунды
@@ -120,5 +121,33 @@ describe('остальные форматы — на языке интерфей
   it('битые метки — пустая строка, а не «Invalid Date»', () => {
     expect(formatClock(NaN)).toBe('')
     expect(formatLongDate(NaN)).toBe('')
+  })
+})
+
+describe('formatMessageTime — время у сообщения в чате', () => {
+  // Среда, 30 сентября 2026, 15:00 по местному времени.
+  const now = new Date(2026, 8, 30, 15, 0).getTime()
+  const at = (month: number, day: number, h: number, m: number, year = 2026) =>
+    new Date(year, month, day, h, m).getTime()
+
+  it('сегодня — только часы и минуты, даже сразу после полуночи', () => {
+    expect(formatMessageTime(at(8, 30, 9, 5), now)).toBe('09:05')
+    expect(formatMessageTime(at(8, 30, 0, 1), now)).toBe('00:01')
+  })
+
+  it('вчера — словом на языке интерфейса', () => {
+    expect(formatMessageTime(at(8, 29, 23, 59), now)).toBe('вчера, 23:59')
+    setI18nLocale('en')
+    expect(formatMessageTime(at(8, 29, 23, 59), now)).toMatch(/^yesterday, 11:59\sPM$/)
+  })
+
+  it('раньше в этом году — день и короткий месяц, в прошлом — полная дата цифрами', () => {
+    expect(formatMessageTime(at(2, 12, 14, 30), now)).toBe('12 мар., 14:30')
+    expect(formatMessageTime(at(11, 31, 18, 0, 2025), now)).toBe('31.12.2025, 18:00')
+  })
+
+  it('часы отправителя чуть впереди — всё равно «сегодня»; битая метка — пусто', () => {
+    expect(formatMessageTime(now + 60_000, now)).toBe('15:01')
+    expect(formatMessageTime(NaN, now)).toBe('')
   })
 })

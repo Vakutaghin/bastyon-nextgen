@@ -42,6 +42,7 @@
         :messages="activeMessages"
         :invite-mode="false"
         :is-loading="isMessagesLoading"
+        focus-on-open
         @send="handleSendMessage"
         @load-more="handleLoadMore"
       />

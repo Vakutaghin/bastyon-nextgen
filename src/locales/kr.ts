@@ -762,6 +762,8 @@ export default {
     recordingInProgress: '음성 녹음 중',
     swipeHint: '< 왼쪽 - 취소, 위쪽 - 고정',
     openEmojiPicker: '이모지 선택기 열기',
+    resizeWindow: '드래그하여 창 크기를 조절하세요. 두 번 클릭하면 원래 크기로 돌아갑니다',
+    sendHint: 'Enter로 보내기, Shift+Enter로 줄바꿈',
     attach: '첨부',
     photo: '사진',
     file: '파일',

@@ -8,7 +8,9 @@ How to write, reply to and react to messages, delete them, and tell whether a me
 
 ## Writing
 
-Type in the **“Type a message...”** field and press Enter or the send button. Shift+Enter starts a new line. The smiley button opens emoji. In the desktop app you can dictate the text — see [Voice input](voice-input.md).
+Type in the **“Type a message...”** field and press Enter or the send button. Shift+Enter starts a new line. The smiley button opens emoji; click elsewhere or press Esc to close them. In the desktop app you can dictate the text — see [Voice input](voice-input.md).
+
+An unfinished message stays in its chat: you can go back to the list or to another chat and return to it. These drafts live only in the app's memory — they are never written to disk and are gone after you sign out or restart the app.
 
 A link to a Bastyon post turns into a card: the author, a picture and the start of the text, and a click opens the post. Links to other sites get no card in an encrypted conversation: building one would mean showing the link to a server.
 
@@ -27,6 +29,7 @@ A sent message cannot be edited.
 
 ## Was it delivered
 
+- The time on a message: today's show only hours and minutes, older ones also the date. Hover over it for the full date.
 - **✓✓** next to the time means **“Seen”**: the other person opened the conversation and saw the message.
 - “typing…” above the input field means the other person is typing.
 - **“Not sent”** means the message did not go out, for example the connection dropped. The text stays on screen: press **“Retry”**.

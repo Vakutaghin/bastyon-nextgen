@@ -75,6 +75,7 @@ import {
   OctagonAlert,
   PanelLeftClose,
   PanelLeftOpen,
+  Paperclip,
   Pause,
   Pencil,
   Play,
@@ -210,6 +211,7 @@ export const MenuUnfoldOutlined = lucideIcon('MenuUnfoldOutlined', PanelLeftOpen
 export const MessageOutlined = lucideIcon('MessageOutlined', MessageCircle)
 export const MoreOutlined = lucideIcon('MoreOutlined', EllipsisVertical)
 export const NotificationOutlined = lucideIcon('NotificationOutlined', Megaphone)
+export const PaperClipOutlined = lucideIcon('PaperClipOutlined', Paperclip)
 export const PauseCircleOutlined = lucideIcon('PauseCircleOutlined', CirclePause)
 export const PictureOutlined = lucideIcon('PictureOutlined', Image)
 export const PlayCircleFilled = lucideIcon('PlayCircleFilled', CirclePlay, 'soft')

@@ -75,7 +75,8 @@
 
       <SC_MessageTime>
         <span v-if="viaMesh" :title="viaMesh">📡</span>
-        {{ formatTime(message.timestamp) }}
+        <!-- Коротко: сегодня — «14:30», раньше — с датой; полная дата — в подсказке. -->
+        <time :datetime="timeIso" :title="formatTime(message.timestamp)">{{ timeShort }}</time>
         <SC_SeenTick v-if="deliveryMark" :title="deliveryMark.title">
           {{ deliveryMark.mark }}
         </SC_SeenTick>
@@ -156,7 +157,10 @@ import { appToast } from '@/b-components/app-toast'
 import { isMeshTransport, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { chatUserName, getAddressFromMatrixId } from '../../helpers'
-import { formatDateTimeFromString as formatTime } from '@/helpers/common/date-formatter'
+import {
+  formatDateTimeFromString as formatTime,
+  formatMessageTime,
+} from '@/helpers/common/date-formatter'
 import { QUICK_REACTION_EMOJIS } from '../../store/consts'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import Avatar from '@/components/avatar/avatar.vue'
@@ -218,6 +222,12 @@ const emit = defineEmits<{ reply: [message: Message] }>()
 const store = useMessengerStore()
 const router = useRouter()
 const { t } = useI18n()
+
+const timeShort = computed(() => formatMessageTime(props.message.timestamp))
+const timeIso = computed(() => {
+  const date = new Date(props.message.timestamp)
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
+})
 
 const isMine = computed<boolean>(
   () => props.message.senderId === 'me' || props.message.senderId === store.currentUser.id

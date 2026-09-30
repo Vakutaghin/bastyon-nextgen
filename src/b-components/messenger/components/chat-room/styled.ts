@@ -24,6 +24,35 @@ export const SC_MessageInputArea = styled.div`
   position: relative;
 `
 
+/**
+ * Панель ввода обычного чата. Кнопки прижаты к низу: поле растёт вверх, а
+ * отправка остаётся у последней строки, как в Telegram. Раньше они висели
+ * посередине многострочного поля.
+ */
+export const SC_ChatInputBar = styled.div`
+  padding: 8px 12px;
+  background-color: var(--ui-bg);
+  border-top: 1px solid var(--ui-border);
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  position: relative;
+`
+
+/** Ячейка высотой с однострочное поле: маленькие кнопки стоят по его центру. */
+export const SC_InputSlot = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  flex-shrink: 0;
+
+  /* Голосового ввода нет (не приложение для компьютера) — ячейка не занимает места. */
+  &:empty {
+    display: none;
+  }
+`
+
 export const SC_MessageInput = styled.textarea`
   flex: 1;
   box-sizing: border-box;
@@ -39,9 +68,11 @@ export const SC_MessageInput = styled.textarea`
     box-shadow var(--transition-fast);
   resize: none;
   overflow-y: auto;
-  min-height: 39px;
-  max-height: 125px;
-  line-height: 1.5;
+  /* Одна строка — 40px, вровень с кнопками. Окно чата на компьютере задаёт
+     предел по своей высоте (messenger-window): растянули окно — поле растёт выше. */
+  min-height: 40px;
+  max-height: var(--chat-input-max-height, 125px);
+  line-height: 22px;
   font-family: inherit;
 
   &::placeholder {
@@ -165,6 +196,7 @@ export const SC_VoiceButton = styled.button`
 `
 
 export const SC_RecordingTimer = styled.div`
+  align-self: center;
   font-family: var(--font-family-mono);
   color: var(--color-red-dark);
   font-size: 16px;
@@ -201,6 +233,7 @@ export const SC_RecordingTimer = styled.div`
 `
 
 export const SC_SwipeHint = styled.div`
+  align-self: center;
   color: var(--ui-text-dimmed);
   font-size: 12px;
   display: flex;
@@ -227,6 +260,7 @@ export const SC_SwipeHint = styled.div`
 `
 
 export const SC_CancelButton = styled.button`
+  align-self: center;
   color: var(--color-red-ant);
   background: none;
   border: none;

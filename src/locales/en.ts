@@ -764,6 +764,8 @@ export default {
     recordingInProgress: 'Recording voice',
     swipeHint: '< Left - cancel, Up - lock',
     openEmojiPicker: 'Open emoji picker',
+    resizeWindow: 'Drag to resize the window. Double-click for the original size',
+    sendHint: 'Enter to send, Shift+Enter for a new line',
     attach: 'Attach',
     photo: 'Photo',
     file: 'File',

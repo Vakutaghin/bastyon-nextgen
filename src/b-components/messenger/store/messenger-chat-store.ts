@@ -29,6 +29,8 @@ import { useMediaTransfer } from './messenger-chat-store/use-media-transfer'
 export const useMessengerChatStore = defineStore('messenger-chat', () => {
   // --- Разделяемое состояние и зависимости ---
   const messages = reactive<Record<string, Message[]>>({})
+  /** Недописанные сообщения по чатам (ChatRoom). Только в памяти: переписка шифруется. */
+  const drafts = reactive<Record<string, string>>({})
   const currentUser = ref<User>({
     id: 'me',
     name: t('appMsg.messenger.me'),
@@ -58,6 +60,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     // расшифрованные файлы жить не должны (N19).
     mediaTransfer.revokeDecryptedMedia()
     Object.keys(messages).forEach((key) => delete messages[key])
+    Object.keys(drafts).forEach((key) => delete drafts[key])
     currentUser.value = {
       id: 'me',
       name: t('appMsg.messenger.me'),
@@ -68,6 +71,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
 
   return {
     messages,
+    drafts,
     currentUser,
     pcryptoService: chatCrypto.pcryptoService,
     localMessengerKeys: chatCrypto.localMessengerKeys,

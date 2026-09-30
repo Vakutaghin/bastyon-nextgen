@@ -1,5 +1,5 @@
 <template>
-  <SC_ChatRoomContainer>
+  <SC_ChatRoomContainer ref="containerRef" :style="isDragging ? DRAG_STYLE : undefined">
     <template v-if="inviteMode">
       <SC_PartnerInfoCard>
         <SC_PartnerHeader>
@@ -130,7 +130,7 @@
       @toggle="activeRoomId && store.toggleMeshRoute(activeRoomId)"
     />
 
-    <SC_MessageInputArea ref="inputAreaRef" :style="isDragging ? DRAG_STYLE : undefined">
+    <SC_ChatInputBar ref="inputAreaRef">
       <!-- RECORDING STATE -->
       <template v-if="isRecording || isLocked">
         <SC_RecordingTimer>{{ recordingDuration }}</SC_RecordingTimer>
@@ -154,34 +154,43 @@
       <template v-else-if="!inviteMode || isInitiated || (messages && messages.length > 0)">
         <EmojiPicker v-if="showEmojiPicker" @select="onEmojiSelect" />
 
-        <AttachmentPanel
-          :can-send-pkoin="canSendPkoin"
-          :can-send-ipfs="canSendIpfs"
-          :can-share-mesh="canShareMesh"
-          @pick-files="handlePickFiles"
-          @pick-pkoin="openPkoinModal"
-          @pick-ipfs="sendViaIpfs"
-          @pick-mesh="shareMeshAddress"
-        />
+        <SC_InputSlot>
+          <AttachmentPanel
+            :can-send-pkoin="canSendPkoin"
+            :can-send-ipfs="canSendIpfs"
+            :can-share-mesh="canShareMesh"
+            @pick-files="handlePickFiles"
+            @pick-pkoin="openPkoinModal"
+            @pick-ipfs="sendViaIpfs"
+            @pick-mesh="shareMeshAddress"
+          />
+        </SC_InputSlot>
 
         <SC_MessageInput
           ref="inputRef"
           v-model="inputValue"
           :placeholder="t('messenger.inputPlaceholder')"
           rows="1"
+          enterkeyhint="send"
           @keydown="handleKeydown"
           @input="handleInput"
         />
 
-        <SC_EmojiToggleButton
-          :aria-label="t('messenger.openEmojiPicker')"
-          @click="toggleEmojiPicker"
-        >
-          <SmileOutlined />
-        </SC_EmojiToggleButton>
+        <SC_InputSlot>
+          <SC_EmojiToggleButton
+            type="button"
+            :aria-label="t('messenger.openEmojiPicker')"
+            :aria-expanded="showEmojiPicker"
+            @click="toggleEmojiPicker"
+          >
+            <SmileOutlined />
+          </SC_EmojiToggleButton>
+        </SC_InputSlot>
 
         <!-- Голосовой ввод текстом (не голосовое сообщение — оно у микрофона справа). -->
-        <VoiceInputButton :get-element="getInputEl" :language="String(locale)" />
+        <SC_InputSlot>
+          <VoiceInputButton :get-element="getInputEl" :language="String(locale)" />
+        </SC_InputSlot>
       </template>
 
       <!-- VOICE BUTTON (видна при записи или когда input пуст). -->
@@ -209,11 +218,12 @@
         v-if="inputValue.trim() && !isRecording && !isLocked"
         :disabled="!inputValue.trim()"
         :aria-label="t('messenger.sendMessage')"
+        :title="t('messenger.sendHint')"
         @click="handleSend"
       >
         <SendOutlined />
       </SC_SendButton>
-    </SC_MessageInputArea>
+    </SC_ChatInputBar>
 
     <PkoinTransferModal
       v-if="pkoinPartnerAddress"
@@ -227,7 +237,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   MicIcon,
@@ -242,6 +252,7 @@ import { debugLog } from '@/helpers/common/debug-log'
 import type { Message } from '../../types'
 import { matrixService } from '../../services/matrix-service'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
+import { useMessengerChatStore } from '../../store/messenger-chat-store'
 import { useTypingIndicator } from './use-typing-indicator'
 import { useReadReceipts } from './use-read-receipts'
 import { useBlockUser } from './use-block-user'
@@ -264,7 +275,8 @@ import { tooLargeForChat } from './too-large-for-chat'
 import {
   SC_ChatRoomContainer,
   SC_PartnerStats,
-  SC_MessageInputArea,
+  SC_ChatInputBar,
+  SC_InputSlot,
   SC_MessageInput,
   SC_SendButton,
   SC_EmojiToggleButton,
@@ -323,8 +335,10 @@ const props = withDefaults(
     inviteMode?: boolean
     /** Загрузка сообщений диалога (показываем прелоадер вместо списка). */
     isLoading?: boolean
+    /** Окно чата на компьютере: курсор сразу в поле ввода. На телефоне — нет, иначе выскочит клавиатура. */
+    focusOnOpen?: boolean
   }>(),
-  { inviteMode: false, isLoading: false }
+  { inviteMode: false, isLoading: false, focusOnOpen: false }
 )
 
 const emit = defineEmits<{
@@ -420,6 +434,7 @@ const {
   toggleEmojiPicker,
   onEmojiSelect,
   focusInput,
+  adjustHeight,
 } = useChatInput({
   onSend: (text) => {
     stopTyping()
@@ -439,6 +454,27 @@ const {
 function getInputEl(): HTMLTextAreaElement | null {
   return inputRef.value?.$el ?? null
 }
+
+// Недописанное сообщение ждёт в своём чате: ушли к списку или в другой чат —
+// текст на месте, когда вернулись. Только в памяти, до выхода из аккаунта:
+// переписка шифруется, и черновик на диск не пишем.
+const chatStore = useMessengerChatStore()
+const draftKey = (): string | null => (props.inviteMode ? null : activeRoomId.value)
+const restoredDraft = draftKey() ? chatStore.drafts[draftKey()!] : undefined
+if (restoredDraft) inputValue.value = restoredDraft
+watch(inputValue, (value) => {
+  const key = draftKey()
+  if (!key) return
+  if (value) chatStore.drafts[key] = value
+  else delete chatStore.drafts[key]
+})
+
+onMounted(() => {
+  // В окне чата на компьютере можно сразу печатать.
+  if (props.focusOnOpen && uiStore.isOpen) focusInput()
+  // Многострочный черновик — поле сразу нужной высоты.
+  else if (restoredDraft) void nextTick(adjustHeight)
+})
 
 // Шлём typing-нотификацию, пока пользователь печатает в активной комнате.
 watch(inputValue, (value) => {
@@ -481,6 +517,7 @@ async function startChatNow(): Promise<void> {
 }
 
 // === Файлы: drag/drop, paste, кнопка-«скрепка». ===
+const containerRef = ref<HTMLElement | null>(null)
 const inputAreaRef = ref<HTMLElement | null>(null)
 
 // Файл через IPFS — ссылкой в чат, как обычное сообщение.
@@ -504,11 +541,42 @@ async function handlePickFiles(files: File[]): Promise<void> {
   }
 }
 
-const { isDragging, bindToRef } = usePasteDrop({
+const { isDragging, bindDropToRef, bindPasteToRef } = usePasteDrop({
   onMediaFiles: handlePickFiles,
   onOtherFiles: handlePickFiles,
 })
-bindToRef(inputAreaRef)
+bindDropToRef(containerRef)
+bindPasteToRef(inputAreaRef)
+
+// Пикер эмодзи закрывается щелчком мимо полосы ввода и клавишей Esc, а не
+// только своей кнопкой. Esc при открытом пикере не уводит из чата.
+function barEl(): HTMLElement | null {
+  const v = inputAreaRef.value as HTMLElement | { $el?: HTMLElement } | null
+  if (!v) return null
+  return v instanceof HTMLElement ? v : (v.$el ?? null)
+}
+function onPointerOutsideBar(e: PointerEvent): void {
+  const bar = barEl()
+  if (bar && !bar.contains(e.target as Node)) showEmojiPicker.value = false
+}
+function onEmojiEscape(e: KeyboardEvent): void {
+  if (e.key !== 'Escape') return
+  e.preventDefault()
+  e.stopPropagation()
+  showEmojiPicker.value = false
+  focusInput()
+}
+function listenWhilePickerOpen(open: boolean): void {
+  if (open) {
+    document.addEventListener('pointerdown', onPointerOutsideBar, true)
+    window.addEventListener('keydown', onEmojiEscape, true)
+  } else {
+    document.removeEventListener('pointerdown', onPointerOutsideBar, true)
+    window.removeEventListener('keydown', onEmojiEscape, true)
+  }
+}
+watch(showEmojiPicker, listenWhilePickerOpen)
+onBeforeUnmount(() => listenWhilePickerOpen(false))
 
 // === PKOIN-донат (только для личных чатов). ===
 const activeChatIdForPkoin = computed<string>(() => store.activeChatId || '')

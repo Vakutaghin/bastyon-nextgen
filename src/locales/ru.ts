@@ -771,6 +771,8 @@ export default {
     recordingInProgress: 'Идёт запись голосового',
     swipeHint: '< Влево - отмена, Вверх - замок',
     openEmojiPicker: 'Открыть выбор эмодзи',
+    resizeWindow: 'Потяните, чтобы изменить размер окна. Двойной щелчок — исходный размер',
+    sendHint: 'Enter — отправить, Shift+Enter — новая строка',
     attach: 'Прикрепить',
     photo: 'Фото',
     file: 'Файл',

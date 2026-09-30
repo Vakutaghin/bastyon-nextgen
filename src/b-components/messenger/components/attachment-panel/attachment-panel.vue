@@ -1,6 +1,14 @@
 <template>
   <SC_AttachmentRoot :ref="setRootRef">
-    <SC_AttachButton type="button" :title="title" @click="toggleMenu">📎</SC_AttachButton>
+    <SC_AttachButton
+      type="button"
+      :title="title"
+      :aria-label="title"
+      :aria-expanded="menuOpen"
+      @click="toggleMenu"
+    >
+      <PaperClipOutlined />
+    </SC_AttachButton>
 
     <SC_Menu v-if="menuOpen">
       <SC_MenuItem type="button" @click="pickImage">
@@ -35,6 +43,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { PaperClipOutlined } from '@/components/icons'
 import { SC_AttachmentRoot, SC_AttachButton, SC_Menu, SC_MenuItem, SC_HiddenInput } from './styled'
 
 const props = defineProps<{
@@ -130,11 +139,21 @@ const onClickOutside = (e: MouseEvent) => {
   if (rootRef.value && !rootRef.value.contains(target)) closeMenu()
 }
 
+// Esc закрывает меню, а не уходит из чата: слушаем раньше обработчика окна.
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key !== 'Escape' || !menuOpen.value) return
+  e.preventDefault()
+  e.stopPropagation()
+  closeMenu()
+}
+
 onMounted(() => {
   document.addEventListener('click', onClickOutside, true)
+  window.addEventListener('keydown', onKeydown, true)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onClickOutside, true)
+  window.removeEventListener('keydown', onKeydown, true)
 })
 </script>

@@ -773,6 +773,8 @@ export default {
     recordingInProgress: 'Sprachaufnahme läuft',
     swipeHint: '< Links – abbrechen, Oben – fixieren',
     openEmojiPicker: 'Emoji-Auswahl öffnen',
+    resizeWindow: 'Ziehen, um die Fenstergröße zu ändern. Doppelklick für die ursprüngliche Größe',
+    sendHint: 'Enter zum Senden, Umschalt+Enter für eine neue Zeile',
     attach: 'Anhängen',
     photo: 'Foto',
     file: 'Datei',

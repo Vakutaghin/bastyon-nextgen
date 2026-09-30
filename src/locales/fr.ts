@@ -775,6 +775,9 @@ export default {
     recordingInProgress: 'Enregistrement vocal',
     swipeHint: '< Gauche – annuler, Haut – verrouiller',
     openEmojiPicker: 'Ouvrir le sélecteur d’emoji',
+    resizeWindow:
+      'Faites glisser pour redimensionner la fenêtre. Double-clic pour la taille d’origine',
+    sendHint: 'Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne',
     attach: 'Joindre',
     photo: 'Photo',
     file: 'Fichier',
