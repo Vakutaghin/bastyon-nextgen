@@ -2610,6 +2610,7 @@ export default {
     later: 'Später',
     skip: 'Diese Version überspringen',
     checkNow: 'Prüfen',
+    checkUpdates: 'Nach Updates suchen',
     checking: 'Wird geprüft…',
     upToDate: 'Aktuell',
     newVersion: '{version} verfügbar',

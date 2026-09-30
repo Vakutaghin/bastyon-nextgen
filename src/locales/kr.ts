@@ -2548,6 +2548,7 @@ export default {
     later: '나중에',
     skip: '이 버전 건너뛰기',
     checkNow: '확인',
+    checkUpdates: '업데이트 확인',
     checking: '확인 중…',
     upToDate: '최신 버전',
     newVersion: '{version} 사용 가능',

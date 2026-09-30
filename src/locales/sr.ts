@@ -2569,6 +2569,7 @@ export default {
     later: 'Касније',
     skip: 'Прескочи ову верзију',
     checkNow: 'Провери',
+    checkUpdates: 'Провери ажурирања',
     checking: 'Провера…',
     upToDate: 'Ажурно',
     newVersion: 'Доступна је {version}',

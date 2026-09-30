@@ -16,7 +16,15 @@ Once a day the app looks at the releases page on GitHub. If a new version is out
 
 The app does not update itself: you install the new version yourself.
 
-To check by hand: **“Settings”** → **“Diagnostics”** → the **“Updates”** line → **“Check”**.
+## Version number
+
+The installed version is always in sight: on a computer at the bottom of the left panel, on a phone in the menu under the app name. The arrows button next to it checks for a new version:
+
+- a new one is out — the **“Update available”** window opens, even if you skipped that version before; until you skip it, the new version number shows in place of yours;
+- no new version — **“Up to date”** shows for a few seconds;
+- GitHub did not answer — **“Check failed”**.
+
+You can also check in **“Settings”** → **“Diagnostics”** → the **“Updates”** line → **“Check”**.
 
 ## How to update
 

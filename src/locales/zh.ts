@@ -2468,6 +2468,7 @@ export default {
     later: '稍后',
     skip: '跳过此版本',
     checkNow: '检查',
+    checkUpdates: '检查更新',
     checking: '正在检查…',
     upToDate: '已是最新',
     newVersion: '{version} 可用',

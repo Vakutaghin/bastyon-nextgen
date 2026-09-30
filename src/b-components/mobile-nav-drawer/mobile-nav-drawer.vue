@@ -3,7 +3,12 @@
     <SC_Backdrop :isOpen="isOpen" @click="close" />
     <SC_Drawer :isOpen="isOpen" :aria-hidden="!isOpen" @click.stop>
       <SC_DrawerHeader>
-        <SC_DrawerTitle>{{ t('app.name') }}</SC_DrawerTitle>
+        <!-- Под названием — номер версии с проверкой обновлений: левой панели
+             компьютера, где он стоит внизу, на телефоне нет. -->
+        <SC_DrawerBrand>
+          <SC_DrawerTitle>{{ t('app.name') }}</SC_DrawerTitle>
+          <AppVersionBadge />
+        </SC_DrawerBrand>
         <SC_DrawerClose :aria-label="t('sidebar.close')" @click="close">
           <CloseOutlined :style="ICON_SIZE_LG" />
         </SC_DrawerClose>
@@ -69,6 +74,7 @@ import { isRadioSupported } from '@/mesh/radio/platform'
 import SidebarTabs from '@/b-components/sidebar/sidebar-tabs/sidebar-tabs.vue'
 import SidebarCategories from '@/b-components/sidebar/sidebar-categories/sidebar-categories.vue'
 import SidebarTags from '@/b-components/sidebar/sidebar-tags/sidebar-tags.vue'
+import AppVersionBadge from '@/b-components/app-update/app-version-badge.vue'
 import { SC_Tabs, SC_TabsItem, SC_TabsLabel } from '@/b-components/sidebar/sidebar-tabs/styled'
 import {
   CloseOutlined,
@@ -84,6 +90,7 @@ import {
   SC_Backdrop,
   SC_Drawer,
   SC_DrawerHeader,
+  SC_DrawerBrand,
   SC_DrawerTitle,
   SC_DrawerClose,
   SC_DrawerAuth,

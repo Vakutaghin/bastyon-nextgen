@@ -45,6 +45,8 @@ const checked = ref(false)
 const skippedVersion = ref<string | null>(null)
 /** Закрытие модалки действует до перезапуска; «пропустить версию» — навсегда. */
 const dismissedForSession = ref(false)
+/** Проверка кнопкой у номера версии: найденное предлагается, даже если эту версию пропускали. */
+const offerSkipped = ref(false)
 
 let inflight: Promise<LatestRelease | null> | null = null
 
@@ -146,10 +148,19 @@ export async function maybeCheckForUpdate(): Promise<void> {
   await checkForUpdate()
 }
 
-/** Ручная проверка из настроек: без троттлинга и вне зависимости от платформы. */
-export async function checkForUpdateNow(): Promise<LatestRelease | null> {
+/**
+ * Ручная проверка: без троттлинга и вне зависимости от платформы.
+ *
+ * С `offerSkipped` найденная версия предлагается, даже если её пропускали.
+ * Так проверяет кнопка у номера версии: ответ, кроме окна, там показать негде,
+ * а диагностика пишет его строкой и пропуск уважает.
+ */
+export async function checkForUpdateNow(
+  options: { offerSkipped?: boolean } = {}
+): Promise<LatestRelease | null> {
   skippedVersion.value = await readSkippedVersion()
   dismissedForSession.value = false
+  if (options.offerSkipped) offerSkipped.value = true
   return checkForUpdate()
 }
 
@@ -162,6 +173,7 @@ export function dismissUpdate(): void {
 export async function skipAvailableVersion(): Promise<void> {
   const version = available.value?.version
   dismissedForSession.value = true
+  offerSkipped.value = false
   if (!version) return
   skippedVersion.value = version
   try {
@@ -186,19 +198,22 @@ export function resetAppUpdateForTests(): void {
   checked.value = false
   skippedVersion.value = null
   dismissedForSession.value = false
+  offerSkipped.value = false
   inflight = null
 }
 
 export function useAppUpdate() {
-  const shouldPrompt = computed(
+  /** Найдена новая версия, о которой стоит говорить: её не пропускали или спросили о ней сами. */
+  const hasUpdate = computed(
     () =>
       available.value !== null &&
-      !dismissedForSession.value &&
-      available.value.version !== skippedVersion.value
+      (offerSkipped.value || available.value.version !== skippedVersion.value)
   )
+  const shouldPrompt = computed(() => hasUpdate.value && !dismissedForSession.value)
 
   return {
     available,
+    hasUpdate,
     checking,
     failed,
     checked,

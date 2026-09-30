@@ -2611,6 +2611,7 @@ export default {
     later: 'Plus tard',
     skip: 'Ignorer cette version',
     checkNow: 'Vérifier',
+    checkUpdates: 'Rechercher des mises à jour',
     checking: 'Vérification…',
     upToDate: 'À jour',
     newVersion: '{version} disponible',

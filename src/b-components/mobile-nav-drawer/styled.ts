@@ -42,8 +42,19 @@ export const SC_DrawerHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--ui-border);
+`
+
+/** Название и под ним номер версии; кнопка проверки — под палец. */
+export const SC_DrawerBrand = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+
+  --version-button-size: 32px;
 `
 
 export const SC_DrawerTitle = styled.div`

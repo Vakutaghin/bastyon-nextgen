@@ -1,9 +1,11 @@
 <template>
+  <!-- Выше мобильного меню (z-index 1101): проверку запускают и из него. -->
   <Modal
     :open="shouldPrompt"
     :title="t('update.title')"
     :footer="null"
     :width="480"
+    :z-index="1200"
     :destroy-on-close="true"
     @cancel="onLater"
     @update:open="onOpenChange"

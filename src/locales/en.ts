@@ -2570,6 +2570,7 @@ export default {
     later: 'Later',
     skip: 'Skip this version',
     checkNow: 'Check',
+    checkUpdates: 'Check for updates',
     checking: 'Checking…',
     upToDate: 'Up to date',
     newVersion: '{version} available',

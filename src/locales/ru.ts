@@ -2567,6 +2567,7 @@ export default {
     later: 'Позже',
     skip: 'Пропустить эту версию',
     checkNow: 'Проверить',
+    checkUpdates: 'Проверить обновления',
     checking: 'Проверяю…',
     upToDate: 'Последняя версия',
     newVersion: 'Доступна {version}',

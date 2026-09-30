@@ -126,6 +126,34 @@ describe('use-app-update', () => {
     expect(useAppUpdate().shouldPrompt.value).toBe(true)
   })
 
+  it('кнопка у номера версии предлагает и пропущенную версию', async () => {
+    respondWith(RELEASE)
+    await checkForUpdate()
+    await useAppUpdate().skip()
+    expect(useAppUpdate().hasUpdate.value).toBe(false)
+
+    await checkForUpdateNow({ offerSkipped: true })
+    const { hasUpdate, shouldPrompt } = useAppUpdate()
+    expect(hasUpdate.value).toBe(true)
+    expect(shouldPrompt.value).toBe(true)
+  })
+
+  it('повторный пропуск прячет версию и у номера версии', async () => {
+    respondWith(RELEASE)
+    await checkForUpdateNow({ offerSkipped: true })
+    await useAppUpdate().skip()
+    expect(useAppUpdate().hasUpdate.value).toBe(false)
+    expect(useAppUpdate().shouldPrompt.value).toBe(false)
+  })
+
+  it('«позже» закрывает окно, а номер версии помнит о новой', async () => {
+    respondWith(RELEASE)
+    await checkForUpdate()
+    useAppUpdate().dismiss()
+    expect(useAppUpdate().shouldPrompt.value).toBe(false)
+    expect(useAppUpdate().hasUpdate.value).toBe(true)
+  })
+
   it('автопроверка в браузере не ходит в сеть', async () => {
     respondWith(RELEASE)
     await maybeCheckForUpdate()
