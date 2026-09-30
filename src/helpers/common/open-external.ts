@@ -17,8 +17,12 @@ import { logger } from '@/services/logger'
 
 const log = logger.scope('[open-external]')
 
-/** Схемы, которые разрешено отдавать наружу. */
-const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:'])
+/**
+ * Схемы, которые разрешено отдавать наружу. Для каждой в
+ * src-tauri/capabilities/default.json нужна область opener: без неё плагин
+ * отказывает в любой ссылке (open-external.test.ts это сверяет).
+ */
+export const ALLOWED_PROTOCOLS: ReadonlySet<string> = new Set(['http:', 'https:', 'mailto:'])
 
 /** Нормализует ссылку: `www.example.com` → `https://www.example.com`. */
 function normalize(url: string): string {
