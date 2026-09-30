@@ -13,8 +13,13 @@ export const SC_VideoPick = styled.label`
   cursor: pointer;
   user-select: none;
 
-  &:hover {
+  &:hover:not(.disabled) {
     color: var(--ui-primary);
+  }
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   &:focus-within {
@@ -114,8 +119,13 @@ export const SC_VideoAction = styled.button`
   border: 0;
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     text-decoration: underline;
+  }
+
+  &:disabled {
+    color: var(--ui-text-dimmed);
+    cursor: not-allowed;
   }
 
   &:focus-visible {

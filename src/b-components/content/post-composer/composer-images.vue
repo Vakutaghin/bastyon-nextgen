@@ -5,6 +5,7 @@
       <SC_ImageRotate
         type="button"
         :aria-label="t('postComposer.rotateImage')"
+        :disabled="disabled"
         @click="emit('rotate', img.id)"
       >
         <RotateRightOutlined />
@@ -12,6 +13,7 @@
       <SC_ImageEdit
         type="button"
         :aria-label="t('postComposer.editImage')"
+        :disabled="disabled"
         @click="openEditor(img)"
       >
         <EditOutlined />
@@ -19,6 +21,7 @@
       <SC_ImageRemove
         type="button"
         :aria-label="t('postComposer.removeImage')"
+        :disabled="disabled"
         @click="emit('remove', img.id)"
       >
         ×
@@ -27,14 +30,22 @@
 
     <SC_AddTile
       v-if="!full"
-      :dragover="dragover"
+      :dragover="dragover && !disabled"
+      :class="{ disabled }"
       :aria-label="t('postComposer.addImages')"
       @dragover.prevent="dragover = true"
       @dragleave.prevent="dragover = false"
       @drop.prevent="onDrop"
     >
       +
-      <input ref="inputRef" type="file" accept="image/*" multiple @change="onChange" />
+      <input
+        ref="inputRef"
+        type="file"
+        accept="image/*"
+        multiple
+        :disabled="disabled"
+        @change="onChange"
+      />
     </SC_AddTile>
   </SC_ImagesGrid>
 
@@ -62,7 +73,12 @@ import {
 import ImageEditorModal from './image-editor-modal.vue'
 import type { ComposerImage } from './use-post-images'
 
-defineProps<{ images: ComposerImage[]; full: boolean }>()
+const props = defineProps<{
+  images: ComposerImage[]
+  full: boolean
+  /** Идёт публикация: картинки уже грузятся, набор не меняется. */
+  disabled?: boolean
+}>()
 const emit = defineEmits<{
   (e: 'add', files: File[]): void
   (e: 'remove', id: string): void
@@ -96,6 +112,8 @@ const onChange = (e: Event): void => {
 
 const onDrop = (e: DragEvent): void => {
   dragover.value = false
+  // Перетаскивание кнопкой не заблокировать — проверяем сами.
+  if (props.disabled) return
   const files = e.dataTransfer?.files
   if (files?.length) emit('add', Array.from(files))
 }

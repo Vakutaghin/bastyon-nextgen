@@ -26,6 +26,9 @@ let counter = 0
 
 /** Вставить распознанную фразу в позицию курсора. */
 export function insertDictated(el: TextField, raw: string, lang: string): void {
+  // Поле заблокировано (например, пост уже публикуется): хвост распознавания
+  // туда не пишем.
+  if (el.disabled || el.readOnly) return
   const chunk = applySpokenCommands(raw, lang)
   const start = el.selectionStart ?? el.value.length
   const end = el.selectionEnd ?? start
@@ -70,6 +73,11 @@ export function useVoiceDictation(options: VoiceDictationOptions) {
     void store.toggle(id)
   }
 
+  /** Прервать диктовку в это поле, если она идёт; чужую не трогаем. */
+  function cancel(): void {
+    if (active.value) void store.cancel()
+  }
+
   // Esc заканчивает диктовку, а не закрывает окно с полем: слушаем в фазе
   // захвата, раньше обработчика модалки.
   function onKeydown(e: KeyboardEvent): void {
@@ -107,5 +115,6 @@ export function useVoiceDictation(options: VoiceDictationOptions) {
     loading: computed(() => active.value && store.loading),
     pending: computed(() => (active.value ? store.pending : 0)),
     toggle,
+    cancel,
   }
 }

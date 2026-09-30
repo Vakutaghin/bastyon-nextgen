@@ -23,6 +23,7 @@
         type="button"
         :aria-label="t('linkPreview.remove')"
         :title="t('linkPreview.remove')"
+        :disabled="disabled"
         @click="emit('remove')"
       >
         <CloseOutlined />
@@ -60,8 +61,10 @@ const props = withDefaults(
     removable?: boolean
     /** Композер: без превью показать хотя бы адрес — ссылка всё равно уйдёт в пост. */
     fallback?: boolean
+    /** Композер: идёт публикация — крестик не нажимается. */
+    disabled?: boolean
   }>(),
-  { lazy: false, removable: false, fallback: false }
+  { lazy: false, removable: false, fallback: false, disabled: false }
 )
 const emit = defineEmits<{ (e: 'remove'): void }>()
 

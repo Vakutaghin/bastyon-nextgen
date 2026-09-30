@@ -25,4 +25,10 @@ export const SC_ArticleEditor = styled.div`
   & .cdx-block {
     color: var(--color-text-primary);
   }
+
+  /* Как у полей ввода (nuxtField): идёт публикация — поле притушено. */
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
+  }
 `

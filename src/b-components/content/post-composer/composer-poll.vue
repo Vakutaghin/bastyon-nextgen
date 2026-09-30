@@ -1,7 +1,7 @@
 <template>
   <SC_Poll>
-    <SC_PollToggle>
-      <input type="checkbox" :checked="active" @change="onToggle" />
+    <SC_PollToggle :class="{ disabled }">
+      <input type="checkbox" :checked="active" :disabled="disabled" @change="onToggle" />
       {{ t('postComposer.pollToggle') }}
     </SC_PollToggle>
 
@@ -10,6 +10,7 @@
         :value="title"
         :placeholder="t('postComposer.pollQuestion')"
         :aria-label="t('postComposer.pollQuestion')"
+        :disabled="disabled"
         @input="emit('update:title', ($event.target as HTMLInputElement).value)"
       />
 
@@ -18,12 +19,14 @@
           :value="opt"
           :placeholder="t('postComposer.pollOption', { n: i + 1 })"
           :aria-label="t('postComposer.pollOption', { n: i + 1 })"
+          :disabled="disabled"
           @input="emit('updateOption', i, ($event.target as HTMLInputElement).value)"
         />
         <SC_PollOptionRemove
           v-if="options.length > 2"
           type="button"
           :aria-label="t('postComposer.pollRemoveOption')"
+          :disabled="disabled"
           @click="emit('removeOption', i)"
         >
           ×
@@ -32,7 +35,7 @@
 
       <SC_PollAddBtn
         type="button"
-        :disabled="options.length >= MAX_POLL_OPTIONS"
+        :disabled="disabled || options.length >= MAX_POLL_OPTIONS"
         @click="emit('addOption')"
       >
         + {{ t('postComposer.pollAddOption') }}
@@ -55,7 +58,13 @@ import {
   SC_PollToggle,
 } from './composer-poll.styled'
 
-defineProps<{ active: boolean; title: string; options: string[] }>()
+defineProps<{
+  active: boolean
+  title: string
+  options: string[]
+  /** Идёт публикация поста: опрос уже в нём. */
+  disabled?: boolean
+}>()
 const emit = defineEmits<{
   (e: 'toggle', active: boolean): void
   (e: 'update:title', value: string): void

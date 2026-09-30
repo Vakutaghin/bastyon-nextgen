@@ -2,8 +2,13 @@
   <SC_Composer>
     <ComposerRepost v-if="isRepost && repostSource" :source="repostSource" />
 
-    <SC_ArticleToggle v-if="!isRepost && !isEdit">
-      <input type="checkbox" :checked="articleMode" @change="onToggleArticle" />
+    <SC_ArticleToggle v-if="!isRepost && !isEdit" :class="{ disabled: submitting }">
+      <input
+        type="checkbox"
+        :checked="articleMode"
+        :disabled="submitting"
+        @change="onToggleArticle"
+      />
       {{ t('postComposer.articleToggle') }}
     </SC_ArticleToggle>
 
@@ -13,6 +18,7 @@
       :value="caption"
       :placeholder="titlePlaceholder"
       :aria-label="titlePlaceholder"
+      :disabled="submitting"
       @input="onCaptionInput(($event.target as HTMLInputElement).value)"
     />
 
@@ -20,6 +26,7 @@
     <ComposerArticleEditor
       v-if="articleMode"
       :model-value="articleContent"
+      :disabled="submitting"
       @update:model-value="onArticleChange"
     />
 
@@ -32,6 +39,7 @@
           isRepost ? t('postComposer.repostPlaceholder') : t('postComposer.placeholder')
         "
         :aria-label="t('postComposer.placeholder')"
+        :disabled="submitting"
         @input="onComposerInput"
         @keydown="onMentionKeydown"
         @keyup="updateMentions"
@@ -63,12 +71,17 @@
         <template #content>
           <CommentEmojiPicker @select="insertEmoji" />
         </template>
-        <SC_EmojiBtn type="button" :title="t('postComposer.emoji')" @click.stop>
+        <SC_EmojiBtn
+          type="button"
+          :title="t('postComposer.emoji')"
+          :disabled="submitting"
+          @click.stop
+        >
           <SmileOutlined />
         </SC_EmojiBtn>
       </APopover>
       <!-- Голосовой ввод: речь на языке поста, текст — в позицию курсора. -->
-      <VoiceInputButton :get-element="getTextareaEl" :language="language" />
+      <VoiceInputButton :get-element="getTextareaEl" :language="language" :disabled="submitting" />
     </SC_EmojiRow>
 
     <!-- Превью видео по ссылке (youtube/vimeo/peertube), найденной в тексте -->
@@ -81,6 +94,7 @@
       :url="linkPreviewUrl"
       removable
       fallback
+      :disabled="submitting"
       @remove="dismissLinkPreview"
     />
 
@@ -95,6 +109,7 @@
       :pointer="uploadedVideoUrl"
       :get-auth="videoAuth"
       :get-title="() => caption"
+      :disabled="submitting"
       @uploaded="onVideoUploaded"
       @removed="clearUploadedVideoUrl"
       @uploading="setVideoUploading"
@@ -106,6 +121,7 @@
       v-if="!isRepost && !articleMode && !videoUploading && !hasUploadedVideo"
       :images="images"
       :full="imagesFull"
+      :disabled="submitting"
       @add="addImageFiles"
       @remove="removeImage"
       @rotate="rotateImage"
@@ -117,6 +133,7 @@
       :tags="tags"
       :full="tagsFull"
       :input-value="tagInput"
+      :disabled="submitting"
       @update:input-value="tagInput = $event"
       @add="addTag"
       @remove="removeTag"
@@ -129,6 +146,7 @@
       :active="pollActive"
       :title="pollTitle"
       :options="pollOptions"
+      :disabled="submitting"
       @toggle="togglePoll"
       @update:title="setPollTitle"
       @update-option="setPollOption"
@@ -142,6 +160,7 @@
       :is-trial="isTrial"
       :paid-available="paidVisibilityAvailable"
       :scheduled-time="scheduledTime"
+      :disabled="submitting"
       @update:visibility="visibility = $event"
       @update:language="language = $event"
       @update:scheduled-time="setScheduledTime"
@@ -354,6 +373,16 @@ function onComposerInput(e: Event): void {
   onMessageInput((e.target as HTMLTextAreaElement).value)
   updateMentions()
 }
+
+// Пока идёт публикация, форма заблокирована целиком (поля — через :disabled):
+// картинки уже грузятся по списку на момент нажатия, правка на полпути попала
+// бы в пост лишь частично, а после публикации форма всё равно очищается.
+// Пикер эмодзи и подсказки @-имён вставляют текст мимо поля — их закрываем.
+watch(submitting, (busy) => {
+  if (!busy) return
+  emojiOpen.value = false
+  closeMentions()
+})
 
 // Клик по строке (mousedown.prevent) успевает отработать до закрытия по blur.
 function onComposerBlur(): void {

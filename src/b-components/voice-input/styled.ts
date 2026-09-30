@@ -24,9 +24,14 @@ export const SC_DictationButton = styled.button`
     color var(--transition-fast),
     background-color var(--transition-fast);
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: var(--ui-text-highlighted);
     background-color: var(--ui-bg-elevated);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 
   &:focus-visible {

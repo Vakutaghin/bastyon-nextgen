@@ -48,6 +48,8 @@ Click **“Publish”**. If something is missing, the line to the left of the bu
 - **“Add a title for the video”** — video and audio need a title;
 - **“Add a poll question”** or **“A poll needs at least 2 options”**.
 
+While the post is being published, a spinner turns on the button and the window is locked: fields, buttons and lists don't respond, and the window can't be closed. The post goes out exactly as it was when you clicked. If publishing fails, the window unlocks and everything you wrote is still there.
+
 If the post was rejected by the network itself, for example because of the daily limit, the app names the reason — see [The network rejected an action](action-rejected.md).
 
 ## See also

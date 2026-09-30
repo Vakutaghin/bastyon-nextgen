@@ -473,6 +473,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   }
 
   const publish = async (): Promise<void> => {
+    // Публикация уже идёт: второй вызов дал бы дубль поста.
+    if (submitting.value) return
     if (!authStore.isUserAuthenticated) {
       modalStore.openAuthModal('login')
       return

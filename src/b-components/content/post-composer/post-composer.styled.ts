@@ -105,9 +105,14 @@ export const SC_EmojiBtn = styled.button`
   cursor: pointer;
   transition: background ${TRANSITIONS.FAST};
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-bg-hover);
     color: var(--color-text-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 `
 
@@ -136,6 +141,16 @@ export const SC_ArticleToggle = styled.label`
     height: 16px;
     cursor: pointer;
     accent-color: var(--color-primary);
+  }
+
+  /* Идёт публикация — переключатель не нажимается. */
+  &.disabled,
+  &.disabled input {
+    cursor: not-allowed;
+  }
+
+  &.disabled {
+    opacity: 0.6;
   }
 `
 

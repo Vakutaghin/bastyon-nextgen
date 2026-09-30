@@ -1,11 +1,12 @@
 <template>
   <SC_TagsField>
-    <SC_TagsRow @click="focusInput">
+    <SC_TagsRow :class="{ disabled }" @click="focusInput">
       <SC_TagChip v-for="tag in tags" :key="tag">
         #{{ tag }}
         <SC_TagRemove
           type="button"
           :aria-label="t('postComposer.removeTag', { tag })"
+          :disabled="disabled"
           @click.stop="emit('remove', tag)"
         >
           ×
@@ -14,7 +15,7 @@
       <SC_TagInput
         ref="inputRef"
         :value="inputValue"
-        :disabled="full"
+        :disabled="full || disabled"
         :placeholder="full ? '' : t('postComposer.tagsPlaceholder')"
         :aria-label="t('postComposer.tagsPlaceholder')"
         @input="onInput"
@@ -38,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useRpcQuery } from '@/composables/use-rpc-query'
@@ -55,7 +56,13 @@ import {
 } from './composer-tags.styled'
 import { filterTagSuggestions, NO_ACTIVE_SUGGESTION, resolveTagOnEnter } from './tag-suggestions'
 
-const props = defineProps<{ tags: string[]; full: boolean; inputValue: string }>()
+const props = defineProps<{
+  tags: string[]
+  full: boolean
+  inputValue: string
+  /** Идёт публикация поста: теги уже в нём. */
+  disabled?: boolean
+}>()
 const emit = defineEmits<{
   (e: 'add', raw: string): void
   (e: 'remove', tag: string): void
@@ -76,6 +83,15 @@ function getInputEl(): HTMLInputElement | null {
 }
 const open = ref(false)
 const activeIndex = ref(NO_ACTIVE_SUGGESTION)
+
+// Поле заблокировали, пока в нём был фокус: blur приходит не везде, а
+// подсказки не должны ни висеть, ни всплыть сами, когда блокировка снимется.
+watch(
+  () => props.disabled,
+  (disabled) => {
+    if (disabled) open.value = false
+  }
+)
 
 // Облако трендовых тегов (gettags не умеет префикс-поиск — фильтруем на клиенте).
 // Тот же ключ, что у облака тегов в сайдбаре: один запрос, один кэш.

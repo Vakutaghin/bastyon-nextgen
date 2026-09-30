@@ -114,8 +114,13 @@ export const SC_Remove = styled.button`
   color: var(--color-white);
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: rgb(var(--color-black-rgb) / 75%);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 
   &:focus-visible {

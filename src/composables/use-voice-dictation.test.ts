@@ -36,6 +36,21 @@ describe('insertDictated', () => {
     expect(el.value).toBe('Первое. Второе предложение.')
   })
 
+  it('в заблокированное поле хвост распознавания не пишется', () => {
+    const onInput = vi.fn()
+    const locked = field('Пост уже публикуется')
+    locked.disabled = true
+    const readOnly = field('Только для чтения')
+    readOnly.readOnly = true
+    for (const el of [locked, readOnly]) {
+      el.addEventListener('input', onInput)
+      insertDictated(el, 'и ещё немного', 'ru')
+    }
+    expect(locked.value).toBe('Пост уже публикуется')
+    expect(readOnly.value).toBe('Только для чтения')
+    expect(onInput).not.toHaveBeenCalled()
+  })
+
   it('пустая фраза ничего не меняет', () => {
     const el = field('abc')
     const onInput = vi.fn()

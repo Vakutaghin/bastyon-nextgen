@@ -16,6 +16,12 @@ export const SC_TagsRow = styled.div`
   border: 1px solid var(--color-border);
   border-radius: var(--ui-radius-lg);
   background: var(--color-bg-input);
+
+  /* Как у полей ввода (nuxtField): идёт публикация — поле притушено. */
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
+  }
 `
 
 export const SC_TagChip = styled.span`
@@ -41,8 +47,12 @@ export const SC_TagRemove = styled.button`
   line-height: 1;
   transition: color var(--transition-quick);
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: var(--ui-text-highlighted);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
   }
 `
 

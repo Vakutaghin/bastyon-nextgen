@@ -354,6 +354,25 @@ describe('usePostComposer', () => {
       expect(c.submitting.value).toBe(false)
     })
 
+    it('второй вызов, пока идёт первая публикация, ничего не отправляет', async () => {
+      let finish: (txid: string) => void = () => {}
+      mocks.sendPost.mockImplementation(() => new Promise<string>((resolve) => (finish = resolve)))
+      const c = compose()
+      fillValidPost(c)
+      const first = c.publish()
+      await flush()
+      expect(c.submitting.value).toBe(true)
+
+      await c.publish()
+      expect(mocks.uploadImages).toHaveBeenCalledTimes(1)
+      expect(mocks.sendPost).toHaveBeenCalledTimes(1)
+
+      finish('tx-new')
+      await first
+      expect(c.submitting.value).toBe(false)
+      expect(mocks.toastSuccess).toHaveBeenCalledTimes(1)
+    })
+
     it('отложенное время 0 или 1 означает «сразу»', () => {
       const c = compose()
       c.setScheduledTime(1)

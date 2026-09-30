@@ -8,6 +8,7 @@
       :class="{ active, speaking }"
       :aria-label="tooltip"
       :aria-pressed="active"
+      :disabled="disabled"
       @mousedown.prevent
       @click="toggle"
     >
@@ -39,15 +40,35 @@ const props = defineProps<{
   getElement: () => TextField | null
   /** Язык речи — коды интерфейса (ru, en, kr…). */
   language: string
+  /** Поле заблокировано (пост публикуется): кнопка не нажимается, диктовка прерывается. */
+  disabled?: boolean
 }>()
 
 const { t } = useI18n()
 
-const { usable, active, phase, installing, installPercent, level, speaking, loading, toggle } =
-  useVoiceDictation({
-    getElement: () => props.getElement(),
-    language: () => props.language,
-  })
+const {
+  usable,
+  active,
+  phase,
+  installing,
+  installPercent,
+  level,
+  speaking,
+  loading,
+  toggle,
+  cancel,
+} = useVoiceDictation({
+  getElement: () => props.getElement(),
+  language: () => props.language,
+})
+
+// Без хвоста: дораспознанное пришло бы уже после публикации, в очищенную форму.
+watch(
+  () => props.disabled,
+  (disabled) => {
+    if (disabled) cancel()
+  }
+)
 
 const busy = computed(
   () => installing.value || phase.value === 'starting' || phase.value === 'finishing'

@@ -6,7 +6,7 @@
         id="composer-visibility"
         :value="visibility"
         :options="visibilityOptions"
-        :disabled="isTrial"
+        :disabled="isTrial || disabled"
         @change="onVisibilityChange"
       />
       <SC_TrialHint v-if="isTrial">{{ t('postComposer.trialVisibilityHint') }}</SC_TrialHint>
@@ -18,6 +18,7 @@
         id="composer-language"
         :value="language"
         :options="LANGUAGE_OPTIONS"
+        :disabled="disabled"
         @change="onLanguageChange"
       />
     </SC_SettingItem>
@@ -29,6 +30,7 @@
         :value="scheduledTime > 1 ? scheduledTime : 0"
         :future="true"
         :placeholder="t('postComposer.schedulePlaceholder')"
+        :disabled="disabled"
         @change="emit('update:scheduledTime', $event)"
       />
       <SC_TrialHint v-if="scheduledTime > 1">{{ t('postComposer.scheduleHint') }}</SC_TrialHint>
@@ -59,6 +61,8 @@ const props = defineProps<{
   /** У автора назначена цена платной подписки — можно публиковать для платных подписчиков. */
   paidAvailable: boolean
   scheduledTime: number
+  /** Идёт публикация поста: настройки уже в нём. */
+  disabled?: boolean
 }>()
 const emit = defineEmits<{
   (e: 'update:visibility', value: string): void

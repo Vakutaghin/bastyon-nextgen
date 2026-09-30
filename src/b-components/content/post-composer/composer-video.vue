@@ -1,6 +1,6 @@
 <template>
-  <SC_VideoPick v-if="state === 'idle'">
-    <input type="file" :accept="ACCEPT" @change="onPick" />
+  <SC_VideoPick v-if="state === 'idle'" :class="{ disabled }">
+    <input type="file" :accept="ACCEPT" :disabled="disabled" @change="onPick" />
     <VideoCameraAddOutlined />
     {{ t('postComposer.videoUpload') }}
   </SC_VideoPick>
@@ -8,7 +8,7 @@
   <SC_VideoPanel v-else-if="state === 'uploading'" role="status">
     <SC_VideoRow>
       <SC_VideoName>{{ fileLabel }}</SC_VideoName>
-      <SC_VideoAction type="button" @click="cancel">{{
+      <SC_VideoAction type="button" :disabled="disabled" @click="cancel">{{
         t('postComposer.videoCancel')
       }}</SC_VideoAction>
     </SC_VideoRow>
@@ -29,7 +29,7 @@
         {{ isAudio ? t('postComposer.audioAttached') : t('postComposer.videoAttached')
         }}<template v-if="fileLabel"> · {{ fileLabel }}</template>
       </SC_VideoName>
-      <SC_VideoAction type="button" @click="remove">{{
+      <SC_VideoAction type="button" :disabled="disabled" @click="remove">{{
         t('postComposer.videoRemove')
       }}</SC_VideoAction>
     </SC_VideoRow>
@@ -38,10 +38,10 @@
   <SC_VideoErrorPanel v-else role="alert">
     <SC_VideoRow>
       <SC_VideoName>{{ errorText }}</SC_VideoName>
-      <SC_VideoAction type="button" @click="retry">{{
+      <SC_VideoAction type="button" :disabled="disabled" @click="retry">{{
         t('postComposer.videoRetry')
       }}</SC_VideoAction>
-      <SC_VideoAction type="button" @click="reset">{{
+      <SC_VideoAction type="button" :disabled="disabled" @click="reset">{{
         t('postComposer.videoCancel')
       }}</SC_VideoAction>
     </SC_VideoRow>
@@ -74,6 +74,8 @@ const props = defineProps<{
   pointer: string
   getAuth: () => { keyPair: KeyPair; address: string } | null
   getTitle: () => string
+  /** Идёт публикация поста: видео не выбрать, не убрать и не перезалить. */
+  disabled?: boolean
 }>()
 const emit = defineEmits<{
   (e: 'uploaded', video: UploadedComposerVideo): void
@@ -109,7 +111,10 @@ watch(state, (value) => emit('uploading', value === 'uploading'))
 watch(
   () => props.pointer,
   (pointer) => {
-    if (!pointer && state.value === 'done') reset()
+    // Черновик читается уже после открытия окна: видео из него приходит
+    // позже, и без этого панель снова предлагала выбрать файл.
+    if (pointer) restore(pointer)
+    else if (state.value === 'done') reset()
   }
 )
 onBeforeUnmount(reset)

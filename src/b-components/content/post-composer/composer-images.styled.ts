@@ -42,8 +42,13 @@ export const SC_ImageRemove = styled.button`
   line-height: 1;
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-overlay-70);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 `
 
@@ -65,8 +70,13 @@ export const SC_ImageRotate = styled.button`
   line-height: 1;
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-overlay-70);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 `
 
@@ -88,8 +98,13 @@ export const SC_ImageEdit = styled.button`
   line-height: 1;
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-overlay-70);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 `
 
@@ -110,9 +125,14 @@ export const SC_AddTile = styled('label', tileProps)`
     border-color var(--transition-quick),
     background var(--transition-quick);
 
-  &:hover {
+  &:hover:not(.disabled) {
     border-color: var(--color-primary);
     color: var(--color-primary);
+  }
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 
   & input {

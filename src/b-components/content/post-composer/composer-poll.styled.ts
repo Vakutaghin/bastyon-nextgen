@@ -25,6 +25,15 @@ export const SC_PollToggle = styled.label`
     cursor: pointer;
     accent-color: var(--color-primary);
   }
+
+  &.disabled,
+  &.disabled input {
+    cursor: not-allowed;
+  }
+
+  &.disabled {
+    opacity: 0.6;
+  }
 `
 
 export const SC_PollBody = styled.div`
@@ -57,8 +66,13 @@ export const SC_PollOptionRemove = styled.button`
   font-size: ${FONT_SIZE.LG};
   line-height: 1;
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: var(--color-danger);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 `
 

@@ -1,9 +1,9 @@
 <template>
-  <SC_ArticleEditor ref="holderRef" />
+  <SC_ArticleEditor ref="holderRef" :class="{ disabled }" />
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ArticleContent } from '@/blockchain/core/actions/post-action'
@@ -13,7 +13,11 @@ import { uploadImage } from '@/services/image-upload-service'
 import { normalizeArticleBlocks } from './article-blocks'
 import { SC_ArticleEditor } from './composer-article-editor.styled'
 
-const props = defineProps<{ modelValue?: ArticleContent | null }>()
+const props = defineProps<{
+  modelValue?: ArticleContent | null
+  /** Идёт публикация поста: статья только для чтения. */
+  disabled?: boolean
+}>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: ArticleContent): void }>()
 
 const { t } = useI18n()
@@ -30,8 +34,29 @@ function getHolderEl(): HTMLElement | null {
 }
 
 // Тип Editor.js не импортируем статически (грузим динамически) — держим инстанс как unknown.
-let editor: { save: () => Promise<unknown>; destroy: () => void; isReady?: Promise<void> } | null =
-  null
+let editor: {
+  save: () => Promise<unknown>
+  destroy: () => void
+  isReady?: Promise<void>
+  /** Появляется, когда редактор готов. */
+  readOnly?: { toggle: (state?: boolean) => Promise<boolean> }
+} | null = null
+
+// Режим «только чтение» Editor.js включает перерисовкой всех блоков, и только
+// у готового редактора. Переключения идут по очереди: публикация, упавшая
+// сразу, иначе начала бы вторую перерисовку посреди первой.
+let readOnlyQueue: Promise<unknown> = Promise.resolve()
+watch(
+  () => props.disabled,
+  (disabled) => {
+    const current = editor
+    if (!current?.isReady) return
+    readOnlyQueue = readOnlyQueue
+      .then(() => current.isReady)
+      .then(() => current.readOnly?.toggle(disabled))
+      .catch((e: unknown) => console.warn('[article-editor] read-only toggle failed', e))
+  }
+)
 
 onMounted(async () => {
   const holderEl = getHolderEl()
@@ -59,6 +84,8 @@ onMounted(async () => {
   editor = new (EditorJS as any)({
     holder: holderEl,
     minHeight: 200,
+    // Публикацию могли начать, пока грузился сам Editor.js.
+    readOnly: props.disabled,
     placeholder: t('postComposer.articlePlaceholder'),
     data: props.modelValue ?? undefined,
     tools: {
