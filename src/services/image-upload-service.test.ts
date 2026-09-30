@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-const { instanceFetch, resolveHost, resolveHosts } = vi.hoisted(() => ({
+const { instanceFetch, resolveHost, resolveHosts, appFetch } = vi.hoisted(() => ({
   instanceFetch: vi.fn(),
   resolveHost: vi.fn(),
   resolveHosts: vi.fn(),
+  appFetch: vi.fn(),
 }))
+
+vi.mock('@/helpers/api/request', () => ({ appFetch }))
 
 vi.mock('@/services/peertube/peertube-host', () => ({
   resolvePeertubeHost: resolveHost,
@@ -24,9 +27,14 @@ import {
   withHttpsScheme,
   dataUrlToBlob,
   peertubeImageProvider,
+  up1ImageProvider,
   resetImageUploadSessionForTests,
   uploadImage,
   uploadImages,
+  ImageUploadError,
+  TOKEN_TIMEOUT_MS,
+  UPLOAD_TIMEOUT_MS,
+  UP1_TIMEOUT_MS,
   type ImageUploadProvider,
 } from './image-upload-service'
 
@@ -35,11 +43,23 @@ const DATA_URL = 'data:image/png;base64,AAAA'
 const jsonRes = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
+/** Запрос, который не отвечает, пока его не отменят. */
+const hang = (_a: unknown, b?: unknown, c?: unknown): Promise<Response> => {
+  const init = (c ?? b) as RequestInit | undefined
+  return new Promise((_resolve, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+  })
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   resolveHost.mockResolvedValue('host.app')
   resolveHosts.mockResolvedValue(['host.app'])
   resetImageUploadSessionForTests()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('withHttpsScheme', () => {
@@ -82,8 +102,24 @@ describe('uploadImage (цепочка провайдеров)', () => {
     expect(ok.upload).toHaveBeenCalled()
   })
 
-  it('все провайдеры упали → пробрасывает последнюю ошибку', async () => {
-    await expect(uploadImage(DATA_URL, [fail])).rejects.toThrow('boom')
+  it('все провайдеры упали → ошибка с причиной от каждого', async () => {
+    const other: ImageUploadProvider = {
+      name: 'other',
+      upload: vi.fn(async () => {
+        throw new Error('bang')
+      }),
+    }
+    const error = await uploadImage(DATA_URL, [fail, other]).catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(ImageUploadError)
+    expect((error as ImageUploadError).message).toBe('fail: boom; other: bang')
+  })
+
+  it('по умолчанию после PeerTube пробуется сервер картинок Bastyon', async () => {
+    resolveHost.mockRejectedValue(new Error('peertube_no_host'))
+    resolveHosts.mockRejectedValue(new Error('network'))
+    appFetch.mockResolvedValue(jsonRes({ data: { ident: 'abc.jfif' }, success: true }))
+
+    await expect(uploadImage(DATA_URL)).resolves.toBe('https://pocketnet.app:8092/i/abc.jfif')
   })
 })
 
@@ -242,5 +278,67 @@ describe('peertubeImageProvider: хост без общего аккаунта',
     instances({ pt101: { token: 'T' } })
 
     await expect(peertubeImageProvider.upload(DATA_URL)).resolves.toBe('https://pt101/img.jpg')
+  })
+})
+
+describe('up1ImageProvider (сервер картинок Bastyon)', () => {
+  it('шлёт base64 без префикса и ключ формой, адрес — по идентификатору', async () => {
+    appFetch.mockResolvedValue(jsonRes({ data: { ident: 'xyz.jfif', delkey: 'k' }, success: true }))
+
+    await expect(up1ImageProvider.upload(DATA_URL)).resolves.toBe(
+      'https://pocketnet.app:8092/i/xyz.jfif'
+    )
+    const [url, init] = appFetch.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('https://pocketnet.app:8092/up')
+    expect(init.method).toBe('POST')
+    // Простой запрос: без него браузер спросил бы preflight, на который сервер CORS не отдаёт.
+    expect(init.headers).toEqual({ 'Content-Type': 'application/x-www-form-urlencoded' })
+    expect(init.body).toBe('file=AAAA&api_key=c61540b5ceecd05092799f936e277552')
+  })
+
+  it('ошибка сервера и ответ без идентификатора — с кодом', async () => {
+    appFetch.mockResolvedValue(jsonRes({ code: 408, error: 'API key' }, 500))
+    await expect(up1ImageProvider.upload(DATA_URL)).rejects.toThrow('up1_upload_500')
+
+    appFetch.mockResolvedValue(jsonRes({ success: true }))
+    await expect(up1ImageProvider.upload(DATA_URL)).rejects.toThrow('up1_upload_no_ident')
+  })
+
+  it('недоступный сервер не держит публикацию дольше таймаута', async () => {
+    vi.useFakeTimers()
+    appFetch.mockImplementation(hang)
+    const result = up1ImageProvider.upload(DATA_URL).catch((e: unknown) => e)
+    await vi.advanceTimersByTimeAsync(UP1_TIMEOUT_MS)
+    expect(((await result) as Error).message).toBe('up1_timeout')
+  })
+})
+
+describe('peertubeImageProvider: зависший инстанс', () => {
+  it('хост, который не выдаёт токен, бросается по таймауту — берётся следующий', async () => {
+    vi.useFakeTimers()
+    resolveHost.mockResolvedValue('slow')
+    resolveHosts.mockResolvedValue(['slow', 'pt101'])
+    instances({ pt101: { token: 'T' } })
+    const answer = instanceFetch.getMockImplementation()!
+    instanceFetch.mockImplementation((host: string, path: string, init?: RequestInit) =>
+      host === 'slow' ? hang(host, path, init) : answer(host, path, init)
+    )
+
+    const result = peertubeImageProvider.upload(DATA_URL)
+    await vi.advanceTimersByTimeAsync(TOKEN_TIMEOUT_MS)
+    await expect(result).resolves.toBe('https://pt101/img.jpg')
+  })
+
+  it('зависшая загрузка — peertube_upload_timeout', async () => {
+    vi.useFakeTimers()
+    instances({ 'host.app': { token: 'T' } })
+    const answer = instanceFetch.getMockImplementation()!
+    instanceFetch.mockImplementation((host: string, path: string, init?: RequestInit) =>
+      path === 'api/v1/images/upload' ? hang(host, path, init) : answer(host, path, init)
+    )
+
+    const result = peertubeImageProvider.upload(DATA_URL).catch((e: unknown) => e)
+    await vi.advanceTimersByTimeAsync(UPLOAD_TIMEOUT_MS)
+    expect(((await result) as Error).message).toBe('peertube_upload_timeout')
   })
 })

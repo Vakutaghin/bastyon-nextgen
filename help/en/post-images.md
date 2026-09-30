@@ -28,7 +28,9 @@ The app scales large photos down to fit into 1920 × 1080 and re-saves them as J
 
 ## Where they are uploaded
 
-When you click **“Publish”**, the app uploads the images to the Bastyon network's PeerTube servers, and the post gets links to them. An image is available to anyone who has the link, and it cannot be deleted from the server from the app, even if you delete the post. Do not publish what should not become public — see [Privacy: what others can see](privacy.md).
+When you click **“Publish”**, the app uploads the images to the Bastyon network's PeerTube servers, and if they do not accept an image, to the Bastyon image server `pocketnet.app:8092`, as the old app does. The post gets links to them. An image is available to anyone who has the link, and it cannot be deleted from the server from the app, even if you delete the post. Do not publish what should not become public — see [Privacy: what others can see](privacy.md).
+
+If no server accepts the image, the post is not published and the app says **“Could not upload the image. Try publishing again.”** The small line under the message says what each server answered. If you report a problem, include it — see [Report a problem](report-bug.md).
 
 ## See also
 

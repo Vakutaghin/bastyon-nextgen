@@ -491,11 +491,12 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
 
     submitting.value = true
     try {
-      // Загружаем картинки (base64 → URL) до сборки транзакции. Код ошибки
-      // («peertube_image_token_400») человеку ничего не говорит — он в консоли.
+      // Загружаем картинки (base64 → URL) до сборки транзакции. Главное в
+      // сообщении — что делать; коды причин («peertube: peertube_image_token_400»)
+      // идут мелкой строкой ниже: по ним видно, где именно не вышло.
       const imageUrls = await uploadImages(base64List.value).catch((e: unknown) => {
         console.warn('[post-composer] image upload failed', e)
-        throw new Error(t('postMsg.errImageUpload'))
+        throw new Error(t('postMsg.errImageUpload'), { cause: e })
       })
       const finalPost: SharePostData = { ...post.value, images: imageUrls }
       const txid = await sendPost(finalPost)
@@ -527,8 +528,10 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       await queryClient.invalidateQueries({ queryKey: ['feed'] })
       options.onPublished?.(txid)
     } catch (e) {
+      const cause = e instanceof Error ? e.cause : undefined
       appToast.error({
         message: e instanceof Error ? e.message : t('postMsg.errSendFailed'),
+        ...(cause instanceof Error ? { description: cause.message } : {}),
       })
     } finally {
       submitting.value = false

@@ -17,6 +17,12 @@
  * сутки): следующим картинкам не нужны ни выбор хоста, ни новый токен.
  * Старый клиент тоже выбирает хост картинок один раз за сессию.
  *
+ * Если PeerTube картинку не принял (ни один хост не выдал токен, загрузка
+ * упала или зависла), она уходит на сервер картинок Bastyon
+ * `pocketnet.app:8092` — туда же грузит старый клиент. Сервер бывает
+ * недоступен, поэтому он запасной. Каждый запрос ограничен по времени:
+ * зависший сервер не должен держать публикацию.
+ *
  * ВАЖНО: раньше здесь был неверный контракт (POST на голый `/api/v1/` с JSON `{base64,Action}`
  * без токена) — он давал 404, т.к. такого роута нет. Правильный эндпоинт — `/api/v1/images/upload`
  * с multipart + Bearer.
@@ -25,6 +31,8 @@
  * imgur-провайдер оставлен заготовкой (нужен подтверждённый прокси-эндпоинт).
  */
 
+import { appFetch } from '@/helpers/api/request'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { resolvePeertubeHost, resolvePeertubeHosts } from '@/services/peertube/peertube-host'
 import { peertubeInstanceFetch, serializeForm } from '@/services/peertube/peertube-instance'
 
@@ -41,6 +49,37 @@ const IMAGE_UPLOAD_CREDS = { username: 'test_bastyon', password: 'test_bastyon' 
 const DEFAULT_TOKEN_TTL_S = 600
 /** Токен, который вот-вот истечёт, не берём: он может кончиться посреди загрузки. */
 const TOKEN_MARGIN_MS = 60_000
+/** Токен выдаётся за доли секунды; дольше — хост завис, берём следующий. */
+export const TOKEN_TIMEOUT_MS = 20_000
+/** Картинка до 1920×1080 грузится за секунды и по медленной сети. */
+export const UPLOAD_TIMEOUT_MS = 60_000
+
+/** Сервер картинок Bastyon: запасной путь, как у старого клиента (js/functions.js). */
+const UP1_URL = 'https://pocketnet.app:8092/up'
+/** Публичный ключ из исходников старого клиента: без него сервер отвечает «API key doesn't match». */
+const UP1_API_KEY = 'c61540b5ceecd05092799f936e277552'
+export const UP1_TIMEOUT_MS = 30_000
+
+/**
+ * Запрос с ограничением по времени на всё сразу — ответ и его тело. По
+ * истечении запрос отменяется и бросается ошибка с кодом `code`.
+ */
+async function withTimeout<T>(
+  ms: number,
+  code: string,
+  run: (signal: AbortSignal) => Promise<T>
+): Promise<T> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  try {
+    return await run(controller.signal)
+  } catch (e) {
+    if (controller.signal.aborted) throw new Error(code, { cause: e })
+    throw e
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
 /** Достраивает протокол, если узел вернул URL без схемы. */
 export function withHttpsScheme(url: string): string {
@@ -63,11 +102,13 @@ export function dataUrlToBlob(dataUrl: string): Blob {
 
 /** oauth-clients/local → { client_id, client_secret } (нужны для password-гранта). */
 async function fetchOauthClient(
-  host: string
+  host: string,
+  signal: AbortSignal
 ): Promise<{ client_id: string; client_secret: string }> {
   const res = await peertubeInstanceFetch(host, 'api/v1/oauth-clients/local', {
     method: 'GET',
     headers: { Accept: 'application/json' },
+    signal,
   })
   if (!res.ok) throw new Error(`peertube_image_oauth_${res.status}`)
   const j = (await res.json()) as { client_id?: string; client_secret?: string } | null
@@ -76,24 +117,27 @@ async function fetchOauthClient(
 }
 
 /** Токен для загрузки картинок: password-грант платформенного аккаунта. */
-async function fetchImageUploadToken(host: string): Promise<{ token: string; ttlSeconds: number }> {
-  const { client_id, client_secret } = await fetchOauthClient(host)
-  const res = await peertubeInstanceFetch(host, 'api/v1/users/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: serializeForm({
-      client_id,
-      client_secret,
-      grant_type: 'password',
-      response_type: 'code',
-      ...IMAGE_UPLOAD_CREDS,
-    }),
+function fetchImageUploadToken(host: string): Promise<{ token: string; ttlSeconds: number }> {
+  return withTimeout(TOKEN_TIMEOUT_MS, 'peertube_image_token_timeout', async (signal) => {
+    const { client_id, client_secret } = await fetchOauthClient(host, signal)
+    const res = await peertubeInstanceFetch(host, 'api/v1/users/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: serializeForm({
+        client_id,
+        client_secret,
+        grant_type: 'password',
+        response_type: 'code',
+        ...IMAGE_UPLOAD_CREDS,
+      }),
+      signal,
+    })
+    if (!res.ok) throw new Error(`peertube_image_token_${res.status}`)
+    const j = (await res.json()) as { access_token?: string; expires_in?: unknown } | null
+    if (!j?.access_token) throw new Error('peertube_image_token_invalid')
+    const ttlSeconds = typeof j.expires_in === 'number' ? j.expires_in : DEFAULT_TOKEN_TTL_S
+    return { token: j.access_token, ttlSeconds }
   })
-  if (!res.ok) throw new Error(`peertube_image_token_${res.status}`)
-  const j = (await res.json()) as { access_token?: string; expires_in?: unknown } | null
-  if (!j?.access_token) throw new Error('peertube_image_token_invalid')
-  const ttlSeconds = typeof j.expires_in === 'number' ? j.expires_in : DEFAULT_TOKEN_TTL_S
-  return { token: j.access_token, ttlSeconds }
 }
 
 /** Хост, принявший общий аккаунт, и его токен. */
@@ -143,13 +187,20 @@ async function openSession(): Promise<UploadSession> {
   throw lastError instanceof Error ? lastError : new Error('peertube_image_token_failed')
 }
 
-function postImage(current: UploadSession, blob: Blob): Promise<Response> {
-  const form = new FormData()
-  form.append('imagefile', blob, 'image')
-  return peertubeInstanceFetch(current.host, 'api/v1/images/upload', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${current.token}` },
-    body: form,
+/** Загрузка на хост сессии: статус ответа и, если картинку приняли, её адрес. */
+function postImage(current: UploadSession, blob: Blob): Promise<{ status: number; url?: string }> {
+  return withTimeout(UPLOAD_TIMEOUT_MS, 'peertube_upload_timeout', async (signal) => {
+    const form = new FormData()
+    form.append('imagefile', blob, 'image')
+    const res = await peertubeInstanceFetch(current.host, 'api/v1/images/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${current.token}` },
+      body: form,
+      signal,
+    })
+    if (!res.ok) return { status: res.status }
+    const data = (await res.json()) as { url?: string } | null
+    return { status: res.status, url: data?.url }
   })
 }
 
@@ -160,16 +211,42 @@ export const peertubeImageProvider: ImageUploadProvider = {
     const blob = dataUrlToBlob(base64)
     const current = session && session.expiresAt > Date.now() ? session : await openSession()
 
-    let res = await postImage(current, blob)
-    if (res.status === 401) {
+    let posted = await postImage(current, blob)
+    if (posted.status === 401) {
       // Токен отозван раньше срока: новый — и ещё одна попытка.
-      res = await postImage(await openSession(), blob)
+      posted = await postImage(await openSession(), blob)
     }
-    if (!res.ok) throw new Error(`peertube_upload_${res.status}`)
+    if (posted.status < 200 || posted.status >= 300) {
+      throw new Error(`peertube_upload_${posted.status}`)
+    }
+    if (!posted.url) throw new Error('peertube_upload_no_url')
+    return withHttpsScheme(posted.url)
+  },
+}
 
-    const data = (await res.json()) as { url?: string } | null
-    if (!data?.url) throw new Error('peertube_upload_no_url')
-    return withHttpsScheme(data.url)
+/**
+ * Провайдер up1 — сервер картинок Bastyon. Принимает base64 без префикса
+ * `data:` формой и отвечает идентификатором файла.
+ */
+export const up1ImageProvider: ImageUploadProvider = {
+  name: 'up1',
+  async upload(base64: string): Promise<string> {
+    const comma = base64.indexOf(',')
+    const file = comma >= 0 ? base64.slice(comma + 1) : base64
+    const data = await withTimeout(UP1_TIMEOUT_MS, 'up1_timeout', async (signal) => {
+      const res = await appFetch(UP1_URL, {
+        method: 'POST',
+        // Простой запрос без preflight: CORS сервер отдаёт только на сам POST.
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: serializeForm({ file, api_key: UP1_API_KEY }),
+        signal,
+      })
+      if (!res.ok) throw new Error(`up1_upload_${res.status}`)
+      return (await res.json()) as { data?: { ident?: unknown } } | null
+    })
+    const ident = data?.data?.ident
+    if (typeof ident !== 'string' || !ident) throw new Error('up1_upload_no_ident')
+    return resolveImageUrl(ident) ?? ident
   },
 }
 
@@ -178,12 +255,24 @@ export function resetImageUploadSessionForTests(): void {
   session = null
 }
 
-/** Дефолтная цепочка провайдеров. */
-export const DEFAULT_IMAGE_PROVIDERS: ImageUploadProvider[] = [peertubeImageProvider]
+/** Дефолтная цепочка провайдеров: PeerTube, а если не вышло — сервер картинок Bastyon. */
+export const DEFAULT_IMAGE_PROVIDERS: ImageUploadProvider[] = [
+  peertubeImageProvider,
+  up1ImageProvider,
+]
+
+/** Картинку не принял ни один провайдер; в `message` — причина от каждого. */
+export class ImageUploadError extends Error {
+  constructor(readonly reasons: string[]) {
+    super(reasons.join('; ') || 'image_upload_failed')
+    this.name = 'ImageUploadError'
+  }
+}
 
 /**
  * Загружает одно изображение. Если это уже URL (не data:image) — возвращает как есть.
- * Перебирает провайдеров по порядку до первого успеха.
+ * Перебирает провайдеров по порядку до первого успеха; если не принял ни один —
+ * `ImageUploadError` с причинами от каждого.
  */
 export async function uploadImage(
   base64: string,
@@ -191,17 +280,17 @@ export async function uploadImage(
 ): Promise<string> {
   if (!base64.startsWith('data:image')) return base64
 
-  let lastError: unknown = null
+  const reasons: string[] = []
   for (const provider of providers) {
     try {
       return await provider.upload(base64)
     } catch (e) {
-      lastError = e
+      reasons.push(`${provider.name}: ${e instanceof Error ? e.message : String(e)}`)
       console.warn(`[image-upload] provider "${provider.name}" failed`, e)
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error('image_upload_failed')
+  throw new ImageUploadError(reasons)
 }
 
 /** Загружает массив изображений последовательно, сохраняя порядок. */

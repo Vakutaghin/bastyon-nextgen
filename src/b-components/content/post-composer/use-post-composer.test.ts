@@ -337,13 +337,18 @@ describe('usePostComposer', () => {
       expect(mocks.addPending).not.toHaveBeenCalled()
     })
 
-    it('картинка не загрузилась: понятный тост вместо кода, пост не отправлен, форма цела', async () => {
-      mocks.uploadImages.mockRejectedValue(new Error('peertube_image_token_400'))
+    it('картинка не загрузилась: понятный тост, коды причин строкой ниже, пост не отправлен', async () => {
+      mocks.uploadImages.mockRejectedValue(
+        new Error('peertube: peertube_image_token_400; up1: up1_timeout')
+      )
       const c = compose()
       fillValidPost(c)
       mocks.images.value = ['data:image/jpeg;base64,AAA']
       await c.publish()
-      expect(mocks.toastError).toHaveBeenCalledWith({ message: 'postMsg.errImageUpload' })
+      expect(mocks.toastError).toHaveBeenCalledWith({
+        message: 'postMsg.errImageUpload',
+        description: 'peertube: peertube_image_token_400; up1: up1_timeout',
+      })
       expect(mocks.sendPost).not.toHaveBeenCalled()
       expect(c.message.value).toBe(TEXT)
       expect(c.submitting.value).toBe(false)

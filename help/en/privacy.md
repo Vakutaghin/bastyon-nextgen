@@ -37,6 +37,7 @@ Bastyon itself does not collect IP addresses, but the app talks to servers, and 
 |---|---|
 | Network nodes | always: feeds, profiles, publishing |
 | PeerTube servers | when you watch videos, view images and avatars |
+| Bastyon image server (`pocketnet.app:8092`) | when you view images and avatars stored there, and when publishing if PeerTube did not accept an image |
 | Matrix servers | when the messenger is open |
 | YouTube and Vimeo | when a post with an embedded clip from these sites is on screen |
 | Websites from links | when a link preview image is shown |
