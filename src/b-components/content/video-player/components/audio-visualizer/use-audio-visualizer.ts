@@ -1,5 +1,9 @@
 import { onMounted, onBeforeUnmount, watch, type Ref } from 'vue'
 import * as PIXI from 'pixi.js'
+import { initPixiApp } from '@/helpers/common/init-pixi-app'
+import { logger } from '@/services/logger'
+
+const log = logger.scope('[audio-visualizer]')
 
 /**
  * Один AudioContext и один source-узел на элемент — на всё приложение (S30).
@@ -59,26 +63,35 @@ export function useAudioVisualizer(
   let source: MediaElementAudioSourceNode | null = null
   let dataArray: Uint8Array | null = null
   let graphics: PIXI.Graphics | null = null
+  /** Плеер уже закрыт: запуск, который закончится позже, приложение не оставляет. */
+  let disposed = false
 
   const initVisualizer = async () => {
     const el = resolveContainerEl(container)
     if (!el) return
 
-    app = new PIXI.Application()
-
-    await app.init({
-      resizeTo: el,
-      backgroundAlpha: 0,
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-    })
+    // Без WebGL волны просто нет — см. initPixiApp. Приложение запоминаем
+    // только запущенным: полузапущенное не разрушить при закрытии плеера.
+    const instance = new PIXI.Application()
+    const ready = await initPixiApp(
+      instance,
+      {
+        resizeTo: el,
+        backgroundAlpha: 0,
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      },
+      '[audio-visualizer]'
+    )
+    if (!ready) return
 
     const elAfter = resolveContainerEl(container)
-    if (!elAfter) {
-      app.destroy()
+    if (disposed || !elAfter) {
+      instance.destroy(true, { children: true, texture: true })
       return
     }
+    app = instance
     elAfter.appendChild(app.canvas)
 
     graphics = new PIXI.Graphics()
@@ -197,13 +210,14 @@ export function useAudioVisualizer(
   })
 
   onMounted(() => {
-    initVisualizer()
+    initVisualizer().catch((e: unknown) => log.warn('init failed:', e))
     if (videoElement.value) {
       setupAudio()
     }
   })
 
   onBeforeUnmount(() => {
+    disposed = true
     if (app) {
       app.destroy(true, { children: true, texture: true })
       app = null

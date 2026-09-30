@@ -6,6 +6,7 @@ import { Application, Graphics, Sprite, Texture } from 'pixi.js'
 // Импорт-сайд-эффект, обязан стоять до создания Application.
 import 'pixi.js/unsafe-eval'
 import { useEffectsStore } from '@/stores/effects-store'
+import { initPixiApp } from '@/helpers/common/init-pixi-app'
 
 function resolveContainerEl(
   ref: Ref<HTMLElement | { $el: HTMLElement } | null>
@@ -19,6 +20,8 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
   const effectsStore = useEffectsStore()
 
   let app: Application | null = null
+  /** Компонент уже снят: запуск, который закончится позже, приложение не оставляет. */
+  let disposed = false
   const particles: Array<{
     sprite: Sprite
     vx: number
@@ -107,19 +110,30 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
     const el = resolveContainerEl(container)
     if (!el) return
 
-    app = new Application()
+    const instance = new Application()
 
     // Цикл не крутим постоянно: раньше пустой полноэкранный WebGL-холст
     // перерисовывался 60 раз в секунду всё время работы приложения (N36).
     // Запускается взрывом и сам останавливается, когда частицы догорели.
-    await app.init({
-      autoStart: false,
-      backgroundAlpha: 0,
-      resizeTo: window,
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-    })
+    // Без WebGL эффекта просто нет — см. initPixiApp.
+    const ready = await initPixiApp(
+      instance,
+      {
+        autoStart: false,
+        backgroundAlpha: 0,
+        resizeTo: window,
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      },
+      '[star-explosion]'
+    )
+    if (!ready) return
+    if (disposed) {
+      instance.destroy(true, { children: true, texture: true })
+      return
+    }
+    app = instance
 
     app.canvas.style.position = 'absolute'
     app.canvas.style.top = '0'
@@ -135,6 +149,7 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
   })
 
   onUnmounted(() => {
+    disposed = true
     if (app) {
       app.destroy(true, { children: true, texture: true, baseTexture: true })
       app = null
