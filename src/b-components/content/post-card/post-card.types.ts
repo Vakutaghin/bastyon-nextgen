@@ -40,6 +40,8 @@ export interface Post {
   videoUrl?: string
   /** Текст превью для статей. */
   preview?: string
+  /** Язык поста (`l`): по нему нода собирает ленты, в том числе ленту бустов. */
+  language?: string
   /** Настройки поста (`s`): видимость, маркер статьи, опрос `poll`. */
   settings?: { [key: string]: unknown }
   lastComment?: {

@@ -6,6 +6,7 @@ import { ConfigProvider } from 'ant-design-vue'
 import AppLayout from '@/b-components/app-layout/app-layout.vue'
 import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
+import BoostModal from '@/b-components/boost/boost-modal.vue'
 import ReportModal from '@/b-components/report/report-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
 import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
@@ -98,6 +99,8 @@ watch(themeConfig, setStaticApiTheme, { immediate: true })
       <MiniAppPaymentModal />
       <!-- Донат автору — singleton, открывается через useDonateStore -->
       <DonateModal />
+      <!-- Продвижение поста за PKOIN — singleton, открывается через useBoostStore -->
+      <BoostModal />
       <!-- Жалоба на контент — singleton, открывается через useReportStore -->
       <ReportModal />
       <!-- P0-1: разблокировка сейфа (passphrase-режим) — singleton, открывается мостом vault-unlock -->

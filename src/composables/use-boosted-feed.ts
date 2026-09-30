@@ -9,31 +9,17 @@
  *
  * Сверено с legacy `js/satolist.js` (`getboostfeed` → `shares.getbyid(txids)` →
  * `shares.users`): фильтр по сумме flags < 10, выбор N продвигаемых, затем добор
- * контента. Параметры getboostfeed: `[height=0, txid='', 1440(окно, мин), lang, …]`.
+ * контента. Сам запрос бустов — `fetchBoostFeed` (services/boost-feed.ts).
  */
 
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
+import { fetchBoostFeed } from '@/services/boost-feed'
 import { useUIStore } from '@/stores/ui-store'
 import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import { preloadLastCommentAuthors } from './helpers/feed-enrichment'
-
-/** Окно буста в минутах (legacy `60 * 24`). */
-const BOOST_WINDOW_MINUTES = 60 * 24
-
-/** Заглушка буста из getboostfeed. */
-interface BoostStub {
-  txid?: string
-  boost?: number
-  flags?: Record<string, number>
-}
-
-interface BoostResponse {
-  data?: { boosts?: BoostStub[] }
-  boosts?: BoostStub[]
-}
 
 interface ContentResponse {
   data?: unknown[]
@@ -57,15 +43,8 @@ export function useBoostedFeed(limit = 3, enabled: () => boolean = () => true) {
     queryKey: computed(() => ['boosted-feed', lang.value]),
     queryFn: async () => {
       // 1. Заглушки бустов.
-      const boostResp = (await getByPRC({
-        method: rpcEndpoints.getBoostFeed,
-        parameters: [0, '', BOOST_WINDOW_MINUTES, lang.value, [], [], [], [], []],
-        cachehash: Date.now().toString(36) + Math.random().toString(36).substring(2),
-        options: { ex: true },
-      })) as BoostResponse
-
-      const boosts = boostResp?.data?.boosts ?? boostResp?.boosts
-      if (!Array.isArray(boosts) || boosts.length === 0) return []
+      const boosts = await fetchBoostFeed(lang.value)
+      if (boosts.length === 0) return []
 
       // 2. Фильтр по flags + выбор самых продвигаемых, собираем txid'ы.
       const txids = boosts

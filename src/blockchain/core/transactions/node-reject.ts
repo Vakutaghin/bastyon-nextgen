@@ -59,6 +59,11 @@ const REJECT_KEYS: Readonly<Record<number, string>> = {
   47: 'deleteFailed',
   48: 'waitPrevious',
   49: 'settingsLimit',
+  // Действие с удалённым постом: комментарий, репост, жалоба, оценка, буст.
+  51: 'contentDeleted',
+  52: 'contentDeleted',
+  56: 'contentDeleted',
+  57: 'contentDeleted',
   60: 'negativeScoreReputation',
   61: 'editOncePerBlock',
   62: 'alreadyReported',

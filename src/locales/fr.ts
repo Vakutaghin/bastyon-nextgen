@@ -1183,6 +1183,32 @@ export default {
     errInsufficient: 'Fonds insuffisants',
     errFailed: 'Impossible d’envoyer le pourboire',
   },
+  boost: {
+    title: 'Promouvoir la publication',
+    intro:
+      'La publication apparaîtra plus souvent dans le fil de sa langue pendant environ une journée. L’auteur ne reçoit pas les pièces : elles vont au réseau en frais.',
+    howItWorks: 'Comment ça marche',
+    current: 'La publication est actuellement promue avec {amount} PKOIN.',
+    amountPlaceholder: 'Montant en PKOIN, à partir de {min}',
+    available: 'Disponible : {amount} PKOIN',
+    probability:
+      'Probabilité d’être parmi les {top} premières publications du fil « {language} » pendant environ une journée : {percent}',
+    probabilityLoading: 'Calcul de la probabilité…',
+    probabilityUnknown:
+      'Impossible de calculer la probabilité pour la langue de cette publication.',
+    forFull: 'Pour 100 % : {amount} PKOIN',
+    send: 'Promouvoir',
+    cancel: 'Annuler',
+    sentToast:
+      'La publication est promue. La promotion commencera quand le réseau aura confirmé la transaction, dans une minute environ.',
+    errAuthRequired: 'Connectez-vous pour promouvoir des publications',
+    errNoPost: 'Cette publication n’est pas encore dans le réseau, impossible de la promouvoir',
+    errMin: 'Minimum {min} PKOIN',
+    errAmount: 'Saisissez un montant valide',
+    errInsufficient: 'Fonds insuffisants',
+    errFailed: 'Impossible de promouvoir la publication',
+    howToBuy: 'Comment obtenir des PKOIN',
+  },
   report: {
     action: 'Signaler',
     titlePost: 'Signaler la publication',
@@ -1223,6 +1249,7 @@ export default {
     repostFrom: 'de',
     repostRecord: 'publication',
     repostAction: 'Republier',
+    boostAction: 'Promouvoir',
     editAction: 'Modifier',
     deleteAction: 'Supprimer',
     deleteCancel: 'Annuler',
@@ -2355,6 +2382,7 @@ export default {
     blockedByAuthor: 'Impossible : vous avez bloqué cette personne, ou elle vous a bloqué.',
     tooLarge: 'Le contenu dépasse la taille autorisée.',
     parentDeleted: 'Le commentaire auquel vous répondez a été supprimé.',
+    contentDeleted: 'La publication a été supprimée.',
     commentEditTooSoon:
       'Le commentaire ne peut pas encore être modifié. Attendez une minute et réessayez.',
     selfCommentScore: 'Vous ne pouvez pas noter votre propre commentaire.',

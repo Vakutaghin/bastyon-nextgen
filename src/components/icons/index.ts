@@ -112,6 +112,7 @@ import {
   Wallet,
   Wifi,
   X,
+  Zap,
   ZoomIn,
 } from '@lucide/vue'
 
@@ -240,6 +241,7 @@ export const StarOutlined = lucideIcon('StarOutlined', Star)
 export const StopOutlined = lucideIcon('StopOutlined', Ban)
 export const SyncOutlined = lucideIcon('SyncOutlined', RefreshCw)
 export const TeamOutlined = lucideIcon('TeamOutlined', Users)
+export const ThunderboltOutlined = lucideIcon('ThunderboltOutlined', Zap)
 export const TrophyFilled = lucideIcon('TrophyFilled', Trophy, 'soft')
 export const UpOutlined = lucideIcon('UpOutlined', ChevronUp)
 export const UploadOutlined = lucideIcon('UploadOutlined', Upload)

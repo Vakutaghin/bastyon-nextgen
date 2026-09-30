@@ -26,7 +26,7 @@ Every action in Bastyon is a [transaction](glossary.md#transaction), and the nod
 - **“You have already rated this.”**, **“You have already rated this comment.”**, **“You are already subscribed to this user.”**, **“You have already reported this.”** — this is already done: the action was recorded earlier, perhaps from another device.
 - **“You cannot rate your own post.”**, **“You cannot report your own content.”** — not allowed with your own content.
 - **“Not possible: you have blocked this person or they have blocked you.”** — see [Blocking](blocking.md).
-- **“The comment you are replying to has been deleted.”** and **“Not found: it may have been deleted.”**
+- **“The comment you are replying to has been deleted.”**, **“The post has been deleted.”** and **“Not found: it may have been deleted.”** — a comment, rating, repost, report or boost for something that is gone.
 
 ## Reputation and the account
 

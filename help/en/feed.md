@@ -31,7 +31,7 @@ The feed, tags and recommendations follow the interface language: the app passes
 
 ## Promoted posts
 
-In the **“Feed”** section, roughly after every ten posts, you may see a post labeled **“Promoted”**: its author or another participant paid PKOIN to lift the post — this is called a [boost](glossary.md#boost). You cannot boost in this app yet; the previous Bastyon app can do it.
+In the **“Feed”** section, roughly after every ten posts, you may see a post labeled **“Promoted”**: its author or another participant paid PKOIN to lift the post — this is called a [boost](glossary.md#boost). You can promote your own or someone else’s post with the **“Promote”** button under it — see [Promoting a post](boost.md).
 
 ## See also
 

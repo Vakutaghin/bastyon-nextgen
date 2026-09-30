@@ -181,6 +181,16 @@
           </Dropdown>
 
           <SC_PostActionBtn
+            v-if="canBoost"
+            type="button"
+            :aria-label="t('postCard.boostAction')"
+            @click="openBoost"
+          >
+            <ThunderboltOutlined />
+            <span>{{ t('postCard.boostAction') }}</span>
+          </SC_PostActionBtn>
+
+          <SC_PostActionBtn
             v-if="isOwnPost"
             type="button"
             :aria-label="t('postCard.editAction')"
@@ -231,6 +241,7 @@ import {
   EditOutlined,
   RetweetOutlined,
   RiseOutlined,
+  ThunderboltOutlined,
   ClockCircleOutlined,
   LockOutlined,
   PlayCircleOutlined,
@@ -241,6 +252,8 @@ import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { useReportStore } from '@/stores/report-store'
+import { useBoostStore } from '@/stores/boost-store'
+import { requireAuth } from '@/composables/use-auth-gate'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { publicEmbedCode, publicPostUrl } from '@/helpers/common/share-origin'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
@@ -421,6 +434,31 @@ function onReportPost(): void {
     authorAddress: props.post.author.address,
     type: 'post',
   })
+}
+
+// ── Продвижение за PKOIN (буст) ─────────────────────────────────────
+// Как у старого клиента — у любого опубликованного поста, своего и чужого.
+// Гостю сначала окно входа, потом само окно продвижения.
+const canBoost = computed<boolean>(() => !!(props.post.txid || props.post.hash))
+
+/** Какой пост продвигаем: заголовок или начало текста. */
+const boostPreview = computed<string>(() => {
+  const text = (
+    decodeUrlEncoded(props.post.title || '') || decodeUrlEncoded(props.post.content || '')
+  )
+    .replace(/\s+/g, ' ')
+    .trim()
+  return text.length > 90 ? `${text.slice(0, 89)}…` : text
+})
+
+function openBoost(): void {
+  requireAuth(() =>
+    useBoostStore().open({
+      postId: postId.value,
+      language: props.post.language,
+      preview: boostPreview.value,
+    })
+  )
 }
 
 // ── Внешний шаринг поста ────────────────────────────────────────────

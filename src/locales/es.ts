@@ -1183,6 +1183,31 @@ export default {
     errInsufficient: 'Fondos insuficientes',
     errFailed: 'No se pudo enviar la propina',
   },
+  boost: {
+    title: 'Promocionar la publicación',
+    intro:
+      'La publicación aparecerá con más frecuencia en el feed de su idioma durante aproximadamente un día. El autor no recibe las monedas: se van a la red como comisión.',
+    howItWorks: 'Cómo funciona',
+    current: 'Ahora la publicación está promocionada con {amount} PKOIN.',
+    amountPlaceholder: 'Importe en PKOIN, desde {min}',
+    available: 'Disponible: {amount} PKOIN',
+    probability:
+      'Probabilidad de estar entre las {top} primeras publicaciones del feed «{language}» durante aproximadamente un día: {percent}',
+    probabilityLoading: 'Calculando la probabilidad…',
+    probabilityUnknown: 'No se puede calcular la probabilidad para el idioma de esta publicación.',
+    forFull: 'Para el 100 %: {amount} PKOIN',
+    send: 'Promocionar',
+    cancel: 'Cancelar',
+    sentToast:
+      'La publicación está promocionada. La promoción empezará cuando la red confirme la transacción, en un minuto aproximadamente.',
+    errAuthRequired: 'Inicia sesión para promocionar publicaciones',
+    errNoPost: 'Esta publicación aún no está en la red y no se puede promocionar',
+    errMin: 'Mínimo {min} PKOIN',
+    errAmount: 'Introduce un importe válido',
+    errInsufficient: 'Fondos insuficientes',
+    errFailed: 'No se pudo promocionar la publicación',
+    howToBuy: 'Cómo conseguir PKOIN',
+  },
   report: {
     action: 'Denunciar',
     titlePost: 'Denunciar publicación',
@@ -1224,6 +1249,7 @@ export default {
     repostFrom: 'de',
     repostRecord: 'publicación',
     repostAction: 'Compartir',
+    boostAction: 'Promocionar',
     editAction: 'Editar',
     deleteAction: 'Eliminar',
     deleteCancel: 'Cancelar',
@@ -2347,6 +2373,7 @@ export default {
     blockedByAuthor: 'No es posible: has bloqueado a esta persona o ella te ha bloqueado.',
     tooLarge: 'El contenido supera el tamaño permitido.',
     parentDeleted: 'El comentario al que respondes se ha eliminado.',
+    contentDeleted: 'La publicación se ha eliminado.',
     commentEditTooSoon:
       'Aún no se puede editar el comentario. Espera un minuto e inténtalo de nuevo.',
     selfCommentScore: 'No puedes valorar tu propio comentario.',

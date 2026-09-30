@@ -40,6 +40,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Rating posts](ratings.md)
   - [Comments](comments.md)
   - [Tipping the author](tips.md)
+  - [Promoting a post](boost.md)
   - [Reposting and linking to a post](sharing.md)
   - [Reports](reports.md)
 - [People and profiles](people.md)

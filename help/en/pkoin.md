@@ -14,12 +14,13 @@ Why the network has a coin, where it comes from and how much of it you need to u
 - **A full account.** With a balance of 50 PKOIN or more the account becomes full even if its reputation has not reached 100 yet, and with 250 PKOIN or more you can publish up to 100 video posts a day — see [Account status and limits](limits.md).
 - **Tips and transfers** to other people — see [Tipping the author](tips.md) and [Transfers and fees](send-pkoin.md).
 - **Payments in mini apps** — see [Payments in mini apps](mini-app-payments.md).
+- **Promoting posts** — see [Promoting a post](boost.md).
 
-In the previous Bastyon app PKOIN is also used to promote posts (boost) and for paid subscriptions to authors. This app does not have these yet.
+In the previous Bastyon app PKOIN is also used for paid subscriptions to authors. This app does not have them yet.
 
 ## How much you need
 
-You can read Bastyon with no coins at all. To write, rate and comment, the coins the network gives a new account at registration are enough — the fees are tiny. You need more only if you want a full account without reputation, to send tips or to pay in mini apps.
+You can read Bastyon with no coins at all. To write, rate and comment, the coins the network gives a new account at registration are enough — the fees are tiny. You need more only if you want a full account without reputation, to send tips, to promote posts or to pay in mini apps.
 
 ## Where new coins come from
 

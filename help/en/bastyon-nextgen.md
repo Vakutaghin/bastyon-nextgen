@@ -28,7 +28,7 @@ Bastyon NextGen is a new app for the same Bastyon network, written from scratch.
 
 These features exist in the previous app but are not done here yet. Meanwhile you can use them there:
 
-- post boosts, paid subscriptions and staking;
+- paid subscriptions and staking;
 - post collections;
 - calls, creating group chats, editing and forwarding messages, stickers;
 - the “My videos” section, importing a video by link and live streams;

@@ -1181,6 +1181,32 @@ export default {
     errInsufficient: 'Nicht genug Guthaben',
     errFailed: 'Das Trinkgeld konnte nicht gesendet werden',
   },
+  boost: {
+    title: 'Beitrag bewerben',
+    intro:
+      'Der Beitrag erscheint etwa einen Tag lang häufiger im Feed seiner Sprache. Der Autor erhält die Coins nicht: Sie gehen als Gebühr an das Netzwerk.',
+    howItWorks: 'So funktioniert es',
+    current: 'Der Beitrag wird derzeit mit {amount} PKOIN beworben.',
+    amountPlaceholder: 'Betrag in PKOIN, ab {min}',
+    available: 'Verfügbar: {amount} PKOIN',
+    probability:
+      'Wahrscheinlichkeit, etwa einen Tag lang unter den ersten {top} Beiträgen des Feeds „{language}“ zu sein: {percent}',
+    probabilityLoading: 'Wahrscheinlichkeit wird berechnet…',
+    probabilityUnknown:
+      'Für die Sprache dieses Beitrags lässt sich die Wahrscheinlichkeit nicht berechnen.',
+    forFull: 'Für 100 %: {amount} PKOIN',
+    send: 'Bewerben',
+    cancel: 'Abbrechen',
+    sentToast:
+      'Der Beitrag wird beworben. Das wirkt, sobald das Netzwerk die Transaktion bestätigt – in etwa einer Minute.',
+    errAuthRequired: 'Melde dich an, um Beiträge zu bewerben',
+    errNoPost: 'Dieser Beitrag ist noch nicht im Netzwerk und kann nicht beworben werden',
+    errMin: 'Mindestens {min} PKOIN',
+    errAmount: 'Gib einen gültigen Betrag ein',
+    errInsufficient: 'Nicht genügend Guthaben',
+    errFailed: 'Der Beitrag konnte nicht beworben werden',
+    howToBuy: 'So bekommst du PKOIN',
+  },
   report: {
     action: 'Melden',
     titlePost: 'Beitrag melden',
@@ -1221,6 +1247,7 @@ export default {
     repostFrom: 'von',
     repostRecord: 'Eintrag',
     repostAction: 'Repost',
+    boostAction: 'Bewerben',
     editAction: 'Bearbeiten',
     deleteAction: 'Löschen',
     deleteCancel: 'Abbrechen',
@@ -2351,6 +2378,7 @@ export default {
     blockedByAuthor: 'Nicht möglich: Du hast diese Person blockiert oder sie dich.',
     tooLarge: 'Der Inhalt überschreitet die zulässige Größe.',
     parentDeleted: 'Der Kommentar, auf den du antwortest, wurde gelöscht.',
+    contentDeleted: 'Der Beitrag wurde gelöscht.',
     commentEditTooSoon:
       'Der Kommentar kann noch nicht bearbeitet werden. Warte eine Minute und versuche es erneut.',
     selfCommentScore: 'Du kannst deinen eigenen Kommentar nicht bewerten.',

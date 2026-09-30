@@ -30,9 +30,15 @@ describe('toNodeRejectError', () => {
   })
 
   it('новый код консенсуса — общий текст с номером', () => {
-    const err = toNodeRejectError({ code: 57 })
-    expect(err?.message).toBe(t('nodeReject.unknownCode', { code: 57 }))
-    expect(err?.message).toContain('57')
+    const err = toNodeRejectError({ code: 63 })
+    expect(err?.message).toBe(t('nodeReject.unknownCode', { code: 63 }))
+    expect(err?.message).toContain('63')
+  })
+
+  it('действие с удалённым постом (комментарий, репост, жалоба, оценка, буст) — «Пост удалён»', () => {
+    for (const code of [51, 52, 56, 57]) {
+      expect(toNodeRejectError({ code })?.message).toBe(t('nodeReject.contentDeleted'))
+    }
   })
 
   it('коды прокси (408, 2000) и сетевые ошибки — не отказ ноды', () => {

@@ -20,7 +20,7 @@ A shared record of every action on the network: transfers, posts, ratings, subsc
 
 ## Boost
 
-Promoting a post for [PKOIN](#pkoin): a participant spends coins, and the post rises in the feed with a "Promoted" label. The more coins, the higher the post. The author does not get the coins: they go as a [fee](#fee) to whoever produced the block.
+Promoting a post for [PKOIN](#pkoin): a participant spends coins, and the post rises in the feed with a "Promoted" label. The more coins, the higher the post. The author does not get the coins: they go as a [fee](#fee) to whoever produced the block. See [Promoting a post](boost.md).
 
 ## Bridge
 
