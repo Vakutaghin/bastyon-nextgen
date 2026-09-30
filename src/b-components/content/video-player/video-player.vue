@@ -338,7 +338,7 @@ import { videoPlayerManager } from './video-player-manager'
 import type { Chapter } from '@/helpers/content/timecode-parser'
 import { useVideoHotkeys } from './composables/use-video-hotkeys'
 import { useVideoControls } from './composables/use-video-controls'
-import { useTouchControls } from './composables/use-touch-controls'
+import { CONTROL_SELECTOR, useTouchControls } from './composables/use-touch-controls'
 import { useTouchUi } from './composables/use-touch-ui'
 import { HOTKEYS_LIST, DOUBLE_CLICK_DELAY } from './consts'
 import { createClickHandler } from './helpers'
@@ -868,10 +868,13 @@ const seekIndicator = computed(() => {
 // пробел себе. С Tab обводка и обычные кнопки возвращаются.
 const pointerMode = ref(false)
 let lastPointerType = ''
+/** Последнее нажатие началось на элементе управления: полосе перемотки, панели, меню. */
+let pressOnControl = false
 
 function handlePointerDownCapture(event: PointerEvent): void {
   pointerMode.value = true
   lastPointerType = event.pointerType
+  pressOnControl = !!(event.target as Element | null)?.closest(CONTROL_SELECTOR)
 }
 
 // Мышь: клик — пуск и пауза с «пульсом», двойной — весь экран.
@@ -881,7 +884,12 @@ const handleMouseClick = createClickHandler(
   DOUBLE_CLICK_DELAY
 )
 
-function handleContainerClick(): void {
+function handleContainerClick(event: MouseEvent): void {
+  // Щелчок по полосе перемотки или другому элементу управления — их, а не
+  // «пауза/пуск». Полоса щелчок не гасит, а если её тянули и отпустили над
+  // роликом, щелчок приходит самому плееру: поэтому смотрим, где началось
+  // нажатие. Раньше перемотка мышью заодно ставила ролик на паузу или пускала.
+  if (pressOnControl || (event.target as Element | null)?.closest(CONTROL_SELECTOR)) return
   // До первого запуска и клик, и касание запускают ролик — как по превью у YouTube.
   if (!isInitialized.value) {
     if (!isLoading.value && !error.value && !torNoticeVisible.value) togglePlay()

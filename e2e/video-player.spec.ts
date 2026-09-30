@@ -71,6 +71,38 @@ test.describe('Плеер мышью', () => {
     await expect(container(page).getByText('0:15 / 0:30')).toBeVisible()
   })
 
+  test('полоса перемотки перематывает и не ставит на паузу, даже если отпустить над роликом', async ({
+    page,
+  }) => {
+    await open(page)
+    await start(page)
+    await container(page).hover()
+    const bar = container(page).getByRole('slider', { name: 'Перемотка' })
+    const box = (await bar.boundingBox())!
+    const y = box.y + box.height / 2
+    // Пауза по щелчку срабатывает с задержкой (ждёт второго щелчка) — ждём дольше неё.
+    const settle = () => page.waitForTimeout(400)
+
+    await page.mouse.click(box.x + box.width * 0.75, y)
+    await expect.poll(async () => (await state(page)).time).toBeCloseTo(22.5, 0)
+    await settle()
+    expect((await state(page)).paused).toBe(false)
+
+    // Потянули ползунок назад и отпустили уже над самим роликом.
+    await page.mouse.move(box.x + box.width * 0.75, y)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width * 0.25, y, { steps: 5 })
+    await page.mouse.move(box.x + box.width * 0.25, y - 120, { steps: 3 })
+    await page.mouse.up()
+    await expect.poll(async () => (await state(page)).time).toBeLessThan(12)
+    await settle()
+    expect((await state(page)).paused).toBe(false)
+
+    // Щелчок по самому ролику по-прежнему ставит на паузу.
+    await page.mouse.click(box.x + box.width / 2, y - 120)
+    await expect.poll(async () => (await state(page)).paused).toBe(true)
+  })
+
   test('скорость — из меню настроек, как у YouTube', async ({ page }) => {
     await open(page)
     await start(page)

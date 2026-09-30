@@ -22,7 +22,7 @@ const TAP_SLOP_PX = 10
 const SWIPE_EXIT_PX = 60
 
 /** Элементы управления: касание по ним — их нажатие, а не жест по ролику. */
-const CONTROL_SELECTOR = '[data-player-control]'
+export const CONTROL_SELECTOR = '[data-player-control]'
 
 interface TouchControlsOptions {
   isPlaying: Ref<boolean>
