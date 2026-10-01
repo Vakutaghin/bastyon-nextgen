@@ -39,6 +39,12 @@ on:
 # При push -> github.ref_name (e.g. v0.1.0). При dispatch -> inputs.tag.
 env:
   TAG: ${{ inputs.tag || github.ref_name }}
+  # Сборке фронта нужно ~2,5 ГБ кучи: plugin-legacy разбирает каждый чанк
+  # Babel, чтобы подобрать полифилы. Node сам даёт четверть памяти машины, а у
+  # macOS-раннера её 7 ГБ — в 0.9.5 обе сборки macOS упали с heap out of memory.
+  # Тот же лимит стоит в скрипте build (package.json); здесь он для тегов, у
+  # которых его в скрипте ещё нет.
+  NODE_OPTIONS: --max-old-space-size=4096
 
 jobs:
   create-release:
