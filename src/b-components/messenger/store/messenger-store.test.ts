@@ -65,6 +65,7 @@ vi.mock('./messenger-store/use-dialog-mapping', () => ({
   }),
 }))
 
+import { findExistingRoomByAddress } from '../room-helpers'
 import { useMessengerStore } from './messenger-store'
 import { useMessengerUiStore } from './messenger-ui-store'
 
@@ -298,5 +299,67 @@ describe('messenger-store: повтор входа в Matrix в фоне', () =>
     store.logout()
     await vi.advanceTimersByTimeAsync(60_000)
     expect(h.matrix.login).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('messenger-store: «Начать чат» сразу после запуска', () => {
+  beforeEach(() => {
+    // Тесты повтора входа выше оставляют login с отказом.
+    h.matrix.login.mockImplementation(async () => {
+      h.matrix.client = { getUserId: () => '@50416c696365:matrix.pocketnet.app' }
+      return true
+    })
+  })
+
+  it('ждёт ответа сервера и открывает существующий чат, а не карточку собеседника', async () => {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    // Как настоящий клиент: кэш ('PREPARED') ещё не знает о приглашении,
+    // знает первый ответ сервера ('SYNCING').
+    vi.mocked(findExistingRoomByAddress).mockImplementation(() =>
+      ui.syncState === 'SYNCING' ? '!bob:host' : null
+    )
+    const opening = store.openInviteWithAddress('PBob')
+    await vi.waitFor(() => expect(h.matrix.login).toHaveBeenCalled())
+    ui.syncState = 'PREPARED'
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(ui.inviteViewActive).toBe(false)
+    expect(ui.activeChatId).toBeNull()
+
+    ui.syncState = 'SYNCING'
+    await opening
+    expect(ui.activeChatId).toBe('!bob:host')
+    expect(ui.inviteViewActive).toBe(false)
+  })
+
+  it('без связи ждать нечего — открывается то, что известно', async () => {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    vi.mocked(findExistingRoomByAddress).mockReturnValue('!bob:host')
+    const opening = store.openInviteWithAddress('PBob')
+    await vi.waitFor(() => expect(h.matrix.login).toHaveBeenCalled())
+    ui.syncState = 'RECONNECTING'
+    await opening
+    expect(ui.activeChatId).toBe('!bob:host')
+  })
+
+  it('синка нет 15 секунд — карточка собеседника, чтобы начать чат', async () => {
+    vi.useFakeTimers()
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    vi.mocked(findExistingRoomByAddress).mockReturnValue(null)
+    const opening = store.openInviteWithAddress('PBob')
+    await vi.advanceTimersByTimeAsync(15_000)
+    await opening
+    expect(ui.inviteViewActive).toBe(true)
+  })
+
+  it('вход в Matrix не удался — ждать нечего, сразу карточка', async () => {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    h.matrix.login.mockImplementationOnce(async () => false)
+    vi.mocked(findExistingRoomByAddress).mockReturnValue(null)
+    await store.openInviteWithAddress('PBob')
+    expect(ui.inviteViewActive).toBe(true)
   })
 })

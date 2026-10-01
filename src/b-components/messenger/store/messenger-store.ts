@@ -65,6 +65,41 @@ export const useMessengerStore = defineStore('messenger', () => {
   const isSyncReady = (): boolean =>
     uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING'
 
+  /** Сколько «Начать чат» ждёт первого ответа сервера, прежде чем решить, что чата нет. */
+  const FIRST_SYNC_WAIT = 15_000
+
+  /**
+   * Дождаться первого синка с сервера. Сразу после запуска клиент ещё не знает
+   * о комнатах, а 'PREPARED' приходит уже из кэша, где нет приглашений,
+   * пришедших позже, — и «Начать чат» показывал карточку собеседника вместо
+   * существующей переписки. 'SYNCING' — ответ сервера: первый запрос после
+   * кэша идёт без ожидания, это доли секунды. Без связи или при ошибке входа
+   * ждать нечего; вход, который ещё идёт (его мог начать openMessenger), —
+   * ждём.
+   */
+  const waitForFirstSync = (): Promise<void> => {
+    const settled = () =>
+      uiStore.syncState === 'SYNCING' ||
+      uiStore.syncState === 'ERROR' ||
+      uiStore.syncState === 'RECONNECTING' ||
+      (!matrixService.getClient() && !uiStore.isInitInProgress)
+    if (settled()) return Promise.resolve()
+    return new Promise((resolve) => {
+      const finish = () => {
+        stop()
+        clearTimeout(timer)
+        resolve()
+      }
+      const stop = watch(
+        () => [uiStore.syncState, uiStore.isInitInProgress],
+        () => {
+          if (settled()) finish()
+        }
+      )
+      const timer = setTimeout(finish, FIRST_SYNC_WAIT)
+    })
+  }
+
   /**
    * На экране список с прошлого запуска (dialogs-snapshot): Matrix ещё входит
    * или синхронизируется. Сменится свежим после первого синка.
@@ -449,6 +484,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
     await openMessenger()
     await initMatrix()
+    await waitForFirstSync()
 
     const hex = matrixService.addressToHex(address).toLowerCase()
     const host = resolveMatrixHost()
@@ -499,6 +535,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
     await openMessenger()
     await initMatrix()
+    await waitForFirstSync()
     const existingRoomId = findExistingRoomByAddress(address)
     if (existingRoomId) {
       switchToChatAndLoad(existingRoomId)

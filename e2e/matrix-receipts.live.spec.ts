@@ -68,18 +68,25 @@ async function signedIn(browser: Browser, account: Account, data: MockNodeData):
 }
 
 /**
- * Открыть личный чат из профиля собеседника. Пока первая синхронизация не
- * пришла, мессенджер не знает о комнате и показывает карточку собеседника со
- * своей «Начать чат» — она находит ту же комнату по алиасу.
+ * Открыть личный чат из профиля собеседника. Новый чат начинается кнопкой на
+ * карточке собеседника; существующий открывается сразу — и сразу после
+ * запуска, пока не пришёл первый синк.
  */
-async function openChatWith(page: Page, partner: Account): Promise<void> {
+async function openChatWith(page: Page, partner: Account, isNew: boolean): Promise<void> {
   await page.goto(`/${partner.address}`)
   await page.getByRole('button', { name: 'Начать чат' }).first().click()
-  await page
-    .getByRole('button', { name: 'Начать чат' })
-    .nth(1)
-    .click({ timeout: 10_000 })
-    .catch(() => {})
+  if (isNew) await page.getByRole('button', { name: 'Начать чат' }).nth(1).click()
+  await expect(page.getByPlaceholder('Введите сообщение...')).toBeVisible({ timeout: 60_000 })
+  await expect(page.getByRole('button', { name: 'Начать чат' })).toHaveCount(1)
+}
+
+/** Предупреждения страницы: кэш синка Matrix должен подниматься и после перезагрузки. */
+function collectWarnings(page: Page): string[] {
+  const warnings: string[] = []
+  page.on('console', (message) => {
+    if (message.type() === 'warning' || message.type() === 'error') warnings.push(message.text())
+  })
+  return warnings
 }
 
 async function send(page: Page, text: string): Promise<void> {
@@ -104,9 +111,10 @@ test('собеседник прочитал — у отправителя «✓�
   }
   const a = await signedIn(browser, alice!, data)
   const b = await signedIn(browser, bob!, data)
+  const bobWarnings = collectWarnings(b)
 
   // Алиса пишет первой: комната создаётся, Боб приглашён.
-  await openChatWith(a, bob!)
+  await openChatWith(a, bob!, true)
   await send(a, 'Привет, Боб')
   const aliceMark = a.getByTitle(/^(Прочитано|Отправлено, ещё не прочитано)$/).last()
   await expect(aliceMark).toHaveAttribute('title', 'Отправлено, ещё не прочитано', {
@@ -114,8 +122,9 @@ test('собеседник прочитал — у отправителя «✓�
   })
   await expect(aliceMark).toHaveText('✓')
 
-  // Боб открывает чат — приглашение принимается, сообщение прочитано.
-  await openChatWith(b, alice!)
+  // Боб открывает чат сразу после перезагрузки страницы: приглашение
+  // принимается, сообщение прочитано, кэш синка поднялся.
+  await openChatWith(b, alice!, false)
   await expect(b.getByText('Привет, Боб')).toBeVisible({ timeout: 90_000 })
   await expect(aliceMark).toHaveAttribute('title', 'Прочитано', { timeout: 60_000 })
   await expect(aliceMark).toHaveText('✓✓')
@@ -146,4 +155,5 @@ test('собеседник прочитал — у отправителя «✓�
   await expect(b.getByPlaceholder('Введите сообщение...')).toBeVisible({ timeout: 30_000 })
   await expect(lastAliceMark).toHaveAttribute('title', 'Прочитано', { timeout: 60_000 })
   await expect(lastAliceMark).toHaveText('✓✓')
+  expect(bobWarnings.filter((w) => w.includes('IndexedDBStore'))).toEqual([])
 })
