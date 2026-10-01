@@ -128,7 +128,7 @@ describe('BoostModal', () => {
     await flushPromises()
     await vi.dynamicImportSettled()
     await flushPromises()
-    expect(mocks.boostPost).toHaveBeenCalledWith(POST, 5)
+    expect(mocks.boostPost).toHaveBeenCalledWith(POST, 5, 'Вчера съездили на море')
     expect(mocks.toastSuccess).toHaveBeenCalledWith({
       message: expect.stringContaining('Пост продвинут'),
     })

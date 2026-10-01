@@ -143,6 +143,7 @@ export async function sendRegistrationUserInfoTx(
       hex: builtTx.hex,
       messageData: userInfoExport,
       operationType: 'userInfo',
+      pending: { kind: 'registration', title: nickname },
     })
     debugLog(LOG_PREFIX, 'transaction sent! txid:', txid)
 

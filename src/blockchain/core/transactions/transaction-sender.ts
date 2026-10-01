@@ -18,6 +18,7 @@ import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCallWithAuth, getByPRC } from '@/helpers/api/request'
 import { t } from '@/i18n'
 import { NodeRejectError, toNodeRejectError } from './node-reject'
+import { notifyTransactionBroadcast, type PendingMeta } from './broadcast-events'
 
 /** Потолок ожидания ответа ноды на бродкаст (мс). */
 export const BROADCAST_TIMEOUT_MS = 90_000
@@ -35,6 +36,11 @@ export interface SendTransactionParams {
   messageData: object
   /** Тип операции (например, 'userInfo') */
   operationType: string
+  /**
+   * Подпись ожидания в «песочных часах» (broadcast-events). false — ожидание
+   * показывает свой стор: новые посты, новые комментарии, оценки постов.
+   */
+  pending?: PendingMeta | false
 }
 
 /**
@@ -149,6 +155,13 @@ export async function sendTransactionWithMessage(
   deps: SendTransactionDeps = defaultDeps
 ): Promise<string> {
   const { hex, messageData, operationType } = params
+  // Ушло в сеть — ждёт блока: сказать «песочным часам».
+  const announce = (txid: string): string => {
+    if (params.pending !== false) {
+      notifyTransactionBroadcast({ txid, operationType, meta: params.pending ?? {} })
+    }
+    return txid
+  }
 
   if (!hex || typeof hex !== 'string') {
     throw new Error('Invalid transaction hex')
@@ -177,19 +190,19 @@ export async function sendTransactionWithMessage(
     debugLog('[sendTransaction] Raw response:', JSON.stringify(response).substring(0, 500))
 
     const txid = txidFromResponse(response)
-    if (txid) return txid
+    if (txid) return announce(txid)
 
     throw new Error('Unexpected response format from sendrawtransactionwithmessage')
   } catch (error) {
     if (isAlreadyKnownError(error) && localTxid) {
       debugLog('[sendTransaction] node already knows the tx, treating as sent:', localTxid)
-      return localTxid
+      return announce(localTxid)
     }
 
     if (isTimeoutError(error)) {
       if (localTxid && (await isTxKnown(localTxid, deps))) {
         debugLog('[sendTransaction] timeout, but tx is visible on the node:', localTxid)
-        return localTxid
+        return announce(localTxid)
       }
       console.error('[sendTransaction] Broadcast timed out, tx not visible:', localTxid, error)
       throw new BroadcastStatusUnknownError(localTxid, error)

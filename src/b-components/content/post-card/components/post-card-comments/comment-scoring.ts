@@ -69,5 +69,11 @@ export async function sendCommentScore(
     fee: DEFAULT_TX_FEE,
   })
 
-  return broadcastTransaction({ hex: builtTx.hex, messageData: rpcData, operationType: 'cScore' })
+  return broadcastTransaction({
+    hex: builtTx.hex,
+    messageData: rpcData,
+    operationType: 'cScore',
+    // В «песочных часах» — чей комментарий оценили.
+    pending: { address: commentAuthorAddress },
+  })
 }

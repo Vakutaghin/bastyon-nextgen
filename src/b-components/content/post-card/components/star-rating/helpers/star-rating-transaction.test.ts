@@ -58,6 +58,7 @@ describe('sendUpvoteTransaction', () => {
       hex: 'cafe',
       messageData: { share: 'post1', value: '4' },
       operationType: 'upvoteShare',
+      pending: false,
     })
   })
 

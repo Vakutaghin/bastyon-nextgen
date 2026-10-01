@@ -142,6 +142,11 @@ async function onConfirm() {
       hex: built.hex,
       messageData: built.messageData,
       operationType: 'transaction',
+      pending: {
+        kind: 'payment',
+        amount: totalAmount,
+        ...(appName.value ? { title: appName.value } : {}),
+      },
     })
     resolvePaymentModal({ transaction: txid, completed: true })
   } catch (e) {

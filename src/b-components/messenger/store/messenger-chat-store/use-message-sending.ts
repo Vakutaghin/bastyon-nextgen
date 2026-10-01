@@ -445,6 +445,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         hex: built.hex,
         messageData: built.messageData,
         operationType: 'transaction',
+        pending: { address: toAddress, amount },
       })
 
       // Фаза 2: сообщение в комнату. С этого момента деньги уже ушли — любая

@@ -66,5 +66,7 @@ export async function sendUpvoteTransaction(
     hex: builtTx.hex,
     messageData: rpcData,
     operationType: 'upvoteShare',
+    // Оценку поста в «песочных часах» показывает pending-ratings-store.
+    pending: false,
   })
 }

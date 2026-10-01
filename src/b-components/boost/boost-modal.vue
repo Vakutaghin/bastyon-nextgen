@@ -281,7 +281,7 @@ async function onSend(): Promise<void> {
   sending.value = true
   try {
     const { boostPost } = await import('@/blockchain/core/actions/boost-action')
-    await boostPost(postId.value, numericAmount.value)
+    await boostPost(postId.value, numericAmount.value, preview.value || undefined)
     appToast.success({ message: t('boost.sentToast') })
     playSound()
     boostStore.close()

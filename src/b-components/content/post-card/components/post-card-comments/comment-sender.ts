@@ -16,6 +16,7 @@ import type {
 
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { broadcastTransaction } from '@/blockchain/core/transactions/transaction-sender'
+import { pendingSnippet, type PendingMeta } from '@/blockchain/core/transactions/broadcast-events'
 import { voteCommentBody } from '@/helpers/content/poll'
 
 /** Тело обычного комментария: только текст. */
@@ -73,7 +74,9 @@ export async function sendComment(
 ): Promise<string> {
   if (!postId || !messageText.trim()) throw new Error(t('commentsMsg.errPostAndTextRequired'))
   const body = editId ? editedBody(originalMsg, messageText) : textBody(messageText)
-  return sendCommentBody(postId, parentId, answerId, body, editId)
+  // Новый комментарий ждёт в comments-store, правка — в общих «песочных часах».
+  const pending = editId ? { postId, title: pendingSnippet(messageText) } : false
+  return sendCommentBody(postId, parentId, answerId, body, pending, editId)
 }
 
 /**
@@ -81,7 +84,11 @@ export async function sendComment(
  * (формат — helpers/content/poll.ts).
  */
 export function sendPollVote(postId: string, index: number, option: string): Promise<string> {
-  return sendCommentBody(postId, '', '', voteCommentBody(index, option))
+  return sendCommentBody(postId, '', '', voteCommentBody(index, option), {
+    kind: 'pollVote',
+    postId,
+    title: pendingSnippet(option),
+  })
 }
 
 /** Комментарий с готовым телом: транзакция `comment` или `commentEdit`. */
@@ -90,6 +97,7 @@ async function sendCommentBody(
   parentId: string,
   answerId: string,
   body: CommentMessageBody,
+  pending: PendingMeta | false,
   editId?: string
 ): Promise<string> {
   const authStore = useAuthStore()
@@ -134,5 +142,6 @@ async function sendCommentBody(
     hex: builtTx.hex,
     messageData: messagePayload,
     operationType: operationType,
+    pending,
   })
 }

@@ -10,6 +10,8 @@ export { useUIStore } from './ui-store'
 
 export { useAuthStore } from '@/blockchain/store/auth-store'
 export { usePendingRatingsStore } from './pending-ratings-store'
+export { usePendingTransactionsStore } from './pending-transactions-store'
+export type { PendingTransaction } from './pending-transactions-store'
 export { useCommentsStore } from './comments-store'
 export type { PendingComment } from './comments-store'
 export { usePendingPostsStore, PENDING_POST_TTL_MS } from './pending-posts-store'

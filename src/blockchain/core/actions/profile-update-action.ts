@@ -84,5 +84,6 @@ export async function updateUserProfileInfo(input: ProfileUpdateInput): Promise<
     hex: builtTx.hex,
     messageData,
     operationType: 'userInfo',
+    pending: { title: input.name },
   })
 }

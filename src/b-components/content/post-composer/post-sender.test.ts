@@ -107,6 +107,8 @@ describe('sendPost', () => {
       hex: 'deadbeef',
       messageData: exportPost(validPost),
       operationType: 'share',
+      // Новый пост ждёт в своём сторе — в общие «песочные часы» не идёт.
+      pending: false,
     })
   })
 

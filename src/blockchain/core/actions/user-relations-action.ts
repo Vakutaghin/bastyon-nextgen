@@ -95,6 +95,7 @@ async function sendRelationTx(
     hex: builtTx.hex,
     messageData: messagePayload,
     operationType: operationType,
+    pending: { address: targetAddress },
   })
 }
 

@@ -57,5 +57,6 @@ export async function deletePost(postId: string): Promise<string> {
     hex: builtTx.hex,
     messageData: messagePayload,
     operationType: 'contentDelete',
+    pending: { postId },
   })
 }

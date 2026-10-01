@@ -107,6 +107,7 @@ export async function sendTransfer(
     hex: built.hex,
     messageData: built.messageData,
     operationType: 'transaction',
+    pending: { address: params.toAddress, amount: params.amount },
   })
 
   return { txid, feePaidSatoshis: built.feePaidSatoshis }

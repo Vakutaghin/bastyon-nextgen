@@ -20,6 +20,7 @@ import { t } from '@/i18n'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { validatePost } from './validate-post'
 import { broadcastTransaction } from '@/blockchain/core/transactions/transaction-sender'
+import { pendingSnippet } from '@/blockchain/core/transactions/broadcast-events'
 
 /**
  * Публикует пост (новый, репост или редактирование — определяется полями post).
@@ -73,5 +74,13 @@ export async function sendPost(post: SharePostData): Promise<string> {
     hex: builtTx.hex,
     messageData: payload,
     operationType: operationType,
+    // Новый пост ждёт в своём сторе (pending-posts), правка — в общих «песочных часах».
+    pending: post.txidEdit
+      ? {
+          kind: 'postEdit',
+          postId: post.txidEdit,
+          title: pendingSnippet(post.caption) ?? pendingSnippet(post.message),
+        }
+      : false,
   })
 }

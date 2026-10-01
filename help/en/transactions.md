@@ -14,13 +14,22 @@ Until the transaction is in a block, other people do not see it yet: the post do
 
 ## The hourglass in the header
 
-On a computer, the hourglass icon in the header opens the **“Awaiting confirmation”** list: posts, comments and ratings that are not on the blockchain yet. Each is marked **“Not on-chain yet”**. When there is nothing to wait for, the list says **“No active events”**.
+While at least one of your actions waits for a block, there is an hourglass icon in the header — on a computer and on a phone. It opens the **“Awaiting confirmation”** list: everything that is not on the blockchain yet. Each item shows the kind of action and the mark **“Not on-chain yet”**. When there is nothing to wait for, the hourglass disappears.
+
+The list has:
+
+- posts, comments and post ratings;
+- post promotion, PKOIN transfers, donations and mini app payments — with the amount;
+- edits and deletions of posts and comments, comment ratings;
+- profile and registration, subscriptions and unsubscriptions, blocks, complaints.
+
+An action with a post has **“Open post”**, with a person — **“Profile”**, and any action has **“In the explorer”**: the transaction in the [block explorer](explorer.md).
 
 - **A post** is visible to you at once in your profile feed, marked **“Not yet published to the blockchain”**. It cannot be rated or commented on yet. The **“Open post”** button in the list shows how it will look.
 - **A comment** appears under the post marked **“Pending”**.
 - **A rating** shows up as stars under the post straight away.
 
-When the network confirms the action, the mark goes away by itself. If there is no confirmation within 10 minutes, the app stops waiting and removes it from the list. If the post never showed up in your profile, the network did not accept it: publish it again.
+When the network confirms an action, it leaves the list by itself; opening the hourglass asks the node about each one again. The app waits 10 minutes for posts, comments and ratings and an hour for other actions, then removes them from the list. If the post never showed up in your profile, the network did not accept it: publish it again. If a transfer left the hourglass, check it in the [wallet history](wallet-history.md).
 
 ## If the network refused
 

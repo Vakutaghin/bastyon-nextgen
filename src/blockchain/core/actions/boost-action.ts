@@ -31,9 +31,14 @@ const TXID_RE = /^[0-9a-f]{64}$/i
 
 /**
  * Продвигает пост `contentTxid` на `amount` PKOIN. Сверху уходит обычная
- * комиссия сети — 1 сатоши. Возвращает txid буста.
+ * комиссия сети — 1 сатоши. Возвращает txid буста. `title` — подпись поста
+ * в «песочных часах», пока буст ждёт блока.
  */
-export async function boostPost(contentTxid: string, amount: number): Promise<string> {
+export async function boostPost(
+  contentTxid: string,
+  amount: number,
+  title?: string
+): Promise<string> {
   const authStore = useAuthStore()
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
@@ -65,6 +70,7 @@ export async function boostPost(contentTxid: string, amount: number): Promise<st
       hex: built.hex,
       messageData: { content: contentTxid },
       operationType: 'contentBoost',
+      pending: { postId: contentTxid, amount, ...(title ? { title } : {}) },
     })
   } catch (error) {
     // Нода отвергла буст — монеты не ушли, пусть следующая попытка их видит.

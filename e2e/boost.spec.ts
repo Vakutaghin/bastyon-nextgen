@@ -77,8 +77,9 @@ function txOutputs(hex: string): { value: bigint; script: string }[] {
 }
 
 /** Монеты, лента бустов и отправка — поверх подменной ноды (маршруты страницы главнее). */
-async function useWallet(page: Page): Promise<{ sent: unknown[][] }> {
-  const state = { sent: [] as unknown[][] }
+async function useWallet(page: Page): Promise<{ sent: unknown[][]; inBlock: boolean }> {
+  /** inBlock — нода видит отправленную транзакцию в блоке (getrawtransaction). */
+  const state = { sent: [] as unknown[][], inBlock: false }
   const rpc = (method: string) => new RegExp(`\\.pocketnet\\.app:8899/rpc(-ex)?/${method}`)
   const answer = (route: Route, data: unknown) =>
     route.request().method() === 'OPTIONS'
@@ -109,6 +110,14 @@ async function useWallet(page: Page): Promise<{ sent: unknown[][] }> {
         { txid: 'b'.repeat(64), boost: 10 * PKOIN },
       ],
     })
+  )
+  await page.route(rpc('getrawtransaction'), (route) =>
+    answer(
+      route,
+      state.inBlock
+        ? { txid: 'f'.repeat(64), blockhash: 'b'.repeat(64), confirmations: 1 }
+        : { txid: 'f'.repeat(64) }
+    )
   )
   await page.route(rpc('sendrawtransactionwithmessage'), (route) => {
     if (route.request().method() === 'OPTIONS') return answer(route, null)
@@ -170,4 +179,21 @@ test('продвижение поста: прогноз, сумма до 100 % �
   )
   expect(outs[0]!.value).toBe(0n)
   expect(outs[1]!.value).toBe(BigInt((UTXO_PKOIN - 10) * PKOIN - 1))
+
+  // Буст ждёт блока — он в «песочных часах», как посты и комментарии.
+  const hourglass = page.getByRole('button', { name: 'Ожидают подтверждения' })
+  await expect(hourglass).toBeVisible()
+  await hourglass.click()
+  const pending = page.getByRole('listitem').filter({ hasText: 'Продвижение поста' })
+  await expect(pending).toContainText('Пост для продвижения')
+  await expect(pending).toContainText('10 PKOIN')
+  await expect(pending.getByRole('button', { name: 'Перейти к посту' })).toBeVisible()
+  await expect(pending.getByRole('button', { name: 'В эксплорере' })).toBeVisible()
+
+  // Транзакция в блоке: часы открыли снова — нода подтвердила, ожидание снято.
+  await hourglass.click()
+  await expect(pending).toBeHidden()
+  wallet.inBlock = true
+  await hourglass.click()
+  await expect(hourglass).toBeHidden({ timeout: 15_000 })
 })

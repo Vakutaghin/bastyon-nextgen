@@ -61,5 +61,6 @@ export async function donateToAuthor(authorAddress: string, amount: number): Pro
     hex: built.hex,
     messageData: built.messageData,
     operationType: 'transaction',
+    pending: { kind: 'donate', address: authorAddress, amount },
   })
 }

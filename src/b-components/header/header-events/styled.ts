@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
 
 export const SC_EventsWrapper = styled.div`
@@ -27,6 +28,11 @@ export const SC_PendingEventsMenu = styled.div`
   max-width: 380px;
   max-height: 80vh;
   overflow-y: auto;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    min-width: 0;
+    width: calc(100vw - 32px);
+  }
 `
 
 /** Заголовок выпадашки — общий контекст «эти события ещё не в блокчейне». */

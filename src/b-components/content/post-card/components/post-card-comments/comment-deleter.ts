@@ -78,5 +78,6 @@ export async function deleteComment(params: DeleteCommentParams): Promise<string
     hex: builtTx.hex,
     messageData: messagePayload,
     operationType: 'commentDelete',
+    pending: { postId },
   })
 }

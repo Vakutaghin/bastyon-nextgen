@@ -77,6 +77,7 @@ describe('sendTransfer', () => {
       hex: 'HEX',
       messageData: { m: 1 },
       operationType: 'transaction',
+      pending: { address: 'TO', amount: 2 },
     })
   })
 

@@ -6,7 +6,7 @@
     placement="bottomRight"
     :get-popup-container="(trigger) => trigger.closest('header') || document.body"
   >
-    <SC_EventsWrapper>
+    <SC_EventsWrapper role="button" tabindex="0" :aria-label="t('header.pendingTitle')">
       <Badge
         :count="pendingCount"
         :offset="[0, 5]"
@@ -27,14 +27,21 @@
           {{ t('header.noActiveEvents') }}
         </SC_EmptyMessage>
 
-        <SC_EventsList v-else>
-          <SC_EventItem v-for="item in pendingItems" :key="item.key" @click.stop @mousedown.stop>
+        <SC_EventsList v-else role="list">
+          <SC_EventItem
+            v-for="item in pendingItems"
+            :key="item.key"
+            role="listitem"
+            @click.stop
+            @mousedown.stop
+          >
             <SC_EventTop>
               <SC_KindChip>
                 <StarFilled v-if="item.kind === 'rating'" />
                 <FileTextOutlined v-else-if="item.kind === 'post'" />
+                <component :is="TX_ICONS[item.txKind]" v-else-if="item.kind === 'tx'" />
                 <MessageOutlined v-else />
-                <span>{{ kindLabel(item.kind) }}</span>
+                <span>{{ kindLabel(item) }}</span>
               </SC_KindChip>
               <SC_PendingTag>
                 <ClockCircleOutlined />
@@ -73,6 +80,37 @@
               </SC_ItemActions>
             </template>
 
+            <!-- Любая другая транзакция: продвижение, перевод, правка, подписка… -->
+            <template v-else-if="item.kind === 'tx'">
+              <SC_EventPanel v-if="item.title || item.amount">
+                <SC_PostTitle v-if="item.title" :title="item.title">{{ item.title }}</SC_PostTitle>
+                <SC_SnippetSpaced v-if="item.amount">
+                  {{ formatPkoinAmount(item.amount) }} PKOIN
+                </SC_SnippetSpaced>
+              </SC_EventPanel>
+              <SC_ItemActions>
+                <Button
+                  v-if="item.postId && item.txKind !== 'postDelete'"
+                  type="link"
+                  size="small"
+                  @click="go(`/post/${item.postId}`)"
+                >
+                  {{ t('header.goToPost') }}
+                </Button>
+                <Button
+                  v-else-if="item.address"
+                  type="link"
+                  size="small"
+                  @click="go(`/${item.address}`)"
+                >
+                  {{ t('header.openProfile') }}
+                </Button>
+                <Button type="link" size="small" @click="go(`/explorer/tx/${item.txid}`)">
+                  {{ t('header.openTx') }}
+                </Button>
+              </SC_ItemActions>
+            </template>
+
             <!-- Комментарий -->
             <SC_EventPanel v-else>
               <SC_PostTitle :title="item.postTitle || t('header.untitled')">
@@ -106,7 +144,26 @@ import {
   ClockCircleOutlined,
   FileTextOutlined,
   MessageOutlined,
+  ThunderboltOutlined,
+  SendOutlined,
+  GiftOutlined,
+  WalletOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  RiseOutlined,
+  UserOutlined,
+  UserAddOutlined,
+  UserDeleteOutlined,
+  StopOutlined,
+  CheckCircleOutlined,
+  CheckOutlined,
+  FlagOutlined,
 } from '@/components/icons'
+import { useRouter } from 'vue-router'
+import type { PendingKind } from '@/blockchain/core/transactions/broadcast-events'
+import { usePendingTransactionsStore } from '@/stores/pending-transactions-store'
+import { formatPkoinAmount } from '@/helpers/common/pkoin-formatter'
+import { userName } from '@/services/user-names'
 import { useAuthStore } from '@/blockchain'
 import {
   usePendingRatingsStore,
@@ -165,7 +222,44 @@ type PostPendingItem = {
   message: string
 }
 
-export type PendingHeaderItem = RatingPendingItem | CommentPendingItem | PostPendingItem
+type TxPendingItem = {
+  kind: 'tx'
+  key: string
+  txid: string
+  txKind: PendingKind
+  title: string
+  amount?: number
+  postId?: string
+  address?: string
+}
+
+export type PendingHeaderItem =
+  | RatingPendingItem
+  | CommentPendingItem
+  | PostPendingItem
+  | TxPendingItem
+
+/** Значок вида транзакции. */
+const TX_ICONS: Record<PendingKind, unknown> = {
+  boost: ThunderboltOutlined,
+  transfer: SendOutlined,
+  donate: GiftOutlined,
+  payment: WalletOutlined,
+  postEdit: EditOutlined,
+  postDelete: DeleteOutlined,
+  commentEdit: EditOutlined,
+  commentDelete: DeleteOutlined,
+  commentScore: RiseOutlined,
+  pollVote: CheckOutlined,
+  profile: UserOutlined,
+  registration: UserOutlined,
+  subscribe: UserAddOutlined,
+  unsubscribe: UserDeleteOutlined,
+  block: StopOutlined,
+  unblock: CheckCircleOutlined,
+  complaint: FlagOutlined,
+  other: ClockCircleOutlined,
+}
 
 const { t } = useI18n()
 
@@ -174,8 +268,16 @@ const pendingStore = usePendingRatingsStore()
 const commentsStore = useCommentsStore()
 const postsStore = usePostsStore()
 const pendingPostsStore = usePendingPostsStore()
+const pendingTxStore = usePendingTransactionsStore()
+const router = useRouter()
 
 pendingStore.init()
+// Остальные транзакции аккаунта: продвижение, переводы, правки, подписки…
+watch(
+  () => authStore.getUserAddress,
+  (address) => pendingTxStore.init(address),
+  { immediate: true }
+)
 
 // Снимаем pending-посты по WS-подтверждению даже когда пользователь не в своём
 // профиле (шапка живёт всегда) — счётчик «песочных часов» гаснет сам.
@@ -204,6 +306,10 @@ onBeforeUnmount(() => {
 })
 
 const visible = ref(false)
+// Открыли часы — свежий статус транзакций у ноды, не дожидаясь опроса.
+watch(visible, (open) => {
+  if (open) void pendingTxStore.checkWithNode()
+})
 
 // Превью pending-поста в модалке (как будто уже опубликован, с пометкой).
 const previewOpen = ref(false)
@@ -223,7 +329,11 @@ watch(
 
 const isAuthenticated = computed(() => authStore.isUserAuthenticated)
 const pendingCount = computed(
-  () => pendingStore.count + commentsStore.pendingCount + pendingPostsStore.pendingCount
+  () =>
+    pendingStore.count +
+    commentsStore.pendingCount +
+    pendingPostsStore.pendingCount +
+    pendingTxStore.count
 )
 
 /** Автор превью — сам пользователь (pending-пост всегда его). */
@@ -272,12 +382,42 @@ const pendingItems = computed<PendingHeaderItem[]>(() => {
     })
   }
 
+  for (const tx of pendingTxStore.items) {
+    items.push({
+      kind: 'tx',
+      key: `tx:${tx.txid}`,
+      txid: tx.txid,
+      txKind: tx.kind,
+      title: txTitle(tx),
+      amount: tx.amount,
+      postId: tx.postId,
+      address: tx.address,
+    })
+  }
+
   return items
 })
 
-function kindLabel(kind: PendingHeaderItem['kind']): string {
-  if (kind === 'rating') return t('header.postRating')
-  if (kind === 'post') return t('header.post')
+/** Подпись транзакции: готовая, заголовок поста или имя человека. */
+function txTitle(tx: { title?: string; postId?: string; address?: string }): string {
+  if (tx.title) return tx.title
+  if (tx.postId) {
+    // Пост не в кэше — строки нет: «Без названия» соврало бы.
+    const post = postsStore.getPostByShareId(tx.postId)
+    if (post) return resolvePostTitleFromPost(post).title || t('header.untitled')
+  }
+  return tx.address ? userName(tx.address) : ''
+}
+
+function go(path: string): void {
+  visible.value = false
+  void router.push(path)
+}
+
+function kindLabel(item: PendingHeaderItem): string {
+  if (item.kind === 'rating') return t('header.postRating')
+  if (item.kind === 'post') return t('header.post')
+  if (item.kind === 'tx') return t(`header.pendingKinds.${item.txKind}`)
   return t('header.comment')
 }
 

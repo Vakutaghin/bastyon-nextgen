@@ -60,7 +60,7 @@ If you turn on **“Browser notifications”**, the app asks the system for perm
 
 ## The hourglass is not a notification
 
-On a computer an hourglass sometimes appears next to the bell: these are your own actions still waiting for the network’s confirmation — see [Confirming actions](transactions.md).
+An hourglass sometimes appears next to the bell: these are your own actions still waiting for the network’s confirmation — see [Confirming actions](transactions.md).
 
 ## See also
 

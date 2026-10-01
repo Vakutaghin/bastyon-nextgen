@@ -72,5 +72,7 @@ export async function sendComplaint(params: ComplaintParams): Promise<string> {
     hex: builtTx.hex,
     messageData: messagePayload,
     operationType: 'modFlag',
+    // Жалоба бывает и на пост, и на комментарий — показываем автора.
+    pending: { address: authorAddress },
   })
 }

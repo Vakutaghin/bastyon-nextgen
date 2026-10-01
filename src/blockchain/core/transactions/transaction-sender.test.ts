@@ -231,3 +231,35 @@ describe('broadcastTransaction — социальные транзакции с 
     expect((err as BroadcastStatusUnknownError).txid).toBe(await localTxid())
   })
 })
+
+describe('«песочные часы»: ушедшая транзакция ждёт блока', () => {
+  it('сообщает об отправке с типом и подписью; без подписи — пустая', async () => {
+    const { onTransactionBroadcast } = await import('./broadcast-events')
+    const seen: unknown[] = []
+    const stop = onTransactionBroadcast((tx) => seen.push(tx))
+    _rpcCallWithAuth.mockResolvedValueOnce('a'.repeat(64)).mockResolvedValueOnce('b'.repeat(64))
+    await sendTransactionWithMessage({
+      ...validParams(),
+      operationType: 'contentBoost',
+      pending: { postId: 'P1', amount: 2.5 },
+    })
+    await broadcastTransaction({ ...validParams(), operationType: 'subscribe' })
+    stop()
+    expect(seen).toEqual([
+      { txid: 'a'.repeat(64), operationType: 'contentBoost', meta: { postId: 'P1', amount: 2.5 } },
+      { txid: 'b'.repeat(64), operationType: 'subscribe', meta: {} },
+    ])
+  })
+
+  it('pending: false — ожидание показывает свой стор; отказ ноды — ждать нечего', async () => {
+    const { onTransactionBroadcast } = await import('./broadcast-events')
+    const seen: unknown[] = []
+    const stop = onTransactionBroadcast((tx) => seen.push(tx))
+    _rpcCallWithAuth.mockResolvedValueOnce('c'.repeat(64))
+    await sendTransactionWithMessage({ ...validParams(), operationType: 'share', pending: false })
+    _rpcCallWithAuth.mockRejectedValueOnce(new Error('boom'))
+    await expect(sendTransactionWithMessage(validParams())).rejects.toThrow()
+    stop()
+    expect(seen).toEqual([])
+  })
+})

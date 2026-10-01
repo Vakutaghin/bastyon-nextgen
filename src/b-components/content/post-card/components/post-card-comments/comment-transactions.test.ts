@@ -54,6 +54,7 @@ function lastBroadcast() {
     hex: string
     messageData: Record<string, string>
     operationType: string
+    pending?: unknown
   }
 }
 
@@ -108,6 +109,7 @@ describe('транзакции комментариев', () => {
         hex: 'deadbeef',
         messageData: { postid: 'post1', answerid: 'answer1', parentid: 'parent1', msg },
         operationType: 'comment',
+        pending: false,
       })
       expect(mocks.lockUTXOs).toHaveBeenCalledWith(UTXO)
       expect(mocks.getUnspents).toHaveBeenCalledWith('PMe', 1, 9999999)
@@ -139,6 +141,8 @@ describe('транзакции комментариев', () => {
         msg,
         id: 'comment1',
       })
+      // Правка ждёт блока в «песочных часах»: пост и новый текст.
+      expect(lastBroadcast().pending).toEqual({ postId: 'post1', title: 'стало' })
     })
 
     it.each([
@@ -184,6 +188,7 @@ describe('транзакции комментариев', () => {
       msg,
     })
     expect(lastBuild().operationType).toBe('comment')
+    expect(lastBroadcast().pending).toEqual({ kind: 'pollVote', postId: 'post1', title: 'Горы' })
   })
 
   describe('deleteComment', () => {
@@ -226,6 +231,7 @@ describe('транзакции комментариев', () => {
         hex: 'deadbeef',
         messageData: { commentid: 'c1', value: '-1' },
         operationType: 'cScore',
+        pending: { address: 'PAuthor' },
       })
     })
 

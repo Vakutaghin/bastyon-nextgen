@@ -12,7 +12,8 @@
       <SC_Right v-hide-zero-width>
         <HeaderTor v-if="!mobile" />
         <HeaderIpfs v-if="!mobile" />
-        <HeaderEvents v-if="!mobile" />
+        <!-- Ожидание блокчейна видно и на телефоне: часы появляются, только когда есть чего ждать. -->
+        <HeaderEvents />
         <HeaderNotifications />
         <HeaderReportBug v-if="!mobile" />
         <SC_MessengerWrapper v-if="showMessengerIcon" @click="toggleMessenger">

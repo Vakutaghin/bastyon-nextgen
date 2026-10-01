@@ -7,11 +7,15 @@
 import { safeDecode } from '@/helpers/content/safe-decode'
 import { t } from '@/i18n'
 
+/** Пост в любом виде: из ленты (поля — строки) или из posts-store (поля — unknown). */
 interface PostLike {
-  title?: string
-  content?: string
-  type?: string
+  title?: unknown
+  content?: unknown
+  type?: unknown
+  [key: string]: unknown
 }
+
+const text = (value: unknown): string => (typeof value === 'string' ? value : '')
 
 export interface ResolvedPostTitle {
   title: string
@@ -19,12 +23,12 @@ export interface ResolvedPostTitle {
 }
 
 export function resolvePostTitleFromPost(post: PostLike | undefined | null): ResolvedPostTitle {
-  let postTitle = post?.title || ''
-  const usedContent = !postTitle && !!post?.content
+  let postTitle = text(post?.title)
+  const content = text(post?.content)
+  const usedContent = !postTitle && !!content
 
   if (usedContent) {
-    const content = post!.content!
-    if (typeof content === 'string' && content.trim().startsWith('{')) {
+    if (content.trim().startsWith('{')) {
       try {
         const json = JSON.parse(content)
         if (json?.blocks && Array.isArray(json.blocks) && json.blocks.length > 0) {

@@ -67,6 +67,8 @@ describe('boostPost', () => {
       hex: 'beef',
       messageData: { content: POST },
       operationType: 'contentBoost',
+      // Буст ждёт блока в «песочных часах»: пост и сумма.
+      pending: { postId: POST, amount: 10 },
     })
   })
 
