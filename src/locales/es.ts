@@ -2638,6 +2638,14 @@ export default {
       'No se pudo abrir el navegador. El enlace a la página de la versión está copiado: pégalo en la barra de direcciones: {url}',
     openFailedManual:
       'No se pudo abrir el navegador. Abre la página de la versión manualmente: {url}',
+    install: 'Actualizar',
+    installHint:
+      'La aplicación descarga la nueva versión, la instala sobre la actual y se reinicia. Las cuentas y los ajustes se conservan.',
+    downloading: 'Descargando la actualización: {percent}',
+    downloadingNoSize: 'Descargando la actualización…',
+    installing: 'Instalando la actualización y reiniciando…',
+    installFailed:
+      'No se pudo instalar la actualización automáticamente. Descarga el instalador desde la página de la versión.',
   },
   changelog: {
     gotIt: 'Entendido',

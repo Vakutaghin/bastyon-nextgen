@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "default permissions + set-fullscreen (video player) and opener (external links, V40: the command alone is not enough — without a URL scope open_url refuses every link, so http/https/mailto are allowed, like ALLOWED_PROTOCOLS in open-external.ts); http scope: any https host + local IPFS gateway (V27) — mini-app URLs are filtered client-side (safe-external-url, V25). Global shortcuts are registered from Rust, so the webview does not need them (N30). app-commands: the app's own commands (AppManifest in build.rs) — for this window only, IPFS viewer windows show foreign sites and get nothing",
+  "description": "default permissions + set-fullscreen (video player) and opener (external links, V40: the command alone is not enough — without a URL scope open_url refuses every link, so http/https/mailto are allowed, like ALLOWED_PROTOCOLS in open-external.ts); http scope: any https host + local IPFS gateway (V27) — mini-app URLs are filtered client-side (safe-external-url, V25). Global shortcuts are registered from Rust, so the webview does not need them (N30). app-commands: the app's own commands (AppManifest in build.rs) — for this window only, IPFS viewer windows show foreign sites and get nothing; updater + process:allow-restart — in-app update: download the signed release build, install it and restart (use-app-update)",
   "windows": ["main"],
   "permissions": [
     "app-commands",
@@ -32,6 +32,8 @@
           "url": "http://127.0.0.1:*/**"
         }
       ]
-    }
+    },
+    "updater:default",
+    "process:allow-restart"
   ]
 }

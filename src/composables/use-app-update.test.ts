@@ -21,6 +21,8 @@ vi.mock('@/db/apis/settings-api', () => ({
   },
 }))
 vi.mock('@/helpers/changelog/changelog-loader', () => ({ CURRENT_APP_VERSION: '0.2.0' }))
+const installUpdate = vi.hoisted(() => vi.fn())
+vi.mock('@/helpers/updates/install-update', () => ({ installUpdate }))
 
 import {
   AUTO_CHECK_INTERVAL_MS,
@@ -220,5 +222,44 @@ describe('use-app-update', () => {
     const [url, init] = appFetch.mock.calls[0] as [string, RequestInit]
     expect(url).toContain('api.github.com')
     expect(init.credentials).toBe('omit')
+  })
+
+  describe('обновление изнутри приложения', () => {
+    it('ставит само только на компьютере', () => {
+      env.tauri = true
+      expect(useAppUpdate().canInstall).toBe(true)
+      env.tauri = false
+      env.capacitor = true
+      expect(useAppUpdate().canInstall).toBe(false)
+    })
+
+    it('прогресс виден, пока идёт установка', async () => {
+      let resolveInstall: (r: string) => void = () => {}
+      installUpdate.mockImplementation((onProgress: (p: unknown) => void) => {
+        onProgress({ phase: 'download', fraction: 0.5 })
+        return new Promise((r) => (resolveInstall = r))
+      })
+      const api = useAppUpdate()
+      const running = api.install()
+      await vi.waitFor(() =>
+        expect(api.installProgress.value).toEqual({ phase: 'download', fraction: 0.5 })
+      )
+      expect(api.installing.value).toBe(true)
+      resolveInstall('restarting')
+      await expect(running).resolves.toBe(true)
+      expect(api.installFailed.value).toBe(false)
+    })
+
+    it('не вышло (ошибка или нет сборки для системы) — предлагается страница релиза', async () => {
+      const api = useAppUpdate()
+      installUpdate.mockRejectedValueOnce(new Error('permission denied'))
+      await expect(api.install()).resolves.toBe(false)
+      expect(api.installFailed.value).toBe(true)
+      expect(api.installing.value).toBe(false)
+
+      installUpdate.mockResolvedValueOnce('unavailable')
+      await expect(api.install()).resolves.toBe(false)
+      expect(api.installFailed.value).toBe(true)
+    })
   })
 })

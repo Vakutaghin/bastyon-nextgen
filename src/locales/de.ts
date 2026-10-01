@@ -2649,6 +2649,14 @@ export default {
       'Der Browser ließ sich nicht öffnen. Der Link zur Release-Seite ist kopiert – fügen Sie ihn in die Adressleiste ein: {url}',
     openFailedManual:
       'Der Browser ließ sich nicht öffnen. Öffnen Sie die Release-Seite selbst: {url}',
+    install: 'Aktualisieren',
+    installHint:
+      'Die App lädt die neue Version herunter, installiert sie über die alte und startet neu. Konten und Einstellungen bleiben erhalten.',
+    downloading: 'Update wird geladen: {percent}',
+    downloadingNoSize: 'Update wird geladen…',
+    installing: 'Update wird installiert, die App startet neu…',
+    installFailed:
+      'Das Update ließ sich nicht automatisch installieren. Laden Sie das Installationsprogramm von der Release-Seite.',
   },
   changelog: {
     gotIt: 'Verstanden',

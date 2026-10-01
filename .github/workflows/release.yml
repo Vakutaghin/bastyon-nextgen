@@ -53,6 +53,11 @@ jobs:
       # Тело релиза собирает тот же скрипт, которым его можно перегенерировать
       # руками: инструкция «что скачать и как поставить» на двух языках плюс
       # заметки из changelogs/<tag>/.
+      #
+      # Новый релиз — черновик: в releases/latest (проверка обновлений в
+      # приложении, latest.json апдейтера) он попадёт только из джобы publish,
+      # когда все сборки зальют файлы. Раньше релиз публиковался сразу, и
+      # пока шли сборки, «последней» была версия без установщиков.
       - name: Create or refresh the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -63,7 +68,8 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" --title "$TAG" --notes-file /tmp/release-body.md
           else
-            gh release create "$TAG" --title "$TAG" --notes-file /tmp/release-body.md
+            gh release create "$TAG" --title "$TAG" --notes-file /tmp/release-body.md \
+              --draft --verify-tag
           fi
 
   desktop:
@@ -207,13 +213,19 @@ jobs:
           done
 
       # Без tagName/releaseName action только собирает и ничего не заливает.
+      # tauri.updater.conf.json включает файлы обновления (.app.tar.gz на macOS,
+      # подписи .sig рядом с .msi и .AppImage): их подписывает ключ из
+      # TAURI_SIGNING_PRIVATE_KEY (scripts/updater-signing-key.sh), а приложение
+      # проверяет открытым ключом из tauri.conf.json. Без ключа сборка падает.
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tauriScript: pnpm tauri
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} --config src-tauri/tauri.updater.conf.json
 
       # Подписано именно постоянным сертификатом: иначе после обновления
       # macOS снова спросит пароль связки ключей и доступ к микрофону.
@@ -237,8 +249,10 @@ jobs:
           fi
           echo "Подпись: $requirement"
 
-      # `.app.tar.gz` сознательно не заливаем: это артефакты Tauri-апдейтера,
-      # который не настроен, а человеку они выглядят как ещё один установщик.
+      # Файл обновления для апдейтера в приложении: на macOS — .app.tar.gz
+      # (заливается рядом с dmg), на Windows и Linux — сами .msi и .AppImage.
+      # Его подпись (.sig рядом) и адрес в релизе уходят записью в
+      # updater-<variant>.json, из записей джоба publish собирает latest.json.
       # `rw.*.dmg` — промежуточный образ упаковщика в bundle/macos/: если он
       # переживёт сборку, find возьмёт его вместо готового dmg.
       - name: Rename installers and upload
@@ -246,31 +260,72 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VARIANT: ${{ matrix.variant }}
+          PLATFORM: ${{ matrix.platform }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           VERSION="${TAG#v}"
           OUT="release-assets"
           mkdir -p "$OUT"
+          updater_asset=""
+          updater_sig=""
 
           while IFS= read -r f; do
+            asset=""
             case "$f" in
-              *.dmg)      cp "$f" "$OUT/macOS-Bastyon-NextGen-${VERSION}-${VARIANT}.dmg" ;;
-              *.msi)      cp "$f" "$OUT/Windows-Bastyon-NextGen-${VERSION}-${VARIANT}.msi" ;;
-              *.AppImage) cp "$f" "$OUT/Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.AppImage" ;;
-              *.deb)      cp "$f" "$OUT/Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.deb" ;;
+              *.dmg)        asset="macOS-Bastyon-NextGen-${VERSION}-${VARIANT}.dmg" ;;
+              *.app.tar.gz) asset="macOS-Bastyon-NextGen-${VERSION}-${VARIANT}.app.tar.gz" ;;
+              *.msi)        asset="Windows-Bastyon-NextGen-${VERSION}-${VARIANT}.msi" ;;
+              *.AppImage)   asset="Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.AppImage" ;;
+              *.deb)        asset="Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.deb" ;;
+            esac
+            cp "$f" "$OUT/$asset"
+            case "$f" in
+              *.app.tar.gz | *.msi | *.AppImage)
+                updater_asset="$asset"
+                updater_sig="$f.sig"
+                ;;
             esac
           done < <(find src-tauri/target -type f \
                      ! -name 'rw.*' \
-                     \( -name '*.dmg' -o -name '*.msi' -o -name '*.AppImage' -o -name '*.deb' \))
+                     \( -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.msi' \
+                        -o -name '*.AppImage' -o -name '*.deb' \))
 
           if [ -z "$(ls -A "$OUT")" ]; then
             echo "Не найдено ни одного установщика — сборка что-то не положила в bundle/" >&2
             find src-tauri/target -type d -name bundle >&2 || true
             exit 1
           fi
+          if [ -z "$updater_asset" ] || [ ! -s "$updater_sig" ]; then
+            echo "::error::Нет файла обновления или его подписи (.sig): задан ли TAURI_SIGNING_PRIVATE_KEY?" >&2
+            exit 1
+          fi
+
+          case "$PLATFORM/$VARIANT" in
+            macos-latest/Apple-Silicon) key=darwin-aarch64 ;;
+            macos-latest/Intel)         key=darwin-x86_64 ;;
+            ubuntu-22.04/x86_64)        key=linux-x86_64 ;;
+            windows-latest/x64)         key=windows-x86_64 ;;
+            *) echo "::error::Неизвестная система $PLATFORM/$VARIANT" >&2; exit 1 ;;
+          esac
+          KEY="$key" SIG="$updater_sig" \
+          URL="https://github.com/$REPO/releases/download/$TAG/$updater_asset" \
+            node -e '
+              const fs = require("fs")
+              const { KEY, SIG, URL } = process.env
+              const entry = { signature: fs.readFileSync(SIG, "utf8").trim(), url: URL }
+              fs.writeFileSync(`updater-${process.env.VARIANT}.json`, JSON.stringify({ [KEY]: entry }))
+            '
 
           ls -la "$OUT"
           gh release upload "$TAG" "$OUT"/* --clobber
+
+      - name: Keep the update record for latest.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-${{ matrix.variant }}
+          path: updater-${{ matrix.variant }}.json
+          if-no-files-found: error
 
   android:
     permissions:
@@ -378,3 +433,41 @@ jobs:
           OUT="Android-Bastyon-NextGen-${VERSION}.apk"
           mv android/app/build/outputs/apk/release/app-release.apk "$OUT"
           gh release upload "$TAG" "$OUT" --clobber
+
+  # Последний шаг: latest.json для апдейтера в приложении и публикация
+  # черновика. Если хоть одна сборка упала, релиз остаётся черновиком — не
+  # «последним» без установщиков. Пересборка одного APK (android_only) идёт по
+  # уже опубликованному релизу, ей это не нужно.
+  publish:
+    needs: [desktop, android]
+    if: ${{ !inputs.android_only }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Collect the update records
+        uses: actions/download-artifact@v4
+        with:
+          pattern: updater-*
+          path: updater-records
+          merge-multiple: true
+
+      - name: Upload latest.json and publish the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/updater-manifest.mjs "$TAG" updater-records > latest.json
+          cat latest.json
+          gh release upload "$TAG" latest.json --clobber
+          gh release edit "$TAG" --draft=false --latest

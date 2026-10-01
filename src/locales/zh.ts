@@ -2502,6 +2502,12 @@ export default {
     failed: '检查失败',
     openFailed: '无法打开浏览器。发布页面链接已复制，请粘贴到地址栏：{url}',
     openFailedManual: '无法打开浏览器。请手动打开发布页面：{url}',
+    install: '更新',
+    installHint: '应用会下载新版本，覆盖安装并重启。账户和设置会保留。',
+    downloading: '正在下载更新：{percent}',
+    downloadingNoSize: '正在下载更新…',
+    installing: '正在安装更新并重启…',
+    installFailed: '无法自动安装更新。请从发布页面下载安装程序。',
   },
   changelog: {
     gotIt: '知道了',

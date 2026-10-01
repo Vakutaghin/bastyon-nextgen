@@ -1,9 +1,9 @@
 /**
  * Проверка обновлений через релизы GitHub.
  *
- * Приложение не обновляет себя само (для этого нужен подписанный апдейтер и
- * сервер обновлений) — оно узнаёт, что вышла новая версия, и предлагает
- * перейти на страницу релиза, где лежат установщики под все платформы.
+ * О новой версии приложение узнаёт из API релизов. На компьютере «Обновить»
+ * ставит её само (helpers/updates/install-update: подписанный latest.json
+ * релиза), на телефоне — ведёт на страницу релиза с установщиками.
  *
  * Состояние модульное, а не на вызов: одно и то же нужно модалке и кнопке
  * «Проверить обновления» в диагностике — иначе они проверяли бы по отдельности.
@@ -23,6 +23,7 @@ import {
   type LatestRelease,
 } from '@/helpers/updates/github-release'
 import { isCapacitor, isTauri } from '@/b-components/video-uploader/utils/environment'
+import type { InstallProgress } from '@/helpers/updates/install-update'
 import { settingsAPI } from '@/db/apis/settings-api'
 import { logger } from '@/services/logger'
 
@@ -190,6 +191,46 @@ export async function openReleasePage(): Promise<boolean> {
   return openExternal(release.pageUrl)
 }
 
+/**
+ * Компьютер ставит обновление сам (install-update); на телефоне и в браузере —
+ * страница релиза.
+ */
+export function supportsInAppInstall(): boolean {
+  return isTauri()
+}
+
+const installing = ref(false)
+const installProgress = ref<InstallProgress | null>(null)
+/** Поставить само не вышло — модалка предлагает страницу релиза. */
+const installFailed = ref(false)
+
+/**
+ * Скачать, поставить и перезапуститься. `false` — не вышло (нет сборки для
+ * этой системы, сеть, Tor не готов, нет прав на папку приложения): тогда
+ * остаётся ручная установка со страницы релиза.
+ */
+export async function installAvailableUpdate(): Promise<boolean> {
+  if (installing.value) return false
+  installing.value = true
+  installFailed.value = false
+  installProgress.value = null
+  try {
+    const { installUpdate } = await import('@/helpers/updates/install-update')
+    const result = await installUpdate((progress) => {
+      installProgress.value = progress
+    })
+    if (result === 'restarting') return true
+    log.warn('no update for this system in latest.json')
+  } catch (e) {
+    log.warn('in-app update failed', e)
+  } finally {
+    installing.value = false
+  }
+  installFailed.value = true
+  installProgress.value = null
+  return false
+}
+
 /** Сброс модульного состояния — только для тестов. */
 export function resetAppUpdateForTests(): void {
   available.value = null
@@ -199,6 +240,9 @@ export function resetAppUpdateForTests(): void {
   skippedVersion.value = null
   dismissedForSession.value = false
   offerSkipped.value = false
+  installing.value = false
+  installProgress.value = null
+  installFailed.value = false
   inflight = null
 }
 
@@ -224,5 +268,10 @@ export function useAppUpdate() {
     dismiss: dismissUpdate,
     skip: skipAvailableVersion,
     openReleasePage,
+    canInstall: supportsInAppInstall(),
+    installing,
+    installProgress,
+    installFailed,
+    install: installAvailableUpdate,
   }
 }

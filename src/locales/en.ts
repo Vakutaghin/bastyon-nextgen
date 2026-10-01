@@ -2607,6 +2607,14 @@ export default {
     openFailed:
       'Could not open the browser. The release page link is copied — paste it into the address bar: {url}',
     openFailedManual: 'Could not open the browser. Open the release page yourself: {url}',
+    install: 'Update',
+    installHint:
+      'The app downloads the new version, installs it over this one and restarts. Accounts and settings are kept.',
+    downloading: 'Downloading the update: {percent}',
+    downloadingNoSize: 'Downloading the update…',
+    installing: 'Installing the update and restarting…',
+    installFailed:
+      'The update could not be installed automatically. Download the installer from the release page.',
   },
   changelog: {
     gotIt: 'Got it',

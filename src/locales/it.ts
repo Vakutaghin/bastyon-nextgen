@@ -2626,6 +2626,14 @@ export default {
     openFailed:
       'Impossibile aprire il browser. Il link alla pagina della versione è copiato: incollalo nella barra degli indirizzi: {url}',
     openFailedManual: 'Impossibile aprire il browser. Apri tu la pagina della versione: {url}',
+    install: 'Aggiorna',
+    installHint:
+      'L’app scarica la nuova versione, la installa sopra quella attuale e si riavvia. Account e impostazioni restano.',
+    downloading: 'Download dell’aggiornamento: {percent}',
+    downloadingNoSize: 'Download dell’aggiornamento…',
+    installing: 'Installazione dell’aggiornamento e riavvio…',
+    installFailed:
+      'Non è stato possibile installare l’aggiornamento automaticamente. Scarica il programma di installazione dalla pagina della versione.',
   },
   changelog: {
     gotIt: 'Ho capito',

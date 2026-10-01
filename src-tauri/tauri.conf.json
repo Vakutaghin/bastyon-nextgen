@@ -65,6 +65,15 @@
       "desktop": {
         "schemes": ["bastyon", "pocketnet"]
       }
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgxRUNEQzlGMDlGNEFGQQpSV1Q2U3Avd3ljMGVDRWRYM3hnMjN2dUdEUlE0RUttalFjRG50K0Ztdjk5eW9pRVlCT2JvdFNlVQo=",
+      "endpoints": [
+        "https://github.com/Vakutaghin/bastyon-nextgen/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

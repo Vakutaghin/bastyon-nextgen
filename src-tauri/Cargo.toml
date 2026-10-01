@@ -88,6 +88,14 @@ cpal = "0.18"
 serialport = { version = "4.10", default-features = false }
 btleplug = "0.13"
 uuid = "1"
+# Обновление изнутри приложения (use-app-update): скачать подписанную сборку
+# из релиза, поставить поверх и перезапуститься. Версии закреплены: следующие
+# требуют tauri 2.12, а связка 2.11 держится Cargo.lock.
+tauri-plugin-updater = "=2.12.0"
+tauri-plugin-process = "=2.3.1"
+# reqwest 0.13 нужен только апдейтеру. Фича `socks` — чтобы при включённом Tor
+# проверка и загрузка обновления шли через Tor, а не напрямую (V20).
+reqwest-updater = { package = "reqwest", version = "0.13", default-features = false, features = ["socks"] }
 
 # Голосовой ввод: распознавание whisper.cpp прямо на устройстве. ggml
 # собирается переносимо (GGML_NATIVE=OFF в .cargo/config.toml), на macOS

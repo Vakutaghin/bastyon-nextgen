@@ -843,6 +843,10 @@ pub fn run() {
     // навигация отменяется). Фронт зовёт его через `helpers/common/open-external`
     // (V40).
     .plugin(tauri_plugin_opener::init())
+    // Обновление изнутри приложения: latest.json релиза, подпись minisign,
+    // установка поверх и перезапуск (use-app-update на фронте).
+    .plugin(tauri_plugin_updater::Builder::new().build())
+    .plugin(tauri_plugin_process::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_http::init())

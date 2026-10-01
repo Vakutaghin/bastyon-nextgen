@@ -1,5 +1,6 @@
 <template>
   <!-- Выше мобильного меню (z-index 1101): проверку запускают и из него. -->
+  <!-- Пока обновление ставится, окно не закрывается: иначе не видно, что происходит. -->
   <Modal
     :open="shouldPrompt"
     :title="t('update.title')"
@@ -7,6 +8,9 @@
     :width="480"
     :z-index="1200"
     :destroy-on-close="true"
+    :closable="!installing"
+    :mask-closable="!installing"
+    :keyboard="!installing"
     @cancel="onLater"
     @update:open="onOpenChange"
   >
@@ -16,16 +20,33 @@
       <SC_Meta v-if="publishedLabel">
         {{ t('update.published', { date: publishedLabel }) }}
       </SC_Meta>
-      <SC_Meta>{{ t('update.downloadHint') }}</SC_Meta>
+      <template v-if="installing">
+        <Progress
+          :percent="progressPercent"
+          :show-info="false"
+          status="active"
+          stroke-color="var(--ui-primary)"
+        />
+        <SC_Meta role="status">{{ progressLabel }}</SC_Meta>
+      </template>
+      <SC_Meta v-else>{{ hint }}</SC_Meta>
 
       <SC_Footer>
-        <SC_GhostButton type="button" @click="onSkip">
+        <SC_GhostButton type="button" :disabled="installing" @click="onSkip">
           {{ t('update.skip') }}
         </SC_GhostButton>
-        <SC_GhostButton type="button" @click="onLater">
+        <SC_GhostButton type="button" :disabled="installing" @click="onLater">
           {{ t('update.later') }}
         </SC_GhostButton>
-        <SC_PrimaryButton type="button" @click="onDownload">
+        <SC_PrimaryButton
+          v-if="installsItself"
+          type="button"
+          :disabled="installing"
+          @click="onInstall"
+        >
+          {{ t('update.install') }}
+        </SC_PrimaryButton>
+        <SC_PrimaryButton v-else type="button" @click="onDownload">
           {{ t('update.download') }}
         </SC_PrimaryButton>
       </SC_Footer>
@@ -37,7 +58,7 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { bcp47 } from '@/i18n'
-import { Modal } from 'ant-design-vue'
+import { Modal, Progress } from 'ant-design-vue'
 import { appToast } from '@/b-components/app-toast'
 import { useAppUpdate } from '@/composables/use-app-update'
 import { copyText } from '@/helpers/common/clipboard'
@@ -51,8 +72,42 @@ import {
 } from './update-modal.styled'
 
 const { t, locale } = useI18n()
-const { available, shouldPrompt, currentVersion, maybeCheck, dismiss, skip, openReleasePage } =
-  useAppUpdate()
+const {
+  available,
+  shouldPrompt,
+  currentVersion,
+  maybeCheck,
+  dismiss,
+  skip,
+  openReleasePage,
+  canInstall,
+  installing,
+  installProgress,
+  installFailed,
+  install,
+} = useAppUpdate()
+
+/** Компьютер ставит обновление сам; не вышло — как раньше, страница релиза. */
+const installsItself = computed<boolean>(() => canInstall && !installFailed.value)
+
+const hint = computed<string>(() => {
+  if (installFailed.value) return t('update.installFailed')
+  return t(canInstall ? 'update.installHint' : 'update.downloadHint')
+})
+
+const progressPercent = computed<number>(() =>
+  Math.round((installProgress.value?.fraction ?? 0) * 100)
+)
+
+const progressLabel = computed<string>(() => {
+  const progress = installProgress.value
+  if (progress?.phase === 'install') return t('update.installing')
+  if (progress?.fraction == null) return t('update.downloadingNoSize')
+  const percent = new Intl.NumberFormat(bcp47(locale.value), { style: 'percent' }).format(
+    progress.fraction
+  )
+  return t('update.downloading', { percent })
+})
 
 const publishedLabel = computed<string>(() => {
   const iso = available.value?.publishedAt
@@ -66,7 +121,12 @@ function onLater(): void {
 }
 
 function onOpenChange(value: boolean): void {
-  if (!value) onLater()
+  if (!value && !installing.value) onLater()
+}
+
+async function onInstall(): Promise<void> {
+  // Удалось — приложение перезапускается; нет — окно предложит страницу релиза.
+  await install()
 }
 
 async function onSkip(): Promise<void> {

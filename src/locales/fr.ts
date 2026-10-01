@@ -2651,6 +2651,14 @@ export default {
       'Impossible d’ouvrir le navigateur. Le lien vers la page de la version est copié : collez-le dans la barre d’adresse : {url}',
     openFailedManual:
       'Impossible d’ouvrir le navigateur. Ouvrez la page de la version vous-même : {url}',
+    install: 'Mettre à jour',
+    installHint:
+      'L’application télécharge la nouvelle version, l’installe par-dessus et redémarre. Les comptes et les réglages sont conservés.',
+    downloading: 'Téléchargement de la mise à jour : {percent}',
+    downloadingNoSize: 'Téléchargement de la mise à jour…',
+    installing: 'Installation de la mise à jour et redémarrage…',
+    installFailed:
+      'La mise à jour n’a pas pu s’installer automatiquement. Téléchargez l’installateur depuis la page de la version.',
   },
   changelog: {
     gotIt: 'Compris',

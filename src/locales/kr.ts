@@ -2583,6 +2583,14 @@ export default {
     openFailed:
       '브라우저를 열 수 없습니다. 릴리스 페이지 링크를 복사했습니다. 주소창에 붙여 넣으세요: {url}',
     openFailedManual: '브라우저를 열 수 없습니다. 릴리스 페이지를 직접 여세요: {url}',
+    install: '업데이트',
+    installHint:
+      '앱이 새 버전을 내려받아 현재 버전 위에 설치하고 다시 시작합니다. 계정과 설정은 유지됩니다.',
+    downloading: '업데이트 다운로드 중: {percent}',
+    downloadingNoSize: '업데이트 다운로드 중…',
+    installing: '업데이트를 설치하고 다시 시작하는 중…',
+    installFailed:
+      '업데이트를 자동으로 설치하지 못했습니다. 릴리스 페이지에서 설치 프로그램을 내려받으세요.',
   },
   changelog: {
     gotIt: '확인',
