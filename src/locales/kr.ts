@@ -2580,6 +2580,9 @@ export default {
     upToDate: '최신 버전',
     newVersion: '{version} 사용 가능',
     failed: '확인 실패',
+    openFailed:
+      '브라우저를 열 수 없습니다. 릴리스 페이지 링크를 복사했습니다. 주소창에 붙여 넣으세요: {url}',
+    openFailedManual: '브라우저를 열 수 없습니다. 릴리스 페이지를 직접 여세요: {url}',
   },
   changelog: {
     gotIt: '확인',

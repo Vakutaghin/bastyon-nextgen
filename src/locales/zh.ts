@@ -2500,6 +2500,8 @@ export default {
     upToDate: '已是最新',
     newVersion: '{version} 可用',
     failed: '检查失败',
+    openFailed: '无法打开浏览器。发布页面链接已复制，请粘贴到地址栏：{url}',
+    openFailedManual: '无法打开浏览器。请手动打开发布页面：{url}',
   },
   changelog: {
     gotIt: '知道了',

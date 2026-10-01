@@ -38,7 +38,9 @@ import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { bcp47 } from '@/i18n'
 import { Modal } from 'ant-design-vue'
+import { appToast } from '@/b-components/app-toast'
 import { useAppUpdate } from '@/composables/use-app-update'
+import { copyText } from '@/helpers/common/clipboard'
 import {
   SC_Wrap,
   SC_Headline,
@@ -74,8 +76,16 @@ async function onSkip(): Promise<void> {
 async function onDownload(): Promise<void> {
   // Закрываем сразу: страница релиза открывается снаружи, и возвращаться
   // пользователю в висящую модалку незачем.
+  const url = available.value?.pageUrl
   dismiss()
-  await openReleasePage()
+  if ((await openReleasePage()) || !url) return
+  // Браузер не открылся (на компьютере до 0.9.3 — всегда): ссылка в буфер и
+  // на экран, а не молча закрытое окно.
+  const copied = await copyText(url)
+  appToast.error({
+    message: t(copied ? 'update.openFailed' : 'update.openFailedManual', { url }),
+    duration: 15,
+  })
 }
 
 onMounted(() => {

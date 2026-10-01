@@ -2604,6 +2604,9 @@ export default {
     upToDate: 'Up to date',
     newVersion: '{version} available',
     failed: 'Check failed',
+    openFailed:
+      'Could not open the browser. The release page link is copied — paste it into the address bar: {url}',
+    openFailedManual: 'Could not open the browser. Open the release page yourself: {url}',
   },
   changelog: {
     gotIt: 'Got it',

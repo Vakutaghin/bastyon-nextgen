@@ -2623,6 +2623,9 @@ export default {
     upToDate: 'Aggiornato',
     newVersion: '{version} disponibile',
     failed: 'Controllo non riuscito',
+    openFailed:
+      'Impossibile aprire il browser. Il link alla pagina della versione è copiato: incollalo nella barra degli indirizzi: {url}',
+    openFailedManual: 'Impossibile aprire il browser. Apri tu la pagina della versione: {url}',
   },
   changelog: {
     gotIt: 'Ho capito',

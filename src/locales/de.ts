@@ -2645,6 +2645,10 @@ export default {
     upToDate: 'Aktuell',
     newVersion: '{version} verfügbar',
     failed: 'Prüfung fehlgeschlagen',
+    openFailed:
+      'Der Browser ließ sich nicht öffnen. Der Link zur Release-Seite ist kopiert – fügen Sie ihn in die Adressleiste ein: {url}',
+    openFailedManual:
+      'Der Browser ließ sich nicht öffnen. Öffnen Sie die Release-Seite selbst: {url}',
   },
   changelog: {
     gotIt: 'Verstanden',

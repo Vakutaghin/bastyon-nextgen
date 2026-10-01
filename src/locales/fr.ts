@@ -2647,6 +2647,10 @@ export default {
     upToDate: 'À jour',
     newVersion: '{version} disponible',
     failed: 'Échec de la vérification',
+    openFailed:
+      'Impossible d’ouvrir le navigateur. Le lien vers la page de la version est copié : collez-le dans la barre d’adresse : {url}',
+    openFailedManual:
+      'Impossible d’ouvrir le navigateur. Ouvrez la page de la version vous-même : {url}',
   },
   changelog: {
     gotIt: 'Compris',
