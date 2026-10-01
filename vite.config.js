@@ -7,9 +7,30 @@ import wasm from 'vite-plugin-wasm'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import babel from 'vite-plugin-babel'
 import { VitePWA } from 'vite-plugin-pwa'
+import legacy from '@vitejs/plugin-legacy'
 import { visualizer } from 'rollup-plugin-visualizer'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+
+/**
+ * Самые старые движки, на которых приложение должно работать.
+ * - Safari 15 — последний для macOS 10.15: в нём живёт WKWebView Intel-сборки.
+ * - Chromium 89 — нижняя граница: top-level await (им грузится wasm tiny-secp256k1)
+ *   esbuild не понижает. WebView2 на Windows 8.1 застыл на 109, Android System
+ *   WebView на Android 7 — на 119.
+ * Синтаксис понижает esbuild (`build.target`), недостающие функции (например
+ * `Promise.withResolvers` в matrix-js-sdk) дописывает plugin-legacy по тому,
+ * что реально встречается в бандле. Регэкспы esbuild не понижает: за ними
+ * следит scripts/check-legacy-syntax.mjs после сборки.
+ */
+const OLDEST_ENGINES = ['chrome89', 'edge89', 'firefox89', 'safari15', 'ios15']
+const OLDEST_ENGINES_BROWSERSLIST = [
+  'chrome >= 89',
+  'edge >= 89',
+  'firefox >= 89',
+  'safari >= 15',
+  'ios_saf >= 15',
+]
 
 // Прокси для PeerTube API в dev — обход CORS (запрос идёт через тот же origin).
 // Пропускает любой метод: авторизация (POST users/token) и загрузка картинок/видео
@@ -119,6 +140,13 @@ export default defineConfig(({ mode }) => ({
       },
     }),
     wasm(), // Плагин для поддержки WebAssembly (нужен для tiny-secp256k1)
+    // Полифилы под OLDEST_ENGINES — отдельным скриптом перед входным модулем.
+    // Legacy-сборка (SystemJS, nomodule) не нужна: все наши движки знают модули.
+    legacy({
+      modernTargets: OLDEST_ENGINES_BROWSERSLIST,
+      modernPolyfills: true,
+      renderLegacyChunks: false,
+    }),
     // PWA: service worker для offline / установки. Отключаем в Tauri (там
     // фронт грузится через asset-протокол, SW не нужен).
     //
@@ -225,7 +253,8 @@ export default defineConfig(({ mode }) => ({
   },
 
   build: {
-    target: 'esnext', // Поддержка top-level await для WebAssembly
+    target: OLDEST_ENGINES,
+    cssTarget: OLDEST_ENGINES,
     minify: 'esbuild',
     // 500 KB — порог, выше которого rollup ругается. Понижено с 1000, чтобы регрессы ловились на CI.
     // Известные чанки выше порога: pocketnet-bitcoin (~900 KB) — это вендоренный btc17.js, выше не оптимизируется.

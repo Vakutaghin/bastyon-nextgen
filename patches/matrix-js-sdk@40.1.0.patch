@@ -1,0 +1,32 @@
+diff --git a/lib/pushprocessor.js b/lib/pushprocessor.js
+index da956265555005970240c35e45dda52854f855be..8339153583323f2998d097a15b0648a9d36a9d45 100644
+--- a/lib/pushprocessor.js
++++ b/lib/pushprocessor.js
+@@ -233,7 +233,10 @@ export class PushProcessor {
+   static getPushRuleGlobRegex(pattern) {
+     var alignToWordBoundary = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+     var flags = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "i";
+-    var [prefix, suffix] = alignToWordBoundary ? ["(?<=^|\\W)", "(?=\\W|$)"] : ["^", "$"];
++    // Bastyon: префикс (?:^|\\W) вместо lookbehind: lookbehind Safari понимает только с 16.4, а
++    // приложение работает с Safari 15 (macOS 10.15). Совпадение по-прежнему ищется
++    // только через match(), и группа 1 — всё так же сам шаблон.
++    var [prefix, suffix] = alignToWordBoundary ? ["(?:^|\\W)", "(?=\\W|$)"] : ["^", "$"];
+     var cacheKey = "".concat(alignToWordBoundary, "-").concat(flags, "-").concat(pattern);
+     if (!PushProcessor.cachedGlobToRegex[cacheKey]) {
+       PushProcessor.cachedGlobToRegex[cacheKey] = new RegExp(prefix + "(" + globToRegexp(pattern) + ")" + suffix, flags);
+diff --git a/src/pushprocessor.ts b/src/pushprocessor.ts
+index 2044977402849702fd63924c20a189f51a6d1f17..cfeecf26ff625d38634bc6417db80a73a3e8de98 100644
+--- a/src/pushprocessor.ts
++++ b/src/pushprocessor.ts
+@@ -328,7 +328,10 @@ export class PushProcessor {
+      * @param flags - the flags to pass to the RegExp constructor, defaults to case-insensitive
+      */
+     public static getPushRuleGlobRegex(pattern: string, alignToWordBoundary = false, flags = "i"): RegExp {
+-        const [prefix, suffix] = alignToWordBoundary ? ["(?<=^|\\W)", "(?=\\W|$)"] : ["^", "$"];
++        // Bastyon: префикс (?:^|\\W) вместо lookbehind: lookbehind Safari понимает только с 16.4, а
++        // приложение работает с Safari 15 (macOS 10.15). Совпадение по-прежнему ищется
++        // только через match(), и группа 1 — всё так же сам шаблон.
++        const [prefix, suffix] = alignToWordBoundary ? ["(?:^|\\W)", "(?=\\W|$)"] : ["^", "$"];
+         const cacheKey = `${alignToWordBoundary}-${flags}-${pattern}`;
+ 
+         if (!PushProcessor.cachedGlobToRegex[cacheKey]) {

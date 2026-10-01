@@ -7,14 +7,13 @@ import { describe, expect, it } from 'vitest'
 import {
   extractPlainTextFromContent,
   findActiveChapterIndex,
+  nextTimecode,
   parseTimecodes,
-  TIMECODE_REGEX,
   timecodeMatchToSeconds,
 } from './timecode-parser'
 
 function seconds(code: string): number | null {
-  TIMECODE_REGEX.lastIndex = 0
-  const match = TIMECODE_REGEX.exec(code)
+  const match = nextTimecode(code)
   return match ? timecodeMatchToSeconds(match) : null
 }
 
@@ -35,8 +34,22 @@ describe('тайм-коды', () => {
   })
 
   it('цифры, склеенные с тайм-кодом, его не образуют', () => {
-    TIMECODE_REGEX.lastIndex = 0
-    expect(TIMECODE_REGEX.exec('версия 1:2:3:4')).toBeNull()
+    expect(nextTimecode('версия 1:2:3:4')).toBeNull()
+  })
+
+  // Без lookbehind: цифру или двоеточие перед кодом проверяет nextTimecode.
+  it.each(['911:23', 'a:12:34', '1:23:45:67'])('%s — код приклеен слева, не тайм-код', (text) => {
+    expect(nextTimecode(text)).toBeNull()
+  })
+
+  it('находит все коды строки по очереди, с любой позиции', () => {
+    const text = 'начало 0:05, потом 12:30 и 1:02:03.'
+    const found: string[] = []
+    for (let m = nextTimecode(text); m; m = nextTimecode(text, m.index + m[0].length)) {
+      found.push(m[0])
+    }
+    expect(found).toEqual(['0:05', '12:30', '1:02:03'])
+    expect(nextTimecode('(1:30) x', 1)?.[0]).toBe('1:30')
   })
 })
 

@@ -30,6 +30,11 @@ const g = globalThis as unknown as Record<string, unknown>
 const w: Record<string, unknown> | undefined =
   typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>) : undefined
 
+// Код приложения начал выполняться. public/compat-check.js показывает экран
+// «приложение не запустилось», только если до этой строки дело не дошло:
+// движок не разобрал бандл или упал на нём.
+g.__bastyonBooted = true
+
 if (!g.Buffer) g.Buffer = BufferImpl
 if (w && !w.Buffer) w.Buffer = BufferImpl
 
@@ -44,6 +49,30 @@ if (typeof g.process === 'undefined') {
   }
   g.process = processPolyfill
   if (w) w.process = processPolyfill
+}
+
+// crypto.randomUUID: в Safari с 15.4, в Chromium с 92, а приложение работает с
+// Safari 15 и Chromium 89 (OLDEST_ENGINES в vite.config.js). Без него, например,
+// не начиналось сохранение файла из IPFS. Остальные функции новее движка
+// дописывает plugin-legacy, но Web Crypto он не знает.
+const webCrypto = g.crypto as Partial<Crypto> | undefined
+if (
+  webCrypto &&
+  typeof webCrypto.getRandomValues === 'function' &&
+  typeof webCrypto.randomUUID !== 'function'
+) {
+  const getRandomValues = webCrypto.getRandomValues.bind(webCrypto)
+  Object.defineProperty(webCrypto, 'randomUUID', {
+    configurable: true,
+    writable: true,
+    value: function randomUUID(): `${string}-${string}-${string}-${string}-${string}` {
+      const b = getRandomValues(new Uint8Array(16))
+      b[6] = (b[6]! & 0x0f) | 0x40
+      b[8] = (b[8]! & 0x3f) | 0x80
+      const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
+      return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
+    },
+  })
 }
 
 // Ранние глобальные обработчики ошибок — ловят падения ДО монтирования Vue

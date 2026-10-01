@@ -54,6 +54,11 @@
     <meta name="twitter:image" content="/img/bastyon_logo_round.png" />
 
     <title>Bastyon NextGen</title>
+
+    <!-- Экран «приложение не запустилось» вместо белого окна, если движок не
+         разобрал бандл (Safari 14, старый Android WebView). Обычный скрипт на
+         ES5: должен выполниться везде, до модулей. -->
+    <script src="/compat-check.js"></script>
   </head>
 
   <body>

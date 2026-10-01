@@ -35,9 +35,17 @@ xattr -dr com.apple.quarantine "/Applications/Bastyon NextGen.app"
 
 Later macOS will ask for access to the microphone and camera — it is needed for voice messages, [voice input](voice-input.md) and signing in with a QR code. Everything else works without it.
 
+The app's interface runs on the Safari engine, so macOS 10.15 needs Safari 15 or newer. If you see "The app could not start" instead of the app, update Safari: System Preferences → Software Update. The latest version for macOS 10.15 is Safari 15.6.
+
+If a version from 0.9.0 to 0.9.4 quits right after launch on an Apple Silicon Mac, install a newer one: those versions looked for a Homebrew library that most Macs do not have.
+
 ## Windows
 
 Run the .msi file. SmartScreen may warn about an unknown publisher: click "More info" → "Run anyway".
+
+If Windows says MSVCP140.dll was not found, install a version newer than 0.9.4. Before it, the app needed the Microsoft Visual C++ Redistributable package, which a clean Windows does not have.
+
+Windows 8.1 is not officially supported, but the app may work on it if all system updates and Microsoft Edge WebView2 are installed. The last WebView2 version for 8.1 came out in January 2023. Windows 7 is not supported.
 
 ## Linux
 
@@ -60,6 +68,8 @@ The system tray icon needs the `libayatana-appindicator3-1` library: the .deb pa
 
 1. Download the .apk file to your phone and open it.
 2. Allow installing from this source — the phone offers the right setting itself.
+
+If you see "The app could not start" instead of the app, update "Android System WebView" and Chrome in Google Play: the app runs on their engine.
 
 > [!WARNING]
 > If the phone has version 0.7.1 or earlier, a new one cannot be installed over it: the old one has to be removed first. Removing it also deletes the account keys from the phone. Before that, make sure your recovery phrase is written down — see [Updates](updates.md).

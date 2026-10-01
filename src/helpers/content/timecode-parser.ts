@@ -21,10 +21,28 @@ export interface Chapter {
 }
 
 /**
- * Регэксп тайм-кода: H:MM:SS, HH:MM:SS, M:SS, MM:SS.
- * Глобальный, чтобы можно было находить все вхождения по строке.
+ * Регэксп тайм-кода: H:MM:SS, HH:MM:SS, M:SS, MM:SS. Перед кодом не должно быть
+ * цифры или двоеточия — это проверяет `nextTimecode`: lookbehind `(?<!…)` Safari
+ * понимает только с 16.4, а на macOS 10.15 последний Safari — 15.6, и такой
+ * литерал ронял разбор всего бандла.
  */
-export const TIMECODE_REGEX = /(?<![\d:])(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?![\d:])/g
+const TIMECODE_REGEX = /(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?![\d:])/g
+
+/**
+ * Следующий тайм-код в `text`, начиная с позиции `from`: совпадение вида
+ * [full, hours?, minutes, seconds] или null.
+ */
+export function nextTimecode(text: string, from = 0): RegExpExecArray | null {
+  TIMECODE_REGEX.lastIndex = from
+  let match: RegExpExecArray | null
+  while ((match = TIMECODE_REGEX.exec(text)) !== null) {
+    const before = match.index > 0 ? text[match.index - 1] : ''
+    if (!before || !/[\d:]/.test(before)) return match
+    // Код приклеен к цифре или двоеточию: ищем со следующего символа.
+    TIMECODE_REGEX.lastIndex = match.index + 1
+  }
+  return null
+}
 
 /** Минимальная длина одной главы в секундах (YouTube требует 10s). */
 const MIN_CHAPTER_LENGTH_SEC = 10
@@ -33,7 +51,7 @@ const MIN_CHAPTER_LENGTH_SEC = 10
 const MIN_CHAPTERS = 3
 
 /**
- * Преобразует совпадение TIMECODE_REGEX в число секунд.
+ * Преобразует совпадение `nextTimecode` в число секунд.
  * @param match массив [full, hours?, minutes, seconds]
  */
 export function timecodeMatchToSeconds(match: RegExpMatchArray | RegExpExecArray): number | null {
@@ -131,8 +149,7 @@ export function parseTimecodes(content: string | object | null | undefined): Cha
 
   for (const line of lines) {
     // Берём ПЕРВЫЙ тайм-код на строке — он и считается началом главы.
-    TIMECODE_REGEX.lastIndex = 0
-    const match = TIMECODE_REGEX.exec(line)
+    const match = nextTimecode(line)
     if (!match) continue
 
     const seconds = timecodeMatchToSeconds(match)

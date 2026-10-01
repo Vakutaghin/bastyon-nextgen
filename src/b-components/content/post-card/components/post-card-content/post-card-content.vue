@@ -43,7 +43,7 @@ import { formatBastyonLinks } from '@/helpers/common/text-formatter'
 import { truncateTextKeepingLinks } from '@/helpers/common/truncate-text'
 import { editorjsToHtml } from '@/helpers/content/editorjs-parser'
 import {
-  TIMECODE_REGEX,
+  nextTimecode,
   timecodeMatchToSeconds,
   type Chapter,
 } from '@/helpers/content/timecode-parser'
@@ -218,7 +218,6 @@ function handleContentClick(event: MouseEvent): void {
 
 function transformTextNode(textNode: Text, knownSeconds: Set<number>): void {
   const text = textNode.nodeValue || ''
-  TIMECODE_REGEX.lastIndex = 0
 
   type Part = { type: 'text'; value: string } | { type: 'tc'; value: string; seconds: number }
   const parts: Part[] = []
@@ -226,7 +225,9 @@ function transformTextNode(textNode: Text, knownSeconds: Set<number>): void {
   let match: RegExpExecArray | null
   let foundAny = false
 
-  while ((match = TIMECODE_REGEX.exec(text)) !== null) {
+  let searchFrom = 0
+  while ((match = nextTimecode(text, searchFrom)) !== null) {
+    searchFrom = match.index + match[0].length
     const seconds = timecodeMatchToSeconds(match)
     if (seconds === null || !knownSeconds.has(seconds)) continue
 
