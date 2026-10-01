@@ -22,7 +22,8 @@
         "maximized": false,
         "center": false,
         "zoomHotkeysEnabled": false,
-        "dragDropEnabled": false
+        "dragDropEnabled": false,
+        "backgroundThrottling": "disabled"
       }
     ],
     "security": {

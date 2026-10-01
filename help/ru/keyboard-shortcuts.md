@@ -7,6 +7,7 @@ code:
   - src/b-components/content/video-player/video-player-manager.ts
   - src-tauri/tauri.conf.json
   - src/composables/use-app-preferences-effects.ts
+  - src/helpers/desktop/quit-shortcut.ts
 ---
 
 # Горячие клавиши
@@ -21,6 +22,7 @@ code:
 | --- | --- |
 | F1 | справка по текущему экрану — статья откроется сбоку, см. [Как пользоваться справкой](using-help.md) |
 | Esc | закрыть окно; в чате — вернуться к списку, потом закрыть мессенджер; закончить диктовку |
+| Ctrl+Q | выйти из приложения для компьютера: крестик окна только прячет его, см. [Приложение для компьютера](desktop-app.md) |
 
 ## Масштаб
 

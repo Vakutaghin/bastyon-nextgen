@@ -1,6 +1,7 @@
 //! Значок в системном трее на Windows и Linux: видно, что приложение запущено
 //! (Tor и IPFS работают в фоне), и из меню можно вернуть окно или выйти.
-//! На macOS не ставим — о запущенном приложении и так говорит точка в Dock.
+//! Крестик прячет окно сюда (см. `main_window`). На macOS не ставим — о
+//! запущенном приложении и так говорит точка в Dock.
 
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -26,7 +27,8 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
   }
 
   let open = MenuItem::with_id(app, OPEN_ID, "Открыть Bastyon", true, None::<&str>)?;
-  let quit = MenuItem::with_id(app, QUIT_ID, "Выйти", true, None::<&str>)?;
+  // Ctrl+Q работает в окне (фронт), в меню — подсказка о нём.
+  let quit = MenuItem::with_id(app, QUIT_ID, "Выйти", true, Some("CmdOrCtrl+Q"))?;
   let menu = Menu::with_items(app, &[&open, &quit])?;
 
   let mut builder = TrayIconBuilder::with_id("main")
@@ -36,7 +38,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
     // там только меню).
     .show_menu_on_left_click(false)
     .on_menu_event(|app, event| match event.id().as_ref() {
-      OPEN_ID => show_main_window(app),
+      OPEN_ID => crate::main_window::show(app),
       // Через exit, а не закрытие окна: RunEvent::ExitRequested гасит Tor и IPFS.
       QUIT_ID => app.exit(0),
       _ => {}
@@ -48,7 +50,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         ..
       } = event
       {
-        show_main_window(tray.app_handle());
+        crate::main_window::show(tray.app_handle());
       }
     });
   if let Some(icon) = app.default_window_icon() {
@@ -60,12 +62,9 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
   Ok(())
 }
 
-fn show_main_window(app: &AppHandle) {
-  if let Some(window) = app.get_webview_window("main") {
-    let _ = window.unminimize();
-    let _ = window.show();
-    let _ = window.set_focus();
-  }
+/// Значок в трее есть: окно, спрятанное крестиком, им можно вернуть.
+pub fn is_shown(app: &AppHandle) -> bool {
+  app.try_state::<TrayMenu>().is_some()
 }
 
 /// На Linux значок рисует appindicator, а tray-icon подгружает его при первом

@@ -30,6 +30,7 @@ import router from '@/router'
 import { initCapacitor } from '@mobile/bootstrap'
 import { setupDeepLinks } from '@/composables/use-deep-links'
 import { setupAppPreferences } from '@/composables/use-app-preferences-effects'
+import { setupQuitShortcut } from '@/helpers/desktop/quit-shortcut'
 import { initDatabase } from '@/db/database'
 import { useAuthStore } from '@/blockchain'
 import {
@@ -99,6 +100,8 @@ configureUnlockUi({
 void router.isReady().then(() => setupDeepLinks(router))
 // Настройки устройства (анимации, масштаб) применяем до первой отрисовки ленты.
 void setupAppPreferences()
+// Ctrl+Q на Windows и Linux: крестик окно только прячет в трей.
+setupQuitShortcut()
 
 void router.isReady().then(() => {
   if (isEmbedRoute()) return

@@ -1,5 +1,6 @@
 mod asr;
 mod ipfs;
+mod main_window;
 mod radio;
 mod rns;
 mod tor;
@@ -814,10 +815,9 @@ pub fn run() {
     // single-instance с фичей `deep-link` обязателен: он передаёт ссылку уже
     // запущенному окну и закрывает дубль. Регистрируем его первым — так
     // требует плагин.
+    // Повторный запуск возвращает окно, даже спрятанное крестиком.
     .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-      if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_focus();
-      }
+      main_window::show(app);
     }))
     .plugin(tauri_plugin_deep_link::init())
     // Автозапуск при входе в систему: включается из настроек, состоянием
@@ -1060,9 +1060,20 @@ pub fn run() {
 
       Ok(())
     })
+    // Крестик прячет главное окно, а не завершает приложение.
+    .on_window_event(main_window::on_window_event)
     .build(tauri::generate_context!())
     .expect("error while building tauri application")
     .run(|app_handle, event| {
+      // Значок в Dock: окно спрятано крестиком — вернуть его.
+      #[cfg(target_os = "macos")]
+      if let RunEvent::Reopen {
+        has_visible_windows: false,
+        ..
+      } = event
+      {
+        main_window::show(app_handle);
+      }
       if let RunEvent::ExitRequested { .. } = event {
         // Best-effort synchronous shutdown of the tor child process so we don't
         // leave an orphaned `tor` binary after the app window closes.

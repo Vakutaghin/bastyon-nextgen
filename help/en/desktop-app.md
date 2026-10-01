@@ -18,11 +18,14 @@ What only the desktop version can do: the tray, autostart, scale, Tor, IPFS — 
 
 The app opens where you left it and at the same size.
 
-On Windows and Linux, while the app is running, its icon sits in the tray: clicking it brings the window back, and the right-click menu has **“Open Bastyon”** and **“Quit”**. On macOS there is no icon — the dot in the Dock shows that the app is running.
+The window’s close button does not quit the app, it hides the window. Tor, the IPFS module, video uploads and the chat keep working, and new messages come with notifications.
 
-Closing the window quits the app, and Tor and the IPFS module stop with it: your files are no longer served.
+- **macOS.** The Dock icon brings the window back. To quit the app, press **Cmd+Q** or choose “Quit” in the Dock icon’s menu.
+- **Windows and Linux.** The window hides to the tray. Clicking the tray icon brings the window back, and the right-click menu has **“Open Bastyon”** and **“Quit”**. You can also quit with **Ctrl+Q**. If there is no tray — this happens on Linux without appindicator — the close button quits the app, as before.
 
-The app cannot run twice: launching it again just brings up the window that is already open. [bastyon:// links](deep-links.md) arrive there too.
+When the app quits, Tor and the IPFS module stop: your files are no longer served.
+
+The app cannot run twice: launching it again just brings up the window that is already running, even a hidden one. [bastyon:// links](deep-links.md) arrive there too.
 
 ## Autostart
 

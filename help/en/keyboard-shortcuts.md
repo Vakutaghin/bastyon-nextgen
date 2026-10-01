@@ -14,6 +14,7 @@ On a Mac, press Cmd instead of Ctrl.
 | --- | --- |
 | F1 | help on the current screen — the article opens at the side, see [Using this help](using-help.md) |
 | Esc | close a window; in the chat, go back to the list, then close the messenger; finish dictation |
+| Ctrl+Q | quit the desktop app: the window’s close button only hides it, see [The desktop app](desktop-app.md) |
 
 ## Scale
 
