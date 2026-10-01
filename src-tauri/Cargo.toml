@@ -64,7 +64,11 @@ http = "1"
 futures-util = "0.3"
 flate2 = "1"
 tar = "0.4"
-zip = "2"
+# Только deflate: им сжаты zip Kubo и Tor для Windows. С default-фичами zip
+# тянул lzma-sys, а тот на ARM-раннере находил liblzma из Homebrew и линковал
+# её динамически: приложение для Apple Silicon (0.9.0–0.9.4) не запускалось на
+# Mac без Homebrew.
+zip = { version = "2", default-features = false, features = ["deflate"] }
 sha2 = "0.10"
 hex = "0.4"
 aes-gcm = "0.10"

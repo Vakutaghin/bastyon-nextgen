@@ -1,4 +1,5 @@
 # CI-гейт (аудит P3-1): lint + typecheck-baseline + vitest + сборка + Rust-тесты
+# + сборка Windows с проверкой, что exe не требует рантайм Visual C++,
 # на каждый push/PR. Без него регрессии уезжали в релизы: `vite build` не
 # тайпчекает, тесты никто не запускал. vue-tsc проверяет и .vue; число ошибок
 # не должно расти относительно typecheck-baseline.json (APP_AUDIT N28).
@@ -70,3 +71,30 @@ jobs:
       - name: Rust tests
         working-directory: src-tauri
         run: cargo test --workspace --lib
+
+  # Windows: программа не должна требовать рантайм Visual C++ (MSVCP140.dll) —
+  # на чистой Windows его нет, и до crt-static (.cargo/config.toml) приложение
+  # там не запускалось. Сборка как в релизе: STATIC_VCRUNTIME ставит tauri-cli.
+  # Фронт не нужен: без фичи custom-protocol Tauri его не встраивает.
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Build
+        working-directory: src-tauri
+        env:
+          STATIC_VCRUNTIME: 'true'
+        run: cargo build --release --locked
+
+      - name: Check native dependencies
+        shell: bash
+        run: scripts/check-native-deps.sh src-tauri/target/release/app.exe

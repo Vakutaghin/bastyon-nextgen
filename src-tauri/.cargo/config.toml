@@ -16,3 +16,14 @@ GGML_AVX2 = "ON"
 GGML_BMI2 = "ON"
 GGML_FMA = "ON"
 GGML_F16C = "ON"
+
+# Windows: C-рантайм вшит в программу. Без этого C++-код whisper.cpp собирался с
+# /MD и требовал MSVCP140.dll из пакета Visual C++ Redistributable, которого нет
+# на чистой Windows, — приложение не запускалось. С crt-static cc и cmake
+# собирают C/C++ с /MT. UCRT остаётся системной: её делает динамической
+# static_vcruntime из tauri-build (часть Windows с 10, на 8.1 — обновление KB2999226).
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
