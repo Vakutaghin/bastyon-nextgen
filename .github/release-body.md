@@ -38,7 +38,7 @@ sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 
 ### Об обновлениях
 
-Начиная с версии 0.3.0 приложение само раз в сутки проверяет релизы здесь и предлагает перейти за новой версией. Новая версия ставится поверх старой и на десктопе, и на Android — кроме перехода с Android-версии 0.7.1 и более ранних, см. выше.
+Начиная с версии 0.3.0 приложение само раз в сутки проверяет релизы здесь и сообщает о новой версии. С версии 0.9.4 приложение для компьютера ставит её само: кнопка «Обновить» скачивает новую версию, проверяет подпись и перезапускает приложение. Пакет .deb так не обновляется — скачайте новый здесь. Новая версия ставится поверх старой и на десктопе, и на Android — кроме перехода с Android-версии 0.7.1 и более ранних, см. выше.
 
 ---
 
@@ -82,4 +82,4 @@ sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 
 ### About updates
 
-Starting with 0.3.0 the app checks the releases here once a day and offers to come and get a newer version. A new version installs over the old one both on desktop and on Android — except when moving from Android version 0.7.1 or earlier, see above.
+Starting with 0.3.0 the app checks the releases here once a day and tells you about a newer version. Since 0.9.4 the desktop app installs it itself: the “Update” button downloads the new version, checks its signature and restarts the app. The .deb package is not updated this way — download the new one here. A new version installs over the old one both on desktop and on Android — except when moving from Android version 0.7.1 or earlier, see above.
