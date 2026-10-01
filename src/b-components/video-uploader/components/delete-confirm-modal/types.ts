@@ -1,4 +1,4 @@
-import type { TranscodedVideo } from '@/db'
+import type { TranscodedVideo } from '@/db/types'
 
 export interface DeleteConfirmModalProps {
   open: boolean

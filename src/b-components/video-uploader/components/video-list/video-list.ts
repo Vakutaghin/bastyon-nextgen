@@ -6,6 +6,7 @@ import {
   InfoCircleOutlined,
   CloseOutlined,
   DownloadOutlined,
+  UploadOutlined,
   VideoCameraAddOutlined,
 } from '@/components/icons'
 import {
@@ -37,6 +38,7 @@ export function useVideoList() {
     InfoCircleOutlined,
     CloseOutlined,
     DownloadOutlined,
+    UploadOutlined,
     VideoCameraAddOutlined,
     SC_VideosSection,
     SC_SectionTitle,

@@ -15,6 +15,7 @@
       v-if="modalStore.postComposerModal.isOpen"
       :mode="modalStore.postComposerModal.mode"
       :source="modalStore.postComposerModal.source"
+      :video="modalStore.postComposerModal.video"
       @published="onPublished"
       @busy-change="publishing = $event"
     />

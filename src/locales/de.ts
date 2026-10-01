@@ -2658,6 +2658,62 @@ export default {
     installFailed:
       'Das Update ließ sich nicht automatisch installieren. Laden Sie das Installationsprogramm von der Release-Seite.',
   },
+  videoStudio: {
+    title: 'Video hochladen',
+    dropTitle: 'Video oder Audio hierher ziehen',
+    dropHint:
+      'MP4, MOV, MKV, WebM, AVI oder Audio MP3, M4A, FLAC, OGG – bis {max}. Der Upload beginnt sofort.',
+    pick: 'Datei auswählen',
+    compress: 'Zuerst auf diesem Computer komprimieren',
+    compressHint:
+      'FFmpeg wandelt das Video in MP4 mit höchstens 1080p um: Die Datei wird kleiner und lädt schneller hoch. Für Dateien bis {max}; die komprimierte Kopie bleibt unter „Auf diesem Computer komprimiert“.',
+    compressNeedsFfmpeg:
+      'Videos lassen sich vor dem Hochladen komprimieren, wenn FFmpeg installiert ist.',
+    compressTooLarge: 'Die Datei ist größer als {max} und wird ohne Komprimierung hochgeladen.',
+    backgroundHint:
+      'Sie können das Fenster minimieren und die App weiter nutzen – der Upload läuft weiter.',
+    titleLabel: 'Titel',
+    titleHint: 'Wird zum Titel des Beitrags. Der Server erhält ihn, wenn der Upload fertig ist.',
+    statusCompressing: 'Komprimierung: {percent}',
+    statusQueued: 'Wartet auf Komprimierung',
+    statusUploading: 'Upload: {percent}',
+    statusDone:
+      'Das Video ist hochgeladen. Der Server braucht noch einige Minuten für weitere Qualitäten, den Beitrag können Sie schon jetzt erstellen.',
+    cancelUpload: 'Upload abbrechen',
+    minimize: 'Minimieren',
+    remove: 'Entfernen',
+    retry: 'Erneut versuchen',
+    done: 'Fertig',
+    createPost: 'Beitrag erstellen',
+    panelTitle: 'Uploads',
+    expand: 'Aufklappen',
+    collapse: 'Zuklappen',
+    closePanel: 'Schließen',
+    panelUploading: 'Wird hochgeladen: {count}',
+    panelDone: 'Uploads abgeschlossen',
+    rowDone: 'Hochgeladen',
+    uploadToServer: 'Auf den Videoserver hochladen',
+    upload: 'Video hochladen',
+    signIn: 'Melden Sie sich an, um Videos hochzuladen und Ihre Videos zu sehen.',
+    signInButton: 'Anmelden',
+    onServer: 'Auf dem Videoserver',
+    refresh: 'Aktualisieren',
+    loadFailed:
+      'Nicht alle Videoserver haben ihre Liste geschickt – einige Videos fehlen eventuell.',
+    empty: 'Hier erscheinen die Videos, die Sie hochladen.',
+    processing: 'Wird verarbeitet',
+    posted: 'Im Beitrag',
+    notPosted: 'Nicht in einem Beitrag',
+    deleteConfirm:
+      'Video vom Videoserver löschen? In Beiträgen mit diesem Video wird es nicht mehr abgespielt.',
+    delete: 'Löschen',
+    cancel: 'Abbrechen',
+    local: 'Auf diesem Computer komprimiert',
+    localEmpty:
+      'Noch keine komprimierten Videos: Aktivieren Sie beim Hochladen „Zuerst auf diesem Computer komprimieren“.',
+    deleted: 'Video gelöscht',
+    deleteFailed: 'Video konnte nicht gelöscht werden',
+  },
   changelog: {
     gotIt: 'Verstanden',
     whatsNewPrefix: 'Neuigkeiten —',

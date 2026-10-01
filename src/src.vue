@@ -21,8 +21,13 @@ import { buildAntdTheme, setStaticApiTheme } from '@/styles/antd-theme'
 import { SC_FramedNotice, SC_FramedLink } from './src.styled'
 
 const isTauriBuild = import.meta.env.VITE_TAURI === 'true'
-const VideoUploader = defineAsyncComponent(
-  () => import('@/b-components/video-uploader/video-uploader.vue')
+// Загрузки видео — окно и плашка «Загрузки» в углу: загрузка идёт в фоне, пока
+// человек ходит по приложению (как в творческой студии YouTube).
+const VideoUploadDialog = defineAsyncComponent(
+  () => import('@/b-components/video-studio/upload-dialog.vue')
+)
+const VideoUploadsPanel = defineAsyncComponent(
+  () => import('@/b-components/video-studio/uploads-panel.vue')
 )
 
 // Embed-роуты (`/embed/...`, meta.embed) рендерятся БЕЗ chrome (хедер/футер/
@@ -92,9 +97,9 @@ watch(themeConfig, setStaticApiTheme, { immediate: true })
     <router-view v-else-if="isEmbed" />
     <template v-else>
       <AppLayout />
-      <!-- Перекодирование видео — только в десктопе (нативный ffmpeg): в вебе
-           кнопки нет, и модуль там даже не загружается (N17). -->
-      <VideoUploader v-if="isTauriBuild" />
+      <!-- Загрузка видео: окно из «Моих видео» и плашка с идущими загрузками. -->
+      <VideoUploadDialog />
+      <VideoUploadsPanel />
       <!-- Mini-apps payment modal — singleton, управляется через payment-modal-controller -->
       <MiniAppPaymentModal />
       <!-- Донат автору — singleton, открывается через useDonateStore -->

@@ -203,7 +203,7 @@ import ComposerUrlPreview from './composer-url-preview.vue'
 import ComposerVideo from './composer-video.vue'
 import LinkPreviewCard from '@/b-components/content/link-preview-card/link-preview-card.vue'
 import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
-import type { ComposerMode, ComposerSource } from './composer-source'
+import type { ComposerMode, ComposerSource, ComposerVideoPrefill } from './composer-source'
 import { useComposerMentions } from './use-composer-mentions'
 import {
   SC_ArticleToggle,
@@ -225,7 +225,12 @@ import {
 import { MAX_TAGS } from './consts'
 import { usePostComposer } from './use-post-composer'
 
-const props = defineProps<{ mode?: ComposerMode; source?: ComposerSource | null }>()
+const props = defineProps<{
+  mode?: ComposerMode
+  source?: ComposerSource | null
+  /** Новый пост с уже загруженным видео (из «Моих видео»). */
+  video?: ComposerVideoPrefill | null
+}>()
 const emit = defineEmits<{
   (e: 'published', txid: string): void
   /** Идёт публикация — модалку закрывать нельзя (S29). */
@@ -294,6 +299,7 @@ const {
   onPublished: (txid) => emit('published', txid),
   mode: props.mode,
   source: props.source,
+  video: props.video,
 })
 
 // Пока идёт публикация, модалку закрывать нельзя: закрытая посреди отправки

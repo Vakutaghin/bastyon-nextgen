@@ -1,6 +1,6 @@
 <template>
   <SC_VideosSection>
-    <SC_SectionTitle>{{ t('videoUploader.savedVideos') }}</SC_SectionTitle>
+    <SC_SectionTitle>{{ title ?? t('videoUploader.savedVideos') }}</SC_SectionTitle>
     <SC_VideosGrid v-if="!loading && videos.length > 0">
       <SC_VideoItem v-for="video in videos" :key="video.id" @click="$emit('play', video)">
         <SC_VideoIcon>
@@ -11,6 +11,15 @@
 
         <!-- Действия (class для селектора при hover) -->
         <SC_VideoActions class="video-actions" @click.stop>
+          <SC_ActionButton
+            v-if="canUpload"
+            @click="$emit('upload', video)"
+            :title="t('videoStudio.uploadToServer')"
+            :aria-label="t('videoStudio.uploadToServer')"
+            type="button"
+          >
+            <UploadOutlined />
+          </SC_ActionButton>
           <SC_ActionButton
             @click="$emit('download', video)"
             :title="t('videoUploader.download')"
@@ -38,7 +47,10 @@
     </SC_VideosGrid>
 
     <SC_EmptyState v-else-if="!loading">
-      <Empty :description="t('videoUploader.noVideos')" :icon="VideoCameraAddOutlined" />
+      <Empty
+        :description="emptyText ?? t('videoUploader.noVideos')"
+        :icon="VideoCameraAddOutlined"
+      />
     </SC_EmptyState>
 
     <SC_LoadingState v-else>
@@ -66,6 +78,7 @@ const {
   InfoCircleOutlined,
   CloseOutlined,
   DownloadOutlined,
+  UploadOutlined,
   VideoCameraAddOutlined,
   SC_VideosSection,
   SC_SectionTitle,

@@ -5,6 +5,7 @@ import type { GetTopFeedPost as Post } from '@/types/rpc-responses/get-top-feed'
 import type {
   ComposerMode,
   ComposerSource,
+  ComposerVideoPrefill,
 } from '@/b-components/content/post-composer/composer-source'
 import type { UnlockPhase } from '@/blockchain/storage/vault/vault-unlock'
 
@@ -38,6 +39,8 @@ export const useModalStore = defineStore('modal', {
       isOpen: false,
       mode: 'create' as ComposerMode,
       source: null as ComposerSource | null,
+      /** Новый пост с уже загруженным видео (из «Моих видео»). */
+      video: null as ComposerVideoPrefill | null,
     },
     // P0-1: недискардимая модалка разблокировки сейфа (passphrase-режим).
     // Только UI-состояние; резолвер unlock живёт в vault-unlock.ts (module-scope).
@@ -67,12 +70,18 @@ export const useModalStore = defineStore('modal', {
      * Открывает модалку композера поста.
      * @param options.mode  create (по умолчанию) / edit / repost
      * @param options.source источник для edit/repost (пост из ленты)
+     * @param options.video уже загруженное своё видео для нового поста
      */
     openPostComposerModal(
-      options: { mode?: ComposerMode; source?: ComposerSource | null } = {}
+      options: {
+        mode?: ComposerMode
+        source?: ComposerSource | null
+        video?: ComposerVideoPrefill | null
+      } = {}
     ): void {
       this.postComposerModal.mode = options.mode ?? 'create'
       this.postComposerModal.source = options.source ?? null
+      this.postComposerModal.video = options.video ?? null
       this.postComposerModal.isOpen = true
     },
 

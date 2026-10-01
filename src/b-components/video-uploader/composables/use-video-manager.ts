@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { transcodedVideoAPI } from '@/db/apis/transcoded-video-api'
-import type { TranscodedVideo } from '@/db'
+import type { TranscodedVideo } from '@/db/types'
 import { isTauri } from '../utils/environment'
 import { t } from '@/i18n'
 

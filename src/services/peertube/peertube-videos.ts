@@ -91,6 +91,34 @@ export async function deleteInstanceVideo(params: DeleteVideoParams): Promise<De
   return { deleted: true, alreadyGone: false }
 }
 
+export interface RenameVideoParams {
+  host: string
+  id: string | number
+  name: string
+  accessToken: string
+  fetchInstance?: InstanceFetch
+}
+
+/**
+ * PUT videos/:id (Bearer, multipart) с новым именем. Загрузка стартует сразу
+ * при выборе файла, и на сервере видео получает имя файла; название, которое
+ * человек дописал за это время, уходит сюда после загрузки.
+ */
+export async function renameInstanceVideo(params: RenameVideoParams): Promise<void> {
+  const { host, id, name, accessToken } = params
+  const fetchInstance: InstanceFetch =
+    params.fetchInstance ?? ((path, init) => peertubeInstanceFetch(host, path, init))
+
+  const body = new FormData()
+  body.append('name', name)
+  const res = await fetchInstance(`api/v1/videos/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body,
+  })
+  if (!res.ok && res.status !== 204) throw new Error(`peertube_rename_video_${res.status}`)
+}
+
 /** Состояния PeerTube, означающие «ещё не готово к постингу» (транскодинг/импорт идёт). */
 const NOT_READY_STATES = new Set([2, 3])
 

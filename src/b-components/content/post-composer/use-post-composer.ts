@@ -30,6 +30,7 @@ import { t } from '@/i18n'
 import {
   type ComposerMode,
   type ComposerSource,
+  type ComposerVideoPrefill,
   isArticleSource,
   parseArticleContent,
   postToComposerData,
@@ -63,6 +64,12 @@ export interface UsePostComposerOptions {
   mode?: ComposerMode
   /** Источник для edit (префилл + txidEdit) или repost (txidRepost + превью). */
   source?: ComposerSource | null
+  /**
+   * Новый пост с уже загруженным своим видео («Мои видео» → «Создать пост»):
+   * видео прикреплено, его название — заголовок. Картинки черновика не
+   * подтягиваются: с видео они в одном посте не живут.
+   */
+  video?: ComposerVideoPrefill | null
 }
 
 export function usePostComposer(options: UsePostComposerOptions = {}) {
@@ -103,7 +110,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
           ? readDraft(authStore.getUserAddress)
           : ''
   )
-  const caption = ref(isEdit && prefill ? prefill.caption : '')
+  const prefillVideo = mode === 'create' && options.video?.pointer ? options.video : null
+  const caption = ref(isEdit && prefill ? prefill.caption : (prefillVideo?.title ?? ''))
   const { tags, tagInput, tagsFull, addTag, commitTagInput, removeTag, onTagBackspace, resetTags } =
     usePostTags(isEdit && prefill ? prefill.tags : [])
   const submitting = ref(false)
@@ -193,7 +201,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
    */
   // При правке — ссылка оригинала: без неё видео/аудио-пост сохранялся как
   // обычный `share` с пустым `u` (V36).
-  const uploadedVideoUrl = ref(isEdit && prefill ? prefill.url : '')
+  const uploadedVideoUrl = ref(isEdit && prefill ? prefill.url : (prefillVideo?.pointer ?? ''))
 
   /** Видео-ссылка, авто-найденная в тексте поста (youtube/vimeo/peertube). */
   const videoUrl = computed(() => (articleMode.value ? '' : firstVideoUrl(message.value)))
@@ -431,7 +439,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
         }
         if (savedImages.length) {
           storedImages = savedImages
-          if (!images.value.length) setFromUrls(savedImages)
+          if (!images.value.length && !prefillVideo) setFromUrls(savedImages)
         }
       })
       .catch((e: unknown) => console.warn('[post-composer] draft restore failed', e))

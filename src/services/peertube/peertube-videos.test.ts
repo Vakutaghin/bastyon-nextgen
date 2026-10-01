@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   getMyAccountVideos,
   deleteInstanceVideo,
+  renameInstanceVideo,
   checkTranscodingReady,
   findPostedVideos,
   removeVideoByPointer,
@@ -93,6 +94,37 @@ describe('deleteInstanceVideo', () => {
     }
     await deleteInstanceVideo({ host: 'h', id: 'a/b', accessToken: 'AT', fetchInstance })
     expect(fetchInstance.mock.calls[0]?.[0]).toBe('api/v1/videos/a%2Fb')
+  })
+})
+
+describe('renameInstanceVideo', () => {
+  it('PUT videos/:id с Bearer и именем в multipart', async () => {
+    const fetchInstance = vi.fn(async () => new Response(null, { status: 204 }))
+    await renameInstanceVideo({
+      host: 'h',
+      id: 'uu id',
+      name: 'Отпуск в Сочи',
+      accessToken: 'AT',
+      fetchInstance: fetchInstance as unknown as InstanceFetch,
+    })
+    const [path, init] = fetchInstance.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('api/v1/videos/uu%20id')
+    expect(init.method).toBe('PUT')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer AT')
+    expect((init.body as FormData).get('name')).toBe('Отпуск в Сочи')
+  })
+
+  it('ошибка сервера → throw с кодом', async () => {
+    const fetchInstance = vi.fn(async () => new Response(null, { status: 403 }))
+    await expect(
+      renameInstanceVideo({
+        host: 'h',
+        id: 1,
+        name: 'x',
+        accessToken: 'AT',
+        fetchInstance: fetchInstance as unknown as InstanceFetch,
+      })
+    ).rejects.toThrow('peertube_rename_video_403')
   })
 })
 

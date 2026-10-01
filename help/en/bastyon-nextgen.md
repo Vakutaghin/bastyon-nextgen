@@ -31,7 +31,7 @@ These features exist in the previous app but are not done here yet. Meanwhile yo
 - paid subscriptions and staking;
 - post collections;
 - calls, creating group chats, editing and forwarding messages, stickers;
-- the “My videos” section, importing a video by link and live streams;
+- importing a video by link and live streams;
 - creating your own mini apps.
 
 ## Polls in the two apps

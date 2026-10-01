@@ -9,6 +9,16 @@ import type { ArticleContent } from '@/blockchain/core/actions/post-action'
 
 export type ComposerMode = 'create' | 'edit' | 'repost'
 
+/**
+ * Своё видео, уже загруженное на видеосервер («Мои видео» → «Создать пост»):
+ * редактор открывается с прикреплённым видео и заголовком.
+ */
+export interface ComposerVideoPrefill {
+  /** peertube://host/uuid[/audio] */
+  pointer: string
+  title: string
+}
+
 export interface ComposerSource {
   txid?: string
   hash?: string

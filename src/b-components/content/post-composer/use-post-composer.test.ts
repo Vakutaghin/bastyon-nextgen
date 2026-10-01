@@ -536,6 +536,24 @@ describe('usePostComposer', () => {
       expect(mocks.setFromUrls).toHaveBeenCalledWith([PNG])
     })
 
+    it('пост с готовым видео из «Моих видео»: видео прикреплено, название — заголовок, картинок черновика нет', async () => {
+      idb.store.set(FIELDS_KEY, { caption: 'Старый заголовок', tags: ['старый'] })
+      idb.store.set(IMAGES_KEY, [PNG])
+      const c = compose({ video: { pointer: 'peertube://pt.host/uuid9', title: 'Сочи, июль' } })
+      await settle()
+      expect(c.uploadedVideoUrl.value).toBe('peertube://pt.host/uuid9')
+      expect(c.caption.value).toBe('Сочи, июль')
+      expect(c.tags.value).toEqual([])
+      expect(mocks.setFromUrls).not.toHaveBeenCalled()
+      // Правке и репосту готовое видео не подмешивается.
+      const edit = compose({
+        mode: 'edit',
+        source: { txid: 'tx1', message: 'текст' },
+        video: { pointer: 'peertube://pt.host/x', title: 'x' },
+      })
+      expect(edit.uploadedVideoUrl.value).toBe('')
+    })
+
     it('время, которое уже прошло, не возвращается', async () => {
       idb.store.set(FIELDS_KEY, { tags: ['море'], scheduledTime: 1_700_000_000 })
       const c = compose()
