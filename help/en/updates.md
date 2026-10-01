@@ -29,6 +29,7 @@ You can also check in **“Settings”** → **“Diagnostics”** → the **“
 ## How to update
 
 - **Computer.** Download the installer for your system and install the new version over the old one — accounts and settings are kept. Which file to pick is in [Installing the app](install.md).
+- **macOS.** macOS blocks a new version on its first launch again: allow it the same way as at installation, with “Open Anyway”. macOS may also ask for your computer password to let Bastyon NextGen use its keychain item. In that item WebKit keeps the key that encrypts the account keys on this computer. Enter the password and click “Always Allow”. All versions are signed with one certificate, so after that updates no longer ask for the password and do not ask for microphone and camera access again. Before, every version was signed anew, and both questions came back after each update.
 - **Android.** Download the .apk file and install the new version over the old one — accounts and settings are kept. The exception is moving from 0.7.1 or an earlier version: those were signed with a temporary key, and the phone refuses to install a new version over them, saying the package conflicts with an existing one. Then the old version has to be removed, and the account keys are removed from the phone with it. So before removing it, make sure your recovery phrase is written down and checked — see [Recovery phrase and private key](recovery-phrase.md). After installing, sign in with the phrase again.
 
 ## What’s new

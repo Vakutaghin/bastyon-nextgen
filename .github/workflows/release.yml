@@ -130,13 +130,55 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      # macOS: без секретов Apple бандл подписывается ad-hoc (signingIdentity "-"
-      # в tauri.conf.json). Такое приложение macOS не называет повреждённым, но
-      # первый запуск разрешают в «Конфиденциальность и безопасность» — оно не
-      # нотаризовано. С сертификатом Developer ID в секретах репозитория Tauri
-      # подпишет им и отправит сборку на нотаризацию. Пустую переменную Tauri
-      # считает заданной и пытается ею подписать, поэтому передаём только
-      # заполненные.
+      # Постоянный самоподписанный сертификат (scripts/macos-signing-key.sh).
+      # Gatekeeper встречает такое приложение так же, как ad-hoc, но требование
+      # подписи у всех версий одно: `identifier "com.bastyon.app" and
+      # certificate leaf = H"…"`. У ad-hoc это хэш сборки, и после каждого
+      # обновления macOS снова спрашивала пароль, чтобы пустить приложение к
+      # ключу сейфа в Связке ключей (его держит WebKit), и заново просила
+      # микрофон и камеру. Без секрета сборка падает, а не откатывается к
+      # ad-hoc: иначе вопросы молча вернулись бы. С Developer ID в секретах
+      # подписывает он (шаг ниже).
+      - name: macOS signing identity (permanent, self-signed)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          MACOS_SIGNING_P12_B64: ${{ secrets.MACOS_SIGNING_P12_B64 }}
+          MACOS_SIGNING_P12_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            echo "Задан Developer ID — подписывает он"
+            exit 0
+          fi
+          if [ -z "$MACOS_SIGNING_P12_B64" ] || [ -z "$MACOS_SIGNING_P12_PASSWORD" ]; then
+            echo "::error::Нет MACOS_SIGNING_P12_B64/MACOS_SIGNING_P12_PASSWORD — см. scripts/macos-signing-key.sh" >&2
+            exit 1
+          fi
+          keychain="$RUNNER_TEMP/bastyon-signing.keychain-db"
+          keychain_password="$(openssl rand -hex 24)"
+          p12="$RUNNER_TEMP/bastyon-signing.p12"
+          printf '%s' "$MACOS_SIGNING_P12_B64" | base64 --decode > "$p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$p12" -k "$keychain" -P "$MACOS_SIGNING_P12_PASSWORD" -T /usr/bin/codesign
+          rm -f "$p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
+            -k "$keychain_password" "$keychain" > /dev/null
+          # codesign ищет подпись только в связках из списка поиска.
+          existing="$(security list-keychains -d user | tr -d '"')"
+          # shellcheck disable=SC2086
+          security list-keychains -d user -s "$keychain" $existing
+          # Переменная окружения главнее signingIdentity "-" из tauri.conf.json.
+          echo "APPLE_SIGNING_IDENTITY=Bastyon NextGen" >> "$GITHUB_ENV"
+          echo "BASTYON_SELF_SIGNED=1" >> "$GITHUB_ENV"
+
+      # Developer ID (если появится): Tauri подпишет им и отправит сборку на
+      # нотаризацию — тогда macOS не спросит про неизвестного разработчика.
+      # Пустую переменную Tauri считает заданной и пытается ею подписать,
+      # поэтому передаём только заполненные.
       - name: Apple signing and notarization (when configured)
         if: matrix.platform == 'macos-latest'
         shell: bash
@@ -172,6 +214,28 @@ jobs:
         with:
           tauriScript: pnpm tauri
           args: ${{ matrix.args }}
+
+      # Подписано именно постоянным сертификатом: иначе после обновления
+      # macOS снова спросит пароль связки ключей и доступ к микрофону.
+      - name: Check the macOS signing certificate
+        if: matrix.platform == 'macos-latest' && env.BASTYON_SELF_SIGNED == '1'
+        shell: bash
+        env:
+          ARGS: ${{ matrix.args }}
+        run: |
+          set -euo pipefail
+          expected="$(tr -d '[:space:]' < src-tauri/macos-signing-cert.sha1)"
+          # Только бандл этой сборки (args = --target <triple>), не из кэша.
+          bundle_dir="src-tauri/target/${ARGS#--target }/release/bundle/macos"
+          app="$(find "$bundle_dir" -maxdepth 1 -type d -name '*.app' | head -n 1)"
+          [ -n "$app" ] || { echo "::error::Не найден собранный .app" >&2; exit 1; }
+          codesign --verify --deep --strict "$app"
+          requirement="$(codesign -d -r- "$app" 2>&1)"
+          if ! grep -q "certificate leaf = H\"$expected\"" <<<"$requirement"; then
+            echo "::error::$app подписан не постоянным сертификатом: $requirement" >&2
+            exit 1
+          fi
+          echo "Подпись: $requirement"
 
       # `.app.tar.gz` сознательно не заливаем: это артефакты Tauri-апдейтера,
       # который не настроен, а человеку они выглядят как ещё один установщик.
