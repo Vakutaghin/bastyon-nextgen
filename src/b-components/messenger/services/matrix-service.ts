@@ -340,10 +340,17 @@ export class MatrixService {
   public async sendEncryptedTextMessage(
     roomId: string,
     payload: { body: string; hash: string; block: number },
-    extraContent?: Record<string, unknown>
+    extraContent?: Record<string, unknown>,
+    txnId?: string
   ) {
     if (!this.client) throw new Error('Client not initialized')
-    return sendEncryptedTextMessageImpl(this.client as MatrixClient, roomId, payload, extraContent)
+    return sendEncryptedTextMessageImpl(
+      this.client as MatrixClient,
+      roomId,
+      payload,
+      extraContent,
+      txnId
+    )
   }
 
   /**
@@ -357,15 +364,25 @@ export class MatrixService {
   public async sendEncryptedDirectMessage(
     roomId: string,
     payload: { body: string; block: number; version: number },
-    extraContent?: Record<string, unknown>
+    extraContent?: Record<string, unknown>,
+    txnId?: string
   ) {
     if (!this.client) throw new Error('Client not initialized')
     return sendEncryptedDirectMessageImpl(
       this.client as MatrixClient,
       roomId,
       payload,
-      extraContent
+      extraContent,
+      txnId
     )
+  }
+
+  /**
+   * Id транзакции для отправки. Локальная копия события в SDK получает id
+   * `~<roomId>:<txnId>` — зная его заранее, своё сообщение в ленте не дублируется.
+   */
+  public makeTxnId(): string {
+    return this.client?.makeTxnId() ?? `m${Date.now()}.${Math.random().toString(36).slice(2)}`
   }
 
   public async uploadContent(

@@ -89,9 +89,15 @@ export function useMessageLoading(
         // уже ушёл read-receipt). Голое присваивание снимка затирало его —
         // сообщение пропадало из ленты до перезахода в чат (S36). Поэтому
         // снимок сливаем с тем, что успело появиться, по id.
+        // Копию своего события (`~`-id) без статуса отправки не сохраняем: она уже
+        // есть в истории под настоящим id, и раньше чат показывал её второй раз —
+        // часто как «*** Encrypted Message ***». Эхо, которое ещё отправляется
+        // или не ушло, остаётся.
         const arrivedWhileLoading = messages[chatId] ?? []
         const knownIds = new Set(list.map((m) => m.id))
-        const extra = arrivedWhileLoading.filter((m) => !knownIds.has(m.id))
+        const extra = arrivedWhileLoading.filter(
+          (m) => !knownIds.has(m.id) && !(m.id.startsWith('~') && m.status === 'sent')
+        )
         if (extra.length > 0) {
           list.push(...extra)
           list.sort((a, b) => a.timestamp - b.timestamp)

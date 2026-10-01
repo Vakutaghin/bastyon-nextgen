@@ -53,6 +53,18 @@ describe('mapEventToMessage — нерасшифрованное сообщен�
     expect(msg?.text).toBe(ENCRYPTED_MESSAGE_PLACEHOLDER)
   })
 
+  it('content события не меняется: у своего только что отправленного он ещё уйдёт на сервер', async () => {
+    // Раньше сюда дописывался info.secrets, и личное сообщение уходило с
+    // лишней копией шифротекста.
+    const body = btoa(JSON.stringify({ peer: { encrypted: 'x', nonce: 'n' } }))
+    const content = { msgtype: 'm.encrypted', body, block: 10, version: 2 }
+    const before = JSON.stringify(content)
+    const { mapEventToMessage } = mapping(async () => 'Привет')
+    const msg = await mapEventToMessage(mxEvent('m.room.message', content))
+    expect(msg?.text).toBe('Привет')
+    expect(JSON.stringify(content)).toBe(before)
+  })
+
   it('body с секретами (base64 JSON) при сбое дешифровки → плейсхолдер', async () => {
     const body = btoa(JSON.stringify({ encrypted: 'x', keys: 'k', cipher: 'c' }))
     const { mapEventToMessage } = mapping(async () => null)

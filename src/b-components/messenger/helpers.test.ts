@@ -11,6 +11,7 @@ import {
   isMessageEvent,
   getMatrixId,
   tetatetid,
+  isTetatetchat,
   getAddressFromMatrixId,
   chatUserName,
   getRoomTimelineEvents,
@@ -127,6 +128,43 @@ describe('tetatetid', () => {
     expect(tetatetid('1a', '1a')).toBeNull()
     expect(tetatetid('', '2b')).toBeNull()
     expect(tetatetid('zz', '2b')).toBeNull()
+  })
+})
+
+describe('isTetatetchat', () => {
+  const tid = tetatetid('1a', '2b')!
+  const member = (id: string, membership: string) => ({ userId: `@${id}:host`, membership })
+  // Как у комнаты SDK: getJoinedMembers — только вступившие, getMembers — все.
+  const room = (members: ReturnType<typeof member>[], name = `#${tid}`) => ({
+    name,
+    getJoinedMembers: () => members.filter((m) => m.membership === 'join'),
+    currentState: { getMembers: () => members },
+  })
+
+  it('новый чат: собеседник только приглашён — уже личный, как у прежнего клиента', () => {
+    expect(isTetatetchat(room([member('1a', 'join'), member('2b', 'invite')]))).toBe(true)
+    expect(isTetatetchat(room([member('1a', 'join'), member('2b', 'join')]))).toBe(true)
+  })
+
+  it('чужое имя комнаты или третий участник — не личный', () => {
+    expect(isTetatetchat(room([member('1a', 'join'), member('2b', 'invite')], '#other'))).toBe(
+      false
+    )
+    expect(
+      isTetatetchat(room([member('1a', 'join'), member('2b', 'join'), member('3c', 'invite')]))
+    ).toBe(false)
+  })
+
+  it('«не личный» не запоминается: имя комнаты пришло с синком позже', () => {
+    const r: ReturnType<typeof room> & { tetatet?: boolean } = room(
+      [member('1a', 'join'), member('2b', 'invite')],
+      ''
+    )
+    expect(isTetatetchat(r)).toBe(false)
+    expect(r.tetatet).toBeUndefined()
+    r.name = `#${tid}`
+    expect(isTetatetchat(r)).toBe(true)
+    expect(r.tetatet).toBe(true)
   })
 })
 

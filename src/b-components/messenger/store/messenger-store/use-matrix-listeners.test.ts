@@ -58,6 +58,7 @@ function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}
     currentUser: { id: 'me', name: 'me' },
     mapEventToMessage: vi.fn(async (e: { event_id: string }) => ({ id: e.event_id, text: 'hi' })),
     enrichMessagesWithReactions: vi.fn(),
+    adoptLocalEcho: vi.fn(async () => {}),
   }
   const uiStore = {
     activeChatId,
@@ -224,5 +225,28 @@ describe('sync — баннер ошибки (S38)', () => {
     handlers['sync']!('ERROR')
     handlers['sync']!('CATCHUP')
     expect(uiStore.syncError).toBeNull()
+  })
+})
+
+describe('копия своего события (`~`-id) получает настоящий id', () => {
+  it('Room.localEchoUpdated передаёт событие и прежний id в chatStore.adoptLocalEcho', () => {
+    const { chatStore } = setup(ROOM)
+    const ev = mxEvent('m.room.message', { id: '$real' })
+    handlers['Room.localEchoUpdated']!(ev, room, `~${ROOM}:m1.1`, 'sending')
+    expect(chatStore.adoptLocalEcho).toHaveBeenCalledWith(ev, `~${ROOM}:m1.1`)
+  })
+
+  it('пока копия расшифровывалась, она ушла на сервер — в ленту ложится настоящий id', async () => {
+    const { chatStore } = setup(ROOM)
+    let id = `~${ROOM}:m1.1`
+    const ev = { ...mxEvent('m.room.message', { sender: '@me:host' }), getId: () => id }
+    chatStore.mapEventToMessage.mockImplementationOnce(async () => {
+      const msg = { id, text: 'hi' }
+      id = '$real'
+      return msg
+    })
+    chatStore.messages[ROOM] = [{ id: '$real' }]
+    await handlers['Room.timeline']!(ev, room, false)
+    expect(chatStore.messages[ROOM]!.map((m) => m.id)).toEqual(['$real'])
   })
 })

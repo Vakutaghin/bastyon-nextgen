@@ -14,9 +14,10 @@ import {
 import { getAddressFromMatrixId, getMatrixId, isTetatetchat } from '../../helpers'
 import { getPartnerMatrixId } from '../../room-helpers'
 import type { Message } from '../../types'
-import { makeTempId, pushOptimistic, removeOptimistic } from './media-sending-helpers'
+import { pushOptimistic } from './media-sending-helpers'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
+import { localEchoId } from './use-local-echo'
 import {
   pkoinTransferContent,
   pkoinTransferText,
@@ -75,6 +76,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     getOrderedMemberIds,
     collectPcryptoUsers,
     pickRoomBlock,
+    decryptionCache,
   } = chatCrypto
 
   /** Возвращает Pocketnet-адрес собеседника в личном чате. null — если это не 1-на-1. */
@@ -99,7 +101,8 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     chatId: string,
     room: MxRoom,
     text: string,
-    extraContent?: Record<string, unknown>
+    extraContent: Record<string, unknown> | undefined,
+    txnId: string
   ) => {
     await room.loadMembersIfNeeded?.()
 
@@ -148,7 +151,8 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     return matrixService.sendEncryptedTextMessage(
       chatId,
       { body: bodyHex, hash, block },
-      extraContent
+      extraContent,
+      txnId
     )
   }
 
@@ -164,7 +168,8 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     chatId: string,
     room: MxRoom,
     text: string,
-    extraContent?: Record<string, unknown>
+    extraContent: Record<string, unknown> | undefined,
+    txnId: string
   ) => {
     await room.loadMembersIfNeeded?.()
 
@@ -182,7 +187,8 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     return matrixService.sendEncryptedDirectMessage(
       chatId,
       { body: secrets.keys, block: secrets.block, version },
-      extraContent
+      extraContent,
+      txnId
     )
   }
 
@@ -195,7 +201,8 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
   const sendTextContent = async (
     chatId: string,
     text: string,
-    extraContent?: Record<string, unknown>
+    extraContent?: Record<string, unknown>,
+    txnId: string = matrixService.makeTxnId()
   ) => {
     // Если нас лишь пригласили в комнату — вступаем перед отправкой, иначе
     // Matrix вернёт M_FORBIDDEN («not in room»). Идемпотентно для joined-комнат.
@@ -204,21 +211,55 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     // Без комнаты шифрование невозможно (нет участников/ключей). Не деградируем к
     // открытому тексту — бросаем, как это делает и медиа-путь.
     if (!room) throw new Error('Room not found')
-    if (!isTetatetchat(room)) {
-      return sendGroupMessage(chatId, room, text, extraContent)
+    // Свой текст известен: копия события в ленте показывает его сразу, без
+    // расшифровки. Иначе у первого сообщения группы (ключ комнаты приходит
+    // синком позже отправки) вместо текста стояло «*** Encrypted Message ***».
+    decryptionCache.set(localEchoId(chatId, txnId), text)
+    const res = isTetatetchat(room)
+      ? await sendDirectEncryptedText(chatId, room, text, extraContent, txnId)
+      : await sendGroupMessage(chatId, room, text, extraContent, txnId)
+    const eventId = res?.event_id
+    if (typeof eventId === 'string' && !decryptionCache.has(eventId)) {
+      decryptionCache.set(eventId, text)
+      decryptionCache.persist(matrixService.getClient()?.getUserId(), eventId, text)
     }
-    return sendDirectEncryptedText(chatId, room, text, extraContent)
+    return res
+  }
+
+  /**
+   * Сообщение ушло: эхо получает настоящий id события, по нему его можно
+   * ответить и удалить. Если SDK уже переименовал эхо или настоящее событие
+   * пришло синком раньше, второе копией не остаётся.
+   */
+  const markSent = (chatId: string, localId: string, eventId: unknown) => {
+    const list = messages[chatId]
+    if (!list) return
+    const idx = list.findIndex((m) => m.id === localId)
+    const real = typeof eventId === 'string' ? list.find((m) => m.id === eventId) : undefined
+    if (real) {
+      real.status = 'sent'
+      if (idx !== -1) list.splice(idx, 1)
+      return
+    }
+    if (idx === -1) return
+    if (typeof eventId === 'string') list[idx]!.id = eventId
+    list[idx]!.status = 'sent'
   }
 
   /**
    * Отправка текста с локальным эхо. Поле ввода очищается сразу, поэтому без
    * эхо неудачная отправка просто теряла текст: статус всегда был `sent`,
    * ошибка уходила в консоль, повторить было нечем (S35).
+   *
+   * Id эхо — как у копии события в SDK (`~<комната>:<txnId>`): лента видит одно
+   * сообщение. Раньше эхо снималось после отправки, а копия SDK оставалась со
+   * своим id и при повторном открытии чата добавлялась к настоящему событию.
    */
   const sendMessage = async (chatId: string, text: string) => {
-    const tempId = makeTempId()
+    const txnId = matrixService.makeTxnId()
+    const localId = localEchoId(chatId, txnId)
     const optimistic: Message = {
-      id: tempId,
+      id: localId,
       chatId,
       senderId: ctx.currentUser.value.id,
       senderName: ctx.currentUser.value.name,
@@ -232,12 +273,11 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     pushOptimistic(messages, chatId, optimistic)
 
     try {
-      await sendTextContent(chatId, text)
-      // Реальное событие придёт по таймлайну — эхо снимаем.
-      removeOptimistic(messages, chatId, tempId)
+      const res = await sendTextContent(chatId, text, undefined, txnId)
+      markSent(chatId, localId, res?.event_id)
     } catch (e) {
       console.error('[ChatStore] Ошибка отправки сообщения:', e)
-      const failed = messages[chatId]?.find((m) => m.id === tempId)
+      const failed = messages[chatId]?.find((m) => m.id === localId)
       if (failed) failed.status = 'failed'
       // У собеседника нет опубликованных ключей — объясняем, иначе повтор
       // будет так же бесполезен (S39).
@@ -255,13 +295,16 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     const list = messages[chatId]
     const failed = list?.find((m) => m.id === messageId)
     if (!failed || failed.status !== 'failed' || failed.type !== 'text') return
+    const txnId = matrixService.makeTxnId()
+    const localId = localEchoId(chatId, txnId)
+    failed.id = localId
     failed.status = 'sending'
     try {
-      await sendTextContent(chatId, failed.text)
-      removeOptimistic(messages, chatId, messageId)
+      const res = await sendTextContent(chatId, failed.text, undefined, txnId)
+      markSent(chatId, localId, res?.event_id)
     } catch (e) {
       console.error('[ChatStore] Повтор отправки не удался:', e)
-      const again = messages[chatId]?.find((m) => m.id === messageId)
+      const again = messages[chatId]?.find((m) => m.id === localId)
       if (again) again.status = 'failed'
     }
   }

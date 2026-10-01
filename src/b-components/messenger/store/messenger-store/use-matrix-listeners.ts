@@ -11,6 +11,7 @@ import { logger } from '@/services/logger'
 import { matrixService } from '../../services/matrix-service'
 import glassSound from '../../sounds/glass.mp3'
 import {
+  getEventId,
   getEventType,
   getEventRoomId,
   getEventSender,
@@ -124,6 +125,10 @@ export function registerMatrixListeners(
           if (uiStore.activeChatId === roomId) {
             const msg = await chatStore.mapEventToMessage(event)
             if (!msg) return
+            // Пока расшифровывали, копия своего события могла дойти до сервера и
+            // получить настоящий id — иначе в ленту легла бы вторая, `~`-копия.
+            const currentId = getEventId(event)
+            if (currentId !== msg.id && currentId.startsWith('$')) msg.id = currentId
             if (!chatStore.messages[roomId]) chatStore.messages[roomId] = []
             if (!chatStore.messages[roomId].find((m) => m.id === msg.id))
               chatStore.messages[roomId].push(msg)
@@ -154,6 +159,15 @@ export function registerMatrixListeners(
       } catch (e) {
         log.error('Ошибка в Room.timeline:', e)
       }
+    }
+  )
+
+  // Своё событие дошло до сервера: SDK сменил id его копии `~…` на настоящий `$…`.
+  matrixService.on(
+    'Room.localEchoUpdated',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MatrixEvent передаётся в приватный MxEvent-тип chat-store, как в Room.timeline выше
+    (event: any, _room: unknown, oldEventId?: string) => {
+      void chatStore.adoptLocalEcho(event, oldEventId)
     }
   )
 

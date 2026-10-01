@@ -29,7 +29,12 @@ export function sendMessage(
  * Redact (удалить) событие — удаление своего сообщения.
  * @param reason — опциональная причина (в content m.room.redaction).
  */
-export function redactEvent(client: MatrixClient, roomId: string, eventId: string, reason?: string) {
+export function redactEvent(
+  client: MatrixClient,
+  roomId: string,
+  eventId: string,
+  reason?: string
+) {
   return client.redactEvent(roomId, eventId, undefined, reason ? { reason } : undefined)
 }
 
@@ -56,16 +61,22 @@ export function sendEncryptedTextMessage(
   client: MatrixClient,
   roomId: string,
   payload: { body: string; hash: string; block: number },
-  extraContent?: Record<string, unknown>
+  extraContent?: Record<string, unknown>,
+  txnId?: string
 ) {
-  return client.sendEvent(roomId, 'm.room.message', {
-    msgtype: 'm.encrypted',
-    body: payload.body,
-    hash: payload.hash,
-    block: payload.block,
-    // extraContent — relation-метаданные (m.relates_to / m.new_content).
-    ...extraContent,
-  })
+  return client.sendEvent(
+    roomId,
+    'm.room.message',
+    {
+      msgtype: 'm.encrypted',
+      body: payload.body,
+      hash: payload.hash,
+      block: payload.block,
+      // extraContent — relation-метаданные (m.relates_to / m.new_content).
+      ...extraContent,
+    },
+    txnId
+  )
 }
 
 /**
@@ -80,17 +91,23 @@ export function sendEncryptedDirectMessage(
   client: MatrixClient,
   roomId: string,
   payload: { body: string; block: number; version: number },
-  extraContent?: Record<string, unknown>
+  extraContent?: Record<string, unknown>,
+  txnId?: string
 ) {
-  return client.sendEvent(roomId, 'm.room.message', {
-    msgtype: 'm.encrypted',
-    body: payload.body,
-    block: payload.block,
-    version: payload.version,
-    // extraContent — relation-метаданные (m.relates_to) для ответа. Лежат на
-    // внешнем (открытом) content, как и у группового зашифрованного сообщения.
-    ...extraContent,
-  })
+  return client.sendEvent(
+    roomId,
+    'm.room.message',
+    {
+      msgtype: 'm.encrypted',
+      body: payload.body,
+      block: payload.block,
+      version: payload.version,
+      // extraContent — relation-метаданные (m.relates_to) для ответа. Лежат на
+      // внешнем (открытом) content, как и у группового зашифрованного сообщения.
+      ...extraContent,
+    },
+    txnId
+  )
 }
 
 /**

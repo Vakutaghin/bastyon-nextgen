@@ -5,7 +5,7 @@
 // API сохранён 1-в-1 (потребители — messenger-store и Vue-компоненты — не меняются).
 // Граф зависимостей модулей:
 //   crypto → { decryption, media-transfer, sending, media-sending }
-//   decryption → mapping → loading (loading также зависит от crypto)
+//   decryption → mapping → { loading, local-echo } (оба также зависят от crypto)
 
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
@@ -25,6 +25,7 @@ import { useMessageLoading } from './messenger-chat-store/use-message-loading'
 import { useMessageSending } from './messenger-chat-store/use-message-sending'
 import { useMediaSending } from './messenger-chat-store/use-media-sending'
 import { useMediaTransfer } from './messenger-chat-store/use-media-transfer'
+import { useLocalEcho } from './messenger-chat-store/use-local-echo'
 
 export const useMessengerChatStore = defineStore('messenger-chat', () => {
   // --- Разделяемое состояние и зависимости ---
@@ -53,6 +54,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const sending = useMessageSending(ctx, chatCrypto)
   const mediaSending = useMediaSending(ctx, chatCrypto)
   const mediaTransfer = useMediaTransfer(chatCrypto)
+  const localEcho = useLocalEcho(ctx, chatCrypto, mapping)
 
   /** Полный сброс при логауте. */
   const reset = () => {
@@ -96,6 +98,8 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     fetchAndDecryptMedia: mediaTransfer.fetchAndDecryptMedia,
     decryptAudioData: mediaTransfer.decryptAudioData,
     mapEventToMessage: mapping.mapEventToMessage,
+    /** Копия своего события получила настоящий id (Room.localEchoUpdated). */
+    adoptLocalEcho: localEcho.adoptLocalEcho,
     // будет заполнен из главного стора (mapRoomToDialog там типизирован как (room) => Promise<Dialog>)
     mapRoomToDialog: undefined as undefined | ((room: MxRoom) => Promise<Dialog>),
     enrichMessagesWithReactions: mapping.enrichMessagesWithReactions,

@@ -98,7 +98,10 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
       !mediaType && !!(content.info?.secrets || content.pbody?.secrets || content.secrets)
     const isGroupEncrypted = !mediaType && isGroupEncryptedContent(content)
 
-    // body может быть base64 JSON с секретами
+    // body может быть base64 JSON с секретами. Только признак: content — объект
+    // самого события, и у только что отправленного он ещё не ушёл на сервер.
+    // Раньше сюда дописывался `info.secrets`, и каждое личное сообщение уходило
+    // с лишней копией шифротекста (расшифровка разбирает body сама).
     if (
       !hasSecrets &&
       !isGroupEncrypted &&
@@ -114,14 +117,6 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
           (decoded.includes('"encrypted"') ||
             (decoded.includes('"keys"') && decoded.includes('"cipher"')))
         ) {
-          let extractedBlock = 0
-          try {
-            extractedBlock = JSON.parse(decoded).block || 0
-          } catch {
-            /* ignore */
-          }
-          if (!content.info) content.info = {}
-          content.info.secrets = { keys: content.body, block: content.block || extractedBlock }
           hasSecrets = true
         }
       } catch {

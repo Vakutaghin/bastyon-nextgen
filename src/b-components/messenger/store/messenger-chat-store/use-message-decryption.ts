@@ -25,6 +25,12 @@ import {
 import type { ChatContext, MxEvent, MxSecrets } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
 
+/**
+ * Копия content: расшифровка дописывает в него секреты и блок, а это объект
+ * самого события — у только что отправленного он ещё уйдёт на сервер.
+ */
+const copyContent = (content: unknown) => JSON.parse(JSON.stringify(content ?? {}))
+
 export function useMessageDecryption(ctx: ChatContext, chatCrypto: ChatCrypto) {
   const { profileCache } = ctx
   const {
@@ -44,7 +50,7 @@ export function useMessageDecryption(ctx: ChatContext, chatCrypto: ChatCrypto) {
       return decryptionCache.get(eventId)!
     }
 
-    const content = getEventContent(event)
+    const content = copyContent(getEventContent(event))
     const isEncryptedType = getEventType(event) === 'm.room.encrypted'
 
     // Группа: m.room.message с msgtype 'm.encrypted', body=hex, content.hash

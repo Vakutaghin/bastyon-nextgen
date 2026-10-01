@@ -148,6 +148,21 @@ describe('useMessageDecryption', () => {
       expect(raw.content.info.secrets).toEqual({ keys: body, block: 5 })
     })
 
+    it('content события не меняется: секреты и блок дописываются в копию', async () => {
+      const body = btoa(JSON.stringify({ zz: { encrypted: 'x', nonce: 'n' } }))
+      const content = { msgtype: 'm.encrypted', body, version: 2 }
+      const before = JSON.stringify(content)
+      const { tryDecrypt, pcrypto } = setup({ direct: true })
+      await expect(tryDecrypt(event(content))).resolves.toBe('Привет!')
+      const [raw] = pcrypto.decryptEvent.mock.lastCall! as [
+        { content: { block: number; info: { secrets: { keys: string } } } },
+        unknown,
+      ]
+      expect(raw.content.info.secrets.keys).toBe(body)
+      expect(raw.content.block).toBe(3_000_000)
+      expect(JSON.stringify(content)).toBe(before)
+    })
+
     it('версия > 1 — участники по dbId, как при шифровании', async () => {
       const { tryDecrypt, pcrypto } = setup()
       await tryDecrypt(event({ secrets: { keys: 'k', block: 1, v: 2 } }))

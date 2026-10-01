@@ -126,6 +126,26 @@ describe('useMessageLoading: чат открыт до конца входа в M
     expect(uiStore.isMessagesLoading).toBe(false)
   })
 
+  it('повторное открытие: устаревшая `~`-копия своего сообщения второй раз не появляется', async () => {
+    // Баг: первое сообщение новому собеседнику — «*** Encrypted Message ***»,
+    // а после закрытия и открытия чата — оно и настоящее событие рядом.
+    const { api, messages, uiStore } = setup()
+    messages['!a:host'] = [
+      { id: '~!a:host:m1.1', timestamp: 2, status: 'sent' },
+      { id: '~!a:host:m2.2', timestamp: 3, status: 'sending' },
+      { id: '~!a:host:m3.3', timestamp: 4, status: 'failed' },
+      { id: '$new', timestamp: 5, status: 'sent' },
+    ] as unknown as { id: string }[]
+    matrixReady(uiStore, [fakeRoom('!a:host', [{ id: '$real', ts: 2 }])])
+    await api.loadMessages('!a:host')
+    expect(messages['!a:host']?.map((m) => m.id)).toEqual([
+      '$real',
+      '~!a:host:m2.2',
+      '~!a:host:m3.3',
+      '$new',
+    ])
+  })
+
   it('Matrix так и не вошёл — через 30 секунд загрузка снимается', async () => {
     const { api, uiStore } = setup()
     const done = api.loadMessages('!a:host')

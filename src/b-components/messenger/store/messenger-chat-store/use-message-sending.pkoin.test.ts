@@ -4,6 +4,8 @@ const { matrix, tx, encryptKey } = vi.hoisted(() => ({
   matrix: {
     getRoom: vi.fn(() => ({ roomId: '!dm:host', loadMembersIfNeeded: async () => {} })),
     joinIfInvited: vi.fn(async () => {}),
+    makeTxnId: vi.fn(() => 'm1.1'),
+    getClient: () => ({ getUserId: () => '@me:host' }),
     sendEncryptedDirectMessage: vi.fn(async () => ({ event_id: '$e' })),
   },
   encryptKey: vi.fn(async () => ({ keys: 'CIPHER', block: 10 })),
@@ -55,6 +57,7 @@ function sending() {
     getOrderedMemberIds: vi.fn(() => ['@me:host', '@peer:host']),
     collectPcryptoUsers: vi.fn(async () => [{ id: '@me:host' }, { id: '@peer:host' }]),
     pickRoomBlock: vi.fn(async () => 10),
+    decryptionCache: { get: vi.fn(), has: vi.fn(() => false), set: vi.fn(), persist: vi.fn() },
   }
   return useMessageSending(ctx as never, crypto as never)
 }
@@ -74,7 +77,8 @@ describe('sendPkoin — две фазы (V2)', () => {
     expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledWith(
       '!dm:host',
       { body: 'CIPHER', block: 10, version: 2 },
-      { pocketnet_transaction: { txid: 'TXID1', amount: 1.5, from: 'PME', to: 'PPARTNER' } }
+      { pocketnet_transaction: { txid: 'TXID1', amount: 1.5, from: 'PME', to: 'PPARTNER' } },
+      'm1.1'
     )
     expect(JSON.stringify(matrix.sendEncryptedDirectMessage.mock.calls)).not.toContain('кофе')
     // Текст чата в транзакцию не попадает: OP_RETURN публичен.

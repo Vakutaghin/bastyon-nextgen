@@ -48,6 +48,8 @@ export interface RoomLike {
 /** Минимальное представление участника комнаты. */
 export interface MemberLike {
   userId: string
+  /** join / invite / leave / ban — у участника из `currentState.getMembers()`. */
+  membership?: string
 }
 
 // --- Извлечение данных из Matrix-событий ---
@@ -158,17 +160,28 @@ export const tetatetid = (user1: string, user2: string): string | null => {
   return CryptoJS.SHA224(id.toString()).toString(CryptoJS.enc.Hex)
 }
 
-/** Определяет, является ли комната тет-а-тет (DM) */
+/** Кто считается участником личного чата: и вступившие, и приглашённые, и вышедшие. */
+const DIRECT_CHAT_MEMBERSHIPS = new Set(['join', 'invite', 'leave'])
+
+/**
+ * Определяет, является ли комната тет-а-тет (DM).
+ *
+ * Участников берём, как прежний клиент (`mtrxkit.tetatetchat` — все из
+ * `currentState.members`), а не только вступивших. В новом чате собеседник лишь
+ * приглашён: комната не считалась личной, и сообщения уходили групповым
+ * протоколом, которого прежний клиент в личном чате не ждёт.
+ */
 export const isTetatetchat = (room: RoomLike | null | undefined): boolean => {
   if (!room) return false
   if (typeof room.tetatet !== 'undefined') return room.tetatet
 
-  const members =
-    typeof room.getJoinedMembers === 'function'
+  const members = room.currentState?.getMembers
+    ? room.currentState
+        .getMembers()
+        .filter((m) => !m.membership || DIRECT_CHAT_MEMBERSHIPS.has(m.membership))
+    : typeof room.getJoinedMembers === 'function'
       ? room.getJoinedMembers()
-      : room.currentState?.getMembers
-        ? room.currentState.getMembers()
-        : []
+      : []
 
   if (!members || members.length !== 2) return false
 
@@ -182,7 +195,9 @@ export const isTetatetchat = (room: RoomLike | null | undefined): boolean => {
   const alias = typeof room.getCanonicalAlias === 'function' ? room.getCanonicalAlias() || '' : ''
   const tt = roomName === `#${tid}` || alias.includes(tid)
 
-  if (members.length > 1) room.tetatet = tt
+  // Запоминаем только «личный»: «нет» могло получиться до того, как синк
+  // принёс имя комнаты, и тогда новый чат навсегда остался бы групповым.
+  if (tt) room.tetatet = true
   return tt
 }
 
