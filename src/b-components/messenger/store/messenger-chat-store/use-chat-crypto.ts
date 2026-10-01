@@ -103,13 +103,27 @@ export function useChatCrypto(ctx: ChatContext) {
 
   // --- Участники комнаты ---
 
+  /**
+   * Ключ события членства для склейки повторов. У приглашённого состояние
+   * комнаты урезанное (invite_state): события без event_id. По одному id они
+   * склеивались в одно, и сам приглашённый выпадал из участников — первое
+   * сообщение нового чата он расшифровывал не тем ключом.
+   */
+  const memberEventKey = (ev: MxEvent): string => {
+    const id = getEventId(ev)
+    if (id && id !== 'unknown') return id
+    const stateKey =
+      typeof ev.getStateKey === 'function' ? ev.getStateKey() : ev.state_key || ev?.event?.state_key
+    return `stripped|${stateKey}|${getEventContent(ev)?.membership}`
+  }
+
   const getMemberHistoryEvents = (room: MxRoom): MxEvent[] => {
     if (!room) return []
     const seen = new Map<string, MxEvent>()
     const addEvents = (events: MxEvent[]) => {
       events.forEach((ev) => {
-        const id = getEventId(ev)
-        if (!seen.has(id)) seen.set(id, ev)
+        const key = memberEventKey(ev)
+        if (!seen.has(key)) seen.set(key, ev)
       })
     }
     if (room.currentState?.getStateEvents) {

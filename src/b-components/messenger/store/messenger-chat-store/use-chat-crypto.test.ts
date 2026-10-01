@@ -102,6 +102,15 @@ describe('useChatCrypto', () => {
       expect(crypto.getOrderedMemberIds(r, 450)).toContain('@alice:srv')
     })
 
+    it('приглашённый в урезанном состоянии комнаты (без event_id) — тоже участник', () => {
+      // Так комнату видит сам приглашённый, пока его вступление не пришло синком.
+      const stripped = [member('@alice:srv', 'join', 100), member('@me:srv', 'invite', 150)].map(
+        ({ event_id: _id, origin_server_ts: _ts, ...ev }) => ev
+      )
+      const ids = setup().getOrderedMemberIds(room(stripped as never, { direct: true }), 200)
+      expect(ids.sort()).toEqual(['@alice:srv', '@me:srv'])
+    })
+
     it('приглашённый учитывается по state_key, а не по пригласившему', () => {
       const ids = setup().getOrderedMemberIds(room(history), 160)
       expect(ids).toContain('@bob:srv')
