@@ -3,7 +3,7 @@
 
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { defineStore, storeToRefs } from 'pinia'
-import { computed, watch } from 'vue'
+import { computed, onScopeDispose, watch } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -219,6 +219,52 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
   }
 
+  // --- Отметка «прочитано» ---
+
+  /** До какого события чат уже отмечен прочитанным на сервере, по комнатам. */
+  const readMarkerSent = new Map<string, string>()
+
+  /**
+   * Сказать серверу, что чат прочитан до последнего события: у собеседника
+   * появится «✓✓». Только если чат на экране (V30) и раз на событие.
+   */
+  const markRoomRead = async (roomId: string): Promise<void> => {
+    if (isMeshDialogId(roomId) || !uiStore.isChatOnScreen(roomId)) return
+    const room = matrixService.getRoom(roomId)
+    if (!room) return
+    const lastEvent = [...room.getLiveTimeline().getEvents()]
+      .reverse()
+      .find((e: MatrixEvent) => e.getId()?.startsWith('$'))
+    const eventId = lastEvent?.getId()
+    if (!lastEvent || !eventId || readMarkerSent.get(roomId) === eventId) return
+    readMarkerSent.set(roomId, eventId)
+    try {
+      const client = matrixService.getClient()
+      if (client?.setRoomReadMarkers) await client.setRoomReadMarkers(roomId, eventId, lastEvent)
+      else await client?.sendReadReceipt(lastEvent)
+    } catch (e) {
+      log.debug('read marker not sent', e)
+      // Не ушло — следующая попытка отправит снова.
+      if (readMarkerSent.get(roomId) === eventId) readMarkerSent.delete(roomId)
+    }
+  }
+
+  // Чат снова на экране: открыли или развернули мессенджер, вернули вкладку
+  // или окно приложения. Собеседник увидит «✓✓» на том, что пришло, пока
+  // чат был скрыт.
+  const markActiveChatRead = () => {
+    const id = uiStore.activeChatId
+    if (id) void markRoomRead(id)
+  }
+  watch(() => [uiStore.isOpen, uiStore.isFullScreen, uiStore.activeChatId], markActiveChatRead)
+  if (typeof document !== 'undefined') {
+    const onVisibility = () => {
+      if (!document.hidden) markActiveChatRead()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    onScopeDispose(() => document.removeEventListener('visibilitychange', onVisibility))
+  }
+
   // --- Инициализация Matrix ---
 
   /**
@@ -282,7 +328,7 @@ export const useMessengerStore = defineStore('messenger', () => {
           // Подписка на события (Room.timeline / sync) — до login, matrixService
           // копит подписки до создания клиента. Ровно один раз (S37).
           if (!listenersRegistered) {
-            registerMatrixListeners(ctx, { loadDialogs, scheduleLoadDialogs })
+            registerMatrixListeners(ctx, { loadDialogs, scheduleLoadDialogs, markRoomRead })
             listenersRegistered = true
           }
 
@@ -335,23 +381,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     void meshRoutes.openRouted(chatId)
 
     await chatStore.loadMessages(chatId)
-
-    try {
-      // Read-marker уходит, только если чат действительно на экране (V30).
-      const room = uiStore.isChatOnScreen(chatId) ? matrixService.getRoom(chatId) : null
-      if (room) {
-        const events = room.getLiveTimeline().getEvents()
-        const lastEvent = [...events].reverse().find((e: MatrixEvent) => e.getId()?.startsWith('$'))
-        if (lastEvent) {
-          const client = matrixService.getClient()
-          if (client?.setRoomReadMarkers)
-            await client.setRoomReadMarkers(room.roomId, lastEvent.getId(), lastEvent)
-          else await client?.sendReadReceipt(lastEvent)
-        }
-      }
-    } catch {
-      /* ignore */
-    }
+    // Read-marker уходит, только если чат действительно на экране (V30).
+    await markRoomRead(chatId)
   }
 
   const toggleMessenger = async () => {
@@ -451,23 +482,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     Promise.resolve().then(async () => {
       await chatStore.loadMessages(roomId)
       await loadDialogs(true)
-      try {
-        const room = matrixService.getRoom(roomId)
-        if (room) {
-          const events = room.getLiveTimeline().getEvents()
-          const lastEvent = [...events]
-            .reverse()
-            .find((e: MatrixEvent) => e.getId()?.startsWith('$'))
-          if (lastEvent) {
-            const client = matrixService.getClient()
-            if (client?.setRoomReadMarkers)
-              await client.setRoomReadMarkers(room.roomId, lastEvent.getId(), lastEvent)
-            else await client?.sendReadReceipt(lastEvent)
-          }
-        }
-      } catch {
-        /* ignore */
-      }
+      await markRoomRead(roomId)
     })
   }
 
@@ -532,6 +547,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     matrixService.stop({ revoke: true })
     // stop() чистит очередь подписок — при следующем входе регистрируем заново.
     listenersRegistered = false
+    readMarkerSent.clear()
     cancelLoginRetry()
     showingSnapshot = false
     uiStore.reset()

@@ -77,8 +77,8 @@
         <span v-if="viaMesh" :title="viaMesh">📡</span>
         <!-- Коротко: сегодня — «14:30», раньше — с датой; полная дата — в подсказке. -->
         <time :datetime="timeIso" :title="formatTime(message.timestamp)">{{ timeShort }}</time>
-        <SC_SeenTick v-if="deliveryMark" :title="deliveryMark.title">
-          {{ deliveryMark.mark }}
+        <SC_SeenTick v-if="mark" :class="{ done: mark.done }" :title="mark.title">
+          {{ mark.mark }}
         </SC_SeenTick>
         <SC_ReactionButton
           v-if="canReact"
@@ -155,6 +155,7 @@ import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { appToast } from '@/b-components/app-toast'
 import { isMeshTransport, type Message } from '../../types'
+import { deliveryMark } from './delivery-mark'
 import { useMessengerStore } from '../../store'
 import { chatUserName, getAddressFromMatrixId } from '../../helpers'
 import {
@@ -211,10 +212,10 @@ const props = withDefaults(
     /** Показывать аватарку. Передаём false для подряд идущих сообщений того же
      *  отправителя — слот всё равно остаётся, чтобы выровнять колонку. */
     showAvatar?: boolean
-    /** Время (ms), до которого собеседник прочитал переписку (read-receipts). */
-    seenUpToTs?: number
+    /** Своё сообщение прочитано собеседником (квитанции Matrix, use-read-receipts). */
+    seen?: boolean
   }>(),
-  { showName: true, showAvatar: true, seenUpToTs: 0 }
+  { showName: true, showAvatar: true, seen: false }
 )
 
 const emit = defineEmits<{ reply: [message: Message] }>()
@@ -238,11 +239,6 @@ function onRetry(): void {
   void store.retryMessage(props.message.chatId, props.message.id)
 }
 
-/** Своё сообщение прочитано собеседником (read-receipt). */
-const isSeen = computed<boolean>(
-  () => isMine.value && props.seenUpToTs > 0 && props.message.timestamp <= props.seenUpToTs
-)
-
 /** Сообщение через mesh-радио (src/mesh), а не через Matrix. */
 const isMesh = computed<boolean>(() => isMeshTransport(props.message.transport))
 const meshKind = computed(() =>
@@ -253,40 +249,20 @@ const isMeshReplyable = computed<boolean>(
   () => props.message.transport === 'meshtastic' && !!props.message.meshReplyable
 )
 
-/**
- * Отметка у времени своего сообщения. Matrix — «✓✓», когда собеседник
- * прочитал. Mesh — путь по эфиру: отправляется, ушло в эфир, радио
- * собеседника подтвердило (прочтений в эфире нет).
- */
-const deliveryMark = computed<{ mark: string; title: string } | null>(() => {
-  if (isMesh.value && isMine.value) {
-    switch (props.message.status) {
-      case 'sending':
-        return { mark: '…', title: t('mesh.chat.sending') }
-      case 'sent':
-        return {
-          mark: '✓',
-          title: props.message.transport === 'lxmf' ? t('mesh.chat.lxmfSent') : t('mesh.chat.sent'),
-        }
-      case 'delivered':
-        // В канале Meshtastic подтверждения от адресата нет: «✓✓» — ретранслировали.
-        return {
-          mark: '✓✓',
-          title:
-            meshKind.value === 'channel'
-              ? t('mesh.chat.relayed')
-              : meshKind.value === 'room'
-                ? t('mesh.chat.roomDelivered')
-                : props.message.transport === 'lxmf'
-                  ? t('mesh.chat.lxmfDelivered')
-                  : t('mesh.chat.delivered'),
-        }
-      default:
-        return null
-    }
-  }
-  return isSeen.value ? { mark: '✓✓', title: t('messenger.seen') } : null
-})
+/** «…», «✓», «✓✓» у времени своего сообщения (delivery-mark.ts). */
+const mark = computed(() =>
+  deliveryMark(
+    {
+      status: props.message.status,
+      transport: props.message.transport,
+      mine: isMine.value,
+      seen: props.seen,
+      mesh: isMesh.value,
+      meshKind: meshKind.value,
+    },
+    t
+  )
+)
 
 const isCompact = computed<boolean>(() => !store.isFullScreen)
 

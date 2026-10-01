@@ -4,8 +4,8 @@ type Handler = (...args: unknown[]) => unknown
 const handlers: Record<string, Handler> = {}
 const client = {
   getUserId: () => '@me:host',
-  setRoomReadMarkers: vi.fn(async () => {}),
 }
+const markRoomRead = vi.fn(async (_roomId: string) => {})
 const notifyMessage = vi.fn()
 const audioPlay = vi.fn(() => Promise.resolve())
 
@@ -59,6 +59,7 @@ function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}
     mapEventToMessage: vi.fn(async (e: { event_id: string }) => ({ id: e.event_id, text: 'hi' })),
     enrichMessagesWithReactions: vi.fn(),
     adoptLocalEcho: vi.fn(async () => {}),
+    noteReceipt: vi.fn(),
   }
   const uiStore = {
     activeChatId,
@@ -72,6 +73,7 @@ function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}
   registerMatrixListeners({ uiStore, chatStore, profileCache: {} } as never, {
     loadDialogs,
     scheduleLoadDialogs,
+    markRoomRead,
   })
   return { chatStore, uiStore, loadDialogs, scheduleLoadDialogs }
 }
@@ -131,7 +133,7 @@ describe('registerMatrixListeners — Room.timeline', () => {
     await handlers['Room.timeline']!(ev, room, false)
     expect(chatStore.messages[ROOM]).toEqual([{ id: '$new', text: 'hi' }])
     expect(chatStore.currentUser.id).toBe('@me:host') // 'me' → реальный id из клиента
-    expect(client.setRoomReadMarkers).toHaveBeenCalledWith(ROOM, '$new', ev)
+    expect(markRoomRead).toHaveBeenCalledWith(ROOM)
     expect(chatStore.enrichMessagesWithReactions).toHaveBeenCalled()
     expect(scheduleLoadDialogs).toHaveBeenCalledTimes(2)
     // своё сообщение из активного чата звук не играет
@@ -179,6 +181,14 @@ describe('registerMatrixListeners — sync', () => {
   })
 })
 
+describe('Room.receipt', () => {
+  it('квитанция о прочтении пересчитывает галочки своей комнаты', () => {
+    const { chatStore } = setup(ROOM)
+    handlers['Room.receipt']!({}, room)
+    expect(chatStore.noteReceipt).toHaveBeenCalledWith(ROOM)
+  })
+})
+
 describe('Room.timeline — свёрнутый виджет (V30)', () => {
   it('не шлёт read-marker, если чат выбран, но окно свёрнуто', async () => {
     const { chatStore } = setup(ROOM, { onScreen: false })
@@ -189,7 +199,7 @@ describe('Room.timeline — свёрнутый виджет (V30)', () => {
     // Сообщение в ленту всё равно попадает (чат выбран), но «прочитано»
     // собеседнику не уходит — окно свёрнуто.
     expect(chatStore.messages[ROOM]?.map((m) => m.id)).toEqual(['$ev-hidden'])
-    expect(client.setRoomReadMarkers).not.toHaveBeenCalled()
+    expect(markRoomRead).not.toHaveBeenCalled()
   })
 
   it('свёрнутое окно ведёт себя как неактивный чат: звук и уведомление приходят', async () => {

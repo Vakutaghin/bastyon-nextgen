@@ -6,7 +6,7 @@
       :message="message"
       :show-name="isFirstInGroup(index)"
       :show-avatar="isFirstInGroup(index)"
-      :seen-up-to-ts="seenUpToTs"
+      :seen="seenIds.has(message.id)"
       @reply="emit('reply', $event)"
     />
   </SC_MessageList>
@@ -18,10 +18,17 @@ import type { Message } from '../../types'
 import MessageItem from '../message-item/message-item.vue'
 import { SC_MessageList } from './styled'
 
-const props = withDefaults(defineProps<{ messages?: Message[]; seenUpToTs?: number }>(), {
-  messages: () => [],
-  seenUpToTs: 0,
-})
+const props = withDefaults(
+  defineProps<{
+    messages?: Message[]
+    /** Свои сообщения, которые уже прочитали (use-read-receipts). */
+    seenIds?: ReadonlySet<string>
+  }>(),
+  {
+    messages: () => [],
+    seenIds: () => new Set<string>(),
+  }
+)
 
 const emit = defineEmits<{
   'load-more': []

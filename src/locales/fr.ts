@@ -747,6 +747,8 @@ export default {
     searchPlaceholder: 'Rechercher dans la conversation…',
     searchNoResults: 'Aucun résultat dans cette conversation.',
     seen: 'Vu',
+    markSending: 'Envoi en cours',
+    markSent: 'Envoyé, pas encore lu',
     blockUser: 'Bloquer l’utilisateur',
     unblockUser: 'Débloquer l’utilisateur',
     blockConfirmTitle: 'Bloquer cet utilisateur ?',

@@ -32,7 +32,7 @@ vi.mock('./use-typing-indicator', async () => {
 })
 vi.mock('./use-read-receipts', async () => {
   const { ref } = await import('vue')
-  return { useReadReceipts: () => ({ partnerSeenUpToTs: ref(0) }) }
+  return { useReadReceipts: () => ({ seenIds: ref(new Set<string>()) }) }
 })
 vi.mock('./use-block-user', async () => {
   const { ref } = await import('vue')

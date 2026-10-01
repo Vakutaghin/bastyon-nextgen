@@ -202,12 +202,17 @@ export const SC_ReactionPickerEmoji = styled.button`
   }
 `
 
+/** «…» и «✓» — приглушённо, «✓✓» (прочитано, подтверждено радио) — цветом. */
 export const SC_SeenTick = styled.span`
   margin-left: 4px;
   font-size: 10px;
   line-height: 1;
-  color: var(--color-primary);
+  color: var(--ui-text-muted);
   letter-spacing: -2px;
+
+  &.done {
+    color: var(--color-primary);
+  }
 `
 
 /** Цитата сообщения, на которое отвечают (показывается над текстом). */

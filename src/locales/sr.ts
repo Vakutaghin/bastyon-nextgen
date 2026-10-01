@@ -736,6 +736,8 @@ export default {
     searchPlaceholder: 'Претрага у разговору…',
     searchNoResults: 'У овом разговору ништа није пронађено.',
     seen: 'Виђено',
+    markSending: 'Шаље се',
+    markSent: 'Послато, још није прочитано',
     blockUser: 'Блокирај корисника',
     unblockUser: 'Одблокирај корисника',
     blockConfirmTitle: 'Блокирати овог корисника?',

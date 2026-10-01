@@ -743,6 +743,8 @@ export default {
     searchPlaceholder: 'Cerca nella conversazione…',
     searchNoResults: 'Nessun risultato in questa conversazione.',
     seen: 'Visto',
+    markSending: 'Invio in corso',
+    markSent: 'Inviato, non ancora letto',
     blockUser: 'Blocca utente',
     unblockUser: 'Sblocca utente',
     blockConfirmTitle: 'Bloccare questo utente?',

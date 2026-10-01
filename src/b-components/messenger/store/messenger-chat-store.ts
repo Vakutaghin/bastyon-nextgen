@@ -32,6 +32,15 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const messages = reactive<Record<string, Message[]>>({})
   /** Недописанные сообщения по чатам (ChatRoom). Только в памяти: переписка шифруется. */
   const drafts = reactive<Record<string, string>>({})
+  /**
+   * Сколько квитанций о прочтении пришло в комнату. Сами квитанции хранит
+   * matrix-js-sdk, а по этому счётчику пересчитываются галочки «✓✓»
+   * (use-read-receipts).
+   */
+  const receiptsVersion = reactive<Record<string, number>>({})
+  const noteReceipt = (roomId: string) => {
+    receiptsVersion[roomId] = (receiptsVersion[roomId] ?? 0) + 1
+  }
   const currentUser = ref<User>({
     id: 'me',
     name: t('appMsg.messenger.me'),
@@ -63,6 +72,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     mediaTransfer.revokeDecryptedMedia()
     Object.keys(messages).forEach((key) => delete messages[key])
     Object.keys(drafts).forEach((key) => delete drafts[key])
+    Object.keys(receiptsVersion).forEach((key) => delete receiptsVersion[key])
     currentUser.value = {
       id: 'me',
       name: t('appMsg.messenger.me'),
@@ -74,6 +84,8 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   return {
     messages,
     drafts,
+    receiptsVersion,
+    noteReceipt,
     currentUser,
     pcryptoService: chatCrypto.pcryptoService,
     localMessengerKeys: chatCrypto.localMessengerKeys,

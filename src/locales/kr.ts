@@ -734,6 +734,8 @@ export default {
     searchPlaceholder: '대화에서 검색…',
     searchNoResults: '이 대화에서 찾은 결과가 없습니다.',
     seen: '읽음',
+    markSending: '보내는 중',
+    markSent: '보냄, 아직 읽지 않음',
     blockUser: '사용자 차단',
     unblockUser: '사용자 차단 해제',
     blockConfirmTitle: '이 사용자를 차단할까요?',

@@ -30,6 +30,8 @@ export interface MatrixListenerCallbacks {
   loadDialogs: (silent?: boolean) => Promise<void>
   /** Дебаунсированная перезагрузка — на каждое новое сообщение. */
   scheduleLoadDialogs: () => void
+  /** Отметить чат прочитанным, если он на экране (read-marker). */
+  markRoomRead: (roomId: string) => Promise<void>
 }
 
 /**
@@ -41,7 +43,7 @@ export function registerMatrixListeners(
   callbacks: MatrixListenerCallbacks
 ): void {
   const { uiStore, chatStore } = ctx
-  const { loadDialogs, scheduleLoadDialogs } = callbacks
+  const { loadDialogs, scheduleLoadDialogs, markRoomRead } = callbacks
 
   matrixService.on(
     'Room.timeline',
@@ -140,18 +142,7 @@ export function registerMatrixListeners(
                 c.getUserId() || ''
               )
 
-            try {
-              const client = matrixService.getClient()
-              const evId = typeof event.getId === 'function' ? event.getId() : event.event_id
-              if (onScreen && client && typeof evId === 'string' && evId.startsWith('$')) {
-                if (typeof client.setRoomReadMarkers === 'function')
-                  await client.setRoomReadMarkers(room.roomId, evId, event)
-                else if (typeof client.sendReadReceipt === 'function')
-                  await client.sendReadReceipt(event)
-              }
-            } catch {
-              /* ignore */
-            }
+            if (onScreen) await markRoomRead(roomId)
           }
 
           scheduleLoadDialogs()
@@ -170,6 +161,11 @@ export function registerMatrixListeners(
       void chatStore.adoptLocalEcho(event, oldEventId)
     }
   )
+
+  // Квитанции о прочтении: по ним пересчитываются галочки «✓✓» (use-read-receipts).
+  matrixService.on('Room.receipt', (_event: unknown, room?: { roomId?: string }) => {
+    if (room?.roomId) chatStore.noteReceipt(room.roomId)
+  })
 
   matrixService.on('sync', (state: string) => {
     uiStore.syncState = state

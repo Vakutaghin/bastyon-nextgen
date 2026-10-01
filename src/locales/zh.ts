@@ -712,6 +712,8 @@ export default {
     searchPlaceholder: '在对话中搜索…',
     searchNoResults: '在此对话中未找到结果。',
     seen: '已读',
+    markSending: '发送中',
+    markSent: '已发送，未读',
     blockUser: '屏蔽用户',
     unblockUser: '解除屏蔽',
     blockConfirmTitle: '屏蔽此用户？',

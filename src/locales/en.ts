@@ -736,6 +736,8 @@ export default {
     searchPlaceholder: 'Search in conversation…',
     searchNoResults: 'Nothing found in this conversation.',
     seen: 'Seen',
+    markSending: 'Sending',
+    markSent: 'Sent, not read yet',
     blockUser: 'Block user',
     unblockUser: 'Unblock user',
     blockConfirmTitle: 'Block this user?',

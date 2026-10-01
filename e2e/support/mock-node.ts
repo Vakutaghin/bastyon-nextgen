@@ -15,6 +15,8 @@ export interface MockProfile {
   address: string
   name: string
   reputation?: number
+  /** Открытые ключи мессенджера через запятую — без них чат не шифрует. */
+  k?: string
 }
 
 export interface MockPost {
@@ -66,7 +68,7 @@ function profileJson(p: MockProfile) {
     blockings_count: 0,
     blockers_count: 0,
     likers_count: 5,
-    k: '',
+    k: p.k ?? '',
     a: '',
     l: 'ru',
     s: '',

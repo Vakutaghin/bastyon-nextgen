@@ -263,8 +263,10 @@ export default defineConfig(({ mode }) => ({
       'Cross-Origin-Opener-Policy': 'same-origin',
     },
     proxy: {
+      // MATRIX_PROXY_TARGET — свой homeserver для проверок чата
+      // (e2e/matrix-receipts.live.spec.ts, локальный Synapse).
       '/_matrix': {
-        target: 'https://matrix.pocketnet.app',
+        target: process.env.MATRIX_PROXY_TARGET || 'https://matrix.pocketnet.app',
         changeOrigin: true,
         secure: false,
       },

@@ -743,6 +743,8 @@ export default {
     searchPlaceholder: 'Поиск в переписке…',
     searchNoResults: 'В этой переписке ничего не найдено.',
     seen: 'Прочитано',
+    markSending: 'Отправляется',
+    markSent: 'Отправлено, ещё не прочитано',
     blockUser: 'Заблокировать',
     unblockUser: 'Разблокировать',
     blockConfirmTitle: 'Заблокировать пользователя?',

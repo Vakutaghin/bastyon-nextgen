@@ -101,7 +101,7 @@
 
       <MessageList
         :messages="displayedMessages"
-        :seen-up-to-ts="partnerSeenUpToTs"
+        :seen-ids="seenIds"
         @load-more="emit('load-more')"
         @reply="onReplyTo"
       />
@@ -354,7 +354,7 @@ const { t, locale } = useI18n()
 // Активная комната + typing-индикатор собеседника.
 const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
 const { isTyping, typingName } = useTypingIndicator(activeRoomId)
-const { partnerSeenUpToTs } = useReadReceipts(activeRoomId)
+const { seenIds } = useReadReceipts(activeRoomId)
 const { isBlocked, busy: blockBusy, toggleBlock } = useBlockUser(activeRoomId)
 
 // Локальный поиск по сообщениям текущего диалога (фильтр по тексту).

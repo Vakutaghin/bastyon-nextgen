@@ -745,6 +745,8 @@ export default {
     searchPlaceholder: 'Im Gespräch suchen…',
     searchNoResults: 'In diesem Gespräch nichts gefunden.',
     seen: 'Gesehen',
+    markSending: 'Wird gesendet',
+    markSent: 'Gesendet, noch nicht gelesen',
     blockUser: 'Benutzer blockieren',
     unblockUser: 'Benutzer entsperren',
     blockConfirmTitle: 'Diesen Benutzer blockieren?',

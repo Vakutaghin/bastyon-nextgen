@@ -30,7 +30,9 @@ A sent message cannot be edited.
 ## Was it delivered
 
 - The time on a message: today's show only hours and minutes, older ones also the date. Hover over it for the full date.
-- **✓✓** next to the time means **“Seen”**: the other person opened the conversation and saw the message.
+- **…** next to the time of your message means **“Sending”**.
+- **✓** means **“Sent, not read yet”**: the message reached the server.
+- **✓✓** means **“Seen”**: the other person opened the conversation and saw the message; in a group, at least one member did. A message counts as read only while the chat is open on screen: not in a minimized messenger, another tab or a hidden app window.
 - “typing…” above the input field means the other person is typing.
 - **“Not sent”** means the message did not go out, for example the connection dropped. The text stays on screen: press **“Retry”**.
 
