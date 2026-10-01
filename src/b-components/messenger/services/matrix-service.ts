@@ -5,7 +5,11 @@ import { matrixFetch } from '@/helpers/api/request'
 import { addressToHex, hexToAddress } from './matrix-service/address-codec'
 import { resolveMxcHttpUrl } from './matrix-service/mxc-resolver'
 import { normalizeLoginAddress, performMatrixLogin } from './matrix-service/auth'
-import { getDefaultMatrixBaseUrl, createIndexedDbStore } from './matrix-service/transport'
+import {
+  getDefaultMatrixBaseUrl,
+  createIndexedDbStore,
+  startIndexedDbStore,
+} from './matrix-service/transport'
 import { runKeepAlive } from './matrix-service/keepalive'
 import {
   uploadContent as uploadContentImpl,
@@ -76,16 +80,17 @@ export class MatrixService {
     // Все запросы Matrix (в т.ч. /filter) через matrixFetch — в Tauri обход CORS
     opts.fetchFn = (input: RequestInfo | URL, init?: RequestInit) => matrixFetch(input, init)
 
-    // Включаем IndexedDBStore: matrix-js-sdk сохраняет sync-state на диск,
-    // и при последующих запусках `getRooms()` сразу возвращает все комнаты из кэша,
-    // без полного initial sync с сервера. Это самый дешёвый и крупный буст к скорости
-    // первого отображения списка диалогов.
-    if (userId) {
-      this.store = await createIndexedDbStore(userId)
-      if (this.store) opts.store = this.store
+    // IndexedDBStore: matrix-js-sdk сохраняет sync-state на диск, и при
+    // последующих запусках `getRooms()` сразу возвращает все комнаты из кэша, без
+    // полного initial sync с сервера. Это самый дешёвый и крупный буст к скорости
+    // первого отображения списка диалогов. Поднимается после передачи клиенту.
+    let store = userId ? createIndexedDbStore(userId) : null
+    let client = sdk.createClient(store ? { ...opts, store } : opts)
+    if (store && !(await startIndexedDbStore(store))) {
+      store = null
+      client = sdk.createClient(opts)
     }
-
-    const client = sdk.createClient(opts)
+    this.store = store
     this.client = client
 
     // Re-attach listeners. Событие — динамическая строка из нашего fluent-API `on()`,

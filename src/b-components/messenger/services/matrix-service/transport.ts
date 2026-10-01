@@ -52,25 +52,43 @@ export async function deleteSyncStores(opts: { userId?: string; userHex?: string
 }
 
 /**
- * Создаёт и поднимает IndexedDBStore для пользователя. matrix-js-sdk сохраняет
- * sync-state на диск, и при последующих запусках `getRooms()` сразу возвращает
- * комнаты из кэша, без полного initial sync. Возвращает null, если IndexedDB
- * недоступен или инициализация упала (вызывающий откатится на MemoryStore).
+ * IndexedDBStore пользователя: matrix-js-sdk сохраняет sync-state на диск, и при
+ * следующих запусках `getRooms()` сразу отдаёт комнаты из кэша, без полного
+ * initial sync. Поднимает его `startIndexedDbStore` — уже после передачи
+ * клиенту. null — IndexedDB недоступен (клиент живёт с MemoryStore).
  */
-export async function createIndexedDbStore(
+export function createIndexedDbStore(
   userId: string
-): Promise<InstanceType<typeof sdk.IndexedDBStore> | null> {
+): InstanceType<typeof sdk.IndexedDBStore> | null {
   if (typeof window === 'undefined' || typeof window.indexedDB === 'undefined') return null
   try {
-    const store = new sdk.IndexedDBStore({
+    return new sdk.IndexedDBStore({
       indexedDB: window.indexedDB,
       localStorage: typeof window.localStorage !== 'undefined' ? window.localStorage : undefined,
       dbName: getStoreDbName(userId),
     })
+  } catch (e) {
+    console.warn('[MatrixService] IndexedDBStore unavailable, using MemoryStore:', e)
+    return null
+  }
+}
+
+/**
+ * Поднять хранилище — только после `createClient({ store })`: клиент даёт ему
+ * `createUser`, без которого startup падает на сохранённых событиях
+ * присутствия. Раньше startup шёл до клиента, и кэш жил один запуск: со
+ * второго хранилище всегда откатывалось в память. false — не поднялось, база
+ * закрыта, клиент нужен без него.
+ */
+export async function startIndexedDbStore(
+  store: InstanceType<typeof sdk.IndexedDBStore>
+): Promise<boolean> {
+  try {
     await store.startup()
-    return store
+    return true
   } catch (e) {
     console.warn('[MatrixService] IndexedDBStore init failed, falling back to MemoryStore:', e)
-    return null
+    await store.destroy().catch(() => {})
+    return false
   }
 }
