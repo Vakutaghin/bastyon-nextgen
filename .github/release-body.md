@@ -1,4 +1,7 @@
-## Какой файл скачать
+<details open>
+<summary><b>🇷🇺 Русский</b></summary>
+
+### Какой файл скачать
 
 | Система | Файл |
 | --- | --- |
@@ -11,17 +14,33 @@
 
 Не знаете, какой процессор у вашего Mac: меню Apple → «Об этом Mac». Строка вида «Apple M1/M2/M3/M4» означает Apple Silicon, «Intel Core» — Intel.
 
-### Как установить
+__CHANGELOG_RU__
 
-**macOS.** Откройте .dmg и перетащите приложение в «Программы». Приложение не нотаризовано в Apple, поэтому первый запуск macOS заблокирует. Откройте «Системные настройки» → «Конфиденциальность и безопасность», прокрутите до сообщения «Файл „Bastyon NextGen“ заблокирован для защиты Вашего Mac», нажмите «Все равно открыть» и подтвердите паролем. Кнопка видна около часа после попытки запуска. На macOS 14 и старше вместо этого можно нажать на приложение правой кнопкой и выбрать «Открыть». Если macOS пишет, что приложение повреждено, выполните в Терминале:
+<details>
+<summary><b>Как установить</b></summary>
+
+<details>
+<summary>macOS</summary>
+
+Откройте .dmg и перетащите приложение в «Программы». Приложение не нотаризовано в Apple, поэтому первый запуск macOS заблокирует. Откройте «Системные настройки» → «Конфиденциальность и безопасность», прокрутите до сообщения «Файл „Bastyon NextGen“ заблокирован для защиты Вашего Mac», нажмите «Все равно открыть» и подтвердите паролем. Кнопка видна около часа после попытки запуска. На macOS 14 и старше вместо этого можно нажать на приложение правой кнопкой и выбрать «Открыть». Если macOS пишет, что приложение повреждено, выполните в Терминале:
 
 ```
 xattr -dr com.apple.quarantine "/Applications/Bastyon NextGen.app"
 ```
 
-**Windows.** Запустите .msi. SmartScreen предупредит о неизвестном издателе: «Подробнее» → «Выполнить в любом случае».
+</details>
 
-**Linux.** AppImage сделайте исполняемым и запустите:
+<details>
+<summary>Windows</summary>
+
+Запустите .msi. SmartScreen предупредит о неизвестном издателе: «Подробнее» → «Выполнить в любом случае».
+
+</details>
+
+<details>
+<summary>Linux</summary>
+
+AppImage сделайте исполняемым и запустите:
 
 ```
 chmod +x Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage
@@ -34,15 +53,30 @@ chmod +x Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage
 sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 ```
 
-**Android.** Понадобится разрешить установку из этого источника. Новая версия ставится поверх старой. Исключение — если на телефоне версия 0.7.1 или более ранняя: она подписана временным ключом, и поверх неё телефон новую не поставит. Тогда проверьте, что фраза восстановления записана, удалите старую версию (ключи аккаунтов удалятся вместе с ней) и поставьте новую.
+</details>
 
-### Об обновлениях
+<details>
+<summary>Android</summary>
 
-Начиная с версии 0.3.0 приложение само раз в сутки проверяет релизы здесь и сообщает о новой версии. С версии 0.9.4 приложение для компьютера ставит её само: кнопка «Обновить» скачивает новую версию, проверяет подпись и перезапускает приложение. Пакет .deb так не обновляется — скачайте новый здесь. Новая версия ставится поверх старой и на десктопе, и на Android — кроме перехода с Android-версии 0.7.1 и более ранних, см. выше.
+Понадобится разрешить установку из этого источника. Новая версия ставится поверх старой. Исключение — если на телефоне версия 0.7.1 или более ранняя: она подписана временным ключом, и поверх неё телефон новую не поставит. Тогда проверьте, что фраза восстановления записана, удалите старую версию (ключи аккаунтов удалятся вместе с ней) и поставьте новую.
 
----
+</details>
 
-## Which file to download
+</details>
+
+<details>
+<summary><b>Об обновлениях</b></summary>
+
+Начиная с версии 0.3.0 приложение само раз в сутки проверяет релизы здесь и сообщает о новой версии. С версии 0.9.4 приложение для компьютера ставит её само: кнопка «Обновить» скачивает новую версию, проверяет подпись и перезапускает приложение. Пакет .deb так не обновляется — скачайте новый здесь. Новая версия ставится поверх старой и на десктопе, и на Android — кроме перехода с Android-версии 0.7.1 и более ранних, см. «Как установить» → Android.
+
+</details>
+
+</details>
+
+<details>
+<summary><b>🇬🇧 English</b></summary>
+
+### Which file to download
 
 | System | File |
 | --- | --- |
@@ -55,17 +89,33 @@ sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 
 Not sure which processor your Mac has: Apple menu → "About This Mac". A line like "Apple M1/M2/M3/M4" means Apple Silicon, "Intel Core" means Intel.
 
-### How to install
+__CHANGELOG_EN__
 
-**macOS.** Open the .dmg and drag the app into Applications. The app is not notarized by Apple, so macOS blocks the first launch. Open System Settings → Privacy & Security, scroll down to "“Bastyon NextGen” was blocked to protect your Mac", click "Open Anyway" and confirm with your password. The button stays there for about an hour after the launch attempt. On macOS 14 and earlier you can instead right-click the app and choose "Open". If macOS says the app is damaged, run in Terminal:
+<details>
+<summary><b>How to install</b></summary>
+
+<details>
+<summary>macOS</summary>
+
+Open the .dmg and drag the app into Applications. The app is not notarized by Apple, so macOS blocks the first launch. Open System Settings → Privacy & Security, scroll down to "“Bastyon NextGen” was blocked to protect your Mac", click "Open Anyway" and confirm with your password. The button stays there for about an hour after the launch attempt. On macOS 14 and earlier you can instead right-click the app and choose "Open". If macOS says the app is damaged, run in Terminal:
 
 ```
 xattr -dr com.apple.quarantine "/Applications/Bastyon NextGen.app"
 ```
 
-**Windows.** Run the .msi. SmartScreen will warn about an unknown publisher: "More info" → "Run anyway".
+</details>
 
-**Linux.** Make the AppImage executable and run it:
+<details>
+<summary>Windows</summary>
+
+Run the .msi. SmartScreen will warn about an unknown publisher: "More info" → "Run anyway".
+
+</details>
+
+<details>
+<summary>Linux</summary>
+
+Make the AppImage executable and run it:
 
 ```
 chmod +x Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage
@@ -78,8 +128,22 @@ The .deb package installs like this:
 sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 ```
 
-**Android.** You will need to allow installation from this source. A new version installs over the old one. The exception is a phone with 0.7.1 or an earlier version: it was signed with a temporary key, and the phone will not install the new one over it. Then make sure your recovery phrase is written down, remove the old version (the account keys are removed with it) and install the new one.
+</details>
 
-### About updates
+<details>
+<summary>Android</summary>
 
-Starting with 0.3.0 the app checks the releases here once a day and tells you about a newer version. Since 0.9.4 the desktop app installs it itself: the “Update” button downloads the new version, checks its signature and restarts the app. The .deb package is not updated this way — download the new one here. A new version installs over the old one both on desktop and on Android — except when moving from Android version 0.7.1 or earlier, see above.
+You will need to allow installation from this source. A new version installs over the old one. The exception is a phone with 0.7.1 or an earlier version: it was signed with a temporary key, and the phone will not install the new one over it. Then make sure your recovery phrase is written down, remove the old version (the account keys are removed with it) and install the new one.
+
+</details>
+
+</details>
+
+<details>
+<summary><b>About updates</b></summary>
+
+Starting with 0.3.0 the app checks the releases here once a day and tells you about a newer version. Since 0.9.4 the desktop app installs it itself: the “Update” button downloads the new version, checks its signature and restarts the app. The .deb package is not updated this way — download the new one here. A new version installs over the old one both on desktop and on Android — except when moving from Android version 0.7.1 or earlier, see “How to install” → Android.
+
+</details>
+
+</details>
