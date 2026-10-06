@@ -3,13 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
 vi.mock('../../services/matrix-service', () => ({
   matrixService: {
-    getClient: () => ({ getUserId: () => '@me:host', getProfileInfo: undefined }),
+    getClient: () => ({ getUserId: () => '@0a0b0c:host', getProfileInfo: undefined }),
     getBaseUrl: () => 'https://mx.host',
     hexToAddress: (hex: string) => `P${hex.toUpperCase()}ADDRESS0000`,
   },
 }))
 
 import { useDialogMapping } from './use-dialog-mapping'
+import { tetatetid } from '../../helpers'
 
 const PEER_HEX = 'abcdef'
 const PEER_ID = `@${PEER_HEX}:host`
@@ -33,7 +34,7 @@ function mxEvent(type: string, ts: number, id = `$${ts}`) {
 
 function fakeRoom(over: Record<string, unknown> = {}) {
   const peer = { userId: PEER_ID, name: PEER_HEX, membership: 'join' }
-  const me = { userId: '@me:host', name: 'me', membership: 'join' }
+  const me = { userId: '@0a0b0c:host', name: 'me', membership: 'join' }
   return {
     roomId: '!room:host',
     name: '',
@@ -132,6 +133,60 @@ describe('useDialogMapping — mapRoomToDialog', () => {
     expect(d.partner.name).toBe('Team')
     expect(d.partner.verified).toBe(false)
     expect(profileCache.fetchProfiles).not.toHaveBeenCalled()
+  })
+
+  describe('личная комната «#<sha224>»', () => {
+    const TETATET_NAME = `#${tetatetid('0a0b0c', PEER_HEX)}`
+    const me = { userId: '@0a0b0c:host', name: 'me', membership: 'join' }
+
+    it('собеседник вышел: чат остаётся личным, вместо имени комнаты — адрес, профиль дозапрашивается', async () => {
+      const peer = { userId: PEER_ID, name: PEER_HEX, membership: 'leave' }
+      const { ctx: c, profileCache } = ctx()
+      const { mapRoomToDialog } = useDialogMapping(c)
+      const d = await mapRoomToDialog(
+        fakeRoom({
+          name: TETATET_NAME,
+          getJoinedMembers: () => [me],
+          getInvitedAndJoinedMemberCount: () => 1,
+          currentState: { getMembers: () => [me, peer] },
+          getMember: (id: string) => (id === PEER_ID ? peer : null),
+        })
+      )
+      expect(d.partner.id).toBe(PEER_ID)
+      expect(d.partner.name).toBe(PEER_ADDR)
+      expect(profileCache.fetchProfiles).toHaveBeenCalledWith([PEER_ADDR])
+    })
+
+    it('профиль пришёл — ник собеседника', async () => {
+      const peer = { userId: PEER_ID, membership: 'leave' }
+      const { ctx: c } = ctx({ profiles: { [PEER_ADDR]: { name: 'alice' } } })
+      const { mapRoomToDialog } = useDialogMapping(c)
+      const d = await mapRoomToDialog(
+        fakeRoom({
+          name: TETATET_NAME,
+          getJoinedMembers: () => [me],
+          getInvitedAndJoinedMemberCount: () => 1,
+          currentState: { getMembers: () => [me, peer] },
+          getMember: () => null,
+        })
+      )
+      expect(d.partner.name).toBe('alice')
+    })
+
+    it('собеседника ещё нет в участниках — «Чат», а не хэш', async () => {
+      const { ctx: c } = ctx()
+      const { mapRoomToDialog } = useDialogMapping(c)
+      const d = await mapRoomToDialog(
+        fakeRoom({
+          name: TETATET_NAME,
+          getJoinedMembers: () => [me],
+          getInvitedAndJoinedMemberCount: () => 1,
+          currentState: { getMembers: () => [me] },
+          getMember: () => null,
+        })
+      )
+      expect(d.partner.name).toBe('appMsg.messenger.chat')
+    })
   })
 
   it('пустой таймлайн → без lastMessage и createdAt', async () => {

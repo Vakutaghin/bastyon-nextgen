@@ -14,6 +14,7 @@ import {
   getEventTs,
   getRoomTimelineEvents,
   isMessageEvent,
+  isTetatetchat,
 } from '../../helpers'
 import { PCRYPTO_DIALOG_TIMEOUT } from '../consts'
 import type { MessengerStoreContext } from './types'
@@ -23,6 +24,12 @@ import type { MessengerStoreContext } from './types'
  * 4-аргументный `getAvatarUrl` и прямое поле `avatarUrl` — то, чего нет в строгом
  * `RoomMember` из текущего matrix-js-sdk.
  */
+/**
+ * Имя личной комнаты Bastyon: `#` и SHA-224 от двух matrix-id (`tetatetid`).
+ * Человеку оно ничего не говорит, в списке чатов его не показываем.
+ */
+const TETATET_ROOM_NAME = /^#[0-9a-f]{56}$/i
+
 interface DialogMember {
   userId: string
   name?: string
@@ -59,7 +66,11 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
       typeof room.getInvitedAndJoinedMemberCount === 'function'
         ? room.getInvitedAndJoinedMemberCount()
         : joinedMembers.length
-    const isDirect = memberCount === 2
+    // Личная комната, из которой собеседник вышел, — тоже личная: по составу
+    // (вступившие + приглашённые = 1) она выглядела группой, и в списке вместо
+    // ника стояло имя комнаты «#<sha224>». Признак — как у прежнего клиента.
+    const isTetatet = isTetatetchat(room)
+    const isDirect = memberCount === 2 || isTetatet
 
     let otherMember = joinedMembers.find((m: DialogMember) => m.userId !== myUserId)
     if (!otherMember) {
@@ -67,7 +78,10 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
         .getMembers()
         .find(
           (m: DialogMember) =>
-            m.userId !== myUserId && (m.membership === 'join' || m.membership === 'invite')
+            m.userId !== myUserId &&
+            (m.membership === 'join' ||
+              m.membership === 'invite' ||
+              (isTetatet && m.membership === 'leave'))
         )
     }
 
@@ -111,7 +125,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
           // вместо сырого hex; как только профиль резолвится, profile-watcher
           // перезагрузит диалоги и подставит логин.
           const localpart = partnerId.slice(1).split(':')[0]
-          if (name === localpart) name = address
+          if (name === localpart || TETATET_ROOM_NAME.test(name)) name = address
         }
         const imgCandidate = p?.i || p?.avatar || p?.image
         const img = typeof imgCandidate === 'string' ? imgCandidate : undefined
@@ -136,6 +150,9 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
         }
       }
     }
+
+    // Собеседника не нашли (участники ещё не пришли с синком) — хотя бы не хэш.
+    if (TETATET_ROOM_NAME.test(name)) name = t('appMsg.messenger.chat')
 
     chatStore.ensurePcryptoInitialized()
     if (!chatStore.pcryptoService && uiStore.isInitInProgress)
