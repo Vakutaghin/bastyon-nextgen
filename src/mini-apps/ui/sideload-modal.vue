@@ -27,7 +27,7 @@
       <SC_Error v-if="error">{{ error }}</SC_Error>
 
       <SC_Actions>
-        <SC_Btn type="button" :disabled="loading" @click="emit('close')">
+        <SC_Btn type="button" :primary="false" :disabled="loading" @click="emit('close')">
           {{ t('miniapps.sideloadCancel') }}
         </SC_Btn>
         <SC_Btn type="button" :primary="true" :disabled="loading || !scope.trim()" @click="load">
@@ -43,6 +43,18 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
+import {
+  SC_Overlay,
+  SC_Dialog,
+  SC_Title,
+  SC_Field,
+  SC_Label,
+  SC_Input,
+  SC_Hint,
+  SC_Error,
+  SC_Actions,
+  SC_Btn,
+} from './sideload-modal.styled'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
