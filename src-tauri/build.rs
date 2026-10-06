@@ -48,6 +48,7 @@ const COMMANDS: &[&str] = &[
   "asr_start",
   "asr_stop",
   "asr_cancel",
+  "asr_open_mic_settings",
   "radio_serial_ports",
   "radio_serial_open",
   "radio_tcp_open",

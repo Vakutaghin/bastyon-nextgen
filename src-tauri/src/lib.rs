@@ -933,6 +933,7 @@ pub fn run() {
       asr::asr_start,
       asr::asr_stop,
       asr::asr_cancel,
+      asr::asr_open_mic_settings,
       radio::radio_serial_ports,
       radio::radio_serial_open,
       radio::radio_tcp_open,

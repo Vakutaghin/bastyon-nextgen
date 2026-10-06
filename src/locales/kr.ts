@@ -2413,6 +2413,9 @@ export default {
     errors: {
       micDenied:
         '마이크에 접근할 수 없습니다. 시스템 설정의 개인정보 보호 → 마이크에서 앱을 허용하세요.',
+      micDeniedWindows:
+        '마이크에 접근할 수 없습니다. Windows 설정 → 개인 정보 및 보안 → 마이크에서 “마이크 액세스”와 “데스크톱 앱이 마이크에 액세스하도록 허용”을 켜세요.',
+      openSettings: '클릭하면 설정이 열립니다.',
       noMicrophone: '마이크를 찾을 수 없습니다.',
       micBusy: '다른 앱이 마이크를 사용 중입니다.',
       unsupportedCpu:

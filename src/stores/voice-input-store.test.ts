@@ -21,7 +21,12 @@ vi.mock('@/b-components/app-toast', () => ({
 }))
 
 import { t } from '@/i18n'
-import { useVoiceInputStore, voiceErrorCode, type VoiceStatus } from './voice-input-store'
+import {
+  useVoiceInputStore,
+  voiceErrorCode,
+  voiceErrorDetails,
+  type VoiceStatus,
+} from './voice-input-store'
 
 const emit = (event: string, payload: unknown) => handlers.get(event)?.({ payload })
 const flush = () => new Promise((r) => setTimeout(r, 0))
@@ -146,6 +151,44 @@ describe('voice input store', () => {
     )
   })
 
+  it('неизвестная ошибка показывает подробности, а не только «не сработал»', async () => {
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === 'asr_status') return status(['small'])
+      if (cmd === 'asr_start') return 1
+    })
+    const store = useVoiceInputStore()
+    store.register(target())
+    await store.start('field-1')
+    emit('asr:end', { session: 1, reason: 'error', error: 'engine_error: failed to load model' })
+    const toast = toastError.mock.calls[0]![0] as { message: string; description?: string }
+    expect(toast.message).toBe(t('voiceInput.errors.generic'))
+    expect(toast.description).toBe('engine_error: failed to load model')
+  })
+
+  it('нет доступа к микрофону на Windows: путь в Параметрах и клик открывает их', async () => {
+    const ua = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Edg/141.0')
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === 'asr_status') return status(['small'])
+      if (cmd === 'asr_start') throw 'mic_denied'
+    })
+    const store = useVoiceInputStore()
+    store.register(target())
+    await store.start('field-1')
+    const toast = toastError.mock.calls[0]![0] as {
+      message: string
+      description?: string
+      onClick?: () => void
+    }
+    expect(toast.message).toBe(t('voiceInput.errors.micDeniedWindows'))
+    expect(toast.description).toBe(t('voiceInput.errors.openSettings'))
+    toast.onClick!()
+    await flush()
+    expect(invoke).toHaveBeenCalledWith('asr_open_mic_settings', undefined)
+    ua.mockRestore()
+  })
+
   it('после скачивания модели диктовка начинается в том поле, откуда её просили', async () => {
     let installed: string[] = []
     invoke.mockImplementation(async (cmd: string, args?: { model?: string }) => {
@@ -186,5 +229,8 @@ describe('voice input store', () => {
     expect(voiceErrorCode('mic_error: stream closed')).toBe('mic_error')
     expect(voiceErrorCode(new Error('tor_not_ready: status=Starting'))).toBe('tor_not_ready')
     expect(voiceErrorCode('')).toBe('engine_error')
+    expect(voiceErrorDetails('mic_error: Отказано в доступе')).toBe('mic_error: Отказано в доступе')
+    expect(voiceErrorDetails('mic_busy')).toBe('')
+    expect(voiceErrorDetails('download_failed: timeout')).toBe('')
   })
 })

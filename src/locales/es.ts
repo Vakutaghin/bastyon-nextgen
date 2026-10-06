@@ -2461,6 +2461,9 @@ export default {
     errors: {
       micDenied:
         'No hay acceso al micrófono. Permítalo para la aplicación en los ajustes del sistema: Privacidad → Micrófono.',
+      micDeniedWindows:
+        'No hay acceso al micrófono. En Configuración de Windows → Privacidad y seguridad → Micrófono, active «Acceso al micrófono» y «Permitir que las aplicaciones de escritorio accedan al micrófono».',
+      openSettings: 'Haga clic para abrir la configuración.',
       noMicrophone: 'No se encontró ningún micrófono.',
       micBusy: 'El micrófono está ocupado por otra aplicación.',
       unsupportedCpu:

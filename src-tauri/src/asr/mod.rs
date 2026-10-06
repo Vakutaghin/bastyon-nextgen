@@ -416,6 +416,24 @@ pub fn asr_cancel(mgr: State<'_, AsrManager>, session: u32) {
     send_session(&mgr, session, SessionCmd::Cancel);
 }
 
+/// Открыть системные настройки доступа к микрофону. Адрес зашит здесь:
+/// разрешать странице открывать ms-settings: и x-apple.systempreferences:
+/// целиком незачем. В Linux общего места для этого нет.
+#[tauri::command]
+pub fn asr_open_mic_settings(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let url = if cfg!(target_os = "windows") {
+        "ms-settings:privacy-microphone"
+    } else if cfg!(target_os = "macos") {
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
+    } else {
+        return Err("unsupported".into());
+    };
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
 // ---------------------------------------------------------------------------
 // Сессия диктовки
 // ---------------------------------------------------------------------------

@@ -101,8 +101,28 @@ fn describe(e: cpal::Error) -> String {
         ErrorKind::PermissionDenied => "mic_denied".into(),
         ErrorKind::DeviceNotAvailable => "no_microphone".into(),
         ErrorKind::DeviceBusy => "mic_busy".into(),
+        _ if is_access_denied(&e.to_string()) => "mic_denied".into(),
         _ => format!("mic_error: {e}"),
     }
+}
+
+/// Windows запрещает микрофон (Параметры → Конфиденциальность и защита →
+/// Микрофон) ответом E_ACCESSDENIED, а cpal отдаёт его общей ошибкой, не
+/// PermissionDenied: «Отказано в доступе. (os error -2147024891)» или
+/// «… (0x80070005)». Текст переведён на язык системы, код — нет.
+fn is_access_denied(message: &str) -> bool {
+    let message = message.to_ascii_lowercase();
+    message.contains("os error -2147024891") || message.contains("0x80070005")
+}
+
+/// Ошибки потока, после которых запись идёт дальше. Xrun — звук не успели
+/// забрать вовремя, будет щелчок: на процессоре это обычное дело, пока
+/// распознавание занимает все ядра. Раньше такая ошибка обрывала диктовку.
+fn is_fatal(kind: ErrorKind) -> bool {
+    !matches!(
+        kind,
+        ErrorKind::Xrun | ErrorKind::RealtimeDenied | ErrorKind::DeviceChanged
+    )
 }
 
 fn build<T>(
@@ -117,6 +137,7 @@ where
     f32: FromSample<T>,
 {
     let channels = channels.max(1);
+    let mut glitch_logged = false;
     device.build_input_stream(
         config,
         move |data: &[T], _: &cpal::InputCallbackInfo| {
@@ -129,7 +150,12 @@ where
             let _ = audio.send(mono);
         },
         move |err| {
-            let _ = errors.send(describe(err));
+            if is_fatal(err.kind()) {
+                let _ = errors.send(describe(err));
+            } else if !glitch_logged {
+                glitch_logged = true;
+                log::info!("asr capture: {err} (recording goes on)");
+            }
         },
         None,
     )
@@ -231,6 +257,38 @@ mod tests {
         out.extend((data.len() as u32).to_le_bytes());
         out.extend(data);
         out
+    }
+
+    #[test]
+    fn glitches_do_not_stop_the_recording() {
+        assert!(!is_fatal(ErrorKind::Xrun));
+        assert!(!is_fatal(ErrorKind::RealtimeDenied));
+        assert!(!is_fatal(ErrorKind::DeviceChanged));
+        assert!(is_fatal(ErrorKind::DeviceNotAvailable));
+        assert!(is_fatal(ErrorKind::StreamInvalidated));
+        assert!(is_fatal(ErrorKind::BackendError));
+    }
+
+    #[test]
+    fn windows_privacy_block_is_mic_denied() {
+        let denied = |m: &str| {
+            describe(cpal::Error::with_message(
+                ErrorKind::BackendError,
+                m.to_string(),
+            ))
+        };
+        assert_eq!(
+            denied("Отказано в доступе. (os error -2147024891)"),
+            "mic_denied"
+        );
+        assert_eq!(
+            denied("Activate failed: Access is denied. (0x80070005)"),
+            "mic_denied"
+        );
+        assert_eq!(
+            denied("The parameter is incorrect. (os error -2147024809)"),
+            "mic_error: The parameter is incorrect. (os error -2147024809)"
+        );
     }
 
     #[test]

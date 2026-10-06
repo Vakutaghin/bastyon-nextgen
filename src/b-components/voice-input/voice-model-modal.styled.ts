@@ -18,6 +18,7 @@ export const SC_Note = styled.p`
   color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 `
 
 export const SC_ModelList = styled.div`

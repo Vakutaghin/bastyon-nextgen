@@ -2472,6 +2472,9 @@ export default {
     errors: {
       micDenied:
         'Pas d’accès au micro. Autorisez-le pour l’application dans les réglages du système : Confidentialité → Micro.',
+      micDeniedWindows:
+        'Pas d’accès au micro. Dans Paramètres Windows → Confidentialité et sécurité → Microphone, activez « Accès au microphone » et « Autoriser les applications de bureau à accéder à votre microphone ».',
+      openSettings: 'Cliquez pour ouvrir les paramètres.',
       noMicrophone: 'Aucun micro trouvé.',
       micBusy: 'Le micro est utilisé par une autre application.',
       unsupportedCpu:

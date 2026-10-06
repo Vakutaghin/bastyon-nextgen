@@ -43,7 +43,11 @@ In a post the app recognizes speech in the post's language — it is chosen in t
 
 - Only in the desktop app: Windows, macOS and Linux.
 - Intel and AMD processors need AVX2 support — processors made since about 2013 have it. On older ones the app says that voice input is not available. On a Mac with Apple Silicon there are no restrictions.
-- The app needs access to the microphone. On macOS the system asks for it; if you refused, allow it in System Settings → Privacy & Security → Microphone.
+- The app needs access to the microphone. On macOS the system asks for it; if you refused, allow it in System Settings → Privacy & Security → Microphone. On Windows access is turned on in Settings → Privacy & security → Microphone: both “Microphone access” and “Let desktop apps access your microphone” are needed. If there is no access, the app says so, and clicking that message opens the right settings.
+
+## If it did not work
+
+Under the message **“Voice input did not work. Try again.”** the app shows the error details. If you report the problem, send them together with the app version.
 
 ## See also
 

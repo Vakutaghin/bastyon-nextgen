@@ -33,7 +33,7 @@ The app cannot run twice: launching it again just brings up the window that is a
 
 ## Microphone and camera
 
-The microphone is needed for [voice input](voice-input.md) and [voice messages](voice-messages.md), the camera to [sign in with a QR code](sign-in.md). On macOS the system asks for permission the first time. If you refused, turn access on in System Settings → Privacy & Security → Microphone or Camera.
+The microphone is needed for [voice input](voice-input.md) and [voice messages](voice-messages.md), the camera to [sign in with a QR code](sign-in.md). On macOS the system asks for permission the first time. If you refused, turn access on in System Settings → Privacy & Security → Microphone or Camera. On Windows it is Settings → Privacy & security → Microphone or Camera, including the switch for desktop apps.
 
 ## Where the data lives
 

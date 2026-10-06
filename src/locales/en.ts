@@ -2435,6 +2435,9 @@ export default {
     errors: {
       micDenied:
         'No access to the microphone. Allow it for the app in the system settings: Privacy → Microphone.',
+      micDeniedWindows:
+        'No access to the microphone. In Windows Settings → Privacy & security → Microphone, turn on “Microphone access” and “Let desktop apps access your microphone”.',
+      openSettings: 'Click to open the settings.',
       noMicrophone: 'No microphone found.',
       micBusy: 'The microphone is busy with another app.',
       unsupportedCpu:

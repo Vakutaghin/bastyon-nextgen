@@ -49,6 +49,7 @@ permissions = [
   "allow-asr-start",
   "allow-asr-stop",
   "allow-asr-cancel",
+  "allow-asr-open-mic-settings",
   "allow-radio-serial-ports",
   "allow-radio-serial-open",
   "allow-radio-tcp-open",

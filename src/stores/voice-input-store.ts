@@ -71,10 +71,21 @@ function loadModel(): VoiceModelId {
   return DEFAULT_VOICE_MODEL
 }
 
+function rawError(error: unknown): string {
+  return (error instanceof Error ? error.message : String(error ?? '')).trim()
+}
+
 /** Код ошибки из Rust: «mic_error: подробности» → «mic_error». */
 export function voiceErrorCode(error: unknown): string {
-  const raw = error instanceof Error ? error.message : String(error ?? '')
-  return raw.split(':')[0]!.trim() || 'engine_error'
+  return rawError(error).split(':')[0]!.trim() || 'engine_error'
+}
+
+function isWindows(): boolean {
+  return typeof navigator !== 'undefined' && /Windows/.test(navigator.userAgent)
+}
+
+function isMac(): boolean {
+  return typeof navigator !== 'undefined' && /Macintosh|Mac OS X/.test(navigator.userAgent)
 }
 
 const ERROR_KEYS: Record<string, string> = {
@@ -89,8 +100,20 @@ const ERROR_KEYS: Record<string, string> = {
   busy: 'voiceInput.errors.busy',
 }
 
-export function voiceErrorText(code: string): string {
+/** Текст ошибки для человека; принимает и код, и строку ошибки целиком. */
+export function voiceErrorText(error: unknown): string {
+  const code = voiceErrorCode(error)
+  if (code === 'mic_denied' && isWindows()) return t('voiceInput.errors.micDeniedWindows')
   return t(ERROR_KEYS[code] ?? 'voiceInput.errors.generic')
+}
+
+/**
+ * Подробности ошибки без своего текста: «не сработал» ничего не говорит, а с
+ * ними по скриншоту видно, что сломалось.
+ */
+export function voiceErrorDetails(error: unknown): string {
+  if (ERROR_KEYS[voiceErrorCode(error)] || voiceErrorCode(error) === 'model_missing') return ''
+  return rawError(error).slice(0, 300)
 }
 
 export const useVoiceInputStore = defineStore('voice-input', {
@@ -210,7 +233,7 @@ export const useVoiceInputStore = defineStore('voice-input', {
       await on<{ session: number; reason: string; error: string | null }>('asr:end', (p) => {
         if (!this.owns(p.session)) return
         this.finishSession()
-        if (p.reason === 'error' && p.error) this.reportError(voiceErrorCode(p.error))
+        if (p.reason === 'error' && p.error) this.reportError(p.error)
       })
     },
 
@@ -224,13 +247,32 @@ export const useVoiceInputStore = defineStore('voice-input', {
       this.pending = 0
     },
 
-    reportError(code: string): void {
+    reportError(error: unknown): void {
+      const code = voiceErrorCode(error)
       if (code === 'model_missing') {
         void this.refresh()
         this.openModal('consent')
         return
       }
-      appToast.error({ message: voiceErrorText(code), duration: 8 })
+      // Нет доступа к микрофону: клик по уведомлению открывает нужную
+      // страницу системных настроек.
+      if (code === 'mic_denied' && (isWindows() || isMac())) {
+        appToast.error({
+          message: voiceErrorText(error),
+          description: t('voiceInput.errors.openSettings'),
+          duration: 15,
+          onClick: () => {
+            tauriInvoke('asr_open_mic_settings').catch(() => {})
+          },
+        })
+        return
+      }
+      const details = voiceErrorDetails(error)
+      appToast.error({
+        message: voiceErrorText(error),
+        description: details || undefined,
+        duration: details ? 15 : 8,
+      })
     },
 
     openModal(phase: VoiceModalPhase, error = ''): void {
@@ -292,7 +334,7 @@ export const useVoiceInputStore = defineStore('voice-input', {
         }
       } catch (e) {
         this.finishSession()
-        this.reportError(voiceErrorCode(e))
+        this.reportError(e)
       }
     },
 
@@ -334,12 +376,11 @@ export const useVoiceInputStore = defineStore('voice-input', {
           appToast.success({ message: t('voiceInput.ready') })
         }
       } catch (e) {
-        const code = voiceErrorCode(e)
-        if (code === 'cancelled') {
+        if (voiceErrorCode(e) === 'cancelled') {
           this.modalOpen = false
           this.pendingOwner = null
         } else {
-          this.openModal('error', code)
+          this.openModal('error', String(e instanceof Error ? e.message : e))
         }
       } finally {
         this.install = null

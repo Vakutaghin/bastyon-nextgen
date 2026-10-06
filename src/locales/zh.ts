@@ -2338,6 +2338,9 @@ export default {
     },
     errors: {
       micDenied: '无法访问麦克风。请在系统设置的“隐私 → 麦克风”中允许本应用使用。',
+      micDeniedWindows:
+        '无法访问麦克风。请在 Windows 设置 → 隐私和安全性 → 麦克风中打开“麦克风访问权限”和“允许桌面应用访问你的麦克风”。',
+      openSettings: '点击打开设置。',
       noMicrophone: '未找到麦克风。',
       micBusy: '麦克风正被其他应用占用。',
       unsupportedCpu: '语音输入需要支持 AVX2 的处理器（2013 年以后出产）。这台电脑无法使用。',

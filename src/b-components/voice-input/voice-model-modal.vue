@@ -72,6 +72,9 @@
 
       <template v-else-if="store.modalPhase === 'error'">
         <SC_Text>{{ voiceErrorText(store.modalError) }}</SC_Text>
+        <SC_Note v-if="voiceErrorDetails(store.modalError)">
+          {{ voiceErrorDetails(store.modalError) }}
+        </SC_Note>
         <SC_Footer>
           <SC_GhostButton type="button" @click="onClose">
             {{ t('voiceInput.modal.close') }}
@@ -104,6 +107,7 @@ import { useTorStore } from '@/stores/tor-store'
 import {
   DEFAULT_VOICE_MODEL,
   useVoiceInputStore,
+  voiceErrorDetails,
   voiceErrorText,
   type VoiceModelId,
 } from '@/stores/voice-input-store'
