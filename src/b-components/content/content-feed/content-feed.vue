@@ -59,6 +59,9 @@
         {{ t('postCard.newPosts', { n: newPostsCount }) }}
       </SC_NewPostsPill>
 
+      <!-- Сервисы (мини-приложения) — только над основной лентой. -->
+      <MiniAppsShelf v-if="filtersStore.activeTab === 1" />
+
       <SC_FeedLoading v-if="isLoading && allPosts.length === 0">
         <Spin :tip="t('postCard.loadingFeed')">
           <template #indicator>
@@ -168,6 +171,7 @@ import type { AdaptedPost } from '@/composables/use-feed'
 import { isMobile } from '@mobile/utils/platform'
 import { useViewport } from '@/composables/use-viewport'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
+import MiniAppsShelf from '@/mini-apps/ui/mini-apps-shelf.vue'
 import Button from '@/components/button/button.vue'
 import Spin from '@/components/spin/spin.vue'
 import Empty from '@/components/empty/empty.vue'

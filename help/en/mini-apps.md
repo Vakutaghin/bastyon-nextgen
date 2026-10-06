@@ -1,19 +1,24 @@
 ---
-keywords: [mini apps, apps, catalog, Barteron, favorites, open an app]
+keywords: [services, mini apps, apps, catalog, games, Barteron, favorites, open an app]
 ---
 
-# Mini apps
+# Services
 
-Third-party apps inside Bastyon: how to find, open, pin and delete them.
+Mini apps inside Bastyon — music and radio, video, games, learning, PKOIN exchange: how to find, open, pin and delete them.
 
 ## Where they are
 
-**“Mini-apps”** in the left panel; on a phone, **“Apps”** in the bottom bar. The page has two sections:
+- **“Services”** in the header, next to search, and in the left panel; on a phone, **“Services”** in the bottom bar.
+- The **“Services”** shelf above the feed: the most popular apps in one row; **“All services”** leads to the catalog. If you do not need the shelf, press the cross — **“Hide from the feed”**. You can bring it back at the bottom of the Services page: **“Show services in the feed”**. While [Tor](tor.md) is on, there is no shelf.
 
-- **“Installed”** — apps that come with Bastyon: Barteron, WPKOIN, Swipelux, PKOIN Exchange, Block Explorer and the Bastyon documentation — plus the ones you loaded yourself, see [Your own mini app](mini-apps-dev.md);
-- **“Catalog”** — apps developers have published on the Bastyon network.
+The **“Services”** page has two sections:
 
-You can search by name with the **“Search apps…”** field, or pick a category above the list.
+- **“Popular”** — apps developers have published on the Bastyon network, the ones users rate higher first;
+- **“Built into Bastyon”** — apps that come with Bastyon: Barteron, WPKOIN, Swipelux, PKOIN Exchange, Block Explorer and the Bastyon documentation.
+
+If you loaded an app of your own, it is in the **“Your apps”** section, see [Your own mini app](mini-apps-dev.md).
+
+You can search by name and description with the **“Search apps…”** field, or pick a section above the list: **“Music & radio”**, **“Video”**, **“Games”**, **“Learning”** and others. Only sections with something in them are shown.
 
 ## Opening and closing
 

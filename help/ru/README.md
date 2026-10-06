@@ -74,7 +74,7 @@
   - [Файлы через IPFS в чате](ipfs-in-chat.md)
   - [Хранение на сервисе](ipfs-remote-pin.md)
   - [Модуль IPFS](ipfs-module.md)
-- [Мини-приложения](mini-apps.md)
+- [Сервисы (мини-приложения)](mini-apps.md)
   - [Разрешения мини-приложений](mini-app-permissions.md)
   - [Платежи в мини-приложениях](mini-app-payments.md)
   - [Своё мини-приложение](mini-apps-dev.md)

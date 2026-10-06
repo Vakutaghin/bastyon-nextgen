@@ -12,6 +12,7 @@ From left to right:
 
 - **The logo** takes you to the home page; the interface language is chosen next to it.
 - **Search** — people, posts and tags, see [Search](search.md).
+- **“Services”** — mini apps inside Bastyon: music, video, games, PKOIN exchange, see [Services](mini-apps.md). In a narrow window only the icon is left of the button.
 - **Tor** and **IPFS** — status icons of [Tor](tor.md) and [the IPFS module](ipfs-module.md). They work in the desktop app; in other versions the icon only tells you so.
 - **The hourglass** appears when you have actions the network has not confirmed yet — see [Confirming actions](transactions.md).
 - **The bell** — **“Notifications”**, see [Notifications](notifications.md).
@@ -23,6 +24,7 @@ From left to right:
 ## Above the feed
 
 - **“Refresh feed”** — load the latest posts.
+- The **“Services”** shelf — popular mini apps in one row, see [Services](mini-apps.md).
 - **“Create post”** — open the [post editor](post-composer.md).
 - The buttons at the edges collapse the left panel (**“Collapse menu”**) and hide the right one (**“Hide sidebar”**). The app remembers how you left them.
 
@@ -31,9 +33,9 @@ From left to right:
 Feed and app sections:
 
 - **“Feed”**, **“Subscriptions”** (once you are signed in), **“Video”**, **“Audio”**, **“Articles”**, **“Favorites”**, **“Discussed”** — see [Feed](feed.md);
+- **“Services”** — see [Services](mini-apps.md); pinned mini apps are listed below, under the line;
 - **“Explorer”** — the [block explorer](explorer.md);
-- **“Help”** — this help;
-- **“Mini-apps”** — see [Mini apps](mini-apps.md); pinned mini apps are listed below.
+- **“Help”** — this help.
 
 Under the sections are the **“Best first”** switch, **“Categories”** and **“Trending tags”**, which select the posts in the feed — see [Categories, tags and sorting](feed-filters.md).
 
@@ -62,9 +64,9 @@ The speech bubble in the header or the round button in the bottom right corner o
 
 ## On a phone and in a narrow window
 
-When the screen is narrow — on a phone or in a shrunk window on a computer — there are no side panels, and a bar appears at the bottom: **“Home”**, **“Search”**, **“Apps”**, **“Chats”** and **“Wallet”**. Tapping the section you are in takes the page back to the top.
+When the screen is narrow — on a phone or in a shrunk window on a computer — there are no side panels, and a bar appears at the bottom: **“Home”**, **“Search”**, **“Services”**, **“Chats”** and **“Wallet”**. Tapping the section you are in takes the page back to the top.
 
-The menu behind the three-line button on the left of the header is the same left panel as on a computer: the feed sections, **“Explorer”**, **“Help”**, **“Mini-apps”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“My videos”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
+The menu behind the three-line button on the left of the header is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“My videos”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
 
 Without an account, **“Chats”**, **“Wallet”** and **“Subscriptions”** open the sign-in window, and after you sign in, the section itself. More in [The phone app](mobile-app.md).
 

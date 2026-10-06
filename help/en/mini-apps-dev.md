@@ -17,12 +17,12 @@ The manifest fields and examples are in the developer documentation, see below.
 
 ## Loading it locally
 
-1. Open [Mini-apps](bastyon://miniapps) and press **“Load local app”**.
+1. Open [Services](bastyon://miniapps) and at the bottom of the page press **“For developers: open your own app”**.
 2. **“App address (scope)”** — the address that serves `b_manifest.json`, for example `https://dev.example.com/app`. For a dev server on your own computer, `http://localhost:3000` works too; other sites only over HTTPS.
 3. **“Display name (optional)”** — if you leave it empty, the name from the manifest is used.
 4. Press **“Load”**.
 
-The app opens and stays in the **“Installed”** section until you delete it.
+The app opens and stays in the **“Your apps”** section until you delete it.
 
 An app from a home network address — `192.168.…`, `….local` and the like — will not load: a stranger’s app must not reach your router or printer. Nor can an app take the identifier of an app that comes with Bastyon or was already loaded from another address: otherwise a fake would inherit its permissions.
 
@@ -34,7 +34,7 @@ The connection between an app and Bastyon works the same way as in the previous 
 
 ## Publishing in the catalog
 
-An app cannot be published from here yet. Apps are registered and published in the previous Bastyon app, on the [bastyon.com/devapplication](https://bastyon.com/devapplication) page, following the documentation. A published app goes onto the Bastyon network and shows up here too, in the **“Catalog”** section.
+An app cannot be published from here yet. Apps are registered and published in the previous Bastyon app, on the [bastyon.com/devapplication](https://bastyon.com/devapplication) page, following the documentation. A published app goes onto the Bastyon network and shows up here too, in the **“Popular”** section.
 
 ## See also
 

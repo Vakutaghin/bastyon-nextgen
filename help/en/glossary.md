@@ -76,7 +76,7 @@ An open messaging protocol. Chats run on the Bastyon network's Matrix servers, a
 
 ## Mini app
 
-A third-party app that opens inside Bastyon and knows about you only what you allowed it. See [Mini apps](mini-apps.md).
+A third-party app that opens inside Bastyon and knows about you only what you allowed it. They are gathered under “Services”, see [Services](mini-apps.md).
 
 ## Node
 

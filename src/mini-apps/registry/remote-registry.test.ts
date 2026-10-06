@@ -55,6 +55,7 @@ describe('RemoteAppsLoader', () => {
           s2: 'tetris.amurkupon.app',
         },
         height: 3844318,
+        ad: { r: 29 },
       },
     ]
     const loader = new RemoteAppsLoader(async () => raw)
@@ -69,6 +70,7 @@ describe('RemoteAppsLoader', () => {
       tags: ['игры', 'тетрис'],
       author: 'PW4P7bBjxSFtAAAeDWwMki6PzFm2L4jE3P',
       height: 3844318,
+      rating: 29,
     })
     expect(page.apps[0]?.icon).toBe('https://tetris.amurkupon.ru/b_icon.png')
   })

@@ -10,6 +10,7 @@
       <HeaderSearch v-if="!mobile" />
 
       <SC_Right v-hide-zero-width>
+        <HeaderServices v-if="!mobile" />
         <HeaderTor v-if="!mobile" />
         <HeaderIpfs v-if="!mobile" />
         <!-- Ожидание блокчейна видно и на телефоне: часы появляются, только когда есть чего ждать. -->
@@ -46,6 +47,7 @@ import HeaderNotifications from '@/b-components/header/header-notifications/head
 import HeaderTor from '@/b-components/header/header-tor/header-tor.vue'
 import HeaderIpfs from '@/b-components/header/header-ipfs/header-ipfs.vue'
 import HeaderReportBug from '@/b-components/header/header-report-bug/header-report-bug.vue'
+import HeaderServices from '@/b-components/header/header-services/header-services.vue'
 import HeaderThemeToggle from '@/b-components/header/header-theme-toggle/header-theme-toggle.vue'
 import { MobileNavDrawer } from '@/b-components/mobile-nav-drawer'
 import { useMessengerStore } from '@/b-components/messenger/store'

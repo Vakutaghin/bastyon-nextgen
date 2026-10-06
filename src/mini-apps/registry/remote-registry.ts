@@ -33,6 +33,8 @@ export interface RemoteAppEntry {
   tags?: readonly string[]
   /** Высота блока, в котором приложение зарегистрировано. */
   height?: number
+  /** Рейтинг по оценкам пользователей (`ad.r` ноды; бывает и отрицательным). */
+  rating?: number
 }
 
 export interface LoadRemoteAppsParams {
@@ -42,7 +44,7 @@ export interface LoadRemoteAppsParams {
   search?: string
   /** Список тегов для фильтра. */
   tags?: readonly string[]
-  /** Поле сортировки. Default: 'height'. */
+  /** Поле сортировки: 'height' (новые) или 'rating' (популярные). Default: 'height'. */
   orderBy?: string
   /** Default: true. */
   orderDesc?: boolean
@@ -210,6 +212,8 @@ function normalizeEntry(entry: unknown): RemoteAppEntry | null {
     (typeof r.address === 'string' && r.address.trim()) ||
     undefined
 
+  const ad = r.ad as { r?: unknown } | undefined
+
   return {
     id,
     name,
@@ -220,6 +224,7 @@ function normalizeEntry(entry: unknown): RemoteAppEntry | null {
     author,
     tags,
     height: typeof r.height === 'number' ? r.height : undefined,
+    rating: typeof ad?.r === 'number' ? ad.r : undefined,
   }
 }
 

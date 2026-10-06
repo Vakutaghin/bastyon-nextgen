@@ -6,26 +6,27 @@ export const SC_Search = styled.div`
   margin: 8px 0 16px;
 `
 
-export const SC_SideloadBar = styled.div`
+/** Низ страницы: вернуть полку в ленту и вход для разработчиков — мелко, не мешая каталогу. */
+export const SC_Footer = styled.div`
   display: flex;
-  justify-content: flex-end;
-  margin: 0 0 16px;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 8px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--ui-border);
 `
 
-export const SC_SideloadBtn = styled.button`
-  padding: 6px 10px;
-  border: 1px dashed var(--ui-border-accented);
-  border-radius: var(--ui-radius-md);
+export const SC_FooterLink = styled.button`
+  padding: 0;
+  border: 0;
   background: none;
   color: var(--ui-text-muted);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
   cursor: pointer;
-  transition: color ${TRANSITIONS.FAST};
+  transition: color var(--transition-fast);
 
   &:hover {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
+    color: var(--ui-primary);
   }
 `
 
@@ -199,6 +200,19 @@ export const SC_Name = styled.div`
   font-size: 14px;
   font-weight: 500;
   line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+`
+
+export const SC_Description = styled.div`
+  margin-top: -6px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ui-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;

@@ -74,7 +74,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Files over IPFS in chat](ipfs-in-chat.md)
   - [Storing on a service](ipfs-remote-pin.md)
   - [The IPFS module](ipfs-module.md)
-- [Mini apps](mini-apps.md)
+- [Services (mini apps)](mini-apps.md)
   - [Mini app permissions](mini-app-permissions.md)
   - [Payments in mini apps](mini-app-payments.md)
   - [Your own mini app](mini-apps-dev.md)

@@ -28,6 +28,7 @@
       </SC_IconFallback>
     </SC_IconWrap>
     <SC_Name>{{ name }}</SC_Name>
+    <SC_Description v-if="description">{{ description }}</SC_Description>
   </SC_Card>
 </template>
 
@@ -41,6 +42,7 @@ import {
   SC_Icon,
   SC_IconFallback,
   SC_Name,
+  SC_Description,
   SC_FavoriteBtn,
   SC_DeleteBtn,
 } from './mini-apps-grid.styled'
@@ -48,6 +50,8 @@ import {
 const props = defineProps<{
   id: string
   name: string
+  /** Одна-две строки о том, что это за приложение. */
+  description?: string
   icon: string
   isFav?: boolean
   /** Показать кнопку удаления — только у сайдлоад-приложений (S51). */

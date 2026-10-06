@@ -43,6 +43,13 @@ export const tabsData = [
     disabled: false,
   },
   {
+    id: 8,
+    labelKey: 'sidebarData.tabs.miniApps',
+    icon: 'AppstoreOutlined',
+    active: false,
+    disabled: false,
+  },
+  {
     id: 9,
     labelKey: 'sidebarData.tabs.explorer',
     icon: 'BlockOutlined',
@@ -53,13 +60,6 @@ export const tabsData = [
     id: 10,
     labelKey: 'sidebarData.tabs.help',
     icon: 'HelpBookIcon',
-    active: false,
-    disabled: false,
-  },
-  {
-    id: 8,
-    labelKey: 'sidebarData.tabs.miniApps',
-    icon: 'AppstoreOutlined',
     active: false,
     disabled: false,
   },
