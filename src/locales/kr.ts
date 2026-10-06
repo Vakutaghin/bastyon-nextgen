@@ -820,6 +820,34 @@ export default {
       '송금은 완료되었지만(tx {txid}…) 채팅 메시지가 전달되지 않았습니다. 메시지만 다시 보내세요. 다시 송금할 필요는 없습니다.',
     retryMessage: '메시지 다시 보내기',
     sendError: '전송 오류',
+    supportReport: {
+      title: '앱 정보',
+      part: '{total}개 중 {part}번째',
+      copy: '복사',
+      copied: '복사됨',
+      copyFailed: '복사하지 못했습니다',
+      caption: '지원팀에 보내는 앱 정보',
+      captionPart: '지원팀에 보내는 앱 정보 ({part}/{total})',
+      barLabel: '앱 정보 보내기',
+      barHint: '버전, 시스템, 오류 — 키 제외',
+      barAction: '보내기',
+      consentTitle: '앱 정보를 보낼까요?',
+      consentLead:
+        '지원팀이 문제의 원인을 더 쉽게 찾을 수 있습니다. 채팅으로 다음 내용이 담긴 메시지가 전송됩니다:',
+      consentItems: {
+        app: 'Bastyon 버전, 실행 환경(컴퓨터, 휴대폰, 브라우저), 실행 시간(분)',
+        system: '시스템과 버전, 휴대폰 모델, 화면, CPU 코어와 메모리, 언어와 시간대',
+        settings: '테마, 배율, 메신저와 Tor 사용 여부',
+        network: '인터넷 연결 여부, 연결된 노드와 채팅 서버, 사용 중인 저장 공간',
+        errors: '최근 앱 오류(주소, 식별자, 파일 경로는 제거됨)',
+      },
+      consentNever:
+        '키, 복구 문구, 비밀번호, 대화 내용, 연락처, 방문 기록은 보내지 않습니다. 메시지는 개인 채팅의 모든 내용처럼 암호화됩니다.',
+      consentPreview: '실제로 보내는 내용:',
+      consentPreviewParts: '실제로 보내는 내용(메시지 {count}개):',
+      send: '보내기',
+      collectFailed: '정보를 수집하지 못했습니다',
+    },
   },
   auth: {
     welcome: {

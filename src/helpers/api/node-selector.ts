@@ -110,9 +110,7 @@ async function probe(server: ServerEndpoint): Promise<boolean> {
  * как последняя надежда). Если живых нет — возвращает исходный порядок.
  */
 async function probeAll(proxies: ServerEndpoint[]): Promise<ServerEndpoint[]> {
-  const results = await Promise.all(
-    proxies.map(async (p) => ({ proxy: p, ok: await probe(p) })),
-  )
+  const results = await Promise.all(proxies.map(async (p) => ({ proxy: p, ok: await probe(p) })))
   const live = results.filter((r) => r.ok).map((r) => r.proxy)
   const dead = results.filter((r) => !r.ok).map((r) => r.proxy)
 
@@ -146,6 +144,11 @@ export async function orderedProxies(proxies: ServerEndpoint[]): Promise<ServerE
     })
   }
   return selectionInFlight
+}
+
+/** Нода, с которой сейчас работает приложение (для сведений в поддержку). */
+export function currentProxy(): ServerEndpoint | null {
+  return current?.proxy ?? null
 }
 
 /** Отметить ноду живой (успешный запрос) — продлевает доверие/стикинесс. */

@@ -3,6 +3,7 @@ mod ipfs;
 mod main_window;
 mod radio;
 mod rns;
+mod system_info;
 mod tor;
 mod tray;
 
@@ -934,6 +935,7 @@ pub fn run() {
       asr::asr_stop,
       asr::asr_cancel,
       asr::asr_open_mic_settings,
+      system_info::system_info,
       radio::radio_serial_ports,
       radio::radio_serial_open,
       radio::radio_tcp_open,

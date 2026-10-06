@@ -16,6 +16,8 @@
 
 import { Buffer as BufferImpl } from 'buffer'
 
+import { captureConsoleErrors } from '@/helpers/diagnostics/recent-errors'
+
 type ProcessShim = {
   env: Record<string, string | undefined>
   browser: boolean
@@ -79,6 +81,9 @@ if (
 // (на стадии evaluate других модулей). `installGlobalErrorHandler(app)` ниже
 // делает то же самое и добавляет Vue-handler, но регистрируется позже.
 // Дублирование безопасно: оба пишут разными префиксами в console.error.
+// Всё, что попадает в console.error, запоминается для сведений в поддержку
+// (helpers/diagnostics/recent-errors) — с самого старта.
+captureConsoleErrors()
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (e: ErrorEvent) => {
     console.error('[window.error]', e.message, e.filename, e.lineno, e.colno, e.error)

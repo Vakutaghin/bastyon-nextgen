@@ -835,6 +835,36 @@ export default {
       'Le transfert a été envoyé (tx {txid}…), mais le message n’a pas été remis. Renvoyez le message : un second transfert n’est pas nécessaire.',
     retryMessage: 'Renvoyer le message',
     sendError: 'Erreur d’envoi',
+    supportReport: {
+      title: 'Informations sur l’application',
+      part: 'partie {part} sur {total}',
+      copy: 'Copier',
+      copied: 'Copié',
+      copyFailed: 'Impossible de copier',
+      caption: 'Informations sur l’application pour le support',
+      captionPart: 'Informations sur l’application pour le support ({part}/{total})',
+      barLabel: 'Envoyer les informations sur l’application',
+      barHint: 'Version, système, erreurs — sans clés',
+      barAction: 'Envoyer',
+      consentTitle: 'Envoyer les informations sur l’application ?',
+      consentLead:
+        'Le support trouvera plus facilement la cause du problème. Un message partira dans ce chat avec :',
+      consentItems: {
+        app: 'la version de Bastyon, où elle tourne (ordinateur, téléphone, navigateur) et depuis combien de minutes',
+        system:
+          'le système et sa version, le modèle du téléphone, l’écran, les cœurs et la mémoire, la langue et le fuseau horaire',
+        settings: 'thème, échelle, messagerie et Tor activés ou non',
+        network: 'la connexion Internet, le nœud et le serveur de chat utilisés, l’espace occupé',
+        errors:
+          'les dernières erreurs de l’application, sans adresses, identifiants ni chemins de fichiers',
+      },
+      consentNever:
+        'Les clés, la phrase de récupération, le mot de passe, les messages, les contacts et l’historique ne sont pas envoyés. Le message est chiffré comme tout le chat privé.',
+      consentPreview: 'Voici exactement ce qui sera envoyé :',
+      consentPreviewParts: 'Voici exactement ce qui sera envoyé (messages : {count}) :',
+      send: 'Envoyer',
+      collectFailed: 'Impossible de rassembler les informations',
+    },
   },
   auth: {
     welcome: {

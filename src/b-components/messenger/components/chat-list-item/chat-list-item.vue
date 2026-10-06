@@ -71,6 +71,7 @@
 <script setup lang="ts">
 import { formatClock } from '@/helpers/common/date-formatter'
 import { parseIpfsFileLink } from '@/helpers/ipfs/ipfs-link'
+import { supportReportPreview } from '../../lib/support-report-preview'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DeleteOutlined, EllipsisOutlined, RadioTowerIcon } from '@/components/icons'
@@ -143,7 +144,8 @@ const lastMessagePreview = computed<string>(() => {
       // «Файл через IPFS» — ссылка с ключом: в списке имя файла, а не ссылка.
       const ipfsFile = parseIpfsFileLink(m.text)
       if (ipfsFile) return `📎 ${ipfsFile.name || t('messenger.ipfsCardNoName')}`
-      return m.text
+      // Сведения для поддержки: в списке подпись, а не JSON.
+      return supportReportPreview(m.text) ?? m.text
     }
   }
 })

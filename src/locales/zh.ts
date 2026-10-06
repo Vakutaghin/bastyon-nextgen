@@ -797,6 +797,33 @@ export default {
       '转账已发送（tx {txid}…），但聊天消息未送达。请重新发送消息——无需再次转账。',
     retryMessage: '重新发送消息',
     sendError: '发送出错',
+    supportReport: {
+      title: '应用信息',
+      part: '第 {part} 部分，共 {total} 部分',
+      copy: '复制',
+      copied: '已复制',
+      copyFailed: '无法复制',
+      caption: '发给客服的应用信息',
+      captionPart: '发给客服的应用信息（{part}/{total}）',
+      barLabel: '发送应用信息',
+      barHint: '版本、系统、错误——不含密钥',
+      barAction: '发送',
+      consentTitle: '发送应用信息？',
+      consentLead: '这能帮助客服更快找到问题原因。聊天中将发送一条消息，内容包括：',
+      consentItems: {
+        app: 'Bastyon 版本、运行位置（电脑、手机、浏览器）以及已打开的分钟数',
+        system: '系统及版本、手机型号、屏幕、处理器核心和内存、语言和时区',
+        settings: '主题、缩放比例，以及消息和 Tor 是否开启',
+        network: '是否联网、应用连接的节点和聊天服务器、已用存储空间',
+        errors: '应用最近的错误（已去除地址、标识符和文件路径）',
+      },
+      consentNever:
+        '不会发送密钥、恢复短语、密码、聊天内容、联系人和浏览记录。消息与私聊中的所有内容一样经过加密。',
+      consentPreview: '实际发送的内容：',
+      consentPreviewParts: '实际发送的内容（共 {count} 条消息）：',
+      send: '发送',
+      collectFailed: '无法收集信息',
+    },
   },
   auth: {
     welcome: {

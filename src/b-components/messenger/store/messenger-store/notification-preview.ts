@@ -11,6 +11,8 @@
 
 import { t } from '@/i18n'
 
+import { supportReportPreview } from '../../lib/support-report-preview'
+
 interface EventLike {
   getContent?: () => Record<string, unknown> | undefined
   getType?: () => string | undefined
@@ -40,7 +42,8 @@ export function notificationPreviewFor(event: EventLike): string {
   if (type === 'm.room.encrypted' || msgtype === 'm.encrypted' || looksEncrypted(body)) {
     return t('messenger.notifyEncrypted')
   }
-  return typeof body === 'string' && body ? body : t('messenger.notifyEncrypted')
+  if (typeof body !== 'string' || !body) return t('messenger.notifyEncrypted')
+  return supportReportPreview(body) ?? body
 }
 
 /** Имя отправителя: профиль Bastyon → имя участника комнаты → адрес. */

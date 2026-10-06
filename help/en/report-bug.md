@@ -1,5 +1,5 @@
 ---
-keywords: [bug, error, support, feedback, write to the developers]
+keywords: [bug, error, support, feedback, write to the developers, app details, logs]
 ---
 
 # Reporting a bug
@@ -12,11 +12,25 @@ The bug icon in the header — **“Report a bug”** — opens a [chat](messeng
 
 The button is visible when you are signed in and the messenger is on.
 
+## App details
+
+In the chat with support, the **“App details”** button is pinned above the conversation. It collects what helps to find a bug:
+
+- the Bastyon version and where it runs — computer, phone or browser;
+- the system and its version, phone model, screen, language and time zone;
+- theme, scale, and whether the messenger and Tor are on;
+- whether there is internet, which node and chat server the app is connected to;
+- recent app errors.
+
+Before sending, a window shows everything that will go, word for word — you decide whether to send it. Keys, the recovery phrase, password, messages, contacts and browsing history are not part of it, and addresses, IDs and file paths are removed from error texts. The message is encrypted like everything in a private chat.
+
+In the chat the details look like a small scrollable box with a copy button. If they do not fit into one message, they go in several parts, in order.
+
 ## What to write
 
 - what you did, step by step;
 - what you expected to see and what actually happened, with the exact error text;
-- **“App version”**, **“Build”** and **“Platform”** from **“Settings”** → **“Diagnostics”**;
+- the app details — with the button in the chat with support; without the chat, **“App version”**, **“Build”** and **“Platform”** from **“Settings”** → **“Diagnostics”**;
 - a screenshot, if the error is visible.
 
 The more precise the steps, the faster the bug is found and fixed.

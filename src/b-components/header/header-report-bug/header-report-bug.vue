@@ -14,16 +14,12 @@ import { BugOutlined } from '@/components/icons'
 import { useAuthStore } from '@/blockchain'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
-import { getByPRC } from '@/helpers/api/request'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import type { GetUserAddressResponse } from '@/types/rpc-responses/get-user-address'
+import {
+  SUPPORT_ACCOUNT_NAME,
+  resolveSupportAddress,
+} from '@/b-components/messenger/lib/support-account'
 import { SC_ReportBugWrapper } from './styled'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
-
-// Аккаунт поддержки в сети Bastyon, на который уходят баг-репорты. Храним имя,
-// а не адрес: имя резолвится в адрес через getuseraddress (как на странице
-// профиля) — никаких посредников, всё через ноду.
-const BUG_REPORT_ACCOUNT_NAME = 'bastyon_nextgen_supp'
 
 const { t } = useI18n()
 
@@ -34,40 +30,11 @@ const messengerStore = useMessengerStore()
 const prefs = useAppPreferencesStore()
 const isVisible = computed<boolean>(() => authStore.isUserAuthenticated && prefs.messengerEnabled)
 
-// Кешируем ТОЛЬКО успешный резолв. Пустой ответ (имя свежего аккаунта ещё не
-// распространилось по всем нодам) или ошибку не кешируем — иначе один промах
-// убивал бы кнопку до перезагрузки страницы.
-let cachedAddress: string | null = null
-let pendingResolve: Promise<string | null> | null = null
-
-function resolveBugReportAddress(): Promise<string | null> {
-  if (cachedAddress) return Promise.resolve(cachedAddress)
-  if (pendingResolve) return pendingResolve
-
-  pendingResolve = getByPRC({
-    method: rpcEndpoints.getUserAddress,
-    parameters: [BUG_REPORT_ACCOUNT_NAME],
-    options: { auth: false },
-  })
-    .then((response) => (response as GetUserAddressResponse)?.data?.[0]?.address ?? null)
-    .catch((error) => {
-      console.warn('[HeaderReportBug] не удалось разрешить адрес аккаунта поддержки:', error)
-      return null
-    })
-    .then((address) => {
-      if (address) cachedAddress = address
-      pendingResolve = null
-      return address
-    })
-
-  return pendingResolve
-}
-
 async function onClick(): Promise<void> {
   if (!authStore.isUserAuthenticated) return
-  const address = await resolveBugReportAddress()
+  const address = await resolveSupportAddress()
   if (!address) {
-    console.warn(`[HeaderReportBug] аккаунт "${BUG_REPORT_ACCOUNT_NAME}" не найден в сети`)
+    console.warn(`[HeaderReportBug] аккаунт "${SUPPORT_ACCOUNT_NAME}" не найден в сети`)
     return
   }
   const roomId = await messengerStore.startChatWithAddress(address)

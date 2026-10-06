@@ -194,6 +194,7 @@ dependencies = [
  "url",
  "uuid",
  "whisper-rs",
+ "windows-version",
  "zip 2.4.2",
 ]
 

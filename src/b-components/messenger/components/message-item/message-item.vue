@@ -42,6 +42,16 @@
         <TransactionMessage :message="message" />
       </div>
 
+      <!-- Сведения о приложении для поддержки: окошко с JSON и копированием.
+           Узнаётся по тексту при первой же отрисовке — длинный текст не мелькает. -->
+      <div v-else-if="supportReport" class="message-report">
+        <SupportReportBox
+          :body="supportReport.body"
+          :part="supportReport.part"
+          :total="supportReport.total"
+        />
+      </div>
+
       <!-- Сообщение целиком — ссылка на файл в IPFS («Файл через IPFS»): карточка. -->
       <div v-else-if="ipfsFile" class="message-file">
         <IpfsFileMessage :link="ipfsFile" :mine="isMine" />
@@ -172,6 +182,9 @@ import FileMessage from '../file-message/file-message.vue'
 import TransactionMessage from '../transaction-message/transaction-message.vue'
 import IpfsFileMessage from '../ipfs-file-message/ipfs-file-message.vue'
 import { parseIpfsFileLink } from '@/helpers/ipfs/ipfs-link'
+import { parseSupportReport } from '../../lib/support-report'
+import SupportReportBox from '../support-report/support-report-box.vue'
+import { supportReportPreview } from '../../lib/support-report-preview'
 import PostEmbed from '../post-embed/post-embed.vue'
 import LinkPreview from '../link-preview/link-preview.vue'
 import { formatMessageSegments, extractFirstExternalUrl } from './helpers'
@@ -308,6 +321,11 @@ watch(senderAddress, ensureSenderProfile, { immediate: true })
 
 /** Сегменты текста: чередование `html` (с inline `<a>`) и `bastyon` (PostEmbed). */
 const messageSegments = computed(() => formatMessageSegments(props.message.text || ''))
+
+/** Сведения о приложении для поддержки (lib/support-report). */
+const supportReport = computed(() =>
+  (props.message.type ?? 'text') === 'text' ? parseSupportReport(props.message.text || '') : null
+)
 
 /** Текст — одна ссылка на файл в IPFS: рисуем карточкой, а не ссылкой. */
 const ipfsFile = computed(() =>
@@ -446,7 +464,10 @@ const repliedPreview = computed<{ name: string; text: string } | null>(() => {
   const name = isRefMine
     ? store.currentUser.name || t('messenger.you')
     : chatUserName(ref.senderId, store.userProfiles, ref.senderName)
-  const text = ref.type && ref.type !== 'text' ? `[${ref.type}]` : (ref.text || '').slice(0, 80)
+  const text =
+    ref.type && ref.type !== 'text'
+      ? `[${ref.type}]`
+      : (supportReportPreview(ref.text || '') ?? (ref.text || '').slice(0, 80))
   return { name, text }
 })
 

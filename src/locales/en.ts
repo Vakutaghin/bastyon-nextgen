@@ -822,6 +822,36 @@ export default {
       'The transfer was sent (tx {txid}…), but the chat message was not delivered. Retry the message — no second transfer is needed.',
     retryMessage: 'Retry message',
     sendError: 'Send error',
+    supportReport: {
+      title: 'App details',
+      part: 'part {part} of {total}',
+      copy: 'Copy',
+      copied: 'Copied',
+      copyFailed: 'Could not copy',
+      caption: 'App details for support',
+      captionPart: 'App details for support ({part}/{total})',
+      barLabel: 'Send app details',
+      barHint: 'Version, system, errors — no keys',
+      barAction: 'Send',
+      consentTitle: 'Send app details?',
+      consentLead:
+        'This helps support find the cause of the problem. A message goes to this chat with:',
+      consentItems: {
+        app: 'the Bastyon version, where it runs (computer, phone, browser) and how many minutes it has been open',
+        system:
+          'the system and its version, phone model, screen, CPU cores and memory, language and time zone',
+        settings: 'theme, scale, whether the messenger and Tor are on',
+        network:
+          'whether there is internet, which node and chat server the app is connected to, how much storage is used',
+        errors: 'recent app errors, with addresses, IDs and file paths removed',
+      },
+      consentNever:
+        'Keys, the recovery phrase, password, messages, contacts and browsing history are not sent. The message is encrypted like everything in a private chat.',
+      consentPreview: 'Exactly what will be sent:',
+      consentPreviewParts: 'Exactly what will be sent (messages: {count}):',
+      send: 'Send',
+      collectFailed: 'Could not collect the details',
+    },
   },
   auth: {
     welcome: {

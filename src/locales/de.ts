@@ -832,6 +832,36 @@ export default {
       'Die Überweisung wurde gesendet (tx {txid}…), aber die Chatnachricht wurde nicht zugestellt. Sende die Nachricht erneut — eine zweite Überweisung ist nicht nötig.',
     retryMessage: 'Nachricht erneut senden',
     sendError: 'Sendefehler',
+    supportReport: {
+      title: 'App-Informationen',
+      part: 'Teil {part} von {total}',
+      copy: 'Kopieren',
+      copied: 'Kopiert',
+      copyFailed: 'Kopieren fehlgeschlagen',
+      caption: 'App-Informationen für den Support',
+      captionPart: 'App-Informationen für den Support ({part}/{total})',
+      barLabel: 'App-Informationen senden',
+      barHint: 'Version, System, Fehler — ohne Schlüssel',
+      barAction: 'Senden',
+      consentTitle: 'App-Informationen senden?',
+      consentLead:
+        'So findet der Support die Ursache leichter. In den Chat geht eine Nachricht mit:',
+      consentItems: {
+        app: 'Bastyon-Version, wo die App läuft (Computer, Telefon, Browser) und wie viele Minuten sie geöffnet ist',
+        system:
+          'System und Version, Telefonmodell, Bildschirm, Prozessorkerne und Speicher, Sprache und Zeitzone',
+        settings: 'Design, Skalierung, ob Messenger und Tor eingeschaltet sind',
+        network:
+          'ob Internet da ist, mit welchem Knoten und Chat-Server die App verbunden ist, wie viel Speicher belegt ist',
+        errors: 'letzte App-Fehler; Adressen, Kennungen und Dateipfade sind entfernt',
+      },
+      consentNever:
+        'Schlüssel, Wiederherstellungsphrase, Passwort, Nachrichten, Kontakte und Verlauf werden nicht gesendet. Die Nachricht ist verschlüsselt wie der ganze private Chat.',
+      consentPreview: 'Genau das wird gesendet:',
+      consentPreviewParts: 'Genau das wird gesendet (Nachrichten: {count}):',
+      send: 'Senden',
+      collectFailed: 'Informationen konnten nicht gesammelt werden',
+    },
   },
   auth: {
     welcome: {

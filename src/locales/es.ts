@@ -835,6 +835,37 @@ export default {
       'La transferencia se envió (tx {txid}…), pero el mensaje del chat no se entregó. Reintenta el mensaje: no hace falta una segunda transferencia.',
     retryMessage: 'Reintentar el mensaje',
     sendError: 'Error de envío',
+    supportReport: {
+      title: 'Datos de la aplicación',
+      part: 'parte {part} de {total}',
+      copy: 'Copiar',
+      copied: 'Copiado',
+      copyFailed: 'No se pudo copiar',
+      caption: 'Datos de la aplicación para soporte',
+      captionPart: 'Datos de la aplicación para soporte ({part}/{total})',
+      barLabel: 'Enviar datos de la aplicación',
+      barHint: 'Versión, sistema, errores — sin claves',
+      barAction: 'Enviar',
+      consentTitle: '¿Enviar los datos de la aplicación?',
+      consentLead:
+        'Así soporte encontrará antes la causa del problema. Al chat irá un mensaje con:',
+      consentItems: {
+        app: 'la versión de Bastyon, dónde se ejecuta (ordenador, teléfono, navegador) y cuántos minutos lleva abierta',
+        system:
+          'el sistema y su versión, el modelo del teléfono, la pantalla, los núcleos y la memoria, el idioma y la zona horaria',
+        settings: 'tema, escala y si el mensajero y Tor están activados',
+        network:
+          'si hay internet, a qué nodo y servidor de chat está conectada la aplicación, cuánto espacio ocupa',
+        errors:
+          'los últimos errores de la aplicación, sin direcciones, identificadores ni rutas de archivos',
+      },
+      consentNever:
+        'No se envían las claves, la frase de recuperación, la contraseña, los mensajes, los contactos ni el historial. El mensaje va cifrado, como todo el chat privado.',
+      consentPreview: 'Esto es exactamente lo que se enviará:',
+      consentPreviewParts: 'Esto es exactamente lo que se enviará (mensajes: {count}):',
+      send: 'Enviar',
+      collectFailed: 'No se pudieron reunir los datos',
+    },
   },
   auth: {
     welcome: {

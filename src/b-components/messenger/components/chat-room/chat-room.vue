@@ -1,5 +1,8 @@
 <template>
   <SC_ChatRoomContainer ref="containerRef" :style="isDragging ? DRAG_STYLE : undefined">
+    <!-- Чат с поддержкой: сведения о приложении одной кнопкой (закреплена над перепиской). -->
+    <SupportReportBar v-if="!inviteMode && isSupportChat && activeRoomId" :chat-id="activeRoomId" />
+
     <template v-if="inviteMode">
       <SC_PartnerInfoCard>
         <SC_PartnerHeader>
@@ -271,6 +274,9 @@ import { useChatInput } from './use-chat-input'
 import { useIpfsSend } from './use-ipfs-send'
 import { useMeshShare } from './use-mesh-share'
 import MeshRouteBar from './mesh-route-bar.vue'
+import SupportReportBar from '../support-report/support-report-bar.vue'
+import { useSupportChat } from '../support-report/use-support-chat'
+import { supportReportPreview } from '../../lib/support-report-preview'
 import { tooLargeForChat } from './too-large-for-chat'
 import {
   SC_ChatRoomContainer,
@@ -377,7 +383,7 @@ const replyPreviewText = computed<string>(() => {
   if (!m) return ''
   // Для медиа показываем тип-плейсхолдер, для текста — обрезанный текст.
   if (m.type && m.type !== 'text') return `[${m.type}]`
-  return (m.text || '').slice(0, 80)
+  return supportReportPreview(m.text || '') ?? (m.text || '').slice(0, 80)
 })
 function onReplyTo(message: Message): void {
   replyingTo.value = message
@@ -585,6 +591,7 @@ const pkoinPartnerAddress = computed<string | null>(() => {
   return store.getDirectPartnerAddress(store.activeChatId)
 })
 const canSendPkoin = computed<boolean>(() => !!pkoinPartnerAddress.value)
+const { isSupportChat } = useSupportChat(() => pkoinPartnerAddress.value)
 
 // === Смена ключей собеседника (TOFU, P3-3). ===
 const profileCache = useMessengerProfileCache()

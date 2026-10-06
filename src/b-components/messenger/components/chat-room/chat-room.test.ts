@@ -42,6 +42,14 @@ vi.mock('./use-ipfs-send', async () => {
   const { ref } = await import('vue')
   return { useIpfsSend: () => ({ available: ref(false), sendViaIpfs: vi.fn() }) }
 })
+vi.mock('../../lib/support-account', async () => {
+  const { ref } = await import('vue')
+  return {
+    SUPPORT_ACCOUNT_NAME: 'bastyon_nextgen_supp',
+    supportAddress: ref('PSupport'),
+    resolveSupportAddress: vi.fn(async () => 'PSupport'),
+  }
+})
 vi.mock('./use-mesh-share', async () => {
   const { ref } = await import('vue')
   return { useMeshShare: () => ({ available: ref(false), shareAddress: vi.fn() }) }
@@ -77,6 +85,7 @@ function open(chatId: string, props: Record<string, unknown> = {}): VueWrapper {
         VoiceInputButton: true,
         MeshRouteBar: true,
         Popconfirm: true,
+        SupportReportBar: true,
       },
     },
     attachTo: document.body,
@@ -203,5 +212,16 @@ describe('полоса ввода чата', () => {
     w.find('textarea').element.dispatchEvent(withFiles('paste', 'clipboardData'))
     await flushPromises()
     expect(mocks.sendImage).toHaveBeenCalledTimes(2)
+  })
+
+  it('кнопка «Сведения о приложении» — только в чате с поддержкой', async () => {
+    mocks.store.getDirectPartnerAddress = () => 'PAlice'
+    let w = open('!a:host')
+    expect(w.findComponent({ name: 'SupportReportBar' }).exists()).toBe(false)
+    close()
+
+    mocks.store.getDirectPartnerAddress = () => 'PSupport'
+    w = open('!support:host')
+    expect(w.findComponent({ name: 'SupportReportBar' }).props('chatId')).toBe('!support:host')
   })
 })
