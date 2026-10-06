@@ -191,7 +191,7 @@
           </SC_PostActionBtn>
 
           <SC_PostActionBtn
-            v-if="isOwnPost"
+            v-if="canEdit"
             type="button"
             :aria-label="t('postCard.editAction')"
             @click="openEdit"
@@ -301,6 +301,7 @@ import { usePostDelete } from './use-post-delete'
 import { calculateAverageRating, decodeUrlEncoded, getPostShareId } from './helpers'
 import { DEFAULT_MAX_BLOCKS, DEFAULT_MAX_TEXT_LENGTH } from './consts'
 import type { Post, PostAuthor } from './post-card.types'
+import { isWithinEditWindow } from '@/helpers/content/edit-window'
 const props = withDefaults(
   defineProps<{
     post: Post
@@ -371,6 +372,10 @@ const repostAuthorName = computed<string>(() =>
 /** Свой ли это пост (для показа кнопки редактирования). */
 const isOwnPost = computed<boolean>(
   () => !!props.post.author?.address && props.post.author.address === authStore.getUserAddress
+)
+/** Свой пост, и сеть ещё примет правку (helpers/content/edit-window). */
+const canEdit = computed<boolean>(
+  () => isOwnPost.value && isWithinEditWindow(Date.parse(props.post.timestamp))
 )
 // Видимость поста и оригинала репоста: сеть её не проверяет, прячем здесь,
 // как старый клиент. Подписки смотрящего грузит user-relations (init в шапке).

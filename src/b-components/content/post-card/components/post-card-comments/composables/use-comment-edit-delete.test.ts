@@ -116,6 +116,13 @@ describe('useCommentEditDelete', () => {
       expect(c.canShowMenu(own)).toBe(true)
     })
 
+    it('свой комментарий старше месяца: сеть правку не примет, удалить можно', () => {
+      const c = setup()
+      const old = comment({ time: Math.floor(Date.now() / 1000) - 40 * 24 * 3600 })
+      expect(c.canEditComment(old)).toBe(false)
+      expect(c.canDeleteComment(old)).toBe(true)
+    })
+
     it('чужой под чужим постом: не править и не удалять, но блок, донат и жалоба', () => {
       const c = setup()
       const foreign = comment({ address: OTHER })

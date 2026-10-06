@@ -19,6 +19,7 @@ import type { GetComment } from '@/types/rpc-responses/get-comments'
 import { sendComment } from '../comment-sender'
 import { deleteComment } from '../comment-deleter'
 import { isCommentLengthValid, getCommentTxState } from '../helpers'
+import { isWithinEditWindow } from '@/helpers/content/edit-window'
 
 export interface UseCommentEditDeleteOptions {
   postId: Ref<string>
@@ -46,7 +47,8 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     if (!me || comment.address !== me) return false
     if (isCommentDeleted(comment)) return false
     if (getCommentTxState(comment) !== 'normal') return false
-    return true
+    // Сеть принимает правку только в первый месяц (helpers/content/edit-window).
+    return isWithinEditWindow(Number(comment.time) * 1000)
   }
   const canDeleteComment = (comment: GetComment): boolean => {
     const me = opts.currentUserAddress.value
