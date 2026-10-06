@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, type Directive } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { MessageOutlined, MenuOutlined } from '@/components/icons'
@@ -55,6 +55,7 @@ import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
+import { vHideZeroWidth } from './hide-zero-width'
 import {
   SC_Header,
   SC_Sections,
@@ -99,36 +100,4 @@ const unreadBadge = computed<string>(() => {
   if (!n || n <= 0) return ''
   return n > 99 ? '99+' : String(n)
 })
-
-/**
- * Прячет дочерние элементы, схлопнутые до 0px по горизонтали. Нужно для адаптива:
- * иконки в `<SC_Right>` могут визуально пропадать на узких экранах из-за стилей
- * выше по каскаду — директива скрывает их через `display:none`, чтобы соседи
- * не «прыгали» из-за невидимых occupants.
- */
-const vHideZeroWidth: Directive<HTMLElement> = {
-  mounted(el) {
-    const checkWidth = (): void => {
-      const children = Array.from(el.children) as HTMLElement[]
-      for (const child of children) {
-        const rect = child.getBoundingClientRect()
-        child.style.display = rect.width === 0 ? 'none' : ''
-      }
-    }
-
-    checkWidth()
-
-    const resizeObserver = new ResizeObserver(checkWidth)
-    resizeObserver.observe(el)
-    for (const child of Array.from(el.children) as HTMLElement[]) {
-      resizeObserver.observe(child)
-    }
-
-    ;(el as HTMLElement & { _resizeObserver?: ResizeObserver })._resizeObserver = resizeObserver
-  },
-  unmounted(el) {
-    const observer = (el as HTMLElement & { _resizeObserver?: ResizeObserver })._resizeObserver
-    observer?.disconnect()
-  },
-}
 </script>
