@@ -776,6 +776,7 @@ export default {
     blockConfirmTitle: 'Bloquer cet utilisateur ?',
     unblockConfirmTitle: 'Débloquer cet utilisateur ?',
     partnerAvatarAlt: 'Avatar de {name}',
+    openProfile: 'Ouvrir le profil : {name}',
     reputation: 'Réputation',
     subscribers: 'Abonnés',
     subscriptions: 'Abonnements',

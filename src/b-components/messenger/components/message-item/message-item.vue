@@ -1,14 +1,16 @@
 <template>
   <SC_MessageRow :class="isMine ? 'mine' : 'others'">
     <SC_AvatarSlot v-if="!isMine">
-      <Avatar
-        v-if="showAvatar"
-        :src="displayAvatar"
-        :alt="displayName"
-        :fallback-text="displayName"
-        :size="32"
-        shape="circle"
-      />
+      <!-- Аватар ведёт в профиль отправителя — в группе по-другому к нему не попасть. -->
+      <ProfileLink v-if="showAvatar" :address="isMesh ? null : senderAddress" :name="displayName">
+        <Avatar
+          :src="displayAvatar"
+          :alt="displayName"
+          :fallback-text="displayName"
+          :size="32"
+          shape="circle"
+        />
+      </ProfileLink>
     </SC_AvatarSlot>
 
     <SC_MessageItem :class="isMine ? 'mine' : 'others'">
@@ -175,6 +177,7 @@ import {
 import { QUICK_REACTION_EMOJIS } from '../../store/consts'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import Avatar from '@/components/avatar/avatar.vue'
+import ProfileLink from '../profile-link/profile-link.vue'
 import AudioMessage from '../audio-message/audio-message.vue'
 import ImageMessage from '../image-message/image-message.vue'
 import VideoMessage from '../video-message/video-message.vue'

@@ -763,6 +763,7 @@ export default {
     blockConfirmTitle: '이 사용자를 차단할까요?',
     unblockConfirmTitle: '이 사용자의 차단을 해제할까요?',
     partnerAvatarAlt: '{name}의 아바타',
+    openProfile: '프로필 열기: {name}',
     reputation: '평판',
     subscribers: '구독자',
     subscriptions: '구독',

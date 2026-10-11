@@ -16,7 +16,10 @@
 
     <SC_Header>
       <slot name="actions" />
-      <SC_Title :title="title">{{ title }}</SC_Title>
+      <!-- В открытом чате вместо заголовка — собеседник со ссылкой на профиль. -->
+      <slot name="title">
+        <SC_Title :title="title">{{ title }}</SC_Title>
+      </slot>
       <SC_CloseButton type="button" :aria-label="t('chat.close')" @click="emit('close')">
         <CloseOutlined />
       </SC_CloseButton>

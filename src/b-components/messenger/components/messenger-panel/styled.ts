@@ -84,11 +84,6 @@ export const SC_ChatTopBar = styled.div`
   padding: 0 16px;
 `
 
-/** Имя собеседника в шапке активного чата. */
-export const SC_PartnerName = styled.span`
-  font-weight: 600;
-`
-
 export const SC_EmptyState = styled.div`
   flex: 1;
   display: flex;

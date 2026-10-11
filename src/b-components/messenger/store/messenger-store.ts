@@ -768,6 +768,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     openMessenger,
     /** Свернуть виджет: сбрасывает активный чат вместе с видимостью (V30). */
     closeWidget: uiStore.closeWidget,
+    closeFullScreen: uiStore.closeFullScreen,
     /** Виден ли чат на экране (для read-markers/звука/уведомлений). */
     isChatOnScreen: uiStore.isChatOnScreen,
     sendMessage,

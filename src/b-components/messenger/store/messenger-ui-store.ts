@@ -100,6 +100,13 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     inviteViewActive.value = false
   }
 
+  /** Закрыть полноэкранный мессенджер целиком — вместе с чатом и приглашением. */
+  const closeFullScreen = (): void => {
+    isFullScreen.value = false
+    clearInviteTarget()
+    closeWidget()
+  }
+
   /** Пометить прочтённым конкретный диалог */
   const markDialogRead = (chatId: string): void => {
     const dialog = dialogs.value.find((d) => d.id === chatId)
@@ -165,6 +172,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     switchToChat,
     showInvite,
     clearInviteTarget,
+    closeFullScreen,
     markDialogRead,
     prependDialog,
     removeDialog,

@@ -20,6 +20,9 @@
           <ArrowLeftIcon />
         </SC_BackButton>
       </template>
+      <template v-if="shownPartner" #title>
+        <ChatPartnerTitle :partner="shownPartner" />
+      </template>
 
       <SC_MessengerWrapperLoader
         v-if="isDialogsLoading && !activeChatId && !(lastTargetAddress && inviteViewActive)"
@@ -82,6 +85,8 @@ import ChatRoom from '../chat-room/chat-room.vue'
 import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
 import { isMeshDialogId } from '@/mesh/ids'
 import MessengerPanel from '../messenger-panel/messenger-panel.vue'
+import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
+import { useShownPartner } from '../chat-partner-title/use-shown-partner'
 import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
@@ -154,17 +159,8 @@ watch(isMobileOrTablet, (mobile) => {
   }
 })
 
-const widgetTitle = computed<string>(() => {
-  if (activeChatId.value) {
-    const dialog = dialogs.value.find((d) => d.id === activeChatId.value)
-    return dialog?.partner.name || t('messenger.chat')
-  }
-  if (lastTargetAddress.value) {
-    const profile = store.userProfiles[lastTargetAddress.value]
-    return profile?.name || lastTargetAddress.value || t('messenger.newChat')
-  }
-  return t('messenger.messages')
-})
+const shownPartner = useShownPartner()
+const widgetTitle = computed<string>(() => shownPartner.value?.name ?? t('messenger.messages'))
 
 function onWidgetBack(): void {
   if (activeChatId.value) {
@@ -179,11 +175,9 @@ function onChatStarted(roomId: string): void {
 }
 
 function closeFullScreen(): void {
-  store.isFullScreen = false
-  store.clearInviteTarget()
-  // closeWidget сбрасывает и активный чат — иначе скрытое окно продолжает
-  // слать read-markers за пользователя (V30).
-  store.closeWidget()
+  // Вместе с активным чатом — иначе скрытое окно продолжает слать read-markers
+  // за пользователя (V30).
+  store.closeFullScreen()
 }
 
 function closeWidget(): void {

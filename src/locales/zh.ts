@@ -741,6 +741,7 @@ export default {
     blockConfirmTitle: '屏蔽此用户？',
     unblockConfirmTitle: '解除对此用户的屏蔽？',
     partnerAvatarAlt: '{name} 的头像',
+    openProfile: '打开主页：{name}',
     reputation: '声誉',
     subscribers: '粉丝',
     subscriptions: '关注',

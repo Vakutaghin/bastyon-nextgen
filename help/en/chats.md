@@ -1,5 +1,6 @@
 ---
-keywords: [chat, new chat, conversation, group chat, search in chat, delete conversation]
+keywords:
+  [chat, new chat, conversation, group chat, search in chat, delete conversation, contact profile]
 ---
 
 # Chats
@@ -19,6 +20,14 @@ If someone new writes to you, the chat with them appears in the list by itself.
 Each chat shows the other person’s name and avatar, the start of the last message (**“You:”** if you wrote it), the time and the number of unread messages.
 
 The three-dot button on a chat is **“Delete dialog”**. The app asks again: **“Delete dialog?”** You leave the conversation, and it disappears from your list. The other person keeps it, and if either of you starts a chat again, it will be a new conversation.
+
+## The other person’s profile
+
+The avatar and name in the header of an open chat lead to the other person’s profile. In the conversation, the avatar next to a message does the same — that is how you open any member’s profile in a group chat.
+
+On a computer the chat window stays open and the profile opens beneath it. On a phone the chat closes; to get back, press **“Start chat”** in the profile — it opens the same conversation.
+
+A group chat and a chat over the radio network ([Mesh](mesh.md)) have no link in the header: they have no Bastyon profile.
 
 ## Search
 

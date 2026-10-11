@@ -31,7 +31,7 @@
           >
             <ArrowLeftIcon />
           </SC_MobileBackButton>
-          <SC_PartnerName>{{ activeChatName }}</SC_PartnerName>
+          <ChatPartnerTitle v-if="shownPartner" :partner="shownPartner" />
         </SC_ChatTopBar>
         <MeshChatRoom
           v-if="isMeshDialogId(activeChatId)"
@@ -53,7 +53,7 @@
           <SC_MobileBackButton :aria-label="t('chat.back')" @click="store.clearInviteTarget">
             <ArrowLeftIcon />
           </SC_MobileBackButton>
-          <SC_PartnerName>{{ invitePartnerName }}</SC_PartnerName>
+          <ChatPartnerTitle v-if="shownPartner" :partner="shownPartner" />
         </SC_ChatTopBar>
         <ChatRoom
           :messages="[]"
@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useMessengerStore } from '../../store'
@@ -81,6 +81,8 @@ import { useAuthStore } from '@/blockchain'
 import ChatList from '../chat-list/chat-list.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
 import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
+import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
+import { useShownPartner } from '../chat-partner-title/use-shown-partner'
 import { isMeshDialogId } from '@/mesh/ids'
 import {
   SC_MessengerContainer,
@@ -92,7 +94,6 @@ import {
   SC_MessengerDialogsLoader,
   SC_MessengerDialogsLoaderText,
   SC_MessengerDialogsSpinner,
-  SC_PartnerName,
   SC_SidebarHeader,
   SC_SyncErrorBanner,
   SC_SyncStatusBanner,
@@ -115,20 +116,8 @@ function syncStatusText(state: string): string {
   return t('messenger.syncConnecting')
 }
 
-const activeChatName = computed<string>(() => {
-  if (activeChatId.value) {
-    const dialog = store.dialogs.find((d) => d.id === activeChatId.value)
-    return dialog?.partner.name || t('messenger.chat')
-  }
-  return ''
-})
-
-const invitePartnerName = computed<string>(() => {
-  const addr = lastTargetAddress.value
-  if (!addr) return t('messenger.newChat')
-  const profile = store.userProfiles[addr]
-  return profile?.name || addr || t('messenger.newChat')
-})
+/** Собеседник в шапке чата: аватар и имя ведут в его профиль. */
+const shownPartner = useShownPartner()
 
 onMounted(async () => {
   if (authStore.isUserAuthenticated) {

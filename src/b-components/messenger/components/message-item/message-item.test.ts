@@ -1,30 +1,37 @@
 // Сведения о приложении для поддержки в переписке: с первой же отрисовки —
 // окошко с JSON, а не длинный текст, который потом превращается в окошко.
-// Стор мессенджера и роутер подменены.
+// Аватар отправителя ведёт в его профиль. Стор мессенджера подменён.
 
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { i18n, setI18nLocale } from '@/i18n'
 
 const mocks = vi.hoisted(() => ({ store: null as unknown as Record<string, unknown> }))
 
 vi.mock('../../store', () => ({ useMessengerStore: () => mocks.store }))
-vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))
+vi.mock('vue-router', async (original) => ({
+  ...(await original<typeof import('vue-router')>()),
+  useRouter: () => ({ push: vi.fn() }),
+}))
 
 import { buildReportMessages } from '../../lib/support-report'
+import { addressToHex } from '../../services/matrix-service/address-codec'
 import type { Message } from '../../types'
 import MessageItem from './message-item.vue'
 
 const JSON_TEXT = JSON.stringify({ app: { version: '0.9.5', platform: 'desktop' } }, null, 2)
 
-function message(text: string): Message {
+const ALICE = 'PXXwfNRT7hD6UYeQQMBXSoLsJH4xDdGc4D'
+
+function message(text: string, senderId = '@alice:host'): Message {
   return {
     id: '$1',
     chatId: '!support:host',
-    senderId: '@alice:host',
+    senderId,
     text,
     timestamp: Date.now(),
     read: true,
@@ -32,10 +39,18 @@ function message(text: string): Message {
   }
 }
 
-function render(text: string) {
+function render(text: string, senderId?: string) {
+  const page = { render: () => null }
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', component: page },
+      { path: '/:userName', name: 'profile', component: page },
+    ],
+  })
   return mount(MessageItem, {
-    props: { message: message(text) },
-    global: { plugins: [i18n], provide: { theme: {} }, stubs: { LinkPreview: true } },
+    props: { message: message(text, senderId) },
+    global: { plugins: [i18n, router], provide: { theme: {} }, stubs: { LinkPreview: true } },
   })
 }
 
@@ -76,5 +91,17 @@ describe('сведения для поддержки в переписке', () 
     const w = render('Привет, у меня не работает голосовой ввод')
     expect(w.find('.message-text').text()).toContain('голосовой ввод')
     expect(w.find('pre').exists()).toBe(false)
+  })
+})
+
+describe('аватар отправителя', () => {
+  it('ведёт в профиль собеседника', () => {
+    const w = render('Привет', `@${addressToHex(ALICE)}:matrix.pocketnet.app`)
+    const link = w.get(`a[href="/${ALICE}"]`)
+    expect(link.attributes('aria-label')).toMatch(/^Открыть профиль: /)
+  })
+
+  it('не из Bastyon — аватар без ссылки', () => {
+    expect(render('Привет').find('a[aria-label^="Открыть профиль"]').exists()).toBe(false)
   })
 })

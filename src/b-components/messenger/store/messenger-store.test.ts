@@ -363,3 +363,18 @@ describe('messenger-store: «Начать чат» сразу после зап�
     expect(ui.inviteViewActive).toBe(true)
   })
 })
+
+describe('messenger-store: закрыть полноэкранный мессенджер', () => {
+  it('закрывается целиком — с чатом и приглашением', () => {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    ui.isFullScreen = true
+    ui.activeChatId = '!bob:host'
+    ui.lastTargetAddress = 'PBob'
+    store.closeFullScreen()
+    expect(ui.isFullScreen).toBe(false)
+    expect(ui.activeChatId).toBeNull()
+    expect(ui.lastTargetAddress).toBeNull()
+    expect(ui.inviteViewActive).toBe(false)
+  })
+})

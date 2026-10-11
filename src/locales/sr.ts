@@ -765,6 +765,7 @@ export default {
     blockConfirmTitle: 'Блокирати овог корисника?',
     unblockConfirmTitle: 'Одблокирати овог корисника?',
     partnerAvatarAlt: 'Аватар корисника {name}',
+    openProfile: 'Отвори профил: {name}',
     reputation: 'Репутација',
     subscribers: 'Пратиоци',
     subscriptions: 'Претплате',
