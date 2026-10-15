@@ -1,6 +1,12 @@
 ---
 keywords:
-  [chat, new chat, conversation, group chat, search in chat, delete conversation, contact profile]
+  - chat
+  - new chat
+  - conversation
+  - group chat
+  - search in chat
+  - delete conversation
+  - contact profile
 ---
 
 # Chats

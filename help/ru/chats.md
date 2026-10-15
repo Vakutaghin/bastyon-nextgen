@@ -1,6 +1,12 @@
 ---
 keywords:
-  [чат, новый чат, диалог, групповой чат, поиск в переписке, удалить диалог, профиль собеседника]
+  - чат
+  - новый чат
+  - диалог
+  - групповой чат
+  - поиск в переписке
+  - удалить диалог
+  - профиль собеседника
 code:
   - src/b-components/messenger/components/chat-list
   - src/b-components/messenger/components/chat-room
