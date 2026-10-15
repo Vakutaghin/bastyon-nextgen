@@ -19,7 +19,7 @@ import { useAuthStore } from '@/blockchain'
 import type { ArticleContent, SharePostData } from '@/blockchain/core/actions/post-action'
 import { resolvePostOperationType } from '@/blockchain/core/actions/post-action'
 import { appToast } from '@/b-components/app-toast'
-import { fetchAccountSettings, paidSubscriptionPrice } from '@/helpers/api/account-settings'
+import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import { encodeArticleContent } from '@/helpers/content/article-codec'
 import { parsePoll } from '@/helpers/content/poll'
 import { haptic } from '@/helpers/common/haptics'
@@ -163,19 +163,16 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   /**
    * Видимость «платным подписчикам» (f='3') — только у автора с назначенной
    * ценой подписки (accSet.paidsubscription), как в старом клиенте: без цены
-   * оформить подписку нельзя, и такой пост не увидел бы никто.
+   * оформить подписку нельзя, и такой пост не увидел бы никто. Цена — из стора
+   * платных подписок: только что назначенная видна до подтверждения сетью.
+   * Нода не ответила — пункт не показываем; правку поста с f='3' это не ломает.
    */
-  const paidVisibilityAvailable = ref(false)
+  const paidSubscriptions = usePaidSubscriptionsStore()
   const ownAddress = authStore.getUserAddress
-  if (ownAddress) {
-    fetchAccountSettings(ownAddress)
-      .then((settings) => {
-        paidVisibilityAvailable.value = paidSubscriptionPrice(settings) > 0
-      })
-      .catch(() => {
-        // Нода не ответила — пункт не показываем; правку поста с f='3' это не ломает.
-      })
-  }
+  if (ownAddress) void paidSubscriptions.ensurePrice(ownAddress)
+  const paidVisibilityAvailable = computed(
+    () => !!ownAddress && (paidSubscriptions.priceOf(ownAddress) ?? 0) > 0
+  )
 
   // Опрос уходит в настройки (`s.poll`): поле `p`, которое заполнял старый
   // клиент, нода не хранит. При правке — опрос опубликованного поста как есть:

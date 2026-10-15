@@ -12,7 +12,7 @@ The wallet’s **“History”** tab shows **“Sent and received PKOIN for your
 
 - **“Received”** or **“Sent”** and the amount;
 - from or to whom — an address;
-- a mark if it is not an ordinary transfer: **“Tip”**, **“Boost”** — promoting a post, **“Stake”** — a block reward;
+- a mark if it is not an ordinary transfer: **“Tip”**, **“Subscription”** — a [paid subscription](paid-subscriptions.md) payment, **“Boost”** — promoting a post, **“Stake”** — a block reward;
 - the time. Hover over it to see the exact date.
 
 At the bottom there is **“Load more”** if there are many entries.

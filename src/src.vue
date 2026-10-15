@@ -6,6 +6,7 @@ import { ConfigProvider } from 'ant-design-vue'
 import AppLayout from '@/b-components/app-layout/app-layout.vue'
 import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
+import PaidSubscriptionModal from '@/b-components/paid-subscription/paid-subscription-modal.vue'
 import BoostModal from '@/b-components/boost/boost-modal.vue'
 import ReportModal from '@/b-components/report/report-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
@@ -104,6 +105,8 @@ watch(themeConfig, setStaticApiTheme, { immediate: true })
       <MiniAppPaymentModal />
       <!-- Донат автору — singleton, открывается через useDonateStore -->
       <DonateModal />
+      <!-- Платная подписка на автора — singleton, открывается через usePaidSubscriptionsStore -->
+      <PaidSubscriptionModal />
       <!-- Продвижение поста за PKOIN — singleton, открывается через useBoostStore -->
       <BoostModal />
       <!-- Жалоба на контент — singleton, открывается через useReportStore -->

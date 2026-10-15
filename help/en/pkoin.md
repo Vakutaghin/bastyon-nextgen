@@ -15,8 +15,7 @@ Why the network has a coin, where it comes from and how much of it you need to u
 - **Tips and transfers** to other people — see [Tipping the author](tips.md) and [Transfers and fees](send-pkoin.md).
 - **Payments in mini apps** — see [Payments in mini apps](mini-app-payments.md).
 - **Promoting posts** — see [Promoting a post](boost.md).
-
-In the previous Bastyon app PKOIN is also used for paid subscriptions to authors. This app does not have them yet.
+- **Paid subscriptions** to authors — see [Paid subscriptions](paid-subscriptions.md).
 
 ## How much you need
 

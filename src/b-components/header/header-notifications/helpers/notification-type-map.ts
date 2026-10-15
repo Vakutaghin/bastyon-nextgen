@@ -48,6 +48,8 @@ export function notificationTypeLabelKey(item: NotificationItem): string {
       return 'notif.typeWin'
     case 'donation':
       return 'notif.typeDonation'
+    case 'paidSubscription':
+      return 'notif.typePaidSubscription'
     case 'userInfo':
       return 'notif.typeUserInfo'
     default:

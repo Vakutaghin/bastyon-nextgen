@@ -308,6 +308,26 @@ describe('чаевые и сообщение перевода — из OP_RETURN
     })
   })
 
+  it('метка a:subscription — оплата платной подписки, без служебного текста', () => {
+    const r = mapMissedEventToNotification(
+      {
+        txid: 's1',
+        type: 1,
+        height: 131,
+        vin: [{ address: 'PX' }],
+        vout: [opReturn('a:subscription'), pay('ME', 55)],
+      },
+      'ME'
+    )
+    expect(r).toMatchObject({
+      type: 'tip',
+      mesType: 'paidSubscription',
+      title: 'notif.titlePaidSubscription',
+      description: '+55 PKOIN',
+      from: 'PX',
+    })
+  })
+
   it('сообщение обычного перевода видно в уведомлении', () => {
     const r = mapMissedEventToNotification(
       {

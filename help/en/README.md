@@ -47,6 +47,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Profile](profile.md)
   - [Your profile](edit-profile.md)
   - [Subscriptions](subscriptions.md)
+  - [Paid subscriptions](paid-subscriptions.md)
   - [Blocking](blocking.md)
 - [Notifications](notifications.md)
 - [Video and audio](video.md)

@@ -67,6 +67,9 @@
         </SC_BellButton>
       </SC_SubscribeRow>
 
+      <!-- Платная подписка: у автора — управление, у читателя — оформить. -->
+      <PaidProfileButton v-if="userAddress" :address="userAddress" :settings="accountSettings" />
+
       <SC_StartChatButton :disabled="!userAddress" @click="startChatWithUser">
         {{ t('profile.startChat') }}
       </SC_StartChatButton>
@@ -179,6 +182,7 @@ import { formatAbout } from './format-about'
 import { useProfileRelationsActions } from './use-profile-relations-actions'
 import EditProfileModal from '@/b-components/profile/edit-profile-modal/edit-profile-modal.vue'
 import FollowersListModal from '@/b-components/profile/followers-list-modal/followers-list-modal.vue'
+import PaidProfileButton from '@/b-components/paid-subscription/paid-profile-button.vue'
 import type { RelationListType } from '@/composables/use-followers-list'
 import { ICON_PRIMARY_24, ICON_SIZE_11 } from '@/styles/icon-styles'
 import { userName } from '@/services/user-names'
@@ -210,7 +214,7 @@ import {
 } from './styled'
 
 interface ProfileWithAccSet extends UserProfile {
-  accSet?: { image?: string }
+  accSet?: { image?: string } & Record<string, unknown>
   publications_count?: number
 }
 
@@ -263,6 +267,11 @@ const userSite = computed<string | null>(() => {
 const formattedUserAbout = computed<string>(() => formatAbout(props.profile?.a || ''))
 
 const userAddress = computed<string>(() => props.profile?.address || '')
+
+/** Настройки аккаунта (accSet), если страница профиля их загрузила: в них цена подписки. */
+const accountSettings = computed(
+  () => (props.profile as ProfileWithAccSet | null | undefined)?.accSet ?? null
+)
 
 // Подписка / уведомления / блокировка + gating — в composable.
 const {

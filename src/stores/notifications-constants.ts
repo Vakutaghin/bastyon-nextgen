@@ -38,5 +38,6 @@ export const MES_TYPE_TITLE_KEYS: Record<string, string> = {
   boost: 'notif.titleBoost',
   transaction: 'notif.titleTip',
   donation: 'notif.titleDonation',
+  paidSubscription: 'notif.titlePaidSubscription',
   win: 'notif.titleWin',
 }

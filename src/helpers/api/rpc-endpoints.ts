@@ -43,6 +43,8 @@ export const rpcEndpoints = {
   txUnspent: 'txunspent',
   getRawTransaction: 'getrawtransaction',
   getRawTransactionWithMessageById: 'getrawtransactionwithmessagebyid',
+  /** Переводы с меткой в OP_RETURN (по умолчанию — оплата платной подписки). */
+  getFromToTransactions: 'getfromtotransactions',
   sendRawTransactionWithMessage: 'sendrawtransactionwithmessage',
 
   // Block Explorer methods

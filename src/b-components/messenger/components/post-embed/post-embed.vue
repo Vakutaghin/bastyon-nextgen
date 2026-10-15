@@ -40,14 +40,19 @@
       </SC_HeaderInfo>
     </SC_Header>
 
-    <SC_Thumb v-if="thumbnailUrl" :aspect="thumbAspect">
+    <!-- Пост не для этого читателя: в чате видно только, что он закрыт. -->
+    <SC_Body v-if="restriction">
+      <SC_Snippet>🔒 {{ t(`postCard.visibility.${restriction}`) }}</SC_Snippet>
+    </SC_Body>
+
+    <SC_Thumb v-else-if="thumbnailUrl" :aspect="thumbAspect">
       <SC_ThumbImg :src="thumbnailUrl" :alt="post.title || 'post image'" loading="lazy" />
       <SC_VideoBadge v-if="isVideoTarget">
         <SC_VideoIcon />
       </SC_VideoBadge>
     </SC_Thumb>
 
-    <SC_Body v-if="post.title || snippet">
+    <SC_Body v-if="!restriction && (post.title || snippet)">
       <SC_Title v-if="post.title">{{ post.title }}</SC_Title>
       <SC_Snippet v-if="snippet">{{ snippet }}</SC_Snippet>
     </SC_Body>
@@ -55,12 +60,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useModalStore } from '@/stores/modal-store'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { usePostByTxid } from './use-post-by-txid'
+import { usePostRestriction } from '@/b-components/content/post-card/use-post-restriction'
+import { postVisibilityOf } from '@/helpers/content/post-visibility'
+import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import { toBasytonHttpsUrl, type BastyonLinkTarget } from '../../lib/bastyon-link'
 import {
   SC_PostEmbed,
@@ -94,6 +102,22 @@ const txidRef = toRef(() => props.target.txid)
 const { post, isLoading, isError, isMissing } = usePostByTxid(txidRef)
 
 const isVideoTarget = computed(() => props.target.isVideo)
+
+// Видимость — как в ленте: пост для подписчиков или платных подписчиков
+// показывает текст и картинку только тем, кому он открыт.
+const restrictionOf = usePostRestriction()
+const restriction = computed(
+  () =>
+    (post.value && restrictionOf(post.value.author?.address, post.value.settings?.f)?.reason) ||
+    null
+)
+const paidSubscriptions = usePaidSubscriptionsStore()
+watch(post, (p) => {
+  const author = p?.author?.address
+  if (!author || postVisibilityOf(p?.settings?.f) !== 'paid') return
+  void paidSubscriptions.ensurePrice(author)
+  void paidSubscriptions.ensureMyPayments()
+})
 
 const shortTxid = computed(() => {
   const txid = props.target.txid

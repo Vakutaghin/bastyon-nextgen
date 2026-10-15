@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_OP_RETURN_BYTES, fitOpReturnText, opReturnText, utf8Length } from './op-return'
+import {
+  MAX_OP_RETURN_BYTES,
+  SUBSCRIPTION_MARKER,
+  fitOpReturnText,
+  opReturnScriptHex,
+  opReturnText,
+  utf8Length,
+} from './op-return'
 
 describe('op-return', () => {
   it('текст из OP_RETURN читается как у старого клиента', () => {
@@ -16,5 +23,13 @@ describe('op-return', () => {
     expect(fitted).toBe('a'.repeat(77))
     expect(utf8Length(fitted)).toBeLessThanOrEqual(MAX_OP_RETURN_BYTES)
     expect(fitOpReturnText('За кофе')).toBe('За кофе')
+  })
+})
+
+describe('opReturnScriptHex', () => {
+  it('метка подписки — тот же скрипт, по которому её ищет нода', () => {
+    // pocketnet.core, GetFromToTransactions: фильтр по умолчанию.
+    expect(opReturnScriptHex(SUBSCRIPTION_MARKER)).toBe('6a0e613a737562736372697074696f6e')
+    expect(opReturnText(opReturnScriptHex(SUBSCRIPTION_MARKER))).toBe(SUBSCRIPTION_MARKER)
   })
 })

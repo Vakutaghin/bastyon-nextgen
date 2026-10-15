@@ -6,6 +6,7 @@
 // сброс → обновление ленты. Валидация, теги, опрос и разбор ссылок —
 // настоящие модули; сеть, сторы и загрузка картинок подменены.
 
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, reactive } from 'vue'
 
@@ -22,7 +23,6 @@ const mocks = vi.hoisted(() => ({
   sendPost: vi.fn(),
   uploadImages: vi.fn(),
   fetchAccountSettings: vi.fn(),
-  paidSubscriptionPrice: vi.fn(),
   openAuthModal: vi.fn(),
   addPending: vi.fn(),
   invalidateQueries: vi.fn(),
@@ -61,9 +61,9 @@ vi.mock('@/blockchain', () => ({ useAuthStore: () => mocks.auth }))
 vi.mock('@/b-components/app-toast', () => ({
   appToast: { error: mocks.toastError, success: mocks.toastSuccess },
 }))
-vi.mock('@/helpers/api/account-settings', () => ({
+vi.mock('@/helpers/api/account-settings', async (original) => ({
+  ...(await original<typeof import('@/helpers/api/account-settings')>()),
   fetchAccountSettings: mocks.fetchAccountSettings,
-  paidSubscriptionPrice: mocks.paidSubscriptionPrice,
 }))
 vi.mock('@/helpers/common/haptics', () => ({ haptic: mocks.haptic }))
 vi.mock('@/services/image-upload-service', () => ({ uploadImages: mocks.uploadImages }))
@@ -136,7 +136,7 @@ describe('usePostComposer', () => {
       .mockReset()
       .mockImplementation(async (list: string[]) => list.map((_, i) => `https://img/${i}.jpg`))
     mocks.fetchAccountSettings.mockReset().mockResolvedValue({})
-    mocks.paidSubscriptionPrice.mockReset().mockReturnValue(0)
+    setActivePinia(createPinia())
     mocks.openAuthModal.mockReset()
     mocks.addPending.mockReset()
     mocks.invalidateQueries.mockReset().mockResolvedValue(undefined)
@@ -219,17 +219,22 @@ describe('usePostComposer', () => {
     })
 
     it('«Платным подписчикам» доступно только при назначенной цене подписки', async () => {
-      mocks.paidSubscriptionPrice.mockReturnValue(5)
+      mocks.fetchAccountSettings.mockResolvedValue({ paidsubscription: 5 })
       const c = compose()
       await flush()
       expect(mocks.fetchAccountSettings).toHaveBeenCalledWith(ME)
       expect(c.paidVisibilityAvailable.value).toBe(true)
 
-      mocks.paidSubscriptionPrice.mockReturnValue(0)
-      const free = compose()
-      await flush()
-      expect(free.paidVisibilityAvailable.value).toBe(false)
+      // Отключена (-1) или не назначена — пункта нет.
+      for (const paidsubscription of [-1, 0]) {
+        setActivePinia(createPinia())
+        mocks.fetchAccountSettings.mockResolvedValue({ paidsubscription })
+        const free = compose()
+        await flush()
+        expect(free.paidVisibilityAvailable.value).toBe(false)
+      }
 
+      setActivePinia(createPinia())
       mocks.fetchAccountSettings.mockRejectedValue(new Error('offline'))
       const offline = compose()
       await flush()

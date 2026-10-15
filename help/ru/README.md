@@ -47,6 +47,7 @@
   - [Профиль](profile.md)
   - [Ваш профиль](edit-profile.md)
   - [Подписки](subscriptions.md)
+  - [Платные подписки](paid-subscriptions.md)
   - [Блокировка](blocking.md)
 - [Уведомления](notifications.md)
 - [Видео и аудио](video.md)

@@ -23,6 +23,8 @@ export type PendingKind =
   | 'boost'
   | 'transfer'
   | 'donate'
+  | 'paidSubscription'
+  | 'paidSubscriptionPrice'
   | 'payment'
   | 'postEdit'
   | 'postDelete'

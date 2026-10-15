@@ -87,4 +87,18 @@ describe('classifyWalletTx semantic', () => {
     const r = classifyWalletTx(t, mine)
     expect(r).toMatchObject({ direction: 'in', amount: 5, semantic: 'donate' })
   })
+
+  it('оплата платной подписки — метка a:subscription', () => {
+    const t = tx([{ address: ME }], [{ value: 55, address: OTHER }], 1)
+    t.vout.unshift({
+      n: 0,
+      value: 0,
+      scriptPubKey: { addresses: [], hex: '6a0e613a737562736372697074696f6e' },
+    })
+    expect(classifyWalletTx(t, mine)).toMatchObject({
+      direction: 'out',
+      amount: 55,
+      semantic: 'subscription',
+    })
+  })
 })

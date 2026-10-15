@@ -13,6 +13,8 @@ const SettingsPage = () => import('@/pages/settings-page/settings-page.vue')
 const LimitsPage = () => import('@/pages/limits-page/limits-page.vue')
 const WalletsPage = () => import('@/pages/wallets-page/wallets-page.vue')
 const MyVideosPage = () => import('@/pages/my-videos-page/my-videos-page.vue')
+const PaidSubscriptionsPage = () =>
+  import('@/pages/paid-subscriptions-page/paid-subscriptions-page.vue')
 const MyFilesPage = () => import('@/pages/my-files-page/my-files-page.vue')
 const MeshPage = () => import('@/pages/mesh-page/mesh-page.vue')
 const BlockExplorerPage = () => import('@/pages/block-explorer-page/block-explorer-page.vue')
@@ -35,6 +37,7 @@ const AUTH_REQUIRED_NAMES = new Set([
   'wallets',
   'settings',
   'my-videos',
+  'paid-subscriptions',
   'my-files',
   'mesh',
 ])
@@ -72,6 +75,12 @@ const router = createRouter({
       name: 'my-videos',
       component: MyVideosPage,
       meta: { titleKey: 'routes.my-videos', helpTopic: 'video-upload' },
+    },
+    {
+      path: '/paid-subscriptions',
+      name: 'paid-subscriptions',
+      component: PaidSubscriptionsPage,
+      meta: { titleKey: 'routes.paid-subscriptions', helpTopic: 'paid-subscriptions' },
     },
     {
       path: '/my-files',

@@ -6,6 +6,9 @@
 /** Метка чаевых в OP_RETURN перевода. */
 export const DONATE_MARKER = 'a:donate'
 
+/** Метка оплаты платной подписки в OP_RETURN перевода (как у старого клиента). */
+export const SUBSCRIPTION_MARKER = 'a:subscription'
+
 /**
  * Сколько байт данных нода пропускает в OP_RETURN: `MAX_OP_RETURN_RELAY` —
  * 83 байта скрипта, из них 3 на OP_RETURN и длину. Длиннее — транзакция
@@ -68,4 +71,15 @@ export function txOpReturnText(
     if (text !== undefined) return text
   }
   return undefined
+}
+
+/**
+ * Скрипт OP_RETURN с одним коротким текстом (`6a <длина> <данные>`) в hex —
+ * так нода ищет переводы по метке (`getfromtotransactions`).
+ */
+export function opReturnScriptHex(text: string): string {
+  const bytes = new TextEncoder().encode(text)
+  if (bytes.length > 0x4b) throw new Error('OP_RETURN text is too long for a single push')
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  return `6a${bytes.length.toString(16).padStart(2, '0')}${hex}`
 }

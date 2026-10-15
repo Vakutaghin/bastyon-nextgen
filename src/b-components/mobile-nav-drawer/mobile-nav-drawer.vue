@@ -85,6 +85,7 @@ import {
   SettingOutlined,
   UserOutlined,
   WalletOutlined,
+  CrownOutlined,
 } from '@/components/icons'
 import {
   SC_Backdrop,
@@ -120,6 +121,11 @@ const profileLink = computed<string>(() => {
 const accountItems = computed(() => [
   { path: profileLink.value, label: t('accountMsg.menuProfile'), icon: UserOutlined },
   { path: '/wallets', label: t('accountMsg.menuWallets'), icon: WalletOutlined },
+  {
+    path: '/paid-subscriptions',
+    label: t('accountMsg.menuPaidSubscriptions'),
+    icon: CrownOutlined,
+  },
   { path: '/limits', label: t('accountMsg.menuLimits'), icon: HourglassOutlined },
   { path: '/my-videos', label: t('accountMsg.menuMyVideos'), icon: PlayCircleOutlined },
   // Раздавать файлы через IPFS умеет только десктоп (своя нода Kubo); радио для

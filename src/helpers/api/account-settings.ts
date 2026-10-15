@@ -8,7 +8,7 @@ import { getByPRC } from './request'
 import { rpcEndpoints } from './rpc-endpoints'
 
 export interface AccountSettings {
-  /** Цена платной подписки, PKOIN в месяц (0 — не задана). */
+  /** Цена платной подписки, PKOIN в месяц (0 — не задана, -1 — отключена). */
   paidsubscription?: number | string
   /** Обложка профиля. */
   cover?: string
@@ -42,6 +42,15 @@ export async function fetchAccountSettings(address: string): Promise<AccountSett
     options: { auth: false },
   })
   return parseAccountSettings(response)
+}
+
+/**
+ * Цена платной подписки как есть: PKOIN в месяц, 0 — не назначена, меньше
+ * нуля — автор подписку отключил (так пишет старый клиент: -1).
+ */
+export function paidSubscriptionValue(settings: AccountSettings): number {
+  const price = Number(settings.paidsubscription ?? 0)
+  return Number.isFinite(price) ? price : 0
 }
 
 /** Цена платной подписки; 0 — автор её не назначил (как `getcondition` старого клиента). */

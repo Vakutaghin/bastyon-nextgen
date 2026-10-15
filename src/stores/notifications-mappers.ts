@@ -10,7 +10,7 @@ import type {
 } from './notifications-types'
 import { MES_TYPE_TITLE_KEYS } from './notifications-constants'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
-import { DONATE_MARKER, opReturnText } from '@/helpers/common/op-return'
+import { DONATE_MARKER, SUBSCRIPTION_MARKER, opReturnText } from '@/helpers/common/op-return'
 
 /** Первая непустая строка по списку ключей. */
 export function pickStr(
@@ -127,6 +127,7 @@ const TYPE_MAP: Record<string, NotificationItem['type']> = {
   repost: 'repost',
   transaction: 'tip',
   donation: 'tip',
+  paidSubscription: 'tip',
 }
 
 /**
@@ -247,7 +248,14 @@ export function mapMissedEventToNotification(
     const coins = incomingCoins(n, myAddress)
     if (!coins) return null
     const donation = !coins.reward && coins.message === DONATE_MARKER
-    const mesType = coins.reward ? 'win' : donation ? 'donation' : 'transaction'
+    const subscription = !coins.reward && coins.message === SUBSCRIPTION_MARKER
+    const mesType = coins.reward
+      ? 'win'
+      : donation
+        ? 'donation'
+        : subscription
+          ? 'paidSubscription'
+          : 'transaction'
     const amount = amountLabel(Math.round(coins.amount * 1e8))
     // Сообщение отправителя показываем, служебные метки (`a:…`) — нет.
     const note =

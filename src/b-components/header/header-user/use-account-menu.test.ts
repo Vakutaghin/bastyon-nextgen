@@ -61,6 +61,7 @@ describe('useAccountMenu', () => {
     expect(keys(menu.menuItems.value)).toEqual([
       '/PAddr1',
       '/wallets',
+      '/paid-subscriptions',
       '/limits',
       '/my-videos',
       '/help',

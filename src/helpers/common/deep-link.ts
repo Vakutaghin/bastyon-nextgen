@@ -86,6 +86,7 @@ export const DEEP_LINK_SECTIONS: ReadonlySet<string> = new Set([
   'miniapps',
   'explorer',
   'my-videos',
+  'paid-subscriptions',
   'my-files',
   'mesh',
   'compose',

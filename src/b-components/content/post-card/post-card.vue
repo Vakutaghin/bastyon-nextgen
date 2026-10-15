@@ -26,6 +26,9 @@
         <span>{{ t('postCard.repostDeleted') }}</span>
       </SC_RepostDeleted>
 
+      <!-- Пост для платных подписчиков: как открыть — оформить, подписаться, войти. -->
+      <PaidPostNotice v-else-if="restriction === 'paid'" :author="restrictedAuthor" />
+
       <!-- Пост не для этого читателя: текст в сети открыт, прячет его приложение. -->
       <SC_RestrictedNotice v-else-if="restriction" role="note">
         <LockOutlined />
@@ -292,8 +295,9 @@ import {
   SC_RestrictedNotice,
 } from './styled'
 import { userAvatar, userName } from '@/services/user-names'
-import { useUserRelationsStore } from '@/stores/user-relations-store'
-import { postVisibilityOf, visibilityRestriction } from '@/helpers/content/post-visibility'
+import PaidPostNotice from '@/b-components/paid-subscription/paid-post-notice.vue'
+import { postVisibilityOf } from '@/helpers/content/post-visibility'
+import { usePostRestriction } from './use-post-restriction'
 import { usePostMedia } from './use-post-media'
 import { canEmbedYoutube } from '@/helpers/common/video-embed-url'
 import { openExternal } from '@/helpers/common/open-external'
@@ -378,21 +382,16 @@ const canEdit = computed<boolean>(
   () => isOwnPost.value && isWithinEditWindow(Date.parse(props.post.timestamp))
 )
 // Видимость поста и оригинала репоста: сеть её не проверяет, прячем здесь,
-// как старый клиент. Подписки смотрящего грузит user-relations (init в шапке).
-const relations = useUserRelationsStore()
-const restriction = computed(() => {
-  const viewer = {
-    address: authStore.getUserAddress,
-    isSubscribedTo: (address: string) => relations.isSubscribed(address),
-  }
-  const own = visibilityRestriction(props.post.author?.address, props.post.settings?.f, viewer)
+// как старый клиент (use-post-restriction).
+const restrictionOf = usePostRestriction()
+/** Чей пост закрыт: сам пост или оригинал репоста — и почему. */
+const restricted = computed(() => {
+  const own = restrictionOf(props.post.author?.address, props.post.settings?.f)
   if (own || !isRepost.value) return own
-  return visibilityRestriction(
-    props.post.repostAuthor?.address,
-    props.post.repostVisibility,
-    viewer
-  )
+  return restrictionOf(props.post.repostAuthor?.address, props.post.repostVisibility)
 })
+const restriction = computed(() => restricted.value?.reason ?? null)
+const restrictedAuthor = computed(() => restricted.value?.author ?? '')
 /** Подпись «Для подписчиков» и т. п. — тем, кому пост открыт. */
 const visibilityLabel = computed<string | null>(() => {
   const visibility = postVisibilityOf(props.post.settings?.f)

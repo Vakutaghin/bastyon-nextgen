@@ -311,6 +311,8 @@ function getActionLine(item: NotificationItem): string {
       return t('header.actionSentCoins')
     case 'donation':
       return t('header.actionSentTip')
+    case 'paidSubscription':
+      return t('header.actionPaidSubscription')
     case 'win':
       return t('header.actionWin')
     case 'userInfo':
@@ -444,6 +446,12 @@ function openNotificationLink(link: string): void {
 
 function onItemClick(item: NotificationItem): void {
   visible.value = false
+
+  // Оплата платной подписки — к списку своих платных подписчиков.
+  if (item.mesType === 'paidSubscription') {
+    void router.push({ name: 'paid-subscriptions', query: { tab: 'subscribers' } })
+    return
+  }
 
   // Монеты — перевод или награда — видны в истории кошелька.
   if (item.type === 'tip' || item.mesType === 'win') {

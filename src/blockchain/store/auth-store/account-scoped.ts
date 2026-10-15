@@ -20,6 +20,7 @@ export async function resetAccountScopedStores(): Promise<void> {
     { usePostsStore },
     { useSearchStore },
     { useNotificationSettingsStore },
+    { usePaidSubscriptionsStore },
   ] = await Promise.all([
     import('@/stores/pending-ratings-store'),
     import('@/stores/notifications-store'),
@@ -29,6 +30,7 @@ export async function resetAccountScopedStores(): Promise<void> {
     import('@/stores/posts-store'),
     import('@/stores/search-store'),
     import('@/stores/notification-settings-store'),
+    import('@/stores/paid-subscriptions-store'),
   ])
   usePendingRatingsStore().reset()
   useNotificationsStore().reset()
@@ -42,4 +44,6 @@ export async function resetAccountScopedStores(): Promise<void> {
   // следующий ensureLoaded/load поднимет данные нового владельца.
   useSearchStore().reset()
   useNotificationSettingsStore().$reset()
+  // Платежи за подписки и своя цена — данные аккаунта.
+  usePaidSubscriptionsStore().reset()
 }

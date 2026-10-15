@@ -57,6 +57,7 @@ vi.mock('@/b-components/app-toast', () => ({
 vi.mock('@/helpers/api/account-settings', () => ({
   fetchAccountSettings: vi.fn().mockResolvedValue({}),
   paidSubscriptionPrice: () => 0,
+  paidSubscriptionValue: () => 0,
 }))
 vi.mock('@/helpers/common/haptics', () => ({ haptic: vi.fn() }))
 vi.mock('@/services/image-upload-service', () => ({

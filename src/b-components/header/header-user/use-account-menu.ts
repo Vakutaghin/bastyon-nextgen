@@ -70,6 +70,7 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
       : []),
     { key: profileLink.value, label: t('accountMsg.menuProfile') },
     { key: '/wallets', label: t('accountMsg.menuWallets') },
+    { key: '/paid-subscriptions', label: t('accountMsg.menuPaidSubscriptions') },
     { key: '/limits', label: t('accountMsg.menuLimits') },
     { key: '/my-videos', label: t('accountMsg.menuMyVideos') },
     // Раздавать файлы через IPFS умеет только десктоп (своя нода Kubo).

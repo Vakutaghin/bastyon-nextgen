@@ -42,6 +42,7 @@ import {
   Code,
   Coins,
   Copy,
+  Crown,
   Download,
   Ellipsis,
   EllipsisVertical,
@@ -183,6 +184,7 @@ export const CloseCircleOutlined = lucideIcon('CloseCircleOutlined', CircleX)
 export const CloseOutlined = lucideIcon('CloseOutlined', X)
 export const CodeOutlined = lucideIcon('CodeOutlined', Code)
 export const CopyOutlined = lucideIcon('CopyOutlined', Copy)
+export const CrownOutlined = lucideIcon('CrownOutlined', Crown)
 export const DeleteOutlined = lucideIcon('DeleteOutlined', Trash2)
 export const DollarOutlined = lucideIcon('DollarOutlined', Coins)
 export const DownloadOutlined = lucideIcon('DownloadOutlined', Download)

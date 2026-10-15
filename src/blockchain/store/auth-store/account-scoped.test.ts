@@ -20,6 +20,7 @@ import { useCommentsStore } from '@/stores/comments-store'
 import { usePendingRatingsStore } from '@/stores/pending-ratings-store'
 import { useNotificationsStore } from '@/stores/notifications-store'
 import { usePostsStore } from '@/stores/posts-store'
+import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 
 describe('resetAccountScopedStores', () => {
   beforeEach(() => {
@@ -42,6 +43,9 @@ describe('resetAccountScopedStores', () => {
     notifications.initedForAddress = 'PA'
     const posts = usePostsStore()
     posts.posts.set('1', { id: '1', myVal: 5 } as never)
+    const paid = usePaidSubscriptionsStore()
+    paid.myPayments = []
+    paid.rememberSettings('PAuthor', { paidsubscription: 5 })
 
     await resetAccountScopedStores()
 
@@ -54,5 +58,7 @@ describe('resetAccountScopedStores', () => {
     expect(notifications.inited).toBe(false)
     expect(notifications.initedForAddress).toBeNull()
     expect(posts.posts.size).toBe(0)
+    expect(paid.myPayments).toBeNull()
+    expect(paid.priceOf('PAuthor')).toBeUndefined()
   })
 })

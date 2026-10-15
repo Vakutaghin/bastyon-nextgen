@@ -18,21 +18,27 @@
       </div>
     </SC_EmbedHeader>
 
-    <SC_EmbedTitle v-if="decodedTitle">{{ decodedTitle }}</SC_EmbedTitle>
+    <!-- Пост не для всех (подписчикам, платным подписчикам): во встройке на
+         чужом сайте смотрящий — гость, текст показываем только в Bastyon. -->
+    <SC_EmbedState v-if="restrictedLabel">🔒 {{ restrictedLabel }}</SC_EmbedState>
 
-    <SC_EmbedMedia v-if="post.images && post.images.length > 0">
-      <PostCardImages :images="post.images" />
-    </SC_EmbedMedia>
-    <SC_EmbedMedia v-else-if="(post.type === 'video' || post.type === 'audio') && post.videoUrl">
-      <VideoPlayer
-        :video-url="post.videoUrl"
-        :is-audio="post.type === 'audio'"
-        :title="decodedTitle || authorName || 'Bastyon'"
-        :artist="authorName"
-      />
-    </SC_EmbedMedia>
+    <template v-else>
+      <SC_EmbedTitle v-if="decodedTitle">{{ decodedTitle }}</SC_EmbedTitle>
 
-    <PostCardContent :post="post" :show-full="true" />
+      <SC_EmbedMedia v-if="post.images && post.images.length > 0">
+        <PostCardImages :images="post.images" />
+      </SC_EmbedMedia>
+      <SC_EmbedMedia v-else-if="(post.type === 'video' || post.type === 'audio') && post.videoUrl">
+        <VideoPlayer
+          :video-url="post.videoUrl"
+          :is-audio="post.type === 'audio'"
+          :title="decodedTitle || authorName || 'Bastyon'"
+          :artist="authorName"
+        />
+      </SC_EmbedMedia>
+
+      <PostCardContent :post="post" :show-full="true" />
+    </template>
 
     <SC_EmbedFooter>
       <SC_EmbedCta :href="postUrl" target="_top" rel="noopener">
@@ -63,6 +69,7 @@ import PostCardImages from '@/b-components/content/post-card/components/post-car
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { usePostByTxid } from '@/b-components/messenger/components/post-embed/use-post-by-txid'
 import { safeDecode } from '@/helpers/content/safe-decode'
+import { postVisibilityOf } from '@/helpers/content/post-visibility'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
 import {
   SC_Embed,
@@ -123,6 +130,12 @@ const postUrl = computed<string>(() => {
 // post-mapper уже декодирует заголовок; повторный safeDecode — для старых
 // дважды кодированных записей (идемпотентен на чистом тексте).
 const decodedTitle = computed<string>(() => safeDecode(post.value?.title || ''))
+
+/** «Для подписчиков» и т. п. — пост закрыт для гостя; пусто — открыт всем. */
+const restrictedLabel = computed<string>(() => {
+  const visibility = postVisibilityOf(post.value?.settings?.f)
+  return visibility === 'all' ? '' : t(`postCard.visibility.${visibility}`)
+})
 
 /**
  * Клик по внутренней ссылке внутри embed (меншен, тег) открывал полное
