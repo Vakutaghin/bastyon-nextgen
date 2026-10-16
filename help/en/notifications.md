@@ -23,10 +23,10 @@ The three-dot button on a notification is **“Hide notification”**, and **“
 - ratings of your posts;
 - comments on your posts and replies to your comments;
 - ratings of your comments — a like or a dislike;
-- new subscribers. **“Private subscription”** means someone subscribed to you and turned on the bell, that is, wants notifications about your posts;
+- new subscribers. **“Subscription with notifications”** means someone subscribed to you and turned on the bell, that is, wants notifications about your posts. It is a regular free subscription, not a paid one;
 - reposts of your posts and boosts — when someone promotes your post for PKOIN;
 - new posts by people whose bell you turned on in their profile — see [Subscriptions](subscriptions.md);
-- incoming transfers from 0.05 PKOIN — **“PKOIN received”** with the amount and the sender’s message, if they wrote one, and tips — **“Tip received”**. The app does not show smaller transfers, so as not to let spam through;
+- incoming transfers from 0.05 PKOIN — **“PKOIN received”** with the amount and the sender’s message, if they wrote one, tips — **“Tip received”**, and payments for a [paid subscription](paid-subscriptions.md) — **“Subscription paid”**. The app does not show smaller transfers, so as not to let spam through;
 - rewards from the network lottery — **“Lottery reward”**: nowadays moderators get them for their jury votes, see [Earnings](earnings.md).
 
 Unsubscriptions are not shown in the list.

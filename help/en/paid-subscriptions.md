@@ -53,7 +53,7 @@ On the **“My subscribers”** tab, below the price:
 - a note when someone paid but doesn’t follow you with a regular subscription: until they do, they don’t see paid posts;
 - those whose term has ended — in a collapsed list below.
 
-Each payment brings a **“Subscription paid”** notification, and in the [transaction history](wallet-history.md) such a transfer is labelled **“Subscription”**.
+Each payment brings a **“Subscription paid”** notification, and in the [transaction history](wallet-history.md) such a transfer is labelled **“Subscription”**. A **“Subscription with notifications”** notification has nothing to do with paid subscriptions: someone subscribed to you for free and turned on the bell.
 
 ## For readers: subscribe
 
