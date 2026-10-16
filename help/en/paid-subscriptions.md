@@ -6,6 +6,8 @@ keywords:
   - paid subscribers
   - support an author
   - author income
+  - auto-renewal
+  - recurring payment
 ---
 
 # Paid subscriptions
@@ -17,6 +19,8 @@ Everything about paid subscriptions is in the [“Paid subscriptions”](bastyon
 ## How it works
 
 The author sets a monthly price in PKOIN. A subscriber pays them with a regular transfer marked “subscription”: the money reaches the author’s wallet at once, with no middleman and no service fee. The subscriber pays the network fee of 0.00000001 PKOIN.
+
+Nothing is charged automatically: the network can’t take money from someone else’s wallet. The subscriber sends every payment themselves, and there is no auto-renewal — neither here nor in the previous app. When the term ends, posts for paid subscribers close for them until they pay again.
 
 A subscription is active while the payments to the author over the last month cover the price of a month, over the last six months — the price of six months, or over the last year — the price of a year:
 
@@ -38,7 +42,14 @@ The rules are the same as in the previous Bastyon app (where it is called a “p
 
 The price is written to the blockchain with an account settings transaction; the network confirms it in about a minute. Until then the price shows “waiting for the network”. You can publish posts for paid subscribers right away.
 
-A new price applies to all subscribers at once: those whose payments no longer cover a term at the new price lose access until they top up. The app asks before changing the price.
+Setting a price charges no one. People who followed you before you set it stay regular free subscribers — including those who turned on the bell. They get no notification about the price. They still see your posts for everyone and for subscribers, and on posts for paid subscribers they see a “Subscribe” button in place of the text. Only those who pay for a subscription themselves bring income — tell your readers about it in a regular post.
+
+A new price applies to all subscribers at once, including those who have already paid: the term is counted at the current price, not at the price they paid.
+
+- **The price goes up** — those whose payments no longer cover a term at the new price lose access until they top up. For example, a subscriber paid 5 PKOIN for a month and you raised the price to 10: their subscription becomes unpaid at once, and the app offers them a 5 PKOIN top-up.
+- **The price goes down** — no one’s term gets shorter, and anyone whose payments now cover a longer term gets that longer term.
+
+The app asks before changing the price.
 
 **“Turn off”** — your posts for paid subscribers become visible to all your followers. You can turn it back on at any time.
 
@@ -68,6 +79,8 @@ The posts open at once, without waiting for the network to confirm. A payment ca
 Your subscriptions are on the **“My subscriptions”** tab: the date they are paid until, the last payment, and the **“Extend”** and **“Subscribe again”** buttons.
 
 While a term is running, you can extend it by moving to a longer term with a top-up. The same term is bought again once it ends: payments count over the last month, six months or year, so paying early for the same term barely lengthens the subscription.
+
+A subscription doesn’t renew itself and never charges your wallet: when the term ends, posts for paid subscribers close until you pay again. If the author raises the price, a paid term may end earlier — the app then offers a top-up.
 
 > [!NOTE]
 > Subscriptions can’t be bought in the iPhone app — App Store rules require this, and the previous app did the same. Buy one in the desktop or Android app or in a browser: paid posts will open on the iPhone.
