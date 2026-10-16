@@ -227,4 +227,22 @@ describe('useInfiniteFeed', () => {
     gate.release?.()
     await expect(request).resolves.toEqual({ data: { contents } })
   })
+
+  it('sends category and picked tags in lower case, like legacy', async () => {
+    filtersStore.selectedCategories = ['c4', 'custom_x']
+    filtersStore.allCategories = [{ id: 'c4', tags: ['криптовалюта'] }]
+    filtersStore.selectedTags = ['Кофе']
+    try {
+      mountFeed()
+      await queryState.lastOptions!.queryFn!()
+      expect(vi.mocked(buildFeedQueryByTab).mock.lastCall![1].allTags).toEqual([
+        encodeURIComponent('криптовалюта'),
+        encodeURIComponent('кофе'),
+      ])
+    } finally {
+      filtersStore.selectedCategories = []
+      filtersStore.allCategories = []
+      filtersStore.selectedTags = []
+    }
+  })
 })

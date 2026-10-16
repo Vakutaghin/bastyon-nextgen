@@ -15,9 +15,9 @@ vi.mock('./filters-persistence', () => ({
   saveFiltersToSettings: mocks.save,
 }))
 
-import { categoriesData } from '@/b-components/sidebar/sidebar-categories/categories-data'
 import { BLOCKS_PER_DAY, DEFAULT_TOP_FEED_DEPTH } from './filters-store-consts'
 import { useFiltersStore } from './filters-store'
+import { useUIStore } from './ui-store'
 
 const lastSaved = () => mocks.save.mock.lastCall![0]
 
@@ -100,6 +100,56 @@ describe('filters store', () => {
     expect(lastSaved().selectedCategories).toEqual([])
   })
 
+  it('готовые категории — набор и порядок legacy, теги на языке интерфейса', () => {
+    const store = useFiltersStore()
+    const ui = useUIStore()
+    ui.language = 'ru'
+    expect(store.allCategories.map((c) => c.id)).toEqual([
+      'c2',
+      'c3',
+      'c4',
+      'c5',
+      'c55',
+      'c6',
+      'c63',
+      'c72',
+      'c7',
+      'c71',
+      'c8',
+      'c9',
+      'c11',
+      'c12',
+      'c13',
+      'c14',
+      'c15',
+      'c16',
+      'c17',
+      'c18',
+    ])
+    const tagsOf = (id: string) => store.allCategories.find((c) => c.id === id)?.tags
+    // Нижний регистр: нода сравнивает теги с учётом регистра.
+    expect(tagsOf('c4')).toEqual(['криптовалюта'])
+    expect(tagsOf('c8')).toEqual(['спорт'])
+    ui.language = 'en'
+    expect(tagsOf('c8')).toEqual(['sports'])
+    ui.language = 'de'
+    expect(tagsOf('c8')).toEqual(['sport'])
+    // У legacy китайские теги под ключом cmn, а язык — zh: берутся английские.
+    ui.language = 'zh'
+    expect(tagsOf('c2')).toEqual(['funny', 'memes'])
+  })
+
+  it('выбранный раньше «Космос» становится своей категорией с тегом «космос»', async () => {
+    mocks.load.mockResolvedValue({ selectedCategories: ['c4', 'c10'] })
+    const store = useFiltersStore()
+    await store.init()
+    expect(store.customCategories).toEqual([
+      { id: 'custom_космос', name: 'Космос', icon: '⭐', tags: ['космос'] },
+    ])
+    expect(store.selectedCategories).toEqual(['c4', 'custom_космос'])
+    expect(lastSaved().selectedCategories).toEqual(['c4', 'custom_космос'])
+  })
+
   it('своя категория: id в нижнем регистре, имя как ввели, сразу выбрана, без дублей', () => {
     const store = useFiltersStore()
     store.addCustomCategory('Кофе')
@@ -113,7 +163,7 @@ describe('filters store', () => {
 
   it('тег из поста: есть подходящая категория — выбирается она, иначе временная', () => {
     const store = useFiltersStore()
-    const existing = categoriesData.find((c) => c.tags.length > 0)!
+    const existing = store.allCategories.find((c) => c.tags.length > 0)!
     store.addTemporaryCategory(existing.tags[0]!.toUpperCase())
     expect(store.temporaryCategories).toEqual([])
     expect(store.selectedCategories).toEqual([existing.id])

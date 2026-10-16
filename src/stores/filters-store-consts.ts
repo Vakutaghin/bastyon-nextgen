@@ -56,3 +56,6 @@ export const CUSTOM_CATEGORY_ICON = '⭐'
 
 /** Иконка временной категории. */
 export const TEMP_CATEGORY_ICON = '⚡'
+
+/** id убранной категории «Космос» (теги `космос`) — для переноса в свою категорию. */
+export const REMOVED_SPACE_CATEGORY_ID = 'c10'

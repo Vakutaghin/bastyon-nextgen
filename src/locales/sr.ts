@@ -2187,7 +2187,6 @@ export default {
       artMusic: 'Уметност/Музика',
       history: 'Историја',
       cinema: 'Филм/Анимација',
-      space: 'Свемир',
       crypto: 'Криптовалуте',
       memes: 'Мемови/Хумор',
       science: 'Наука/Технологија',
@@ -2198,6 +2197,9 @@ export default {
       diy: 'Уради сам',
       sport: 'Спорт',
       finance: 'Финансије/Инвестиције',
+      pkoin: 'PKOIN/Од руке до руке',
+      covid: 'COVID/Карантин',
+      bastyon: 'Bastyon/Pocketnet',
     },
     timeFilters: {
       today: 'Данас',

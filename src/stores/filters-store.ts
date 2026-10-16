@@ -2,9 +2,10 @@ import { defineStore } from 'pinia'
 import { filtersData } from '@/b-components/sidebar/filters-data'
 import { tabsData } from '@/b-components/sidebar/sidebar-tabs/tabs-data'
 import {
-  categoriesData,
+  categoriesForLanguage,
   type Category,
 } from '@/b-components/sidebar/sidebar-categories/categories-data'
+import { useUIStore } from './ui-store'
 
 // Локальные типы, синхронизированные с формой tabsData / filtersData.
 // Когда сами *-data.ts получат свои интерфейсы — удалить отсюда.
@@ -27,6 +28,7 @@ import {
   DEFAULT_TOP_FEED_DEPTH,
   CUSTOM_CATEGORY_ICON,
   TEMP_CATEGORY_ICON,
+  REMOVED_SPACE_CATEGORY_ID,
 } from './filters-store-consts'
 import { loadFiltersFromSettings, saveFiltersToSettings } from './filters-persistence'
 
@@ -68,11 +70,13 @@ export const useFiltersStore = defineStore('filters', {
   getters: {
     /**
      * Получает полный список категорий (статические + кастомные + временные)
-     * Кастомные и временные выводятся сверху
+     * Кастомные и временные выводятся сверху. Теги готовых категорий — на языке
+     * интерфейса, как в legacy.
      */
     allCategories(): Category[] {
+      const builtIn = categoriesForLanguage(useUIStore().language)
       // Объединяем списки, исключая дубликаты по ID
-      const all = [...this.temporaryCategories, ...this.customCategories, ...categoriesData]
+      const all = [...this.temporaryCategories, ...this.customCategories, ...builtIn]
 
       // Убираем дубликаты (если вдруг временная категория совпадает с кастомной или статической)
       const unique = new Map()
@@ -136,6 +140,15 @@ export const useFiltersStore = defineStore('filters', {
       if (snapshot.selectedCategories) this.selectedCategories = snapshot.selectedCategories
       if (snapshot.selectedTags) this.selectedTags = snapshot.selectedTags
       if (snapshot.topFirst !== undefined) this.topFirst = snapshot.topFirst
+
+      // «Космос» был только в NextGen, в legacy такой категории нет. Кто её
+      // выбрал, получает ту же выборку своей категорией с тегом «космос».
+      if (this.selectedCategories.includes(REMOVED_SPACE_CATEGORY_ID)) {
+        this.selectedCategories = this.selectedCategories.filter(
+          (id) => id !== REMOVED_SPACE_CATEGORY_ID
+        )
+        this.addCustomCategory('Космос')
+      }
 
       this.isInitialized = true
       this.isInitializing = false

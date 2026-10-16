@@ -2108,7 +2108,6 @@ export default {
       artMusic: '艺术/音乐',
       history: '历史',
       cinema: '电影/动画',
-      space: '太空',
       crypto: '加密货币',
       memes: '表情包/幽默',
       science: '科学/技术',
@@ -2119,6 +2118,9 @@ export default {
       diy: '手工 DIY',
       sport: '体育',
       finance: '金融/投资',
+      pkoin: 'PKOIN/点对点',
+      covid: 'COVID/封锁',
+      bastyon: 'Bastyon/Pocketnet',
     },
     timeFilters: {
       today: '今天',

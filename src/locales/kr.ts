@@ -2168,7 +2168,6 @@ export default {
       artMusic: '예술/음악',
       history: '역사',
       cinema: '영화/애니메이션',
-      space: '우주',
       crypto: '암호화폐',
       memes: '밈/유머',
       science: '과학/기술',
@@ -2179,6 +2178,9 @@ export default {
       diy: 'DIY',
       sport: '스포츠',
       finance: '금융/투자',
+      pkoin: 'PKOIN/개인 간 거래',
+      covid: 'COVID/봉쇄',
+      bastyon: 'Bastyon/Pocketnet',
     },
     timeFilters: {
       today: '오늘',

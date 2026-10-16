@@ -2189,7 +2189,6 @@ export default {
       artMusic: 'Искусство/Музыка',
       history: 'История',
       cinema: 'Кино/Анимация',
-      space: 'Космос',
       crypto: 'Криптовалюта',
       memes: 'Мемы/Юмор',
       science: 'Наука/Технологии',
@@ -2200,6 +2199,9 @@ export default {
       diy: 'Сделай сам',
       sport: 'Спорт',
       finance: 'Финансы/Инвестиции',
+      pkoin: 'PKOIN/из рук в руки',
+      covid: 'COVID/локдаун',
+      bastyon: 'Bastyon/Pocketnet',
     },
     timeFilters: {
       today: 'За сегодня',

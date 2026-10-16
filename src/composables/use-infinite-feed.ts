@@ -139,13 +139,15 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   }
 
   // Объединение тегов категорий + пользовательских тегов (для 4-го параметра RPC: tagsfilter).
+  // Нижний регистр — как legacy: нода сравнивает теги с учётом регистра.
   const buildAllTags = (): string[] => {
     const categoryTags = filtersStore.selectedCategories.flatMap((id) => {
       const category = filtersStore.allCategories.find((c) => c.id === id)
-      return category ? category.tags.map((tag: string) => encodeURIComponent(tag)) : []
+      return category ? category.tags : []
     })
-    const userSelectedTags = filtersStore.selectedTags.map((tag: string) => encodeURIComponent(tag))
-    return [...categoryTags, ...userSelectedTags]
+    return [...categoryTags, ...filtersStore.selectedTags].map((tag: string) =>
+      encodeURIComponent(tag.toLowerCase())
+    )
   }
 
   // Запрос данных — все варианты вкладок диспатчатся в buildFeedQueryByTab.

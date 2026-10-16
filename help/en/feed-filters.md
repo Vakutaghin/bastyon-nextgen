@@ -10,7 +10,7 @@ The filters are in the left panel under the feed sections. They work in the **�
 
 ## Categories
 
-A category is a set of tags on one topic: "Cars/Racing", "Science/Technology", "Travel/Architecture" and others, 18 ready-made ones in total. Click a category to keep only posts with its tags in the feed; click it again to deselect it. You can pick several categories — the feed shows posts from any of them. **“Reset filter”** deselects them all.
+A category is a set of tags on one topic: "Cars/Racing", "Science/Technology", "Travel/Architecture" and others, 20 ready-made ones in total — the same as in the old Bastyon. Their tags follow the interface language: in English "Sport" picks posts tagged `sports`, in Russian — posts tagged `спорт`. Click a category to keep only posts with its tags in the feed; click it again to deselect it. You can pick several categories — the feed shows posts from any of them. **“Reset filter”** deselects them all.
 
 **Your own category.** The **“Add category”** button (the plus in the heading) asks for a tag: letters, digits and `_`, without the hash sign; spaces turn into `_` by themselves. A category with this tag appears in the list with a ⭐ icon, and you can remove it with the cross.
 

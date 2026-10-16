@@ -2199,7 +2199,6 @@ export default {
       artMusic: 'Arte/Musica',
       history: 'Storia',
       cinema: 'Cinema/Animazione',
-      space: 'Spazio',
       crypto: 'Criptovalute',
       memes: 'Meme/Umorismo',
       science: 'Scienza/Tecnologia',
@@ -2210,6 +2209,9 @@ export default {
       diy: 'Fai da te',
       sport: 'Sport',
       finance: 'Finanza/Investimenti',
+      pkoin: 'PKOIN/Peer-to-peer',
+      covid: 'COVID/Lockdown',
+      bastyon: 'Bastyon/Pocketnet',
     },
     timeFilters: {
       today: 'Oggi',
