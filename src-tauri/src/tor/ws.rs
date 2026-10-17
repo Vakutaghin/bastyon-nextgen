@@ -295,7 +295,7 @@ pub async fn close_all(map: &SharedWsMap) {
     }
 }
 
-fn build_rustls_connector() -> Result<tokio_rustls::TlsConnector, String> {
+pub(crate) fn build_rustls_connector() -> Result<tokio_rustls::TlsConnector, String> {
     use rustls_native_certs::load_native_certs;
     use std::sync::Arc;
     use tokio_rustls::rustls::{ClientConfig, RootCertStore};
@@ -308,7 +308,13 @@ fn build_rustls_connector() -> Result<tokio_rustls::TlsConnector, String> {
     for cert in result.certs {
         let _ = roots.add(cert);
     }
-    let cfg = ClientConfig::builder()
+    // Провайдер — явно: в сборке включены и ring, и aws-lc-rs, и
+    // `ClientConfig::builder()` без выбранного по умолчанию паниковал —
+    // wss через Tor (чат) и Moat падали на первом же соединении.
+    let provider = Arc::new(tokio_rustls::rustls::crypto::ring::default_provider());
+    let cfg = ClientConfig::builder_with_provider(provider)
+        .with_safe_default_protocol_versions()
+        .map_err(|e| e.to_string())?
         .with_root_certificates(roots)
         .with_no_client_auth();
     Ok(tokio_rustls::TlsConnector::from(Arc::new(cfg)))
@@ -326,5 +332,11 @@ mod tests {
         assert!(validate_id("has:colon").is_err());
         assert!(validate_id("has space").is_err());
         assert!(validate_id(&"x".repeat(65)).is_err());
+    }
+
+    /// Раньше паниковал: два криптопровайдера rustls и ни одного по умолчанию.
+    #[test]
+    fn tls_connector_builds_without_a_default_crypto_provider() {
+        assert!(build_rustls_connector().is_ok());
     }
 }
