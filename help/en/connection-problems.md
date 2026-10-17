@@ -18,7 +18,7 @@ If nothing loads on any screen:
 
 ## Tor does not connect
 
-While Tor is connecting, the app does not go online — nothing loads. If the connection is stuck at the same percentage, your provider is most likely blocking Tor. Open the Tor menu in the header, choose bridges — Snowflake or **“OBFS4 (built-in)”** — and press **“Apply”**. If that does not help, turn Tor off: the app reloads and works directly.
+While Tor is connecting, the app does not go online — nothing loads. If the connection is stuck at the same percentage, your provider is most likely blocking Tor. Open the Tor menu in the header, choose **“Automatic”** or other bridges — see [Tor](tor.md#bridges) — and press **“Apply”**. If that does not help, turn Tor off: the app reloads and works directly.
 
 ## The chat does not connect
 

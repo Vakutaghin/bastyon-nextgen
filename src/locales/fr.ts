@@ -284,9 +284,32 @@ export default {
     cancel: 'Annuler',
     torBridges: 'Ponts',
     torBridgesNone: 'Aucun pont',
-    torBridgesObfs4: 'OBFS4 (intégré)',
-    torBridgesCustom: 'OBFS4 personnalisé',
+    torBridgesObfs4: 'obfs4 (intégrés)',
+    torBridgesCustom: 'Ponts personnalisés',
     torBridgesRestartHint: 'Changer de pont redémarre Tor.',
+    torBridgesAuto: 'Automatique',
+    torBridgesAutoHint:
+      'Le Tor Project choisit des ponts pour votre pays ; l’application les essaie un par un et retient celui qui fonctionne.',
+    torBridgesMeek: 'meek (via CDN, lent)',
+    torBridgesCustomHint:
+      "Un par ligne, de tout type : obfs4, WebTunnel, Snowflake, meek. Obtenez-en auprès du bot Telegram {'@'}GetBridgesBot ou sur bridges.torproject.org.",
+    torRequestBridges: 'Obtenir des ponts',
+    torRequestBridgesDone: 'Ponts reçus : {n}. Appuyez sur « Appliquer ».',
+    torRequestBridgesFailed: 'Impossible d’obtenir des ponts : {message}',
+    torBridgesRejected: 'Lignes ignorées qui ne ressemblent pas à un pont : {n}',
+    torStatusFetchingBridges: 'Recherche de ponts pour votre pays…',
+    torStatusBootstrappingVia: 'Connexion via {via} : {pct} %',
+    torStatusReadyVia: 'Connecté au réseau Tor via {via}',
+    torStatusAttempt: 'méthode {n}',
+    torStalledHint:
+      'La connexion n’avance plus : cette méthode semble bloquée. Choisissez « Automatique » ou d’autres ponts.',
+    torErrorAllFailed:
+      'Aucune méthode de connexion n’a fonctionné. Ajoutez vos propres ponts ou réessayez plus tard.',
+    torErrorNoBridges: 'Votre liste de ponts ne contient aucun pont.',
+    torRetry: 'Réessayer',
+    torCountry: 'Pays selon le Tor Project : {country}',
+    torViaCustom: 'vos ponts',
+    torViaVanilla: 'ponts simples',
     torDesktopOnly: 'Disponible uniquement dans l’application de bureau.',
     torStatusStopping: 'Arrêt de Tor…',
     torStatusOff: 'Tor est désactivé',
@@ -302,7 +325,7 @@ export default {
       'Ouvrez Bastyon dans l’application de bureau — la version navigateur ne prend pas en charge Tor intégré.',
     torEnableTitle: 'Activer Tor ?',
     torEnableContent:
-      'Au premier lancement, Tor (~30 Mo) est téléchargé ; cela peut prendre une minute. Les requêtes aux nœuds, le chat et l’API de l’application passent par Tor. Les images, vidéos et contenus intégrés (YouTube, mini-apps) non — ils sont donc bloqués tant que Tor est activé : une image peut être chargée via Tor d’un clic, une vidéo seulement en direct, avec votre IP, après confirmation. Désactiver Tor recharge l’application.',
+      'Au premier lancement, Tor (~20 Mo) est téléchargé ; cela peut prendre une minute. Les requêtes aux nœuds, le chat et l’API de l’application passent par Tor. Les images, vidéos et contenus intégrés (YouTube, mini-apps) non — ils sont donc bloqués tant que Tor est activé : une image peut être chargée via Tor d’un clic, une vidéo seulement en direct, avec votre IP, après confirmation. Désactiver Tor recharge l’application.',
     torEnableOk: 'Activer',
     torMediaHint:
       'Via Tor : nœuds, chat, API. Images — via Tor d’un clic ; vidéos, YouTube et mini-apps — désactivés ou en direct avec votre IP après confirmation. Désactiver Tor recharge l’application.',

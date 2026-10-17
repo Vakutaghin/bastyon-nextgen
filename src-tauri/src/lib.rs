@@ -902,6 +902,7 @@ pub fn run() {
       tor::tor_stop,
       tor::tor_fetch,
       tor::tor_set_bridges,
+      tor::tor_request_bridges,
       tor::tor_ws_connect,
       tor::tor_ws_send,
       tor::tor_ws_close,

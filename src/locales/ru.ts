@@ -284,9 +284,32 @@ export default {
     cancel: 'Отмена',
     torBridges: 'Мосты',
     torBridgesNone: 'Без мостов',
-    torBridgesObfs4: 'OBFS4 (встроенные)',
-    torBridgesCustom: 'Свои OBFS4',
+    torBridgesObfs4: 'obfs4 (встроенные)',
+    torBridgesCustom: 'Свои мосты',
     torBridgesRestartHint: 'Изменение мостов перезапустит Tor.',
+    torBridgesAuto: 'Автоматически',
+    torBridgesAutoHint:
+      'Tor Project подберёт мосты для вашей страны, приложение попробует их по очереди и запомнит рабочие.',
+    torBridgesMeek: 'meek (через CDN, медленно)',
+    torBridgesCustomHint:
+      "По одному на строку, любого типа: obfs4, WebTunnel, Snowflake, meek. Мосты выдают Telegram-бот {'@'}GetBridgesBot и сайт bridges.torproject.org.",
+    torRequestBridges: 'Получить мосты',
+    torRequestBridgesDone: 'Получено мостов: {n}. Нажмите «Применить».',
+    torRequestBridgesFailed: 'Не удалось получить мосты: {message}',
+    torBridgesRejected: 'Пропущено строк, не похожих на мост: {n}',
+    torStatusFetchingBridges: 'Подбор мостов для вашей страны…',
+    torStatusBootstrappingVia: 'Подключение через {via}: {pct}%',
+    torStatusReadyVia: 'Подключено к сети Tor через {via}',
+    torStatusAttempt: 'способ {n}',
+    torStalledHint:
+      'Подключение не продвигается — похоже, этот способ заблокирован. Выберите «Автоматически» или другие мосты.',
+    torErrorAllFailed:
+      'Ни один способ подключения не сработал. Вставьте свои мосты или попробуйте позже.',
+    torErrorNoBridges: 'В списке своих мостов нет ни одного моста.',
+    torRetry: 'Повторить',
+    torCountry: 'Страна по данным Tor Project: {country}',
+    torViaCustom: 'свои мосты',
+    torViaVanilla: 'обычные мосты',
     torDesktopOnly: 'Доступно только в десктопном приложении.',
     torStatusStopping: 'Tor выключается…',
     torStatusOff: 'Tor выключен',
@@ -302,7 +325,7 @@ export default {
       'Откройте Bastyon в приложении для рабочего стола — браузерная версия не поддерживает встроенный Tor.',
     torEnableTitle: 'Включить Tor?',
     torEnableContent:
-      'При первом запуске будет загружен Tor (~30 МБ), это может занять минуту. Через Tor пойдут запросы к нодам, чат и API приложения. Картинки, видео и встраивания (YouTube, мини-приложения) через Tor не идут — поэтому при включённом Tor они заблокированы: картинку можно загрузить через Tor по клику, видео — только напрямую, с вашим IP, после подтверждения. Выключение Tor перезагрузит приложение.',
+      'При первом запуске будет загружен Tor (~20 МБ), это может занять минуту. Через Tor пойдут запросы к нодам, чат и API приложения. Картинки, видео и встраивания (YouTube, мини-приложения) через Tor не идут — поэтому при включённом Tor они заблокированы: картинку можно загрузить через Tor по клику, видео — только напрямую, с вашим IP, после подтверждения. Выключение Tor перезагрузит приложение.',
     torEnableOk: 'Включить',
     torMediaHint:
       'Через Tor: ноды, чат, API. Картинки — через Tor по клику; видео, YouTube и мини-приложения — отключены или напрямую с вашим IP по подтверждению. Выключение Tor перезагрузит приложение.',

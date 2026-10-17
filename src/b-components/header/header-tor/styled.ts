@@ -109,3 +109,21 @@ export const SC_TorHint = styled.div`
   font-size: 12px;
   color: var(--ui-text-dimmed);
 `
+
+/** Варианты мостов столбиком: шесть в строку не помещаются. */
+export const SC_TorRadioColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`
+
+export const SC_TorInlineActions = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`
+
+export const SC_TorWarning = styled.div`
+  font-size: 12px;
+  color: var(--ui-warning);
+`

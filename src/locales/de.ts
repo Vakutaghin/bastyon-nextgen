@@ -282,9 +282,32 @@ export default {
     cancel: 'Abbrechen',
     torBridges: 'Bridges',
     torBridgesNone: 'Keine Bridges',
-    torBridgesObfs4: 'OBFS4 (integriert)',
-    torBridgesCustom: 'Eigene OBFS4',
+    torBridgesObfs4: 'obfs4 (integriert)',
+    torBridgesCustom: 'Eigene Bridges',
     torBridgesRestartHint: 'Beim Ändern der Bridges wird Tor neu gestartet.',
+    torBridgesAuto: 'Automatisch',
+    torBridgesAutoHint:
+      'Das Tor Project wählt Bridges für Ihr Land aus; die App probiert sie nacheinander und merkt sich die funktionierende.',
+    torBridgesMeek: 'meek (über CDN, langsam)',
+    torBridgesCustomHint:
+      "Eine pro Zeile, beliebiger Typ: obfs4, WebTunnel, Snowflake, meek. Bridges gibt es beim Telegram-Bot {'@'}GetBridgesBot und auf bridges.torproject.org.",
+    torRequestBridges: 'Bridges anfordern',
+    torRequestBridgesDone: '{n} Bridges erhalten. Klicken Sie auf „Übernehmen“.',
+    torRequestBridgesFailed: 'Bridges konnten nicht abgerufen werden: {message}',
+    torBridgesRejected: 'Übersprungene Zeilen, die nicht wie eine Bridge aussehen: {n}',
+    torStatusFetchingBridges: 'Bridges für Ihr Land werden gesucht…',
+    torStatusBootstrappingVia: 'Verbindung über {via}: {pct}%',
+    torStatusReadyVia: 'Über {via} mit dem Tor-Netzwerk verbunden',
+    torStatusAttempt: 'Methode {n}',
+    torStalledHint:
+      'Die Verbindung kommt nicht voran – diese Methode scheint blockiert zu sein. Wählen Sie „Automatisch“ oder andere Bridges.',
+    torErrorAllFailed:
+      'Keine Verbindungsmethode hat funktioniert. Fügen Sie eigene Bridges hinzu oder versuchen Sie es später erneut.',
+    torErrorNoBridges: 'Die Liste eigener Bridges enthält keine Bridge.',
+    torRetry: 'Erneut versuchen',
+    torCountry: 'Land laut Tor Project: {country}',
+    torViaCustom: 'eigene Bridges',
+    torViaVanilla: 'einfache Bridges',
     torDesktopOnly: 'Nur in der Desktop-App verfügbar.',
     torStatusStopping: 'Tor wird beendet…',
     torStatusOff: 'Tor ist aus',
@@ -300,7 +323,7 @@ export default {
       'Öffne Bastyon in der Desktop-App — die Browserversion unterstützt kein integriertes Tor.',
     torEnableTitle: 'Tor aktivieren?',
     torEnableContent:
-      'Beim ersten Start wird Tor (~30 MB) heruntergeladen; das kann eine Minute dauern. Anfragen an Nodes, der Chat und die App-API laufen über Tor. Bilder, Videos und Einbettungen (YouTube, Mini-Apps) nicht — deshalb sind sie blockiert, solange Tor an ist: Ein Bild kann per Klick über Tor geladen werden, ein Video nur direkt, mit deiner IP, nach Bestätigung. Beim Ausschalten von Tor wird die App neu geladen.',
+      'Beim ersten Start wird Tor (~20 MB) heruntergeladen; das kann eine Minute dauern. Anfragen an Nodes, der Chat und die App-API laufen über Tor. Bilder, Videos und Einbettungen (YouTube, Mini-Apps) nicht — deshalb sind sie blockiert, solange Tor an ist: Ein Bild kann per Klick über Tor geladen werden, ein Video nur direkt, mit deiner IP, nach Bestätigung. Beim Ausschalten von Tor wird die App neu geladen.',
     torEnableOk: 'Aktivieren',
     torMediaHint:
       'Über Tor: Nodes, Chat, API. Bilder — per Klick über Tor; Videos, YouTube und Mini-Apps — deaktiviert oder nach Bestätigung direkt mit deiner IP. Beim Ausschalten von Tor wird die App neu geladen.',

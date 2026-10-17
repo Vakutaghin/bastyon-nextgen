@@ -283,9 +283,32 @@ export default {
     cancel: 'Cancelar',
     torBridges: 'Puentes',
     torBridgesNone: 'Sin puentes',
-    torBridgesObfs4: 'OBFS4 (integrados)',
-    torBridgesCustom: 'OBFS4 propios',
+    torBridgesObfs4: 'obfs4 (integrados)',
+    torBridgesCustom: 'Puentes propios',
     torBridgesRestartHint: 'Cambiar los puentes reinicia Tor.',
+    torBridgesAuto: 'Automático',
+    torBridgesAutoHint:
+      'Tor Project elige puentes para tu país; la aplicación los prueba uno a uno y recuerda el que funciona.',
+    torBridgesMeek: 'meek (vía CDN, lento)',
+    torBridgesCustomHint:
+      "Uno por línea, de cualquier tipo: obfs4, WebTunnel, Snowflake, meek. Consíguelos con el bot de Telegram {'@'}GetBridgesBot o en bridges.torproject.org.",
+    torRequestBridges: 'Obtener puentes',
+    torRequestBridgesDone: 'Puentes recibidos: {n}. Pulsa «Aplicar».',
+    torRequestBridgesFailed: 'No se pudieron obtener puentes: {message}',
+    torBridgesRejected: 'Líneas omitidas que no parecen un puente: {n}',
+    torStatusFetchingBridges: 'Buscando puentes para tu país…',
+    torStatusBootstrappingVia: 'Conectando mediante {via}: {pct} %',
+    torStatusReadyVia: 'Conectado a la red Tor mediante {via}',
+    torStatusAttempt: 'método {n}',
+    torStalledHint:
+      'La conexión no avanza: este método parece bloqueado. Elige «Automático» u otros puentes.',
+    torErrorAllFailed:
+      'Ningún método de conexión funcionó. Añade tus propios puentes o inténtalo más tarde.',
+    torErrorNoBridges: 'Tu lista de puentes no contiene ningún puente.',
+    torRetry: 'Reintentar',
+    torCountry: 'País según Tor Project: {country}',
+    torViaCustom: 'tus puentes',
+    torViaVanilla: 'puentes simples',
     torDesktopOnly: 'Solo disponible en la aplicación de escritorio.',
     torStatusStopping: 'Deteniendo Tor…',
     torStatusOff: 'Tor está desactivado',
@@ -301,7 +324,7 @@ export default {
       'Abre Bastyon en la aplicación de escritorio: la versión del navegador no admite Tor integrado.',
     torEnableTitle: '¿Activar Tor?',
     torEnableContent:
-      'En el primer inicio se descarga Tor (~30 MB); puede tardar un minuto. Las solicitudes a los nodos, el chat y la API de la aplicación pasan por Tor. Las imágenes, los vídeos y los contenidos incrustados (YouTube, miniapps) no, así que se bloquean mientras Tor está activo: una imagen se puede cargar por Tor con un clic y un vídeo solo directamente, con tu IP, tras confirmarlo. Desactivar Tor recarga la aplicación.',
+      'En el primer inicio se descarga Tor (~20 MB); puede tardar un minuto. Las solicitudes a los nodos, el chat y la API de la aplicación pasan por Tor. Las imágenes, los vídeos y los contenidos incrustados (YouTube, miniapps) no, así que se bloquean mientras Tor está activo: una imagen se puede cargar por Tor con un clic y un vídeo solo directamente, con tu IP, tras confirmarlo. Desactivar Tor recarga la aplicación.',
     torEnableOk: 'Activar',
     torMediaHint:
       'Por Tor: nodos, chat, API. Imágenes: por Tor con un clic; vídeos, YouTube y miniapps: desactivados o directamente con tu IP tras confirmarlo. Desactivar Tor recarga la aplicación.',

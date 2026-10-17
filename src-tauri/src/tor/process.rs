@@ -1,7 +1,7 @@
-use crate::tor::state::{SharedTorState, TorPaths, TorStateSnapshot, TorStatus};
-use std::process::{Child, Command, Stdio};
+use crate::tor::state::{SharedTorState, TorPaths, TorState, TorStateSnapshot, TorStatus};
+use std::process::{Child, ChildStderr, ChildStdout, Command, Stdio};
 use std::thread;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Runtime};
 
 pub struct TorChild {
     pub child: Child,
@@ -11,15 +11,41 @@ impl TorChild {
     pub fn pid(&self) -> u32 {
         self.child.id()
     }
+
+    /// Пайпы логов — чтобы запустить потоки уже после того, как `child_pid`
+    /// записан в состояние и процесс сохранён в менеджере.
+    pub fn take_logs(&mut self) -> TorLogs {
+        TorLogs {
+            pid: self.pid(),
+            stdout: self.child.stdout.take(),
+            stderr: self.child.stderr.take(),
+        }
+    }
 }
 
-/// Spawn `tor -f <torrc>` and start a thread that parses stdout/stderr.
-/// Updates shared state with bootstrap progress; emits `tor:state` on each change.
-pub fn spawn(
-    app: AppHandle,
-    paths: &TorPaths,
-    shared: SharedTorState,
-) -> std::io::Result<TorChild> {
+pub struct TorLogs {
+    pid: u32,
+    stdout: Option<ChildStdout>,
+    stderr: Option<ChildStderr>,
+}
+
+impl TorLogs {
+    /// Потоки разбирают stdout/stderr: прогресс бутстрапа, ошибки, падения
+    /// транспорта. Каждое изменение — событие `tor:state`.
+    pub fn start<RT: Runtime>(self, app: AppHandle<RT>, shared: SharedTorState) {
+        let pid = self.pid;
+        if let Some(out) = self.stdout {
+            let (app, shared) = (app.clone(), shared.clone());
+            thread::spawn(move || stream_log(out, app, shared, pid));
+        }
+        if let Some(err) = self.stderr {
+            thread::spawn(move || stream_log(err, app, shared, pid));
+        }
+    }
+}
+
+/// Spawn `tor -f <torrc>` with piped output; logging starts via [`TorChild::take_logs`].
+pub fn spawn(paths: &TorPaths) -> std::io::Result<TorChild> {
     let mut cmd = Command::new(&paths.binary);
     cmd.arg("-f").arg(&paths.torrc);
     cmd.stdout(Stdio::piped());
@@ -32,32 +58,24 @@ pub fn spawn(
         cmd.creation_flags(0x08000000);
     }
 
-    // Run from the binary's directory so relative pluggable_transports paths resolve.
+    // Рабочий каталог — каталог tor: пути транспортов в torrc относительные
+    // (pt_config::PT_DIR_REL).
     if let Some(parent) = paths.binary.parent() {
         cmd.current_dir(parent);
     }
 
-    let mut child = cmd.spawn()?;
-    let pid = child.id();
-
-    if let Some(out) = child.stdout.take() {
-        let app_clone = app.clone();
-        let shared_clone = shared.clone();
-        thread::spawn(move || stream_log(out, app_clone, shared_clone, pid));
-    }
-    if let Some(err) = child.stderr.take() {
-        let app_clone = app.clone();
-        let shared_clone = shared.clone();
-        thread::spawn(move || stream_log(err, app_clone, shared_clone, pid));
-    }
-
-    Ok(TorChild { child })
+    Ok(TorChild { child: cmd.spawn()? })
 }
 
 /// Сообщение статуса, когда процесс завершился сам (не через `tor_stop`).
 pub const EXITED_MESSAGE: &str = "tor process exited unexpectedly";
 
-fn stream_log<R: std::io::Read>(reader: R, app: AppHandle, shared: SharedTorState, pid: u32) {
+fn stream_log<R: std::io::Read, RT: Runtime>(
+    reader: R,
+    app: AppHandle<RT>,
+    shared: SharedTorState,
+    pid: u32,
+) {
     use std::io::{BufRead, BufReader};
     let buf = BufReader::new(reader);
     let mut recent_warns: Vec<String> = Vec::new();
@@ -65,58 +83,11 @@ fn stream_log<R: std::io::Read>(reader: R, app: AppHandle, shared: SharedTorStat
     for line in buf.lines() {
         let Ok(line) = line else { continue };
         log::debug!("[tor] {}", line);
-
-        let is_err = line.contains("[err]") || line.to_lowercase().contains("could not bind");
-        let is_warn = line.contains("[warn]");
-
-        if let Some(pct) = parse_bootstrap_pct(&line) {
-            let snapshot = with_state(&shared, |state| {
-                state.bootstrap_pct = pct;
-                state.message = Some(line.clone());
-                state.status = if pct >= 100 {
-                    TorStatus::Ready
-                } else {
-                    TorStatus::Bootstrapping
-                };
-                state.snapshot()
-            });
-            if let Some(s) = snapshot {
-                let _ = app.emit("tor:state", &s);
-            }
-            continue;
-        }
-
-        if is_err {
-            // Bundle the last few warnings into the error message so the UI
-            // shows the actual cause, not just `Reading config failed--see
-            // warnings above`.
-            let combined = if recent_warns.is_empty() {
-                line.clone()
-            } else {
-                let warns = recent_warns.join("\n");
-                format!("{}\n{}", warns, line)
-            };
-            let snapshot = with_state(&shared, |state| {
-                state.status = TorStatus::Failed;
-                state.message = Some(combined);
-                state.snapshot()
-            });
-            if let Some(s) = snapshot {
-                let _ = app.emit("tor:state", &s);
-            }
-            recent_warns.clear();
-        } else if is_warn {
-            recent_warns.push(line.clone());
-            if recent_warns.len() > 5 {
-                recent_warns.remove(0);
-            }
-            let snapshot = with_state(&shared, |state| {
-                state.message = Some(line.clone());
-                state.snapshot()
-            });
-            if let Some(s) = snapshot {
-                let _ = app.emit("tor:state", &s);
-            }
+        let snapshot = with_state(&shared, |state| {
+            apply_log_line(state, pid, &line, &mut recent_warns)
+        });
+        if let Some(Some(s)) = snapshot {
+            let _ = app.emit("tor:state", &s);
         }
     }
 
@@ -129,9 +100,92 @@ fn stream_log<R: std::io::Read>(reader: R, app: AppHandle, shared: SharedTorStat
     }
 }
 
+/// Строка лога → изменение состояния. Строки не текущего процесса (убитая
+/// попытка автоподбора допечатывает своё) состояние не трогают.
+fn apply_log_line(
+    state: &mut TorState,
+    pid: u32,
+    line: &str,
+    recent_warns: &mut Vec<String>,
+) -> Option<TorStateSnapshot> {
+    if state.child_pid != Some(pid) {
+        return None;
+    }
+    let body = log_body(line);
+
+    if let Some(pct) = parse_bootstrap_pct(line) {
+        state.bootstrap_pct = pct;
+        state.message = Some(body.to_string());
+        if pct >= 100 {
+            state.status = TorStatus::Ready;
+            state.stalled = false;
+            // Подключились: дальше смерть процесса — `Failed`, а не «следующая
+            // попытка» при статусе `Ready` и мёртвом SOCKS.
+            state.keep_going = false;
+        } else {
+            state.status = TorStatus::Bootstrapping;
+        }
+        return Some(state.snapshot());
+    }
+
+    let is_err = line.contains("[err]") || line.to_lowercase().contains("could not bind");
+    if is_err {
+        // Bundle the last few warnings into the error message so the UI
+        // shows the actual cause, not just `Reading config failed--see
+        // warnings above`.
+        let mut parts = std::mem::take(recent_warns);
+        parts.push(body.to_string());
+        fail_attempt(state, parts.join("\n"));
+        return Some(state.snapshot());
+    }
+
+    if is_pt_failure(line) {
+        state.pt_failures += 1;
+    }
+    if line.contains("[warn]") {
+        recent_warns.push(body.to_string());
+        if recent_warns.len() > 5 {
+            recent_warns.remove(0);
+        }
+        state.message = Some(body.to_string());
+        return Some(state.snapshot());
+    }
+    None
+}
+
+/// Попытка не удалась. В автоподборе это сигнал перейти к следующей: статус
+/// не меняется, чтобы запросы ждали, а не падали. Иначе — `Failed`.
+fn fail_attempt(state: &mut TorState, message: String) {
+    state.message = Some(message);
+    if state.keep_going {
+        state.candidate_failed = true;
+    } else {
+        state.status = TorStatus::Failed;
+    }
+}
+
+/// Транспорт не запустился или упал: Tor перезапускает его каждую секунду,
+/// и без счётчика попытка висела бы до таймаута.
+fn is_pt_failure(line: &str) -> bool {
+    line.contains("Managed proxy")
+        && (line.contains("terminated with status code")
+            || line.contains("failed at launch")
+            || line.contains("died in state"))
+}
+
+/// Текст после `[notice] `/`[warn] ` — без даты и уровня.
+fn log_body(line: &str) -> &str {
+    for level in ["[notice] ", "[warn] ", "[err] ", "[info] "] {
+        if let Some(idx) = line.find(level) {
+            return &line[idx + level.len()..];
+        }
+    }
+    line
+}
+
 /// Переводит состояние в `Failed`, если умерший процесс — текущий и Tor
 /// считался живым. Возвращает снапшот только при реальном переходе.
-fn mark_exited(state: &mut crate::tor::state::TorState, pid: u32) -> Option<TorStateSnapshot> {
+fn mark_exited(state: &mut TorState, pid: u32) -> Option<TorStateSnapshot> {
     let alive = matches!(
         state.status,
         TorStatus::Starting | TorStatus::Bootstrapping | TorStatus::Ready
@@ -139,19 +193,15 @@ fn mark_exited(state: &mut crate::tor::state::TorState, pid: u32) -> Option<TorS
     if state.child_pid != Some(pid) || !alive {
         return None;
     }
-    state.status = TorStatus::Failed;
-    state.message = Some(EXITED_MESSAGE.into());
     state.child_pid = None;
     state.bootstrap_pct = 0;
+    fail_attempt(state, EXITED_MESSAGE.into());
     Some(state.snapshot())
 }
 
 /// Поток логов — обычный OS-поток без tokio-контекста, поэтому блокирующая
 /// запись безопасна. Раньше при занятом локе обновление молча терялось.
-fn with_state<R>(
-    shared: &SharedTorState,
-    mutate: impl FnOnce(&mut crate::tor::state::TorState) -> R,
-) -> Option<R> {
+fn with_state<R>(shared: &SharedTorState, mutate: impl FnOnce(&mut TorState) -> R) -> Option<R> {
     let mut state = shared.blocking_write();
     Some(mutate(&mut state))
 }
@@ -216,7 +266,7 @@ mod tests {
 
     #[test]
     fn exit_of_current_process_marks_failed() {
-        let mut st = crate::tor::state::TorState::default();
+        let mut st = TorState::default();
         st.status = TorStatus::Ready;
         st.child_pid = Some(42);
         let snap = mark_exited(&mut st, 42).expect("transition");
@@ -228,7 +278,7 @@ mod tests {
     #[test]
     fn exit_after_tor_stop_or_of_stale_process_is_ignored() {
         // tor_stop: Off + child_pid=None до kill.
-        let mut st = crate::tor::state::TorState::default();
+        let mut st = TorState::default();
         assert!(mark_exited(&mut st, 42).is_none());
         assert_eq!(st.status, TorStatus::Off);
 
@@ -244,5 +294,63 @@ mod tests {
         st.child_pid = Some(42);
         assert!(mark_exited(&mut st, 42).is_none());
         assert_eq!(st.message.as_deref(), Some("could not bind"));
+    }
+
+    fn bootstrapping(pid: u32) -> TorState {
+        TorState {
+            status: TorStatus::Bootstrapping,
+            child_pid: Some(pid),
+            ..TorState::default()
+        }
+    }
+
+    #[test]
+    fn lines_of_a_killed_attempt_do_not_touch_the_state() {
+        let mut st = bootstrapping(43);
+        let mut warns = Vec::new();
+        let line = "Oct 17 16:17:07.000 [notice] Bootstrapped 100% (done): Done";
+        assert!(apply_log_line(&mut st, 42, line, &mut warns).is_none());
+        assert_eq!(st.status, TorStatus::Bootstrapping);
+        assert!(apply_log_line(&mut st, 43, line, &mut warns).is_some());
+        assert_eq!(st.status, TorStatus::Ready);
+        assert_eq!(st.message.as_deref(), Some("Bootstrapped 100% (done): Done"));
+    }
+
+    #[test]
+    fn in_auto_mode_an_error_moves_on_instead_of_failing() {
+        let mut st = bootstrapping(7);
+        st.keep_going = true;
+        let mut warns = Vec::new();
+        apply_log_line(&mut st, 7, "Oct 17 [warn] Problem bootstrapping. Stuck at 10%", &mut warns);
+        apply_log_line(&mut st, 7, "Oct 17 [err] Reading config failed", &mut warns);
+        assert_eq!(st.status, TorStatus::Bootstrapping, "requests keep waiting");
+        assert!(st.candidate_failed);
+        assert_eq!(
+            st.message.as_deref(),
+            Some("Problem bootstrapping. Stuck at 10%\nReading config failed")
+        );
+
+        // Подключились — дальше смерть процесса уже `Failed`.
+        let mut st = bootstrapping(8);
+        st.keep_going = true;
+        apply_log_line(&mut st, 8, "[notice] Bootstrapped 100% (done): Done", &mut warns);
+        assert!(!st.keep_going);
+        mark_exited(&mut st, 8).expect("transition");
+        assert_eq!(st.status, TorStatus::Failed);
+    }
+
+    #[test]
+    fn transport_crashes_are_counted() {
+        let mut st = bootstrapping(9);
+        let mut warns = Vec::new();
+        for line in [
+            "[warn] Managed proxy \"pluggable_transports/lyrebird\" having PID 1 terminated with status code 1",
+            "[warn] Managed proxy at 'pluggable_transports/lyrebird' died in state Launched",
+            "[warn] Proxy Client: unable to connect OR connection",
+        ] {
+            apply_log_line(&mut st, 9, line, &mut warns);
+        }
+        assert_eq!(st.pt_failures, 2);
+        assert_eq!(st.message.as_deref(), Some("Proxy Client: unable to connect OR connection"));
     }
 }

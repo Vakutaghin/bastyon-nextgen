@@ -17,6 +17,7 @@ permissions = [
   "allow-tor-stop",
   "allow-tor-fetch",
   "allow-tor-set-bridges",
+  "allow-tor-request-bridges",
   "allow-tor-ws-connect",
   "allow-tor-ws-send",
   "allow-tor-ws-close",

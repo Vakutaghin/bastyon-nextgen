@@ -167,6 +167,12 @@ async function systemInfo(isDesktop: boolean): Promise<SupportReportData['system
   }
 }
 
+/** `bootstrapping (auto, webtunnel)`: статус, режим мостов и чем идёт подключение. */
+function torSummary(tor: ReturnType<typeof useTorStore>): string {
+  const via = tor.activeTransport ? `, ${tor.activeTransport}` : ''
+  return `${tor.status} (${tor.bridgeKind}${via})`
+}
+
 async function storage(): Promise<SupportReportData['storage']> {
   const est = await safeAsync(() => navigator.storage.estimate(), null)
   if (!est?.quota) return undefined
@@ -263,7 +269,7 @@ export async function collectSupportReport(now: Date = new Date()): Promise<Supp
       uiScale: prefs.uiScale,
       animations: prefs.animations,
       messenger: prefs.messengerEnabled,
-      tor: tor.available ? (tor.enabled ? tor.status : 'off') : 'unavailable',
+      tor: tor.available ? (tor.enabled ? torSummary(tor) : 'off') : 'unavailable',
     },
     network: {
       online: safe(() => navigator.onLine, true),

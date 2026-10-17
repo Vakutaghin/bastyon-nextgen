@@ -1,11 +1,16 @@
+pub mod bridges;
 pub mod config;
+pub mod connect;
 pub mod installer;
+pub mod moat;
 pub mod process;
+pub mod pt_config;
 pub mod state;
 pub mod ws;
 
 use crate::tor::installer::InstallError;
 use crate::tor::process::TorChild;
+use crate::tor::pt_config::PtConfig;
 use crate::tor::state::{
     BridgeKind, SharedTorState, TorPaths, TorState, TorStateSnapshot, TorStatus,
 };
@@ -17,7 +22,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 use tokio::sync::RwLock;
 
 /// Ошибка `tor_fetch`/`tor_ws_connect`, когда Tor включён, но ещё не готов.
@@ -45,6 +50,9 @@ pub struct TorManager {
     /// Поколение запуска: `tor_stop` инкрементирует, и застрявший в `.await`
     /// `tor_start` не воскрешает состояние после остановки (S59).
     pub start_gen: AtomicU64,
+    /// Установку бандла запускают и `tor_start`, и «Получить мосты»: две
+    /// загрузки в один архив давали `SHA256 mismatch` (S59).
+    pub install_lock: tokio::sync::Mutex<()>,
 }
 
 impl TorManager {
@@ -57,6 +65,7 @@ impl TorManager {
             torified: RwLock::new(None),
             install_cancel: Arc::new(AtomicBool::new(false)),
             start_gen: AtomicU64::new(0),
+            install_lock: tokio::sync::Mutex::new(()),
         }
     }
 
@@ -97,7 +106,7 @@ impl TorManager {
         })
     }
 
-    pub async fn emit_state(&self, app: &AppHandle) {
+    pub async fn emit_state<R: Runtime>(&self, app: &AppHandle<R>) {
         let snapshot = self.state.read().await.snapshot();
         let _ = app.emit("tor:state", &snapshot);
     }
@@ -140,6 +149,20 @@ pub struct TorBridgesPayload {
     pub custom_bridges: Vec<String>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct TorBridgesResult {
+    pub snapshot: TorStateSnapshot,
+    /// Строки «Своих мостов», не похожие на мост, — чтобы показать их в меню.
+    pub rejected: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TorRequestedBridges {
+    /// Страна, для которой Moat подобрал мосты (`ru`), если определил.
+    pub country: Option<String>,
+    pub bridges: Vec<String>,
+}
+
 fn err_string<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
 }
@@ -149,16 +172,51 @@ pub async fn tor_status(mgr: State<'_, TorManager>) -> Result<TorStateSnapshot, 
     Ok(mgr.state.read().await.snapshot())
 }
 
+/// Сохраняет выбор мостов; применяется при следующем `tor_start`.
 #[tauri::command]
 pub async fn tor_set_bridges(
     payload: TorBridgesPayload,
     mgr: State<'_, TorManager>,
-) -> Result<TorStateSnapshot, String> {
+) -> Result<TorBridgesResult, String> {
+    let parsed = bridges::parse_lines(&payload.custom_bridges);
     let mut st = mgr.state.write().await;
-    st.use_bridges = payload.use_bridges;
+    st.use_bridges = payload.use_bridges && payload.kind != BridgeKind::None;
     st.bridge_kind = payload.kind;
-    st.custom_bridges = payload.custom_bridges;
-    Ok(st.snapshot())
+    st.custom_bridges = parsed.lines();
+    Ok(TorBridgesResult {
+        snapshot: st.snapshot(),
+        rejected: parsed.rejected,
+    })
+}
+
+/// «Получить мосты»: свежие мосты из BridgeDB для страны пользователя через
+/// Moat (без капчи) — для «Своих мостов». Страна без цензуры — общие запасные.
+#[tauri::command]
+pub async fn tor_request_bridges(
+    app: AppHandle,
+    mgr: State<'_, TorManager>,
+) -> Result<TorRequestedBridges, String> {
+    {
+        let _install = mgr.install_lock.lock().await;
+        installer::ensure_installed(&app, &mgr.paths, &AtomicBool::new(false))
+            .await
+            .map_err(err_string)?;
+    }
+    let pt = PtConfig::load(&mgr.paths.pt_dir);
+    let settings = moat::settings_or_defaults(&mgr.paths, &pt)
+        .await
+        .map_err(err_string)?;
+    let mut lines = settings.bridgedb_lines();
+    if lines.is_empty() {
+        lines = moat::circumvention_defaults(&mgr.paths, &pt)
+            .await
+            .map_err(err_string)?
+            .bridgedb_lines();
+    }
+    Ok(TorRequestedBridges {
+        country: settings.country,
+        bridges: bridges::parse_lines(&lines).lines(),
+    })
 }
 
 enum StartAbort {
@@ -185,27 +243,32 @@ fn kill_existing_child(mgr: &TorManager) {
     }
 }
 
-async fn start_inner(
-    app: &AppHandle,
-    mgr: &TorManager,
-    gen: u64,
-) -> Result<TorStateSnapshot, StartAbort> {
+/// Установка и порты. Дальше подключением занимается `connect::supervise`.
+async fn prepare(app: &AppHandle, mgr: &TorManager, gen: u64) -> Result<(), StartAbort> {
     let still_ours = || mgr.start_gen.load(Ordering::SeqCst) == gen;
 
     {
         let mut st = mgr.state.write().await;
+        if !still_ours() {
+            return Err(StartAbort::Cancelled);
+        }
+        st.reset_attempt();
         st.status = TorStatus::Installing;
         st.message = Some("Preparing Tor".into());
-        st.bootstrap_pct = 0;
     }
     mgr.emit_state(app).await;
 
-    installer::ensure_installed(app, &mgr.paths, &mgr.install_cancel).await?;
+    // До установки: на Windows работающий tor.exe не дал бы заменить бандл
+    // новой версии, а `Failed` с живым `tor` раньше порождал второго (S59).
+    kill_existing_child(mgr);
+
+    {
+        let _install = mgr.install_lock.lock().await;
+        installer::ensure_installed(app, &mgr.paths, &mgr.install_cancel).await?;
+    }
     if !still_ours() {
         return Err(StartAbort::Cancelled);
     }
-
-    kill_existing_child(mgr);
 
     // Pick a free SOCKS/Control port pair so we don't collide with a zombie
     // tor or another app holding the default 9250/9251.
@@ -216,42 +279,15 @@ async fn start_inner(
     }
 
     {
-        let st = mgr.state.read().await;
-        config::write_torrc(&st, &mgr.paths).map_err(|e| StartAbort::Failed(e.to_string()))?;
-    }
-
-    {
         let mut st = mgr.state.write().await;
+        if !still_ours() {
+            return Err(StartAbort::Cancelled);
+        }
         st.status = TorStatus::Starting;
         st.message = Some("Launching tor".into());
     }
     mgr.emit_state(app).await;
-
-    let mut child = process::spawn(app.clone(), &mgr.paths, mgr.state.clone())
-        .map_err(|e| StartAbort::Failed(e.to_string()))?;
-    let pid = child.pid();
-
-    if !still_ours() {
-        let _ = process::kill(&mut child);
-        return Err(StartAbort::Cancelled);
-    }
-
-    {
-        let mut st = mgr.state.write().await;
-        st.child_pid = Some(pid);
-        st.status = TorStatus::Bootstrapping;
-    }
-    mgr.emit_state(app).await;
-
-    {
-        let mut guard = mgr.child.lock().expect("tor child mutex poisoned");
-        *guard = Some(child);
-    }
-
-    // Reset cached torified clients; rebuilt on first fetch after Ready.
-    *mgr.torified.write().await = None;
-
-    Ok(mgr.state.read().await.snapshot())
+    Ok(())
 }
 
 #[tauri::command]
@@ -274,8 +310,11 @@ pub async fn tor_start(
     let gen = mgr.start_gen.fetch_add(1, Ordering::SeqCst) + 1;
     mgr.install_cancel.store(false, Ordering::SeqCst);
 
-    match start_inner(&app, &mgr, gen).await {
-        Ok(snap) => Ok(snap),
+    match prepare(&app, &mgr, gen).await {
+        Ok(()) => {
+            tauri::async_runtime::spawn(connect::supervise(app.clone(), gen));
+            Ok(mgr.state.read().await.snapshot())
+        }
         Err(StartAbort::Cancelled) => Ok(mgr.state.read().await.snapshot()),
         Err(StartAbort::Failed(msg)) => {
             // Раньше ошибка установки оставляла статус `Installing` навсегда.
@@ -284,6 +323,7 @@ pub async fn tor_start(
                 st.status = TorStatus::Failed;
                 st.message = Some(msg.clone());
                 st.child_pid = None;
+                st.keep_going = false;
             }
             mgr.emit_state(&app).await;
             Err(msg)
@@ -305,9 +345,7 @@ pub async fn tor_stop(
     {
         let mut st = mgr.state.write().await;
         st.status = TorStatus::Off;
-        st.bootstrap_pct = 0;
-        st.message = None;
-        st.child_pid = None;
+        st.reset_attempt();
     }
     kill_existing_child(&mgr);
     *mgr.torified.write().await = None;

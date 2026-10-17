@@ -1,4 +1,6 @@
-use crate::tor::state::{BridgeKind, TorPaths, TorState};
+use crate::tor::bridges;
+use crate::tor::pt_config::PtConfig;
+use crate::tor::state::{TorPaths, TorState};
 use std::io::Write;
 use std::path::Path;
 
@@ -11,8 +13,9 @@ fn q(path: &Path) -> String {
     format!("\"{}\"", escaped)
 }
 
-/// Generate torrc content based on current TorState.
-pub fn render_torrc(state: &TorState, paths: &TorPaths) -> String {
+/// Generate torrc content based on current TorState: мосты — те, что у
+/// текущей попытки (`active_bridges`), транспорты — из pt_config бандла.
+pub fn render_torrc(state: &TorState, paths: &TorPaths, pt: &PtConfig) -> String {
     let mut out = String::new();
 
     out.push_str(&format!("SocksPort 127.0.0.1:{}\n", state.socks_port));
@@ -43,85 +46,28 @@ pub fn render_torrc(state: &TorState, paths: &TorPaths) -> String {
     out.push_str("AvoidDiskWrites 1\n");
     out.push_str("Log notice stdout\n");
 
-    if state.use_bridges {
+    // Строки проверяются ещё раз здесь, у самой записи: что бы ни положили в
+    // состояние, директиву в torrc мост не допишет.
+    let bridges = bridges::parse_lines(&state.active_bridges);
+    if !bridges.bridges.is_empty() {
         out.push_str("UseBridges 1\n");
-
-        match state.bridge_kind {
-            BridgeKind::Snowflake => {
-                let snowflake = paths.pt_dir.join(if cfg!(windows) {
-                    "snowflake-client.exe"
-                } else {
-                    "snowflake-client"
-                });
-                out.push_str(&format!(
-                    "ClientTransportPlugin snowflake exec {} \
-                     -url https://1098762253.rsc.cdn77.org/ \
-                     -front www.cdn77.com \
-                     -ice stun:stun.l.google.com:19302,stun:stun.antisip.com:3478 \
-                     -log snowflake.log\n",
-                    q(&snowflake)
-                ));
-                out.push_str(
-                    "Bridge snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72\n",
-                );
-            }
-            BridgeKind::Obfs4 => {
-                let lyrebird = paths.pt_dir.join(if cfg!(windows) {
-                    "lyrebird.exe"
-                } else {
-                    "lyrebird"
-                });
-                out.push_str(&format!(
-                    "ClientTransportPlugin obfs4 exec {}\n",
-                    q(&lyrebird)
-                ));
-                for line in DEFAULT_OBFS4_BRIDGES {
-                    out.push_str("Bridge ");
-                    out.push_str(line);
-                    out.push('\n');
-                }
-            }
-            BridgeKind::Custom => {
-                let lyrebird = paths.pt_dir.join(if cfg!(windows) {
-                    "lyrebird.exe"
-                } else {
-                    "lyrebird"
-                });
-                out.push_str(&format!(
-                    "ClientTransportPlugin obfs4 exec {}\n",
-                    q(&lyrebird)
-                ));
-                for bridge in &state.custom_bridges {
-                    let trimmed = bridge.trim();
-                    if trimmed.is_empty() {
-                        continue;
-                    }
-                    out.push_str("Bridge ");
-                    out.push_str(trimmed);
-                    out.push('\n');
-                }
-            }
-            BridgeKind::None => {}
+        out.push_str(&pt.torrc_lines());
+        for bridge in &bridges.bridges {
+            out.push_str("Bridge ");
+            out.push_str(&bridge.line);
+            out.push('\n');
         }
     }
 
     out
 }
 
-pub fn write_torrc(state: &TorState, paths: &TorPaths) -> std::io::Result<()> {
-    let body = render_torrc(state, paths);
+pub fn write_torrc(state: &TorState, paths: &TorPaths, pt: &PtConfig) -> std::io::Result<()> {
+    let body = render_torrc(state, paths, pt);
     let mut f = std::fs::File::create(&paths.torrc)?;
     f.write_all(body.as_bytes())?;
     Ok(())
 }
-
-/// Built-in obfs4 bridges as published by Tor Project (rotated periodically).
-/// User can supply custom ones via the UI; these are a sensible default.
-const DEFAULT_OBFS4_BRIDGES: &[&str] = &[
-    "obfs4 192.95.36.142:443 CDF2E852BF539B82BD10E27E9115A31734E378C2 cert=qUVQ0srL1JI/vO6V6m/24anYXiJD3QP2HgzUKQtQ7GRqqUvs7P+tG43RtAqdhLOALP7DJQ iat-mode=1",
-    "obfs4 38.229.33.83:80 0BAC39417268B96B9F514E7F63FA6FBA1A788955 cert=VwEFpk9F/UN9JED7XpG1XOjm/O8ZCXK80oPecgWnNDZDv5pdkhq1OpbAH0wNqOT6H6BmRQ iat-mode=1",
-    "obfs4 37.218.245.14:38224 D9A82D2F9C2F65A18407B1D2B764F130847F8B5D cert=bjRaMrr1BRiAW8IE9U5z27fQaYgOhX1UCmOpg2pFpoMvo6ZgQMzLsaTzzQNTlm7hNcb+Sg iat-mode=0",
-];
 
 #[cfg(test)]
 mod tests {
@@ -132,10 +78,68 @@ mod tests {
     fn torrc_has_no_control_port_and_no_cookie_auth_off() {
         let state = TorState::default();
         let paths = TorPaths::from_root(PathBuf::from("/tmp/bastyon-tor-test"));
-        let torrc = render_torrc(&state, &paths);
+        let torrc = render_torrc(&state, &paths, &PtConfig::fallback());
         assert!(torrc.contains("SocksPort 127.0.0.1:9250\n"));
         assert!(!torrc.contains("ControlPort"), "{torrc}");
         assert!(!torrc.contains("CookieAuthentication 0"), "{torrc}");
         assert!(torrc.contains("__OwningControllerProcess"));
+        assert!(!torrc.contains("UseBridges"), "direct attempt: {torrc}");
+    }
+
+    #[test]
+    fn bridges_of_any_type_get_their_transport() {
+        let state = TorState {
+            active_bridges: vec![
+                "webtunnel [2001:db8::1]:443 DF82B4001F68C2312CB01762E8AE203EB9F1FF54 url=https://wt.example ver=0.0.5".into(),
+                "snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://x.example fronts=a.example".into(),
+            ],
+            ..TorState::default()
+        };
+        let paths = TorPaths::from_root(PathBuf::from(
+            "/Users/a b/Library/Application Support/x/tor",
+        ));
+        let torrc = render_torrc(&state, &paths, &PtConfig::fallback());
+        assert!(torrc.contains("UseBridges 1\n"));
+        assert!(
+            torrc.contains(",webtunnel exec pluggable_transports"),
+            "{torrc}"
+        );
+        assert!(
+            torrc.contains("ClientTransportPlugin snowflake exec pluggable_transports"),
+            "{torrc}"
+        );
+        assert!(
+            torrc.contains("\nBridge webtunnel [2001:db8::1]:443 "),
+            "{torrc}"
+        );
+        assert!(
+            torrc.contains("\nBridge snowflake 192.0.2.3:80 "),
+            "{torrc}"
+        );
+        // Пробел в пути — только у DataDirectory, и тот в кавычках.
+        for line in torrc
+            .lines()
+            .filter(|l| l.starts_with("ClientTransportPlugin"))
+        {
+            assert!(
+                !line.contains("Application Support") && !line.contains('"'),
+                "{line}"
+            );
+        }
+    }
+
+    #[test]
+    fn injected_directives_never_reach_the_torrc() {
+        let state = TorState {
+            active_bridges: vec!["obfs4 1.2.3.4:443 cert=x\nControlPort 9999".into()],
+            ..TorState::default()
+        };
+        let paths = TorPaths::from_root(PathBuf::from("/tmp/bastyon-tor-test"));
+        let torrc = render_torrc(&state, &paths, &PtConfig::fallback());
+        assert!(!torrc.contains("ControlPort"), "{torrc}");
+        assert!(
+            torrc.contains("\nBridge obfs4 1.2.3.4:443 cert=x\n"),
+            "{torrc}"
+        );
     }
 }

@@ -281,9 +281,32 @@ export default {
     cancel: 'Откажи',
     torBridges: 'Мостови',
     torBridgesNone: 'Без мостова',
-    torBridgesObfs4: 'OBFS4 (уграђени)',
-    torBridgesCustom: 'Сопствени OBFS4',
+    torBridgesObfs4: 'obfs4 (уграђени)',
+    torBridgesCustom: 'Сопствени мостови',
     torBridgesRestartHint: 'Промена мостова поново покреће Tor.',
+    torBridgesAuto: 'Аутоматски',
+    torBridgesAutoHint:
+      'Tor Project бира мостове за вашу земљу, апликација их пробава редом и памти онај који ради.',
+    torBridgesMeek: 'meek (преко CDN-а, споро)',
+    torBridgesCustomHint:
+      "Један по реду, било ког типа: obfs4, WebTunnel, Snowflake, meek. Мостове дају Telegram бот {'@'}GetBridgesBot и сајт bridges.torproject.org.",
+    torRequestBridges: 'Набави мостове',
+    torRequestBridgesDone: 'Примљено мостова: {n}. Притисните „Примени“.',
+    torRequestBridgesFailed: 'Мостови нису набављени: {message}',
+    torBridgesRejected: 'Прескочено редова који не личе на мост: {n}',
+    torStatusFetchingBridges: 'Тражење мостова за вашу земљу…',
+    torStatusBootstrappingVia: 'Повезивање преко {via}: {pct}%',
+    torStatusReadyVia: 'Повезано са Tor мрежом преко {via}',
+    torStatusAttempt: 'начин {n}',
+    torStalledHint:
+      'Повезивање не напредује — изгледа да је овај начин блокиран. Изаберите „Аутоматски“ или друге мостове.',
+    torErrorAllFailed:
+      'Ниједан начин повезивања није успео. Додајте сопствене мостове или покушајте касније.',
+    torErrorNoBridges: 'На листи сопствених мостова нема ниједног моста.',
+    torRetry: 'Покушај поново',
+    torCountry: 'Земља према Tor Project-у: {country}',
+    torViaCustom: 'сопствене мостове',
+    torViaVanilla: 'обичне мостове',
     torDesktopOnly: 'Доступно само у десктоп апликацији.',
     torStatusStopping: 'Tor се зауставља…',
     torStatusOff: 'Tor је искључен',
@@ -299,7 +322,7 @@ export default {
       'Отворите Bastyon у десктоп апликацији — верзија за прегледач не подржава уграђени Tor.',
     torEnableTitle: 'Укључити Tor?',
     torEnableContent:
-      'При првом покретању преузима се Tor (~30 MB); то може потрајати минут. Захтеви чворовима, ћаскање и API апликације иду кроз Tor. Слике, видео снимци и уграђени садржаји (YouTube, мини-апликације) не иду — зато су блокирани док је Tor укључен: слика може да се учита кроз Tor кликом, видео само директно, са вашом IP адресом, након потврде. Искључивање Tor-а поново учитава апликацију.',
+      'При првом покретању преузима се Tor (~20 MB); то може потрајати минут. Захтеви чворовима, ћаскање и API апликације иду кроз Tor. Слике, видео снимци и уграђени садржаји (YouTube, мини-апликације) не иду — зато су блокирани док је Tor укључен: слика може да се учита кроз Tor кликом, видео само директно, са вашом IP адресом, након потврде. Искључивање Tor-а поново учитава апликацију.',
     torEnableOk: 'Укључи',
     torMediaHint:
       'Кроз Tor: чворови, ћаскање, API. Слике — кроз Tor кликом; видео, YouTube и мини-апликације — искључени или директно са вашом IP адресом након потврде. Искључивање Tor-а поново учитава апликацију.',

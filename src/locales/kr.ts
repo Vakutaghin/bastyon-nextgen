@@ -280,9 +280,32 @@ export default {
     cancel: '취소',
     torBridges: '브리지',
     torBridgesNone: '브리지 없음',
-    torBridgesObfs4: 'OBFS4 (내장)',
-    torBridgesCustom: '사용자 지정 OBFS4',
+    torBridgesObfs4: 'obfs4 (내장)',
+    torBridgesCustom: '사용자 지정 브리지',
     torBridgesRestartHint: '브리지를 변경하면 Tor가 다시 시작됩니다.',
+    torBridgesAuto: '자동',
+    torBridgesAutoHint:
+      'Tor Project가 사용자의 국가에 맞는 브리지를 고르고, 앱이 하나씩 시도해 작동하는 것을 기억합니다.',
+    torBridgesMeek: 'meek (CDN 경유, 느림)',
+    torBridgesCustomHint:
+      "한 줄에 하나씩, 모든 유형 가능: obfs4, WebTunnel, Snowflake, meek. 텔레그램 봇 {'@'}GetBridgesBot이나 bridges.torproject.org에서 받을 수 있습니다.",
+    torRequestBridges: '브리지 받기',
+    torRequestBridgesDone: '브리지 {n}개를 받았습니다. "적용"을 누르세요.',
+    torRequestBridgesFailed: '브리지를 받지 못했습니다: {message}',
+    torBridgesRejected: '브리지로 보이지 않아 건너뛴 줄: {n}',
+    torStatusFetchingBridges: '사용자의 국가에 맞는 브리지를 찾는 중…',
+    torStatusBootstrappingVia: '{via}(으)로 연결 중: {pct}%',
+    torStatusReadyVia: '{via}(으)로 Tor 네트워크에 연결됨',
+    torStatusAttempt: '방법 {n}',
+    torStalledHint:
+      '연결이 진행되지 않습니다. 이 방법이 차단된 것 같습니다. "자동" 또는 다른 브리지를 선택하세요.',
+    torErrorAllFailed:
+      '어떤 연결 방법도 작동하지 않았습니다. 브리지를 직접 추가하거나 나중에 다시 시도하세요.',
+    torErrorNoBridges: '사용자 지정 브리지 목록에 브리지가 없습니다.',
+    torRetry: '다시 시도',
+    torCountry: 'Tor Project 기준 국가: {country}',
+    torViaCustom: '사용자 지정 브리지',
+    torViaVanilla: '일반 브리지',
     torDesktopOnly: '데스크톱 앱에서만 사용할 수 있습니다.',
     torStatusStopping: 'Tor를 중지하는 중…',
     torStatusOff: 'Tor 꺼짐',
@@ -298,7 +321,7 @@ export default {
       '데스크톱 앱에서 Bastyon을 여세요. 브라우저 버전은 내장 Tor를 지원하지 않습니다.',
     torEnableTitle: 'Tor를 켤까요?',
     torEnableContent:
-      '처음 실행하면 Tor(~30MB)를 다운로드하며 1분 정도 걸릴 수 있습니다. 노드 요청, 채팅, 앱 API는 Tor를 거칩니다. 이미지, 동영상, 임베드(YouTube, 미니 앱)는 거치지 않으므로 Tor가 켜져 있는 동안 차단됩니다. 이미지는 클릭하면 Tor를 통해 불러올 수 있고, 동영상은 확인 후 회원님의 IP로 직접 재생됩니다. Tor를 끄면 앱이 다시 로드됩니다.',
+      '처음 실행하면 Tor(~20MB)를 다운로드하며 1분 정도 걸릴 수 있습니다. 노드 요청, 채팅, 앱 API는 Tor를 거칩니다. 이미지, 동영상, 임베드(YouTube, 미니 앱)는 거치지 않으므로 Tor가 켜져 있는 동안 차단됩니다. 이미지는 클릭하면 Tor를 통해 불러올 수 있고, 동영상은 확인 후 회원님의 IP로 직접 재생됩니다. Tor를 끄면 앱이 다시 로드됩니다.',
     torEnableOk: '켜기',
     torMediaHint:
       'Tor 경유: 노드, 채팅, API. 이미지는 클릭 시 Tor 경유, 동영상·YouTube·미니 앱은 꺼지거나 확인 후 회원님의 IP로 직접 연결됩니다. Tor를 끄면 앱이 다시 로드됩니다.',

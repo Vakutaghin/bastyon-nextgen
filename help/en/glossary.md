@@ -24,7 +24,7 @@ Promoting a post for [PKOIN](#pkoin): a participant spends coins, and the post r
 
 ## Bridge
 
-A hidden entry point to the [Tor](#tor) network, for people whose Tor is blocked. obfs4 bridges disguise the traffic as random noise, Snowflake as a video call.
+A hidden entry point to the [Tor](#tor) network, for people whose Tor is blocked. obfs4 bridges disguise the traffic as random noise, WebTunnel as an ordinary website, Snowflake as a video call, meek as traffic to a content delivery network.
 
 ## CID
 

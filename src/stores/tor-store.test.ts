@@ -93,3 +93,81 @@ describe('tor-store media policy', () => {
     expect(store.routingMode).toBe('failed')
   })
 })
+
+describe('tor-store bridges', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+    invoke.mockReset()
+  })
+
+  it('кто мосты не выбирал, получает автоподбор', () => {
+    const store = useTorStore()
+    expect(store.bridgeKind).toBe('auto')
+    expect(store.useBridges).toBe(true)
+  })
+
+  it('сохранённый выбор остаётся, незнакомое значение — автоподбор', () => {
+    localStorage.setItem('tor:bridges:kind', 'none')
+    expect(useTorStore().bridgeKind).toBe('none')
+    expect(useTorStore().useBridges).toBe(false)
+
+    setActivePinia(createPinia())
+    localStorage.setItem('tor:bridges:kind', 'obfs3-legacy')
+    expect(useTorStore().bridgeKind).toBe('auto')
+  })
+
+  it('pushBridges запоминает строки, которые бэкенд не признал мостом', async () => {
+    const store = useTorStore()
+    store.available = true
+    invoke.mockImplementation(async (cmd: string) =>
+      cmd === 'tor_set_bridges'
+        ? { snapshot: snapshot('off'), rejected: ['garbage'] }
+        : snapshot('off')
+    )
+    store.setBridgeConfig({ useBridges: true, kind: 'custom', customBridges: 'obfs4 x\ngarbage\n' })
+    await store.pushBridges()
+    expect(invoke).toHaveBeenCalledWith('tor_set_bridges', {
+      payload: { use_bridges: true, kind: 'custom', custom_bridges: ['obfs4 x', 'garbage'] },
+    })
+    expect(store.rejectedBridges).toEqual(['garbage'])
+
+    store.setBridgeConfig({ useBridges: true, kind: 'auto' })
+    await store.pushBridges()
+    expect(store.rejectedBridges).toEqual([])
+  })
+
+  it('снимок автоподбора доходит до стора', () => {
+    const store = useTorStore()
+    store.applySnapshot({
+      ...snapshot('bootstrapping'),
+      bridge_kind: 'auto',
+      active_transport: 'webtunnel',
+      attempt: 2,
+      country: 'ru',
+      stalled: true,
+      fetching_bridges: false,
+      error_code: null,
+    } as never)
+    expect(store.activeTransport).toBe('webtunnel')
+    expect(store.attempt).toBe(2)
+    expect(store.country).toBe('ru')
+    expect(store.stalled).toBe(true)
+
+    // Старый бэкенд без новых полей не ломает стор.
+    store.applySnapshot(snapshot('ready') as never)
+    expect(store.activeTransport).toBeNull()
+    expect(store.stalled).toBe(false)
+  })
+
+  it('requestBridges отдаёт мосты от Moat', async () => {
+    const store = useTorStore()
+    store.available = true
+    invoke.mockResolvedValue({ country: 'ru', bridges: ['webtunnel [2001:db8::1]:443 url=x'] })
+    await expect(store.requestBridges()).resolves.toEqual({
+      country: 'ru',
+      bridges: ['webtunnel [2001:db8::1]:443 url=x'],
+    })
+    expect(invoke).toHaveBeenCalledWith('tor_request_bridges', undefined)
+  })
+})

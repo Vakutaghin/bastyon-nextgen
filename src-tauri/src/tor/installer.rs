@@ -1,20 +1,49 @@
 use crate::tor::state::TorPaths;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
+use serde::Deserialize;
 use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
+use std::time::Duration;
 use tar::Archive;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Runtime};
 use thiserror::Error;
 
-/// Pinned tor-expert-bundle version. Bump to upgrade Tor.
-/// Releases: https://archive.torproject.org/tor-package-archive/torbrowser/
-pub const TOR_VERSION: &str = "14.0.7";
+/// Закреплённый tor-expert-bundle: версия и SHA-256 архивов по платформам.
+/// Хэши взяты из `sha256sums-signed-build.txt`, подпись которого проверена
+/// ключом Tor Browser Developers (`scripts/tor-bundle-pin.sh <версия>`). Тот
+/// же файл читает release.yml, когда кладёт архивы в зеркало на GitHub.
+const BUNDLE_JSON: &str = include_str!("bundle.json");
 
 const ARCHIVE_BASE: &str = "https://archive.torproject.org/tor-package-archive/torbrowser";
+const DIST_BASE: &str = "https://dist.torproject.org/torbrowser";
+/// Релиз `tor-<версия>` этого репозитория — зеркало архивов (release.yml).
+const MIRROR_REPO: &str = "Vakutaghin/bastyon-nextgen";
+
+/// Версия бандла, с которой распакован `tor/`. Другая или нет файла — бандл
+/// ставится заново: раньше установленный Tor не обновлялся никогда.
+const VERSION_MARKER: &str = ".bundle-version";
+
+#[derive(Debug, Deserialize)]
+struct BundlePin {
+    version: String,
+    sha256: BTreeMap<String, String>,
+}
+
+fn pin() -> &'static BundlePin {
+    static PIN: OnceLock<BundlePin> = OnceLock::new();
+    PIN.get_or_init(|| serde_json::from_str(BUNDLE_JSON).expect("tor/bundle.json is valid"))
+}
+
+/// Версия закреплённого бандла (= версия Tor Browser, из которого он взят).
+pub fn tor_version() -> &'static str {
+    &pin().version
+}
 
 #[derive(Debug, Error)]
 pub enum InstallError {
@@ -26,8 +55,6 @@ pub enum InstallError {
     UnsupportedPlatform(String),
     #[error("SHA256 mismatch: expected {expected}, got {actual}")]
     HashMismatch { expected: String, actual: String },
-    #[error("SHA256 manifest did not contain entry for {0}")]
-    HashMissing(String),
     #[error("expected file missing after extraction: {0}")]
     ExtractedFileMissing(String),
     #[error("zip error: {0}")]
@@ -40,21 +67,22 @@ pub enum InstallError {
 pub struct PlatformInfo {
     /// Filename within the version directory.
     pub archive_name: String,
+    /// Ожидаемый SHA-256 архива из `bundle.json`.
+    pub sha256: String,
     /// Whether the archive is a `.zip` (legacy Windows) or `.tar.gz` (default).
     pub is_zip: bool,
 }
 
 pub fn detect_platform() -> Result<PlatformInfo, InstallError> {
-    let os = std::env::consts::OS;
-    let arch = std::env::consts::ARCH;
+    platform_for(std::env::consts::OS, std::env::consts::ARCH)
+}
 
+fn platform_for(os: &str, arch: &str) -> Result<PlatformInfo, InstallError> {
     let (platform, arch_tag) = match (os, arch) {
         ("windows", "x86_64") => ("windows", "x86_64"),
         ("windows", "x86") => ("windows", "i686"),
         ("linux", "x86_64") => ("linux", "x86_64"),
         ("linux", "x86") => ("linux", "i686"),
-        ("linux", "aarch64") => ("linux", "aarch64"),
-        ("linux", "arm") => ("linux", "armhf"),
         ("macos", "x86_64") => ("macos", "x86_64"),
         ("macos", "aarch64") => ("macos", "aarch64"),
         _ => {
@@ -64,25 +92,50 @@ pub fn detect_platform() -> Result<PlatformInfo, InstallError> {
             )))
         }
     };
-
-    let archive_name = format!(
-        "tor-expert-bundle-{}-{}-{}.tar.gz",
-        platform, arch_tag, TOR_VERSION
-    );
+    let key = format!("{}-{}", platform, arch_tag);
+    // Для Linux ARM Tor Project бандл не собирает — хэша нет, ставить нечего.
+    let sha256 = pin()
+        .sha256
+        .get(&key)
+        .ok_or_else(|| InstallError::UnsupportedPlatform(key.clone()))?
+        .to_lowercase();
 
     Ok(PlatformInfo {
-        archive_name,
+        archive_name: format!("tor-expert-bundle-{}-{}.tar.gz", key, tor_version()),
+        sha256,
         is_zip: false,
     })
 }
 
+/// Откуда качать архив, по порядку. Первым — зеркало в релизах этого
+/// репозитория: torproject.org в РФ заблокирован с 2021 года, а GitHub
+/// открывается. Подлинность держит закреплённый хэш, а не источник.
+fn archive_urls(version: &str, archive_name: &str) -> Vec<String> {
+    vec![
+        format!(
+            "https://github.com/{}/releases/download/tor-{}/{}",
+            MIRROR_REPO, version, archive_name
+        ),
+        format!("{}/{}/{}", ARCHIVE_BASE, version, archive_name),
+        format!("{}/{}/{}", DIST_BASE, version, archive_name),
+    ]
+}
+
+/// Бандл распакован и той же версии, что закреплена.
+pub fn is_installed(paths: &TorPaths) -> bool {
+    let marker = paths.binary.with_file_name(VERSION_MARKER);
+    paths.binary.is_file()
+        && paths.geoip.is_file()
+        && fs::read_to_string(marker).is_ok_and(|v| v.trim() == tor_version())
+}
+
 /// Top-level: ensure Tor binary and resources exist on disk. No-op if installed.
-pub async fn ensure_installed(
-    app: &AppHandle,
+pub async fn ensure_installed<R: Runtime>(
+    app: &AppHandle<R>,
     paths: &TorPaths,
     cancel: &AtomicBool,
 ) -> Result<(), InstallError> {
-    if paths.binary.is_file() && paths.geoip.is_file() {
+    if is_installed(paths) {
         return Ok(());
     }
 
@@ -90,30 +143,53 @@ pub async fn ensure_installed(
     fs::create_dir_all(&paths.data_dir)?;
 
     let platform = detect_platform()?;
-
-    emit_progress(app, "starting", 0.0, &format!("Downloading {}", platform.archive_name));
-
-    let archive_url = format!(
-        "{}/{}/{}",
-        ARCHIVE_BASE, TOR_VERSION, platform.archive_name
-    );
-    let sha_url = format!(
-        "{}/{}/sha256sums-signed-build.txt",
-        ARCHIVE_BASE, TOR_VERSION
-    );
-
     let archive_path = paths.root.join(&platform.archive_name);
 
-    download_with_progress(app, &archive_url, &archive_path, cancel).await?;
-    if cancel.load(Ordering::SeqCst) {
-        let _ = fs::remove_file(&archive_path);
-        return Err(InstallError::Cancelled);
+    // Зеркало по очереди: недоступно, 404 или хэш не тот — следующее.
+    let mut last_err: Option<InstallError> = None;
+    let mut verified = false;
+    for url in archive_urls(tor_version(), &platform.archive_name) {
+        emit_progress(app, "starting", 0.0, &format!("Downloading {}", platform.archive_name));
+        match download_with_progress(app, &url, &archive_path, cancel).await {
+            Ok(()) => {}
+            Err(InstallError::Cancelled) => return Err(InstallError::Cancelled),
+            Err(e) => {
+                log::warn!("[tor] download from {} failed: {}", url, e);
+                let _ = fs::remove_file(&archive_path);
+                last_err = Some(e);
+                continue;
+            }
+        }
+        if cancel.load(Ordering::SeqCst) {
+            let _ = fs::remove_file(&archive_path);
+            return Err(InstallError::Cancelled);
+        }
+
+        emit_progress(app, "verifying", 0.95, "Verifying SHA256");
+        match check_sha256(&archive_path, &platform.sha256) {
+            Ok(()) => {
+                verified = true;
+                break;
+            }
+            Err(e) => {
+                log::warn!("[tor] archive from {} rejected: {}", url, e);
+                let _ = fs::remove_file(&archive_path);
+                last_err = Some(e);
+            }
+        }
+    }
+    if !verified {
+        return Err(last_err.unwrap_or(InstallError::ExtractedFileMissing(
+            platform.archive_name.clone(),
+        )));
     }
 
-    emit_progress(app, "verifying", 0.95, "Verifying SHA256");
-    verify_sha256(&archive_path, &platform.archive_name, &sha_url).await?;
-
     emit_progress(app, "extracting", 0.97, "Extracting bundle");
+    // Каталог прошлой версии — целиком: в 15.x нет отдельного
+    // snowflake-client, и старые бинарники не должны оставаться рядом.
+    if let Some(tor_dir) = paths.binary.parent() {
+        let _ = fs::remove_dir_all(tor_dir);
+    }
     if platform.is_zip {
         extract_zip(&archive_path, &paths.root)?;
     } else {
@@ -156,18 +232,23 @@ pub async fn ensure_installed(
             .output();
     }
 
+    fs::write(paths.binary.with_file_name(VERSION_MARKER), tor_version())?;
+
     emit_progress(app, "ready", 1.0, "Tor installed");
     Ok(())
 }
 
-async fn download_with_progress(
-    app: &AppHandle,
+async fn download_with_progress<R: Runtime>(
+    app: &AppHandle<R>,
     url: &str,
     dest: &Path,
     cancel: &AtomicBool,
 ) -> Result<(), InstallError> {
+    // Заблокированный адрес в РФ чаще молчит, чем отказывает: без
+    // connect_timeout следующее зеркало ждало бы общие 10 минут.
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(600))
+        .connect_timeout(Duration::from_secs(20))
+        .timeout(Duration::from_secs(600))
         .build()?;
     let resp = client.get(url).send().await?.error_for_status()?;
     let total = resp.content_length().unwrap_or(0);
@@ -202,31 +283,6 @@ async fn download_with_progress(
         }
     }
     Ok(())
-}
-
-async fn verify_sha256(
-    archive_path: &Path,
-    archive_name: &str,
-    sha_url: &str,
-) -> Result<(), InstallError> {
-    let manifest = reqwest::get(sha_url).await?.error_for_status()?.text().await?;
-    let expected = expected_sha256(&manifest, archive_name)
-        .ok_or_else(|| InstallError::HashMissing(archive_name.to_string()))?;
-    check_sha256(archive_path, &expected)
-}
-
-/// Хэш архива из манифеста `sha256sums-signed-build.txt` (строки
-/// `<hash>  <файл>`, у файла бывает `*` двоичного режима и путь). Имя
-/// сравнивается целиком: раньше `ends_with` принимал и файл, имя которого
-/// только заканчивается нужным.
-fn expected_sha256(manifest: &str, archive_name: &str) -> Option<String> {
-    manifest.lines().find_map(|line| {
-        let mut it = line.split_whitespace();
-        let hash = it.next()?;
-        let name = it.next()?.trim_start_matches('*');
-        let file_name = name.rsplit('/').next().unwrap_or(name);
-        (file_name == archive_name).then(|| hash.to_lowercase())
-    })
 }
 
 /// SHA-256 файла совпадает с ожидаемым (в нижнем регистре hex).
@@ -275,7 +331,7 @@ fn extract_zip(archive: &Path, dest: &Path) -> Result<(), InstallError> {
     Ok(())
 }
 
-fn emit_progress(app: &AppHandle, phase: &str, fraction: f32, message: &str) {
+fn emit_progress<R: Runtime>(app: &AppHandle<R>, phase: &str, fraction: f32, message: &str) {
     let _ = app.emit(
         "tor:install-progress",
         serde_json::json!({
@@ -318,7 +374,7 @@ mod tests {
         }
     }
 
-    const NAME: &str = "tor-expert-bundle-linux-x86_64-14.0.7.tar.gz";
+    const NAME: &str = "tor-expert-bundle-linux-x86_64-15.0.25.tar.gz";
 
     #[test]
     fn platform_archive_name_is_pinned_to_the_version() {
@@ -326,30 +382,85 @@ mod tests {
         assert!(platform.archive_name.starts_with("tor-expert-bundle-"));
         assert!(platform
             .archive_name
-            .ends_with(&format!("-{}.tar.gz", TOR_VERSION)));
+            .ends_with(&format!("-{}.tar.gz", tor_version())));
+        assert_eq!(platform.sha256.len(), 64);
         assert!(!platform.is_zip);
     }
 
+    /// Каждая сборка релиза (macOS обе, Windows, Linux) должна найти свой хэш,
+    /// иначе Tor на ней не поставится вовсе.
     #[test]
-    fn manifest_hash_is_found_by_exact_file_name() {
-        let manifest = format!(
-            "\n\
-             1111111111111111111111111111111111111111111111111111111111111111  tor-browser.dmg\n\
-             ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789 *{NAME}\n"
-        );
-        assert_eq!(
-            expected_sha256(&manifest, NAME).as_deref(),
-            Some("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
-        );
-        let with_path = format!("2222  ./torbrowser/14.0.7/{NAME}");
-        assert_eq!(expected_sha256(&with_path, NAME).as_deref(), Some("2222"));
+    fn every_release_platform_has_a_pinned_hash() {
+        for (os, arch) in [
+            ("macos", "aarch64"),
+            ("macos", "x86_64"),
+            ("windows", "x86_64"),
+            ("linux", "x86_64"),
+        ] {
+            let p = platform_for(os, arch).unwrap_or_else(|e| panic!("{os}-{arch}: {e}"));
+            assert!(
+                p.sha256.len() == 64 && p.sha256.chars().all(|c| c.is_ascii_hexdigit()),
+                "{os}-{arch}: {}",
+                p.sha256
+            );
+        }
+        assert!(matches!(
+            platform_for("linux", "aarch64"),
+            Err(InstallError::UnsupportedPlatform(_))
+        ));
     }
 
     #[test]
-    fn manifest_does_not_match_a_longer_name_or_a_missing_entry() {
-        let manifest = format!("3333  evil-{NAME}\nbroken-line\n");
-        assert_eq!(expected_sha256(&manifest, NAME), None);
-        assert_eq!(expected_sha256("", NAME), None);
+    fn github_mirror_is_tried_before_torproject() {
+        let urls = archive_urls("15.0.25", NAME);
+        assert_eq!(
+            urls[0],
+            format!("https://github.com/Vakutaghin/bastyon-nextgen/releases/download/tor-15.0.25/{NAME}")
+        );
+        assert!(urls[1].starts_with("https://archive.torproject.org/"));
+        assert!(urls.iter().all(|u| u.ends_with(NAME)));
+    }
+
+    /// Бандл прошлой версии (14.0.7 без файла версии) считается неустановленным
+    /// и ставится заново.
+    #[test]
+    fn installed_bundle_of_another_version_is_reinstalled() {
+        let dir = TempDir::new("marker");
+        let paths = TorPaths::from_root(dir.0.clone());
+        fs::create_dir_all(paths.binary.parent().unwrap()).unwrap();
+        fs::create_dir_all(&paths.data_dir).unwrap();
+        fs::write(&paths.binary, b"tor").unwrap();
+        fs::write(&paths.geoip, b"geo").unwrap();
+        assert!(!is_installed(&paths), "no marker = old bundle");
+
+        let marker = paths.binary.with_file_name(VERSION_MARKER);
+        fs::write(&marker, "14.0.7").unwrap();
+        assert!(!is_installed(&paths));
+
+        fs::write(&marker, format!("{}\n", tor_version())).unwrap();
+        assert!(is_installed(&paths));
+    }
+
+    /// Живая установка поверх старой: `BASTYON_TOR_INSTALL_ROOT=<пустой каталог
+    /// или с бандлом 14.x> cargo test --lib live_install -- --ignored --nocapture`.
+    /// Качает ~20 МБ: зеркало GitHub, при 404 — torproject.org.
+    #[test]
+    #[ignore]
+    fn live_install() {
+        let root = PathBuf::from(std::env::var("BASTYON_TOR_INSTALL_ROOT").expect("root"));
+        let paths = TorPaths::from_root(root);
+        let app = tauri::test::mock_builder()
+            .build(tauri::generate_context!(test = true))
+            .expect("mock app");
+        let handle = app.handle().clone();
+        tauri::async_runtime::block_on(async move {
+            ensure_installed(&handle, &paths, &AtomicBool::new(false))
+                .await
+                .expect("install");
+            assert!(is_installed(&paths));
+            assert!(paths.pt_dir.join("pt_config.json").is_file());
+            assert!(!paths.pt_dir.join("snowflake-client").exists(), "old binary removed");
+        });
     }
 
     #[test]

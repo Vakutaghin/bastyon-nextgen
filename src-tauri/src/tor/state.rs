@@ -18,8 +18,13 @@ pub enum TorStatus {
 #[serde(rename_all = "lowercase")]
 pub enum BridgeKind {
     None,
+    /// Подбор по стране через Moat, как Connection Assist в Tor Browser.
+    Auto,
     Snowflake,
     Obfs4,
+    /// Встроенный meek_lite (domain fronting через CDN).
+    Meek,
+    /// Строки пользователя, любой транспорт бандла.
     Custom,
 }
 
@@ -27,6 +32,16 @@ impl Default for BridgeKind {
     fn default() -> Self {
         BridgeKind::None
     }
+}
+
+/// Ошибки, у которых в меню свой текст, а не строка из лога Tor.
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TorErrorCode {
+    /// «Автоматически» перебрал всё и не подключился.
+    AllMethodsFailed,
+    /// «Свои мосты» пусты или ни одна строка не похожа на мост.
+    NoValidBridges,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -38,6 +53,17 @@ pub struct TorStateSnapshot {
     pub control_port: u16,
     pub use_bridges: bool,
     pub bridge_kind: BridgeKind,
+    /// Чем подключается текущая попытка: `direct`, `snowflake`, `webtunnel`…
+    pub active_transport: Option<String>,
+    /// Номер попытки автоподбора (с 1); 0 — ещё не начинали.
+    pub attempt: u8,
+    /// Страна по данным Moat (`ru`), если автоподбор её узнал.
+    pub country: Option<String>,
+    /// Бутстрап давно не двигается — способ, похоже, заблокирован.
+    pub stalled: bool,
+    /// Идёт запрос мостов у Moat.
+    pub fetching_bridges: bool,
+    pub error_code: Option<TorErrorCode>,
 }
 
 #[derive(Debug)]
@@ -50,7 +76,23 @@ pub struct TorState {
     pub child_pid: Option<u32>,
     pub use_bridges: bool,
     pub bridge_kind: BridgeKind,
+    /// Уже проверенные строки (`bridges::parse_lines`).
     pub custom_bridges: Vec<String>,
+    pub active_transport: Option<String>,
+    /// Мосты текущей попытки — их и пишет torrc; пусто — без мостов.
+    pub active_bridges: Vec<String>,
+    pub attempt: u8,
+    pub country: Option<String>,
+    pub stalled: bool,
+    pub fetching_bridges: bool,
+    pub error_code: Option<TorErrorCode>,
+    /// Автоподбор: ошибка или смерть процесса — повод перейти к следующей
+    /// попытке, а не `Failed` (иначе запросы падали бы между попытками).
+    pub keep_going: bool,
+    /// Текущая попытка провалилась (при `keep_going`).
+    pub candidate_failed: bool,
+    /// Сколько раз умер транспорт в текущей попытке.
+    pub pt_failures: u32,
 }
 
 impl Default for TorState {
@@ -65,6 +107,16 @@ impl Default for TorState {
             use_bridges: false,
             bridge_kind: BridgeKind::None,
             custom_bridges: Vec::new(),
+            active_transport: None,
+            active_bridges: Vec::new(),
+            attempt: 0,
+            country: None,
+            stalled: false,
+            fetching_bridges: false,
+            error_code: None,
+            keep_going: false,
+            candidate_failed: false,
+            pt_failures: 0,
         }
     }
 }
@@ -79,7 +131,29 @@ impl TorState {
             control_port: self.control_port,
             use_bridges: self.use_bridges,
             bridge_kind: self.bridge_kind,
+            active_transport: self.active_transport.clone(),
+            attempt: self.attempt,
+            country: self.country.clone(),
+            stalled: self.stalled,
+            fetching_bridges: self.fetching_bridges,
+            error_code: self.error_code,
         }
+    }
+
+    /// Сброс перед новым запуском: прошлые попытка, ошибка и флаги не тянутся.
+    pub fn reset_attempt(&mut self) {
+        self.bootstrap_pct = 0;
+        self.message = None;
+        self.child_pid = None;
+        self.active_transport = None;
+        self.active_bridges.clear();
+        self.attempt = 0;
+        self.stalled = false;
+        self.fetching_bridges = false;
+        self.error_code = None;
+        self.keep_going = false;
+        self.candidate_failed = false;
+        self.pt_failures = 0;
     }
 }
 
@@ -125,7 +199,13 @@ mod tests {
             bootstrap_pct: 45,
             message: Some("Loading relay descriptors".into()),
             use_bridges: true,
-            bridge_kind: BridgeKind::Snowflake,
+            bridge_kind: BridgeKind::Auto,
+            active_transport: Some("webtunnel".into()),
+            attempt: 2,
+            country: Some("ru".into()),
+            stalled: true,
+            error_code: Some(TorErrorCode::AllMethodsFailed),
+            active_bridges: vec!["webtunnel [2001:db8::1]:443 url=https://x".into()],
             ..TorState::default()
         };
         assert_eq!(
@@ -137,7 +217,13 @@ mod tests {
                 "socks_port": 9250,
                 "control_port": 9251,
                 "use_bridges": true,
-                "bridge_kind": "snowflake",
+                "bridge_kind": "auto",
+                "active_transport": "webtunnel",
+                "attempt": 2,
+                "country": "ru",
+                "stalled": true,
+                "fetching_bridges": false,
+                "error_code": "all_methods_failed",
             })
         );
     }
@@ -157,8 +243,10 @@ mod tests {
         }
         for (kind, name) in [
             (BridgeKind::None, "none"),
+            (BridgeKind::Auto, "auto"),
             (BridgeKind::Snowflake, "snowflake"),
             (BridgeKind::Obfs4, "obfs4"),
+            (BridgeKind::Meek, "meek"),
             (BridgeKind::Custom, "custom"),
         ] {
             assert_eq!(serde_json::to_value(kind).unwrap(), json!(name));
@@ -174,6 +262,8 @@ mod tests {
         assert_eq!(state.child_pid, None);
         assert!(!state.use_bridges);
         assert!(state.custom_bridges.is_empty());
+        assert!(state.active_bridges.is_empty());
+        assert!(!state.keep_going);
     }
 
     #[test]

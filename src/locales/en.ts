@@ -280,9 +280,32 @@ export default {
     cancel: 'Cancel',
     torBridges: 'Bridges',
     torBridgesNone: 'No bridges',
-    torBridgesObfs4: 'OBFS4 (built-in)',
-    torBridgesCustom: 'Custom OBFS4',
+    torBridgesObfs4: 'obfs4 (built-in)',
+    torBridgesCustom: 'Custom bridges',
     torBridgesRestartHint: 'Changing bridges will restart Tor.',
+    torBridgesAuto: 'Automatic',
+    torBridgesAutoHint:
+      'The Tor Project picks bridges for your country; the app tries them one by one and remembers the one that works.',
+    torBridgesMeek: 'meek (via CDN, slow)',
+    torBridgesCustomHint:
+      "One per line, any type: obfs4, WebTunnel, Snowflake, meek. Get bridges from the {'@'}GetBridgesBot Telegram bot or bridges.torproject.org.",
+    torRequestBridges: 'Get bridges',
+    torRequestBridgesDone: 'Got {n} bridges. Press “Apply”.',
+    torRequestBridgesFailed: 'Could not get bridges: {message}',
+    torBridgesRejected: 'Skipped lines that don’t look like a bridge: {n}',
+    torStatusFetchingBridges: 'Finding bridges for your country…',
+    torStatusBootstrappingVia: 'Connecting via {via}: {pct}%',
+    torStatusReadyVia: 'Connected to the Tor network via {via}',
+    torStatusAttempt: 'method {n}',
+    torStalledHint:
+      'The connection is not progressing — this method seems blocked. Choose “Automatic” or other bridges.',
+    torErrorAllFailed:
+      'None of the connection methods worked. Add your own bridges or try again later.',
+    torErrorNoBridges: 'Your bridge list has no bridges.',
+    torRetry: 'Retry',
+    torCountry: 'Country according to the Tor Project: {country}',
+    torViaCustom: 'your bridges',
+    torViaVanilla: 'plain bridges',
     torDesktopOnly: 'Available only in the desktop app.',
     torStatusStopping: 'Tor is stopping…',
     torStatusOff: 'Tor is off',
@@ -298,7 +321,7 @@ export default {
       'Open Bastyon in the desktop app — the browser version does not support built-in Tor.',
     torEnableTitle: 'Enable Tor?',
     torEnableContent:
-      'On first launch Tor (~30 MB) is downloaded; this may take a minute. Node requests, chat and the app API go through Tor. Images, video and embeds (YouTube, mini-apps) do not — so while Tor is on they are blocked: an image can be loaded through Tor on click, video only directly, with your IP, after confirmation. Turning Tor off reloads the app.',
+      'On first launch Tor (~20 MB) is downloaded; this may take a minute. Node requests, chat and the app API go through Tor. Images, video and embeds (YouTube, mini-apps) do not — so while Tor is on they are blocked: an image can be loaded through Tor on click, video only directly, with your IP, after confirmation. Turning Tor off reloads the app.',
     torEnableOk: 'Enable',
     torMediaHint:
       'Through Tor: nodes, chat, API. Images — through Tor on click; video, YouTube and mini-apps — disabled or directly with your IP after confirmation. Turning Tor off reloads the app.',

@@ -5,7 +5,26 @@ import { applyTorMediaPolicy, isTorMediaPolicyApplied } from '@/helpers/tor/tor-
 
 export type TorStatus = 'off' | 'installing' | 'starting' | 'bootstrapping' | 'ready' | 'failed'
 
-export type TorBridgeKind = 'none' | 'snowflake' | 'obfs4' | 'custom'
+/**
+ * `auto` — мосты по стране через Moat, как Connection Assist в Tor Browser
+ * (src-tauri/src/tor/connect.rs). `meek` — встроенный meek_lite через CDN.
+ */
+export type TorBridgeKind = 'none' | 'auto' | 'snowflake' | 'obfs4' | 'meek' | 'custom'
+
+export const TOR_BRIDGE_KINDS: readonly TorBridgeKind[] = [
+  'auto',
+  'none',
+  'snowflake',
+  'obfs4',
+  'meek',
+  'custom',
+]
+
+/** Тот, кто мосты не выбирал, получает автоподбор: из РФ без мостов Tor не подключается. */
+export const DEFAULT_BRIDGE_KIND: TorBridgeKind = 'auto'
+
+/** Ошибки со своим текстом в меню (src-tauri/src/tor/state.rs, TorErrorCode). */
+export type TorErrorCode = 'all_methods_failed' | 'no_valid_bridges'
 
 export type TorStateSnapshot = {
   status: TorStatus
@@ -15,7 +34,22 @@ export type TorStateSnapshot = {
   control_port: number
   use_bridges: boolean
   bridge_kind: TorBridgeKind
+  /** Чем подключается текущая попытка: `direct`, `snowflake`, `webtunnel`… */
+  active_transport?: string | null
+  /** Номер попытки автоподбора, с 1. */
+  attempt?: number
+  /** Страна по данным Moat (`ru`). */
+  country?: string | null
+  /** Бутстрап давно не двигается — способ, похоже, заблокирован. */
+  stalled?: boolean
+  /** Идёт запрос мостов у Moat. */
+  fetching_bridges?: boolean
+  error_code?: TorErrorCode | null
 }
+
+type TorBridgesResult = { snapshot: TorStateSnapshot; rejected: string[] }
+
+export type TorRequestedBridges = { country: string | null; bridges: string[] }
 
 export type TorInstallProgress = {
   phase: 'starting' | 'downloading' | 'verifying' | 'extracting' | 'ready'
@@ -70,6 +104,14 @@ function loadString(key: string, def: string): string {
   }
 }
 
+/** Сохранённый выбор; незнакомое значение — автоподбор. */
+function loadBridgeKind(): TorBridgeKind {
+  const raw = loadString(LS_BRIDGES_KIND, DEFAULT_BRIDGE_KIND)
+  return (TOR_BRIDGE_KINDS as readonly string[]).includes(raw)
+    ? (raw as TorBridgeKind)
+    : DEFAULT_BRIDGE_KIND
+}
+
 function persistBool(key: string, value: boolean): void {
   try {
     localStorage.setItem(key, value ? '1' : '0')
@@ -106,9 +148,17 @@ export const useTorStore = defineStore('tor', {
     message: null as string | null,
     socksPort: 9250,
     install: null as TorInstallProgress | null,
-    useBridges: loadBool(LS_BRIDGES_USE, false),
-    bridgeKind: loadString(LS_BRIDGES_KIND, 'none') as TorBridgeKind,
+    useBridges: loadBridgeKind() !== 'none',
+    bridgeKind: loadBridgeKind(),
     customBridges: loadString(LS_BRIDGES_CUSTOM, ''),
+    activeTransport: null as string | null,
+    attempt: 0,
+    country: null as string | null,
+    stalled: false,
+    fetchingBridges: false,
+    errorCode: null as TorErrorCode | null,
+    /** Строки «Своих мостов», которые бэкенд не признал мостом. */
+    rejectedBridges: [] as string[],
     _subscribed: false,
     _stateUnlisten: null as (() => void) | null,
     _installUnlisten: null as (() => void) | null,
@@ -187,6 +237,12 @@ export const useTorStore = defineStore('tor', {
       this.socksPort = snap.socks_port
       this.useBridges = snap.use_bridges
       this.bridgeKind = snap.bridge_kind
+      this.activeTransport = snap.active_transport ?? null
+      this.attempt = snap.attempt ?? 0
+      this.country = snap.country ?? null
+      this.stalled = snap.stalled ?? false
+      this.fetchingBridges = snap.fetching_bridges ?? false
+      this.errorCode = snap.error_code ?? null
     },
 
     async enable(): Promise<void> {
@@ -255,16 +311,26 @@ export const useTorStore = defineStore('tor', {
         .map((s) => s.trim())
         .filter(Boolean)
       try {
-        await tauriInvoke('tor_set_bridges', {
+        const result = await tauriInvoke<TorBridgesResult>('tor_set_bridges', {
           payload: {
             use_bridges: this.useBridges,
             kind: this.bridgeKind,
             custom_bridges: lines,
           },
         })
+        this.rejectedBridges = this.bridgeKind === 'custom' ? (result?.rejected ?? []) : []
       } catch {
         // bridges will be retried on next state push
       }
+    },
+
+    /**
+     * Свежие мосты от Tor Project для страны пользователя (Moat через meek,
+     * без капчи) — для «Своих мостов». Бросает ошибку бэкенда как есть.
+     */
+    async requestBridges(): Promise<TorRequestedBridges> {
+      if (!this.available) return { country: null, bridges: [] }
+      return tauriInvoke<TorRequestedBridges>('tor_request_bridges')
     },
 
     async applyAndRestart(opts: {

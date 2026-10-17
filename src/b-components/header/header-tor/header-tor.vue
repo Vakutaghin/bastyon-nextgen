@@ -20,6 +20,13 @@
         </SC_TorRow>
 
         <SC_TorStatusLine>{{ statusLine }}</SC_TorStatusLine>
+        <SC_TorInlineActions v-if="enabled && status === 'failed'">
+          <Button size="small" @click="onRetry">{{ t('header.torRetry') }}</Button>
+        </SC_TorInlineActions>
+        <SC_TorHint v-if="countryLine">{{ countryLine }}</SC_TorHint>
+        <SC_TorWarning v-if="stalled && status === 'bootstrapping'">
+          {{ t('header.torStalledHint') }}
+        </SC_TorWarning>
         <!-- Честно о границах: через Tor идёт только appFetch, медиа/фреймы — нет (V21). -->
         <SC_TorHint v-if="enabled">{{ t('header.torMediaHint') }}</SC_TorHint>
 
@@ -33,17 +40,38 @@
             :value="localKind"
             @change="(e: RadioChangeEvent) => onSelectKind(e.target.value as TorBridgeKind)"
           >
-            <Radio value="none">{{ t('header.torBridgesNone') }}</Radio>
-            <Radio value="snowflake">Snowflake</Radio>
-            <Radio value="obfs4">{{ t('header.torBridgesObfs4') }}</Radio>
-            <Radio value="custom">{{ t('header.torBridgesCustom') }}</Radio>
+            <SC_TorRadioColumn>
+              <Radio value="auto">{{ t('header.torBridgesAuto') }}</Radio>
+              <Radio value="none">{{ t('header.torBridgesNone') }}</Radio>
+              <Radio value="snowflake">Snowflake</Radio>
+              <Radio value="obfs4">{{ t('header.torBridgesObfs4') }}</Radio>
+              <Radio value="meek">{{ t('header.torBridgesMeek') }}</Radio>
+              <Radio value="custom">{{ t('header.torBridgesCustom') }}</Radio>
+            </SC_TorRadioColumn>
           </RadioGroup>
-          <SC_TorTextarea
-            v-if="localKind === 'custom'"
-            :value="localCustom"
-            placeholder="obfs4 IP:PORT FINGERPRINT cert=... iat-mode=..."
-            @input="onCustomTextareaInput"
-          />
+          <SC_TorHint v-if="localKind === 'auto'">{{ t('header.torBridgesAutoHint') }}</SC_TorHint>
+          <template v-if="localKind === 'custom'">
+            <SC_TorTextarea
+              :value="localCustom"
+              :placeholder="CUSTOM_PLACEHOLDER"
+              @input="onCustomTextareaInput"
+            />
+            <SC_TorHint>{{ t('header.torBridgesCustomHint') }}</SC_TorHint>
+            <SC_TorInlineActions>
+              <Button
+                size="small"
+                :loading="requesting"
+                :disabled="!available"
+                @click="onRequestBridges"
+              >
+                {{ t('header.torRequestBridges') }}
+              </Button>
+            </SC_TorInlineActions>
+            <SC_TorHint v-if="requestNote">{{ requestNote }}</SC_TorHint>
+            <SC_TorWarning v-if="rejectedBridges.length && !dirty">
+              {{ t('header.torBridgesRejected', { n: rejectedBridges.length }) }}
+            </SC_TorWarning>
+          </template>
           <SC_TorActions>
             <Button size="small" type="primary" :disabled="!dirty" @click="onApplyBridges">
               {{ t('header.apply') }}
@@ -72,6 +100,7 @@ import {
   CheckCircleFilled,
 } from '@/components/icons'
 import { useTorStore, type TorBridgeKind } from '@/stores/tor-store'
+import { countryDisplayName, torTransportLabel } from '@/helpers/tor/tor-transport-label'
 import {
   SC_TorWrapper,
   SC_TorMenu,
@@ -85,13 +114,22 @@ import {
   SC_TorTextarea,
   SC_TorActions,
   SC_TorHint,
+  SC_TorRadioColumn,
+  SC_TorInlineActions,
+  SC_TorWarning,
 } from './styled'
 
 const RadioGroup = Radio.Group
 
 const TOR_CONSENT_KEY = 'tor:seen-consent:v2'
 
-const { t } = useI18n()
+/** Образцы строк — как их выдают @GetBridgesBot и bridges.torproject.org. */
+const CUSTOM_PLACEHOLDER = [
+  'webtunnel [2001:db8::1]:443 FINGERPRINT url=https://… ver=0.0.3',
+  'obfs4 203.0.113.5:443 FINGERPRINT cert=… iat-mode=0',
+].join('\n')
+
+const { t, locale } = useI18n()
 
 const tor = useTorStore()
 const {
@@ -104,6 +142,13 @@ const {
   useBridges,
   bridgeKind,
   customBridges,
+  activeTransport,
+  attempt,
+  country,
+  stalled,
+  fetchingBridges,
+  errorCode,
+  rejectedBridges,
 } = storeToRefs(tor)
 
 const visible = ref(false)
@@ -111,6 +156,8 @@ const localUseBridges = ref(useBridges.value)
 const localKind = ref<TorBridgeKind>(bridgeKind.value)
 const localCustom = ref(customBridges.value)
 const dirty = ref(false)
+const requesting = ref(false)
+const requestNote = ref<string | null>(null)
 
 onMounted(() => {
   tor.hydrate().catch(() => {})
@@ -139,6 +186,37 @@ const variant = computed<'off' | 'busy' | 'ready' | 'failed'>(() => {
   return 'off'
 })
 
+/** Чем идёт подключение, для строки статуса; `null` — без мостов. */
+const via = computed<string | null>(() => {
+  const label = torTransportLabel(activeTransport.value)
+  if (!label) return null
+  if (label.kind === 'brand') return label.name
+  return label.kind === 'custom' ? t('header.torViaCustom') : t('header.torViaVanilla')
+})
+
+const countryLine = computed<string | null>(() => {
+  if (!country.value || bridgeKind.value !== 'auto') return null
+  if (status.value === 'off' || status.value === 'installing') return null
+  return t('header.torCountry', { country: countryDisplayName(country.value, locale.value) })
+})
+
+const failedLine = computed<string>(() => {
+  if (errorCode.value === 'all_methods_failed') return t('header.torErrorAllFailed')
+  if (errorCode.value === 'no_valid_bridges') return t('header.torErrorNoBridges')
+  return message.value
+    ? t('header.torStatusError', { message: message.value })
+    : t('header.torError')
+})
+
+const bootstrappingLine = computed<string>(() => {
+  const pct = bootstrapPct.value
+  const base = via.value
+    ? t('header.torStatusBootstrappingVia', { via: via.value, pct })
+    : t('header.torStatusBootstrapping', { pct })
+  if (bridgeKind.value !== 'auto' || attempt.value < 2) return base
+  return `${base} · ${t('header.torStatusAttempt', { n: attempt.value })}`
+})
+
 const statusLine = computed<string>(() => {
   switch (status.value) {
     case 'off':
@@ -151,15 +229,17 @@ const statusLine = computed<string>(() => {
           })
         : t('header.torStatusInstallingShort')
     case 'starting':
-      return t('header.torStatusStarting')
+      return fetchingBridges.value
+        ? t('header.torStatusFetchingBridges')
+        : t('header.torStatusStarting')
     case 'bootstrapping':
-      return t('header.torStatusBootstrapping', { pct: bootstrapPct.value })
+      return bootstrappingLine.value
     case 'ready':
-      return t('header.torStatusReady')
+      return via.value
+        ? t('header.torStatusReadyVia', { via: via.value })
+        : t('header.torStatusReady')
     case 'failed':
-      return message.value
-        ? t('header.torStatusError', { message: message.value })
-        : t('header.torError')
+      return failedLine.value
     default:
       return ''
   }
@@ -238,8 +318,36 @@ function onCustomTextareaInput(e: Event): void {
   dirty.value = true
 }
 
+/** Свежие мосты от Tor Project заменяют список: старые, скорее всего, и не работали. */
+async function onRequestBridges(): Promise<void> {
+  requesting.value = true
+  requestNote.value = null
+  try {
+    const result = await tor.requestBridges()
+    if (result.bridges.length) {
+      localCustom.value = result.bridges.join('\n')
+      dirty.value = true
+    }
+    requestNote.value = t('header.torRequestBridgesDone', { n: result.bridges.length })
+  } catch (e) {
+    requestNote.value = t('header.torRequestBridgesFailed', { message: String(e) })
+  } finally {
+    requesting.value = false
+  }
+}
+
+/** После неудачи — тот же выбор заново: Moat мог выдать новые мосты. */
+async function onRetry(): Promise<void> {
+  await tor.applyAndRestart({
+    useBridges: useBridges.value,
+    kind: bridgeKind.value,
+    customBridges: customBridges.value,
+  })
+}
+
 async function onApplyBridges(): Promise<void> {
   dirty.value = false
+  requestNote.value = null
   await tor.applyAndRestart({
     useBridges: localUseBridges.value,
     kind: localKind.value,

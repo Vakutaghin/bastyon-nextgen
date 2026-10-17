@@ -1,0 +1,11 @@
+{
+  "version": "15.0.25",
+  "sha256": {
+    "linux-i686": "e3195aa30946de60b1a31ef584f2e8bc2623a99815f4a102a89257a01bef9a77",
+    "linux-x86_64": "19cf18726eecb362e0f21d27afa9ea9efe5da928bfdfbb1ceb5fe54519e87f4a",
+    "macos-aarch64": "a3febb6179152b0b4f56a0f5cc57bf5cc8ecef7db35e7c3e9d5a044c8158c26c",
+    "macos-x86_64": "e1ae4d4a734d28bb590839188511deb3cebc26fcbce9df66d01b2c452060fe95",
+    "windows-i686": "55a1e4c9b6df47c6e5fde1b3d755c858374d6cc0809c1dd1533a8622bb52de96",
+    "windows-x86_64": "c1988c701de2f24f7d098d1d6d7f507b58f27740d097f29c246e0524d639b252"
+  }
+}

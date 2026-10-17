@@ -16,6 +16,7 @@ const COMMANDS: &[&str] = &[
   "tor_stop",
   "tor_fetch",
   "tor_set_bridges",
+  "tor_request_bridges",
   "tor_ws_connect",
   "tor_ws_send",
   "tor_ws_close",

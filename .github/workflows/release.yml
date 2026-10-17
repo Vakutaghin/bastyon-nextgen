@@ -460,6 +460,51 @@ jobs:
           mv android/app/build/outputs/apk/release/app-release.apk "$OUT"
           gh release upload "$TAG" "$OUT" --clobber
 
+  # Зеркало tor-expert-bundle в релизе `tor-<версия>` этого репозитория:
+  # torproject.org в РФ заблокирован, и приложение сначала качает Tor отсюда
+  # (src-tauri/src/tor/installer.rs). Подлинность держат хэши из
+  # src-tauri/src/tor/bundle.json — их сверяет и эта джоба, и приложение.
+  # Релиз — предрелиз: в releases/latest (проверка обновлений, latest.json)
+  # он не попадает. Уже залитые архивы не перезаливаются, так что для той же
+  # версии Tor джоба ничего не делает. Падение зеркала релиз не держит:
+  # приложение тогда скачает Tor с torproject.org.
+  tor-mirror:
+    if: ${{ !inputs.android_only }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Mirror the pinned Tor bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          PIN=src-tauri/src/tor/bundle.json
+          VERSION=$(jq -r .version "$PIN")
+          MIRROR="tor-$VERSION"
+          if ! gh release view "$MIRROR" >/dev/null 2>&1; then
+            gh release create "$MIRROR" --title "Tor $VERSION (mirror)" \
+              --notes "tor-expert-bundle $VERSION from archive.torproject.org, mirrored for the app. Checksums: src-tauri/src/tor/bundle.json." \
+              --prerelease --latest=false --target "$(git rev-parse HEAD)"
+          fi
+          have=$(gh release view "$MIRROR" --json assets -q '.assets[].name')
+          mkdir -p tor-mirror
+          for platform in $(jq -r '.sha256 | keys[]' "$PIN"); do
+            name="tor-expert-bundle-$platform-$VERSION.tar.gz"
+            if grep -qxF "$name" <<<"$have"; then
+              echo "$name: already mirrored"
+              continue
+            fi
+            curl -fsSL --retry 3 -o "tor-mirror/$name" \
+              "https://archive.torproject.org/tor-package-archive/torbrowser/$VERSION/$name"
+            echo "$(jq -r --arg p "$platform" '.sha256[$p]' "$PIN")  tor-mirror/$name" | sha256sum -c -
+            gh release upload "$MIRROR" "tor-mirror/$name"
+          done
+
   # Последний шаг: latest.json для апдейтера в приложении и публикация
   # черновика. Если хоть одна сборка упала, релиз остаётся черновиком — не
   # «последним» без установщиков. Пересборка одного APK (android_only) идёт по
