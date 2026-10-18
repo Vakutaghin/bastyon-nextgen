@@ -17,7 +17,9 @@ export const SC_ProfileMainContent = styled.main`
   flex: 1;
   min-width: 0;
   background: var(--color-bg-primary);
-  padding: 20px 0;
+  /* Справа — тот же отступ, что у сайдбара слева: иначе до 1640px кнопка
+     «Создать пост» и посты прилипают к правому краю окна. */
+  padding: 20px var(--content-padding-x) 20px 0;
   border-radius: var(--ui-radius-lg);
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
