@@ -111,6 +111,18 @@
             </SC_PaidNote>
 
             <SC_PaidNote>{{ t('paidSubscriptions.modal.howItWorks') }}</SC_PaidNote>
+
+            <!-- Перевод не отменить: без галочки кнопка оплаты не нажимается. -->
+            <SC_PaidConfirm v-if="selectedOffer">
+              <Checkbox v-model:checked="confirmed" :disabled="paying">
+                {{
+                  t('paidSubscriptions.modal.confirm', {
+                    amount: formatPkoin(selectedOffer.amount),
+                    name,
+                  })
+                }}
+              </Checkbox>
+            </SC_PaidConfirm>
           </template>
         </template>
       </SC_PaidBody>
@@ -123,7 +135,7 @@
           v-if="selectedOffer"
           type="primary"
           :loading="paying"
-          :disabled="insufficient"
+          :disabled="insufficient || !confirmed"
           @click="onPay"
         >
           {{ t('paidSubscriptions.modal.pay', { amount: formatPkoin(selectedOffer.amount) }) }}
@@ -136,7 +148,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Modal, Spin } from 'ant-design-vue'
+import { Button, Checkbox, Modal, Spin } from 'ant-design-vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import { CheckCircleOutlined } from '@/components/icons'
 import { SC_ModalActions, SC_ModalBody } from '@/components/modal'
@@ -173,6 +185,7 @@ import {
   SC_PlanUntil,
   SC_PlanAmount,
   SC_PlanAmountNote,
+  SC_PaidConfirm,
 } from './styled'
 
 /** Выгода длинного срока против помесячной оплаты, %: 1 − 5,5/6 и 1 − 10/12. */
@@ -202,6 +215,12 @@ const offers = computed(() => {
   return s && (s.kind === 'active' || s.kind === 'inactive') && purchaseSupported ? s.offers : []
 })
 const selectedOffer = computed(() => offers.value.find((o) => o.plan === selectedPlan.value))
+
+/** Галочка подтверждения: сбрасывается при смене срока — у другого срока другая сумма. */
+const confirmed = ref(false)
+watch(selectedPlan, () => {
+  confirmed.value = false
+})
 
 // По умолчанию — самый короткий из доступных сроков.
 watch(
@@ -247,6 +266,7 @@ watch(
     if (!open) return
     failed.value = false
     selectedPlan.value = '1m'
+    confirmed.value = false
     void loadBalance()
     void Promise.all([store.ensurePrice(author.value), store.ensureMyPayments()]).then(() => {
       if (store.modal.open && !store.statusFor(author.value)) failed.value = true
@@ -260,7 +280,7 @@ function close(): void {
 
 async function onPay(): Promise<void> {
   const offer = selectedOffer.value
-  if (!offer || paying.value) return
+  if (!offer || paying.value || !confirmed.value) return
   paying.value = true
   try {
     const { subscribeFailed } = await store.pay(author.value, offer)

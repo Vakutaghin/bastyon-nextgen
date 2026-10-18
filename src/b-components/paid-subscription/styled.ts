@@ -241,6 +241,21 @@ export const SC_PaidNoticeAction = styled.button`
 
 // ── Кнопка в профиле ───────────────────────────────────────────────────
 
+/** Подпись кнопки в две строки: что делает — и сумма или срок под ней. */
+export const SC_PaidButtonLabel = styled.span`
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  line-height: 1.25;
+`
+
+export const SC_PaidButtonSub = styled.span`
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.85;
+`
+
 export const SC_PaidProfileButton = styled.button`
   width: 100%;
   margin: 0 20px 16px 0;
@@ -267,4 +282,13 @@ export const SC_PaidProfileButton = styled.button`
     background-color: rgb(var(--ui-success-rgb) / 10%);
     color: var(--ui-success-deep);
   }
+`
+
+export const SC_PaidConfirm = styled.div`
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border-accented);
+  border-radius: var(--ui-radius-md);
+  background-color: var(--ui-bg-elevated);
+  font-size: 13px;
+  line-height: 1.4;
 `

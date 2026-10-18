@@ -2676,6 +2676,7 @@ export default {
       subscribers: '我的付费订阅者',
     },
     perMonth: '每月 {price} PKOIN',
+    perMonthShort: '每月 {price} PKOIN',
     plans: {
       '1m': '1 个月',
       '6m': '6 个月',
@@ -2704,6 +2705,7 @@ export default {
       until: '至 {date}',
       topUp: '补足至 {cost}',
       pay: '支付 {amount} PKOIN',
+      confirm: '我确认向 {name} 支付 {amount} PKOIN。付款无法取消或退还。',
       balance: '钱包余额 {amount} PKOIN',
       insufficient: '主钱包中的 PKOIN 不足',
       willSubscribe: '你还没有关注这位作者——付款时会一并关注：不关注的话，这类帖子不会打开。',
@@ -2718,7 +2720,7 @@ export default {
     },
     post: {
       buy: '作者的付费订阅者专属帖子。',
-      buyAction: '订阅 · 每月 {price} PKOIN',
+      buyTitle: '订阅',
       buyActionShort: '订阅',
       follow: '订阅已付费——只需再关注作者。',
       followOpen: '作者已向关注者开放此帖——关注后即可阅读。',
@@ -2730,10 +2732,8 @@ export default {
       unsupported: '付费订阅者专属帖子。iPhone 应用中无法购买订阅。',
     },
     profile: {
-      subscribe: '付费订阅 · 每月 {price} PKOIN',
-      active: '付费订阅至 {date}',
       own: '付费订阅',
-      ownWithPrice: '付费订阅 · 每月 {price} PKOIN',
+      until: '至 {date}',
     },
     price: {
       title: '订阅价格',

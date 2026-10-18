@@ -68,11 +68,12 @@ Each payment brings a **“Subscription paid”** notification, and in the [tran
 
 ## For readers: subscribe
 
-The **“Paid subscription”** button with the price is on the author’s page if they have set a price. You can also subscribe straight from a post for paid subscribers: in place of the text there is a “Subscribe” button.
+The **“Paid subscription”** button with the price under the name is on the author’s page if they have set a price. You can also subscribe straight from a post for paid subscribers: in place of the text there is a “Subscribe” button.
 
 1. In the window, choose a term: a month, six months or a year. Each shows the date it will be paid until.
 2. If part of a term is already covered by earlier payments, the app offers only a top-up, marked “top-up to…”.
-3. Press “Pay”. If you don’t follow the author yet, the app follows them along with the payment.
+3. Tick “I confirm sending…” — without it the “Pay” button doesn’t press, so a stray click sends no money. Changing the term clears the tick, since another term has another amount.
+4. Press “Pay”. If you don’t follow the author yet, the app follows them along with the payment.
 
 The posts open at once, without waiting for the network to confirm. A payment can’t be refunded: it is a regular transfer.
 

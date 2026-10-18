@@ -8,7 +8,11 @@
 
     <SC_PaidNoticeAction v-if="access === 'buy'" type="button" @click="openModal">
       <CrownOutlined />
-      {{ buyLabel }}
+      <SC_PaidButtonLabel v-if="perMonth">
+        {{ t('paidSubscriptions.post.buyTitle') }}
+        <SC_PaidButtonSub>{{ perMonth }}</SC_PaidButtonSub>
+      </SC_PaidButtonLabel>
+      <template v-else>{{ t('paidSubscriptions.post.buyActionShort') }}</template>
     </SC_PaidNoticeAction>
     <SC_PaidNoticeAction
       v-else-if="access === 'follow'"
@@ -42,7 +46,13 @@ import { SATOSHI } from '@/helpers/paid-subscription/plans'
 import { formatPkoin } from '@/helpers/paid-subscription/format'
 import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import { useUserRelationsStore } from '@/stores/user-relations-store'
-import { SC_PaidNotice, SC_PaidNoticeText, SC_PaidNoticeAction } from './styled'
+import {
+  SC_PaidNotice,
+  SC_PaidNoticeText,
+  SC_PaidNoticeAction,
+  SC_PaidButtonLabel,
+  SC_PaidButtonSub,
+} from './styled'
 
 /** Пост «для платных подписчиков», закрытый для смотрящего: что не так и как открыть. */
 const props = defineProps<{ author: string }>()
@@ -76,10 +86,11 @@ const text = computed<string>(() => {
   }
 })
 
-const buyLabel = computed(() =>
+/** Цена второй строкой кнопки; без цены — одна подпись. */
+const perMonth = computed(() =>
   price.value && price.value > 0
-    ? t('paidSubscriptions.post.buyAction', { price: formatPkoin(price.value * SATOSHI) })
-    : t('paidSubscriptions.post.buyActionShort')
+    ? t('paidSubscriptions.perMonthShort', { price: formatPkoin(price.value * SATOSHI) })
+    : ''
 )
 
 onMounted(() => {

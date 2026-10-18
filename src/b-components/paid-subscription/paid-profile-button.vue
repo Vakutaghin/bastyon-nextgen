@@ -2,7 +2,10 @@
   <!-- Свой профиль: цена и подписчики — на странице платных подписок. -->
   <SC_PaidProfileButton v-if="isOwn" type="button" @click="openOwnPage">
     <CrownOutlined />
-    {{ ownLabel }}
+    <SC_PaidButtonLabel>
+      {{ t('paidSubscriptions.profile.own') }}
+      <SC_PaidButtonSub v-if="perMonth">{{ perMonthLabel }}</SC_PaidButtonSub>
+    </SC_PaidButtonLabel>
   </SC_PaidProfileButton>
 
   <!-- Чужой: оформить или продлить. Без цены автора кнопки нет. -->
@@ -14,7 +17,11 @@
     @click="openModal"
   >
     <CrownOutlined />
-    {{ otherLabel }}
+    <!-- Сумма или срок — второй строкой: в одну строку подпись не помещалась. -->
+    <SC_PaidButtonLabel>
+      {{ t('paidSubscriptions.profile.own') }}
+      <SC_PaidButtonSub>{{ subLabel }}</SC_PaidButtonSub>
+    </SC_PaidButtonLabel>
   </SC_PaidProfileButton>
 </template>
 
@@ -28,7 +35,7 @@ import { requireAuth } from '@/composables/use-auth-gate'
 import { SATOSHI } from '@/helpers/paid-subscription/plans'
 import { formatPkoin, formatTermDate } from '@/helpers/paid-subscription/format'
 import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
-import { SC_PaidProfileButton } from './styled'
+import { SC_PaidButtonLabel, SC_PaidButtonSub, SC_PaidProfileButton } from './styled'
 
 const props = defineProps<{
   address: string
@@ -53,16 +60,14 @@ const perMonth = computed(() =>
   price.value && price.value > 0 ? formatPkoin(price.value * SATOSHI) : ''
 )
 
-const ownLabel = computed(() =>
-  perMonth.value
-    ? t('paidSubscriptions.profile.ownWithPrice', { price: perMonth.value })
-    : t('paidSubscriptions.profile.own')
+const perMonthLabel = computed(() =>
+  t('paidSubscriptions.perMonthShort', { price: perMonth.value })
 )
 
-const otherLabel = computed(() =>
+const subLabel = computed(() =>
   activeUntil.value !== null
-    ? t('paidSubscriptions.profile.active', { date: formatTermDate(activeUntil.value) })
-    : t('paidSubscriptions.profile.subscribe', { price: perMonth.value })
+    ? t('paidSubscriptions.profile.until', { date: formatTermDate(activeUntil.value) })
+    : perMonthLabel.value
 )
 
 // Цена — из уже загруженных настроек профиля, иначе спросим ноду.

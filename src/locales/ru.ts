@@ -2788,6 +2788,7 @@ export default {
       subscribers: 'Мои подписчики',
     },
     perMonth: '{price} PKOIN в месяц',
+    perMonthShort: '{price} PKOIN/мес',
     plans: {
       '1m': '1 месяц',
       '6m': '6 месяцев',
@@ -2817,6 +2818,8 @@ export default {
       until: 'до {date}',
       topUp: 'доплата до {cost}',
       pay: 'Оплатить {amount} PKOIN',
+      confirm:
+        'Подтверждаю перевод {amount} PKOIN автору {name}. Отменить или вернуть платёж нельзя.',
       balance: 'На кошельке {amount} PKOIN',
       insufficient: 'На основном кошельке не хватает PKOIN',
       willSubscribe:
@@ -2835,7 +2838,7 @@ export default {
     },
     post: {
       buy: 'Пост для платных подписчиков автора.',
-      buyAction: 'Оформить · {price} PKOIN/мес',
+      buyTitle: 'Оформить',
       buyActionShort: 'Оформить подписку',
       follow: 'Подписка оплачена — осталось подписаться на автора.',
       followOpen: 'Автор открыл этот пост своим подписчикам — подпишитесь, чтобы прочитать.',
@@ -2848,10 +2851,8 @@ export default {
         'Пост для платных подписчиков. В приложении для iPhone подписку оформить нельзя.',
     },
     profile: {
-      subscribe: 'Платная подписка · {price} PKOIN/мес',
-      active: 'Платная подписка до {date}',
       own: 'Платная подписка',
-      ownWithPrice: 'Платная подписка · {price} PKOIN/мес',
+      until: 'до {date}',
     },
     price: {
       title: 'Цена подписки',

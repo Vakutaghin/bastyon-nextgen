@@ -2767,6 +2767,7 @@ export default {
       subscribers: '내 유료 구독자',
     },
     perMonth: '월 {price} PKOIN',
+    perMonthShort: '월 {price} PKOIN',
     plans: {
       '1m': '1개월',
       '6m': '6개월',
@@ -2796,6 +2797,8 @@ export default {
       until: '{date}까지',
       topUp: '{cost}까지 추가 결제',
       pay: '{amount} PKOIN 결제',
+      confirm:
+        '{name}님에게 {amount} PKOIN을 보내는 것을 확인합니다. 결제는 취소하거나 환불할 수 없습니다.',
       balance: '지갑 잔액 {amount} PKOIN',
       insufficient: '기본 지갑에 PKOIN이 부족합니다',
       willSubscribe:
@@ -2812,7 +2815,7 @@ export default {
     },
     post: {
       buy: '작성자의 유료 구독자 전용 게시물입니다.',
-      buyAction: '구독하기 · 월 {price} PKOIN',
+      buyTitle: '구독하기',
       buyActionShort: '구독하기',
       follow: '구독료가 결제되었습니다. 이제 작성자를 구독하세요.',
       followOpen: '작성자가 이 게시물을 구독자에게 공개했습니다. 읽으려면 구독하세요.',
@@ -2824,10 +2827,8 @@ export default {
       unsupported: '유료 구독자 전용 게시물입니다. iPhone 앱에서는 구독을 구매할 수 없습니다.',
     },
     profile: {
-      subscribe: '유료 구독 · 월 {price} PKOIN',
-      active: '유료 구독 {date}까지',
       own: '유료 구독',
-      ownWithPrice: '유료 구독 · 월 {price} PKOIN',
+      until: '{date}까지',
     },
     price: {
       title: '구독 가격',

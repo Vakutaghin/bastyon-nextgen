@@ -2791,6 +2791,7 @@ export default {
       subscribers: 'Моји претплатници',
     },
     perMonth: '{price} PKOIN месечно',
+    perMonthShort: '{price} PKOIN/мес.',
     plans: {
       '1m': '1 месец',
       '6m': '6 месеци',
@@ -2820,6 +2821,8 @@ export default {
       until: 'до {date}',
       topUp: 'доплата до {cost}',
       pay: 'Плати {amount} PKOIN',
+      confirm:
+        'Потврђујем слање {amount} PKOIN кориснику {name}. Плаћање се не може отказати ни вратити.',
       balance: 'У новчанику {amount} PKOIN',
       insufficient: 'Нема довољно PKOIN у главном новчанику',
       willSubscribe:
@@ -2838,7 +2841,7 @@ export default {
     },
     post: {
       buy: 'Објава за ауторове плаћене претплатнике.',
-      buyAction: 'Претплати се · {price} PKOIN/мес.',
+      buyTitle: 'Претплати се',
       buyActionShort: 'Претплати се',
       follow: 'Претплата је плаћена — још само пратите аутора.',
       followOpen:
@@ -2852,10 +2855,8 @@ export default {
         'Објава за плаћене претплатнике. У апликацији за iPhone не може се купити претплата.',
     },
     profile: {
-      subscribe: 'Плаћена претплата · {price} PKOIN/мес.',
-      active: 'Плаћена претплата до {date}',
       own: 'Плаћена претплата',
-      ownWithPrice: 'Плаћена претплата · {price} PKOIN/мес.',
+      until: 'до {date}',
     },
     price: {
       title: 'Цена претплате',

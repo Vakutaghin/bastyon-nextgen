@@ -43,6 +43,7 @@ vi.mock('@/blockchain/core/transactions/unspents-manager', () => ({
 }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: mocks.toast }))
 vi.mock('@/composables/use-auth-gate', () => ({ requireAuth: (action: () => void) => action() }))
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 vi.mock('@/services/user-names', () => ({
   userName: () => 'Алиса',
   userAvatar: () => null,
@@ -50,6 +51,7 @@ vi.mock('@/services/user-names', () => ({
 
 import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import PaidPostNotice from './paid-post-notice.vue'
+import PaidProfileButton from './paid-profile-button.vue'
 import PaidSubscriptionModal from './paid-subscription-modal.vue'
 
 let mounted: VueWrapper[] = []
@@ -98,7 +100,11 @@ describe('плашка на посте для платных подписчик�
     expect(w.text()).toContain('Пост для платных подписчиков автора.')
     await w.get('button').trigger('click')
     expect(usePaidSubscriptionsStore().modal).toMatchObject({ open: true, author: 'PAuthor' })
-    expect(w.get('button').text()).toContain('Оформить · 10 PKOIN/мес')
+    // Сумма — второй строкой кнопки.
+    const label = w.get('button').findAll('span')
+    expect(label.map((n) => n.text())).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^Оформить/), '10 PKOIN/мес'])
+    )
   })
 
   it('оплачено, но не подписан — «Подписаться»', async () => {
@@ -150,8 +156,33 @@ describe('окно оформления', () => {
     expect(button('Оплатить 55 PKOIN')).toBeTruthy()
   })
 
+  const confirmBox = () =>
+    body().querySelector<HTMLInputElement>('.ant-checkbox-input') ?? undefined
+
+  it('без галочки подтверждения оплатить нельзя; смена срока галочку снимает', async () => {
+    await openModal()
+    expect(body().textContent).toContain(
+      'Подтверждаю перевод 10 PKOIN автору Алиса. Отменить или вернуть платёж нельзя.'
+    )
+    const pay = () => button('Оплатить') as HTMLButtonElement
+    expect(pay().disabled).toBe(true)
+    pay().click()
+    await flushPromises()
+    expect(mocks.pay).not.toHaveBeenCalled()
+
+    confirmBox()!.click()
+    await flushPromises()
+    expect(pay().disabled).toBe(false)
+    ;(body().querySelectorAll('[role="radio"]')[1] as HTMLElement).click()
+    await flushPromises()
+    expect(body().textContent).toContain('Подтверждаю перевод 55 PKOIN')
+    expect(pay().disabled).toBe(true)
+  })
+
   it('оплата: перевод на сумму срока, сообщение и окно закрывается', async () => {
     await openModal()
+    confirmBox()!.click()
+    await flushPromises()
     button('Оплатить 10 PKOIN')!.click()
     await flushPromises()
     expect(mocks.pay).toHaveBeenCalledWith('PAuthor', 10e8)
@@ -181,5 +212,37 @@ describe('окно оформления', () => {
     ]
     await openModal()
     expect(body().textContent).toContain('Оплачено до')
+  })
+})
+
+describe('кнопка на странице автора', () => {
+  const lines = (w: VueWrapper) =>
+    w
+      .get('button')
+      .findAll('span')
+      .map((n) => n.text())
+
+  it('цена — второй строкой под названием', async () => {
+    const w = mountIt(PaidProfileButton, { address: 'PAuthor' })
+    await flushPromises()
+    expect(lines(w)).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^Платная подписка/), '10 PKOIN/мес'])
+    )
+  })
+
+  it('уже оплачено — второй строкой срок', async () => {
+    mocks.payments = [
+      {
+        from: 'PMe',
+        to: 'PAuthor',
+        txid: 't',
+        height: 1,
+        amount: 10e8,
+        time: Math.floor(Date.now() / 1000) - 60,
+      },
+    ]
+    const w = mountIt(PaidProfileButton, { address: 'PAuthor' })
+    await flushPromises()
+    expect(lines(w)).toEqual(expect.arrayContaining([expect.stringMatching(/^до /)]))
   })
 })

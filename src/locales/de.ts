@@ -2838,6 +2838,7 @@ export default {
       subscribers: 'Meine Abonnenten',
     },
     perMonth: '{price} PKOIN pro Monat',
+    perMonthShort: '{price} PKOIN/Mon.',
     plans: {
       '1m': '1 Monat',
       '6m': '6 Monate',
@@ -2867,6 +2868,8 @@ export default {
       until: 'bis {date}',
       topUp: 'Aufstockung auf {cost}',
       pay: '{amount} PKOIN bezahlen',
+      confirm:
+        'Ich bestätige die Überweisung von {amount} PKOIN an {name}. Die Zahlung lässt sich weder stornieren noch zurückerstatten.',
       balance: '{amount} PKOIN im Wallet',
       insufficient: 'Nicht genug PKOIN im Hauptwallet',
       willSubscribe:
@@ -2885,7 +2888,7 @@ export default {
     },
     post: {
       buy: 'Beitrag für bezahlte Abonnenten des Autors.',
-      buyAction: 'Abonnieren · {price} PKOIN/Mon.',
+      buyTitle: 'Abonnieren',
       buyActionShort: 'Abonnieren',
       follow: 'Dein Abonnement ist bezahlt – jetzt nur noch dem Autor folgen.',
       followOpen:
@@ -2900,10 +2903,8 @@ export default {
         'Beitrag für bezahlte Abonnenten. In der iPhone-App lassen sich keine Abonnements kaufen.',
     },
     profile: {
-      subscribe: 'Bezahltes Abo · {price} PKOIN/Mon.',
-      active: 'Bezahltes Abo bis {date}',
       own: 'Bezahltes Abonnement',
-      ownWithPrice: 'Bezahltes Abo · {price} PKOIN/Mon.',
+      until: 'bis {date}',
     },
     price: {
       title: 'Abonnementpreis',
