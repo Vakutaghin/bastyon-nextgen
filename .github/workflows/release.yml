@@ -460,6 +460,62 @@ jobs:
           mv android/app/build/outputs/apk/release/app-release.apk "$OUT"
           gh release upload "$TAG" "$OUT" --clobber
 
+  # Зеркало tor-expert-bundle в релизе `tor-<версия>` этого репозитория:
+  # torproject.org в РФ заблокирован, и приложение сначала качает Tor отсюда
+  # (src-tauri/src/tor/installer.rs). Подлинность держат хэши из
+  # src-tauri/src/tor/bundle.json — их сверяет и эта джоба, и приложение.
+  #
+  # Это служебная запись, не версия: так и написано в названии и описании.
+  # Не предрелиз (владелец репозитория так решил 18.10.2026), но и не
+  # «последний» — `--latest=false`. Тег стоит на первом коммите репозитория:
+  # GitHub сортирует релизы по дате коммита тега, и запись уходит в самый низ
+  # списка, не вклиниваясь между версиями. Уже залитые архивы не
+  # перезаливаются, так что для той же версии Tor джоба ничего не делает.
+  # Падение зеркала релиз не держит: приложение скачает Tor с torproject.org.
+  tor-mirror:
+    if: ${{ !inputs.android_only }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Mirror the pinned Tor bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Первый коммит репозитория («Start project»).
+          ROOT_COMMIT: a675d4ada4fdb68a71d909ead50539d379478961
+        run: |
+          set -euo pipefail
+          PIN=src-tauri/src/tor/bundle.json
+          VERSION=$(jq -r .version "$PIN")
+          MIRROR="tor-$VERSION"
+          if ! gh release view "$MIRROR" >/dev/null 2>&1; then
+            cat > tor-mirror-notes.md <<NOTES
+          **Служебная запись, а не версия приложения.** Здесь лежат архивы tor-expert-bundle $VERSION с archive.torproject.org. Bastyon NextGen скачивает их отсюда, когда вы включаете Tor: сайт Tor Project заблокирован в России. Перед установкой приложение сверяет каждый архив с контрольной суммой, зашитой в него (\`src-tauri/src/tor/bundle.json\`). Скачивать отсюда ничего не нужно — установщики приложения лежат в релизах с номером версии.
+
+          **A service entry, not an app version.** These are the tor-expert-bundle $VERSION archives from archive.torproject.org. Bastyon NextGen downloads them from here when you turn Tor on, because the Tor Project site is blocked in Russia. Before installing, the app checks every archive against a checksum built into it (\`src-tauri/src/tor/bundle.json\`). There is nothing to download here — the app installers are in the releases with a version number.
+          NOTES
+            gh release create "$MIRROR" --target "$ROOT_COMMIT" --latest=false \
+              --title "Служебное: Tor $VERSION для приложения (не версия / not an app version)" \
+              --notes-file tor-mirror-notes.md
+          fi
+          have=$(gh release view "$MIRROR" --json assets -q '.assets[].name')
+          mkdir -p tor-mirror
+          for platform in $(jq -r '.sha256 | keys[]' "$PIN"); do
+            name="tor-expert-bundle-$platform-$VERSION.tar.gz"
+            if grep -qxF "$name" <<<"$have"; then
+              echo "$name: already mirrored"
+              continue
+            fi
+            curl -fsSL --retry 3 -o "tor-mirror/$name" \
+              "https://archive.torproject.org/tor-package-archive/torbrowser/$VERSION/$name"
+            echo "$(jq -r --arg p "$platform" '.sha256[$p]' "$PIN")  tor-mirror/$name" | sha256sum -c -
+            gh release upload "$MIRROR" "tor-mirror/$name"
+          done
+
   # Последний шаг: latest.json для апдейтера в приложении и публикация
   # черновика. Если хоть одна сборка упала, релиз остаётся черновиком — не
   # «последним» без установщиков. Пересборка одного APK (android_only) идёт по

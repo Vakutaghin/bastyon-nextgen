@@ -16,14 +16,15 @@ use thiserror::Error;
 
 /// Закреплённый tor-expert-bundle: версия и SHA-256 архивов по платформам.
 /// Хэши взяты из `sha256sums-signed-build.txt`, подпись которого проверена
-/// ключом Tor Browser Developers (`scripts/tor-bundle-pin.sh <версия>`).
+/// ключом Tor Browser Developers (`scripts/tor-bundle-pin.sh <версия>`). Тот
+/// же файл читает release.yml, когда кладёт архивы в зеркало на GitHub.
 const BUNDLE_JSON: &str = include_str!("bundle.json");
 
 const ARCHIVE_BASE: &str = "https://archive.torproject.org/tor-package-archive/torbrowser";
 const DIST_BASE: &str = "https://dist.torproject.org/torbrowser";
-/// Релиз `tor-<версия>` этого репозитория — зеркало архивов. Автоматически его
-/// никто не создаёт (предрелиз только по решению владельца репозитория); пока
-/// его нет, GitHub отвечает 404 и архив берётся с torproject.org.
+/// Релиз `tor-<версия>` этого репозитория — зеркало архивов (джоба `tor-mirror`
+/// в release.yml). Пока его нет, GitHub отвечает 404 и архив берётся с
+/// torproject.org.
 const MIRROR_REPO: &str = "Vakutaghin/bastyon-nextgen";
 
 /// Версия бандла, с которой распакован `tor/`. Другая или нет файла — бандл
