@@ -62,6 +62,18 @@ export function registerMatrixListeners(
         return
       }
 
+      // Ключ группы и участники: от них зависит расшифровка. Сообщение могло
+      // прийти раньше своего ключа и остаться заглушкой — пробуем ещё раз,
+      // и превью в списке диалогов тоже.
+      if (evType === 'm.room.encryption' || evType === 'm.room.member') {
+        const roomId = getEventRoomId(event)
+        if (roomId) {
+          chatStore.retryUndecrypted(roomId)
+          scheduleLoadDialogs()
+        }
+        return
+      }
+
       // Redaction (удаление сообщения) — убираем целевое сообщение из ленты.
       if (evType === 'm.room.redaction') {
         const roomId = getEventRoomId(event)
@@ -134,6 +146,7 @@ export function registerMatrixListeners(
             if (!chatStore.messages[roomId]) chatStore.messages[roomId] = []
             if (!chatStore.messages[roomId].find((m) => m.id === msg.id))
               chatStore.messages[roomId].push(msg)
+            chatStore.watchUndecrypted(roomId)
             const c = matrixService.getClient()
             if (c)
               chatStore.enrichMessagesWithReactions(
@@ -167,11 +180,17 @@ export function registerMatrixListeners(
     if (room?.roomId) chatStore.noteReceipt(room.roomId)
   })
 
-  matrixService.on('sync', (state: string) => {
+  matrixService.on('sync', (state: string, prevState?: string | null) => {
     uiStore.syncState = state
     if (state === 'ERROR') {
       uiStore.syncError = t('appMsg.messenger.syncError')
       return
+    }
+    // Связь вернулась: то, что не расшифровалось без сети (профили с ключами
+    // не загрузились), пробуем снова.
+    if (state === 'SYNCING' && (prevState === 'ERROR' || prevState === 'RECONNECTING')) {
+      chatStore.retryUndecrypted()
+      scheduleLoadDialogs()
     }
     // Баннер «Ошибка синхронизации» раньше гас только на 'PREPARED', а он
     // бывает раз за жизнь клиента — после восстановления связи (SYNCING)

@@ -41,7 +41,10 @@ export function useLocalEcho(ctx: ChatContext, chatCrypto: ChatCrypto, mapping: 
     }
     const local = list[idx]!
     local.id = newId
-    if (local.status === 'sending') local.status = 'sent'
+    // «Не ушло» тоже: запрос мог оборваться уже после того, как сервер принял
+    // событие, — тогда подтверждение приходит синком, а сообщение висело
+    // «не отправлено», хотя собеседник его получил.
+    if (local.status === 'sending' || local.status === 'failed') local.status = 'sent'
     if (local.text !== ENCRYPTED_MESSAGE_PLACEHOLDER) return
     const fresh = await mapping.mapEventToMessage(event)
     const at = list.findIndex((m) => m.id === newId)

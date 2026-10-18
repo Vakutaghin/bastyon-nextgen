@@ -92,4 +92,10 @@ describe('useLocalEcho', () => {
     expect(messages[ROOM]![0]!.id).toBe(LOCAL)
     expect(decryptionCache.set).not.toHaveBeenCalled()
   })
+
+  it('эхо «не отправлено», а сервер событие всё же принял — подтверждение синком снимает пометку', async () => {
+    const { adoptLocalEcho, messages } = setup([message(LOCAL, { status: 'failed' })])
+    await adoptLocalEcho(event('$real'), LOCAL)
+    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
+  })
 })

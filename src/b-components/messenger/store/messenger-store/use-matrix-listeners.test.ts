@@ -60,6 +60,8 @@ function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}
     enrichMessagesWithReactions: vi.fn(),
     adoptLocalEcho: vi.fn(async () => {}),
     noteReceipt: vi.fn(),
+    watchUndecrypted: vi.fn(),
+    retryUndecrypted: vi.fn(),
   }
   const uiStore = {
     activeChatId,
@@ -258,5 +260,41 @@ describe('копия своего события (`~`-id) получает на�
     chatStore.messages[ROOM] = [{ id: '$real' }]
     await handlers['Room.timeline']!(ev, room, false)
     expect(chatStore.messages[ROOM]!.map((m) => m.id)).toEqual(['$real'])
+  })
+})
+
+describe('повторная расшифровка заглушек', () => {
+  it('пришёл ключ группы — повтор в этой комнате и пересчёт превью', async () => {
+    const { chatStore, scheduleLoadDialogs } = setup(ROOM)
+    await handlers['Room.timeline']!(mxEvent('m.room.encryption'), room, false)
+    expect(chatStore.retryUndecrypted).toHaveBeenCalledWith(ROOM)
+    expect(scheduleLoadDialogs).toHaveBeenCalled()
+    expect(chatStore.mapEventToMessage).not.toHaveBeenCalled()
+  })
+
+  it('сменился состав участников — тоже повод', async () => {
+    const { chatStore } = setup(null)
+    await handlers['Room.timeline']!(mxEvent('m.room.member'), room, false)
+    expect(chatStore.retryUndecrypted).toHaveBeenCalledWith(ROOM)
+  })
+
+  it('новое сообщение в открытом чате — заглушки в нём под присмотром', async () => {
+    const { chatStore } = setup(ROOM)
+    await handlers['Room.timeline']!(mxEvent('m.room.message'), room, false)
+    expect(chatStore.watchUndecrypted).toHaveBeenCalledWith(ROOM)
+  })
+
+  it('связь вернулась после ошибки — повтор во всех чатах', () => {
+    const { chatStore, scheduleLoadDialogs } = setup(ROOM)
+    handlers['sync']!('SYNCING', 'ERROR')
+    expect(chatStore.retryUndecrypted).toHaveBeenCalledWith()
+    expect(scheduleLoadDialogs).toHaveBeenCalled()
+  })
+
+  it('обычный синк без перерыва повода не даёт', () => {
+    const { chatStore } = setup(ROOM)
+    handlers['sync']!('SYNCING', 'SYNCING')
+    handlers['sync']!('PREPARED', null)
+    expect(chatStore.retryUndecrypted).not.toHaveBeenCalled()
   })
 })

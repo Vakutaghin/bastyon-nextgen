@@ -67,6 +67,19 @@ function assertRecipientsHaveKeys(
   if (missing.length > 0) throw new RecipientKeysMissingError(missing)
 }
 
+/** Копия события в SDK, которая не ушла (`not_sent`), и её повтор с тем же txnId. */
+function findUnsentEcho(
+  chatId: string,
+  messageId: string
+): { resend: () => Promise<{ event_id?: string } | undefined> } | null {
+  if (!messageId.startsWith('~')) return null
+  const client = matrixService.getClient()
+  const room = matrixService.getRoom(chatId)
+  const event = room?.findEventById?.(messageId)
+  if (!client || !event || event.status !== 'not_sent') return null
+  return { resend: () => client.resendEvent(event, room) }
+}
+
 export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
   const { messages, authStore, uiStore } = ctx
   const {
@@ -295,6 +308,25 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     const list = messages[chatId]
     const failed = list?.find((m) => m.id === messageId)
     if (!failed || failed.status !== 'failed' || failed.type !== 'text') return
+
+    // Запрос мог дойти до сервера, а оборваться только ответ. Такое событие SDK
+    // держит неотправленным с прежним txnId; повтор с ним же сервер узнаёт и
+    // возвращает то же событие. Новая транзакция дала бы собеседнику дубль.
+    const unsent = findUnsentEcho(chatId, messageId)
+    if (unsent) {
+      failed.status = 'sending'
+      try {
+        const res = await unsent.resend()
+        markSent(chatId, messageId, res?.event_id)
+      } catch (e) {
+        console.error('[ChatStore] Повтор отправки не удался:', e)
+        const again = messages[chatId]?.find((m) => m.id === messageId)
+        if (again && again.status === 'sending') again.status = 'failed'
+      }
+      return
+    }
+
+    // До сервера дело не дошло (не было ключей, шифрования): шифруем заново.
     const txnId = matrixService.makeTxnId()
     const localId = localEchoId(chatId, txnId)
     failed.id = localId

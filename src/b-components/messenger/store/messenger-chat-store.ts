@@ -8,7 +8,7 @@
 //   decryption → mapping → { loading, local-echo } (оба также зависят от crypto)
 
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
 import { t } from '@/i18n'
@@ -26,6 +26,7 @@ import { useMessageSending } from './messenger-chat-store/use-message-sending'
 import { useMediaSending } from './messenger-chat-store/use-media-sending'
 import { useMediaTransfer } from './messenger-chat-store/use-media-transfer'
 import { useLocalEcho } from './messenger-chat-store/use-local-echo'
+import { useRedecrypt } from './messenger-chat-store/use-redecrypt'
 
 export const useMessengerChatStore = defineStore('messenger-chat', () => {
   // --- Разделяемое состояние и зависимости ---
@@ -64,9 +65,26 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const mediaSending = useMediaSending(ctx, chatCrypto)
   const mediaTransfer = useMediaTransfer(chatCrypto)
   const localEcho = useLocalEcho(ctx, chatCrypto, mapping)
+  const redecrypt = useRedecrypt(ctx, mapping)
+
+  // История, разобранная до готовности шифрования, — сплошные заглушки.
+  watch(chatCrypto.pcryptoService, (service) => {
+    if (service) redecrypt.retryNow()
+  })
+
+  const loadMessages = async (chatId: string) => {
+    await loading.loadMessages(chatId)
+    redecrypt.watchChat(chatId)
+  }
+
+  const loadMoreMessages = async (chatId: string) => {
+    await loading.loadMoreMessages(chatId)
+    redecrypt.watchChat(chatId)
+  }
 
   /** Полный сброс при логауте. */
   const reset = () => {
+    redecrypt.reset()
     // Blob-URL расшифрованного медиа отзываем: после выхода ссылки на
     // расшифрованные файлы жить не должны (N19).
     mediaTransfer.revokeDecryptedMedia()
@@ -89,8 +107,12 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     currentUser,
     pcryptoService: chatCrypto.pcryptoService,
     localMessengerKeys: chatCrypto.localMessengerKeys,
-    loadMessages: loading.loadMessages,
-    loadMoreMessages: loading.loadMoreMessages,
+    loadMessages,
+    loadMoreMessages,
+    /** В чате появились заглушки «*** Encrypted Message ***» — повторять расшифровку. */
+    watchUndecrypted: redecrypt.watchChat,
+    /** Повод расшифровать заглушки сразу: ключ группы пришёл, связь вернулась. */
+    retryUndecrypted: redecrypt.retryNow,
     sendMessage: sending.sendMessage,
     /** Повтор неудавшейся отправки текста (S35). */
     retryMessage: sending.retryMessage,

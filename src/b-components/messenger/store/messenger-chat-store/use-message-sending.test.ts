@@ -138,4 +138,30 @@ describe('sendMessage — эхо и копия события SDK', () => {
     )
     expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
   })
+
+  it('запрос оборвался, а копия в SDK «не ушла» — повтор той же копией, с прежним txnId', async () => {
+    const { api, messages } = setup()
+    matrix.sendEncryptedDirectMessage.mockRejectedValueOnce(new Error('connection reset'))
+    await api.sendMessage(ROOM, 'Привет')
+
+    const unsent = { status: 'not_sent' }
+    const resendEvent = vi.fn(async () => ({ event_id: '$real' }))
+    const getClient = matrix.getClient
+    matrix.getClient = () => ({ getUserId: () => '@me:host', resendEvent }) as never
+    matrix.getRoom.mockReturnValueOnce({
+      roomId: ROOM,
+      findEventById: (id: string) => (id === LOCAL ? unsent : undefined),
+    } as never)
+    try {
+      await api.retryMessage(ROOM, LOCAL)
+    } finally {
+      matrix.getClient = getClient
+    }
+
+    expect(resendEvent).toHaveBeenCalledWith(unsent, expect.objectContaining({ roomId: ROOM }))
+    // Заново не шифровали и новой транзакции не открывали.
+    expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledTimes(1)
+    expect(matrix.makeTxnId).toHaveBeenCalledTimes(1)
+    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
+  })
 })
