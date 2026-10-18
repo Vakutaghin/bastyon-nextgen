@@ -47,21 +47,15 @@
     </SC_EmbedFooter>
   </SC_Embed>
 
-  <!-- Галерея внутри embed: без неё клик по картинке ничего не делал (N33). -->
-  <ImageGallery
-    v-if="post?.images?.length"
-    v-model:visible="isGalleryOpen"
-    :images="post.images"
-    :initial-index="galleryIndex"
-    @hide="closeGallery"
-  />
+  <!-- Галерея внутри embed: без неё клик по картинке ничего не делал (N33).
+       Глобальных синглтонов во встройке нет — просмотрщик свой. -->
+  <ImageGalleryHost v-if="post?.images?.length" />
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { ImageGallery } from '@/components/image-gallery'
-import { useModalStore } from '@/stores/modal-store'
+import { ImageGalleryHost } from '@/components/image-gallery'
 import { useI18n } from 'vue-i18n'
 import { bcp47 } from '@/i18n'
 import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
@@ -86,7 +80,6 @@ import {
 
 const route = useRoute()
 const { t, locale } = useI18n()
-const modalStore = useModalStore()
 
 const txid = computed<string>(() =>
   typeof route.params.txid === 'string' ? route.params.txid : ''
@@ -95,17 +88,6 @@ const { post, isLoading, isMissing, isError } = usePostByTxid(txid)
 
 /** Битый txid: запрос даже не стартует, и раньше это был пустой iframe (N33). */
 const isInvalidTxid = computed<boolean>(() => !/^[a-f0-9]{64}$/i.test(txid.value))
-
-const isGalleryOpen = computed<boolean>({
-  get: () => modalStore.imageGallery.isOpen,
-  set: (value) => {
-    if (!value) modalStore.closeImageGallery()
-  },
-})
-const galleryIndex = computed<number>(() => modalStore.imageGallery.index)
-function closeGallery(): void {
-  modalStore.closeImageGallery()
-}
 
 // og:url и ссылки на профиль в embed читают внешние потребители (S20).
 const origin = publicShareOrigin()

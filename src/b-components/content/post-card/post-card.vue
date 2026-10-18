@@ -225,14 +225,6 @@
       </template>
     </component>
   </SC_PostCard>
-
-  <ImageGallery
-    v-if="post.images && post.images.length > 0"
-    v-model:visible="isImageGalleryOpen"
-    :images="post.images"
-    :initial-index="galleryIndex"
-    @hide="closeImageGallery"
-  />
 </template>
 
 <script setup lang="ts">
@@ -261,7 +253,6 @@ import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { publicEmbedCode, publicPostUrl } from '@/helpers/common/share-origin'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
-import { ImageGallery } from '@/components/image-gallery'
 import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
 import PostCardComments from '@/b-components/content/post-card/components/post-card-comments/post-card-comments.vue'
 import Avatar from '@/components/avatar/avatar.vue'
@@ -475,15 +466,6 @@ const shareText = computed<string>(
   () => decodeUrlEncoded(props.post.title || '') || props.post.author?.name || 'Bastyon'
 )
 
-const isImageGalleryOpen = computed<boolean>({
-  get: () => modalStore.imageGallery.isOpen && modalStore.imageGallery.images === props.post.images,
-  set: (value) => {
-    if (!value) modalStore.closeImageGallery()
-  },
-})
-
-const galleryIndex = computed<number>(() => modalStore.imageGallery.index)
-
 /** Средний рейтинг в звёздах (0-5). */
 const averageRating = computed<number>(() =>
   calculateAverageRating(props.post.ratingStars, props.post.scoreSum, props.post.scoreCnt)
@@ -496,10 +478,6 @@ const originalAuthorFormattedTime = computed<string>(() => {
   if (ts == null) return ''
   return formatDateTimeFull(ts)
 })
-
-function closeImageGallery(): void {
-  modalStore.closeImageGallery()
-}
 
 function handleRatingChange(_rating: number): void {
   // Оптимистичное состояние держится в composable (`optimisticRating` +

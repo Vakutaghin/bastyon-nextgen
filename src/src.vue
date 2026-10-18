@@ -12,6 +12,7 @@ import ReportModal from '@/b-components/report/report-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
 import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import HelpPanel from '@/b-components/help/help-panel.vue'
+import { ImageGalleryHost } from '@/components/image-gallery'
 import { useHelpHotkey } from '@/composables/use-help-hotkey'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
@@ -117,6 +118,8 @@ watch(themeConfig, setStaticApiTheme, { immediate: true })
       <IpfsInstallModal />
       <!-- Контекстная справка (кнопки «?» и F1) — singleton, открывается useHelpStore().openTopic -->
       <HelpPanel />
+      <!-- Просмотр картинок постов и комментариев — singleton, открывается modalStore.openImageGallery -->
+      <ImageGalleryHost />
     </template>
   </ConfigProvider>
 </template>
