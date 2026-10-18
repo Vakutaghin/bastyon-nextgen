@@ -6,18 +6,28 @@
     <template v-if="!allComments">
       <LastCommentPreview v-if="hasUserComments" :post="post" />
 
-      <SC_CommentsActionsRow v-if="totalCommentsCount > 0">
+      <SC_CommentsActionsRow v-if="moreThanPreview || allCommentsLoading">
         <SC_CommentsActionsLeft>
           <SC_CommentsLoading v-if="allCommentsLoading">
             <LoadingOutlined :style="ICON_PRIMARY_18" spin />
           </SC_CommentsLoading>
 
           <template v-else>
-            <SC_ShowCommentsBtn type="button" @click.stop.prevent="loadAllComments(false)">
-              {{ t('comments.showMoreFixed', { count: COMMENTS_PAGE_SIZE }) }}
+            <!-- Без числа: сколько их на самом деле, до загрузки неизвестно.
+                 Единственный комментарий уже виден выше — загружать нечего. -->
+            <SC_ShowCommentsBtn
+              v-if="moreThanPreview"
+              type="button"
+              @click.stop.prevent="loadAllComments(false)"
+            >
+              {{ t('comments.loadMore') }}
             </SC_ShowCommentsBtn>
 
-            <SC_ShowCommentsBtnSecondary type="button" @click.stop.prevent="loadAllComments(true)">
+            <SC_ShowCommentsBtnSecondary
+              v-if="moreThanFirstPage"
+              type="button"
+              @click.stop.prevent="loadAllComments(true)"
+            >
               {{ t('comments.showAll') }}
             </SC_ShowCommentsBtnSecondary>
           </template>
@@ -96,16 +106,17 @@
 
       <SC_CommentsActionsRow>
         <SC_CommentsActionsLeft>
+          <!-- Комментарии уже загружены целиком: кнопка есть, только если правда есть ещё. -->
           <SC_ShowCommentsBtn
             v-if="hasMoreCommentsToShow"
             type="button"
             @click.stop.prevent="showMoreComments"
           >
-            {{ t('comments.showMore', { count: nextCommentsPageSize }) }}
+            {{ t('comments.loadMore') }}
           </SC_ShowCommentsBtn>
 
           <SC_ShowCommentsBtnSecondary
-            v-if="hasMoreCommentsToShow"
+            v-if="remainingCommentsCount > COMMENTS_PAGE_SIZE"
             type="button"
             @click.stop.prevent="showAllComments"
           >
@@ -262,7 +273,7 @@ import { useCommentMenuActions } from './composables/use-comment-menu-actions'
 import { useCommentVisibility } from './composables/use-comment-visibility'
 import { useCommentsWs } from './composables/use-comments-ws'
 import { provideCommentTree } from './comment-tree-context'
-import { COMMENTS_PAGE_SIZE } from './consts'
+import { COMMENTS_ALREADY_SHOWN, COMMENTS_PAGE_SIZE } from './consts'
 
 export type { PostForComments }
 
@@ -406,12 +417,6 @@ const remainingCommentsCount = computed<number>(() =>
   Math.max(0, sortedComments.value.length - loader.visibleCommentsCount.value)
 )
 
-const nextCommentsPageSize = computed<number>(() => {
-  if (remainingCommentsCount.value <= 0) return 0
-  // Кнопка обещала 20, а загрузчик добавлял COMMENTS_PAGE_SIZE = 15 (N14).
-  return Math.min(COMMENTS_PAGE_SIZE, remainingCommentsCount.value)
-})
-
 const hasMoreCommentsToShow = computed<boolean>(() => remainingCommentsCount.value > 0)
 
 // Голоса в опросе нода считает комментариями, а в обсуждении их нет.
@@ -430,6 +435,15 @@ const hasUserComments = computed<boolean>(() => {
   const lc = props.post.lastComment
   return !!lc && !!lc.message && (props.post.comments || 0) > 0
 })
+/** Есть комментарии сверх показанного в превью (последнего). */
+const moreThanPreview = computed<boolean>(
+  () => totalCommentsCount.value > (hasUserComments.value ? COMMENTS_ALREADY_SHOWN : 0)
+)
+/** «Показать все» — только когда комментариев больше, чем откроет «Загрузить ещё»:
+ *  иначе обе кнопки делают одно и то же. В счёт ноды входят и ответы — с запасом. */
+const moreThanFirstPage = computed<boolean>(
+  () => totalCommentsCount.value > COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
+)
 
 // --- Текущий пользователь — аватар/инициал. ---
 const currentUserAvatarUrl = computed<string | null>(() => {
