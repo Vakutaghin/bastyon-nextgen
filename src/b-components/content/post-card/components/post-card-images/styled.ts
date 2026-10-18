@@ -1,201 +1,84 @@
 import styled from 'vue3-styled-components'
 
-export const SC_PostImage = styled.div<{ imageCount: number }>`
+/** Одна картинка: во всю ширину, высота по картинке, не выше 500px. */
+export const SC_PostImage = styled.div`
   margin-bottom: 15px;
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
   max-width: 100%;
   width: 100%;
   display: flex;
-  gap: 2px;
+  flex-direction: column;
   box-sizing: border-box;
 
-  /* 1 изображение */
-  ${(p) =>
-    p.imageCount === 1 &&
-    `
-    flex-direction: column;
-    gap: 0;
-
-    > div {
-      width: 100%;
-      border-radius: var(--ui-radius-lg);
-    }
-
-    img {
-      width: 100%;
-      max-width: 100%;
-      height: auto;
-      object-fit: cover;
-      display: block;
-      max-height: 500px;
-      border-radius: var(--ui-radius-lg);
-    }
-  `}
-
-  /* 2 изображения - splitscreen */
-  ${(p) =>
-    p.imageCount === 2 &&
-    `
-    flex-direction: row;
-    gap: 2px;
-
-    > div {
-      flex: 1;
-      width: calc(50% - 1px);
-      max-width: calc(50% - 1px);
-      max-height: 500px;
-    }
-
-    > div:first-child {
-      border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg);
-    }
-
-    > div:last-child {
-      border-radius: 0 var(--ui-radius-lg) var(--ui-radius-lg) 0;
-    }
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      box-sizing: border-box;
-    }
-  `}
-
-  /* 3 изображения - левая половина, правая половина с двумя по вертикали */
-  ${(p) =>
-    p.imageCount === 3 &&
-    `
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 2px;
-    max-height: 500px;
+  > div {
     width: 100%;
-    box-sizing: border-box;
+    border-radius: var(--ui-radius-lg);
+  }
 
-    > div:first-child {
-      grid-column: 1;
-      grid-row: 1 / 3;
-      border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg);
-    }
+  img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+    display: block;
+    max-height: 500px;
+    border-radius: var(--ui-radius-lg);
+  }
+`
 
-    > div:nth-child(2) {
-      grid-column: 2;
-      grid-row: 1;
-      border-radius: 0 var(--ui-radius-lg) 0 0;
-    }
+/** Сетка нескольких картинок: высота — из aspect-ratio, плитки по процентам
+ *  (раскладка — helpers/content/image-grid-layout). */
+export const SC_ImageGrid = styled.div`
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+  border-radius: var(--ui-radius-lg);
+  overflow: hidden;
+`
 
-    > div:nth-child(3) {
-      grid-column: 2;
-      grid-row: 2;
-      border-radius: 0 0 var(--ui-radius-lg) 0;
-    }
+export const SC_GridTile = styled.div`
+  position: absolute;
+  cursor: pointer;
+`
 
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      box-sizing: border-box;
-    }
-  `}
+/** Содержимое плитки; отступы до соседей задаёт inline-стиль (top/left/…). */
+export const SC_GridCell = styled.div`
+  position: absolute;
+  overflow: hidden;
+  background: var(--color-bg-tertiary);
 
-  /* 4 изображения - по 2 в строке */
-  ${(p) =>
-    p.imageCount === 4 &&
-    `
-    flex-wrap: wrap;
-    flex-direction: row;
-    gap: 2px;
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: filter var(--transition-quick);
+  }
 
-    > div {
-      width: calc(50% - 1px);
-      max-width: calc(50% - 1px);
-      max-height: 250px;
-      flex: 0 0 calc(50% - 1px);
-    }
+  &:hover img {
+    filter: brightness(0.92);
+  }
 
-    > div:nth-child(1) {
-      border-radius: var(--ui-radius-lg) 0 0 0;
-    }
+  /* Заглушка Tor — во всю плитку, а не своей минимальной высотой. */
+  > button {
+    height: 100%;
+    min-height: 0;
+  }
+`
 
-    > div:nth-child(2) {
-      border-radius: 0 var(--ui-radius-lg) 0 0;
-    }
-
-    > div:nth-child(3) {
-      border-radius: 0 0 0 var(--ui-radius-lg);
-    }
-
-    > div:nth-child(4) {
-      border-radius: 0 0 var(--ui-radius-lg) 0;
-    }
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      box-sizing: border-box;
-    }
-  `}
-
-  /* 5 и более изображений - 2 в верхней строке, 3 в нижней */
-  ${(p) =>
-    p.imageCount >= 5 &&
-    `
-    flex-wrap: wrap;
-    flex-direction: row;
-    gap: 2px;
-
-    > div {
-      max-height: 250px;
-    }
-
-    > div:nth-child(1),
-    > div:nth-child(2) {
-      width: calc(50% - 1px);
-      max-width: calc(50% - 1px);
-      flex: 0 0 calc(50% - 1px);
-    }
-
-    > div:nth-child(1) {
-      border-radius: var(--ui-radius-lg) 0 0 0;
-    }
-
-    > div:nth-child(2) {
-      border-radius: 0 var(--ui-radius-lg) 0 0;
-    }
-
-    > div:nth-child(3),
-    > div:nth-child(4),
-    > div:nth-child(5) {
-      width: calc(33.333% - 1.33px);
-      max-width: calc(33.333% - 1.33px);
-      flex: 0 0 calc(33.333% - 1.33px);
-    }
-
-    > div:nth-child(3) {
-      border-radius: 0 0 0 var(--ui-radius-lg);
-    }
-
-    > div:nth-child(5) {
-      border-radius: 0 0 var(--ui-radius-lg) 0;
-    }
-
-    /* Если больше 5, скрываем остальные */
-    > div:nth-child(n+6) {
-      display: none;
-    }
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      box-sizing: border-box;
-    }
-  `}
+/** «+N» на последней плитке, когда картинок больше, чем помещается в сетку. */
+export const SC_GridMore = styled.div`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-overlay-50);
+  color: var(--color-white);
+  font-size: 28px;
+  font-weight: 600;
+  pointer-events: none;
 `
 
 export const SC_ImageWrapper = styled.div`
