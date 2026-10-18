@@ -160,6 +160,17 @@ describe('RemoteAppsLoader', () => {
     expect(page.hasMore).toBe(false)
   })
 
+  it('hasMore and rawCount count what the node returned, not what survived normalization', async () => {
+    const page20 = Array.from({ length: 20 }, (_, i) =>
+      i < 3 ? { id: `bad${i}` } : { id: `app${i}.app`, name: `App ${i}`, scope: `a${i}.com` }
+    )
+    const loader = new RemoteAppsLoader(async () => page20)
+    const page = await loader.load({ pageSize: 20 })
+    expect(page.apps).toHaveLength(17)
+    expect(page.rawCount).toBe(20)
+    expect(page.hasMore).toBe(true)
+  })
+
   it('preserves optional fields', async () => {
     const raw = [
       {

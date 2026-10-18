@@ -56,7 +56,13 @@ export interface RemoteAppsPage {
   apps: RemoteAppEntry[]
   /** Запрошенные параметры — для дебага. */
   params: Required<Omit<LoadRemoteAppsParams, 'topHeight'>> & { topHeight?: number }
-  /** Грубая эвристика: если страница меньше pageSize — больше страниц нет. */
+  /**
+   * Сколько записей отдала нода, включая отброшенные нормализацией. По нему
+   * считается смещение следующей страницы: по `apps.length` страницы
+   * наезжали друг на друга.
+   */
+  rawCount: number
+  /** Грубая эвристика: если нода отдала меньше pageSize — больше страниц нет. */
   hasMore: boolean
 }
 
@@ -104,6 +110,7 @@ export class RemoteAppsLoader {
     // тестовые fixtures могли передавать или сырой массив, или полный envelope.
     const unwrapped = unwrapEnvelope(raw)
     const apps = normalizeResponse(unwrapped)
+    const rawCount = Array.isArray(unwrapped) ? unwrapped.length : 0
 
     return {
       apps,
@@ -116,7 +123,8 @@ export class RemoteAppsLoader {
         orderDesc: resolved.orderDesc,
         topHeight: resolved.topHeight,
       },
-      hasMore: apps.length === resolved.pageSize,
+      rawCount,
+      hasMore: rawCount >= resolved.pageSize,
     }
   }
 }

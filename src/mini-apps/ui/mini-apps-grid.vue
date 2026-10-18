@@ -154,6 +154,10 @@ onMounted(() => {
   void shelfStore.load()
 })
 
+// «Установленные» = built-in + local. Каталог не должен повторно показывать их,
+// но remote-session app (открытая через каталог в этой сессии) пусть остаётся в каталоге.
+const persistedIds = computed(() => new Set(appsStore.forGrid.map((a) => a.manifest.id)))
+
 const {
   search,
   items: remoteItems,
@@ -164,7 +168,7 @@ const {
   activeCategory,
   availableCategories,
   toggleCategory,
-} = useRemoteApps()
+} = useRemoteApps({ isHidden: (entry) => persistedIds.value.has(entry.id) })
 
 const matchesSearch = (...texts: string[]): boolean => {
   if (!search.value) return true
@@ -213,9 +217,6 @@ const categoryChips = computed<MiniAppCategoryId[]>(() => {
   return [...ids].sort((a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b))
 })
 
-// «Установленные» = built-in + local. Каталог не должен повторно показывать их,
-// но remote-session app (открытая через каталог в этой сессии) пусть остаётся в каталоге.
-const persistedIds = computed(() => new Set(appsStore.forGrid.map((a) => a.manifest.id)))
 const filteredRemote = computed(() =>
   remoteItems.value.filter((e) => !persistedIds.value.has(e.id))
 )
