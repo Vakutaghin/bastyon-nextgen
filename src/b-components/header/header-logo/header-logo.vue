@@ -5,10 +5,9 @@
     </SC_LogoLink>
 
     <Dropdown :trigger="['click']" placement="bottomLeft">
-      <SC_LogoLang>
+      <!-- В шапке — только флаг: название языка видно в подсказке и в меню. -->
+      <SC_LogoLang type="button" :title="languageHint" :aria-label="languageHint">
         <SC_LanguageFlag>{{ currentLanguageFlag }}</SC_LanguageFlag>
-        <SC_LanguageName>{{ currentLanguageName }}</SC_LanguageName>
-        <CaretDownOutlined />
       </SC_LogoLang>
 
       <template #overlay>
@@ -20,23 +19,18 @@
 
 <script setup lang="ts">
 import { computed, h } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Dropdown, Menu } from 'ant-design-vue'
 import type { MenuProps } from 'ant-design-vue'
-import { CaretDownOutlined, CheckOutlined } from '@/components/icons'
+import { CheckOutlined } from '@/components/icons'
 import { logoData } from '@/b-components/header/dummy-data/logo-data'
 import { useLocale } from '@/composables/use-locale'
 import { useTheme } from '@/composables/use-theme'
 import type { Locale } from '@/i18n'
-import {
-  SC_Logo,
-  SC_LogoLink,
-  SC_LogoImg,
-  SC_LogoLang,
-  SC_LanguageFlag,
-  SC_LanguageName,
-} from './styled'
+import { SC_Logo, SC_LogoLink, SC_LogoImg, SC_LogoLang, SC_LanguageFlag } from './styled'
 
+const { t } = useI18n()
 const router = useRouter()
 const { locale, setLocale, available } = useLocale()
 const { isDark } = useTheme()
@@ -59,6 +53,8 @@ const currentLanguageFlag = computed<string>(() => {
   const lang = languageOptions.value.find((l) => l.code === locale.value)
   return lang ? lang.flag : '🇷🇺'
 })
+
+const languageHint = computed<string>(() => `${t('language.label')}: ${currentLanguageName.value}`)
 
 const languageMenuItems = computed<MenuProps['items']>(() =>
   languageOptions.value.map((lang) => {
