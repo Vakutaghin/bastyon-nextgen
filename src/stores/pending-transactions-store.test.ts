@@ -20,7 +20,10 @@ vi.mock('@/blockchain/ws/ws-service', () => ({
 }))
 vi.mock('@/helpers/api/request', () => ({ getByPRC: h.getByPRC }))
 
-import { notifyTransactionBroadcast } from '@/blockchain/core/transactions/broadcast-events'
+import {
+  notifyTransactionBroadcast,
+  onTransactionSettled,
+} from '@/blockchain/core/transactions/broadcast-events'
 import {
   PENDING_TX_TTL_MS,
   pendingKindOf,
@@ -120,6 +123,23 @@ describe('pending-transactions-store', () => {
     expect(store.count).toBe(1)
     store.cleanupExpired(Date.now() + PENDING_TX_TTL_MS)
     expect(store.count).toBe(0)
+  })
+
+  it('снятие ожидания слышно снаружи: в блоке — true, истекла — false', () => {
+    vi.useFakeTimers()
+    const settled: Array<[string, boolean]> = []
+    const stop = onTransactionSettled((txid, ok) => settled.push([txid, ok]))
+    const store = usePendingTransactionsStore()
+    store.init('PAlice')
+    notifyTransactionBroadcast({ txid: TX(7), operationType: 'subscribe', meta: {} })
+    notifyTransactionBroadcast({ txid: TX(8), operationType: 'unsubscribe', meta: {} })
+    h.ws.get('transaction')?.({ txid: TX(7) })
+    store.cleanupExpired(Date.now() + PENDING_TX_TTL_MS)
+    stop()
+    expect(settled).toEqual([
+      [TX(7), true],
+      [TX(8), false],
+    ])
   })
 
   it('без аккаунта отправки не запоминаются; одна и та же транзакция — один раз', () => {

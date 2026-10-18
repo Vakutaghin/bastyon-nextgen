@@ -1213,6 +1213,8 @@ export default {
     errAuthRequired: 'Melde dich an, um zu abonnieren',
     errSubscribeSelf: 'Du kannst dich nicht selbst abonnieren',
     errFailed: 'Aktion fehlgeschlagen, bitte versuche es erneut',
+    errDeferred:
+      'Die Aktion, die auf die Bestätigung des Netzwerks wartete, ist fehlgeschlagen: {reason}',
   },
   relations: {
     followersTitle: 'Abonnenten',

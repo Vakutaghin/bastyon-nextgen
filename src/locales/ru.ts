@@ -1206,6 +1206,7 @@ export default {
     errAuthRequired: 'Войдите, чтобы подписаться',
     errSubscribeSelf: 'Нельзя подписаться на себя',
     errFailed: 'Не удалось выполнить действие, попробуйте ещё раз',
+    errDeferred: 'Не удалось выполнить действие, которое ждало подтверждения сети: {reason}',
   },
   relations: {
     followersTitle: 'Подписчики',

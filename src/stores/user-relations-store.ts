@@ -11,6 +11,9 @@
  * Ограничение: изменения, сделанные на другом устройстве/в legacy-клиенте,
  * подхватятся только после refresh()/refreshSubscriptions(). В рамках текущей
  * сессии состояние консистентно.
+ *
+ * Пока транзакция по адресу не в блоке, повторное нажатие не шлёт вторую (нода
+ * её отклонит), а встаёт в очередь и уходит после блока — см. deferred-relation.
  */
 
 import { defineStore } from 'pinia'
@@ -25,6 +28,22 @@ import {
   unsubscribeUser as unsubscribeUserTx,
 } from '@/blockchain/core/actions/user-relations-action'
 import type { UserProfile, UserSubscribe } from '@/types/rpc-responses/user-get'
+import { onTransactionSettled } from '@/blockchain/core/transactions/broadcast-events'
+import { usePendingTransactionsStore } from '@/stores/pending-transactions-store'
+import { appToast } from '@/b-components/app-toast'
+import { t } from '@/i18n'
+import { DeferredRelation } from './deferred-relation'
+
+/** Подписка на человека: публичная, приватная (с уведомлениями) или нет. */
+export type SubscriptionState = 'public' | 'private' | 'none'
+
+/** Выборы, ждущие блока, — переживают перезапуск (по аккаунтам). */
+const QUEUE_STORAGE_PREFIX = 'BST_RELATION_QUEUE_'
+
+interface StoredQueue {
+  subscriptions?: Array<[string, SubscriptionState]>
+  blocks?: Array<[string, boolean]>
+}
 
 /** Сырой элемент ответа getusersubscribes (терпим к опечатке adddress/address). */
 type RawSubscribe = UserSubscribe & { address?: string }
@@ -46,6 +65,137 @@ async function applyMatrixIgnore(address: string, ignored: boolean): Promise<voi
     await matrixService.setIgnoredByAddress(address, ignored)
   } catch (e) {
     console.warn('[userRelations] matrix ignore sync failed', e)
+  }
+}
+
+/** Поля и действия стора, нужные очередям (тип стора внутри defineStore ещё не известен). */
+interface RelationsState {
+  blocked: Set<string>
+  pending: Set<string>
+  subscribed: Set<string>
+  subscribedPrivate: Set<string>
+  subscribePending: Set<string>
+  refresh(): Promise<void>
+  refreshSubscriptions(): Promise<void>
+}
+
+interface RelationChannels {
+  subscriptions: DeferredRelation<SubscriptionState>
+  blocks: DeferredRelation<boolean>
+  /** Отписка от событий блока. */
+  stop: () => void
+}
+
+/** Неподтверждённая транзакция отношений по адресу — из «песочных часов». */
+function findUnconfirmed(address: string, kinds: readonly string[]) {
+  try {
+    return (
+      usePendingTransactionsStore().items.find(
+        (i) => i.address === address && kinds.includes(i.kind)
+      ) ?? null
+    )
+  } catch {
+    return null
+  }
+}
+
+/** Отложенная транзакция не ушла: человек нажал минуту назад, скажем, о чём речь. */
+function deferredError(e: unknown): void {
+  const reason = e instanceof Error && e.message ? e.message : t('subscriptions.errFailed')
+  appToast.error({ message: t('subscriptions.errDeferred', { reason }) })
+}
+
+const channelsByStore = new WeakMap<object, RelationChannels>()
+
+function createChannels(store: RelationsState): RelationChannels {
+  const persistQueue = (): void => {
+    const me = useAuthStore().getUserAddress
+    if (!me) return
+    const data: StoredQueue = {
+      subscriptions: subscriptions.queueEntries(),
+      blocks: blocks.queueEntries(),
+    }
+    try {
+      if (data.subscriptions?.length || data.blocks?.length) {
+        localStorage.setItem(QUEUE_STORAGE_PREFIX + me, JSON.stringify(data))
+      } else {
+        localStorage.removeItem(QUEUE_STORAGE_PREFIX + me)
+      }
+    } catch {
+      // Хранилище недоступно — очередь живёт до перезапуска.
+    }
+  }
+
+  const subscriptions = new DeferredRelation<SubscriptionState>({
+    shown: (a) =>
+      store.subscribed.has(a) ? (store.subscribedPrivate.has(a) ? 'private' : 'public') : 'none',
+    show: (a, state) => {
+      if (state === 'none') store.subscribed.delete(a)
+      else store.subscribed.add(a)
+      if (state === 'private') store.subscribedPrivate.add(a)
+      else store.subscribedPrivate.delete(a)
+    },
+    send: (a, state) =>
+      state === 'none'
+        ? unsubscribeUserTx(a)
+        : state === 'private'
+          ? subscribeUserPrivateTx(a)
+          : subscribeUserTx(a),
+    setSending: (a, on) => (on ? store.subscribePending.add(a) : store.subscribePending.delete(a)),
+    findUnconfirmed: (a) => {
+      const tx = findUnconfirmed(a, ['subscribe', 'unsubscribe'])
+      if (!tx) return null
+      // Приватную от публичной ожидание не отличает — для очереди это неважно.
+      return { txid: tx.txid, state: tx.kind === 'unsubscribe' ? 'none' : 'public' }
+    },
+    onDeferredError: deferredError,
+    onQueueChange: persistQueue,
+  })
+
+  const blocks = new DeferredRelation<boolean>({
+    shown: (a) => store.blocked.has(a),
+    show: (a, on) => (on ? store.blocked.add(a) : store.blocked.delete(a)),
+    send: (a, on) => (on ? blockUserTx(a) : unblockUserTx(a)),
+    setSending: (a, on) => (on ? store.pending.add(a) : store.pending.delete(a)),
+    findUnconfirmed: (a) => {
+      const tx = findUnconfirmed(a, ['block', 'unblock'])
+      return tx ? { txid: tx.txid, state: tx.kind === 'block' } : null
+    },
+    // Решение Р3: блокировка в социальном графе глушит и чат (S43).
+    afterSent: (a, on) => void applyMatrixIgnore(a, on),
+    onDeferredError: deferredError,
+    onQueueChange: persistQueue,
+  })
+
+  const stop = onTransactionSettled((txid, confirmed) => {
+    // Не попала в блок — что в цепочке, неизвестно: перечитать и свериться.
+    if (subscriptions.settle(txid, confirmed)) void store.refreshSubscriptions()
+    if (blocks.settle(txid, confirmed)) void store.refresh()
+  })
+
+  return { subscriptions, blocks, stop }
+}
+
+function channelsOf(store: RelationsState): RelationChannels {
+  let channels = channelsByStore.get(store)
+  if (!channels) {
+    channels = createChannels(store)
+    channelsByStore.set(store, channels)
+  }
+  return channels
+}
+
+/** Очередь с прошлого запуска для текущего аккаунта. */
+function restoreQueue(channels: RelationChannels): void {
+  const me = useAuthStore().getUserAddress
+  if (!me) return
+  try {
+    const raw = localStorage.getItem(QUEUE_STORAGE_PREFIX + me)
+    const data = raw ? (JSON.parse(raw) as StoredQueue) : null
+    if (Array.isArray(data?.subscriptions)) channels.subscriptions.restoreQueue(data.subscriptions)
+    if (Array.isArray(data?.blocks)) channels.blocks.restoreQueue(data.blocks)
+  } catch {
+    // Испорченная запись — начнём с пустой очереди.
   }
 }
 
@@ -105,6 +255,7 @@ export const useUserRelationsStore = defineStore('userRelations', {
     async init(): Promise<void> {
       if (this.isInitialized) return
       this.isInitialized = true
+      restoreQueue(channelsOf(this))
       await Promise.all([this.refresh(), this.refreshSubscriptions()])
     },
 
@@ -121,7 +272,10 @@ export const useUserRelationsStore = defineStore('userRelations', {
         })
         const me = Array.isArray(arr) ? (arr.find((p) => p?.address === address) ?? arr[0]) : null
         const list = Array.isArray(me?.blocking) ? (me!.blocking as string[]) : []
-        this.blocked = new Set(list.filter((a): a is string => typeof a === 'string' && !!a))
+        const chain = new Set(list.filter((a): a is string => typeof a === 'string' && !!a))
+        this.blocked = new Set(chain)
+        // Поверх цепочки — блокировки, ждущие блока.
+        channelsOf(this).blocks.reconcile((a) => chain.has(a))
       } catch (e) {
         console.warn('[userRelations] refresh failed', e)
       } finally {
@@ -151,100 +305,54 @@ export const useUserRelationsStore = defineStore('userRelations', {
             }
           }
         }
-        this.subscribed = subscribed
-        this.subscribedPrivate = subscribedPrivate
+        this.subscribed = new Set(subscribed)
+        this.subscribedPrivate = new Set(subscribedPrivate)
+        // Поверх цепочки — подписки, ждущие блока.
+        channelsOf(this).subscriptions.reconcile((a) =>
+          subscribed.has(a) ? (subscribedPrivate.has(a) ? 'private' : 'public') : 'none'
+        )
       } catch (e) {
         console.warn('[userRelations] refreshSubscriptions failed', e)
       }
     },
 
-    /** Заблокировать адрес: оптимистично + on-chain tx, откат при ошибке. */
+    /**
+     * Заблокировать адрес: сразу в интерфейсе, транзакция — сейчас или после
+     * блока прошлой транзакции по этому адресу; откат при отказе.
+     */
     async block(address: string): Promise<void> {
-      if (!address || this.pending.has(address) || this.blocked.has(address)) return
-      this.pending.add(address)
-      this.blocked.add(address)
-      try {
-        await blockUserTx(address)
-        // Решение Р3: блокировка в социальном графе глушит и чат (S43).
-        void applyMatrixIgnore(address, true)
-      } catch (e) {
-        this.blocked.delete(address)
-        throw e
-      } finally {
-        this.pending.delete(address)
-      }
+      await channelsOf(this).blocks.set(address, true)
     },
 
-    /** Разблокировать адрес: оптимистично + on-chain tx, откат при ошибке. */
+    /** Разблокировать адрес — так же, как block(). */
     async unblock(address: string): Promise<void> {
-      if (!address || this.pending.has(address) || !this.blocked.has(address)) return
-      this.pending.add(address)
-      this.blocked.delete(address)
-      try {
-        await unblockUserTx(address)
-        void applyMatrixIgnore(address, false)
-      } catch (e) {
-        this.blocked.add(address)
-        throw e
-      } finally {
-        this.pending.delete(address)
-      }
+      await channelsOf(this).blocks.set(address, false)
     },
 
     /** Подписаться публично (или снять приватность, оставшись подписанным). */
     async subscribe(address: string): Promise<void> {
-      if (!address || this.subscribePending.has(address)) return
-      // Уже подписан публично — нечего делать.
-      if (this.subscribed.has(address) && !this.subscribedPrivate.has(address)) return
-      await this.applySubscriptionChange(address, subscribeUserTx, 'public')
+      await this.setSubscription(address, 'public')
     },
 
     /** Подписаться приватно (с уведомлениями). */
     async subscribePrivate(address: string): Promise<void> {
-      if (!address || this.subscribePending.has(address)) return
-      // Уже приватно подписан — нечего делать.
-      if (this.subscribed.has(address) && this.subscribedPrivate.has(address)) return
-      await this.applySubscriptionChange(address, subscribeUserPrivateTx, 'private')
+      await this.setSubscription(address, 'private')
     },
 
     /** Отписаться от пользователя. */
     async unsubscribe(address: string): Promise<void> {
-      if (!address || this.subscribePending.has(address)) return
-      if (!this.subscribed.has(address)) return
-      await this.applySubscriptionChange(address, unsubscribeUserTx, 'none')
+      await this.setSubscription(address, 'none')
     },
 
     /**
-     * @internal Оптимистично применяет изменение подписки и шлёт on-chain tx;
-     * при ошибке откатывает оба множества в исходное состояние.
+     * Подписка как выбрал человек: сразу в интерфейсе, транзакция — сейчас или
+     * после блока прошлой транзакции по этому адресу; откат при отказе.
      */
-    async applySubscriptionChange(
+    async setSubscription(
       address: string,
-      txFn: (a: string) => Promise<string>,
-      nextState: 'public' | 'private' | 'none'
-    ): Promise<void> {
-      const wasSubscribed = this.subscribed.has(address)
-      const wasPrivate = this.subscribedPrivate.has(address)
-      this.subscribePending.add(address)
-      if (nextState === 'none') {
-        this.subscribed.delete(address)
-        this.subscribedPrivate.delete(address)
-      } else {
-        this.subscribed.add(address)
-        if (nextState === 'private') this.subscribedPrivate.add(address)
-        else this.subscribedPrivate.delete(address)
-      }
-      try {
-        await txFn(address)
-      } catch (e) {
-        if (wasSubscribed) this.subscribed.add(address)
-        else this.subscribed.delete(address)
-        if (wasPrivate) this.subscribedPrivate.add(address)
-        else this.subscribedPrivate.delete(address)
-        throw e
-      } finally {
-        this.subscribePending.delete(address)
-      }
+      next: SubscriptionState
+    ): Promise<'sent' | 'queued' | 'none'> {
+      return channelsOf(this).subscriptions.set(address, next)
     },
 
     /**
@@ -276,6 +384,11 @@ export const useUserRelationsStore = defineStore('userRelations', {
 
     /** Сброс при разлогине. */
     reset(): void {
+      const channels = channelsByStore.get(this)
+      if (channels) {
+        channels.stop()
+        channelsByStore.delete(this)
+      }
       this.blocked = new Set()
       this.pending = new Set()
       this.bannedBy = new Set()

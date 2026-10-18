@@ -1193,6 +1193,7 @@ export default {
     errAuthRequired: '구독하려면 로그인하세요',
     errSubscribeSelf: '자기 자신을 구독할 수 없습니다',
     errFailed: '작업에 실패했습니다. 다시 시도하세요',
+    errDeferred: '네트워크 확인을 기다리던 작업이 실패했습니다: {reason}',
   },
   relations: {
     followersTitle: '팔로워',

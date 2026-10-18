@@ -1200,6 +1200,7 @@ export default {
     errAuthRequired: 'Sign in to subscribe',
     errSubscribeSelf: 'You cannot subscribe to yourself',
     errFailed: 'Action failed, please try again',
+    errDeferred: 'The action waiting for the network to confirm the previous one failed: {reason}',
   },
   relations: {
     followersTitle: 'Followers',

@@ -1209,6 +1209,7 @@ export default {
     errAuthRequired: 'Accedi per iscriverti',
     errSubscribeSelf: 'Non puoi iscriverti a te stesso',
     errFailed: 'Azione non riuscita, riprova',
+    errDeferred: 'L’azione in attesa della conferma della rete non è riuscita: {reason}',
   },
   relations: {
     followersTitle: 'Follower',

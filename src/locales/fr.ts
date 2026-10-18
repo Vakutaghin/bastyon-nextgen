@@ -1215,6 +1215,7 @@ export default {
     errAuthRequired: 'Connectez-vous pour vous abonner',
     errSubscribeSelf: 'Vous ne pouvez pas vous abonner à vous-même',
     errFailed: 'L’action a échoué, veuillez réessayer',
+    errDeferred: 'L’action qui attendait la confirmation du réseau a échoué : {reason}',
   },
   relations: {
     followersTitle: 'Abonnés',

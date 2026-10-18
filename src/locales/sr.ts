@@ -1201,6 +1201,7 @@ export default {
     errAuthRequired: 'Пријавите се да бисте се претплатили',
     errSubscribeSelf: 'Не можете се претплатити на себе',
     errFailed: 'Радња није успела, покушајте поново',
+    errDeferred: 'Радња која је чекала потврду мреже није успела: {reason}',
   },
   relations: {
     followersTitle: 'Пратиоци',

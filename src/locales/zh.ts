@@ -1161,6 +1161,7 @@ export default {
     errAuthRequired: '登录后才能关注',
     errSubscribeSelf: '不能关注自己',
     errFailed: '操作失败，请重试',
+    errDeferred: '等待网络确认的操作失败：{reason}',
   },
   relations: {
     followersTitle: '粉丝',

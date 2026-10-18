@@ -77,3 +77,31 @@ export function notifyTransactionBroadcast(tx: BroadcastedTransaction): void {
     }
   }
 }
+
+/**
+ * Ожидание по транзакции снято: `confirmed` — она в блоке; `false` — за час так
+ * и не попала в блок (вероятно, выпала из mempool). Сообщает
+ * pending-transactions-store; слушают те, кто ждёт блока, чтобы сделать
+ * следующий шаг (отложенная отписка и т. п.).
+ */
+type SettledListener = (txid: string, confirmed: boolean) => void
+
+const settledListeners = new Set<SettledListener>()
+
+/** Подписаться на снятие ожиданий; возвращает отписку. */
+export function onTransactionSettled(listener: SettledListener): () => void {
+  settledListeners.add(listener)
+  return () => {
+    settledListeners.delete(listener)
+  }
+}
+
+export function notifyTransactionSettled(txid: string, confirmed: boolean): void {
+  for (const listener of settledListeners) {
+    try {
+      listener(txid, confirmed)
+    } catch (e) {
+      console.warn('[broadcast-events] settled listener failed', e)
+    }
+  }
+}

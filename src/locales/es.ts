@@ -1216,6 +1216,7 @@ export default {
     errAuthRequired: 'Inicia sesión para suscribirte',
     errSubscribeSelf: 'No puedes suscribirte a ti mismo',
     errFailed: 'No se pudo completar la acción; vuelve a intentarlo',
+    errDeferred: 'La acción que esperaba la confirmación de la red ha fallado: {reason}',
   },
   relations: {
     followersTitle: 'Seguidores',

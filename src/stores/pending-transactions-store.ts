@@ -17,6 +17,7 @@ import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref } from 'vue'
 
 import {
+  notifyTransactionSettled,
   onTransactionBroadcast,
   type BroadcastedTransaction,
   type PendingKind,
@@ -147,13 +148,16 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
     items.value = items.value.filter((i) => i.txid !== txid)
     persist()
     ensureTimer()
+    notifyTransactionSettled(txid, true)
   }
 
   function cleanupExpired(now: number = Date.now()): void {
     const fresh = items.value.filter((i) => now - i.createdAt < PENDING_TX_TTL_MS)
     if (fresh.length === items.value.length) return
+    const expired = items.value.filter((i) => !fresh.includes(i))
     items.value = fresh
     persist()
+    for (const item of expired) notifyTransactionSettled(item.txid, false)
   }
 
   /** Спросить ноду про самые старые ожидания: WS мог подтверждение пропустить. */
