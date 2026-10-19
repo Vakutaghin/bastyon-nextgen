@@ -1,55 +1,55 @@
 //! Установка бинаря Kubo по требованию: скачивание → сверка запиненного SHA-512
 //! → распаковка → chmod → (macOS) ad-hoc-переподпись + снятие quarantine.
 //!
-//! Отличие от Tor-инсталлятора: SHA-512 запинен КОНСТАНТАМИ в подписанном
-//! приложении, а не тянется манифестом. Скачивание+запуск бинаря — это канал RCE;
-//! пин защищает от угнанного зеркала (fail-closed при несовпадении).
+//! Отличие от Tor-инсталлятора: SHA-512 запинен в подписанном приложении
+//! (`kubo.json` вкомпилирован), а не тянется манифестом. Скачивание+запуск
+//! бинаря — это канал RCE; пин защищает от угнанного зеркала (fail-closed при
+//! несовпадении), поэтому источников несколько и любой из них годится.
 use crate::ipfs::state::IpfsPaths;
 use flate2::read::GzDecoder;
 use futures_util::{Stream, StreamExt};
+use serde::Deserialize;
 use sha2::{Digest, Sha512};
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
+use std::sync::OnceLock;
+use std::time::Duration;
 use tar::Archive;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Runtime};
 use thiserror::Error;
 use tokio::sync::watch;
 
-/// Запиненная версия Kubo. Строка ВКЛЮЧАЕТ ведущий `v`. Bump = обновить и
-/// EXPECTED_SHA512 (значения из https://dist.ipfs.tech/kubo/<ver>/<file>.sha512).
-pub const KUBO_VERSION: &str = "v0.43.0";
+/// Запиненный Kubo: версия (с ведущим `v`) и SHA-512 архивов (hex, нижний
+/// регистр, ключ — имя архива), снятые байт-точно с dist.ipfs.tech. Bump —
+/// новые значения из `https://dist.ipfs.tech/kubo/<ver>/<file>.sha512` (те же
+/// лежат рядом с архивами в релизе ipfs/kubo на GitHub). Тот же файл читает
+/// release.yml, когда кладёт архивы в зеркало.
+const KUBO_JSON: &str = include_str!("kubo.json");
 
 const DIST_BASE: &str = "https://dist.ipfs.tech/kubo";
+const UPSTREAM_REPO: &str = "ipfs/kubo";
+/// Релиз `kubo-<версия>` этого репозитория — зеркало архивов (джоба
+/// `kubo-mirror` в release.yml). Пока его нет, GitHub отвечает 404 и архив
+/// берётся из релиза ipfs/kubo.
+const MIRROR_REPO: &str = "Vakutaghin/bastyon-nextgen";
 
-/// SHA-512 (hex, нижний регистр) артефактов v0.43.0, снятые байт-точно с
-/// официального dist-сервера. Ключ — имя архива.
-const EXPECTED_SHA512: &[(&str, &str)] = &[
-    (
-        "kubo_v0.43.0_darwin-amd64.tar.gz",
-        "7edd038e9208b8024ef14329102a8bc40827c21337bb2d38ea52400c57a04e3c092086a11c9d342b85083a71df4bf77130fd676bdb68628b2d9e8e6f511ee305",
-    ),
-    (
-        "kubo_v0.43.0_darwin-arm64.tar.gz",
-        "2377bc886b340087b20d5a9bdd025e5a6ed4b7e910ac04fa0d0e26f5b7e189b31a33f6cc682c0aaec2695a65b8a38d1f5bfce505c2948c0ea08ee64009034ef6",
-    ),
-    (
-        "kubo_v0.43.0_linux-amd64.tar.gz",
-        "6af21cd24a307d94326807b3d3827064c74fb7122f83b6940af250e6ae40da250e0ec0e1f3551256b78cd204623ed56c32ce735bbe28bdcc787b36943c52458a",
-    ),
-    (
-        "kubo_v0.43.0_linux-arm64.tar.gz",
-        "aae6c766ec2436f27bbd2d6ab5f8de7d2ced4dc83abc5b54b17bd58a80c28f1ea2e38840305e22f08bd01c55cf8263745675da1bbda2ac0bcde268e9e61e3818",
-    ),
-    (
-        "kubo_v0.43.0_windows-amd64.zip",
-        "0486721fc406d36c9d70d16dc3984e70c50d5f1d1c890de3864a6904564080adb3f73546162ad30a8e1ee43024a18bf900fbda2b6c131197351ff2e8b9782178",
-    ),
-    (
-        "kubo_v0.43.0_windows-arm64.zip",
-        "6d4bb67ca78219e45bb6375d3d46852e145fd293fe566be03380023d067c9edcccf7887d23bb1ce46152e45177b9a0af282fdd7b8b19a34d5df8fddc58412a75",
-    ),
-];
+#[derive(Debug, Deserialize)]
+struct KuboPin {
+    version: String,
+    sha512: BTreeMap<String, String>,
+}
+
+fn pin() -> &'static KuboPin {
+    static PIN: OnceLock<KuboPin> = OnceLock::new();
+    PIN.get_or_init(|| serde_json::from_str(KUBO_JSON).expect("ipfs/kubo.json is valid"))
+}
+
+/// Запиненная версия Kubo, с ведущим `v`.
+pub fn kubo_version() -> &'static str {
+    &pin().version
+}
 
 #[derive(Debug, Error)]
 pub enum InstallError {
@@ -118,7 +118,7 @@ pub fn detect_platform() -> Result<PlatformInfo, InstallError> {
     let (go_os, go_arch, is_zip) = map_platform(os, arch)
         .ok_or_else(|| InstallError::UnsupportedPlatform(format!("{os}-{arch}")))?;
     let ext = if is_zip { "zip" } else { "tar.gz" };
-    let archive_name = format!("kubo_{KUBO_VERSION}_{go_os}-{go_arch}.{ext}");
+    let archive_name = format!("kubo_{}_{go_os}-{go_arch}.{ext}", kubo_version());
     Ok(PlatformInfo {
         archive_name,
         is_zip,
@@ -127,14 +127,19 @@ pub fn detect_platform() -> Result<PlatformInfo, InstallError> {
 
 /// Запиненный SHA-512 для имени архива (None — если такого артефакта нет в таблице).
 pub fn expected_sha512(archive_name: &str) -> Option<&'static str> {
-    EXPECTED_SHA512
-        .iter()
-        .find(|(name, _)| *name == archive_name)
-        .map(|(_, hash)| *hash)
+    pin().sha512.get(archive_name).map(String::as_str)
 }
 
-pub fn archive_url(archive_name: &str) -> String {
-    format!("{DIST_BASE}/{KUBO_VERSION}/{archive_name}")
+/// Откуда качать архив, по порядку. dist.ipfs.tech бывает недоступен целиком
+/// (19.10.2026 не отвечал ни из Грузии, ни из Германии), а те же архивы лежат в
+/// релизе на GitHub. Первым — зеркало этого репозитория, как у Tor. Подлинность
+/// держит запиненный хэш, а не источник.
+fn archive_urls(version: &str, archive_name: &str) -> Vec<String> {
+    vec![
+        format!("https://github.com/{MIRROR_REPO}/releases/download/kubo-{version}/{archive_name}"),
+        format!("https://github.com/{UPSTREAM_REPO}/releases/download/{version}/{archive_name}"),
+        format!("{DIST_BASE}/{version}/{archive_name}"),
+    ]
 }
 
 /// Версия установленного бинаря из install.json (None — маркера нет).
@@ -146,7 +151,7 @@ pub fn installed_version(paths: &IpfsPaths) -> Option<String> {
 
 /// Установлено, но версия не совпадает с запиненной → предложить обновление.
 pub fn update_available(paths: &IpfsPaths) -> bool {
-    paths.binary.is_file() && installed_version(paths).as_deref() != Some(KUBO_VERSION)
+    paths.binary.is_file() && installed_version(paths).as_deref() != Some(kubo_version())
 }
 
 /// Верхний уровень: гарантировать наличие бинаря kubo. No-op, если уже
@@ -154,8 +159,8 @@ pub fn update_available(paths: &IpfsPaths) -> bool {
 /// усечённый бинарь после краша посреди распаковки (маркера нет) переставится,
 /// а не считался бы готовым («Exec format error» при spawn). Отмена прерывает
 /// скачивание и удаляет недокачанный архив.
-pub async fn ensure_installed(
-    app: &AppHandle,
+pub async fn ensure_installed<R: Runtime>(
+    app: &AppHandle<R>,
     paths: &IpfsPaths,
     cancel: &CancelRx,
 ) -> Result<(), InstallError> {
@@ -169,26 +174,53 @@ pub async fn ensure_installed(
     let expected = expected_sha512(&platform.archive_name)
         .ok_or_else(|| InstallError::HashMissing(platform.archive_name.clone()))?;
 
-    emit_progress(
-        app,
-        "starting",
-        0.0,
-        &format!("Downloading {}", platform.archive_name),
-    );
-
-    let url = archive_url(&platform.archive_name);
     let archive_path = paths.bin_dir.join(&platform.archive_name);
-    if let Err(e) = download_with_progress(app, &url, &archive_path, cancel).await {
-        let _ = fs::remove_file(&archive_path);
-        return Err(e);
-    }
-    if let Err(e) = check_cancelled(cancel) {
-        let _ = fs::remove_file(&archive_path);
-        return Err(e);
-    }
 
-    emit_progress(app, "verifying", 0.95, "Verifying SHA-512");
-    verify_sha512(&archive_path, &platform.archive_name, expected)?;
+    // Источники по очереди: недоступен, 404 или хэш не тот — следующий.
+    let mut last_err: Option<InstallError> = None;
+    let mut verified = false;
+    for url in archive_urls(kubo_version(), &platform.archive_name) {
+        emit_progress(
+            app,
+            "starting",
+            0.0,
+            &format!("Downloading {}", platform.archive_name),
+        );
+        match download_with_progress(app, &url, &archive_path, cancel).await {
+            Ok(()) => {}
+            Err(InstallError::Cancelled) => {
+                let _ = fs::remove_file(&archive_path);
+                return Err(InstallError::Cancelled);
+            }
+            Err(e) => {
+                log::warn!("[ipfs] download from {} failed: {}", url, e);
+                let _ = fs::remove_file(&archive_path);
+                last_err = Some(e);
+                continue;
+            }
+        }
+        if let Err(e) = check_cancelled(cancel) {
+            let _ = fs::remove_file(&archive_path);
+            return Err(e);
+        }
+
+        emit_progress(app, "verifying", 0.95, "Verifying SHA-512");
+        match verify_sha512(&archive_path, &platform.archive_name, expected) {
+            Ok(()) => {
+                verified = true;
+                break;
+            }
+            Err(e) => {
+                log::warn!("[ipfs] archive from {} rejected: {}", url, e);
+                last_err = Some(e);
+            }
+        }
+    }
+    if !verified {
+        return Err(last_err.unwrap_or(InstallError::ExtractedFileMissing(
+            platform.archive_name.clone(),
+        )));
+    }
 
     emit_progress(app, "extracting", 0.97, "Extracting Kubo");
     if platform.is_zip {
@@ -233,14 +265,19 @@ pub async fn ensure_installed(
     Ok(())
 }
 
-async fn download_with_progress(
-    app: &AppHandle,
+async fn download_with_progress<R: Runtime>(
+    app: &AppHandle<R>,
     url: &str,
     dest: &Path,
     cancel: &CancelRx,
 ) -> Result<(), InstallError> {
+    // Без общего лимита на всё скачивание: архив 40–55 МБ на медленном канале
+    // идёт дольше десяти минут, и такой лимит не давал бы поставить Kubo вовсе.
+    // Недоступный источник отваливается на соединении, замолчавший — на чтении,
+    // и очередь переходит к следующему.
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(600))
+        .connect_timeout(Duration::from_secs(20))
+        .read_timeout(Duration::from_secs(60))
         .build()?;
     // Отмена и во время соединения, а не только между кусками.
     let mut cancel_wait = cancel.clone();
@@ -353,13 +390,13 @@ fn extract_zip(archive: &Path, dest: &Path) -> Result<(), InstallError> {
 
 fn write_install_marker(paths: &IpfsPaths, archive_name: &str) {
     let body = serde_json::json!({
-        "version": KUBO_VERSION,
+        "version": kubo_version(),
         "archive": archive_name,
     });
     let _ = fs::write(&paths.install_marker, body.to_string());
 }
 
-fn emit_progress(app: &AppHandle, phase: &str, fraction: f32, message: &str) {
+fn emit_progress<R: Runtime>(app: &AppHandle<R>, phase: &str, fraction: f32, message: &str) {
     let _ = app.emit(
         "ipfs:install-progress",
         serde_json::json!({
@@ -394,7 +431,7 @@ mod tests {
             for arch in ["x86_64", "aarch64"] {
                 let (go_os, go_arch, is_zip) = map_platform(os, arch).unwrap();
                 let ext = if is_zip { "zip" } else { "tar.gz" };
-                let name = format!("kubo_{KUBO_VERSION}_{go_os}-{go_arch}.{ext}");
+                let name = format!("kubo_{}_{go_os}-{go_arch}.{ext}", kubo_version());
                 assert!(
                     expected_sha512(&name).is_some(),
                     "missing pinned SHA-512 for {name}"
@@ -404,21 +441,37 @@ mod tests {
     }
 
     #[test]
-    fn pinned_hashes_are_128_hex_chars() {
-        for (name, hash) in EXPECTED_SHA512 {
+    fn pinned_hashes_are_128_lowercase_hex_chars() {
+        for (name, hash) in &pin().sha512 {
             assert_eq!(hash.len(), 128, "{name}: bad length");
             assert!(
-                hash.chars().all(|c| c.is_ascii_hexdigit()),
-                "{name}: non-hex char"
+                hash.chars().all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c)),
+                "{name}: not lowercase hex"
             );
         }
     }
 
+    /// Ключи — архивы той же версии: release.yml качает их по этим именам.
     #[test]
-    fn builds_expected_url() {
+    fn pinned_archives_belong_to_the_pinned_version() {
+        let prefix = format!("kubo_{}_", kubo_version());
+        assert!(kubo_version().starts_with('v'));
+        assert_eq!(pin().sha512.len(), 6);
+        for name in pin().sha512.keys() {
+            assert!(name.starts_with(&prefix), "{name}");
+        }
+    }
+
+    #[test]
+    fn github_is_tried_before_dist_ipfs_tech() {
+        const NAME: &str = "kubo_v0.43.0_linux-amd64.tar.gz";
         assert_eq!(
-            archive_url("kubo_v0.43.0_linux-amd64.tar.gz"),
-            "https://dist.ipfs.tech/kubo/v0.43.0/kubo_v0.43.0_linux-amd64.tar.gz"
+            archive_urls("v0.43.0", NAME),
+            vec![
+                format!("https://github.com/Vakutaghin/bastyon-nextgen/releases/download/kubo-v0.43.0/{NAME}"),
+                format!("https://github.com/ipfs/kubo/releases/download/v0.43.0/{NAME}"),
+                format!("https://dist.ipfs.tech/kubo/v0.43.0/{NAME}"),
+            ]
         );
     }
 
@@ -488,6 +541,37 @@ mod tests {
         assert!(matches!(check_cancelled(&rx), Err(InstallError::Cancelled)));
     }
 
+    /// Живая установка: `BASTYON_IPFS_INSTALL_ROOT=<пустой каталог> cargo test
+    /// --lib ipfs::installer::tests::live_install -- --ignored --nocapture`.
+    /// Качает ~40 МБ: зеркало, при 404 — релиз ipfs/kubo, потом dist.ipfs.tech.
+    #[test]
+    #[ignore]
+    fn live_install() {
+        let root = std::path::PathBuf::from(
+            std::env::var("BASTYON_IPFS_INSTALL_ROOT").expect("BASTYON_IPFS_INSTALL_ROOT"),
+        );
+        let paths = IpfsPaths::new(root.clone(), root.join("repo"));
+        let app = tauri::test::mock_builder()
+            .build(tauri::generate_context!(test = true))
+            .expect("mock app");
+        let handle = app.handle().clone();
+        let (_tx, rx) = watch::channel(false);
+        tauri::async_runtime::block_on(async move {
+            ensure_installed(&handle, &paths, &rx).await.expect("install");
+            assert!(paths.binary.is_file());
+            assert_eq!(installed_version(&paths).as_deref(), Some(kubo_version()));
+            let out = std::process::Command::new(&paths.binary)
+                .arg("version")
+                .output()
+                .expect("run kubo");
+            let printed = String::from_utf8_lossy(&out.stdout);
+            assert!(
+                printed.contains(kubo_version().trim_start_matches('v')),
+                "{printed}"
+            );
+        });
+    }
+
     #[test]
     fn update_available_compares_to_pinned_version() {
         let dir = std::env::temp_dir().join(format!("kubo-upd-test-{}", std::process::id()));
@@ -497,7 +581,7 @@ mod tests {
         assert!(!update_available(&paths));
         fs::write(&paths.binary, b"x").unwrap();
         // Совпадает с запиненной → нет обновления.
-        fs::write(&paths.install_marker, format!(r#"{{"version":"{KUBO_VERSION}"}}"#)).unwrap();
+        fs::write(&paths.install_marker, format!(r#"{{"version":"{}"}}"#, kubo_version())).unwrap();
         assert!(!update_available(&paths));
         // Старая версия → есть обновление.
         fs::write(&paths.install_marker, r#"{"version":"v0.0.1"}"#).unwrap();

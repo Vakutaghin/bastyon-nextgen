@@ -516,6 +516,58 @@ jobs:
             gh release upload "$MIRROR" "tor-mirror/$name"
           done
 
+  # Зеркало Kubo (IPFS) в релизе `kubo-<версия>` этого репозитория — так же,
+  # как у Tor: 19.10.2026 dist.ipfs.tech не отвечал вовсе, и модуль IPFS не
+  # ставился. Приложение пробует зеркало первым, потом релиз ipfs/kubo и
+  # dist.ipfs.tech (src-tauri/src/ipfs/installer.rs). Подлинность держат хэши
+  # из src-tauri/src/ipfs/kubo.json — их сверяет и эта джоба, и приложение.
+  # Остальное как у tor-mirror: служебная запись на первом коммите, не
+  # «последняя», залитое не перезаливается, падение релиз не держит.
+  kubo-mirror:
+    if: ${{ !inputs.android_only }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Mirror the pinned Kubo archives
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Первый коммит репозитория («Start project»).
+          ROOT_COMMIT: a675d4ada4fdb68a71d909ead50539d379478961
+        run: |
+          set -euo pipefail
+          PIN=src-tauri/src/ipfs/kubo.json
+          VERSION=$(jq -r .version "$PIN")
+          MIRROR="kubo-$VERSION"
+          if ! gh release view "$MIRROR" >/dev/null 2>&1; then
+            cat > kubo-mirror-notes.md <<NOTES
+          **Служебная запись, а не версия приложения.** Здесь лежат архивы Kubo $VERSION — узла IPFS — из релиза ipfs/kubo. Bastyon NextGen скачивает их отсюда, когда вы включаете модуль IPFS: сайт dist.ipfs.tech бывает недоступен. Перед установкой приложение сверяет каждый архив с контрольной суммой, зашитой в него (\`src-tauri/src/ipfs/kubo.json\`). Скачивать отсюда ничего не нужно — установщики приложения лежат в релизах с номером версии.
+
+          **A service entry, not an app version.** These are the Kubo $VERSION (IPFS node) archives from the ipfs/kubo release. Bastyon NextGen downloads them from here when you turn the IPFS module on, because dist.ipfs.tech is sometimes unreachable. Before installing, the app checks every archive against a checksum built into it (\`src-tauri/src/ipfs/kubo.json\`). There is nothing to download here — the app installers are in the releases with a version number.
+          NOTES
+            gh release create "$MIRROR" --target "$ROOT_COMMIT" --latest=false \
+              --title "Служебное: Kubo (IPFS) $VERSION для приложения (не версия / not an app version)" \
+              --notes-file kubo-mirror-notes.md
+          fi
+          have=$(gh release view "$MIRROR" --json assets -q '.assets[].name')
+          mkdir -p kubo-mirror
+          for name in $(jq -r '.sha512 | keys[]' "$PIN"); do
+            if grep -qxF "$name" <<<"$have"; then
+              echo "$name: already mirrored"
+              continue
+            fi
+            curl -fsSL --retry 3 -o "kubo-mirror/$name" \
+              "https://github.com/ipfs/kubo/releases/download/$VERSION/$name" ||
+              curl -fsSL --retry 3 -o "kubo-mirror/$name" \
+                "https://dist.ipfs.tech/kubo/$VERSION/$name"
+            echo "$(jq -r --arg n "$name" '.sha512[$n]' "$PIN")  kubo-mirror/$name" | sha512sum -c -
+            gh release upload "$MIRROR" "kubo-mirror/$name"
+          done
+
   # Последний шаг: latest.json для апдейтера в приложении и публикация
   # черновика. Если хоть одна сборка упала, релиз остаётся черновиком — не
   # «последним» без установщиков. Пересборка одного APK (android_only) идёт по
