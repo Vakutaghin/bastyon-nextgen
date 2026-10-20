@@ -10,6 +10,8 @@ You open an `ipfs://…` link like any other: by clicking it in a post, a commen
 
 A link that came from somewhere else can be pasted into the search bar in the header (on a phone, on the search page): it opens right away, without a search. This works for `ipfs://…` and `ipns://…`, a gateway address like `…/ipfs/<CID>` or `<CID>.ipfs.dweb.link`, also without `https://`, and a bare CID. A private link opens together with its key.
 
+The desktop app also has an address bar for this: the IPFS icon in the header → **“Open IPFS browser”**. Paste the link and click **“Open”** — the content opens in the viewer window. Below the bar is **“Recent”**: addresses you opened before, one click away. Private links are not added there: they contain the file’s key.
+
 ## In the desktop app
 
 The first time, the app asks how to open such links:

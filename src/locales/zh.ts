@@ -344,6 +344,15 @@ export default {
     ipfsUpdateHint: '有新版本的 IPFS 可用。',
     ipfsMenuHint: 'IPFS 链接会在单独的查看器窗口中打开。',
     ipfsMyFilesBtn: '我的文件',
+    ipfsBrowserBtn: '打开 IPFS 浏览器',
+    ipfsBrowserTitle: 'IPFS 浏览器',
+    ipfsBrowserPlaceholder: 'IPFS 链接、网关地址或 CID',
+    ipfsBrowserOpen: '打开',
+    ipfsBrowserInvalid:
+      '这不是 IPFS 链接。可以使用 ipfs://…、ipns://…、…/ipfs/<CID> 形式的地址，或直接输入 CID。',
+    ipfsBrowserHint: '内容会在单独的查看器窗口中打开。无法显示的文件会提示保存。',
+    ipfsBrowserRecent: '最近',
+    ipfsBrowserForget: '从最近记录中移除',
     ipfsUninstallConfirmTitle: '移除 IPFS 模块？',
     ipfsUninstallConfirmContent:
       'Kubo 程序和本地区块缓存将被删除，你的文件将不再分享。IPFS 链接将改用公共网关打开。',

@@ -46,12 +46,18 @@
           <Button size="small" @click="openMyFiles">
             {{ t('header.ipfsMyFilesBtn') }}
           </Button>
+
+          <Button size="small" @click="openBrowser">
+            {{ t('header.ipfsBrowserBtn') }}
+          </Button>
         </SC_IpfsActions>
 
         <SC_IpfsHint>{{ t('header.ipfsMenuHint') }}</SC_IpfsHint>
       </SC_IpfsMenu>
     </template>
   </Dropdown>
+
+  <IpfsBrowserDialog :open="browserOpen" @close="browserOpen = false" />
 </template>
 
 <script setup lang="ts">
@@ -68,6 +74,7 @@ import {
   CheckCircleFilled,
 } from '@/components/icons'
 import { useIpfsStore } from '@/stores/ipfs-store'
+import IpfsBrowserDialog from './ipfs-browser-dialog.vue'
 import {
   SC_IpfsWrapper,
   SC_IpfsDot,
@@ -88,6 +95,13 @@ const { available, status, message, install, installed, updateAvailable, busy } 
 
 const router = useRouter()
 const visible = ref(false)
+/** IPFS-браузер: адресная строка для ссылки IPFS. */
+const browserOpen = ref(false)
+
+function openBrowser(): void {
+  visible.value = false
+  browserOpen.value = true
+}
 
 onMounted(() => {
   ipfs.hydrate().catch(() => {})

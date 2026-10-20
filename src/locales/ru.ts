@@ -360,6 +360,16 @@ export default {
     ipfsUpdateHint: 'Доступна новая версия IPFS.',
     ipfsMenuHint: 'IPFS-ссылки открываются в отдельном окне-просмотрщике.',
     ipfsMyFilesBtn: 'Мои файлы',
+    ipfsBrowserBtn: 'Открыть IPFS-браузер',
+    ipfsBrowserTitle: 'IPFS-браузер',
+    ipfsBrowserPlaceholder: 'Ссылка IPFS, адрес на шлюзе или CID',
+    ipfsBrowserOpen: 'Открыть',
+    ipfsBrowserInvalid:
+      'Это не ссылка IPFS. Подойдёт ipfs://…, ipns://…, адрес вида …/ipfs/<CID> или просто CID.',
+    ipfsBrowserHint:
+      'Содержимое откроется в отдельном окне-просмотрщике. Файлы, которые нельзя показать, приложение предложит сохранить.',
+    ipfsBrowserRecent: 'Недавние',
+    ipfsBrowserForget: 'Убрать из недавних',
     ipfsUninstallConfirmTitle: 'Удалить модуль IPFS?',
     ipfsUninstallConfirmContent:
       'Бинарь Kubo и локальный кэш блоков будут удалены, раздача ваших файлов прекратится. IPFS-ссылки будут открываться через публичный шлюз.',

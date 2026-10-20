@@ -358,6 +358,16 @@ export default {
     ipfsUpdateHint: 'Eine neuere IPFS-Version ist verfügbar.',
     ipfsMenuHint: 'IPFS-Links öffnen sich in einem separaten Anzeigefenster.',
     ipfsMyFilesBtn: 'Meine Dateien',
+    ipfsBrowserBtn: 'IPFS-Browser öffnen',
+    ipfsBrowserTitle: 'IPFS-Browser',
+    ipfsBrowserPlaceholder: 'IPFS-Link, Gateway-Adresse oder CID',
+    ipfsBrowserOpen: 'Öffnen',
+    ipfsBrowserInvalid:
+      'Das ist kein IPFS-Link. Geeignet sind ipfs://…, ipns://…, eine Adresse wie …/ipfs/<CID> oder einfach eine CID.',
+    ipfsBrowserHint:
+      'Der Inhalt öffnet sich in einem separaten Anzeigefenster. Dateien, die sich nicht anzeigen lassen, bietet die App zum Speichern an.',
+    ipfsBrowserRecent: 'Zuletzt geöffnet',
+    ipfsBrowserForget: 'Aus der Liste entfernen',
     ipfsUninstallConfirmTitle: 'IPFS-Modul entfernen?',
     ipfsUninstallConfirmContent:
       'Die Kubo-Programmdatei und der lokale Block-Cache werden gelöscht, und deine Dateien werden nicht mehr geteilt. IPFS-Links öffnen sich dann über ein öffentliches Gateway.',

@@ -357,6 +357,16 @@ export default {
     ipfsUpdateHint: 'Доступна је новија верзија IPFS-а.',
     ipfsMenuHint: 'IPFS везе се отварају у посебном прозору прегледача.',
     ipfsMyFilesBtn: 'Моје датотеке',
+    ipfsBrowserBtn: 'Отвори IPFS прегледач',
+    ipfsBrowserTitle: 'IPFS прегледач',
+    ipfsBrowserPlaceholder: 'IPFS веза, адреса пролаза или CID',
+    ipfsBrowserOpen: 'Отвори',
+    ipfsBrowserInvalid:
+      'Ово није IPFS веза. Одговара ipfs://…, ipns://…, адреса облика …/ipfs/<CID> или само CID.',
+    ipfsBrowserHint:
+      'Садржај се отвара у посебном прозору за преглед. Датотеке које не могу да се прикажу апликација нуди да сачувате.',
+    ipfsBrowserRecent: 'Недавно',
+    ipfsBrowserForget: 'Уклони из недавних',
     ipfsUninstallConfirmTitle: 'Уклонити IPFS модул?',
     ipfsUninstallConfirmContent:
       'Kubo програм и локални кеш блокова биће обрисани, а ваше датотеке више неће бити дељене. IPFS везе ће се отварати преко јавног пролаза.',

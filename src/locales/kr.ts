@@ -356,6 +356,16 @@ export default {
     ipfsUpdateHint: '새 IPFS 버전을 사용할 수 있습니다.',
     ipfsMenuHint: 'IPFS 링크는 별도의 뷰어 창에서 열립니다.',
     ipfsMyFilesBtn: '내 파일',
+    ipfsBrowserBtn: 'IPFS 브라우저 열기',
+    ipfsBrowserTitle: 'IPFS 브라우저',
+    ipfsBrowserPlaceholder: 'IPFS 링크, 게이트웨이 주소 또는 CID',
+    ipfsBrowserOpen: '열기',
+    ipfsBrowserInvalid:
+      'IPFS 링크가 아닙니다. ipfs://…, ipns://…, …/ipfs/<CID> 형식의 주소 또는 CID를 입력하세요.',
+    ipfsBrowserHint:
+      '내용은 별도의 뷰어 창에서 열립니다. 표시할 수 없는 파일은 저장하도록 안내합니다.',
+    ipfsBrowserRecent: '최근 항목',
+    ipfsBrowserForget: '최근 항목에서 삭제',
     ipfsUninstallConfirmTitle: 'IPFS 모듈을 제거할까요?',
     ipfsUninstallConfirmContent:
       'Kubo 실행 파일과 로컬 블록 캐시가 삭제되고 파일 공유가 중단됩니다. IPFS 링크는 공개 게이트웨이로 열립니다.',

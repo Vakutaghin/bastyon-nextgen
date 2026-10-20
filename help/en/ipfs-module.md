@@ -21,7 +21,8 @@ The icon shows the module’s state: a green check means running, a spinner mean
 - a status line, for example **“Local IPFS node running”** or **“IPFS module installed (stopped)”**;
 - **“Install & start (~80 MB)”**, **“Start”** or **“Stop”**. While the module installs, there is also **“Cancel installation”**;
 - **“Update”** — when a new Bastyon version brings a new version of the module. The icon then gets a dot, and the menu says **“A newer IPFS version is available.”**;
-- **“My files”** — see [My files](my-files.md).
+- **“My files”** — see [My files](my-files.md);
+- **“Open IPFS browser”** — an address bar for an IPFS link, see [Opening an IPFS link](open-ipfs-links.md).
 
 ## What it serves
 

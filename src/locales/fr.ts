@@ -360,6 +360,16 @@ export default {
     ipfsUpdateHint: 'Une version plus récente d’IPFS est disponible.',
     ipfsMenuHint: 'Les liens IPFS s’ouvrent dans une fenêtre de visualisation séparée.',
     ipfsMyFilesBtn: 'Mes fichiers',
+    ipfsBrowserBtn: 'Ouvrir le navigateur IPFS',
+    ipfsBrowserTitle: 'Navigateur IPFS',
+    ipfsBrowserPlaceholder: 'Lien IPFS, adresse de passerelle ou CID',
+    ipfsBrowserOpen: 'Ouvrir',
+    ipfsBrowserInvalid:
+      'Ce n’est pas un lien IPFS. Utilisez ipfs://…, ipns://…, une adresse du type …/ipfs/<CID> ou simplement un CID.',
+    ipfsBrowserHint:
+      'Le contenu s’ouvre dans une fenêtre d’affichage séparée. Les fichiers impossibles à afficher sont proposés à l’enregistrement.',
+    ipfsBrowserRecent: 'Récents',
+    ipfsBrowserForget: 'Retirer des récents',
     ipfsUninstallConfirmTitle: 'Supprimer le module IPFS ?',
     ipfsUninstallConfirmContent:
       'Le binaire Kubo et le cache local des blocs seront supprimés, et vos fichiers ne seront plus partagés. Les liens IPFS s’ouvriront via une passerelle publique.',
