@@ -4,8 +4,7 @@
 // старыми записями, переехавшими к первому спросившему (N10); «Очистить кэш»
 // не трогает избранное, настройки и неотправленные оценки; позиции видео
 // не копятся сверх 300; одна pending-оценка на пост (N10); уведомления
-// новыми сверху; хранилище транскодированных видео подрезается по числу и
-// размеру. Время подменяется только у Date: fake-indexeddb выполняет запросы
+// новыми сверху. Время подменяется только у Date: fake-indexeddb выполняет запросы
 // через таймеры, и полная подмена таймеров останавливает базу.
 
 import 'fake-indexeddb/auto'
@@ -14,7 +13,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 import { db, resetDbAvailabilityForTests } from '../database'
-import type { TranscodedVideo } from '../types'
 import { cacheAPI } from './cache-api'
 import {
   clearDecryptedForUser,
@@ -26,7 +24,6 @@ import { favoritesAPI } from './favorites-api'
 import { notificationsAPI } from './notifications-api'
 import { postRatingPendingAPI } from './post-rating-pending-api'
 import { settingsAPI } from './settings-api'
-import { transcodedVideoAPI } from './transcoded-video-api'
 import { videoProgressAPI } from './video-progress-api'
 
 const texts = (list: Array<{ text: string }>) => list.map((m) => m.text).sort()
@@ -265,66 +262,5 @@ describe('локальная база', () => {
     await notificationsAPI.deleteAllByAddress('PA')
     expect(await notificationsAPI.getAllByAddress('PA')).toEqual([])
     expect(await notificationsAPI.getAllByAddress('PB')).toHaveLength(1)
-  })
-
-  describe('транскодированные видео', () => {
-    const video = (
-      id: string,
-      sizeMB: number
-    ): Omit<TranscodedVideo, 'createdAt' | 'updatedAt'> => ({
-      id,
-      originalFileName: `${id}.mov`,
-      originalSize: 1,
-      transcodedBlob: { size: sizeMB * 1024 * 1024 } as Blob,
-      resolution: '720p',
-      bitrate: 2000,
-      hasAudio: true,
-      duration: 10,
-      width: 1280,
-      height: 720,
-      mimeType: 'video/mp4',
-    })
-
-    async function saveAt(time: number, id: string, sizeMB: number) {
-      vi.setSystemTime(time)
-      await transcodedVideoAPI.save(video(id, sizeMB))
-    }
-
-    beforeEach(() => vi.useFakeTimers({ toFake: ['Date'] }))
-
-    it('новые первыми; статистика размера', async () => {
-      await saveAt(1_000, 'a', 1)
-      await saveAt(2_000, 'b', 3)
-      expect((await transcodedVideoAPI.getRecent()).map((v) => v.id)).toEqual(['b', 'a'])
-      expect((await transcodedVideoAPI.getRecent(1)).map((v) => v.id)).toEqual(['b'])
-      expect(await transcodedVideoAPI.getStorageStats()).toMatchObject({
-        count: 2,
-        totalSizeMB: 4,
-        averageSizeMB: 2,
-      })
-    })
-
-    it('лимит по числу и по размеру удаляет самые старые', async () => {
-      await saveAt(1_000, 'a', 2)
-      await saveAt(2_000, 'b', 2)
-      await saveAt(3_000, 'c', 2)
-      await expect(transcodedVideoAPI.enforceLimit(2)).resolves.toBe(1)
-      expect(await transcodedVideoAPI.get('a')).toBeUndefined()
-
-      await expect(transcodedVideoAPI.enforceSizeLimit(3)).resolves.toBe(1)
-      expect((await transcodedVideoAPI.getAll()).map((v) => v.id)).toEqual(['c'])
-      await expect(transcodedVideoAPI.enforceSizeLimit(3)).resolves.toBe(0)
-    })
-
-    it('старше N дней удаляются; удаление несуществующего — без ошибки', async () => {
-      const day = 24 * 60 * 60 * 1000
-      await saveAt(0, 'old', 1)
-      await saveAt(40 * day, 'fresh', 1)
-      vi.setSystemTime(41 * day)
-      await expect(transcodedVideoAPI.deleteOld(30)).resolves.toBe(1)
-      await transcodedVideoAPI.delete('missing')
-      await transcodedVideoAPI.delete('fresh')
-      expect(await transcodedVideoAPI.count()).toBe(0)
-    })
   })
 })

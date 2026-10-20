@@ -7,7 +7,6 @@ import type {
   MeshMessageRecord,
   PendingPostRating,
   StoredNotification,
-  TranscodedVideo,
   VideoProgress,
 } from './types'
 
@@ -16,7 +15,6 @@ import type {
  */
 export class AppDatabase extends Dexie {
   // Определяем таблицы с типами
-  transcodedVideos!: Table<TranscodedVideo, string>
   postRatingsPending!: Table<PendingPostRating, number>
   settings!: Table<AppSettings, string>
   favorites!: Table<FavoritePost, [string, string]>
@@ -88,6 +86,21 @@ export class AppDatabase extends Dexie {
     // станет второй записью.
     this.version(5).stores({
       transcodedVideos: 'id, originalFileName, resolution, createdAt',
+      postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
+      settings: 'key, createdAt',
+      favorites: '[address+id], address, addedAt',
+      notifications: '[address+id], address, nblock',
+      decryptedMessages: '[userId+eventId], userId, createdAt',
+      videoProgress: 'id, updatedAt',
+      meshDialogs: 'id, account',
+      meshMessages: 'id, &dedupKey, [dialogId+ts], account',
+    })
+
+    // v6: сжатые копии видео больше не храним — загруженный ролик уже на
+    // сервере, а «Повторить» берёт сжатый файл из задачи. Таблица уходит вместе
+    // с копиями: у кого-то это до 500 МБ.
+    this.version(6).stores({
+      transcodedVideos: null,
       postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
       settings: 'key, createdAt',
       favorites: '[address+id], address, addedAt',

@@ -32,17 +32,9 @@ A file up to 500 MB can be compressed: FFmpeg gets it whole. A larger file is up
 
 Several videos are compressed one at a time: while FFmpeg is busy, the next one waits as **“Waiting to compress”** and then is compressed and uploaded by itself.
 
-## Compressed copies
+## If the upload fails
 
-The compressed copy stays on the computer: **“My videos”** → **“Compressed on this computer”**. Each has:
-
-- click the clip to watch it;
-- **“Upload to the video server”** — upload this copy again, without compressing it, for example if the upload failed;
-- **“Information”** — parameters and the size before and after compression;
-- **“Download”** — save the file to the computer;
-- **“Delete”** — with a confirmation.
-
-The copies are kept inside the app and take up disk space. The app keeps no more than 50 clips, 500 MB, and nothing older than 30 days: it deletes old ones itself and tells you so. Everything stored on the device is listed in [What is stored on your device](local-data.md).
+The compressed file stays with the upload while the app is open: **“Retry”** uploads it without compressing it again. The app does not keep compressed copies on disk — the uploaded clip is already on the video server, see **“My videos”**. If you close the app before the upload finishes, the video is compressed again.
 
 ## See also
 

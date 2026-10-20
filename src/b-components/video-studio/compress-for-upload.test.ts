@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   getMetadata: vi.fn(),
   transcode: vi.fn(),
   destroy: vi.fn(),
-  save: vi.fn(async () => undefined),
 }))
 
 vi.mock('@/b-components/video-uploader/transcoder', () => ({
@@ -17,9 +16,6 @@ vi.mock('@/b-components/video-uploader/transcoder', () => ({
     destroy: mocks.destroy,
     checkFfmpegAvailable: vi.fn(),
   },
-}))
-vi.mock('@/b-components/video-uploader/utils/storage-manager', () => ({
-  storageManager: { saveWithCleanup: mocks.save },
 }))
 
 import { compressForUpload } from './compress-for-upload'
@@ -81,7 +77,6 @@ describe('compressForUpload', () => {
     expect(second.onStart).toHaveBeenCalledTimes(1)
     runs[1]!.finish()
     expect((await b).name).toBe('b.mp4')
-    expect(mocks.save).toHaveBeenCalledTimes(2)
   })
 
   it('отмена видео в очереди не трогает FFmpeg чужого видео', async () => {
@@ -129,6 +124,5 @@ describe('compressForUpload', () => {
     expect(opts.onProgress).not.toHaveBeenCalled()
     runs[0]!.finish()
     await expect(a).rejects.toMatchObject({ name: 'AbortError' })
-    expect(mocks.save).not.toHaveBeenCalled()
   })
 })

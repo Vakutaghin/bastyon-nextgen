@@ -29,24 +29,6 @@ export interface ContentCache extends BaseEntity {
   expiresAt?: number
 }
 
-/**
- * Интерфейс для транскодированных видео
- */
-export interface TranscodedVideo extends BaseEntity<string> {
-  id: string
-  originalFileName: string
-  originalSize: number
-  transcodedBlob: Blob
-  resolution: string // '144p' | '240p' | '360p' | '480p' | '720p'
-  bitrate: number // kbps
-  hasAudio: boolean
-  duration: number // seconds
-  width: number
-  height: number
-  mimeType: string // 'video/mp4' или 'video/webm'
-  fps?: number // кадров в секунду
-}
-
 export type PendingStatus = 'pending' | 'submitted' | 'confirmed' | 'failed'
 
 export interface PendingPostRating extends BaseEntity {

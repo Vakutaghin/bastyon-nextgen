@@ -1,19 +1,18 @@
 /**
  * Сжатие перед загрузкой — только в приложении для компьютера: системный
  * FFmpeg пережимает файл в MP4 (H.264, звук AAC) не выше 1080p, с битрейтом
- * под разрешение — то же, что делало окно «Сжатие видео». Сжатая копия, как и
- * раньше, остаётся в «Сжатых на этом компьютере».
+ * под разрешение — то же, что делало окно «Сжатие видео». Копию на диске не
+ * храним: «Повторить» берёт сжатый файл из задачи, а загруженный ролик — на
+ * сервере.
  *
  * FFmpeg у приложения один: Rust держит один процесс, а прогресс шлёт общим
  * событием. Поэтому сжатия идут по очереди, а отмена останавливает FFmpeg,
  * только если он сейчас занят именно этим файлом.
  */
 
-import { transcoder, type TranscodeResult } from '@/b-components/video-uploader/transcoder'
+import { transcoder } from '@/b-components/video-uploader/transcoder'
 import { selectTargetResolution } from '@/b-components/video-uploader/transcoder/resolution-selector'
 import { getBitrateForResolution } from '@/b-components/video-uploader/utils/constants'
-import { calculateVideoBitrate } from '@/b-components/video-uploader/components/video-info-panel/video-info-panel'
-import { storageManager } from '@/b-components/video-uploader/utils/storage-manager'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { logger } from '@/services/logger'
 
@@ -27,6 +26,12 @@ export interface CompressOptions {
 }
 
 let queue: Promise<unknown> = Promise.resolve()
+
+/** Битрейт в кбит/с по размеру и длительности — когда ffprobe его не знает. */
+function averageBitrate(fileSizeBytes: number, durationSeconds: number): number {
+  if (durationSeconds <= 0) return 0
+  return Math.round((fileSizeBytes * 8) / (durationSeconds * 1000))
+}
 
 /** Есть ли чем сжимать: приложение для компьютера и FFmpeg с ffprobe в системе. */
 export async function compressionAvailable(): Promise<boolean> {
@@ -63,8 +68,7 @@ async function compressNow(
     const metadata = await transcoder.getMetadata(file)
     throwIfAborted(signal)
     const target = selectTargetResolution(metadata.width, metadata.height)
-    const sourceBitrate =
-      metadata.videoBitrate || calculateVideoBitrate(file.size, metadata.duration)
+    const sourceBitrate = metadata.videoBitrate || averageBitrate(file.size, metadata.duration)
     const result = await transcoder.transcode(
       file,
       { videoBitrate: Math.min(getBitrateForResolution(target), sourceBitrate) },
@@ -75,36 +79,9 @@ async function compressNow(
       }
     )
     throwIfAborted(signal)
-    await saveCopy(file, result)
     const base = file.name.replace(/\.[^./\\]{1,8}$/, '') || 'video'
     return new File([result.blob], `${base}.mp4`, { type: result.mimeType || 'video/mp4' })
   } finally {
     signal.removeEventListener('abort', stop)
-  }
-}
-
-/** Сжатая копия — в «Сжатые на этом компьютере». */
-async function saveCopy(file: File, result: TranscodeResult): Promise<void> {
-  try {
-    await storageManager.saveWithCleanup(
-      {
-        id: `video_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-        originalFileName: file.name,
-        originalSize: file.size,
-        transcodedBlob: result.blob,
-        resolution: result.resolution,
-        bitrate: result.videoBitrate,
-        hasAudio: result.hasAudio,
-        duration: result.duration,
-        width: result.width,
-        height: result.height,
-        mimeType: result.mimeType,
-        fps: result.fps,
-      },
-      result.blob.size / (1024 * 1024)
-    )
-  } catch (e) {
-    // Копия — удобство, а не условие загрузки: место кончилось — грузим и так.
-    log.warn('compressed copy not saved', e)
   }
 }

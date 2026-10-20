@@ -1,6 +1,7 @@
 // «Мои видео» как раздел «Контент» студии YouTube: «Загрузить видео» открывает
 // окно загрузки, свои ролики с серверов — с «Создать пост»; не вошли —
-// приглашение войти; на компьютере — сжатые копии с кнопкой «Загрузить».
+// приглашение войти. Сжатых копий нет и на компьютере: загруженный ролик — на
+// сервере, а «Повторить» берёт сжатый файл из задачи.
 
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -14,8 +15,6 @@ const mocks = vi.hoisted(() => ({
   signedIn: true,
   load: vi.fn(),
   openComposer: vi.fn(),
-  getVideoBlob: vi.fn(async () => new Blob(['x'], { type: 'video/mp4' })),
-  localVideos: [] as unknown[],
 }))
 
 vi.mock('@/b-components/video-uploader/utils/environment', () => ({
@@ -55,32 +54,8 @@ vi.mock('./use-server-videos', () => ({
     remove: vi.fn(),
   }),
 }))
-vi.mock('@/b-components/video-uploader/composables/use-video-manager', () => ({
-  useVideoManager: () => ({
-    videos: ref(mocks.localVideos),
-    isLoadingVideos: ref(false),
-    selectedVideo: ref(null),
-    videoUrl: ref(null),
-    infoVideo: ref(null),
-    isInfoModalOpen: ref(false),
-    deleteVideo: ref(null),
-    isDeleteModalOpen: ref(false),
-    loadVideos: vi.fn(),
-    playVideo: vi.fn(),
-    showVideoInfo: vi.fn(),
-    closeVideoInfo: vi.fn(),
-    confirmDelete: vi.fn(),
-    deleteVideoConfirm: vi.fn(),
-    cancelDelete: vi.fn(),
-    downloadVideo: vi.fn(),
-    closePlayer: vi.fn(),
-  }),
-}))
 vi.mock('@/b-components/video-studio/use-open-composer-with-video', () => ({
   useOpenComposerWithVideo: () => mocks.openComposer,
-}))
-vi.mock('@/db/apis/transcoded-video-api', () => ({
-  transcodedVideoAPI: { getVideoBlob: mocks.getVideoBlob },
 }))
 vi.mock('@/blockchain/store/auth-store', () => ({
   useAuthStore: () => ({ getKeyPair: { privateKey: 'k' }, getUserAddress: 'PMe' }),
@@ -110,7 +85,6 @@ describe('MyVideosPage', () => {
     vi.clearAllMocks()
     mocks.desktop = false
     mocks.signedIn = true
-    mocks.localVideos = []
   })
   afterEach(() => {
     wrapper?.unmount()
@@ -143,33 +117,16 @@ describe('MyVideosPage', () => {
     })
   })
 
-  it('«Загрузить видео» открывает окно загрузки; в вебе сжатых копий нет', async () => {
+  it('«Загрузить видео» открывает окно загрузки', async () => {
     await mountPage()
     await button('Загрузить видео')!.trigger('click')
     expect(useVideoUploadsStore().dialogOpen).toBe(true)
-    expect(wrapper!.text()).not.toContain('Сжатые на этом компьютере')
   })
 
-  it('на компьютере сжатую копию можно загрузить на видеосервер — уже без сжатия', async () => {
+  it('на компьютере только ролики на сервере — без сжатых копий', async () => {
     mocks.desktop = true
-    mocks.localVideos = [
-      {
-        id: 'video_1',
-        originalFileName: 'Отпуск.mov',
-        resolution: '720p',
-        mimeType: 'video/mp4',
-      },
-    ]
     await mountPage()
-    expect(wrapper!.text()).toContain('Сжатые на этом компьютере')
-    const store = useVideoUploadsStore()
-    const start = vi.spyOn(store, 'start').mockReturnValue('job1')
-    await wrapper!.find('button[aria-label="Загрузить на видеосервер"]').trigger('click')
-    await flushPromises()
-    expect(mocks.getVideoBlob).toHaveBeenCalledWith('video_1')
-    const [file, options] = start.mock.calls[0]!
-    expect((file as File).name).toBe('Отпуск.mp4')
-    expect(options).toEqual({ compress: false })
-    expect(store.dialogOpen).toBe(true)
+    expect(wrapper!.text()).toContain('На видеосервере')
+    expect(wrapper!.findAll('section')).toHaveLength(1)
   })
 })

@@ -9,12 +9,7 @@ import { db, withDb } from '../database'
  * заново, — а аккаунты, ключи, настройки, избранное и неотправленные оценки
  * не трогаются.
  */
-const CACHE_TABLES = [
-  'transcodedVideos',
-  'videoProgress',
-  'decryptedMessages',
-  'notifications',
-] as const
+const CACHE_TABLES = ['videoProgress', 'decryptedMessages', 'notifications'] as const
 
 export interface CacheClearResult {
   /** Сколько записей удалено суммарно. */

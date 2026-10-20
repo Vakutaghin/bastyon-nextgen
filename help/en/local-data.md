@@ -17,12 +17,12 @@ Everything published is stored on the network. On the device the app keeps only 
 - **Search history.**
 - **Decrypted messages** — so that conversations are not decrypted again every time you open them.
 - **Notifications** that have already arrived.
-- **Transcoded videos** and the places where you stopped watching.
+- **The places where you stopped watching** videos.
 - In the desktop app also the [Tor](tor.md) and [IPFS](ipfs-module.md) programs, the [voice input](voice-input.md) models and your [files in IPFS](my-files.md).
 
 ## Clearing the cache
 
-**“Settings”** → the **“System”** tab → **“Clear cache”**. This removes transcoded videos, viewing positions, decrypted messages and saved notifications — the app loads all of that again later. Accounts, keys, settings and favorites stay.
+**“Settings”** → the **“System”** tab → **“Clear cache”**. This removes viewing positions, decrypted messages and saved notifications — the app loads all of that again later. Accounts, keys, settings and favorites stay.
 
 ## Private windows and blocked storage
 

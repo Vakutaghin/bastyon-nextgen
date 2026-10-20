@@ -1,6 +1,6 @@
 <template>
-  <!-- «Мои видео» — как раздел «Контент» творческой студии YouTube: загрузка,
-       свои ролики на видеосерверах и (на компьютере) сжатые копии. -->
+  <!-- «Мои видео» — как раздел «Контент» творческой студии YouTube: загрузка
+       и свои ролики на видеосерверах. -->
   <SC_MyVideosWork>
     <SC_MyVideosPage>
       <SC_Header>
@@ -63,44 +63,13 @@
             </SC_Card>
           </SC_Grid>
         </SC_Section>
-
-        <SC_Section v-if="desktop">
-          <VideoList
-            :videos="local.videos.value"
-            :loading="local.isLoadingVideos.value"
-            :title="t('videoStudio.local')"
-            :empty-text="t('videoStudio.localEmpty')"
-            can-upload
-            @play="local.playVideo"
-            @info="local.showVideoInfo"
-            @delete="local.confirmDelete"
-            @download="local.downloadVideo"
-            @upload="uploadLocal"
-          />
-          <VideoPlayerModal
-            :video="local.selectedVideo.value"
-            :video-url="local.videoUrl.value"
-            @close="local.closePlayer"
-          />
-          <VideoInfoModal
-            :open="local.isInfoModalOpen.value"
-            :video="local.infoVideo.value"
-            @close="local.closeVideoInfo"
-          />
-          <DeleteConfirmModal
-            :open="local.isDeleteModalOpen.value"
-            :video="local.deleteVideo.value"
-            @confirm="local.deleteVideoConfirm"
-            @cancel="local.cancelDelete"
-          />
-        </SC_Section>
       </template>
     </SC_MyVideosPage>
   </SC_MyVideosWork>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button, Popconfirm, Spin } from 'ant-design-vue'
 
@@ -109,15 +78,7 @@ import { appToast } from '@/b-components/app-toast'
 import { useModalStore } from '@/stores/modal-store'
 import { useVideoUploadsStore } from '@/stores/video-uploads-store'
 import { useOpenComposerWithVideo } from '@/b-components/video-studio/use-open-composer-with-video'
-import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'
-import { useVideoManager } from '@/b-components/video-uploader/composables/use-video-manager'
-import VideoList from '@/b-components/video-uploader/components/video-list/video-list.vue'
-import VideoPlayerModal from '@/b-components/video-uploader/components/video-player-modal/video-player-modal.vue'
-import VideoInfoModal from '@/b-components/video-uploader/components/video-info-modal/video-info-modal.vue'
-import DeleteConfirmModal from '@/b-components/video-uploader/components/delete-confirm-modal/delete-confirm-modal.vue'
-import { transcodedVideoAPI } from '@/db/apis/transcoded-video-api'
-import type { TranscodedVideo } from '@/db/types'
 import { useServerVideos, type ServerVideo } from './use-server-videos'
 import {
   SC_MyVideosWork,
@@ -143,25 +104,12 @@ const uploads = useVideoUploadsStore()
 const openComposer = useOpenComposerWithVideo()
 const { videos, loading, loaded, failedHosts, signedIn, load, remove } = useServerVideos()
 
-/** Сжатые копии — только на компьютере: сжимает системный FFmpeg. */
-const desktop = isTauri()
-const local = useVideoManager()
+onMounted(() => void load())
 
-onMounted(() => {
-  void load()
-  if (desktop) void local.loadVideos()
-})
-onBeforeUnmount(() => local.closePlayer())
-
-// Загрузка закончилась — ролик уже на сервере; сжатие закончилось — копия
-// уже в «Сжатых».
+// Загрузка закончилась — ролик уже на сервере.
 const doneCount = computed(() => uploads.jobs.filter((job) => job.status === 'done').length)
 watch(doneCount, (now, before) => {
   if (now > before) void load()
-})
-const compressing = computed(() => uploads.jobs.some((job) => job.status === 'compressing'))
-watch(compressing, (now, before) => {
-  if (desktop && before && !now) void local.loadVideos()
 })
 
 watch(signedIn, (yes) => {
@@ -179,15 +127,5 @@ async function removeVideo(video: ServerVideo): Promise<void> {
   } catch {
     appToast.error({ message: t('videoStudio.deleteFailed') })
   }
-}
-
-/** Сжатую копию — на видеосервер, уже без сжатия. */
-async function uploadLocal(video: TranscodedVideo): Promise<void> {
-  const blob = await transcodedVideoAPI.getVideoBlob(video.id)
-  if (!blob) return
-  const base = video.originalFileName.replace(/\.[^./\\]{1,8}$/, '') || video.id
-  const file = new File([blob], `${base}.mp4`, { type: video.mimeType || 'video/mp4' })
-  const id = uploads.start(file, { compress: false })
-  if (id) uploads.openDialog(id)
 }
 </script>
