@@ -2674,9 +2674,8 @@ export default {
     pick: 'Select file',
     compress: 'Compress on this computer first',
     compressHint:
-      'FFmpeg re-encodes the video to MP4 at up to 1080p: the file gets smaller and uploads faster. For files up to {max}.',
+      'FFmpeg re-encodes the video to MP4 at up to 1080p: the file gets smaller and uploads faster. If compression would barely help, the video is uploaded as is.',
     compressNeedsFfmpeg: 'You can compress videos before uploading if FFmpeg is installed.',
-    compressTooLarge: 'The file is larger than {max}, so it is uploaded without compression.',
     backgroundHint: 'You can minimize this window and keep using the app — the upload continues.',
     titleLabel: 'Title',
     titleHint: 'It becomes the post title. The server gets it when the upload finishes.',
@@ -2716,6 +2715,36 @@ export default {
     cancel: 'Cancel',
     deleted: 'Video deleted',
     deleteFailed: 'Could not delete the video',
+    module: {
+      title: 'Video compression module',
+      description:
+        'FFmpeg to compress videos before uploading: clips get smaller and upload faster. You only need it if you upload videos.',
+      offer:
+        'The compression module can compress videos before uploading. It is downloaded once: {size}.',
+      download: 'Download the compression module',
+      downloadSized: 'Download ({size})',
+      downloading: 'Downloading the compression module: {percent}',
+      downloadingShort: 'Downloading: {percent}%',
+      cancel: 'Cancel',
+      remove: 'Remove',
+      removeTitle: 'Remove the compression module?',
+      removeContent:
+        'Videos will be uploaded without compression. You can download the module again.',
+      statusInstalled: 'Installed',
+      statusSystem: 'Using the FFmpeg installed on the system',
+      statusNone: 'Not installed',
+      unsupported: 'Not available for this system',
+      errTor: 'Tor is still connecting — you can download the module once it is ready.',
+      errDownload: 'Could not download the compression module. Check the connection and try again.',
+      errHash: 'The downloaded file did not match, so the module was not installed. Try again.',
+      errInstall:
+        'Could not install the compression module: no disk space or no access to the app folder.',
+    },
+    skipped: {
+      small: 'Not compressed: the video is already compact, uploading it as is.',
+      long: 'The video is too long to compress in the app — uploading it as is.',
+      failed: 'Compression failed — uploading the video as is.',
+    },
   },
   paidSubscriptions: {
     title: 'Paid subscriptions',

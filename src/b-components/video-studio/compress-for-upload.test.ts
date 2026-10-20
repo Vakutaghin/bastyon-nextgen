@@ -1,5 +1,7 @@
 // Сжатие перед загрузкой: FFmpeg у приложения один, поэтому сжатия идут по
 // очереди, а отмена гасит FFmpeg, только если он занят именно этим файлом.
+// Видео, которое сжимать не стоит, уходит как есть и очереди не ждёт; FFmpeg
+// не справился — тоже как есть.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   getMetadata: vi.fn(),
   transcode: vi.fn(),
   destroy: vi.fn(),
+  probe: vi.fn(),
+  plan: vi.fn(),
 }))
 
 vi.mock('@/b-components/video-uploader/transcoder', () => ({
@@ -14,9 +18,10 @@ vi.mock('@/b-components/video-uploader/transcoder', () => ({
     getMetadata: mocks.getMetadata,
     transcode: mocks.transcode,
     destroy: mocks.destroy,
-    checkFfmpegAvailable: vi.fn(),
   },
 }))
+
+vi.mock('./compression-plan', () => ({ probeVideo: mocks.probe, planCompression: mocks.plan }))
 
 import { compressForUpload } from './compress-for-upload'
 
@@ -54,7 +59,10 @@ const options = (controller = new AbortController()) => ({
 describe('compressForUpload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    for (const mock of [mocks.transcode, mocks.probe, mocks.plan]) mock.mockReset()
     mocks.getMetadata.mockResolvedValue(META)
+    mocks.probe.mockResolvedValue(META)
+    mocks.plan.mockReturnValue('compress')
   })
 
   it('сжатия идут по очереди: второе начинается, когда закончилось первое', async () => {
@@ -72,11 +80,11 @@ describe('compressForUpload', () => {
     expect(second.onProgress).not.toHaveBeenCalled()
 
     runs[0]!.finish()
-    expect((await a).name).toBe('a.mp4')
+    expect((await a).file.name).toBe('a.mp4')
     await vi.waitFor(() => expect(runs).toHaveLength(2))
     expect(second.onStart).toHaveBeenCalledTimes(1)
     runs[1]!.finish()
-    expect((await b).name).toBe('b.mp4')
+    expect((await b).file.name).toBe('b.mp4')
   })
 
   it('отмена видео в очереди не трогает FFmpeg чужого видео', async () => {
@@ -89,7 +97,7 @@ describe('compressForUpload', () => {
     queued.abort()
     expect(mocks.destroy).not.toHaveBeenCalled()
     runs[0]!.finish()
-    expect((await a).name).toBe('a.mp4')
+    expect((await a).file.name).toBe('a.mp4')
     await expect(b).rejects.toMatchObject({ name: 'AbortError' })
     expect(runs).toHaveLength(1)
   })
@@ -107,7 +115,7 @@ describe('compressForUpload', () => {
     await expect(a).rejects.toMatchObject({ name: 'AbortError' })
     await vi.waitFor(() => expect(runs).toHaveLength(2))
     runs[1]!.finish()
-    expect((await b).name).toBe('b.mp4')
+    expect((await b).file.name).toBe('b.mp4')
   })
 
   it('отменили до запуска FFmpeg — его гасит первый же отклик прогресса', async () => {
@@ -124,5 +132,37 @@ describe('compressForUpload', () => {
     expect(opts.onProgress).not.toHaveBeenCalled()
     runs[0]!.finish()
     await expect(a).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('сжимать не стоит — исходный файл сразу, без FFmpeg и без очереди', async () => {
+    const runs = heldTranscodes()
+    const busy = compressForUpload(file('long.mov'), options())
+    await vi.waitFor(() => expect(runs).toHaveLength(1))
+
+    mocks.plan.mockReturnValueOnce('small')
+    const small = file('small.mp4')
+    const outcome = await compressForUpload(small, options())
+    expect(outcome).toEqual({ file: small, skipped: 'small' })
+    expect(runs).toHaveLength(1)
+    runs[0]!.finish()
+    await busy
+  })
+
+  it('формат браузеру незнаком — решает ffprobe', async () => {
+    mocks.probe.mockResolvedValueOnce(null)
+    mocks.plan.mockReturnValueOnce('compress').mockReturnValueOnce('long')
+    const video = file('old.avi')
+    const outcome = await compressForUpload(video, options())
+    expect(mocks.plan).toHaveBeenLastCalledWith(META, video.size)
+    expect(outcome).toEqual({ file: video, skipped: 'long' })
+    expect(mocks.transcode).not.toHaveBeenCalled()
+  })
+
+  it('FFmpeg не справился — загружаем исходный файл', async () => {
+    mocks.transcode.mockRejectedValueOnce(new Error('Invalid data found'))
+    const video = file('broken.mov')
+    const outcome = await compressForUpload(video, options())
+    expect(outcome).toEqual({ file: video, skipped: 'failed' })
+    expect(mocks.transcode).toHaveBeenCalledWith(video, {}, expect.any(Function))
   })
 })

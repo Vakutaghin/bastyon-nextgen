@@ -28,7 +28,6 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::watch;
 
-use crate::tor::state::TorStatus;
 use crate::tor::TorManager;
 
 /// Модель выгружается из памяти после такого простоя.
@@ -240,24 +239,6 @@ struct InstallProgress {
     total: u64,
 }
 
-/// Клиент для скачивания: под Tor — только через Tor (fail-closed, как у
-/// остальных запросов приложения), без Tor — напрямую.
-async fn download_client(tor: &TorManager) -> Result<reqwest::Client, String> {
-    let st = tor.state.read().await;
-    let builder = reqwest::Client::builder()
-        .user_agent("Bastyon/1.0")
-        .connect_timeout(Duration::from_secs(30));
-    let builder = match st.status {
-        TorStatus::Off => builder,
-        TorStatus::Ready => builder.proxy(
-            reqwest::Proxy::all(format!("socks5h://127.0.0.1:{}", st.socks_port))
-                .map_err(|e| format!("download_failed: {e}"))?,
-        ),
-        other => return Err(format!("{}: status={other:?}", crate::tor::TOR_NOT_READY)),
-    };
-    builder.build().map_err(|e| format!("download_failed: {e}"))
-}
-
 /// Скачать модель (и детектор речи, если его ещё нет).
 #[tauri::command]
 pub async fn asr_install(
@@ -278,7 +259,7 @@ pub async fn asr_install(
     *mgr.installing.lock().unwrap_or_else(|p| p.into_inner()) = Some(model.clone());
 
     let result = async {
-        let client = download_client(&tor).await?;
+        let client = crate::fetch::download_client(&tor).await?;
         let need_vad = !mgr.paths.is_installed(&VAD_MODEL);
         let need_model = !mgr.paths.is_installed(spec);
         let total = if need_vad { VAD_MODEL.size } else { 0 } + if need_model { spec.size } else { 0 };

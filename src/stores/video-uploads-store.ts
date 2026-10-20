@@ -23,6 +23,11 @@ import { renameInstanceVideo } from '@/services/peertube/peertube-videos'
 import { buildPeertubeSignature, ensurePeertubeToken } from '@/services/peertube/peertube-auth'
 import { logger } from '@/services/logger'
 import { useModalStore } from './modal-store'
+import type {
+  CompressOptions,
+  CompressOutcome,
+  CompressSkip,
+} from '@/b-components/video-studio/compress-for-upload'
 
 const log = logger.scope('[video-uploads]')
 
@@ -48,6 +53,8 @@ export interface VideoUploadJob {
   compress: boolean
   /** Сжатие ждёт очереди: FFmpeg занят другим видео. */
   waiting: boolean
+  /** Видео ушло без сжатия — почему (null — сжато или сжимать не просили). */
+  compressSkipped: CompressSkip | null
   error: string
   result: VideoUploadResult | null
   startedAt: number
@@ -66,14 +73,7 @@ interface JobRuntime {
 export interface VideoUploadsDeps {
   upload: typeof uploadVideoToPeertube
   rename: typeof renameInstanceVideo
-  compress: (
-    file: File,
-    options: {
-      signal: AbortSignal
-      onProgress: (percent: number) => void
-      onStart?: () => void
-    }
-  ) => Promise<File>
+  compress: (file: File, options: CompressOptions) => Promise<CompressOutcome>
 }
 
 const defaultDeps = (): VideoUploadsDeps => ({
@@ -144,6 +144,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       progress: 0,
       compress: !!options.compress,
       waiting: false,
+      compressSkipped: null,
       error: '',
       result: null,
       startedAt: Date.now(),
@@ -168,7 +169,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
         job.status = 'compressing'
         job.progress = 0
         job.waiting = true
-        file = await deps.compress(rt.file, {
+        const outcome = await deps.compress(rt.file, {
           signal: controller.signal,
           onStart: () => {
             if (rt.controller === controller) job.waiting = false
@@ -177,7 +178,9 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
             if (rt.controller === controller) job.progress = Math.min(100, Math.round(percent))
           },
         })
+        file = outcome.file
         rt.uploadFile = file
+        job.compressSkipped = outcome.skipped
       }
       if (rt.controller !== controller) return
 

@@ -1,4 +1,6 @@
 mod asr;
+mod fetch;
+mod ffmpeg;
 mod ipfs;
 mod main_window;
 mod radio;
@@ -93,9 +95,13 @@ fn find_tool_in_known_dirs(name: &str) -> Option<String> {
     None
 }
 
-/// Имя/путь бинаря для `Command::new`. Сначала PATH (там он и должен быть),
-/// потом известные каталоги пакетных менеджеров.
+/// Имя/путь бинаря для `Command::new`. Сначала модуль сжатия, если его
+/// скачали (сборка с x264, проверенная), потом PATH, потом известные каталоги
+/// пакетных менеджеров.
 fn tool_command(name: &str) -> String {
+    if let Some(path) = ffmpeg::module_binary(name) {
+        return path.to_string_lossy().to_string();
+    }
     if Command::new(name)
         .arg("-version")
         .stdout(Stdio::null())
@@ -229,6 +235,38 @@ async fn save_temp_file(request: tauri::ipc::Request<'_>) -> Result<String, Stri
     Ok(file_path.to_string_lossy().to_string())
 }
 
+/// Дописать кусок к входному временному файлу транскодера: большое видео
+/// идёт кусками, а не целиком в памяти. Тело — сырые байты, путь — заголовок
+/// `x-file-path` (percent-encoded), только файл, созданный `save_temp_file`.
+#[tauri::command]
+async fn append_temp_file(request: tauri::ipc::Request<'_>) -> Result<(), String> {
+    let raw = request
+        .headers()
+        .get("x-file-path")
+        .and_then(|v| v.to_str().ok())
+        .map(percent_decode)
+        .ok_or_else(|| "append_temp_file expects x-file-path".to_string())?;
+    let path = ensure_transcoder_temp_path(&raw)?;
+    let is_input = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .map(|n| n.starts_with(TEMP_INPUT_PREFIX))
+        .unwrap_or(false);
+    if !is_input {
+        return Err("Path is not a transcoder input file".to_string());
+    }
+    let data: &[u8] = match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => bytes.as_slice(),
+        _ => return Err("append_temp_file expects a raw body".to_string()),
+    };
+    let mut file = fs::OpenOptions::new()
+        .append(true)
+        .open(&path)
+        .map_err(|e| format!("Failed to open temp file: {}", e))?;
+    file.write_all(data)
+        .map_err(|e| format!("Failed to write temp file: {}", e))
+}
+
 /// Удалить временный файл (только наш temp-файл транскодера, см. V17)
 #[tauri::command]
 async fn delete_temp_file(file_path: String) -> Result<(), String> {
@@ -297,15 +335,23 @@ struct FfmpegAvailability {
     ffmpeg: bool,
     ffprobe: bool,
     ffmpeg_version: Option<String>,
+    /// Есть кодировщик libx264: без него сжатие падает (у Fedora, например,
+    /// FFmpeg из основного репозитория собран без x264).
+    x264: bool,
 }
 
-/// Проверить, доступны ли системные ffmpeg/ffprobe и вернуть версию ffmpeg.
-/// Вызывается при старте Tauri приложения, чтобы UI мог показать инструкцию по установке
-/// до того, как пользователь выберет файл и упрётся в невнятную ошибку "Failed to execute ffprobe".
+/// Проверить, доступны ли ffmpeg/ffprobe (модуль или системные) и вернуть
+/// версию ffmpeg. Интерфейс по ней решает, предлагать ли скачать модуль, до
+/// того, как человек выберет файл и упрётся в «Failed to execute ffprobe».
 #[tauri::command]
 async fn check_ffmpeg_available() -> Result<FfmpegAvailability, String> {
     let ffmpeg_output = ffmpeg_command().arg("-version").output();
     let ffprobe_output = ffprobe_command().arg("-version").output();
+    let x264 = ffmpeg_command()
+        .args(["-hide_banner", "-encoders"])
+        .output()
+        .map(|out| String::from_utf8_lossy(&out.stdout).contains(" libx264 "))
+        .unwrap_or(false);
 
     let ffmpeg_version = ffmpeg_output.as_ref().ok().and_then(|out| {
         if !out.status.success() {
@@ -320,6 +366,7 @@ async fn check_ffmpeg_available() -> Result<FfmpegAvailability, String> {
         ffmpeg: ffmpeg_output.map(|o| o.status.success()).unwrap_or(false),
         ffprobe: ffprobe_output.map(|o| o.status.success()).unwrap_or(false),
         ffmpeg_version,
+        x264,
     })
 }
 
@@ -894,11 +941,16 @@ pub fn run() {
     )
     .invoke_handler(tauri::generate_handler![
       save_temp_file,
+      append_temp_file,
       delete_temp_file,
       get_video_metadata,
       transcode_video,
       cancel_transcode,
       check_ffmpeg_available,
+      ffmpeg::ffmpeg_module_status,
+      ffmpeg::ffmpeg_module_install,
+      ffmpeg::ffmpeg_module_cancel_install,
+      ffmpeg::ffmpeg_module_remove,
       tor::tor_status,
       tor::tor_start,
       tor::tor_stop,
@@ -1046,6 +1098,9 @@ pub fn run() {
 
       // Голосовой ввод: модели в данных приложения, распознавание на устройстве.
       asr::init(app.handle()).map_err(|e| e.to_string())?;
+
+      // Модуль сжатия видео: FFmpeg, скачанный по просьбе пользователя.
+      ffmpeg::init(app.handle()).map_err(|e| e.to_string())?;
 
       // Радио для mesh-сетей: соединения с LoRa-устройствами.
       radio::init(app.handle())?;

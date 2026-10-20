@@ -2,6 +2,7 @@
 // приложению; сжатие на компьютере — шагом перед загрузкой; отмена, повтор с
 // места обрыва; название, дописанное во время загрузки, уходит на сервер.
 
+import type { CompressOutcome } from '@/b-components/video-studio/compress-for-upload'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -98,7 +99,7 @@ describe('video-uploads-store', () => {
     const compressed = file('Отпуск 2026.mp4', 10)
     const compress = vi.fn(async (_f: File, o: { onProgress: (p: number) => void }) => {
       o.onProgress(50)
-      return compressed
+      return { file: compressed, skipped: null }
     })
     const up = controllableUpload()
     store.setDepsForTests({ upload: up.upload as never, compress, rename: vi.fn() })
@@ -106,12 +107,27 @@ describe('video-uploads-store', () => {
     expect(store.jobs[0]!.status).toBe('compressing')
     await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('uploading'))
     expect(up.upload.mock.calls[0]![0]).toMatchObject({ file: compressed })
+    expect(store.jobs[0]!.compressSkipped).toBeNull()
+  })
+
+  it('сжимать не стоило — грузится исходный файл, причина видна', async () => {
+    const store = useVideoUploadsStore()
+    const original = file('Кот.mp4', 10)
+    const compress = vi.fn(async (f: File) => ({ file: f, skipped: 'small' as const }))
+    const up = controllableUpload()
+    store.setDepsForTests({ upload: up.upload as never, compress, rename: vi.fn() })
+    store.start(original, { compress: true })
+    await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('uploading'))
+    expect(up.upload.mock.calls[0]![0]).toMatchObject({ file: original })
+    expect(store.jobs[0]!.compressSkipped).toBe('small')
   })
 
   it('отмена: загрузка прерывается и пропадает из списка; во время сжатия — сжатие этого видео', async () => {
     const store = useVideoUploadsStore()
     const up = controllableUpload()
-    const compress = vi.fn((_f: File, _o: { signal: AbortSignal }) => new Promise<File>(() => {}))
+    const compress = vi.fn(
+      (_f: File, _o: { signal: AbortSignal }) => new Promise<CompressOutcome>(() => {})
+    )
     store.setDepsForTests({ upload: up.upload as never, compress })
     const uploading = store.start(file())!
     const signal = (up.upload.mock.calls[0]![0] as unknown as { signal: AbortSignal }).signal
@@ -132,7 +148,7 @@ describe('video-uploads-store', () => {
     let begin: () => void = () => {}
     const compress = vi.fn(
       (_f: File, o: { onStart?: () => void }) =>
-        new Promise<File>(() => {
+        new Promise<CompressOutcome>(() => {
           begin = () => o.onStart?.()
         })
     )
@@ -145,7 +161,7 @@ describe('video-uploads-store', () => {
 
   it('сбой — понятная причина; «Повторить» продолжает тем же файлом, без нового сжатия', async () => {
     const store = useVideoUploadsStore()
-    const compress = vi.fn(async () => file('a.mp4', 5))
+    const compress = vi.fn(async () => ({ file: file('a.mp4', 5), skipped: null }))
     const upload = vi
       .fn()
       .mockRejectedValueOnce(new Error('network timeout'))

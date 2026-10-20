@@ -568,6 +568,57 @@ jobs:
             gh release upload "$MIRROR" "kubo-mirror/$name"
           done
 
+  # Зеркало модуля сжатия видео (FFmpeg и ffprobe из релиза
+  # eugeneware/ffmpeg-static) в релизе `ffmpeg-<версия>` этого репозитория.
+  # Приложение пробует зеркало первым, потом исходный релиз
+  # (src-tauri/src/ffmpeg/mod.rs). Подлинность держат размеры и SHA-256 из
+  # src-tauri/src/ffmpeg/ffmpeg.json — их сверяет и эта джоба, и приложение.
+  # Остальное как у tor-mirror: служебная запись на первом коммите, не
+  # «последняя», залитое не перезаливается, падение релиз не держит.
+  ffmpeg-mirror:
+    if: ${{ !inputs.android_only }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Mirror the pinned FFmpeg builds
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Первый коммит репозитория («Start project»).
+          ROOT_COMMIT: a675d4ada4fdb68a71d909ead50539d379478961
+        run: |
+          set -euo pipefail
+          PIN=src-tauri/src/ffmpeg/ffmpeg.json
+          VERSION=$(jq -r .version "$PIN")
+          MIRROR="ffmpeg-$VERSION"
+          if ! gh release view "$MIRROR" >/dev/null 2>&1; then
+            cat > ffmpeg-mirror-notes.md <<NOTES
+          **Служебная запись, а не версия приложения.** Здесь лежат FFmpeg и ffprobe из релиза $VERSION проекта eugeneware/ffmpeg-static — модуль сжатия видео. Bastyon NextGen скачивает их отсюда, когда вы просите скачать модуль сжатия. Перед установкой приложение сверяет каждый файл с размером и контрольной суммой, зашитыми в него (\`src-tauri/src/ffmpeg/ffmpeg.json\`). Скачивать отсюда ничего не нужно — установщики приложения лежат в релизах с номером версии.
+
+          **A service entry, not an app version.** These are the FFmpeg and ffprobe builds from release $VERSION of eugeneware/ffmpeg-static — the video compression module. Bastyon NextGen downloads them from here when you ask it to download the compression module. Before installing, the app checks every file against a size and checksum built into it (\`src-tauri/src/ffmpeg/ffmpeg.json\`). There is nothing to download here — the app installers are in the releases with a version number.
+          NOTES
+            gh release create "$MIRROR" --target "$ROOT_COMMIT" --latest=false \
+              --title "Служебное: FFmpeg $VERSION для приложения (не версия / not an app version)" \
+              --notes-file ffmpeg-mirror-notes.md
+          fi
+          have=$(gh release view "$MIRROR" --json assets -q '.assets[].name')
+          mkdir -p ffmpeg-mirror
+          for name in $(jq -r '.files | keys[]' "$PIN"); do
+            if grep -qxF "$name" <<<"$have"; then
+              echo "$name: already mirrored"
+              continue
+            fi
+            curl -fsSL --retry 3 -o "ffmpeg-mirror/$name" \
+              "https://github.com/eugeneware/ffmpeg-static/releases/download/$VERSION/$name"
+            test "$(stat -c %s "ffmpeg-mirror/$name")" = "$(jq -r --arg n "$name" '.files[$n].size' "$PIN")"
+            echo "$(jq -r --arg n "$name" '.files[$n].sha256' "$PIN")  ffmpeg-mirror/$name" | sha256sum -c -
+            gh release upload "$MIRROR" "ffmpeg-mirror/$name"
+          done
+
   # Последний шаг: latest.json для апдейтера в приложении и публикация
   # черновика. Если хоть одна сборка упала, релиз остаётся черновиком — не
   # «последним» без установщиков. Пересборка одного APK (android_only) идёт по

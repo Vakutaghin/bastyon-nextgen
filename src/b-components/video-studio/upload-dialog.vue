@@ -30,13 +30,43 @@
           @change="onPicked"
         />
       </SC_Drop>
-      <template v-if="canCompress">
-        <Checkbox v-model:checked="compress">{{ t('videoStudio.compress') }}</Checkbox>
-        <SC_Hint>{{ t('videoStudio.compressHint', { max: compressMax }) }}</SC_Hint>
+      <template v-if="desktop">
+        <template v-if="compression.available">
+          <Checkbox v-model:checked="compress">{{ t('videoStudio.compress') }}</Checkbox>
+          <SC_Hint>{{ t('videoStudio.compressHint') }}</SC_Hint>
+        </template>
+        <!-- Сжимать нечем — модуль сжатия скачивается по кнопке: видео грузят не все. -->
+        <SC_Module v-else-if="compression.supported">
+          <SC_Hint>{{ t('videoStudio.module.offer', { size: moduleSize }) }}</SC_Hint>
+          <template v-if="compression.installing">
+            <Progress
+              :percent="compression.percent"
+              :show-info="false"
+              status="active"
+              stroke-color="var(--ui-primary)"
+            />
+            <SC_ModuleRow>
+              <SC_Status role="status">{{
+                t('videoStudio.module.downloading', { percent: percent(compression.percent) })
+              }}</SC_Status>
+              <SC_GhostButton type="button" @click="compression.cancel()">
+                {{ t('videoStudio.module.cancel') }}
+              </SC_GhostButton>
+            </SC_ModuleRow>
+          </template>
+          <SC_ModuleRow v-else>
+            <SC_GhostButton type="button" @click="compression.install()">
+              {{ t('videoStudio.module.download') }}
+            </SC_GhostButton>
+          </SC_ModuleRow>
+          <SC_Status v-if="compression.error" class="error" role="alert">{{
+            compression.error
+          }}</SC_Status>
+        </SC_Module>
+        <SC_Hint v-else-if="compression.available === false">
+          {{ t('videoStudio.compressNeedsFfmpeg') }} {{ getFfmpegMissingInstruction() }}
+        </SC_Hint>
       </template>
-      <SC_Hint v-else-if="desktop && compressChecked">
-        {{ t('videoStudio.compressNeedsFfmpeg') }} {{ getFfmpegMissingInstruction() }}
-      </SC_Hint>
       <SC_Hint>{{ t('videoStudio.backgroundHint') }}</SC_Hint>
     </SC_Body>
 
@@ -63,6 +93,9 @@
       <SC_Status role="status" :class="{ error: job.status === 'error' }">{{
         statusText
       }}</SC_Status>
+      <SC_Hint v-if="job.compressSkipped">{{
+        t(`videoStudio.skipped.${job.compressSkipped}`)
+      }}</SC_Hint>
       <SC_Hint v-if="active">{{ t('videoStudio.backgroundHint') }}</SC_Hint>
 
       <SC_Footer>
@@ -102,12 +135,11 @@ import { Checkbox, Input, Modal, Progress } from 'ant-design-vue'
 
 import { bcp47 } from '@/i18n'
 import { UploadOutlined } from '@/components/icons'
-import { appToast } from '@/b-components/app-toast'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { MAX_VIDEO_SIZE_BYTES } from '@/services/peertube/peertube-validation'
 import { useVideoUploadsStore, type VideoUploadJob } from '@/stores/video-uploads-store'
-import { MAX_COMPRESS_BYTES } from './constants'
+import { useCompressionModuleStore } from '@/stores/compression-module-store'
 import { getFfmpegMissingInstruction } from './ffmpeg-instruction'
 import { useOpenComposerWithVideo } from './use-open-composer-with-video'
 import {
@@ -120,6 +152,8 @@ import {
   SC_Field,
   SC_Status,
   SC_Footer,
+  SC_Module,
+  SC_ModuleRow,
   SC_PrimaryButton,
   SC_GhostButton,
 } from './upload-dialog.styled'
@@ -134,9 +168,8 @@ const active = computed(
 )
 
 const desktop = isTauri()
-const canCompress = ref(false)
-/** FFmpeg уже проверили: до этого подсказку «поставьте FFmpeg» не показываем. */
-const compressChecked = ref(false)
+/** Чем сжимать: модуль сжатия или FFmpeg из системы. */
+const compression = useCompressionModuleStore()
 /** Сжимать по умолчанию: раньше окно на этой кнопке только это и делало. */
 const compress = ref(true)
 const dragging = ref(false)
@@ -144,14 +177,10 @@ const fileInput = ref<HTMLInputElement | null>(null)
 
 // Единицы (КБ/МБ/ГБ) — из словаря текущего языка.
 const maxSize = computed(() => formatFileSize(MAX_VIDEO_SIZE_BYTES))
-const compressMax = computed(() => formatFileSize(MAX_COMPRESS_BYTES))
+const moduleSize = computed(() => formatFileSize(compression.size))
 
-// Модуль сжатия (FFmpeg через Tauri) в вебе не грузится вовсе (N17).
-onMounted(async () => {
-  if (!desktop) return
-  const { compressionAvailable } = await import('./compress-for-upload')
-  canCompress.value = await compressionAvailable()
-  compressChecked.value = true
+onMounted(() => {
+  if (desktop) void compression.refresh()
 })
 
 const percent = (value: number): string =>
@@ -181,12 +210,7 @@ function pick(): void {
 function startWith(file: File | undefined): void {
   if (!file) return
   const video = file.type.startsWith('video/')
-  const wantsCompress = canCompress.value && compress.value && video
-  const fits = file.size <= MAX_COMPRESS_BYTES
-  if (wantsCompress && !fits) {
-    appToast.info({ message: t('videoStudio.compressTooLarge', { max: compressMax.value }) })
-  }
-  const id = store.start(file, { compress: wantsCompress && fits })
+  const id = store.start(file, { compress: !!compression.available && compress.value && video })
   if (id) store.openDialog(id)
 }
 

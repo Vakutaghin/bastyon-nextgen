@@ -2693,9 +2693,8 @@ export default {
     pick: 'Scegli file',
     compress: 'Prima comprimi su questo computer',
     compressHint:
-      'FFmpeg converte il video in MP4 fino a 1080p: il file diventa più leggero e si carica più in fretta. Per file fino a {max}.',
+      'FFmpeg converte il video in MP4 fino a 1080p: il file diventa più leggero e si carica più in fretta. Se la compressione serve a poco, il video viene caricato così com’è.',
     compressNeedsFfmpeg: 'Puoi comprimere i video prima di caricarli se è installato FFmpeg.',
-    compressTooLarge: 'Il file supera {max}, quindi viene caricato senza compressione.',
     backgroundHint:
       'Puoi ridurre questa finestra e continuare a usare l’app: il caricamento prosegue.',
     titleLabel: 'Titolo',
@@ -2737,6 +2736,37 @@ export default {
     cancel: 'Annulla',
     deleted: 'Video eliminato',
     deleteFailed: 'Impossibile eliminare il video',
+    module: {
+      title: 'Modulo di compressione video',
+      description:
+        'FFmpeg per comprimere i video prima del caricamento: i clip diventano più leggeri e si caricano più in fretta. Serve solo se carichi video.',
+      offer:
+        'Il modulo di compressione può comprimere i video prima del caricamento. Si scarica una volta sola: {size}.',
+      download: 'Scarica il modulo di compressione',
+      downloadSized: 'Scarica ({size})',
+      downloading: 'Download del modulo di compressione: {percent}',
+      downloadingShort: 'Download: {percent}%',
+      cancel: 'Annulla',
+      remove: 'Rimuovi',
+      removeTitle: 'Rimuovere il modulo di compressione?',
+      removeContent:
+        'I video verranno caricati senza compressione. Potrai scaricare di nuovo il modulo.',
+      statusInstalled: 'Installato',
+      statusSystem: 'Viene usato l’FFmpeg del sistema',
+      statusNone: 'Non installato',
+      unsupported: 'Non disponibile per questo sistema',
+      errTor: 'Tor si sta ancora connettendo: potrai scaricare il modulo quando sarà pronto.',
+      errDownload:
+        'Impossibile scaricare il modulo di compressione. Controlla la connessione e riprova.',
+      errHash: 'Il file scaricato non corrisponde, il modulo non è stato installato. Riprova.',
+      errInstall:
+        'Impossibile installare il modulo di compressione: spazio su disco esaurito o nessun accesso alla cartella dell’app.',
+    },
+    skipped: {
+      small: 'Nessuna compressione: il video è già compatto e viene caricato così com’è.',
+      long: 'Il video è troppo lungo per essere compresso nell’app: viene caricato così com’è.',
+      failed: 'Compressione non riuscita: il video viene caricato così com’è.',
+    },
   },
   paidSubscriptions: {
     title: 'Abbonamenti a pagamento',

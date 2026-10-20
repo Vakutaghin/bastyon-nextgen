@@ -1,5 +1,5 @@
 ---
-keywords: [video compression, transcoding, FFmpeg, video size, make a video smaller]
+keywords: [video compression, transcoding, FFmpeg, compression module, video size, make a video smaller]
 ---
 
 # Compressing a video
@@ -12,9 +12,16 @@ Video from a phone or a camera often weighs gigabytes. The desktop app can re-en
 
 In the upload window: **“My videos”** → **“Upload video”** → **“Compress on this computer first”**. It is checked by itself when there is something to compress with. Compression is only in the desktop app.
 
-## FFmpeg is needed
+## The compression module
 
-The video is re-encoded by the FFmpeg program, which has to be installed on the system separately: the app uses the one that is installed. If FFmpeg is not found, the window tells you how to install it instead of showing the checkbox:
+The video is re-encoded by the FFmpeg program. Not everyone uploads videos, so it is not built into the app: it is downloaded as a separate module, once, when you need it:
+
+- in the upload window, while there is nothing to compress with, — the **“Download the compression module”** button, with its size next to it and the percentage while it downloads;
+- or **“Settings”** → the **“General”** tab → **“Video compression module”**. You can **“Remove”** the module there too.
+
+The module weighs 36 to 56 MB, depending on the system. The app checks every downloaded file against a size and checksum built into it and does not install a tampered file. If [Tor](tor.md) is on, the module is downloaded through Tor.
+
+If FFmpeg is already installed on the system and can encode H.264 (x264), the module is not needed: the compression checkbox appears right away. On Windows on ARM and other systems without the module, the window tells you how to install FFmpeg yourself:
 
 - macOS — `brew install ffmpeg`;
 - Windows — `winget install ffmpeg` or download it from [ffmpeg.org](https://ffmpeg.org);
@@ -28,7 +35,15 @@ The video is re-encoded by the FFmpeg program, which has to be installed on the 
 
 What you get: an MP4 video (H.264, AAC sound) at the resolution closest to the original — from 144p to 1080p, higher ones are reduced to 1080p — at no more than 30 frames per second and with a bitrate chosen for the resolution, for example about 1.5 Mbit/s for 720p. Such a file plays everywhere.
 
-A file up to 500 MB can be compressed: FFmpeg gets it whole. A larger file is uploaded without compression, and the window says so. Audio is not compressed.
+Audio is not compressed.
+
+## When a video goes without compression
+
+The app compresses a video only when that makes the file noticeably smaller. Otherwise the video is uploaded as is, and the window says why:
+
+- **“Not compressed: the video is already compact, uploading it as is.”** — compression would shrink the file by less than a fifth. This happens with a video that is already compressed, for example by a messenger;
+- **“The video is too long to compress in the app — uploading it as is.”** — the compressed file would be over 1 GB: roughly more than half an hour in 1080p;
+- **“Compression failed — uploading the video as is.”** — FFmpeg could not handle the file. The upload does not suffer from it.
 
 Several videos are compressed one at a time: while FFmpeg is busy, the next one waits as **“Waiting to compress”** and then is compressed and uploaded by itself.
 

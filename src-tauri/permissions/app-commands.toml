@@ -7,11 +7,16 @@ identifier = "app-commands"
 description = "Every command of the app itself, for the app's own UI only."
 permissions = [
   "allow-save-temp-file",
+  "allow-append-temp-file",
   "allow-delete-temp-file",
   "allow-get-video-metadata",
   "allow-transcode-video",
   "allow-cancel-transcode",
   "allow-check-ffmpeg-available",
+  "allow-ffmpeg-module-status",
+  "allow-ffmpeg-module-install",
+  "allow-ffmpeg-module-cancel-install",
+  "allow-ffmpeg-module-remove",
   "allow-tor-status",
   "allow-tor-start",
   "allow-tor-stop",

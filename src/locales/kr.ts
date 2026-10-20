@@ -2648,9 +2648,8 @@ export default {
     pick: '파일 선택',
     compress: '먼저 이 컴퓨터에서 압축',
     compressHint:
-      'FFmpeg가 동영상을 최대 1080p MP4로 다시 인코딩해 파일이 작아지고 더 빨리 업로드됩니다. {max} 이하 파일에 적용됩니다.',
+      'FFmpeg가 동영상을 최대 1080p MP4로 다시 인코딩해 파일이 작아지고 더 빨리 업로드됩니다. 압축 효과가 거의 없으면 그대로 업로드합니다.',
     compressNeedsFfmpeg: 'FFmpeg를 설치하면 업로드 전에 동영상을 압축할 수 있습니다.',
-    compressTooLarge: '파일이 {max}보다 커서 압축하지 않고 업로드합니다.',
     backgroundHint: '창을 최소화하고 앱을 계속 사용할 수 있습니다. 업로드는 계속됩니다.',
     titleLabel: '제목',
     titleHint: '게시물 제목이 됩니다. 업로드가 끝나면 서버에도 반영됩니다.',
@@ -2691,6 +2690,35 @@ export default {
     cancel: '취소',
     deleted: '동영상을 삭제했습니다',
     deleteFailed: '동영상을 삭제하지 못했습니다',
+    module: {
+      title: '동영상 압축 모듈',
+      description:
+        '업로드 전에 동영상을 압축하는 FFmpeg입니다. 파일이 작아지고 더 빨리 업로드됩니다. 동영상을 올리는 경우에만 필요합니다.',
+      offer:
+        '압축 모듈로 업로드 전에 동영상을 압축할 수 있습니다. 한 번만 다운로드하면 됩니다: {size}.',
+      download: '압축 모듈 다운로드',
+      downloadSized: '다운로드 ({size})',
+      downloading: '압축 모듈 다운로드 중: {percent}',
+      downloadingShort: '다운로드 중: {percent}%',
+      cancel: '취소',
+      remove: '삭제',
+      removeTitle: '압축 모듈을 삭제할까요?',
+      removeContent: '동영상이 압축 없이 업로드됩니다. 모듈은 다시 다운로드할 수 있습니다.',
+      statusInstalled: '설치됨',
+      statusSystem: '시스템에 설치된 FFmpeg 사용 중',
+      statusNone: '설치되지 않음',
+      unsupported: '이 시스템에서는 사용할 수 없음',
+      errTor: 'Tor가 아직 연결 중입니다. 준비되면 모듈을 다운로드할 수 있습니다.',
+      errDownload: '압축 모듈을 다운로드하지 못했습니다. 연결을 확인하고 다시 시도하세요.',
+      errHash: '다운로드한 파일이 일치하지 않아 모듈을 설치하지 않았습니다. 다시 시도하세요.',
+      errInstall:
+        '압축 모듈을 설치하지 못했습니다. 디스크 공간이 없거나 앱 폴더에 접근할 수 없습니다.',
+    },
+    skipped: {
+      small: '압축하지 않음: 이미 작은 동영상이라 그대로 업로드합니다.',
+      long: '앱에서 압축하기에는 너무 긴 동영상이라 그대로 업로드합니다.',
+      failed: '압축하지 못해 동영상을 그대로 업로드합니다.',
+    },
   },
   paidSubscriptions: {
     title: '유료 구독',

@@ -2,6 +2,7 @@
 // что загрузилось и окно свёрнуто; строка открывает окно этой загрузки,
 // «Создать пост» — у загруженных; закрыть — законченные уходят.
 
+import type { CompressOutcome } from './compress-for-upload'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -69,7 +70,7 @@ describe('UploadsPanel', () => {
     const starts: (() => void)[] = []
     store.setDepsForTests({
       compress: (_f, o) =>
-        new Promise<File>(() => {
+        new Promise<CompressOutcome>(() => {
           starts.push(() => o.onStart?.())
         }),
     })

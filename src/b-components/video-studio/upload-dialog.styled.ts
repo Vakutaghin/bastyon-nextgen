@@ -68,6 +68,21 @@ export const SC_Status = styled.div`
   }
 `
 
+/** Предложение скачать модуль сжатия. */
+export const SC_Module = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`
+
+export const SC_ModuleRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`
+
 export const SC_Footer = styled.div`
   display: flex;
   flex-wrap: wrap;

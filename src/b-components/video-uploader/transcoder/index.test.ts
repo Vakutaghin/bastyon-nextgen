@@ -13,9 +13,6 @@ vi.mock('./tauri-transcoder', () => ({
     async transcode() {
       return {}
     }
-    async checkFfmpegAvailable() {
-      return { ffmpeg: true, ffprobe: true, ffmpegVersion: 'test' }
-    }
     destroy() {}
   },
 }))

@@ -15,7 +15,7 @@ The section is in the account menu: **“My videos”**. It works like YouTube S
 3. You do not have to wait in the window. **“Minimize”** closes the window, and the upload goes on while you use the app. You see it in the **“Uploads”** panel in the bottom left corner, above the bottom bar on a phone. Click an upload in the panel to open its window again.
 4. When “The video is uploaded” appears, click **“Create post”**. The new post window opens with the video attached and the title filled in. Add text and tags and publish the post.
 
-On a computer the upload window has **“Compress on this computer first”**: the video is made smaller first and then uploaded, see [Compressing a video](video-compression.md).
+On a computer the upload window has **“Compress on this computer first”**: the video is made smaller first and then uploaded. If there is nothing to compress with yet, the window offers **“Download the compression module”**, see [Compressing a video](video-compression.md).
 
 You can also make the post later. The section shows all your clips, newest first: those from your posts — whichever video server they are on — and the unpublished ones on the servers that take uploads now. The button with arrows next to **“Upload video”** is **“Refresh”**. Each clip has:
 

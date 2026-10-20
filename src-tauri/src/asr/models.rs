@@ -2,16 +2,12 @@
 //! детектор речи Silero. Скачиваются по требованию в данные приложения.
 //!
 //! Файлы берутся с Hugging Face по ЗАКРЕПЛЁННОЙ ревизии, а SHA-256 и размер
-//! запинены здесь: подменённый или обрезанный файл не будет принят. Скачивание
-//! идёт в `<файл>.part` и переименовывается только после проверки — модели,
-//! которую нельзя загрузить, на диске не остаётся.
+//! запинены здесь: подменённый или обрезанный файл не будет принят (`fetch`).
 
-use futures_util::StreamExt;
-use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
-use std::time::Duration;
-use tokio::io::AsyncWriteExt;
 use tokio::sync::watch;
+
+use crate::fetch::{fetch_pinned, FetchError, Pinned};
 
 pub struct ModelSpec {
     /// Идентификатор, которым пользуется интерфейс.
@@ -110,23 +106,6 @@ impl AsrPaths {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum DownloadError {
-    #[error("cancelled")]
-    Cancelled,
-    #[error("download_failed: {0}")]
-    Http(String),
-    #[error("download_failed: {0}")]
-    Io(#[from] std::io::Error),
-    #[error("hash_mismatch: {0}")]
-    HashMismatch(String),
-    #[error("size_mismatch: {0}")]
-    SizeMismatch(String),
-}
-
-/// Пауза без единого байта, после которой скачивание считается оборванным.
-const STALL_TIMEOUT: Duration = Duration::from_secs(60);
-
 /// Скачать файл модели с проверкой размера и SHA-256. `on_progress` получает
 /// (скачано, всего) по мере прихода данных.
 pub async fn download(
@@ -134,75 +113,10 @@ pub async fn download(
     spec: &ModelSpec,
     dest: &Path,
     cancel: &mut watch::Receiver<bool>,
-    mut on_progress: impl FnMut(u64, u64),
-) -> Result<(), DownloadError> {
-    if let Some(dir) = dest.parent() {
-        tokio::fs::create_dir_all(dir).await?;
-    }
-    let part = dest.with_extension("part");
-    let result = download_to(client, spec, &part, cancel, &mut on_progress).await;
-    match result {
-        Ok(()) => {
-            tokio::fs::rename(&part, dest).await?;
-            Ok(())
-        }
-        Err(e) => {
-            let _ = tokio::fs::remove_file(&part).await;
-            Err(e)
-        }
-    }
-}
-
-async fn download_to(
-    client: &reqwest::Client,
-    spec: &ModelSpec,
-    part: &Path,
-    cancel: &mut watch::Receiver<bool>,
-    on_progress: &mut impl FnMut(u64, u64),
-) -> Result<(), DownloadError> {
-    let response = client
-        .get(spec.url())
-        .send()
-        .await
-        .and_then(|r| r.error_for_status())
-        .map_err(|e| DownloadError::Http(e.to_string()))?;
-    let mut file = tokio::fs::File::create(part).await?;
-    let mut hasher = Sha256::new();
-    let mut received: u64 = 0;
-    let mut stream = response.bytes_stream();
-    on_progress(0, spec.size);
-    loop {
-        let next = tokio::select! {
-            _ = cancel.changed() => {
-                if *cancel.borrow() { return Err(DownloadError::Cancelled) }
-                continue;
-            }
-            chunk = tokio::time::timeout(STALL_TIMEOUT, stream.next()) => chunk,
-        };
-        let chunk = match next {
-            Err(_) => return Err(DownloadError::Http("stalled".into())),
-            Ok(None) => break,
-            Ok(Some(Err(e))) => return Err(DownloadError::Http(e.to_string())),
-            Ok(Some(Ok(chunk))) => chunk,
-        };
-        received += chunk.len() as u64;
-        if received > spec.size {
-            return Err(DownloadError::SizeMismatch(spec.file.into()));
-        }
-        hasher.update(&chunk);
-        file.write_all(&chunk).await?;
-        on_progress(received, spec.size);
-    }
-    file.flush().await?;
-    drop(file);
-    if received != spec.size {
-        return Err(DownloadError::SizeMismatch(spec.file.into()));
-    }
-    let actual = hex::encode(hasher.finalize());
-    if actual != spec.sha256 {
-        return Err(DownloadError::HashMismatch(spec.file.into()));
-    }
-    Ok(())
+    on_progress: impl FnMut(u64, u64),
+) -> Result<(), FetchError> {
+    let pin = Pinned { name: spec.file, sha256: spec.sha256, size: spec.size };
+    fetch_pinned(client, &spec.url(), &pin, dest, cancel, on_progress).await
 }
 
 #[cfg(test)]

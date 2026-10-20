@@ -6,11 +6,16 @@
 // любую страницу в нём. Списки сверяет тест `acl_tests` в src/lib.rs.
 const COMMANDS: &[&str] = &[
   "save_temp_file",
+  "append_temp_file",
   "delete_temp_file",
   "get_video_metadata",
   "transcode_video",
   "cancel_transcode",
   "check_ffmpeg_available",
+  "ffmpeg_module_status",
+  "ffmpeg_module_install",
+  "ffmpeg_module_cancel_install",
+  "ffmpeg_module_remove",
   "tor_status",
   "tor_start",
   "tor_stop",

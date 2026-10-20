@@ -2717,9 +2717,8 @@ export default {
     pick: 'Choisir un fichier',
     compress: 'Compresser d’abord sur cet ordinateur',
     compressHint:
-      'FFmpeg réencode la vidéo en MP4 jusqu’à 1080p : le fichier devient plus léger et s’envoie plus vite. Pour les fichiers jusqu’à {max}.',
+      'FFmpeg réencode la vidéo en MP4 jusqu’à 1080p : le fichier devient plus léger et s’envoie plus vite. Si la compression n’apporte presque rien, la vidéo est envoyée telle quelle.',
     compressNeedsFfmpeg: 'Vous pouvez compresser les vidéos avant l’envoi si FFmpeg est installé.',
-    compressTooLarge: 'Le fichier dépasse {max} : il est envoyé sans compression.',
     backgroundHint:
       'Vous pouvez réduire cette fenêtre et continuer à utiliser l’application : l’envoi continue.',
     titleLabel: 'Titre',
@@ -2762,6 +2761,39 @@ export default {
     cancel: 'Annuler',
     deleted: 'Vidéo supprimée',
     deleteFailed: 'Impossible de supprimer la vidéo',
+    module: {
+      title: 'Module de compression vidéo',
+      description:
+        'FFmpeg pour compresser les vidéos avant l’envoi : les clips sont plus légers et s’envoient plus vite. Utile seulement si vous envoyez des vidéos.',
+      offer:
+        'Le module de compression peut compresser les vidéos avant l’envoi. Il se télécharge une seule fois : {size}.',
+      download: 'Télécharger le module de compression',
+      downloadSized: 'Télécharger ({size})',
+      downloading: 'Téléchargement du module de compression : {percent}',
+      downloadingShort: 'Téléchargement : {percent} %',
+      cancel: 'Annuler',
+      remove: 'Supprimer',
+      removeTitle: 'Supprimer le module de compression ?',
+      removeContent:
+        'Les vidéos seront envoyées sans compression. Vous pourrez retélécharger le module.',
+      statusInstalled: 'Installé',
+      statusSystem: 'FFmpeg du système utilisé',
+      statusNone: 'Non installé',
+      unsupported: 'Indisponible pour ce système',
+      errTor:
+        'Tor est encore en cours de connexion : vous pourrez télécharger le module quand il sera prêt.',
+      errDownload:
+        'Impossible de télécharger le module de compression. Vérifiez la connexion et réessayez.',
+      errHash:
+        'Le fichier téléchargé ne correspond pas : le module n’a pas été installé. Réessayez.',
+      errInstall:
+        'Impossible d’installer le module de compression : pas d’espace disque ou pas d’accès au dossier de l’application.',
+    },
+    skipped: {
+      small: 'Pas de compression : la vidéo est déjà compacte, elle est envoyée telle quelle.',
+      long: 'La vidéo est trop longue pour être compressée dans l’application : elle est envoyée telle quelle.',
+      failed: 'La compression a échoué : la vidéo est envoyée telle quelle.',
+    },
   },
   paidSubscriptions: {
     title: 'Abonnements payants',

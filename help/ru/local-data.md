@@ -19,7 +19,7 @@ code: [src/pages/settings-page/tabs/system-tab.vue, src/db, src/blockchain/stora
 - **Расшифрованные сообщения** — чтобы не расшифровывать переписку заново при каждом открытии.
 - **Уведомления**, которые уже пришли.
 - **Места, где вы остановили просмотр** видео.
-- В приложении для компьютера ещё программы [Tor](tor.md) и [IPFS](ipfs-module.md), модели [голосового ввода](voice-input.md) и ваши [файлы в IPFS](my-files.md).
+- В приложении для компьютера ещё программы [Tor](tor.md) и [IPFS](ipfs-module.md), модели [голосового ввода](voice-input.md), [модуль сжатия видео](video-compression.md) и ваши [файлы в IPFS](my-files.md).
 
 ## Очистить кэш
 

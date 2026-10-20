@@ -2717,10 +2717,9 @@ export default {
     pick: 'Datei auswählen',
     compress: 'Zuerst auf diesem Computer komprimieren',
     compressHint:
-      'FFmpeg wandelt das Video in MP4 mit höchstens 1080p um: Die Datei wird kleiner und lädt schneller hoch. Für Dateien bis {max}.',
+      'FFmpeg wandelt das Video in MP4 mit höchstens 1080p um: Die Datei wird kleiner und lädt schneller hoch. Bringt die Komprimierung kaum etwas, wird das Video unverändert hochgeladen.',
     compressNeedsFfmpeg:
       'Videos lassen sich vor dem Hochladen komprimieren, wenn FFmpeg installiert ist.',
-    compressTooLarge: 'Die Datei ist größer als {max} und wird ohne Komprimierung hochgeladen.',
     backgroundHint:
       'Sie können das Fenster minimieren und die App weiter nutzen – der Upload läuft weiter.',
     titleLabel: 'Titel',
@@ -2763,6 +2762,39 @@ export default {
     cancel: 'Abbrechen',
     deleted: 'Video gelöscht',
     deleteFailed: 'Video konnte nicht gelöscht werden',
+    module: {
+      title: 'Modul zur Videokomprimierung',
+      description:
+        'FFmpeg komprimiert Videos vor dem Hochladen: Clips werden kleiner und laden schneller hoch. Nur nötig, wenn Sie Videos hochladen.',
+      offer:
+        'Das Komprimierungsmodul kann Videos vor dem Hochladen komprimieren. Es wird einmal heruntergeladen: {size}.',
+      download: 'Komprimierungsmodul herunterladen',
+      downloadSized: 'Herunterladen ({size})',
+      downloading: 'Komprimierungsmodul wird heruntergeladen: {percent}',
+      downloadingShort: 'Wird heruntergeladen: {percent} %',
+      cancel: 'Abbrechen',
+      remove: 'Entfernen',
+      removeTitle: 'Komprimierungsmodul entfernen?',
+      removeContent:
+        'Videos werden dann ohne Komprimierung hochgeladen. Sie können das Modul erneut herunterladen.',
+      statusInstalled: 'Installiert',
+      statusSystem: 'FFmpeg aus dem System wird verwendet',
+      statusNone: 'Nicht installiert',
+      unsupported: 'Für dieses System nicht verfügbar',
+      errTor:
+        'Tor verbindet sich noch – Sie können das Modul herunterladen, sobald Tor bereit ist.',
+      errDownload:
+        'Das Komprimierungsmodul konnte nicht heruntergeladen werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.',
+      errHash:
+        'Die heruntergeladene Datei stimmte nicht überein, das Modul wurde nicht installiert. Versuchen Sie es erneut.',
+      errInstall:
+        'Das Komprimierungsmodul konnte nicht installiert werden: kein Speicherplatz oder kein Zugriff auf den App-Ordner.',
+    },
+    skipped: {
+      small: 'Nicht komprimiert: Das Video ist bereits kompakt und wird unverändert hochgeladen.',
+      long: 'Das Video ist zu lang für die Komprimierung in der App und wird unverändert hochgeladen.',
+      failed: 'Komprimierung fehlgeschlagen – das Video wird unverändert hochgeladen.',
+    },
   },
   paidSubscriptions: {
     title: 'Bezahlte Abonnements',

@@ -23,6 +23,9 @@ import { isTauri } from '../utils/environment'
 import { invoke, convertFileSrc } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 
+/** Кусок, которым файл уходит в Rust. */
+export const TEMP_CHUNK_BYTES = 32 * 1024 * 1024
+
 /**
  * Tauri транскодер
  * Использует Tauri команды для транскодирования видео через FFmpeg на стороне Rust
@@ -36,35 +39,6 @@ export class TauriTranscoder implements Transcoder {
    */
   isSupported(): boolean {
     return isTauri()
-  }
-
-  /**
-   * Проверить, установлены ли системные ffmpeg/ffprobe.
-   * Запускается один раз при инициализации UI uploader'а, чтобы показать инструкцию
-   * по установке ДО того, как пользователь упрётся в "Failed to execute ffprobe".
-   */
-  async checkFfmpegAvailable(): Promise<{
-    ffmpeg: boolean
-    ffprobe: boolean
-    ffmpegVersion: string | null
-  }> {
-    if (!this.isSupported()) {
-      return { ffmpeg: false, ffprobe: false, ffmpegVersion: null }
-    }
-    try {
-      const result = await invoke<{
-        ffmpeg: boolean
-        ffprobe: boolean
-        ffmpeg_version: string | null
-      }>('check_ffmpeg_available')
-      return {
-        ffmpeg: result.ffmpeg,
-        ffprobe: result.ffprobe,
-        ffmpegVersion: result.ffmpeg_version,
-      }
-    } catch {
-      return { ffmpeg: false, ffprobe: false, ffmpegVersion: null }
-    }
   }
 
   /**
@@ -249,21 +223,28 @@ export class TauriTranscoder implements Transcoder {
   }
 
   /**
-   * Сохранить файл во временную директорию через Tauri
-   * Использует Web Worker для чтения больших файлов, чтобы не блокировать UI
+   * Сохранить файл во временную директорию через Tauri — кусками: в памяти
+   * не больше одного куска, а не весь файл (видео с телефона — гигабайты).
    */
   private async saveFileToTemp(file: File): Promise<string> {
+    let path: string | null = null
     try {
       // Сырое тело IPC вместо JSON-массива чисел (V37): `number[]` стоил
-      // 8–10× памяти файла, а на файлах больше 100 МБ конвертация падала с
-      // RangeError — то есть при лимите UI в 500 МБ транскод был сломан
-      // детерминированно. Имя файла едет заголовком (там только ASCII,
-      // поэтому percent-encoding).
-      const bytes = new Uint8Array(await file.arrayBuffer())
-      return await invoke<string>('save_temp_file', bytes, {
+      // 8–10× памяти файла. Имя файла и путь едут заголовками (там только
+      // ASCII, поэтому percent-encoding).
+      const chunk = async (offset: number) =>
+        new Uint8Array(await file.slice(offset, offset + TEMP_CHUNK_BYTES).arrayBuffer())
+      path = await invoke<string>('save_temp_file', await chunk(0), {
         headers: { 'x-file-name': encodeURIComponent(file.name) },
       })
+      for (let offset = TEMP_CHUNK_BYTES; offset < file.size; offset += TEMP_CHUNK_BYTES) {
+        await invoke('append_temp_file', await chunk(offset), {
+          headers: { 'x-file-path': encodeURIComponent(path) },
+        })
+      }
+      return path
     } catch (error) {
+      if (path) invoke('delete_temp_file', { filePath: path }).catch(() => {})
       throw new TranscodeError('Failed to save file to temp', 'FILE_SAVE_ERROR', error as Error)
     }
   }

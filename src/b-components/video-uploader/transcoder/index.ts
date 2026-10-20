@@ -117,22 +117,6 @@ class UniversalTranscoder implements Transcoder {
   }
 
   /**
-   * Проверить, доступен ли системный ffmpeg в Tauri.
-   * Вне Tauri всегда `{ ffmpeg: false }`.
-   */
-  async checkFfmpegAvailable(): Promise<{
-    ffmpeg: boolean
-    ffprobe: boolean
-    ffmpegVersion: string | null
-  }> {
-    await this.ensureInitialized()
-    if (this.transcoder instanceof TauriTranscoder) {
-      return this.transcoder.checkFfmpegAvailable()
-    }
-    return { ffmpeg: false, ffprobe: false, ffmpegVersion: null }
-  }
-
-  /**
    * Получить информацию о текущем транскодере.
    * `method`: 'tauri' (нативный ffmpeg) | 'none' (не поддерживается).
    */

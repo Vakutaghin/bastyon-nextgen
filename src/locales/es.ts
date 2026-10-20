@@ -2706,9 +2706,8 @@ export default {
     pick: 'Elegir archivo',
     compress: 'Comprimir primero en este ordenador',
     compressHint:
-      'FFmpeg convierte el vídeo a MP4 de hasta 1080p: el archivo pesa menos y se sube más rápido. Para archivos de hasta {max}.',
+      'FFmpeg convierte el vídeo a MP4 de hasta 1080p: el archivo pesa menos y se sube más rápido. Si la compresión apenas ayuda, el vídeo se sube tal cual.',
     compressNeedsFfmpeg: 'Puedes comprimir vídeos antes de subirlos si tienes FFmpeg instalado.',
-    compressTooLarge: 'El archivo supera {max} y se sube sin comprimir.',
     backgroundHint:
       'Puedes minimizar esta ventana y seguir usando la aplicación: la subida continúa.',
     titleLabel: 'Título',
@@ -2750,6 +2749,36 @@ export default {
     cancel: 'Cancelar',
     deleted: 'Vídeo eliminado',
     deleteFailed: 'No se pudo eliminar el vídeo',
+    module: {
+      title: 'Módulo de compresión de vídeo',
+      description:
+        'FFmpeg para comprimir vídeos antes de subirlos: los clips pesan menos y se suben más rápido. Solo lo necesitas si subes vídeos.',
+      offer:
+        'El módulo de compresión puede comprimir los vídeos antes de subirlos. Se descarga una sola vez: {size}.',
+      download: 'Descargar el módulo de compresión',
+      downloadSized: 'Descargar ({size})',
+      downloading: 'Descargando el módulo de compresión: {percent}',
+      downloadingShort: 'Descargando: {percent} %',
+      cancel: 'Cancelar',
+      remove: 'Eliminar',
+      removeTitle: '¿Eliminar el módulo de compresión?',
+      removeContent: 'Los vídeos se subirán sin comprimir. Puedes volver a descargar el módulo.',
+      statusInstalled: 'Instalado',
+      statusSystem: 'Se usa el FFmpeg del sistema',
+      statusNone: 'No instalado',
+      unsupported: 'No disponible para este sistema',
+      errTor: 'Tor aún se está conectando: podrás descargar el módulo cuando esté listo.',
+      errDownload:
+        'No se pudo descargar el módulo de compresión. Comprueba la conexión e inténtalo de nuevo.',
+      errHash: 'El archivo descargado no coincide, el módulo no se instaló. Inténtalo de nuevo.',
+      errInstall:
+        'No se pudo instalar el módulo de compresión: no hay espacio en disco o acceso a la carpeta de la aplicación.',
+    },
+    skipped: {
+      small: 'Sin comprimir: el vídeo ya es compacto y se sube tal cual.',
+      long: 'El vídeo es demasiado largo para comprimirlo en la aplicación: se sube tal cual.',
+      failed: 'No se pudo comprimir: el vídeo se sube tal cual.',
+    },
   },
   paidSubscriptions: {
     title: 'Suscripciones de pago',

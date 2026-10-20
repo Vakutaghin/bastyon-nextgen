@@ -1,7 +1,7 @@
 // Окно загрузки, как в творческой студии YouTube: файл выбран — загрузка уже
 // идёт, окно можно свернуть; по состоянию — «Отменить»/«Свернуть»,
 // «Убрать»/«Повторить», «Готово»/«Создать пост». На компьютере с FFmpeg —
-// «Сначала сжать на этом компьютере».
+// «Сначала сжать на этом компьютере»; без него — скачать модуль сжатия.
 
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -12,15 +12,35 @@ import { i18n, setI18nLocale } from '@/i18n'
 const mocks = vi.hoisted(() => ({
   desktop: false,
   ffmpeg: true,
+  supported: true,
   openComposer: vi.fn(),
   toastInfo: vi.fn(),
+  install: vi.fn(async () => {}),
+  progress: null as ((e: { payload: { received: number; total: number } }) => void) | null,
 }))
 
 vi.mock('@/b-components/video-uploader/utils/environment', () => ({
   isTauri: () => mocks.desktop,
 }))
-vi.mock('./compress-for-upload', () => ({
-  compressionAvailable: async () => mocks.ffmpeg,
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: async (cmd: string) => {
+    switch (cmd) {
+      case 'ffmpeg_module_status':
+        return { supported: mocks.supported, installed: false, size: 38_000_000 }
+      case 'check_ffmpeg_available':
+        return { ffmpeg: mocks.ffmpeg, ffprobe: mocks.ffmpeg, x264: mocks.ffmpeg }
+      case 'ffmpeg_module_install':
+        return mocks.install()
+      default:
+        return undefined
+    }
+  },
+}))
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: async (_event: string, cb: typeof mocks.progress) => {
+    mocks.progress = cb
+    return () => {}
+  },
 }))
 vi.mock('./use-open-composer-with-video', () => ({
   useOpenComposerWithVideo: () => mocks.openComposer,
@@ -46,8 +66,15 @@ async function open(): Promise<ReturnType<typeof useVideoUploadsStore>> {
     attachTo: document.body,
     global: { plugins: [i18n], provide: { theme: {} } },
   })
-  await flushPromises()
+  await settle()
   return store
+}
+
+/** Стор модуля сжатия грузит Tauri через import() — ждём и его. */
+async function settle(): Promise<void> {
+  await flushPromises()
+  await vi.dynamicImportSettled()
+  await flushPromises()
 }
 
 function pickFile(name: string, size = 1000, type = 'video/mp4'): void {
@@ -66,6 +93,8 @@ describe('UploadDialog', () => {
     vi.clearAllMocks()
     mocks.desktop = false
     mocks.ffmpeg = true
+    mocks.supported = true
+    mocks.install.mockImplementation(async () => {})
   })
   afterEach(() => {
     wrapper?.unmount()
@@ -82,27 +111,86 @@ describe('UploadDialog', () => {
     expect(start).toHaveBeenCalledWith(expect.any(File), { compress: false })
   })
 
-  it('на компьютере с FFmpeg — сжатие по умолчанию; файл больше 500 МБ грузится без него', async () => {
+  it('на компьютере с FFmpeg — сжатие по умолчанию, и большого видео тоже; звук не сжимаем', async () => {
     mocks.desktop = true
     const store = await open()
     const start = vi.spyOn(store, 'start').mockReturnValue(null)
     expect(text()).toContain('Сначала сжать на этом компьютере')
+    expect(text()).not.toContain('Скачать модуль сжатия')
     pickFile('a.mp4')
     expect(start).toHaveBeenLastCalledWith(expect.any(File), { compress: true })
+    // Файл уходит в FFmpeg кусками — прежнего предела в 500 МБ нет.
     pickFile('big.mp4', 600 * 1024 * 1024)
-    expect(start).toHaveBeenLastCalledWith(expect.any(File), { compress: false })
-    expect(mocks.toastInfo).toHaveBeenCalledTimes(1)
-    // Звук не сжимаем — это пережатие видео.
+    expect(start).toHaveBeenLastCalledWith(expect.any(File), { compress: true })
     pickFile('song.mp3', 1000, 'audio/mpeg')
     expect(start).toHaveBeenLastCalledWith(expect.any(File), { compress: false })
   })
 
-  it('на компьютере без FFmpeg — подсказка, как его поставить', async () => {
+  it('без FFmpeg — модуль сжатия по кнопке: размер, проценты, потом сжатие', async () => {
     mocks.desktop = true
     mocks.ffmpeg = false
+    let finish: () => void = () => {}
+    mocks.install.mockImplementation(() => new Promise<void>((resolve) => (finish = resolve)))
+    const store = await open()
+    const start = vi.spyOn(store, 'start').mockReturnValue(null)
+    expect(text()).not.toContain('Сначала сжать на этом компьютере')
+    expect(text()).toMatch(/Он скачивается один раз: 36 МБ/)
+    pickFile('a.mp4')
+    expect(start).toHaveBeenLastCalledWith(expect.any(File), { compress: false })
+
+    button('Скачать модуль сжатия')!.click()
+    await settle()
+    mocks.progress!({ payload: { received: 15_200_000, total: 38_000_000 } })
+    await flushPromises()
+    expect(text()).toMatch(/Скачиваю модуль сжатия: 40\s?%/)
+
+    mocks.ffmpeg = true
+    finish()
+    await settle()
+    expect(text()).toContain('Сначала сжать на этом компьютере')
+    pickFile('b.mp4')
+    expect(start).toHaveBeenLastCalledWith(expect.any(File), { compress: true })
+  })
+
+  it('модуль не скачался — причина, кнопка остаётся', async () => {
+    mocks.desktop = true
+    mocks.ffmpeg = false
+    mocks.install.mockRejectedValue('download_failed: 503')
+    await open()
+    button('Скачать модуль сжатия')!.click()
+    await settle()
+    expect(text()).toContain('Не удалось скачать модуль сжатия.')
+    expect(button('Скачать модуль сжатия')).toBeTruthy()
+  })
+
+  it('модуля для этой системы нет — подсказка, как поставить FFmpeg', async () => {
+    mocks.desktop = true
+    mocks.ffmpeg = false
+    mocks.supported = false
     await open()
     expect(text()).toContain('если установлен FFmpeg')
-    expect(text()).not.toContain('Сначала сжать на этом компьютере')
+    expect(button('Скачать модуль сжатия')).toBeUndefined()
+  })
+
+  it('сжимать не стали — окно говорит почему', async () => {
+    const store = await open()
+    store.jobs.unshift({
+      id: 'j1',
+      fileName: 'Кот.mp4',
+      size: 1000,
+      title: 'Кот',
+      status: 'uploading',
+      progress: 10,
+      compress: true,
+      waiting: false,
+      compressSkipped: 'small',
+      error: '',
+      result: null,
+      startedAt: 0,
+    })
+    store.openDialog('j1')
+    await flushPromises()
+    expect(text()).toContain('Сжимать не стали: видео и так компактное')
   })
 
   it('идёт загрузка: прогресс, «Свернуть» не останавливает её, «Отменить загрузку» — да', async () => {

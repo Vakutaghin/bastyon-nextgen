@@ -90,6 +90,9 @@
 
   <!-- Голосовой ввод (десктоп): модели распознавания и команды пунктуации. -->
   <VoiceInputSection />
+
+  <!-- Модуль сжатия видео (десктоп): FFmpeg для сжатия перед загрузкой. -->
+  <CompressionModuleSection />
 </template>
 
 <script setup lang="ts">
@@ -112,6 +115,7 @@ import {
 import { useTheme, type ThemeMode } from '@/composables/use-theme'
 import IpfsSection from './ipfs-section.vue'
 import VoiceInputSection from './voice-input-section.vue'
+import CompressionModuleSection from './compression-module-section.vue'
 import {
   SC_SettingsSectionTitle,
   SC_GeneralBlock,
