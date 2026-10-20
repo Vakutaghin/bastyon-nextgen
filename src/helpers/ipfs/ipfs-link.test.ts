@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parseIpfsLink, parseIpfsSecret } from './ipfs-link'
 import { buildIpfsViewerUrl, buildShareLink, buildIpfsSecretLink } from './ipfs-viewer'
-import { parseIpfsFileLink, parseIpfsSize } from './ipfs-link'
+import { parseIpfsFileLink, parseIpfsInput, parseIpfsSize } from './ipfs-link'
 
 describe('parseIpfsLink', () => {
   it('scheme-форма ipfs:// с путём', () => {
@@ -211,5 +211,58 @@ describe('parseIpfsFileLink — сообщение-карточка', () => {
     expect(parseIpfsFileLink('ipns://docs.ipfs.tech')).toBeNull()
     expect(parseIpfsFileLink('https://dweb.link/ipfs/bafyDIR')).toBeNull()
     expect(parseIpfsFileLink('')).toBeNull()
+  })
+})
+
+describe('parseIpfsInput', () => {
+  const CIDV1 = 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+  const CIDV0 = 'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG'
+  const IPNS_KEY = 'k51qzi5uqu5dlvj2baxnqndepeb86cbk3ng7n3i46uzyxzyqj2xjonzllnv0v8'
+
+  it('голый CID и ключ IPNS', () => {
+    expect(parseIpfsInput(` ${CIDV1} `)?.target).toEqual({
+      namespace: 'ipfs',
+      root: CIDV1,
+      path: '',
+    })
+    expect(parseIpfsInput(CIDV0)?.target).toEqual({ namespace: 'ipfs', root: CIDV0, path: '' })
+    expect(parseIpfsInput(IPNS_KEY)?.target).toEqual({
+      namespace: 'ipns',
+      root: IPNS_KEY,
+      path: '',
+    })
+  })
+
+  it('всё, что понимает parseIpfsLink, вместе с ключом и размером приватной ссылки', () => {
+    const link = parseIpfsInput(`ipfs://${CIDV1}/a.pdf#key=c2VjcmV0&name=a.pdf&size=1234`)
+    expect(link?.target).toEqual({ namespace: 'ipfs', root: CIDV1, path: 'a.pdf' })
+    expect(link?.secret).toEqual({ key: 'c2VjcmV0', name: 'a.pdf' })
+    expect(link?.size).toBe(1234)
+    expect(parseIpfsInput(`https://ipfs.io/ipfs/${CIDV0}/x`)?.target.path).toBe('x')
+    expect(parseIpfsInput(`/ipns/${IPNS_KEY}`)?.target.namespace).toBe('ipns')
+  })
+
+  it('адрес шлюза без https://', () => {
+    expect(parseIpfsInput(`ipfs.io/ipfs/${CIDV0}`)?.target.root).toBe(CIDV0)
+    expect(parseIpfsInput(`${CIDV1}.ipfs.dweb.link/cat.jpg`)?.target).toEqual({
+      namespace: 'ipfs',
+      root: CIDV1,
+      path: 'cat.jpg',
+    })
+  })
+
+  it('обычный поиск — не IPFS', () => {
+    for (const text of [
+      '',
+      'котики',
+      'bafy', // слишком короткий для CID
+      `смотрите ipfs://${CIDV1}`, // ссылка посреди текста — это поиск
+      'docs.ipfs.tech/install',
+      'bastyon.com/@user',
+      '/search',
+      'Qm' + '0'.repeat(44), // не base58
+    ]) {
+      expect(parseIpfsInput(text), text).toBeNull()
+    }
   })
 })

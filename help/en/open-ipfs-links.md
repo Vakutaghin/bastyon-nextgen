@@ -8,6 +8,8 @@ What happens when you open an ipfs:// link in the app, in the browser or on a ph
 
 You open an `ipfs://…` link like any other: by clicking it in a post, a comment or a chat.
 
+A link that came from somewhere else can be pasted into the search bar in the header (on a phone, on the search page): it opens right away, without a search. This works for `ipfs://…` and `ipns://…`, a gateway address like `…/ipfs/<CID>` or `<CID>.ipfs.dweb.link`, also without `https://`, and a bare CID. A private link opens together with its key.
+
 ## In the desktop app
 
 The first time, the app asks how to open such links:

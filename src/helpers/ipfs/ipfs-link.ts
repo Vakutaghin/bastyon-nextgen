@@ -157,6 +157,43 @@ export function parseIpfsLink(href: string): IpfsTarget | null {
   return null
 }
 
+/** CIDv0: base58, всегда `Qm` и 46 знаков. */
+const BARE_CIDV0_RE = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/
+/** CIDv1 в base32 (`bafy…`, `bafk…`): содержимое. */
+const BARE_CIDV1_RE = /^b[a-z2-7]{50,}$/
+/** Ключ IPNS в base36 (`k51…`): имя, а не содержимое. */
+const BARE_IPNS_KEY_RE = /^k51[a-z0-9]{50,}$/
+
+/** Ссылка, которую человек вставил или набрал сам. */
+export interface IpfsInput {
+  target: IpfsTarget
+  secret: IpfsSecret | null
+  size: number | null
+}
+
+/**
+ * Строка из поля ввода (строка поиска): всё, что понимает parseIpfsLink, —
+ * `ipfs://…`, `/ipfs/…` на любом шлюзе, `<cid>.ipfs.dweb.link`, — плюс голый
+ * CID или ключ IPNS. Только одна ссылка целиком: текст со ссылкой внутри — это
+ * поиск. null — не IPFS.
+ */
+export function parseIpfsInput(text: string): IpfsInput | null {
+  const raw = (text || '').trim()
+  if (!raw || /\s/.test(raw)) return null
+  if (BARE_CIDV0_RE.test(raw) || BARE_CIDV1_RE.test(raw)) {
+    return { target: { namespace: 'ipfs', root: raw, path: '' }, secret: null, size: null }
+  }
+  if (BARE_IPNS_KEY_RE.test(raw)) {
+    return { target: { namespace: 'ipns', root: raw, path: '' }, secret: null, size: null }
+  }
+  // Адрес шлюза часто копируют без схемы: ipfs.io/ipfs/…, bafy….ipfs.dweb.link.
+  // Путь без хоста годится только /ipfs/… или /ipns/… — это решает parseIpfsLink.
+  const href = /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/|$)/i.test(raw) ? `https://${raw}` : raw
+  const target = parseIpfsLink(href)
+  if (!target) return null
+  return { target, secret: parseIpfsSecret(href), size: parseIpfsSize(href) }
+}
+
 /** Сообщение, которое целиком — ссылка на файл в IPFS: чат рисует её карточкой. */
 export interface IpfsFileLink {
   target: IpfsTarget

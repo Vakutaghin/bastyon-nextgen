@@ -5,6 +5,7 @@
     @focusout="onFocusOut"
     @keydown.esc="close"
     @keyup="onKeyUp"
+    @paste="onPaste"
   >
     <InputSearch
       v-model:value="searchQuery"
@@ -34,6 +35,8 @@ import {
   resolveNameRemote,
 } from '@/services/user-resolver'
 import { parseBastyonInput } from '@/services/bastyon-input-link'
+import { parseIpfsInput, type IpfsInput } from '@/helpers/ipfs/ipfs-link'
+import { openIpfsViewer } from '@/composables/use-ipfs-links'
 import InputSearch from '@/components/input-search/input-search.vue'
 import HeaderSearchDropdown from './header-search-dropdown.vue'
 import { useI18n } from 'vue-i18n'
@@ -135,9 +138,35 @@ function onKeyUp(e: KeyboardEvent): void {
   debouncedQuery.value = sanitizeSearchQuery(searchStore.query)
 }
 
+/** Ссылка IPFS (или голый CID) открывается сразу, а не ищется. */
+function openIpfs(link: IpfsInput): void {
+  close()
+  searchStore.setQuery('')
+  void openIpfsViewer(link.target, link.secret, link.size)
+}
+
+/**
+ * Вставили ссылку IPFS — открываем, не дожидаясь Enter. И раньше, чем поле
+ * обрежет её до SEARCH_MAX_LENGTH: у приватной ссылки длинный ключ после `#`.
+ */
+function onPaste(e: Event): void {
+  const clipboard = (e as Event & { clipboardData?: Pick<DataTransfer, 'getData'> | null })
+    .clipboardData
+  const link = parseIpfsInput(clipboard?.getData('text') ?? '')
+  if (!link) return
+  e.preventDefault()
+  openIpfs(link)
+}
+
 async function onEnter(value: string): Promise<void> {
   const raw = value.trim()
   if (!raw) return
+
+  const ipfs = parseIpfsInput(raw)
+  if (ipfs) {
+    openIpfs(ipfs)
+    return
+  }
 
   // Bastyon-URL — прямая навигация по таргету, как в оригинальном
   // `thislink()` (menu/index.js:827-836). Парсим до резолва ника:
