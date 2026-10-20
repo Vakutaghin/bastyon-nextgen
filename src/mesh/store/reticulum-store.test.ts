@@ -160,6 +160,35 @@ describe('reticulum node', () => {
     }
   })
 
+  it('interface came up before the planned restart — no restart', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    try {
+      h.rns.status.mockResolvedValue({
+        running: true,
+        interfaces: [
+          { name: 'hub:4242', kind: 'tcp', started: false, online: false, rxBytes: 0, txBytes: 0 },
+        ],
+        paths: 0,
+        propagationNode: null,
+      } as never)
+      const rns = useReticulumStore()
+      await rns.start()
+      h.rns.status.mockResolvedValue({
+        running: true,
+        interfaces: [],
+        paths: 0,
+        propagationNode: null,
+      } as never)
+      await rns.refreshStatus()
+      await vi.advanceTimersByTimeAsync(600_000)
+      expect(h.rns.stop).not.toHaveBeenCalled()
+      expect(h.rns.start).toHaveBeenCalledTimes(1)
+      await rns.stop()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('follows the progress of a NomadNet transfer', async () => {
     const rns = useReticulumStore()
     await rns.start()

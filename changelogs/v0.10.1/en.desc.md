@@ -10,3 +10,7 @@ Video uploads finish again, and the list of your clips no longer waits for the s
 ## Desktop
 
 - **A file dropped on the window no longer replaces the app.** A video dragged onto the window outside a place for files opened instead of the app, and only a restart brought it back. Now only the places for files accept them: the video upload window, the “+” tile next to a post’s images, and the chat. Elsewhere the cursor shows you can’t drop there. Text still drags into input fields as before.
+
+## Chatting over radio
+
+- **The Reticulum node no longer restarts for nothing.** If an interface, such as a hub, did not come up at start, the app restarts the node a minute later. The restart used to happen even when the interface had come up on its own, and the connection dropped meanwhile. Now that restart is cancelled.

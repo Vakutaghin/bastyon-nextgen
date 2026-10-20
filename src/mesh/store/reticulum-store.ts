@@ -273,7 +273,10 @@ export const useReticulumStore = defineStore('reticulum', () => {
   /** Перезапустить узел позже, если какой-то интерфейс так и не поднялся. */
   function scheduleRestart(missing: boolean): void {
     if (!missing) {
+      // Всё поднялось — назначенный перезапуск больше не нужен.
       restartStep = 0
+      if (restartTimer) clearTimeout(restartTimer)
+      restartTimer = null
       return
     }
     if (restartTimer) return
