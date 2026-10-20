@@ -1,27 +1,28 @@
 <template>
   <div>
     <SC_Tabs :class="{ collapsed }">
-      <SC_TabsItem
-        v-for="tab in tabsData"
-        :key="tab.id"
-        :active="tab.active && onTabsRoute"
-        :disabled="tab.disabled"
-        type="button"
-        @click="onTabClick(tab)"
-      >
-        <HomeOutlined v-if="tab.icon === 'HomeOutlined'" />
-        <TeamOutlined v-else-if="tab.icon === 'TeamOutlined'" />
-        <PlayCircleOutlined v-else-if="tab.icon === 'PlayCircleOutlined'" />
-        <SoundOutlined v-else-if="tab.icon === 'SoundOutlined'" />
-        <FileTextOutlined v-else-if="tab.icon === 'FileTextOutlined'" />
-        <BookOutlined v-else-if="tab.icon === 'BookOutlined'" />
-        <StarOutlined v-else-if="tab.icon === 'StarOutlined'" />
-        <MessageOutlined v-else-if="tab.icon === 'MessageOutlined'" />
-        <BlockOutlined v-else-if="tab.icon === 'BlockOutlined'" />
-        <HelpBookIcon v-else-if="tab.icon === 'HelpBookIcon'" />
-        <AppstoreOutlined v-else />
-        <SC_TabsLabel v-if="!collapsed">{{ t(tab.labelKey) }}</SC_TabsLabel>
-      </SC_TabsItem>
+      <template v-for="tab in tabsData" :key="tab.id">
+        <SC_TabsDivider v-if="SECTION_STARTS.has(tab.labelKey)" role="separator" />
+        <SC_TabsItem
+          :active="tab.active && onTabsRoute"
+          :disabled="tab.disabled"
+          type="button"
+          @click="onTabClick(tab)"
+        >
+          <HomeOutlined v-if="tab.icon === 'HomeOutlined'" />
+          <TeamOutlined v-else-if="tab.icon === 'TeamOutlined'" />
+          <PlayCircleOutlined v-else-if="tab.icon === 'PlayCircleOutlined'" />
+          <SoundOutlined v-else-if="tab.icon === 'SoundOutlined'" />
+          <FileTextOutlined v-else-if="tab.icon === 'FileTextOutlined'" />
+          <BookOutlined v-else-if="tab.icon === 'BookOutlined'" />
+          <StarOutlined v-else-if="tab.icon === 'StarOutlined'" />
+          <MessageOutlined v-else-if="tab.icon === 'MessageOutlined'" />
+          <BlockOutlined v-else-if="tab.icon === 'BlockOutlined'" />
+          <HelpBookIcon v-else-if="tab.icon === 'HelpBookIcon'" />
+          <AppstoreOutlined v-else />
+          <SC_TabsLabel v-if="!collapsed">{{ t(tab.labelKey) }}</SC_TabsLabel>
+        </SC_TabsItem>
+      </template>
     </SC_Tabs>
 
     <!-- Закреплённые миниаппы (favorites) — управляются через звёздочки в каталоге -->
@@ -50,7 +51,7 @@ import { useFiltersStore } from '@/stores/filters-store'
 import { useAuthStore } from '@/blockchain'
 import { requireAuth } from '@/composables/use-auth-gate'
 import SidebarFavorites from './sidebar-favorites.vue'
-import { SC_Tabs, SC_TabsItem, SC_TabsLabel } from './styled'
+import { SC_Tabs, SC_TabsDivider, SC_TabsItem, SC_TabsLabel } from './styled'
 
 withDefaults(defineProps<{ collapsed?: boolean }>(), { collapsed: false })
 const emit = defineEmits<{ 'tab-changed': [tabId: string | number] }>()
@@ -62,6 +63,9 @@ const router = useRouter()
 const route = useRoute()
 
 const tabsData = computed(() => filtersStore.tabs)
+
+/** Перед «Сервисами» — разделитель: выше разделы ленты, ниже приложения и справка. */
+const SECTION_STARTS = new Set(['sidebarData.tabs.miniApps'])
 
 // Вкладка подсвечена, только пока открыт её раздел. Мобильное меню видно на
 // любой странице, и на кошельке в нём горела «Лента»; на десктопе — на поиске.

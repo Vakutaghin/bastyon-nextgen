@@ -22,6 +22,12 @@ export const SC_Tabs = styled.nav`
   }
 `
 
+export const SC_TabsDivider = styled.div`
+  height: 1px;
+  margin: 6px 0;
+  background: var(--ui-border);
+`
+
 // Пункт навигации как у Nuxt UI (UNavigationMenu, vertical): 14px/500,
 // приглушённый текст; hover — подложка elevated/50 и яркий текст; активный —
 // акцентный текст на подложке elevated, без полоски сбоку.
