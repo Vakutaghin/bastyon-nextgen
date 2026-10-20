@@ -64,7 +64,7 @@ export class PeertubeUploadError extends Error {
 export interface UploadMetadata {
   channelId: number
   name: string
-  /** Служебное имя файла на инстансе; по умолчанию = name. */
+  /** Имя файла для инстанса; по умолчанию — имя самого файла (serverFileName). */
   filename?: string
   /** По умолчанию PUBLIC (1). */
   privacy?: number
@@ -123,6 +123,89 @@ export function parseUploadId(location: string | null | undefined): string | nul
   }
   const m = location.match(/upload_id=([^&]+)/)
   return m?.[1] ? decodeURIComponent(m[1]) : null
+}
+
+/** Расширения, которые принимает PeerTube 4.2 (api/v1/config → video.file.extensions). */
+const SERVER_EXTENSIONS = new Set([
+  '.webm',
+  '.ogv',
+  '.ogg',
+  '.mp4',
+  '.mkv',
+  '.mov',
+  '.qt',
+  '.mqv',
+  '.m4v',
+  '.flv',
+  '.f4v',
+  '.wmv',
+  '.avi',
+  '.3gp',
+  '.3gpp',
+  '.3g2',
+  '.3gpp2',
+  '.nut',
+  '.mts',
+  '.m2ts',
+  '.mpv',
+  '.m2v',
+  '.m1v',
+  '.mpg',
+  '.mpe',
+  '.mpeg',
+  '.vob',
+  '.mxf',
+  '.mp3',
+  '.wma',
+  '.wav',
+  '.flac',
+  '.aac',
+  '.m4a',
+  '.ac3',
+])
+
+/** Расширение по типу файла, когда в имени его нет. */
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
+  'video/quicktime': '.mov',
+  'video/x-matroska': '.mkv',
+  'video/ogg': '.ogv',
+  'video/x-msvideo': '.avi',
+  'video/3gpp': '.3gp',
+  'audio/mpeg': '.mp3',
+  'audio/ogg': '.ogg',
+  'audio/wav': '.wav',
+  'audio/x-wav': '.wav',
+  'audio/flac': '.flac',
+  'audio/aac': '.aac',
+  'audio/mp4': '.m4a',
+  'audio/x-m4a': '.m4a',
+}
+
+/**
+ * Имя файла для инстанса. Расширение ролика PeerTube берёт из него, а не из
+ * содержимого: «Me at the zoo» без «.mp4» сервер принимает, а на последнем
+ * куске падает (пустое расширение не проходит проверку), и загрузка не
+ * завершается. Название видео — отдельное поле.
+ */
+export function serverFileName(file: File): string {
+  const name = file.name.trim() || 'video'
+  const dot = name.lastIndexOf('.')
+  if (dot > 0 && SERVER_EXTENSIONS.has(name.slice(dot).toLowerCase())) return name
+  return name + (EXTENSION_BY_TYPE[file.type.toLowerCase()] ?? '.mp4')
+}
+
+/**
+ * Сбой, после которого ту же загрузку можно продолжить: связь, таймаут,
+ * токен истёк (401 — переавторизуемся), сервер просит подождать (429/503).
+ * После остальных отказов сервер свою загрузку уже не доведёт — следующая
+ * попытка начинается заново.
+ */
+function canResumeAfter(e: unknown): boolean {
+  if (!(e instanceof PeertubeUploadError)) return true
+  if (e.message === CHUNK_TIMEOUT_ERROR) return true
+  return e.status === 401 || e.status === 429 || e.status === 503
 }
 
 /** Стабильный ключ файла без хеширования содержимого (достаточно для resume в сессии). */
@@ -365,7 +448,11 @@ export interface UploadVideoParams {
  * держит истинный host на финале. Кидает PeertubeUploadError (в т.ч. cancelled:true).
  */
 export async function uploadVideoResumable(params: UploadVideoParams): Promise<UploadVideoResult> {
-  const { host, address, accessToken, file, metadata } = params
+  const { host, address, accessToken, file } = params
+  const metadata: UploadMetadata = {
+    ...params.metadata,
+    filename: params.metadata.filename ?? serverFileName(file),
+  }
   const fetchInstance: InstanceFetch =
     params.fetchInstance ?? ((path, init) => peertubeInstanceFetch(host, path, init))
   const now = params.now ?? defaultNow
@@ -415,6 +502,9 @@ export async function uploadVideoResumable(params: UploadVideoParams): Promise<U
   }
 
   let reinits = 0
+  // Загрузка с прошлого раза. Сервер мог её уже не довести (раньше ей
+  // уходило имя без расширения) — тогда начинаем заново, а не падаем снова.
+  let resumed = !!cached
 
   try {
     while (pos < total) {
@@ -423,24 +513,31 @@ export async function uploadVideoResumable(params: UploadVideoParams): Promise<U
       const end = Math.min(pos + chunkSize, total)
       const bytes = await file.slice(pos, end).arrayBuffer()
 
-      const outcome = await putChunkWithRetry(
-        {
-          fetchInstance,
-          accessToken,
-          uploadId,
-          bytes,
-          start: pos,
-          total,
-          host,
-          signal: params.signal,
-        },
-        sleep
-      )
+      let outcome: ChunkOutcome
+      try {
+        outcome = await putChunkWithRetry(
+          {
+            fetchInstance,
+            accessToken,
+            uploadId,
+            bytes,
+            start: pos,
+            total,
+            host,
+            signal: params.signal,
+          },
+          sleep
+        )
+      } catch (e) {
+        if (!resumed || isCancelled(e) || canResumeAfter(e)) throw e
+        outcome = { kind: 'not_found' }
+      }
 
       if (outcome.kind === 'not_found') {
         if (reinits >= MAX_REINITS)
           throw new PeertubeUploadError('peertube_upload_reinit_exhausted')
         reinits += 1
+        resumed = false
         clearResumableState(key)
         uploadId = await init()
         pos = 0
@@ -470,7 +567,9 @@ export async function uploadVideoResumable(params: UploadVideoParams): Promise<U
         ? e
         : new PeertubeUploadError('peertube_upload_cancelled', { cancelled: true })
     }
-    // Не отмена: resume-состояние сохранено на последнем успешном чанке — оставляем для повтора.
+    // Не отмена: после обрыва resume-состояние (последний принятый чанк) ждёт
+    // повтора, после отказа сервера — убираем.
+    if (!canResumeAfter(e)) clearResumableState(key)
     throw e
   }
 }

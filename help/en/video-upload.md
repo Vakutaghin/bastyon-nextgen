@@ -24,6 +24,8 @@ You can also make the post later. Your clips are in the section under **“On th
 - **“Create post”** — a new post with this clip;
 - **“Delete”** — delete the clip from the video server. Posts with it will stop playing it, so the app asks first.
 
+There are several video servers, and they answer at different speeds. Clips from each one appear as soon as it answers. If a server stays silent for more than 15 seconds, **“Not every video server sent its list — some videos may be missing.”** appears; when it answers later, its clips are added on their own.
+
 ## Right in a post
 
 1. In the new post window, click **“Upload video or audio”** and choose a file.

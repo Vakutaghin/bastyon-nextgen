@@ -4,6 +4,7 @@ import {
   initResumableUpload,
   parseUploadId,
   resumableStorageKey,
+  serverFileName,
   type UploadMetadata,
 } from './peertube-upload'
 import type { InstanceFetch } from './peertube-instance'
@@ -50,6 +51,18 @@ describe('parseUploadId', () => {
     expect(parseUploadId('h/api/v1/videos/upload-resumable?upload_id=GHI')).toBe('GHI')
     expect(parseUploadId(null)).toBeNull()
     expect(parseUploadId('no-query-here')).toBeNull()
+  })
+})
+
+describe('serverFileName', () => {
+  it('расширение из имени файла, а если его нет — по типу', () => {
+    expect(serverFileName(makeFile(1, 'video/mp4', 'Отпуск.MP4'))).toBe('Отпуск.MP4')
+    expect(serverFileName(makeFile(1, 'video/mp4', 'Me at the zoo [jNQXAC9IVRw]'))).toBe(
+      'Me at the zoo [jNQXAC9IVRw].mp4'
+    )
+    expect(serverFileName(makeFile(1, 'video/webm', 'Версия 2.0'))).toBe('Версия 2.0.webm')
+    expect(serverFileName(makeFile(1, 'audio/mpeg', 'песня'))).toBe('песня.mp3')
+    expect(serverFileName(makeFile(1, '', ''))).toBe('video.mp4')
   })
 })
 
@@ -157,6 +170,30 @@ describe('uploadVideoResumable — happy path', () => {
     expect(localStorage.getItem(resumableStorageKey('h', 'ADDR', 'VK'))).toBeNull()
   })
 
+  it('серверу уходит имя файла с расширением, а не название видео', async () => {
+    let form: FormData | null = null
+    const fetchInstance = (async (_p: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        form = init.body as FormData
+        return res(201, {}, { Location: 'h/x?upload_id=UP' })
+      }
+      return res(200, doneBody())
+    }) as InstanceFetch
+
+    await uploadVideoResumable({
+      host: 'h',
+      address: 'ADDR',
+      accessToken: 'AT',
+      file: makeFile(256, 'video/mp4', 'Me at the zoo [jNQXAC9IVRw].mp4'),
+      metadata: { channelId: 7, name: 'Me at the zoo [jNQXAC9IVRw]' },
+      fetchInstance,
+      sleep: noSleep,
+    })
+
+    expect(form!.get('name')).toBe('Me at the zoo [jNQXAC9IVRw]')
+    expect(form!.get('filename')).toBe('Me at the zoo [jNQXAC9IVRw].mp4')
+  })
+
   it('фолбэк на исходный host, если videoCreated.url отсутствует', async () => {
     const fetchInstance = (async (_p: string, init?: RequestInit) => {
       if (init?.method === 'POST') return res(201, {}, { Location: 'h/x?upload_id=UP' })
@@ -244,6 +281,36 @@ describe('uploadVideoResumable — resume / reinit', () => {
       sleep: noSleep,
     })
     expect(posted).toBe(true)
+  })
+
+  it('сервер не доводит загрузку с прошлого раза (500) → она начинается заново', async () => {
+    const key = resumableStorageKey('h', 'ADDR', 'VK')
+    localStorage.setItem(
+      key,
+      JSON.stringify({ uploadHost: 'h', uploadId: 'OLD', resumeFrom: 0, lastOperation: 1000 })
+    )
+    const ids: string[] = []
+    const fetchInstance = (async (path: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return res(201, {}, { Location: 'h/x?upload_id=NEW' })
+      ids.push(new URL(path, 'http://x').searchParams.get('upload_id') ?? '')
+      return path.includes('upload_id=OLD') ? res(500) : res(200, doneBody('VID'))
+    }) as InstanceFetch
+
+    const result = await uploadVideoResumable({
+      host: 'h',
+      address: 'ADDR',
+      accessToken: 'AT',
+      file: makeFile(256),
+      metadata: META,
+      videoKey: 'VK',
+      chunkSize: 256,
+      fetchInstance,
+      now: () => 2000,
+      sleep: noSleep,
+    })
+
+    expect(result.uuid).toBe('VID')
+    expect(ids).toEqual(['OLD', 'NEW'])
   })
 
   it('404 на чанке → реинициализация и успешное завершение', async () => {
@@ -348,7 +415,7 @@ describe('uploadVideoResumable — retry / ошибки', () => {
     }
   })
 
-  it('жёсткая 422 → PeertubeUploadError без повторов, resume-state сохранён', async () => {
+  it('жёсткая 422 → PeertubeUploadError без повторов, следующая попытка начнётся заново', async () => {
     let putCount = 0
     const fetchInstance = (async (_p: string, init?: RequestInit) => {
       if (init?.method === 'POST') return res(201, {}, { Location: 'h/x?upload_id=UP' })
@@ -373,7 +440,29 @@ describe('uploadVideoResumable — retry / ошибки', () => {
       })
     ).rejects.toMatchObject({ status: 422, cancelled: false })
     expect(putCount).toBe(1) // без повторов
-    // resume-state НЕ вычищен (можно продолжить позже)
+    // Эту загрузку сервер уже не доведёт: продолжать её нечего.
+    expect(localStorage.getItem(resumableStorageKey('h', 'ADDR', 'VK'))).toBeNull()
+  })
+
+  it('сервер просит подождать (503) и после повторов — resume-state ждёт следующей попытки', async () => {
+    const fetchInstance = (async (_p: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return res(201, {}, { Location: 'h/x?upload_id=UP' })
+      return res(503)
+    }) as InstanceFetch
+
+    await expect(
+      uploadVideoResumable({
+        host: 'h',
+        address: 'ADDR',
+        accessToken: 'AT',
+        file: makeFile(256),
+        metadata: META,
+        videoKey: 'VK',
+        chunkSize: 256,
+        fetchInstance,
+        sleep: noSleep,
+      })
+    ).rejects.toMatchObject({ status: 503 })
     expect(localStorage.getItem(resumableStorageKey('h', 'ADDR', 'VK'))).not.toBeNull()
   })
 })

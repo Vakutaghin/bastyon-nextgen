@@ -25,12 +25,20 @@ vi.mock('@/services/peertube/peertube-videos', () => ({
   deleteInstanceVideo: mocks.del,
 }))
 
-import { useServerVideos } from './use-server-videos'
+import { HOST_SLOW_MS, useServerVideos } from './use-server-videos'
+
+/** Ответ сервера, который придёт, когда тест скажет. */
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((r) => (resolve = r))
+  return { promise, resolve }
+}
 
 describe('useServerVideos', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.auth.getKeyPair = { privateKey: 'k' }
+    mocks.auth.getUserAddress = 'PMe'
     mocks.hosts.mockResolvedValue(['a.host', 'b.host'])
     mocks.list.mockImplementation(async ({ host }: { host: string }) =>
       host === 'a.host'
@@ -80,6 +88,64 @@ describe('useServerVideos', () => {
     await api.load()
     expect(api.videos.value.map((v) => v.pointer)).toEqual(['peertube://a.host/u1'])
     expect(api.failedHosts.value).toEqual(['b.host'])
+  })
+
+  it('медленный сервер не держит список: быстрые видны сразу, его ролики добавятся, когда ответит', async () => {
+    vi.useFakeTimers()
+    try {
+      const slow = deferred<{ total: number; data: unknown[] }>()
+      mocks.list.mockImplementation(async ({ host }: { host: string }) =>
+        host === 'a.host'
+          ? slow.promise
+          : { total: 1, data: [{ id: 7, uuid: 'u7', name: 'Лес', state: { id: 1 } }] }
+      )
+      const api = useServerVideos()
+      const loading = api.load()
+
+      await vi.waitFor(() =>
+        expect(api.videos.value.map((v) => v.pointer)).toEqual(['peertube://b.host/u7'])
+      )
+      expect(api.loading.value).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(HOST_SLOW_MS)
+      expect(api.loading.value).toBe(false)
+      expect(api.loaded.value).toBe(true)
+      expect(api.failedHosts.value).toEqual(['a.host'])
+
+      slow.resolve({ total: 1, data: [{ id: 1, uuid: 'u1', name: 'Море', state: { id: 1 } }] })
+      await loading
+      // Порядок — по роям, а не по тому, кто ответил первым.
+      expect(api.videos.value.map((v) => v.pointer)).toEqual([
+        'peertube://a.host/u1',
+        'peertube://b.host/u7',
+      ])
+      expect(api.videos.value[0]!.posted).toBe(true)
+      expect(api.failedHosts.value).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('«Обновить» не прячет прежний список, пока серверы отвечают', async () => {
+    const api = useServerVideos()
+    await api.load()
+    const slow = deferred<{ total: number; data: unknown[] }>()
+    mocks.list.mockImplementation(() => slow.promise)
+    const loading = api.load()
+    await vi.waitFor(() => expect(mocks.list).toHaveBeenCalledTimes(4))
+    expect(api.videos.value).toHaveLength(3)
+    slow.resolve({ total: 0, data: [] })
+    await loading
+    expect(api.videos.value).toEqual([])
+  })
+
+  it('другой аккаунт не видит ролики прежнего, пока серверы отвечают', async () => {
+    const api = useServerVideos()
+    await api.load()
+    mocks.auth.getUserAddress = 'POther'
+    mocks.list.mockRejectedValue(new Error('peertube_my_videos_502'))
+    await api.load()
+    expect(api.videos.value).toEqual([])
   })
 
   it('не вошли — ничего не запрашивается', async () => {
