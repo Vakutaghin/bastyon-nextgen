@@ -2,7 +2,8 @@
 //! загрузки видео и сообщения продолжают работать в фоне. Выход — явный:
 //! Cmd+Q на macOS, «Выйти» в трее или Ctrl+Q на Windows и Linux.
 
-use tauri::{AppHandle, Manager, Window, WindowEvent};
+use tauri::plugin::{Builder, TauriPlugin};
+use tauri::{AppHandle, Manager, Runtime, Url, Window, WindowEvent};
 
 pub const LABEL: &str = "main";
 
@@ -48,4 +49,35 @@ fn hide(window: &Window) {
     }
   }
   let _ = window.hide();
+}
+
+/// Файл, брошенный мимо мест для файлов, WebView открывает вместо страницы:
+/// видео заменяло собой приложение. Страница такие броски гасит сама
+/// (`src/helpers/common/drop-guard.ts`), а до броска на iframe мини-приложения
+/// или ролика она не дотягивается. Поэтому `file:` в окнах приложения не
+/// открывается никогда: своим страницам и сайтам он не нужен.
+pub fn file_drop_guard<R: Runtime>() -> TauriPlugin<R> {
+  Builder::new("file-drop-guard")
+    .on_navigation(|_, url| navigation_allowed(url))
+    .build()
+}
+
+fn navigation_allowed(url: &Url) -> bool {
+  url.scheme() != "file"
+}
+
+#[cfg(test)]
+mod tests {
+  use super::navigation_allowed;
+
+  #[test]
+  fn a_dropped_file_does_not_replace_the_page() {
+    let allowed = |u: &str| navigation_allowed(&u.parse().unwrap());
+    assert!(!allowed("file:///Users/me/Movies/clip.mp4"));
+    assert!(!allowed("file:///C:/Users/me/Videos/clip.mp4"));
+    assert!(allowed("tauri://localhost/"));
+    assert!(allowed("http://tauri.localhost/"));
+    assert!(allowed("http://localhost:1420/"));
+    assert!(allowed("https://www.youtube.com/embed/xyz"));
+  }
 }

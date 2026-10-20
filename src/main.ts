@@ -31,6 +31,7 @@ import { initCapacitor } from '@mobile/bootstrap'
 import { setupDeepLinks } from '@/composables/use-deep-links'
 import { setupAppPreferences } from '@/composables/use-app-preferences-effects'
 import { setupQuitShortcut } from '@/helpers/desktop/quit-shortcut'
+import { installDropGuard } from '@/helpers/common/drop-guard'
 import { initDatabase } from '@/db/database'
 import { useAuthStore } from '@/blockchain'
 import {
@@ -102,6 +103,8 @@ void router.isReady().then(() => setupDeepLinks(router))
 void setupAppPreferences()
 // Ctrl+Q на Windows и Linux: крестик окно только прячет в трей.
 setupQuitShortcut()
+// Файл, брошенный мимо зон для файлов, не открывается вместо приложения.
+installDropGuard()
 
 void router.isReady().then(() => {
   if (isEmbedRoute()) return
