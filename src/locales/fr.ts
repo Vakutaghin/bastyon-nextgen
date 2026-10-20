@@ -2745,7 +2745,6 @@ export default {
     upload: 'Mettre en ligne une vidéo',
     signIn: 'Connectez-vous pour envoyer des vidéos et voir les vôtres.',
     signInButton: 'Se connecter',
-    onServer: 'Sur le serveur vidéo',
     refresh: 'Actualiser',
     loadFailed:
       'Tous les serveurs vidéo n’ont pas envoyé leur liste : certaines vidéos peuvent manquer.',
@@ -2753,6 +2752,10 @@ export default {
     processing: 'En traitement',
     posted: 'Dans une publication',
     notPosted: 'Pas dans une publication',
+    publishing: 'Publication en cours',
+    openPost: 'Ouvrir la publication',
+    openPosts: 'Publications : {count}',
+    openPostFailed: 'Impossible d’ouvrir la publication',
     deleteConfirm:
       'Supprimer la vidéo du serveur vidéo ? Elle ne sera plus lue dans les publications qui l’utilisent.',
     delete: 'Supprimer',

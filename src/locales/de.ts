@@ -2746,7 +2746,6 @@ export default {
     upload: 'Video hochladen',
     signIn: 'Melden Sie sich an, um Videos hochzuladen und Ihre Videos zu sehen.',
     signInButton: 'Anmelden',
-    onServer: 'Auf dem Videoserver',
     refresh: 'Aktualisieren',
     loadFailed:
       'Nicht alle Videoserver haben ihre Liste geschickt – einige Videos fehlen eventuell.',
@@ -2754,6 +2753,10 @@ export default {
     processing: 'Wird verarbeitet',
     posted: 'Im Beitrag',
     notPosted: 'Nicht in einem Beitrag',
+    publishing: 'Wird veröffentlicht',
+    openPost: 'Beitrag öffnen',
+    openPosts: 'Beiträge: {count}',
+    openPostFailed: 'Beitrag konnte nicht geöffnet werden',
     deleteConfirm:
       'Video vom Videoserver löschen? In Beiträgen mit diesem Video wird es nicht mehr abgespielt.',
     delete: 'Löschen',

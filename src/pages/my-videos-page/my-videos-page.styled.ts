@@ -33,6 +33,12 @@ export const SC_Header = styled.div`
   margin: 24px 0;
 `
 
+export const SC_HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`
+
 export const SC_MyVideosTitle = styled.h1`
   font-size: 24px;
   font-weight: 600;
@@ -42,21 +48,6 @@ export const SC_MyVideosTitle = styled.h1`
 
 export const SC_Section = styled.section`
   margin-bottom: 32px;
-`
-
-export const SC_SectionHead = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-`
-
-export const SC_SectionTitle = styled.h2`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--ui-text-highlighted);
 `
 
 export const SC_Note = styled.div`
@@ -121,8 +112,13 @@ export const SC_CardTitle = styled.div`
   white-space: nowrap;
 `
 
+export const SC_Badges = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`
+
 export const SC_Badge = styled.span`
-  align-self: flex-start;
   padding: 1px 8px;
   border-radius: var(--ui-radius-full);
   border: 1px solid var(--ui-border);
@@ -132,6 +128,13 @@ export const SC_Badge = styled.span`
   &.posted {
     border-color: var(--ui-primary);
     color: var(--ui-primary);
+  }
+
+  /* Пост ушёл в сеть и ждёт блока. */
+  &.publishing {
+    border-style: dashed;
+    border-color: var(--ui-primary);
+    color: var(--ui-text-highlighted);
   }
 `
 

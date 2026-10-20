@@ -11,7 +11,8 @@
  *   - что уже опубликовано on-chain — RPC searchlinks (нода)
  */
 
-import { fetchHttp, rpcCallArray } from '@/helpers/api/request'
+import { fetchHttp, rpcCallArray, rpcCallWithAuth } from '@/helpers/api/request'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import type { KeyPair } from '@/blockchain/types/keys'
 import { parsePeerTubeUrl } from '@/helpers/api/peertube-parser'
 import { peertubeInstanceFetch, type InstanceFetch } from './peertube-instance'
@@ -26,6 +27,8 @@ export interface MyVideoItem {
   state?: { id: number; label?: string }
   thumbnailPath?: string
   duration?: number
+  /** ISO-дата загрузки. */
+  createdAt?: string
 }
 
 /** Страница списка видео аккаунта. */
@@ -156,16 +159,29 @@ export async function checkTranscodingReady(
   return result
 }
 
+/** Пост в блокчейне — только нужные здесь поля (searchlinks, getprofilefeed). */
+export interface ChainPost {
+  txid?: string
+  type?: string
+  /** Заголовок. */
+  c?: string
+  /** Ссылка на видео. */
+  u?: string
+  /** Время в блокчейне, секунды. */
+  time?: number | string
+  deleted?: boolean
+}
+
 /** RPC-функция searchlinks (urls, types, offset, count) → массив постов. DI для тестов. */
 export type SearchLinksFn = (
   urls: string[],
   types: string[],
   offset: number,
   count: number
-) => Promise<Array<{ u?: string }>>
+) => Promise<ChainPost[]>
 
 const defaultSearchLinks: SearchLinksFn = (urls, types, offset, count) =>
-  rpcCallArray<{ u?: string }>({
+  rpcCallArray<ChainPost>({
     method: 'searchlinks',
     parameters: [urls, types, offset, count],
   })
@@ -173,31 +189,150 @@ const defaultSearchLinks: SearchLinksFn = (urls, types, offset, count) =>
 /** Типы постов, которыми видео могло быть опубликовано (обычное видео + платные офферы). */
 const POSTED_VIDEO_TYPES = ['video', 'brtoffer', 'brtofferpaid']
 
+/** Сколько постов с одним видео ждать от searchlinks. */
+const POSTS_PER_VIDEO = 5
+
+/** Пост с видео, который можно открыть. */
+export interface VideoPost {
+  txid: string
+  caption: string
+  /** Время поста, мс. */
+  time: number
+}
+
+const decodeField = (value: string | undefined): string => {
+  if (!value) return ''
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value // невалидный %-энкодинг — берём как есть
+  }
+}
+
+const toVideoPost = (post: ChainPost): VideoPost | null =>
+  post.txid
+    ? { txid: post.txid, caption: decodeField(post.c), time: Number(post.time) * 1000 || 0 }
+    : null
+
 export interface FindPostedParams {
   urls: string[]
   searchLinks?: SearchLinksFn
 }
 
 /**
- * Какие из указателей уже опубликованы on-chain (RPC searchlinks). Возвращает Set
- * декодированных url. Пустой Set при отсутствии/ошибке. `orig:videoCabinet/index.js:202-217`.
+ * Какие из указателей уже опубликованы on-chain (RPC searchlinks): декодированный
+ * url → посты с ним. Список пуст у видео в оффере Barteron: «в посте» оно есть,
+ * но открывать его в окне поста нечего. `orig:videoCabinet/index.js:202-217`.
  */
-export async function findPostedVideos(params: FindPostedParams): Promise<Set<string>> {
+export async function findPostedVideos(
+  params: FindPostedParams
+): Promise<Map<string, VideoPost[]>> {
   const { urls } = params
-  if (!urls.length) return new Set()
+  const posted = new Map<string, VideoPost[]>()
+  if (!urls.length) return posted
   const searchLinks = params.searchLinks ?? defaultSearchLinks
 
-  const posts = await searchLinks(urls, POSTED_VIDEO_TYPES, 0, urls.length)
-  const posted = new Set<string>()
+  const posts = await searchLinks(urls, POSTED_VIDEO_TYPES, 0, urls.length * POSTS_PER_VIDEO)
   for (const post of posts) {
-    if (!post?.u) continue
-    try {
-      posted.add(decodeURIComponent(post.u))
-    } catch {
-      posted.add(post.u) // невалидный %-энкодинг — берём как есть
-    }
+    if (!post?.u || post.deleted) continue
+    const url = decodeField(post.u)
+    const list = posted.get(url) ?? []
+    const ref = post.type === 'video' ? toVideoPost(post) : null
+    if (ref && !list.some((p) => p.txid === ref.txid)) list.push(ref)
+    posted.set(url, list)
   }
   return posted
+}
+
+/** RPC getprofilefeed (адрес, с какого txid, сколько) → посты с видео. DI для тестов. */
+export type ProfileFeedFn = (
+  address: string,
+  afterTxid: string,
+  count: number
+) => Promise<ChainPost[]>
+
+const defaultProfileFeed: ProfileFeedFn = async (address, afterTxid, count) => {
+  const data = await rpcCallWithAuth<{ contents?: ChainPost[] }>({
+    method: rpcEndpoints.getProfileFeed,
+    // Тот же порядок, что у ленты профиля; тип — только видео. Неизвестный
+    // ноде тип (например, audio) снимает фильтр целиком.
+    parameters: [0, afterTxid, count, '', [], ['video'], [], [], [], '', address, '', '', 'desc'],
+    options: { ex: true },
+  })
+  return Array.isArray(data?.contents) ? data.contents : []
+}
+
+/** Видео из поста автора. */
+export interface PostedVideo {
+  /** peertube://host/uuid[/audio] — как в посте. */
+  pointer: string
+  post: VideoPost
+}
+
+export interface PostedVideosPage {
+  videos: PostedVideo[]
+  /** txid, с которого брать следующую страницу; null — постов больше нет. */
+  next: string | null
+}
+
+/**
+ * Видео из постов автора, свежие первыми (getprofilefeed type video). Так видны
+ * ролики на любом видеосервере: `peertube/roys` знает только серверы, куда
+ * грузят сейчас, а старые ролики лежат на десятках других. Как в
+ * `orig:videoCabinet/index.js getBlockChainVideos`.
+ */
+export async function getPostedVideosPage(params: {
+  address: string
+  after?: string
+  count: number
+  profileFeed?: ProfileFeedFn
+}): Promise<PostedVideosPage> {
+  const profileFeed = params.profileFeed ?? defaultProfileFeed
+  const posts = await profileFeed(params.address, params.after ?? '', params.count)
+  const videos: PostedVideo[] = []
+  for (const post of posts) {
+    const pointer = decodeField(post.u)
+    const ref = toVideoPost(post)
+    if (post.deleted || post.type !== 'video' || !ref || !parsePeerTubeUrl(pointer)) continue
+    videos.push({ pointer, post: ref })
+  }
+  const last = posts[posts.length - 1]?.txid
+  return { videos, next: posts.length >= params.count && last ? last : null }
+}
+
+/** Сведения о видео, которые нода кэширует с видеосерверов. */
+export interface NodeVideoInfo {
+  id?: number
+  uuid?: string
+  name?: string
+  state?: { id?: number }
+  thumbnailPath?: string
+  duration?: number
+  createdAt?: string
+}
+
+/**
+ * Сведения о многих видео сразу — одним запросом к ноде (`peertube/videos`),
+ * из её кэша. Сервер, который не ответил, нода кладёт в `errors`: таких видео
+ * в ответе нет.
+ */
+export async function getVideosInfo(params: {
+  urls: string[]
+  fetchNode?: NodeFetch
+}): Promise<Map<string, NodeVideoInfo>> {
+  const info = new Map<string, NodeVideoInfo>()
+  if (!params.urls.length) return info
+  const fetchNode: NodeFetch = params.fetchNode ?? ((path, data) => fetchHttp({ path, data }))
+  const raw = (await fetchNode('peertube/videos', { urls: params.urls })) as Record<
+    string,
+    unknown
+  > | null
+  for (const url of params.urls) {
+    const item = raw?.[url]
+    if (item && typeof item === 'object' && !Array.isArray(item))
+      info.set(url, item as NodeVideoInfo)
+  }
+  return info
 }
 
 /** Инъектируемые шаги удаления по указателю (для тестов). */

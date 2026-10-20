@@ -17,14 +17,16 @@ The section is in the account menu: **“My videos”**. It works like YouTube S
 
 On a computer the upload window has **“Compress on this computer first”**: the video is made smaller first and then uploaded, see [Compressing a video](video-compression.md).
 
-You can also make the post later. Your clips are in the section under **“On the video server”**:
+You can also make the post later. The section shows all your clips, newest first: those from your posts — whichever video server they are on — and the unpublished ones on the servers that take uploads now. The button with arrows next to **“Upload video”** is **“Refresh”**. Each clip has:
 
 - **“In a post”** — the clip is already published, **“Not in a post”** — not yet;
+- **“Publishing”** — a post with the clip has been sent and is waiting to get into the blockchain. Once it does, **“In a post”** appears, no need to reload the page;
 - **“Processing”** — the server is still preparing different qualities;
+- **“Open post”** — open the post with this clip. If there are several posts, the button shows their number, for example “Posts: 2”, and opens a list: pick the post by date and title;
 - **“Create post”** — a new post with this clip;
 - **“Delete”** — delete the clip from the video server. Posts with it will stop playing it, so the app asks first.
 
-There are several video servers, and they answer at different speeds. Clips from each one appear as soon as it answers. If a server stays silent for more than 15 seconds, **“Not every video server sent its list — some videos may be missing.”** appears; when it answers later, its clips are added on their own.
+There are several video servers, and they answer at different speeds. Clips from each one appear as soon as it answers. If a server or the list of posts stays silent for more than 15 seconds, **“Not every video server sent its list — some videos may be missing.”** appears; when it answers later, its clips are added on their own.
 
 ## Right in a post
 

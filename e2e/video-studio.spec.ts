@@ -172,3 +172,66 @@ test('загрузка в фоне: свернуть, уйти со страни
   await expect(composer.getByLabel('Заголовок видео')).toHaveValue('Море в июле')
   await expect(panel).toHaveCount(0)
 })
+
+test('видеотека: ролики из постов на любом сервере, пост открывается в окне', async ({ page }) => {
+  test.setTimeout(120_000)
+  // Старый ролик лежит не на сервере загрузки, а на другом: его видно по постам.
+  const OLD_HOST = 'old.e2e.test'
+  const pointer = `peertube://${OLD_HOST}/0a1b2c3d-1111-4222-8333-444455556666`
+  await useMockNode(page, {
+    profiles: [ALICE],
+    posts: [
+      {
+        txid: 'a'.repeat(64),
+        address: ALICE.address,
+        type: 'video',
+        url: pointer,
+        caption: 'Меш-сети, часть 2',
+        message: 'Продолжение про меш-сети',
+      },
+      {
+        txid: 'b'.repeat(64),
+        address: ALICE.address,
+        type: 'video',
+        url: pointer,
+        caption: 'Меш-сети, часть 1',
+        message: 'Первый пост про меш-сети',
+      },
+    ],
+    comments: [],
+  })
+  await useVideoServer(page)
+  await page.route(/\.pocketnet\.app:8899\/peertube\/videos/, (route) =>
+    route.request().method() === 'OPTIONS'
+      ? route.fulfill({ status: 204, headers: CORS })
+      : route.fulfill({
+          headers: CORS,
+          json: {
+            result: 'success',
+            data: { [pointer]: { id: 5, name: 'Меш-сети', duration: 610, state: { id: 1 } } },
+          },
+        })
+  )
+  await page.goto('/')
+  await page.waitForSelector('#app > *', { timeout: 30_000 })
+  await page
+    .getByRole('button', { name: 'Понятно' })
+    .click({ timeout: 5_000 })
+    .catch(() => {})
+  await signIn(page)
+  await page.goto('/my-videos')
+
+  const card = page.getByRole('listitem').filter({ hasText: 'Меш-сети' })
+  await expect(card).toBeVisible({ timeout: 30_000 })
+  await expect(card).toContainText('В посте')
+  await expect(card).toContainText('10:10')
+  // «Обновить» — иконка рядом с «Загрузить видео»; заголовка раздела больше нет.
+  await expect(page.getByRole('button', { name: 'Обновить' })).toBeVisible()
+  await expect(page.getByText('На видеосервере')).toHaveCount(0)
+
+  await card.getByRole('button', { name: 'Посты: 2' }).click()
+  const menu = page.getByRole('menu')
+  await expect(menu.getByRole('menuitem')).toHaveCount(2)
+  await menu.getByRole('menuitem', { name: /часть 1/ }).click()
+  await expect(page.getByText('Первый пост про меш-сети')).toBeVisible({ timeout: 20_000 })
+})

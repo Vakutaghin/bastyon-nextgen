@@ -5,6 +5,8 @@ import {
   renameInstanceVideo,
   checkTranscodingReady,
   findPostedVideos,
+  getPostedVideosPage,
+  getVideosInfo,
   removeVideoByPointer,
   type RemoveVideoDeps,
 } from './peertube-videos'
@@ -161,27 +163,82 @@ describe('checkTranscodingReady', () => {
 })
 
 describe('findPostedVideos', () => {
-  it('декодирует post.u в Set опубликованных; тип-фильтр корректен', async () => {
+  it('url → посты с ним; Barteron — «в посте», но открывать нечего', async () => {
     const searchLinks = vi.fn(async () => [
-      { u: encodeURIComponent('peertube://h/posted1') },
-      { u: 'peertube://h/posted2' },
+      {
+        u: encodeURIComponent('peertube://h/posted1'),
+        type: 'video',
+        txid: 't1',
+        c: 'Море',
+        time: 10,
+      },
+      { u: 'peertube://h/posted1', type: 'video', txid: 't2', c: 'Море снова', time: 20 },
+      { u: 'peertube://h/posted1', type: 'video', txid: 't2', c: 'Море снова', time: 20 },
+      { u: 'peertube://h/offer', type: 'brtoffer', txid: 't3' },
+      { u: 'peertube://h/gone', type: 'video', txid: 't4', deleted: true },
       {}, // без u — пропускаем
     ])
-    const urls = ['peertube://h/posted1', 'peertube://h/posted2', 'peertube://h/draft']
+    const urls = [
+      'peertube://h/posted1',
+      'peertube://h/offer',
+      'peertube://h/gone',
+      'peertube://h/draft',
+    ]
     const posted = await findPostedVideos({ urls, searchLinks })
 
-    expect(posted.has('peertube://h/posted1')).toBe(true)
-    expect(posted.has('peertube://h/posted2')).toBe(true)
+    expect(posted.get('peertube://h/posted1')).toEqual([
+      { txid: 't1', caption: 'Море', time: 10_000 },
+      { txid: 't2', caption: 'Море снова', time: 20_000 },
+    ])
+    expect(posted.get('peertube://h/offer')).toEqual([])
+    expect(posted.has('peertube://h/gone')).toBe(false)
     expect(posted.has('peertube://h/draft')).toBe(false)
-
-    expect(searchLinks).toHaveBeenCalledWith(urls, ['video', 'brtoffer', 'brtofferpaid'], 0, 3)
+    // У одного видео может быть несколько постов — берём с запасом.
+    expect(searchLinks).toHaveBeenCalledWith(urls, ['video', 'brtoffer', 'brtofferpaid'], 0, 20)
   })
 
-  it('пустой список → пустой Set без вызова', async () => {
+  it('пустой список → пусто без вызова', async () => {
     const searchLinks = vi.fn()
     const posted = await findPostedVideos({ urls: [], searchLinks })
     expect(posted.size).toBe(0)
     expect(searchLinks).not.toHaveBeenCalled()
+  })
+})
+
+describe('getPostedVideosPage', () => {
+  it('только видео PeerTube из живых постов; полная страница — есть следующая', async () => {
+    const profileFeed = vi.fn(async () => [
+      { txid: 'a', type: 'video', u: 'peertube://h1/u1', c: 'Первое', time: 100 },
+      { txid: 'b', type: 'video', u: 'https://youtu.be/x', c: 'Ютуб' },
+      { txid: 'c', type: 'video', u: 'peertube://h2/u2', deleted: true },
+    ])
+    const page = await getPostedVideosPage({ address: 'PMe', count: 3, profileFeed })
+    expect(profileFeed).toHaveBeenCalledWith('PMe', '', 3)
+    expect(page.videos).toEqual([
+      { pointer: 'peertube://h1/u1', post: { txid: 'a', caption: 'Первое', time: 100_000 } },
+    ])
+    expect(page.next).toBe('c')
+  })
+
+  it('неполная страница — постов больше нет', async () => {
+    const profileFeed = vi.fn(async () => [{ txid: 'a', type: 'video', u: 'peertube://h1/u1' }])
+    const page = await getPostedVideosPage({ address: 'PMe', after: 'z', count: 50, profileFeed })
+    expect(profileFeed).toHaveBeenCalledWith('PMe', 'z', 50)
+    expect(page.next).toBeNull()
+  })
+})
+
+describe('getVideosInfo', () => {
+  it('один запрос к ноде; не ответившие серверы (errors) — без сведений', async () => {
+    const fetchNode = vi.fn(async () => ({
+      'peertube://h/u1': { id: 5, name: 'Море', state: { id: 1 } },
+      errors: ['peertube://dead/u2'],
+    }))
+    const urls = ['peertube://h/u1', 'peertube://dead/u2']
+    const info = await getVideosInfo({ urls, fetchNode })
+    expect(fetchNode).toHaveBeenCalledWith('peertube/videos', { urls })
+    expect(info.get('peertube://h/u1')).toMatchObject({ id: 5, name: 'Море' })
+    expect(info.has('peertube://dead/u2')).toBe(false)
   })
 })
 
