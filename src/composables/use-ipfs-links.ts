@@ -4,15 +4,16 @@
 // (v-html-контент постов, меншены, «о себе» и т.д.).
 //
 // Слушатель вешается ВЕЗДЕ (веб/десктоп). Есть ли своя нода (Tier 1), решает
-// ipfs-store. Без неё ссылку открывает браузер через inbrowser.link: публичные
-// шлюзы приложениям с сентября 2026 не отвечают (см. ipfs-viewer.ts). В вебе и
-// на телефоне ноды нет никогда — там ссылку открывает ipfs-browser-open.
+// ipfs-store. Без неё — в вебе, на телефоне и на компьютере без модуля —
+// ссылку открывает ipfs-browser-open: содержимое качает узел IPFS в самом
+// приложении (helpers/ipfs/ipfs-node.ts), публичные шлюзы приложениям с
+// сентября 2026 не отвечают (см. ipfs-viewer.ts).
 //
 // Tor: IPFS НЕ торифицирован ни в одном звене — окно-просмотрщик грузит URL без
-// прокси, а Kubo дозванивается DHT/Bitswap-пиров напрямую и светит реальный IP
-// вместе с запрашиваемым CID. Поэтому под Tor не открываем ВООБЩЕ (ни локально,
-// ни через публичный шлюз), а флаг перечитываем после каждого await — он мог
-// включиться, пока шли consent/установка (до 10 мин).
+// прокси, а Kubo и узел в приложении дозваниваются до других узлов напрямую и
+// светят реальный IP вместе с запрашиваемым CID. Поэтому под Tor не открываем
+// ВООБЩЕ, а флаг перечитываем после каждого await — он мог включиться, пока
+// шли consent/установка (до 10 мин).
 import { onBeforeUnmount, onMounted, watch } from 'vue'
 import { Modal } from 'ant-design-vue'
 import {
@@ -22,10 +23,10 @@ import {
   type IpfsSecret,
   type IpfsTarget,
 } from '@/helpers/ipfs/ipfs-link'
-import { buildIpfsViewerUrl, buildIpfsWebUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
+import { buildIpfsViewerUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
 import { ipfsAddress } from '@/helpers/ipfs/ipfs-recent'
-import { openExternal } from '@/helpers/common/open-external'
 import { classify, detectViewerOs, downloadFilename } from '@/helpers/ipfs/ipfs-content'
+import { stopIpfsNode } from '@/helpers/ipfs/ipfs-node-loader'
 import { probeContent } from '@/helpers/ipfs/ipfs-download'
 import {
   useIpfsStore,
@@ -36,6 +37,7 @@ import {
 import { Z_INDEX } from '@/styles/design-tokens'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { t } from '@/i18n'
+import { useIpfsNodeViewerStore } from '@/stores/ipfs-node-viewer-store'
 import { openIpfsInBrowser } from './ipfs-browser-open'
 
 /** FNV-1a 32-bit → 8 hex: дешёвый стабильный хэш строки для меток окон. */
@@ -209,12 +211,10 @@ export async function openIpfsViewer(
     const gateway = await store.resolveGateway()
     if (torBlocked(store)) return
 
-    // Своей ноды нет. Публичные шлюзы приложениям больше не отвечают — ссылку
-    // открывает браузер через inbrowser.link и сам проверяет содержимое.
-    // Приватному файлу нужна расшифровка, а она есть только с модулем.
+    // Своей ноды нет (модуль не ставили или отказались) — как в вебе: узел
+    // IPFS в окне приложения, приватный файл расшифровывается тут же.
     if (gateway === IPFS_GATEWAY) {
-      if (secret?.key) offerModule(store)
-      else void openExternal(buildIpfsWebUrl(target))
+      openIpfsInBrowser(target, secret, size)
       return
     }
 
@@ -312,20 +312,6 @@ async function showFromNode(
   await store.openViewer(label, url, title, true)
 }
 
-/** Приватная ссылка без своей ноды: расшифровать её нечем — предлагаем модуль. */
-function offerModule(store: IpfsStore): void {
-  Modal.confirm({
-    zIndex: Z_INDEX.MODAL,
-    title: t('header.ipfsPrivateNeedsModuleTitle'),
-    content: t('header.ipfsPrivateNeedsModule'),
-    okText: t('header.ipfsInstallBtn'),
-    cancelText: t('common.cancel'),
-    onOk: () => {
-      void store.enable()
-    },
-  })
-}
-
 function findIpfsTargetFromClick(
   e: MouseEvent
 ): { target: IpfsTarget; secret: IpfsSecret | null; size: number | null } | null {
@@ -378,12 +364,16 @@ export function useIpfsLinks(active: () => boolean = () => true): void {
   onBeforeUnmount(() => document.removeEventListener('click', handleClick, true))
 
   // Tor включили при работающей ноде — гасим её: фоновые DHT/Bitswap-соединения
-  // Kubo идут в обход Tor и светят реальный IP всё время, пока демон жив.
+  // Kubo и узла в приложении идут в обход Tor и светят реальный IP, пока живы.
   const store = useIpfsStore()
+  const nodeViewer = useIpfsNodeViewerStore()
   watch(
     () => store.torActive,
     (on) => {
-      if (on && store.status === 'running') void store.stop({ remember: false })
+      if (!on) return
+      if (store.status === 'running') void store.stop({ remember: false })
+      nodeViewer.close()
+      stopIpfsNode()
     }
   )
 }

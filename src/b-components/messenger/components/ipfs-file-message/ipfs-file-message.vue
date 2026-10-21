@@ -33,7 +33,8 @@ import { appToast } from '@/b-components/app-toast'
 import { FileOutlined, LockOutlined } from '@/components/icons'
 import { openIpfsViewer } from '@/composables/use-ipfs-links'
 import type { IpfsFileLink } from '@/helpers/ipfs/ipfs-link'
-import { classify, classifyForBrowser, detectViewerOs } from '@/helpers/ipfs/ipfs-content'
+import { classify, detectViewerOs } from '@/helpers/ipfs/ipfs-content'
+import { previewKind } from '@/helpers/ipfs/ipfs-preview'
 import { typeFromName } from '@/helpers/ipfs/ipfs-sniff'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import { formatFileSize } from '../file-message/helpers'
@@ -68,9 +69,11 @@ const openLabel = computed(() => {
   const type = typeFromName(props.link.name)
   if (props.link.secret) return t('messenger.ipfsDownload')
   if (!type) return t('messenger.ipfsOpen')
-  const shown = ipfs.available
-    ? classify(type, null, detectViewerOs()) === 'render'
-    : classifyForBrowser(type, navigator.userAgent) === 'render'
+  // С модулем файл показывает окно-просмотрщик, без него — окно приложения.
+  const shown =
+    ipfs.status === 'running'
+      ? classify(type, null, detectViewerOs()) === 'render'
+      : previewKind(type, navigator.userAgent) !== null
   return t(shown ? 'messenger.ipfsOpen' : 'messenger.ipfsDownload')
 })
 

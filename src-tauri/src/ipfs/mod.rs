@@ -3,6 +3,7 @@ pub mod crypto;
 pub mod installer;
 pub mod process;
 pub mod shares;
+pub mod sink;
 pub mod state;
 pub mod verify;
 
@@ -1665,6 +1666,7 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         installer::adopt_legacy_install(&cache.join("ipfs"), &paths);
     }
     app.manage(IpfsManager::new(paths));
+    app.manage(sink::SaveSinks::default());
     Ok(())
 }
 

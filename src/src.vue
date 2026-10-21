@@ -15,6 +15,7 @@ import HelpPanel from '@/b-components/help/help-panel.vue'
 import { ImageGalleryHost } from '@/components/image-gallery'
 import { useHelpHotkey } from '@/composables/use-help-hotkey'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
+import { useIpfsNodeViewerStore } from '@/stores/ipfs-node-viewer-store'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
 import { useTrayLabels } from '@/composables/use-tray-labels'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
@@ -31,6 +32,9 @@ const VideoUploadDialog = defineAsyncComponent(
 const VideoUploadsPanel = defineAsyncComponent(
   () => import('@/b-components/video-studio/uploads-panel.vue')
 )
+// Окно просмотра IPFS без своей ноды — грузится с первой ссылкой.
+const IpfsNodeViewer = defineAsyncComponent(() => import('@/components/ipfs/ipfs-node-viewer.vue'))
+const ipfsNodeViewer = useIpfsNodeViewerStore()
 
 // Embed-роуты (`/embed/...`, meta.embed) рендерятся БЕЗ chrome (хедер/футер/
 // сайдбар/глобальные модалки) — это самостоятельная вьюха для встраивания в iframe.
@@ -116,6 +120,8 @@ watch(themeConfig, setStaticApiTheme, { immediate: true })
       <VaultUnlockModal />
       <!-- IPFS-модуль: consent/прогресс/desktop-only — singleton, открывается ipfs-store -->
       <IpfsInstallModal />
+      <!-- IPFS без своей ноды: просмотр и скачивание узлом в приложении — singleton, открывается useIpfsNodeViewerStore -->
+      <IpfsNodeViewer v-if="ipfsNodeViewer.seq > 0" />
       <!-- Контекстная справка (кнопки «?» и F1) — singleton, открывается useHelpStore().openTopic -->
       <HelpPanel />
       <!-- Просмотр картинок постов и комментариев — singleton, открывается modalStore.openImageGallery -->

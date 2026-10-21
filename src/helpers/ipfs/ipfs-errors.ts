@@ -1,6 +1,6 @@
 // Ошибки проверенного скачивания в браузере. Отдельно от ipfs-verify.ts, чтобы
-// сценарий клика мог различать их, не затягивая в основной бандл библиотеки
-// IPLD (они грузятся только при скачивании).
+// сценарий клика мог различать их, не затягивая в основной бандл узел IPFS и
+// библиотеки IPLD (они грузятся только при открытии ссылки).
 
 export type VerifyCode =
   | 'mismatch'
@@ -23,8 +23,8 @@ export class VerifyError extends Error {
 }
 
 /**
- * Сбой связи со шлюзом (обрыв, долгая тишина). Слой проверки пропускает его
- * как есть: это не порча данных, и пользователю нужно другое сообщение.
+ * Содержимое не пришло: в сети не нашлось, кто его раздаёт, или источник
+ * замолчал. Это не порча данных, и пользователю нужно другое сообщение.
  */
 export class TransportError extends Error {
   readonly reason: 'timeout' | 'network'
@@ -36,14 +36,23 @@ export class TransportError extends Error {
   }
 }
 
-/** Шлюз ответил ошибкой: 429 — перегружен, 5xx — не нашёл файл в сети. */
-export class GatewayError extends Error {
-  readonly status: number
+/** Имя IPNS или DNSLink не разрешилось в адрес содержимого. */
+export class NameError extends Error {
+  /** not-found — записи в сети нет; invalid — запись есть, но подпись не сошлась. */
+  readonly reason: 'not-found' | 'invalid'
 
-  constructor(status: number) {
-    super(`gateway responded ${status}`)
-    this.name = 'GatewayError'
-    this.status = status
+  constructor(reason: 'not-found' | 'invalid', message: string) {
+    super(message)
+    this.name = 'NameError'
+    this.reason = reason
+  }
+}
+
+/** Узел IPFS в этом браузере не запустился: старый движок или нет нужных сетевых API. */
+export class NodeUnavailableError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'NodeUnavailableError'
   }
 }
 

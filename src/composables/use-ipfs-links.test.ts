@@ -183,28 +183,17 @@ describe('openIpfsViewer: окно просмотра', () => {
 })
 
 describe('openIpfsViewer: своей ноды нет', () => {
-  it('ссылку открывает браузер через inbrowser.link — без окна и проб', async () => {
+  it('как в вебе: узел в приложении, без окна-просмотрщика и проб', async () => {
     h.store.resolveGateway.mockResolvedValue('https://dweb.link')
+    const secret = { key: 'a2V5', name: 'a.txt' }
 
-    await openIpfsViewer(target, null)
+    await openIpfsViewer(target, null, 7)
+    await openIpfsViewer(target, secret)
 
-    expect(h.openExternal).toHaveBeenCalledWith(
-      'https://inbrowser.link/ipfs/bafybeigdyrzt5sfp7/docs/a.zip'
-    )
+    expect(h.openInBrowser).toHaveBeenNthCalledWith(1, target, null, 7)
+    expect(h.openInBrowser).toHaveBeenNthCalledWith(2, target, secret, null)
     expect(h.probe).not.toHaveBeenCalled()
     expect(h.store.viewerStatus).not.toHaveBeenCalled()
-  })
-
-  it('приватную ссылку расшифровать нечем — предлагаем модуль', async () => {
-    h.store.resolveGateway.mockResolvedValue('https://dweb.link')
-
-    await openIpfsViewer(target, { key: 'a2V5', name: 'a.txt' })
-
-    const [opts] = h.modal.confirm.mock.calls[0] as [{ title: string; onOk: () => void }]
-    expect(opts.title).toBe('header.ipfsPrivateNeedsModuleTitle')
-    opts.onOk()
-    expect(h.store.enable).toHaveBeenCalled()
-    expect(h.openExternal).not.toHaveBeenCalled()
   })
 })
 

@@ -1,13 +1,11 @@
-// Проверенное чтение файла UnixFS из CAR — для веба и телефона, где нет Rust.
+// Проверенное чтение файлов и папок UnixFS — для веба и телефона, где нет Rust.
 // Близнец src-tauri/src/ipfs/verify.rs: те же правила, те же коды ошибок и те
 // же фикстуры в тестах. Каждый блок сверяется с CID, по которому на него
-// сослался родитель (метки CID внутри CAR не доверенные), поэтому подменить
-// содержимое шлюз не может.
+// сослался родитель, поэтому подменить содержимое не может ни узел, приславший
+// блок, ни библиотека, которая его скачала.
 //
-// Отличие от Rust: блоки не лежат на диске, а приходят потоком. Когда шлюз шлёт
-// их в порядке обхода с повторами (order=dfs, dups=y), файл отдаётся кусками по
-// мере прихода и память не растёт с размером файла. Блоки не по порядку и
-// блоки, которые понадобятся повторно, копятся в буфере с потолком.
+// Откуда блоки — решает BlockSource: в приложении это узел Helia
+// (ipfs-node.ts), в тестах — блоки из фикстур.
 import { CID } from 'multiformats/cid'
 import { base16, base16upper } from 'multiformats/bases/base16'
 import { base32, base32upper } from 'multiformats/bases/base32'
@@ -17,7 +15,7 @@ import { equals } from 'multiformats/bytes'
 import { identity } from 'multiformats/hashes/identity'
 import { sha256, sha512 } from 'multiformats/hashes/sha2'
 import { decode as decodePb, type PBNode } from '@ipld/dag-pb'
-import { TransportError, VerifyError, isAbortError } from './ipfs-errors'
+import { VerifyError } from './ipfs-errors'
 
 const CODEC_DAG_PB = 0x70
 const CODEC_RAW = 0x55
@@ -43,6 +41,30 @@ export function parseCid(text: string): CID {
   }
 }
 
+/**
+ * Сегменты пути ссылки (как в href, с %-кодированием) → имена в каталогах.
+ * Отвергает то же, что SaveTarget::parse в Rust: `.`, `..`, слэши внутри
+ * имени и управляющие символы.
+ */
+export function pathSegments(path: string): string[] {
+  return path
+    .split('/')
+    .filter(Boolean)
+    .map((raw) => {
+      let name: string
+      try {
+        name = decodeURIComponent(raw)
+      } catch {
+        throw new VerifyError('malformed', 'bad path')
+      }
+      // eslint-disable-next-line no-control-regex
+      if (name === '.' || name === '..' || /[/\\\x00-\x1f\x7f]/.test(name)) {
+        throw new VerifyError('malformed', 'bad path')
+      }
+      return name
+    })
+}
+
 async function digestOf(code: number, bytes: Uint8Array): Promise<Uint8Array> {
   if (code === sha256.code) return (await sha256.digest(bytes)).bytes
   if (code === sha512.code) return (await sha512.digest(bytes)).bytes
@@ -50,101 +72,40 @@ async function digestOf(code: number, bytes: Uint8Array): Promise<Uint8Array> {
   throw new VerifyError('unsupported', `hash function 0x${code.toString(16)}`)
 }
 
-async function verifyBlock(cid: CID, bytes: Uint8Array): Promise<void> {
+export async function verifyBlock(cid: CID, bytes: Uint8Array): Promise<void> {
   const digest = await digestOf(cid.multihash.code, bytes)
   if (!equals(digest, cid.multihash.bytes)) {
     throw new VerifyError('mismatch', `block ${cid.toString()} does not match its CID`)
   }
 }
 
-function hex(bytes: Uint8Array): string {
-  let out = ''
-  for (const b of bytes) out += b.toString(16).padStart(2, '0')
-  return out
-}
-
-export interface CarBlock {
-  cid: CID
-  bytes: Uint8Array
-}
-
-export interface BlockReaderOptions {
-  /** Хранить выданные блоки: без dups=y повторный блок файла второй раз не придёт. */
-  keepConsumed: boolean
-  /** Потолок байт, которые держим в памяти: пришедшие раньше очереди и оставленные для повтора. */
-  maxBuffered: number
+export interface BlockSource {
+  /** Байты блока как пришли из сети. Проверяет их этот модуль, а не источник. */
+  get(cid: CID): Promise<Uint8Array>
+  /** Подсказка: эти блоки понадобятся следующими, по порядку. */
+  prefetch?(cids: readonly CID[]): void
 }
 
 /**
- * Блоки по CID из потока CAR. Блок ищется по multihash, а проверяется по
- * CID, через который на него сослались, — не по метке в CAR.
+ * Блоки для обхода: каждый сверяется с CID, по которому на него сослались.
+ * identity-CID несёт данные в себе — в сеть за ним не ходим.
  */
-export class BlockReader {
-  private readonly early = new Map<string, Uint8Array>()
-  private readonly kept = new Map<string, Uint8Array>()
-  private buffered = 0
+class Blocks {
   private visits = 0
 
-  constructor(
-    private readonly blocks: AsyncIterator<CarBlock>,
-    private readonly opts: BlockReaderOptions
-  ) {}
-
-  /** Сколько байт сейчас лежит в буфере (для тестов потокового режима). */
-  get bufferedBytes(): number {
-    return this.buffered
-  }
+  constructor(private readonly source: BlockSource) {}
 
   async get(cid: CID): Promise<Uint8Array> {
     if (++this.visits > MAX_VISITS) throw new VerifyError('too-large')
-    // identity: данные лежат прямо в CID, в CAR такого блока нет.
     if (cid.multihash.code === identity.code) return cid.multihash.digest
-    const key = hex(cid.multihash.bytes)
-    const bytes = this.take(key) ?? (await this.pull(key, cid))
+    const bytes = await this.source.get(cid)
     await verifyBlock(cid, bytes)
-    if (this.opts.keepConsumed && !this.kept.has(key)) this.hold(this.kept, key, bytes)
     return bytes
   }
 
-  private take(key: string): Uint8Array | undefined {
-    const kept = this.kept.get(key)
-    if (kept) return kept
-    const early = this.early.get(key)
-    if (early) {
-      this.early.delete(key)
-      this.buffered -= early.length
-    }
-    return early
-  }
-
-  private async pull(key: string, cid: CID): Promise<Uint8Array> {
-    for (;;) {
-      let next: IteratorResult<CarBlock>
-      try {
-        next = await this.blocks.next()
-      } catch (e) {
-        if (e instanceof VerifyError || e instanceof TransportError || isAbortError(e)) throw e
-        // CAR оборвался или испорчен на середине.
-        throw new VerifyError(
-          'missing',
-          `the gateway response broke off before block ${cid.toString()}`
-        )
-      }
-      if (next.done) {
-        throw new VerifyError('missing', `the gateway did not send block ${cid.toString()}`)
-      }
-      const k = hex(next.value.cid.multihash.bytes)
-      if (k === key) return next.value.bytes
-      if (!this.early.has(k) && !this.kept.has(k)) this.hold(this.early, k, next.value.bytes)
-    }
-  }
-
-  private hold(map: Map<string, Uint8Array>, key: string, bytes: Uint8Array): void {
-    this.buffered += bytes.length
-    if (this.buffered > this.opts.maxBuffered) {
-      throw new VerifyError('too-large', 'too many blocks held in memory')
-    }
-    map.set(key, bytes)
+  prefetch(cids: readonly CID[]): void {
+    const remote = cids.filter((c) => c.multihash.code !== identity.code)
+    if (remote.length) this.source.prefetch?.(remote)
   }
 }
 
@@ -250,11 +211,7 @@ function decodeDagPb(bytes: Uint8Array): { node: PBNode; fs: UnixFs } {
 }
 
 /** CID по пути от корня: обычные каталоги и шардированные (HAMT). */
-async function resolvePath(
-  reader: BlockReader,
-  root: CID,
-  segments: readonly string[]
-): Promise<CID> {
+async function resolvePath(reader: Blocks, root: CID, segments: readonly string[]): Promise<CID> {
   let cur = root
   for (const name of segments) {
     if (cur.code !== CODEC_DAG_PB) throw new VerifyError('not-found', name)
@@ -280,12 +237,7 @@ const MASK64 = (1n << 64n) - 1n
  * уровне. Ссылка слота называется HEX-номером (`0A`) — это вложенный шард, или
  * номером с именем (`0Af10.txt`) — это сама запись.
  */
-async function hamtFind(
-  reader: BlockReader,
-  root: PBNode,
-  rootFs: UnixFs,
-  name: string
-): Promise<CID> {
+async function hamtFind(reader: Blocks, root: PBNode, rootFs: UnixFs, name: string): Promise<CID> {
   if (rootFs.hashType !== HASH_MURMUR3_X64_64) {
     throw new VerifyError('unsupported', 'HAMT hash function')
   }
@@ -321,10 +273,14 @@ async function hamtFind(
   }
 }
 
+/** Сколько блоков файла просить наперёд: по одному блоку за раз сеть отвечала бы медленно. */
+const PREFETCH_BLOCKS = 12
+
 export type Entity =
-  | { kind: 'directory' }
+  | { kind: 'directory'; cid: CID }
   | {
       kind: 'file'
+      cid: CID
       /** Размер из корня файла (проверенного); фактические байты тоже ограничены. */
       size: number
       /** Байты файла по порядку, каждый кусок уже проверен. */
@@ -337,16 +293,22 @@ export type Entity =
  * потребления.
  */
 export async function openEntity(
-  reader: BlockReader,
+  source: BlockSource,
   root: CID,
   segments: readonly string[],
   maxBytes: number
 ): Promise<Entity> {
+  const reader = new Blocks(source)
   const cid = await resolvePath(reader, root, segments)
   const bytes = await reader.get(cid)
   if (cid.code === CODEC_RAW) {
     if (bytes.length > maxBytes) throw new VerifyError('too-large')
-    return { kind: 'file', size: bytes.length, chunks: fileChunks(reader, bytes, [], maxBytes) }
+    return {
+      kind: 'file',
+      cid,
+      size: bytes.length,
+      chunks: fileChunks(reader, bytes, [], maxBytes),
+    }
   }
   if (cid.code !== CODEC_DAG_PB) {
     throw new VerifyError('unsupported', `codec 0x${cid.code.toString(16)}`)
@@ -355,13 +317,13 @@ export async function openEntity(
   switch (fs.type) {
     case 'directory':
     case 'hamt-sharded-directory':
-      return { kind: 'directory' }
+      return { kind: 'directory', cid }
     case 'file':
     case 'raw': {
       const size = unixfsFileSize(fs)
       if (size > maxBytes) throw new VerifyError('too-large')
       const links = node.Links.map((l) => l.Hash)
-      return { kind: 'file', size, chunks: fileChunks(reader, fs.data, links, maxBytes) }
+      return { kind: 'file', cid, size, chunks: fileChunks(reader, fs.data, links, maxBytes) }
     }
     case 'symlink':
       throw new VerifyError('unsupported', 'symlink')
@@ -372,7 +334,7 @@ export async function openEntity(
 
 /** Байты файла UnixFS по порядку: данные узла, затем его дети слева направо. */
 async function* fileChunks(
-  reader: BlockReader,
+  reader: Blocks,
   rootData: Uint8Array | undefined,
   rootLinks: CID[],
   maxBytes: number
@@ -384,8 +346,11 @@ async function* fileChunks(
     return data
   }
   if (rootData?.length) yield counted(rootData)
+  // Вершина стека — следующий блок по порядку файла.
   const stack = [...rootLinks].reverse()
-  for (let cid = stack.pop(); cid; cid = stack.pop()) {
+  while (stack.length) {
+    reader.prefetch(stack.slice(-PREFETCH_BLOCKS).reverse())
+    const cid = stack.pop() as CID
     const bytes = await reader.get(cid)
     let data: Uint8Array | undefined
     if (cid.code === CODEC_RAW) {
@@ -406,6 +371,85 @@ async function* fileChunks(
     }
     if (data?.length) yield counted(data)
   }
+}
+
+export interface DirEntry {
+  name: string
+  cid: CID
+  /** Размер из ссылки каталога: у файла это байты плюс немного служебных. */
+  size: number
+}
+
+export interface DirListing {
+  entries: DirEntry[]
+  /** Записей больше, чем `limit`: показаны не все. */
+  truncated: boolean
+}
+
+/**
+ * Записи каталога: обычного или шардированного (HAMT). У HAMT записи лежат в
+ * порядке хэшей имён — список сортируется по имени.
+ */
+export async function listDirectory(
+  source: BlockSource,
+  dir: CID,
+  limit: number
+): Promise<DirListing> {
+  const reader = new Blocks(source)
+  if (dir.code !== CODEC_DAG_PB) throw new VerifyError('malformed', 'not a directory')
+  const { node, fs } = decodeDagPb(await reader.get(dir))
+  const entries: DirEntry[] = []
+  if (fs.type === 'directory') {
+    for (const link of node.Links) {
+      if (entries.length >= limit) return { entries, truncated: true }
+      entries.push({ name: link.Name ?? '', cid: link.Hash, size: link.Tsize ?? 0 })
+    }
+    return { entries, truncated: false }
+  }
+  if (fs.type !== 'hamt-sharded-directory') throw new VerifyError('malformed', 'not a directory')
+  const fanout = fs.fanout
+  if (fanout === undefined || fanout < 2 || fanout > 4096 || (fanout & (fanout - 1)) !== 0) {
+    throw new VerifyError('malformed', 'HAMT fanout')
+  }
+  const pad = (fanout - 1).toString(16).length
+  const shards: PBNode[] = [node]
+  for (let shard = shards.pop(); shard; shard = shards.pop()) {
+    const subShards: CID[] = []
+    for (const link of shard.Links) {
+      const linkName = link.Name ?? ''
+      if (linkName.length === pad) {
+        subShards.push(link.Hash)
+        continue
+      }
+      if (entries.length >= limit) return { entries: byName(entries), truncated: true }
+      entries.push({ name: linkName.slice(pad), cid: link.Hash, size: link.Tsize ?? 0 })
+    }
+    reader.prefetch(subShards)
+    for (const cid of subShards) {
+      const child = decodeDagPb(await reader.get(cid))
+      if (child.fs.type !== 'hamt-sharded-directory' || child.fs.fanout !== fanout) {
+        throw new VerifyError('malformed', 'HAMT sub-shard')
+      }
+      shards.push(child.node)
+    }
+  }
+  return { entries: byName(entries), truncated: false }
+}
+
+function byName(entries: DirEntry[]): DirEntry[] {
+  return entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+}
+
+export type EntryStat = { kind: 'directory' } | { kind: 'file'; size: number } | { kind: 'other' }
+
+/** Что за запись каталога: для raw-листа хватает CID, иначе читается её корень. */
+export async function statEntry(source: BlockSource, entry: DirEntry): Promise<EntryStat> {
+  if (entry.cid.code === CODEC_RAW) return { kind: 'file', size: entry.size }
+  if (entry.cid.code !== CODEC_DAG_PB) return { kind: 'other' }
+  const { fs } = decodeDagPb(await new Blocks(source).get(entry.cid))
+  if (fs.type === 'directory' || fs.type === 'hamt-sharded-directory') return { kind: 'directory' }
+  if (fs.type === 'file' || fs.type === 'raw') return { kind: 'file', size: unixfsFileSize(fs) }
+  return { kind: 'other' }
 }
 
 // ---------------------------------------------------------------------------

@@ -216,11 +216,21 @@ async function answerNode(route: Route, data: MockNodeData): Promise<void> {
   })
 }
 
-/** Включает подменную ноду и обрывает остальной внешний трафик. */
-export async function useMockNode(page: Page, data: MockNodeData): Promise<void> {
+/**
+ * Включает подменную ноду и обрывает остальной внешний трафик. `allow` —
+ * адреса, которые живой тест пускает в настоящую сеть.
+ */
+export async function useMockNode(
+  page: Page,
+  data: MockNodeData,
+  allow?: (url: string) => boolean
+): Promise<void> {
   await page.context().route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, async (route) => {
-    if (/\.pocketnet\.app:8899\//.test(route.request().url())) {
+    const url = route.request().url()
+    if (/\.pocketnet\.app:8899\//.test(url)) {
       await answerNode(route, data)
+    } else if (allow?.(url)) {
+      await route.continue()
     } else {
       await route.abort()
     }

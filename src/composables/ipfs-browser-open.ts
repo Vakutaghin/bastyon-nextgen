@@ -1,36 +1,36 @@
-// Открытие IPFS-ссылок в браузере и на телефоне, где нет локальной ноды и Rust.
-// Обычная ссылка — новая вкладка inbrowser.link: содержимое из сети качает и
-// проверяет сам браузер (service worker), он же решает, показать или скачать.
-// Публичные шлюзы с сентября 2026 приложениям не отвечают (ipfs-viewer.ts),
-// поэтому раньше здешние проба типа и скачивание из CAR перестали работать.
+// Открытие IPFS-ссылок там, где своей ноды нет: в вебе, на телефоне и на
+// компьютере без модуля. Содержимое качает узел IPFS в самом приложении
+// (helpers/ipfs/ipfs-node.ts) — напрямую у других узлов сети, без шлюзов, и
+// каждый блок сверяется со своим CID (ipfs-verify.ts). Публичные шлюзы с
+// сентября 2026 приложениям не отвечают (ipfs-viewer.ts).
 //
-// Приватный файл скачивается здесь: файл собирается из CAR, каждый блок
-// сверяется со своим CID (ipfs-verify.ts) и расшифровывается ключом из ссылки.
-// Библиотеки IPLD грузятся только при скачивании (динамический import).
+// Обычная ссылка открывается в окне просмотра (components/ipfs/ipfs-node-viewer):
+// картинку, звук, видео и текст оно показывает само, папку — списком, прочее
+// предлагает скачать. Приватный файл сразу скачивается и расшифровывается
+// ключом из ссылки на этом устройстве.
 import { h, type VNode } from 'vue'
 import { Modal } from 'ant-design-vue'
 import { t } from '@/i18n'
 import { appToast } from '@/b-components/app-toast'
 import { Z_INDEX } from '@/styles/design-tokens'
-import { openExternal } from '@/helpers/common/open-external'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import type { IpfsSecret, IpfsTarget } from '@/helpers/ipfs/ipfs-link'
-import { buildIpfsWebUrl } from '@/helpers/ipfs/ipfs-viewer'
 import { sanitizeFilename } from '@/helpers/ipfs/ipfs-content'
 import { extensionFor } from '@/helpers/ipfs/ipfs-sniff'
 import {
-  GatewayError,
+  NameError,
+  NodeUnavailableError,
   SecretError,
   TransportError,
   VerifyError,
   isAbortError,
 } from '@/helpers/ipfs/ipfs-errors'
+import { loadIpfsNode } from '@/helpers/ipfs/ipfs-node-loader'
 import { openSaveSink, type SaveSink, type SinkKind } from '@/helpers/ipfs/ipfs-save-sinks'
+import { useIpfsNodeViewerStore } from '@/stores/ipfs-node-viewer-store'
 
 /** Старые приватные файлы (v1) расшифровываются целиком в памяти — как MAX_ENCRYPTED_BYTES в Rust. */
 const SECRET_V1_MAX_BYTES = 512 * 1024 * 1024 + 28
-/** Если шлюз прислал блоки не по порядку, столько можем держать в памяти. */
-const REORDER_MAX_BYTES = 256 * 1024 * 1024
 /** Расшифрованный файл уходит на запись такими кусками. */
 const WRITE_SLICE_BYTES = 4 * 1024 * 1024
 /** Прогресс в окне обновляется не чаще. */
@@ -44,14 +44,14 @@ const inFlight = new Set<string>()
 interface DownloadRequest {
   name: string
   size?: number
-  secret?: IpfsSecret
+  secret: IpfsSecret
 }
 
 /**
  * Имя для сохранения: из ссылки (только базовое имя — `../x` из чужой ссылки
  * не должен стать путём), а для голого CID — по угаданному типу.
  */
-function fileName(name: string, target: IpfsTarget, type?: string): string {
+export function fileName(name: string, target: IpfsTarget, type?: string): string {
   const clean = sanitizeFilename(name.split(/[/\\]/).pop() ?? '')
   if (clean) return clean
   const ext = (type && extensionFor(type)) || 'bin'
@@ -63,17 +63,14 @@ function track(key: string, work: Promise<void>): void {
   void work.finally(() => inFlight.delete(key))
 }
 
-/**
- * Клик по IPFS-ссылке в браузере или на телефоне. Синхронно: вкладку браузер
- * откроет, только пока идёт обработка клика.
- */
+/** Клик по IPFS-ссылке, когда своей ноды нет: окно просмотра или скачивание приватного файла. */
 export function openIpfsInBrowser(
   target: IpfsTarget,
   secret: IpfsSecret | null,
   size: number | null = null
 ): void {
   if (!secret?.key) {
-    void openExternal(buildIpfsWebUrl(target))
+    useIpfsNodeViewerStore().show(target, size)
     return
   }
   const key = `${target.root}/${target.path}`
@@ -86,8 +83,10 @@ export function openIpfsInBrowser(
 
 function describe(req: DownloadRequest): VNode {
   const title = req.size ? `${req.name} · ${formatFileSize(req.size)}` : req.name
-  const hint = req.secret ? t('header.ipfsWebPrivateHint') : t('header.ipfsWebVerifyHint')
-  return h('div', [h('div', { style: { wordBreak: 'break-all' } }, title), h('div', hint)])
+  return h('div', [
+    h('div', { style: { wordBreak: 'break-all' } }, title),
+    h('div', t('header.ipfsWebPrivateHint')),
+  ])
 }
 
 /** Окно «Скачать?»; по «Скачать» — выбор места и скачивание с прогрессом в том же окне. */
@@ -96,7 +95,7 @@ function download(target: IpfsTarget, req: DownloadRequest): Promise<void> {
     const controller = new AbortController()
     const modal = Modal.confirm({
       zIndex: MODAL_Z,
-      title: t(req.secret ? 'header.ipfsWebPrivateTitle' : 'header.ipfsWebDownloadTitle'),
+      title: t('header.ipfsWebPrivateTitle'),
       content: describe(req),
       okText: t('header.ipfsWebDownloadBtn'),
       cancelText: t('common.cancel'),
@@ -113,13 +112,15 @@ function download(target: IpfsTarget, req: DownloadRequest): Promise<void> {
         }
         modal.update({ title: t('header.ipfsWebDownloadingTitle') })
         try {
-          await runDownload(target, req, sink, controller.signal, (content) =>
-            modal.update({ content })
-          )
+          await saveFromNetwork(target, sink, {
+            signal: controller.signal,
+            secret: req.secret,
+            show: (content) => modal.update({ content }),
+          })
           if (sink.kind !== 'share') appToast.success({ message: t('header.ipfsSaveDoneTitle') })
         } catch (e) {
           await sink.abort()
-          if (!isAbortError(e)) showError(e, sink.kind, Boolean(req.secret))
+          if (!isAbortError(e)) showError(e, sink.kind, true)
         } finally {
           done()
         }
@@ -138,22 +139,30 @@ function progressReporter(show: (content: string) => void) {
   }
 }
 
-async function runDownload(
-  target: IpfsTarget,
-  req: DownloadRequest,
-  sink: SaveSink,
-  signal: AbortSignal,
+export interface SaveOptions {
+  signal: AbortSignal
+  /** Ключ приватной ссылки: файл расшифровывается по дороге. */
+  secret?: IpfsSecret
+  /** Текст о ходе скачивания. */
   show: (content: string) => void
+}
+
+/** Файл по ссылке — в выбранное место, с проверкой каждого блока по CID. */
+export async function saveFromNetwork(
+  target: IpfsTarget,
+  sink: SaveSink,
+  opts: SaveOptions
 ): Promise<void> {
-  const { fetchVerifiedEntity } = await import('@/helpers/ipfs/ipfs-gateway-car')
-  const entity = await fetchVerifiedEntity(target, {
-    signal,
+  const node = await loadIpfsNode()
+  const { entity } = await node.openIpfs(target, {
+    signal: opts.signal,
     // Шифр v2 добавляет 16 байт на мегабайт — запас в 1/64 000 с лихвой.
-    maxBytes: req.secret ? sink.maxBytes + Math.ceil(sink.maxBytes / 65_536) + 1024 : sink.maxBytes,
-    maxReorderBytes: REORDER_MAX_BYTES,
+    maxBytes: opts.secret
+      ? sink.maxBytes + Math.ceil(sink.maxBytes / 65_536) + 1024
+      : sink.maxBytes,
   })
   if (entity.kind === 'directory') throw new VerifyError('directory')
-  const progress = progressReporter(show)
+  const progress = progressReporter(opts.show)
   const counted = (async function* () {
     let received = 0
     for await (const chunk of entity.chunks) {
@@ -162,11 +171,20 @@ async function runDownload(
       yield chunk
     }
   })()
-  if (req.secret) {
-    await saveSecret(entity.size, counted, req.secret, sink, show)
+  if (opts.secret) {
+    await saveSecret(entity.size, counted, opts.secret, sink, opts.show)
     return
   }
   for await (const chunk of counted) await sink.write(chunk)
+  await sink.close()
+}
+
+/** Файл, уже скачанный для показа, — в выбранное место без второго скачивания. */
+export async function saveBlob(blob: Blob, sink: SaveSink): Promise<void> {
+  if (blob.size > sink.maxBytes) throw new VerifyError('too-large')
+  for (let i = 0; i < blob.size; i += WRITE_SLICE_BYTES) {
+    await sink.write(new Uint8Array(await blob.slice(i, i + WRITE_SLICE_BYTES).arrayBuffer()))
+  }
   await sink.close()
 }
 
@@ -230,22 +248,20 @@ async function saveSecret(
  * в 1 ГБ — только у сохранения через Blob; у приватных файлов свой, меньше.
  */
 export function webErrorText(e: unknown, sink: SinkKind | null, secret = false): string {
-  if (e instanceof GatewayError) {
-    if (e.status === 429) return t('header.ipfsWebGatewayBusy')
-    if (e.status === 404 || e.status === 410) return t('header.ipfsWebNotFound')
-    if (e.status >= 500) return t('header.ipfsWebGatewayMissing')
-    return e.message
+  if (e instanceof NodeUnavailableError) return t('header.ipfsNodeUnavailable')
+  if (e instanceof NameError) {
+    return t(e.reason === 'invalid' ? 'header.ipfsNameInvalid' : 'header.ipfsNameNotFound')
   }
   if (e instanceof TransportError) {
-    return t(e.reason === 'timeout' ? 'header.ipfsWebGatewayMissing' : 'header.ipfsWebNetwork')
+    return t(e.reason === 'timeout' ? 'header.ipfsNetNotFound' : 'header.ipfsNetFailed')
   }
   if (e instanceof SecretError) return t('header.ipfsWebDecryptFailed')
   if (e instanceof VerifyError) {
     switch (e.code) {
       case 'mismatch':
-        return t('header.ipfsVerifyMismatch')
+        return t('header.ipfsNetMismatch')
       case 'missing':
-        return t('header.ipfsWebIncomplete')
+        return t('header.ipfsNetIncomplete')
       case 'not-found':
         return t('header.ipfsWebNotFound')
       case 'directory':
@@ -254,7 +270,7 @@ export function webErrorText(e: unknown, sink: SinkKind | null, secret = false):
         return t('header.ipfsWebMalformed')
       case 'too-large':
         return t(
-          sink === 'blob' && !secret ? 'header.ipfsWebTooLargeForBrowser' : 'header.ipfsWebTooLarge'
+          sink === 'blob' && !secret ? 'header.ipfsWebTooLargeForBrowser' : 'header.ipfsNetTooLarge'
         )
       default:
         return t('header.ipfsWebUnsupported')

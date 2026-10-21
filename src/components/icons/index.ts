@@ -50,6 +50,7 @@ import {
   File,
   FileText,
   Flag,
+  Folder,
   Gift,
   Globe,
   Hourglass,
@@ -195,6 +196,7 @@ export const ExpandOutlined = lucideIcon('ExpandOutlined', Expand)
 export const FileOutlined = lucideIcon('FileOutlined', File)
 export const FileTextOutlined = lucideIcon('FileTextOutlined', FileText)
 export const FlagOutlined = lucideIcon('FlagOutlined', Flag)
+export const FolderOutlined = lucideIcon('FolderOutlined', Folder)
 export const FullscreenExitOutlined = lucideIcon('FullscreenExitOutlined', Minimize)
 export const FullscreenOutlined = lucideIcon('FullscreenOutlined', Maximize)
 export const GiftOutlined = lucideIcon('GiftOutlined', Gift)

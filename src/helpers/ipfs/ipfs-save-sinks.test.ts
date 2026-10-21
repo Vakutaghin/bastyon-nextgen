@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
   mobile: false,
+  tauri: false,
+  invoke: vi.fn(),
   anchor: vi.fn(),
   fs: {
     writeFile: vi.fn(async () => ({ uri: '' })),
@@ -16,12 +18,13 @@ const h = vi.hoisted(() => ({
   share: { share: vi.fn(async () => ({})) },
 }))
 
-vi.mock('@mobile/utils/platform', () => ({ isMobile: () => h.mobile }))
+vi.mock('@mobile/utils/platform', () => ({ isMobile: () => h.mobile, isTauri: () => h.tauri }))
+vi.mock('@tauri-apps/api/core', () => ({ invoke: h.invoke }))
 vi.mock('@/helpers/common/download-media', () => ({ triggerAnchorDownload: h.anchor }))
 vi.mock('@capacitor/filesystem', () => ({ Filesystem: h.fs, Directory: { Cache: 'CACHE' } }))
 vi.mock('@capacitor/share', () => ({ Share: h.share }))
 
-import { BlobSink, ShareSink, openSaveSink } from './ipfs-save-sinks'
+import { BlobSink, DesktopSink, ShareSink, openSaveSink } from './ipfs-save-sinks'
 
 type PickerWindow = Window & { showSaveFilePicker?: unknown }
 
@@ -31,6 +34,7 @@ const chunk = (s: string): Uint8Array => new TextEncoder().encode(s)
 beforeEach(() => {
   vi.clearAllMocks()
   h.mobile = false
+  h.tauri = false
 })
 
 afterEach(() => {
@@ -146,5 +150,47 @@ describe('ShareSink (телефон)', () => {
       directory: 'CACHE',
     })
     expect(h.share.share).not.toHaveBeenCalled()
+  })
+})
+
+describe('DesktopSink (компьютер без модуля)', () => {
+  it('диалог «Сохранить» — у Rust; закрыли — ничего не качаем', async () => {
+    h.tauri = true
+    h.invoke.mockResolvedValueOnce(null)
+    expect(await openSaveSink('a.zip')).toBeNull()
+    expect(h.invoke).toHaveBeenCalledWith('ipfs_sink_open', { suggestedName: 'a.zip' })
+  })
+
+  it('куски копятся до мегабайта и уходят сырым телом; конец — переименование', async () => {
+    h.tauri = true
+    h.invoke.mockResolvedValue('tok')
+    const sink = (await openSaveSink('a.zip')) as DesktopSink
+    expect(sink).toBeInstanceOf(DesktopSink)
+    expect(sink.kind).toBe('disk')
+    h.invoke.mockClear()
+    await sink.write(new Uint8Array(600 * 1024))
+    expect(h.invoke).not.toHaveBeenCalled()
+    await sink.write(new Uint8Array(600 * 1024))
+    expect(h.invoke).toHaveBeenCalledTimes(1)
+    const [cmd, body, opts] = h.invoke.mock.calls[0] as [string, Uint8Array, unknown]
+    expect(cmd).toBe('ipfs_sink_write')
+    expect(body).toBeInstanceOf(Uint8Array)
+    expect(body.length).toBe(1200 * 1024)
+    expect(opts).toEqual({ headers: { 'x-sink': 'tok' } })
+    await sink.write(chunk('tail'))
+    await sink.close()
+    expect(h.invoke).toHaveBeenNthCalledWith(2, 'ipfs_sink_write', chunk('tail'), {
+      headers: { 'x-sink': 'tok' },
+    })
+    expect(h.invoke).toHaveBeenLastCalledWith('ipfs_sink_close', { token: 'tok' })
+  })
+
+  it('отмена удаляет недокачанное', async () => {
+    h.invoke.mockResolvedValue(undefined)
+    const sink = new DesktopSink(h.invoke as never, 'tok')
+    await sink.write(chunk('part'))
+    await sink.abort()
+    expect(h.invoke).toHaveBeenCalledTimes(1)
+    expect(h.invoke).toHaveBeenCalledWith('ipfs_sink_abort', { token: 'tok' })
   })
 })

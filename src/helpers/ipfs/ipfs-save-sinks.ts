@@ -1,11 +1,13 @@
-// Куда сохранить скачанный и проверенный IPFS-файл в браузере и на телефоне:
+// Куда сохранить скачанный и проверенный IPFS-файл, когда своей ноды нет:
+//  - компьютер без модуля (Tauri): системный диалог «Сохранить», куски пишет
+//    Rust (src-tauri/src/ipfs/sink.rs) — у WKWebView и WebKitGTK своего диалога нет;
 //  - телефон (Capacitor): по кускам во временную папку приложения, потом
 //    системное «Поделиться» — оттуда «Сохранить в Файлы» или любое приложение;
 //  - браузер с File System Access (Chrome, Edge): диалог сохранения и запись
 //    на диск по мере скачивания, без потолка памяти;
 //  - остальные браузеры: файл собирается в Blob и уходит обычной загрузкой,
 //    поэтому у этого способа потолок размера.
-import { isMobile } from '@mobile/utils/platform'
+import { isMobile, isTauri } from '@mobile/utils/platform'
 import { triggerAnchorDownload } from '@/helpers/common/download-media'
 import { isAbortError } from './ipfs-errors'
 
@@ -30,6 +32,8 @@ export const MAX_BLOB_BYTES = 1024 ** 3
 const BLOB_BATCH_BYTES = 16 * 1024 * 1024
 /** Кусок записи на телефоне: каждый идёт через мост Capacitor в base64. */
 const SHARE_FLUSH_BYTES = 2 * 1024 * 1024
+/** Кусок записи на компьютере: каждый — отдельный вызов Rust. */
+const DESKTOP_FLUSH_BYTES = 1024 * 1024
 /** Папка загрузок в кэше приложения; чистится перед каждой новой. */
 const SHARE_DIR = 'ipfs-downloads'
 
@@ -41,6 +45,7 @@ type SaveFilePicker = (options: { suggestedName?: string }) => Promise<FileSyste
  * пользователя. null — диалог закрыли.
  */
 export async function openSaveSink(name: string): Promise<SaveSink | null> {
+  if (isTauri()) return openDesktopSink(name)
   if (isMobile()) return openShareSink(name)
   const picker = (window as Window & { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker
   if (picker) {
@@ -108,6 +113,57 @@ export class BlobSink implements SaveSink {
     this.parts = []
     this.batch = []
     this.batchBytes = 0
+  }
+}
+
+type Invoke = typeof import('@tauri-apps/api/core').invoke
+
+async function openDesktopSink(name: string): Promise<SaveSink | null> {
+  const { invoke } = await import('@tauri-apps/api/core')
+  const token = await invoke<string | null>('ipfs_sink_open', { suggestedName: name })
+  return token ? new DesktopSink(invoke, token) : null
+}
+
+export class DesktopSink implements SaveSink {
+  readonly kind = 'disk'
+  readonly maxBytes = MAX_FILE_BYTES
+  private batch: Uint8Array<ArrayBuffer>[] = []
+  private batchBytes = 0
+
+  constructor(
+    private readonly invoke: Invoke,
+    private readonly token: string
+  ) {}
+
+  async write(chunk: Uint8Array): Promise<void> {
+    this.batch.push(chunk as Uint8Array<ArrayBuffer>)
+    this.batchBytes += chunk.length
+    if (this.batchBytes >= DESKTOP_FLUSH_BYTES) await this.flush()
+  }
+
+  private async flush(): Promise<void> {
+    if (!this.batchBytes) return
+    const body = new Uint8Array(this.batchBytes)
+    let offset = 0
+    for (const part of this.batch) {
+      body.set(part, offset)
+      offset += part.length
+    }
+    this.batch = []
+    this.batchBytes = 0
+    // Сырое тело IPC, а не JSON-массив чисел: см. save_temp_file в lib.rs.
+    await this.invoke('ipfs_sink_write', body, { headers: { 'x-sink': this.token } })
+  }
+
+  async close(): Promise<void> {
+    await this.flush()
+    await this.invoke('ipfs_sink_close', { token: this.token })
+  }
+
+  async abort(): Promise<void> {
+    this.batch = []
+    this.batchBytes = 0
+    await this.invoke('ipfs_sink_abort', { token: this.token }).catch(() => {})
   }
 }
 

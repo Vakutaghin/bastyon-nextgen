@@ -48,7 +48,7 @@ The network’s charge for every action — a post, a rating, a transfer. It is 
 
 ## Gateway
 
-A website through which people without their own IPFS program open files from the [IPFS](#ipfs) network. The public gateways ipfs.io and dweb.link stopped serving files to sites and apps in September 2026. On the inbrowser.link gateway, the browser itself fetches files from the network and checks them against the [CID](#cid).
+A website through which people without their own IPFS program open files from the [IPFS](#ipfs) network. The public gateways ipfs.io and dweb.link stopped serving files to sites and apps in September 2026, so Bastyon fetches files from the network itself, with the IPFS node in the app. On the inbrowser.link gateway, the browser itself fetches files from the network and checks them against the [CID](#cid).
 
 ## Hash
 

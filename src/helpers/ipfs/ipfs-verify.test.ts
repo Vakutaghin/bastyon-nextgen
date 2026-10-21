@@ -5,11 +5,18 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CarBlockIterator } from '@ipld/car/iterator'
-import { decode as decodePb } from '@ipld/dag-pb'
-import { CID } from 'multiformats/cid'
-import { varint } from 'multiformats'
+import type { CID } from 'multiformats/cid'
 import { VerifyError, type VerifyCode } from './ipfs-errors'
-import { BlockReader, murmur3x64_128, murmur3x64_64, openEntity, parseCid } from './ipfs-verify'
+import {
+  listDirectory,
+  murmur3x64_128,
+  murmur3x64_64,
+  openEntity,
+  parseCid,
+  pathSegments,
+  statEntry,
+  type BlockSource,
+} from './ipfs-verify'
 
 const SMALL_V0 = 'QmWmkE7shY3Z4JnHqMYqvzLvsAR5ZYhkHSuskPXSCdHKSF'
 const CHUNKED_V0 = 'QmYdDbAGaTRc5KgQhznmX9F5mEfzyFrdzcPZrEukdrXvbd'
@@ -32,18 +39,42 @@ function fixture(name: string): Uint8Array {
   return new Uint8Array(readFileSync(resolve(process.cwd(), 'src-tauri/src/ipfs/testdata', name)))
 }
 
-type ReadOpts = { keepConsumed?: boolean; maxBuffered?: number; maxBytes?: number }
+/**
+ * Блоки фикстуры по multihash — как их прислал бы узел сети, без проверки:
+ * проверяет обход. Запоминает, какие блоки просили и о каких предупредили.
+ */
+class FixtureSource implements BlockSource {
+  readonly blocks = new Map<string, Uint8Array>()
+  readonly requested: string[] = []
+  readonly prefetched: string[][] = []
 
-async function readerFor(car: Uint8Array, opts: ReadOpts = {}): Promise<BlockReader> {
-  const blocks = await CarBlockIterator.fromBytes(car)
-  return new BlockReader(blocks[Symbol.asyncIterator](), {
-    keepConsumed: opts.keepConsumed ?? true,
-    maxBuffered: opts.maxBuffered ?? Number.MAX_SAFE_INTEGER,
-  })
+  static async of(car: Uint8Array): Promise<FixtureSource> {
+    const source = new FixtureSource()
+    for await (const block of await CarBlockIterator.fromBytes(car)) {
+      source.blocks.set(block.cid.multihash.bytes.join(','), block.bytes)
+    }
+    return source
+  }
+
+  async get(cid: CID): Promise<Uint8Array> {
+    this.requested.push(cid.toString())
+    const bytes = this.blocks.get(cid.multihash.bytes.join(','))
+    if (!bytes) throw new VerifyError('missing', cid.toString())
+    return bytes
+  }
+
+  prefetch(cids: readonly CID[]): void {
+    this.prefetched.push(cids.map(String))
+  }
+
+  /** Подменить блок `cid` байтами другого блока. */
+  swap(cid: string, bytes: Uint8Array): void {
+    this.blocks.set(parseCid(cid).multihash.bytes.join(','), bytes)
+  }
 }
 
-async function readAll(reader: BlockReader, root: string, path: string[], maxBytes: number) {
-  const entity = await openEntity(reader, parseCid(root), path, maxBytes)
+async function readAll(source: BlockSource, root: string, path: string[], maxBytes: number) {
+  const entity = await openEntity(source, parseCid(root), path, maxBytes)
   if (entity.kind === 'directory') throw new VerifyError('directory')
   const parts: Uint8Array[] = []
   for await (const chunk of entity.chunks) parts.push(chunk)
@@ -56,8 +87,8 @@ async function readAll(reader: BlockReader, root: string, path: string[], maxByt
   return out
 }
 
-async function extract(car: Uint8Array, root: string, path: string[] = [], opts: ReadOpts = {}) {
-  return readAll(await readerFor(car, opts), root, path, opts.maxBytes ?? Number.MAX_SAFE_INTEGER)
+async function extract(car: Uint8Array, root: string, path: string[] = [], maxBytes?: number) {
+  return readAll(await FixtureSource.of(car), root, path, maxBytes ?? Number.MAX_SAFE_INTEGER)
 }
 
 async function failure(promise: Promise<unknown>): Promise<VerifyCode> {
@@ -68,49 +99,6 @@ async function failure(promise: Promise<unknown>): Promise<VerifyCode> {
     throw e
   }
   throw new Error('expected a VerifyError')
-}
-
-/** Смещения секций CAR: [начало секции, начало данных блока, конец]. */
-function sections(car: Uint8Array): Array<[number, number, number]> {
-  const [headerLen, n] = varint.decode(car)
-  let pos = n + headerLen
-  const out: Array<[number, number, number]> = []
-  while (pos < car.length) {
-    const start = pos
-    const [len, used] = varint.decode(car, pos)
-    pos += used
-    const [cid] = CID.decodeFirst(car.subarray(pos))
-    out.push([start, pos + cid.bytes.length, pos + len])
-    pos += len
-  }
-  return out
-}
-
-/**
- * CAR файла в порядке обхода с повторами — так отвечает шлюз на
- * `order=dfs, dups=y`. Блоки берутся из фикстуры (там каждый блок один раз).
- */
-async function dfsWithDups(car: Uint8Array, root: string): Promise<Uint8Array> {
-  const byHash = new Map<string, { cid: CID; bytes: Uint8Array }>()
-  for await (const block of await CarBlockIterator.fromBytes(car)) {
-    byHash.set(block.cid.multihash.bytes.join(','), block)
-  }
-  const [headerLen, n] = varint.decode(car)
-  const parts: Uint8Array[] = [car.subarray(0, n + headerLen)]
-  const walk = (cid: CID): void => {
-    const block = byHash.get(cid.multihash.bytes.join(','))
-    if (!block) throw new Error(`fixture lacks ${cid}`)
-    const body = new Uint8Array([...block.cid.bytes, ...block.bytes])
-    parts.push(
-      Uint8Array.from(
-        varint.encodeTo(body.length, new Uint8Array(varint.encodingLength(body.length)))
-      ),
-      body
-    )
-    if (cid.code === 0x70) decodePb(block.bytes).Links.forEach((l) => walk(l.Hash))
-  }
-  walk(parseCid(root))
-  return new Uint8Array(parts.flatMap((p) => [...p]))
 }
 
 describe('CID', () => {
@@ -136,6 +124,16 @@ describe('CID', () => {
   })
 })
 
+describe('путь из ссылки', () => {
+  it('раскодируется, опасные сегменты отвергаются', () => {
+    expect(pathSegments('docs/my%20file.pdf')).toEqual(['docs', 'my file.pdf'])
+    expect(pathSegments('')).toEqual([])
+    for (const bad of ['a/%2e%2e', 'a%2Fb', 'a%5Cb', 'x%0Ay', '%E0%A4%A']) {
+      expect(() => pathSegments(bad), bad).toThrow(VerifyError)
+    }
+  })
+})
+
 describe('murmur3', () => {
   it('совпадает с эталоном (как go murmur3.Sum64)', () => {
     expect(murmur3x64_128(new Uint8Array())).toEqual([0n, 0n])
@@ -143,7 +141,7 @@ describe('murmur3', () => {
   })
 })
 
-describe('чтение файла из CAR', () => {
+describe('чтение файла', () => {
   it('CIDv0: файл в одном узле и файл из dag-pb-листьев', async () => {
     expect(await extract(fixture('small-v0.car'), SMALL_V0)).toEqual(text('hello bastyon\n'))
     expect(await extract(fixture('chunked-v0.car'), CHUNKED_V0)).toEqual(pattern(1000))
@@ -165,16 +163,16 @@ describe('чтение файла из CAR', () => {
   })
 
   it('каждая запись шардированного каталога находится', async () => {
-    const reader = await readerFor(fixture('hamt-v1.car'))
+    const source = await FixtureSource.of(fixture('hamt-v1.car'))
     for (let i = 0; i < 300; i++) {
       const name = `f${i}.txt`
-      expect(await readAll(reader, HAMT_V1, [name], 1 << 20), name).toEqual(text(`entry ${i}\n`))
+      expect(await readAll(source, HAMT_V1, [name], 1 << 20), name).toEqual(text(`entry ${i}\n`))
     }
-    expect(await failure(readAll(reader, HAMT_V1, ['f300.txt'], 1 << 20))).toBe('not-found')
+    expect(await failure(readAll(source, HAMT_V1, ['f300.txt'], 1 << 20))).toBe('not-found')
   })
 
   it('identity- и sha2-512-CID проверяются тоже', async () => {
-    // Каталог и файл целиком внутри CID: в CAR блоков нет вовсе.
+    // Каталог и файл целиком внутри CID: в сеть за ними не ходят.
     expect(await extract(fixture('inline-v1.car'), INLINE_V1, ['a.txt'])).toEqual(text('hi\n'))
     expect(await extract(fixture('sha512-v1.car'), SHA512_V1)).toEqual(text('hello bastyon\n'))
   })
@@ -184,72 +182,76 @@ describe('чтение файла из CAR', () => {
   })
 })
 
-describe('чужие данные от шлюза', () => {
+describe('чужие данные из сети', () => {
   it('испорченный блок', async () => {
-    const car = fixture('deep-v1.car')
-    // Портим байт в данных последнего блока (листа файла).
-    const all = sections(car)
-    const [, dataStart, end] = all[all.length - 1] as [number, number, number]
-    const index = Math.floor((dataStart + end) / 2)
-    car[index] = (car[index] as number) ^ 0x01
-    expect(await failure(extract(car, DEEP_V1))).toBe('mismatch')
+    const source = await FixtureSource.of(fixture('deep-v1.car'))
+    const [leaf] = [...source.blocks.entries()].filter(([, b]) => b.length > 0).slice(-1)
+    const bytes = (leaf as [string, Uint8Array])[1].slice()
+    bytes[Math.floor(bytes.length / 2)] = (bytes[Math.floor(bytes.length / 2)] as number) ^ 0x01
+    source.blocks.set((leaf as [string, Uint8Array])[0], bytes)
+    expect(await failure(readAll(source, DEEP_V1, [], Number.MAX_SAFE_INTEGER))).toBe('mismatch')
   })
 
-  it('чужой, но корректный CAR: корня из ссылки в нём нет', async () => {
-    expect(await failure(extract(fixture('small-v0.car'), CHUNKED_V0))).toBe('missing')
-  })
-
-  it('недостающий блок', async () => {
-    const car = fixture('deep-v1.car')
-    const all = sections(car)
-    const [start] = all[all.length - 1] as [number, number, number]
-    expect(await failure(extract(car.subarray(0, start), DEEP_V1))).toBe('missing')
-  })
-
-  it('повторы блоков не мешают', async () => {
-    const car = fixture('chunked-v0.car')
-    const [start, , end] = sections(car)[1] as [number, number, number]
-    const dup = new Uint8Array([...car, ...car.subarray(start, end)])
-    expect(await extract(dup, CHUNKED_V0)).toEqual(pattern(1000))
+  it('вместо корня прислали другой, целый блок', async () => {
+    const source = await FixtureSource.of(fixture('chunked-v0.car'))
+    const small = await FixtureSource.of(fixture('small-v0.car'))
+    source.swap(CHUNKED_V0, await small.get(parseCid(SMALL_V0)))
+    expect(await failure(readAll(source, CHUNKED_V0, [], 1 << 20))).toBe('mismatch')
   })
 
   it('потолок размера: отказ по размеру из корня, до скачивания данных', async () => {
-    expect(await failure(extract(fixture('deep-v1.car'), DEEP_V1, [], { maxBytes: 1000 }))).toBe(
-      'too-large'
-    )
-    expect(await failure(extract(fixture('small-v0.car'), SMALL_V0, [], { maxBytes: 5 }))).toBe(
-      'too-large'
-    )
+    const source = await FixtureSource.of(fixture('deep-v1.car'))
+    expect(await failure(readAll(source, DEEP_V1, [], 1000))).toBe('too-large')
+    expect(source.requested).toEqual([DEEP_V1])
+    expect(await failure(extract(fixture('small-v0.car'), SMALL_V0, [], 5))).toBe('too-large')
   })
 })
 
-describe('поток в порядке обхода (order=dfs, dups=y)', () => {
-  it('файл собирается без буфера: блоки не копятся в памяти', async () => {
-    for (const [name, root, expected] of [
-      ['chunked-v0.car', CHUNKED_V0, pattern(1000)],
-      ['deep-v1.car', DEEP_V1, pattern(6000)],
-    ] as const) {
-      const car = await dfsWithDups(fixture(name), root)
-      const reader = await readerFor(car, { keepConsumed: false, maxBuffered: 0 })
-      expect(await readAll(reader, root, [], Number.MAX_SAFE_INTEGER), name).toEqual(expected)
-      expect(reader.bufferedBytes).toBe(0)
-    }
+describe('чтение наперёд', () => {
+  it('следующие блоки файла запрашиваются заранее, по порядку и не больше 12', async () => {
+    const source = await FixtureSource.of(fixture('deep-v1.car'))
+    expect(await readAll(source, DEEP_V1, [], Number.MAX_SAFE_INTEGER)).toEqual(pattern(6000))
+    expect(source.prefetched.length).toBeGreaterThan(0)
+    for (const batch of source.prefetched) expect(batch.length).toBeLessThanOrEqual(12)
+    // Первым в каждой подсказке — блок, который обход тут же попросит.
+    const asked = source.requested.slice(1)
+    source.prefetched.forEach((batch, i) => expect(batch[0]).toBe(asked[i]))
+  })
+})
+
+describe('каталог', () => {
+  it('обычный: записи с CID и размером из ссылок', async () => {
+    const source = await FixtureSource.of(fixture('site-v1.car'))
+    const { entries, truncated } = await listDirectory(source, parseCid(SITE_V1), 100)
+    expect(truncated).toBe(false)
+    expect(entries.map((e) => e.name)).toEqual(['assets', 'index.html'])
+    const stats = await Promise.all(entries.map((e) => statEntry(source, e)))
+    expect(stats).toEqual([{ kind: 'directory' }, { kind: 'file', size: 12 }])
   })
 
-  it('без повторов тот же файл требует буфера (dups=n)', async () => {
-    // В chunked-v0 куски повторяются (период узора 256 байт): без повторов в
-    // потоке уже выданный блок нужен снова — его приходится хранить.
-    const car = fixture('chunked-v0.car')
-    const noKeep = { keepConsumed: false, maxBuffered: Number.MAX_SAFE_INTEGER }
-    expect(await failure(extract(car, CHUNKED_V0, [], noKeep))).toBe('missing')
-    expect(await extract(car, CHUNKED_V0, [], { keepConsumed: true })).toEqual(pattern(1000))
+  it('открытие пути на каталог отдаёт его CID', async () => {
+    const source = await FixtureSource.of(fixture('site-v1.car'))
+    const entity = await openEntity(source, parseCid(SITE_V1), ['assets'], 1 << 20)
+    expect(entity.kind).toBe('directory')
+    const { entries } = await listDirectory(source, entity.cid, 100)
+    expect(entries.map((e) => e.name)).toEqual(['app.js'])
   })
 
-  it('блоки не по порядку упираются в потолок буфера', async () => {
-    const reader = await readerFor(fixture('hamt-v1.car'), {
-      keepConsumed: false,
-      maxBuffered: 0,
-    })
-    expect(await failure(readAll(reader, HAMT_V1, ['f299.txt'], 1 << 20))).toBe('too-large')
+  it('шардированный: все записи по имени, потолок числа записей', async () => {
+    const source = await FixtureSource.of(fixture('hamt-v1.car'))
+    const all = await listDirectory(source, parseCid(HAMT_V1), 1000)
+    expect(all.truncated).toBe(false)
+    expect(all.entries).toHaveLength(300)
+    const names = all.entries.map((e) => e.name)
+    expect(names).toEqual([...names].sort())
+    expect(new Set(names)).toEqual(new Set(Array.from({ length: 300 }, (_, i) => `f${i}.txt`)))
+    const some = await listDirectory(source, parseCid(HAMT_V1), 10)
+    expect(some.truncated).toBe(true)
+    expect(some.entries).toHaveLength(10)
+  })
+
+  it('файл — не каталог', async () => {
+    const source = await FixtureSource.of(fixture('chunked-v0.car'))
+    expect(await failure(listDirectory(source, parseCid(CHUNKED_V0), 10))).toBe('malformed')
   })
 })

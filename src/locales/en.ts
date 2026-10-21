@@ -331,14 +331,14 @@ export default {
       'Only the Bastyon desktop app can share files over IPFS: it needs its own IPFS node. IPFS links open here too.',
     ipfsConsentTitle: 'Open IPFS content',
     ipfsConsentContent:
-      'To open this link, install the IPFS module (~80 MB): it takes content straight from the IPFS network. Or your browser can open the link through inbrowser.link.',
+      'You can open the link right away: the IPFS node in the app window will fetch it. The IPFS module (~80 MB) also reaches files on home computers, opens websites, and is needed to share your own files.',
     ipfsConsentInstall: 'Install IPFS module (~80 MB)',
-    ipfsConsentPublic: 'Open in the browser',
+    ipfsConsentPublic: 'Open without the module',
     ipfsInstallTitle: 'Setting up IPFS',
     ipfsPreparing: 'Preparing IPFS…',
     ipfsInstallingProgress: 'Downloading: {pct}% — {message}',
     ipfsStarting: 'Starting IPFS daemon…',
-    ipfsCancel: 'Open in the browser',
+    ipfsCancel: 'Open without the module',
     ipfsAbortInstall: 'Cancel installation',
     ipfsTorBlockedTitle: 'Tor is on',
     ipfsTorBlockedContent:
@@ -372,12 +372,9 @@ export default {
     ipfsViewerNotFound: 'Not found on IPFS',
     ipfsViewerNotFoundDetail:
       'Nobody serves this address right now, or the link has a mistake. Content that gets updated, such as websites, changes its address over time, so an old link may no longer work.',
-    ipfsPrivateNeedsModuleTitle: 'The IPFS module is needed',
-    ipfsPrivateNeedsModule:
-      'A private file is decrypted by the IPFS module. Without it such a link can’t be opened: public gateways no longer serve files to apps.',
     ipfsUninstallConfirmTitle: 'Remove the IPFS module?',
     ipfsUninstallConfirmContent:
-      'The Kubo binary and the local block cache will be deleted, and your files will no longer be served. IPFS links will open in the browser through inbrowser.link.',
+      'The Kubo binary and the local block cache will be deleted, and your files will no longer be served. IPFS links can still be opened without the module, by the IPFS node in the app window.',
     ipfsShareDoneTitle: 'File published to IPFS',
     ipfsShareDoneCopied: 'Link copied. Anyone with this link can open the file: {link}',
     ipfsShareDone: 'Anyone with this link can open the file: {link}',
@@ -400,32 +397,52 @@ export default {
       'The file is larger than 4 GB, too large for the public gateway. Start the local IPFS node.',
     ipfsVerifyIncomplete:
       'The public gateway sent an incomplete file. Try again later or start the local IPFS node.',
-    ipfsWebDownloadTitle: 'Download the file?',
     ipfsWebPrivateTitle: 'Download the private file?',
-    ipfsWebVerifyHint:
-      'The file comes through a public gateway, and every part of it is checked against the link, so the gateway cannot swap its contents.',
     ipfsWebPrivateHint:
       'The file is decrypted on this device. The key from the link is not sent anywhere.',
     ipfsWebDownloadBtn: 'Download',
     ipfsWebDownloadingTitle: 'Downloading the file…',
     ipfsWebProgress: 'Downloaded {done} of {total}',
     ipfsWebDecrypting: 'Decrypting…',
-    ipfsWebGatewayBusy: 'The public gateway is overloaded right now. Try again in a minute.',
-    ipfsWebGatewayMissing:
-      'The file was not found on the network. Most likely the person who shared it is offline. Try again later.',
-    ipfsWebNetwork: 'Could not reach the public gateway. Check your connection and try again.',
-    ipfsWebIncomplete: 'The public gateway sent an incomplete file. Try again later.',
     ipfsWebNotFound: 'There is no such file at this link.',
     ipfsWebDirectory: 'This link points to a folder, not a file.',
     ipfsWebMalformed: 'The link or the file behind it is damaged.',
     ipfsWebUnsupported:
       'This file cannot be verified in the browser. Open the link in the Bastyon desktop app.',
-    ipfsWebTooLarge:
-      'The file is too large to download through the public gateway. Open the link in the Bastyon desktop app with the local IPFS node.',
     ipfsWebTooLargeForBrowser:
       'The file is larger than 1 GB, too large for this browser to save. Open the link in Chrome or Edge, or in the Bastyon desktop app.',
     ipfsWebDecryptFailed:
       'Could not decrypt the file: the key in the link is wrong or the file is damaged.',
+    ipfsNodeUnavailable:
+      'The IPFS node cannot start in this browser. Open the link in your browser through inbrowser.link or in the Bastyon app.',
+    ipfsNameNotFound:
+      'The name was not found on the network: it has not been updated for a long time or has not been published yet.',
+    ipfsNameInvalid: 'The record for this name failed the signature check.',
+    ipfsNetNotFound:
+      'The file was not found on the network. Most likely the person who shared it is offline. Try again later.',
+    ipfsNetFailed:
+      'The IPFS node could not reach the network. Check your internet connection and try again.',
+    ipfsNetMismatch:
+      'The file did not match its CID: someone on the network sent different data. The file was not saved.',
+    ipfsNetIncomplete: 'The file did not arrive in full. Try again later.',
+    ipfsNetTooLarge:
+      'The file is too large to download here. Open the link in the Bastyon desktop app with the IPFS module.',
+    ipfsViewerFailed: 'Could not open',
+    ipfsViewerVerified:
+      'The file comes straight from IPFS nodes, and every part of it is checked against the link, so no one can swap its contents.',
+    ipfsViewerNoPreview: 'Files like this are not shown here, but you can download it.',
+    ipfsViewerTooBig: 'The file is large, so it is not shown here, but you can download it.',
+    ipfsViewerTextCut: 'Only the beginning of the file is shown.',
+    ipfsViewerSiteHint:
+      'This is a website: the folder has index.html. Websites open in your browser.',
+    ipfsViewerFolderEmpty: 'The folder is empty.',
+    ipfsViewerFolderTruncated: 'Showing the first {n} entries.',
+    ipfsViewerBack: 'Back',
+    ipfsViewerOpenSite: 'Open website',
+    ipfsViewerOpenBrowser: 'Open in browser',
+    ipfsViewerNameIpns: 'The name points to {value}. The record is valid until {date}.',
+    ipfsViewerNameIpnsNoDate: 'The name points to {value}.',
+    ipfsViewerNameDnslink: 'The domain’s DNSLink points to {value}.',
     ipfsPinConfigTitle: 'Remote pinning',
     ipfsPinConfigContent:
       "To keep your files available while this computer is off, a remote pinning service that supports the IPFS Pinning Service API can keep copies — for example Pinata, Filebase or ipfs-cluster on your own server. Enter the service's API address and access token.",

@@ -333,14 +333,14 @@ export default {
       'Nur die Bastyon-Desktop-App kann Dateien über IPFS teilen: Dafür braucht sie einen eigenen IPFS-Node. IPFS-Links öffnen sich auch hier.',
     ipfsConsentTitle: 'IPFS-Inhalt öffnen',
     ipfsConsentContent:
-      'Um diesen Link zu öffnen, installiere das IPFS-Modul (~80 MB): Es holt Inhalte direkt aus dem IPFS-Netz. Oder dein Browser öffnet den Link über inbrowser.link.',
+      'Du kannst den Link sofort öffnen: Der IPFS-Knoten im App-Fenster lädt den Inhalt. Das IPFS-Modul (~80 MB) erreicht auch Dateien auf Heimcomputern, öffnet Websites und wird zum Teilen eigener Dateien gebraucht.',
     ipfsConsentInstall: 'IPFS-Modul installieren (~80 MB)',
-    ipfsConsentPublic: 'Im Browser öffnen',
+    ipfsConsentPublic: 'Ohne Modul öffnen',
     ipfsInstallTitle: 'IPFS wird eingerichtet',
     ipfsPreparing: 'IPFS wird vorbereitet…',
     ipfsInstallingProgress: 'Download: {pct}% — {message}',
     ipfsStarting: 'IPFS-Daemon wird gestartet…',
-    ipfsCancel: 'Im Browser öffnen',
+    ipfsCancel: 'Ohne Modul öffnen',
     ipfsAbortInstall: 'Installation abbrechen',
     ipfsTorBlockedTitle: 'Tor ist an',
     ipfsTorBlockedContent:
@@ -374,12 +374,9 @@ export default {
     ipfsViewerNotFound: 'Im IPFS-Netz nicht gefunden',
     ipfsViewerNotFoundDetail:
       'Diese Adresse stellt gerade niemand bereit, oder der Link ist fehlerhaft. Inhalte, die aktualisiert werden, etwa Websites, ändern mit der Zeit ihre Adresse – ein alter Link funktioniert dann womöglich nicht mehr.',
-    ipfsPrivateNeedsModuleTitle: 'IPFS-Modul erforderlich',
-    ipfsPrivateNeedsModule:
-      'Eine private Datei entschlüsselt das IPFS-Modul. Ohne es lässt sich ein solcher Link nicht öffnen: Öffentliche Gateways liefern Apps keine Dateien mehr.',
     ipfsUninstallConfirmTitle: 'IPFS-Modul entfernen?',
     ipfsUninstallConfirmContent:
-      'Die Kubo-Datei und der lokale Block-Cache werden gelöscht, deine Dateien werden nicht mehr verteilt. IPFS-Links öffnen sich dann im Browser über inbrowser.link.',
+      'Die Kubo-Datei und der lokale Block-Cache werden gelöscht, deine Dateien werden nicht mehr verteilt. IPFS-Links lassen sich weiterhin ohne Modul öffnen – über den IPFS-Knoten im App-Fenster.',
     ipfsShareDoneTitle: 'Datei in IPFS veröffentlicht',
     ipfsShareDoneCopied: 'Link kopiert. Jeder mit diesem Link kann die Datei öffnen: {link}',
     ipfsShareDone: 'Jeder mit diesem Link kann die Datei öffnen: {link}',
@@ -403,35 +400,54 @@ export default {
       'Die Datei ist größer als 4 GB und damit zu groß für das öffentliche Gateway. Starte den lokalen IPFS-Node.',
     ipfsVerifyIncomplete:
       'Das öffentliche Gateway hat eine unvollständige Datei geliefert. Versuche es später erneut oder starte den lokalen IPFS-Node.',
-    ipfsWebDownloadTitle: 'Datei herunterladen?',
     ipfsWebPrivateTitle: 'Private Datei herunterladen?',
-    ipfsWebVerifyHint:
-      'Die Datei kommt über ein öffentliches Gateway, und jeder Teil wird mit dem Link abgeglichen — das Gateway kann den Inhalt also nicht austauschen.',
     ipfsWebPrivateHint:
       'Die Datei wird auf diesem Gerät entschlüsselt. Der Schlüssel aus dem Link wird nirgendwohin gesendet.',
     ipfsWebDownloadBtn: 'Herunterladen',
     ipfsWebDownloadingTitle: 'Datei wird heruntergeladen…',
     ipfsWebProgress: '{done} von {total} heruntergeladen',
     ipfsWebDecrypting: 'Wird entschlüsselt…',
-    ipfsWebGatewayBusy:
-      'Das öffentliche Gateway ist gerade überlastet. Versuche es in einer Minute erneut.',
-    ipfsWebGatewayMissing:
-      'Die Datei wurde im Netzwerk nicht gefunden. Wahrscheinlich ist die Person, die sie geteilt hat, offline. Versuche es später erneut.',
-    ipfsWebNetwork:
-      'Das öffentliche Gateway ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.',
-    ipfsWebIncomplete:
-      'Das öffentliche Gateway hat eine unvollständige Datei geliefert. Versuche es später erneut.',
     ipfsWebNotFound: 'Unter diesem Link gibt es keine Datei.',
     ipfsWebDirectory: 'Dieser Link verweist auf einen Ordner, nicht auf eine Datei.',
     ipfsWebMalformed: 'Der Link oder die Datei dahinter ist beschädigt.',
     ipfsWebUnsupported:
       'Diese Datei kann im Browser nicht überprüft werden. Öffne den Link in der Bastyon-Desktop-App.',
-    ipfsWebTooLarge:
-      'Die Datei ist zu groß für den Download über das öffentliche Gateway. Öffne den Link in der Bastyon-Desktop-App mit dem lokalen IPFS-Node.',
     ipfsWebTooLargeForBrowser:
       'Die Datei ist größer als 1 GB und zu groß, um sie in diesem Browser zu speichern. Öffne den Link in Chrome oder Edge oder in der Bastyon-Desktop-App.',
     ipfsWebDecryptFailed:
       'Die Datei konnte nicht entschlüsselt werden: Der Schlüssel im Link ist falsch oder die Datei ist beschädigt.',
+    ipfsNodeUnavailable:
+      'Der IPFS-Knoten startet in diesem Browser nicht. Öffne den Link im Browser über inbrowser.link oder in der Bastyon-App.',
+    ipfsNameNotFound:
+      'Der Name wurde im Netz nicht gefunden: Er wurde lange nicht aktualisiert oder noch nicht veröffentlicht.',
+    ipfsNameInvalid: 'Der Eintrag für diesen Namen hat die Signaturprüfung nicht bestanden.',
+    ipfsNetNotFound:
+      'Die Datei wurde im Netz nicht gefunden. Wahrscheinlich ist die Person, die sie geteilt hat, gerade offline. Versuche es später erneut.',
+    ipfsNetFailed:
+      'Der IPFS-Knoten konnte das Netz nicht erreichen. Prüfe die Internetverbindung und versuche es erneut.',
+    ipfsNetMismatch:
+      'Die Datei passt nicht zu ihrer CID: Jemand im Netz hat fremde Daten geschickt. Die Datei wurde nicht gespeichert.',
+    ipfsNetIncomplete: 'Die Datei kam nicht vollständig an. Versuche es später erneut.',
+    ipfsNetTooLarge:
+      'Die Datei ist zu groß, um sie hier herunterzuladen. Öffne den Link in der Bastyon-Desktop-App mit dem IPFS-Modul.',
+    ipfsViewerFailed: 'Öffnen fehlgeschlagen',
+    ipfsViewerVerified:
+      'Die Datei kommt direkt von IPFS-Knoten, und jeder Teil wird mit dem Link abgeglichen — niemand kann den Inhalt austauschen.',
+    ipfsViewerNoPreview:
+      'Solche Dateien werden hier nicht angezeigt, du kannst sie aber herunterladen.',
+    ipfsViewerTooBig:
+      'Die Datei ist groß und wird deshalb hier nicht angezeigt, du kannst sie aber herunterladen.',
+    ipfsViewerTextCut: 'Nur der Anfang der Datei wird angezeigt.',
+    ipfsViewerSiteHint:
+      'Das ist eine Website: Der Ordner enthält index.html. Websites öffnen sich im Browser.',
+    ipfsViewerFolderEmpty: 'Der Ordner ist leer.',
+    ipfsViewerFolderTruncated: 'Die ersten {n} Einträge werden angezeigt.',
+    ipfsViewerBack: 'Zurück',
+    ipfsViewerOpenSite: 'Website öffnen',
+    ipfsViewerOpenBrowser: 'Im Browser öffnen',
+    ipfsViewerNameIpns: 'Der Name verweist auf {value}. Der Eintrag gilt bis {date}.',
+    ipfsViewerNameIpnsNoDate: 'Der Name verweist auf {value}.',
+    ipfsViewerNameDnslink: 'Der DNSLink der Domain verweist auf {value}.',
     ipfsPinConfigTitle: 'Remote-Pinning',
     ipfsPinConfigContent:
       'Damit deine Dateien auch bei ausgeschaltetem Computer verfügbar bleiben, kann ein Remote-Pinning-Dienst mit IPFS Pinning Service API Kopien aufbewahren — etwa Pinata, Filebase oder ipfs-cluster auf deinem eigenen Server. Gib die API-Adresse des Dienstes und das Zugriffstoken ein.',

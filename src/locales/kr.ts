@@ -331,14 +331,14 @@ export default {
       'IPFS로 파일을 공유하려면 자체 IPFS 노드가 필요하므로 Bastyon 데스크톱 앱에서만 가능합니다. IPFS 링크는 여기서도 열립니다.',
     ipfsConsentTitle: 'IPFS 콘텐츠 열기',
     ipfsConsentContent:
-      '이 링크를 열려면 IPFS 모듈(~80MB)을 설치하세요. IPFS 네트워크에서 직접 콘텐츠를 가져옵니다. 또는 브라우저에서 inbrowser.link를 통해 링크를 열 수 있습니다.',
+      '링크를 바로 열 수 있습니다. 앱 창의 IPFS 노드가 내용을 가져옵니다. IPFS 모듈(~80MB)은 집에 있는 컴퓨터의 파일에도 닿고, 웹사이트를 열며, 내 파일을 공유할 때 필요합니다.',
     ipfsConsentInstall: 'IPFS 모듈 설치(~80MB)',
-    ipfsConsentPublic: '브라우저에서 열기',
+    ipfsConsentPublic: '모듈 없이 열기',
     ipfsInstallTitle: 'IPFS 설정 중',
     ipfsPreparing: 'IPFS 준비 중…',
     ipfsInstallingProgress: '다운로드 중: {pct}% — {message}',
     ipfsStarting: 'IPFS 데몬 시작 중…',
-    ipfsCancel: '브라우저에서 열기',
+    ipfsCancel: '모듈 없이 열기',
     ipfsAbortInstall: '설치 취소',
     ipfsTorBlockedTitle: 'Tor가 켜져 있습니다',
     ipfsTorBlockedContent:
@@ -372,12 +372,9 @@ export default {
     ipfsViewerNotFound: 'IPFS 네트워크에서 찾을 수 없음',
     ipfsViewerNotFoundDetail:
       '현재 이 주소를 제공하는 사람이 없거나 링크에 오류가 있습니다. 웹사이트처럼 업데이트되는 콘텐츠는 시간이 지나면 주소가 바뀌므로 오래된 링크는 더 이상 작동하지 않을 수 있습니다.',
-    ipfsPrivateNeedsModuleTitle: 'IPFS 모듈이 필요합니다',
-    ipfsPrivateNeedsModule:
-      '비공개 파일은 IPFS 모듈이 복호화합니다. 모듈 없이는 이 링크를 열 수 없습니다. 공개 게이트웨이가 더 이상 앱에 파일을 제공하지 않습니다.',
     ipfsUninstallConfirmTitle: 'IPFS 모듈을 제거할까요?',
     ipfsUninstallConfirmContent:
-      'Kubo 바이너리와 로컬 블록 캐시가 삭제되고 파일 공유가 중단됩니다. IPFS 링크는 브라우저에서 inbrowser.link를 통해 열립니다.',
+      'Kubo 바이너리와 로컬 블록 캐시가 삭제되고 파일 공유가 중단됩니다. IPFS 링크는 모듈 없이도 앱 창의 IPFS 노드로 열 수 있습니다.',
     ipfsShareDoneTitle: '파일이 IPFS에 게시되었습니다',
     ipfsShareDoneCopied:
       '링크가 복사되었습니다. 이 링크가 있으면 누구나 파일을 열 수 있습니다: {link}',
@@ -401,31 +398,51 @@ export default {
       '파일이 4GB를 넘어 공개 게이트웨이로 받기에는 너무 큽니다. 로컬 IPFS 노드를 시작하세요.',
     ipfsVerifyIncomplete:
       '공개 게이트웨이가 불완전한 파일을 보냈습니다. 나중에 다시 시도하거나 로컬 IPFS 노드를 시작하세요.',
-    ipfsWebDownloadTitle: '파일을 다운로드할까요?',
     ipfsWebPrivateTitle: '비공개 파일을 다운로드할까요?',
-    ipfsWebVerifyHint:
-      '파일은 공개 게이트웨이를 통해 전달되며 모든 부분을 링크와 대조해 확인하므로 게이트웨이가 내용을 바꿀 수 없습니다.',
     ipfsWebPrivateHint: '파일은 이 기기에서 복호화됩니다. 링크의 키는 어디에도 전송되지 않습니다.',
     ipfsWebDownloadBtn: '다운로드',
     ipfsWebDownloadingTitle: '파일 다운로드 중…',
     ipfsWebProgress: '{total} 중 {done} 다운로드됨',
     ipfsWebDecrypting: '복호화 중…',
-    ipfsWebGatewayBusy: '지금은 공개 게이트웨이가 과부하 상태입니다. 1분 후에 다시 시도하세요.',
-    ipfsWebGatewayMissing:
-      '네트워크에서 파일을 찾을 수 없습니다. 공유한 사람이 오프라인일 가능성이 큽니다. 나중에 다시 시도하세요.',
-    ipfsWebNetwork: '공개 게이트웨이에 연결할 수 없습니다. 연결을 확인하고 다시 시도하세요.',
-    ipfsWebIncomplete: '공개 게이트웨이가 불완전한 파일을 보냈습니다. 나중에 다시 시도하세요.',
     ipfsWebNotFound: '이 링크에 해당하는 파일이 없습니다.',
     ipfsWebDirectory: '이 링크는 파일이 아니라 폴더를 가리킵니다.',
     ipfsWebMalformed: '링크 또는 링크가 가리키는 파일이 손상되었습니다.',
     ipfsWebUnsupported:
       '이 파일은 브라우저에서 확인할 수 없습니다. Bastyon 데스크톱 앱에서 링크를 여세요.',
-    ipfsWebTooLarge:
-      '파일이 너무 커서 공개 게이트웨이로 다운로드할 수 없습니다. 로컬 IPFS 노드가 있는 Bastyon 데스크톱 앱에서 링크를 여세요.',
     ipfsWebTooLargeForBrowser:
       '파일이 1GB를 넘어 이 브라우저에서 저장하기에는 너무 큽니다. Chrome이나 Edge 또는 Bastyon 데스크톱 앱에서 링크를 여세요.',
     ipfsWebDecryptFailed:
       '파일을 복호화하지 못했습니다. 링크의 키가 잘못되었거나 파일이 손상되었습니다.',
+    ipfsNodeUnavailable:
+      '이 브라우저에서는 IPFS 노드가 시작되지 않습니다. inbrowser.link를 통해 브라우저에서 열거나 Bastyon 앱에서 여세요.',
+    ipfsNameNotFound:
+      '네트워크에서 이름을 찾지 못했습니다. 오랫동안 업데이트되지 않았거나 아직 게시되지 않았습니다.',
+    ipfsNameInvalid: '이 이름의 레코드가 서명 검증을 통과하지 못했습니다.',
+    ipfsNetNotFound:
+      '네트워크에서 파일을 찾지 못했습니다. 공유한 사람이 지금 오프라인일 가능성이 큽니다. 나중에 다시 시도하세요.',
+    ipfsNetFailed:
+      'IPFS 노드가 네트워크에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도하세요.',
+    ipfsNetMismatch:
+      '파일이 CID와 일치하지 않습니다. 네트워크의 누군가가 다른 데이터를 보냈습니다. 파일은 저장되지 않았습니다.',
+    ipfsNetIncomplete: '파일이 전부 도착하지 않았습니다. 나중에 다시 시도하세요.',
+    ipfsNetTooLarge:
+      '여기서 내려받기에는 파일이 너무 큽니다. IPFS 모듈이 있는 Bastyon 데스크톱 앱에서 링크를 여세요.',
+    ipfsViewerFailed: '열지 못했습니다',
+    ipfsViewerVerified:
+      '파일은 IPFS 노드에서 직접 오며, 모든 부분을 링크와 대조합니다. 누구도 내용을 바꿔치기할 수 없습니다.',
+    ipfsViewerNoPreview: '이런 파일은 여기서 표시되지 않지만 내려받을 수 있습니다.',
+    ipfsViewerTooBig: '파일이 커서 여기서 표시되지 않지만 내려받을 수 있습니다.',
+    ipfsViewerTextCut: '파일의 앞부분만 표시됩니다.',
+    ipfsViewerSiteHint:
+      '웹사이트입니다. 폴더에 index.html이 있습니다. 웹사이트는 브라우저에서 열립니다.',
+    ipfsViewerFolderEmpty: '폴더가 비어 있습니다.',
+    ipfsViewerFolderTruncated: '처음 {n}개 항목만 표시됩니다.',
+    ipfsViewerBack: '뒤로',
+    ipfsViewerOpenSite: '웹사이트 열기',
+    ipfsViewerOpenBrowser: '브라우저에서 열기',
+    ipfsViewerNameIpns: '이름이 {value}을(를) 가리킵니다. 레코드는 {date}까지 유효합니다.',
+    ipfsViewerNameIpnsNoDate: '이름이 {value}을(를) 가리킵니다.',
+    ipfsViewerNameDnslink: '도메인의 DNSLink가 {value}을(를) 가리킵니다.',
     ipfsPinConfigTitle: '원격 고정',
     ipfsPinConfigContent:
       '컴퓨터가 꺼져 있을 때도 파일을 계속 사용할 수 있도록 IPFS Pinning Service API를 지원하는 원격 고정 서비스(예: Pinata, Filebase 또는 자체 서버의 ipfs-cluster)에 사본을 보관할 수 있습니다. 서비스의 API 주소와 액세스 토큰을 입력하세요.',

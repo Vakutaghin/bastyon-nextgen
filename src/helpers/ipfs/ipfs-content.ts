@@ -69,46 +69,6 @@ export function detectViewerOs(): ViewerOs {
   return 'other'
 }
 
-/**
- * Типы, которые показывает любой браузер (включая телефоны), когда открываешь
- * ссылку на шлюз в новой вкладке. Остальное браузер может молча скачать мимо
- * проверки по CID (CSV в Chrome, Markdown в Firefox, HEIC и MOV не в Safari) —
- * такие файлы скачиваем сами, с проверкой.
- */
-const BROWSER_RENDERABLE = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/gif',
-  'image/webp',
-  'image/avif',
-  'image/svg+xml',
-  'image/bmp',
-  'image/x-icon',
-  'video/mp4',
-  'video/webm',
-  'audio/mpeg',
-  'audio/mp4',
-  'audio/aac',
-  'audio/wav',
-  'audio/flac',
-  'text/plain',
-  'text/html',
-  'text/css',
-  'text/javascript',
-  'application/json',
-])
-
-/**
- * «Показать или скачать» для веба и телефона: показ — вкладка с публичным
- * шлюзом, скачивание — своё, с проверкой. PDF браузер показывает везде, кроме
- * Android (там Chrome его скачивает).
- */
-export function classifyForBrowser(contentType: string, userAgent: string): RenderMode {
-  const type = normalizeType(contentType)
-  if (type === 'application/pdf') return /android/i.test(userAgent) ? 'download' : 'render'
-  return BROWSER_RENDERABLE.has(type) ? 'render' : 'download'
-}
-
 /** Небезопасные для имени файла символы → `_`; пустое имя отфильтровано вызывающим. */
 export function sanitizeFilename(name: string): string {
   return (

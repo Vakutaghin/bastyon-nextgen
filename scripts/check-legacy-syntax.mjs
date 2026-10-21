@@ -9,6 +9,11 @@
  * главном чанке (тайм-коды) не давал приложению запуститься на macOS 10.15.
  * Флаг `v` — Safari 17, Chromium 112.
  *
+ * Исключение — чанк узла IPFS (src/helpers/ipfs/ipfs-node.ts, Helia): его грузит
+ * только динамический import() при открытии IPFS-ссылки, и сбой загрузки на
+ * старом движке ловится — окно предлагает открыть ссылку в браузере
+ * (ipfs-node-loader.ts). Lookbehind там — из библиотеки ip-regex.
+ *
  * Запуск: node scripts/check-legacy-syntax.mjs [папка сборки, по умолчанию dist]
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -33,8 +38,12 @@ function* jsFiles(dir) {
   }
 }
 
+/** Чанки, которые грузятся лениво и переживают сбой загрузки (см. шапку). */
+const LAZY_MODERN_CHUNK = /(^|[\\/])ipfs-node-[\w-]{8}\.js$/
+
 const problems = []
 for (const file of jsFiles(root)) {
+  if (LAZY_MODERN_CHUNK.test(file)) continue
   const code = readFileSync(file, 'utf8')
   for (const { re, why } of RULES) {
     re.lastIndex = 0

@@ -8,7 +8,7 @@ What gets installed on your computer for IPFS, how much space it takes, and how 
 
 ## What it is
 
-The IPFS module is Kubo, the main program of the IPFS network. It lets you serve files and get them straight from the network, without a public gateway. It exists only in the desktop app.
+The IPFS module is Kubo, the main program of the IPFS network. It serves your files, also reaches files on home computers that a browser cannot get to, and shows websites right in the viewer window. It exists only in the desktop app. IPFS links can be opened without it too — see [Opening an IPFS link](open-ipfs-links.md).
 
 The module does not install itself. The app downloads it — about 80 MB — when you share your first file, choose **“Install IPFS module (~80 MB)”** when opening an IPFS link, or press **“Install & start (~80 MB)”** in the IPFS menu. The app takes the program from its own mirror on GitHub or, if it is not there, from the IPFS release on GitHub or the IPFS site, and checks it against the checksum built into the app: it will not install a tampered copy.
 
@@ -38,7 +38,7 @@ The module keeps a copy of the files you share for as long as you share them, an
 
 **“Settings”** → **“General”** tab → **“IPFS module”** → **“Remove module”**. The section is visible only while the module is installed.
 
-The program and the whole cache are deleted from disk, your files are no longer served, and the lists in My files and the connected [storage service](ipfs-remote-pin.md) have to be set up again. IPFS links will open in the browser through inbrowser.link.
+The program and the whole cache are deleted from disk, your files are no longer served, and the lists in My files and the connected [storage service](ipfs-remote-pin.md) have to be set up again. IPFS links can still be opened without the module, by the IPFS node in the app window.
 
 ## See also
 

@@ -335,14 +335,14 @@ export default {
       'Seule l’application de bureau Bastyon peut partager des fichiers via IPFS : elle a besoin de son propre nœud IPFS. Les liens IPFS s’ouvrent aussi ici.',
     ipfsConsentTitle: 'Ouvrir un contenu IPFS',
     ipfsConsentContent:
-      'Pour ouvrir ce lien, installez le module IPFS (~80 Mo) : il récupère le contenu directement sur le réseau IPFS. Sinon, votre navigateur peut ouvrir le lien via inbrowser.link.',
+      'Vous pouvez ouvrir le lien tout de suite : le nœud IPFS de la fenêtre de l’application le récupère. Le module IPFS (~80 Mo) atteint aussi les fichiers sur des ordinateurs personnels, ouvre les sites web et sert à partager vos propres fichiers.',
     ipfsConsentInstall: 'Installer le module IPFS (~80 Mo)',
-    ipfsConsentPublic: 'Ouvrir dans le navigateur',
+    ipfsConsentPublic: 'Ouvrir sans le module',
     ipfsInstallTitle: 'Configuration d’IPFS',
     ipfsPreparing: 'Préparation d’IPFS…',
     ipfsInstallingProgress: 'Téléchargement : {pct} % — {message}',
     ipfsStarting: 'Démarrage du démon IPFS…',
-    ipfsCancel: 'Ouvrir dans le navigateur',
+    ipfsCancel: 'Ouvrir sans le module',
     ipfsAbortInstall: 'Annuler l’installation',
     ipfsTorBlockedTitle: 'Tor est activé',
     ipfsTorBlockedContent:
@@ -376,12 +376,9 @@ export default {
     ipfsViewerNotFound: 'Introuvable sur le réseau IPFS',
     ipfsViewerNotFoundDetail:
       'Personne ne partage cette adresse pour le moment, ou le lien contient une erreur. Un contenu mis à jour, comme un site web, change d’adresse avec le temps : un ancien lien peut ne plus fonctionner.',
-    ipfsPrivateNeedsModuleTitle: 'Le module IPFS est nécessaire',
-    ipfsPrivateNeedsModule:
-      'Un fichier privé est déchiffré par le module IPFS. Sans lui, ce lien ne peut pas être ouvert : les passerelles publiques ne fournissent plus de fichiers aux applications.',
     ipfsUninstallConfirmTitle: 'Supprimer le module IPFS ?',
     ipfsUninstallConfirmContent:
-      'Le binaire Kubo et le cache local des blocs seront supprimés, et vos fichiers ne seront plus partagés. Les liens IPFS s’ouvriront dans le navigateur via inbrowser.link.',
+      'Le binaire Kubo et le cache local des blocs seront supprimés, et vos fichiers ne seront plus partagés. Les liens IPFS pourront toujours s’ouvrir sans le module, via le nœud IPFS dans la fenêtre de l’application.',
     ipfsShareDoneTitle: 'Fichier publié sur IPFS',
     ipfsShareDoneCopied: 'Lien copié. Toute personne ayant ce lien peut ouvrir le fichier : {link}',
     ipfsShareDone: 'Toute personne ayant ce lien peut ouvrir le fichier : {link}',
@@ -405,34 +402,54 @@ export default {
       'Le fichier dépasse 4 Go, c’est trop pour la passerelle publique. Démarrez le nœud IPFS local.',
     ipfsVerifyIncomplete:
       'La passerelle publique a envoyé un fichier incomplet. Réessayez plus tard ou démarrez le nœud IPFS local.',
-    ipfsWebDownloadTitle: 'Télécharger le fichier ?',
     ipfsWebPrivateTitle: 'Télécharger le fichier privé ?',
-    ipfsWebVerifyHint:
-      'Le fichier arrive par une passerelle publique et chacune de ses parties est vérifiée par rapport au lien : la passerelle ne peut pas en substituer le contenu.',
     ipfsWebPrivateHint:
       'Le fichier est déchiffré sur cet appareil. La clé du lien n’est envoyée nulle part.',
     ipfsWebDownloadBtn: 'Télécharger',
     ipfsWebDownloadingTitle: 'Téléchargement du fichier…',
     ipfsWebProgress: '{done} téléchargés sur {total}',
     ipfsWebDecrypting: 'Déchiffrement…',
-    ipfsWebGatewayBusy:
-      'La passerelle publique est surchargée pour le moment. Réessayez dans une minute.',
-    ipfsWebGatewayMissing:
-      'Le fichier est introuvable sur le réseau. La personne qui l’a partagé est probablement hors ligne. Réessayez plus tard.',
-    ipfsWebNetwork:
-      'Impossible de joindre la passerelle publique. Vérifiez votre connexion et réessayez.',
-    ipfsWebIncomplete: 'La passerelle publique a envoyé un fichier incomplet. Réessayez plus tard.',
     ipfsWebNotFound: 'Aucun fichier à ce lien.',
     ipfsWebDirectory: 'Ce lien pointe vers un dossier, pas vers un fichier.',
     ipfsWebMalformed: 'Le lien ou le fichier qu’il désigne est endommagé.',
     ipfsWebUnsupported:
       'Ce fichier ne peut pas être vérifié dans le navigateur. Ouvrez le lien dans l’application de bureau Bastyon.',
-    ipfsWebTooLarge:
-      'Le fichier est trop volumineux pour être téléchargé via la passerelle publique. Ouvrez le lien dans l’application de bureau Bastyon avec le nœud IPFS local.',
     ipfsWebTooLargeForBrowser:
       'Le fichier dépasse 1 Go, c’est trop pour que ce navigateur l’enregistre. Ouvrez le lien dans Chrome ou Edge, ou dans l’application de bureau Bastyon.',
     ipfsWebDecryptFailed:
       'Impossible de déchiffrer le fichier : la clé du lien est incorrecte ou le fichier est endommagé.',
+    ipfsNodeUnavailable:
+      'Le nœud IPFS ne démarre pas dans ce navigateur. Ouvrez le lien dans votre navigateur via inbrowser.link ou dans l’application Bastyon.',
+    ipfsNameNotFound:
+      'Le nom est introuvable sur le réseau : il n’a pas été mis à jour depuis longtemps ou n’a pas encore été publié.',
+    ipfsNameInvalid: 'L’enregistrement de ce nom n’a pas passé la vérification de signature.',
+    ipfsNetNotFound:
+      'Le fichier est introuvable sur le réseau. La personne qui l’a partagé est sans doute hors ligne. Réessayez plus tard.',
+    ipfsNetFailed:
+      'Le nœud IPFS n’a pas pu joindre le réseau. Vérifiez votre connexion internet et réessayez.',
+    ipfsNetMismatch:
+      'Le fichier ne correspond pas à son CID : quelqu’un sur le réseau a envoyé d’autres données. Le fichier n’a pas été enregistré.',
+    ipfsNetIncomplete: 'Le fichier n’est pas arrivé en entier. Réessayez plus tard.',
+    ipfsNetTooLarge:
+      'Le fichier est trop volumineux pour être téléchargé ici. Ouvrez le lien dans l’application Bastyon pour ordinateur avec le module IPFS.',
+    ipfsViewerFailed: 'Impossible d’ouvrir',
+    ipfsViewerVerified:
+      'Le fichier vient directement des nœuds IPFS, et chaque partie est vérifiée par rapport au lien : personne ne peut en remplacer le contenu.',
+    ipfsViewerNoPreview:
+      'Ce type de fichier ne s’affiche pas ici, mais vous pouvez le télécharger.',
+    ipfsViewerTooBig:
+      'Le fichier est volumineux, il ne s’affiche donc pas ici, mais vous pouvez le télécharger.',
+    ipfsViewerTextCut: 'Seul le début du fichier est affiché.',
+    ipfsViewerSiteHint:
+      'C’est un site web : le dossier contient index.html. Les sites s’ouvrent dans le navigateur.',
+    ipfsViewerFolderEmpty: 'Le dossier est vide.',
+    ipfsViewerFolderTruncated: 'Les {n} premières entrées sont affichées.',
+    ipfsViewerBack: 'Retour',
+    ipfsViewerOpenSite: 'Ouvrir le site',
+    ipfsViewerOpenBrowser: 'Ouvrir dans le navigateur',
+    ipfsViewerNameIpns: 'Le nom pointe vers {value}. L’enregistrement est valable jusqu’au {date}.',
+    ipfsViewerNameIpnsNoDate: 'Le nom pointe vers {value}.',
+    ipfsViewerNameDnslink: 'Le DNSLink du domaine pointe vers {value}.',
     ipfsPinConfigTitle: 'Épinglage distant',
     ipfsPinConfigContent:
       'Pour que vos fichiers restent disponibles même ordinateur éteint, un service d’épinglage distant compatible avec l’IPFS Pinning Service API peut en garder des copies — par exemple Pinata, Filebase ou ipfs-cluster sur votre propre serveur. Saisissez l’adresse de l’API du service et le jeton d’accès.',
