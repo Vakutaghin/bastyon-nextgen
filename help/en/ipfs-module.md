@@ -12,7 +12,7 @@ The IPFS module is Kubo, the main program of the IPFS network. It lets you serve
 
 The module does not install itself. The app downloads it — about 80 MB — when you share your first file, choose **“Install IPFS module (~80 MB)”** when opening an IPFS link, or press **“Install & start (~80 MB)”** in the IPFS menu. The app takes the program from its own mirror on GitHub or, if it is not there, from the IPFS release on GitHub or the IPFS site, and checks it against the checksum built into the app: it will not install a tampered copy.
 
-The module runs while Bastyon is open and stops together with the app. It does not start while [Tor](tor.md) is on.
+The module runs while Bastyon is open and stops together with the app. Unless you pressed **“Stop”**, it starts on its own the next time the app starts, including after an update. It does not start while [Tor](tor.md) is on.
 
 ## The IPFS icon in the header
 

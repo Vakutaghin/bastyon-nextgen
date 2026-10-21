@@ -79,7 +79,8 @@ pub type SharedIpfsState = Arc<RwLock<IpfsState>>;
 /// repo (IPFS_PATH, кэш блоков) — в `app_data_dir`.
 #[derive(Debug, Clone)]
 pub struct IpfsPaths {
-    /// `app_cache_dir/ipfs` — корень установки бинаря.
+    /// `app_local_data_dir/ipfs/bin` — корень установки бинаря (раньше —
+    /// `app_cache_dir/ipfs`, см. `installer::adopt_legacy_install`).
     pub bin_dir: PathBuf,
     /// `bin_dir/kubo/ipfs[.exe]` — исполняемый файл (layout архива Kubo).
     pub binary: PathBuf,

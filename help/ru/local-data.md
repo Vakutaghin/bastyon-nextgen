@@ -35,7 +35,7 @@ code: [src/pages/settings-page/tabs/system-tab.vue, src/db, src/blockchain/stora
 2. Удалите приложение.
 3. В приложении для компьютера удалите ещё папку данных — там остаются Tor, IPFS и модели голосового ввода:
    - macOS: `~/Library/Application Support/com.bastyon.app`
-   - Windows: `%APPDATA%\com.bastyon.app`
+   - Windows: `%APPDATA%\com.bastyon.app` и `%LOCALAPPDATA%\com.bastyon.app`
    - Linux: `~/.local/share/com.bastyon.app`
 
 На Android всё удаляется вместе с приложением.

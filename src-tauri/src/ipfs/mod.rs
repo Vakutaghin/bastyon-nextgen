@@ -1469,12 +1469,15 @@ pub fn shutdown_on_exit(mgr: &IpfsManager) {
 
 /// Инициализация менеджера и регистрация в app state. Вызывается один раз из setup.
 pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    // Бинарь — в перекачиваемый cache; repo (IPFS_PATH) — в data.
+    // Бинарь — в данных приложения, а не в кэше: папку кэшей чистят macOS,
+    // когда кончается место, и программы-«чистильщики», и модуль приходилось
+    // качать заново. repo (IPFS_PATH) — в data, как и было.
     let bin_dir = app
         .path()
-        .app_cache_dir()
-        .or_else(|_| app.path().app_local_data_dir())?
-        .join("ipfs");
+        .app_local_data_dir()
+        .or_else(|_| app.path().app_data_dir())?
+        .join("ipfs")
+        .join("bin");
     let repo = app
         .path()
         .app_data_dir()
@@ -1484,6 +1487,9 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(&bin_dir)?;
     std::fs::create_dir_all(&repo)?;
     let paths = IpfsPaths::new(bin_dir, repo);
+    if let Ok(cache) = app.path().app_cache_dir() {
+        installer::adopt_legacy_install(&cache.join("ipfs"), &paths);
+    }
     app.manage(IpfsManager::new(paths));
     Ok(())
 }

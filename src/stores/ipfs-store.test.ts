@@ -4,10 +4,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }))
+const { invoke, tor } = vi.hoisted(() => ({
+  invoke: vi.fn(),
+  tor: { shouldTorify: false, enabled: false },
+}))
 vi.mock('@tauri-apps/api/core', () => ({ invoke }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn(async () => () => {}) }))
-vi.mock('@/stores/tor-store', () => ({ useTorStore: () => ({ shouldTorify: false }) }))
+vi.mock('@/stores/tor-store', () => ({ useTorStore: () => tor }))
 
 import { useIpfsStore, type IpfsStateSnapshot } from './ipfs-store'
 import { IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
@@ -43,6 +46,7 @@ beforeEach(() => {
   ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {}
   setActivePinia(createPinia())
   invoke.mockReset()
+  tor.enabled = false
 })
 
 afterEach(() => {
@@ -282,5 +286,78 @@ describe('ipfs-store: «Мои файлы»', () => {
     await store.forgetAccount(ALICE)
     expect(invoke).toHaveBeenCalledWith('ipfs_forget_account', { account: ALICE })
     expect(store.shares).toEqual([])
+  })
+})
+
+describe('ipfs-store: нода после перезапуска приложения', () => {
+  /** Модуль стоит, нода выключена; ensure её поднимает. */
+  function installedNode(): void {
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === 'ipfs_status') return snapshot({ installed: true })
+      if (cmd === 'ipfs_ensure')
+        return snapshot({ status: 'running', gateway_port: 8080, installed: true })
+      return undefined
+    })
+  }
+
+  function started(): boolean {
+    return invoke.mock.calls.some(([cmd]) => cmd === 'ipfs_ensure')
+  }
+
+  it('нода, которую не выключали, поднимается сама — без скачивания и один раз', async () => {
+    localStorage.setItem('ipfs:consent', 'accepted')
+    installedNode()
+    const store = useIpfsStore()
+
+    await store.hydrate()
+    await vi.waitFor(() => expect(store.status).toBe('running'))
+    await store.hydrate()
+
+    expect(invoke.mock.calls.filter(([cmd]) => cmd === 'ipfs_ensure')).toHaveLength(1)
+    expect(localStorage.getItem('ipfs:run')).toBe('1')
+  })
+
+  it('выключенная вручную остаётся выключенной', async () => {
+    localStorage.setItem('ipfs:consent', 'accepted')
+    installedNode()
+    await useIpfsStore().stop()
+    expect(localStorage.getItem('ipfs:run')).toBe('0')
+
+    setActivePinia(createPinia())
+    await useIpfsStore().hydrate()
+    await vi.dynamicImportSettled()
+
+    expect(started()).toBe(false)
+  })
+
+  it('выключил Tor, а не человек, — при следующем запуске нода поднимется', async () => {
+    localStorage.setItem('ipfs:consent', 'accepted')
+    localStorage.setItem('ipfs:run', '1')
+    installedNode()
+    await useIpfsStore().stop({ remember: false })
+
+    expect(localStorage.getItem('ipfs:run')).toBe('1')
+  })
+
+  it('под Tor, без модуля или без согласия — не поднимается', async () => {
+    installedNode()
+    localStorage.setItem('ipfs:consent', 'accepted')
+    tor.enabled = true
+    await useIpfsStore().hydrate()
+
+    tor.enabled = false
+    setActivePinia(createPinia())
+    invoke.mockImplementation(async (cmd: string) =>
+      cmd === 'ipfs_status' ? snapshot({ installed: false }) : undefined
+    )
+    await useIpfsStore().hydrate()
+
+    localStorage.setItem('ipfs:consent', 'declined')
+    setActivePinia(createPinia())
+    installedNode()
+    await useIpfsStore().hydrate()
+    await vi.dynamicImportSettled()
+
+    expect(started()).toBe(false)
   })
 })

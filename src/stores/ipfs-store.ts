@@ -69,6 +69,12 @@ export type IpfsModalPhase = 'consent' | 'progress' | 'desktop-only' | 'tor-bloc
 type ConsentChoice = 'install' | 'decline' | 'dismiss'
 
 const LS_CONSENT = 'ipfs:consent'
+/**
+ * Нода работала, и её не выключали: после перезапуска приложения (в том числе
+ * обновлением) она поднимается сама. Иначе «Мои файлы» переставали раздаваться,
+ * а модуль выглядел слетевшим.
+ */
+const LS_RUN = 'ipfs:run'
 /** Щедрый потолок ожидания: скачивание ~80 МБ + init + старт демона. */
 const ENSURE_TIMEOUT_MS = 10 * 60 * 1000
 /** После неудачного ensure не долбим бэкенд на каждый клик — окно тишины. */
@@ -111,6 +117,34 @@ function persistConsent(v: IpfsConsent): void {
     localStorage.setItem(LS_CONSENT, v)
   } catch {
     // не критично: не сохранили выбор — переспросим на следующем клике
+  }
+}
+
+/** Нет записи — как с согласием: кто ставил модуль, тот пользовался нодой. */
+function loadRun(consent: IpfsConsent): boolean {
+  try {
+    const raw = localStorage.getItem(LS_RUN)
+    if (raw !== null) return raw === '1'
+  } catch {
+    // localStorage недоступен — решаем по согласию
+  }
+  return consent === 'accepted'
+}
+
+function persistRun(on: boolean): void {
+  try {
+    localStorage.setItem(LS_RUN, on ? '1' : '0')
+  } catch {
+    // не критично: в худшем случае нода не поднимется сама
+  }
+}
+
+/** Tor включён (или подключается) — флаг из localStorage, известен с запуска. */
+function torEnabled(): boolean {
+  try {
+    return useTorStore().enabled
+  } catch {
+    return false
   }
 }
 
@@ -162,6 +196,7 @@ export const useIpfsStore = defineStore('ipfs', {
     _cancelPromise: null as Promise<null> | null,
     _ensureWaiters: 0,
     _lastFailedAt: 0,
+    _autostarted: false,
   }),
 
   getters: {
@@ -189,9 +224,23 @@ export const useIpfsStore = defineStore('ipfs', {
         const snap = await tauriInvoke<IpfsStateSnapshot>('ipfs_status')
         this.applySnapshot(snap)
         if (this.status === 'running') void this.refreshPinService()
+        else this._autostart()
       } catch {
         // бэкенд ещё не готов — подтянем при первом действии
       }
+    },
+
+    /**
+     * Поднять ноду при запуске приложения, если её не выключали. Раз за сессию,
+     * только установленную (без скачивания) и не под Tor: Kubo ходит в сеть
+     * мимо Tor.
+     */
+    _autostart(): void {
+      if (this._autostarted) return
+      this._autostarted = true
+      if (!this.installed || this.status !== 'off' || this.consent !== 'accepted') return
+      if (!loadRun(this.consent) || torEnabled()) return
+      void this.ensureRunning()
     },
 
     async subscribe(): Promise<void> {
@@ -283,8 +332,10 @@ export const useIpfsStore = defineStore('ipfs', {
       await this.ensureRunning()
     },
 
-    async stop(): Promise<void> {
+    /** `remember: false` — гасит приложение (включили Tor), а не человек: при следующем запуске нода поднимется. */
+    async stop(opts: { remember?: boolean } = {}): Promise<void> {
       if (!this.available) return
+      if (opts.remember !== false) persistRun(false)
       try {
         const snap = await tauriInvoke<IpfsStateSnapshot>('ipfs_stop')
         this.applySnapshot(snap)
@@ -300,6 +351,7 @@ export const useIpfsStore = defineStore('ipfs', {
         this.applySnapshot(snap)
         // Сброс согласия: после удаления снова спросим на следующем клике.
         this.setConsent('unknown')
+        persistRun(false)
       } catch (e) {
         this.message = String(e)
       }
@@ -630,7 +682,10 @@ export const useIpfsStore = defineStore('ipfs', {
             ENSURE_TIMEOUT_MS
           )
           this.applySnapshot(snap)
-          if (snap.status === 'running') return snap.gateway_port
+          if (snap.status === 'running') {
+            persistRun(true)
+            return snap.gateway_port
+          }
           // Установку отменили (abortInstall) — это не сбой, паузы не нужно.
           if (snap.status === 'off') return null
           // Не running без исключения (напр. демон не поднялся) — фиксируем как

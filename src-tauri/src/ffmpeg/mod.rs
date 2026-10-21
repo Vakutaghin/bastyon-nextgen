@@ -113,15 +113,19 @@ impl FfmpegPaths {
         self.dir.join("install.json")
     }
 
-    /// Оба бинаря на месте и маркер закреплённой версии. Маркер пишется
-    /// последним: бинарь, распакованный наполовину перед падением, без него
-    /// готовым не считается.
+    /// Оба бинаря на месте и маркер. Маркер пишется последним: бинарь,
+    /// распакованный наполовину перед падением, без него готовым не считается.
+    ///
+    /// Версия любая: модуль прошлой версии сжимает так же, а скачивать
+    /// десятки мегабайт заново после каждого обновления приложения, где
+    /// сменилась закреплённая сборка, незачем. Новую ставит «Удалить» и
+    /// «Скачать».
     pub fn is_installed(&self) -> bool {
         let version = std::fs::read_to_string(self.marker())
             .ok()
             .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
             .and_then(|v| v.get("version")?.as_str().map(str::to_string));
-        version.as_deref() == Some(pin().version.as_str())
+        version.is_some_and(|v| !v.is_empty())
             && TOOLS.iter().all(|tool| self.binary(tool).is_file())
     }
 
@@ -462,7 +466,7 @@ mod tests {
     }
 
     #[test]
-    fn installed_needs_both_tools_and_the_marker_of_this_version() {
+    fn installed_needs_both_tools_and_the_marker() {
         let dir = std::env::temp_dir().join(format!("ffmpeg-module-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
@@ -486,7 +490,10 @@ mod tests {
         assert!(paths.is_installed());
 
         std::fs::write(paths.marker(), r#"{"version":"b0.0.1"}"#).unwrap();
-        assert!(!paths.is_installed(), "маркер другой версии");
+        assert!(paths.is_installed(), "модуль прошлой версии тоже сжимает");
+
+        std::fs::write(paths.marker(), "{").unwrap();
+        assert!(!paths.is_installed(), "битый маркер");
 
         paths.write_marker().unwrap();
         std::fs::remove_file(paths.binary("ffprobe")).unwrap();

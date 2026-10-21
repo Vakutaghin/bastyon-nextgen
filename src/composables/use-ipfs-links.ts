@@ -309,7 +309,7 @@ export function useIpfsLinks(active: () => boolean = () => true): void {
   watch(
     () => store.torActive,
     (on) => {
-      if (on && store.status === 'running') void store.stop()
+      if (on && store.status === 'running') void store.stop({ remember: false })
     }
   )
 }

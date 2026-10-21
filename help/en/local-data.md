@@ -34,7 +34,7 @@ If the browser does not let websites store data — for example, in a private wi
 2. Uninstall the app.
 3. In the desktop app, also delete the data folder — Tor, IPFS and the voice input models stay there:
    - macOS: `~/Library/Application Support/com.bastyon.app`
-   - Windows: `%APPDATA%\com.bastyon.app`
+   - Windows: `%APPDATA%\com.bastyon.app` and `%LOCALAPPDATA%\com.bastyon.app`
    - Linux: `~/.local/share/com.bastyon.app`
 
 On Android everything is removed together with the app.

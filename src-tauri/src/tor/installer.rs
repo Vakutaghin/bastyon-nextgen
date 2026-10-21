@@ -126,12 +126,28 @@ fn archive_urls(version: &str, archive_name: &str) -> Vec<String> {
 /// Бандл распакован и той же версии, что закреплена.
 pub fn is_installed(paths: &TorPaths) -> bool {
     let marker = paths.binary.with_file_name(VERSION_MARKER);
-    paths.binary.is_file()
-        && paths.geoip.is_file()
-        && fs::read_to_string(marker).is_ok_and(|v| v.trim() == tor_version())
+    has_bundle(paths) && fs::read_to_string(marker).is_ok_and(|v| v.trim() == tor_version())
 }
 
-/// Top-level: ensure Tor binary and resources exist on disk. No-op if installed.
+/// Бандл распакован, пусть и другой версии: Tor из него запустится.
+pub fn has_bundle(paths: &TorPaths) -> bool {
+    paths.binary.is_file() && paths.geoip.is_file()
+}
+
+/// Приложение обновилось и закрепило другой Tor, а стоит прежний: он работает,
+/// пока закреплённый скачивается через него в фоне (`download_upgrade`).
+pub fn upgrade_pending(paths: &TorPaths) -> bool {
+    !is_installed(paths) && has_bundle(paths)
+}
+
+/// Бандл готов к запуску: закреплённый, а пока он не скачан — прежний.
+///
+/// Раньше прежний бандл сносился и закреплённый качался прямо при включении
+/// Tor: после обновления приложения Tor скачивался заново, а если скачать не
+/// выходило (адрес заблокирован, сеть плохая), не включался вовсе.
+///
+/// Скачанный архив ставится здесь, поэтому звать — только когда tor не
+/// запущен: работающий tor.exe на Windows не заменить.
 pub async fn ensure_installed<R: Runtime>(
     app: &AppHandle<R>,
     paths: &TorPaths,
@@ -140,12 +156,37 @@ pub async fn ensure_installed<R: Runtime>(
     if is_installed(paths) {
         return Ok(());
     }
+    install_platform(app, paths, &detect_platform()?, cancel).await
+}
 
+async fn install_platform<R: Runtime>(
+    app: &AppHandle<R>,
+    paths: &TorPaths,
+    platform: &PlatformInfo,
+    cancel: &AtomicBool,
+) -> Result<(), InstallError> {
     fs::create_dir_all(&paths.root)?;
     fs::create_dir_all(&paths.data_dir)?;
 
-    let platform = detect_platform()?;
     let archive_path = paths.root.join(&platform.archive_name);
+
+    // Архив скачан в фоне или остался от прерванной распаковки — ставим без сети.
+    if archive_path.is_file() {
+        match check_sha256(&archive_path, &platform.sha256) {
+            Ok(()) => return unpack(app, paths, platform, &archive_path),
+            Err(e) => {
+                log::warn!("[tor] stored archive rejected: {}", e);
+                let _ = fs::remove_file(&archive_path);
+            }
+        }
+    }
+    if has_bundle(paths) {
+        log::info!(
+            "[tor] using the installed bundle until {} is downloaded",
+            tor_version()
+        );
+        return Ok(());
+    }
 
     // Зеркало по очереди: недоступно, 404 или хэш не тот — следующее.
     let mut last_err: Option<InstallError> = None;
@@ -185,7 +226,17 @@ pub async fn ensure_installed<R: Runtime>(
             platform.archive_name.clone(),
         )));
     }
+    unpack(app, paths, platform, &archive_path)
+}
 
+/// Проверенный архив — на место прежнего бандла. Архив удаляется последним,
+/// после метки версии: прерванная распаковка повторится из него.
+fn unpack<R: Runtime>(
+    app: &AppHandle<R>,
+    paths: &TorPaths,
+    platform: &PlatformInfo,
+    archive_path: &Path,
+) -> Result<(), InstallError> {
     emit_progress(app, "extracting", 0.97, "Extracting bundle");
     // Каталог прошлой версии — целиком: в 15.x нет отдельного
     // snowflake-client, и старые бинарники не должны оставаться рядом.
@@ -193,12 +244,10 @@ pub async fn ensure_installed<R: Runtime>(
         let _ = fs::remove_dir_all(tor_dir);
     }
     if platform.is_zip {
-        extract_zip(&archive_path, &paths.root)?;
+        extract_zip(archive_path, &paths.root)?;
     } else {
-        extract_tar_gz(&archive_path, &paths.root)?;
+        extract_tar_gz(archive_path, &paths.root)?;
     }
-
-    let _ = fs::remove_file(&archive_path);
 
     if !paths.binary.is_file() {
         return Err(InstallError::ExtractedFileMissing(
@@ -235,8 +284,70 @@ pub async fn ensure_installed<R: Runtime>(
     }
 
     fs::write(paths.binary.with_file_name(VERSION_MARKER), tor_version())?;
+    let _ = fs::remove_file(archive_path);
+    let _ = fs::remove_file(part_path(archive_path));
 
     emit_progress(app, "ready", 1.0, "Tor installed");
+    Ok(())
+}
+
+/// Пауза без единого байта, после которой фоновая загрузка считается оборванной.
+const UPGRADE_STALL: Duration = Duration::from_secs(60);
+
+fn part_path(archive_path: &Path) -> std::path::PathBuf {
+    let mut name = archive_path.as_os_str().to_owned();
+    name.push(".part");
+    name.into()
+}
+
+/// Скачать закреплённый бандл, не трогая работающий: он встанет при следующем
+/// включении Tor (`ensure_installed`). `client` ходит через сам Tor: прямой
+/// адрес может быть заблокирован, а запрос мимо Tor выдал бы, что здесь Tor.
+pub async fn download_upgrade(
+    client: &reqwest::Client,
+    paths: &TorPaths,
+) -> Result<(), InstallError> {
+    let platform = detect_platform()?;
+    let dest = paths.root.join(&platform.archive_name);
+    if dest.is_file() {
+        return Ok(());
+    }
+    let part = part_path(&dest);
+    let mut last_err: Option<InstallError> = None;
+    for url in archive_urls(tor_version(), &platform.archive_name) {
+        let result = match fetch_to(client, &url, &part).await {
+            Ok(()) => check_sha256(&part, &platform.sha256),
+            Err(e) => Err(e),
+        };
+        match result {
+            Ok(()) => {
+                fs::rename(&part, &dest)?;
+                return Ok(());
+            }
+            Err(e) => {
+                log::warn!("[tor] upgrade from {} failed: {}", url, e);
+                let _ = fs::remove_file(&part);
+                last_err = Some(e);
+            }
+        }
+    }
+    Err(last_err.unwrap_or(InstallError::ExtractedFileMissing(platform.archive_name)))
+}
+
+async fn fetch_to(client: &reqwest::Client, url: &str, dest: &Path) -> Result<(), InstallError> {
+    let resp = client.get(url).send().await?.error_for_status()?;
+    let mut file = fs::File::create(dest)?;
+    let mut stream = resp.bytes_stream();
+    loop {
+        match tokio::time::timeout(UPGRADE_STALL, stream.next()).await {
+            Err(_) => {
+                return Err(std::io::Error::new(std::io::ErrorKind::TimedOut, "stalled").into())
+            }
+            Ok(None) => break,
+            Ok(Some(chunk)) => file.write_all(&chunk?)?,
+        }
+    }
+    file.flush()?;
     Ok(())
 }
 
@@ -423,8 +534,8 @@ mod tests {
         assert!(urls.iter().all(|u| u.ends_with(NAME)));
     }
 
-    /// Бандл прошлой версии (14.0.7 без файла версии) считается неустановленным
-    /// и ставится заново.
+    /// Бандл прошлой версии (14.0.7 без файла версии) — не закреплённый: его
+    /// заменит новый, а до тех пор он работает.
     #[test]
     fn installed_bundle_of_another_version_is_reinstalled() {
         let dir = TempDir::new("marker");
@@ -441,6 +552,114 @@ mod tests {
 
         fs::write(&marker, format!("{}\n", tor_version())).unwrap();
         assert!(is_installed(&paths));
+        assert!(!upgrade_pending(&paths));
+    }
+
+    /// Бандл как у Tor Project: `tor/`, транспорты и `data/geoip*`.
+    fn write_bundle(archive: &Path, body: &[u8]) {
+        let gz = flate2::write::GzEncoder::new(
+            fs::File::create(archive).unwrap(),
+            flate2::Compression::fast(),
+        );
+        let mut tar = tar::Builder::new(gz);
+        let bin_name = if cfg!(windows) { "tor.exe" } else { "tor" };
+        for (path, body) in [
+            (format!("tor/{bin_name}"), body),
+            ("tor/pluggable_transports/lyrebird".to_string(), &b"pt"[..]),
+            ("data/geoip".to_string(), &b"geo"[..]),
+            ("data/geoip6".to_string(), &b"geo6"[..]),
+        ] {
+            let mut header = tar::Header::new_gnu();
+            header.set_size(body.len() as u64);
+            header.set_mode(0o644);
+            header.set_cksum();
+            tar.append_data(&mut header, path, body).unwrap();
+        }
+        tar.into_inner().unwrap().finish().unwrap();
+    }
+
+    /// Бандл прежней версии без метки, со старым `snowflake-client`.
+    fn old_bundle(dir: &TempDir) -> TorPaths {
+        let paths = TorPaths::from_root(dir.0.join("tor-root"));
+        fs::create_dir_all(&paths.pt_dir).unwrap();
+        fs::create_dir_all(&paths.data_dir).unwrap();
+        fs::write(&paths.binary, b"old tor").unwrap();
+        fs::write(paths.pt_dir.join("snowflake-client"), b"old").unwrap();
+        fs::write(&paths.geoip, b"geo").unwrap();
+        paths
+    }
+
+    fn install_offline(paths: &TorPaths, platform: &PlatformInfo) -> Result<(), InstallError> {
+        let app = tauri::test::mock_builder()
+            .build(tauri::generate_context!(test = true))
+            .expect("mock app");
+        let handle = app.handle().clone();
+        tauri::async_runtime::block_on(install_platform(
+            &handle,
+            paths,
+            platform,
+            &AtomicBool::new(false),
+        ))
+    }
+
+    fn fake_platform(archive_name: &str, sha256: String) -> PlatformInfo {
+        PlatformInfo {
+            archive_name: archive_name.to_string(),
+            sha256,
+            is_zip: false,
+        }
+    }
+
+    /// После обновления приложения прежний Tor запускается сразу, без сети:
+    /// раньше его сносили и качали новый прямо при включении.
+    #[test]
+    fn previous_bundle_keeps_working_until_the_new_one_is_downloaded() {
+        let dir = TempDir::new("keep");
+        let paths = old_bundle(&dir);
+        assert!(upgrade_pending(&paths));
+
+        // Хэш, которому не совпасть: дошло бы до сети — упало бы.
+        install_offline(&paths, &fake_platform(NAME, "0".repeat(64))).expect("old bundle used");
+
+        assert_eq!(fs::read(&paths.binary).unwrap(), b"old tor");
+        assert!(
+            upgrade_pending(&paths),
+            "the new version is still to download"
+        );
+    }
+
+    /// Скачанный в фоне архив ставится при следующем запуске, без сети.
+    #[test]
+    fn downloaded_upgrade_installs_on_the_next_start() {
+        let dir = TempDir::new("apply");
+        let paths = old_bundle(&dir);
+        let archive = paths.root.join(NAME);
+        write_bundle(&archive, b"new tor");
+        let sha = hex::encode(Sha256::digest(fs::read(&archive).unwrap()));
+
+        install_offline(&paths, &fake_platform(NAME, sha)).expect("install");
+
+        assert_eq!(fs::read(&paths.binary).unwrap(), b"new tor");
+        assert!(is_installed(&paths));
+        assert!(!archive.exists(), "the archive is removed once installed");
+        assert!(
+            !paths.pt_dir.join("snowflake-client").exists(),
+            "old binaries removed"
+        );
+    }
+
+    /// Битый архив не ставится и не мешает прежнему бандлу.
+    #[test]
+    fn corrupt_downloaded_archive_is_dropped() {
+        let dir = TempDir::new("corrupt");
+        let paths = old_bundle(&dir);
+        let archive = paths.root.join(NAME);
+        fs::write(&archive, b"truncated").unwrap();
+
+        install_offline(&paths, &fake_platform(NAME, "0".repeat(64))).expect("old bundle used");
+
+        assert!(!archive.exists());
+        assert_eq!(fs::read(&paths.binary).unwrap(), b"old tor");
     }
 
     /// Живая установка поверх старой: `BASTYON_TOR_INSTALL_ROOT=<пустой каталог
@@ -462,6 +681,42 @@ mod tests {
             assert!(is_installed(&paths));
             assert!(paths.pt_dir.join("pt_config.json").is_file());
             assert!(!paths.pt_dir.join("snowflake-client").exists(), "old binary removed");
+        });
+    }
+
+    /// Живое обновление поверх прежнего бандла: `BASTYON_TOR_INSTALL_ROOT=<каталог
+    /// с бандлом 14.x> cargo test --lib live_upgrade -- --ignored --nocapture`.
+    /// Прежний запускается без сети, новый качается (здесь — напрямую, в
+    /// приложении — через Tor) и встаёт при следующем запуске.
+    #[test]
+    #[ignore]
+    fn live_upgrade() {
+        let root = PathBuf::from(std::env::var("BASTYON_TOR_INSTALL_ROOT").expect("root"));
+        let paths = TorPaths::from_root(root);
+        assert!(upgrade_pending(&paths), "needs a bundle of another version");
+        let app = tauri::test::mock_builder()
+            .build(tauri::generate_context!(test = true))
+            .expect("mock app");
+        let handle = app.handle().clone();
+        tauri::async_runtime::block_on(async move {
+            ensure_installed(&handle, &paths, &AtomicBool::new(false))
+                .await
+                .expect("old bundle");
+            assert!(upgrade_pending(&paths), "nothing downloaded at start");
+
+            download_upgrade(&reqwest::Client::new(), &paths)
+                .await
+                .expect("download");
+            assert!(upgrade_pending(&paths), "the running bundle is not touched");
+
+            ensure_installed(&handle, &paths, &AtomicBool::new(false))
+                .await
+                .expect("install");
+            assert!(is_installed(&paths));
+            assert!(
+                !paths.pt_dir.join("snowflake-client").exists(),
+                "old binary removed"
+            );
         });
     }
 

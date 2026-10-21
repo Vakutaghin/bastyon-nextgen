@@ -53,6 +53,8 @@ pub struct TorManager {
     /// Установку бандла запускают и `tor_start`, и «Получить мосты»: две
     /// загрузки в один архив давали `SHA256 mismatch` (S59).
     pub install_lock: tokio::sync::Mutex<()>,
+    /// Идёт фоновая загрузка новой версии бандла (`upgrade_in_background`).
+    pub upgrading: AtomicBool,
 }
 
 impl TorManager {
@@ -66,6 +68,7 @@ impl TorManager {
             install_cancel: Arc::new(AtomicBool::new(false)),
             start_gen: AtomicU64::new(0),
             install_lock: tokio::sync::Mutex::new(()),
+            upgrading: AtomicBool::new(false),
         }
     }
 
@@ -196,7 +199,9 @@ pub async fn tor_request_bridges(
     app: AppHandle,
     mgr: State<'_, TorManager>,
 ) -> Result<TorRequestedBridges, String> {
-    {
+    // Мостам хватит и бандла прежней версии. Новую ставит только запуск Tor:
+    // файлы работающего tor не заменить.
+    if !installer::has_bundle(&mgr.paths) {
         let _install = mgr.install_lock.lock().await;
         installer::ensure_installed(&app, &mgr.paths, &AtomicBool::new(false))
             .await
@@ -312,7 +317,11 @@ pub async fn tor_start(
 
     match prepare(&app, &mgr, gen).await {
         Ok(()) => {
-            tauri::async_runtime::spawn(connect::supervise(app.clone(), gen));
+            let handle = app.clone();
+            tauri::async_runtime::spawn(async move {
+                connect::supervise(handle.clone(), gen).await;
+                upgrade_in_background(&handle).await;
+            });
             Ok(mgr.state.read().await.snapshot())
         }
         Err(StartAbort::Cancelled) => Ok(mgr.state.read().await.snapshot()),
@@ -329,6 +338,51 @@ pub async fn tor_start(
             Err(msg)
         }
     }
+}
+
+/// Tor подключился на бандле прежней версии: приложение обновилось и закрепило
+/// новый Tor. Скачиваем его через подключённый — встанет при следующем
+/// включении. Не скачался — попробуем при следующем подключении.
+async fn upgrade_in_background(app: &AppHandle) {
+    let mgr = app.state::<TorManager>();
+    if !installer::upgrade_pending(&mgr.paths) || mgr.upgrading.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let result = match upgrade_client(&mgr).await {
+        Ok(client) => installer::download_upgrade(&client, &mgr.paths)
+            .await
+            .map_err(err_string),
+        Err(e) => Err(e),
+    };
+    mgr.upgrading.store(false, Ordering::SeqCst);
+    match result {
+        Ok(()) => log::info!(
+            "[tor] Tor {} downloaded, installs on the next start",
+            installer::tor_version()
+        ),
+        Err(e) => log::warn!(
+            "[tor] Tor {} not downloaded: {}",
+            installer::tor_version(),
+            e
+        ),
+    }
+}
+
+/// Только через Tor (fail-closed) и без общего таймаута: бандл в десятки
+/// мегабайт через Tor качается дольше двух минут клиентов `tor_fetch`.
+async fn upgrade_client(mgr: &TorManager) -> Result<reqwest::Client, String> {
+    let st = mgr.state.read().await;
+    if st.status != TorStatus::Ready {
+        return Err(format!("{}: status={:?}", TOR_NOT_READY, st.status));
+    }
+    let proxy = reqwest::Proxy::all(format!("socks5h://127.0.0.1:{}", st.socks_port))
+        .map_err(err_string)?;
+    reqwest::Client::builder()
+        .proxy(proxy)
+        .user_agent("Bastyon/1.0")
+        .connect_timeout(Duration::from_secs(60))
+        .build()
+        .map_err(err_string)
 }
 
 #[tauri::command]

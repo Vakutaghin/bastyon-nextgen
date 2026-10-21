@@ -10,7 +10,7 @@ How to hide your IP address from nodes and chat servers: turn on Tor in the app,
 
 Tor exists only in the desktop app. Click the Tor icon in the header and flip the switch. The first time, the app explains what goes through Tor — press **“Enable”**.
 
-The first time, Tor is downloaded — about 20 MB. The app takes it from its own mirror on GitHub or, if it is not there, from the Tor Project site, and checks it against the checksum built into the app. When a new app version ships a newer Tor, it is downloaded again the next time you turn Tor on. Then Tor connects to its network — the menu shows how far along it is and through which bridges, and once done, **“Connected to the Tor network”**.
+The first time, Tor is downloaded — about 20 MB. The app takes it from its own mirror on GitHub or, if it is not there, from the Tor Project site, and checks it against the checksum built into the app. When a new app version ships a newer Tor, the previous one keeps working: the new one downloads through it in the background and takes over the next time you turn Tor on. Then Tor connects to its network — the menu shows how far along it is and through which bridges, and once done, **“Connected to the Tor network”**.
 
 While Tor is connecting, the app waits and does not go online directly. If Tor cannot connect, requests are not sent at all: the app will not quietly bypass Tor. Tor, once on, also starts the next time you launch the app.
 

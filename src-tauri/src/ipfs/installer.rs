@@ -142,6 +142,58 @@ fn archive_urls(version: &str, archive_name: &str) -> Vec<String> {
     ]
 }
 
+/// Перенести модуль, скачанный раньше в папку кэшей (`<cache>/ipfs`), к данным
+/// приложения — без повторного скачивания. Кэш чистят система и программы
+/// очистки, и модуль оттуда пропадал. Не вышло перенести — скачается снова.
+pub fn adopt_legacy_install(legacy: &Path, paths: &IpfsPaths) {
+    if legacy == paths.bin_dir.as_path() {
+        return;
+    }
+    let Some(bin_name) = paths.binary.file_name() else {
+        return;
+    };
+    let old_binary = legacy.join("kubo").join(bin_name);
+    let old_marker = legacy.join("install.json");
+    let drop_legacy = || {
+        let _ = fs::remove_dir_all(legacy.join("kubo"));
+        let _ = fs::remove_file(&old_marker);
+    };
+    if paths.binary.is_file() && paths.install_marker.is_file() {
+        // Уже на новом месте — оставшаяся в кэше копия только занимает место.
+        if old_binary.exists() {
+            drop_legacy();
+        }
+        return;
+    }
+    if !old_binary.is_file() || !old_marker.is_file() {
+        return;
+    }
+    let moved = (|| -> std::io::Result<()> {
+        if let Some(dir) = paths.binary.parent() {
+            fs::create_dir_all(dir)?;
+        }
+        move_file(&old_binary, &paths.binary)?;
+        // Маркер — последним: без него бинарь готовым не считается.
+        move_file(&old_marker, &paths.install_marker)
+    })();
+    match moved {
+        Ok(()) => {
+            drop_legacy();
+            log::info!("[ipfs] Kubo moved out of the cache folder");
+        }
+        Err(e) => log::warn!("[ipfs] could not move Kubo out of the cache folder: {e}"),
+    }
+}
+
+/// rename, а между дисками — копия (с правами) и удаление.
+fn move_file(from: &Path, to: &Path) -> std::io::Result<()> {
+    if fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    fs::copy(from, to)?;
+    fs::remove_file(from)
+}
+
 /// Версия установленного бинаря из install.json (None — маркера нет).
 pub fn installed_version(paths: &IpfsPaths) -> Option<String> {
     let raw = fs::read_to_string(&paths.install_marker).ok()?;
@@ -473,6 +525,62 @@ mod tests {
                 format!("https://dist.ipfs.tech/kubo/v0.43.0/{NAME}"),
             ]
         );
+    }
+
+    fn legacy_layout(tag: &str) -> (std::path::PathBuf, IpfsPaths) {
+        let root = std::env::temp_dir().join(format!("kubo-legacy-{tag}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let legacy = root.join("cache").join("ipfs");
+        let paths = IpfsPaths::new(root.join("data/ipfs/bin"), root.join("data/ipfs/repo"));
+        let bin_name = paths.binary.file_name().unwrap().to_owned();
+        fs::create_dir_all(legacy.join("kubo")).unwrap();
+        fs::write(legacy.join("kubo").join(bin_name), b"kubo").unwrap();
+        fs::write(legacy.join("install.json"), r#"{"version":"v0.43.0"}"#).unwrap();
+        (root, paths)
+    }
+
+    /// Модуль из папки кэшей переезжает к данным приложения и не качается снова.
+    #[test]
+    fn module_in_the_cache_folder_moves_to_app_data() {
+        let (root, paths) = legacy_layout("move");
+        let legacy = root.join("cache").join("ipfs");
+
+        adopt_legacy_install(&legacy, &paths);
+
+        assert_eq!(fs::read(&paths.binary).unwrap(), b"kubo");
+        assert_eq!(installed_version(&paths).as_deref(), Some("v0.43.0"));
+        assert!(!legacy.join("kubo").exists());
+        assert!(!legacy.join("install.json").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    /// Без маркера (распаковку прервали) в кэше — не переносим: скачается заново.
+    #[test]
+    fn unfinished_install_in_the_cache_folder_is_not_moved() {
+        let (root, paths) = legacy_layout("partial");
+        let legacy = root.join("cache").join("ipfs");
+        fs::remove_file(legacy.join("install.json")).unwrap();
+
+        adopt_legacy_install(&legacy, &paths);
+
+        assert!(!paths.binary.exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    /// Модуль уже на новом месте — копия в кэше удаляется, новый не трогаем.
+    #[test]
+    fn leftover_copy_in_the_cache_folder_is_removed() {
+        let (root, paths) = legacy_layout("leftover");
+        let legacy = root.join("cache").join("ipfs");
+        fs::create_dir_all(paths.binary.parent().unwrap()).unwrap();
+        fs::write(&paths.binary, b"new").unwrap();
+        fs::write(&paths.install_marker, r#"{"version":"v0.43.0"}"#).unwrap();
+
+        adopt_legacy_install(&legacy, &paths);
+
+        assert_eq!(fs::read(&paths.binary).unwrap(), b"new");
+        assert!(!legacy.join("kubo").exists());
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
