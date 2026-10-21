@@ -63,6 +63,13 @@ const saveListeners = new Map<string, (received: number, total: number | null) =
 /** Rust отвечает этим на отменённое сохранение (ipfs_cancel_save). */
 const SAVE_CANCELLED = 'cancelled'
 
+/** Что окно просмотра показывает, пока нода ищет содержимое (`ipfs_viewer_status`). */
+export interface IpfsViewerStatus {
+  kind: 'loading' | 'error'
+  heading: string
+  detail: string
+}
+
 export type IpfsModalPhase = 'consent' | 'progress' | 'desktop-only' | 'tor-blocked' | 'pin-config'
 
 /** Выбор пользователя в consent-модалке: установить / явный отказ / закрыл. */
@@ -558,10 +565,35 @@ export const useIpfsStore = defineStore('ipfs', {
 
     /**
      * Окно-просмотрщик создаёт Rust (incognito + on_navigation по белому списку);
-     * повторный вызов с той же меткой — фокус существующего.
+     * повторный вызов с той же меткой — фокус существующего. `waited` — окно
+     * уже показывало ожидание: если его закрыли, новое не открывается.
      */
-    async openViewer(label: string, url: string, title: string): Promise<void> {
-      await tauriInvoke('ipfs_open_viewer', { label, url, title })
+    async openViewer(label: string, url: string, title: string, waited = false): Promise<void> {
+      await tauriInvoke('ipfs_open_viewer', { label, url, title, waited })
+    },
+
+    /**
+     * Страница ожидания или ошибки в окне просмотра; `start` — создать окно.
+     * false — показывать некуда: окно с содержимым уже открыто или окно
+     * ожидания закрыли.
+     */
+    async viewerStatus(
+      label: string,
+      title: string,
+      status: IpfsViewerStatus,
+      start: boolean
+    ): Promise<boolean> {
+      try {
+        return await tauriInvoke<boolean>('ipfs_viewer_status', { label, title, status, start })
+      } catch (e) {
+        console.warn('[ipfs] viewer status failed', e)
+        return false
+      }
+    },
+
+    /** Закрыть окно ожидания: ссылка оказалась файлом для скачивания. */
+    async closeViewer(label: string): Promise<void> {
+      await tauriInvoke('ipfs_viewer_close', { label }).catch(() => {})
     },
 
     // --- удалённый pin (Ф5c, durability) ---

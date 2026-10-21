@@ -1,23 +1,23 @@
 // Открытие IPFS-ссылок в браузере и на телефоне, где нет локальной ноды и Rust.
-// Показ — новая вкладка с публичным шлюзом, как окно просмотра на десктопе.
-// Скачивание — только проверенное: файл собирается из CAR, каждый блок
-// сверяется со своим CID (ipfs-verify.ts). Приватный файл расшифровывается
-// здесь же ключом из ссылки.
+// Обычная ссылка — новая вкладка inbrowser.link: содержимое из сети качает и
+// проверяет сам браузер (service worker), он же решает, показать или скачать.
+// Публичные шлюзы с сентября 2026 приложениям не отвечают (ipfs-viewer.ts),
+// поэтому раньше здешние проба типа и скачивание из CAR перестали работать.
 //
-// Библиотеки IPLD грузятся только при скачивании (динамический import), а
-// решение «показать» по расширению принимается прямо в обработчике клика:
-// вкладку, открытую позже, заблокирует браузер.
+// Приватный файл скачивается здесь: файл собирается из CAR, каждый блок
+// сверяется со своим CID (ipfs-verify.ts) и расшифровывается ключом из ссылки.
+// Библиотеки IPLD грузятся только при скачивании (динамический import).
 import { h, type VNode } from 'vue'
-import { Modal, message } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
 import { t } from '@/i18n'
 import { appToast } from '@/b-components/app-toast'
 import { Z_INDEX } from '@/styles/design-tokens'
 import { openExternal } from '@/helpers/common/open-external'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import type { IpfsSecret, IpfsTarget } from '@/helpers/ipfs/ipfs-link'
-import { buildIpfsViewerUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
-import { classifyForBrowser, sanitizeFilename } from '@/helpers/ipfs/ipfs-content'
-import { extensionFor, guessContentType, typeFromName } from '@/helpers/ipfs/ipfs-sniff'
+import { buildIpfsWebUrl } from '@/helpers/ipfs/ipfs-viewer'
+import { sanitizeFilename } from '@/helpers/ipfs/ipfs-content'
+import { extensionFor } from '@/helpers/ipfs/ipfs-sniff'
 import {
   GatewayError,
   SecretError,
@@ -26,7 +26,6 @@ import {
   isAbortError,
 } from '@/helpers/ipfs/ipfs-errors'
 import { openSaveSink, type SaveSink, type SinkKind } from '@/helpers/ipfs/ipfs-save-sinks'
-import type { EntityInfo } from '@/helpers/ipfs/ipfs-gateway-car'
 
 /** Старые приватные файлы (v1) расшифровываются целиком в памяти — как MAX_ENCRYPTED_BYTES в Rust. */
 const SECRET_V1_MAX_BYTES = 512 * 1024 * 1024 + 28
@@ -48,16 +47,6 @@ interface DownloadRequest {
   secret?: IpfsSecret
 }
 
-/** Последний сегмент пути ссылки — имя файла в каталоге. */
-function lastSegment(target: IpfsTarget): string {
-  const seg = target.path.split('/').filter(Boolean).pop() ?? ''
-  try {
-    return decodeURIComponent(seg)
-  } catch {
-    return seg
-  }
-}
-
 /**
  * Имя для сохранения: из ссылки (только базовое имя — `../x` из чужой ссылки
  * не должен стать путём), а для голого CID — по угаданному типу.
@@ -75,79 +64,24 @@ function track(key: string, work: Promise<void>): void {
 }
 
 /**
- * Клик по IPFS-ссылке в браузере или на телефоне. Синхронная часть решает
- * всё, что можно решить без сети.
+ * Клик по IPFS-ссылке в браузере или на телефоне. Синхронно: вкладку браузер
+ * откроет, только пока идёт обработка клика.
  */
 export function openIpfsInBrowser(
   target: IpfsTarget,
   secret: IpfsSecret | null,
   size: number | null = null
 ): void {
-  const viewUrl = buildIpfsViewerUrl(target, IPFS_GATEWAY)
-  // IPNS-имя через шлюз проверить нечем (DNSLink не подписан) — показываем
-  // как есть, как и на десктопе.
-  if (target.namespace === 'ipns') {
-    void openExternal(viewUrl)
+  if (!secret?.key) {
+    void openExternal(buildIpfsWebUrl(target))
     return
   }
   const key = `${target.root}/${target.path}`
   if (inFlight.has(key)) return
-
-  const sized = size ?? undefined
-  if (secret?.key) {
-    track(key, download(target, { name: fileName(secret.name, target), size: sized, secret }))
-    return
-  }
-  const name = lastSegment(target)
-  const known = typeFromName(name)
-  if (known) {
-    if (classifyForBrowser(known, navigator.userAgent) === 'render') void openExternal(viewUrl)
-    else track(key, download(target, { name: fileName(name, target, known), size: sized }))
-    return
-  }
-  track(key, inspectThenOpen(target, name, viewUrl))
-}
-
-/** Тип неизвестен (голый CID, имя без расширения) — смотрим на первые байты. */
-async function inspectThenOpen(target: IpfsTarget, name: string, viewUrl: string): Promise<void> {
-  const controller = new AbortController()
-  const hide = message.loading(t('header.ipfsWebChecking'), 0)
-  let info: EntityInfo
-  try {
-    const { inspectEntity } = await import('@/helpers/ipfs/ipfs-gateway-car')
-    info = await inspectEntity(target, controller.signal)
-  } catch (e) {
-    showError(e, null)
-    return
-  } finally {
-    hide()
-    // Первых байт хватило — остальное не качаем.
-    controller.abort()
-  }
-  if (info.kind === 'directory') {
-    offerToOpen(viewUrl)
-    return
-  }
-  const type = guessContentType(name, info.head)
-  if (classifyForBrowser(type, navigator.userAgent) === 'render') {
-    offerToOpen(viewUrl)
-    return
-  }
-  await download(target, { name: fileName(name, target, type), size: info.size })
-}
-
-/** После запроса к шлюзу жест пользователя истёк — вкладку открывает его клик. */
-function offerToOpen(viewUrl: string): void {
-  Modal.confirm({
-    zIndex: MODAL_Z,
-    title: t('header.ipfsWebOpenTitle'),
-    content: t('header.ipfsWebOpenContent'),
-    okText: t('header.ipfsWebOpenBtn'),
-    cancelText: t('common.cancel'),
-    onOk: () => {
-      void openExternal(viewUrl)
-    },
-  })
+  track(
+    key,
+    download(target, { name: fileName(secret.name, target), size: size ?? undefined, secret })
+  )
 }
 
 function describe(req: DownloadRequest): VNode {

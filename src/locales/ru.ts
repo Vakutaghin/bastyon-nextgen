@@ -335,14 +335,14 @@ export default {
       'Раздавать файлы через IPFS умеет только приложение Bastyon для компьютера: для этого нужна своя нода IPFS. Открывать IPFS-ссылки можно и здесь.',
     ipfsConsentTitle: 'Открыть IPFS-контент',
     ipfsConsentContent:
-      'Чтобы открыть эту ссылку приватно, установите локальный модуль IPFS (~80 МБ). Он качает контент напрямую из сети, без публичного шлюза. Либо можно открыть через публичный шлюз.',
+      'Чтобы открыть эту ссылку, установите модуль IPFS (~80 МБ): он берёт содержимое прямо из сети IPFS. Либо ссылку откроет ваш браузер через inbrowser.link.',
     ipfsConsentInstall: 'Установить модуль IPFS (~80 МБ)',
-    ipfsConsentPublic: 'Через публичный шлюз',
+    ipfsConsentPublic: 'Открыть в браузере',
     ipfsInstallTitle: 'Настройка IPFS',
     ipfsPreparing: 'Подготовка IPFS…',
     ipfsInstallingProgress: 'Загрузка: {pct}% — {message}',
     ipfsStarting: 'Запуск демона IPFS…',
-    ipfsCancel: 'Через публичный шлюз',
+    ipfsCancel: 'Открыть в браузере',
     ipfsAbortInstall: 'Отменить установку',
     ipfsTorBlockedTitle: 'Включён Tor',
     ipfsTorBlockedContent:
@@ -370,9 +370,17 @@ export default {
       'Содержимое откроется в отдельном окне-просмотрщике. Файлы, которые нельзя показать, приложение предложит сохранить.',
     ipfsBrowserRecent: 'Недавние',
     ipfsBrowserForget: 'Убрать из недавних',
+    ipfsViewerSearching: 'Ищу в сети IPFS…',
+    ipfsViewerSlow: 'Узел ищет, кто раздаёт этот адрес. Иногда это занимает до минуты.',
+    ipfsViewerNotFound: 'В сети IPFS не нашлось',
+    ipfsViewerNotFoundDetail:
+      'Сейчас этот адрес никто не раздаёт, или в ссылке ошибка. У содержимого, которое обновляют, например у сайтов, со временем меняется адрес — старая ссылка может больше не работать.',
+    ipfsPrivateNeedsModuleTitle: 'Нужен модуль IPFS',
+    ipfsPrivateNeedsModule:
+      'Приватный файл расшифровывает модуль IPFS. Без него такую ссылку не открыть: публичные шлюзы больше не отдают файлы приложениям.',
     ipfsUninstallConfirmTitle: 'Удалить модуль IPFS?',
     ipfsUninstallConfirmContent:
-      'Бинарь Kubo и локальный кэш блоков будут удалены, раздача ваших файлов прекратится. IPFS-ссылки будут открываться через публичный шлюз.',
+      'Бинарь Kubo и локальный кэш блоков будут удалены, раздача ваших файлов прекратится. IPFS-ссылки будут открываться в браузере через inbrowser.link.',
     ipfsShareDoneTitle: 'Файл опубликован в IPFS',
     ipfsShareDoneCopied: 'Ссылка скопирована. Любой с этой ссылкой откроет файл: {link}',
     ipfsShareDone: 'Любой с этой ссылкой откроет файл: {link}',
@@ -396,10 +404,6 @@ export default {
       'Файл больше 4 ГБ — через публичный шлюз такой не скачать. Запустите локальную ноду IPFS.',
     ipfsVerifyIncomplete:
       'Публичный шлюз прислал файл не целиком. Попробуйте позже или запустите локальную ноду IPFS.',
-    ipfsWebChecking: 'Открываю файл из IPFS…',
-    ipfsWebOpenTitle: 'Открыть в новой вкладке?',
-    ipfsWebOpenContent: 'Откроется через публичный шлюз dweb.link.',
-    ipfsWebOpenBtn: 'Открыть',
     ipfsWebDownloadTitle: 'Скачать файл?',
     ipfsWebPrivateTitle: 'Скачать приватный файл?',
     ipfsWebVerifyHint:

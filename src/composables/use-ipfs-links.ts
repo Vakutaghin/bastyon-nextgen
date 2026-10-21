@@ -3,10 +3,10 @@
 // WebviewWindow). Один делегат на document ловит ссылки из любого места
 // (v-html-контент постов, меншены, «о себе» и т.д.).
 //
-// Слушатель вешается ВЕЗДЕ (веб/десктоп). Решение о доступности и о том, каким
-// шлюзом резолвить (локальная нода Tier 1 vs публичный шлюз Tier 0), принимает
-// ipfs-store. В вебе и на телефоне ноды нет — там ссылку открывает
-// ipfs-browser-open: показ через шлюз во вкладке, скачивание с проверкой по CID.
+// Слушатель вешается ВЕЗДЕ (веб/десктоп). Есть ли своя нода (Tier 1), решает
+// ipfs-store. Без неё ссылку открывает браузер через inbrowser.link: публичные
+// шлюзы приложениям с сентября 2026 не отвечают (см. ipfs-viewer.ts). В вебе и
+// на телефоне ноды нет никогда — там ссылку открывает ipfs-browser-open.
 //
 // Tor: IPFS НЕ торифицирован ни в одном звене — окно-просмотрщик грузит URL без
 // прокси, а Kubo дозванивается DHT/Bitswap-пиров напрямую и светит реальный IP
@@ -22,10 +22,17 @@ import {
   type IpfsSecret,
   type IpfsTarget,
 } from '@/helpers/ipfs/ipfs-link'
-import { buildIpfsViewerUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
+import { buildIpfsViewerUrl, buildIpfsWebUrl, IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
+import { ipfsAddress } from '@/helpers/ipfs/ipfs-recent'
+import { openExternal } from '@/helpers/common/open-external'
 import { classify, detectViewerOs, downloadFilename } from '@/helpers/ipfs/ipfs-content'
 import { probeContent } from '@/helpers/ipfs/ipfs-download'
-import { useIpfsStore, type IpfsGatewaySource, type IpfsSaveProgress } from '@/stores/ipfs-store'
+import {
+  useIpfsStore,
+  type IpfsGatewaySource,
+  type IpfsSaveProgress,
+  type IpfsViewerStatus,
+} from '@/stores/ipfs-store'
 import { Z_INDEX } from '@/styles/design-tokens'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { t } from '@/i18n'
@@ -170,6 +177,11 @@ async function openEncrypted(
   }
 }
 
+/** Сколько ждём свою ноду. Шлюз Kubo сам сдаётся через 30 с (504); запас — на холодный старт. */
+const NODE_PROBE_TIMEOUT_MS = 45_000
+/** Через столько окно ожидания объясняет, что поиск бывает долгим. */
+const SLOW_HINT_MS = 8_000
+
 /** Открыть IPFS-ссылку; `size` — размер из самой ссылки, если он там есть. */
 export async function openIpfsViewer(
   target: IpfsTarget,
@@ -193,9 +205,18 @@ export async function openIpfsViewer(
   inFlight.add(label)
 
   try {
-    // Резолвим шлюз: локальная нода (с consent/установкой) либо публичный.
+    // Своя нода (с consent/установкой) или «ноды нет».
     const gateway = await store.resolveGateway()
     if (torBlocked(store)) return
+
+    // Своей ноды нет. Публичные шлюзы приложениям больше не отвечают — ссылку
+    // открывает браузер через inbrowser.link и сам проверяет содержимое.
+    // Приватному файлу нужна расшифровка, а она есть только с модулем.
+    if (gateway === IPFS_GATEWAY) {
+      if (secret?.key) offerModule(store)
+      else void openExternal(buildIpfsWebUrl(target))
+      return
+    }
 
     // Приватная (зашифрованная) ссылка: тянем шифртекст, расшифровываем в Rust,
     // сохраняем на диск. Рендер в окне тут неприменим (сырые байты — шифр).
@@ -204,52 +225,105 @@ export async function openIpfsViewer(
       return
     }
 
-    let source: IpfsGatewaySource = gateway === IPFS_GATEWAY ? 'public' : 'local'
-    let url = buildIpfsViewerUrl(target, gateway)
-
-    // Универсальный контент: пробуем тип и решаем render-vs-download, как браузер.
-    let probed = await probeContent(url)
-
-    // Per-CID fallback: локальная нода не отдала CID за таймаут (холодный swarm /
-    // файрвол) → публичный шлюз (Tier 1 → Tier 0).
-    if (!probed && source === 'local') {
-      if (torBlocked(store)) return
-      source = 'public'
-      url = buildIpfsViewerUrl(target, IPFS_GATEWAY)
-      probed = await probeContent(url)
-    }
-
-    // Проба не удалась вовсе → показываем в окне (поведение не хуже прежнего).
-    const mode = probed
-      ? classify(probed.contentType, probed.contentDisposition, detectViewerOs())
-      : 'render'
-    if (mode === 'download') {
-      if (torBlocked(store)) return
-      await saveFile(
-        store,
-        source,
-        target,
-        downloadFilename(target, probed?.contentDisposition),
-        size
-      )
-      return
-    }
-
-    // Последняя проверка непосредственно перед окном без прокси.
-    if (torBlocked(store)) return
-
-    // Окно создаёт Rust: incognito (эфемерный storage — все IPFS-сайты на одном
-    // origin), on_navigation по белому списку (наш gateway-порт / dweb.link),
-    // повторный клик по открытому CID — фокус. URL проверяется там же.
-    // Показ через публичный шлюз по CID не проверяется (в отличие от
-    // сохранения) — заголовок окна честно называет шлюз.
-    const via = source === 'public' ? ` · ${new URL(IPFS_GATEWAY).host}` : ''
-    await store.openViewer(label, url, `IPFS · ${target.root.slice(0, 12)}…${via}`)
+    await showFromNode(store, label, target, buildIpfsViewerUrl(target, gateway), size)
   } catch (err) {
     console.error('[ipfs-viewer] ошибка открытия просмотрщика:', err)
   } finally {
     inFlight.delete(label)
   }
+}
+
+function viewerStatus(kind: IpfsViewerStatus['kind'], heading: string, detail: string) {
+  return { kind, heading, detail }
+}
+
+/**
+ * Окно просмотра — сразу, со страницей ожидания: нода ищет содержимое в сети
+ * до полуминуты, а раньше окно появлялось только после этого, и казалось, что
+ * ничего не происходит. Не нашлось — окно так и говорит. Раньше в таком случае
+ * окно молча переходило на публичный шлюз, а тот теперь отвечает только
+ * проверкой Cloudflare, которую окно пройти не может.
+ */
+async function showFromNode(
+  store: IpfsStore,
+  label: string,
+  target: IpfsTarget,
+  url: string,
+  size: number | null
+): Promise<void> {
+  const title = `IPFS · ${target.root.slice(0, 12)}…`
+  const searching = t('header.ipfsViewerSearching')
+  const opened = await store.viewerStatus(
+    label,
+    title,
+    viewerStatus('loading', searching, ipfsAddress(target)),
+    true
+  )
+  // Окно с этим содержимым уже открыто — оно в фокусе.
+  if (!opened) return
+
+  // Окно ожидания закрыли — поиск больше не нужен.
+  const closed = new AbortController()
+  const slow = setTimeout(() => {
+    void store
+      .viewerStatus(
+        label,
+        title,
+        viewerStatus('loading', searching, t('header.ipfsViewerSlow')),
+        false
+      )
+      .then((shown) => shown || closed.abort())
+  }, SLOW_HINT_MS)
+  let probed: Awaited<ReturnType<typeof probeContent>>
+  try {
+    probed = await probeContent(url, NODE_PROBE_TIMEOUT_MS, closed.signal)
+  } finally {
+    clearTimeout(slow)
+  }
+  if (closed.signal.aborted) return
+
+  if (!probed) {
+    await store.viewerStatus(
+      label,
+      title,
+      viewerStatus('error', t('header.ipfsViewerNotFound'), t('header.ipfsViewerNotFoundDetail')),
+      false
+    )
+    return
+  }
+
+  // Последняя проверка непосредственно перед показом без прокси.
+  if (torBlocked(store)) {
+    await store.closeViewer(label)
+    return
+  }
+  const mode = classify(probed.contentType, probed.contentDisposition, detectViewerOs())
+  if (mode === 'download') {
+    await store.closeViewer(label)
+    await saveFile(
+      store,
+      'local',
+      target,
+      downloadFilename(target, probed.contentDisposition),
+      size
+    )
+    return
+  }
+  await store.openViewer(label, url, title, true)
+}
+
+/** Приватная ссылка без своей ноды: расшифровать её нечем — предлагаем модуль. */
+function offerModule(store: IpfsStore): void {
+  Modal.confirm({
+    zIndex: Z_INDEX.MODAL,
+    title: t('header.ipfsPrivateNeedsModuleTitle'),
+    content: t('header.ipfsPrivateNeedsModule'),
+    okText: t('header.ipfsInstallBtn'),
+    cancelText: t('common.cancel'),
+    onOk: () => {
+      void store.enable()
+    },
+  })
 }
 
 function findIpfsTargetFromClick(

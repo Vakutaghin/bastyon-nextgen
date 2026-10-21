@@ -38,7 +38,7 @@ The module keeps a copy of the files you share for as long as you share them, an
 
 **“Settings”** → **“General”** tab → **“IPFS module”** → **“Remove module”**. The section is visible only while the module is installed.
 
-The program and the whole cache are deleted from disk, your files are no longer served, and the lists in My files and the connected [storage service](ipfs-remote-pin.md) have to be set up again. IPFS links will open through the public gateway.
+The program and the whole cache are deleted from disk, your files are no longer served, and the lists in My files and the connected [storage service](ipfs-remote-pin.md) have to be set up again. IPFS links will open in the browser through inbrowser.link.
 
 ## See also
 

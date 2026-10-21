@@ -26,8 +26,7 @@ async function ipfsFetch(url: string, init?: RequestInit): Promise<Response> {
   return appFetch(url, init)
 }
 
-/** Таймаут пробы: локальная нода на холодном CID может висеть — тогда падаем на
- *  публичный шлюз (Tier 1 → Tier 0). Публичный шлюз обычно отвечает быстро. */
+/** Таймаут пробы по умолчанию. Своей ноде окно просмотра даёт больше. */
 const PROBE_TIMEOUT_MS = 8000
 
 /**
@@ -37,10 +36,12 @@ const PROBE_TIMEOUT_MS = 8000
  */
 export async function probeContent(
   url: string,
-  timeoutMs: number = PROBE_TIMEOUT_MS
+  timeoutMs: number = PROBE_TIMEOUT_MS,
+  signal?: AbortSignal
 ): Promise<ProbedHeaders | null> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
+  signal?.addEventListener('abort', () => controller.abort(), { once: true })
   try {
     const res = await ipfsFetch(url, {
       method: 'GET',

@@ -8,7 +8,7 @@ pub mod verify;
 
 use crate::ipfs::process::IpfsChild;
 use crate::ipfs::state::{IpfsPaths, IpfsState, IpfsStateSnapshot, IpfsStatus, SharedIpfsState};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
@@ -34,6 +34,10 @@ pub struct IpfsManager {
     pub picked: StdMutex<HashMap<String, PathBuf>>,
     /// Идущие сохранения: id из фронта → сигнал отмены (ipfs_cancel_save).
     pub saves: StdMutex<HashMap<String, watch::Sender<bool>>>,
+    /// Окна просмотра, где пока наша страница ожидания (`ipfs_viewer_status`).
+    /// Её читает и `on_navigation` окна: на страницу ожидания окно пускают,
+    /// только пока оно ждёт.
+    pub viewer_waiting: Arc<StdMutex<HashSet<String>>>,
 }
 
 impl IpfsManager {
@@ -46,6 +50,7 @@ impl IpfsManager {
             shares_lock: tokio::sync::Mutex::new(()),
             install_cancel: watch::channel(false).0,
             picked: StdMutex::new(HashMap::new()),
+            viewer_waiting: Arc::new(StdMutex::new(HashSet::new())),
             saves: StdMutex::new(HashMap::new()),
         }
     }
@@ -279,14 +284,9 @@ pub async fn ipfs_update(
     Ok(mgr.state.read().await.snapshot())
 }
 
-/// Окно-просмотрщик IPFS-контента. Создаётся в Rust, а не из JS, чтобы:
-///   - `incognito`: у каждого окна эфемерный storage — все IPFS-сайты живут на
-///     одном origin (path-gateway 127.0.0.1:<gw>), иначе вредоносный сайт читал
-///     бы localStorage/IndexedDB другого;
-///   - `on_navigation`: страница не уведёт окно с титулом «IPFS · …» на
-///     произвольный сайт (фишинг) или другой локальный порт.
-/// URL валидируется по белому списку (наш gateway-порт или публичный шлюз):
-/// у JS нет права открыть окно с чем угодно. Повторный вызов — фокус.
+/// Показать содержимое в окне просмотра (`build_viewer`). URL — только по белому
+/// списку: у JS нет права открыть окно с чем угодно. Окно ждало содержимое
+/// (`ipfs_viewer_status`) — переходит к нему; уже открыто — фокус.
 #[tauri::command]
 pub async fn ipfs_open_viewer(
     app: AppHandle,
@@ -294,6 +294,7 @@ pub async fn ipfs_open_viewer(
     label: String,
     url: String,
     title: String,
+    waited: Option<bool>,
 ) -> Result<(), String> {
     if !is_valid_viewer_label(&label) {
         return Err("invalid viewer window label".into());
@@ -303,18 +304,189 @@ pub async fn ipfs_open_viewer(
     if !viewer_url_allowed(&parsed, gw_port) {
         return Err("url is not allowed for the IPFS viewer".into());
     }
+    let title: String = title.chars().take(80).collect();
     if let Some(existing) = app.get_webview_window(&label) {
+        // Окно ждало содержимое — показываем его в том же окне.
+        if lock(&mgr.viewer_waiting).remove(&label) {
+            let _ = existing.set_title(&title);
+            existing.navigate(parsed).map_err(err_string)?;
+        }
         let _ = existing.set_focus();
         return Ok(());
     }
+    // Окно ожидания закрыли, пока нода искала: человек передумал.
+    if waited == Some(true) {
+        return Ok(());
+    }
+    build_viewer(
+        &app,
+        &mgr,
+        &label,
+        tauri::WebviewUrl::External(parsed),
+        &title,
+    )?;
+    Ok(())
+}
+
+/// Что показать в окне просмотра, пока нода ищет содержимое или когда не нашла.
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct ViewerStatus {
+    /// `loading` — с индикатором, `error` — без.
+    kind: String,
+    heading: String,
+    detail: String,
+}
+
+impl ViewerStatus {
+    fn checked(self) -> Result<Self, String> {
+        if self.kind != "loading" && self.kind != "error" {
+            return Err("invalid viewer status kind".into());
+        }
+        Ok(Self {
+            kind: self.kind,
+            heading: self.heading.chars().take(200).collect(),
+            detail: self.detail.chars().take(600).collect(),
+        })
+    }
+
+    /// JSON как литерал JS: `<` экранирован. Тексты попадают на страницу
+    /// только через textContent.
+    fn script_json(&self) -> String {
+        serde_json::to_string(self)
+            .unwrap_or_else(|_| "{}".into())
+            .replace('<', "\\u003c")
+    }
+
+    /// Страница ожидания с первым состоянием во фрагменте. Base64url — без
+    /// символов, которые Tauri перекодировал бы при сборке адреса.
+    fn page(&self) -> tauri::WebviewUrl {
+        use base64::Engine as _;
+        let json = serde_json::to_string(self).unwrap_or_else(|_| "{}".into());
+        let encoded = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(json);
+        tauri::WebviewUrl::App(format!("{VIEWER_STATUS_PAGE}#{encoded}").into())
+    }
+
+    fn update_script(&self) -> String {
+        format!(
+            "window.__bastyonViewerStatus && window.__bastyonViewerStatus({})",
+            self.script_json()
+        )
+    }
+}
+
+/// Страница ожидания (`public/`): своя, без внешних ресурсов. У окна просмотра
+/// нет прав на команды приложения, так что и у неё их нет.
+const VIEWER_STATUS_PAGE: &str = "ipfs-viewer-status.html";
+
+/// Страница ожидания приложения: `tauri://localhost` на macOS и Linux,
+/// `http(s)://tauri.localhost` на Windows, сервер разработки — `localhost`.
+fn is_status_page(u: &tauri::Url) -> bool {
+    u.path() == format!("/{VIEWER_STATUS_PAGE}")
+        && matches!(u.host_str(), Some("localhost") | Some("tauri.localhost"))
+}
+
+/// Окно просмотра — сразу по клику, со своей страницей ожидания, пока нода
+/// ищет содержимое: раньше окно появлялось, только когда всё нашлось, и
+/// десятки секунд казалось, что ничего не происходит. `start` — первый показ:
+/// окна нет — создать. false — показывать некуда: окно с этим содержимым уже
+/// открыто (оно в фокусе) или человек закрыл окно ожидания.
+#[tauri::command]
+pub async fn ipfs_viewer_status(
+    app: AppHandle,
+    mgr: State<'_, IpfsManager>,
+    label: String,
+    title: String,
+    status: ViewerStatus,
+    start: bool,
+) -> Result<bool, String> {
+    if !is_valid_viewer_label(&label) {
+        return Err("invalid viewer window label".into());
+    }
+    let status = status.checked()?;
     let title: String = title.chars().take(80).collect();
-    tauri::WebviewWindowBuilder::new(&app, &label, tauri::WebviewUrl::External(parsed))
+    if let Some(win) = app.get_webview_window(&label) {
+        if !lock(&mgr.viewer_waiting).contains(&label) {
+            if start {
+                let _ = win.set_focus();
+            }
+            return Ok(false);
+        }
+        let _ = win.set_title(&title);
+        win.eval(status.update_script()).map_err(err_string)?;
+        return Ok(true);
+    }
+    if !start {
+        return Ok(false);
+    }
+    lock(&mgr.viewer_waiting).insert(label.clone());
+    let built = build_viewer(&app, &mgr, &label, status.page(), &title);
+    if let Err(e) = built {
+        lock(&mgr.viewer_waiting).remove(&label);
+        return Err(e);
+    }
+    Ok(true)
+}
+
+/// Закрыть окно ожидания: ссылка оказалась файлом для скачивания. Окно с
+/// содержимым не трогаем.
+#[tauri::command]
+pub async fn ipfs_viewer_close(
+    app: AppHandle,
+    mgr: State<'_, IpfsManager>,
+    label: String,
+) -> Result<(), String> {
+    if lock(&mgr.viewer_waiting).remove(&label) {
+        if let Some(win) = app.get_webview_window(&label) {
+            let _ = win.close();
+        }
+    }
+    Ok(())
+}
+
+fn lock<T>(m: &StdMutex<T>) -> std::sync::MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(|p| p.into_inner())
+}
+
+/// Окно создаёт Rust, а не JS, чтобы:
+///   - `incognito`: у каждого окна эфемерный storage — все IPFS-сайты живут на
+///     одном origin (path-gateway 127.0.0.1:<gw>), иначе вредоносный сайт читал
+///     бы localStorage/IndexedDB другого;
+///   - `on_navigation`: страница не уведёт окно с титулом «IPFS · …» на
+///     произвольный сайт (фишинг) или другой локальный порт. На macOS проверка
+///     касается и фреймов внутри страницы.
+/// Порт шлюза читается при каждой навигации: нода могла перезапуститься на
+/// другом, пока окно ждало. На страницу ожидания окно пускают, только пока
+/// оно ждёт: содержимое IPFS увести на неё окно не может.
+fn build_viewer(
+    app: &AppHandle,
+    mgr: &IpfsManager,
+    label: &str,
+    url: tauri::WebviewUrl,
+    title: &str,
+) -> Result<(), String> {
+    let state = mgr.state.clone();
+    let waiting = mgr.viewer_waiting.clone();
+    let own_label = label.to_string();
+    let win = tauri::WebviewWindowBuilder::new(app, label, url)
         .title(title)
         .inner_size(1100.0, 780.0)
         .incognito(true)
-        .on_navigation(move |u| viewer_url_allowed(u, gw_port))
+        .on_navigation(move |u| {
+            if is_status_page(u) {
+                return lock(&waiting).contains(&own_label);
+            }
+            let gw_port = state.try_read().map(|st| st.gateway_port).unwrap_or(0);
+            viewer_url_allowed(u, gw_port)
+        })
         .build()
         .map_err(err_string)?;
+    let waiting = mgr.viewer_waiting.clone();
+    let own_label = label.to_string();
+    win.on_window_event(move |event| {
+        if let tauri::WindowEvent::Destroyed = event {
+            lock(&waiting).remove(&own_label);
+        }
+    });
     Ok(())
 }
 
@@ -1265,12 +1437,14 @@ fn is_valid_viewer_label(label: &str) -> bool {
         && label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
 }
 
-/// Куда viewer-окну можно ходить: наш gateway-порт на loopback (и только он —
-/// не API-порт, не другие локальные сервисы) или публичный шлюз по https.
+/// Куда viewer-окну можно ходить (кроме страницы ожидания): только наш
+/// gateway-порт на loopback — не API-порт и не другие локальные сервисы.
+/// Публичного шлюза больше нет:
+/// dweb.link с сентября 2026 приложениям не отдаёт ничего, кроме проверки
+/// Cloudflare, а пройти её окно не может — фрейм проверки на чужом домене.
 fn viewer_url_allowed(u: &tauri::Url, gw_port: u16) -> bool {
     match (u.scheme(), u.host_str()) {
         ("http", Some("127.0.0.1")) => gw_port != 0 && u.port() == Some(gw_port),
-        ("https", Some(host)) => host == "dweb.link" || host.ends_with(".dweb.link"),
         _ => false,
     }
 }
@@ -1505,12 +1679,53 @@ mod tests {
         assert!(!ok("http://127.0.0.1:5001/api/v0/id", 8080)); // API-порт
         assert!(!ok("http://127.0.0.1:8080/ipfs/bafy", 0)); // нода не запущена
         assert!(!ok("http://localhost:8080/ipfs/bafy", 8080)); // только 127.0.0.1
-        assert!(ok("https://dweb.link/ipfs/bafy", 0));
-        assert!(ok("https://bafy.ipfs.dweb.link/", 0));
-        assert!(!ok("http://dweb.link/ipfs/bafy", 0)); // публичный только https
+        assert!(!ok("https://dweb.link/ipfs/bafy", 8080)); // публичного шлюза больше нет
+        assert!(!ok("https://bafy.ipfs.dweb.link/", 8080));
+        assert!(!ok("data:text/html,x", 8080));
+        assert!(!ok("tauri://localhost/ipfs-viewer-status.html", 8080)); // только пока окно ждёт
         assert!(!ok("https://evil.example/", 8080));
         assert!(!ok("https://notdweb.link/", 8080));
         assert!(!ok("javascript:alert(1)", 8080));
+    }
+
+    #[test]
+    fn viewer_status_page_carries_the_text_safely() {
+        let status = ViewerStatus {
+            kind: "loading".into(),
+            heading: "Ищу</script><script>alert(1)".into(),
+            detail: "x".repeat(1000),
+        }
+        .checked()
+        .unwrap();
+        assert_eq!(status.detail.chars().count(), 600);
+        let json = status.script_json();
+        assert!(!json.contains('<'), "{json}");
+        assert!(status
+            .update_script()
+            .starts_with("window.__bastyonViewerStatus"));
+        // Фрагмент — только base64url: Tauri его не перекодирует.
+        let tauri::WebviewUrl::App(path) = status.page() else {
+            panic!("an app page")
+        };
+        let path = path.to_string_lossy().into_owned();
+        let (page, fragment) = path.split_once('#').unwrap();
+        assert_eq!(page, VIEWER_STATUS_PAGE);
+        assert!(fragment
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));
+
+        let page = |s: &str| is_status_page(&tauri::Url::parse(s).unwrap());
+        assert!(page("tauri://localhost/ipfs-viewer-status.html#e30"));
+        assert!(page("http://tauri.localhost/ipfs-viewer-status.html"));
+        assert!(!page("http://127.0.0.1:8080/ipfs-viewer-status.html"));
+        assert!(!page("https://evil.example/ipfs-viewer-status.html"));
+
+        let bad = ViewerStatus {
+            kind: "html".into(),
+            heading: String::new(),
+            detail: String::new(),
+        };
+        assert!(bad.checked().is_err());
     }
 
     #[test]

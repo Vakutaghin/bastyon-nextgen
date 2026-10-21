@@ -39,6 +39,8 @@ permissions = [
   "allow-ipfs-save",
   "allow-ipfs-cancel-save",
   "allow-ipfs-open-viewer",
+  "allow-ipfs-viewer-status",
+  "allow-ipfs-viewer-close",
   "allow-ipfs-pin-service-set",
   "allow-ipfs-pin-service-status",
   "allow-ipfs-pin-service-clear",

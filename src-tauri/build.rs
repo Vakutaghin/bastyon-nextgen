@@ -38,6 +38,8 @@ const COMMANDS: &[&str] = &[
   "ipfs_save",
   "ipfs_cancel_save",
   "ipfs_open_viewer",
+  "ipfs_viewer_status",
+  "ipfs_viewer_close",
   "ipfs_pin_service_set",
   "ipfs_pin_service_status",
   "ipfs_pin_service_clear",

@@ -332,14 +332,14 @@ export default {
       'Solo l’app desktop di Bastyon può condividere file tramite IPFS: le serve un proprio nodo IPFS. I link IPFS si aprono anche qui.',
     ipfsConsentTitle: 'Apri contenuto IPFS',
     ipfsConsentContent:
-      'Per aprire questo link in modo privato, installa il modulo IPFS locale (~80 MB). Recupera i contenuti peer-to-peer senza gateway pubblico. Puoi anche aprirlo tramite un gateway pubblico.',
+      'Per aprire questo link, installa il modulo IPFS (~80 MB): prende i contenuti direttamente dalla rete IPFS. Oppure il tuo browser può aprire il link tramite inbrowser.link.',
     ipfsConsentInstall: 'Installa il modulo IPFS (~80 MB)',
-    ipfsConsentPublic: 'Usa un gateway pubblico',
+    ipfsConsentPublic: 'Apri nel browser',
     ipfsInstallTitle: 'Configurazione di IPFS',
     ipfsPreparing: 'Preparazione di IPFS…',
     ipfsInstallingProgress: 'Download: {pct}% — {message}',
     ipfsStarting: 'Avvio del demone IPFS…',
-    ipfsCancel: 'Usa invece un gateway pubblico',
+    ipfsCancel: 'Apri nel browser',
     ipfsAbortInstall: 'Annulla l’installazione',
     ipfsTorBlockedTitle: 'Tor è attivo',
     ipfsTorBlockedContent:
@@ -367,9 +367,17 @@ export default {
       'Il contenuto si apre in una finestra di visualizzazione separata. I file che non si possono mostrare vengono proposti per il salvataggio.',
     ipfsBrowserRecent: 'Recenti',
     ipfsBrowserForget: 'Rimuovi dai recenti',
+    ipfsViewerSearching: 'Ricerca nella rete IPFS…',
+    ipfsViewerSlow: 'Il nodo cerca chi condivide questo indirizzo. Può volerci fino a un minuto.',
+    ipfsViewerNotFound: 'Non trovato nella rete IPFS',
+    ipfsViewerNotFoundDetail:
+      'Al momento nessuno condivide questo indirizzo, oppure il link contiene un errore. I contenuti che vengono aggiornati, come i siti web, cambiano indirizzo nel tempo: un link vecchio potrebbe non funzionare più.',
+    ipfsPrivateNeedsModuleTitle: 'Serve il modulo IPFS',
+    ipfsPrivateNeedsModule:
+      'Un file privato viene decifrato dal modulo IPFS. Senza di esso questo link non si può aprire: i gateway pubblici non forniscono più file alle app.',
     ipfsUninstallConfirmTitle: 'Rimuovere il modulo IPFS?',
     ipfsUninstallConfirmContent:
-      'Il binario di Kubo e la cache locale dei blocchi verranno eliminati e i tuoi file non saranno più condivisi. I link IPFS si apriranno tramite un gateway pubblico.',
+      'Il binario di Kubo e la cache locale dei blocchi verranno eliminati e i tuoi file non saranno più condivisi. I link IPFS si apriranno nel browser tramite inbrowser.link.',
     ipfsShareDoneTitle: 'File pubblicato su IPFS',
     ipfsShareDoneCopied: 'Link copiato. Chiunque abbia questo link può aprire il file: {link}',
     ipfsShareDone: 'Chiunque abbia questo link può aprire il file: {link}',
@@ -392,10 +400,6 @@ export default {
       'Il file supera i 4 GB, troppo per il gateway pubblico. Avvia il nodo IPFS locale.',
     ipfsVerifyIncomplete:
       'Il gateway pubblico ha inviato un file incompleto. Riprova più tardi o avvia il nodo IPFS locale.',
-    ipfsWebChecking: 'Apertura del file da IPFS…',
-    ipfsWebOpenTitle: 'Aprire in una nuova scheda?',
-    ipfsWebOpenContent: 'Si apre tramite il gateway pubblico dweb.link.',
-    ipfsWebOpenBtn: 'Apri',
     ipfsWebDownloadTitle: 'Scaricare il file?',
     ipfsWebPrivateTitle: 'Scaricare il file privato?',
     ipfsWebVerifyHint:

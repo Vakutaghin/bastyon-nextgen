@@ -335,14 +335,14 @@ export default {
       'Seule l’application de bureau Bastyon peut partager des fichiers via IPFS : elle a besoin de son propre nœud IPFS. Les liens IPFS s’ouvrent aussi ici.',
     ipfsConsentTitle: 'Ouvrir un contenu IPFS',
     ipfsConsentContent:
-      'Pour ouvrir ce lien en privé, installez le module IPFS local (~80 Mo). Il récupère le contenu de pair à pair, sans passerelle publique. Vous pouvez aussi l’ouvrir via une passerelle publique.',
+      'Pour ouvrir ce lien, installez le module IPFS (~80 Mo) : il récupère le contenu directement sur le réseau IPFS. Sinon, votre navigateur peut ouvrir le lien via inbrowser.link.',
     ipfsConsentInstall: 'Installer le module IPFS (~80 Mo)',
-    ipfsConsentPublic: 'Utiliser une passerelle publique',
+    ipfsConsentPublic: 'Ouvrir dans le navigateur',
     ipfsInstallTitle: 'Configuration d’IPFS',
     ipfsPreparing: 'Préparation d’IPFS…',
     ipfsInstallingProgress: 'Téléchargement : {pct} % — {message}',
     ipfsStarting: 'Démarrage du démon IPFS…',
-    ipfsCancel: 'Utiliser plutôt une passerelle publique',
+    ipfsCancel: 'Ouvrir dans le navigateur',
     ipfsAbortInstall: 'Annuler l’installation',
     ipfsTorBlockedTitle: 'Tor est activé',
     ipfsTorBlockedContent:
@@ -370,9 +370,18 @@ export default {
       'Le contenu s’ouvre dans une fenêtre d’affichage séparée. Les fichiers impossibles à afficher sont proposés à l’enregistrement.',
     ipfsBrowserRecent: 'Récents',
     ipfsBrowserForget: 'Retirer des récents',
+    ipfsViewerSearching: 'Recherche sur le réseau IPFS…',
+    ipfsViewerSlow:
+      'Le nœud cherche qui partage cette adresse. Cela peut prendre jusqu’à une minute.',
+    ipfsViewerNotFound: 'Introuvable sur le réseau IPFS',
+    ipfsViewerNotFoundDetail:
+      'Personne ne partage cette adresse pour le moment, ou le lien contient une erreur. Un contenu mis à jour, comme un site web, change d’adresse avec le temps : un ancien lien peut ne plus fonctionner.',
+    ipfsPrivateNeedsModuleTitle: 'Le module IPFS est nécessaire',
+    ipfsPrivateNeedsModule:
+      'Un fichier privé est déchiffré par le module IPFS. Sans lui, ce lien ne peut pas être ouvert : les passerelles publiques ne fournissent plus de fichiers aux applications.',
     ipfsUninstallConfirmTitle: 'Supprimer le module IPFS ?',
     ipfsUninstallConfirmContent:
-      'Le binaire Kubo et le cache local des blocs seront supprimés, et vos fichiers ne seront plus partagés. Les liens IPFS s’ouvriront via une passerelle publique.',
+      'Le binaire Kubo et le cache local des blocs seront supprimés, et vos fichiers ne seront plus partagés. Les liens IPFS s’ouvriront dans le navigateur via inbrowser.link.',
     ipfsShareDoneTitle: 'Fichier publié sur IPFS',
     ipfsShareDoneCopied: 'Lien copié. Toute personne ayant ce lien peut ouvrir le fichier : {link}',
     ipfsShareDone: 'Toute personne ayant ce lien peut ouvrir le fichier : {link}',
@@ -396,10 +405,6 @@ export default {
       'Le fichier dépasse 4 Go, c’est trop pour la passerelle publique. Démarrez le nœud IPFS local.',
     ipfsVerifyIncomplete:
       'La passerelle publique a envoyé un fichier incomplet. Réessayez plus tard ou démarrez le nœud IPFS local.',
-    ipfsWebChecking: 'Ouverture du fichier depuis IPFS…',
-    ipfsWebOpenTitle: 'Ouvrir dans un nouvel onglet ?',
-    ipfsWebOpenContent: 'Il s’ouvre via la passerelle publique dweb.link.',
-    ipfsWebOpenBtn: 'Ouvrir',
     ipfsWebDownloadTitle: 'Télécharger le fichier ?',
     ipfsWebPrivateTitle: 'Télécharger le fichier privé ?',
     ipfsWebVerifyHint:

@@ -1,0 +1,105 @@
+<!doctype html>
+<!--
+  Страница ожидания окна просмотра IPFS (src-tauri/src/ipfs/mod.rs,
+  ipfs_viewer_status): пока своя нода ищет содержимое, и когда не нашла.
+  Первое состояние — во фрагменте (base64url от JSON), следующие приходят
+  через window.__bastyonViewerStatus. Тексты — только через textContent.
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IPFS</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #1f2329;
+        --muted: #646a73;
+        --ring: rgba(127, 127, 127, 0.25);
+        --accent: #2f7cf6;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #17181a;
+          --fg: #e8eaed;
+          --muted: #9aa0a6;
+        }
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        max-width: 520px;
+        padding: 24px;
+        text-align: center;
+      }
+      .spin {
+        width: 28px;
+        height: 28px;
+        margin: 0 auto 18px;
+        border: 3px solid var(--ring);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+      .error .spin {
+        display: none;
+      }
+      h1 {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .spin {
+          animation-duration: 3s;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="status" class="loading">
+      <div class="spin"></div>
+      <h1 id="heading"></h1>
+      <p id="detail"></p>
+    </main>
+    <script>
+      window.__bastyonViewerStatus = function (s) {
+        document.getElementById('status').className = s.kind === 'error' ? 'error' : 'loading'
+        document.getElementById('heading').textContent = String(s.heading || '')
+        document.getElementById('detail').textContent = String(s.detail || '')
+      }
+      try {
+        var b64 = location.hash.slice(1).replace(/-/g, '+').replace(/_/g, '/')
+        while (b64.length % 4) b64 += '='
+        var bytes = Uint8Array.from(atob(b64), function (c) {
+          return c.charCodeAt(0)
+        })
+        window.__bastyonViewerStatus(JSON.parse(new TextDecoder().decode(bytes)))
+      } catch (e) {
+        // Нет состояния во фрагменте — ждём первого обновления.
+      }
+    </script>
+  </body>
+</html>

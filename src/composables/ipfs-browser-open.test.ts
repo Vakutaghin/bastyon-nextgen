@@ -1,6 +1,7 @@
-// Клик по IPFS-ссылке в браузере и на телефоне: что открывается сразу, что
-// после первых байт, что скачивается с проверкой, и что видит пользователь при
-// ошибке или отмене.
+// Клик по IPFS-ссылке в браузере и на телефоне. Обычная ссылка — вкладка
+// inbrowser.link: публичные шлюзы приложениям больше не отвечают, а там
+// содержимое качает и проверяет сам браузер. Приватный файл скачивается с
+// проверкой и расшифровкой здесь; что видит пользователь при ошибке и отмене.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -95,55 +96,35 @@ beforeEach(() => {
   h.confirms.length = 0
 })
 
-describe('решение без сети — прямо в обработчике клика', () => {
-  it('IPNS — сразу вкладка со шлюзом: подпись имени не проверить', () => {
+describe('обычная ссылка — вкладка inbrowser.link, прямо в обработчике клика', () => {
+  it('картинка, архив, сайт, голый CID — без запросов из приложения', () => {
+    for (const path of ['photos/cat.jpg', 'build/app.tar.gz', 'site', '']) {
+      openIpfsInBrowser(at(path), null)
+      const suffix = path ? `/${path}` : ''
+      expect(h.openExternal).toHaveBeenLastCalledWith(
+        `https://inbrowser.link/ipfs/${ROOT}${suffix}`
+      )
+    }
+    expect(h.openExternal).toHaveBeenCalledTimes(4)
+    expect(h.confirms).toHaveLength(0)
+    expect(h.inspectEntity).not.toHaveBeenCalled()
+    expect(h.fetchVerifiedEntity).not.toHaveBeenCalled()
+  })
+
+  it('IPNS — так же', () => {
     openIpfsInBrowser({ namespace: 'ipns', root: 'docs.ipfs.tech', path: 'index.html' }, null)
-    expect(h.openExternal).toHaveBeenCalledWith('https://dweb.link/ipns/docs.ipfs.tech/index.html')
-  })
-
-  it('картинка по имени — вкладка открывается синхронно, без запросов', () => {
-    openIpfsInBrowser(at('photos/cat.jpg'), null)
-    expect(h.openExternal).toHaveBeenCalledWith(`https://dweb.link/ipfs/${ROOT}/photos/cat.jpg`)
-    expect(h.inspectEntity).not.toHaveBeenCalled()
-  })
-
-  it('архив по имени — сразу окно «Скачать?»', () => {
-    openIpfsInBrowser(at('build/app.tar.gz'), null)
-    expect(h.confirms[0]?.title).toBe('header.ipfsWebDownloadTitle')
-    expect(h.openExternal).not.toHaveBeenCalled()
-    expect(h.inspectEntity).not.toHaveBeenCalled()
-    h.confirms[0]?.onCancel?.()
+    expect(h.openExternal).toHaveBeenCalledWith(
+      'https://inbrowser.link/ipns/docs.ipfs.tech/index.html'
+    )
   })
 })
 
-describe('скачивание', () => {
-  it('«Скачать» — место сохранения, проверенные куски в файл, сообщение об успехе', async () => {
-    const sink = makeSink()
-    h.openSaveSink.mockResolvedValue(sink)
-    h.fetchVerifiedEntity.mockResolvedValue(fileEntity('PK', '\x03\x04rest'))
-
-    openIpfsInBrowser(at('build/app%20v2.zip'), null)
-    await (await nextConfirm()).onOk()
-
-    expect(h.openSaveSink).toHaveBeenCalledWith('app v2.zip')
-    expect(h.update).toHaveBeenCalledWith({ title: 'header.ipfsWebDownloadingTitle' })
-    expect(h.fetchVerifiedEntity.mock.calls[0]?.[1]).toMatchObject({ maxBytes: sink.maxBytes })
-    expect(new TextDecoder().decode(Uint8Array.from(sink.written))).toBe('PK\x03\x04rest')
-    expect(sink.close).toHaveBeenCalled()
-    expect(h.success).toHaveBeenCalled()
-  })
-
-  it('на телефоне итог — «Поделиться», без отдельного сообщения', async () => {
-    h.openSaveSink.mockResolvedValue(makeSink('share'))
-    h.fetchVerifiedEntity.mockResolvedValue(fileEntity('data'))
-    openIpfsInBrowser(at('a.zip'), null)
-    await (await nextConfirm()).onOk()
-    expect(h.success).not.toHaveBeenCalled()
-  })
+describe('скачивание приватного файла', () => {
+  const secret = { key: 'a2V5', name: 'a.zip' }
 
   it('закрыли диалог сохранения — ничего не качаем', async () => {
     h.openSaveSink.mockResolvedValue(null)
-    openIpfsInBrowser(at('a.zip'), null)
+    openIpfsInBrowser(at('a.zip'), secret)
     await (await nextConfirm()).onOk()
     expect(h.fetchVerifiedEntity).not.toHaveBeenCalled()
   })
@@ -152,7 +133,7 @@ describe('скачивание', () => {
     const sink = makeSink()
     h.openSaveSink.mockResolvedValue(sink)
     h.fetchVerifiedEntity.mockRejectedValue(new GatewayError(504))
-    openIpfsInBrowser(at('a.zip'), null)
+    openIpfsInBrowser(at('a.zip'), secret)
     await (await nextConfirm()).onOk()
     expect(sink.abort).toHaveBeenCalled()
     expect(h.error).toHaveBeenCalledWith(
@@ -174,7 +155,7 @@ describe('скачивание', () => {
           )
         )
     )
-    openIpfsInBrowser(at('a.zip'), null)
+    openIpfsInBrowser(at('a.zip'), secret)
     const confirm = await nextConfirm()
     const running = confirm.onOk()
     await vi.waitFor(() => expect(h.fetchVerifiedEntity).toHaveBeenCalled())
@@ -185,64 +166,14 @@ describe('скачивание', () => {
   })
 
   it('повторный клик, пока первый не закончен, второго окна не открывает', async () => {
-    openIpfsInBrowser(at('a.zip'), null)
-    openIpfsInBrowser(at('a.zip'), null)
+    openIpfsInBrowser(at('a.zip'), secret)
+    openIpfsInBrowser(at('a.zip'), secret)
     expect(h.confirms).toHaveLength(1)
     h.confirms[0]?.onCancel?.()
     await vi.waitFor(() => {
-      openIpfsInBrowser(at('a.zip'), null)
+      openIpfsInBrowser(at('a.zip'), secret)
       expect(h.confirms).toHaveLength(2)
     })
-  })
-})
-
-describe('тип неизвестен — смотрим первые байты', () => {
-  it('голый CID с картинкой — окно «Открыть» (жест для новой вкладки)', async () => {
-    h.inspectEntity.mockResolvedValue({
-      kind: 'file',
-      size: 10,
-      head: Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]),
-    })
-    openIpfsInBrowser(at(''), null)
-    const offer = await nextConfirm()
-    expect(offer.title).toBe('header.ipfsWebOpenTitle')
-    expect(h.hide).toHaveBeenCalled()
-    offer.onOk()
-    expect(h.openExternal).toHaveBeenCalledWith(`https://dweb.link/ipfs/${ROOT}`)
-  })
-
-  it('голый CID с архивом — «Скачать?» с размером и именем по типу', async () => {
-    h.inspectEntity.mockResolvedValue({
-      kind: 'file',
-      size: 2048,
-      head: Uint8Array.from([0x50, 0x4b, 0x03, 0x04]),
-    })
-    h.openSaveSink.mockResolvedValue(null)
-    openIpfsInBrowser(at(''), null)
-    const confirm = await nextConfirm()
-    expect(confirm.title).toBe('header.ipfsWebDownloadTitle')
-    await confirm.onOk()
-    expect(h.openSaveSink).toHaveBeenCalledWith(`${ROOT.slice(0, 16)}.zip`)
-  })
-
-  it('каталог (сайт) — окно «Открыть»', async () => {
-    h.inspectEntity.mockResolvedValue({ kind: 'directory' })
-    openIpfsInBrowser(at('site'), null)
-    expect((await nextConfirm()).title).toBe('header.ipfsWebOpenTitle')
-  })
-
-  it('не нашёлся в сети — сообщение, а не вечная загрузка', async () => {
-    h.inspectEntity.mockRejectedValue(new TransportError('timeout', 'silent'))
-    openIpfsInBrowser(at(''), null)
-    await vi.waitFor(() =>
-      expect(h.error).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'header.ipfsDownloadFailedTitle',
-          content: 'header.ipfsWebGatewayMissing',
-        })
-      )
-    )
-    expect(h.hide).toHaveBeenCalled()
   })
 })
 

@@ -332,14 +332,14 @@ export default {
       'Само десктоп апликација Bastyon може да дели датотеке преко IPFS-а: потребан јој је сопствени IPFS чвор. IPFS везе се отварају и овде.',
     ipfsConsentTitle: 'Отвори IPFS садржај',
     ipfsConsentContent:
-      'Да бисте ову везу отворили приватно, инсталирајте локални IPFS модул (~80 MB). Он преузима садржај пир-то-пир, без јавног пролаза. Можете је отворити и преко јавног пролаза.',
+      'Да бисте отворили ову везу, инсталирајте IPFS модул (~80 MB): он узима садржај директно из IPFS мреже. Или ће везу отворити ваш прегледач преко inbrowser.link.',
     ipfsConsentInstall: 'Инсталирај IPFS модул (~80 MB)',
-    ipfsConsentPublic: 'Користи јавни пролаз',
+    ipfsConsentPublic: 'Отвори у прегледачу',
     ipfsInstallTitle: 'Подешавање IPFS-а',
     ipfsPreparing: 'Припрема IPFS-а…',
     ipfsInstallingProgress: 'Преузимање: {pct}% — {message}',
     ipfsStarting: 'Покретање IPFS демона…',
-    ipfsCancel: 'Користи јавни пролаз уместо тога',
+    ipfsCancel: 'Отвори у прегледачу',
     ipfsAbortInstall: 'Откажи инсталацију',
     ipfsTorBlockedTitle: 'Tor је укључен',
     ipfsTorBlockedContent:
@@ -367,9 +367,17 @@ export default {
       'Садржај се отвара у посебном прозору за преглед. Датотеке које не могу да се прикажу апликација нуди да сачувате.',
     ipfsBrowserRecent: 'Недавно',
     ipfsBrowserForget: 'Уклони из недавних',
+    ipfsViewerSearching: 'Тражим у IPFS мрежи…',
+    ipfsViewerSlow: 'Чвор тражи ко дели ову адресу. То може потрајати до једног минута.',
+    ipfsViewerNotFound: 'Није пронађено у IPFS мрежи',
+    ipfsViewerNotFoundDetail:
+      'Ову адресу тренутно нико не дели, или веза садржи грешку. Садржај који се ажурира, на пример сајтови, временом мења адресу, па стара веза можда више не ради.',
+    ipfsPrivateNeedsModuleTitle: 'Потребан је IPFS модул',
+    ipfsPrivateNeedsModule:
+      'Приватну датотеку дешифрује IPFS модул. Без њега оваква веза не може да се отвори: јавни пролази више не дају датотеке апликацијама.',
     ipfsUninstallConfirmTitle: 'Уклонити IPFS модул?',
     ipfsUninstallConfirmContent:
-      'Kubo програм и локални кеш блокова биће обрисани, а ваше датотеке више неће бити дељене. IPFS везе ће се отварати преко јавног пролаза.',
+      'Kubo бинарна датотека и локални кеш блокова биће обрисани, а дељење ваших датотека ће престати. IPFS везе ће се отварати у прегледачу преко inbrowser.link.',
     ipfsShareDoneTitle: 'Датотека је објављена на IPFS-у',
     ipfsShareDoneCopied: 'Веза је копирана. Свако ко има ову везу може да отвори датотеку: {link}',
     ipfsShareDone: 'Свако ко има ову везу може да отвори датотеку: {link}',
@@ -392,10 +400,6 @@ export default {
       'Датотека је већа од 4 GB, превелика за јавни пролаз. Покрените локални IPFS чвор.',
     ipfsVerifyIncomplete:
       'Јавни пролаз је послао непотпуну датотеку. Покушајте касније или покрените локални IPFS чвор.',
-    ipfsWebChecking: 'Отварање датотеке са IPFS-а…',
-    ipfsWebOpenTitle: 'Отворити у новој картици?',
-    ipfsWebOpenContent: 'Отвара се преко јавног пролаза dweb.link.',
-    ipfsWebOpenBtn: 'Отвори',
     ipfsWebDownloadTitle: 'Преузети датотеку?',
     ipfsWebPrivateTitle: 'Преузети приватну датотеку?',
     ipfsWebVerifyHint:

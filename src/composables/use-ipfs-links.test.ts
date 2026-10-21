@@ -1,13 +1,15 @@
-// Открытие IPFS-ссылки: откуда брать файл (локальная нода или публичный
-// шлюз) решается до сохранения — от этого зависит, проверит ли Rust файл по
-// CID. И что пользователь видит, если проверка не прошла.
+// Открытие IPFS-ссылки на компьютере: окно просмотра появляется сразу и ждёт,
+// пока своя нода ищет содержимое; не нашлось — так и говорит. Своей ноды нет —
+// ссылку открывает браузер через inbrowser.link: публичные шлюзы приложениям
+// больше не отвечают.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
   probe: vi.fn(),
   openInBrowser: vi.fn(),
-  modal: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  openExternal: vi.fn(),
+  modal: { success: vi.fn(), error: vi.fn(), info: vi.fn(), confirm: vi.fn() },
   progressModal: { update: vi.fn(), destroy: vi.fn() },
   store: {
     available: true,
@@ -17,6 +19,9 @@ const h = vi.hoisted(() => ({
     saveFile: vi.fn(),
     saveEncrypted: vi.fn(),
     openViewer: vi.fn(),
+    viewerStatus: vi.fn(),
+    closeViewer: vi.fn(),
+    enable: vi.fn(),
     showDesktopOnly: vi.fn(),
     showTorBlocked: vi.fn(),
   },
@@ -27,6 +32,7 @@ vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => h.store }))
 vi.mock('ant-design-vue', () => ({ Modal: h.modal }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 vi.mock('./ipfs-browser-open', () => ({ openIpfsInBrowser: h.openInBrowser }))
+vi.mock('@/helpers/common/open-external', () => ({ openExternal: h.openExternal }))
 
 import { openIpfsViewer, saveErrorText } from './use-ipfs-links'
 import type { IpfsTarget } from '@/helpers/ipfs/ipfs-link'
@@ -42,15 +48,22 @@ beforeEach(() => {
   h.store.available = true
   h.store.message = null
   h.store.saveFile.mockResolvedValue('saved')
+  h.store.viewerStatus.mockResolvedValue(true)
 })
 
-describe('openIpfsViewer: откуда сохраняется файл', () => {
-  it('локальная нода отдала файл — сохраняем с неё', async () => {
+/** Что показало окно ожидания (`n`-й вызов). */
+function statusAt(n: number): { kind: string; heading: string; detail: string } {
+  return h.store.viewerStatus.mock.calls[n]?.[2]
+}
+
+describe('openIpfsViewer: файл со своей ноды', () => {
+  it('нода отдала файл — окно ожидания закрывается, файл сохраняется с неё', async () => {
     h.store.resolveGateway.mockResolvedValue(LOCAL)
     h.probe.mockResolvedValue(zip)
 
     await openIpfsViewer(target, null)
 
+    expect(h.store.closeViewer).toHaveBeenCalled()
     expect(h.store.saveFile).toHaveBeenCalledWith(
       'local',
       target,
@@ -58,25 +71,11 @@ describe('openIpfsViewer: откуда сохраняется файл', () => {
       expect.objectContaining({ sizeHint: null })
     )
     expect(h.modal.success).toHaveBeenCalled()
+    expect(h.store.openViewer).not.toHaveBeenCalled()
   })
 
-  it('локальная нода не ответила — файл идёт с публичного шлюза, то есть с проверкой по CID', async () => {
+  it('сохранение не удалось — понятное сообщение', async () => {
     h.store.resolveGateway.mockResolvedValue(LOCAL)
-    h.probe.mockResolvedValueOnce(null).mockResolvedValueOnce(zip)
-
-    await openIpfsViewer(target, null)
-
-    expect(h.probe).toHaveBeenLastCalledWith('https://dweb.link/ipfs/bafybeigdyrzt5sfp7/docs/a.zip')
-    expect(h.store.saveFile).toHaveBeenCalledWith(
-      'public',
-      target,
-      'a.zip',
-      expect.objectContaining({ sizeHint: null })
-    )
-  })
-
-  it('файл не совпал с CID — пользователь видит, что шлюз подменил данные', async () => {
-    h.store.resolveGateway.mockResolvedValue('https://dweb.link')
     h.probe.mockResolvedValue(zip)
     h.store.saveFile.mockImplementation(async () => {
       h.store.message = 'verify-mismatch: block 0a1b does not match its CID'
@@ -104,27 +103,108 @@ describe('openIpfsViewer: откуда сохраняется файл', () => {
 })
 
 describe('openIpfsViewer: окно просмотра', () => {
-  it('через публичный шлюз заголовок окна называет шлюз', async () => {
-    h.store.resolveGateway.mockResolvedValue('https://dweb.link')
-    h.probe.mockResolvedValue(png)
+  const pic: IpfsTarget = { ...target, path: 'pic.png' }
 
-    await openIpfsViewer({ ...target, path: 'pic.png' }, null)
+  it('окно — сразу, пока нода ищет; потом в нём же содержимое', async () => {
+    h.store.resolveGateway.mockResolvedValue(LOCAL)
+    let found: (v: typeof png) => void = () => {}
+    h.probe.mockReturnValue(new Promise((resolve) => (found = resolve)))
 
-    const [, url, title] = h.store.openViewer.mock.calls[0] as [string, string, string]
-    expect(url).toBe('https://dweb.link/ipfs/bafybeigdyrzt5sfp7/pic.png')
-    expect(title).toContain('dweb.link')
-    expect(h.store.saveFile).not.toHaveBeenCalled()
+    const opening = openIpfsViewer(pic, null)
+    await vi.waitFor(() => expect(h.probe).toHaveBeenCalled())
+
+    const [label, title, , start] = h.store.viewerStatus.mock.calls[0] as [
+      string,
+      string,
+      unknown,
+      boolean,
+    ]
+    expect(start).toBe(true)
+    expect(statusAt(0)).toEqual({
+      kind: 'loading',
+      heading: 'header.ipfsViewerSearching',
+      detail: 'ipfs://bafybeigdyrzt5sfp7/pic.png',
+    })
+    expect(h.store.openViewer).not.toHaveBeenCalled()
+
+    found(png)
+    await opening
+    expect(h.store.openViewer).toHaveBeenCalledWith(
+      label,
+      `${LOCAL}/ipfs/bafybeigdyrzt5sfp7/pic.png`,
+      title,
+      true
+    )
   })
 
-  it('с локальной ноды — без шлюза в заголовке', async () => {
+  it('не нашлось — окно говорит об этом, а не уходит на публичный шлюз', async () => {
     h.store.resolveGateway.mockResolvedValue(LOCAL)
-    h.probe.mockResolvedValue(png)
+    h.probe.mockResolvedValue(null)
 
-    await openIpfsViewer({ ...target, path: 'pic.png' }, null)
+    await openIpfsViewer(pic, null)
 
-    const [, url, title] = h.store.openViewer.mock.calls[0] as [string, string, string]
-    expect(url).toBe(`${LOCAL}/ipfs/bafybeigdyrzt5sfp7/pic.png`)
-    expect(title).not.toContain('dweb.link')
+    expect(h.probe).toHaveBeenCalledTimes(1)
+    expect(h.probe.mock.calls[0]?.[0]).toBe(`${LOCAL}/ipfs/bafybeigdyrzt5sfp7/pic.png`)
+    expect(statusAt(1)).toMatchObject({ kind: 'error', heading: 'header.ipfsViewerNotFound' })
+    expect(h.store.openViewer).not.toHaveBeenCalled()
+  })
+
+  it('окно с этим содержимым уже открыто — без поиска', async () => {
+    h.store.resolveGateway.mockResolvedValue(LOCAL)
+    h.store.viewerStatus.mockResolvedValue(false)
+
+    await openIpfsViewer(pic, null)
+
+    expect(h.probe).not.toHaveBeenCalled()
+    expect(h.store.openViewer).not.toHaveBeenCalled()
+  })
+
+  it('долго — окно объясняет; закрыли окно — поиск бросаем', async () => {
+    vi.useFakeTimers()
+    try {
+      h.store.resolveGateway.mockResolvedValue(LOCAL)
+      h.store.viewerStatus.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+      h.probe.mockImplementation(
+        (_url: string, _timeout: number, signal: AbortSignal) =>
+          new Promise((resolve) => signal.addEventListener('abort', () => resolve(null)))
+      )
+
+      const opening = openIpfsViewer(pic, null)
+      await vi.advanceTimersByTimeAsync(8_000)
+      await opening
+
+      expect(statusAt(1)).toMatchObject({ kind: 'loading', detail: 'header.ipfsViewerSlow' })
+      expect(h.store.viewerStatus).toHaveBeenCalledTimes(2)
+      expect(h.store.openViewer).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('openIpfsViewer: своей ноды нет', () => {
+  it('ссылку открывает браузер через inbrowser.link — без окна и проб', async () => {
+    h.store.resolveGateway.mockResolvedValue('https://dweb.link')
+
+    await openIpfsViewer(target, null)
+
+    expect(h.openExternal).toHaveBeenCalledWith(
+      'https://inbrowser.link/ipfs/bafybeigdyrzt5sfp7/docs/a.zip'
+    )
+    expect(h.probe).not.toHaveBeenCalled()
+    expect(h.store.viewerStatus).not.toHaveBeenCalled()
+  })
+
+  it('приватную ссылку расшифровать нечем — предлагаем модуль', async () => {
+    h.store.resolveGateway.mockResolvedValue('https://dweb.link')
+
+    await openIpfsViewer(target, { key: 'a2V5', name: 'a.txt' })
+
+    const [opts] = h.modal.confirm.mock.calls[0] as [{ title: string; onOk: () => void }]
+    expect(opts.title).toBe('header.ipfsPrivateNeedsModuleTitle')
+    opts.onOk()
+    expect(h.store.enable).toHaveBeenCalled()
+    expect(h.openExternal).not.toHaveBeenCalled()
   })
 })
 

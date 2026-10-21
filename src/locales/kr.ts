@@ -331,14 +331,14 @@ export default {
       'IPFS로 파일을 공유하려면 자체 IPFS 노드가 필요하므로 Bastyon 데스크톱 앱에서만 가능합니다. IPFS 링크는 여기서도 열립니다.',
     ipfsConsentTitle: 'IPFS 콘텐츠 열기',
     ipfsConsentContent:
-      '이 링크를 비공개로 열려면 로컬 IPFS 모듈(~80MB)을 설치하세요. 공개 게이트웨이 없이 P2P로 콘텐츠를 가져옵니다. 대신 공개 게이트웨이로 열 수도 있습니다.',
+      '이 링크를 열려면 IPFS 모듈(~80MB)을 설치하세요. IPFS 네트워크에서 직접 콘텐츠를 가져옵니다. 또는 브라우저에서 inbrowser.link를 통해 링크를 열 수 있습니다.',
     ipfsConsentInstall: 'IPFS 모듈 설치(~80MB)',
-    ipfsConsentPublic: '공개 게이트웨이 사용',
+    ipfsConsentPublic: '브라우저에서 열기',
     ipfsInstallTitle: 'IPFS 설정 중',
     ipfsPreparing: 'IPFS 준비 중…',
     ipfsInstallingProgress: '다운로드 중: {pct}% — {message}',
     ipfsStarting: 'IPFS 데몬 시작 중…',
-    ipfsCancel: '대신 공개 게이트웨이 사용',
+    ipfsCancel: '브라우저에서 열기',
     ipfsAbortInstall: '설치 취소',
     ipfsTorBlockedTitle: 'Tor가 켜져 있습니다',
     ipfsTorBlockedContent:
@@ -366,9 +366,18 @@ export default {
       '내용은 별도의 뷰어 창에서 열립니다. 표시할 수 없는 파일은 저장하도록 안내합니다.',
     ipfsBrowserRecent: '최근 항목',
     ipfsBrowserForget: '최근 항목에서 삭제',
+    ipfsViewerSearching: 'IPFS 네트워크에서 찾는 중…',
+    ipfsViewerSlow:
+      '노드가 이 주소를 제공하는 피어를 찾고 있습니다. 최대 1분 정도 걸릴 수 있습니다.',
+    ipfsViewerNotFound: 'IPFS 네트워크에서 찾을 수 없음',
+    ipfsViewerNotFoundDetail:
+      '현재 이 주소를 제공하는 사람이 없거나 링크에 오류가 있습니다. 웹사이트처럼 업데이트되는 콘텐츠는 시간이 지나면 주소가 바뀌므로 오래된 링크는 더 이상 작동하지 않을 수 있습니다.',
+    ipfsPrivateNeedsModuleTitle: 'IPFS 모듈이 필요합니다',
+    ipfsPrivateNeedsModule:
+      '비공개 파일은 IPFS 모듈이 복호화합니다. 모듈 없이는 이 링크를 열 수 없습니다. 공개 게이트웨이가 더 이상 앱에 파일을 제공하지 않습니다.',
     ipfsUninstallConfirmTitle: 'IPFS 모듈을 제거할까요?',
     ipfsUninstallConfirmContent:
-      'Kubo 실행 파일과 로컬 블록 캐시가 삭제되고 파일 공유가 중단됩니다. IPFS 링크는 공개 게이트웨이로 열립니다.',
+      'Kubo 바이너리와 로컬 블록 캐시가 삭제되고 파일 공유가 중단됩니다. IPFS 링크는 브라우저에서 inbrowser.link를 통해 열립니다.',
     ipfsShareDoneTitle: '파일이 IPFS에 게시되었습니다',
     ipfsShareDoneCopied:
       '링크가 복사되었습니다. 이 링크가 있으면 누구나 파일을 열 수 있습니다: {link}',
@@ -392,10 +401,6 @@ export default {
       '파일이 4GB를 넘어 공개 게이트웨이로 받기에는 너무 큽니다. 로컬 IPFS 노드를 시작하세요.',
     ipfsVerifyIncomplete:
       '공개 게이트웨이가 불완전한 파일을 보냈습니다. 나중에 다시 시도하거나 로컬 IPFS 노드를 시작하세요.',
-    ipfsWebChecking: 'IPFS에서 파일을 여는 중…',
-    ipfsWebOpenTitle: '새 탭에서 열까요?',
-    ipfsWebOpenContent: '공개 게이트웨이 dweb.link를 통해 열립니다.',
-    ipfsWebOpenBtn: '열기',
     ipfsWebDownloadTitle: '파일을 다운로드할까요?',
     ipfsWebPrivateTitle: '비공개 파일을 다운로드할까요?',
     ipfsWebVerifyHint:

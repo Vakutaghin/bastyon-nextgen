@@ -973,6 +973,8 @@ pub fn run() {
       ipfs::ipfs_save,
       ipfs::ipfs_cancel_save,
       ipfs::ipfs_open_viewer,
+      ipfs::ipfs_viewer_status,
+      ipfs::ipfs_viewer_close,
       ipfs::ipfs_pin_service_set,
       ipfs::ipfs_pin_service_status,
       ipfs::ipfs_pin_service_clear,
@@ -1135,36 +1137,47 @@ pub fn run() {
       {
         main_window::show(app_handle);
       }
-      if let RunEvent::ExitRequested { .. } = event {
-        // Best-effort synchronous shutdown of the tor child process so we don't
-        // leave an orphaned `tor` binary after the app window closes.
-        if let Some(mgr) = app_handle.try_state::<tor::TorManager>() {
-          if let Ok(mut guard) = mgr.child.lock() {
-            if let Some(mut child) = guard.take() {
-              let _ = tor::process::kill(&mut child);
-            }
-          }
-        }
-        // Same for the IPFS (Kubo) daemon — don't leave an orphan holding the
-        // repo lock and gateway port after the app exits. Covers an attached
-        // (adopted) daemon too, which `child.kill()` alone would never see.
-        if let Some(mgr) = app_handle.try_state::<ipfs::IpfsManager>() {
-          ipfs::shutdown_on_exit(&mgr);
-        }
-        // Микрофон не должен оставаться открытым после выхода.
-        if let Some(mgr) = app_handle.try_state::<asr::AsrManager>() {
-          asr::shutdown_on_exit(&mgr);
-        }
-        // Порты и Bluetooth-соединения с радио отпускаем.
-        if let Some(mgr) = app_handle.try_state::<radio::RadioManager>() {
-          radio::shutdown_on_exit(&mgr);
-        }
-        // Узел Reticulum: закрыть интерфейсы и сохранить известные адреса.
-        if let Some(mgr) = app_handle.try_state::<rns::RnsManager>() {
-          rns::shutdown_on_exit(&mgr);
-        }
+      // Выход через Cmd+Q или «Завершить» в Dock на macOS приходит одним
+      // `Exit`, без `ExitRequested`, и узел Kubo после такого выхода оставался
+      // работать сиротой. Гасим дочерние процессы на любом из двух,
+      // один раз.
+      if matches!(event, RunEvent::ExitRequested { .. } | RunEvent::Exit) {
+        static SHUT_DOWN: std::sync::Once = std::sync::Once::new();
+        SHUT_DOWN.call_once(|| shutdown_children(app_handle));
       }
     });
+}
+
+/// Best-effort синхронная остановка всего, что приложение запустило: в
+/// обработчике выхода нет tokio-рантайма.
+fn shutdown_children(app_handle: &tauri::AppHandle) {
+  // Best-effort synchronous shutdown of the tor child process so we don't
+  // leave an orphaned `tor` binary after the app window closes.
+  if let Some(mgr) = app_handle.try_state::<tor::TorManager>() {
+    if let Ok(mut guard) = mgr.child.lock() {
+      if let Some(mut child) = guard.take() {
+        let _ = tor::process::kill(&mut child);
+      }
+    }
+  }
+  // Same for the IPFS (Kubo) daemon — don't leave an orphan holding the
+  // repo lock and gateway port after the app exits. Covers an attached
+  // (adopted) daemon too, which `child.kill()` alone would never see.
+  if let Some(mgr) = app_handle.try_state::<ipfs::IpfsManager>() {
+    ipfs::shutdown_on_exit(&mgr);
+  }
+  // Микрофон не должен оставаться открытым после выхода.
+  if let Some(mgr) = app_handle.try_state::<asr::AsrManager>() {
+    asr::shutdown_on_exit(&mgr);
+  }
+  // Порты и Bluetooth-соединения с радио отпускаем.
+  if let Some(mgr) = app_handle.try_state::<radio::RadioManager>() {
+    radio::shutdown_on_exit(&mgr);
+  }
+  // Узел Reticulum: закрыть интерфейсы и сохранить известные адреса.
+  if let Some(mgr) = app_handle.try_state::<rns::RnsManager>() {
+    rns::shutdown_on_exit(&mgr);
+  }
 }
 
 #[cfg(test)]
