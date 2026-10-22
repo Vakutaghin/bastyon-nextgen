@@ -1,7 +1,7 @@
 /**
  * Бейджи профиля — выводятся ТОЛЬКО из уже имеющихся данных, без выдуманных порогов:
- *  - `verified` — по badges (`verificated`/`verified`) или flags.real
- *    (общий `isUserVerified`).
+ *  - `verified` — адрес в списке проверенных, badges (`verificated`/`verified`)
+ *    или flags.real (общий `isUserVerified`).
  *  - `established` — репутация ≥ 100, тот же порог, что уже использует гейтинг оценок
  *    (star-rating-validation.ts: `reputation < 100`).
  */
@@ -14,6 +14,7 @@ export type ProfileBadgeKey = 'verified' | 'established'
 export const ESTABLISHED_REPUTATION = 100
 
 interface BadgeSource {
+  address?: unknown
   reputation?: number | string
   badges?: unknown
   flags?: { real?: unknown } | null

@@ -235,7 +235,9 @@ const userInitial = computed<string>(() => {
   return 'U'
 })
 
-const isUserVerified = computed<boolean>(() => isVerifiedProfile(userProfile.value))
+const isUserVerified = computed<boolean>(() =>
+  isVerifiedProfile(userProfile.value, userAddress.value)
+)
 
 function formatBalance(balance: number | null | undefined): string {
   // Хелпер конвертирует из минимальных единиц (аналог сатоши) в PKOIN.

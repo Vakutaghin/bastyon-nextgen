@@ -133,7 +133,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
           const url = resolveImageUrl(img)
           if (url) avatar = url
         }
-        verified = isUserVerified(p)
+        verified = isUserVerified(p, address)
       }
     }
 

@@ -52,17 +52,22 @@
               </SC_NotificationHead>
 
               <SC_NotificationActor>
-                <SC_NotificationAvatar v-if="getAvatar(item)">
-                  <img
-                    :src="getAvatar(item) ?? undefined"
-                    :alt="getDisplayName(item)"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </SC_NotificationAvatar>
-                <SC_NotificationAvatarLetter v-else>
-                  {{ getInitial(item) }}
-                </SC_NotificationAvatarLetter>
+                <VerifiedMark
+                  :verified="isAddressVerified(item.from ?? item.fromSnapshot?.address)"
+                  :size="14"
+                >
+                  <SC_NotificationAvatar v-if="getAvatar(item)">
+                    <img
+                      :src="getAvatar(item) ?? undefined"
+                      :alt="getDisplayName(item)"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </SC_NotificationAvatar>
+                  <SC_NotificationAvatarLetter v-else>
+                    {{ getInitial(item) }}
+                  </SC_NotificationAvatarLetter>
+                </VerifiedMark>
 
                 <SC_NotificationActorText>
                   <SC_NotificationActorName>
@@ -149,6 +154,8 @@ import { useModalStore } from '@/stores/modal-store'
 import type { NotificationItem } from '@/stores/notifications-store'
 import { isLowRatingValue } from '@/stores/notification-filtering'
 import { adaptPostData } from '@/composables/use-feed'
+import VerifiedMark from '@/components/verified-mark'
+import { isAddressVerified } from '@/helpers/profile/is-user-verified'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import {
   trimText,

@@ -2,7 +2,11 @@
   <SC_CommentWithReplies>
     <SC_CommentItem>
       <router-link :to="lastCommentProfileLink">
-        <CommentAvatar :url="lastCommentAvatarUrl" :name="lastCommentAuthor" />
+        <CommentAvatar
+          :url="lastCommentAvatarUrl"
+          :name="lastCommentAuthor"
+          :address="post.lastComment?.address"
+        />
       </router-link>
 
       <SC_CommentContent>
@@ -75,6 +79,7 @@
           <CommentAvatar
             :url="getCommentAvatarUrl(reply.userprofile) ?? userAvatar(reply.address)"
             :name="userName(reply.address, reply.userprofile)"
+            :address="reply.address"
           />
           <SC_CommentContent>
             <SC_CommentMeta>

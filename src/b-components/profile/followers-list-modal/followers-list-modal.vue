@@ -18,10 +18,12 @@
       <SC_List>
         <SC_Row v-for="row in rows" :key="row.address">
           <SC_RowMain @click="goToProfile(row.address)">
-            <SC_Avatar>
-              <img v-if="row.avatar" :src="row.avatar" :alt="row.name" />
-              <span v-else>{{ row.name.charAt(0).toUpperCase() }}</span>
-            </SC_Avatar>
+            <VerifiedMark :verified="isAddressVerified(row.address)" :size="14">
+              <SC_Avatar>
+                <img v-if="row.avatar" :src="row.avatar" :alt="row.name" />
+                <span v-else>{{ row.name.charAt(0).toUpperCase() }}</span>
+              </SC_Avatar>
+            </VerifiedMark>
             <SC_RowInfo>
               <SC_RowName>{{ row.name }}</SC_RowName>
               <SC_RowMeta
@@ -59,6 +61,8 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { CheckOutlined, PlusOutlined, LoadingOutlined } from '@/components/icons'
 import { Modal } from 'ant-design-vue'
+import VerifiedMark from '@/components/verified-mark'
+import { isAddressVerified } from '@/helpers/profile/is-user-verified'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'

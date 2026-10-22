@@ -46,6 +46,7 @@
               :alt="repostAuthorName"
               :fallback-text="repostAuthorName"
               :size="50"
+              :verified="isAddressVerified(post.repostAuthor.address)"
             />
           </router-link>
           <SC_RepostOriginalAuthorInfo>
@@ -286,6 +287,7 @@ import {
   SC_RestrictedNotice,
 } from './styled'
 import { userAvatar, userName } from '@/services/user-names'
+import { isAddressVerified } from '@/helpers/profile/is-user-verified'
 import PaidPostNotice from '@/b-components/paid-subscription/paid-post-notice.vue'
 import { postVisibilityOf } from '@/helpers/content/post-visibility'
 import { usePostRestriction } from './use-post-restriction'

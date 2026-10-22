@@ -29,7 +29,7 @@ function buildDisplayInfo(
       avatar: null,
       balance: null,
       loading,
-      verified: false,
+      verified: isUserVerified(null, acc.address),
     }
   }
   return {
@@ -38,7 +38,7 @@ function buildDisplayInfo(
     avatar: resolveAvatarUrl(profile) ?? null,
     balance: profile.balance ?? null,
     loading: false,
-    verified: isUserVerified(profile),
+    verified: isUserVerified(profile, acc.address),
   }
 }
 

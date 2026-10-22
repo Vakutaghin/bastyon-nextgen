@@ -9,6 +9,7 @@ import { useAuthStore } from '@/blockchain'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type { Dialog } from '../types'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import { logger } from '@/services/logger'
 import { t } from '@/i18n'
 
@@ -502,7 +503,12 @@ export const useMessengerStore = defineStore('messenger', () => {
 
         uiStore.prependDialog({
           id: roomId,
-          partner: { id: partnerId, name: partnerName, avatar: partnerAvatar, verified: false },
+          partner: {
+            id: partnerId,
+            name: partnerName,
+            avatar: partnerAvatar,
+            verified: isUserVerified(profile, address),
+          },
           unreadCount: 0,
           lastMessage: undefined,
           createdAt: Date.now(),

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { isUserVerified } from './is-user-verified'
+import { isAddressVerified, isUserVerified } from './is-user-verified'
 
 describe('isUserVerified', () => {
   it('нет профиля → false', () => {
@@ -24,5 +24,29 @@ describe('isUserVerified', () => {
   it('пустой массив бейджей не блокирует проверку по флагу (фикс ленты/post-mapper)', () => {
     expect(isUserVerified({ badges: [], flags: { real: 1 } })).toBe(true)
     expect(isUserVerified({ badges: [], flags: {} })).toBe(false)
+  })
+})
+
+describe('проверка по списку адресов (как platform.real старого приложения)', () => {
+  // Bastyon_Team: узел отдаёт ему badges ['shark', 'moderator'] и flags-жалобы.
+  const TEAM = 'PEj7QNjKdDPqE9kMDRboKoCtp8V6vZeZPd'
+
+  it('адрес из списка — проверен, с профилем с узла и без него', () => {
+    expect(isAddressVerified(TEAM)).toBe(true)
+    expect(isUserVerified({ address: TEAM, badges: ['shark', 'moderator'], flags: { 3: 1 } })).toBe(
+      true
+    )
+    expect(isUserVerified(null, TEAM)).toBe(true)
+    expect(isUserVerified({ badges: [] }, TEAM)).toBe(true)
+  })
+
+  it('адрес не из списка, мусор — нет', () => {
+    expect(isAddressVerified('PQb6pDXHTt3xsUsgPVy3mb7xqt9Q9Kzt8X')).toBe(false)
+    expect(isAddressVerified('')).toBe(false)
+    expect(isAddressVerified(undefined)).toBe(false)
+    expect(isAddressVerified(42)).toBe(false)
+    expect(isUserVerified({ address: 'PQb6pDXHTt3xsUsgPVy3mb7xqt9Q9Kzt8X', badges: [] })).toBe(
+      false
+    )
   })
 })

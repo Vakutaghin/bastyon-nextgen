@@ -55,7 +55,7 @@ export function useShownPartner(): ComputedRef<ShownPartner | null> {
     return {
       name: profile?.name || address,
       avatar: image ? resolveImageUrl(image) || undefined : undefined,
-      verified: isUserVerified(profile),
+      verified: isUserVerified(profile, address),
       address,
     }
   })

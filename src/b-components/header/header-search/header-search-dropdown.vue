@@ -92,16 +92,18 @@
             }}</SC_DropdownSeeAll>
           </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="u in users" :key="u.address" @click="onSelectUser(u)">
-            <SC_Avatar>
-              <img
-                v-if="avatarOf(u)"
-                :src="avatarOf(u)!"
-                :alt="u.name || u.address"
-                loading="lazy"
-                decoding="async"
-              />
-              <template v-else>{{ initialOf(u) }}</template>
-            </SC_Avatar>
+            <VerifiedMark :verified="isAddressVerified(u.address)" :size="14">
+              <SC_Avatar>
+                <img
+                  v-if="avatarOf(u)"
+                  :src="avatarOf(u)!"
+                  :alt="u.name || u.address"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <template v-else>{{ initialOf(u) }}</template>
+              </SC_Avatar>
+            </VerifiedMark>
             <SC_ItemBody>
               <SC_ItemPrimary>{{ u.name || u.address }}</SC_ItemPrimary>
               <SC_ItemSecondary v-if="u.name">{{ u.address }}</SC_ItemSecondary>
@@ -151,6 +153,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter, type RouteLocationRaw } from 'vue-router'
 import { MIN_QUERY_LENGTH } from '@/composables/use-search-query'
 import { safeDecode } from '@/composables/use-feed'
+import VerifiedMark from '@/components/verified-mark'
+import { isAddressVerified } from '@/helpers/profile/is-user-verified'
 import {
   explorerRouteSuggestions,
   type ExplorerEntityKind,

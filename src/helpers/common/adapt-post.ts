@@ -116,7 +116,7 @@ export function adaptPostData(
 
   const avatar = resolveImageUrl(userprofile?.i) ?? null
   const reputation = userprofile?.reputation || 0
-  const verified = isUserVerified(userprofile)
+  const verified = isUserVerified(userprofile, post.address)
   const title = safeDecode(post.c || '')
   // Статья раскодируется по полям: целиком раскодированный JSON ломался на кавычках.
   const content = decodePostBody(post.m || '')

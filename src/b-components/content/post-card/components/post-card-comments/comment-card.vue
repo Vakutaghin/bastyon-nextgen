@@ -12,6 +12,7 @@
       <CommentAvatar
         :url="getCommentAvatarUrl(comment.userprofile) ?? userAvatar(comment.address)"
         :name="authorName"
+        :address="comment.address"
       />
     </router-link>
 

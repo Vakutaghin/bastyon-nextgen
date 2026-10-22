@@ -5,6 +5,7 @@
 
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import { isVoteComment } from '@/helpers/content/poll'
+import { isAddressVerified } from '@/helpers/profile/is-user-verified'
 import { sortComments } from '../helpers'
 import { isHiddenByReputation as visIsHiddenByReputation } from '../visibility'
 import { MENTION_LIST_LIMIT } from '../consts'
@@ -41,7 +42,9 @@ export function buildSortedComments(
     // Эвристический isBlocked: пока user-relations store нет, единственный
     // надёжный сигнал «не показывать наверх» — низкая репутация автора.
     isBlocked: (address) => lowRepAuthors.has(address),
-    // isVerified / getActivityPoint — TBD (нужен activity / verified сигнал из API).
+    // Проверенные аккаунты — по тому же списку, что и галочка (platform.real в легаси).
+    isVerified: isAddressVerified,
+    // getActivityPoint — TBD (нужен activity-сигнал из API).
   })
 }
 
