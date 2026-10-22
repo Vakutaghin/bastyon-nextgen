@@ -59,6 +59,11 @@
         <IpfsFileMessage :link="ipfsFile" :mine="isMine" />
       </div>
 
+      <!-- Сообщение целиком — постоянная ссылка ipns://k51…: карточка. -->
+      <div v-else-if="ipnsName" class="message-file">
+        <IpfsNameMessage :name="ipnsName" :mine="isMine" />
+      </div>
+
       <div v-else class="message-text">
         <template v-for="(seg, idx) in messageSegments" :key="idx">
           <span v-if="seg.kind === 'html'" v-html="seg.html" />
@@ -184,7 +189,8 @@ import VideoMessage from '../video-message/video-message.vue'
 import FileMessage from '../file-message/file-message.vue'
 import TransactionMessage from '../transaction-message/transaction-message.vue'
 import IpfsFileMessage from '../ipfs-file-message/ipfs-file-message.vue'
-import { parseIpfsFileLink } from '@/helpers/ipfs/ipfs-link'
+import IpfsNameMessage from '../ipfs-file-message/ipfs-name-message.vue'
+import { parseIpfsFileLink, parseIpfsNameLink } from '@/helpers/ipfs/ipfs-link'
 import { parseSupportReport } from '../../lib/support-report'
 import SupportReportBox from '../support-report/support-report-box.vue'
 import { supportReportPreview } from '../../lib/support-report-preview'
@@ -333,6 +339,11 @@ const supportReport = computed(() =>
 /** Текст — одна ссылка на файл в IPFS: рисуем карточкой, а не ссылкой. */
 const ipfsFile = computed(() =>
   (props.message.type ?? 'text') === 'text' ? parseIpfsFileLink(props.message.text || '') : null
+)
+
+/** Текст — одна постоянная ссылка `ipns://k51…`: тоже карточкой. */
+const ipnsName = computed(() =>
+  (props.message.type ?? 'text') === 'text' ? parseIpfsNameLink(props.message.text || '') : null
 )
 
 /**

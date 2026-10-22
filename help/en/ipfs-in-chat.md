@@ -1,5 +1,5 @@
 ---
-keywords: [file over IPFS, large file, keep sharing, chat, send a large file]
+keywords: [file over IPFS, large file, keep sharing, chat, send a large file, permanent link, follow updates]
 ---
 
 # Files over IPFS in chat
@@ -28,6 +28,12 @@ If the other person uses the previous Bastyon app, they see an `ipfs://…` link
 A card with someone else’s file has a **“Keep sharing”** button in the desktop app. Your computer downloads the file and becomes one more source of it: the file stays available even when the sender is offline. The network will see that your computer serves it.
 
 The file appears in [My files](my-files.md) labelled **“received, sharing”**, and the card shows **“Sharing”**. To stop, go to **“My files”** and press **“Stop sharing”**.
+
+## A permanent link in chat
+
+A message that holds only a permanent link `ipns://k51…` is shown in chat as a **“Permanent link”** card. Its owner can switch such a link to a new version, so you see what it leads to with **“Open”**. The card itself does not go to the network. How to make a permanent link of your own — in [My files](my-files.md).
+
+**“Follow updates”** — while Bastyon is open, it checks the link once an hour and says **“A permanent link was updated”** when it is switched to a new version. The app also republishes the link’s record every 12 hours, so the link keeps opening while its owner is offline, until the record expires. To stop, click **“Stop following”**. When checking, the delegated-ipfs.dev service sees the link and your IP address; with [Tor](tor.md) on, there are no checks.
 
 ## See also
 

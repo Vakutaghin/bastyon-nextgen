@@ -53,6 +53,8 @@ export const MESH_ROUTES_PREFIX = 'BST_MESH_ROUTES_'
  * записи; ключей нет): `BST_IPNS_NAMES_<ownAddress>`.
  */
 export const IPNS_NAMES_PREFIX = 'BST_IPNS_NAMES_'
+/** Чужие постоянные ссылки, за которыми следит аккаунт: `BST_IPNS_FOLLOW_<ownAddress>`. */
+export const IPNS_FOLLOW_PREFIX = 'BST_IPNS_FOLLOW_'
 
 /** Отметка «бэкап 12 слов проверен»: `BST_BACKUP_VERIFIED_<address>` = timestamp (мс). */
 export const BACKUP_VERIFIED_PREFIX = 'BST_BACKUP_VERIFIED_'

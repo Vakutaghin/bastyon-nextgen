@@ -219,3 +219,12 @@ export function parseIpfsFileLink(text: string): IpfsFileLink | null {
   }
   return { target, secret, name: secret?.name || fromPath, size: parseIpfsSize(raw) }
 }
+
+/**
+ * Сообщение, которое целиком — постоянная ссылка `ipns://k51…` (имя IPNS на
+ * ключе): чат рисует её карточкой. Имя домена (DNSLink) остаётся ссылкой.
+ */
+export function parseIpfsNameLink(text: string): string | null {
+  const m = /^ipns:\/\/(k51[a-z0-9]{50,})\/?$/.exec((text || '').trim())
+  return m?.[1] ?? null
+}

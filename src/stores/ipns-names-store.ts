@@ -95,7 +95,25 @@ function refuseUnderTor(): void {
   throw new BlockedByTorError()
 }
 
-function torEnabled(): boolean {
+/**
+ * Запись имени — в delegated routing; с запущенной нодой — ещё и в DHT своим
+ * Kubo, фоном: там это занимает около минуты.
+ */
+export async function publishNameRecord(record: NameRecord): Promise<void> {
+  const { putRecord } = await loadNames()
+  await putRecord(record)
+  const ipfs = useIpfsStore()
+  if (ipfs.available && ipfs.status === 'running') {
+    const { invoke } = await import('@tauri-apps/api/core')
+    let binary = ''
+    for (const byte of record.bytes) binary += String.fromCharCode(byte)
+    invoke('ipfs_name_put', { name: record.name, record: btoa(binary) }).catch((e: unknown) =>
+      console.warn('[ipns] kubo routing put failed:', e)
+    )
+  }
+}
+
+export function torEnabled(): boolean {
   try {
     return useTorStore().enabled
   } catch {
@@ -140,21 +158,6 @@ export const useIpnsNamesStore = defineStore('ipns-names', {
       const pair = auth.getKeyPair
       if (!pair || auth.getUserAddress !== this.account) return null
       return new Uint8Array(pair.privateKey)
-    },
-
-    /** Запись — в delegated routing; с запущенной нодой — ещё и в DHT своим Kubo, фоном. */
-    async _publish(record: NameRecord): Promise<void> {
-      const { putRecord } = await loadNames()
-      await putRecord(record)
-      const ipfs = useIpfsStore()
-      if (ipfs.available && ipfs.status === 'running') {
-        const { invoke } = await import('@tauri-apps/api/core')
-        let binary = ''
-        for (const byte of record.bytes) binary += String.fromCharCode(byte)
-        invoke('ipfs_name_put', { name: record.name, record: btoa(binary) }).catch((e: unknown) =>
-          console.warn('[ipns] kubo routing put failed:', e)
-        )
-      }
     },
 
     /**
@@ -206,7 +209,7 @@ export const useIpnsNamesStore = defineStore('ipns-names', {
           continue
         }
         const record = await signRecord(key, value, 1n)
-        await this._publish(record)
+        await publishNameRecord(record)
         const entry = toEntry(index, record)
         this._remember(entry)
         return entry
@@ -228,7 +231,7 @@ export const useIpnsNamesStore = defineStore('ipns-names', {
           ? network.sequence
           : BigInt(entry.sequence)
       const record = await signRecord(key, value, last + 1n)
-      await this._publish(record)
+      await publishNameRecord(record)
       const updated = toEntry(index, record)
       this._remember(updated)
       return updated
@@ -259,7 +262,7 @@ export const useIpnsNamesStore = defineStore('ipns-names', {
               now
             )
             if (!record) continue
-            await this._publish(record)
+            await publishNameRecord(record)
             this._remember(toEntry(entry.index, record))
           } catch (e) {
             failed = true

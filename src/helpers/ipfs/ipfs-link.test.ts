@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parseIpfsLink, parseIpfsSecret } from './ipfs-link'
 import { buildIpfsViewerUrl, buildShareLink, buildIpfsSecretLink } from './ipfs-viewer'
-import { parseIpfsFileLink, parseIpfsInput, parseIpfsSize } from './ipfs-link'
+import { parseIpfsFileLink, parseIpfsInput, parseIpfsNameLink, parseIpfsSize } from './ipfs-link'
 
 describe('parseIpfsLink', () => {
   it('scheme-форма ipfs:// с путём', () => {
@@ -211,6 +211,22 @@ describe('parseIpfsFileLink — сообщение-карточка', () => {
     expect(parseIpfsFileLink('ipns://docs.ipfs.tech')).toBeNull()
     expect(parseIpfsFileLink('https://dweb.link/ipfs/bafyDIR')).toBeNull()
     expect(parseIpfsFileLink('')).toBeNull()
+  })
+})
+
+describe('parseIpfsNameLink — постоянная ссылка карточкой', () => {
+  const NAME = 'k51qzi5uqu5dkxmzvkhc42poz8bqi5t742v6qda52xv7c4ff115356d77amfwc'
+
+  it('сообщение целиком — ipns:// на ключ', () => {
+    expect(parseIpfsNameLink(` ipns://${NAME}\n`)).toBe(NAME)
+    expect(parseIpfsNameLink(`ipns://${NAME}/`)).toBe(NAME)
+  })
+
+  it('домен, путь внутри имени, текст вокруг — не карточка', () => {
+    expect(parseIpfsNameLink('ipns://docs.ipfs.tech')).toBeNull()
+    expect(parseIpfsNameLink(`ipns://${NAME}/a.pdf`)).toBeNull()
+    expect(parseIpfsNameLink(`вот ipns://${NAME}`)).toBeNull()
+    expect(parseIpfsNameLink(`ipfs://${NAME}`)).toBeNull()
   })
 })
 
