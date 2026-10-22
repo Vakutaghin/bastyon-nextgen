@@ -184,7 +184,8 @@
       "node-fetch@<2.6.7": ">=2.6.7"
     },
     "patchedDependencies": {
-      "matrix-js-sdk@40.1.0": "patches/matrix-js-sdk@40.1.0.patch"
+      "matrix-js-sdk@40.1.0": "patches/matrix-js-sdk@40.1.0.patch",
+      "@helia/delegated-routing-v1-http-api-client@9.0.2": "patches/@helia__delegated-routing-v1-http-api-client@9.0.2.patch"
     }
   }
 }

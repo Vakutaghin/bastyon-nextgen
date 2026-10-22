@@ -42,8 +42,16 @@ async function follow(page: Page, href: string): Promise<Locator> {
 }
 
 test.describe('Узел IPFS в приложении, живая сеть', () => {
+  // Необработанная ошибка в узле — это тост с ошибкой у пользователя
+  // (use-error-boundary), даже если файл открылся.
+  let pageErrors: string[] = []
   test.beforeEach(async ({ page }) => {
+    pageErrors = []
+    page.on('pageerror', (e) => pageErrors.push(String(e)))
     await openApp(page)
+  })
+  test.afterEach(() => {
+    expect(pageErrors).toEqual([])
   })
 
   test('папка сайта по DNSLink: список, куда ведёт имя, подсказка про сайт', async ({ page }) => {

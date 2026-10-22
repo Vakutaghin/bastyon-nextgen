@@ -25,6 +25,9 @@ overrides:
   node-fetch@<2.6.7: '>=2.6.7'
 
 patchedDependencies:
+  '@helia/delegated-routing-v1-http-api-client@9.0.2':
+    hash: 100dd7f9bbbccaeb4ac0590adba17841503aefbcb757c816c1cc91ac79fb276e
+    path: patches/@helia__delegated-routing-v1-http-api-client@9.0.2.patch
   matrix-js-sdk@40.1.0:
     hash: 12ac992db00b7e52d82baa8772dfc46a9c5d21425f1af6bbd0f0436329015100
     path: patches/matrix-js-sdk@40.1.0.patch
@@ -8007,7 +8010,7 @@ snapshots:
 
   '@helia/delegated-routing-client@1.0.7':
     dependencies:
-      '@helia/delegated-routing-v1-http-api-client': 9.0.2
+      '@helia/delegated-routing-v1-http-api-client': 9.0.2(patch_hash=100dd7f9bbbccaeb4ac0590adba17841503aefbcb757c816c1cc91ac79fb276e)
       '@helia/interface': 7.1.2
       '@libp2p/interface': 3.4.0
       it-first: 3.0.11
@@ -8015,7 +8018,7 @@ snapshots:
       multiformats: 14.0.5
       uint8arrays: 6.1.1
 
-  '@helia/delegated-routing-v1-http-api-client@9.0.2':
+  '@helia/delegated-routing-v1-http-api-client@9.0.2(patch_hash=100dd7f9bbbccaeb4ac0590adba17841503aefbcb757c816c1cc91ac79fb276e)':
     dependencies:
       '@libp2p/interface': 3.4.0
       '@libp2p/peer-id': 6.0.18
@@ -8094,7 +8097,7 @@ snapshots:
   '@helia/libp2p@2.1.5(react-native@0.88.0(@babel/core@7.29.0)(react@19.2.4))':
     dependencies:
       '@helia/delegated-routing-client': 1.0.7
-      '@helia/delegated-routing-v1-http-api-client': 9.0.2
+      '@helia/delegated-routing-v1-http-api-client': 9.0.2(patch_hash=100dd7f9bbbccaeb4ac0590adba17841503aefbcb757c816c1cc91ac79fb276e)
       '@helia/interface': 7.1.2
       '@ipshipyard/libp2p-auto-tls': 2.0.2
       '@libp2p/autonat': 3.0.32

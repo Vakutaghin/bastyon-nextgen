@@ -1,0 +1,31 @@
+diff --git a/dist/src/client.js b/dist/src/client.js
+index 4e36c6f1522973d3276d6cf70fb5101a3c144eaf..b418268aea69e50381c7e1214ba60ebc38651a64 100644
+--- a/dist/src/client.js
++++ b/dist/src/client.js
+@@ -135,7 +135,7 @@ export class DelegatedRoutingV1HttpApiClient {
+             }
+             else if (contentType.includes('application/x-ndjson')) {
+                 signal.addEventListener('abort', () => {
+-                    res?.body?.cancel();
++                    res?.body?.cancel()?.catch(() => {});
+                 });
+                 for await (const provider of ndjson(toIt(res.body))) {
+                     const record = this.#conformToPeerSchema(provider);
+@@ -205,7 +205,7 @@ export class DelegatedRoutingV1HttpApiClient {
+             }
+             else {
+                 signal.addEventListener('abort', () => {
+-                    res.body?.cancel();
++                    res.body?.cancel()?.catch(() => {});
+                 });
+                 for await (const peer of ndjson(toIt(res.body))) {
+                     const record = this.#conformToPeerSchema(peer);
+@@ -281,7 +281,7 @@ export class DelegatedRoutingV1HttpApiClient {
+             }
+             else {
+                 signal.addEventListener('abort', () => {
+-                    res.body?.cancel();
++                    res.body?.cancel()?.catch(() => {});
+                 });
+                 for await (const peer of ndjson(toIt(res.body))) {
+                     const record = this.#conformToPeerSchema(peer);
