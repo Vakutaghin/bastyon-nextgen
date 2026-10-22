@@ -97,6 +97,14 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
+        Обновление изнутри приложения (plugins/AppUpdaterPlugin): скачанный APK
+        релиза отдаётся системному установщику. Ставит его человек — Android
+        спросит подтверждение и, в первый раз, разрешение «Установка
+        неизвестных приложений» для Bastyon.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!--
         Mesh-радио (src/mesh): LoRa-радио по Bluetooth LE, USB (OTG) и Wi-Fi.
         Поиск Bluetooth не нужен для геолокации (neverForLocation); до Android 12
         он без геолокации не работает. Служба connectedDevice требует одно из

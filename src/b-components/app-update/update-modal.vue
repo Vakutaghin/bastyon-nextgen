@@ -81,18 +81,23 @@ const {
   skip,
   openReleasePage,
   canInstall,
+  installsWithConfirmation,
   installing,
   installProgress,
   installFailed,
+  installNotice,
   install,
 } = useAppUpdate()
 
-/** Компьютер ставит обновление сам; не вышло — как раньше, страница релиза. */
-const installsItself = computed<boolean>(() => canInstall && !installFailed.value)
+/** Компьютер и Android ставят обновление сами; не вышло — как раньше, страница релиза. */
+const installsItself = computed<boolean>(() => canInstall.value && !installFailed.value)
 
 const hint = computed<string>(() => {
   if (installFailed.value) return t('update.installFailed')
-  return t(canInstall ? 'update.installHint' : 'update.downloadHint')
+  if (installNotice.value === 'permission') return t('update.permissionNeeded')
+  if (installNotice.value === 'dismissed') return t('update.installDismissed')
+  if (!canInstall.value) return t('update.downloadHint')
+  return t(installsWithConfirmation ? 'update.installHintAndroid' : 'update.installHint')
 })
 
 const progressPercent = computed<number>(() =>
@@ -101,7 +106,10 @@ const progressPercent = computed<number>(() =>
 
 const progressLabel = computed<string>(() => {
   const progress = installProgress.value
-  if (progress?.phase === 'install') return t('update.installing')
+  if (progress?.phase === 'install') {
+    // Android ставит сам системный установщик — ждём подтверждения человека.
+    return t(installsWithConfirmation ? 'update.confirmInstall' : 'update.installing')
+  }
   if (progress?.fraction == null) return t('update.downloadingNoSize')
   const percent = new Intl.NumberFormat(bcp47(locale.value), { style: 'percent' }).format(
     progress.fraction

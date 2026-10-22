@@ -2870,6 +2870,13 @@ export default {
     installing: 'Installation de la mise à jour et redémarrage…',
     installFailed:
       'La mise à jour n’a pas pu s’installer automatiquement. Téléchargez l’installateur depuis la page de la version.',
+    installHintAndroid:
+      'L’application téléchargera la nouvelle version, et Android vous demandera de confirmer l’installation. Les comptes et les réglages sont conservés.',
+    confirmInstall: 'Confirmez l’installation dans la fenêtre d’Android…',
+    installDismissed:
+      'La mise à jour n’a pas été installée. Appuyez sur « Mettre à jour » pour réessayer.',
+    permissionNeeded:
+      'Android n’a pas autorisé Bastyon à installer des mises à jour. Appuyez sur « Mettre à jour » et, dans les réglages qui s’ouvrent, autorisez l’installation depuis cette source.',
   },
   videoStudio: {
     title: 'Mettre en ligne une vidéo',

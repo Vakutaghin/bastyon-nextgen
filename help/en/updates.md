@@ -10,12 +10,12 @@ How the app tells you about a new version, how to update on each system, and whe
 
 Once a day the app looks at the releases page on GitHub. If a new version is out, an **“Update available”** window appears — which version came out, which one you have and when the new one was published:
 
-- **“Update”** — on a computer: the app downloads the new version, installs it over this one and restarts, showing the progress in the window. Accounts and settings are kept. If it cannot install by itself, “Go to download” appears instead;
-- **“Go to download”** — on a phone: the release page opens in the browser, with installers for every system. If the browser does not open, the link is copied and shown in a message;
+- **“Update”** — the app downloads the new version, showing the progress in the window, and installs it over this one. Accounts and settings are kept. A computer then restarts the app, and on Android you confirm the installation — see [How to update](#how-to-update). If it cannot install by itself, “Go to download” appears instead;
+- **“Go to download”** — the release page opens in the browser, with installers for every system. If the browser does not open, the link is copied and shown in a message;
 - **“Later”** — reminds you on the next launch;
 - **“Skip this version”** — no more reminders about this version; the next one will be offered.
 
-The update is checked by its signature: only a build from a Bastyon NextGen release can be installed this way. With Tor on, it is downloaded over Tor.
+The update is checked by its signature: only a build from a Bastyon NextGen release can be installed this way. On Android the file is also checked against the checksum GitHub shows for the release. With Tor on, a computer downloads the update over Tor.
 
 ## Version number
 
@@ -32,7 +32,9 @@ You can also check in **“Settings”** → **“Diagnostics”** → the **“
 - **Computer.** Click “Update” in the “Update available” window, and the app does the rest. This works on macOS, Windows and the Linux AppImage; update a .deb install with a new .deb. You can also do it by hand: download the installer for your system and install it over the old version — accounts and settings are kept. Which file to pick is in [Installing the app](install.md). In versions without the “Update” button, install the next one by hand; after that the app updates itself.
 - **macOS.** macOS does not stop an update made with “Update”. If you install a new version by hand, macOS blocks it on its first launch again: allow it the same way as at installation, with “Open Anyway”. macOS may also ask for your computer password once to let Bastyon NextGen use its keychain item. In that item WebKit keeps the key that encrypts the account keys on this computer. Enter the password and click “Always Allow”. All versions are signed with one certificate, so after that updates no longer ask for the password and do not ask for microphone and camera access again.
 - **Windows.** During an update Windows asks whether to let the installer make changes — answer “Yes”.
-- **Android.** Download the .apk file and install the new version over the old one — accounts and settings are kept. The exception is moving from 0.7.1 or an earlier version: those were signed with a temporary key, and the phone refuses to install a new version over them, saying the package conflicts with an existing one. Then the old version has to be removed, and the account keys are removed from the phone with it. So before removing it, make sure your recovery phrase is written down and checked — see [Recovery phrase and private key](recovery-phrase.md). After installing, sign in with the phrase again.
+- **Android.** Press “Update” in the “Update available” window. The app downloads the new version and checks it: it has to be Bastyon NextGen from a release, signed with the same key as the installed one. Then Android asks whether to update the app — confirm, and when the installation finishes, press “Open”. The first time, Android first opens the “Install unknown apps” settings for Bastyon NextGen: turn the permission on and go back — the installation continues by itself. If you cancel the installation, the app offers to press “Update” again.
+
+  You can also do it by hand: download the .apk file and install the new version over the old one — accounts and settings are kept. In versions where the phone shows only “Go to download” instead of “Update”, install the next one by hand; after that the app updates itself. The exception is moving from 0.7.1 or an earlier version: those were signed with a temporary key, and the phone refuses to install a new version over them, saying the package conflicts with an existing one. Then the old version has to be removed, and the account keys are removed from the phone with it. So before removing it, make sure your recovery phrase is written down and checked — see [Recovery phrase and private key](recovery-phrase.md). After installing, sign in with the phrase again.
 
 ## What’s new
 

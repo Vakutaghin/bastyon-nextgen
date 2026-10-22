@@ -2854,6 +2854,13 @@ export default {
     installing: 'Instalando la actualización y reiniciando…',
     installFailed:
       'No se pudo instalar la actualización automáticamente. Descarga el instalador desde la página de la versión.',
+    installHintAndroid:
+      'La aplicación descargará la nueva versión y Android te pedirá que confirmes la instalación. Las cuentas y los ajustes se conservan.',
+    confirmInstall: 'Confirma la instalación en la ventana de Android…',
+    installDismissed:
+      'La actualización no se instaló. Pulsa «Actualizar» para intentarlo de nuevo.',
+    permissionNeeded:
+      'Android no permitió a Bastyon instalar actualizaciones. Pulsa «Actualizar» y, en los ajustes que se abren, permite instalar desde esta fuente.',
   },
   videoStudio: {
     title: 'Subir vídeo',

@@ -2697,6 +2697,11 @@ export default {
     downloadingNoSize: '正在下载更新…',
     installing: '正在安装更新并重启…',
     installFailed: '无法自动安装更新。请从发布页面下载安装程序。',
+    installHintAndroid: '应用会下载新版本，Android 会请你确认安装。账户和设置会保留。',
+    confirmInstall: '请在 Android 窗口中确认安装…',
+    installDismissed: '更新未安装。点按“更新”重试。',
+    permissionNeeded:
+      'Android 未允许 Bastyon 安装更新。点按“更新”，并在打开的设置中允许安装此来源的应用。',
   },
   videoStudio: {
     title: '上传视频',

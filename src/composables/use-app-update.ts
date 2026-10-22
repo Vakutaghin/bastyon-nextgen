@@ -1,9 +1,11 @@
 /**
  * Проверка обновлений через релизы GitHub.
  *
- * О новой версии приложение узнаёт из API релизов. На компьютере «Обновить»
- * ставит её само (helpers/updates/install-update: подписанный latest.json
- * релиза), на телефоне — ведёт на страницу релиза с установщиками.
+ * О новой версии приложение узнаёт из API релизов. «Обновить» ставит её само:
+ * на компьютере — helpers/updates/install-update (подписанный latest.json
+ * релиза), на Android — helpers/updates/android-update (APK релиза, его
+ * SHA-256 и подпись, ставит системный установщик). Где не вышло — страница
+ * релиза с установщиками.
  *
  * Состояние модульное, а не на вызов: одно и то же нужно модалке и кнопке
  * «Проверить обновления» в диагностике — иначе они проверяли бы по отдельности.
@@ -24,6 +26,11 @@ import {
 } from '@/helpers/updates/github-release'
 import { isCapacitor, isTauri } from '@/b-components/video-uploader/utils/environment'
 import type { InstallProgress } from '@/helpers/updates/install-update'
+import {
+  installAndroidUpdate,
+  isAndroidUpdaterAvailable,
+  type AndroidInstallResult,
+} from '@/helpers/updates/android-update'
 import { settingsAPI } from '@/db/apis/settings-api'
 import { logger } from '@/services/logger'
 
@@ -192,35 +199,56 @@ export async function openReleasePage(): Promise<boolean> {
 }
 
 /**
- * Компьютер ставит обновление сам (install-update); на телефоне и в браузере —
- * страница релиза.
+ * Компьютер ставит обновление сам (install-update), Android — тоже, если в
+ * релизе есть APK с хешем (android-update). В браузере — страница релиза.
  */
 export function supportsInAppInstall(): boolean {
-  return isTauri()
+  return isTauri() || (isAndroidUpdaterAvailable() && !!available.value?.androidApk)
 }
 
 const installing = ref(false)
 const installProgress = ref<InstallProgress | null>(null)
 /** Поставить само не вышло — модалка предлагает страницу релиза. */
 const installFailed = ref(false)
+/**
+ * Android: установщик закрыли, не обновив, или не дали разрешение ставить
+ * обновления. Не провал — «Обновить» можно нажать ещё раз.
+ */
+const installNotice = ref<AndroidInstallResult | null>(null)
 
 /**
- * Скачать, поставить и перезапуститься. `false` — не вышло (нет сборки для
- * этой системы, сеть, Tor не готов, нет прав на папку приложения): тогда
- * остаётся ручная установка со страницы релиза.
+ * Скачать, поставить и перезапуститься. `false` — не поставили: на Android
+ * установщик закрыли или не дали разрешение (`installNotice`, можно ещё раз);
+ * иначе не вышло совсем (нет сборки для этой системы, сеть, Tor не готов, нет
+ * прав на папку приложения, не сошёлся хеш или подпись APK) — тогда остаётся
+ * ручная установка со страницы релиза.
  */
 export async function installAvailableUpdate(): Promise<boolean> {
   if (installing.value) return false
   installing.value = true
   installFailed.value = false
+  installNotice.value = null
   installProgress.value = null
+  const onProgress = (progress: InstallProgress): void => {
+    installProgress.value = progress
+  }
   try {
-    const { installUpdate } = await import('@/helpers/updates/install-update')
-    const result = await installUpdate((progress) => {
-      installProgress.value = progress
-    })
-    if (result === 'restarting') return true
-    log.warn('no update for this system in latest.json')
+    if (isTauri()) {
+      const { installUpdate } = await import('@/helpers/updates/install-update')
+      const result = await installUpdate(onProgress)
+      if (result === 'restarting') return true
+      log.warn('no update for this system in latest.json')
+    } else {
+      const apk = available.value?.androidApk
+      if (apk && isAndroidUpdaterAvailable()) {
+        // Вернулись — значит, новую версию не поставили: при успехе
+        // установщик завершает этот процесс.
+        installNotice.value = await installAndroidUpdate(apk, onProgress)
+        installProgress.value = null
+        return false
+      }
+      log.warn('no apk with a hash in the release')
+    }
   } catch (e) {
     log.warn('in-app update failed', e)
   } finally {
@@ -243,6 +271,7 @@ export function resetAppUpdateForTests(): void {
   installing.value = false
   installProgress.value = null
   installFailed.value = false
+  installNotice.value = null
   inflight = null
 }
 
@@ -268,10 +297,14 @@ export function useAppUpdate() {
     dismiss: dismissUpdate,
     skip: skipAvailableVersion,
     openReleasePage,
-    canInstall: supportsInAppInstall(),
+    /** Ставит само: компьютер — и Android, если в релизе есть APK с хешем. */
+    canInstall: computed(() => supportsInAppInstall()),
+    /** Android ставит через системный установщик — с подтверждением человека. */
+    installsWithConfirmation: !isTauri(),
     installing,
     installProgress,
     installFailed,
+    installNotice,
     install: installAvailableUpdate,
   }
 }

@@ -2842,6 +2842,12 @@ export default {
     installing: 'Installazione dell’aggiornamento e riavvio…',
     installFailed:
       'Non è stato possibile installare l’aggiornamento automaticamente. Scarica il programma di installazione dalla pagina della versione.',
+    installHintAndroid:
+      'L’app scaricherà la nuova versione e Android ti chiederà di confermare l’installazione. Account e impostazioni restano.',
+    confirmInstall: 'Conferma l’installazione nella finestra di Android…',
+    installDismissed: 'L’aggiornamento non è stato installato. Tocca «Aggiorna» per riprovare.',
+    permissionNeeded:
+      'Android non ha consentito a Bastyon di installare aggiornamenti. Tocca «Aggiorna» e, nelle impostazioni che si aprono, consenti l’installazione da questa fonte.',
   },
   videoStudio: {
     title: 'Carica video',

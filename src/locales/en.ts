@@ -2826,6 +2826,12 @@ export default {
     installing: 'Installing the update and restarting…',
     installFailed:
       'The update could not be installed automatically. Download the installer from the release page.',
+    installHintAndroid:
+      'The app will download the new version, and Android will ask you to confirm the installation. Accounts and settings are kept.',
+    confirmInstall: 'Confirm the installation in the Android window…',
+    installDismissed: 'The update was not installed. Press “Update” to try again.',
+    permissionNeeded:
+      'Android did not allow Bastyon to install updates. Press “Update” and, in the settings that open, allow installing from this source.',
   },
   videoStudio: {
     title: 'Upload video',

@@ -1,6 +1,8 @@
 // «Перейти к загрузке»: окно закрывается и открывает страницу релиза в
-// браузере; не открылось — ссылка в буфере и на экране. На компьютере вместо
-// неё «Обновить»: обновление ставится само, с прогрессом; не вышло — страница.
+// браузере; не открылось — ссылка в буфере и на экране. На компьютере и на
+// Android вместо неё «Обновить»: обновление ставится само, с прогрессом; не
+// вышло — страница. На Android ставит системный установщик: его можно закрыть
+// или не дать разрешение — тогда «Обновить» остаётся.
 
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,10 +18,12 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   install: vi.fn(),
   canInstall: false,
+  withConfirmation: false,
   state: null as null | {
     installing: { value: boolean }
     installProgress: { value: unknown }
     installFailed: { value: boolean }
+    installNotice: { value: string | null }
   },
 }))
 
@@ -28,7 +32,8 @@ vi.mock('@/composables/use-app-update', async () => {
   const installing = ref(false)
   const installProgress = ref<unknown>(null)
   const installFailed = ref(false)
-  mocks.state = { installing, installProgress, installFailed }
+  const installNotice = ref<string | null>(null)
+  mocks.state = { installing, installProgress, installFailed, installNotice }
   return {
     useAppUpdate: () => ({
       available: ref({ tag: 'v0.9.3', pageUrl: URL, publishedAt: '2026-09-30T19:00:45Z' }),
@@ -38,10 +43,12 @@ vi.mock('@/composables/use-app-update', async () => {
       dismiss: mocks.dismiss,
       skip: vi.fn(),
       openReleasePage: mocks.openReleasePage,
-      canInstall: mocks.canInstall,
+      canInstall: ref(mocks.canInstall),
+      installsWithConfirmation: mocks.withConfirmation,
       installing,
       installProgress,
       installFailed,
+      installNotice,
       install: mocks.install,
     }),
   }
@@ -74,6 +81,8 @@ describe('UpdateModal — «Перейти к загрузке»', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.canInstall = false
+    mocks.withConfirmation = false
+    mocks.state!.installNotice.value = null
     mocks.state!.installing.value = false
     mocks.state!.installProgress.value = null
     mocks.state!.installFailed.value = false
@@ -146,6 +155,42 @@ describe('UpdateModal — «Перейти к загрузке»', () => {
       expect(document.body.textContent).toContain('само не получилось')
       expect(button('Обновить')).toBeUndefined()
       expect(button('Перейти к загрузке')).toBeDefined()
+    })
+  })
+
+  describe('на Android ставит системный установщик', () => {
+    beforeEach(() => {
+      mocks.canInstall = true
+      mocks.withConfirmation = true
+    })
+
+    it('«Обновить» вместо страницы; подсказка — про подтверждение Android', async () => {
+      await open()
+      expect(document.body.textContent).toContain('Android попросит подтвердить')
+      expect(button('Перейти к загрузке')).toBeUndefined()
+      button('Обновить')!.click()
+      await flushPromises()
+      expect(mocks.install).toHaveBeenCalledTimes(1)
+    })
+
+    it('скачано — ждём подтверждения в окне Android', async () => {
+      mocks.state!.installing.value = true
+      mocks.state!.installProgress.value = { phase: 'install', fraction: 1 }
+      await open()
+      expect(document.body.textContent).toContain('Подтвердите установку')
+      expect(document.body.textContent).not.toContain('перезапускаю')
+    })
+
+    it('установщик закрыли или не дали разрешение — «Обновить» остаётся', async () => {
+      mocks.state!.installNotice.value = 'dismissed'
+      await open()
+      expect(document.body.textContent).toContain('не установлено')
+      expect(button('Обновить')!.disabled).toBe(false)
+
+      mocks.state!.installNotice.value = 'permission'
+      await flushPromises()
+      expect(document.body.textContent).toContain('из этого источника')
+      expect(button('Обновить')!.disabled).toBe(false)
     })
   })
 })

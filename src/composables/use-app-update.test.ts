@@ -23,6 +23,11 @@ vi.mock('@/db/apis/settings-api', () => ({
 vi.mock('@/helpers/changelog/changelog-loader', () => ({ CURRENT_APP_VERSION: '0.2.0' }))
 const installUpdate = vi.hoisted(() => vi.fn())
 vi.mock('@/helpers/updates/install-update', () => ({ installUpdate }))
+const android = vi.hoisted(() => ({ available: false, install: vi.fn() }))
+vi.mock('@/helpers/updates/android-update', () => ({
+  isAndroidUpdaterAvailable: () => android.available,
+  installAndroidUpdate: android.install,
+}))
 
 import {
   AUTO_CHECK_INTERVAL_MS,
@@ -42,6 +47,14 @@ const RELEASE = {
   published_at: '2026-09-24T15:00:00Z',
 }
 
+const APK_ASSET = {
+  name: 'Android-Bastyon-NextGen-0.3.0.apk',
+  size: 16456301,
+  digest: 'sha256:50e4dfe12608de9633675216d5fb5384f7960429473f9a6ace09f25d214318eb',
+  browser_download_url:
+    'https://github.com/Vakutaghin/bastyon-nextgen/releases/download/v0.3.0/Android-Bastyon-NextGen-0.3.0.apk',
+}
+
 function respondWith(body: unknown, ok = true, status = 200): void {
   appFetch.mockResolvedValue({ ok, status, json: async () => body } as unknown as Response)
 }
@@ -54,6 +67,8 @@ describe('use-app-update', () => {
     openExternal.mockClear()
     env.tauri = false
     env.capacitor = false
+    android.available = false
+    android.install.mockReset()
   })
 
   afterEach(() => {
@@ -225,15 +240,29 @@ describe('use-app-update', () => {
   })
 
   describe('обновление изнутри приложения', () => {
-    it('ставит само только на компьютере', () => {
+    it('ставит само на компьютере и на Android, если в релизе есть APK с хешем', async () => {
       env.tauri = true
-      expect(useAppUpdate().canInstall).toBe(true)
+      expect(useAppUpdate().canInstall.value).toBe(true)
+
       env.tauri = false
       env.capacitor = true
-      expect(useAppUpdate().canInstall).toBe(false)
+      android.available = true
+      respondWith(RELEASE)
+      await checkForUpdate()
+      // В релизе нет APK — только страница.
+      expect(useAppUpdate().canInstall.value).toBe(false)
+
+      respondWith({ ...RELEASE, assets: [APK_ASSET] })
+      await checkForUpdateNow()
+      expect(useAppUpdate().canInstall.value).toBe(true)
+
+      // Браузер: плагина нет.
+      android.available = false
+      expect(useAppUpdate().canInstall.value).toBe(false)
     })
 
     it('прогресс виден, пока идёт установка', async () => {
+      env.tauri = true
       let resolveInstall: (r: string) => void = () => {}
       installUpdate.mockImplementation((onProgress: (p: unknown) => void) => {
         onProgress({ phase: 'download', fraction: 0.5 })
@@ -251,6 +280,7 @@ describe('use-app-update', () => {
     })
 
     it('не вышло (ошибка или нет сборки для системы) — предлагается страница релиза', async () => {
+      env.tauri = true
       const api = useAppUpdate()
       installUpdate.mockRejectedValueOnce(new Error('permission denied'))
       await expect(api.install()).resolves.toBe(false)
@@ -260,6 +290,59 @@ describe('use-app-update', () => {
       installUpdate.mockResolvedValueOnce('unavailable')
       await expect(api.install()).resolves.toBe(false)
       expect(api.installFailed.value).toBe(true)
+    })
+
+    describe('Android', () => {
+      beforeEach(async () => {
+        installUpdate.mockClear()
+        env.capacitor = true
+        android.available = true
+        respondWith({ ...RELEASE, assets: [APK_ASSET] })
+        await checkForUpdate()
+      })
+
+      it('APK релиза уходит установщику; прогресс скачивания виден', async () => {
+        let finish: (r: string) => void = () => {}
+        android.install.mockImplementation((_apk: unknown, onProgress: (p: unknown) => void) => {
+          onProgress({ phase: 'download', fraction: 0.25 })
+          return new Promise((r) => (finish = r))
+        })
+        const api = useAppUpdate()
+        const running = api.install()
+        await vi.waitFor(() =>
+          expect(api.installProgress.value).toEqual({ phase: 'download', fraction: 0.25 })
+        )
+        expect(android.install.mock.calls[0]![0]).toEqual({
+          url: APK_ASSET.browser_download_url,
+          size: APK_ASSET.size,
+          sha256: '50e4dfe12608de9633675216d5fb5384f7960429473f9a6ace09f25d214318eb',
+        })
+        expect(installUpdate).not.toHaveBeenCalled()
+
+        // Установщик закрыли, не обновив: «Обновить» остаётся, страница не нужна.
+        finish('dismissed')
+        await expect(running).resolves.toBe(false)
+        expect(api.installNotice.value).toBe('dismissed')
+        expect(api.installFailed.value).toBe(false)
+        expect(api.installing.value).toBe(false)
+        expect(api.installProgress.value).toBeNull()
+      })
+
+      it('не дали разрешение — подсказка, а не провал', async () => {
+        android.install.mockResolvedValueOnce('permission')
+        const api = useAppUpdate()
+        await api.install()
+        expect(api.installNotice.value).toBe('permission')
+        expect(api.installFailed.value).toBe(false)
+      })
+
+      it('хеш, подпись или сеть подвели — страница релиза', async () => {
+        android.install.mockRejectedValueOnce(Object.assign(new Error('hash'), { code: 'hash' }))
+        const api = useAppUpdate()
+        await expect(api.install()).resolves.toBe(false)
+        expect(api.installFailed.value).toBe(true)
+        expect(api.installNotice.value).toBeNull()
+      })
     })
   })
 })

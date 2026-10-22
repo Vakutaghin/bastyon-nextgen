@@ -2,4 +2,6 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-path name="my_images" path="." />
     <cache-path name="my_cache_images" path="." />
+    <!-- APK обновления (plugins/AppUpdaterPlugin) — для системного установщика. -->
+    <cache-path name="updates" path="updates/" />
 </paths>

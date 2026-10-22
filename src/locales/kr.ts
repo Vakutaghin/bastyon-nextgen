@@ -2798,6 +2798,12 @@ export default {
     installing: '업데이트를 설치하고 다시 시작하는 중…',
     installFailed:
       '업데이트를 자동으로 설치하지 못했습니다. 릴리스 페이지에서 설치 프로그램을 내려받으세요.',
+    installHintAndroid:
+      '앱이 새 버전을 내려받고, Android가 설치 확인을 요청합니다. 계정과 설정은 유지됩니다.',
+    confirmInstall: 'Android 창에서 설치를 확인하세요…',
+    installDismissed: '업데이트가 설치되지 않았습니다. 다시 시도하려면 “업데이트”를 누르세요.',
+    permissionNeeded:
+      'Android가 Bastyon의 업데이트 설치를 허용하지 않았습니다. “업데이트”를 누르고 열리는 설정에서 이 출처의 앱 설치를 허용하세요.',
   },
   videoStudio: {
     title: '동영상 업로드',

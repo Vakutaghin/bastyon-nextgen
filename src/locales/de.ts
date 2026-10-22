@@ -2869,6 +2869,13 @@ export default {
     installing: 'Update wird installiert, die App startet neu…',
     installFailed:
       'Das Update ließ sich nicht automatisch installieren. Laden Sie das Installationsprogramm von der Release-Seite.',
+    installHintAndroid:
+      'Die App lädt die neue Version herunter, und Android bittet Sie, die Installation zu bestätigen. Konten und Einstellungen bleiben erhalten.',
+    confirmInstall: 'Bestätigen Sie die Installation im Android-Fenster…',
+    installDismissed:
+      'Das Update wurde nicht installiert. Tippen Sie auf „Aktualisieren“, um es erneut zu versuchen.',
+    permissionNeeded:
+      'Android hat Bastyon keine Installation von Updates erlaubt. Tippen Sie auf „Aktualisieren“ und erlauben Sie in den geöffneten Einstellungen die Installation aus dieser Quelle.',
   },
   videoStudio: {
     title: 'Video hochladen',
