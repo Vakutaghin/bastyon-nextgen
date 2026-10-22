@@ -111,8 +111,6 @@ export default {
       favorites: 'Омиљено',
     },
     toolbar: {
-      back: 'Назад',
-      forward: 'Напред',
       home: 'Почетна страна помоћи',
       hideNav: 'Сакриј панел',
       showNav: 'Прикажи панел',
@@ -208,6 +206,8 @@ export default {
   },
   header: {
     menu: 'Мени',
+    back: 'Назад',
+    forward: 'Напред',
     signIn: 'Пријави се',
     register: 'Региструј се',
     loading: 'Учитавање...',

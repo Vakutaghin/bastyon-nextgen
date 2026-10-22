@@ -1,5 +1,5 @@
 ---
-keywords: [interface, header, menu, sidebar, navigation, bottom bar, messenger]
+keywords: [interface, header, menu, sidebar, navigation, bottom bar, messenger, back, forward]
 ---
 
 # Finding your way around
@@ -11,6 +11,7 @@ The header, the side panels and the menus: where everything is on a computer and
 From left to right:
 
 - **The logo** takes you to the home page; the interface language is chosen next to it.
+- The **“Back”** and **“Forward”** arrows step through the pages you opened, like browser buttons. While there is nowhere to go, the arrow is pale. From the keyboard — Alt+← and Alt+→, on a Mac — Cmd+[ and Cmd+], see [Keyboard shortcuts](keyboard-shortcuts.md).
 - **Search** — people, posts and tags, see [Search](search.md).
 - **“Services”** — mini apps inside Bastyon: music, video, games, PKOIN exchange, see [Services](mini-apps.md). In a narrow window only the icon is left of the button.
 - **Tor** and **IPFS** — status icons of [Tor](tor.md) and [the IPFS module](ipfs-module.md). They work in the desktop app; in other versions the icon only tells you so.
@@ -67,6 +68,8 @@ The speech bubble in the header or the round button in the bottom right corner o
 When the screen is narrow — on a phone or in a shrunk window on a computer — there are no side panels, and a bar appears at the bottom: **“Home”**, **“Search”**, **“Services”**, **“Chats”** and **“Wallet”**. Tapping the section you are in takes the page back to the top.
 
 The menu behind the three-line button on the left of the header is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“My videos”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
+
+To the right of the menu button, the **“Back”** arrow appears when there is somewhere to go back to; a narrow screen has no **“Forward”** arrow. On Android, the system Back button or gesture also goes back.
 
 Without an account, **“Chats”**, **“Wallet”** and **“Subscriptions”** open the sign-in window, and after you sign in, the section itself. More in [The phone app](mobile-app.md).
 

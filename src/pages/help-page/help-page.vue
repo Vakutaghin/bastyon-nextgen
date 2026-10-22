@@ -10,26 +10,9 @@
       <SC_State v-else-if="!library">{{ t('help.loading') }}</SC_State>
 
       <template v-else>
-        <!-- Панель инструментов окна справки: назад, вперёд, домой, скрыть навигатор. -->
+        <!-- Панель инструментов окна справки: домой, скрыть навигатор. Назад и
+             вперёд — стрелки шапки приложения. -->
         <SC_Toolbar v-if="!mobile">
-          <SC_ToolButton
-            type="button"
-            :disabled="!page.canBack.value"
-            :aria-label="t('help.toolbar.back')"
-            :title="t('help.toolbar.back')"
-            @click="page.back"
-          >
-            <LeftOutlined />
-          </SC_ToolButton>
-          <SC_ToolButton
-            type="button"
-            :disabled="!page.canForward.value"
-            :aria-label="t('help.toolbar.forward')"
-            :title="t('help.toolbar.forward')"
-            @click="page.forward"
-          >
-            <RightOutlined />
-          </SC_ToolButton>
           <SC_ToolButton
             type="button"
             :aria-label="t('help.toolbar.home')"
@@ -150,7 +133,6 @@ import {
   LinkIcon,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  RightOutlined,
   StarFilled,
   StarOutlined,
 } from '@/components/icons'

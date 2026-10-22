@@ -112,8 +112,6 @@ export default {
       favorites: 'Favoritos',
     },
     toolbar: {
-      back: 'Atrás',
-      forward: 'Adelante',
       home: 'Inicio de la ayuda',
       hideNav: 'Ocultar panel',
       showNav: 'Mostrar panel',
@@ -210,6 +208,8 @@ export default {
   },
   header: {
     menu: 'Menú',
+    back: 'Atrás',
+    forward: 'Adelante',
     signIn: 'Iniciar sesión',
     register: 'Registrarse',
     loading: 'Cargando...',

@@ -111,8 +111,6 @@ export default {
       favorites: 'Preferiti',
     },
     toolbar: {
-      back: 'Indietro',
-      forward: 'Avanti',
       home: 'Home della guida',
       hideNav: 'Nascondi pannello',
       showNav: 'Mostra pannello',
@@ -208,6 +206,8 @@ export default {
   },
   header: {
     menu: 'Menu',
+    back: 'Indietro',
+    forward: 'Avanti',
     signIn: 'Accedi',
     register: 'Registrati',
     loading: 'Caricamento...',

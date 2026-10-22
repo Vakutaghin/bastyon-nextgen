@@ -108,6 +108,12 @@ export const SC_HamburgerButton = styled.button`
   }
 `
 
+export const SC_Left = styled.div`
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+`
+
 export const SC_Right = styled.div`
   display: flex;
   align-items: center;

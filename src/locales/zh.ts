@@ -103,8 +103,6 @@ export default {
       favorites: '收藏',
     },
     toolbar: {
-      back: '后退',
-      forward: '前进',
       home: '帮助首页',
       hideNav: '隐藏面板',
       showNav: '显示面板',
@@ -200,6 +198,8 @@ export default {
   },
   header: {
     menu: '菜单',
+    back: '后退',
+    forward: '前进',
     signIn: '登录',
     register: '注册',
     loading: '加载中...',

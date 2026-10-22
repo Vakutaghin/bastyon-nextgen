@@ -112,8 +112,6 @@ export default {
       favorites: 'Favoris',
     },
     toolbar: {
-      back: 'Retour',
-      forward: 'Suivant',
       home: 'Accueil de l’aide',
       hideNav: 'Masquer le panneau',
       showNav: 'Afficher le panneau',
@@ -165,7 +163,7 @@ export default {
     },
     panel: {
       open: 'Ouvrir dans l’aide',
-      back: 'Retour',
+      back: 'Précédent',
       close: 'Fermer',
     },
   },
@@ -210,6 +208,8 @@ export default {
   },
   header: {
     menu: 'Menu',
+    back: 'Précédent',
+    forward: 'Suivant',
     signIn: 'Se connecter',
     register: 'S’inscrire',
     loading: 'Chargement...',
@@ -948,7 +948,7 @@ export default {
       step3Desc:
         'Votre phrase de 12 mots est le seul moyen de récupérer votre compte. Gardez-la en lieu sûr et ne la partagez jamais.',
       skip: 'Passer',
-      back: 'Retour',
+      back: 'Précédent',
       next: 'Suivant',
       finish: 'Compris',
     },
@@ -1474,7 +1474,7 @@ export default {
     viewInExplorer: 'Voir dans l’explorateur',
     close: 'Fermer',
     emoji: 'Emoji',
-    back: 'Retour',
+    back: 'Précédent',
     play: 'Lire',
     pause: 'Pause',
     audioLoading: 'Chargement de l’audio',
@@ -2069,7 +2069,7 @@ export default {
         open: 'Ouvrir',
         byAddress: 'Ouvrir par adresse',
         addressPlaceholder: 'adresse du nœud ou adresse:/page/…',
-        back: 'Retour',
+        back: 'Précédent',
         reload: 'Recharger',
         close: 'Fermer',
         loading: 'Chargement de la page…',

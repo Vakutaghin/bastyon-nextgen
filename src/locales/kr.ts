@@ -110,8 +110,6 @@ export default {
       favorites: '즐겨찾기',
     },
     toolbar: {
-      back: '뒤로',
-      forward: '앞으로',
       home: '도움말 홈',
       hideNav: '패널 숨기기',
       showNav: '패널 표시',
@@ -207,6 +205,8 @@ export default {
   },
   header: {
     menu: '메뉴',
+    back: '뒤로',
+    forward: '앞으로',
     signIn: '로그인',
     register: '가입',
     loading: '불러오는 중...',

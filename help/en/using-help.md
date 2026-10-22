@@ -17,7 +17,7 @@ On the left there are four tabs:
 - **“Search”** — through the text of every article, word forms included. In the open article the words found are highlighted — **“Clear highlighting”** removes it;
 - **“Favorites”** — articles you starred.
 
-Buttons above the article: **“Back”** and **“Forward”** — through the articles you read, **“Help home”**, **“Hide panel”**, the star — **“Add to favorites”**, and **“Copy link”**. From the desktop app and the phone, the link leads to this article in the app’s open repository — anyone can open it, even without Bastyon.
+Buttons above the article: **“Help home”**, **“Hide panel”**, the star — **“Add to favorites”**, and **“Copy link”**. The **“Back”** and **“Forward”** arrows in the app header step through the articles you read. From the desktop app and the phone, the link leads to this article in the app’s open repository — anyone can open it, even without Bastyon.
 
 ## Help in place
 

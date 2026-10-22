@@ -1,7 +1,6 @@
 // Страница справки: всё её состояние — в адресе. Статья — `/help/<id>`,
-// раздел — `#якорь`, подсветка найденного — `?hl=<запрос>`. Поэтому «Назад»,
-// ссылки и обновление страницы работают сами. Кнопки «Назад/Вперёд» панели
-// листают только справку: как в CHM, из справки они не уводят.
+// раздел — `#якорь`, подсветка найденного — `?hl=<запрос>`. Поэтому «Назад»
+// и «Вперёд» шапки, ссылки и обновление страницы работают сами.
 import {
   computed,
   inject,
@@ -39,12 +38,8 @@ export interface HelpPage {
   /** Что набрано во вкладках «Указатель» и «Поиск» — не теряется при переключении. */
   indexFilter: Ref<string>
   searchQuery: Ref<string>
-  canBack: Ref<boolean>
-  canForward: Ref<boolean>
   navigate: (target: HelpLinkTarget, highlight?: string) => void
   openTopic: (id: string, highlight?: string) => void
-  back: () => void
-  forward: () => void
   clearHighlight: () => void
   copyLink: () => Promise<void>
   /** Путь по оглавлению для списков: «Книга › Раздел». */
@@ -66,13 +61,6 @@ function decodeHash(hash: string): string {
   } catch {
     return raw
   }
-}
-
-/** Путь, куда ведёт «Назад» или «Вперёд» (vue-router хранит его в history.state). */
-function historyPath(key: 'back' | 'forward'): string | null {
-  const state = window.history.state as Record<string, unknown> | null
-  const path = state?.[key]
-  return typeof path === 'string' ? path : null
 }
 
 export function useHelpPage(): HelpPage {
@@ -130,17 +118,6 @@ export function useHelpPage(): HelpPage {
     { immediate: true }
   )
 
-  const canBack = ref(false)
-  const canForward = ref(false)
-  watch(
-    () => route.fullPath,
-    () => {
-      canBack.value = historyPath('back')?.startsWith('/help') ?? false
-      canForward.value = historyPath('forward')?.startsWith('/help') ?? false
-    },
-    { immediate: true }
-  )
-
   function clearHighlight(): void {
     void router.replace({ path: route.path, hash: route.hash })
   }
@@ -167,12 +144,8 @@ export function useHelpPage(): HelpPage {
     tab,
     indexFilter,
     searchQuery,
-    canBack,
-    canForward,
     navigate,
     openTopic,
-    back: () => router.back(),
-    forward: () => router.forward(),
     clearHighlight,
     copyLink,
     whereIs,

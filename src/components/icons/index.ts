@@ -14,6 +14,7 @@ import { h, type Component, type FunctionalComponent } from 'vue'
 import {
   ArrowDown,
   ArrowLeft,
+  ArrowRight,
   ArrowUp,
   AudioLines,
   Ban,
@@ -284,3 +285,6 @@ export const WifiIcon = lucideIcon('WifiIcon', Wifi)
 /** Переключатель темы — солнце и луна, как кнопка цветовой схемы у Nuxt UI. */
 export const ThemeLightIcon = lucideIcon('ThemeLightIcon', Sun)
 export const ThemeDarkIcon = lucideIcon('ThemeDarkIcon', Moon)
+
+/** Шапка: «Назад» (ArrowLeftIcon) и «Вперёд» по страницам, как в браузере. */
+export const ArrowRightIcon = lucideIcon('ArrowRightIcon', ArrowRight)

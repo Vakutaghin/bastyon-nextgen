@@ -110,8 +110,6 @@ export default {
       favorites: 'Favorites',
     },
     toolbar: {
-      back: 'Back',
-      forward: 'Forward',
       home: 'Help home',
       hideNav: 'Hide panel',
       showNav: 'Show panel',
@@ -207,6 +205,8 @@ export default {
   },
   header: {
     menu: 'Menu',
+    back: 'Back',
+    forward: 'Forward',
     signIn: 'Sign in',
     register: 'Sign up',
     loading: 'Loading...',

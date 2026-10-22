@@ -114,8 +114,6 @@ export default {
       favorites: 'Избранное',
     },
     toolbar: {
-      back: 'Назад',
-      forward: 'Вперёд',
       home: 'Главная справки',
       hideNav: 'Скрыть панель',
       showNav: 'Показать панель',
@@ -211,6 +209,8 @@ export default {
   },
   header: {
     menu: 'Меню',
+    back: 'Назад',
+    forward: 'Вперёд',
     signIn: 'Войти',
     register: 'Регистрация',
     loading: 'Загрузка...',

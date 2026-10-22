@@ -66,4 +66,16 @@ test.describe('Навигация на телефоне', () => {
     await field.press('Enter')
     await expect(page).toHaveURL(/\/search\?q=%D0%BC%D0%BE%D1%80%D0%B5$/)
   })
+
+  test('«Назад» в шапке — когда есть куда вернуться', async ({ page }) => {
+    await open(page, '/')
+    const back = page.getByTestId('history-back')
+    await expect(back).toHaveCount(0)
+    await bottomNav(page, 'Поиск').click()
+    await expect(page).toHaveURL(/\/search$/)
+    await expect(page.getByTestId('history-forward')).toHaveCount(0)
+    await back.click()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(back).toHaveCount(0)
+  })
 })

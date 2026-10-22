@@ -111,8 +111,6 @@ export default {
       favorites: 'Favoriten',
     },
     toolbar: {
-      back: 'Zurück',
-      forward: 'Vorwärts',
       home: 'Startseite der Hilfe',
       hideNav: 'Leiste ausblenden',
       showNav: 'Leiste einblenden',
@@ -208,6 +206,8 @@ export default {
   },
   header: {
     menu: 'Menü',
+    back: 'Zurück',
+    forward: 'Vorwärts',
     signIn: 'Anmelden',
     register: 'Registrieren',
     loading: 'Wird geladen...',

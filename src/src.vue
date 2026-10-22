@@ -14,6 +14,7 @@ import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import HelpPanel from '@/b-components/help/help-panel.vue'
 import { ImageGalleryHost } from '@/components/image-gallery'
 import { useHelpHotkey } from '@/composables/use-help-hotkey'
+import { useHistoryHotkeys } from '@/composables/use-history-hotkeys'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useIpfsNodeViewerStore } from '@/stores/ipfs-node-viewer-store'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
@@ -68,6 +69,9 @@ const publicAppUrl =
 
 // F1 — справка по текущему экрану (в embed-вьюхе справки нет).
 useHelpHotkey(() => !isEmbed.value)
+
+// Назад и вперёд с клавиатуры и кнопками мыши — там, где движок не делает этого сам.
+useHistoryHotkeys(() => !isEmbed.value)
 
 // Перехват кликов по IPFS-ссылкам → открытие в отдельном окне (только в Tauri).
 // На embed-роутах выключаем: там нет singleton-модалки IPFS.

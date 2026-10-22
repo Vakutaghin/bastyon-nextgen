@@ -1,12 +1,19 @@
 <template>
   <SC_Header>
     <SC_Sections>
-      <SC_HamburgerButton :aria-label="t('header.menu')" @click="openDrawer">
-        <MenuOutlined />
-      </SC_HamburgerButton>
+      <!-- «Назад» на телефоне — вплотную за меню; на компьютере обе стрелки у
+           поиска, как у адресной строки. Группа — один элемент шапки: иначе
+           space-between ставил бы стрелку посередине между меню и логотипом. -->
+      <SC_Left v-if="mobile">
+        <SC_HamburgerButton :aria-label="t('header.menu')" @click="openDrawer">
+          <MenuOutlined />
+        </SC_HamburgerButton>
+        <HeaderHistoryNav compact />
+      </SC_Left>
 
       <HeaderLogo />
 
+      <HeaderHistoryNav v-if="!mobile" />
       <HeaderSearch v-if="!mobile" />
 
       <SC_Right v-hide-zero-width>
@@ -40,6 +47,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { MessageOutlined, MenuOutlined } from '@/components/icons'
 import HeaderLogo from '@/b-components/header/header-logo/header-logo.vue'
+import HeaderHistoryNav from '@/b-components/header/header-history-nav/header-history-nav.vue'
 import HeaderSearch from '@/b-components/header/header-search/header-search.vue'
 import HeaderUser from '@/b-components/header/header-user/header-user.vue'
 import HeaderEvents from '@/b-components/header/header-events/header-events.vue'
@@ -63,6 +71,7 @@ import {
   SC_MessengerWrapper,
   SC_UnreadBadge,
   SC_HamburgerButton,
+  SC_Left,
 } from './styled'
 
 const { t } = useI18n()

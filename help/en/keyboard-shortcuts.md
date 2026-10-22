@@ -1,10 +1,10 @@
 ---
-keywords: [keyboard shortcuts, keyboard, hotkeys, F1, Esc]
+keywords: [keyboard shortcuts, keyboard, hotkeys, F1, Esc, back, forward]
 ---
 
 # Keyboard shortcuts
 
-Key combinations for help, scale, video and dictation.
+Key combinations for help, navigation, scale, video and dictation.
 
 On a Mac, press Cmd instead of Ctrl.
 
@@ -15,6 +15,9 @@ On a Mac, press Cmd instead of Ctrl.
 | F1 | help on the current screen — the article opens at the side, see [Using this help](using-help.md) |
 | Esc | close a window; in the chat, go back to the list, then close the messenger; finish dictation |
 | Ctrl+Q | quit the desktop app: the window’s close button only hides it, see [The desktop app](desktop-app.md) |
+| Alt+← and Alt+→, on a Mac — Cmd+[ and Cmd+] | back and forward through the pages you opened, like the **“Back”** and **“Forward”** arrows in the header |
+
+The side “back” and “forward” mouse buttons also step through pages — in a browser and in the Windows app.
 
 ## Scale
 
