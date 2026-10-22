@@ -1213,6 +1213,8 @@ export default {
     badges: {
       verified: 'Проверен',
       established: 'Авторитетный',
+      moderator: 'Модератор',
+      shark: 'Акула',
     },
     startChat: 'Начать чат',
     info: 'Информация',

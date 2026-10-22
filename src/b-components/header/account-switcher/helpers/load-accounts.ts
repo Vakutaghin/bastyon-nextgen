@@ -5,6 +5,7 @@ import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
+import { userMark } from '@/helpers/profile/user-mark'
 import type { Address } from '@/blockchain/types/addresses'
 import type { UserProfile, GetUserProfileResponse } from '@/types/rpc-responses/user-get'
 import type { AccountInfo } from '@/blockchain/types/auth'
@@ -30,6 +31,7 @@ function buildDisplayInfo(
       balance: null,
       loading,
       verified: isUserVerified(null, acc.address),
+      mark: userMark(null, acc.address),
     }
   }
   return {
@@ -39,6 +41,7 @@ function buildDisplayInfo(
     balance: profile.balance ?? null,
     loading: false,
     verified: isUserVerified(profile, acc.address),
+    mark: userMark(profile, acc.address),
   }
 }
 

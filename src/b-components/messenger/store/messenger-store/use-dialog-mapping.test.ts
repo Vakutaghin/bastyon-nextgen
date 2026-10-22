@@ -92,6 +92,7 @@ describe('useDialogMapping — mapRoomToDialog', () => {
       name: 'alice',
       avatar: 'https://img.host/a.jpg',
       verified: true,
+      mark: 'verified',
     })
     expect(d.unreadCount).toBe(3)
     // m.reaction (ts 300) не считается сообщением — берётся последнее m.room.message
@@ -105,6 +106,15 @@ describe('useDialogMapping — mapRoomToDialog', () => {
     const d = await mapRoomToDialog(fakeRoom())
     expect(d.partner.name).toBe(PEER_ADDR)
     expect(profileCache.fetchProfiles).toHaveBeenCalledWith([PEER_ADDR])
+  })
+
+  it('модератор и «акула» — значок из бейджей узла, модератор старше', async () => {
+    const { ctx: c } = ctx({
+      profiles: { [PEER_ADDR]: { name: 'alice', badges: ['shark', 'moderator'] } },
+    })
+    const d = await useDialogMapping(c).mapRoomToDialog(fakeRoom())
+    expect(d.partner.verified).toBe(false)
+    expect(d.partner.mark).toBe('moderator')
   })
 
   it('verified через flags.real, если бейджей нет', async () => {

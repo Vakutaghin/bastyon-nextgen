@@ -6,6 +6,7 @@
 import { t } from '@/i18n'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
+import { userMark, type UserMark } from '@/helpers/profile/user-mark'
 
 import { matrixService } from '../../services/matrix-service'
 import type { Dialog, Message } from '../../types'
@@ -109,6 +110,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
     if (isDirect && member?.name) name = member.name
     let avatar = avatarUrl
     let verified = false
+    let mark: UserMark | null = null
 
     // Резолв из кэша профилей
     if (partnerId) {
@@ -134,6 +136,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
           if (url) avatar = url
         }
         verified = isUserVerified(p, address)
+        mark = userMark(p, address)
       }
     }
 
@@ -181,7 +184,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
 
     return {
       id: room.roomId,
-      partner: { id: partnerId || room.roomId, name, avatar, verified },
+      partner: { id: partnerId || room.roomId, name, avatar, verified, mark },
       unreadCount,
       lastMessage,
       createdAt,

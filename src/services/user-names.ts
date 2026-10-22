@@ -34,12 +34,30 @@ export interface ProfileLike {
   i?: string | null
   /** true, «deleted» или «temp» — аккаунт удалён или удаляется. */
   deleted?: boolean | string | null
+  /** Бейджи узла: `moderator`, `shark`… — для значка у аватара. */
+  badges?: unknown
 }
 
 interface KnownUser {
   name?: string
   avatar?: string | null
   deleted?: boolean
+  /** Бейджи узла; `undefined` — ещё не знаем. */
+  badges?: string[]
+}
+
+const NO_BADGES: readonly string[] = Object.freeze([])
+
+function badgesOf(profile: ProfileLike): string[] | undefined {
+  return Array.isArray(profile.badges)
+    ? profile.badges.filter((b): b is string => typeof b === 'string')
+    : undefined
+}
+
+function sameBadges(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {
+  if (a === b) return true
+  if (!a || !b || a.length !== b.length) return false
+  return a.every((x, i) => x === b[i])
 }
 
 /** Адресов в одном запросе: ответ лёгкого профиля ~1 КБ на адрес. */
@@ -74,12 +92,22 @@ export function rememberUsers(profiles: Iterable<ProfileLike | null | undefined>
       if (!users.get(address)?.deleted) users.set(address, { deleted: true })
       continue
     }
-    const name = typeof profile.name === 'string' ? profile.name.trim() : ''
-    if (!name) continue
-    const avatar = resolveImageUrl(profile.i) ?? null
     const known = users.get(address)
-    if (known?.name === name && (known.avatar ?? null) === avatar) continue
-    users.set(address, { name, avatar })
+    const badges = badgesOf(profile) ?? known?.badges
+    const name = typeof profile.name === 'string' ? profile.name.trim() : ''
+    if (!name) {
+      // Аккаунт без имени: запоминаем хотя бы бейджи.
+      if (badges && !sameBadges(badges, known?.badges)) users.set(address, { ...known, badges })
+      continue
+    }
+    const avatar = resolveImageUrl(profile.i) ?? null
+    if (
+      known?.name === name &&
+      (known.avatar ?? null) === avatar &&
+      sameBadges(known.badges, badges)
+    )
+      continue
+    users.set(address, { name, avatar, badges })
   }
 }
 
@@ -103,8 +131,11 @@ async function load(batch: string[]): Promise<void> {
     rememberUsers(profiles)
     for (const address of batch) {
       failures.delete(address)
-      // Профиля нет вовсе (адрес без аккаунта): больше не спрашиваем.
-      if (!users.has(address)) users.set(address, {})
+      // Профиля нет вовсе (адрес без аккаунта) или бейджей в нём нет: больше
+      // не спрашиваем.
+      const user = users.get(address)
+      if (!user) users.set(address, { badges: [] })
+      else if (!user.badges) users.set(address, { ...user, badges: [] })
     }
   } catch (error) {
     // Ничего не запоминаем: имя этих адресов спросим ещё раз.
@@ -157,8 +188,9 @@ function schedule(): void {
   }, BATCH_DELAY_MS)
 }
 
-function request(address: string): void {
-  if (users.has(address) || queued.has(address) || inFlight.has(address)) return
+/** @param force - спросить и знакомый адрес: его имя известно, а бейджи — нет. */
+function request(address: string, force = false): void {
+  if ((!force && users.has(address)) || queued.has(address) || inFlight.has(address)) return
   queued.add(address)
   schedule()
 }
@@ -253,6 +285,18 @@ export function userAvatar(
   if (known) return known
   if (!address) return null
   return users.get(address)?.avatar ?? null
+}
+
+/**
+ * Бейджи узла (`moderator`, `shark`…) — для значка у аватара. Реактивно:
+ * незнакомый адрес, как и в userName, догружается лёгким профилем.
+ */
+export function userBadges(address: string | null | undefined): readonly string[] {
+  if (!address) return NO_BADGES
+  const user = users.get(address)
+  if (user?.badges) return user.badges
+  if (!user?.deleted) request(address, true)
+  return NO_BADGES
 }
 
 /**

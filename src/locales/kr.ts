@@ -1205,6 +1205,8 @@ export default {
     badges: {
       verified: '인증됨',
       established: '활동 인증',
+      moderator: '모더레이터',
+      shark: '상어',
     },
     startChat: '채팅 시작',
     info: '정보',

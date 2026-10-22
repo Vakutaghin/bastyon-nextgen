@@ -1218,6 +1218,8 @@ export default {
     badges: {
       verified: 'Verificato',
       established: 'Affermato',
+      moderator: 'Moderatore',
+      shark: 'Squalo',
     },
     startChat: 'Avvia la chat',
     info: 'Informazioni',

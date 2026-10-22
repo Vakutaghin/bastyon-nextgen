@@ -1165,6 +1165,8 @@ export default {
     badges: {
       verified: '已认证',
       established: '资深用户',
+      moderator: '版主',
+      shark: '鲨鱼',
     },
     startChat: '开始聊天',
     info: '信息',

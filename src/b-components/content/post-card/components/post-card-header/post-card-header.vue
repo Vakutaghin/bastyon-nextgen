@@ -8,7 +8,7 @@
             :alt="authorLabel || displayAuthor.letter"
             :fallback-text="authorLabel"
             :size="50"
-            :verified="displayAuthor.verified"
+            :mark="authorMark"
           />
         </router-link>
       </SC_AuthorLinkWrap>
@@ -105,6 +105,8 @@ import { appToast } from '@/b-components/app-toast'
 import { favoritesAPI } from '@/db/apis/favorites-api'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
 import { userAvatar, userName } from '@/services/user-names'
+import { userMarkOf } from '@/services/user-marks'
+import type { UserMark } from '@/helpers/profile/user-mark'
 import { ICON_PRIMARY_18, ICON_SIZE_MD, ICON_OVERLAY_45_18 } from '@/styles/icon-styles'
 import {
   SC_PostHeader,
@@ -175,6 +177,12 @@ const isBookmarked = ref(false)
 const postId = computed<string>(() => {
   return props.post.txid || props.post.hash || String(props.post.id || '')
 })
+
+// Значок автора: бейджи модератора и «акулы» — из профиля, который пришёл с
+// постом (adapt-post запоминает его в user-names), или догружаются по адресу.
+const authorMark = computed<UserMark | null>(() =>
+  displayAuthor.value.verified ? 'verified' : userMarkOf(displayAuthor.value.address)
+)
 
 const displayAuthor = computed<PostAuthor>(() => {
   const defaultAuthor: PostAuthor = props.post?.author || {

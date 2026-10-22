@@ -71,29 +71,27 @@
     >
       <ClockCircleOutlined :style="ICON_WHITE_9" />
     </div>
-    <div
-      v-else-if="p.verified"
-      class="verified-badge"
-      :style="{
-        width: Math.max(14, Math.floor(sizePx * 0.35)) + 'px',
-        height: Math.max(14, Math.floor(sizePx * 0.35)) + 'px',
-      }"
-    >
-      <CheckOutlined :style="ICON_WHITE_10" />
-    </div>
+    <UserMarkBadge v-else-if="mark" :mark="mark" :size="Math.max(14, Math.floor(sizePx * 0.35))" />
   </SC_Avatar>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useAvatar } from './avatar'
 import type { AvatarProps } from './types'
-import { CheckOutlined, ClockCircleOutlined } from '@/components/icons'
-import { ICON_WHITE_9, ICON_WHITE_10 } from '@/styles/icon-styles'
+import { ClockCircleOutlined } from '@/components/icons'
+import { UserMarkBadge } from '@/components/user-mark'
+import type { UserMark } from '@/helpers/profile/user-mark'
+import { ICON_WHITE_9 } from '@/styles/icon-styles'
 
 const p = withDefaults(defineProps<AvatarProps>(), {
   verified: false,
   pending: false,
+  mark: null,
 })
+
+/** Значок у аватара; `verified` — старый проп, то же, что mark="verified". */
+const mark = computed<UserMark | null>(() => p.mark ?? (p.verified ? 'verified' : null))
 
 const {
   Avatar,

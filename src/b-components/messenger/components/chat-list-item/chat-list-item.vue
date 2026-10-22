@@ -6,6 +6,7 @@
       :fallback-text="dialog.partner.name || dialog.partner.id"
       :size="48"
       :verified="dialog.partner.verified"
+      :mark="dialog.partner.mark"
       shape="circle"
     />
 

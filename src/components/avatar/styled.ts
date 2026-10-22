@@ -1,8 +1,8 @@
 import styled from 'vue3-styled-components'
 
 // Аватар в оформлении Nuxt UI (UAvatar): круг без рамки, инициалы 500-м
-// начертанием. Значки «подтверждён» и «ждёт регистрации» — точки с кольцом
-// цвета фона, как UChip.
+// начертанием. Значок «ждёт регистрации» — точка с кольцом цвета фона, как
+// UChip; проверенный, модератор и «акула» — components/user-mark.
 export const SC_Avatar = styled.div<{
   shape?: 'circle' | 'square'
 }>`
@@ -21,7 +21,6 @@ export const SC_Avatar = styled.div<{
     border-radius: ${(p) => (p.shape === 'square' ? 'var(--ui-radius-sm)' : '50%')};
   }
 
-  .verified-badge,
   .pending-badge {
     position: absolute;
     bottom: -2px;
@@ -33,14 +32,6 @@ export const SC_Avatar = styled.div<{
     align-items: center;
     justify-content: center;
     z-index: 2;
-  }
-
-  .verified-badge {
-    right: -2px;
-    background: var(--ui-primary);
-  }
-
-  .pending-badge {
     left: -2px;
     background: var(--ui-warning);
   }

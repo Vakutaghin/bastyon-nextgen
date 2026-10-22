@@ -6,7 +6,7 @@
         :alt="authorName"
         :fallback-text="authorName"
         :size="32"
-        :verified="isAddressVerified(source.author?.address)"
+        :mark="userMarkOf(source.author?.address)"
       />
       <SC_RepostAuthor>{{ authorName }}</SC_RepostAuthor>
     </SC_RepostHead>
@@ -22,7 +22,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Avatar from '@/components/avatar/avatar.vue'
-import { isAddressVerified } from '@/helpers/profile/is-user-verified'
+import { userMarkOf } from '@/services/user-marks'
 
 import type { ComposerSource } from './composer-source'
 import {

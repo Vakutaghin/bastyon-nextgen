@@ -1,9 +1,13 @@
+import type { UserMark } from '@/helpers/profile/user-mark'
+
 export interface User {
   id: string
   name: string
   avatar?: string
   online?: boolean
   verified?: boolean
+  /** Значок у аватара: проверенный, модератор, «акула». */
+  mark?: UserMark | null
 }
 
 /** Одна агрегированная реакция (эмодзи + количество + поставил ли текущий пользователь) */

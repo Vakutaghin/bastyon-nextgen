@@ -52,10 +52,7 @@
               </SC_NotificationHead>
 
               <SC_NotificationActor>
-                <VerifiedMark
-                  :verified="isAddressVerified(item.from ?? item.fromSnapshot?.address)"
-                  :size="14"
-                >
+                <UserMark :mark="userMarkOf(item.from ?? item.fromSnapshot?.address)" :size="14">
                   <SC_NotificationAvatar v-if="getAvatar(item)">
                     <img
                       :src="getAvatar(item) ?? undefined"
@@ -67,7 +64,7 @@
                   <SC_NotificationAvatarLetter v-else>
                     {{ getInitial(item) }}
                   </SC_NotificationAvatarLetter>
-                </VerifiedMark>
+                </UserMark>
 
                 <SC_NotificationActorText>
                   <SC_NotificationActorName>
@@ -154,8 +151,8 @@ import { useModalStore } from '@/stores/modal-store'
 import type { NotificationItem } from '@/stores/notifications-store'
 import { isLowRatingValue } from '@/stores/notification-filtering'
 import { adaptPostData } from '@/composables/use-feed'
-import VerifiedMark from '@/components/verified-mark'
-import { isAddressVerified } from '@/helpers/profile/is-user-verified'
+import UserMark from '@/components/user-mark'
+import { userMarkOf } from '@/services/user-marks'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import {
   trimText,

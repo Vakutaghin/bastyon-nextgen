@@ -36,6 +36,7 @@
             :fallback-text="account.name"
             :size="40"
             :verified="account.verified"
+            :mark="account.mark"
           />
           <SC_AccountItemContent>
             <SC_AccountInfo>

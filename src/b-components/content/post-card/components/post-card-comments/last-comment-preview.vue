@@ -80,6 +80,7 @@
             :url="getCommentAvatarUrl(reply.userprofile) ?? userAvatar(reply.address)"
             :name="userName(reply.address, reply.userprofile)"
             :address="reply.address"
+            :profile="reply.userprofile"
           />
           <SC_CommentContent>
             <SC_CommentMeta>

@@ -45,10 +45,10 @@ function trimMessage(m: Message): Message {
 }
 
 function trimDialog(d: Dialog): Dialog {
-  const { id, name, avatar, verified } = d.partner
+  const { id, name, avatar, verified, mark } = d.partner
   return {
     id: d.id,
-    partner: { id, name, avatar, verified },
+    partner: { id, name, avatar, verified, mark },
     unreadCount: d.unreadCount,
     lastMessage: d.lastMessage ? trimMessage(d.lastMessage) : undefined,
     createdAt: d.createdAt,

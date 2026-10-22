@@ -92,7 +92,7 @@
             }}</SC_DropdownSeeAll>
           </SC_DropdownSectionHeader>
           <SC_DropdownItem v-for="u in users" :key="u.address" @click="onSelectUser(u)">
-            <VerifiedMark :verified="isAddressVerified(u.address)" :size="14">
+            <UserMark :mark="userMarkOf(u.address, u)" :size="14">
               <SC_Avatar>
                 <img
                   v-if="avatarOf(u)"
@@ -103,7 +103,7 @@
                 />
                 <template v-else>{{ initialOf(u) }}</template>
               </SC_Avatar>
-            </VerifiedMark>
+            </UserMark>
             <SC_ItemBody>
               <SC_ItemPrimary>{{ u.name || u.address }}</SC_ItemPrimary>
               <SC_ItemSecondary v-if="u.name">{{ u.address }}</SC_ItemSecondary>
@@ -153,8 +153,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter, type RouteLocationRaw } from 'vue-router'
 import { MIN_QUERY_LENGTH } from '@/composables/use-search-query'
 import { safeDecode } from '@/composables/use-feed'
-import VerifiedMark from '@/components/verified-mark'
-import { isAddressVerified } from '@/helpers/profile/is-user-verified'
+import UserMark from '@/components/user-mark'
+import { userMarkOf } from '@/services/user-marks'
 import {
   explorerRouteSuggestions,
   type ExplorerEntityKind,

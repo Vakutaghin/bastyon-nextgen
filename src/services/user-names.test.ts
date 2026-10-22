@@ -11,6 +11,7 @@ import {
   rememberUsers,
   shortAddress,
   userAvatar,
+  userBadges,
   userName,
   userNameIfKnown,
 } from './user-names'
@@ -242,6 +243,44 @@ describe('preloadUserNames', () => {
       { address: GONE, deleted: true },
     ])
     await preloadUserNames([ALICE, GONE])
+    expect(getByPRC).not.toHaveBeenCalled()
+  })
+})
+
+describe('userBadges', () => {
+  it('бейджи из профиля ленты — сразу и без запроса', () => {
+    rememberUsers([{ address: ALICE, name: 'SergiyKir', badges: ['shark', 'moderator'] }])
+    expect(userBadges(ALICE)).toEqual(['shark', 'moderator'])
+    expect(getByPRC).not.toHaveBeenCalled()
+  })
+
+  it('незнакомый адрес догружается тем же лёгким профилем, что и имя', async () => {
+    getByPRC.mockResolvedValue([{ address: BOB, name: 'Leo5591', badges: ['shark'] }])
+    const badges = computed(() => userBadges(BOB))
+    expect(badges.value).toEqual([])
+    await settle()
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+    expect(badges.value).toEqual(['shark'])
+    expect(userName(BOB)).toBe('Leo5591')
+  })
+
+  it('имя известно, бейджи — нет: спрашивает один раз, пустые запоминает', async () => {
+    rememberUsers([{ address: ALICE, name: 'SergiyKir' }])
+    getByPRC.mockResolvedValue([{ address: ALICE, name: 'SergiyKir' }])
+    expect(userBadges(ALICE)).toEqual([])
+    await settle()
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+    expect(userBadges(ALICE)).toEqual([])
+    await settle()
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+  })
+
+  it('профиль без бейджей не стирает уже известные, удалённый аккаунт не спрашивается', () => {
+    rememberUsers([{ address: ALICE, name: 'SergiyKir', badges: ['moderator'] }])
+    rememberUsers([{ address: ALICE, name: 'SergiyKir' }])
+    expect(userBadges(ALICE)).toEqual(['moderator'])
+    rememberUsers([{ address: GONE, deleted: true }])
+    expect(userBadges(GONE)).toEqual([])
     expect(getByPRC).not.toHaveBeenCalled()
   })
 })

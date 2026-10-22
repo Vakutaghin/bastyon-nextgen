@@ -23,6 +23,15 @@ describe('getProfileBadges', () => {
     expect(getProfileBadges({ reputation: '250' })).toEqual(['established'])
   })
 
+  it('модератор и «акула» из бейджей узла — в порядке старшинства', () => {
+    expect(getProfileBadges({ badges: ['shark', 'moderator'], reputation: 500 })).toEqual([
+      'moderator',
+      'shark',
+      'established',
+    ])
+    expect(getProfileBadges({ badges: ['whale'] })).toEqual([])
+  })
+
   it('оба бейджа вместе', () => {
     expect(getProfileBadges({ badges: ['verified'], reputation: 500 })).toEqual([
       'verified',

@@ -13,6 +13,8 @@
       <SC_BadgeRow v-if="profileBadges.length > 0">
         <SC_Badge v-for="b in profileBadges" :key="b" :class="b">
           <SafetyCertificateFilled v-if="b === 'verified'" />
+          <CrownOutlined v-else-if="b === 'moderator'" />
+          <FlagOutlined v-else-if="b === 'shark'" />
           <TrophyFilled v-else />
           {{ t('profile.badges.' + b) }}
         </SC_Badge>
@@ -165,7 +167,9 @@ import {
   PlusOutlined,
   BellFilled,
   BellOutlined,
+  CrownOutlined,
   EditOutlined,
+  FlagOutlined,
   StopOutlined,
   SafetyCertificateFilled,
   TrophyFilled,

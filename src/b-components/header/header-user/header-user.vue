@@ -29,7 +29,7 @@
           :alt="userInitial"
           :fallback-text="userName"
           :size="32"
-          :verified="isUserVerified"
+          :mark="userMark"
           :pending="registrationPending"
           data-header-avatar="true"
           @click="onAvatarClick"
@@ -127,7 +127,7 @@ import {
   SC_AuthSkeleton,
   SC_SkeletonLines,
 } from './styled'
-import { isUserVerified as isVerifiedProfile } from '@/helpers/profile/is-user-verified'
+import { userMarkOf } from '@/services/user-marks'
 
 const { t } = useI18n()
 
@@ -235,9 +235,7 @@ const userInitial = computed<string>(() => {
   return 'U'
 })
 
-const isUserVerified = computed<boolean>(() =>
-  isVerifiedProfile(userProfile.value, userAddress.value)
-)
+const userMark = computed(() => userMarkOf(userAddress.value, userProfile.value))
 
 function formatBalance(balance: number | null | undefined): string {
   // Хелпер конвертирует из минимальных единиц (аналог сатоши) в PKOIN.

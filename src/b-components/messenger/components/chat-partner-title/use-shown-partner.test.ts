@@ -45,6 +45,7 @@ describe('собеседник в шапке', () => {
       name: 'Алиса',
       avatar: 'https://img/a.png',
       verified: false,
+      mark: null,
       address: ALICE,
     })
   })
@@ -71,6 +72,7 @@ describe('собеседник в шапке', () => {
       name: 'bob',
       avatar: undefined,
       verified: true,
+      mark: 'verified',
       address: BOB,
     })
   })

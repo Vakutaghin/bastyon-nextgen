@@ -1,8 +1,9 @@
 import styled from 'vue3-styled-components'
 
-// Галочка проверенного аккаунта — как значок компонента Avatar: точка цвета
-// акцента с белой галочкой и кольцом цвета фона, в правом нижнем углу.
-export const SC_VerifiedMark = styled('span', { size: Number })`
+// Значок у аватара (проверенный, модератор, «акула») — как в старом
+// приложении: точка цвета акцента с белой иконкой, здесь ещё и с кольцом
+// цвета фона, в правом нижнем углу.
+export const SC_UserMarkBadge = styled('span', { size: Number })`
   position: absolute;
   right: -2px;
   bottom: -2px;
@@ -27,7 +28,7 @@ export const SC_VerifiedMark = styled('span', { size: Number })`
 
 /** Обёртка аватара, свёрстанного обычным <img>: у самих аватаров overflow:
  *  hidden для круга, и значок внутри них обрезался бы. */
-export const SC_VerifiedAnchor = styled.span`
+export const SC_UserMarkAnchor = styled.span`
   position: relative;
   display: inline-flex;
   flex-shrink: 0;

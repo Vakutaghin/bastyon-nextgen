@@ -8,6 +8,7 @@
         :fallback-text="partner.name"
         :size="32"
         :verified="partner.verified"
+        :mark="partner.mark"
         shape="circle"
       />
       <SC_PartnerTitleName>{{ partner.name }}</SC_PartnerTitleName>

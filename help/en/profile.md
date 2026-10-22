@@ -1,5 +1,5 @@
 ---
-keywords: [profile, user page, subscribers, badges, avatar, address, established, cover]
+keywords: [profile, user page, subscribers, badges, avatar, address, established, cover, check mark, verified, moderator, shark, crown, flag]
 ---
 
 # Profile
@@ -11,12 +11,22 @@ A profile opens when you click a person’s name or avatar — in the feed, in c
 ## What is on the page
 
 - **The cover** at the top. It can only be set in the previous Bastyon app. Without a cover, a blurred avatar takes its place.
-- **Avatar and name.** Under the name there may be the **“Established”** badge — for accounts with a reputation of 100 or more.
+- **Avatar and name.** Under the name there are badges: **“Verified”**, **“Moderator”** and **“Shark”** (what they mean is below) and **“Established”** — for accounts with a reputation of 100 or more.
 - **“Reputation”**, **“Subscribers”** and **“Subscriptions”**. Click the number of subscribers or subscriptions to open the list — see [Subscriptions](subscriptions.md). What reputation is — see [Reputation](reputation.md).
 - **“Information”** — what the person wrote about themselves, if anything.
 - **The account address.** Click it to copy: **“Address copied”**. Below it is **“Open in block explorer”**: all transactions of this address, see [Block explorer](explorer.md).
 - **A website**, if there is one, **“Publications:”** — how many posts the person has, and **“Registered:”** — when they registered.
 - **The feed of this person’s posts**, newest first.
+
+## Marks on the avatar
+
+In the bottom right corner of an avatar — in the feed, in comments, in search, in subscriber lists, in notifications and in chats — there may be a mark, as in the previous Bastyon app. There is one mark: if several apply, the senior one shows.
+
+- **A check mark — “Verified”.** An account from the list of verified accounts kept by the Bastyon team. The list is the same as in the previous app.
+- **A crown — “Moderator”.** An account the network calls to juries on reports — see [Moderation and rules](moderation.md).
+- **A flag — “Shark”.** An experienced account: at least a year old, with posts and comments rated by at least 100 different people. Ratings from such accounts move authors’ [reputation](reputation.md).
+
+Point at a mark to see its name. Moderators and sharks are marked by the network itself; the app only shows its mark.
 
 ## What you can do
 

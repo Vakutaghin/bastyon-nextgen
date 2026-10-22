@@ -1210,6 +1210,8 @@ export default {
     badges: {
       verified: 'Верификован',
       established: 'Искусан',
+      moderator: 'Модератор',
+      shark: 'Ајкула',
     },
     startChat: 'Започни ћаскање',
     info: 'Информације',

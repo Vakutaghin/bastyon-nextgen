@@ -2,6 +2,7 @@ import { computed, type ComputedRef } from 'vue'
 import { t } from '@/i18n'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { isUserVerified, type VerifiableProfile } from '@/helpers/profile/is-user-verified'
+import { userMark, type UserMark } from '@/helpers/profile/user-mark'
 import { isMeshDialogId } from '@/mesh/ids'
 import { useMessengerStore } from '../../store'
 import { getAddressFromMatrixId } from '../../helpers'
@@ -11,6 +12,8 @@ export interface ShownPartner {
   name: string
   avatar?: string
   verified: boolean
+  /** Значок у аватара: проверенный, модератор, «акула». */
+  mark?: UserMark | null
   /** Адрес Bastyon; null — профиля нет: группа, mesh. */
   address: string | null
 }
@@ -44,6 +47,7 @@ export function useShownPartner(): ComputedRef<ShownPartner | null> {
         name: dialog?.partner.name || t('messenger.chat'),
         avatar: dialog?.partner.avatar,
         verified: !!dialog?.partner.verified,
+        mark: dialog?.partner.mark ?? (dialog?.partner.verified ? 'verified' : null),
         address,
       }
     }
@@ -56,6 +60,7 @@ export function useShownPartner(): ComputedRef<ShownPartner | null> {
       name: profile?.name || address,
       avatar: image ? resolveImageUrl(image) || undefined : undefined,
       verified: isUserVerified(profile, address),
+      mark: userMark(profile, address),
       address,
     }
   })

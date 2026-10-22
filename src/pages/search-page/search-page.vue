@@ -46,7 +46,7 @@
               :key="u.address"
               @click="openProfile(u.address)"
             >
-              <VerifiedMark :verified="isAddressVerified(u.address)" :size="16">
+              <UserMark :mark="userMarkOf(u.address, u)" :size="16">
                 <SC_Avatar>
                   <img
                     v-if="avatarOf(u)"
@@ -57,7 +57,7 @@
                   />
                   <template v-else>{{ initialOf(u.name, u.address) }}</template>
                 </SC_Avatar>
-              </VerifiedMark>
+              </UserMark>
               <SC_ItemBody>
                 <SC_ItemTitle>{{ u.name || u.address }}</SC_ItemTitle>
                 <SC_ItemSubtitle>{{ u.address }}</SC_ItemSubtitle>
@@ -109,8 +109,8 @@ import {
 import { sanitizeSearchQuery, type SearchPaging } from '@/services/search-service'
 import { adaptPostData, type AdaptedPost } from '@/composables/use-feed'
 import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
-import VerifiedMark from '@/components/verified-mark'
-import { isAddressVerified } from '@/helpers/profile/is-user-verified'
+import UserMark from '@/components/user-mark'
+import { userMarkOf } from '@/services/user-marks'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import SidebarLeft from '@/b-components/sidebar/sidebar-left/sidebar-left.vue'
 import { settingsAPI } from '@/db/apis/settings-api'

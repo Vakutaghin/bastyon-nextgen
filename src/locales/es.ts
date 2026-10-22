@@ -1224,6 +1224,8 @@ export default {
     badges: {
       verified: 'Verificado',
       established: 'Consolidado',
+      moderator: 'Moderador',
+      shark: 'Tiburón',
     },
     startChat: 'Iniciar chat',
     info: 'Información',

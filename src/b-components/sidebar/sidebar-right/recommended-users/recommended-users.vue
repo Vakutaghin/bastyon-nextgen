@@ -7,12 +7,12 @@
     <SC_RecList v-else>
       <SC_RecRow v-for="user in users" :key="user.address">
         <SC_RecMain @click="goToProfile(user.address)">
-          <VerifiedMark :verified="isAddressVerified(user.address)" :size="14">
+          <UserMark :mark="userMarkOf(user.address)" :size="14">
             <SC_RecAvatar>
               <img v-if="user.avatar" :src="user.avatar" :alt="user.name" loading="lazy" />
               <span v-else>{{ user.name.charAt(0).toUpperCase() }}</span>
             </SC_RecAvatar>
-          </VerifiedMark>
+          </UserMark>
           <SC_RecInfo>
             <SC_RecName>{{ user.name }}</SC_RecName>
             <SC_RecMeta>{{
@@ -40,8 +40,8 @@ import { useI18n } from 'vue-i18n'
 import { PlusOutlined, LoadingOutlined } from '@/components/icons'
 import { useUserRelationsStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
-import VerifiedMark from '@/components/verified-mark'
-import { isAddressVerified } from '@/helpers/profile/is-user-verified'
+import UserMark from '@/components/user-mark'
+import { userMarkOf } from '@/services/user-marks'
 import { useRecommendedUsers } from '@/composables/use-recommended-users'
 import {
   SC_RecRoot,
