@@ -52,6 +52,7 @@ const COMMANDS: &[&str] = &[
   "ipfs_sink_write",
   "ipfs_sink_close",
   "ipfs_sink_abort",
+  "ipfs_name_put",
   "tray_set_labels",
   "asr_status",
   "asr_install",

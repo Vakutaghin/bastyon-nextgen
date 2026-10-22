@@ -1,5 +1,5 @@
 ---
-keywords: [my files, share a file, private file, file link, seeding, stop sharing]
+keywords: [my files, share a file, private file, file link, seeding, stop sharing, permanent link, IPNS, new version of a file]
 ---
 
 # My files
@@ -36,6 +36,17 @@ Each file shows its name, size, date and a label: **“by link”**, **“privat
 - **“Stop sharing”** — the computer no longer serves the file. People who already downloaded it can keep sharing it, so a file cannot be removed from the network for good.
 
 Each account has its own list: another account on this computer does not see your files or the keys to your private ones. When you sign out of an account, its files stop being served.
+
+## Permanent link
+
+A regular link always leads to the same file: a new version of the file gets a new link. A permanent link like `ipns://k51…` never changes and leads to the version you choose. You can post it once — in your profile, a post or on a website — and update it later.
+
+- **“Permanent link”** next to a file marked **“by link”** creates a link to this file and shows it with a QR code. Private files have no permanent link.
+- When a new version comes out, share it as usual. Then in **“Permanent links”** click **“Update to a new version”**, choose the new file and click **“Switch the link”**. Others will see the new version within a few minutes.
+
+A permanent link belongs to the account: it is the same on all your computers and comes back when you restore the account. The link itself does not reveal your account.
+
+Your computer keeps the link alive on the network while Bastyon is open: the app renews it by itself. If Bastyon is not opened for more than two days, the link stops opening until you start it again. When you publish or update a link, the delegated-ipfs.dev service sees it and your IP address. With [Tor](tor.md) on, permanent links are not created or updated.
 
 ## When the computer is off
 

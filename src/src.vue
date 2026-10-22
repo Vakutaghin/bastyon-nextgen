@@ -17,6 +17,7 @@ import { useHelpHotkey } from '@/composables/use-help-hotkey'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useIpfsNodeViewerStore } from '@/stores/ipfs-node-viewer-store'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
+import { useIpnsRenewal } from '@/composables/use-ipns-renewal'
 import { useTrayLabels } from '@/composables/use-tray-labels'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
 import { useTheme } from '@/composables/use-theme'
@@ -74,6 +75,9 @@ useIpfsLinks(() => !isEmbed.value)
 
 // Напоминание о резервной копии 12 слов (раз в 7 дней, пока не проверена).
 useBackupNudge(() => !isEmbed.value)
+
+// Постоянные ссылки аккаунта переиздаются, пока приложение открыто.
+useIpnsRenewal(() => !isEmbed.value)
 
 // Меню значка в трее — на языке приложения (только десктоп).
 if (isTauriBuild) useTrayLabels()

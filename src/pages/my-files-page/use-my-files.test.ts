@@ -1,6 +1,6 @@
 // Страница «Мои файлы»: что загружается при открытии и смене аккаунта,
-// раздаются ли файлы сейчас, копирование ссылки, снятие с раздачи и опрос
-// статусов, пока сервис копирует файлы.
+// раздаются ли файлы сейчас, копирование ссылки, снятие с раздачи, опрос
+// статусов, пока сервис копирует файлы, и постоянные ссылки.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, reactive } from 'vue'
@@ -11,6 +11,7 @@ const BOB = 'PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82'
 
 const h = vi.hoisted(() => ({
   store: null as unknown as Record<string, unknown>,
+  names: null as unknown as Record<string, unknown>,
   auth: null as unknown as { address: string | null },
   copyText: vi.fn(async () => true),
   toast: { success: vi.fn(), error: vi.fn() },
@@ -19,6 +20,10 @@ const h = vi.hoisted(() => ({
 }))
 
 vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => h.store }))
+vi.mock('@/stores/ipns-names-store', () => ({
+  useIpnsNamesStore: () => h.names,
+  BlockedByTorError: class BlockedByTorError extends Error {},
+}))
 vi.mock('@/blockchain', () => ({ useAuthStore: () => h.auth }))
 vi.mock('@/helpers/common/clipboard', () => ({ copyText: h.copyText }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: h.toast }))
@@ -28,9 +33,38 @@ vi.mock('@/composables/use-ipfs-share', () => ({
   useIpfsShare: () => ({ share: h.publish, sharing: { value: false } }),
 }))
 
+import { BlockedByTorError } from '@/stores/ipns-names-store'
 import { useMyFiles, type MyFiles } from './use-my-files'
 
 const file = { cid: 'bafydir', name: 'a b.pdf', size: 10, addedAt: 1 }
+const v2 = { cid: 'bafydir2', name: 'a b v2.pdf', size: 12, addedAt: 2 }
+const secret = { cid: 'bafysecret', name: 's.pdf', size: 5, addedAt: 3, key: 'k' }
+const NAME = 'k51qzi5uqu5dkxmzvkhc42poz8bqi5t742v6qda52xv7c4ff115356d77amfwc'
+const own = (value: string, index = 0) => ({
+  index,
+  name: NAME,
+  value,
+  sequence: '1',
+  updatedAt: 5,
+})
+
+function makeNames() {
+  const names = reactive({
+    account: '',
+    names: [] as ReturnType<typeof own>[],
+    use: vi.fn((account: string) => {
+      names.account = account
+    }),
+    sync: vi.fn(async () => undefined),
+    create: vi.fn(async (value: string) => {
+      const entry = own(value)
+      names.names = [entry]
+      return entry
+    }),
+    point: vi.fn(async (index: number, value: string) => own(value, index)),
+  })
+  return names
+}
 
 function makeStore() {
   const store = reactive({
@@ -76,6 +110,7 @@ const flush = async () => {
 beforeEach(() => {
   vi.clearAllMocks()
   h.store = makeStore()
+  h.names = makeNames()
   h.auth = reactive({ address: ALICE })
 })
 
@@ -166,5 +201,67 @@ describe('useMyFiles', () => {
     await vi.advanceTimersByTimeAsync(60_000)
     expect(store.refreshShareStatus).not.toHaveBeenCalled()
     expect(files.remoteStatus(file)).toBe('pinned')
+  })
+
+  describe('постоянные ссылки', () => {
+    it('при открытии — имена аккаунта с устройства и сверка с сетью фоном', async () => {
+      mountPage()
+      await flush()
+      expect(h.names.use).toHaveBeenCalledWith(ALICE)
+      expect(h.names.sync).toHaveBeenCalled()
+    })
+
+    it('«Постоянная ссылка» у файла: имя ведёт прямо на файл, потом — тот же диалог', async () => {
+      const store = h.store as ReturnType<typeof makeStore>
+      mountPage()
+      await flush()
+      store.shares = [file, v2, secret]
+      expect(files.publicFiles.value).toEqual([file, v2])
+
+      await files.openPermanent(file)
+      expect(h.names.create).toHaveBeenCalledWith('/ipfs/bafydir/a b.pdf')
+      expect(files.dialog.value?.value).toBe('/ipfs/bafydir/a b.pdf')
+      expect(files.permanentOf(file)?.name).toBe(NAME)
+      expect(files.targetOf(own('/ipfs/bafydir/a b.pdf'))).toBe('a b.pdf')
+
+      files.dialog.value = null
+      await files.openPermanent(file)
+      expect(h.names.create).toHaveBeenCalledTimes(1)
+      expect(files.dialog.value).toMatchObject({ name: NAME })
+    })
+
+    it('«Обновить на новую версию» — имя ведёт на другой файл, тост', async () => {
+      mountPage()
+      await flush()
+      await files.pointPermanent(own('/ipfs/bafydir/a b.pdf', 3), v2)
+      expect(h.names.point).toHaveBeenCalledWith(3, '/ipfs/bafydir2/a b v2.pdf')
+      expect(files.dialog.value?.value).toBe('/ipfs/bafydir2/a b v2.pdf')
+      expect(h.toast.success).toHaveBeenCalledWith({ message: 'myFiles.permanent.updated' })
+    })
+
+    it('файла, на который ведёт имя, уже нет — видно имя из пути', async () => {
+      mountPage()
+      await flush()
+      const gone = own('/ipfs/bafygone/old.zip')
+      expect(files.targetOf(gone)).toBe('old.zip')
+      expect(files.targetShared(gone)).toBe(false)
+      expect(files.targetOf(own('/ipfs/bafygone'))).toBe('bafygone')
+    })
+
+    it('не вышло — тост с ошибкой; под Tor тоста нет: показано окно про Tor', async () => {
+      mountPage()
+      await flush()
+      const names = h.names as ReturnType<typeof makeNames>
+      names.create.mockRejectedValueOnce(new Error('offline'))
+      await files.openPermanent(file)
+      expect(h.toast.error).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'myFiles.permanent.createFailed' })
+      )
+      h.toast.error.mockClear()
+      names.create.mockRejectedValueOnce(new BlockedByTorError())
+      await files.openPermanent(file)
+      expect(h.toast.error).not.toHaveBeenCalled()
+      expect(files.naming.value).toBe(false)
+    })
   })
 })

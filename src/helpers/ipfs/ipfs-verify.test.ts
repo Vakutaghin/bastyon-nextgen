@@ -131,6 +131,9 @@ describe('путь из ссылки', () => {
     for (const bad of ['a/%2e%2e', 'a%2Fb', 'a%5Cb', 'x%0Ay', '%E0%A4%A']) {
       expect(() => pathSegments(bad), bad).toThrow(VerifyError)
     }
+    // Путь из записи IPNS — как есть: «%» — часть имени файла.
+    expect(pathSegments('/docs/100% готово.txt', false)).toEqual(['docs', '100% готово.txt'])
+    expect(() => pathSegments('a/..', false)).toThrow(VerifyError)
   })
 })
 

@@ -14,3 +14,10 @@ export const DELEGATED_ROUTERS: readonly string[] = [
   'https://delegated-ipfs.dev',
   'https://cid.contact',
 ]
+
+/**
+ * Куда публиковать и где читать записи IPNS (`/routing/v1/ipns`). cid.contact
+ * имён не хранит; delegated-ipfs.dev принимает PUT и кладёт запись в DHT
+ * (проверено 22.10.2026).
+ */
+export const IPNS_ROUTER = 'https://delegated-ipfs.dev'

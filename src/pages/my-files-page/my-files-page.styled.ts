@@ -43,6 +43,13 @@ export const SC_FilesTitle = styled.h1`
   color: var(--ui-text-highlighted);
 `
 
+export const SC_FilesSubtitle = styled.h2`
+  margin: 8px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ui-text-highlighted);
+`
+
 export const SC_FilesActions = styled.div`
   display: flex;
   flex-wrap: wrap;

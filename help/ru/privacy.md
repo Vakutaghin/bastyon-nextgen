@@ -46,7 +46,7 @@ code: [src/services/link-preview-service.ts, src/composables/use-app-update.ts, 
 | GitHub | при проверке обновлений (в приложениях для компьютера и телефона) |
 | Hugging Face | при скачивании модели голосового ввода |
 | Tor Project, IPFS | при первом включении Tor или модуля IPFS — скачивание программ |
-| Участники сети IPFS, службы поиска delegated-ipfs.dev и cid.contact | при открытии IPFS-ссылок и раздаче файлов |
+| Участники сети IPFS, службы поиска delegated-ipfs.dev и cid.contact | при открытии IPFS-ссылок, раздаче файлов и обновлении постоянных ссылок |
 | DNS Cloudflare и Google | при открытии IPFS-ссылки на имя домена |
 | inbrowser.link | когда IPFS-ссылка или сайт открываются в браузере |
 

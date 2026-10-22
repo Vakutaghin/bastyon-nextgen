@@ -1,6 +1,7 @@
 pub mod config;
 pub mod crypto;
 pub mod installer;
+pub mod names;
 pub mod process;
 pub mod shares;
 pub mod sink;

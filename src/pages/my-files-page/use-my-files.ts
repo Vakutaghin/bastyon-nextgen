@@ -1,14 +1,15 @@
 // «Мои файлы»: что аккаунт опубликовал в IPFS с этого компьютера, раздаются ли
-// эти файлы сейчас и где их копии на удалённом сервисе.
+// эти файлы сейчас, где их копии на удалённом сервисе и постоянные ссылки на них.
 import { computed, onBeforeUnmount, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { Modal } from 'ant-design-vue'
 import { t } from '@/i18n'
 import { useAuthStore } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
 import { copyText } from '@/helpers/common/clipboard'
-import { buildShareLink } from '@/helpers/ipfs/ipfs-viewer'
+import { buildNameLink, buildNameValue, buildShareLink } from '@/helpers/ipfs/ipfs-viewer'
 import { useIpfsShare, type ShareKind } from '@/composables/use-ipfs-share'
 import { useIpfsStore, type IpfsShare, type RemotePinStatus } from '@/stores/ipfs-store'
+import { BlockedByTorError, useIpnsNamesStore, type OwnName } from '@/stores/ipns-names-store'
 
 /** Пока сервис копирует файлы, статусы обновляются так часто. */
 const REMOTE_POLL_MS = 15_000
@@ -32,10 +33,28 @@ export interface MyFiles {
   sendToService: (file: IpfsShare) => Promise<void>
   startNode: () => Promise<void>
   openRemoteSettings: () => void
+  /** Постоянные ссылки аккаунта. */
+  permanent: ComputedRef<OwnName[]>
+  /** Открытая в диалоге постоянная ссылка. */
+  dialog: Ref<OwnName | null>
+  /** Создаётся или переводится постоянная ссылка. */
+  naming: Ref<boolean>
+  /** Публичные файлы: на них может вести постоянная ссылка. */
+  publicFiles: ComputedRef<IpfsShare[]>
+  /** Постоянная ссылка, которая ведёт на этот файл. */
+  permanentOf: (file: IpfsShare) => OwnName | undefined
+  /** Куда ведёт постоянная ссылка: имя файла или что есть. */
+  targetOf: (entry: OwnName) => string
+  /** Есть ли ещё файл, на который ведёт ссылка. */
+  targetShared: (entry: OwnName) => boolean
+  openPermanent: (file: IpfsShare) => Promise<void>
+  copyPermanent: (entry: OwnName) => Promise<void>
+  pointPermanent: (entry: OwnName, file: IpfsShare) => Promise<void>
 }
 
 export function useMyFiles(): MyFiles {
   const ipfs = useIpfsStore()
+  const names = useIpnsNamesStore()
   const auth = useAuthStore()
   const { share: publish, sharing } = useIpfsShare()
   const loading = ref(true)
@@ -59,6 +78,7 @@ export function useMyFiles(): MyFiles {
       return
     }
     loading.value = true
+    names.use(account.value)
     try {
       await Promise.all([ipfs.hydrate(), ipfs.refreshPinService(), ipfs.loadShares(account.value)])
     } catch (e) {
@@ -66,6 +86,8 @@ export function useMyFiles(): MyFiles {
     } finally {
       loading.value = false
     }
+    // Имена с других устройств и свежие значения своих — фоном.
+    names.sync().catch((e: unknown) => console.warn('[ipns] sync failed:', e))
     await refreshRemote()
   }
 
@@ -123,6 +145,65 @@ export function useMyFiles(): MyFiles {
     await refreshRemote()
   }
 
+  const permanent = computed(() => (names.account === account.value ? names.names : []))
+  const dialog = ref<OwnName | null>(null)
+  const naming = ref(false)
+  const publicFiles = computed(() => files.value.filter((f) => !f.key))
+
+  const permanentOf = (file: IpfsShare): OwnName | undefined => {
+    const value = buildNameValue(file)
+    return permanent.value.find((n) => n.value === value)
+  }
+
+  const shareOf = (entry: OwnName): IpfsShare | undefined =>
+    files.value.find((f) => buildNameValue(f) === entry.value)
+
+  /** Имя файла из пути `/ipfs/<cid>/<имя>`; без имени — CID. */
+  function targetOf(entry: OwnName): string {
+    const share = shareOf(entry)
+    if (share) return share.name
+    const [, , cid = '', ...rest] = entry.value.split('/')
+    return rest.join('/') || cid
+  }
+
+  async function openPermanent(file: IpfsShare): Promise<void> {
+    const existing = permanentOf(file)
+    if (existing) {
+      dialog.value = existing
+      return
+    }
+    naming.value = true
+    try {
+      dialog.value = await names.create(buildNameValue(file))
+    } catch (e) {
+      if (!(e instanceof BlockedByTorError)) {
+        appToast.error({ message: t('myFiles.permanent.createFailed'), description: String(e) })
+      }
+    } finally {
+      naming.value = false
+    }
+  }
+
+  async function copyPermanent(entry: OwnName): Promise<void> {
+    const copied = await copyText(buildNameLink(entry.name))
+    if (copied) appToast.success({ message: t('myFiles.permanent.copied') })
+    else appToast.error({ message: t('myFiles.copyFailed') })
+  }
+
+  async function pointPermanent(entry: OwnName, file: IpfsShare): Promise<void> {
+    naming.value = true
+    try {
+      dialog.value = await names.point(entry.index, buildNameValue(file))
+      appToast.success({ message: t('myFiles.permanent.updated', { name: file.name }) })
+    } catch (e) {
+      if (!(e instanceof BlockedByTorError)) {
+        appToast.error({ message: t('myFiles.permanent.updateFailed'), description: String(e) })
+      }
+    } finally {
+      naming.value = false
+    }
+  }
+
   return {
     available: ipfs.available,
     loading,
@@ -141,5 +222,15 @@ export function useMyFiles(): MyFiles {
     sendToService,
     startNode: () => ipfs.enable(),
     openRemoteSettings: () => ipfs.openPinConfig(),
+    permanent,
+    dialog,
+    naming,
+    publicFiles,
+    permanentOf,
+    targetOf,
+    targetShared: (entry) => !!shareOf(entry),
+    openPermanent,
+    copyPermanent,
+    pointPermanent,
   }
 }

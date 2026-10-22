@@ -16,10 +16,16 @@ import {
   type DNSLinkIPFSResult,
   type DNSLinkIPNSResult,
 } from '@helia/dnslink'
-import { ipnsResolver, type IPNSResolver } from '@helia/ipns'
+import {
+  ipnsResolver,
+  multihashFromIPNSRoutingKey,
+  type IPNSResolver,
+  type IPNSRouting,
+} from '@helia/ipns'
 import { base32 } from 'multiformats/bases/base32'
+import { base36 } from 'multiformats/bases/base36'
 import { base58btc } from 'multiformats/bases/base58'
-import type { CID } from 'multiformats/cid'
+import { CID } from 'multiformats/cid'
 import * as Digest from 'multiformats/hashes/digest'
 import type { MultihashDigest } from 'multiformats/hashes/interface'
 import type { IpfsTarget } from './ipfs-link'
@@ -32,6 +38,7 @@ import {
   isAbortError,
 } from './ipfs-errors'
 import { compatKeychain } from './ipns-keys'
+import { getRecordBytes, recordValidity } from './ipns-names'
 import {
   listDirectory,
   openEntity,
@@ -211,16 +218,36 @@ async function startNode(): Promise<Node> {
     // createHelia узел не запускает, а без запуска нет и libp2p.
     await helia.start()
     // Подпись имени проверяет noble, а не WebCrypto: см. ipns-keys.ts.
-    const ipns = ipnsResolver({
-      datastore: helia.datastore,
-      routing: helia.routing,
-      logger: helia.logger,
-      keychain: compatKeychain(helia.keychain),
-    })
+    const ipns = ipnsResolver(
+      {
+        datastore: helia.datastore,
+        routing: helia.routing,
+        logger: helia.logger,
+        keychain: compatKeychain(helia.keychain),
+      },
+      { routers: [freshIpnsRouting] }
+    )
     return { helia, ipns, dnslink: dnsLink(helia) }
   } catch (e) {
     throw new NodeUnavailableError(e instanceof Error ? e.message : String(e))
   }
+}
+
+/**
+ * Запись имени из delegated routing мимо кэша CDN: из кэша браузер может
+ * получить ответ без CORS (см. recordUrl в ipns-names.ts). Резолвер спрашивает
+ * все роутеры сразу и берёт лучшую запись — этот запрос просто ещё один.
+ */
+const freshIpnsRouting: IPNSRouting = {
+  async put() {
+    // Свои имена публикует ipns-names.ts.
+  },
+  async get(routingKey, options) {
+    const name = CID.createV1(LIBP2P_KEY, multihashFromIPNSRoutingKey(routingKey))
+    const bytes = await getRecordBytes(name.toString(base36), options?.signal)
+    if (!bytes) throw new Error('no IPNS record in delegated routing')
+    return bytes
+  },
 }
 
 function abortError(signal: AbortSignal): unknown {
@@ -382,18 +409,11 @@ function ipnsKey(name: string): MultihashDigest {
   throw new VerifyError('malformed', `not an IPNS name: ${name.slice(0, 64)}`)
 }
 
-/** RFC 3339 с наносекундами → Date (Safari не разбирает больше трёх знаков дроби). */
-function validity(bytes: Uint8Array | undefined): Date | null {
-  if (!bytes?.length) return null
-  const text = new TextDecoder().decode(bytes).replace(/(\.\d{3})\d+/, '$1')
-  const date = new Date(text)
-  return Number.isNaN(date.getTime()) ? null : date
-}
-
+/** Путь из записи IPNS: без %-кодирования, как его пишет Kubo. */
 function ipfsPath(value: string): { root: CID; segments: string[] } {
   const m = /^\/ipfs\/([^/]+)(\/.*)?$/.exec(value)
   if (!m?.[1]) throw new NameError('invalid', `the name points to ${value.slice(0, 80)}`)
-  return { root: parseCid(m[1]), segments: pathSegments(m[2] ?? '') }
+  return { root: parseCid(m[1]), segments: pathSegments(m[2] ?? '', false) }
 }
 
 function nameFailure(e: unknown, signal: AbortSignal): unknown {
@@ -419,7 +439,11 @@ async function resolveIpns(
     throw nameFailure(e, signal)
   }
   if (!last) throw new NameError('not-found', 'empty IPNS resolution')
-  return { ...ipfsPath(last.value), value: last.value, validUntil: validity(last.record.validity) }
+  return {
+    ...ipfsPath(last.value),
+    value: last.value,
+    validUntil: recordValidity(last.record.validity),
+  }
 }
 
 async function resolveDnsLink(n: Node, domain: string, signal: AbortSignal): Promise<Resolved> {

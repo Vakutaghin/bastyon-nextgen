@@ -48,6 +48,11 @@ export const RNS_CONFIG_PREFIX = 'BST_RNS_'
  * адрес LXMF»): `BST_MESH_ROUTES_<ownAddress>`.
  */
 export const MESH_ROUTES_PREFIX = 'BST_MESH_ROUTES_'
+/**
+ * Постоянные ссылки аккаунта — свои имена IPNS (номер, куда ведёт, номер
+ * записи; ключей нет): `BST_IPNS_NAMES_<ownAddress>`.
+ */
+export const IPNS_NAMES_PREFIX = 'BST_IPNS_NAMES_'
 
 /** Отметка «бэкап 12 слов проверен»: `BST_BACKUP_VERIFIED_<address>` = timestamp (мс). */
 export const BACKUP_VERIFIED_PREFIX = 'BST_BACKUP_VERIFIED_'

@@ -244,9 +244,14 @@ function clearView(): void {
   saveText.value = ''
 }
 
-/** Последний сегмент пути — имя файла, как в ссылке «Моих файлов». */
+/**
+ * Последний сегмент пути — имя файла, как в ссылке «Моих файлов». У ссылки
+ * на имя без пути (постоянная ссылка) — из пути, куда ведёт имя: там он без
+ * %-кодирования.
+ */
 function lastSegment(target: IpfsTarget): string {
-  const raw = target.path.split('/').filter(Boolean).pop() ?? ''
+  const raw = target.path.split('/').filter(Boolean).pop()
+  if (!raw) return name.value?.value.split('/').filter(Boolean).slice(2).pop() ?? ''
   try {
     return decodeURIComponent(raw)
   } catch {

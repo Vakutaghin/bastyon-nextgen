@@ -987,6 +987,7 @@ pub fn run() {
       ipfs::sink::ipfs_sink_write,
       ipfs::sink::ipfs_sink_close,
       ipfs::sink::ipfs_sink_abort,
+      ipfs::names::ipfs_name_put,
       tray::tray_set_labels,
       asr::asr_status,
       asr::asr_install,

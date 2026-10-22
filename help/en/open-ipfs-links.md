@@ -54,6 +54,8 @@ An `ipns://…` link points not to the files themselves but to a name. The owner
 
 Without the module, the viewer window shows where the name points now and, for a key, until what date the record is valid.
 
+You can make a name of your own — a permanent link to a file — in [My files](my-files.md).
+
 ## Private files
 
 If the link contains a key — the part after `#key=` — it is a private file. It is decrypted on your device, and the key from the link is not sent anywhere. A private file is always downloaded: it cannot be shown in a window or a tab.

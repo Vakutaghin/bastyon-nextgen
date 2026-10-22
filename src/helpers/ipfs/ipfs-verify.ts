@@ -43,17 +43,18 @@ export function parseCid(text: string): CID {
 
 /**
  * Сегменты пути ссылки (как в href, с %-кодированием) → имена в каталогах.
+ * Путь в записи IPNS — без %-кодирования, как его пишет Kubo: `encoded = false`.
  * Отвергает то же, что SaveTarget::parse в Rust: `.`, `..`, слэши внутри
  * имени и управляющие символы.
  */
-export function pathSegments(path: string): string[] {
+export function pathSegments(path: string, encoded = true): string[] {
   return path
     .split('/')
     .filter(Boolean)
     .map((raw) => {
-      let name: string
+      let name = raw
       try {
-        name = decodeURIComponent(raw)
+        if (encoded) name = decodeURIComponent(raw)
       } catch {
         throw new VerifyError('malformed', 'bad path')
       }

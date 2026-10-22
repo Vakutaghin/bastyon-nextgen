@@ -46,6 +46,19 @@ export function buildShareLink(share: {
 }
 
 /**
+ * Куда ведёт постоянная ссылка (имя IPNS) на файл из «Моих файлов». Имя файла —
+ * как есть, без %-кодирования: так путь в записи IPNS читает Kubo.
+ */
+export function buildNameValue(share: { cid: string; name: string }): string {
+  return `/ipfs/${share.cid.trim()}/${share.name}`
+}
+
+/** Постоянная ссылка: имя IPNS ведёт прямо на файл, поэтому пути у неё нет. */
+export function buildNameLink(name: string): string {
+  return `ipns://${name}`
+}
+
+/**
  * Приватная шаринг-ссылка: ключ и имя файла во ФРАГМЕНТЕ (`#…`) — фрагмент не
  * уходит в HTTP-запросах на gateway, только клиент видит ключ. encodeURIComponent,
  * т.к. base64 содержит `+/=`.

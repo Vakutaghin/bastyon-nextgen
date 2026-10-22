@@ -22,6 +22,7 @@ import {
   MESH_LAST_DEVICE_PREFIX,
   RNS_CONFIG_PREFIX,
   MESH_ROUTES_PREFIX,
+  IPNS_NAMES_PREFIX,
   BACKUP_VERIFIED_PREFIX,
   BACKUP_NUDGED_AT_KEY,
   PEERTUBE_TOKEN_PREFIX,
@@ -114,6 +115,7 @@ export function clearAllUserData(): void {
         MESH_LAST_DEVICE_PREFIX,
         RNS_CONFIG_PREFIX,
         MESH_ROUTES_PREFIX,
+        IPNS_NAMES_PREFIX,
         BACKUP_VERIFIED_PREFIX,
         PEERTUBE_TOKEN_PREFIX,
         PEERTUBE_RESUME_PREFIX,
@@ -173,6 +175,7 @@ export function clearAccountScopedLocalData(address: Address): void {
     localStorage.removeItem(`${MESH_LAST_DEVICE_PREFIX}${address}`)
     localStorage.removeItem(`${RNS_CONFIG_PREFIX}${address}`)
     localStorage.removeItem(`${MESH_ROUTES_PREFIX}${address}`)
+    localStorage.removeItem(`${IPNS_NAMES_PREFIX}${address}`)
   } catch {
     /* ignore */
   }

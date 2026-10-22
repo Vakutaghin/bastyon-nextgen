@@ -45,7 +45,7 @@ Bastyon itself does not collect IP addresses, but the app talks to servers, and 
 | GitHub | when checking for updates (in the desktop and phone apps) |
 | Hugging Face | when downloading the voice input model |
 | Tor Project, IPFS | when Tor or the IPFS module is turned on for the first time — downloading the programs |
-| IPFS peers, the lookup services delegated-ipfs.dev and cid.contact | when you open IPFS links and share files |
+| IPFS peers, the lookup services delegated-ipfs.dev and cid.contact | when you open IPFS links, share files and update permanent links |
 | Cloudflare and Google DNS | when you open an IPFS link to a domain name |
 | inbrowser.link | when an IPFS link or website opens in the browser |
 
