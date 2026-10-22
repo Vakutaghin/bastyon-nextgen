@@ -55,6 +55,7 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
   function createExplosion(x: number, y: number, variant: 'star' | 'coin' = 'star') {
     const texture = variant === 'coin' ? coinTexture : starTexture
     if (!app || !texture) return
+    showCanvas(app)
 
     const particleCount = 20
     for (let i = 0; i < particleCount; i++) {
@@ -103,7 +104,22 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
     }
     // Частицы кончились — цикл больше не нужен. Отрисовка этого тика (пустая
     // сцена, стирает последний кадр) всё равно пройдёт: она идёт после update.
-    if (particles.length === 0) app?.ticker.stop()
+    if (particles.length === 0 && app) {
+      app.ticker.stop()
+      app.canvas.style.display = 'none'
+    }
+  }
+
+  /**
+   * Холст показывается только на время взрыва. Прозрачный WebGL-слой во весь
+   * экран, висящий постоянно, телефон смешивал с каждым кадром прокрутки.
+   * Размер окна мог смениться, пока холст был скрыт, — подгоняем перед показом.
+   */
+  function showCanvas(instance: Application): void {
+    if (instance.canvas.style.display !== 'none') return
+    const { innerWidth: w, innerHeight: h } = window
+    if (instance.screen.width !== w || instance.screen.height !== h) instance.renderer.resize(w, h)
+    instance.canvas.style.display = ''
   }
 
   onMounted(async () => {
@@ -121,7 +137,8 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
       {
         autoStart: false,
         backgroundAlpha: 0,
-        resizeTo: window,
+        width: window.innerWidth,
+        height: window.innerHeight,
         antialias: true,
         resolution: window.devicePixelRatio || 1,
         autoDensity: true,
@@ -139,6 +156,11 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
     app.canvas.style.top = '0'
     app.canvas.style.left = '0'
     app.canvas.style.pointerEvents = 'none'
+    app.canvas.style.display = 'none'
+    // Холст касаний не ловит, а система событий PixiJS всё равно слушала
+    // каждое движение пальца по документу и крутила свой цикл
+    // requestAnimationFrame всё время работы приложения.
+    app.renderer.events.setTargetElement(null as unknown as HTMLElement)
 
     el.appendChild(app.canvas)
 

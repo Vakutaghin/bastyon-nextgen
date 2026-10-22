@@ -86,7 +86,7 @@
       </SC_FeedError>
       <template v-else-if="allPosts && allPosts.length > 0">
         <PostCard
-          v-for="(post, index) in displayedPosts"
+          v-for="(post, index) in renderedPosts"
           :key="`${post.isBoosted ? 'boosted' : 'post'}-${post.id || index}`"
           v-memo="[post.id, post.likes, post.comments, post.shares, post.isBoosted]"
           :post="post"
@@ -283,6 +283,41 @@ const displayedPosts = computed<FeedItem[]>(() => {
   return result
 })
 
+// Карточки монтируются по одной за кадр. Догруженная страница из 20 постов,
+// смонтированная разом, занимала главный поток телефона на полсекунды: новые
+// посты и картинки появлялись рывком, лента замирала. Карточка дорогая (каждый
+// styled-элемент — компонент Vue), поэтому порция — одна. Догрузка начинается
+// за экран до конца ленты, так что порции успевают.
+const FIRST_RENDER = 5
+const RENDER_STEP = 1
+const renderLimit = ref<number>(FIRST_RENDER)
+let renderFrame: number | null = null
+
+const renderedPosts = computed<FeedItem[]>(() => displayedPosts.value.slice(0, renderLimit.value))
+
+function renderMore(): void {
+  renderFrame = null
+  const total = displayedPosts.value.length
+  renderLimit.value = Math.min(total, renderLimit.value + RENDER_STEP)
+  if (renderLimit.value < total) renderFrame = requestAnimationFrame(renderMore)
+}
+
+watch(
+  () => displayedPosts.value.length,
+  (total) => {
+    // Лента сброшена (вкладка, язык, «Обновить»): снова с первой порции.
+    if (total === 0) renderLimit.value = FIRST_RENDER
+    if (renderLimit.value < total && renderFrame === null) {
+      renderFrame = requestAnimationFrame(renderMore)
+    }
+  },
+  { immediate: true }
+)
+
+onUnmounted(() => {
+  if (renderFrame !== null) cancelAnimationFrame(renderFrame)
+})
+
 async function onShowNewPosts(): Promise<void> {
   await showNewPosts()
   scrollToTop()
@@ -359,9 +394,13 @@ function updateScrollToTopPosition(): void {
 function onScroll(): void {
   if (typeof window !== 'undefined') {
     showScrollToTop.value = window.scrollY > scrollThreshold()
-    updateScrollToTopPosition()
   }
 }
+
+// Середина колонки меняется от ширины окна и боковых панелей, не от прокрутки:
+// замер на каждое событие скролла лишь заставлял браузер пересчитывать
+// раскладку. Колонку сторожит ResizeObserver, окно — resize.
+let columnObserver: ResizeObserver | null = null
 
 // Не скрываем кнопку, пока на неё наведён курсор.
 const showScrollToTopVisible = computed<boolean>(
@@ -397,6 +436,12 @@ onMounted(() => {
     nextTick(() => {
       onScroll()
       updateScrollToTopPosition()
+      const root = feedRootRef.value
+      const column = root && ((root as { $el?: HTMLElement }).$el ?? (root as HTMLElement))
+      if (column?.parentElement && typeof ResizeObserver !== 'undefined') {
+        columnObserver = new ResizeObserver(updateScrollToTopPosition)
+        columnObserver.observe(column.parentElement)
+      }
     })
   }
 })
@@ -406,5 +451,7 @@ onUnmounted(() => {
     window.removeEventListener('scroll', onScroll)
     window.removeEventListener('resize', updateScrollToTopPosition)
   }
+  columnObserver?.disconnect()
+  columnObserver = null
 })
 </script>

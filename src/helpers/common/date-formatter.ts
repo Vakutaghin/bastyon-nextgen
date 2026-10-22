@@ -34,6 +34,40 @@ export function dateLocale(): string {
   return bcp47(String(i18n.global.locale.value))
 }
 
+/**
+ * Форматтеры Intl по языку и опциям. `toLocaleDateString(locale, opts)`
+ * собирает новый Intl.DateTimeFormat на каждый вызов — в ленте и чате это
+ * сотни вызовов подряд, и на телефоне они заметно тормозили отрисовку.
+ */
+const dateTimeFormats = new Map<string, Intl.DateTimeFormat>()
+const relativeTimeFormats = new Map<string, Intl.RelativeTimeFormat>()
+
+function dateTimeFormat(locale: string, options?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}|${options ? JSON.stringify(options) : ''}`
+  let fmt = dateTimeFormats.get(key)
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(locale, options)
+    dateTimeFormats.set(key, fmt)
+  }
+  return fmt
+}
+
+function relativeTimeFormat(
+  locale: string,
+  numeric: Intl.RelativeTimeFormatNumeric
+): Intl.RelativeTimeFormat {
+  const key = `${locale}|${numeric}`
+  let fmt = relativeTimeFormats.get(key)
+  if (!fmt) {
+    fmt = new Intl.RelativeTimeFormat(locale, { numeric })
+    relativeTimeFormats.set(key, fmt)
+  }
+  return fmt
+}
+
+/** Часы и минуты — как toLocaleTimeString(locale, { hour, minute }). */
+const CLOCK: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }
+
 function nowSeconds(): number {
   return Math.floor(Date.now() / 1000)
 }
@@ -53,7 +87,7 @@ function validDate(ms: number): Date | null {
 export function formatTimeAgo(unixSeconds: number, now: number = nowSeconds()): string {
   const diff = now - unixSeconds
   if (diff < JUST_NOW_SECONDS) return t('appMsg.relativeAgo.justNow')
-  const rtf = new Intl.RelativeTimeFormat(dateLocale(), { numeric: 'always' })
+  const rtf = relativeTimeFormat(dateLocale(), 'always')
   for (const [unit, seconds] of TIME_AGO_UNITS) {
     if (diff >= seconds) return rtf.format(-Math.floor(diff / seconds), unit)
   }
@@ -78,7 +112,7 @@ export function formatTimeCompact(unixSeconds: number, now: number = nowSeconds(
   if (diff < SECONDS_PER_WEEK) {
     return t('appMsg.time.daysShort', { n: Math.floor(diff / SECONDS_PER_DAY) })
   }
-  return new Date(unixSeconds * 1000).toLocaleDateString(dateLocale())
+  return dateTimeFormat(dateLocale()).format(new Date(unixSeconds * 1000))
 }
 
 /**
@@ -94,12 +128,12 @@ export function formatDateTimeFull(unixSeconds: number): string {
 
   const locale = dateLocale()
   const isCurrentYear = date.getFullYear() === new Date().getFullYear()
-  const time = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
-  const day = date.toLocaleDateString(locale, {
+  const time = dateTimeFormat(locale, CLOCK).format(date)
+  const day = dateTimeFormat(locale, {
     day: 'numeric',
     month: 'long',
     ...(isCurrentYear ? {} : { year: 'numeric' }),
-  })
+  }).format(date)
   return `${day}, ${time}`
 }
 
@@ -129,20 +163,20 @@ export function formatMessageTime(ms: number, now: number = Date.now()): string 
   const date = validDate(ms)
   if (!date) return ''
   const locale = dateLocale()
-  const clock = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+  const clock = dateTimeFormat(locale, CLOCK).format(date)
   const today = new Date(now)
   const daysAgo = localDayNumber(today) - localDayNumber(date)
   if (daysAgo <= 0) return clock
   if (daysAgo === 1) {
-    const yesterday = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-1, 'day')
+    const yesterday = relativeTimeFormat(locale, 'auto').format(-1, 'day')
     return `${yesterday}, ${clock}`
   }
-  const day = date.toLocaleDateString(
+  const day = dateTimeFormat(
     locale,
     date.getFullYear() === today.getFullYear()
       ? { day: 'numeric', month: 'short' }
       : { day: '2-digit', month: '2-digit', year: 'numeric' }
-  )
+  ).format(date)
   return `${day}, ${clock}`
 }
 
@@ -165,7 +199,7 @@ export function formatDateTimeExact(unixSeconds: number): string {
 /** Часы и минуты: «14:30» / «02:30 PM». */
 export function formatClock(ms: number): string {
   const date = validDate(ms)
-  return date ? date.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' }) : ''
+  return date ? dateTimeFormat(dateLocale(), CLOCK).format(date) : ''
 }
 
 /** Дата без времени: «12 марта 2024 г.» / «March 12, 2024». */

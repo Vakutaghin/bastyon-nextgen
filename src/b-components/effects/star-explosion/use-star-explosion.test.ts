@@ -34,7 +34,12 @@ vi.mock('pixi.js', () => {
     canvas = document.createElement('canvas')
     stage = { addChild: vi.fn(), removeChild: vi.fn() }
     ticker = { add: vi.fn(), start: vi.fn(), stop: vi.fn() }
-    renderer = { generateTexture: vi.fn(() => ({})) }
+    screen = { width: 0, height: 0 }
+    renderer = {
+      generateTexture: vi.fn(() => ({})),
+      resize: vi.fn(),
+      events: { setTargetElement: vi.fn() },
+    }
   }
   return { Application, Graphics: Chain, Sprite: class {}, Texture: class {} }
 })
