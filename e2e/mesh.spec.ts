@@ -1110,11 +1110,11 @@ test.describe('reticulum', () => {
     rns.refused.add('/file/secret.zip')
     await page.getByRole('button', { name: 'Архив' }).click()
     await expect(page.getByText('Нет доступа')).toBeVisible()
-    await page.getByRole('button', { name: 'Назад' }).click()
+    await page.getByRole('main').getByRole('button', { name: 'Назад' }).click()
 
     await page.getByRole('button', { name: 'Правила' }).click()
     await expect(page.getByText('Будьте вежливы.')).toBeVisible()
-    await page.getByRole('button', { name: 'Назад' }).click()
+    await page.getByRole('main').getByRole('button', { name: 'Назад' }).click()
 
     const name = page.getByRole('textbox', { name: 'name' })
     await expect(name).toHaveValue('Гость')
