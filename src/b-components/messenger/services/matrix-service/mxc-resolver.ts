@@ -71,3 +71,39 @@ export function resolveMxcHttpUrl(
   const base = matrixBaseUrl(client).replace(/\/$/, '')
   return `${base}/_matrix/media/v3/download/${server}/${mediaId}`
 }
+
+const MEDIA_PATH =
+  /^\/_matrix\/(?:media\/(?:r0|v1|v3)|client\/v1\/media)\/(?:download|thumbnail)\/([A-Za-z0-9.:[\]-]+)\/([A-Za-z0-9_-]+)(?:\/|$)/
+
+/**
+ * http(s)-ссылка на медиа Matrix → `mxc://{server}/{mediaId}`. Такие ссылки
+ * кладут в content bastyon-chat и forta.chat (`mxcUrlToHttp` при отправке), и
+ * хост в них — тот, через который подключился отправитель: зеркало
+ * `matrix.2.pocketnet.app` или loopback старых сборок SDK.
+ */
+export function mediaUrlToMxc(url: string): string | null {
+  let u: URL
+  try {
+    u = new URL(url)
+  } catch {
+    return null
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null
+  const m = MEDIA_PATH.exec(u.pathname)
+  return m ? `mxc://${m[1]}/${m[2]}` : null
+}
+
+/**
+ * URL медиа из контента отправителя → URL для загрузки. `mxc://` и ссылки
+ * homeserver'а — как есть; ссылку на медиа Matrix с другого хоста качаем через
+ * свой homeserver; остальное — '' (медиа «недоступно», S34).
+ */
+export function resolveMediaUrl(
+  client: MediaResolverClient | null | undefined,
+  mxcOrHttp: string
+): string {
+  if (mxcOrHttp.startsWith('mxc://')) return resolveMxcHttpUrl(client, mxcOrHttp) || ''
+  if (isTrustedMediaUrl(client, mxcOrHttp)) return mxcOrHttp
+  const mxc = mediaUrlToMxc(mxcOrHttp)
+  return mxc ? resolveMxcHttpUrl(client, mxc) || '' : ''
+}

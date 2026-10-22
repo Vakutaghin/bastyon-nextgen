@@ -16,7 +16,7 @@ import {
 } from '../../helpers'
 import { matrixService } from '../../services/matrix-service'
 import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
-import { isTrustedMediaUrl, resolveMxcHttpUrl } from '../../services/matrix-service/mxc-resolver'
+import { resolveMediaUrl } from '../../services/matrix-service/mxc-resolver'
 import { isGroupEncryptedContent } from '../../services/group-encryption'
 import type { Message, MessageReaction } from '../../types'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../consts'
@@ -36,14 +36,12 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
 
   /**
    * mxc:// → http через homeserver; абсолютный http(s) — только с origin
-   * homeserver'а, чужой хост → '' (медиа «недоступно»). Иначе любой URL из
-   * контента отправителя фетчился при открытии чата и отдавал IP читателя (S34).
+   * homeserver'а или как медиа Matrix через него, остальное → '' (медиа
+   * «недоступно»). Иначе любой URL из контента отправителя фетчился при
+   * открытии чата и отдавал IP читателя (S34).
    */
-  const resolveMxc = (mxcOrHttp: string): string => {
-    const client = matrixService.getClient()
-    if (mxcOrHttp.startsWith('mxc://')) return resolveMxcHttpUrl(client, mxcOrHttp) || ''
-    return isTrustedMediaUrl(client, mxcOrHttp) ? mxcOrHttp : ''
-  }
+  const resolveMxc = (mxcOrHttp: string): string =>
+    resolveMediaUrl(matrixService.getClient(), mxcOrHttp)
 
   const mapEventToMessage = async (
     event: MxEvent,
