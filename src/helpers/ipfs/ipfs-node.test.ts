@@ -22,6 +22,7 @@ vi.mock('helia', () => ({
   createHelia: async () => ({
     start: async () => {},
     stop: async () => {},
+    keychain: {},
     blockstore: {
       createSession: () => {
         h.sessions++

@@ -31,6 +31,7 @@ import {
   VerifyError,
   isAbortError,
 } from './ipfs-errors'
+import { compatKeychain } from './ipns-keys'
 import {
   listDirectory,
   openEntity,
@@ -209,7 +210,14 @@ async function startNode(): Promise<Node> {
     })
     // createHelia узел не запускает, а без запуска нет и libp2p.
     await helia.start()
-    return { helia, ipns: ipnsResolver(helia), dnslink: dnsLink(helia) }
+    // Подпись имени проверяет noble, а не WebCrypto: см. ipns-keys.ts.
+    const ipns = ipnsResolver({
+      datastore: helia.datastore,
+      routing: helia.routing,
+      logger: helia.logger,
+      keychain: compatKeychain(helia.keychain),
+    })
+    return { helia, ipns, dnslink: dnsLink(helia) }
   } catch (e) {
     throw new NodeUnavailableError(e instanceof Error ? e.message : String(e))
   }
