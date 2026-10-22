@@ -34,10 +34,16 @@ export const SC_PlayButton = styled.button`
   }
 `
 
+/*
+ * Ширина задана явно: пузырь подбирает ширину по содержимому, а flex-basis в
+ * этом подборе не участвует ни в Chromium, ни в WebKit. С `width: 100%`
+ * пузырь ужимался под кнопку и время, и на волну оставалось 15–20px.
+ * На узком экране контейнер сжимается (flex-shrink, min-width: 0).
+ */
 export const SC_WaveContainer = styled('div', { compact: Boolean })`
-  flex: 1 1 ${(p) => (p.compact ? '120px' : '240px')};
-  width: 100%;
-  max-width: ${(p) => (p.compact ? '120px' : '240px')};
+  flex: 0 1 ${(p) => (p.compact ? '120px' : '240px')};
+  width: ${(p) => (p.compact ? '120px' : '240px')};
+  max-width: 100%;
   min-width: 0;
   height: 36px;
   position: relative;

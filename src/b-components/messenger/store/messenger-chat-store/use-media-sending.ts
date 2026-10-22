@@ -3,6 +3,7 @@
 // Текстовые сообщения и реакции — в use-message-sending.
 
 import { matrixService } from '../../services/matrix-service'
+import { registerLocalMedia, releaseLocalMedia } from '../../services/local-media'
 import { encryptAudioBlob } from '../../services/encryption-service'
 import { encryptBlobWithRandomKey, wrapKeyForRoom } from '../../services/media-encrypt'
 import { extractImageDimensions, extractVideoMetadata } from '../../services/media-metadata'
@@ -65,8 +66,10 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     try {
       const room = await prepareRoom(chatId)
 
-      // Оптимистичное сообщение
-      const objectUrl = URL.createObjectURL(blob)
+      // Оптимистичное сообщение. Blob — в local-media: плеер берёт его оттуда
+      // и рисует волну, пока голосовое грузится (fetch ссылки `blob:` CSP не
+      // пускает, и вместо волны была ошибка загрузки).
+      const objectUrl = registerLocalMedia(blob)
       const tempId = makeTempId()
       const now = Date.now()
       const tempMessage: Message = {
@@ -121,7 +124,7 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
 
       // Удаляем оптимистичное сообщение
       removeOptimistic(messages, chatId, tempId)
-      revokeObjectUrlQuiet(objectUrl)
+      releaseLocalMedia(objectUrl)
     } catch (e) {
       console.error('[ChatStore] Ошибка отправки аудио:', e)
       markLastSendingFailed(messages, chatId, 'audio')
