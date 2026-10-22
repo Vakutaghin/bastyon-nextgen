@@ -1686,6 +1686,29 @@ export default {
     title: '메시 네트워크',
     lead: '인터넷이나 휴대전화망 없이 LoRa 무전기로 대화하세요. Meshtastic 또는 MeshCore 무전기를 USB, 블루투스 또는 Wi-Fi로 연결하면 그 대화가 메신저에 일반 대화와 함께 표시됩니다.',
     desktopOnly: '무전기는 데스크톱 앱(macOS, Windows, Linux)과 Android에서 연결할 수 있습니다.',
+    module: {
+      title: '메시 네트워크 모듈',
+      description:
+        'USB, 블루투스, Wi-Fi로 연결하는 Meshtastic·MeshCore 무선기와 나만의 Reticulum 노드. 메시 네트워크로 대화할 때만 필요합니다.',
+      download: '모듈 다운로드 ({size})',
+      update: '업데이트 ({size})',
+      downloading: '다운로드 중: {percent}%',
+      cancel: '취소',
+      remove: '삭제',
+      removeTitle: '메시 네트워크 모듈을 삭제할까요?',
+      removeContent:
+        '무선기 연결이 끊기고 Reticulum 노드가 멈춥니다. 대화와 설정은 그대로 남으며 모듈은 다시 다운로드할 수 있습니다.',
+      statusInstalled: '설치됨',
+      statusOutdated: '새 버전 있음',
+      statusNone: '설치 안 됨',
+      unsupported: '이 빌드용 모듈이 없습니다',
+      errTor: 'Tor가 아직 연결 중입니다. 준비되면 모듈을 다운로드할 수 있습니다.',
+      errDownload:
+        '메시 네트워크 모듈을 다운로드하지 못했습니다. 인터넷 연결을 확인하고 다시 시도하세요.',
+      errHash: '다운로드한 파일이 예상과 달라 모듈을 설치하지 않았습니다. 다시 시도하세요.',
+      errInstall:
+        '메시 네트워크 모듈을 설치하지 못했습니다. 디스크 공간이 없거나 앱 폴더에 접근할 수 없습니다.',
+    },
     android: {
       serviceTitle: '무전기 연결됨',
       serviceText: '앱이 백그라운드에 있어도 무전 메시지를 계속 받습니다',
@@ -2146,6 +2169,13 @@ export default {
       login_failed: '방이 입장을 거부했습니다.',
       no_account_key: '계정 키가 없습니다. 다시 로그인하세요.',
       rns_not_running: 'Reticulum 노드가 실행 중이 아닙니다.',
+      mesh_module_missing:
+        '메시 네트워크 모듈이 설치되지 않았습니다. «메시 네트워크» 페이지에서 다운로드하세요.',
+      mesh_module_outdated:
+        '메시 네트워크 모듈이 오래되었습니다. «메시 네트워크» 페이지에서 업데이트하세요.',
+      mesh_module_failed:
+        '메시 네트워크 모듈이 시작되지 않았습니다. 설정에서 삭제한 뒤 다시 다운로드하세요.',
+      mesh_module_stopped: '메시 네트워크 모듈이 멈췄습니다. 다시 시도하세요.',
       rns_error: 'Reticulum 오류입니다.',
       rns_timeout: '노드가 제때 응답하지 않았습니다.',
       rns_link_closed: '노드가 연결을 닫았습니다.',

@@ -18,6 +18,7 @@ Settings open from the account menu — **“Settings”** — or, on a phone, f
   - **“Comments order”** — the order a discussion opens in, see [Comments](comments.md);
   - **“Messenger”** — turns the chat off entirely, see [Messenger](messenger.md).
 - **“IPFS module”** — in the desktop app, when the module is installed, see [The IPFS module](ipfs-module.md).
+- **“Mesh networks module”** — in the desktop app: download, update or remove it, see [Chatting over radio](mesh.md).
 - Voice input — in the desktop app, see [Voice input](voice-input.md).
 
 ## Notifications

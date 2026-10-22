@@ -38,7 +38,7 @@ import java.util.concurrent.Executors;
 
 /**
  * Узел Reticulum на Android — то же, что команды `rns_*` десктопа
- * (src-tauri/src/rns): узел работает в процессе приложения (RnsNative), его
+ * (модуль mesh-сетей, src-tauri/crates/bastyon-mesh/src/rns.rs): узел работает в процессе приложения (RnsNative), его
  * события приходят в JS потоком `rns`. Пока узел работает, держится общее с
  * радио постоянное уведомление, а для локальной сети — multicast Wi-Fi.
  *

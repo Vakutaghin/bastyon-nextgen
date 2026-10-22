@@ -14,6 +14,12 @@
       <SC_MeshNote v-if="!availability.serial">{{ t('mesh.desktopOnly') }}</SC_MeshNote>
 
       <template v-else>
+        <!-- На компьютере радио и Reticulum работают через модуль: пока его нет,
+             страница предлагает скачать его, и только. -->
+        <MeshModuleSection page />
+      </template>
+
+      <template v-if="availability.serial && meshModule.ready">
         <SC_MeshNetworks role="tablist" :aria-label="t('mesh.networks.label')">
           <SC_MeshNetwork
             v-for="n in networks"
@@ -92,6 +98,8 @@ import MeshDeviceCard from './mesh-device-card.vue'
 import MtChannels from './mt-channels.vue'
 import MtDeviceCard from './mt-device-card.vue'
 import MtNodes from './mt-nodes.vue'
+import MeshModuleSection from '@/pages/settings-page/tabs/mesh-module-section.vue'
+import { useMeshModuleStore } from '@/stores/mesh-module-store'
 import {
   SC_MeshDot,
   SC_MeshHead,
@@ -111,6 +119,7 @@ const router = useRouter()
 const mt = useMeshtasticConnectionStore()
 const mc = useMeshConnectionStore()
 const rns = useReticulumStore()
+const meshModule = useMeshModuleStore()
 
 /** Вкладки: радио-сети и Reticulum (он — только там, где есть свой узел). */
 type Tab = 'meshtastic' | 'meshcore' | 'reticulum'

@@ -1702,6 +1702,28 @@ export default {
     lead: 'Переписка через LoRa-радио — без интернета и сотовой связи. Подключите радио Meshtastic или MeshCore по USB, Bluetooth или Wi-Fi: чаты через него появятся в мессенджере рядом с обычными.',
     desktopOnly:
       'Радио подключается в приложении для компьютера (macOS, Windows, Linux) и для Android.',
+    module: {
+      title: 'Модуль mesh-сетей',
+      description:
+        'Радио Meshtastic и MeshCore по USB, Bluetooth и Wi-Fi и свой узел Reticulum. Нужен, только если вы переписываетесь через mesh-сети.',
+      download: 'Скачать модуль ({size})',
+      update: 'Обновить ({size})',
+      downloading: 'Скачиваю: {percent} %',
+      cancel: 'Отменить',
+      remove: 'Удалить',
+      removeTitle: 'Удалить модуль mesh-сетей?',
+      removeContent:
+        'Радио отключится, узел Reticulum остановится. Переписка и настройки останутся — модуль можно скачать снова.',
+      statusInstalled: 'Установлен',
+      statusOutdated: 'Есть новая версия',
+      statusNone: 'Не установлен',
+      unsupported: 'Для этой сборки модуля нет',
+      errTor: 'Tor ещё подключается — скачать модуль можно, когда он будет готов.',
+      errDownload: 'Не удалось скачать модуль mesh-сетей. Проверьте интернет и попробуйте ещё раз.',
+      errHash: 'Скачанный файл не совпал с ожидаемым, модуль не установлен. Попробуйте ещё раз.',
+      errInstall:
+        'Не удалось установить модуль mesh-сетей: нет места на диске или доступа к папке приложения.',
+    },
     android: {
       serviceTitle: 'Радио на связи',
       serviceText: 'Сообщения по радио приходят и тогда, когда приложение в фоне',
@@ -2163,6 +2185,12 @@ export default {
       login_failed: 'Комната не пустила.',
       no_account_key: 'Нет ключа аккаунта: войдите заново.',
       rns_not_running: 'Узел Reticulum не запущен.',
+      mesh_module_missing:
+        'Модуль mesh-сетей не установлен — скачайте его на странице «Mesh-сети».',
+      mesh_module_outdated: 'Модуль mesh-сетей устарел — обновите его на странице «Mesh-сети».',
+      mesh_module_failed:
+        'Модуль mesh-сетей не запустился. Удалите его в настройках и скачайте снова.',
+      mesh_module_stopped: 'Модуль mesh-сетей остановился. Попробуйте ещё раз.',
       rns_error: 'Ошибка Reticulum.',
       rns_timeout: 'Узел не ответил вовремя.',
       rns_link_closed: 'Узел закрыл соединение.',

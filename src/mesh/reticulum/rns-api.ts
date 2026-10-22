@@ -1,6 +1,6 @@
 /**
- * Узел Reticulum: на десктопе — команды `rns_*` (src-tauri/src/rns), на
- * Android — плагин MeshRns (capacitor-rns.ts). Сам стек (rns-net + lxmf-rs,
+ * Узел Reticulum: на десктопе — команды `rns_*` (src-tauri/src/mesh, модуль
+ * mesh-сетей), на Android — плагин MeshRns (capacitor-rns.ts). Сам стек (rns-net + lxmf-rs,
  * src-tauri/crates/bastyon-rns) один и тот же, в Rust; сюда приходят события —
  * announce, сообщения LXMF, их судьба, состояние интерфейсов (на десктопе —
  * через Tauri Channel, только этому окну).

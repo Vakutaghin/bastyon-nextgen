@@ -218,6 +218,66 @@ jobs:
             { echo "$name<<$delimiter"; echo "$value"; echo "$delimiter"; } >> "$GITHUB_ENV"
           done
 
+      # Модуль mesh-сетей (src-tauri/crates/bastyon-mesh) — отдельная программа,
+      # которую приложение скачивает по просьбе человека, как Tor и Kubo.
+      # Собирается до приложения: размер и SHA-256 архива сборка приложения
+      # вшивает в себя (src-tauri/src/mesh/module.rs) и подменённый не
+      # запустит. Архив ложится в этот же релиз рядом с установщиками.
+      # strip сбрасывает подпись macOS, поэтому подпись — после него: тем же
+      # постоянным сертификатом, что приложение, а без него ad-hoc.
+      - name: Build the mesh module
+        shell: bash
+        env:
+          ARGS: ${{ matrix.args }}
+          PLATFORM: ${{ matrix.platform }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          triple="${ARGS#--target }"
+          # Та же нижняя версия macOS, что у приложения (bundle.macOS.minimumSystemVersion).
+          if [ "$PLATFORM" = macos-latest ]; then
+            export MACOSX_DEPLOYMENT_TARGET="$(node -p 'require("./src-tauri/tauri.conf.json").bundle.macOS.minimumSystemVersion')"
+          fi
+          if [ -n "$triple" ]; then
+            out="src-tauri/target/$triple/release"
+            cargo build --release -p bastyon-mesh --manifest-path src-tauri/Cargo.toml --target "$triple"
+          else
+            out="src-tauri/target/release"
+            cargo build --release -p bastyon-mesh --manifest-path src-tauri/Cargo.toml
+          fi
+          case "$PLATFORM/$VARIANT" in
+            macos-latest/Apple-Silicon) key=darwin-aarch64 ;;
+            macos-latest/Intel)         key=darwin-x86_64 ;;
+            ubuntu-22.04/x86_64)        key=linux-x86_64 ;;
+            windows-latest/x64)         key=windows-x86_64 ;;
+            *) echo "::error::Неизвестная система $PLATFORM/$VARIANT" >&2; exit 1 ;;
+          esac
+          exe=bastyon-mesh
+          [ "$PLATFORM" = windows-latest ] && exe=bastyon-mesh.exe
+          mkdir -p mesh-module
+          cp "$out/$exe" "mesh-module/$exe"
+          if [ "$PLATFORM" != windows-latest ]; then
+            strip "mesh-module/$exe"
+          fi
+          if [ "$PLATFORM" = macos-latest ]; then
+            identity=-
+            [ "${BASTYON_SELF_SIGNED:-}" = 1 ] && identity="$APPLE_SIGNING_IDENTITY"
+            codesign --force --options runtime --sign "$identity" "mesh-module/$exe"
+            codesign --verify --strict "mesh-module/$exe"
+          fi
+          asset="mesh-module/bastyon-mesh-$key.gz"
+          gzip -9 -n -c "mesh-module/$exe" > "$asset"
+          read -r sha size < <(node -e '
+            const b = require("fs").readFileSync(process.argv[1])
+            console.log(require("crypto").createHash("sha256").update(b).digest("hex"), b.length)
+          ' "$asset")
+          echo "Модуль: $asset, $size байт, sha256 $sha"
+          {
+            echo "BASTYON_MESH_MODULE_SHA256=$sha"
+            echo "BASTYON_MESH_MODULE_SIZE=$size"
+            echo "MESH_MODULE_ASSET=$asset"
+          } >> "$GITHUB_ENV"
+
       # Без tagName/releaseName action только собирает и ничего не заливает.
       # tauri.updater.conf.json включает файлы обновления (.app.tar.gz на macOS,
       # подписи .sig рядом с .msi и .AppImage): их подписывает ключ из
@@ -249,8 +309,10 @@ jobs:
             app="$(find "$bundle_dir" -maxdepth 1 -type d -name '*.app' | head -n 1)"
             [ -n "$app" ] || { echo "::error::Не найден собранный .app" >&2; exit 1; }
             scripts/check-native-deps.sh "$app"
+            scripts/check-native-deps.sh mesh-module/bastyon-mesh "$app"
           else
             scripts/check-native-deps.sh src-tauri/target/release/app.exe
+            scripts/check-native-deps.sh mesh-module/bastyon-mesh.exe
           fi
 
       # Подписано именно постоянным сертификатом: иначе после обновления
@@ -322,6 +384,9 @@ jobs:
             find src-tauri/target -type d -name bundle >&2 || true
             exit 1
           fi
+          # Модуль mesh-сетей: приложение этой версии качает его отсюда.
+          [ -s "$MESH_MODULE_ASSET" ] || { echo "::error::Нет архива модуля mesh-сетей" >&2; exit 1; }
+          cp "$MESH_MODULE_ASSET" "$OUT/"
           if [ -z "$updater_asset" ] || [ ! -s "$updater_sig" ]; then
             echo "::error::Нет файла обновления или его подписи (.sig): задан ли TAURI_SIGNING_PRIVATE_KEY?" >&2
             exit 1

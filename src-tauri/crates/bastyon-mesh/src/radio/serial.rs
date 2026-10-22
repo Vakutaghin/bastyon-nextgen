@@ -101,7 +101,11 @@ impl SerialLink {
         if !is_listed(path, &listed) {
             return Err(format!("port_not_found: {path}"));
         }
-        let baud = if (1_200..=3_000_000).contains(&baud) { baud } else { DEFAULT_BAUD };
+        let baud = if (1_200..=3_000_000).contains(&baud) {
+            baud
+        } else {
+            DEFAULT_BAUD
+        };
         Self::open_unchecked(path, baud, sink, on_gone)
     }
 
@@ -141,10 +145,13 @@ impl SerialLink {
     pub async fn write(&self, data: Vec<u8>) -> Result<(), String> {
         let writer = self.writer.clone();
         tokio::task::spawn_blocking(move || {
-            let mut port = writer.lock().map_err(|_| "write_failed: lock".to_string())?;
+            let mut port = writer
+                .lock()
+                .map_err(|_| "write_failed: lock".to_string())?;
             // Без flush: он ждёт (tcdrain), пока байты физически уйдут, — лишняя
             // задержка на каждый кадр. Ядро передаст их само.
-            port.write_all(&data).map_err(|e| format!("write_failed: {e}"))
+            port.write_all(&data)
+                .map_err(|e| format!("write_failed: {e}"))
         })
         .await
         .map_err(|e| format!("write_failed: {e}"))?
@@ -288,9 +295,13 @@ mod tests {
         let sink: EventSink = Arc::new(move |ev| {
             let _ = tx.send(ev);
         });
-        let baud = if cfg!(target_os = "macos") { 0 } else { DEFAULT_BAUD };
-        let link = SerialLink::open_unchecked(&slave_path, baud, sink, Box::new(|| {}))
-            .expect("open pty");
+        let baud = if cfg!(target_os = "macos") {
+            0
+        } else {
+            DEFAULT_BAUD
+        };
+        let link =
+            SerialLink::open_unchecked(&slave_path, baud, sink, Box::new(|| {})).expect("open pty");
         assert_eq!(termios(slave).c_cflag & libc::HUPCL, 0, "HUPCL снят");
 
         device.write_all(&[0x3e, 0x01, 0x00, 0x0a]).unwrap();

@@ -1721,6 +1721,31 @@ export default {
     lead: 'Chatten über LoRa-Funk – ohne Internet und Mobilfunk. Verbinde ein Meshtastic- oder MeshCore-Funkgerät über USB, Bluetooth oder WLAN: Die Chats darüber erscheinen im Messenger neben den gewohnten.',
     desktopOnly:
       'Ein Funkgerät lässt sich in der Desktop-App (macOS, Windows, Linux) und unter Android verbinden.',
+    module: {
+      title: 'Modul für Mesh-Netze',
+      description:
+        'Meshtastic- und MeshCore-Funkgeräte über USB, Bluetooth und WLAN sowie ein eigener Reticulum-Knoten. Nur nötig, wenn Sie über Mesh-Netze schreiben.',
+      download: 'Modul herunterladen ({size})',
+      update: 'Aktualisieren ({size})',
+      downloading: 'Wird heruntergeladen: {percent} %',
+      cancel: 'Abbrechen',
+      remove: 'Entfernen',
+      removeTitle: 'Modul für Mesh-Netze entfernen?',
+      removeContent:
+        'Funkgeräte werden getrennt, der Reticulum-Knoten wird gestoppt. Chats und Einstellungen bleiben erhalten — das Modul lässt sich erneut herunterladen.',
+      statusInstalled: 'Installiert',
+      statusOutdated: 'Neue Version verfügbar',
+      statusNone: 'Nicht installiert',
+      unsupported: 'Für diesen Build gibt es kein Modul',
+      errTor:
+        'Tor verbindet sich noch — das Modul lässt sich herunterladen, sobald Tor bereit ist.',
+      errDownload:
+        'Das Modul für Mesh-Netze konnte nicht heruntergeladen werden. Prüfen Sie die Internetverbindung und versuchen Sie es erneut.',
+      errHash:
+        'Die heruntergeladene Datei entspricht nicht der erwarteten, das Modul wurde nicht installiert. Versuchen Sie es erneut.',
+      errInstall:
+        'Das Modul für Mesh-Netze konnte nicht installiert werden: kein Speicherplatz oder kein Zugriff auf den App-Ordner.',
+    },
     android: {
       serviceTitle: 'Funkgerät verbunden',
       serviceText: 'Nachrichten über Funk kommen auch an, wenn die App im Hintergrund ist',
@@ -2191,6 +2216,13 @@ export default {
       login_failed: 'Der Raum hat die Anmeldung abgelehnt.',
       no_account_key: 'Kein Kontoschlüssel: melde dich erneut an.',
       rns_not_running: 'Der Reticulum-Knoten läuft nicht.',
+      mesh_module_missing:
+        'Das Modul für Mesh-Netze ist nicht installiert — laden Sie es auf der Seite „Mesh-Netze“ herunter.',
+      mesh_module_outdated:
+        'Das Modul für Mesh-Netze ist veraltet — aktualisieren Sie es auf der Seite „Mesh-Netze“.',
+      mesh_module_failed:
+        'Das Modul für Mesh-Netze ist nicht gestartet. Entfernen Sie es in den Einstellungen und laden Sie es erneut herunter.',
+      mesh_module_stopped: 'Das Modul für Mesh-Netze wurde beendet. Versuchen Sie es erneut.',
       rns_error: 'Reticulum-Fehler.',
       rns_timeout: 'Der Knoten hat nicht rechtzeitig geantwortet.',
       rns_link_closed: 'Der Knoten hat die Verbindung geschlossen.',

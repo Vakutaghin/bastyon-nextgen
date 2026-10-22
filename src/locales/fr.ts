@@ -1723,6 +1723,31 @@ export default {
     lead: 'Discuter par radio LoRa, sans internet ni réseau mobile. Connectez une radio Meshtastic ou MeshCore en USB, Bluetooth ou Wi-Fi : ses discussions apparaissent dans la messagerie à côté des autres.',
     desktopOnly:
       "Une radio se connecte dans l'application pour ordinateur (macOS, Windows, Linux) et sur Android.",
+    module: {
+      title: 'Module réseaux mesh',
+      description:
+        'Radios Meshtastic et MeshCore en USB, Bluetooth et Wi-Fi, et votre propre nœud Reticulum. Utile seulement si vous échangez via des réseaux mesh.',
+      download: 'Télécharger le module ({size})',
+      update: 'Mettre à jour ({size})',
+      downloading: 'Téléchargement : {percent} %',
+      cancel: 'Annuler',
+      remove: 'Supprimer',
+      removeTitle: 'Supprimer le module réseaux mesh ?',
+      removeContent:
+        'Les radios seront déconnectées et le nœud Reticulum s’arrêtera. Vos conversations et réglages restent : vous pourrez retélécharger le module.',
+      statusInstalled: 'Installé',
+      statusOutdated: 'Nouvelle version disponible',
+      statusNone: 'Non installé',
+      unsupported: 'Pas de module pour cette version',
+      errTor:
+        'Tor est encore en cours de connexion : vous pourrez télécharger le module quand il sera prêt.',
+      errDownload:
+        'Impossible de télécharger le module réseaux mesh. Vérifiez votre connexion internet et réessayez.',
+      errHash:
+        'Le fichier téléchargé ne correspond pas à celui attendu : le module n’a pas été installé. Réessayez.',
+      errInstall:
+        'Impossible d’installer le module réseaux mesh : pas d’espace disque ou pas d’accès au dossier de l’application.',
+    },
     android: {
       serviceTitle: 'Radio connectée',
       serviceText:
@@ -2195,6 +2220,13 @@ export default {
       login_failed: 'Le salon a refusé la connexion.',
       no_account_key: 'Pas de clé de compte : reconnectez-vous.',
       rns_not_running: "Le nœud Reticulum n'est pas démarré.",
+      mesh_module_missing:
+        'Le module réseaux mesh n’est pas installé : téléchargez-le sur la page « Réseaux mesh ».',
+      mesh_module_outdated:
+        'Le module réseaux mesh est obsolète : mettez-le à jour sur la page « Réseaux mesh ».',
+      mesh_module_failed:
+        'Le module réseaux mesh n’a pas démarré. Supprimez-le dans les réglages et téléchargez-le à nouveau.',
+      mesh_module_stopped: 'Le module réseaux mesh s’est arrêté. Réessayez.',
       rns_error: 'Erreur Reticulum.',
       rns_timeout: "Le nœud n'a pas répondu à temps.",
       rns_link_closed: 'Le nœud a fermé la connexion.',

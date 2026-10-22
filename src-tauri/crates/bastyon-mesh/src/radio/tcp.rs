@@ -99,12 +99,6 @@ impl TcpLink {
         w.flush().await.map_err(|e| format!("write_failed: {e}"))
     }
 
-    /// Прервать чтение без ожидания (выход из приложения): сокет закроется
-    /// вместе с процессом.
-    pub fn abort(&self) {
-        self.reader.abort();
-    }
-
     /// Закрыть по просьбе интерфейса: чтение прерываем, событие `closed` не шлём.
     pub async fn close(&self) {
         self.reader.abort();
@@ -121,9 +115,18 @@ mod tests {
 
     #[tokio::test]
     async fn public_hosts_are_refused_before_connecting() {
-        assert!(resolve("8.8.8.8", 4403).await.unwrap_err().starts_with("address_not_allowed"));
-        assert!(resolve("example.org", 5000).await.unwrap_err().starts_with("address_not_allowed"));
-        assert!(resolve("127.0.0.1", 0).await.unwrap_err().starts_with("bad_address"));
+        assert!(resolve("8.8.8.8", 4403)
+            .await
+            .unwrap_err()
+            .starts_with("address_not_allowed"));
+        assert!(resolve("example.org", 5000)
+            .await
+            .unwrap_err()
+            .starts_with("address_not_allowed"));
+        assert!(resolve("127.0.0.1", 0)
+            .await
+            .unwrap_err()
+            .starts_with("bad_address"));
     }
 
     #[tokio::test]

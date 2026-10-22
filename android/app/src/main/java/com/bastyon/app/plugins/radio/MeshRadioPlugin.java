@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Радио для mesh-сетей на Android — то же, что команды `radio_*` десктопа
- * (src-tauri/src/radio): список USB-портов, соединения USB / TCP (только LAN) /
+ * (модуль mesh-сетей, src-tauri/crates/bastyon-mesh/src/radio): список USB-портов, соединения USB / TCP (только LAN) /
  * Bluetooth LE и события `radio` с байтами. Протоколы Meshtastic и MeshCore —
  * в JS (src/mesh), одинаковые для всех платформ.
  *

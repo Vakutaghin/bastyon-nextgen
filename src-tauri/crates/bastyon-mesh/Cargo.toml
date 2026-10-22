@@ -1,0 +1,42 @@
+[package]
+name = "bastyon-mesh"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+publish = false
+
+# Модуль mesh-сетей для приложения на компьютере: отдельная программа, как
+# Tor и Kubo. Приложение скачивает её по просьбе человека и запускает, когда
+# mesh нужен; разговор — строками JSON через stdin и stdout (src/wire.rs).
+# Внутри — радио-слой (USB-serial, TCP, Bluetooth LE) и узел Reticulum. На
+# Android mesh встроен в приложение (bastyon-rns-jni и Java-плагины): там
+# запускать скачанный код нельзя.
+
+# Работа — в библиотеке (src/lib.rs): так её тесты идут в `cargo test --lib`
+# вместе с остальными крейтами.
+[lib]
+name = "bastyon_mesh"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bastyon-mesh"
+path = "src/main.rs"
+
+[dependencies]
+bastyon-rns = { path = "../bastyon-rns" }
+base64 = "0.22"
+dashmap = "6"
+futures-util = "0.3"
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "io-std", "net", "sync", "time"] }
+# serialport без libudev: на Linux порты перечисляются через sysfs, и сборке
+# не нужен libudev-dev. btleplug на Linux идёт через BlueZ (libdbus).
+serialport = { version = "4.10", default-features = false }
+btleplug = "0.13"
+uuid = "1"
+
+# Снять HUPCL с порта (src/radio/serial.rs); в тестах — openpty.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

@@ -6,7 +6,7 @@ import java.net.InetAddress;
 
 /**
  * Радио по Wi-Fi — только в локальной сети, как на десктопе
- * (src-tauri/src/radio/addr.rs): иначе приложение стало бы прокси во внешний
+ * (src-tauri/crates/bastyon-mesh/src/radio/addr.rs): иначе приложение стало бы прокси во внешний
  * интернет, в том числе в режиме Tor.
  */
 final class LanAddress {

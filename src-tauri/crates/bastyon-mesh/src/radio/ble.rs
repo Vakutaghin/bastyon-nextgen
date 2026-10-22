@@ -8,8 +8,8 @@
 
 use super::{EventSink, RadioEvent};
 use btleplug::api::{
-    Central, CentralEvent, CentralState, Characteristic, Manager as _, Peripheral as _,
-    ScanFilter, WriteType,
+    Central, CentralEvent, CentralState, Characteristic, Manager as _, Peripheral as _, ScanFilter,
+    WriteType,
 };
 use btleplug::platform::{Adapter, Manager, Peripheral};
 use futures_util::StreamExt;
@@ -185,7 +185,8 @@ impl BleLink {
             .await
             .map_err(|_| "ble_connect_failed: service discovery timeout".to_string())?
             .map_err(|e| format!("ble_connect_failed: {e}"))?;
-        let characteristics: Vec<Characteristic> = peripheral.characteristics().into_iter().collect();
+        let characteristics: Vec<Characteristic> =
+            peripheral.characteristics().into_iter().collect();
         let mut notifications = peripheral
             .notifications()
             .await
@@ -225,7 +226,12 @@ impl BleLink {
             .map_err(|e| format!("ble_io_failed: {e}"))
     }
 
-    pub async fn write(&self, uuid: Uuid, data: Vec<u8>, with_response: bool) -> Result<(), String> {
+    pub async fn write(
+        &self,
+        uuid: Uuid,
+        data: Vec<u8>,
+        with_response: bool,
+    ) -> Result<(), String> {
         let c = self.characteristic(uuid)?;
         let kind = if with_response {
             WriteType::WithResponse
@@ -250,16 +256,6 @@ impl BleLink {
         self.notifier.abort();
         let _ = self.peripheral.disconnect().await;
     }
-
-    /// Выход из приложения: отключение в фоне, не дожидаясь (выключенное
-    /// устройство может не ответить). Соединение всё равно рвётся с процессом.
-    pub fn abort(&self) {
-        self.notifier.abort();
-        let peripheral = self.peripheral.clone();
-        tauri::async_runtime::spawn(async move {
-            let _ = peripheral.disconnect().await;
-        });
-    }
 }
 
 /// UUID из интерфейса: полный вид (`6e400001-…`) или короткий 16-битный
@@ -280,7 +276,9 @@ mod tests {
     #[test]
     fn uuids_are_parsed_in_both_forms() {
         assert_eq!(
-            parse_uuid("6E400001-B5A3-F393-E0A9-E50E24DCCA9E").unwrap().to_string(),
+            parse_uuid("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
+                .unwrap()
+                .to_string(),
             "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
         );
         assert_eq!(

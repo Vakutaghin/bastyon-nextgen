@@ -170,7 +170,7 @@ interface Bridge {
 }
 
 /**
- * Узел Reticulum вместо `rns_*` (src-tauri/src/rns): стек заменён, логика
+ * Узел Reticulum вместо `rns_*` (модуль mesh-сетей, src-tauri/src/mesh): стек заменён, логика
  * страницы, сторов и мессенджера — настоящая. События — из теста.
  */
 class RnsBridge implements Bridge {
@@ -284,10 +284,49 @@ class RnsBridge implements Bridge {
   }
 }
 
+/**
+ * Модуль mesh-сетей приложения для компьютера (src-tauri/src/mesh): в тесте —
+ * его состояние; радио и узел за ним — в Bridge.
+ */
+class MeshModule {
+  installs = 0
+
+  constructor(public installed = true) {}
+
+  invoke(cmd: string): { value?: unknown; error?: string } | null {
+    switch (cmd) {
+      case 'mesh_module_status':
+        return {
+          value: {
+            supported: true,
+            installed: this.installed,
+            current: this.installed,
+            installing: false,
+            running: this.installed,
+            size: 2_300_000,
+          },
+        }
+      case 'mesh_module_install':
+        this.installs++
+        this.installed = true
+        return { value: null }
+      default:
+        // Без модуля радио и узел не отвечают — как у приложения.
+        return this.installed ? null : { error: 'mesh_module_missing' }
+    }
+  }
+}
+
 /** Подменить Tauri: команды — в тест, Channel — через transformCallback. */
-async function installTauriMock(page: Page, bridge: Bridge): Promise<void> {
-  await page.exposeFunction('__meshBridge', (cmd: string, args: string) =>
-    bridge.invoke(cmd, JSON.parse(args) as Record<string, unknown>)
+async function installTauriMock(
+  page: Page,
+  bridge: Bridge,
+  meshModule = new MeshModule()
+): Promise<void> {
+  await page.exposeFunction(
+    '__meshBridge',
+    async (cmd: string, args: string) =>
+      meshModule.invoke(cmd) ?? bridge.invoke(cmd, JSON.parse(args) as Record<string, unknown>)
   )
   await page.evaluate(() => {
     const callbacks = new Map<number, (message: unknown) => void>()
@@ -414,6 +453,33 @@ test('mesh: connect a radio, chat with a node and write to a channel', async ({ 
   expect(bobInbox.find((m) => m.kind === 'channel')).toMatchObject({ senderName: 'Alice' })
 
   await bobSession.close()
+})
+
+test('desktop: the mesh page offers the module first, then the radio', async ({ page }) => {
+  const alice = new FakeCompanion(new FakeAir(), { name: 'Alice', channels: [] })
+  await useMockNode(page, DATA)
+  await page.goto('/')
+  await page.waitForSelector('#app > *', { timeout: 30_000 })
+  await page
+    .getByRole('button', { name: 'Понятно' })
+    .click({ timeout: 5_000 })
+    .catch(() => {})
+  await signIn(page)
+  const meshModule = new MeshModule(false)
+  await installTauriMock(page, new RadioBridge(page, () => meshcorePort(alice)), meshModule)
+  await goTo(page, '/mesh?net=meshcore')
+
+  // Модуля нет: только предложение скачать, вкладок сетей нет.
+  await expect(page.getByText('Модуль mesh-сетей')).toBeVisible()
+  await expect(page.getByText('Не установлен')).toBeVisible()
+  await expect(page.getByRole('tablist', { name: 'Сеть' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Скачать модуль (2.2 МБ)' }).click()
+
+  // Скачан: карточка ушла, радио в списке портов.
+  await expect.poll(() => meshModule.installs).toBe(1)
+  await expect(page.getByText('Модуль mesh-сетей')).toHaveCount(0)
+  await expect(page.getByRole('tablist', { name: 'Сеть' })).toBeVisible()
+  await expect(page.getByRole('listitem').filter({ hasText: 'CP2102 USB to UART' })).toBeVisible()
 })
 
 test('a Bastyon contact over a MeshCore radio when the server is down', async ({ page }) => {

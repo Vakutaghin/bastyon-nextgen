@@ -3,8 +3,7 @@ mod fetch;
 mod ffmpeg;
 mod ipfs;
 mod main_window;
-mod radio;
-mod rns;
+mod mesh;
 mod system_info;
 mod tor;
 mod tray;
@@ -998,30 +997,34 @@ pub fn run() {
       asr::asr_cancel,
       asr::asr_open_mic_settings,
       system_info::system_info,
-      radio::radio_serial_ports,
-      radio::radio_serial_open,
-      radio::radio_tcp_open,
-      radio::radio_write,
-      radio::radio_close,
-      radio::radio_ble_scan,
-      radio::radio_ble_connect,
-      radio::radio_ble_subscribe,
-      radio::radio_ble_write,
-      radio::radio_ble_read,
-      rns::rns_start,
-      rns::rns_stop,
-      rns::rns_status,
-      rns::rns_announce,
-      rns::rns_paths,
-      rns::rns_learn,
-      rns::rns_send,
-      rns::rns_request_path,
-      rns::rns_set_propagation_node,
-      rns::rns_sync,
-      rns::rns_page,
-      rns::rns_download,
-      rns::rns_paper,
-      rns::rns_ingest,
+      mesh::mesh_module_status,
+      mesh::mesh_module_install,
+      mesh::mesh_module_cancel_install,
+      mesh::mesh_module_remove,
+      mesh::commands::radio_serial_ports,
+      mesh::commands::radio_serial_open,
+      mesh::commands::radio_tcp_open,
+      mesh::commands::radio_write,
+      mesh::commands::radio_close,
+      mesh::commands::radio_ble_scan,
+      mesh::commands::radio_ble_connect,
+      mesh::commands::radio_ble_subscribe,
+      mesh::commands::radio_ble_write,
+      mesh::commands::radio_ble_read,
+      mesh::commands::rns_start,
+      mesh::commands::rns_stop,
+      mesh::commands::rns_status,
+      mesh::commands::rns_announce,
+      mesh::commands::rns_paths,
+      mesh::commands::rns_learn,
+      mesh::commands::rns_send,
+      mesh::commands::rns_request_path,
+      mesh::commands::rns_set_propagation_node,
+      mesh::commands::rns_sync,
+      mesh::commands::rns_page,
+      mesh::commands::rns_download,
+      mesh::commands::rns_paper,
+      mesh::commands::rns_ingest,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]
@@ -1109,11 +1112,9 @@ pub fn run() {
       // Модуль сжатия видео: FFmpeg, скачанный по просьбе пользователя.
       ffmpeg::init(app.handle()).map_err(|e| e.to_string())?;
 
-      // Радио для mesh-сетей: соединения с LoRa-устройствами.
-      radio::init(app.handle())?;
-
-      // Свой узел Reticulum (LXMF, NomadNet): поднимается по команде rns_start.
-      rns::init(app.handle())?;
+      // Mesh-сети: модуль с радио и узлом Reticulum, скачанный по просьбе
+      // пользователя, — запускается, когда mesh нужен.
+      mesh::init(app.handle()).map_err(|e| e.to_string())?;
 
       // Значок в трее (Windows, Linux). Не вышло — работаем без него.
       if let Err(e) = tray::init(app.handle()) {
@@ -1175,13 +1176,10 @@ fn shutdown_children(app_handle: &tauri::AppHandle) {
   if let Some(mgr) = app_handle.try_state::<asr::AsrManager>() {
     asr::shutdown_on_exit(&mgr);
   }
-  // Порты и Bluetooth-соединения с радио отпускаем.
-  if let Some(mgr) = app_handle.try_state::<radio::RadioManager>() {
-    radio::shutdown_on_exit(&mgr);
-  }
-  // Узел Reticulum: закрыть интерфейсы и сохранить известные адреса.
-  if let Some(mgr) = app_handle.try_state::<rns::RnsManager>() {
-    rns::shutdown_on_exit(&mgr);
+  // Модуль mesh-сетей: отпускает порты и Bluetooth, узел Reticulum закрывает
+  // интерфейсы и сохраняет известные адреса.
+  if let Some(mgr) = app_handle.try_state::<mesh::MeshManager>() {
+    mesh::shutdown_on_exit(&mgr);
   }
 }
 

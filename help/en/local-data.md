@@ -18,7 +18,7 @@ Everything published is stored on the network. On the device the app keeps only 
 - **Decrypted messages** — so that conversations are not decrypted again every time you open them.
 - **Notifications** that have already arrived.
 - **The places where you stopped watching** videos.
-- In the desktop app also the [Tor](tor.md) and [IPFS](ipfs-module.md) programs, the [voice input](voice-input.md) models, the [video compression module](video-compression.md) and your [files in IPFS](my-files.md).
+- In the desktop app also the [Tor](tor.md) and [IPFS](ipfs-module.md) programs, the [voice input](voice-input.md) models, the [video compression module](video-compression.md), the [mesh networks module](mesh.md) and your [files in IPFS](my-files.md).
 
 ## Clearing the cache
 

@@ -15,8 +15,10 @@
   hardened runtime в entitlements.plist.
 
   NSBluetoothAlwaysUsageDescription — Bluetooth до LoRa-радио (mesh-сети).
-  Без него macOS закрывает приложение при первом обращении к Bluetooth. Права
-  hardened runtime для Bluetooth нет: оно есть только у песочницы App Store.
+  К Bluetooth обращается модуль mesh-сетей — программа, которую запускает
+  приложение, — а macOS спрашивает доступ от имени приложения и берёт текст
+  отсюда. Без него macOS закрывает модуль при первом обращении к Bluetooth.
+  Права hardened runtime для Bluetooth нет: оно есть только у песочницы App Store.
 -->
 <plist version="1.0">
   <dict>

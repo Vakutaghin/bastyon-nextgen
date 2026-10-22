@@ -25,11 +25,23 @@ const h = vi.hoisted(() => {
     setPropagationNode: vi.fn(async (_h: string | null) => {}),
     paper: vi.fn(async (_to: string, _text: string) => ({ uri: 'lxm://cGFwZXI' })),
   }
-  return { auth, tor, rns }
+  // Модуль mesh-сетей приложения для компьютера; required: false — Android.
+  const meshModule = {
+    required: false,
+    supported: true,
+    installed: true,
+    refresh: vi.fn(async () => {}),
+    install: vi.fn(async () => {
+      meshModule.installed = meshModule.supported
+      return meshModule.installed
+    }),
+  }
+  return { auth, tor, rns, meshModule }
 })
 
 vi.mock('@/blockchain', () => ({ useAuthStore: () => h.auth }))
 vi.mock('@/stores/tor-store', () => ({ useTorStore: () => h.tor }))
+vi.mock('@/stores/mesh-module-store', () => ({ useMeshModuleStore: () => h.meshModule }))
 vi.mock('@/composables/use-browser-notifications', () => ({ notifyMessage: vi.fn() }))
 vi.mock('@/b-components/messenger/sounds/glass.mp3', () => ({ default: 'glass.mp3' }))
 vi.mock('../reticulum/rns-api', () => ({
@@ -67,6 +79,7 @@ beforeEach(async () => {
   h.auth.address = 'PAliceAddressXXXXXXXXXXXXXXXXXXXX'
   h.auth.keyPair.privateKey = new Uint8Array(32).fill(1)
   h.tor.enabled = false
+  Object.assign(h.meshModule, { required: false, supported: true, installed: true })
   vi.clearAllMocks()
 })
 
@@ -123,6 +136,28 @@ describe('reticulum node', () => {
     await rns.autostart()
     expect(h.rns.start).toHaveBeenCalledTimes(1)
     expect(rns.status).toBe('running')
+  })
+
+  it('desktop: autostart downloads the missing mesh module, then starts', async () => {
+    Object.assign(h.meshModule, { required: true, installed: false })
+    const rns = useReticulumStore()
+    await rns.autostart()
+    expect(h.meshModule.install).not.toHaveBeenCalled()
+
+    await rns.updateConfig({ autostart: true })
+    await rns.autostart()
+    expect(h.meshModule.install).toHaveBeenCalledTimes(1)
+    expect(h.rns.start).toHaveBeenCalledTimes(1)
+  })
+
+  it('desktop: no module for this build — no download, no start', async () => {
+    Object.assign(h.meshModule, { required: true, installed: false, supported: false })
+    const rns = useReticulumStore()
+    await rns.updateConfig({ autostart: true })
+    await rns.autostart()
+    expect(h.meshModule.install).not.toHaveBeenCalled()
+    expect(h.rns.start).not.toHaveBeenCalled()
+    expect(rns.status).toBe('idle')
   })
 
   it('restarts the node later when an interface did not come up', async () => {

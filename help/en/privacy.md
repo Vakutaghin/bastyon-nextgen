@@ -42,7 +42,7 @@ Bastyon itself does not collect IP addresses, but the app talks to servers, and 
 | YouTube and Vimeo | when a post with an embedded clip from these sites is on screen |
 | Websites from links | when a link preview image is shown |
 | CoinGecko | when you open the PKOIN price chart in the wallet |
-| GitHub | when checking for updates (in the desktop and phone apps) |
+| GitHub | when checking for updates (in the desktop and phone apps) and downloading the mesh networks module |
 | Hugging Face | when downloading the voice input model |
 | Tor Project, IPFS | when Tor or the IPFS module is turned on for the first time — downloading the programs |
 | IPFS peers, the lookup services delegated-ipfs.dev and cid.contact | when you open IPFS links, share files and update permanent links |

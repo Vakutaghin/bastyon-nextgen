@@ -15,6 +15,7 @@ import { computed, ref } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
 import { RNS_CONFIG_PREFIX } from '@/blockchain/constants/storage'
+import { useMeshModuleStore } from '@/stores/mesh-module-store'
 import { useTorStore } from '@/stores/tor-store'
 import { deriveRnsIdentity } from '../reticulum/identity'
 import {
@@ -289,11 +290,19 @@ export const useReticulumStore = defineStore('reticulum', () => {
     }, delay)
   }
 
-  /** При входе в аккаунт: поднять узел, если так настроено. */
+  /** При входе в аккаунт: поднять узел, если так настроено. На компьютере узел
+   *  работает в модуле mesh-сетей. Нет модуля — он скачивается сам: узел
+   *  запускали при входе и до того, как mesh стал модулем, и без этого после
+   *  обновления приложения сообщения Reticulum молча перестали бы приходить. */
   async function autostart(): Promise<void> {
     ensureConfig()
     // Не через computed `available`: он запомнил бы ответ на момент входа.
     if (!isRnsAvailable() || !config.value.autostart || status.value !== 'idle') return
+    const meshModule = useMeshModuleStore()
+    if (meshModule.required) {
+      await meshModule.refresh()
+      if (!meshModule.installed && !(meshModule.supported && (await meshModule.install()))) return
+    }
     await start()
   }
 

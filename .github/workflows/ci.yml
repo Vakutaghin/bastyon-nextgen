@@ -67,7 +67,7 @@ jobs:
           # bindgen при сборке whisper.cpp (src/asr).
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev libasound2-dev libclang-dev
 
-      # --workspace: и крейты узла Reticulum (src-tauri/crates).
+      # --workspace: и крейты mesh-сетей (src-tauri/crates): узел Reticulum и модуль.
       - name: Rust tests
         working-directory: src-tauri
         run: cargo test --workspace --lib
@@ -89,12 +89,17 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      # И модуль mesh-сетей: его скачивают на ту же чистую Windows.
       - name: Build
         working-directory: src-tauri
         env:
           STATIC_VCRUNTIME: 'true'
-        run: cargo build --release --locked
+        run: |
+          cargo build --release --locked
+          cargo build --release --locked -p bastyon-mesh
 
       - name: Check native dependencies
         shell: bash
-        run: scripts/check-native-deps.sh src-tauri/target/release/app.exe
+        run: |
+          scripts/check-native-deps.sh src-tauri/target/release/app.exe
+          scripts/check-native-deps.sh src-tauri/target/release/bastyon-mesh.exe

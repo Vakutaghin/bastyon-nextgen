@@ -5,7 +5,7 @@ import java.io.IOException;
 /**
  * Соединение с LoRa-радио: поток байтов (USB-serial, TCP) или GATT (Bluetooth).
  * Протоколы (Meshtastic, MeshCore) живут в JS — здесь только транспорт, как в
- * src-tauri/src/radio на десктопе.
+ * src-tauri/crates/bastyon-mesh/src/radio на десктопе.
  */
 abstract class RadioLink {
 

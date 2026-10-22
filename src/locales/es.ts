@@ -1718,6 +1718,30 @@ export default {
     lead: 'Chatea por radio LoRa, sin internet ni cobertura móvil. Conecta una radio Meshtastic o MeshCore por USB, Bluetooth o Wi-Fi: sus chats aparecerán en el mensajero junto a los habituales.',
     desktopOnly:
       'La radio se conecta en la aplicación de escritorio (macOS, Windows, Linux) y en Android.',
+    module: {
+      title: 'Módulo de redes mesh',
+      description:
+        'Radios Meshtastic y MeshCore por USB, Bluetooth y Wi-Fi, y tu propio nodo Reticulum. Solo hace falta si escribes por redes mesh.',
+      download: 'Descargar el módulo ({size})',
+      update: 'Actualizar ({size})',
+      downloading: 'Descargando: {percent} %',
+      cancel: 'Cancelar',
+      remove: 'Eliminar',
+      removeTitle: '¿Eliminar el módulo de redes mesh?',
+      removeContent:
+        'Las radios se desconectarán y el nodo Reticulum se detendrá. Los chats y los ajustes se conservan: puedes volver a descargar el módulo.',
+      statusInstalled: 'Instalado',
+      statusOutdated: 'Hay una versión nueva',
+      statusNone: 'No instalado',
+      unsupported: 'No hay módulo para esta versión',
+      errTor: 'Tor aún se está conectando: podrás descargar el módulo cuando esté listo.',
+      errDownload:
+        'No se pudo descargar el módulo de redes mesh. Comprueba la conexión a internet e inténtalo de nuevo.',
+      errHash:
+        'El archivo descargado no coincide con el esperado, así que el módulo no se instaló. Inténtalo de nuevo.',
+      errInstall:
+        'No se pudo instalar el módulo de redes mesh: no hay espacio en disco o acceso a la carpeta de la aplicación.',
+    },
     android: {
       serviceTitle: 'Radio conectada',
       serviceText:
@@ -2185,6 +2209,13 @@ export default {
       login_failed: 'La sala no te dejó entrar.',
       no_account_key: 'No hay clave de la cuenta: vuelve a entrar.',
       rns_not_running: 'El nodo Reticulum no está en marcha.',
+      mesh_module_missing:
+        'El módulo de redes mesh no está instalado: descárgalo en la página «Redes mesh».',
+      mesh_module_outdated:
+        'El módulo de redes mesh está desactualizado: actualízalo en la página «Redes mesh».',
+      mesh_module_failed:
+        'El módulo de redes mesh no arrancó. Elimínalo en los ajustes y descárgalo de nuevo.',
+      mesh_module_stopped: 'El módulo de redes mesh se detuvo. Inténtalo de nuevo.',
       rns_error: 'Error de Reticulum.',
       rns_timeout: 'El nodo no respondió a tiempo.',
       rns_link_closed: 'El nodo cerró la conexión.',

@@ -23,7 +23,7 @@ The window’s close button does not quit the app, it hides the window. Tor, the
 - **macOS.** The Dock icon brings the window back. To quit the app, press **Cmd+Q** or choose “Quit” in the Dock icon’s menu.
 - **Windows and Linux.** The window hides to the tray. Clicking the tray icon brings the window back, and the right-click menu has **“Open Bastyon”** and **“Quit”**. You can also quit with **Ctrl+Q**. If there is no tray — this happens on Linux without appindicator — the close button quits the app, as before.
 
-When the app quits, Tor and the IPFS module stop: your files are no longer served.
+When the app quits, Tor and the IPFS module stop — your files are no longer served — and so does the mesh networks module: radios disconnect and the Reticulum node saves the addresses it knows.
 
 The app cannot run twice: launching it again just brings up the window that is already running, even a hidden one. [bastyon:// links](deep-links.md) arrive there too.
 

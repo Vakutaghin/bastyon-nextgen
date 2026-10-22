@@ -67,15 +67,13 @@ pub fn parse_target(host: &str) -> Result<TcpTarget, String> {
     let name = bare.trim_end_matches('.').to_ascii_lowercase();
     let valid = !name.is_empty()
         && name.len() <= 253
-        && name
-            .split('.')
-            .all(|label| {
-                !label.is_empty()
-                    && label.len() <= 63
-                    && label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
-                    && !label.starts_with('-')
-                    && !label.ends_with('-')
-            });
+        && name.split('.').all(|label| {
+            !label.is_empty()
+                && label.len() <= 63
+                && label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+                && !label.starts_with('-')
+                && !label.ends_with('-')
+        });
     if !valid {
         return Err(format!("bad_address: {host}"));
     }
@@ -131,17 +129,34 @@ mod tests {
 
     #[test]
     fn targets_are_parsed_and_checked() {
-        assert_eq!(parse_target("192.168.1.7"), Ok(TcpTarget::Ip(ip("192.168.1.7"))));
-        assert_eq!(parse_target(" [fe80::2] "), Ok(TcpTarget::Ip(ip("fe80::2"))));
+        assert_eq!(
+            parse_target("192.168.1.7"),
+            Ok(TcpTarget::Ip(ip("192.168.1.7")))
+        );
+        assert_eq!(
+            parse_target(" [fe80::2] "),
+            Ok(TcpTarget::Ip(ip("fe80::2")))
+        );
         assert_eq!(
             parse_target("MeshCore-1.local."),
             Ok(TcpTarget::Name("meshcore-1.local".into()))
         );
-        assert_eq!(parse_target("localhost"), Ok(TcpTarget::Name("localhost".into())));
-        assert!(parse_target("8.8.4.4").unwrap_err().starts_with("address_not_allowed"));
-        assert!(parse_target("example.com").unwrap_err().starts_with("address_not_allowed"));
+        assert_eq!(
+            parse_target("localhost"),
+            Ok(TcpTarget::Name("localhost".into()))
+        );
+        assert!(parse_target("8.8.4.4")
+            .unwrap_err()
+            .starts_with("address_not_allowed"));
+        assert!(parse_target("example.com")
+            .unwrap_err()
+            .starts_with("address_not_allowed"));
         assert!(parse_target("").unwrap_err().starts_with("bad_address"));
-        assert!(parse_target("bad host.local").unwrap_err().starts_with("bad_address"));
-        assert!(parse_target("-x.local").unwrap_err().starts_with("bad_address"));
+        assert!(parse_target("bad host.local")
+            .unwrap_err()
+            .starts_with("bad_address"));
+        assert!(parse_target("-x.local")
+            .unwrap_err()
+            .starts_with("bad_address"));
     }
 }

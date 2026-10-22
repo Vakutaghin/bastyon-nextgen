@@ -1703,6 +1703,30 @@ export default {
     lead: 'Chat over LoRa radio, with no internet or cellular network. Connect a Meshtastic or MeshCore radio over USB, Bluetooth or Wi-Fi: its chats appear in the messenger next to your usual ones.',
     desktopOnly:
       'A radio can be connected in the desktop app (macOS, Windows, Linux) and on Android.',
+    module: {
+      title: 'Mesh networks module',
+      description:
+        'Meshtastic and MeshCore radios over USB, Bluetooth and Wi-Fi, and your own Reticulum node. Only needed if you chat over mesh networks.',
+      download: 'Download the module ({size})',
+      update: 'Update ({size})',
+      downloading: 'Downloading: {percent}%',
+      cancel: 'Cancel',
+      remove: 'Remove',
+      removeTitle: 'Remove the mesh networks module?',
+      removeContent:
+        'Radios will disconnect and the Reticulum node will stop. Your chats and settings stay — you can download the module again.',
+      statusInstalled: 'Installed',
+      statusOutdated: 'New version available',
+      statusNone: 'Not installed',
+      unsupported: 'There is no module for this build',
+      errTor: 'Tor is still connecting — you can download the module once it is ready.',
+      errDownload:
+        'Could not download the mesh networks module. Check your internet connection and try again.',
+      errHash:
+        'The downloaded file did not match the expected one, so the module was not installed. Try again.',
+      errInstall:
+        'Could not install the mesh networks module: no disk space or no access to the app folder.',
+    },
     android: {
       serviceTitle: 'Radio connected',
       serviceText: 'Messages over the radio keep arriving while the app is in the background',
@@ -2169,6 +2193,13 @@ export default {
       login_failed: 'The room refused the login.',
       no_account_key: 'No account key: sign in again.',
       rns_not_running: 'The Reticulum node is not running.',
+      mesh_module_missing:
+        'The mesh networks module is not installed — download it on the “Mesh networks” page.',
+      mesh_module_outdated:
+        'The mesh networks module is out of date — update it on the “Mesh networks” page.',
+      mesh_module_failed:
+        'The mesh networks module did not start. Remove it in the settings and download it again.',
+      mesh_module_stopped: 'The mesh networks module stopped. Try again.',
       rns_error: 'Reticulum error.',
       rns_timeout: 'The node did not answer in time.',
       rns_link_closed: 'The node closed the connection.',

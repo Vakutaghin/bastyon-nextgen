@@ -1,5 +1,5 @@
 ---
-keywords: [mesh, Meshtastic, MeshCore, Reticulum, LXMF, NomadNet, micron, RNode, propagation node, LoRa, radio, without internet, offline chat, companion, region, preset, LongFast, node, node key, channel, channel link, hashtag channel, private channel]
+keywords: [mesh, Meshtastic, MeshCore, Reticulum, LXMF, NomadNet, micron, RNode, propagation node, LoRa, radio, without internet, offline chat, companion, region, preset, LongFast, node, node key, channel, channel link, hashtag channel, private channel, mesh networks module]
 ---
 
 # Chatting over radio (mesh)
@@ -20,6 +20,7 @@ These are different networks: Meshtastic and MeshCore radios cannot hear each ot
 ## What you need
 
 - The desktop or Android app: a radio can be connected only there (not in a browser or on an iPhone).
+- In the desktop app, the mesh networks module, see below. On Android everything is built in.
 - A LoRa radio with the firmware of the network you want. Common boards (Heltec, LilyGO, RAK and others) work; the firmware is installed with each project's web flasher.
   - **Meshtastic** — firmware 2.5 or newer (2.7 is best).
   - **MeshCore** — the companion firmware (USB, Bluetooth or Wi-Fi).
@@ -27,6 +28,12 @@ These are different networks: Meshtastic and MeshCore radios cannot hear each ot
 
 > [!NOTE]
 > A radio keeps only one connection. If it is connected to the official app on a phone, Bastyon cannot connect to it — disconnect the phone first.
+
+## The mesh networks module
+
+In the desktop app, radios and Reticulum work through the mesh networks module — a separate program, like [Tor](tor.md) and [the IPFS module](ipfs-module.md). Not everyone needs mesh, so the module is downloaded only when you ask for it: the first time you open the **“Mesh networks”** page, it shows the **“Mesh networks module”** card with a download button — a couple of megabytes. With [Tor](tor.md) on, the module is downloaded through Tor. If **“Start the node when signing in”** is checked for the Reticulum node, the module downloads by itself when you sign in.
+
+The module is updated together with the app: the app downloads the new version by itself and puts it in place the next time the module starts. To remove the module, go to **“Settings”** → **“General”** → **“Mesh networks module”** → **“Remove”**. Radios disconnect and the Reticulum node stops, while your chats and settings stay.
 
 ## Connect a radio
 
