@@ -63,7 +63,9 @@ const PANEL_HEIGHT = '85%'
 const { t } = useI18n()
 const router = useRouter()
 const help = useHelpStore()
-const { isMobileOrTablet: mobile } = useViewport()
+// Шторка снизу — только в узком окне: телефону боком она оставила бы под
+// статью полосу в пару строк, а сбоку места хватает.
+const { isTablet: mobile } = useViewport()
 
 function openFull(): void {
   const id = help.panelTopic

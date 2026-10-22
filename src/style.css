@@ -338,8 +338,20 @@
   --safe-left: max(env(safe-area-inset-left, 0px), var(--android-inset-left, 0px));
   --safe-right: max(env(safe-area-inset-right, 0px), var(--android-inset-right, 0px));
   --header-height-total: calc(var(--header-height) + var(--safe-top));
+  /* Нижняя панель разделов есть только в узком окне (data-shell="compact"),
+     у остальных каркасов её высота 0 — от неё отступают кнопки снизу. */
   --bottom-nav-height: 56px;
   --bottom-nav-height-total: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  /* Колонка разделов слева у телефона боком (data-shell="rail"); у остальных 0.
+     --shell-inset-left — сколько слева занято каркасом: колонка и вырез экрана. */
+  --rail-width: 0px;
+  --shell-inset-left: calc(var(--rail-width) + var(--safe-left));
+  /* Картинка или ролик в ленте не выше экрана под шапкой, иначе телефон боком
+     показывал их кусками. На компьютере упирается в свои 500 px раньше. */
+  --media-max-height: calc(100vh - var(--header-height-total) - 24px);
+  /* Тело окна (modal.ts): 90 % высоты; у телефона боком — вся высота окна
+     под заголовком (правила rail ниже). */
+  --modal-body-max-height: 90vh;
   --content-max-width: 1600px;
   --content-gap: 20px;
   --content-padding-x: 20px;
@@ -487,6 +499,49 @@
     --content-gap: 8px;
     --content-padding-x: 8px;
   }
+}
+
+/* Телефон боком (data-shell="rail", ставит use-viewport): разделы колонкой
+   слева вместо нижней панели, шапка ниже — по высоте экран в полтора раза
+   меньше, чем стоя. Отступы — как у узкого окна. Окна antd — от самого верха,
+   а их тело — по оставшейся высоте: с отступом сверху в 100 px низ окна
+   уходил за край экрана. */
+:root[data-shell='rail'] {
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-xxl: 32px;
+
+  --header-height: 48px;
+  --bottom-nav-height: 0px;
+  --rail-width: 64px;
+  --content-gap: 12px;
+  --content-padding-x: 12px;
+  /* Высоту тела окна задаёт колонка ниже, а не число. */
+  --modal-body-max-height: none;
+}
+
+:root[data-shell='desktop'] {
+  --bottom-nav-height: 0px;
+}
+
+:root[data-shell='rail'] .ant-modal-wrap:not(.ant-modal-centered) .ant-modal {
+  top: 8px;
+  padding-bottom: 8px;
+}
+
+/* Окно — колонкой не выше экрана: заголовок и кнопки на месте, прокручивается
+   только тело, и ему достаётся вся остальная высота. */
+:root[data-shell='rail'] .ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 16px);
+}
+
+:root[data-shell='rail'] .ant-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -995,6 +1050,27 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   opacity: 1;
 }
 
+/* Кнопки — мимо выреза экрана: телефон боком держит его слева или справа,
+   а крестик и стрелки стояли у самого края. Без выреза отступы прежние.
+   С .vel-modal — сильнее стилей самой библиотеки: она вставляет их позже,
+   когда загружается. */
+.vel-modal .vel-btns-wrapper .btn__close {
+  top: calc(var(--safe-top) + 24px);
+  right: calc(var(--safe-right) + 10px);
+}
+
+.vel-modal .vel-btns-wrapper .btn__prev {
+  left: calc(var(--safe-left) + 12px);
+}
+
+.vel-modal .vel-btns-wrapper .btn__next {
+  right: calc(var(--safe-right) + 12px);
+}
+
+.vel-modal .vel-toolbar {
+  bottom: calc(var(--safe-bottom) + 8px);
+}
+
 /* Оверлей меню профиля (header-user) — поднимаем над хедером (z 1000) и триггером
    (z 3000). Раньше z-index навешивался хаком через класс скрытого helper-div'а,
    но тот класс тащил ещё и visibility:hidden/pointer-events:none → меню монтировалось
@@ -1047,6 +1123,20 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   /* BREAKPOINTS.TABLET */
   .bastyon-card .ant-card-body {
     padding: 16px;
+  }
+}
+
+:root[data-shell='rail'] .bastyon-card .ant-card-body {
+  padding: 16px;
+}
+
+/* Кнопки под постом (post-card): в узкой карточке — только иконки, подписи
+   вылезали за край экрана. Решает ширина строки, а не окна: карточка узкая и
+   в широком окне с боковой панелью (планшет стоя). Здесь, а не в styled.ts:
+   stylis 3 правило @container выбрасывает. Для скринридеров — aria-label. */
+@container post-actions (max-width: 600px) {
+  .post-actions > button > span:not(.anticon) {
+    display: none;
   }
 }
 

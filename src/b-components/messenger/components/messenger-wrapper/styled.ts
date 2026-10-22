@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, SHELL } from '@/styles/design-tokens'
 
 export const SC_MessengerWrapper = styled.div`
   position: fixed;
@@ -58,6 +58,14 @@ export const SC_FullScreenOverlay = styled.div`
     height: auto;
     padding-bottom: 0;
   }
+
+  /* Телефон боком: колонка разделов слева видна всегда — она не мешает полю
+     ввода внизу, как мешала бы нижняя панель. */
+  ${() => SHELL.RAIL} & {
+    left: var(--shell-inset-left);
+    width: auto;
+    padding-left: 0;
+  }
 `
 
 /**
@@ -103,6 +111,11 @@ export const SC_OverlayContent = styled.div`
   max-width: var(--content-max-width);
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 0;
+  }
+
+  /* Телефону боком поля вокруг чатов не по высоте. */
+  ${() => SHELL.RAIL} & {
     padding: 0;
   }
 `

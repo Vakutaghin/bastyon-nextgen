@@ -174,7 +174,8 @@ export const SC_FeedRefreshWrap = styled.div`
 
 export const SC_ScrollToTop = styled.button`
   position: fixed;
-  bottom: 24px;
+  /* Над нижней панелью телефона: раньше она закрывала кнопку целиком. */
+  bottom: calc(var(--bottom-nav-height-total) + 24px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;

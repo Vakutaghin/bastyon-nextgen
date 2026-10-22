@@ -8,7 +8,12 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n, setI18nLocale } from '@/i18n'
 import MessengerWindow from './messenger-window.vue'
-import { clampWidgetSize, WIDGET_KEY_STEP, WIDGET_MIN_SIZE } from './use-widget-size'
+import {
+  clampWidgetSize,
+  WIDGET_HEIGHT_RESERVE,
+  WIDGET_KEY_STEP,
+  WIDGET_MIN_SIZE,
+} from './use-widget-size'
 
 const KEY = 'bastyon_messenger_widget_size'
 let mounted: VueWrapper | null = null
@@ -98,9 +103,10 @@ describe('размер окна чата', () => {
     const w = render()
     expect(size(w)).toEqual({ width: 900, height: 780 })
 
+    // По высоте — не 80 % (560), а место под шапкой: 700 − 150.
     setViewport(1000, 700)
     await w.vm.$nextTick()
-    expect(size(w)).toEqual({ width: 600, height: 560 })
+    expect(size(w)).toEqual({ width: 600, height: 700 - WIDGET_HEIGHT_RESERVE })
 
     setViewport(1600, 1000)
     await w.vm.$nextTick()
@@ -125,12 +131,28 @@ describe('размер окна чата', () => {
     expect(localStorage.getItem(KEY)).toBeNull()
   })
 
-  it('на тесном экране побеждает исходный размер; битая запись — тоже исходный', () => {
-    expect(clampWidgetSize({ width: 1000, height: 1000 }, { width: 500, height: 500 })).toEqual(
+  it('на узком экране побеждает исходная ширина; битая запись — исходный размер', () => {
+    expect(clampWidgetSize({ width: 1000, height: 400 }, { width: 500, height: 900 })).toEqual(
       WIDGET_MIN_SIZE
     )
     localStorage.setItem(KEY, '{oops')
     expect(size(render())).toEqual(WIDGET_MIN_SIZE)
+  })
+
+  it('на низком экране окно ужимается по высоте и не уходит за верх экрана', () => {
+    // Планшет боком с клавиатурой: над окном — шапка, под ним — кнопка-кружок.
+    expect(clampWidgetSize({ width: 360, height: 500 }, { width: 1180, height: 440 })).toEqual({
+      width: 360,
+      height: 440 - WIDGET_HEIGHT_RESERVE,
+    })
+    // Совсем низкий — не меньше 200, чтобы в окне было что-то видно.
+    expect(clampWidgetSize({ width: 360, height: 500 }, { width: 1180, height: 300 }).height).toBe(
+      200
+    )
+    // Высокий экран — по-прежнему не больше 80 % высоты.
+    expect(
+      clampWidgetSize({ width: 360, height: 2000 }, { width: 1280, height: 1000 }).height
+    ).toBe(800)
   })
 
   it('длинное имя собеседника — целиком в подсказке заголовка', () => {

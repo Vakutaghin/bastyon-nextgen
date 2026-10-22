@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, SHELL } from '@/styles/design-tokens'
 
 export const SC_HomeWork = styled.div`
   display: flex;
@@ -43,6 +43,15 @@ export const SC_HomeMainContent = styled.main`
 
     &.sidebar-right-hidden {
       padding-right: 6px;
+    }
+  }
+
+  /* Телефон боком шире 768 px: боковых панелей нет, отступы с обеих сторон. */
+  ${() => SHELL.RAIL} & {
+    padding: 12px 12px 16px;
+
+    &.sidebar-right-hidden {
+      padding-right: 12px;
     }
   }
 `

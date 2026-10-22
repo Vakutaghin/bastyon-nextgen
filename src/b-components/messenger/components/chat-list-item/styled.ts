@@ -99,6 +99,12 @@ export const SC_MenuWrap = styled.div`
 
 export const SC_DotsBtn = styled.button`
   opacity: 0;
+
+  /* Без мыши наводить нечем: на планшете и телефоне «…» видно всегда, иначе
+     удалить чат было нечем — кнопка была, но невидимая. */
+  @media (hover: none) {
+    opacity: 1;
+  }
   background: none;
   border: none;
   cursor: pointer;

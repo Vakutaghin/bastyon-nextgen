@@ -79,3 +79,36 @@ test.describe('Навигация на телефоне', () => {
     await expect(back).toHaveCount(0)
   })
 })
+
+/**
+ * Телефон боком (data-shell="rail"): каркас телефона, но разделы — колонкой
+ * слева, шапка ниже, окна не выше экрана. 844×390 — iPhone 14 боком: шире
+ * 768 px, и по одной ширине приложение раньше считало его компьютером.
+ */
+test.describe('Телефон боком', () => {
+  test.use({ viewport: { width: 844, height: 390 }, screen: { width: 844, height: 390 } })
+
+  test('разделы колонкой слева, шапка ниже, вбок не прокручивается', async ({ page }) => {
+    await open(page, '/')
+    const rail = page
+      .getByRole('navigation')
+      .filter({ has: page.getByRole('button', { name: 'Главная' }) })
+    const box = await rail.boundingBox()
+    expect(box).toMatchObject({ x: 0, y: 48, width: 64 })
+    await expect(page.getByRole('button', { name: 'Меню' })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(844)
+
+    await bottomNav(page, 'Поиск').click()
+    await expect(page).toHaveURL(/\/search$/)
+  })
+
+  test('окно входа целиком на экране', async ({ page }) => {
+    await open(page, '/search')
+    await bottomNav(page, 'Кошелёк').click()
+    const dialog = page.getByRole('dialog', { name: 'Вход в аккаунт' })
+    await expect(dialog).toBeVisible()
+    const box = await page.locator('.ant-modal-content').boundingBox()
+    expect(box!.y).toBeGreaterThanOrEqual(0)
+    expect(box!.y + box!.height).toBeLessThanOrEqual(390)
+  })
+})

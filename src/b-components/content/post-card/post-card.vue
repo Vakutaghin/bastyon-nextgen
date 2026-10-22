@@ -144,7 +144,7 @@
 
         <PostCardCategoriesTags :post="post" />
 
-        <SC_PostActions v-if="!post.pending">
+        <SC_PostActions v-if="!post.pending" class="post-actions">
           <StarRating
             v-if="post.hash || post.txid || post.id"
             :rating="averageRating"

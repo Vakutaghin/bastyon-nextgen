@@ -12,8 +12,9 @@ export const SC_LightboxRoot = styled.div`
 // Кнопка «скачать» поверх лайтбокса (его z-index = 9998). Фиксируем выше.
 export const SC_DownloadBtn = styled.button`
   position: fixed;
-  top: 16px;
-  left: 16px;
+  /* Мимо выреза экрана — у телефона боком он сбоку. */
+  top: calc(var(--safe-top) + 16px);
+  left: calc(var(--safe-left) + 16px);
   z-index: 9999;
   display: inline-flex;
   align-items: center;

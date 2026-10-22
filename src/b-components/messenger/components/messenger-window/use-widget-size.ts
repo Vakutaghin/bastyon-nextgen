@@ -1,8 +1,11 @@
 /**
  * Размер окна чата на компьютере. Окно прижато к правому нижнему углу, поэтому
  * тянется за левый и верхний край и за левый верхний угол. Не меньше исходных
- * 360×500 и не больше 60 % ширины и 80 % высоты окна приложения; на тесном
- * экране побеждает минимум — как было, пока размер не менялся.
+ * 360×500 и не больше 60 % ширины и 80 % высоты окна приложения; на узком
+ * экране побеждает минимум ширины. По высоте окно не выходит из места между
+ * шапкой и кнопкой-кружком: на низком экране — планшет боком с клавиатурой —
+ * оно ужимается и ниже 500, иначе верх с кнопками «Назад» и «Закрыть» уходил
+ * за край экрана.
  *
  * Размер запоминается на этом устройстве. Окно приложения сузили — чат
  * ужимается, но запомненный размер остаётся и вернётся, когда места снова
@@ -20,18 +23,24 @@ export interface WidgetSize {
 export const WIDGET_MIN_SIZE: Readonly<WidgetSize> = { width: 360, height: 500 }
 /** Доля окна приложения, больше которой чат не растягивается. */
 export const WIDGET_MAX_SHARE: Readonly<WidgetSize> = { width: 0.6, height: 0.8 }
+/** Над окном шапка, под ним кнопка-кружок и отступы: эта высота окну не достаётся. */
+export const WIDGET_HEIGHT_RESERVE = 150
+/** Ниже окно не ужимается даже на совсем низком экране — в нём ничего не было бы видно. */
+const WIDGET_FLOOR_HEIGHT = 200
 /** Шаг стрелками на клавиатуре. */
 export const WIDGET_KEY_STEP = 20
 
 const STORAGE_KEY = 'bastyon_messenger_widget_size'
 
-/** Размер в пределах: не меньше исходного и не больше доли окна приложения. */
+/** Размер в пределах: не меньше исходного, не больше доли окна приложения и не выше места под шапкой. */
 export function clampWidgetSize(size: WidgetSize, viewport: WidgetSize): WidgetSize {
   const maxWidth = Math.max(WIDGET_MIN_SIZE.width, viewport.width * WIDGET_MAX_SHARE.width)
-  const maxHeight = Math.max(WIDGET_MIN_SIZE.height, viewport.height * WIDGET_MAX_SHARE.height)
+  const room = Math.max(WIDGET_FLOOR_HEIGHT, viewport.height - WIDGET_HEIGHT_RESERVE)
+  const minHeight = Math.min(WIDGET_MIN_SIZE.height, room)
+  const maxHeight = Math.min(room, Math.max(minHeight, viewport.height * WIDGET_MAX_SHARE.height))
   return {
     width: Math.round(Math.min(Math.max(size.width, WIDGET_MIN_SIZE.width), maxWidth)),
-    height: Math.round(Math.min(Math.max(size.height, WIDGET_MIN_SIZE.height), maxHeight)),
+    height: Math.round(Math.min(Math.max(size.height, minHeight), maxHeight)),
   }
 }
 

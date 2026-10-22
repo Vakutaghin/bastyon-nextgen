@@ -63,8 +63,9 @@ export function useModal(p: ModalProps, emit: ModalEmits, slots: Slots) {
   // строки по 200 символов, читать такое трудно.
   const width = computed(() => (p.fullWidth ? 'min(95vw, 880px)' : p.width))
 
+  // --modal-body-max-height: 90vh, у телефона боком — остаток экрана (style.css).
   const bodyStyle = computed<CSSProperties>(() => ({
-    maxHeight: '90vh',
+    maxHeight: 'var(--modal-body-max-height)',
     overflowY: 'auto',
   }))
 

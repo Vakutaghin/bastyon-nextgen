@@ -80,11 +80,27 @@ export const FONT_SIZE = {
 export const LAYOUT = {
   HEADER_HEIGHT: '64px',
   HEADER_HEIGHT_MOBILE: '56px',
+  HEADER_HEIGHT_RAIL: '48px',
   BOTTOM_NAV_HEIGHT: '56px',
+  RAIL_WIDTH: '64px',
   SIDEBAR_LEFT_WIDTH: '280px',
   SIDEBAR_LEFT_COLLAPSED_WIDTH: '64px',
   SIDEBAR_RIGHT_WIDTH: '320px',
   MAX_CONTENT_WIDTH: '1600px',
+} as const
+
+/**
+ * Каркас приложения — `<html data-shell="desktop|compact|rail">`, ставит
+ * use-viewport. `compact` — узкое окно: меню в шапке, разделы в нижней панели.
+ * `rail` — телефон боком: каркас тот же, но разделы колонкой слева. Телефон
+ * боком бывает шире 768 px, поэтому правилам каркаса одной ширины мало:
+ * `${SHELL.RAIL} & { … }` в styled-компоненте.
+ */
+// `html`, а не `:root`: селектор с двоеточием в начале stylis считает
+// псевдоклассом самого компонента и клеит к нему класс (`.abc:root[…] .abc`).
+export const SHELL = {
+  COMPACT: "html[data-shell='compact']",
+  RAIL: "html[data-shell='rail']",
 } as const
 
 // ─────────────────────────────────────────────────────────────────────────────

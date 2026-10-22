@@ -107,7 +107,7 @@ function handleImageLoad(event: Event, imageIndex: number): void {
   // Очень высокое изображение (портрет) в одиночной карточке — ограничиваем высоту.
   if (imageCount.value === 1 && naturalHeight > naturalWidth * 2) {
     target.style.aspectRatio = '1 / 2'
-    target.style.maxHeight = '500px'
+    target.style.maxHeight = 'min(500px, var(--media-max-height))'
   }
 }
 
@@ -180,8 +180,11 @@ function handleGridError(event: Event, idx: number): void {
   rememberRatio(idx, 1)
 }
 
+// Шириной, а не высотой: так сетка не выше экрана (телефон боком) и не
+// сплющивается.
 const gridStyle = computed<Record<string, string>>(() => ({
   aspectRatio: String(1 / layout.value.height),
+  maxWidth: `calc(var(--media-max-height) / ${layout.value.height.toFixed(4)})`,
 }))
 
 const pct = (v: number): string => `${(v * 100).toFixed(4)}%`

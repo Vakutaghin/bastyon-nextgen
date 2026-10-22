@@ -41,14 +41,17 @@ public class MainActivity extends BridgeActivity {
         // env(safe-area-inset-*) у iOS-style WebView отрабатывают сами, у Android-
         // WebView их нужно установить руками: подписываемся на WindowInsets и пишем
         // CSS custom properties в :root через document.documentElement.style.
+        // Вместе с вырезом камеры: с targetSdk 35 окно рисуется и под ним, а
+        // телефон боком держит вырез сбоку — там, где у панелей отступа нет.
         View root = window.getDecorView();
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets safe = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             float density = getResources().getDisplayMetrics().density;
-            int topPx = Math.round(systemBars.top / density);
-            int bottomPx = Math.round(systemBars.bottom / density);
-            int leftPx = Math.round(systemBars.left / density);
-            int rightPx = Math.round(systemBars.right / density);
+            int topPx = Math.round(safe.top / density);
+            int bottomPx = Math.round(safe.bottom / density);
+            int leftPx = Math.round(safe.left / density);
+            int rightPx = Math.round(safe.right / density);
 
             WebView wv = getBridge() != null ? getBridge().getWebView() : null;
             if (wv != null) {

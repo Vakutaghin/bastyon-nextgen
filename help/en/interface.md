@@ -1,5 +1,5 @@
 ---
-keywords: [interface, header, menu, sidebar, navigation, bottom bar, messenger, back, forward]
+keywords: [interface, header, menu, sidebar, navigation, bottom bar, messenger, back, forward, landscape]
 ---
 
 # Finding your way around
@@ -70,6 +70,8 @@ When the screen is narrow — on a phone or in a shrunk window on a computer —
 The menu behind the three-line button on the left of the header is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“My videos”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
 
 To the right of the menu button, the **“Back”** arrow appears when there is somewhere to go back to; a narrow screen has no **“Forward”** arrow. On Android, the system Back button or gesture also goes back.
+
+A phone turned sideways works the same way, except that the section bar becomes a column at the left edge and the header gets lower: there is little height. Pictures and videos in the feed are no taller than the screen, windows fit on the screen, and chats show the list and the conversation side by side when the screen is wide enough. A tablet turned sideways gets the computer layout: side panels and the chat window in the corner.
 
 Without an account, **“Chats”**, **“Wallet”** and **“Subscriptions”** open the sign-in window, and after you sign in, the section itself. More in [The phone app](mobile-app.md).
 

@@ -22,12 +22,14 @@ export const SC_VideoSkeleton = styled.div`
 export const SC_VideoContainer = styled.div`
   position: relative;
   width: 100%;
-  max-width: 100%;
+  /* Не выше экрана под шапкой (--media-max-height): у телефона боком ролик во
+     всю ширину выходил выше экрана. Пропорции те же, по центру. */
+  max-width: min(100%, calc(var(--media-max-height) * 16 / 9));
   /* Под роликом чёрное, как у YouTube: полосы по краям вертикального видео. */
   background-color: var(--color-black);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;
-  margin-bottom: 15px;
+  margin: 0 auto 15px;
   aspect-ratio: 16 / 9;
   display: flex;
   align-items: center;
@@ -41,6 +43,7 @@ export const SC_VideoContainer = styled.div`
 
   &:fullscreen {
     width: 100vw;
+    max-width: none;
     height: 100vh;
     border-radius: 0;
     aspect-ratio: unset;
@@ -50,6 +53,7 @@ export const SC_VideoContainer = styled.div`
   /* stylelint-disable-next-line selector-no-vendor-prefix */
   &:-webkit-full-screen {
     width: 100vw;
+    max-width: none;
     height: 100vh;
     border-radius: 0;
     aspect-ratio: unset;
@@ -60,6 +64,7 @@ export const SC_VideoContainer = styled.div`
     top: 0;
     left: 0;
     width: 100vw;
+    max-width: none;
     height: 100vh;
     border-radius: 0;
     aspect-ratio: unset;

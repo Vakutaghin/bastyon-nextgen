@@ -16,6 +16,10 @@ export const SC_Appcnt = styled.div`
   display: flex;
   flex-direction: column;
   padding-bottom: var(--safe-bottom);
+  /* Слева — колонка разделов телефона боком и вырез экрана, справа — вырез:
+     в горизонтальном положении он сбоку. Стоя и на компьютере оба нуля. */
+  padding-left: var(--shell-inset-left);
+  padding-right: var(--safe-right);
 
   /* Когда видна нижняя навигация (моб/планшет) — резервируем под неё место,
      чтобы фиксированный бар (высота 56px + safe-area) не перекрывал контент. */

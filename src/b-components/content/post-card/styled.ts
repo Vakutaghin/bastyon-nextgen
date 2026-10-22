@@ -181,22 +181,20 @@ export const SC_PostActionBtn = styled.button`
     color: var(--ui-text-highlighted);
   }
 
-  /* На узком экране — только иконка: подпись не помещалась и обрезалась краем
-     карточки. Для скринридеров остаётся aria-label. */
-  @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    /* Иконка — тоже span (.anticon), её оставляем. */
-    & > span:not(.anticon) {
-      display: none;
-    }
-  }
+  /* В узкой карточке — только иконка: правило в style.css (.post-actions). */
 `
 
 export const SC_PostActions = styled.div`
   display: flex;
   align-items: center;
-  gap: 15px;
+  /* Своих кнопок у поста бывает больше (изменить, удалить) — лишнее уходит на
+     вторую строку, а не за край. */
+  flex-wrap: wrap;
+  gap: 4px 15px;
   padding-top: 12px;
   border-top: 1px solid var(--color-border-light);
+  /* Контейнер для правила подписей в style.css: stylis 3 @container выбрасывает. */
+  container: post-actions / inline-size;
 
   .ant-btn {
     flex: 0 0 auto;
@@ -207,12 +205,12 @@ export const SC_PostActions = styled.div`
   }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
-    gap: 10px;
+    column-gap: 10px;
     padding-top: 10px;
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    gap: 8px;
+    column-gap: 8px;
     padding-top: 8px;
   }
 `
@@ -251,6 +249,9 @@ export const SC_PostCardYoutube = styled.div`
   iframe {
     width: 100%;
     aspect-ratio: 16 / 9;
+    /* Не выше экрана под шапкой — телефон боком. */
+    max-width: calc(var(--media-max-height) * 16 / 9);
+    align-self: center;
     border-radius: var(--ui-radius-lg);
     border: 0;
   }
@@ -265,6 +266,8 @@ export const SC_VideoEmbedLink = styled.a`
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
+  max-width: calc(var(--media-max-height) * 16 / 9);
+  align-self: center;
   overflow: hidden;
   border-radius: var(--ui-radius-lg);
   background: var(--color-black);

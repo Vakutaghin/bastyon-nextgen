@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, SHELL } from '@/styles/design-tokens'
 
 export const SC_Header = styled.header`
   position: fixed;
@@ -38,6 +38,12 @@ export const SC_Sections = styled.div`
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     gap: 8px;
+  }
+
+  /* Телефон боком: логотип — у меню, над началом ленты, а не посередине
+     широкой шапки (значки справа прижимает SC_Right). */
+  ${() => SHELL.RAIL} & {
+    justify-content: flex-start;
   }
 `
 
@@ -79,8 +85,10 @@ export const SC_UnreadBadge = styled.span`
   box-shadow: 0 0 0 2px var(--ui-bg);
 `
 
+// Есть только в каркасе телефона (app-header.vue решает по useViewport): у
+// телефона боком он шире 768 px, и ширина в CSS тут не указ.
 export const SC_HamburgerButton = styled.button`
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 36px;
@@ -101,10 +109,6 @@ export const SC_HamburgerButton = styled.button`
   &:hover,
   &:active {
     background: var(--ui-bg-elevated);
-  }
-
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    display: inline-flex;
   }
 `
 
@@ -130,5 +134,9 @@ export const SC_Right = styled.div`
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     gap: 4px;
     margin-left: 4px;
+  }
+
+  ${() => SHELL.RAIL} & {
+    margin-left: auto;
   }
 `

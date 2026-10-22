@@ -1,5 +1,5 @@
 <template>
-  <SC_BottomNav>
+  <SC_BottomNav :class="{ 'over-chats': isFullScreen }">
     <SC_NavItem
       v-for="item in items"
       :key="item.key"

@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { TRANSITIONS } from '@/styles/design-tokens'
+import { SHELL, TRANSITIONS } from '@/styles/design-tokens'
 
 const activeProps = { active: Boolean }
 
@@ -24,6 +24,29 @@ export const SC_BottomNav = styled.nav`
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-top: 1px solid var(--ui-border);
+
+  /* Телефон боком: та же панель — колонкой слева под шапкой (navigation rail
+     из Material). Внизу она отнимала бы шестую часть и без того низкого
+     экрана, а ширины в этом положении в избытке. Слева — и вырез экрана. */
+  ${() => SHELL.RAIL} & {
+    top: var(--header-height-total);
+    right: auto;
+    width: var(--shell-inset-left);
+    height: auto;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 8px 0 var(--safe-bottom) var(--safe-left);
+    border-top: 0;
+    border-right: 1px solid var(--ui-border);
+  }
+
+  /* Чаты на весь экран закрывают шапку, но не колонку: колонка тянется до
+     верха и прячет кнопку меню шапки — меню открылось бы под чатами. */
+  ${() => SHELL.RAIL} &.over-chats {
+    top: 0;
+    padding-top: calc(var(--header-height-total) + 8px);
+  }
 `
 
 export const SC_NavItem = styled('button', activeProps)`
@@ -45,6 +68,13 @@ export const SC_NavItem = styled('button', activeProps)`
     opacity: 0.7;
   }
 
+  /* В колонке пункты своей высоты; на совсем низком экране — ужимаются. */
+  ${() => SHELL.RAIL} & {
+    flex: 0 1 56px;
+    min-height: 44px;
+    padding: 4px 2px;
+  }
+
   /* Только с мышью: на телефоне :hover «залипает» после тапа. */
   @media (hover: hover) {
     &:hover {
@@ -64,6 +94,13 @@ export const SC_NavLabel = styled.span`
   font-weight: 500;
   line-height: 1.2;
   white-space: nowrap;
+
+  /* Колонка узкая: длинная подпись (Brieftasche) — с многоточием. */
+  ${() => SHELL.RAIL} & {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `
 
 export const SC_NavBadge = styled.span`

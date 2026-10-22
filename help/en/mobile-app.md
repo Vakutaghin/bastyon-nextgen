@@ -1,5 +1,5 @@
 ---
-keywords: [phone, Android, mobile app, APK, install on a phone]
+keywords: [phone, Android, mobile app, APK, install on a phone, landscape, rotate the screen]
 ---
 
 # The phone app
@@ -15,6 +15,8 @@ A new version installs over the old one, and the accounts are kept. Only 0.7.1 a
 ## Navigation
 
 The bottom of the screen has a bar: **“Home”**, **“Search”**, **“Services”**, **“Chats”** and **“Wallet”**. The menu behind the three-line button in the header repeats the left panel of the computer version: the feed sections, the explorer, help, categories and tags, and when you are signed in, also your profile, wallets, limits, videos and settings. Without an account, **“Chats”** and **“Wallet”** open the sign-in window. More in [Finding your way around](interface.md).
+
+When you turn the phone sideways, the bar moves to the left edge of the screen and the header gets lower: there is little height, and this way more of the feed fits. Pictures and videos in the feed are no taller than the screen. In this position chats show the list and the conversation side by side when the screen is wide enough.
 
 ## What the phone can do
 

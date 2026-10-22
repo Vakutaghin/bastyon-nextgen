@@ -158,7 +158,9 @@ import {
 const { t } = useI18n()
 const router = useRouter()
 const help = useHelpStore()
-const { isMobileOrTablet: mobile } = useViewport()
+// По ширине, а не по каркасу: телефону боком хватает места на навигатор и
+// статью рядом, как на компьютере.
+const { isTablet: mobile } = useViewport()
 const page = useHelpPage()
 
 const library = computed(() => page.library.value)

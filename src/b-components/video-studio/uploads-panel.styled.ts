@@ -5,8 +5,9 @@ import { BREAKPOINTS } from '@/styles/design-tokens'
 // Слой как у мессенджера: над страницей, под окнами и подсказками.
 export const SC_Panel = styled.section`
   position: fixed;
-  left: 16px;
-  bottom: 16px;
+  /* Правее колонки разделов телефона боком (--shell-inset-left). */
+  left: calc(var(--shell-inset-left) + 16px);
+  bottom: calc(var(--safe-bottom) + 16px);
   z-index: 1000;
   width: 340px;
   max-width: calc(100vw - 32px);
@@ -17,8 +18,8 @@ export const SC_Panel = styled.section`
   overflow: hidden;
 
   @media (max-width: ${() => BREAKPOINTS.TABLET}) {
-    left: 8px;
-    right: 8px;
+    left: calc(var(--shell-inset-left) + 8px);
+    right: calc(var(--safe-right) + 8px);
     width: auto;
     max-width: none;
     bottom: calc(var(--bottom-nav-height-total) + 8px);
