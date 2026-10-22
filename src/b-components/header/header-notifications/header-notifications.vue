@@ -114,10 +114,7 @@
               >
                 <SC_NotificationItemTrigger><EllipsisOutlined /></SC_NotificationItemTrigger>
                 <template #overlay>
-                  <Menu
-                    :items="[{ key: item.id, label: t('header.hideNotification') }]"
-                    @click="onItemMenuClick"
-                  />
+                  <Menu :items="itemMenu(item)" @click="onItemMenuClick" />
                 </template>
               </Dropdown>
             </SC_NotificationItemActions>
@@ -148,6 +145,8 @@ import {
 } from '@/components/icons'
 import { useAuthStore, useNotificationsStore } from '@/stores'
 import { useModalStore } from '@/stores/modal-store'
+import { useChainInfoStore } from '@/stores/chain-info-store'
+import { isTxid } from '@/b-components/chain-info/chain-link'
 import type { NotificationItem } from '@/stores/notifications-store'
 import { isLowRatingValue } from '@/stores/notification-filtering'
 import { adaptPostData } from '@/composables/use-feed'
@@ -496,8 +495,24 @@ function onOpenChange(open: boolean): void {
   void notificationsStore.persistReadPointer()
 }
 
-function onItemMenuClick({ key }: { key: string }): void {
-  notificationsStore.hideNotification(key)
+/** Меню уведомления: «В блокчейне» — у событий с транзакцией, и «Скрыть». */
+function itemMenu(item: NotificationItem): { key: string; label: string }[] {
+  const hide = { key: `hide:${item.id}`, label: t('header.hideNotification') }
+  return isTxid(item.id)
+    ? [{ key: `chain:${item.id}`, label: t('chainInfo.action') }, hide]
+    : [hide]
+}
+
+function onItemMenuClick({ key }: { key: string | number }): void {
+  const [action, ...rest] = String(key).split(':')
+  const id = rest.join(':')
+  if (action === 'chain') {
+    // Транзакция события: перевод, оценка, комментарий, подписка.
+    visible.value = false
+    useChainInfoStore().open({ kind: 'tx', txid: id })
+    return
+  }
+  notificationsStore.hideNotification(id)
 }
 
 function onClearAll(): void {

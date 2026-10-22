@@ -57,3 +57,4 @@ export type CommentMenuAction =
   | 'share'
   | 'donate'
   | 'report'
+  | 'chain'

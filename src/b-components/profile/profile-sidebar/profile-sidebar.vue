@@ -107,9 +107,9 @@
             custom
             :to="{ name: 'explorer-address', params: { address: userAddress } }"
           >
-            <SC_ExplorerLink :href="href" @click="navigate">
+            <SC_ExplorerLink :href="href" @click="openChainInfo($event, navigate)">
               <BlockOutlined :style="ICON_SIZE_11" />
-              {{ t('profile.openInExplorer') }}
+              {{ t('chainInfo.action') }}
             </SC_ExplorerLink>
           </RouterLink>
         </SC_ExplorerLinkRow>
@@ -182,6 +182,7 @@ import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { getProfileBadges } from '@/helpers/profile/profile-badges'
 import { useMessengerStore } from '@/b-components/messenger/store'
+import { useChainInfoStore } from '@/stores/chain-info-store'
 import { formatAbout } from './format-about'
 import { useProfileRelationsActions } from './use-profile-relations-actions'
 import EditProfileModal from '@/b-components/profile/edit-profile-modal/edit-profile-modal.vue'
@@ -290,6 +291,19 @@ const {
   onPrimaryClick,
   onBellClick,
 } = useProfileRelationsActions(userAddress)
+
+/**
+ * «В блокчейне» — модалка поверх профиля; переход в эксплорер — в ней. С
+ * модификатором (открыть отдельно) — сразу эксплорер.
+ */
+function openChainInfo(e: MouseEvent, navigate: (e?: MouseEvent) => unknown): void {
+  if (e.metaKey || e.ctrlKey || e.shiftKey) {
+    void navigate(e)
+    return
+  }
+  e.preventDefault()
+  useChainInfoStore().open({ kind: 'account', address: userAddress.value })
+}
 
 async function copyAddress(): Promise<void> {
   if (!userAddress.value) return

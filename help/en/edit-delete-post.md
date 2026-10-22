@@ -19,7 +19,7 @@ Network restrictions:
 - a post can be edited up to 5 times, an article up to 10, and only within 30 days of publishing. Precisely, 43,200 blocks, which is about 29 days, so the **“Edit”** button disappears after 28 days, before the network would reject the edit;
 - no more than once a minute: otherwise the network replies **“You can edit only once per blockchain block. Wait a minute and try again.”**
 
-Readers see the new version once the network confirms the edit. Earlier versions stay on the blockchain and can be found in the [block explorer](explorer.md).
+Readers see the new version once the network confirms the edit. Earlier versions stay on the blockchain: their list is in the **“On blockchain”** window from the **“Share”** menu under the post, see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed).
 
 ## Deleting
 

@@ -29,6 +29,14 @@
       {{ target.label }}
     </SC_ShareItem>
 
+    <template v-if="canChainInfo">
+      <SC_ShareDivider />
+      <SC_ShareItem type="button" @click="onChainInfo">
+        <SC_ShareIcon><BlockOutlined /></SC_ShareIcon>
+        {{ t('chainInfo.action') }}
+      </SC_ShareItem>
+    </template>
+
     <template v-if="canReport">
       <SC_ShareDivider />
       <SC_ShareItem type="button" class="share-item--danger" @click="onReport">
@@ -43,7 +51,13 @@
 import { computed } from 'vue'
 import { openExternal } from '@/helpers/common/open-external'
 import { useI18n } from 'vue-i18n'
-import { CodeOutlined, CopyOutlined, ShareAltOutlined, FlagOutlined } from '@/components/icons'
+import {
+  BlockOutlined,
+  CodeOutlined,
+  CopyOutlined,
+  ShareAltOutlined,
+  FlagOutlined,
+} from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { SHARE_TARGETS, type ShareTarget } from '@/helpers/common/share-targets'
 import { SC_ShareMenu, SC_ShareItem, SC_ShareIcon, SC_ShareDivider } from './styled'
@@ -52,10 +66,17 @@ const props = defineProps<{
   url: string
   text: string
   canReport?: boolean
+  /** Пункт «В блокчейне» — у опубликованного поста с txid. */
+  canChainInfo?: boolean
   /** Код вставки на сайт (share-origin publicEmbedCode); нет — пункта нет. */
   embedCode?: string
 }>()
-const emit = defineEmits<{ (e: 'done'): void; (e: 'report'): void }>()
+const emit = defineEmits<{
+  (e: 'done'): void
+  (e: 'report'): void
+  /** «В блокчейне»: что записано о посте. */
+  (e: 'chainInfo'): void
+}>()
 
 const { t } = useI18n()
 
@@ -102,6 +123,11 @@ function openShareTarget(target: ShareTarget): void {
   const href = target.buildUrl(props.url, props.text)
   // Через общий openExternal: в десктопной сборке window.open — no-op (V40).
   void openExternal(href)
+  emit('done')
+}
+
+function onChainInfo(): void {
+  emit('chainInfo')
   emit('done')
 }
 

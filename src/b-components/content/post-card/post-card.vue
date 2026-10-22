@@ -178,7 +178,9 @@
                 :embed-code="embedCode"
                 :text="shareText"
                 :can-report="canReport"
+                :can-chain-info="isTxid(post.txid)"
                 @report="onReportPost"
+                @chain-info="openChainInfo"
                 @done="shareMenuOpen = false"
               />
             </template>
@@ -249,6 +251,8 @@ import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { useReportStore } from '@/stores/report-store'
 import { useBoostStore } from '@/stores/boost-store'
+import { useChainInfoStore } from '@/stores/chain-info-store'
+import { isTxid } from '@/b-components/chain-info/chain-link'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { publicEmbedCode, publicPostUrl } from '@/helpers/common/share-origin'
@@ -431,6 +435,12 @@ function onReportPost(): void {
     authorAddress: props.post.author.address,
     type: 'post',
   })
+}
+
+// ── «В блокчейне» ───────────────────────────────────────────────────
+// По txid первой публикации: правки пишутся под ним же.
+function openChainInfo(): void {
+  if (isTxid(props.post.txid)) useChainInfoStore().open({ kind: 'post', txid: props.post.txid })
 }
 
 // ── Продвижение за PKOIN (буст) ─────────────────────────────────────

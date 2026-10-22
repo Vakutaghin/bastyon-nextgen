@@ -24,7 +24,7 @@ The **“Share”** button under a post opens a menu:
 - **“Share via…”** — your device’s system Share menu. The item is there only where the system supports it.
 - **Telegram**, **X / Twitter**, **Facebook**, **Reddit**, **WhatsApp** — open the posting page of that network with a link to the post.
 
-The menu also has **“Copy embed code”** and **“Report”** — about them below and in [Reports](reports.md).
+The menu also has **“Copy embed code”**, **“On blockchain”** and **“Report”** — about them below and in [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed) and [Reports](reports.md).
 
 In a Bastyon chat a link to a post is shown as a card: the author, an image and the beginning of the text. Click the card to open the post — see [Messages](messages.md).
 

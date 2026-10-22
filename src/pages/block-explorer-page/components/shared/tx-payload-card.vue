@@ -13,7 +13,7 @@
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.contentId') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue
-          ><HashLink :hash="payload.postId" :to="undefined"
+          ><HashLink :hash="payload.postId" :to="txRoute(payload.postId)"
         /></SC_PayloadFieldValue>
       </template>
 
@@ -24,12 +24,12 @@
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.commentId') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue
-          ><HashLink :hash="payload.commentId" :to="undefined"
+          ><HashLink :hash="payload.commentId" :to="txRoute(payload.commentId)"
         /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.toPost') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue
-          ><HashLink :hash="payload.parentPostId" :to="undefined"
+          ><HashLink :hash="payload.parentPostId" :to="txRoute(payload.parentPostId)"
         /></SC_PayloadFieldValue>
       </template>
 
@@ -40,12 +40,12 @@
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.edit') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue
-          ><HashLink :hash="payload.editTxId" :to="undefined"
+          ><HashLink :hash="payload.editTxId" :to="txRoute(payload.editTxId)"
         /></SC_PayloadFieldValue>
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.original') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue
-          ><HashLink :hash="payload.originalCommentId" :to="undefined"
+          ><HashLink :hash="payload.originalCommentId" :to="txRoute(payload.originalCommentId)"
         /></SC_PayloadFieldValue>
       </template>
 
@@ -62,7 +62,7 @@
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.forPost') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue
-          ><HashLink :hash="payload.postId" :to="undefined"
+          ><HashLink :hash="payload.postId" :to="txRoute(payload.postId)"
         /></SC_PayloadFieldValue>
       </template>
 
@@ -80,7 +80,7 @@
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.forComment') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue
-          ><HashLink :hash="payload.commentId" :to="undefined"
+          ><HashLink :hash="payload.commentId" :to="txRoute(payload.commentId)"
         /></SC_PayloadFieldValue>
       </template>
 
@@ -120,7 +120,7 @@
 
         <SC_PayloadFieldLabel>{{ t('explorerShared.post') }}</SC_PayloadFieldLabel>
         <SC_PayloadFieldValue
-          ><HashLink :hash="payload.postId" :to="undefined"
+          ><HashLink :hash="payload.postId" :to="txRoute(payload.postId)"
         /></SC_PayloadFieldValue>
       </template>
 
@@ -184,6 +184,11 @@ const { t } = useI18n()
 const p = defineProps<{
   payload: PocketPayload | null
 }>()
+
+/** Пост и комментарий — тоже транзакции: id ведёт к транзакции первой версии. */
+function txRoute(txid: string): RouteLocationRaw {
+  return { name: 'explorer-tx', params: { txid } }
+}
 
 interface PayloadAction {
   label: string

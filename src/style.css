@@ -572,6 +572,15 @@ body {
   background: var(--ui-bg);
   color: var(--ui-text);
   min-height: 100vh;
+  /*
+   * Без горизонтальной прокрутки. Правило — у body, а не у html: пока у html
+   * overflow `visible`, overflow body переходит на окно браузера. Модалки antd
+   * запирают прокрутку через `body { overflow-y: hidden }` — так запирается
+   * окно, и лента остаётся на месте. С `overflow-x: hidden` у html body сам
+   * обрезался по высоте экрана (у него height: 100% из reset antd), документ
+   * схлопывался, и любая модалка отбрасывала ленту в самый верх.
+   */
+  overflow-x: hidden;
   overscroll-behavior: none;
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
@@ -586,7 +595,6 @@ html {
   line-height: 1.4;
   min-height: 100%;
   position: relative;
-  overflow-x: hidden;
   scroll-behavior: smooth;
 }
 

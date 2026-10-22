@@ -105,13 +105,21 @@ test.describe('Главные экраны для гостя', () => {
     await expect(page.getByText(POST_TEXT)).toBeVisible({ timeout: 20_000 })
   })
 
-  test('профиль без «О себе» показывает адрес, эксплорер и дату регистрации', async ({ page }) => {
+  test('профиль без «О себе» показывает адрес, «В блокчейне» и дату регистрации', async ({
+    page,
+  }) => {
     await open(page, `/${ALICE.address}`)
     await expect(page.getByTitle('Скопировать адрес')).toHaveText(ALICE.address, {
       timeout: 20_000,
     })
-    await expect(page.getByText('Открыть в блок-эксплорере')).toBeVisible()
     await expect(page.getByText('Регистрация:')).toBeVisible()
+
+    // Аккаунт в блокчейне — окном поверх профиля, страница та же.
+    await page.getByRole('link', { name: 'В блокчейне' }).click()
+    const dialog = page.getByRole('dialog', { name: /В блокчейне/ })
+    await expect(dialog).toContainText(ALICE.name)
+    await expect(dialog).toContainText('Репутация')
+    expect(new URL(page.url()).pathname).toBe(`/${ALICE.address}`)
   })
 
   test('справка открывается без входа, статья — по ссылке из содержания', async ({ page }) => {

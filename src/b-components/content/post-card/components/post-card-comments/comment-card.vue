@@ -49,6 +49,7 @@
             :can-edit="canEditComment(comment)"
             :can-delete="canDeleteComment(comment)"
             :can-share="canShareComment(comment)"
+            :can-chain-info="canShareComment(comment)"
             :can-block="canBlockUser(comment)"
             :can-donate="canDonateComment(comment)"
             :can-report="canReportComment(comment)"

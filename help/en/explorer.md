@@ -1,5 +1,5 @@
 ---
-keywords: [explorer, block, transaction, txid, address, peers, blockchain explorer]
+keywords: [explorer, block, transaction, txid, address, peers, blockchain explorer, on blockchain]
 ---
 
 # Block explorer
@@ -21,7 +21,7 @@ The home page shows:
 
 In the **“Block hash, txid, address or height”** field, paste a transaction number, an address or a block number and press **“Open”**. Below it is **“Recently opened”**. You can also paste a transaction number or an address into the regular [search](search.md): it offers to open them in the explorer.
 
-A transfer in the [transaction history](wallet-history.md) or in a [chat](pkoin-in-chat.md) also opens in the explorer, with the button next to it.
+A post, a comment, an account, an entry from the [transaction history](wallet-history.md) and a transfer in a [chat](pkoin-in-chat.md) can be viewed without leaving the page — see [“On blockchain”](#on-blockchain-without-leaving-the-feed).
 
 ## Block, transaction, address
 
@@ -30,6 +30,24 @@ A transfer in the [transaction history](wallet-history.md) or in a [chat](pkoin-
 - **An address**: **“Balance”**, **“Last activity”**, the profile if it is an account address, and all of the address’s transactions.
 
 The question mark next to a field explains what it means. **“Show raw JSON”** shows the data as the node returned it. **“Share”** gives a link to the block, transaction or address that opens even for someone without the app.
+
+## “On blockchain”: without leaving the feed
+
+A post, a comment and a profile have an **“On blockchain”** item. It opens a window over the feed, chat or wallet: take a look, close it, and you are where you were.
+
+- **A post** — the **“Share”** menu under the post. The author, when the post was published and in which block, the publication transaction and the edits — each edit is a transaction of its own — the language, tags, attachments, ratings, comments and reposts. Below: who rated it and how many stars, who boosted it and who sent coins with a comment under it.
+- **A comment** — the **“Actions”** button with three dots. When it was written and edited, its transaction, how many coins went to the post author, votes and replies.
+- **An account** — in the profile, under the address. Balance, reputation, when the account was registered and last changed its profile, posts, followers, blocks, whether chat keys are published, moderator flags, all-time earnings and recent transactions.
+- **A transaction** — the same as in the explorer. Entries from the [transaction history](wallet-history.md), a transfer in a [chat](pkoin-in-chat.md) and an event from [notifications](notifications.md) open this way.
+
+You can go further inside the window: from a post to an edit’s transaction, from there to an address. The arrow in the title takes you one step back. **“Open in block explorer”** at the bottom opens the same thing on an explorer page.
+
+<details>
+<summary>Why boosts and coins have no amounts</summary>
+
+The app asks the node who rated, boosted and sent coins to a post in a single request. The node gets the boost and coin amounts in it wrong: anything above roughly 21 PKOIN comes out incorrect, and sometimes a person drops out of the list entirely. So the window shows only who it was.
+
+</details>
 
 ## Nodes and peers
 

@@ -13,9 +13,13 @@
         </SC_TxIOValue>
         <SC_TxIOAnnotation v-if="vin.txid">
           {{ t('explorerPage.txIoVinFrom') }}
-          <SC_InlineLink :to="{ name: 'explorer-tx', params: { txid: vin.txid } }">
-            {{ shortenHash(vin.txid, 6, 6) }}:{{ vin.vout }}
-          </SC_InlineLink>
+          <HashLink
+            :hash="vin.txid"
+            :head="6"
+            :tail="6"
+            :copyable="false"
+            :to="{ name: 'explorer-tx', params: { txid: vin.txid } }"
+          />:{{ vin.vout }}
         </SC_TxIOAnnotation>
       </SC_TxIOItem>
     </SC_TxIOColumn>
@@ -45,7 +49,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import AddressLink from '../components/shared/address-link.vue'
-import { formatExplorerPkoin, shortenHash } from '../components/shared/format-explorer'
+import HashLink from '../components/shared/hash-link.vue'
+import { formatExplorerPkoin } from '../components/shared/format-explorer'
 import type { Transaction, TxVout } from '@/types/rpc-responses/get-transactions'
 import { opReturnText } from '@/helpers/common/op-return'
 import {
@@ -57,7 +62,6 @@ import {
   SC_TxIOValue,
   SC_TxIOAnnotation,
   SC_TxArrow,
-  SC_InlineLink,
 } from './tx-page.styled'
 import {
   SC_Muted,

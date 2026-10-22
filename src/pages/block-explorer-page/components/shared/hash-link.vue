@@ -1,7 +1,12 @@
 <template>
   <SC_HashLink :title="hash">
     <RouterLink v-if="to" v-slot="{ navigate, href }" custom :to="to">
-      <SC_HashLinkAnchor :href="href" @click="navigate" @mouseenter="prefetch" @focus="prefetch">
+      <SC_HashLinkAnchor
+        :href="href"
+        @click="onClick($event, navigate)"
+        @mouseenter="prefetch"
+        @focus="prefetch"
+      >
         {{ display }}
       </SC_HashLinkAnchor>
     </RouterLink>
@@ -19,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
@@ -27,6 +32,7 @@ import { CopyOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { prefetchExplorerTarget } from '@/composables/use-block-explorer-queries'
 import { shortenHash } from './format-explorer'
+import { CHAIN_LINK_KEY, chainTargetForRoute } from '@/b-components/chain-info/chain-link'
 import { ICON_SIZE_XS } from '@/styles/icon-styles'
 import {
   SC_HashLink,
@@ -57,6 +63,21 @@ const { t } = useI18n()
 const queryClient = useQueryClient()
 
 const display = computed(() => (p.full ? p.hash : shortenHash(p.hash, p.head, p.tail)))
+
+// В модалке «В блокчейне» транзакция и адрес открываются в ней же. С
+// модификатором — как обычная ссылка.
+const openInChainModal = inject(CHAIN_LINK_KEY, null)
+
+function onClick(e: MouseEvent, navigate: (e?: MouseEvent) => unknown) {
+  const target =
+    openInChainModal && !e.metaKey && !e.ctrlKey && !e.shiftKey ? chainTargetForRoute(p.to) : null
+  if (target) {
+    e.preventDefault()
+    openInChainModal!(target)
+    return
+  }
+  void navigate(e)
+}
 
 // Прогреваем кэш целевой страницы при наведении/фокусе — клик откроет её мгновенно
 // из кэша. prefetchQuery уважает staleTime, поэтому повторные наведения не спамят сеть.

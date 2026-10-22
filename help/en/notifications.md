@@ -16,7 +16,7 @@ Each notification shows the kind of event, the time, who did it and the details:
 - to the person’s profile — for subscriptions;
 - to the wallet — for transfers and rewards.
 
-The three-dot button on a notification is **“Hide notification”**, and **“Clear all”** at the top hides the whole list. Hidden notifications do not come back.
+The three-dot button on a notification has **“On blockchain”**, the event’s transaction in a window over the page (see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed)), and **“Hide notification”**. **“Clear all”** at the top hides the whole list. Hidden notifications do not come back.
 
 ## What you are notified about
 

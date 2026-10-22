@@ -1,6 +1,6 @@
 /**
  * Действия контекстного меню комментария (edit/delete/block/unblock/share/
- * donate/report) + permalink-шаринг (#16). Вынесено из post-card-comments.vue:
+ * donate/report/chain) + permalink-шаринг (#16). Вынесено из post-card-comments.vue:
  * диспетчер зависит только от edit-delete composable и postId, а сборка
  * permalink — чистая функция, проверяемая без DOM.
  */
@@ -9,7 +9,7 @@ import type { Ref } from 'vue'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import { commentUrl, publicShareOrigin } from '@/helpers/common/share-origin'
-import { useDonateStore, useReportStore } from '@/stores'
+import { useChainInfoStore, useDonateStore, useReportStore } from '@/stores'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { CommentMenuAction } from '../types'
 import type { useCommentEditDelete } from './use-comment-edit-delete'
@@ -83,6 +83,14 @@ export function useCommentMenuActions(opts: UseCommentMenuActionsOptions) {
       useDonateStore().open({
         address: comment.address,
         name: (comment as GetComment & { userprofile?: { name?: string } }).userprofile?.name,
+      })
+      return
+    }
+    if (action === 'chain') {
+      useChainInfoStore().open({
+        kind: 'comment',
+        id: comment.id,
+        postId: comment.postid || opts.postId.value,
       })
       return
     }

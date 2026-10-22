@@ -12,8 +12,8 @@
 
     <SC_Footer>
       <SC_Txid :title="tx.txid">{{ shortTxid }}</SC_Txid>
-      <SC_ExplorerLink :href="explorerUrl" @click.prevent="openInExplorer">
-        {{ t('chat.viewInExplorer') }}
+      <SC_ExplorerLink :href="explorerUrl" @click.prevent="openChainInfo">
+        {{ t('chainInfo.action') }}
       </SC_ExplorerLink>
     </SC_Footer>
   </SC_Card>
@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useChainInfoStore } from '@/stores/chain-info-store'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { formatPkoinAmount, type PkoinTransferInfo } from '../../lib/pkoin-transfer'
@@ -66,17 +66,20 @@ const explorerUrl = computed<string>(() => {
   return `/explorer/tx/${encodeURIComponent(tx.value.txid)}`
 })
 
-const router = useRouter()
-
 /**
- * Эксплорер — страница самого приложения. Раньше ссылка открывалась с
- * `target="_blank"`: в приложении для компьютера и на телефоне новое окно не
- * открывается, и нажатие ничего не делало. Полноэкранный чат перекрыл бы
- * страницу — закрываем его.
+ * Перевод — в модалке «В блокчейне» поверх чата: посмотрел и вернулся к
+ * переписке. Если из модалки уйти в эксплорер или профиль, полноэкранный чат
+ * закрывается — иначе он перекрыл бы страницу.
  */
-function openInExplorer(): void {
+function openChainInfo(): void {
   if (!tx.value.txid) return
-  store.isFullScreen = false
-  void router.push({ name: 'explorer-tx', params: { txid: tx.value.txid } })
+  useChainInfoStore().open(
+    { kind: 'tx', txid: tx.value.txid },
+    {
+      onLeave: () => {
+        store.isFullScreen = false
+      },
+    }
+  )
 }
 </script>

@@ -22,7 +22,7 @@
         custom
         :to="{ name: 'explorer-tx', params: { txid: row.tx.txid } }"
       >
-        <SC_HistoryRow :href="href" @click="navigate">
+        <SC_HistoryRow :href="href" @click="openTx($event, row.tx.txid, navigate)">
           <SC_DirIcon :class="row.direction">
             <ArrowDownOutlined v-if="row.direction === 'in'" />
             <ArrowUpOutlined v-else />
@@ -66,6 +66,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { ArrowDownOutlined, ArrowUpOutlined } from '@/components/icons'
 import { useAuthStore, getAdditionalWalletAddressesList } from '@/blockchain'
+import { useChainInfoStore } from '@/stores/chain-info-store'
 import { useUserProfiles } from '@/composables/use-user-profile'
 import { formatPkoinAmount } from '@/helpers/common/pkoin-formatter'
 import { shortenHash } from '@/pages/block-explorer-page/components/shared/format-explorer'
@@ -116,6 +117,19 @@ const MAX_PAGES_PER_LOAD = 5
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+
+/**
+ * Операция открывается в модалке «В блокчейне»: закрыл — и история на том
+ * же месте, без перезагрузки. С модификатором — сразу в эксплорере.
+ */
+function openTx(e: MouseEvent, txid: string, navigate: (e?: MouseEvent) => unknown): void {
+  if (e.metaKey || e.ctrlKey || e.shiftKey) {
+    void navigate(e)
+    return
+  }
+  e.preventDefault()
+  useChainInfoStore().open({ kind: 'tx', txid })
+}
 
 const rows = ref<HistoryRow[]>([])
 const loading = ref(false)

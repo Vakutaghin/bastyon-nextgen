@@ -9,6 +9,7 @@ import DonateModal from '@/b-components/donate/donate-modal.vue'
 import PaidSubscriptionModal from '@/b-components/paid-subscription/paid-subscription-modal.vue'
 import BoostModal from '@/b-components/boost/boost-modal.vue'
 import ReportModal from '@/b-components/report/report-modal.vue'
+import ChainInfoModal from '@/b-components/chain-info/chain-info-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
 import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import HelpPanel from '@/b-components/help/help-panel.vue'
@@ -124,6 +125,8 @@ watch(themeConfig, setStaticApiTheme, { immediate: true })
       <BoostModal />
       <!-- Жалоба на контент — singleton, открывается через useReportStore -->
       <ReportModal />
+      <!-- «В блокчейне»: пост, комментарий, аккаунт, транзакция — singleton, открывается useChainInfoStore -->
+      <ChainInfoModal />
       <!-- P0-1: разблокировка сейфа (passphrase-режим) — singleton, открывается мостом vault-unlock -->
       <VaultUnlockModal />
       <!-- IPFS-модуль: consent/прогресс/desktop-only — singleton, открывается ipfs-store -->

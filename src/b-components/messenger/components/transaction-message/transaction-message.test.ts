@@ -1,28 +1,25 @@
-// «В эксплорере» у перевода в чате открывает страницу приложения, а не
-// новое окно, которого в десктопе и на телефоне нет.
+// «В блокчейне» у перевода в чате открывает модалку поверх переписки: чат
+// остаётся на месте. Уход из модалки на страницу приложения закрывает и
+// полноэкранный чат — иначе он перекрыл бы страницу.
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createRouter, createMemoryHistory } from 'vue-router'
+import { createPinia, setActivePinia } from 'pinia'
 import { i18n } from '@/i18n'
+import { useChainInfoStore } from '@/stores/chain-info-store'
 
 const store = vi.hoisted(() => ({ isFullScreen: true, currentUser: { id: '@me:host' } }))
 vi.mock('../../store', () => ({ useMessengerStore: () => store }))
 
 import TransactionMessage from './transaction-message.vue'
 
-const blank = { template: '<div />' }
-
 describe('transaction-message', () => {
-  it('«В эксплорере» закрывает полноэкранный чат и открывает транзакцию', async () => {
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [
-        { path: '/', component: blank },
-        { path: '/explorer/tx/:txid', name: 'explorer-tx', component: blank },
-      ],
-    })
-    await router.push('/')
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    store.isFullScreen = true
+  })
+
+  it('«В блокчейне» открывает перевод в модалке, чат остаётся', async () => {
     const wrapper = mount(TransactionMessage, {
       props: {
         message: {
@@ -31,12 +28,20 @@ describe('transaction-message', () => {
           info: { transaction: { txid: 'abc123', amount: 1.5, from: 'PA', to: 'PB' } },
         } as never,
       },
-      global: { plugins: [router, i18n] },
+      global: { plugins: [i18n] },
     })
-    await wrapper.find('a').trigger('click')
-    await router.isReady()
-    await new Promise((r) => setTimeout(r, 0))
+    const link = wrapper.find('a')
+    expect(link.text()).toBe(i18n.global.t('chainInfo.action'))
+    expect(link.attributes('href')).toBe('/explorer/tx/abc123')
+
+    await link.trigger('click')
+    const chainInfo = useChainInfoStore()
+    expect(chainInfo.current).toEqual({ kind: 'tx', txid: 'abc123' })
+    expect(store.isFullScreen).toBe(true)
+
+    // Из модалки ушли в эксплорер — чат закрывается.
+    chainInfo.leave()
+    expect(chainInfo.isOpen).toBe(false)
     expect(store.isFullScreen).toBe(false)
-    expect(router.currentRoute.value.fullPath).toBe('/explorer/tx/abc123')
   })
 })

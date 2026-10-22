@@ -17,6 +17,11 @@
           <span>{{ t('comments.share') }}</span>
         </SC_MenuItem>
 
+        <SC_MenuItem v-if="canChainInfo" type="button" @click.stop.prevent="onAction('chain')">
+          <BlockOutlined />
+          <span>{{ t('chainInfo.action') }}</span>
+        </SC_MenuItem>
+
         <SC_MenuItem v-if="canDonate" type="button" @click.stop.prevent="onAction('donate')">
           <GiftOutlined />
           <span>{{ t('donate.tip') }}</span>
@@ -72,6 +77,7 @@ import {
   ShareAltOutlined,
   GiftOutlined,
   FlagOutlined,
+  BlockOutlined,
 } from '@/components/icons'
 import { SC_MenuList, SC_MenuItem, SC_MenuTrigger } from './styled'
 import type { CommentMenuAction } from './types'
@@ -83,6 +89,8 @@ defineProps<{
   canDelete: boolean
   /** Можно ли поделиться ссылкой на комментарий (обычный, не pending) */
   canShare: boolean
+  /** «В блокчейне» — у комментария, который уже в блокчейне */
+  canChainInfo: boolean
   /** Можно ли (раз)блокировать автора (чужой комментарий, авторизован) */
   canBlock: boolean
   /** Можно ли донатить автору (чужой комментарий, авторизован) */

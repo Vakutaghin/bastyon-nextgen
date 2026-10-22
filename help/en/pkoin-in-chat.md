@@ -28,9 +28,9 @@ The transfer itself — amount, addresses and time — is visible on the blockch
 
 ## The transfer card
 
-After sending, a card appears in the conversation: **“PKOIN transfer”** on your side, **“PKOIN received”** on theirs. It shows the amount, the message, the start of the transaction number and a **“View in explorer”** button, which opens the transfer in the [block explorer](explorer.md).
+After sending, a card appears in the conversation: **“PKOIN transfer”** on your side, **“PKOIN received”** on theirs. It shows the amount, the message, the start of the transaction number and an **“On blockchain”** button, which opens the transfer in a window over the chat, see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed).
 
-The card is sent by the sender, and it can be faked. Before, say, handing over goods, make sure the coins arrived: press **“View in explorer”** or look at the wallet’s [transaction history](wallet-history.md).
+The card is sent by the sender, and it can be faked. Before, say, handing over goods, make sure the coins arrived: press **“On blockchain”** or look at the wallet’s [transaction history](wallet-history.md).
 
 If the other person uses the previous Bastyon app or forta.chat, they see a line like “💎 1.5 PKOIN · For coffee” instead of a card. A transfer from the previous app arrives as a `bastyon://i?stx=…` link — click it, and the transfer opens in the explorer.
 

@@ -32,15 +32,19 @@ export interface TxData {
   now: Ref<number>
 }
 
-export function useTxData(txidRef: Ref<string>): TxData {
+export function useTxData(
+  txidRef: Ref<string>,
+  { rememberVisit = true }: { rememberVisit?: boolean } = {}
+): TxData {
   const { data: txResp, isLoading: txLoading, error: txError } = useTransactionDetails(txidRef)
   const tx = computed<Transaction | undefined>(() => txResp.value?.data?.[0])
 
-  // Регистрируем визит, когда tx реально загрузилась.
+  // Регистрируем визит, когда tx реально загрузилась. Из модалки «В блокчейне»
+  // — нет: в обозреватель человек не заходил, его недавние поиски не трогаем.
   watch(
     () => tx.value?.txid,
     (id) => {
-      if (id) recordVisit(txidRef.value, 'tx')
+      if (id && rememberVisit) recordVisit(txidRef.value, 'tx')
     }
   )
 

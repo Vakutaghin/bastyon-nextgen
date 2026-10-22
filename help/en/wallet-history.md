@@ -28,7 +28,7 @@ Posts, ratings and comments without coins are not shown in the history: the coin
 
 ## Transaction details
 
-Click an entry — it opens in the [block explorer](explorer.md): the block it is recorded in, the inputs and outputs, the fee and the message, if there is one.
+Click an entry — it opens in an **“On blockchain”** window over the history: the block it is recorded in, the inputs and outputs, the fee and the message, if there is one. Close the window, and the list stays where it was. More in [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed).
 
 ## What is not here
 

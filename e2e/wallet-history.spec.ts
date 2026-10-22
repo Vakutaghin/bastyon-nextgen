@@ -143,6 +143,16 @@ async function useHistoryNode(page: Page): Promise<unknown[][]> {
     const skip = params[2] as number
     return answer(route, skip === 0 ? comments : skip === PAGE ? money : [])
   })
+  await page.route(/\.pocketnet\.app:8899\/rpc(-ex)?\/gettransactions/, (route) => {
+    if (route.request().method() === 'OPTIONS') return answer(route, null)
+    const [ids] = route.request().postDataJSON().parameters as [string[]]
+    const me = (calls[0]?.[0] as string) ?? ''
+    const { comments, money } = pages(me)
+    return answer(
+      route,
+      [...comments, ...money].filter((t) => ids.includes(t.txid))
+    )
+  })
   await page.route(/\.pocketnet\.app:8899\/rpc(-ex)?\/getaccountearning/, (route) => {
     if (route.request().method() === 'OPTIONS') return answer(route, null)
     const [address] = route.request().postDataJSON().parameters as [string]
@@ -220,6 +230,16 @@ test('история кошелька: движения монет, метки, 
     [me, 999_999_999, 0, PAGE, 0, [1, 2, 3, 204, 208]],
     [me, TOP, PAGE, PAGE, 0, [1, 2, 3, 204, 208]],
   ])
+
+  // Операция — в окне «В блокчейне» поверх истории, страница та же.
+  await rows.nth(1).click()
+  const dialog = page.getByRole('dialog', { name: /В блокчейне/ })
+  await expect(dialog).toContainText('a2'.repeat(32))
+  await expect(dialog).toContainText('BoostContent')
+  expect(new URL(page.url()).pathname).toBe('/wallets')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(rows).toHaveCount(5)
 
   await page.getByRole('button', { name: 'Заработок', exact: true }).click()
   await expect(page.getByText('Заработок аккаунта')).toBeVisible()

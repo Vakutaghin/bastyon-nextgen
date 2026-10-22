@@ -14,7 +14,7 @@ A profile opens when you click a person’s name or avatar — in the feed, in c
 - **Avatar and name.** Under the name there are badges: **“Verified”**, **“Moderator”** and **“Shark”** (what they mean is below) and **“Established”** — for accounts with a reputation of 100 or more.
 - **“Reputation”**, **“Subscribers”** and **“Subscriptions”**. Click the number of subscribers or subscriptions to open the list — see [Subscriptions](subscriptions.md). What reputation is — see [Reputation](reputation.md).
 - **“Information”** — what the person wrote about themselves, if anything.
-- **The account address.** Click it to copy: **“Address copied”**. Below it is **“Open in block explorer”**: all transactions of this address, see [Block explorer](explorer.md).
+- **The account address.** Click it to copy: **“Address copied”**. Below it is **“On blockchain”**: what the blockchain holds about the account — registration, balance, reputation, earnings, recent transactions, see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed).
 - **A website**, if there is one, **“Publications:”** — how many posts the person has, and **“Registered:”** — when they registered.
 - **The feed of this person’s posts**, newest first.
 

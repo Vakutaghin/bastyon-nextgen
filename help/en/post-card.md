@@ -28,7 +28,7 @@ Click an image to open the gallery full screen. Page through with the arrows —
 - **Rate** with stars — see [Rating posts](ratings.md).
 - **Comment** — see [Comments](comments.md).
 - **“Repost”** — share the post on your page with a comment — see [Reposting and linking to a post](sharing.md).
-- **“Share”** — a menu: **“Copy link”**, **“Copy embed code”**, **“Share via…”** and **“Report”** — see [Reports](reports.md).
+- **“Share”** — a menu: **“Copy link”**, **“Copy embed code”**, **“Share via…”**, **“On blockchain”** — what the blockchain holds about the post, see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed) — and **“Report”**, see [Reports](reports.md).
 - **Thank the author** with coins — see [Tipping the author](tips.md).
 - **“Promote”** — lift the post in the feed for PKOIN, your own or someone else’s — see [Promoting a post](boost.md).
 - **Save** to favorites — the bookmark in the post's header.
