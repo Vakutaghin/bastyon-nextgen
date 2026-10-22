@@ -225,7 +225,8 @@ const title = computed((): string => {
         200: t('explorerShared.titlePost'),
         201: t('explorerShared.titleVideo'),
         202: t('explorerShared.titleArticle'),
-        203: t('explorerShared.titleStream'),
+        209: t('explorerShared.titleStream'),
+        210: t('explorerShared.titleAudio'),
       }
       return labels[pl.type] ?? t('explorerShared.titleContent')
     }

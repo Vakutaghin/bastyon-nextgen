@@ -16,6 +16,7 @@ import {
   canonicalStoredMesType,
   mapMissedEventToNotification,
   notificationTypeFor,
+  preferEventsOverTransfers,
 } from './notifications-mappers'
 import { enrichNotifications } from './notifications-enricher'
 import {
@@ -183,6 +184,7 @@ export const useNotificationsStore = defineStore('notifications', {
         commentId?: string
         mesType?: string
         upvoteVal?: number
+        donation?: boolean
       }): NotificationItem => {
         const mesType = canonicalStoredMesType(s.mesType)
         const renamed = mesType !== s.mesType
@@ -200,6 +202,7 @@ export const useNotificationsStore = defineStore('notifications', {
           commentId: s.commentId,
           mesType,
           upvoteVal: s.upvoteVal,
+          ...(s.donation ? { donation: true } : {}),
         }
       }
       // Полный пересбор из IDB терял снапшоты (их там нет) и вместе с
@@ -228,9 +231,11 @@ export const useNotificationsStore = defineStore('notifications', {
             this.lastBlock = Number((blockInfo as GetMissedInfoBlockItem).block) || this.lastBlock
           }
           const rawEvents = arr.slice(1) as (GetMissedInfoEventItem | Record<string, unknown>)[]
-          const mapped = rawEvents
-            .map((n) => mapMissedEventToNotification(n, address))
-            .filter((n): n is NotificationItem => n != null)
+          const mapped = preferEventsOverTransfers(
+            rawEvents
+              .map((n) => mapMissedEventToNotification(n, address))
+              .filter((n): n is NotificationItem => n != null)
+          )
           const existingIds = new Set(this.items.map((i) => i.id))
           const newItems = mapped.filter((n) => !existingIds.has(n.id))
           if (newItems.length > 0) {
@@ -251,6 +256,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 commentId,
                 mesType,
                 upvoteVal,
+                donation,
               }) => ({
                 id,
                 nblock,
@@ -264,6 +270,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 commentId,
                 mesType,
                 upvoteVal,
+                ...(donation ? { donation } : {}),
               })
             )
             await notificationsAPI.putMany(address, toStore)

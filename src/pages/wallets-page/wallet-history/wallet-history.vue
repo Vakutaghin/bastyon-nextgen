@@ -10,7 +10,7 @@
       {{ t('wallet.history.error') }}
     </SC_HistoryError>
 
-    <SC_HistoryEmpty v-else-if="!rows.length">
+    <SC_HistoryEmpty v-else-if="!rows.length && !hasMore">
       {{ t('wallet.history.empty') }}
     </SC_HistoryEmpty>
 
@@ -35,7 +35,9 @@
                 {{ t('wallet.history.semantic.' + row.semantic) }}
               </SC_TxBadge>
             </SC_HistoryDirLabel>
-            <SC_HistoryCounterparty>{{ counterpartyLabel(row) }}</SC_HistoryCounterparty>
+            <SC_HistoryCounterparty v-if="row.counterparties.length">
+              {{ counterpartyLabel(row) }}
+            </SC_HistoryCounterparty>
           </SC_HistoryMid>
 
           <SC_HistoryAmount :class="row.direction">
@@ -59,14 +61,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { nextAddressTxCursor } from '@/helpers/explorer/address-tx-cursor'
+import { fetchAddressTxPage, startAddressTxCursor } from '@/helpers/explorer/address-transactions'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { ArrowDownOutlined, ArrowUpOutlined } from '@/components/icons'
 import { useAuthStore, getAdditionalWalletAddressesList } from '@/blockchain'
 import { useUserProfiles } from '@/composables/use-user-profile'
-import { getByPRC } from '@/helpers/api/request'
-import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { formatPkoinAmount } from '@/helpers/common/pkoin-formatter'
 import { shortenHash } from '@/pages/block-explorer-page/components/shared/format-explorer'
 import {
@@ -74,8 +74,12 @@ import {
   formatDateTimeExact as formatAbsTime,
 } from '@/helpers/common/date-formatter'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
-import type { GetAddressTransactionsResponse } from '@/types/rpc-responses/get-address-transactions'
-import { classifyWalletTx, type WalletTxDirection, type WalletTxSemantic } from './classify-tx'
+import {
+  classifyWalletTx,
+  WALLET_HISTORY_TX_TYPES,
+  type WalletTxDirection,
+  type WalletTxSemantic,
+} from './classify-tx'
 import {
   SC_History,
   SC_HistoryHint,
@@ -102,6 +106,13 @@ interface HistoryRow {
 }
 
 const TX_PAGE_SIZE = 30
+/**
+ * Строк за одно нажатие. Нода отдаёт и комментарии без монет — их история
+ * пропускает, и страница бывает пустой: тогда сразу просим следующую.
+ */
+const MIN_NEW_ROWS = 10
+/** Потолок запросов за одно нажатие, чтобы не листать всю историю разом. */
+const MAX_PAGES_PER_LOAD = 5
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -128,7 +139,9 @@ const profileNameByAddress = computed<Record<string, string>>(() => {
   return map
 })
 const hasMore = ref(true)
-let nextCursorHeight = -1
+let cursor = startAddressTxCursor()
+/** Номер загрузки: ответ для прежнего аккаунта не должен долиться к новому. */
+let generation = 0
 
 const mainAddress = computed<string>(() => authStore.getUserAddress ?? '')
 
@@ -139,10 +152,10 @@ const mine = computed<ReadonlySet<string>>(() => {
   return new Set([cur, ...getAdditionalWalletAddressesList(cur)])
 })
 
+/** «от …» / «на …»; у наград и буста контрагента нет — строка не выводится. */
 function counterpartyLabel(row: HistoryRow): string {
   const first = row.counterparties[0]
-  if (!first)
-    return row.direction === 'in' ? t('wallet.history.received') : t('wallet.history.sent')
+  if (!first) return ''
   // Ник, если профиль уже подгрузился; иначе укороченный адрес.
   const display = profileNameByAddress.value[first] || shortenHash(first, 8, 6)
   const extra = row.counterparties.length - 1
@@ -155,36 +168,37 @@ function counterpartyLabel(row: HistoryRow): string {
 
 async function loadPage(reset = false): Promise<void> {
   if (reset) {
+    generation++
     rows.value = []
-    nextCursorHeight = -1
+    cursor = startAddressTxCursor()
     hasMore.value = true
     error.value = false
+    loading.value = false
   }
   const addr = mainAddress.value
   if (!addr || !hasMore.value || loading.value) return
+  const current = generation
   loading.value = true
   error.value = false
   try {
-    // Нода — общая для приложения, а не закреплённая в настройках эксплорера:
-    // та настройка обещает «на остальное приложение не влияет» (S7).
-    const resp = (await getByPRC({
-      method: rpcEndpoints.getAddressTransactions,
-      parameters: [addr, nextCursorHeight, TX_PAGE_SIZE],
-      options: { auth: false },
-    })) as GetAddressTransactionsResponse
-    const page = resp?.data ?? []
-    if (page.length === 0) {
-      hasMore.value = false
-      return
-    }
-
-    const seen = new Set(rows.value.map((r) => r.tx.txid))
     const m = mine.value
-    for (const tx of page) {
-      if (seen.has(tx.txid)) continue
-      const c = classifyWalletTx(tx, m)
-      // В истории показываем только реальные движения монет (получено/отправлено).
-      if (c.direction === 'in' || c.direction === 'out') {
+    let added = 0
+    for (let i = 0; i < MAX_PAGES_PER_LOAD && cursor.hasMore && added < MIN_NEW_ROWS; i++) {
+      // Нода — общая для приложения, а не закреплённая в настройках эксплорера:
+      // та настройка обещает «на остальное приложение не влияет» (S7).
+      const page = await fetchAddressTxPage(addr, cursor, {
+        pageSize: TX_PAGE_SIZE,
+        types: WALLET_HISTORY_TX_TYPES,
+      })
+      // Пока ходили в ноду, сменился аккаунт — его история уже грузится заново.
+      if (current !== generation) return
+      cursor = page.cursor
+      const seen = new Set(rows.value.map((r) => r.tx.txid))
+      for (const tx of page.txs) {
+        if (seen.has(tx.txid)) continue
+        const c = classifyWalletTx(tx, m)
+        // В истории показываем только реальные движения монет (получено/отправлено).
+        if (c.direction === 'change') continue
         rows.value.push({
           tx,
           direction: c.direction,
@@ -192,23 +206,14 @@ async function loadPage(reset = false): Promise<void> {
           counterparties: c.counterparties,
           semantic: c.semantic,
         })
+        added++
       }
     }
-
-    // Тот же курсор, что в эксплорере (S66): включительно + дедуп по txid,
-    // иначе на границе страницы терялся хвост блока.
-    const cursor = nextAddressTxCursor({
-      heights: page.map((t2) => t2.height),
-      freshCount: page.filter((tx) => !seen.has(tx.txid)).length,
-      currentCursor: nextCursorHeight,
-      pageSize: TX_PAGE_SIZE,
-    })
-    nextCursorHeight = cursor.nextCursor
     hasMore.value = cursor.hasMore
   } catch {
-    error.value = true
+    if (current === generation) error.value = true
   } finally {
-    loading.value = false
+    if (current === generation) loading.value = false
   }
 }
 

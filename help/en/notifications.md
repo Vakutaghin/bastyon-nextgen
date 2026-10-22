@@ -21,7 +21,7 @@ The three-dot button on a notification is **“Hide notification”**, and **“
 ## What you are notified about
 
 - ratings of your posts;
-- comments on your posts and replies to your comments;
+- comments on your posts and replies to your comments. If coins are attached to a comment, the notification shows the amount;
 - ratings of your comments — a like or a dislike;
 - new subscribers. **“Subscription with notifications”** means someone subscribed to you and turned on the bell, that is, wants notifications about your posts. It is a regular free subscription, not a paid one;
 - reposts of your posts and boosts — when someone promotes your post for PKOIN;
@@ -35,6 +35,8 @@ Unsubscriptions are not shown in the list.
 
 While the app is open, it checks for new events every 30 seconds. A new notification also pops up for a few seconds with a sound — no more than two at a time.
 
+The sound depends on the event. When coins arrive — a transfer, a tip, coins with a comment, a subscription payment, a lottery reward — you hear a coin; for everything else, a short chime. The coin also plays when you send PKOIN yourself: a transfer, a tip, a boost, a subscription or mini-app payment. A batch of events makes one sound.
+
 When the app is closed, notifications do not arrive: it has no push notifications. On the next start it asks for what was missed — up to the 30 latest events of each kind — and shows them in the list.
 
 The list is kept on this device, separately for each account: the latest 300 notifications.
@@ -43,7 +45,7 @@ The list is kept on this device, separately for each account: the latest 300 not
 
 **“Settings”** → the **“Notifications”** tab — **“Notification filter”**. A kind of event that is switched off disappears both from the list and from the pop-ups:
 
-- **“Sound”** — a sound for new notifications;
+- **“Sound”** — all the app’s sounds: notifications, new chat messages and the coin when you send PKOIN;
 - **“Browser notifications”** — see below;
 - **“Coinstake win”** — lottery rewards;
 - **“Transaction received”** — incoming transfers;

@@ -11,13 +11,20 @@ Where to see the PKOIN you sent and received, and how to find a transaction on t
 The wallet’s **“History”** tab shows **“Sent and received PKOIN for your main wallet.”**, newest first. Each entry has:
 
 - **“Received”** or **“Sent”** and the amount;
-- from or to whom — an address;
-- a mark if it is not an ordinary transfer: **“Tip”**, **“Subscription”** — a [paid subscription](paid-subscriptions.md) payment, **“Boost”** — promoting a post, **“Stake”** — a block reward;
+- from or to whom — a name or an address. Rewards and boosts have no such line;
+- a mark if it is not an ordinary transfer:
+  - **“Tip”**;
+  - **“Subscription”** — a [paid subscription](paid-subscriptions.md) payment;
+  - **“With a comment”** — coins attached to a comment under your post;
+  - **“Monetization”** — a monetization payout from Bastyon;
+  - **“Lottery”** — a [block lottery](earnings.md) win;
+  - **“Stake”** — a reward for a block your wallet produced;
+  - **“Boost”** — promoting a post: the whole boost amount goes to the network;
 - the time. Hover over it to see the exact date.
 
 At the bottom there is **“Load more”** if there are many entries.
 
-Fees for posts, ratings and other actions are not shown in the history: the coins do not go to other people then, but come back to you as change minus the tiny fee.
+Posts, ratings and comments without coins are not shown in the history: the coins do not go to other people then, but come back to you as change minus the tiny fee.
 
 ## Transaction details
 

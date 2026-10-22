@@ -1,10 +1,13 @@
 /**
  * Карта Pocketnet-кодов типов транзакций (поле type) → человеко-читаемое имя.
  *
- * Источник истины — vout[0].scriptPubKey.hex (OP_RETURN <label> <data>). Метки,
- * помеченные «verified», взяты из реальных tx на mainnet; остальные — предположения
- * по pocketnet.core::PocketTx.h, которые будут заменены на verified-метки по мере
- * встречаемости в реальных данных.
+ * Коды — из pocketnet.core (PocketTx). Помеченные «verified» сверены с
+ * транзакциями mainnet 22.10.2026 по первой метке OP_RETURN (в скобках);
+ * остальные на mainnet не встретились и взяты из кода ноды.
+ *
+ * До 22.10.2026 таблица была сдвинута: 1 значился Coinbase, 208 — Audio,
+ * 307 — BoostContent, и обозреватель подписывал переводы и бусты чужими
+ * именами.
  *
  * Если код неизвестен — отдаём 'Тип ' + код.
  */
@@ -12,57 +15,54 @@
 import { t } from '@/i18n'
 
 export const POCKET_TX_TYPES: Record<number, string> = {
-  // Базовые Bitcoin / PoS
-  1: 'Coinbase',
-  2: 'Coinstake',
-  3: 'PoS reward', // verified: vin[0].address === vout[1].addresses[0]
-  4: 'Default',
+  // Монеты
+  1: 'Transfer', // verified: переводы, без OP_RETURN или с сообщением
+  2: 'Coinbase',
+  3: 'Coinstake', // verified: vout[0] пустой, дальше ставщик и лотерея
 
-  // Account
-  100: 'AccountSetting', // verified: OP_RETURN "userInfo"
-  101: 'Account',
-  102: 'AccountUser',
-  103: 'AccountSet', // verified: OP_RETURN "accSet"
-  104: 'AccountBarteron',
+  // Аккаунт
+  100: 'AccountUser', // verified ("userInfo")
+  101: 'AccountVideoServer',
+  102: 'AccountMessageServer',
+  103: 'AccountSetting', // verified ("accSet")
+  104: 'BarteronAccount', // verified ("brtaccount")
+  170: 'AccountDelete',
 
-  // Content
-  200: 'Post', // verified: OP_RETURN "share"
-  201: 'Video', // verified: OP_RETURN "video"
-  202: 'Article',
-  203: 'Stream',
-  204: 'Comment', // verified: OP_RETURN "comment"
-  205: 'CommentEdit', // verified: OP_RETURN "commentEdit"
-  206: 'ContentDelete',
-  207: 'CommentDelete',
-  208: 'Audio',
-  209: 'Collection',
+  // Контент
+  200: 'Post', // verified ("share")
+  201: 'Video', // verified ("video")
+  202: 'Article', // verified ("article")
+  204: 'Comment', // verified ("comment")
+  205: 'CommentEdit', // verified ("commentEdit")
+  206: 'CommentDelete', // verified ("commentDelete")
+  207: 'ContentDelete', // verified ("contentDelete")
+  208: 'BoostContent', // verified ("contentBoost")
+  209: 'Stream',
+  210: 'Audio', // verified ("audio")
+  211: 'BarteronOffer', // verified ("brtoffer")
+  220: 'Collection',
+  221: 'MiniApp', // verified ("miniapp")
 
-  // Scoring
-  300: 'UpvoteShare', // verified: OP_RETURN "upvoteShare"
-  301: 'cScore', // verified: OP_RETURN "cScore"
+  // Оценки
+  300: 'UpvoteShare', // verified ("upvoteShare")
+  301: 'CommentScore', // verified ("cScore")
 
-  // Subscriptions
-  302: 'Subscribe',
-  303: 'SubscribePrivate',
-  304: 'Unsubscribe', // verified: OP_RETURN "unsubscribe"
+  // Подписки
+  302: 'Subscribe', // verified ("subscribe")
+  303: 'SubscribePrivate', // verified ("subscribePrivate")
+  304: 'Unsubscribe', // verified ("unsubscribe")
 
-  // Blocking
-  305: 'Blocking',
-  306: 'Unblocking',
+  // Блокировки и жалобы
+  305: 'Blocking', // verified ("blocking")
+  306: 'Unblocking', // verified ("unblocking")
+  307: 'Complain', // verified ("complainShare")
 
-  // Boost / Complain
-  307: 'BoostContent',
-  308: 'Complain',
-
-  // Moderation
-  400: 'ModerationFlag',
-  401: 'ModerationVote',
-
-  // Barteron
-  211: 'BarteronAccount',
-  212: 'BarteronOffer',
-  213: 'BarteronOfferDelete',
-  214: 'BarteronRequest',
+  // Модерация
+  400: 'ModeratorRequestSubs',
+  401: 'ModeratorRequestCoin',
+  402: 'ModeratorRequestCancel',
+  410: 'ModerationFlag', // verified ("modFlag")
+  420: 'ModerationVote', // verified ("modVote")
 }
 
 export function labelForTxType(type: number): string {

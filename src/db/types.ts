@@ -90,6 +90,8 @@ export interface StoredNotification {
   commentId?: string
   mesType?: string
   upvoteVal?: number
+  /** К комментарию приложены монеты (сумма — в description). */
+  donation?: boolean
 }
 
 /**

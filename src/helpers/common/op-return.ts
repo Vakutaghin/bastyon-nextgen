@@ -9,6 +9,9 @@ export const DONATE_MARKER = 'a:donate'
 /** Метка оплаты платной подписки в OP_RETURN перевода (как у старого клиента). */
 export const SUBSCRIPTION_MARKER = 'a:subscription'
 
+/** Метка выплаты монетизации авторам: так подписаны выплаты Bastyon (mainnet, 10.2026). */
+export const MONETIZATION_MARKER = 'a:monetization'
+
 /**
  * Сколько байт данных нода пропускает в OP_RETURN: `MAX_OP_RETURN_RELAY` —
  * 83 байта скрипта, из них 3 на OP_RETURN и длину. Длиннее — транзакция

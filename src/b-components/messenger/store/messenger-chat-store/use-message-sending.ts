@@ -3,6 +3,7 @@
 
 import { t } from '@/i18n'
 import { appToast } from '@/b-components/app-toast'
+import { playSound } from '@/services/app-sounds'
 
 import { matrixService } from '../../services/matrix-service'
 import { encryptTextWithSecret } from '../../services/encryption-service'
@@ -479,6 +480,8 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         operationType: 'transaction',
         pending: { address: toAddress, amount },
       })
+      // Монеты ушли — даже если сообщение о переводе ниже не дойдёт.
+      playSound('coin')
 
       // Фаза 2: сообщение в комнату. С этого момента деньги уже ушли — любая
       // ошибка ниже НЕ должна приводить к повторной транзакции.

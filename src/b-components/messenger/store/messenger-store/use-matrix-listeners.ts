@@ -7,10 +7,11 @@
 import { t } from '@/i18n'
 import { notifyMessage } from '@/composables/use-browser-notifications'
 import { logger } from '@/services/logger'
+import { playSound } from '@/services/app-sounds'
 
 import { matrixService } from '../../services/matrix-service'
-import glassSound from '../../sounds/glass.mp3'
 import {
+  getEventContent,
   getEventId,
   getEventType,
   getEventRoomId,
@@ -104,12 +105,10 @@ export function registerMatrixListeners(
           // выбранным чатом раньше считалось открытым: ни звука, ни бейджа, но
           // серверу уходило «прочитано» (V30).
           const onScreen = uiStore.isChatOnScreen(roomId)
-          if (senderId !== chatStore.currentUser.id && !onScreen && isRecent) {
-            try {
-              new Audio(glassSound).play().catch(() => {})
-            } catch {
-              /* ignore */
-            }
+          // Правка — то же сообщение, а не новое: без звука и уведомления.
+          const isEdit = getEventContent(event)['m.relates_to']?.rel_type === 'm.replace'
+          if (senderId !== chatStore.currentUser.id && !onScreen && isRecent && !isEdit) {
+            playSound('message')
             // Браузерное уведомление о новом сообщении (если вкладка в фоне
             // и пользователь включил браузерные уведомления).
             try {

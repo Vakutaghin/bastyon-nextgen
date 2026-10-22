@@ -163,6 +163,7 @@ import { SATOSHI, type PaidPlanId } from '@/helpers/paid-subscription/plans'
 import { formatPkoin, formatTermDate } from '@/helpers/paid-subscription/format'
 import { userAvatar, userName } from '@/services/user-names'
 import { useEffectsStore } from '@/stores/effects-store'
+import { playSound } from '@/services/app-sounds'
 import { paidPurchaseSupported, usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import { useUserRelationsStore } from '@/stores/user-relations-store'
 import {
@@ -285,6 +286,7 @@ async function onPay(): Promise<void> {
   try {
     const { subscribeFailed } = await store.pay(author.value, offer)
     appToast.success({ message: t('paidSubscriptions.modal.sent') })
+    playSound('coin')
     if (subscribeFailed) appToast.warning({ message: t('paidSubscriptions.modal.subscribeFailed') })
     store.closeModal()
     if (typeof window !== 'undefined') {

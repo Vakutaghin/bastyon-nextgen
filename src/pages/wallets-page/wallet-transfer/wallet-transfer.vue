@@ -150,6 +150,7 @@ import Select, { type SelectOption } from '@/components/select'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { fitOpReturnText } from '@/helpers/common/op-return'
+import { playSound } from '@/services/app-sounds'
 import { InsufficientFundsError, sendTransfer } from './send-transfer'
 import { useReceiveAddress } from './use-receive-address'
 import { useReceiverSearch } from './use-receiver-search'
@@ -280,6 +281,7 @@ async function doSend(): Promise<void> {
       txid: txid.slice(0, 16),
       fee: formatPkoin(feePaidSatoshis, 8),
     })
+    playSound('coin')
     // Баланс во вкладке «Балансы» пересчитываем сразу — раньше он оставался
     // тем, что пришёл в профиле при логине (S47).
     emit('sent')

@@ -15,6 +15,10 @@ vi.mock('@/composables/use-browser-notifications', () => ({
 }))
 vi.mock('@/services/logger', () => ({ logger: { scope: () => ({ error: vi.fn() }) } }))
 vi.mock('../../sounds/glass.mp3', () => ({ default: 'glass.mp3' }))
+vi.mock('@/b-components/donate/sounds/donate.mp3', () => ({ default: 'coin.mp3' }))
+vi.mock('@/b-components/header/header-notifications/sounds/notification.mp3', () => ({
+  default: 'drop.mp3',
+}))
 vi.mock('../../services/matrix-service', () => ({
   matrixService: {
     on: (name: string, h: Handler) => {
@@ -25,6 +29,7 @@ vi.mock('../../services/matrix-service', () => ({
 }))
 
 import { registerMatrixListeners } from './use-matrix-listeners'
+import { resetAppSoundsForTests } from '@/services/app-sounds'
 
 const ROOM = '!room:host'
 
@@ -82,6 +87,7 @@ function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}
 
 beforeEach(() => {
   vi.clearAllMocks()
+  resetAppSoundsForTests()
   vi.stubGlobal(
     'Audio',
     class {
@@ -153,6 +159,32 @@ describe('registerMatrixListeners — Room.timeline', () => {
     expect(notifyMessage).toHaveBeenCalledWith('name-of-@peer:host', 'hi')
     expect(chatStore.messages[ROOM]).toBeUndefined()
     expect(scheduleLoadDialogs).toHaveBeenCalledTimes(1)
+  })
+
+  it('правка сообщения — не новое сообщение: без звука и уведомления', async () => {
+    setup('!other:host')
+    await handlers['Room.timeline']!(
+      mxEvent('m.room.message', {
+        content: {
+          body: '* hi',
+          'm.new_content': { msgtype: 'm.text', body: 'hi' },
+          'm.relates_to': { rel_type: 'm.replace', event_id: '$orig' },
+        },
+      }),
+      room,
+      false
+    )
+    expect(audioPlay).not.toHaveBeenCalled()
+    expect(notifyMessage).not.toHaveBeenCalled()
+  })
+
+  it('пачка сообщений подряд — один звук, уведомление на каждое', async () => {
+    setup('!other:host')
+    for (const id of ['$a', '$b', '$c']) {
+      await handlers['Room.timeline']!(mxEvent('m.room.message', { id }), room, false)
+    }
+    expect(audioPlay).toHaveBeenCalledTimes(1)
+    expect(notifyMessage).toHaveBeenCalledTimes(3)
   })
 
   it('старое сообщение (старше SOUND_MAX_AGE) не озвучивается', async () => {

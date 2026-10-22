@@ -80,15 +80,23 @@ test.describe('Block explorer routes', () => {
   })
 
   test('address route renders breadcrumb and balance label', async ({ page }) => {
-    // Используем известный адрес из главного фонда Pocketnet (большой баланс) —
-    // он же используется в эталонном эксплорере. Если адрес сменится, тест надо обновить.
-    const sampleAddress = 'PEbcdM5z3ggptkbptqDtgxqRcDR2GnUuJ4'
+    test.setTimeout(60_000)
+    // Адрес, с которого Bastyon платит авторам монетизацию (`a:monetization`):
+    // транзакции у него есть всегда. Прежний PEbcdM5z… нода отвергает как
+    // «Invalid address» — у него неверная контрольная сумма.
+    const sampleAddress = 'PHdW4pwWbFdoofVhSEfPSHgradmrvZdbE5'
     await page.goto(`/explorer/address/${sampleAddress}`)
     await waitForAppMount(page)
 
     await expect(page.getByText('Эксплорер').first()).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('Баланс').first()).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('Транзакции', { exact: true }).first()).toBeVisible()
+    // Список транзакций адреса не пуст: до 22.10.2026 запрос `[адрес, -1, N]`
+    // нода понимала как «блоки не выше −1», и список был пустым всегда.
+    await expect(page.getByRole('link', { name: /^#[\d\s\u00a0,]+$/ }).first()).toBeVisible({
+      timeout: 30_000,
+    })
+    await expect(page.getByText('Транзакций нет')).toHaveCount(0)
   })
 
   test('explorer search input keeps local hint for known formats', async ({ page }) => {

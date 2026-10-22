@@ -3,11 +3,11 @@
  *
  * Каждая точка: { bucket, total, content, ratings, subscriptions, accounts }.
  * Категории по нашему [tx-type-labels]:
- *   - content       — пост/видео/статья/коммент/правка/коллекция (200, 201, 202, 203, 204, 205, 206, 207, 208, 209)
+ *   - content       — посты всех видов, комментарии, правки, удаления, бусты (200–210, 220, 221)
  *   - ratings       — оценки (300, 301)
  *   - subscriptions — подписки и отписки (302, 303, 304)
- *   - accounts      — действия с профилем/аккаунтом (100, 101, 102, 103, 104, 211)
- *   - moderation    — модерация (305, 306, 308, 400, 401)
+ *   - accounts      — действия с профилем/аккаунтом и Barteron (100–104, 170, 211)
+ *   - moderation    — блокировки, жалобы, модерация (305–307, 400–402, 410, 420)
  *   - other         — coinbase/coinstake/transfers и т.п. (всё остальное)
  *
  * Точки идут по возрастанию ключа bucket (parseInt(key)).
@@ -28,11 +28,11 @@ export interface StatsPoint {
   other: number
 }
 
-const CONTENT_TYPES = new Set([200, 201, 202, 203, 204, 205, 206, 207, 208, 209])
+const CONTENT_TYPES = new Set([200, 201, 202, 204, 205, 206, 207, 208, 209, 210, 220, 221])
 const RATING_TYPES = new Set([300, 301])
 const SUBSCRIPTION_TYPES = new Set([302, 303, 304])
-const ACCOUNT_TYPES = new Set([100, 101, 102, 103, 104, 211])
-const MODERATION_TYPES = new Set([305, 306, 308, 400, 401])
+const ACCOUNT_TYPES = new Set([100, 101, 102, 103, 104, 170, 211])
+const MODERATION_TYPES = new Set([305, 306, 307, 400, 401, 402, 410, 420])
 
 export function aggregateStats(buckets: StatisticBuckets | null | undefined): StatsPoint[] {
   if (!buckets || typeof buckets !== 'object') return []

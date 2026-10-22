@@ -46,7 +46,7 @@ const cases: Array<{ name: string; payload: PocketPayload; titleKey: string }> =
   },
   {
     name: 'stream',
-    payload: { kind: 'post', type: 203, author: 'PauthorAddr', postId: 'postid' },
+    payload: { kind: 'post', type: 209, author: 'PauthorAddr', postId: 'postid' },
     titleKey: 'titleStream',
   },
   {
@@ -129,7 +129,7 @@ const cases: Array<{ name: string; payload: PocketPayload; titleKey: string }> =
   },
   {
     name: 'boost',
-    payload: { kind: 'boost', type: 307, booster: 'Pb', postId: 'pid', amount: 100000000 },
+    payload: { kind: 'boost', type: 208, booster: 'Pb', postId: 'pid', amount: 4.5 },
     titleKey: 'titleBoostPost',
   },
   {

@@ -2,10 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { parsePocketnetPayload } from './parse-pocketnet-payload'
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 
-function txOf(
-  type: number,
-  extra: Partial<Transaction> = {},
-): Transaction {
+function txOf(type: number, extra: Partial<Transaction> = {}): Transaction {
   return {
     txid: 'tx',
     type,
@@ -42,7 +39,9 @@ describe('parsePocketnetPayload', () => {
     const p = parsePocketnetPayload(tx)
     expect(p?.kind).toBe('comment')
     if (p?.kind === 'comment') {
-      expect(p.parentPostId).toBe('99382d92f180cdbf50b2d946f41dc540ea411e5b010611b17ac97e101dfa7fa0')
+      expect(p.parentPostId).toBe(
+        '99382d92f180cdbf50b2d946f41dc540ea411e5b010611b17ac97e101dfa7fa0'
+      )
     }
   })
 
@@ -72,42 +71,63 @@ describe('parsePocketnetPayload', () => {
 
   it('parses subscribe/unsubscribe variants', () => {
     expect(parsePocketnetPayload(txOf(302, { s1: 'PA', s2: 'PB' }))).toMatchObject({
-      kind: 'subscribe', isUnsubscribe: false, isPrivate: false, from: 'PA', to: 'PB',
+      kind: 'subscribe',
+      isUnsubscribe: false,
+      isPrivate: false,
+      from: 'PA',
+      to: 'PB',
     })
     expect(parsePocketnetPayload(txOf(303, { s1: 'PA', s2: 'PB' }))).toMatchObject({
-      kind: 'subscribe', isUnsubscribe: false, isPrivate: true,
+      kind: 'subscribe',
+      isUnsubscribe: false,
+      isPrivate: true,
     })
     expect(parsePocketnetPayload(txOf(304, { s1: 'PA', s2: 'PB' }))).toMatchObject({
-      kind: 'subscribe', isUnsubscribe: true, isPrivate: false,
+      kind: 'subscribe',
+      isUnsubscribe: true,
+      isPrivate: false,
     })
   })
 
   it('parses block / unblock', () => {
     expect(parsePocketnetPayload(txOf(305, { s1: 'PA', s2: 'PB' }))).toMatchObject({
-      kind: 'block-user', isUnblock: false,
+      kind: 'block-user',
+      isUnblock: false,
     })
     expect(parsePocketnetPayload(txOf(306, { s1: 'PA', s2: 'PB' }))).toMatchObject({
-      kind: 'block-user', isUnblock: true,
+      kind: 'block-user',
+      isUnblock: true,
     })
   })
 
-  it('parses Boost (307) and picks recipient vout', () => {
-    const tx = txOf(307, {
+  // Как буст 9a25a95b… на mainnet: сдача бустеру, сумма буста — комиссия.
+  it('parses Boost (208): amount = inputs − outputs', () => {
+    const tx = txOf(208, {
       s1: 'Pbooster',
       s2: 'postid',
+      vin: [
+        { txid: 'a', vout: 0, address: 'Pbooster', value: 5 },
+        { txid: 'b', vout: 1, address: 'Pbooster', value: 2.81236681 },
+      ],
       vout: [
-        { n: 0, value: 0, scriptPubKey: { addresses: [''], hex: '6a05626f6f7374...' } },
-        { n: 1, value: 0.5, scriptPubKey: { addresses: ['Pauthor'], hex: '' } },
+        { n: 0, value: 0, scriptPubKey: { addresses: [''], hex: '6a0c636f6e74656e74426f6f7374' } },
+        { n: 1, value: 3.31236681, scriptPubKey: { addresses: ['Pbooster'], hex: '' } },
       ],
     })
     const p = parsePocketnetPayload(tx)
-    expect(p).toMatchObject({ kind: 'boost', booster: 'Pbooster', postId: 'postid', amount: 0.5 })
+    expect(p).toMatchObject({ kind: 'boost', booster: 'Pbooster', postId: 'postid', amount: 4.5 })
+  })
+
+  it('307 — жалоба, не буст', () => {
+    expect(parsePocketnetPayload(txOf(307, { s1: 'PA', s2: 'postid' }))).toBeNull()
   })
 
   it('parses AccountSetting (100)', () => {
     const tx = txOf(100, { s1: 'PAU9mgKzS63ouytAwM8PCEZh4jHBo6ktuz' })
     expect(parsePocketnetPayload(tx)).toMatchObject({
-      kind: 'account', isSetting: true, account: 'PAU9mgKzS63ouytAwM8PCEZh4jHBo6ktuz',
+      kind: 'account',
+      isSetting: true,
+      account: 'PAU9mgKzS63ouytAwM8PCEZh4jHBo6ktuz',
     })
   })
 
@@ -122,7 +142,7 @@ describe('parsePocketnetPayload', () => {
 
   it('returns null when required slots are missing', () => {
     expect(parsePocketnetPayload(txOf(204, { s1: 'P', s2: 'x' }))).toBeNull() // нет s3
-    expect(parsePocketnetPayload(txOf(200, { s1: 'P' }))).toBeNull()           // нет s2
+    expect(parsePocketnetPayload(txOf(200, { s1: 'P' }))).toBeNull() // нет s2
   })
 
   it('handles nullish tx', () => {

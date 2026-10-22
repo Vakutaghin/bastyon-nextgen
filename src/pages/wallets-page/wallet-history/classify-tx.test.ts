@@ -8,9 +8,9 @@ const mine = new Set([ME])
 
 /** Минимальная tx-болванка с заданными vin/vout (опц. on-chain type). */
 function tx(
-  vin: { address?: string }[],
+  vin: { address?: string; value?: number }[],
   vout: { value: number; address: string }[],
-  type = 4
+  type = 1
 ): Transaction {
   return {
     txid: 'tx',
@@ -18,7 +18,7 @@ function tx(
     height: 1,
     blockHash: 'b',
     nTime: 0,
-    vin: vin.map((i) => ({ txid: '', vout: 0, address: i.address })),
+    vin: vin.map((i) => ({ txid: '', vout: 0, address: i.address, value: i.value })),
     vout: vout.map((o, n) => ({
       n,
       value: o.value,
@@ -65,18 +65,105 @@ describe('classifyWalletTx', () => {
 })
 
 describe('classifyWalletTx semantic', () => {
-  it('помечает boost (type 307)', () => {
-    const r = classifyWalletTx(tx([{ address: ME }], [{ value: 1, address: OTHER }], 307), mine)
-    expect(r.semantic).toBe('boost')
+  // Формы транзакций — как у настоящих на mainnet (22.10.2026).
+  const OP_RETURN = { value: 0, address: '' }
+
+  it('буст (208): трата на сумму комиссии, выходов на чужие адреса нет', () => {
+    const r = classifyWalletTx(
+      tx([{ address: ME, value: 7 }], [OP_RETURN, { value: 4.5, address: ME }], 208),
+      mine
+    )
+    expect(r).toMatchObject({
+      direction: 'out',
+      amount: 2.5,
+      semantic: 'boost',
+      counterparties: [],
+    })
   })
 
-  it('помечает stake (coinstake, type 3)', () => {
-    const r = classifyWalletTx(tx([{ address: OTHER }], [{ value: 1, address: ME }], 3), mine)
-    expect(r.semantic).toBe('stake')
+  it('307 — жалоба, а не буст: без движения монет', () => {
+    const r = classifyWalletTx(
+      tx([{ address: ME, value: 1 }], [OP_RETURN, { value: 1, address: ME }], 307),
+      mine
+    )
+    expect(r.direction).toBe('change')
+  })
+
+  it('свой комментарий без монет: OP_RETURN — не получатель', () => {
+    const r = classifyWalletTx(
+      tx([{ address: ME, value: 1 }], [OP_RETURN, { value: 1, address: ME }], 204),
+      mine
+    )
+    expect(r).toMatchObject({ direction: 'change', amount: 0 })
+  })
+
+  it('комментарий с монетами автору поста — получено', () => {
+    const r = classifyWalletTx(
+      tx(
+        [{ address: OTHER, value: 1.1 }],
+        [OP_RETURN, { value: 1, address: ME }, { value: 0.1, address: OTHER }],
+        204
+      ),
+      mine
+    )
+    expect(r).toMatchObject({
+      direction: 'in',
+      amount: 1,
+      semantic: 'comment',
+      counterparties: [OTHER],
+    })
+  })
+
+  it('выигрыш лотереи — выход мне в чужом coinstake', () => {
+    const r = classifyWalletTx(
+      tx(
+        [{ address: OTHER, value: 60.9 }],
+        [
+          OP_RETURN,
+          { value: 31.66, address: OTHER },
+          { value: 31.6775, address: OTHER },
+          { value: 0.03125, address: ME },
+        ],
+        3
+      ),
+      mine
+    )
+    expect(r).toMatchObject({ direction: 'in', amount: 0.03125, semantic: 'lottery' })
+  })
+
+  it('свой coinstake: награда = выходы мне − мои входы, выходы лотереи другим не трата', () => {
+    const r = classifyWalletTx(
+      tx(
+        [{ address: ME, value: 100 }],
+        [
+          OP_RETURN,
+          { value: 50, address: ME },
+          { value: 52.5, address: ME },
+          { value: 0.0125, address: OTHER },
+        ],
+        3
+      ),
+      mine
+    )
+    expect(r).toMatchObject({ direction: 'in', amount: 2.5, semantic: 'stake' })
+  })
+
+  it('выплата монетизации — метка a:monetization', () => {
+    const t = tx([{ address: OTHER }], [{ value: 0.53, address: ME }])
+    t.vout.unshift({
+      n: 0,
+      value: 0,
+      scriptPubKey: { addresses: [''], hex: '6a0e613a6d6f6e6574697a6174696f6e' },
+    })
+    expect(classifyWalletTx(t, mine)).toMatchObject({
+      direction: 'in',
+      amount: 0.53,
+      semantic: 'monetization',
+    })
   })
 
   it('обычный перевод — semantic null', () => {
-    const r = classifyWalletTx(tx([{ address: ME }], [{ value: 1, address: OTHER }], 4), mine)
+    const r = classifyWalletTx(tx([{ address: ME }], [{ value: 1, address: OTHER }]), mine)
     expect(r.semantic).toBeNull()
   })
 

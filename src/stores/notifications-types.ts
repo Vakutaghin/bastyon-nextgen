@@ -58,6 +58,8 @@ export interface NotificationItem {
   mesType?: string
   /** Для upvoteShare: значение оценки (положительное — апвоут, отрицательное — даунвоут) */
   upvoteVal?: number
+  /** К комментарию приложены монеты (сумма — в description). */
+  donation?: boolean
   /**
    * Снимок связанного контента, если RPC отдал его вместе с событием.
    * Не сохраняется в IDB — только в памяти, для превью.

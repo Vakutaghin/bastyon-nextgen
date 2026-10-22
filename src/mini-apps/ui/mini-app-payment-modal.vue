@@ -50,6 +50,7 @@ import { splitFeeAcrossReceivers } from '@/blockchain/core/transactions/split-fe
 import { sendTransactionWithMessage } from '@/blockchain/core/transactions/transaction-sender'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { fitOpReturnText } from '@/helpers/common/op-return'
+import { playSound } from '@/services/app-sounds'
 import {
   isPaymentModalOpen,
   currentPaymentPayload,
@@ -148,6 +149,7 @@ async function onConfirm() {
         ...(appName.value ? { title: appName.value } : {}),
       },
     })
+    playSound('coin')
     resolvePaymentModal({ transaction: txid, completed: true })
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('miniapps.errorPaymentFailed')

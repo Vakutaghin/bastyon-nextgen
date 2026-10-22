@@ -23,8 +23,8 @@ import type {
   MeshMessageStatus,
 } from '@/db/types'
 import { notifyMessage } from '@/composables/use-browser-notifications'
+import { playSound } from '@/services/app-sounds'
 import { useMessengerUiStore } from '@/b-components/messenger/store/messenger-ui-store'
-import glassSound from '@/b-components/messenger/sounds/glass.mp3'
 import type { Dialog, Message } from '@/b-components/messenger/types'
 import {
   channelDialogId,
@@ -557,11 +557,7 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
     const ui = useMessengerUiStore()
     if (!ui.isChatOnScreen(dialog.id)) {
       dialog.unread += 1
-      try {
-        new Audio(glassSound).play().catch(() => {})
-      } catch {
-        /* нет звука — не беда */
-      }
+      playSound('message')
       // На Android — системное уведомление (Web Notification в WebView нет).
       const title = record.senderName || dialog.name
       if (!showRadioNotification(title, shown)) notifyMessage(title, shown)

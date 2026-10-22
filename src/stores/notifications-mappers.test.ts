@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
+  bringsCoins,
   canonicalStoredMesType,
   mapMissedEventToNotification,
   MIN_TRANSFER_NOTIFY_PKOIN,
+  preferEventsOverTransfers,
 } from './notifications-mappers'
 import { opReturnText } from '@/helpers/common/op-return'
 
@@ -350,5 +352,84 @@ describe('canonicalStoredMesType', () => {
     expect(canonicalStoredMesType('contentBoost')).toBe('boost')
     expect(canonicalStoredMesType('postfromprivate')).toBe('postfromprivate')
     expect(canonicalStoredMesType(undefined)).toBeUndefined()
+  })
+})
+
+// Как в ответе getmissedinfo mainnet (22.10.2026): комментарий с донатом 1 PKOIN
+// приходит событием и сырой транзакцией с тем же txid.
+describe('донат в комментарии', () => {
+  const comment = {
+    addr: 'ME',
+    msg: 'comment',
+    mesType: 'post',
+    reason: 'post',
+    txid: 'c42',
+    time: 10,
+    nblock: 5,
+    addrFrom: 'PX',
+    posttxid: 'p1',
+    donation: 'true',
+    amount: 100000000,
+  }
+  const raw = {
+    txid: 'c42',
+    type: 204,
+    height: 5,
+    vin: [{ address: 'PX', value: 1.1 }],
+    vout: [
+      { n: 0, value: 0, scriptPubKey: { addresses: [''], hex: '6a07636f6d6d656e74' } },
+      { n: 1, value: 1, scriptPubKey: { addresses: ['ME'] } },
+      { n: 2, value: 0.1, scriptPubKey: { addresses: ['PX'] } },
+    ],
+  }
+
+  it('комментарий несёт сумму и признак доната', () => {
+    const r = mapMissedEventToNotification(comment, 'ME')
+    expect(r).toMatchObject({ type: 'comment', description: '+1 PKOIN', donation: true })
+    expect(bringsCoins(r!)).toBe(true)
+  })
+
+  it('из двух записей с одним txid остаётся комментарий', () => {
+    const items = [raw, comment].map((n) => mapMissedEventToNotification(n, 'ME')!)
+    expect(items.map((n) => n.type)).toEqual(['tip', 'comment'])
+    const kept = preferEventsOverTransfers(items)
+    expect(kept).toHaveLength(1)
+    expect(kept[0]).toMatchObject({ type: 'comment', donation: true })
+  })
+
+  it('обычный комментарий и оценка монет не приносят', () => {
+    const plain = mapMissedEventToNotification({
+      ...comment,
+      donation: undefined,
+      amount: undefined,
+    })
+    expect(plain!.donation).toBeUndefined()
+    expect(bringsCoins(plain!)).toBe(false)
+    const like = mapMissedEventToNotification({
+      msg: 'event',
+      mesType: 'upvoteShare',
+      txid: 'u1',
+      upvoteVal: 5,
+      addrFrom: 'PX',
+      posttxid: 'p1',
+    })
+    expect(bringsCoins(like!)).toBe(false)
+  })
+
+  it('перевод и выигрыш лотереи приносят монеты', () => {
+    const transfer = mapMissedEventToNotification(raw, 'ME')!
+    expect(bringsCoins(transfer)).toBe(true)
+    const win = mapMissedEventToNotification(
+      {
+        txid: 'w1',
+        type: 3,
+        height: 7,
+        vin: [{ address: 'STAKER' }],
+        vout: [{ n: 0, value: 0.0125, scriptPubKey: { addresses: ['ME'] } }],
+      },
+      'ME'
+    )!
+    expect(win.mesType).toBe('win')
+    expect(bringsCoins(win)).toBe(true)
   })
 })

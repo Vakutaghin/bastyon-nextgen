@@ -4,34 +4,8 @@ import { isNotificationAllowed } from '@/stores/notification-filtering'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import type { NotificationItem } from '@/stores/notifications-store'
-// Реальный звук уведомления (портирован из legacy sounds/). Vite отдаёт URL —
-// тот же приём, что у мессенджера (messenger-store импортирует glass.mp3).
-import notificationSound from './sounds/notification.mp3'
-
-/** Один раз за сессию проигрываем короткий звук (чтобы при пачке уведомлений не было какофонии). */
-let soundPlayedInSession = false
-// Один аудио-инстанс на модуль — не плодим элементы при пачке уведомлений.
-let notificationAudio: HTMLAudioElement | null = null
-
-function playNotificationSoundOnce(): void {
-  if (soundPlayedInSession) return
-  soundPlayedInSession = true
-  try {
-    if (!notificationAudio) {
-      notificationAudio = new Audio(notificationSound)
-      notificationAudio.volume = 0.5
-    }
-    notificationAudio.currentTime = 0
-    // Автоплей может быть заблокирован браузером до первого клика — глушим ошибку
-    // (как в messenger-store), синтез-бип больше не нужен.
-    void notificationAudio.play().catch(() => {})
-    setTimeout(() => {
-      soundPlayedInSession = false
-    }, 2000)
-  } catch {
-    soundPlayedInSession = false
-  }
-}
+import { bringsCoins } from '@/stores/notifications-mappers'
+import { playSound } from '@/services/app-sounds'
 
 /** Максимум тостов за раз при пачке уведомлений — показываем только последние 2. */
 const MAX_TOASTS_AT_ONCE = 2
@@ -71,7 +45,7 @@ export function showToastsForNewNotifications(pinia: Pinia, items: NotificationI
     })
   }
 
-  if (settings.sound) {
-    playNotificationSoundOnce()
-  }
+  // Пришли монеты — монетка, иначе капля. Один звук на пачку; «Звук» в
+  // настройках проверяет playSound.
+  playSound(allowed.some(bringsCoins) ? 'coin' : 'notification')
 }

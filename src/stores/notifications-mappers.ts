@@ -296,7 +296,12 @@ export function mapMissedEventToNotification(
     : ((mesType && MES_TYPE_TITLE_KEYS[mesType]) ?? 'notif.titleDefault')
   // Текст оценки не сохраняем (он застыл бы на языке момента записи) —
   // тост соберёт его из upvoteVal. Сумма от языка не зависит.
-  const description = isTipEvent ? amountLabel(n.amount as string | number) : undefined
+  // Монеты в комментарии: нода помечает событие `donation: 'true'` и кладёт
+  // сумму в сатоши. Ту же транзакцию она присылает и сырой — см.
+  // preferEventsOverTransfers.
+  const donation =
+    !isTipEvent && (n.donation === true || n.donation === 'true') && Number(n.amount) > 0
+  const description = isTipEvent || donation ? amountLabel(n.amount as string | number) : undefined
   const link = (n.url ?? n.link) as string | undefined
 
   const safeType: NotificationItem['type'] = isTipEvent ? 'tip' : notificationTypeFor(mesType)
@@ -338,8 +343,28 @@ export function mapMissedEventToNotification(
     commentId,
     mesType,
     upvoteVal,
+    ...(donation ? { donation } : {}),
     postSnapshot,
     commentSnapshot,
     fromSnapshot,
   }
+}
+
+/** В уведомлении пришли монеты: перевод, чаевые, оплата подписки, лотерея, донат. */
+export function bringsCoins(item: NotificationItem): boolean {
+  return item.type === 'tip' || item.mesType === 'win' || !!item.donation
+}
+
+/**
+ * Донат в комментарии нода присылает дважды с одним txid: событием
+ * комментария и сырой транзакцией, из которой выходит «Перевод». В списке
+ * было две записи с одним id; оставляем комментарий — сумма теперь в нём.
+ */
+export function preferEventsOverTransfers(items: NotificationItem[]): NotificationItem[] {
+  const byId = new Map<string, NotificationItem>()
+  for (const item of items) {
+    const prev = byId.get(item.id)
+    if (!prev || (prev.type === 'tip' && item.type !== 'tip')) byId.set(item.id, item)
+  }
+  return [...byId.values()]
 }

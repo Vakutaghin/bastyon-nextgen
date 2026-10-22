@@ -128,7 +128,7 @@ import {
   SC_BalanceHint,
   SC_FieldError,
 } from '@/b-components/donate/styled'
-import donateSound from '@/b-components/donate/sounds/donate.mp3'
+import { playSound } from '@/services/app-sounds'
 import {
   SC_BoostBody,
   SC_PostPreview,
@@ -264,18 +264,6 @@ function handleCancel(): void {
   boostStore.close()
 }
 
-let sound: HTMLAudioElement | null = null
-function playSound(): void {
-  try {
-    sound ??= new Audio(donateSound)
-    sound.volume = 0.5
-    sound.currentTime = 0
-    void sound.play().catch(() => {})
-  } catch {
-    // Автоплей мог быть заблокирован — не критично.
-  }
-}
-
 async function onSend(): Promise<void> {
   if (!canSend.value) return
   sending.value = true
@@ -283,7 +271,7 @@ async function onSend(): Promise<void> {
     const { boostPost } = await import('@/blockchain/core/actions/boost-action')
     await boostPost(postId.value, numericAmount.value, preview.value || undefined)
     appToast.success({ message: t('boost.sentToast') })
-    playSound()
+    playSound('coin')
     boostStore.close()
     if (typeof window !== 'undefined') {
       effectsStore.triggerCoins(window.innerWidth / 2, window.innerHeight / 3)

@@ -6,6 +6,7 @@
  *
  *   Post (200)         s1=author,  s2=postId,    s3=editRoot
  *   Video (201)        s1=author,  s2=videoId,   s3=editRoot
+ *   Article (202), Stream (209), Audio (210) — как пост
  *   Comment (204)      s1=author,  s2=commentId, s3=parentPostId
  *   CommentEdit (205)  s1=author,  s2=editTxId,  s3=originalCommentId
  *   UpvoteShare (300)  s1=voter,   s2=postId,    i1=value (1..5)
@@ -15,7 +16,8 @@
  *   Unsubscribe (304)  s1=from,    s2=toAddress
  *   Blocking (305)     s1=actor,   s2=targetAddress
  *   Unblocking (306)   s1=actor,   s2=targetAddress
- *   BoostContent (307) s1=booster, s2=postId; сумма буста = vout[0].value
+ *   BoostContent (208) s1=booster, s2=postId; сумма буста — комиссия
+ *                      (входы − выходы): выходов на чужие адреса у буста нет
  *   AccountSetting/AccountSet (100/103)  s1=accountAddress
  *
  * Если код не распознан — возвращаем `null`. Это сигнал tx-payload-card-у
@@ -25,15 +27,22 @@
 import type { Transaction } from '@/types/rpc-responses/get-transactions'
 
 export type PocketPayload =
-  | { kind: 'post';         type: 200 | 201 | 202 | 203; author: string; postId: string }
-  | { kind: 'comment';      type: 204; author: string; commentId: string; parentPostId: string }
+  | { kind: 'post'; type: 200 | 201 | 202 | 209 | 210; author: string; postId: string }
+  | { kind: 'comment'; type: 204; author: string; commentId: string; parentPostId: string }
   | { kind: 'comment-edit'; type: 205; author: string; editTxId: string; originalCommentId: string }
   | { kind: 'upvote-share'; type: 300; voter: string; postId: string; value: number }
-  | { kind: 'c-score';      type: 301; voter: string; commentId: string; value: number }
-  | { kind: 'subscribe';    type: 302 | 303 | 304; from: string; to: string; isUnsubscribe: boolean; isPrivate: boolean }
-  | { kind: 'block-user';   type: 305 | 306; actor: string; target: string; isUnblock: boolean }
-  | { kind: 'boost';        type: 307; booster: string; postId: string; amount: number }
-  | { kind: 'account';      type: 100 | 103; account: string; isSetting: boolean }
+  | { kind: 'c-score'; type: 301; voter: string; commentId: string; value: number }
+  | {
+      kind: 'subscribe'
+      type: 302 | 303 | 304
+      from: string
+      to: string
+      isUnsubscribe: boolean
+      isPrivate: boolean
+    }
+  | { kind: 'block-user'; type: 305 | 306; actor: string; target: string; isUnblock: boolean }
+  | { kind: 'boost'; type: 208; booster: string; postId: string; amount: number }
+  | { kind: 'account'; type: 100 | 103; account: string; isSetting: boolean }
 
 export function parsePocketnetPayload(tx: Transaction | null | undefined): PocketPayload | null {
   if (!tx) return null
@@ -47,7 +56,8 @@ export function parsePocketnetPayload(tx: Transaction | null | undefined): Pocke
     case 200:
     case 201:
     case 202:
-    case 203:
+    case 209:
+    case 210:
       if (!s1 || !s2) return null
       return { kind: 'post', type: t, author: s1, postId: s2 }
 
@@ -85,17 +95,12 @@ export function parsePocketnetPayload(tx: Transaction | null | undefined): Pocke
       if (!s1 || !s2) return null
       return { kind: 'block-user', type: t, actor: s1, target: s2, isUnblock: t === 306 }
 
-    case 307: {
+    case 208: {
       if (!s1 || !s2) return null
-      // Сумма буста — это первый ненулевой vout, чей адрес НЕ адрес бустера.
-      // Если такого нет — берём sum(vout.value).
-      const boostVout = tx.vout?.find((v) => {
-        if (!v.value || v.value <= 0) return false
-        const addr = v.scriptPubKey?.addresses?.[0]
-        return addr && addr !== s1
-      })
-      const amount = boostVout?.value ?? (tx.vout?.reduce((s, v) => s + (v.value ?? 0), 0) ?? 0)
-      return { kind: 'boost', type: 307, booster: s1, postId: s2, amount }
+      const inputs = (tx.vin ?? []).reduce((s, v) => s + (v.value ?? 0), 0)
+      const outputs = (tx.vout ?? []).reduce((s, v) => s + (v.value ?? 0), 0)
+      const amount = Math.max(0, Math.round((inputs - outputs) * 1e8) / 1e8)
+      return { kind: 'boost', type: 208, booster: s1, postId: s2, amount }
     }
 
     case 100:
