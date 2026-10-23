@@ -9,6 +9,7 @@ import {
   formatClock,
   formatLongDate,
   formatMessageTime,
+  formatDayLabel,
 } from './date-formatter'
 
 const NOW = 1_700_000_000 // секунды
@@ -149,5 +150,23 @@ describe('formatMessageTime — время у сообщения в чате', (
   it('часы отправителя чуть впереди — всё равно «сегодня»; битая метка — пусто', () => {
     expect(formatMessageTime(now + 60_000, now)).toBe('15:01')
     expect(formatMessageTime(NaN, now)).toBe('')
+  })
+})
+
+describe('formatDayLabel — подпись дня в ленте канала', () => {
+  const now = new Date(2026, 8, 30, 15, 0).getTime()
+  const at = (month: number, day: number, year = 2026) =>
+    new Date(year, month, day, 10, 0).getTime()
+
+  it('сегодня и вчера — словом с заглавной, на языке интерфейса', () => {
+    expect(formatDayLabel(at(8, 30), now)).toBe('Сегодня')
+    expect(formatDayLabel(at(8, 29), now)).toBe('Вчера')
+    setI18nLocale('en')
+    expect(formatDayLabel(at(8, 29), now)).toBe('Yesterday')
+  })
+
+  it('раньше — день и месяц, в прошлые годы с годом', () => {
+    expect(formatDayLabel(at(2, 12), now)).toBe('12 марта')
+    expect(formatDayLabel(at(11, 31, 2025), now)).toBe('31 декабря 2025 г.')
   })
 })

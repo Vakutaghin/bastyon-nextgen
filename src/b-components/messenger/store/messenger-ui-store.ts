@@ -5,8 +5,23 @@ import { ref, computed } from 'vue'
 
 import type { Dialog } from '../types'
 
-/** Какие чаты показывает список: все, только личные или только группы. */
-export type ChatFilter = 'all' | 'direct' | 'groups'
+/** Что показывает список: всё, только переписки (личные и группы) или только каналы. */
+export type ChatFilter = 'all' | 'chats' | 'channels'
+
+/**
+ * Выбранный фильтр помнится на устройстве: один и тот же у виджета и
+ * полноэкранного мессенджера и после перезапуска.
+ */
+const CHAT_FILTER_KEY = 'BST_MSG_CHAT_FILTER'
+
+function readChatFilter(): ChatFilter {
+  try {
+    const v = localStorage.getItem(CHAT_FILTER_KEY)
+    return v === 'chats' || v === 'channels' ? v : 'all'
+  } catch {
+    return 'all'
+  }
+}
 
 export const useMessengerUiStore = defineStore('messenger-ui', () => {
   const isOpen = ref(false)
@@ -23,7 +38,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
   /** true после первой успешной загрузки списка диалогов */
   const dialogsLoadedOnce = ref(false)
 
-  const chatFilter = ref<ChatFilter>('all')
+  const chatFilter = ref<ChatFilter>(readChatFilter())
   /** Группа, чьё окно с участниками сейчас открыто. */
   const groupInfoChatId = ref<string | null>(null)
 
@@ -131,6 +146,11 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
 
   const setChatFilter = (filter: ChatFilter): void => {
     chatFilter.value = filter
+    try {
+      localStorage.setItem(CHAT_FILTER_KEY, filter)
+    } catch {
+      /* без хранилища — до перезапуска */
+    }
   }
 
   const openGroupInfo = (chatId: string): void => {
@@ -174,7 +194,6 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     syncError.value = null
     isSyncStarted.value = false
     isInitInProgress.value = false
-    chatFilter.value = 'all'
     groupInfoChatId.value = null
   }
 

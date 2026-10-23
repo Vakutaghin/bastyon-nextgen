@@ -109,7 +109,7 @@ test('группа видна в списке, у неё участники, «�
   await Promise.all([matrixReady(a), matrixReady(b), matrixReady(c)])
   await c.close()
 
-  // У Боба есть и личный чат — тогда над списком появляется фильтр.
+  // У Боба есть и личный чат: в «Переписках» он рядом с группами.
   await openChatWith(b, alice!, true)
   await send(b, 'Привет, это личное')
   await b.keyboard.press('Escape')
@@ -145,14 +145,14 @@ test('группа видна в списке, у неё участники, «�
   await expect(clubRow.getByText('@Книжный клуб')).toHaveCount(0)
   await expect(clubRow.getByLabel(/^Группа · \d+ участник/)).toBeVisible()
 
-  // Фильтр: группы отдельно, личные отдельно.
+  // Фильтр: личные и группы — переписки, в «Каналах» их нет.
   const directRow = b.locator('[data-testid=chat-row]:not([data-group])')
   await expect(directRow).toHaveText(/alice_e2e/)
-  await b.getByRole('radio', { name: 'Группы' }).click()
+  await b.getByRole('radio', { name: /Каналы/ }).click()
   await expect(directRow).toHaveCount(0)
-  await expect(clubRow).toBeVisible()
-  await b.getByRole('radio', { name: 'Личные' }).click()
   await expect(clubRow).toHaveCount(0)
+  await b.getByRole('radio', { name: 'Переписки' }).click()
+  await expect(clubRow).toBeVisible()
   await expect(directRow).toHaveCount(1)
   await b.getByRole('radio', { name: 'Все' }).click()
 

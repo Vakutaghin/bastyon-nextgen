@@ -33,8 +33,13 @@
           </SC_MobileBackButton>
           <ChatPartnerTitle v-if="shownPartner" :partner="shownPartner" />
         </SC_ChatTopBar>
+        <ChannelRoom
+          v-if="channelAddressOf(activeChatId)"
+          :key="activeChatId"
+          :address="channelAddressOf(activeChatId)!"
+        />
         <MeshChatRoom
-          v-if="isMeshDialogId(activeChatId)"
+          v-else-if="isMeshDialogId(activeChatId)"
           :key="activeChatId"
           :dialog-id="activeChatId"
         />
@@ -81,6 +86,8 @@ import { useAuthStore } from '@/blockchain'
 import ChatList from '../chat-list/chat-list.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
 import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
+import ChannelRoom from '../channel-room/channel-room.vue'
+import { channelAddressOf } from '../../lib/channels'
 import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
 import { useShownPartner } from '../chat-partner-title/use-shown-partner'
 import { isMeshDialogId } from '@/mesh/ids'

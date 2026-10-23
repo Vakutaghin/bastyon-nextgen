@@ -63,6 +63,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Earnings](earnings.md)
 - [Messenger](messenger.md)
   - [Chats](chats.md)
+  - [Channels](channels.md)
   - [Messages](messages.md)
   - [Photos, videos and files in chat](chat-attachments.md)
   - [Voice messages](voice-messages.md)

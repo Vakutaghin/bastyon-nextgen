@@ -7,6 +7,9 @@ import { isMeshDialogId } from '@/mesh/ids'
 import { useMessengerStore } from '../../store'
 import { getAddressFromMatrixId } from '../../helpers'
 import type { DialogGroup } from '../../types'
+import { channelAddressOf } from '../../lib/channels'
+import { channelAuthor } from '../../lib/channel-author'
+import { useMessengerChannelsStore } from '../../store/messenger-channels-store'
 
 /** Собеседник в шапке открытого чата. */
 export interface ShownPartner {
@@ -21,6 +24,8 @@ export interface ShownPartner {
   chatId: string | null
   /** Matrix-группа: в шапке число участников, по нажатию — окно группы. */
   group?: DialogGroup
+  /** Канал: посты автора с адресом `address`. */
+  channel?: boolean
 }
 
 type ProfileLike = VerifiableProfile & {
@@ -36,9 +41,19 @@ type ProfileLike = VerifiableProfile & {
  */
 export function useShownPartner(): ComputedRef<ShownPartner | null> {
   const store = useMessengerStore()
+  const channels = useMessengerChannelsStore()
 
   return computed<ShownPartner | null>(() => {
     const chatId = store.activeChatId
+    const channel = channelAddressOf(chatId)
+    if (channel) {
+      const author = channelAuthor(
+        channel,
+        store.userProfiles[channel],
+        channels.summaries[channel]
+      )
+      return { ...author, address: channel, chatId, channel: true }
+    }
     if (chatId) {
       const dialog = store.dialogs.find((d) => d.id === chatId)
       let address: string | null = null

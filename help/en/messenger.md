@@ -23,6 +23,8 @@ Private messages are encrypted on your device, and the server sees only the ciph
 
 If [Tor](tor.md) is on in the desktop app, the chat goes through Tor too.
 
+Besides conversations, the messenger lets you read authors’ posts — as channels next to your chats, see [Channels](channels.md).
+
 ## Turning it off
 
 If you do not need the chat: **“Settings”** → **“General”** tab → **“Messenger”**. Turning it off removes the chat entirely: the round button, the header icon and the bottom bar item.
@@ -30,5 +32,6 @@ If you do not need the chat: **“Settings”** → **“General”** tab → **
 ## See also
 
 - [Chats](chats.md)
+- [Channels](channels.md)
 - [Messages](messages.md)
 - [Message encryption](chat-encryption.md)

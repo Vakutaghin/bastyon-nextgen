@@ -36,6 +36,8 @@ const log = logger.scope('[MessengerStore]')
 import { useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerProfileCache } from './messenger-profile-cache'
 import { useMessengerChatStore } from './messenger-chat-store'
+import { useMessengerChannelsStore } from './messenger-channels-store'
+import { CHANNELS_ACCOUNT_DATA, channelChatId, isChannelChatId } from '../lib/channels'
 import type { MessengerStoreContext } from './messenger-store/types'
 import { loadDialogsSnapshot, saveDialogsSnapshot } from './messenger-store/dialogs-snapshot'
 import { useDialogMapping } from './messenger-store/use-dialog-mapping'
@@ -48,6 +50,8 @@ export const useMessengerStore = defineStore('messenger', () => {
   const uiStore = useMessengerUiStore()
   const profileCache = useMessengerProfileCache()
   const chatStore = useMessengerChatStore()
+  // Каналы — посты авторов, которых читают в мессенджере; в списке рядом с чатами.
+  const channels = useMessengerChannelsStore()
   // Mesh-диалоги (переписка через радио, src/mesh) идут в общем списке с
   // комнатами Matrix; их id начинаются с `mesh:`.
   const meshChat = useMeshChatStore()
@@ -266,7 +270,9 @@ export const useMessengerStore = defineStore('messenger', () => {
    * появится «✓✓». Только если чат на экране (V30) и раз на событие.
    */
   const markRoomRead = async (roomId: string): Promise<void> => {
-    if (isMeshDialogId(roomId) || !uiStore.isChatOnScreen(roomId)) return
+    if (isMeshDialogId(roomId) || isChannelChatId(roomId) || !uiStore.isChatOnScreen(roomId)) {
+      return
+    }
     const room = matrixService.getRoom(roomId)
     if (!room) return
     const lastEvent = [...room.getLiveTimeline().getEvents()]
@@ -294,6 +300,14 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (id) void markRoomRead(id)
   }
   watch(() => [uiStore.isOpen, uiStore.isFullScreen, uiStore.activeChatId], markActiveChatRead)
+
+  // Первый синк: забрать список каналов с сервера, отдать свои изменения.
+  watch(
+    () => uiStore.syncState,
+    (state) => {
+      if (state === 'PREPARED') channels.syncWithServer()
+    }
+  )
   if (typeof document !== 'undefined') {
     const onVisibility = () => {
       if (!document.hidden) markActiveChatRead()
@@ -345,6 +359,8 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   const initMatrix = async () => {
     if (!authStore.isUserAuthenticated || !authStore.address || !authStore.keyPair) return
+    // Каналы с прошлого запуска — сразу; серверная копия подтянется после синка.
+    channels.attach(authStore.address)
     // Переписка через радио не зависит от Matrix: без интернета она нужнее всего.
     void meshChat.ensureLoaded()
     void useReticulumStore().autostart()
@@ -366,6 +382,15 @@ export const useMessengerStore = defineStore('messenger', () => {
           // копит подписки до создания клиента. Ровно один раз (S37).
           if (!listenersRegistered) {
             registerMatrixListeners(ctx, { loadDialogs, scheduleLoadDialogs, markRoomRead })
+            // Список каналов поменяли на другом устройстве.
+            matrixService.on(
+              'accountData',
+              (event: { getType?: () => string; getContent?: () => unknown }) => {
+                if (event?.getType?.() === CHANNELS_ACCOUNT_DATA) {
+                  channels.applyRemote(event.getContent?.())
+                }
+              }
+            )
             listenersRegistered = true
           }
 
@@ -407,6 +432,11 @@ export const useMessengerStore = defineStore('messenger', () => {
   // --- Открытие/переключение ---
 
   const openChat = async (chatId: string) => {
+    // Канал — лента автора с ноды, Matrix тут ни при чём.
+    if (isChannelChatId(chatId)) {
+      uiStore.switchToChat(chatId)
+      return
+    }
     if (isMeshDialogId(chatId)) {
       uiStore.switchToChat(chatId)
       await meshChat.openDialog(chatId)
@@ -520,6 +550,13 @@ export const useMessengerStore = defineStore('messenger', () => {
     return roomId || null
   }
 
+  /** Открыть канал автора в мессенджере (из профиля, из тоста «Открыть»). */
+  const openChannel = async (address: string): Promise<void> => {
+    if (!address || !authStore.isUserAuthenticated) return
+    await openMessenger()
+    uiStore.switchToChat(channelChatId(address))
+  }
+
   const switchToChatAndLoad = (roomId: string): void => {
     uiStore.switchToChat(roomId)
     uiStore.markDialogRead(roomId)
@@ -618,6 +655,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     uiStore.reset()
     chatStore.reset()
     profileCache.reset()
+    channels.reset()
     // Радио отключается, переписка аккаунта уходит из памяти; при выходе —
     // и с диска, как расшифровки Matrix.
     void useMeshConnectionStore().reset()
@@ -765,11 +803,15 @@ export const useMessengerStore = defineStore('messenger', () => {
     toggleMeshRoute: meshRoutes.toggleForced,
     shareMeshBinding,
     dialogsLoadedOnce: computed(() => uiStore.dialogsLoadedOnce),
-    /** Загрузка вместо списка — только пока показать нечего, даже списка с прошлого запуска. */
+    /**
+     * Загрузка вместо списка — только пока показать нечего, даже списка с
+     * прошлого запуска. Каналам сервер чатов не нужен — они видны сразу.
+     */
     isDialogsLoading: computed(
       () =>
         uiStore.dialogs.length === 0 &&
         meshChat.dialogs.length === 0 &&
+        channels.addresses.length === 0 &&
         (!uiStore.dialogsLoadedOnce || uiStore.isLoading)
     ),
     syncState: computed(() => uiStore.syncState),
@@ -794,6 +836,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     loadMessages: chatStore.loadMessages,
     loadMoreMessages: chatStore.loadMoreMessages,
     openChat,
+    openChannel,
     toggleMessenger,
     openMessenger,
     /** Свернуть виджет: сбрасывает активный чат вместе с видимостью (V30). */

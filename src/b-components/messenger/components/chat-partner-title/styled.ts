@@ -59,3 +59,14 @@ export const SC_GroupTitleSub = styled.span`
   color: var(--color-text-secondary);
   white-space: nowrap;
 `
+
+/** «Канал» под именем автора — фиолетовым, как мегафон в списке. */
+export const SC_ChannelTitleSub = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--ui-violet);
+  white-space: nowrap;
+`

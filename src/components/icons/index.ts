@@ -69,6 +69,7 @@ import {
   LogOut,
   Maximize,
   Megaphone,
+  MegaphoneOff,
   Menu,
   MessageCircle,
   MessagesSquare,
@@ -278,6 +279,9 @@ export const HelpIndexIcon = lucideIcon('HelpIndexIcon', BookA)
 export const LinkIcon = lucideIcon('LinkIcon', Link)
 export const MonitorIcon = lucideIcon('MonitorIcon', Monitor)
 export const CautionIcon = lucideIcon('CautionIcon', OctagonAlert)
+/** Канал в мессенджере: посты автора. */
+export const MegaphoneIcon = lucideIcon('MegaphoneIcon', Megaphone)
+export const MegaphoneOffIcon = lucideIcon('MegaphoneOffIcon', MegaphoneOff)
 // Mesh-сети: радио и способы его подключения.
 export const RadioTowerIcon = lucideIcon('RadioTowerIcon', RadioTower)
 export const UsbIcon = lucideIcon('UsbIcon', Usb)

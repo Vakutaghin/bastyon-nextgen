@@ -117,12 +117,12 @@ async function checkGroups(page: Page): Promise<void> {
   await expect(club.getByLabel('Есть новые сообщения')).toBeVisible()
   await expect(direct).toContainText('alice_ng')
 
-  // Фильтр.
-  await page.getByRole('radio', { name: 'Группы' }).click()
-  await expect(direct).toHaveCount(0)
+  // Фильтр: группы и личные — переписки; каналов нет — подсказка, как их завести.
+  await page.getByRole('radio', { name: /Каналы/ }).click()
+  await expect(rows).toHaveCount(0)
+  await expect(page.getByTestId('channels-empty')).toContainText('Читать в мессенджере')
+  await page.getByRole('radio', { name: 'Переписки' }).click()
   await expect(club).toBeVisible()
-  await page.getByRole('radio', { name: 'Личные' }).click()
-  await expect(club).toHaveCount(0)
   await expect(direct).toHaveCount(1)
   await page.getByRole('radio', { name: 'Все' }).click()
   await expect(rows).toHaveCount(2)

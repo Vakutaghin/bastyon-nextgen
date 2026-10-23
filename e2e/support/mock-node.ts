@@ -31,6 +31,10 @@ export interface MockPost {
   caption?: string
   settings?: Record<string, unknown>
   comments?: number
+  /** Картинки поста (`i`). */
+  images?: string[]
+  /** Сколько секунд назад опубликован; по умолчанию — по порядку в списке, через 10 минут. */
+  ago?: number
 }
 
 export interface MockComment {
@@ -89,14 +93,14 @@ function postJson(post: MockPost, data: MockNodeData, index: number) {
     txid: post.txid,
     id: 37_000_000 + index,
     address: post.address,
-    time: NOW - 600 * (index + 1),
+    time: NOW - (post.ago ?? 600 * (index + 1)),
     l: 'ru',
     type: post.type ?? 'share',
     c: post.caption ?? '',
     m: post.message,
     u: post.url ?? '',
     t: post.tags ?? ['bastyon'],
-    i: [],
+    i: post.images ?? [],
     s: { a: '', v: '', videos: [], image: '', f: '0', c: '', t: '0', ...post.settings },
     scoreCnt: 0,
     scoreSum: 0,
@@ -141,10 +145,29 @@ function commentJson(c: MockComment, index: number) {
 
 function rpcResult(method: string, params: unknown[], data: MockNodeData): unknown {
   switch (method) {
+    case 'getprofilefeed': {
+      // Лента автора, как у ноды: свежие первыми, страница — после поста `txid`.
+      const [, fromTxid, count, , , , , , , , address] = params as [
+        unknown,
+        string,
+        number,
+        ...unknown[],
+      ]
+      const own = data.posts
+        .map((p, i) => postJson(p, data, i))
+        .filter((p) => !address || p.address === address)
+        .sort((a, b) => b.time - a.time)
+      const start = fromTxid ? own.findIndex((p) => p.txid === fromTxid) + 1 : 0
+      return {
+        height: HEIGHT,
+        contents: own.slice(start, start + (count || own.length)),
+        users: [],
+        videos: {},
+      }
+    }
     case 'gethierarchicalstrip':
     case 'gethistoricalstrip':
     case 'gettopfeed':
-    case 'getprofilefeed':
       return {
         height: HEIGHT,
         contents: data.posts.map((p, i) => postJson(p, data, i)),

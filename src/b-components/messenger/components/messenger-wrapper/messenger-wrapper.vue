@@ -33,6 +33,12 @@
         </SC_MessengerWrapperLoaderText>
       </SC_MessengerWrapperLoader>
 
+      <ChannelRoom
+        v-else-if="channelAddressOf(activeChatId)"
+        :key="activeChatId!"
+        :address="channelAddressOf(activeChatId)!"
+      />
+
       <MeshChatRoom
         v-else-if="activeChatId && isMeshDialogId(activeChatId)"
         :key="activeChatId"
@@ -86,6 +92,8 @@ import MessengerWindow from '../messenger-window/messenger-window.vue'
 import ChatList from '../chat-list/chat-list.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
 import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
+import ChannelRoom from '../channel-room/channel-room.vue'
+import { channelAddressOf } from '../../lib/channels'
 import { isMeshDialogId } from '@/mesh/ids'
 import MessengerPanel from '../messenger-panel/messenger-panel.vue'
 import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
@@ -96,6 +104,7 @@ import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
 import { closePageOverlay, openPageOverlay } from '@/composables/use-page-overlay'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
+import { useModalStore } from '@/stores/modal-store'
 import {
   SC_MessengerWrapper,
   SC_BackButton,
@@ -108,6 +117,7 @@ import {
 } from './styled'
 
 const store = useMessengerStore()
+const modalStore = useModalStore()
 const {
   isFullScreen,
   isOpen,
@@ -230,6 +240,13 @@ watch(
 
 function handleKeydown(e: KeyboardEvent): void {
   if (e.key !== 'Escape') return
+  // Открытый поверх пост (из канала или ссылки в чате) закрывается первым:
+  // фокус остаётся в ленте, и раньше Escape закрывал чат под постом.
+  if (modalStore.postModal.isOpen) {
+    e.preventDefault()
+    modalStore.closePostModal()
+    return
+  }
   // Окно группы закрывается первым (обычно его Escape сюда и не доходит).
   if (store.groupInfoChatId) {
     e.preventDefault()

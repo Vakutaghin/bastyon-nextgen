@@ -63,6 +63,7 @@
   - [Заработок](earnings.md)
 - [Мессенджер](messenger.md)
   - [Чаты](chats.md)
+  - [Каналы](channels.md)
   - [Сообщения](messages.md)
   - [Фото, видео и файлы в чате](chat-attachments.md)
   - [Голосовые сообщения](voice-messages.md)

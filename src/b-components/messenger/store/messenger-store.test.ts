@@ -4,7 +4,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import type { Dialog } from '../types'
 
@@ -27,6 +27,9 @@ const h = vi.hoisted(() => {
     }),
     purgeLocalData: vi.fn(async () => {}),
     leaveAndForgetRoom: vi.fn(async () => {}),
+    on: vi.fn(),
+    getAccountData: vi.fn((): unknown => undefined),
+    setAccountData: vi.fn(async () => {}),
   }
   const auth = {
     isUserAuthenticated: true,
@@ -56,6 +59,9 @@ vi.mock('../room-helpers', () => ({
 vi.mock('./messenger-chat-store', () => ({ useMessengerChatStore: () => h.chat }))
 vi.mock('./messenger-profile-cache', () => ({ useMessengerProfileCache: () => h.profiles }))
 vi.mock('./messenger-store/use-matrix-listeners', () => ({ registerMatrixListeners: vi.fn() }))
+vi.mock('../lib/channel-feed', () => ({
+  fetchChannelPage: vi.fn(async () => ({ posts: [], hasMore: false })),
+}))
 vi.mock('./messenger-store/use-dialog-mapping', () => ({
   useDialogMapping: () => ({
     mapRoomToDialog: async (room: { dialog: Dialog }) => {
@@ -68,6 +74,7 @@ vi.mock('./messenger-store/use-dialog-mapping', () => ({
 import { findExistingRoomByAddress } from '../room-helpers'
 import { useMessengerStore } from './messenger-store'
 import { useMessengerUiStore } from './messenger-ui-store'
+import { useMessengerChannelsStore } from './messenger-channels-store'
 
 type ChatFake = ReturnType<typeof makeChat>
 
@@ -376,5 +383,52 @@ describe('messenger-store: закрыть полноэкранный мессе�
     expect(ui.activeChatId).toBeNull()
     expect(ui.lastTargetAddress).toBeNull()
     expect(ui.inviteViewActive).toBe(false)
+  })
+})
+
+describe('messenger-store: каналы', () => {
+  const AUTHOR = 'PXXwfNRT7hD6UYeQQMBXSoLsJH4xDdGc4D'
+
+  it('канал открывается без Matrix: ни истории, ни отметок прочтения', async () => {
+    const store = useMessengerStore()
+    await store.openChat(`channel:${AUTHOR}`)
+    expect(store.activeChatId).toBe(`channel:${AUTHOR}`)
+    expect(h.chat.loadMessages).not.toHaveBeenCalled()
+    expect(h.matrix.getRoom).not.toHaveBeenCalled()
+  })
+
+  it('«Открыть в мессенджере» из профиля — мессенджер открыт на канале', async () => {
+    const store = useMessengerStore()
+    await store.openChannel(AUTHOR)
+    expect(store.isOpen).toBe(true)
+    expect(store.activeChatId).toBe(`channel:${AUTHOR}`)
+  })
+
+  it('после первого синка список каналов — с сервера; выход из аккаунта его убирает', async () => {
+    h.matrix.getAccountData.mockReturnValue({ v: 1, items: { [AUTHOR]: { on: true, t: 1 } } })
+    const store = useMessengerStore()
+    await store.initMatrix()
+    useMessengerUiStore().syncState = 'PREPARED'
+    await nextTick()
+    expect(useMessengerChannelsStore().addresses).toEqual([AUTHOR])
+    store.logout()
+    expect(useMessengerChannelsStore().addresses).toEqual([])
+  })
+})
+
+describe('messenger-ui-store: фильтр списка', () => {
+  it('помнится на устройстве: после выхода и перезапуска тот же', () => {
+    const ui = useMessengerUiStore()
+    expect(ui.chatFilter).toBe('all')
+    ui.setChatFilter('channels')
+    ui.reset()
+    expect(ui.chatFilter).toBe('channels')
+    setActivePinia(createPinia())
+    expect(useMessengerUiStore().chatFilter).toBe('channels')
+  })
+
+  it('«Личные» и «Группы» прежней версии — снова «Все»', () => {
+    localStorage.setItem('BST_MSG_CHAT_FILTER', 'groups')
+    expect(useMessengerUiStore().chatFilter).toBe('all')
   })
 })

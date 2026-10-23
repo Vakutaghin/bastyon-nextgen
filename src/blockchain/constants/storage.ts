@@ -39,6 +39,8 @@ export const VAULT_ATTEMPTS_KEY = 'BST_VAULT_ATTEMPTS'
 export const MESSENGER_KEY_PINS_PREFIX = 'BST_MSG_KEYPINS_'
 /** Список диалогов с прошлого запуска (с превью сообщений): `BST_MSG_DIALOGS_<ownAddress>`. */
 export const MESSENGER_DIALOGS_PREFIX = 'BST_MSG_DIALOGS_'
+/** Каналы в мессенджере и последние посты в них: `BST_MSG_CHANNELS_<ownAddress>`. */
+export const MESSENGER_CHANNELS_PREFIX = 'BST_MSG_CHANNELS_'
 /** Последнее подключённое mesh-радио (порт, адрес, BLE-id): `BST_MESH_DEVICE_<ownAddress>`. */
 export const MESH_LAST_DEVICE_PREFIX = 'BST_MESH_DEVICE_'
 /** Настройки Reticulum аккаунта (хабы, LAN, RNode, узел доставки): `BST_RNS_<ownAddress>`. */

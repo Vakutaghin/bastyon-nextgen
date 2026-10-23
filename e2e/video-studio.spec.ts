@@ -178,7 +178,7 @@ test('видеотека: ролики из постов на любом сер�
   // Старый ролик лежит не на сервере загрузки, а на другом: его видно по постам.
   const OLD_HOST = 'old.e2e.test'
   const pointer = `peertube://${OLD_HOST}/0a1b2c3d-1111-4222-8333-444455556666`
-  await useMockNode(page, {
+  const data: MockNodeData = {
     profiles: [ALICE],
     posts: [
       {
@@ -199,7 +199,8 @@ test('видеотека: ролики из постов на любом сер�
       },
     ],
     comments: [],
-  })
+  }
+  await useMockNode(page, data)
   await useVideoServer(page)
   await page.route(/\.pocketnet\.app:8899\/peertube\/videos/, (route) =>
     route.request().method() === 'OPTIONS'
@@ -219,6 +220,19 @@ test('видеотека: ролики из постов на любом сер�
     .click({ timeout: 5_000 })
     .catch(() => {})
   await signIn(page)
+  // Видеотека — посты своего аккаунта: нода отдаёт ленту только этого автора.
+  const me = await page.evaluate(() => {
+    const app = (
+      document.querySelector('#app') as unknown as {
+        __vue_app__: {
+          config: { globalProperties: { $pinia: { _s: Map<string, { getUserAddress: string }> } } }
+        }
+      }
+    ).__vue_app__
+    return app.config.globalProperties.$pinia._s.get('auth')!.getUserAddress
+  })
+  for (const post of data.posts) post.address = me
+  data.profiles.push({ address: me, name: ALICE.name })
   await page.goto('/my-videos')
 
   const card = page.getByRole('listitem').filter({ hasText: 'Меш-сети' })

@@ -181,6 +181,30 @@ export function formatMessageTime(ms: number, now: number = Date.now()): string 
 }
 
 /**
+ * Подпись дня над сообщениями ленты: «Сегодня», «Вчера», «12 октября», в
+ * прошлые годы — с годом. «Сегодня» и «вчера» даёт Intl на языке интерфейса.
+ *
+ * @param ms - метка времени в миллисекундах
+ * @param now - «сейчас» в миллисекундах (для тестов)
+ */
+export function formatDayLabel(ms: number, now: number = Date.now()): string {
+  const date = validDate(ms)
+  if (!date) return ''
+  const locale = dateLocale()
+  const today = new Date(now)
+  const daysAgo = localDayNumber(today) - localDayNumber(date)
+  if (daysAgo === 0 || daysAgo === 1) {
+    const word = relativeTimeFormat(locale, 'auto').format(-daysAgo, 'day')
+    return word.charAt(0).toLocaleUpperCase(locale) + word.slice(1)
+  }
+  return dateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    ...(date.getFullYear() === today.getFullYear() ? {} : { year: 'numeric' }),
+  }).format(date)
+}
+
+/**
  * Точная метка для эксплорера: дата и время до секунд в числовом виде.
  *
  * @param unixSeconds - метка времени в секундах

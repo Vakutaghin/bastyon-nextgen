@@ -69,6 +69,33 @@
         </SC_BellButton>
       </SC_SubscribeRow>
 
+      <!-- Посты автора каналом в мессенджере: без транзакции, независимо от подписки. -->
+      <SC_SubscribeRow v-if="canShowChannel">
+        <SC_ChannelButton
+          type="button"
+          :class="{ on: isChannelOn }"
+          data-testid="profile-channel"
+          @click="onChannelClick"
+        >
+          <MegaphoneIcon />
+          {{
+            isChannelOn
+              ? t('messenger.channel.openInMessenger')
+              : t('messenger.channel.readInMessenger')
+          }}
+        </SC_ChannelButton>
+        <SC_BellButton
+          v-if="isChannelOn"
+          type="button"
+          :title="t('messenger.channel.stop')"
+          :aria-label="t('messenger.channel.stop')"
+          data-testid="profile-channel-stop"
+          @click="onChannelStop"
+        >
+          <MegaphoneOffIcon />
+        </SC_BellButton>
+      </SC_SubscribeRow>
+
       <!-- Платная подписка: у автора — управление, у читателя — оформить. -->
       <PaidProfileButton v-if="userAddress" :address="userAddress" :settings="accountSettings" />
 
@@ -170,6 +197,8 @@ import {
   CrownOutlined,
   EditOutlined,
   FlagOutlined,
+  MegaphoneIcon,
+  MegaphoneOffIcon,
   StopOutlined,
   SafetyCertificateFilled,
   TrophyFilled,
@@ -185,6 +214,7 @@ import { useMessengerStore } from '@/b-components/messenger/store'
 import { useChainInfoStore } from '@/stores/chain-info-store'
 import { formatAbout } from './format-about'
 import { useProfileRelationsActions } from './use-profile-relations-actions'
+import { useProfileChannel } from './use-profile-channel'
 import EditProfileModal from '@/b-components/profile/edit-profile-modal/edit-profile-modal.vue'
 import FollowersListModal from '@/b-components/profile/followers-list-modal/followers-list-modal.vue'
 import PaidProfileButton from '@/b-components/paid-subscription/paid-profile-button.vue'
@@ -212,6 +242,7 @@ import {
   SC_SubscribeRow,
   SC_SubscribeButton,
   SC_BellButton,
+  SC_ChannelButton,
   SC_BlockButton,
   SC_StatButton,
   SC_ExplorerLinkRow,
@@ -291,6 +322,11 @@ const {
   onPrimaryClick,
   onBellClick,
 } = useProfileRelationsActions(userAddress)
+
+const { canShowChannel, isChannelOn, onChannelClick, onChannelStop } = useProfileChannel(
+  userAddress,
+  displayName
+)
 
 /**
  * «В блокчейне» — модалка поверх профиля; переход в эксплорер — в ней. С

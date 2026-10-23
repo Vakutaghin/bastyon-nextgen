@@ -2,6 +2,7 @@
 // у группы и mesh-диалога профиля нет, приглашение — к тому, кому пишем.
 
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 import { reactive } from 'vue'
 
 import { setI18nLocale } from '@/i18n'
@@ -13,6 +14,7 @@ vi.mock('../../store', () => ({ useMessengerStore: () => mocks.store }))
 import { addressToHex } from '../../services/matrix-service/address-codec'
 import type { Dialog } from '../../types'
 import { useShownPartner } from './use-shown-partner'
+import { useMessengerChannelsStore } from '../../store/messenger-channels-store'
 
 const ALICE = 'PXXwfNRT7hD6UYeQQMBXSoLsJH4xDdGc4D'
 const BOB = 'PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82'
@@ -24,6 +26,7 @@ function dialog(id: string, partnerId: string, name: string): Dialog {
 beforeAll(() => setI18nLocale('ru'))
 
 beforeEach(() => {
+  setActivePinia(createPinia())
   mocks.store = reactive({
     activeChatId: null as string | null,
     dialogs: [
@@ -85,6 +88,22 @@ describe('собеседник в шапке', () => {
       address: BOB,
       chatId: null,
     })
+  })
+
+  it('канал — автор с адресом, имя из ленты, пока профиля нет', () => {
+    const shown = useShownPartner()
+    useMessengerChannelsStore().summaries = {
+      [BOB]: { recent: [], name: 'Боб пишет', checkedAt: 1 },
+    }
+    mocks.store.activeChatId = `channel:${BOB}`
+    expect(shown.value).toMatchObject({
+      name: 'Боб пишет',
+      address: BOB,
+      chatId: `channel:${BOB}`,
+      channel: true,
+    })
+    mocks.store.userProfiles = { [BOB]: { name: 'bob' } }
+    expect(shown.value).toMatchObject({ name: 'bob', channel: true })
   })
 
   it('открыт список чатов — в шапке никого', () => {

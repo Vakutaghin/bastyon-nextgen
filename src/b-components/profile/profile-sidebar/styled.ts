@@ -199,6 +199,47 @@ export const SC_SubscribeButton = styled.button`
   }
 `
 
+/** «Читать в мессенджере» — цветом каналов: фиолетовый, как мегафон в списке чатов. */
+export const SC_ChannelButton = styled.button`
+  flex: 1;
+  min-width: 0;
+  padding: 9px 14px;
+  border-radius: var(--ui-radius-lg);
+  border: 1px solid rgb(var(--ui-violet-rgb) / 60%);
+  background-color: transparent;
+  color: var(--ui-violet);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  &:hover {
+    background-color: rgb(var(--ui-violet-rgb) / 10%);
+  }
+
+  &.on {
+    border-color: var(--ui-violet);
+    background-color: rgb(var(--ui-violet-rgb) / 10%);
+  }
+
+  &.on:hover {
+    background-color: rgb(var(--ui-violet-rgb) / 16%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-violet);
+    outline-offset: 2px;
+  }
+
+  .anticon {
+    font-size: 15px;
+  }
+`
+
 export const SC_BellButton = styled.button`
   flex: 0 0 auto;
   width: 40px;

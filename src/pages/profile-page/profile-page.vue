@@ -10,6 +10,8 @@
         <ProfileSidebar :profile="profile" @profile-updated="onSidebarProfileUpdated" />
 
         <SC_ProfileMainContent>
+          <!-- На телефоне боковой колонки нет: имя и кнопки — над постами. -->
+          <ProfileMobileHeader v-if="profile && !loading && !error" :profile="profile" />
           <SC_LoadingProfile v-if="loading">
             <Spin :tip="t('profile.loadingProfile')">
               <template #indicator>
@@ -72,6 +74,7 @@ import type { GetUserAddressResponse } from '@/types/rpc-responses/get-user-addr
 import ProfileCover from '@/b-components/profile/profile-cover/profile-cover.vue'
 import ProfileSidebar from '@/b-components/profile/profile-sidebar/profile-sidebar.vue'
 import ProfileFeed from '@/b-components/profile/profile-feed/profile-feed.vue'
+import ProfileMobileHeader from '@/b-components/profile/profile-mobile-header/profile-mobile-header.vue'
 import Spin from '@/components/spin/spin.vue'
 import { ICON_PRIMARY_40 } from '@/styles/icon-styles'
 import {

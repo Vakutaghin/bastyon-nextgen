@@ -28,6 +28,29 @@
         </SC_GroupTitleSub>
       </SC_GroupTitleText>
     </SC_GroupTitleBtn>
+    <!-- Канал: квадратная аватарка, «Канал» под именем; ведёт в профиль автора. -->
+    <ProfileLink
+      v-else-if="partner.channel"
+      :address="partner.address"
+      :name="partner.name"
+      chip
+      data-testid="channel-title"
+    >
+      <ChannelAvatar
+        :src="partner.avatar"
+        :name="partner.name"
+        :size="32"
+        :verified="partner.verified"
+        :mark="partner.mark"
+      />
+      <SC_GroupTitleText>
+        <SC_PartnerTitleName>{{ partner.name }}</SC_PartnerTitleName>
+        <SC_ChannelTitleSub>
+          <MegaphoneIcon />
+          {{ t('messenger.channel.kind') }}
+        </SC_ChannelTitleSub>
+      </SC_GroupTitleText>
+    </ProfileLink>
     <!-- Аватар и имя ведут в профиль собеседника. -->
     <ProfileLink v-else :address="partner.address" :name="partner.name" chip>
       <Avatar
@@ -49,9 +72,12 @@ import { useI18n } from 'vue-i18n'
 import Avatar from '@/components/avatar/avatar.vue'
 import ProfileLink from '../profile-link/profile-link.vue'
 import GroupAvatar from '../group-avatar/group-avatar.vue'
+import ChannelAvatar from '../channel-avatar/channel-avatar.vue'
+import { MegaphoneIcon } from '@/components/icons'
 import { useMessengerStore } from '../../store'
 import type { ShownPartner } from './use-shown-partner'
 import {
+  SC_ChannelTitleSub,
   SC_GroupTitleBtn,
   SC_GroupTitleSub,
   SC_GroupTitleText,

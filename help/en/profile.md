@@ -31,10 +31,13 @@ Point at a mark to see its name. Moderators and sharks are marked by the network
 ## What you can do
 
 - **“Subscribe”** — and the bell next to it to get notifications about their new posts — see [Subscriptions](subscriptions.md).
+- **“Read in Messenger”** — the person’s posts appear in the messenger as a separate channel, next to your chats. You don’t need to subscribe for that, see [Channels](channels.md).
 - **“Start chat”** — see [Chats](chats.md).
 - **“Block”** — see [Blocking](blocking.md).
 
-Subscribing and blocking are available only when you are signed in. You can tip the person from the header of any of their posts — see [Tipping the author](tips.md).
+On a phone there is no side column: the name, **“Subscribe”**, **“Read in Messenger”** and the chat button are at the top of the page, above the posts.
+
+Subscribing, reading in the messenger and blocking are available only when you are signed in. You can tip the person from the header of any of their posts — see [Tipping the author](tips.md).
 
 On your own page these buttons are replaced by **“Edit profile”**, see [Your profile](edit-profile.md), and above the feed there is **“Create post”**.
 

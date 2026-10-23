@@ -24,6 +24,8 @@ code: [src/b-components/messenger, src/b-components/header/app-header/app-header
 
 Если в приложении для компьютера включён [Tor](tor.md), переписка тоже идёт через Tor.
 
+Кроме переписки, в мессенджере можно читать посты авторов — каналами рядом с чатами, см. [Каналы](channels.md).
+
 ## Выключить
 
 Если чат не нужен: **«Настройки»** → вкладка **«Общие»** → **«Мессенджер»**. Выключение убирает чат целиком: круглую кнопку, значок в шапке и пункт нижней панели.
@@ -31,5 +33,6 @@ code: [src/b-components/messenger, src/b-components/header/app-header/app-header
 ## См. также
 
 - [Чаты](chats.md)
+- [Каналы](channels.md)
 - [Сообщения](messages.md)
 - [Шифрование переписки](chat-encryption.md)

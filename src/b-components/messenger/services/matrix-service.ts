@@ -504,6 +504,20 @@ export class MatrixService {
     await this.client.setRoomMutePushRule('global', roomId, muted)
   }
 
+  /** Данные аккаунта на сервере (одни на все устройства); undefined — нет клиента или записи. */
+  public getAccountData(type: string): unknown {
+    try {
+      return this.client?.getAccountData?.(type as never)?.getContent()
+    } catch {
+      return undefined
+    }
+  }
+
+  public async setAccountData(type: string, content: Record<string, unknown>): Promise<void> {
+    if (!this.client) throw new Error('Client not initialized')
+    await this.client.setAccountData(type as never, content as never)
+  }
+
   /**
    * Стирает локальные данные мессенджера с диска (V15/Р6): sync-state
    * matrix-js-sdk и кэш расшифрованных сообщений. Для текущего юзера — по id;

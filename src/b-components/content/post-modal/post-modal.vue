@@ -9,6 +9,7 @@
       :mask-closable="true"
       :footer="null"
       :destroy-on-close="true"
+      :z-index="zIndex"
       @cancel="closeModal"
     >
       <SC_PostModalContent v-if="isModalOpen && postData" :key="postData.id ?? postData.txid ?? ''">
@@ -31,6 +32,8 @@ import { storeToRefs } from 'pinia'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import Modal from '@/components/modal/modal.vue'
+import { isPageOverlaid } from '@/composables/use-page-overlay'
+import { Z_INDEX } from '@/styles/design-tokens'
 import { SC_PostModalWrapper, SC_PostModalContent } from './styled'
 
 const PostCard = defineAsyncComponent(
@@ -52,6 +55,10 @@ const postsStore = usePostsStore()
 const { postModal } = storeToRefs(modalStore)
 
 const isModalOpen = computed(() => postModal.value.isOpen)
+/** Над полноэкранным мессенджером: иначе пост из канала открывался под ним, невидимым. */
+const zIndex = computed<number | undefined>(() =>
+  isPageOverlaid.value ? Z_INDEX.MODAL_OVER_MESSENGER : undefined
+)
 const postData = computed(() => postModal.value.post)
 
 function closeModal(): void {
