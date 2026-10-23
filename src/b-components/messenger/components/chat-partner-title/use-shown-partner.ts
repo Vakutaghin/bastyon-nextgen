@@ -6,6 +6,7 @@ import { userMark, type UserMark } from '@/helpers/profile/user-mark'
 import { isMeshDialogId } from '@/mesh/ids'
 import { useMessengerStore } from '../../store'
 import { getAddressFromMatrixId } from '../../helpers'
+import type { DialogGroup } from '../../types'
 
 /** Собеседник в шапке открытого чата. */
 export interface ShownPartner {
@@ -16,6 +17,10 @@ export interface ShownPartner {
   mark?: UserMark | null
   /** Адрес Bastyon; null — профиля нет: группа, mesh. */
   address: string | null
+  /** Открытый чат; null — приглашение написать. */
+  chatId: string | null
+  /** Matrix-группа: в шапке число участников, по нажатию — окно группы. */
+  group?: DialogGroup
 }
 
 type ProfileLike = VerifiableProfile & {
@@ -49,6 +54,8 @@ export function useShownPartner(): ComputedRef<ShownPartner | null> {
         verified: !!dialog?.partner.verified,
         mark: dialog?.partner.mark ?? (dialog?.partner.verified ? 'verified' : null),
         address,
+        chatId,
+        ...(dialog?.group ? { group: dialog.group } : {}),
       }
     }
 
@@ -62,6 +69,7 @@ export function useShownPartner(): ComputedRef<ShownPartner | null> {
       verified: isUserVerified(profile, address),
       mark: userMark(profile, address),
       address,
+      chatId: null,
     }
   })
 }

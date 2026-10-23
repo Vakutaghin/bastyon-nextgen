@@ -66,6 +66,17 @@ describe('dialogs-snapshot', () => {
     expect(loadDialogsSnapshot('PAlice')).toEqual(list)
   })
 
+  it('группа остаётся группой до первого синка: состав, «без звука», новое', () => {
+    const group = dialog('!g:host', {
+      partner: { id: '!g:host', name: 'Клуб', verified: false, mark: null },
+      group: { memberCount: 5, previewIds: ['@a:host', '@b:host'], topic: 'Обо всём' },
+      muted: true,
+      hasUnread: true,
+    })
+    saveDialogsSnapshot('PAlice', [group])
+    expect(loadDialogsSnapshot('PAlice')).toEqual([group])
+  })
+
   it('у каждого аккаунта свой список', () => {
     saveDialogsSnapshot('PAlice', [dialog('!a:host')])
     expect(loadDialogsSnapshot('PBob')).toEqual([])

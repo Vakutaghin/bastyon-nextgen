@@ -7,6 +7,7 @@ const client = {
 }
 const markRoomRead = vi.fn(async (_roomId: string) => {})
 const notifyMessage = vi.fn()
+const mutedRooms = new Set<string>()
 const audioPlay = vi.fn(() => Promise.resolve())
 
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
@@ -25,6 +26,7 @@ vi.mock('../../services/matrix-service', () => ({
       handlers[name] = h
     },
     getClient: () => client,
+    isRoomMuted: (roomId: string) => mutedRooms.has(roomId),
   },
 }))
 
@@ -187,6 +189,19 @@ describe('registerMatrixListeners — Room.timeline', () => {
     expect(notifyMessage).toHaveBeenCalledTimes(3)
   })
 
+  it('«Без звука» — ни звука, ни уведомления, но список обновляется', async () => {
+    const { scheduleLoadDialogs } = setup('!other:host')
+    mutedRooms.add(ROOM)
+    try {
+      await handlers['Room.timeline']!(mxEvent('m.room.message'), room, false)
+    } finally {
+      mutedRooms.clear()
+    }
+    expect(audioPlay).not.toHaveBeenCalled()
+    expect(notifyMessage).not.toHaveBeenCalled()
+    expect(scheduleLoadDialogs).toHaveBeenCalledTimes(1)
+  })
+
   it('старое сообщение (старше SOUND_MAX_AGE) не озвучивается', async () => {
     setup('!other:host')
     await handlers['Room.timeline']!(
@@ -216,6 +231,14 @@ describe('registerMatrixListeners — sync', () => {
 })
 
 describe('Room.receipt', () => {
+  it('новая комната (приглашение), своё членство и название группы — список перезагружается', () => {
+    const { scheduleLoadDialogs } = setup()
+    handlers['Room']!({ roomId: '!invite:host' })
+    handlers['Room.myMembership']!({ roomId: ROOM }, 'join', 'invite')
+    handlers['Room.name']!({ roomId: ROOM })
+    expect(scheduleLoadDialogs).toHaveBeenCalledTimes(3)
+  })
+
   it('квитанция о прочтении пересчитывает галочки своей комнаты', () => {
     const { chatStore } = setup(ROOM)
     handlers['Room.receipt']!({}, room)

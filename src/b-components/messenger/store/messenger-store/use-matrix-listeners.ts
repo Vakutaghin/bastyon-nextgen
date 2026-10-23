@@ -107,7 +107,9 @@ export function registerMatrixListeners(
           const onScreen = uiStore.isChatOnScreen(roomId)
           // Правка — то же сообщение, а не новое: без звука и уведомления.
           const isEdit = getEventContent(event)['m.relates_to']?.rel_type === 'm.replace'
-          if (senderId !== chatStore.currentUser.id && !onScreen && isRecent && !isEdit) {
+          // «Без звука» (правило уведомлений комнаты) — ни звука, ни уведомления.
+          const muted = matrixService.isRoomMuted(roomId)
+          if (senderId !== chatStore.currentUser.id && !onScreen && isRecent && !isEdit && !muted) {
             playSound('message')
             // Браузерное уведомление о новом сообщении (если вкладка в фоне
             // и пользователь включил браузерные уведомления).
@@ -173,6 +175,14 @@ export function registerMatrixListeners(
       void chatStore.adoptLocalEcho(event, oldEventId)
     }
   )
+
+  // Новая комната — приглашение в чат или группу — приходит без событий
+  // ленты: список показывал её только после чего-нибудь ещё. Туда же — своё
+  // членство (вступил, вышел на другом устройстве) и новое название группы.
+  const reloadDialogs = (): void => scheduleLoadDialogs()
+  matrixService.on('Room', reloadDialogs)
+  matrixService.on('Room.myMembership', reloadDialogs)
+  matrixService.on('Room.name', reloadDialogs)
 
   // Квитанции о прочтении: по ним пересчитываются галочки «✓✓» (use-read-receipts).
   matrixService.on('Room.receipt', (_event: unknown, room?: { roomId?: string }) => {

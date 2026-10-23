@@ -28,7 +28,10 @@ beforeEach(() => {
     activeChatId: null as string | null,
     dialogs: [
       dialog('!alice:host', `@${addressToHex(ALICE)}:matrix.pocketnet.app`, 'Алиса'),
-      dialog('!group:host', '!group:host', 'Книжный клуб'),
+      {
+        ...dialog('!group:host', '!group:host', 'Книжный клуб'),
+        group: { memberCount: 5, previewIds: ['@a:host'] },
+      },
       dialog('mesh:lx:abcd1234:u:ef567890', 'ef567890', 'Узел у реки'),
     ],
     inviteViewActive: false,
@@ -47,13 +50,19 @@ describe('собеседник в шапке', () => {
       verified: false,
       mark: null,
       address: ALICE,
+      chatId: '!alice:host',
     })
   })
 
   it('у группы и mesh-диалога профиля нет', () => {
     const shown = useShownPartner()
     mocks.store.activeChatId = '!group:host'
-    expect(shown.value).toMatchObject({ name: 'Книжный клуб', address: null })
+    expect(shown.value).toMatchObject({
+      name: 'Книжный клуб',
+      address: null,
+      chatId: '!group:host',
+      group: { memberCount: 5 },
+    })
     mocks.store.activeChatId = 'mesh:lx:abcd1234:u:ef567890'
     expect(shown.value).toMatchObject({ name: 'Узел у реки', address: null })
   })
@@ -74,6 +83,7 @@ describe('собеседник в шапке', () => {
       verified: true,
       mark: 'verified',
       address: BOB,
+      chatId: null,
     })
   })
 

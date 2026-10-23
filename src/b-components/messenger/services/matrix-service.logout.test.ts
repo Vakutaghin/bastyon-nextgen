@@ -26,3 +26,20 @@ describe('MatrixService.revokeSession (N21)', () => {
     vi.useRealTimers()
   })
 })
+
+describe('MatrixService.waitForJoin', () => {
+  it('синк отметил вступление — true', async () => {
+    let membership = 'invite'
+    setTimeout(() => (membership = 'join'), 30)
+    await expect(
+      MatrixService.waitForJoin(() => ({ getMyMembership: () => membership }), 1000, 5)
+    ).resolves.toBe(true)
+  })
+
+  it('не дождался — false, без исключений', async () => {
+    await expect(
+      MatrixService.waitForJoin(() => ({ getMyMembership: () => 'invite' }), 30, 5)
+    ).resolves.toBe(false)
+    await expect(MatrixService.waitForJoin(() => null, 30, 5)).resolves.toBe(false)
+  })
+})

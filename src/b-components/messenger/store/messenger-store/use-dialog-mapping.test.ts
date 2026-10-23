@@ -1,11 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@/i18n', () => ({ t: (k: string) => k }))
+const muted = vi.hoisted(() => new Set<string>())
+
+vi.mock('@/i18n', () => ({
+  t: (k: string, p?: Record<string, unknown>) => (p ? `${k} ${JSON.stringify(p)}` : k),
+}))
 vi.mock('../../services/matrix-service', () => ({
   matrixService: {
     getClient: () => ({ getUserId: () => '@0a0b0c:host', getProfileInfo: undefined }),
     getBaseUrl: () => 'https://mx.host',
     hexToAddress: (hex: string) => `P${hex.toUpperCase()}ADDRESS0000`,
+    isRoomMuted: (roomId: string) => muted.has(roomId),
   },
 }))
 
@@ -76,7 +81,10 @@ function ctx(over: { activeChatId?: string | null; profiles?: Record<string, unk
 }
 
 describe('useDialogMapping — mapRoomToDialog', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    muted.clear()
+  })
 
   it('DM с профилем в кэше: имя/аватар/verified из профиля, последнее сообщение и unread из комнаты', async () => {
     const { ctx: c } = ctx({
@@ -133,16 +141,115 @@ describe('useDialogMapping — mapRoomToDialog', () => {
     expect(d.unreadCount).toBe(0)
   })
 
-  it('группа (3 участника): partner.id = roomId, имя комнаты, кэш профилей не трогается', async () => {
-    const { ctx: c, profileCache } = ctx()
-    const { mapRoomToDialog } = useDialogMapping(c)
-    const d = await mapRoomToDialog(
-      fakeRoom({ name: 'Team', getInvitedAndJoinedMemberCount: () => 3 })
-    )
-    expect(d.partner.id).toBe('!room:host')
-    expect(d.partner.name).toBe('Team')
-    expect(d.partner.verified).toBe(false)
-    expect(profileCache.fetchProfiles).not.toHaveBeenCalled()
+  describe('группа', () => {
+    const me = { userId: '@0a0b0c:host', name: 'me', membership: 'join', powerLevel: 100 }
+    const peer = { userId: PEER_ID, name: PEER_HEX, membership: 'join' }
+    const carol = { userId: '@c0c0:host', name: 'Carol', membership: 'invite' }
+    const left = { userId: '@dead:host', name: 'dead', membership: 'leave' }
+
+    function groupRoom(state: Record<string, Record<string, unknown>>, over = {}) {
+      const members = [me, peer, carol, left]
+      return fakeRoom({
+        name: '@Team',
+        getJoinedMembers: () => [me, peer],
+        getInvitedAndJoinedMemberCount: () => 3,
+        currentState: {
+          getMembers: () => members,
+          getStateEvents: (type: string) =>
+            state[type] ? { getContent: () => state[type] } : null,
+        },
+        getMember: (id: string) => members.find((m) => m.userId === id) ?? null,
+        getAvatarUrl: () => 'https://mx.host/peer-avatar',
+        ...over,
+      })
+    }
+
+    it('название без «@», картинка комнаты, а не аватар участника', async () => {
+      const { ctx: c } = ctx()
+      const d = await useDialogMapping(c).mapRoomToDialog(
+        groupRoom({
+          'm.room.name': { name: '@Team' },
+          'm.room.avatar': { avatarUrl: 'data:image/png;base64,AAAA' },
+          'm.room.topic': { topic: 'Обо_всём_подряд' },
+        })
+      )
+      expect(d.partner).toEqual({
+        id: '!room:host',
+        name: 'Team',
+        avatar: 'data:image/png;base64,AAAA',
+        verified: false,
+        mark: null,
+      })
+      expect(d.group).toEqual({
+        memberCount: 3,
+        previewIds: [PEER_ID, '@c0c0:host'],
+        topic: 'Обо всём подряд',
+      })
+    })
+
+    it('без картинки — без аватара (рисуется мозаика), профили мозаики дозапрашиваются', async () => {
+      const { ctx: c, profileCache } = ctx()
+      const d = await useDialogMapping(c).mapRoomToDialog(
+        groupRoom({ 'm.room.name': { name: '@Team' } })
+      )
+      expect(d.partner.avatar).toBeUndefined()
+      expect(profileCache.fetchProfiles).toHaveBeenCalledWith([PEER_ADDR, 'PC0C0ADDRESS0000'])
+    })
+
+    it('без названия — имена участников из профилей', async () => {
+      const { ctx: c } = ctx({ profiles: { [PEER_ADDR]: { name: 'alice' } } })
+      const d = await useDialogMapping(c).mapRoomToDialog(
+        groupRoom({}, { name: 'abcdef and 1 other' })
+      )
+      expect(d.partner.name).toBe('alice, Carol')
+    })
+
+    it('на двоих, но с «@» — группа, а не личный чат', async () => {
+      const { ctx: c } = ctx()
+      const d = await useDialogMapping(c).mapRoomToDialog(
+        groupRoom({ 'm.room.name': { name: '@Duo' } }, { getInvitedAndJoinedMemberCount: () => 2 })
+      )
+      expect(d.group?.memberCount).toBe(3)
+      expect(d.partner.name).toBe('Duo')
+    })
+
+    it('открытая группа', async () => {
+      const { ctx: c } = ctx()
+      const d = await useDialogMapping(c).mapRoomToDialog(
+        groupRoom({ 'm.room.name': { name: '@Team' } }, { getJoinRule: () => 'public' })
+      )
+      expect(d.group?.isPublic).toBe(true)
+    })
+  })
+
+  describe('без звука', () => {
+    it('правило уведомлений комнаты → muted; новое чужое сообщение без отметки прочтения → hasUnread', async () => {
+      muted.add('!room:host')
+      const { ctx: c } = ctx()
+      const d = await useDialogMapping(c).mapRoomToDialog(
+        fakeRoom({ hasUserReadEvent: () => false, getUnreadNotificationCount: () => 0 })
+      )
+      expect(d.muted).toBe(true)
+      expect(d.hasUnread).toBe(true)
+    })
+
+    it('прочитано или чат открыт — без отметки нового', async () => {
+      muted.add('!room:host')
+      const read = await useDialogMapping(ctx().ctx).mapRoomToDialog(
+        fakeRoom({ hasUserReadEvent: () => true })
+      )
+      expect(read.hasUnread).toBeUndefined()
+      const open = await useDialogMapping(ctx({ activeChatId: '!room:host' }).ctx).mapRoomToDialog(
+        fakeRoom({ hasUserReadEvent: () => false })
+      )
+      expect(open.hasUnread).toBeUndefined()
+    })
+
+    it('со звуком полей нет', async () => {
+      const d = await useDialogMapping(ctx().ctx).mapRoomToDialog(fakeRoom())
+      expect(d.muted).toBeUndefined()
+      expect(d.hasUnread).toBeUndefined()
+    })
   })
 
   describe('личная комната «#<sha224>»', () => {

@@ -578,6 +578,26 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   /**
+   * «Без звука» для чата: правило уведомлений на сервере, общее с прежним
+   * клиентом и другими устройствами. В списке меняется сразу; сервер не
+   * принял — возвращаем как было.
+   */
+  const setDialogMuted = async (chatId: string, muted: boolean): Promise<void> => {
+    if (isMeshDialogId(chatId)) return
+    const was = !!uiStore.dialogs.find((d) => d.id === chatId)?.muted
+    if (was === muted) return
+    uiStore.setDialogMuted(chatId, muted)
+    try {
+      await matrixService.setRoomMuted(chatId, muted)
+      persistDialogs()
+    } catch (e) {
+      log.error('Не удалось изменить уведомления чата:', e)
+      uiStore.setDialogMuted(chatId, was)
+      appToast.error({ message: t('messenger.notifyToggleFailed') })
+    }
+  }
+
+  /**
    * @param opts.purge — стереть с диска sync-state и кэш расшифровок текущего
    *   юзера (signOut / удаление аккаунта, V15/Р6). При смене аккаунта — false:
    *   кэши per-user и пригодятся при возврате.
@@ -753,6 +773,8 @@ export const useMessengerStore = defineStore('messenger', () => {
         (!uiStore.dialogsLoadedOnce || uiStore.isLoading)
     ),
     syncState: computed(() => uiStore.syncState),
+    chatFilter: computed(() => uiStore.chatFilter),
+    groupInfoChatId: computed(() => uiStore.groupInfoChatId),
     syncError: computed(() => uiStore.syncError),
     userProfiles: computed(() => profileCache.userProfiles),
     // ВАЖНО: `pcryptoService` инициализируется как `ref(null)`, поэтому при auto-unwrap
@@ -794,6 +816,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     fetchAndDecryptMedia: chatStore.fetchAndDecryptMedia,
     initMatrix,
     deleteDialog,
+    setDialogMuted,
+    setChatFilter: uiStore.setChatFilter,
+    openGroupInfo: uiStore.openGroupInfo,
+    closeGroupInfo: uiStore.closeGroupInfo,
     logout,
     purgeAccountData,
     fetchProfiles: profileCache.fetchProfiles,

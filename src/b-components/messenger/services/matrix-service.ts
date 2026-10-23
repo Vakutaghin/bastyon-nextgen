@@ -33,7 +33,7 @@ import {
 import { tetatetid, getMatrixId, resolveMatrixHost } from '../helpers'
 import type { MatrixClient, MatrixEventContent } from './matrix-service/types'
 import type { MatrixClient as SdkMatrixClient, ICreateClientOpts } from 'matrix-js-sdk'
-import { Preset, Visibility } from 'matrix-js-sdk'
+import { Preset, PushRuleActionName, Visibility } from 'matrix-js-sdk'
 
 export class MatrixService {
   private client: SdkMatrixClient | null = null
@@ -232,9 +232,28 @@ export class MatrixService {
       const membership = room?.getMyMembership?.()
       if (membership !== 'invite') return
       await this.client.joinRoom?.(roomId)
+      // Историю листать — только когда синк принёс вступление. Иначе события
+      // вступления приходят листанием раньше синка, синк потом отбрасывает их
+      // как повторы, и комната остаётся с состоянием приглашения: без
+      // участников, ролей и ключа группы (первые сообщения не расшифровывались).
+      await MatrixService.waitForJoin(() => this.client?.getRoom?.(roomId))
     } catch (e) {
       console.warn('[matrix] joinIfInvited failed:', e)
     }
+  }
+
+  /** Ждёт, пока синк отметит вступление в комнату; не дождался — идём дальше. */
+  static async waitForJoin(
+    getRoom: () => { getMyMembership?: () => string } | null | undefined,
+    timeoutMs = 15_000,
+    stepMs = 100
+  ): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() < deadline) {
+      if (getRoom()?.getMyMembership?.() === 'join') return true
+      await new Promise((resolve) => setTimeout(resolve, stepMs))
+    }
+    return false
   }
 
   /**
@@ -464,6 +483,25 @@ export class MatrixService {
 
     await this.client.leave(roomId)
     await this.client.forget(roomId, true)
+  }
+
+  /**
+   * «Без звука»: правило уведомлений комнаты с `dont_notify`, как ставит
+   * прежний клиент (id правила — id комнаты). Правила общие для всех
+   * устройств аккаунта; до первого синка их нет, и SDK бросает.
+   */
+  public isRoomMuted(roomId: string): boolean {
+    try {
+      const rule = this.client?.getRoomPushRule?.('global', roomId)
+      return !!rule?.actions?.includes(PushRuleActionName.DontNotify)
+    } catch {
+      return false
+    }
+  }
+
+  public async setRoomMuted(roomId: string, muted: boolean): Promise<void> {
+    if (!this.client) throw new Error('Client not initialized')
+    await this.client.setRoomMutePushRule('global', roomId, muted)
   }
 
   /**

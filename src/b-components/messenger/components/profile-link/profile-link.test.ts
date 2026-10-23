@@ -24,7 +24,9 @@ let mounted: VueWrapper | null = null
 
 async function render(partner: Partial<ShownPartner> = {}): Promise<VueWrapper> {
   mounted = mount(ChatPartnerTitle, {
-    props: { partner: { name: 'Алиса', verified: false, address: ALICE, ...partner } },
+    props: {
+      partner: { name: 'Алиса', verified: false, address: ALICE, chatId: '!a:host', ...partner },
+    },
     global: { plugins: [i18n, router], provide: { theme: {} } },
     attachTo: document.body,
   })

@@ -18,3 +18,44 @@ export const SC_PartnerTitleName = styled.span`
   line-height: 1.3;
   color: var(--ui-text-highlighted);
 `
+
+/** Шапка группы — кнопка той же формы, что ссылка-«чип» на профиль собеседника. */
+export const SC_GroupTitleBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 2px 10px 2px 4px;
+  margin-left: -4px;
+  border: none;
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+  }
+`
+
+export const SC_GroupTitleText = styled.span`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+`
+
+export const SC_GroupTitleSub = styled.span`
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+`

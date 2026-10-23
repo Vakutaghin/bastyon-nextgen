@@ -52,6 +52,10 @@ function trimDialog(d: Dialog): Dialog {
     unreadCount: d.unreadCount,
     lastMessage: d.lastMessage ? trimMessage(d.lastMessage) : undefined,
     createdAt: d.createdAt,
+    // Группа остаётся группой и до первого синка: значок, мозаика, число участников.
+    group: d.group,
+    muted: d.muted,
+    hasUnread: d.hasUnread,
   }
 }
 

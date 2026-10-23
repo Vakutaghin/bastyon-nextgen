@@ -5,6 +5,9 @@ import { ref, computed } from 'vue'
 
 import type { Dialog } from '../types'
 
+/** Какие чаты показывает список: все, только личные или только группы. */
+export type ChatFilter = 'all' | 'direct' | 'groups'
+
 export const useMessengerUiStore = defineStore('messenger-ui', () => {
   const isOpen = ref(false)
   const isFullScreen = ref(false)
@@ -19,6 +22,10 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
   const isMessagesLoading = ref(false)
   /** true после первой успешной загрузки списка диалогов */
   const dialogsLoadedOnce = ref(false)
+
+  const chatFilter = ref<ChatFilter>('all')
+  /** Группа, чьё окно с участниками сейчас открыто. */
+  const groupInfoChatId = ref<string | null>(null)
 
   const syncState = ref<string>('STOPPED')
   const syncError = ref<string | null>(null)
@@ -113,6 +120,27 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     if (dialog) dialog.unreadCount = 0
   }
 
+  /** «Без звука» в списке — сразу, не дожидаясь сервера. */
+  const setDialogMuted = (chatId: string, muted: boolean): void => {
+    const dialog = dialogs.value.find((d) => d.id === chatId)
+    if (!dialog) return
+    if (muted) dialog.muted = true
+    else delete dialog.muted
+    delete dialog.hasUnread
+  }
+
+  const setChatFilter = (filter: ChatFilter): void => {
+    chatFilter.value = filter
+  }
+
+  const openGroupInfo = (chatId: string): void => {
+    groupInfoChatId.value = chatId
+  }
+
+  const closeGroupInfo = (): void => {
+    groupInfoChatId.value = null
+  }
+
   /** Добавить диалог в начало списка */
   const prependDialog = (dialog: Dialog): void => {
     dialogs.value = [dialog, ...dialogs.value]
@@ -146,6 +174,8 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     syncError.value = null
     isSyncStarted.value = false
     isInitInProgress.value = false
+    chatFilter.value = 'all'
+    groupInfoChatId.value = null
   }
 
   return {
@@ -162,6 +192,8 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     syncError,
     isSyncStarted,
     isInitInProgress,
+    chatFilter,
+    groupInfoChatId,
     activeDialog,
     totalUnreadCount,
     setDialogs,
@@ -174,6 +206,10 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     clearInviteTarget,
     closeFullScreen,
     markDialogRead,
+    setDialogMuted,
+    setChatFilter,
+    openGroupInfo,
+    closeGroupInfo,
     prependDialog,
     removeDialog,
     restoreDialog,

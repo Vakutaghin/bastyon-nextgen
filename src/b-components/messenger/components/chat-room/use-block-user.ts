@@ -22,6 +22,8 @@ export function useBlockUser(activeRoomId: Ref<string | null>) {
       const room = client.getRoom?.(rid)
       const myId = client.getUserId?.()
       if (!room) return null
+      // В группе «собеседника» нет: первым нашёлся бы случайный участник.
+      if ((room.getInvitedAndJoinedMemberCount?.() ?? 0) > 2) return null
       // Сначала joined, затем invited: у свежего DM собеседник ещё лишь приглашён
       // (не joined), и поиск только по joined возвращал null — кнопка молча не
       // срабатывала. Тот же случай, что и в mapRoomToDialog.

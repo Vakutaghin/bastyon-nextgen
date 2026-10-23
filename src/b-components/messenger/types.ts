@@ -78,8 +78,21 @@ export interface Message {
   meshReplyable?: boolean
 }
 
+/** Групповой чат Matrix: сколько в нём людей и кого показать вместо аватара. */
+export interface DialogGroup {
+  /** Вступившие и приглашённые, вместе с собой. */
+  memberCount: number
+  /** Matrix-id до четырёх участников, кроме себя: мозаика вместо аватара. */
+  previewIds: string[]
+  /** Открытая группа: войти может любой (join rule public). */
+  isPublic?: boolean
+  /** Описание группы (m.room.topic). */
+  topic?: string
+}
+
 export interface Dialog {
   id: string
+  /** У группы — сама комната: её id, название и картинка. */
   partner: User
   unreadCount: number
   lastMessage?: Message
@@ -91,4 +104,15 @@ export interface Dialog {
   meshKind?: 'direct' | 'channel' | 'room'
   /** Mesh-канал: открытый (Public, #тег, ключ по умолчанию) или приватный. */
   channelKind?: 'public' | 'hashtag' | 'private'
+  /** Matrix-группа; у личного чата не задано. */
+  group?: DialogGroup
+  /** «Без звука»: правило уведомлений комнаты, общее с прежним клиентом. */
+  muted?: boolean
+  /** Без звука сервер не считает непрочитанные — есть ли новое, видно по отметке прочтения. */
+  hasUnread?: boolean
+}
+
+/** Переписка на несколько человек: группа Matrix, канал или комната mesh-сети. */
+export function isGroupDialog(d: Pick<Dialog, 'group' | 'meshKind'>): boolean {
+  return !!d.group || d.meshKind === 'channel' || d.meshKind === 'room'
 }

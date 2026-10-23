@@ -19,6 +19,7 @@ import {
   AudioLines,
   Ban,
   Bell,
+  BellOff,
   Blocks,
   Bluetooth,
   BookA,
@@ -168,6 +169,7 @@ export const ArrowDownOutlined = lucideIcon('ArrowDownOutlined', ArrowDown)
 export const ArrowUpOutlined = lucideIcon('ArrowUpOutlined', ArrowUp)
 export const BellFilled = lucideIcon('BellFilled', Bell, 'solid')
 export const BellOutlined = lucideIcon('BellOutlined', Bell)
+export const BellOffOutlined = lucideIcon('BellOffOutlined', BellOff)
 export const BlockOutlined = lucideIcon('BlockOutlined', Blocks)
 export const BookFilled = lucideIcon('BookFilled', Bookmark, 'solid')
 export const BookOutlined = lucideIcon('BookOutlined', Bookmark)

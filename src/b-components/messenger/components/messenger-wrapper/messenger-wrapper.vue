@@ -70,6 +70,9 @@
       </template>
     </MessengerButton>
   </SC_MessengerWrapper>
+
+  <!-- Участники и настройки группы — из шапки чата и меню «…» в списке. -->
+  <GroupInfoModal v-if="isVisible" />
 </template>
 
 <script setup lang="ts">
@@ -86,6 +89,7 @@ import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
 import { isMeshDialogId } from '@/mesh/ids'
 import MessengerPanel from '../messenger-panel/messenger-panel.vue'
 import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
+import GroupInfoModal from '../group-info/group-info-modal.vue'
 import { useShownPartner } from '../chat-partner-title/use-shown-partner'
 import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
@@ -226,6 +230,12 @@ watch(
 
 function handleKeydown(e: KeyboardEvent): void {
   if (e.key !== 'Escape') return
+  // Окно группы закрывается первым (обычно его Escape сюда и не доходит).
+  if (store.groupInfoChatId) {
+    e.preventDefault()
+    store.closeGroupInfo()
+    return
+  }
   if (store.isFullScreen) {
     e.preventDefault()
     e.stopPropagation()

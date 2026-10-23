@@ -63,8 +63,10 @@
         <SC_SearchCount v-if="searchQuery.trim()">{{ displayedMessages.length }}</SC_SearchCount>
         <!-- Здесь именно «скрыть сообщения» (matrix-ignore), а не блокировка в
              социальном графе: она живёт в профиле и дополнительно глушит чат
-             (решение Р3, S43). -->
+             (решение Р3, S43). В группе кнопка скрывала бы случайного
+             участника — там это делается в списке участников. -->
         <Popconfirm
+          v-if="!isGroupChat"
           :title="isBlocked ? t('messenger.unmuteConfirmTitle') : t('messenger.muteConfirmTitle')"
           :description="t('messenger.muteExplain')"
           :ok-text="isBlocked ? t('messenger.unmuteUser') : t('messenger.muteUser')"
@@ -365,6 +367,7 @@ const { t, locale } = useI18n()
 
 // Активная комната + typing-индикатор собеседника.
 const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
+const isGroupChat = computed<boolean>(() => !!store.activeDialog?.group)
 const { isTyping, typingName } = useTypingIndicator(activeRoomId)
 const { seenIds } = useReadReceipts(activeRoomId)
 const { isBlocked, busy: blockBusy, toggleBlock } = useBlockUser(activeRoomId)
