@@ -238,12 +238,15 @@ jobs:
           if [ "$PLATFORM" = macos-latest ]; then
             export MACOSX_DEPLOYMENT_TARGET="$(node -p 'require("./src-tauri/tauri.conf.json").bundle.macOS.minimumSystemVersion')"
           fi
+          # Из src-tauri, а не с --manifest-path: cargo читает .cargo/config.toml
+          # от рабочей папки. Без него на Windows нет crt-static, и модуль
+          # требовал VCRUNTIME140.dll (v0.12.0 упал на проверке ниже).
           if [ -n "$triple" ]; then
             out="src-tauri/target/$triple/release"
-            cargo build --release -p bastyon-mesh --manifest-path src-tauri/Cargo.toml --target "$triple"
+            (cd src-tauri && cargo build --release -p bastyon-mesh --target "$triple")
           else
             out="src-tauri/target/release"
-            cargo build --release -p bastyon-mesh --manifest-path src-tauri/Cargo.toml
+            (cd src-tauri && cargo build --release -p bastyon-mesh)
           fi
           case "$PLATFORM/$VARIANT" in
             macos-latest/Apple-Silicon) key=darwin-aarch64 ;;
