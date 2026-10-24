@@ -83,7 +83,7 @@ export const SC_RestrictedNotice = styled.div`
   padding: 14px 16px;
   border-radius: var(--ui-radius-md);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
   background: var(--ui-bg-elevated);
 
@@ -111,7 +111,7 @@ export const SC_PostTitle = styled.h3`
   font-size: 16px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     margin: 0 0 10px;

@@ -82,9 +82,9 @@ export const FONT_SIZE = {
 // Дублируются в style.css как CSS-переменные (--header-height, --bottom-nav-height).
 export const LAYOUT = {
   HEADER_HEIGHT: '64px',
-  HEADER_HEIGHT_MOBILE: '56px',
+  HEADER_HEIGHT_MOBILE: '48px',
   HEADER_HEIGHT_RAIL: '48px',
-  BOTTOM_NAV_HEIGHT: '56px',
+  BOTTOM_NAV_HEIGHT: '50px',
   RAIL_WIDTH: '64px',
   SIDEBAR_LEFT_WIDTH: '280px',
   SIDEBAR_LEFT_COLLAPSED_WIDTH: '64px',

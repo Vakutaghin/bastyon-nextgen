@@ -131,7 +131,7 @@ export const SC_PostTitle = styled.div`
 /** Текст поста/коммента — аккуратные ДВЕ строки с многоточием. */
 export const SC_Snippet = styled.div`
   font-size: 12px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   color: var(--ui-text-toned);
   word-break: break-word;
   display: -webkit-box;
@@ -181,7 +181,7 @@ export const SC_PreviewNote = styled('div', { confirmed: Boolean })`
   background: ${(p) => (p.confirmed ? COLORS.SUCCESS_BG_TINT : COLORS.PRIMARY_LIGHT)};
   color: var(--color-text-secondary);
   font-size: 12px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
 
   .anticon {
     color: ${(p) => (p.confirmed ? COLORS.SUCCESS : COLORS.PRIMARY)};

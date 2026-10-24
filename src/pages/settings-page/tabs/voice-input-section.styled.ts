@@ -32,7 +32,7 @@ export const SC_VoiceStatus = styled.div`
 export const SC_VoiceDesc = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--color-text-secondary);
 `
 
@@ -85,7 +85,7 @@ export const SC_ModelMeta = styled.span`
 export const SC_ModelHint = styled.div`
   color: var(--color-text-secondary);
   font-size: 12px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
 `
 
 export const SC_ModelActions = styled.div`

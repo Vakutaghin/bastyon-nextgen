@@ -77,7 +77,7 @@ export const SC_LastCommentContent = styled.div`
   flex: 1;
   min-width: 0;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   color: var(--color-text-primary);
   /* Длинные ссылки без пробелов иначе вылезали за край колонки. */
   overflow-wrap: anywhere;

@@ -26,7 +26,7 @@ export const SC_RepostAuthor = styled.span`
 
 export const SC_RepostBody = styled.div`
   font-size: ${FONT_SIZE.MD};
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: var(--color-text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 4;

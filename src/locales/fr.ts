@@ -94,9 +94,6 @@ export default {
     compose: 'Nouvelle publication',
     help: 'Aide',
   },
-  footer: {
-    brand: 'Bastyon — un réseau social décentralisé.',
-  },
   help: {
     title: 'Aide',
     loading: 'Chargement de l’aide…',

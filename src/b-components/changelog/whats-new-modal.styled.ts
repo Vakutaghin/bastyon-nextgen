@@ -119,7 +119,7 @@ export const SC_LangButton = styled.button<{ active: boolean }>`
 export const SC_MarkdownBody = styled.div`
   color: var(--color-text-primary);
   font-size: 14px;
-  line-height: 1.55;
+  line-height: calc(1.55 * var(--leading-scale));
   max-height: 60vh;
   overflow-y: auto;
 

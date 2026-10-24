@@ -13,7 +13,7 @@ export const SC_BlockQuote = styled.blockquote`
 `
 
 export const SC_BlockQuoteContent = styled.div`
-  line-height: 1.6;
+  line-height: calc(1.6 * var(--leading-scale));
   margin-bottom: 0.5em;
   color: var(--color-text-primary) !important;
   word-wrap: break-word;

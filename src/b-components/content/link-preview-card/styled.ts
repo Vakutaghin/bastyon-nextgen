@@ -82,7 +82,7 @@ export const SC_Title = styled.div`
   overflow: hidden;
   font-size: ${() => FONT_SIZE.MD};
   font-weight: 600;
-  line-height: 1.35;
+  line-height: calc(1.35 * var(--leading-scale));
   color: var(--ui-text-highlighted);
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -92,7 +92,7 @@ export const SC_Description = styled.div`
   display: -webkit-box;
   overflow: hidden;
   font-size: ${() => FONT_SIZE.SM};
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   color: var(--ui-text-toned);
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;

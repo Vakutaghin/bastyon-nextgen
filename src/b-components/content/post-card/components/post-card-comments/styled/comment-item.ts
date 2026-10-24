@@ -125,7 +125,7 @@ export const SC_CommentAuthor = styled.div`
 export const SC_CommentText = styled.div`
   font-size: 14px;
   color: var(--color-text-primary) !important;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -196,7 +196,7 @@ export const SC_CommentDeleted = styled.div`
   font-size: 14px;
   font-style: italic;
   color: var(--color-text-secondary);
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
 `
 
 /** Плашка-заглушка вместо текста скрытого по репутации комментария */
@@ -209,7 +209,7 @@ export const SC_HiddenBanner = styled.div`
   border-radius: var(--ui-radius-lg);
   font-size: 14px;
   color: var(--color-text-secondary);
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
 
   & > span {
     flex: 1;
@@ -240,7 +240,7 @@ export const SC_ComposerDisabled = styled.div`
   border-radius: var(--ui-radius-lg);
   font-size: 14px;
   color: var(--color-text-secondary);
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   margin-top: 8px;
 `
 

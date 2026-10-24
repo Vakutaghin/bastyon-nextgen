@@ -9,7 +9,7 @@ export const SC_IpfsBody = styled.div`
 
 export const SC_IpfsText = styled.div`
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--color-text-secondary);
 `
 

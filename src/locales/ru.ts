@@ -96,9 +96,6 @@ export default {
     compose: 'Новый пост',
     help: 'Справка',
   },
-  footer: {
-    brand: 'Bastyon — децентрализованная социальная сеть.',
-  },
   help: {
     title: 'Справка',
     loading: 'Загружаю справку…',

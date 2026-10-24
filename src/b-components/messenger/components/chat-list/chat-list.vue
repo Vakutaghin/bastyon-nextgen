@@ -24,6 +24,10 @@
       </SC_FilterChip>
     </SC_ChatFilter>
     <SC_ChatList>
+      <SC_ChatsLoading v-if="chatsLoading" data-testid="chats-loading">
+        <SC_ChatsLoadingSpinner aria-hidden="true" />
+        {{ t('messenger.loadingDialogs') }}
+      </SC_ChatsLoading>
       <template v-for="row in shown" :key="row.id">
         <ChannelListItem v-if="row.channel" :address="row.channel" @click="onSelect(row.id)" />
         <ChatListItem v-else-if="row.dialog" :dialog="row.dialog" @click="onSelect(row.id)" />
@@ -34,7 +38,7 @@
         <strong>{{ t('messenger.channel.emptyTitle') }}</strong>
         <span>{{ t('messenger.channel.emptyText') }}</span>
       </SC_EmptyHint>
-      <SC_EmptyHint v-else-if="shown.length === 0 && filter === 'chats'">
+      <SC_EmptyHint v-else-if="shown.length === 0 && filter === 'chats' && !chatsLoading">
         <span>{{ t('messenger.filterChatsEmpty') }}</span>
       </SC_EmptyHint>
     </SC_ChatList>
@@ -57,6 +61,8 @@ import {
   SC_ChatFilter,
   SC_ChatList,
   SC_ChatListRoot,
+  SC_ChatsLoading,
+  SC_ChatsLoadingSpinner,
   SC_ChipCount,
   SC_EmptyHint,
   SC_FilterChip,
@@ -78,6 +84,8 @@ const store = useMessengerStore()
 const channels = useMessengerChannelsStore()
 
 const filter = computed<ChatFilter>(() => store.chatFilter)
+/** Переписки ещё грузятся, а каналы уже видны: каналам строка не нужна. */
+const chatsLoading = computed<boolean>(() => store.isChatsLoading && filter.value !== 'channels')
 
 interface Row {
   id: string

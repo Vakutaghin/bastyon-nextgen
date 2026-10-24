@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 import { nuxtField } from '@/styles/field-styles'
 
 /** Плашка ответа под комментарием: аватар + textarea + кнопки */
@@ -9,7 +10,8 @@ export const SC_ReplyPanel = styled.div`
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   display: flex;
-  align-items: center;
+  /* Поле растёт вверх до семи строк — кнопки остаются у последней строки. */
+  align-items: flex-end;
   gap: 10px;
   width: 100%;
   box-sizing: border-box;
@@ -63,8 +65,17 @@ export const SC_ReplyTextarea = styled.textarea`
   resize: none;
   overflow-y: auto;
   min-height: 36px;
-  max-height: 120px;
-  line-height: 1.45;
+  /* Растёт с текстом (use-auto-grow) до семи строк, дальше — прокрутка:
+     строка 18px, поля 7+7 и рамка 1+1. */
+  max-height: calc(7 * 18px + 16px);
+  font-size: 14px;
+  line-height: 18px;
+
+  /* nuxtField на телефоне ставит 16px; комментарий пишется тем же 14px, каким
+     показывается. Масштаб при фокусе iOS не включит: maximum-scale=1 в index.html. */
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
+    font-size: 14px;
+  }
 `
 
 export const SC_ReplySendBtn = styled.button`
@@ -236,7 +247,7 @@ export const SC_LengthCounter = styled.div`
   font-size: 12px;
   color: var(--color-text-secondary);
   padding: 2px 14px 0;
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
 
   &.length-counter--bad {
     color: var(--color-red-ant);

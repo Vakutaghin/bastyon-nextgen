@@ -3,7 +3,7 @@ import styled from 'vue3-styled-components'
 export const SC_BlockList = styled.ul<{ style?: 'ordered' | 'unordered' }>`
   margin: 0.75em 0;
   padding-left: 1.5em;
-  line-height: 1.6;
+  line-height: calc(1.6 * var(--leading-scale));
   color: var(--color-text-primary) !important;
   word-wrap: break-word;
   overflow-wrap: break-word;

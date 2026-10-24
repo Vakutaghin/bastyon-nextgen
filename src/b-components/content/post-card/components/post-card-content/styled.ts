@@ -16,7 +16,7 @@ export const SC_PostContent = styled.div`
      размер наследовался от темы antd (fontSize 16), с интерфейсными 14px
      тема его уменьшила. Интерлиньяж 1.5: 1.2 было тесно для длинных постов. */
   font-size: 16px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--color-text-primary) !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -73,7 +73,7 @@ export const SC_PostContent = styled.div`
 export const SC_PostPreview = styled.div`
   position: relative;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   overflow: hidden;
   word-wrap: break-word;
   overflow-wrap: break-word;

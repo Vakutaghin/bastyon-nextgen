@@ -123,7 +123,7 @@ export const SC_Textarea = styled.textarea`
   resize: vertical;
   padding: 8px 12px;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
 `
 
 export const SC_ArticleToggle = styled.label`

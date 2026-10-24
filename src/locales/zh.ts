@@ -85,9 +85,6 @@ export default {
     compose: '新帖子',
     help: '帮助',
   },
-  footer: {
-    brand: 'Bastyon——去中心化社交网络。',
-  },
   help: {
     title: '帮助',
     loading: '正在加载帮助…',

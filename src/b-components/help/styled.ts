@@ -83,7 +83,7 @@ export const SC_Fallback = styled.p`
 
 export const SC_Body = styled.div`
   font-size: 15px;
-  line-height: 1.65;
+  line-height: calc(1.65 * var(--leading-scale));
 
   /* Вводный абзац статьи — крупнее: по нему видно, о чём она. */
   & > p:first-child {
@@ -99,7 +99,7 @@ export const SC_Body = styled.div`
   h3,
   h4 {
     color: var(--ui-text-highlighted);
-    line-height: 1.3;
+    line-height: calc(1.3 * var(--leading-scale));
     scroll-margin-top: calc(var(--header-height-total, 64px) + 16px);
   }
 
@@ -285,7 +285,7 @@ export const SC_Term = styled.button`
 export const SC_TermCard = styled.div`
   max-width: 320px;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text);
 
   p {

@@ -7,7 +7,7 @@ export const SC_PaidBody = styled.div`
   flex-direction: column;
   gap: 14px;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: var(--ui-text);
 `
 
@@ -192,7 +192,7 @@ export const SC_PaidNotice = styled.div`
   background: var(--ui-bg-elevated);
   color: var(--ui-text-muted);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
 `
 
 export const SC_PaidNoticeText = styled.span`
@@ -290,5 +290,5 @@ export const SC_PaidConfirm = styled.div`
   border-radius: var(--ui-radius-md);
   background-color: var(--ui-bg-elevated);
   font-size: 13px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
 `

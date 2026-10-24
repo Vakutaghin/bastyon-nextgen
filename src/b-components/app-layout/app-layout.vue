@@ -6,7 +6,6 @@
     <SC_Appcnt :class="{ 'has-bottom-nav': isMobileOrTablet }">
       <AppHeader />
       <router-view />
-      <SiteFooter />
     </SC_Appcnt>
 
     <BottomNav v-if="isMobileOrTablet" />
@@ -36,7 +35,6 @@ import WhatsNewModal from '@/b-components/changelog/whats-new-modal.vue'
 import UpdateModal from '@/b-components/app-update/update-modal.vue'
 import VoiceModelModal from '@/b-components/voice-input/voice-model-modal.vue'
 import { StarExplosion } from '@/b-components/effects/star-explosion'
-import SiteFooter from '@/b-components/site-footer/site-footer.vue'
 import BottomNav from '@/b-components/bottom-nav/bottom-nav.vue'
 import { useUIStore } from '@/stores/ui-store'
 import { classifyContentLink } from '@/helpers/common/content-link'

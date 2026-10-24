@@ -18,13 +18,15 @@ export const SC_MeshPage = styled.main`
   width: 100%;
   max-width: 880px;
   margin: 0 auto;
-  padding: 60px 20px 24px;
+  /* От шапки вместе со строкой состояния; в узком окне раньше было 24px,
+     и заголовок уходил под шапку. */
+  padding: var(--header-height-total) 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 
   @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
-    padding: 24px 16px;
+    padding: var(--header-height-total) 16px 24px;
   }
 `
 
@@ -69,7 +71,7 @@ export const SC_MeshDot = styled('span', { state: String })`
 export const SC_MeshLead = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 
@@ -114,7 +116,7 @@ export const SC_MeshSubtitle = styled.h3`
 export const SC_MeshNote = styled.p`
   margin: 0;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 
@@ -123,7 +125,7 @@ export const SC_MeshWarn = styled.p`
   padding: 8px 12px;
   border-radius: var(--ui-radius-md);
   font-size: 13px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: var(--ui-text-highlighted);
   background: rgb(var(--ui-warning-rgb) / 12%);
 `
@@ -131,7 +133,7 @@ export const SC_MeshWarn = styled.p`
 export const SC_MeshError = styled.p`
   margin: 0;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: var(--ui-error);
 `
 

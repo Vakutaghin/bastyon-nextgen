@@ -16,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.bastyon.app.plugins.AppUpdaterPlugin;
 import com.bastyon.app.plugins.BackgroundMediaPlugin;
+import com.bastyon.app.plugins.MatrixHttpPlugin;
 import com.bastyon.app.plugins.radio.MeshRadioPlugin;
 import com.bastyon.app.plugins.radio.MeshRnsPlugin;
 import com.getcapacitor.BridgeActivity;
@@ -25,6 +26,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(BackgroundMediaPlugin.class);
         registerPlugin(AppUpdaterPlugin.class);
+        registerPlugin(MatrixHttpPlugin.class);
         registerPlugin(MeshRadioPlugin.class);
         registerPlugin(MeshRnsPlugin.class);
         super.onCreate(savedInstanceState);

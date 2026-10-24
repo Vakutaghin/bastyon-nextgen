@@ -92,9 +92,6 @@ export default {
     compose: '새 게시물',
     help: '도움말',
   },
-  footer: {
-    brand: 'Bastyon — 탈중앙화 소셜 네트워크.',
-  },
   help: {
     title: '도움말',
     loading: '도움말을 불러오는 중…',

@@ -2,7 +2,7 @@ import styled from 'vue3-styled-components'
 
 export const SC_BlockParagraph = styled.p`
   margin: 0.75em 0;
-  line-height: 1.6;
+  line-height: calc(1.6 * var(--leading-scale));
   color: var(--color-text-primary) !important;
   word-wrap: break-word;
   overflow-wrap: break-word;

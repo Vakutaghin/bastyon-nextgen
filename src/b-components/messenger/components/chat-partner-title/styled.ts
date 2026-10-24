@@ -15,7 +15,7 @@ export const SC_PartnerTitleName = styled.span`
   white-space: nowrap;
   font-size: 16px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
   color: var(--ui-text-highlighted);
 `
 

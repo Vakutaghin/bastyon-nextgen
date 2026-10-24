@@ -92,9 +92,6 @@ export default {
     compose: 'New post',
     help: 'Help',
   },
-  footer: {
-    brand: 'Bastyon — a decentralized social network.',
-  },
   help: {
     title: 'Help',
     loading: 'Loading help…',

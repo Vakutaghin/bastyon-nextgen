@@ -857,6 +857,17 @@ export const useMessengerStore = defineStore('messenger', () => {
         channels.addresses.length === 0 &&
         (!uiStore.dialogsLoadedOnce || uiStore.isLoading)
     ),
+    /**
+     * Переписки сервера чатов ещё не пришли, а список уже не пуст — в нём
+     * каналы или mesh. Без строки загрузки такой список выглядел готовым:
+     * «загрузился только канал, переписок нет».
+     */
+    isChatsLoading: computed(
+      () =>
+        uiStore.dialogs.length === 0 &&
+        !uiStore.syncError &&
+        (!uiStore.dialogsLoadedOnce || uiStore.isLoading)
+    ),
     syncState: computed(() => uiStore.syncState),
     chatFilter: computed(() => uiStore.chatFilter),
     groupInfoChatId: computed(() => uiStore.groupInfoChatId),

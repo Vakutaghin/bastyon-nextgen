@@ -1,11 +1,12 @@
 import styled from 'vue3-styled-components'
 
-import { FONT_SIZE, LAYOUT, SPACING } from '@/styles/design-tokens'
+import { FONT_SIZE, SPACING } from '@/styles/design-tokens'
 
 export const SC_ComposePage = styled.div`
   display: flex;
   justify-content: center;
-  padding: calc(${LAYOUT.HEADER_HEIGHT} + ${SPACING.LG}) ${SPACING.MD} ${SPACING.XL};
+  /* Шапка своей высоты на телефоне и со строкой состояния, а не 64px. */
+  padding: calc(var(--header-height-total) + ${SPACING.LG}) ${SPACING.MD} ${SPACING.XL};
   background: var(--color-bg-primary);
   min-height: 100vh;
 `

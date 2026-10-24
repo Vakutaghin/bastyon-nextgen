@@ -130,7 +130,7 @@ export const SC_PkoinChartPriceValue = styled.div`
 export const SC_PkoinChartChange = styled.div`
   font-size: 14px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
 
   &.positive {
     color: var(--color-success-deep);

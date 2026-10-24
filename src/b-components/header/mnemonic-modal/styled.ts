@@ -28,13 +28,13 @@ export const SC_WarningTitle = styled.div`
 export const SC_WarningText = styled.div`
   font-size: 14px;
   color: var(--color-orange-text);
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
 `
 
 export const SC_EquivalenceNote = styled.div`
   font-size: 14px;
   color: var(--color-text-secondary);
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   margin-bottom: 16px;
 `
 
@@ -79,7 +79,7 @@ export const SC_CopyIconBtn = styled.button`
 export const SC_MnemonicText = styled.div`
   font-family: var(--font-family-mono);
   font-size: 16px;
-  line-height: 1.8;
+  line-height: calc(1.8 * var(--leading-scale));
   color: var(--color-text-primary);
   word-break: break-word;
   user-select: all;
@@ -106,7 +106,7 @@ export const SC_PrivateKeyLabel = styled.div`
 export const SC_PrivateKeyText = styled.div`
   font-family: var(--font-family-mono);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: calc(1.6 * var(--leading-scale));
   color: var(--color-text-primary);
   word-break: break-all;
   user-select: all;

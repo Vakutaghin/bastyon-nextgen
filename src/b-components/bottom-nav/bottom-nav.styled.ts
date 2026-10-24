@@ -16,7 +16,7 @@ export const SC_BottomNav = styled.nav`
   align-items: stretch;
   /* Высота включает safe-area: при box-sizing: border-box отступ съедал её из
      тех же 56px, на контент оставалось меньше, и иконки с подписями вылезали
-     поверх ленты. --bottom-nav-height-total = 56px + safe-area. */
+     поверх ленты. --bottom-nav-height-total = 50px + safe-area. */
   height: var(--bottom-nav-height-total);
   padding-bottom: var(--safe-bottom);
   /* Как шапка: фон страницы на 75% с размытием, линия сверху. */
@@ -60,7 +60,8 @@ export const SC_NavItem = styled('button', activeProps)`
   border: none;
   background: none;
   cursor: pointer;
-  padding: 4px 0;
+  /* Отступ только сверху: под подписью оставалось 11px пустоты, теперь 5. */
+  padding: 4px 0 0;
   color: ${(p) => (p.active ? 'var(--ui-primary)' : 'var(--ui-text-muted)')};
   transition: color ${TRANSITIONS.FAST};
 

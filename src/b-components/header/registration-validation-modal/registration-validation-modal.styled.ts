@@ -37,12 +37,12 @@ export const SC_Message = styled.p`
   font-size: 1.1em;
   margin-bottom: 1.5em;
   color: var(--color-text-primary);
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
 `
 
 export const SC_Info = styled.p`
   font-size: 0.9em;
   color: var(--ui-text-dimmed);
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   margin-top: 1em;
 `

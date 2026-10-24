@@ -3,7 +3,7 @@ import styled from 'vue3-styled-components'
 export const SC_BlockHeader = styled.h1<{ level?: number }>`
   margin: 1.5em 0 0.5em;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
   color: var(--ui-text-highlighted) !important;
   word-wrap: break-word;
   overflow-wrap: break-word;

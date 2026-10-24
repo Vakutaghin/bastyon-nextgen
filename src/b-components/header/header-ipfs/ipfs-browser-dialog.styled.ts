@@ -25,7 +25,7 @@ export const SC_BrowserError = styled.div`
 
 export const SC_BrowserHint = styled.div`
   font-size: 13px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 

@@ -45,6 +45,7 @@ import { useI18n } from 'vue-i18n'
 import { Popover } from 'ant-design-vue'
 import { LoadingOutlined, SmileOutlined } from '@/components/icons'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
+import { useAutoGrow } from '@/composables/use-auto-grow'
 import {
   SC_ReplyInputWrap,
   SC_ReplyTextarea,
@@ -84,6 +85,8 @@ function getTextareaEl(): HTMLTextAreaElement | null {
   if (typeof (r as HTMLTextAreaElement).focus === 'function') return r as HTMLTextAreaElement
   return (r as { $el?: HTMLTextAreaElement }).$el ?? null
 }
+
+useAutoGrow(getTextareaEl, () => props.editDraft || '')
 
 function insertEmoji(emoji: string): void {
   emojiOpen.value = false

@@ -17,13 +17,15 @@ export const SC_FilesPage = styled.main`
   width: 100%;
   max-width: 880px;
   margin: 0 auto;
-  padding: 60px 20px 24px;
+  /* От шапки вместе со строкой состояния; в узком окне раньше было 24px,
+     и заголовок уходил под шапку. */
+  padding: var(--header-height-total) 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 
   @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
-    padding: 24px 16px;
+    padding: var(--header-height-total) 16px 24px;
   }
 `
 
@@ -93,7 +95,7 @@ export const SC_FilesDot = styled('span', { state: String })`
 export const SC_FilesNote = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 

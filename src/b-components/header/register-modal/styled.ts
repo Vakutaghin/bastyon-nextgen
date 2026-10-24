@@ -36,7 +36,7 @@ export const SC_FormHint = styled.div`
   margin-top: 8px;
   font-size: 12px;
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
 `
 
 /** Подсказка-ошибка вместо обычной: имя уже занято. */

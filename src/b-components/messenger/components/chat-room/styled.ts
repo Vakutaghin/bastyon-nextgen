@@ -385,7 +385,7 @@ export const SC_ChatRoomEmptyHint = styled.div`
   padding: 12px 16px;
   color: var(--ui-text-dimmed);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   flex-shrink: 0;
 `
 
@@ -525,7 +525,7 @@ export const SC_KeyChangedBanner = styled.div`
 export const SC_KeyChangedText = styled.span`
   flex: 1;
   font-size: 12px;
-  line-height: 1.35;
+  line-height: calc(1.35 * var(--leading-scale));
   color: var(--color-danger-deep);
 `
 

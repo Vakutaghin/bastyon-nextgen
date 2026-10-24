@@ -218,6 +218,7 @@ import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { formatTimeCompact } from '@/helpers/common/date-formatter'
 import { isVoteComment } from '@/helpers/content/poll'
 import { usePollVotesStore } from '@/stores/poll-votes-store'
+import { useAutoGrow } from '@/composables/use-auto-grow'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { PostForComments } from './types'
 import LastCommentPreview from './last-comment-preview.vue'
@@ -471,6 +472,13 @@ const mentionListRef = ref<unknown>(null)
 const rootReplyTextareaRef = ref<unknown>(null)
 const replyTextareaRef = ref<unknown>(null)
 
+/** Поле styled-компонента — его $el. */
+function rootTextarea(): HTMLTextAreaElement | null {
+  const raw = rootReplyTextareaRef.value as HTMLTextAreaElement | { $el?: HTMLTextAreaElement }
+  if (!raw) return null
+  return raw instanceof HTMLTextAreaElement ? raw : (raw.$el ?? null)
+}
+
 // form composable нужен filteredMentionUsers (вынесен сюда, потому что
 // зависит от mentionQuery, которое живёт внутри form composable —
 // форвардим через ref-прокси).
@@ -657,6 +665,8 @@ const {
   insertRootEmoji,
   sendReply,
 } = form
+
+useAutoGrow(rootTextarea, () => (isRootReplyActive.value ? replyDraft.value : '') || '')
 
 const emojiOpenRoot = ref(false)
 function onRootEmojiSelect(emoji: string): void {

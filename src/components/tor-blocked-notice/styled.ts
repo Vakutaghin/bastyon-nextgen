@@ -13,7 +13,7 @@ export const SC_TorBlockedNotice = styled.div`
   background: var(--color-bg-tertiary);
   color: var(--color-text-secondary);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   box-sizing: border-box;
 `
 

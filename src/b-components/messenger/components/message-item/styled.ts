@@ -6,7 +6,7 @@ export const SC_MessageItem = styled.div`
   padding: 8px 12px;
   border-radius: var(--ui-radius-lg);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   position: relative;
   white-space: pre-wrap;
   word-break: break-word;

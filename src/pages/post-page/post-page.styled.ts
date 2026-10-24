@@ -10,7 +10,8 @@ export const SC_PostPage = styled.div`
 export const SC_PostPageInner = styled.div`
   width: 100%;
   max-width: 680px;
-  padding: 16px;
+  /* Под шапкой: без отступа от неё начало поста было скрыто. */
+  padding: calc(var(--header-height-total) + 16px) 16px 16px;
   box-sizing: border-box;
 
   /* Телефон: пост перекрывает поля страницы и встаёт во всю ширину. */

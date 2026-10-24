@@ -6,7 +6,7 @@ export const SC_ArticleEditor = styled.div`
   min-height: 240px;
   padding: ${SPACING.SM} ${SPACING.MD};
   font-size: ${FONT_SIZE.LG};
-  line-height: 1.6;
+  line-height: calc(1.6 * var(--leading-scale));
   color: var(--color-text-primary);
   background: var(--color-bg-input);
   border: 1px solid var(--color-border);

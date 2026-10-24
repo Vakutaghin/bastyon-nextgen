@@ -200,7 +200,7 @@ export const SC_PaneInput = styled.div`
 export const SC_PaneHint = styled.p`
   margin: 4px 6px 0;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 
@@ -356,7 +356,7 @@ export const SC_ResultSnippet = styled.span`
   display: block;
   margin-top: 2px;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: var(--ui-text-toned);
 
   mark {
@@ -381,7 +381,7 @@ export const SC_FavoriteRow = styled.div`
 export const SC_Empty = styled.p`
   margin: 16px 8px;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   text-align: center;
   color: var(--ui-text-muted);
 `
@@ -408,7 +408,7 @@ export const SC_Books = styled.div`
 export const SC_BookLead = styled.p`
   margin: 6px 0 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 

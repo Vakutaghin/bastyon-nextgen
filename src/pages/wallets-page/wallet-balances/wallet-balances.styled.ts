@@ -142,7 +142,7 @@ export const SC_WalletTableTitleRow = styled.div`
 /** Пояснение под заголовком доп. кошельков: почему они только для просмотра. */
 export const SC_WalletReadOnlyNote = styled.p`
   font-size: 14px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   color: var(--color-text-secondary);
   margin: 0 10px 12px;
 `

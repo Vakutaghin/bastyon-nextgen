@@ -29,7 +29,7 @@ export const SC_MicronPage = styled.div`
   border-radius: var(--ui-radius-md);
   font-family: ${() => MONO};
   font-size: 13px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: ${() => PAGE_FG};
   background: ${() => PAGE_BG};
 `

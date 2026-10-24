@@ -43,7 +43,7 @@ export const SC_Title = styled.div`
   font-size: 14px;
   font-weight: 600;
   color: var(--ui-text-highlighted);
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -53,7 +53,7 @@ export const SC_Title = styled.div`
 export const SC_Description = styled.div`
   font-size: 12px;
   color: var(--color-text-dark);
-  line-height: 1.35;
+  line-height: calc(1.35 * var(--leading-scale));
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;

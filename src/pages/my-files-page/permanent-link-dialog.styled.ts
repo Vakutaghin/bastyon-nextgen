@@ -9,7 +9,7 @@ export const SC_LinkBody = styled.div`
 export const SC_LinkNote = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 

@@ -1,10 +1,11 @@
 <template>
-  <SC_Logo>
+  <SC_Logo :class="{ compact }">
     <SC_LogoLink @click="handleLogoClick">
       <SC_LogoImg :src="logoSrc" :alt="logoData.siteName" />
     </SC_LogoLink>
 
-    <Dropdown :trigger="['click']" placement="bottomLeft">
+    <!-- На телефоне язык — в «Настройках»: флаг встал бы между логотипом и меню. -->
+    <Dropdown v-if="!compact" :trigger="['click']" placement="bottomLeft">
       <!-- В шапке — только флаг: название языка видно в подсказке и в меню. -->
       <SC_LogoLang type="button" :title="languageHint" :aria-label="languageHint">
         <SC_LanguageFlag>{{ currentLanguageFlag }}</SC_LanguageFlag>
@@ -29,6 +30,9 @@ import { useLocale } from '@/composables/use-locale'
 import { useTheme } from '@/composables/use-theme'
 import type { Locale } from '@/i18n'
 import { SC_Logo, SC_LogoLink, SC_LogoImg, SC_LogoLang, SC_LanguageFlag } from './styled'
+
+/** compact — шапка телефона: только знак, без выбора языка. */
+withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 const { t } = useI18n()
 const router = useRouter()

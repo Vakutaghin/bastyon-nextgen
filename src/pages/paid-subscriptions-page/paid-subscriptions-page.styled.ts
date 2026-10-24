@@ -79,7 +79,7 @@ export const SC_PaidSectionTitle = styled.h2`
 export const SC_PaidLead = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 
@@ -299,7 +299,7 @@ export const SC_Empty = styled.div`
   border-radius: var(--ui-radius-lg);
   color: var(--ui-text-muted);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   text-align: center;
 `
 

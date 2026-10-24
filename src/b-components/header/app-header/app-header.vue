@@ -1,17 +1,18 @@
 <template>
   <SC_Header>
     <SC_Sections>
-      <!-- «Назад» на телефоне — вплотную за меню; на компьютере обе стрелки у
-           поиска, как у адресной строки. Группа — один элемент шапки: иначе
-           space-between ставил бы стрелку посередине между меню и логотипом. -->
+      <!-- Телефон: логотип, за ним меню и «Назад» — одной группой слева; на
+           компьютере обе стрелки у поиска, как у адресной строки. Группа — один
+           элемент шапки: иначе space-between разносил бы их по ширине. -->
       <SC_Left v-if="mobile">
+        <HeaderLogo compact />
         <SC_HamburgerButton :aria-label="t('header.menu')" @click="openDrawer">
           <MenuOutlined />
         </SC_HamburgerButton>
         <HeaderHistoryNav compact />
       </SC_Left>
 
-      <HeaderLogo />
+      <HeaderLogo v-else />
 
       <HeaderHistoryNav v-if="!mobile" />
       <HeaderSearch v-if="!mobile" />

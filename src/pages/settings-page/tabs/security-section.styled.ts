@@ -19,7 +19,7 @@ export const SC_SecurityLevel = styled.div`
 export const SC_SecurityDesc = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--color-text-secondary);
 
   &.warn {
@@ -36,7 +36,7 @@ export const SC_SecurityForm = styled.div`
 export const SC_SecurityWarning = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--color-danger);
 `
 

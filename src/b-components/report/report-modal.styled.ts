@@ -11,7 +11,7 @@ export const SC_ReportBody = styled.div`
 export const SC_ReportIntro = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--color-text-secondary);
 `
 
@@ -31,7 +31,7 @@ export const SC_ReasonItem = styled('button', reasonProps)`
   padding: 12px 14px;
   text-align: left;
   font-size: 14px;
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
   cursor: pointer;
   border-radius: var(--ui-radius-lg);
   border: 1px solid ${(p) => (p.active ? COLORS.PRIMARY : COLORS.BORDER)};

@@ -37,7 +37,7 @@ export const SC_DropTitle = styled.div`
 export const SC_Hint = styled.div`
   color: var(--ui-text-muted);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
 `
 
 export const SC_FileLine = styled.div`
@@ -61,7 +61,7 @@ export const SC_Field = styled.div`
 export const SC_Status = styled.div`
   color: var(--ui-text);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
 
   &.error {
     color: var(--ui-error);

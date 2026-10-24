@@ -404,6 +404,23 @@ describe('messenger-store: каналы', () => {
     expect(store.activeChatId).toBe(`channel:${AUTHOR}`)
   })
 
+  it('канал виден сразу, а пока переписки не пришли — строка загрузки над ним', async () => {
+    h.matrix.login.mockImplementationOnce(() => new Promise(() => {}))
+    const store = useMessengerStore()
+    void store.initMatrix()
+    const channels = useMessengerChannelsStore()
+    channels.attach('PAlice')
+    channels.setChannel(AUTHOR, true)
+
+    // Список не пуст — общей загрузки нет, но переписки ещё грузятся.
+    expect(store.isDialogsLoading).toBe(false)
+    expect(store.isChatsLoading).toBe(true)
+
+    // Сбой синка показывает баннер, загрузка не висит рядом с ним.
+    useMessengerUiStore().syncError = 'нет связи'
+    expect(store.isChatsLoading).toBe(false)
+  })
+
   it('после первого синка список каналов — с сервера; выход из аккаунта его убирает', async () => {
     h.matrix.getAccountData.mockReturnValue({ v: 1, items: { [AUTHOR]: { on: true, t: 1 } } })
     const store = useMessengerStore()

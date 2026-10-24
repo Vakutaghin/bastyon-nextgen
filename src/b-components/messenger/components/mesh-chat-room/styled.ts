@@ -10,7 +10,7 @@ export const SC_MeshInfoBar = styled.div`
   background: var(--ui-bg-muted);
   color: var(--ui-text-muted);
   font-size: 12px;
-  line-height: 1.35;
+  line-height: calc(1.35 * var(--leading-scale));
   flex-shrink: 0;
 `
 
@@ -100,7 +100,7 @@ export const SC_PaperTitle = styled.h3`
 export const SC_PaperHint = styled.p`
   margin: 0;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 

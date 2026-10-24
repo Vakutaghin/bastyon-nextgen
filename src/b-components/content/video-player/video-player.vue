@@ -26,21 +26,21 @@
     @focusout="handleFocusOut"
   >
     <SC_VideoWrapper :style="getVideoWrapperStyle()">
-      <!-- Skeleton loader while thumbnail is loading -->
-      <SC_VideoSkeleton v-if="thumbnailUrl && !isThumbnailLoaded" />
+      <!-- Заглушка, пока грузится превью; нет превью на экране — нет и её. -->
+      <SC_VideoSkeleton v-if="showThumbnail && !isThumbnailLoaded" />
 
       <!-- Размытый фон из превью (cover) — заполняет пустое пространство под основной превьюшкой -->
       <SC_VideoThumbnailBackdrop
-        v-if="(isAudio || !isInitialized) && thumbnailUrl && !isLoading && !error"
-        :src="thumbnailUrl"
+        v-if="showThumbnail"
+        :src="thumbnailUrl ?? undefined"
         alt=""
         aria-hidden="true"
       />
 
       <!-- Превьюшка видео до инициализации или если это аудио -->
       <SC_VideoThumbnail
-        v-if="(isAudio || !isInitialized) && thumbnailUrl && !isLoading && !error"
-        :src="thumbnailUrl"
+        v-if="showThumbnail"
+        :src="thumbnailUrl ?? undefined"
         alt="Video thumbnail"
         :style="getThumbnailStyle()"
         @load="handleThumbnailLoad"
@@ -831,6 +831,19 @@ const muteTip = computed<string>(
 )
 const fullscreenTip = computed<string>(
   () => `${isFullscreen.value ? t('videoPlayer.exitFullscreen') : t('videoPlayer.fullscreen')} (f)`
+)
+
+/**
+ * Превью — до запуска ролика (у аудио — всегда). Ролик, запущенный сам (из
+ * канала), превью не показывает вовсе: его `load` не наступит, и заглушка,
+ * привязанная к нему, мигала бы поверх видео до закрытия.
+ */
+const showThumbnail = computed<boolean>(
+  () =>
+    (props.isAudio || !isInitialized.value) &&
+    !!thumbnailUrl.value &&
+    !isLoading.value &&
+    !error.value
 )
 
 const showSpinner = computed<boolean>(

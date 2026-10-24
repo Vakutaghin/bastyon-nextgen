@@ -378,7 +378,7 @@ export const SC_UserAbout = styled.div`
   margin-top: 20px;
   font-size: 14px;
   color: var(--color-text-primary);
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   white-space: pre-wrap;
   word-break: break-word;
 

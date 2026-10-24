@@ -10,14 +10,14 @@ export const SC_Text = styled.p`
   margin: 0;
   color: var(--color-text-primary);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
 `
 
 export const SC_Note = styled.p`
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   overflow-wrap: anywhere;
 `
 
@@ -71,7 +71,7 @@ export const SC_ModelHint = styled.span`
   grid-column: 2 / 4;
   color: var(--color-text-secondary);
   font-size: 12px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
 `
 
 export const SC_Badge = styled.span`

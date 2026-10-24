@@ -210,7 +210,7 @@ export const SC_NotificationActorText = styled.div`
   min-width: 0;
   font-size: 12px;
   color: var(--ui-text-toned);
-  line-height: 1.35;
+  line-height: calc(1.35 * var(--leading-scale));
   word-break: break-word;
 `
 
@@ -268,7 +268,7 @@ export const SC_RatingValue = styled.div<{ positive?: boolean }>`
 export const SC_CommentPreview = styled.div<{ expanded?: boolean }>`
   font-size: 12px;
   color: var(--color-text-primary);
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   word-break: break-word;
   white-space: pre-wrap;
   ${(p) =>

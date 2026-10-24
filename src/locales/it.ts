@@ -93,9 +93,6 @@ export default {
     compose: 'Nuovo post',
     help: 'Guida',
   },
-  footer: {
-    brand: 'Bastyon — un social network decentralizzato.',
-  },
   help: {
     title: 'Guida',
     loading: 'Caricamento della guida…',

@@ -26,7 +26,7 @@ export const SC_ReportHead = styled.div`
   padding: 2px 2px 2px 10px;
   border-bottom: 1px solid var(--ui-border);
   font-size: 12px;
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 
@@ -82,7 +82,7 @@ export const SC_ReportCode = styled.pre`
   overflow: auto;
   font-family: var(--font-family-mono);
   font-size: 11.5px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   white-space: pre;
   word-break: normal;
   tab-size: 2;
@@ -107,7 +107,7 @@ export const SC_SupportBar = styled.button`
   background: rgb(var(--ui-primary-rgb) / 8%);
   color: var(--ui-text);
   font-size: 13px;
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
   text-align: left;
   cursor: pointer;
   transition: background var(--transition-fast);
@@ -159,7 +159,7 @@ export const SC_ConsentText = styled.div`
   flex-direction: column;
   gap: 10px;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: var(--ui-text);
 
   p {

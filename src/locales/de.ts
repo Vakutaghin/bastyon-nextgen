@@ -93,9 +93,6 @@ export default {
     compose: 'Neuer Beitrag',
     help: 'Hilfe',
   },
-  footer: {
-    brand: 'Bastyon — ein dezentrales soziales Netzwerk.',
-  },
   help: {
     title: 'Hilfe',
     loading: 'Hilfe wird geladen…',

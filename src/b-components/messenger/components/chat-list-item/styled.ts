@@ -253,7 +253,7 @@ export const SC_ConfirmText = styled.div`
   font-size: 14px;
   color: var(--color-text-secondary);
   margin-bottom: 20px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   overflow-wrap: anywhere;
   word-break: break-word;
 `

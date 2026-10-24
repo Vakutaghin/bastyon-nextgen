@@ -126,7 +126,7 @@ export const SC_Post = styled.div`
   background-color: var(--ui-bg-elevated);
   color: var(--color-text-primary);
   font-size: 14px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   cursor: pointer;
   box-sizing: border-box;
   overflow: hidden;
@@ -253,7 +253,7 @@ export const SC_PostTitle = styled.div`
   color: var(--ui-text-highlighted);
   font-size: 15px;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: calc(1.35 * var(--leading-scale));
   word-break: break-word;
 `
 

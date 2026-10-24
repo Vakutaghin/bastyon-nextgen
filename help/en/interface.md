@@ -65,9 +65,9 @@ The speech bubble in the header or the round button in the bottom right corner o
 
 ## On a phone and in a narrow window
 
-When the screen is narrow — on a phone or in a shrunk window on a computer — there are no side panels, and a bar appears at the bottom: **“Home”**, **“Search”**, **“Services”**, **“Chats”** and **“Wallet”**. Tapping the section you are in takes the page back to the top.
+When the screen is narrow — on a phone or in a shrunk window on a computer — there are no side panels, and a bar appears at the bottom: **“Home”**, **“Search”**, **“Chats”**, **“Wallet”** and **“Services”**. Tapping the section you are in takes the page back to the top.
 
-The menu behind the three-line button on the left of the header is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“My videos”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
+The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“My videos”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
 
 To the right of the menu button, the **“Back”** arrow appears when there is somewhere to go back to; a narrow screen has no **“Forward”** arrow. On Android, the system Back button or gesture also goes back.
 

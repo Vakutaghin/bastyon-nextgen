@@ -12,7 +12,7 @@ export const SC_PrivateKeyWarning = styled.div`
   border-radius: var(--ui-radius-lg);
   margin-bottom: 20px;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--color-warning-text);
 `
 
@@ -36,7 +36,7 @@ export const SC_PrivateKeyLabel = styled.div`
 export const SC_PrivateKeyValue = styled.div`
   font-family: var(--font-family-mono);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: calc(1.6 * var(--leading-scale));
   color: var(--color-text-primary);
   word-break: break-all;
   user-select: all;
@@ -135,7 +135,7 @@ export const SC_ConfirmTitle = styled.div`
 
 export const SC_ConfirmText = styled.p`
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-highlighted);
   margin: 0 0 16px;
 `

@@ -91,7 +91,7 @@ export const SC_PendingProfile = styled.div`
   padding: 40px 20px;
   font-size: 16px;
   color: var(--ui-text-muted);
-  line-height: 1.6;
+  line-height: calc(1.6 * var(--leading-scale));
 
   .pending-icon {
     font-size: 48px;

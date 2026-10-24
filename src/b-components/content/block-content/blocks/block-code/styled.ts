@@ -12,7 +12,7 @@ export const SC_BlockCode = styled.pre`
 export const SC_BlockCodeCode = styled.code`
   font-family: var(--font-family-mono);
   font-size: 0.9em;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--color-white);
   white-space: pre;
   word-wrap: normal;

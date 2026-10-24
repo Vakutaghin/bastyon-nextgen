@@ -17,7 +17,7 @@ export const SC_Address = styled.div`
 
 export const SC_Note = styled.div`
   font-size: 13px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 
@@ -43,7 +43,7 @@ export const SC_StatusHeading = styled.div`
 
 export const SC_StatusDetail = styled.div`
   font-size: 13px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 
@@ -79,7 +79,7 @@ export const SC_Text = styled.pre`
   overflow: auto;
   font-family: var(--font-family-mono, monospace);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text);
   white-space: pre-wrap;
   word-break: break-word;

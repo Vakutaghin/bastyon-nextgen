@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_WalletWork = styled.div`
   display: flex;
@@ -16,7 +16,9 @@ export const SC_WalletPage = styled.main`
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
-  padding: 60px 20px 24px;
+  /* От шапки вместе со строкой состояния: с 60px заголовок на телефоне
+     уходил под шапку. */
+  padding: var(--header-height-total) var(--content-padding-x) 24px;
 `
 
 export const SC_WalletTitle = styled.h1`
@@ -24,6 +26,11 @@ export const SC_WalletTitle = styled.h1`
   font-weight: 600;
   color: var(--ui-text-highlighted);
   margin: 24px 0;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    font-size: 20px;
+    margin: 16px 0;
+  }
 `
 
 export const SC_WalletTabs = styled.div`

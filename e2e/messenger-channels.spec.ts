@@ -322,6 +322,11 @@ test('длинная лента: посты целиком, ролики отк�
       timeout: 20_000,
     })
     .toBeGreaterThan(0.5)
+  // Ролик запустился сам, кадр-превью не показывали: заглушка превью над
+  // играющим роликом мигала бы, пока его не закроют.
+  await expect(
+    page.locator('.ant-modal-content [data-styled-name="SC_VideoSkeleton"]')
+  ).toHaveCount(0)
   await page.keyboard.press('Escape')
 
   // Текст без ролика открывает пост без запуска видео — и ничего не сломалось.
@@ -349,5 +354,26 @@ test.describe('на телефоне', () => {
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
     ).toBe(true)
+  })
+
+  test('канал виден сразу, а пока переписки грузятся — над ним «Загрузка диалогов»', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    // Сервер чатов не отвечает: первый синк большого аккаунта идёт минуты.
+    await page.route('**/_matrix/**', () => {})
+    await signIn(page)
+    await callStore(page, 'messenger-channels', 'setChannel', ALICE, true)
+    await page.getByRole('navigation').getByRole('button', { name: 'Чаты', exact: true }).click()
+
+    const loading = page.getByTestId('chats-loading')
+    await expect(loading).toHaveText('Загрузка диалогов...', { timeout: 30_000 })
+    await expect(page.locator('[data-testid=chat-row][data-channel]')).toContainText('alice_ng')
+    // Ни подсказки «переписок нет», ни строки загрузки среди одних каналов.
+    await page.getByRole('radio', { name: 'Переписки' }).click()
+    await expect(loading).toBeVisible()
+    await expect(page.getByText('Переписок пока нет')).toHaveCount(0)
+    await page.getByRole('radio', { name: /Каналы/ }).click()
+    await expect(loading).toHaveCount(0)
   })
 })

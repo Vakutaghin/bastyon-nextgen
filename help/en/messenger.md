@@ -13,7 +13,7 @@ Private messaging in Bastyon: where it is, how it works, and how to turn it off 
 
 The number on the icon is how many unread messages you have. The messenger is there only once you are signed in.
 
-The chat list shows up as soon as the app starts, because it is kept on the device. The app connects to the server in the background, and until it is connected, a line above the list says what is going on, for example **“Connecting to the chat…”**.
+The chat list shows up as soon as the app starts, because it is kept on the device. The app connects to the server in the background, and until it is connected, a line above the list says what is going on, for example **“Connecting to the chat…”**. The first time you sign in on a device, there is no list yet: while the conversations load, the list says **“Loading dialogs...”**. For an account with hundreds of chats this takes up to a few minutes. Channels show up at once: they do not need the chat server.
 
 ## How it works
 

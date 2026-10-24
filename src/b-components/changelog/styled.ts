@@ -36,7 +36,7 @@ export const SC_VersionLabel = styled.div`
 export const SC_MarkdownBody = styled.div`
   color: var(--color-text-primary);
   font-size: 14px;
-  line-height: 1.55;
+  line-height: calc(1.55 * var(--leading-scale));
 
   h1 {
     font-size: 20px;

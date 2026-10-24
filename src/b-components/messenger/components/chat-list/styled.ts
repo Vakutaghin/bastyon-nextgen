@@ -33,7 +33,7 @@ export const SC_FilterChip = styled.button`
   background: transparent;
   color: var(--color-text-secondary);
   font-size: 13px;
-  line-height: 1.4;
+  line-height: calc(1.4 * var(--leading-scale));
   cursor: pointer;
   transition:
     background-color var(--transition-fast),
@@ -89,7 +89,7 @@ export const SC_EmptyHint = styled.div`
   padding: 32px 24px;
   color: var(--color-text-secondary);
   font-size: 14px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   text-align: center;
 
   .anticon {
@@ -101,4 +101,24 @@ export const SC_EmptyHint = styled.div`
     color: var(--ui-text-highlighted);
     font-weight: 500;
   }
+`
+
+/** Строка «Загрузка диалогов» над каналами, пока переписки не пришли. */
+export const SC_ChatsLoading = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  color: var(--ui-text-dimmed);
+  font-size: 14px;
+`
+
+export const SC_ChatsLoadingSpinner = styled.span`
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--ui-border);
+  border-top-color: var(--color-text-secondary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `

@@ -93,9 +93,6 @@ export default {
     compose: 'Нова објава',
     help: 'Помоћ',
   },
-  footer: {
-    brand: 'Bastyon — децентрализована друштвена мрежа.',
-  },
   help: {
     title: 'Помоћ',
     loading: 'Учитавање помоћи…',

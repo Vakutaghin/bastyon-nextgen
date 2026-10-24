@@ -15,6 +15,11 @@ export const SC_Logo = styled.div`
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     margin-right: 20px;
   }
+
+  /* В шапке телефона знак стоит перед кнопкой меню. */
+  &.compact {
+    margin-right: 4px;
+  }
 `
 
 export const SC_LogoLink = styled.button`

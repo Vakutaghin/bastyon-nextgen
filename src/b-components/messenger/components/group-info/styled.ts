@@ -21,7 +21,7 @@ export const SC_GroupHeadText = styled.div`
 export const SC_GroupName = styled.div`
   font-size: 18px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
   color: var(--ui-text-highlighted);
   overflow-wrap: anywhere;
 `
@@ -35,7 +35,7 @@ export const SC_GroupMeta = styled.div`
 export const SC_GroupTopic = styled.p`
   margin: 12px 0 0;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: var(--color-text-primary);
   white-space: pre-wrap;
   overflow-wrap: anywhere;

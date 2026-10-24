@@ -99,7 +99,7 @@ export const SC_LimitCtaHeading = styled.h2`
 export const SC_LimitCtaText = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: calc(1.45 * var(--leading-scale));
   color: var(--ui-text-muted);
 `
 

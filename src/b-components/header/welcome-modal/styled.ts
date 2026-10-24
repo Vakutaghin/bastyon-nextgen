@@ -26,7 +26,7 @@ export const SC_WelcomeTitle = styled.h2`
 export const SC_WelcomeDesc = styled.p`
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--color-text-secondary);
   max-width: 360px;
 `

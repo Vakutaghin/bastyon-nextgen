@@ -15,7 +15,7 @@ export const SC_AuthPopoverContent = styled.div`
   p {
     margin: 0;
     font-size: 14px;
-    line-height: 1.4;
+    line-height: calc(1.4 * var(--leading-scale));
   }
 `
 

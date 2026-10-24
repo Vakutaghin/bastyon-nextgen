@@ -75,7 +75,7 @@ export const SC_Badge = styled.button`
 export const SC_HintCard = styled.div`
   max-width: 280px;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: calc(1.5 * var(--leading-scale));
   color: var(--ui-text);
 `
 

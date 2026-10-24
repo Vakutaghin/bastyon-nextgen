@@ -199,7 +199,7 @@ export const SC_IconFallback = styled.div`
 export const SC_Name = styled.div`
   font-size: 14px;
   font-weight: 500;
-  line-height: 1.3;
+  line-height: calc(1.3 * var(--leading-scale));
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -211,7 +211,7 @@ export const SC_Name = styled.div`
 export const SC_Description = styled.div`
   margin-top: -6px;
   font-size: 12px;
-  line-height: 1.35;
+  line-height: calc(1.35 * var(--leading-scale));
   color: var(--ui-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;

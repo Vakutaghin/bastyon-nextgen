@@ -77,8 +77,8 @@ function toggleChats(): void {
   })
 }
 
-// Выключенный в настройках мессенджер убирает и пункт нижней панели —
-// иначе он вёл бы в пустоту.
+// Порядок: главная, поиск, сообщения, кошелёк, сервисы. Выключенный в
+// настройках мессенджер убирает и пункт нижней панели — иначе он вёл бы в пустоту.
 const items = computed<NavItem[]>(() => [
   {
     key: 'home',
@@ -93,13 +93,6 @@ const items = computed<NavItem[]>(() => [
     icon: SearchOutlined,
     active: route.path === '/search' && !isFullScreen.value,
     onClick: () => go('/search'),
-  },
-  {
-    key: 'apps',
-    label: t('bottomNav.apps'),
-    icon: AppstoreOutlined,
-    active: (route.path === '/miniapps' || route.path.startsWith('/app/')) && !isFullScreen.value,
-    onClick: () => go('/miniapps'),
   },
   ...(prefs.messengerEnabled
     ? [
@@ -119,6 +112,13 @@ const items = computed<NavItem[]>(() => [
     icon: WalletOutlined,
     active: route.path === '/wallets' && !isFullScreen.value,
     onClick: () => go('/wallets'),
+  },
+  {
+    key: 'apps',
+    label: t('bottomNav.apps'),
+    icon: AppstoreOutlined,
+    active: (route.path === '/miniapps' || route.path.startsWith('/app/')) && !isFullScreen.value,
+    onClick: () => go('/miniapps'),
   },
 ])
 </script>
