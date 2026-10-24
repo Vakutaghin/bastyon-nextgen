@@ -105,6 +105,9 @@ export default {
     notFound: 'Cet article n’existe pas dans l’aide.',
     toHome: 'Accueil de l’aide',
     contextLink: 'Aide sur cette section',
+    home: {
+      more: '{n} de plus',
+    },
     tabs: {
       contents: 'Sommaire',
       index: 'Index',
@@ -1367,6 +1370,16 @@ export default {
       moderator: 'Modérateur',
       shark: 'Requin',
     },
+    badgeHints: {
+      verified: 'Un compte de la liste des comptes vérifiés tenue par l’équipe Bastyon.',
+      moderator:
+        'Un membre expérimenté que le réseau appelle dans les jurys sur les signalements. Le compte a au moins 90 jours, et au moins 100 personnes ont noté ses publications et commentaires.',
+      shark:
+        'Le membre le plus expérimenté : le compte a au moins un an et a été noté par au moins 100 personnes. Seules les notes des requins changent la réputation des auteurs, et seuls les requins peuvent signaler.',
+      established:
+        'Une réputation de 100 ou plus. C’est l’application qui donne ce badge : un tel compte n’est plus un compte d’essai et peut donner des notes basses.',
+    },
+    badgeMore: 'En savoir plus dans l’aide',
     startChat: 'Démarrer une discussion',
     info: 'Informations',
     copyAddress: 'Copier l’adresse',
@@ -3168,6 +3181,9 @@ export default {
     gotIt: 'Compris',
     whatsNewPrefix: 'Nouveautés —',
     empty: 'Pas encore de notes de version',
+    older: 'Version précédente',
+    newer: 'Version suivante',
+    allVersions: 'Toutes les versions',
   },
   appMsg: {
     insufficientFundsForFee: 'Fonds insuffisants pour payer les frais',

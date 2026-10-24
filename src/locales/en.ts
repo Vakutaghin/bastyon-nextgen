@@ -103,6 +103,9 @@ export default {
     notFound: 'There is no such article in the help.',
     toHome: 'Help home',
     contextLink: 'Help on this section',
+    home: {
+      more: '{n} more',
+    },
     tabs: {
       contents: 'Contents',
       index: 'Index',
@@ -1352,6 +1355,16 @@ export default {
       moderator: 'Moderator',
       shark: 'Shark',
     },
+    badgeHints: {
+      verified: 'An account on the list of verified accounts kept by the Bastyon team.',
+      moderator:
+        'An experienced member the network calls to juries on reports. The account is at least 90 days old, and at least 100 people have rated its posts and comments.',
+      shark:
+        'The most experienced member: the account is at least a year old and rated by at least 100 people. Only sharks’ ratings change authors’ reputation, and only sharks can report.',
+      established:
+        'A reputation of 100 or more. The app gives this badge: such an account is no longer a trial one and can give low ratings.',
+    },
+    badgeMore: 'More in the help',
     startChat: 'Start chat',
     info: 'Information',
     copyAddress: 'Copy address',
@@ -3114,6 +3127,9 @@ export default {
     gotIt: 'Got it',
     whatsNewPrefix: "What's new —",
     empty: 'No release notes yet',
+    older: 'Earlier version',
+    newer: 'Later version',
+    allVersions: 'All versions',
   },
   appMsg: {
     insufficientFundsForFee: 'Not enough funds to pay the fee',

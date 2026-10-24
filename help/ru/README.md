@@ -45,6 +45,7 @@
   - [Жалобы](reports.md)
 - [Люди и профили](people.md)
   - [Профиль](profile.md)
+  - [Отметки аккаунтов](account-badges.md)
   - [Ваш профиль](edit-profile.md)
   - [Подписки](subscriptions.md)
   - [Платные подписки](paid-subscriptions.md)
@@ -100,3 +101,4 @@
   - [Сообщить об ошибке](report-bug.md)
 - [Частые вопросы](faq.md)
 - [Словарь](glossary.md)
+- [История версий](releases.md)

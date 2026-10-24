@@ -104,6 +104,9 @@ export default {
     notFound: 'Diesen Artikel gibt es in der Hilfe nicht.',
     toHome: 'Startseite der Hilfe',
     contextLink: 'Hilfe zu diesem Bereich',
+    home: {
+      more: '{n} weitere',
+    },
     tabs: {
       contents: 'Inhalt',
       index: 'Index',
@@ -1364,6 +1367,16 @@ export default {
       moderator: 'Moderator',
       shark: 'Hai',
     },
+    badgeHints: {
+      verified: 'Ein Konto auf der Liste verifizierter Konten, die das Bastyon-Team führt.',
+      moderator:
+        'Ein erfahrenes Mitglied, das das Netzwerk bei Meldungen in die Jury beruft. Das Konto ist mindestens 90 Tage alt, und mindestens 100 Personen haben seine Beiträge und Kommentare bewertet.',
+      shark:
+        'Das erfahrenste Mitglied: Das Konto ist mindestens ein Jahr alt und wurde von mindestens 100 Personen bewertet. Nur Bewertungen von Haien ändern die Reputation von Autoren, und nur Haie können melden.',
+      established:
+        'Reputation von 100 oder mehr. Die App vergibt dieses Abzeichen: Ein solches Konto ist kein Testkonto mehr und kann niedrige Bewertungen vergeben.',
+    },
+    badgeMore: 'Mehr in der Hilfe',
     startChat: 'Chat starten',
     info: 'Informationen',
     copyAddress: 'Adresse kopieren',
@@ -3167,6 +3180,9 @@ export default {
     gotIt: 'Verstanden',
     whatsNewPrefix: 'Neuigkeiten —',
     empty: 'Noch keine Versionshinweise',
+    older: 'Frühere Version',
+    newer: 'Neuere Version',
+    allVersions: 'Alle Versionen',
   },
   appMsg: {
     insufficientFundsForFee: 'Nicht genug Guthaben für die Gebühr',

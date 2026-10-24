@@ -11,7 +11,7 @@ A profile opens when you click a person’s name or avatar — in the feed, in c
 ## What is on the page
 
 - **The cover** at the top. It can only be set in the previous Bastyon app. Without a cover, the page starts right with the avatar and name.
-- **Avatar and name.** Under the name there are badges: **“Verified”**, **“Moderator”** and **“Shark”** (what they mean is below) and **“Established”** — for accounts with a reputation of 100 or more.
+- **Avatar and name.** Under the name there are coloured badges **“Verified”**, **“Moderator”**, **“Shark”** and **“Established”**. Tap a badge to read what it means; more in [Account badges](account-badges.md).
 - **“Reputation”**, **“Subscribers”** and **“Subscriptions”**. Click the number of subscribers or subscriptions to open the list — see [Subscriptions](subscriptions.md). What reputation is — see [Reputation](reputation.md).
 - **“Information”** — what the person wrote about themselves, if anything.
 - **The account address.** Click it to copy: **“Address copied”**. Below it is **“On blockchain”**: what the blockchain holds about the account — registration, balance, reputation, earnings, recent transactions, see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed).
@@ -20,13 +20,7 @@ A profile opens when you click a person’s name or avatar — in the feed, in c
 
 ## Marks on the avatar
 
-In the bottom right corner of an avatar — in the feed, in comments, in search, in subscriber lists, in notifications and in chats — there may be a mark, as in the previous Bastyon app. There is one mark: if several apply, the senior one shows.
-
-- **A check mark — “Verified”.** An account from the list of verified accounts kept by the Bastyon team. The list is the same as in the previous app.
-- **A crown — “Moderator”.** An account the network calls to juries on reports — see [Moderation and rules](moderation.md).
-- **A flag — “Shark”.** An experienced account: at least a year old, with posts and comments rated by at least 100 different people. Ratings from such accounts move authors’ [reputation](reputation.md).
-
-Point at a mark to see its name. Moderators and sharks are marked by the network itself; the app only shows its mark.
+In the top left corner of an avatar — in the feed, in comments, in search, in subscriber lists, in notifications and in chats — there may be a mark: a blue check is “Verified”, a gold crown is “Moderator”, a purple flag is “Shark”. There is one mark: if several apply, the senior one shows. Point at a mark to see its name. What the badges mean and what they are given for — see [Account badges](account-badges.md).
 
 ## What you can do
 

@@ -45,6 +45,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Reports](reports.md)
 - [People and profiles](people.md)
   - [Profile](profile.md)
+  - [Account badges](account-badges.md)
   - [Your profile](edit-profile.md)
   - [Subscriptions](subscriptions.md)
   - [Paid subscriptions](paid-subscriptions.md)
@@ -100,3 +101,4 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Reporting a bug](report-bug.md)
 - [Frequently asked questions](faq.md)
 - [Glossary](glossary.md)
+- [Version history](releases.md)

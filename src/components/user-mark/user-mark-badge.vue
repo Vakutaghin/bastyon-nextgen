@@ -1,8 +1,15 @@
 <template>
-  <SC_UserMarkBadge role="img" :size="size" :title="label" :aria-label="label">
+  <SC_UserMarkBadge
+    role="img"
+    :class="mark"
+    :size="size"
+    :title="label"
+    :aria-label="label"
+    :data-mark="mark"
+  >
     <CheckOutlined v-if="mark === 'verified'" />
-    <CrownOutlined v-else-if="mark === 'moderator'" />
-    <FlagOutlined v-else />
+    <CrownFilled v-else-if="mark === 'moderator'" />
+    <FlagFilled v-else />
   </SC_UserMarkBadge>
 </template>
 
@@ -10,7 +17,7 @@
 // Сам значок; родитель — с position: relative (Avatar, обёртка UserMark).
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CheckOutlined, CrownOutlined, FlagOutlined } from '@/components/icons'
+import { CheckOutlined, CrownFilled, FlagFilled } from '@/components/icons'
 import type { UserMark } from '@/helpers/profile/user-mark'
 import { SC_UserMarkBadge } from './styled'
 

@@ -50,6 +50,31 @@ describe('buildHelpLibrary', () => {
     expect(basics?.code).toEqual(['src/x'])
   })
 
+  it('собранные статьи (история версий) — под своей книгой, без указателя', () => {
+    const files = {
+      ...FILES,
+      'ru/release-2.md': '# v2 — Свежее\n\nЧто нового во второй.\n',
+      'ru/release-1.md': '# v1 — Первая\n\nЧто нового в первой.\n',
+    }
+    const lib = buildHelpLibrary('ru', {
+      ...sources(files),
+      generated: { glossary: ['release-2', 'release-1'] },
+    })
+    expect(lib.problems).toEqual([])
+    expect(lib.toc[1]).toEqual({
+      id: 'glossary',
+      label: 'Словарь',
+      children: [
+        { id: 'release-2', label: 'v2 — Свежее', children: [] },
+        { id: 'release-1', label: 'v1 — Первая', children: [] },
+      ],
+    })
+    expect(lib.order.slice(-2)).toEqual(['release-2', 'release-1'])
+    expect(lib.topics.get('release-1')?.generated).toBe(true)
+    expect(lib.topics.get('keys')?.generated).toBe(false)
+    expect(lib.index.some((e) => e.topics.includes('release-1'))).toBe(false)
+  })
+
   it('английская справка: свой текст, платформы из русской, нет статьи — русская', () => {
     const lib = buildHelpLibrary('en', sources())
     expect(lib.problems).toEqual([])

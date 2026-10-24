@@ -9,7 +9,10 @@
         :mark="mark"
         shape="circle"
       />
-      <SC_Name>{{ name }}</SC_Name>
+      <SC_IdentityText>
+        <SC_Name>{{ name }}</SC_Name>
+        <ProfileBadges :profile="profile" align="start" />
+      </SC_IdentityText>
     </SC_Identity>
 
     <SC_Actions v-if="canShowSubscribe">
@@ -84,8 +87,9 @@ import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useProfileRelationsActions } from '../profile-sidebar/use-profile-relations-actions'
 import { useProfileChannel } from '../profile-sidebar/use-profile-channel'
+import ProfileBadges from '../profile-badges/profile-badges.vue'
 import { SC_BellButton, SC_ChannelButton, SC_SubscribeButton } from '../profile-sidebar/styled'
-import { SC_Actions, SC_Identity, SC_MobileHeader, SC_Name } from './styled'
+import { SC_Actions, SC_Identity, SC_IdentityText, SC_MobileHeader, SC_Name } from './styled'
 
 const props = defineProps<{ profile: UserProfile }>()
 const { t } = useI18n()

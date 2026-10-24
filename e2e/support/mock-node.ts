@@ -17,6 +17,8 @@ export interface MockProfile {
   reputation?: number
   /** Открытые ключи мессенджера через запятую — без них чат не шифрует. */
   k?: string
+  /** Отметки ноды: `moderator`, `shark`. */
+  badges?: string[]
 }
 
 export interface MockPost {
@@ -86,7 +88,7 @@ function profileJson(p: MockProfile) {
     firstFlags: {},
     actions: 10,
     bans: {},
-    badges: [],
+    badges: p.badges ?? [],
   }
 }
 

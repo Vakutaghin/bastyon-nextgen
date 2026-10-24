@@ -1,7 +1,7 @@
 /**
  * Composable для работы с changelog.
  *
- * - Возвращает список всех версий + содержимое в текущем языке (реактивно).
+ * - Возвращает список вышедших версий + содержимое в текущем языке (реактивно).
  * - Отслеживает «последнюю увиденную пользователем» версию, чтобы окно
  *   «Что нового» открывалось ровно один раз при обновлении приложения.
  */
@@ -10,7 +10,7 @@ import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
   CURRENT_APP_VERSION,
-  getAllChangelogEntries,
+  getReleasedChangelogEntries,
   getChangelogText,
   getChangelogEntryForVersion,
   type ChangelogEntry,
@@ -27,7 +27,7 @@ export interface RenderedChangelogEntry extends ChangelogEntry {
 }
 
 function renderEntries(language: AppLanguage): RenderedChangelogEntry[] {
-  return getAllChangelogEntries().map((e) => ({
+  return getReleasedChangelogEntries().map((e) => ({
     ...e,
     html: renderMarkdown(getChangelogText(e, language)),
   }))

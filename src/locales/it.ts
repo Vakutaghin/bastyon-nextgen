@@ -104,6 +104,9 @@ export default {
     notFound: 'Questo articolo non esiste nella guida.',
     toHome: 'Home della guida',
     contextLink: 'Guida su questa sezione',
+    home: {
+      more: 'Altri {n}',
+    },
     tabs: {
       contents: 'Sommario',
       index: 'Indice',
@@ -1358,6 +1361,16 @@ export default {
       moderator: 'Moderatore',
       shark: 'Squalo',
     },
+    badgeHints: {
+      verified: 'Un account dell’elenco degli account verificati tenuto dal team Bastyon.',
+      moderator:
+        'Un membro esperto che la rete chiama nelle giurie sulle segnalazioni. L’account ha almeno 90 giorni e almeno 100 persone hanno valutato i suoi post e commenti.',
+      shark:
+        'Il membro più esperto: l’account ha almeno un anno ed è stato valutato da almeno 100 persone. Solo le valutazioni degli squali cambiano la reputazione degli autori, e solo gli squali possono segnalare.',
+      established:
+        'Reputazione di 100 o più. È l’app a dare questo badge: un account così non è più di prova e può dare valutazioni basse.',
+    },
+    badgeMore: 'Altro nella guida',
     startChat: 'Avvia la chat',
     info: 'Informazioni',
     copyAddress: 'Copia indirizzo',
@@ -3133,6 +3146,9 @@ export default {
     gotIt: 'Ho capito',
     whatsNewPrefix: 'Novità —',
     empty: 'Ancora nessuna nota di rilascio',
+    older: 'Versione precedente',
+    newer: 'Versione successiva',
+    allVersions: 'Tutte le versioni',
   },
   appMsg: {
     insufficientFundsForFee: 'Fondi insufficienti per pagare la commissione',

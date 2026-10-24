@@ -9,8 +9,61 @@ export const SC_Wrap = styled.div`
 
 export const SC_Footer = styled.div`
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 8px;
+`
+
+/** Назад к более ранним версиям, вперёд к более новым и вся история в справке. */
+export const SC_VersionNav = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+`
+
+export const SC_NavButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 8px;
+  background: var(--ui-bg-elevated);
+  color: var(--ui-text);
+  border: none;
+  border-radius: var(--ui-radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color ${() => TRANSITIONS.QUICK};
+
+  &:hover:not(:disabled) {
+    background: var(--ui-bg-accented);
+    color: var(--ui-text-highlighted);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+`
+
+export const SC_AllVersionsLink = styled.button`
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  color: var(--ui-primary-text);
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--ui-primary-text);
+    text-decoration: underline;
+  }
 `
 
 export const SC_DismissButton = styled.button`

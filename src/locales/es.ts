@@ -105,6 +105,9 @@ export default {
     notFound: 'Ese artículo no existe en la ayuda.',
     toHome: 'Inicio de la ayuda',
     contextLink: 'Ayuda sobre esta sección',
+    home: {
+      more: '{n} más',
+    },
     tabs: {
       contents: 'Contenido',
       index: 'Índice',
@@ -1364,6 +1367,16 @@ export default {
       moderator: 'Moderador',
       shark: 'Tiburón',
     },
+    badgeHints: {
+      verified: 'Una cuenta de la lista de cuentas verificadas que mantiene el equipo de Bastyon.',
+      moderator:
+        'Un miembro con experiencia al que la red llama a jurados sobre denuncias. La cuenta tiene al menos 90 días y al menos 100 personas han valorado sus publicaciones y comentarios.',
+      shark:
+        'El miembro con más experiencia: la cuenta tiene al menos un año y la han valorado al menos 100 personas. Solo las valoraciones de los tiburones cambian la reputación de los autores, y solo los tiburones pueden denunciar.',
+      established:
+        'Reputación de 100 o más. La aplicación da esta insignia: una cuenta así ya no es de prueba y puede dar valoraciones bajas.',
+    },
+    badgeMore: 'Más en la ayuda',
     startChat: 'Iniciar chat',
     info: 'Información',
     copyAddress: 'Copiar dirección',
@@ -3145,6 +3158,9 @@ export default {
     gotIt: 'Entendido',
     whatsNewPrefix: 'Novedades —',
     empty: 'Aún no hay notas de la versión',
+    older: 'Versión anterior',
+    newer: 'Versión posterior',
+    allVersions: 'Todas las versiones',
   },
   appMsg: {
     insufficientFundsForFee: 'No hay fondos suficientes para pagar la comisión',

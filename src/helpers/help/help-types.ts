@@ -67,6 +67,8 @@ export interface HelpTopic {
   fallback: boolean
   /** Черновик (`draft: true`): виден только при разработке. */
   draft: boolean
+  /** Собрана при загрузке, а не из файла help/: статья версии из changelogs/. */
+  generated: boolean
 }
 
 export interface HelpTocNode {

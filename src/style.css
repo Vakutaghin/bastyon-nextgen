@@ -124,6 +124,26 @@
   --ui-pink-rgb: 246 51 154;
   --ui-amber-rgb: 254 154 0;
 
+  /* Отметки аккаунтов — у каждой свой цвет: значок у аватара — заливка с
+     контрастной иконкой (-on), отметка в профиле — подложка из -rgb и текст
+     -text. На белом: белая галочка на blue-600 — 5.2:1, тёмная корона на
+     золоте — 10.6:1, белый флажок на violet-700 — 7.3:1. */
+  --ui-mark-verified: var(--ui-color-blue-600);
+  --ui-mark-verified-rgb: 21 93 252;
+  --ui-mark-verified-on: var(--color-white);
+  --ui-mark-verified-text: var(--ui-color-blue-700);
+  --ui-mark-moderator: var(--ui-color-warning-500);
+  --ui-mark-moderator-rgb: 240 177 0;
+  --ui-mark-moderator-on: var(--ui-color-neutral-950);
+  --ui-mark-moderator-text: var(--ui-color-warning-700);
+  --ui-mark-shark: var(--ui-color-violet-700);
+  --ui-mark-shark-rgb: 112 8 231;
+  --ui-mark-shark-on: var(--color-white);
+  --ui-mark-shark-text: var(--ui-color-violet-700);
+  --ui-mark-established: var(--ui-color-green-500);
+  --ui-mark-established-rgb: 0 193 106;
+  --ui-mark-established-text: var(--ui-color-green-700);
+
   --ui-text-dimmed: var(--ui-color-neutral-400);
   --ui-text-muted: var(--ui-color-neutral-500);
   --ui-text-toned: var(--ui-color-neutral-600);
@@ -418,6 +438,24 @@
   --ui-error-deep: var(--ui-color-error-200);
   --ui-violet: var(--ui-color-violet-400);
   --ui-violet-rgb: 166 132 255;
+
+  /* Отметки аккаунтов: на тёмном фоне заливки светлые, иконка на них тёмная
+     — от 7.1:1. Прежняя белая иконка на зелёном акценте давала 1.8:1. */
+  --ui-mark-verified: var(--ui-color-blue-400);
+  --ui-mark-verified-rgb: 81 162 255;
+  --ui-mark-verified-on: var(--ui-color-neutral-950);
+  --ui-mark-verified-text: var(--ui-color-blue-300);
+  --ui-mark-moderator: var(--ui-color-warning-400);
+  --ui-mark-moderator-rgb: 253 199 0;
+  --ui-mark-moderator-on: var(--ui-color-neutral-950);
+  --ui-mark-moderator-text: var(--ui-color-warning-300);
+  --ui-mark-shark: var(--ui-color-violet-400);
+  --ui-mark-shark-rgb: 166 132 255;
+  --ui-mark-shark-on: var(--ui-color-neutral-950);
+  --ui-mark-shark-text: var(--ui-color-violet-300);
+  --ui-mark-established: var(--ui-color-green-400);
+  --ui-mark-established-rgb: 0 220 130;
+  --ui-mark-established-text: var(--ui-color-green-300);
   --ui-violet-deep: var(--ui-color-violet-300);
   --ui-pink: var(--ui-color-pink-400);
   --ui-pink-rgb: 251 100 182;

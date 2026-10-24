@@ -103,6 +103,9 @@ export default {
     notFound: '도움말에 해당 문서가 없습니다.',
     toHome: '도움말 홈',
     contextLink: '이 섹션 도움말',
+    home: {
+      more: '{n}개 더 보기',
+    },
     tabs: {
       contents: '목차',
       index: '색인',
@@ -1345,6 +1348,16 @@ export default {
       moderator: '모더레이터',
       shark: '상어',
     },
+    badgeHints: {
+      verified: 'Bastyon 팀이 관리하는 인증 계정 목록에 있는 계정입니다.',
+      moderator:
+        '네트워크가 신고 심사단으로 부르는 경험 많은 회원입니다. 계정은 90일 이상 되었고, 100명 이상이 게시물과 댓글을 평가했습니다.',
+      shark:
+        '가장 경험 많은 회원입니다. 계정은 1년 이상 되었고 100명 이상에게 평가받았습니다. 상어의 평가만 작성자의 평판을 바꾸고, 상어만 신고할 수 있습니다.',
+      established:
+        '평판 100 이상입니다. 이 배지는 앱이 줍니다. 이런 계정은 더 이상 체험 계정이 아니며 낮은 평가를 줄 수 있습니다.',
+    },
+    badgeMore: '도움말에서 자세히 보기',
     startChat: '채팅 시작',
     info: '정보',
     copyAddress: '주소 복사',
@@ -3082,6 +3095,9 @@ export default {
     gotIt: '확인',
     whatsNewPrefix: '새로운 기능 —',
     empty: '아직 릴리스 노트가 없습니다',
+    older: '이전 버전',
+    newer: '최신 버전',
+    allVersions: '모든 버전',
   },
   appMsg: {
     insufficientFundsForFee: '수수료를 낼 잔액이 부족합니다',

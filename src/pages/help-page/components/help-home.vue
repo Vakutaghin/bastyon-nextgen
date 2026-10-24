@@ -11,8 +11,14 @@
         {{ book.label }}
       </SC_BookTitle>
       <ul v-if="book.children.length">
-        <li v-for="child in book.children" :key="child.id">
+        <li v-for="child in book.children.slice(0, BOOK_PREVIEW)" :key="child.id">
           <a :href="topicPath(child.id)" @click="open($event, child.id)">{{ child.label }}</a>
+        </li>
+        <!-- Длинная книга (история версий) — первые статьи и ссылка на всю книгу. -->
+        <li v-if="book.children.length > BOOK_PREVIEW">
+          <a :href="topicPath(book.id)" @click="open($event, book.id)">{{
+            t('help.home.more', { n: book.children.length - BOOK_PREVIEW })
+          }}</a>
         </li>
       </ul>
       <!-- У статьи без подразделов — её вводный абзац: о чём она. -->
@@ -24,6 +30,7 @@
 <script setup lang="ts">
 // Главная справки (README.md): вступление и разделы карточками. На телефоне
 // разделы показывает навигатор под вступлением (compact).
+import { useI18n } from 'vue-i18n'
 import { FileTextOutlined, HelpBookIcon } from '@/components/icons'
 import HelpBlocks from '@/b-components/help/help-blocks.vue'
 import { topicPath } from '@/b-components/help/help-view'
@@ -35,6 +42,10 @@ import { SC_Book, SC_BookLead, SC_Books, SC_BookTitle, SC_HomeTitle } from '../h
 
 const props = defineProps<{ library: HelpLibrary; compact?: boolean }>()
 
+/** Сколько статей книги видно на главной: в самых больших книгах их восемь. */
+const BOOK_PREVIEW = 8
+
+const { t } = useI18n()
 const page = useHelpPageContext()
 
 function leadOf(id: string): string {

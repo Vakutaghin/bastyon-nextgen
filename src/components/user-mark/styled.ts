@@ -1,12 +1,14 @@
 import styled from 'vue3-styled-components'
 
-// Значок у аватара (проверенный, модератор, «акула») — как в старом
-// приложении: точка цвета акцента с белой иконкой, здесь ещё и с кольцом
-// цвета фона, в правом нижнем углу.
+// Значок у аватара (проверенный, модератор, «акула»), как в старом приложении,
+// но в левом верхнем углу: правый нижний — место точки «в сети», и в чатах
+// значок за неё принимали. У каждой отметки свой цвет (--ui-mark-* в
+// style.css), иконка контрастная к заливке, кольцо цвета фона отделяет значок
+// от фото.
 export const SC_UserMarkBadge = styled('span', { size: Number })`
   position: absolute;
-  right: -2px;
-  bottom: -2px;
+  top: -2px;
+  left: -2px;
   z-index: 2;
   display: flex;
   align-items: center;
@@ -14,15 +16,30 @@ export const SC_UserMarkBadge = styled('span', { size: Number })`
   width: ${(p) => p.size ?? 16}px;
   height: ${(p) => p.size ?? 16}px;
   border-radius: 50%;
-  background: var(--ui-primary);
-  color: var(--color-white);
+  background: var(--ui-mark-verified);
+  color: var(--ui-mark-verified-on);
   box-shadow: 0 0 0 2px var(--ui-bg);
-  font-size: ${(p) => Math.max(8, Math.round((p.size ?? 16) * 0.62))}px;
+  font-size: ${(p) => Math.max(9, Math.round((p.size ?? 16) * 0.66))}px;
   line-height: 1;
 
   svg {
     width: 1em;
     height: 1em;
+  }
+
+  /* Тонкая линия в 9–10 px не видна — галочка толще. */
+  &.verified svg {
+    stroke-width: 3.5;
+  }
+
+  &.moderator {
+    background: var(--ui-mark-moderator);
+    color: var(--ui-mark-moderator-on);
+  }
+
+  &.shark {
+    background: var(--ui-mark-shark);
+    color: var(--ui-mark-shark-on);
   }
 `
 

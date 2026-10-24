@@ -110,3 +110,4 @@ code: [src/pages/my-files-page, src-tauri/src/ipfs]
 - Разбор — markdown-it (`src/helpers/help/help-markdown.ts`), вывод — свои компоненты (`src/b-components/help/`), без `v-html`.
 - Поиск — MiniSearch с учётом окончаний (`help-stem.ts`, `help-search.ts`).
 - Раздел — `src/pages/help-page/`, боковая панель — `src/b-components/help/help-panel.vue`.
+- **История версий** — книга `releases.md`, а статьи версий в `help/` не лежат: их собирает `src/helpers/help/help-releases.ts` из `changelogs/v*/{ru,en}.desc.md` — тех же файлов, что показывает окно «Что нового». Они встают в оглавление под книгу, их список дописывается в конец `releases.md`, в указатель они не попадают, и названия кнопок в них тест с интерфейсом не сверяет: старая версия описывает интерфейс своего времени.

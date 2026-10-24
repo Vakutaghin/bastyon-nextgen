@@ -96,6 +96,9 @@ export default {
     notFound: '帮助中没有这篇文章。',
     toHome: '帮助首页',
     contextLink: '此部分的帮助',
+    home: {
+      more: '还有 {n} 篇',
+    },
     tabs: {
       contents: '目录',
       index: '索引',
@@ -1304,6 +1307,15 @@ export default {
       moderator: '版主',
       shark: '鲨鱼',
     },
+    badgeHints: {
+      verified: '在 Bastyon 团队维护的已验证账户名单中的账户。',
+      moderator:
+        '有经验的成员：网络会召集其进入举报评审团。账户至少 90 天，且至少 100 人评价过其帖子和评论。',
+      shark:
+        '最有经验的成员：账户至少一年，且至少 100 人评价过它。只有鲨鱼的评分会改变作者的声望，也只有鲨鱼可以举报。',
+      established: '声望 100 及以上。此标记由应用授予：这样的账户不再是试用账户，可以给出低分。',
+    },
+    badgeMore: '在帮助中了解更多',
     startChat: '开始聊天',
     info: '信息',
     copyAddress: '复制地址',
@@ -2967,6 +2979,9 @@ export default {
     gotIt: '知道了',
     whatsNewPrefix: '新功能 —',
     empty: '暂无更新说明',
+    older: '较早版本',
+    newer: '较新版本',
+    allVersions: '所有版本',
   },
   appMsg: {
     insufficientFundsForFee: '余额不足以支付手续费',

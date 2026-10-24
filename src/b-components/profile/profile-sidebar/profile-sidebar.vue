@@ -10,15 +10,7 @@
 
       <SC_UserName>{{ displayName }}</SC_UserName>
 
-      <SC_BadgeRow v-if="profileBadges.length > 0">
-        <SC_Badge v-for="b in profileBadges" :key="b" :class="b">
-          <SafetyCertificateFilled v-if="b === 'verified'" />
-          <CrownOutlined v-else-if="b === 'moderator'" />
-          <FlagOutlined v-else-if="b === 'shark'" />
-          <TrophyFilled v-else />
-          {{ t('profile.badges.' + b) }}
-        </SC_Badge>
-      </SC_BadgeRow>
+      <ProfileBadges :profile="profile" />
 
       <SC_UserStats>
         <SC_StatItem>
@@ -194,14 +186,10 @@ import {
   PlusOutlined,
   BellFilled,
   BellOutlined,
-  CrownOutlined,
   EditOutlined,
-  FlagOutlined,
   MegaphoneIcon,
   MegaphoneOffIcon,
   StopOutlined,
-  SafetyCertificateFilled,
-  TrophyFilled,
   UserOutlined,
 } from '@/components/icons'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
@@ -209,7 +197,6 @@ import { copyText } from '@/helpers/common/clipboard'
 import { appToast } from '@/b-components/app-toast'
 import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
-import { getProfileBadges } from '@/helpers/profile/profile-badges'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useChainInfoStore } from '@/stores/chain-info-store'
 import { formatAbout } from './format-about'
@@ -218,6 +205,7 @@ import { useProfileChannel } from './use-profile-channel'
 import EditProfileModal from '@/b-components/profile/edit-profile-modal/edit-profile-modal.vue'
 import FollowersListModal from '@/b-components/profile/followers-list-modal/followers-list-modal.vue'
 import PaidProfileButton from '@/b-components/paid-subscription/paid-profile-button.vue'
+import ProfileBadges from '@/b-components/profile/profile-badges/profile-badges.vue'
 import type { RelationListType } from '@/composables/use-followers-list'
 import { ICON_PRIMARY_24, ICON_SIZE_11 } from '@/styles/icon-styles'
 import { userName } from '@/services/user-names'
@@ -227,8 +215,6 @@ import {
   SC_UserAvatar,
   SC_UserAvatarPlaceholder,
   SC_UserName,
-  SC_BadgeRow,
-  SC_Badge,
   SC_UserStats,
   SC_StatItem,
   SC_StatLabel,
@@ -345,8 +331,6 @@ async function copyAddress(): Promise<void> {
   if (!userAddress.value) return
   if (await copyText(userAddress.value)) appToast.success({ message: t('profile.addressCopied') })
 }
-
-const profileBadges = computed(() => getProfileBadges(props.profile))
 
 const formattedReputation = computed<string>(() => {
   const r: unknown = props.profile?.reputation ?? 0

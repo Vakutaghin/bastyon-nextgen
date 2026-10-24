@@ -1,31 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
-export const SC_BadgeRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  margin: 8px 0 4px;
-`
-
-export const SC_Badge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 9px;
-  border-radius: var(--ui-radius-lg);
-  font-size: 12px;
-  font-weight: 500;
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-
-  &.established {
-    background: var(--color-success-bg-tint);
-    color: var(--color-success);
-  }
-`
-
 export const SC_ProfileSidebar = styled.div`
   width: 280px;
   min-width: 280px;

@@ -128,7 +128,9 @@ describe('справка в help/', () => {
     const known = uiStrings(UI_MESSAGES[locale])
     const missing: string[] = []
     eachInline(libraries[locale], (node, topic) => {
-      if (node.t !== 'strong') return
+      // История версий описывает интерфейс своего времени: кнопку с тех пор
+      // могли переименовать, а прошлую версию не перепишешь.
+      if (node.t !== 'strong' || libraries[locale].topics.get(topic)?.generated) return
       const label = UI_LABEL[locale].exec(plainText(node.c).trim())?.[1]
       if (label && !known.has(normalizeLabel(label))) missing.push(`${topic}: ${label}`)
     })

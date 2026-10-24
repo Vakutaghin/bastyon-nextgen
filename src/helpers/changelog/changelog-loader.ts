@@ -65,6 +65,17 @@ export function getAllChangelogEntries(): ChangelogEntry[] {
 }
 
 /**
+ * Вышедшие версии: не новее версии приложения, от новых к старым. Заранее
+ * подготовленный changelog следующего релиза сюда не попадает (N34) — ни в
+ * «Что нового», ни в историю версий в настройках и справке.
+ */
+export function getReleasedChangelogEntries(
+  version: string = CURRENT_APP_VERSION
+): ChangelogEntry[] {
+  return ENTRIES.filter((e) => compareSemver(e.version, version) <= 0)
+}
+
+/**
  * Запись, соответствующая версии приложения (N34).
  *
  * «Что нового» раньше ключевалось на САМОЙ СВЕЖЕЙ папке `changelogs/`, а не на

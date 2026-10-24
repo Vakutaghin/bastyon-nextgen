@@ -23,6 +23,13 @@ export const SC_Identity = styled.div`
   min-width: 0;
 `
 
+/** Имя и отметки под ним. */
+export const SC_IdentityText = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+`
+
 export const SC_Name = styled.span`
   min-width: 0;
   overflow: hidden;

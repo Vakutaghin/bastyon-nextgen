@@ -50,7 +50,7 @@ The app version and build, the update check, the connection and the node the app
 
 ## What’s new
 
-The changes in every version of the app — see [Updates](updates.md).
+The changes in every version of the app, newest first. They are also in the help — see [Version history](releases.md).
 
 ## See also
 

@@ -38,7 +38,7 @@ You can also check in **“Settings”** → **“Diagnostics”** → the **“
 
 ## What’s new
 
-After an update, the app shows once what changed in the new version — **“Got it”** closes the window. The changes in every version are in **“Settings”** → **“What's new”**.
+After an update, the app shows once what changed in the new version. The arrows at the bottom of the window page back to earlier versions and forward again, **“All versions”** opens the [version history](releases.md) in the help, and **“Got it”** closes the window. The changes in every version are also in **“Settings”** → **“What's new”**.
 
 ## See also
 

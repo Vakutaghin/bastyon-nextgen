@@ -34,6 +34,11 @@ export interface HelpSources {
   resolveApp: (href: string) => string | null
   /** Показывать черновики: при разработке — да, в сборке — нет. */
   drafts?: boolean
+  /**
+   * Статьи, собранные не из help/ (история версий): книга → её статьи по
+   * порядку. В оглавлении они встают под книгу, в указатель не попадают.
+   */
+  generated?: Record<string, string[]>
 }
 
 export const PRIMARY_LOCALE: HelpLocale = 'ru'
@@ -102,6 +107,23 @@ function glossaryEntries(topic: HelpTopic | undefined): Map<string, HelpGlossary
   return entries
 }
 
+/** Собранные статьи — детьми своей книги, после тех, что перечислены в README. */
+function attachGenerated(
+  nodes: HelpTocNode[],
+  generated: Record<string, string[]>,
+  topics: Map<string, HelpTopic>
+): void {
+  walk(nodes, (node) => {
+    const ids = generated[node.id]
+    if (!ids) return
+    const listed = new Set(node.children.map((c) => c.id))
+    for (const id of ids) {
+      const topic = topics.get(id)
+      if (topic && !listed.has(id)) node.children.push({ id, label: topic.title, children: [] })
+    }
+  })
+}
+
 function normalizeKeyword(keyword: string): string {
   return keyword.trim().toLowerCase().replace(/ё/g, 'е')
 }
@@ -128,6 +150,7 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
   }
 
   const drafts = sources.drafts ?? false
+  const generated = new Set(Object.values(sources.generated ?? {}).flat())
   const primaries = new Map(
     ids.map((id) => [id, splitFrontmatter(files[`${PRIMARY_LOCALE}/${id}.md`] ?? '')])
   )
@@ -169,6 +192,7 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
       code: primary.meta.code,
       fallback,
       draft: front.meta.draft,
+      generated: generated.has(id),
     })
   }
 
@@ -182,6 +206,7 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
   })
   report(readmeFile, readme.problems)
   links.set(HOME_FILE, readme.links)
+  attachGenerated(readme.toc, sources.generated ?? {}, topics)
   const toc = visibleToc(readme.toc, hidden, topics)
 
   // Оглавление: каждая статья ровно один раз, и только существующие.
@@ -234,6 +259,8 @@ export function buildHelpLibrary(locale: HelpLocale, sources: HelpSources): Help
   }
   for (const id of order) {
     const topic = topics.get(id) as HelpTopic
+    // Версии в указателе — 30 одинаковых «v0.x»: их находит поиск.
+    if (topic.generated) continue
     addKeyword(topic.title, id)
     for (const keyword of topic.keywords) addKeyword(keyword, id)
   }
