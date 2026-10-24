@@ -7,12 +7,13 @@
  * - Tauri → plugin-http (CORS bypass)
  * - Browser → globalThis.fetch
  *
- * `matrixFetch` — тонкий alias на `appFetch` для семантической маркировки
- * запросов Matrix/chat (на случай если в будущем понадобится особое поведение).
+ * `matrixFetch` — запросы Matrix/chat: то же, а в приложении Android
+ * JSON-API сервера чатов идёт нативным HTTP Capacitor (`request-native.ts`).
  */
 
 import { TorNotReadyError, torRoutingMode, waitForTorRouting } from '@/helpers/tor/tor-gate'
 import { getTauriFetch, isSameOriginUrl, torFetch } from './request-tor'
+import { isNativeMatrixRequest, nativeFetch } from './request-native'
 
 export { getTauriFetch } from './request-tor'
 
@@ -45,7 +46,9 @@ export async function appFetch(input: RequestInfo | URL, init?: RequestInit): Pr
 }
 
 /** Fetch for Matrix/chat: routes через Tor когда включён, plugin-http для cross-origin
- *  (CORS bypass), plain browser fetch для same-origin (Vite dev proxy). */
+ *  (CORS bypass), plain browser fetch для same-origin (Vite dev proxy). На Android —
+ *  нативный HTTP мимо CORS WebView, как plugin-http в Tauri; Tor там не бывает. */
 export async function matrixFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  if (isNativeMatrixRequest(input, init)) return nativeFetch(input, init)
   return appFetch(input, init)
 }

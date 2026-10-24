@@ -54,9 +54,13 @@ const TOR_NOT_READY_PREFIX = 'tor_not_ready'
 /**
  * Invoke нельзя отменить, но ждать его после abort незачем: сигнал (таймаут
  * RPC, health-пинг ноды) раньше игнорировался, и под Tor запрос висел до
- * reqwest-таймаута 120 с (S1). Rust-запрос доживает в фоне сам.
+ * reqwest-таймаута 120 с (S1). Rust-запрос доживает в фоне сам. Так же
+ * ждёт нативный HTTP Capacitor (`request-native.ts`).
  */
-function raceWithAbort<T>(p: Promise<T>, signal: AbortSignal | null | undefined): Promise<T> {
+export function raceWithAbort<T>(
+  p: Promise<T>,
+  signal: AbortSignal | null | undefined
+): Promise<T> {
   if (!signal) return p
   return new Promise<T>((resolve, reject) => {
     const onAbort = () => reject(new DOMException('Aborted', 'AbortError'))
@@ -127,15 +131,18 @@ export async function torFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   })
 }
 
-// --- body/header conversion helpers (private к torFetch контракту) ----------
+// --- body/header conversion helpers (torFetch и nativeFetch) ----------------
 
-function inputToUrl(input: RequestInfo | URL): string {
+export function inputToUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
   if (input instanceof URL) return input.toString()
   return input.url
 }
 
-function headersToRecord(input: RequestInfo | URL, init?: RequestInit): Record<string, string> {
+export function headersToRecord(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Record<string, string> {
   const out: Record<string, string> = {}
   const collect = (h: HeadersInit) => {
     if (h instanceof Headers) {

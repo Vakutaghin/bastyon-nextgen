@@ -35,6 +35,9 @@ describe('syncErrorReason', () => {
     })
     const abort = Object.assign(new Error('aborted'), { name: 'AbortError' })
     expect(syncErrorReason(abort).kind).toBe('timeout')
+    // Нативный HTTP Android.
+    const native = new ConnectionError('fetch failed: SocketTimeoutException: timeout')
+    expect(syncErrorReason(native)).toEqual({ kind: 'timeout', detail: native.message })
   })
 
   it('Tor не готов — и напрямую, и внутри ConnectionError', () => {

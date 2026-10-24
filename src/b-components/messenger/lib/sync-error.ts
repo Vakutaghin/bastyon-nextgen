@@ -42,6 +42,10 @@ export function syncErrorReason(error: unknown): SyncErrorReason {
   if (e.name === 'TorNotReadyError' || /Tor is enabled/.test(message)) {
     return { kind: 'tor', detail: 'Tor' }
   }
-  if (e.name === 'ConnectionError') return { kind: 'network', detail: message || e.name }
+  if (e.name === 'ConnectionError') {
+    // Нативный HTTP Android (request-native.ts) называет таймаут по-джавовски.
+    if (/SocketTimeoutException/.test(message)) return { kind: 'timeout', detail: message }
+    return { kind: 'network', detail: message || e.name }
+  }
   return { kind: 'unknown', detail: [e.name, message].filter(Boolean).join(': ') }
 }
