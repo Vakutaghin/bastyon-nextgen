@@ -9,9 +9,18 @@ export const SC_PostCard = styled(Card)`
     margin-bottom: 10px;
   }
 
+  /* Телефон: пост во всю ширину экрана, как в Instagram, — поверх полей
+     страницы (--page-gutter задают страницы с лентой). Рамку и отступы тела
+     карточки снимает style.css: до .ant-card-body отсюда не дотянуться. */
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    margin-bottom: 8px;
+    margin-bottom: 0;
+    margin-inline: calc(-1 * var(--page-gutter, 0px));
   }
+`
+
+/** Картинки и ролик поста: на телефоне — от края до края карточки (--post-bleed). */
+export const SC_PostMedia = styled.div`
+  margin-inline: calc(-1 * var(--post-bleed, 0px));
 `
 
 /** Метка «Продвигаемое» для бустнутых постов, вплетённых в ленту. */
@@ -241,7 +250,7 @@ export const SC_PostBookmark = styled.div`
 `
 
 export const SC_PostCardYoutube = styled.div`
-  margin: 12px 0;
+  margin: 12px calc(-1 * var(--post-bleed, 0px));
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -252,7 +261,7 @@ export const SC_PostCardYoutube = styled.div`
     /* Не выше экрана под шапкой — телефон боком. */
     max-width: calc(var(--media-max-height) * 16 / 9);
     align-self: center;
-    border-radius: var(--ui-radius-lg);
+    border-radius: var(--post-media-radius, var(--ui-radius-lg));
     border: 0;
   }
 `
@@ -269,7 +278,7 @@ export const SC_VideoEmbedLink = styled.a`
   max-width: calc(var(--media-max-height) * 16 / 9);
   align-self: center;
   overflow: hidden;
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--post-media-radius, var(--ui-radius-lg));
   background: var(--color-black);
   cursor: pointer;
 
@@ -303,6 +312,10 @@ export const SC_AuthorLinkWrap = styled.div`
 
 /** Обёртка контента репоста: ниже шапки показывается «карточка» оригинала */
 export const SC_RepostInnerCard = styled.div`
+  /* Внутри рамки репоста картинки не растягиваются до краёв экрана. */
+  --post-bleed: 0px;
+  --post-media-radius: var(--ui-radius-lg);
+
   margin-top: 8px;
   padding: 12px 14px;
   background: rgb(var(--ui-bg-elevated-rgb) / 50%);

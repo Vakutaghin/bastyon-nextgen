@@ -27,6 +27,10 @@ export const SC_ProfileMainContent = styled.main`
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    /* Посты ленты перекрывают поля страницы и встают во всю ширину: 6px свои
+       и 6px у SC_ProfileContentWrapper. */
+    --page-gutter: 12px;
+
     padding: 8px 6px 12px;
   }
 `

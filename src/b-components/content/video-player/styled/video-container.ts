@@ -27,7 +27,7 @@ export const SC_VideoContainer = styled.div`
   max-width: min(100%, calc(var(--media-max-height) * 16 / 9));
   /* Под роликом чёрное, как у YouTube: полосы по краям вертикального видео. */
   background-color: var(--color-black);
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--post-media-radius, var(--ui-radius-lg));
   overflow: hidden;
   margin: 0 auto 15px;
   aspect-ratio: 16 / 9;

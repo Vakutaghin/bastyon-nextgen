@@ -960,6 +960,7 @@ export default {
       rating: '{n} оцена | {n} оцене | {n} оцена',
       comments: '{n} коментар | {n} коментара | {n} коментара',
       writeToAuthor: 'Пиши аутору',
+      watchVideo: 'Погледај видео',
     },
     supportReport: {
       title: 'Подаци о апликацији',

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
 
 /**
  * Каналы в мессенджере: «Читать в мессенджере» в профиле автора, канал в
@@ -35,8 +36,8 @@ const DATA: MockNodeData = {
   comments: [],
 }
 
-async function signIn(page: Page): Promise<void> {
-  await useMockNode(page, DATA)
+async function signIn(page: Page, data: MockNodeData = DATA): Promise<void> {
+  await useMockNode(page, data)
   await page.goto('/')
   await page.waitForSelector('#app > *', { timeout: 30_000 })
   await page
@@ -98,6 +99,14 @@ async function checkChannelFeed(page: Page): Promise<void> {
   await expect(page.getByTestId('channel-write')).toHaveText('Написать автору')
   // Свежий пост в зоне видимости: лента открылась внизу.
   await expect(posts.last()).toBeInViewport()
+}
+
+/** Посты не сжаты: всё содержимое видно, ничего не обрезано. */
+async function expectPostsWhole(page: Page): Promise<void> {
+  const clipped = await page
+    .getByTestId('channel-post')
+    .evaluateAll((els) => els.filter((e) => e.scrollHeight > e.clientHeight + 1).length)
+  expect(clipped).toBe(0)
 }
 
 /** Пост открывается целиком в окне поста, и оно поверх мессенджера. */
@@ -216,6 +225,112 @@ test('новые публикации: счётчик в списке и чер�
   await expect(row.getByLabel(/новые публикации/)).toHaveCount(0)
 })
 
+// Автор с длинной лентой: текст, картинка, ролик Bastyon и ролик YouTube.
+const CAROL = 'PCarozMockAddress22222222222222222'
+const YT_ID = 'dQw4w9WgXcQ'
+const LONG_FEED: MockNodeData = {
+  profiles: [...DATA.profiles, { address: CAROL, name: 'carol_ng' }],
+  posts: [
+    ...Array.from({ length: 8 }, (_, i) => ({
+      txid: `${i}`.repeat(64),
+      address: CAROL,
+      message: `Длинный пост ${i}. ${'Текст, который займёт несколько строк в ленте канала. '.repeat(4)}`,
+      ago: (i + 2) * HOUR,
+    })),
+    {
+      txid: 'e'.repeat(64),
+      address: CAROL,
+      message: 'Пост с картинкой',
+      images: ['https://bastyon.com/images/e2e.jpg'],
+      ago: 900,
+    },
+    {
+      txid: 'f'.repeat(64),
+      address: CAROL,
+      message: `Клип https://www.youtube.com/watch?v=${YT_ID}`,
+      ago: 600,
+    },
+    {
+      txid: '9'.repeat(64),
+      address: CAROL,
+      type: 'video',
+      url: VIDEO_URL,
+      caption: 'Ролик Кэрол',
+      message: 'Описание ролика',
+      ago: 300,
+    },
+  ],
+  comments: [],
+  subscribes: [CAROL],
+}
+
+test('длинная лента: посты целиком, ролики открываются и играют, подписка видна', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await signIn(page, LONG_FEED)
+  await useMockPeerTube(page)
+  // Обложка YouTube: настоящая сеть в тестах закрыта.
+  const PIXEL = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+    'base64'
+  )
+  await page.route('https://i.ytimg.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: PIXEL })
+  )
+  await callStore(page, 'messenger-channels', 'setChannel', CAROL, true)
+  await callStore(page, 'messenger', 'openChannel', CAROL)
+
+  const posts = page.getByTestId('channel-post')
+  await expect(posts.last()).toContainText('Ролик Кэрол', { timeout: 30_000 })
+  expect(await posts.count()).toBeGreaterThanOrEqual(10)
+  await expectPostsWhole(page)
+
+  // Подписан — так и написано, кнопки «Подписаться» нет.
+  await expect(page.getByTestId('channel-subscribed')).toHaveText('Вы подписаны', {
+    timeout: 15_000,
+  })
+  await expect(page.getByTestId('channel-subscribe')).toHaveCount(0)
+
+  // YouTube: обложка ролика, нажатие — окно поста, плеер запускает ролик сам.
+  const youtube = page.getByTestId('channel-video').filter({ hasText: 'YouTube' })
+  // Ссылку на ролик текстом не повторяем — его видно обложкой.
+  const clip = posts.filter({ has: youtube })
+  await expect(clip).toContainText('Клип')
+  await expect(clip).not.toContainText('youtube.com')
+  await expect(youtube.locator('img')).toHaveAttribute(
+    'src',
+    new RegExp(`i\\.ytimg\\.com/vi/${YT_ID}/`)
+  )
+  await youtube.click()
+  await expect(page.locator(`iframe[src*="youtube.com/embed/${YT_ID}?autoplay=1"]`)).toHaveCount(
+    1,
+    { timeout: 15_000 }
+  )
+  await page.keyboard.press('Escape')
+  await expect(page.locator('iframe[src*="autoplay=1"]')).toHaveCount(0)
+
+  // Ролик Bastyon: кадр с сервера видео, в окне поста — сразу играет.
+  const own = page.getByTestId('channel-video').filter({ hasNotText: 'YouTube' })
+  await expect(own.locator('img')).toHaveAttribute('src', /\/static\/thumbnails\//, {
+    timeout: 15_000,
+  })
+  await own.click()
+  const video = page.locator('.ant-modal-content video').first()
+  await expect
+    .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime).catch(() => 0), {
+      timeout: 20_000,
+    })
+    .toBeGreaterThan(0.5)
+  await page.keyboard.press('Escape')
+
+  // Текст без ролика открывает пост без запуска видео — и ничего не сломалось.
+  await posts.filter({ hasText: 'Длинный пост 0' }).click()
+  await expect(
+    page.locator('.ant-modal-content').filter({ hasText: 'Длинный пост 0' })
+  ).toBeVisible()
+})
+
 test.describe('на телефоне', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 
@@ -225,6 +340,11 @@ test.describe('на телефоне', () => {
     await readAliceInMessenger(page)
     await page.getByTestId('profile-channel').filter({ visible: true }).click()
     await checkChannelFeed(page)
+    // Без пузырей: пост во всю ширину экрана.
+    const box = await page.getByTestId('channel-post').last().boundingBox()
+    expect(box?.x).toBe(0)
+    expect(Math.round(box?.width ?? 0)).toBe(390)
+    await expectPostsWhole(page)
     await openPostOnTop(page)
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)

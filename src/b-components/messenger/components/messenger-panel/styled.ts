@@ -13,6 +13,12 @@ export const SC_MessengerContainer = styled.div`
 
   /* margin: 20px 0; */
   height: 100%;
+
+  /* Телефон: мессенджер и так во весь экран — рамка лишь отнимала по пикселю. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    border: 0;
+    border-radius: 0;
+  }
 `
 
 const sidebarProps = {

@@ -1,6 +1,7 @@
 <template>
   <SC_PostModalWrapper>
     <Modal
+      class="post-modal"
       :open="isModalOpen"
       :title="t('postCard.postTitle')"
       :full-width="fullWidth"
@@ -16,6 +17,7 @@
         <PostCard
           :post="postData"
           :show-full="true"
+          :autoplay-video="postModal.autoplay"
           @like="handleLike"
           @comment="handleComment"
           @share="handleShare"

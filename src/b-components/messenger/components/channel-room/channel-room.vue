@@ -35,18 +35,26 @@
 
     <!-- Вместо поля ввода: канал читают, а ответить можно автору лично. -->
     <SC_ChannelBar>
-      <SC_BarButton
-        v-if="canSubscribe && !isSubscribed"
-        type="button"
-        class="primary"
-        :disabled="isSubscribePending"
-        data-testid="channel-subscribe"
-        @click="subscribe"
-      >
-        <LoadingOutlined v-if="isSubscribePending" spin />
-        <PlusOutlined v-else />
-        {{ t('subscriptions.subscribe') }}
-      </SC_BarButton>
+      <template v-if="canSubscribe">
+        <!-- Подписка — как в профиле: пока транзакция ждёт блока, крутится значок. -->
+        <SC_BarStatus v-if="isSubscribed" data-testid="channel-subscribed">
+          <LoadingOutlined v-if="isSubscribePending" spin />
+          <CheckOutlined v-else />
+          {{ t('subscriptions.subscribed') }}
+        </SC_BarStatus>
+        <SC_BarButton
+          v-else
+          type="button"
+          class="primary"
+          :disabled="isSubscribePending"
+          data-testid="channel-subscribe"
+          @click="subscribe"
+        >
+          <LoadingOutlined v-if="isSubscribePending" spin />
+          <PlusOutlined v-else />
+          {{ t('subscriptions.subscribe') }}
+        </SC_BarButton>
+      </template>
       <SC_BarButton type="button" data-testid="channel-write" @click="writeToAuthor">
         <MessageOutlined />
         {{ t('messenger.channel.writeToAuthor') }}
@@ -58,7 +66,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { LoadingOutlined, MessageOutlined, PlusOutlined } from '@/components/icons'
+import { CheckOutlined, LoadingOutlined, MessageOutlined, PlusOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { useAuthStore } from '@/blockchain'
 import { useUserRelationsStore } from '@/stores'
@@ -72,6 +80,7 @@ import ChannelPost from './channel-post.vue'
 import { useChannelFeed } from './use-channel-feed'
 import {
   SC_BarButton,
+  SC_BarStatus,
   SC_ChannelBar,
   SC_ChannelFeed,
   SC_ChannelRoom,
@@ -192,13 +201,15 @@ watch(
 
 // --- Действия ---
 
-// Подписки читаются с ноды: до ответа «Подписаться» не показываем — мигало бы и у подписанных.
-const relationsReady = ref(false)
-if (authStore.isAuthenticated) void relations.init().finally(() => (relationsReady.value = true))
+// Подписки читаются с ноды: пока список не пришёл, о подписке молчим — иначе
+// «Подписаться» видели бы и подписанные.
+if (authStore.isAuthenticated) void relations.init()
 
 const canSubscribe = computed<boolean>(
   () =>
-    relationsReady.value && authStore.isAuthenticated && authStore.getUserAddress !== props.address
+    relations.subscriptionsLoaded &&
+    authStore.isAuthenticated &&
+    authStore.getUserAddress !== props.address
 )
 const isSubscribed = computed<boolean>(() => relations.isSubscribed(props.address))
 const isSubscribePending = computed<boolean>(() => relations.isSubscribePending(props.address))

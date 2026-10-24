@@ -71,6 +71,8 @@ The menu behind the three-line button on the left of the header is the same left
 
 To the right of the menu button, the **“Back”** arrow appears when there is somewhere to go back to; a narrow screen has no **“Forward”** arrow. On Android, the system Back button or gesture also goes back.
 
+On a phone posts take the full width of the screen, without frames: pictures and videos run edge to edge, with a thin line between posts. A post opened in full takes the whole screen.
+
 A phone turned sideways works the same way, except that the section bar becomes a column at the left edge and the header gets lower: there is little height. Pictures and videos in the feed are no taller than the screen, windows fit on the screen, and chats show the list and the conversation side by side when the screen is wide enough. A tablet turned sideways gets the computer layout: side panels and the chat window in the corner.
 
 Without an account, **“Chats”**, **“Wallet”** and **“Subscriptions”** open the sign-in window, and after you sign in, the section itself. More in [The phone app](mobile-app.md).

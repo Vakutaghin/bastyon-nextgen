@@ -121,6 +121,28 @@ describe('userRelations store', () => {
     expect(mocks.rpcCall).toHaveBeenCalledTimes(2)
   })
 
+  it('второй init во время загрузки ждёт её: «не подписан» до ответа ноды не показывается', async () => {
+    let answer: (list: unknown[]) => void = () => {}
+    mocks.rpcCall.mockImplementation(async (req: { method: string }) =>
+      req.method === 'getusersubscribes'
+        ? new Promise((resolve) => (answer = resolve))
+        : [{ address: 'PMe' }]
+    )
+    const store = useUserRelationsStore()
+    void store.init()
+    let second = false
+    void store.init().then(() => (second = true))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(second).toBe(false)
+    expect(store.subscriptionsLoaded).toBe(false)
+
+    answer([{ adddress: 'PFriend' }])
+    await vi.waitFor(() => expect(second).toBe(true))
+    expect(store.subscriptionsLoaded).toBe(true)
+    expect(store.isSubscribed('PFriend')).toBe(true)
+  })
+
   it('без входа ничего не грузит; ошибка ноды не роняет стор', async () => {
     mocks.auth.getUserAddress = null
     const store = useUserRelationsStore()
@@ -132,6 +154,9 @@ describe('userRelations store', () => {
     mocks.rpcCall.mockRejectedValue(new Error('offline'))
     await expect(store.refresh()).resolves.toBeUndefined()
     expect(store.isLoading).toBe(false)
+    // Подписки не пришли — «не подписан» ещё ничего не значит.
+    await store.refreshSubscriptions()
+    expect(store.subscriptionsLoaded).toBe(false)
   })
 
   describe('блокировка', () => {

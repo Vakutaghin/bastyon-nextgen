@@ -6,9 +6,9 @@
     data-testid="channel-post"
     :data-txid="post.txid"
     :aria-label="t('messenger.channel.openPost')"
-    @click="open"
-    @keydown.enter.prevent="open"
-    @keydown.space.prevent="open"
+    @click="open(false)"
+    @keydown.enter.prevent="open(false)"
+    @keydown.space.prevent="open(false)"
   >
     <SC_PostRepost v-if="post.repost">
       <RetweetOutlined />
@@ -21,15 +21,33 @@
     </SC_PostLocked>
 
     <template v-else>
-      <SC_PostMedia v-if="mediaSrc">
-        <img :src="mediaSrc" alt="" loading="lazy" @error="mediaFailed = true" />
-        <SC_PlayBadge v-if="kind === 'video'" aria-hidden="true"><PlayIcon /></SC_PlayBadge>
-        <SC_MoreImages v-if="moreImages > 0">+{{ moreImages }}</SC_MoreImages>
+      <!-- Картинки — сеткой, как в ленте; нажатие открывает их в просмотрщике. -->
+      <SC_PostMedia v-if="post.images.length > 0">
+        <PostCardImages :images="post.images" />
       </SC_PostMedia>
-      <SC_PostKind v-else-if="kind === 'video'">
-        <PlayIcon />
-        {{ t('messenger.channel.kinds.video') }}
-      </SC_PostKind>
+      <!-- Ролик: обложка, по нажатию — окно поста, и видео сразу играет. -->
+      <SC_PostVideo
+        v-else-if="isVideo"
+        role="button"
+        tabindex="0"
+        data-testid="channel-video"
+        :aria-label="t('messenger.channel.watchVideo')"
+        @click.stop="open(true)"
+        @keydown.enter.stop.prevent="open(true)"
+        @keydown.space.stop.prevent="open(true)"
+      >
+        <img
+          v-if="videoCover"
+          :src="videoCover"
+          alt=""
+          loading="lazy"
+          @error="coverFailed = true"
+        />
+        <SC_PlayBadge aria-hidden="true"><PlayIcon /></SC_PlayBadge>
+        <SC_VideoSource v-if="embed">{{
+          embed.kind === 'vimeo' ? 'Vimeo' : 'YouTube'
+        }}</SC_VideoSource>
+      </SC_PostVideo>
       <SC_PostKind v-if="kind === 'article'">{{
         t('messenger.channel.kinds.article')
       }}</SC_PostKind>
@@ -70,14 +88,14 @@ import {
   StarFilled,
 } from '@/components/icons'
 import { useModalStore } from '@/stores/modal-store'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { useTorMedia } from '@/composables/use-tor-media'
 import { formatClock, formatDateTimeFromString } from '@/helpers/common/date-formatter'
 import { getVideoThumbnailFromUrl } from '@/helpers/api/peertube-url'
 import { usePostRestriction } from '@/b-components/content/post-card/use-post-restriction'
+import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
 import type { AdaptedPost } from '@/types/adapted-post'
-import { postBodyText, postKind, postTime } from '../../lib/channels'
+import { postBodyText, postKind, postTime, postVideoEmbed } from '../../lib/channels'
 import {
-  SC_MoreImages,
   SC_PlayBadge,
   SC_Post,
   SC_PostFooter,
@@ -89,7 +107,9 @@ import {
   SC_PostText,
   SC_PostTime,
   SC_PostTitle,
+  SC_PostVideo,
   SC_ReadMore,
+  SC_VideoSource,
 } from './styled'
 
 /** Длиннее — «Читать полностью» в окне поста. */
@@ -111,42 +131,60 @@ const repostLabel = computed<string>(() => {
   return name ? t('messenger.channel.repostFrom', { name }) : t('messenger.channel.kinds.repost')
 })
 
-const body = computed<string>(() => postBodyText(props.post))
+/** Ссылка на ролик YouTube или Vimeo: его и так видно обложкой. */
+const VIDEO_LINK = /https?:\/\/\S*(?:youtube\.com|youtu\.be|vimeo\.com)\S*/gi
+
+const body = computed<string>(() => {
+  const plain = postBodyText(props.post)
+  return embed.value ? plain.replace(VIDEO_LINK, '').trim() : plain
+})
 const truncated = computed<boolean>(() => body.value.length > TEXT_LIMIT)
 const text = computed<string>(() =>
   truncated.value ? `${body.value.slice(0, TEXT_LIMIT).trimEnd()}…` : body.value
 )
 
-// Обложка: первая картинка, у видео PeerTube — кадр с его сервера.
-const videoThumb = ref<string | null>(null)
+// --- Видео: свой ролик Bastyon (PeerTube) или YouTube и Vimeo по ссылке ---
+
+const embed = computed(() => postVideoEmbed(props.post))
+const isVideo = computed<boolean>(
+  () =>
+    ((props.post.type === 'video' || props.post.type === 'audio') && !!props.post.videoUrl) ||
+    !!embed.value
+)
+
+// Под Tor обложки не грузим: картинка с чужого сервера ушла бы мимо Tor.
+const { mediaBlocked } = useTorMedia()
+const peertubeCover = ref<string | null>(null)
 watch(
-  () => (kind.value === 'video' ? props.post.videoUrl : undefined),
+  () => (embed.value || mediaBlocked.value ? undefined : props.post.videoUrl),
   async (url) => {
-    videoThumb.value = null
+    peertubeCover.value = null
     if (!url?.startsWith('peertube://')) return
     try {
-      videoThumb.value = await getVideoThumbnailFromUrl(url)
+      peertubeCover.value = await getVideoThumbnailFromUrl(url)
     } catch {
-      /* без обложки — подпись «Видео» */
+      /* без обложки — тёмная рамка со значком */
     }
   },
   { immediate: true }
 )
 
-const mediaFailed = ref(false)
-const mediaSrc = computed<string | undefined>(() => {
-  if (mediaFailed.value) return undefined
-  const first = props.post.images[0]
-  if (first) return resolveImageUrl(first) || undefined
-  return videoThumb.value || undefined
+const coverFailed = ref(false)
+const videoCover = computed<string | undefined>(() => {
+  if (coverFailed.value || mediaBlocked.value) return undefined
+  if (embed.value?.kind === 'youtube')
+    return `https://i.ytimg.com/vi/${embed.value.id}/hqdefault.jpg`
+  return peertubeCover.value || undefined
 })
-const moreImages = computed<number>(() => Math.max(0, props.post.images.length - 1))
 
 const clock = computed<string>(() => formatClock(postTime(props.post)))
 const fullDate = computed<string>(() => formatDateTimeFromString(props.post.timestamp))
 
-function open(): void {
+function open(autoplay: boolean): void {
   // Окно поста принимает и адаптированный пост ленты (как post-embed), тип у него сырой.
-  modalStore.openPostModal(props.post as unknown as Parameters<typeof modalStore.openPostModal>[0])
+  modalStore.openPostModal(
+    props.post as unknown as Parameters<typeof modalStore.openPostModal>[0],
+    { autoplay }
+  )
 }
 </script>

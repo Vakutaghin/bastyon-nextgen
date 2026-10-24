@@ -971,6 +971,7 @@ export default {
       rating: '{n} Bewertung | {n} Bewertungen',
       comments: '{n} Kommentar | {n} Kommentare',
       writeToAuthor: 'Dem Autor schreiben',
+      watchVideo: 'Video ansehen',
     },
     supportReport: {
       title: 'App-Informationen',

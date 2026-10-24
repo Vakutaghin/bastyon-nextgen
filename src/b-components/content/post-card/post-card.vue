@@ -1,11 +1,11 @@
 <template>
-  <SC_PostCard v-if="deleted" hoverable role="article">
+  <SC_PostCard v-if="deleted" class="post-card" hoverable role="article">
     <SC_RepostDeleted>
       <DeleteOutlined class="repost-deleted-icon" />
       <span>{{ t('postCard.deleted') }}</span>
     </SC_RepostDeleted>
   </SC_PostCard>
-  <SC_PostCard v-else ref="postCardRef" hoverable role="article">
+  <SC_PostCard v-else ref="postCardRef" class="post-card" hoverable role="article">
     <SC_BoostedBadge v-if="boosted">
       <RiseOutlined />
       {{ t('postCard.boosted') }}
@@ -61,20 +61,23 @@
           </SC_RepostOriginalAuthorInfo>
         </SC_RepostOriginalAuthor>
 
-        <PostCardImages v-if="post.images && post.images.length > 0" :images="post.images" />
+        <!-- На телефоне картинки и ролик — во всю ширину карточки (--post-bleed). -->
+        <SC_PostMedia v-if="hasMedia" data-testid="post-media">
+          <PostCardImages v-if="post.images && post.images.length > 0" :images="post.images" />
 
-        <VideoPlayer
-          v-else-if="(post.type === 'video' || post.type === 'audio') && post.videoUrl"
-          ref="videoPlayerRef"
-          :video-url="post.videoUrl"
-          :autoplay="prefs.videoAutoplay"
-          :is-audio="post.type === 'audio'"
-          :chapters="chapters"
-          :title="decodedTitle || post.author?.name || 'Bastyon'"
-          :artist="post.author?.name || ''"
-        />
+          <VideoPlayer
+            v-else-if="(post.type === 'video' || post.type === 'audio') && post.videoUrl"
+            ref="videoPlayerRef"
+            :video-url="post.videoUrl"
+            :autoplay="autoplayVideo || prefs.videoAutoplay"
+            :is-audio="post.type === 'audio'"
+            :chapters="chapters"
+            :title="decodedTitle || post.author?.name || 'Bastyon'"
+            :artist="post.author?.name || ''"
+          />
 
-        <PostCardVideoPlaceholder v-else-if="post.type === 'video' || post.type === 'audio'" />
+          <PostCardVideoPlaceholder v-else />
+        </SC_PostMedia>
 
         <SC_PostTitle v-if="decodedTitle">
           {{ decodedTitle }}
@@ -106,7 +109,7 @@
           :message="t('torMedia.embedBlocked')"
         />
         <SC_PostCardYoutube v-else-if="videoEmbeds.length && prefs.embeddedVideo">
-          <template v-for="embed in videoEmbeds" :key="embed.embedUrl">
+          <template v-for="(embed, i) in videoEmbeds" :key="embed.embedUrl">
             <SC_VideoEmbedLink
               v-if="embed.kind === 'youtube' && !youtubeEmbeddable"
               :href="embed.watchUrl"
@@ -124,7 +127,7 @@
             </SC_VideoEmbedLink>
             <iframe
               v-else
-              :src="embed.embedUrl"
+              :src="autoplayVideo && i === 0 ? autoplayEmbedUrl(embed.embedUrl) : embed.embedUrl"
               :title="embed.kind === 'vimeo' ? 'Vimeo video player' : 'YouTube video player'"
               frameborder="0"
               allow="
@@ -273,6 +276,7 @@ import TorBlockedNotice from '@/components/tor-blocked-notice'
 import { useTorMedia } from '@/composables/use-tor-media'
 import {
   SC_PostCard,
+  SC_PostMedia,
   SC_PostTitle,
   SC_PostActions,
   SC_PostActionBtn,
@@ -296,7 +300,7 @@ import PaidPostNotice from '@/b-components/paid-subscription/paid-post-notice.vu
 import { postVisibilityOf } from '@/helpers/content/post-visibility'
 import { usePostRestriction } from './use-post-restriction'
 import { usePostMedia } from './use-post-media'
-import { canEmbedYoutube } from '@/helpers/common/video-embed-url'
+import { autoplayEmbedUrl, canEmbedYoutube } from '@/helpers/common/video-embed-url'
 import { openExternal } from '@/helpers/common/open-external'
 import { usePostDelete } from './use-post-delete'
 import { calculateAverageRating, decodeUrlEncoded, getPostShareId } from './helpers'
@@ -319,6 +323,8 @@ const props = withDefaults(
     targetParentId?: string
     /** Показывать метку «Продвигаемое» (буст, вплетённый в ленту). */
     boosted?: boolean
+    /** Сразу запустить ролик: окно поста открыли нажатием на видео. */
+    autoplayVideo?: boolean
   }>(),
   {
     maxLength: DEFAULT_MAX_TEXT_LENGTH,
@@ -326,6 +332,7 @@ const props = withDefaults(
     showFull: false,
     authorOverride: null,
     boosted: false,
+    autoplayVideo: false,
   }
 )
 
@@ -365,6 +372,12 @@ onMounted(() => {
 })
 
 const isRepost = computed<boolean>(() => !!props.post.repost)
+const hasMedia = computed<boolean>(
+  () =>
+    (props.post.images?.length ?? 0) > 0 ||
+    props.post.type === 'video' ||
+    props.post.type === 'audio'
+)
 // Профиль автора оригинала есть не всегда: без него имя догружается (user-names).
 const repostAuthorName = computed<string>(() =>
   userName(props.post.repostAuthor?.address, props.post.repostAuthor?.name)

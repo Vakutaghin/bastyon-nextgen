@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_PostPage = styled.div`
   width: 100%;
@@ -11,6 +12,11 @@ export const SC_PostPageInner = styled.div`
   max-width: 680px;
   padding: 16px;
   box-sizing: border-box;
+
+  /* Телефон: пост перекрывает поля страницы и встаёт во всю ширину. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    --page-gutter: 16px;
+  }
 `
 
 export const SC_PostStatus = styled.div`

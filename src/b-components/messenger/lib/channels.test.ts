@@ -13,6 +13,7 @@ import {
   mergeChannelsDoc,
   parseChannelsDoc,
   postBodyText,
+  postVideoEmbed,
   sameChannelsDoc,
   type ChannelsDoc,
 } from './channels'
@@ -108,6 +109,18 @@ describe('пост в строке списка', () => {
     expect(channelPostPreview(post({ type: 'article' })).kind).toBe('article')
     expect(channelPostPreview(post({ images: ['a.jpg'] })).kind).toBe('image')
     expect(channelPostPreview(post()).kind).toBe('text')
+  })
+
+  it('ссылка на YouTube или Vimeo — тоже видео: в ссылке поста, закодированной, или в тексте', () => {
+    const yt = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    expect(channelPostPreview(post({ videoUrl: yt })).kind).toBe('video')
+    expect(postVideoEmbed(post({ videoUrl: encodeURIComponent(yt) }))?.id).toBe('dQw4w9WgXcQ')
+    expect(
+      postVideoEmbed(post({ content: 'смотрите https://vimeo.com/123456789.' }))
+    ).toMatchObject({ kind: 'vimeo', id: '123456789' })
+    // Обычная ссылка видео не делает, а у видео Bastyon свой плеер.
+    expect(channelPostPreview(post({ videoUrl: 'https://example.com/a' })).kind).toBe('text')
+    expect(postVideoEmbed(post({ type: 'video', videoUrl: yt }))).toBeNull()
   })
 
   it('статья — текстом из блоков, без разметки', () => {

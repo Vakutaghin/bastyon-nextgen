@@ -965,6 +965,7 @@ export default {
       rating: '{n} оценка | {n} оценки | {n} оценок',
       comments: '{n} комментарий | {n} комментария | {n} комментариев',
       writeToAuthor: 'Написать автору',
+      watchVideo: 'Смотреть видео',
     },
     supportReport: {
       title: 'Сведения о приложении',

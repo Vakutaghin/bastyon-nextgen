@@ -50,6 +50,8 @@ export interface MockNodeData {
   profiles: MockProfile[]
   posts: MockPost[]
   comments: MockComment[]
+  /** На кого подписан вошедший (`getusersubscribes`). */
+  subscribes?: string[]
 }
 
 const HEIGHT = 4_037_000
@@ -190,6 +192,9 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
       if (parentId) return []
       return data.comments.filter((c) => c.postid === postId).map(commentJson)
     }
+    case 'getusersubscribes':
+      // Поле с опечаткой, как у настоящей ноды.
+      return (data.subscribes ?? []).map((adddress) => ({ adddress, private: 'false' }))
     case 'getboostfeed':
       return { height: HEIGHT, boosts: [] }
     case 'getnodeinfo':

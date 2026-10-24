@@ -2,7 +2,7 @@
 // плеер YouTube вообще может работать.
 
 import { describe, expect, it } from 'vitest'
-import { canEmbedYoutube, getVideoEmbeds } from './video-embed-url'
+import { autoplayEmbedUrl, canEmbedYoutube, getVideoEmbeds } from './video-embed-url'
 
 const YT = 'dQw4w9WgXcQ'
 
@@ -48,5 +48,16 @@ describe('canEmbedYoutube', () => {
     expect(canEmbedYoutube('http:')).toBe(true)
     expect(canEmbedYoutube('tauri:')).toBe(false)
     expect(canEmbedYoutube(undefined)).toBe(false)
+  })
+})
+
+describe('autoplayEmbedUrl', () => {
+  it('плеер запускает ролик сам', () => {
+    expect(autoplayEmbedUrl('https://www.youtube.com/embed/abc')).toBe(
+      'https://www.youtube.com/embed/abc?autoplay=1'
+    )
+    expect(autoplayEmbedUrl('https://player.vimeo.com/video/1?h=x')).toBe(
+      'https://player.vimeo.com/video/1?h=x&autoplay=1'
+    )
   })
 })

@@ -22,6 +22,8 @@ export const useModalStore = defineStore('modal', {
       isOpen: false,
       post: null as Post | null,
       scrollPosition: 0,
+      /** Видео поста запускается сразу: окно открыли нажатием на ролик. */
+      autoplay: false,
     },
     imageGallery: {
       isOpen: false,
@@ -106,7 +108,7 @@ export const useModalStore = defineStore('modal', {
     /**
      * Открывает модалку с постом
      */
-    openPostModal(post: Post): void {
+    openPostModal(post: Post, options: { autoplay?: boolean } = {}): void {
       // Сохраняем позицию скролла
       const scrollTop =
         window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
@@ -120,6 +122,7 @@ export const useModalStore = defineStore('modal', {
       }
 
       this.postModal.post = post
+      this.postModal.autoplay = !!options.autoplay
       this.postModal.isOpen = true
     },
 
@@ -129,6 +132,7 @@ export const useModalStore = defineStore('modal', {
     closePostModal(): void {
       this.postModal.isOpen = false
       this.postModal.post = null
+      this.postModal.autoplay = false
 
       // Восстанавливаем позицию скролла
       requestAnimationFrame(() => {

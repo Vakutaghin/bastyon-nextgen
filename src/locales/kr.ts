@@ -960,6 +960,7 @@ export default {
       rating: '평가 {n}개',
       comments: '댓글 {n}개',
       writeToAuthor: '작성자에게 메시지',
+      watchVideo: '동영상 보기',
     },
     supportReport: {
       title: '앱 정보',

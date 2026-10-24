@@ -962,6 +962,7 @@ export default {
       rating: '{n} rating | {n} ratings',
       comments: '{n} comment | {n} comments',
       writeToAuthor: 'Message the author',
+      watchVideo: 'Watch the video',
     },
     supportReport: {
       title: 'App details',

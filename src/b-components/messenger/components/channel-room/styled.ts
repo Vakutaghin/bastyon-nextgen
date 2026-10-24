@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_ChannelRoom = styled.div`
   display: flex;
@@ -16,12 +17,29 @@ export const SC_ChannelFeed = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  /* Посты в колонке не сжимаются: с overflow: hidden колонка ужимала каждый до
+     строки, чтобы все поместились в окно. */
+  & > * {
+    flex-shrink: 0;
+  }
+
+  /* Телефон: посты во всю ширину, без пузырей — как лента в Instagram. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    padding: 4px 0 16px;
+    gap: 0;
+  }
 `
 
 /** Дата над постами одного дня — как в ленте сообщений мессенджеров. */
 export const SC_DayDivider = styled.div`
   align-self: center;
   margin: 8px 0 2px;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    margin: 12px 0 8px;
+  }
+
   padding: 2px 10px;
   border-radius: var(--ui-radius-full);
   background: var(--ui-bg-elevated);
@@ -35,6 +53,12 @@ export const SC_NewDivider = styled.div`
   align-items: center;
   gap: 8px;
   margin: 4px 0;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    margin: 8px 0;
+    padding: 0 12px;
+  }
+
   color: var(--ui-violet);
   font-size: 12px;
   font-weight: 500;
@@ -84,6 +108,12 @@ export const SC_RetryButton = styled.button`
 
 /** Пост: пузырь входящего сообщения во всю ширину ленты, но не шире строки для чтения. */
 export const SC_Post = styled.div`
+  /* Картинки поста (post-card-images) — без своих скруглений и отступа снизу,
+     не выше 420px: окошко мессенджера невысокое. */
+  --media-max-height: 420px;
+  --post-media-gap: 0px;
+  --post-media-radius: 0;
+
   align-self: flex-start;
   width: 100%;
   max-width: 560px;
@@ -110,6 +140,24 @@ export const SC_Post = styled.div`
     outline: 2px solid var(--ui-violet);
     outline-offset: 2px;
   }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    --media-max-height: min(560px, 70vh);
+
+    max-width: none;
+    padding: 12px;
+    border-radius: 0;
+    background-color: transparent;
+    border-bottom: 1px solid var(--ui-border);
+
+    &:hover {
+      background-color: transparent;
+    }
+
+    &:focus-visible {
+      outline-offset: -2px;
+    }
+  }
 `
 
 export const SC_PostRepost = styled.div`
@@ -127,18 +175,27 @@ export const SC_PostLocked = styled.div`
   color: var(--ui-text-muted);
 `
 
-/** Обложка с постоянными пропорциями: лента не прыгает, пока грузятся картинки. */
+/** Картинки поста — от края до края пузыря. */
 export const SC_PostMedia = styled.div`
-  position: relative;
   margin: 0 -12px;
-  aspect-ratio: 16 / 10;
-  max-height: 340px;
-  overflow: hidden;
-  background: var(--color-bg-tertiary);
 
   &:first-child {
     margin-top: -8px;
   }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    &:first-child {
+      margin-top: -12px;
+    }
+  }
+`
+
+/** Обложка ролика 16:9 со значком ▶: лента не прыгает, пока грузится картинка. */
+export const SC_PostVideo = styled(SC_PostMedia)`
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: ${() => COLORS.BLACK};
 
   img {
     width: 100%;
@@ -146,6 +203,24 @@ export const SC_PostMedia = styled.div`
     object-fit: cover;
     display: block;
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-violet);
+    outline-offset: -2px;
+  }
+`
+
+/** Откуда ролик — YouTube или Vimeo. */
+export const SC_VideoSource = styled.span`
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: var(--ui-radius-full);
+  background: ${() => COLORS.OVERLAY_55};
+  color: ${() => COLORS.WHITE};
+  font-size: 12px;
+  font-weight: 500;
 `
 
 export const SC_PlayBadge = styled.span`
@@ -164,19 +239,7 @@ export const SC_PlayBadge = styled.span`
   font-size: 22px;
 `
 
-export const SC_MoreImages = styled.span`
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  padding: 2px 8px;
-  border-radius: var(--ui-radius-full);
-  background: ${() => COLORS.OVERLAY_55};
-  color: ${() => COLORS.WHITE};
-  font-size: 12px;
-  font-weight: 600;
-`
-
-/** «Видео» без обложки, «Статья». */
+/** «Статья». */
 export const SC_PostKind = styled.span`
   display: inline-flex;
   align-items: center;
@@ -188,7 +251,9 @@ export const SC_PostKind = styled.span`
 
 export const SC_PostTitle = styled.div`
   color: var(--ui-text-highlighted);
+  font-size: 15px;
   font-weight: 600;
+  line-height: 1.35;
   word-break: break-word;
 `
 
@@ -218,6 +283,18 @@ export const SC_PostStat = styled.span`
 
 export const SC_PostTime = styled.span`
   margin-left: auto;
+`
+
+/** «Вы подписаны» — состояние, не кнопка: отписка — в профиле автора. */
+export const SC_BarStatus = styled.span`
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  color: var(--ui-text-muted);
+  font-size: 14px;
+  white-space: nowrap;
 `
 
 /** Вместо поля ввода: подписаться и написать автору. */

@@ -107,6 +107,9 @@ function deferredError(e: unknown): void {
 
 const channelsByStore = new WeakMap<object, RelationChannels>()
 
+/** Идущая загрузка init(): второй вызов ждёт её, а не получает «готово» до ответа ноды. */
+const initByStore = new WeakMap<object, Promise<void>>()
+
 function createChannels(store: RelationsState): RelationChannels {
   const persistQueue = (): void => {
     const me = useAuthStore().getUserAddress
@@ -215,6 +218,11 @@ export const useUserRelationsStore = defineStore('userRelations', {
     subscribedPrivate: new Set<string>(),
     /** Адреса с in-flight subscribe/unsubscribe транзакцией. */
     subscribePending: new Set<string>(),
+    /**
+     * Список подписок пришёл с ноды. До этого «не подписан» ничего не значит:
+     * кнопка «Подписаться» показывалась бы и подписанным.
+     */
+    subscriptionsLoaded: false,
     isInitialized: false,
     isLoading: false,
   }),
@@ -252,11 +260,13 @@ export const useUserRelationsStore = defineStore('userRelations', {
 
   actions: {
     /** Загружает блок-лист и подписки из ноды один раз за сессию. */
-    async init(): Promise<void> {
-      if (this.isInitialized) return
+    init(): Promise<void> {
+      if (this.isInitialized) return initByStore.get(this) ?? Promise.resolve()
       this.isInitialized = true
       restoreQueue(channelsOf(this))
-      await Promise.all([this.refresh(), this.refreshSubscriptions()])
+      const loading = Promise.all([this.refresh(), this.refreshSubscriptions()]).then(() => {})
+      initByStore.set(this, loading)
+      return loading
     },
 
     /** Перечитывает блок-лист текущего пользователя из getuserprofile. */
@@ -307,6 +317,7 @@ export const useUserRelationsStore = defineStore('userRelations', {
         }
         this.subscribed = new Set(subscribed)
         this.subscribedPrivate = new Set(subscribedPrivate)
+        this.subscriptionsLoaded = true
         // Поверх цепочки — подписки, ждущие блока.
         channelsOf(this).subscriptions.reconcile((a) =>
           subscribed.has(a) ? (subscribedPrivate.has(a) ? 'private' : 'public') : 'none'
@@ -389,6 +400,7 @@ export const useUserRelationsStore = defineStore('userRelations', {
         channels.stop()
         channelsByStore.delete(this)
       }
+      initByStore.delete(this)
       this.blocked = new Set()
       this.pending = new Set()
       this.bannedBy = new Set()
@@ -396,6 +408,7 @@ export const useUserRelationsStore = defineStore('userRelations', {
       this.subscribed = new Set()
       this.subscribedPrivate = new Set()
       this.subscribePending = new Set()
+      this.subscriptionsLoaded = false
       this.isInitialized = false
       this.isLoading = false
     },

@@ -925,6 +925,7 @@ export default {
       rating: '{n} 个评分',
       comments: '{n} 条评论',
       writeToAuthor: '给作者发消息',
+      watchVideo: '观看视频',
     },
     supportReport: {
       title: '应用信息',

@@ -34,6 +34,9 @@ export const SC_SearchMainContent = styled.main`
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    /* Посты ленты перекрывают поля страницы и встают во всю ширину. */
+    --page-gutter: 6px;
+
     padding: 8px 6px 60px;
   }
 `

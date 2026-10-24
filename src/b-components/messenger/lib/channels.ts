@@ -8,6 +8,8 @@
 // слияние идёт по записям, а не «кто последний записал весь список».
 
 import { extractPlainTextFromContent } from '@/helpers/content/timecode-parser'
+import { safeDecode } from '@/helpers/content/safe-decode'
+import { getVideoEmbeds, type VideoEmbed } from '@/helpers/common/video-embed-url'
 import type { AdaptedPost } from '@/types/adapted-post'
 
 export const CHANNELS_ACCOUNT_DATA = 'app.bastyon.channels'
@@ -115,11 +117,26 @@ export function postTime(post: Pick<AdaptedPost, 'timestamp'>): number {
   return Number.isFinite(ms) ? ms : 0
 }
 
+/**
+ * Ролик YouTube или Vimeo из ссылки поста (`u`) или его текста — как у
+ * карточки в ленте. У видео Bastyon (PeerTube) свой плеер, ему это не нужно.
+ */
+export function postVideoEmbed(
+  post: Pick<AdaptedPost, 'type' | 'videoUrl' | 'content'>
+): VideoEmbed | null {
+  if (post.type === 'video' || post.type === 'audio' || post.type === 'article') return null
+  const raw = (post.videoUrl || '').trim()
+  // Старые посты хранят ссылку целиком закодированной (`https%3A%2F%2F…`).
+  const url = /^https?%3A/i.test(raw) ? safeDecode(raw) : raw
+  return getVideoEmbeds(url, post.content)[0] ?? null
+}
+
 export function postKind(post: AdaptedPost): ChannelPostKind {
   if (post.repost) return 'repost'
   if (post.type === 'video' || post.type === 'audio') return 'video'
   if (post.type === 'article') return 'article'
   if (post.images.length > 0) return 'image'
+  if (postVideoEmbed(post)) return 'video'
   return 'text'
 }
 

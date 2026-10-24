@@ -3,8 +3,8 @@ import styled from 'vue3-styled-components'
 /** Одна картинка: во всю ширину, высота по картинке, не выше 500px и экрана
  *  под шапкой (--media-max-height): у телефона боком экран ниже 500px. */
 export const SC_PostImage = styled.div`
-  margin-bottom: 15px;
-  border-radius: var(--ui-radius-lg);
+  margin-bottom: var(--post-media-gap, 15px);
+  border-radius: var(--post-media-radius, var(--ui-radius-lg));
   overflow: hidden;
   max-width: 100%;
   width: 100%;
@@ -14,7 +14,7 @@ export const SC_PostImage = styled.div`
 
   > div {
     width: 100%;
-    border-radius: var(--ui-radius-lg);
+    border-radius: var(--post-media-radius, var(--ui-radius-lg));
   }
 
   img {
@@ -24,7 +24,7 @@ export const SC_PostImage = styled.div`
     object-fit: cover;
     display: block;
     max-height: min(500px, var(--media-max-height));
-    border-radius: var(--ui-radius-lg);
+    border-radius: var(--post-media-radius, var(--ui-radius-lg));
   }
 `
 
@@ -35,8 +35,8 @@ export const SC_ImageGrid = styled.div`
   width: 100%;
   /* Предел ширины — inline (gridStyle): сетка не выше экрана под шапкой,
      пропорции те же, по центру. */
-  margin: 0 auto 15px;
-  border-radius: var(--ui-radius-lg);
+  margin: 0 auto var(--post-media-gap, 15px);
+  border-radius: var(--post-media-radius, var(--ui-radius-lg));
   overflow: hidden;
 `
 

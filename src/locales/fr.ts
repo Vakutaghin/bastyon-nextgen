@@ -975,6 +975,7 @@ export default {
       rating: '{n} note | {n} notes',
       comments: '{n} commentaire | {n} commentaires',
       writeToAuthor: "Écrire à l'auteur",
+      watchVideo: 'Regarder la vidéo',
     },
     supportReport: {
       title: 'Informations sur l’application',

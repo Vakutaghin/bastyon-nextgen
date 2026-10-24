@@ -41,7 +41,11 @@ Posts run like messages: older above, newer below, with a date over each day. If
 
 Press a post to open it in full: with ratings, comments and the “Repost” and “Share” buttons. Long text is cut in the feed, followed by **“Read more”**.
 
-At the bottom, instead of the message field: **“Subscribe”** if you are not subscribed yet, and **“Message the author”**, which opens your private chat with them.
+Pictures sit in a grid, as in the feed; press a picture to look at it closely. A video has a cover with a ▶ sign: press it, and the post opens with the video already playing. YouTube and Vimeo videos linked in a post open the same way. With Tor on there are no covers: a picture from another server would bypass Tor.
+
+On a phone posts take the full width of the screen, without bubbles, and pictures and videos run edge to edge.
+
+At the bottom, instead of the message field: **“Subscribe”**, or **“Subscribed”** if you already are, and **“Message the author”**, which opens your private chat with them. While the subscription waits to be written to the blockchain, a spinner turns next to it. To unsubscribe, use the author’s profile.
 
 Subscriber-only and paid posts look the same as in the feed: those closed to you show a lock.
 

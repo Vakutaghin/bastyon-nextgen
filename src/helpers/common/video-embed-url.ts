@@ -184,6 +184,11 @@ export function getVideoEmbeds(...sources: Array<string | undefined>): VideoEmbe
   return Array.from(out.values())
 }
 
+/** Адрес плеера YouTube или Vimeo, который сам запускает ролик. */
+export function autoplayEmbedUrl(embedUrl: string): string {
+  return `${embedUrl}${embedUrl.includes('?') ? '&' : '?'}autoplay=1`
+}
+
 /**
  * Можно ли встроить плеер YouTube на этой странице. YouTube требует от
  * встроенного плеера заголовок Referer, а страница `tauri://localhost`
