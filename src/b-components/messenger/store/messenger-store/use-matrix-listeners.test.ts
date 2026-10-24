@@ -232,7 +232,7 @@ describe('registerMatrixListeners — sync', () => {
 
 describe('Room.receipt', () => {
   it('новая комната (приглашение), своё членство и название группы — список перезагружается', () => {
-    const { scheduleLoadDialogs } = setup()
+    const { scheduleLoadDialogs } = setup(null)
     handlers['Room']!({ roomId: '!invite:host' })
     handlers['Room.myMembership']!({ roomId: ROOM }, 'join', 'invite')
     handlers['Room.name']!({ roomId: ROOM })
