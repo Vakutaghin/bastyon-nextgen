@@ -23,7 +23,7 @@
           </router-link>
 
           <SC_ChatBtn
-            v-if="displayAuthor.address"
+            v-if="canShowChat"
             type="button"
             :aria-label="t('postCard.startChat')"
             @click.stop.prevent="startChatWithAuthor"
@@ -250,6 +250,11 @@ const canShowFollow = computed<boolean>(
     !!authorAddress.value &&
     authStore.isAuthenticated &&
     authStore.getUserAddress !== authorAddress.value
+)
+
+// Написать себе нельзя: на своих постах кнопки чата нет.
+const canShowChat = computed<boolean>(
+  () => !!authorAddress.value && authStore.getUserAddress !== authorAddress.value
 )
 
 async function onToggleFollow(event: Event): Promise<void> {

@@ -36,7 +36,7 @@ The rules are the same as in the previous Bastyon app (where it is called a “p
 
 ## For authors: set a price
 
-1. Open [“Paid subscriptions”](bastyon://paid-subscriptions), the **“My subscribers”** tab — or press **“Paid subscription”** in your profile.
+1. Open [“Paid subscriptions”](bastyon://paid-subscriptions), the **“My subscribers”** tab.
 2. Enter the price in the “PKOIN a month” field — a whole number from 1 to 1500. Below the field you see what six months and a year cost.
 3. Press **“Turn on paid subscriptions”** — or **“Save price”** if a price is already set.
 

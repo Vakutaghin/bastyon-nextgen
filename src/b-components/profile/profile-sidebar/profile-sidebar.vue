@@ -96,10 +96,10 @@
         </SC_BellButton>
       </SC_SubscribeRow>
 
-      <!-- Платная подписка: у автора — управление, у читателя — оформить. -->
+      <!-- Платная подписка: оформить или продлить; на своём профиле её нет. -->
       <PaidProfileButton v-if="userAddress" :address="userAddress" :settings="accountSettings" />
 
-      <SC_StartChatButton :disabled="!userAddress" @click="startChatWithUser">
+      <SC_StartChatButton v-if="!isOwnProfile" :disabled="!userAddress" @click="startChatWithUser">
         {{ t('profile.startChat') }}
       </SC_StartChatButton>
 

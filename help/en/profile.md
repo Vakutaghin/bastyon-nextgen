@@ -10,7 +10,7 @@ A profile opens when you click a person’s name or avatar — in the feed, in c
 
 ## What is on the page
 
-- **The cover** at the top. It can only be set in the previous Bastyon app. Without a cover, a blurred avatar takes its place.
+- **The cover** at the top. It can only be set in the previous Bastyon app. Without a cover, the page starts right with the avatar and name.
 - **Avatar and name.** Under the name there are badges: **“Verified”**, **“Moderator”** and **“Shark”** (what they mean is below) and **“Established”** — for accounts with a reputation of 100 or more.
 - **“Reputation”**, **“Subscribers”** and **“Subscriptions”**. Click the number of subscribers or subscriptions to open the list — see [Subscriptions](subscriptions.md). What reputation is — see [Reputation](reputation.md).
 - **“Information”** — what the person wrote about themselves, if anything.

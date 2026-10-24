@@ -1,12 +1,14 @@
 <template>
-  <SC_ProfileCover :has-image="!!coverUrl">
+  <!-- Только своя обложка автора: без неё, как и если она не загрузилась, полосы
+       нет (раньше — заглушка или размытый аватар). -->
+  <SC_ProfileCover v-if="coverUrl && !failed" data-testid="profile-cover">
     <!-- URL из блокчейна — только в атрибут src после safeHttpImageUrl, не в CSS (V16). -->
-    <SC_CoverImage v-if="coverUrl" :src="coverUrl" :is-blur="isBlur" alt="" aria-hidden="true" />
+    <SC_CoverImage :src="coverUrl" alt="" aria-hidden="true" @error="failed = true" />
   </SC_ProfileCover>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { SC_ProfileCover, SC_CoverImage } from './styled'
 import { safeHttpImageUrl } from '@/helpers/common/safe-image-url'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -34,14 +36,11 @@ const coverImage = computed<string>(() => {
   return ''
 })
 
-const displayImage = computed<string>(() => {
-  if (coverImage.value) return coverImage.value
-  return props.profile?.i ?? ''
-})
-
 /** http(s)-href только для валидного URL/хеша; всё остальное — без обложки. */
-const coverUrl = computed<string | null>(() => safeHttpImageUrl(displayImage.value))
+const coverUrl = computed<string | null>(() => safeHttpImageUrl(coverImage.value))
 
-// Блюрим аватарку только когда нет настоящей обложки (используется как фон).
-const isBlur = computed<boolean>(() => !coverImage.value && !!props.profile?.i)
+const failed = ref(false)
+watch(coverUrl, () => {
+  failed.value = false
+})
 </script>

@@ -52,6 +52,8 @@ export interface MockNodeData {
   comments: MockComment[]
   /** На кого подписан вошедший (`getusersubscribes`). */
   subscribes?: string[]
+  /** Настройки аккаунтов (`getaccountsetting`): обложка, цена подписки… */
+  settings?: Record<string, Record<string, unknown>>
 }
 
 const HEIGHT = 4_037_000
@@ -195,6 +197,11 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
     case 'getusersubscribes':
       // Поле с опечаткой, как у настоящей ноды.
       return (data.subscribes ?? []).map((adddress) => ({ adddress, private: 'false' }))
+    case 'getaccountsetting': {
+      // Нода отдаёт настройки JSON-строкой; у аккаунта без них — пусто.
+      const settings = data.settings?.[params[0] as string]
+      return settings ? JSON.stringify(settings) : ''
+    }
     case 'getboostfeed':
       return { height: HEIGHT, boosts: [] }
     case 'getnodeinfo':

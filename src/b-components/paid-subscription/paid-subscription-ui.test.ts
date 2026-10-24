@@ -245,4 +245,10 @@ describe('кнопка на странице автора', () => {
     await flushPromises()
     expect(lines(w)).toEqual(expect.arrayContaining([expect.stringMatching(/^до /)]))
   })
+
+  it('на своём профиле кнопки нет: подписаться на себя нельзя', async () => {
+    const w = mountIt(PaidProfileButton, { address: 'PMe' })
+    await flushPromises()
+    expect(w.find('button').exists()).toBe(false)
+  })
 })

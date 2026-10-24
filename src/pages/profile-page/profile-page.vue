@@ -188,6 +188,9 @@ async function fetchUserProfile(identifier: string): Promise<void> {
           hash: '',
           id: 0,
         }
+        // Или профиль аккаунта ещё не догрузился после запуска: нода его знает,
+        // и «Регистрация в процессе» сменится профилем, а не повиснет до перезагрузки.
+        void refreshOwnProfile(address)
       }
     } else {
       const profileResponse = (await getByPRCWithAuth({

@@ -1,16 +1,8 @@
 <template>
-  <!-- Свой профиль: цена и подписчики — на странице платных подписок. -->
-  <SC_PaidProfileButton v-if="isOwn" type="button" @click="openOwnPage">
-    <CrownOutlined />
-    <SC_PaidButtonLabel>
-      {{ t('paidSubscriptions.profile.own') }}
-      <SC_PaidButtonSub v-if="perMonth">{{ perMonthLabel }}</SC_PaidButtonSub>
-    </SC_PaidButtonLabel>
-  </SC_PaidProfileButton>
-
-  <!-- Чужой: оформить или продлить. Без цены автора кнопки нет. -->
+  <!-- Оформить или продлить. Без цены автора кнопки нет, на своём профиле тоже:
+       подписаться на себя нельзя, а цена и подписчики — на странице «Платные подписки». -->
   <SC_PaidProfileButton
-    v-else-if="price !== undefined && price > 0"
+    v-if="!isOwn && price !== undefined && price > 0"
     type="button"
     :class="{ active: activeUntil !== null }"
     :aria-haspopup="'dialog'"
@@ -28,7 +20,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { CrownOutlined } from '@/components/icons'
 import { useAuthStore } from '@/blockchain'
 import { requireAuth } from '@/composables/use-auth-gate'
@@ -44,7 +35,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const router = useRouter()
 const authStore = useAuthStore()
 const store = usePaidSubscriptionsStore()
 
@@ -83,10 +73,6 @@ watch(
   },
   { immediate: true }
 )
-
-function openOwnPage(): void {
-  void router.push({ name: 'paid-subscriptions', query: { tab: 'subscribers' } })
-}
 
 function openModal(): void {
   requireAuth(() => store.openModal(props.address))

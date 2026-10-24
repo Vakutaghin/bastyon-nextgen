@@ -8,7 +8,7 @@ What a post in the feed consists of and what you can do with it: read it in full
 
 ## What it consists of
 
-- **The header:** the author's avatar and name; the number next to the name is their [reputation](reputation.md), and the publishing time is under the name. Next to them are buttons to start a chat with the author, follow them and send a tip, and on the right a bookmark for [favorites](favorites.md).
+- **The header:** the author's avatar and name; the number next to the name is their [reputation](reputation.md), and the publishing time is under the name. Next to them are buttons to start a chat with the author, follow them and send a tip (your own posts have none), and on the right a bookmark for [favorites](favorites.md).
 - **The text.** Long text is collapsed — the **“Show full”** button opens the whole post in a window over the feed. For an article it is **“Read article”** instead.
 - **Images, video or audio.** Video and audio play right in the feed — see [Watching videos](video-player.md).
 - **A link card** — the title and image of the site the post links to.
