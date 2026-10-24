@@ -66,13 +66,6 @@ export const SC_SidebarHeader = styled.div`
 `
 
 /** Красная плашка с ошибкой синка messenger. */
-export const SC_SyncErrorBanner = styled.div`
-  padding: 8px;
-  background: var(--color-red-bg);
-  color: var(--color-red-dark);
-  font-size: 12px;
-`
-
 /** Синяя плашка со статусом синка messenger. */
 export const SC_SyncStatusBanner = styled.div`
   padding: 8px;

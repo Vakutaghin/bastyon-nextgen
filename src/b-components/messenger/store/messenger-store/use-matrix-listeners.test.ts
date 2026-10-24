@@ -74,17 +74,20 @@ function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}
     activeChatId,
     syncState: 'STOPPED',
     syncError: null as string | null,
+    syncErrorDetail: null as string | null,
     dialogsLoadedOnce: false,
     isChatOnScreen: (chatId: string | null) => onScreen && !!chatId && chatId === activeChatId,
   }
   const loadDialogs = vi.fn(async () => {})
   const scheduleLoadDialogs = vi.fn()
+  const onTokenRejected = vi.fn()
   registerMatrixListeners({ uiStore, chatStore, profileCache: {} } as never, {
     loadDialogs,
     scheduleLoadDialogs,
     markRoomRead,
+    onTokenRejected,
   })
-  return { chatStore, uiStore, loadDialogs, scheduleLoadDialogs }
+  return { chatStore, uiStore, loadDialogs, scheduleLoadDialogs, onTokenRejected }
 }
 
 beforeEach(() => {
@@ -293,14 +296,39 @@ describe('sync — баннер ошибки (S38)', () => {
     handlers['sync']!('CATCHUP')
     expect(uiStore.syncError).toBeNull()
   })
+
+  it('говорит, почему: нет связи — и техническую подпись для поддержки', () => {
+    const { uiStore, onTokenRejected } = setup(null)
+    const error = Object.assign(new Error('fetch failed: Failed to fetch'), {
+      name: 'ConnectionError',
+    })
+    handlers['sync']!('ERROR', 'RECONNECTING', { error })
+    expect(uiStore.syncError).toBe('appMsg.messenger.syncError: appMsg.messenger.syncErrorNetwork')
+    expect(uiStore.syncErrorDetail).toBe('fetch failed: Failed to fetch')
+    expect(onTokenRejected).not.toHaveBeenCalled()
+
+    handlers['sync']!('SYNCING', 'ERROR')
+    expect(uiStore.syncErrorDetail).toBeNull()
+  })
+
+  it('сервер отверг токен — новый вход, синк сам уже не вернётся', () => {
+    const { uiStore, onTokenRejected } = setup(null)
+    handlers['sync']!('ERROR', 'SYNCING', {
+      error: { httpStatus: 401, errcode: 'M_UNKNOWN_TOKEN' },
+    })
+    expect(uiStore.syncErrorDetail).toBe('M_UNKNOWN_TOKEN')
+    expect(onTokenRejected).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('копия своего события (`~`-id) получает настоящий id', () => {
   it('Room.localEchoUpdated передаёт событие и прежний id в chatStore.adoptLocalEcho', () => {
-    const { chatStore } = setup(ROOM)
+    const { chatStore, scheduleLoadDialogs } = setup(ROOM)
     const ev = mxEvent('m.room.message', { id: '$real' })
     handlers['Room.localEchoUpdated']!(ev, room, `~${ROOM}:m1.1`, 'sending')
     expect(chatStore.adoptLocalEcho).toHaveBeenCalledWith(ev, `~${ROOM}:m1.1`)
+    // Список тоже узнаёт: у последнего сообщения «…» сменится на «✓».
+    expect(scheduleLoadDialogs).toHaveBeenCalled()
   })
 
   it('пока копия расшифровывалась, она ушла на сервер — в ленту ложится настоящий id', async () => {

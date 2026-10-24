@@ -87,5 +87,19 @@ test('собеседник прочитал — у отправителя «✓�
   await expect(b.getByPlaceholder('Введите сообщение...')).toBeVisible({ timeout: 30_000 })
   await expect(lastAliceMark).toHaveAttribute('title', 'Прочитано', { timeout: 60_000 })
   await expect(lastAliceMark).toHaveText('✓✓')
+
+  // Та же галочка — в списке чатов, у последнего сообщения.
+  await a.keyboard.press('Escape')
+  const aliceRowMark = a
+    .getByTestId('chat-row')
+    .filter({ hasText: 'bob_e2e' })
+    .getByTestId('last-mark')
+  await expect(aliceRowMark).toHaveAttribute('title', 'Прочитано', { timeout: 30_000 })
+  await expect(aliceRowMark).toHaveText('✓✓')
+  // У Боба последнее — чужое сообщение: галочки нет.
+  await b.keyboard.press('Escape')
+  await expect(
+    b.getByTestId('chat-row').filter({ hasText: 'alice_e2e' }).getByTestId('last-mark')
+  ).toHaveCount(0)
   expect(bobWarnings.filter((w) => w.includes('IndexedDBStore'))).toEqual([])
 })

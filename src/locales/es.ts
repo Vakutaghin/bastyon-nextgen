@@ -3260,6 +3260,12 @@ export default {
       keyChanged: 'Las claves de cifrado de {name} han cambiado: verifica tu contacto',
       insufficientFunds: 'Fondos insuficientes para la transferencia con la comisión incluida',
       syncError: 'Error de sincronización',
+      syncErrorNetwork: 'sin conexión con el servidor de chat',
+      syncErrorTimeout: 'el servidor de chat no respondió a tiempo',
+      syncErrorServer: 'el servidor de chat devolvió el error {status}',
+      syncErrorToken: 'el servidor de chat cerró la sesión — entrando de nuevo',
+      syncErrorTor: 'Tor aún no está listo',
+      syncRetry: 'Reintentar',
     },
   },
 } as const

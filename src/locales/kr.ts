@@ -3192,6 +3192,12 @@ export default {
       keyChanged: '{name}님의 암호화 키가 변경되었습니다. 상대방을 확인하세요',
       insufficientFunds: '수수료를 포함한 송금액에 비해 잔액이 부족합니다',
       syncError: '동기화 오류',
+      syncErrorNetwork: '채팅 서버에 연결할 수 없음',
+      syncErrorTimeout: '채팅 서버가 제때 응답하지 않음',
+      syncErrorServer: '채팅 서버 오류 {status}',
+      syncErrorToken: '채팅 서버가 로그인을 해제함 — 다시 로그인 중',
+      syncErrorTor: 'Tor가 아직 준비되지 않음',
+      syncRetry: '다시 시도',
     },
   },
 } as const

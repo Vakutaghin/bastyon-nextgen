@@ -3206,6 +3206,12 @@ export default {
       keyChanged: 'Encryption keys of {name} have changed — verify your contact',
       insufficientFunds: 'Insufficient funds for the transfer including the fee',
       syncError: 'Sync error',
+      syncErrorNetwork: 'no connection to the chat server',
+      syncErrorTimeout: 'the chat server did not answer in time',
+      syncErrorServer: 'the chat server returned error {status}',
+      syncErrorToken: 'the chat server dropped the sign-in — signing in again',
+      syncErrorTor: 'Tor is not ready yet',
+      syncRetry: 'Retry',
     },
   },
 } as const

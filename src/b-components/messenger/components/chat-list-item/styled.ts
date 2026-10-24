@@ -95,6 +95,25 @@ export const SC_LastMessage = styled.div`
   text-overflow: ellipsis;
 `
 
+/** «…», «✓», «✓✓» у своего последнего сообщения — как у времени в переписке. */
+export const SC_ListTick = styled.span`
+  margin-right: 4px;
+  font-size: 12px;
+  letter-spacing: -2px;
+  color: var(--ui-text-muted);
+
+  &.done {
+    color: var(--color-primary);
+  }
+`
+
+/** «!» — последнее своё сообщение не отправилось. */
+export const SC_ListFailed = styled.span`
+  margin-right: 4px;
+  font-weight: 700;
+  color: var(--color-red-dark);
+`
+
 export const SC_Meta = styled.div`
   display: flex;
   flex-direction: column;

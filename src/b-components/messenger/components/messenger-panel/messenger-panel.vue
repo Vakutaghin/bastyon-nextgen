@@ -5,11 +5,9 @@
         <span>{{ t('messenger.messages') }}</span>
         <slot name="header-actions" />
       </SC_SidebarHeader>
-      <SC_SyncErrorBanner v-if="store.syncError">
-        {{ store.syncError }}
-      </SC_SyncErrorBanner>
+      <SyncErrorBanner />
       <SC_SyncStatusBanner
-        v-else-if="store.syncState !== 'PREPARED' && store.syncState !== 'SYNCING'"
+        v-if="!store.syncError && store.syncState !== 'PREPARED' && store.syncState !== 'SYNCING'"
       >
         {{ syncStatusText(store.syncState) }}
       </SC_SyncStatusBanner>
@@ -87,6 +85,7 @@ import ChatList from '../chat-list/chat-list.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
 import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
 import ChannelRoom from '../channel-room/channel-room.vue'
+import SyncErrorBanner from '../sync-error-banner/sync-error-banner.vue'
 import { channelAddressOf } from '../../lib/channels'
 import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
 import { useShownPartner } from '../chat-partner-title/use-shown-partner'
@@ -102,7 +101,6 @@ import {
   SC_MessengerDialogsLoaderText,
   SC_MessengerDialogsSpinner,
   SC_SidebarHeader,
-  SC_SyncErrorBanner,
   SC_SyncStatusBanner,
 } from './styled'
 import { ArrowLeftIcon, MessagesIcon } from '@/components/icons'

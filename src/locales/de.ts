@@ -3282,6 +3282,12 @@ export default {
         'Die Verschlüsselungsschlüssel von {name} haben sich geändert — prüfe deinen Kontakt',
       insufficientFunds: 'Nicht genug Guthaben für die Überweisung inklusive Gebühr',
       syncError: 'Synchronisierungsfehler',
+      syncErrorNetwork: 'keine Verbindung zum Chat-Server',
+      syncErrorTimeout: 'der Chat-Server hat nicht rechtzeitig geantwortet',
+      syncErrorServer: 'der Chat-Server meldet Fehler {status}',
+      syncErrorToken: 'der Chat-Server hat die Anmeldung verworfen — melde mich neu an',
+      syncErrorTor: 'Tor ist noch nicht bereit',
+      syncRetry: 'Wiederholen',
     },
   },
 } as const

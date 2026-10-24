@@ -3281,6 +3281,12 @@ export default {
       keyChanged: 'Les clés de chiffrement de {name} ont changé — vérifiez votre contact',
       insufficientFunds: 'Fonds insuffisants pour le transfert, frais compris',
       syncError: 'Erreur de synchronisation',
+      syncErrorNetwork: 'pas de connexion au serveur de discussion',
+      syncErrorTimeout: 'le serveur de discussion n’a pas répondu à temps',
+      syncErrorServer: 'le serveur de discussion a renvoyé l’erreur {status}',
+      syncErrorToken: 'le serveur de discussion a fermé la session — reconnexion',
+      syncErrorTor: 'Tor n’est pas encore prêt',
+      syncRetry: 'Réessayer',
     },
   },
 } as const

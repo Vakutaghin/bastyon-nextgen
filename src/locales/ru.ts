@@ -3193,6 +3193,12 @@ export default {
       keyChanged: 'Ключи шифрования {name} изменились — проверьте собеседника',
       insufficientFunds: 'Недостаточно средств для перевода с учётом комиссии',
       syncError: 'Ошибка синхронизации',
+      syncErrorNetwork: 'нет связи с сервером чатов',
+      syncErrorTimeout: 'сервер чатов не ответил вовремя',
+      syncErrorServer: 'сервер чатов ответил ошибкой {status}',
+      syncErrorToken: 'сервер чатов сбросил вход — вхожу заново',
+      syncErrorTor: 'Tor ещё не готов',
+      syncRetry: 'Повторить',
     },
   },
 } as const

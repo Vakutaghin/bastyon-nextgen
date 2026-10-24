@@ -45,8 +45,29 @@
       </SC_Name>
 
       <SC_LastMessage v-if="dialog.lastMessage">
-        <span v-if="isMine(dialog.lastMessage)">{{ t('chat.youPrefix') }}</span>
-        <SC_SenderPrefix v-else-if="senderPrefix">{{ senderPrefix }}:</SC_SenderPrefix>
+        <!-- Своё сообщение: галочка, как в переписке. В личном чате она и говорит,
+             что сообщение ваше, — «Вы:» остаётся только в группах. -->
+        <SC_ListTick
+          v-if="lastMark"
+          data-testid="last-mark"
+          :class="{ done: lastMark.done }"
+          :title="lastMark.title"
+          :aria-label="lastMark.title"
+          >{{ lastMark.mark }}</SC_ListTick
+        >
+        <SC_ListFailed
+          v-else-if="lastFailed"
+          data-testid="last-mark"
+          :title="t('messenger.notSent')"
+          :aria-label="t('messenger.notSent')"
+          >!</SC_ListFailed
+        >
+        <span v-if="isMine(dialog.lastMessage) && (isGroup || !lastMark)">{{
+          t('chat.youPrefix')
+        }}</span>
+        <SC_SenderPrefix v-else-if="!isMine(dialog.lastMessage) && senderPrefix"
+          >{{ senderPrefix }}:</SC_SenderPrefix
+        >
         {{ lastMessagePreview }}
       </SC_LastMessage>
     </SC_Info>
@@ -140,11 +161,17 @@ import {
 import { isMeshDialogId } from '@/mesh/ids'
 import { isGroupDialog, isMeshTransport, type Dialog, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
+import { useMessengerChatStore } from '../../store/messenger-chat-store'
+import { seenMessageIds, type ReceiptRoom } from '../../store/messenger-chat-store/read-receipts'
+import { matrixService } from '../../services/matrix-service'
 import { chatUserName } from '../../helpers'
+import { lastMessageMark } from './last-message-mark'
 import GroupAvatar from '../group-avatar/group-avatar.vue'
 import {
   SC_AvatarSlot,
   SC_GroupMark,
+  SC_ListFailed,
+  SC_ListTick,
   SC_MutedMark,
   SC_NameText,
   SC_SenderPrefix,
@@ -254,6 +281,35 @@ function formatTime(timestamp?: number): string {
 function isMine(message: Message): boolean {
   return message.senderId === 'me' || message.senderId === store.currentUser.id
 }
+
+const chatStore = useMessengerChatStore()
+
+/** Своё последнее сообщение прочитали — по квитанциям Matrix, как «✓✓» в переписке. */
+const lastSeen = computed<boolean>(() => {
+  const m = props.dialog.lastMessage
+  if (!m || !m.id.startsWith('$') || isMeshDialogId(props.dialog.id)) return false
+  // Пересчёт, когда пришла квитанция (слушатель Room.receipt).
+  void chatStore.receiptsVersion[props.dialog.id]
+  const client = matrixService.getClient()
+  const room = client?.getRoom?.(props.dialog.id) as ReceiptRoom | null | undefined
+  const myUserId = client?.getUserId?.() as string | undefined
+  if (!room || !myUserId) return false
+  try {
+    return seenMessageIds(room, myUserId, [m], () => true).has(m.id)
+  } catch {
+    return false
+  }
+})
+
+const lastMark = computed(() => {
+  const m = props.dialog.lastMessage
+  return m && isMine(m) ? lastMessageMark(m, lastSeen.value, t) : null
+})
+
+const lastFailed = computed<boolean>(() => {
+  const m = props.dialog.lastMessage
+  return !!m && isMine(m) && m.status === 'failed'
+})
 
 function toggleMenu(e: MouseEvent): void {
   if (menuOpen.value) {

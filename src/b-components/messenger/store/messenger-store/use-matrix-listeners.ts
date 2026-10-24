@@ -21,6 +21,7 @@ import {
   getAddressFromMatrixId,
 } from '../../helpers'
 import { notificationPreviewFor, senderDisplayName } from './notification-preview'
+import { syncErrorReason, type SyncErrorKind } from '../../lib/sync-error'
 import { SOUND_MAX_AGE } from '../consts'
 import type { MessengerStoreContext } from './types'
 
@@ -33,6 +34,21 @@ export interface MatrixListenerCallbacks {
   scheduleLoadDialogs: () => void
   /** Отметить чат прочитанным, если он на экране (read-marker). */
   markRoomRead: (roomId: string) => Promise<void>
+  /**
+   * Сервер отверг токен (M_UNKNOWN_TOKEN): SDK остановил синк и сам больше не
+   * пробует — нужен новый вход.
+   */
+  onTokenRejected?: () => void
+}
+
+/** Подпись к «Ошибке синхронизации»: почему синк не идёт. */
+const REASON_KEY: Record<SyncErrorKind, string | null> = {
+  network: 'appMsg.messenger.syncErrorNetwork',
+  timeout: 'appMsg.messenger.syncErrorTimeout',
+  server: 'appMsg.messenger.syncErrorServer',
+  token: 'appMsg.messenger.syncErrorToken',
+  tor: 'appMsg.messenger.syncErrorTor',
+  unknown: null,
 }
 
 /**
@@ -44,7 +60,7 @@ export function registerMatrixListeners(
   callbacks: MatrixListenerCallbacks
 ): void {
   const { uiStore, chatStore } = ctx
-  const { loadDialogs, scheduleLoadDialogs, markRoomRead } = callbacks
+  const { loadDialogs, scheduleLoadDialogs, markRoomRead, onTokenRejected } = callbacks
 
   matrixService.on(
     'Room.timeline',
@@ -173,6 +189,9 @@ export function registerMatrixListeners(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MatrixEvent передаётся в приватный MxEvent-тип chat-store, как в Room.timeline выше
     (event: any, _room: unknown, oldEventId?: string) => {
       void chatStore.adoptLocalEcho(event, oldEventId)
+      // В списке у последнего сообщения «…» сменится на «✓»: новых событий
+      // ленты при этом нет, сам список о подтверждении не узнал бы.
+      scheduleLoadDialogs()
     }
   )
 
@@ -189,28 +208,41 @@ export function registerMatrixListeners(
     if (room?.roomId) chatStore.noteReceipt(room.roomId)
   })
 
-  matrixService.on('sync', (state: string, prevState?: string | null) => {
-    uiStore.syncState = state
-    if (state === 'ERROR') {
-      uiStore.syncError = t('appMsg.messenger.syncError')
-      return
+  matrixService.on(
+    'sync',
+    (state: string, prevState?: string | null, data?: { error?: unknown }) => {
+      uiStore.syncState = state
+      if (state === 'ERROR') {
+        const reason = syncErrorReason(data?.error)
+        const key = REASON_KEY[reason.kind]
+        const why = key ? t(key, { status: reason.status ?? '' }) : ''
+        uiStore.syncError = why
+          ? `${t('appMsg.messenger.syncError')}: ${why}`
+          : t('appMsg.messenger.syncError')
+        uiStore.syncErrorDetail = reason.detail || null
+        // В кольцо последних ошибок — оно уходит в «Сведения о приложении».
+        if (prevState !== 'ERROR') log.error('Ошибка синхронизации:', reason.kind, reason.detail)
+        if (reason.kind === 'token') onTokenRejected?.()
+        return
+      }
+      // Связь вернулась: то, что не расшифровалось без сети (профили с ключами
+      // не загрузились), пробуем снова.
+      if (state === 'SYNCING' && (prevState === 'ERROR' || prevState === 'RECONNECTING')) {
+        chatStore.retryUndecrypted()
+        scheduleLoadDialogs()
+      }
+      // Баннер «Ошибка синхронизации» раньше гас только на 'PREPARED', а он
+      // бывает раз за жизнь клиента — после восстановления связи (SYNCING)
+      // надпись висела навсегда (S38).
+      if (state === 'PREPARED' || state === 'SYNCING' || state === 'CATCHUP') {
+        uiStore.syncError = null
+        uiStore.syncErrorDetail = null
+      }
+      if (state === 'PREPARED') {
+        loadDialogs(true).then(() => {
+          uiStore.dialogsLoadedOnce = true
+        })
+      }
     }
-    // Связь вернулась: то, что не расшифровалось без сети (профили с ключами
-    // не загрузились), пробуем снова.
-    if (state === 'SYNCING' && (prevState === 'ERROR' || prevState === 'RECONNECTING')) {
-      chatStore.retryUndecrypted()
-      scheduleLoadDialogs()
-    }
-    // Баннер «Ошибка синхронизации» раньше гас только на 'PREPARED', а он
-    // бывает раз за жизнь клиента — после восстановления связи (SYNCING)
-    // надпись висела навсегда (S38).
-    if (state === 'PREPARED' || state === 'SYNCING' || state === 'CATCHUP') {
-      uiStore.syncError = null
-    }
-    if (state === 'PREPARED') {
-      loadDialogs(true).then(() => {
-        uiStore.dialogsLoadedOnce = true
-      })
-    }
-  })
+  )
 }

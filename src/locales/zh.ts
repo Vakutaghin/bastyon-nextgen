@@ -3075,6 +3075,12 @@ export default {
       keyChanged: '{name} 的加密密钥已更改——请核实联系人',
       insufficientFunds: '余额不足以支付转账及手续费',
       syncError: '同步出错',
+      syncErrorNetwork: '无法连接聊天服务器',
+      syncErrorTimeout: '聊天服务器未及时响应',
+      syncErrorServer: '聊天服务器返回错误 {status}',
+      syncErrorToken: '聊天服务器注销了登录，正在重新登录',
+      syncErrorTor: 'Tor 尚未就绪',
+      syncRetry: '重试',
     },
   },
 } as const

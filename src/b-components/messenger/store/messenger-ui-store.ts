@@ -44,6 +44,8 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
 
   const syncState = ref<string>('STOPPED')
   const syncError = ref<string | null>(null)
+  /** Техническая причина ошибки синка (HTTP-код, «fetch failed…») — для поддержки. */
+  const syncErrorDetail = ref<string | null>(null)
   const isSyncStarted = ref(false)
   const isInitInProgress = ref(false)
 
@@ -192,6 +194,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     dialogsLoadedOnce.value = false
     syncState.value = 'STOPPED'
     syncError.value = null
+    syncErrorDetail.value = null
     isSyncStarted.value = false
     isInitInProgress.value = false
     groupInfoChatId.value = null
@@ -209,6 +212,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     dialogsLoadedOnce,
     syncState,
     syncError,
+    syncErrorDetail,
     isSyncStarted,
     isInitInProgress,
     chatFilter,

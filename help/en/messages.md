@@ -36,6 +36,8 @@ A sent message cannot be edited.
 - “typing…” above the input field means the other person is typing.
 - **“Not sent”** means the message did not go out, for example the connection dropped. The text stays on screen: press **“Retry”**.
 
+The same marks show in the chat list, next to your last message in a chat, and **!** there means it was not sent. In a private chat the mark itself says the message is yours, so “You:” appears before it only in groups.
+
 ## Message notifications
 
 When a message arrives in a chat that is not open, a sound plays and the unread count on the chat icon goes up. Several messages in a row make one sound, and a message the other person edited makes none. The **“Sound”** switch in the [notification settings](notifications.md) turns the sound off. If **“Browser notifications”** are on in the [notification settings](notifications.md) and the app window is minimised, the system tells you too — without the text: the sender’s name and what arrived, for example “New message” or “Image”.

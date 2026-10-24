@@ -24,6 +24,9 @@
         <ChatPartnerTitle :partner="shownPartner" />
       </template>
 
+      <!-- Без него окошко при сбое синка показывало только вечную «Загрузку диалогов». -->
+      <SyncErrorBanner v-if="!activeChatId && !(lastTargetAddress && inviteViewActive)" />
+
       <SC_MessengerWrapperLoader
         v-if="isDialogsLoading && !activeChatId && !(lastTargetAddress && inviteViewActive)"
       >
@@ -96,6 +99,7 @@ import ChannelRoom from '../channel-room/channel-room.vue'
 import { channelAddressOf } from '../../lib/channels'
 import { isMeshDialogId } from '@/mesh/ids'
 import MessengerPanel from '../messenger-panel/messenger-panel.vue'
+import SyncErrorBanner from '../sync-error-banner/sync-error-banner.vue'
 import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
 import GroupInfoModal from '../group-info/group-info-modal.vue'
 import { useShownPartner } from '../chat-partner-title/use-shown-partner'

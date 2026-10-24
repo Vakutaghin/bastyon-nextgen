@@ -340,6 +340,44 @@ export const useMessengerStore = defineStore('messenger', () => {
     void initMatrix()
   }
 
+  /**
+   * Сервер отверг токен (M_UNKNOWN_TOKEN): SDK остановил синк насовсем, и
+   * мессенджер висел с «Ошибкой синхронизации» до перезапуска. Заводим клиента
+   * заново — новый вход ключами, как при запуске. Не чаще раза в минуту: если
+   * сервер отвергает и свежий токен, по кругу не ходим.
+   */
+  let lastTokenRecovery = 0
+  const recoverFromRejectedToken = () => {
+    if (Date.now() - lastTokenRecovery < 60_000) return
+    lastTokenRecovery = Date.now()
+    // Не внутри обработчика события синка: SDK ещё заканчивает остановку.
+    setTimeout(() => {
+      // stop() снимает подписки — initMatrix зарегистрирует их заново.
+      matrixService.stop()
+      listenersRegistered = false
+      // Токен бывает отвергнут первым же синком, пока первый вход ещё не
+      // закончился, — тогда initMatrix вышел бы сразу («уже идёт»).
+      const relogin = () => {
+        if (uiStore.isInitInProgress) setTimeout(relogin, 500)
+        else void initMatrix()
+      }
+      relogin()
+    }, 0)
+  }
+
+  /** «Повторить» в баннере ошибки: синк — сейчас, а не через минуту ожидания. */
+  const retrySync = () => {
+    const client = matrixService.getClient()
+    if (!client) {
+      retryLoginNow()
+    } else if (client.clientRunning === false) {
+      lastTokenRecovery = 0
+      recoverFromRejectedToken()
+    } else {
+      client.retryImmediately?.()
+    }
+  }
+
   const cancelLoginRetry = () => {
     if (loginRetryTimer) clearTimeout(loginRetryTimer)
     loginRetryTimer = null
@@ -381,7 +419,12 @@ export const useMessengerStore = defineStore('messenger', () => {
           // Подписка на события (Room.timeline / sync) — до login, matrixService
           // копит подписки до создания клиента. Ровно один раз (S37).
           if (!listenersRegistered) {
-            registerMatrixListeners(ctx, { loadDialogs, scheduleLoadDialogs, markRoomRead })
+            registerMatrixListeners(ctx, {
+              loadDialogs,
+              scheduleLoadDialogs,
+              markRoomRead,
+              onTokenRejected: recoverFromRejectedToken,
+            })
             // Список каналов поменяли на другом устройстве.
             matrixService.on(
               'accountData',
@@ -818,6 +861,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     chatFilter: computed(() => uiStore.chatFilter),
     groupInfoChatId: computed(() => uiStore.groupInfoChatId),
     syncError: computed(() => uiStore.syncError),
+    syncErrorDetail: computed(() => uiStore.syncErrorDetail),
     userProfiles: computed(() => profileCache.userProfiles),
     // ВАЖНО: `pcryptoService` инициализируется как `ref(null)`, поэтому при auto-unwrap
     // через Pinia это даёт `null`. Если выставить значение напрямую (`pcryptoService:
@@ -858,6 +902,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     getDirectPartnerAddress: chatStore.getDirectPartnerAddress,
     fetchAndDecryptMedia: chatStore.fetchAndDecryptMedia,
     initMatrix,
+    retrySync,
     deleteDialog,
     setDialogMuted,
     setChatFilter: uiStore.setChatFilter,
