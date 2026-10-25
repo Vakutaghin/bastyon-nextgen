@@ -1,6 +1,5 @@
 ---
 keywords: [NextGen, старое приложение, Pocketnet, совместимость, возможности, открытый код, bastyon.com]
-code: [_docs-todo/FEATURE_GAP_ROADMAP.md]
 ---
 
 # Приложение Bastyon NextGen
