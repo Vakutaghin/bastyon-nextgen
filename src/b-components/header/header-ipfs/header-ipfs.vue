@@ -6,10 +6,10 @@
     :overlay-style="{ zIndex: 3000 }"
   >
     <SC_IpfsWrapper :variant="variant" @click="onTriggerClick">
-      <CheckCircleFilled v-if="variant === 'ready'" :style="ICON_SIZE_XL" />
-      <LoadingOutlined v-else-if="variant === 'busy'" :style="ICON_SIZE_XL" spin />
-      <WarningFilled v-else-if="variant === 'failed'" :style="ICON_SIZE_XL" />
-      <GlobalOutlined v-else :style="ICON_SIZE_XL" />
+      <LoadingOutlined v-if="variant === 'busy'" spin />
+      <WarningFilled v-else-if="variant === 'failed'" />
+      <!-- Выключен — серый глобус, запущен — тот же глобус зелёным (цвет у SC_IpfsWrapper). -->
+      <GlobalOutlined v-else />
       <SC_IpfsDot v-if="updateAvailable" />
     </SC_IpfsWrapper>
 
@@ -66,13 +66,7 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Dropdown, Button, Modal } from 'ant-design-vue'
-import { ICON_SIZE_XL } from '@/styles/icon-styles'
-import {
-  GlobalOutlined,
-  LoadingOutlined,
-  WarningFilled,
-  CheckCircleFilled,
-} from '@/components/icons'
+import { GlobalOutlined, LoadingOutlined, WarningFilled } from '@/components/icons'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import IpfsBrowserDialog from './ipfs-browser-dialog.vue'
 import {

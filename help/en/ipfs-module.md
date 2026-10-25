@@ -16,7 +16,7 @@ The module runs while Bastyon is open and stops together with the app. Unless yo
 
 ## The IPFS icon in the header
 
-The icon shows the module’s state: a green check means running, a spinner means installing or starting, a triangle means an error. The icon’s menu has:
+The icon shows the module’s state: a grey globe means off, a green one means running, a spinner means installing or starting, a triangle means an error. The icon’s menu has:
 
 - a status line, for example **“Local IPFS node running”** or **“IPFS module installed (stopped)”**;
 - **“Install & start (~80 MB)”**, **“Start”** or **“Stop”**. While the module installs, there is also **“Cancel installation”**;

@@ -10,6 +10,7 @@ export const SC_IpfsWrapper = styled.div<{ variant?: Variant }>`
   cursor: pointer;
   padding: 6px;
   border-radius: var(--ui-radius-md);
+  font-size: 20px;
   transition:
     background-color var(--transition-fast),
     color var(--transition-fast);
