@@ -175,13 +175,25 @@ export const SC_NotificationActor = styled.div`
   min-width: 0;
 `
 
+/** Пока картинка грузится, подложка пульсирует, как скелетон. */
 export const SC_NotificationAvatar = styled.div`
   width: 28px;
   height: 28px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: var(--ui-border);
+  background: var(--ui-bg-elevated);
+  animation: notification-avatar-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  &.loaded {
+    animation: none;
+  }
+
+  @keyframes notification-avatar-pulse {
+    50% {
+      opacity: 0.5;
+    }
+  }
 
   img {
     width: 100%;

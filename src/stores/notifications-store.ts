@@ -47,6 +47,22 @@ export type {
  * Блок для следующего запроса сохраняем в IDB при открытии выпадашки (все прочитаны).
  */
 
+/**
+ * Сведения об отправителе из двух источников: непустые поля `over` поверх
+ * `base`. Пустое имя снимка не затирает известное.
+ */
+function mergeUser<T extends NotificationUserSnapshot>(
+  base: T | undefined,
+  over: NotificationUserSnapshot | undefined
+): T | undefined {
+  if (!over) return base
+  const out = { ...base, address: over.address } as T
+  if (over.name?.trim()) out.name = over.name
+  if (over.avatar) out.avatar = over.avatar
+  if (over.reputation != null) out.reputation = over.reputation
+  return out
+}
+
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     items: [] as NotificationItem[],
@@ -81,6 +97,8 @@ export const useNotificationsStore = defineStore('notifications', {
     enriching: false,
     /** id уведомлений, для которых уже запускали enrichVisible (антидубль) */
     enrichedIds: new Set<string>() as Set<string>,
+    /** Адреса, чьи профили сейчас грузятся: имя и аватар — скелетоном. */
+    pendingProfiles: new Set<string>() as Set<string>,
   }),
   getters: {
     /**
@@ -323,7 +341,7 @@ export const useNotificationsStore = defineStore('notifications', {
         }
         const fromAddr = n.from ?? n.fromSnapshot?.address
         if (n.fromSnapshot && fromAddr) {
-          this.profileCache[fromAddr] = { ...this.profileCache[fromAddr], ...n.fromSnapshot }
+          this.profileCache[fromAddr] = mergeUser(this.profileCache[fromAddr], n.fromSnapshot)!
         }
       }
     },
@@ -376,6 +394,7 @@ export const useNotificationsStore = defineStore('notifications', {
       this.commentCache = {}
       this.profileCache = {}
       this.enrichedIds = new Set()
+      this.pendingProfiles = new Set()
       this.enriching = false
     },
     setItems(items: NotificationItem[]) {
@@ -433,6 +452,7 @@ export const useNotificationsStore = defineStore('notifications', {
           commentCache: this.commentCache,
           profileCache: this.profileCache,
           enrichedIds: this.enrichedIds,
+          pendingProfiles: this.pendingProfiles,
         },
         notifications,
         (v) => {
@@ -452,8 +472,16 @@ export const useNotificationsStore = defineStore('notifications', {
       const post = item.postSnapshot ?? (postId ? this.postCache[postId] : undefined)
       const fromAddr = item.from ?? item.fromSnapshot?.address
       const fromCached = fromAddr ? this.profileCache[fromAddr] : undefined
-      const from = item.fromSnapshot ?? fromCached
+      // Снимок у большинства событий — один адрес: имя и аватар тогда из
+      // догруженного профиля, иначе вместо ника стоял адрес.
+      const from = mergeUser(fromCached, item.fromSnapshot)
       return { post, comment, from }
+    },
+
+    /** Имя отправителя ещё грузится: в карточке — скелетон, а не адрес. */
+    isActorPending(item: NotificationItem): boolean {
+      const addr = item.from ?? item.fromSnapshot?.address
+      return !!addr && !this.getEnrichment(item).from?.name && this.pendingProfiles.has(addr)
     },
   },
 })

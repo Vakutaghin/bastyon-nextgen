@@ -184,6 +184,31 @@ describe('notifications-store: курсор, снимки, бейдж (V38, V39,
     expect(store.getEnrichment(store.items[0]!).from?.name).toBe('Alice')
   })
 
+  it('снимок без имени: ник и аватар из профиля, а не адрес', () => {
+    const store = useNotificationsStore()
+    const item = {
+      id: 'n1',
+      type: 'comment',
+      title: 't',
+      time: 1,
+      seen: false,
+      from: 'PX',
+      fromSnapshot: { address: 'PX' },
+    } as const
+    store.pendingProfiles.add('PX')
+    expect(store.isActorPending(item)).toBe(true)
+    store.profileCache.PX = { address: 'PX', name: 'Alice', avatar: 'https://img/a.jpg' }
+    store.pendingProfiles.delete('PX')
+    expect(store.getEnrichment(item).from).toMatchObject({
+      name: 'Alice',
+      avatar: 'https://img/a.jpg',
+    })
+    expect(store.isActorPending(item)).toBe(false)
+    // Новое событие того же автора с пустым снимком имя в кеше не стирает.
+    store.cacheSnapshots([{ ...item, id: 'n2' }])
+    expect(store.profileCache.PX?.name).toBe('Alice')
+  })
+
   it('бейдж считает только непрочитанные и чистит хранилище (S53)', async () => {
     mocks.fetchMissedInfo.mockResolvedValueOnce([
       { block: 105, contentsLang: {} },

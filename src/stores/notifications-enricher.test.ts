@@ -50,6 +50,25 @@ describe('enrichNotifications', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
+  it('профиль в пути — адрес «в загрузке», повторно не запрашивается, после ответа снят', async () => {
+    let answer: (v: unknown) => void = () => {}
+    mocks.rpcCall.mockReturnValue(new Promise((r) => (answer = r)))
+    const c = { ...caches(), pendingProfiles: new Set<string>() }
+    // Снимок с одним адресом — как у большинства событий.
+    const n = note({ id: 'up1', from: 'PBob', fromSnapshot: { address: 'PBob' } })
+    const first = enrichNotifications(c, [n], () => {})
+    expect([...c.pendingProfiles]).toEqual(['PBob'])
+    await enrichNotifications(c, [n, note({ id: 'up2', from: 'PBob' })], () => {})
+    expect(mocks.rpcCall).toHaveBeenCalledTimes(1)
+    // Пока профиль в пути, второй вызов готовыми их не помечает.
+    expect(c.enrichedIds.size).toBe(0)
+    answer([{ address: 'PBob', name: 'bob' }])
+    await first
+    expect(c.pendingProfiles.size).toBe(0)
+    expect(c.profileCache.PBob?.name).toBe('bob')
+    expect([...c.enrichedIds]).toEqual(['up1'])
+  })
+
   it('пост, комментарий и автор — по пачке на вид, кеш заполнен, всё помечено', async () => {
     node(
       {

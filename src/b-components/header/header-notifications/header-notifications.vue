@@ -9,7 +9,7 @@
     :overlay-style="{ zIndex: 3000 }"
     @open-change="onOpenChange"
   >
-    <SC_NotificationsWrapper>
+    <SC_NotificationsWrapper role="button" tabindex="0" :aria-label="t('header.notifications')">
       <Badge
         :count="unreadCount"
         :offset="[0, 5]"
@@ -53,12 +53,25 @@
 
               <SC_NotificationActor>
                 <UserMark :mark="userMarkOf(item.from ?? item.fromSnapshot?.address)" :size="14">
-                  <SC_NotificationAvatar v-if="getAvatar(item)">
+                  <!-- Профиль ещё грузится: скелетоны вместо адреса и буквы. -->
+                  <Skeleton
+                    v-if="notificationsStore.isActorPending(item)"
+                    data-testid="actor-avatar-skeleton"
+                    :width="28"
+                    :height="28"
+                    radius="50%"
+                  />
+                  <SC_NotificationAvatar
+                    v-else-if="avatarOf(item)"
+                    :class="{ loaded: loadedAvatars.has(avatarOf(item)!) }"
+                  >
                     <img
-                      :src="getAvatar(item) ?? undefined"
+                      :src="avatarOf(item)!"
                       :alt="getDisplayName(item)"
                       loading="lazy"
                       decoding="async"
+                      @load="loadedAvatars.add(avatarOf(item)!)"
+                      @error="brokenAvatars.add(avatarOf(item)!)"
                     />
                   </SC_NotificationAvatar>
                   <SC_NotificationAvatarLetter v-else>
@@ -68,7 +81,13 @@
 
                 <SC_NotificationActorText>
                   <SC_NotificationActorName>
-                    {{ getDisplayName(item) }}
+                    <Skeleton
+                      v-if="notificationsStore.isActorPending(item)"
+                      data-testid="actor-name-skeleton"
+                      :width="96"
+                      :height="12"
+                    />
+                    <template v-else>{{ getDisplayName(item) }}</template>
                   </SC_NotificationActorName>
                   <SC_NotificationAction>{{ getActionLine(item) }}</SC_NotificationAction>
                 </SC_NotificationActorText>
@@ -126,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, type Component } from 'vue'
+import { computed, onMounted, reactive, ref, watch, type Component } from 'vue'
 import { openExternal } from '@/helpers/common/open-external'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -151,6 +170,7 @@ import type { NotificationItem } from '@/stores/notifications-store'
 import { isLowRatingValue } from '@/stores/notification-filtering'
 import { adaptPostData } from '@/composables/use-feed'
 import UserMark from '@/components/user-mark'
+import Skeleton from '@/components/skeleton'
 import { userMarkOf } from '@/services/user-marks'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import {
@@ -236,6 +256,16 @@ const unreadCount = computed(() => notificationsStore.unreadCount)
 const list = computed(() => notificationsStore.list.slice(0, 20))
 const isLoading = computed(() => notificationsStore.loading)
 const isEnriching = computed(() => notificationsStore.enriching)
+
+// Имена, тексты и посты догружаются, пока список открыт: и при открытии, и
+// когда уведомления пришли уже при открытом (первая загрузка, новое событие).
+// Раньше только при открытии, и пришедшие позже оставались с адресами.
+watch(
+  () => (visible.value ? list.value.map((i) => i.id).join(',') : ''),
+  (ids) => {
+    if (ids) void notificationsStore.enrichVisible(list.value)
+  }
+)
 // Read-pointer (P2-8): «прочитано до» двигается только по явному открытию
 // выпадашки, а не на head сети при каждом фоновом опросе.
 const readBlock = computed(() => notificationsStore.readBlock)
@@ -279,9 +309,13 @@ function getInitial(item: NotificationItem): string {
   return getDisplayName(item).charAt(0).toUpperCase()
 }
 
-function getAvatar(item: NotificationItem): string | null {
-  const e = enrichmentFor(item)
-  return resolveImageUrl(e.from?.avatar) ?? null
+/** Загруженные картинки аватаров — без пульсации; битые — буквой. */
+const loadedAvatars = reactive(new Set<string>())
+const brokenAvatars = reactive(new Set<string>())
+
+function avatarOf(item: NotificationItem): string | null {
+  const url = resolveImageUrl(enrichmentFor(item).from?.avatar) ?? null
+  return url && !brokenAvatars.has(url) ? url : null
 }
 
 function getActionLine(item: NotificationItem): string {
@@ -489,7 +523,6 @@ function onOpenChange(open: boolean): void {
     if (notificationsStore.list.length === 0 && !notificationsStore.loading) {
       notificationsStore.init({ forceRefresh: true })
     }
-    notificationsStore.enrichVisible(list.value)
     return
   }
   void notificationsStore.persistReadPointer()

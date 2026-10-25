@@ -25,6 +25,8 @@ export interface EnrichmentCaches {
   commentCache: Record<string, NotificationCommentSnapshot & Record<string, unknown>>
   profileCache: Record<string, NotificationUserSnapshot & { profile?: UserProfile }>
   enrichedIds: Set<string>
+  /** Адреса, чьи профили сейчас запрошены: имя и аватар у них — скелетоном. */
+  pendingProfiles?: Set<string>
 }
 
 /** id комментария, текст которого нужен уведомлению (у оценки комментария — commentId). */
@@ -98,7 +100,12 @@ export async function enrichNotifications(
     }
     // Профиль отправителя
     const addr = n.from ?? n.fromSnapshot?.address
-    if (addr && !caches.profileCache[addr]?.name && !n.fromSnapshot?.name) {
+    if (
+      addr &&
+      !caches.profileCache[addr]?.name &&
+      !n.fromSnapshot?.name &&
+      !caches.pendingProfiles?.has(addr)
+    ) {
       profileAddrs.add(addr)
     }
   }
@@ -139,6 +146,7 @@ export async function enrichNotifications(
   }
   if (profileAddrs.size > 0) {
     const addrs = [...profileAddrs]
+    for (const a of addrs) caches.pendingProfiles?.add(a)
     tasks.push(
       rpcCall<UserProfile[]>({
         method: rpcEndpoints.getUserProfile,
@@ -161,6 +169,9 @@ export async function enrichNotifications(
         .catch((e) => {
           profilesFailed = true
           console.warn('[notifications] enrich profiles failed', e)
+        })
+        .finally(() => {
+          for (const a of addrs) caches.pendingProfiles?.delete(a)
         })
     )
   }
@@ -207,6 +218,8 @@ export async function enrichNotifications(
     const dependsComment = !!commentId && commentTxids.has(commentId)
     const addr = n.from ?? n.fromSnapshot?.address
     const dependsProfile = !!addr && profileAddrs.has(addr)
+    // Профиль грузит другой вызов: готово станет, когда он ответит.
+    if (addr && !dependsProfile && caches.pendingProfiles?.has(addr)) continue
     if (
       (dependsPost && postsFailed) ||
       (dependsComment && commentsFailed) ||
