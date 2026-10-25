@@ -1,7 +1,8 @@
 //! Файл модуля mesh-сетей: скачать, проверить, распаковать, удалить.
 //!
 //! Модуль собирается в релизе вместе с приложением (джоба `desktop` в
-//! release.yml) и лежит в том же релизе: `bastyon-mesh-<платформа>.gz`.
+//! release.yml) и лежит в том же релизе: `_bastyon-mesh-<платформа>.gz`
+//! (до 0.13.4 — без `_`; служебные файлы релиза с `_` уходят в конец списка).
 //! Размер и SHA-256 архива сборка приложения получает из той же джобы
 //! (`BASTYON_MESH_MODULE_SHA256`, `BASTYON_MESH_MODULE_SIZE`) и вшивает в
 //! себя: скачанная программа — канал исполнения чужого кода, и подменённый
@@ -62,7 +63,7 @@ fn current_key() -> Option<&'static str> {
 }
 
 pub fn archive_name(key: &str) -> String {
-    format!("bastyon-mesh-{key}.gz")
+    format!("_bastyon-mesh-{key}.gz")
 }
 
 /// Архив лежит в релизе той версии приложения, которой он собран.
@@ -338,8 +339,8 @@ mod tests {
     #[test]
     fn archive_is_in_the_release_of_this_version() {
         assert_eq!(
-            archive_url("0.12.0", "darwin-aarch64"),
-            "https://github.com/Vakutaghin/bastyon-nextgen/releases/download/v0.12.0/bastyon-mesh-darwin-aarch64.gz"
+            archive_url("0.13.5", "darwin-aarch64"),
+            "https://github.com/Vakutaghin/bastyon-nextgen/releases/download/v0.13.5/_bastyon-mesh-darwin-aarch64.gz"
         );
         assert_eq!(platform_key("windows", "x86_64"), Some("windows-x86_64"));
         assert_eq!(platform_key("windows", "aarch64"), None);

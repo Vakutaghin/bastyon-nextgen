@@ -12,6 +12,8 @@
 | Linux на базе Debian или Ubuntu | `Linux-Bastyon-NextGen-__VERSION__-x86_64.deb` |
 | Android 7 и новее | `Android-Bastyon-NextGen-__VERSION__.apk` |
 
+Файлы с `_` в начале имени и `latest.json` служебные: их скачивает само приложение (обновления, модуль mesh-сетей). Вручную их качать не нужно.
+
 Не знаете, какой процессор у вашего Mac: меню Apple → «Об этом Mac». Строка вида «Apple M1/M2/M3/M4» означает Apple Silicon, «Intel Core» — Intel.
 
 __CHANGELOG_RU__
@@ -86,6 +88,8 @@ sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 | Linux, any distribution | `Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage` |
 | Linux based on Debian or Ubuntu | `Linux-Bastyon-NextGen-__VERSION__-x86_64.deb` |
 | Android 7 and newer | `Android-Bastyon-NextGen-__VERSION__.apk` |
+
+Files whose names start with `_`, and `latest.json`, are for the app itself (updates, the mesh module). You do not need to download them.
 
 Not sure which processor your Mac has: Apple menu → "About This Mac". A line like "Apple M1/M2/M3/M4" means Apple Silicon, "Intel Core" means Intel.
 

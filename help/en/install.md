@@ -19,6 +19,8 @@ All versions are on the [releases page](https://github.com/Vakutaghin/bastyon-ne
 | Linux based on Debian or Ubuntu | `Linux-Bastyon-NextGen-…-x86_64.deb` |
 | Android 7 and newer | `Android-Bastyon-NextGen-….apk` |
 
+Files whose names start with `_`, and `latest.json`, are for the app itself (updates, the mesh module). You do not need to download them.
+
 You can see which processor your Mac has in Apple menu → "About This Mac": a line like "Apple M1" (M2, M3, M4) means Apple Silicon, "Intel Core" means Intel.
 
 ## macOS

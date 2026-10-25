@@ -21,6 +21,8 @@ code: [.github/release-body.md, src-tauri/tauri.conf.json, public/compat-check.j
 | Linux на базе Debian или Ubuntu | `Linux-Bastyon-NextGen-…-x86_64.deb` |
 | Android 7 и новее | `Android-Bastyon-NextGen-….apk` |
 
+Файлы с `_` в начале имени и `latest.json` служебные: их скачивает само приложение (обновления, модуль mesh-сетей). Вручную их качать не нужно.
+
 Какой процессор у вашего Mac, видно в меню Apple → «Об этом Mac»: строка «Apple M1» (M2, M3, M4) означает Apple Silicon, «Intel Core» — Intel.
 
 ## macOS

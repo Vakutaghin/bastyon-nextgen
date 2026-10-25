@@ -14,6 +14,12 @@
 # качать. Здесь платформа идёт ПЕРВОЙ, поэтому сортировка по алфавиту сама
 # группирует файлы по системам.
 #
+# Служебные файлы, которые качает само приложение (модуль mesh-сетей, файл
+# обновления macOS), начинаются с `_`: GitHub сортирует его после букв, и они
+# уходят в конец списка, под «Show all N assets» — без него видно только
+# первые десять файлов. latest.json не переименовать: по этому адресу его
+# ищут все установленные версии с 0.9.4 (endpoints в tauri.conf.json).
+#
 # Релиз создаёт отдельная джоба до сборок: tauri-action больше не создаёт его
 # сама (иначе она же и заливала бы файлы под своими именами), а android раньше
 # падал на `release not found`, если добегал первым.
@@ -286,7 +292,7 @@ jobs:
             codesign --force --options runtime --sign "$identity" "mesh-module/$exe"
             codesign --verify --strict "mesh-module/$exe"
           fi
-          asset="mesh-module/bastyon-mesh-$key.gz"
+          asset="mesh-module/_bastyon-mesh-$key.gz"
           gzip -9 -n -c "mesh-module/$exe" > "$asset"
           read -r sha size < <(node -e '
             const b = require("fs").readFileSync(process.argv[1])
@@ -376,7 +382,8 @@ jobs:
           echo "Подпись: $requirement"
 
       # Файл обновления для апдейтера в приложении: на macOS — .app.tar.gz
-      # (заливается рядом с dmg), на Windows и Linux — сами .msi и .AppImage.
+      # (служебный, с `_`: апдейтер Tauri на macOS ставит только его, не dmg),
+      # на Windows и Linux — сами .msi и .AppImage.
       # Его подпись (.sig рядом) и адрес в релизе уходят записью в
       # updater-<variant>.json, из записей джоба publish собирает latest.json.
       # `rw.*.dmg` — промежуточный образ упаковщика в bundle/macos/: если он
@@ -400,7 +407,7 @@ jobs:
             asset=""
             case "$f" in
               *.dmg)        asset="macOS-Bastyon-NextGen-${VERSION}-${VARIANT}.dmg" ;;
-              *.app.tar.gz) asset="macOS-Bastyon-NextGen-${VERSION}-${VARIANT}.app.tar.gz" ;;
+              *.app.tar.gz) asset="_update-macOS-Bastyon-NextGen-${VERSION}-${VARIANT}.app.tar.gz" ;;
               *.msi)        asset="Windows-Bastyon-NextGen-${VERSION}-${VARIANT}.msi" ;;
               *.AppImage)   asset="Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.AppImage" ;;
               *.deb)        asset="Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.deb" ;;
