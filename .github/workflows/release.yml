@@ -139,6 +139,24 @@ jobs:
           # bindgen при сборке whisper.cpp (src/asr).
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev libasound2-dev libclang-dev
 
+      # AppImage не должен везти libwayland-* Ubuntu 22.04: системный Mesa
+      # (Fedora 42 — 25.x) грузит их вместо своих, процесс страницы падает с
+      # «Could not create default EGL display: EGL_BAD_PARAMETER», и окно пустое
+      # (0.13.4 на Fedora). Исключить библиотеку можно переменной
+      # LINUXDEPLOY_EXCLUDED_LIBRARIES (шаг Build the app), но её понимает
+      # linuxdeploy только с августа 2025, а Tauri качает сборку 2024 года.
+      # Tauri берёт linuxdeploy из ~/.cache/tauri, если он там уже есть, —
+      # кладём туда выпуск, сверенный по SHA-256.
+      - name: Pin linuxdeploy for the AppImage
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.cache/tauri
+          f=~/.cache/tauri/linuxdeploy-x86_64.AppImage
+          curl -fsSL -o "$f" https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-x86_64.AppImage
+          echo "c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d  $f" | sha256sum -c
+          chmod +x "$f"
+
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
@@ -292,9 +310,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Только для AppImage, см. шаг Pin linuxdeploy for the AppImage.
+          LINUXDEPLOY_EXCLUDED_LIBRARIES: ${{ matrix.platform == 'ubuntu-22.04' && 'libwayland-*' || '' }}
         with:
           tauriScript: pnpm tauri
           args: ${{ matrix.args }} --config src-tauri/tauri.updater.conf.json
+
+      - name: Check the AppImage has no libwayland
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          set -euo pipefail
+          img="$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppImage' | head -n 1)"
+          [ -n "$img" ] || { echo "::error::Не найден собранный AppImage" >&2; exit 1; }
+          dir="$(mktemp -d)"
+          (cd "$dir" && "$OLDPWD/$img" --appimage-extract >/dev/null)
+          found="$(find "$dir/squashfs-root" -name 'libwayland-*.so*' -printf '%f ')"
+          rm -rf "$dir"
+          if [ -n "$found" ]; then
+            echo "::error::В AppImage попали $found— на Fedora окно будет пустым" >&2
+            exit 1
+          fi
 
       # Собранная программа запустится на чистой системе: на macOS только
       # системные библиотеки (liblzma из Homebrew раннера не давала 0.9.0–0.9.4
@@ -461,11 +496,13 @@ jobs:
 
       # Узел Reticulum (src-tauri/crates/bastyon-rns-jni): Gradle собирает его
       # scripts/build-rns-android.sh под NDK раннера. Без Rust APK собрался бы
-      # без узла.
+      # без узла. armeabi-v7a — телефоны с 32-битным Android при 64-битном
+      # процессоре (Redmi 9A и другие недорогие): APK с одной arm64-v8a в lib/
+      # они не ставят, «приложение несовместимо с устройством».
       - name: Install Rust for the Reticulum node
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android
+          targets: aarch64-linux-android,armv7-linux-androideabi
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -492,6 +529,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          RNS_ANDROID_ABIS: arm64-v8a armeabi-v7a
         run: |
           set -euo pipefail
           if [ -z "$ANDROID_KEYSTORE_B64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
@@ -516,6 +554,14 @@ jobs:
             echo "::error::APK подписан не тем ключом: SHA-256 ${CERT:-не найден}, а в android/app/release-cert.sha256 записан $EXPECTED"
             exit 1
           fi
+          # build-rns-android.sh без цели Rust молча пропускает ABI.
+          LIBS="$(unzip -Z1 app/build/outputs/apk/release/app-release.apk 'lib/*')"
+          for abi in $RNS_ANDROID_ABIS; do
+            grep -qx "lib/$abi/libbastyon_rns_jni.so" <<<"$LIBS" || {
+              echo "::error::В APK нет lib/$abi/libbastyon_rns_jni.so — на таких телефонах он не встанет"
+              exit 1
+            }
+          done
 
       - name: Rename APK and upload
         shell: bash

@@ -6,8 +6,9 @@
 # Нет cargo, цели Rust или NDK — предупреждает и выходит без ошибки: APK
 # собирается без Reticulum, приложение покажет, что узел недоступен.
 #
-#   RNS_ANDROID_ABIS   — какие ABI (по умолчанию arm64-v8a; ещё x86_64,
-#                        armeabi-v7a);
+#   RNS_ANDROID_ABIS   — какие ABI (по умолчанию arm64-v8a и armeabi-v7a:
+#                        32-битный Android на телефонах вроде Redmi 9A;
+#                        ещё x86_64 для эмулятора);
 #   RNS_ANDROID_PROFILE — release (по умолчанию) или debug;
 #   ANDROID_NDK_HOME   — NDK; иначе самый новый из $ANDROID_HOME/ndk.
 set -euo pipefail
@@ -15,7 +16,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CRATES="$ROOT/src-tauri"
 OUT="$ROOT/android/app/src/main/jniLibs"
-ABIS="${RNS_ANDROID_ABIS:-arm64-v8a}"
+ABIS="${RNS_ANDROID_ABIS:-arm64-v8a armeabi-v7a}"
 PROFILE="${RNS_ANDROID_PROFILE:-release}"
 API=24 # minSdkVersion (android/variables.gradle)
 
