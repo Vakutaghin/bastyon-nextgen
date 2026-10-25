@@ -117,15 +117,27 @@ async function checkGroups(page: Page): Promise<void> {
   await expect(club.getByLabel('Есть новые сообщения')).toBeVisible()
   await expect(direct).toContainText('alice_ng')
 
-  // Фильтр: группы и личные — переписки; каналов нет — подсказка, как их завести.
-  await page.getByRole('radio', { name: /Каналы/ }).click()
-  await expect(rows).toHaveCount(0)
-  await expect(page.getByTestId('channels-empty')).toContainText('Читать в мессенджере')
-  await page.getByRole('radio', { name: 'Переписки' }).click()
+  // Фильтр: «Все» или личные, группы и каналы в любом сочетании.
+  const chip = (name: RegExp) =>
+    page.getByRole('group', { name: 'Что показать в списке' }).getByRole('button', { name })
+  await chip(/Группы/).click()
+  await expect(club).toBeVisible()
+  await expect(direct).toHaveCount(0)
+  await chip(/Личные/).click()
   await expect(club).toBeVisible()
   await expect(direct).toHaveCount(1)
-  await page.getByRole('radio', { name: 'Все' }).click()
+  await chip(/Группы/).click()
+  await expect(club).toHaveCount(0)
+  await expect(direct).toHaveCount(1)
+  await expect(chip(/Группы/)).toHaveAttribute('aria-pressed', 'false')
+  await expect(chip(/Личные/)).toHaveAttribute('aria-pressed', 'true')
+  await chip(/^Все$/).click()
   await expect(rows).toHaveCount(2)
+  // Каналов нет — подсказка, как их завести.
+  await chip(/Каналы/).click()
+  await expect(rows).toHaveCount(0)
+  await expect(page.getByTestId('channels-empty')).toContainText('Читать в мессенджере')
+  await chip(/^Все$/).click()
 
   // Шапка группы открывает окно группы.
   await selectChat(page, '!club:matrix.pocketnet.app')

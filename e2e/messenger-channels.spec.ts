@@ -4,7 +4,7 @@ import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
 
 /**
  * Каналы в мессенджере: «Читать в мессенджере» в профиле автора, канал в
- * списке рядом с чатами, лента постов, фильтр «Все / Переписки / Каналы»,
+ * списке рядом с чатами, лента постов, фильтр «Все» и «Личные / Группы / Каналы»,
  * который помнится и общий у окошка и полноэкранного мессенджера. Сервер
  * чатов не нужен: каналы — посты с ноды (подменной).
  */
@@ -52,6 +52,11 @@ async function signIn(page: Page, data: MockNodeData = DATA): Promise<void> {
 }
 
 /** Действие стора pinia — то, что в приложении делает кнопка, до которой тесту долго идти. */
+/** Фишка фильтра над списком чатов. */
+function chip(page: Page, name: RegExp) {
+  return page.getByRole('group', { name: 'Что показать в списке' }).getByRole('button', { name })
+}
+
 async function callStore(page: Page, id: string, action: string, ...args: unknown[]) {
   await page.evaluate(
     async ([storeId, name, params]) => {
@@ -143,12 +148,18 @@ test('профиль → «Читать в мессенджере» → кана
   await expect(row).toContainText('alice_ng')
   await expect(row).toContainText('Свежий пост Алисы')
 
-  // Фильтр: каналы отдельно, переписок нет — подсказка.
-  await page.getByRole('radio', { name: 'Переписки' }).click()
+  // Фильтр: каналы отдельно, переписок нет — подсказка. Все три вида — это «Все».
+  await chip(page, /Личные/).click()
   await expect(row).toHaveCount(0)
-  await expect(page.getByText('Переписок пока нет')).toBeVisible()
-  await page.getByRole('radio', { name: /Каналы/ }).click()
+  await expect(page.getByText('Личных переписок пока нет')).toBeVisible()
+  await chip(page, /Группы/).click()
+  await expect(page.getByText('Переписок пока нет', { exact: true })).toBeVisible()
+  await chip(page, /Каналы/).click()
   await expect(row).toBeVisible()
+  await expect(chip(page, /^Все$/)).toHaveAttribute('aria-pressed', 'true')
+  await chip(page, /Каналы/).click()
+  await expect(row).toBeVisible()
+  await expect(chip(page, /Каналы/)).toHaveAttribute('aria-pressed', 'true')
 
   // После перезапуска — тот же канал (кнопка в профиле его помнит) и тот же фильтр.
   await page.reload()
@@ -159,18 +170,14 @@ test('профиль → «Читать в мессенджере» → кана
     timeout: 30_000,
   })
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('radio', { name: /Каналы/ })).toHaveAttribute(
-    'aria-checked',
-    'true',
-    {
-      timeout: 30_000,
-    }
-  )
+  await expect(chip(page, /Каналы/)).toHaveAttribute('aria-pressed', 'true', {
+    timeout: 30_000,
+  })
   await expect(row).toBeVisible()
 
   // Полноэкранный мессенджер (узкое окно) — с тем же фильтром.
   await page.setViewportSize({ width: 390, height: 844 })
-  await expect(page.getByRole('radio', { name: /Каналы/ })).toHaveAttribute('aria-checked', 'true')
+  await expect(chip(page, /Каналы/)).toHaveAttribute('aria-pressed', 'true')
   await expect(row).toBeVisible()
   await page.setViewportSize({ width: 1280, height: 800 })
 
@@ -207,10 +214,10 @@ test('новые публикации: счётчик в списке и чер�
 
   const row = page.locator('[data-testid=chat-row][data-channel]')
   await expect(row.getByLabel('2 новые публикации')).toHaveText('2', { timeout: 30_000 })
-  // В «Переписках» видно, что в каналах есть новое.
-  await page.getByRole('radio', { name: 'Переписки' }).click()
-  await expect(page.getByRole('radio', { name: /Каналы/ })).toContainText('1')
-  await page.getByRole('radio', { name: 'Все' }).click()
+  // В «Личных» видно, что в каналах есть новое.
+  await chip(page, /Личные/).click()
+  await expect(chip(page, /Каналы/)).toContainText('1')
+  await chip(page, /^Все$/).click()
 
   await row.click()
   const divider = page.getByTestId('channel-new-divider')
@@ -370,10 +377,11 @@ test.describe('на телефоне', () => {
     await expect(loading).toHaveText('Загрузка диалогов...', { timeout: 30_000 })
     await expect(page.locator('[data-testid=chat-row][data-channel]')).toContainText('alice_ng')
     // Ни подсказки «переписок нет», ни строки загрузки среди одних каналов.
-    await page.getByRole('radio', { name: 'Переписки' }).click()
+    await chip(page, /Личные/).click()
     await expect(loading).toBeVisible()
-    await expect(page.getByText('Переписок пока нет')).toHaveCount(0)
-    await page.getByRole('radio', { name: /Каналы/ }).click()
+    await expect(page.getByText('Личных переписок пока нет')).toHaveCount(0)
+    await chip(page, /Личные/).click()
+    await chip(page, /Каналы/).click()
     await expect(loading).toHaveCount(0)
   })
 })

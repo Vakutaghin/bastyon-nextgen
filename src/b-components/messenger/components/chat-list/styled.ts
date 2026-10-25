@@ -14,9 +14,10 @@ export const SC_ChatList = styled.div`
   padding: 0;
 `
 
-/** «Все · Переписки · Каналы» над списком — стоит на месте, список прокручивается. */
+/** «Все · Личные · Группы · Каналы» над списком — стоит на месте, список прокручивается. */
 export const SC_ChatFilter = styled.div`
   display: flex;
+  flex-wrap: wrap;
   flex-shrink: 0;
   gap: 6px;
   padding: 8px 12px;

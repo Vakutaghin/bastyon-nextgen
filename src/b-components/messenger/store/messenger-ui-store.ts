@@ -5,8 +5,16 @@ import { ref, computed } from 'vue'
 
 import type { Dialog } from '../types'
 
-/** Что показывает список: всё, только переписки (личные и группы) или только каналы. */
-export type ChatFilter = 'all' | 'chats' | 'channels'
+/** Виды строк списка: личные переписки, группы (и каналы/комнаты mesh), каналы авторов. */
+export type ChatKind = 'direct' | 'groups' | 'channels'
+
+export const CHAT_KINDS: readonly ChatKind[] = ['direct', 'groups', 'channels']
+
+/**
+ * Что показывает список: виды строк в порядке CHAT_KINDS. Пусто — «Все»; все
+ * три вида сразу тоже сводятся к «Все».
+ */
+export type ChatFilter = readonly ChatKind[]
 
 /**
  * Выбранный фильтр помнится на устройстве: один и тот же у виджета и
@@ -14,12 +22,20 @@ export type ChatFilter = 'all' | 'chats' | 'channels'
  */
 const CHAT_FILTER_KEY = 'BST_MSG_CHAT_FILTER'
 
+/** Виды по порядку, без повторов; все три — это «Все». */
+function normalizeChatFilter(kinds: readonly string[]): ChatFilter {
+  const out = CHAT_KINDS.filter((k) => kinds.includes(k))
+  return out.length === CHAT_KINDS.length ? [] : out
+}
+
 function readChatFilter(): ChatFilter {
   try {
-    const v = localStorage.getItem(CHAT_FILTER_KEY)
-    return v === 'chats' || v === 'channels' ? v : 'all'
+    const v = localStorage.getItem(CHAT_FILTER_KEY) ?? ''
+    // До 0.13.5 «Переписки» были личными и группами вместе.
+    if (v === 'chats') return ['direct', 'groups']
+    return normalizeChatFilter(v.split(','))
   } catch {
-    return 'all'
+    return []
   }
 }
 
@@ -146,13 +162,20 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     delete dialog.hasUnread
   }
 
-  const setChatFilter = (filter: ChatFilter): void => {
-    chatFilter.value = filter
+  const setChatFilter = (kinds: readonly ChatKind[]): void => {
+    chatFilter.value = normalizeChatFilter(kinds)
     try {
-      localStorage.setItem(CHAT_FILTER_KEY, filter)
+      localStorage.setItem(CHAT_FILTER_KEY, chatFilter.value.join(',') || 'all')
     } catch {
       /* без хранилища — до перезапуска */
     }
+  }
+
+  /** Вид включается и выключается, как флажок; из «Все» — остаётся только он. */
+  const toggleChatKind = (kind: ChatKind): void => {
+    const on = chatFilter.value
+    if (on.length === 0) setChatFilter([kind])
+    else setChatFilter(on.includes(kind) ? on.filter((k) => k !== kind) : [...on, kind])
   }
 
   const openGroupInfo = (chatId: string): void => {
@@ -231,6 +254,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     markDialogRead,
     setDialogMuted,
     setChatFilter,
+    toggleChatKind,
     openGroupInfo,
     closeGroupInfo,
     prependDialog,

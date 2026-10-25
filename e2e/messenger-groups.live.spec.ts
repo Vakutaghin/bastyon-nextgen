@@ -145,16 +145,21 @@ test('группа видна в списке, у неё участники, «�
   await expect(clubRow.getByText('@Книжный клуб')).toHaveCount(0)
   await expect(clubRow.getByLabel(/^Группа · \d+ участник/)).toBeVisible()
 
-  // Фильтр: личные и группы — переписки, в «Каналах» их нет.
+  // Фильтр: личные и группы отдельно, в «Каналах» их нет.
   const directRow = b.locator('[data-testid=chat-row]:not([data-group])')
+  const chip = (name: RegExp) =>
+    b.getByRole('group', { name: 'Что показать в списке' }).getByRole('button', { name })
   await expect(directRow).toHaveText(/alice_e2e/)
-  await b.getByRole('radio', { name: /Каналы/ }).click()
+  await chip(/Каналы/).click()
   await expect(directRow).toHaveCount(0)
   await expect(clubRow).toHaveCount(0)
-  await b.getByRole('radio', { name: 'Переписки' }).click()
+  await chip(/Каналы/).click()
+  await chip(/Группы/).click()
   await expect(clubRow).toBeVisible()
+  await expect(directRow).toHaveCount(0)
+  await chip(/Личные/).click()
   await expect(directRow).toHaveCount(1)
-  await b.getByRole('radio', { name: 'Все' }).click()
+  await chip(/^Все$/).click()
 
   // --- Открытая группа: шапка и окно участников ---
   await clubRow.click()

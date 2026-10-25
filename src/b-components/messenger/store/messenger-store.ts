@@ -917,6 +917,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     deleteDialog,
     setDialogMuted,
     setChatFilter: uiStore.setChatFilter,
+    toggleChatKind: uiStore.toggleChatKind,
     openGroupInfo: uiStore.openGroupInfo,
     closeGroupInfo: uiStore.closeGroupInfo,
     logout,

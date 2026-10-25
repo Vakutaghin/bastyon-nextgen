@@ -30,7 +30,7 @@ Each chat shows the other person’s name and avatar, the start of the last mess
 
 A group stands out at once: a people icon before its name, the group picture or a mosaic of members’ avatars with a badge in the corner instead of an avatar, and the sender’s name before the last message.
 
-Above the list there are **“All”**, **“Chats”** and **“Channels”** switches. **“Chats”** has private chats, groups and radio network channels ([Mesh](mesh.md)); **“Channels”** has posts of authors you read in the messenger, see [Channels](channels.md). The choice is remembered.
+Above the list there are **“All”**, **“Personal”**, **“Groups”** and **“Channels”** switches. **“All”** shows the whole list, and the other three turn on and off like checkboxes, in any combination. **“Personal”** has one-to-one chats, **“Groups”** has groups and radio network channels ([Mesh](mesh.md)), **“Channels”** has posts of authors you read in the messenger, see [Channels](channels.md). With all three on, it is **“All”** again. The choice is remembered.
 
 The three-dot button on a chat:
 

@@ -27,7 +27,7 @@ A channel can’t be mistaken for a person or a group: it has the author’s squ
 
 The number of new posts is in a violet bubble. It is not added to the message count: channels make no sound and send no notifications.
 
-Above the list there are **“All”**, **“Chats”** and **“Channels”** switches. **“Chats”** has private chats and groups. The choice is remembered and shared by the messenger window and the full-screen messenger. If another section has something new, its switch shows a number.
+Above the list there are **“All”**, **“Personal”**, **“Groups”** and **“Channels”** switches. The last three go in any combination: for example, **“Groups”** and **“Channels”** together. The choice is remembered and shared by the messenger window and the full-screen messenger. If another section has something new, its switch shows a number.
 
 The three-dot button on a channel:
 
