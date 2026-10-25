@@ -87,11 +87,11 @@ export const SC_Error = styled.div`
 `
 
 /**
- * Деликатный «лепесток» закрытия в правом верхнем углу, на 16px ниже верха viewport'а.
- * По дефолту почти невидим: виден только тонкий 6px-полукруг полупрозрачного цвета.
- * При наведении выезжает целиком, становится контрастным и показывает подпись.
- *
- * Идея: не отвлекать от контента миниаппы, но оставить affordance.
+ * «Лепесток» закрытия в правом верхнем углу, на 16px ниже верха viewport'а.
+ * Крестик виден всегда, целиком и на любом фоне приложения; подпись
+ * «Закрыть» выезжает при наведении и фокусе. Раньше из-за края выглядывали
+ * 14px полупрозрачной подложки с краешком крестика, и кнопку принимали за
+ * обрезанную (Windows, 0.9.6).
  */
 export const SC_ClosePetal = styled.button`
   appearance: none;
@@ -105,29 +105,27 @@ export const SC_ClosePetal = styled.button`
   align-items: center;
   gap: 8px;
   height: 28px;
-  padding: 0 14px 0 10px;
-  background: var(--color-overlay-15);
-  color: var(--color-white-75);
+  padding: 0 14px 0 8px;
+  background: var(--color-overlay-55);
+  color: var(--color-white);
   border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg);
   cursor: pointer;
   user-select: none;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  opacity: 0.6;
+  opacity: 0.85;
 
-  /* Прячем за правый край, оставляя 14px видимого язычка — заметно но ненавязчиво. */
-  transform: translateX(calc(100% - 14px));
+  /* За краем — только подпись: отступ 8px, крестик 20px и 6px до края. */
+  transform: translateX(calc(100% - 34px));
   transition:
     transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
     background-color ${TRANSITIONS.FAST},
-    opacity ${TRANSITIONS.FAST},
-    color ${TRANSITIONS.FAST};
+    opacity ${TRANSITIONS.FAST};
 
   &:hover,
   &:focus-visible {
     transform: translateX(0);
     background: var(--color-overlay-70);
-    color: var(--color-white);
     opacity: 1;
     outline: none;
   }

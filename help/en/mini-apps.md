@@ -24,7 +24,7 @@ You can search by name and description with the **“Search apps…”** field, 
 
 Click an app, and it opens inside Bastyon, filling the page. Catalog apps need no installing: they open right away.
 
-To close it, use the **“Close”** tab in the top right corner. The app asks again: “Unsaved data in the app may be lost.” — **“Close”** or **“Stay”**. After closing, the feed opens.
+To close it, use the button with a cross at the right edge near the top; on hover it shows **“Close”**. The app asks again: “Unsaved data in the app may be lost.” — **“Close”** or **“Stay”**. After closing, the feed opens.
 
 If an app takes too long to load, you see “… is not responding — try again later”: the app’s site is down or overloaded.
 
