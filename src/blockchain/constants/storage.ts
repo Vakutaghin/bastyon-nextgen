@@ -120,6 +120,13 @@ export const WALLET_ADDRESSES_PREFIX = 'BST_WALLET_ADDRS_'
 export const ADDITIONAL_WALLETS_LIST_KEY = 'BST_ADDITIONAL_WALLETS_LIST'
 
 /**
+ * Адреса кошелька, которые 0.3.0–0.13.4 выводили из зерна мнемоники, а не из
+ * приватного ключа, как прежнее приложение (wallet-addresses.ts). Баланс
+ * показывает их, только если на них что-то есть. Значение: JSON Record<address, string[]>
+ */
+export const LEGACY_WALLETS_LIST_KEY = 'BST_LEGACY_WALLETS_LIST'
+
+/**
  * Локальные ярлыки кошельков (только косметика). Значение: JSON
  * Record<accountAddress, Record<walletAddress, label>>. Ярлыки хранятся отдельно
  * от derivation-критичного списка адресов — на восстановление по мнемонике не

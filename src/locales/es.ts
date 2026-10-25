@@ -596,8 +596,9 @@ export default {
   wallet: {
     errorForeignNetworkAddress:
       'Esta dirección pertenece a otra red. Una dirección de Bastyon empieza por «P».',
+    legacyWalletLabel: 'Dirección de una versión anterior de esta aplicación',
     additionalWalletsReadOnly:
-      'Por ahora, las billeteras adicionales son solo de consulta: este cliente no puede firmar su entrada P2SH, así que no se pueden enviar sus monedas. Las transferencias entrantes van a la billetera principal.',
+      'Por ahora, las billeteras adicionales son solo de consulta: este cliente no puede firmar su entrada P2SH, así que no se pueden enviar sus monedas. Las transferencias entrantes van a la billetera principal. Son las mismas direcciones que la «Billetera» de la aplicación Bastyon anterior; por ahora las monedas se pueden gastar allí.',
     title: 'Billeteras',
     tabBalances: 'Saldos',
     tabTransfers: 'Transferencias',

@@ -592,8 +592,9 @@ export default {
   wallet: {
     errorForeignNetworkAddress:
       'Questo indirizzo appartiene a un’altra rete. Un indirizzo Bastyon inizia con «P».',
+    legacyWalletLabel: 'Indirizzo di una versione precedente di questa app',
     additionalWalletsReadOnly:
-      'Per ora i portafogli aggiuntivi sono solo in visualizzazione: questo client non sa firmare il loro input P2SH, quindi le monete che contengono non possono essere inviate. I trasferimenti in entrata vanno al portafoglio principale.',
+      'Per ora i portafogli aggiuntivi sono solo in visualizzazione: questo client non sa firmare il loro input P2SH, quindi le monete che contengono non possono essere inviate. I trasferimenti in entrata vanno al portafoglio principale. Sono gli stessi indirizzi del «Portafoglio» della precedente app Bastyon: per ora le monete si possono spendere lì.',
     title: 'Portafogli',
     tabBalances: 'Saldi',
     tabTransfers: 'Trasferimenti',

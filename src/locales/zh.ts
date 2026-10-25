@@ -554,8 +554,9 @@ export default {
   },
   wallet: {
     errorForeignNetworkAddress: '此地址属于其他网络。Bastyon 地址以“P”开头。',
+    legacyWalletLabel: '本应用早期版本的地址',
     additionalWalletsReadOnly:
-      '附加钱包目前仅供查看：此客户端无法为其 P2SH 输入签名，因此无法发送其中的币。转入款项会进入主钱包。',
+      '附加钱包目前仅供查看：此客户端无法为其 P2SH 输入签名，因此无法发送其中的币。转入款项会进入主钱包。 这些地址与旧版 Bastyon 应用中的「钱包」相同，目前可以在那里花费其中的币。',
     title: '钱包',
     tabBalances: '余额',
     tabTransfers: '转账',

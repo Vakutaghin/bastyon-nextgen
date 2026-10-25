@@ -2,7 +2,8 @@
 // дополнительные — txunspent, всё в сатоши. Свежий баланс важнее профиля с
 // момента входа (S47). Кошелёк, который не ответил, показывается прочерком и
 // делает сумму неизвестной, а не нулём; если не ответил никто — ошибка.
-// Добавление кошелька, дефолтные три и переименование ярлыка.
+// Добавление кошелька, дефолтные адреса прежнего приложения, прежние адреса
+// этого приложения (видны только с монетами) и переименование ярлыка.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
@@ -15,6 +16,7 @@ const mocks = vi.hoisted(() => ({
     getKeyPair: { privateKey: string } | null
   },
   wallets: {} as Record<string, string[]>,
+  legacy: {} as Record<string, string[]>,
   labels: {} as Record<string, string>,
   getByPRC: vi.fn(),
   getByPRCWithAuth: vi.fn(),
@@ -28,6 +30,7 @@ vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 vi.mock('@/blockchain', () => ({
   useAuthStore: () => mocks.auth,
   getAdditionalWalletAddressesList: (main: string) => [...(mocks.wallets[main] ?? [])],
+  getLegacyWalletAddressesList: (main: string) => [...(mocks.legacy[main] ?? [])],
   addOneWalletAddress: mocks.addOneWalletAddress,
   ensureDefaultAdditionalWallet: mocks.ensureDefaultAdditionalWallet,
   getWalletLabel: (_main: string, addr: string) => mocks.labels[addr] ?? '',
@@ -65,6 +68,7 @@ describe('useWalletBalances', () => {
       getKeyPair: { privateKey: 'priv' },
     })
     mocks.wallets = { [MAIN]: ['PZ1', 'PZ2'] }
+    mocks.legacy = {}
     mocks.labels = { PZ1: 'Копилка' }
     mocks.getByPRC.mockReset()
     mocks.getByPRCWithAuth.mockReset().mockResolvedValue({ data: [{ balance: 5 * SAT }] })
@@ -195,7 +199,7 @@ describe('useWalletBalances', () => {
     expect(mocks.addOneWalletAddress).not.toHaveBeenCalled()
   })
 
-  it('при открытии досоздаёт дефолтные кошельки, если их меньше трёх', async () => {
+  it('при открытии сверяет кошельки с прежним приложением — и когда их уже три', async () => {
     const w = useWalletBalances()
     await w.initBalances()
     expect(mocks.ensureDefaultAdditionalWallet).toHaveBeenCalledWith(MAIN, 'priv')
@@ -203,7 +207,20 @@ describe('useWalletBalances', () => {
     mocks.ensureDefaultAdditionalWallet.mockClear()
     mocks.wallets[MAIN] = ['PZ1', 'PZ2', 'PZ3']
     await useWalletBalances().initBalances()
-    expect(mocks.ensureDefaultAdditionalWallet).not.toHaveBeenCalled()
+    expect(mocks.ensureDefaultAdditionalWallet).toHaveBeenCalledWith(MAIN, 'priv')
+  })
+
+  it('прежние адреса этого приложения: в таблице и сумме, только если на них монеты', async () => {
+    mocks.wallets[MAIN] = ['PZ1']
+    mocks.legacy[MAIN] = ['PL1', 'PL2', 'PL3']
+    answerTxUnspent({ PZ1: 1 * SAT, PL2: 43 * SAT }, ['PL3'])
+    const w = useWalletBalances()
+    await w.loadBalances()
+    expect(w.additionalTableRows.value).toEqual([
+      { address: 'PZ1', balance: 1 * SAT, label: 'Копилка' },
+      { address: 'PL2', balance: 43 * SAT, label: 'wallet.legacyWalletLabel' },
+    ])
+    expect(w.sumWalletsBalance.value).toBe(44 * SAT)
   })
 
   it('переименование: сохранённый ярлык сразу виден в таблице', () => {

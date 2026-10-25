@@ -68,6 +68,8 @@ export {
   saveWalletAddressesList,
   getAdditionalWalletAddressesList,
   saveAdditionalWalletAddressesList,
+  getLegacyWalletAddressesList,
+  saveLegacyWalletAddressesList,
   getWalletLabel,
   setWalletLabel,
 } from './storage-manager'

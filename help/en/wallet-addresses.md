@@ -16,7 +16,9 @@ At the top there are three numbers: **“Main wallet balance”**, **“Total ba
 
 ## Additional wallets
 
-**“Additional wallets”** are a few more addresses derived from the same recovery phrase. Their addresses start with a **Z**. The previous Bastyon app introduced them, and there you could receive and keep coins on them.
+**“Additional wallets”** are ten more addresses derived from your account’s key. Their addresses start with a **Z**. They are the same addresses as the **“Wallet”** in the previous Bastyon app: it receives coins on them and moves coins there from the main wallet.
+
+Before version 0.13.5 this app derived the additional wallets differently, and coins in the previous app’s “Wallet” did not show up here. If an address from those versions has coins, it is in the table too, labelled **“Address from an earlier version of this app”**.
 
 In this app they are **view-only**: you see the balance, but you cannot send coins from them — the app cannot sign such transfers yet. That is why it does not offer them for receiving either. If an additional wallet has coins, you can manage them in the previous app.
 

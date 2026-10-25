@@ -587,8 +587,9 @@ export default {
   wallet: {
     errorForeignNetworkAddress:
       "이 주소는 다른 네트워크의 주소입니다. Bastyon 주소는 'P'로 시작합니다.",
+    legacyWalletLabel: '이 앱의 이전 버전 주소',
     additionalWalletsReadOnly:
-      '추가 지갑은 현재 보기 전용입니다. 이 클라이언트는 P2SH 입력에 서명할 수 없어 해당 지갑의 코인을 보낼 수 없습니다. 받는 송금은 기본 지갑으로 들어갑니다.',
+      '추가 지갑은 현재 보기 전용입니다. 이 클라이언트는 P2SH 입력에 서명할 수 없어 해당 지갑의 코인을 보낼 수 없습니다. 받는 송금은 기본 지갑으로 들어갑니다. 이전 Bastyon 앱의 「지갑」과 같은 주소이며, 지금은 그 앱에서 코인을 사용할 수 있습니다.',
     title: '지갑',
     tabBalances: '잔액',
     tabTransfers: '송금',

@@ -599,8 +599,9 @@ export default {
   wallet: {
     errorForeignNetworkAddress:
       'Cette adresse appartient à un autre réseau. Une adresse Bastyon commence par « P ».',
+    legacyWalletLabel: 'Adresse d’une version antérieure de cette application',
     additionalWalletsReadOnly:
-      'Les portefeuilles supplémentaires sont pour l’instant en lecture seule : ce client ne sait pas signer leur entrée P2SH, les pièces qu’ils contiennent ne peuvent donc pas être envoyées. Les transferts entrants arrivent sur le portefeuille principal.',
+      'Les portefeuilles supplémentaires sont pour l’instant en lecture seule : ce client ne sait pas signer leur entrée P2SH, les pièces qu’ils contiennent ne peuvent donc pas être envoyées. Les transferts entrants arrivent sur le portefeuille principal. Ce sont les mêmes adresses que le « Portefeuille » de l’ancienne application Bastyon ; pour l’instant, les jetons se dépensent là-bas.',
     title: 'Portefeuilles',
     tabBalances: 'Soldes',
     tabTransfers: 'Transferts',

@@ -11,6 +11,7 @@ import {
   WAS_LOGGED_KEY,
   WALLET_ADDRESSES_PREFIX,
   ADDITIONAL_WALLETS_LIST_KEY,
+  LEGACY_WALLETS_LIST_KEY,
   ACCOUNT_STORAGE_PREFIX,
   DEVICE_FINGERPRINT_KEY,
   VAULT_ENVELOPE_KEY,
@@ -96,6 +97,7 @@ export function clearAllUserData(): void {
       localStorage.removeItem(ACCOUNTS_LIST_KEY)
       // Локальные данные кошельков (изоляция между аккаунтами на одном устройстве).
       localStorage.removeItem(ADDITIONAL_WALLETS_LIST_KEY)
+      localStorage.removeItem(LEGACY_WALLETS_LIST_KEY)
       localStorage.removeItem(WALLET_LABELS_KEY)
 
       // Per-account секреты (BST_ACCOUNT_<addr>) — собираем ключи, затем удаляем.
@@ -222,11 +224,9 @@ export function saveWalletAddressesList(address: Address, addresses: string[]): 
 }
 
 /** Читает объект дополнительных кошельков из LS: { [accountAddress]: string[] }. */
-function getAdditionalWalletsMap(): Record<string, string[]> {
+function getAddressListsMap(key: string): Record<string, string[]> {
   try {
-    const raw =
-      (typeof localStorage !== 'undefined' && localStorage.getItem(ADDITIONAL_WALLETS_LIST_KEY)) ||
-      null
+    const raw = (typeof localStorage !== 'undefined' && localStorage.getItem(key)) || null
     if (!raw) return {}
     const parsed = JSON.parse(raw)
     return typeof parsed === 'object' && parsed !== null ? parsed : {}
@@ -235,30 +235,49 @@ function getAdditionalWalletsMap(): Record<string, string[]> {
   }
 }
 
+function getAddressList(key: string, address: Address): string[] {
+  const list = getAddressListsMap(key)[address]
+  return Array.isArray(list) ? list.filter((a: unknown) => typeof a === 'string') : []
+}
+
+function saveAddressList(key: string, address: Address, addresses: string[]): StorageSaveResult {
+  try {
+    const map = getAddressListsMap(key)
+    map[address] = addresses
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, JSON.stringify(map))
+    }
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
 /**
- * Список адресов дополнительных кошельков (индексы 1, 2, …) для аккаунта.
+ * Список адресов дополнительных кошельков (индексы 0, 1, …) для аккаунта.
  * Хранится в общем ключе BST_ADDITIONAL_WALLETS_LIST.
  */
 export function getAdditionalWalletAddressesList(address: Address): string[] {
-  const map = getAdditionalWalletsMap()
-  const list = map[address]
-  return Array.isArray(list) ? list.filter((a: unknown) => typeof a === 'string') : []
+  return getAddressList(ADDITIONAL_WALLETS_LIST_KEY, address)
 }
 
 export function saveAdditionalWalletAddressesList(
   address: Address,
   addresses: string[]
 ): StorageSaveResult {
-  try {
-    const map = getAdditionalWalletsMap()
-    map[address] = addresses
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(ADDITIONAL_WALLETS_LIST_KEY, JSON.stringify(map))
-    }
-    return { success: true }
-  } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : String(e) }
-  }
+  return saveAddressList(ADDITIONAL_WALLETS_LIST_KEY, address, addresses)
+}
+
+/** Прежние адреса кошелька аккаунта (LEGACY_WALLETS_LIST_KEY). */
+export function getLegacyWalletAddressesList(address: Address): string[] {
+  return getAddressList(LEGACY_WALLETS_LIST_KEY, address)
+}
+
+export function saveLegacyWalletAddressesList(
+  address: Address,
+  addresses: string[]
+): StorageSaveResult {
+  return saveAddressList(LEGACY_WALLETS_LIST_KEY, address, addresses)
 }
 
 // ─── Ярлыки кошельков (локальные, косметические) ──────────────────────────────

@@ -65,7 +65,11 @@ import { fetchAddressTxPage, startAddressTxCursor } from '@/helpers/explorer/add
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { ArrowDownOutlined, ArrowUpOutlined } from '@/components/icons'
-import { useAuthStore, getAdditionalWalletAddressesList } from '@/blockchain'
+import {
+  useAuthStore,
+  getAdditionalWalletAddressesList,
+  getLegacyWalletAddressesList,
+} from '@/blockchain'
 import { useChainInfoStore } from '@/stores/chain-info-store'
 import { useUserProfiles } from '@/composables/use-user-profile'
 import { formatPkoinAmount } from '@/helpers/common/pkoin-formatter'
@@ -163,7 +167,11 @@ const mainAddress = computed<string>(() => authStore.getUserAddress ?? '')
 const mine = computed<ReadonlySet<string>>(() => {
   const cur = mainAddress.value
   if (!cur) return new Set<string>()
-  return new Set([cur, ...getAdditionalWalletAddressesList(cur)])
+  return new Set([
+    cur,
+    ...getAdditionalWalletAddressesList(cur),
+    ...getLegacyWalletAddressesList(cur),
+  ])
 })
 
 /** «от …» / «на …»; у наград и буста контрагента нет — строка не выводится. */

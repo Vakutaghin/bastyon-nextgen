@@ -597,8 +597,9 @@ export default {
   wallet: {
     errorForeignNetworkAddress:
       'Diese Adresse gehört zu einem anderen Netzwerk. Eine Bastyon-Adresse beginnt mit „P“.',
+    legacyWalletLabel: 'Adresse aus einer früheren Version dieser App',
     additionalWalletsReadOnly:
-      'Zusätzliche Wallets sind vorerst nur zum Ansehen: Dieser Client kann ihren P2SH-Input nicht signieren, daher lassen sich Coins darauf nicht senden. Eingehende Überweisungen gehen an die Haupt-Wallet.',
+      'Zusätzliche Wallets sind vorerst nur zum Ansehen: Dieser Client kann ihren P2SH-Input nicht signieren, daher lassen sich Coins darauf nicht senden. Eingehende Überweisungen gehen an die Haupt-Wallet. Es sind dieselben Adressen wie die „Wallet“ in der bisherigen Bastyon-App; dort lassen sich die Coins vorerst ausgeben.',
     title: 'Wallets',
     tabBalances: 'Guthaben',
     tabTransfers: 'Überweisungen',

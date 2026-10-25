@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n'
 import {
   useAuthStore,
   getAdditionalWalletAddressesList,
+  getLegacyWalletAddressesList,
   addOneWalletAddress,
   ensureDefaultAdditionalWallet,
   getWalletLabel,
@@ -32,6 +33,8 @@ export function useWalletBalances() {
   const loading = ref(true)
   const error = ref<string | null>(null)
   const accountsWithBalances = ref<{ address: string; balance: number | null }[]>([])
+  /** Прежние адреса кошелька (wallet-addresses.ts): видны, только если на них что-то есть. */
+  const legacyBalances = ref<{ address: string; balance: number }[]>([])
   const walletListVersion = ref(0)
   const addingWallet = ref(false)
 
@@ -43,6 +46,12 @@ export function useWalletBalances() {
     void walletListVersion.value
     const cur = currentAddress.value
     return cur ? getAdditionalWalletAddressesList(cur) : []
+  })
+
+  const legacyAddresses = computed<string[]>(() => {
+    void walletListVersion.value
+    const cur = currentAddress.value
+    return cur ? getLegacyWalletAddressesList(cur) : []
   })
 
   const allAddresses = computed<string[]>(() => {
@@ -77,6 +86,7 @@ export function useWalletBalances() {
       if (a.balance == null) return null
       sum += a.balance
     }
+    for (const a of legacyBalances.value) sum += a.balance
     return sum
   })
 
@@ -110,10 +120,18 @@ export function useWalletBalances() {
         label: labelOf(addr),
       }))
     }
-    return addrs.map((addr) => {
+    const rows = addrs.map((addr) => {
       const row = withBalances.find((a) => a.address === addr)
       return { address: addr, balance: row?.balance ?? null, label: labelOf(addr) }
     })
+    for (const a of legacyBalances.value) {
+      rows.push({
+        address: a.address,
+        balance: a.balance,
+        label: labelOf(a.address) || t('wallet.legacyWalletLabel'),
+      })
+    }
+    return rows
   })
 
   function formatBalance(bal: number | null | undefined): string {
@@ -184,6 +202,14 @@ export function useWalletBalances() {
         result.push({ address: addr, balance: bal })
       }
 
+      // Прежние адреса — только с монетами; не ответил — не показываем.
+      const legacy: { address: string; balance: number }[] = []
+      for (const addr of legacyAddresses.value) {
+        const bal = await fetchBalanceTxUnspent(addr)
+        if (bal) legacy.push({ address: addr, balance: bal })
+      }
+      legacyBalances.value = legacy
+
       accountsWithBalances.value = result
       // Ни один адрес не ответил — это недоступная сеть, а не нулевые балансы.
       if (result.every((r) => r.balance == null)) error.value = t('wallet.errorLoadBalances')
@@ -220,7 +246,9 @@ export function useWalletBalances() {
   /** onMounted-часть: досоздать дефолтные доп-кошельки и загрузить балансы. */
   async function initBalances(): Promise<void> {
     const cur = currentAddress.value
-    if (cur && getAdditionalWalletAddressesList(cur).length < 3) {
+    if (cur) {
+      // Доводит список до адресов прежнего приложения (и переносит адреса
+      // другой деривации в прежние).
       const privateKey = authStore.getKeyPair?.privateKey ?? undefined
       await ensureDefaultAdditionalWallet(cur, privateKey)
       walletListVersion.value += 1
