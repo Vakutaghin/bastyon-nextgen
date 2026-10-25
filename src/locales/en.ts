@@ -1423,6 +1423,7 @@ export default {
     errNameRequired: 'Name cannot be empty',
     errNoUnspents: 'No funds available for the transaction',
     errAvatarUpload: 'Failed to upload avatar',
+    errAvatarFormat: 'Couldn’t open the picture. Choose a JPG, PNG or WebP',
     errFailed: 'Failed to update profile',
   },
   donate: {

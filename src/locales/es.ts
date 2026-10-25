@@ -1435,6 +1435,7 @@ export default {
     errNameRequired: 'El nombre no puede estar vacío',
     errNoUnspents: 'No hay fondos disponibles para la transacción',
     errAvatarUpload: 'No se pudo subir el avatar',
+    errAvatarFormat: 'No se pudo abrir la imagen. Elija JPG, PNG o WebP',
     errFailed: 'No se pudo actualizar el perfil',
   },
   donate: {

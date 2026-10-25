@@ -1374,6 +1374,7 @@ export default {
     errNameRequired: '名称不能为空',
     errNoUnspents: '没有可用于交易的资金',
     errAvatarUpload: '无法上传头像',
+    errAvatarFormat: '无法打开图片。请选择 JPG、PNG 或 WebP',
     errFailed: '无法更新个人资料',
   },
   donate: {

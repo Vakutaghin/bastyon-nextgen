@@ -1424,6 +1424,7 @@ export default {
     errNameRequired: 'Имя не может быть пустым',
     errNoUnspents: 'Недостаточно средств для транзакции',
     errAvatarUpload: 'Не удалось загрузить аватар',
+    errAvatarFormat: 'Не удалось открыть картинку. Выберите JPG, PNG или WebP',
     errFailed: 'Не удалось обновить профиль',
   },
   donate: {

@@ -1436,6 +1436,7 @@ export default {
     errNameRequired: 'Der Name darf nicht leer sein',
     errNoUnspents: 'Kein Guthaben für die Transaktion verfügbar',
     errAvatarUpload: 'Der Avatar konnte nicht hochgeladen werden',
+    errAvatarFormat: 'Das Bild ließ sich nicht öffnen. Wählen Sie JPG, PNG oder WebP',
     errFailed: 'Das Profil konnte nicht aktualisiert werden',
   },
   donate: {

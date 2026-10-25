@@ -1416,6 +1416,7 @@ export default {
     errNameRequired: '이름을 비워 둘 수 없습니다',
     errNoUnspents: '거래에 사용할 수 있는 자금이 없습니다',
     errAvatarUpload: '아바타를 업로드하지 못했습니다',
+    errAvatarFormat: '이미지를 열 수 없습니다. JPG, PNG 또는 WebP를 선택하세요',
     errFailed: '프로필을 업데이트하지 못했습니다',
   },
   donate: {

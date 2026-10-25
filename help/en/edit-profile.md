@@ -10,11 +10,11 @@ How to change the name, avatar, description, website and content language in you
 
 1. Click your avatar in the header and choose **“Profile”**.
 2. Click **“Edit profile”**.
-3. Change what you need and click **“Save”**. Once the changes go to the network, **“Profile updated”** appears.
+3. Change what you need and click **“Save”**. Once the changes go to the network, **“Profile updated”** appears. You see the new name and avatar at once, others see them when the change gets into a block, usually in a minute.
 
 ## What you can change
 
-- **“Avatar”** — **“Change avatar”** uploads a picture from your device, **“Remove”** removes it. The app shrinks the picture to 200 × 200 pixels and uploads it to the network’s image server while you wait: the button says **“Uploading avatar…”** meanwhile.
+- **“Avatar”** — **“Change avatar”** uploads a picture from your device, **“Remove”** removes it. The app shrinks the picture to 200 × 200 pixels and uploads it to the network’s image server while you wait: the button says **“Uploading avatar…”** meanwhile. JPG, PNG and WebP work; a HEIC photo (some phone cameras take them) won’t open, and the app says **“Couldn’t open the picture. Choose a JPG, PNG or WebP”**.
 - **“Name”** — up to 20 characters: Latin letters, digits and `_`, without the words “bastyon” and “pocketnet”. The name must be free, otherwise the network replies **“This name is already taken.”**
 - **“About”** — a description; it is shown in the profile under the **“Information”** heading. Links in it become clickable.
 - **“Website”** — a link to your website.

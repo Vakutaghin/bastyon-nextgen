@@ -103,6 +103,8 @@ import { useI18n } from 'vue-i18n'
 import { Modal, Button } from 'ant-design-vue'
 import { appToast } from '@/b-components/app-toast'
 import { useProfileStore } from '@/blockchain/store/profile-store'
+import { useAuthStore } from '@/blockchain/store/auth-store'
+import { holdProfileEdit } from '@/blockchain/store/pending-profile-edit'
 import { resizeImageBase64, fileToBase64 } from '@/helpers/common/resize-image'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { safeDecode } from '@/helpers/content/safe-decode'
@@ -187,9 +189,25 @@ async function onFileChange(event: Event): Promise<void> {
   const file = input.files?.[0]
   // Сбрасываем, чтобы повторный выбор того же файла снова триггерил change.
   input.value = ''
-  if (!file || !file.type.startsWith('image/')) return
+  if (!file) return
+  // Тип бывает пустым (файл из облака на Android) — тогда решает сама картинка.
+  // Не картинка или формат, который WebView не открывает (HEIC с камеры), —
+  // говорим об этом, а не молчим.
+  if (file.type && !file.type.startsWith('image/')) {
+    appToast.error({ message: t('editProfile.errAvatarFormat') })
+    return
+  }
+  let base64: string
   try {
-    const base64 = await fileToBase64(file)
+    base64 = await fileToBase64(file)
+    // Без типа FileReader пишет application/octet-stream; формат декодер узнаёт сам.
+    if (!file.type) base64 = base64.replace(/^data:[^;,]*/, 'data:image/jpeg')
+  } catch (e) {
+    console.error('[EditProfile] avatar read failed', e)
+    appToast.error({ message: t('editProfile.errAvatarUpload') })
+    return
+  }
+  try {
     avatarPreview.value = await resizeImageBase64(base64, {
       maxWidth: 200,
       maxHeight: 200,
@@ -197,8 +215,8 @@ async function onFileChange(event: Event): Promise<void> {
     })
     avatarChanged.value = true
   } catch (e) {
-    console.error('[EditProfile] avatar read failed', e)
-    appToast.error({ message: t('editProfile.errAvatarUpload') })
+    console.error('[EditProfile] avatar decode failed', file.type || 'no type', e)
+    appToast.error({ message: t('editProfile.errAvatarFormat') })
   }
 }
 
@@ -257,7 +275,7 @@ async function onSave(): Promise<void> {
     // 2. Отправляем userInfo-транзакцию.
     const { updateUserProfileInfo } =
       await import('@/blockchain/core/actions/profile-update-action')
-    await updateUserProfileInfo({
+    const txid = await updateUserProfileInfo({
       name: trimmedName,
       about: about.value.trim(),
       site: site.value.trim(),
@@ -274,6 +292,9 @@ async function onSave(): Promise<void> {
       l: language.value,
       i: image,
     }
+    // До блока нода отдаёт прежний профиль: правка держится поверх него.
+    const address = useAuthStore().getUserAddress ?? props.profile?.address
+    if (address) holdProfileEdit(address, txid, patch)
     useProfileStore().patchUserProfile(patch)
     emit('updated', patch)
     appToast.success({ message: t('editProfile.savedToast') })

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useProfileStore } from './profile-store'
+import { holdProfileEdit } from './pending-profile-edit'
 
 const h = vi.hoisted(() => ({
   getByPRCWithAuth: vi.fn(),
@@ -54,7 +55,10 @@ describe('геттеры', () => {
 
 describe('fetchUserState', () => {
   const stateResp = { result: 'success', data: [{ address: ADDR, score_unspent: 7 }] }
-  const profileResp = { result: 'success', data: [{ address: ADDR, i: 'avatar.jpg', name: 'Alice' }] }
+  const profileResp = {
+    result: 'success',
+    data: [{ address: ADDR, i: 'avatar.jpg', name: 'Alice' }],
+  }
 
   beforeEach(() => {
     h.getByPRCWithAuth.mockImplementation(async ({ method }: { method: string }) =>
@@ -147,5 +151,22 @@ describe('clearProfile', () => {
     expect(store.userProfile).toBeNull()
     expect(store.userAvatarUrl).toBeNull()
     expect(store.isFetchingUserState).toBe(false)
+  })
+})
+
+describe('правка профиля до блока', () => {
+  it('fetchUserState не возвращает прежний аватар, пока правка не в блоке', async () => {
+    localStorage.clear()
+    h.getByPRCWithAuth.mockImplementation(async ({ method }: { method: string }) =>
+      method === 'getuserstate'
+        ? { result: 'success', data: [{ address: ADDR, score_unspent: 7 }] }
+        : { result: 'success', data: [{ address: ADDR, i: 'old.jpg', name: 'Alice' }] }
+    )
+    holdProfileEdit(ADDR, 'tx1', { name: 'Alice', i: 'new.jpg' })
+    const store = useProfileStore()
+    await store.fetchUserState(ADDR)
+    expect(store.userProfile?.i).toBe('new.jpg')
+    expect(store.getUserAvatarUrl).toBe('new.jpg')
+    localStorage.clear()
   })
 })

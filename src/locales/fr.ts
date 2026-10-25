@@ -1438,6 +1438,7 @@ export default {
     errNameRequired: 'Le nom ne peut pas être vide',
     errNoUnspents: 'Aucun fonds disponible pour la transaction',
     errAvatarUpload: 'Impossible de téléverser l’avatar',
+    errAvatarFormat: 'Impossible d’ouvrir l’image. Choisissez un JPG, PNG ou WebP',
     errFailed: 'Impossible de mettre à jour le profil',
   },
   donate: {

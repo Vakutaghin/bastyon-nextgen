@@ -67,6 +67,7 @@ import { fetchAccountSettings } from '@/helpers/api/account-settings'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain/store/auth-store'
+import { withPendingProfileEdit } from '@/blockchain/store/pending-profile-edit'
 import { useModalStore } from '@/stores'
 import Button from '@/components/button/button.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -242,7 +243,8 @@ async function refreshOwnProfile(address: string): Promise<void> {
     const fresh = Array.isArray(response) ? response[0] : response?.data?.[0]
     // Пока шёл запрос, могли открыть другой профиль.
     if (fresh && userAddress.value === address && profile.value) {
-      profile.value = { ...profile.value, ...fresh }
+      // Пока правка профиля не в блоке, нода отдаёт прежние имя и аватар.
+      profile.value = withPendingProfileEdit({ ...profile.value, ...fresh })
     }
   } catch (e) {
     console.warn('[profile] own profile refresh failed', e)
@@ -253,7 +255,7 @@ function onProfileLoaded(newProfile: UserProfile): void {
   // Лента может прислать более свежие поля профиля (subscribers_count и т.п.) —
   // мерджим поверх существующего.
   if (newProfile) {
-    profile.value = { ...(profile.value ?? {}), ...newProfile }
+    profile.value = withPendingProfileEdit({ ...(profile.value ?? {}), ...newProfile })
   }
 }
 

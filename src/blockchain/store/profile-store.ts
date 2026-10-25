@@ -10,6 +10,7 @@ import type {
   GetUserStateResponse,
 } from '../../types/rpc-responses/user-state'
 import type { Address } from '../types/addresses'
+import { withPendingProfileEdit } from './pending-profile-edit'
 
 /**
  * Адрес самого свежего запроса состояния (P2-1). Обновляется в начале каждого
@@ -157,8 +158,10 @@ export const useProfileStore = defineStore('profile', {
           return null
         }
 
-        const avatarUrl = userState.i
-        this.userProfile = { ...userState, i: avatarUrl } as UserProfile & UserStateData
+        // Неподтверждённая правка профиля — поверх ответа ноды до блока.
+        const shown = withPendingProfileEdit(userState)
+        const avatarUrl = shown.i
+        this.userProfile = { ...shown, i: avatarUrl } as UserProfile & UserStateData
         if (avatarUrl) this.userAvatarUrl = avatarUrl
 
         this.isFetchingUserState = false
@@ -207,6 +210,7 @@ export const useProfileStore = defineStore('profile', {
         }
 
         if (userProfile) {
+          userProfile = withPendingProfileEdit(userProfile)
           this.userProfile = userProfile
           return userProfile
         }

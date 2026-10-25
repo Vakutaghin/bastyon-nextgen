@@ -1421,6 +1421,7 @@ export default {
     errNameRequired: 'Име не може бити празно',
     errNoUnspents: 'Нема доступних средстава за трансакцију',
     errAvatarUpload: 'Аватар није могао да се отпреми',
+    errAvatarFormat: 'Слика није могла да се отвори. Изаберите JPG, PNG или WebP',
     errFailed: 'Профил није могао да се ажурира',
   },
   donate: {
