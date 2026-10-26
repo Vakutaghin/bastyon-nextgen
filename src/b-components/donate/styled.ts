@@ -71,3 +71,50 @@ export const SC_FieldError = styled.div`
   font-size: 14px;
   color: var(--color-red-ant);
 `
+
+export const SC_OtherWallets = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ui-border);
+`
+
+export const SC_OtherWalletsTitle = styled.div`
+  font-size: 12px;
+  color: var(--ui-text-muted);
+`
+
+export const SC_WalletRow = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  color: var(--ui-text-highlighted);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+
+  &:hover {
+    border-color: var(--ui-primary);
+  }
+`
+
+export const SC_WalletCurrency = styled.span`
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-text-muted);
+`
+
+export const SC_WalletAddress = styled.span`
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-family: var(--font-family-mono);
+  overflow-wrap: anywhere;
+`

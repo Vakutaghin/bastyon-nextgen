@@ -1446,6 +1446,8 @@ export default {
     errSubscribeSelf: 'No puedes suscribirte a ti mismo',
     errFailed: 'No se pudo completar la acción; vuelve a intentarlo',
     errDeferred: 'La acción que esperaba la confirmación de la red ha fallado: {reason}',
+    unsubscribeConfirmTitle: '¿Cancelar la suscripción a este usuario?',
+    unsubscribeConfirmOk: 'Cancelar suscripción',
   },
   relations: {
     followersTitle: 'Seguidores',
@@ -1480,6 +1482,15 @@ export default {
     errAvatarUpload: 'No se pudo subir el avatar',
     errAvatarFormat: 'No se pudo abrir la imagen. Elija JPG, PNG o WebP',
     errFailed: 'No se pudo actualizar el perfil',
+    donationAddresses: 'Direcciones para donaciones',
+    donationAddressesHint: 'Monederos en otras monedas. La ventana de propinas los muestra.',
+    currency: 'Moneda',
+    addressPlaceholder: 'Dirección del monedero',
+    addAddress: 'Añadir',
+    removeAddress: 'Quitar dirección',
+    errAddressInvalid: 'No parece una dirección de {currency}',
+    errAddressDuplicate: 'Esta dirección ya está en la lista',
+    errNameTaken: 'Este nombre ya está ocupado',
   },
   donate: {
     title: 'Dar propina al autor',
@@ -1497,6 +1508,9 @@ export default {
     errAmountTooSmall: 'El importe es demasiado pequeño',
     errInsufficient: 'Fondos insuficientes',
     errFailed: 'No se pudo enviar la propina',
+    otherWallets: 'O envía en otra moneda',
+    copyAddress: 'Copiar dirección',
+    addressCopied: 'Dirección copiada',
   },
   boost: {
     title: 'Promocionar la publicación',
@@ -1614,6 +1628,8 @@ export default {
     linkCopied: 'Enlace copiado',
     shareFailed: 'No se pudo compartir',
     scrollToTop: 'Arriba',
+    blockAuthor: 'Bloquear al autor',
+    unblockAuthor: 'Desbloquear al autor',
   },
   sidebar: {
     topFirst: 'Lo mejor primero',
@@ -1789,6 +1805,8 @@ export default {
     block: 'Bloquear',
     unblock: 'Desbloquear',
     hiddenBlocked: 'Oculto: el usuario está bloqueado',
+    hiddenByPostAuthor: 'Oculto: el autor de la publicación bloqueó a este usuario',
+    hiddenExternalLink: 'Oculto: enlace a un sitio externo de una cuenta con baja reputación',
   },
   limits: {
     title: 'Mis límites',
@@ -2646,7 +2664,8 @@ export default {
     disableScoreLimit: 'Has alcanzado el límite diario de valoraciones',
     disableRepScore: 'Tu reputación es demasiado baja para valorar',
     blockConfirmTitle: '¿Bloquear a este usuario?',
-    blockConfirmContent: 'Sus comentarios se ocultarán. Puedes desbloquearlo en cualquier momento.',
+    blockConfirmContent:
+      'Sus publicaciones desaparecerán de tus feeds y sus comentarios y mensajes de chat se ocultarán. No podrá comentar tus publicaciones, y sus comentarios anteriores en ellas se ocultarán para todos. Puedes desbloquearlo en cualquier momento.',
     blockConfirmOk: 'Bloquear',
     blockSuccess: 'Usuario bloqueado',
     blockError: 'No se pudo bloquear al usuario',
@@ -2657,6 +2676,9 @@ export default {
     disableBannedByAuthor: 'El autor de la publicación no te permite comentar',
     linkCopied: 'Enlace al comentario copiado',
     shareFailed: 'No se pudo compartir el enlace',
+    unblockConfirmTitle: '¿Desbloquear a este usuario?',
+    unblockConfirmContent: 'Sus publicaciones, comentarios y mensajes de chat volverán a verse.',
+    unblockConfirmOk: 'Desbloquear',
   },
   postMsg: {
     errAuthRequired: 'Inicia sesión para publicar',

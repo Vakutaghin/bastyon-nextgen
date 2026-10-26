@@ -23,6 +23,8 @@ import { useIpnsRenewal } from '@/composables/use-ipns-renewal'
 import { useTrayLabels } from '@/composables/use-tray-labels'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
 import { useTheme } from '@/composables/use-theme'
+import { useAuthStore } from '@/blockchain/store/auth-store'
+import { useUserRelationsStore } from '@/stores/user-relations-store'
 import { buildAntdTheme, setStaticApiTheme } from '@/styles/antd-theme'
 import { SC_FramedNotice, SC_FramedLink } from './src.styled'
 
@@ -86,6 +88,18 @@ useIpnsRenewal(() => !isEmbed.value)
 
 // Меню значка в трее — на языке приложения (только десктоп).
 if (isTauriBuild) useTrayLabels()
+
+// Блок-лист и подписки — как только сессия восстановилась: карточки ленты,
+// смонтированные раньше, сами их не запросят. Вход и смену аккаунта ведёт
+// auth-store (resetAccountScopedStores).
+const authStore = useAuthStore()
+watch(
+  () => authStore.isAuthenticated,
+  (authed) => {
+    if (authed && !isEmbed.value) void useUserRelationsStore().init()
+  },
+  { immediate: true }
+)
 
 // Тема antd — палитра Nuxt UI из styles/antd-theme.ts, своя для светлой и
 // тёмной темы. Раньше antd всегда был светлым, а тёмным его делали

@@ -33,7 +33,16 @@
           </SC_RowMain>
 
           <SC_FollowBtn
-            v-if="canFollow(row.address)"
+            v-if="canFollow(row.address) && relations.isBlocked(row.address)"
+            class="subscribed"
+            :disabled="relations.isPending(row.address)"
+            @click="confirmUnblock(row.address)"
+          >
+            <LoadingOutlined v-if="relations.isPending(row.address)" spin />
+            {{ t('comments.unblock') }}
+          </SC_FollowBtn>
+          <SC_FollowBtn
+            v-else-if="canFollow(row.address)"
             :class="{ subscribed: relations.isSubscribed(row.address) }"
             :disabled="relations.isSubscribePending(row.address)"
             @click="toggleFollow(row.address)"
@@ -65,7 +74,7 @@ import UserMark from '@/components/user-mark'
 import { userMarkOf } from '@/services/user-marks'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore } from '@/stores'
-import { appToast } from '@/b-components/app-toast'
+import { useRelationActions } from '@/composables/use-relation-actions'
 import { useFollowersList, type RelationListType } from '@/composables/use-followers-list'
 import {
   SC_List,
@@ -84,6 +93,8 @@ const props = defineProps<{
   open: boolean
   profileAddress: string
   type: RelationListType
+  /** Кого не показывать: тех, кого владелец профиля заблокировал. */
+  hiddenAddresses?: readonly string[]
 }>()
 const emit = defineEmits<{ (e: 'update:open', value: boolean): void; (e: 'close'): void }>()
 
@@ -104,8 +115,12 @@ const { rows, hasMore, isLoading, error } = useFollowersList(
   () => props.profileAddress,
   () => props.type,
   visibleCount,
-  () => props.open
+  () => props.open,
+  () => props.hiddenAddresses ?? []
 )
+
+// Подписка и отписка — с вопросом перед отпиской, разблокировка — с вопросом.
+const { toggleFollow, confirmUnblock } = useRelationActions()
 
 const title = computed(() =>
   props.type === 'followers' ? t('relations.followersTitle') : t('relations.followingTitle')
@@ -138,20 +153,5 @@ function close(): void {
 function goToProfile(address: string): void {
   close()
   router.push(`/${address}`)
-}
-
-async function toggleFollow(address: string): Promise<void> {
-  if (relations.isSubscribePending(address)) return
-  try {
-    if (relations.isSubscribed(address)) {
-      await relations.unsubscribe(address)
-      appToast.success({ message: t('subscriptions.unsubscribedToast') })
-    } else {
-      await relations.subscribe(address)
-      appToast.success({ message: t('subscriptions.subscribedToast') })
-    }
-  } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
-  }
 }
 </script>

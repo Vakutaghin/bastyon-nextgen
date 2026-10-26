@@ -37,13 +37,21 @@
       </SC_ShareItem>
     </template>
 
-    <template v-if="canReport">
-      <SC_ShareDivider />
-      <SC_ShareItem type="button" class="share-item--danger" @click="onReport">
-        <SC_ShareIcon><FlagOutlined /></SC_ShareIcon>
-        {{ t('report.action') }}
-      </SC_ShareItem>
-    </template>
+    <SC_ShareDivider v-if="canReport || canBlock" />
+    <SC_ShareItem v-if="canReport" type="button" class="share-item--danger" @click="onReport">
+      <SC_ShareIcon><FlagOutlined /></SC_ShareIcon>
+      {{ t('report.action') }}
+    </SC_ShareItem>
+    <SC_ShareItem
+      v-if="canBlock"
+      type="button"
+      :class="{ 'share-item--danger': !isBlocked }"
+      data-testid="post-block-author"
+      @click="onBlock"
+    >
+      <SC_ShareIcon><StopOutlined /></SC_ShareIcon>
+      {{ isBlocked ? t('postCard.unblockAuthor') : t('postCard.blockAuthor') }}
+    </SC_ShareItem>
   </SC_ShareMenu>
 </template>
 
@@ -57,6 +65,7 @@ import {
   CopyOutlined,
   ShareAltOutlined,
   FlagOutlined,
+  StopOutlined,
 } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { SHARE_TARGETS, type ShareTarget } from '@/helpers/common/share-targets'
@@ -66,6 +75,10 @@ const props = defineProps<{
   url: string
   text: string
   canReport?: boolean
+  /** «Заблокировать автора» — чужой пост, человек вошёл (как в меню поста старого клиента). */
+  canBlock?: boolean
+  /** Автор уже заблокирован: пункт снимает блокировку. */
+  isBlocked?: boolean
   /** Пункт «В блокчейне» — у опубликованного поста с txid. */
   canChainInfo?: boolean
   /** Код вставки на сайт (share-origin publicEmbedCode); нет — пункта нет. */
@@ -74,6 +87,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'done'): void
   (e: 'report'): void
+  (e: 'block'): void
   /** «В блокчейне»: что записано о посте. */
   (e: 'chainInfo'): void
 }>()
@@ -133,6 +147,11 @@ function onChainInfo(): void {
 
 function onReport(): void {
   emit('report')
+  emit('done')
+}
+
+function onBlock(): void {
+  emit('block')
   emit('done')
 }
 </script>

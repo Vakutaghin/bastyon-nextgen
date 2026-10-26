@@ -9,9 +9,10 @@ How to block someone, how it differs from hiding their messages in a chat, and w
 ## Blocking someone
 
 - In the person’s profile — the **“Block”** button.
-- In the menu of their comment — the **“Actions”** button with three dots, item **“Block”**. The app asks: **“Block this user?”**
+- On their post — the **“Share”** menu, item **“Block author”**.
+- In the menu of their comment — the **“Actions”** button with three dots, item **“Block”**.
 
-**“User blocked”** appears.
+A block is a blockchain record, so the app asks first: **“Block this user?”** Once you confirm, **“User blocked”** appears.
 
 ## What happens
 
@@ -19,7 +20,10 @@ For you:
 
 - this person’s posts disappear from feeds, recommendations and promoted posts;
 - their comments are collapsed with the note **“Hidden: user is blocked”** — **“Show anyway”** opens them;
-- their chat messages are hidden too.
+- their chat messages are hidden too;
+- they are not in the **“Subscribers”** and **“Subscriptions”** lists of your profile.
+
+Under your posts — for everyone: their earlier comments there are collapsed with the note **“Hidden: the post author blocked this user”**. They still see their own comments. The rule works under other people’s posts too: comments from those the post author has blocked are collapsed there.
 
 Between you — a network rule: while the block is in place, neither of you can rate, comment on or repost the other’s posts, rate the other’s comments or subscribe to the other. It does not matter who blocked whom. An attempt ends with a refusal: **“Not possible: you have blocked this person or they have blocked you.”** If the person has blocked you, their posts show **“The post author has restricted you from commenting”** instead of the comment field.
 
@@ -36,10 +40,12 @@ This works only in the chat: you stop seeing their messages, while feeds and com
 ## Lifting a block
 
 - In the person’s profile — **“Unblock”**.
+- On their post — the **“Share”** menu, item **“Unblock author”**. Their posts are not in the feeds, but a post page opens from a link.
 - In the menu of their comment — **“Unblock”**.
+- In subscriber and subscription lists — **“Unblock”** instead of subscribing.
 - **“Settings”** → the **“Blocked users”** tab: everyone you have blocked, each with **“Unblock”**.
 
-After unblocking, their chat messages are visible again.
+Everywhere except the comment menu, the app asks: **“Unblock this user?”** After unblocking, their posts, comments and chat messages are visible again.
 
 ## See also
 

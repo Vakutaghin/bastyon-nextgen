@@ -1440,6 +1440,8 @@ export default {
     errSubscribeSelf: 'Non puoi iscriverti a te stesso',
     errFailed: 'Azione non riuscita, riprova',
     errDeferred: 'L’azione in attesa della conferma della rete non è riuscita: {reason}',
+    unsubscribeConfirmTitle: 'Annullare l’iscrizione a questo utente?',
+    unsubscribeConfirmOk: 'Annulla iscrizione',
   },
   relations: {
     followersTitle: 'Follower',
@@ -1474,6 +1476,15 @@ export default {
     errAvatarUpload: 'Impossibile caricare l’avatar',
     errAvatarFormat: 'Impossibile aprire l’immagine. Scegli un JPG, PNG o WebP',
     errFailed: 'Impossibile aggiornare il profilo',
+    donationAddresses: 'Indirizzi per le donazioni',
+    donationAddressesHint: 'Wallet in altre valute. La finestra delle mance li mostra.',
+    currency: 'Valuta',
+    addressPlaceholder: 'Indirizzo del wallet',
+    addAddress: 'Aggiungi',
+    removeAddress: 'Rimuovi indirizzo',
+    errAddressInvalid: 'Non sembra un indirizzo {currency}',
+    errAddressDuplicate: 'Questo indirizzo è già nell’elenco',
+    errNameTaken: 'Questo nome è già occupato',
   },
   donate: {
     title: 'Lascia una mancia all’autore',
@@ -1491,6 +1502,9 @@ export default {
     errAmountTooSmall: 'L’importo è troppo basso',
     errInsufficient: 'Fondi insufficienti',
     errFailed: 'Impossibile inviare la mancia',
+    otherWallets: 'Oppure invia in un’altra valuta',
+    copyAddress: 'Copia indirizzo',
+    addressCopied: 'Indirizzo copiato',
   },
   boost: {
     title: 'Promuovi il post',
@@ -1608,6 +1622,8 @@ export default {
     linkCopied: 'Link copiato',
     shareFailed: 'Impossibile condividere',
     scrollToTop: 'Torna su',
+    blockAuthor: 'Blocca l’autore',
+    unblockAuthor: 'Sblocca l’autore',
   },
   sidebar: {
     topFirst: 'Prima i migliori',
@@ -1783,6 +1799,8 @@ export default {
     block: 'Blocca',
     unblock: 'Sblocca',
     hiddenBlocked: 'Nascosto: l’utente è bloccato',
+    hiddenByPostAuthor: 'Nascosto: l’autore del post ha bloccato questo utente',
+    hiddenExternalLink: 'Nascosto: link a un sito esterno da un account con bassa reputazione',
   },
   limits: {
     title: 'I miei limiti',
@@ -2637,7 +2655,8 @@ export default {
     disableScoreLimit: 'Limite giornaliero di valutazioni raggiunto',
     disableRepScore: 'La tua reputazione è troppo bassa per valutare',
     blockConfirmTitle: 'Bloccare questo utente?',
-    blockConfirmContent: 'I suoi commenti verranno nascosti. Puoi sbloccarlo in qualsiasi momento.',
+    blockConfirmContent:
+      'I suoi post spariranno dai tuoi feed, i suoi commenti e messaggi in chat verranno nascosti. Non potrà commentare i tuoi post, e i suoi commenti precedenti lì verranno nascosti a tutti. Puoi sbloccarlo in qualsiasi momento.',
     blockConfirmOk: 'Blocca',
     blockSuccess: 'Utente bloccato',
     blockError: 'Impossibile bloccare l’utente',
@@ -2648,6 +2667,9 @@ export default {
     disableBannedByAuthor: 'L’autore del post non ti permette di commentare',
     linkCopied: 'Link al commento copiato',
     shareFailed: 'Impossibile condividere il link',
+    unblockConfirmTitle: 'Sbloccare questo utente?',
+    unblockConfirmContent: 'I suoi post, commenti e messaggi in chat torneranno visibili.',
+    unblockConfirmOk: 'Sblocca',
   },
   postMsg: {
     errAuthRequired: 'Accedi per pubblicare un post',

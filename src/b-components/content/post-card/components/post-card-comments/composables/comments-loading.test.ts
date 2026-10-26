@@ -203,6 +203,24 @@ describe('обсуждение под постом', () => {
       expect(v.shouldHideContent(lowRep('c2'))).toBe(true)
     })
 
+    it('блокировка автором поста и ссылка новичка — свои причины и тексты', () => {
+      mocks.relations.blockedSet = new Set(['PBlocked'])
+      const v = useCommentVisibility({ currentUserAddress: ref('PMe'), isDeleted: () => false })
+      const byPostAuthor = make('c5', { blck_cnt_cmt: 1 })
+      const newbieLink = make('c6', {
+        msg: '{"message":"смотрите example.org/x"}',
+        userprofile: { reputation: 3 },
+      } as unknown as Partial<GetComment>)
+      expect(v.hiddenReason(byPostAuthor)).toBe('postAuthor')
+      expect(v.hiddenLabelKey(byPostAuthor)).toBe('comments.hiddenByPostAuthor')
+      expect(v.hiddenReason(newbieLink)).toBe('link')
+      expect(v.hiddenLabelKey(newbieLink)).toBe('comments.hiddenExternalLink')
+      // Моя блокировка важнее: текст про неё.
+      expect(v.hiddenReason(make('c7', { address: 'PBlocked', blck_cnt_cmt: 1 }))).toBe('blocked')
+      // Свой комментарий автор видит, даже если автор поста его заблокировал.
+      expect(v.shouldHideContent(make('c8', { address: 'PMe', blck_cnt_cmt: 1 }))).toBe(false)
+    })
+
     it('«Показать всё равно» раскрывает; удалённый и свой не прячутся', () => {
       const deleted = new Set(['c9'])
       const v = useCommentVisibility({

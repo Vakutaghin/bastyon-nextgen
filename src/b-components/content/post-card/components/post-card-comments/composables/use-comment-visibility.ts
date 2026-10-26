@@ -9,12 +9,22 @@ import type { GetComment } from '@/types/rpc-responses/get-comments'
 import { useCommentsStore, useUserRelationsStore } from '@/stores'
 import {
   isHiddenByReputation as visIsHiddenByReputation,
+  isHiddenByPostAuthor as visIsHiddenByPostAuthor,
+  isHiddenForExternalLink as visIsHiddenForExternalLink,
   isAuthorAccountLocked as visIsAuthorAccountLocked,
   isBlockedByMe as visIsBlockedByMe,
 } from '../visibility'
 
 /** Причина скрытия комментария (для выбора текста баннера). */
-export type HiddenReason = 'blocked' | 'reputation' | null
+export type HiddenReason = 'blocked' | 'postAuthor' | 'reputation' | 'link' | null
+
+/** Текст баннера скрытого комментария по причине. */
+const HIDDEN_LABEL_KEYS: Record<Exclude<HiddenReason, null>, string> = {
+  blocked: 'comments.hiddenBlocked',
+  postAuthor: 'comments.hiddenByPostAuthor',
+  reputation: 'comments.hiddenLowReputation',
+  link: 'comments.hiddenExternalLink',
+}
 
 export interface UseCommentVisibilityOptions {
   currentUserAddress: Ref<string>
@@ -26,22 +36,25 @@ export function useCommentVisibility(opts: UseCommentVisibilityOptions) {
   const isBlockedAuthor = (comment: GetComment): boolean =>
     visIsBlockedByMe(comment, useUserRelationsStore().blockedSet)
 
-  /** Скрыт ли коммент по правилам видимости (блок-лист, репутация автора и т.п.) */
-  const isCommentHiddenByVisibility = (comment: GetComment): boolean => {
-    const me = opts.currentUserAddress.value || undefined
-    if (isBlockedAuthor(comment)) return true
-    if (visIsHiddenByReputation(comment, me)) return true
-    if (visIsAuthorAccountLocked(comment)) return true
-    return false
-  }
-
-  /** Причина скрытия (для текста баннера). Приоритет у блокировки. */
+  /** Причина скрытия (для текста баннера). Приоритет у моей блокировки. */
   const hiddenReason = (comment: GetComment): HiddenReason => {
     const me = opts.currentUserAddress.value || undefined
     if (isBlockedAuthor(comment)) return 'blocked'
+    if (visIsHiddenByPostAuthor(comment, me)) return 'postAuthor'
     if (visIsHiddenByReputation(comment, me) || visIsAuthorAccountLocked(comment))
       return 'reputation'
+    if (visIsHiddenForExternalLink(comment, me)) return 'link'
     return null
+  }
+
+  /** Скрыт ли коммент по правилам видимости (блок-лист, репутация автора и т.п.) */
+  const isCommentHiddenByVisibility = (comment: GetComment): boolean =>
+    hiddenReason(comment) !== null
+
+  /** Ключ текста баннера скрытого комментария. */
+  const hiddenLabelKey = (comment: GetComment): string => {
+    const reason = hiddenReason(comment)
+    return reason ? HIDDEN_LABEL_KEYS[reason] : HIDDEN_LABEL_KEYS.reputation
   }
 
   /** Раскрыл ли пользователь скрытый коммент через «Показать всё равно» */
@@ -69,6 +82,7 @@ export function useCommentVisibility(opts: UseCommentVisibilityOptions) {
   return {
     isCommentHiddenByVisibility,
     hiddenReason,
+    hiddenLabelKey,
     isHiddenRevealed,
     shouldHideContent,
     revealHiddenComment,

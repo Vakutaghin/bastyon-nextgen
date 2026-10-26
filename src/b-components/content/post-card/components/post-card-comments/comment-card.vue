@@ -73,11 +73,7 @@
         @save="submitEdit"
       />
       <SC_HiddenBanner v-else-if="shouldHideContent(comment)">
-        <span>{{
-          hiddenReason(comment) === 'blocked'
-            ? t('comments.hiddenBlocked')
-            : t('comments.hiddenLowReputation')
-        }}</span>
+        <span>{{ t(hiddenLabelKey(comment)) }}</span>
         <SC_RevealBtn type="button" @click.stop.prevent="revealHiddenComment(comment)">
           {{ t('comments.showAnyway') }}
         </SC_RevealBtn>
@@ -238,7 +234,7 @@ const {
   requestCloseEdit,
   submitEdit,
 } = ctx.editDelete
-const { shouldHideContent, hiddenReason, revealHiddenComment, isMyComment } = ctx.visibility
+const { shouldHideContent, hiddenLabelKey, revealHiddenComment, isMyComment } = ctx.visibility
 const { onRepliesClick } = ctx.replies
 
 const wrapper = computed(() => (props.level === 1 ? SC_CommentRow : SC_CommentItem))

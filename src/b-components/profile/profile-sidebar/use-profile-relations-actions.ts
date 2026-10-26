@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
+import { useRelationActions } from '@/composables/use-relation-actions'
 
 export function useProfileRelationsActions(userAddress: Ref<string>) {
   const { t } = useI18n()
@@ -38,36 +39,15 @@ export function useProfileRelationsActions(userAddress: Ref<string>) {
     () => !!userAddress.value && authStore.getUserAddress === userAddress.value
   )
 
-  async function onBlockClick(): Promise<void> {
-    const address = userAddress.value
-    if (!address || isBlockPending.value) return
-    try {
-      if (isBlocked.value) {
-        await relations.unblock(address)
-        appToast.success({ message: t('commentsMsg.unblockSuccess') })
-      } else {
-        await relations.block(address)
-        appToast.success({ message: t('commentsMsg.blockSuccess') })
-      }
-    } catch (e) {
-      appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
-    }
+  // Отписка и (раз)блокировка — транзакции: переспрашиваем, как старый клиент.
+  const { toggleBlock, toggleFollow } = useRelationActions()
+
+  function onBlockClick(): void {
+    if (!isBlockPending.value) toggleBlock(userAddress.value)
   }
 
   async function onPrimaryClick(): Promise<void> {
-    const address = userAddress.value
-    if (!address || isSubscribePending.value) return
-    try {
-      if (isSubscribed.value) {
-        await relations.unsubscribe(address)
-        appToast.success({ message: t('subscriptions.unsubscribedToast') })
-      } else {
-        await relations.subscribe(address)
-        appToast.success({ message: t('subscriptions.subscribedToast') })
-      }
-    } catch (e) {
-      appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
-    }
+    await toggleFollow(userAddress.value)
   }
 
   async function onBellClick(): Promise<void> {

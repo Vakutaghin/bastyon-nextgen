@@ -21,6 +21,7 @@ import {
   type DisableReason,
 } from '../visibility'
 import type { PostForComments } from '../types'
+import { Z_INDEX } from '@/styles/design-tokens'
 
 export interface UseCommentsScoringOptions {
   post: PostForComments | Ref<PostForComments>
@@ -65,6 +66,7 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
           okType: 'danger',
           cancelText: t('commentsMsg.cancel'),
           centered: true,
+          zIndex: Z_INDEX.CONFIRM,
           onOk: () => resolve(true),
           onCancel: () => resolve(false),
         })

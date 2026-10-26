@@ -76,9 +76,11 @@ The order every discussion opens in is chosen in the [settings](settings.md) —
 Some comments are collapsed, with a note instead of the text:
 
 - **“Hidden: user is blocked”** — you have [blocked](blocking.md) the author;
-- **“Hidden due to low author reputation”** — the author’s reputation is negative, and the comment has collected 5 or more dislikes.
+- **“Hidden: the post author blocked this user”** — the post author has blocked the commenter. Such comments are collapsed for everyone except the commenter;
+- **“Hidden due to low author reputation”** — the author’s reputation is negative, and the comment has collected 5 or more dislikes;
+- **“Hidden: a link to an outside site from a low-reputation account”** — the author’s reputation is below 20, and the comment links somewhere other than Bastyon. This is how the app cuts link spam from new accounts.
 
-**“Show anyway”** opens such a comment.
+**“Show anyway”** opens such a comment. The same rules apply to the last comment shown under a post in the feed.
 
 ## When you cannot comment
 

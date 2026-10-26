@@ -64,6 +64,10 @@ export interface AdaptedPost {
     children: number
     scoreUp: number
     scoreDown: number
+    /** Автор поста заблокировал комментатора — превью свёрнуто, как в обсуждении. */
+    blockedByPostAuthor?: boolean
+    /** Репутация комментатора, если его профиль пришёл с лентой. */
+    authorReputation?: number
   }
   /** txid оригинальной записи, если это репост */
   repost?: string

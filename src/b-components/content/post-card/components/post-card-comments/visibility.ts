@@ -12,6 +12,7 @@
  */
 
 import { t } from '@/i18n'
+import { getCommentMessageText } from './helpers'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { UserState as UserStateData } from '@/types/rpc-responses/user-state'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -38,8 +39,7 @@ export const SELF_REP_BLOCK_THRESHOLD = -50
  * комментарий скрывается если репутация автора `<= -0.5` И у комментария
  * набралось `>= 5` дизлайков. Свой комментарий и удалённый — не скрываются.
  *
- * Не портирован link-spam-критерий (`reputation < 20` + не-whitelist ссылки):
- * требует legacy-whitelist доменов (`thislink`) — отдельная задача.
+ * Ссылки на чужие сайты от новичков — {@link isHiddenForExternalLink}.
  */
 export function isHiddenByReputation(comment: GetComment, myAddress?: string): boolean {
   if (myAddress && comment.address === myAddress) return false
@@ -47,6 +47,54 @@ export function isHiddenByReputation(comment: GetComment, myAddress?: string): b
   const rep = comment.userprofile?.reputation
   if (typeof rep !== 'number') return false
   return rep <= HIDE_REPUTATION_MAX && (comment.scoreDown ?? 0) >= HIDE_MIN_SCORE_DOWN
+}
+
+/**
+ * Автор поста заблокировал автора комментария. Нода помечает такие комментарии
+ * `blck_cnt_cmt` (у старого клиента — первая проверка `hiddenComment`), и они
+ * свёрнуты у всех читателей: блокировка закрывает комментатору дорогу под посты
+ * автора и прячет то, что он написал там раньше. Сам комментатор их видит.
+ */
+export function isHiddenByPostAuthor(comment: GetComment, myAddress?: string): boolean {
+  if (myAddress && comment.address === myAddress) return false
+  if (comment.deleted) return false
+  return Number(comment.blck_cnt_cmt) === 1
+}
+
+/** Ниже этой репутации ссылка на чужой сайт сворачивает комментарий (legacy: `< 20`). */
+export const LINK_REPUTATION_MIN = 20
+
+/** Ссылка или голый домен в тексте — регулярка старого клиента (`urlreg`, satolist.js). */
+const LINK_PATTERN =
+  /(([-a-zA-Z0-9@:%_+.~#?&/=]{2,256}\.[a-z]{2,5}\b)|(bastyon:\/))(\/[-a-zA-Z0-9@:%|_+.~#/?&=]*)?/gi
+
+/** Свои домены: на них ссылаться можно с любой репутацией (legacy `thislink`). */
+const OWN_LINK_HOSTS = ['bastyon.com', 'pocketnet.app', 'forta.chat']
+
+function isOwnLink(link: string): boolean {
+  const lower = link.toLowerCase()
+  if (lower.startsWith('bastyon:/')) return true
+  try {
+    const host = new URL(/^[a-z][a-z0-9+.-]*:\/\//.test(lower) ? lower : `https://${lower}`)
+      .hostname
+    return OWN_LINK_HOSTS.some((own) => host === own || host.endsWith(`.${own}`))
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Комментарий новичка со ссылкой на чужой сайт (legacy `hiddenCommentLabelLink`):
+ * у автора репутация ниже {@link LINK_REPUTATION_MIN}, а в тексте есть ссылка
+ * не на Bastyon. Так старый клиент гасил спам ссылками из свежих аккаунтов.
+ */
+export function isHiddenForExternalLink(comment: GetComment, myAddress?: string): boolean {
+  if (myAddress && comment.address === myAddress) return false
+  if (comment.deleted) return false
+  const rep = comment.userprofile?.reputation
+  if (typeof rep !== 'number' || rep >= LINK_REPUTATION_MIN) return false
+  const links = getCommentMessageText(comment).match(LINK_PATTERN)
+  return !!links && links.some((link) => !isOwnLink(link))
 }
 
 /**

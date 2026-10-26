@@ -46,6 +46,8 @@ interface RawLastComment {
   children?: number
   scoreUp?: number
   scoreDown?: number
+  /** 1 — автор поста заблокировал комментатора (см. GetComment.blck_cnt_cmt). */
+  blck_cnt_cmt?: number
 }
 
 /**
@@ -170,6 +172,9 @@ export function adaptPostData(
       children: Number(post.lastComment.children || 0),
       scoreUp: Number(post.lastComment.scoreUp || 0),
       scoreDown: Number(post.lastComment.scoreDown || 0),
+      blockedByPostAuthor: Number(post.lastComment.blck_cnt_cmt) === 1,
+      authorReputation:
+        typeof commenterProfile?.reputation === 'number' ? commenterProfile.reputation : undefined,
     }
   }
 

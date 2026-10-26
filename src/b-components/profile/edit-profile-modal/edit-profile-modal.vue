@@ -81,6 +81,51 @@
             :disabled="saving"
           />
         </SC_Field>
+
+        <SC_Field>
+          <SC_Label for="edit-profile-address">{{ t('editProfile.donationAddresses') }}</SC_Label>
+          <SC_Hint>{{ t('editProfile.donationAddressesHint') }}</SC_Hint>
+          <SC_AddressList v-if="addresses.length">
+            <SC_AddressRow
+              v-for="(entry, index) in addresses"
+              :key="entry.currency + entry.address"
+            >
+              <SC_AddressCurrency>{{ donationCurrencyLabel(entry.currency) }}</SC_AddressCurrency>
+              <SC_AddressValue>{{ entry.address }}</SC_AddressValue>
+              <SC_SmallBtn
+                type="button"
+                class="danger"
+                :disabled="saving"
+                :aria-label="t('editProfile.removeAddress')"
+                :title="t('editProfile.removeAddress')"
+                @click="removeAddress(index)"
+              >
+                <DeleteOutlined />
+              </SC_SmallBtn>
+            </SC_AddressRow>
+          </SC_AddressList>
+          <SC_AddressAdd>
+            <Select
+              v-model:value="newCurrency"
+              :options="DONATION_CURRENCIES"
+              :disabled="saving"
+              :aria-label="t('editProfile.currency')"
+            />
+            <SC_Input
+              id="edit-profile-address"
+              v-model="newAddress"
+              :placeholder="t('editProfile.addressPlaceholder')"
+              :disabled="saving"
+              autocomplete="off"
+              spellcheck="false"
+              @keydown.enter.prevent="addAddress"
+            />
+            <SC_SmallBtn type="button" :disabled="saving || !newAddress.trim()" @click="addAddress">
+              {{ t('editProfile.addAddress') }}
+            </SC_SmallBtn>
+          </SC_AddressAdd>
+          <SC_FieldError v-if="addressError" role="alert">{{ addressError }}</SC_FieldError>
+        </SC_Field>
       </SC_Form>
     </SC_ModalBody>
 
@@ -89,7 +134,7 @@
         <Button type="default" :disabled="saving" @click="handleCancel">
           {{ t('editProfile.cancel') }}
         </Button>
-        <Button type="primary" :loading="saving" @click="onSave">
+        <Button type="primary" :loading="saving" :disabled="!hasChanges" @click="onSave">
           {{ saving && uploadingAvatar ? t('editProfile.uploadingAvatar') : t('editProfile.save') }}
         </Button>
       </SC_ModalActions>
@@ -101,6 +146,7 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Modal, Button } from 'ant-design-vue'
+import { DeleteOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { useProfileStore } from '@/blockchain/store/profile-store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
@@ -109,6 +155,14 @@ import { resizeImageBase64, fileToBase64 } from '@/helpers/common/resize-image'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { safeDecode } from '@/helpers/content/safe-decode'
 import { NICKNAME_MAX_LENGTH, validateProfileNickname } from '@/helpers/profile/nickname-validation'
+import { isNicknameTaken } from '@/helpers/profile/nickname-owner'
+import {
+  DONATION_CURRENCIES,
+  donationCurrencyLabel,
+  isValidDonationAddress,
+  parseDonationAddresses,
+  type DonationAddress,
+} from '@/helpers/profile/donation-addresses'
 import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
 import Select from '@/components/select'
 import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@/i18n'
@@ -124,6 +178,13 @@ import {
   SC_AvatarActions,
   SC_SmallBtn,
   SC_HiddenFileInput,
+  SC_Hint,
+  SC_FieldError,
+  SC_AddressList,
+  SC_AddressRow,
+  SC_AddressCurrency,
+  SC_AddressValue,
+  SC_AddressAdd,
 } from './styled'
 
 /** Максимум имени — как в legacy (NICKNAME, 20 символов). */
@@ -156,6 +217,11 @@ const avatarChanged = ref(false)
 const saving = ref(false)
 const uploadingAvatar = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+/** Адреса для пожертвований (поле `b`). */
+const addresses = ref<DonationAddress[]>([])
+const newCurrency = ref<string>(DONATION_CURRENCIES[0]!.value)
+const newAddress = ref('')
+const addressError = ref('')
 
 const avatarInitial = computed<string>(() => (name.value.trim()[0] || '?').toUpperCase())
 
@@ -170,6 +236,48 @@ function resetFromProfile(): void {
   language.value = p?.l || String(locale.value)
   avatarPreview.value = p?.i || ''
   avatarChanged.value = false
+  addresses.value = parseDonationAddresses(p?.b)
+  newAddress.value = ''
+  addressError.value = ''
+}
+
+/**
+ * Есть что сохранять. Без правок старый клиент отвечал «изменений нет» и
+ * транзакцию не слал — здесь кнопка просто неактивна.
+ */
+const hasChanges = computed<boolean>(() => {
+  const p = props.profile
+  if (!p) return true
+  return (
+    avatarChanged.value ||
+    name.value.trim() !== (p.name || '') ||
+    about.value.trim() !== safeDecode(p.a || '').trim() ||
+    site.value.trim() !== (p.s || '').trim() ||
+    language.value !== (p.l || String(locale.value)) ||
+    JSON.stringify(addresses.value) !== JSON.stringify(parseDonationAddresses(p.b))
+  )
+})
+
+function addAddress(): void {
+  const address = newAddress.value.trim()
+  if (!address) return
+  if (!isValidDonationAddress(newCurrency.value, address)) {
+    addressError.value = t('editProfile.errAddressInvalid', {
+      currency: donationCurrencyLabel(newCurrency.value),
+    })
+    return
+  }
+  if (addresses.value.some((a) => a.currency === newCurrency.value && a.address === address)) {
+    addressError.value = t('editProfile.errAddressDuplicate')
+    return
+  }
+  addresses.value = [...addresses.value, { currency: newCurrency.value, address }]
+  newAddress.value = ''
+  addressError.value = ''
+}
+
+function removeAddress(index: number): void {
+  addresses.value = addresses.value.filter((_, i) => i !== index)
 }
 
 watch(
@@ -225,18 +333,6 @@ function removeAvatar(): void {
   avatarChanged.value = true
 }
 
-/** Сохранённые крипто-адреса (поле `b`) — переносим без изменений. */
-function extractAddresses(): unknown[] {
-  const b = props.profile?.b
-  if (!b) return []
-  try {
-    const parsed = JSON.parse(b)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
 function handleCancel(): void {
   if (saving.value) return
   emit('close')
@@ -252,6 +348,19 @@ async function onSave(): Promise<void> {
 
   saving.value = true
   try {
+    // Новое имя может быть занято: спросим ноду до транзакции, как старый
+    // клиент. Сеть недоступна — не мешаем, занятое имя отвергнет сама нода.
+    if (trimmedName !== props.profile?.name) {
+      const taken = await isNicknameTaken(
+        trimmedName,
+        useAuthStore().getUserAddress ?? props.profile?.address
+      ).catch(() => false)
+      if (taken) {
+        appToast.error({ message: t('editProfile.errNameTaken') })
+        return
+      }
+    }
+
     // 1. Аватар: грузим новый data-URI на хостинг; пустой — снятие аватара.
     let image = props.profile?.i || ''
     if (avatarChanged.value) {
@@ -281,7 +390,7 @@ async function onSave(): Promise<void> {
       site: site.value.trim(),
       language: language.value,
       image,
-      addresses: extractAddresses(),
+      addresses: addresses.value,
     })
 
     // 3. Оптимистично обновляем закэшированный профиль (хедер/сайдбар) и страницу.
@@ -291,6 +400,7 @@ async function onSave(): Promise<void> {
       s: site.value.trim(),
       l: language.value,
       i: image,
+      b: JSON.stringify(addresses.value),
     }
     // До блока нода отдаёт прежний профиль: правка держится поверх него.
     const address = useAuthStore().getUserAddress ?? props.profile?.address

@@ -5,7 +5,7 @@
 // Сериализация/payload — через готовые serializeUserInfo/exportUserInfo
 // (формат 1:1 с legacy kit.js). Ключи мессенджера (`k`) детерминированы из
 // приватного ключа и ВСЕГДА ре-деривятся, чтобы апдейт их не потерял.
-// Крипто-адреса (`b`) сохраняются как есть (их редактирование — вне этого флоу).
+// Адреса для пожертвований (`b`) приходят из формы профиля.
 
 import { useAuthStore } from '@/blockchain'
 import { serializeUserInfo, exportUserInfo, type UserInfoData } from './user-info-action'
@@ -19,6 +19,7 @@ import {
 import { deriveMessengerKeys } from '../keys/key-generator'
 import { DEFAULT_TX_FEE } from '../../constants/transactions'
 import { t } from '@/i18n'
+import type { DonationAddress } from '@/helpers/profile/donation-addresses'
 
 /** Поля, которые редактируются в edit-profile флоу. */
 export interface ProfileUpdateInput {
@@ -28,8 +29,8 @@ export interface ProfileUpdateInput {
   language?: string
   /** Аватар: уже загруженный URL (data-URI нужно предварительно загрузить). */
   image?: string
-  /** Существующие крипто-адреса профиля (поле `b`) — передаём, чтобы не затереть. */
-  addresses?: unknown[]
+  /** Адреса для пожертвований (поле `b`): без них транзакция их сотрёт. */
+  addresses?: DonationAddress[]
 }
 
 /**
@@ -56,7 +57,7 @@ export async function updateUserProfileInfo(input: ProfileUpdateInput): Promise<
     site: input.site || '',
     language: input.language || '',
     image: input.image || '',
-    addresses: (input.addresses as string[]) || [],
+    addresses: input.addresses || [],
     ref: '',
     keys: publicKeys,
   }

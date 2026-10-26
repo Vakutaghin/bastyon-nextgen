@@ -4,6 +4,7 @@
 
 import type { KeyPair } from '../types/keys'
 import type { Address } from '../types/addresses'
+import type { DonationAddress } from '@/helpers/profile/donation-addresses'
 
 export interface UserInfoData {
   name: string
@@ -11,7 +12,8 @@ export interface UserInfoData {
   site?: string
   language?: string
   image?: string
-  addresses?: string[]
+  /** Адреса для пожертвований (`b`): `{ currency, address }`, см. helpers/profile/donation-addresses. */
+  addresses?: DonationAddress[]
   ref?: string
   keys?: string[]
   email?: string
@@ -36,7 +38,10 @@ export function serializeUserInfo(userInfo: UserInfoData): string {
 /**
  * Экспортирует userInfo данные в формат для транзакции
  */
-export function exportUserInfo(userInfo: UserInfoData, extended: boolean = false): Record<string, unknown> {
+export function exportUserInfo(
+  userInfo: UserInfoData,
+  extended: boolean = false
+): Record<string, unknown> {
   if (extended) {
     return {
       type: 'userInfo',

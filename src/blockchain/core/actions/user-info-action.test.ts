@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { serializeUserInfo, exportUserInfo } from './user-info-action'
 import type { UserInfoData } from './user-info-action'
 
+/** Адреса для пожертвований (`b`) — в формате старого клиента. */
+const BTC = { currency: 'btc', address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa' }
+const LTC = { currency: 'ltc', address: 'LTC-ADDRESS' }
+
 describe('serializeUserInfo', () => {
   it('конкатенирует поля в фиксированном порядке: name+site+language+about+image+addresses+ref+keys', () => {
     const info: UserInfoData = {
@@ -10,13 +14,13 @@ describe('serializeUserInfo', () => {
       language: 'en',
       about: 'bio',
       image: 'img',
-      addresses: ['P1', 'P2'],
+      addresses: [BTC, LTC],
       ref: 'refX',
       keys: ['k1', 'k2'],
     }
 
     expect(serializeUserInfo(info)).toBe(
-      'Alice' + 'site.io' + 'en' + 'bio' + 'img' + JSON.stringify(['P1', 'P2']) + 'refX' + 'k1,k2'
+      'Alice' + 'site.io' + 'en' + 'bio' + 'img' + JSON.stringify([BTC, LTC]) + 'refX' + 'k1,k2'
     )
   })
 
@@ -37,7 +41,7 @@ describe('exportUserInfo', () => {
       site: 'site.io',
       language: 'en',
       image: 'img',
-      addresses: ['P1'],
+      addresses: [BTC],
       ref: 'r',
       keys: ['k1', 'k2'],
     }
@@ -48,14 +52,14 @@ describe('exportUserInfo', () => {
       s: 'site.io',
       l: 'en',
       i: 'img',
-      b: JSON.stringify(['P1']),
+      b: JSON.stringify([BTC]),
       r: 'r',
       k: 'k1,k2',
     })
   })
 
   it('extended=true использует полные ключи + type:userInfo', () => {
-    const info: UserInfoData = { name: 'Alice', addresses: ['P1'], keys: ['k1'] }
+    const info: UserInfoData = { name: 'Alice', addresses: [BTC], keys: ['k1'] }
 
     expect(exportUserInfo(info, true)).toEqual({
       type: 'userInfo',
@@ -64,7 +68,7 @@ describe('exportUserInfo', () => {
       site: '',
       language: '',
       image: '',
-      addresses: JSON.stringify(['P1']),
+      addresses: JSON.stringify([BTC]),
       ref: '',
       keys: 'k1',
     })

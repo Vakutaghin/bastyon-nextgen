@@ -20,6 +20,7 @@ import { sendComment } from '../comment-sender'
 import { deleteComment } from '../comment-deleter'
 import { isCommentLengthValid, getCommentTxState } from '../helpers'
 import { isWithinEditWindow } from '@/helpers/content/edit-window'
+import { Z_INDEX } from '@/styles/design-tokens'
 
 export interface UseCommentEditDeleteOptions {
   postId: Ref<string>
@@ -109,6 +110,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       okType: 'danger',
       cancelText: t('commentsMsg.cancel'),
       centered: true,
+      zIndex: Z_INDEX.CONFIRM,
       onOk: () => blockUserFromComment(comment),
     })
   }
@@ -163,6 +165,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       okType: 'danger',
       cancelText: t('commentsMsg.cancel'),
       centered: true,
+      zIndex: Z_INDEX.CONFIRM,
       onOk: () => deleteCommentInternal(comment),
     })
   }
@@ -235,6 +238,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       okText: t('commentsMsg.discardEditOk'),
       cancelText: t('commentsMsg.no'),
       centered: true,
+      zIndex: Z_INDEX.CONFIRM,
       onOk: () => closeEdit(),
     })
   }

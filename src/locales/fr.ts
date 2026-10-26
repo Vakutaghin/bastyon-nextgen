@@ -1450,6 +1450,8 @@ export default {
     errSubscribeSelf: 'Vous ne pouvez pas vous abonner à vous-même',
     errFailed: 'L’action a échoué, veuillez réessayer',
     errDeferred: 'L’action qui attendait la confirmation du réseau a échoué : {reason}',
+    unsubscribeConfirmTitle: 'Se désabonner de cet utilisateur ?',
+    unsubscribeConfirmOk: 'Se désabonner',
   },
   relations: {
     followersTitle: 'Abonnés',
@@ -1484,6 +1486,15 @@ export default {
     errAvatarUpload: 'Impossible de téléverser l’avatar',
     errAvatarFormat: 'Impossible d’ouvrir l’image. Choisissez un JPG, PNG ou WebP',
     errFailed: 'Impossible de mettre à jour le profil',
+    donationAddresses: 'Adresses pour les dons',
+    donationAddressesHint: 'Portefeuilles dans d’autres devises. La fenêtre de don les affiche.',
+    currency: 'Devise',
+    addressPlaceholder: 'Adresse du portefeuille',
+    addAddress: 'Ajouter',
+    removeAddress: 'Supprimer l’adresse',
+    errAddressInvalid: 'Cela ne ressemble pas à une adresse {currency}',
+    errAddressDuplicate: 'Cette adresse est déjà dans la liste',
+    errNameTaken: 'Ce nom est déjà pris',
   },
   donate: {
     title: 'Faire un don à l’auteur',
@@ -1501,6 +1512,9 @@ export default {
     errAmountTooSmall: 'Le montant est trop faible',
     errInsufficient: 'Fonds insuffisants',
     errFailed: 'Impossible d’envoyer le pourboire',
+    otherWallets: 'Ou envoyez dans une autre devise',
+    copyAddress: 'Copier l’adresse',
+    addressCopied: 'Adresse copiée',
   },
   boost: {
     title: 'Promouvoir la publication',
@@ -1619,6 +1633,8 @@ export default {
     linkCopied: 'Lien copié',
     shareFailed: 'Impossible de partager',
     scrollToTop: 'Haut de page',
+    blockAuthor: 'Bloquer l’auteur',
+    unblockAuthor: 'Débloquer l’auteur',
   },
   sidebar: {
     topFirst: 'Les meilleurs d’abord',
@@ -1794,6 +1810,8 @@ export default {
     block: 'Bloquer',
     unblock: 'Débloquer',
     hiddenBlocked: 'Masqué : l’utilisateur est bloqué',
+    hiddenByPostAuthor: 'Masqué : l’auteur de la publication a bloqué cet utilisateur',
+    hiddenExternalLink: 'Masqué : lien vers un site externe d’un compte à faible réputation',
   },
   limits: {
     title: 'Mes limites',
@@ -2657,7 +2675,7 @@ export default {
     disableRepScore: 'Votre réputation est trop faible pour noter',
     blockConfirmTitle: 'Bloquer cet utilisateur ?',
     blockConfirmContent:
-      'Ses commentaires seront masqués. Vous pourrez le débloquer à tout moment.',
+      'Ses publications disparaîtront de vos fils, ses commentaires et messages de chat seront masqués. Il ne pourra plus commenter vos publications, et ses anciens commentaires y seront masqués pour tous. Vous pourrez le débloquer à tout moment.',
     blockConfirmOk: 'Bloquer',
     blockSuccess: 'Utilisateur bloqué',
     blockError: 'Impossible de bloquer l’utilisateur',
@@ -2668,6 +2686,10 @@ export default {
     disableBannedByAuthor: 'L’auteur de la publication vous a interdit de commenter',
     linkCopied: 'Lien du commentaire copié',
     shareFailed: 'Impossible de partager le lien',
+    unblockConfirmTitle: 'Débloquer cet utilisateur ?',
+    unblockConfirmContent:
+      'Ses publications, commentaires et messages de chat seront de nouveau visibles.',
+    unblockConfirmOk: 'Débloquer',
   },
   postMsg: {
     errAuthRequired: 'Connexion requise pour publier',

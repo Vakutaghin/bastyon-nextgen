@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 
 import {
   isHiddenByReputation,
+  isHiddenByPostAuthor,
+  isHiddenForExternalLink,
   isBlockedByMe,
   getCommentPostingDisableReason,
   getCommentScoringDisableReason,
@@ -173,5 +175,45 @@ describe('shouldShowScamWarningOnDislike', () => {
 
   it('без состояния аккаунта — не предупреждает', () => {
     expect(shouldShowScamWarningOnDislike(null)).toBe(false)
+  })
+})
+
+describe('isHiddenByPostAuthor (legacy hiddenComment: blck_cnt_cmt)', () => {
+  it('скрывает комментарий того, кого заблокировал автор поста', () => {
+    expect(isHiddenByPostAuthor(makeComment({ blck_cnt_cmt: 1 }), 'PREADER')).toBe(true)
+  })
+
+  it('не скрывает без пометки ноды, у самого комментатора и у удалённого', () => {
+    expect(isHiddenByPostAuthor(makeComment(), 'PREADER')).toBe(false)
+    expect(isHiddenByPostAuthor(makeComment({ blck_cnt_cmt: 1 }), 'PAUTHOR')).toBe(false)
+    expect(isHiddenByPostAuthor(makeComment({ blck_cnt_cmt: 1, deleted: true }))).toBe(false)
+  })
+})
+
+describe('isHiddenForExternalLink (legacy hiddenCommentLabelLink: rep < 20 + чужая ссылка)', () => {
+  const withText = (message: string, reputation: number) =>
+    makeComment({
+      msg: JSON.stringify({ message }),
+      userprofile: { ...makeComment().userprofile, reputation },
+    })
+
+  it('скрывает ссылку на чужой сайт, в том числе без схемы', () => {
+    expect(isHiddenForExternalLink(withText('заходите https://spam.shop/x', 5))).toBe(true)
+    expect(isHiddenForExternalLink(withText('заходите spam.shop', 19.9))).toBe(true)
+  })
+
+  it('свои домены и bastyon:// не прячет', () => {
+    expect(isHiddenForExternalLink(withText('https://bastyon.com/post?s=abc', 1))).toBe(false)
+    expect(isHiddenForExternalLink(withText('bastyon.com/user и pocketnet.app', 1))).toBe(false)
+    expect(isHiddenForExternalLink(withText('bastyon://post?s=abc', 1))).toBe(false)
+  })
+
+  it('репутация от 20, свой комментарий и текст без ссылок — не скрывает', () => {
+    expect(isHiddenForExternalLink(withText('https://spam.shop', 20))).toBe(false)
+    expect(isHiddenForExternalLink(withText('https://spam.shop', 1), 'PAUTHOR')).toBe(false)
+    expect(isHiddenForExternalLink(withText('просто текст', 1))).toBe(false)
+    expect(isHiddenForExternalLink(makeComment({ msg: '{"message":"https://spam.shop"}' }))).toBe(
+      false
+    )
   })
 })

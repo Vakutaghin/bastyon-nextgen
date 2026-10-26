@@ -9,6 +9,7 @@ import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 
 import { usePostsStore } from '@/stores/posts-store'
+import { Z_INDEX } from '@/styles/design-tokens'
 
 import { deletePost } from './post-deleter'
 
@@ -42,6 +43,7 @@ export function usePostDelete(getPostId: () => string, onDeleted: (postId: strin
       okText: t('postCard.deleteAction'),
       okType: 'danger',
       cancelText: t('postCard.deleteCancel'),
+      zIndex: Z_INDEX.CONFIRM,
       onOk: doDelete,
     })
   }

@@ -1425,6 +1425,8 @@ export default {
     errSubscribeSelf: '자기 자신을 구독할 수 없습니다',
     errFailed: '작업에 실패했습니다. 다시 시도하세요',
     errDeferred: '네트워크 확인을 기다리던 작업이 실패했습니다: {reason}',
+    unsubscribeConfirmTitle: '이 사용자의 구독을 취소할까요?',
+    unsubscribeConfirmOk: '구독 취소',
   },
   relations: {
     followersTitle: '팔로워',
@@ -1459,6 +1461,15 @@ export default {
     errAvatarUpload: '아바타를 업로드하지 못했습니다',
     errAvatarFormat: '이미지를 열 수 없습니다. JPG, PNG 또는 WebP를 선택하세요',
     errFailed: '프로필을 업데이트하지 못했습니다',
+    donationAddresses: '후원 주소',
+    donationAddressesHint: '다른 통화의 지갑입니다. 후원 창에 표시됩니다.',
+    currency: '통화',
+    addressPlaceholder: '지갑 주소',
+    addAddress: '추가',
+    removeAddress: '주소 삭제',
+    errAddressInvalid: '{currency} 주소 형식이 아닙니다',
+    errAddressDuplicate: '이미 목록에 있는 주소입니다',
+    errNameTaken: '이미 사용 중인 이름입니다',
   },
   donate: {
     title: '작성자 후원',
@@ -1476,6 +1487,9 @@ export default {
     errAmountTooSmall: '금액이 너무 적습니다',
     errInsufficient: '잔액이 부족합니다',
     errFailed: '후원을 보내지 못했습니다',
+    otherWallets: '또는 다른 통화로 보내기',
+    copyAddress: '주소 복사',
+    addressCopied: '주소를 복사했습니다',
   },
   boost: {
     title: '게시물 홍보',
@@ -1587,6 +1601,8 @@ export default {
     linkCopied: '링크가 복사되었습니다',
     shareFailed: '공유하지 못했습니다',
     scrollToTop: '맨 위로',
+    blockAuthor: '작성자 차단',
+    unblockAuthor: '작성자 차단 해제',
   },
   sidebar: {
     topFirst: '인기순',
@@ -1761,6 +1777,8 @@ export default {
     block: '차단',
     unblock: '차단 해제',
     hiddenBlocked: '숨김: 차단한 사용자',
+    hiddenByPostAuthor: '숨김: 게시물 작성자가 이 사용자를 차단했습니다',
+    hiddenExternalLink: '숨김: 평판이 낮은 계정이 남긴 외부 사이트 링크',
   },
   limits: {
     title: '내 한도',
@@ -2598,7 +2616,8 @@ export default {
     disableScoreLimit: '일일 평가 한도에 도달했습니다',
     disableRepScore: '평판이 너무 낮아 평가할 수 없습니다',
     blockConfirmTitle: '이 사용자를 차단할까요?',
-    blockConfirmContent: '이 사용자의 댓글이 숨겨집니다. 언제든 차단을 해제할 수 있습니다.',
+    blockConfirmContent:
+      '이 사용자의 게시물이 피드에서 사라지고 댓글과 채팅 메시지가 숨겨집니다. 내 게시물에 댓글을 달 수 없게 되며, 내 게시물에 남긴 이전 댓글도 모두에게 숨겨집니다. 언제든 차단을 해제할 수 있습니다.',
     blockConfirmOk: '차단',
     blockSuccess: '사용자를 차단했습니다',
     blockError: '사용자를 차단하지 못했습니다',
@@ -2609,6 +2628,9 @@ export default {
     disableBannedByAuthor: '게시물 작성자가 회원님의 댓글 작성을 제한했습니다',
     linkCopied: '댓글 링크가 복사되었습니다',
     shareFailed: '링크를 공유하지 못했습니다',
+    unblockConfirmTitle: '이 사용자의 차단을 해제할까요?',
+    unblockConfirmContent: '이 사용자의 게시물, 댓글, 채팅 메시지가 다시 보입니다.',
+    unblockConfirmOk: '차단 해제',
   },
   postMsg: {
     errAuthRequired: '게시물을 올리려면 로그인이 필요합니다',

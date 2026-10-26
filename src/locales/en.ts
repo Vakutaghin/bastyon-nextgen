@@ -1433,6 +1433,8 @@ export default {
     errSubscribeSelf: 'You cannot subscribe to yourself',
     errFailed: 'Action failed, please try again',
     errDeferred: 'The action waiting for the network to confirm the previous one failed: {reason}',
+    unsubscribeConfirmTitle: 'Unsubscribe from this user?',
+    unsubscribeConfirmOk: 'Unsubscribe',
   },
   relations: {
     followersTitle: 'Followers',
@@ -1467,6 +1469,15 @@ export default {
     errAvatarUpload: 'Failed to upload avatar',
     errAvatarFormat: 'Couldn’t open the picture. Choose a JPG, PNG or WebP',
     errFailed: 'Failed to update profile',
+    donationAddresses: 'Donation addresses',
+    donationAddressesHint: 'Wallets in other currencies. The tip window shows them.',
+    currency: 'Currency',
+    addressPlaceholder: 'Wallet address',
+    addAddress: 'Add',
+    removeAddress: 'Remove address',
+    errAddressInvalid: 'This doesn’t look like a {currency} address',
+    errAddressDuplicate: 'This address is already on the list',
+    errNameTaken: 'This name is already taken',
   },
   donate: {
     title: 'Tip the author',
@@ -1484,6 +1495,9 @@ export default {
     errAmountTooSmall: 'Amount is too small',
     errInsufficient: 'Insufficient funds',
     errFailed: 'Failed to send the tip',
+    otherWallets: 'Or send in another currency',
+    copyAddress: 'Copy address',
+    addressCopied: 'Address copied',
   },
   boost: {
     title: 'Promote the post',
@@ -1600,6 +1614,8 @@ export default {
     linkCopied: 'Link copied',
     shareFailed: 'Failed to share',
     scrollToTop: 'To top',
+    blockAuthor: 'Block author',
+    unblockAuthor: 'Unblock author',
   },
   sidebar: {
     topFirst: 'Best first',
@@ -1775,6 +1791,8 @@ export default {
     block: 'Block',
     unblock: 'Unblock',
     hiddenBlocked: 'Hidden: user is blocked',
+    hiddenByPostAuthor: 'Hidden: the post author blocked this user',
+    hiddenExternalLink: 'Hidden: a link to an outside site from a low-reputation account',
   },
   limits: {
     title: 'My limits',
@@ -2624,7 +2642,8 @@ export default {
     disableScoreLimit: 'Daily rating limit reached',
     disableRepScore: 'Your reputation is too low to rate',
     blockConfirmTitle: 'Block this user?',
-    blockConfirmContent: 'Their comments will be hidden. You can unblock them at any time.',
+    blockConfirmContent:
+      'Their posts will disappear from your feeds, and their comments and chat messages will be hidden. They won’t be able to comment on your posts, and their earlier comments there will be hidden for everyone. You can unblock them at any time.',
     blockConfirmOk: 'Block',
     blockSuccess: 'User blocked',
     blockError: 'Failed to block user',
@@ -2635,6 +2654,9 @@ export default {
     disableBannedByAuthor: 'The post author has restricted you from commenting',
     linkCopied: 'Comment link copied',
     shareFailed: 'Failed to share the link',
+    unblockConfirmTitle: 'Unblock this user?',
+    unblockConfirmContent: 'Their posts, comments and chat messages will be visible again.',
+    unblockConfirmOk: 'Unblock',
   },
   postMsg: {
     errAuthRequired: 'Authorization required to publish a post',

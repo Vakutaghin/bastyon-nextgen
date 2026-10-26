@@ -101,7 +101,7 @@ import Avatar from '@/components/avatar/avatar.vue'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore, useDonateStore } from '@/stores'
-import { appToast } from '@/b-components/app-toast'
+import { useRelationActions } from '@/composables/use-relation-actions'
 import { favoritesAPI } from '@/db/apis/favorites-api'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
 import { userAvatar, userName } from '@/services/user-names'
@@ -170,6 +170,7 @@ const props = withDefaults(
 const { t } = useI18n()
 const authStore = useAuthStore()
 const relations = useUserRelationsStore()
+const { toggleFollow } = useRelationActions()
 const donateStore = useDonateStore()
 
 const isBookmarked = ref(false)
@@ -262,17 +263,7 @@ async function onToggleFollow(event: Event): Promise<void> {
   event.stopPropagation()
   const address = authorAddress.value
   if (!address || isFollowPending.value) return
-  try {
-    if (isFollowing.value) {
-      await relations.unsubscribe(address)
-      appToast.success({ message: t('subscriptions.unsubscribedToast') })
-    } else {
-      await relations.subscribe(address)
-      appToast.success({ message: t('subscriptions.subscribedToast') })
-    }
-  } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
-  }
+  await toggleFollow(address)
 }
 
 function onDonate(): void {

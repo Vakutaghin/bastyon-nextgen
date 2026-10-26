@@ -43,6 +43,22 @@
         </SC_BalanceHint>
 
         <SC_FieldError v-if="validationError">{{ validationError }}</SC_FieldError>
+
+        <!-- Кошельки в других валютах из профиля получателя: копируются нажатием. -->
+        <SC_OtherWallets v-if="otherWallets.length">
+          <SC_OtherWalletsTitle>{{ t('donate.otherWallets') }}</SC_OtherWalletsTitle>
+          <SC_WalletRow
+            v-for="wallet in otherWallets"
+            :key="wallet.currency + wallet.address"
+            type="button"
+            :title="t('donate.copyAddress')"
+            @click="copyWallet(wallet.address)"
+          >
+            <SC_WalletCurrency>{{ donationCurrencyLabel(wallet.currency) }}</SC_WalletCurrency>
+            <SC_WalletAddress>{{ wallet.address }}</SC_WalletAddress>
+            <CopyOutlined />
+          </SC_WalletRow>
+        </SC_OtherWallets>
       </SC_DonateBody>
     </SC_ModalBody>
 
@@ -74,6 +90,17 @@ import {
 } from '@/blockchain/core/transactions/unspents-manager'
 import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
 import { userName } from '@/services/user-names'
+import { CopyOutlined } from '@/components/icons'
+import { copyText } from '@/helpers/common/clipboard'
+import { useQuery } from '@tanstack/vue-query'
+import { rpcCall } from '@/helpers/api/request'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
+import type { UserProfile } from '@/types/rpc-responses/user-get'
+import {
+  donationCurrencyLabel,
+  parseDonationAddresses,
+  type DonationAddress,
+} from '@/helpers/profile/donation-addresses'
 import { playSound } from '@/services/app-sounds'
 import {
   SC_DonateBody,
@@ -83,6 +110,11 @@ import {
   SC_AmountInput,
   SC_BalanceHint,
   SC_FieldError,
+  SC_OtherWallets,
+  SC_OtherWalletsTitle,
+  SC_WalletRow,
+  SC_WalletCurrency,
+  SC_WalletAddress,
 } from './styled'
 
 /** Пресеты быстрых сумм доната (PKOIN). */
@@ -98,6 +130,29 @@ const sending = ref(false)
 const balance = ref<number | null>(null)
 
 const recipientLabel = computed<string>(() => userName(donateStore.address, donateStore.name))
+
+// Адреса для пожертвований из профиля получателя (поле `b`), как в окне доната
+// старого клиента: перевести можно и не в PKOIN. Короткий профиль: полный у
+// популярного автора несёт список всех подписчиков.
+const { data: recipientWallets } = useQuery({
+  queryKey: computed(() => ['donation-addresses', donateStore.address]),
+  queryFn: async (): Promise<DonationAddress[]> => {
+    const address = donateStore.address
+    const profiles = await rpcCall<UserProfile[]>({
+      method: rpcEndpoints.getUserProfile,
+      parameters: [[address], '1'],
+      options: { auth: false },
+    })
+    return parseDonationAddresses(profiles.find((p) => p?.address === address)?.b)
+  },
+  enabled: computed(() => donateStore.isOpen && !!donateStore.address),
+  staleTime: 5 * 60 * 1000,
+})
+const otherWallets = computed<DonationAddress[]>(() => recipientWallets.value ?? [])
+
+async function copyWallet(address: string): Promise<void> {
+  if (await copyText(address)) appToast.success({ message: t('donate.addressCopied') })
+}
 const formattedBalance = computed<string>(() =>
   balance.value === null ? '' : balance.value.toFixed(4)
 )

@@ -1382,6 +1382,8 @@ export default {
     errSubscribeSelf: '不能关注自己',
     errFailed: '操作失败，请重试',
     errDeferred: '等待网络确认的操作失败：{reason}',
+    unsubscribeConfirmTitle: '取消关注此用户？',
+    unsubscribeConfirmOk: '取消关注',
   },
   relations: {
     followersTitle: '粉丝',
@@ -1416,6 +1418,15 @@ export default {
     errAvatarUpload: '无法上传头像',
     errAvatarFormat: '无法打开图片。请选择 JPG、PNG 或 WebP',
     errFailed: '无法更新个人资料',
+    donationAddresses: '捐赠地址',
+    donationAddressesHint: '其他币种的钱包，会显示在打赏窗口中。',
+    currency: '币种',
+    addressPlaceholder: '钱包地址',
+    addAddress: '添加',
+    removeAddress: '删除地址',
+    errAddressInvalid: '这看起来不像 {currency} 地址',
+    errAddressDuplicate: '该地址已在列表中',
+    errNameTaken: '该名称已被占用',
   },
   donate: {
     title: '打赏作者',
@@ -1433,6 +1444,9 @@ export default {
     errAmountTooSmall: '金额太小',
     errInsufficient: '余额不足',
     errFailed: '打赏发送失败',
+    otherWallets: '或使用其他币种发送',
+    copyAddress: '复制地址',
+    addressCopied: '地址已复制',
   },
   boost: {
     title: '推广帖子',
@@ -1543,6 +1557,8 @@ export default {
     linkCopied: '链接已复制',
     shareFailed: '分享失败',
     scrollToTop: '回到顶部',
+    blockAuthor: '屏蔽作者',
+    unblockAuthor: '解除屏蔽作者',
   },
   sidebar: {
     topFirst: '最佳优先',
@@ -1716,6 +1732,8 @@ export default {
     block: '屏蔽',
     unblock: '解除屏蔽',
     hiddenBlocked: '已隐藏：该用户已被屏蔽',
+    hiddenByPostAuthor: '已隐藏：帖子作者屏蔽了此用户',
+    hiddenExternalLink: '已隐藏：低声誉账户发布的外部网站链接',
   },
   limits: {
     title: '我的限额',
@@ -2505,7 +2523,8 @@ export default {
     disableScoreLimit: '已达到每日评分上限',
     disableRepScore: '你的声誉太低，无法评分',
     blockConfirmTitle: '屏蔽此用户？',
-    blockConfirmContent: '其评论将被隐藏。你可以随时解除屏蔽。',
+    blockConfirmContent:
+      '其帖子将从你的信息流中消失，评论和聊天消息将被隐藏。对方将无法评论你的帖子，之前在你帖子下的评论也会对所有人隐藏。你可以随时解除屏蔽。',
     blockConfirmOk: '屏蔽',
     blockSuccess: '已屏蔽用户',
     blockError: '无法屏蔽用户',
@@ -2516,6 +2535,9 @@ export default {
     disableBannedByAuthor: '帖子作者已禁止你评论',
     linkCopied: '评论链接已复制',
     shareFailed: '无法分享链接',
+    unblockConfirmTitle: '解除屏蔽此用户？',
+    unblockConfirmContent: '其帖子、评论和聊天消息将重新可见。',
+    unblockConfirmOk: '解除屏蔽',
   },
   postMsg: {
     errAuthRequired: '发布帖子需要登录',

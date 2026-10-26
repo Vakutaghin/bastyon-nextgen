@@ -18,10 +18,21 @@
           <SC_CommentDate :title="lastCommentDateFull">{{ lastCommentDateOnly }}</SC_CommentDate>
         </SC_CommentMeta>
 
+        <!-- Те же правила скрытия, что в обсуждении: превью не должно показывать то,
+             что в списке свёрнуто. -->
+        <SC_HiddenBanner v-if="lastCommentHidden && lastCommentAsComment">
+          <span>{{ t(hiddenLabelKey(lastCommentAsComment)) }}</span>
+          <SC_RevealBtn
+            type="button"
+            @click.stop.prevent="revealHiddenComment(lastCommentAsComment)"
+          >
+            {{ t('comments.showAnyway') }}
+          </SC_RevealBtn>
+        </SC_HiddenBanner>
         <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-        <SC_CommentText v-html="lastCommentMessageHtml"></SC_CommentText>
+        <SC_CommentText v-else v-html="lastCommentMessageHtml"></SC_CommentText>
 
-        <SC_CommentActions>
+        <SC_CommentActions v-if="!lastCommentHidden">
           <button
             type="button"
             :class="[
@@ -145,6 +156,8 @@ import {
   SC_ReplyItemWrapper,
   SC_ReplyPanelNested,
   SC_TxStatusBadge,
+  SC_HiddenBanner,
+  SC_RevealBtn,
 } from './styled'
 import { useCommentTree } from './comment-tree-context'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
@@ -168,6 +181,7 @@ const {
 const { isCommentPending, isCommentRejected } = ctx.editDelete
 const { getReplies } = replies
 const { isReplyPanelOpen } = form
+const { shouldHideContent, hiddenLabelKey, revealHiddenComment } = ctx.visibility
 
 // --- Last comment отображение. ---
 const lastCommentMessageHtml = computed<string>(() =>
@@ -198,6 +212,25 @@ const lastCommentDateFull = computed<string>(() =>
   formatCommentDateFull(props.post.lastComment?.time || 0)
 )
 const lastCommentId = computed<string | null>(() => props.post.lastComment?.id ?? null)
+
+/** Превью в форме комментария обсуждения — для общих правил скрытия. */
+const lastCommentAsComment = computed<GetComment | null>(() => {
+  const lc = props.post.lastComment
+  if (!lc?.id) return null
+  return {
+    id: lc.id,
+    address: lc.address,
+    msg: JSON.stringify({ message: lc.message }),
+    scoreUp: lc.scoreUp,
+    scoreDown: lc.scoreDown,
+    deleted: false,
+    blck_cnt_cmt: lc.blockedByPostAuthor ? 1 : undefined,
+    userprofile: { reputation: lc.authorReputation },
+  } as GetComment
+})
+const lastCommentHidden = computed<boolean>(
+  () => !!lastCommentAsComment.value && shouldHideContent(lastCommentAsComment.value)
+)
 const lastCommentChildren = computed<number>(() => props.post.lastComment?.children ?? 0)
 
 // --- LastComment handlers (обслуживают только этот блок). ---

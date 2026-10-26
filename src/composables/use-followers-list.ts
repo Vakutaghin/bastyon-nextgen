@@ -8,6 +8,9 @@
  *
  * Производительность: полный список адресов грузится разом, но профили резолвятся
  * только для видимого среза (`visibleCount`) — модалка наращивает его «показать ещё».
+ *
+ * `hidden` — адреса, которых в списке быть не должно: старый клиент убирал из
+ * подписчиков и подписок тех, кого владелец профиля заблокировал.
  */
 
 import { computed, unref, type MaybeRefOrGetter } from 'vue'
@@ -56,7 +59,8 @@ export function useFollowersList(
   profileAddress: MaybeRefOrGetter<string>,
   type: MaybeRefOrGetter<RelationListType>,
   visibleCount: MaybeRefOrGetter<number>,
-  enabled: MaybeRefOrGetter<boolean> = true
+  enabled: MaybeRefOrGetter<boolean> = true,
+  hidden: MaybeRefOrGetter<readonly string[]> = []
 ) {
   const address = computed(() => resolve(profileAddress))
   const listType = computed(() => resolve(type))
@@ -86,7 +90,7 @@ export function useFollowersList(
   const allEntries = computed<{ address: string; isPrivate: boolean }[]>(() => {
     const list = rawList.value
     if (!Array.isArray(list)) return []
-    const seen = new Set<string>()
+    const seen = new Set<string>(resolve(hidden))
     const out: { address: string; isPrivate: boolean }[] = []
     for (const item of list) {
       const addr = item?.adddress ?? item?.address

@@ -1431,6 +1431,8 @@ export default {
     errSubscribeSelf: 'Не можете се претплатити на себе',
     errFailed: 'Радња није успела, покушајте поново',
     errDeferred: 'Радња која је чекала потврду мреже није успела: {reason}',
+    unsubscribeConfirmTitle: 'Отказати претплату на овог корисника?',
+    unsubscribeConfirmOk: 'Откажи претплату',
   },
   relations: {
     followersTitle: 'Пратиоци',
@@ -1465,6 +1467,15 @@ export default {
     errAvatarUpload: 'Аватар није могао да се отпреми',
     errAvatarFormat: 'Слика није могла да се отвори. Изаберите JPG, PNG или WebP',
     errFailed: 'Профил није могао да се ажурира',
+    donationAddresses: 'Адресе за донације',
+    donationAddressesHint: 'Новчаници у другим валутама. Приказује их прозор за напојницу.',
+    currency: 'Валута',
+    addressPlaceholder: 'Адреса новчаника',
+    addAddress: 'Додај',
+    removeAddress: 'Уклони адресу',
+    errAddressInvalid: 'Ово не личи на {currency} адресу',
+    errAddressDuplicate: 'Ова адреса је већ на листи',
+    errNameTaken: 'Ово име је већ заузето',
   },
   donate: {
     title: 'Дај напојницу аутору',
@@ -1482,6 +1493,9 @@ export default {
     errAmountTooSmall: 'Износ је премали',
     errInsufficient: 'Нема довољно средстава',
     errFailed: 'Напојница није могла да се пошаље',
+    otherWallets: 'Или пошаљите у другој валути',
+    copyAddress: 'Копирај адресу',
+    addressCopied: 'Адреса је копирана',
   },
   boost: {
     title: 'Промовиши објаву',
@@ -1598,6 +1612,8 @@ export default {
     linkCopied: 'Веза је копирана',
     shareFailed: 'Дељење није успело',
     scrollToTop: 'На врх',
+    blockAuthor: 'Блокирај аутора',
+    unblockAuthor: 'Одблокирај аутора',
   },
   sidebar: {
     topFirst: 'Прво најбоље',
@@ -1773,6 +1789,8 @@ export default {
     block: 'Блокирај',
     unblock: 'Одблокирај',
     hiddenBlocked: 'Сакривено: корисник је блокиран',
+    hiddenByPostAuthor: 'Сакривено: аутор објаве је блокирао овог корисника',
+    hiddenExternalLink: 'Сакривено: веза ка спољном сајту са налога ниске репутације',
   },
   limits: {
     title: 'Моја ограничења',
@@ -2616,7 +2634,7 @@ export default {
     disableRepScore: 'Ваша репутација је прениска за оцењивање',
     blockConfirmTitle: 'Блокирати овог корисника?',
     blockConfirmContent:
-      'Његови коментари ће бити сакривени. Можете га одблокирати у било ком тренутку.',
+      'Његове објаве ће нестати из ваших фидова, а коментари и поруке у ћаскањима биће сакривени. Неће моћи да коментарише ваше објаве, а његови ранији коментари на њима биће сакривени за све. Можете га одблокирати у било ком тренутку.',
     blockConfirmOk: 'Блокирај',
     blockSuccess: 'Корисник је блокиран',
     blockError: 'Корисник није могао да се блокира',
@@ -2627,6 +2645,9 @@ export default {
     disableBannedByAuthor: 'Аутор објаве вам је забранио коментарисање',
     linkCopied: 'Веза до коментара је копирана',
     shareFailed: 'Веза није могла да се подели',
+    unblockConfirmTitle: 'Одблокирати овог корисника?',
+    unblockConfirmContent: 'Његове објаве, коментари и поруке у ћаскањима поново ће бити видљиви.',
+    unblockConfirmOk: 'Одблокирај',
   },
   postMsg: {
     errAuthRequired: 'За објављивање је потребна пријава',

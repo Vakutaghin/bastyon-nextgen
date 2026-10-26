@@ -26,6 +26,10 @@ The app will not send the transfer if:
 
 Where to get coins — see [How to get PKOIN](how-to-buy-pkoin.md).
 
+## Other currencies
+
+If the author has set [donation addresses](edit-profile.md) in their profile, the bottom of the window shows **“Or send in another currency”**: their wallets in Bitcoin, Ethereum, USDT and other currencies. Click an address to copy it — **“Address copied”** appears — and send the transfer from your own wallet in that currency. Such a transfer bypasses Bastyon: the app does not see it, and the author gets no notification.
+
 ## What the author sees
 
 The author gets a **“Tip received”** notification with the amount — if it is at least 0.05 PKOIN: the app does not show tiny transfers, so as not to let spam through. A tip differs from an ordinary transfer by a mark in the transaction itself, which the previous Bastyon app understands too. In the author’s wallet the tip is an incoming transfer from you. A tip is not tied to a post: the author sees who sent how much, but not what for. If you want them to know, write to them — in a comment, for example.

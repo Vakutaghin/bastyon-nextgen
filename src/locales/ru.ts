@@ -1434,6 +1434,8 @@ export default {
     errSubscribeSelf: 'Нельзя подписаться на себя',
     errFailed: 'Не удалось выполнить действие, попробуйте ещё раз',
     errDeferred: 'Не удалось выполнить действие, которое ждало подтверждения сети: {reason}',
+    unsubscribeConfirmTitle: 'Отписаться от пользователя?',
+    unsubscribeConfirmOk: 'Отписаться',
   },
   relations: {
     followersTitle: 'Подписчики',
@@ -1468,6 +1470,15 @@ export default {
     errAvatarUpload: 'Не удалось загрузить аватар',
     errAvatarFormat: 'Не удалось открыть картинку. Выберите JPG, PNG или WebP',
     errFailed: 'Не удалось обновить профиль',
+    donationAddresses: 'Адреса для пожертвований',
+    donationAddressesHint: 'Кошельки в других валютах. Их покажет окно чаевых.',
+    currency: 'Валюта',
+    addressPlaceholder: 'Адрес кошелька',
+    addAddress: 'Добавить',
+    removeAddress: 'Удалить адрес',
+    errAddressInvalid: 'Это не похоже на адрес {currency}',
+    errAddressDuplicate: 'Этот адрес уже есть',
+    errNameTaken: 'Это имя уже занято',
   },
   donate: {
     title: 'Чаевые автору',
@@ -1485,6 +1496,9 @@ export default {
     errAmountTooSmall: 'Слишком маленькая сумма',
     errInsufficient: 'Недостаточно средств',
     errFailed: 'Не удалось отправить чаевые',
+    otherWallets: 'Или переведите в другой валюте',
+    copyAddress: 'Скопировать адрес',
+    addressCopied: 'Адрес скопирован',
   },
   boost: {
     title: 'Продвинуть пост',
@@ -1651,6 +1665,8 @@ export default {
     linkCopied: 'Ссылка скопирована',
     shareFailed: 'Не удалось поделиться',
     scrollToTop: 'Наверх',
+    blockAuthor: 'Заблокировать автора',
+    unblockAuthor: 'Разблокировать автора',
   },
   miniapps: {
     pageTitle: 'Сервисы',
@@ -1773,6 +1789,8 @@ export default {
     block: 'Заблокировать',
     unblock: 'Разблокировать',
     hiddenBlocked: 'Скрыто: пользователь заблокирован',
+    hiddenByPostAuthor: 'Скрыто: автор публикации заблокировал этого пользователя',
+    hiddenExternalLink: 'Скрыто: ссылка на сторонний сайт от аккаунта с низкой репутацией',
   },
   limits: {
     title: 'Мои лимиты',
@@ -2615,7 +2633,7 @@ export default {
     disableRepScore: 'Ваша репутация слишком низка для оценки',
     blockConfirmTitle: 'Заблокировать пользователя?',
     blockConfirmContent:
-      'Его комментарии будут скрыты. Вы сможете разблокировать его в любой момент.',
+      'Его публикации пропадут из ваших лент, комментарии и сообщения в чатах скроются. Комментировать ваши публикации он не сможет, а его прежние комментарии под ними скроются у всех. Разблокировать можно в любой момент.',
     blockConfirmOk: 'Заблокировать',
     blockSuccess: 'Пользователь заблокирован',
     blockError: 'Не удалось заблокировать пользователя',
@@ -2626,6 +2644,9 @@ export default {
     disableBannedByAuthor: 'Автор поста ограничил вам возможность комментировать',
     linkCopied: 'Ссылка на комментарий скопирована',
     shareFailed: 'Не удалось поделиться ссылкой',
+    unblockConfirmTitle: 'Разблокировать пользователя?',
+    unblockConfirmContent: 'Его публикации, комментарии и сообщения в чатах снова будут видны.',
+    unblockConfirmOk: 'Разблокировать',
   },
   postMsg: {
     errAuthRequired: 'Нужна авторизация для публикации поста',

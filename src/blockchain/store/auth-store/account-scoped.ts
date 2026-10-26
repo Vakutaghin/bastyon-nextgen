@@ -10,7 +10,7 @@
  * сеть (pending-оценки, уведомления), потом чистим кэши.
  */
 
-export async function resetAccountScopedStores(): Promise<void> {
+export async function resetAccountScopedStores(address?: string | null): Promise<void> {
   const [
     { usePendingRatingsStore },
     { useNotificationsStore },
@@ -46,4 +46,8 @@ export async function resetAccountScopedStores(): Promise<void> {
   useNotificationSettingsStore().$reset()
   // Платежи за подписки и своя цена — данные аккаунта.
   usePaidSubscriptionsStore().reset()
+  // Блок-лист и подписки нового аккаунта — сразу: карточки ленты, стоящие на
+  // экране, их не перезапросят, и до смены страницы лента показывала посты
+  // заблокированных, а кнопки — чужие подписки.
+  if (address) void useUserRelationsStore().init()
 }

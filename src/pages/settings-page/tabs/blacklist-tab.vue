@@ -21,7 +21,10 @@
           <SC_BlacklistName>{{ row.name }}</SC_BlacklistName>
         </SC_BlacklistMain>
 
-        <SC_UnblockBtn :disabled="relations.isPending(row.address)" @click="unblock(row.address)">
+        <SC_UnblockBtn
+          :disabled="relations.isPending(row.address)"
+          @click="confirmUnblock(row.address)"
+        >
           {{ t('comments.unblock') }}
         </SC_UnblockBtn>
       </SC_BlacklistRow>
@@ -35,7 +38,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUserRelationsStore } from '@/stores'
 import { useUserProfiles } from '@/composables/use-user-profile'
-import { appToast } from '@/b-components/app-toast'
+import { useRelationActions } from '@/composables/use-relation-actions'
 import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import { userName } from '@/services/user-names'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
@@ -55,6 +58,8 @@ import {
 const { t } = useI18n()
 const router = useRouter()
 const relations = useUserRelationsStore()
+// Разблокировка — транзакция: переспрашиваем, как старый клиент.
+const { confirmUnblock } = useRelationActions()
 
 const blockedAddresses = computed<string[]>(() => Array.from(relations.blocked))
 
@@ -83,15 +88,5 @@ onMounted(() => {
 
 function goToProfile(address: string): void {
   router.push(`/${address}`)
-}
-
-async function unblock(address: string): Promise<void> {
-  if (relations.isPending(address)) return
-  try {
-    await relations.unblock(address)
-    appToast.success({ message: t('commentsMsg.unblockSuccess') })
-  } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
-  }
 }
 </script>

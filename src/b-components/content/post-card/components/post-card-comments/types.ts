@@ -24,6 +24,10 @@ export interface PostForComments {
     children: number
     scoreUp: number
     scoreDown: number
+    /** Автор поста заблокировал комментатора — превью свёрнуто, как в обсуждении. */
+    blockedByPostAuthor?: boolean
+    /** Репутация комментатора, если его профиль пришёл с лентой. */
+    authorReputation?: number
     /** Оценка текущего пользователя: 1 — лайк, -1 — дизлайк, 0/нет — не голосовал */
     myScore?: number
   }

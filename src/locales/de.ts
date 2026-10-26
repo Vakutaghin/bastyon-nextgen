@@ -1448,6 +1448,8 @@ export default {
     errFailed: 'Aktion fehlgeschlagen, bitte versuche es erneut',
     errDeferred:
       'Die Aktion, die auf die Bestätigung des Netzwerks wartete, ist fehlgeschlagen: {reason}',
+    unsubscribeConfirmTitle: 'Abo dieses Benutzers beenden?',
+    unsubscribeConfirmOk: 'Abo beenden',
   },
   relations: {
     followersTitle: 'Abonnenten',
@@ -1482,6 +1484,15 @@ export default {
     errAvatarUpload: 'Der Avatar konnte nicht hochgeladen werden',
     errAvatarFormat: 'Das Bild ließ sich nicht öffnen. Wählen Sie JPG, PNG oder WebP',
     errFailed: 'Das Profil konnte nicht aktualisiert werden',
+    donationAddresses: 'Adressen für Spenden',
+    donationAddressesHint: 'Wallets in anderen Währungen. Das Trinkgeld-Fenster zeigt sie an.',
+    currency: 'Währung',
+    addressPlaceholder: 'Wallet-Adresse',
+    addAddress: 'Hinzufügen',
+    removeAddress: 'Adresse entfernen',
+    errAddressInvalid: 'Das sieht nicht wie eine {currency}-Adresse aus',
+    errAddressDuplicate: 'Diese Adresse ist schon eingetragen',
+    errNameTaken: 'Dieser Name ist bereits vergeben',
   },
   donate: {
     title: 'Dem Autor Trinkgeld geben',
@@ -1499,6 +1510,9 @@ export default {
     errAmountTooSmall: 'Der Betrag ist zu klein',
     errInsufficient: 'Nicht genug Guthaben',
     errFailed: 'Das Trinkgeld konnte nicht gesendet werden',
+    otherWallets: 'Oder in einer anderen Währung senden',
+    copyAddress: 'Adresse kopieren',
+    addressCopied: 'Adresse kopiert',
   },
   boost: {
     title: 'Beitrag bewerben',
@@ -1617,6 +1631,8 @@ export default {
     linkCopied: 'Link kopiert',
     shareFailed: 'Teilen fehlgeschlagen',
     scrollToTop: 'Nach oben',
+    blockAuthor: 'Autor blockieren',
+    unblockAuthor: 'Autor entsperren',
   },
   sidebar: {
     topFirst: 'Beste zuerst',
@@ -1792,6 +1808,9 @@ export default {
     block: 'Blockieren',
     unblock: 'Entsperren',
     hiddenBlocked: 'Ausgeblendet: Benutzer ist blockiert',
+    hiddenByPostAuthor: 'Ausgeblendet: Der Autor des Beitrags hat diesen Benutzer blockiert',
+    hiddenExternalLink:
+      'Ausgeblendet: Link auf eine fremde Website von einem Konto mit niedriger Reputation',
   },
   limits: {
     title: 'Meine Limits',
@@ -2652,7 +2671,7 @@ export default {
     disableRepScore: 'Deine Reputation ist zu niedrig zum Bewerten',
     blockConfirmTitle: 'Diesen Benutzer blockieren?',
     blockConfirmContent:
-      'Seine Kommentare werden ausgeblendet. Du kannst ihn jederzeit entsperren.',
+      'Seine Beiträge verschwinden aus deinen Feeds, seine Kommentare und Chatnachrichten werden ausgeblendet. Er kann deine Beiträge nicht mehr kommentieren, und seine bisherigen Kommentare dort werden für alle ausgeblendet. Du kannst ihn jederzeit entsperren.',
     blockConfirmOk: 'Blockieren',
     blockSuccess: 'Benutzer blockiert',
     blockError: 'Der Benutzer konnte nicht blockiert werden',
@@ -2663,6 +2682,9 @@ export default {
     disableBannedByAuthor: 'Der Autor des Beitrags hat dir das Kommentieren untersagt',
     linkCopied: 'Link zum Kommentar kopiert',
     shareFailed: 'Der Link konnte nicht geteilt werden',
+    unblockConfirmTitle: 'Diesen Benutzer entsperren?',
+    unblockConfirmContent: 'Seine Beiträge, Kommentare und Chatnachrichten sind wieder sichtbar.',
+    unblockConfirmOk: 'Entsperren',
   },
   postMsg: {
     errAuthRequired: 'Zum Veröffentlichen eines Beitrags ist eine Anmeldung erforderlich',

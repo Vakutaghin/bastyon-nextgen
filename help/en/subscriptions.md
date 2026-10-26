@@ -14,7 +14,7 @@ You can subscribe:
 - in the header of their post — the button with a person icon next to the name;
 - in **“Who to follow”** on the home screen and in subscriber and subscription lists.
 
-The button changes to **“Subscribed”**. Click it again to unsubscribe: **“Unsubscribed”**.
+The button changes to **“Subscribed”**. Click it again to unsubscribe: the app asks **“Unsubscribe from this user?”**, then **“Unsubscribed”** appears.
 
 Posts of the people you follow are collected in the **“Subscriptions”** section of the left panel, newest first — see [Feed](feed.md).
 
@@ -27,6 +27,8 @@ Next to the subscribe button in a profile there is a bell, **“Enable notificat
 ## Who follows whom
 
 Every profile shows the numbers of **“Subscribers”** and **“Subscriptions”**. Click a number to open a list with names and reputation. You can subscribe to someone right from the list, and **“Show more”** at the bottom loads more people.
+
+People the profile owner has [blocked](blocking.md) are not in their lists. If the list has someone you have blocked, they have **“Unblock”** instead of subscribing.
 
 A subscription is a blockchain record. Who follows whom and who has notifications on is visible to everyone — see [Privacy: what others can see](privacy.md).
 

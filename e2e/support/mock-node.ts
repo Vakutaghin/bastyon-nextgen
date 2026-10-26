@@ -19,6 +19,12 @@ export interface MockProfile {
   k?: string
   /** Отметки ноды: `moderator`, `shark`. */
   badges?: string[]
+  /** Кого он заблокировал (`blocking` полного профиля). */
+  blocking?: string[]
+  /** Подписчики (`getusersubscribers`). */
+  subscribers?: string[]
+  /** Адреса для пожертвований (`b`). */
+  donations?: Array<{ currency: string; address: string }>
 }
 
 export interface MockPost {
@@ -37,6 +43,8 @@ export interface MockPost {
   images?: string[]
   /** Сколько секунд назад опубликован; по умолчанию — по порядку в списке, через 10 минут. */
   ago?: number
+  /** id комментария, который нода покажет превью под постом (`lastComment`). */
+  lastComment?: string
 }
 
 export interface MockComment {
@@ -46,6 +54,8 @@ export interface MockComment {
   message: string
   /** Номер варианта опроса: такой комментарий — голос (helpers/content/poll.ts). */
   pollVote?: { index: number; option: string }
+  /** Автор поста заблокировал комментатора: нода ставит `blck_cnt_cmt: 1`. */
+  blockedByPostAuthor?: boolean
 }
 
 export interface MockNodeData {
@@ -68,14 +78,14 @@ function profileJson(p: MockProfile) {
     id: 1000 + p.name.length,
     name: p.name,
     i: '',
-    b: '[]',
+    b: JSON.stringify(p.donations ?? []),
     r: '',
     postcnt: 3,
     dltdcnt: 0,
     reputation: p.reputation ?? 120,
     subscribes_count: 1,
     subscribers_count: 2,
-    blockings_count: 0,
+    blockings_count: p.blocking?.length ?? 0,
     blockers_count: 0,
     likers_count: 5,
     k: p.k ?? '',
@@ -89,6 +99,7 @@ function profileJson(p: MockProfile) {
     actions: 10,
     bans: {},
     badges: p.badges ?? [],
+    ...(p.blocking ? { blocking: p.blocking } : {}),
   }
 }
 
@@ -114,12 +125,26 @@ function postJson(post: MockPost, data: MockNodeData, index: number) {
     comments: post.comments ?? 0,
     versions: [],
     flags: {},
-    lastComment: null,
+    lastComment: lastCommentJson(post, data),
     userprofile: author ? profileJson(author) : undefined,
   }
 }
 
-function commentJson(c: MockComment, index: number) {
+/** Превью последнего комментария, как в ленте ноды: без профиля автора. */
+function lastCommentJson(post: MockPost, data: MockNodeData) {
+  if (!post.lastComment) return null
+  const index = (data.comments ?? []).findIndex((c) => c.id === post.lastComment)
+  if (index < 0) return null
+  const comment: Partial<ReturnType<typeof commentJson>> = commentJson(
+    data.comments[index]!,
+    index,
+    data
+  )
+  delete comment.userprofile
+  return comment
+}
+
+function commentJson(c: MockComment, index: number, data: MockNodeData) {
   const body = c.pollVote
     ? {
         message: `🗳 ${c.pollVote.option}`,
@@ -146,7 +171,14 @@ function commentJson(c: MockComment, index: number) {
     children: 0,
     flags: {},
     type: 204,
+    ...(c.blockedByPostAuthor ? { blck_cnt_cmt: 1 } : {}),
+    userprofile: profileOf(c.address, data),
   }
+}
+
+function profileOf(address: string, data: MockNodeData) {
+  const profile = data.profiles.find((p) => p.address === address)
+  return profile ? profileJson(profile) : undefined
 }
 
 function rpcResult(method: string, params: unknown[], data: MockNodeData): unknown {
@@ -194,7 +226,19 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
     case 'getcomments': {
       const [postId, parentId] = params as [string, string]
       if (parentId) return []
-      return data.comments.filter((c) => c.postid === postId).map(commentJson)
+      return data.comments
+        .map((c, i) => [c, i] as const)
+        .filter(([c]) => c.postid === postId)
+        .map(([c, i]) => commentJson(c, i, data))
+    }
+    case 'getusersubscribers': {
+      const owner = data.profiles.find((p) => p.address === params[0])
+      return (owner?.subscribers ?? []).map((address) => ({ address, private: 'false' }))
+    }
+    case 'getuseraddress': {
+      const name = String(params[0] ?? '').toLowerCase()
+      const owner = data.profiles.find((p) => p.name.toLowerCase() === name)
+      return owner ? [{ name: owner.name, address: owner.address }] : []
     }
     case 'getusersubscribes':
       // Поле с опечаткой, как у настоящей ноды.

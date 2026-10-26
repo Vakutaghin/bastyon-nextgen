@@ -170,6 +170,7 @@
       v-model:open="listOpen"
       :profile-address="userAddress"
       :type="listType"
+      :hidden-addresses="listHiddenAddresses"
     />
   </SC_ProfileSidebar>
 </template>
@@ -199,6 +200,7 @@ import Spin from '@/components/spin/spin.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useChainInfoStore } from '@/stores/chain-info-store'
+import { useUserRelationsStore } from '@/stores/user-relations-store'
 import { formatAbout } from './format-about'
 import { useProfileRelationsActions } from './use-profile-relations-actions'
 import { useProfileChannel } from './use-profile-channel'
@@ -347,6 +349,17 @@ const publicationsCount = computed<number>(() =>
 // ── Списки подписчиков / подписок ───────────────────────────────────
 const listOpen = ref(false)
 const listType = ref<RelationListType>('followers')
+
+/**
+ * Кого владелец профиля заблокировал — в его списках их нет (как у старого
+ * клиента). Свой блок-лист — из стора: он свежее профиля и знает о блокировках,
+ * ждущих блока.
+ */
+const listHiddenAddresses = computed<readonly string[]>(() => {
+  if (isOwnProfile.value) return [...useUserRelationsStore().blocked]
+  const blocking = props.profile?.blocking
+  return Array.isArray(blocking) ? blocking : []
+})
 
 function openList(type: RelationListType): void {
   listType.value = type

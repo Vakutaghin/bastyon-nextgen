@@ -61,4 +61,15 @@ describe('resetAccountScopedStores', () => {
     expect(paid.myPayments).toBeNull()
     expect(paid.priceOf('PAuthor')).toBeUndefined()
   })
+
+  it('при входе в аккаунт сразу грузит его блок-лист и подписки', async () => {
+    const relations = useUserRelationsStore()
+    const init = vi.spyOn(relations, 'init').mockResolvedValue()
+
+    await resetAccountScopedStores()
+    expect(init).not.toHaveBeenCalled()
+
+    await resetAccountScopedStores('PB')
+    expect(init).toHaveBeenCalledTimes(1)
+  })
 })

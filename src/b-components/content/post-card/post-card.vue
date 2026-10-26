@@ -181,8 +181,11 @@
                 :embed-code="embedCode"
                 :text="shareText"
                 :can-report="canReport"
+                :can-block="canBlockAuthor"
+                :is-blocked="isAuthorBlocked"
                 :can-chain-info="isTxid(post.txid)"
                 @report="onReportPost"
+                @block="onBlockAuthor"
                 @chain-info="openChainInfo"
                 @done="shareMenuOpen = false"
               />
@@ -253,6 +256,8 @@ import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { useReportStore } from '@/stores/report-store'
+import { useUserRelationsStore } from '@/stores/user-relations-store'
+import { useRelationActions } from '@/composables/use-relation-actions'
 import { useBoostStore } from '@/stores/boost-store'
 import { useChainInfoStore } from '@/stores/chain-info-store'
 import { isTxid } from '@/b-components/chain-info/chain-link'
@@ -448,6 +453,22 @@ function onReportPost(): void {
     authorAddress: props.post.author.address,
     type: 'post',
   })
+}
+
+// ── Блокировка автора ───────────────────────────────────────────────
+// Как в меню поста старого клиента: чужой пост, человек вошёл. После блокировки
+// пост пропадает из лент (use-blocked-authors), на странице поста — остаётся.
+const canBlockAuthor = computed<boolean>(
+  () => !isOwnPost.value && !!authStore.getUserAddress && !!props.post.author?.address
+)
+const isAuthorBlocked = computed<boolean>(() =>
+  useUserRelationsStore().isBlocked(props.post.author?.address ?? '')
+)
+const { toggleBlock } = useRelationActions()
+
+function onBlockAuthor(): void {
+  const address = props.post.author?.address
+  if (address) toggleBlock(address)
 }
 
 // ── «В блокчейне» ───────────────────────────────────────────────────

@@ -714,7 +714,7 @@ export const useAuthStore = defineStore('auth', {
      */
     async resetForAccount(address: Address | null): Promise<void> {
       try {
-        await resetAccountScopedStores()
+        await resetAccountScopedStores(address)
       } catch (e) {
         console.error('[auth-store] resetAccountScopedStores failed:', e)
       }

@@ -109,7 +109,7 @@ import {
 } from './helpers/pending-registration-store'
 import { registrationRejectionReason } from './helpers/rejection-reason'
 import { setNeedShowMnemonic } from '@/helpers/common/mnemonic-storage'
-import type { UserAddressData } from '@/types/rpc-responses/get-user-address'
+import { isNicknameTaken } from '@/helpers/profile/nickname-owner'
 import {
   isFormNicknameValid,
   normalizeAndCapNickname,
@@ -386,20 +386,9 @@ async function freshRegistration(): Promise<{ address: string }> {
   return { address: result.address }
 }
 
-/**
- * Имя занято другим адресом? Прокси отвечает конвертом `{ result, data: [...] }`
- * (раньше здесь ждали голый массив, и занятое имя не ловилось никогда); нода
- * ищет без учёта регистра. Сеть недоступна — бросает, решает вызывающий.
- */
-async function isNameTaken(name: string): Promise<boolean> {
-  const { rpcCallArray } = await import('@/helpers/api/request')
-  const users = await rpcCallArray<UserAddressData>({
-    method: 'getuseraddress',
-    parameters: [name],
-    options: { auth: false },
-  })
-  const owner = users[0]?.address
-  return !!owner && owner !== authStore.getUserAddress
+/** Имя занято другим адресом (helpers/profile/nickname-owner). */
+function isNameTaken(name: string): Promise<boolean> {
+  return isNicknameTaken(name, authStore.getUserAddress)
 }
 
 async function checkNameTaken(name: string): Promise<boolean> {
