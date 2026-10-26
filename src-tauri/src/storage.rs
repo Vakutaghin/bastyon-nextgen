@@ -170,6 +170,41 @@ pub struct ModulesUsage {
     mesh: u64,
 }
 
+/// Версия скачанного модуля. Каждая версия приложения закрепляет свою версию
+/// модуля вместе с хэшем, и прежний модуль после обновления приложения
+/// работает, пока новый не скачается в фоне и не встанет сам.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleVersion {
+    /// Пусто — неизвестна (Tor, скачанный до того, как версию стали помечать).
+    installed: String,
+    /// Закреплённая в этой версии приложения.
+    latest: String,
+    /// Стоит прежняя: новая скачается и встанет сама.
+    pending: bool,
+}
+
+impl ModuleVersion {
+    pub fn new(installed: &str, latest: &str, pending: bool) -> Self {
+        Self {
+            installed: installed.to_string(),
+            latest: latest.to_string(),
+            pending,
+        }
+    }
+}
+
+/// `None` — модуль не скачан. Голосового ввода нет: его движок внутри
+/// приложения, а модели — данные без версий.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleVersions {
+    ipfs: Option<ModuleVersion>,
+    tor: Option<ModuleVersion>,
+    compression: Option<ModuleVersion>,
+    mesh: Option<ModuleVersion>,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageUsage {
@@ -178,6 +213,7 @@ pub struct StorageUsage {
     ipfs_cache: Option<u64>,
     limits: Limits,
     modules: ModulesUsage,
+    versions: ModuleVersions,
 }
 
 /// Что сколько занимает. Обход каталогов — в пуле блокирующих задач: кэш
@@ -190,10 +226,19 @@ pub async fn storage_usage(app: AppHandle) -> Result<StorageUsage, String> {
     let ipfs = app.state::<crate::ipfs::IpfsManager>();
     let ipfs_bin = ipfs.paths.bin_dir.clone();
     let ipfs_repo = ipfs.paths.binary.is_file().then(|| ipfs.paths.repo.clone());
-    let tor = app.state::<crate::tor::TorManager>().paths.root.clone();
+    let tor_mgr = app.state::<crate::tor::TorManager>();
+    let tor = tor_mgr.paths.root.clone();
     let voice = app.state::<crate::asr::AsrManager>().dir().to_path_buf();
-    let compression = app.state::<crate::ffmpeg::FfmpegManager>().dir().to_path_buf();
-    let mesh = app.state::<crate::mesh::MeshManager>().disk_dirs();
+    let ffmpeg = app.state::<crate::ffmpeg::FfmpegManager>();
+    let compression = ffmpeg.dir().to_path_buf();
+    let mesh_mgr = app.state::<crate::mesh::MeshManager>();
+    let mesh = mesh_mgr.disk_dirs();
+    let versions = ModuleVersions {
+        ipfs: crate::ipfs::module_version(&ipfs),
+        tor: crate::tor::module_version(&tor_mgr),
+        compression: ffmpeg.version(),
+        mesh: mesh_mgr.version(),
+    };
     tauri::async_runtime::spawn_blocking(move || StorageUsage {
         web_cache: total_size(&web_dirs),
         ipfs_cache: ipfs_repo.map(|repo| dir_size(&repo)),
@@ -205,6 +250,7 @@ pub async fn storage_usage(app: AppHandle) -> Result<StorageUsage, String> {
             compression: dir_size(&compression),
             mesh: total_size(&mesh),
         },
+        versions,
     })
     .await
     .map_err(|e| e.to_string())

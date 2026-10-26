@@ -21,7 +21,6 @@ function snapshot(over: Partial<IpfsStateSnapshot> = {}): IpfsStateSnapshot {
     message: null,
     gateway_port: 0,
     installed: false,
-    update_available: false,
     ...over,
   }
 }

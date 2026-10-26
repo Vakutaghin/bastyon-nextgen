@@ -10,7 +10,6 @@
       <WarningFilled v-else-if="variant === 'failed'" />
       <!-- Выключен — серый глобус, запущен — тот же глобус зелёным (цвет у SC_IpfsWrapper). -->
       <GlobalOutlined v-else />
-      <SC_IpfsDot v-if="updateAvailable" />
     </SC_IpfsWrapper>
 
     <template #overlay>
@@ -25,8 +24,6 @@
           <SC_IpfsProgressInner :pct="progressPct" />
         </SC_IpfsProgressOuter>
 
-        <SC_IpfsHint v-if="updateAvailable">{{ t('header.ipfsUpdateHint') }}</SC_IpfsHint>
-
         <SC_IpfsActions>
           <Button v-if="status === 'running'" size="small" @click="ipfs.stop()">
             {{ t('header.ipfsStopBtn') }}
@@ -36,10 +33,6 @@
           </Button>
           <Button v-if="status === 'installing'" size="small" @click="ipfs.abortInstall()">
             {{ t('header.ipfsAbortInstall') }}
-          </Button>
-
-          <Button v-if="updateAvailable" size="small" :loading="busy" @click="ipfs.update()">
-            {{ t('header.ipfsUpdateBtn') }}
           </Button>
 
           <!-- Публикация, список опубликованного и удалённый pin — на странице «Мои файлы». -->
@@ -71,7 +64,6 @@ import { useIpfsStore } from '@/stores/ipfs-store'
 import IpfsBrowserDialog from './ipfs-browser-dialog.vue'
 import {
   SC_IpfsWrapper,
-  SC_IpfsDot,
   SC_IpfsMenu,
   SC_IpfsRow,
   SC_IpfsTitle,
@@ -85,7 +77,7 @@ import {
 const { t } = useI18n()
 
 const ipfs = useIpfsStore()
-const { available, status, message, install, installed, updateAvailable, busy } = storeToRefs(ipfs)
+const { available, status, message, install, installed, busy } = storeToRefs(ipfs)
 
 const router = useRouter()
 const visible = ref(false)

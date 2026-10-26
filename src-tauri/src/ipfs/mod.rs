@@ -78,10 +78,8 @@ fn err_string<E: std::fmt::Display>(e: E) -> String {
 pub async fn ipfs_status(mgr: State<'_, IpfsManager>) -> Result<IpfsStateSnapshot, String> {
     reap_dead_child(&mgr).await;
     let installed = mgr.paths.binary.is_file();
-    let update_available = installer::update_available(&mgr.paths);
     let mut st = mgr.state.write().await;
     st.installed = installed;
-    st.update_available = update_available;
     Ok(st.snapshot())
 }
 
@@ -121,7 +119,6 @@ pub async fn ipfs_ensure(
             st.gateway_port = gw;
             st.status = IpfsStatus::Running;
             st.installed = true;
-            st.update_available = installer::update_available(&mgr.paths);
             st.message = None;
             st.lock_error = false;
         }
@@ -258,29 +255,6 @@ pub async fn ipfs_uninstall(
     {
         let mut st = mgr.state.write().await;
         *st = IpfsState::default();
-    }
-    mgr.emit_state(&app).await;
-    Ok(mgr.state.read().await.snapshot())
-}
-
-/// Обновление: гасим демон и сносим ТОЛЬКО бинарь (repo/кэш блоков сохраняем).
-/// Следующий `ipfs_ensure` докачает запиненную версию и переиспользует repo.
-#[tauri::command]
-pub async fn ipfs_update(
-    app: AppHandle,
-    mgr: State<'_, IpfsManager>,
-) -> Result<IpfsStateSnapshot, String> {
-    let _guard = mgr.start_lock.lock().await;
-    // Усыновлённый демон тоже гасим — иначе после удаления бинаря ensure снова
-    // «усыновил» бы старую версию, а бинаря на диске уже нет.
-    stop_daemon(&mgr).await;
-    let _ = std::fs::remove_dir_all(&mgr.paths.bin_dir);
-    {
-        let mut st = mgr.state.write().await;
-        st.status = IpfsStatus::Off;
-        st.installed = false;
-        st.update_available = false;
-        st.message = None;
     }
     mgr.emit_state(&app).await;
     Ok(mgr.state.read().await.snapshot())
@@ -926,7 +900,6 @@ async fn prepare_node(
     {
         let mut st = mgr.state.write().await;
         st.installed = true;
-        st.update_available = installer::update_available(&mgr.paths);
     }
     installer::check_cancelled(cancel)?;
 
@@ -1685,7 +1658,55 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     }
     app.manage(IpfsManager::new(paths));
     app.manage(sink::SaveSinks::default());
+    schedule_update(app.clone());
     Ok(())
+}
+
+/// Когда пробовать скачать новый Kubo после запуска: сразу после запуска сеть
+/// и Tor заняты своим.
+const UPDATE_DELAYS: [Duration; 2] = [Duration::from_secs(120), Duration::from_secs(15 * 60)];
+
+/// Kubo прошлой закреплённой версии — докачать новый в фоне: человек уже
+/// согласился на модуль, когда скачал его. Встанет при следующем запуске
+/// ноды (`installer::ensure_installed`), до того работает прежний.
+fn schedule_update(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        for delay in UPDATE_DELAYS {
+            tokio::time::sleep(delay).await;
+            let mgr = app.state::<IpfsManager>();
+            installer::remove_stale_archives(&mgr.paths);
+            if !installer::update_available(&mgr.paths) || installer::update_staged(&mgr.paths) {
+                return;
+            }
+            let tor = app.state::<crate::tor::TorManager>();
+            let result = match crate::fetch::download_client(&tor).await {
+                Ok(client) => installer::stage_update(&client, &mgr.paths)
+                    .await
+                    .map_err(|e| e.to_string()),
+                Err(e) => Err(e),
+            };
+            match result {
+                Ok(()) => {
+                    log::info!("[ipfs] Kubo {} downloaded", installer::kubo_version());
+                    return;
+                }
+                Err(e) => log::warn!("[ipfs] Kubo update: {e}"),
+            }
+        }
+    });
+}
+
+/// Версия для вкладки «Модули».
+pub fn module_version(mgr: &IpfsManager) -> Option<crate::storage::ModuleVersion> {
+    if !mgr.paths.binary.is_file() {
+        return None;
+    }
+    let installed = installer::installed_version(&mgr.paths).unwrap_or_default();
+    Some(crate::storage::ModuleVersion::new(
+        installed.trim_start_matches('v'),
+        installer::kubo_version().trim_start_matches('v'),
+        installer::update_available(&mgr.paths),
+    ))
 }
 
 #[cfg(test)]

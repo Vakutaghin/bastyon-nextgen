@@ -27,12 +27,34 @@ export interface ModulesUsage {
   mesh: number
 }
 
+/**
+ * Версия скачанного модуля. Каждая версия приложения закрепляет свои версии
+ * модулей и обновляет их сама: новая скачивается в фоне, прежняя работает,
+ * пока новая не встанет.
+ */
+export interface ModuleVersion {
+  /** Пусто — неизвестна. */
+  installed: string
+  latest: string
+  /** Стоит прежняя: новая скачается и встанет сама. */
+  pending: boolean
+}
+
+/** null — модуль не скачан. У голосового ввода версии нет: движок внутри приложения. */
+export interface ModuleVersions {
+  ipfs: ModuleVersion | null
+  tor: ModuleVersion | null
+  compression: ModuleVersion | null
+  mesh: ModuleVersion | null
+}
+
 export interface StorageUsage {
   webCache: number
   /** null — модуль IPFS не установлен. */
   ipfsCache: number | null
   limits: StorageLimits
   modules: ModulesUsage
+  versions: ModuleVersions
 }
 
 const MB = 1024 * 1024

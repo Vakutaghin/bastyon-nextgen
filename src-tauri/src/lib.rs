@@ -967,7 +967,6 @@ pub fn run() {
       ipfs::ipfs_cancel_install,
       ipfs::ipfs_stop,
       ipfs::ipfs_uninstall,
-      ipfs::ipfs_update,
       ipfs::ipfs_pick_files,
       ipfs::ipfs_publish,
       ipfs::ipfs_seed,

@@ -27,6 +27,8 @@ Recognition needs a model, which is downloaded once. The first time you click, t
 
 The model is downloaded from Hugging Face, and the app checks that the file has not been swapped. If [Tor](tor.md) is on, the model downloads through Tor — this can take a few minutes.
 
+The recognition engine is built into the app and updates with it. If a new version of the app needs a different model file, it downloads by itself and the old one is removed.
+
 ## Punctuation by voice
 
 Punctuation can be dictated with words: "period", "comma", "question mark", "exclamation mark", "colon", "ellipsis", "new line", "new paragraph", "open parenthesis" and "close parenthesis", "open quote" and "close quote". There are commands for every interface language; the full list is in the settings, under **“Voice commands for punctuation”**.

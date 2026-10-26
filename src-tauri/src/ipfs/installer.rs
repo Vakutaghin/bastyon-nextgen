@@ -201,9 +201,135 @@ pub fn installed_version(paths: &IpfsPaths) -> Option<String> {
     v.get("version")?.as_str().map(|s| s.to_string())
 }
 
-/// Установлено, но версия не совпадает с запиненной → предложить обновление.
+/// Установлен Kubo прошлой закреплённой версии: новый скачивается в фоне
+/// (`stage_update`) и встаёт при следующем запуске ноды (`apply_staged`).
 pub fn update_available(paths: &IpfsPaths) -> bool {
     paths.binary.is_file() && installed_version(paths).as_deref() != Some(kubo_version())
+}
+
+/// Архив закреплённой версии рядом с бинарём: скачан в фоне, ждёт запуска ноды.
+fn staged_archive(paths: &IpfsPaths) -> Result<std::path::PathBuf, InstallError> {
+    Ok(paths.bin_dir.join(detect_platform()?.archive_name))
+}
+
+pub fn update_staged(paths: &IpfsPaths) -> bool {
+    staged_archive(paths).is_ok_and(|p| p.is_file())
+}
+
+/// Архивы и недокачанное прежних версий: приложение обновилось дважды, а нода
+/// так и не запускалась.
+pub fn remove_stale_archives(paths: &IpfsPaths) {
+    let Ok(current) = detect_platform().map(|p| p.archive_name) else {
+        return;
+    };
+    let Ok(entries) = fs::read_dir(&paths.bin_dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with("kubo_") && name != current && entry.path().is_file() {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
+}
+
+/// Пауза без единого байта, после которой фоновое скачивание считается оборванным.
+const STALL_TIMEOUT: Duration = Duration::from_secs(60);
+
+/// Скачать архив закреплённой версии, не трогая установленный бинарь: нода
+/// работает дальше. `client` — `crate::fetch::download_client`, под Tor —
+/// через Tor.
+pub async fn stage_update(client: &reqwest::Client, paths: &IpfsPaths) -> Result<(), InstallError> {
+    let platform = detect_platform()?;
+    let expected = expected_sha512(&platform.archive_name)
+        .ok_or_else(|| InstallError::HashMissing(platform.archive_name.clone()))?;
+    let dest = paths.bin_dir.join(&platform.archive_name);
+    if dest.is_file() {
+        return Ok(());
+    }
+    let part = paths.bin_dir.join(format!("{}.part", platform.archive_name));
+    let mut last_err: Option<InstallError> = None;
+    for url in archive_urls(kubo_version(), &platform.archive_name) {
+        let result = match fetch_to(client, &url, &part).await {
+            Ok(()) => verify_sha512(&part, &platform.archive_name, expected),
+            Err(e) => Err(e),
+        };
+        match result {
+            Ok(()) => {
+                fs::rename(&part, &dest)?;
+                return Ok(());
+            }
+            Err(e) => {
+                log::warn!("[ipfs] update from {} failed: {}", url, e);
+                let _ = fs::remove_file(&part);
+                last_err = Some(e);
+            }
+        }
+    }
+    Err(last_err.unwrap_or(InstallError::ExtractedFileMissing(platform.archive_name)))
+}
+
+async fn fetch_to(client: &reqwest::Client, url: &str, dest: &Path) -> Result<(), InstallError> {
+    let resp = client.get(url).send().await?.error_for_status()?;
+    let mut file = fs::File::create(dest)?;
+    let mut stream = resp.bytes_stream();
+    loop {
+        let next = tokio::time::timeout(STALL_TIMEOUT, stream.next())
+            .await
+            .map_err(|_| std::io::Error::new(std::io::ErrorKind::TimedOut, "download stalled"))?;
+        let Some(chunk) = next else { break };
+        file.write_all(&chunk?)?;
+    }
+    file.flush()?;
+    Ok(())
+}
+
+/// Поставить архив, скачанный в фоне. Только пока нода не запущена: бинарь
+/// работающего демона не заменить. Хэш сверяется ещё раз — архив пролежал на
+/// диске.
+pub fn apply_staged(paths: &IpfsPaths) -> Result<bool, InstallError> {
+    let platform = detect_platform()?;
+    let archive = paths.bin_dir.join(&platform.archive_name);
+    if !archive.is_file() {
+        return Ok(false);
+    }
+    let expected = expected_sha512(&platform.archive_name)
+        .ok_or_else(|| InstallError::HashMissing(platform.archive_name.clone()))?;
+    verify_sha512(&archive, &platform.archive_name, expected)?;
+    replace_binary(paths, &archive, platform.is_zip)?;
+    write_install_marker(paths, &platform.archive_name);
+    let _ = fs::remove_file(&archive);
+    Ok(true)
+}
+
+/// Распаковать в отдельный каталог и заменить бинарь одним переименованием:
+/// сбой посередине прежний бинарь не портит.
+fn replace_binary(paths: &IpfsPaths, archive: &Path, is_zip: bool) -> Result<(), InstallError> {
+    let next = paths.bin_dir.join("next");
+    let _ = fs::remove_dir_all(&next);
+    fs::create_dir_all(&next)?;
+    let result = (|| {
+        if is_zip {
+            extract_zip(archive, &next)?;
+        } else {
+            extract_tar_gz(archive, &next)?;
+        }
+        let rel = paths
+            .binary
+            .strip_prefix(&paths.bin_dir)
+            .map_err(|_| InstallError::ExtractedFileMissing(paths.binary.to_string_lossy().to_string()))?;
+        let fresh = next.join(rel);
+        if !fresh.is_file() {
+            return Err(InstallError::ExtractedFileMissing(
+                fresh.to_string_lossy().to_string(),
+            ));
+        }
+        prepare_binary(&fresh, &next)?;
+        fs::rename(&fresh, &paths.binary)?;
+        Ok(())
+    })();
+    let _ = fs::remove_dir_all(&next);
+    result
 }
 
 /// Верхний уровень: гарантировать наличие бинаря kubo. No-op, если уже
@@ -217,6 +343,15 @@ pub async fn ensure_installed<R: Runtime>(
     cancel: &CancelRx,
 ) -> Result<(), InstallError> {
     if paths.binary.is_file() && paths.install_marker.is_file() {
+        // Нода не запущена — самое время поставить версию, скачанную в фоне.
+        // Не вышло — запустится прежняя.
+        if update_available(paths) {
+            match apply_staged(paths) {
+                Ok(true) => log::info!("[ipfs] Kubo {} installed", kubo_version()),
+                Ok(false) => {}
+                Err(e) => log::warn!("[ipfs] staged update: {}", e),
+            }
+        }
         return Ok(());
     }
 
@@ -287,13 +422,21 @@ pub async fn ensure_installed<R: Runtime>(
             paths.binary.to_string_lossy().to_string(),
         ));
     }
+    prepare_binary(&paths.binary, &paths.bin_dir)?;
 
+    write_install_marker(paths, &platform.archive_name);
+    emit_progress(app, "ready", 1.0, "Kubo installed");
+    Ok(())
+}
+
+/// Сделать распакованный бинарь запускаемым.
+fn prepare_binary(binary: &Path, dir: &Path) -> Result<(), InstallError> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut p = fs::metadata(&paths.binary)?.permissions();
+        let mut p = fs::metadata(binary)?.permissions();
         p.set_mode(0o755);
-        fs::set_permissions(&paths.binary, p)?;
+        fs::set_permissions(binary, p)?;
     }
 
     #[cfg(target_os = "macos")]
@@ -303,17 +446,16 @@ pub async fn ensure_installed<R: Runtime>(
         // может не быть, тогда полагаемся на снятие quarantine ниже.
         let _ = std::process::Command::new("codesign")
             .args(["-s", "-", "-f"])
-            .arg(&paths.binary)
+            .arg(binary)
             .output();
         let _ = std::process::Command::new("xattr")
             .arg("-dr")
             .arg("com.apple.quarantine")
-            .arg(&paths.bin_dir)
+            .arg(dir)
             .output();
     }
-
-    write_install_marker(paths, &platform.archive_name);
-    emit_progress(app, "ready", 1.0, "Kubo installed");
+    #[cfg(not(target_os = "macos"))]
+    let _ = dir;
     Ok(())
 }
 
@@ -678,6 +820,69 @@ mod tests {
                 "{printed}"
             );
         });
+    }
+
+    #[test]
+    fn a_staged_archive_replaces_the_binary() {
+        let root = std::env::temp_dir().join(format!("kubo-staged-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let paths = IpfsPaths::new(root.join("bin"), root.join("repo"));
+        fs::create_dir_all(paths.binary.parent().unwrap()).unwrap();
+        fs::write(&paths.binary, b"old").unwrap();
+        assert!(!apply_staged(&paths).unwrap(), "скачанного нет");
+
+        // Архив как у Kubo: kubo/ipfs и рядом прочее.
+        let rel = paths.binary.strip_prefix(&paths.bin_dir).unwrap().to_path_buf();
+        let archive = root.join("kubo.tar.gz");
+        {
+            let gz = flate2::write::GzEncoder::new(
+                fs::File::create(&archive).unwrap(),
+                flate2::Compression::fast(),
+            );
+            let mut tar = tar::Builder::new(gz);
+            for (path, body) in [(rel.as_path(), &b"new"[..]), (Path::new("kubo/LICENSE"), &b"MIT"[..])] {
+                let mut header = tar::Header::new_gnu();
+                header.set_size(body.len() as u64);
+                header.set_mode(0o644);
+                header.set_cksum();
+                tar.append_data(&mut header, path, body).unwrap();
+            }
+            tar.into_inner().unwrap().finish().unwrap();
+        }
+        replace_binary(&paths, &archive, false).unwrap();
+        assert_eq!(fs::read(&paths.binary).unwrap(), b"new");
+        assert!(!paths.bin_dir.join("next").exists());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(fs::metadata(&paths.binary).unwrap().permissions().mode() & 0o111, 0o111);
+        }
+
+        // Битый архив прежний бинарь не трогает.
+        fs::write(&archive, b"not a tar.gz").unwrap();
+        assert!(replace_binary(&paths, &archive, false).is_err());
+        assert_eq!(fs::read(&paths.binary).unwrap(), b"new");
+        assert!(!paths.bin_dir.join("next").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn archives_of_other_versions_are_removed() {
+        let root = std::env::temp_dir().join(format!("kubo-stale-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let paths = IpfsPaths::new(root.join("bin"), root.join("repo"));
+        fs::create_dir_all(&paths.bin_dir).unwrap();
+        let current = detect_platform().unwrap().archive_name;
+        for name in [current.as_str(), "kubo_v0.40.0_x.tar.gz", "kubo_v0.40.0_x.tar.gz.part", "install.json"] {
+            fs::write(paths.bin_dir.join(name), b"x").unwrap();
+        }
+        assert!(update_staged(&paths));
+        remove_stale_archives(&paths);
+        assert!(paths.bin_dir.join(&current).exists());
+        assert!(paths.bin_dir.join("install.json").exists());
+        assert!(!paths.bin_dir.join("kubo_v0.40.0_x.tar.gz").exists());
+        assert!(!paths.bin_dir.join("kubo_v0.40.0_x.tar.gz.part").exists());
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]

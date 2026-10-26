@@ -187,8 +187,48 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    app.manage(AsrManager::new(AsrPaths::new(dir)));
+    let paths = AsrPaths::new(dir);
+    if let Err(e) = paths.init_wanted() {
+        log::warn!("[asr] models list: {e}");
+    }
+    paths.remove_orphans();
+    app.manage(AsrManager::new(paths));
+    schedule_update(app.clone());
     Ok(())
+}
+
+/// Когда пробовать скачать модели после запуска: сразу после запуска сеть и
+/// Tor заняты своим.
+const UPDATE_DELAYS: [Duration; 2] = [Duration::from_secs(90), Duration::from_secs(15 * 60)];
+
+/// Модель, которую человек скачал, а приложение теперь закрепляет другой
+/// файл, — скачать снова, как будто он нажал «Скачать»: интерфейс покажет
+/// ход скачивания. Движок распознавания — часть приложения и обновляется
+/// вместе с ним.
+fn schedule_update(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        for delay in UPDATE_DELAYS {
+            tokio::time::sleep(delay).await;
+            let outdated = app.state::<AsrManager>().paths.outdated();
+            if outdated.is_empty() {
+                return;
+            }
+            let mut done = true;
+            for id in outdated {
+                let mgr = app.state::<AsrManager>();
+                let tor = app.state::<TorManager>();
+                if let Err(e) = install_model(&app, &mgr, &tor, id.to_string()).await {
+                    log::warn!("[asr] model {id} update: {e}");
+                    done = false;
+                    break;
+                }
+                log::info!("[asr] model {id} downloaded again");
+            }
+            if done {
+                return;
+            }
+        }
+    });
 }
 
 /// Остановить запись при выходе: микрофон не должен оставаться открытым.
@@ -252,6 +292,15 @@ pub async fn asr_install(
     tor: State<'_, TorManager>,
     model: String,
 ) -> Result<(), String> {
+    install_model(&app, &mgr, &tor, model).await
+}
+
+async fn install_model(
+    app: &AppHandle,
+    mgr: &AsrManager,
+    tor: &TorManager,
+    model: String,
+) -> Result<(), String> {
     let spec = model_spec(&model).ok_or_else(|| "unknown_model".to_string())?;
     let (cancel_tx, mut cancel_rx) = watch::channel(false);
     {
@@ -264,7 +313,7 @@ pub async fn asr_install(
     *mgr.installing.lock().unwrap_or_else(|p| p.into_inner()) = Some(model.clone());
 
     let result = async {
-        let client = crate::fetch::download_client(&tor).await?;
+        let client = crate::fetch::download_client(tor).await?;
         let need_vad = !mgr.paths.is_installed(&VAD_MODEL);
         let need_model = !mgr.paths.is_installed(spec);
         let total = if need_vad { VAD_MODEL.size } else { 0 } + if need_model { spec.size } else { 0 };
@@ -296,6 +345,9 @@ pub async fn asr_install(
             .map_err(|e| e.to_string())?;
             done += step.size;
         }
+        if let Err(e) = mgr.paths.remember(&model) {
+            log::warn!("[asr] models list: {e}");
+        }
         Ok::<(), String>(())
     }
     .await;
@@ -322,6 +374,9 @@ pub fn asr_remove(mgr: State<'_, AsrManager>, model: String) -> Result<(), Strin
     let path = mgr.paths.file(spec);
     if path.exists() {
         std::fs::remove_file(&path).map_err(|e| format!("remove_failed: {e}"))?;
+    }
+    if let Err(e) = mgr.paths.forget(&model) {
+        log::warn!("[asr] models list: {e}");
     }
     if mgr.paths.installed_models().is_empty() {
         let _ = std::fs::remove_file(mgr.paths.file(&VAD_MODEL));

@@ -1,10 +1,10 @@
 ---
-keywords: [IPFS module, Kubo, IPFS node, install IPFS, remove IPFS, disk space]
+keywords: [IPFS module, Kubo, IPFS node, install IPFS, update IPFS, remove IPFS, disk space]
 ---
 
 # The IPFS module
 
-What gets installed on your computer for IPFS, how much space it takes, and how to stop, update or remove it.
+What gets installed on your computer for IPFS, how much space it takes, how it updates, and how to stop or remove it.
 
 ## What it is
 
@@ -14,13 +14,14 @@ The module does not install itself. The app downloads it — about 80 MB — whe
 
 The module runs while Bastyon is open and stops together with the app. Unless you pressed **“Stop”**, it starts on its own the next time the app starts, including after an update. It does not start while [Tor](tor.md) is on.
 
+The module updates together with the app. When a new Bastyon version brings a new version of Kubo, it downloads in the background — through Tor if Tor is on — and takes over the next time the module starts; until then the old one works. The installed version is shown in **“Settings”** → **“Modules”**.
+
 ## The IPFS icon in the header
 
 The icon shows the module’s state: a grey globe means off, a green one means running, a spinner means installing or starting, a triangle means an error. The icon’s menu has:
 
 - a status line, for example **“Local IPFS node running”** or **“IPFS module installed (stopped)”**;
 - **“Install & start (~80 MB)”**, **“Start”** or **“Stop”**. While the module installs, there is also **“Cancel installation”**;
-- **“Update”** — when a new Bastyon version brings a new version of the module. The icon then gets a dot, and the menu says **“A newer IPFS version is available.”**;
 - **“My files”** — see [My files](my-files.md);
 - **“Open IPFS browser”** — an address bar for an IPFS link, see [Opening an IPFS link](open-ipfs-links.md).
 

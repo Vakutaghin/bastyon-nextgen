@@ -33,7 +33,6 @@ permissions = [
   "allow-ipfs-cancel-install",
   "allow-ipfs-stop",
   "allow-ipfs-uninstall",
-  "allow-ipfs-update",
   "allow-ipfs-pick-files",
   "allow-ipfs-publish",
   "allow-ipfs-seed",

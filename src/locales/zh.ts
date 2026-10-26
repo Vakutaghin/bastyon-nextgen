@@ -340,8 +340,6 @@ export default {
     ipfsStartBtn: '启动',
     ipfsStopBtn: '停止',
     ipfsUninstallBtn: '卸载',
-    ipfsUpdateBtn: '更新',
-    ipfsUpdateHint: '有新版本的 IPFS 可用。',
     ipfsMenuHint: 'IPFS 链接会在单独的查看器窗口中打开。',
     ipfsMyFilesBtn: '我的文件',
     ipfsBrowserBtn: '打开 IPFS 浏览器',
@@ -505,6 +503,9 @@ export default {
       intro: '仅在您需要时才由应用下载的附加程序。',
       total: '目前共占用 {size}。',
       onDisk: '磁盘占用：{size}',
+      version: '版本 {version}',
+      versionPending: '版本 {version}，{latest} 将自动下载并安装',
+      updates: '模块随应用一起更新：新版本在后台下载，并在下次启动时生效，在此之前旧版本继续工作。',
       tor: {
         title: 'Tor',
         description:

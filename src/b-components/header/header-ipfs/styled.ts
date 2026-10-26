@@ -32,17 +32,6 @@ export const SC_IpfsWrapper = styled.div<{ variant?: Variant }>`
   }
 `
 
-export const SC_IpfsDot = styled.div`
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ui-primary);
-  border: 1px solid var(--color-bg-primary);
-`
-
 export const SC_IpfsMenu = styled.div`
   background: var(--ui-bg);
   border-radius: var(--ui-radius-md);

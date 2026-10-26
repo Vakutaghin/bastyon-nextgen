@@ -95,6 +95,18 @@ impl MeshManager {
         [self.paths.dir().to_path_buf(), self.rns_dir.clone()]
     }
 
+    /// Версия для вкладки «Модули»: модуль собирается вместе с приложением,
+    /// и его версия — версия приложения, с которой он скачан.
+    pub fn version(&self) -> Option<crate::storage::ModuleVersion> {
+        let installed = self.paths.installed()?;
+        let pending = module::pin().is_some_and(|pin| installed.sha256 != pin.sha256);
+        Some(crate::storage::ModuleVersion::new(
+            &installed.version,
+            env!("CARGO_PKG_VERSION"),
+            pending,
+        ))
+    }
+
     fn current(&self) -> Option<Arc<Proc>> {
         self.proc
             .lock()

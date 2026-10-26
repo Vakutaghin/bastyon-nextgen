@@ -356,8 +356,6 @@ export default {
     ipfsStartBtn: 'Démarrer',
     ipfsStopBtn: 'Arrêter',
     ipfsUninstallBtn: 'Désinstaller',
-    ipfsUpdateBtn: 'Mettre à jour',
-    ipfsUpdateHint: 'Une version plus récente d’IPFS est disponible.',
     ipfsMenuHint: 'Les liens IPFS s’ouvrent dans une fenêtre de visualisation séparée.',
     ipfsMyFilesBtn: 'Mes fichiers',
     ipfsBrowserBtn: 'Ouvrir le navigateur IPFS',
@@ -549,6 +547,10 @@ export default {
         'Des programmes supplémentaires que l’application ne télécharge que si vous le demandez.',
       total: 'Ils occupent actuellement {size}.',
       onDisk: 'Sur le disque : {size}',
+      version: 'version {version}',
+      versionPending: 'version {version} ; la {latest} se téléchargera et s’installera toute seule',
+      updates:
+        'Les modules se mettent à jour avec l’application : la nouvelle version se télécharge en arrière-plan et prend le relais au prochain démarrage ; d’ici là, l’ancienne continue de fonctionner.',
       tor: {
         title: 'Tor',
         description:

@@ -32,7 +32,6 @@ const COMMANDS: &[&str] = &[
   "ipfs_cancel_install",
   "ipfs_stop",
   "ipfs_uninstall",
-  "ipfs_update",
   "ipfs_pick_files",
   "ipfs_publish",
   "ipfs_seed",

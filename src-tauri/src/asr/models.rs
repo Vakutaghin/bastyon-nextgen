@@ -104,6 +104,79 @@ impl AsrPaths {
             .map(|m| m.id)
             .collect()
     }
+
+    /// Какие модели человек скачал. Приложение может закрепить другой файл
+    /// модели (новая ревизия, формат для нового whisper.cpp) — тогда по этому
+    /// списку она скачается снова сама.
+    fn wanted_file(&self) -> PathBuf {
+        self.dir.join("models.json")
+    }
+
+    pub fn wanted(&self) -> Vec<String> {
+        std::fs::read_to_string(self.wanted_file())
+            .ok()
+            .and_then(|raw| serde_json::from_str(&raw).ok())
+            .unwrap_or_default()
+    }
+
+    fn write_wanted(&self, ids: &[String]) -> std::io::Result<()> {
+        std::fs::write(self.wanted_file(), serde_json::to_string(ids)?)
+    }
+
+    pub fn remember(&self, id: &str) -> std::io::Result<()> {
+        let mut ids = self.wanted();
+        if ids.iter().any(|w| w == id) {
+            return Ok(());
+        }
+        ids.push(id.to_string());
+        self.write_wanted(&ids)
+    }
+
+    pub fn forget(&self, id: &str) -> std::io::Result<()> {
+        let mut ids = self.wanted();
+        ids.retain(|w| w != id);
+        self.write_wanted(&ids)
+    }
+
+    /// Списка ещё нет — модели скачаны до него: это те, что стоят сейчас.
+    pub fn init_wanted(&self) -> std::io::Result<()> {
+        if self.wanted_file().exists() {
+            return Ok(());
+        }
+        let ids: Vec<String> = self.installed_models().iter().map(|id| id.to_string()).collect();
+        if ids.is_empty() {
+            return Ok(());
+        }
+        self.write_wanted(&ids)
+    }
+
+    /// Скачанные человеком модели, которых сейчас нет: сменился закреплённый
+    /// файл модели или детектора речи.
+    pub fn outdated(&self) -> Vec<&'static str> {
+        let installed = self.installed_models();
+        self.wanted()
+            .iter()
+            .filter_map(|id| model_spec(id))
+            .map(|m| m.id)
+            .filter(|id| !installed.contains(id))
+            .collect()
+    }
+
+    /// Файлы моделей, которых нет среди закреплённых, — прежние версии: ими
+    /// приложение больше не пользуется.
+    pub fn remove_orphans(&self) {
+        let Ok(entries) = std::fs::read_dir(&self.dir) else {
+            return;
+        };
+        let known: Vec<&str> = MODELS.iter().chain([&VAD_MODEL]).map(|m| m.file).collect();
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name.starts_with("ggml-") && name.ends_with(".bin") && !known.contains(&name.as_str()) {
+                log::info!("[asr] removing {name}: no longer pinned");
+                let _ = std::fs::remove_file(entry.path());
+            }
+        }
+    }
 }
 
 /// Скачать файл модели с проверкой размера и SHA-256. `on_progress` получает
@@ -156,6 +229,60 @@ mod tests {
         let v = std::fs::File::create(paths.file(&VAD_MODEL)).unwrap();
         v.set_len(VAD_MODEL.size).unwrap();
         assert_eq!(paths.installed_models(), vec!["base"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_wanted_model_whose_file_changed_is_outdated() {
+        let dir = std::env::temp_dir().join(format!("asr-wanted-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let paths = AsrPaths::new(dir.clone());
+        let base = model_spec("base").unwrap();
+        for spec in [base, &VAD_MODEL] {
+            std::fs::File::create(paths.file(spec)).unwrap().set_len(spec.size).unwrap();
+        }
+
+        // Скачано до списка: список — то, что стоит.
+        paths.init_wanted().unwrap();
+        assert_eq!(paths.wanted(), vec!["base"]);
+        assert!(paths.outdated().is_empty());
+
+        // Закреплён другой файл: прежний не той длины — модель надо скачать.
+        std::fs::File::create(paths.file(base)).unwrap().set_len(base.size - 1).unwrap();
+        assert_eq!(paths.outdated(), vec!["base"]);
+
+        // Сменился детектор речи — тоже.
+        std::fs::File::create(paths.file(base)).unwrap().set_len(base.size).unwrap();
+        std::fs::remove_file(paths.file(&VAD_MODEL)).unwrap();
+        assert_eq!(paths.outdated(), vec!["base"]);
+
+        // Удалённую человеком модель обратно не качаем.
+        paths.forget("base").unwrap();
+        assert!(paths.outdated().is_empty());
+        paths.init_wanted().unwrap();
+        assert!(paths.wanted().is_empty(), "список уже есть — не пересобирается");
+        paths.remember("small").unwrap();
+        paths.remember("small").unwrap();
+        assert_eq!(paths.wanted(), vec!["small"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn files_of_models_no_longer_pinned_are_removed() {
+        let dir = std::env::temp_dir().join(format!("asr-orphans-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let paths = AsrPaths::new(dir.clone());
+        let base = model_spec("base").unwrap();
+        for name in [base.file, VAD_MODEL.file, "ggml-small-q5_0.bin", "models.json", "notes.bin"] {
+            std::fs::write(dir.join(name), b"x").unwrap();
+        }
+        paths.remove_orphans();
+        assert!(!dir.join("ggml-small-q5_0.bin").exists());
+        for kept in [base.file, VAD_MODEL.file, "models.json", "notes.bin"] {
+            assert!(dir.join(kept).exists(), "{kept}");
+        }
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -134,6 +134,15 @@ pub fn has_bundle(paths: &TorPaths) -> bool {
     paths.binary.is_file() && paths.geoip.is_file()
 }
 
+/// Версия распакованного бандла (пусто — распакован до маркера версии).
+pub fn installed_version(paths: &TorPaths) -> Option<String> {
+    has_bundle(paths).then(|| {
+        fs::read_to_string(paths.binary.with_file_name(VERSION_MARKER))
+            .map(|v| v.trim().to_string())
+            .unwrap_or_default()
+    })
+}
+
 /// Приложение обновилось и закрепило другой Tor, а стоит прежний: он работает,
 /// пока закреплённый скачивается через него в фоне (`download_upgrade`).
 pub fn upgrade_pending(paths: &TorPaths) -> bool {

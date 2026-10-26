@@ -16,7 +16,6 @@ export type IpfsStateSnapshot = {
   message?: string | null
   gateway_port: number
   installed: boolean
-  update_available: boolean
 }
 
 export type IpfsInstallProgress = {
@@ -178,7 +177,6 @@ export const useIpfsStore = defineStore('ipfs', {
     gatewayPort: 0,
     message: null as string | null,
     installed: false,
-    updateAvailable: false,
     pinServiceConfigured: false,
     /** «Мои файлы» аккаунта `sharesAccount`. */
     shares: [] as IpfsShare[],
@@ -288,7 +286,6 @@ export const useIpfsStore = defineStore('ipfs', {
       this.gatewayPort = snap.gateway_port
       this.message = snap.message ?? null
       this.installed = snap.installed
-      this.updateAvailable = snap.update_available
       // Прогресс скачивания — только пока идёт установка: после отмены или
       // ошибки полоска не должна застывать на последнем проценте.
       if (snap.status !== 'installing') this.install = null
@@ -641,19 +638,6 @@ export const useIpfsStore = defineStore('ipfs', {
       } catch {
         // без сервиса/недоступен — durability просто не добавили
       }
-    },
-
-    /** Обновление: снести бинарь (repo сохраняется) и переустановить запиненную версию. */
-    async update(): Promise<void> {
-      if (!this.available) return
-      try {
-        const snap = await tauriInvoke<IpfsStateSnapshot>('ipfs_update')
-        this.applySnapshot(snap)
-      } catch (e) {
-        this.message = String(e)
-        return
-      }
-      await this.ensureRunning()
     },
 
     // --- кнопки consent-модалки ---

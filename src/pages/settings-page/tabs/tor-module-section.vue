@@ -7,7 +7,7 @@
       <SC_ModuleStatus>{{ statusLabel }}</SC_ModuleStatus>
     </SC_ModuleHead>
     <SC_ModuleDesc>{{ t('settings.modules.tor.description') }}</SC_ModuleDesc>
-    <ModuleDiskUsage module="tor" />
+    <ModuleInfo module="tor" />
 
     <SC_ModuleActions v-if="!tor.installed">
       {{ t('settings.modules.tor.downloadsOnEnable') }}
@@ -29,7 +29,7 @@ import { Button, Modal } from 'ant-design-vue'
 
 import { useStorageStore } from '@/stores/storage-store'
 import { useTorStore } from '@/stores/tor-store'
-import ModuleDiskUsage from './module-disk-usage.vue'
+import ModuleInfo from './module-info.vue'
 import {
   SC_ModuleActions,
   SC_ModuleCard,

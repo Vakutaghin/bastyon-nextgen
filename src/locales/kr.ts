@@ -352,8 +352,6 @@ export default {
     ipfsStartBtn: '시작',
     ipfsStopBtn: '중지',
     ipfsUninstallBtn: '제거',
-    ipfsUpdateBtn: '업데이트',
-    ipfsUpdateHint: '새 IPFS 버전을 사용할 수 있습니다.',
     ipfsMenuHint: 'IPFS 링크는 별도의 뷰어 창에서 열립니다.',
     ipfsMyFilesBtn: '내 파일',
     ipfsBrowserBtn: 'IPFS 브라우저 열기',
@@ -535,6 +533,10 @@ export default {
       intro: '요청할 때만 앱이 내려받는 추가 프로그램입니다.',
       total: '현재 {size}를 차지합니다.',
       onDisk: '디스크 사용량: {size}',
+      version: '버전 {version}',
+      versionPending: '버전 {version}, {latest}이(가) 자동으로 다운로드되어 설치됩니다',
+      updates:
+        '모듈은 앱과 함께 업데이트됩니다. 새 버전은 백그라운드에서 다운로드되어 다음 실행 때 적용되며, 그때까지는 이전 버전이 작동합니다.',
       tor: {
         title: 'Tor',
         description:

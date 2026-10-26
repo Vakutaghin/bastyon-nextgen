@@ -19,7 +19,7 @@ The video is re-encoded by the FFmpeg program. Not everyone uploads videos, so i
 - in the upload window, while there is nothing to compress with, — the **“Download the compression module”** button, with its size next to it and the percentage while it downloads;
 - or **“Settings”** → the **“Modules”** tab → **“Video compression module”**. You can **“Remove”** the module there too.
 
-The module weighs 36 to 56 MB, depending on the system. The app checks every downloaded file against a size and checksum built into it and does not install a tampered file. If [Tor](tor.md) is on, the module is downloaded through Tor.
+The module weighs 36 to 56 MB, depending on the system. The app checks every downloaded file against a size and checksum built into it and does not install a tampered file. If [Tor](tor.md) is on, the module is downloaded through Tor. When a new version of the app brings a new FFmpeg build, it downloads in the background and takes over at the next start of the app; until then the old one compresses.
 
 If FFmpeg is already installed on the system and can encode H.264 (x264), the module is not needed: the compression checkbox appears right away. On Windows on ARM and other systems without the module, the window tells you how to install FFmpeg yourself:
 

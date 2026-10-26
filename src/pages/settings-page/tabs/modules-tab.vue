@@ -5,6 +5,7 @@
     <template v-if="storage.usage">
       {{ t('settings.modules.total', { size: formatFileSize(storage.modulesTotal) }) }}
     </template>
+    {{ t('settings.modules.updates') }}
   </SC_ModulesIntro>
 
   <IpfsSection />

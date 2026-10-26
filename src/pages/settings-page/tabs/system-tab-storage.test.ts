@@ -59,6 +59,7 @@ describe('SystemTab: кэш и расшифровки', () => {
           ipfsCache: mocks.ipfsCache,
           limits: { web: 512 * MB, ipfs: 2048 * MB },
           modules: { ipfs: 0, tor: 0, voice: 0, compression: 0, mesh: 0 },
+          versions: { ipfs: null, tor: null, compression: null, mesh: null },
         }
       if (cmd === 'storage_set_limits') return args?.limits
       return undefined

@@ -113,25 +113,60 @@ impl FfmpegPaths {
         self.dir.join("install.json")
     }
 
-    /// Оба бинаря на месте и маркер. Маркер пишется последним: бинарь,
-    /// распакованный наполовину перед падением, без него готовым не считается.
-    ///
-    /// Версия любая: модуль прошлой версии сжимает так же, а скачивать
-    /// десятки мегабайт заново после каждого обновления приложения, где
-    /// сменилась закреплённая сборка, незачем. Новую ставит «Удалить» и
-    /// «Скачать».
-    pub fn is_installed(&self) -> bool {
+    /// Версия установленного модуля: оба бинаря на месте и маркер. Маркер
+    /// пишется последним: бинарь, распакованный наполовину перед падением,
+    /// без него готовым не считается.
+    pub fn installed_version(&self) -> Option<String> {
         let version = std::fs::read_to_string(self.marker())
             .ok()
             .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
-            .and_then(|v| v.get("version")?.as_str().map(str::to_string));
-        version.is_some_and(|v| !v.is_empty())
-            && TOOLS.iter().all(|tool| self.binary(tool).is_file())
+            .and_then(|v| v.get("version")?.as_str().map(str::to_string))
+            .filter(|v| !v.is_empty())?;
+        TOOLS
+            .iter()
+            .all(|tool| self.binary(tool).is_file())
+            .then_some(version)
+    }
+
+    /// Версия любая: модуль прошлой версии сжимает, пока новая скачивается
+    /// в фоне (`schedule_update`).
+    pub fn is_installed(&self) -> bool {
+        self.installed_version().is_some()
+    }
+
+    /// Установлен модуль прошлой закреплённой сборки.
+    fn is_outdated(&self) -> bool {
+        self.installed_version()
+            .is_some_and(|v| v != pin().version)
     }
 
     fn write_marker(&self) -> std::io::Result<()> {
         let body = serde_json::json!({ "version": pin().version });
         std::fs::write(self.marker(), body.to_string())
+    }
+
+    /// Сюда в фоне скачивается новая сборка — тот же вид, что у модуля.
+    fn staged(&self) -> FfmpegPaths {
+        FfmpegPaths::new(self.dir.join("update"))
+    }
+
+    /// Поставить скачанную в фоне сборку. Только при запуске приложения:
+    /// ни ffmpeg, ни ffprobe ещё не работают, а работающий .exe на Windows не
+    /// заменить. Недокачанное или сборка уже не той версии — удаляется.
+    fn apply_staged(&self) -> std::io::Result<bool> {
+        let staged = self.staged();
+        if !staged.dir.exists() {
+            return Ok(false);
+        }
+        let ready = staged.installed_version().as_deref() == Some(pin().version.as_str());
+        if ready {
+            for tool in TOOLS {
+                std::fs::rename(staged.binary(tool), self.binary(tool))?;
+            }
+            self.write_marker()?;
+        }
+        std::fs::remove_dir_all(&staged.dir)?;
+        Ok(ready)
     }
 
     /// Убрать модуль: сначала маркер — без него остаток не считается модулем.
@@ -144,6 +179,10 @@ impl FfmpegPaths {
             if path.exists() {
                 std::fs::remove_file(path)?;
             }
+        }
+        let staged = self.staged();
+        if staged.dir.exists() {
+            std::fs::remove_dir_all(&staged.dir)?;
         }
         Ok(())
     }
@@ -202,6 +241,8 @@ pub fn module_binary(tool: &str) -> Option<PathBuf> {
 pub struct FfmpegManager {
     paths: FfmpegPaths,
     install_cancel: Mutex<Option<watch::Sender<bool>>>,
+    /// Фоновое скачивание новой сборки: интерфейс его не показывает.
+    update_cancel: Mutex<Option<watch::Sender<bool>>>,
 }
 
 impl FfmpegManager {
@@ -209,6 +250,56 @@ impl FfmpegManager {
     pub fn dir(&self) -> &Path {
         &self.paths.dir
     }
+
+    /// Версия для вкладки «Модули»: установленная и закреплённая.
+    pub fn version(&self) -> Option<crate::storage::ModuleVersion> {
+        let installed = self.paths.installed_version()?;
+        Some(crate::storage::ModuleVersion::new(
+            installed.trim_start_matches('b'),
+            pin().version.trim_start_matches('b'),
+            installed != pin().version,
+        ))
+    }
+}
+
+/// Когда пробовать скачать новую сборку после запуска: сразу после запуска
+/// сеть и Tor заняты своим.
+const UPDATE_DELAYS: [Duration; 2] = [Duration::from_secs(90), Duration::from_secs(15 * 60)];
+
+/// Модуль прошлой закреплённой сборки — докачать новую в фоне: человек уже
+/// согласился на модуль, когда скачал его. Встанет при следующем запуске
+/// приложения (`apply_staged`), а до того сжимает прежний.
+fn schedule_update(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        let Some(suffix) = current_suffix() else {
+            return;
+        };
+        for delay in UPDATE_DELAYS {
+            tokio::time::sleep(delay).await;
+            let mgr = app.state::<FfmpegManager>();
+            let staged = mgr.paths.staged();
+            if !mgr.paths.is_outdated()
+                || staged.installed_version().as_deref() == Some(pin().version.as_str())
+            {
+                return;
+            }
+            let (cancel_tx, mut cancel_rx) = watch::channel(false);
+            *mgr.update_cancel.lock().unwrap_or_else(|p| p.into_inner()) = Some(cancel_tx);
+            let tor = app.state::<TorManager>();
+            let result = match download_client(&tor).await {
+                Ok(client) => install(&client, &staged, suffix, &mut cancel_rx, |_, _| {}).await,
+                Err(e) => Err(e),
+            };
+            *mgr.update_cancel.lock().unwrap_or_else(|p| p.into_inner()) = None;
+            match result {
+                Ok(()) => {
+                    log::info!("[ffmpeg] module {} downloaded", pin().version);
+                    return;
+                }
+                Err(e) => log::warn!("[ffmpeg] module update: {e}"),
+            }
+        }
+    });
 }
 
 pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -230,11 +321,19 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    let _ = MODULE_DIR.set(dir.clone());
+    let paths = FfmpegPaths::new(dir.clone());
+    match paths.apply_staged() {
+        Ok(true) => log::info!("[ffmpeg] module {} installed", pin().version),
+        Ok(false) => {}
+        Err(e) => log::warn!("[ffmpeg] staged update: {e}"),
+    }
+    let _ = MODULE_DIR.set(dir);
     app.manage(FfmpegManager {
-        paths: FfmpegPaths::new(dir),
+        paths,
         install_cancel: Mutex::new(None),
+        update_cancel: Mutex::new(None),
     });
+    schedule_update(app.clone());
     Ok(())
 }
 
@@ -413,6 +512,17 @@ pub fn ffmpeg_module_remove(mgr: State<'_, FfmpegManager>) -> Result<(), String>
     {
         return Err("busy".into());
     }
+    // Фоновое обновление пишет в каталог модуля: остановить и попросить
+    // повторить — файл, открытый на запись, на Windows не удалить.
+    if let Some(tx) = mgr
+        .update_cancel
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .as_ref()
+    {
+        let _ = tx.send(true);
+        return Err("busy".into());
+    }
     mgr.paths
         .remove()
         .map_err(|e| format!("remove_failed: {e}"))
@@ -509,6 +619,54 @@ mod tests {
         paths.remove().unwrap();
         assert!(!paths.marker().exists());
         assert!(!paths.binary("ffmpeg").exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_staged_build_replaces_the_old_one_at_start() {
+        let dir = std::env::temp_dir().join(format!("ffmpeg-staged-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let paths = FfmpegPaths::new(dir.clone());
+        for tool in TOOLS {
+            std::fs::write(paths.binary(tool), b"old").unwrap();
+        }
+        std::fs::write(paths.marker(), r#"{"version":"b0.0.1"}"#).unwrap();
+        assert!(paths.is_outdated());
+        assert!(!paths.apply_staged().unwrap(), "скачанного нет");
+
+        // Недокачанное (нет маркера) удаляется, прежний модуль остаётся.
+        let staged = paths.staged();
+        std::fs::create_dir_all(&staged.dir).unwrap();
+        std::fs::write(staged.binary("ffmpeg"), b"half").unwrap();
+        assert!(!paths.apply_staged().unwrap());
+        assert!(!staged.dir.exists());
+        assert_eq!(std::fs::read(paths.binary("ffmpeg")).unwrap(), b"old");
+
+        // Скачанная сборка не той версии (приложение обновилось ещё раз) — тоже.
+        std::fs::create_dir_all(&staged.dir).unwrap();
+        for tool in TOOLS {
+            std::fs::write(staged.binary(tool), b"new").unwrap();
+        }
+        std::fs::write(staged.marker(), r#"{"version":"b0.0.2"}"#).unwrap();
+        assert!(!paths.apply_staged().unwrap());
+        assert!(!staged.dir.exists());
+
+        std::fs::create_dir_all(&staged.dir).unwrap();
+        for tool in TOOLS {
+            std::fs::write(staged.binary(tool), b"new").unwrap();
+        }
+        staged.write_marker().unwrap();
+        assert!(paths.apply_staged().unwrap());
+        for tool in TOOLS {
+            assert_eq!(std::fs::read(paths.binary(tool)).unwrap(), b"new");
+        }
+        assert!(!paths.is_outdated());
+        assert!(!staged.dir.exists());
+
+        std::fs::create_dir_all(&staged.dir).unwrap();
+        paths.remove().unwrap();
+        assert!(!staged.dir.exists(), "удаление модуля убирает и скачанное");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

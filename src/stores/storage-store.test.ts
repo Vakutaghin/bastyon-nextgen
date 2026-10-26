@@ -16,6 +16,7 @@ function usage(over: Partial<StorageUsage> = {}): StorageUsage {
     ipfsCache: null,
     limits: { web: 512 * MB, ipfs: 2048 * MB },
     modules: { ipfs: 0, tor: 100 * MB, voice: 0, compression: 0, mesh: 2 * MB },
+    versions: { ipfs: null, tor: null, compression: null, mesh: null },
     ...over,
   }
 }

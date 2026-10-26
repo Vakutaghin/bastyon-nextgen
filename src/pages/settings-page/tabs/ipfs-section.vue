@@ -7,7 +7,7 @@
       <SC_IpfsStatus>{{ statusLabel }}</SC_IpfsStatus>
     </SC_IpfsHead>
     <SC_IpfsDesc>{{ t('settings.ipfs.description') }}</SC_IpfsDesc>
-    <ModuleDiskUsage module="ipfs" />
+    <ModuleInfo module="ipfs" />
     <SC_IpfsActions>
       <Button v-if="ipfs.installed" danger :loading="ipfs.busy" @click="onUninstall">
         {{ t('settings.ipfs.uninstall') }}
@@ -30,7 +30,7 @@ import { useI18n } from 'vue-i18n'
 import { Modal, Button } from 'ant-design-vue'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import { useStorageStore } from '@/stores/storage-store'
-import ModuleDiskUsage from './module-disk-usage.vue'
+import ModuleInfo from './module-info.vue'
 import {
   SC_IpfsCard,
   SC_IpfsHead,

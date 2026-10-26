@@ -181,6 +181,17 @@ pub fn tor_installed(mgr: State<'_, TorManager>) -> bool {
     installer::has_bundle(&mgr.paths)
 }
 
+/// Версия для вкладки «Модули». Новый бандл скачивается через сам Tor и
+/// встаёт при следующем включении (`installer::download_upgrade`).
+pub fn module_version(mgr: &TorManager) -> Option<crate::storage::ModuleVersion> {
+    let installed = installer::installed_version(&mgr.paths)?;
+    Some(crate::storage::ModuleVersion::new(
+        &installed,
+        installer::tor_version(),
+        installer::upgrade_pending(&mgr.paths),
+    ))
+}
+
 /// «Удалить» в настройках → «Модули»: бандл и кэш каталога узлов. Только у
 /// выключенного Tor — файлы работающего не удалить (на Windows — вообще).
 /// Мосты остаются в состоянии и в настройках; Tor скачается снова, когда его

@@ -353,8 +353,6 @@ export default {
     ipfsStartBtn: 'Покрени',
     ipfsStopBtn: 'Заустави',
     ipfsUninstallBtn: 'Деинсталирај',
-    ipfsUpdateBtn: 'Ажурирај',
-    ipfsUpdateHint: 'Доступна је новија верзија IPFS-а.',
     ipfsMenuHint: 'IPFS везе се отварају у посебном прозору прегледача.',
     ipfsMyFilesBtn: 'Моје датотеке',
     ipfsBrowserBtn: 'Отвори IPFS прегледач',
@@ -534,6 +532,10 @@ export default {
       intro: 'Додатни програми које апликација преузима само када то затражите.',
       total: 'Тренутно заузимају {size}.',
       onDisk: 'На диску: {size}',
+      version: 'верзија {version}',
+      versionPending: 'верзија {version}, нова {latest} ће се сама преузети и инсталирати',
+      updates:
+        'Модули се ажурирају заједно са апликацијом: нова верзија се преузима у позадини и почиње да ради при следећем покретању, а до тада ради стара.',
       tor: {
         title: 'Tor',
         description:

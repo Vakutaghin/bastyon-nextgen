@@ -356,8 +356,6 @@ export default {
     ipfsStartBtn: 'Запустить',
     ipfsStopBtn: 'Остановить',
     ipfsUninstallBtn: 'Удалить',
-    ipfsUpdateBtn: 'Обновить',
-    ipfsUpdateHint: 'Доступна новая версия IPFS.',
     ipfsMenuHint: 'IPFS-ссылки открываются в отдельном окне-просмотрщике.',
     ipfsMyFilesBtn: 'Мои файлы',
     ipfsBrowserBtn: 'Открыть IPFS-браузер',
@@ -540,6 +538,10 @@ export default {
       intro: 'Дополнительные программы, которые приложение скачивает, только когда вы попросите.',
       total: 'Сейчас они занимают {size}.',
       onDisk: 'На диске: {size}',
+      version: 'версия {version}',
+      versionPending: 'версия {version}, новая {latest} скачается и встанет сама',
+      updates:
+        'Модули обновляются вместе с приложением: новая версия скачивается в фоне и встаёт при следующем запуске, а до того работает прежняя.',
       tor: {
         title: 'Tor',
         description:

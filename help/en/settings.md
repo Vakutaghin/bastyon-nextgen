@@ -38,6 +38,8 @@ Only in the desktop app. The programs the app downloads when you ask, and how mu
 - **“Video compression module”** — see [Video compression](video-compression.md);
 - **“Mesh networks module”** — download, update or remove it, see [Chatting over radio](mesh.md).
 
+Under each module you can see how much space it takes and its version. Modules update together with the app: a new version downloads in the background and takes over at the next start, while the old one keeps working.
+
 ## Private key
 
 The recovery phrase and account key, checking that the phrase is written down, and protection on this device — see [Recovery phrase and private key](recovery-phrase.md) and [Protection on this device](device-protection.md).
