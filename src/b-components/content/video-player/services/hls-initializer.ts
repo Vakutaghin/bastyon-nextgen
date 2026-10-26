@@ -142,6 +142,11 @@ export function initHlsJsVideo(
     maxMaxBufferLength: 300,
     // Жёсткий потолок в байтах: на 4K стриме без него буфер съедает >1GB RAM и убивает мобильный браузер
     maxBufferSize: 60 * 1000 * 1000,
+    // Слабый процессор не успевает декодировать (теряется больше 20% кадров) —
+    // качество на ступень ниже. Без этого ABR смотрел только на сеть и на
+    // Celeron держал 1080p, загружая оба ядра. capLevelToPlayerSize не берём:
+    // он раз в секунду переписывает autoLevelCapping и снял бы потолок сети.
+    capLevelOnFPSDrop: true,
     ...HLS_LOAD_POLICY,
   })
 
