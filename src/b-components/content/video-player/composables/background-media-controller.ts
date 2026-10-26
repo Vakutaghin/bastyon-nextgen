@@ -1,4 +1,5 @@
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core'
+import { ref } from 'vue'
 
 import { BackgroundMedia } from '@/plugins/background-media'
 
@@ -29,7 +30,31 @@ export interface ActivePlayerHandle {
 }
 
 const platform = Capacitor.getPlatform()
-const isAndroidNative = platform === 'android'
+export const isAndroidNative = platform === 'android'
+
+/**
+ * Приложение свёрнуто или экран погашен (Android). Capacitor сообщает об этом
+ * сразу, а страница становится скрытой (`visibilitychange`) через несколько
+ * секунд — и тогда же Chromium ставит видео на паузу. По этому сигналу звук
+ * ролика уходит в нативный плеер (use-background-playback).
+ */
+export const appInBackground = ref(false)
+let appStateWatched = false
+
+export function watchAppState(): void {
+  if (appStateWatched || !isAndroidNative) return
+  appStateWatched = true
+  void import('@capacitor/app')
+    .then(({ App }) =>
+      App.addListener('appStateChange', ({ isActive }) => {
+        appInBackground.value = !isActive
+      })
+    )
+    .catch((err) => {
+      console.warn('appStateChange listener failed:', err)
+      appStateWatched = false
+    })
+}
 
 let activePlayerId: string | null = null
 let activeHandle: ActivePlayerHandle | null = null

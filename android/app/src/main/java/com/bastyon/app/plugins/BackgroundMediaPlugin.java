@@ -3,6 +3,8 @@ package com.bastyon.app.plugins;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -101,6 +103,40 @@ public class BackgroundMediaPlugin extends Plugin {
                 .setAction(MediaPlaybackService.ACTION_STOP);
         ctx.startService(intent);
         call.resolve();
+    }
+
+    /** Приложение свернули: звук ролика — ExoPlayer службы с его места. */
+    @PluginMethod
+    public void playNative(PluginCall call) {
+        String url = call.getString("url");
+        if (url == null || url.isEmpty()) {
+            call.reject("url is required");
+            return;
+        }
+        Context ctx = getContext();
+        Intent intent = new Intent(ctx, MediaPlaybackService.class)
+                .setAction(MediaPlaybackService.ACTION_NATIVE_PLAY);
+        fillIntent(intent, call);
+        intent.putExtra(MediaPlaybackService.EXTRA_URL, url);
+        Float volume = call.getFloat("volume", 1.0f);
+        intent.putExtra(MediaPlaybackService.EXTRA_VOLUME, volume == null ? 1.0f : volume);
+        startForegroundService(ctx, intent);
+        call.resolve();
+    }
+
+    /** Приложение снова на экране: где ExoPlayer остановился и играл ли. */
+    @PluginMethod
+    public void stopNative(PluginCall call) {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            long[] state = MediaPlaybackService.stopNativePlayback();
+            JSObject ret = new JSObject();
+            ret.put("active", state != null);
+            if (state != null) {
+                ret.put("position", state[0] / 1000d);
+                ret.put("isPlaying", state[1] == 1L);
+            }
+            call.resolve(ret);
+        });
     }
 
     @PluginMethod

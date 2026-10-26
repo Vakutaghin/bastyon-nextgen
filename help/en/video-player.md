@@ -72,7 +72,7 @@ On a video post’s page, under the clip, there is **“More from this author”
 
 ## On a phone
 
-In the Android app a clip or audio keeps playing when you minimise the app or turn off the screen. You can control it from the notification and the lock screen. While the app is minimised, the video plays in the lowest quality: the picture is not visible anyway, and the sound is the same.
+In the Android app a clip or audio keeps playing when you minimise the app or turn off the screen. You can control it from the notification and the lock screen: pause, play, seeking. While the app is minimised, only the clip's sound plays, taken from the lightest quality: the picture is not visible anyway. When you minimise the app, the sound may pause for a second or two while it loads. When you come back, the video continues from the same spot.
 
 ## With Tor
 

@@ -66,6 +66,10 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation "androidx.media:media:$androidxMediaVersion"
+    // Звук ролика, пока приложение свёрнуто или экран погашен: WebView в фоне
+    // видео не играет (MediaPlaybackService). Только плеер и HLS.
+    implementation "androidx.media3:media3-exoplayer:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-hls:$media3Version"
     // Mesh-радио по USB: CDC-ACM, CP210x, CH34x, FTDI (MIT).
     implementation "com.github.mik3y:usb-serial-for-android:3.11.0"
     implementation project(':capacitor-android')

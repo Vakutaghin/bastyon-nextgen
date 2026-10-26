@@ -19,6 +19,22 @@ export interface BackgroundMediaStartOptions {
 
 export type BackgroundMediaUpdateOptions = Partial<BackgroundMediaStartOptions>
 
+/** Звук ролика в нативном плеере службы, пока приложение свёрнуто. */
+export interface BackgroundMediaNativeOptions extends BackgroundMediaStartOptions {
+  /** HLS-плейлист или файл ролика (http/https). */
+  url: string
+  /** 0…1; 0 — ролик был без звука. */
+  volume?: number
+}
+
+export interface BackgroundMediaNativeState {
+  /** Нативный плеер играл (false — его уже остановили из уведомления). */
+  active: boolean
+  /** Где остановился, секунды. */
+  position?: number
+  isPlaying?: boolean
+}
+
 export interface BackgroundMediaSeekEvent {
   positionMs: number
 }
@@ -35,6 +51,10 @@ export interface BackgroundMediaPlugin {
   start(options: BackgroundMediaStartOptions): Promise<void>
   update(options: BackgroundMediaUpdateOptions): Promise<void>
   stop(): Promise<void>
+  /** Android: свернули — звук играет ExoPlayer службы (WebView видео в фоне не играет). */
+  playNative(options: BackgroundMediaNativeOptions): Promise<void>
+  /** Android: вернулись — забрать у ExoPlayer позицию и остановить его. */
+  stopNative(): Promise<BackgroundMediaNativeState>
   isSupported(): Promise<{ supported: boolean }>
 
   addListener(eventName: 'play' | 'pause' | 'stop', cb: () => void): Promise<PluginListenerHandle>

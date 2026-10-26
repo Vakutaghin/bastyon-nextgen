@@ -1,8 +1,12 @@
 import { ref, watch, onBeforeUnmount, type Ref } from 'vue'
 import type Hls from 'hls.js'
 
+import { BackgroundMedia } from '@/plugins/background-media'
 import {
+  appInBackground,
   backgroundMediaController,
+  isAndroidNative,
+  watchAppState,
   type ActivePlayerHandle,
   type MediaSessionPayload,
 } from './background-media-controller'
@@ -75,6 +79,75 @@ export function useBackgroundPlayback(opts: Options) {
     }
   }
 
+  // --- звук в нативном плеере, пока приложение свёрнуто ---
+  //
+  // Android WebView не играет видео в скрытой странице: Chromium ставит на
+  // паузу и <video>, и любой элемент с видеодорожкой (<audio> с тем же
+  // потоком — тоже), а в «видимом», но не рисуемом окне встаёт декодер.
+  // Проверено на эмуляторе API 35, WebView 124. Поэтому, пока приложение
+  // свёрнуто или экран погашен, звук играет ExoPlayer службы
+  // MediaPlaybackService: кнопки уведомления управляют им сами, а вернувшись,
+  // видео продолжает с его места.
+
+  /** Звук сейчас у нативного плеера: состояние и позиция — его. */
+  let nativeActive = false
+
+  /** Что отдать нативному плееру: blob: (свой файл до загрузки) ему не открыть. */
+  const nativeSource = (video: HTMLVideoElement): string | null => {
+    const url = hls.value?.url ?? video.currentSrc
+    return url && /^https?:/i.test(url) ? url : null
+  }
+
+  const startNative = (): boolean => {
+    if (nativeActive) return true
+    if (!isAndroidNative || isAudio.value) return false
+    const video = resolveVideo()
+    const url = video ? nativeSource(video) : null
+    if (!video || !url) return false
+    nativeActive = true
+    const payload = buildPayload()
+    video.pause()
+    BackgroundMedia.playNative({
+      ...payload,
+      url,
+      position: video.currentTime,
+      isPlaying: true,
+      volume: video.muted ? 0 : video.volume,
+    }).catch(() => {
+      nativeActive = false
+    })
+    return true
+  }
+
+  /**
+   * Страница снова видна. Capacitor сообщает о возвращении раньше, а `play()`
+   * в ещё скрытой странице Chromium тут же гасит.
+   */
+  const whenVisible = (): Promise<void> =>
+    new Promise((resolve) => {
+      if (!document.hidden) return resolve()
+      const onChange = (): void => {
+        if (document.hidden) return
+        document.removeEventListener('visibilitychange', onChange)
+        resolve()
+      }
+      document.addEventListener('visibilitychange', onChange)
+    })
+
+  const endNative = async (): Promise<void> => {
+    if (!nativeActive) return
+    nativeActive = false
+    const state = await BackgroundMedia.stopNative().catch(() => null)
+    const video = resolveVideo()
+    if (!video || !state?.active) return
+    if (state.position !== undefined && Math.abs(video.currentTime - state.position) > 0.25) {
+      video.currentTime = state.position
+    }
+    if (!state.isPlaying) return
+    await whenVisible()
+    if (!appInBackground.value) video.play().catch(() => {})
+  }
+
   // --- session payload ---
 
   const buildPayload = (): MediaSessionPayload => {
@@ -92,21 +165,24 @@ export function useBackgroundPlayback(opts: Options) {
   }
 
   const handle: ActivePlayerHandle = {
+    // Пока звук у нативного плеера, кнопки уведомления служба обрабатывает
+    // сама; сюда приходит «пуск», если ролик свернули уже на паузе.
     onPlay: () => {
-      const v = resolveVideo()
-      if (v) v.play().catch(() => {})
+      if (appInBackground.value && startNative()) return
+      resolveVideo()
+        ?.play()
+        .catch(() => {})
     },
     onPause: () => {
-      const v = resolveVideo()
-      if (v) v.pause()
+      resolveVideo()?.pause()
     },
     onSeekTo: (positionMs: number) => {
       const v = resolveVideo()
       if (v) v.currentTime = positionMs / 1000
     },
     onStop: () => {
-      const v = resolveVideo()
-      if (v) v.pause()
+      nativeActive = false
+      resolveVideo()?.pause()
       backgroundMediaController.release(playerId.value)
     },
   }
@@ -116,7 +192,7 @@ export function useBackgroundPlayback(opts: Options) {
   const startPositionTicker = () => {
     stopPositionTicker()
     positionTimer = window.setInterval(() => {
-      if (!backgroundMediaController.owns(playerId.value)) return
+      if (nativeActive || !backgroundMediaController.owns(playerId.value)) return
       backgroundMediaController.update(playerId.value, {
         position: resolveVideo()?.currentTime || 0,
         isPlaying: isPlaying.value,
@@ -134,7 +210,7 @@ export function useBackgroundPlayback(opts: Options) {
   // --- visibility ---
 
   const onVisibilityChange = () => {
-    const hidden = document.hidden
+    const hidden = document.hidden || appInBackground.value
     isInBackground.value = hidden
     if (!backgroundMediaController.owns(playerId.value)) return
     if (hidden && isPlaying.value) {
@@ -145,10 +221,18 @@ export function useBackgroundPlayback(opts: Options) {
   }
 
   document.addEventListener('visibilitychange', onVisibilityChange)
+  watchAppState()
+  // Свернули — звук ролика у нативного плеера, вернулись — видео продолжает.
+  watch(appInBackground, (background) => {
+    if (!background) void endNative()
+    else if (isPlaying.value && backgroundMediaController.owns(playerId.value)) startNative()
+  })
 
   // --- session lifecycle driven by isPlaying ---
 
   watch(isPlaying, async (playing) => {
+    // Видео встало, потому что звук у нативного плеера, — уведомление его.
+    if (nativeActive) return
     if (playing) {
       await backgroundMediaController.claim(playerId.value, handle, buildPayload())
       startPositionTicker()
@@ -165,6 +249,10 @@ export function useBackgroundPlayback(opts: Options) {
   }
 
   onBeforeUnmount(() => {
+    if (nativeActive) {
+      nativeActive = false
+      void BackgroundMedia.stopNative().catch(() => {})
+    }
     document.removeEventListener('visibilitychange', onVisibilityChange)
     stopPositionTicker()
     if (backgroundMediaController.owns(playerId.value)) {
