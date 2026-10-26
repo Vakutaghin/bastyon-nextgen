@@ -9,6 +9,9 @@ const props = {
 export const SC_Window = styled('div', props)`
   position: relative;
   background-color: var(--color-bg-primary);
+  /* Фон окна — как у страницы, а тень в тёмной теме не видна: без рамки
+     окно сливалось со страницей в обеих темах. */
+  border: 1px solid var(--ui-border-accented);
   border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_LG};
   display: flex;

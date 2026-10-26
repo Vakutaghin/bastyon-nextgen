@@ -6,7 +6,9 @@ export const SC_MessengerContainer = styled.div`
   display: flex;
   background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--ui-border);
+  /* Внешняя рамка заметнее разделителей внутри: фон мессенджера — как у
+     страницы, и с --ui-border в тёмной теме он с ней сливался. */
+  border: 1px solid var(--ui-border-accented);
   overflow: hidden;
 
   /* Remove margin here, let parent control it */

@@ -99,9 +99,11 @@ async function checkChannelFeed(page: Page): Promise<void> {
   await expect(page.getByText('Пост Боба')).toHaveCount(0)
   // Подписи дней: свежий пост — сегодня (сразу после полуночи — вчера).
   await expect(page.getByText(/^(Сегодня|Вчера)$/).first()).toBeVisible()
-  // Вместо поля ввода — подписка и личное сообщение автору.
-  await expect(page.getByTestId('channel-subscribe')).toBeVisible()
-  await expect(page.getByTestId('channel-write')).toHaveText('Написать автору')
+  // Поля ввода нет; написать автору — значок в шапке рядом с именем.
+  await expect(page.getByTestId('channel-write').last()).toHaveAttribute(
+    'aria-label',
+    'Написать автору'
+  )
   // Свежий пост в зоне видимости: лента открылась внизу.
   await expect(posts.last()).toBeInViewport()
 }
@@ -271,9 +273,7 @@ const LONG_FEED: MockNodeData = {
   subscribes: [CAROL],
 }
 
-test('длинная лента: посты целиком, ролики открываются и играют, подписка видна', async ({
-  page,
-}) => {
+test('длинная лента: посты целиком, ролики открываются и играют', async ({ page }) => {
   test.setTimeout(120_000)
   await signIn(page, LONG_FEED)
   await useMockPeerTube(page)
@@ -292,12 +292,6 @@ test('длинная лента: посты целиком, ролики отк�
   await expect(posts.last()).toContainText('Ролик Кэрол', { timeout: 30_000 })
   expect(await posts.count()).toBeGreaterThanOrEqual(10)
   await expectPostsWhole(page)
-
-  // Подписан — так и написано, кнопки «Подписаться» нет.
-  await expect(page.getByTestId('channel-subscribed')).toHaveText('Вы подписаны', {
-    timeout: 15_000,
-  })
-  await expect(page.getByTestId('channel-subscribe')).toHaveCount(0)
 
   // YouTube: обложка ролика, нажатие — окно поста, плеер запускает ролик сам.
   const youtube = page.getByTestId('channel-video').filter({ hasText: 'YouTube' })
@@ -361,6 +355,21 @@ test.describe('на телефоне', () => {
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
     ).toBe(true)
+
+    // «Написать автору» в шапке ничем не закрыт (крестик мессенджера — справа)
+    // и вместо ленты открывает переписку с автором: её ещё нет — «Начать чат».
+    const uncovered = (el: Element): boolean => {
+      const r = el.getBoundingClientRect()
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return !!hit && el.contains(hit)
+    }
+    const write = page.getByTestId('channel-write').filter({ visible: true })
+    expect(await write.evaluate(uncovered)).toBe(true)
+    await write.click()
+    await expect(page.getByTestId('channel-feed')).toHaveCount(0)
+    const start = page.getByRole('button', { name: 'Начать чат', exact: true }).last()
+    await expect(start).toBeVisible()
+    expect(await start.evaluate(uncovered)).toBe(true)
   })
 
   test('канал виден сразу, а пока переписки грузятся — над ним «Загрузка диалогов»', async ({

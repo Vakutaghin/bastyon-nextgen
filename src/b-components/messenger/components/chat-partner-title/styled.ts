@@ -60,6 +60,37 @@ export const SC_GroupTitleSub = styled.span`
   white-space: nowrap;
 `
 
+/** Значок действия рядом с именем в шапке — как кнопки окна мессенджера. */
+export const SC_TitleAction = styled.button`
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  color: var(--ui-text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text-highlighted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+  }
+`
+
 /** «Канал» под именем автора — фиолетовым, как мегафон в списке. */
 export const SC_ChannelTitleSub = styled.span`
   display: inline-flex;

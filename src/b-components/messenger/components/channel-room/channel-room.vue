@@ -32,56 +32,22 @@
         {{ t('messenger.channel.noPosts') }}
       </SC_FeedStatus>
     </SC_ChannelFeed>
-
-    <!-- Вместо поля ввода: канал читают, а ответить можно автору лично. -->
-    <SC_ChannelBar>
-      <template v-if="canSubscribe">
-        <!-- Подписка — как в профиле: пока транзакция ждёт блока, крутится значок. -->
-        <SC_BarStatus v-if="isSubscribed" data-testid="channel-subscribed">
-          <LoadingOutlined v-if="isSubscribePending" spin />
-          <CheckOutlined v-else />
-          {{ t('subscriptions.subscribed') }}
-        </SC_BarStatus>
-        <SC_BarButton
-          v-else
-          type="button"
-          class="primary"
-          :disabled="isSubscribePending"
-          data-testid="channel-subscribe"
-          @click="subscribe"
-        >
-          <LoadingOutlined v-if="isSubscribePending" spin />
-          <PlusOutlined v-else />
-          {{ t('subscriptions.subscribe') }}
-        </SC_BarButton>
-      </template>
-      <SC_BarButton type="button" data-testid="channel-write" @click="writeToAuthor">
-        <MessageOutlined />
-        {{ t('messenger.channel.writeToAuthor') }}
-      </SC_BarButton>
-    </SC_ChannelBar>
+    <!-- Поля ввода нет: канал читают. Написать автору — значок в шапке
+         (ChatPartnerTitle), подписка — в профиле автора. -->
   </SC_ChannelRoom>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CheckOutlined, LoadingOutlined, MessageOutlined, PlusOutlined } from '@/components/icons'
-import { appToast } from '@/b-components/app-toast'
-import { useAuthStore } from '@/blockchain'
-import { useUserRelationsStore } from '@/stores'
 import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import { postVisibilityOf } from '@/helpers/content/post-visibility'
 import { formatDayLabel } from '@/helpers/common/date-formatter'
 import type { AdaptedPost } from '@/types/adapted-post'
-import { useMessengerStore } from '../../store'
 import { postTime } from '../../lib/channels'
 import ChannelPost from './channel-post.vue'
 import { useChannelFeed } from './use-channel-feed'
 import {
-  SC_BarButton,
-  SC_BarStatus,
-  SC_ChannelBar,
   SC_ChannelFeed,
   SC_ChannelRoom,
   SC_DayDivider,
@@ -93,9 +59,6 @@ import {
 
 const props = defineProps<{ address: string }>()
 const { t } = useI18n()
-const store = useMessengerStore()
-const authStore = useAuthStore()
-const relations = useUserRelationsStore()
 
 const { posts, isLoading, isLoadingOlder, hasOlder, failed, seenAtOpen, loadOlder, retry } =
   useChannelFeed(props.address)
@@ -198,32 +161,4 @@ watch(
   },
   { immediate: true }
 )
-
-// --- Действия ---
-
-// Подписки читаются с ноды: пока список не пришёл, о подписке молчим — иначе
-// «Подписаться» видели бы и подписанные.
-if (authStore.isAuthenticated) void relations.init()
-
-const canSubscribe = computed<boolean>(
-  () =>
-    relations.subscriptionsLoaded &&
-    authStore.isAuthenticated &&
-    authStore.getUserAddress !== props.address
-)
-const isSubscribed = computed<boolean>(() => relations.isSubscribed(props.address))
-const isSubscribePending = computed<boolean>(() => relations.isSubscribePending(props.address))
-
-async function subscribe(): Promise<void> {
-  try {
-    await relations.subscribe(props.address)
-    appToast.success({ message: t('subscriptions.subscribedToast') })
-  } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
-  }
-}
-
-function writeToAuthor(): void {
-  void store.openInviteWithAddress(props.address)
-}
 </script>
